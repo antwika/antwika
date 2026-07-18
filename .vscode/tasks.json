@@ -1,0 +1,69 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Conan create libs/log",
+            "type": "shell",
+            "command": "conan create . -pr:b=../../profiles/build/${env:CONAN_PROFILE} -pr:h=../../profiles/host/${env:CONAN_PROFILE} --build=missing",
+            "options": {
+                "cwd": "${workspaceFolder}/libs/log"
+            }
+        },
+        {
+            "label": "Conan create libs/engine",
+            "type": "shell",
+            "command": "conan create . -pr:b=../../profiles/build/${env:CONAN_PROFILE} -pr:h=../../profiles/host/${env:CONAN_PROFILE} --build=missing",
+            "options": {
+                "cwd": "${workspaceFolder}/libs/engine"
+            }
+        },
+        {
+            "label": "CMake clean",
+            "type": "shell",
+            "command": "rm -Rf apps/app/build && cmake --build build/Release --target clean",
+            "options": {
+                "cwd": "${workspaceFolder}/apps/app"
+            }
+        },
+        {
+            "label": "Conan install",
+            "type": "shell",
+            "command": "conan install . -pr:b=../../profiles/build/${env:CONAN_PROFILE} -pr:h=../../profiles/host/${env:CONAN_PROFILE} --build=missing -s build_type=Release",
+            "options": {
+                "cwd": "${workspaceFolder}/apps/app"
+            }
+        },
+        {
+            "label": "CMake preset conan-release",
+            "type": "shell",
+            "command": "cmake --preset conan-release",
+            "options": {
+                "cwd": "${workspaceFolder}/apps/app"
+            }
+        },
+        {
+            "label": "CMake build",
+            "type": "shell",
+            "command": "cmake --build build/Release",
+            "options": {
+                "cwd": "${workspaceFolder}/apps/app"
+            }
+        },
+        {
+            "label": "Build apps/app",
+            "dependsOrder": "sequence",
+            "dependsOn": [
+                "Conan create libs/log",
+                "Conan create libs/engine",
+                "Conan install",
+                "CMake preset conan-release",
+                "CMake clean",
+                "CMake build"
+            ],
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            }
+        }
+    ]
+}

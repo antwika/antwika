@@ -1,0 +1,25 @@
+{
+    "name": "Clang Dev Container",
+    "build": {
+        "dockerfile": "Dockerfile",
+        "context": "../.."
+    },
+    "workspaceFolder": "/workspaces/${localWorkspaceFolderBasename}",
+    "remoteUser": "ubuntu",
+    "customizations": {
+        "vscode": {
+            "settings": {
+                "terminal.integrated.shellArgs.linux": [
+                    "-l"
+                ]
+            },
+            "extensions": [
+                "ms-vscode.cmake-tools",
+                "llvm-vs-code-extensions.vscode-clangd"
+            ]
+        }
+    },
+    "containerEnv": {
+        "CONAN_PROFILE": "clang-linux-x86_64"
+    }
+}

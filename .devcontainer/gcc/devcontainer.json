@@ -1,0 +1,25 @@
+{
+    "name": "GCC Dev Container",
+    "build": {
+        "dockerfile": "Dockerfile",
+        "context": "../.."
+    },
+    "workspaceFolder": "/workspaces/${localWorkspaceFolderBasename}",
+    "remoteUser": "ubuntu",
+    "customizations": {
+        "vscode": {
+            "settings": {
+                "terminal.integrated.shellArgs.linux": [
+                    "-l"
+                ]
+            },
+            "extensions": [
+                "ms-vscode.cmake-tools",
+                "ms-vscode.cpptools"
+            ]
+        }
+    },
+    "containerEnv": {
+        "CONAN_PROFILE": "gcc-linux-x86_64"
+    }
+}
