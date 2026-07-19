@@ -1,3 +1,5 @@
 CMakePresets.json
 CMakeUserPresets.json
 build
+
+!profiles/build/
