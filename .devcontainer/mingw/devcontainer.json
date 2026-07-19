@@ -1,5 +1,5 @@
 {
-    "name": "Clang Dev Container",
+    "name": "Mingw Dev Container",
     "build": {
         "dockerfile": "Dockerfile",
         "context": "../.."
@@ -15,11 +15,11 @@
             },
             "extensions": [
                 "ms-vscode.cmake-tools",
-                "llvm-vs-code-extensions.vscode-clangd"
+                "ms-vscode.cpptools"
             ]
         }
     },
     "containerEnv": {
-        "CONAN_PROFILE": "clang-linux-x86_64"
+        "CONAN_PROFILE": "mingw-windows-x86_64"
     }
 }

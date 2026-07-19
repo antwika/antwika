@@ -1,5 +1,5 @@
 {
-    "name": "GCC Dev Container",
+    "name": "GNU Dev Container",
     "build": {
         "dockerfile": "Dockerfile",
         "context": "../.."

@@ -27,13 +27,13 @@ Now run the compiled binary `apps/app/build/Release/app` or `apps/app/build/Rele
 ### Build dev containers
 
 ```sh
-$ docker build --no-cache -t base:latest -f .devcontainer/base/Dockerfile .
-$ docker build --no-cache -t gcc:latest -f .devcontainer/gcc/Dockerfile .
-$ docker build --no-cache -t clang:latest -f .devcontainer/clang/Dockerfile .
-$ docker build --no-cache -t mingw-w64:latest -f .devcontainer/mingw-w64/Dockerfile .
+$ docker build --no-cache -t antwika-dev-base:latest -f .devcontainer/base/Dockerfile .
+$ docker build --no-cache -t antwika-dev-gnu:latest -f .devcontainer/gnu/Dockerfile .
+$ docker build --no-cache -t antwika-dev-llvm:latest -f .devcontainer/llvm/Dockerfile .
+$ docker build --no-cache -t antwika-dev-mingw:latest -f .devcontainer/mingw/Dockerfile .
 ```
 
-### Build with GCC Dev Container for Linux
+### Build with GNU Dev Container
 
 ```sh
 $ cd libs/log/
@@ -48,7 +48,7 @@ $ cd build/Release/
 Run the build/Release/app on your Linux machine
 ```
 
-### Build with Clang Dev Container for Linux
+### Build with LLVM Dev Container
 
 ```sh
 $ cd libs/log/
@@ -63,7 +63,7 @@ $ cd build/Release/
 Run the build/Release/app on your Linux machine
 ```
 
-### Build with Mingw-w64 Dev Container for Windows
+### Build with Mingw Dev Container
 
 ```sh
 $ cd libs/log/
