@@ -44,7 +44,7 @@ jobs:
       - name: Build and push base image
         uses: docker/build-push-action@v6
         with:
-          context: .devcontainer/base
+          context: .
           file: .devcontainer/base/Dockerfile
           push: true
           tags: |
@@ -74,7 +74,7 @@ jobs:
       - name: Build and push LLVM image
         uses: docker/build-push-action@v6
         with:
-          context: .devcontainer/llvm
+          context: .
           file: .devcontainer/llvm/Dockerfile
           push: true
           build-args: |
@@ -106,7 +106,7 @@ jobs:
       - name: Build and push GNU image
         uses: docker/build-push-action@v6
         with:
-          context: .devcontainer/gnu
+          context: .
           file: .devcontainer/gnu/Dockerfile
           push: true
           build-args: |
@@ -138,7 +138,7 @@ jobs:
       - name: Build and push MinGW image
         uses: docker/build-push-action@v6
         with:
-          context: .devcontainer/mingw
+          context: .
           file: .devcontainer/mingw/Dockerfile
           push: true
           build-args: |
