@@ -2,7 +2,7 @@
 
 ## Quick start
 
-Build the base dev container with **Docker**
+### Optional: Build the dev containers locally with **Docker**
 
 ```sh
 $ docker build --no-cache -t antwika-dev-base:latest -f .devcontainer/base/Dockerfile .
@@ -17,7 +17,9 @@ $ sed -i 's|FROM ghcr.io/antwika/antwika-dev-base:${BASE_VERSION}|FROM antwika-d
   .devcontainer/mingw/Dockerfile
 ```
 
-Then open the project with **Visual Studio Code** and then reopen with in container:
+### Build the project
+
+Open the project with **Visual Studio Code** and then reopen with in container:
 
 ```
 Ctrl+Shift+P > Dev Containers: Reopen in Container
