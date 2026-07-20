@@ -5,7 +5,16 @@
 Build the base dev container with **Docker**
 
 ```sh
-$ docker build --no-cache -t base:latest -f .devcontainer/base/Dockerfile .
+$ docker build --no-cache -t antwika-dev-base:latest -f .devcontainer/base/Dockerfile .
+```
+
+Adjust gnu/llvm/mingw dockerfiles to use the locally built antwika-dev-base image
+
+```sh
+$ sed -i 's|FROM ghcr.io/antwika/antwika-dev-base:${BASE_VERSION}|FROM antwika-dev-base:${BASE_VERSION}|' \
+  .devcontainer/gnu/Dockerfile \
+  .devcontainer/llvm/Dockerfile \
+  .devcontainer/mingw/Dockerfile
 ```
 
 Then open the project with **Visual Studio Code** and then reopen with in container:
@@ -14,7 +23,9 @@ Then open the project with **Visual Studio Code** and then reopen with in contai
 Ctrl+Shift+P > Dev Containers: Reopen in Container
 ```
 
-And build the project with
+> You may need to delete the "apps/app/build" directory when switching between dev containers...
+
+Build the project with
 
 ```
 Ctrl+Shift+B
