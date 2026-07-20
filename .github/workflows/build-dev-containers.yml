@@ -78,9 +78,9 @@ jobs:
           file: .devcontainer/llvm/Dockerfile
           push: true
           build-args: |
-            BASE_VERSION=${VERSION}
+            BASE_VERSION=${{ env.VERSION }}
           tags: |
-            ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}-llvm:${VERSION}
+            ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}-llvm:${{ env.VERSION }}
             ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}-llvm:latest
 
   build-gnu:
@@ -110,9 +110,9 @@ jobs:
           file: .devcontainer/gnu/Dockerfile
           push: true
           build-args: |
-            BASE_VERSION=${VERSION}
+            BASE_VERSION=${{ env.VERSION }}
           tags: |
-            ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}-gnu:${VERSION}
+            ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}-gnu:${{ env.VERSION }}
             ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}-gnu:latest
 
   build-mingw:
@@ -142,7 +142,7 @@ jobs:
           file: .devcontainer/mingw/Dockerfile
           push: true
           build-args: |
-            BASE_VERSION=${VERSION}
+            BASE_VERSION=${{ env.VERSION }}
           tags: |
-            ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}-mingw:${VERSION}
+            ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}-mingw:${{ env.VERSION }}
             ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}-mingw:latest
