@@ -1,5 +1,5 @@
 {
-    "name": "Mingw Dev Container",
+    "name": "MinGW Dev Container",
     "build": {
         "dockerfile": "Dockerfile",
         "context": "../.."
