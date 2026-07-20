@@ -35,16 +35,20 @@ Now run the compiled binary `apps/app/build/Release/app` or `apps/app/build/Rele
 
 ## Manual build steps
 
-### Build dev containers
+### Build Dev Containers
 
 ```sh
+$ sed -i 's|FROM ghcr.io/antwika/antwika-dev-base:${BASE_VERSION}|FROM antwika-dev-base:${BASE_VERSION}|' \
+  .devcontainer/gnu/Dockerfile \
+  .devcontainer/llvm/Dockerfile \
+  .devcontainer/mingw/Dockerfile
 $ docker build --no-cache -t antwika-dev-base:latest -f .devcontainer/base/Dockerfile .
 $ docker build --no-cache -t antwika-dev-gnu:latest -f .devcontainer/gnu/Dockerfile .
 $ docker build --no-cache -t antwika-dev-llvm:latest -f .devcontainer/llvm/Dockerfile .
 $ docker build --no-cache -t antwika-dev-mingw:latest -f .devcontainer/mingw/Dockerfile .
 ```
 
-### Build with GNU Dev Container
+### Build project with GNU Dev Container
 
 ```sh
 $ cd libs/log/
@@ -59,7 +63,7 @@ $ cd build/Release/
 Run the build/Release/app on your Linux machine
 ```
 
-### Build with LLVM Dev Container
+### Build project with LLVM Dev Container
 
 ```sh
 $ cd libs/log/
@@ -74,7 +78,7 @@ $ cd build/Release/
 Run the build/Release/app on your Linux machine
 ```
 
-### Build with MinGW Dev Container
+### Build project with MinGW Dev Container
 
 ```sh
 $ cd libs/log/
