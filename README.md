@@ -74,7 +74,7 @@ $ cd build/Release/
 Run the build/Release/app on your Linux machine
 ```
 
-### Build with Mingw Dev Container
+### Build with MinGW Dev Container
 
 ```sh
 $ cd libs/log/
