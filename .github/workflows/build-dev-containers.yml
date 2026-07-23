@@ -66,7 +66,7 @@ jobs:
           tags: |
             ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}-base:latest
   build-llvm:
-    name: Build LLVM devcontainer
+    name: Build LLVM dev container
     needs: build-base
     runs-on: ubuntu-latest
     env:
@@ -109,7 +109,7 @@ jobs:
             ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}-llvm:latest
 
   build-gnu:
-    name: Build GNU devcontainer
+    name: Build GNU dev container
     needs: build-base
     runs-on: ubuntu-latest
     env:
@@ -152,7 +152,7 @@ jobs:
             ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}-gnu:latest
 
   build-mingw:
-    name: Build MinGW devcontainer
+    name: Build MinGW dev container
     needs: build-base
     runs-on: ubuntu-latest
     env:
