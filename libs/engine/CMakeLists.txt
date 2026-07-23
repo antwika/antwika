@@ -34,7 +34,7 @@ target_link_libraries(engine PRIVATE antwika::log)
 add_subdirectory(mocks)
 
 
-if(BUILD_TESTING)
+if(BUILD_TESTING AND NOT CMAKE_CROSSCOMPILING)
     add_subdirectory(tests)
 endif()
 

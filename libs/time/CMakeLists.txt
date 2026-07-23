@@ -25,7 +25,7 @@ target_include_directories(time
 
 add_subdirectory(fakes)
 
-if(BUILD_TESTING)
+if(BUILD_TESTING AND NOT CMAKE_CROSSCOMPILING)
     add_subdirectory(tests)
 endif()
 
