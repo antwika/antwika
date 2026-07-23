@@ -25,6 +25,10 @@ target_include_directories(time
 
 add_subdirectory(fakes)
 
+if(BUILD_TESTING)
+    add_subdirectory(tests)
+endif()
+
 install(
     TARGETS time
     EXPORT timeTargets

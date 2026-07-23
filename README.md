@@ -25,7 +25,7 @@ Open the project with **Visual Studio Code** and then reopen with in container:
 Ctrl+Shift+P > Dev Containers: Reopen in Container
 ```
 
-> You may need to delete the "apps/app/build" directory when switching between dev containers...
+> You may need to delete the "build" directory when switching between dev containers...
 
 Build the project with
 
@@ -33,7 +33,7 @@ Build the project with
 Ctrl+Shift+B
 ```
 
-Now run the compiled binary `apps/app/build/Release/app` or `apps/app/build/Release/app.exe` on your target machine.
+Now run the compiled binary `build/apps/app/app` or `build/apps/app/app.exe` on your target machine.
 
 ## Manual build steps
 
@@ -50,56 +50,14 @@ $ docker build --no-cache -t antwika-dev-llvm:latest -f .devcontainer/llvm/Docke
 $ docker build --no-cache -t antwika-dev-mingw:latest -f .devcontainer/mingw/Dockerfile .
 ```
 
-### Build project with GNU Dev Container
-
-```sh
-$ cd libs/log/
-$ conan create . -pr:b=../../profiles/build/gcc-linux-x86_64 -pr:h=../../profiles/host/gcc-linux-x86_64 --build=missing
-$ cd libs/engine/
-$ conan create . -pr:b=../../profiles/build/gcc-linux-x86_64 -pr:h=../../profiles/host/gcc-linux-x86_64 --build=missing
-$ cd ../../apps/app
-$ conan install . -pr:b=../../profiles/build/gcc-linux-x86_64 -pr:h=../../profiles/host/gcc-linux-x86_64 --build=missing -s build_type=Release
-$ cmake --preset conan-release
-$ cmake --build build/Release
-$ cd build/Release/
-Run the build/Release/app on your Linux machine
-```
-
-### Build project with LLVM Dev Container
-
-```sh
-$ cd libs/log/
-$ conan create . -pr:b=../../profiles/build/clang-linux-x86_64 -pr:h=../../profiles/host/clang-linux-x86_64 --build=missing
-$ cd libs/engine/
-$ conan create . -pr:b=../../profiles/build/clang-linux-x86_64 -pr:h=../../profiles/host/clang-linux-x86_64 --build=missing
-$ cd ../../apps/app
-$ conan install . -pr:b=../../profiles/build/clang-linux-x86_64 -pr:h=../../profiles/host/clang-linux-x86_64 --build=missing -s build_type=Release
-$ cmake --preset conan-release
-$ cmake --build build/Release
-$ cd build/Release/
-Run the build/Release/app on your Linux machine
-```
-
-### Build project with MinGW Dev Container
-
-```sh
-$ cd libs/log/
-$ conan create . -pr:b=../../profiles/build/mingw-windows-x86_64 -pr:h=../../profiles/host/mingw-windows-x86_64 --build=missing
-$ cd libs/engine/
-$ conan create . -pr:b=../../profiles/build/mingw-windows-x86_64 -pr:h=../../profiles/host/mingw-windows-x86_64 --build=missing
-$ cd ../../apps/app
-$ conan install . -pr:b=../../profiles/build/mingw-windows-x86_64 -pr:h=../../profiles/host/mingw-windows-x86_64 --build=missing -s build_type=Release
-$ cmake --preset conan-release
-$ cmake --build build/Release
-Run the build/Release/app.exe on your Windows machine
-```
-
-### Build with CMake
+### Build steps (same as when doing Ctrl+Shift+B in VSCode)
 
 Launch one of the dev-containers
 
 ```sh
-$ cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+$ rm -Rf build
+$ conan install . -of build -pr:b=./profiles/build/${CONAN_PROFILE} -pr:h=./profiles/host/${CONAN_PROFILE} --build=missing -s build_type=Release
+$ cmake --preset conan-release
 $ cmake --build build
-$ ./build/apps/app/app
+$ ctest --test-dir build
 ```

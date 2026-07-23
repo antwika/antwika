@@ -31,9 +31,13 @@ target_include_directories(log
         $<INSTALL_INTERFACE:include>
 )
 
-target_link_libraries(log PRIVATE antwika::time)
+target_link_libraries(log PUBLIC antwika::time)
 
 add_subdirectory(mocks)
+
+if(BUILD_TESTING)
+    add_subdirectory(tests)
+endif()
 
 install(
     TARGETS log

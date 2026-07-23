@@ -33,6 +33,11 @@ target_link_libraries(engine PRIVATE antwika::log)
 
 add_subdirectory(mocks)
 
+
+if(BUILD_TESTING)
+    add_subdirectory(tests)
+endif()
+
 install(
     TARGETS engine
     EXPORT engineTargets
