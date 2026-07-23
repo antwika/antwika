@@ -6,7 +6,7 @@ find_package(time REQUIRED)
 find_package(log REQUIRED)
 find_package(engine REQUIRED)
 
-add_executable(app src/app/App.cpp src/main.cpp)
+add_executable(app src/antwika/app/App.cpp src/main.cpp)
 
 target_link_libraries(app PRIVATE antwika::time)
 target_link_libraries(app PRIVATE antwika::log)
