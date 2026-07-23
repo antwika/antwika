@@ -2,8 +2,13 @@ cmake_minimum_required(VERSION 3.28)
 
 project(engine CXX)
 
-find_package(time REQUIRED)
-find_package(log REQUIRED)
+if(NOT TARGET antwika::time)
+    find_package(time REQUIRED)
+endif()
+
+if(NOT TARGET antwika::log)
+    find_package(log REQUIRED)
+endif()
 
 add_library(engine src/antwika/engine/Engine.cpp)
 

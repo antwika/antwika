@@ -1,7 +1,9 @@
 cmake_minimum_required(VERSION 3.28)
 project(PackageTest CXX)
 
-find_package(time CONFIG REQUIRED)
+if(NOT TARGET antwika::time)
+    find_package(time CONFIG REQUIRED)
+endif()
 
 find_package(GTest REQUIRED)
 

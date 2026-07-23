@@ -2,7 +2,9 @@ cmake_minimum_required(VERSION 3.28)
 
 project(log CXX)
 
-find_package(time REQUIRED)
+if(NOT TARGET antwika::time)
+    find_package(time REQUIRED)
+endif()
 
 add_library(log
     src/antwika/log/Logger.cpp

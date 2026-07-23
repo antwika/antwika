@@ -93,3 +93,13 @@ $ cmake --preset conan-release
 $ cmake --build build/Release
 Run the build/Release/app.exe on your Windows machine
 ```
+
+### Build with CMake
+
+Launch one of the dev-containers
+
+```sh
+$ cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+$ cmake --build build
+$ ./build/apps/app/app
+```

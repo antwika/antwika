@@ -2,9 +2,17 @@ cmake_minimum_required(VERSION 3.28)
 
 project(app CXX)
 
-find_package(time REQUIRED)
-find_package(log REQUIRED)
-find_package(engine REQUIRED)
+if(NOT TARGET antwika::time)
+    find_package(time REQUIRED)
+endif()
+
+if(NOT TARGET antwika::log)
+    find_package(log REQUIRED)
+endif()
+
+if(NOT TARGET antwika::engine)
+    find_package(engine REQUIRED)
+endif()
 
 add_executable(app src/antwika/app/App.cpp src/main.cpp)
 
