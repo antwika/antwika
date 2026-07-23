@@ -2,6 +2,8 @@ name: Build Dev Containers
 
 on:
   push:
+    branches:
+      - main
     tags:
       - "v*"
 
@@ -28,7 +30,12 @@ jobs:
       - name: Get version
         id: version
         run: |
-          VERSION=${GITHUB_REF#refs/tags/v}
+          if [[ "$GITHUB_REF" == refs/tags/v* ]]; then
+            VERSION=${GITHUB_REF#refs/tags/v}
+          else
+            VERSION=${GITHUB_REF#refs/heads/}
+            VERSION=${VERSION//\//-}
+          fi
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
 
       - name: Log in to GHCR
@@ -46,7 +53,7 @@ jobs:
         with:
           context: .
           file: .devcontainer/base/Dockerfile
-          push: true
+          push: ${{ startsWith(github.ref, 'refs/tags/v') }}
           tags: |
             ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}-base:${{ steps.version.outputs.version }}
             ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}-base:latest
@@ -62,6 +69,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Log in to GHCR
+        if: startsWith(github.ref, 'refs/tags/v')
         uses: docker/login-action@v3
         with:
           registry: ${{ env.REGISTRY }}
@@ -76,7 +84,7 @@ jobs:
         with:
           context: .
           file: .devcontainer/llvm/Dockerfile
-          push: true
+          push: ${{ startsWith(github.ref, 'refs/tags/v') }}
           build-args: |
             BASE_VERSION=${{ env.VERSION }}
           tags: |
@@ -94,6 +102,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Log in to GHCR
+        if: startsWith(github.ref, 'refs/tags/v')
         uses: docker/login-action@v3
         with:
           registry: ${{ env.REGISTRY }}
@@ -108,7 +117,7 @@ jobs:
         with:
           context: .
           file: .devcontainer/gnu/Dockerfile
-          push: true
+          push: ${{ startsWith(github.ref, 'refs/tags/v') }}
           build-args: |
             BASE_VERSION=${{ env.VERSION }}
           tags: |
@@ -126,6 +135,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Log in to GHCR
+        if: startsWith(github.ref, 'refs/tags/v')
         uses: docker/login-action@v3
         with:
           registry: ${{ env.REGISTRY }}
@@ -140,7 +150,7 @@ jobs:
         with:
           context: .
           file: .devcontainer/mingw/Dockerfile
-          push: true
+          push: ${{ startsWith(github.ref, 'refs/tags/v') }}
           build-args: |
             BASE_VERSION=${{ env.VERSION }}
           tags: |
