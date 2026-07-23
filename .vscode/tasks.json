@@ -10,6 +10,14 @@
             }
         },
         {
+            "label": "Conan create libs/time",
+            "type": "shell",
+            "command": "conan create . -pr:b=../../profiles/build/${env:CONAN_PROFILE} -pr:h=../../profiles/host/${env:CONAN_PROFILE} --build=missing",
+            "options": {
+                "cwd": "${workspaceFolder}/libs/time"
+            }
+        },
+        {
             "label": "Conan create libs/engine",
             "type": "shell",
             "command": "conan create . -pr:b=../../profiles/build/${env:CONAN_PROFILE} -pr:h=../../profiles/host/${env:CONAN_PROFILE} --build=missing",
@@ -53,6 +61,7 @@
             "label": "Build apps/app",
             "dependsOrder": "sequence",
             "dependsOn": [
+                "Conan create libs/time",
                 "Conan create libs/log",
                 "Conan create libs/engine",
                 "Conan install",
