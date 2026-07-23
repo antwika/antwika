@@ -1,10 +1,6 @@
 from conan import ConanFile
 
-class antwikaConan(ConanFile):
-    name = "antwika"
-    version = "0.1"
-    package_type = "application"
-
+class AntwikaConan(ConanFile):
     settings = (
         "os",
         "compiler",
@@ -17,5 +13,5 @@ class antwikaConan(ConanFile):
         "CMakeDeps",
     )
 
-    def requirements(self):
-        self.requires("gtest/1.17.0")
+    def build_requirements(self):
+        self.test_requires("gtest/1.17.0")

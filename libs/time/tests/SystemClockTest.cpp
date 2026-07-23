@@ -4,7 +4,7 @@
 
 using antwika::time::SystemClock;
 
-TEST(SystemClockTest, Instantiates) {
+TEST(SystemClockTest, Now) {
     SystemClock clock;
     auto now = clock.now();
 }

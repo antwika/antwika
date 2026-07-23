@@ -11,7 +11,6 @@ using antwika::log::mocks::MockLogger;
 TEST(EngineTest, Start_WritesInfoMessageToLogger)
 {
     MockLogger mockLogger;
-    // antwika::engine::test::MockLogger mockLogger;
     Engine engine(mockLogger);
     EXPECT_CALL(mockLogger, info("Antwika engine started!"));
     engine.start();
