@@ -2,7 +2,7 @@
 
 #include "antwika/time/fakes/FakeClock.hpp"
 
-using antwika::time::FakeClock;
+using antwika::time::fakes::FakeClock;
 
 TEST(FakeClockTest, Now) {
 

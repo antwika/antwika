@@ -2,11 +2,15 @@
 
 #include <iostream>
 #include <string>
+#include <chrono>
+#include <ctime>
+#include <iomanip>
+#include <sstream>
 
 namespace antwika::log
 {
 
-    Logger::Logger(Level level, Appender &appender) : level(level), appender(appender)
+    Logger::Logger(antwika::time::IClock& clock, Level level, Appender &appender) : clock(clock), level(level), appender(appender)
     {
     }
 
@@ -54,13 +58,16 @@ namespace antwika::log
 
     void Logger::log(std::string_view level, std::string_view message)
     {
-        std::string formatted;
-        formatted.reserve(level.size() + message.size() + 4);
-        formatted.append("[");
-        formatted.append(level);
-        formatted.append("] ");
-        formatted.append(message);
-        appender.append(formatted);
+        auto t = std::chrono::system_clock::to_time_t(clock.now());
+
+        std::tm tm = *std::localtime(&t);
+
+        std::ostringstream oss;
+        oss << '[' << std::put_time(&tm, "%Y-%m-%d %H:%M:%S") << "] ["
+            << level << "] "
+            << message;
+
+        appender.append(oss.str());
     }
 
 } // namespace antwika::log

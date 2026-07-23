@@ -2,7 +2,7 @@
 
 #include <antwika/time/IClock.hpp>
 
-namespace antwika::time {
+namespace antwika::time::fakes {
 
     class TIME_EXPORT FakeClock : public IClock
     {
