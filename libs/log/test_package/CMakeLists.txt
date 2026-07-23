@@ -3,6 +3,7 @@ project(PackageTest CXX)
 
 find_package(log CONFIG REQUIRED)
 
+find_package(time REQUIRED)
 find_package(GTest REQUIRED)
 
 add_executable(log_test
@@ -11,5 +12,7 @@ add_executable(log_test
 )
 
 target_link_libraries(log_test antwika::log)
+
+target_link_libraries(log_test antwika::time)
 
 target_link_libraries(log_test gtest::gtest)

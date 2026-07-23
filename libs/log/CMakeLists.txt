@@ -2,6 +2,8 @@ cmake_minimum_required(VERSION 3.15)
 
 project(log CXX)
 
+find_package(time REQUIRED)
+
 add_library(log
     src/antwika/log/Logger.cpp
     src/antwika/log/NullAppender.cpp
@@ -26,6 +28,8 @@ target_include_directories(log
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
         $<INSTALL_INTERFACE:include>
 )
+
+target_link_libraries(log PRIVATE antwika::time)
 
 add_subdirectory(mocks)
 

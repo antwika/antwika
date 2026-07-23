@@ -14,7 +14,7 @@ class appRecipe(ConanFile):
     description = "<Description of app package here>"
     topics = ("<Put some tag here>", "<here>", "<and here>")
 
-    requires = ("log/0.1.0", "engine/0.1.0")
+    requires = ("time/0.1.0", "log/0.1.0", "engine/0.1.0")
 
     # Binary configuration
     settings = "os", "compiler", "build_type", "arch"

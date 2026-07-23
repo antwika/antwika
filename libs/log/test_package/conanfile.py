@@ -11,6 +11,7 @@ class logTestConan(ConanFile):
     def requirements(self):
         self.requires(self.tested_reference_str)
         self.requires("gtest/1.17.0")
+        self.requires("time/0.1.0")
 
     def build(self):
         cmake = CMake(self)

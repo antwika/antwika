@@ -2,6 +2,7 @@
 
 #include <string_view>
 
+#include "antwika/log/ILogger.hpp"
 #include "antwika/log/Appender.hpp"
 
 #ifdef _WIN32
@@ -21,18 +22,6 @@ namespace antwika::log
         Warning,
         Error,
         Fatal,
-    };
-
-    class LOG_EXPORT ILogger
-    {
-    public:
-        virtual ~ILogger() = default;
-        virtual void trace(std::string_view) = 0;
-        virtual void debug(std::string_view) = 0;
-        virtual void info(std::string_view) = 0;
-        virtual void warning(std::string_view) = 0;
-        virtual void error(std::string_view) = 0;
-        virtual void fatal(std::string_view) = 0;
     };
 
     class LOG_EXPORT Logger : public ILogger

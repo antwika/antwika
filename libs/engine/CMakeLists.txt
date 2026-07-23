@@ -2,6 +2,7 @@ cmake_minimum_required(VERSION 3.15)
 
 project(engine CXX)
 
+find_package(time REQUIRED)
 find_package(log REQUIRED)
 
 add_library(engine src/antwika/engine/Engine.cpp)
@@ -22,6 +23,7 @@ target_include_directories(engine
         $<INSTALL_INTERFACE:include>
 )
 
+target_link_libraries(engine PRIVATE antwika::time)
 target_link_libraries(engine PRIVATE antwika::log)
 
 add_subdirectory(mocks)

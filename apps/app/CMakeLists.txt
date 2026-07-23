@@ -2,11 +2,13 @@ cmake_minimum_required(VERSION 3.15)
 
 project(app CXX)
 
+find_package(time REQUIRED)
 find_package(log REQUIRED)
 find_package(engine REQUIRED)
 
 add_executable(app src/app/App.cpp src/main.cpp)
 
+target_link_libraries(app PRIVATE antwika::time)
 target_link_libraries(app PRIVATE antwika::log)
 target_link_libraries(app PRIVATE antwika::engine)
 

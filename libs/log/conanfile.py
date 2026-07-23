@@ -13,6 +13,8 @@ class logRecipe(ConanFile):
     description = "<Description of log package here>"
     topics = ("<Put some tag here>", "<here>", "<and here>")
 
+    requires = ("time/0.1.0")
+
     # Binary configuration
     settings = "os", "compiler", "build_type", "arch"
     options = {"shared": [True, False], "fPIC": [True, False]}
