@@ -7,12 +7,6 @@
 #include "antwika/log/ILogger.hpp"
 #include "antwika/log/Appender.hpp"
 
-#ifdef _WIN32
-#define LOG_EXPORT __declspec(dllexport)
-#else
-#define LOG_EXPORT
-#endif
-
 namespace antwika::log
 {
 
@@ -26,7 +20,7 @@ namespace antwika::log
         Fatal,
     };
 
-    class LOG_EXPORT Logger : public ILogger
+    class Logger : public ILogger
     {
     public:
         explicit Logger(antwika::time::IClock &clock, Level level, Appender &appender);

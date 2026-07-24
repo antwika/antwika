@@ -7,7 +7,7 @@
 namespace antwika::time
 {
 
-    class TIME_EXPORT SystemClock : public IClock
+    class SystemClock : public IClock
     {
     public:
         std::chrono::time_point<std::chrono::system_clock> now() const override;

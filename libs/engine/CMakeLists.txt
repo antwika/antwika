@@ -14,6 +14,10 @@ add_library(engine src/antwika/engine/Engine.cpp)
 
 add_library(antwika::engine ALIAS engine)
 
+set_target_properties(engine PROPERTIES
+    WINDOWS_EXPORT_ALL_SYMBOLS ON
+)
+
 set(ENGINE_PUBLIC_HEADERS
     include/antwika/engine/Engine.hpp
 )

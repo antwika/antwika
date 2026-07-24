@@ -5,7 +5,7 @@
 namespace antwika::time::fakes
 {
 
-    class TIME_EXPORT FakeClock : public IClock
+    class FakeClock : public IClock
     {
     public:
         explicit FakeClock(std::chrono::time_point<std::chrono::system_clock> t) : current(t) {}

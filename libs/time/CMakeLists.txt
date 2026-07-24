@@ -8,6 +8,10 @@ add_library(time
 
 add_library(antwika::time ALIAS time)
 
+set_target_properties(time PROPERTIES
+    WINDOWS_EXPORT_ALL_SYMBOLS ON
+)
+
 set(TIME_PUBLIC_HEADERS
     include/antwika/time/IClock.hpp
     include/antwika/time/SystemClock.hpp

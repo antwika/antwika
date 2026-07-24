@@ -14,6 +14,10 @@ add_library(log
 
 add_library(antwika::log ALIAS log)
 
+set_target_properties(log PROPERTIES
+    WINDOWS_EXPORT_ALL_SYMBOLS ON
+)
+
 set(LOG_PUBLIC_HEADERS
     include/antwika/log/Appender.hpp
     include/antwika/log/Logger.hpp

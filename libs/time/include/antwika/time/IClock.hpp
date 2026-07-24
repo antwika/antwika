@@ -2,16 +2,10 @@
 
 #include <chrono>
 
-#ifdef _WIN32
-#define TIME_EXPORT __declspec(dllexport)
-#else
-#define TIME_EXPORT
-#endif
-
 namespace antwika::time
 {
 
-    class TIME_EXPORT IClock
+    class IClock
     {
     public:
         virtual ~IClock() = default;
