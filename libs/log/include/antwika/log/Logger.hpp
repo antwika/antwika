@@ -29,19 +29,19 @@ namespace antwika::log
     class LOG_EXPORT Logger : public ILogger
     {
     public:
-        explicit Logger(antwika::time::IClock& clock, Level level, Appender &appender);
-        void trace(std::string_view message);
-        void debug(std::string_view message);
-        void info(std::string_view message);
-        void warning(std::string_view message);
-        void error(std::string_view message);
-        void fatal(std::string_view message);
+        explicit Logger(antwika::time::IClock &clock, Level level, Appender &appender);
+        void trace(std::string_view message) noexcept;
+        void debug(std::string_view message) noexcept;
+        void info(std::string_view message) noexcept;
+        void warning(std::string_view message) noexcept;
+        void error(std::string_view message) noexcept;
+        void fatal(std::string_view message) noexcept;
 
     private:
-        antwika::time::IClock& clock;
+        antwika::time::IClock &clock;
         Level level;
         Appender &appender;
-        void log(std::string_view level, std::string_view message);
+        void log(std::string_view level, std::string_view message) noexcept;
     };
 
 } // namespace antwika::log

@@ -6,10 +6,10 @@
 
 #include "antwika/log/Logger.hpp"
 
-using antwika::time::fakes::FakeClock;
 using antwika::log::Level;
 using antwika::log::Logger;
 using antwika::log::mocks::MockAppender;
+using antwika::time::fakes::FakeClock;
 
 #define EXPECT_LOG(level, expected, call) [&] { \
     FakeClock fakeClock(std::chrono::system_clock::from_time_t(0)); \
