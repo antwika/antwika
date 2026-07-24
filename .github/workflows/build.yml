@@ -58,7 +58,7 @@ jobs:
             ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}-base:${{ inputs.version }}
             ${{ inputs.latest && format('{0}/{1}-base:latest', env.REGISTRY, env.IMAGE_PREFIX) || '' }}
 
-  build-images:
+  images:
     name: ${{ matrix.name }} image
     needs: build-base
     runs-on: ubuntu-latest
@@ -105,9 +105,9 @@ jobs:
             ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}-${{ matrix.image }}:${{ inputs.version }}
             ${{ inputs.latest && format('{0}/{1}-{2}:latest', env.REGISTRY, env.IMAGE_PREFIX, matrix.image) || '' }}
 
-  build-app:
+  apps:
     name: Build (${{ matrix.name }}) app
-    needs: build-images
+    needs: images
     runs-on: ubuntu-latest
 
     strategy:
@@ -126,7 +126,7 @@ jobs:
 
     container:
       image: ghcr.io/${{ github.repository_owner }}/antwika-dev-${{ matrix.image }}:${{ inputs.version }}
-
+      options: --user ubuntu
     env:
       CONAN_PROFILE: ${{ matrix.conan_profile }}
 
