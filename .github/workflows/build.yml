@@ -159,11 +159,28 @@ jobs:
         shell: bash
         run: ctest --test-dir build
 
-      - name: Verify executable
+      - name: Verify executables
         shell: bash
         run: |
-          if [ "${{ matrix.image }}" = "mingw" ]; then
-            test -f build/apps/game/game.exe
-          else
-            test -f build/apps/game/game
-          fi
+          failed=0
+
+          for dir in build/apps/*/; do
+            [ -d "$dir" ] || continue
+
+            app=$(basename "$dir")
+
+            if [ "${{ matrix.image }}" = "mingw" ]; then
+              BINARY="$dir$app.exe"
+            else
+              BINARY="$dir$app"
+            fi
+
+            if [ ! -f "$BINARY" ]; then
+              echo "Missing binary: $BINARY"
+              failed=1
+            else
+              echo "Found: $BINARY"
+            fi
+          done
+
+          exit $failed
