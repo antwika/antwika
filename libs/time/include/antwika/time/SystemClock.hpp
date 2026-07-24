@@ -4,7 +4,8 @@
 
 #include "antwika/time/IClock.hpp"
 
-namespace antwika::time {
+namespace antwika::time
+{
 
     class TIME_EXPORT SystemClock : public IClock
     {

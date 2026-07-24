@@ -11,10 +11,11 @@
 namespace antwika::log
 {
 
-class LOG_EXPORT Appender {
-public:
-    virtual ~Appender() = default;
-    virtual void append(std::string_view message) = 0;
-};
+    class LOG_EXPORT Appender
+    {
+    public:
+        virtual ~Appender() = default;
+        virtual void append(std::string_view message) = 0;
+    };
 
 } // namespace antwika::log

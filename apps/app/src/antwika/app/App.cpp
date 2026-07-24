@@ -9,7 +9,8 @@
 namespace antwika::app
 {
 
-    void App::run() {
+    void App::run()
+    {
         antwika::time::SystemClock clock;
         antwika::log::StreamAppender appender(std::cout);
         antwika::log::Logger logger(clock, antwika::log::Level::Info, appender);

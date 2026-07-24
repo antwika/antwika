@@ -3,8 +3,8 @@
 namespace antwika::log
 {
 
-    StreamAppender::StreamAppender(std::ostream& stream): stream(stream) {
-        
+    StreamAppender::StreamAppender(std::ostream &stream) : stream(stream)
+    {
     }
 
     void StreamAppender::append(std::string_view message)

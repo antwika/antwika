@@ -13,9 +13,10 @@
 namespace antwika::log
 {
 
-class LOG_EXPORT NullAppender: public Appender {
-public:
-    void append(std::string_view message) override;
-};
+    class LOG_EXPORT NullAppender : public Appender
+    {
+    public:
+        void append(std::string_view message) override;
+    };
 
 } // namespace antwika::log

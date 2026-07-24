@@ -6,7 +6,8 @@
 
 using antwika::log::StreamAppender;
 
-TEST(StreamAppenderTest, Append_WritesMessageToStream) {
+TEST(StreamAppenderTest, Append_WritesMessageToStream)
+{
     std::ostringstream stream;
     StreamAppender appender(stream);
     appender.append("Message");

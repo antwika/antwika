@@ -14,12 +14,14 @@
 namespace antwika::log
 {
 
-class LOG_EXPORT StreamAppender: public Appender {
-public:
-    explicit StreamAppender(std::ostream& stream);
-    void append(std::string_view message) override;
-private:
-    std::ostream& stream;
-};
+    class LOG_EXPORT StreamAppender : public Appender
+    {
+    public:
+        explicit StreamAppender(std::ostream &stream);
+        void append(std::string_view message) override;
+
+    private:
+        std::ostream &stream;
+    };
 
 } // namespace antwika::log
