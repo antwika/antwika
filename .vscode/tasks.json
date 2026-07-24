@@ -4,7 +4,7 @@
         {
             "label": "Conan install",
             "type": "shell",
-            "command": "conan install . -of build -pr:b=./profiles/build/${env:CONAN_PROFILE} -pr:h=./profiles/host/${env:CONAN_PROFILE} --build=missing -s build_type=Release",
+            "command": "conan install . -of build -pr:b=./profiles/build/${env:CONAN_PROFILE} -pr:h=./profiles/host/${env:CONAN_PROFILE} --build=missing -s build_type=Release --lockfile=conan.lock",
             "options": {
                 "cwd": "${workspaceFolder}"
             }

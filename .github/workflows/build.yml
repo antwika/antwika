@@ -144,7 +144,8 @@ jobs:
             -pr:b=./profiles/build/${CONAN_PROFILE} \
             -pr:h=./profiles/host/${CONAN_PROFILE} \
             --build=missing \
-            -s build_type=Release
+            -s build_type=Release \
+            --lockfile=conan.lock
 
       - name: Configure CMake
         shell: bash
