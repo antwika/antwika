@@ -125,7 +125,7 @@ jobs:
             conan_profile: mingw-windows-x86_64
 
     container:
-      image: ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}-${{ matrix.image }}:${{ inputs.version }}
+      image: ghcr.io/${{ github.repository_owner }}/antwika-dev-${{ matrix.image }}:${{ inputs.version }}
 
     env:
       CONAN_PROFILE: ${{ matrix.conan_profile }}
