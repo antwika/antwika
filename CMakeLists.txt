@@ -2,6 +2,8 @@ cmake_minimum_required(VERSION 3.28)
 
 project(antwika CXX)
 
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+
 include(CTest)
 
 enable_testing()
