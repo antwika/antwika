@@ -28,7 +28,7 @@
         {
             "label": "CMake build",
             "type": "shell",
-            "command": "cmake --build build",
+            "command": "cmake --build build --verbose",
             "options": {
                 "cwd": "${workspaceFolder}"
             }
