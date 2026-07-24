@@ -2,35 +2,51 @@
 
 ## Quick start
 
-Open the project with **Visual Studio Code** and then reopen in container:
+Open the project in **Visual Studio Code**, then reopen it in a development container:
 
 ```
 Ctrl+Shift+P > Dev Containers: Reopen in Container
 ```
 
-> You may need to delete the "build" directory when switching between dev containers...
+When prompted to choose a container, select one of the following:
 
-Build the project with
+- **GNU Dev Container**
+- **LLVM Dev Container**
+- **MinGW Dev Container**
+
+The **Base Dev Container** provides only the common development environment used as the foundation for the other containers.  
+It is not intended for regular development or for building the project directly.
+
+> When switching between different dev containers, you may need to remove the `build` directory first.
+
+Build and test the project using:
 
 ```
-Ctrl+Shift+B
+Ctrl + Shift + B
 ```
 
-Now run the compiled binary `build/apps/app/app` or `build/apps/app/app.exe` on your target machine.
+After the build completes, run the compiled binary on your target machine:
 
-## Optional: Use a locally built antwika-dev-base dev containers
+- Linux: `build/apps/app/app`
+- Windows: `build/apps/app/app.exe`
+
+## Optional: Use a locally built `antwika-dev-base` development container
+
+Build the base development container locally:
 
 ```sh
-$ docker build --no-cache -t antwika-dev-base:latest -f .devcontainer/base/Dockerfile .
+docker build --no-cache \
+  -t antwika-dev-base:latest \
+  -f .devcontainer/base/Dockerfile .
 ```
 
-Adjust gnu/llvm/mingw dockerfiles to use the locally built antwika-dev-base image
+Update the GNU, LLVM, and MinGW container definitions to use the locally built image:
 
 ```sh
-$ sed -i 's|FROM ghcr.io/antwika/antwika-dev-base:${BASE_VERSION}|FROM antwika-dev-base:${BASE_VERSION}|' \
+sed -i 's|FROM ghcr.io/antwika/antwika-dev-base:${BASE_VERSION}|FROM antwika-dev-base:${BASE_VERSION}|' \
   .devcontainer/gnu/Dockerfile \
   .devcontainer/llvm/Dockerfile \
   .devcontainer/mingw/Dockerfile
 ```
 
-Now VSCode will use the locally built antwika-dev-base container 
+VS Code will then use the locally built `antwika-dev-base` image when creating the GNU, LLVM, or MinGW development containers.
