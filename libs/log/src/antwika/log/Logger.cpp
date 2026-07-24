@@ -1,11 +1,8 @@
 #include "antwika/log/Logger.hpp"
 
-#include <iostream>
-#include <string>
 #include <chrono>
-#include <ctime>
-#include <iomanip>
-#include <sstream>
+#include <format>
+#include <string>
 
 namespace antwika::log
 {
@@ -56,16 +53,25 @@ namespace antwika::log
 
     void Logger::log(std::string_view level, std::string_view message) noexcept
     {
-        auto t = std::chrono::system_clock::to_time_t(clock.now());
+        const auto t = std::chrono::system_clock::to_time_t(clock.now());
 
-        std::tm tm = *std::localtime(&t);
+        std::tm tm{};
+#if defined(_WIN32)
+        localtime_s(&tm, &t);
+#else
+        localtime_r(&t, &tm);
+#endif
 
-        std::ostringstream oss;
-        oss << '[' << std::put_time(&tm, "%Y-%m-%d %H:%M:%S") << "] ["
-            << level << "] "
-            << message;
-
-        appender.append(oss.str());
+        appender.append(std::format(
+            "[{:04}-{:02}-{:02} {:02}:{:02}:{:02}] [{}] {}",
+            tm.tm_year + 1900,
+            tm.tm_mon + 1,
+            tm.tm_mday,
+            tm.tm_hour,
+            tm.tm_min,
+            tm.tm_sec,
+            level,
+            message));
     }
 
 } // namespace antwika::log

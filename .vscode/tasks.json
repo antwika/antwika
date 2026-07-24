@@ -28,7 +28,7 @@
         {
             "label": "CMake build",
             "type": "shell",
-            "command": "cmake --build build --verbose",
+            "command": "cmake --build build",
             "options": {
                 "cwd": "${workspaceFolder}"
             }
@@ -36,7 +36,7 @@
         {
             "label": "Test",
             "type": "shell",
-            "command": "ctest --test-dir build",
+            "command": "ctest --test-dir build --rerun-failed --output-on-failure",
             "options": {
                 "cwd": "${workspaceFolder}"
             }
