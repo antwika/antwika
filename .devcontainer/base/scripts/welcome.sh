@@ -4,12 +4,12 @@ source /usr/local/lib/devcontainer/info.sh
 
 echo "Dev Container"
 
-echo "System:"
+echo "  System:"
 
 info "OS:" "$(. /etc/os-release && echo "$PRETTY_NAME")"
 info "User:" "$(whoami)"
 
-echo "Build tools:"
+echo "  Build tools:"
 
 if command -v make >/dev/null 2>&1; then
     info "Make:" "$(make --version | head -n1)"
@@ -29,7 +29,7 @@ fi
 
 info "Toolchain:" "${CPP_TOOLCHAIN:-unknown}"
 
-echo "Development tools:"
+echo "  Development tools:"
 
 if command -v git >/dev/null 2>&1; then
     info "Git:" "$(git --version)"
