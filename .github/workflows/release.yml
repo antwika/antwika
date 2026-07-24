@@ -34,11 +34,11 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          npx --yes \
-            --package semantic-release \
-            --package @semantic-release/changelog \
-            --package @semantic-release/git \
-            semantic-release
+          npm install --no-save \
+            semantic-release@25.0.8 \
+            @semantic-release/changelog@7.0.0 \
+            @semantic-release/git@11.0.1
+          npx semantic-release
       - name: Fetch tags
         run: git fetch --tags
       - name: Get released version
