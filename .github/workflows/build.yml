@@ -104,3 +104,65 @@ jobs:
           tags: |
             ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}-${{ matrix.image }}:${{ inputs.version }}
             ${{ inputs.latest && format('{0}/{1}-{2}:latest', env.REGISTRY, env.IMAGE_PREFIX, matrix.image) || '' }}
+
+  build-app:
+    name: Build (${{ matrix.name }}) app
+    needs: build-images
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: LLVM
+            image: llvm
+            conan_profile: clang-linux-x86_64
+          - name: GNU
+            image: gnu
+            conan_profile: gcc-linux-x86_64
+          - name: MinGW
+            image: mingw
+            conan_profile: mingw-windows-x86_64
+
+    container:
+      image: ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}-${{ matrix.image }}:${{ inputs.version }}
+
+    env:
+      CONAN_PROFILE: ${{ matrix.conan_profile }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ inputs.ref }}
+
+      - name: Install dependencies
+        shell: bash
+        run: |
+          conan install . \
+            -of build \
+            -pr:b=./profiles/build/${CONAN_PROFILE} \
+            -pr:h=./profiles/host/${CONAN_PROFILE} \
+            --build=missing \
+            -s build_type=Release
+
+      - name: Configure CMake
+        shell: bash
+        run: cmake --preset conan-release
+
+      - name: Build
+        shell: bash
+        run: cmake --build build
+
+      - name: Test
+        shell: bash
+        run: ctest --test-dir build
+
+      - name: Verify executable
+        shell: bash
+        run: |
+          if [ "${{ matrix.image }}" = "mingw" ]; then
+            test -f build/apps/app/app.exe
+          else
+            test -f build/apps/app/app
+          fi
