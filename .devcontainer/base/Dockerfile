@@ -14,6 +14,7 @@ RUN apt-get update \
         python3 \
         python3-pip \
         pipx \
+        gcovr \
     && rm -rf /var/lib/apt/lists/*
 
 RUN echo "ubuntu ALL=(root) NOPASSWD:ALL" > /etc/sudoers.d/ubuntu \

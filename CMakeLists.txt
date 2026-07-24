@@ -4,10 +4,23 @@ project(antwika CXX)
 
 include(CTest)
 
-# Enable folders in IDEs
-#set_property(GLOBAL PROPERTY USE_FOLDERS ON)
-
 enable_testing()
+
+option(ENABLE_COVERAGE "Enable coverage" OFF)
+
+if(ENABLE_COVERAGE AND BUILD_TESTING AND NOT CMAKE_CROSSCOMPILING)
+    if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
+        add_compile_options(
+            -O0
+            -g
+            --coverage
+        )
+
+        add_link_options(
+            --coverage
+        )
+    endif()
+endif()
 
 add_subdirectory(libs/time)
 add_subdirectory(libs/log)

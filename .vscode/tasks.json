@@ -18,6 +18,14 @@
             }
         },
         {
+            "label": "CMake preset conan-coverage",
+            "type": "shell",
+            "command": "cmake --preset conan-coverage",
+            "options": {
+                "cwd": "${workspaceFolder}"
+            }
+        },
+        {
             "label": "CMake build",
             "type": "shell",
             "command": "cmake --build build",
@@ -34,7 +42,15 @@
             }
         },
         {
-            "label": "Build apps/app",
+            "label": "Gcovr coverage report",
+            "type": "shell",
+            "command": "mkdir -p build/coverage && gcovr -r . --html --html-details -o build/coverage/index.html",
+            "options": {
+                "cwd": "${workspaceFolder}"
+            }
+        },
+        {
+            "label": "Build",
             "dependsOrder": "sequence",
             "dependsOn": [
                 "Conan install",
@@ -46,6 +62,17 @@
                 "kind": "build",
                 "isDefault": true
             }
+        },
+        {
+            "label": "Coverage",
+            "dependsOrder": "sequence",
+            "dependsOn": [
+                "Conan install",
+                "CMake preset conan-coverage",
+                "CMake build",
+                "Test",
+                "Gcovr coverage report"
+            ]
         }
     ]
 }

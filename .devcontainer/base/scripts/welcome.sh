@@ -47,6 +47,10 @@ if command -v conan >/dev/null 2>&1; then
     info "conan:" "$(conan --version)"
 fi
 
+if command -v gcovr >/dev/null 2>&1; then
+    info "gcovr:" "$(gcovr --version --version)"
+fi
+
 echo "Debuggers:"
 
 if command -v gdb >/dev/null 2>&1; then
