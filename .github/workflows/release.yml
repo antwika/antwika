@@ -27,4 +27,12 @@ jobs:
       - name: Release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: npx semantic-release
+        run: |
+          npx --yes \
+            --package semantic-release \
+            --package @semantic-release/changelog \
+            --package @semantic-release/git \
+            --package @semantic-release/github \
+            --package @semantic-release/commit-analyzer \
+            --package @semantic-release/release-notes-generator \
+            semantic-release
