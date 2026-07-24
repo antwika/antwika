@@ -1,4 +1,5 @@
 name: Release
+
 on:
   workflow_dispatch:
 
@@ -11,10 +12,15 @@ jobs:
   release:
     name: Release
     runs-on: ubuntu-latest
+
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+
     permissions:
       contents: write
       issues: write
       pull-requests: write
+
     steps:
       - name: Checkout
         uses: actions/checkout@v7
@@ -36,3 +42,26 @@ jobs:
             --package @semantic-release/commit-analyzer \
             --package @semantic-release/release-notes-generator \
             semantic-release
+      - name: Fetch tags
+        run: git fetch --tags
+      - name: Get released version
+        id: version
+        run: |
+          if ! VERSION=$(git describe --tags --abbrev=0 --match "v*"); then
+            echo "No release created"
+            exit 1
+          fi
+          VERSION=${VERSION#v}
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
+  build:
+    name: Build
+    needs: release
+    uses: ./.github/workflows/build.yml
+    permissions:
+      contents: read
+      packages: write
+    with:
+      version: ${{ needs.release.outputs.version }}
+      latest: true
+      ref: v${{ needs.release.outputs.version }}
