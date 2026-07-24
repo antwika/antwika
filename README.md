@@ -27,8 +27,8 @@ Ctrl + Shift + B
 
 After the build completes, run the compiled binary on your target machine:
 
-- Linux: `build/apps/app/app`
-- Windows: `build/apps/app/app.exe`
+- Linux: `build/apps/game/game`
+- Windows: `build/apps/game/game.exe`
 
 ## Optional: Use a locally built `antwika-dev-base` development container
 

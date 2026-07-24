@@ -1,4 +1,4 @@
-#include "App.hpp"
+#include "Game.hpp"
 
 #include <iostream>
 #include <antwika/time/SystemClock.hpp>
@@ -6,10 +6,10 @@
 #include <antwika/log/StreamAppender.hpp>
 #include <antwika/engine/Engine.hpp>
 
-namespace antwika::app
+namespace antwika::game
 {
 
-    void App::run()
+    void Game::run()
     {
         antwika::time::SystemClock clock;
         antwika::log::StreamAppender appender(std::cout);
@@ -19,4 +19,4 @@ namespace antwika::app
         engine.start();
     }
 
-} // namespace antwika::app
+} // namespace antwika::game

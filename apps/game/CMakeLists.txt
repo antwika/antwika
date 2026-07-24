@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.28)
 
-project(app CXX)
+project(game CXX)
 
 if(NOT TARGET antwika::time)
     find_package(time REQUIRED)
@@ -14,11 +14,11 @@ if(NOT TARGET antwika::engine)
     find_package(engine REQUIRED)
 endif()
 
-add_executable(app src/antwika/app/App.cpp src/main.cpp)
+add_executable(game src/antwika/game/Game.cpp src/main.cpp)
 
-target_link_libraries(app PRIVATE antwika::time)
-target_link_libraries(app PRIVATE antwika::log)
-target_link_libraries(app PRIVATE antwika::engine)
+target_link_libraries(game PRIVATE antwika::time)
+target_link_libraries(game PRIVATE antwika::log)
+target_link_libraries(game PRIVATE antwika::engine)
 
 if(MINGW)
     execute_process(
@@ -45,16 +45,16 @@ if(MINGW)
         ${LIBWINPTHREAD_DLL}
     )
         if(EXISTS ${DLL})
-            add_custom_command(TARGET app POST_BUILD
+            add_custom_command(TARGET game POST_BUILD
                 COMMAND ${CMAKE_COMMAND} -E copy_if_different
                     ${DLL}
-                    $<TARGET_FILE_DIR:app>
+                    $<TARGET_FILE_DIR:game>
             )
         endif()
     endforeach()
 endif()
 
-install(TARGETS app DESTINATION "."
+install(TARGETS game DESTINATION "."
         RUNTIME DESTINATION bin
         ARCHIVE DESTINATION lib
         LIBRARY DESTINATION lib

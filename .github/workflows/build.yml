@@ -106,7 +106,7 @@ jobs:
             ${{ inputs.latest && format('{0}/{1}-{2}:latest', env.REGISTRY, env.IMAGE_PREFIX, matrix.image) || '' }}
 
   apps:
-    name: Build (${{ matrix.name }}) app
+    name: Build ${{ matrix.name }} apps
     needs: images
     runs-on: ubuntu-latest
 
@@ -163,7 +163,7 @@ jobs:
         shell: bash
         run: |
           if [ "${{ matrix.image }}" = "mingw" ]; then
-            test -f build/apps/app/app.exe
+            test -f build/apps/game/game.exe
           else
-            test -f build/apps/app/app
+            test -f build/apps/game/game
           fi
