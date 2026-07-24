@@ -106,7 +106,7 @@ jobs:
             ${{ inputs.latest && format('{0}/{1}-{2}:latest', env.REGISTRY, env.IMAGE_PREFIX, matrix.image) || '' }}
 
   apps:
-    name: Build ${{ matrix.name }} apps
+    name: ${{ matrix.name }} apps
     needs: images
     runs-on: ubuntu-latest
 
