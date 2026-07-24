@@ -44,7 +44,7 @@
         {
             "label": "Gcovr coverage report",
             "type": "shell",
-            "command": "mkdir -p build/coverage && gcovr -r . --exclude '.*/tests/.*' --exclude '.*/mocks/.*' --exclude '.*/fakes/.*' --html --html-details -o build/coverage/index.html",
+            "command": "mkdir -p build/coverage && gcovr -r . --exclude '.*apps/.*' --exclude '.*/tests/.*' --exclude '.*/mocks/.*' --exclude '.*/fakes/.*' --html --html-details -o build/coverage/index.html",
             "options": {
                 "cwd": "${workspaceFolder}"
             }
