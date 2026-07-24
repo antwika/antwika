@@ -52,6 +52,7 @@ jobs:
             exit 1
           fi
           VERSION=${VERSION#v}
+          echo "Released version: $VERSION"
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
 
   build:
