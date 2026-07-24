@@ -126,7 +126,7 @@ jobs:
 
     container:
       image: ghcr.io/${{ github.repository_owner }}/antwika-dev-${{ matrix.image }}:${{ inputs.version }}
-      options: --user ubuntu
+      options: --user root
     env:
       CONAN_PROFILE: ${{ matrix.conan_profile }}
 
