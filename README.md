@@ -5,7 +5,7 @@
 Open the project in **Visual Studio Code**, then reopen it in a development container:
 
 ```
-Ctrl+Shift+P > Dev Containers: Reopen in Container
+Ctrl + Shift + P > Dev Containers: Reopen in Container
 ```
 
 When prompted to choose a container, select one of the following:
