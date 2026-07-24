@@ -51,7 +51,7 @@ jobs:
           push: true
           tags: |
             ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}-base:${{ inputs.version }}
-            ${{ inputs.latest && format('{0}/{1}-base:latest', env.REGISTRY, env.IMAGE_PREFIX) }}
+            ${{ inputs.latest && format('{0}/{1}-base:latest', env.REGISTRY, env.IMAGE_PREFIX) || '' }}
 
   build-llvm:
     name: Build LLVM dev container
@@ -87,7 +87,7 @@ jobs:
             BASE_VERSION=${{ env.VERSION }}
           tags: |
             ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}-llvm:${{ env.VERSION }}
-            ${{ inputs.latest && format('{0}/{1}-llvm:latest', env.REGISTRY, env.IMAGE_PREFIX) }}
+            ${{ inputs.latest && format('{0}/{1}-llvm:latest', env.REGISTRY, env.IMAGE_PREFIX) || '' }}
 
   build-gnu:
     name: Build GNU dev container
@@ -123,7 +123,7 @@ jobs:
             BASE_VERSION=${{ env.VERSION }}
           tags: |
             ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}-gnu:${{ env.VERSION }}
-            ${{ inputs.latest && format('{0}/{1}-gnu:latest', env.REGISTRY, env.IMAGE_PREFIX) }}
+            ${{ inputs.latest && format('{0}/{1}-gnu:latest', env.REGISTRY, env.IMAGE_PREFIX) || '' }}
 
   build-mingw:
     name: Build MinGW dev container
@@ -159,4 +159,4 @@ jobs:
             BASE_VERSION=${{ env.VERSION }}
           tags: |
             ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}-mingw:${{ env.VERSION }}
-            ${{ inputs.latest && format('{0}/{1}-mingw:latest', env.REGISTRY, env.IMAGE_PREFIX) }}
+            ${{ inputs.latest && format('{0}/{1}-mingw:latest', env.REGISTRY, env.IMAGE_PREFIX) || '' }}
