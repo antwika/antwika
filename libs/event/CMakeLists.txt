@@ -3,9 +3,9 @@ cmake_minimum_required(VERSION 3.28)
 project(event CXX)
 
 add_library(event
-    src/antwika/event/EventDispatcher.cpp
-    src/antwika/event/EventQueue.cpp
-    src/antwika/event/EventRecorder.cpp
+    src/EventDispatcher.cpp
+    src/EventQueue.cpp
+    src/EventRecorder.cpp
 )
 
 add_library(antwika::event ALIAS event)
