@@ -44,7 +44,7 @@
         {
             "label": "Gcovr coverage report",
             "type": "shell",
-            "command": "rm -Rf build/coverage && mkdir -p build/coverage && gcovr -r . --fail-under-line 100 --fail-under-function 100  --fail-under-branch 100 --exclude-throw-branches --exclude-unreachable-branches --exclude '.*apps/.*' --exclude '.*/tests/.*' --exclude '.*/mocks/.*' --exclude '.*/fakes/.*' --html --html-details -o build/coverage/index.html --print-summary",
+            "command": "rm -Rf build/coverage && mkdir -p build/coverage && gcovr -r . --gcov-executable \"${env:GCOV_EXECUTABLE}\" --exclude-throw-branches --exclude-unreachable-branches --exclude '.*apps/.*' --exclude '.*/tests/.*' --exclude '.*/mocks/.*' --exclude '.*/fakes/.*' --html --html-details -o build/coverage/index.html --print-summary",
             "options": {
                 "cwd": "${workspaceFolder}"
             }

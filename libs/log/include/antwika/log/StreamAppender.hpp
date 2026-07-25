@@ -3,12 +3,12 @@
 #include <ostream>
 #include <string_view>
 
-#include "antwika/log/Appender.hpp"
+#include "antwika/log/IAppender.hpp"
 
 namespace antwika::log
 {
 
-    class StreamAppender : public Appender
+    class StreamAppender : public IAppender
     {
     public:
         explicit StreamAppender(std::ostream &stream);

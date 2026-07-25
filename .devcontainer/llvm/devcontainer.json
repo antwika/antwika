@@ -20,6 +20,7 @@
         }
     },
     "containerEnv": {
-        "CONAN_PROFILE": "clang-linux-x86_64"
+        "CONAN_PROFILE": "clang-linux-x86_64",
+        "GCOV_EXECUTABLE": "llvm-cov-21 gcov"
     }
 }

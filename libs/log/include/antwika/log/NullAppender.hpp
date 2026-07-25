@@ -2,12 +2,12 @@
 
 #include <string_view>
 
-#include "antwika/log/Appender.hpp"
+#include "antwika/log/IAppender.hpp"
 
 namespace antwika::log
 {
 
-    class NullAppender : public Appender
+    class NullAppender : public IAppender
     {
     public:
         void append(std::string_view message) override;

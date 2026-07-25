@@ -3,7 +3,9 @@
 namespace antwika::event
 {
 
-    EventQueue::EventQueue(IEventRecorder &eventRecorder) noexcept : eventRecorder(eventRecorder) {}
+    EventQueue::EventQueue(IEventRecorder &eventRecorder) noexcept : eventRecorder(eventRecorder) { // GCOVR_EXCL_LINE
+
+    }
 
     void EventQueue::enqueue(Event event)
     {

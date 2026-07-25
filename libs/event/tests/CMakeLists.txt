@@ -1,6 +1,7 @@
 find_package(GTest REQUIRED)
 
 add_executable(event_tests
+    EventTest.cpp
     EventQueueTest.cpp
     EventRecorderTest.cpp
 )

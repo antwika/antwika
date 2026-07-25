@@ -19,9 +19,9 @@ namespace antwika::event
     public:
         explicit EventQueue(IEventRecorder &eventRecorder) noexcept;
         void enqueue(Event event) override;
-        Event pop();
-        bool empty() const noexcept;
-        std::vector<Event> getHistory() const;
+        Event pop() override;
+        bool empty() const noexcept override;
+        std::vector<Event> getHistory() const override;
 
     private:
         std::deque<Event> queue;

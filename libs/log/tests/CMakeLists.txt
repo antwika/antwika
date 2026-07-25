@@ -2,8 +2,9 @@ find_package(GTest REQUIRED)
 
 add_executable(log_tests
     LoggerTest.cpp
-    StreamAppenderTest.cpp
     NullAppenderTest.cpp
+    PlainFormatterTest.cpp
+    StreamAppenderTest.cpp
 )
 
 target_link_libraries(log_tests

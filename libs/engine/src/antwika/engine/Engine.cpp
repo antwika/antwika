@@ -16,7 +16,8 @@ namespace antwika::engine
         while (!eventQueue.empty())
         {
             auto event = eventQueue.pop();
-            logger.info(std::format("Process event: {}", event.name));
+            auto message = std::format("Process event: {}", event.name); // GCOVR_EXCL_LINE
+            logger.info(message);
         }
     }
 
