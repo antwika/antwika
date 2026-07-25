@@ -2,7 +2,6 @@
 
 #include <gmock/gmock.h>
 
-#include "antwika/event/IEventRecorder.hpp"
 #include "antwika/event/IEventQueue.hpp"
 
 namespace antwika::event::mocks

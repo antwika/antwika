@@ -3,17 +3,18 @@
 #include <vector>
 
 #include "antwika/event/Event.hpp"
-#include "antwika/event/IEventRecorder.hpp"
+#include "antwika/event/IEventHistory.hpp"
+#include "antwika/event/IEventSink.hpp"
 
 namespace antwika::event
 {
 
-    class EventRecorder : public IEventRecorder
+    class EventRecorder final : public IEventSink,
+                                public IEventHistory
     {
     public:
-        virtual ~EventRecorder() = default;
-        virtual void record(const Event &event);
-        virtual std::vector<Event> getEvents() const;
+        void handle(const Event &event) override;
+        std::vector<Event> getEvents() const override;
 
     private:
         std::vector<Event> events;

@@ -1,9 +1,10 @@
 find_package(GTest REQUIRED)
 
 add_executable(event_tests
-    EventTest.cpp
+    EventDispatcherTest.cpp
     EventQueueTest.cpp
     EventRecorderTest.cpp
+    EventTest.cpp
 )
 
 target_link_libraries(event_tests

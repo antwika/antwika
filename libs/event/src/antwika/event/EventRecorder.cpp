@@ -3,7 +3,7 @@
 namespace antwika::event
 {
 
-    void EventRecorder::record(const Event &event)
+    void EventRecorder::handle(const Event &event)
     {
         events.push_back(event);
     }

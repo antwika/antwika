@@ -6,11 +6,11 @@
 
 namespace antwika::event
 {
-    class IEventRecorder
+
+    class IEventHistory
     {
     public:
-        virtual ~IEventRecorder() = default;
-        virtual void record(const Event &event) = 0;
+        virtual ~IEventHistory() = default;
         virtual std::vector<Event> getEvents() const = 0;
     };
 

@@ -14,7 +14,6 @@ namespace antwika::event
         virtual void enqueue(Event event) = 0;
         virtual Event pop() = 0;
         virtual bool empty() const noexcept = 0;
-        virtual std::vector<Event> getHistory() const = 0;
     };
 
 } // namespace antwika::event
