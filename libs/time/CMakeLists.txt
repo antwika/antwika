@@ -3,7 +3,7 @@ cmake_minimum_required(VERSION 3.28)
 project(time CXX)
 
 add_library(time
-    src/antwika/time/SystemClock.cpp
+    src/SystemClock.cpp
 )
 
 add_library(antwika::time ALIAS time)
