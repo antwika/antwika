@@ -10,6 +10,10 @@ if(NOT TARGET antwika::log)
     find_package(log REQUIRED)
 endif()
 
+if(NOT TARGET antwika::event)
+    find_package(event REQUIRED)
+endif()
+
 if(NOT TARGET antwika::engine)
     find_package(engine REQUIRED)
 endif()
@@ -18,6 +22,7 @@ add_executable(game src/antwika/game/Game.cpp src/main.cpp)
 
 target_link_libraries(game PRIVATE antwika::time)
 target_link_libraries(game PRIVATE antwika::log)
+target_link_libraries(game PRIVATE antwika::event)
 target_link_libraries(game PRIVATE antwika::engine)
 
 if(MINGW)

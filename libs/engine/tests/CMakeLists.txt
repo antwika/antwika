@@ -7,7 +7,9 @@ add_executable(engine_tests
 target_link_libraries(engine_tests
     PRIVATE
         antwika::engine
+        engine_mocks
         log_mocks
+        event_mocks
         gtest::gtest
 )
 
