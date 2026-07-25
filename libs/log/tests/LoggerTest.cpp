@@ -3,6 +3,7 @@
 
 #include <antwika/time/fakes/FakeClock.hpp>
 #include "antwika/log/mocks/MockFormatter.hpp"
+#include "antwika/log/mocks/MockLogPolicy.hpp"
 #include "antwika/log/mocks/MockAppender.hpp"
 
 #include "antwika/log/Logger.hpp"
@@ -11,117 +12,69 @@ using antwika::log::Level;
 using antwika::log::Logger;
 using antwika::log::mocks::MockAppender;
 using antwika::log::mocks::MockFormatter;
+using antwika::log::mocks::MockLogPolicy;
 using antwika::time::fakes::FakeClock;
 
-#define EXPECT_LOG(level, call) [&] { \
-    MockFormatter mockFormatter; \
-    std::chrono::system_clock::time_point time{}; \
-    FakeClock fakeClock(time); \
-    MockAppender mockAppender; \
-    Logger logger(mockFormatter, fakeClock, level, mockAppender); \
-    EXPECT_CALL(mockFormatter, format(time, ::testing::_, "Message")).WillOnce(::testing::Return("Formatted message")); \
-    EXPECT_CALL(mockAppender, append("Formatted message")); \
-    call; }()
-
-#define EXPECT_NO_LOG(level, call) [&] { \
-    MockFormatter mockFormatter; \
-    std::chrono::system_clock::time_point time{}; \
-    FakeClock fakeClock(time); \
-    MockAppender mockAppender; \
-    Logger logger(mockFormatter, fakeClock, level, mockAppender); \
-    EXPECT_CALL(mockFormatter, format(::testing::_, ::testing::_, ::testing::_)).Times(0); \
-    EXPECT_CALL(mockAppender, append(::testing::_)).Times(0); \
-    call; }()
-
-TEST(LoggerTest, MustNotPropagateExceptionIfFormatterFails)
+TEST(LoggerTest, log_WhenPolicyRejects_DoesNothing)
 {
     MockFormatter mockFormatter;
+    MockLogPolicy mockLogPolicy;
     std::chrono::system_clock::time_point time{};
     FakeClock fakeClock(time);
     MockAppender mockAppender;
-    Logger logger(mockFormatter, fakeClock, Level::Trace, mockAppender);
-    EXPECT_CALL(mockFormatter, format(time, ::testing::_, "Message")).WillRepeatedly(::testing::Throw(std::exception{}));
-    EXPECT_NO_THROW(logger.log(Level::Trace, "Message"));
-    EXPECT_NO_THROW(logger.log(Level::Debug, "Message"));
-    EXPECT_NO_THROW(logger.log(Level::Warning, "Message"));
-    EXPECT_NO_THROW(logger.log(Level::Info, "Message"));
-    EXPECT_NO_THROW(logger.log(Level::Error, "Message"));
-    EXPECT_NO_THROW(logger.log(Level::Fatal, "Message"));
+    Logger logger(mockFormatter, mockLogPolicy, fakeClock, mockAppender);
+
+    EXPECT_CALL(mockLogPolicy, accepts(Level::Info)).WillOnce(::testing::Return(false));
+    EXPECT_CALL(mockFormatter, format(::testing::_, ::testing::_, ::testing::_)).Times(0);
+    EXPECT_CALL(mockAppender, append(::testing::_)).Times(0);
+
+    logger.log(Level::Info, "Message");
 }
 
-TEST(LoggerTest, MustNotPropagateExceptionIfAppenderFails)
+TEST(LoggerTest, log_WhenPolicyAccepts_FormatsAndAppendsToAppender)
 {
     MockFormatter mockFormatter;
+    MockLogPolicy mockLogPolicy;
     std::chrono::system_clock::time_point time{};
     FakeClock fakeClock(time);
     MockAppender mockAppender;
-    Logger logger(mockFormatter, fakeClock, Level::Trace, mockAppender);
-    EXPECT_CALL(mockFormatter, format(time, ::testing::_, "Message")).WillRepeatedly(::testing::Return("Formatted message"));
-    EXPECT_CALL(mockAppender, append("Formatted message")).WillRepeatedly(::testing::Throw(std::exception{}));
-    EXPECT_NO_THROW(logger.log(Level::Trace, "Message"));
-    EXPECT_NO_THROW(logger.log(Level::Debug, "Message"));
-    EXPECT_NO_THROW(logger.log(Level::Warning, "Message"));
-    EXPECT_NO_THROW(logger.log(Level::Info, "Message"));
-    EXPECT_NO_THROW(logger.log(Level::Error, "Message"));
-    EXPECT_NO_THROW(logger.log(Level::Fatal, "Message"));
+    Logger logger(mockFormatter, mockLogPolicy, fakeClock, mockAppender);
+
+    EXPECT_CALL(mockLogPolicy, accepts(Level::Info)).WillOnce(::testing::Return(true));
+    EXPECT_CALL(mockFormatter, format(time, Level::Info, "Message")).WillOnce(::testing::Return("Formatted message"));
+    EXPECT_CALL(mockAppender, append("Formatted message"));
+
+    logger.log(Level::Info, "Message");
 }
 
-TEST(LoggerTest, TraceIsEnabledWhenLoggerLevelIsTrace)
+TEST(LoggerTest, log_MustNotPropagateExceptionIfFormatterFails)
 {
-    EXPECT_LOG(Level::Trace, logger.log(Level::Trace, "Message"));
-    EXPECT_NO_LOG(Level::Debug, logger.log(Level::Trace, "Message"));
-    EXPECT_NO_LOG(Level::Info, logger.log(Level::Trace, "Message"));
-    EXPECT_NO_LOG(Level::Warning, logger.log(Level::Trace, "Message"));
-    EXPECT_NO_LOG(Level::Error, logger.log(Level::Trace, "Message"));
-    EXPECT_NO_LOG(Level::Fatal, logger.log(Level::Trace, "Message"));
+    MockFormatter mockFormatter;
+    MockLogPolicy mockLogPolicy;
+    std::chrono::system_clock::time_point time{};
+    FakeClock fakeClock(time);
+    MockAppender mockAppender;
+    Logger logger(mockFormatter, mockLogPolicy, fakeClock, mockAppender);
+
+    EXPECT_CALL(mockLogPolicy, accepts(Level::Info)).WillOnce(::testing::Return(true));
+    EXPECT_CALL(mockFormatter, format(time, Level::Info, "Message")).WillRepeatedly(::testing::Throw(std::exception{}));
+    EXPECT_CALL(mockAppender, append(::testing::_)).Times(0);
+
+    logger.log(Level::Info, "Message");
 }
 
-TEST(LoggerTest, DebugIsEnabledWhenLoggerLevelIsTraceOrDebug)
+TEST(LoggerTest, log_MustNotPropagateExceptionIfAppenderFails)
 {
-    EXPECT_LOG(Level::Trace, logger.log(Level::Debug, "Message"));
-    EXPECT_LOG(Level::Debug, logger.log(Level::Debug, "Message"));
-    EXPECT_NO_LOG(Level::Info, logger.log(Level::Debug, "Message"));
-    EXPECT_NO_LOG(Level::Warning, logger.log(Level::Debug, "Message"));
-    EXPECT_NO_LOG(Level::Error, logger.log(Level::Debug, "Message"));
-    EXPECT_NO_LOG(Level::Fatal, logger.log(Level::Debug, "Message"));
-}
+    MockFormatter mockFormatter;
+    MockLogPolicy mockLogPolicy;
+    std::chrono::system_clock::time_point time{};
+    FakeClock fakeClock(time);
+    MockAppender mockAppender;
+    Logger logger(mockFormatter, mockLogPolicy, fakeClock, mockAppender);
 
-TEST(LoggerTest, InfoIsEnabledWhenLoggerLevelIsTraceDebugOrInfo)
-{
-    EXPECT_LOG(Level::Trace, logger.log(Level::Info, "Message"));
-    EXPECT_LOG(Level::Debug, logger.log(Level::Info, "Message"));
-    EXPECT_LOG(Level::Info, logger.log(Level::Info, "Message"));
-    EXPECT_NO_LOG(Level::Warning, logger.log(Level::Info, "Message"));
-    EXPECT_NO_LOG(Level::Error, logger.log(Level::Info, "Message"));
-    EXPECT_NO_LOG(Level::Fatal, logger.log(Level::Info, "Message"));
-}
+    EXPECT_CALL(mockLogPolicy, accepts(Level::Info)).WillOnce(::testing::Return(true));
+    EXPECT_CALL(mockFormatter, format(time, Level::Info, "Message")).WillOnce(::testing::Return("Formatted message"));
+    EXPECT_CALL(mockAppender, append(::testing::_)).WillRepeatedly(::testing::Throw(std::exception{}));
 
-TEST(LoggerTest, WarningIsEnabledWhenLoggerLevelIsTraceDebugInfoOrWarning)
-{
-    EXPECT_LOG(Level::Trace, logger.log(Level::Warning, "Message"));
-    EXPECT_LOG(Level::Debug, logger.log(Level::Warning, "Message"));
-    EXPECT_LOG(Level::Info, logger.log(Level::Warning, "Message"));
-    EXPECT_LOG(Level::Warning, logger.log(Level::Warning, "Message"));
-    EXPECT_NO_LOG(Level::Error, logger.log(Level::Warning, "Message"));
-    EXPECT_NO_LOG(Level::Fatal, logger.log(Level::Warning, "Message"));
-}
-
-TEST(LoggerTest, ErrorIsEnabledWhenLoggerLevelIsTraceDebugInfoWarningOrError)
-{
-    EXPECT_LOG(Level::Trace, logger.log(Level::Error, "Message"));
-    EXPECT_LOG(Level::Debug, logger.log(Level::Error, "Message"));
-    EXPECT_LOG(Level::Info, logger.log(Level::Error, "Message"));
-    EXPECT_LOG(Level::Warning, logger.log(Level::Error, "Message"));
-    EXPECT_LOG(Level::Error, logger.log(Level::Error, "Message"));
-    EXPECT_NO_LOG(Level::Fatal, logger.log(Level::Error, "Message"));
-}
-
-TEST(LoggerTest, FatalIsEnabledWhenLoggerLevelIsTraceDebugInfoWarningErrorOrFatal)
-{
-    EXPECT_LOG(Level::Trace, logger.log(Level::Fatal, "Message"));
-    EXPECT_LOG(Level::Debug, logger.log(Level::Fatal, "Message"));
-    EXPECT_LOG(Level::Info, logger.log(Level::Fatal, "Message"));
-    EXPECT_LOG(Level::Warning, logger.log(Level::Fatal, "Message"));
-    EXPECT_LOG(Level::Error, logger.log(Level::Fatal, "Message"));
-    EXPECT_LOG(Level::Fatal, logger.log(Level::Fatal, "Message"));
+    logger.log(Level::Info, "Message");
 }
