@@ -5,10 +5,10 @@
 namespace antwika::log
 {
 
-    class Appender
+    class IAppender
     {
     public:
-        virtual ~Appender() = default;
+        virtual ~IAppender() = default;
         virtual void append(std::string_view message) = 0;
     };
 

@@ -7,7 +7,7 @@
 namespace antwika::log
 {
 
-    Logger::Logger(antwika::time::IClock &clock, Level level, Appender &appender) : clock(clock), level(level), appender(appender)
+    Logger::Logger(IFormatter& formatter, antwika::time::IClock &clock, Level level, IAppender &appender) : formatter(formatter), clock(clock), level(level), appender(appender)
     {
     }
 
@@ -53,13 +53,13 @@ namespace antwika::log
 
     void Logger::log(std::string_view level, std::string_view message) noexcept
     {
-        const auto now = std::chrono::time_point_cast<std::chrono::seconds>(clock.now());
-
-        appender.append(std::format(
-            "[{:%Y-%m-%d %H:%M:%S}] [{}] {}",
-            now,
-            level,
-            message));
+        const auto now = clock.now();
+        try {
+            auto formatted = formatter.format(now, level, message);
+            appender.append(formatted);
+        } catch (...) {
+            // Ignore, perhaps add a fallback
+        }
     }
 
 } // namespace antwika::log

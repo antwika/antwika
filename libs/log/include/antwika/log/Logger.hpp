@@ -4,8 +4,9 @@
 
 #include <antwika/time/IClock.hpp>
 
+#include "antwika/log/IFormatter.hpp"
 #include "antwika/log/ILogger.hpp"
-#include "antwika/log/Appender.hpp"
+#include "antwika/log/IAppender.hpp"
 
 namespace antwika::log
 {
@@ -23,7 +24,7 @@ namespace antwika::log
     class Logger : public ILogger
     {
     public:
-        explicit Logger(antwika::time::IClock &clock, Level level, Appender &appender);
+        explicit Logger(IFormatter& formatter, antwika::time::IClock &clock, Level level, IAppender &appender);
         void trace(std::string_view message) noexcept;
         void debug(std::string_view message) noexcept;
         void info(std::string_view message) noexcept;
@@ -32,9 +33,10 @@ namespace antwika::log
         void fatal(std::string_view message) noexcept;
 
     private:
+        IFormatter &formatter;
         antwika::time::IClock &clock;
         Level level;
-        Appender &appender;
+        IAppender &appender;
         void log(std::string_view level, std::string_view message) noexcept;
     };
 

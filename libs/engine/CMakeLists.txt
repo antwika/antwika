@@ -10,7 +10,13 @@ if(NOT TARGET antwika::log)
     find_package(log REQUIRED)
 endif()
 
-add_library(engine src/antwika/engine/Engine.cpp)
+if(NOT TARGET antwika::event)
+    find_package(event REQUIRED)
+endif()
+
+add_library(engine
+    src/antwika/engine/Engine.cpp
+)
 
 add_library(antwika::engine ALIAS engine)
 
@@ -34,6 +40,7 @@ target_include_directories(engine
 
 target_link_libraries(engine PRIVATE antwika::time)
 target_link_libraries(engine PRIVATE antwika::log)
+target_link_libraries(engine PRIVATE antwika::event)
 
 add_subdirectory(mocks)
 

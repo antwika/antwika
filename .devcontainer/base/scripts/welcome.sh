@@ -48,7 +48,7 @@ if command -v conan >/dev/null 2>&1; then
 fi
 
 if command -v gcovr >/dev/null 2>&1; then
-    info "gcovr:" "$(gcovr --version --version)"
+    info "gcovr:" "$(gcovr --version | head -n1)"
 fi
 
 echo "Debuggers:"

@@ -36,7 +36,7 @@
         {
             "label": "Test",
             "type": "shell",
-            "command": "ctest --test-dir build --rerun-failed --output-on-failure",
+            "command": "ctest --test-dir build --output-on-failure",
             "options": {
                 "cwd": "${workspaceFolder}"
             }
@@ -44,7 +44,7 @@
         {
             "label": "Gcovr coverage report",
             "type": "shell",
-            "command": "mkdir -p build/coverage && gcovr -r . --exclude '.*apps/.*' --exclude '.*/tests/.*' --exclude '.*/mocks/.*' --exclude '.*/fakes/.*' --html --html-details -o build/coverage/index.html",
+            "command": "rm -Rf build/coverage && mkdir -p build/coverage && gcovr -r . --gcov-executable \"${env:GCOV_EXECUTABLE}\" --exclude-throw-branches --exclude-unreachable-branches --exclude '.*apps/.*' --exclude '.*/tests/.*' --exclude '.*/mocks/.*' --exclude '.*/fakes/.*' --html --html-details -o build/coverage/index.html --print-summary",
             "options": {
                 "cwd": "${workspaceFolder}"
             }

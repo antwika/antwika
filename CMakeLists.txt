@@ -30,6 +30,7 @@ endif()
 
 add_subdirectory(libs/time)
 add_subdirectory(libs/log)
+add_subdirectory(libs/event)
 add_subdirectory(libs/engine)
 
 add_subdirectory(apps/game)

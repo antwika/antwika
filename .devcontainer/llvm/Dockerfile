@@ -5,7 +5,9 @@ USER root
 
 RUN apt-get update \
     && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        llvm-21 \
         clang \
+        libclang-rt-21-dev \
     && rm -rf /var/lib/apt/lists/*
 
 ENV CPP_TOOLCHAIN=llvm

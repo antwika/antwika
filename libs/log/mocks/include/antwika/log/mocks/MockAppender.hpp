@@ -2,12 +2,12 @@
 
 #include <gmock/gmock.h>
 
-#include "antwika/log/Appender.hpp"
+#include "antwika/log/IAppender.hpp"
 
 namespace antwika::log::mocks
 {
 
-    class MockAppender : public antwika::log::Appender
+    class MockAppender : public antwika::log::IAppender
     {
     public:
         MOCK_METHOD(void, append, (std::string_view message), (override));

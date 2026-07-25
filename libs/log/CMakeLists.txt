@@ -9,6 +9,7 @@ endif()
 add_library(log
     src/antwika/log/Logger.cpp
     src/antwika/log/NullAppender.cpp
+    src/antwika/log/PlainFormatter.cpp
     src/antwika/log/StreamAppender.cpp
 )
 
@@ -19,10 +20,12 @@ set_target_properties(log PROPERTIES
 )
 
 set(LOG_PUBLIC_HEADERS
-    include/antwika/log/Appender.hpp
+    include/antwika/log/IAppender.hpp
+    include/antwika/log/IFormatter.hpp
     include/antwika/log/Logger.hpp
     include/antwika/log/NullAppender.hpp
     include/antwika/log/StreamAppender.hpp
+    include/antwika/log/PlainFormatter.hpp
 )
 
 set_target_properties(log PROPERTIES

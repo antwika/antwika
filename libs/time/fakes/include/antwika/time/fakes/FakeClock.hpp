@@ -10,7 +10,7 @@ namespace antwika::time::fakes
     public:
         explicit FakeClock(std::chrono::time_point<std::chrono::system_clock> t) : current(t) {}
 
-        std::chrono::time_point<std::chrono::system_clock> now() const override
+        std::chrono::time_point<std::chrono::system_clock> now() const noexcept override
         {
             return current;
         }

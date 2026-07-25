@@ -11,3 +11,7 @@ fi
 if command -v g++ >/dev/null 2>&1; then
     info "g++:" "$(g++ --version | head -n1)"
 fi
+
+if command -v gcov >/dev/null 2>&1; then
+    info "gcov:" "$(gcov --version | head -n1)"
+fi
