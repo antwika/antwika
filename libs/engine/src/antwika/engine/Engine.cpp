@@ -11,13 +11,13 @@ namespace antwika::engine
 
     void Engine::start()
     {
-        logger.info("Antwika engine started!");
+        logger.log(antwika::log::Level::Info, "Antwika engine started!");
 
         while (!eventQueue.empty())
         {
             auto event = eventQueue.pop();
             auto message = std::format("Process event: {}", event.name); // GCOVR_EXCL_LINE
-            logger.info(message);
+            logger.log(antwika::log::Level::Info, message);
         }
     }
 

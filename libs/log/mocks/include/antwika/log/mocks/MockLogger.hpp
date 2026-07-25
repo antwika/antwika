@@ -1,7 +1,8 @@
 #pragma once
 
 #include <gmock/gmock.h>
-#include <antwika/log/Logger.hpp>
+#include <antwika/log/ILogger.hpp>
+#include <antwika/log/Level.hpp>
 
 #include <string_view>
 
@@ -11,12 +12,7 @@ namespace antwika::log::mocks
     class MockLogger : public antwika::log::ILogger
     {
     public:
-        MOCK_METHOD(void, trace, (std::string_view message), (noexcept, override));
-        MOCK_METHOD(void, debug, (std::string_view message), (noexcept, override));
-        MOCK_METHOD(void, info, (std::string_view message), (noexcept, override));
-        MOCK_METHOD(void, warning, (std::string_view message), (noexcept, override));
-        MOCK_METHOD(void, error, (std::string_view message), (noexcept, override));
-        MOCK_METHOD(void, fatal, (std::string_view message), (noexcept, override));
+        MOCK_METHOD(void, log, (antwika::log::Level, std::string_view message), (noexcept, override));
     };
 
 } // namespace antwika::log::mocks

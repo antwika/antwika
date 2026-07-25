@@ -1,6 +1,7 @@
 find_package(GTest REQUIRED)
 
 add_executable(log_tests
+    LevelTest.cpp
     LoggerTest.cpp
     NullAppenderTest.cpp
     PlainFormatterTest.cpp
