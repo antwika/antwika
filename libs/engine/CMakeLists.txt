@@ -15,7 +15,7 @@ if(NOT TARGET antwika::event)
 endif()
 
 add_library(engine
-    src/antwika/engine/Engine.cpp
+    src/Engine.cpp
 )
 
 add_library(antwika::engine ALIAS engine)
