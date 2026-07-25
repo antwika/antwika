@@ -8,8 +8,8 @@ using antwika::event::EventRecorder;
 TEST(EventRecorderTest, record)
 {
     EventRecorder eventRecorder;
-    eventRecorder.record(Event{.name = "foo"});
-    eventRecorder.record(Event{.name = "bar"});
+    eventRecorder.handle(Event{.name = "foo"});
+    eventRecorder.handle(Event{.name = "bar"});
     auto events = eventRecorder.getEvents();
     EXPECT_EQ(events.size(), 2);
     EXPECT_EQ(events[0].name, "foo");

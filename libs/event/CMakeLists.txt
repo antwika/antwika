@@ -17,8 +17,10 @@ set(EVENT_PUBLIC_HEADERS
     include/antwika/event/Event.hpp
     include/antwika/event/EventQueue.hpp
     include/antwika/event/EventRecorder.hpp
+    include/antwika/event/IEventHistory.hpp
     include/antwika/event/IEventQueue.hpp
     include/antwika/event/IEventRecorder.hpp
+    include/antwika/event/IEventSink.hpp
 )
 
 set_target_properties(event PROPERTIES

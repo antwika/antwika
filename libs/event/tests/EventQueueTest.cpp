@@ -14,7 +14,7 @@ TEST(EventQueueTest, enqueue_records_event)
     MockEventRecorder mockEventRecorder;
     EventQueue eventQueue(mockEventRecorder);
     Event mockEvent{.name = "mockEvent"};
-    EXPECT_CALL(mockEventRecorder, record(mockEvent));
+    EXPECT_CALL(mockEventRecorder, handle(mockEvent));
     eventQueue.enqueue(mockEvent);
 }
 
@@ -55,14 +55,4 @@ TEST(EventQueueTest, empty_returns_false_after_enqueue)
     EventQueue eventQueue(eventRecorder);
     eventQueue.enqueue(Event{.name = "mockEvent"});
     EXPECT_FALSE(eventQueue.empty());
-}
-
-TEST(EventQueueTest, getHistory)
-{
-    MockEventRecorder mockEventRecorder;
-    std::vector<Event> mockEvents = std::vector<Event>{Event{.name = "mockEvent"}};
-    EXPECT_CALL(mockEventRecorder, getEvents()).WillOnce(::testing::Return(mockEvents));
-    EventQueue eventQueue(mockEventRecorder);
-    auto history = eventQueue.getHistory();
-    EXPECT_EQ(history, mockEvents);
 }
