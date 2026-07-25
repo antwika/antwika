@@ -3,13 +3,8 @@
 namespace antwika::event
 {
 
-    EventQueue::EventQueue(IEventSink &eventSink) noexcept : eventSink(eventSink) { // GCOVR_EXCL_LINE
-
-    }
-
     void EventQueue::enqueue(Event event)
     {
-        eventSink.handle(event);
         queue.push_back(std::move(event));
     }
 

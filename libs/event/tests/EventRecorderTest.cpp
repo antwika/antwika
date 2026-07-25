@@ -5,7 +5,7 @@
 using antwika::event::Event;
 using antwika::event::EventRecorder;
 
-TEST(EventRecorderTest, record)
+TEST(EventRecorderTest, handle)
 {
     EventRecorder eventRecorder;
     eventRecorder.handle(Event{.name = "foo"});

@@ -3,6 +3,7 @@ cmake_minimum_required(VERSION 3.28)
 project(event CXX)
 
 add_library(event
+    src/antwika/event/EventDispatcher.cpp
     src/antwika/event/EventQueue.cpp
     src/antwika/event/EventRecorder.cpp
 )
@@ -15,8 +16,10 @@ set_target_properties(event PROPERTIES
 
 set(EVENT_PUBLIC_HEADERS
     include/antwika/event/Event.hpp
+    include/antwika/event/EventDispatcher.hpp
     include/antwika/event/EventQueue.hpp
     include/antwika/event/EventRecorder.hpp
+    include/antwika/event/IEventDispatcher.hpp
     include/antwika/event/IEventHistory.hpp
     include/antwika/event/IEventQueue.hpp
     include/antwika/event/IEventRecorder.hpp

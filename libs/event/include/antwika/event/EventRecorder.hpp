@@ -9,12 +9,12 @@
 namespace antwika::event
 {
 
-    class EventRecorder : public IEventSink, IEventHistory
+    class EventRecorder final : public IEventSink,
+                                public IEventHistory
     {
     public:
-        virtual ~EventRecorder() = default;
-        virtual void handle(const Event &event);
-        virtual std::vector<Event> getEvents() const;
+        void handle(const Event &event) override;
+        std::vector<Event> getEvents() const override;
 
     private:
         std::vector<Event> events;

@@ -1,0 +1,20 @@
+#include "antwika/event/EventDispatcher.hpp"
+
+namespace antwika::event
+{
+
+    EventDispatcher::EventDispatcher(IEventQueue &queue, std::vector<std::reference_wrapper<IEventSink>> sinks) : queue(queue), sinks(std::move(sinks))
+    {
+    }
+
+    void EventDispatcher::dispatch(const Event &event)
+    {
+        for (auto &sink : sinks)
+        {
+            sink.get().handle(event);
+        }
+
+        queue.enqueue(std::move(event));
+    }
+
+} // namespace antwika::event
