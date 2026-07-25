@@ -5,6 +5,7 @@
 #include <antwika/log/Logger.hpp>
 #include <antwika/log/StreamAppender.hpp>
 #include <antwika/log/PlainFormatter.hpp>
+#include <antwika/log/MinimumLevelLogPolicy.hpp>
 #include <antwika/engine/Engine.hpp>
 #include <antwika/event/EventDispatcher.hpp>
 #include <antwika/event/EventQueue.hpp>
@@ -19,7 +20,9 @@ namespace antwika::game
         antwika::time::SystemClock clock;
         antwika::log::StreamAppender appender(std::cout);
         antwika::log::PlainFormatter formatter;
-        antwika::log::Logger logger(formatter, clock, antwika::log::Level::Info, appender);
+
+        antwika::log::MinimumLevelLogPolicy logPolicy(antwika::log::Level::Info);
+        antwika::log::Logger logger(formatter, logPolicy, clock, appender);
 
         antwika::event::EventRecorder eventRecorder;
         antwika::event::EventQueue eventQueue;

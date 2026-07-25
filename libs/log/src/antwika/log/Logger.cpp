@@ -7,18 +7,19 @@
 namespace antwika::log
 {
 
-    Logger::Logger(IFormatter &formatter, antwika::time::IClock &clock, Level level, IAppender &appender) : formatter(formatter), clock(clock), level(level), appender(appender)
+    Logger::Logger(IFormatter &formatter, ILogPolicy &policy, antwika::time::IClock &clock, IAppender &appender) : formatter(formatter), policy(policy), clock(clock), appender(appender)
     {
     }
 
     void Logger::log(Level level, std::string_view message) noexcept
     {
-        if (level < this->level)
-            return;
-
-        const auto now = clock.now();
         try
         {
+            if (!policy.accepts(level))
+                return;
+
+            const auto now = clock.now();
+
             auto formatted = formatter.format(now, level, message);
             appender.append(formatted);
         }

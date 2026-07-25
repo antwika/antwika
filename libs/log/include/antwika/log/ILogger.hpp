@@ -2,6 +2,7 @@
 
 #include <string_view>
 
+#include "ILogPolicy.hpp"
 #include "Level.hpp"
 
 namespace antwika::log
