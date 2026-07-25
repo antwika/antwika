@@ -7,12 +7,12 @@ if(NOT TARGET antwika::time)
 endif()
 
 add_library(log
-    src/antwika/log/Level.cpp
-    src/antwika/log/Logger.cpp
-    src/antwika/log/MinimumLevelLogPolicy.cpp
-    src/antwika/log/NullAppender.cpp
-    src/antwika/log/PlainFormatter.cpp
-    src/antwika/log/StreamAppender.cpp
+    src/Level.cpp
+    src/Logger.cpp
+    src/MinimumLevelLogPolicy.cpp
+    src/NullAppender.cpp
+    src/PlainFormatter.cpp
+    src/StreamAppender.cpp
 )
 
 add_library(antwika::log ALIAS log)
