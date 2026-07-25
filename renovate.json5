@@ -8,4 +8,15 @@
     ],
     automerge: true,
     automergeType: 'branch',
+    customManagers: [
+        {
+            customType: 'regex',
+            managerFilePatterns: ['^\\.github/workflows/release\\.yml$'],
+            matchStrings: [
+                // Track npm packages installed with `npm install --no-save` (including scoped packages and prereleases).
+                'npm install --no-save (?<depName>@?[a-zA-Z0-9._-]+(?:/[a-zA-Z0-9._-]+)?)@(?<currentValue>\\d+\\.\\d+\\.\\d+(?:-[0-9A-Za-z.-]+)?)',
+            ],
+            datasourceTemplate: 'npm',
+        }
+    ],
 }

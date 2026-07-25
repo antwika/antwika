@@ -34,11 +34,10 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          npm install --no-save \
-            semantic-release@25.0.8 \
-            @semantic-release/changelog@7.0.0 \
-            @semantic-release/git@11.0.1 \
-            conventional-changelog-conventionalcommits@10.2.1
+          npm install --no-save semantic-release@25.0.8
+          npm install --no-save @semantic-release/changelog@7.0.0
+          npm install --no-save @semantic-release/git@11.0.1
+          npm install --no-save conventional-changelog-conventionalcommits@10.2.1
           npx semantic-release
       - name: Fetch tags
         run: git fetch --tags
