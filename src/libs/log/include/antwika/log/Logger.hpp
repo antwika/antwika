@@ -19,7 +19,7 @@ namespace antwika::log
     {
     public:
         explicit Logger(IFormatter &formatter, ILogPolicy &policy, IClock &clock, IAppender &appender);
-        void log(Level level, std::string_view message) noexcept;
+        void log(Level level, std::string_view message) noexcept override;
 
     private:
         IFormatter &formatter;
