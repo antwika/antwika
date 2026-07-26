@@ -4,10 +4,10 @@
 
 #include <antwika/event/IEventSink.hpp>
 
-using antwika::event::IEventSink;
-
 namespace antwika::event::mocks
 {
+
+    using antwika::event::IEventSink;
 
     class MockEventSink : public IEventSink
     {

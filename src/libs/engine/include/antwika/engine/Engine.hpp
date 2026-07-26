@@ -5,11 +5,11 @@
 
 #include "antwika/engine/IEngine.hpp"
 
-using antwika::event::IEventQueue;
-using antwika::log::ILogger;
-
 namespace antwika::engine
 {
+
+    using antwika::event::IEventQueue;
+    using antwika::log::ILogger;
 
     class Engine : public IEngine
     {

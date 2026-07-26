@@ -4,10 +4,10 @@
 
 #include <antwika/log/IAppender.hpp>
 
-using antwika::log::IAppender;
-
 namespace antwika::log::mocks
 {
+
+    using antwika::log::IAppender;
 
     class MockAppender : public IAppender
     {

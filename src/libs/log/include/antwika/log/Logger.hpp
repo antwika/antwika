@@ -10,10 +10,10 @@
 #include "IAppender.hpp"
 #include "Level.hpp"
 
-using antwika::time::IClock;
-
 namespace antwika::log
 {
+
+    using antwika::time::IClock;
 
     class Logger : public ILogger
     {

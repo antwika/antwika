@@ -5,11 +5,11 @@
 #include <antwika/log/ILogPolicy.hpp>
 #include <antwika/log/Level.hpp>
 
-using antwika::log::ILogPolicy;
-using antwika::log::Level;
-
 namespace antwika::log::mocks
 {
+
+    using antwika::log::ILogPolicy;
+    using antwika::log::Level;
 
     class MockLogPolicy : public ILogPolicy
     {

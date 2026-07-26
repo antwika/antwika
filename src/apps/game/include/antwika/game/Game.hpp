@@ -3,11 +3,11 @@
 #include <antwika/engine/IEngine.hpp>
 #include <antwika/event/IEventDispatcher.hpp>
 
-using antwika::engine::IEngine;
-using antwika::event::IEventDispatcher;
-
 namespace antwika::game
 {
+
+    using antwika::engine::IEngine;
+    using antwika::event::IEventDispatcher;
 
     class Game
     {

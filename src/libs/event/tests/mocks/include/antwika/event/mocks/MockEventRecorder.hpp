@@ -7,12 +7,13 @@
 #include <antwika/event/IEventQueue.hpp>
 #include <antwika/event/IEventHistory.hpp>
 
-using antwika::event::Event;
-using antwika::event::IEventHistory;
-using antwika::event::IEventSink;
-
 namespace antwika::event::mocks
 {
+
+    using antwika::event::Event;
+    using antwika::event::IEventHistory;
+    using antwika::event::IEventSink;
+
     class MockEventRecorder : public IEventSink,
                               public IEventHistory
     {

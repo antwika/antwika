@@ -2,10 +2,10 @@
 
 #include <antwika/time/IClock.hpp>
 
-using antwika::time::IClock;
-
 namespace antwika::time::fakes
 {
+
+    using antwika::time::IClock;
 
     class FakeClock : public IClock
     {

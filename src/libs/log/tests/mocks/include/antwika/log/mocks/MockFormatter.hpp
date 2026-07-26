@@ -7,11 +7,11 @@
 #include <antwika/log/IFormatter.hpp>
 #include <antwika/log/Level.hpp>
 
-using antwika::log::IFormatter;
-using antwika::log::Level;
-
 namespace antwika::log::mocks
 {
+
+    using antwika::log::IFormatter;
+    using antwika::log::Level;
 
     class MockFormatter : public IFormatter
     {

@@ -4,10 +4,10 @@
 
 #include "antwika/engine/IEngine.hpp"
 
-using antwika::engine::IEngine;
-
 namespace antwika::engine::mocks
 {
+
+    using antwika::engine::IEngine;
 
     class MockEngine : public IEngine
     {
