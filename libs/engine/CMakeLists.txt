@@ -42,9 +42,6 @@ target_link_libraries(engine PRIVATE antwika::time)
 target_link_libraries(engine PRIVATE antwika::log)
 target_link_libraries(engine PRIVATE antwika::event)
 
-add_subdirectory(mocks)
-
-
 if(BUILD_TESTING AND NOT CMAKE_CROSSCOMPILING)
     add_subdirectory(tests)
 endif()
