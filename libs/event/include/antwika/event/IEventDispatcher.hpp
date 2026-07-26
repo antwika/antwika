@@ -1,6 +1,6 @@
 #pragma once
 
-#include "antwika/event/Event.hpp"
+#include "Event.hpp"
 
 namespace antwika::event
 {

@@ -2,12 +2,12 @@
 
 #include <gmock/gmock.h>
 
-#include "antwika/event/IEventDispatcher.hpp"
+#include <antwika/event/IEventDispatcher.hpp>
 
 namespace antwika::event::mocks
 {
 
-    class MockEventDispatcher : public antwika::event::IEventDispatcher
+    class MockEventDispatcher : public IEventDispatcher
     {
     public:
         MOCK_METHOD(void, dispatch, (const Event &event), ());

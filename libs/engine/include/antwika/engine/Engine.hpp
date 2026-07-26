@@ -1,9 +1,12 @@
 #pragma once
 
-#include <antwika/log/Logger.hpp>
+#include <antwika/log/ILogger.hpp>
+#include <antwika/event/IEventQueue.hpp>
 
 #include "antwika/engine/IEngine.hpp"
-#include "antwika/event/IEventQueue.hpp"
+
+using antwika::event::IEventQueue;
+using antwika::log::ILogger;
 
 namespace antwika::engine
 {
@@ -11,12 +14,12 @@ namespace antwika::engine
     class Engine : public IEngine
     {
     public:
-        Engine(antwika::log::ILogger &logger, antwika::event::IEventQueue &eventQueue);
+        Engine(ILogger &logger, IEventQueue &eventQueue);
         void start() override;
 
     private:
-        antwika::log::ILogger &logger;
-        antwika::event::IEventQueue &eventQueue;
+        ILogger &logger;
+        IEventQueue &eventQueue;
     };
 
 } // namespace antwika::engine

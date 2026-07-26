@@ -2,12 +2,12 @@
 
 #include <gmock/gmock.h>
 
-#include "antwika/event/IEventQueue.hpp"
+#include <antwika/event/IEventQueue.hpp>
 
 namespace antwika::event::mocks
 {
 
-    class MockEventQueue : public antwika::event::IEventQueue
+    class MockEventQueue : public IEventQueue
     {
     public:
         MOCK_METHOD(void, enqueue, (Event event), ());

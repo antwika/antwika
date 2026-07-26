@@ -4,11 +4,13 @@
 
 #include <antwika/time/IClock.hpp>
 
-#include "antwika/log/IFormatter.hpp"
-#include "antwika/log/ILogPolicy.hpp"
-#include "antwika/log/ILogger.hpp"
-#include "antwika/log/IAppender.hpp"
-#include "antwika/log/Level.hpp"
+#include "IFormatter.hpp"
+#include "ILogPolicy.hpp"
+#include "ILogger.hpp"
+#include "IAppender.hpp"
+#include "Level.hpp"
+
+using antwika::time::IClock;
 
 namespace antwika::log
 {
@@ -16,13 +18,13 @@ namespace antwika::log
     class Logger : public ILogger
     {
     public:
-        explicit Logger(IFormatter &formatter, ILogPolicy &policy, antwika::time::IClock &clock, IAppender &appender);
+        explicit Logger(IFormatter &formatter, ILogPolicy &policy, IClock &clock, IAppender &appender);
         void log(Level level, std::string_view message) noexcept;
 
     private:
         IFormatter &formatter;
         ILogPolicy &policy;
-        antwika::time::IClock &clock;
+        IClock &clock;
         IAppender &appender;
     };
 

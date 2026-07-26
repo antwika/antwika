@@ -1,9 +1,10 @@
 #include <gtest/gtest.h>
 
+#include <antwika/event/mocks/MockEventQueue.hpp>
+#include <antwika/event/mocks/MockEventRecorder.hpp>
+
 #include "antwika/event/EventQueue.hpp"
 #include "antwika/event/EventRecorder.hpp"
-#include "antwika/event/mocks/MockEventQueue.hpp"
-#include "antwika/event/mocks/MockEventRecorder.hpp"
 
 using antwika::event::Event;
 using antwika::event::EventQueue;

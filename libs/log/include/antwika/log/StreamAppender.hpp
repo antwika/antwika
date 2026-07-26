@@ -3,7 +3,7 @@
 #include <ostream>
 #include <string_view>
 
-#include "antwika/log/IAppender.hpp"
+#include "IAppender.hpp"
 
 namespace antwika::log
 {

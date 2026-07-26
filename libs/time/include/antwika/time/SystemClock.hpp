@@ -2,7 +2,7 @@
 
 #include <chrono>
 
-#include "antwika/time/IClock.hpp"
+#include "IClock.hpp"
 
 namespace antwika::time
 {

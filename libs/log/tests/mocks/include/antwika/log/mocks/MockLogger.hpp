@@ -1,18 +1,22 @@
 #pragma once
 
 #include <gmock/gmock.h>
+
+#include <string_view>
+
 #include <antwika/log/ILogger.hpp>
 #include <antwika/log/Level.hpp>
 
-#include <string_view>
+using antwika::log::ILogger;
+using antwika::log::Level;
 
 namespace antwika::log::mocks
 {
 
-    class MockLogger : public antwika::log::ILogger
+    class MockLogger : public ILogger
     {
     public:
-        MOCK_METHOD(void, log, (antwika::log::Level, std::string_view message), (noexcept, override));
+        MOCK_METHOD(void, log, (Level level, std::string_view message), (noexcept, override));
     };
 
 } // namespace antwika::log::mocks

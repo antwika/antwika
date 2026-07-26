@@ -7,7 +7,7 @@
 namespace antwika::log
 {
 
-    Logger::Logger(IFormatter &formatter, ILogPolicy &policy, antwika::time::IClock &clock, IAppender &appender) : formatter(formatter), policy(policy), clock(clock), appender(appender)
+    Logger::Logger(IFormatter &formatter, ILogPolicy &policy, IClock &clock, IAppender &appender) : formatter(formatter), policy(policy), clock(clock), appender(appender)
     {
     }
 

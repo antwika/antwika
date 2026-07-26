@@ -1,9 +1,5 @@
 #pragma once
 
-#include <antwika/log/Logger.hpp>
-
-#include "antwika/event/IEventQueue.hpp"
-
 namespace antwika::engine
 {
 

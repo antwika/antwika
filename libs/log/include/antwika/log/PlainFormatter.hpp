@@ -1,7 +1,7 @@
 #pragma once
 
-#include "antwika/log/IFormatter.hpp"
-#include "antwika/log/Level.hpp"
+#include "IFormatter.hpp"
+#include "Level.hpp"
 
 namespace antwika::log
 {

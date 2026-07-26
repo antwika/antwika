@@ -2,9 +2,9 @@
 
 #include <deque>
 
-#include "antwika/event/Event.hpp"
-#include "antwika/event/IEventSink.hpp"
-#include "antwika/event/IEventQueue.hpp"
+#include "Event.hpp"
+#include "IEventSink.hpp"
+#include "IEventQueue.hpp"
 
 namespace antwika::event
 {
