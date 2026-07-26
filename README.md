@@ -1,6 +1,8 @@
 # Antwika
 
 [![CI](https://github.com/antwika/antwika/actions/workflows/ci.yml/badge.svg)](https://github.com/antwika/antwika/actions/workflows/ci.yml)
+[![Coverage (GNU)](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/antwika/antwika/badges/coverage-gnu.json)](https://github.com/antwika/antwika/actions/workflows/ci.yml)
+[![Coverage (LLVM)](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/antwika/antwika/badges/coverage-llvm.json)](https://github.com/antwika/antwika/actions/workflows/ci.yml)
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
 
 A C++23 game project built with CMake, Conan, and GoogleTest, developed inside VS Code Dev Containers for a fully reproducible toolchain across Linux (GNU/LLVM) and Windows (MinGW).
@@ -63,6 +65,19 @@ A helper script checks for unused test doubles (mocks/fakes that no `.cpp` file 
 ```sh
 scripts/check-unused-test-doubles.sh
 ```
+
+### Coverage
+
+The GNU and LLVM toolchains build with instrumentation via the `conan-coverage` CMake preset and report line coverage with `gcovr`:
+
+```sh
+cmake --preset conan-coverage
+cmake --build build
+ctest --test-dir build
+gcovr --root . --filter 'src/.*' --exclude '.*/tests/.*' --print-summary build
+```
+
+CI runs this on every push to `main` for the GNU and LLVM toolchains (not MinGW, which doesn't support `--coverage`) and publishes the resulting percentage as the badges above.
 
 ## Optional: Use a locally built `antwika-dev-base` development container
 
