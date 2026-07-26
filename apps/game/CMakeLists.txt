@@ -18,7 +18,13 @@ if(NOT TARGET antwika::engine)
     find_package(engine REQUIRED)
 endif()
 
-add_executable(game src/antwika/game/Game.cpp src/main.cpp)
+add_executable(game src/Game.cpp src/main.cpp)
+
+target_include_directories(game
+    PUBLIC
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+        $<INSTALL_INTERFACE:include>
+)
 
 target_link_libraries(game PRIVATE antwika::time)
 target_link_libraries(game PRIVATE antwika::log)

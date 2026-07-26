@@ -1,4 +1,4 @@
-#include "Game.hpp"
+#include "antwika/game/Game.hpp"
 
 #include <iostream>
 #include <antwika/time/SystemClock.hpp>
