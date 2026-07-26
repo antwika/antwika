@@ -1,14 +1,14 @@
-add_library(time
+add_library(antwika_time
     src/SystemClock.cpp
 )
 
-add_library(antwika::time ALIAS time)
+add_library(antwika::time ALIAS antwika_time)
 
-set_target_properties(time PROPERTIES
+set_target_properties(antwika_time PROPERTIES
     WINDOWS_EXPORT_ALL_SYMBOLS ON
 )
 
-target_include_directories(time
+target_include_directories(antwika_time
     PUBLIC
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
         $<INSTALL_INTERFACE:include>
@@ -19,16 +19,20 @@ if(BUILD_TESTING AND NOT CMAKE_CROSSCOMPILING)
 endif()
 
 install(
-    TARGETS time
-    EXPORT timeTargets
+    TARGETS antwika_time
+    EXPORT antwika_timeTargets
     ARCHIVE DESTINATION lib
     LIBRARY DESTINATION lib
     RUNTIME DESTINATION bin
-    PUBLIC_HEADER DESTINATION include
 )
 
 install(
-    EXPORT timeTargets
+    DIRECTORY include/
+    DESTINATION include
+)
+
+install(
+    EXPORT antwika_timeTargets
     NAMESPACE antwika::
-    DESTINATION lib/cmake/time
+    DESTINATION lib/cmake/antwika
 )

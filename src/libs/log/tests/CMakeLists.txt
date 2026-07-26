@@ -2,7 +2,7 @@ find_package(GTest REQUIRED)
 
 add_subdirectory(mocks)
 
-add_executable(log_tests
+add_executable(antwika_log_tests
     LevelTest.cpp
     LoggerTest.cpp
     MinimumLevelLogPolicyTest.cpp
@@ -11,13 +11,13 @@ add_executable(log_tests
     StreamAppenderTest.cpp
 )
 
-target_link_libraries(log_tests
+target_link_libraries(antwika_log_tests
     PRIVATE
         antwika::log
-        log_mocks
-        time_fakes
+        antwika::log::tests::mocks
+        antwika::time::tests::fakes
         gtest::gtest
 )
 
 include(GoogleTest)
-gtest_discover_tests(log_tests)
+gtest_discover_tests(antwika_log_tests)

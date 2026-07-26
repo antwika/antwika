@@ -1,18 +1,24 @@
-add_library(event_mocks INTERFACE)
+add_library(antwika_event_tests_mocks INTERFACE)
 
-target_include_directories(event_mocks
+add_library(antwika::event::tests::mocks ALIAS antwika_event_tests_mocks)
+
+target_include_directories(antwika_event_tests_mocks
     INTERFACE
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
         $<INSTALL_INTERFACE:include>
 )
 
-target_link_libraries(event_mocks
+target_link_libraries(antwika_event_tests_mocks
     INTERFACE
-        event
+        antwika::event
 )
 
 install(
-    TARGETS event_mocks
-    EXPORT eventTargets
-    PUBLIC_HEADER DESTINATION include
+    TARGETS antwika_event_tests_mocks
+    EXPORT antwika_eventTargets
+)
+
+install(
+    DIRECTORY include/
+    DESTINATION include
 )

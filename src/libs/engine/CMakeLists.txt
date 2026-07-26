@@ -1,47 +1,44 @@
-add_library(engine
+add_library(antwika_engine
     src/Engine.cpp
 )
 
-add_library(antwika::engine ALIAS engine)
+add_library(antwika::engine ALIAS antwika_engine)
 
-set_target_properties(engine PROPERTIES
+set_target_properties(antwika_engine PROPERTIES
     WINDOWS_EXPORT_ALL_SYMBOLS ON
 )
 
-set(ENGINE_PUBLIC_HEADERS
-    include/antwika/engine/Engine.hpp
-    include/antwika/engine/IEngine.hpp
-)
-
-set_target_properties(engine PROPERTIES
-    PUBLIC_HEADER "${ENGINE_PUBLIC_HEADERS}"
-)
-
-target_include_directories(engine
+target_include_directories(antwika_engine
     PUBLIC
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
         $<INSTALL_INTERFACE:include>
 )
 
-target_link_libraries(engine PRIVATE antwika::time)
-target_link_libraries(engine PRIVATE antwika::log)
-target_link_libraries(engine PRIVATE antwika::event)
+target_link_libraries(antwika_engine
+    PUBLIC
+        antwika::log
+        antwika::event
+)
 
 if(BUILD_TESTING AND NOT CMAKE_CROSSCOMPILING)
     add_subdirectory(tests)
 endif()
 
 install(
-    TARGETS engine
-    EXPORT engineTargets
+    TARGETS antwika_engine
+    EXPORT antwika_engineTargets
     ARCHIVE DESTINATION lib
     LIBRARY DESTINATION lib
     RUNTIME DESTINATION bin
-    PUBLIC_HEADER DESTINATION include
 )
 
 install(
-    EXPORT engineTargets
+    DIRECTORY include/
+    DESTINATION include
+)
+
+install(
+    EXPORT antwika_engineTargets
     NAMESPACE antwika::
-    DESTINATION lib/cmake/engine
+    DESTINATION lib/cmake/antwika
 )

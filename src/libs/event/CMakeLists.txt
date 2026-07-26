@@ -1,32 +1,16 @@
-add_library(event
+add_library(antwika_event
     src/EventDispatcher.cpp
     src/EventQueue.cpp
     src/EventRecorder.cpp
 )
 
-add_library(antwika::event ALIAS event)
+add_library(antwika::event ALIAS antwika_event)
 
-set_target_properties(event PROPERTIES
+set_target_properties(antwika_event PROPERTIES
     WINDOWS_EXPORT_ALL_SYMBOLS ON
 )
 
-set(EVENT_PUBLIC_HEADERS
-    include/antwika/event/Event.hpp
-    include/antwika/event/EventDispatcher.hpp
-    include/antwika/event/EventQueue.hpp
-    include/antwika/event/EventRecorder.hpp
-    include/antwika/event/IEventDispatcher.hpp
-    include/antwika/event/IEventHistory.hpp
-    include/antwika/event/IEventQueue.hpp
-    include/antwika/event/IEventRecorder.hpp
-    include/antwika/event/IEventSink.hpp
-)
-
-set_target_properties(event PROPERTIES
-    PUBLIC_HEADER "${EVENT_PUBLIC_HEADERS}"
-)
-
-target_include_directories(event
+target_include_directories(antwika_event
     PUBLIC
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
         $<INSTALL_INTERFACE:include>
@@ -37,16 +21,20 @@ if(BUILD_TESTING AND NOT CMAKE_CROSSCOMPILING)
 endif()
 
 install(
-    TARGETS event
-    EXPORT eventTargets
+    TARGETS antwika_event
+    EXPORT antwika_eventTargets
     ARCHIVE DESTINATION lib
     LIBRARY DESTINATION lib
     RUNTIME DESTINATION bin
-    PUBLIC_HEADER DESTINATION include
 )
 
 install(
-    EXPORT eventTargets
+    DIRECTORY include/
+    DESTINATION include
+)
+
+install(
+    EXPORT antwika_eventTargets
     NAMESPACE antwika::
-    DESTINATION lib/cmake/event
+    DESTINATION lib/cmake/antwika
 )

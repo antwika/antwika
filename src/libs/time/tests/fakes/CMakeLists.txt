@@ -1,18 +1,24 @@
-add_library(time_fakes INTERFACE)
+add_library(antwika_time_tests_fakes INTERFACE)
 
-target_include_directories(time_fakes
+add_library(antwika::time::tests::fakes ALIAS antwika_time_tests_fakes)
+
+target_include_directories(antwika_time_tests_fakes
     INTERFACE
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
         $<INSTALL_INTERFACE:include>
 )
 
-target_link_libraries(time_fakes
+target_link_libraries(antwika_time_tests_fakes
     INTERFACE
-        time
+        antwika_time
 )
 
 install(
-    TARGETS time_fakes
-    EXPORT timeTargets
-    PUBLIC_HEADER DESTINATION include
+    TARGETS antwika_time_tests_fakes
+    EXPORT antwika_timeTargets
+)
+
+install(
+    DIRECTORY include/
+    DESTINATION include
 )

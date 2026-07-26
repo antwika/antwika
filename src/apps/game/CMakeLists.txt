@@ -1,15 +1,15 @@
-add_executable(game src/Game.cpp src/main.cpp)
+add_executable(antwika_game src/Game.cpp src/main.cpp)
 
-target_include_directories(game
-    PUBLIC
-        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-        $<INSTALL_INTERFACE:include>
+target_include_directories(antwika_game
+    PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/include
 )
 
-target_link_libraries(game PRIVATE antwika::time)
-target_link_libraries(game PRIVATE antwika::log)
-target_link_libraries(game PRIVATE antwika::event)
-target_link_libraries(game PRIVATE antwika::engine)
+target_link_libraries(antwika_game
+    PRIVATE
+        antwika::engine
+        antwika::time
+)
 
 if(MINGW)
     execute_process(
@@ -36,17 +36,15 @@ if(MINGW)
         ${LIBWINPTHREAD_DLL}
     )
         if(EXISTS ${DLL})
-            add_custom_command(TARGET game POST_BUILD
+            add_custom_command(TARGET antwika_game POST_BUILD
                 COMMAND ${CMAKE_COMMAND} -E copy_if_different
                     ${DLL}
-                    $<TARGET_FILE_DIR:game>
+                    $<TARGET_FILE_DIR:antwika_game>
             )
         endif()
     endforeach()
 endif()
 
-install(TARGETS game DESTINATION "."
-        RUNTIME DESTINATION bin
-        ARCHIVE DESTINATION lib
-        LIBRARY DESTINATION lib
+install(TARGETS antwika_game
+    RUNTIME DESTINATION bin
 )
