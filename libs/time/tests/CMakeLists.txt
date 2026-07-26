@@ -1,5 +1,7 @@
 find_package(GTest REQUIRED)
 
+add_subdirectory(fakes)
+
 add_executable(time_tests
     FakeClockTest.cpp
     SystemClockTest.cpp

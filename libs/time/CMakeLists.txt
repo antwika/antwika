@@ -27,8 +27,6 @@ target_include_directories(time
         $<INSTALL_INTERFACE:include>
 )
 
-add_subdirectory(fakes)
-
 if(BUILD_TESTING AND NOT CMAKE_CROSSCOMPILING)
     add_subdirectory(tests)
 endif()
