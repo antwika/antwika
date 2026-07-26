@@ -1,5 +1,6 @@
 #include "antwika/game/Game.hpp"
 
+#include <antwika/engine/Engine.hpp>
 #include <antwika/time/SystemClock.hpp>
 #include <antwika/log/StreamAppender.hpp>
 #include <antwika/log/PlainFormatter.hpp>
@@ -34,7 +35,10 @@ int main()
     EventQueue eventQueue;
     EventDispatcher eventDispatcher(eventQueue, {eventRecorder});
     Engine engine(logger, eventQueue);
-    Game game(engine, eventDispatcher);
+
     eventDispatcher.dispatch(antwika::event::Event{.name = "ExampleEvent"});
+
+    Game game(engine, eventDispatcher);
+
     game.run();
 }

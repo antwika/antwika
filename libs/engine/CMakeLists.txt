@@ -26,6 +26,7 @@ set_target_properties(engine PROPERTIES
 
 set(ENGINE_PUBLIC_HEADERS
     include/antwika/engine/Engine.hpp
+    include/antwika/engine/IEngine.hpp
 )
 
 set_target_properties(engine PROPERTIES

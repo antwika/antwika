@@ -1,9 +1,9 @@
 #pragma once
 
-#include <antwika/engine/Engine.hpp>
+#include <antwika/engine/IEngine.hpp>
 #include <antwika/event/IEventDispatcher.hpp>
 
-using antwika::engine::Engine;
+using antwika::engine::IEngine;
 using antwika::event::IEventDispatcher;
 
 namespace antwika::game
@@ -12,11 +12,11 @@ namespace antwika::game
     class Game
     {
     public:
-        explicit Game(Engine &engine, IEventDispatcher &eventDispatcher);
+        explicit Game(IEngine &engine, IEventDispatcher &eventDispatcher);
         void run();
 
     private:
-        Engine &engine;
+        IEngine &engine;
         IEventDispatcher &eventDispatcher;
     };
 
