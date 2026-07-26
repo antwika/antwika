@@ -9,7 +9,7 @@ namespace antwika::log
 
     bool MinimumLevelLogPolicy::accepts(Level level) const noexcept
     {
-        return static_cast<int>(level) >= static_cast<int>(minimumLevel);
+        return level >= minimumLevel;
     }
 
 } // namespace antwika::log
