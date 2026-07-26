@@ -5,7 +5,7 @@ namespace antwika::game
 
     Game::Game(IEngine &engine,
                IEventDispatcher &dispatcher) : engine(engine),
-                                               eventDispatcher(eventDispatcher)
+                                               eventDispatcher(dispatcher)
     {
     }
 

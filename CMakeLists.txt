@@ -15,6 +15,20 @@ include(CTest)
 enable_testing()
 
 option(ENABLE_COVERAGE "Enable coverage" OFF)
+option(ANTWIKA_WARNINGS_AS_ERRORS "Treat compiler warnings as errors" ON)
+
+if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
+    add_compile_options(
+        -Wall
+        -Wextra
+        -Wpedantic
+        -Wsuggest-override
+    )
+
+    if(ANTWIKA_WARNINGS_AS_ERRORS)
+        add_compile_options(-Werror)
+    endif()
+endif()
 
 if(ENABLE_COVERAGE AND BUILD_TESTING AND NOT CMAKE_CROSSCOMPILING)
     if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")

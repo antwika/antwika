@@ -136,6 +136,10 @@ jobs:
         with:
           ref: ${{ inputs.ref }}
 
+      - name: Check for unused test doubles
+        shell: bash
+        run: ./scripts/check-unused-test-doubles.sh
+
       - name: Install dependencies
         shell: bash
         run: |
@@ -168,6 +172,7 @@ jobs:
             "antwika_engine_tests"
             "antwika_event_tests"
             "antwika_game"
+            "antwika_game_tests"
             "antwika_log_tests"
             "antwika_time_tests"
           )

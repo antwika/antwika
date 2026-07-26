@@ -10,9 +10,9 @@ namespace antwika::event::mocks
     class MockEventQueue : public IEventQueue
     {
     public:
-        MOCK_METHOD(void, enqueue, (Event event), ());
-        MOCK_METHOD(Event, pop, (), ());
-        MOCK_METHOD(bool, empty, (), (const, noexcept));
+        MOCK_METHOD(void, enqueue, (Event event), (override));
+        MOCK_METHOD(Event, pop, (), (override));
+        MOCK_METHOD(bool, empty, (), (const, noexcept, override));
     };
 
 } // namespace antwika::event::mocks

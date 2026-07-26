@@ -11,6 +11,10 @@ target_link_libraries(antwika_game
         antwika::time
 )
 
+if(BUILD_TESTING AND NOT CMAKE_CROSSCOMPILING)
+    add_subdirectory(tests)
+endif()
+
 if(MINGW)
     execute_process(
         COMMAND ${CMAKE_CXX_COMPILER} -print-file-name=libgcc_s_seh-1.dll

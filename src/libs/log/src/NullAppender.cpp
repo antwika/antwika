@@ -3,7 +3,7 @@
 namespace antwika::log
 {
 
-    void NullAppender::append(std::string_view message)
+    void NullAppender::append(std::string_view)
     {
     }
 
