@@ -15,24 +15,14 @@
 namespace antwika::game
 {
 
+    Game::Game(Engine &engine,
+               IEventDispatcher &dispatcher) : engine(engine),
+                                               eventDispatcher(eventDispatcher)
+    {
+    }
+
     void Game::run()
     {
-        antwika::time::SystemClock clock;
-        antwika::log::StreamAppender appender(std::cout);
-        antwika::log::PlainFormatter formatter;
-
-        antwika::log::MinimumLevelLogPolicy logPolicy(antwika::log::Level::Info);
-        antwika::log::Logger logger(formatter, logPolicy, clock, appender);
-
-        antwika::event::EventRecorder eventRecorder;
-        antwika::event::EventQueue eventQueue;
-
-        antwika::event::EventDispatcher eventDispatcher(eventQueue, {eventRecorder});
-
-        antwika::engine::Engine engine(logger, eventQueue);
-
-        eventDispatcher.dispatch(antwika::event::Event{.name = "ExampleEvent"});
-
         engine.start();
     }
 
