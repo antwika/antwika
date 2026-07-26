@@ -12,6 +12,13 @@ namespace antwika::log
     {
     public:
         explicit StreamAppender(std::ostream &stream);
+
+        StreamAppender(const StreamAppender &) = delete;
+        StreamAppender(StreamAppender &&) = delete;
+
+        StreamAppender &operator=(const StreamAppender &) = delete;
+        StreamAppender &operator=(StreamAppender &&) = delete;
+
         void append(std::string_view message) override;
 
     private:

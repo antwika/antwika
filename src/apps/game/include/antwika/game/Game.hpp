@@ -13,6 +13,13 @@ namespace antwika::game
     {
     public:
         explicit Game(IEngine &engine, IEventDispatcher &eventDispatcher);
+
+        Game(const Game &) = default;
+        Game(Game &&) = default;
+
+        Game &operator=(const Game &) = delete;
+        Game &operator=(Game &&) = delete;
+
         void run();
 
     private:

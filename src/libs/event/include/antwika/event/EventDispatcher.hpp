@@ -13,6 +13,13 @@ namespace antwika::event
     {
     public:
         EventDispatcher(IEventQueue &queue, std::vector<std::reference_wrapper<IEventSink>> sinks);
+
+        EventDispatcher(const EventDispatcher &) = delete;
+        EventDispatcher(EventDispatcher &&) = delete;
+
+        EventDispatcher &operator=(const EventDispatcher &) = delete;
+        EventDispatcher &operator=(EventDispatcher &&) = delete;
+
         void dispatch(Event event) override;
 
     private:

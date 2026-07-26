@@ -19,6 +19,13 @@ namespace antwika::log
     {
     public:
         explicit Logger(IFormatter &formatter, ILogPolicy &policy, IClock &clock, IAppender &appender);
+
+        Logger(const Logger &) = delete;
+        Logger(Logger &&) = delete;
+
+        Logger &operator=(const Logger &) = delete;
+        Logger &operator=(Logger &&) = delete;
+
         void log(Level level, std::string_view message) noexcept override;
 
     private:
