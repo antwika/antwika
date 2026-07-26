@@ -14,7 +14,7 @@ namespace antwika::event
     {
     public:
         void handle(const Event &event) override;
-        std::vector<Event> getEvents() const override;
+        [[nodiscard]] std::vector<Event> getEvents() const override;
 
     private:
         std::vector<Event> events;

@@ -12,8 +12,8 @@ namespace antwika::event
     public:
         virtual ~IEventQueue() = default;
         virtual void enqueue(Event event) = 0;
-        virtual Event pop() = 0;
-        virtual bool empty() const noexcept = 0;
+        [[nodiscard]] virtual Event pop() = 0;
+        [[nodiscard]] virtual bool empty() const noexcept = 0;
     };
 
 } // namespace antwika::event

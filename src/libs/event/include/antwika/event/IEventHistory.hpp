@@ -11,7 +11,7 @@ namespace antwika::event
     {
     public:
         virtual ~IEventHistory() = default;
-        virtual std::vector<Event> getEvents() const = 0;
+        [[nodiscard]] virtual std::vector<Event> getEvents() const = 0;
     };
 
 } // namespace antwika::event

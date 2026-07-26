@@ -13,8 +13,8 @@ namespace antwika::event
     {
     public:
         void enqueue(Event event) override;
-        Event pop() override;
-        bool empty() const noexcept override;
+        [[nodiscard]] Event pop() override;
+        [[nodiscard]] bool empty() const noexcept override;
 
     private:
         std::deque<Event> queue;

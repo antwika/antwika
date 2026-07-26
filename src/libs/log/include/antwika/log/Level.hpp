@@ -15,6 +15,6 @@ namespace antwika::log
         Fatal = 50,
     };
 
-    std::string_view toString(Level level) noexcept;
+    [[nodiscard]] std::string_view toString(Level level) noexcept;
 
 } // namespace antwika::log

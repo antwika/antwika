@@ -12,7 +12,7 @@ namespace antwika::log
     {
     public:
         virtual ~ILogPolicy() = default;
-        virtual bool accepts(Level level) const noexcept = 0;
+        [[nodiscard]] virtual bool accepts(Level level) const noexcept = 0;
     };
 
 } // namespace antwika::log

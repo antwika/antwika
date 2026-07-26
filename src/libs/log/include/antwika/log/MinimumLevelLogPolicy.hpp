@@ -9,7 +9,7 @@ namespace antwika::log
     {
     public:
         explicit MinimumLevelLogPolicy(Level minimumLevel);
-        bool accepts(Level level) const noexcept override;
+        [[nodiscard]] bool accepts(Level level) const noexcept override;
 
     private:
         Level minimumLevel;
