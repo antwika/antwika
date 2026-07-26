@@ -36,8 +36,6 @@ target_include_directories(event
         $<INSTALL_INTERFACE:include>
 )
 
-add_subdirectory(mocks)
-
 if(BUILD_TESTING AND NOT CMAKE_CROSSCOMPILING)
     add_subdirectory(tests)
 endif()
