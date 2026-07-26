@@ -33,12 +33,8 @@ int main()
     Logger logger(formatter, logPolicy, clock, appender);
     EventRecorder eventRecorder;
     EventQueue eventQueue;
-    EventDispatcher eventDispatcher(eventQueue, {eventRecorder});
+    EventDispatcher dispatcher(eventQueue, {eventRecorder});
     Engine engine(logger, eventQueue);
-
-    eventDispatcher.dispatch(antwika::event::Event{.name = "ExampleEvent"});
-
-    Game game(engine, eventDispatcher);
-
+    Game game(engine, dispatcher);
     game.run();
 }

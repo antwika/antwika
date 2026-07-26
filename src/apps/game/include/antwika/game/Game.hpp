@@ -12,7 +12,7 @@ namespace antwika::game
     class Game
     {
     public:
-        explicit Game(IEngine &engine, IEventDispatcher &eventDispatcher);
+        explicit Game(IEngine &engine, IEventDispatcher &dispatcher);
 
         Game(const Game &) = delete;
         Game(Game &&) = delete;
@@ -24,7 +24,7 @@ namespace antwika::game
 
     private:
         IEngine &engine;
-        IEventDispatcher &eventDispatcher;
+        IEventDispatcher &dispatcher;
     };
 
 } // namespace antwika::game

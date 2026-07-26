@@ -7,6 +7,7 @@
 #include "antwika/game/Game.hpp"
 
 using antwika::engine::mocks::MockEngine;
+using antwika::event::Event;
 using antwika::event::mocks::MockEventDispatcher;
 using antwika::game::Game;
 
@@ -16,6 +17,7 @@ TEST(GameTest, Run_StartsEngine)
     MockEventDispatcher mockEventDispatcher;
     Game game(mockEngine, mockEventDispatcher);
 
+    EXPECT_CALL(mockEventDispatcher, dispatch(Event{.name = "Running Antwika Game"})).Times(1);
     EXPECT_CALL(mockEngine, start()).Times(1);
 
     game.run();
