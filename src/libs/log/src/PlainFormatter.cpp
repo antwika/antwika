@@ -1,5 +1,7 @@
 #include "antwika/log/PlainFormatter.hpp"
 
+#include <format>
+
 namespace antwika::log
 {
 
