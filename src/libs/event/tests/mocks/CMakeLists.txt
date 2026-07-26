@@ -14,9 +14,5 @@ target_link_libraries(event_mocks
 install(
     TARGETS event_mocks
     EXPORT eventTargets
-)
-
-install(
-    DIRECTORY include/
-    DESTINATION include
+    PUBLIC_HEADER DESTINATION include
 )

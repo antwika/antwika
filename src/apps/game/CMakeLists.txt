@@ -1,23 +1,3 @@
-cmake_minimum_required(VERSION 3.28)
-
-project(game CXX)
-
-if(NOT TARGET antwika::time)
-    find_package(time REQUIRED)
-endif()
-
-if(NOT TARGET antwika::log)
-    find_package(log REQUIRED)
-endif()
-
-if(NOT TARGET antwika::event)
-    find_package(event REQUIRED)
-endif()
-
-if(NOT TARGET antwika::engine)
-    find_package(engine REQUIRED)
-endif()
-
 add_executable(game src/Game.cpp src/main.cpp)
 
 target_include_directories(game

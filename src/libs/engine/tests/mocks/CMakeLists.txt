@@ -14,9 +14,5 @@ target_link_libraries(engine_mocks
 install(
     TARGETS engine_mocks
     EXPORT engineTargets
-)
-
-install(
-    DIRECTORY include/
-    DESTINATION include
+    PUBLIC_HEADER DESTINATION include
 )

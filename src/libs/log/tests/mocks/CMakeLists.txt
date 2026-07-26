@@ -14,9 +14,5 @@ target_link_libraries(log_mocks
 install(
     TARGETS log_mocks
     EXPORT logTargets
-)
-
-install(
-    DIRECTORY include/
-    DESTINATION include
+    PUBLIC_HEADER DESTINATION include
 )

@@ -1,19 +1,3 @@
-cmake_minimum_required(VERSION 3.28)
-
-project(engine CXX)
-
-if(NOT TARGET antwika::time)
-    find_package(time REQUIRED)
-endif()
-
-if(NOT TARGET antwika::log)
-    find_package(log REQUIRED)
-endif()
-
-if(NOT TARGET antwika::event)
-    find_package(event REQUIRED)
-endif()
-
 add_library(engine
     src/Engine.cpp
 )
@@ -53,11 +37,7 @@ install(
     ARCHIVE DESTINATION lib
     LIBRARY DESTINATION lib
     RUNTIME DESTINATION bin
-)
-
-install(
-    DIRECTORY include/
-    DESTINATION include
+    PUBLIC_HEADER DESTINATION include
 )
 
 install(

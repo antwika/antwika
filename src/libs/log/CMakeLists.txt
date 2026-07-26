@@ -1,11 +1,3 @@
-cmake_minimum_required(VERSION 3.28)
-
-project(log CXX)
-
-if(NOT TARGET antwika::time)
-    find_package(time REQUIRED)
-endif()
-
 add_library(log
     src/Level.cpp
     src/Logger.cpp
@@ -54,11 +46,7 @@ install(
     ARCHIVE DESTINATION lib
     LIBRARY DESTINATION lib
     RUNTIME DESTINATION bin
-)
-
-install(
-    DIRECTORY include/
-    DESTINATION include
+    PUBLIC_HEADER DESTINATION include
 )
 
 install(

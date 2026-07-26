@@ -1,7 +1,3 @@
-cmake_minimum_required(VERSION 3.28)
-
-project(time CXX)
-
 add_library(time
     src/SystemClock.cpp
 )
@@ -10,15 +6,6 @@ add_library(antwika::time ALIAS time)
 
 set_target_properties(time PROPERTIES
     WINDOWS_EXPORT_ALL_SYMBOLS ON
-)
-
-set(TIME_PUBLIC_HEADERS
-    include/antwika/time/IClock.hpp
-    include/antwika/time/SystemClock.hpp
-)
-
-set_target_properties(time PROPERTIES
-    PUBLIC_HEADER "${TIME_PUBLIC_HEADERS}"
 )
 
 target_include_directories(time
@@ -37,11 +24,7 @@ install(
     ARCHIVE DESTINATION lib
     LIBRARY DESTINATION lib
     RUNTIME DESTINATION bin
-)
-
-install(
-    DIRECTORY include/
-    DESTINATION include
+    PUBLIC_HEADER DESTINATION include
 )
 
 install(

@@ -14,9 +14,5 @@ target_link_libraries(time_fakes
 install(
     TARGETS time_fakes
     EXPORT timeTargets
-)
-
-install(
-    DIRECTORY include/
-    DESTINATION include
+    PUBLIC_HEADER DESTINATION include
 )

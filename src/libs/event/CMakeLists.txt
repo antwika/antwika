@@ -1,7 +1,3 @@
-cmake_minimum_required(VERSION 3.28)
-
-project(event CXX)
-
 add_library(event
     src/EventDispatcher.cpp
     src/EventQueue.cpp
@@ -46,11 +42,7 @@ install(
     ARCHIVE DESTINATION lib
     LIBRARY DESTINATION lib
     RUNTIME DESTINATION bin
-)
-
-install(
-    DIRECTORY include/
-    DESTINATION include
+    PUBLIC_HEADER DESTINATION include
 )
 
 install(
