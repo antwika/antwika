@@ -57,7 +57,7 @@ jobs:
     needs: release
     uses: ./.github/workflows/build.yml
     permissions:
-      contents: read
+      contents: write
       packages: write
     with:
       version: ${{ needs.release.outputs.version }}

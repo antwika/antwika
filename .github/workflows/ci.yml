@@ -33,7 +33,7 @@ jobs:
     needs: determine-version
     uses: ./.github/workflows/build.yml
     permissions:
-      contents: read
+      contents: write
       packages: write
     with:
       version: ${{ needs.determine-version.outputs.version }}
