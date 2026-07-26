@@ -14,8 +14,8 @@ namespace antwika::game
     public:
         explicit Game(IEngine &engine, IEventDispatcher &eventDispatcher);
 
-        Game(const Game &) = default;
-        Game(Game &&) = default;
+        Game(const Game &) = delete;
+        Game(Game &&) = delete;
 
         Game &operator=(const Game &) = delete;
         Game &operator=(Game &&) = delete;
