@@ -6,7 +6,6 @@ using antwika::time::fakes::FakeClock;
 
 TEST(FakeClockTest, Now)
 {
-
     auto now = std::chrono::system_clock::now();
     FakeClock clock{now};
     EXPECT_EQ(clock.now(), now);
@@ -14,10 +13,8 @@ TEST(FakeClockTest, Now)
 
 TEST(FakeClockTest, Advance)
 {
-
     auto now = std::chrono::system_clock::now();
     FakeClock clock{now};
-
     std::chrono::seconds s{5};
     clock.advance(s);
     EXPECT_EQ(clock.now(), now + s);
@@ -25,11 +22,8 @@ TEST(FakeClockTest, Advance)
 
 TEST(FakeClockTest, Set)
 {
-
     auto now = std::chrono::system_clock::now();
     FakeClock clock{now};
-
-    std::chrono::seconds s{5};
     auto updatedNow = now + std::chrono::seconds{5};
     clock.set(updatedNow);
     EXPECT_EQ(clock.now(), updatedNow);
