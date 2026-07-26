@@ -60,7 +60,13 @@ TEST(LoggerTest, log_MustNotPropagateExceptionIfFormatterFails)
     EXPECT_CALL(mockFormatter, format(time, Level::Info, "Message")).WillRepeatedly(::testing::Throw(std::exception{}));
     EXPECT_CALL(mockAppender, append(::testing::_)).Times(0);
 
-    logger.log(Level::Info, "Message");
+    testing::internal::CaptureStderr();
+
+    EXPECT_NO_THROW(logger.log(Level::Info, "Message"));
+
+    const auto output = testing::internal::GetCapturedStderr();
+    EXPECT_NE(output.find("Logger failure"), std::string::npos);
+    EXPECT_NE(output.find("Message"), std::string::npos);
 }
 
 TEST(LoggerTest, log_MustNotPropagateExceptionIfAppenderFails)
@@ -76,5 +82,11 @@ TEST(LoggerTest, log_MustNotPropagateExceptionIfAppenderFails)
     EXPECT_CALL(mockFormatter, format(time, Level::Info, "Message")).WillOnce(::testing::Return("Formatted message"));
     EXPECT_CALL(mockAppender, append(::testing::_)).WillRepeatedly(::testing::Throw(std::exception{}));
 
-    logger.log(Level::Info, "Message");
+    testing::internal::CaptureStderr();
+
+    EXPECT_NO_THROW(logger.log(Level::Info, "Message"));
+
+    const auto output = testing::internal::GetCapturedStderr();
+    EXPECT_NE(output.find("Logger failure"), std::string::npos);
+    EXPECT_NE(output.find("Message"), std::string::npos);
 }

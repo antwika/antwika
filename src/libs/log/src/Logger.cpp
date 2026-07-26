@@ -3,6 +3,7 @@
 #include <chrono>
 #include <format>
 #include <string>
+#include <cstdio>
 
 namespace antwika::log
 {
@@ -25,7 +26,11 @@ namespace antwika::log
         }
         catch (...)
         {
-            // Ignore, perhaps add a fallback
+            // Logging must not fail silently; provide a best-effort fallback without
+            // allocations or exceptions since this function is noexcept
+            (void)std::fputs("Logger failure: ", stderr);
+            (void)std::fwrite(message.data(), 1, message.size(), stderr);
+            (void)std::fputc('\n', stderr);
         }
     }
 
