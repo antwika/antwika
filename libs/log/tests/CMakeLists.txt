@@ -1,5 +1,7 @@
 find_package(GTest REQUIRED)
 
+add_subdirectory(mocks)
+
 add_executable(log_tests
     LevelTest.cpp
     LoggerTest.cpp

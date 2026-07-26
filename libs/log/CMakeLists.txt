@@ -44,8 +44,6 @@ target_include_directories(log
 
 target_link_libraries(log PUBLIC antwika::time)
 
-add_subdirectory(mocks)
-
 if(BUILD_TESTING AND NOT CMAKE_CROSSCOMPILING)
     add_subdirectory(tests)
 endif()
