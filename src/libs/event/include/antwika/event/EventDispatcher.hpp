@@ -13,7 +13,7 @@ namespace antwika::event
     {
     public:
         EventDispatcher(IEventQueue &queue, std::vector<std::reference_wrapper<IEventSink>> sinks);
-        void dispatch(const Event &event) override;
+        void dispatch(Event event) override;
 
     private:
         IEventQueue &queue;

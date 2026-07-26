@@ -9,7 +9,7 @@ namespace antwika::event
     {
     public:
         virtual ~IEventDispatcher() = default;
-        virtual void dispatch(const Event &event) = 0;
+        virtual void dispatch(Event event) = 0;
     };
 
 } // namespace antwika::event

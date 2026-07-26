@@ -9,7 +9,7 @@ namespace antwika::event
     {
     }
 
-    void EventDispatcher::dispatch(const Event &event)
+    void EventDispatcher::dispatch(Event event)
     {
         for (auto &sink : sinks)
         {
