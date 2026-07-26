@@ -7,11 +7,7 @@ namespace antwika::event
     struct Event
     {
         std::string name{};
-
-        bool operator==(const Event &other) const
-        {
-            return name == other.name;
-        }
+        bool operator==(const Event &other) const = default;
     };
 
 } // namespace antwika::event
