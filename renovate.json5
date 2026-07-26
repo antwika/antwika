@@ -8,4 +8,16 @@
     ],
     automerge: true,
     automergeType: 'branch',
+    customManagers: [
+        {
+            customType: 'regex',
+            managerFilePatterns: [
+                '/^\\.github/workflows/release\\.yml$/',
+            ],
+            matchStrings: [
+                '(?<depName>semantic-release|@semantic-release/changelog|@semantic-release/git|conventional-changelog-conventionalcommits)@(?<currentValue>[\\d.]+)',
+            ],
+            datasourceTemplate: 'npm',
+        },
+    ],
 }
