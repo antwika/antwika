@@ -164,12 +164,6 @@ jobs:
         run: |
           failed=0
 
-          if [ "${{ matrix.image }}" = "mingw" ]; then
-            extension=".exe"
-          else
-            extension=""
-          fi
-
           expected=(
             "antwika_engine_tests"
             "antwika_event_tests"
@@ -177,6 +171,13 @@ jobs:
             "antwika_log_tests"
             "antwika_time_tests"
           )
+
+          if [ "${{ matrix.image }}" = "mingw" ]; then
+            extension=".exe"
+            expected=("antwika_game")
+          else
+            extension=""
+          fi
 
           for executable in "${expected[@]}"; do
             binary="build/bin/${executable}${extension}"
