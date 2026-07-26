@@ -16,7 +16,7 @@ namespace antwika::log::mocks
     class MockFormatter : public IFormatter
     {
     public:
-        MOCK_METHOD(std::string, format, (std::chrono::system_clock::time_point time, Level level, std::string_view message), (override));
+        MOCK_METHOD(std::string, format, (std::chrono::system_clock::time_point time, Level level, std::string_view message), (const, override));
     };
 
 } // namespace antwika::log::mocks
