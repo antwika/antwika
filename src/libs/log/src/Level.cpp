@@ -5,7 +5,7 @@
 namespace antwika::log
 {
 
-    std::string toString(Level level)
+    std::string_view toString(Level level) noexcept
     {
         switch (level)
         {
