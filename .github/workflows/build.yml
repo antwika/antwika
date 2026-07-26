@@ -164,22 +164,29 @@ jobs:
         run: |
           failed=0
 
-          for dir in build/apps/*/; do
-            [ -d "$dir" ] || continue
+          expected=(
+            "antwika_engine_tests"
+            "antwika_event_tests"
+            "antwika_game"
+            "antwika_log_tests"
+            "antwika_time_tests"
+          )
 
-            app=$(basename "$dir")
+          if [ "${{ matrix.image }}" = "mingw" ]; then
+            extension=".exe"
+            expected=("antwika_game")
+          else
+            extension=""
+          fi
 
-            if [ "${{ matrix.image }}" = "mingw" ]; then
-              BINARY="$dir$app.exe"
-            else
-              BINARY="$dir$app"
-            fi
+          for executable in "${expected[@]}"; do
+            binary="build/bin/${executable}${extension}"
 
-            if [ ! -f "$BINARY" ]; then
-              echo "Missing binary: $BINARY"
+            if [ ! -f "$binary" ]; then
+              echo "Missing binary: $binary"
               failed=1
             else
-              echo "Found: $BINARY"
+              echo "Found: $binary"
             fi
           done
 

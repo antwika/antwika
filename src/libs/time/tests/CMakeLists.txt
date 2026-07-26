@@ -2,17 +2,17 @@ find_package(GTest REQUIRED)
 
 add_subdirectory(fakes)
 
-add_executable(time_tests
+add_executable(antwika_time_tests
     FakeClockTest.cpp
     SystemClockTest.cpp
 )
 
-target_link_libraries(time_tests
+target_link_libraries(antwika_time_tests
     PRIVATE
         antwika::time
-        time_fakes
+        antwika::time::tests::fakes
         gtest::gtest
 )
 
 include(GoogleTest)
-gtest_discover_tests(time_tests)
+gtest_discover_tests(antwika_time_tests)

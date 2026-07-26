@@ -8,6 +8,8 @@ set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
+
 include(CTest)
 
 enable_testing()
@@ -28,9 +30,4 @@ if(ENABLE_COVERAGE AND BUILD_TESTING AND NOT CMAKE_CROSSCOMPILING)
     endif()
 endif()
 
-add_subdirectory(libs/time)
-add_subdirectory(libs/log)
-add_subdirectory(libs/event)
-add_subdirectory(libs/engine)
-
-add_subdirectory(apps/game)
+add_subdirectory(src)
