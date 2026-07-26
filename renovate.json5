@@ -15,7 +15,7 @@
                 '/^\\.github/workflows/release\\.yml$/',
             ],
             matchStrings: [
-                '(?<depName>semantic-release|@semantic-release/changelog|@semantic-release/git|conventional-changelog-conventionalcommits)@(?<currentValue>[\\d.]+)',
+                '(?<depName>semantic-release|@semantic-release/changelog|@semantic-release/git)@(?<currentValue>[\\d.]+)',
             ],
             datasourceTemplate: 'npm',
         },
