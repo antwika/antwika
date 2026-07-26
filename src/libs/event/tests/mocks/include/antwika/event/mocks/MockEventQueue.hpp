@@ -13,7 +13,6 @@ namespace antwika::event::mocks
         MOCK_METHOD(void, enqueue, (Event event), ());
         MOCK_METHOD(Event, pop, (), ());
         MOCK_METHOD(bool, empty, (), (const, noexcept));
-        MOCK_METHOD(std::vector<Event>, getHistory, (), (const));
     };
 
 } // namespace antwika::event::mocks
