@@ -1,5 +1,7 @@
 #include "antwika/event/EventQueue.hpp"
 
+#include <utility>
+
 namespace antwika::event
 {
 

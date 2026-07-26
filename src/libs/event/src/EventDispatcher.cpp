@@ -1,5 +1,7 @@
 #include "antwika/event/EventDispatcher.hpp"
 
+#include <utility>
+
 namespace antwika::event
 {
 
