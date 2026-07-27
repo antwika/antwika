@@ -41,7 +41,7 @@ written up **as the item is implemented**, not upfront.
       stream and back into an equal history. The format is self-describing
       (versioned) so bad/incompatible input fails loudly and specifically
       rather than corrupting state silently. — [notes/09-serialization.md](notes/09-serialization.md)
-- [ ] **10.** Replay playback uses the same code path as a live run. Loading
+- [x] **10.** Replay playback uses the same code path as a live run. Loading
       a replay doesn't take a shortcut — it drives the exact same
       tick/dispatch machinery a live run uses, just sourced from the file
       instead of live input. This is what makes determinism provable rather
@@ -57,12 +57,12 @@ written up **as the item is implemented**, not upfront.
       and from a custom application-defined event, proving the extensibility
       and state-representation ideas actually work together end to
       end. — [notes/12-state-example-apps-game.md](notes/12-state-example-apps-game.md)
-- [ ] **13.** Determinism is proven, not asserted by inspection. A test runs
+- [x] **13.** Determinism is proven, not asserted by inspection. A test runs
       the engine live, records, serializes, deserializes, replays into a
       fresh instance, and checks the resulting state — and the recorded
       event history — are exactly equal to the original
       run. — [notes/13-determinism-proven-by-test.md](notes/13-determinism-proven-by-test.md)
-- [ ] **14.** Serialization is itself deterministic. Serializing the same
+- [x] **14.** Serialization is itself deterministic. Serializing the same
       recorded history twice produces byte-for-byte identical output —
       guards against accidental nondeterminism sneaking into the format
       itself (e.g. unordered iteration). — [notes/14-serialization-deterministic.md](notes/14-serialization-deterministic.md)

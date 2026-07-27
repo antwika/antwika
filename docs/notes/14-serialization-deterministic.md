@@ -1,6 +1,9 @@
 # 14 — Serialization is itself deterministic
 
-**Status:** not started
+**Status:** done. `ReplayDeterminismTest.SerializingTheSameRecordingTwiceProducesIdenticalBytes`
+serializes the same recording twice via `BinaryReplayWriter` into two
+separate `std::stringstream`s and asserts the resulting byte strings are
+identical.
 
 ## Rationale/motivation
 

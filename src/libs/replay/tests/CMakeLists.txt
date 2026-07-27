@@ -4,6 +4,7 @@ add_executable(antwika_replay_tests
     BinaryEventCodecTest.cpp
     BinaryReplayWriterReaderTest.cpp
     EngineLoopTest.cpp
+    ReplayDeterminismTest.cpp
     ReplaySourceTest.cpp
 )
 
@@ -12,6 +13,7 @@ target_link_libraries(antwika_replay_tests
         antwika::replay
         antwika::engine::tests::mocks
         antwika::event::tests::mocks
+        antwika::log::tests::mocks
         gtest::gtest
 )
 

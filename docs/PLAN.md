@@ -203,6 +203,20 @@ private:
 `event` lib. It's registered as one of the `TickedEventDispatcher`'s timed
 sinks, exactly like `EventRecorder` is registered as a plain sink today.
 
+> **Implementation note:** building the determinism test in §5 step 12
+> surfaced an important distinction this section didn't originally make.
+> `ReplayRecorder`'s full history (everything dispatched, including the
+> engine's own built-in `events::kTick`) is correct and valuable as a
+> complete *audit trail* — but it is **not** what should be serialized to
+> build a reloadable replay. `Engine::step()` dispatches `events::kTick`
+> fresh, every tick, live or replayed; feeding a history that already
+> contains it back in as replay *input* (§3.7) makes it fire twice per tick
+> on replay and breaks determinism instead of proving it. What a replay
+> actually stores is the *input* — in this codebase's current scope, exactly
+> the `vector<TimedEvent>` used to construct the `IReplaySource` that drove
+> the original run — a strictly smaller set than what `ReplayRecorder`
+> observes. See `docs/notes/13-determinism-proven-by-test.md`.
+
 ### 3.6 Serialization: codec + writer/reader, split by responsibility, new `replay` lib
 
 ```cpp
