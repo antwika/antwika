@@ -7,6 +7,9 @@ add_executable(antwika_event_tests
     EventQueueTest.cpp
     EventRecorderTest.cpp
     EventTest.cpp
+    ReplayRecorderTest.cpp
+    TickedEventDispatcherTest.cpp
+    TimedEventTest.cpp
 )
 
 target_link_libraries(antwika_event_tests

@@ -1,4 +1,4 @@
-add_executable(antwika_game src/Game.cpp src/main.cpp)
+add_executable(antwika_game src/Game.cpp src/GameStateReducer.cpp src/main.cpp)
 
 target_include_directories(antwika_game
     PRIVATE
@@ -8,6 +8,7 @@ target_include_directories(antwika_game
 target_link_libraries(antwika_game
     PRIVATE
         antwika::engine
+        antwika::replay
         antwika::time
 )
 

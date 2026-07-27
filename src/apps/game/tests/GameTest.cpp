@@ -11,14 +11,30 @@ using antwika::event::Event;
 using antwika::event::mocks::MockEventDispatcher;
 using antwika::game::Game;
 
-TEST(GameTest, Run_StartsEngine)
+TEST(GameTest, Run_DispatchesBootEventAndStartsEngine)
 {
     MockEngine mockEngine;
     MockEventDispatcher mockEventDispatcher;
     Game game(mockEngine, mockEventDispatcher);
 
-    EXPECT_CALL(mockEventDispatcher, dispatch(Event{.name = "Running Antwika Game"})).Times(1);
-    EXPECT_CALL(mockEngine, start()).Times(1);
+    {
+        ::testing::InSequence seq;
+        EXPECT_CALL(mockEventDispatcher, dispatch(Event{.name = "Running Antwika Game"})).Times(1);
+        EXPECT_CALL(mockEngine, start()).Times(1);
+    }
 
     game.run();
+}
+
+TEST(GameTest, Run_PropagatesExceptionWhenDispatcherDispatchFails)
+{
+    MockEngine mockEngine;
+    MockEventDispatcher mockEventDispatcher;
+    Game game(mockEngine, mockEventDispatcher);
+
+    EXPECT_CALL(mockEventDispatcher, dispatch(Event{.name = "Running Antwika Game"}))
+        .WillOnce(::testing::Throw(std::runtime_error("mockException")));
+    EXPECT_CALL(mockEngine, start()).Times(0);
+
+    EXPECT_THROW(game.run(), std::runtime_error);
 }

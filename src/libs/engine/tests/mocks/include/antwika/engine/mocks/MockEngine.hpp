@@ -13,6 +13,7 @@ namespace antwika::engine::mocks
     {
     public:
         MOCK_METHOD(void, start, (), (override));
+        MOCK_METHOD(void, step, (antwika::time::Tick tick), (override));
     };
 
 } // namespace antwika::engine::mocks

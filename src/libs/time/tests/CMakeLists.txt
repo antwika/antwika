@@ -5,6 +5,7 @@ add_subdirectory(fakes)
 add_executable(antwika_time_tests
     FakeClockTest.cpp
     SystemClockTest.cpp
+    TickTest.cpp
 )
 
 target_link_libraries(antwika_time_tests

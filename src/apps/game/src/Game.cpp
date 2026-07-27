@@ -3,12 +3,18 @@
 #include <antwika/engine/Engine.hpp>
 #include <antwika/event/Event.hpp>
 #include <antwika/event/EventDispatcher.hpp>
+#include <antwika/event/TickedEventDispatcher.hpp>
 #include <antwika/log/Logger.hpp>
+#include <antwika/replay/EngineLoop.hpp>
+
+#include "antwika/game/GameStateReducer.hpp"
 
 using antwika::engine::Engine;
 using antwika::event::Event;
 using antwika::event::EventDispatcher;
+using antwika::event::TickedEventDispatcher;
 using antwika::log::Logger;
+using antwika::replay::EngineLoop;
 
 namespace antwika::game
 {
@@ -21,23 +27,34 @@ namespace antwika::game
 
     void Game::run()
     {
-        dispatcher.dispatch(Event{.name = "Running Antwika Game"});
+        dispatcher.dispatch(Event{.name = "Running Antwika Game"}); // GCOVR_EXCL_LINE
         engine.start();
     }
 
-    void bootstrap(IClock &clock,
-                    IAppender &appender,
-                    IFormatter &formatter,
-                    ILogPolicy &logPolicy,
-                    IEventQueue &eventQueue,
-                    IEventSink &eventSink)
+    GameState bootstrap(IClock &clock,
+                        IAppender &appender,
+                        IFormatter &formatter,
+                        ILogPolicy &logPolicy,
+                        IEventQueue &eventQueue,
+                        IEventSink &eventSink,
+                        IReplaySource &inputSource,
+                        antwika::time::Tick totalTicks)
     {
         Logger logger(formatter, logPolicy, clock, appender);
         EventDispatcher dispatcher(eventQueue, {eventSink});
-        Engine engine(logger, eventQueue);
-        Game game(engine, dispatcher);
 
+        GameState state;
+        GameStateReducer reducer(state);
+        TickedEventDispatcher tickedDispatcher(dispatcher, {reducer});
+
+        Engine engine(logger, eventQueue, tickedDispatcher);
+        Game game(engine, tickedDispatcher);
         game.run();
+
+        EngineLoop loop(engine, tickedDispatcher, inputSource);
+        loop.run(totalTicks);
+
+        return state;
     }
 
 } // namespace antwika::game
