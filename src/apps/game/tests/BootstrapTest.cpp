@@ -26,13 +26,8 @@ using antwika::log::PlainFormatter;
 using antwika::replay::ReplaySource;
 using antwika::time::fakes::FakeClock;
 
-// Bootstrap wires many already-unit-tested collaborators together
-// (EventDispatcher, TickedEventDispatcher, Engine, EngineLoop,
-// GameStateReducer, ...); re-asserting their exact internal call sequences
-// here would be redundant with their own tests and brittle to boot. This
-// test instead verifies the wiring end to end, black-box style: given a
-// scripted input over a fixed number of ticks, does GameState come out
-// right.
+// Bootstrap wires many already-unit-tested collaborators together (EventDispatcher, TickedEventDispatcher, Engine, EngineLoop, GameStateReducer, ...); re-asserting their exact internal call sequences here would be redundant with their own tests and brittle to boot.
+// This test instead verifies the wiring end to end, black-box style: given a scripted input over a fixed number of ticks, does GameState come out right.
 TEST(BootstrapTest, Bootstrap_RunsScriptedTicksAndReturnsResultingGameState)
 {
     std::chrono::system_clock::time_point time{};

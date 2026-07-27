@@ -22,9 +22,7 @@ blog/
 
 Each library and app has its own `CMakeLists.txt`, `include/`, `src/`, and `tests/` directory.
 
-`blog/` holds write-ups about notable changes to the project — see
-[`blog/2026-07-27-building-a-deterministic-replay-system.md`](blog/2026-07-27-building-a-deterministic-replay-system.md)
-for the design and requirements behind the replay system below.
+`blog/` holds write-ups about notable changes to the project — see [`blog/2026-07-27-building-a-deterministic-replay-system.md`](blog/2026-07-27-building-a-deterministic-replay-system.md) for the design and requirements behind the replay system below.
 
 ## Quick start
 
@@ -58,28 +56,20 @@ After the build completes, run the compiled binary on your target machine:
 
 ## Replays
 
-The engine runs on a fixed timestep and every event dispatched during a run
-is tick-stamped, so a run can be recorded and later reloaded to reproduce
-the exact same resulting state:
+The engine runs on a fixed timestep and every event dispatched during a run is tick-stamped, so a run can be recorded and later reloaded to reproduce the exact same resulting state:
 
 ```sh
 build/bin/antwika_game --record demo.replay   # run once, save the input as a replay
 build/bin/antwika_game --replay demo.replay   # reload it, reproducing the same run
 ```
 
-Both modes go through the same `antwika::game::bootstrap()` entry point and
-the same fixed-timestep tick loop (`antwika::replay::EngineLoop`) — replay
-mode only differs in where each tick's events come from. Application code
-(here, `apps/game`) defines its own state (`GameState`) and events (e.g.
-`game.score_increment`) on top of the engine's built-in per-tick event
-(`engine.tick`), both reacted to through the same `ITimedEventSink`
-mechanism — see
-[`blog/2026-07-27-building-a-deterministic-replay-system.md`](blog/2026-07-27-building-a-deterministic-replay-system.md)
-for the full design and how to add your own.
+Both modes go through the same `antwika::game::bootstrap()` entry point and the same fixed-timestep tick loop (`antwika::replay::EngineLoop`) — replay mode only differs in where each tick's events come from.
+Application code (here, `apps/game`) defines its own state (`GameState`) and events (e.g. `game.score_increment`) on top of the engine's built-in per-tick event (`engine.tick`), both reacted to through the same `ITimedEventSink` mechanism — see [`blog/2026-07-27-building-a-deterministic-replay-system.md`](blog/2026-07-27-building-a-deterministic-replay-system.md) for the full design and how to add your own.
 
 ## Testing
 
-Tests are built with GoogleTest and registered with CTest. From the `build` directory:
+Tests are built with GoogleTest and registered with CTest.
+From the `build` directory:
 
 ```sh
 ctest --output-on-failure
@@ -91,9 +81,16 @@ A helper script checks for unused test doubles (mocks/fakes that no `.cpp` file 
 python3 scripts/check_unused_test_doubles.py
 ```
 
+Another checks that comments and markdown prose keep to one sentence per line -- however long, but never two sentences sharing a line or one sentence wrapped across several:
+
+```sh
+python3 scripts/check_one_sentence_per_line.py
+```
+
 ### Coverage
 
-The GNU and LLVM toolchains build with instrumentation via the `conan-coverage` CMake preset, which configures into its own `build-coverage/` directory (separate from `build/`) so switching between a regular and a coverage build never leaves stale, uninstrumented object files behind. Report line coverage with `gcovr`:
+The GNU and LLVM toolchains build with instrumentation via the `conan-coverage` CMake preset, which configures into its own `build-coverage/` directory (separate from `build/`) so switching between a regular and a coverage build never leaves stale, uninstrumented object files behind.
+Report line coverage with `gcovr`:
 
 ```sh
 cmake --preset conan-coverage
@@ -106,7 +103,17 @@ CI runs this on every push to `main` for the GNU and LLVM toolchains (not MinGW,
 
 ### Badges
 
-Coverage badges report **line / function / branch** coverage. For example, **95% / 80% / 75%** indicates 95% line coverage, 80% function coverage, and 75% branch coverage.
+Coverage badges report **line / function / branch** coverage.
+For example, **95% / 80% / 75%** indicates 95% line coverage, 80% function coverage, and 75% branch coverage.
+
+The LLVM badge's branch percentage in particular runs noticeably lower than GNU's, and that gap isn't a real coverage hole.
+`gcovr` passes `--exclude-throw-branches` to strip compiler-generated exception-unwind branches (the implicit edge taken if a call throws right before a non-trivial local destructor runs) from the count, but that only works because GCC's `gcov` tags those branches `(throw)`.
+LLVM's `llvm-cov gcov` emulation never emits that tag, so the same flag is a silent no-op on the LLVM leg, leaving those unwind edges counted as "missing" branches.
+Treat the two branch numbers as not directly comparable, and don't chase the LLVM one down to match GNU's via more tests — most of the gap can't be closed without injecting failures into unrelated calls (allocators, `fputs`, etc).
+
+**The GNU badge is the one this project strives to bring to 100%.**
+Its branch count reflects only this project's own logic, since GCC's `gcov` tags let `--exclude-throw-branches` do its job.
+LLVM's can't reach 100% by design, so use GNU as the completion signal and treat LLVM's as informational.
 
 ## Optional: Use a locally built `antwika-dev-base` development container
 
