@@ -1,6 +1,21 @@
 # 10 — Replay playback uses the same code path as a live run
 
-**Status:** not started
+**Status:** done. `IReplaySource`/`ReplaySource` (feeds back a previously
+recorded/scripted `vector<TimedEvent>`, one tick's worth at a time) and
+`EngineLoop` (the orchestrator: each tick, `dispatcher.setTick(tick)`, pull
+and dispatch that tick's source events, then `engine.step(tick)`) landed in
+the `replay` lib.
+
+## Issues encountered
+
+None so far. One deliberate simplification versus a first reading of
+PLAN.md §3.7: `EngineLoop` takes the concrete `TickedEventDispatcher` type
+directly rather than a further interface over it, since there is currently
+only one implementation and it already sits behind `IEventDispatcher` for
+its own dispatch behavior — adding another interface purely to make
+`setTick` mockable wasn't justified by an actual second implementation or a
+test that needed it (`EngineLoopTest` uses a real `TickedEventDispatcher`
+wrapping a `MockEventDispatcher`, which was sufficient).
 
 ## Rationale/motivation
 

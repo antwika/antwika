@@ -3,6 +3,8 @@ add_library(antwika_replay
     src/BinaryPrimitives.cpp
     src/BinaryReplayReader.cpp
     src/BinaryReplayWriter.cpp
+    src/EngineLoop.cpp
+    src/ReplaySource.cpp
 )
 
 add_library(antwika::replay ALIAS antwika_replay)
@@ -19,6 +21,7 @@ target_include_directories(antwika_replay
 
 target_link_libraries(antwika_replay
     PUBLIC
+        antwika::engine
         antwika::event
         antwika::time
 )
