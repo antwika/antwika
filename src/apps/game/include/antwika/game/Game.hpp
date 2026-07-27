@@ -7,7 +7,11 @@
 #include <antwika/log/IAppender.hpp>
 #include <antwika/log/IFormatter.hpp>
 #include <antwika/log/ILogPolicy.hpp>
+#include <antwika/replay/IReplaySource.hpp>
 #include <antwika/time/IClock.hpp>
+#include <antwika/time/Tick.hpp>
+
+#include "antwika/game/GameState.hpp"
 
 namespace antwika::game
 {
@@ -19,6 +23,7 @@ namespace antwika::game
     using antwika::log::IAppender;
     using antwika::log::IFormatter;
     using antwika::log::ILogPolicy;
+    using antwika::replay::IReplaySource;
     using antwika::time::IClock;
 
     class Game
@@ -39,11 +44,19 @@ namespace antwika::game
         IEventDispatcher &dispatcher;
     };
 
-    void bootstrap(IClock &clock,
-                    IAppender &appender,
-                    IFormatter &formatter,
-                    ILogPolicy &logPolicy,
-                    IEventQueue &eventQueue,
-                    IEventSink &eventSink);
+    // Wires the engine/event/replay collaborators together, boots the game,
+    // then drives the fixed-timestep tick loop for totalTicks, sourcing that
+    // tick's events from inputSource -- a hand-scripted "live" run and a
+    // loaded replay both go through this identical function, differing only
+    // in what inputSource was built from. Returns the resulting GameState so
+    // callers (main.cpp, tests) can inspect or compare it.
+    GameState bootstrap(IClock &clock,
+                        IAppender &appender,
+                        IFormatter &formatter,
+                        ILogPolicy &logPolicy,
+                        IEventQueue &eventQueue,
+                        IEventSink &eventSink,
+                        IReplaySource &inputSource,
+                        antwika::time::Tick totalTicks);
 
 } // namespace antwika::game

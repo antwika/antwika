@@ -6,6 +6,7 @@ add_executable(antwika_game_tests
     BootstrapTest.cpp
     GameStateReducerTest.cpp
     GameTest.cpp
+    ReplayIntegrationTest.cpp
 )
 
 target_include_directories(antwika_game_tests
@@ -18,6 +19,7 @@ target_link_libraries(antwika_game_tests
         antwika::engine::tests::mocks
         antwika::event::tests::mocks
         antwika::log::tests::mocks
+        antwika::replay
         antwika::time::tests::fakes
         gtest::gtest
 )

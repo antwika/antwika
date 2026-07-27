@@ -11,7 +11,7 @@ using antwika::event::Event;
 using antwika::event::mocks::MockEventDispatcher;
 using antwika::game::Game;
 
-TEST(GameTest, Run_StartsAndStepsEngine)
+TEST(GameTest, Run_DispatchesBootEventAndStartsEngine)
 {
     MockEngine mockEngine;
     MockEventDispatcher mockEventDispatcher;
@@ -21,7 +21,6 @@ TEST(GameTest, Run_StartsAndStepsEngine)
         ::testing::InSequence seq;
         EXPECT_CALL(mockEventDispatcher, dispatch(Event{.name = "Running Antwika Game"})).Times(1);
         EXPECT_CALL(mockEngine, start()).Times(1);
-        EXPECT_CALL(mockEngine, step(0)).Times(1);
     }
 
     game.run();

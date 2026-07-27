@@ -52,7 +52,7 @@ written up **as the item is implemented**, not upfront.
       mechanism used for recording — so "recording" and "updating state" are
       two instances of one idea, not two separate
       systems. — [notes/11-state-application-concern.md](notes/11-state-application-concern.md)
-- [ ] **12.** State example in `apps/game`. A small, concrete demonstration:
+- [x] **12.** State example in `apps/game`. A small, concrete demonstration:
       application-level state that updates both from a built-in engine event
       and from a custom application-defined event, proving the extensibility
       and state-representation ideas actually work together end to
@@ -66,7 +66,7 @@ written up **as the item is implemented**, not upfront.
       recorded history twice produces byte-for-byte identical output —
       guards against accidental nondeterminism sneaking into the format
       itself (e.g. unordered iteration). — [notes/14-serialization-deterministic.md](notes/14-serialization-deterministic.md)
-- [ ] **15.** Record/replay is reachable from the actual application, not
+- [x] **15.** Record/replay is reachable from the actual application, not
       just exercised in isolated unit tests — `apps/game` can both produce a
       replay from a live run and consume one to reproduce
       it. — [notes/15-record-replay-reachable.md](notes/15-record-replay-reachable.md)

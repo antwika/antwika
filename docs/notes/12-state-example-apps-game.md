@@ -1,11 +1,8 @@
 # 12 — State example in `apps/game`
 
-**Status:** done, for the reducer itself and its unit tests
-(`GameStateReducerTest.cpp`: reacts to the built-in tick, reacts to the
-custom `game.score_increment` event, ignores unrelated events, and a test
-asserting both flow through the identical `handle()` mechanism). Not yet
-wired into `bootstrap()`/a live `Game` run or exercised by the
-`apps/game`-level determinism test — that's [item 15](15-record-replay-reachable.md).
+**Status:** done. `GameStateReducer` is wired into `bootstrap()` as a timed
+sink; `bootstrap()` now returns the resulting `GameState` so callers
+(`main.cpp`, tests) can inspect it directly.
 
 ## Rationale/motivation
 
