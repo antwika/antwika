@@ -1,3 +1,10 @@
+## [0.5.4](https://github.com/antwika/antwika/compare/v0.5.3...v0.5.4) (2026-07-27)
+
+
+### Bug Fixes
+
+* various issues with coverage, scripts ([be14e91](https://github.com/antwika/antwika/commit/be14e91316a775cb1dd094e7e0361adddb19a543))
+
 ## [0.5.3](https://github.com/antwika/antwika/compare/v0.5.2...v0.5.3) (2026-07-26)
 
 
