@@ -9,11 +9,10 @@ turning that skeleton into something that can record a run and reload it
 later to deterministically reproduce the exact same result — and about a
 real bug that a test caught before it ever shipped.
 
-It's written from the git history of the branch (15 commits, `docs: move
-planning docs...` through `refactor(replay): drop unused writer/reader
-interfaces...`), which is a reasonably honest record of how the thinking
-actually evolved, including the part where an assumption turned out to be
-wrong.
+It's written from the git history of the branch (17 commits, `docs: move
+planning docs...` through the final round of coverage fixes), which is a
+reasonably honest record of how the thinking actually evolved, including
+the part where an assumption turned out to be wrong.
 
 ## Requirements
 
@@ -315,13 +314,65 @@ saying why rather than just silently ignoring them:
   review flags need a human to check them against what the code actually
   does before acting on them.
 
+## Chasing branch coverage to 100%
+
+CI's coverage report came back with four files short of full coverage —
+line coverage was actually fine everywhere except one closing brace;
+the real gap was in *branches* (90.8% overall). Rather than guess from the
+percentages alone, the coverage build (`cmake --preset conan-coverage`) got
+rebuilt locally and inspected line by line via gcovr's JSON output, so each
+gap could be judged individually instead of chased blind.
+
+They split cleanly into two categories:
+
+**Real gaps, fixed with real tests:**
+- `GameState`'s defaulted `operator==` had only ever been asserted `EXPECT_EQ`
+  in existing tests — never compared as unequal, so the "these two fields
+  differ" branch of the compiler-generated comparison had never fired. A
+  small `GameStateTest.cpp`, matching the existing `EventTest.cpp`/
+  `TimedEventTest.cpp` convention (equal, and inequality with only one
+  field differing at a time), closed it.
+- Neither `Game::run()` nor `Engine::step()` had a test for what happens
+  when the *dispatcher itself* throws — every other "does this propagate an
+  exception" test in the codebase (`EventDispatcherTest`,
+  `EngineTest::Step_PropagatesExceptionWhenEventQueuePopFails`) already
+  existed for other collaborators; these two were just missing their own
+  instance of the same pattern.
+- `BinaryReplayReader::read()` had a test for bad magic bytes and one for a
+  truncated *trailing* field, but nothing for a stream too short to even
+  contain the 4 magic bytes in the first place — a distinct failure mode
+  from "wrong bytes."
+- `BinaryPrimitives::readString` had never been tested with a string whose
+  *length prefix* was intact but whose *content* was cut short — every
+  existing truncation test happened to truncate a length field instead.
+
+**Not real gaps — compiler-generated exception-safety artifacts:**
+A couple of residual branches remained on lines like
+`dispatcher.dispatch(Event{.name = events::kTick});` even after the
+exception-propagation tests landed. These are landing pads the compiler
+emits for the case where constructing the `Event` temporary itself throws
+(std::string allocation failure) — not reachable through any reasonable
+mock, and not our logic to test. The codebase already had a precedent for
+exactly this situation: `Engine.cpp`'s `std::format(...)` lines were
+already marked `// GCOVR_EXCL_LINE` for the identical reason. Applied the
+same marker to the residual lines, once real tests had covered everything
+that *could* be tested. Same story for one bare closing brace in
+`ReplaySource::eventsFor()` — a return-value epilogue counter under `-O3`
+that no amount of new test scenarios moved, confirmed empirically before
+excluding it rather than assumed.
+
+Result: 245/245 lines, 66/66 functions, 107/107 branches — every one of
+those either backed by a test that fails without the fix, or backed by a
+`GCOVR_EXCL_LINE` next to a comment explaining exactly why, following the
+convention the codebase already used rather than inventing a new one.
+
 ## Where it ended up
 
 - 4 libraries touched (`time`, `event`, `engine`), one new one added
   (`replay`, 23 files).
-- 71 tests, all added alongside the code they cover, none bolted on
+- 80 tests, all added alongside the code they cover, none bolted on
   afterward.
-- 15 commits, each independently green, each a single-line Conventional
+- 17 commits, each independently green, each a single-line Conventional
   Commit.
 - `antwika_game --record demo.replay` followed by
   `antwika_game --replay demo.replay` produces byte-identical log output
