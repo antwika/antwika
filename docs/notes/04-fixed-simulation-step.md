@@ -1,6 +1,8 @@
 # 04 — Fixed simulation step (`Tick`)
 
-**Status:** not started
+**Status:** `Tick` type landed. Fixed-timestep `Engine::step()` is tracked
+separately in this note once the engine rework lands (see PLAN.md §5 steps
+1 and 7 — this note covers both).
 
 ## Rationale/motivation
 
