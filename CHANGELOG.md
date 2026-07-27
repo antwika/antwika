@@ -1,3 +1,11 @@
+## [0.5.5](https://github.com/antwika/antwika/compare/v0.5.4...v0.5.5) (2026-07-27)
+
+
+### Bug Fixes
+
+* adjust badge generation to be more harmonized ([5c6d49e](https://github.com/antwika/antwika/commit/5c6d49ea1397142c5337c8e56e556fe74a2cdd04))
+* try use an img.shield.io badge for ci ([dff447d](https://github.com/antwika/antwika/commit/dff447d4af6f62a9d8209de1596ec7358fa836ef))
+
 ## [0.5.4](https://github.com/antwika/antwika/compare/v0.5.3...v0.5.4) (2026-07-27)
 
 
