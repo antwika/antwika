@@ -21,8 +21,13 @@ or any other entropy source. No `seed` field exists anywhere in `Event`,
 determinism-sensitive randomness, that's a deliberate future replay-format
 version bump, not something pre-guessed here.
 
+**Status:** done.
+
 ## Issues encountered
 
-None — verified by inspection at the end of implementation (see
-[item 18](18-definition-of-done.md)): no `<random>` include anywhere under
-`src/`.
+None — verified at the end of implementation:
+`grep -rniE "<random>|random_device|mt19937|std::rand|srand\(|rand\(" src/`
+returns no matches anywhere under `src/`. No `seed` field exists in `Event`,
+`TimedEvent`, or the replay file header (see
+[item 09](09-serialization.md)'s note on the similarly-rejected `Δt` field
+for the same reasoning).

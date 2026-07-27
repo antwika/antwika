@@ -70,9 +70,9 @@ written up **as the item is implemented**, not upfront.
       just exercised in isolated unit tests — `apps/game` can both produce a
       replay from a live run and consume one to reproduce
       it. — [notes/15-record-replay-reachable.md](notes/15-record-replay-reachable.md)
-- [ ] **16.** No RNG/PRNG. Explicitly out of scope for this pass; not even a
+- [x] **16.** No RNG/PRNG. Explicitly out of scope for this pass; not even a
       placeholder/reserved field for one. — [notes/16-no-rng.md](notes/16-no-rng.md)
-- [ ] **17.** Docs reflect the new capability (structure + how to use
+- [x] **17.** Docs reflect the new capability (structure + how to use
       record/replay) once it exists. — [notes/17-docs-reflect-capability.md](notes/17-docs-reflect-capability.md)
 
 ## Definition of done

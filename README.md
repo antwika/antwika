@@ -15,10 +15,19 @@ src/
     ├── engine/
     ├── event/
     ├── log/
+    ├── replay/
     └── time/
+docs/
+├── PLAN.md
+├── CHECKLIST.md
+└── notes/
 ```
 
 Each library and app has its own `CMakeLists.txt`, `include/`, `src/`, and `tests/` directory.
+
+`docs/PLAN.md` and `docs/CHECKLIST.md` describe the design and status of the
+engine's replay system; `docs/notes/` holds one file per checklist item with
+the rationale behind it and any issues found while building it.
 
 ## Quick start
 
@@ -49,6 +58,27 @@ After the build completes, run the compiled binary on your target machine:
 
 - Linux: `build/bin/antwika_game`
 - Windows: `build/bin/antwika_game.exe`
+
+## Replays
+
+The engine runs on a fixed timestep and every event dispatched during a run
+is tick-stamped, so a run can be recorded and later reloaded to reproduce
+the exact same resulting state:
+
+```sh
+build/bin/antwika_game --record demo.replay   # run once, save the input as a replay
+build/bin/antwika_game --replay demo.replay   # reload it, reproducing the same run
+```
+
+Both modes go through the same `antwika::game::bootstrap()` entry point and
+the same fixed-timestep tick loop (`antwika::replay::EngineLoop`) — replay
+mode only differs in where each tick's events come from. Application code
+(here, `apps/game`) defines its own state (`GameState`) and events (e.g.
+`game.score_increment`) on top of the engine's built-in per-tick event
+(`engine.tick`), both reacted to through the same `ITimedEventSink`
+mechanism — see `docs/PLAN.md` for the full design and
+`docs/notes/06-extendable-events.md`/`docs/notes/11-state-application-concern.md`
+for how to add your own.
 
 ## Testing
 

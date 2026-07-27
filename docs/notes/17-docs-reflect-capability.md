@@ -1,6 +1,9 @@
 # 17 — Docs reflect the new capability
 
-**Status:** not started
+**Status:** done. `README.md`'s project-structure tree now lists `replay/`
+and `docs/`; a new "Replays" section explains the `--record`/`--replay`
+flags and links to `docs/PLAN.md` and the relevant `docs/notes/` files for
+anyone extending the game with new state or event kinds.
 
 ## Rationale/motivation
 
