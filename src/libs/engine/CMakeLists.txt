@@ -18,6 +18,7 @@ target_link_libraries(antwika_engine
     PUBLIC
         antwika::log
         antwika::event
+        antwika::time
 )
 
 if(BUILD_TESTING AND NOT CMAKE_CROSSCOMPILING)

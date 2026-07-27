@@ -1,8 +1,10 @@
 # 04 — Fixed simulation step (`Tick`)
 
-**Status:** `Tick` type landed. Fixed-timestep `Engine::step()` is tracked
-separately in this note once the engine rework lands (see PLAN.md §5 steps
-1 and 7 — this note covers both).
+**Status:** done. `IEngine::step(Tick)` added alongside the existing
+`start()`; `Engine` now processes one fixed tick per `step()` call rather
+than draining the queue unconditionally in `start()`. `Game::run()` calls
+`engine.step(0)` once as an interim single-tick "loop" — the real
+multi-tick orchestrator lands with [item 10](10-replay-same-code-path.md).
 
 ## Rationale/motivation
 

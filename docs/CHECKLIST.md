@@ -17,7 +17,7 @@ written up **as the item is implemented**, not upfront.
 
 ## Core concepts
 
-- [ ] **04.** Fixed simulation step. The engine advances in discrete,
+- [x] **04.** Fixed simulation step. The engine advances in discrete,
       fixed-size ticks — not wall-clock time — so "what happened" is fully
       determined by "which tick, in what order," never by real elapsed
       time. — [notes/04-fixed-simulation-step.md](notes/04-fixed-simulation-step.md)
@@ -29,7 +29,7 @@ written up **as the item is implemented**, not upfront.
       ones the engine itself provides — both travel through the exact same
       pipeline, with no special-casing between "built-in" and
       "custom." — [notes/06-extendable-events.md](notes/06-extendable-events.md)
-- [ ] **07.** The engine ships at least one common, built-in event (a
+- [x] **07.** The engine ships at least one common, built-in event (a
       per-tick "tick happened" event) so application code can react to
       simulation progress without inventing and manually dispatching its
       own. — [notes/07-builtin-common-events.md](notes/07-builtin-common-events.md)

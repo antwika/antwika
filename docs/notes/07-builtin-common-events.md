@@ -1,6 +1,8 @@
 # 07 — Built-in, common event(s) from the engine
 
-**Status:** not started
+**Status:** done. `antwika::engine::events::kTick` ("engine.tick") added in
+`Events.hpp`; `Engine::step(tick)` dispatches it (through the injected
+`IEventDispatcher`) before draining that tick's queued events.
 
 ## Rationale/motivation
 
@@ -24,4 +26,9 @@ events — no special-casing between "built-in" and "custom."
 
 ## Issues encountered
 
-_(filled in during implementation)_
+Rewiring `Engine` to take an `IEventDispatcher` (needed to dispatch the
+built-in event) meant `Engine::start()` could no longer also drain the
+queue — that responsibility moved entirely to `step()`. This rippled into
+`Game::run()` (now calls `engine.step(0)` after `start()`) and both
+`BootstrapTest.cpp`/`GameTest.cpp`/`EngineTest.cpp`, which were rewritten to
+match. Anticipated in PLAN.md §5 as expected fallout, not a regression.

@@ -2,20 +2,32 @@
 
 #include <format>
 
+#include <antwika/event/Event.hpp>
 #include <antwika/log/Level.hpp>
 
+#include "antwika/engine/Events.hpp"
+
+using antwika::event::Event;
 using antwika::log::Level;
 
 namespace antwika::engine
 {
 
-    Engine::Engine(ILogger &logger, IEventQueue &eventQueue) : logger(logger), eventQueue(eventQueue)
+    Engine::Engine(ILogger &logger, IEventQueue &eventQueue, IEventDispatcher &dispatcher) : logger(logger), eventQueue(eventQueue), dispatcher(dispatcher)
     {
     }
 
     void Engine::start()
     {
         logger.log(Level::Info, "Antwika engine started!");
+    }
+
+    void Engine::step(antwika::time::Tick tick)
+    {
+        auto stepMessage = std::format("Engine step: tick {}", tick); // GCOVR_EXCL_LINE
+        logger.log(Level::Info, stepMessage);
+
+        dispatcher.dispatch(Event{.name = events::kTick});
 
         while (!eventQueue.empty())
         {

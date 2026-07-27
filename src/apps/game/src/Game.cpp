@@ -23,6 +23,7 @@ namespace antwika::game
     {
         dispatcher.dispatch(Event{.name = "Running Antwika Game"});
         engine.start();
+        engine.step(0);
     }
 
     void bootstrap(IClock &clock,
@@ -34,7 +35,7 @@ namespace antwika::game
     {
         Logger logger(formatter, logPolicy, clock, appender);
         EventDispatcher dispatcher(eventQueue, {eventSink});
-        Engine engine(logger, eventQueue);
+        Engine engine(logger, eventQueue, dispatcher);
         Game game(engine, dispatcher);
 
         game.run();
