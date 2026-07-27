@@ -1,6 +1,9 @@
 # 08 — Recording
 
-**Status:** not started
+**Status:** `TimedEvent`, `ITimedEventSink`, `ITimedEventHistory`, and
+`ReplayRecorder` landed in the `event` lib, mirroring `EventRecorder`
+exactly. Not yet wired into the dispatch path — that's
+[item 05](05-automatic-tick-stamping.md)'s `TickedEventDispatcher`.
 
 ## Rationale/motivation
 

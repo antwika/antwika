@@ -2,6 +2,7 @@ add_library(antwika_event
     src/EventDispatcher.cpp
     src/EventQueue.cpp
     src/EventRecorder.cpp
+    src/ReplayRecorder.cpp
 )
 
 add_library(antwika::event ALIAS antwika_event)
@@ -14,6 +15,11 @@ target_include_directories(antwika_event
     PUBLIC
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
         $<INSTALL_INTERFACE:include>
+)
+
+target_link_libraries(antwika_event
+    PUBLIC
+        antwika::time
 )
 
 if(BUILD_TESTING AND NOT CMAKE_CROSSCOMPILING)
