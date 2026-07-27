@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
   "label": "coverage (llvm)",
-  "message": "L:100.0% F:100.0% B:74.4%",
-  "color": "FF6666"
+  "message": "100%/100%/74%",
+  "color": "e05d44"
 }
