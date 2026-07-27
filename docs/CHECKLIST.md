@@ -21,7 +21,7 @@ written up **as the item is implemented**, not upfront.
       fixed-size ticks — not wall-clock time — so "what happened" is fully
       determined by "which tick, in what order," never by real elapsed
       time. — [notes/04-fixed-simulation-step.md](notes/04-fixed-simulation-step.md)
-- [ ] **05.** Every dispatched event is tick-stamped, automatically, in one
+- [x] **05.** Every dispatched event is tick-stamped, automatically, in one
       place — no call site has to remember to do it, and nothing dispatched
       can slip through un-stamped. — [notes/05-automatic-tick-stamping.md](notes/05-automatic-tick-stamping.md)
 - [ ] **06.** Events are extendable. Application code can define and

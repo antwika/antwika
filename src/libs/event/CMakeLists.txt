@@ -3,6 +3,7 @@ add_library(antwika_event
     src/EventQueue.cpp
     src/EventRecorder.cpp
     src/ReplayRecorder.cpp
+    src/TickedEventDispatcher.cpp
 )
 
 add_library(antwika::event ALIAS antwika_event)

@@ -1,6 +1,10 @@
 # 05 — Automatic tick-stamping of every dispatched event
 
-**Status:** not started
+**Status:** done. `TickedEventDispatcher` landed, decorating
+`IEventDispatcher`: forwards every dispatched `Event` to the wrapped
+dispatcher unchanged, then fans a `TimedEvent{currentTick, event}` out to its
+registered `ITimedEventSink`s. `setTick(Tick)` lets the tick-loop
+orchestrator (upcoming) advance the current tick between dispatches.
 
 ## Rationale/motivation
 

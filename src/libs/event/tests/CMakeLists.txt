@@ -8,6 +8,7 @@ add_executable(antwika_event_tests
     EventRecorderTest.cpp
     EventTest.cpp
     ReplayRecorderTest.cpp
+    TickedEventDispatcherTest.cpp
     TimedEventTest.cpp
 )
 
