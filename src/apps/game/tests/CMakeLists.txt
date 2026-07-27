@@ -2,6 +2,7 @@ find_package(GTest REQUIRED)
 
 add_executable(antwika_game_tests
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/Game.cpp
+    BootstrapTest.cpp
     GameTest.cpp
 )
 
@@ -14,6 +15,8 @@ target_link_libraries(antwika_game_tests
     PRIVATE
         antwika::engine::tests::mocks
         antwika::event::tests::mocks
+        antwika::log::tests::mocks
+        antwika::time::tests::fakes
         gtest::gtest
 )
 

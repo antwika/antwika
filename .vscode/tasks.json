@@ -34,6 +34,14 @@
             }
         },
         {
+            "label": "CMake build (coverage)",
+            "type": "shell",
+            "command": "cmake --build build-coverage",
+            "options": {
+                "cwd": "${workspaceFolder}"
+            }
+        },
+        {
             "label": "Test",
             "type": "shell",
             "command": "ctest --test-dir build --output-on-failure",
@@ -42,9 +50,17 @@
             }
         },
         {
+            "label": "Test (coverage)",
+            "type": "shell",
+            "command": "ctest --test-dir build-coverage --output-on-failure",
+            "options": {
+                "cwd": "${workspaceFolder}"
+            }
+        },
+        {
             "label": "Gcovr coverage report",
             "type": "shell",
-            "command": "rm -Rf build/coverage && mkdir -p build/coverage && gcovr -r . --gcov-executable \"${env:GCOV_EXECUTABLE}\" --exclude-throw-branches --exclude-unreachable-branches --exclude '.*apps/.*' --exclude '.*/tests/.*' --exclude '.*/mocks/.*' --exclude '.*/fakes/.*' --html --html-details -o build/coverage/index.html --print-summary",
+            "command": "rm -Rf build-coverage/coverage && mkdir -p build-coverage/coverage && gcovr -r . --filter 'src/.*' --gcov-executable \"${env:GCOV_EXECUTABLE}\" --exclude-throw-branches --exclude-unreachable-branches --exclude '.*/tests/.*' --exclude '.*/mocks/.*' --exclude '.*/fakes/.*' --exclude '.*/apps/game/src/main\\.cpp' --html --html-details -o build-coverage/coverage/index.html --print-summary build-coverage",
             "options": {
                 "cwd": "${workspaceFolder}"
             }
@@ -69,8 +85,8 @@
             "dependsOn": [
                 "Conan install",
                 "CMake preset conan-coverage",
-                "CMake build",
-                "Test",
+                "CMake build (coverage)",
+                "Test (coverage)",
                 "Gcovr coverage report"
             ]
         }

@@ -63,18 +63,18 @@ ctest --output-on-failure
 A helper script checks for unused test doubles (mocks/fakes that no `.cpp` file includes):
 
 ```sh
-scripts/check-unused-test-doubles.sh
+python3 scripts/check_unused_test_doubles.py
 ```
 
 ### Coverage
 
-The GNU and LLVM toolchains build with instrumentation via the `conan-coverage` CMake preset and report line coverage with `gcovr`:
+The GNU and LLVM toolchains build with instrumentation via the `conan-coverage` CMake preset, which configures into its own `build-coverage/` directory (separate from `build/`) so switching between a regular and a coverage build never leaves stale, uninstrumented object files behind. Report line coverage with `gcovr`:
 
 ```sh
 cmake --preset conan-coverage
-cmake --build build
-ctest --test-dir build
-gcovr --root . --filter 'src/.*' --exclude '.*/tests/.*' --print-summary build
+cmake --build build-coverage
+ctest --test-dir build-coverage
+gcovr --root . --filter 'src/.*' --exclude '.*/tests/.*' --print-summary build-coverage
 ```
 
 CI runs this on every push to `main` for the GNU and LLVM toolchains (not MinGW, which doesn't support `--coverage`) and publishes the resulting percentage as the badges above.

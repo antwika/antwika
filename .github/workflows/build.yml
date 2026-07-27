@@ -119,21 +119,25 @@ jobs:
             conan_profile: clang-linux-x86_64
             coverage: true
             gcov_executable: "llvm-cov-21 gcov"
+            build_dir: build-coverage
           - name: GNU
             image: gnu
             conan_profile: gcc-linux-x86_64
             coverage: true
             gcov_executable: gcov
+            build_dir: build-coverage
           - name: MinGW
             image: mingw
             conan_profile: mingw-windows-x86_64
             coverage: false
+            build_dir: build
 
     container:
       image: ghcr.io/${{ github.repository_owner }}/antwika-dev-${{ matrix.image }}:${{ inputs.version }}
       options: --user root
     env:
       CONAN_PROFILE: ${{ matrix.conan_profile }}
+      BUILD_DIR: ${{ matrix.build_dir }}
 
     steps:
       - name: Checkout
@@ -141,9 +145,13 @@ jobs:
         with:
           ref: ${{ inputs.ref }}
 
+      - name: Test check-unused-test-doubles script
+        shell: bash
+        run: python3 scripts/tests/test_check_unused_test_doubles.py
+
       - name: Check for unused test doubles
         shell: bash
-        run: ./scripts/check-unused-test-doubles.sh
+        run: python3 scripts/check_unused_test_doubles.py
 
       - name: Install dependencies
         shell: bash
@@ -162,11 +170,16 @@ jobs:
 
       - name: Build
         shell: bash
-        run: cmake --build build
+        run: cmake --build "$BUILD_DIR"
 
       - name: Test
         shell: bash
-        run: ctest --test-dir build
+        run: ctest --test-dir "$BUILD_DIR"
+
+      - name: Test coverage badge script
+        if: matrix.coverage
+        shell: bash
+        run: python3 scripts/tests/test_generate_coverage_badge.py
 
       - name: Generate coverage report
         if: matrix.coverage
@@ -176,41 +189,19 @@ jobs:
             --root . \
             --filter 'src/.*' \
             --exclude '.*/tests/.*' \
+            --exclude '.*/apps/game/src/main\.cpp' \
+            --exclude-throw-branches \
+            --exclude-unreachable-branches \
             --gcov-executable '${{ matrix.gcov_executable }}' \
             --print-summary \
             --json-summary --json-summary-pretty \
             -o coverage-summary.json \
-            build
+            "$BUILD_DIR"
 
-          python3 <<'PY'
-          import json
-
-          summary = json.load(open("coverage-summary.json"))
-          percent = summary["line_percent"]
-
-          if percent >= 90:
-              color = "brightgreen"
-          elif percent >= 75:
-              color = "green"
-          elif percent >= 50:
-              color = "yellow"
-          elif percent >= 25:
-              color = "orange"
-          else:
-              color = "red"
-
-          badge = {
-              "schemaVersion": 1,
-              "label": "coverage",
-              "message": f"{percent:.1f}%",
-              "color": color,
-          }
-
-          with open("coverage-badge.json", "w") as f:
-              json.dump(badge, f, indent=2)
-
-          print(f"Line coverage: {percent:.1f}% ({color})")
-          PY
+          python3 scripts/generate_coverage_badge.py \
+            --summary coverage-summary.json \
+            --output coverage-badge.json \
+            --label "coverage (${{ matrix.image }})"
 
       - name: Upload coverage badge
         if: matrix.coverage
@@ -242,7 +233,7 @@ jobs:
           fi
 
           for executable in "${expected[@]}"; do
-            binary="build/bin/${executable}${extension}"
+            binary="${BUILD_DIR}/bin/${executable}${extension}"
 
             if [ ! -f "$binary" ]; then
               echo "Missing binary: $binary"

@@ -1,6 +1,8 @@
 CMakePresets.json
 CMakeUserPresets.json
 build
+build-coverage
+__pycache__
 
 !profiles/build/
 !CMakePresets.json
