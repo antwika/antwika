@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "label": "coverage",
-  "message": "88.3%",
-  "color": "green"
+  "label": "coverage (gnu)",
+  "message": "L:100.0% F:100.0% B:100.0%",
+  "color": "85E485"
 }
