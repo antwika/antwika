@@ -55,7 +55,7 @@ def it_writes_a_full_coverage_badge():
     assert badge == {
         "schemaVersion": 1,
         "label": "coverage (gnu)",
-        "message": "L:100.0% F:100.0% B:100.0%",
+        "message": "100%",
         "color": generate_coverage_badge.HIGH_COLOR,
     }
 
@@ -68,7 +68,17 @@ def it_uses_the_lowest_metric_for_color():
     })
 
     assert badge["color"] == generate_coverage_badge.LOW_COLOR
-    assert badge["message"] == "L:100.0% F:95.0% B:60.0%"
+    assert badge["message"] == "100%/95%/60%"
+
+
+def it_collapses_to_a_single_percentage_only_when_fully_covered():
+    badge = run_main({
+        "line_percent": 100.0,
+        "function_percent": 100.0,
+        "branch_percent": 99.0,
+    })
+
+    assert badge["message"] == "100%/100%/99%"
 
 
 def it_writes_the_provided_label():
@@ -86,6 +96,7 @@ def main():
         it_picks_color_from_gcovr_thresholds,
         it_writes_a_full_coverage_badge,
         it_uses_the_lowest_metric_for_color,
+        it_collapses_to_a_single_percentage_only_when_fully_covered,
         it_writes_the_provided_label,
     ]
 

@@ -1,12 +1,13 @@
 #!/usr/bin/env python3
 # Turns a gcovr --json-summary report into a shields.io endpoint badge,
-# using gcovr's own low/medium/high buckets and colors (see index.css: theme-green).
+# using gcovr's own low/medium/high buckets, colored with shields.io's
+# standard palette to match the other badges in the README.
 import argparse
 import json
 
-LOW_COLOR = "FF6666"
-MEDIUM_COLOR = "F9FD63"
-HIGH_COLOR = "85E485"
+LOW_COLOR = "e05d44"
+MEDIUM_COLOR = "dfb317"
+HIGH_COLOR = "44cc11"
 
 
 def color_for(percent: float) -> str:
@@ -32,10 +33,15 @@ def main() -> None:
     branches = summary["branch_percent"]
     color = color_for(min(lines, functions, branches))
 
+    if lines == 100 and functions == 100 and branches == 100:
+        message = "100%"
+    else:
+        message = f"{round(lines)}%/{round(functions)}%/{round(branches)}%"
+
     badge = {
         "schemaVersion": 1,
         "label": args.label,
-        "message": f"L:{lines:.1f}% F:{functions:.1f}% B:{branches:.1f}%",
+        "message": message,
         "color": color,
     }
 
