@@ -77,6 +77,10 @@ gcovr --root . --filter 'src/.*' --exclude '.*/tests/.*' --print-summary build-c
 
 CI runs this on every push to `main` for the GNU and LLVM toolchains (not MinGW, which doesn't support `--coverage`) and publishes the resulting percentage as the badges above.
 
+### Badges
+
+Coverage badges report **line / function / branch** coverage. For example, **95% / 80% / 75%** indicates 95% line coverage, 80% function coverage, and 75% branch coverage.
+
 ## Optional: Use a locally built `antwika-dev-base` development container
 
 Build the base development container locally:
