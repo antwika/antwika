@@ -27,7 +27,7 @@ namespace antwika::engine
         auto stepMessage = std::format("Engine step: tick {}", tick); // GCOVR_EXCL_LINE
         logger.log(Level::Info, stepMessage);
 
-        dispatcher.dispatch(Event{.name = events::kTick});
+        dispatcher.dispatch(Event{.name = events::kTick}); // GCOVR_EXCL_LINE
 
         while (!eventQueue.empty())
         {

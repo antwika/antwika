@@ -25,3 +25,16 @@ TEST(GameTest, Run_DispatchesBootEventAndStartsEngine)
 
     game.run();
 }
+
+TEST(GameTest, Run_PropagatesExceptionWhenDispatcherDispatchFails)
+{
+    MockEngine mockEngine;
+    MockEventDispatcher mockEventDispatcher;
+    Game game(mockEngine, mockEventDispatcher);
+
+    EXPECT_CALL(mockEventDispatcher, dispatch(Event{.name = "Running Antwika Game"}))
+        .WillOnce(::testing::Throw(std::runtime_error("mockException")));
+    EXPECT_CALL(mockEngine, start()).Times(0);
+
+    EXPECT_THROW(game.run(), std::runtime_error);
+}

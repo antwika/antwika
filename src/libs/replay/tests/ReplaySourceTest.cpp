@@ -29,3 +29,10 @@ TEST(ReplaySourceTest, EventsFor_ReturnsEmptyForTickWithNothingRecorded)
 
     EXPECT_TRUE(source.eventsFor(5).empty());
 }
+
+TEST(ReplaySourceTest, EventsFor_ReturnsEmptyWhenNoEventsWereEverRecorded)
+{
+    ReplaySource source({});
+
+    EXPECT_TRUE(source.eventsFor(0).empty());
+}

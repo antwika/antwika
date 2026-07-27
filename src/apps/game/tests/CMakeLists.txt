@@ -5,6 +5,7 @@ add_executable(antwika_game_tests
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/GameStateReducer.cpp
     BootstrapTest.cpp
     GameStateReducerTest.cpp
+    GameStateTest.cpp
     GameTest.cpp
     ReplayIntegrationTest.cpp
 )

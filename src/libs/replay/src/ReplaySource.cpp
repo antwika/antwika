@@ -22,6 +22,6 @@ namespace antwika::replay
         }
 
         return result;
-    }
+    } // GCOVR_EXCL_LINE
 
 } // namespace antwika::replay

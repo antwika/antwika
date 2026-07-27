@@ -62,6 +62,15 @@ TEST(BinaryReplayWriterReaderTest, ReadThrowsOnBadMagicBytes)
     EXPECT_THROW((void)reader.read(stream), ReplayFormatError);
 }
 
+TEST(BinaryReplayWriterReaderTest, ReadThrowsOnStreamTooShortForMagicBytes)
+{
+    BinaryEventCodec codec;
+    BinaryReplayReader reader(codec);
+    std::stringstream stream("AB"); // shorter than the 4 magic bytes themselves
+
+    EXPECT_THROW((void)reader.read(stream), ReplayFormatError);
+}
+
 TEST(BinaryReplayWriterReaderTest, ReadThrowsOnUnsupportedVersion)
 {
     BinaryEventCodec codec;

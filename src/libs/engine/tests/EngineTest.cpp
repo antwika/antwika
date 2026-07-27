@@ -63,6 +63,21 @@ TEST(EngineTest, Step_ProcessesQueuedEventsForTheSteppedTick)
     engine.step(3);
 }
 
+TEST(EngineTest, Step_PropagatesExceptionWhenDispatcherDispatchFails)
+{
+    MockLogger mockLogger;
+    MockEventQueue mockEventQueue;
+    MockEventDispatcher mockEventDispatcher;
+    Engine engine(mockLogger, mockEventQueue, mockEventDispatcher);
+
+    EXPECT_CALL(mockLogger, log(Level::Info, "Engine step: tick 0"));
+    EXPECT_CALL(mockEventDispatcher, dispatch(Event{.name = antwika::engine::events::kTick}))
+        .WillOnce(::testing::Throw(std::runtime_error("mockException")));
+    EXPECT_CALL(mockEventQueue, empty()).Times(0);
+
+    EXPECT_THROW(engine.step(0), std::runtime_error);
+}
+
 TEST(EngineTest, Step_PropagatesExceptionWhenEventQueuePopFails)
 {
     MockLogger mockLogger;
