@@ -1,3 +1,19 @@
+# [0.6.0](https://github.com/antwika/antwika/compare/v0.5.5...v0.6.0) (2026-07-27)
+
+
+### Features
+
+* **engine:** add fixed-timestep step() and built-in tick event ([e3b3890](https://github.com/antwika/antwika/commit/e3b38905f5c26ec6a244e84c6fc7bcd74b672b11))
+* **event:** add opaque payload field to Event for extensibility ([909a024](https://github.com/antwika/antwika/commit/909a024a818c6089a5d5a88b0dd8063e6ba45456))
+* **event:** add TickedEventDispatcher to tick-stamp dispatched events ([effb8d3](https://github.com/antwika/antwika/commit/effb8d35f337bb31dbe37aac55f3b18cffef8e0b))
+* **event:** add TimedEvent, ITimedEventSink/History, ReplayRecorder ([30131c7](https://github.com/antwika/antwika/commit/30131c77f5cb502f925030a4cd6a379e40b9a776))
+* **game:** add GameState and GameStateReducer example ([7662125](https://github.com/antwika/antwika/commit/76621256f1ba15857cdfb337f7baa4b71bd024a9))
+* **game:** wire record/replay CLI flags into bootstrap and main ([5d4e347](https://github.com/antwika/antwika/commit/5d4e34717f2471ffb9a29a627a93e96d8292e816))
+* **replay:** add ReplaySource and EngineLoop orchestrator ([9529b22](https://github.com/antwika/antwika/commit/9529b222400ccd1a4354f6bc2e26e30ce736f174))
+* **replay:** add versioned binary replay writer/reader ([140213d](https://github.com/antwika/antwika/commit/140213dca7b6ba02073261b0a8460a96d004a993))
+* **replay:** scaffold replay lib with binary event codec ([aa3b5e2](https://github.com/antwika/antwika/commit/aa3b5e23d19ede13cd00b12a9d8964bc19347072))
+* **time:** add fixed-size Tick type ([d98705b](https://github.com/antwika/antwika/commit/d98705ba1a003922a8375bfc79e81ff294203a58))
+
 ## [0.5.5](https://github.com/antwika/antwika/compare/v0.5.4...v0.5.5) (2026-07-27)
 
 
