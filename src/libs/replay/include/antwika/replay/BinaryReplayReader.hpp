@@ -1,7 +1,9 @@
 #pragma once
 
+#include <istream>
+#include <vector>
+
 #include "IEventCodec.hpp"
-#include "IReplayReader.hpp"
 
 namespace antwika::replay
 {
@@ -10,12 +12,12 @@ namespace antwika::replay
     // (see ReplayFormatError.hpp) if the stream doesn't start with the
     // expected magic bytes, declares an unsupported format version, or ends
     // before the data it claims to contain.
-    class BinaryReplayReader final : public IReplayReader
+    class BinaryReplayReader final
     {
     public:
         explicit BinaryReplayReader(const IEventCodec &codec);
 
-        [[nodiscard]] std::vector<TimedEvent> read(std::istream &in) const override;
+        [[nodiscard]] std::vector<TimedEvent> read(std::istream &in) const;
 
     private:
         const IEventCodec &codec;
