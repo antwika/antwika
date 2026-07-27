@@ -37,7 +37,7 @@ written up **as the item is implemented**, not upfront.
       custom — is captured, in order, into a replayable history. Nothing
       that happens during a run is excluded from the
       recording. — [notes/08-recording.md](notes/08-recording.md)
-- [ ] **09.** Serialization. A recorded history can be turned into a byte
+- [x] **09.** Serialization. A recorded history can be turned into a byte
       stream and back into an equal history. The format is self-describing
       (versioned) so bad/incompatible input fails loudly and specifically
       rather than corrupting state silently. — [notes/09-serialization.md](notes/09-serialization.md)

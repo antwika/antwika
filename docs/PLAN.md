@@ -240,13 +240,20 @@ public:
   shifts — never native struct layout), then length-prefixed `name`, then
   length-prefixed `payload`. Dependency-free.
 - `BinaryReplayWriter`/`BinaryReplayReader` wrap a codec and add a small
-  versioned header: magic bytes (`"ARPL"`), format version (`uint32_t`), the
-  fixed timestep `Δt` the replay was recorded at (so a replay file is
-  self-describing about its own playback rate), and an event count, followed
-  by that many encoded `TimedEvent`s. Version + magic let `read()` throw a
-  specific, typed exception on garbage/incompatible input instead of
-  misbehaving silently — this gets its own unit tests (truncated stream, bad
-  magic, unsupported version).
+  versioned header: magic bytes (`"ARPL"`), format version (`uint32_t`), and
+  an event count, followed by that many encoded `TimedEvent`s. Version +
+  magic let `read()` throw a specific, typed exception
+  (`ReplayFormatError`) on garbage/incompatible input instead of misbehaving
+  silently — this gets its own unit tests (truncated stream, bad magic,
+  unsupported version).
+  > **Implementation note:** an earlier draft of this section reserved a
+  > header field for the fixed timestep `Δt` a replay was recorded at, on
+  > the theory that a replay file should be self-describing about its
+  > playback rate. Building it surfaced that this engine has no wall-clock
+  > playback rate at all — `Engine::step()` advances by a discrete `Tick`,
+  > never by a duration — so the field would have had no consumer. Dropped,
+  > same reasoning as the RNG-seed non-decision in §7. See
+  > `docs/notes/09-serialization.md`.
 
 ### 3.7 Feeding a loaded replay back into the engine
 

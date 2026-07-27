@@ -1,10 +1,26 @@
 # 09 — Serialization
 
-**Status:** in progress. New `replay` lib scaffolded; `IEventCodec`/
-`BinaryEventCodec` landed (big-endian tick, length-prefixed name/payload,
-shared byte-order helpers in `BinaryPrimitives`), with round-trip and
-truncated-stream tests. `IReplayWriter`/`IReplayReader` (the whole-sequence,
-versioned-header layer) are the remaining piece.
+**Status:** done. `IEventCodec`/`BinaryEventCodec` (per-event: big-endian
+tick, length-prefixed name/payload) plus `IReplayWriter`/`IReplayReader` and
+their `BinaryReplayWriter`/`BinaryReplayReader` implementations (whole
+sequence: 4-byte magic `"ARPL"`, format version, event count, then the
+encoded events) landed in the `replay` lib. Bad magic, an unsupported
+version, and truncated streams all throw the same specific
+`ReplayFormatError` (see [PLAN.md §3.6](../PLAN.md#36-serialization-codec--writerreader-split-by-responsibility-new-replay-lib)).
+
+## Issues encountered
+
+PLAN.md §3.6 proposed reserving a header field for the fixed timestep `Δt`
+the replay was recorded at, reasoning a replay file should be
+"self-describing about its own playback rate." Implementing it surfaced that
+this engine has no wall-clock playback rate to describe: `Engine::step()`
+advances by a discrete `Tick`, not by a duration, and nothing anywhere reads
+a `Δt` value. Adding the field would have meant carrying an unused,
+unvalidated header field — the same shape of speculative addition already
+rejected for RNG seeding in [item 16](16-no-rng.md). Dropped it; the header
+is magic + version + event count only. If real-time pacing is ever added to
+the engine, that's a deliberate future format version bump with an actual
+consumer for the field, not a guess made now.
 
 ## Rationale/motivation
 

@@ -1,7 +1,8 @@
 #include "BinaryPrimitives.hpp"
 
 #include <array>
-#include <stdexcept>
+
+#include <antwika/replay/ReplayFormatError.hpp>
 
 namespace antwika::replay::detail
 {
@@ -23,7 +24,7 @@ namespace antwika::replay::detail
         in.read(bytes.data(), static_cast<std::streamsize>(bytes.size()));
         if (!in)
         {
-            throw std::runtime_error("antwika::replay: unexpected end of stream while reading a 32-bit value");
+            throw ReplayFormatError("antwika::replay: unexpected end of stream while reading a 32-bit value");
         }
         std::uint32_t value{};
         for (auto byte : bytes)
@@ -50,7 +51,7 @@ namespace antwika::replay::detail
         in.read(bytes.data(), static_cast<std::streamsize>(bytes.size()));
         if (!in)
         {
-            throw std::runtime_error("antwika::replay: unexpected end of stream while reading a 64-bit value");
+            throw ReplayFormatError("antwika::replay: unexpected end of stream while reading a 64-bit value");
         }
         std::uint64_t value{};
         for (auto byte : bytes)
@@ -78,7 +79,7 @@ namespace antwika::replay::detail
             in.read(value.data(), static_cast<std::streamsize>(length));
             if (!in)
             {
-                throw std::runtime_error("antwika::replay: unexpected end of stream while reading a string");
+                throw ReplayFormatError("antwika::replay: unexpected end of stream while reading a string");
             }
         }
         return value;

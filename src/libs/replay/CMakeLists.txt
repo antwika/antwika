@@ -1,6 +1,8 @@
 add_library(antwika_replay
     src/BinaryEventCodec.cpp
     src/BinaryPrimitives.cpp
+    src/BinaryReplayReader.cpp
+    src/BinaryReplayWriter.cpp
 )
 
 add_library(antwika::replay ALIAS antwika_replay)
