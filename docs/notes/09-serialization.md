@@ -1,6 +1,10 @@
 # 09 — Serialization
 
-**Status:** not started
+**Status:** in progress. New `replay` lib scaffolded; `IEventCodec`/
+`BinaryEventCodec` landed (big-endian tick, length-prefixed name/payload,
+shared byte-order helpers in `BinaryPrimitives`), with round-trip and
+truncated-stream tests. `IReplayWriter`/`IReplayReader` (the whole-sequence,
+versioned-header layer) are the remaining piece.
 
 ## Rationale/motivation
 
