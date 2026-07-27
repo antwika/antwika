@@ -1,9 +1,13 @@
 # 08 — Recording
 
-**Status:** `TimedEvent`, `ITimedEventSink`, `ITimedEventHistory`, and
+**Status:** done. `TimedEvent`, `ITimedEventSink`, `ITimedEventHistory`, and
 `ReplayRecorder` landed in the `event` lib, mirroring `EventRecorder`
-exactly. Not yet wired into the dispatch path — that's
-[item 05](05-automatic-tick-stamping.md)'s `TickedEventDispatcher`.
+exactly, and are wired into the dispatch path via
+[item 05](05-automatic-tick-stamping.md)'s `TickedEventDispatcher`. See
+[item 13](13-determinism-proven-by-test.md) for an important refinement
+found while testing: `ReplayRecorder`'s full history is the right thing to
+capture for audit purposes, but not what gets serialized to drive a future
+replay run (that's the run's *input*, a strictly smaller set).
 
 ## Rationale/motivation
 

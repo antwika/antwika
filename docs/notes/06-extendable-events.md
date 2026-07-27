@@ -1,8 +1,11 @@
 # 06 — Events are extendable
 
-**Status:** `Event::payload` landed. `TimedEvent` (the tick-aware wrapper
-that carries this through recording/replay) is tracked as a follow-up in the
-same commit sequence.
+**Status:** done. `Event::payload` landed, and `apps/game`'s
+`game.score_increment` (see [item 12](12-state-example-apps-game.md)) is the
+proof: an application-defined event, unknown to the engine core, flowing
+through the identical `TimedEvent`/`ITimedEventSink`/replay pipeline as the
+engine's own built-in `engine.tick`, with zero changes required anywhere in
+`engine`, `event`, or `replay` to support it.
 
 ## Rationale/motivation
 

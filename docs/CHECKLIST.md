@@ -8,12 +8,12 @@ written up **as the item is implemented**, not upfront.
 
 ## Working agreement (applies to every item below)
 
-- [ ] **01.** Tests are written alongside each item, as it's built — never
+- [x] **01.** Tests are written alongside each item, as it's built — never
       deferred to a later "testing pass." — [notes/01-tests-alongside.md](notes/01-tests-alongside.md)
-- [ ] **02.** Each completed item (or natural sub-chunk of one) gets its own
+- [x] **02.** Each completed item (or natural sub-chunk of one) gets its own
       git commit, message in [Conventional Commits](https://www.conventionalcommits.org/)
       style. Small commits, not one giant one. — [notes/02-commit-per-chunk.md](notes/02-commit-per-chunk.md)
-- [ ] **03.** Nothing is pushed to any remote during implementation. — [notes/03-no-push.md](notes/03-no-push.md)
+- [x] **03.** Nothing is pushed to any remote during implementation. — [notes/03-no-push.md](notes/03-no-push.md)
 
 ## Core concepts
 
@@ -24,7 +24,7 @@ written up **as the item is implemented**, not upfront.
 - [x] **05.** Every dispatched event is tick-stamped, automatically, in one
       place — no call site has to remember to do it, and nothing dispatched
       can slip through un-stamped. — [notes/05-automatic-tick-stamping.md](notes/05-automatic-tick-stamping.md)
-- [ ] **06.** Events are extendable. Application code can define and
+- [x] **06.** Events are extendable. Application code can define and
       dispatch its own event kinds, on top of a small set of common/built-in
       ones the engine itself provides — both travel through the exact same
       pipeline, with no special-casing between "built-in" and
@@ -33,7 +33,7 @@ written up **as the item is implemented**, not upfront.
       per-tick "tick happened" event) so application code can react to
       simulation progress without inventing and manually dispatching its
       own. — [notes/07-builtin-common-events.md](notes/07-builtin-common-events.md)
-- [ ] **08.** Recording. Every tick-stamped event that occurs — built-in or
+- [x] **08.** Recording. Every tick-stamped event that occurs — built-in or
       custom — is captured, in order, into a replayable history. Nothing
       that happens during a run is excluded from the
       recording. — [notes/08-recording.md](notes/08-recording.md)
@@ -77,7 +77,7 @@ written up **as the item is implemented**, not upfront.
 
 ## Definition of done
 
-- [ ] **18.** All items above checked, `ctest` green,
+- [x] **18.** All items above checked, `ctest` green,
       `scripts/check_unused_test_doubles.py` green, and the git history
       tells the story of how it was built (small, conventional commits)
       rather than landing as one opaque change. — [notes/18-definition-of-done.md](notes/18-definition-of-done.md)

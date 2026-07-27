@@ -1,6 +1,7 @@
 # 03 — No push to remote
 
-**Status:** in progress (ongoing constraint, re-affirmed at [18](18-definition-of-done.md))
+**Status:** done. `git push` was never run; the branch sits 13 commits
+ahead of `origin/main`, all local.
 
 ## Rationale/motivation
 

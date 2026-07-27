@@ -1,6 +1,8 @@
 # 01 — Tests written alongside
 
-**Status:** in progress (ongoing constraint, re-affirmed at [18](18-definition-of-done.md))
+**Status:** done. Every implementation commit in this effort added its
+tests in the same commit as the code they cover (see `git log --oneline`)
+— no trailing "add tests" commit anywhere in the sequence.
 
 ## Rationale/motivation
 

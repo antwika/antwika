@@ -1,6 +1,9 @@
 # 02 — Commit per completed chunk, Conventional Commits
 
-**Status:** in progress (ongoing constraint, re-affirmed at [18](18-definition-of-done.md))
+**Status:** done. 13 commits, each a self-contained, buildable, green chunk,
+all `type(scope): summary` single-line Conventional Commits messages (the
+user asked for one-line messages specifically — no multi-paragraph bodies,
+even where a body would normally be warranted).
 
 ## Rationale/motivation
 
