@@ -1,6 +1,8 @@
 # 06 — Events are extendable
 
-**Status:** not started
+**Status:** `Event::payload` landed. `TimedEvent` (the tick-aware wrapper
+that carries this through recording/replay) is tracked as a follow-up in the
+same commit sequence.
 
 ## Rationale/motivation
 

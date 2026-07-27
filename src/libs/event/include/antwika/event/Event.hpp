@@ -7,6 +7,7 @@ namespace antwika::event
     struct Event
     {
         std::string name{};
+        std::string payload{};
         bool operator==(const Event &other) const = default;
     };
 
