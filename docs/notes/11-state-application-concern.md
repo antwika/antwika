@@ -1,6 +1,8 @@
 # 11 — State is an application concern
 
-**Status:** not started
+**Status:** done. `GameState` (plain data) + `GameStateReducer`
+(`ITimedEventSink`) landed in `apps/game` — no state concept was added to
+`engine`, `event`, or `replay`.
 
 ## Rationale/motivation
 

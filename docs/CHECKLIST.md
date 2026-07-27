@@ -46,7 +46,7 @@ written up **as the item is implemented**, not upfront.
       tick/dispatch machinery a live run uses, just sourced from the file
       instead of live input. This is what makes determinism provable rather
       than assumed. — [notes/10-replay-same-code-path.md](notes/10-replay-same-code-path.md)
-- [ ] **11.** State is an application concern, not baked into the engine
+- [x] **11.** State is an application concern, not baked into the engine
       core. The engine core stays domain-agnostic; state is plain data,
       updated by folding tick-stamped events into it via the same extension
       mechanism used for recording — so "recording" and "updating state" are

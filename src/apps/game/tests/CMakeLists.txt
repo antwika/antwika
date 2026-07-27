@@ -2,7 +2,9 @@ find_package(GTest REQUIRED)
 
 add_executable(antwika_game_tests
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/Game.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/GameStateReducer.cpp
     BootstrapTest.cpp
+    GameStateReducerTest.cpp
     GameTest.cpp
 )
 

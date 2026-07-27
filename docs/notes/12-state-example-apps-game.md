@@ -1,6 +1,11 @@
 # 12 — State example in `apps/game`
 
-**Status:** not started
+**Status:** done, for the reducer itself and its unit tests
+(`GameStateReducerTest.cpp`: reacts to the built-in tick, reacts to the
+custom `game.score_increment` event, ignores unrelated events, and a test
+asserting both flow through the identical `handle()` mechanism). Not yet
+wired into `bootstrap()`/a live `Game` run or exercised by the
+`apps/game`-level determinism test — that's [item 15](15-record-replay-reachable.md).
 
 ## Rationale/motivation
 
