@@ -14,8 +14,7 @@ namespace antwika::game
     // built-in tick event and to this application's custom
     // events::kScoreIncrement through the identical ITimedEventSink
     // mechanism -- proving both are usable the same way, with no
-    // special-casing between "built-in" and "custom" (see items 06/07/11/12
-    // in docs/CHECKLIST.md).
+    // special-casing between "built-in" and "custom".
     class GameStateReducer final : public ITimedEventSink
     {
     public:

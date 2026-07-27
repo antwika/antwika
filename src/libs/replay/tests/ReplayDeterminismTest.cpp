@@ -37,9 +37,9 @@ using antwika::replay::ReplaySource;
 namespace
 {
     // A minimal, test-only "folded state" -- deliberately not production
-    // code (see docs/notes/13-determinism-proven-by-test.md). Gives the
-    // determinism assertion something concrete to compare beyond "the same
-    // events came out," independent of the real GameState demo in apps/game.
+    // code. Gives the determinism assertion something concrete to compare
+    // beyond "the same events came out," independent of the real GameState
+    // demo in apps/game.
     class FoldingStateReducer final : public ITimedEventSink
     {
     public:
@@ -107,14 +107,15 @@ namespace
 // self-generated events such as the engine's built-in tick) are different
 // things. Engine::step() dispatches its own engine.tick event fresh, every
 // tick, live or replayed -- that's what makes it usable via the ordinary
-// ITimedEventSink mechanism (item 07) without the replay system needing to
-// know it's "special". But that also means it must never itself be fed back
-// in as replay *input*: doing so would dispatch it twice per tick on
-// replay (once from the source, once freshly from Engine::step()) and break
+// ITimedEventSink mechanism without the replay system needing to know it's
+// "special". But that also means it must never itself be fed back in as
+// replay *input*: doing so would dispatch it twice per tick on replay
+// (once from the source, once freshly from Engine::step()) and break
 // determinism rather than prove it. So what gets serialized here is the
 // original input script (scriptedLiveEvents) -- not liveRecording's full
 // history, which is a strictly larger, derived set. See
-// docs/notes/13-determinism-proven-by-test.md for how this was found.
+// blog/2026-07-27-building-a-deterministic-replay-system.md for how this
+// was found.
 TEST(ReplayDeterminismTest, LoadingAReplayReproducesTheSameStateAsTheOriginalRun)
 {
     constexpr antwika::time::Tick totalTicks = 3;

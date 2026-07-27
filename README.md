@@ -17,17 +17,14 @@ src/
     ├── log/
     ├── replay/
     └── time/
-docs/
-├── PLAN.md
-├── CHECKLIST.md
-└── notes/
+blog/
 ```
 
 Each library and app has its own `CMakeLists.txt`, `include/`, `src/`, and `tests/` directory.
 
-`docs/PLAN.md` and `docs/CHECKLIST.md` describe the design and status of the
-engine's replay system; `docs/notes/` holds one file per checklist item with
-the rationale behind it and any issues found while building it.
+`blog/` holds write-ups about notable changes to the project — see
+[`blog/2026-07-27-building-a-deterministic-replay-system.md`](blog/2026-07-27-building-a-deterministic-replay-system.md)
+for the design and requirements behind the replay system below.
 
 ## Quick start
 
@@ -76,9 +73,9 @@ mode only differs in where each tick's events come from. Application code
 (here, `apps/game`) defines its own state (`GameState`) and events (e.g.
 `game.score_increment`) on top of the engine's built-in per-tick event
 (`engine.tick`), both reacted to through the same `ITimedEventSink`
-mechanism — see `docs/PLAN.md` for the full design and
-`docs/notes/06-extendable-events.md`/`docs/notes/11-state-application-concern.md`
-for how to add your own.
+mechanism — see
+[`blog/2026-07-27-building-a-deterministic-replay-system.md`](blog/2026-07-27-building-a-deterministic-replay-system.md)
+for the full design and how to add your own.
 
 ## Testing
 
