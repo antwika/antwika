@@ -12,6 +12,7 @@ src/
 ├── apps/
 │   └── game/
 └── libs/
+    ├── ecs/
     ├── engine/
     ├── event/
     ├── log/
