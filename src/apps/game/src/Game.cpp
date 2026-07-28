@@ -27,7 +27,8 @@ namespace antwika::game
 
     void Game::run()
     {
-        dispatcher.dispatch(Event{.name = "Running Antwika Game"}); // GCOVR_EXCL_LINE
+        dispatcher.dispatch(
+            Event{.name = "Running Antwika Game"}); // GCOVR_EXCL_LINE
         engine.start();
     }
 

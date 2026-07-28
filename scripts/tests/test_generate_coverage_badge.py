@@ -8,9 +8,13 @@ import sys
 import tempfile
 from pathlib import Path
 
-SCRIPT_PATH = Path(__file__).resolve().parent.parent / "generate_coverage_badge.py"
+SCRIPT_PATH = (
+    Path(__file__).resolve().parent.parent / "generate_coverage_badge.py"
+)
 
-spec = importlib.util.spec_from_file_location("generate_coverage_badge", SCRIPT_PATH)
+spec = importlib.util.spec_from_file_location(
+    "generate_coverage_badge", SCRIPT_PATH
+)
 generate_coverage_badge = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(generate_coverage_badge)
 
@@ -38,12 +42,13 @@ def run_main(summary, label="coverage (gnu)"):
 
 
 def it_picks_color_from_gcovr_thresholds():
-    assert generate_coverage_badge.color_for(100.0) == generate_coverage_badge.HIGH_COLOR
-    assert generate_coverage_badge.color_for(90.0) == generate_coverage_badge.HIGH_COLOR
-    assert generate_coverage_badge.color_for(89.9) == generate_coverage_badge.MEDIUM_COLOR
-    assert generate_coverage_badge.color_for(75.0) == generate_coverage_badge.MEDIUM_COLOR
-    assert generate_coverage_badge.color_for(74.9) == generate_coverage_badge.LOW_COLOR
-    assert generate_coverage_badge.color_for(0.0) == generate_coverage_badge.LOW_COLOR
+    color_for = generate_coverage_badge.color_for
+    assert color_for(100.0) == generate_coverage_badge.HIGH_COLOR
+    assert color_for(90.0) == generate_coverage_badge.HIGH_COLOR
+    assert color_for(89.9) == generate_coverage_badge.MEDIUM_COLOR
+    assert color_for(75.0) == generate_coverage_badge.MEDIUM_COLOR
+    assert color_for(74.9) == generate_coverage_badge.LOW_COLOR
+    assert color_for(0.0) == generate_coverage_badge.LOW_COLOR
 
 
 def it_writes_a_full_coverage_badge():

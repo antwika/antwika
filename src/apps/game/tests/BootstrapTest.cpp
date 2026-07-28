@@ -43,11 +43,31 @@ TEST(BootstrapTest, Bootstrap_RunsScriptedTicksAndReturnsResultingGameState)
     EventRecorder eventSink;
 
     ReplaySource inputSource({
-        TimedEvent{.tick = 1, .event = Event{.name = antwika::game::events::kScoreIncrement, .payload = "5"}},
-        TimedEvent{.tick = 3, .event = Event{.name = antwika::game::events::kScoreIncrement, .payload = "2"}},
+        TimedEvent{
+            .tick = 1,
+            .event = Event{
+                .name = antwika::game::events::kScoreIncrement,
+                .payload = "5",
+            },
+        },
+        TimedEvent{
+            .tick = 3,
+            .event = Event{
+                .name = antwika::game::events::kScoreIncrement,
+                .payload = "2",
+            },
+        },
     });
 
-    auto state = antwika::game::bootstrap(fakeClock, appender, formatter, logPolicy, eventQueue, eventSink, inputSource, 5);
+    auto state = antwika::game::bootstrap(
+        fakeClock,
+        appender,
+        formatter,
+        logPolicy,
+        eventQueue,
+        eventSink,
+        inputSource,
+        5);
 
     EXPECT_EQ(state, (GameState{.ticksProcessed = 5, .score = 7}));
 }
@@ -64,7 +84,15 @@ TEST(BootstrapTest, Bootstrap_WithNoScriptedInputOnlyAdvancesTicks)
 
     ReplaySource inputSource({});
 
-    auto state = antwika::game::bootstrap(fakeClock, appender, formatter, logPolicy, eventQueue, eventSink, inputSource, 3);
+    auto state = antwika::game::bootstrap(
+        fakeClock,
+        appender,
+        formatter,
+        logPolicy,
+        eventQueue,
+        eventSink,
+        inputSource,
+        3);
 
     EXPECT_EQ(state, (GameState{.ticksProcessed = 3, .score = 0}));
 }

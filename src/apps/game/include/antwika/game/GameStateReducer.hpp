@@ -23,7 +23,8 @@ namespace antwika::game
     public:
         /**
          * @brief Construct the reducer over the state it will mutate.
-         * @param state The state to update as events are handled. Must outlive this object.
+         * @param state The state to update as events are handled.
+         * Must outlive this object.
          */
         explicit GameStateReducer(GameState &state);
 

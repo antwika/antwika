@@ -15,7 +15,8 @@ def is_test_double_path(path: Path) -> bool:
 
 
 def find_test_doubles(root: Path) -> list[Path]:
-    return sorted(p for p in (root / "src").rglob("*.hpp") if is_test_double_path(p))
+    headers = (root / "src").rglob("*.hpp")
+    return sorted(p for p in headers if is_test_double_path(p))
 
 
 def is_included_anywhere(header_name: str, root: Path) -> bool:
@@ -27,26 +28,42 @@ def is_included_anywhere(header_name: str, root: Path) -> bool:
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--root", type=Path, default=DEFAULT_ROOT, help="Repository root (defaults to the parent of scripts/)")
+    parser.add_argument(
+        "--root",
+        type=Path,
+        default=DEFAULT_ROOT,
+        help="Repository root (defaults to the parent of scripts/)",
+    )
     args = parser.parse_args()
 
     doubles = find_test_doubles(args.root)
 
     if not doubles:
-        print("No test doubles found under src/**/tests/{mocks,fakes}/include -- did the layout change?", file=sys.stderr)
+        print(
+            "No test doubles found under src/**/tests/{mocks,fakes}/include "
+            "-- did the layout change?",
+            file=sys.stderr,
+        )
         return 1
 
-    orphans = [header for header in doubles if not is_included_anywhere(header.name, args.root)]
+    orphans = [
+        header
+        for header in doubles
+        if not is_included_anywhere(header.name, args.root)
+    ]
 
     if orphans:
         print("The following test doubles are never included by any .cpp file:")
         for orphan in orphans:
             print(f"  - {orphan.relative_to(args.root)}")
         print()
-        print("Either delete the unused test double or add a test that uses it.")
+        print("Either delete the unused test double, or add a test using it.")
         return 1
 
-    print(f"OK: every mock/fake header is included by at least one .cpp file ({len(doubles)} checked).")
+    print(
+        f"OK: every mock/fake header is included by at least one .cpp file "
+        f"({len(doubles)} checked)."
+    )
     return 0
 
 

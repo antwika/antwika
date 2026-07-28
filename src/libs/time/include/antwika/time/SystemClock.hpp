@@ -17,6 +17,7 @@ namespace antwika::time
          * @brief Get the current wall-clock time.
          * @return The result of std::chrono::system_clock::now().
          */
-        [[nodiscard]] std::chrono::time_point<std::chrono::system_clock> now() const noexcept override;
+        [[nodiscard]] std::chrono::time_point<std::chrono::system_clock>
+        now() const noexcept override;
     };
 }

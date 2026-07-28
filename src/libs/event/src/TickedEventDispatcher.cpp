@@ -7,9 +7,10 @@
 namespace antwika::event
 {
 
-    TickedEventDispatcher::TickedEventDispatcher(IEventDispatcher &dispatcher,
-                                                 std::vector<std::reference_wrapper<ITimedEventSink>> timedSinks) : dispatcher(dispatcher),
-                                                                                                                     timedSinks(std::move(timedSinks))
+    TickedEventDispatcher::TickedEventDispatcher(
+        IEventDispatcher &dispatcher,
+        std::vector<std::reference_wrapper<ITimedEventSink>> timedSinks)
+        : dispatcher(dispatcher), timedSinks(std::move(timedSinks))
     {
     }
 

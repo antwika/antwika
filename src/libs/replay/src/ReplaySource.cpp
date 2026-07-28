@@ -5,7 +5,8 @@
 namespace antwika::replay
 {
 
-    ReplaySource::ReplaySource(std::vector<TimedEvent> events) : events(std::move(events))
+    ReplaySource::ReplaySource(std::vector<TimedEvent> events)
+        : events(std::move(events))
     {
     }
 

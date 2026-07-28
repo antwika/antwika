@@ -26,7 +26,10 @@ namespace antwika::engine
          * @param eventQueue Queue drained of pending events on every step.
          * @param dispatcher Used to broadcast the engine.tick event each step.
          */
-        Engine(ILogger &logger, IEventQueue &eventQueue, IEventDispatcher &dispatcher);
+        Engine(
+            ILogger &logger,
+            IEventQueue &eventQueue,
+            IEventDispatcher &dispatcher);
 
         Engine(const Engine &) = delete;
         Engine(Engine &&) = delete;

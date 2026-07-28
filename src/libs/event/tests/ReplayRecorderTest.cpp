@@ -13,6 +13,8 @@ TEST(ReplayRecorderTest, handle)
     replayRecorder.handle(TimedEvent{.tick = 1, .event = Event{.name = "bar"}});
     auto events = replayRecorder.getEvents();
     EXPECT_EQ(events.size(), 2);
-    EXPECT_EQ(events[0], (TimedEvent{.tick = 0, .event = Event{.name = "foo"}}));
-    EXPECT_EQ(events[1], (TimedEvent{.tick = 1, .event = Event{.name = "bar"}}));
+    EXPECT_EQ(
+        events[0], (TimedEvent{.tick = 0, .event = Event{.name = "foo"}}));
+    EXPECT_EQ(
+        events[1], (TimedEvent{.tick = 1, .event = Event{.name = "bar"}}));
 }

@@ -45,8 +45,20 @@ namespace
     std::vector<TimedEvent> demoScript()
     {
         return {
-            TimedEvent{.tick = 1, .event = Event{.name = antwika::game::events::kScoreIncrement, .payload = "5"}},
-            TimedEvent{.tick = 3, .event = Event{.name = antwika::game::events::kScoreIncrement, .payload = "2"}},
+            TimedEvent{
+                .tick = 1,
+                .event = Event{
+                    .name = antwika::game::events::kScoreIncrement,
+                    .payload = "5",
+                },
+            },
+            TimedEvent{
+                .tick = 3,
+                .event = Event{
+                    .name = antwika::game::events::kScoreIncrement,
+                    .payload = "2",
+                },
+            },
         };
     }
 
@@ -88,14 +100,30 @@ int main(int argc, char **argv)
         BinaryReplayReader reader(codec);
         auto loadedEvents = reader.read(replayFile);
         ReplaySource source(std::move(loadedEvents));
-        auto state = antwika::game::bootstrap(clock, appender, formatter, logPolicy, eventQueue, eventSink, source, kDemoTotalTicks);
+        auto state = antwika::game::bootstrap(
+            clock,
+            appender,
+            formatter,
+            logPolicy,
+            eventQueue,
+            eventSink,
+            source,
+            kDemoTotalTicks);
         printState(state);
         return 0;
     }
 
     auto script = demoScript();
     ReplaySource source(script);
-    auto state = antwika::game::bootstrap(clock, appender, formatter, logPolicy, eventQueue, eventSink, source, kDemoTotalTicks);
+    auto state = antwika::game::bootstrap(
+        clock,
+        appender,
+        formatter,
+        logPolicy,
+        eventQueue,
+        eventSink,
+        source,
+        kDemoTotalTicks);
     printState(state);
 
     if (!recordPath.empty())

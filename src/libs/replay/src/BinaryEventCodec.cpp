@@ -5,7 +5,8 @@
 namespace antwika::replay
 {
 
-    void BinaryEventCodec::encode(const TimedEvent &event, std::ostream &out) const
+    void BinaryEventCodec::encode(
+        const TimedEvent &event, std::ostream &out) const
     {
         detail::writeU64(event.tick, out);
         detail::writeString(event.event.name, out);

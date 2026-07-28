@@ -3,7 +3,8 @@
 namespace antwika::log
 {
 
-    MinimumLevelLogPolicy::MinimumLevelLogPolicy(Level minimumLevel) : minimumLevel(minimumLevel)
+    MinimumLevelLogPolicy::MinimumLevelLogPolicy(Level minimumLevel)
+        : minimumLevel(minimumLevel)
     {
     }
 

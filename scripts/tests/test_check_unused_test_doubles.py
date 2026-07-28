@@ -9,9 +9,13 @@ import tempfile
 from contextlib import redirect_stderr, redirect_stdout
 from pathlib import Path
 
-SCRIPT_PATH = Path(__file__).resolve().parent.parent / "check_unused_test_doubles.py"
+SCRIPT_PATH = (
+    Path(__file__).resolve().parent.parent / "check_unused_test_doubles.py"
+)
 
-spec = importlib.util.spec_from_file_location("check_unused_test_doubles", SCRIPT_PATH)
+spec = importlib.util.spec_from_file_location(
+    "check_unused_test_doubles", SCRIPT_PATH
+)
 check_unused_test_doubles = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(check_unused_test_doubles)
 
@@ -37,7 +41,10 @@ def run_main(root: Path):
 def it_finds_mock_headers():
     with tempfile.TemporaryDirectory() as tmp:
         root = Path(tmp)
-        mock = root / "src/libs/foo/tests/mocks/include/antwika/foo/mocks/MockFoo.hpp"
+        mock = (
+            root
+            / "src/libs/foo/tests/mocks/include/antwika/foo/mocks/MockFoo.hpp"
+        )
         unrelated = root / "src/libs/foo/include/antwika/foo/Foo.hpp"
         write(mock)
         write(unrelated)
@@ -50,7 +57,10 @@ def it_finds_mock_headers():
 def it_finds_fake_headers():
     with tempfile.TemporaryDirectory() as tmp:
         root = Path(tmp)
-        fake = root / "src/libs/bar/tests/fakes/include/antwika/bar/fakes/FakeBar.hpp"
+        fake = (
+            root
+            / "src/libs/bar/tests/fakes/include/antwika/bar/fakes/FakeBar.hpp"
+        )
         unrelated = root / "src/libs/bar/include/antwika/bar/Bar.hpp"
         write(fake)
         write(unrelated)
@@ -63,17 +73,25 @@ def it_finds_fake_headers():
 def it_detects_a_referenced_mock_header():
     with tempfile.TemporaryDirectory() as tmp:
         root = Path(tmp)
-        write(root / "src/libs/foo/tests/FooTest.cpp", '#include "antwika/foo/mocks/MockFoo.hpp"\n')
+        write(
+            root / "src/libs/foo/tests/FooTest.cpp",
+            '#include "antwika/foo/mocks/MockFoo.hpp"\n',
+        )
 
-        assert check_unused_test_doubles.is_included_anywhere("MockFoo.hpp", root) is True
+        is_included = check_unused_test_doubles.is_included_anywhere
+        assert is_included("MockFoo.hpp", root) is True
 
 
 def it_detects_a_referenced_fake_header():
     with tempfile.TemporaryDirectory() as tmp:
         root = Path(tmp)
-        write(root / "src/libs/foo/tests/FooTest.cpp", '#include "antwika/foo/fakes/FakeFoo.hpp"\n')
+        write(
+            root / "src/libs/foo/tests/FooTest.cpp",
+            '#include "antwika/foo/fakes/FakeFoo.hpp"\n',
+        )
 
-        assert check_unused_test_doubles.is_included_anywhere("FakeFoo.hpp", root) is True
+        is_included = check_unused_test_doubles.is_included_anywhere
+        assert is_included("FakeFoo.hpp", root) is True
 
 
 def it_fails_when_no_test_doubles_exist():
@@ -90,8 +108,14 @@ def it_fails_when_no_test_doubles_exist():
 def it_fails_and_lists_unreferenced_mock_headers():
     with tempfile.TemporaryDirectory() as tmp:
         root = Path(tmp)
-        write(root / "src/libs/foo/tests/mocks/include/antwika/foo/mocks/MockFoo.hpp")
-        write(root / "src/libs/foo/tests/FooTest.cpp", "// no test doubles referenced here\n")
+        write(
+            root
+            / "src/libs/foo/tests/mocks/include/antwika/foo/mocks/MockFoo.hpp"
+        )
+        write(
+            root / "src/libs/foo/tests/FooTest.cpp",
+            "// no test doubles referenced here\n",
+        )
 
         exit_code, stdout, _stderr = run_main(root)
 
@@ -103,13 +127,22 @@ def it_fails_and_lists_unreferenced_mock_headers():
 def it_succeeds_when_every_test_double_is_referenced():
     with tempfile.TemporaryDirectory() as tmp:
         root = Path(tmp)
-        write(root / "src/libs/foo/tests/mocks/include/antwika/foo/mocks/MockFoo.hpp")
-        write(root / "src/libs/foo/tests/FooTest.cpp", '#include "antwika/foo/mocks/MockFoo.hpp"\n')
+        write(
+            root
+            / "src/libs/foo/tests/mocks/include/antwika/foo/mocks/MockFoo.hpp"
+        )
+        write(
+            root / "src/libs/foo/tests/FooTest.cpp",
+            '#include "antwika/foo/mocks/MockFoo.hpp"\n',
+        )
 
         exit_code, stdout, _stderr = run_main(root)
 
         assert exit_code == 0
-        assert "OK: every mock/fake header is included by at least one .cpp file (1 checked)." in stdout
+        assert (
+            "OK: every mock/fake header is included by at least one "
+            ".cpp file (1 checked)."
+        ) in stdout
 
 
 def main():

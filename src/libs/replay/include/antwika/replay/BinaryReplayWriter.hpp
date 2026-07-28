@@ -26,7 +26,8 @@ namespace antwika::replay
          * @param events The events to write, in the order they occurred.
          * @param out The stream to write the encoded bytes to.
          */
-        void write(const std::vector<TimedEvent> &events, std::ostream &out) const;
+        void write(
+            const std::vector<TimedEvent> &events, std::ostream &out) const;
 
     private:
         const IEventCodec &codec;

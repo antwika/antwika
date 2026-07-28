@@ -14,8 +14,12 @@ namespace antwika::game
      */
     struct GameState
     {
-        std::uint64_t ticksProcessed{}; ///< Number of engine ticks folded into this state so far.
-        std::uint64_t score{};          ///< Running total accumulated from kScoreIncrement events.
+        /// Number of engine ticks folded into this state so far.
+        std::uint64_t ticksProcessed{};
+
+        /// Running total accumulated from kScoreIncrement events.
+        std::uint64_t score{};
+
         bool operator==(const GameState &other) const = default;
     };
 

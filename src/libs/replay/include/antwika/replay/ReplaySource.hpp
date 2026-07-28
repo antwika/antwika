@@ -29,7 +29,8 @@ namespace antwika::replay
          * @param tick The tick to fetch events for.
          * @return The events for that tick, in original order.
          */
-        [[nodiscard]] std::vector<Event> eventsFor(antwika::time::Tick tick) override;
+        [[nodiscard]] std::vector<Event> eventsFor(
+            antwika::time::Tick tick) override;
 
     private:
         std::vector<TimedEvent> events;

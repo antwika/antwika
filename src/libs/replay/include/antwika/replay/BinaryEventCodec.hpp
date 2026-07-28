@@ -23,7 +23,7 @@ namespace antwika::replay
         void encode(const TimedEvent &event, std::ostream &out) const override;
 
         /**
-         * @brief Deserialize a timed event from the binary format described above.
+         * @brief Deserialize a timed event from the binary format above.
          * @param in The stream to read the encoded bytes from.
          * @return The decoded event.
          */

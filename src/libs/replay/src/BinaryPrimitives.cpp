@@ -10,7 +10,7 @@ namespace antwika::replay::detail
     namespace
     {
         // Big-endian read/write, generic over the unsigned integer width.
-        // writeU32/readU32/writeU64/readU64 below are thin, named wrappers over this.
+        // writeU32/readU32/writeU64/readU64 below are thin, named wrappers.
         // They exist so call sites don't need to spell out a template argument.
         template <typename T>
         void writeBigEndian(T value, std::ostream &out)
@@ -18,7 +18,8 @@ namespace antwika::replay::detail
             std::array<char, sizeof(T)> bytes{};
             for (std::size_t i = 0; i < bytes.size(); ++i)
             {
-                const auto shift = static_cast<unsigned>((bytes.size() - 1 - i) * 8);
+                const auto shift =
+                    static_cast<unsigned>((bytes.size() - 1 - i) * 8);
                 bytes[i] = static_cast<char>((value >> shift) & 0xFF);
             }
             out.write(bytes.data(), static_cast<std::streamsize>(bytes.size()));
@@ -31,12 +32,15 @@ namespace antwika::replay::detail
             in.read(bytes.data(), static_cast<std::streamsize>(bytes.size()));
             if (!in)
             {
-                throw ReplayFormatError("antwika::replay: unexpected end of stream while reading a fixed-size value");
+                throw ReplayFormatError(
+                    "antwika::replay: unexpected end of stream while "
+                    "reading a fixed-size value");
             }
             T value{};
             for (auto byte : bytes)
             {
-                value = static_cast<T>((value << 8) | static_cast<unsigned char>(byte));
+                value = static_cast<T>(
+                    (value << 8) | static_cast<unsigned char>(byte));
             }
             return value;
         }
@@ -80,7 +84,9 @@ namespace antwika::replay::detail
             in.read(value.data(), static_cast<std::streamsize>(length));
             if (!in)
             {
-                throw ReplayFormatError("antwika::replay: unexpected end of stream while reading a string");
+                throw ReplayFormatError(
+                    "antwika::replay: unexpected end of stream while "
+                    "reading a string");
             }
         }
         return value;

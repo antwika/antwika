@@ -24,7 +24,8 @@ namespace antwika::replay
          * @param tick The tick to fetch events for.
          * @return The events for that tick, in original order.
          */
-        [[nodiscard]] virtual std::vector<Event> eventsFor(antwika::time::Tick tick) = 0;
+        [[nodiscard]] virtual std::vector<Event> eventsFor(
+            antwika::time::Tick tick) = 0;
     };
 
 } // namespace antwika::replay

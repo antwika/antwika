@@ -50,7 +50,15 @@ namespace
         EventQueue eventQueue;
         EventRecorder eventSink;
 
-        return antwika::game::bootstrap(fakeClock, appender, formatter, logPolicy, eventQueue, eventSink, source, kTotalTicks);
+        return antwika::game::bootstrap(
+            fakeClock,
+            appender,
+            formatter,
+            logPolicy,
+            eventQueue,
+            eventSink,
+            source,
+            kTotalTicks);
     }
 } // namespace
 
@@ -62,8 +70,20 @@ namespace
 TEST(ReplayIntegrationTest, LoadingASavedReplayReproducesTheSameGameState)
 {
     std::vector<TimedEvent> script{
-        TimedEvent{.tick = 1, .event = Event{.name = antwika::game::events::kScoreIncrement, .payload = "5"}},
-        TimedEvent{.tick = 3, .event = Event{.name = antwika::game::events::kScoreIncrement, .payload = "2"}},
+        TimedEvent{
+            .tick = 1,
+            .event = Event{
+                .name = antwika::game::events::kScoreIncrement,
+                .payload = "5",
+            },
+        },
+        TimedEvent{
+            .tick = 3,
+            .event = Event{
+                .name = antwika::game::events::kScoreIncrement,
+                .payload = "2",
+            },
+        },
     };
 
     ReplaySource liveSource(script);

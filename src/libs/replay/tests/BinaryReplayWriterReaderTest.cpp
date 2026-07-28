@@ -45,10 +45,22 @@ TEST(BinaryReplayWriterReaderTest, RoundTripsManyEventsInOrder)
 {
     std::vector<TimedEvent> events{
         TimedEvent{.tick = 0, .event = Event{.name = "engine.tick"}},
-        TimedEvent{.tick = 0, .event = Event{.name = "game.score_increment", .payload = "amount=1"}},
+        TimedEvent{
+            .tick = 0,
+            .event = Event{
+                .name = "game.score_increment",
+                .payload = "amount=1",
+            },
+        },
         TimedEvent{.tick = 1, .event = Event{.name = "engine.tick"}},
         TimedEvent{.tick = 2, .event = Event{.name = "engine.tick"}},
-        TimedEvent{.tick = 2, .event = Event{.name = "game.score_increment", .payload = "amount=4"}},
+        TimedEvent{
+            .tick = 2,
+            .event = Event{
+                .name = "game.score_increment",
+                .payload = "amount=4",
+            },
+        },
     };
     EXPECT_EQ(roundTrip(events), events);
 }
@@ -94,7 +106,9 @@ TEST(BinaryReplayWriterReaderTest, ReadThrowsOnTruncatedStream)
     BinaryReplayWriter writer(codec);
     BinaryReplayReader reader(codec);
 
-    std::vector<TimedEvent> events{TimedEvent{.tick = 1, .event = Event{.name = "truncated"}}};
+    std::vector<TimedEvent> events{
+        TimedEvent{.tick = 1, .event = Event{.name = "truncated"}},
+    };
     std::stringstream stream;
     writer.write(events, stream);
 

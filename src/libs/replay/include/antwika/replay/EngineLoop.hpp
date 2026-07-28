@@ -26,10 +26,13 @@ namespace antwika::replay
         /**
          * @brief Construct the loop from its collaborators.
          * @param engine Engine stepped once per tick.
-         * @param dispatcher Dispatches each tick's events before the engine steps.
+         * @param dispatcher Dispatches each tick's events before stepping.
          * @param source Supplies the events to dispatch for each tick.
          */
-        EngineLoop(IEngine &engine, TickedEventDispatcher &dispatcher, IReplaySource &source);
+        EngineLoop(
+            IEngine &engine,
+            TickedEventDispatcher &dispatcher,
+            IReplaySource &source);
 
         EngineLoop(const EngineLoop &) = delete;
         EngineLoop(EngineLoop &&) = delete;

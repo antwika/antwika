@@ -21,6 +21,7 @@ namespace antwika::time
          * @brief Get the current point in time.
          * @return The current time as a system_clock time point.
          */
-        [[nodiscard]] virtual std::chrono::time_point<std::chrono::system_clock> now() const noexcept = 0;
+        [[nodiscard]] virtual std::chrono::time_point<std::chrono::system_clock>
+        now() const noexcept = 0;
     };
 } // namespace antwika::time

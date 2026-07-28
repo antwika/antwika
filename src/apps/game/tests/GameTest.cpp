@@ -19,7 +19,10 @@ TEST(GameTest, Run_DispatchesBootEventAndStartsEngine)
 
     {
         ::testing::InSequence seq;
-        EXPECT_CALL(mockEventDispatcher, dispatch(Event{.name = "Running Antwika Game"})).Times(1);
+        EXPECT_CALL(
+            mockEventDispatcher,
+            dispatch(Event{.name = "Running Antwika Game"}))
+            .Times(1);
         EXPECT_CALL(mockEngine, start()).Times(1);
     }
 
@@ -32,7 +35,9 @@ TEST(GameTest, Run_PropagatesExceptionWhenDispatcherDispatchFails)
     MockEventDispatcher mockEventDispatcher;
     Game game(mockEngine, mockEventDispatcher);
 
-    EXPECT_CALL(mockEventDispatcher, dispatch(Event{.name = "Running Antwika Game"}))
+    EXPECT_CALL(
+        mockEventDispatcher,
+        dispatch(Event{.name = "Running Antwika Game"}))
         .WillOnce(::testing::Throw(std::runtime_error("mockException")));
     EXPECT_CALL(mockEngine, start()).Times(0);
 

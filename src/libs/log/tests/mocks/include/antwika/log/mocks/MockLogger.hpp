@@ -19,7 +19,11 @@ namespace antwika::log::mocks
     class MockLogger : public ILogger
     {
     public:
-        MOCK_METHOD(void, log, (Level level, std::string_view message), (noexcept, override));
+        MOCK_METHOD(
+            void,
+            log,
+            (Level level, std::string_view message),
+            (noexcept, override));
     };
 
 } // namespace antwika::log::mocks

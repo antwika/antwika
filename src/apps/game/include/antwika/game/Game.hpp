@@ -71,15 +71,16 @@ namespace antwika::game
      * @param eventSink Receives every dispatched event.
      * @param inputSource Supplies each tick's events, live or replayed.
      * @param totalTicks The number of ticks to run.
-     * @return The resulting GameState, for callers (main.cpp, tests) to inspect.
+     * @return The resulting GameState, for callers (main.cpp, tests).
      */
-    GameState bootstrap(IClock &clock,
-                        IAppender &appender,
-                        IFormatter &formatter,
-                        ILogPolicy &logPolicy,
-                        IEventQueue &eventQueue,
-                        IEventSink &eventSink,
-                        IReplaySource &inputSource,
-                        antwika::time::Tick totalTicks);
+    GameState bootstrap(
+        IClock &clock,
+        IAppender &appender,
+        IFormatter &formatter,
+        ILogPolicy &logPolicy,
+        IEventQueue &eventQueue,
+        IEventSink &eventSink,
+        IReplaySource &inputSource,
+        antwika::time::Tick totalTicks);
 
 } // namespace antwika::game

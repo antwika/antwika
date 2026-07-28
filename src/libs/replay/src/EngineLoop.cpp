@@ -5,7 +5,11 @@
 namespace antwika::replay
 {
 
-    EngineLoop::EngineLoop(IEngine &engine, TickedEventDispatcher &dispatcher, IReplaySource &source) : engine(engine), dispatcher(dispatcher), source(source)
+    EngineLoop::EngineLoop(
+        IEngine &engine,
+        TickedEventDispatcher &dispatcher,
+        IReplaySource &source)
+        : engine(engine), dispatcher(dispatcher), source(source)
     {
     }
 

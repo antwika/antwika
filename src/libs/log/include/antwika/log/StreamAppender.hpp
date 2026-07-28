@@ -16,7 +16,8 @@ namespace antwika::log
     public:
         /**
          * @brief Construct the appender over an output stream.
-         * @param stream The stream to write messages to. Must outlive this object.
+         * @param stream The stream to write messages to.
+         * Must outlive this object.
          */
         explicit StreamAppender(std::ostream &stream);
 

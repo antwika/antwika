@@ -19,13 +19,17 @@ namespace antwika::time::fakes
          * @brief Construct the clock with an initial time value.
          * @param t The time point to report until advanced or set.
          */
-        explicit FakeClock(std::chrono::time_point<std::chrono::system_clock> t) : current(t) {}
+        explicit FakeClock(std::chrono::time_point<std::chrono::system_clock> t)
+            : current(t)
+        {
+        }
 
         /**
          * @brief Get the currently configured time.
          * @return The last value set via the constructor, set(), or advance().
          */
-        std::chrono::time_point<std::chrono::system_clock> now() const noexcept override
+        std::chrono::time_point<std::chrono::system_clock>
+        now() const noexcept override
         {
             return current;
         }

@@ -23,12 +23,15 @@ TEST(EventDispatcherTest, Dispatch)
     eventDispatcher.dispatch(mockEvent);
 }
 
-TEST(EventDispatcherTest, Dispatch_PropagatesExceptionWhenEventQueueEnqueueFails)
+TEST(
+    EventDispatcherTest,
+    Dispatch_PropagatesExceptionWhenEventQueueEnqueueFails)
 {
     MockEventQueue mockEventQueue;
     EventDispatcher eventDispatcher(mockEventQueue, {});
     Event mockEvent{.name = "mockEvent"};
 
-    EXPECT_CALL(mockEventQueue, enqueue(mockEvent)).WillOnce(::testing::Throw(std::runtime_error("mockException")));
+    EXPECT_CALL(mockEventQueue, enqueue(mockEvent))
+        .WillOnce(::testing::Throw(std::runtime_error("mockException")));
     EXPECT_THROW(eventDispatcher.dispatch(mockEvent), std::runtime_error);
 }

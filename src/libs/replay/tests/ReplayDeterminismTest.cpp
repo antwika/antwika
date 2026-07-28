@@ -81,17 +81,20 @@ namespace
         std::uint64_t state{14695981039346656037ULL}; // FNV-1a offset basis
     };
 
-    std::uint64_t runScriptedTicks(std::vector<TimedEvent> scriptedEvents,
-                                   antwika::time::Tick totalTicks,
-                                   ReplayRecorder &recorder)
+    std::uint64_t runScriptedTicks(
+        std::vector<TimedEvent> scriptedEvents,
+        antwika::time::Tick totalTicks,
+        ReplayRecorder &recorder)
     {
         MockLogger mockLogger;
-        EXPECT_CALL(mockLogger, log(::testing::_, ::testing::_)).Times(::testing::AnyNumber());
+        EXPECT_CALL(mockLogger, log(::testing::_, ::testing::_))
+            .Times(::testing::AnyNumber());
 
         EventQueue eventQueue;
         EventDispatcher plainDispatcher(eventQueue, {});
         FoldingStateReducer reducer;
-        TickedEventDispatcher tickedDispatcher(plainDispatcher, {recorder, reducer});
+        TickedEventDispatcher tickedDispatcher(
+            plainDispatcher, {recorder, reducer});
         Engine engine(mockLogger, eventQueue, tickedDispatcher);
         ReplaySource source(std::move(scriptedEvents));
         EngineLoop loop(engine, tickedDispatcher, source);
@@ -118,15 +121,24 @@ namespace
 // That's scriptedLiveEvents, not liveRecording's full history.
 // liveRecording's history is a strictly larger, derived set.
 // See blog/2026-07-27-building-a-deterministic-replay-system.md for details.
-TEST(ReplayDeterminismTest, LoadingAReplayReproducesTheSameStateAsTheOriginalRun)
+TEST(
+    ReplayDeterminismTest,
+    LoadingAReplayReproducesTheSameStateAsTheOriginalRun)
 {
     constexpr antwika::time::Tick totalTicks = 3;
     std::vector<TimedEvent> scriptedLiveEvents{
-        TimedEvent{.tick = 1, .event = Event{.name = "game.score_increment", .payload = "amount=5"}},
+        TimedEvent{
+            .tick = 1,
+            .event = Event{
+                .name = "game.score_increment",
+                .payload = "amount=5",
+            },
+        },
     };
 
     ReplayRecorder liveRecording;
-    const auto liveStateHash = runScriptedTicks(scriptedLiveEvents, totalTicks, liveRecording);
+    const auto liveStateHash =
+        runScriptedTicks(scriptedLiveEvents, totalTicks, liveRecording);
 
     BinaryEventCodec codec;
     BinaryReplayWriter writer(codec);
@@ -138,18 +150,33 @@ TEST(ReplayDeterminismTest, LoadingAReplayReproducesTheSameStateAsTheOriginalRun
     EXPECT_EQ(loadedInputEvents, scriptedLiveEvents);
 
     ReplayRecorder replayedRecording;
-    const auto replayedStateHash = runScriptedTicks(loadedInputEvents, totalTicks, replayedRecording);
+    const auto replayedStateHash =
+        runScriptedTicks(loadedInputEvents, totalTicks, replayedRecording);
 
     EXPECT_EQ(replayedStateHash, liveStateHash);
     EXPECT_EQ(replayedRecording.getEvents(), liveRecording.getEvents());
 }
 
-TEST(ReplayDeterminismTest, SerializingTheSameRecordingTwiceProducesIdenticalBytes)
+TEST(
+    ReplayDeterminismTest,
+    SerializingTheSameRecordingTwiceProducesIdenticalBytes)
 {
     constexpr antwika::time::Tick totalTicks = 3;
     std::vector<TimedEvent> scriptedLiveEvents{
-        TimedEvent{.tick = 1, .event = Event{.name = "game.score_increment", .payload = "amount=5"}},
-        TimedEvent{.tick = 2, .event = Event{.name = "game.score_increment", .payload = "amount=2"}},
+        TimedEvent{
+            .tick = 1,
+            .event = Event{
+                .name = "game.score_increment",
+                .payload = "amount=5",
+            },
+        },
+        TimedEvent{
+            .tick = 2,
+            .event = Event{
+                .name = "game.score_increment",
+                .payload = "amount=2",
+            },
+        },
     };
 
     ReplayRecorder recording;

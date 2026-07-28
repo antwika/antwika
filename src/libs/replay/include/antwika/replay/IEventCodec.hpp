@@ -23,7 +23,8 @@ namespace antwika::replay
          * @param event The event to encode.
          * @param out The stream to write the encoded bytes to.
          */
-        virtual void encode(const TimedEvent &event, std::ostream &out) const = 0;
+        virtual void encode(
+            const TimedEvent &event, std::ostream &out) const = 0;
 
         /**
          * @brief Deserialize a timed event from a stream.

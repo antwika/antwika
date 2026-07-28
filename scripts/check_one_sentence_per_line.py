@@ -30,12 +30,19 @@ class Violation:
     text: str
 
     def __str__(self) -> str:
-        reason = "holds multiple sentences" if self.kind == "multiple" else "wraps a sentence onto the next line"
+        reason = (
+            "holds multiple sentences"
+            if self.kind == "multiple"
+            else "wraps a sentence onto the next line"
+        )
         return f"{self.path}:{self.line}: {reason}\n    {self.text}"
 
 
 def _mask_code_spans(text: str) -> str:
-    return CODE_SPAN.sub(lambda m: "`" + "_" * (len(m.group(0)) - 2) + "`", text)
+    def mask(m: re.Match[str]) -> str:
+        return "`" + "_" * (len(m.group(0)) - 2) + "`"
+
+    return CODE_SPAN.sub(mask, text)
 
 
 def _mask_abbreviations(text: str) -> str:
@@ -93,9 +100,11 @@ def _check_line_comment_file(path: Path, marker: str) -> list[Violation]:
                 violations.append(Violation(path, line_no, "wrapped", text))
         chain.clear()
 
-    for line_no, raw in enumerate(path.read_text(errors="ignore").splitlines(), start=1):
+    lines = path.read_text(errors="ignore").splitlines()
+    for line_no, raw in enumerate(lines, start=1):
         stripped = raw.strip()
-        if stripped.startswith(marker) and (marker != "#" or not stripped.startswith("#!")):
+        is_shebang = marker == "#" and stripped.startswith("#!")
+        if stripped.startswith(marker) and not is_shebang:
             comment = stripped[len(marker):].strip()
             if not comment:
                 flush_chain()
@@ -135,7 +144,8 @@ def check_markdown_file(path: Path) -> list[Violation]:
                 violations.append(Violation(path, line_no, "wrapped", text))
         chain.clear()
 
-    for line_no, raw in enumerate(path.read_text(errors="ignore").splitlines(), start=1):
+    lines = path.read_text(errors="ignore").splitlines()
+    for line_no, raw in enumerate(lines, start=1):
         stripped = raw.strip()
 
         if FENCE.match(stripped):
@@ -180,7 +190,12 @@ def find_violations(root: Path) -> list[Violation]:
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--root", type=Path, default=DEFAULT_ROOT, help="Repository root (defaults to the parent of scripts/)")
+    parser.add_argument(
+        "--root",
+        type=Path,
+        default=DEFAULT_ROOT,
+        help="Repository root (defaults to the parent of scripts/)",
+    )
     args = parser.parse_args()
 
     violations = find_violations(args.root)
@@ -190,10 +205,16 @@ def main() -> int:
         for violation in violations:
             print(violation)
             print()
-        print("Put each sentence on its own line -- however long -- and split any line that holds more than one.")
+        print(
+            "Put each sentence on its own line -- however long -- and "
+            "split any line that holds more than one."
+        )
         return 1
 
-    print("OK: every checked comment and markdown line holds exactly one, unwrapped sentence.")
+    print(
+        "OK: every checked comment and markdown line holds exactly one, "
+        "unwrapped sentence."
+    )
     return 0
 
 

@@ -19,7 +19,7 @@ namespace antwika::log
         /**
          * @brief Check whether a level passes this policy.
          * @param level The severity level to check.
-         * @return true if records at this level should be logged, false otherwise.
+         * @return true if records at this level should be logged.
          */
         [[nodiscard]] virtual bool accepts(Level level) const noexcept = 0;
     };

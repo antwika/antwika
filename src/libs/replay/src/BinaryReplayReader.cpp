@@ -11,7 +11,8 @@
 namespace antwika::replay
 {
 
-    BinaryReplayReader::BinaryReplayReader(const IEventCodec &codec) : codec(codec)
+    BinaryReplayReader::BinaryReplayReader(const IEventCodec &codec)
+        : codec(codec)
     {
     }
 
@@ -21,13 +22,16 @@ namespace antwika::replay
         in.read(magic.data(), static_cast<std::streamsize>(magic.size()));
         if (!in || magic != detail::kReplayMagic)
         {
-            throw ReplayFormatError("antwika::replay: not a valid replay stream (bad magic bytes)");
+            throw ReplayFormatError(
+                "antwika::replay: not a valid replay stream (bad magic bytes)");
         }
 
         const auto version = detail::readU32(in);
         if (version != detail::kReplayFormatVersion)
         {
-            throw ReplayFormatError(std::format("antwika::replay: unsupported replay format version {}", version)); // GCOVR_EXCL_LINE
+            throw ReplayFormatError(std::format(
+                "antwika::replay: unsupported replay format version {}",
+                version)); // GCOVR_EXCL_LINE
         }
 
         const auto count = detail::readU32(in);

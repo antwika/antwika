@@ -161,6 +161,14 @@ jobs:
         shell: bash
         run: python3 scripts/check_one_sentence_per_line.py
 
+      - name: Test check-line-length script
+        shell: bash
+        run: python3 scripts/tests/test_check_line_length.py
+
+      - name: Check line length
+        shell: bash
+        run: python3 scripts/check_line_length.py
+
       - name: Install dependencies
         shell: bash
         run: |

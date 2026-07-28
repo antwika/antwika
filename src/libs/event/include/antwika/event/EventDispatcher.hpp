@@ -20,7 +20,9 @@ namespace antwika::event
          * @param queue Queue used to buffer events before delivery.
          * @param sinks Sinks that will receive every dispatched event.
          */
-        EventDispatcher(IEventQueue &queue, std::vector<std::reference_wrapper<IEventSink>> sinks);
+        EventDispatcher(
+            IEventQueue &queue,
+            std::vector<std::reference_wrapper<IEventSink>> sinks);
 
         EventDispatcher(const EventDispatcher &) = delete;
         EventDispatcher(EventDispatcher &&) = delete;

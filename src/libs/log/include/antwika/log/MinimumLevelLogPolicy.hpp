@@ -20,7 +20,8 @@ namespace antwika::log
         MinimumLevelLogPolicy(const MinimumLevelLogPolicy &) = delete;
         MinimumLevelLogPolicy(MinimumLevelLogPolicy &&) = delete;
 
-        MinimumLevelLogPolicy &operator=(const MinimumLevelLogPolicy &) = delete;
+        MinimumLevelLogPolicy &operator=(
+            const MinimumLevelLogPolicy &) = delete;
         MinimumLevelLogPolicy &operator=(MinimumLevelLogPolicy &&) = delete;
 
         /**

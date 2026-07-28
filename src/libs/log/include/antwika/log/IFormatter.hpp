@@ -23,7 +23,10 @@ namespace antwika::log
          * @param message The raw log message.
          * @return The fully formatted message.
          */
-        [[nodiscard]] virtual std::string format(std::chrono::system_clock::time_point time, Level level, std::string_view message) const = 0;
+        [[nodiscard]] virtual std::string format(
+            std::chrono::system_clock::time_point time,
+            Level level,
+            std::string_view message) const = 0;
     };
 
 } // antwika::log

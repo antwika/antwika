@@ -22,19 +22,22 @@ namespace antwika::event
         /**
          * @brief Construct a dispatcher wrapping an inner dispatcher.
          * @param dispatcher Inner dispatcher that receives every event first.
-         * @param timedSinks Sinks that receive events stamped with the current tick.
+         * @param timedSinks Sinks that receive events stamped with the
+         * current tick.
          */
-        TickedEventDispatcher(IEventDispatcher &dispatcher,
-                              std::vector<std::reference_wrapper<ITimedEventSink>> timedSinks);
+        TickedEventDispatcher(
+            IEventDispatcher &dispatcher,
+            std::vector<std::reference_wrapper<ITimedEventSink>> timedSinks);
 
         TickedEventDispatcher(const TickedEventDispatcher &) = delete;
         TickedEventDispatcher(TickedEventDispatcher &&) = delete;
 
-        TickedEventDispatcher &operator=(const TickedEventDispatcher &) = delete;
+        TickedEventDispatcher &operator=(
+            const TickedEventDispatcher &) = delete;
         TickedEventDispatcher &operator=(TickedEventDispatcher &&) = delete;
 
         /**
-         * @brief Set the tick value to attach to subsequently dispatched events.
+         * @brief Set the tick value attached to subsequently dispatched events.
          * @param tick The current simulation tick.
          */
         void setTick(antwika::time::Tick tick) noexcept;

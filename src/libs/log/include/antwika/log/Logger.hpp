@@ -28,7 +28,11 @@ namespace antwika::log
          * @param clock Supplies the timestamp attached to each record.
          * @param appender Receives the formatted text of each accepted record.
          */
-        explicit Logger(IFormatter &formatter, ILogPolicy &policy, IClock &clock, IAppender &appender);
+        explicit Logger(
+            IFormatter &formatter,
+            ILogPolicy &policy,
+            IClock &clock,
+            IAppender &appender);
 
         Logger(const Logger &) = delete;
         Logger(Logger &&) = delete;

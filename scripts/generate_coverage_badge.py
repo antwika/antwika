@@ -21,9 +21,17 @@ def color_for(percent: float) -> str:
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--summary", required=True, help="Path to a gcovr --json-summary report")
-    parser.add_argument("--output", required=True, help="Path to write the shields.io endpoint badge JSON")
-    parser.add_argument("--label", required=True, help="Badge label, e.g. 'coverage (gnu)'")
+    parser.add_argument(
+        "--summary", required=True, help="Path to a gcovr --json-summary report"
+    )
+    parser.add_argument(
+        "--output",
+        required=True,
+        help="Path to write the shields.io endpoint badge JSON",
+    )
+    parser.add_argument(
+        "--label", required=True, help="Badge label, e.g. 'coverage (gnu)'"
+    )
     args = parser.parse_args()
 
     with open(args.summary) as f:
@@ -49,7 +57,10 @@ def main() -> None:
     with open(args.output, "w") as f:
         json.dump(badge, f, indent=2)
 
-    print(f"Lines: {lines:.1f}% Functions: {functions:.1f}% Branches: {branches:.1f}% ({color})")
+    print(
+        f"Lines: {lines:.1f}% Functions: {functions:.1f}% "
+        f"Branches: {branches:.1f}% ({color})"
+    )
 
 
 if __name__ == "__main__":
