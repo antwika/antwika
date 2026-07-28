@@ -244,14 +244,17 @@ jobs:
             "antwika_reducer_tests"
             "antwika_replay_tests"
             "antwika_scheduler_tests"
+            "antwika_sudoku"
+            "antwika_sudoku_tests"
             "antwika_task_worker"
             "antwika_task_worker_tests"
             "antwika_time_tests"
+            "antwika_wfc_tests"
           )
 
           if [ "${{ matrix.image }}" = "mingw" ]; then
             extension=".exe"
-            expected=("antwika_game" "antwika_life" "antwika_task_worker")
+            expected=("antwika_game" "antwika_life" "antwika_sudoku" "antwika_task_worker")
           else
             extension=""
           fi

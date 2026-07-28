@@ -12,6 +12,7 @@ src/
 ├── apps/
 │   ├── game/
 │   ├── life/
+│   ├── sudoku/
 │   └── task_worker/
 └── libs/
     ├── ecs/
@@ -21,7 +22,8 @@ src/
     ├── reducer/
     ├── replay/
     ├── scheduler/
-    └── time/
+    ├── time/
+    └── wfc/
 blog/
 ```
 
@@ -56,8 +58,8 @@ Ctrl + Shift + B
 
 After the build completes, run the compiled binaries on your target machine:
 
-- Linux: `build/bin/antwika_game`, `build/bin/antwika_life`, `build/bin/antwika_task_worker`
-- Windows: `build/bin/antwika_game.exe`, `build/bin/antwika_life.exe`, `build/bin/antwika_task_worker.exe`
+- Linux: `build/bin/antwika_game`, `build/bin/antwika_life`, `build/bin/antwika_sudoku`, `build/bin/antwika_task_worker`
+- Windows: `build/bin/antwika_game.exe`, `build/bin/antwika_life.exe`, `build/bin/antwika_sudoku.exe`, `build/bin/antwika_task_worker.exe`
 
 ## Replays
 
@@ -89,6 +91,23 @@ build/bin/antwika_task_worker --replay demo.replay   # reload it, reproducing th
 
 Tasks are submitted via a `task.submit` event (payload `"id,priority,durationTicks,label[,dependsOnId]"`), tick-stamped exactly like `life.toggle_cell` — a `TaskSubmissionSink` schedules each parsed task onto the `Scheduler`, and a `TaskDispatchSystem` runs the scheduler each tick with that tick's idle-worker count as its budget, so no more tasks start than there are free workers.
 See [`blog/005-a-job-scheduler-and-a-worker-pool-that-cant-lie-to-itself.md`](blog/005-a-job-scheduler-and-a-worker-pool-that-cant-lie-to-itself.md) for the full design.
+
+## Wave Function Collapse and Sudoku
+
+`libs/wfc` (`antwika::wfc`) is a standalone, dependency-free constraint-solving library implementing Wave Function Collapse: repeatedly pick the lowest-entropy cell, collapse it to one candidate value, propagate the consequences, and backtrack on contradiction.
+It is deterministic (no RNG, fixed tie-breaks) and complete: an exhaustive backtracking search distinguishes a proven-`Unsatisfiable` puzzle from one that merely ran out of an optional step budget (`LimitExceeded`).
+It also scales to large waves via worklist-driven propagation and a trail-based undo log, rather than copying the whole wave per branch.
+Its own data model is a flat, index-addressed `std::vector` of cells with no notion of a grid.
+Geometry is entirely up to the caller, expressed as `IConstraint`s over cell indices.
+
+`apps/sudoku` (`antwika_sudoku`) is the showcase: it expresses a Sudoku puzzle as an 81-cell wave and its row/column/3x3-box rules as 27 `AllDifferentConstraint`s over that flat array, then hands both to `antwika::wfc::Solver` — no 2D-grid code inside the library at all.
+
+```sh
+build/bin/antwika_sudoku                          # solves a built-in demo puzzle
+build/bin/antwika_sudoku --puzzle my-puzzle.txt    # solves a puzzle loaded from a file
+```
+
+A puzzle file is 81 characters (whitespace ignored) of digits `1`-`9` or a blank marker (`.` or `0`).
 
 ## Testing
 
