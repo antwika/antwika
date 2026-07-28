@@ -19,10 +19,15 @@ namespace antwika::task_worker
         for (const auto entity : world.view<Worker>())
         {
             const auto &worker = world.get<Worker>(entity);
-            out << "  worker[" << index << "]: "
-                << (worker.status == WorkerStatus::Idle ? "Idle"
-                                                          : "Busy")
-                << " remaining=" << worker.remainingTicks << "\n";
+            out << "  worker[" << index << "] - Current state: "
+                << (worker.status == WorkerStatus::Idle ? "Idle" : "Busy");
+            if (worker.status == WorkerStatus::Busy)
+            {
+                out << " | Remaining: " << worker.remainingTicks
+                    << " tick(s) | Task id: " << worker.taskId
+                    << " | Task name: " << worker.label.data();
+            }
+            out << "\n";
             ++index;
         }
     }

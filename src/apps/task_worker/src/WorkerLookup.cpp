@@ -29,7 +29,10 @@ namespace antwika::task_worker
             std::count(idle.begin(), idle.end(), true));
     }
 
-    bool WorkerLookup::claimIdle(antwika::time::Tick durationTicks)
+    bool WorkerLookup::claimIdle(
+        antwika::time::Tick durationTicks,
+        std::uint64_t taskId,
+        std::string_view label)
     {
         const auto it = std::find(idle.begin(), idle.end(), true);
         if (it == idle.end()) // GCOVR_EXCL_LINE
@@ -41,7 +44,10 @@ namespace antwika::task_worker
             static_cast<std::size_t>(std::distance(idle.begin(), it));
         idle[index] = false;
         world.set<Worker>(
-            workers[index], Worker{WorkerStatus::Busy, durationTicks});
+            workers[index],
+            Worker{
+                WorkerStatus::Busy, durationTicks, taskId,
+                makeWorkerLabel(label)});
         return true;
     }
 

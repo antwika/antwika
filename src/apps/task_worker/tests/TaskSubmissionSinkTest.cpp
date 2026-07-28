@@ -9,6 +9,7 @@
 
 #include "antwika/task_worker/Events.hpp"
 #include "antwika/task_worker/TaskDispatchSystem.hpp"
+#include "antwika/task_worker/TaskRegistry.hpp"
 #include "antwika/task_worker/TaskSubmissionError.hpp"
 #include "antwika/task_worker/Worker.hpp"
 #include "antwika/task_worker/WorkerLookup.hpp"
@@ -19,7 +20,9 @@ using antwika::event::Event;
 using antwika::event::TimedEvent;
 using antwika::log::mocks::MockLogger;
 using antwika::scheduler::Scheduler;
+using antwika::task_worker::makeWorkerLabel;
 using antwika::task_worker::TaskDispatchSystem;
+using antwika::task_worker::TaskRegistry;
 using antwika::task_worker::TaskSubmissionError;
 using antwika::task_worker::TaskSubmissionSink;
 using antwika::task_worker::Worker;
@@ -46,7 +49,9 @@ TEST(TaskSubmissionSinkTest, ParsesAPayloadIntoAScheduledTaskAtItsPriority)
     Scheduler jobScheduler;
     SystemScheduler systemScheduler;
     static_cast<void>(systemScheduler.createPhase("dispatch"));
-    TaskSubmissionSink sink(world, systemScheduler, jobScheduler, lookup);
+    TaskRegistry registry;
+    TaskSubmissionSink sink(
+        world, systemScheduler, jobScheduler, lookup, registry);
 
     sink.handle(TimedEvent{
         .tick = 0,
@@ -63,7 +68,9 @@ TEST(TaskSubmissionSinkTest, ParsesAPayloadIntoAScheduledTaskAtItsPriority)
     EXPECT_EQ(executed.size(), 1U);
 
     world.commit();
-    EXPECT_EQ(world.get<Worker>(workerA), (Worker{WorkerStatus::Busy, 3}));
+    EXPECT_EQ(
+        world.get<Worker>(workerA),
+        (Worker{WorkerStatus::Busy, 3, 1, makeWorkerLabel("Alpha")}));
 }
 
 TEST(
@@ -80,7 +87,9 @@ TEST(
     Scheduler jobScheduler;
     SystemScheduler systemScheduler;
     static_cast<void>(systemScheduler.createPhase("dispatch"));
-    TaskSubmissionSink sink(world, systemScheduler, jobScheduler, lookup);
+    TaskRegistry registry;
+    TaskSubmissionSink sink(
+        world, systemScheduler, jobScheduler, lookup, registry);
 
     sink.handle(TimedEvent{
         .tick = 0,
@@ -105,6 +114,141 @@ TEST(
     EXPECT_EQ(jobScheduler.pending(), 1U);
 }
 
+TEST(TaskSubmissionSinkTest, PayloadWithTooFewFieldsThrows)
+{
+    NiceMock<MockLogger> logger;
+    World world(logger);
+    const auto worker = world.create();
+    world.add<Worker>(worker, Worker{});
+    world.commit();
+
+    WorkerLookup lookup(world, {worker});
+    Scheduler jobScheduler;
+    SystemScheduler systemScheduler;
+    static_cast<void>(systemScheduler.createPhase("dispatch"));
+    TaskRegistry registry;
+    TaskSubmissionSink sink(
+        world, systemScheduler, jobScheduler, lookup, registry);
+
+    EXPECT_THROW(
+        sink.handle(TimedEvent{
+            .tick = 0,
+            .event = Event{
+                .name = kTaskSubmit,
+                .payload = "1,1,1",
+            },
+        }),
+        TaskSubmissionError);
+}
+
+TEST(TaskSubmissionSinkTest, NonNumericFieldThrows)
+{
+    NiceMock<MockLogger> logger;
+    World world(logger);
+    const auto worker = world.create();
+    world.add<Worker>(worker, Worker{});
+    world.commit();
+
+    WorkerLookup lookup(world, {worker});
+    Scheduler jobScheduler;
+    SystemScheduler systemScheduler;
+    static_cast<void>(systemScheduler.createPhase("dispatch"));
+    TaskRegistry registry;
+    TaskSubmissionSink sink(
+        world, systemScheduler, jobScheduler, lookup, registry);
+
+    EXPECT_THROW(
+        sink.handle(TimedEvent{
+            .tick = 0,
+            .event = Event{
+                .name = kTaskSubmit,
+                .payload = "1,oops,3,Alpha",
+            },
+        }),
+        TaskSubmissionError);
+}
+
+TEST(TaskSubmissionSinkTest, TrailingGarbageAfterANumberThrows)
+{
+    NiceMock<MockLogger> logger;
+    World world(logger);
+    const auto worker = world.create();
+    world.add<Worker>(worker, Worker{});
+    world.commit();
+
+    WorkerLookup lookup(world, {worker});
+    Scheduler jobScheduler;
+    SystemScheduler systemScheduler;
+    static_cast<void>(systemScheduler.createPhase("dispatch"));
+    TaskRegistry registry;
+    TaskSubmissionSink sink(
+        world, systemScheduler, jobScheduler, lookup, registry);
+
+    EXPECT_THROW(
+        sink.handle(TimedEvent{
+            .tick = 0,
+            .event = Event{
+                .name = kTaskSubmit,
+                .payload = "1,1,3x,Alpha",
+            },
+        }),
+        TaskSubmissionError);
+}
+
+TEST(TaskSubmissionSinkTest, ZeroDurationTicksThrows)
+{
+    NiceMock<MockLogger> logger;
+    World world(logger);
+    const auto worker = world.create();
+    world.add<Worker>(worker, Worker{});
+    world.commit();
+
+    WorkerLookup lookup(world, {worker});
+    Scheduler jobScheduler;
+    SystemScheduler systemScheduler;
+    static_cast<void>(systemScheduler.createPhase("dispatch"));
+    TaskRegistry registry;
+    TaskSubmissionSink sink(
+        world, systemScheduler, jobScheduler, lookup, registry);
+
+    EXPECT_THROW(
+        sink.handle(TimedEvent{
+            .tick = 0,
+            .event = Event{
+                .name = kTaskSubmit,
+                .payload = "1,1,0,Alpha",
+            },
+        }),
+        TaskSubmissionError);
+}
+
+TEST(TaskSubmissionSinkTest, PriorityAboveUInt8RangeThrows)
+{
+    NiceMock<MockLogger> logger;
+    World world(logger);
+    const auto worker = world.create();
+    world.add<Worker>(worker, Worker{});
+    world.commit();
+
+    WorkerLookup lookup(world, {worker});
+    Scheduler jobScheduler;
+    SystemScheduler systemScheduler;
+    static_cast<void>(systemScheduler.createPhase("dispatch"));
+    TaskRegistry registry;
+    TaskSubmissionSink sink(
+        world, systemScheduler, jobScheduler, lookup, registry);
+
+    EXPECT_THROW(
+        sink.handle(TimedEvent{
+            .tick = 0,
+            .event = Event{
+                .name = kTaskSubmit,
+                .payload = "1,256,3,Alpha",
+            },
+        }),
+        TaskSubmissionError);
+}
+
 TEST(TaskSubmissionSinkTest, UnresolvableDependsOnIdThrows)
 {
     NiceMock<MockLogger> logger;
@@ -117,7 +261,9 @@ TEST(TaskSubmissionSinkTest, UnresolvableDependsOnIdThrows)
     Scheduler jobScheduler;
     SystemScheduler systemScheduler;
     static_cast<void>(systemScheduler.createPhase("dispatch"));
-    TaskSubmissionSink sink(world, systemScheduler, jobScheduler, lookup);
+    TaskRegistry registry;
+    TaskSubmissionSink sink(
+        world, systemScheduler, jobScheduler, lookup, registry);
 
     EXPECT_THROW(
         sink.handle(TimedEvent{
@@ -141,10 +287,12 @@ TEST(TaskSubmissionSinkTest, TickEventCommitsAndRunsSystemScheduler)
     WorkerLookup lookup(world, {worker});
     Scheduler jobScheduler;
     SystemScheduler systemScheduler;
-    TaskDispatchSystem dispatchSystem(jobScheduler, lookup);
+    TaskRegistry registry;
+    TaskDispatchSystem dispatchSystem(jobScheduler, lookup, registry);
     const auto phase = systemScheduler.createPhase("dispatch");
     systemScheduler.addSystem(phase, dispatchSystem);
-    TaskSubmissionSink sink(world, systemScheduler, jobScheduler, lookup);
+    TaskSubmissionSink sink(
+        world, systemScheduler, jobScheduler, lookup, registry);
 
     sink.handle(TimedEvent{
         .tick = 0,
@@ -159,5 +307,7 @@ TEST(TaskSubmissionSinkTest, TickEventCommitsAndRunsSystemScheduler)
     });
 
     EXPECT_TRUE(jobScheduler.empty());
-    EXPECT_EQ(world.get<Worker>(worker), (Worker{WorkerStatus::Busy, 3}));
+    EXPECT_EQ(
+        world.get<Worker>(worker),
+        (Worker{WorkerStatus::Busy, 3, 1, makeWorkerLabel("Alpha")}));
 }

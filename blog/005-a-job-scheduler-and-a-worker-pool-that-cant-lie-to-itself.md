@@ -74,7 +74,8 @@ The same-tick cascade case (a fully pre-existing chain draining in one `run()` c
 
 ## Where it ended up
 
-- `antwika::scheduler`: `JobId`, `Priority`, `IJob`, `SchedulerError`, and `Scheduler` — priority-ordered, budget-bounded, dependency-aware, depending only on `antwika::time`. 16 tests across `SchedulerTest.cpp`, `SchedulerDependencyTest.cpp`, and `SchedulerDeterminismTest.cpp`.
+- `antwika::scheduler`: `JobId`, `Priority`, `IJob`, `SchedulerError`, and `Scheduler` — priority-ordered, budget-bounded, dependency-aware, depending only on `antwika::time`.
+  Tested in `SchedulerTest.cpp`, `SchedulerDependencyTest.cpp`, and `SchedulerDeterminismTest.cpp`.
 - `apps/task_worker`: a 2-phase (`"release"`/`"dispatch"`, plus an optional `"observe"`) `antwika::ecs` application wiring `antwika::scheduler` in through a `TaskDispatchSystem`, with `--record`/`--replay` identical to `apps/game`/`apps/life`.
 - `WorkerLookup`: the one piece of real design that only became necessary once the plan's "app's worker-lookup" phrase met `World`'s actual double-buffering semantics.
-- 181 tests passing, 100% line coverage on every new file, no `std::unordered_map`/`unordered_set` anywhere in the pending-job or dependency-tracking path, no cycle-detection code because there's nothing to detect.
+- 100% line coverage on every new file, no `std::unordered_map`/`unordered_set` anywhere in the pending-job or dependency-tracking path, no cycle-detection code because there's nothing to detect.

@@ -11,6 +11,7 @@
 #include <antwika/scheduler/Scheduler.hpp>
 
 #include "antwika/task_worker/TaskJob.hpp"
+#include "antwika/task_worker/TaskRegistry.hpp"
 #include "antwika/task_worker/WorkerLookup.hpp"
 
 namespace antwika::task_worker
@@ -47,12 +48,15 @@ namespace antwika::task_worker
          * on.
          * @param lookup Worker lookup each TaskJob claims workers
          * through.
+         * @param registry Task registry each parsed task's identity is
+         * recorded in for status reporting.
          */
         TaskSubmissionSink(
             World &world,
             SystemScheduler &systemScheduler,
             Scheduler &jobScheduler,
-            WorkerLookup &lookup);
+            WorkerLookup &lookup,
+            TaskRegistry &registry);
 
         /**
          * @brief Apply a timed event's effect.
@@ -68,6 +72,7 @@ namespace antwika::task_worker
         SystemScheduler &systemScheduler;
         Scheduler &jobScheduler;
         WorkerLookup &lookup;
+        TaskRegistry &registry;
         std::vector<std::unique_ptr<TaskJob>> jobs;
         std::vector<std::pair<std::uint64_t, JobId>> submitted;
     };

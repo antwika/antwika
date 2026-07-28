@@ -11,6 +11,7 @@
 
 using antwika::ecs::World;
 using antwika::log::mocks::MockLogger;
+using antwika::task_worker::makeWorkerLabel;
 using antwika::task_worker::Worker;
 using antwika::task_worker::WorkerStatus;
 using antwika::task_worker::WorkerStatusPrintSystem;
@@ -23,7 +24,9 @@ TEST(WorkerStatusPrintSystemTest, PrintsEachWorkersStatusAndRemainingTicks)
     const auto idle = world.create();
     world.add<Worker>(idle, Worker{WorkerStatus::Idle, 0});
     const auto busy = world.create();
-    world.add<Worker>(busy, Worker{WorkerStatus::Busy, 3});
+    world.add<Worker>(
+        busy,
+        Worker{WorkerStatus::Busy, 3, 42, makeWorkerLabel("Render")});
     world.commit();
 
     std::ostringstream out;
@@ -34,6 +37,7 @@ TEST(WorkerStatusPrintSystemTest, PrintsEachWorkersStatusAndRemainingTicks)
     EXPECT_EQ(
         out.str(),
         "After tick 5:\n"
-        "  worker[0]: Idle remaining=0\n"
-        "  worker[1]: Busy remaining=3\n");
+        "  worker[0] - Current state: Idle\n"
+        "  worker[1] - Current state: Busy | Remaining: 3 tick(s) | "
+        "Task id: 42 | Task name: Render\n");
 }

@@ -4,15 +4,21 @@ namespace antwika::task_worker
 {
 
     TaskDispatchSystem::TaskDispatchSystem(
-        Scheduler &jobScheduler, WorkerLookup &lookup)
-        : jobScheduler(jobScheduler), lookup(lookup)
+        Scheduler &jobScheduler,
+        WorkerLookup &lookup,
+        TaskRegistry &registry)
+        : jobScheduler(jobScheduler), lookup(lookup), registry(registry)
     {
     }
 
     void TaskDispatchSystem::update(World &, antwika::time::Tick tick)
     {
         lookup.refresh();
-        jobScheduler.run(tick, lookup.idleCount());
+        const auto executed = jobScheduler.run(tick, lookup.idleCount());
+        for (const auto jobId : executed)
+        {
+            registry.markStarted(jobId);
+        }
     }
 
 } // namespace antwika::task_worker

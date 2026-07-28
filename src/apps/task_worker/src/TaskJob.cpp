@@ -17,7 +17,7 @@ namespace antwika::task_worker
 
     void TaskJob::execute(antwika::time::Tick)
     {
-        lookup.claimIdle(durationTicks);
+        lookup.claimIdle(durationTicks, id, taskLabel);
     }
 
     std::uint64_t TaskJob::taskId() const noexcept

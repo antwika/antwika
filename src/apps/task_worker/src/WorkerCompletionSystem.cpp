@@ -5,6 +5,11 @@
 namespace antwika::task_worker
 {
 
+    WorkerCompletionSystem::WorkerCompletionSystem(TaskRegistry &registry)
+        : registry(registry)
+    {
+    }
+
     void WorkerCompletionSystem::update(World &world, antwika::time::Tick)
     {
         for (const auto entity : world.view<Worker>())
@@ -17,14 +22,18 @@ namespace antwika::task_worker
 
             if (worker.remainingTicks <= 1)
             {
+                registry.markCompleted(worker.taskId);
                 world.set<Worker>(entity, Worker{WorkerStatus::Idle, 0});
             }
             else
             {
+                const auto newRemaining = worker.remainingTicks - 1;
+                registry.updateRemaining(worker.taskId, newRemaining);
                 world.set<Worker>(
                     entity,
                     Worker{
-                        WorkerStatus::Busy, worker.remainingTicks - 1});
+                        WorkerStatus::Busy, newRemaining, worker.taskId,
+                        worker.label});
             }
         }
     }

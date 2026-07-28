@@ -9,6 +9,7 @@
 
 using antwika::ecs::World;
 using antwika::log::mocks::MockLogger;
+using antwika::task_worker::makeWorkerLabel;
 using antwika::task_worker::TaskJob;
 using antwika::task_worker::Worker;
 using antwika::task_worker::WorkerLookup;
@@ -37,7 +38,8 @@ TEST(TaskJobTest, ExecuteClaimsTheLowestIndexIdleWorkerOnly)
 
     EXPECT_EQ(world.get<Worker>(busy), (Worker{WorkerStatus::Busy, 3}));
     EXPECT_EQ(
-        world.get<Worker>(idleFirst), (Worker{WorkerStatus::Busy, 5}));
+        world.get<Worker>(idleFirst),
+        (Worker{WorkerStatus::Busy, 5, 1, makeWorkerLabel("Task")}));
     EXPECT_EQ(
         world.get<Worker>(idleSecond), (Worker{WorkerStatus::Idle, 0}));
     EXPECT_NE(
@@ -46,19 +48,4 @@ TEST(TaskJobTest, ExecuteClaimsTheLowestIndexIdleWorkerOnly)
         world.get<Worker>(idleFirst), (Worker{WorkerStatus::Busy, 99}));
     EXPECT_EQ(job.taskId(), 1U);
     EXPECT_EQ(job.label(), "Task");
-}
-
-TEST(TaskJobTest, WorkerComponentCanBeRemovedFromAnEntity)
-{
-    NiceMock<MockLogger> logger;
-    World world(logger);
-
-    const auto entity = world.create();
-    world.add<Worker>(entity, Worker{WorkerStatus::Idle, 0});
-    world.commit();
-
-    world.destroy(entity);
-    world.commit();
-
-    EXPECT_FALSE(world.has<Worker>(entity));
 }

@@ -6,6 +6,7 @@
 #include <antwika/scheduler/Scheduler.hpp>
 #include <antwika/scheduler/mocks/MockJob.hpp>
 
+#include "antwika/task_worker/TaskRegistry.hpp"
 #include "antwika/task_worker/Worker.hpp"
 #include "antwika/task_worker/WorkerLookup.hpp"
 
@@ -15,6 +16,7 @@ using antwika::scheduler::Scheduler;
 using antwika::scheduler::kNormalPriority;
 using antwika::scheduler::mocks::MockJob;
 using antwika::task_worker::TaskDispatchSystem;
+using antwika::task_worker::TaskRegistry;
 using antwika::task_worker::Worker;
 using antwika::task_worker::WorkerLookup;
 using antwika::task_worker::WorkerStatus;
@@ -44,7 +46,8 @@ TEST(TaskDispatchSystemTest, RunsSchedulerWithExactlyTheIdleWorkerCount)
     jobScheduler.schedule(jobB, kNormalPriority);
     jobScheduler.schedule(jobC, kNormalPriority);
 
-    TaskDispatchSystem system(jobScheduler, lookup);
+    TaskRegistry registry;
+    TaskDispatchSystem system(jobScheduler, lookup, registry);
     system.update(world, 0);
 
     EXPECT_EQ(jobScheduler.pending(), 1U);

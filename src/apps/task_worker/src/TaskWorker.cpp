@@ -50,7 +50,8 @@ namespace antwika::task_worker
         IReplaySource &inputSource,
         antwika::time::Tick totalTicks,
         std::uint32_t workerCount,
-        std::vector<std::reference_wrapper<ISystem>> observers)
+        std::vector<std::reference_wrapper<ISystem>> observers,
+        TaskRegistry *registry)
     {
         Logger logger(formatter, logPolicy, clock, appender);
         EventDispatcher dispatcher({eventSink});
@@ -66,15 +67,21 @@ namespace antwika::task_worker
         }
         world.commit();
 
+        TaskRegistry localRegistry;
+        TaskRegistry &taskRegistry = registry != nullptr
+                                          ? *registry
+                                          : localRegistry;
+
         WorkerLookup lookup(world, workerEntities);
         Scheduler jobScheduler;
 
         SystemScheduler systemScheduler;
-        WorkerCompletionSystem completionSystem;
+        WorkerCompletionSystem completionSystem(taskRegistry);
         const auto releasePhase = systemScheduler.createPhase("release");
         systemScheduler.addSystem(releasePhase, completionSystem);
 
-        TaskDispatchSystem dispatchSystem(jobScheduler, lookup);
+        TaskDispatchSystem dispatchSystem(
+            jobScheduler, lookup, taskRegistry);
         const auto dispatchPhase = systemScheduler.createPhase("dispatch");
         systemScheduler.addSystem(dispatchPhase, dispatchSystem);
 
@@ -85,7 +92,7 @@ namespace antwika::task_worker
         }
 
         TaskSubmissionSink submissionSink(
-            world, systemScheduler, jobScheduler, lookup);
+            world, systemScheduler, jobScheduler, lookup, taskRegistry);
         TickedEventDispatcher tickedDispatcher(
             dispatcher, {submissionSink});
 

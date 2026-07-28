@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <charconv>
 #include <cstdint>
+#include <limits>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -19,11 +20,35 @@ namespace antwika::task_worker
     namespace
     {
 
+        // "id,priority,durationTicks,label[,dependsOnId]"
+        constexpr std::size_t kRequiredFieldCount = 4;
+        constexpr std::size_t kFieldCountWithDependsOn = 5;
+
         std::uint64_t parseUInt64(std::string_view text)
         {
             std::uint64_t value{};
-            std::from_chars(text.data(), text.data() + text.size(), value);
+            const auto result = std::from_chars(
+                text.data(), text.data() + text.size(), value);
+            if (result.ec != std::errc{} ||
+                result.ptr != text.data() + text.size())
+            {
+                throw TaskSubmissionError(
+                    "TaskSubmissionSink: task.submit payload contains "
+                    "a non-numeric or malformed numeric field");
+            }
             return value;
+        }
+
+        antwika::scheduler::Priority parsePriority(std::string_view text)
+        {
+            const auto value = parseUInt64(text);
+            if (value > std::numeric_limits<std::uint8_t>::max())
+            {
+                throw TaskSubmissionError(
+                    "TaskSubmissionSink: task.submit payload's priority "
+                    "must fit in a std::uint8_t (0-255)");
+            }
+            return static_cast<antwika::scheduler::Priority>(value);
         }
 
         std::vector<std::string_view> splitByComma(std::string_view text)
@@ -50,11 +75,13 @@ namespace antwika::task_worker
         World &world,
         SystemScheduler &systemScheduler,
         Scheduler &jobScheduler,
-        WorkerLookup &lookup)
+        WorkerLookup &lookup,
+        TaskRegistry &registry)
         : world(world),
           systemScheduler(systemScheduler),
           jobScheduler(jobScheduler),
-          lookup(lookup)
+          lookup(lookup),
+          registry(registry)
     {
     }
 
@@ -73,14 +100,28 @@ namespace antwika::task_worker
         }
 
         const auto tokens = splitByComma(event.event.payload);
+        if (tokens.size() != kRequiredFieldCount &&
+            tokens.size() != kFieldCountWithDependsOn)
+        {
+            throw TaskSubmissionError(
+                "TaskSubmissionSink: task.submit payload must have 4 "
+                "or 5 comma-separated fields "
+                "(id,priority,durationTicks,label[,dependsOnId])");
+        }
+
         const auto taskId = parseUInt64(tokens[0]);
-        const auto priority =
-            static_cast<antwika::scheduler::Priority>(parseUInt64(tokens[1]));
+        const auto priority = parsePriority(tokens[1]);
         const auto durationTicks = parseUInt64(tokens[2]);
+        if (durationTicks == 0)
+        {
+            throw TaskSubmissionError(
+                "TaskSubmissionSink: task.submit payload's "
+                "durationTicks must be greater than zero");
+        }
         auto label = std::string(tokens[3]);
 
         std::vector<JobId> dependsOn;
-        if (tokens.size() > 4)
+        if (tokens.size() == kFieldCountWithDependsOn)
         {
             const auto dependsOnTaskId = parseUInt64(tokens[4]);
             const auto found = std::find_if(
@@ -101,6 +142,7 @@ namespace antwika::task_worker
             lookup, taskId, std::move(label), durationTicks);
         const auto jobId =
             jobScheduler.schedule(*job, priority, dependsOn);
+        registry.submit(taskId, job->label(), priority, durationTicks);
         submitted.emplace_back(taskId, jobId);
         jobs.push_back(std::move(job));
     }

@@ -20,6 +20,8 @@
 #include <antwika/time/SystemClock.hpp>
 
 #include "antwika/task_worker/Events.hpp"
+#include "antwika/task_worker/TaskRegistry.hpp"
+#include "antwika/task_worker/TaskStatusPrintSystem.hpp"
 #include "antwika/task_worker/WorkerStatusPrintSystem.hpp"
 
 using antwika::event::Event;
@@ -33,6 +35,8 @@ using antwika::replay::BinaryEventCodec;
 using antwika::replay::BinaryReplayReader;
 using antwika::replay::BinaryReplayWriter;
 using antwika::replay::ReplaySource;
+using antwika::task_worker::TaskRegistry;
+using antwika::task_worker::TaskStatusPrintSystem;
 using antwika::task_worker::WorkerStatusPrintSystem;
 using antwika::time::SystemClock;
 using antwika::time::Tick;
@@ -46,7 +50,7 @@ namespace
     // See blog/003-... and blog/004-... for the pattern this follows.
     // Sized to exercise multi-tick distribution and a priority jump.
     // Also exercises a dependency edge crossing a tick boundary.
-    // See PLAN_SCHEDULER.md §4.7 for the full scenario rationale.
+    // See blog/005-... for the full scenario rationale.
     std::vector<TimedEvent> demoScript()
     {
         using antwika::task_worker::events::kTaskSubmit;
@@ -114,7 +118,9 @@ int main(int argc, char **argv)
     MinimumLevelLogPolicy logPolicy(Level::Info);
     EventRecorder eventSink;
     BinaryEventCodec codec;
+    TaskRegistry registry;
     WorkerStatusPrintSystem printSystem(std::cout);
+    TaskStatusPrintSystem taskStatusPrintSystem(std::cout, registry);
 
     if (!replayPath.empty())
     {
@@ -131,7 +137,8 @@ int main(int argc, char **argv)
             source,
             kDemoTotalTicks,
             kWorkerCount,
-            {printSystem});
+            {printSystem, taskStatusPrintSystem},
+            &registry);
         return 0;
     }
 
@@ -146,7 +153,8 @@ int main(int argc, char **argv)
         source,
         kDemoTotalTicks,
         kWorkerCount,
-        {printSystem});
+        {printSystem, taskStatusPrintSystem},
+        &registry);
 
     if (!recordPath.empty())
     {

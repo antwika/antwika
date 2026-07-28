@@ -88,7 +88,7 @@ build/bin/antwika_task_worker --replay demo.replay   # reload it, reproducing th
 ```
 
 Tasks are submitted via a `task.submit` event (payload `"id,priority,durationTicks,label[,dependsOnId]"`), tick-stamped exactly like `life.toggle_cell` — a `TaskSubmissionSink` schedules each parsed task onto the `Scheduler`, and a `TaskDispatchSystem` runs the scheduler each tick with that tick's idle-worker count as its budget, so no more tasks start than there are free workers.
-See [`PLAN_SCHEDULER.md`](PLAN_SCHEDULER.md) and [`blog/005-a-job-scheduler-and-a-worker-pool-that-cant-lie-to-itself.md`](blog/005-a-job-scheduler-and-a-worker-pool-that-cant-lie-to-itself.md) for the full design.
+See [`blog/005-a-job-scheduler-and-a-worker-pool-that-cant-lie-to-itself.md`](blog/005-a-job-scheduler-and-a-worker-pool-that-cant-lie-to-itself.md) for the full design.
 
 ## Testing
 

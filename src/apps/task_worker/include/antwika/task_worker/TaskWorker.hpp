@@ -15,6 +15,7 @@
 #include <antwika/time/IClock.hpp>
 #include <antwika/time/Tick.hpp>
 
+#include "antwika/task_worker/TaskRegistry.hpp"
 #include "antwika/task_worker/Worker.hpp"
 
 namespace antwika::task_worker
@@ -81,6 +82,11 @@ namespace antwika::task_worker
      * @param observers Extra systems registered into an "observe" phase
      * that runs after "dispatch" every tick. Defaults to none, for
      * callers (like the tests) that only need the final worker states.
+     * @param registry Task registry kept in sync with every submitted
+     * task's pending/completed status, for a caller-owned observer
+     * (e.g. TaskStatusPrintSystem, itself passed via observers) to read
+     * live during the run. Optional: defaults to an internal registry
+     * for callers with no need to observe task status externally.
      * @return Every Worker's final state, in creation order.
      */
     std::vector<Worker> bootstrap(
@@ -92,6 +98,7 @@ namespace antwika::task_worker
         IReplaySource &inputSource,
         antwika::time::Tick totalTicks,
         std::uint32_t workerCount,
-        std::vector<std::reference_wrapper<ISystem>> observers = {});
+        std::vector<std::reference_wrapper<ISystem>> observers = {},
+        TaskRegistry *registry = nullptr);
 
 } // namespace antwika::task_worker

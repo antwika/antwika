@@ -1,6 +1,8 @@
 #pragma once
 
 #include <cstddef>
+#include <cstdint>
+#include <string_view>
 #include <vector>
 
 #include <antwika/ecs/Entity.hpp>
@@ -58,11 +60,19 @@ namespace antwika::task_worker
          * @brief Claim the lowest-index idle worker, if any.
          * @param durationTicks How many ticks the claimed worker stays
          * busy for.
+         * @param taskId The claiming task's submission-script id,
+         * recorded on the claimed Worker for status reporting.
+         * @param label The claiming task's human-readable label,
+         * recorded on the claimed Worker for status reporting;
+         * truncated to Worker::kWorkerLabelMaxLength if longer.
          * @return True if a worker was claimed; false if none were
          * idle (should not happen when callers respect idleCount() as
          * a budget, but handled defensively rather than assumed away).
          */
-        bool claimIdle(antwika::time::Tick durationTicks);
+        bool claimIdle(
+            antwika::time::Tick durationTicks,
+            std::uint64_t taskId,
+            std::string_view label);
 
     private:
         World &world;

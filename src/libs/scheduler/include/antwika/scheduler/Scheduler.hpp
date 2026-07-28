@@ -18,8 +18,7 @@ namespace antwika::scheduler
      * dependency DAG between jobs.
      *
      * Single-threaded, no RNG, no hashing anywhere in the pending-job
-     * or dependency-tracking path. See PLAN_SCHEDULER.md for the full
-     * design.
+     * or dependency-tracking path.
      */
     class Scheduler final
     {
