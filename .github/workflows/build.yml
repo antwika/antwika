@@ -205,9 +205,7 @@ jobs:
             --root . \
             --filter 'src/.*' \
             --exclude '.*/tests/.*' \
-            --exclude '.*/apps/game/src/main\.cpp' \
-            --exclude '.*/apps/life/src/main\.cpp' \
-            --exclude '.*/apps/sudoku/src/main\.cpp' \
+            --exclude '.*/apps/[^/]+/src/main\.cpp' \
             --exclude-throw-branches \
             --exclude-unreachable-branches \
             --gcov-executable '${{ matrix.gcov_executable }}' \
@@ -245,15 +243,18 @@ jobs:
             "antwika_log_tests"
             "antwika_reducer_tests"
             "antwika_replay_tests"
+            "antwika_scheduler_tests"
             "antwika_sudoku"
             "antwika_sudoku_tests"
+            "antwika_task_worker"
+            "antwika_task_worker_tests"
             "antwika_time_tests"
             "antwika_wfc_tests"
           )
 
           if [ "${{ matrix.image }}" = "mingw" ]; then
             extension=".exe"
-            expected=("antwika_game" "antwika_life" "antwika_sudoku")
+            expected=("antwika_game" "antwika_life" "antwika_sudoku" "antwika_task_worker")
           else
             extension=""
           fi

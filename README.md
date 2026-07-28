@@ -12,7 +12,8 @@ src/
 ├── apps/
 │   ├── game/
 │   ├── life/
-│   └── sudoku/
+│   ├── sudoku/
+│   └── task_worker/
 └── libs/
     ├── ecs/
     ├── engine/
@@ -20,6 +21,7 @@ src/
     ├── log/
     ├── reducer/
     ├── replay/
+    ├── scheduler/
     ├── time/
     └── wfc/
 blog/
@@ -56,8 +58,8 @@ Ctrl + Shift + B
 
 After the build completes, run the compiled binaries on your target machine:
 
-- Linux: `build/bin/antwika_game`, `build/bin/antwika_life`, `build/bin/antwika_sudoku`
-- Windows: `build/bin/antwika_game.exe`, `build/bin/antwika_life.exe`, `build/bin/antwika_sudoku.exe`
+- Linux: `build/bin/antwika_game`, `build/bin/antwika_life`, `build/bin/antwika_sudoku`, `build/bin/antwika_task_worker`
+- Windows: `build/bin/antwika_game.exe`, `build/bin/antwika_life.exe`, `build/bin/antwika_sudoku.exe`, `build/bin/antwika_task_worker.exe`
 
 ## Replays
 
@@ -79,6 +81,16 @@ build/bin/antwika_life --replay demo.replay   # reload it, reproducing the same 
 ```
 
 Cells are toggled alive via a `life.toggle_cell` event (payload `"x,y"`), tick-stamped exactly like `game.score_increment` — the same event-driven, replayable pattern applied to ECS state instead of a hand-rolled reducer.
+
+`apps/task_worker` is a third application, this time combining `antwika::ecs` with a new `antwika::scheduler` library: a fixed pool of `Worker` entities pulls tasks off a deterministic, priority-ordered, budget-bounded `antwika::scheduler::Scheduler`, submitted over time via a `task.submit` event and, optionally, chained to an earlier task with a dependency edge:
+
+```sh
+build/bin/antwika_task_worker --record demo.replay   # submits a mixed-priority task burst
+build/bin/antwika_task_worker --replay demo.replay   # reload it, reproducing the same run
+```
+
+Tasks are submitted via a `task.submit` event (payload `"id,priority,durationTicks,label[,dependsOnId]"`), tick-stamped exactly like `life.toggle_cell` — a `TaskSubmissionSink` schedules each parsed task onto the `Scheduler`, and a `TaskDispatchSystem` runs the scheduler each tick with that tick's idle-worker count as its budget, so no more tasks start than there are free workers.
+See [`blog/006-a-job-scheduler-and-a-worker-pool-that-cant-lie-to-itself.md`](blog/006-a-job-scheduler-and-a-worker-pool-that-cant-lie-to-itself.md) for the full design.
 
 ## Wave Function Collapse and Sudoku
 
