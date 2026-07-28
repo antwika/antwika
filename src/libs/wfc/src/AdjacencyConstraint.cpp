@@ -69,17 +69,15 @@ namespace antwika::wfc
         {
             rightDomain.remove(value);
         }
-        // Unreachable: any rightValue removed here had no compatible
-        // leftValue in the ORIGINAL leftDomain either, so it could
-        // never have kept leftDomain from being emptied above -- and
-        // conversely, whichever leftValue survived the left-hand pass
-        // did so *because* it is compatible with some value still in
-        // rightDomain, which is exactly what keeps that value from
-        // being removed here. So once leftDomain (checked above) is
-        // non-empty, rightDomain provably cannot become empty in this
-        // second pass. Kept only as a defensive check against a future
-        // change to the two-pass structure above, per
-        // docs/confirming-unreachable-branches.md.
+        // Unreachable in practice.
+        // Any value removed here had no compatible leftValue.
+        // It had none in the original leftDomain either.
+        // So it could not have kept leftDomain from emptying above.
+        // A surviving leftValue is compatible with some rightDomain value.
+        // That keeps it from being removed here, in the second pass.
+        // So once leftDomain is non-empty here, rightDomain cannot too.
+        // Kept as a defensive check for a future structure change.
+        // See docs/confirming-unreachable-branches.md.
         if (rightDomain.isEmpty()) // GCOVR_EXCL_LINE
         {
             return false; // GCOVR_EXCL_LINE

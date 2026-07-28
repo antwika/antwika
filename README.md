@@ -82,7 +82,11 @@ Cells are toggled alive via a `life.toggle_cell` event (payload `"x,y"`), tick-s
 
 ## Wave Function Collapse and Sudoku
 
-`libs/wfc` (`antwika::wfc`) is a standalone, dependency-free constraint-solving library implementing Wave Function Collapse: repeatedly pick the lowest-entropy cell, collapse it to one candidate value, propagate the consequences, and backtrack on contradiction. It is deterministic (no RNG, fixed tie-breaks), complete (an exhaustive backtracking search distinguishes a proven-`Unsatisfiable` puzzle from one that merely ran out of an optional step budget, `LimitExceeded`), and scales to large waves via worklist-driven propagation and a trail-based undo log rather than copying the whole wave per branch. Its own data model is a flat, index-addressed `std::vector` of cells with no notion of a grid — geometry is entirely up to the caller, expressed as `IConstraint`s over cell indices.
+`libs/wfc` (`antwika::wfc`) is a standalone, dependency-free constraint-solving library implementing Wave Function Collapse: repeatedly pick the lowest-entropy cell, collapse it to one candidate value, propagate the consequences, and backtrack on contradiction.
+It is deterministic (no RNG, fixed tie-breaks) and complete: an exhaustive backtracking search distinguishes a proven-`Unsatisfiable` puzzle from one that merely ran out of an optional step budget (`LimitExceeded`).
+It also scales to large waves via worklist-driven propagation and a trail-based undo log, rather than copying the whole wave per branch.
+Its own data model is a flat, index-addressed `std::vector` of cells with no notion of a grid.
+Geometry is entirely up to the caller, expressed as `IConstraint`s over cell indices.
 
 `apps/sudoku` (`antwika_sudoku`) is the showcase: it expresses a Sudoku puzzle as an 81-cell wave and its row/column/3x3-box rules as 27 `AllDifferentConstraint`s over that flat array, then hands both to `antwika::wfc::Solver` — no 2D-grid code inside the library at all.
 

@@ -9,10 +9,9 @@ namespace antwika::sudoku
 
     namespace
     {
-        // The closing brace below is a gcov/NRVO miss, not a real
-        // gap -- see the identical case in
-        // antwika::wfc::Domain::singleton, documented in
-        // docs/confirming-unreachable-branches.md.
+        // The closing brace below is a gcov/NRVO miss, not a real gap.
+        // See the identical case in antwika::wfc::Domain::singleton.
+        // It is documented in docs/confirming-unreachable-branches.md.
         std::string stripWhitespace(std::string_view text)
         {
             std::string result;

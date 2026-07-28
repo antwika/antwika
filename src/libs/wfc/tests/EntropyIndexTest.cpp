@@ -49,8 +49,8 @@ TEST(EntropyIndexTest, CustomWeightsCanChangeSelectionOrder)
 {
     // Cell 0: candidates {0, 1}, weights heavily skewed -> low entropy.
     // Cell 1: candidates {0, 1}, equal weights -> higher entropy.
-    // Both have the same candidate count, so uniform MRV would tie on
-    // index; weights make cell 0 strictly lower entropy.
+    // Both have the same candidate count, so uniform MRV would tie.
+    // The weights make cell 0 strictly lower entropy.
     std::vector<Domain> wave{Domain(2), Domain(2)};
     std::vector<double> weights{100.0, 1.0};
     EntropyIndex entropyIndex(wave, weights);

@@ -15,9 +15,8 @@ using antwika::wfc::Solver;
 
 TEST(SolverDeterminismTest, SameWaveSolvedTwiceViaOneSolverMatches)
 {
-    // Two solutions exist -- (0,1) and (1,0) -- so this also proves
-    // the *same* one is always picked, not merely that some solution
-    // is found each time.
+    // Two solutions exist: (0,1) and (1,0).
+    // This proves the same solution is always picked, not just any.
     std::vector<Domain> wave{Domain(2), Domain(2)};
     AllDifferentConstraint allDifferent({0, 1});
 

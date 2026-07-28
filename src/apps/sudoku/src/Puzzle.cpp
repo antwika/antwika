@@ -6,10 +6,9 @@ namespace antwika::sudoku
     using antwika::wfc::AllDifferentConstraint;
     using antwika::wfc::Domain;
 
-    // The closing braces below on buildInitialWave and buildConstraints
-    // are gcov/NRVO misses, not real gaps -- see the identical case in
-    // antwika::wfc::Domain::singleton, documented in
-    // docs/confirming-unreachable-branches.md.
+    // The closing braces below are gcov/NRVO misses, not real gaps.
+    // See the identical case in antwika::wfc::Domain::singleton.
+    // It is documented in docs/confirming-unreachable-branches.md.
     std::vector<Domain> buildInitialWave(const Board &board)
     {
         std::vector<Domain> wave;

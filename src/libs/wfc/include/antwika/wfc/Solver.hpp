@@ -60,9 +60,8 @@ namespace antwika::wfc
         std::vector<double> valueWeights;
         SolverLimits limits;
 
-        // cellToConstraints[c] lists every constraint whose cells()
-        // includes c -- built once at construction so propagation wakes
-        // only constraints actually touched by a change.
+        // cellToConstraints[c] lists every constraint touching cell c.
+        // Built once at construction; wakes only touched constraints.
         std::vector<std::vector<std::size_t>> cellToConstraints;
     };
 

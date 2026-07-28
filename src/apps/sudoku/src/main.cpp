@@ -123,8 +123,8 @@ int main(int argc, char **argv)
             std::cout << "\nNo solution exists for this puzzle.\n";
             return 1;
         case SolveOutcome::LimitExceeded:
-            // Cannot occur: no SolverLimits is set above. Handled
-            // explicitly anyway so the switch stays exhaustive.
+            // Cannot occur: no SolverLimits is set above.
+            // Handled explicitly anyway, so the switch stays exhaustive.
             std::cout << "\nSolver step limit exceeded.\n";
             return 1;
     }

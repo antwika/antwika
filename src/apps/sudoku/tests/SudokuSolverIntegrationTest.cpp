@@ -20,8 +20,7 @@ using antwika::wfc::Solver;
 
 namespace
 {
-    // The classic Wikipedia example easy puzzle and its known unique
-    // solution.
+    // The classic Wikipedia easy puzzle, and its known unique solution.
     constexpr std::string_view kEasyPuzzle =
         "53..7...."
         "6..195..."
@@ -44,11 +43,10 @@ namespace
         "287419635"
         "345286179";
 
-    // A sparser puzzle (fewer givens, so more search) sharing the same
-    // underlying solution grid as kEasyPuzzle -- exercises the solver
-    // with a harder starting position without depending on memorizing
-    // a second full solution by hand; correctness is instead checked
-    // structurally (see IsValidSolution).
+    // A sparser puzzle (fewer givens, so more search).
+    // It shares the same underlying solution grid as kEasyPuzzle.
+    // That exercises a harder start, with no second solution to memorize.
+    // Correctness is instead checked structurally (see IsValidSolution).
     constexpr std::string_view kHardPuzzle =
         "53......."
         "6..1....."

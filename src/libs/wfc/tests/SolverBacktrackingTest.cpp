@@ -19,10 +19,11 @@ using ::testing::Return;
 
 TEST(SolverBacktrackingTest, WrongBranchIsAbandonedBeforeCorrectOneFound)
 {
-    // A single cell with two candidates. Candidate 0 (tried first, per
-    // ascending order) is a manufactured dead end; only candidate 1
-    // actually satisfies the constraint. Propagation alone can't know
-    // this in advance -- it only surfaces once the branch is tried.
+    // A single cell with two candidates.
+    // Candidate 0 (tried first, ascending) is a manufactured dead end.
+    // Only candidate 1 actually satisfies the constraint.
+    // Propagation alone can't know this in advance.
+    // It only surfaces once the branch is tried.
     static const std::vector<std::size_t> cellIndices{0};
 
     MockConstraint constraint;
@@ -51,14 +52,14 @@ TEST(SolverBacktrackingTest, WrongBranchIsAbandonedBeforeCorrectOneFound)
 
 TEST(SolverBacktrackingTest, ExhaustingAnInnerChoicePointPopsToAnOuterOne)
 {
-    // Two choice points deep: cell 0 (2 candidates) is chosen first
-    // (fewer candidates -> lower entropy). Its first candidate (0)
-    // leaves cell 1 (3 candidates) as a second, inner choice point --
-    // every one of *its* candidates is a dead end while cell 0 == 0,
-    // so the inner choice point is fully exhausted and popped while
-    // the outer one (cell 0) is still on the stack, forcing a rewind
-    // to it rather than reporting Unsatisfiable. Only cell 0 == 1
-    // paired with cell 1 == 0 actually satisfies the constraint.
+    // Two choice points deep.
+    // Cell 0 (2 candidates) is chosen first: fewer means lower entropy.
+    // Its first candidate (0) leaves cell 1 (3) as a second, inner point.
+    // Every one of its candidates is a dead end while cell 0 == 0.
+    // So the inner choice point is fully exhausted and popped.
+    // The outer one (cell 0) is still on the stack at that point.
+    // That forces a rewind to it, rather than reporting Unsatisfiable.
+    // Only cell 0 == 1 with cell 1 == 0 satisfies the constraint.
     static const std::vector<std::size_t> cellIndices{0, 1};
 
     MockConstraint constraint;

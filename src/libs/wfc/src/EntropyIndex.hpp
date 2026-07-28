@@ -15,12 +15,14 @@ namespace antwika::wfc::detail
 
     // Private, incrementally maintained lowest-entropy-cell picker.
     //
-    // Keyed on (entropy, cellIndex) in a std::set, ordered ascending, so
-    // pickNext() is a single begin() lookup and update() is a single
-    // erase+insert -- neither rescans the whole wave. Ordering by the
-    // pair directly makes "ties by lowest cell index" fall out of
-    // std::pair's lexicographic operator< for free, with no separate
-    // tie-break step. Only cells with count() > 1 are kept in the set.
+    // Keyed on (entropy, cellIndex) in a std::set, ordered ascending.
+    // pickNext() is then a single begin() lookup.
+    // update() is a single erase+insert.
+    // Neither rescans the whole wave.
+    // Ordering by the pair gives ties-by-lowest-index for free.
+    // It comes from std::pair's lexicographic operator<.
+    // No separate tie-break step is needed.
+    // Only cells with count() > 1 are kept in the set.
     class EntropyIndex
     {
     public:
@@ -28,12 +30,12 @@ namespace antwika::wfc::detail
             const std::vector<Domain> &wave,
             std::vector<double> valueWeights);
 
-        // Notify the index that a cell's domain changed (shrunk during
-        // propagation, or grew back during a Trail rewind).
+        // Notify the index that a cell's domain changed.
+        // This covers a propagation shrink or a Trail-rewind regrow.
         void update(std::size_t cell, const Domain &domain);
 
-        // Next cell to collapse, per the entropy + lowest-index rule, or
-        // std::nullopt if every cell is already singleton/empty.
+        // Next cell to collapse, per the entropy + lowest-index rule.
+        // Returns std::nullopt if every cell is singleton or empty.
         [[nodiscard]] std::optional<std::size_t> pickNext() const;
 
     private:

@@ -17,8 +17,8 @@ using antwika::wfc::SolverLimits;
 
 TEST(SolverStepLimitTest, TinyBudgetReturnsLimitExceeded)
 {
-    // Unsatisfiable by pigeonhole (3 mutually-different cells, 2
-    // symbols), which would otherwise require exhausting every branch.
+    // Unsatisfiable by pigeonhole (3 cells, only 2 symbols).
+    // That would otherwise require exhausting every branch.
     // A budget of a single step can't get that far.
     std::vector<Domain> wave{Domain(2), Domain(2), Domain(2)};
     AllDifferentConstraint ab({0, 1});

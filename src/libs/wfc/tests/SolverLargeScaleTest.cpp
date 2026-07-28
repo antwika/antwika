@@ -19,9 +19,8 @@ using antwika::wfc::Solver;
 
 namespace
 {
-    // Every pair of symbols is compatible: mostly-satisfiable by
-    // design, per PLAN_WFC.md 8, so this stresses propagation/trail
-    // scale rather than search depth.
+    // Every pair of symbols is compatible, so this is mostly-satisfiable.
+    // It stresses propagation/trail scale, not search depth.
     CompatibilityTable makeFullyCompatibleTable()
     {
         return CompatibilityTable(4);

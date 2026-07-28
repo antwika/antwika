@@ -19,7 +19,8 @@ using antwika::wfc::Solver;
 namespace
 {
     // Symbols: 0 = grass, 1 = sand, 2 = water.
-    // water only sits next to sand or water; grass never next to water;
+    // water only sits next to sand or water.
+    // grass never sits next to water.
     // sand sits next to anything.
     CompatibilityTable makeTable()
     {

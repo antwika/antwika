@@ -14,13 +14,12 @@ namespace antwika::wfc
 
     namespace
     {
-        // The closing brace below is a gcov/NRVO miss, not a real gap:
-        // every statement in the body runs on every call, but gcc
-        // attributes `assignment`'s scope-exit destructor block
-        // separately from the elided-copy return path, leaving that
-        // block's own counter at zero. Same class of artifact as
-        // Domain::singleton -- see
-        // docs/confirming-unreachable-branches.md.
+        // The closing brace below is a gcov/NRVO miss, not a real gap.
+        // Every statement in the body still runs on every call.
+        // gcc separates the block from the elided-copy return path.
+        // That block's own counter is left at zero.
+        // Same class of artifact as Domain::singleton.
+        // See docs/confirming-unreachable-branches.md.
         std::vector<std::size_t> extractAssignment(
             const std::vector<Domain> &wave)
         {
@@ -190,21 +189,19 @@ namespace antwika::wfc
                 cell, std::move(candidates), 0, trail.checkpoint()});
         };
 
-        // Deliberately restructured versus PLAN_WFC.md 3.9's literal
-        // pseudocode: that version re-derives "which cell" via
-        // entropyIndex.pickNext() at the very top of every loop
-        // iteration, including right after a failed propagate(). A
-        // failed propagate() can leave some *other* cell's domain
-        // empty (a contradiction) without that cell ever appearing in
-        // entropyIndex (which only tracks cells with count() > 1) --
-        // so re-deriving "solved" purely from "pickNext() returns
-        // nothing" at that point would misreport a contradiction as
-        // Solved. Instead, a failed propagate() here falls straight
-        // through to retry the *same* choice point's next candidate,
-        // and pickNext() is only ever consulted right after a
-        // *successful* propagate() (including the very first one) --
-        // exactly when "no undetermined cell left" truly does mean
-        // solved.
+        // Deliberately restructured versus PLAN_WFC.md's pseudocode.
+        // That pseudocode re-derives which cell to pick every loop.
+        // It does so even right after a failed propagate().
+        // A failed propagate() can leave some other cell's domain empty.
+        // That cell may never surface in entropyIndex, though.
+        // entropyIndex only tracks cells with count() > 1.
+        // So pickNext() returning nothing would not reliably mean solved.
+        // It could misreport a contradiction as Solved instead.
+        // Here, a failed propagate() falls through to the next candidate.
+        // That retry stays at the same choice point.
+        // pickNext() is only consulted after a successful propagate().
+        // That includes the first propagate() call, before any choice point.
+        // Only then does no undetermined cell left truly mean solved.
         {
             const std::optional<std::size_t> firstCell =
                 entropyIndex.pickNext();

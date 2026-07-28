@@ -15,10 +15,10 @@ using antwika::wfc::Solver;
 
 TEST(SolverCompletenessTest, UnsatisfiableOnlyAfterFullExhaustion)
 {
-    // 3 mutually-different cells, only 2 symbols available: pigeonhole
-    // makes this unsatisfiable, but only provably so after both
-    // candidates at the first choice point (and their consequences)
-    // have genuinely been tried.
+    // Pigeonhole: 3 mutually-different cells, only 2 symbols available.
+    // That makes this unsatisfiable.
+    // It is provably so only after trying both first-choice candidates.
+    // Their consequences must be genuinely tried too.
     std::vector<Domain> wave{Domain(2), Domain(2), Domain(2)};
     AllDifferentConstraint ab({0, 1});
     AllDifferentConstraint bc({1, 2});

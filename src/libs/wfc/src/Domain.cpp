@@ -43,13 +43,13 @@ namespace antwika::wfc
     {
     }
 
-    // The closing brace below is flagged as a gcov miss despite every
-    // statement in the body executing on every call: gcc emits a
-    // separate scope-exit block here for `domain`'s destructor call
-    // that named return value optimization elides in the normal
-    // return path, leaving that block's own counter at zero. Not a
-    // reachable, untested branch -- a known gcov/NRVO artifact, per
-    // docs/confirming-unreachable-branches.md.
+    // The closing brace below is flagged as a gcov miss.
+    // Every statement in the body still executes on every call.
+    // gcc emits a separate scope-exit block for `domain`'s destructor.
+    // Named return value optimization elides that block.
+    // Its counter is left at zero.
+    // Not a reachable, untested branch -- a known gcov/NRVO artifact.
+    // See docs/confirming-unreachable-branches.md.
     Domain Domain::singleton(std::size_t value, std::size_t alphabetSize)
     {
         Domain domain(alphabetSize);
@@ -124,10 +124,11 @@ namespace antwika::wfc
                 return i;
             }
         }
-        // Unreachable: isSingleton() (asserted above) guarantees exactly
-        // one set bit, so the loop always returns before falling through
-        // here. Kept only as a defensive fallback against a violated
-        // precondition, per docs/confirming-unreachable-branches.md.
+        // Unreachable in practice.
+        // isSingleton() (asserted above) guarantees exactly one bit.
+        // So the loop above always returns before reaching here.
+        // Kept only as a defensive fallback against a violated precondition.
+        // See docs/confirming-unreachable-branches.md.
         assert(false); // GCOVR_EXCL_LINE
         return 0; // GCOVR_EXCL_LINE
     }
