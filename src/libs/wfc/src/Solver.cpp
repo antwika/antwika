@@ -206,8 +206,8 @@ namespace antwika::wfc
                 cell, std::move(candidates), 0, trail.checkpoint()});
         };
 
-        // A naive version of this loop re-derives which cell to pick
-        // every iteration, even right after a failed propagate().
+        // A naive loop re-derives which cell to pick on every iteration.
+        // It does so even right after a failed propagate().
         // A failed propagate() can leave some other cell's domain empty.
         // That cell may never surface in entropyIndex, though.
         // entropyIndex only tracks cells with count() > 1.
