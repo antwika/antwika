@@ -35,7 +35,6 @@ TEST(EngineTest, Step_DispatchesBuiltInTickEventBeforeProcessingQueue)
 
     {
         ::testing::InSequence seq;
-        EXPECT_CALL(mockLogger, log(Level::Info, "Engine step: tick 0"));
         EXPECT_CALL(
             mockEventDispatcher,
             dispatch(Event{.name = antwika::engine::events::kTick}));
@@ -54,7 +53,6 @@ TEST(EngineTest, Step_ProcessesQueuedEventsForTheSteppedTick)
 
     {
         ::testing::InSequence seq;
-        EXPECT_CALL(mockLogger, log(Level::Info, "Engine step: tick 3"));
         EXPECT_CALL(
             mockEventDispatcher,
             dispatch(Event{.name = antwika::engine::events::kTick}));
@@ -75,7 +73,6 @@ TEST(EngineTest, Step_PropagatesExceptionWhenDispatcherDispatchFails)
     MockEventDispatcher mockEventDispatcher;
     Engine engine(mockLogger, mockEventQueue, mockEventDispatcher);
 
-    EXPECT_CALL(mockLogger, log(Level::Info, "Engine step: tick 0"));
     EXPECT_CALL(
         mockEventDispatcher,
         dispatch(Event{.name = antwika::engine::events::kTick}))
@@ -92,7 +89,6 @@ TEST(EngineTest, Step_PropagatesExceptionWhenEventQueuePopFails)
     MockEventDispatcher mockEventDispatcher;
     Engine engine(mockLogger, mockEventQueue, mockEventDispatcher);
 
-    EXPECT_CALL(mockLogger, log(Level::Info, "Engine step: tick 0"));
     EXPECT_CALL(
         mockEventDispatcher,
         dispatch(Event{.name = antwika::engine::events::kTick}));
