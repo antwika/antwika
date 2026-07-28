@@ -1,4 +1,4 @@
-#include "antwika/task-worker/TaskDispatchSystem.hpp"
+#include "antwika/task_worker/TaskDispatchSystem.hpp"
 
 namespace antwika::task_worker
 {

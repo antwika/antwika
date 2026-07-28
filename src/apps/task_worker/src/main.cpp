@@ -1,4 +1,4 @@
-#include "antwika/task-worker/TaskWorker.hpp"
+#include "antwika/task_worker/TaskWorker.hpp"
 
 #include <cstdint>
 #include <fstream>
@@ -19,8 +19,8 @@
 #include <antwika/replay/ReplaySource.hpp>
 #include <antwika/time/SystemClock.hpp>
 
-#include "antwika/task-worker/Events.hpp"
-#include "antwika/task-worker/WorkerStatusPrintSystem.hpp"
+#include "antwika/task_worker/Events.hpp"
+#include "antwika/task_worker/WorkerStatusPrintSystem.hpp"
 
 using antwika::event::Event;
 using antwika::event::EventRecorder;

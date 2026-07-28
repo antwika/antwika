@@ -1,4 +1,4 @@
-#include "antwika/task-worker/TaskWorker.hpp"
+#include "antwika/task_worker/TaskWorker.hpp"
 
 #include <antwika/ecs/SystemScheduler.hpp>
 #include <antwika/ecs/World.hpp>
@@ -10,10 +10,10 @@
 #include <antwika/replay/EngineLoop.hpp>
 #include <antwika/scheduler/Scheduler.hpp>
 
-#include "antwika/task-worker/TaskDispatchSystem.hpp"
-#include "antwika/task-worker/TaskSubmissionSink.hpp"
-#include "antwika/task-worker/WorkerCompletionSystem.hpp"
-#include "antwika/task-worker/WorkerLookup.hpp"
+#include "antwika/task_worker/TaskDispatchSystem.hpp"
+#include "antwika/task_worker/TaskSubmissionSink.hpp"
+#include "antwika/task_worker/WorkerCompletionSystem.hpp"
+#include "antwika/task_worker/WorkerLookup.hpp"
 
 using antwika::ecs::Entity;
 using antwika::ecs::SystemScheduler;

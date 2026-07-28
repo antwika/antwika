@@ -1,11 +1,11 @@
-#include "antwika/task-worker/TaskJob.hpp"
+#include "antwika/task_worker/TaskJob.hpp"
 
 #include <gtest/gtest.h>
 
 #include <antwika/log/mocks/MockLogger.hpp>
 
-#include "antwika/task-worker/Worker.hpp"
-#include "antwika/task-worker/WorkerLookup.hpp"
+#include "antwika/task_worker/Worker.hpp"
+#include "antwika/task_worker/WorkerLookup.hpp"
 
 using antwika::ecs::World;
 using antwika::log::mocks::MockLogger;

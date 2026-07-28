@@ -1,4 +1,4 @@
-#include "antwika/task-worker/WorkerStatusPrintSystem.hpp"
+#include "antwika/task_worker/WorkerStatusPrintSystem.hpp"
 
 #include <sstream>
 
@@ -7,7 +7,7 @@
 
 #include <antwika/log/mocks/MockLogger.hpp>
 
-#include "antwika/task-worker/Worker.hpp"
+#include "antwika/task_worker/Worker.hpp"
 
 using antwika::ecs::World;
 using antwika::log::mocks::MockLogger;

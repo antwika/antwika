@@ -1,6 +1,6 @@
-#include "antwika/task-worker/WorkerCompletionSystem.hpp"
+#include "antwika/task_worker/WorkerCompletionSystem.hpp"
 
-#include "antwika/task-worker/Worker.hpp"
+#include "antwika/task_worker/Worker.hpp"
 
 namespace antwika::task_worker
 {

@@ -1,3 +1,3 @@
 add_subdirectory(game)
 add_subdirectory(life)
-add_subdirectory(task-worker)
+add_subdirectory(task_worker)

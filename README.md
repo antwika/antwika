@@ -12,7 +12,7 @@ src/
 ├── apps/
 │   ├── game/
 │   ├── life/
-│   └── task-worker/
+│   └── task_worker/
 └── libs/
     ├── ecs/
     ├── engine/
@@ -80,7 +80,7 @@ build/bin/antwika_life --replay demo.replay   # reload it, reproducing the same 
 
 Cells are toggled alive via a `life.toggle_cell` event (payload `"x,y"`), tick-stamped exactly like `game.score_increment` — the same event-driven, replayable pattern applied to ECS state instead of a hand-rolled reducer.
 
-`apps/task-worker` is a third application, this time combining `antwika::ecs` with a new `antwika::scheduler` library: a fixed pool of `Worker` entities pulls tasks off a deterministic, priority-ordered, budget-bounded `antwika::scheduler::Scheduler`, submitted over time via a `task.submit` event and, optionally, chained to an earlier task with a dependency edge:
+`apps/task_worker` is a third application, this time combining `antwika::ecs` with a new `antwika::scheduler` library: a fixed pool of `Worker` entities pulls tasks off a deterministic, priority-ordered, budget-bounded `antwika::scheduler::Scheduler`, submitted over time via a `task.submit` event and, optionally, chained to an earlier task with a dependency edge:
 
 ```sh
 build/bin/antwika_task_worker --record demo.replay   # submits a mixed-priority task burst

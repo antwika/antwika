@@ -1,4 +1,4 @@
-#include "antwika/task-worker/TaskSubmissionSink.hpp"
+#include "antwika/task_worker/TaskSubmissionSink.hpp"
 
 #include <gtest/gtest.h>
 
@@ -7,11 +7,11 @@
 #include <antwika/log/mocks/MockLogger.hpp>
 #include <antwika/scheduler/Scheduler.hpp>
 
-#include "antwika/task-worker/Events.hpp"
-#include "antwika/task-worker/TaskDispatchSystem.hpp"
-#include "antwika/task-worker/TaskSubmissionError.hpp"
-#include "antwika/task-worker/Worker.hpp"
-#include "antwika/task-worker/WorkerLookup.hpp"
+#include "antwika/task_worker/Events.hpp"
+#include "antwika/task_worker/TaskDispatchSystem.hpp"
+#include "antwika/task_worker/TaskSubmissionError.hpp"
+#include "antwika/task_worker/Worker.hpp"
+#include "antwika/task_worker/WorkerLookup.hpp"
 
 using antwika::ecs::SystemScheduler;
 using antwika::ecs::World;

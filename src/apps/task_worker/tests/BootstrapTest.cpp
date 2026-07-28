@@ -13,9 +13,9 @@
 #include <antwika/replay/ReplaySource.hpp>
 #include <antwika/time/fakes/FakeClock.hpp>
 
-#include "antwika/task-worker/Events.hpp"
-#include "antwika/task-worker/TaskWorker.hpp"
-#include "antwika/task-worker/Worker.hpp"
+#include "antwika/task_worker/Events.hpp"
+#include "antwika/task_worker/TaskWorker.hpp"
+#include "antwika/task_worker/Worker.hpp"
 
 using antwika::ecs::ISystem;
 using antwika::ecs::World;

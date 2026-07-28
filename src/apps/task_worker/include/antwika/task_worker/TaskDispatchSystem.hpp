@@ -5,7 +5,7 @@
 #include <antwika/scheduler/Scheduler.hpp>
 #include <antwika/time/Tick.hpp>
 
-#include "antwika/task-worker/WorkerLookup.hpp"
+#include "antwika/task_worker/WorkerLookup.hpp"
 
 namespace antwika::task_worker
 {

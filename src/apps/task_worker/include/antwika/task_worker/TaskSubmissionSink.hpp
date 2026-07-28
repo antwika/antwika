@@ -10,8 +10,8 @@
 #include <antwika/scheduler/JobId.hpp>
 #include <antwika/scheduler/Scheduler.hpp>
 
-#include "antwika/task-worker/TaskJob.hpp"
-#include "antwika/task-worker/WorkerLookup.hpp"
+#include "antwika/task_worker/TaskJob.hpp"
+#include "antwika/task_worker/WorkerLookup.hpp"
 
 namespace antwika::task_worker
 {

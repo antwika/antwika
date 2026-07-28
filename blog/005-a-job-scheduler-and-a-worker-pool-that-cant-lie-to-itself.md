@@ -3,7 +3,7 @@
 *Post 5*
 
 The [previous post](004-a-game-of-life-demo-and-a-queue-nobody-was-reading.md) closed out `apps/life` and a queue that turned out to have no reader.
-This post adds a new mechanism library, `antwika::scheduler`, and a new demo application, `apps/task-worker`, that puts it to work — the same "library owns a mechanism, an app demonstrates it end to end" shape `antwika::ecs`/`apps/life` established, applied to a different problem: running a batch of prioritized jobs across ticks instead of simulating a board.
+This post adds a new mechanism library, `antwika::scheduler`, and a new demo application, `apps/task_worker`, that puts it to work — the same "library owns a mechanism, an app demonstrates it end to end" shape `antwika::ecs`/`apps/life` established, applied to a different problem: running a batch of prioritized jobs across ticks instead of simulating a board.
 
 ## What `antwika::scheduler` had to guarantee
 
@@ -46,7 +46,7 @@ There's no detection algorithm in `Scheduler` because there's nothing to detect:
 The alternative — a `SchedulerSystem : ISystem` shipped inside the library, wrapping a `Scheduler` and draining it every tick — was considered and rejected for the same reason `antwika::ecs` doesn't depend on `antwika::reducer` or vice versa: every library in this project depends only "downward" toward genuinely shared mechanism, never sideways toward a peer library just to shorten one application's wiring.
 Making `scheduler` depend on `ecs` would also make it unusable in a context with no `World` at all, which contradicts the whole point of keeping it domain-agnostic.
 
-`apps/task-worker` is where the two actually meet, at the application layer, mirroring `apps/life`'s `BoardSink`/`LifeSystem` split exactly: `TaskDispatchSystem : ISystem` lives in the app, not the library, and its `update(World&, Tick)` computes that tick's idle-worker count and calls `Scheduler::run(tick, idleCount)`.
+`apps/task_worker` is where the two actually meet, at the application layer, mirroring `apps/life`'s `BoardSink`/`LifeSystem` split exactly: `TaskDispatchSystem : ISystem` lives in the app, not the library, and its `update(World&, Tick)` computes that tick's idle-worker count and calls `Scheduler::run(tick, idleCount)`.
 Registering it into a `"dispatch"` phase (after a `"release"` phase that frees finished workers) is the concrete answer to "how do systems get scheduled": systems schedule jobs, the job scheduler doesn't schedule systems.
 
 ## The one thing that changed once code met the plan: `WorkerLookup`
@@ -60,7 +60,7 @@ It's a small addition, not a different design — the plan's own wording, "a ref
 
 ## The demo scenario
 
-`apps/task-worker`'s replay script (`main.cpp`'s `demoScript()`, also what `BootstrapTest`/`ReplayIntegrationTest` run against) uses 2 workers and 5 tasks, deliberately sized to hit every requirement:
+`apps/task_worker`'s replay script (`main.cpp`'s `demoScript()`, also what `BootstrapTest`/`ReplayIntegrationTest` run against) uses 2 workers and 5 tasks, deliberately sized to hit every requirement:
 
 ```
 tick 0: Alpha (Normal, 4 ticks), Beta (Normal, 5 ticks), Gamma (Low, 1 tick)
@@ -75,6 +75,6 @@ The same-tick cascade case (a fully pre-existing chain draining in one `run()` c
 ## Where it ended up
 
 - `antwika::scheduler`: `JobId`, `Priority`, `IJob`, `SchedulerError`, and `Scheduler` — priority-ordered, budget-bounded, dependency-aware, depending only on `antwika::time`. 16 tests across `SchedulerTest.cpp`, `SchedulerDependencyTest.cpp`, and `SchedulerDeterminismTest.cpp`.
-- `apps/task-worker`: a 2-phase (`"release"`/`"dispatch"`, plus an optional `"observe"`) `antwika::ecs` application wiring `antwika::scheduler` in through a `TaskDispatchSystem`, with `--record`/`--replay` identical to `apps/game`/`apps/life`.
+- `apps/task_worker`: a 2-phase (`"release"`/`"dispatch"`, plus an optional `"observe"`) `antwika::ecs` application wiring `antwika::scheduler` in through a `TaskDispatchSystem`, with `--record`/`--replay` identical to `apps/game`/`apps/life`.
 - `WorkerLookup`: the one piece of real design that only became necessary once the plan's "app's worker-lookup" phrase met `World`'s actual double-buffering semantics.
 - 181 tests passing, 100% line coverage on every new file, no `std::unordered_map`/`unordered_set` anywhere in the pending-job or dependency-tracking path, no cycle-detection code because there's nothing to detect.

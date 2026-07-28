@@ -1,8 +1,8 @@
-#include "antwika/task-worker/WorkerLookup.hpp"
+#include "antwika/task_worker/WorkerLookup.hpp"
 
 #include <algorithm>
 
-#include "antwika/task-worker/Worker.hpp"
+#include "antwika/task_worker/Worker.hpp"
 
 namespace antwika::task_worker
 {

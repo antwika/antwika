@@ -1,4 +1,4 @@
-#include "antwika/task-worker/TaskSubmissionSink.hpp"
+#include "antwika/task_worker/TaskSubmissionSink.hpp"
 
 #include <algorithm>
 #include <charconv>
@@ -10,8 +10,8 @@
 #include <antwika/engine/Events.hpp>
 #include <antwika/scheduler/Priority.hpp>
 
-#include "antwika/task-worker/Events.hpp"
-#include "antwika/task-worker/TaskSubmissionError.hpp"
+#include "antwika/task_worker/Events.hpp"
+#include "antwika/task_worker/TaskSubmissionError.hpp"
 
 namespace antwika::task_worker
 {

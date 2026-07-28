@@ -1,4 +1,4 @@
-#include "antwika/task-worker/TaskDispatchSystem.hpp"
+#include "antwika/task_worker/TaskDispatchSystem.hpp"
 
 #include <gtest/gtest.h>
 
@@ -6,8 +6,8 @@
 #include <antwika/scheduler/Scheduler.hpp>
 #include <antwika/scheduler/mocks/MockJob.hpp>
 
-#include "antwika/task-worker/Worker.hpp"
-#include "antwika/task-worker/WorkerLookup.hpp"
+#include "antwika/task_worker/Worker.hpp"
+#include "antwika/task_worker/WorkerLookup.hpp"
 
 using antwika::ecs::World;
 using antwika::log::mocks::MockLogger;

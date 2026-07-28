@@ -15,7 +15,7 @@
 #include <antwika/time/IClock.hpp>
 #include <antwika/time/Tick.hpp>
 
-#include "antwika/task-worker/Worker.hpp"
+#include "antwika/task_worker/Worker.hpp"
 
 namespace antwika::task_worker
 {
