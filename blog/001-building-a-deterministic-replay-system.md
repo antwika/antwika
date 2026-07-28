@@ -1,6 +1,6 @@
 # Building a deterministic replay system for a fixed-timestep engine
 
-*2026-07-27*
+*Post 1*
 
 Antwika is a small C++23 game engine — until this change, a fairly bare skeleton: a logger, an event queue, and an `Engine::start()` that logged a line and drained whatever was sitting in the queue.
 This post is about turning that skeleton into something that can record a run and reload it later to deterministically reproduce the exact same result — and about a real bug that a test caught before it ever shipped.

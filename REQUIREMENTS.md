@@ -1,6 +1,6 @@
 # Requirements
 
-Requirements for the Antwika project, gathered from `README.md`, `blog/2026-07-27-building-a-deterministic-replay-system.md`, the build/CI configuration, and the checker scripts under `scripts/`, phrased as MoSCoW statements.
+Requirements for the Antwika project, gathered from `README.md`, `blog/001-building-a-deterministic-replay-system.md`, the build/CI configuration, and the checker scripts under `scripts/`, phrased as MoSCoW statements.
 
 ## Must have
 

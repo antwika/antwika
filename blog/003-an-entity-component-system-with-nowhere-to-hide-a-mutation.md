@@ -1,8 +1,8 @@
 # An entity-component-system with nowhere to hide a mutation
 
-*2026-07-29*
+*Post 3*
 
-The [previous post](2026-07-27-building-a-deterministic-replay-system.md) ended with a promise: state is an application concern, the engine core stays domain-agnostic, and `apps/game`'s hand-rolled `GameState` + `GameStateReducer` was "a small example," not the only shape state is allowed to take.
+The [previous post](001-building-a-deterministic-replay-system.md) ended with a promise: state is an application concern, the engine core stays domain-agnostic, and `apps/game`'s hand-rolled `GameState` + `GameStateReducer` was "a small example," not the only shape state is allowed to take.
 This post is about the other shape: an entity-component-system, added as a new library, `antwika::ecs`, that applications can build on instead of (or alongside) a plain struct and a reducer.
 It's also about a request that showed up mid-implementation and reshaped a chunk of the design for the better, and about two places where the original plan simply didn't compile once real code had to satisfy it.
 
