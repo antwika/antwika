@@ -24,7 +24,7 @@ Requirements for the Antwika project, gathered from `README.md`, `blog/001-build
 - Tests must be written with GoogleTest and registered with CTest.
 - Every mock/fake header under a `tests/{mocks,fakes}/include` directory must be `#include`d by at least one `.cpp` file.
 - CI must enforce coverage instrumentation and reporting for the GNU and LLVM toolchains.
-- Lines excluded from coverage via `GCOVR_EXCL_LINE` must carry a comment explaining why, and only after real, testable gaps have been covered by actual tests.
+- Lines excluded from coverage via `GCOVR_EXCL_LINE` must carry a comment explaining why, and only after real, testable gaps have been covered by actual tests, following the procedure in `docs/confirming-unreachable-branches.md`.
 - Source lines (`src/**/*.cpp`, `src/**/*.hpp`) and script lines (`scripts/*.py`, `scripts/tests/*.py`) must not exceed 80 characters.
 - Comments and markdown prose must hold exactly one sentence per line, with no sentence wrapped across multiple lines.
 - CI must run on every push to any branch (except `badges`) and on `v*` tags, building and testing all three toolchains.
@@ -45,7 +45,6 @@ Requirements for the Antwika project, gathered from `README.md`, `blog/001-build
 
 ## Could have
 
-- Planning scaffolding (e.g. `PLAN.md`, `CHECKLIST.md`) could be used under `docs/` while implementing a feature, but is temporary and not kept once the work lands.
 - Notable design decisions could be written up afterward as a post under `blog/`.
 - A locally built `antwika-dev-base` image could be used in place of the `ghcr.io` one for offline or iterative Dockerfile development.
 

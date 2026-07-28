@@ -126,6 +126,7 @@ Treat the two branch numbers as not directly comparable, and don't chase the LLV
 **The GNU badge is the one this project strives to bring to 100%.**
 Its branch count reflects only this project's own logic, since GCC's `gcov` tags let `--exclude-throw-branches` do its job.
 LLVM's can't reach 100% by design, so use GNU as the completion signal and treat LLVM's as informational.
+See [`docs/confirming-unreachable-branches.md`](docs/confirming-unreachable-branches.md) for the procedure to follow before marking any remaining gap `GCOVR_EXCL_LINE` rather than writing a test for it.
 
 ## Optional: Use a locally built `antwika-dev-base` development container
 
