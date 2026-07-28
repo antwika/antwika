@@ -11,7 +11,8 @@ A C++23 game project built with CMake, Conan, and GoogleTest, developed inside V
 src/
 ├── apps/
 │   ├── game/
-│   └── life/
+│   ├── life/
+│   └── task-worker/
 └── libs/
     ├── ecs/
     ├── engine/
@@ -19,6 +20,7 @@ src/
     ├── log/
     ├── reducer/
     ├── replay/
+    ├── scheduler/
     └── time/
 blog/
 ```
