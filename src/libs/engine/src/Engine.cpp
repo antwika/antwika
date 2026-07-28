@@ -1,7 +1,5 @@
 #include "antwika/engine/Engine.hpp"
 
-#include <format>
-
 #include <antwika/event/Event.hpp>
 #include <antwika/log/Level.hpp>
 
@@ -13,9 +11,8 @@ using antwika::log::Level;
 namespace antwika::engine
 {
 
-    Engine::Engine(
-        ILogger &logger, IEventQueue &eventQueue, IEventDispatcher &dispatcher)
-        : logger(logger), eventQueue(eventQueue), dispatcher(dispatcher)
+    Engine::Engine(ILogger &logger, IEventDispatcher &dispatcher)
+        : logger(logger), dispatcher(dispatcher)
     {
     }
 
@@ -27,14 +24,6 @@ namespace antwika::engine
     void Engine::step(antwika::time::Tick)
     {
         dispatcher.dispatch(Event{.name = events::kTick}); // GCOVR_EXCL_LINE
-
-        while (!eventQueue.empty())
-        {
-            auto event = eventQueue.pop();
-            auto message =
-                std::format("Process event: {}", event.name); // GCOVR_EXCL_LINE
-            logger.log(Level::Info, message);
-        }
     }
 
 } // namespace antwika::engine

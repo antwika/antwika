@@ -1,6 +1,5 @@
 add_library(antwika_event
     src/EventDispatcher.cpp
-    src/EventQueue.cpp
     src/EventRecorder.cpp
     src/ReplayRecorder.cpp
     src/TickedEventDispatcher.cpp

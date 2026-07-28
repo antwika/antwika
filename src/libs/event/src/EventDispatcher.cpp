@@ -6,9 +6,8 @@ namespace antwika::event
 {
 
     EventDispatcher::EventDispatcher(
-        IEventQueue &queue,
         std::vector<std::reference_wrapper<IEventSink>> sinks)
-        : queue(queue), sinks(std::move(sinks))
+        : sinks(std::move(sinks))
     {
     }
 
@@ -18,8 +17,6 @@ namespace antwika::event
         {
             sink.get().handle(event);
         }
-
-        queue.enqueue(std::move(event));
     }
 
 } // namespace antwika::event

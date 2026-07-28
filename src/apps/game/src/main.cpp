@@ -1,7 +1,6 @@
 #include "antwika/game/Game.hpp"
 
 #include <antwika/event/Event.hpp>
-#include <antwika/event/EventQueue.hpp>
 #include <antwika/event/EventRecorder.hpp>
 #include <antwika/event/TimedEvent.hpp>
 #include <antwika/log/Level.hpp>
@@ -22,7 +21,6 @@
 #include "antwika/game/Events.hpp"
 
 using antwika::event::Event;
-using antwika::event::EventQueue;
 using antwika::event::EventRecorder;
 using antwika::event::TimedEvent;
 using antwika::log::Level;
@@ -90,7 +88,6 @@ int main(int argc, char **argv)
     StreamAppender appender(std::cout);
     PlainFormatter formatter;
     MinimumLevelLogPolicy logPolicy(Level::Info);
-    EventQueue eventQueue;
     EventRecorder eventSink;
     BinaryEventCodec codec;
 
@@ -105,7 +102,6 @@ int main(int argc, char **argv)
             appender,
             formatter,
             logPolicy,
-            eventQueue,
             eventSink,
             source,
             kDemoTotalTicks);
@@ -120,7 +116,6 @@ int main(int argc, char **argv)
         appender,
         formatter,
         logPolicy,
-        eventQueue,
         eventSink,
         source,
         kDemoTotalTicks);

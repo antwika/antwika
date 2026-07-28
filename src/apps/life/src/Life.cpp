@@ -42,7 +42,6 @@ namespace antwika::life
         IAppender &appender,
         IFormatter &formatter,
         ILogPolicy &logPolicy,
-        IEventQueue &eventQueue,
         IEventSink &eventSink,
         IReplaySource &inputSource,
         antwika::time::Tick totalTicks,
@@ -51,7 +50,7 @@ namespace antwika::life
         std::vector<std::reference_wrapper<ISystem>> observers)
     {
         Logger logger(formatter, logPolicy, clock, appender);
-        EventDispatcher dispatcher(eventQueue, {eventSink});
+        EventDispatcher dispatcher({eventSink});
 
         World world(logger);
         Grid grid(world, width, height);
@@ -71,7 +70,7 @@ namespace antwika::life
         BoardSink boardSink(world, grid, scheduler);
         TickedEventDispatcher tickedDispatcher(dispatcher, {boardSink});
 
-        Engine engine(logger, eventQueue, tickedDispatcher);
+        Engine engine(logger, tickedDispatcher);
         Life life(engine, tickedDispatcher);
         life.run();
 

@@ -3,7 +3,6 @@
 #include <sstream>
 
 #include <antwika/event/Event.hpp>
-#include <antwika/event/EventQueue.hpp>
 #include <antwika/event/EventRecorder.hpp>
 #include <antwika/event/TimedEvent.hpp>
 #include <antwika/log/Level.hpp>
@@ -21,7 +20,6 @@
 #include "antwika/game/Game.hpp"
 
 using antwika::event::Event;
-using antwika::event::EventQueue;
 using antwika::event::EventRecorder;
 using antwika::event::TimedEvent;
 using antwika::game::GameState;
@@ -47,7 +45,6 @@ namespace
         NullAppender appender;
         PlainFormatter formatter;
         MinimumLevelLogPolicy logPolicy(Level::Info);
-        EventQueue eventQueue;
         EventRecorder eventSink;
 
         return antwika::game::bootstrap(
@@ -55,7 +52,6 @@ namespace
             appender,
             formatter,
             logPolicy,
-            eventQueue,
             eventSink,
             source,
             kTotalTicks);

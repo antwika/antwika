@@ -3,25 +3,22 @@
 #include <vector>
 
 #include "IEventDispatcher.hpp"
-#include "IEventQueue.hpp"
 #include "IEventSink.hpp"
 
 namespace antwika::event
 {
 
     /**
-     * @brief IEventDispatcher that enqueues events and fans them out to sinks.
+     * @brief IEventDispatcher that fans a dispatched event out to its sinks.
      */
     class EventDispatcher final : public IEventDispatcher
     {
     public:
         /**
-         * @brief Construct a dispatcher over a queue and its sinks.
-         * @param queue Queue used to buffer events before delivery.
+         * @brief Construct a dispatcher over its sinks.
          * @param sinks Sinks that will receive every dispatched event.
          */
-        EventDispatcher(
-            IEventQueue &queue,
+        explicit EventDispatcher(
             std::vector<std::reference_wrapper<IEventSink>> sinks);
 
         EventDispatcher(const EventDispatcher &) = delete;
@@ -31,13 +28,12 @@ namespace antwika::event
         EventDispatcher &operator=(EventDispatcher &&) = delete;
 
         /**
-         * @brief Deliver an event to all sinks, then enqueue it.
+         * @brief Deliver an event to all sinks.
          * @param event The event to dispatch.
          */
         void dispatch(Event event) override;
 
     private:
-        IEventQueue &queue;
         std::vector<std::reference_wrapper<IEventSink>> sinks;
     };
 

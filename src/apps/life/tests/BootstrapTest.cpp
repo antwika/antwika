@@ -5,7 +5,6 @@
 
 #include <antwika/ecs/ISystem.hpp>
 #include <antwika/event/Event.hpp>
-#include <antwika/event/EventQueue.hpp>
 #include <antwika/event/EventRecorder.hpp>
 #include <antwika/event/TimedEvent.hpp>
 #include <antwika/log/Level.hpp>
@@ -22,7 +21,6 @@
 using antwika::ecs::ISystem;
 using antwika::ecs::World;
 using antwika::event::Event;
-using antwika::event::EventQueue;
 using antwika::event::EventRecorder;
 using antwika::event::TimedEvent;
 using antwika::life::Board;
@@ -74,7 +72,6 @@ TEST(BootstrapTest, Bootstrap_RunsScriptedTicksAndReturnsResultingBoard)
     NullAppender appender;
     PlainFormatter formatter;
     MinimumLevelLogPolicy logPolicy(Level::Info);
-    EventQueue eventQueue;
     EventRecorder eventSink;
 
     ReplaySource inputSource({
@@ -106,7 +103,6 @@ TEST(BootstrapTest, Bootstrap_RunsScriptedTicksAndReturnsResultingBoard)
         appender,
         formatter,
         logPolicy,
-        eventQueue,
         eventSink,
         inputSource,
         4,
@@ -128,7 +124,6 @@ TEST(BootstrapTest, Bootstrap_RunsEveryObserverOncePerTick)
     NullAppender appender;
     PlainFormatter formatter;
     MinimumLevelLogPolicy logPolicy(Level::Info);
-    EventQueue eventQueue;
     EventRecorder eventSink;
 
     ReplaySource inputSource({
@@ -164,7 +159,6 @@ TEST(BootstrapTest, Bootstrap_RunsEveryObserverOncePerTick)
         appender,
         formatter,
         logPolicy,
-        eventQueue,
         eventSink,
         inputSource,
         4,
@@ -194,7 +188,6 @@ TEST(BootstrapTest, Bootstrap_WithNoScriptedInputStaysAllDead)
     NullAppender appender;
     PlainFormatter formatter;
     MinimumLevelLogPolicy logPolicy(Level::Info);
-    EventQueue eventQueue;
     EventRecorder eventSink;
 
     ReplaySource inputSource({});
@@ -204,7 +197,6 @@ TEST(BootstrapTest, Bootstrap_WithNoScriptedInputStaysAllDead)
         appender,
         formatter,
         logPolicy,
-        eventQueue,
         eventSink,
         inputSource,
         3,
