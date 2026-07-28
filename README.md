@@ -11,7 +11,8 @@ A C++23 game project built with CMake, Conan, and GoogleTest, developed inside V
 src/
 ├── apps/
 │   ├── game/
-│   └── life/
+│   ├── life/
+│   └── sudoku/
 └── libs/
     ├── ecs/
     ├── engine/
@@ -19,7 +20,8 @@ src/
     ├── log/
     ├── reducer/
     ├── replay/
-    └── time/
+    ├── time/
+    └── wfc/
 blog/
 ```
 
@@ -54,8 +56,8 @@ Ctrl + Shift + B
 
 After the build completes, run the compiled binaries on your target machine:
 
-- Linux: `build/bin/antwika_game`, `build/bin/antwika_life`
-- Windows: `build/bin/antwika_game.exe`, `build/bin/antwika_life.exe`
+- Linux: `build/bin/antwika_game`, `build/bin/antwika_life`, `build/bin/antwika_sudoku`
+- Windows: `build/bin/antwika_game.exe`, `build/bin/antwika_life.exe`, `build/bin/antwika_sudoku.exe`
 
 ## Replays
 
@@ -77,6 +79,19 @@ build/bin/antwika_life --replay demo.replay   # reload it, reproducing the same 
 ```
 
 Cells are toggled alive via a `life.toggle_cell` event (payload `"x,y"`), tick-stamped exactly like `game.score_increment` — the same event-driven, replayable pattern applied to ECS state instead of a hand-rolled reducer.
+
+## Wave Function Collapse and Sudoku
+
+`libs/wfc` (`antwika::wfc`) is a standalone, dependency-free constraint-solving library implementing Wave Function Collapse: repeatedly pick the lowest-entropy cell, collapse it to one candidate value, propagate the consequences, and backtrack on contradiction. It is deterministic (no RNG, fixed tie-breaks), complete (an exhaustive backtracking search distinguishes a proven-`Unsatisfiable` puzzle from one that merely ran out of an optional step budget, `LimitExceeded`), and scales to large waves via worklist-driven propagation and a trail-based undo log rather than copying the whole wave per branch. Its own data model is a flat, index-addressed `std::vector` of cells with no notion of a grid — geometry is entirely up to the caller, expressed as `IConstraint`s over cell indices.
+
+`apps/sudoku` (`antwika_sudoku`) is the showcase: it expresses a Sudoku puzzle as an 81-cell wave and its row/column/3x3-box rules as 27 `AllDifferentConstraint`s over that flat array, then hands both to `antwika::wfc::Solver` — no 2D-grid code inside the library at all.
+
+```sh
+build/bin/antwika_sudoku                          # solves a built-in demo puzzle
+build/bin/antwika_sudoku --puzzle my-puzzle.txt    # solves a puzzle loaded from a file
+```
+
+A puzzle file is 81 characters (whitespace ignored) of digits `1`-`9` or a blank marker (`.` or `0`).
 
 ## Testing
 
