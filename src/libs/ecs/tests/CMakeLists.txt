@@ -5,6 +5,7 @@ add_subdirectory(mocks)
 add_executable(antwika_ecs_tests
     ComponentStorageTest.cpp
     DoubleBufferingTest.cpp
+    EcsDeterminismTest.cpp
     EntityManagerTest.cpp
     SystemSchedulerTest.cpp
     ViewTest.cpp
