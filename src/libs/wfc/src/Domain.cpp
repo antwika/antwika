@@ -80,6 +80,10 @@ namespace antwika::wfc
 
     void Domain::restrictTo(std::size_t value)
     {
+        if (value >= bits.size())
+        {
+            return;
+        }
         for (std::size_t i = 0; i < bits.size(); ++i)
         {
             bits[i] = (i == value);

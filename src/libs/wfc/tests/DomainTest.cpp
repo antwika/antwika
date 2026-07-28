@@ -126,3 +126,10 @@ TEST(DomainTest, OutOfRangeAccessIsIgnored)
     domain.add(5);
     EXPECT_EQ(domain.count(), 3U);
 }
+
+TEST(DomainTest, RestrictToOutOfRangeValueIsIgnored)
+{
+    Domain domain(3);
+    domain.restrictTo(5);
+    EXPECT_EQ(domain, Domain(3));
+}

@@ -20,7 +20,7 @@ namespace antwika::wfc
      * worklist over the supplied constraints, and backtracks on
      * contradiction using an explicit choice-point stack and a Trail
      * undo log -- never recursion, so search depth is never bounded by
-     * the C++ call stack. See PLAN_WFC.md 3.9 for the full design.
+     * the C++ call stack.
      */
     class Solver
     {
@@ -33,11 +33,14 @@ namespace antwika::wfc
          * initialWave. Each referenced IConstraint must outlive this
          * Solver.
          * @param valueWeights Per-symbol weight, shared across every
-         * cell; empty means uniform (plain MRV), per PLAN_WFC.md 3.7.
+         * cell; empty means uniform (plain MRV). Every weight must be
+         * strictly positive.
          * @param limits Optional step budget; default is unlimited.
          * @throws WfcError if initialWave's domains don't all share the
-         * same alphabet size, or a constraint references a cell index
-         * out of range for initialWave.
+         * same alphabet size, a constraint references a cell index out
+         * of range for initialWave, valueWeights is non-empty and its
+         * size doesn't match the wave's alphabet size, or any weight is
+         * not strictly positive.
          */
         Solver(
             std::vector<Domain> initialWave,

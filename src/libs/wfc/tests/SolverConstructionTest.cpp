@@ -41,3 +41,30 @@ TEST(SolverConstructionTest, OutOfRangeConstraintCellIndexThrows)
     EXPECT_THROW(
         { Solver solver(wave, {std::cref(outOfRange)}); }, WfcError);
 }
+
+TEST(SolverConstructionTest, MismatchedValueWeightsSizeThrows)
+{
+    std::vector<Domain> wave{Domain(3), Domain(3)};
+    const std::vector<double> tooFewWeights{1.0, 1.0};
+
+    EXPECT_THROW(
+        { Solver solver(wave, {}, tooFewWeights); }, WfcError);
+}
+
+TEST(SolverConstructionTest, ZeroValueWeightThrows)
+{
+    std::vector<Domain> wave{Domain(3), Domain(3)};
+    const std::vector<double> zeroWeight{1.0, 0.0, 1.0};
+
+    EXPECT_THROW(
+        { Solver solver(wave, {}, zeroWeight); }, WfcError);
+}
+
+TEST(SolverConstructionTest, NegativeValueWeightThrows)
+{
+    std::vector<Domain> wave{Domain(3), Domain(3)};
+    const std::vector<double> negativeWeight{1.0, -1.0, 1.0};
+
+    EXPECT_THROW(
+        { Solver solver(wave, {}, negativeWeight); }, WfcError);
+}

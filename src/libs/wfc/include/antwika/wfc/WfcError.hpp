@@ -7,8 +7,9 @@ namespace antwika::wfc
 
     /**
      * @brief Thrown by Solver's constructor for mismatched Domain
-     * alphabet sizes across the wave, or an out-of-range constraint
-     * cell index.
+     * alphabet sizes across the wave, an out-of-range constraint cell
+     * index, or an invalid valueWeights vector (wrong size, or a
+     * non-positive weight).
      *
      * Deliberately a single, specific, catchable type, mirroring
      * antwika::ecs::EcsError and antwika::replay::ReplayFormatError.

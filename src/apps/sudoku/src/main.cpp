@@ -72,9 +72,19 @@ int main(int argc, char **argv)
     for (int i = 1; i < argc; ++i)
     {
         const std::string_view arg = argv[i];
-        if (arg == "--puzzle" && i + 1 < argc)
+        if (arg == "--puzzle")
         {
+            if (i + 1 >= argc)
+            {
+                std::cerr << "Missing value for --puzzle\n";
+                return 1;
+            }
             puzzlePath = argv[++i];
+        }
+        else
+        {
+            std::cerr << "Unrecognized argument: " << arg << '\n';
+            return 1;
         }
     }
 

@@ -73,8 +73,7 @@ namespace antwika::wfc
          * @brief Restore a previously removed value.
          * @param value The value to restore.
          *
-         * Only ever called by Trail to undo a prior remove() -- see
-         * PLAN_WFC.md 3.2 and 3.9.
+         * Only ever called by Trail to undo a prior remove().
          */
         void add(std::size_t value);
 

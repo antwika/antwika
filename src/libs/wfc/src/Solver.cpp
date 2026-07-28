@@ -55,6 +55,23 @@ namespace antwika::wfc
                         "Domain alphabet size mismatch in initial wave");
                 }
             }
+
+            if (!this->valueWeights.empty()
+                && this->valueWeights.size() != alphabetSize)
+            {
+                throw WfcError(
+                    "valueWeights size must match the wave's alphabet "
+                    "size");
+            }
+        }
+
+        for (const double weight : this->valueWeights)
+        {
+            // Negated so NaN (neither > nor <= 0.0) is rejected too.
+            if (!(weight > 0.0))
+            {
+                throw WfcError("valueWeights must be strictly positive");
+            }
         }
 
         cellToConstraints.assign(this->initialWave.size(), {});
@@ -189,9 +206,8 @@ namespace antwika::wfc
                 cell, std::move(candidates), 0, trail.checkpoint()});
         };
 
-        // Deliberately restructured versus PLAN_WFC.md's pseudocode.
-        // That pseudocode re-derives which cell to pick every loop.
-        // It does so even right after a failed propagate().
+        // A naive version of this loop re-derives which cell to pick
+        // every iteration, even right after a failed propagate().
         // A failed propagate() can leave some other cell's domain empty.
         // That cell may never surface in entropyIndex, though.
         // entropyIndex only tracks cells with count() > 1.
