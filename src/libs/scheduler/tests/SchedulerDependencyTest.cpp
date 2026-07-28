@@ -89,6 +89,23 @@ TEST(SchedulerDependencyTest, JobWithUnmetDependencyWaitsForIt)
     EXPECT_EQ(log, (std::vector<std::string>{"first", "second"}));
 }
 
+TEST(SchedulerDependencyTest, DependingOnAnAlreadyCompletedJobIsReadyAtOnce)
+{
+    Scheduler scheduler;
+    std::vector<std::string> log;
+    RecordingJob first(log, "first");
+    RecordingJob second(log, "second");
+
+    const auto firstId = scheduler.schedule(first, kNormalPriority);
+    scheduler.run(0, 1);
+    EXPECT_EQ(log, (std::vector<std::string>{"first"}));
+
+    scheduler.schedule(second, kNormalPriority, {firstId});
+    const auto ran = scheduler.run(0, 1);
+    EXPECT_EQ(ran.size(), 1U);
+    EXPECT_EQ(log, (std::vector<std::string>{"first", "second"}));
+}
+
 TEST(SchedulerDependencyTest, DiamondResolvesOnceBothParentsComplete)
 {
     Scheduler scheduler;

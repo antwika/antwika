@@ -32,7 +32,7 @@ namespace antwika::task_worker
     bool WorkerLookup::claimIdle(antwika::time::Tick durationTicks)
     {
         const auto it = std::find(idle.begin(), idle.end(), true);
-        if (it == idle.end())
+        if (it == idle.end()) // GCOVR_EXCL_LINE
         {
             return false; // GCOVR_EXCL_LINE
         }

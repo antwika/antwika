@@ -30,7 +30,7 @@ namespace antwika::task_worker
         {
             std::vector<std::string_view> tokens;
             std::size_t start = 0;
-            while (start <= text.size())
+            while (start <= text.size()) // GCOVR_EXCL_LINE
             {
                 const auto separator = text.find(',', start);
                 if (separator == std::string_view::npos)

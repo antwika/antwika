@@ -61,6 +61,7 @@ namespace antwika::scheduler
             if (!records[dependencyIndex].completed)
             {
                 ++unmet;
+                dependents[dependencyIndex].push_back(newId);
             }
         }
 
@@ -73,17 +74,6 @@ namespace antwika::scheduler
         if (unmet == 0)
         {
             insertReady(newId, priority);
-        }
-        else
-        {
-            for (const auto dependency : dependsOn)
-            {
-                const auto dependencyIndex = rawValue(dependency) - 1;
-                if (!records[dependencyIndex].completed)
-                {
-                    dependents[dependencyIndex].push_back(newId);
-                }
-            }
         }
 
         return newId;
