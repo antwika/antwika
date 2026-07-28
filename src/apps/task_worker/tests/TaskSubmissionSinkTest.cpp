@@ -1,5 +1,7 @@
 #include "antwika/task_worker/TaskSubmissionSink.hpp"
 
+#include <optional>
+
 #include <gtest/gtest.h>
 
 #include <antwika/ecs/SystemScheduler.hpp>
@@ -21,6 +23,7 @@ using antwika::event::TimedEvent;
 using antwika::log::mocks::MockLogger;
 using antwika::scheduler::Scheduler;
 using antwika::task_worker::makeWorkerLabel;
+using antwika::task_worker::TaskDependency;
 using antwika::task_worker::TaskDispatchSystem;
 using antwika::task_worker::TaskRegistry;
 using antwika::task_worker::TaskSubmissionError;
@@ -107,6 +110,9 @@ TEST(
     });
 
     EXPECT_EQ(jobScheduler.pending(), 2U);
+    EXPECT_EQ(
+        registry.allTasks()[1].dependsOn,
+        (std::optional<TaskDependency>{TaskDependency{1, "First"}}));
 
     lookup.refresh();
     const auto firstRun = jobScheduler.run(0, lookup.idleCount());

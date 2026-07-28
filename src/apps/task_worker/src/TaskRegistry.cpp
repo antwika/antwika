@@ -9,11 +9,12 @@ namespace antwika::task_worker
         std::uint64_t taskId,
         std::string label,
         antwika::scheduler::Priority priority,
-        antwika::time::Tick durationTicks)
+        antwika::time::Tick durationTicks,
+        std::optional<TaskDependency> dependsOn)
     {
         entries.push_back(TaskInfo{ // GCOVR_EXCL_LINE
             taskId, std::move(label), priority, TaskStatus::Pending,
-            durationTicks});
+            durationTicks, std::move(dependsOn)});
     }
 
     void TaskRegistry::markStarted(antwika::scheduler::JobId jobId)

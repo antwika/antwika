@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstdint>
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -23,10 +24,23 @@ namespace antwika::task_worker
     };
 
     /**
+     * @brief The identity of a task another task depends on, denormalized
+     * onto the dependent so reporting never needs a second lookup.
+     */
+    struct TaskDependency
+    {
+        std::uint64_t taskId;
+        std::string label;
+
+        bool operator==(const TaskDependency &other) const = default;
+    };
+
+    /**
      * @brief A task's full status for human-readable reporting: its
-     * identity, priority, lifecycle stage, and however many ticks are
-     * left (its full requested duration while Pending, the live
-     * countdown while Running, zero once Completed).
+     * identity, priority, lifecycle stage, however many ticks are left
+     * (its full requested duration while Pending, the live countdown
+     * while Running, zero once Completed), and the task it depends on,
+     * if any.
      */
     struct TaskInfo
     {
@@ -35,6 +49,7 @@ namespace antwika::task_worker
         antwika::scheduler::Priority priority;
         TaskStatus status;
         antwika::time::Tick remainingTicks;
+        std::optional<TaskDependency> dependsOn;
 
         bool operator==(const TaskInfo &other) const = default;
     };
@@ -59,6 +74,7 @@ namespace antwika::task_worker
          * @param priority The priority it was scheduled at.
          * @param durationTicks How many ticks it will occupy a worker
          * for, once started.
+         * @param dependsOn The task it must wait on, if any.
          *
          * Callers must submit tasks in the same order the owning
          * antwika::scheduler::Scheduler hands out JobIds (i.e. once per
@@ -71,7 +87,8 @@ namespace antwika::task_worker
             std::uint64_t taskId,
             std::string label,
             antwika::scheduler::Priority priority,
-            antwika::time::Tick durationTicks);
+            antwika::time::Tick durationTicks,
+            std::optional<TaskDependency> dependsOn = std::nullopt);
 
         /**
          * @brief Mark a task Running (dispatched to a worker).

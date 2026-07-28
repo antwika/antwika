@@ -9,6 +9,7 @@
 #include <antwika/scheduler/JobId.hpp>
 #include <antwika/scheduler/Priority.hpp>
 
+#include "antwika/task_worker/TaskRegistry.hpp"
 #include "antwika/task_worker/Worker.hpp"
 
 using antwika::ecs::World;
@@ -19,6 +20,7 @@ using antwika::scheduler::kLowPriority;
 using antwika::scheduler::kNormalPriority;
 using antwika::task_worker::makeWorkerLabel;
 using antwika::task_worker::StatusPrintSystem;
+using antwika::task_worker::TaskDependency;
 using antwika::task_worker::TaskRegistry;
 using antwika::task_worker::Worker;
 using antwika::task_worker::WorkerStatus;
@@ -94,6 +96,33 @@ TEST(StatusPrintSystemTest, PrintsARunningTaskWithItsLiveCountdown)
         "  Tasks:\n"
         "    Task id: 4 | Task name: Delta | Priority: 3 | "
         "Status: Running | Remaining: 1 tick(s)\n"
+        "  Workers:\n");
+}
+
+TEST(StatusPrintSystemTest, PrintsATasksDependencyWhenPresent)
+{
+    NiceMock<MockLogger> logger;
+    World world(logger);
+
+    TaskRegistry registry;
+    registry.submit(4, "Delta", kCriticalPriority, 1);
+    registry.submit(
+        5, "Epsilon", kNormalPriority, 1, TaskDependency{4, "Delta"});
+    registry.markStarted(static_cast<JobId>(1));
+
+    std::ostringstream out;
+    StatusPrintSystem system(out, registry);
+
+    system.update(world, 4);
+
+    EXPECT_EQ(
+        out.str(),
+        "After tick 4:\n"
+        "  Tasks:\n"
+        "    Task id: 4 | Task name: Delta | Priority: 3 | "
+        "Status: Running | Remaining: 1 tick(s)\n"
+        "    Task id: 5 | Task name: Epsilon | Priority: 1 | "
+        "Status: Pending | Remaining: 1 tick(s) | Depends on: Delta (4)\n"
         "  Workers:\n");
 }
 

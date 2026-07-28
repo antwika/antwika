@@ -4,6 +4,7 @@
 #include <charconv>
 #include <cstdint>
 #include <limits>
+#include <optional>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -121,6 +122,7 @@ namespace antwika::task_worker
         auto label = std::string(tokens[3]);
 
         std::vector<JobId> dependsOn;
+        std::optional<TaskDependency> dependencyInfo;
         if (tokens.size() == kFieldCountWithDependsOn)
         {
             const auto dependsOnTaskId = parseUInt64(tokens[4]);
@@ -136,13 +138,18 @@ namespace antwika::task_worker
                     "id that was never submitted");
             }
             dependsOn.push_back(found->second);
+            const auto dependencyIndex =
+                antwika::scheduler::rawValue(found->second) - 1;
+            dependencyInfo = TaskDependency{
+                dependsOnTaskId, jobs[dependencyIndex]->label()};
         }
 
         auto job = std::make_unique<TaskJob>(
             lookup, taskId, std::move(label), durationTicks);
         const auto jobId =
             jobScheduler.schedule(*job, priority, dependsOn);
-        registry.submit(taskId, job->label(), priority, durationTicks);
+        registry.submit(
+            taskId, job->label(), priority, durationTicks, dependencyInfo);
         submitted.emplace_back(taskId, jobId);
         jobs.push_back(std::move(job));
     }

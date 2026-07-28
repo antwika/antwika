@@ -44,7 +44,13 @@ namespace antwika::task_worker
                 << static_cast<unsigned>(
                        antwika::scheduler::rawValue(task.priority))
                 << " | Status: " << statusName(task.status)
-                << " | Remaining: " << task.remainingTicks << " tick(s)\n";
+                << " | Remaining: " << task.remainingTicks << " tick(s)";
+            if (task.dependsOn.has_value())
+            {
+                out << " | Depends on: " << task.dependsOn->label << " ("
+                    << task.dependsOn->taskId << ")";
+            }
+            out << "\n";
         }
 
         out << "  Workers:\n";

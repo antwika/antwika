@@ -42,7 +42,7 @@ using antwika::time::Tick;
 namespace
 {
     constexpr std::uint32_t kWorkerCount = 2;
-    constexpr Tick kDemoTotalTicks = 6;
+    constexpr Tick kDemoTotalTicks = 8;
 
     // Stands in for real (network/CLI) live input the engine lacks.
     // See blog/003-... and blog/004-... for the pattern this follows.

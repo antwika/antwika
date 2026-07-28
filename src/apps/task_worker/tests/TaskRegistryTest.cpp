@@ -1,5 +1,7 @@
 #include "antwika/task_worker/TaskRegistry.hpp"
 
+#include <optional>
+
 #include <gtest/gtest.h>
 
 #include <antwika/scheduler/Priority.hpp>
@@ -7,6 +9,7 @@
 using antwika::scheduler::JobId;
 using antwika::scheduler::kHighPriority;
 using antwika::scheduler::kNormalPriority;
+using antwika::task_worker::TaskDependency;
 using antwika::task_worker::TaskInfo;
 using antwika::task_worker::TaskRegistry;
 using antwika::task_worker::TaskStatus;
@@ -18,8 +21,9 @@ TEST(TaskRegistryTest, SubmitRecordsAPendingTaskWithDurationAsTicksLeft)
 
     EXPECT_EQ(
         registry.allTasks(),
-        (std::vector<TaskInfo>{
-            TaskInfo{1, "Alpha", kNormalPriority, TaskStatus::Pending, 5}}));
+        (std::vector<TaskInfo>{TaskInfo{
+            1, "Alpha", kNormalPriority, TaskStatus::Pending, 5,
+            std::nullopt}}));
 }
 
 TEST(TaskRegistryTest, AllTasksReportsSubmittedTasksInOrder)
@@ -31,8 +35,25 @@ TEST(TaskRegistryTest, AllTasksReportsSubmittedTasksInOrder)
     EXPECT_EQ(
         registry.allTasks(),
         (std::vector<TaskInfo>{
-            TaskInfo{1, "Alpha", kNormalPriority, TaskStatus::Pending, 5},
-            TaskInfo{2, "Beta", kHighPriority, TaskStatus::Pending, 3}}));
+            TaskInfo{
+                1, "Alpha", kNormalPriority, TaskStatus::Pending, 5,
+                std::nullopt},
+            TaskInfo{
+                2, "Beta", kHighPriority, TaskStatus::Pending, 3,
+                std::nullopt}}));
+}
+
+TEST(TaskRegistryTest, SubmitRecordsTheDependedOnTasksIdentity)
+{
+    TaskRegistry registry;
+    registry.submit(4, "Delta", kNormalPriority, 1);
+    registry.submit(
+        5, "Epsilon", kNormalPriority, 1,
+        TaskDependency{4, "Delta"});
+
+    EXPECT_EQ(
+        registry.allTasks()[1].dependsOn,
+        (std::optional<TaskDependency>{TaskDependency{4, "Delta"}}));
 }
 
 TEST(TaskRegistryTest, MarkStartedFlipsTheMatchingJobToRunning)
@@ -105,24 +126,51 @@ TEST(TaskRegistryTest, MarkCompletedIgnoresATaskIdNeverSubmitted)
 
 TEST(TaskRegistryTest, TaskInfoEqualityComparesEveryFieldIndependently)
 {
-    const TaskInfo base{1, "Alpha", kNormalPriority, TaskStatus::Pending, 5};
+    const TaskInfo base{
+        1, "Alpha", kNormalPriority, TaskStatus::Pending, 5, std::nullopt};
 
     EXPECT_NE(
         base,
-        (TaskInfo{2, "Alpha", kNormalPriority, TaskStatus::Pending, 5}));
+        (TaskInfo{
+            2, "Alpha", kNormalPriority, TaskStatus::Pending, 5,
+            std::nullopt}));
     EXPECT_NE(
         base,
-        (TaskInfo{1, "Beta", kNormalPriority, TaskStatus::Pending, 5}));
+        (TaskInfo{
+            1, "Beta", kNormalPriority, TaskStatus::Pending, 5,
+            std::nullopt}));
     EXPECT_NE(
         base,
-        (TaskInfo{1, "Alpha", kHighPriority, TaskStatus::Pending, 5}));
+        (TaskInfo{
+            1, "Alpha", kHighPriority, TaskStatus::Pending, 5,
+            std::nullopt}));
     EXPECT_NE(
         base,
-        (TaskInfo{1, "Alpha", kNormalPriority, TaskStatus::Running, 5}));
+        (TaskInfo{
+            1, "Alpha", kNormalPriority, TaskStatus::Running, 5,
+            std::nullopt}));
     EXPECT_NE(
         base,
-        (TaskInfo{1, "Alpha", kNormalPriority, TaskStatus::Pending, 6}));
+        (TaskInfo{
+            1, "Alpha", kNormalPriority, TaskStatus::Pending, 6,
+            std::nullopt}));
+    EXPECT_NE(
+        base,
+        (TaskInfo{
+            1, "Alpha", kNormalPriority, TaskStatus::Pending, 5,
+            TaskDependency{4, "Delta"}}));
     EXPECT_EQ(
         base,
-        (TaskInfo{1, "Alpha", kNormalPriority, TaskStatus::Pending, 5}));
+        (TaskInfo{
+            1, "Alpha", kNormalPriority, TaskStatus::Pending, 5,
+            std::nullopt}));
+}
+
+TEST(TaskRegistryTest, TaskDependencyEqualityComparesBothFields)
+{
+    const TaskDependency base{4, "Delta"};
+
+    EXPECT_NE(base, (TaskDependency{5, "Delta"}));
+    EXPECT_NE(base, (TaskDependency{4, "Epsilon"}));
+    EXPECT_EQ(base, (TaskDependency{4, "Delta"}));
 }

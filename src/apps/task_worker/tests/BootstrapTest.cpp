@@ -1,5 +1,6 @@
 #include <gtest/gtest.h>
 
+#include <optional>
 #include <vector>
 
 #include <antwika/ecs/ISystem.hpp>
@@ -34,6 +35,7 @@ using antwika::scheduler::kCriticalPriority;
 using antwika::scheduler::kLowPriority;
 using antwika::scheduler::kNormalPriority;
 using antwika::task_worker::makeWorkerLabel;
+using antwika::task_worker::TaskDependency;
 using antwika::task_worker::TaskInfo;
 using antwika::task_worker::TaskRegistry;
 using antwika::task_worker::TaskStatus;
@@ -185,14 +187,20 @@ TEST(BootstrapTest, Bootstrap_KeepsACallerSuppliedRegistryInSync)
         registry.allTasks(),
         (std::vector<TaskInfo>{
             TaskInfo{
-                1, "Alpha", kNormalPriority, TaskStatus::Completed, 0},
+                1, "Alpha", kNormalPriority, TaskStatus::Completed, 0,
+                std::nullopt},
             TaskInfo{
-                2, "Beta", kNormalPriority, TaskStatus::Completed, 0},
-            TaskInfo{3, "Gamma", kLowPriority, TaskStatus::Running, 1},
+                2, "Beta", kNormalPriority, TaskStatus::Completed, 0,
+                std::nullopt},
             TaskInfo{
-                4, "Delta", kCriticalPriority, TaskStatus::Completed, 0},
+                3, "Gamma", kLowPriority, TaskStatus::Running, 1,
+                std::nullopt},
             TaskInfo{
-                5, "Epsilon", kNormalPriority, TaskStatus::Running, 1}}));
+                4, "Delta", kCriticalPriority, TaskStatus::Completed, 0,
+                std::nullopt},
+            TaskInfo{
+                5, "Epsilon", kNormalPriority, TaskStatus::Running, 1,
+                TaskDependency{4, "Delta"}}}));
 }
 
 TEST(BootstrapTest, Bootstrap_WithNoScriptedInputAllWorkersStayIdle)
