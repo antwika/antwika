@@ -206,6 +206,7 @@ jobs:
             --filter 'src/.*' \
             --exclude '.*/tests/.*' \
             --exclude '.*/apps/game/src/main\.cpp' \
+            --exclude '.*/apps/life/src/main\.cpp' \
             --exclude-throw-branches \
             --exclude-unreachable-branches \
             --gcov-executable '${{ matrix.gcov_executable }}' \

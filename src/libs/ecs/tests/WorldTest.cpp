@@ -186,6 +186,77 @@ TEST(WorldTest, DestroyingAnAlreadyDeadEntityThrows)
     EXPECT_THROW(world.destroy(entity), EcsError);
 }
 
+TEST(WorldTest, RemovingAComponentFromADeadEntityThrows)
+{
+    NiceMock<MockLogger> logger;
+    World world(logger);
+    const auto entity = world.create();
+    world.destroy(entity);
+    world.commit();
+
+    EXPECT_THROW(world.remove<Position>(entity), EcsError);
+}
+
+TEST(WorldTest, RemovingAComponentTheEntityNeverHadIsANoOp)
+{
+    NiceMock<MockLogger> logger;
+    World world(logger);
+    const auto entity = world.create();
+    world.commit();
+
+    EXPECT_NO_THROW(world.remove<Position>(entity));
+    world.commit();
+
+    EXPECT_FALSE(world.has<Position>(entity));
+}
+
+TEST(WorldTest, GettingAComponentAnotherEntityHasButThisOneLacksThrows)
+{
+    NiceMock<MockLogger> logger;
+    World world(logger);
+    const auto withPosition = world.create();
+    const auto withoutPosition = world.create();
+    world.add<Position>(withPosition, Position{1, 2});
+    world.commit();
+
+    EXPECT_THROW(
+        static_cast<void>(world.get<Position>(withoutPosition)), EcsError);
+}
+
+TEST(WorldTest, SettingAComponentOnADeadEntityThrows)
+{
+    NiceMock<MockLogger> logger;
+    World world(logger);
+    const auto entity = world.create();
+    world.destroy(entity);
+    world.commit();
+
+    EXPECT_THROW(world.set<Position>(entity, Position{}), EcsError);
+}
+
+TEST(WorldTest, DestroyingAnEntityLeavesUnrelatedPoolsForOthersAlone)
+{
+    NiceMock<MockLogger> logger;
+    World world(logger);
+    const auto withPosition = world.create();
+    const auto withVelocity = world.create();
+    world.add<Position>(withPosition, Position{1, 2});
+    world.add<Velocity>(withVelocity, Velocity{3});
+    world.commit();
+
+    world.destroy(withPosition);
+    world.commit();
+
+    EXPECT_FALSE(world.alive(withPosition));
+    ASSERT_TRUE(world.has<Velocity>(withVelocity));
+    EXPECT_EQ(world.get<Velocity>(withVelocity), (Velocity{3}));
+
+    world.destroy(withVelocity);
+    world.commit();
+
+    EXPECT_FALSE(world.alive(withVelocity));
+}
+
 TEST(WorldTest, ViewOverAnUnusedComponentTypeIsEmpty)
 {
     NiceMock<MockLogger> logger;

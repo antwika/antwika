@@ -26,6 +26,6 @@ namespace antwika::life
         }
 
         return board;
-    }
+    } // GCOVR_EXCL_LINE
 
 } // namespace antwika::life

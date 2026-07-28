@@ -31,3 +31,22 @@ TEST(BoardTest, ReadBoardSnapshotsEveryCellsAliveStateRowMajor)
     EXPECT_EQ(board.height, 2U);
     EXPECT_EQ(board.alive, (std::vector<bool>{false, true, false, false}));
 }
+
+TEST(BoardTest, EqualityComparesWidthHeightAndAliveCells)
+{
+    const Board reference{
+        .width = 2, .height = 2, .alive = {false, true, false, false}};
+    const Board same{
+        .width = 2, .height = 2, .alive = {false, true, false, false}};
+    const Board differentWidth{
+        .width = 3, .height = 2, .alive = {false, true, false, false}};
+    const Board differentHeight{
+        .width = 2, .height = 3, .alive = {false, true, false, false}};
+    const Board differentAlive{
+        .width = 2, .height = 2, .alive = {true, true, false, false}};
+
+    EXPECT_EQ(reference, same);
+    EXPECT_NE(reference, differentWidth);
+    EXPECT_NE(reference, differentHeight);
+    EXPECT_NE(reference, differentAlive);
+}

@@ -30,6 +30,12 @@ TEST(GridTest, ConstructorCreatesOneDeadCellEntityPerCoordinate)
     }
 }
 
+TEST(GridTest, CellEqualityComparesAliveState)
+{
+    EXPECT_EQ(Cell{.alive = true}, Cell{.alive = true});
+    EXPECT_NE(Cell{.alive = true}, Cell{.alive = false});
+}
+
 TEST(GridTest, EntityAtMapsDistinctCoordinatesToDistinctEntities)
 {
     NiceMock<MockLogger> logger;
@@ -39,6 +45,20 @@ TEST(GridTest, EntityAtMapsDistinctCoordinatesToDistinctEntities)
     EXPECT_NE(grid.entityAt(0, 0), grid.entityAt(1, 0));
     EXPECT_NE(grid.entityAt(0, 0), grid.entityAt(0, 1));
     EXPECT_EQ(grid.entityAt(1, 1), grid.entityAt(1, 1));
+}
+
+TEST(GridTest, DestroyingACellEntityRemovesItsComponentOnCommit)
+{
+    NiceMock<MockLogger> logger;
+    World world(logger);
+    Grid grid(world, 2, 2);
+    world.commit();
+
+    const auto entity = grid.entityAt(0, 0);
+    world.destroy(entity);
+    world.commit();
+
+    EXPECT_FALSE(world.alive(entity));
 }
 
 TEST(GridTest, ContainsIsTrueOnlyWithinBounds)

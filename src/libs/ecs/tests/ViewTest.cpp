@@ -65,6 +65,42 @@ TEST(ViewTest, TwoComponentViewIsTheIntersection)
     EXPECT_EQ(entities, (std::vector<Entity>{Entity{2}, Entity{3}}));
 }
 
+TEST(ViewTest, EntityInTheSmallestStorageButAbsentElsewhereIsExcluded)
+{
+    ComponentStorage<Position> positions;
+    positions.insert(Entity{1}, Position{});
+    positions.insert(Entity{5}, Position{});
+
+    ComponentStorage<Velocity> velocities;
+    velocities.insert(Entity{1}, Velocity{});
+    velocities.insert(Entity{2}, Velocity{});
+    velocities.insert(Entity{3}, Velocity{});
+    velocities.insert(Entity{4}, Velocity{});
+
+    const View<Position, Velocity> view(&positions, &velocities);
+    const std::vector<Entity> entities(view.begin(), view.end());
+
+    EXPECT_EQ(entities, (std::vector<Entity>{Entity{1}}));
+}
+
+TEST(ViewTest, EntityMissingFromAnEarlierParameterIsExcluded)
+{
+    ComponentStorage<Position> positions;
+    positions.insert(Entity{1}, Position{});
+    positions.insert(Entity{2}, Position{});
+    positions.insert(Entity{3}, Position{});
+    positions.insert(Entity{4}, Position{});
+
+    ComponentStorage<Velocity> velocities;
+    velocities.insert(Entity{1}, Velocity{});
+    velocities.insert(Entity{9}, Velocity{});
+
+    const View<Position, Velocity> view(&positions, &velocities);
+    const std::vector<Entity> entities(view.begin(), view.end());
+
+    EXPECT_EQ(entities, (std::vector<Entity>{Entity{1}}));
+}
+
 TEST(ViewTest, OrderFollowsTheSmallerStorageRegardlessOfArgumentOrder)
 {
     ComponentStorage<Position> positions;
