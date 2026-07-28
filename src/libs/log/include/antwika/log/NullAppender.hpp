@@ -7,9 +7,16 @@
 namespace antwika::log
 {
 
+    /**
+     * @brief IAppender that discards every message it receives.
+     */
     class NullAppender : public IAppender
     {
     public:
+        /**
+         * @brief Discard the given message.
+         * @param message The message to discard.
+         */
         void append(std::string_view message) override;
     };
 

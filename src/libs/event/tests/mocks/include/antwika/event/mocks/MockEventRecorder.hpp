@@ -14,6 +14,9 @@ namespace antwika::event::mocks
     using antwika::event::IEventHistory;
     using antwika::event::IEventSink;
 
+    /**
+     * @brief GMock double implementing both IEventSink and IEventHistory.
+     */
     class MockEventRecorder : public IEventSink,
                               public IEventHistory
     {

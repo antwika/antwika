@@ -7,6 +7,9 @@
 namespace antwika::event::mocks
 {
 
+    /**
+     * @brief GMock double for IEventQueue.
+     */
     class MockEventQueue : public IEventQueue
     {
     public:

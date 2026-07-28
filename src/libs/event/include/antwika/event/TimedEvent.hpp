@@ -7,10 +7,13 @@
 namespace antwika::event
 {
 
+    /**
+     * @brief An Event bound to the simulation tick it occurred on.
+     */
     struct TimedEvent
     {
-        antwika::time::Tick tick{};
-        Event event{};
+        antwika::time::Tick tick{}; ///< Tick at which the event occurred.
+        Event event{};              ///< The underlying event.
         bool operator==(const TimedEvent &other) const = default;
     };
 

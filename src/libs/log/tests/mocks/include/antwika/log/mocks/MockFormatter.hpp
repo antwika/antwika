@@ -13,6 +13,9 @@ namespace antwika::log::mocks
     using antwika::log::IFormatter;
     using antwika::log::Level;
 
+    /**
+     * @brief GMock double for IFormatter.
+     */
     class MockFormatter : public IFormatter
     {
     public:

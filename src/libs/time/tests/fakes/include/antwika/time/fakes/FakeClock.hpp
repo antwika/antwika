@@ -7,21 +7,42 @@ namespace antwika::time::fakes
 
     using antwika::time::IClock;
 
+    /**
+     * @brief IClock implementation with a manually controlled time value.
+     *
+     * Intended for tests that need deterministic, reproducible timestamps.
+     */
     class FakeClock : public IClock
     {
     public:
+        /**
+         * @brief Construct the clock with an initial time value.
+         * @param t The time point to report until advanced or set.
+         */
         explicit FakeClock(std::chrono::time_point<std::chrono::system_clock> t) : current(t) {}
 
+        /**
+         * @brief Get the currently configured time.
+         * @return The last value set via the constructor, set(), or advance().
+         */
         std::chrono::time_point<std::chrono::system_clock> now() const noexcept override
         {
             return current;
         }
 
+        /**
+         * @brief Move the clock forward by a duration.
+         * @param s The number of seconds to add to the current time.
+         */
         void advance(std::chrono::seconds s)
         {
             current += s;
         }
 
+        /**
+         * @brief Replace the clock's current time value.
+         * @param t The new time point to report.
+         */
         void set(std::chrono::time_point<std::chrono::system_clock> t)
         {
             current = t;

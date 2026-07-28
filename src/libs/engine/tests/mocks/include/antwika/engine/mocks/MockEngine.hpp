@@ -9,6 +9,9 @@ namespace antwika::engine::mocks
 
     using antwika::engine::IEngine;
 
+    /**
+     * @brief GMock double for IEngine.
+     */
     class MockEngine : public IEngine
     {
     public:
