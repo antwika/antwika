@@ -1,3 +1,15 @@
+# [0.7.0](https://github.com/antwika/antwika/compare/v0.6.0...v0.7.0) (2026-07-28)
+
+
+### Features
+
+* **ecs:** add double-buffered ComponentStorage<T> ([c503be2](https://github.com/antwika/antwika/commit/c503be2fdf1caaa7ff0d3850ac822f30e5ca3aa3))
+* **ecs:** add ISystem and SystemScheduler with phases ([d6cfa9c](https://github.com/antwika/antwika/commit/d6cfa9cb5b4dd0a9c1c98eac0d3e24a492db1971))
+* **ecs:** add View and World ([24ec64a](https://github.com/antwika/antwika/commit/24ec64a1ba9496c4005e91a3a6477f7821b1a2e3))
+* **ecs:** scaffold library with Entity and EntityManager ([54392b5](https://github.com/antwika/antwika/commit/54392b582cdc66f028c9aae455d5db7bd8e642ba))
+* **life:** add Game of Life demo app on antwika::ecs ([81983f0](https://github.com/antwika/antwika/commit/81983f04284057c0474ee70927ea489b7dbb15a3))
+* **reducer:** add generic IReducer/ReducerSink library ([e42e387](https://github.com/antwika/antwika/commit/e42e387e1e5fd5eeed6ca7ef20f9a3eeae5efc2c))
+
 # [0.6.0](https://github.com/antwika/antwika/compare/v0.5.5...v0.6.0) (2026-07-27)
 
 
