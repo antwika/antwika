@@ -1,6 +1,8 @@
-#include "antwika/task_worker/TaskStatusPrintSystem.hpp"
+#include "antwika/task_worker/StatusPrintSystem.hpp"
 
 #include <antwika/scheduler/Priority.hpp>
+
+#include "antwika/task_worker/Worker.hpp"
 
 namespace antwika::task_worker
 {
@@ -24,24 +26,42 @@ namespace antwika::task_worker
 
     } // namespace
 
-    TaskStatusPrintSystem::TaskStatusPrintSystem(
+    StatusPrintSystem::StatusPrintSystem(
         std::ostream &out, TaskRegistry &registry)
         : out(out), registry(registry)
     {
     }
 
-    void TaskStatusPrintSystem::update(World &, antwika::time::Tick tick)
+    void StatusPrintSystem::update(World &world, antwika::time::Tick tick)
     {
-        out << "Tasks after tick " << tick << ":\n";
+        out << "After tick " << tick << ":\n";
 
+        out << "  Tasks:\n";
         for (const auto &task : registry.allTasks())
         {
-            out << "  Task id: " << task.taskId
+            out << "    Task id: " << task.taskId
                 << " | Task name: " << task.label << " | Priority: "
                 << static_cast<unsigned>(
                        antwika::scheduler::rawValue(task.priority))
                 << " | Status: " << statusName(task.status)
                 << " | Remaining: " << task.remainingTicks << " tick(s)\n";
+        }
+
+        out << "  Workers:\n";
+        std::size_t index = 0;
+        for (const auto entity : world.view<Worker>())
+        {
+            const auto &worker = world.get<Worker>(entity);
+            out << "    worker[" << index << "] - Current state: "
+                << (worker.status == WorkerStatus::Idle ? "Idle" : "Busy");
+            if (worker.status == WorkerStatus::Busy)
+            {
+                out << " | Remaining: " << worker.remainingTicks
+                    << " tick(s) | Task id: " << worker.taskId
+                    << " | Task name: " << worker.label.data();
+            }
+            out << "\n";
+            ++index;
         }
     }
 

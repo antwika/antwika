@@ -20,9 +20,8 @@
 #include <antwika/time/SystemClock.hpp>
 
 #include "antwika/task_worker/Events.hpp"
+#include "antwika/task_worker/StatusPrintSystem.hpp"
 #include "antwika/task_worker/TaskRegistry.hpp"
-#include "antwika/task_worker/TaskStatusPrintSystem.hpp"
-#include "antwika/task_worker/WorkerStatusPrintSystem.hpp"
 
 using antwika::event::Event;
 using antwika::event::EventRecorder;
@@ -35,9 +34,8 @@ using antwika::replay::BinaryEventCodec;
 using antwika::replay::BinaryReplayReader;
 using antwika::replay::BinaryReplayWriter;
 using antwika::replay::ReplaySource;
+using antwika::task_worker::StatusPrintSystem;
 using antwika::task_worker::TaskRegistry;
-using antwika::task_worker::TaskStatusPrintSystem;
-using antwika::task_worker::WorkerStatusPrintSystem;
 using antwika::time::SystemClock;
 using antwika::time::Tick;
 
@@ -119,8 +117,7 @@ int main(int argc, char **argv)
     EventRecorder eventSink;
     BinaryEventCodec codec;
     TaskRegistry registry;
-    WorkerStatusPrintSystem printSystem(std::cout);
-    TaskStatusPrintSystem taskStatusPrintSystem(std::cout, registry);
+    StatusPrintSystem printSystem(std::cout, registry);
 
     if (!replayPath.empty())
     {
@@ -137,7 +134,7 @@ int main(int argc, char **argv)
             source,
             kDemoTotalTicks,
             kWorkerCount,
-            {printSystem, taskStatusPrintSystem},
+            {printSystem},
             &registry);
         return 0;
     }
@@ -153,7 +150,7 @@ int main(int argc, char **argv)
         source,
         kDemoTotalTicks,
         kWorkerCount,
-        {printSystem, taskStatusPrintSystem},
+        {printSystem},
         &registry);
 
     if (!recordPath.empty())

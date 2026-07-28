@@ -84,7 +84,7 @@ namespace antwika::task_worker
      * callers (like the tests) that only need the final worker states.
      * @param registry Task registry kept in sync with every submitted
      * task's pending/completed status, for a caller-owned observer
-     * (e.g. TaskStatusPrintSystem, itself passed via observers) to read
+     * (e.g. StatusPrintSystem, itself passed via observers) to read
      * live during the run. Optional: defaults to an internal registry
      * for callers with no need to observe task status externally.
      * @return Every Worker's final state, in creation order.

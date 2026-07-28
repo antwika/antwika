@@ -1,13 +1,12 @@
 add_executable(antwika_task_worker
+    src/StatusPrintSystem.cpp
     src/TaskDispatchSystem.cpp
     src/TaskJob.cpp
     src/TaskRegistry.cpp
-    src/TaskStatusPrintSystem.cpp
     src/TaskSubmissionSink.cpp
     src/TaskWorker.cpp
     src/WorkerCompletionSystem.cpp
     src/WorkerLookup.cpp
-    src/WorkerStatusPrintSystem.cpp
     src/main.cpp
 )
 
