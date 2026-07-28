@@ -8,13 +8,29 @@
 namespace antwika::replay
 {
 
-    // Reads the format BinaryReplayWriter produces.
-    // Throws ReplayFormatError (see ReplayFormatError.hpp) if the stream doesn't start with the expected magic bytes, declares an unsupported format version, or ends before the data it claims to contain.
+    /**
+     * @brief Reads the format BinaryReplayWriter produces.
+     *
+     * Throws ReplayFormatError on a malformed stream (see
+     * ReplayFormatError.hpp): a stream missing the expected magic bytes, an
+     * unsupported format version, or a stream that ends before the data it
+     * claims to hold.
+     */
     class BinaryReplayReader final
     {
     public:
+        /**
+         * @brief Construct the reader over a codec used to decode events.
+         * @param codec Codec used to decode each event in the stream.
+         */
         explicit BinaryReplayReader(const IEventCodec &codec);
 
+        /**
+         * @brief Read and decode every event from a binary replay stream.
+         * @param in The stream to read from.
+         * @return The decoded events, in the order they were recorded.
+         * @throws ReplayFormatError If the stream is malformed.
+         */
         [[nodiscard]] std::vector<TimedEvent> read(std::istream &in) const;
 
     private:

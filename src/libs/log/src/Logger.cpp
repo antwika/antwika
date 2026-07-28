@@ -26,7 +26,9 @@ namespace antwika::log
         }
         catch (...)
         {
-            // Logging must not fail silently; provide a best-effort fallback without allocations or exceptions since this function is noexcept
+            // Logging must not fail silently.
+            // Provide a best-effort fallback without allocations or exceptions.
+            // This function is noexcept, so it must not throw.
             (void)std::fputs("Logger failure: ", stderr);
             (void)std::fwrite(message.data(), 1, message.size(), stderr);
             (void)std::fputc('\n', stderr);

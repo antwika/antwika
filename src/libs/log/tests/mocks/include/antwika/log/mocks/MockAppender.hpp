@@ -9,6 +9,9 @@ namespace antwika::log::mocks
 
     using antwika::log::IAppender;
 
+    /**
+     * @brief GMock double for IAppender.
+     */
     class MockAppender : public IAppender
     {
     public:

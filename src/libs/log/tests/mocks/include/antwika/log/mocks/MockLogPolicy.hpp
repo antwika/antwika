@@ -11,6 +11,9 @@ namespace antwika::log::mocks
     using antwika::log::ILogPolicy;
     using antwika::log::Level;
 
+    /**
+     * @brief GMock double for ILogPolicy.
+     */
     class MockLogPolicy : public ILogPolicy
     {
     public:

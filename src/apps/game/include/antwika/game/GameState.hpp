@@ -5,11 +5,17 @@
 namespace antwika::game
 {
 
-    // Deliberately plain data: the engine core has no opinion about what "score" means, so state is owned and defined entirely here, in the application, not in any engine library.
+    /**
+     * @brief Deliberately plain data describing this application's state.
+     *
+     * The engine core has no opinion about what "score" means, so this
+     * state is owned and defined entirely in the application, not in any
+     * engine library.
+     */
     struct GameState
     {
-        std::uint64_t ticksProcessed{};
-        std::uint64_t score{};
+        std::uint64_t ticksProcessed{}; ///< Number of engine ticks folded into this state so far.
+        std::uint64_t score{};          ///< Running total accumulated from kScoreIncrement events.
         bool operator==(const GameState &other) const = default;
     };
 

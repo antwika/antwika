@@ -9,6 +9,9 @@ namespace antwika::event::mocks
 
     using antwika::event::ITimedEventSink;
 
+    /**
+     * @brief GMock double for ITimedEventSink.
+     */
     class MockTimedEventSink : public ITimedEventSink
     {
     public:

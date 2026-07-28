@@ -26,9 +26,17 @@ namespace antwika::game
     using antwika::replay::IReplaySource;
     using antwika::time::IClock;
 
+    /**
+     * @brief Announces game startup and starts the engine.
+     */
     class Game
     {
     public:
+        /**
+         * @brief Construct the game over its engine and event dispatcher.
+         * @param engine Engine started by run().
+         * @param dispatcher Dispatcher used to announce the game is running.
+         */
         explicit Game(IEngine &engine, IEventDispatcher &dispatcher);
 
         Game(const Game &) = delete;
@@ -37,6 +45,9 @@ namespace antwika::game
         Game &operator=(const Game &) = delete;
         Game &operator=(Game &&) = delete;
 
+        /**
+         * @brief Dispatch a startup event and start the engine.
+         */
         void run();
 
     private:
@@ -44,8 +55,24 @@ namespace antwika::game
         IEventDispatcher &dispatcher;
     };
 
-    // Wires the engine/event/replay collaborators together, boots the game, then drives the fixed-timestep tick loop for totalTicks, sourcing that tick's events from inputSource -- a hand-scripted "live" run and a loaded replay both go through this identical function, differing only in what inputSource was built from.
-    // Returns the resulting GameState so callers (main.cpp, tests) can inspect or compare it.
+    /**
+     * @brief Wires the engine, event, and replay collaborators together,
+     * boots the game, then drives the fixed-timestep tick loop.
+     *
+     * Runs for totalTicks, sourcing each tick's events from inputSource. A
+     * hand-scripted "live" run and a loaded replay both use this same
+     * function; they differ only in what inputSource was built from.
+     *
+     * @param clock Supplies timestamps for the logger.
+     * @param appender Receives formatted log output.
+     * @param formatter Renders log records into text.
+     * @param logPolicy Decides which log records are emitted.
+     * @param eventQueue Buffers events dispatched during the run.
+     * @param eventSink Receives every dispatched event.
+     * @param inputSource Supplies each tick's events, live or replayed.
+     * @param totalTicks The number of ticks to run.
+     * @return The resulting GameState, for callers (main.cpp, tests) to inspect.
+     */
     GameState bootstrap(IClock &clock,
                         IAppender &appender,
                         IFormatter &formatter,

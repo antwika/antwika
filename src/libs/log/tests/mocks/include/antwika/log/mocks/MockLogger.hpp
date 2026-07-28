@@ -13,6 +13,9 @@ namespace antwika::log::mocks
     using antwika::log::ILogger;
     using antwika::log::Level;
 
+    /**
+     * @brief GMock double for ILogger.
+     */
     class MockLogger : public ILogger
     {
     public:

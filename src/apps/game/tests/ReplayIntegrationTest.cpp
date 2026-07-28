@@ -54,8 +54,11 @@ namespace
     }
 } // namespace
 
-// The requirement this project exists for: save a replay from a live run, load it back, and prove the game reaches exactly the same state.
-// Both runs go through the real antwika::game::bootstrap() entry point -- the same one main.cpp uses -- not a test-only shortcut.
+// This is the requirement this project exists for.
+// Save a replay from a live run, then load it back.
+// Prove the game reaches exactly the same state.
+// Both runs go through the real antwika::game::bootstrap() entry point.
+// That's the same entry point main.cpp uses, not a test-only shortcut.
 TEST(ReplayIntegrationTest, LoadingASavedReplayReproducesTheSameGameState)
 {
     std::vector<TimedEvent> script{
