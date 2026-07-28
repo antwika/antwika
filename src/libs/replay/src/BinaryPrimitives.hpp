@@ -8,7 +8,10 @@
 namespace antwika::replay::detail
 {
 
-    // Explicit big-endian encode/decode helpers shared by BinaryEventCodec and the binary replay writer/reader -- never native struct layout, so the format is identical regardless of host byte order.
+    // Explicit big-endian encode/decode helpers.
+    // Shared by BinaryEventCodec and the binary replay writer/reader.
+    // Never native struct layout.
+    // That keeps the format identical regardless of host byte order.
 
     void writeU32(std::uint32_t value, std::ostream &out);
     [[nodiscard]] std::uint32_t readU32(std::istream &in);

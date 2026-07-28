@@ -5,7 +5,10 @@
 namespace antwika::replay
 {
 
-    // Encodes a TimedEvent as: tick (8 bytes, big-endian), then name and payload as length-prefixed (4-byte big-endian length) byte strings.
+    // Encodes a TimedEvent as tick, then name, then payload.
+    // The tick is 8 bytes, big-endian.
+    // Name and payload are length-prefixed byte strings.
+    // Each length prefix is a 4-byte big-endian integer.
     class BinaryEventCodec final : public IEventCodec
     {
     public:

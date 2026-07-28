@@ -157,6 +157,45 @@ def it_allows_a_multi_sentence_list_item_split_across_its_own_lines():
         assert check_one_sentence_per_line.check_markdown_file(path) == []
 
 
+MAX_COMMENT_LENGTH = 80
+
+
+def _comment_texts(path: Path, marker: str):
+    texts = []
+    for line_no, raw in enumerate(path.read_text(errors="ignore").splitlines(), start=1):
+        stripped = raw.strip()
+        if stripped.startswith(marker) and (marker != "#" or not stripped.startswith("#!")):
+            comment = stripped[len(marker):].strip()
+            if comment:
+                texts.append((line_no, comment))
+            continue
+        idx = check_one_sentence_per_line._find_comment_start(raw, marker)
+        if idx is not None:
+            comment = raw[idx + len(marker):].strip()
+            if comment:
+                texts.append((line_no, comment))
+    return texts
+
+
+def it_keeps_every_comment_at_or_under_eighty_characters():
+    root = check_one_sentence_per_line.DEFAULT_ROOT
+    too_long = []
+
+    for pattern in check_one_sentence_per_line.CPP_GLOBS:
+        for path in sorted(root.glob(pattern)):
+            for line_no, comment in _comment_texts(path, "//"):
+                if len(comment) > MAX_COMMENT_LENGTH:
+                    too_long.append(f"{path}:{line_no}: {len(comment)} chars: {comment}")
+
+    for pattern in check_one_sentence_per_line.PYTHON_GLOBS:
+        for path in sorted(root.glob(pattern)):
+            for line_no, comment in _comment_texts(path, "#"):
+                if len(comment) > MAX_COMMENT_LENGTH:
+                    too_long.append(f"{path}:{line_no}: {len(comment)} chars: {comment}")
+
+    assert too_long == [], "\n".join(too_long)
+
+
 def it_finds_violations_across_the_configured_file_globs():
     with tempfile.TemporaryDirectory() as tmp:
         root = Path(tmp)
@@ -191,6 +230,7 @@ def main():
         it_does_not_flag_a_multi_line_badge_block,
         it_does_not_scan_inside_fenced_code_blocks,
         it_allows_a_multi_sentence_list_item_split_across_its_own_lines,
+        it_keeps_every_comment_at_or_under_eighty_characters,
         it_finds_violations_across_the_configured_file_globs,
     ]
 

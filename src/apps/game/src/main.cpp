@@ -40,7 +40,8 @@ namespace
 {
     constexpr Tick kDemoTotalTicks = 5;
 
-    // Stands in for real (network/keyboard) live input, which this engine doesn't have yet -- see blog/2026-07-27-building-a-deterministic-replay-system.md.
+    // Stands in for real (network/keyboard) live input the engine lacks.
+    // See blog/2026-07-27-building-a-deterministic-replay-system.md.
     std::vector<TimedEvent> demoScript()
     {
         return {

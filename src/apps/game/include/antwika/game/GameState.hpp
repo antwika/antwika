@@ -5,7 +5,10 @@
 namespace antwika::game
 {
 
-    // Deliberately plain data: the engine core has no opinion about what "score" means, so state is owned and defined entirely here, in the application, not in any engine library.
+    // Deliberately plain data.
+    // The engine core has no opinion about what "score" means.
+    // So this state is owned and defined entirely in the application.
+    // It's not defined in any engine library.
     struct GameState
     {
         std::uint64_t ticksProcessed{};

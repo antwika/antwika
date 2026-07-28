@@ -11,7 +11,8 @@ namespace antwika::replay
 
     using antwika::event::TimedEvent;
 
-    // Feeds a previously recorded (or hand-scripted) sequence of TimedEvents back out, one tick's worth at a time, in original order.
+    // Feeds a recorded or hand-scripted sequence of TimedEvents back out.
+    // It returns one tick's worth at a time, in original order.
     class ReplaySource final : public IReplaySource
     {
     public:

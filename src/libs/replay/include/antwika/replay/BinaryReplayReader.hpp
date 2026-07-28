@@ -9,7 +9,10 @@ namespace antwika::replay
 {
 
     // Reads the format BinaryReplayWriter produces.
-    // Throws ReplayFormatError (see ReplayFormatError.hpp) if the stream doesn't start with the expected magic bytes, declares an unsupported format version, or ends before the data it claims to contain.
+    // Throws ReplayFormatError on a malformed stream (see ReplayFormatError.hpp).
+    // That includes a stream missing the expected magic bytes.
+    // It also includes an unsupported format version.
+    // It also includes a stream that ends before the data it claims to hold.
     class BinaryReplayReader final
     {
     public:

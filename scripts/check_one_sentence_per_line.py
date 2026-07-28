@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
-# Fails if a comment or markdown paragraph line holds more than one sentence, or a single sentence is wrapped across multiple lines -- the convention is exactly one sentence per line, however long.
+# Fails if a comment or markdown paragraph line holds more than one sentence.
+# Also fails if a single sentence is wrapped across multiple lines.
+# The convention is exactly one sentence per line, however long.
 import argparse
 import re
 import sys
@@ -55,8 +57,9 @@ def ends_sentence(text: str) -> bool:
 
 
 def is_pure_markup(text: str) -> bool:
-    # Drops the *contents* of every (...)/[...] group -- link/image labels and
-    # URLs alike -- so a line that's nothing but badges/links has no letters left.
+    # Drops the *contents* of every (...) and [...] group.
+    # That removes link/image labels and URLs alike.
+    # So a line that's nothing but badges or links has no letters left.
     residual = []
     depth = 0
     for char in text:

@@ -1,5 +1,8 @@
 #!/usr/bin/env python3
-# Turns a gcovr --json-summary report into a shields.io endpoint badge, using gcovr's own low/medium/high buckets, colored with shields.io's standard palette to match the other badges in the README.
+# Turns a gcovr --json-summary report into a shields.io endpoint badge.
+# It uses gcovr's own low/medium/high buckets.
+# It's colored with shields.io's standard palette.
+# That matches the other badges in the README.
 import argparse
 import json
 

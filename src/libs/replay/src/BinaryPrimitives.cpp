@@ -9,7 +9,9 @@ namespace antwika::replay::detail
 
     namespace
     {
-        // Big-endian read/write, generic over the unsigned integer width -- writeU32/readU32/writeU64/readU64 below are thin, named wrappers over this so call sites don't need to spell out a template argument.
+        // Big-endian read/write, generic over the unsigned integer width.
+        // writeU32/readU32/writeU64/readU64 below are thin, named wrappers over this.
+        // They exist so call sites don't need to spell out a template argument.
         template <typename T>
         void writeBigEndian(T value, std::ostream &out)
         {

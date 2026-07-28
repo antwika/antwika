@@ -13,8 +13,11 @@ namespace antwika::replay
     using antwika::event::TickedEventDispatcher;
 
     // Drives IEngine one fixed tick at a time.
-    // Every tick, it first asks the IReplaySource for that tick's events and dispatches them, then steps the engine -- the same sequence whether the source is a hand-scripted live run or a loaded replay.
-    // This is what makes "replay reproduces the same state" a property of the code path itself, not a coincidence.
+    // Every tick, it asks the IReplaySource for that tick's events.
+    // It dispatches those events, then steps the engine.
+    // That sequence is identical for a live run or a loaded replay.
+    // That's what guarantees replay reproduces the same state.
+    // It's not a coincidence.
     class EngineLoop
     {
     public:

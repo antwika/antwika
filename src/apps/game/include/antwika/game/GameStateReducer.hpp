@@ -11,7 +11,11 @@ namespace antwika::game
     using antwika::event::TimedEvent;
 
     // Folds tick-stamped events into GameState.
-    // Reacts to the engine's own built-in tick event and to this application's custom events::kScoreIncrement through the identical ITimedEventSink mechanism -- proving both are usable the same way, with no special-casing between "built-in" and "custom".
+    // Reacts to the engine's own built-in tick event.
+    // It also reacts to this application's custom events::kScoreIncrement.
+    // Both go through the identical ITimedEventSink mechanism.
+    // That proves both are usable the same way.
+    // There is no special-casing between "built-in" and "custom".
     class GameStateReducer final : public ITimedEventSink
     {
     public:
