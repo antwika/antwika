@@ -4,6 +4,8 @@ add_executable(antwika_ecs_tests
     ComponentStorageTest.cpp
     DoubleBufferingTest.cpp
     EntityManagerTest.cpp
+    ViewTest.cpp
+    WorldTest.cpp
 )
 
 target_include_directories(antwika_ecs_tests

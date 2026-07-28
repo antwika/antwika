@@ -1,5 +1,6 @@
 add_library(antwika_ecs
     src/EntityManager.cpp
+    src/World.cpp
 )
 
 add_library(antwika::ecs ALIAS antwika_ecs)
