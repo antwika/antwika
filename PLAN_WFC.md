@@ -7,6 +7,13 @@ rather than reusing the generic `docs/PLAN.md` name, so a future
 per-feature plan can coexist without a collision — see `ISSUES.md` for
 this and a few other judgment calls made while writing this plan.
 
+Revised after a first review pass: the original sketch's copy-per-
+branch backtracking and linear entropy scan were sized for an 81-cell
+Sudoku board. Scale is now a first-class design goal (large procedural
+generation, not just small puzzles), which changed §3.7-3.9
+substantially — see the note at the top of §3 for what changed and
+why.
+
 ## 1. Goal
 
 Add a generic, reusable constraint-solving library at `src/libs/wfc`
@@ -17,7 +24,7 @@ and `tests/` directory under `src/libs/<name>`.
 The library implements Wave Function Collapse (WFC): repeatedly pick
 the lowest-entropy cell, collapse it to one candidate value, propagate
 the consequences to every other cell, and backtrack on contradiction.
-Three properties are required, all achievable within that same loop:
+Four properties are required, all achievable within that same loop:
 
 - **Deterministic** — no RNG anywhere; every tie (which cell to
   collapse next, which candidate value to try first) is broken by a
@@ -27,7 +34,10 @@ Three properties are required, all achievable within that same loop:
   WFC implementations are randomized and allowed to fail on
   contradiction (typically by restarting with a new seed); this one
   instead backtracks exhaustively, so failure only ever means "proven
-  unsatisfiable," never "got unlucky."
+  unsatisfiable," never "got unlucky." A deterministic step budget
+  (§3.8) can bound how long the search is allowed to run, but doing so
+  introduces a distinct third outcome rather than quietly weakening
+  this guarantee — see §3.11.
 - **One dimensional** — the algorithm's own data model is a flat,
   index-addressed `std::vector` of cells. It has no concept of a grid,
   rows, columns, or neighbors. All spatial/relational structure is
@@ -35,12 +45,23 @@ Three properties are required, all achievable within that same loop:
   for why this is what makes both a classic 1D WFC use case *and* a
   2D puzzle like Sudoku expressible on top of the same core, and
   `ISSUES.md` for the ambiguity this resolves.
+- **Scales to large waves** — Sudoku (81 cells) is the showcase, not
+  the ceiling. The library must not assume its caller only ever has a
+  handful of cells; a procedural-generation caller with thousands of
+  cells is an explicit target, which is why §3.9's algorithm is
+  worklist-driven and trail-based rather than the simpler "re-scan
+  everything, copy the wave per branch" approach a small-scale-only
+  design would get away with.
 
 The showcase application, `src/apps/sudoku` (`antwika::sudoku` /
 binary `antwika_sudoku`), solves a Sudoku puzzle by expressing its
 givens as an initial 81-cell wave and its rows/columns/3x3-box rules
 as constraints over that flat array, then hands both to
 `antwika::wfc::Solver` — no 2D-grid code inside the library at all.
+Sudoku itself is small enough that it doesn't exercise the
+weighted-entropy or step-budget features (§3.8, §3.9); it uses the
+library's plain defaults, which is itself the point — the added
+generality for larger callers must not tax the simple case.
 
 ## 2. Non-goals
 
@@ -50,25 +71,27 @@ as constraints over that flat array, then hands both to
   application concern, expressed by which indices a constraint
   touches, the same way `apps/life`'s `Grid` maps `(x, y)` to `Entity`
   entirely outside `antwika::ecs`.
-- No tile-frequency/weighted-entropy model. Classic WFC often biases
-  cell selection and value choice by authored tile weights, to make
-  generated output look more "natural." Sudoku has no such notion, and
-  determinism only requires *some* fixed rule, not a weighted one, so
-  entropy here is simply "count of remaining candidate values" (the
-  standard CSP "minimum remaining values" heuristic) — a deliberate
-  simplification, not an oversight. A weighted variant is a possible
-  future extension, not required by anything asked for here.
-- No RNG/PRNG anywhere, matching the project-wide "Won't have."
+- No RNG/PRNG anywhere, matching the project-wide "Won't have." A
+  weighted-entropy mode (§3.7) uses fixed, caller-supplied weight data,
+  not randomness — it changes tie-breaking, not determinism.
 - No general SAT/SMT solving. Two constraint kinds ship
-  (`AllDifferentConstraint`, `AdjacencyConstraint`, §3.4–3.5) — enough
+  (`AllDifferentConstraint`, `AdjacencyConstraint`, §3.4-3.5) — enough
   for classic tile-adjacency WFC and for Sudoku's row/column/box
   rules. The `IConstraint` interface is the extension point for any
   future kind; inventing more than these two isn't needed today.
-- No incremental/step-by-step solving API for visualization. `solve()`
-  is one-shot: given a wave and constraints, it returns a result. A
-  future step-by-step observer hook is a documented possible
-  extension, not required by the Sudoku showcase.
+- No incremental/step-by-step *public* solving API for visualization.
+  `solve()` is one-shot: given a wave and constraints, it returns a
+  result. This is unrelated to the step budget in §3.8/§3.9, which
+  exists purely to bound worst-case runtime deterministically and
+  returns nothing about intermediate states — a future step-by-step
+  observer hook remains a documented possible extension, not required
+  here.
 - No multithreaded search.
+- No wall-clock/real-time timeout. §3.8's budget is measured in
+  algorithm-defined steps (candidate values attempted), the same
+  "discrete steps, not wall-clock time" principle
+  `antwika::engine`'s fixed timestep already applies, per explicit
+  instruction — see §3.8.
 - `antwika::wfc` will not depend on `antwika::engine`, `antwika::event`,
   `antwika::replay`, `antwika::time`, or `antwika::log`. It is a pure,
   self-contained algorithm library — even more standalone than
@@ -82,6 +105,23 @@ as constraints over that flat array, then hands both to
   deliberate deviation from the existing two apps' shape.
 
 ## 3. Core design (`antwika::wfc`)
+
+**What changed from the first draft, and why**: the original sketch
+had `collapse()` copy the entire wave on every branch taken and pick
+the next cell to collapse via an `O(n)` scan of every cell, and left
+weighting and a runtime bound as "left entirely open." That was fine
+at Sudoku's 81-cell scale but would degrade badly for a
+procedural-generation caller with thousands of cells (an `O(n)` copy
+or scan per decision point turns into `O(n^2)` or worse over a whole
+solve). §3.7-3.9 below replace that with: an internal, incrementally
+updated entropy index (no full rescan per pick), a single up-front
+wave copy plus a trail-based undo log instead of one copy per branch,
+an iterative explicit-stack search instead of recursion (so search
+depth is never bounded by the C++ call stack), and an optional
+per-value weight table for weighted entropy. None of this changes the
+public shape of `IConstraint`/`AllDifferentConstraint`/
+`AdjacencyConstraint`/`Domain` from the first draft, except that
+`Domain` gains one more small operation (§3.2).
 
 ### 3.1 Why "one dimensional" and "solves Sudoku" aren't in tension
 
@@ -113,6 +153,9 @@ public:
 
     [[nodiscard]] bool contains(std::size_t value) const;
     void remove(std::size_t value);
+    void add(std::size_t value);       // restores a candidate; only
+                                        // ever called by Trail (§3.9)
+                                        // to undo a prior remove()
     void restrictTo(std::size_t value);
 
     [[nodiscard]] std::size_t count() const;
@@ -135,6 +178,9 @@ A small bitset-backed value type: the set of candidate symbol indices
 `[0, alphabetSize)` still allowed for one cell. `std::vector<bool>`
 (not a fixed-width `std::bitset<N>`) so the same type serves a 3-tile
 WFC strip and Sudoku's 9-symbol alphabet without a template parameter.
+`add()` is the one addition versus the first draft: it is what lets
+`Trail::rewindTo()` (§3.9) restore an exact prior domain bit by bit
+without needing to re-derive it from scratch.
 
 ### 3.3 `IConstraint`
 
@@ -153,13 +199,18 @@ public:
 };
 ```
 
-One small interface, same shape as `ISystem`/`IEventSink` elsewhere —
-a constraint is anything that can look at (and narrow) the domains of
-the cells it cares about. `prune()` doubles as the *only* consistency
-check the solver needs (§3.7): collapsing a cell to a value and then
-re-running `prune()` on every constraint touching it is what both
-propagates the consequence and detects a violation, with no separate
-"is this assignment legal" method required.
+Unchanged from the first draft. One small interface, same shape as
+`ISystem`/`IEventSink` elsewhere — a constraint is anything that can
+look at (and narrow) the domains of the cells it cares about.
+`prune()` doubles as the *only* consistency check the solver needs
+(§3.9): collapsing a cell to a value and then re-running `prune()` on
+every constraint touching it is what both propagates the consequence
+and detects a violation, with no separate "is this assignment legal"
+method required. Note that `prune()` itself stays a plain, trail-
+unaware function — `Solver` is the only thing that knows about the
+trail (§3.9), diffing each constraint's domains before/after the call
+to record exactly what changed. Constraint authors never have to
+think about undo logic.
 
 ### 3.4 `AllDifferentConstraint`
 
@@ -182,7 +233,7 @@ from every *other* cell in `cellIndices`. This is what Sudoku's rows,
 columns, and boxes are built from (§5.2) — it is not full
 hyper-arc-consistency for all-different (it won't spot every possible
 inconsistency early), and it doesn't need to: completeness comes from
-the backtracking search in §3.7, not from how aggressively propagation
+the backtracking search in §3.9, not from how aggressively propagation
 prunes. Propagation is purely a speed optimization on top of a search
 that is correct even with the weakest possible `prune()` (one that
 always returns `true` and changes nothing).
@@ -223,6 +274,8 @@ enum class SolveOutcome
 {
     Solved,
     Unsatisfiable,
+    LimitExceeded,   // step budget (§3.8) reached before either of
+                     // the above could be determined
 };
 
 struct SolveResult
@@ -232,7 +285,88 @@ struct SolveResult
 };
 ```
 
-### 3.7 `Solver`
+`LimitExceeded` is new versus the first draft (§3.8). It is a
+deliberately distinct value from `Unsatisfiable`: the search did not
+prove there's no solution, it simply ran out of budget while still
+searching. Conflating the two would silently break the completeness
+guarantee (§1) by letting "gave up" masquerade as "proven impossible."
+
+### 3.7 Weighted entropy
+
+Classic WFC implementations often bias which cell collapses next (and
+implicitly, generation "style") using per-symbol weights — e.g. a
+procedural terrain generator might want `grass` picked far more often
+than `water`, expressed as tile frequency. Sudoku has no such notion
+(every digit is equally valid), but a procedural-generation caller
+plausibly does, so this is opt-in, not required:
+
+```cpp
+Solver(std::vector<Domain> initialWave,
+       std::vector<std::reference_wrapper<const IConstraint>>
+           constraints,
+       std::vector<double> valueWeights = {},   // empty == uniform
+       SolverLimits limits = {});                // §3.8
+```
+
+`valueWeights[v]` is symbol `v`'s weight, shared across every cell in
+the wave (the classic WFC model: a tile's frequency doesn't depend on
+*where* it's being considered). An empty vector means "every value
+has weight 1.0" — plain, unweighted MRV (minimum remaining values),
+exactly the first draft's behavior.
+
+Entropy for a cell, given its remaining candidate values `V` and their
+weights:
+
+```
+W = sum(valueWeights[v] for v in V)
+H = log(W) - sum(valueWeights[v] * log(valueWeights[v]) for v in V) / W
+```
+
+the standard weighted Shannon-entropy formula WFC implementations use.
+When every weight is `1.0`, this reduces to `log(|V|)` — a strictly
+increasing function of candidate count alone, so cell selection order
+with uniform (or absent) weights is *identical* to the first draft's
+plain-count MRV rule. Weighted entropy is therefore a strict
+generalization: Sudoku passing nothing extra behaves exactly as
+before, and a weighted caller gets biased selection without the
+solver needing two separate code paths.
+
+**Selection rule** (used by `EntropyIndex`, §3.9): among cells with
+`count() > 1`, pick the one with the smallest `H`; ties (all-equal `H`,
+which is exactly what happens whenever weights are uniform or absent)
+broken by lowest cell index — always an exact integer comparison,
+never a floating-point one, so the *tie-break* stays fully
+deterministic regardless of any floating-point subtlety in computing
+`H` itself. See §3.10 for the determinism claim this rests on.
+
+### 3.8 Step budget (`SolverLimits`)
+
+```cpp
+struct SolverLimits
+{
+    std::optional<std::uint64_t> maxSteps;  // default: unlimited
+};
+```
+
+Per explicit instruction: the solver must be boundable so it "can't
+continue forever," but not via wall-clock time — the same "fixed,
+discrete steps, not wall-clock time" principle
+`REQUIREMENTS.md` already states for `antwika::engine`'s tick loop
+applies here. One "step" is one candidate value attempted at a
+decision point (§3.9's search loop increments a counter exactly once
+per candidate tried, regardless of how much propagation work that
+candidate triggers) — a deterministic, algorithm-defined unit: the
+same wave/constraints/limit always exhausts the same budget at the
+same point, run after run, machine after machine.
+
+When the counter reaches `maxSteps`, `solve()` returns
+`SolveOutcome::LimitExceeded` immediately (§3.6). Default
+(`std::nullopt`) is unlimited, so Sudoku and the small 1D demo (§7)
+are unaffected unless a caller opts in — this is a safety valve for
+large/adversarial searches, not a behavior change for existing small
+ones.
+
+### 3.9 `Solver`: propagation, selection, and backtracking at scale
 
 ```cpp
 class Solver
@@ -240,78 +374,185 @@ class Solver
 public:
     Solver(std::vector<Domain> initialWave,
            std::vector<std::reference_wrapper<const IConstraint>>
-               constraints);
+               constraints,
+           std::vector<double> valueWeights = {},
+           SolverLimits limits = {});
 
     [[nodiscard]] SolveResult solve() const;
 
 private:
-    std::vector<Domain> wave;
+    std::vector<Domain> initialWave;
     std::vector<std::reference_wrapper<const IConstraint>> constraints;
+    std::vector<double> valueWeights;
+    SolverLimits limits;
+
+    // Built once at construction: cellToConstraints[c] lists every
+    // constraint whose cells() includes c. Lets propagation wake up
+    // only the constraints actually touched by a change, instead of
+    // re-scanning every constraint on every step.
+    std::vector<std::vector<std::size_t>> cellToConstraints;
 };
 ```
 
 Constructor validates that every `Domain` in `initialWave` shares the
 same alphabet size, and that every constraint's `cells()` indices are
-in range, throwing `WfcError` otherwise (§3.10) — a cheap, purely
-defensive check at the boundary, not a hot-path cost.
+in range, throwing `WfcError` otherwise (§3.12) — a cheap, purely
+defensive check at the boundary, not a hot-path cost. It also builds
+`cellToConstraints` once, up front.
 
-`solve()`, in pseudocode:
+`solve()` makes exactly **one** copy of `initialWave` (not one per
+branch, unlike the first draft) into a local working `wave`, then
+drives everything else through two small private helpers and an
+explicit stack — no recursion, so search depth is never limited by
+the C++ call stack, which matters once "large procedural generation"
+(§1) means potentially many thousands of decision points deep:
+
+- **`Trail`** (private, §4): an undo log of individual
+  `(cellIndex, value)` removals. `Solver` snapshots a constraint's
+  `cells()` domains before calling `prune()`, diffs after, and pushes
+  one trail entry per value that disappeared — regardless of whether
+  it came from `remove()` or `restrictTo()` clearing several bits at
+  once. `trail.checkpoint()` returns the current length;
+  `trail.rewindTo(checkpoint, wave, entropyIndex)` replays entries
+  after that point in reverse, calling `Domain::add()` to restore each
+  one and notifying `entropyIndex.update()` (below) so the index stays
+  consistent. This is what replaces the first draft's per-branch wave
+  copy: undoing a failed branch is proportional to how much that
+  branch actually changed, not to the whole wave's size.
+- **`EntropyIndex`** (private, §4): an incrementally maintained
+  structure (e.g. an ordered-by-entropy index with a per-cell reverse
+  lookup — the exact internal structure is an implementation detail,
+  left open in §10) supporting `update(cell, domain)` (called whenever
+  a cell's domain changes, whether shrinking during propagation or
+  growing back during a rewind) and `pickNext()` (the next cell to
+  collapse per §3.7's rule) in better than `O(n)` time each, so
+  choosing the next cell to collapse never re-scans the whole wave.
+
+Propagation, worklist-driven rather than "repeat full passes until
+nothing changes" (the first draft's approach, which re-checks every
+constraint on every pass regardless of whether it could possibly have
+new information):
 
 ```
-propagate(wave):
-    repeat until no constraint's prune() changes anything in a full pass:
-        for each constraint, in the order the caller supplied it:
-            if not constraint.prune(wave): return false  // contradiction
+propagate(wave, trail, entropyIndex, startingWorklist):
+    worklist = startingWorklist        // which constraints to (re)check
+    while worklist not empty:
+        constraint = worklist.popFront()
+        before = snapshot(wave, constraint.cells())
+        if not constraint.prune(wave): return false     // contradiction
+        for each cell in constraint.cells() whose domain shrank:
+            trail.record one entry per value removed
+            entropyIndex.update(cell, wave[cell])
+            for each other constraint touching that cell:
+                if not already queued: worklist.pushBack(it)
     return true
-
-collapse(wave):                      // wave taken and returned by value
-    if not propagate(wave): return Unsatisfiable
-
-    cell = the lowest-index cell whose domain.count() is the smallest
-           value > 1 across the whole wave                 // MRV, §2
-    if no such cell exists: return Solved, extract(wave)    // all singleton
-
-    for value in wave[cell], in ascending order:            // fixed order
-        branch = wave                                       // copy
-        branch[cell] = Domain::singleton(value, alphabetSize)
-        result = collapse(branch)
-        if result.outcome == Solved: return result
-
-    return Unsatisfiable   // every candidate at `cell` led to a dead end
-
-solve(): return collapse(wave)
 ```
 
-**Determinism** (§8's tests hold this to account): both the cell
-picked at each step (lowest remaining-candidate count, ties broken by
-lowest index) and the order candidate values are tried (ascending) are
-fixed rules with no randomness and no dependence on container
-iteration order beyond a plain `std::vector`'s index order. Running
-`solve()` twice on the same wave/constraints always returns the exact
-same `SolveResult`.
+The very first `propagate()` call in `solve()` seeds `worklist` with
+every constraint once; every later call (after collapsing one cell)
+seeds it with only the constraints touching that one cell — the cost
+of re-propagating after a collapse scales with how connected that
+cell is, never with the total wave size.
 
-**Completeness**: every reachable branch at every decision point is
-tried, in order, before the search reports `Unsatisfiable` — the
-search only gives up on a cell once every one of its remaining
-candidate values has been tried and led to a dead end further down.
-This is what guarantees "finds a solution if one exists," at the cost
-of worst-case exponential time on adversarial inputs (§9, `ISSUES.md`).
+Search, an explicit loop with a choice-point stack instead of
+recursion:
 
-**Chosen trade-off**: `collapse()` takes and returns `wave` by value,
-copying the whole wave per branch rather than mutating one shared wave
-with an undo stack. Simpler to write and to reason about correctly,
-at the cost of extra copies; §9 leaves an undo-stack version as a
-possible future optimization if a much larger board ever needs it —
-not required for Sudoku's 81 cells or a small WFC demo strip.
+```
+solve():
+    wave = copy of initialWave                 // the only copy made
+    trail = Trail{}
+    entropyIndex = EntropyIndex(wave, valueWeights)
+    steps = 0
 
-### 3.8 `WfcError`
+    if not propagate(wave, trail, entropyIndex, allConstraints):
+        return {Unsatisfiable, {}}
+
+    stack = []   // ChoicePoint{cell, remaining candidates, checkpoint}
+
+    loop:
+        cell = entropyIndex.pickNext()
+        if cell is null: return {Solved, extract(wave)}   // all singleton
+
+        if stack empty or stack.top().cell != cell:
+            push ChoicePoint{cell, ascending candidates of wave[cell],
+                              trail.checkpoint()}
+
+        top = stack.top()
+        if top.remaining candidates is empty:
+            pop stack
+            if stack empty: return {Unsatisfiable, {}}
+            trail.rewindTo(stack.top().checkpoint, wave, entropyIndex)
+            continue
+
+        if limits.maxSteps and steps >= *limits.maxSteps:
+            return {LimitExceeded, {}}
+        ++steps
+
+        trail.rewindTo(top.checkpoint, wave, entropyIndex)  // undo the
+                                          // previous candidate at this
+                                          // cell, if any, before trying
+                                          // the next one
+        value = top.remaining candidates.popFront()
+        restrict wave[cell] to {value}, recording the removals on
+            trail and notifying entropyIndex
+        propagate(wave, trail, entropyIndex, cellToConstraints[cell])
+            // false: this candidate is a dead end; loop retries with
+            // the next candidate at the same choice point. true: loop
+            // continues -- pickNext() next iteration either surfaces a
+            // new undetermined cell (a new choice point gets pushed)
+            // or returns null (solved).
+```
+
+### 3.10 Determinism
+
+Both which cell is picked at each step (§3.7's entropy rule, or plain
+MRV with default weights) and the order candidate values are tried
+(ascending) are fixed rules with no randomness, and no dependence on
+container iteration order beyond `std::vector`/`Domain`'s own
+documented index order — this holds regardless of the worklist/trail
+mechanics in §3.9, which only change *how fast* the answer is reached,
+never *which* answer. Running `solve()` twice on the same
+wave/constraints/weights/limits (via one `Solver` or two independently
+constructed ones) always returns the exact same `SolveResult`.
+
+One caveat specific to weighted entropy (§3.7): `H` is computed with
+`double` arithmetic, and while a fixed sequence of floating-point
+operations on fixed inputs is itself deterministic on a given build,
+this project targets three toolchains (GNU, LLVM, MinGW) and makes no
+claim that `H`'s bit pattern is identical *across* them — only that
+the *outcome* (which cell is picked, and hence the final assignment)
+is reproducible for a given build, which is what "same input, same
+output" determinism means everywhere else in this repo (e.g.
+`EcsDeterminismTest`, `ReplayDeterminismTest`). Callers who want
+cross-toolchain bit-identical weights are advised to stick to small
+integer-valued weights (exactly representable in `double`), which
+sidesteps the concern in practice; the plan does not chase further
+than that, since nothing asked for here needs it.
+
+### 3.11 Completeness
+
+Every reachable branch at every decision point is tried, in order,
+before the search reports `Unsatisfiable` — the search only gives up
+on a cell once every one of its remaining candidate values has been
+tried and led to a dead end further down. This holds exactly as
+stated **only when `limits.maxSteps` is unset** (the default): with a
+finite budget, the search may instead return `LimitExceeded`, which is
+not a claim about solvability either way (§3.6, §3.8) — completeness
+is preserved by keeping that outcome distinct, not by pretending a
+truncated search still proves unsatisfiability. Worst-case time
+remains exponential on adversarial inputs when no budget is set; §3.8
+and `ISSUES.md` cover why a budget is offered instead of pretending
+this away.
+
+### 3.12 `WfcError`
 
 One specific, catchable error type — mirrors `EcsError` and
 `ReplayFormatError`'s existing "one exception type per library"
 precedent — thrown only by `Solver`'s constructor, for mismatched
 `Domain` alphabet sizes across the wave or an out-of-range constraint
-cell index. Never thrown by `solve()` itself: an unsatisfiable puzzle
-is a normal, non-exceptional `SolveResult`, not an error.
+cell index. Never thrown by `solve()` itself: an unsatisfiable puzzle,
+and a budget-exceeded search, are both normal, non-exceptional
+`SolveResult`s, not errors.
 
 ## 4. File layout (`src/libs/wfc`)
 
@@ -325,6 +566,7 @@ src/libs/wfc/
 │   ├── CompatibilityTable.hpp
 │   ├── AdjacencyConstraint.hpp
 │   ├── SolveResult.hpp        // SolveOutcome, SolveResult
+│   ├── SolverLimits.hpp       // SolverLimits (§3.8)
 │   ├── WfcError.hpp
 │   └── Solver.hpp
 ├── src/
@@ -332,18 +574,37 @@ src/libs/wfc/
 │   ├── AllDifferentConstraint.cpp
 │   ├── CompatibilityTable.cpp
 │   ├── AdjacencyConstraint.cpp
+│   ├── Trail.hpp/.cpp             // private undo log, §3.9
+│   ├── EntropyIndex.hpp/.cpp      // private incremental index, §3.9
 │   └── Solver.cpp
 └── tests/
     ├── CMakeLists.txt
     ├── DomainTest.cpp
     ├── AllDifferentConstraintTest.cpp
     ├── AdjacencyConstraintTest.cpp
+    ├── TrailTest.cpp                 // record/checkpoint/rewindTo
+    │                                  // restores exact prior domains
+    ├── EntropyIndexTest.cpp          // update/pickNext in isolation,
+    │                                  // uniform and weighted cases
     ├── SolverPropagationTest.cpp     // prune-only behavior, no search
     ├── SolverBacktrackingTest.cpp    // contradictions force backtrack
     ├── SolverCompletenessTest.cpp    // crafted solvable/unsatisfiable
     │                                  // CSPs, proves both outcomes
     ├── SolverDeterminismTest.cpp     // same input solved twice ->
     │                                  // bit-identical SolveResult
+    ├── WeightedEntropyTest.cpp       // custom weights change
+    │                                  // selection order; omitting
+    │                                  // weights reproduces the
+    │                                  // unweighted MRV order exactly
+    ├── SolverStepLimitTest.cpp       // tiny maxSteps -> LimitExceeded,
+    │                                  // not Solved or Unsatisfiable;
+    │                                  // generous maxSteps still lets
+    │                                  // a normal solve finish
+    ├── SolverLargeScaleTest.cpp      // a few thousand cells, simple
+    │                                  // constraints -> completes with
+    │                                  // a valid assignment; a scale
+    │                                  // regression check, not a timed
+    │                                  // benchmark (§8)
     ├── OneDimensionalWfcTest.cpp     // classic tile-adjacency strip,
     │                                  // see §7 -- the literal 1D case
     └── mocks/
@@ -354,6 +615,11 @@ src/libs/wfc/
 inside `AdjacencyConstraint.hpp` since it is a small, independently
 testable value type (a square boolean matrix), the same granularity
 `antwika::ecs` uses for e.g. `Entity`/`EcsError` as separate headers.
+`Trail` and `EntropyIndex` are kept as private headers under `src/`,
+not `include/`, the same way `antwika::ecs` keeps `EntityManager.hpp`
+and `IComponentPool.hpp` internal — implementation details `Solver`
+composes, never part of the public surface, but still directly unit
+tested via their (private) headers, mirroring `EntityManagerTest.cpp`.
 
 ## 5. Showcase application (`src/apps/sudoku`)
 
@@ -403,7 +669,11 @@ row `r`'s nine indices are `r*9 .. r*9+8`; column `c`'s are
 `{c, c+9, ..., c+72}`; box `b`'s nine indices come from
 `(3*(b/3) + dr)*9 + (3*(b%3) + dc)` for `dr, dc` in `0..2` — ordinary
 index arithmetic, entirely inside `apps/sudoku`, never inside
-`antwika::wfc`.
+`antwika::wfc`. `apps/sudoku` constructs `Solver` with only the first
+two constructor arguments (§3.9) — no `valueWeights`, no
+`SolverLimits` — demonstrating that the larger-scale features added
+in §3.7/§3.8 stay fully opt-in and impose nothing on a caller that
+doesn't need them.
 
 ### 5.3 CLI (`main.cpp`)
 
@@ -414,7 +684,9 @@ demo puzzle constant (an easy, well-known example), the same
 uses in `apps/game`. Print the input board, run `Solver::solve()`,
 then print either the solved grid (`SolveOutcome::Solved`) or a
 "no solution" message with a non-zero exit code
-(`SolveOutcome::Unsatisfiable`).
+(`SolveOutcome::Unsatisfiable`). `SolveOutcome::LimitExceeded` cannot
+occur here (no limit is set), but the CLI still handles it explicitly
+rather than falling through, so the switch stays exhaustive.
 
 ### 5.4 File layout (`src/apps/sudoku`)
 
@@ -464,7 +736,7 @@ user's explicit sign-off before implementation starts.
 
 ## 6. CI / workflow impact
 
-`.github/workflows/build.yml`'s "Verify executables" step (§8, step
+`.github/workflows/build.yml`'s "Verify executables" step (§9, step
 9) needs updated expected-binary lists once `antwika::wfc` and
 `antwika::sudoku` exist:
 
@@ -488,10 +760,9 @@ as every prior library/app addition.
 `REQUIREMENTS.md` is deliberately **not** edited as part of this plan.
 It documents already-built, current state (per its own header) and
 the ECS precedent (`docs/PLAN.md` §9, at the time) left it unedited
-during planning for the same reason — once `antwika::wfc`/
-`apps/sudoku` actually land, revisit whether it should gain a line
-about the determinism/completeness guarantee and about an app that
-doesn't use the replay stack.
+during planning for the same reason. Concrete candidate additions for
+once this actually lands are recorded in `ISSUES.md` rather than
+guessed at here, per explicit instruction.
 
 ## 7. The literal one-dimensional demo
 
@@ -506,15 +777,27 @@ directly next to `water`). This is classic 1D WFC with no
 generalization at all — proving the "one dimensional" requirement is
 met literally, not only via Sudoku's flattened indexing.
 
+`SolverLargeScaleTest.cpp` (§4, §8) extends this same idea to a few
+thousand cells, specifically to exercise §3.9's scalability design —
+`OneDimensionalWfcTest` stays small and readable as the *demonstration*
+of the 1D use case, while `SolverLargeScaleTest` is the *stress*
+regression proving the design doesn't quietly assume small input.
+
 ## 8. Testing strategy
 
 - GoogleTest + CTest, one behavior tested alongside the code that
   introduces it, per the project's existing rule.
-- `DomainTest`: bit operations, singleton/empty construction,
-  iteration order (ascending), equality.
+- `DomainTest`: bit operations (including `add()`), singleton/empty
+  construction, iteration order (ascending), equality.
 - `AllDifferentConstraintTest` / `AdjacencyConstraintTest`: pruning
   behavior in isolation, including the "already contradictory input"
   case returning `false`.
+- `TrailTest`: `record`/`checkpoint`/`rewindTo` restores the exact
+  prior state of every affected `Domain`, including a case with
+  multiple removals from the same cell between two checkpoints.
+- `EntropyIndexTest`: `pickNext()` returns the correct cell under both
+  uniform and custom weights; `update()` keeps the index consistent
+  across a sequence of shrink-then-restore (rewind) operations.
 - `SolverPropagationTest`: propagation alone solves a fully
   determined-by-naked-singles case with zero backtracking (an "easy"
   Sudoku-shaped CSP is the natural fixture here).
@@ -527,8 +810,23 @@ met literally, not only via Sudoku's flattened indexing.
 - `SolverDeterminismTest`: same wave/constraints solved twice (or via
   two independently constructed `Solver` instances) yields a
   bit-identical `SolveResult`.
-- `OneDimensionalWfcTest`: §7's tile strip, asserting every adjacent
-  pair in the final assignment is compatible per the table.
+- `WeightedEntropyTest`: a crafted wave where two cells have equal
+  candidate *count* but different weight distributions collapses the
+  lower-entropy one first; the same wave solved with no weights given
+  reproduces the first draft's plain-count MRV order exactly.
+- `SolverStepLimitTest`: a tiny `maxSteps` on a search that would
+  otherwise need many candidates tried returns `LimitExceeded`, never
+  `Unsatisfiable`; a generously large `maxSteps` still lets a normal
+  small solve finish as `Solved`.
+- `SolverLargeScaleTest`: a few-thousand-cell 1D wave with simple,
+  mostly-satisfiable adjacency constraints completes with a valid
+  assignment. Asserts correctness (every constraint holds in the
+  result) and that it finishes at all within the test framework's
+  default timeout, not a specific wall-clock target — a scale
+  regression check, not a performance benchmark, to avoid flaky
+  timing-based assertions.
+- `OneDimensionalWfcTest`: §7's small tile strip, asserting every
+  adjacent pair in the final assignment is compatible per the table.
 - `apps/sudoku` tests per §5.4: parsing, constraint-set construction,
   solving known easy/hard puzzles against known expected solutions, an
   unsatisfiable puzzle, and a determinism check at the app level too.
@@ -546,34 +844,38 @@ level:
 2. `Domain` (+ tests).
 3. `IConstraint`, `AllDifferentConstraint`, `CompatibilityTable`,
    `AdjacencyConstraint` (+ tests for each).
-4. `SolveResult`, `WfcError`, `Solver` (propagation, then collapse/
-   backtracking) (+ propagation/backtracking/completeness/determinism
-   tests).
-5. `OneDimensionalWfcTest` — the literal 1D demo (§7).
-6. `antwika::sudoku` scaffold (`CMakeLists.txt`, wired into
+4. `Trail`, `EntropyIndex` (private internals) (+ tests for each, in
+   isolation from `Solver`).
+5. `SolveResult`, `SolverLimits`, `WfcError`, `Solver` (worklist
+   propagation, then entropy-driven iterative backtracking) (+
+   propagation/backtracking/completeness/determinism/weighted-entropy/
+   step-limit tests).
+6. `SolverLargeScaleTest` and `OneDimensionalWfcTest` — the literal 1D
+   demo and its scale regression counterpart (§7).
+7. `antwika::sudoku` scaffold (`CMakeLists.txt`, wired into
    `src/apps/CMakeLists.txt`, linking only `antwika::wfc`).
-7. `Board` + `BoardFormatError` (+ tests).
-8. `Puzzle` (initial wave + 27 constraints) (+ tests).
-9. `main.cpp` CLI, `.github/workflows/build.yml` expected-binaries and
-   `gcovr --exclude` updates (§6), `README.md` project-structure
-   update.
-10. Integration tests: known easy/hard puzzles, an unsatisfiable
+8. `Board` + `BoardFormatError` (+ tests).
+9. `Puzzle` (initial wave + 27 constraints) (+ tests).
+10. `main.cpp` CLI, `.github/workflows/build.yml` expected-binaries
+    and `gcovr --exclude` updates (§6), `README.md` project-structure
+    update.
+11. Integration tests: known easy/hard puzzles, an unsatisfiable
     puzzle, determinism.
-11. Final review pass: coverage, workflow verification, blog post —
+12. Final review pass: coverage, workflow verification, blog post —
     see `PLAN_WFC_CHECKLIST.md`'s closing items.
 
 ## 10. Open questions
 
-- Should `Solver` eventually support an injected step limit/timeout
-  for adversarial inputs (§2, `ISSUES.md`)? Not required by Sudoku or
-  the 1D demo; left open for whenever `antwika::wfc` gets used with
-  untrusted input.
-- Is the copy-per-branch `collapse()` (§3.7) fast enough in practice
-  for every puzzle difficulty the showcase wants to demonstrate, or
-  does an undo-stack version become necessary? Expected to be a
-  non-issue at Sudoku's 81-cell scale; revisit only if profiling says
-  otherwise.
-- Whether a weighted-entropy variant (§2) is ever worth adding is left
-  entirely open — nothing asked for here needs it.
-- Whether `REQUIREMENTS.md` gains new lines once this lands, and what
-  they should say, is deliberately left for after implementation (§6).
+- Exact internal data structure for `EntropyIndex` (§3.9) is left to
+  implementation — the plan only fixes its complexity goal (better
+  than `O(n)` per `pickNext()`/`update()`) and its interface, not its
+  internals (e.g. an ordered map keyed by entropy value plus a
+  per-cell reverse lookup is one reasonable option, not a mandate).
+- Whether `SolverLimits` should eventually gain a second bound (e.g. a
+  cap on total propagation work, not just candidates attempted) is
+  left open; `maxSteps` alone is judged sufficient for now since every
+  unit of search work happens either as part of trying a candidate or
+  as propagation directly triggered by one.
+- Whether `REQUIREMENTS.md` actually gains the lines proposed in
+  `ISSUES.md` once this lands, or different ones, is left for after
+  implementation (§6).
