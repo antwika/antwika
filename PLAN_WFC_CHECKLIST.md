@@ -2,6 +2,10 @@
 
 Companion to `PLAN_WFC.md`. Granular, checkable steps in build order.
 
+Revised after a first review pass: §3 now covers `Trail`/
+`EntropyIndex`/weighted entropy/step budget instead of the original
+copy-per-branch, full-rescan design — see `PLAN_WFC.md` §3 for why.
+
 ## 0. Scaffold `antwika::wfc`
 
 - [ ] Create `src/libs/wfc/{CMakeLists.txt,include,src,tests}`.
@@ -26,10 +30,13 @@ Companion to `PLAN_WFC.md`. Granular, checkable steps in build order.
 - [ ] `Domain(alphabetSize)` starts with every bit set (full domain).
 - [ ] `Domain::singleton(value, alphabetSize)` starts with exactly one
       bit set.
-- [ ] `contains`, `remove`, `restrictTo`, `count`, `isEmpty`,
-      `isSingleton`, `singleValue` (precondition-checked), `==`.
+- [ ] `contains`, `remove`, `add` (restores a candidate — new versus
+      the first draft, needed by `Trail::rewindTo`, §3), `restrictTo`,
+      `count`, `isEmpty`, `isSingleton`, `singleValue`
+      (precondition-checked), `==`.
 - [ ] Ascending iteration (`begin()`/`end()`) over remaining values.
-- [ ] `DomainTest.cpp`: construction, mutation, iteration order,
+- [ ] `DomainTest.cpp`: construction, mutation (including `add()`
+      after `remove()` restoring exactly that bit), iteration order,
       equality, and the `isEmpty`/`isSingleton` boundary cases (zero
       bits, exactly one bit, more than one bit).
 
@@ -55,29 +62,63 @@ Companion to `PLAN_WFC.md`. Granular, checkable steps in build order.
       from both sides; a domain left with no compatible partner
       returns `false` from `prune()`.
 
-## 3. `Solver`
+## 3. `Trail` and `EntropyIndex` (private internals)
 
-- [ ] `SolveResult.hpp`: `SolveOutcome` (`Solved`/`Unsatisfiable`),
-      `SolveResult` (`outcome` + `assignment`).
+- [ ] `Trail.hpp/.cpp` (private, under `src/`, not `include/`):
+      `record(cell, value)`, `checkpoint() const`,
+      `rewindTo(checkpoint, wave, entropyIndex)` replaying removals
+      after that checkpoint in reverse via `Domain::add()`, per
+      `PLAN_WFC.md` §3.9.
+- [ ] `TrailTest.cpp`: `rewindTo` restores the exact prior `Domain`
+      for every affected cell, including a case where several values
+      were removed from the same cell (via multiple `record()` calls
+      or one `restrictTo()`) between two checkpoints.
+- [ ] `EntropyIndex.hpp/.cpp` (private, under `src/`): `update(cell,
+      domain)`, `pickNext() const` returning the lowest-entropy cell
+      with `count() > 1` (ties by lowest index), better than `O(n)`
+      per call — exact internal structure is an implementation
+      detail (`PLAN_WFC.md` §10).
+- [ ] `EntropyIndexTest.cpp`: `pickNext()` picks correctly under
+      uniform weights (equivalent to plain MRV) and under custom
+      weights (`PLAN_WFC.md` §3.7's formula); `update()` keeps the
+      index consistent across a shrink-then-restore (rewind)
+      sequence, not just monotonically shrinking domains.
+
+## 4. `Solver`
+
+- [ ] `SolveResult.hpp`: `SolveOutcome`
+      (`Solved`/`Unsatisfiable`/`LimitExceeded`), `SolveResult`
+      (`outcome` + `assignment`), per `PLAN_WFC.md` §3.6.
+- [ ] `SolverLimits.hpp`: `SolverLimits` struct with
+      `std::optional<std::uint64_t> maxSteps` (default: unlimited),
+      per `PLAN_WFC.md` §3.8.
 - [ ] `WfcError.hpp`: one exception type, constructed with a reason
       (mismatched domain alphabet sizes, out-of-range constraint cell
       index) — mirrors `EcsError`/`ReplayFormatError`'s "one specific,
-      catchable type" shape, per `PLAN_WFC.md` §3.8.
-- [ ] `Solver.hpp/.cpp`: constructor validates wave/constraint
-      consistency (throws `WfcError` on violation); `solve()`
-      implements propagate-then-collapse per `PLAN_WFC.md` §3.7.
-- [ ] Propagation loop: repeatedly runs every constraint's `prune()`,
-      in the caller-supplied `std::vector` order, until a full pass
-      changes nothing; returns failure immediately on any `false`.
-- [ ] Cell selection: lowest candidate-count cell with `count() > 1`,
-      ties broken by lowest index (deterministic MRV, no RNG).
+      catchable type" shape, per `PLAN_WFC.md` §3.12.
+- [ ] `Solver.hpp/.cpp`: constructor takes `initialWave`,
+      `constraints`, optional `valueWeights` (default empty ==
+      uniform), optional `SolverLimits` (default unlimited); validates
+      wave/constraint consistency (throws `WfcError` on violation);
+      builds `cellToConstraints` once, per `PLAN_WFC.md` §3.9.
+- [ ] Propagation: worklist-driven, not repeated full passes over
+      every constraint — the initial `propagate()` call seeds the
+      worklist with every constraint once; every later call (after one
+      collapse) seeds it with only the constraints touching the
+      collapsed cell, per `PLAN_WFC.md` §3.9's pseudocode.
+- [ ] Cell selection: via `EntropyIndex::pickNext()`, not a linear
+      rescan of the wave (deterministic MRV/weighted-entropy, no RNG).
 - [ ] Candidate order: ascending value order at the chosen cell
       (deterministic, fixed).
-- [ ] Backtracking: each candidate is tried via a full-wave copy
-      (`PLAN_WFC.md` §3.7's chosen by-value trade-off, not an
-      undo-stack); a dead end abandons that copy and tries the next
-      candidate; exhausting every candidate at a cell returns
-      `Unsatisfiable` from that branch.
+- [ ] Backtracking: iterative, an explicit choice-point stack (not
+      recursion — search depth must never be bounded by the C++ call
+      stack, per `PLAN_WFC.md` §1's scalability goal); `solve()` copies
+      `initialWave` exactly once, never once per branch; each branch's
+      effects are undone via `Trail::rewindTo`, not a fresh wave copy.
+- [ ] Step budget: one step per candidate value attempted at a choice
+      point (not per propagation call); reaching `maxSteps` returns
+      `SolveOutcome::LimitExceeded` immediately, distinct from
+      `Unsatisfiable`, per `PLAN_WFC.md` §3.8/§3.11.
 - [ ] `SolverPropagationTest.cpp`: a wave solvable by naked singles
       alone reaches `Solved` with propagation only (no branch taken
       needs to backtrack).
@@ -85,17 +126,26 @@ Companion to `PLAN_WFC.md`. Granular, checkable steps in build order.
       alone is insufficient — at least one wrong branch is taken and
       abandoned before the correct one is found, and the final
       `SolveResult` is still `Solved` with a valid assignment.
-- [ ] `SolverCompletenessTest.cpp`: a crafted unsatisfiable wave
-      returns `Unsatisfiable` (proving the search doesn't give up
-      early); a crafted solvable wave with a unique solution returns
-      exactly that solution.
-- [ ] `SolverDeterminismTest.cpp`: the same wave/constraints solved
-      twice (two independently constructed `Solver`s or two `solve()`
-      calls) produce a bit-identical `SolveResult`.
+- [ ] `SolverCompletenessTest.cpp`: a crafted unsatisfiable wave (with
+      unlimited `maxSteps`) returns `Unsatisfiable` (proving the
+      search doesn't give up early); a crafted solvable wave with a
+      unique solution returns exactly that solution.
+- [ ] `SolverDeterminismTest.cpp`: the same wave/constraints/weights/
+      limits solved twice (two independently constructed `Solver`s or
+      two `solve()` calls) produce a bit-identical `SolveResult`.
+- [ ] `WeightedEntropyTest.cpp`: custom `valueWeights` change which
+      cell collapses first versus plain MRV, for a crafted wave with
+      two equal-candidate-count cells and differing weight
+      distributions; omitting `valueWeights` on that same wave
+      reproduces the unweighted MRV collapse order exactly.
+- [ ] `SolverStepLimitTest.cpp`: a tiny `maxSteps` on a search needing
+      many candidates returns `LimitExceeded`, never
+      `Unsatisfiable` or `Solved`; a generous `maxSteps` still lets an
+      otherwise-normal small solve finish as `Solved`.
 - [ ] `tests/mocks/include/antwika/wfc/mocks/MockConstraint.hpp`
       created and consumed by at least one `.cpp` test.
 
-## 4. The literal one-dimensional demo
+## 5. Scale and the literal one-dimensional demo
 
 - [ ] `OneDimensionalWfcTest.cpp`: a short 1D sequence of cells (no
       grid, no flattening trick — genuinely 1D), a small symbol
@@ -104,8 +154,14 @@ Companion to `PLAN_WFC.md`. Granular, checkable steps in build order.
 - [ ] Test asserts every adjacent pair in the resulting assignment is
       compatible per the table, and that solving is deterministic
       (same as `SolverDeterminismTest`, applied to this concrete case).
+- [ ] `SolverLargeScaleTest.cpp`: a few-thousand-cell 1D wave with
+      simple, mostly-satisfiable `AdjacencyConstraint`s completes with
+      a valid assignment (every constraint holds in the result);
+      asserts completion within the test framework's default timeout,
+      not a specific wall-clock target — a scale regression check for
+      `PLAN_WFC.md` §3.9's design, not a timed benchmark.
 
-## 5. Scaffold `apps/sudoku`
+## 6. Scaffold `apps/sudoku`
 
 - [ ] Create `src/apps/sudoku/{CMakeLists.txt,include,src,tests}`.
 - [ ] `add_executable(antwika_sudoku ...)` in
@@ -118,7 +174,7 @@ Companion to `PLAN_WFC.md`. Granular, checkable steps in build order.
 - [ ] `antwika_sudoku_tests` executable scaffolded in
       `src/apps/sudoku/tests/CMakeLists.txt`.
 
-## 6. `Board`
+## 7. `Board`
 
 - [ ] `BoardFormatError.hpp`: one exception type for parse failures
       (wrong length after stripping whitespace, invalid character).
@@ -129,7 +185,7 @@ Companion to `PLAN_WFC.md`. Granular, checkable steps in build order.
       string; `BoardFormatError` for wrong length and for an invalid
       character; both `.` and `0` accepted as the blank marker.
 
-## 7. `Puzzle`
+## 8. `Puzzle`
 
 - [ ] `Puzzle.hpp/.cpp`: `buildInitialWave(board)` (givens ->
       singleton `Domain`, blanks -> full `Domain(9)`) and
@@ -141,12 +197,16 @@ Companion to `PLAN_WFC.md`. Granular, checkable steps in build order.
       produces the right singleton/full domain per cell against a
       hand-built board.
 
-## 8. CLI and integration
+## 9. CLI and integration
 
 - [ ] `main.cpp`: optional `--puzzle <path>` argument; falls back to
       a built-in demo puzzle constant when absent, per `PLAN_WFC.md`
-      §5.3. Prints the input board, solves, prints the solved grid or
-      a "no solution" message with a non-zero exit code.
+      §5.3. Constructs `Solver` with only the wave and constraints —
+      no `valueWeights`, no `SolverLimits` (Sudoku needs neither).
+      Prints the input board, solves, prints the solved grid or a
+      "no solution" message with a non-zero exit code; handles
+      `SolveOutcome::LimitExceeded` explicitly too, even though it
+      cannot occur here, so the switch stays exhaustive.
 - [ ] `SudokuSolverIntegrationTest.cpp`: a known easy puzzle and a
       known hard puzzle each solve to their known expected solution.
 - [ ] `UnsolvablePuzzleTest.cpp`: a puzzle with contradictory givens
@@ -156,19 +216,25 @@ Companion to `PLAN_WFC.md`. Granular, checkable steps in build order.
       level, via `Puzzle`/`Solver` together) produces identical
       output.
 
-## 9. Cross-cutting / hygiene
+## 10. Cross-cutting / hygiene
 
 - [ ] No line in `src/libs/wfc/**/*.{hpp,cpp}` or
       `src/apps/sudoku/**/*.{hpp,cpp}` exceeds 80 characters
       (`scripts/check_line_length.py` covers `src/**` already).
 - [ ] Doxygen `@brief`/`@param`/`@return` on every public class and
-      method under `include/antwika/wfc/` and `include/antwika/sudoku/`.
+      method under `include/antwika/wfc/` and `include/antwika/sudoku/`
+      (`Trail`/`EntropyIndex` are private, under `src/`, and exempt
+      from the public-surface Doxygen rule, same as `EntityManager`).
 - [ ] No `std::unordered_map`/`unordered_set` (or anything else whose
       iteration order isn't a documented, stable invariant) anywhere
       iteration order could leak into `solve()`'s output — constraints
       and candidate values are iterated only via `std::vector`/`Domain`
-      order.
+      order; `EntropyIndex`'s internal structure (§3) must be checked
+      against this same rule once its concrete type is chosen.
 - [ ] No RNG/PRNG anywhere in either the library or the app.
+- [ ] No wall-clock/real-time-based timeout anywhere — `SolverLimits`
+      is step-counted only, per explicit instruction (`PLAN_WFC.md`
+      §3.8).
 - [ ] `-Wall -Wextra -Wpedantic -Wsuggest-override -Werror` clean on
       GNU and LLVM toolchains.
 - [ ] `README.md`'s project-structure listing gains `wfc/` under
@@ -179,12 +245,11 @@ Companion to `PLAN_WFC.md`. Granular, checkable steps in build order.
       `GCOVR_EXCL_LINE` is justified by a comment and added only after
       confirming a real, unreachable gap, per
       `docs/confirming-unreachable-branches.md`.
-- [ ] Once landed, consider whether `REQUIREMENTS.md` should gain
-      lines documenting the WFC determinism/completeness guarantee and
-      an app that intentionally doesn't use the engine/replay stack
-      (`PLAN_WFC.md` §6, deliberately not edited during planning).
+- [ ] Once landed, cross-check the current implementation against the
+      candidate `REQUIREMENTS.md` additions recorded in `ISSUES.md`
+      and decide which, if any, to actually add.
 
-## 10. `.github/workflows/` verification (final check before merge)
+## 11. `.github/workflows/` verification (final check before merge)
 
 - [ ] `.github/workflows/build.yml`'s non-MinGW "Verify executables"
       `expected` array includes `antwika_wfc_tests`, `antwika_sudoku`,
@@ -203,18 +268,22 @@ Companion to `PLAN_WFC.md`. Granular, checkable steps in build order.
       newly expected binary actually exists after a build, on at
       least the GNU toolchain.
 
-## 11. Write-up (final item)
+## 12. Write-up (final item)
 
 - [ ] A `blog/` post added (next number in sequence — `blog/004-...`
       is the latest today, so this would be `blog/005-...`) describing
-      the design actually implemented: the propagate/collapse/
-      backtrack loop, the determinism and completeness guarantees, how
-      the same 1D core expresses both a literal tile-adjacency strip
-      and Sudoku's row/column/box rules, and any place the real
-      implementation deviated from `PLAN_WFC.md`'s sketch (matching
-      the precedent set by `blog/001-...` through `blog/004-...`, each
-      written after its corresponding work landed, capturing what
-      actually happened rather than what was planned).
+      the design actually implemented: the worklist propagation, trail-
+      based backtracking, and incremental entropy index behind the
+      propagate/collapse/backtrack loop; the determinism and
+      completeness guarantees (and how the step budget's
+      `LimitExceeded` outcome avoids weakening completeness); weighted
+      entropy as an opt-in generalization; how the same 1D core
+      expresses both a literal tile-adjacency strip and Sudoku's
+      row/column/box rules; and any place the real implementation
+      deviated from `PLAN_WFC.md`'s sketch (matching the precedent set
+      by `blog/001-...` through `blog/004-...`, each written after its
+      corresponding work landed, capturing what actually happened
+      rather than what was planned).
 - [ ] `PLAN_WFC.md` and `PLAN_WFC_CHECKLIST.md` either deleted (if the
       blog post and code fully capture the design, matching the ECS
       precedent's `docs/PLAN.md`/`docs/CHECKLIST.md` removal) or kept
