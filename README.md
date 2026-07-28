@@ -10,7 +10,8 @@ A C++23 game project built with CMake, Conan, and GoogleTest, developed inside V
 ```
 src/
 ├── apps/
-│   └── game/
+│   ├── game/
+│   └── life/
 └── libs/
     ├── ecs/
     ├── engine/
@@ -51,10 +52,10 @@ Build and test the project using:
 Ctrl + Shift + B
 ```
 
-After the build completes, run the compiled binary on your target machine:
+After the build completes, run the compiled binaries on your target machine:
 
-- Linux: `build/bin/antwika_game`
-- Windows: `build/bin/antwika_game.exe`
+- Linux: `build/bin/antwika_game`, `build/bin/antwika_life`
+- Windows: `build/bin/antwika_game.exe`, `build/bin/antwika_life.exe`
 
 ## Replays
 
@@ -67,6 +68,15 @@ build/bin/antwika_game --replay demo.replay   # reload it, reproducing the same 
 
 Both modes go through the same `antwika::game::bootstrap()` entry point and the same fixed-timestep tick loop (`antwika::replay::EngineLoop`) — replay mode only differs in where each tick's events come from.
 Application code (here, `apps/game`) defines its own state (`GameState`) and events (e.g. `game.score_increment`) on top of the engine's built-in per-tick event (`engine.tick`), both reacted to through the same `ITimedEventSink` mechanism — see [`blog/2026-07-27-building-a-deterministic-replay-system.md`](blog/2026-07-27-building-a-deterministic-replay-system.md) for the full design and how to add your own.
+
+`apps/life` is a second, independent application built on the same replay system, this time with its state held in an `antwika::ecs::World` instead of a plain struct — a Conway's Game of Life board, where each cell is an entity with a `Cell` component and a single `LifeSystem` advances every cell one generation per tick using the double-buffered `World`/`SystemScheduler` machinery described in [`blog/2026-07-29-an-entity-component-system-with-nowhere-to-hide-a-mutation.md`](blog/2026-07-29-an-entity-component-system-with-nowhere-to-hide-a-mutation.md):
+
+```sh
+build/bin/antwika_life --record demo.replay   # seeds a blinker, saves the input
+build/bin/antwika_life --replay demo.replay   # reload it, reproducing the same run
+```
+
+Cells are toggled alive via a `life.toggle_cell` event (payload `"x,y"`), tick-stamped exactly like `game.score_increment` — the same event-driven, replayable pattern applied to ECS state instead of a hand-rolled reducer.
 
 ## Testing
 
