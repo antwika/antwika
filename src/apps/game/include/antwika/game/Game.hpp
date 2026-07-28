@@ -44,12 +44,8 @@ namespace antwika::game
         IEventDispatcher &dispatcher;
     };
 
-    // Wires the engine/event/replay collaborators together, boots the game,
-    // then drives the fixed-timestep tick loop for totalTicks, sourcing that
-    // tick's events from inputSource -- a hand-scripted "live" run and a
-    // loaded replay both go through this identical function, differing only
-    // in what inputSource was built from. Returns the resulting GameState so
-    // callers (main.cpp, tests) can inspect or compare it.
+    // Wires the engine/event/replay collaborators together, boots the game, then drives the fixed-timestep tick loop for totalTicks, sourcing that tick's events from inputSource -- a hand-scripted "live" run and a loaded replay both go through this identical function, differing only in what inputSource was built from.
+    // Returns the resulting GameState so callers (main.cpp, tests) can inspect or compare it.
     GameState bootstrap(IClock &clock,
                         IAppender &appender,
                         IFormatter &formatter,

@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
-# Plain-assert tests for generate_coverage_badge.py. Run directly:
+# Plain-assert tests for generate_coverage_badge.py.
+# Run directly:
 #   python3 scripts/tests/test_generate_coverage_badge.py
 import importlib.util
 import json

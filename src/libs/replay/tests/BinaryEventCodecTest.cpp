@@ -44,6 +44,20 @@ TEST(BinaryEventCodecTest, RoundTripsMaxTickValue)
     EXPECT_EQ(roundTrip(event), event);
 }
 
+TEST(BinaryEventCodecTest, DecodeThrowsWhenTickFieldIsTruncated)
+{
+    BinaryEventCodec codec;
+    std::stringstream stream;
+    codec.encode(TimedEvent{.tick = 1, .event = Event{.name = "truncated"}}, stream);
+
+    // Cut off inside the 8-byte tick field itself, distinct from DecodeThrowsOnTruncatedStream below (which truncates later, inside a length-prefixed string).
+    // This exercises readU64's own truncation check, not just readU32's.
+    auto truncated = stream.str().substr(0, 4);
+    std::stringstream truncatedStream(truncated);
+
+    EXPECT_THROW((void)codec.decode(truncatedStream), std::runtime_error);
+}
+
 TEST(BinaryEventCodecTest, DecodeThrowsOnTruncatedStream)
 {
     BinaryEventCodec codec;
@@ -62,11 +76,8 @@ TEST(BinaryEventCodecTest, DecodeThrowsWhenStringContentIsTruncated)
     std::stringstream stream;
     codec.encode(TimedEvent{.tick = 1, .event = Event{.name = "hello"}}, stream);
 
-    // Keep the tick (8 bytes) and the name's length prefix (4 bytes) intact,
-    // but cut off partway through the name's content bytes. Distinct from
-    // DecodeThrowsOnTruncatedStream above, which truncates a length field
-    // itself -- this exercises the "length was readable but the content
-    // wasn't" branch in readString.
+    // Keep the tick (8 bytes) and the name's length prefix (4 bytes) intact, but cut off partway through the name's content bytes.
+    // Distinct from DecodeThrowsOnTruncatedStream above, which truncates a length field itself -- this exercises the "length was readable but the content wasn't" branch in readString.
     auto truncated = stream.str().substr(0, 8 + 4 + 2);
     std::stringstream truncatedStream(truncated);
 

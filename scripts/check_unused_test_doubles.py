@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
-# Fails if any mock/fake header under src/**/tests/{mocks,fakes}/include is
-# never #included by a .cpp file, i.e. it's dead test-double code.
+# Fails if any mock/fake header under src/**/tests/{mocks,fakes}/include is never #included by a .cpp file, i.e. it's dead test-double code.
 import argparse
 import sys
 from pathlib import Path

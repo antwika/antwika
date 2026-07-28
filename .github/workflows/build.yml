@@ -153,6 +153,14 @@ jobs:
         shell: bash
         run: python3 scripts/check_unused_test_doubles.py
 
+      - name: Test check-one-sentence-per-line script
+        shell: bash
+        run: python3 scripts/tests/test_check_one_sentence_per_line.py
+
+      - name: Check comments and docs are one sentence per line
+        shell: bash
+        run: python3 scripts/check_one_sentence_per_line.py
+
       - name: Install dependencies
         shell: bash
         run: |

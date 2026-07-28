@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
-# Plain-assert tests for check_unused_test_doubles.py. Run directly:
+# Plain-assert tests for check_unused_test_doubles.py.
+# Run directly:
 #   python3 scripts/tests/test_check_unused_test_doubles.py
 import importlib.util
 import io
