@@ -1,6 +1,8 @@
 find_package(GTest REQUIRED)
 
 add_executable(antwika_ecs_tests
+    ComponentStorageTest.cpp
+    DoubleBufferingTest.cpp
     EntityManagerTest.cpp
 )
 
