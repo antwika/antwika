@@ -76,6 +76,15 @@ TEST(BoardTest, InvalidCharacterThrows)
         BoardFormatError);
 }
 
+TEST(BoardTest, InvalidCharacterBelowDigitRangeThrows)
+{
+    std::string bad(kPuzzle);
+    bad[0] = '#';
+    EXPECT_THROW(
+        { [[maybe_unused]] auto b = Board::parse(bad); },
+        BoardFormatError);
+}
+
 TEST(BoardTest, SetWritesACell)
 {
     Board board;

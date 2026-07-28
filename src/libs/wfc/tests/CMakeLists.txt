@@ -9,6 +9,7 @@ add_executable(antwika_wfc_tests
     TrailTest.cpp
     EntropyIndexTest.cpp
     SolverPropagationTest.cpp
+    SolverConstructionTest.cpp
     SolverBacktrackingTest.cpp
     SolverCompletenessTest.cpp
     SolverDeterminismTest.cpp

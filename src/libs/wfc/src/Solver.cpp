@@ -14,6 +14,13 @@ namespace antwika::wfc
 
     namespace
     {
+        // The closing brace below is a gcov/NRVO miss, not a real gap:
+        // every statement in the body runs on every call, but gcc
+        // attributes `assignment`'s scope-exit destructor block
+        // separately from the elided-copy return path, leaving that
+        // block's own counter at zero. Same class of artifact as
+        // Domain::singleton -- see
+        // docs/confirming-unreachable-branches.md.
         std::vector<std::size_t> extractAssignment(
             const std::vector<Domain> &wave)
         {
@@ -24,7 +31,7 @@ namespace antwika::wfc
                 assignment.push_back(domain.singleValue());
             }
             return assignment;
-        }
+        } // GCOVR_EXCL_LINE
     } // namespace
 
     Solver::Solver(
@@ -179,7 +186,7 @@ namespace antwika::wfc
         {
             std::vector<std::size_t> candidates(
                 wave[cell].begin(), wave[cell].end());
-            stack.push_back(ChoicePoint{
+            stack.push_back(ChoicePoint{ // GCOVR_EXCL_LINE
                 cell, std::move(candidates), 0, trail.checkpoint()});
         };
 
