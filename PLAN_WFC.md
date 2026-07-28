@@ -14,6 +14,13 @@ generation, not just small puzzles), which changed §3.7-3.9
 substantially — see the note at the top of §3 for what changed and
 why.
 
+**Temporary**: this file and `PLAN_WFC_CHECKLIST.md` exist only to
+guide the implementation. Per explicit instruction, both are deleted
+once the implementation and its `blog/` write-up (checklist §12) are
+complete — the same disposition the equivalent `docs/PLAN.md`/
+`docs/CHECKLIST.md` had for `antwika::ecs`, just decided up front here
+rather than left open.
+
 ## 1. Goal
 
 Add a generic, reusable constraint-solving library at `src/libs/wfc`

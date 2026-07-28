@@ -284,8 +284,8 @@ copy-per-branch, full-rescan design — see `PLAN_WFC.md` §3 for why.
       by `blog/001-...` through `blog/004-...`, each written after its
       corresponding work landed, capturing what actually happened
       rather than what was planned).
-- [ ] `PLAN_WFC.md` and `PLAN_WFC_CHECKLIST.md` either deleted (if the
-      blog post and code fully capture the design, matching the ECS
-      precedent's `docs/PLAN.md`/`docs/CHECKLIST.md` removal) or kept
-      and closed out with notes on any deviation, at the user's
-      preference at that point.
+- [ ] `PLAN_WFC.md` and `PLAN_WFC_CHECKLIST.md` deleted — per explicit
+      instruction, these are guidance for the implementation only and
+      are removed once it and the blog post above are both done,
+      matching the ECS precedent's `docs/PLAN.md`/`docs/CHECKLIST.md`
+      removal (not left open to preference, unlike that precedent).
