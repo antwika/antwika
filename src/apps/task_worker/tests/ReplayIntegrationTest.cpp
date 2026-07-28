@@ -78,7 +78,7 @@ TEST(ReplayIntegrationTest, LoadingASavedReplayReproducesTheSameState)
             .event = Event{.name = kTaskSubmit, .payload = "2,1,5,Beta"}},
         TimedEvent{
             .tick = 0,
-            .event = Event{.name = kTaskSubmit, .payload = "3,0,1,Gamma"}},
+            .event = Event{.name = kTaskSubmit, .payload = "3,0,2,Gamma"}},
         TimedEvent{
             .tick = 4,
             .event = Event{.name = kTaskSubmit, .payload = "4,3,1,Delta"}},

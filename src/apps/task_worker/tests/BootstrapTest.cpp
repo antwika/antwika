@@ -69,7 +69,7 @@ namespace
             TimedEvent{
                 .tick = 0,
                 .event = Event{
-                    .name = kTaskSubmit, .payload = "3,0,1,Gamma"}},
+                    .name = kTaskSubmit, .payload = "3,0,2,Gamma"}},
             TimedEvent{
                 .tick = 4,
                 .event = Event{
@@ -125,7 +125,7 @@ TEST(BootstrapTest, Bootstrap_RunsScriptedTasksToCompletion)
         (Worker{WorkerStatus::Busy, 1, 5, makeWorkerLabel("Epsilon")}));
     EXPECT_EQ(
         finalState[1],
-        (Worker{WorkerStatus::Busy, 1, 3, makeWorkerLabel("Gamma")}));
+        (Worker{WorkerStatus::Busy, 2, 3, makeWorkerLabel("Gamma")}));
 }
 
 TEST(BootstrapTest, Bootstrap_RunsEveryObserverOncePerTick)
@@ -181,7 +181,8 @@ TEST(BootstrapTest, Bootstrap_KeepsACallerSuppliedRegistryInSync)
         &registry);
 
     // By tick 5, Alpha/Beta/Delta have completed.
-    // Gamma and Epsilon are still running with one tick left each.
+    // Gamma and Epsilon are still running, both just started.
+    // Gamma's 2-tick duration leaves two; Epsilon's 1-tick leaves one.
     // See Bootstrap_RunsScriptedTasksToCompletion for the worker view.
     EXPECT_EQ(
         registry.allTasks(),
@@ -193,7 +194,7 @@ TEST(BootstrapTest, Bootstrap_KeepsACallerSuppliedRegistryInSync)
                 2, "Beta", kNormalPriority, TaskStatus::Completed, 0,
                 std::nullopt},
             TaskInfo{
-                3, "Gamma", kLowPriority, TaskStatus::Running, 1,
+                3, "Gamma", kLowPriority, TaskStatus::Running, 2,
                 std::nullopt},
             TaskInfo{
                 4, "Delta", kCriticalPriority, TaskStatus::Completed, 0,
