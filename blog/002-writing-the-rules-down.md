@@ -1,8 +1,8 @@
 # Writing the rules down: prose linting, doc comments, and a requirements file
 
-*2026-07-28*
+*Post 2*
 
-The [previous post](2026-07-27-building-a-deterministic-replay-system.md) was about a feature — a deterministic replay system, with a bug a test caught before it shipped.
+The [previous post](001-building-a-deterministic-replay-system.md) was about a feature — a deterministic replay system, with a bug a test caught before it shipped.
 This one isn't about a feature at all.
 It's about the day after: turning a handful of conventions that had only ever lived in people's heads (and in review comments) into checks CI actually runs, comments the public API actually carries, and a single file that says what the whole project is for.
 

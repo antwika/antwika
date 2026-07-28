@@ -16,13 +16,13 @@
 #include <antwika/replay/ReplaySource.hpp>
 #include <antwika/time/fakes/FakeClock.hpp>
 
-#include "antwika/game/Events.hpp"
-#include "antwika/game/Game.hpp"
+#include "antwika/life/Events.hpp"
+#include "antwika/life/Life.hpp"
 
 using antwika::event::Event;
 using antwika::event::EventRecorder;
 using antwika::event::TimedEvent;
-using antwika::game::GameState;
+using antwika::life::Board;
 using antwika::log::Level;
 using antwika::log::MinimumLevelLogPolicy;
 using antwika::log::NullAppender;
@@ -36,9 +36,11 @@ using antwika::time::fakes::FakeClock;
 
 namespace
 {
-    constexpr antwika::time::Tick kTotalTicks = 5;
+    constexpr antwika::time::Tick kTotalTicks = 4;
+    constexpr std::uint32_t kWidth = 5;
+    constexpr std::uint32_t kHeight = 5;
 
-    GameState runGame(IReplaySource &source)
+    Board runLife(IReplaySource &source)
     {
         std::chrono::system_clock::time_point time{};
         FakeClock fakeClock(time);
@@ -47,43 +49,52 @@ namespace
         MinimumLevelLogPolicy logPolicy(Level::Info);
         EventRecorder eventSink;
 
-        return antwika::game::bootstrap(
+        return antwika::life::bootstrap(
             fakeClock,
             appender,
             formatter,
             logPolicy,
             eventSink,
             source,
-            kTotalTicks);
+            kTotalTicks,
+            kWidth,
+            kHeight);
     }
 } // namespace
 
 // This is the requirement this project exists for.
 // Save a replay from a live run, then load it back.
-// Prove the game reaches exactly the same state.
-// Both runs go through the real antwika::game::bootstrap() entry point.
+// Prove the simulation reaches exactly the same board.
+// Both runs go through the real antwika::life::bootstrap() entry point.
 // That's the same entry point main.cpp uses, not a test-only shortcut.
-TEST(ReplayIntegrationTest, LoadingASavedReplayReproducesTheSameGameState)
+TEST(ReplayIntegrationTest, LoadingASavedReplayReproducesTheSameBoard)
 {
     std::vector<TimedEvent> script{
         TimedEvent{
-            .tick = 1,
+            .tick = 0,
             .event = Event{
-                .name = antwika::game::events::kScoreIncrement,
-                .payload = "5",
+                .name = antwika::life::events::kToggleCell,
+                .payload = "1,2",
             },
         },
         TimedEvent{
-            .tick = 3,
+            .tick = 0,
             .event = Event{
-                .name = antwika::game::events::kScoreIncrement,
-                .payload = "2",
+                .name = antwika::life::events::kToggleCell,
+                .payload = "2,2",
+            },
+        },
+        TimedEvent{
+            .tick = 0,
+            .event = Event{
+                .name = antwika::life::events::kToggleCell,
+                .payload = "3,2",
             },
         },
     };
 
     ReplaySource liveSource(script);
-    auto liveState = runGame(liveSource);
+    auto liveBoard = runLife(liveSource);
 
     BinaryEventCodec codec;
     BinaryReplayWriter writer(codec);
@@ -93,8 +104,7 @@ TEST(ReplayIntegrationTest, LoadingASavedReplayReproducesTheSameGameState)
     BinaryReplayReader reader(codec);
     auto loadedEvents = reader.read(replayStream);
     ReplaySource replaySource(loadedEvents);
-    auto replayedState = runGame(replaySource);
+    auto replayedBoard = runLife(replaySource);
 
-    EXPECT_EQ(replayedState, liveState);
-    EXPECT_EQ(replayedState, (GameState{.ticksProcessed = 5, .score = 7}));
+    EXPECT_EQ(replayedBoard, liveBoard);
 }

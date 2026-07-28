@@ -168,3 +168,23 @@ TEST(SystemSchedulerTest, ALaterPhaseObservesAnEarlierPhasesWrites)
 
     EXPECT_EQ(observed, (std::vector<int>{42}));
 }
+
+TEST(SystemSchedulerTest, EntityCanBeDestroyedAfterASchedulerRun)
+{
+    NiceMock<MockLogger> logger;
+    World world(logger);
+    const auto entity = world.create();
+    world.add<Position>(entity, Position{0});
+    world.commit();
+
+    SystemScheduler scheduler;
+    SetPositionSystem setter(entity, 1);
+    const auto phase = scheduler.createPhase("phase");
+    scheduler.addSystem(phase, setter);
+    scheduler.run(world, 0);
+
+    world.destroy(entity);
+    world.commit();
+
+    EXPECT_FALSE(world.alive(entity));
+}

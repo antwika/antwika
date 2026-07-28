@@ -1,4 +1,10 @@
-#include "antwika/game/Game.hpp"
+#include "antwika/life/Life.hpp"
+
+#include <cstdint>
+#include <fstream>
+#include <iostream>
+#include <string_view>
+#include <vector>
 
 #include <antwika/event/Event.hpp>
 #include <antwika/event/EventRecorder.hpp>
@@ -13,16 +19,13 @@
 #include <antwika/replay/ReplaySource.hpp>
 #include <antwika/time/SystemClock.hpp>
 
-#include <fstream>
-#include <iostream>
-#include <string_view>
-#include <vector>
-
-#include "antwika/game/Events.hpp"
+#include "antwika/life/Events.hpp"
+#include "antwika/life/PrintSystem.hpp"
 
 using antwika::event::Event;
 using antwika::event::EventRecorder;
 using antwika::event::TimedEvent;
+using antwika::life::PrintSystem;
 using antwika::log::Level;
 using antwika::log::MinimumLevelLogPolicy;
 using antwika::log::PlainFormatter;
@@ -36,34 +39,38 @@ using antwika::time::Tick;
 
 namespace
 {
-    constexpr Tick kDemoTotalTicks = 5;
+    constexpr std::uint32_t kBoardWidth = 5;
+    constexpr std::uint32_t kBoardHeight = 5;
+    constexpr Tick kDemoTotalTicks = 4;
 
     // Stands in for real (network/keyboard) live input the engine lacks.
     // See blog/2026-07-27-building-a-deterministic-replay-system.md.
+    // Seeds a horizontal blinker -- a period-2 oscillator -- at tick 0.
     std::vector<TimedEvent> demoScript()
     {
         return {
             TimedEvent{
-                .tick = 1,
+                .tick = 0,
                 .event = Event{
-                    .name = antwika::game::events::kScoreIncrement,
-                    .payload = "5",
+                    .name = antwika::life::events::kToggleCell,
+                    .payload = "1,2",
                 },
             },
             TimedEvent{
-                .tick = 3,
+                .tick = 0,
                 .event = Event{
-                    .name = antwika::game::events::kScoreIncrement,
-                    .payload = "2",
+                    .name = antwika::life::events::kToggleCell,
+                    .payload = "2,2",
+                },
+            },
+            TimedEvent{
+                .tick = 0,
+                .event = Event{
+                    .name = antwika::life::events::kToggleCell,
+                    .payload = "3,2",
                 },
             },
         };
-    }
-
-    void printState(const antwika::game::GameState &state)
-    {
-        std::cout << "Final state: ticksProcessed=" << state.ticksProcessed
-                   << " score=" << state.score << '\n';
     }
 } // namespace
 
@@ -90,6 +97,7 @@ int main(int argc, char **argv)
     MinimumLevelLogPolicy logPolicy(Level::Info);
     EventRecorder eventSink;
     BinaryEventCodec codec;
+    PrintSystem printSystem(kBoardWidth, std::cout);
 
     if (!replayPath.empty())
     {
@@ -97,29 +105,33 @@ int main(int argc, char **argv)
         BinaryReplayReader reader(codec);
         auto loadedEvents = reader.read(replayFile);
         ReplaySource source(std::move(loadedEvents));
-        auto state = antwika::game::bootstrap(
+        antwika::life::bootstrap(
             clock,
             appender,
             formatter,
             logPolicy,
             eventSink,
             source,
-            kDemoTotalTicks);
-        printState(state);
+            kDemoTotalTicks,
+            kBoardWidth,
+            kBoardHeight,
+            {printSystem});
         return 0;
     }
 
     auto script = demoScript();
     ReplaySource source(script);
-    auto state = antwika::game::bootstrap(
+    antwika::life::bootstrap(
         clock,
         appender,
         formatter,
         logPolicy,
         eventSink,
         source,
-        kDemoTotalTicks);
-    printState(state);
+        kDemoTotalTicks,
+        kBoardWidth,
+        kBoardHeight,
+        {printSystem});
 
     if (!recordPath.empty())
     {

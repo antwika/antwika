@@ -60,7 +60,7 @@
         {
             "label": "Gcovr coverage report",
             "type": "shell",
-            "command": "rm -Rf build-coverage/coverage && mkdir -p build-coverage/coverage && gcovr -r . --filter 'src/.*' --gcov-executable \"${env:GCOV_EXECUTABLE}\" --exclude-throw-branches --exclude-unreachable-branches --exclude '.*/tests/.*' --exclude '.*/mocks/.*' --exclude '.*/fakes/.*' --exclude '.*/apps/game/src/main\\.cpp' --html --html-details -o build-coverage/coverage/index.html --print-summary build-coverage",
+            "command": "rm -Rf build-coverage/coverage && mkdir -p build-coverage/coverage && gcovr -r . --filter 'src/.*' --gcov-executable \"${env:GCOV_EXECUTABLE}\" --exclude-throw-branches --exclude-unreachable-branches --exclude '.*/tests/.*' --exclude '.*/mocks/.*' --exclude '.*/fakes/.*' --exclude '.*/apps/game/src/main\\.cpp' --exclude '.*/apps/life/src/main\\.cpp' --html --html-details -o build-coverage/coverage/index.html --print-summary build-coverage",
             "options": {
                 "cwd": "${workspaceFolder}"
             }

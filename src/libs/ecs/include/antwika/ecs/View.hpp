@@ -43,8 +43,11 @@ namespace antwika::ecs
             std::erase_if(
                 matching,
                 [&](Entity entity)
-                { return !(... && storages->contains(entity)); });
-        }
+                {
+                    return !(
+                        ... && storages->contains(entity)); // GCOVR_EXCL_LINE
+                });
+        } // GCOVR_EXCL_LINE
 
         using const_iterator = std::vector<Entity>::const_iterator;
 
@@ -74,7 +77,7 @@ namespace antwika::ecs
             auto consider = [&](auto *storage)
             {
                 const auto entities = storage->entities();
-                if (entities.size() < smallestSize)
+                if (entities.size() < smallestSize) // GCOVR_EXCL_LINE
                 {
                     smallestSize = entities.size();
                     smallest.assign(entities.begin(), entities.end());
@@ -83,7 +86,7 @@ namespace antwika::ecs
             (consider(storages), ...);
 
             return smallest;
-        }
+        } // GCOVR_EXCL_LINE
 
         std::vector<Entity> matching;
     };

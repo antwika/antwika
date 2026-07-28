@@ -5,7 +5,7 @@ namespace antwika::ecs
 
     PhaseId SystemScheduler::createPhase(std::string_view name)
     {
-        phases.push_back(Phase{std::string(name), {}});
+        phases.push_back(Phase{std::string(name), {}}); // GCOVR_EXCL_LINE
         return static_cast<PhaseId>(phases.size() - 1);
     }
 

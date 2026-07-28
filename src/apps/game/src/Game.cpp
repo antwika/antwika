@@ -36,19 +36,18 @@ namespace antwika::game
                         IAppender &appender,
                         IFormatter &formatter,
                         ILogPolicy &logPolicy,
-                        IEventQueue &eventQueue,
                         IEventSink &eventSink,
                         IReplaySource &inputSource,
                         antwika::time::Tick totalTicks)
     {
         Logger logger(formatter, logPolicy, clock, appender);
-        EventDispatcher dispatcher(eventQueue, {eventSink});
+        EventDispatcher dispatcher({eventSink});
 
         GameState state;
         GameStateReducer reducer(state);
         TickedEventDispatcher tickedDispatcher(dispatcher, {reducer});
 
-        Engine engine(logger, eventQueue, tickedDispatcher);
+        Engine engine(logger, tickedDispatcher);
         Game game(engine, tickedDispatcher);
         game.run();
 

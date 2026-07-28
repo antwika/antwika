@@ -7,7 +7,6 @@
 
 #include <antwika/engine/Engine.hpp>
 #include <antwika/event/EventDispatcher.hpp>
-#include <antwika/event/EventQueue.hpp>
 #include <antwika/event/ITimedEventSink.hpp>
 #include <antwika/event/ReplayRecorder.hpp>
 #include <antwika/event/TickedEventDispatcher.hpp>
@@ -22,7 +21,6 @@
 using antwika::engine::Engine;
 using antwika::event::Event;
 using antwika::event::EventDispatcher;
-using antwika::event::EventQueue;
 using antwika::event::ITimedEventSink;
 using antwika::event::ReplayRecorder;
 using antwika::event::TickedEventDispatcher;
@@ -90,12 +88,11 @@ namespace
         EXPECT_CALL(mockLogger, log(::testing::_, ::testing::_))
             .Times(::testing::AnyNumber());
 
-        EventQueue eventQueue;
-        EventDispatcher plainDispatcher(eventQueue, {});
+        EventDispatcher plainDispatcher({});
         FoldingStateReducer reducer;
         TickedEventDispatcher tickedDispatcher(
             plainDispatcher, {recorder, reducer});
-        Engine engine(mockLogger, eventQueue, tickedDispatcher);
+        Engine engine(mockLogger, tickedDispatcher);
         ReplaySource source(std::move(scriptedEvents));
         EngineLoop loop(engine, tickedDispatcher, source);
 

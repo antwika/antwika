@@ -2,7 +2,6 @@
 
 #include <antwika/engine/IEngine.hpp>
 #include <antwika/event/IEventDispatcher.hpp>
-#include <antwika/event/IEventQueue.hpp>
 #include <antwika/event/IEventSink.hpp>
 #include <antwika/log/IAppender.hpp>
 #include <antwika/log/IFormatter.hpp>
@@ -18,7 +17,6 @@ namespace antwika::game
 
     using antwika::engine::IEngine;
     using antwika::event::IEventDispatcher;
-    using antwika::event::IEventQueue;
     using antwika::event::IEventSink;
     using antwika::log::IAppender;
     using antwika::log::IFormatter;
@@ -67,7 +65,6 @@ namespace antwika::game
      * @param appender Receives formatted log output.
      * @param formatter Renders log records into text.
      * @param logPolicy Decides which log records are emitted.
-     * @param eventQueue Buffers events dispatched during the run.
      * @param eventSink Receives every dispatched event.
      * @param inputSource Supplies each tick's events, live or replayed.
      * @param totalTicks The number of ticks to run.
@@ -78,7 +75,6 @@ namespace antwika::game
         IAppender &appender,
         IFormatter &formatter,
         ILogPolicy &logPolicy,
-        IEventQueue &eventQueue,
         IEventSink &eventSink,
         IReplaySource &inputSource,
         antwika::time::Tick totalTicks);
