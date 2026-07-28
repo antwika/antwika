@@ -24,6 +24,12 @@ namespace
     }
 } // namespace
 
+TEST(AdjacencyConstraintTest, CompatibilityTableReportsAlphabetSize)
+{
+    CompatibilityTable table = makeTable();
+    EXPECT_EQ(table.alphabetSize(), 3U);
+}
+
 TEST(AdjacencyConstraintTest, CellsReturnsLeftAndRight)
 {
     AdjacencyConstraint constraint(3, 7, makeTable());

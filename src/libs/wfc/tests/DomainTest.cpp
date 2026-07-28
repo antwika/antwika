@@ -87,3 +87,42 @@ TEST(DomainTest, AlphabetSizeIsPreserved)
     Domain domain(7);
     EXPECT_EQ(domain.alphabetSize(), 7U);
 }
+
+TEST(DomainTest, IteratorPostIncrementReturnsPriorPositionAndAdvances)
+{
+    Domain domain(3);
+    Domain::const_iterator it = domain.begin();
+    Domain::const_iterator prior = it++;
+    EXPECT_EQ(*prior, 0U);
+    EXPECT_EQ(*it, 1U);
+}
+
+TEST(DomainTest, IteratorEqualityComparesPosition)
+{
+    Domain domain(3);
+    Domain::const_iterator first = domain.begin();
+    Domain::const_iterator second = domain.begin();
+    EXPECT_TRUE(first == second);
+
+    ++second;
+    EXPECT_FALSE(first == second);
+}
+
+TEST(DomainTest, IteratorEqualityComparesUnderlyingDomain)
+{
+    Domain a(3);
+    Domain b(3);
+    EXPECT_FALSE(a.begin() == b.begin());
+}
+
+TEST(DomainTest, OutOfRangeAccessIsIgnored)
+{
+    Domain domain(3);
+    EXPECT_FALSE(domain.contains(5));
+
+    domain.remove(5);
+    EXPECT_EQ(domain.count(), 3U);
+
+    domain.add(5);
+    EXPECT_EQ(domain.count(), 3U);
+}
