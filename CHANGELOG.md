@@ -1,3 +1,22 @@
+# [0.8.0](https://github.com/antwika/antwika/compare/v0.7.0...v0.8.0) (2026-07-28)
+
+
+### Bug Fixes
+
+* generalize gcovr main.cpp exclude, rename task-worker to task_worker ([0ee6228](https://github.com/antwika/antwika/commit/0ee622859798f8e7ec8f2549af7cc15768b1a9c2)), closes [#1](https://github.com/antwika/antwika/issues/1) [#2](https://github.com/antwika/antwika/issues/2)
+* **task-worker:** harden task submission validation, add live task status ([c9ce2df](https://github.com/antwika/antwika/commit/c9ce2dfc4c2500666b7f20ea7bdfb31c2fe125ef))
+* **wfc,sudoku:** validate solver weights, close Domain/CLI edge cases ([8978426](https://github.com/antwika/antwika/commit/897842660866eb10849a200217af98ecc14da2af))
+
+
+### Features
+
+* **scheduler:** add antwika::scheduler library ([6feb676](https://github.com/antwika/antwika/commit/6feb676ac7a71423bd5c4ee1f2fc192a3595c586))
+* **sudoku:** add apps/sudoku showcase for antwika::wfc ([c7edb5d](https://github.com/antwika/antwika/commit/c7edb5def2092d3e624aa71f6e1bfd4c4ccb26eb))
+* **task-worker:** add apps/task-worker demo app ([9833a2d](https://github.com/antwika/antwika/commit/9833a2dfacf29653f79ad19ab3d3705d5cb60117))
+* **task-worker:** merge worker/task status prints under one tick header ([3c2d261](https://github.com/antwika/antwika/commit/3c2d26147472e988ed127b5d1759a83f39617a43))
+* **task-worker:** show task dependencies, run demo 2 more ticks ([381a2dc](https://github.com/antwika/antwika/commit/381a2dc65cc950417e1edfbaac0b311409b3a785))
+* **wfc:** add antwika::wfc library implementing deterministic WFC ([243287d](https://github.com/antwika/antwika/commit/243287d659c18a78bfb0f50e13ec2aa690a534ca))
+
 # [0.7.0](https://github.com/antwika/antwika/compare/v0.6.0...v0.7.0) (2026-07-28)
 
 
