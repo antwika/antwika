@@ -14,6 +14,7 @@ add_executable(antwika_task_worker_tests
     TaskJobTest.cpp
     TaskSubmissionSinkTest.cpp
     WorkerCompletionSystemTest.cpp
+    WorkerStatusPrintSystemTest.cpp
 )
 
 target_include_directories(antwika_task_worker_tests

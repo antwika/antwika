@@ -42,7 +42,7 @@ namespace antwika::task_worker
                 start = separator + 1;
             }
             return tokens;
-        }
+        } // GCOVR_EXCL_LINE
 
     } // namespace
 

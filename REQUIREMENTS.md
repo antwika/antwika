@@ -31,6 +31,10 @@ Requirements for the Antwika project, gathered from `README.md`, `blog/001-build
 - CI must verify that the expected binaries exist after the build for each toolchain.
 - Releases must be cut via `semantic-release`, driven by Conventional Commits, publishing to `CHANGELOG.md` and GitHub releases.
 - The project must be licensed under the Apache License 2.0.
+- Running the same set of `Scheduler::schedule()`/`run()` calls twice from scratch must produce identical `run()` output both times, proven by a test rather than asserted by inspection.
+- `Scheduler::run()` must dispatch ready jobs in priority order (higher priority first) with equal-priority jobs run FIFO by submission order.
+- `Scheduler::run()`'s `budget` parameter must be the only mechanism controlling how many jobs run per call; no job may run outside a `run()` call.
+- A job with unmet dependencies (via `schedule()`'s `dependsOn`) must never be dispatched until every dependency has run; dependency cycles must be unreachable through the public API, by construction (id-ordering), not by a runtime check.
 
 ## Should have
 
@@ -54,3 +58,4 @@ Requirements for the Antwika project, gathered from `README.md`, `blog/001-build
 - The engine won't support capturing live/interactive input into a replay in its current scope; the current replay input is a hand-authored script.
 - MinGW builds won't carry coverage instrumentation (`--coverage` isn't supported by that toolchain).
 - An index over replay events (to avoid the linear scan per tick in `ReplaySource::eventsFor()`) won't be built until replays are long enough for it to matter.
+- `Scheduler` won't include priority aging or anti-starvation: a continuous stream of higher-priority jobs can, by design, keep a lower-priority job pending indefinitely, since unconditional priority respect is the requirement, not a bug to work around.

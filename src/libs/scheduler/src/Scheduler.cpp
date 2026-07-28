@@ -133,7 +133,7 @@ namespace antwika::scheduler
         }
 
         return executed;
-    }
+    } // GCOVR_EXCL_LINE
 
     std::size_t Scheduler::pending() const noexcept
     {
