@@ -1,6 +1,6 @@
 # A job scheduler, and a worker pool that can't lie to itself
 
-*Post 5*
+*Post 6*
 
 The [previous post](004-a-game-of-life-demo-and-a-queue-nobody-was-reading.md) closed out `apps/life` and a queue that turned out to have no reader.
 This post adds a new mechanism library, `antwika::scheduler`, and a new demo application, `apps/task_worker`, that puts it to work — the same "library owns a mechanism, an app demonstrates it end to end" shape `antwika::ecs`/`apps/life` established, applied to a different problem: running a batch of prioritized jobs across ticks instead of simulating a board.

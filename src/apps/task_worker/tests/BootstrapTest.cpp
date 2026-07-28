@@ -52,7 +52,7 @@ namespace
     // Delta (Critical, submitted tick 4) jumps ahead of Gamma.
     // Epsilon depends on Delta but can't run in Delta's run() call.
     // Epsilon runs the following tick: a cross-tick dependency.
-    // See blog/005-... for the full scenario rationale.
+    // See blog/006-... for the full scenario rationale.
     std::vector<TimedEvent> demoScript()
     {
         return {

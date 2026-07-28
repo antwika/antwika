@@ -50,7 +50,7 @@ namespace
     // See blog/003-... and blog/004-... for the pattern this follows.
     // Sized to exercise multi-tick distribution and a priority jump.
     // Also exercises a dependency edge crossing a tick boundary.
-    // See blog/005-... for the full scenario rationale.
+    // See blog/006-... for the full scenario rationale.
     std::vector<TimedEvent> demoScript()
     {
         using antwika::task_worker::events::kTaskSubmit;
