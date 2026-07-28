@@ -114,8 +114,8 @@ TEST(SystemSchedulerTest, SystemsRunInPhaseCreationThenRegistrationOrder)
 
     const auto phaseOne = scheduler.createPhase("first");
     const auto phaseTwo = scheduler.createPhase("second");
-    // Registered out of phase order, to prove run order tracks phase
-    // creation order, not the order addSystem() happened to be called.
+    // Registered out of phase order on purpose.
+    // Run order must track phase creation, not addSystem() call order.
     scheduler.addSystem(phaseTwo, b);
     scheduler.addSystem(phaseOne, a);
     scheduler.addSystem(phaseTwo, c);

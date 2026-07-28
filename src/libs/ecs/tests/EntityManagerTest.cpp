@@ -32,9 +32,8 @@ using ::testing::NiceMock;
 namespace
 {
 
-    // Drives an EntityManager past a tiny index ceiling. Logs to std::cerr
-    // through a real Logger (not a mock) so the death test below can assert
-    // on the actual fatal message text, not just that the process died.
+    // Drives an EntityManager past its ceiling, logging via a real Logger.
+    // The death test below checks the fatal message text captured this way.
     void createUntilExhausted()
     {
         PlainFormatter formatter;

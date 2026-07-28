@@ -77,8 +77,7 @@ TEST(DoubleBufferingTest, BackIsReseededFromFrontAfterCommit)
     storage.write(entity, Health{1});
     storage.commit();
 
-    // Without a further write(), a second commit must not revert to a
-    // stale back value from before the first commit.
+    // A second commit without a write() must not revert to a stale value.
     storage.commit();
 
     EXPECT_EQ(storage.read(entity), (Health{1}));

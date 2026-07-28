@@ -25,8 +25,7 @@ namespace antwika::ecs::detail
                 Level::Fatal,
                 "EntityManager: entity index space exhausted");
             std::exit(EXIT_FAILURE); // GCOVR_EXCL_LINE
-            // Death-test coverage from a forked child process isn't
-            // reliably attributed back to this line by gcovr.
+            // Forked-child death-test coverage isn't reliably seen by gcovr.
         }
 
         const auto value = nextValue;

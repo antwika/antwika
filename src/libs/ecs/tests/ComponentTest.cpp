@@ -25,9 +25,6 @@ namespace
 
 TEST(ComponentConceptTest, StaticAssertionsAboveProveTheConstraint)
 {
-    // The interesting assertions are the static_asserts above: a plain
-    // struct satisfies Component, one holding a std::string does not.
-    // This test exists so the file (and the assertions in it) run as
-    // part of the normal test suite rather than living unreferenced.
+    // The interesting checks are the static_asserts above this test.
     SUCCEED();
 }
