@@ -1,9 +1,12 @@
 find_package(GTest REQUIRED)
 
+add_subdirectory(mocks)
+
 add_executable(antwika_ecs_tests
     ComponentStorageTest.cpp
     DoubleBufferingTest.cpp
     EntityManagerTest.cpp
+    SystemSchedulerTest.cpp
     ViewTest.cpp
     WorldTest.cpp
 )
@@ -16,6 +19,7 @@ target_include_directories(antwika_ecs_tests
 target_link_libraries(antwika_ecs_tests
     PRIVATE
         antwika::ecs
+        antwika::ecs::tests::mocks
         antwika::log::tests::mocks
         antwika::time::tests::fakes
         gtest::gtest

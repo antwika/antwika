@@ -1,5 +1,6 @@
 add_library(antwika_ecs
     src/EntityManager.cpp
+    src/SystemScheduler.cpp
     src/World.cpp
 )
 
