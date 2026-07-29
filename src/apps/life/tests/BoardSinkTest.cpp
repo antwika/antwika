@@ -11,6 +11,7 @@
 #include <antwika/log/mocks/MockLogger.hpp>
 
 #include "antwika/life/Board.hpp"
+#include "antwika/life/BoardSinkError.hpp"
 #include "antwika/life/Cell.hpp"
 #include "antwika/life/Events.hpp"
 #include "antwika/life/Grid.hpp"
@@ -21,6 +22,7 @@ using antwika::ecs::World;
 using antwika::event::Event;
 using antwika::event::TimedEvent;
 using antwika::life::BoardSink;
+using antwika::life::BoardSinkError;
 using antwika::life::Cell;
 using antwika::life::Grid;
 using antwika::life::LifeSystem;
@@ -113,6 +115,90 @@ TEST(BoardSinkTest, TickEventRunsLifeSystemLettingAnIsolatedCellDie)
     });
 
     EXPECT_FALSE(world.get<Cell>(grid.entityAt(1, 1)).alive);
+}
+
+TEST(BoardSinkTest, ToggleCellPayloadMissingCommaThrows)
+{
+    NiceMock<MockLogger> logger;
+    World world(logger);
+    Grid grid(world, 2, 2);
+    world.commit();
+
+    SystemScheduler scheduler;
+    BoardSink sink(world, grid, scheduler);
+
+    EXPECT_THROW(
+        sink.handle(TimedEvent{
+            .tick = 0,
+            .event = Event{
+                .name = antwika::life::events::kToggleCell,
+                .payload = "42",
+            },
+        }),
+        BoardSinkError);
+}
+
+TEST(BoardSinkTest, ToggleCellPayloadWithNonNumericFieldThrows)
+{
+    NiceMock<MockLogger> logger;
+    World world(logger);
+    Grid grid(world, 2, 2);
+    world.commit();
+
+    SystemScheduler scheduler;
+    BoardSink sink(world, grid, scheduler);
+
+    EXPECT_THROW(
+        sink.handle(TimedEvent{
+            .tick = 0,
+            .event = Event{
+                .name = antwika::life::events::kToggleCell,
+                .payload = "abc,def",
+            },
+        }),
+        BoardSinkError);
+}
+
+TEST(BoardSinkTest, ToggleCellPayloadWithNegativeFieldThrows)
+{
+    NiceMock<MockLogger> logger;
+    World world(logger);
+    Grid grid(world, 2, 2);
+    world.commit();
+
+    SystemScheduler scheduler;
+    BoardSink sink(world, grid, scheduler);
+
+    EXPECT_THROW(
+        sink.handle(TimedEvent{
+            .tick = 0,
+            .event = Event{
+                .name = antwika::life::events::kToggleCell,
+                .payload = "-1,2",
+            },
+        }),
+        BoardSinkError);
+}
+
+TEST(BoardSinkTest, ToggleCellPayloadWithTrailingGarbageThrows)
+{
+    NiceMock<MockLogger> logger;
+    World world(logger);
+    Grid grid(world, 2, 2);
+    world.commit();
+
+    SystemScheduler scheduler;
+    BoardSink sink(world, grid, scheduler);
+
+    EXPECT_THROW(
+        sink.handle(TimedEvent{
+            .tick = 0,
+            .event = Event{
+                .name = antwika::life::events::kToggleCell,
+                .payload = "1x,2",
+            },
+        }),
+        BoardSinkError);
 }
 
 TEST(BoardSinkTest, IgnoresUnrelatedEvents)

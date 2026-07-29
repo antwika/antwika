@@ -11,7 +11,7 @@ namespace antwika::log
     /**
      * @brief IAppender that writes messages to a std::ostream.
      */
-    class StreamAppender : public IAppender
+    class StreamAppender final : public IAppender
     {
     public:
         /**

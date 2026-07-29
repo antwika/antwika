@@ -2,7 +2,7 @@
 
 #include <vector>
 
-#include "Event.hpp"
+#include "antwika/event/Event.hpp"
 
 namespace antwika::event
 {

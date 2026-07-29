@@ -1,5 +1,6 @@
 #include "antwika/wfc/Solver.hpp"
 
+#include <algorithm>
 #include <cstdint>
 #include <numeric>
 #include <optional>
@@ -113,12 +114,17 @@ namespace antwika::wfc
             entropyIndex.update(cell, domain);
         };
 
+        // Reused across every propagate() call instead of reallocated.
+        // A contradiction can abandon entries still marked true.
+        // So each call resets it up front rather than trust the past.
+        std::vector<bool> queued(constraints.size(), false);
+
         auto propagate =
             [&](const std::vector<std::size_t> &startingWorklist) -> bool
         {
             std::vector<std::size_t> worklist(
                 startingWorklist.begin(), startingWorklist.end());
-            std::vector<bool> queued(constraints.size(), false);
+            std::fill(queued.begin(), queued.end(), false);
             for (const std::size_t index : worklist)
             {
                 queued[index] = true;
@@ -143,10 +149,11 @@ namespace antwika::wfc
                     before.push_back(wave[cell]);
                 }
 
-                if (!constraint.prune(wave))
-                {
-                    return false;
-                }
+                // A failing constraint can still mutate cells first.
+                // Those mutations must be recorded regardless.
+                // Otherwise a later backtrack cannot undo them.
+                // That leaves a sibling branch missing candidates.
+                const bool pruned = constraint.prune(wave);
 
                 for (std::size_t i = 0; i < cells.size(); ++i)
                 {
@@ -176,6 +183,11 @@ namespace antwika::wfc
                             worklist.push_back(other);
                         }
                     }
+                }
+
+                if (!pruned)
+                {
+                    return false;
                 }
             }
             return true;

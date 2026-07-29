@@ -111,6 +111,16 @@ namespace antwika::task_worker
         }
 
         const auto taskId = parseUInt64(tokens[0]);
+        const auto alreadySubmitted = std::find_if(
+            submitted.begin(),
+            submitted.end(),
+            [taskId](const auto &entry) { return entry.first == taskId; });
+        if (alreadySubmitted != submitted.end())
+        {
+            throw TaskSubmissionError(
+                "TaskSubmissionSink: task.submit payload's id was "
+                "already submitted");
+        }
         const auto priority = parsePriority(tokens[1]);
         const auto durationTicks = parseUInt64(tokens[2]);
         if (durationTicks == 0)

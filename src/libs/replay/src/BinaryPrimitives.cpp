@@ -1,6 +1,8 @@
 #include "BinaryPrimitives.hpp"
 
+#include <algorithm>
 #include <array>
+#include <limits>
 
 #include <antwika/replay/ReplayFormatError.hpp>
 
@@ -66,8 +68,19 @@ namespace antwika::replay::detail
         return readBigEndian<std::uint64_t>(in);
     }
 
+    void checkFitsInU32Length(std::size_t size)
+    {
+        if (size > std::numeric_limits<std::uint32_t>::max())
+        {
+            throw ReplayFormatError(
+                "antwika::replay: string exceeds the maximum length "
+                "a 32-bit length prefix can represent");
+        }
+    }
+
     void writeString(const std::string &value, std::ostream &out)
     {
+        checkFitsInU32Length(value.size());
         writeU32(static_cast<std::uint32_t>(value.size()), out);
         if (!value.empty())
         {
@@ -77,17 +90,27 @@ namespace antwika::replay::detail
 
     std::string readString(std::istream &in)
     {
-        const auto length = readU32(in);
-        std::string value(length, '\0');
-        if (length > 0)
+        // Read in bounded chunks, not the untrusted length up front.
+        // A corrupt stream claiming a huge length must fail fast.
+        // Otherwise it forces a multi-gigabyte allocation attempt.
+        static constexpr std::size_t kChunkSize = 1U << 16;
+        std::string value;
+        auto remaining = static_cast<std::size_t>(readU32(in));
+        value.reserve(std::min(remaining, kChunkSize));
+        std::array<char, kChunkSize> buffer{};
+        while (remaining > 0)
         {
-            in.read(value.data(), static_cast<std::streamsize>(length));
+            const auto toRead = std::min(remaining, kChunkSize);
+            in.read(
+                buffer.data(), static_cast<std::streamsize>(toRead));
             if (!in)
             {
                 throw ReplayFormatError(
                     "antwika::replay: unexpected end of stream while "
                     "reading a string");
             }
+            value.append(buffer.data(), toRead);
+            remaining -= toRead;
         }
         return value;
     }

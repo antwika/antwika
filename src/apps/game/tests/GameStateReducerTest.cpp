@@ -4,11 +4,13 @@
 
 #include "antwika/game/Events.hpp"
 #include "antwika/game/GameStateReducer.hpp"
+#include "antwika/game/GameStateReducerError.hpp"
 
 using antwika::event::Event;
 using antwika::event::TimedEvent;
 using antwika::game::GameState;
 using antwika::game::GameStateReducer;
+using antwika::game::GameStateReducerError;
 
 TEST(GameStateReducerTest, Handle_IncrementsTicksProcessedOnBuiltInTickEvent)
 {
@@ -63,6 +65,54 @@ TEST(GameStateReducerTest, Handle_IgnoresUnrelatedEvents)
     });
 
     EXPECT_EQ(state, GameState{});
+}
+
+TEST(GameStateReducerTest, Handle_NonNumericScoreIncrementPayloadThrows)
+{
+    GameState state;
+    GameStateReducer reducer(state);
+
+    EXPECT_THROW(
+        reducer.handle(TimedEvent{
+            .tick = 0,
+            .event = Event{
+                .name = antwika::game::events::kScoreIncrement,
+                .payload = "abc",
+            },
+        }),
+        GameStateReducerError);
+}
+
+TEST(GameStateReducerTest, Handle_NegativeScoreIncrementPayloadThrows)
+{
+    GameState state;
+    GameStateReducer reducer(state);
+
+    EXPECT_THROW(
+        reducer.handle(TimedEvent{
+            .tick = 0,
+            .event = Event{
+                .name = antwika::game::events::kScoreIncrement,
+                .payload = "-1",
+            },
+        }),
+        GameStateReducerError);
+}
+
+TEST(GameStateReducerTest, Handle_ScoreIncrementTrailingGarbageThrows)
+{
+    GameState state;
+    GameStateReducer reducer(state);
+
+    EXPECT_THROW(
+        reducer.handle(TimedEvent{
+            .tick = 0,
+            .event = Event{
+                .name = antwika::game::events::kScoreIncrement,
+                .payload = "5abc",
+            },
+        }),
+        GameStateReducerError);
 }
 
 TEST(

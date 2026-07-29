@@ -12,7 +12,7 @@ namespace antwika::time::fakes
      *
      * Intended for tests that need deterministic, reproducible timestamps.
      */
-    class FakeClock : public IClock
+    class FakeClock final : public IClock
     {
     public:
         /**
@@ -28,7 +28,7 @@ namespace antwika::time::fakes
          * @brief Get the currently configured time.
          * @return The last value set via the constructor, set(), or advance().
          */
-        std::chrono::time_point<std::chrono::system_clock>
+        [[nodiscard]] std::chrono::time_point<std::chrono::system_clock>
         now() const noexcept override
         {
             return current;

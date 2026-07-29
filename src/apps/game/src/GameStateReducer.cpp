@@ -1,13 +1,34 @@
 #include "antwika/game/GameStateReducer.hpp"
 
-#include <string>
+#include <charconv>
+#include <string_view>
+#include <system_error>
 
 #include <antwika/engine/Events.hpp>
 
 #include "antwika/game/Events.hpp"
+#include "antwika/game/GameStateReducerError.hpp"
 
 namespace antwika::game
 {
+
+    namespace
+    {
+        std::uint64_t parseUInt64(std::string_view text)
+        {
+            std::uint64_t value{};
+            const auto result = std::from_chars(
+                text.data(), text.data() + text.size(), value);
+            if (result.ec != std::errc{} ||
+                result.ptr != text.data() + text.size())
+            {
+                throw GameStateReducerError(
+                    "GameStateReducer: game.score_increment payload is "
+                    "not a plain, in-range base-10 unsigned integer");
+            }
+            return value;
+        }
+    } // namespace
 
     GameStateReducer::GameStateReducer(GameState &state) : state(state)
     {
@@ -21,7 +42,7 @@ namespace antwika::game
         }
         else if (event.event.name == events::kScoreIncrement)
         {
-            state.score += std::stoull(event.event.payload);
+            state.score += parseUInt64(event.event.payload);
         }
     }
 

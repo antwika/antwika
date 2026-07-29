@@ -2,8 +2,8 @@
 
 #include <vector>
 
-#include "IEventDispatcher.hpp"
-#include "IEventSink.hpp"
+#include "antwika/event/IEventDispatcher.hpp"
+#include "antwika/event/IEventSink.hpp"
 
 namespace antwika::event
 {

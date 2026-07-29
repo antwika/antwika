@@ -37,7 +37,7 @@ namespace antwika::task_worker
     /**
      * @brief Announces simulation startup and starts the engine.
      */
-    class TaskWorker
+    class TaskWorker final
     {
     public:
         /**

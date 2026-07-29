@@ -25,4 +25,4 @@ namespace antwika::log
             std::string_view message) const override;
     };
 
-} // antwika::log
+} // namespace antwika::log

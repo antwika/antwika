@@ -10,7 +10,7 @@ namespace antwika::time
     /**
      * @brief IClock implementation backed by std::chrono::system_clock.
      */
-    class SystemClock : public IClock
+    class SystemClock final : public IClock
     {
     public:
         /**

@@ -84,7 +84,7 @@ def _find_comment_start(line: str, marker: str) -> int | None:
     while idx != -1:
         if marker == "//" and (idx == 0 or line[idx - 1] != ":"):
             return idx
-        if marker == "#" and (idx == 0 or line[idx - 1] != "!"):
+        if marker == "#" and line[idx + 1 : idx + 2] != "!":
             return idx
         idx = line.find(marker, idx + len(marker))
     return None
@@ -100,7 +100,7 @@ def _check_line_comment_file(path: Path, marker: str) -> list[Violation]:
                 violations.append(Violation(path, line_no, "wrapped", text))
         chain.clear()
 
-    lines = path.read_text(errors="ignore").splitlines()
+    lines = path.read_text(encoding="utf-8", errors="ignore").splitlines()
     for line_no, raw in enumerate(lines, start=1):
         stripped = raw.strip()
         is_shebang = marker == "#" and stripped.startswith("#!")
@@ -144,7 +144,7 @@ def check_markdown_file(path: Path) -> list[Violation]:
                 violations.append(Violation(path, line_no, "wrapped", text))
         chain.clear()
 
-    lines = path.read_text(errors="ignore").splitlines()
+    lines = path.read_text(encoding="utf-8", errors="ignore").splitlines()
     for line_no, raw in enumerate(lines, start=1):
         stripped = raw.strip()
 

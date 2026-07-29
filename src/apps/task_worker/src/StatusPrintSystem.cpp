@@ -55,7 +55,7 @@ namespace antwika::task_worker
 
         out << "  Workers:\n";
         std::size_t index = 0;
-        for (const auto entity : world.view<Worker>())
+        for (const auto entity : allWorkers(world))
         {
             const auto &worker = world.get<Worker>(entity);
             out << "    worker[" << index << "] - Current state: "

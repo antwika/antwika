@@ -14,7 +14,7 @@ MAX_LINE_LENGTH = 80
 
 def find_long_lines(path: Path) -> list[tuple[int, int]]:
     violations = []
-    lines = path.read_text(errors="ignore").splitlines()
+    lines = path.read_text(encoding="utf-8", errors="ignore").splitlines()
     for line_no, raw in enumerate(lines, start=1):
         if len(raw) > MAX_LINE_LENGTH:
             violations.append((line_no, len(raw)))

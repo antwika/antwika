@@ -36,7 +36,7 @@ namespace antwika::life
     /**
      * @brief Announces simulation startup and starts the engine.
      */
-    class Life
+    class Life final
     {
     public:
         /**

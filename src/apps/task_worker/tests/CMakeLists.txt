@@ -7,6 +7,7 @@ add_executable(antwika_task_worker_tests
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/TaskRegistry.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/TaskSubmissionSink.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/TaskWorker.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/Worker.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/WorkerCompletionSystem.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/WorkerLookup.cpp
     BootstrapTest.cpp

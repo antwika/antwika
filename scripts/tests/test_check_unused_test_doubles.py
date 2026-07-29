@@ -70,6 +70,16 @@ def it_finds_fake_headers():
         assert doubles == [fake]
 
 
+def it_computes_the_include_path_from_a_full_header_path():
+    header = Path(
+        "/repo/src/libs/foo/tests/mocks/include/antwika/foo/mocks/MockFoo.hpp"
+    )
+
+    include_path = check_unused_test_doubles.include_path_for(header)
+
+    assert include_path == "antwika/foo/mocks/MockFoo.hpp"
+
+
 def it_detects_a_referenced_mock_header():
     with tempfile.TemporaryDirectory() as tmp:
         root = Path(tmp)
@@ -79,7 +89,7 @@ def it_detects_a_referenced_mock_header():
         )
 
         is_included = check_unused_test_doubles.is_included_anywhere
-        assert is_included("MockFoo.hpp", root) is True
+        assert is_included("antwika/foo/mocks/MockFoo.hpp", root) is True
 
 
 def it_detects_a_referenced_fake_header():
@@ -91,7 +101,51 @@ def it_detects_a_referenced_fake_header():
         )
 
         is_included = check_unused_test_doubles.is_included_anywhere
-        assert is_included("FakeFoo.hpp", root) is True
+        assert is_included("antwika/foo/fakes/FakeFoo.hpp", root) is True
+
+
+def it_detects_an_angle_bracket_include():
+    with tempfile.TemporaryDirectory() as tmp:
+        root = Path(tmp)
+        write(
+            root / "src/libs/foo/tests/FooTest.cpp",
+            "#include <antwika/foo/mocks/MockFoo.hpp>\n",
+        )
+
+        is_included = check_unused_test_doubles.is_included_anywhere
+        assert is_included("antwika/foo/mocks/MockFoo.hpp", root) is True
+
+
+def it_does_not_count_a_bare_comment_mention_as_included():
+    # Regression test for is_included_anywhere's old substring bug.
+    # A header merely named in a comment used to count as included.
+    # That was a false negative, since it was never truly #included.
+    # A dead mock/fake could then slip past the check undetected.
+    with tempfile.TemporaryDirectory() as tmp:
+        root = Path(tmp)
+        write(
+            root / "src/libs/foo/tests/FooTest.cpp",
+            "// MockFoo.hpp was replaced by a fake, remove it\n",
+        )
+
+        is_included = check_unused_test_doubles.is_included_anywhere
+        assert is_included("antwika/foo/mocks/MockFoo.hpp", root) is False
+
+
+def it_does_not_confuse_a_same_named_mock_in_another_module():
+    # Regression test for matching by bare filename alone.
+    # An unused mock in one module could go undetected this way.
+    # A same-named mock genuinely used by a different module masks it.
+    with tempfile.TemporaryDirectory() as tmp:
+        root = Path(tmp)
+        write(
+            root / "src/libs/bar/tests/FooTest.cpp",
+            '#include "antwika/bar/mocks/MockFoo.hpp"\n',
+        )
+
+        is_included = check_unused_test_doubles.is_included_anywhere
+        assert is_included("antwika/foo/mocks/MockFoo.hpp", root) is False
+        assert is_included("antwika/bar/mocks/MockFoo.hpp", root) is True
 
 
 def it_fails_when_no_test_doubles_exist():
@@ -106,6 +160,9 @@ def it_fails_when_no_test_doubles_exist():
 
 
 def it_fails_and_lists_unreferenced_mock_headers():
+    # The fixture mentions the mock's filename only in a comment.
+    # It's never included as a real #include.
+    # The old substring-based check would have wrongly called it used.
     with tempfile.TemporaryDirectory() as tmp:
         root = Path(tmp)
         write(
@@ -114,7 +171,7 @@ def it_fails_and_lists_unreferenced_mock_headers():
         )
         write(
             root / "src/libs/foo/tests/FooTest.cpp",
-            "// no test doubles referenced here\n",
+            "// MockFoo.hpp was replaced by a fake, remove it\n",
         )
 
         exit_code, stdout, _stderr = run_main(root)
@@ -149,8 +206,12 @@ def main():
     tests = [
         it_finds_mock_headers,
         it_finds_fake_headers,
+        it_computes_the_include_path_from_a_full_header_path,
         it_detects_a_referenced_mock_header,
         it_detects_a_referenced_fake_header,
+        it_detects_an_angle_bracket_include,
+        it_does_not_count_a_bare_comment_mention_as_included,
+        it_does_not_confuse_a_same_named_mock_in_another_module,
         it_fails_when_no_test_doubles_exist,
         it_fails_and_lists_unreferenced_mock_headers,
         it_succeeds_when_every_test_double_is_referenced,

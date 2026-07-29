@@ -35,8 +35,10 @@ namespace antwika::replay
         }
 
         const auto count = detail::readU32(in);
+        // Not reserve(count): a corrupt count could claim billions.
+        // Reserving that up front allocates before any event exists.
+        // Growing naturally bounds growth by what was truly decoded.
         std::vector<TimedEvent> events;
-        events.reserve(count);
         for (std::uint32_t i = 0; i < count; ++i)
         {
             events.push_back(codec.decode(in));

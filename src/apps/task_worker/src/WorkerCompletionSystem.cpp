@@ -12,7 +12,7 @@ namespace antwika::task_worker
 
     void WorkerCompletionSystem::update(World &world, antwika::time::Tick)
     {
-        for (const auto entity : world.view<Worker>())
+        for (const auto entity : allWorkers(world))
         {
             const auto worker = world.get<Worker>(entity);
             if (worker.status != WorkerStatus::Busy)

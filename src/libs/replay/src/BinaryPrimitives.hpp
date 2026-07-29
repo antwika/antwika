@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstddef>
 #include <cstdint>
 #include <istream>
 #include <ostream>
@@ -45,9 +46,22 @@ namespace antwika::replay::detail
     [[nodiscard]] std::uint64_t readU64(std::istream &in);
 
     /**
+     * @brief Check that a length fits in a 32-bit length prefix.
+     * @param size The candidate length, in bytes.
+     * @throws antwika::replay::ReplayFormatError if size exceeds what
+     * a 32-bit length prefix can represent.
+     *
+     * Factored out of writeString so the boundary can be exercised by
+     * a test without actually allocating a multi-gigabyte string.
+     */
+    void checkFitsInU32Length(std::size_t size);
+
+    /**
      * @brief Write a length-prefixed string.
      * @param value The string to write.
      * @param out The stream to write to.
+     * @throws antwika::replay::ReplayFormatError if value is longer
+     * than a 32-bit length prefix can represent.
      */
     void writeString(const std::string &value, std::ostream &out);
 

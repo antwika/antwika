@@ -63,7 +63,8 @@ namespace antwika::task_worker
          * @param event kTick commits and runs one tick of
          * systemScheduler; kTaskSubmit parses and schedules a task.
          * @throws TaskSubmissionError if a kTaskSubmit payload's
-         * dependsOnId refers to a task id never submitted.
+         * dependsOnId refers to a task id never submitted, or if its
+         * own id was already submitted.
          */
         void handle(const TimedEvent &event) override;
 

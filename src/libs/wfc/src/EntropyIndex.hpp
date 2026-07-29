@@ -23,7 +23,7 @@ namespace antwika::wfc::detail
     // It comes from std::pair's lexicographic operator<.
     // No separate tie-break step is needed.
     // Only cells with count() > 1 are kept in the set.
-    class EntropyIndex
+    class EntropyIndex final
     {
     public:
         EntropyIndex(

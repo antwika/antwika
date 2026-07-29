@@ -22,7 +22,7 @@ namespace antwika::wfc::detail
     // The affected cell's EntropyIndex entry is updated too.
     // This replaces a per-branch wave copy.
     // Undoing a failed branch only costs what that branch changed.
-    class Trail
+    class Trail final
     {
     public:
         // Record that value was just removed from wave[cell].

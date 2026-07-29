@@ -257,6 +257,28 @@ TEST(WorldTest, DestroyingAnEntityLeavesUnrelatedPoolsForOthersAlone)
     EXPECT_FALSE(world.alive(withVelocity));
 }
 
+TEST(WorldTest, DestroyStagedBeforeAddInTheSameCommitLeavesNoOrphan)
+{
+    // Covers two distinct T instantiations of the deferred re-check.
+    // Each is compiled and branch-tracked separately.
+    NiceMock<MockLogger> logger;
+    World world(logger);
+    const auto entity = world.create();
+
+    world.destroy(entity);
+    world.add<Position>(entity, Position{1, 2});
+    world.add<Velocity>(entity, Velocity{3});
+    world.commit();
+
+    EXPECT_FALSE(world.alive(entity));
+    EXPECT_FALSE(world.has<Position>(entity));
+    EXPECT_FALSE(world.has<Velocity>(entity));
+    const auto positionView = world.view<Position>();
+    EXPECT_EQ(positionView.size(), 0U);
+    const auto velocityView = world.view<Velocity>();
+    EXPECT_EQ(velocityView.size(), 0U);
+}
+
 TEST(WorldTest, ViewOverAnUnusedComponentTypeIsEmpty)
 {
     NiceMock<MockLogger> logger;
@@ -265,6 +287,24 @@ TEST(WorldTest, ViewOverAnUnusedComponentTypeIsEmpty)
     const auto view = world.view<Position>();
 
     EXPECT_EQ(view.size(), 0U);
+}
+
+TEST(WorldTest, ViewOverASingleComponentTypeWithDataReturnsThatEntity)
+{
+    // Position's view<T>() already gets exercised with real data.
+    // Velocity's never did until now.
+    // It was only ever empty, or paired with Position.
+    // That pairing is a separate instantiation from Velocity alone.
+    NiceMock<MockLogger> logger;
+    World world(logger);
+    const auto entity = world.create();
+    world.add<Velocity>(entity, Velocity{5});
+    world.commit();
+
+    const auto view = world.view<Velocity>();
+    const std::vector<Entity> entities(view.begin(), view.end());
+
+    EXPECT_EQ(entities, (std::vector<Entity>{entity}));
 }
 
 TEST(WorldTest, ViewIntersectsMultipleComponentTypes)
@@ -282,4 +322,10 @@ TEST(WorldTest, ViewIntersectsMultipleComponentTypes)
     const std::vector<Entity> entities(view.begin(), view.end());
 
     EXPECT_EQ(entities, (std::vector<Entity>{both}));
+
+    const auto positionView = world.view<Position>();
+    const std::vector<Entity> positionEntities(
+        positionView.begin(), positionView.end());
+
+    EXPECT_EQ(positionEntities, (std::vector<Entity>{both, positionOnly}));
 }

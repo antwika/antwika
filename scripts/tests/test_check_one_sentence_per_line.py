@@ -127,6 +127,18 @@ def it_does_not_follow_a_url_scheme_into_a_comment():
         assert m.check_cpp_file(path) == []
 
 
+def it_skips_over_a_hash_bang_that_is_not_a_real_comment_start():
+    # Regression test for _find_comment_start's shebang guard.
+    # The old guard checked the character before a found "#".
+    # A real "#!" sequence has its "!" after the "#", not before.
+    # That made the old guard a no-op for any actual "#!" text.
+    line = 'value = "#!looks-like-a-shebang" # real comment'
+
+    idx = m._find_comment_start(line, "#")
+
+    assert idx == line.index("# real comment")
+
+
 def it_flags_a_sentence_wrapped_across_two_markdown_lines():
     with tempfile.TemporaryDirectory() as tmp:
         path = Path(tmp) / "doc.md"
@@ -260,6 +272,7 @@ def main():
         it_allows_a_properly_split_two_sentence_comment_block,
         it_does_not_flag_an_inline_trailing_comment_fragment,
         it_does_not_follow_a_url_scheme_into_a_comment,
+        it_skips_over_a_hash_bang_that_is_not_a_real_comment_start,
         it_flags_a_sentence_wrapped_across_two_markdown_lines,
         it_does_not_flag_consecutive_short_list_items,
         it_does_not_flag_a_multi_line_badge_block,

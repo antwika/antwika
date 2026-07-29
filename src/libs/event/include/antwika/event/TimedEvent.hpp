@@ -2,7 +2,7 @@
 
 #include <antwika/time/Tick.hpp>
 
-#include "Event.hpp"
+#include "antwika/event/Event.hpp"
 
 namespace antwika::event
 {
