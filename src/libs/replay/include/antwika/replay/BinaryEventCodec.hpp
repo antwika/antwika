@@ -6,7 +6,7 @@ namespace antwika::replay
 {
 
     /**
-     * @brief IEventCodec that encodes a TimedEvent as tick, then name, then
+     * @brief IEventCodec that encodes a TickEvent as tick, then name, then
      * payload.
      *
      * The tick is 8 bytes, big-endian. Name and payload are length-prefixed
@@ -20,14 +20,14 @@ namespace antwika::replay
          * @param event The event to encode.
          * @param out The stream to write the encoded bytes to.
          */
-        void encode(const TimedEvent &event, std::ostream &out) const override;
+        void encode(const TickEvent &event, std::ostream &out) const override;
 
         /**
          * @brief Deserialize a timed event from the binary format above.
          * @param in The stream to read the encoded bytes from.
          * @return The decoded event.
          */
-        [[nodiscard]] TimedEvent decode(std::istream &in) const override;
+        [[nodiscard]] TickEvent decode(std::istream &in) const override;
     };
 
 } // namespace antwika::replay

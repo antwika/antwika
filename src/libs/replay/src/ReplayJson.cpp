@@ -42,7 +42,7 @@ namespace antwika::replay
         }
     } // namespace
 
-    std::vector<TimedEvent> replayFromJson(const nlohmann::json &j)
+    std::vector<TickEvent> replayFromJson(const nlohmann::json &j)
     {
         try
         {
@@ -56,10 +56,10 @@ namespace antwika::replay
                     "validation: ") +
                 error.what());
         }
-        return j.at("events").get<std::vector<TimedEvent>>();
+        return j.at("events").get<std::vector<TickEvent>>();
     }
 
-    nlohmann::json replayToJson(const std::vector<TimedEvent> &events)
+    nlohmann::json replayToJson(const std::vector<TickEvent> &events)
     {
         nlohmann::json document;
         document["magic"] = std::string(detail::kJsonReplayMagic);

@@ -3,15 +3,15 @@
 #include <ostream>
 #include <vector>
 
-#include <antwika/event/TimedEvent.hpp>
+#include <antwika/event/TickEvent.hpp>
 
 namespace antwika::replay
 {
 
-    using antwika::event::TimedEvent;
+    using antwika::event::TickEvent;
 
     /**
-     * @brief Writes a sequence of TimedEvent instances as a single,
+     * @brief Writes a sequence of TickEvent instances as a single,
      * pretty-printed JSON document, readable by JsonReplayReader.
      *
      * A human-readable, diffable alternative to BinaryReplayWriter --
@@ -27,7 +27,7 @@ namespace antwika::replay
          * @param out The stream to write the encoded document to.
          */
         void write(
-            const std::vector<TimedEvent> &events, std::ostream &out) const;
+            const std::vector<TickEvent> &events, std::ostream &out) const;
     };
 
 } // namespace antwika::replay

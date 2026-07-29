@@ -8,7 +8,7 @@
 namespace antwika::replay
 {
 
-    std::vector<TimedEvent> JsonReplayReader::read(std::istream &in) const
+    std::vector<TickEvent> JsonReplayReader::read(std::istream &in) const
     {
         nlohmann::json parsed;
         try

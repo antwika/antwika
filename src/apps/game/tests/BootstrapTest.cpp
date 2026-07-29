@@ -5,8 +5,8 @@
 #include <antwika/engine/Events.hpp>
 #include <antwika/event/Event.hpp>
 #include <antwika/event/EventRecorder.hpp>
-#include <antwika/event/ReplayRecorder.hpp>
-#include <antwika/event/TimedEvent.hpp>
+#include <antwika/event/TickEventRecorder.hpp>
+#include <antwika/event/TickEvent.hpp>
 #include <antwika/log/Level.hpp>
 #include <antwika/log/MinimumLevelLogPolicy.hpp>
 #include <antwika/log/NullAppender.hpp>
@@ -20,8 +20,8 @@
 
 using antwika::event::Event;
 using antwika::event::EventRecorder;
-using antwika::event::ReplayRecorder;
-using antwika::event::TimedEvent;
+using antwika::event::TickEventRecorder;
+using antwika::event::TickEvent;
 using antwika::game::GameState;
 using antwika::log::Level;
 using antwika::log::MinimumLevelLogPolicy;
@@ -47,21 +47,21 @@ TEST(BootstrapTest, Bootstrap_RunsScriptedTicksAndReturnsResultingGameState)
     EventRecorder eventSink;
 
     ReplaySource inputSource({
-        TimedEvent{
+        TickEvent{
             .tick = 1,
             .event = Event{
                 .name = antwika::game::events::kScoreIncrement,
                 .payload = R"({"amount":5})",
             },
         },
-        TimedEvent{
+        TickEvent{
             .tick = 3,
             .event = Event{
                 .name = antwika::game::events::kScoreIncrement,
                 .payload = R"({"amount":2})",
             },
         },
-        TimedEvent{
+        TickEvent{
             .tick = 4,
             .event = Event{.name = antwika::engine::events::kStop},
         },
@@ -89,7 +89,7 @@ TEST(BootstrapTest, Bootstrap_WithNoScriptedInputOnlyAdvancesTicks)
     EventRecorder eventSink;
 
     ReplaySource inputSource({
-        TimedEvent{
+        TickEvent{
             .tick = 2,
             .event = Event{.name = antwika::engine::events::kStop},
         },
@@ -110,7 +110,7 @@ TEST(BootstrapTest, Bootstrap_WithNoScriptedInputOnlyAdvancesTicks)
 // A caller wanting to persist a `--record` file has no pre-known script.
 // It instead passes an optional replayRecorder.
 // bootstrap() must register it so it observes every dispatched event.
-TEST(BootstrapTest, Bootstrap_ForwardsDispatchedEventsToAReplayRecorder)
+TEST(BootstrapTest, Bootstrap_ForwardsDispatchedEventsToATickEventRecorder)
 {
     std::chrono::system_clock::time_point time{};
     FakeClock fakeClock(time);
@@ -120,19 +120,19 @@ TEST(BootstrapTest, Bootstrap_ForwardsDispatchedEventsToAReplayRecorder)
     EventRecorder eventSink;
 
     ReplaySource inputSource({
-        TimedEvent{
+        TickEvent{
             .tick = 0,
             .event = Event{
                 .name = antwika::game::events::kScoreIncrement,
                 .payload = R"({"amount":5})",
             },
         },
-        TimedEvent{
+        TickEvent{
             .tick = 0,
             .event = Event{.name = antwika::engine::events::kStop},
         },
     });
-    ReplayRecorder replayRecorder;
+    TickEventRecorder replayRecorder;
 
     antwika::game::bootstrap(
         fakeClock,
@@ -146,23 +146,23 @@ TEST(BootstrapTest, Bootstrap_ForwardsDispatchedEventsToAReplayRecorder)
 
     EXPECT_EQ(
         replayRecorder.getEvents(),
-        (std::vector<TimedEvent>{
-            TimedEvent{
+        (std::vector<TickEvent>{
+            TickEvent{
                 .tick = 0,
                 .event = Event{.name = "Running Antwika Game"},
             },
-            TimedEvent{
+            TickEvent{
                 .tick = 0,
                 .event = Event{
                     .name = antwika::game::events::kScoreIncrement,
                     .payload = R"({"amount":5})",
                 },
             },
-            TimedEvent{
+            TickEvent{
                 .tick = 0,
                 .event = Event{.name = antwika::engine::events::kStop},
             },
-            TimedEvent{
+            TickEvent{
                 .tick = 0,
                 .event = Event{.name = antwika::engine::events::kTick},
             },

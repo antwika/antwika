@@ -4,7 +4,7 @@
 #include "antwika/replay/ReplayJson.hpp"
 
 using antwika::event::Event;
-using antwika::event::TimedEvent;
+using antwika::event::TickEvent;
 using antwika::replay::replayFromJson;
 using antwika::replay::replayToJson;
 using antwika::replay::ReplayFormatError;
@@ -12,23 +12,23 @@ using antwika::replay::ReplayFormatError;
 TEST(ReplayJsonTest, RoundTripsZeroEvents)
 {
     EXPECT_EQ(
-        replayFromJson(replayToJson({})), std::vector<TimedEvent>{});
+        replayFromJson(replayToJson({})), std::vector<TickEvent>{});
 }
 
 TEST(ReplayJsonTest, RoundTripsManyEventsInOrder)
 {
-    std::vector<TimedEvent> events{
-        TimedEvent{.tick = 0, .event = Event{.name = "engine.tick"}},
-        TimedEvent{
+    std::vector<TickEvent> events{
+        TickEvent{.tick = 0, .event = Event{.name = "engine.tick"}},
+        TickEvent{
             .tick = 0,
             .event = Event{
                 .name = "game.score_increment",
                 .payload = R"({"amount":1})",
             },
         },
-        TimedEvent{.tick = 1, .event = Event{.name = "engine.tick"}},
-        TimedEvent{.tick = 2, .event = Event{.name = "engine.tick"}},
-        TimedEvent{
+        TickEvent{.tick = 1, .event = Event{.name = "engine.tick"}},
+        TickEvent{.tick = 2, .event = Event{.name = "engine.tick"}},
+        TickEvent{
             .tick = 2,
             .event = Event{
                 .name = "game.score_increment",

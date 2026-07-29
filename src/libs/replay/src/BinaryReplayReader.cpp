@@ -16,7 +16,7 @@ namespace antwika::replay
     {
     }
 
-    std::vector<TimedEvent> BinaryReplayReader::read(std::istream &in) const
+    std::vector<TickEvent> BinaryReplayReader::read(std::istream &in) const
     {
         std::array<char, detail::kReplayMagic.size()> magic{};
         in.read(magic.data(), static_cast<std::streamsize>(magic.size()));
@@ -38,7 +38,7 @@ namespace antwika::replay
         // Not reserve(count): a corrupt count could claim billions.
         // Reserving that up front allocates before any event exists.
         // Growing naturally bounds growth by what was truly decoded.
-        std::vector<TimedEvent> events;
+        std::vector<TickEvent> events;
         for (std::uint32_t i = 0; i < count; ++i)
         {
             events.push_back(codec.decode(in));

@@ -3,15 +3,15 @@
 #include "antwika/replay/ReplaySource.hpp"
 
 using antwika::event::Event;
-using antwika::event::TimedEvent;
+using antwika::event::TickEvent;
 using antwika::replay::ReplaySource;
 
 TEST(ReplaySourceTest, EventsFor_ReturnsEventsRecordedAtThatTickInOrder)
 {
     ReplaySource source({
-        TimedEvent{.tick = 0, .event = Event{.name = "a"}},
-        TimedEvent{.tick = 1, .event = Event{.name = "b"}},
-        TimedEvent{.tick = 1, .event = Event{.name = "c"}},
+        TickEvent{.tick = 0, .event = Event{.name = "a"}},
+        TickEvent{.tick = 1, .event = Event{.name = "b"}},
+        TickEvent{.tick = 1, .event = Event{.name = "c"}},
     });
 
     auto tick1Events = source.eventsFor(1);
@@ -24,7 +24,7 @@ TEST(ReplaySourceTest, EventsFor_ReturnsEventsRecordedAtThatTickInOrder)
 TEST(ReplaySourceTest, EventsFor_ReturnsEmptyForTickWithNothingRecorded)
 {
     ReplaySource source({
-        TimedEvent{.tick = 0, .event = Event{.name = "a"}},
+        TickEvent{.tick = 0, .event = Event{.name = "a"}},
     });
 
     EXPECT_TRUE(source.eventsFor(5).empty());

@@ -10,7 +10,7 @@ namespace antwika::task_worker::events
     /**
      * @brief Submits a task to the job scheduler.
      *
-     * Uses the same TimedEvent/ITimedEventSink pipeline as built-in events
+     * Uses the same TickEvent/ITickEventSink pipeline as built-in events
      * (see antwika::engine::events::kTick). The payload is a JSON object
      * with fields "id" (this task's own submission-script-chosen
      * number, not a JobId), "priority" (an unsigned integer fitting in

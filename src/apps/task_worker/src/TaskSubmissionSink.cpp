@@ -65,7 +65,7 @@ namespace antwika::task_worker
     {
     }
 
-    void TaskSubmissionSink::handle(const TimedEvent &event)
+    void TaskSubmissionSink::handle(const TickEvent &event)
     {
         if (event.event.name == antwika::engine::events::kTick)
         {

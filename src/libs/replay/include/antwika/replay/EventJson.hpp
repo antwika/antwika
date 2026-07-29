@@ -3,11 +3,11 @@
 #include <nlohmann/json.hpp>
 
 #include <antwika/event/Event.hpp>
-#include <antwika/event/TimedEvent.hpp>
+#include <antwika/event/TickEvent.hpp>
 
 /**
  * @file
- * @brief JSON conversion for antwika::event::Event and TimedEvent.
+ * @brief JSON conversion for antwika::event::Event and TickEvent.
  *
  * to_json/from_json are declared inside antwika::event -- the type's own
  * namespace -- so nlohmann's argument-dependent lookup finds them for
@@ -31,17 +31,17 @@ namespace antwika::event
     void from_json(const nlohmann::json &j, Event &event);
 
     /**
-     * @brief Serialize a TimedEvent to {"tick":..., "event":{...}}.
+     * @brief Serialize a TickEvent to {"tick":..., "event":{...}}.
      */
-    void to_json(nlohmann::json &j, const TimedEvent &event);
+    void to_json(nlohmann::json &j, const TickEvent &event);
 
     /**
-     * @brief Deserialize a TimedEvent from {"tick":..., "event":{...}}.
+     * @brief Deserialize a TickEvent from {"tick":..., "event":{...}}.
      * @throws nlohmann::json::out_of_range If a required field is
      * missing.
      * @throws nlohmann::json::type_error If a field has the wrong type.
      */
-    void from_json(const nlohmann::json &j, TimedEvent &event);
+    void from_json(const nlohmann::json &j, TickEvent &event);
 
 } // namespace antwika::event
 
@@ -55,16 +55,16 @@ namespace antwika::replay
      * @return The decoded event.
      * @throws ReplayFormatError If j does not match the schema.
      */
-    [[nodiscard]] antwika::event::TimedEvent eventFromJson(
+    [[nodiscard]] antwika::event::TickEvent eventFromJson(
         const nlohmann::json &j);
 
     /**
-     * @brief Serialize a timed event to a JSON value matching the
+     * @brief Serialize a tick event to a JSON value matching the
      * timed-event schema.
      * @param event The event to serialize.
      * @return The encoded JSON value.
      */
     [[nodiscard]] nlohmann::json eventToJson(
-        const antwika::event::TimedEvent &event);
+        const antwika::event::TickEvent &event);
 
 } // namespace antwika::replay

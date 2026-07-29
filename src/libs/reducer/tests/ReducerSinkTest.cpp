@@ -7,7 +7,7 @@
 #include <antwika/reducer/mocks/MockReducer.hpp>
 
 using antwika::event::Event;
-using antwika::event::TimedEvent;
+using antwika::event::TickEvent;
 using antwika::reducer::ReducerSink;
 using antwika::reducer::mocks::MockReducer;
 using ::testing::Return;
@@ -17,7 +17,7 @@ TEST(ReducerSinkTest, HandleCallsReduceAndStoresTheResult)
     MockReducer<int> reducer;
     int state = 1;
     ReducerSink<int> sink(state, reducer);
-    const TimedEvent event{.tick = 5, .event = Event{.name = "x"}};
+    const TickEvent event{.tick = 5, .event = Event{.name = "x"}};
 
     EXPECT_CALL(reducer, reduce(1, event)).WillOnce(Return(42));
 
@@ -31,7 +31,7 @@ TEST(ReducerSinkTest, EachHandleCallReducesFromTheLatestState)
     MockReducer<int> reducer;
     int state = 0;
     ReducerSink<int> sink(state, reducer);
-    const TimedEvent event{};
+    const TickEvent event{};
 
     EXPECT_CALL(reducer, reduce(0, event)).WillOnce(Return(1));
     sink.handle(event);

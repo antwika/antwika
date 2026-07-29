@@ -10,7 +10,7 @@ namespace antwika::life::events
     /**
      * @brief Flips one cell's alive state.
      *
-     * Uses the same TimedEvent/ITimedEventSink pipeline as built-in events
+     * Uses the same TickEvent/ITickEventSink pipeline as built-in events
      * (see antwika::engine::events::kTick). The payload is a JSON object
      * with unsigned integer "x" and "y" fields, identifying the cell
      * within the grid bootstrap() was configured with -- an app-chosen

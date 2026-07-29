@@ -6,14 +6,14 @@
 #include <antwika/time/Tick.hpp>
 
 #include "antwika/event/IEventDispatcher.hpp"
-#include "antwika/event/ITimedEventSink.hpp"
+#include "antwika/event/ITickEventSink.hpp"
 
 namespace antwika::event
 {
 
     /**
      * @brief IEventDispatcher decorator that stamps events with the current
-     * tick and forwards them to timed sinks, in addition to an inner
+     * tick and forwards them to tick sinks, in addition to an inner
      * dispatcher.
      */
     class TickedEventDispatcher final : public IEventDispatcher
@@ -27,7 +27,7 @@ namespace antwika::event
          */
         TickedEventDispatcher(
             IEventDispatcher &dispatcher,
-            std::vector<std::reference_wrapper<ITimedEventSink>> timedSinks);
+            std::vector<std::reference_wrapper<ITickEventSink>> timedSinks);
 
         TickedEventDispatcher(const TickedEventDispatcher &) = delete;
         TickedEventDispatcher(TickedEventDispatcher &&) = delete;
@@ -43,14 +43,14 @@ namespace antwika::event
         void setTick(antwika::time::Tick tick) noexcept;
 
         /**
-         * @brief Forward an event to the inner dispatcher and timed sinks.
+         * @brief Forward an event to the inner dispatcher and tick sinks.
          * @param event The event to dispatch.
          */
         void dispatch(Event event) override;
 
     private:
         IEventDispatcher &dispatcher;
-        std::vector<std::reference_wrapper<ITimedEventSink>> timedSinks;
+        std::vector<std::reference_wrapper<ITickEventSink>> timedSinks;
         antwika::time::Tick currentTick{};
     };
 

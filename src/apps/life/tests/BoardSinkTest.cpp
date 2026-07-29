@@ -20,7 +20,7 @@
 using antwika::ecs::SystemScheduler;
 using antwika::ecs::World;
 using antwika::event::Event;
-using antwika::event::TimedEvent;
+using antwika::event::TickEvent;
 using antwika::life::BoardSink;
 using antwika::life::BoardSinkError;
 using antwika::life::Cell;
@@ -59,7 +59,7 @@ TEST(BoardSinkTest, ToggleCellEventsStageA2x2BlockThatSurvivesTheNextTick)
           R"({"x":1,"y":2})",
           R"({"x":2,"y":2})"})
     {
-        sink.handle(TimedEvent{
+        sink.handle(TickEvent{
             .tick = 0,
             .event = Event{
                 .name = antwika::life::events::kToggleCell,
@@ -71,7 +71,7 @@ TEST(BoardSinkTest, ToggleCellEventsStageA2x2BlockThatSurvivesTheNextTick)
     // Staged into the back buffer only -- not yet visible before a commit.
     EXPECT_FALSE(world.get<Cell>(grid.entityAt(1, 1)).alive);
 
-    sink.handle(TimedEvent{
+    sink.handle(TickEvent{
         .tick = 0,
         .event = Event{.name = antwika::engine::events::kTick},
     });
@@ -97,14 +97,14 @@ TEST(BoardSinkTest, TickEventRunsLifeSystemLettingAnIsolatedCellDie)
     registerLifeSystem(scheduler, system);
     BoardSink sink(world, grid, scheduler);
 
-    sink.handle(TimedEvent{
+    sink.handle(TickEvent{
         .tick = 0,
         .event = Event{
             .name = antwika::life::events::kToggleCell,
             .payload = R"({"x":1,"y":1})",
         },
     });
-    sink.handle(TimedEvent{
+    sink.handle(TickEvent{
         .tick = 0,
         .event = Event{.name = antwika::engine::events::kTick},
     });
@@ -113,7 +113,7 @@ TEST(BoardSinkTest, TickEventRunsLifeSystemLettingAnIsolatedCellDie)
     // This proves kTick both commits the toggle and runs a generation.
     EXPECT_FALSE(world.get<Cell>(grid.entityAt(1, 1)).alive);
 
-    sink.handle(TimedEvent{
+    sink.handle(TickEvent{
         .tick = 1,
         .event = Event{.name = antwika::engine::events::kTick},
     });
@@ -132,7 +132,7 @@ TEST(BoardSinkTest, ToggleCellPayloadThatIsNotValidJsonThrows)
     BoardSink sink(world, grid, scheduler);
 
     EXPECT_THROW(
-        sink.handle(TimedEvent{
+        sink.handle(TickEvent{
             .tick = 0,
             .event = Event{
                 .name = antwika::life::events::kToggleCell,
@@ -153,7 +153,7 @@ TEST(BoardSinkTest, ToggleCellPayloadMissingXFieldThrows)
     BoardSink sink(world, grid, scheduler);
 
     EXPECT_THROW(
-        sink.handle(TimedEvent{
+        sink.handle(TickEvent{
             .tick = 0,
             .event = Event{
                 .name = antwika::life::events::kToggleCell,
@@ -174,7 +174,7 @@ TEST(BoardSinkTest, ToggleCellPayloadMissingYFieldThrows)
     BoardSink sink(world, grid, scheduler);
 
     EXPECT_THROW(
-        sink.handle(TimedEvent{
+        sink.handle(TickEvent{
             .tick = 0,
             .event = Event{
                 .name = antwika::life::events::kToggleCell,
@@ -195,7 +195,7 @@ TEST(BoardSinkTest, ToggleCellPayloadWithNonNumericFieldThrows)
     BoardSink sink(world, grid, scheduler);
 
     EXPECT_THROW(
-        sink.handle(TimedEvent{
+        sink.handle(TickEvent{
             .tick = 0,
             .event = Event{
                 .name = antwika::life::events::kToggleCell,
@@ -216,7 +216,7 @@ TEST(BoardSinkTest, ToggleCellPayloadWithNegativeFieldThrows)
     BoardSink sink(world, grid, scheduler);
 
     EXPECT_THROW(
-        sink.handle(TimedEvent{
+        sink.handle(TickEvent{
             .tick = 0,
             .event = Event{
                 .name = antwika::life::events::kToggleCell,
@@ -237,7 +237,7 @@ TEST(BoardSinkTest, ToggleCellPayloadWithXFieldOutOfUint32RangeThrows)
     BoardSink sink(world, grid, scheduler);
 
     EXPECT_THROW(
-        sink.handle(TimedEvent{
+        sink.handle(TickEvent{
             .tick = 0,
             .event = Event{
                 .name = antwika::life::events::kToggleCell,
@@ -258,7 +258,7 @@ TEST(BoardSinkTest, IgnoresUnrelatedEvents)
     BoardSink sink(world, grid, scheduler);
     const auto before = antwika::life::readBoard(world, grid);
 
-    sink.handle(TimedEvent{
+    sink.handle(TickEvent{
         .tick = 0,
         .event = Event{.name = "some.other.event"},
     });

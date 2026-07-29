@@ -5,7 +5,7 @@
 namespace antwika::engine
 {
 
-    void StopSignal::handle(const TimedEvent &event)
+    void StopSignal::handle(const TickEvent &event)
     {
         if (event.event.name == events::kStop)
         {

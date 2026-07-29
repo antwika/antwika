@@ -19,7 +19,7 @@
 using antwika::ecs::SystemScheduler;
 using antwika::ecs::World;
 using antwika::event::Event;
-using antwika::event::TimedEvent;
+using antwika::event::TickEvent;
 using antwika::log::mocks::MockLogger;
 using antwika::scheduler::Scheduler;
 using antwika::task_worker::makeWorkerLabel;
@@ -56,7 +56,7 @@ TEST(TaskSubmissionSinkTest, ParsesAPayloadIntoAScheduledTaskAtItsPriority)
     TaskSubmissionSink sink(
         world, systemScheduler, jobScheduler, lookup, registry);
 
-    sink.handle(TimedEvent{
+    sink.handle(TickEvent{
         .tick = 0,
         .event = Event{
             .name = kTaskSubmit,
@@ -95,7 +95,7 @@ TEST(
     TaskSubmissionSink sink(
         world, systemScheduler, jobScheduler, lookup, registry);
 
-    sink.handle(TimedEvent{
+    sink.handle(TickEvent{
         .tick = 0,
         .event = Event{
             .name = kTaskSubmit,
@@ -103,7 +103,7 @@ TEST(
                        R"("label":"First"})",
         },
     });
-    sink.handle(TimedEvent{
+    sink.handle(TickEvent{
         .tick = 0,
         .event = Event{
             .name = kTaskSubmit,
@@ -140,7 +140,7 @@ TEST(TaskSubmissionSinkTest, PayloadThatIsNotValidJsonThrows)
         world, systemScheduler, jobScheduler, lookup, registry);
 
     EXPECT_THROW(
-        sink.handle(TimedEvent{
+        sink.handle(TickEvent{
             .tick = 0,
             .event = Event{
                 .name = kTaskSubmit,
@@ -167,7 +167,7 @@ TEST(TaskSubmissionSinkTest, PayloadMissingDurationTicksFieldThrows)
         world, systemScheduler, jobScheduler, lookup, registry);
 
     EXPECT_THROW(
-        sink.handle(TimedEvent{
+        sink.handle(TickEvent{
             .tick = 0,
             .event = Event{
                 .name = kTaskSubmit,
@@ -194,7 +194,7 @@ TEST(TaskSubmissionSinkTest, PayloadMissingLabelFieldThrows)
         world, systemScheduler, jobScheduler, lookup, registry);
 
     EXPECT_THROW(
-        sink.handle(TimedEvent{
+        sink.handle(TickEvent{
             .tick = 0,
             .event = Event{
                 .name = kTaskSubmit,
@@ -221,7 +221,7 @@ TEST(TaskSubmissionSinkTest, NonNumericFieldThrows)
         world, systemScheduler, jobScheduler, lookup, registry);
 
     EXPECT_THROW(
-        sink.handle(TimedEvent{
+        sink.handle(TickEvent{
             .tick = 0,
             .event = Event{
                 .name = kTaskSubmit,
@@ -249,7 +249,7 @@ TEST(TaskSubmissionSinkTest, PayloadWithNonStringLabelThrows)
         world, systemScheduler, jobScheduler, lookup, registry);
 
     EXPECT_THROW(
-        sink.handle(TimedEvent{
+        sink.handle(TickEvent{
             .tick = 0,
             .event = Event{
                 .name = kTaskSubmit,
@@ -277,7 +277,7 @@ TEST(TaskSubmissionSinkTest, ZeroDurationTicksThrows)
         world, systemScheduler, jobScheduler, lookup, registry);
 
     EXPECT_THROW(
-        sink.handle(TimedEvent{
+        sink.handle(TickEvent{
             .tick = 0,
             .event = Event{
                 .name = kTaskSubmit,
@@ -305,7 +305,7 @@ TEST(TaskSubmissionSinkTest, PriorityAboveUInt8RangeThrows)
         world, systemScheduler, jobScheduler, lookup, registry);
 
     EXPECT_THROW(
-        sink.handle(TimedEvent{
+        sink.handle(TickEvent{
             .tick = 0,
             .event = Event{
                 .name = kTaskSubmit,
@@ -332,7 +332,7 @@ TEST(TaskSubmissionSinkTest, DuplicateTaskIdThrows)
     TaskSubmissionSink sink(
         world, systemScheduler, jobScheduler, lookup, registry);
 
-    sink.handle(TimedEvent{
+    sink.handle(TickEvent{
         .tick = 0,
         .event = Event{
             .name = kTaskSubmit,
@@ -342,7 +342,7 @@ TEST(TaskSubmissionSinkTest, DuplicateTaskIdThrows)
     });
 
     EXPECT_THROW(
-        sink.handle(TimedEvent{
+        sink.handle(TickEvent{
             .tick = 0,
             .event = Event{
                 .name = kTaskSubmit,
@@ -374,7 +374,7 @@ TEST(
     TaskSubmissionSink sink(
         world, systemScheduler, jobScheduler, lookup, registry);
 
-    sink.handle(TimedEvent{
+    sink.handle(TickEvent{
         .tick = 0,
         .event = Event{
             .name = kTaskSubmit,
@@ -382,7 +382,7 @@ TEST(
                        R"("label":"First"})",
         },
     });
-    sink.handle(TimedEvent{
+    sink.handle(TickEvent{
         .tick = 0,
         .event = Event{
             .name = kTaskSubmit,
@@ -413,7 +413,7 @@ TEST(TaskSubmissionSinkTest, PayloadWithNonNumericDependsOnIdThrows)
     TaskSubmissionSink sink(
         world, systemScheduler, jobScheduler, lookup, registry);
 
-    sink.handle(TimedEvent{
+    sink.handle(TickEvent{
         .tick = 0,
         .event = Event{
             .name = kTaskSubmit,
@@ -423,7 +423,7 @@ TEST(TaskSubmissionSinkTest, PayloadWithNonNumericDependsOnIdThrows)
     });
 
     EXPECT_THROW(
-        sink.handle(TimedEvent{
+        sink.handle(TickEvent{
             .tick = 0,
             .event = Event{
                 .name = kTaskSubmit,
@@ -451,7 +451,7 @@ TEST(TaskSubmissionSinkTest, UnresolvableDependsOnIdThrows)
         world, systemScheduler, jobScheduler, lookup, registry);
 
     EXPECT_THROW(
-        sink.handle(TimedEvent{
+        sink.handle(TickEvent{
             .tick = 0,
             .event = Event{
                 .name = kTaskSubmit,
@@ -480,7 +480,7 @@ TEST(TaskSubmissionSinkTest, TickEventCommitsAndRunsSystemScheduler)
     TaskSubmissionSink sink(
         world, systemScheduler, jobScheduler, lookup, registry);
 
-    sink.handle(TimedEvent{
+    sink.handle(TickEvent{
         .tick = 0,
         .event = Event{
             .name = kTaskSubmit,
@@ -488,7 +488,7 @@ TEST(TaskSubmissionSinkTest, TickEventCommitsAndRunsSystemScheduler)
                        R"("label":"Alpha"})",
         },
     });
-    sink.handle(TimedEvent{
+    sink.handle(TickEvent{
         .tick = 0,
         .event = Event{.name = antwika::engine::events::kTick},
     });

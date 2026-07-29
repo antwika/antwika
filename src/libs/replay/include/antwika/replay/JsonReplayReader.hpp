@@ -3,12 +3,12 @@
 #include <istream>
 #include <vector>
 
-#include <antwika/event/TimedEvent.hpp>
+#include <antwika/event/TickEvent.hpp>
 
 namespace antwika::replay
 {
 
-    using antwika::event::TimedEvent;
+    using antwika::event::TickEvent;
 
     /**
      * @brief Reads the format JsonReplayWriter produces.
@@ -26,7 +26,7 @@ namespace antwika::replay
          * @return The decoded events, in the order they were recorded.
          * @throws ReplayFormatError If the stream is malformed.
          */
-        [[nodiscard]] std::vector<TimedEvent> read(std::istream &in) const;
+        [[nodiscard]] std::vector<TickEvent> read(std::istream &in) const;
     };
 
 } // namespace antwika::replay

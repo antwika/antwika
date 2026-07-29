@@ -8,7 +8,7 @@
 #include "antwika/replay/ReplayFormatError.hpp"
 
 using antwika::event::Event;
-using antwika::event::TimedEvent;
+using antwika::event::TickEvent;
 using antwika::replay::BinaryEventCodec;
 using antwika::replay::BinaryReplayReader;
 using antwika::replay::BinaryReplayWriter;
@@ -16,7 +16,7 @@ using antwika::replay::ReplayFormatError;
 
 namespace
 {
-    std::vector<TimedEvent> roundTrip(const std::vector<TimedEvent> &events)
+    std::vector<TickEvent> roundTrip(const std::vector<TickEvent> &events)
     {
         BinaryEventCodec codec;
         BinaryReplayWriter writer(codec);
@@ -30,31 +30,31 @@ namespace
 
 TEST(BinaryReplayWriterReaderTest, RoundTripsZeroEvents)
 {
-    EXPECT_EQ(roundTrip({}), std::vector<TimedEvent>{});
+    EXPECT_EQ(roundTrip({}), std::vector<TickEvent>{});
 }
 
 TEST(BinaryReplayWriterReaderTest, RoundTripsOneEvent)
 {
-    std::vector<TimedEvent> events{
-        TimedEvent{.tick = 0, .event = Event{.name = "engine.tick"}},
+    std::vector<TickEvent> events{
+        TickEvent{.tick = 0, .event = Event{.name = "engine.tick"}},
     };
     EXPECT_EQ(roundTrip(events), events);
 }
 
 TEST(BinaryReplayWriterReaderTest, RoundTripsManyEventsInOrder)
 {
-    std::vector<TimedEvent> events{
-        TimedEvent{.tick = 0, .event = Event{.name = "engine.tick"}},
-        TimedEvent{
+    std::vector<TickEvent> events{
+        TickEvent{.tick = 0, .event = Event{.name = "engine.tick"}},
+        TickEvent{
             .tick = 0,
             .event = Event{
                 .name = "game.score_increment",
                 .payload = "amount=1",
             },
         },
-        TimedEvent{.tick = 1, .event = Event{.name = "engine.tick"}},
-        TimedEvent{.tick = 2, .event = Event{.name = "engine.tick"}},
-        TimedEvent{
+        TickEvent{.tick = 1, .event = Event{.name = "engine.tick"}},
+        TickEvent{.tick = 2, .event = Event{.name = "engine.tick"}},
+        TickEvent{
             .tick = 2,
             .event = Event{
                 .name = "game.score_increment",
@@ -106,8 +106,8 @@ TEST(BinaryReplayWriterReaderTest, ReadThrowsRatherThanTrustingBogusCount)
     BinaryReplayWriter writer(codec);
     BinaryReplayReader reader(codec);
 
-    std::vector<TimedEvent> events{
-        TimedEvent{.tick = 1, .event = Event{.name = "truncated"}},
+    std::vector<TickEvent> events{
+        TickEvent{.tick = 1, .event = Event{.name = "truncated"}},
     };
     std::stringstream stream;
     writer.write(events, stream);
@@ -131,8 +131,8 @@ TEST(BinaryReplayWriterReaderTest, ReadThrowsOnTruncatedStream)
     BinaryReplayWriter writer(codec);
     BinaryReplayReader reader(codec);
 
-    std::vector<TimedEvent> events{
-        TimedEvent{.tick = 1, .event = Event{.name = "truncated"}},
+    std::vector<TickEvent> events{
+        TickEvent{.tick = 1, .event = Event{.name = "truncated"}},
     };
     std::stringstream stream;
     writer.write(events, stream);

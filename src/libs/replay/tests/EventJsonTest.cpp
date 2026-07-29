@@ -6,14 +6,14 @@
 #include "antwika/replay/ReplayFormatError.hpp"
 
 using antwika::event::Event;
-using antwika::event::TimedEvent;
+using antwika::event::TickEvent;
 using antwika::replay::eventFromJson;
 using antwika::replay::eventToJson;
 using antwika::replay::ReplayFormatError;
 
 TEST(EventJsonTest, EventToJsonProducesTheExpectedShape)
 {
-    TimedEvent event{
+    TickEvent event{
         .tick = 42,
         .event = Event{.name = "game.score_increment", .payload = "5"},
     };
@@ -28,7 +28,7 @@ TEST(EventJsonTest, EventToJsonProducesTheExpectedShape)
 
 TEST(EventJsonTest, EventFromJsonRoundTripsATypicalEvent)
 {
-    TimedEvent event{
+    TickEvent event{
         .tick = 42,
         .event = Event{
             .name = "game.score_increment",
@@ -40,7 +40,7 @@ TEST(EventJsonTest, EventFromJsonRoundTripsATypicalEvent)
 
 TEST(EventJsonTest, EventFromJsonRoundTripsEmptyNameAndPayload)
 {
-    TimedEvent event{.tick = 0, .event = Event{}};
+    TickEvent event{.tick = 0, .event = Event{}};
     EXPECT_EQ(eventFromJson(eventToJson(event)), event);
 }
 
@@ -49,7 +49,7 @@ TEST(EventJsonTest, EventFromJsonRoundTripsEmptyNameAndPayload)
 // So the JSON tick range tops out there, unlike BinaryEventCodec's.
 TEST(EventJsonTest, EventFromJsonRoundTripsLargeTickValue)
 {
-    TimedEvent event{
+    TickEvent event{
         .tick = static_cast<antwika::time::Tick>(
             std::numeric_limits<std::int64_t>::max()),
         .event = Event{.name = "max-tick"},

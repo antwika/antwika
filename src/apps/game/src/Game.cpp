@@ -41,7 +41,7 @@ namespace antwika::game
                         IEventSink &eventSink,
                         IReplaySource &inputSource,
                         std::optional<antwika::time::Tick> maxTicks,
-                        ITimedEventSink *replayRecorder)
+                        ITickEventSink *replayRecorder)
     {
         Logger logger(formatter, logPolicy, clock, appender);
         EventDispatcher dispatcher({eventSink});
@@ -50,7 +50,7 @@ namespace antwika::game
         GameStateReducer reducer(state);
         StopSignal stopSignal;
 
-        std::vector<std::reference_wrapper<ITimedEventSink>> timedSinks{
+        std::vector<std::reference_wrapper<ITickEventSink>> timedSinks{
             reducer, stopSignal};
         if (replayRecorder != nullptr)
         {

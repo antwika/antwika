@@ -5,7 +5,7 @@
 #include <antwika/engine/Events.hpp>
 #include <antwika/event/Event.hpp>
 #include <antwika/event/EventRecorder.hpp>
-#include <antwika/event/TimedEvent.hpp>
+#include <antwika/event/TickEvent.hpp>
 #include <antwika/log/Level.hpp>
 #include <antwika/log/MinimumLevelLogPolicy.hpp>
 #include <antwika/log/NullAppender.hpp>
@@ -23,7 +23,7 @@
 
 using antwika::event::Event;
 using antwika::event::EventRecorder;
-using antwika::event::TimedEvent;
+using antwika::event::TickEvent;
 using antwika::log::Level;
 using antwika::log::MinimumLevelLogPolicy;
 using antwika::log::NullAppender;
@@ -72,39 +72,39 @@ namespace
 // That's the same entry point main.cpp uses, not a test-only shortcut.
 TEST(ReplayIntegrationTest, LoadingASavedReplayReproducesTheSameState)
 {
-    std::vector<TimedEvent> script{
-        TimedEvent{
+    std::vector<TickEvent> script{
+        TickEvent{
             .tick = 0,
             .event = Event{
                 .name = kTaskSubmit,
                 .payload = R"({"id":1,"priority":1,)"
                            R"("durationTicks":4,"label":"Alpha"})"}},
-        TimedEvent{
+        TickEvent{
             .tick = 0,
             .event = Event{
                 .name = kTaskSubmit,
                 .payload = R"({"id":2,"priority":1,)"
                            R"("durationTicks":5,"label":"Beta"})"}},
-        TimedEvent{
+        TickEvent{
             .tick = 0,
             .event = Event{
                 .name = kTaskSubmit,
                 .payload = R"({"id":3,"priority":0,)"
                            R"("durationTicks":2,"label":"Gamma"})"}},
-        TimedEvent{
+        TickEvent{
             .tick = 4,
             .event = Event{
                 .name = kTaskSubmit,
                 .payload = R"({"id":4,"priority":3,)"
                            R"("durationTicks":1,"label":"Delta"})"}},
-        TimedEvent{
+        TickEvent{
             .tick = 4,
             .event = Event{
                 .name = kTaskSubmit,
                 .payload = R"({"id":5,"priority":1,)"
                            R"("durationTicks":1,"label":"Epsilon",)"
                            R"("dependsOnId":4})"}},
-        TimedEvent{
+        TickEvent{
             .tick = 5,
             .event = Event{.name = antwika::engine::events::kStop}},
     };

@@ -4,7 +4,7 @@
 
 /**
  * @file
- * @brief The JSON Schema fragment describing a single timed event's
+ * @brief The JSON Schema fragment describing a single tick event's
  * shape, shared by the standalone event schema (EventJson.cpp) and the
  * whole-replay document schema (ReplayJson.cpp).
  */
@@ -13,7 +13,7 @@ namespace antwika::replay::detail
 
     /**
      * @brief Get the {type, required, properties} shape of an encoded
-     * TimedEvent, without a top-level "$schema"/"title".
+     * TickEvent, without a top-level "$schema"/"title".
      * @return A JSON Schema fragment, reusable standalone or nested
      * inside a larger schema's "items"/"properties".
      *

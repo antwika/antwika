@@ -8,13 +8,13 @@
 #include "antwika/replay/ReplayFormatError.hpp"
 
 using antwika::event::Event;
-using antwika::event::TimedEvent;
+using antwika::event::TickEvent;
 using antwika::replay::BinaryEventCodec;
 using antwika::replay::ReplayFormatError;
 
 namespace
 {
-    TimedEvent roundTrip(const TimedEvent &event)
+    TickEvent roundTrip(const TickEvent &event)
     {
         BinaryEventCodec codec;
         std::stringstream stream;
@@ -25,7 +25,7 @@ namespace
 
 TEST(BinaryEventCodecTest, RoundTripsATypicalEvent)
 {
-    TimedEvent event{
+    TickEvent event{
         .tick = 42,
         .event = Event{.name = "game.score_increment", .payload = "amount=5"},
     };
@@ -34,13 +34,13 @@ TEST(BinaryEventCodecTest, RoundTripsATypicalEvent)
 
 TEST(BinaryEventCodecTest, RoundTripsEmptyNameAndPayload)
 {
-    TimedEvent event{.tick = 0, .event = Event{}};
+    TickEvent event{.tick = 0, .event = Event{}};
     EXPECT_EQ(roundTrip(event), event);
 }
 
 TEST(BinaryEventCodecTest, RoundTripsNonAsciiUtf8Bytes)
 {
-    TimedEvent event{
+    TickEvent event{
         .tick = 1,
         .event = Event{.name = "événement", .payload = "payload-\xc3\xa9"},
     };
@@ -49,7 +49,7 @@ TEST(BinaryEventCodecTest, RoundTripsNonAsciiUtf8Bytes)
 
 TEST(BinaryEventCodecTest, RoundTripsMaxTickValue)
 {
-    TimedEvent event{
+    TickEvent event{
         .tick = std::numeric_limits<antwika::time::Tick>::max(),
         .event = Event{.name = "max-tick"},
     };
@@ -61,7 +61,7 @@ TEST(BinaryEventCodecTest, DecodeThrowsWhenTickFieldIsTruncated)
     BinaryEventCodec codec;
     std::stringstream stream;
     codec.encode(
-        TimedEvent{.tick = 1, .event = Event{.name = "truncated"}}, stream);
+        TickEvent{.tick = 1, .event = Event{.name = "truncated"}}, stream);
 
     // Cut off inside the 8-byte tick field itself.
     // That differs from DecodeThrowsOnTruncatedStream below.
@@ -78,7 +78,7 @@ TEST(BinaryEventCodecTest, DecodeThrowsOnTruncatedStream)
     BinaryEventCodec codec;
     std::stringstream stream;
     codec.encode(
-        TimedEvent{.tick = 1, .event = Event{.name = "truncated"}}, stream);
+        TickEvent{.tick = 1, .event = Event{.name = "truncated"}}, stream);
 
     auto truncated = stream.str().substr(0, stream.str().size() - 1);
     std::stringstream truncatedStream(truncated);
@@ -91,7 +91,7 @@ TEST(BinaryEventCodecTest, DecodeThrowsWhenStringContentIsTruncated)
     BinaryEventCodec codec;
     std::stringstream stream;
     codec.encode(
-        TimedEvent{.tick = 1, .event = Event{.name = "hello"}}, stream);
+        TickEvent{.tick = 1, .event = Event{.name = "hello"}}, stream);
 
     // Keep the tick (8 bytes) and the name's length prefix (4 bytes) intact.
     // Cut off partway through the name's content bytes instead.
@@ -109,7 +109,7 @@ TEST(BinaryEventCodecTest, DecodeThrowsRatherThanOverallocatingOnBogusLength)
     BinaryEventCodec codec;
     std::stringstream stream;
     codec.encode(
-        TimedEvent{.tick = 1, .event = Event{.name = "hello"}}, stream);
+        TickEvent{.tick = 1, .event = Event{.name = "hello"}}, stream);
 
     // Keep the tick (8 bytes) intact.
     // Overwrite the name's length prefix with a bogus, huge value.

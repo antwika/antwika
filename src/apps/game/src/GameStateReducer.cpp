@@ -67,7 +67,7 @@ namespace antwika::game
     {
     }
 
-    void GameStateReducer::handle(const TimedEvent &event)
+    void GameStateReducer::handle(const TickEvent &event)
     {
         if (event.event.name == antwika::engine::events::kTick)
         {

@@ -31,7 +31,7 @@ namespace antwika::replay
          * @return The decoded events, in the order they were recorded.
          * @throws ReplayFormatError If the stream is malformed.
          */
-        [[nodiscard]] std::vector<TimedEvent> read(std::istream &in) const;
+        [[nodiscard]] std::vector<TickEvent> read(std::istream &in) const;
 
     private:
         const IEventCodec &codec;

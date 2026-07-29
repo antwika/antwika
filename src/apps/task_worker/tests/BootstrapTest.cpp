@@ -7,8 +7,8 @@
 #include <antwika/engine/Events.hpp>
 #include <antwika/event/Event.hpp>
 #include <antwika/event/EventRecorder.hpp>
-#include <antwika/event/ReplayRecorder.hpp>
-#include <antwika/event/TimedEvent.hpp>
+#include <antwika/event/TickEventRecorder.hpp>
+#include <antwika/event/TickEvent.hpp>
 #include <antwika/log/Level.hpp>
 #include <antwika/log/MinimumLevelLogPolicy.hpp>
 #include <antwika/log/NullAppender.hpp>
@@ -28,8 +28,8 @@ using antwika::ecs::ISystem;
 using antwika::ecs::World;
 using antwika::event::Event;
 using antwika::event::EventRecorder;
-using antwika::event::ReplayRecorder;
-using antwika::event::TimedEvent;
+using antwika::event::TickEventRecorder;
+using antwika::event::TickEvent;
 using antwika::log::Level;
 using antwika::log::MinimumLevelLogPolicy;
 using antwika::log::NullAppender;
@@ -62,41 +62,41 @@ namespace
     // Epsilon runs the following tick: a cross-tick dependency.
     // See blog/006-... for the full scenario rationale.
     // Ends with engine.stop at tick 5, once every task has settled.
-    std::vector<TimedEvent> demoScript()
+    std::vector<TickEvent> demoScript()
     {
         return {
-            TimedEvent{
+            TickEvent{
                 .tick = 0,
                 .event = Event{
                     .name = kTaskSubmit,
                     .payload = R"({"id":1,"priority":1,)"
                                R"("durationTicks":4,"label":"Alpha"})"}},
-            TimedEvent{
+            TickEvent{
                 .tick = 0,
                 .event = Event{
                     .name = kTaskSubmit,
                     .payload = R"({"id":2,"priority":1,)"
                                R"("durationTicks":5,"label":"Beta"})"}},
-            TimedEvent{
+            TickEvent{
                 .tick = 0,
                 .event = Event{
                     .name = kTaskSubmit,
                     .payload = R"({"id":3,"priority":0,)"
                                R"("durationTicks":2,"label":"Gamma"})"}},
-            TimedEvent{
+            TickEvent{
                 .tick = 4,
                 .event = Event{
                     .name = kTaskSubmit,
                     .payload = R"({"id":4,"priority":3,)"
                                R"("durationTicks":1,"label":"Delta"})"}},
-            TimedEvent{
+            TickEvent{
                 .tick = 4,
                 .event = Event{
                     .name = kTaskSubmit,
                     .payload = R"({"id":5,"priority":1,)"
                                R"("durationTicks":1,"label":"Epsilon",)"
                                R"("dependsOnId":4})"}},
-            TimedEvent{
+            TickEvent{
                 .tick = 5,
                 .event = Event{.name = antwika::engine::events::kStop}},
         };
@@ -237,7 +237,7 @@ TEST(BootstrapTest, Bootstrap_WithNoScriptedInputAllWorkersStayIdle)
     EventRecorder eventSink;
 
     ReplaySource inputSource({
-        TimedEvent{
+        TickEvent{
             .tick = 2,
             .event = Event{.name = antwika::engine::events::kStop}},
     });
@@ -261,7 +261,7 @@ TEST(BootstrapTest, Bootstrap_WithNoScriptedInputAllWorkersStayIdle)
 // A caller wanting to persist a `--record` file has no pre-known script.
 // It instead passes an optional replayRecorder.
 // bootstrap() must register it so it observes every dispatched event.
-TEST(BootstrapTest, Bootstrap_ForwardsDispatchedEventsToAReplayRecorder)
+TEST(BootstrapTest, Bootstrap_ForwardsDispatchedEventsToATickEventRecorder)
 {
     std::chrono::system_clock::time_point time{};
     FakeClock fakeClock(time);
@@ -271,17 +271,17 @@ TEST(BootstrapTest, Bootstrap_ForwardsDispatchedEventsToAReplayRecorder)
     EventRecorder eventSink;
 
     ReplaySource inputSource({
-        TimedEvent{
+        TickEvent{
             .tick = 0,
             .event = Event{
                 .name = kTaskSubmit,
                 .payload = R"({"id":1,"priority":1,)"
                            R"("durationTicks":4,"label":"Alpha"})"}},
-        TimedEvent{
+        TickEvent{
             .tick = 0,
             .event = Event{.name = antwika::engine::events::kStop}},
     });
-    ReplayRecorder replayRecorder;
+    TickEventRecorder replayRecorder;
 
     antwika::task_worker::bootstrap(
         fakeClock,
@@ -298,20 +298,20 @@ TEST(BootstrapTest, Bootstrap_ForwardsDispatchedEventsToAReplayRecorder)
 
     EXPECT_EQ(
         replayRecorder.getEvents(),
-        (std::vector<TimedEvent>{
-            TimedEvent{
+        (std::vector<TickEvent>{
+            TickEvent{
                 .tick = 0,
                 .event = Event{.name = "Running Antwika TaskWorker"}},
-            TimedEvent{
+            TickEvent{
                 .tick = 0,
                 .event = Event{
                     .name = kTaskSubmit,
                     .payload = R"({"id":1,"priority":1,)"
                                R"("durationTicks":4,"label":"Alpha"})"}},
-            TimedEvent{
+            TickEvent{
                 .tick = 0,
                 .event = Event{.name = antwika::engine::events::kStop}},
-            TimedEvent{
+            TickEvent{
                 .tick = 0,
                 .event = Event{.name = antwika::engine::events::kTick}},
         }));

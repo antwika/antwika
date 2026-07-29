@@ -12,7 +12,7 @@ namespace antwika::replay
     }
 
     void BinaryReplayWriter::write(
-        const std::vector<TimedEvent> &events, std::ostream &out) const
+        const std::vector<TickEvent> &events, std::ostream &out) const
     {
         out.write(
             detail::kReplayMagic.data(),

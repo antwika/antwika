@@ -49,7 +49,7 @@ namespace antwika::life
     {
     }
 
-    void BoardSink::handle(const TimedEvent &event)
+    void BoardSink::handle(const TickEvent &event)
     {
         if (event.event.name == antwika::engine::events::kTick)
         {

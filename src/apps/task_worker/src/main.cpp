@@ -10,8 +10,8 @@
 #include <antwika/engine/Events.hpp>
 #include <antwika/event/Event.hpp>
 #include <antwika/event/EventRecorder.hpp>
-#include <antwika/event/ReplayRecorder.hpp>
-#include <antwika/event/TimedEvent.hpp>
+#include <antwika/event/TickEventRecorder.hpp>
+#include <antwika/event/TickEvent.hpp>
 #include <antwika/log/Level.hpp>
 #include <antwika/log/MinimumLevelLogPolicy.hpp>
 #include <antwika/log/PlainFormatter.hpp>
@@ -28,8 +28,8 @@
 
 using antwika::event::Event;
 using antwika::event::EventRecorder;
-using antwika::event::ReplayRecorder;
-using antwika::event::TimedEvent;
+using antwika::event::TickEventRecorder;
+using antwika::event::TickEvent;
 using antwika::log::Level;
 using antwika::log::MinimumLevelLogPolicy;
 using antwika::log::PlainFormatter;
@@ -54,12 +54,12 @@ namespace
     // See blog/006-... for the full scenario rationale.
     // Ends with engine.stop 3 ticks after every task has settled.
     // That gives the demo's printed status a few idle ticks to show.
-    std::vector<TimedEvent> demoScript()
+    std::vector<TickEvent> demoScript()
     {
         using antwika::task_worker::events::kTaskSubmit;
 
         return {
-            TimedEvent{
+            TickEvent{
                 .tick = 0,
                 .event = Event{
                     .name = kTaskSubmit,
@@ -67,7 +67,7 @@ namespace
                                R"("durationTicks":4,"label":"Alpha"})",
                 },
             },
-            TimedEvent{
+            TickEvent{
                 .tick = 0,
                 .event = Event{
                     .name = kTaskSubmit,
@@ -75,7 +75,7 @@ namespace
                                R"("durationTicks":5,"label":"Beta"})",
                 },
             },
-            TimedEvent{
+            TickEvent{
                 .tick = 0,
                 .event = Event{
                     .name = kTaskSubmit,
@@ -83,7 +83,7 @@ namespace
                                R"("durationTicks":2,"label":"Gamma"})",
                 },
             },
-            TimedEvent{
+            TickEvent{
                 .tick = 4,
                 .event = Event{
                     .name = kTaskSubmit,
@@ -91,7 +91,7 @@ namespace
                                R"("durationTicks":1,"label":"Delta"})",
                 },
             },
-            TimedEvent{
+            TickEvent{
                 .tick = 4,
                 .event = Event{
                     .name = kTaskSubmit,
@@ -100,7 +100,7 @@ namespace
                                R"("dependsOnId":4})",
                 },
             },
-            TimedEvent{
+            TickEvent{
                 .tick = 7,
                 .event = Event{.name = antwika::engine::events::kStop},
             },
@@ -111,12 +111,12 @@ namespace
     // Every bootstrap() call regenerates them fresh, live or replayed.
     // Recording either and feeding it back would double-dispatch it.
     // See blog/2026-07-27-building-a-deterministic-replay-system.md.
-    std::vector<TimedEvent> stripSelfGeneratedEvents(
-        std::vector<TimedEvent> events)
+    std::vector<TickEvent> stripSelfGeneratedEvents(
+        std::vector<TickEvent> events)
     {
         std::erase_if(
             events,
-            [](const TimedEvent &event)
+            [](const TickEvent &event)
             {
                 const auto &name = event.event.name;
                 return name == antwika::engine::events::kTick
@@ -173,7 +173,7 @@ int main(int argc, char **argv)
 
     auto script = demoScript();
     ReplaySource source(script);
-    ReplayRecorder replayRecorder;
+    TickEventRecorder replayRecorder;
     antwika::task_worker::bootstrap(
         clock,
         appender,

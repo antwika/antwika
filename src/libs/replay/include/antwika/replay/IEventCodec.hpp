@@ -3,15 +3,15 @@
 #include <istream>
 #include <ostream>
 
-#include <antwika/event/TimedEvent.hpp>
+#include <antwika/event/TickEvent.hpp>
 
 namespace antwika::replay
 {
 
-    using antwika::event::TimedEvent;
+    using antwika::event::TickEvent;
 
     /**
-     * @brief Converts TimedEvent instances to and from a serialized form.
+     * @brief Converts TickEvent instances to and from a serialized form.
      */
     class IEventCodec
     {
@@ -24,14 +24,14 @@ namespace antwika::replay
          * @param out The stream to write the encoded bytes to.
          */
         virtual void encode(
-            const TimedEvent &event, std::ostream &out) const = 0;
+            const TickEvent &event, std::ostream &out) const = 0;
 
         /**
          * @brief Deserialize a timed event from a stream.
          * @param in The stream to read the encoded bytes from.
          * @return The decoded event.
          */
-        [[nodiscard]] virtual TimedEvent decode(std::istream &in) const = 0;
+        [[nodiscard]] virtual TickEvent decode(std::istream &in) const = 0;
     };
 
 } // namespace antwika::replay

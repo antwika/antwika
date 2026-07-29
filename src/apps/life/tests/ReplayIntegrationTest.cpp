@@ -5,7 +5,7 @@
 #include <antwika/engine/Events.hpp>
 #include <antwika/event/Event.hpp>
 #include <antwika/event/EventRecorder.hpp>
-#include <antwika/event/TimedEvent.hpp>
+#include <antwika/event/TickEvent.hpp>
 #include <antwika/log/Level.hpp>
 #include <antwika/log/MinimumLevelLogPolicy.hpp>
 #include <antwika/log/NullAppender.hpp>
@@ -22,7 +22,7 @@
 
 using antwika::event::Event;
 using antwika::event::EventRecorder;
-using antwika::event::TimedEvent;
+using antwika::event::TickEvent;
 using antwika::life::Board;
 using antwika::log::Level;
 using antwika::log::MinimumLevelLogPolicy;
@@ -71,29 +71,29 @@ namespace
 // That's the same entry point main.cpp uses, not a test-only shortcut.
 TEST(ReplayIntegrationTest, LoadingASavedReplayReproducesTheSameBoard)
 {
-    std::vector<TimedEvent> script{
-        TimedEvent{
+    std::vector<TickEvent> script{
+        TickEvent{
             .tick = 0,
             .event = Event{
                 .name = antwika::life::events::kToggleCell,
                 .payload = R"({"x":1,"y":2})",
             },
         },
-        TimedEvent{
+        TickEvent{
             .tick = 0,
             .event = Event{
                 .name = antwika::life::events::kToggleCell,
                 .payload = R"({"x":2,"y":2})",
             },
         },
-        TimedEvent{
+        TickEvent{
             .tick = 0,
             .event = Event{
                 .name = antwika::life::events::kToggleCell,
                 .payload = R"({"x":3,"y":2})",
             },
         },
-        TimedEvent{
+        TickEvent{
             .tick = 3,
             .event = Event{.name = antwika::engine::events::kStop},
         },

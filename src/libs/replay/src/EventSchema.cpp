@@ -5,7 +5,7 @@ namespace antwika::replay::detail
 
     namespace
     {
-        nlohmann::json buildTimedEventShape()
+        nlohmann::json buildTickEventShape()
         {
             nlohmann::json eventShape;
             eventShape["type"] = "object";
@@ -28,7 +28,7 @@ namespace antwika::replay::detail
     const nlohmann::json &timedEventShape()
     {
         static const nlohmann::json shape =
-            buildTimedEventShape(); // GCOVR_EXCL_LINE
+            buildTickEventShape(); // GCOVR_EXCL_LINE
         return shape;
     }
 

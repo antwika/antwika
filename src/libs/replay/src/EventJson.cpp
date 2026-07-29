@@ -21,13 +21,13 @@ namespace antwika::event
         event.payload = j.at("payload").get<std::string>();
     }
 
-    void to_json(nlohmann::json &j, const TimedEvent &event)
+    void to_json(nlohmann::json &j, const TickEvent &event)
     {
         j["tick"] = event.tick;
         j["event"] = event.event;
     }
 
-    void from_json(const nlohmann::json &j, TimedEvent &event)
+    void from_json(const nlohmann::json &j, TickEvent &event)
     {
         event.tick = j.at("tick").get<antwika::time::Tick>();
         event.event = j.at("event").get<Event>();
@@ -44,7 +44,7 @@ namespace antwika::replay
         {
             nlohmann::json schema = detail::timedEventShape();
             schema["$schema"] = "http://json-schema.org/draft-07/schema#";
-            schema["title"] = "antwika replay timed event";
+            schema["title"] = "antwika replay tick event";
             return schema;
         } // GCOVR_EXCL_LINE
 
@@ -56,7 +56,7 @@ namespace antwika::replay
         }
     } // namespace
 
-    antwika::event::TimedEvent eventFromJson(const nlohmann::json &j)
+    antwika::event::TickEvent eventFromJson(const nlohmann::json &j)
     {
         try
         {
@@ -70,10 +70,10 @@ namespace antwika::replay
                     "validation: ") +
                 error.what());
         }
-        return j.get<antwika::event::TimedEvent>();
+        return j.get<antwika::event::TickEvent>();
     }
 
-    nlohmann::json eventToJson(const antwika::event::TimedEvent &event)
+    nlohmann::json eventToJson(const antwika::event::TickEvent &event)
     {
         return nlohmann::json(event);
     }

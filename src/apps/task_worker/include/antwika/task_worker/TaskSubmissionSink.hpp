@@ -6,7 +6,7 @@
 
 #include <antwika/ecs/SystemScheduler.hpp>
 #include <antwika/ecs/World.hpp>
-#include <antwika/event/ITimedEventSink.hpp>
+#include <antwika/event/ITickEventSink.hpp>
 #include <antwika/scheduler/JobId.hpp>
 #include <antwika/scheduler/Scheduler.hpp>
 
@@ -19,14 +19,14 @@ namespace antwika::task_worker
 
     using antwika::ecs::SystemScheduler;
     using antwika::ecs::World;
-    using antwika::event::ITimedEventSink;
-    using antwika::event::TimedEvent;
+    using antwika::event::ITickEventSink;
+    using antwika::event::TickEvent;
     using antwika::scheduler::JobId;
     using antwika::scheduler::Scheduler;
 
     /**
      * @brief Drives the ECS world and job scheduler from the same
-     * TimedEvent stream that carries this application's custom events.
+     * TickEvent stream that carries this application's custom events.
      *
      * Reacts to the engine's built-in tick event by committing any
      * staged World writes then running one tick of systemScheduler
@@ -37,7 +37,7 @@ namespace antwika::task_worker
      * tick's engine.tick event even fires, mirroring
      * antwika::life::BoardSink's kToggleCell handling.
      */
-    class TaskSubmissionSink final : public ITimedEventSink
+    class TaskSubmissionSink final : public ITickEventSink
     {
     public:
         /**
@@ -59,14 +59,14 @@ namespace antwika::task_worker
             TaskRegistry &registry);
 
         /**
-         * @brief Apply a timed event's effect.
+         * @brief Apply a tick event's effect.
          * @param event kTick commits and runs one tick of
          * systemScheduler; kTaskSubmit parses and schedules a task.
          * @throws TaskSubmissionError if a kTaskSubmit payload's
          * dependsOnId refers to a task id never submitted, or if its
          * own id was already submitted.
          */
-        void handle(const TimedEvent &event) override;
+        void handle(const TickEvent &event) override;
 
     private:
         World &world;

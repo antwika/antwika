@@ -5,7 +5,7 @@
 #include <antwika/engine/IEngine.hpp>
 #include <antwika/event/IEventDispatcher.hpp>
 #include <antwika/event/IEventSink.hpp>
-#include <antwika/event/ITimedEventSink.hpp>
+#include <antwika/event/ITickEventSink.hpp>
 #include <antwika/log/IAppender.hpp>
 #include <antwika/log/IFormatter.hpp>
 #include <antwika/log/ILogPolicy.hpp>
@@ -21,7 +21,7 @@ namespace antwika::game
     using antwika::engine::IEngine;
     using antwika::event::IEventDispatcher;
     using antwika::event::IEventSink;
-    using antwika::event::ITimedEventSink;
+    using antwika::event::ITickEventSink;
     using antwika::log::IAppender;
     using antwika::log::IFormatter;
     using antwika::log::ILogPolicy;
@@ -92,6 +92,6 @@ namespace antwika::game
         IEventSink &eventSink,
         IReplaySource &inputSource,
         std::optional<antwika::time::Tick> maxTicks = std::nullopt,
-        ITimedEventSink *replayRecorder = nullptr);
+        ITickEventSink *replayRecorder = nullptr);
 
 } // namespace antwika::game

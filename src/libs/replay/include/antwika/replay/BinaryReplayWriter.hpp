@@ -9,7 +9,7 @@ namespace antwika::replay
 {
 
     /**
-     * @brief Writes a sequence of TimedEvent instances to a binary replay
+     * @brief Writes a sequence of TickEvent instances to a binary replay
      * stream, readable by BinaryReplayReader.
      */
     class BinaryReplayWriter final
@@ -27,7 +27,7 @@ namespace antwika::replay
          * @param out The stream to write the encoded bytes to.
          */
         void write(
-            const std::vector<TimedEvent> &events, std::ostream &out) const;
+            const std::vector<TickEvent> &events, std::ostream &out) const;
 
     private:
         const IEventCodec &codec;

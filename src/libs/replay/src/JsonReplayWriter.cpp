@@ -6,7 +6,7 @@ namespace antwika::replay
 {
 
     void JsonReplayWriter::write(
-        const std::vector<TimedEvent> &events, std::ostream &out) const
+        const std::vector<TickEvent> &events, std::ostream &out) const
     {
         out << replayToJson(events).dump(2) << '\n';
     }

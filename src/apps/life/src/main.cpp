@@ -10,8 +10,8 @@
 #include <antwika/engine/Events.hpp>
 #include <antwika/event/Event.hpp>
 #include <antwika/event/EventRecorder.hpp>
-#include <antwika/event/ReplayRecorder.hpp>
-#include <antwika/event/TimedEvent.hpp>
+#include <antwika/event/TickEventRecorder.hpp>
+#include <antwika/event/TickEvent.hpp>
 #include <antwika/log/Level.hpp>
 #include <antwika/log/MinimumLevelLogPolicy.hpp>
 #include <antwika/log/PlainFormatter.hpp>
@@ -27,8 +27,8 @@
 
 using antwika::event::Event;
 using antwika::event::EventRecorder;
-using antwika::event::ReplayRecorder;
-using antwika::event::TimedEvent;
+using antwika::event::TickEventRecorder;
+using antwika::event::TickEvent;
 using antwika::life::PrintSystem;
 using antwika::log::Level;
 using antwika::log::MinimumLevelLogPolicy;
@@ -50,31 +50,31 @@ namespace
     // See blog/2026-07-27-building-a-deterministic-replay-system.md.
     // Seeds a horizontal blinker -- a period-2 oscillator -- at tick 0.
     // Ends with engine.stop after 4 generations.
-    std::vector<TimedEvent> demoScript()
+    std::vector<TickEvent> demoScript()
     {
         return {
-            TimedEvent{
+            TickEvent{
                 .tick = 0,
                 .event = Event{
                     .name = antwika::life::events::kToggleCell,
                     .payload = R"({"x":1,"y":2})",
                 },
             },
-            TimedEvent{
+            TickEvent{
                 .tick = 0,
                 .event = Event{
                     .name = antwika::life::events::kToggleCell,
                     .payload = R"({"x":2,"y":2})",
                 },
             },
-            TimedEvent{
+            TickEvent{
                 .tick = 0,
                 .event = Event{
                     .name = antwika::life::events::kToggleCell,
                     .payload = R"({"x":3,"y":2})",
                 },
             },
-            TimedEvent{
+            TickEvent{
                 .tick = 3,
                 .event = Event{.name = antwika::engine::events::kStop},
             },
@@ -85,12 +85,12 @@ namespace
     // Every bootstrap() call regenerates them fresh, live or replayed.
     // Recording either and feeding it back would double-dispatch it.
     // See blog/2026-07-27-building-a-deterministic-replay-system.md.
-    std::vector<TimedEvent> stripSelfGeneratedEvents(
-        std::vector<TimedEvent> events)
+    std::vector<TickEvent> stripSelfGeneratedEvents(
+        std::vector<TickEvent> events)
     {
         std::erase_if(
             events,
-            [](const TimedEvent &event)
+            [](const TickEvent &event)
             {
                 return event.event.name == antwika::engine::events::kTick
                        || event.event.name == "Running Antwika Life";
@@ -145,7 +145,7 @@ int main(int argc, char **argv)
 
     auto script = demoScript();
     ReplaySource source(script);
-    ReplayRecorder replayRecorder;
+    TickEventRecorder replayRecorder;
     antwika::life::bootstrap(
         clock,
         appender,
