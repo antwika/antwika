@@ -3,10 +3,13 @@
 # Fails if any of them is never #included by a .cpp file.
 # That means it's dead test-double code.
 import argparse
+import re
 import sys
 from pathlib import Path
 
 DEFAULT_ROOT = Path(__file__).resolve().parent.parent
+
+INCLUDE_PATTERN = re.compile(r'#include\s*[<"]([^">]+)[">]')
 
 
 def is_test_double_path(path: Path) -> bool:
@@ -19,9 +22,22 @@ def find_test_doubles(root: Path) -> list[Path]:
     return sorted(p for p in headers if is_test_double_path(p))
 
 
-def is_included_anywhere(header_name: str, root: Path) -> bool:
+def include_path_for(header: Path) -> str:
+    # The path a consumer actually writes inside #include, e.g.
+    # "antwika/foo/mocks/MockFoo.hpp".
+    # That's every segment after the header's own include/ directory.
+    parts = header.parts
+    index = parts.index("include")
+    return "/".join(parts[index + 1 :])
+
+
+def is_included_anywhere(include_path: str, root: Path) -> bool:
     for cpp_file in (root / "src").rglob("*.cpp"):
-        if header_name in cpp_file.read_text(errors="ignore"):
+        text = cpp_file.read_text(errors="ignore")
+        if any(
+            match.group(1) == include_path
+            for match in INCLUDE_PATTERN.finditer(text)
+        ):
             return True
     return False
 
@@ -49,7 +65,7 @@ def main() -> int:
     orphans = [
         header
         for header in doubles
-        if not is_included_anywhere(header.name, args.root)
+        if not is_included_anywhere(include_path_for(header), args.root)
     ]
 
     if orphans:
