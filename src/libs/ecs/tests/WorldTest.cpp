@@ -257,6 +257,22 @@ TEST(WorldTest, DestroyingAnEntityLeavesUnrelatedPoolsForOthersAlone)
     EXPECT_FALSE(world.alive(withVelocity));
 }
 
+TEST(WorldTest, DestroyStagedBeforeAddInTheSameCommitLeavesNoOrphan)
+{
+    NiceMock<MockLogger> logger;
+    World world(logger);
+    const auto entity = world.create();
+
+    world.destroy(entity);
+    world.add<Position>(entity, Position{1, 2});
+    world.commit();
+
+    EXPECT_FALSE(world.alive(entity));
+    EXPECT_FALSE(world.has<Position>(entity));
+    const auto view = world.view<Position>();
+    EXPECT_EQ(view.size(), 0U);
+}
+
 TEST(WorldTest, ViewOverAnUnusedComponentTypeIsEmpty)
 {
     NiceMock<MockLogger> logger;

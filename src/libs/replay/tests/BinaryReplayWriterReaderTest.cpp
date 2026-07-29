@@ -100,6 +100,31 @@ TEST(BinaryReplayWriterReaderTest, ReadThrowsOnUnsupportedVersion)
     EXPECT_THROW((void)reader.read(corrupted), ReplayFormatError);
 }
 
+TEST(BinaryReplayWriterReaderTest, ReadThrowsRatherThanTrustingBogusCount)
+{
+    BinaryEventCodec codec;
+    BinaryReplayWriter writer(codec);
+    BinaryReplayReader reader(codec);
+
+    std::vector<TimedEvent> events{
+        TimedEvent{.tick = 1, .event = Event{.name = "truncated"}},
+    };
+    std::stringstream stream;
+    writer.write(events, stream);
+
+    // Byte 8 is the big-endian event count's most-significant byte.
+    // Only one event's worth of bytes actually follows it.
+    // Reserving up front on this count would allocate for billions.
+    auto bytes = stream.str();
+    bytes[8] = static_cast<char>(0xFF);
+    bytes[9] = static_cast<char>(0xFF);
+    bytes[10] = static_cast<char>(0xFF);
+    bytes[11] = static_cast<char>(0xF0);
+    std::stringstream corrupted(bytes);
+
+    EXPECT_THROW((void)reader.read(corrupted), ReplayFormatError);
+}
+
 TEST(BinaryReplayWriterReaderTest, ReadThrowsOnTruncatedStream)
 {
     BinaryEventCodec codec;

@@ -2,12 +2,15 @@
 
 #include <limits>
 #include <sstream>
+#include <string>
 
 #include "antwika/replay/BinaryEventCodec.hpp"
+#include "antwika/replay/ReplayFormatError.hpp"
 
 using antwika::event::Event;
 using antwika::event::TimedEvent;
 using antwika::replay::BinaryEventCodec;
+using antwika::replay::ReplayFormatError;
 
 namespace
 {
@@ -99,4 +102,25 @@ TEST(BinaryEventCodecTest, DecodeThrowsWhenStringContentIsTruncated)
     std::stringstream truncatedStream(truncated);
 
     EXPECT_THROW((void)codec.decode(truncatedStream), std::runtime_error);
+}
+
+TEST(BinaryEventCodecTest, DecodeThrowsRatherThanOverallocatingOnBogusLength)
+{
+    BinaryEventCodec codec;
+    std::stringstream stream;
+    codec.encode(
+        TimedEvent{.tick = 1, .event = Event{.name = "hello"}}, stream);
+
+    // Keep the tick (8 bytes) intact.
+    // Overwrite the name's length prefix with a bogus, huge value.
+    // Only two content bytes follow, nowhere near that many.
+    // A reader trusting the length up front would allocate ~4 GB.
+    auto bytes = stream.str().substr(0, 8 + 4 + 2);
+    bytes[8] = static_cast<char>(0xFF);
+    bytes[9] = static_cast<char>(0xFF);
+    bytes[10] = static_cast<char>(0xFF);
+    bytes[11] = static_cast<char>(0xF0);
+    std::stringstream bogusStream(bytes);
+
+    EXPECT_THROW((void)codec.decode(bogusStream), ReplayFormatError);
 }

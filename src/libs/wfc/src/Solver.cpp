@@ -143,10 +143,11 @@ namespace antwika::wfc
                     before.push_back(wave[cell]);
                 }
 
-                if (!constraint.prune(wave))
-                {
-                    return false;
-                }
+                // A failing constraint can still mutate cells first.
+                // Those mutations must be recorded regardless.
+                // Otherwise a later backtrack cannot undo them.
+                // That leaves a sibling branch missing candidates.
+                const bool pruned = constraint.prune(wave);
 
                 for (std::size_t i = 0; i < cells.size(); ++i)
                 {
@@ -176,6 +177,11 @@ namespace antwika::wfc
                             worklist.push_back(other);
                         }
                     }
+                }
+
+                if (!pruned)
+                {
+                    return false;
                 }
             }
             return true;

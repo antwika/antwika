@@ -103,7 +103,16 @@ namespace antwika::ecs
 
             pendingOps.push_back(
                 [this, entity, value]
-                { storageFor<T>().insert(entity, value); });
+                {
+                    // A destroy() staged earlier may have run first.
+                    // Inserting now would orphan a component forever.
+                    // retire() only purges pools existing when it ran.
+                    if (!alive(entity))
+                    {
+                        return;
+                    }
+                    storageFor<T>().insert(entity, value);
+                });
         }
 
         /**
