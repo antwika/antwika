@@ -55,6 +55,7 @@ RUN apt-get update \
         libxcb-res0-dev \
         libxcb-shape0-dev \
         libxcb-sync-dev \
+        libxcb-util-dev \
         libxcb-xfixes0-dev \
         libxcb-xinerama0-dev \
         libxcb-xkb-dev \
