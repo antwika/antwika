@@ -14,6 +14,13 @@ namespace antwika::gfx
         std::uint8_t green = 0;
         std::uint8_t blue = 0;
         std::uint8_t alpha = 255;
+
+        /**
+         * @brief Compare two colours channel by channel.
+         * @param other The colour to compare against.
+         * @return True when every channel matches.
+         */
+        [[nodiscard]] bool operator==(const Color &other) const = default;
     };
 
 } // namespace antwika::gfx

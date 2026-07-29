@@ -1,9 +1,15 @@
 find_package(GTest REQUIRED)
 
+add_subdirectory(mocks)
+
 add_executable(antwika_gfx_tests
+    ColorTest.cpp
     NullBackendTest.cpp
     NullRendererTest.cpp
     NullWindowTest.cpp
+    PointTest.cpp
+    RectTest.cpp
+    SizeTest.cpp
 )
 
 target_include_directories(antwika_gfx_tests
