@@ -6,6 +6,7 @@
 #include <fstream>
 #include <string>
 #include <string_view>
+#include <system_error>
 #include <vector>
 
 #include "antwika/replay/ReplayCli.hpp"
@@ -32,7 +33,11 @@ namespace
 
         ~ScratchFile()
         {
-            std::filesystem::remove(path);
+            // The error_code overload, not the throwing one.
+            // A destructor is implicitly noexcept.
+            // A throwing removal would take the whole binary down.
+            std::error_code ignored;
+            std::filesystem::remove(path, ignored);
         }
 
         ScratchFile(const ScratchFile &) = delete;
