@@ -12,6 +12,7 @@ add_executable(antwika_gfx_tests
     PointTest.cpp
     RectTest.cpp
     SizeTest.cpp
+    WindowIdTest.cpp
 )
 
 target_include_directories(antwika_gfx_tests

@@ -20,6 +20,7 @@ using antwika::gfx::Resized;
 using antwika::gfx::Size;
 using antwika::gfx::WindowDesc;
 using antwika::gfx::WindowEvent;
+using antwika::gfx::WindowId;
 using antwika::gfx::mocks::MockGfxBackend;
 using antwika::gfx::mocks::MockRenderer;
 using antwika::gfx::mocks::MockWindow;
@@ -42,11 +43,15 @@ namespace
         NiceMock<MockRenderer> renderer;
         MockWindow *window = nullptr;
 
+        static constexpr WindowId kOurWindow{1};
+        static constexpr WindowId kSomeoneElsesWindow{99};
+
         void expectOneWindow(bool open)
         {
             auto owned = std::make_unique<NiceMock<MockWindow>>();
             window = owned.get();
 
+            ON_CALL(*window, id()).WillByDefault(Return(kOurWindow));
             ON_CALL(*window, isOpen()).WillByDefault(Return(open));
             ON_CALL(*window, renderer()).WillByDefault(ReturnRef(renderer));
             ON_CALL(*window, size())
@@ -82,7 +87,9 @@ TEST(DemoLoopTest, Run_ClosesTheWindowWhenTheBackendReportsACloseRequest)
     fixture.expectOneWindow(false);
 
     EXPECT_CALL(fixture.backend, pollEvent())
-        .WillOnce(Return(WindowEvent{CloseRequested{}}))
+        .WillOnce(Return(WindowEvent{
+            .window = DemoFixture::kOurWindow,
+            .payload = CloseRequested{}}))
         .WillRepeatedly(Return(std::nullopt));
 
     EXPECT_CALL(fixture.renderer, present()).Times(0);
@@ -103,14 +110,37 @@ TEST(DemoLoopTest, Run_KeepsDrawingThroughEventsThatAreNotCloseRequests)
     fixture.expectOneWindow(true);
 
     EXPECT_CALL(fixture.backend, pollEvent())
-        .WillOnce(Return(
-            WindowEvent{Resized{.size = {.width = 700, .height = 400}}}))
+        .WillOnce(Return(WindowEvent{
+            .window = DemoFixture::kOurWindow,
+            .payload = Resized{.size = {.width = 700, .height = 400}}}))
         .WillRepeatedly(Return(std::nullopt));
 
     EXPECT_CALL(fixture.renderer, present()).Times(1);
 
     const DemoScene scene;
     DemoLoop loop(fixture.backend, scene);
+
+    loop.run(WindowDesc{.title = "Antwika"}, 1);
+}
+
+TEST(DemoLoopTest, Run_IgnoresACloseRequestForSomebodyElsesWindow)
+{
+    DemoFixture fixture;
+    fixture.expectOneWindow(true);
+
+    EXPECT_CALL(fixture.backend, pollEvent())
+        .WillOnce(Return(WindowEvent{
+            .window = DemoFixture::kSomeoneElsesWindow,
+            .payload = CloseRequested{}}))
+        .WillRepeatedly(Return(std::nullopt));
+
+    EXPECT_CALL(fixture.renderer, present()).Times(1);
+
+    const DemoScene scene;
+    DemoLoop loop(fixture.backend, scene);
+
+    // Only the one on the way out, never one caused by that event.
+    EXPECT_CALL(*fixture.window, close()).Times(1);
 
     loop.run(WindowDesc{.title = "Antwika"}, 1);
 }

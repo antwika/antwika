@@ -5,6 +5,7 @@
 
 #include "antwika/gfx/IRenderer.hpp"
 #include "antwika/gfx/Size.hpp"
+#include "antwika/gfx/WindowId.hpp"
 
 namespace antwika::gfx
 {
@@ -19,6 +20,13 @@ namespace antwika::gfx
     {
     public:
         virtual ~IWindow() = default;
+
+        /**
+         * @brief Get this window's id, for matching events against it.
+         * @return An id distinct from every other live window of the same
+         * backend, and never kNullWindowId.
+         */
+        [[nodiscard]] virtual WindowId id() const = 0;
 
         /**
          * @brief Whether this window is still open.

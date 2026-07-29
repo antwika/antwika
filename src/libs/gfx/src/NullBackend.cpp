@@ -33,7 +33,10 @@ namespace antwika::gfx
 
         logger.log(Level::Debug, "gfx.null: created window");
 
-        return std::make_unique<detail::NullWindow>(logger, desc);
+        const WindowId id{nextWindowId};
+        ++nextWindowId;
+
+        return std::make_unique<detail::NullWindow>(logger, id, desc);
     }
 
     std::optional<WindowEvent> NullBackend::pollEvent()

@@ -9,6 +9,7 @@
 #include "antwika/gfx/IWindow.hpp"
 #include "antwika/gfx/Size.hpp"
 #include "antwika/gfx/WindowDesc.hpp"
+#include "antwika/gfx/WindowId.hpp"
 
 #include "NullRenderer.hpp"
 
@@ -27,15 +28,22 @@ namespace antwika::gfx::detail
         /**
          * @brief Construct the window.
          * @param logger Receives this window's diagnostics.
+         * @param id The id the backend assigned to this window.
          * @param desc The requested title and size.
          */
-        NullWindow(ILogger &logger, const WindowDesc &desc);
+        NullWindow(ILogger &logger, WindowId id, const WindowDesc &desc);
 
         NullWindow(const NullWindow &) = delete;
         NullWindow(NullWindow &&) = delete;
 
         NullWindow &operator=(const NullWindow &) = delete;
         NullWindow &operator=(NullWindow &&) = delete;
+
+        /**
+         * @brief Get this window's id.
+         * @return The id the backend assigned at creation.
+         */
+        [[nodiscard]] WindowId id() const override;
 
         /**
          * @brief Whether this window is still open.
@@ -76,6 +84,7 @@ namespace antwika::gfx::detail
     private:
         ILogger &logger;
         NullRenderer nullRenderer;
+        WindowId windowId;
         std::string windowTitle;
         Size windowSize;
         bool open = true;

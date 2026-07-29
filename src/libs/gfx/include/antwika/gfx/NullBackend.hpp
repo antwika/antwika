@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstdint>
 #include <memory>
 #include <optional>
 #include <string_view>
@@ -10,6 +11,7 @@
 #include "antwika/gfx/IWindow.hpp"
 #include "antwika/gfx/WindowDesc.hpp"
 #include "antwika/gfx/WindowEvent.hpp"
+#include "antwika/gfx/WindowId.hpp"
 
 namespace antwika::gfx
 {
@@ -67,6 +69,7 @@ namespace antwika::gfx
 
     private:
         ILogger &logger;
+        std::uint64_t nextWindowId = 1;
     };
 
 } // namespace antwika::gfx

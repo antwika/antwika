@@ -9,6 +9,7 @@
 #include "NullWindow.hpp"
 
 using antwika::gfx::WindowDesc;
+using antwika::gfx::WindowId;
 using antwika::gfx::detail::NullWindow;
 using antwika::log::Level;
 using antwika::log::mocks::MockLogger;
@@ -16,6 +17,8 @@ using ::testing::NiceMock;
 
 namespace
 {
+    constexpr WindowId kWindowId{7};
+
     WindowDesc demoDesc()
     {
         return WindowDesc{
@@ -27,15 +30,23 @@ namespace
 TEST(NullWindowTest, IsOpen_IsTrueForANewWindow)
 {
     NiceMock<MockLogger> logger;
-    NullWindow window(logger, demoDesc());
+    NullWindow window(logger, kWindowId, demoDesc());
 
     EXPECT_TRUE(window.isOpen());
+}
+
+TEST(NullWindowTest, Id_IsTheIdTheBackendAssigned)
+{
+    NiceMock<MockLogger> logger;
+    NullWindow window(logger, kWindowId, demoDesc());
+
+    EXPECT_EQ(window.id(), kWindowId);
 }
 
 TEST(NullWindowTest, Title_IsTheRequestedTitle)
 {
     NiceMock<MockLogger> logger;
-    NullWindow window(logger, demoDesc());
+    NullWindow window(logger, kWindowId, demoDesc());
 
     EXPECT_EQ(window.title(), "Antwika");
 }
@@ -43,7 +54,7 @@ TEST(NullWindowTest, Title_IsTheRequestedTitle)
 TEST(NullWindowTest, Size_IsTheRequestedSize)
 {
     NiceMock<MockLogger> logger;
-    NullWindow window(logger, demoDesc());
+    NullWindow window(logger, kWindowId, demoDesc());
 
     EXPECT_EQ(window.size().width, 640u);
     EXPECT_EQ(window.size().height, 480u);
@@ -52,7 +63,7 @@ TEST(NullWindowTest, Size_IsTheRequestedSize)
 TEST(NullWindowTest, SetTitle_ReplacesTheTitle)
 {
     NiceMock<MockLogger> logger;
-    NullWindow window(logger, demoDesc());
+    NullWindow window(logger, kWindowId, demoDesc());
 
     window.setTitle("Antwika Life");
 
@@ -62,7 +73,7 @@ TEST(NullWindowTest, SetTitle_ReplacesTheTitle)
 TEST(NullWindowTest, Renderer_ReturnsTheSameRendererEveryCall)
 {
     NiceMock<MockLogger> logger;
-    NullWindow window(logger, demoDesc());
+    NullWindow window(logger, kWindowId, demoDesc());
 
     EXPECT_EQ(&window.renderer(), &window.renderer());
 }
@@ -70,7 +81,7 @@ TEST(NullWindowTest, Renderer_ReturnsTheSameRendererEveryCall)
 TEST(NullWindowTest, Close_MakesTheWindowClosed)
 {
     NiceMock<MockLogger> logger;
-    NullWindow window(logger, demoDesc());
+    NullWindow window(logger, kWindowId, demoDesc());
 
     window.close();
 
@@ -80,7 +91,7 @@ TEST(NullWindowTest, Close_MakesTheWindowClosed)
 TEST(NullWindowTest, Close_LogsThatTheWindowWasClosed)
 {
     MockLogger logger;
-    NullWindow window(logger, demoDesc());
+    NullWindow window(logger, kWindowId, demoDesc());
 
     EXPECT_CALL(logger, log(Level::Debug, "gfx.null: closed window"));
 
@@ -90,7 +101,7 @@ TEST(NullWindowTest, Close_LogsThatTheWindowWasClosed)
 TEST(NullWindowTest, Close_IsIdempotentAndOnlyLogsOnce)
 {
     MockLogger logger;
-    NullWindow window(logger, demoDesc());
+    NullWindow window(logger, kWindowId, demoDesc());
 
     EXPECT_CALL(logger, log(Level::Debug, "gfx.null: closed window")).Times(1);
 

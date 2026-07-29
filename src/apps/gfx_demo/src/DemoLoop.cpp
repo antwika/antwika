@@ -4,6 +4,7 @@
 
 #include <antwika/gfx/IWindow.hpp>
 #include <antwika/gfx/WindowEvent.hpp>
+#include <antwika/gfx/WindowId.hpp>
 
 namespace antwika::gfx_demo
 {
@@ -23,7 +24,14 @@ namespace antwika::gfx_demo
         {
             while (const auto event = backend.pollEvent())
             {
-                if (std::holds_alternative<CloseRequested>(*event))
+                // The backend pumps one queue for all its windows.
+                // An event for somebody else's window is not ours.
+                if (event->window != window->id())
+                {
+                    continue;
+                }
+
+                if (std::holds_alternative<CloseRequested>(event->payload))
                 {
                     window->close();
                 }

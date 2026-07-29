@@ -23,6 +23,26 @@ ctest --test-dir build --output-on-failure
 
 Or in VS Code: `Ctrl+Shift+B` runs the same sequence as the default build task (see [`.vscode/tasks.json`](.vscode/tasks.json)).
 
+**Choosing a graphics backend** (default `null`, which needs no graphics framework and draws nothing):
+
+```sh
+conan install . -of build-sdl3 -o gfx_backend=sdl3 \
+  -c tools.cmake.cmake_layout:build_folder_vars="['options.gfx_backend']" \
+  -pr:b=./profiles/build/${CONAN_PROFILE} \
+  -pr:h=./profiles/host/${CONAN_PROFILE} \
+  --build=missing -s build_type=Release --lockfile=conan-sdl3.lock
+
+cmake --preset conan-gfx_backend_sdl3-release
+cmake --build build-sdl3 -j24
+ctest --test-dir build-sdl3 --output-on-failure
+```
+
+The Conan option sets the `ANTWIKA_GFX_BACKEND` CMake variable, which names a directory under [`backends/`](backends/); an unknown value fails at configure time with the list of ones that exist.
+The `build_folder_vars` conf is what puts the backend in the preset name, so the sdl3 configuration does not collide with the default build's `conan-release` preset.
+Each configuration has its own lockfile, because selecting a backend changes the dependency graph.
+
+Set `SDL_VIDEODRIVER=dummy` to run the SDL build with no display, which is how the conformance suite is exercised without a desktop session.
+
 **Run a single test binary / test case:**
 
 ```sh

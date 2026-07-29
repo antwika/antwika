@@ -11,7 +11,14 @@ from pathlib import Path
 DEFAULT_ROOT = Path(__file__).resolve().parent.parent
 
 MARKDOWN_GLOBS = ("README.md", "blog/*.md")
-CPP_GLOBS = ("src/**/*.cpp", "src/**/*.hpp")
+# Backends live outside src/ and so outside the coverage gate.
+# The style rules still apply to them.
+CPP_GLOBS = (
+    "src/**/*.cpp",
+    "src/**/*.hpp",
+    "backends/**/*.cpp",
+    "backends/**/*.hpp",
+)
 PYTHON_GLOBS = ("scripts/*.py", "scripts/tests/*.py")
 
 ABBREVIATIONS = ("e.g.", "i.e.", "etc.", "vs.", "cf.", "approx.")

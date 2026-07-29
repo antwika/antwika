@@ -12,6 +12,7 @@
 #include <antwika/gfx/IWindow.hpp>
 #include <antwika/gfx/Rect.hpp>
 #include <antwika/gfx/WindowDesc.hpp>
+#include <antwika/gfx/WindowId.hpp>
 #include <antwika/log/ILogger.hpp>
 #include <antwika/log/mocks/MockLogger.hpp>
 
@@ -78,6 +79,21 @@ namespace antwika::gfx::conformance
 
         ASSERT_NE(window, nullptr);
         EXPECT_TRUE(window->isOpen());
+    }
+
+    TYPED_TEST_P(GfxBackendConformance, CreateWindow_GivesTheWindowARealId)
+    {
+        const auto window = this->backend->createWindow(this->demoDesc());
+
+        EXPECT_NE(window->id(), kNullWindowId);
+    }
+
+    TYPED_TEST_P(GfxBackendConformance, CreateWindow_GivesEachWindowItsOwnId)
+    {
+        const auto first = this->backend->createWindow(this->demoDesc());
+        const auto second = this->backend->createWindow(this->demoDesc());
+
+        EXPECT_NE(first->id(), second->id());
     }
 
     TYPED_TEST_P(GfxBackendConformance, CreateWindow_ReportsTheRequestedTitle)
@@ -193,6 +209,8 @@ namespace antwika::gfx::conformance
         GfxBackendConformance,
         Name_IsNotEmpty,
         CreateWindow_ReturnsAnOpenWindow,
+        CreateWindow_GivesTheWindowARealId,
+        CreateWindow_GivesEachWindowItsOwnId,
         CreateWindow_ReportsTheRequestedTitle,
         CreateWindow_ReportsANonZeroSize,
         CreateWindow_ThrowsWhenWidthIsZero,

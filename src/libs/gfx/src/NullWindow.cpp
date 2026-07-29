@@ -7,12 +7,18 @@ namespace antwika::gfx::detail
 
     using antwika::log::Level;
 
-    NullWindow::NullWindow(ILogger &logger, const WindowDesc &desc)
+    NullWindow::NullWindow(ILogger &logger, WindowId id, const WindowDesc &desc)
         : logger(logger),
           nullRenderer(logger),
+          windowId(id),
           windowTitle(desc.title),
           windowSize(desc.size)
     {
+    }
+
+    WindowId NullWindow::id() const
+    {
+        return windowId;
     }
 
     bool NullWindow::isOpen() const

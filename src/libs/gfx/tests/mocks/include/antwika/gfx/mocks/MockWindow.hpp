@@ -8,6 +8,7 @@
 #include <antwika/gfx/IRenderer.hpp>
 #include <antwika/gfx/IWindow.hpp>
 #include <antwika/gfx/Size.hpp>
+#include <antwika/gfx/WindowId.hpp>
 
 namespace antwika::gfx::mocks
 {
@@ -20,6 +21,7 @@ namespace antwika::gfx::mocks
     class MockWindow : public IWindow
     {
     public:
+        MOCK_METHOD(WindowId, id, (), (const, override));
         MOCK_METHOD(bool, isOpen, (), (const, override));
         MOCK_METHOD(std::string, title, (), (const, override));
         MOCK_METHOD(Size, size, (), (const, override));
