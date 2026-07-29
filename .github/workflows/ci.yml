@@ -12,7 +12,7 @@ jobs:
   determine-version:
     name: Determine version
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 1
 
     outputs:
       version: ${{ steps.determine-version.outputs.version }}
