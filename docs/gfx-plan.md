@@ -236,9 +236,10 @@ Two consequences to plan for:
 - The framework name appears in `conanfile.py` as a build option value.
   That is build configuration, not a source dependency, and no `src/` file
   is affected.
-  If even that is unwanted, the alternative is a separate
-  `backends/sdl3/conanfile.py` and a second `conan install`, at the cost of
-  a two-step build for backend developers.
+  This is accepted rather than worked around: a per-backend
+  `backends/sdl3/conanfile.py` would keep the name out of the root file, but
+  costs a second `conan install` for every backend developer, which is a
+  poor trade for one build option value.
 
 ## Coverage: the main constraint
 
@@ -266,6 +267,37 @@ The style checkers glob `src/**` and would silently skip `backends/`, so
 `backends/**/*.hpp` added to their `CPP_GLOBS`, with their own script tests
 updated to match.
 Style still applies to backend code; only the coverage gate does not.
+
+## Toolchain and CI integration
+
+Three pieces of existing plumbing need extending, none of them optional.
+
+**The CI executable check.** `.github/workflows/build.yml` verifies a
+hardcoded list of expected binaries after every build, with a shorter
+apps-only list on MinGW. `antwika_gfx_tests` and `antwika_gfx_demo` must be
+added to the main list, and `antwika_gfx_demo` to the MinGW one.
+
+**MinGW runtime DLLs.** Each app copies `libgcc_s_seh-1.dll`,
+`libstdc++-6.dll` and `libwinpthread-1.dll` next to its binary in a
+`POST_BUILD` step, and `apps/gfx_demo` needs the same block. A framework
+backend adds its own runtime DLL (`SDL3.dll`, ...) to that copy list, which
+is backend-specific and so belongs in `backends/<name>/CMakeLists.txt`
+rather than in the app.
+
+**Install rules.** Every module mirrors the same `ARCHIVE`/`LIBRARY`/
+`RUNTIME` destinations, header directory, and `antwika::`-namespaced export
+set, and `antwika::gfx` follows that pattern unchanged. Whether backends
+install at all is a genuine question: exporting `antwika_gfx_backend` from
+an install tree pins consumers to whichever backend that tree was built
+with. The recommendation is to install them anyway and document that an
+installed Antwika is backend-specific.
+
+**CI stays on the null backend**, because nothing else is possible without a
+display or the framework packages. The cost is that backend code can bitrot
+silently between the phases that touch it. Once Phase 4 lands, a cheap
+mitigation is a configure-and-build-only job with `-o gfx_backend=sdl3` that
+never runs the binary — it catches compile breakage without needing a
+display.
 
 ## Verifying backends: a conformance suite
 
