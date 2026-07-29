@@ -29,4 +29,4 @@ namespace antwika::log
             std::string_view message) const = 0;
     };
 
-} // antwika::log
+} // namespace antwika::log

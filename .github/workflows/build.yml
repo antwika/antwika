@@ -31,6 +31,7 @@ jobs:
   build-base:
     name: Base image
     runs-on: ubuntu-latest
+    timeout-minutes: 20
 
     steps:
       - name: Checkout
@@ -54,6 +55,8 @@ jobs:
           context: .
           file: .devcontainer/base/Dockerfile
           push: true
+          cache-from: type=gha,scope=base
+          cache-to: type=gha,mode=max,scope=base
           tags: |
             ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}-base:${{ inputs.version }}
             ${{ inputs.latest && format('{0}/{1}-base:latest', env.REGISTRY, env.IMAGE_PREFIX) || '' }}
@@ -62,6 +65,7 @@ jobs:
     name: ${{ matrix.name }} image
     needs: build-base
     runs-on: ubuntu-latest
+    timeout-minutes: 20
 
     strategy:
       fail-fast: false
@@ -99,6 +103,8 @@ jobs:
           context: .
           file: ${{ matrix.dockerfile }}
           push: true
+          cache-from: type=gha,scope=${{ matrix.image }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.image }}
           build-args: |
             BASE_VERSION=${{ inputs.version }}
           tags: |
@@ -109,6 +115,7 @@ jobs:
     name: ${{ matrix.name }} app(s)
     needs: images
     runs-on: ubuntu-latest
+    timeout-minutes: 45
 
     strategy:
       fail-fast: false
@@ -168,6 +175,14 @@ jobs:
       - name: Check line length
         shell: bash
         run: python3 scripts/check_line_length.py
+
+      - name: Cache Conan packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.conan2
+          key: conan-${{ matrix.image }}-${{ hashFiles('conanfile.py', 'conan.lock', format('profiles/build/{0}', matrix.conan_profile), format('profiles/host/{0}', matrix.conan_profile)) }}
+          restore-keys: |
+            conan-${{ matrix.image }}-
 
       - name: Install dependencies
         shell: bash
@@ -277,8 +292,12 @@ jobs:
     needs: apps
     if: inputs.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     permissions:
       contents: write
+    concurrency:
+      group: coverage-badges-publish
+      cancel-in-progress: false
 
     steps:
       - name: Checkout

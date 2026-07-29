@@ -17,4 +17,4 @@ namespace antwika::log
             message);
     }
 
-} // antwika::log
+} // namespace antwika::log
