@@ -263,6 +263,7 @@ jobs:
             "antwika_event_tests"
             "antwika_game"
             "antwika_game_tests"
+            "antwika_gfx_tests"
             "antwika_life"
             "antwika_life_tests"
             "antwika_log_tests"
