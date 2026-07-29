@@ -48,7 +48,7 @@ first:
 ```sh
 rm -rf build-coverage
 cmake --preset conan-coverage
-cmake --build build-coverage
+cmake --build build-coverage -j24
 ctest --test-dir build-coverage
 ```
 

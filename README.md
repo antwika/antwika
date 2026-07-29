@@ -137,7 +137,7 @@ Report line coverage with `gcovr`:
 
 ```sh
 cmake --preset conan-coverage
-cmake --build build-coverage
+cmake --build build-coverage -j24
 ctest --test-dir build-coverage
 gcovr --root . --filter 'src/.*' --exclude '.*/tests/.*' --print-summary build-coverage
 ```

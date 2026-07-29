@@ -28,7 +28,7 @@
         {
             "label": "CMake build",
             "type": "shell",
-            "command": "cmake --build build",
+            "command": "cmake --build build -j24",
             "options": {
                 "cwd": "${workspaceFolder}"
             }
@@ -36,7 +36,7 @@
         {
             "label": "CMake build (coverage)",
             "type": "shell",
-            "command": "cmake --build build-coverage",
+            "command": "cmake --build build-coverage -j24",
             "options": {
                 "cwd": "${workspaceFolder}"
             }

@@ -186,7 +186,7 @@ jobs:
 
       - name: Build
         shell: bash
-        run: cmake --build "$BUILD_DIR"
+        run: cmake --build "$BUILD_DIR" -j24
 
       - name: Test
         shell: bash
