@@ -48,6 +48,7 @@ namespace antwika::ecs
          * @brief Construct an empty world.
          * @param logger Forwarded to the internal EntityManager; used to
          * log a fatal message if the entity index space is exhausted.
+         * Must outlive this object.
          * @param maxEntities Highest entity value ever handed out.
          * Defaults to the full range of the underlying type.
          */
@@ -67,6 +68,7 @@ namespace antwika::ecs
         /**
          * @brief Allocate a new entity, usable immediately.
          * @return A newly-allocated Entity.
+         * @throws EcsError if the entity index space is exhausted.
          */
         [[nodiscard]] Entity create();
 

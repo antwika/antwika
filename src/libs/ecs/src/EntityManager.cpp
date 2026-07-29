@@ -1,7 +1,5 @@
 #include "EntityManager.hpp"
 
-#include <cstdlib>
-
 #include <antwika/log/Level.hpp>
 
 #include "antwika/ecs/EcsError.hpp"
@@ -24,8 +22,8 @@ namespace antwika::ecs::detail
             logger.log(
                 Level::Fatal,
                 "EntityManager: entity index space exhausted");
-            std::exit(EXIT_FAILURE); // GCOVR_EXCL_LINE
-            // Forked-child death-test coverage isn't reliably seen by gcovr.
+            throw EcsError(
+                "EntityManager: entity index space exhausted");
         }
 
         const auto value = nextValue;

@@ -1,17 +1,9 @@
 #include "EntityManager.hpp"
 
-#include <chrono>
-#include <iostream>
-
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
-#include <antwika/log/Logger.hpp>
-#include <antwika/log/MinimumLevelLogPolicy.hpp>
-#include <antwika/log/PlainFormatter.hpp>
-#include <antwika/log/StreamAppender.hpp>
 #include <antwika/log/mocks/MockLogger.hpp>
-#include <antwika/time/fakes/FakeClock.hpp>
 
 #include "antwika/ecs/EcsError.hpp"
 
@@ -21,33 +13,8 @@ using antwika::ecs::kNullEntity;
 using antwika::ecs::rawValue;
 using antwika::ecs::detail::EntityManager;
 using antwika::log::Level;
-using antwika::log::Logger;
-using antwika::log::MinimumLevelLogPolicy;
-using antwika::log::PlainFormatter;
-using antwika::log::StreamAppender;
 using antwika::log::mocks::MockLogger;
-using antwika::time::fakes::FakeClock;
 using ::testing::NiceMock;
-
-namespace
-{
-
-    // Drives an EntityManager past its ceiling, logging via a real Logger.
-    // The death test below checks the fatal message text captured this way.
-    void createUntilExhausted()
-    {
-        PlainFormatter formatter;
-        MinimumLevelLogPolicy policy(Level::Trace);
-        FakeClock clock(std::chrono::system_clock::time_point{});
-        StreamAppender appender(std::cerr);
-        Logger logger(formatter, policy, clock, appender);
-
-        EntityManager manager(logger, /*maxEntities=*/1);
-        static_cast<void>(manager.create());
-        static_cast<void>(manager.create());
-    }
-
-} // namespace
 
 TEST(EntityManagerTest, CreateReturnsIncreasingValuesStartingAtOne)
 {
@@ -113,7 +80,27 @@ TEST(EntityManagerTest, KNullEntityIsNeverAlive)
     EXPECT_FALSE(manager.alive(kNullEntity));
 }
 
-TEST(EntityManagerDeathTest, ExhaustingIndexSpaceLogsFatalAndTerminates)
+TEST(EntityManagerTest, ExhaustingIndexSpaceLogsFatalAndThrows)
 {
-    EXPECT_DEATH(createUntilExhausted(), "exhausted");
+    MockLogger logger;
+    EXPECT_CALL(
+        logger,
+        log(Level::Fatal, "EntityManager: entity index space exhausted"));
+
+    EntityManager manager(logger, /*maxEntities=*/1);
+    static_cast<void>(manager.create());
+
+    EXPECT_THROW(static_cast<void>(manager.create()), EcsError);
+}
+
+TEST(EntityManagerTest, ExhaustionLeavesTheManagerUsableForQueries)
+{
+    NiceMock<MockLogger> logger;
+    EntityManager manager(logger, /*maxEntities=*/1);
+    const auto only = manager.create();
+
+    EXPECT_THROW(static_cast<void>(manager.create()), EcsError);
+
+    // Throwing rather than exiting leaves the caller a live object.
+    EXPECT_TRUE(manager.alive(only));
 }
