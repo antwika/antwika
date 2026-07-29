@@ -255,6 +255,41 @@ TEST(TaskSubmissionSinkTest, PriorityAboveUInt8RangeThrows)
         TaskSubmissionError);
 }
 
+TEST(TaskSubmissionSinkTest, DuplicateTaskIdThrows)
+{
+    NiceMock<MockLogger> logger;
+    World world(logger);
+    const auto worker = world.create();
+    world.add<Worker>(worker, Worker{});
+    world.commit();
+
+    WorkerLookup lookup(world, {worker});
+    Scheduler jobScheduler;
+    SystemScheduler systemScheduler;
+    static_cast<void>(systemScheduler.createPhase("dispatch"));
+    TaskRegistry registry;
+    TaskSubmissionSink sink(
+        world, systemScheduler, jobScheduler, lookup, registry);
+
+    sink.handle(TimedEvent{
+        .tick = 0,
+        .event = Event{
+            .name = kTaskSubmit,
+            .payload = "1,1,3,Alpha",
+        },
+    });
+
+    EXPECT_THROW(
+        sink.handle(TimedEvent{
+            .tick = 0,
+            .event = Event{
+                .name = kTaskSubmit,
+                .payload = "1,1,3,AlphaAgain",
+            },
+        }),
+        TaskSubmissionError);
+}
+
 TEST(TaskSubmissionSinkTest, UnresolvableDependsOnIdThrows)
 {
     NiceMock<MockLogger> logger;

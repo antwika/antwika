@@ -25,6 +25,15 @@ namespace antwika::sudoku
             }
             return result;
         } // GCOVR_EXCL_LINE
+
+        void checkInBounds(std::size_t row, std::size_t col)
+        {
+            if (row >= Board::kSize || col >= Board::kSize)
+            {
+                throw BoardFormatError(
+                    "Sudoku board row/col index must be in [0, 8]");
+            }
+        }
     } // namespace
 
     Board Board::parse(std::string_view text)
@@ -72,6 +81,7 @@ namespace antwika::sudoku
 
     std::optional<int> Board::at(std::size_t row, std::size_t col) const
     {
+        checkInBounds(row, col);
         const int digit = cells[row * kSize + col];
         if (digit == 0)
         {
@@ -82,6 +92,12 @@ namespace antwika::sudoku
 
     void Board::set(std::size_t row, std::size_t col, int digit)
     {
+        checkInBounds(row, col);
+        if (digit < 0 || digit > 9)
+        {
+            throw BoardFormatError(
+                "Sudoku board digit must be 0 (blank) or 1-9");
+        }
         cells[row * kSize + col] = digit;
     }
 

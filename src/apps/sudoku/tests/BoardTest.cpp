@@ -91,3 +91,41 @@ TEST(BoardTest, SetWritesACell)
     board.set(4, 4, 7);
     EXPECT_EQ(board.at(4, 4), 7);
 }
+
+TEST(BoardTest, AtWithOutOfRangeRowThrows)
+{
+    const Board board = Board::parse(kPuzzle);
+    EXPECT_THROW(
+        { [[maybe_unused]] auto d = board.at(9, 0); }, BoardFormatError);
+}
+
+TEST(BoardTest, AtWithOutOfRangeColThrows)
+{
+    const Board board = Board::parse(kPuzzle);
+    EXPECT_THROW(
+        { [[maybe_unused]] auto d = board.at(0, 9); }, BoardFormatError);
+}
+
+TEST(BoardTest, SetWithOutOfRangeRowThrows)
+{
+    Board board;
+    EXPECT_THROW(board.set(9, 0, 5), BoardFormatError);
+}
+
+TEST(BoardTest, SetWithOutOfRangeColThrows)
+{
+    Board board;
+    EXPECT_THROW(board.set(0, 9, 5), BoardFormatError);
+}
+
+TEST(BoardTest, SetWithDigitAboveNineThrows)
+{
+    Board board;
+    EXPECT_THROW(board.set(0, 0, 10), BoardFormatError);
+}
+
+TEST(BoardTest, SetWithNegativeDigitThrows)
+{
+    Board board;
+    EXPECT_THROW(board.set(0, 0, -1), BoardFormatError);
+}

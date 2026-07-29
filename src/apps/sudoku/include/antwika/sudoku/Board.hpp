@@ -44,6 +44,7 @@ namespace antwika::sudoku
          * @param col Column index, 0-8.
          * @return The digit 1-9 at (row, col), or std::nullopt if
          * blank.
+         * @throws BoardFormatError if row or col is out of [0, 8].
          */
         [[nodiscard]] std::optional<int> at(
             std::size_t row, std::size_t col) const;
@@ -53,6 +54,8 @@ namespace antwika::sudoku
          * @param row Row index, 0-8.
          * @param col Column index, 0-8.
          * @param digit 0 for blank, or a digit 1-9.
+         * @throws BoardFormatError if row or col is out of [0, 8], or
+         * digit is outside [0, 9].
          */
         void set(std::size_t row, std::size_t col, int digit);
 

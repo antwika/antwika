@@ -11,12 +11,22 @@ namespace antwika::wfc
     void CompatibilityTable::set(
         std::size_t left, std::size_t right, bool isCompatible)
     {
+        // Mirrors Domain::remove/add: an out-of-range pair is ignored.
+        // That way a table smaller than a wave's alphabet fails safe.
+        if (left >= size || right >= size)
+        {
+            return;
+        }
         entries[left * size + right] = isCompatible;
     }
 
     bool CompatibilityTable::compatible(
         std::size_t left, std::size_t right) const
     {
+        if (left >= size || right >= size)
+        {
+            return false;
+        }
         return entries[left * size + right];
     }
 
