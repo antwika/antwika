@@ -290,6 +290,51 @@ TEST(TaskSubmissionSinkTest, DuplicateTaskIdThrows)
         TaskSubmissionError);
 }
 
+TEST(
+    TaskSubmissionSinkTest,
+    EmbeddedCommaInLabelIsMisparsedAsDependsOnIdKnownLimitation)
+{
+    // Known, documented limitation: the wire format has no escaping.
+    // A label containing a comma can look like a real dependsOnId.
+    // That happens once the fragment after it looks numeric.
+    // Task 42 below is unrelated to task 2's own dependencies.
+    // Its id is only chosen to match task 2's intended label text.
+    // This test locks in that accepted behavior rather than a fix.
+    // Fixing it would need a breaking wire-format change.
+    NiceMock<MockLogger> logger;
+    World world(logger);
+    const auto worker = world.create();
+    world.add<Worker>(worker, Worker{});
+    world.commit();
+
+    WorkerLookup lookup(world, {worker});
+    Scheduler jobScheduler;
+    SystemScheduler systemScheduler;
+    static_cast<void>(systemScheduler.createPhase("dispatch"));
+    TaskRegistry registry;
+    TaskSubmissionSink sink(
+        world, systemScheduler, jobScheduler, lookup, registry);
+
+    sink.handle(TimedEvent{
+        .tick = 0,
+        .event = Event{
+            .name = kTaskSubmit,
+            .payload = "42,1,5,First",
+        },
+    });
+    sink.handle(TimedEvent{
+        .tick = 0,
+        .event = Event{
+            .name = kTaskSubmit,
+            .payload = "2,1,3,Second,42",
+        },
+    });
+
+    EXPECT_EQ(
+        registry.allTasks()[1].dependsOn,
+        (std::optional<TaskDependency>{TaskDependency{42, "First"}}));
+}
+
 TEST(TaskSubmissionSinkTest, UnresolvableDependsOnIdThrows)
 {
     NiceMock<MockLogger> logger;

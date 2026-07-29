@@ -58,3 +58,27 @@ TEST(AdjacencyConstraintTest, NoCompatiblePartnerFails)
 
     EXPECT_FALSE(constraint.prune(wave));
 }
+
+TEST(
+    AdjacencyConstraintTest,
+    TableSmallerThanWaveAlphabetPrunesOutOfRangeValuesSafely)
+{
+    // A table smaller than the wave's alphabet is a caller mistake.
+    // CompatibilityTable can't detect that on its own.
+    // Values 2 and 3 fall outside this 2-symbol table.
+    // compatible() now treats such an out-of-range pair as incompatible.
+    // That prunes it like any other value with no compatible partner.
+    CompatibilityTable table(2);
+    AdjacencyConstraint constraint(0, 1, table);
+    std::vector<Domain> wave{Domain(4), Domain(4)};
+
+    EXPECT_TRUE(constraint.prune(wave));
+    EXPECT_FALSE(wave[0].contains(2));
+    EXPECT_FALSE(wave[0].contains(3));
+    EXPECT_TRUE(wave[0].contains(0));
+    EXPECT_TRUE(wave[0].contains(1));
+    EXPECT_FALSE(wave[1].contains(2));
+    EXPECT_FALSE(wave[1].contains(3));
+    EXPECT_TRUE(wave[1].contains(0));
+    EXPECT_TRUE(wave[1].contains(1));
+}

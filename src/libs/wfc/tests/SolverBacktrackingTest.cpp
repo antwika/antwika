@@ -5,10 +5,16 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
+#include <antwika/wfc/AdjacencyConstraint.hpp>
+#include <antwika/wfc/AllDifferentConstraint.hpp>
+#include <antwika/wfc/CompatibilityTable.hpp>
 #include <antwika/wfc/Domain.hpp>
 #include <antwika/wfc/SolveResult.hpp>
 #include <antwika/wfc/mocks/MockConstraint.hpp>
 
+using antwika::wfc::AdjacencyConstraint;
+using antwika::wfc::AllDifferentConstraint;
+using antwika::wfc::CompatibilityTable;
 using antwika::wfc::Domain;
 using antwika::wfc::SolveOutcome;
 using antwika::wfc::Solver;
@@ -96,4 +102,35 @@ TEST(SolverBacktrackingTest, ExhaustingAnInnerChoicePointPopsToAnOuterOne)
 
     EXPECT_EQ(result.outcome, SolveOutcome::Solved);
     EXPECT_EQ(result.assignment, (std::vector<std::size_t>{1, 0}));
+}
+
+TEST(
+    SolverBacktrackingTest,
+    FailingConstraintsPartialMutationsAreUndoneOnBacktrack)
+{
+    // Regression test for a real false-Unsatisfiable bug.
+    // AdjacencyConstraint::prune() removes candidates from one cell.
+    // Only afterwards does it discover the other cell went empty.
+    // An unrecorded removal can't be restored on a later backtrack.
+    // That would corrupt a sibling branch's domain.
+    // cell0 == 0 or 1 is a dead end that must be tried and abandoned.
+    // Only cell0 == 2 with cell1 == 0 satisfies both constraints.
+    std::vector<Domain> wave{Domain(3), Domain(3)};
+    wave[1].remove(2);
+    AllDifferentConstraint allDifferent({0, 1});
+
+    CompatibilityTable table(3);
+    table.set(0, 0, false);
+    table.set(0, 1, false);
+    table.set(0, 2, true);
+    table.set(1, 0, false);
+    table.set(1, 1, true);
+    table.set(1, 2, false);
+    AdjacencyConstraint adjacency(1, 0, table);
+
+    Solver solver(wave, {std::cref(allDifferent), std::cref(adjacency)});
+    const auto result = solver.solve();
+
+    EXPECT_EQ(result.outcome, SolveOutcome::Solved);
+    EXPECT_EQ(result.assignment, (std::vector<std::size_t>{2, 0}));
 }
