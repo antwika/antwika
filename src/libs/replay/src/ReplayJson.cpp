@@ -25,12 +25,12 @@ namespace antwika::replay
             schema["required"] =
                 {"magic", "version", "events"}; // GCOVR_EXCL_LINE
             schema["properties"]["magic"]["const"] =
-                std::string(detail::kJsonReplayMagic);
+                std::string(detail::kReplayMagic);
             schema["properties"]["version"]["const"] =
-                detail::kJsonReplayFormatVersion;
+                detail::kReplayFormatVersion;
             schema["properties"]["events"]["type"] = "array";
             schema["properties"]["events"]["items"] =
-                detail::timedEventShape();
+                detail::tickEventShape();
             return schema;
         }
 
@@ -62,8 +62,8 @@ namespace antwika::replay
     nlohmann::json replayToJson(const std::vector<TickEvent> &events)
     {
         nlohmann::json document;
-        document["magic"] = std::string(detail::kJsonReplayMagic);
-        document["version"] = detail::kJsonReplayFormatVersion;
+        document["magic"] = std::string(detail::kReplayMagic);
+        document["version"] = detail::kReplayFormatVersion;
         document["events"] = events;
         return document;
     } // GCOVR_EXCL_LINE

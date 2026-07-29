@@ -12,13 +12,13 @@ namespace antwika::replay
 
     /**
      * @brief Writes a sequence of TickEvent instances as a single,
-     * pretty-printed JSON document, readable by JsonReplayReader.
+     * pretty-printed JSON document, readable by ReplayReader.
      *
-     * A human-readable, diffable alternative to BinaryReplayWriter --
-     * useful for debugging and golden-file tests, at the cost of the
-     * name/payload UTF-8 restriction JSON text has.
+     * Human-readable and diffable -- useful for debugging and
+     * golden-file tests, at the cost of the name/payload UTF-8
+     * restriction JSON text has.
      */
-    class JsonReplayWriter final
+    class ReplayWriter final
     {
     public:
         /**

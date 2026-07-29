@@ -3,6 +3,7 @@
 #include <nlohmann/json-schema.hpp>
 
 #include <antwika/engine/Events.hpp>
+#include <antwika/replay/PayloadJson.hpp>
 
 #include "antwika/game/Events.hpp"
 #include "antwika/game/GameStateReducerError.hpp"
@@ -35,30 +36,11 @@ namespace antwika::game
 
         std::uint64_t parseAmount(const std::string &payload)
         {
-            nlohmann::json parsed;
-            try
-            {
-                parsed = nlohmann::json::parse(payload);
-            }
-            catch (const nlohmann::json::parse_error &) // GCOVR_EXCL_LINE
-            {
-                throw GameStateReducerError(
-                    "GameStateReducer: game.score_increment payload is "
-                    "not valid JSON");
-            }
-
-            try
-            {
-                scoreIncrementValidator().validate(parsed);
-            }
-            catch (const std::exception &error) // GCOVR_EXCL_LINE
-            {
-                throw GameStateReducerError(
-                    std::string(
-                        "GameStateReducer: game.score_increment payload "
-                        "failed schema validation: ") +
-                    error.what());
-            }
+            const auto parsed = antwika::replay::parseAndValidatePayload<
+                GameStateReducerError>(
+                payload,
+                scoreIncrementValidator(),
+                "GameStateReducer: game.score_increment payload");
             return parsed.at("amount").get<std::uint64_t>();
         }
     } // namespace

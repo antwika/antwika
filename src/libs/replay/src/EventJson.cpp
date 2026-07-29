@@ -42,7 +42,7 @@ namespace antwika::replay
     {
         nlohmann::json eventSchema()
         {
-            nlohmann::json schema = detail::timedEventShape();
+            nlohmann::json schema = detail::tickEventShape();
             schema["$schema"] = "http://json-schema.org/draft-07/schema#";
             schema["title"] = "antwika replay tick event";
             return schema;

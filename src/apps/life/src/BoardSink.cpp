@@ -6,6 +6,7 @@
 #include <nlohmann/json-schema.hpp>
 
 #include <antwika/engine/Events.hpp>
+#include <antwika/replay/PayloadJson.hpp>
 
 #include "antwika/life/BoardSinkError.hpp"
 #include "antwika/life/Cell.hpp"
@@ -58,30 +59,11 @@ namespace antwika::life
         }
         else if (event.event.name == events::kToggleCell)
         {
-            nlohmann::json parsed;
-            try
-            {
-                parsed = nlohmann::json::parse(event.event.payload);
-            }
-            catch (const nlohmann::json::parse_error &) // GCOVR_EXCL_LINE
-            {
-                throw BoardSinkError(
-                    "BoardSink: life.toggle_cell payload is not valid "
-                    "JSON");
-            }
-
-            try
-            {
-                toggleCellValidator().validate(parsed);
-            }
-            catch (const std::exception &error) // GCOVR_EXCL_LINE
-            {
-                throw BoardSinkError(
-                    std::string(
-                        "BoardSink: life.toggle_cell payload failed "
-                        "schema validation: ") +
-                    error.what());
-            }
+            const auto parsed =
+                antwika::replay::parseAndValidatePayload<BoardSinkError>(
+                    event.event.payload,
+                    toggleCellValidator(),
+                    "BoardSink: life.toggle_cell payload");
             const auto x = parsed.at("x").get<std::uint32_t>();
             const auto y = parsed.at("y").get<std::uint32_t>();
 

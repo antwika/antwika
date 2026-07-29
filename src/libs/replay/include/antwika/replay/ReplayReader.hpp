@@ -11,13 +11,13 @@ namespace antwika::replay
     using antwika::event::TickEvent;
 
     /**
-     * @brief Reads the format JsonReplayWriter produces.
+     * @brief Reads the format ReplayWriter produces.
      *
      * Throws ReplayFormatError on a malformed stream (see
      * ReplayFormatError.hpp): a stream that isn't valid JSON, or a
      * document that fails the replay-document schema.
      */
-    class JsonReplayReader final
+    class ReplayReader final
     {
     public:
         /**

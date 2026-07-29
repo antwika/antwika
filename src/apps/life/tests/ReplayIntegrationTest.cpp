@@ -10,11 +10,10 @@
 #include <antwika/log/MinimumLevelLogPolicy.hpp>
 #include <antwika/log/NullAppender.hpp>
 #include <antwika/log/PlainFormatter.hpp>
-#include <antwika/replay/BinaryEventCodec.hpp>
-#include <antwika/replay/BinaryReplayReader.hpp>
-#include <antwika/replay/BinaryReplayWriter.hpp>
 #include <antwika/replay/IReplaySource.hpp>
+#include <antwika/replay/ReplayReader.hpp>
 #include <antwika/replay/ReplaySource.hpp>
+#include <antwika/replay/ReplayWriter.hpp>
 #include <antwika/time/fakes/FakeClock.hpp>
 
 #include "antwika/life/Events.hpp"
@@ -28,11 +27,10 @@ using antwika::log::Level;
 using antwika::log::MinimumLevelLogPolicy;
 using antwika::log::NullAppender;
 using antwika::log::PlainFormatter;
-using antwika::replay::BinaryEventCodec;
-using antwika::replay::BinaryReplayReader;
-using antwika::replay::BinaryReplayWriter;
 using antwika::replay::IReplaySource;
+using antwika::replay::ReplayReader;
 using antwika::replay::ReplaySource;
+using antwika::replay::ReplayWriter;
 using antwika::time::fakes::FakeClock;
 
 namespace
@@ -102,12 +100,11 @@ TEST(ReplayIntegrationTest, LoadingASavedReplayReproducesTheSameBoard)
     ReplaySource liveSource(script);
     auto liveBoard = runLife(liveSource);
 
-    BinaryEventCodec codec;
-    BinaryReplayWriter writer(codec);
+    ReplayWriter writer;
     std::stringstream replayStream;
     writer.write(script, replayStream);
 
-    BinaryReplayReader reader(codec);
+    ReplayReader reader;
     auto loadedEvents = reader.read(replayStream);
     ReplaySource replaySource(loadedEvents);
     auto replayedBoard = runLife(replaySource);

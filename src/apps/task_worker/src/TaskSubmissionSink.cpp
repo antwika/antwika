@@ -9,6 +9,7 @@
 #include <nlohmann/json-schema.hpp>
 
 #include <antwika/engine/Events.hpp>
+#include <antwika/replay/PayloadJson.hpp>
 #include <antwika/scheduler/Priority.hpp>
 
 #include "antwika/task_worker/Events.hpp"
@@ -79,30 +80,11 @@ namespace antwika::task_worker
             return;
         }
 
-        nlohmann::json parsed;
-        try
-        {
-            parsed = nlohmann::json::parse(event.event.payload);
-        }
-        catch (const nlohmann::json::parse_error &) // GCOVR_EXCL_LINE
-        {
-            throw TaskSubmissionError(
-                "TaskSubmissionSink: task.submit payload is not valid "
-                "JSON");
-        }
-
-        try
-        {
-            taskSubmitValidator().validate(parsed);
-        }
-        catch (const std::exception &error) // GCOVR_EXCL_LINE
-        {
-            throw TaskSubmissionError(
-                std::string(
-                    "TaskSubmissionSink: task.submit payload failed "
-                    "schema validation: ") +
-                error.what());
-        }
+        const auto parsed =
+            antwika::replay::parseAndValidatePayload<TaskSubmissionError>(
+                event.event.payload,
+                taskSubmitValidator(),
+                "TaskSubmissionSink: task.submit payload");
 
         const auto taskId = parsed.at("id").get<std::uint64_t>();
         const auto alreadySubmitted = std::find_if(

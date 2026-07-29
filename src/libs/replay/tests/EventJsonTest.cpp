@@ -46,7 +46,7 @@ TEST(EventJsonTest, EventFromJsonRoundTripsEmptyNameAndPayload)
 
 // Not numeric_limits<Tick>::max().
 // The schema library mishandles "minimum" above INT64_MAX.
-// So the JSON tick range tops out there, unlike BinaryEventCodec's.
+// So the JSON tick range tops out there, short of Tick's full width.
 TEST(EventJsonTest, EventFromJsonRoundTripsLargeTickValue)
 {
     TickEvent event{

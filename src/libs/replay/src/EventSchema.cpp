@@ -25,7 +25,7 @@ namespace antwika::replay::detail
         }
     } // namespace
 
-    const nlohmann::json &timedEventShape()
+    const nlohmann::json &tickEventShape()
     {
         static const nlohmann::json shape =
             buildTickEventShape(); // GCOVR_EXCL_LINE

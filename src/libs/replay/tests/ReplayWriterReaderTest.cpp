@@ -2,22 +2,22 @@
 
 #include <sstream>
 
-#include "antwika/replay/JsonReplayReader.hpp"
-#include "antwika/replay/JsonReplayWriter.hpp"
+#include "antwika/replay/ReplayReader.hpp"
+#include "antwika/replay/ReplayWriter.hpp"
 #include "antwika/replay/ReplayFormatError.hpp"
 
 using antwika::event::Event;
 using antwika::event::TickEvent;
-using antwika::replay::JsonReplayReader;
-using antwika::replay::JsonReplayWriter;
+using antwika::replay::ReplayReader;
+using antwika::replay::ReplayWriter;
 using antwika::replay::ReplayFormatError;
 
 namespace
 {
     std::vector<TickEvent> roundTrip(const std::vector<TickEvent> &events)
     {
-        JsonReplayWriter writer;
-        JsonReplayReader reader;
+        ReplayWriter writer;
+        ReplayReader reader;
 
         std::stringstream stream;
         writer.write(events, stream);
@@ -25,12 +25,12 @@ namespace
     }
 } // namespace
 
-TEST(JsonReplayWriterReaderTest, RoundTripsZeroEvents)
+TEST(ReplayWriterReaderTest, RoundTripsZeroEvents)
 {
     EXPECT_EQ(roundTrip({}), std::vector<TickEvent>{});
 }
 
-TEST(JsonReplayWriterReaderTest, RoundTripsOneEvent)
+TEST(ReplayWriterReaderTest, RoundTripsOneEvent)
 {
     std::vector<TickEvent> events{
         TickEvent{.tick = 0, .event = Event{.name = "engine.tick"}},
@@ -38,7 +38,7 @@ TEST(JsonReplayWriterReaderTest, RoundTripsOneEvent)
     EXPECT_EQ(roundTrip(events), events);
 }
 
-TEST(JsonReplayWriterReaderTest, RoundTripsManyEventsInOrder)
+TEST(ReplayWriterReaderTest, RoundTripsManyEventsInOrder)
 {
     std::vector<TickEvent> events{
         TickEvent{.tick = 0, .event = Event{.name = "engine.tick"}},
@@ -62,25 +62,25 @@ TEST(JsonReplayWriterReaderTest, RoundTripsManyEventsInOrder)
     EXPECT_EQ(roundTrip(events), events);
 }
 
-TEST(JsonReplayWriterReaderTest, ReadThrowsWhenStreamIsNotValidJson)
+TEST(ReplayWriterReaderTest, ReadThrowsWhenStreamIsNotValidJson)
 {
-    JsonReplayReader reader;
+    ReplayReader reader;
     std::stringstream stream("not json");
 
     EXPECT_THROW((void)reader.read(stream), ReplayFormatError);
 }
 
-TEST(JsonReplayWriterReaderTest, ReadThrowsOnEmptyStream)
+TEST(ReplayWriterReaderTest, ReadThrowsOnEmptyStream)
 {
-    JsonReplayReader reader;
+    ReplayReader reader;
     std::stringstream stream("");
 
     EXPECT_THROW((void)reader.read(stream), ReplayFormatError);
 }
 
-TEST(JsonReplayWriterReaderTest, ReadThrowsWhenDocumentFailsTheSchema)
+TEST(ReplayWriterReaderTest, ReadThrowsWhenDocumentFailsTheSchema)
 {
-    JsonReplayReader reader;
+    ReplayReader reader;
     std::stringstream stream(R"({"magic":"nope","version":1,)"
                               R"("events":[]})");
 

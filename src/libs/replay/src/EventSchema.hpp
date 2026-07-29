@@ -19,9 +19,9 @@ namespace antwika::replay::detail
      *
      * "tick" carries a "minimum": 0 constraint, but no matching
      * maximum -- json-schema-validator itself mishandles "minimum" for
-     * integers above INT64_MAX, so ticks past that (not the full
-     * uint64_t range BinaryEventCodec supports) fail to validate.
+     * integers above INT64_MAX, so ticks past that (within the full
+     * uint64_t range antwika::time::Tick allows) fail to validate.
      */
-    const nlohmann::json &timedEventShape();
+    const nlohmann::json &tickEventShape();
 
 } // namespace antwika::replay::detail

@@ -15,11 +15,10 @@
 #include <antwika/event/TickedEventDispatcher.hpp>
 #include <antwika/log/mocks/MockLogger.hpp>
 
-#include "antwika/replay/BinaryEventCodec.hpp"
-#include "antwika/replay/BinaryReplayReader.hpp"
-#include "antwika/replay/BinaryReplayWriter.hpp"
 #include "antwika/replay/EngineLoop.hpp"
+#include "antwika/replay/ReplayReader.hpp"
 #include "antwika/replay/ReplaySource.hpp"
+#include "antwika/replay/ReplayWriter.hpp"
 
 using antwika::engine::Engine;
 using antwika::engine::StopSignal;
@@ -30,11 +29,10 @@ using antwika::event::TickEventRecorder;
 using antwika::event::TickedEventDispatcher;
 using antwika::event::TickEvent;
 using antwika::log::mocks::MockLogger;
-using antwika::replay::BinaryEventCodec;
-using antwika::replay::BinaryReplayReader;
-using antwika::replay::BinaryReplayWriter;
 using antwika::replay::EngineLoop;
+using antwika::replay::ReplayReader;
 using antwika::replay::ReplaySource;
+using antwika::replay::ReplayWriter;
 
 namespace
 {
@@ -146,12 +144,11 @@ TEST(
     const auto liveStateHash =
         runScriptedTicks(scriptedLiveEvents, liveRecording, maxTicks);
 
-    BinaryEventCodec codec;
-    BinaryReplayWriter writer(codec);
+    ReplayWriter writer;
     std::stringstream replayStream;
     writer.write(scriptedLiveEvents, replayStream);
 
-    BinaryReplayReader reader(codec);
+    ReplayReader reader;
     auto loadedInputEvents = reader.read(replayStream);
     EXPECT_EQ(loadedInputEvents, scriptedLiveEvents);
 
@@ -192,8 +189,7 @@ TEST(
     TickEventRecorder recording;
     (void)runScriptedTicks(scriptedLiveEvents, recording, maxTicks);
 
-    BinaryEventCodec codec;
-    BinaryReplayWriter writer(codec);
+    ReplayWriter writer;
 
     std::stringstream firstSerialization;
     writer.write(recording.getEvents(), firstSerialization);

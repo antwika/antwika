@@ -2,17 +2,14 @@ find_package(nlohmann_json REQUIRED)
 find_package(nlohmann_json_schema_validator REQUIRED)
 
 add_library(antwika_replay
-    src/BinaryEventCodec.cpp
-    src/BinaryPrimitives.cpp
-    src/BinaryReplayReader.cpp
-    src/BinaryReplayWriter.cpp
     src/EngineLoop.cpp
     src/EventJson.cpp
     src/EventSchema.cpp
-    src/JsonReplayReader.cpp
-    src/JsonReplayWriter.cpp
+    src/ReplayCli.cpp
     src/ReplayJson.cpp
+    src/ReplayReader.cpp
     src/ReplaySource.cpp
+    src/ReplayWriter.cpp
 )
 
 add_library(antwika::replay ALIAS antwika_replay)
