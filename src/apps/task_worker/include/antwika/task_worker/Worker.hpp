@@ -5,8 +5,15 @@
 #include <cstddef>
 #include <cstdint>
 #include <string_view>
+#include <vector>
 
+#include <antwika/ecs/Entity.hpp>
 #include <antwika/time/Tick.hpp>
+
+namespace antwika::ecs
+{
+    class World;
+} // namespace antwika::ecs
 
 namespace antwika::task_worker
 {
@@ -60,5 +67,19 @@ namespace antwika::task_worker
         std::copy_n(text.begin(), length, label.begin());
         return label;
     }
+
+    /**
+     * @brief Snapshot every entity that currently has a Worker.
+     * @param world World to query.
+     * @return Every Worker entity, in View's insertion-stable order.
+     *
+     * The sole caller of World::view<Worker>().
+     * WorkerCompletionSystem and StatusPrintSystem both need every
+     * Worker entity.
+     * Routing both through here keeps View<Worker> instantiated in
+     * one place, rather than once per silently-duplicated caller.
+     */
+    [[nodiscard]] std::vector<antwika::ecs::Entity> allWorkers(
+        const antwika::ecs::World &world);
 
 } // namespace antwika::task_worker

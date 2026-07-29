@@ -5,6 +5,7 @@ add_executable(antwika_task_worker
     src/TaskRegistry.cpp
     src/TaskSubmissionSink.cpp
     src/TaskWorker.cpp
+    src/Worker.cpp
     src/WorkerCompletionSystem.cpp
     src/WorkerLookup.cpp
     src/main.cpp

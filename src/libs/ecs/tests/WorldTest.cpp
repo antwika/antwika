@@ -289,6 +289,24 @@ TEST(WorldTest, ViewOverAnUnusedComponentTypeIsEmpty)
     EXPECT_EQ(view.size(), 0U);
 }
 
+TEST(WorldTest, ViewOverASingleComponentTypeWithDataReturnsThatEntity)
+{
+    // Position's view<T>() already gets exercised with real data.
+    // Velocity's never did until now.
+    // It was only ever empty, or paired with Position.
+    // That pairing is a separate instantiation from Velocity alone.
+    NiceMock<MockLogger> logger;
+    World world(logger);
+    const auto entity = world.create();
+    world.add<Velocity>(entity, Velocity{5});
+    world.commit();
+
+    const auto view = world.view<Velocity>();
+    const std::vector<Entity> entities(view.begin(), view.end());
+
+    EXPECT_EQ(entities, (std::vector<Entity>{entity}));
+}
+
 TEST(WorldTest, ViewIntersectsMultipleComponentTypes)
 {
     NiceMock<MockLogger> logger;
@@ -304,4 +322,10 @@ TEST(WorldTest, ViewIntersectsMultipleComponentTypes)
     const std::vector<Entity> entities(view.begin(), view.end());
 
     EXPECT_EQ(entities, (std::vector<Entity>{both}));
+
+    const auto positionView = world.view<Position>();
+    const std::vector<Entity> positionEntities(
+        positionView.begin(), positionView.end());
+
+    EXPECT_EQ(positionEntities, (std::vector<Entity>{both, positionOnly}));
 }
