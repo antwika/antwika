@@ -259,18 +259,24 @@ TEST(WorldTest, DestroyingAnEntityLeavesUnrelatedPoolsForOthersAlone)
 
 TEST(WorldTest, DestroyStagedBeforeAddInTheSameCommitLeavesNoOrphan)
 {
+    // Covers two distinct T instantiations of the deferred re-check.
+    // Each is compiled and branch-tracked separately.
     NiceMock<MockLogger> logger;
     World world(logger);
     const auto entity = world.create();
 
     world.destroy(entity);
     world.add<Position>(entity, Position{1, 2});
+    world.add<Velocity>(entity, Velocity{3});
     world.commit();
 
     EXPECT_FALSE(world.alive(entity));
     EXPECT_FALSE(world.has<Position>(entity));
-    const auto view = world.view<Position>();
-    EXPECT_EQ(view.size(), 0U);
+    EXPECT_FALSE(world.has<Velocity>(entity));
+    const auto positionView = world.view<Position>();
+    EXPECT_EQ(positionView.size(), 0U);
+    const auto velocityView = world.view<Velocity>();
+    EXPECT_EQ(velocityView.size(), 0U);
 }
 
 TEST(WorldTest, ViewOverAnUnusedComponentTypeIsEmpty)

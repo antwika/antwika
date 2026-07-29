@@ -212,6 +212,11 @@ jobs:
         shell: bash
         run: python3 scripts/tests/test_generate_coverage_badge.py
 
+      - name: Test check-full-coverage script
+        if: matrix.coverage
+        shell: bash
+        run: python3 scripts/tests/test_check_full_coverage.py
+
       - name: Generate coverage report
         if: matrix.coverage
         shell: bash
@@ -233,6 +238,11 @@ jobs:
             --summary coverage-summary.json \
             --output coverage-badge.json \
             --label "coverage (${{ matrix.image }})"
+
+      - name: Enforce full coverage (GNU)
+        if: matrix.coverage && matrix.image == 'gnu'
+        shell: bash
+        run: python3 scripts/check_full_coverage.py --summary coverage-summary.json
 
       - name: Upload coverage badge
         if: matrix.coverage
