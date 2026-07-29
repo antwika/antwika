@@ -4,6 +4,7 @@ add_subdirectory(mocks)
 
 add_executable(antwika_engine_tests
     EngineTest.cpp
+    StopSignalTest.cpp
 )
 
 target_link_libraries(antwika_engine_tests

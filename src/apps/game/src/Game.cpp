@@ -1,6 +1,7 @@
 #include "antwika/game/Game.hpp"
 
 #include <antwika/engine/Engine.hpp>
+#include <antwika/engine/StopSignal.hpp>
 #include <antwika/event/Event.hpp>
 #include <antwika/event/EventDispatcher.hpp>
 #include <antwika/event/TickedEventDispatcher.hpp>
@@ -10,6 +11,7 @@
 #include "antwika/game/GameStateReducer.hpp"
 
 using antwika::engine::Engine;
+using antwika::engine::StopSignal;
 using antwika::event::Event;
 using antwika::event::EventDispatcher;
 using antwika::event::TickedEventDispatcher;
@@ -38,21 +40,30 @@ namespace antwika::game
                         ILogPolicy &logPolicy,
                         IEventSink &eventSink,
                         IReplaySource &inputSource,
-                        antwika::time::Tick totalTicks)
+                        std::optional<antwika::time::Tick> maxTicks,
+                        ITimedEventSink *replayRecorder)
     {
         Logger logger(formatter, logPolicy, clock, appender);
         EventDispatcher dispatcher({eventSink});
 
         GameState state;
         GameStateReducer reducer(state);
-        TickedEventDispatcher tickedDispatcher(dispatcher, {reducer});
+        StopSignal stopSignal;
+
+        std::vector<std::reference_wrapper<ITimedEventSink>> timedSinks{
+            reducer, stopSignal};
+        if (replayRecorder != nullptr)
+        {
+            timedSinks.push_back(*replayRecorder);
+        }
+        TickedEventDispatcher tickedDispatcher(dispatcher, timedSinks);
 
         Engine engine(logger, tickedDispatcher);
         Game game(engine, tickedDispatcher);
         game.run();
 
         EngineLoop loop(engine, tickedDispatcher, inputSource);
-        loop.run(totalTicks);
+        loop.run(stopSignal, maxTicks);
 
         return state;
     }

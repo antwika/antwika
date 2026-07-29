@@ -2,6 +2,7 @@
 
 #include <sstream>
 
+#include <antwika/engine/Events.hpp>
 #include <antwika/event/Event.hpp>
 #include <antwika/event/EventRecorder.hpp>
 #include <antwika/event/TimedEvent.hpp>
@@ -38,7 +39,7 @@ using antwika::time::fakes::FakeClock;
 namespace
 {
     using antwika::task_worker::events::kTaskSubmit;
-    constexpr antwika::time::Tick kTotalTicks = 6;
+    constexpr antwika::time::Tick kMaxTicks = 10;
     constexpr std::uint32_t kWorkerCount = 2;
 
     std::vector<Worker> runTaskWorker(IReplaySource &source)
@@ -57,8 +58,10 @@ namespace
             logPolicy,
             eventSink,
             source,
-            kTotalTicks,
-            kWorkerCount);
+            kWorkerCount,
+            {},
+            nullptr,
+            kMaxTicks);
     }
 } // namespace
 
@@ -86,6 +89,9 @@ TEST(ReplayIntegrationTest, LoadingASavedReplayReproducesTheSameState)
             .tick = 4,
             .event = Event{
                 .name = kTaskSubmit, .payload = "5,1,1,Epsilon,4"}},
+        TimedEvent{
+            .tick = 5,
+            .event = Event{.name = antwika::engine::events::kStop}},
     };
 
     ReplaySource liveSource(script);

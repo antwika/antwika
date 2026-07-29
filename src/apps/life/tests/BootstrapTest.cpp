@@ -4,13 +4,16 @@
 #include <vector>
 
 #include <antwika/ecs/ISystem.hpp>
+#include <antwika/engine/Events.hpp>
 #include <antwika/event/Event.hpp>
 #include <antwika/event/EventRecorder.hpp>
+#include <antwika/event/ReplayRecorder.hpp>
 #include <antwika/event/TimedEvent.hpp>
 #include <antwika/log/Level.hpp>
 #include <antwika/log/MinimumLevelLogPolicy.hpp>
 #include <antwika/log/NullAppender.hpp>
 #include <antwika/log/PlainFormatter.hpp>
+#include <antwika/replay/EngineLoopError.hpp>
 #include <antwika/replay/ReplaySource.hpp>
 #include <antwika/time/fakes/FakeClock.hpp>
 
@@ -22,6 +25,7 @@ using antwika::ecs::ISystem;
 using antwika::ecs::World;
 using antwika::event::Event;
 using antwika::event::EventRecorder;
+using antwika::event::ReplayRecorder;
 using antwika::event::TimedEvent;
 using antwika::life::Board;
 using antwika::life::PrintSystem;
@@ -29,6 +33,7 @@ using antwika::log::Level;
 using antwika::log::MinimumLevelLogPolicy;
 using antwika::log::NullAppender;
 using antwika::log::PlainFormatter;
+using antwika::replay::EngineLoopError;
 using antwika::replay::ReplaySource;
 using antwika::time::fakes::FakeClock;
 
@@ -96,6 +101,10 @@ TEST(BootstrapTest, Bootstrap_RunsScriptedTicksAndReturnsResultingBoard)
                 .payload = "3,2",
             },
         },
+        TimedEvent{
+            .tick = 3,
+            .event = Event{.name = antwika::engine::events::kStop},
+        },
     });
 
     auto board = antwika::life::bootstrap(
@@ -105,9 +114,10 @@ TEST(BootstrapTest, Bootstrap_RunsScriptedTicksAndReturnsResultingBoard)
         logPolicy,
         eventSink,
         inputSource,
-        4,
         5,
-        5);
+        5,
+        {},
+        10);
 
     EXPECT_EQ(board.width, 5U);
     EXPECT_EQ(board.height, 5U);
@@ -148,6 +158,10 @@ TEST(BootstrapTest, Bootstrap_RunsEveryObserverOncePerTick)
                 .payload = "3,2",
             },
         },
+        TimedEvent{
+            .tick = 3,
+            .event = Event{.name = antwika::engine::events::kStop},
+        },
     });
 
     std::ostringstream printed;
@@ -161,10 +175,10 @@ TEST(BootstrapTest, Bootstrap_RunsEveryObserverOncePerTick)
         logPolicy,
         eventSink,
         inputSource,
-        4,
         5,
         5,
-        {printSystem, countingSystem});
+        {printSystem, countingSystem},
+        10);
 
     EXPECT_EQ(countingSystem.calls, 4);
 
@@ -190,7 +204,12 @@ TEST(BootstrapTest, Bootstrap_WithNoScriptedInputStaysAllDead)
     MinimumLevelLogPolicy logPolicy(Level::Info);
     EventRecorder eventSink;
 
-    ReplaySource inputSource({});
+    ReplaySource inputSource({
+        TimedEvent{
+            .tick = 2,
+            .event = Event{.name = antwika::engine::events::kStop},
+        },
+    });
 
     auto board = antwika::life::bootstrap(
         fakeClock,
@@ -199,9 +218,103 @@ TEST(BootstrapTest, Bootstrap_WithNoScriptedInputStaysAllDead)
         logPolicy,
         eventSink,
         inputSource,
-        3,
         4,
-        4);
+        4,
+        {},
+        10);
 
     EXPECT_EQ(board.alive, std::vector<bool>(16, false));
+}
+
+// A caller wanting to persist a `--record` file has no pre-known script.
+// It instead passes an optional replayRecorder.
+// bootstrap() must register it so it observes every dispatched event.
+TEST(BootstrapTest, Bootstrap_ForwardsDispatchedEventsToAReplayRecorder)
+{
+    std::chrono::system_clock::time_point time{};
+    FakeClock fakeClock(time);
+    NullAppender appender;
+    PlainFormatter formatter;
+    MinimumLevelLogPolicy logPolicy(Level::Info);
+    EventRecorder eventSink;
+
+    ReplaySource inputSource({
+        TimedEvent{
+            .tick = 0,
+            .event = Event{
+                .name = antwika::life::events::kToggleCell,
+                .payload = "1,2",
+            },
+        },
+        TimedEvent{
+            .tick = 0,
+            .event = Event{.name = antwika::engine::events::kStop},
+        },
+    });
+    ReplayRecorder replayRecorder;
+
+    antwika::life::bootstrap(
+        fakeClock,
+        appender,
+        formatter,
+        logPolicy,
+        eventSink,
+        inputSource,
+        4,
+        4,
+        {},
+        10,
+        &replayRecorder);
+
+    EXPECT_EQ(
+        replayRecorder.getEvents(),
+        (std::vector<TimedEvent>{
+            TimedEvent{
+                .tick = 0,
+                .event = Event{.name = "Running Antwika Life"},
+            },
+            TimedEvent{
+                .tick = 0,
+                .event = Event{
+                    .name = antwika::life::events::kToggleCell,
+                    .payload = "1,2",
+                },
+            },
+            TimedEvent{
+                .tick = 0,
+                .event = Event{.name = antwika::engine::events::kStop},
+            },
+            TimedEvent{
+                .tick = 0,
+                .event = Event{.name = antwika::engine::events::kTick},
+            },
+        }));
+}
+
+// Safety valve: a run that never dispatches engine.stop must fail loudly.
+// It should not hang or silently truncate once maxTicks is reached.
+TEST(BootstrapTest, Bootstrap_ThrowsWhenMaxTicksIsReachedWithoutAStopEvent)
+{
+    std::chrono::system_clock::time_point time{};
+    FakeClock fakeClock(time);
+    NullAppender appender;
+    PlainFormatter formatter;
+    MinimumLevelLogPolicy logPolicy(Level::Info);
+    EventRecorder eventSink;
+
+    ReplaySource inputSource({});
+
+    EXPECT_THROW(
+        antwika::life::bootstrap(
+            fakeClock,
+            appender,
+            formatter,
+            logPolicy,
+            eventSink,
+            inputSource,
+            4,
+            4,
+            {},
+            3),
+        EngineLoopError);
 }

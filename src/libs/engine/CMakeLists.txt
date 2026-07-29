@@ -1,5 +1,6 @@
 add_library(antwika_engine
     src/Engine.cpp
+    src/StopSignal.cpp
 )
 
 add_library(antwika::engine ALIAS antwika_engine)

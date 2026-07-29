@@ -4,13 +4,16 @@
 #include <vector>
 
 #include <antwika/ecs/ISystem.hpp>
+#include <antwika/engine/Events.hpp>
 #include <antwika/event/Event.hpp>
 #include <antwika/event/EventRecorder.hpp>
+#include <antwika/event/ReplayRecorder.hpp>
 #include <antwika/event/TimedEvent.hpp>
 #include <antwika/log/Level.hpp>
 #include <antwika/log/MinimumLevelLogPolicy.hpp>
 #include <antwika/log/NullAppender.hpp>
 #include <antwika/log/PlainFormatter.hpp>
+#include <antwika/replay/EngineLoopError.hpp>
 #include <antwika/replay/ReplaySource.hpp>
 #include <antwika/time/fakes/FakeClock.hpp>
 
@@ -25,11 +28,13 @@ using antwika::ecs::ISystem;
 using antwika::ecs::World;
 using antwika::event::Event;
 using antwika::event::EventRecorder;
+using antwika::event::ReplayRecorder;
 using antwika::event::TimedEvent;
 using antwika::log::Level;
 using antwika::log::MinimumLevelLogPolicy;
 using antwika::log::NullAppender;
 using antwika::log::PlainFormatter;
+using antwika::replay::EngineLoopError;
 using antwika::replay::ReplaySource;
 using antwika::scheduler::kCriticalPriority;
 using antwika::scheduler::kLowPriority;
@@ -46,7 +51,8 @@ using antwika::time::fakes::FakeClock;
 namespace
 {
     using antwika::task_worker::events::kTaskSubmit;
-    constexpr antwika::time::Tick kTotalTicks = 6;
+    constexpr int kExpectedTicks = 6;
+    constexpr antwika::time::Tick kMaxTicks = 10;
     constexpr std::uint32_t kWorkerCount = 2;
 
     // Same scenario as main.cpp's demoScript().
@@ -55,6 +61,7 @@ namespace
     // Epsilon depends on Delta but can't run in Delta's run() call.
     // Epsilon runs the following tick: a cross-tick dependency.
     // See blog/006-... for the full scenario rationale.
+    // Ends with engine.stop at tick 5, once every task has settled.
     std::vector<TimedEvent> demoScript()
     {
         return {
@@ -79,6 +86,9 @@ namespace
                 .event = Event{
                     .name = kTaskSubmit,
                     .payload = "5,1,1,Epsilon,4"}},
+            TimedEvent{
+                .tick = 5,
+                .event = Event{.name = antwika::engine::events::kStop}},
         };
     }
 
@@ -113,8 +123,10 @@ TEST(BootstrapTest, Bootstrap_RunsScriptedTasksToCompletion)
         logPolicy,
         eventSink,
         inputSource,
-        kTotalTicks,
-        kWorkerCount);
+        kWorkerCount,
+        {},
+        nullptr,
+        kMaxTicks);
 
     // At tick 5, Delta's and Beta's workers free simultaneously.
     // Epsilon (Normal) now outranks Gamma (Low) for the freed slot.
@@ -148,11 +160,12 @@ TEST(BootstrapTest, Bootstrap_RunsEveryObserverOncePerTick)
         logPolicy,
         eventSink,
         inputSource,
-        kTotalTicks,
         kWorkerCount,
-        {countingSystem});
+        {countingSystem},
+        nullptr,
+        kMaxTicks);
 
-    EXPECT_EQ(countingSystem.calls, static_cast<int>(kTotalTicks));
+    EXPECT_EQ(countingSystem.calls, kExpectedTicks);
 }
 
 TEST(BootstrapTest, Bootstrap_KeepsACallerSuppliedRegistryInSync)
@@ -175,10 +188,10 @@ TEST(BootstrapTest, Bootstrap_KeepsACallerSuppliedRegistryInSync)
         logPolicy,
         eventSink,
         inputSource,
-        kTotalTicks,
         kWorkerCount,
         {},
-        &registry);
+        &registry,
+        kMaxTicks);
 
     // By tick 5, Alpha/Beta/Delta have completed.
     // Gamma and Epsilon are still running, both just started.
@@ -213,7 +226,11 @@ TEST(BootstrapTest, Bootstrap_WithNoScriptedInputAllWorkersStayIdle)
     MinimumLevelLogPolicy logPolicy(Level::Info);
     EventRecorder eventSink;
 
-    ReplaySource inputSource({});
+    ReplaySource inputSource({
+        TimedEvent{
+            .tick = 2,
+            .event = Event{.name = antwika::engine::events::kStop}},
+    });
 
     auto finalState = antwika::task_worker::bootstrap(
         fakeClock,
@@ -222,9 +239,94 @@ TEST(BootstrapTest, Bootstrap_WithNoScriptedInputAllWorkersStayIdle)
         logPolicy,
         eventSink,
         inputSource,
-        3,
-        2);
+        2,
+        {},
+        nullptr,
+        kMaxTicks);
 
     EXPECT_EQ(finalState[0], (Worker{WorkerStatus::Idle, 0}));
     EXPECT_EQ(finalState[1], (Worker{WorkerStatus::Idle, 0}));
+}
+
+// A caller wanting to persist a `--record` file has no pre-known script.
+// It instead passes an optional replayRecorder.
+// bootstrap() must register it so it observes every dispatched event.
+TEST(BootstrapTest, Bootstrap_ForwardsDispatchedEventsToAReplayRecorder)
+{
+    std::chrono::system_clock::time_point time{};
+    FakeClock fakeClock(time);
+    NullAppender appender;
+    PlainFormatter formatter;
+    MinimumLevelLogPolicy logPolicy(Level::Info);
+    EventRecorder eventSink;
+
+    ReplaySource inputSource({
+        TimedEvent{
+            .tick = 0,
+            .event = Event{
+                .name = kTaskSubmit, .payload = "1,1,4,Alpha"}},
+        TimedEvent{
+            .tick = 0,
+            .event = Event{.name = antwika::engine::events::kStop}},
+    });
+    ReplayRecorder replayRecorder;
+
+    antwika::task_worker::bootstrap(
+        fakeClock,
+        appender,
+        formatter,
+        logPolicy,
+        eventSink,
+        inputSource,
+        kWorkerCount,
+        {},
+        nullptr,
+        kMaxTicks,
+        &replayRecorder);
+
+    EXPECT_EQ(
+        replayRecorder.getEvents(),
+        (std::vector<TimedEvent>{
+            TimedEvent{
+                .tick = 0,
+                .event = Event{.name = "Running Antwika TaskWorker"}},
+            TimedEvent{
+                .tick = 0,
+                .event = Event{
+                    .name = kTaskSubmit, .payload = "1,1,4,Alpha"}},
+            TimedEvent{
+                .tick = 0,
+                .event = Event{.name = antwika::engine::events::kStop}},
+            TimedEvent{
+                .tick = 0,
+                .event = Event{.name = antwika::engine::events::kTick}},
+        }));
+}
+
+// Safety valve: a run that never dispatches engine.stop must fail loudly.
+// It should not hang or silently truncate once maxTicks is reached.
+TEST(BootstrapTest, Bootstrap_ThrowsWhenMaxTicksIsReachedWithoutAStopEvent)
+{
+    std::chrono::system_clock::time_point time{};
+    FakeClock fakeClock(time);
+    NullAppender appender;
+    PlainFormatter formatter;
+    MinimumLevelLogPolicy logPolicy(Level::Info);
+    EventRecorder eventSink;
+
+    ReplaySource inputSource({});
+
+    EXPECT_THROW(
+        antwika::task_worker::bootstrap(
+            fakeClock,
+            appender,
+            formatter,
+            logPolicy,
+            eventSink,
+            inputSource,
+            kWorkerCount,
+            {},
+            nullptr,
+            3),
+        EngineLoopError);
 }

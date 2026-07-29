@@ -1,7 +1,9 @@
 #include "antwika/game/Game.hpp"
 
+#include <antwika/engine/Events.hpp>
 #include <antwika/event/Event.hpp>
 #include <antwika/event/EventRecorder.hpp>
+#include <antwika/event/ReplayRecorder.hpp>
 #include <antwika/event/TimedEvent.hpp>
 #include <antwika/log/Level.hpp>
 #include <antwika/log/MinimumLevelLogPolicy.hpp>
@@ -15,6 +17,7 @@
 
 #include <fstream>
 #include <iostream>
+#include <optional>
 #include <string_view>
 #include <vector>
 
@@ -22,6 +25,7 @@
 
 using antwika::event::Event;
 using antwika::event::EventRecorder;
+using antwika::event::ReplayRecorder;
 using antwika::event::TimedEvent;
 using antwika::log::Level;
 using antwika::log::MinimumLevelLogPolicy;
@@ -36,10 +40,9 @@ using antwika::time::Tick;
 
 namespace
 {
-    constexpr Tick kDemoTotalTicks = 5;
-
     // Stands in for real (network/keyboard) live input the engine lacks.
     // See blog/2026-07-27-building-a-deterministic-replay-system.md.
+    // Ends with engine.stop -- the run keeps going until it is dispatched.
     std::vector<TimedEvent> demoScript()
     {
         return {
@@ -57,6 +60,10 @@ namespace
                     .payload = "2",
                 },
             },
+            TimedEvent{
+                .tick = 4,
+                .event = Event{.name = antwika::engine::events::kStop},
+            },
         };
     }
 
@@ -64,6 +71,23 @@ namespace
     {
         std::cout << "Final state: ticksProcessed=" << state.ticksProcessed
                    << " score=" << state.score << '\n';
+    }
+
+    // engine.tick and the startup announcement are both self-generated.
+    // Every bootstrap() call regenerates them fresh, live or replayed.
+    // Recording either and feeding it back would double-dispatch it.
+    // See blog/2026-07-27-building-a-deterministic-replay-system.md.
+    std::vector<TimedEvent> stripSelfGeneratedEvents(
+        std::vector<TimedEvent> events)
+    {
+        std::erase_if(
+            events,
+            [](const TimedEvent &event)
+            {
+                return event.event.name == antwika::engine::events::kTick
+                       || event.event.name == "Running Antwika Game";
+            });
+        return events;
     }
 } // namespace
 
@@ -103,14 +127,14 @@ int main(int argc, char **argv)
             formatter,
             logPolicy,
             eventSink,
-            source,
-            kDemoTotalTicks);
+            source);
         printState(state);
         return 0;
     }
 
     auto script = demoScript();
     ReplaySource source(script);
+    ReplayRecorder replayRecorder;
     auto state = antwika::game::bootstrap(
         clock,
         appender,
@@ -118,14 +142,17 @@ int main(int argc, char **argv)
         logPolicy,
         eventSink,
         source,
-        kDemoTotalTicks);
+        std::nullopt,
+        &replayRecorder);
     printState(state);
 
     if (!recordPath.empty())
     {
         std::ofstream replayFile(std::string(recordPath), std::ios::binary);
         BinaryReplayWriter writer(codec);
-        writer.write(script, replayFile);
+        writer.write(
+            stripSelfGeneratedEvents(replayRecorder.getEvents()),
+            replayFile);
     }
 
     return 0;

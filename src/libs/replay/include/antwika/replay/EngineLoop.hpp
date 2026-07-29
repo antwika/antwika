@@ -1,6 +1,9 @@
 #pragma once
 
+#include <optional>
+
 #include <antwika/engine/IEngine.hpp>
+#include <antwika/engine/StopSignal.hpp>
 #include <antwika/event/TickedEventDispatcher.hpp>
 #include <antwika/time/Tick.hpp>
 
@@ -10,10 +13,11 @@ namespace antwika::replay
 {
 
     using antwika::engine::IEngine;
+    using antwika::engine::StopSignal;
     using antwika::event::TickedEventDispatcher;
 
     /**
-     * @brief Drives an IEngine one fixed tick at a time.
+     * @brief Drives an IEngine one fixed tick at a time until stopped.
      *
      * Every tick, it asks the IReplaySource for that tick's events,
      * dispatches those events, then steps the engine. That sequence is
@@ -41,10 +45,24 @@ namespace antwika::replay
         EngineLoop &operator=(EngineLoop &&) = delete;
 
         /**
-         * @brief Run the engine from tick 0 up to (but excluding) totalTicks.
-         * @param totalTicks The number of ticks to run.
+         * @brief Run the engine from tick 0 until stop reports stopped.
+         *
+         * The tick that carries the stop event still runs to completion —
+         * its events are dispatched and the engine still steps — before
+         * the loop exits, so live and replayed runs agree up to and
+         * including the terminal tick.
+         *
+         * @param stop Checked after every tick; the loop exits once it
+         * reports stopped().
+         * @param maxTicks Optional safety cap. Production callers can
+         * leave this unset to run uncapped; tests should always pass one
+         * so a forgotten stop event fails loudly instead of hanging.
+         * @throws EngineLoopError If maxTicks is reached without stop
+         * having reported stopped().
          */
-        void run(antwika::time::Tick totalTicks);
+        void run(
+            const StopSignal &stop,
+            std::optional<antwika::time::Tick> maxTicks = std::nullopt);
 
     private:
         IEngine &engine;

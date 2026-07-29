@@ -2,6 +2,8 @@
 
 #include <utility>
 
+#include "antwika/replay/EngineLoopError.hpp"
+
 namespace antwika::replay
 {
 
@@ -13,10 +15,18 @@ namespace antwika::replay
     {
     }
 
-    void EngineLoop::run(antwika::time::Tick totalTicks)
+    void EngineLoop::run(
+        const StopSignal &stop, std::optional<antwika::time::Tick> maxTicks)
     {
-        for (antwika::time::Tick tick = 0; tick < totalTicks; ++tick)
+        for (antwika::time::Tick tick = 0;; ++tick)
         {
+            if (maxTicks.has_value() && tick >= *maxTicks)
+            {
+                throw EngineLoopError(
+                    "EngineLoop::run reached maxTicks without an "
+                    "engine.stop event");
+            }
+
             dispatcher.setTick(tick);
 
             for (auto &event : source.eventsFor(tick))
@@ -25,6 +35,11 @@ namespace antwika::replay
             }
 
             engine.step(tick);
+
+            if (stop.stopped())
+            {
+                break;
+            }
         }
     }
 

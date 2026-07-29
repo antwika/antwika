@@ -2,6 +2,7 @@
 
 #include <sstream>
 
+#include <antwika/engine/Events.hpp>
 #include <antwika/event/Event.hpp>
 #include <antwika/event/EventRecorder.hpp>
 #include <antwika/event/TimedEvent.hpp>
@@ -36,7 +37,7 @@ using antwika::time::fakes::FakeClock;
 
 namespace
 {
-    constexpr antwika::time::Tick kTotalTicks = 4;
+    constexpr antwika::time::Tick kMaxTicks = 10;
     constexpr std::uint32_t kWidth = 5;
     constexpr std::uint32_t kHeight = 5;
 
@@ -56,9 +57,10 @@ namespace
             logPolicy,
             eventSink,
             source,
-            kTotalTicks,
             kWidth,
-            kHeight);
+            kHeight,
+            {},
+            kMaxTicks);
     }
 } // namespace
 
@@ -90,6 +92,10 @@ TEST(ReplayIntegrationTest, LoadingASavedReplayReproducesTheSameBoard)
                 .name = antwika::life::events::kToggleCell,
                 .payload = "3,2",
             },
+        },
+        TimedEvent{
+            .tick = 3,
+            .event = Event{.name = antwika::engine::events::kStop},
         },
     };
 
