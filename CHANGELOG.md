@@ -1,3 +1,15 @@
+# [0.9.0](https://github.com/antwika/antwika/compare/v0.8.0...v0.9.0) (2026-07-29)
+
+
+### Features
+
+* **engine,replay:** run until an engine.stop event, not a fixed tick count ([4342036](https://github.com/antwika/antwika/commit/4342036a462a1527a861b713adcdb0a2e4bb8821))
+
+
+### Performance Improvements
+
+* **build:** parallelize cmake builds with -j24 ([ef41564](https://github.com/antwika/antwika/commit/ef41564b1461f5a95b2ed0c320153c0114217b41))
+
 # [0.8.0](https://github.com/antwika/antwika/compare/v0.7.0...v0.8.0) (2026-07-28)
 
 
