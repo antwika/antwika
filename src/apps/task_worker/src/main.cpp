@@ -3,11 +3,14 @@
 #include <cstdint>
 #include <fstream>
 #include <iostream>
+#include <optional>
 #include <string_view>
 #include <vector>
 
+#include <antwika/engine/Events.hpp>
 #include <antwika/event/Event.hpp>
 #include <antwika/event/EventRecorder.hpp>
+#include <antwika/event/ReplayRecorder.hpp>
 #include <antwika/event/TimedEvent.hpp>
 #include <antwika/log/Level.hpp>
 #include <antwika/log/MinimumLevelLogPolicy.hpp>
@@ -25,6 +28,7 @@
 
 using antwika::event::Event;
 using antwika::event::EventRecorder;
+using antwika::event::ReplayRecorder;
 using antwika::event::TimedEvent;
 using antwika::log::Level;
 using antwika::log::MinimumLevelLogPolicy;
@@ -42,13 +46,14 @@ using antwika::time::Tick;
 namespace
 {
     constexpr std::uint32_t kWorkerCount = 2;
-    constexpr Tick kDemoTotalTicks = 8;
 
     // Stands in for real (network/CLI) live input the engine lacks.
     // See blog/003-... and blog/004-... for the pattern this follows.
     // Sized to exercise multi-tick distribution and a priority jump.
     // Also exercises a dependency edge crossing a tick boundary.
     // See blog/006-... for the full scenario rationale.
+    // Ends with engine.stop 3 ticks after every task has settled.
+    // That gives the demo's printed status a few idle ticks to show.
     std::vector<TimedEvent> demoScript()
     {
         using antwika::task_worker::events::kTaskSubmit;
@@ -89,7 +94,29 @@ namespace
                     .payload = "5,1,1,Epsilon,4",
                 },
             },
+            TimedEvent{
+                .tick = 7,
+                .event = Event{.name = antwika::engine::events::kStop},
+            },
         };
+    }
+
+    // engine.tick and the startup announcement are both self-generated.
+    // Every bootstrap() call regenerates them fresh, live or replayed.
+    // Recording either and feeding it back would double-dispatch it.
+    // See blog/2026-07-27-building-a-deterministic-replay-system.md.
+    std::vector<TimedEvent> stripSelfGeneratedEvents(
+        std::vector<TimedEvent> events)
+    {
+        std::erase_if(
+            events,
+            [](const TimedEvent &event)
+            {
+                const auto &name = event.event.name;
+                return name == antwika::engine::events::kTick
+                       || name == "Running Antwika TaskWorker";
+            });
+        return events;
     }
 } // namespace
 
@@ -132,7 +159,6 @@ int main(int argc, char **argv)
             logPolicy,
             eventSink,
             source,
-            kDemoTotalTicks,
             kWorkerCount,
             {printSystem},
             &registry);
@@ -141,6 +167,7 @@ int main(int argc, char **argv)
 
     auto script = demoScript();
     ReplaySource source(script);
+    ReplayRecorder replayRecorder;
     antwika::task_worker::bootstrap(
         clock,
         appender,
@@ -148,16 +175,19 @@ int main(int argc, char **argv)
         logPolicy,
         eventSink,
         source,
-        kDemoTotalTicks,
         kWorkerCount,
         {printSystem},
-        &registry);
+        &registry,
+        std::nullopt,
+        &replayRecorder);
 
     if (!recordPath.empty())
     {
         std::ofstream replayFile(std::string(recordPath), std::ios::binary);
         BinaryReplayWriter writer(codec);
-        writer.write(script, replayFile);
+        writer.write(
+            stripSelfGeneratedEvents(replayRecorder.getEvents()),
+            replayFile);
     }
 
     return 0;

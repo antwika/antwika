@@ -16,4 +16,16 @@ namespace antwika::engine::events
      */
     inline constexpr const char *kTick = "engine.tick";
 
+    /**
+     * @brief Dispatched by application code (or a test) to request that the
+     * run stop.
+     *
+     * Observed by StopSignal, which EngineLoop consults after each tick to
+     * decide whether to keep running. Unlike kTick, this event is genuine
+     * external input, not something the engine regenerates itself -- it
+     * must be part of a run's recorded/replayed input for a replay to stop
+     * at the same tick a live run did.
+     */
+    inline constexpr const char *kStop = "engine.stop";
+
 } // namespace antwika::engine::events

@@ -2,6 +2,7 @@
 
 #include <sstream>
 
+#include <antwika/engine/Events.hpp>
 #include <antwika/event/Event.hpp>
 #include <antwika/event/EventRecorder.hpp>
 #include <antwika/event/TimedEvent.hpp>
@@ -36,7 +37,7 @@ using antwika::time::fakes::FakeClock;
 
 namespace
 {
-    constexpr antwika::time::Tick kTotalTicks = 5;
+    constexpr antwika::time::Tick kMaxTicks = 10;
 
     GameState runGame(IReplaySource &source)
     {
@@ -54,7 +55,7 @@ namespace
             logPolicy,
             eventSink,
             source,
-            kTotalTicks);
+            kMaxTicks);
     }
 } // namespace
 
@@ -79,6 +80,10 @@ TEST(ReplayIntegrationTest, LoadingASavedReplayReproducesTheSameGameState)
                 .name = antwika::game::events::kScoreIncrement,
                 .payload = "2",
             },
+        },
+        TimedEvent{
+            .tick = 4,
+            .event = Event{.name = antwika::engine::events::kStop},
         },
     };
 

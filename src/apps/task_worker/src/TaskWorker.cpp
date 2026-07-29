@@ -3,6 +3,7 @@
 #include <antwika/ecs/SystemScheduler.hpp>
 #include <antwika/ecs/World.hpp>
 #include <antwika/engine/Engine.hpp>
+#include <antwika/engine/StopSignal.hpp>
 #include <antwika/event/Event.hpp>
 #include <antwika/event/EventDispatcher.hpp>
 #include <antwika/event/TickedEventDispatcher.hpp>
@@ -19,6 +20,7 @@ using antwika::ecs::Entity;
 using antwika::ecs::SystemScheduler;
 using antwika::ecs::World;
 using antwika::engine::Engine;
+using antwika::engine::StopSignal;
 using antwika::event::Event;
 using antwika::event::EventDispatcher;
 using antwika::event::TickedEventDispatcher;
@@ -48,10 +50,11 @@ namespace antwika::task_worker
         ILogPolicy &logPolicy,
         IEventSink &eventSink,
         IReplaySource &inputSource,
-        antwika::time::Tick totalTicks,
         std::uint32_t workerCount,
         std::vector<std::reference_wrapper<ISystem>> observers,
-        TaskRegistry *registry)
+        TaskRegistry *registry,
+        std::optional<antwika::time::Tick> maxTicks,
+        ITimedEventSink *replayRecorder)
     {
         Logger logger(formatter, logPolicy, clock, appender);
         EventDispatcher dispatcher({eventSink});
@@ -93,15 +96,22 @@ namespace antwika::task_worker
 
         TaskSubmissionSink submissionSink(
             world, systemScheduler, jobScheduler, lookup, taskRegistry);
-        TickedEventDispatcher tickedDispatcher(
-            dispatcher, {submissionSink});
+        StopSignal stopSignal;
+
+        std::vector<std::reference_wrapper<ITimedEventSink>> timedSinks{
+            submissionSink, stopSignal};
+        if (replayRecorder != nullptr)
+        {
+            timedSinks.push_back(*replayRecorder);
+        }
+        TickedEventDispatcher tickedDispatcher(dispatcher, timedSinks);
 
         Engine engine(logger, tickedDispatcher);
         TaskWorker taskWorker(engine, tickedDispatcher);
         taskWorker.run();
 
         EngineLoop loop(engine, tickedDispatcher, inputSource);
-        loop.run(totalTicks);
+        loop.run(stopSignal, maxTicks);
 
         std::vector<Worker> finalState;
         finalState.reserve(workerEntities.size());

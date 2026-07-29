@@ -1,12 +1,17 @@
 #include <gtest/gtest.h>
 
+#include <vector>
+
+#include <antwika/engine/Events.hpp>
 #include <antwika/event/Event.hpp>
 #include <antwika/event/EventRecorder.hpp>
+#include <antwika/event/ReplayRecorder.hpp>
 #include <antwika/event/TimedEvent.hpp>
 #include <antwika/log/Level.hpp>
 #include <antwika/log/MinimumLevelLogPolicy.hpp>
 #include <antwika/log/NullAppender.hpp>
 #include <antwika/log/PlainFormatter.hpp>
+#include <antwika/replay/EngineLoopError.hpp>
 #include <antwika/replay/ReplaySource.hpp>
 #include <antwika/time/fakes/FakeClock.hpp>
 
@@ -15,12 +20,14 @@
 
 using antwika::event::Event;
 using antwika::event::EventRecorder;
+using antwika::event::ReplayRecorder;
 using antwika::event::TimedEvent;
 using antwika::game::GameState;
 using antwika::log::Level;
 using antwika::log::MinimumLevelLogPolicy;
 using antwika::log::NullAppender;
 using antwika::log::PlainFormatter;
+using antwika::replay::EngineLoopError;
 using antwika::replay::ReplaySource;
 using antwika::time::fakes::FakeClock;
 
@@ -28,7 +35,7 @@ using antwika::time::fakes::FakeClock;
 // Re-testing their exact call sequences here would be redundant.
 // It would also be brittle to maintain over time.
 // This test instead verifies the wiring end to end, black-box style.
-// It feeds a scripted input over a fixed number of ticks.
+// It feeds a scripted input that ends with engine.stop.
 // Then it checks whether GameState comes out right.
 TEST(BootstrapTest, Bootstrap_RunsScriptedTicksAndReturnsResultingGameState)
 {
@@ -54,6 +61,10 @@ TEST(BootstrapTest, Bootstrap_RunsScriptedTicksAndReturnsResultingGameState)
                 .payload = "2",
             },
         },
+        TimedEvent{
+            .tick = 4,
+            .event = Event{.name = antwika::engine::events::kStop},
+        },
     });
 
     auto state = antwika::game::bootstrap(
@@ -63,7 +74,7 @@ TEST(BootstrapTest, Bootstrap_RunsScriptedTicksAndReturnsResultingGameState)
         logPolicy,
         eventSink,
         inputSource,
-        5);
+        10);
 
     EXPECT_EQ(state, (GameState{.ticksProcessed = 5, .score = 7}));
 }
@@ -77,7 +88,12 @@ TEST(BootstrapTest, Bootstrap_WithNoScriptedInputOnlyAdvancesTicks)
     MinimumLevelLogPolicy logPolicy(Level::Info);
     EventRecorder eventSink;
 
-    ReplaySource inputSource({});
+    ReplaySource inputSource({
+        TimedEvent{
+            .tick = 2,
+            .event = Event{.name = antwika::engine::events::kStop},
+        },
+    });
 
     auto state = antwika::game::bootstrap(
         fakeClock,
@@ -86,7 +102,94 @@ TEST(BootstrapTest, Bootstrap_WithNoScriptedInputOnlyAdvancesTicks)
         logPolicy,
         eventSink,
         inputSource,
-        3);
+        10);
 
     EXPECT_EQ(state, (GameState{.ticksProcessed = 3, .score = 0}));
+}
+
+// A caller wanting to persist a `--record` file has no pre-known script.
+// It instead passes an optional replayRecorder.
+// bootstrap() must register it so it observes every dispatched event.
+TEST(BootstrapTest, Bootstrap_ForwardsDispatchedEventsToAReplayRecorder)
+{
+    std::chrono::system_clock::time_point time{};
+    FakeClock fakeClock(time);
+    NullAppender appender;
+    PlainFormatter formatter;
+    MinimumLevelLogPolicy logPolicy(Level::Info);
+    EventRecorder eventSink;
+
+    ReplaySource inputSource({
+        TimedEvent{
+            .tick = 0,
+            .event = Event{
+                .name = antwika::game::events::kScoreIncrement,
+                .payload = "5",
+            },
+        },
+        TimedEvent{
+            .tick = 0,
+            .event = Event{.name = antwika::engine::events::kStop},
+        },
+    });
+    ReplayRecorder replayRecorder;
+
+    antwika::game::bootstrap(
+        fakeClock,
+        appender,
+        formatter,
+        logPolicy,
+        eventSink,
+        inputSource,
+        10,
+        &replayRecorder);
+
+    EXPECT_EQ(
+        replayRecorder.getEvents(),
+        (std::vector<TimedEvent>{
+            TimedEvent{
+                .tick = 0,
+                .event = Event{.name = "Running Antwika Game"},
+            },
+            TimedEvent{
+                .tick = 0,
+                .event = Event{
+                    .name = antwika::game::events::kScoreIncrement,
+                    .payload = "5",
+                },
+            },
+            TimedEvent{
+                .tick = 0,
+                .event = Event{.name = antwika::engine::events::kStop},
+            },
+            TimedEvent{
+                .tick = 0,
+                .event = Event{.name = antwika::engine::events::kTick},
+            },
+        }));
+}
+
+// Safety valve: a run that never dispatches engine.stop must fail loudly.
+// It should not hang or silently truncate once maxTicks is reached.
+TEST(BootstrapTest, Bootstrap_ThrowsWhenMaxTicksIsReachedWithoutAStopEvent)
+{
+    std::chrono::system_clock::time_point time{};
+    FakeClock fakeClock(time);
+    NullAppender appender;
+    PlainFormatter formatter;
+    MinimumLevelLogPolicy logPolicy(Level::Info);
+    EventRecorder eventSink;
+
+    ReplaySource inputSource({});
+
+    EXPECT_THROW(
+        antwika::game::bootstrap(
+            fakeClock,
+            appender,
+            formatter,
+            logPolicy,
+            eventSink,
+            inputSource,
+            3),
+        EngineLoopError);
 }

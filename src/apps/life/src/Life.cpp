@@ -3,6 +3,7 @@
 #include <antwika/ecs/SystemScheduler.hpp>
 #include <antwika/ecs/World.hpp>
 #include <antwika/engine/Engine.hpp>
+#include <antwika/engine/StopSignal.hpp>
 #include <antwika/event/Event.hpp>
 #include <antwika/event/EventDispatcher.hpp>
 #include <antwika/event/TickedEventDispatcher.hpp>
@@ -16,6 +17,7 @@
 using antwika::ecs::SystemScheduler;
 using antwika::ecs::World;
 using antwika::engine::Engine;
+using antwika::engine::StopSignal;
 using antwika::event::Event;
 using antwika::event::EventDispatcher;
 using antwika::event::TickedEventDispatcher;
@@ -44,10 +46,11 @@ namespace antwika::life
         ILogPolicy &logPolicy,
         IEventSink &eventSink,
         IReplaySource &inputSource,
-        antwika::time::Tick totalTicks,
         std::uint32_t width,
         std::uint32_t height,
-        std::vector<std::reference_wrapper<ISystem>> observers)
+        std::vector<std::reference_wrapper<ISystem>> observers,
+        std::optional<antwika::time::Tick> maxTicks,
+        ITimedEventSink *replayRecorder)
     {
         Logger logger(formatter, logPolicy, clock, appender);
         EventDispatcher dispatcher({eventSink});
@@ -68,14 +71,22 @@ namespace antwika::life
         }
 
         BoardSink boardSink(world, grid, scheduler);
-        TickedEventDispatcher tickedDispatcher(dispatcher, {boardSink});
+        StopSignal stopSignal;
+
+        std::vector<std::reference_wrapper<ITimedEventSink>> timedSinks{
+            boardSink, stopSignal};
+        if (replayRecorder != nullptr)
+        {
+            timedSinks.push_back(*replayRecorder);
+        }
+        TickedEventDispatcher tickedDispatcher(dispatcher, timedSinks);
 
         Engine engine(logger, tickedDispatcher);
         Life life(engine, tickedDispatcher);
         life.run();
 
         EngineLoop loop(engine, tickedDispatcher, inputSource);
-        loop.run(totalTicks);
+        loop.run(stopSignal, maxTicks);
 
         return readBoard(world, grid);
     }

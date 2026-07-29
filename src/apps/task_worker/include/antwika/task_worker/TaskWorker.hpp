@@ -2,12 +2,14 @@
 
 #include <cstdint>
 #include <functional>
+#include <optional>
 #include <vector>
 
 #include <antwika/ecs/ISystem.hpp>
 #include <antwika/engine/IEngine.hpp>
 #include <antwika/event/IEventDispatcher.hpp>
 #include <antwika/event/IEventSink.hpp>
+#include <antwika/event/ITimedEventSink.hpp>
 #include <antwika/log/IAppender.hpp>
 #include <antwika/log/IFormatter.hpp>
 #include <antwika/log/ILogPolicy.hpp>
@@ -25,6 +27,7 @@ namespace antwika::task_worker
     using antwika::engine::IEngine;
     using antwika::event::IEventDispatcher;
     using antwika::event::IEventSink;
+    using antwika::event::ITimedEventSink;
     using antwika::log::IAppender;
     using antwika::log::IFormatter;
     using antwika::log::ILogPolicy;
@@ -63,12 +66,12 @@ namespace antwika::task_worker
     /**
      * @brief Wires the ECS world, job scheduler, engine, event, and
      * replay collaborators together, boots the simulation, then drives
-     * the fixed-timestep tick loop.
+     * the tick loop until an engine.stop event is dispatched.
      *
-     * Runs for totalTicks, sourcing each tick's events from
-     * inputSource -- typically events::kTaskSubmit, submitting tasks
-     * over time. A hand-scripted "live" run and a loaded replay both
-     * use this same function, the same contract
+     * Sources each tick's events from inputSource -- typically
+     * events::kTaskSubmit, submitting tasks over time -- until it
+     * dispatches engine.stop. A hand-scripted "live" run and a loaded
+     * replay both use this same function, the same contract
      * antwika::life::bootstrap() follows for its own state.
      *
      * @param clock Supplies timestamps for the logger.
@@ -77,7 +80,6 @@ namespace antwika::task_worker
      * @param logPolicy Decides which log records are emitted.
      * @param eventSink Receives every dispatched event.
      * @param inputSource Supplies each tick's events, live or replayed.
-     * @param totalTicks The number of ticks to run.
      * @param workerCount Number of Worker entities to seed.
      * @param observers Extra systems registered into an "observe" phase
      * that runs after "dispatch" every tick. Defaults to none, for
@@ -87,6 +89,13 @@ namespace antwika::task_worker
      * (e.g. StatusPrintSystem, itself passed via observers) to read
      * live during the run. Optional: defaults to an internal registry
      * for callers with no need to observe task status externally.
+     * @param maxTicks Optional safety cap on how many ticks to run before
+     * giving up if engine.stop is never dispatched. Production callers
+     * can leave this unset to run uncapped; tests should always pass one.
+     * @param replayRecorder Optional sink that, if provided, receives
+     * every dispatched event stamped with its tick -- what a caller
+     * wanting to persist a `--record` file should register, since a run's
+     * actual length is no longer known ahead of time. Defaults to none.
      * @return Every Worker's final state, in creation order.
      */
     std::vector<Worker> bootstrap(
@@ -96,9 +105,10 @@ namespace antwika::task_worker
         ILogPolicy &logPolicy,
         IEventSink &eventSink,
         IReplaySource &inputSource,
-        antwika::time::Tick totalTicks,
         std::uint32_t workerCount,
         std::vector<std::reference_wrapper<ISystem>> observers = {},
-        TaskRegistry *registry = nullptr);
+        TaskRegistry *registry = nullptr,
+        std::optional<antwika::time::Tick> maxTicks = std::nullopt,
+        ITimedEventSink *replayRecorder = nullptr);
 
 } // namespace antwika::task_worker
