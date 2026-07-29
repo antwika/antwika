@@ -24,7 +24,7 @@ namespace antwika::replay
      * identical for a live run or a loaded replay, which is what guarantees
      * replay reproduces the same state — deliberately, not by coincidence.
      */
-    class EngineLoop
+    class EngineLoop final
     {
     public:
         /**

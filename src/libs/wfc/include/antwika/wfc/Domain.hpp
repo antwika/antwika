@@ -14,14 +14,14 @@ namespace antwika::wfc
      * same type serves both a 3-symbol tile strip and Sudoku's 9-symbol
      * alphabet without a template parameter.
      */
-    class Domain
+    class Domain final
     {
     public:
         /**
          * @brief Forward iterator over a Domain's remaining values, in
          * ascending order.
          */
-        class const_iterator
+        class const_iterator final
         {
         public:
             using value_type = std::size_t;

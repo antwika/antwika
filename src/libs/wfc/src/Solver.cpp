@@ -1,5 +1,6 @@
 #include "antwika/wfc/Solver.hpp"
 
+#include <algorithm>
 #include <cstdint>
 #include <numeric>
 #include <optional>
@@ -113,12 +114,17 @@ namespace antwika::wfc
             entropyIndex.update(cell, domain);
         };
 
+        // Reused across every propagate() call instead of reallocated.
+        // A contradiction can abandon entries still marked true.
+        // So each call resets it up front rather than trust the past.
+        std::vector<bool> queued(constraints.size(), false);
+
         auto propagate =
             [&](const std::vector<std::size_t> &startingWorklist) -> bool
         {
             std::vector<std::size_t> worklist(
                 startingWorklist.begin(), startingWorklist.end());
-            std::vector<bool> queued(constraints.size(), false);
+            std::fill(queued.begin(), queued.end(), false);
             for (const std::size_t index : worklist)
             {
                 queued[index] = true;

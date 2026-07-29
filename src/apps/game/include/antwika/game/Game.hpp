@@ -31,7 +31,7 @@ namespace antwika::game
     /**
      * @brief Announces game startup and starts the engine.
      */
-    class Game
+    class Game final
     {
     public:
         /**

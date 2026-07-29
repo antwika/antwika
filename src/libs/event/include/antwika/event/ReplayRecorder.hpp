@@ -2,9 +2,9 @@
 
 #include <vector>
 
-#include "ITimedEventHistory.hpp"
-#include "ITimedEventSink.hpp"
-#include "TimedEvent.hpp"
+#include "antwika/event/ITimedEventHistory.hpp"
+#include "antwika/event/ITimedEventSink.hpp"
+#include "antwika/event/TimedEvent.hpp"
 
 namespace antwika::event
 {

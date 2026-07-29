@@ -2,10 +2,16 @@ find_package(GTest REQUIRED)
 
 add_executable(antwika_replay_tests
     BinaryEventCodecTest.cpp
+    BinaryPrimitivesTest.cpp
     BinaryReplayWriterReaderTest.cpp
     EngineLoopTest.cpp
     ReplayDeterminismTest.cpp
     ReplaySourceTest.cpp
+)
+
+target_include_directories(antwika_replay_tests
+    PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/../src
 )
 
 target_link_libraries(antwika_replay_tests

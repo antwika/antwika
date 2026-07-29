@@ -5,8 +5,8 @@
 
 #include <antwika/time/Tick.hpp>
 
-#include "IEventDispatcher.hpp"
-#include "ITimedEventSink.hpp"
+#include "antwika/event/IEventDispatcher.hpp"
+#include "antwika/event/ITimedEventSink.hpp"
 
 namespace antwika::event
 {

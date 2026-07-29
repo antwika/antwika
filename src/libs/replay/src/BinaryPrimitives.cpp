@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <array>
+#include <limits>
 
 #include <antwika/replay/ReplayFormatError.hpp>
 
@@ -67,8 +68,19 @@ namespace antwika::replay::detail
         return readBigEndian<std::uint64_t>(in);
     }
 
+    void checkFitsInU32Length(std::size_t size)
+    {
+        if (size > std::numeric_limits<std::uint32_t>::max())
+        {
+            throw ReplayFormatError(
+                "antwika::replay: string exceeds the maximum length "
+                "a 32-bit length prefix can represent");
+        }
+    }
+
     void writeString(const std::string &value, std::ostream &out)
     {
+        checkFitsInU32Length(value.size());
         writeU32(static_cast<std::uint32_t>(value.size()), out);
         if (!value.empty())
         {

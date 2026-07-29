@@ -23,6 +23,11 @@ namespace antwika::engine
 
     void Engine::step(antwika::time::Tick)
     {
+        // gcov -b tags this call's exception-unwind edge (throw).
+        // It covers allocation inside Event's std::string members.
+        // It also covers allocation inside dispatch() itself.
+        // Taken only if one of those allocations actually fails.
+        // See docs/confirming-unreachable-branches.md.
         dispatcher.dispatch(Event{.name = events::kTick}); // GCOVR_EXCL_LINE
     }
 

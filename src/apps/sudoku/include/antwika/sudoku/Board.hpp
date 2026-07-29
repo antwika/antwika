@@ -15,7 +15,7 @@ namespace antwika::sudoku
      * Cells hold 0 (blank) or a digit 1-9. Row/column indices are
      * 0-based; row-major flat storage.
      */
-    class Board
+    class Board final
     {
     public:
         static constexpr std::size_t kSize = 9;

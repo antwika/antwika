@@ -22,7 +22,7 @@ namespace antwika::wfc
      * undo log -- never recursion, so search depth is never bounded by
      * the C++ call stack.
      */
-    class Solver
+    class Solver final
     {
     public:
         /**

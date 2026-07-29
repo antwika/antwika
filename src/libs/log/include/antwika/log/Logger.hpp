@@ -18,7 +18,7 @@ namespace antwika::log
     /**
      * @brief ILogger that formats and appends records that pass a policy check.
      */
-    class Logger : public ILogger
+    class Logger final : public ILogger
     {
     public:
         /**

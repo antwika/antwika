@@ -12,7 +12,7 @@ namespace antwika::time::fakes
      *
      * Intended for tests that need deterministic, reproducible timestamps.
      */
-    class FakeClock : public IClock
+    class FakeClock final : public IClock
     {
     public:
         /**

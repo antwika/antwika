@@ -10,7 +10,7 @@ namespace antwika::log
     /**
      * @brief IAppender that discards every message it receives.
      */
-    class NullAppender : public IAppender
+    class NullAppender final : public IAppender
     {
     public:
         /**

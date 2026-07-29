@@ -10,7 +10,7 @@ namespace antwika::wfc
      * @brief A square boolean matrix describing which symbol pairs may
      * sit next to each other across an AdjacencyConstraint.
      */
-    class CompatibilityTable
+    class CompatibilityTable final
     {
     public:
         /**

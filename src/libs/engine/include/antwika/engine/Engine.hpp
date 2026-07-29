@@ -15,7 +15,7 @@ namespace antwika::engine
      * @brief IEngine implementation that logs its lifecycle and broadcasts
      * the built-in tick event once per step.
      */
-    class Engine : public IEngine
+    class Engine final : public IEngine
     {
     public:
         /**
