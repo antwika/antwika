@@ -88,12 +88,39 @@ namespace antwika::gfx::conformance
         EXPECT_NE(window->id(), kNullWindowId);
     }
 
+    TYPED_TEST_P(GfxBackendConformance, MaxWindows_IsAtLeastOne)
+    {
+        EXPECT_GE(this->backend->maxWindows(), std::size_t{1});
+    }
+
     TYPED_TEST_P(GfxBackendConformance, CreateWindow_GivesEachWindowItsOwnId)
     {
+        if (this->backend->maxWindows() < 2)
+        {
+            GTEST_SKIP() << "backend allows only one window at a time";
+        }
+
         const auto first = this->backend->createWindow(this->demoDesc());
         const auto second = this->backend->createWindow(this->demoDesc());
 
         EXPECT_NE(first->id(), second->id());
+    }
+
+    TYPED_TEST_P(GfxBackendConformance, CreateWindow_RefusesToExceedItsLimit)
+    {
+        if (this->backend->maxWindows() != 1)
+        {
+            GTEST_SKIP() << "backend allows more than one window";
+        }
+
+        const auto first = this->backend->createWindow(this->demoDesc());
+
+        EXPECT_THROW(
+            {
+                const auto second =
+                    this->backend->createWindow(this->demoDesc());
+            },
+            GfxError);
     }
 
     TYPED_TEST_P(GfxBackendConformance, CreateWindow_ReportsTheRequestedTitle)
@@ -135,6 +162,11 @@ namespace antwika::gfx::conformance
 
     TYPED_TEST_P(GfxBackendConformance, CreateWindow_ReturnsIndependentWindows)
     {
+        if (this->backend->maxWindows() < 2)
+        {
+            GTEST_SKIP() << "backend allows only one window at a time";
+        }
+
         const auto first = this->backend->createWindow(this->demoDesc());
         const auto second = this->backend->createWindow(this->demoDesc());
 
@@ -208,9 +240,11 @@ namespace antwika::gfx::conformance
     REGISTER_TYPED_TEST_SUITE_P(
         GfxBackendConformance,
         Name_IsNotEmpty,
+        MaxWindows_IsAtLeastOne,
         CreateWindow_ReturnsAnOpenWindow,
         CreateWindow_GivesTheWindowARealId,
         CreateWindow_GivesEachWindowItsOwnId,
+        CreateWindow_RefusesToExceedItsLimit,
         CreateWindow_ReportsTheRequestedTitle,
         CreateWindow_ReportsANonZeroSize,
         CreateWindow_ThrowsWhenWidthIsZero,

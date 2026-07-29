@@ -46,6 +46,11 @@ namespace antwika::gfx::sdl3
         return "sdl3";
     }
 
+    std::size_t Sdl3Backend::maxWindows() const
+    {
+        return kUnlimitedWindows;
+    }
+
     std::unique_ptr<IWindow> Sdl3Backend::createWindow(const WindowDesc &desc)
     {
         if (desc.size.width == 0 || desc.size.height == 0)

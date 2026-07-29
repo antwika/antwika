@@ -13,7 +13,7 @@ class AntwikaConan(ConanFile):
     # Only the selected one contributes a dependency, so the default build
     # pulls in no graphics framework at all.
     options = {
-        "gfx_backend": ["null", "sdl3"],
+        "gfx_backend": ["null", "sdl3", "raylib"],
     }
 
     default_options = {
@@ -26,6 +26,8 @@ class AntwikaConan(ConanFile):
 
         if self.options.gfx_backend == "sdl3":
             self.requires("sdl/3.2.20")
+        elif self.options.gfx_backend == "raylib":
+            self.requires("raylib/5.5")
 
     def build_requirements(self):
         self.test_requires("gtest/1.17.0")

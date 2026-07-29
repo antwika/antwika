@@ -23,7 +23,7 @@ ctest --test-dir build --output-on-failure
 
 Or in VS Code: `Ctrl+Shift+B` runs the same sequence as the default build task (see [`.vscode/tasks.json`](.vscode/tasks.json)).
 
-**Choosing a graphics backend** (default `null`, which needs no graphics framework and draws nothing):
+**Choosing a graphics backend** (`null`, `sdl3` or `raylib`; the default `null` needs no graphics framework and draws nothing):
 
 ```sh
 conan install . -of build-sdl3 -o gfx_backend=sdl3 \
@@ -41,7 +41,8 @@ The Conan option sets the `ANTWIKA_GFX_BACKEND` CMake variable, which names a di
 The `build_folder_vars` conf is what puts the backend in the preset name, so the sdl3 configuration does not collide with the default build's `conan-release` preset.
 Each configuration has its own lockfile, because selecting a backend changes the dependency graph.
 
-Set `SDL_VIDEODRIVER=dummy` to run the SDL build with no display, which is how the conformance suite is exercised without a desktop session.
+Set `SDL_VIDEODRIVER=dummy` to run the SDL build with no display, or use `xvfb-run` for any backend, which is how the conformance suite is exercised without a desktop session.
+`raylib` reports `maxWindows() == 1`, since it keeps its one window in global state; the conformance suite skips its multi-window tests for such a backend rather than failing them.
 
 **Run a single test binary / test case:**
 

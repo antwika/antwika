@@ -2,6 +2,7 @@
 
 #include <gmock/gmock.h>
 
+#include <cstddef>
 #include <memory>
 #include <optional>
 #include <string_view>
@@ -23,6 +24,7 @@ namespace antwika::gfx::mocks
     {
     public:
         MOCK_METHOD(std::string_view, name, (), (const, override));
+        MOCK_METHOD(std::size_t, maxWindows, (), (const, override));
 
         MOCK_METHOD(
             std::unique_ptr<IWindow>,

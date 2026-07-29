@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstddef>
 #include <cstdint>
 #include <memory>
 #include <optional>
@@ -51,6 +52,12 @@ namespace antwika::gfx
          * @return Always "null".
          */
         [[nodiscard]] std::string_view name() const override;
+
+        /**
+         * @brief How many windows this backend allows at once.
+         * @return kUnlimitedWindows: nothing here is a real resource.
+         */
+        [[nodiscard]] std::size_t maxWindows() const override;
 
         /**
          * @brief Open a new window that draws nothing.

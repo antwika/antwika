@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstddef>
 #include <memory>
 #include <optional>
 #include <string_view>
@@ -47,6 +48,12 @@ namespace antwika::gfx::sdl3
          * @return Always "sdl3".
          */
         [[nodiscard]] std::string_view name() const override;
+
+        /**
+         * @brief How many windows this backend allows at once.
+         * @return kUnlimitedWindows: SDL is happy with many.
+         */
+        [[nodiscard]] std::size_t maxWindows() const override;
 
         /**
          * @brief Open a new SDL window with a renderer attached.

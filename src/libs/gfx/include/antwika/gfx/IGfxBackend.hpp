@@ -1,5 +1,7 @@
 #pragma once
 
+#include <cstddef>
+#include <limits>
 #include <memory>
 #include <optional>
 #include <string_view>
@@ -10,6 +12,12 @@
 
 namespace antwika::gfx
 {
+
+    /**
+     * @brief The window count reported by a backend with no fixed limit.
+     */
+    inline constexpr std::size_t kUnlimitedWindows =
+        std::numeric_limits<std::size_t>::max();
 
     /**
      * @brief Creates windows and reports what happened to them.
@@ -31,15 +39,30 @@ namespace antwika::gfx
         [[nodiscard]] virtual std::string_view name() const = 0;
 
         /**
+         * @brief How many windows this backend can have open at once.
+         *
+         * Not every graphics framework does multiple windows: raylib, for
+         * one, has a single global window and no concept of a second.
+         * Rather than have such a backend pretend otherwise, it says so
+         * here, and createWindow() refuses to exceed what it reports.
+         *
+         * @return The limit, or kUnlimitedWindows when there isn't one.
+         * Never zero.
+         */
+        [[nodiscard]] virtual std::size_t maxWindows() const = 0;
+
+        /**
          * @brief Open a new window.
          *
-         * Windows are independent: opening a second one does not disturb
+         * Windows are independent as far as the backend allows: where
+         * more than one can be open, opening a second does not disturb
          * the first, and either can be closed on its own.
          *
          * @param desc What the window should look like.
          * @return The new window, never null.
          * @throws GfxError If the window could not be created, including
-         * when desc asks for a zero width or height.
+         * when desc asks for a zero width or height, or when maxWindows()
+         * are already open.
          */
         [[nodiscard]] virtual std::unique_ptr<IWindow> createWindow(
             const WindowDesc &desc) = 0;

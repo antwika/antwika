@@ -23,6 +23,11 @@ namespace antwika::gfx
         return "null";
     }
 
+    std::size_t NullBackend::maxWindows() const
+    {
+        return kUnlimitedWindows;
+    }
+
     std::unique_ptr<IWindow> NullBackend::createWindow(const WindowDesc &desc)
     {
         if (desc.size.width == 0 || desc.size.height == 0)
