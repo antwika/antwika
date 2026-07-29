@@ -1,13 +1,13 @@
+// The shared backend contract lives in NullBackendConformanceTest.cpp.
+// Only what is specific to this backend is left here.
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
 #include <antwika/log/Level.hpp>
 #include <antwika/log/mocks/MockLogger.hpp>
 
-#include "antwika/gfx/GfxError.hpp"
 #include "antwika/gfx/NullBackend.hpp"
 
-using antwika::gfx::GfxError;
 using antwika::gfx::NullBackend;
 using antwika::gfx::WindowDesc;
 using antwika::log::Level;
@@ -22,7 +22,7 @@ TEST(NullBackendTest, Name_IsNull)
     EXPECT_EQ(backend.name(), "null");
 }
 
-TEST(NullBackendTest, CreateWindow_ReturnsAnOpenWindowWithTheRequestedDesc)
+TEST(NullBackendTest, CreateWindow_ReportsExactlyTheRequestedSize)
 {
     NiceMock<MockLogger> logger;
     NullBackend backend(logger);
@@ -30,8 +30,8 @@ TEST(NullBackendTest, CreateWindow_ReturnsAnOpenWindowWithTheRequestedDesc)
     const auto window = backend.createWindow(
         WindowDesc{.title = "Antwika", .size = {.width = 640, .height = 480}});
 
-    EXPECT_TRUE(window->isOpen());
-    EXPECT_EQ(window->title(), "Antwika");
+    // Stronger than the conformance suite asks for, and only true here:
+    // nothing can resize a window that was never put on a screen.
     EXPECT_EQ(window->size().width, 640u);
     EXPECT_EQ(window->size().height, 480u);
 }
@@ -46,53 +46,13 @@ TEST(NullBackendTest, CreateWindow_LogsThatAWindowWasCreated)
     const auto window = backend.createWindow(WindowDesc{.title = "Antwika"});
 }
 
-TEST(NullBackendTest, CreateWindow_ThrowsWhenWidthIsZero)
+TEST(NullBackendTest, PollEvent_AlwaysReturnsNulloptWithNothingToReport)
 {
     NiceMock<MockLogger> logger;
     NullBackend backend(logger);
 
-    EXPECT_THROW(
-        {
-            const auto window = backend.createWindow(WindowDesc{
-                .title = "Antwika",
-                .size = {.width = 0, .height = 480}});
-        },
-        GfxError);
-}
+    const auto window = backend.createWindow(WindowDesc{.title = "Antwika"});
 
-TEST(NullBackendTest, CreateWindow_ThrowsWhenHeightIsZero)
-{
-    NiceMock<MockLogger> logger;
-    NullBackend backend(logger);
-
-    EXPECT_THROW(
-        {
-            const auto window = backend.createWindow(WindowDesc{
-                .title = "Antwika",
-                .size = {.width = 640, .height = 0}});
-        },
-        GfxError);
-}
-
-TEST(NullBackendTest, CreateWindow_ReturnsIndependentWindows)
-{
-    NiceMock<MockLogger> logger;
-    NullBackend backend(logger);
-
-    const auto first = backend.createWindow(WindowDesc{.title = "First"});
-    const auto second = backend.createWindow(WindowDesc{.title = "Second"});
-
-    first->close();
-
-    EXPECT_FALSE(first->isOpen());
-    EXPECT_TRUE(second->isOpen());
-    EXPECT_EQ(second->title(), "Second");
-}
-
-TEST(NullBackendTest, PollEvent_ReturnsNulloptBecauseNothingReportsEvents)
-{
-    NiceMock<MockLogger> logger;
-    NullBackend backend(logger);
-
+    EXPECT_FALSE(backend.pollEvent().has_value());
     EXPECT_FALSE(backend.pollEvent().has_value());
 }
