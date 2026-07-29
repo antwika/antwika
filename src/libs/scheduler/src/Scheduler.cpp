@@ -1,6 +1,8 @@
 #include "antwika/scheduler/Scheduler.hpp"
 
 #include <algorithm>
+#include <memory>
+#include <utility>
 
 #include "antwika/scheduler/SchedulerError.hpp"
 
@@ -25,6 +27,32 @@ namespace antwika::scheduler
         }
 
     } // namespace
+
+    JobId Scheduler::schedule(
+        std::unique_ptr<IJob> job,
+        Priority priority,
+        std::vector<JobId> dependsOn)
+    {
+        if (job == nullptr)
+        {
+            throw SchedulerError(
+                "Scheduler::schedule: job must not be null");
+        }
+
+        ownedJobs.push_back(std::move(job));
+        try
+        {
+            return schedule(
+                *ownedJobs.back(), priority, std::move(dependsOn));
+        }
+        catch (...)
+        {
+            // Preserve the documented "nothing is mutated" guarantee.
+            // A rejected job must not linger in ownedJobs.
+            ownedJobs.pop_back();
+            throw;
+        }
+    }
 
     JobId Scheduler::schedule(
         IJob &job,

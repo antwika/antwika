@@ -1,7 +1,7 @@
 #pragma once
 
-#include <memory>
-#include <utility>
+#include <cstdint>
+#include <string>
 #include <vector>
 
 #include <antwika/ecs/SystemScheduler.hpp>
@@ -32,9 +32,9 @@ namespace antwika::task_worker
      * staged World writes then running one tick of systemScheduler
      * (the "release" then "dispatch" phases). Reacts to
      * events::kTaskSubmit by parsing a task.submit payload, building a
-     * TaskJob it owns for the rest of the run, and scheduling it on
-     * jobScheduler -- all synchronously at dispatch time, before that
-     * tick's engine.tick event even fires, mirroring
+     * TaskJob and handing ownership of it to jobScheduler, which keeps
+     * it alive for the rest of the run -- all synchronously at dispatch
+     * time, before that tick's engine.tick event even fires, mirroring
      * antwika::life::BoardSink's kToggleCell handling.
      */
     class TaskSubmissionSink final : public ITickEventSink
@@ -69,13 +69,19 @@ namespace antwika::task_worker
         void handle(const TickEvent &event) override;
 
     private:
+        struct Submission
+        {
+            std::uint64_t taskId;
+            JobId jobId;
+            std::string label;
+        };
+
         World &world;
         SystemScheduler &systemScheduler;
         Scheduler &jobScheduler;
         WorkerLookup &lookup;
         TaskRegistry &registry;
-        std::vector<std::unique_ptr<TaskJob>> jobs;
-        std::vector<std::pair<std::uint64_t, JobId>> submitted;
+        std::vector<Submission> submitted;
     };
 
 } // namespace antwika::task_worker
