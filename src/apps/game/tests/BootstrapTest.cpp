@@ -51,14 +51,14 @@ TEST(BootstrapTest, Bootstrap_RunsScriptedTicksAndReturnsResultingGameState)
             .tick = 1,
             .event = Event{
                 .name = antwika::game::events::kScoreIncrement,
-                .payload = "5",
+                .payload = R"({"amount":5})",
             },
         },
         TimedEvent{
             .tick = 3,
             .event = Event{
                 .name = antwika::game::events::kScoreIncrement,
-                .payload = "2",
+                .payload = R"({"amount":2})",
             },
         },
         TimedEvent{
@@ -124,7 +124,7 @@ TEST(BootstrapTest, Bootstrap_ForwardsDispatchedEventsToAReplayRecorder)
             .tick = 0,
             .event = Event{
                 .name = antwika::game::events::kScoreIncrement,
-                .payload = "5",
+                .payload = R"({"amount":5})",
             },
         },
         TimedEvent{
@@ -155,7 +155,7 @@ TEST(BootstrapTest, Bootstrap_ForwardsDispatchedEventsToAReplayRecorder)
                 .tick = 0,
                 .event = Event{
                     .name = antwika::game::events::kScoreIncrement,
-                    .payload = "5",
+                    .payload = R"({"amount":5})",
                 },
             },
             TimedEvent{

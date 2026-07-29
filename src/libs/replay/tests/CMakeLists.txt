@@ -5,7 +5,10 @@ add_executable(antwika_replay_tests
     BinaryPrimitivesTest.cpp
     BinaryReplayWriterReaderTest.cpp
     EngineLoopTest.cpp
+    EventJsonTest.cpp
+    JsonReplayWriterReaderTest.cpp
     ReplayDeterminismTest.cpp
+    ReplayJsonTest.cpp
     ReplaySourceTest.cpp
 )
 

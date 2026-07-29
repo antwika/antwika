@@ -53,7 +53,11 @@ TEST(BoardSinkTest, ToggleCellEventsStageA2x2BlockThatSurvivesTheNextTick)
     registerLifeSystem(scheduler, system);
     BoardSink sink(world, grid, scheduler);
 
-    for (const std::string_view payload : {"1,1", "2,1", "1,2", "2,2"})
+    for (const std::string_view payload :
+         {R"({"x":1,"y":1})",
+          R"({"x":2,"y":1})",
+          R"({"x":1,"y":2})",
+          R"({"x":2,"y":2})"})
     {
         sink.handle(TimedEvent{
             .tick = 0,
@@ -97,7 +101,7 @@ TEST(BoardSinkTest, TickEventRunsLifeSystemLettingAnIsolatedCellDie)
         .tick = 0,
         .event = Event{
             .name = antwika::life::events::kToggleCell,
-            .payload = "1,1",
+            .payload = R"({"x":1,"y":1})",
         },
     });
     sink.handle(TimedEvent{
@@ -117,7 +121,7 @@ TEST(BoardSinkTest, TickEventRunsLifeSystemLettingAnIsolatedCellDie)
     EXPECT_FALSE(world.get<Cell>(grid.entityAt(1, 1)).alive);
 }
 
-TEST(BoardSinkTest, ToggleCellPayloadMissingCommaThrows)
+TEST(BoardSinkTest, ToggleCellPayloadThatIsNotValidJsonThrows)
 {
     NiceMock<MockLogger> logger;
     World world(logger);
@@ -132,7 +136,49 @@ TEST(BoardSinkTest, ToggleCellPayloadMissingCommaThrows)
             .tick = 0,
             .event = Event{
                 .name = antwika::life::events::kToggleCell,
-                .payload = "42",
+                .payload = "not json",
+            },
+        }),
+        BoardSinkError);
+}
+
+TEST(BoardSinkTest, ToggleCellPayloadMissingXFieldThrows)
+{
+    NiceMock<MockLogger> logger;
+    World world(logger);
+    Grid grid(world, 2, 2);
+    world.commit();
+
+    SystemScheduler scheduler;
+    BoardSink sink(world, grid, scheduler);
+
+    EXPECT_THROW(
+        sink.handle(TimedEvent{
+            .tick = 0,
+            .event = Event{
+                .name = antwika::life::events::kToggleCell,
+                .payload = R"({"y":2})",
+            },
+        }),
+        BoardSinkError);
+}
+
+TEST(BoardSinkTest, ToggleCellPayloadMissingYFieldThrows)
+{
+    NiceMock<MockLogger> logger;
+    World world(logger);
+    Grid grid(world, 2, 2);
+    world.commit();
+
+    SystemScheduler scheduler;
+    BoardSink sink(world, grid, scheduler);
+
+    EXPECT_THROW(
+        sink.handle(TimedEvent{
+            .tick = 0,
+            .event = Event{
+                .name = antwika::life::events::kToggleCell,
+                .payload = R"({"x":1})",
             },
         }),
         BoardSinkError);
@@ -153,7 +199,7 @@ TEST(BoardSinkTest, ToggleCellPayloadWithNonNumericFieldThrows)
             .tick = 0,
             .event = Event{
                 .name = antwika::life::events::kToggleCell,
-                .payload = "abc,def",
+                .payload = R"({"x":"abc","y":2})",
             },
         }),
         BoardSinkError);
@@ -174,13 +220,13 @@ TEST(BoardSinkTest, ToggleCellPayloadWithNegativeFieldThrows)
             .tick = 0,
             .event = Event{
                 .name = antwika::life::events::kToggleCell,
-                .payload = "-1,2",
+                .payload = R"({"x":-1,"y":2})",
             },
         }),
         BoardSinkError);
 }
 
-TEST(BoardSinkTest, ToggleCellPayloadWithTrailingGarbageThrows)
+TEST(BoardSinkTest, ToggleCellPayloadWithXFieldOutOfUint32RangeThrows)
 {
     NiceMock<MockLogger> logger;
     World world(logger);
@@ -195,7 +241,7 @@ TEST(BoardSinkTest, ToggleCellPayloadWithTrailingGarbageThrows)
             .tick = 0,
             .event = Event{
                 .name = antwika::life::events::kToggleCell,
-                .payload = "1x,2",
+                .payload = R"({"x":4294967296,"y":2})",
             },
         }),
         BoardSinkError);

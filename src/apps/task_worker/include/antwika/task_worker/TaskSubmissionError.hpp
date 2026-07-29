@@ -6,8 +6,10 @@ namespace antwika::task_worker
 {
 
     /**
-     * @brief Thrown by TaskSubmissionSink when a task.submit payload's
-     * dependsOnId refers to a task id that was never submitted.
+     * @brief Thrown by TaskSubmissionSink when a task.submit payload is
+     * not valid JSON, is missing a required field, has a field of the
+     * wrong type or out of range, or its dependsOnId refers to a task
+     * id that was never submitted.
      *
      * This is an application-level error, not a
      * antwika::scheduler::SchedulerError: resolving a submission

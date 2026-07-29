@@ -76,21 +76,21 @@ TEST(ReplayIntegrationTest, LoadingASavedReplayReproducesTheSameBoard)
             .tick = 0,
             .event = Event{
                 .name = antwika::life::events::kToggleCell,
-                .payload = "1,2",
+                .payload = R"({"x":1,"y":2})",
             },
         },
         TimedEvent{
             .tick = 0,
             .event = Event{
                 .name = antwika::life::events::kToggleCell,
-                .payload = "2,2",
+                .payload = R"({"x":2,"y":2})",
             },
         },
         TimedEvent{
             .tick = 0,
             .event = Event{
                 .name = antwika::life::events::kToggleCell,
-                .payload = "3,2",
+                .payload = R"({"x":3,"y":2})",
             },
         },
         TimedEvent{

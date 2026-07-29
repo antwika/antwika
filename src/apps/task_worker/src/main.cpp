@@ -63,35 +63,41 @@ namespace
                 .tick = 0,
                 .event = Event{
                     .name = kTaskSubmit,
-                    .payload = "1,1,4,Alpha",
+                    .payload = R"({"id":1,"priority":1,)"
+                               R"("durationTicks":4,"label":"Alpha"})",
                 },
             },
             TimedEvent{
                 .tick = 0,
                 .event = Event{
                     .name = kTaskSubmit,
-                    .payload = "2,1,5,Beta",
+                    .payload = R"({"id":2,"priority":1,)"
+                               R"("durationTicks":5,"label":"Beta"})",
                 },
             },
             TimedEvent{
                 .tick = 0,
                 .event = Event{
                     .name = kTaskSubmit,
-                    .payload = "3,0,2,Gamma",
+                    .payload = R"({"id":3,"priority":0,)"
+                               R"("durationTicks":2,"label":"Gamma"})",
                 },
             },
             TimedEvent{
                 .tick = 4,
                 .event = Event{
                     .name = kTaskSubmit,
-                    .payload = "4,3,1,Delta",
+                    .payload = R"({"id":4,"priority":3,)"
+                               R"("durationTicks":1,"label":"Delta"})",
                 },
             },
             TimedEvent{
                 .tick = 4,
                 .event = Event{
                     .name = kTaskSubmit,
-                    .payload = "5,1,1,Epsilon,4",
+                    .payload = R"({"id":5,"priority":1,)"
+                               R"("durationTicks":1,"label":"Epsilon",)"
+                               R"("dependsOnId":4})",
                 },
             },
             TimedEvent{

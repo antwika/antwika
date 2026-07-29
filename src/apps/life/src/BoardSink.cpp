@@ -1,9 +1,9 @@
 #include "antwika/life/BoardSink.hpp"
 
-#include <charconv>
 #include <cstdint>
-#include <string_view>
-#include <system_error>
+#include <limits>
+
+#include <nlohmann/json-schema.hpp>
 
 #include <antwika/engine/Events.hpp>
 
@@ -15,19 +15,31 @@ namespace antwika::life
 {
     namespace
     {
-        std::uint32_t parseUInt32(std::string_view text)
+        constexpr std::uint32_t kMaxCoordinate =
+            std::numeric_limits<std::uint32_t>::max();
+
+        nlohmann::json toggleCellSchema()
         {
-            std::uint32_t value{};
-            const auto result = std::from_chars(
-                text.data(), text.data() + text.size(), value);
-            if (result.ec != std::errc{} ||
-                result.ptr != text.data() + text.size())
+            nlohmann::json schema;
+            schema["$schema"] = "http://json-schema.org/draft-07/schema#";
+            schema["title"] = "life.toggle_cell payload";
+            schema["type"] = "object";
+            schema["additionalProperties"] = false;
+            schema["required"] = {"x", "y"}; // GCOVR_EXCL_LINE
+            for (const char *field : {"x", "y"})
             {
-                throw BoardSinkError(
-                    "BoardSink: life.toggle_cell payload contains a "
-                    "non-numeric or malformed numeric field");
+                schema["properties"][field]["type"] = "integer";
+                schema["properties"][field]["minimum"] = 0;
+                schema["properties"][field]["maximum"] = kMaxCoordinate;
             }
-            return value;
+            return schema;
+        }
+
+        const nlohmann::json_schema::json_validator &toggleCellValidator()
+        {
+            static const nlohmann::json_schema::json_validator validator(
+                toggleCellSchema()); // GCOVR_EXCL_LINE
+            return validator;
         }
     } // namespace
 
@@ -46,16 +58,32 @@ namespace antwika::life
         }
         else if (event.event.name == events::kToggleCell)
         {
-            const std::string_view payload = event.event.payload;
-            const auto separator = payload.find(',');
-            if (separator == std::string_view::npos)
+            nlohmann::json parsed;
+            try
+            {
+                parsed = nlohmann::json::parse(event.event.payload);
+            }
+            catch (const nlohmann::json::parse_error &) // GCOVR_EXCL_LINE
             {
                 throw BoardSinkError(
-                    "BoardSink: life.toggle_cell payload must be "
-                    "\"x,y\"");
+                    "BoardSink: life.toggle_cell payload is not valid "
+                    "JSON");
             }
-            const auto x = parseUInt32(payload.substr(0, separator));
-            const auto y = parseUInt32(payload.substr(separator + 1));
+
+            try
+            {
+                toggleCellValidator().validate(parsed);
+            }
+            catch (const std::exception &error) // GCOVR_EXCL_LINE
+            {
+                throw BoardSinkError(
+                    std::string(
+                        "BoardSink: life.toggle_cell payload failed "
+                        "schema validation: ") +
+                    error.what());
+            }
+            const auto x = parsed.at("x").get<std::uint32_t>();
+            const auto y = parsed.at("y").get<std::uint32_t>();
 
             const auto entity = grid.entityAt(x, y);
             const auto wasAlive = world.get<Cell>(entity).alive;

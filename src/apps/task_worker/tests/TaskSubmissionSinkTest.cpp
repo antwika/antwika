@@ -60,7 +60,8 @@ TEST(TaskSubmissionSinkTest, ParsesAPayloadIntoAScheduledTaskAtItsPriority)
         .tick = 0,
         .event = Event{
             .name = kTaskSubmit,
-            .payload = "1,1,3,Alpha",
+            .payload = R"({"id":1,"priority":1,"durationTicks":3,)"
+                       R"("label":"Alpha"})",
         },
     });
 
@@ -98,14 +99,16 @@ TEST(
         .tick = 0,
         .event = Event{
             .name = kTaskSubmit,
-            .payload = "1,1,1,First",
+            .payload = R"({"id":1,"priority":1,"durationTicks":1,)"
+                       R"("label":"First"})",
         },
     });
     sink.handle(TimedEvent{
         .tick = 0,
         .event = Event{
             .name = kTaskSubmit,
-            .payload = "2,1,1,Second,1",
+            .payload = R"({"id":2,"priority":1,"durationTicks":1,)"
+                       R"("label":"Second","dependsOnId":1})",
         },
     });
 
@@ -120,7 +123,7 @@ TEST(
     EXPECT_EQ(jobScheduler.pending(), 1U);
 }
 
-TEST(TaskSubmissionSinkTest, PayloadWithTooFewFieldsThrows)
+TEST(TaskSubmissionSinkTest, PayloadThatIsNotValidJsonThrows)
 {
     NiceMock<MockLogger> logger;
     World world(logger);
@@ -141,7 +144,61 @@ TEST(TaskSubmissionSinkTest, PayloadWithTooFewFieldsThrows)
             .tick = 0,
             .event = Event{
                 .name = kTaskSubmit,
-                .payload = "1,1,1",
+                .payload = "not json",
+            },
+        }),
+        TaskSubmissionError);
+}
+
+TEST(TaskSubmissionSinkTest, PayloadMissingDurationTicksFieldThrows)
+{
+    NiceMock<MockLogger> logger;
+    World world(logger);
+    const auto worker = world.create();
+    world.add<Worker>(worker, Worker{});
+    world.commit();
+
+    WorkerLookup lookup(world, {worker});
+    Scheduler jobScheduler;
+    SystemScheduler systemScheduler;
+    static_cast<void>(systemScheduler.createPhase("dispatch"));
+    TaskRegistry registry;
+    TaskSubmissionSink sink(
+        world, systemScheduler, jobScheduler, lookup, registry);
+
+    EXPECT_THROW(
+        sink.handle(TimedEvent{
+            .tick = 0,
+            .event = Event{
+                .name = kTaskSubmit,
+                .payload = R"({"id":1,"priority":1,"label":"Alpha"})",
+            },
+        }),
+        TaskSubmissionError);
+}
+
+TEST(TaskSubmissionSinkTest, PayloadMissingLabelFieldThrows)
+{
+    NiceMock<MockLogger> logger;
+    World world(logger);
+    const auto worker = world.create();
+    world.add<Worker>(worker, Worker{});
+    world.commit();
+
+    WorkerLookup lookup(world, {worker});
+    Scheduler jobScheduler;
+    SystemScheduler systemScheduler;
+    static_cast<void>(systemScheduler.createPhase("dispatch"));
+    TaskRegistry registry;
+    TaskSubmissionSink sink(
+        world, systemScheduler, jobScheduler, lookup, registry);
+
+    EXPECT_THROW(
+        sink.handle(TimedEvent{
+            .tick = 0,
+            .event = Event{
+                .name = kTaskSubmit,
+                .payload = R"({"id":1,"priority":1,"durationTicks":3})",
             },
         }),
         TaskSubmissionError);
@@ -168,13 +225,14 @@ TEST(TaskSubmissionSinkTest, NonNumericFieldThrows)
             .tick = 0,
             .event = Event{
                 .name = kTaskSubmit,
-                .payload = "1,oops,3,Alpha",
+                .payload = R"({"id":1,"priority":"oops",)"
+                           R"("durationTicks":3,"label":"Alpha"})",
             },
         }),
         TaskSubmissionError);
 }
 
-TEST(TaskSubmissionSinkTest, TrailingGarbageAfterANumberThrows)
+TEST(TaskSubmissionSinkTest, PayloadWithNonStringLabelThrows)
 {
     NiceMock<MockLogger> logger;
     World world(logger);
@@ -195,7 +253,8 @@ TEST(TaskSubmissionSinkTest, TrailingGarbageAfterANumberThrows)
             .tick = 0,
             .event = Event{
                 .name = kTaskSubmit,
-                .payload = "1,1,3x,Alpha",
+                .payload = R"({"id":1,"priority":1,)"
+                           R"("durationTicks":3,"label":123})",
             },
         }),
         TaskSubmissionError);
@@ -222,7 +281,8 @@ TEST(TaskSubmissionSinkTest, ZeroDurationTicksThrows)
             .tick = 0,
             .event = Event{
                 .name = kTaskSubmit,
-                .payload = "1,1,0,Alpha",
+                .payload = R"({"id":1,"priority":1,"durationTicks":0,)"
+                           R"("label":"Alpha"})",
             },
         }),
         TaskSubmissionError);
@@ -249,7 +309,8 @@ TEST(TaskSubmissionSinkTest, PriorityAboveUInt8RangeThrows)
             .tick = 0,
             .event = Event{
                 .name = kTaskSubmit,
-                .payload = "1,256,3,Alpha",
+                .payload = R"({"id":1,"priority":256,)"
+                           R"("durationTicks":3,"label":"Alpha"})",
             },
         }),
         TaskSubmissionError);
@@ -275,7 +336,8 @@ TEST(TaskSubmissionSinkTest, DuplicateTaskIdThrows)
         .tick = 0,
         .event = Event{
             .name = kTaskSubmit,
-            .payload = "1,1,3,Alpha",
+            .payload = R"({"id":1,"priority":1,"durationTicks":3,)"
+                       R"("label":"Alpha"})",
         },
     });
 
@@ -284,23 +346,20 @@ TEST(TaskSubmissionSinkTest, DuplicateTaskIdThrows)
             .tick = 0,
             .event = Event{
                 .name = kTaskSubmit,
-                .payload = "1,1,3,AlphaAgain",
+                .payload = R"({"id":1,"priority":1,"durationTicks":3,)"
+                           R"("label":"AlphaAgain"})",
             },
         }),
         TaskSubmissionError);
 }
 
+// Unlike the earlier CSV wire format, JSON needs no comma escaping.
+// A label containing a literal comma is just string content.
+// It never gets misparsed as an extra dependsOnId field.
 TEST(
     TaskSubmissionSinkTest,
-    EmbeddedCommaInLabelIsMisparsedAsDependsOnIdKnownLimitation)
+    LabelContainingACommaIsNoLongerMisparsedAsADependsOnId)
 {
-    // Known, documented limitation: the wire format has no escaping.
-    // A label containing a comma can look like a real dependsOnId.
-    // That happens once the fragment after it looks numeric.
-    // Task 42 below is unrelated to task 2's own dependencies.
-    // Its id is only chosen to match task 2's intended label text.
-    // This test locks in that accepted behavior rather than a fix.
-    // Fixing it would need a breaking wire-format change.
     NiceMock<MockLogger> logger;
     World world(logger);
     const auto worker = world.create();
@@ -319,20 +378,60 @@ TEST(
         .tick = 0,
         .event = Event{
             .name = kTaskSubmit,
-            .payload = "42,1,5,First",
+            .payload = R"({"id":1,"priority":1,"durationTicks":5,)"
+                       R"("label":"First"})",
         },
     });
     sink.handle(TimedEvent{
         .tick = 0,
         .event = Event{
             .name = kTaskSubmit,
-            .payload = "2,1,3,Second,42",
+            .payload = R"({"id":2,"priority":1,"durationTicks":3,)"
+                       R"("label":"Se,cond","dependsOnId":1})",
         },
     });
 
     EXPECT_EQ(
         registry.allTasks()[1].dependsOn,
-        (std::optional<TaskDependency>{TaskDependency{42, "First"}}));
+        (std::optional<TaskDependency>{TaskDependency{1, "First"}}));
+    EXPECT_EQ(registry.allTasks()[1].label, "Se,cond");
+}
+
+TEST(TaskSubmissionSinkTest, PayloadWithNonNumericDependsOnIdThrows)
+{
+    NiceMock<MockLogger> logger;
+    World world(logger);
+    const auto worker = world.create();
+    world.add<Worker>(worker, Worker{});
+    world.commit();
+
+    WorkerLookup lookup(world, {worker});
+    Scheduler jobScheduler;
+    SystemScheduler systemScheduler;
+    static_cast<void>(systemScheduler.createPhase("dispatch"));
+    TaskRegistry registry;
+    TaskSubmissionSink sink(
+        world, systemScheduler, jobScheduler, lookup, registry);
+
+    sink.handle(TimedEvent{
+        .tick = 0,
+        .event = Event{
+            .name = kTaskSubmit,
+            .payload = R"({"id":1,"priority":1,"durationTicks":1,)"
+                       R"("label":"First"})",
+        },
+    });
+
+    EXPECT_THROW(
+        sink.handle(TimedEvent{
+            .tick = 0,
+            .event = Event{
+                .name = kTaskSubmit,
+                .payload = R"({"id":2,"priority":1,"durationTicks":1,)"
+                           R"("label":"Second","dependsOnId":"bad"})",
+            },
+        }),
+        TaskSubmissionError);
 }
 
 TEST(TaskSubmissionSinkTest, UnresolvableDependsOnIdThrows)
@@ -356,7 +455,8 @@ TEST(TaskSubmissionSinkTest, UnresolvableDependsOnIdThrows)
             .tick = 0,
             .event = Event{
                 .name = kTaskSubmit,
-                .payload = "1,1,1,Orphan,999",
+                .payload = R"({"id":1,"priority":1,"durationTicks":1,)"
+                           R"("label":"Orphan","dependsOnId":999})",
             },
         }),
         TaskSubmissionError);
@@ -384,7 +484,8 @@ TEST(TaskSubmissionSinkTest, TickEventCommitsAndRunsSystemScheduler)
         .tick = 0,
         .event = Event{
             .name = kTaskSubmit,
-            .payload = "1,1,3,Alpha",
+            .payload = R"({"id":1,"priority":1,"durationTicks":3,)"
+                       R"("label":"Alpha"})",
         },
     });
     sink.handle(TimedEvent{

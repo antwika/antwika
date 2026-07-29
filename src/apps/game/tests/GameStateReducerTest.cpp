@@ -39,14 +39,14 @@ TEST(GameStateReducerTest, Handle_AddsToScoreOnCustomScoreIncrementEvent)
         .tick = 0,
         .event = Event{
             .name = antwika::game::events::kScoreIncrement,
-            .payload = "5",
+            .payload = R"({"amount":5})",
         },
     });
     reducer.handle(TimedEvent{
         .tick = 1,
         .event = Event{
             .name = antwika::game::events::kScoreIncrement,
-            .payload = "3",
+            .payload = R"({"amount":3})",
         },
     });
 
@@ -67,7 +67,7 @@ TEST(GameStateReducerTest, Handle_IgnoresUnrelatedEvents)
     EXPECT_EQ(state, GameState{});
 }
 
-TEST(GameStateReducerTest, Handle_NonNumericScoreIncrementPayloadThrows)
+TEST(GameStateReducerTest, Handle_ScoreIncrementPayloadThatIsNotJsonThrows)
 {
     GameState state;
     GameStateReducer reducer(state);
@@ -83,7 +83,7 @@ TEST(GameStateReducerTest, Handle_NonNumericScoreIncrementPayloadThrows)
         GameStateReducerError);
 }
 
-TEST(GameStateReducerTest, Handle_NegativeScoreIncrementPayloadThrows)
+TEST(GameStateReducerTest, Handle_ScoreIncrementPayloadWithNegativeAmountThrows)
 {
     GameState state;
     GameStateReducer reducer(state);
@@ -93,13 +93,13 @@ TEST(GameStateReducerTest, Handle_NegativeScoreIncrementPayloadThrows)
             .tick = 0,
             .event = Event{
                 .name = antwika::game::events::kScoreIncrement,
-                .payload = "-1",
+                .payload = R"({"amount":-1})",
             },
         }),
         GameStateReducerError);
 }
 
-TEST(GameStateReducerTest, Handle_ScoreIncrementTrailingGarbageThrows)
+TEST(GameStateReducerTest, Handle_ScoreIncrementPayloadMissingAmountThrows)
 {
     GameState state;
     GameStateReducer reducer(state);
@@ -109,7 +109,7 @@ TEST(GameStateReducerTest, Handle_ScoreIncrementTrailingGarbageThrows)
             .tick = 0,
             .event = Event{
                 .name = antwika::game::events::kScoreIncrement,
-                .payload = "5abc",
+                .payload = "{}",
             },
         }),
         GameStateReducerError);
@@ -130,7 +130,7 @@ TEST(
         .tick = 0,
         .event = Event{
             .name = antwika::game::events::kScoreIncrement,
-            .payload = "10",
+            .payload = R"({"amount":10})",
         },
     });
     reducer.handle(TimedEvent{

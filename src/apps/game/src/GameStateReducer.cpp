@@ -1,8 +1,6 @@
 #include "antwika/game/GameStateReducer.hpp"
 
-#include <charconv>
-#include <string_view>
-#include <system_error>
+#include <nlohmann/json-schema.hpp>
 
 #include <antwika/engine/Events.hpp>
 
@@ -14,19 +12,54 @@ namespace antwika::game
 
     namespace
     {
-        std::uint64_t parseUInt64(std::string_view text)
+        nlohmann::json scoreIncrementSchema()
         {
-            std::uint64_t value{};
-            const auto result = std::from_chars(
-                text.data(), text.data() + text.size(), value);
-            if (result.ec != std::errc{} ||
-                result.ptr != text.data() + text.size())
+            nlohmann::json schema;
+            schema["$schema"] = "http://json-schema.org/draft-07/schema#";
+            schema["title"] = "game.score_increment payload";
+            schema["type"] = "object";
+            schema["additionalProperties"] = false;
+            schema["required"] = {"amount"}; // GCOVR_EXCL_LINE
+            schema["properties"]["amount"]["type"] = "integer";
+            schema["properties"]["amount"]["minimum"] = 0;
+            return schema;
+        }
+
+        const nlohmann::json_schema::json_validator &
+        scoreIncrementValidator()
+        {
+            static const nlohmann::json_schema::json_validator validator(
+                scoreIncrementSchema()); // GCOVR_EXCL_LINE
+            return validator;
+        }
+
+        std::uint64_t parseAmount(const std::string &payload)
+        {
+            nlohmann::json parsed;
+            try
+            {
+                parsed = nlohmann::json::parse(payload);
+            }
+            catch (const nlohmann::json::parse_error &) // GCOVR_EXCL_LINE
             {
                 throw GameStateReducerError(
                     "GameStateReducer: game.score_increment payload is "
-                    "not a plain, in-range base-10 unsigned integer");
+                    "not valid JSON");
             }
-            return value;
+
+            try
+            {
+                scoreIncrementValidator().validate(parsed);
+            }
+            catch (const std::exception &error) // GCOVR_EXCL_LINE
+            {
+                throw GameStateReducerError(
+                    std::string(
+                        "GameStateReducer: game.score_increment payload "
+                        "failed schema validation: ") +
+                    error.what());
+            }
+            return parsed.at("amount").get<std::uint64_t>();
         }
     } // namespace
 
@@ -42,7 +75,7 @@ namespace antwika::game
         }
         else if (event.event.name == events::kScoreIncrement)
         {
-            state.score += parseUInt64(event.event.payload);
+            state.score += parseAmount(event.event.payload);
         }
     }
 
