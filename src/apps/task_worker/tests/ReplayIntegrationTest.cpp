@@ -5,16 +5,15 @@
 #include <antwika/engine/Events.hpp>
 #include <antwika/event/Event.hpp>
 #include <antwika/event/EventRecorder.hpp>
-#include <antwika/event/TimedEvent.hpp>
+#include <antwika/event/TickEvent.hpp>
 #include <antwika/log/Level.hpp>
 #include <antwika/log/MinimumLevelLogPolicy.hpp>
 #include <antwika/log/NullAppender.hpp>
 #include <antwika/log/PlainFormatter.hpp>
-#include <antwika/replay/BinaryEventCodec.hpp>
-#include <antwika/replay/BinaryReplayReader.hpp>
-#include <antwika/replay/BinaryReplayWriter.hpp>
 #include <antwika/replay/IReplaySource.hpp>
+#include <antwika/replay/ReplayReader.hpp>
 #include <antwika/replay/ReplaySource.hpp>
+#include <antwika/replay/ReplayWriter.hpp>
 #include <antwika/time/fakes/FakeClock.hpp>
 
 #include "antwika/task_worker/Events.hpp"
@@ -23,16 +22,15 @@
 
 using antwika::event::Event;
 using antwika::event::EventRecorder;
-using antwika::event::TimedEvent;
+using antwika::event::TickEvent;
 using antwika::log::Level;
 using antwika::log::MinimumLevelLogPolicy;
 using antwika::log::NullAppender;
 using antwika::log::PlainFormatter;
-using antwika::replay::BinaryEventCodec;
-using antwika::replay::BinaryReplayReader;
-using antwika::replay::BinaryReplayWriter;
 using antwika::replay::IReplaySource;
+using antwika::replay::ReplayReader;
 using antwika::replay::ReplaySource;
+using antwika::replay::ReplayWriter;
 using antwika::task_worker::Worker;
 using antwika::time::fakes::FakeClock;
 
@@ -72,24 +70,39 @@ namespace
 // That's the same entry point main.cpp uses, not a test-only shortcut.
 TEST(ReplayIntegrationTest, LoadingASavedReplayReproducesTheSameState)
 {
-    std::vector<TimedEvent> script{
-        TimedEvent{
+    std::vector<TickEvent> script{
+        TickEvent{
             .tick = 0,
-            .event = Event{.name = kTaskSubmit, .payload = "1,1,4,Alpha"}},
-        TimedEvent{
+            .event = Event{
+                .name = kTaskSubmit,
+                .payload = R"({"id":1,"priority":1,)"
+                           R"("durationTicks":4,"label":"Alpha"})"}},
+        TickEvent{
             .tick = 0,
-            .event = Event{.name = kTaskSubmit, .payload = "2,1,5,Beta"}},
-        TimedEvent{
+            .event = Event{
+                .name = kTaskSubmit,
+                .payload = R"({"id":2,"priority":1,)"
+                           R"("durationTicks":5,"label":"Beta"})"}},
+        TickEvent{
             .tick = 0,
-            .event = Event{.name = kTaskSubmit, .payload = "3,0,2,Gamma"}},
-        TimedEvent{
-            .tick = 4,
-            .event = Event{.name = kTaskSubmit, .payload = "4,3,1,Delta"}},
-        TimedEvent{
+            .event = Event{
+                .name = kTaskSubmit,
+                .payload = R"({"id":3,"priority":0,)"
+                           R"("durationTicks":2,"label":"Gamma"})"}},
+        TickEvent{
             .tick = 4,
             .event = Event{
-                .name = kTaskSubmit, .payload = "5,1,1,Epsilon,4"}},
-        TimedEvent{
+                .name = kTaskSubmit,
+                .payload = R"({"id":4,"priority":3,)"
+                           R"("durationTicks":1,"label":"Delta"})"}},
+        TickEvent{
+            .tick = 4,
+            .event = Event{
+                .name = kTaskSubmit,
+                .payload = R"({"id":5,"priority":1,)"
+                           R"("durationTicks":1,"label":"Epsilon",)"
+                           R"("dependsOnId":4})"}},
+        TickEvent{
             .tick = 5,
             .event = Event{.name = antwika::engine::events::kStop}},
     };
@@ -97,12 +110,11 @@ TEST(ReplayIntegrationTest, LoadingASavedReplayReproducesTheSameState)
     ReplaySource liveSource(script);
     auto liveState = runTaskWorker(liveSource);
 
-    BinaryEventCodec codec;
-    BinaryReplayWriter writer(codec);
+    ReplayWriter writer;
     std::stringstream replayStream;
     writer.write(script, replayStream);
 
-    BinaryReplayReader reader(codec);
+    ReplayReader reader;
     auto loadedEvents = reader.read(replayStream);
     ReplaySource replaySource(loadedEvents);
     auto replayedState = runTaskWorker(replaySource);

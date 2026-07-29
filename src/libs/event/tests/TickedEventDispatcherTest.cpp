@@ -2,24 +2,24 @@
 #include <gtest/gtest.h>
 
 #include <antwika/event/mocks/MockEventDispatcher.hpp>
-#include <antwika/event/mocks/MockTimedEventSink.hpp>
+#include <antwika/event/mocks/MockTickEventSink.hpp>
 
 #include "antwika/event/TickedEventDispatcher.hpp"
 
 using antwika::event::Event;
 using antwika::event::TickedEventDispatcher;
-using antwika::event::TimedEvent;
+using antwika::event::TickEvent;
 using antwika::event::mocks::MockEventDispatcher;
-using antwika::event::mocks::MockTimedEventSink;
+using antwika::event::mocks::MockTickEventSink;
 
 TEST(
     TickedEventDispatcherTest,
     Dispatch_ForwardsToWrappedDispatcherAndStampsCurrentTick)
 {
     MockEventDispatcher mockDispatcher;
-    MockTimedEventSink mockTimedEventSink;
+    MockTickEventSink mockTickEventSink;
     TickedEventDispatcher tickedEventDispatcher(
-        mockDispatcher, {mockTimedEventSink});
+        mockDispatcher, {mockTickEventSink});
     Event mockEvent{.name = "mockEvent"};
 
     tickedEventDispatcher.setTick(5);
@@ -28,8 +28,8 @@ TEST(
         ::testing::InSequence seq;
         EXPECT_CALL(mockDispatcher, dispatch(mockEvent)).Times(1);
         EXPECT_CALL(
-            mockTimedEventSink,
-            handle(TimedEvent{.tick = 5, .event = mockEvent}))
+            mockTickEventSink,
+            handle(TickEvent{.tick = 5, .event = mockEvent}))
             .Times(1);
     }
 
@@ -41,9 +41,9 @@ TEST(
     Dispatch_StampsAdvancingTicksAcrossMultipleCalls)
 {
     MockEventDispatcher mockDispatcher;
-    MockTimedEventSink mockTimedEventSink;
+    MockTickEventSink mockTickEventSink;
     TickedEventDispatcher tickedEventDispatcher(
-        mockDispatcher, {mockTimedEventSink});
+        mockDispatcher, {mockTickEventSink});
     Event mockEvent1{.name = "mockEvent1"};
     Event mockEvent2{.name = "mockEvent2"};
 
@@ -52,12 +52,12 @@ TEST(
     {
         ::testing::InSequence seq;
         EXPECT_CALL(
-            mockTimedEventSink,
-            handle(TimedEvent{.tick = 0, .event = mockEvent1}))
+            mockTickEventSink,
+            handle(TickEvent{.tick = 0, .event = mockEvent1}))
             .Times(1);
         EXPECT_CALL(
-            mockTimedEventSink,
-            handle(TimedEvent{.tick = 1, .event = mockEvent2}))
+            mockTickEventSink,
+            handle(TickEvent{.tick = 1, .event = mockEvent2}))
             .Times(1);
     }
 
@@ -71,14 +71,14 @@ TEST(
     Dispatch_PropagatesExceptionFromWrappedDispatcherWithoutNotifyingTimedSinks)
 {
     MockEventDispatcher mockDispatcher;
-    MockTimedEventSink mockTimedEventSink;
+    MockTickEventSink mockTickEventSink;
     TickedEventDispatcher tickedEventDispatcher(
-        mockDispatcher, {mockTimedEventSink});
+        mockDispatcher, {mockTickEventSink});
     Event mockEvent{.name = "mockEvent"};
 
     EXPECT_CALL(mockDispatcher, dispatch(mockEvent))
         .WillOnce(::testing::Throw(std::runtime_error("mockException")));
-    EXPECT_CALL(mockTimedEventSink, handle(::testing::_)).Times(0);
+    EXPECT_CALL(mockTickEventSink, handle(::testing::_)).Times(0);
 
     EXPECT_THROW(tickedEventDispatcher.dispatch(mockEvent), std::runtime_error);
 }

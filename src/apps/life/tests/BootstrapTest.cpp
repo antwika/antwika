@@ -7,8 +7,8 @@
 #include <antwika/engine/Events.hpp>
 #include <antwika/event/Event.hpp>
 #include <antwika/event/EventRecorder.hpp>
-#include <antwika/event/ReplayRecorder.hpp>
-#include <antwika/event/TimedEvent.hpp>
+#include <antwika/event/TickEventRecorder.hpp>
+#include <antwika/event/TickEvent.hpp>
 #include <antwika/log/Level.hpp>
 #include <antwika/log/MinimumLevelLogPolicy.hpp>
 #include <antwika/log/NullAppender.hpp>
@@ -25,8 +25,8 @@ using antwika::ecs::ISystem;
 using antwika::ecs::World;
 using antwika::event::Event;
 using antwika::event::EventRecorder;
-using antwika::event::ReplayRecorder;
-using antwika::event::TimedEvent;
+using antwika::event::TickEventRecorder;
+using antwika::event::TickEvent;
 using antwika::life::Board;
 using antwika::life::PrintSystem;
 using antwika::log::Level;
@@ -80,28 +80,28 @@ TEST(BootstrapTest, Bootstrap_RunsScriptedTicksAndReturnsResultingBoard)
     EventRecorder eventSink;
 
     ReplaySource inputSource({
-        TimedEvent{
+        TickEvent{
             .tick = 0,
             .event = Event{
                 .name = antwika::life::events::kToggleCell,
-                .payload = "1,2",
+                .payload = R"({"x":1,"y":2})",
             },
         },
-        TimedEvent{
+        TickEvent{
             .tick = 0,
             .event = Event{
                 .name = antwika::life::events::kToggleCell,
-                .payload = "2,2",
+                .payload = R"({"x":2,"y":2})",
             },
         },
-        TimedEvent{
+        TickEvent{
             .tick = 0,
             .event = Event{
                 .name = antwika::life::events::kToggleCell,
-                .payload = "3,2",
+                .payload = R"({"x":3,"y":2})",
             },
         },
-        TimedEvent{
+        TickEvent{
             .tick = 3,
             .event = Event{.name = antwika::engine::events::kStop},
         },
@@ -137,28 +137,28 @@ TEST(BootstrapTest, Bootstrap_RunsEveryObserverOncePerTick)
     EventRecorder eventSink;
 
     ReplaySource inputSource({
-        TimedEvent{
+        TickEvent{
             .tick = 0,
             .event = Event{
                 .name = antwika::life::events::kToggleCell,
-                .payload = "1,2",
+                .payload = R"({"x":1,"y":2})",
             },
         },
-        TimedEvent{
+        TickEvent{
             .tick = 0,
             .event = Event{
                 .name = antwika::life::events::kToggleCell,
-                .payload = "2,2",
+                .payload = R"({"x":2,"y":2})",
             },
         },
-        TimedEvent{
+        TickEvent{
             .tick = 0,
             .event = Event{
                 .name = antwika::life::events::kToggleCell,
-                .payload = "3,2",
+                .payload = R"({"x":3,"y":2})",
             },
         },
-        TimedEvent{
+        TickEvent{
             .tick = 3,
             .event = Event{.name = antwika::engine::events::kStop},
         },
@@ -205,7 +205,7 @@ TEST(BootstrapTest, Bootstrap_WithNoScriptedInputStaysAllDead)
     EventRecorder eventSink;
 
     ReplaySource inputSource({
-        TimedEvent{
+        TickEvent{
             .tick = 2,
             .event = Event{.name = antwika::engine::events::kStop},
         },
@@ -229,7 +229,7 @@ TEST(BootstrapTest, Bootstrap_WithNoScriptedInputStaysAllDead)
 // A caller wanting to persist a `--record` file has no pre-known script.
 // It instead passes an optional replayRecorder.
 // bootstrap() must register it so it observes every dispatched event.
-TEST(BootstrapTest, Bootstrap_ForwardsDispatchedEventsToAReplayRecorder)
+TEST(BootstrapTest, Bootstrap_ForwardsDispatchedEventsToATickEventRecorder)
 {
     std::chrono::system_clock::time_point time{};
     FakeClock fakeClock(time);
@@ -239,19 +239,19 @@ TEST(BootstrapTest, Bootstrap_ForwardsDispatchedEventsToAReplayRecorder)
     EventRecorder eventSink;
 
     ReplaySource inputSource({
-        TimedEvent{
+        TickEvent{
             .tick = 0,
             .event = Event{
                 .name = antwika::life::events::kToggleCell,
-                .payload = "1,2",
+                .payload = R"({"x":1,"y":2})",
             },
         },
-        TimedEvent{
+        TickEvent{
             .tick = 0,
             .event = Event{.name = antwika::engine::events::kStop},
         },
     });
-    ReplayRecorder replayRecorder;
+    TickEventRecorder replayRecorder;
 
     antwika::life::bootstrap(
         fakeClock,
@@ -268,23 +268,23 @@ TEST(BootstrapTest, Bootstrap_ForwardsDispatchedEventsToAReplayRecorder)
 
     EXPECT_EQ(
         replayRecorder.getEvents(),
-        (std::vector<TimedEvent>{
-            TimedEvent{
+        (std::vector<TickEvent>{
+            TickEvent{
                 .tick = 0,
                 .event = Event{.name = "Running Antwika Life"},
             },
-            TimedEvent{
+            TickEvent{
                 .tick = 0,
                 .event = Event{
                     .name = antwika::life::events::kToggleCell,
-                    .payload = "1,2",
+                    .payload = R"({"x":1,"y":2})",
                 },
             },
-            TimedEvent{
+            TickEvent{
                 .tick = 0,
                 .event = Event{.name = antwika::engine::events::kStop},
             },
-            TimedEvent{
+            TickEvent{
                 .tick = 0,
                 .event = Event{.name = antwika::engine::events::kTick},
             },

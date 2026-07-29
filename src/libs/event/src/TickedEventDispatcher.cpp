@@ -2,14 +2,14 @@
 
 #include <utility>
 
-#include "antwika/event/TimedEvent.hpp"
+#include "antwika/event/TickEvent.hpp"
 
 namespace antwika::event
 {
 
     TickedEventDispatcher::TickedEventDispatcher(
         IEventDispatcher &dispatcher,
-        std::vector<std::reference_wrapper<ITimedEventSink>> timedSinks)
+        std::vector<std::reference_wrapper<ITickEventSink>> timedSinks)
         : dispatcher(dispatcher), timedSinks(std::move(timedSinks))
     {
     }
@@ -23,7 +23,7 @@ namespace antwika::event
     {
         dispatcher.dispatch(event);
 
-        TimedEvent timedEvent{.tick = currentTick, .event = std::move(event)};
+        TickEvent timedEvent{.tick = currentTick, .event = std::move(event)};
 
         for (auto &sink : timedSinks)
         {

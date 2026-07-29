@@ -10,31 +10,29 @@
 #include <antwika/engine/Events.hpp>
 #include <antwika/engine/StopSignal.hpp>
 #include <antwika/event/EventDispatcher.hpp>
-#include <antwika/event/ITimedEventSink.hpp>
-#include <antwika/event/ReplayRecorder.hpp>
+#include <antwika/event/ITickEventSink.hpp>
+#include <antwika/event/TickEventRecorder.hpp>
 #include <antwika/event/TickedEventDispatcher.hpp>
 #include <antwika/log/mocks/MockLogger.hpp>
 
-#include "antwika/replay/BinaryEventCodec.hpp"
-#include "antwika/replay/BinaryReplayReader.hpp"
-#include "antwika/replay/BinaryReplayWriter.hpp"
 #include "antwika/replay/EngineLoop.hpp"
+#include "antwika/replay/ReplayReader.hpp"
 #include "antwika/replay/ReplaySource.hpp"
+#include "antwika/replay/ReplayWriter.hpp"
 
 using antwika::engine::Engine;
 using antwika::engine::StopSignal;
 using antwika::event::Event;
 using antwika::event::EventDispatcher;
-using antwika::event::ITimedEventSink;
-using antwika::event::ReplayRecorder;
+using antwika::event::ITickEventSink;
+using antwika::event::TickEventRecorder;
 using antwika::event::TickedEventDispatcher;
-using antwika::event::TimedEvent;
+using antwika::event::TickEvent;
 using antwika::log::mocks::MockLogger;
-using antwika::replay::BinaryEventCodec;
-using antwika::replay::BinaryReplayReader;
-using antwika::replay::BinaryReplayWriter;
 using antwika::replay::EngineLoop;
+using antwika::replay::ReplayReader;
 using antwika::replay::ReplaySource;
+using antwika::replay::ReplayWriter;
 
 namespace
 {
@@ -42,10 +40,10 @@ namespace
     // Gives the determinism assertion something concrete to compare.
     // It goes beyond just "the same events came out".
     // It's independent of the real GameState demo in apps/game.
-    class FoldingStateReducer final : public ITimedEventSink
+    class FoldingStateReducer final : public ITickEventSink
     {
     public:
-        void handle(const TimedEvent &event) override
+        void handle(const TickEvent &event) override
         {
             fold(event.tick);
             fold(event.event.name);
@@ -84,8 +82,8 @@ namespace
     };
 
     std::uint64_t runScriptedTicks(
-        std::vector<TimedEvent> scriptedEvents,
-        ReplayRecorder &recorder,
+        std::vector<TickEvent> scriptedEvents,
+        TickEventRecorder &recorder,
         antwika::time::Tick maxTicks)
     {
         MockLogger mockLogger;
@@ -113,7 +111,7 @@ namespace
 // One example is the engine's own built-in tick event.
 // Engine::step() dispatches its own engine.tick event fresh every tick.
 // It does this whether the run is live or replayed.
-// That's what makes it usable via the ordinary ITimedEventSink mechanism.
+// That's what makes it usable via the ordinary ITickEventSink mechanism.
 // The replay system doesn't need to know it's "special".
 // But that also means it must never be fed back in as replay input itself.
 // Doing so would dispatch it twice per tick during replay.
@@ -128,34 +126,33 @@ TEST(
     LoadingAReplayReproducesTheSameStateAsTheOriginalRun)
 {
     constexpr antwika::time::Tick maxTicks = 10;
-    std::vector<TimedEvent> scriptedLiveEvents{
-        TimedEvent{
+    std::vector<TickEvent> scriptedLiveEvents{
+        TickEvent{
             .tick = 1,
             .event = Event{
                 .name = "game.score_increment",
                 .payload = "amount=5",
             },
         },
-        TimedEvent{
+        TickEvent{
             .tick = 2,
             .event = Event{.name = antwika::engine::events::kStop},
         },
     };
 
-    ReplayRecorder liveRecording;
+    TickEventRecorder liveRecording;
     const auto liveStateHash =
         runScriptedTicks(scriptedLiveEvents, liveRecording, maxTicks);
 
-    BinaryEventCodec codec;
-    BinaryReplayWriter writer(codec);
+    ReplayWriter writer;
     std::stringstream replayStream;
     writer.write(scriptedLiveEvents, replayStream);
 
-    BinaryReplayReader reader(codec);
+    ReplayReader reader;
     auto loadedInputEvents = reader.read(replayStream);
     EXPECT_EQ(loadedInputEvents, scriptedLiveEvents);
 
-    ReplayRecorder replayedRecording;
+    TickEventRecorder replayedRecording;
     const auto replayedStateHash =
         runScriptedTicks(loadedInputEvents, replayedRecording, maxTicks);
 
@@ -168,32 +165,31 @@ TEST(
     SerializingTheSameRecordingTwiceProducesIdenticalBytes)
 {
     constexpr antwika::time::Tick maxTicks = 10;
-    std::vector<TimedEvent> scriptedLiveEvents{
-        TimedEvent{
+    std::vector<TickEvent> scriptedLiveEvents{
+        TickEvent{
             .tick = 1,
             .event = Event{
                 .name = "game.score_increment",
                 .payload = "amount=5",
             },
         },
-        TimedEvent{
+        TickEvent{
             .tick = 2,
             .event = Event{
                 .name = "game.score_increment",
                 .payload = "amount=2",
             },
         },
-        TimedEvent{
+        TickEvent{
             .tick = 3,
             .event = Event{.name = antwika::engine::events::kStop},
         },
     };
 
-    ReplayRecorder recording;
+    TickEventRecorder recording;
     (void)runScriptedTicks(scriptedLiveEvents, recording, maxTicks);
 
-    BinaryEventCodec codec;
-    BinaryReplayWriter writer(codec);
+    ReplayWriter writer;
 
     std::stringstream firstSerialization;
     writer.write(recording.getEvents(), firstSerialization);
@@ -215,34 +211,34 @@ TEST(
     FilteringBuiltInTicksFromARecordingYieldsValidReplayInput)
 {
     constexpr antwika::time::Tick maxTicks = 10;
-    std::vector<TimedEvent> scriptedLiveEvents{
-        TimedEvent{
+    std::vector<TickEvent> scriptedLiveEvents{
+        TickEvent{
             .tick = 1,
             .event = Event{
                 .name = "game.score_increment",
                 .payload = "amount=5",
             },
         },
-        TimedEvent{
+        TickEvent{
             .tick = 2,
             .event = Event{.name = antwika::engine::events::kStop},
         },
     };
 
-    ReplayRecorder liveRecording;
+    TickEventRecorder liveRecording;
     const auto liveStateHash =
         runScriptedTicks(scriptedLiveEvents, liveRecording, maxTicks);
 
     auto derivedInput = liveRecording.getEvents();
     std::erase_if(
         derivedInput,
-        [](const TimedEvent &event)
+        [](const TickEvent &event)
         {
             return event.event.name == antwika::engine::events::kTick;
         });
     EXPECT_EQ(derivedInput, scriptedLiveEvents);
 
-    ReplayRecorder replayedRecording;
+    TickEventRecorder replayedRecording;
     const auto replayedStateHash =
         runScriptedTicks(derivedInput, replayedRecording, maxTicks);
 

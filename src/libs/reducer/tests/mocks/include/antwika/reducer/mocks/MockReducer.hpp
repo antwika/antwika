@@ -17,7 +17,7 @@ namespace antwika::reducer::mocks
         MOCK_METHOD(
             State,
             reduce,
-            (const State &previous, const TimedEvent &event),
+            (const State &previous, const TickEvent &event),
             (const, override));
     };
 

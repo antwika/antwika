@@ -1,10 +1,9 @@
 #include "antwika/game/GameStateReducer.hpp"
 
-#include <charconv>
-#include <string_view>
-#include <system_error>
+#include <nlohmann/json-schema.hpp>
 
 #include <antwika/engine/Events.hpp>
+#include <antwika/replay/PayloadJson.hpp>
 
 #include "antwika/game/Events.hpp"
 #include "antwika/game/GameStateReducerError.hpp"
@@ -14,19 +13,35 @@ namespace antwika::game
 
     namespace
     {
-        std::uint64_t parseUInt64(std::string_view text)
+        nlohmann::json scoreIncrementSchema()
         {
-            std::uint64_t value{};
-            const auto result = std::from_chars(
-                text.data(), text.data() + text.size(), value);
-            if (result.ec != std::errc{} ||
-                result.ptr != text.data() + text.size())
-            {
-                throw GameStateReducerError(
-                    "GameStateReducer: game.score_increment payload is "
-                    "not a plain, in-range base-10 unsigned integer");
-            }
-            return value;
+            nlohmann::json schema;
+            schema["$schema"] = "http://json-schema.org/draft-07/schema#";
+            schema["title"] = "game.score_increment payload";
+            schema["type"] = "object";
+            schema["additionalProperties"] = false;
+            schema["required"] = {"amount"}; // GCOVR_EXCL_LINE
+            schema["properties"]["amount"]["type"] = "integer";
+            schema["properties"]["amount"]["minimum"] = 0;
+            return schema;
+        }
+
+        const nlohmann::json_schema::json_validator &
+        scoreIncrementValidator()
+        {
+            static const nlohmann::json_schema::json_validator validator(
+                scoreIncrementSchema()); // GCOVR_EXCL_LINE
+            return validator;
+        }
+
+        std::uint64_t parseAmount(const std::string &payload)
+        {
+            const auto parsed = antwika::replay::parseAndValidatePayload<
+                GameStateReducerError>(
+                payload,
+                scoreIncrementValidator(),
+                "GameStateReducer: game.score_increment payload");
+            return parsed.at("amount").get<std::uint64_t>();
         }
     } // namespace
 
@@ -34,7 +49,7 @@ namespace antwika::game
     {
     }
 
-    void GameStateReducer::handle(const TimedEvent &event)
+    void GameStateReducer::handle(const TickEvent &event)
     {
         if (event.event.name == antwika::engine::events::kTick)
         {
@@ -42,7 +57,7 @@ namespace antwika::game
         }
         else if (event.event.name == events::kScoreIncrement)
         {
-            state.score += parseUInt64(event.event.payload);
+            state.score += parseAmount(event.event.payload);
         }
     }
 

@@ -1,15 +1,15 @@
 #include "antwika/task_worker/TaskSubmissionSink.hpp"
 
 #include <algorithm>
-#include <charconv>
 #include <cstdint>
-#include <limits>
 #include <optional>
 #include <string>
-#include <string_view>
 #include <vector>
 
+#include <nlohmann/json-schema.hpp>
+
 #include <antwika/engine/Events.hpp>
+#include <antwika/replay/PayloadJson.hpp>
 #include <antwika/scheduler/Priority.hpp>
 
 #include "antwika/task_worker/Events.hpp"
@@ -21,54 +21,34 @@ namespace antwika::task_worker
     namespace
     {
 
-        // "id,priority,durationTicks,label[,dependsOnId]"
-        constexpr std::size_t kRequiredFieldCount = 4;
-        constexpr std::size_t kFieldCountWithDependsOn = 5;
-
-        std::uint64_t parseUInt64(std::string_view text)
+        nlohmann::json taskSubmitSchema()
         {
-            std::uint64_t value{};
-            const auto result = std::from_chars(
-                text.data(), text.data() + text.size(), value);
-            if (result.ec != std::errc{} ||
-                result.ptr != text.data() + text.size())
-            {
-                throw TaskSubmissionError(
-                    "TaskSubmissionSink: task.submit payload contains "
-                    "a non-numeric or malformed numeric field");
-            }
-            return value;
+            nlohmann::json schema;
+            schema["$schema"] = "http://json-schema.org/draft-07/schema#";
+            schema["title"] = "task.submit payload";
+            schema["type"] = "object";
+            schema["additionalProperties"] = false;
+            schema["required"] =
+                {"id", "priority", "durationTicks", "label"}; // GCOVR_EXCL_LINE
+            schema["properties"]["id"]["type"] = "integer";
+            schema["properties"]["id"]["minimum"] = 0;
+            schema["properties"]["priority"]["type"] = "integer";
+            schema["properties"]["priority"]["minimum"] = 0;
+            schema["properties"]["priority"]["maximum"] = 255;
+            schema["properties"]["durationTicks"]["type"] = "integer";
+            schema["properties"]["durationTicks"]["minimum"] = 1;
+            schema["properties"]["label"]["type"] = "string";
+            schema["properties"]["dependsOnId"]["type"] = "integer";
+            schema["properties"]["dependsOnId"]["minimum"] = 0;
+            return schema;
         }
 
-        antwika::scheduler::Priority parsePriority(std::string_view text)
+        const nlohmann::json_schema::json_validator &taskSubmitValidator()
         {
-            const auto value = parseUInt64(text);
-            if (value > std::numeric_limits<std::uint8_t>::max())
-            {
-                throw TaskSubmissionError(
-                    "TaskSubmissionSink: task.submit payload's priority "
-                    "must fit in a std::uint8_t (0-255)");
-            }
-            return static_cast<antwika::scheduler::Priority>(value);
+            static const nlohmann::json_schema::json_validator validator(
+                taskSubmitSchema()); // GCOVR_EXCL_LINE
+            return validator;
         }
-
-        std::vector<std::string_view> splitByComma(std::string_view text)
-        {
-            std::vector<std::string_view> tokens;
-            std::size_t start = 0;
-            while (start <= text.size()) // GCOVR_EXCL_LINE
-            {
-                const auto separator = text.find(',', start);
-                if (separator == std::string_view::npos)
-                {
-                    tokens.push_back(text.substr(start));
-                    break;
-                }
-                tokens.push_back(text.substr(start, separator - start));
-                start = separator + 1;
-            }
-            return tokens;
-        } // GCOVR_EXCL_LINE
 
     } // namespace
 
@@ -86,7 +66,7 @@ namespace antwika::task_worker
     {
     }
 
-    void TaskSubmissionSink::handle(const TimedEvent &event)
+    void TaskSubmissionSink::handle(const TickEvent &event)
     {
         if (event.event.name == antwika::engine::events::kTick)
         {
@@ -100,17 +80,13 @@ namespace antwika::task_worker
             return;
         }
 
-        const auto tokens = splitByComma(event.event.payload);
-        if (tokens.size() != kRequiredFieldCount &&
-            tokens.size() != kFieldCountWithDependsOn)
-        {
-            throw TaskSubmissionError(
-                "TaskSubmissionSink: task.submit payload must have 4 "
-                "or 5 comma-separated fields "
-                "(id,priority,durationTicks,label[,dependsOnId])");
-        }
+        const auto parsed =
+            antwika::replay::parseAndValidatePayload<TaskSubmissionError>(
+                event.event.payload,
+                taskSubmitValidator(),
+                "TaskSubmissionSink: task.submit payload");
 
-        const auto taskId = parseUInt64(tokens[0]);
+        const auto taskId = parsed.at("id").get<std::uint64_t>();
         const auto alreadySubmitted = std::find_if(
             submitted.begin(),
             submitted.end(),
@@ -121,21 +97,19 @@ namespace antwika::task_worker
                 "TaskSubmissionSink: task.submit payload's id was "
                 "already submitted");
         }
-        const auto priority = parsePriority(tokens[1]);
-        const auto durationTicks = parseUInt64(tokens[2]);
-        if (durationTicks == 0)
-        {
-            throw TaskSubmissionError(
-                "TaskSubmissionSink: task.submit payload's "
-                "durationTicks must be greater than zero");
-        }
-        auto label = std::string(tokens[3]);
+        const auto priority = static_cast<antwika::scheduler::Priority>(
+            parsed.at("priority").get<std::uint64_t>());
+        const auto durationTicks =
+            parsed.at("durationTicks").get<std::uint64_t>();
+        auto label = parsed.at("label").get<std::string>();
 
         std::vector<JobId> dependsOn;
         std::optional<TaskDependency> dependencyInfo;
-        if (tokens.size() == kFieldCountWithDependsOn)
+        const auto dependsOnIt = parsed.find("dependsOnId");
+        if (dependsOnIt != parsed.end())
         {
-            const auto dependsOnTaskId = parseUInt64(tokens[4]);
+            const auto dependsOnTaskId =
+                dependsOnIt->get<std::uint64_t>();
             const auto found = std::find_if(
                 submitted.begin(),
                 submitted.end(),

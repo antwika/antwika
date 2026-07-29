@@ -54,7 +54,7 @@ namespace antwika::task_worker
         std::vector<std::reference_wrapper<ISystem>> observers,
         TaskRegistry *registry,
         std::optional<antwika::time::Tick> maxTicks,
-        ITimedEventSink *replayRecorder)
+        ITickEventSink *replayRecorder)
     {
         Logger logger(formatter, logPolicy, clock, appender);
         EventDispatcher dispatcher({eventSink});
@@ -98,7 +98,7 @@ namespace antwika::task_worker
             world, systemScheduler, jobScheduler, lookup, taskRegistry);
         StopSignal stopSignal;
 
-        std::vector<std::reference_wrapper<ITimedEventSink>> timedSinks{
+        std::vector<std::reference_wrapper<ITickEventSink>> timedSinks{
             submissionSink, stopSignal};
         if (replayRecorder != nullptr)
         {

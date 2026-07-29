@@ -7,7 +7,7 @@
 #include "antwika/game/GameStateReducerError.hpp"
 
 using antwika::event::Event;
-using antwika::event::TimedEvent;
+using antwika::event::TickEvent;
 using antwika::game::GameState;
 using antwika::game::GameStateReducer;
 using antwika::game::GameStateReducerError;
@@ -17,11 +17,11 @@ TEST(GameStateReducerTest, Handle_IncrementsTicksProcessedOnBuiltInTickEvent)
     GameState state;
     GameStateReducer reducer(state);
 
-    reducer.handle(TimedEvent{
+    reducer.handle(TickEvent{
         .tick = 0,
         .event = Event{.name = antwika::engine::events::kTick},
     });
-    reducer.handle(TimedEvent{
+    reducer.handle(TickEvent{
         .tick = 1,
         .event = Event{.name = antwika::engine::events::kTick},
     });
@@ -35,18 +35,18 @@ TEST(GameStateReducerTest, Handle_AddsToScoreOnCustomScoreIncrementEvent)
     GameState state;
     GameStateReducer reducer(state);
 
-    reducer.handle(TimedEvent{
+    reducer.handle(TickEvent{
         .tick = 0,
         .event = Event{
             .name = antwika::game::events::kScoreIncrement,
-            .payload = "5",
+            .payload = R"({"amount":5})",
         },
     });
-    reducer.handle(TimedEvent{
+    reducer.handle(TickEvent{
         .tick = 1,
         .event = Event{
             .name = antwika::game::events::kScoreIncrement,
-            .payload = "3",
+            .payload = R"({"amount":3})",
         },
     });
 
@@ -59,7 +59,7 @@ TEST(GameStateReducerTest, Handle_IgnoresUnrelatedEvents)
     GameState state;
     GameStateReducer reducer(state);
 
-    reducer.handle(TimedEvent{
+    reducer.handle(TickEvent{
         .tick = 0,
         .event = Event{.name = "some.other.event"},
     });
@@ -67,13 +67,13 @@ TEST(GameStateReducerTest, Handle_IgnoresUnrelatedEvents)
     EXPECT_EQ(state, GameState{});
 }
 
-TEST(GameStateReducerTest, Handle_NonNumericScoreIncrementPayloadThrows)
+TEST(GameStateReducerTest, Handle_ScoreIncrementPayloadThatIsNotJsonThrows)
 {
     GameState state;
     GameStateReducer reducer(state);
 
     EXPECT_THROW(
-        reducer.handle(TimedEvent{
+        reducer.handle(TickEvent{
             .tick = 0,
             .event = Event{
                 .name = antwika::game::events::kScoreIncrement,
@@ -83,33 +83,33 @@ TEST(GameStateReducerTest, Handle_NonNumericScoreIncrementPayloadThrows)
         GameStateReducerError);
 }
 
-TEST(GameStateReducerTest, Handle_NegativeScoreIncrementPayloadThrows)
+TEST(GameStateReducerTest, Handle_ScoreIncrementPayloadWithNegativeAmountThrows)
 {
     GameState state;
     GameStateReducer reducer(state);
 
     EXPECT_THROW(
-        reducer.handle(TimedEvent{
+        reducer.handle(TickEvent{
             .tick = 0,
             .event = Event{
                 .name = antwika::game::events::kScoreIncrement,
-                .payload = "-1",
+                .payload = R"({"amount":-1})",
             },
         }),
         GameStateReducerError);
 }
 
-TEST(GameStateReducerTest, Handle_ScoreIncrementTrailingGarbageThrows)
+TEST(GameStateReducerTest, Handle_ScoreIncrementPayloadMissingAmountThrows)
 {
     GameState state;
     GameStateReducer reducer(state);
 
     EXPECT_THROW(
-        reducer.handle(TimedEvent{
+        reducer.handle(TickEvent{
             .tick = 0,
             .event = Event{
                 .name = antwika::game::events::kScoreIncrement,
-                .payload = "5abc",
+                .payload = "{}",
             },
         }),
         GameStateReducerError);
@@ -122,18 +122,18 @@ TEST(
     GameState state;
     GameStateReducer reducer(state);
 
-    reducer.handle(TimedEvent{
+    reducer.handle(TickEvent{
         .tick = 0,
         .event = Event{.name = antwika::engine::events::kTick},
     });
-    reducer.handle(TimedEvent{
+    reducer.handle(TickEvent{
         .tick = 0,
         .event = Event{
             .name = antwika::game::events::kScoreIncrement,
-            .payload = "10",
+            .payload = R"({"amount":10})",
         },
     });
-    reducer.handle(TimedEvent{
+    reducer.handle(TickEvent{
         .tick = 1,
         .event = Event{.name = antwika::engine::events::kTick},
     });

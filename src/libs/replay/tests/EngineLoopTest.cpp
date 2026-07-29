@@ -15,7 +15,7 @@ using antwika::engine::StopSignal;
 using antwika::engine::mocks::MockEngine;
 using antwika::event::Event;
 using antwika::event::TickedEventDispatcher;
-using antwika::event::TimedEvent;
+using antwika::event::TickEvent;
 using antwika::event::mocks::MockEventDispatcher;
 using antwika::replay::EngineLoop;
 using antwika::replay::EngineLoopError;
@@ -29,9 +29,9 @@ TEST(EngineLoopTest, Run_DispatchesSourcedEventsThenStepsEngineUntilStop)
     TickedEventDispatcher tickedEventDispatcher(
         mockEventDispatcher, {stopSignal});
     ReplaySource source({
-        TimedEvent{.tick = 0, .event = Event{.name = "a"}},
-        TimedEvent{.tick = 2, .event = Event{.name = "b"}},
-        TimedEvent{
+        TickEvent{.tick = 0, .event = Event{.name = "a"}},
+        TickEvent{.tick = 2, .event = Event{.name = "b"}},
+        TickEvent{
             .tick = 2,
             .event = Event{.name = antwika::engine::events::kStop}},
     });
@@ -62,7 +62,7 @@ TEST(EngineLoopTest, Run_RunsUncappedUntilStopWhenMaxTicksIsOmitted)
     TickedEventDispatcher tickedEventDispatcher(
         mockEventDispatcher, {stopSignal});
     ReplaySource source({
-        TimedEvent{
+        TickEvent{
             .tick = 5,
             .event = Event{.name = antwika::engine::events::kStop}},
     });

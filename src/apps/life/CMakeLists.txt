@@ -13,6 +13,14 @@ target_include_directories(antwika_life
         ${CMAKE_CURRENT_SOURCE_DIR}/include
 )
 
+set(ANTWIKA_LIFE_DEMO_REPLAY_PATH
+    "${CMAKE_CURRENT_SOURCE_DIR}/replays/demo.json")
+
+target_compile_definitions(antwika_life
+    PRIVATE
+        ANTWIKA_LIFE_DEMO_REPLAY_PATH="${ANTWIKA_LIFE_DEMO_REPLAY_PATH}"
+)
+
 target_link_libraries(antwika_life
     PRIVATE
         antwika::ecs

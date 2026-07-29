@@ -1,12 +1,13 @@
 find_package(GTest REQUIRED)
 
 add_executable(antwika_replay_tests
-    BinaryEventCodecTest.cpp
-    BinaryPrimitivesTest.cpp
-    BinaryReplayWriterReaderTest.cpp
     EngineLoopTest.cpp
+    EventJsonTest.cpp
+    ReplayCliTest.cpp
     ReplayDeterminismTest.cpp
+    ReplayJsonTest.cpp
     ReplaySourceTest.cpp
+    ReplayWriterReaderTest.cpp
 )
 
 target_include_directories(antwika_replay_tests

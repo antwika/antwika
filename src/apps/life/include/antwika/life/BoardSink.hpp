@@ -2,7 +2,7 @@
 
 #include <antwika/ecs/SystemScheduler.hpp>
 #include <antwika/ecs/World.hpp>
-#include <antwika/event/ITimedEventSink.hpp>
+#include <antwika/event/ITickEventSink.hpp>
 
 #include "antwika/life/Grid.hpp"
 
@@ -11,21 +11,21 @@ namespace antwika::life
 
     using antwika::ecs::SystemScheduler;
     using antwika::ecs::World;
-    using antwika::event::ITimedEventSink;
-    using antwika::event::TimedEvent;
+    using antwika::event::ITickEventSink;
+    using antwika::event::TickEvent;
 
     /**
-     * @brief Drives the ECS world from the same TimedEvent stream that
+     * @brief Drives the ECS world from the same TickEvent stream that
      * carries this application's custom events.
      *
      * Reacts to the engine's built-in tick event by committing any cell
      * toggled this tick, then running one generation of LifeSystem through
      * scheduler. Reacts to events::kToggleCell by flipping the named
      * cell's Cell::alive, staged for that commit. This is the same
-     * ITimedEventSink mechanism apps/game's GameStateReducer uses to fold
+     * ITickEventSink mechanism apps/game's GameStateReducer uses to fold
      * events into a plain struct, applied here to an ECS World instead.
      */
-    class BoardSink final : public ITimedEventSink
+    class BoardSink final : public ITickEventSink
     {
     public:
         /**
@@ -37,11 +37,11 @@ namespace antwika::life
         BoardSink(World &world, const Grid &grid, SystemScheduler &scheduler);
 
         /**
-         * @brief Apply a timed event's effect to the referenced World.
+         * @brief Apply a tick event's effect to the referenced World.
          * @param event kTick commits and advances one generation;
          * kToggleCell flips one cell, staged for the next commit.
          */
-        void handle(const TimedEvent &event) override;
+        void handle(const TickEvent &event) override;
 
     private:
         World &world;

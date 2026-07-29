@@ -6,9 +6,9 @@ add_executable(antwika_event_tests
     EventDispatcherTest.cpp
     EventRecorderTest.cpp
     EventTest.cpp
-    ReplayRecorderTest.cpp
+    TickEventRecorderTest.cpp
     TickedEventDispatcherTest.cpp
-    TimedEventTest.cpp
+    TickEventTest.cpp
 )
 
 target_link_libraries(antwika_event_tests

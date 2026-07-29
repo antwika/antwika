@@ -50,7 +50,7 @@ namespace antwika::life
         std::uint32_t height,
         std::vector<std::reference_wrapper<ISystem>> observers,
         std::optional<antwika::time::Tick> maxTicks,
-        ITimedEventSink *replayRecorder)
+        ITickEventSink *replayRecorder)
     {
         Logger logger(formatter, logPolicy, clock, appender);
         EventDispatcher dispatcher({eventSink});
@@ -73,7 +73,7 @@ namespace antwika::life
         BoardSink boardSink(world, grid, scheduler);
         StopSignal stopSignal;
 
-        std::vector<std::reference_wrapper<ITimedEventSink>> timedSinks{
+        std::vector<std::reference_wrapper<ITickEventSink>> timedSinks{
             boardSink, stopSignal};
         if (replayRecorder != nullptr)
         {

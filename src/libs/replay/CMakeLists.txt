@@ -1,10 +1,15 @@
+find_package(nlohmann_json REQUIRED)
+find_package(nlohmann_json_schema_validator REQUIRED)
+
 add_library(antwika_replay
-    src/BinaryEventCodec.cpp
-    src/BinaryPrimitives.cpp
-    src/BinaryReplayReader.cpp
-    src/BinaryReplayWriter.cpp
     src/EngineLoop.cpp
+    src/EventJson.cpp
+    src/EventSchema.cpp
+    src/ReplayCli.cpp
+    src/ReplayJson.cpp
+    src/ReplayReader.cpp
     src/ReplaySource.cpp
+    src/ReplayWriter.cpp
 )
 
 add_library(antwika::replay ALIAS antwika_replay)
@@ -24,6 +29,12 @@ target_link_libraries(antwika_replay
         antwika::engine
         antwika::event
         antwika::time
+)
+
+target_link_libraries(antwika_replay
+    PUBLIC
+        nlohmann_json::nlohmann_json
+        nlohmann_json_schema_validator
 )
 
 if(BUILD_TESTING AND NOT CMAKE_CROSSCOMPILING)

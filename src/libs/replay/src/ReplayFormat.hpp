@@ -1,26 +1,25 @@
 #pragma once
 
-#include <array>
 #include <cstdint>
+#include <string_view>
 
 /**
  * @file
- * @brief On-disk format constants shared by BinaryReplayWriter and
- * BinaryReplayReader.
+ * @brief On-disk format constants shared by ReplayWriter and ReplayReader.
  *
- * Bumping kReplayFormatVersion is how the on-disk layout evolves; readers
+ * Bumping the format version is how the on-disk layout evolves; readers
  * reject anything they don't recognize instead of guessing.
  */
 namespace antwika::replay::detail
 {
 
     /**
-     * @brief Magic bytes identifying a binary replay stream.
+     * @brief Magic string identifying a replay stream's header line.
      */
-    inline constexpr std::array<char, 4> kReplayMagic{'A', 'R', 'P', 'L'};
+    inline constexpr std::string_view kReplayMagic = "antwika-replay";
 
     /**
-     * @brief Version of the on-disk binary replay format written and expected.
+     * @brief Version of the on-disk replay format written and expected.
      */
     inline constexpr std::uint32_t kReplayFormatVersion = 1;
 

@@ -72,7 +72,7 @@ build/bin/antwika_game --replay demo.replay   # reload it, reproducing the same 
 ```
 
 Both modes go through the same `antwika::game::bootstrap()` entry point and the same fixed-timestep tick loop (`antwika::replay::EngineLoop`) — replay mode only differs in where each tick's events come from.
-Application code (here, `apps/game`) defines its own state (`GameState`) and events (e.g. `game.score_increment`) on top of the engine's built-in per-tick event (`engine.tick`), both reacted to through the same `ITimedEventSink` mechanism — see [`blog/001-building-a-deterministic-replay-system.md`](blog/001-building-a-deterministic-replay-system.md) for the full design and how to add your own.
+Application code (here, `apps/game`) defines its own state (`GameState`) and events (e.g. `game.score_increment`) on top of the engine's built-in per-tick event (`engine.tick`), both reacted to through the same `ITickEventSink` mechanism — see [`blog/001-building-a-deterministic-replay-system.md`](blog/001-building-a-deterministic-replay-system.md) for the full design and how to add your own.
 
 `apps/life` is a second, independent application built on the same replay system, this time with its state held in an `antwika::ecs::World` instead of a plain struct — a Conway's Game of Life board, where each cell is an entity with a `Cell` component and a single `LifeSystem` advances every cell one generation per tick using the double-buffered `World`/`SystemScheduler` machinery described in [`blog/003-an-entity-component-system-with-nowhere-to-hide-a-mutation.md`](blog/003-an-entity-component-system-with-nowhere-to-hide-a-mutation.md):
 
@@ -81,7 +81,7 @@ build/bin/antwika_life --record demo.replay   # seeds a blinker, saves the input
 build/bin/antwika_life --replay demo.replay   # reload it, reproducing the same run
 ```
 
-Cells are toggled alive via a `life.toggle_cell` event (payload `"x,y"`), tick-stamped exactly like `game.score_increment` — the same event-driven, replayable pattern applied to ECS state instead of a hand-rolled reducer.
+Cells are toggled alive via a `life.toggle_cell` event (JSON payload `{"x":..,"y":..}`), tick-stamped exactly like `game.score_increment` — the same event-driven, replayable pattern applied to ECS state instead of a hand-rolled reducer.
 
 `apps/task_worker` is a third application, this time combining `antwika::ecs` with a new `antwika::scheduler` library: a fixed pool of `Worker` entities pulls tasks off a deterministic, priority-ordered, budget-bounded `antwika::scheduler::Scheduler`, submitted over time via a `task.submit` event and, optionally, chained to an earlier task with a dependency edge:
 
@@ -90,7 +90,7 @@ build/bin/antwika_task_worker --record demo.replay   # submits a mixed-priority 
 build/bin/antwika_task_worker --replay demo.replay   # reload it, reproducing the same run
 ```
 
-Tasks are submitted via a `task.submit` event (payload `"id,priority,durationTicks,label[,dependsOnId]"`), tick-stamped exactly like `life.toggle_cell` — a `TaskSubmissionSink` schedules each parsed task onto the `Scheduler`, and a `TaskDispatchSystem` runs the scheduler each tick with that tick's idle-worker count as its budget, so no more tasks start than there are free workers.
+Tasks are submitted via a `task.submit` event (JSON payload `{"id":..,"priority":..,"durationTicks":..,"label":..}`, plus an optional `"dependsOnId"`), tick-stamped exactly like `life.toggle_cell` — a `TaskSubmissionSink` schedules each parsed task onto the `Scheduler`, and a `TaskDispatchSystem` runs the scheduler each tick with that tick's idle-worker count as its budget, so no more tasks start than there are free workers.
 See [`blog/006-a-job-scheduler-and-a-worker-pool-that-cant-lie-to-itself.md`](blog/006-a-job-scheduler-and-a-worker-pool-that-cant-lie-to-itself.md) for the full design.
 
 ## Wave Function Collapse and Sudoku

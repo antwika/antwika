@@ -1,26 +1,26 @@
 #pragma once
 
-#include <antwika/event/ITimedEventSink.hpp>
+#include <antwika/event/ITickEventSink.hpp>
 
 #include "antwika/reducer/IReducer.hpp"
 
 namespace antwika::reducer
 {
 
-    using antwika::event::ITimedEventSink;
-    using antwika::event::TimedEvent;
+    using antwika::event::ITickEventSink;
+    using antwika::event::TickEvent;
 
     /**
      * @brief Makes any IReducer<State> pluggable into the engine as an
-     * ITimedEventSink.
+     * ITickEventSink.
      *
      * The one generic adapter that replaces hand-writing a mutate-in-
-     * place ITimedEventSink per application-state type: construct it
+     * place ITickEventSink per application-state type: construct it
      * over a State and an IReducer<State>, and every dispatched event
      * folds through reduce() into the referenced state.
      */
     template <typename State>
-    class ReducerSink final : public ITimedEventSink
+    class ReducerSink final : public ITickEventSink
     {
     public:
         /**
@@ -43,9 +43,9 @@ namespace antwika::reducer
 
         /**
          * @brief Fold a dispatched event into the referenced state.
-         * @param event The timed event to handle.
+         * @param event The tick event to handle.
          */
-        void handle(const TimedEvent &event) override
+        void handle(const TickEvent &event) override
         {
             state = reducer.reduce(state, event);
         }

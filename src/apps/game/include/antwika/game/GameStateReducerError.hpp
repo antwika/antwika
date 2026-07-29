@@ -7,7 +7,8 @@ namespace antwika::game
 
     /**
      * @brief Thrown by GameStateReducer when a game.score_increment
-     * payload is not a plain, in-range base-10 unsigned integer.
+     * payload is not valid JSON, or not an object with an unsigned
+     * integer "amount" field.
      */
     class GameStateReducerError final : public std::runtime_error
     {

@@ -16,6 +16,14 @@ target_include_directories(antwika_task_worker
         ${CMAKE_CURRENT_SOURCE_DIR}/include
 )
 
+set(ANTWIKA_TASK_WORKER_DEMO_REPLAY_PATH
+    "${CMAKE_CURRENT_SOURCE_DIR}/replays/demo.json")
+
+target_compile_definitions(antwika_task_worker
+    PRIVATE
+        ANTWIKA_TASK_WORKER_DEMO_REPLAY_PATH="${ANTWIKA_TASK_WORKER_DEMO_REPLAY_PATH}"
+)
+
 target_link_libraries(antwika_task_worker
     PRIVATE
         antwika::ecs

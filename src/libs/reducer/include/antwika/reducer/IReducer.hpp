@@ -1,11 +1,11 @@
 #pragma once
 
-#include <antwika/event/TimedEvent.hpp>
+#include <antwika/event/TickEvent.hpp>
 
 namespace antwika::reducer
 {
 
-    using antwika::event::TimedEvent;
+    using antwika::event::TickEvent;
 
     /**
      * @brief A pure function from (previous state, event) to next state.
@@ -28,7 +28,7 @@ namespace antwika::reducer
          * @return The state after this event.
          */
         [[nodiscard]] virtual State reduce(
-            const State &previous, const TimedEvent &event) const = 0;
+            const State &previous, const TickEvent &event) const = 0;
     };
 
 } // namespace antwika::reducer
