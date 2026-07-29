@@ -84,5 +84,6 @@ The system is layered as small, single-purpose libraries under `src/libs/`, comp
 
 ## Notes for AI agents
 
+- **Always work in a separate git worktree, never directly in the primary checkout.** Before making any change, create/enter a dedicated worktree for the task (e.g. `git worktree add ../antwika-<task> -b <task>`), do all editing, building, and testing there, and only merge back when the work is done. This keeps `main` clean and lets several tasks build in parallel without clobbering each other's `build/` directory.
 - The blog posts under `blog/` are design write-ups for *why* a piece was built the way it was, written after the fact — read the relevant one before changing a library's core abstraction, since it usually explains a constraint that isn't obvious from the code alone.
 - Prefer running a single test binary (or `--gtest_filter`) over the full `ctest` suite while iterating; run the full suite before considering a change done.
