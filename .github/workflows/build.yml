@@ -177,7 +177,7 @@ jobs:
         run: python3 scripts/check_line_length.py
 
       - name: Cache Conan packages
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: ~/.conan2
           key: conan-${{ matrix.image }}-${{ hashFiles('conanfile.py', 'conan.lock', format('profiles/build/{0}', matrix.conan_profile), format('profiles/host/{0}', matrix.conan_profile)) }}
