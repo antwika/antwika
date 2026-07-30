@@ -1,7 +1,6 @@
 add_executable(antwika_game
     src/Game.cpp
     src/GameStateReducer.cpp
-    src/DiamondSpans.cpp
     src/GridScene.cpp
     src/GridSink.cpp
     src/PathIndex.cpp
@@ -11,6 +10,17 @@ add_executable(antwika_game
     src/WalkerSystem.cpp
     src/WindowInputSource.cpp
     src/main.cpp
+)
+
+# Baked in at configure time, as apps/gfx_demo does with its logo, so the
+# binary needs no install step and no working directory.
+# Only the app gets this: every test draws a mock texture instead.
+set(ANTWIKA_GAME_ATLAS_PATH
+    "${CMAKE_CURRENT_SOURCE_DIR}/assets/atlas.png")
+
+target_compile_definitions(antwika_game
+    PRIVATE
+        ANTWIKA_GAME_ATLAS_PATH="${ANTWIKA_GAME_ATLAS_PATH}"
 )
 
 target_include_directories(antwika_game

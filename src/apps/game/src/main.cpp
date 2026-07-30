@@ -4,6 +4,7 @@
 #include <chrono>
 #include <cstdlib>
 #include <exception>
+#include <fstream>
 #include <functional>
 #include <iostream>
 #include <string>
@@ -15,6 +16,7 @@
 #include <antwika/event/TickEvent.hpp>
 #include <antwika/event/TickEventRecorder.hpp>
 #include <antwika/gfx/Point.hpp>
+#include <antwika/gfx/PngReader.hpp>
 #include <antwika/gfx/SelectedBackend.hpp>
 #include <antwika/gfx/Size.hpp>
 #include <antwika/gfx/WindowDesc.hpp>
@@ -54,6 +56,7 @@ using antwika::game::RenderSystem;
 using antwika::game::TickPacer;
 using antwika::game::WindowInputSource;
 using antwika::gfx::Point;
+using antwika::gfx::PngReader;
 using antwika::gfx::Size;
 using antwika::gfx::WindowDesc;
 using antwika::input::CoalescingPointerSource;
@@ -145,11 +148,22 @@ int main(int argc, char **argv)
         const auto window = backend->createWindow(
             WindowDesc{.title = "Antwika Game", .size = kWindowSize});
 
+        // Opening the file is the application's job, not the library's.
+        // antwika::gfx decodes bytes and never goes looking for them.
+        std::ifstream atlasFile(
+            ANTWIKA_GAME_ATLAS_PATH, std::ios::binary);
+        const auto atlasBitmap = PngReader{}.read(atlasFile);
+
+        // After the window, since a backend may have no device yet.
+        // Declared after it too, so it is destroyed first.
+        const auto atlas =
+            window->renderer().createTexture(atlasBitmap);
+
         Camera camera(kInitialPan);
         PathIndex paths;
         const GridScene scene;
         RenderSystem renderSystem(
-            *window, scene, paths, camera, kExtent);
+            *window, scene, *atlas, paths, camera, kExtent);
         SystemSleeper sleeper;
         TickPacer pacer(sleeper, kTickInterval);
 
