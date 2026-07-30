@@ -80,6 +80,9 @@ Requirements for the Antwika project, gathered from `README.md`, `blog/001-build
 - An interface with only one implementation should still be kept where it lets a class be unit-tested against a mock/fake in isolation (e.g. `IEventCodec`, `IFormatter`).
 - A window-driven app should pace its ticks through an injected sleeper rather than a direct sleep call, so its tests still run at full speed.
 - A UI's picture should be expressible as a value (a list of drawing commands), so a whole layout can be asserted as data rather than looked at or pinned call by call against a mock.
+- Input that cannot affect the state a run reaches should be dropped before it reaches the replay recorder, never filtered out of a recording afterwards, so a replay file always holds exactly what its run consumed.
+- Whether a pointer movement can affect state should be decided from the folded button state at the moment it arrives, not from its event name, since the same name is load-bearing during a drag and inconsequential outside one.
+- A recorded session should be written without indentation, since a `--record` run of any length is read by `ReplayReader` rather than by a person; a replay meant to be checked in and edited by hand should still be written readably.
 
 ## Could have
 
@@ -106,3 +109,4 @@ Requirements for the Antwika project, gathered from `README.md`, `blog/001-build
 - `antwika::ui` won't clip, scroll, or draw out of declaration order, since `antwika::gfx` offers no scissor and no z-order; a container that cannot fit its content shrinks it in proportion instead.
 - `antwika::ui` won't wrap text across lines, offer a main-axis alignment mode (a growing spacer expresses leading, trailing and centred content), weight how growing children share leftover room, or animate anything.
 - `antwika::ui` won't carry a style stack or cascade; one plain `Theme` value is passed to a frame and nothing overrides it per widget.
+- An application attaching `input::IdleMotionSource` won't draw anything that follows a free-moving pointer (a hover highlight, a rubber band, a custom cursor), since the movements between clicks are deliberately not in the tick stream.

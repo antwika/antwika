@@ -20,6 +20,7 @@
 #include <antwika/replay/ReplayCli.hpp>
 #include <antwika/replay/ReplaySource.hpp>
 
+#include "antwika/input/IdleMotionSource.hpp"
 #include "antwika/input/InputEvent.hpp"
 #include "antwika/input/InputEventCodec.hpp"
 #include "antwika/input/InputState.hpp"
@@ -36,6 +37,7 @@ using antwika::event::ITickEventSink;
 using antwika::event::TickEvent;
 using antwika::event::TickEventRecorder;
 using antwika::event::TickedEventDispatcher;
+using antwika::input::IdleMotionSource;
 using antwika::input::InputEvent;
 using antwika::input::InputEventCodec;
 using antwika::input::InputState;
@@ -179,6 +181,57 @@ namespace
         };
     }
 
+    // A session that is mostly the pointer crossing an empty window.
+    // One round per tick, so the wandering really does span ticks:
+    // ten ticks of it, a drag, five more, then a scroll.
+    [[nodiscard]] std::vector<std::vector<InputEvent>> wanderingSession()
+    {
+        std::vector<std::vector<InputEvent>> rounds;
+
+        const auto wander = [&rounds](std::int32_t from, std::int32_t to)
+        {
+            for (std::int32_t step = from; step < to; ++step)
+            {
+                rounds.push_back(
+                    {PointerMoved{.position = {.x = step, .y = step}}});
+            }
+        };
+
+        wander(0, 10);
+        rounds.push_back(
+            {PointerButtonPressed{
+                .button = MouseButton::Left,
+                .position = {.x = 9, .y = 9}}});
+        wander(10, 13);
+        rounds.push_back(
+            {PointerButtonReleased{
+                .button = MouseButton::Left,
+                .position = {.x = 12, .y = 12}}});
+        wander(13, 18);
+        rounds.push_back({PointerScrolled{.vertical = -2}});
+
+        return rounds;
+    }
+
+    // How many rounds the session above spans, and so when to stop.
+    constexpr antwika::time::Tick kWanderingTicks = 21;
+
+    [[nodiscard]] std::size_t inputEventsIn(
+        const std::vector<TickEvent> &events)
+    {
+        const InputEventCodec codec;
+
+        std::size_t count = 0;
+        for (const auto &event : events)
+        {
+            if (codec.decode(event.event).has_value())
+            {
+                ++count;
+            }
+        }
+        return count;
+    }
+
     struct RunResult
     {
         SessionSummary summary;
@@ -296,4 +349,85 @@ TEST(InputDeterminismTest, TheRecordingKeepsTheInputAndDropsTheTicks)
     }
 
     EXPECT_EQ(inputEvents, scriptedSession().size());
+}
+
+// What the idle-motion gate must never do: change the outcome.
+// The argument for holding a movement back is that nothing reads it.
+// So a run with the gate and one without must fold the same state.
+TEST(InputDeterminismTest, TheIdleMotionGateChangesNothingTheAppFolds)
+{
+    constexpr antwika::time::Tick kMaxTicks = 30;
+
+    const InputEventCodec codec;
+
+    ReplaySource ungatedStop(
+        {TickEvent{
+            .tick = kWanderingTicks,
+            .event = {.name = antwika::engine::events::kStop}}});
+    FakeInputBackend ungatedBackend(wanderingSession());
+    LiveInputSource ungatedLive(ungatedStop, ungatedBackend, codec);
+
+    const auto ungated = run(ungatedLive, kMaxTicks);
+
+    ReplaySource gatedStop(
+        {TickEvent{
+            .tick = kWanderingTicks,
+            .event = {.name = antwika::engine::events::kStop}}});
+    FakeInputBackend gatedBackend(wanderingSession());
+    LiveInputSource gatedLive(gatedStop, gatedBackend, codec);
+    IdleMotionSource gated(gatedLive, codec);
+
+    const auto run_ = run(gated, kMaxTicks);
+
+    EXPECT_EQ(run_.summary, ungated.summary);
+}
+
+TEST(InputDeterminismTest, TheIdleMotionGateKeepsOnlyMotionThatDidSomething)
+{
+    constexpr antwika::time::Tick kMaxTicks = 30;
+
+    const InputEventCodec codec;
+    ReplaySource stopping(
+        {TickEvent{
+            .tick = kWanderingTicks,
+            .event = {.name = antwika::engine::events::kStop}}});
+    FakeInputBackend backend(wanderingSession());
+    LiveInputSource live(stopping, backend, codec);
+    IdleMotionSource gated(live, codec);
+
+    const auto gatedRun = run(gated, kMaxTicks);
+
+    // The press, three movements mid-drag, the release and the scroll.
+    // Plus one held-back movement ahead of each of press and scroll.
+    // The other thirteen were superseded before anything read them.
+    EXPECT_EQ(inputEventsIn(gatedRun.recorded), 8U);
+}
+
+TEST(InputDeterminismTest, AGatedLiveSessionReplaysToTheSameState)
+{
+    constexpr antwika::time::Tick kMaxTicks = 30;
+
+    const InputEventCodec codec;
+    ReplaySource stopping(
+        {TickEvent{
+            .tick = kWanderingTicks,
+            .event = {.name = antwika::engine::events::kStop}}});
+    FakeInputBackend backend(wanderingSession());
+    LiveInputSource live(stopping, backend, codec);
+    IdleMotionSource gated(live, codec);
+
+    const auto liveRun = run(gated, kMaxTicks);
+
+    const ScratchFile file("antwika-input-gated.replay");
+    antwika::replay::saveReplayFile(liveRun.recorded, file.name());
+    auto loaded = antwika::replay::loadReplayFile(file.name());
+
+    // Gated on the way back too, since both paths run one pipeline.
+    // An already gated stream must come through it unchanged.
+    ReplaySource replayed(std::move(loaded));
+    IdleMotionSource replayedGate(replayed, codec);
+    const auto replayedRun = run(replayedGate, kMaxTicks);
+
+    EXPECT_EQ(replayedRun.summary, liveRun.summary);
+    EXPECT_EQ(replayedRun.recorded, liveRun.recorded);
 }

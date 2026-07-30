@@ -1,6 +1,7 @@
 add_library(antwika_input
     src/ActionMap.cpp
     src/CoalescingPointerSource.cpp
+    src/IdleMotionSource.cpp
     src/InputEventCodec.cpp
     src/InputState.cpp
     src/Key.cpp
