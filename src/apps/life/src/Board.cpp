@@ -31,11 +31,14 @@ namespace antwika::life
     Board readBoardFromView(
         const World &world, std::uint32_t width, std::uint32_t height)
     {
+        const auto cells = static_cast<std::size_t>(width) * height;
+
+        // The excluded line carries the vector's cleanup landing pad.
+        // It only runs if allocating the cells throws.
         Board board{
             .width = width,
             .height = height,
-            .alive = std::vector<bool>(
-                static_cast<std::size_t>(width) * height),
+            .alive = std::vector<bool>(cells), // GCOVR_EXCL_LINE
         };
 
         std::size_t index = 0;

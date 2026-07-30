@@ -8,6 +8,7 @@
 namespace antwika::life
 {
 
+    using antwika::engine::events::kStop;
     using antwika::gfx::CloseRequested;
 
     WindowInputSource::WindowInputSource(
@@ -35,10 +36,12 @@ namespace antwika::life
         }
 
         // One stop, however many times closing was asked for.
+        // Every branch left on the excluded line is the allocator's.
+        // Those are push_back's throw edge and its growth path.
+        // Plus the heap branch of a name far too short to need one.
         if (closeRequested)
         {
-            events.push_back(
-                Event{.name = antwika::engine::events::kStop});
+            events.push_back(Event{.name = kStop}); // GCOVR_EXCL_LINE
         }
 
         return events;
