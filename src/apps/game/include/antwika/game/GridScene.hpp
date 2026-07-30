@@ -48,7 +48,7 @@ namespace antwika::game
          * @param snapshot What to draw.
          * @param atlas The texture every tile is blitted from; it must
          * have come from this renderer, and must be the atlas
-         * scripts/generate_game_atlas.py draws.
+         * TileAtlas.hpp addresses.
          */
         void draw(
             IRenderer &renderer,
