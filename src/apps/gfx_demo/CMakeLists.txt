@@ -22,6 +22,7 @@ target_include_directories(antwika_gfx_demo
 
 target_link_libraries(antwika_gfx_demo
     PRIVATE
+        antwika::app
         antwika::gfx
         antwika::gfx_backend
         antwika::input
