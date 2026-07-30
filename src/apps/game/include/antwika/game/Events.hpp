@@ -19,15 +19,6 @@ namespace antwika::game::events
     inline constexpr const char *kScoreIncrement = "game.score_increment";
 
     /**
-     * @brief Announces that the game started.
-     *
-     * The application generates this itself on every run, so a caller
-     * persisting a replay filters it back out rather than storing it --
-     * see antwika::replay::saveReplayFile.
-     */
-    inline constexpr const char *kStarted = "Running Antwika Game";
-
-    /**
      * @brief There is deliberately no event here for placing a path or a
      * walker.
      *

@@ -50,16 +50,15 @@ namespace
         EventRecorder eventSink;
 
         return antwika::task_worker::bootstrap(
-            fakeClock,
-            appender,
-            formatter,
-            logPolicy,
-            eventSink,
-            source,
-            kWorkerCount,
-            {},
-            nullptr,
-            kMaxTicks);
+            antwika::task_worker::TaskWorkerConfig{
+                .clock = fakeClock,
+                .appender = appender,
+                .formatter = formatter,
+                .logPolicy = logPolicy,
+                .eventSink = eventSink,
+                .inputSource = source,
+                .workerCount = kWorkerCount,
+                .maxTicks = kMaxTicks});
     }
 } // namespace
 

@@ -9,6 +9,7 @@
 #include <antwika/event/Event.hpp>
 #include <antwika/event/EventDispatcher.hpp>
 #include <antwika/event/TickedEventDispatcher.hpp>
+#include <antwika/log/Level.hpp>
 #include <antwika/replay/EngineLoop.hpp>
 
 #include "antwika/life/BoardSink.hpp"
@@ -24,38 +25,31 @@ using antwika::engine::StopSignal;
 using antwika::event::Event;
 using antwika::event::EventDispatcher;
 using antwika::event::TickedEventDispatcher;
+using antwika::log::Level;
 using antwika::replay::EngineLoop;
 
 namespace antwika::life
 {
 
-    Life::Life(IEngine &engine, IEventDispatcher &dispatcher)
-        : engine(engine), dispatcher(dispatcher)
+    Life::Life(IEngine &engine, ILogger &logger)
+        : engine(engine), logger(logger)
     {
     }
 
     void Life::run()
     {
-        dispatcher.dispatch(
-            Event{.name = events::kStarted}); // GCOVR_EXCL_LINE
+        logger.log(Level::Info, "Running Antwika Life");
         engine.start();
     }
 
-    Board bootstrap(
-        ILogger &logger,
-        IEventSink &eventSink,
-        IReplaySource &inputSource,
-        std::uint32_t width,
-        std::uint32_t height,
-        std::vector<std::reference_wrapper<ISystem>> observers,
-        std::optional<antwika::time::Tick> maxTicks,
-        ITickEventSink *replayRecorder,
-        const TickSinkFactory &extraSink)
+    Board bootstrap(const LifeConfig &config)
     {
-        EventDispatcher dispatcher({eventSink});
+        ILogger &logger = config.logger;
+
+        EventDispatcher dispatcher({config.eventSink});
 
         World world(logger);
-        Grid grid(world, width, height);
+        Grid grid(world, config.width, config.height);
         world.commit();
 
         SystemScheduler scheduler;
@@ -72,7 +66,7 @@ namespace antwika::life
         scheduler.addSystem(lifePhase, pausedLife);
 
         const auto observePhase = scheduler.createPhase("observe");
-        for (auto &observer : observers)
+        for (auto &observer : config.observers)
         {
             scheduler.addSystem(observePhase, observer.get());
         }
@@ -86,24 +80,24 @@ namespace antwika::life
         // Held out here rather than inside the if.
         // The sink has to outlive the reference the dispatcher keeps.
         std::unique_ptr<ITickEventSink> extra;
-        if (extraSink)
+        if (config.extraSink)
         {
-            extra = extraSink(world, grid, drag);
+            extra = config.extraSink(world, grid, drag);
             timedSinks.push_back(*extra);
         }
 
-        if (replayRecorder != nullptr)
+        if (config.replayRecorder.has_value())
         {
-            timedSinks.push_back(*replayRecorder);
+            timedSinks.push_back(config.replayRecorder->get());
         }
         TickedEventDispatcher tickedDispatcher(dispatcher, timedSinks);
 
         Engine engine(logger, tickedDispatcher);
-        Life life(engine, tickedDispatcher);
+        Life life(engine, logger);
         life.run();
 
-        EngineLoop loop(engine, tickedDispatcher, inputSource);
-        loop.run(stopSignal, maxTicks);
+        EngineLoop loop(engine, tickedDispatcher, config.inputSource);
+        loop.run(stopSignal, config.maxTicks);
 
         return readBoard(world, grid);
     }

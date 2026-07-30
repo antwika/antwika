@@ -1,6 +1,5 @@
 #include "antwika/game/Game.hpp"
 
-#include <array>
 #include <chrono>
 #include <cstdlib>
 #include <exception>
@@ -8,17 +7,17 @@
 #include <functional>
 #include <iostream>
 #include <string>
-#include <string_view>
 #include <vector>
 
 #include <antwika/ecs/ISystem.hpp>
-#include <antwika/event/EventRecorder.hpp>
+#include <antwika/event/Event.hpp>
+#include <antwika/event/IEventSink.hpp>
 #include <antwika/event/TickEvent.hpp>
 #include <antwika/event/TickEventRecorder.hpp>
+#include <antwika/gfx/GfxError.hpp>
 #include <antwika/gfx/Point.hpp>
 #include <antwika/gfx/PngReader.hpp>
 #include <antwika/gfx/SelectedBackend.hpp>
-#include <antwika/gfx/Size.hpp>
 #include <antwika/gfx/WindowDesc.hpp>
 #include <antwika/input/CoalescingPointerSource.hpp>
 #include <antwika/input/IdleMotionSource.hpp>
@@ -38,17 +37,16 @@
 #include <antwika/time/SystemSleeper.hpp>
 
 #include "antwika/game/Camera.hpp"
-#include "antwika/game/Events.hpp"
 #include "antwika/game/GridExtent.hpp"
 #include "antwika/game/GridScene.hpp"
 #include "antwika/game/PathIndex.hpp"
 #include "antwika/game/RenderSystem.hpp"
 #include "antwika/game/TickPacer.hpp"
+#include "antwika/game/UiCanvas.hpp"
 #include "antwika/game/UiOverlay.hpp"
 #include "antwika/game/WindowInputSource.hpp"
 
 using antwika::ecs::ISystem;
-using antwika::event::EventRecorder;
 using antwika::event::TickEventRecorder;
 using antwika::game::Camera;
 using antwika::game::GridExtent;
@@ -60,7 +58,6 @@ using antwika::game::UiOverlay;
 using antwika::game::WindowInputSource;
 using antwika::gfx::Point;
 using antwika::gfx::PngReader;
-using antwika::gfx::Size;
 using antwika::gfx::WindowDesc;
 using antwika::input::CoalescingPointerSource;
 using antwika::input::IdleMotionSource;
@@ -78,7 +75,6 @@ using antwika::time::SystemSleeper;
 
 namespace
 {
-    constexpr Size kWindowSize{.width = 1024, .height = 640};
     constexpr GridExtent kExtent{.width = 24, .height = 24};
 
     // The origin cell's top corner starts here.
@@ -93,13 +89,6 @@ namespace
     // Neither is available under the headless backend.
     // That build therefore runs until it is interrupted.
     constexpr antwika::input::Key kQuitKey = antwika::input::Key::Escape;
-
-    // Only this app's own announcement is filtered from a recording.
-    // No input.* name may ever join it.
-    // That would stop recording the only input a live run has.
-    constexpr std::array<std::string_view, 1> kSelfGeneratedEventNames{
-        antwika::game::events::kStarted,
-    };
 
     void printSummary(const antwika::game::GameSummary &summary)
     {
@@ -121,6 +110,23 @@ namespace
                   << summary.camera.pan().y << ") zoom "
                   << summary.camera.zoomLevel() << '\n';
     }
+    /**
+     * @brief Sink for the events nothing in this app reads.
+     *
+     * Every dispatched event has to go somewhere, and an EventRecorder
+     * used to be what went there -- deep-copying both strings of every
+     * event and keeping them for the life of the process, in a run that
+     * ends only when somebody closes the window.
+     * Nothing ever called getEvents() on it.
+     */
+    class DiscardedEvents final : public antwika::event::IEventSink
+    {
+    public:
+        void handle(const antwika::event::Event &) override
+        {
+        }
+    };
+
 } // namespace
 
 int main(int argc, char **argv)
@@ -132,7 +138,7 @@ int main(int argc, char **argv)
     PlainFormatter formatter;
     MinimumLevelLogPolicy logPolicy(Level::Info);
     Logger logger(formatter, logPolicy, clock, appender);
-    EventRecorder eventSink;
+    DiscardedEvents eventSink;
     TickEventRecorder replayRecorder;
 
     // Catching is what makes the run's resources unwind at all.
@@ -149,13 +155,23 @@ int main(int argc, char **argv)
             "Antwika Game on backends: " + std::string(backend->name())
                 + " / " + std::string(inputBackend->name()));
 
-        const auto window = backend->createWindow(
-            WindowDesc{.title = "Antwika Game", .size = kWindowSize});
+        // Asked for the canvas the toolbar is resolved against.
+        // Stating the two separately is what lets them disagree.
+        const auto window = backend->createWindow(WindowDesc{
+            .title = "Antwika Game",
+            .size = antwika::game::kUiCanvas});
 
         // Opening the file is the application's job, not the library's.
         // antwika::gfx decodes bytes and never goes looking for them.
+        // Which is why saying it is missing is this app's job too.
         std::ifstream atlasFile(
             ANTWIKA_GAME_ATLAS_PATH, std::ios::binary);
+        if (!atlasFile.is_open())
+        {
+            throw antwika::gfx::GfxError(
+                std::string("antwika_game: could not open the atlas: ")
+                + ANTWIKA_GAME_ATLAS_PATH);
+        }
         const auto atlasBitmap = PngReader{}.read(atlasFile);
 
         // After the window, since a backend may have no device yet.
@@ -170,7 +186,7 @@ int main(int argc, char **argv)
         // Against the size the window was asked for.
         // Never the size one reports, which nothing records.
         // That is what makes a recorded click hit the same button.
-        UiOverlay overlay(kWindowSize);
+        UiOverlay overlay(antwika::game::kUiCanvas);
         RenderSystem renderSystem(
             *window, scene, *atlas, paths, camera, kExtent, overlay);
         SystemSleeper sleeper;
@@ -214,17 +230,17 @@ int main(int argc, char **argv)
         WindowInputSource source(quitting, *backend, window->id());
 
         const auto summary = antwika::game::bootstrap(
-            logger,
-            eventSink,
-            source,
-            codec,
-            kExtent,
-            camera,
-            paths,
-            observers,
-            std::nullopt,
-            &replayRecorder,
-            &overlay);
+            antwika::game::GameConfig{
+                .logger = logger,
+                .eventSink = eventSink,
+                .inputSource = source,
+                .codec = codec,
+                .extent = kExtent,
+                .camera = camera,
+                .paths = paths,
+                .observers = observers,
+                .replayRecorder = replayRecorder,
+                .overlay = overlay});
 
         printSummary(summary);
     }
@@ -237,9 +253,7 @@ int main(int argc, char **argv)
     if (options.recordPath)
     {
         antwika::replay::saveReplayFile(
-            replayRecorder.getEvents(),
-            *options.recordPath,
-            kSelfGeneratedEventNames);
+            replayRecorder.getEvents(), *options.recordPath);
     }
 
     return exitCode;

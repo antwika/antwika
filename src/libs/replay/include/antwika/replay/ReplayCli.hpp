@@ -1,7 +1,6 @@
 #pragma once
 
 #include <optional>
-#include <span>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -51,8 +50,9 @@ namespace antwika::replay
      * @brief Load a replay document from a file and decode its events.
      * @param path Path to the replay file to read.
      * @return The decoded events, in the order they were recorded.
-     * @throws ReplayFormatError If the file can't be parsed as a replay
-     * document.
+     * @throws ReplayFormatError If the file can't be opened at all, or
+     * can't be parsed as a replay document. The two say so differently: a
+     * file that is not there is not a malformed one.
      */
     [[nodiscard]] std::vector<TickEvent> loadReplayFile(
         const std::string &path);
@@ -64,21 +64,24 @@ namespace antwika::replay
      * `engine.tick` is always filtered: `Engine::step()` regenerates it
      * identically every run, live or replayed, so it was never really
      * input and must not be fed back in as replay input.
+     *
+     * It is also the only name filtered here.
+     * Apps used to pass the names of their own startup announcements too;
+     * those are log lines now, so the tick is all that is regenerated.
      * @param events The dispatched events to persist, in original order.
      * @param path Path to write the replay document to.
-     * @param extraSelfGeneratedEventNames Additional event names to filter
-     * out before writing, e.g. an app's own unconditional startup
-     * announcement.
      * @param layout How much whitespace to write; compact by default,
      * since a recorded session is written to be replayed rather than
      * read, and an interactive one gets long enough for the indentation
      * to be most of the file. Pass Pretty for a replay meant to be
      * checked in and edited by hand.
+     * @throws ReplayFormatError If the file can't be opened, or if the
+     * bytes can't be written once it is. A recording is written once, at
+     * the end of a run, so failing quietly here loses the whole session.
      */
     void saveReplayFile(
         std::vector<TickEvent> events,
         const std::string &path,
-        std::span<const std::string_view> extraSelfGeneratedEventNames = {},
         ReplayWriter::Layout layout = ReplayWriter::Layout::Compact);
 
 } // namespace antwika::replay

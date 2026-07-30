@@ -212,18 +212,23 @@ namespace
         TickEventRecorder replayRecorder;
         std::ostringstream out;
 
-        auto summary = antwika::poker::bootstrap(
-            clock,
-            appender,
-            formatter,
-            logPolicy,
-            eventSink,
-            source,
-            out,
-            kRoom,
-            kMaxTicks,
-            &replayRecorder,
-            window);
+        antwika::poker::RoomSetup setup{
+            .clock = clock,
+            .appender = appender,
+            .formatter = formatter,
+            .logPolicy = logPolicy,
+            .eventSink = eventSink,
+            .inputSource = source,
+            .out = out,
+            .room = kRoom,
+            .maxTicks = kMaxTicks,
+            .replayRecorder = replayRecorder};
+        if (window != nullptr)
+        {
+            setup.window = *window;
+        }
+
+        auto summary = antwika::poker::bootstrap(setup);
 
         return Session{
             .summary = std::move(summary),
@@ -310,8 +315,7 @@ TEST(ReplayIntegrationTest, RecordedEventsHoldOnlyTheRoomsOwnInput)
         recorded,
         [](const TickEvent &event)
         {
-            return event.event.name == antwika::engine::events::kTick
-                   || event.event.name == "Running Antwika Poker";
+            return event.event.name == antwika::engine::events::kTick;
         });
 
     EXPECT_EQ(recorded, script);
@@ -341,8 +345,7 @@ TEST(ReplayIntegrationTest, ReplayReproducesASessionEndedByClosingTheWindow)
         recorded,
         [](const TickEvent &event)
         {
-            return event.event.name == antwika::engine::events::kTick
-                   || event.event.name == "Running Antwika Poker";
+            return event.event.name == antwika::engine::events::kTick;
         });
     EXPECT_TRUE(
         std::ranges::any_of(

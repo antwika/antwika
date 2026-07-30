@@ -14,7 +14,8 @@
 #include <vector>
 
 #include <antwika/ecs/ISystem.hpp>
-#include <antwika/event/EventRecorder.hpp>
+#include <antwika/event/Event.hpp>
+#include <antwika/event/IEventSink.hpp>
 #include <antwika/event/TickEventRecorder.hpp>
 #include <antwika/gfx/SelectedBackend.hpp>
 #include <antwika/gfx/WindowDesc.hpp>
@@ -43,7 +44,6 @@
 
 using antwika::ecs::ISystem;
 using antwika::ecs::World;
-using antwika::event::EventRecorder;
 using antwika::event::TickEventRecorder;
 using antwika::gfx::WindowDesc;
 using antwika::input::IdleMotionSource;
@@ -85,9 +85,23 @@ namespace
 
     constexpr std::string_view kDemoReplayPath = ANTWIKA_LIFE_DEMO_REPLAY_PATH;
 
-    constexpr std::array<std::string_view, 1> kSelfGeneratedEventNames{
-        antwika::life::events::kStarted,
+    /**
+     * @brief Sink for the events nothing in this app reads.
+     *
+     * Every dispatched event has to go somewhere, and an EventRecorder
+     * used to be what went there -- deep-copying both strings of every
+     * event and keeping them for the life of the process, in a run that
+     * ends only when somebody closes the window.
+     * Nothing ever called getEvents() on it.
+     */
+    class DiscardedEvents final : public antwika::event::IEventSink
+    {
+    public:
+        void handle(const antwika::event::Event &) override
+        {
+        }
     };
+
 } // namespace
 
 int main(int argc, char **argv)
@@ -99,7 +113,7 @@ int main(int argc, char **argv)
     PlainFormatter formatter;
     MinimumLevelLogPolicy logPolicy(Level::Info);
     Logger logger(formatter, logPolicy, clock, appender);
-    EventRecorder eventSink;
+    DiscardedEvents eventSink;
     TickEventRecorder replayRecorder;
     PrintSystem printSystem(kBoardWidth, std::cout);
 
@@ -178,22 +192,28 @@ int main(int argc, char **argv)
                 "press Ctrl+C to stop");
         }
 
-        antwika::life::bootstrap(
-            logger,
-            eventSink,
-            source,
-            kBoardWidth,
-            kBoardHeight,
-            observers,
-            std::nullopt,
-            // Registered only when there is a file to write.
-            // A run with no end would otherwise keep every event, forever.
-            options.recordPath ? &replayRecorder : nullptr,
-            [&codec](World &world, const Grid &grid, DragState &drag)
+        antwika::life::LifeConfig config{
+            .logger = logger,
+            .eventSink = eventSink,
+            .inputSource = source,
+            .width = kBoardWidth,
+            .height = kBoardHeight,
+            .observers = observers,
+            .extraSink =
+                [&codec](World &world, const Grid &grid, DragState &drag)
             {
                 return std::make_unique<PointerToggleSink>(
                     world, grid, codec, kWindowSize, drag);
-            });
+            }};
+
+        // Registered only when there is a file to write.
+        // A run with no end would otherwise keep every event, forever.
+        if (options.recordPath)
+        {
+            config.replayRecorder = replayRecorder;
+        }
+
+        antwika::life::bootstrap(config);
     }
     catch (const std::exception &error)
     {
@@ -204,9 +224,7 @@ int main(int argc, char **argv)
     if (options.recordPath)
     {
         antwika::replay::saveReplayFile(
-            replayRecorder.getEvents(),
-            *options.recordPath,
-            kSelfGeneratedEventNames);
+            replayRecorder.getEvents(), *options.recordPath);
     }
 
     return exitCode;

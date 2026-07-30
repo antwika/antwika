@@ -5,6 +5,7 @@
 
 #include <antwika/engine/Events.hpp>
 
+#include "antwika/replay/ReplayFormatError.hpp"
 #include "antwika/replay/ReplayReader.hpp"
 #include "antwika/replay/ReplayWriter.hpp"
 
@@ -32,6 +33,17 @@ namespace antwika::replay
     std::vector<TickEvent> loadReplayFile(const std::string &path)
     {
         std::ifstream replayFile(path);
+
+        // A file that is not there is not a malformed document.
+        // Unchecked, it reached the reader as an empty stream.
+        // Which reported a valid replay as invalid JSON.
+        if (!replayFile.is_open())
+        {
+            throw ReplayFormatError(
+                "antwika::replay: could not open a replay to read: "
+                + path);
+        }
+
         ReplayReader reader;
         return reader.read(replayFile);
     }
@@ -39,25 +51,37 @@ namespace antwika::replay
     void saveReplayFile(
         std::vector<TickEvent> events,
         const std::string &path,
-        std::span<const std::string_view> extraSelfGeneratedEventNames,
         ReplayWriter::Layout layout)
     {
         std::erase_if(
             events,
-            [extraSelfGeneratedEventNames](const TickEvent &event)
+            [](const TickEvent &event)
             {
-                const auto &name = event.event.name;
-                if (name == antwika::engine::events::kTick)
-                {
-                    return true;
-                }
-                return std::ranges::find(extraSelfGeneratedEventNames, name)
-                       != extraSelfGeneratedEventNames.end();
+                return event.event.name == antwika::engine::events::kTick;
             });
 
         std::ofstream replayFile(path);
+
+        // A --record run only writes once the run has ended.
+        // So an unwritable path used to lose a whole session in silence.
+        if (!replayFile.is_open())
+        {
+            throw ReplayFormatError(
+                "antwika::replay: could not open a replay to write: "
+                + path);
+        }
+
         const ReplayWriter writer(layout);
         writer.write(events, replayFile);
+
+        // Flushed here rather than by the destructor, which cannot say.
+        // A full disk fails on the flush, not on the open.
+        replayFile.flush();
+        if (!replayFile)
+        {
+            throw ReplayFormatError(
+                "antwika::replay: could not write a replay: " + path);
+        }
     }
 
 } // namespace antwika::replay

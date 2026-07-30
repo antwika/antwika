@@ -35,6 +35,7 @@
 #include "antwika/game/IsoProjection.hpp"
 #include "antwika/game/PathIndex.hpp"
 #include "antwika/game/Toolbar.hpp"
+#include "antwika/game/UiCanvas.hpp"
 #include "antwika/game/UiOverlay.hpp"
 #include "antwika/game/WindowInputSource.hpp"
 
@@ -47,6 +48,7 @@ using antwika::game::Cell;
 using antwika::game::cellCentre;
 using antwika::game::GameSummary;
 using antwika::game::GridExtent;
+using antwika::game::kUiCanvas;
 using antwika::game::PathIndex;
 using antwika::game::Toolbar;
 using antwika::game::UiOverlay;
@@ -73,10 +75,6 @@ namespace
     constexpr GridExtent kExtent{.width = 16, .height = 16};
     constexpr antwika::time::Tick kMaxTicks = 40;
     constexpr WindowId kWindow{7};
-
-    constexpr std::array<std::string_view, 1> kSelfGeneratedEventNames{
-        antwika::game::events::kStarted,
-    };
 
     // Removes its backing file on scope exit.
     class ScratchFile
@@ -125,25 +123,21 @@ namespace
         TickEventRecorder recorder;
 
         auto summary = antwika::game::bootstrap(
-            logger,
-            eventSink,
-            source,
-            codec,
-            kExtent,
-            camera,
-            paths,
-            {},
-            kMaxTicks,
-            &recorder);
+            antwika::game::GameConfig{
+                .logger = logger,
+                .eventSink = eventSink,
+                .inputSource = source,
+                .codec = codec,
+                .extent = kExtent,
+                .camera = camera,
+                .paths = paths,
+                .maxTicks = kMaxTicks,
+                .replayRecorder = recorder});
 
         return RunResult{
             .summary = std::move(summary),
             .recorded = recorder.getEvents()};
     }
-
-    // The size the app asks its window for.
-    // Which is the size the bar is laid out and hit-tested against.
-    constexpr antwika::gfx::Size kUiCanvas{.width = 1024, .height = 640};
 
     [[nodiscard]] RunResult runWithToolbar(
         antwika::replay::IReplaySource &source)
@@ -157,17 +151,17 @@ namespace
         UiOverlay overlay(kUiCanvas);
 
         auto summary = antwika::game::bootstrap(
-            logger,
-            eventSink,
-            source,
-            codec,
-            kExtent,
-            camera,
-            paths,
-            {},
-            kMaxTicks,
-            &recorder,
-            &overlay);
+            antwika::game::GameConfig{
+                .logger = logger,
+                .eventSink = eventSink,
+                .inputSource = source,
+                .codec = codec,
+                .extent = kExtent,
+                .camera = camera,
+                .paths = paths,
+                .maxTicks = kMaxTicks,
+                .replayRecorder = recorder,
+                .overlay = overlay});
 
         return RunResult{
             .summary = std::move(summary),
@@ -296,7 +290,7 @@ TEST(ReplayDeterminismTest, ARecordedRunReplaysToTheSameState)
 
     const ScratchFile file("antwika-game-determinism.replay");
     antwika::replay::saveReplayFile(
-        live.recorded, file.name(), kSelfGeneratedEventNames);
+        live.recorded, file.name());
     auto loaded = antwika::replay::loadReplayFile(file.name());
 
     ReplaySource replayedSource(std::move(loaded));
@@ -337,7 +331,7 @@ TEST(ReplayDeterminismTest, TheRecordingHoldsClicksAndNoDerivedPlacement)
 
     const ScratchFile file("antwika-game-recording.replay");
     antwika::replay::saveReplayFile(
-        result.recorded, file.name(), kSelfGeneratedEventNames);
+        result.recorded, file.name());
     const auto loaded = antwika::replay::loadReplayFile(file.name());
 
     const InputEventCodec codec;
@@ -345,7 +339,6 @@ TEST(ReplayDeterminismTest, TheRecordingHoldsClicksAndNoDerivedPlacement)
     for (const auto &event : loaded)
     {
         EXPECT_NE(event.event.name, antwika::engine::events::kTick);
-        EXPECT_NE(event.event.name, antwika::game::events::kStarted);
 
         // Nothing named game.place_* may ever appear here.
         EXPECT_EQ(event.event.name.rfind("game.place", 0), std::string::npos)
@@ -396,7 +389,7 @@ TEST(ReplayDeterminismTest, ClosingTheWindowEndsTheRunAndReplaysTheSame)
 
     const ScratchFile file("antwika-game-close.replay");
     antwika::replay::saveReplayFile(
-        live.recorded, file.name(), kSelfGeneratedEventNames);
+        live.recorded, file.name());
     auto loaded = antwika::replay::loadReplayFile(file.name());
 
     // Replayed under a source with no window at all.
@@ -423,7 +416,7 @@ TEST(ReplayDeterminismTest, AToolbarClickReplaysToTheSameCamera)
 
     const ScratchFile file("antwika-game-toolbar.replay");
     antwika::replay::saveReplayFile(
-        live.recorded, file.name(), kSelfGeneratedEventNames);
+        live.recorded, file.name());
     auto loaded = antwika::replay::loadReplayFile(file.name());
 
     // Nothing about a button may be in the file.

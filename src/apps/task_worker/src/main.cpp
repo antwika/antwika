@@ -1,6 +1,5 @@
 #include "antwika/task_worker/TaskWorker.hpp"
 
-#include <array>
 #include <cstdint>
 #include <cstdlib>
 #include <exception>
@@ -8,7 +7,8 @@
 #include <string>
 #include <string_view>
 
-#include <antwika/event/EventRecorder.hpp>
+#include <antwika/event/Event.hpp>
+#include <antwika/event/IEventSink.hpp>
 #include <antwika/event/TickEventRecorder.hpp>
 #include <antwika/log/Level.hpp>
 #include <antwika/log/MinimumLevelLogPolicy.hpp>
@@ -21,7 +21,6 @@
 #include "antwika/task_worker/StatusPrintSystem.hpp"
 #include "antwika/task_worker/TaskRegistry.hpp"
 
-using antwika::event::EventRecorder;
 using antwika::event::TickEventRecorder;
 using antwika::log::Level;
 using antwika::log::MinimumLevelLogPolicy;
@@ -39,9 +38,23 @@ namespace
     constexpr std::string_view kDemoReplayPath =
         ANTWIKA_TASK_WORKER_DEMO_REPLAY_PATH;
 
-    constexpr std::array<std::string_view, 1> kSelfGeneratedEventNames{
-        "Running Antwika TaskWorker",
+    /**
+     * @brief Sink for the events nothing in this app reads.
+     *
+     * Every dispatched event has to go somewhere, and an EventRecorder
+     * used to be what went there -- deep-copying both strings of every
+     * event and keeping them for the life of the process, in a run that
+     * ends only when somebody closes the window.
+     * Nothing ever called getEvents() on it.
+     */
+    class DiscardedEvents final : public antwika::event::IEventSink
+    {
+    public:
+        void handle(const antwika::event::Event &) override
+        {
+        }
     };
+
 } // namespace
 
 int main(int argc, char **argv)
@@ -52,7 +65,7 @@ int main(int argc, char **argv)
     StreamAppender appender(std::cout);
     PlainFormatter formatter;
     MinimumLevelLogPolicy logPolicy(Level::Info);
-    EventRecorder eventSink;
+    DiscardedEvents eventSink;
     TickEventRecorder replayRecorder;
     TaskRegistry registry;
     StatusPrintSystem printSystem(std::cout, registry);
@@ -68,17 +81,17 @@ int main(int argc, char **argv)
         ReplaySource source(std::move(events));
 
         antwika::task_worker::bootstrap(
-            clock,
-            appender,
-            formatter,
-            logPolicy,
-            eventSink,
-            source,
-            kWorkerCount,
-            {printSystem},
-            &registry,
-            std::nullopt,
-            &replayRecorder);
+            antwika::task_worker::TaskWorkerConfig{
+                .clock = clock,
+                .appender = appender,
+                .formatter = formatter,
+                .logPolicy = logPolicy,
+                .eventSink = eventSink,
+                .inputSource = source,
+                .workerCount = kWorkerCount,
+                .observers = {printSystem},
+                .registry = registry,
+                .replayRecorder = replayRecorder});
     }
     catch (const std::exception &error)
     {
@@ -89,9 +102,7 @@ int main(int argc, char **argv)
     if (options.recordPath)
     {
         antwika::replay::saveReplayFile(
-            replayRecorder.getEvents(),
-            *options.recordPath,
-            kSelfGeneratedEventNames);
+            replayRecorder.getEvents(), *options.recordPath);
     }
 
     return exitCode;

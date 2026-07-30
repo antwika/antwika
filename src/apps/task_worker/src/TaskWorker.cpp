@@ -7,6 +7,7 @@
 #include <antwika/event/Event.hpp>
 #include <antwika/event/EventDispatcher.hpp>
 #include <antwika/event/TickedEventDispatcher.hpp>
+#include <antwika/log/Level.hpp>
 #include <antwika/log/Logger.hpp>
 #include <antwika/replay/EngineLoop.hpp>
 #include <antwika/scheduler/Scheduler.hpp>
@@ -24,6 +25,7 @@ using antwika::engine::StopSignal;
 using antwika::event::Event;
 using antwika::event::EventDispatcher;
 using antwika::event::TickedEventDispatcher;
+using antwika::log::Level;
 using antwika::log::Logger;
 using antwika::replay::EngineLoop;
 using antwika::scheduler::Scheduler;
@@ -31,38 +33,30 @@ using antwika::scheduler::Scheduler;
 namespace antwika::task_worker
 {
 
-    TaskWorker::TaskWorker(IEngine &engine, IEventDispatcher &dispatcher)
-        : engine(engine), dispatcher(dispatcher)
+    TaskWorker::TaskWorker(IEngine &engine, ILogger &logger)
+        : engine(engine), logger(logger)
     {
     }
 
     void TaskWorker::run()
     {
-        dispatcher.dispatch(
-            Event{.name = "Running Antwika TaskWorker"}); // GCOVR_EXCL_LINE
+        logger.log(Level::Info, "Running Antwika TaskWorker");
         engine.start();
     }
 
-    std::vector<Worker> bootstrap(
-        IClock &clock,
-        IAppender &appender,
-        IFormatter &formatter,
-        ILogPolicy &logPolicy,
-        IEventSink &eventSink,
-        IReplaySource &inputSource,
-        std::uint32_t workerCount,
-        std::vector<std::reference_wrapper<ISystem>> observers,
-        TaskRegistry *registry,
-        std::optional<antwika::time::Tick> maxTicks,
-        ITickEventSink *replayRecorder)
+    std::vector<Worker> bootstrap(const TaskWorkerConfig &config)
     {
-        Logger logger(formatter, logPolicy, clock, appender);
-        EventDispatcher dispatcher({eventSink});
+        Logger logger(
+            config.formatter,
+            config.logPolicy,
+            config.clock,
+            config.appender);
+        EventDispatcher dispatcher({config.eventSink});
 
         World world(logger);
         std::vector<Entity> workerEntities;
-        workerEntities.reserve(workerCount);
-        for (std::uint32_t i = 0; i < workerCount; ++i)
+        workerEntities.reserve(config.workerCount);
+        for (std::uint32_t i = 0; i < config.workerCount; ++i)
         {
             const auto entity = world.create();
             world.add<Worker>(entity, Worker{});
@@ -71,8 +65,8 @@ namespace antwika::task_worker
         world.commit();
 
         TaskRegistry localRegistry;
-        TaskRegistry &taskRegistry = registry != nullptr
-                                          ? *registry
+        TaskRegistry &taskRegistry = config.registry.has_value()
+                                          ? config.registry->get()
                                           : localRegistry;
 
         WorkerLookup lookup(world, workerEntities);
@@ -89,7 +83,7 @@ namespace antwika::task_worker
         systemScheduler.addSystem(dispatchPhase, dispatchSystem);
 
         const auto observePhase = systemScheduler.createPhase("observe");
-        for (auto &observer : observers)
+        for (auto &observer : config.observers)
         {
             systemScheduler.addSystem(observePhase, observer.get());
         }
@@ -100,18 +94,18 @@ namespace antwika::task_worker
 
         std::vector<std::reference_wrapper<ITickEventSink>> timedSinks{
             submissionSink, stopSignal};
-        if (replayRecorder != nullptr)
+        if (config.replayRecorder.has_value())
         {
-            timedSinks.push_back(*replayRecorder);
+            timedSinks.push_back(config.replayRecorder->get());
         }
         TickedEventDispatcher tickedDispatcher(dispatcher, timedSinks);
 
         Engine engine(logger, tickedDispatcher);
-        TaskWorker taskWorker(engine, tickedDispatcher);
+        TaskWorker taskWorker(engine, logger);
         taskWorker.run();
 
-        EngineLoop loop(engine, tickedDispatcher, inputSource);
-        loop.run(stopSignal, maxTicks);
+        EngineLoop loop(engine, tickedDispatcher, config.inputSource);
+        loop.run(stopSignal, config.maxTicks);
 
         std::vector<Worker> finalState;
         finalState.reserve(workerEntities.size());

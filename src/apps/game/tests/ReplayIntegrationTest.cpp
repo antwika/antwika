@@ -48,15 +48,15 @@ namespace
         PathIndex paths;
 
         return antwika::game::bootstrap(
-                   logger,
-                   eventSink,
-                   source,
-                   codec,
-                   GridExtent{.width = 16, .height = 16},
-                   camera,
-                   paths,
-                   {},
-                   kMaxTicks)
+                   antwika::game::GameConfig{
+                       .logger = logger,
+                       .eventSink = eventSink,
+                       .inputSource = source,
+                       .codec = codec,
+                       .extent = GridExtent{.width = 16, .height = 16},
+                       .camera = camera,
+                       .paths = paths,
+                       .maxTicks = kMaxTicks})
             .state;
     }
 } // namespace

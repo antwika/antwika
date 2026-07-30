@@ -7,6 +7,7 @@
 #include <antwika/event/Event.hpp>
 #include <antwika/event/EventDispatcher.hpp>
 #include <antwika/event/TickedEventDispatcher.hpp>
+#include <antwika/log/Level.hpp>
 #include <antwika/replay/EngineLoop.hpp>
 
 #include "antwika/game/Events.hpp"
@@ -25,38 +26,30 @@ using antwika::engine::StopSignal;
 using antwika::event::Event;
 using antwika::event::EventDispatcher;
 using antwika::event::TickedEventDispatcher;
+using antwika::log::Level;
 using antwika::replay::EngineLoop;
 
 namespace antwika::game
 {
 
-    Game::Game(IEngine &engine,
-               IEventDispatcher &dispatcher) : engine(engine),
-                                               dispatcher(dispatcher)
+    Game::Game(IEngine &engine, ILogger &logger)
+        : engine(engine), logger(logger)
     {
     }
 
     void Game::run()
     {
-        dispatcher.dispatch(
-            Event{.name = events::kStarted}); // GCOVR_EXCL_LINE
+        logger.log(Level::Info, "Running Antwika Game");
         engine.start();
     }
 
-    GameSummary bootstrap(
-        ILogger &logger,
-        IEventSink &eventSink,
-        IReplaySource &inputSource,
-        const IInputEventCodec &codec,
-        GridExtent extent,
-        Camera &camera,
-        PathIndex &paths,
-        std::vector<std::reference_wrapper<ISystem>> observers,
-        std::optional<antwika::time::Tick> maxTicks,
-        ITickEventSink *replayRecorder,
-        UiOverlay *overlay)
+    GameSummary bootstrap(const GameConfig &config)
     {
-        EventDispatcher dispatcher({eventSink});
+        ILogger &logger = config.logger;
+        Camera &camera = config.camera;
+        PathIndex &paths = config.paths;
+
+        EventDispatcher dispatcher({config.eventSink});
 
         World world(logger);
 
@@ -68,7 +61,7 @@ namespace antwika::game
         // A phase of its own.
         // A renderer then sees the generation this walk produced.
         const auto observePhase = scheduler.createPhase("observe");
-        for (auto &observer : observers)
+        for (auto &observer : config.observers)
         {
             scheduler.addSystem(observePhase, observer.get());
         }
@@ -76,17 +69,24 @@ namespace antwika::game
         GameState state;
         GameStateReducer reducer(state);
 
-        // A run with no toolbar still needs something to ask.
+        // A run with no toolbar still needs something the grid can ask.
         // An overlay nothing writes covers nothing.
         // So every click is the world's, which is what that means.
         UiOverlay noToolbar;
-        UiOverlay &ui = overlay != nullptr ? *overlay : noToolbar;
+        const bool hasToolbar = config.overlay.has_value();
+        UiOverlay &ui = hasToolbar ? config.overlay->get() : noToolbar;
 
         const Toolbar toolbar;
-        InputFold input(codec);
+        InputFold input(config.codec);
         UiSink uiSink(camera, ui, input, toolbar, camera);
         GridSink gridSink(
-            world, paths, camera, extent, scheduler, input, ui);
+            world,
+            paths,
+            camera,
+            config.extent,
+            scheduler,
+            input,
+            ui);
         StopSignal stopSignal;
 
         // The fold is first: what it holds is the event the sinks after
@@ -98,21 +98,35 @@ namespace antwika::game
         // the bar before the grid sees it, and the picture is described
         // before the renderer paints it.
         std::vector<std::reference_wrapper<ITickEventSink>> timedSinks{
-            input, reducer, uiSink, gridSink, stopSignal};
-        if (replayRecorder != nullptr)
+            input, reducer};
+
+        // Registered only when there is somewhere to put the picture.
+        // Otherwise the bar is described against a zero canvas.
+        // Which no click can hit, so nothing is ever hovered or pressed.
+        // "No toolbar" then means no toolbar, not an unhittable one.
+        if (hasToolbar)
         {
-            timedSinks.push_back(*replayRecorder);
+            timedSinks.push_back(uiSink);
+        }
+
+        timedSinks.push_back(gridSink);
+        timedSinks.push_back(stopSignal);
+
+        if (config.replayRecorder.has_value())
+        {
+            timedSinks.push_back(config.replayRecorder->get());
         }
         TickedEventDispatcher tickedDispatcher(dispatcher, timedSinks);
 
         Engine engine(logger, tickedDispatcher);
-        Game game(engine, tickedDispatcher);
+        Game game(engine, logger);
         game.run();
 
-        EngineLoop loop(engine, tickedDispatcher, inputSource);
-        loop.run(stopSignal, maxTicks);
+        EngineLoop loop(engine, tickedDispatcher, config.inputSource);
+        loop.run(stopSignal, config.maxTicks);
 
-        const auto frame = snapshotOf(world, paths, camera, extent);
+        const auto frame =
+            snapshotOf(world, paths, camera, config.extent);
 
         // Every branch left on the excluded line is the allocator's.
         // Two are the throw edges of copying the two vectors.

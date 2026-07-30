@@ -46,6 +46,16 @@ namespace
         }
 
         std::ifstream file{std::string(puzzlePath)};
+
+        // Unchecked, a missing file read as an empty puzzle.
+        // Which Board::parse then reported as the wrong length.
+        if (!file.is_open())
+        {
+            throw BoardFormatError(
+                "antwika_sudoku: could not open a puzzle: "
+                + std::string(puzzlePath));
+        }
+
         std::ostringstream contents;
         contents << file.rdbuf();
         return Board::parse(contents.str());

@@ -98,13 +98,13 @@ TEST(BootstrapTest, Bootstrap_RunsScriptedTicksAndReturnsResultingBoard)
     });
 
     auto board = antwika::life::bootstrap(
-        logger,
-        eventSink,
-        inputSource,
-        5,
-        5,
-        {},
-        10);
+        antwika::life::LifeConfig{
+            .logger = logger,
+            .eventSink = eventSink,
+            .inputSource = inputSource,
+            .width = 5,
+            .height = 5,
+            .maxTicks = 10});
 
     EXPECT_EQ(board.width, 5U);
     EXPECT_EQ(board.height, 5U);
@@ -152,13 +152,14 @@ TEST(BootstrapTest, Bootstrap_RunsEveryObserverOncePerTick)
     CallCountingSystem countingSystem;
 
     auto board = antwika::life::bootstrap(
-        logger,
-        eventSink,
-        inputSource,
-        5,
-        5,
-        {printSystem, countingSystem},
-        10);
+        antwika::life::LifeConfig{
+            .logger = logger,
+            .eventSink = eventSink,
+            .inputSource = inputSource,
+            .width = 5,
+            .height = 5,
+            .observers = {printSystem, countingSystem},
+            .maxTicks = 10});
 
     EXPECT_EQ(countingSystem.calls, 4);
 
@@ -188,13 +189,13 @@ TEST(BootstrapTest, Bootstrap_WithNoScriptedInputStaysAllDead)
     });
 
     auto board = antwika::life::bootstrap(
-        logger,
-        eventSink,
-        inputSource,
-        4,
-        4,
-        {},
-        10);
+        antwika::life::LifeConfig{
+            .logger = logger,
+            .eventSink = eventSink,
+            .inputSource = inputSource,
+            .width = 4,
+            .height = 4,
+            .maxTicks = 10});
 
     EXPECT_EQ(board.alive, std::vector<bool>(16, false));
 }
@@ -223,22 +224,18 @@ TEST(BootstrapTest, Bootstrap_ForwardsDispatchedEventsToATickEventRecorder)
     TickEventRecorder replayRecorder;
 
     antwika::life::bootstrap(
-        logger,
-        eventSink,
-        inputSource,
-        4,
-        4,
-        {},
-        10,
-        &replayRecorder);
+        antwika::life::LifeConfig{
+            .logger = logger,
+            .eventSink = eventSink,
+            .inputSource = inputSource,
+            .width = 4,
+            .height = 4,
+            .maxTicks = 10,
+            .replayRecorder = replayRecorder});
 
     EXPECT_EQ(
         replayRecorder.getEvents(),
         (std::vector<TickEvent>{
-            TickEvent{
-                .tick = 0,
-                .event = Event{.name = "Running Antwika Life"},
-            },
             TickEvent{
                 .tick = 0,
                 .event = Event{
@@ -268,12 +265,12 @@ TEST(BootstrapTest, Bootstrap_ThrowsWhenMaxTicksIsReachedWithoutAStopEvent)
 
     EXPECT_THROW(
         antwika::life::bootstrap(
-            logger,
-            eventSink,
-            inputSource,
-            4,
-            4,
-            {},
-            3),
+            antwika::life::LifeConfig{
+                .logger = logger,
+                .eventSink = eventSink,
+                .inputSource = inputSource,
+                .width = 4,
+                .height = 4,
+                .maxTicks = 3}),
         EngineLoopError);
 }

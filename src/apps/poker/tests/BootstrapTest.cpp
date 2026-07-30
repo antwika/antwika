@@ -111,18 +111,22 @@ namespace
         MinimumLevelLogPolicy logPolicy(Level::Warning);
         EventRecorder eventSink;
 
-        return antwika::poker::bootstrap(
-            clock,
-            appender,
-            formatter,
-            logPolicy,
-            eventSink,
-            source,
-            out,
-            config,
-            kMaxTicks,
-            nullptr,
-            window);
+        antwika::poker::RoomSetup setup{
+            .clock = clock,
+            .appender = appender,
+            .formatter = formatter,
+            .logPolicy = logPolicy,
+            .eventSink = eventSink,
+            .inputSource = source,
+            .out = out,
+            .room = config,
+            .maxTicks = kMaxTicks};
+        if (window != nullptr)
+        {
+            setup.window = *window;
+        }
+
+        return antwika::poker::bootstrap(setup);
     }
 
     // Counts frames, and stands in for a renderer nobody inspects.
