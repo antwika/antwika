@@ -72,6 +72,7 @@ Contents of `src/libs/gfx/include/antwika/gfx/`:
 | `WindowEvent.hpp` | close requested, resized, key, pointer |
 | `IWindow.hpp` | one window's lifetime and properties |
 | `IRenderer.hpp` | drawing operations against one window |
+| `Glyphs.hpp`, `TextLayout.hpp` | the one built-in fixed-cell font, and measuring it |
 | `IGfxBackend.hpp` | window factory and event pump |
 | `SelectedBackend.hpp` | declares the build-time-selected factory function |
 | `NullBackend.hpp` | headless backend that draws nothing |
@@ -104,6 +105,11 @@ public:
 
     virtual void clear(Color color) = 0;
     virtual void drawRect(Rect rect, Color color) = 0;
+    virtual void drawText(
+        Point origin,
+        std::string_view text,
+        std::uint32_t scale,
+        Color color) = 0;
     virtual void present() = 0;
 };
 
@@ -392,6 +398,42 @@ the project a visible, replayable, deterministic demo.
 Then the blog post, per the project's usual practice of writing up a design
 after the fact.
 
+### Phase 7 — `apps/poker` draws itself
+
+Done ahead of Phase 6, and for the same reasons: poker is the project's
+showcase, and a hand history is exactly the kind of thing worth seeing
+rather than reading.
+
+It added `IRenderer::drawText` (see
+[Deferred deliberately](#deferred-deliberately)) and shaped how an app hangs
+rendering off the tick loop:
+
+- `poker::snapshotOf()` produces an immutable `poker::TableSnapshot`, the
+  spectator's counterpart to `holdem::TableView`.
+  `poker::TableScene` draws only that, so it structurally cannot reach the
+  `Table` -- write-only in the type system rather than by promise, which is
+  also what keeps its tests to struct literals against a mock renderer.
+- `poker::TableRenderSink` is an ordinary `ITickEventSink`, registered after
+  the sink that steps the table.
+  That ordering is positional and nothing but a test enforces it.
+- `poker::WindowCloseSource` decorates the `IReplaySource` and appends
+  `engine.stop` once the window has gone.
+  Pumping the queue there rather than beside the drawing is what makes the
+  close cost no latency: the loop asks a source for a tick's events *before*
+  stepping, so a close seen now stops the session now.
+- Pacing needed `antwika::time::ISleeper`, since a 250-tick session is
+  otherwise over in milliseconds, and a bare `sleep_for` would have made the
+  bootstrap tests spend real seconds each.
+
+One trap worth recording: holding the final frame open until the window
+closes hangs under any backend that never reports a close, which is exactly
+what `NullBackend` does.
+It is therefore gated on the app having been asked to pace itself at all.
+The equivalence proof from
+[Keeping rendering out of the tick path](#keeping-rendering-out-of-the-tick-path)
+is in place both as a unit test and by hand: a session recorded under sdl3
+replays under `null` to identical output.
+
 ## Documentation and requirements to update
 
 - `REQUIREMENTS.md` gains Must-have entries: graphics access must go through
@@ -409,7 +451,23 @@ after the fact.
 
 - **Textures and sprites.** These need resource-handle lifetime rules that
   are worth designing against a real use case rather than guessing at now.
-  Phase 1 is limited to clear, rectangle and present.
+  Phase 1 was limited to clear, rectangle and present.
+
+  Text arrived later, in Phase 7, once a real use case asked for it: a poker
+  table with no card ranks, names or chip counts on it is not worth looking
+  at.
+  It is deliberately *not* a texture or a font resource.
+  `antwika::gfx` owns one fixed-cell 5x7 bitmap font as data, every backend
+  paints it out of `drawRect`-equivalent calls, and `textSize()` measures it
+  arithmetically.
+  Nothing is loaded, so there is still no resource-handle lifetime question,
+  and no new dependency: SDL_ttf was considered and rejected on those
+  grounds.
+  The fixed cell is the load-bearing part -- it is what lets a scene lay text
+  out without asking a backend anything, and what stops two backends drawing
+  different pictures.
+  It is also why `backends/raylib` does not use raylib's own `DrawText`,
+  whose default font is not fixed-cell.
 - **Live input capture into replays.** `pollEvent()` finally makes this
   possible, and `REQUIREMENTS.md` currently lists it as out of scope.
   It should be picked up as its own piece of work once a backend exists,

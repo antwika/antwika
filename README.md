@@ -132,6 +132,7 @@ Nothing is enumerated and no five-card subset is ever materialised, so scoring s
 ```sh
 build/bin/antwika_poker --record demo.replay   # a cash game, saving who bought in
 build/bin/antwika_poker --replay demo.replay   # reload it, reproducing the same session
+build-sdl3/bin/antwika_poker --tick-delay-ms 150   # or watch it, in a window
 ```
 
 One engine tick is one step of the poker loop: dealing a hand, or asking a single player to act.
@@ -170,6 +171,14 @@ Seat 3: carol (button) showed [7c Js] and lost with two pair, Fives and Deuces
 
 Every player's cards are dealt face up here, since a table of bots has nobody to keep them from.
 See [`blog/011-writing-a-hand-history-the-rest-of-the-world-can-read.md`](blog/011-writing-a-hand-history-the-rest-of-the-world-can-read.md) for how the printer gets the numbers that format wants out of a table that never had to track them.
+
+The same session also draws itself, through `antwika::gfx`: felt, the board, the pot, and one row per seat with its stack, its cards and a ring round whoever has to act.
+`--tick-delay-ms <n>` is what makes that watchable, holding each tick's frame for `n` milliseconds and then keeping the final frame up until the window is closed; without it the ~250-tick demo is over in milliseconds.
+Under the default `null` backend the window draws nothing, so the terminal run is exactly what it always was.
+A real backend needs a display — `SDL_VIDEODRIVER=dummy` or `xvfb-run` otherwise.
+
+Closing the window ends the session, and it does so as a `engine.stop` fed in through the `IReplaySource` the loop already reads from, never by reaching into the loop.
+That is what keeps drawing a write-only projection: a windowed run reaches the same chip counts as a headless one, and a session ended by closing the window replays under `null` to the same result.
 
 Money moving in and out is all a replay stores: `poker.deposit`, `poker.buy_in` and `poker.cash_out` events (JSON payloads `{"player":..,"amount":..}`).
 Not one card and not one action is recorded, because the shuffle is seeded from `RoomConfig` and the agents behind `antwika::holdem::IAgent` are deterministic functions of what they are shown — so a reloaded session deals the same cards and reaches the same chip counts by construction.
