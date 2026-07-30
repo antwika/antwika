@@ -62,11 +62,14 @@ namespace antwika::scheduler
          * @brief Enqueue a job owned by the caller.
          * @param job The job to run later; the Scheduler stores a
          * non-owning pointer, so the caller must keep it alive until
-         * this Scheduler is destroyed -- outliving the job's own run()
-         * is not enough, since records keeps the pointer either way.
-         * Only correct when the job provably outlives this Scheduler
-         * (a longer-lived member, or a stack object declared before
-         * it); otherwise use the unique_ptr overload above.
+         * this Scheduler is destroyed. Today records only dereferences
+         * that pointer once, when the job runs, so outliving its own
+         * run() happens to be enough -- but that is an implementation
+         * detail of run(), not a promise, and this contract is the
+         * conservative one deliberately. Only correct when the job
+         * provably outlives this Scheduler (a longer-lived member, or
+         * a stack object declared before it); otherwise use the
+         * unique_ptr overload above.
          * @param priority The job's priority; higher runs first.
          * @param dependsOn JobIds (issued by this same Scheduler) that
          * must run before this job becomes a candidate for run().
@@ -120,6 +123,9 @@ namespace antwika::scheduler
             IJob *job;
             bool completed;
         };
+
+        void validateDependencies(
+            const std::vector<JobId> &dependsOn) const;
 
         void insertReady(JobId id, Priority priority);
 

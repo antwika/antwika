@@ -240,8 +240,9 @@ TEST(SchedulerTest, LowPriorityJobCanStarveIndefinitely)
     for (int i = 0; i < 5; ++i)
     {
         // Handed over, not kept on the loop's stack frame.
-        // The Scheduler retains a pointer to every job it is given.
-        // A per-iteration local would dangle once the iteration ended.
+        // A per-iteration local would in fact run before it died.
+        // But that leans on run() being the only dereference.
+        // This follows the documented contract instead.
         auto criticalJob = std::make_unique<NiceMock<MockJob>>();
         EXPECT_CALL(*criticalJob, execute(::testing::_)).Times(1);
         scheduler.schedule(std::move(criticalJob), kCriticalPriority);

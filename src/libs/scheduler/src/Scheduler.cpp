@@ -39,18 +39,33 @@ namespace antwika::scheduler
                 "Scheduler::schedule: job must not be null");
         }
 
+        // Validated before ownership moves, so there is nothing to undo.
+        // A rejected job dies with this parameter on the way out.
+        // Undoing it afterwards would need a catch clause instead.
+        // Such a clause would also see allocation failures.
+        // Those can strike after records already holds this job.
+        // Dropping the job there would leave a dangling pointer.
+        validateDependencies(dependsOn);
+
         ownedJobs.push_back(std::move(job));
-        try
+        return schedule(
+            *ownedJobs.back(), priority, std::move(dependsOn));
+    }
+
+    void Scheduler::validateDependencies(
+        const std::vector<JobId> &dependsOn) const
+    {
+        const auto newRaw = rawValue(nextId);
+
+        for (const auto dependency : dependsOn)
         {
-            return schedule(
-                *ownedJobs.back(), priority, std::move(dependsOn));
-        }
-        catch (...)
-        {
-            // Preserve the documented "nothing is mutated" guarantee.
-            // A rejected job must not linger in ownedJobs.
-            ownedJobs.pop_back();
-            throw;
+            const auto dependencyRaw = rawValue(dependency);
+            if (dependencyRaw == 0 || dependencyRaw >= newRaw)
+            {
+                throw SchedulerError(
+                    "Scheduler::schedule: dependsOn contains an "
+                    "unknown JobId");
+            }
         }
     }
 
@@ -71,16 +86,7 @@ namespace antwika::scheduler
         const auto newId = nextId;
         const auto newRaw = rawValue(newId);
 
-        for (const auto dependency : dependsOn)
-        {
-            const auto dependencyRaw = rawValue(dependency);
-            if (dependencyRaw == 0 || dependencyRaw >= newRaw)
-            {
-                throw SchedulerError(
-                    "Scheduler::schedule: dependsOn contains an "
-                    "unknown JobId");
-            }
-        }
+        validateDependencies(dependsOn);
 
         std::size_t unmet = 0;
         for (const auto dependency : dependsOn)
