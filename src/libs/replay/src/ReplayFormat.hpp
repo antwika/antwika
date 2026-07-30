@@ -5,21 +5,37 @@
 
 /**
  * @file
- * @brief On-disk format constants shared by ReplayWriter and ReplayReader.
+ * @brief What identifies a replay document, shared by ReplayWriter and
+ * ReplayReader.
  *
- * Bumping the format version is how the on-disk layout evolves; readers
- * reject anything they don't recognize instead of guessing.
+ * A replay is one JSON object with exactly three members:
+ *
+ *     {"magic": "antwika-replay",
+ *      "version": 1,
+ *      "events": [{"tick": 0, "event": {"name": "", "payload": ""}}]}
+ *
+ * The two constants below are what "magic" and "version" must hold.
+ * ReplayJson.cpp turns them into the JSON Schema a document is validated
+ * against, and EventSchema.cpp describes the events array's items.
+ *
+ * Bumping the version is how the document's shape evolves; a reader
+ * refuses a version it does not know rather than guessing at it.
  */
 namespace antwika::replay::detail
 {
 
     /**
-     * @brief Magic string identifying a replay stream's header line.
+     * @brief What a replay document's "magic" member has to say.
+     *
+     * A JSON string rather than a byte signature: it tells a reader that
+     * this object is meant to be a replay, so that a JSON document of
+     * some other kind is refused as one rather than parsed as an empty
+     * session.
      */
     inline constexpr std::string_view kReplayMagic = "antwika-replay";
 
     /**
-     * @brief Version of the on-disk replay format written and expected.
+     * @brief What a replay document's "version" member has to say.
      */
     inline constexpr std::uint32_t kReplayFormatVersion = 1;
 
