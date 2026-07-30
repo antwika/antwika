@@ -51,8 +51,8 @@ namespace antwika::gfx_demo
         // That keeps the row centred whatever the canvas size is.
         constexpr std::uint32_t kUnitsAcross = kBarCount * 2 + 1;
 
-        // The UI panel takes a third of the width and only the height it
-        // needs, so the bars and the logo behind it stay visible.
+        // The UI panel takes a third of the width.
+        // That keeps the bars and the logo behind it visible.
         constexpr std::uint32_t kPanelShare = 3;
     } // namespace
 

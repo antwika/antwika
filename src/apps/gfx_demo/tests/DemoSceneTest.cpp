@@ -96,8 +96,7 @@ namespace
 
 // Each test pins the one thing it is about.
 // Everything else the scene draws is allowed and ignored.
-// That is what keeps the UI panel's own rectangles and labels from
-// breaking the tests about bars and textures.
+// That keeps the UI panel's own drawing out of the texture tests.
 class DemoSceneTest : public ::testing::Test
 {
 protected:
