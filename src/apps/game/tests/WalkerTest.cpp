@@ -16,6 +16,7 @@ using antwika::game::Cell;
 using antwika::game::Direction;
 using antwika::game::Path;
 using antwika::game::Walker;
+using antwika::game::WalkerKind;
 using antwika::log::mocks::MockLogger;
 using ::testing::NiceMock;
 
@@ -32,6 +33,37 @@ TEST(WalkerTest, EqualityComparesTheFacing)
 
     EXPECT_EQ(walker, (Walker{.facing = Direction::North}));
     EXPECT_NE(walker, (Walker{.facing = Direction::South}));
+}
+
+// A defaulted operator== compares field by field.
+// A field nothing varies is therefore a branch nothing takes.
+// Each case below varies exactly one of them.
+TEST(WalkerTest, EqualityComparesEveryOtherFieldIndependently)
+{
+    constexpr Walker walker{
+        .facing = Direction::North,
+        .kind = WalkerKind::Water,
+        .carried = 3,
+        .stepsTaken = 4,
+        .origin = Cell{.x = 5, .y = 6}};
+
+    EXPECT_EQ(walker, walker);
+
+    Walker other = walker;
+    other.kind = WalkerKind::Fireman;
+    EXPECT_NE(walker, other);
+
+    other = walker;
+    other.carried = 2;
+    EXPECT_NE(walker, other);
+
+    other = walker;
+    other.stepsTaken = 5;
+    EXPECT_NE(walker, other);
+
+    other = walker;
+    other.origin = Cell{.x = 7, .y = 6};
+    EXPECT_NE(walker, other);
 }
 
 TEST(WalkerTest, PathTagsCompareEqualToEachOther)
