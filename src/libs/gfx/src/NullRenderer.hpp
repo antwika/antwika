@@ -54,6 +54,14 @@ namespace antwika::gfx::detail
         void drawRect(Rect rect, Color color) override;
 
         /**
+         * @brief Discard a line.
+         * @param from The end it would have started at.
+         * @param to The end it would have finished at.
+         * @param color The colour it would have been drawn in.
+         */
+        void drawLine(Point from, Point to, Color color) override;
+
+        /**
          * @brief Discard a line of text.
          * @param origin Where the text would have started.
          * @param text The characters that would have been drawn.

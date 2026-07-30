@@ -46,6 +46,7 @@ Requirements for the Antwika project, gathered from `README.md`, `blog/001-build
 - Image decoding must accept a byte stream rather than a path, so `antwika::gfx` opens no files and every decoder failure is provable headlessly.
 - A texture must be created through the renderer that will draw it, and both destroying that texture after its renderer's window has closed and drawing it through another renderer must be safe.
 - A blit whose source rectangle reaches outside its texture must be refused identically by every backend, since that is the one case where the underlying frameworks disagree.
+- A line must include both of its endpoints, so a line whose ends coincide draws that one pixel; callers step diagonal shapes out of lines, and a dropped endpoint leaves a gap at every corner. Which pixels between the endpoints are lit is left to the backend, since nothing reads a drawn line back.
 - A window's close request must reach the engine only as replayable input through `IReplaySource`, never by short-circuiting the tick loop.
 - UI layout must be a pure function of the described UI and the canvas size, computed arithmetically from the built-in font's metrics without asking a graphics backend to measure anything.
 - UI layouts must nest, and a container must be able to take its size from the content of children it has not seen yet.
@@ -88,7 +89,7 @@ Requirements for the Antwika project, gathered from `README.md`, `blog/001-build
 - MinGW builds won't carry coverage instrumentation (`--coverage` isn't supported by that toolchain).
 - An index over replay events (to avoid the linear scan per tick in `ReplaySource::eventsFor()`) won't be built until replays are long enough for it to matter.
 - Graphics backends won't be loadable at runtime; exactly one is compiled and linked per build, selected by the `ANTWIKA_GFX_BACKEND` CMake variable and the matching `gfx_backend` Conan option.
-- The graphics abstraction won't include GPU, shader or 3D APIs in its current scope; drawing is limited to clearing, filling rectangles, text in the one built-in font, and blitting a loaded texture with a source rectangle and a tint.
+- The graphics abstraction won't include GPU, shader or 3D APIs in its current scope; drawing is limited to clearing, filling rectangles, one-pixel lines, text in the one built-in font, and blitting a loaded texture with a source rectangle and a tint.
 - `antwika::gfx` won't offer pixel read-back, render targets or screenshots, since read-back is the one thing that would let rendering feed the simulation.
 - The graphics abstraction won't load fonts, or offer any font beyond the built-in fixed-cell one, since a second font implies per-backend glyph metrics that would break laying text out arithmetically; a decoded bitmap has no metrics for a backend to disagree about, which is why textures are in scope and fonts are not.
 - `antwika::gfx` won't report keyboard or pointer input; that travels through `antwika::input`, which does not depend on `antwika::gfx`, so reading input never requires opening a window.

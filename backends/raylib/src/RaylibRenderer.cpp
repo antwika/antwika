@@ -59,6 +59,28 @@ namespace antwika::gfx::raylib
             toRaylib(color));
     }
 
+    void RaylibRenderer::drawLine(Point from, Point to, Color color)
+    {
+        beginIfNeeded();
+
+        if (!drawing)
+        {
+            return;
+        }
+
+        const auto raylibColor = toRaylib(color);
+
+        // A GL line between two identical vertices covers no pixel.
+        // IRenderer promises that pixel, so draw it directly.
+        if (from == to)
+        {
+            DrawPixel(from.x, from.y, raylibColor);
+            return;
+        }
+
+        DrawLine(from.x, from.y, to.x, to.y, raylibColor);
+    }
+
     void RaylibRenderer::drawText(
         Point origin,
         std::string_view text,

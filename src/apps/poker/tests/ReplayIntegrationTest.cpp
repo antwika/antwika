@@ -170,6 +170,7 @@ namespace
 
                 void clear(Color) override {}
                 void drawRect(Rect, Color) override {}
+                void drawLine(Point, Point, Color) override {}
                 void drawText(
                     Point, std::string_view, std::uint32_t, Color) override
                 {

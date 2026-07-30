@@ -59,6 +59,17 @@ namespace antwika::gfx::sdl3
         void drawRect(Rect rect, Color color) override;
 
         /**
+         * @brief Draw a one-pixel-wide line between two points.
+         *
+         * SDL_RenderLine already includes both endpoints, so nothing here
+         * has to adjust for the degenerate case.
+         * @param from One end of the line.
+         * @param to The other end.
+         * @param color The colour to draw in.
+         */
+        void drawLine(Point from, Point to, Color color) override;
+
+        /**
          * @brief Draw a line of text in the built-in fixed-cell font.
          *
          * Painted from gfx::glyphRow() as filled rectangles rather than

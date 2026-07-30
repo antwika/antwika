@@ -86,6 +86,31 @@ namespace antwika::gfx::sdl3
         }
     }
 
+    void Sdl3Renderer::drawLine(Point from, Point to, Color color)
+    {
+        if (renderer == nullptr)
+        {
+            return;
+        }
+
+        if (!SDL_SetRenderDrawColor(
+                renderer, color.red, color.green, color.blue, color.alpha))
+        {
+            warn(logger, "could not set the draw colour");
+            return;
+        }
+
+        if (!SDL_RenderLine(
+                renderer,
+                static_cast<float>(from.x),
+                static_cast<float>(from.y),
+                static_cast<float>(to.x),
+                static_cast<float>(to.y)))
+        {
+            warn(logger, "could not draw a line");
+        }
+    }
+
     void Sdl3Renderer::drawText(
         Point origin,
         std::string_view text,

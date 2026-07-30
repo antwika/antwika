@@ -46,6 +46,29 @@ namespace antwika::gfx
         virtual void drawRect(Rect rect, Color color) = 0;
 
         /**
+         * @brief Draw a one-pixel-wide line between two points.
+         *
+         * Both endpoints are drawn, so a line from a point to itself
+         * draws that one pixel rather than nothing. Callers step diagonal
+         * shapes out of these, and dropping an endpoint would leave a gap
+         * at every corner.
+         *
+         * Which pixels between the endpoints get lit is the backend's
+         * business, and two backends may well choose differently. Nothing
+         * reads a drawn line back, so a line placed a pixel over cannot
+         * change what a replay reproduces -- the same latitude each
+         * backend already has in how it rasterises the built-in font.
+         *
+         * There is no width, no anti-aliasing and no line cap, for the
+         * same reason there is only one font: each would mean per-backend
+         * behaviour that nothing needs yet.
+         * @param from One end of the line.
+         * @param to The other end.
+         * @param color The colour to draw in.
+         */
+        virtual void drawLine(Point from, Point to, Color color) = 0;
+
+        /**
          * @brief Draw a line of text in the built-in fixed-cell font.
          *
          * Every backend draws the same glyphs at the same metrics, which

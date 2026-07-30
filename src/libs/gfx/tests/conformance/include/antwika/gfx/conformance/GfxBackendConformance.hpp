@@ -249,6 +249,41 @@ namespace antwika::gfx::conformance
                 Color{.red = 255});
             renderer.drawText(
                 Point{.x = 8, .y = 8}, "Antwika 123", 2, Color{.green = 255});
+            renderer.drawLine(
+                Point{.x = 4, .y = 4},
+                Point{.x = 40, .y = 22},
+                Color{.blue = 255});
+            renderer.present();
+        });
+    }
+
+    TYPED_TEST_P(GfxBackendConformance, DrawLine_AcceptsAwkwardLines)
+    {
+        const auto window = this->backend->createWindow(this->demoDesc());
+        auto &renderer = window->renderer();
+
+        // Nothing here can be checked by reading pixels back.
+        // What a backend must not do is refuse any of it.
+        // The zero-length line is the one worth listing first.
+        // It is one pixel, not nothing drawn at all.
+        // A backend deriving a direction from the ends divides by zero.
+        EXPECT_NO_THROW({
+            renderer.drawLine(
+                Point{.x = 9, .y = 9},
+                Point{.x = 9, .y = 9},
+                Color{.red = 255});
+            renderer.drawLine(
+                Point{.x = 60, .y = 30},
+                Point{.x = 10, .y = 5},
+                Color{.red = 255});
+            renderer.drawLine(
+                Point{.x = -80, .y = -40},
+                Point{.x = -10, .y = -10},
+                Color{.red = 255});
+            renderer.drawLine(
+                Point{.x = -20, .y = 240},
+                Point{.x = 900, .y = 260},
+                Color{.red = 255});
             renderer.present();
         });
     }
@@ -488,6 +523,7 @@ namespace antwika::gfx::conformance
         Close_ClosesTheWindow,
         Close_IsIdempotent,
         Renderer_AcceptsAFrameWithoutThrowing,
+        DrawLine_AcceptsAwkwardLines,
         DrawText_AcceptsAwkwardText,
         CreateTexture_ReportsTheBitmapSize,
         CreateTexture_ThrowsOnAnIncompleteBitmap,
