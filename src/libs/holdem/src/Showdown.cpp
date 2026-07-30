@@ -22,10 +22,10 @@ namespace antwika::holdem
     ShowdownScores scoreShowdown(
         std::span<const Seat> seats, std::span<const Card> board)
     {
-        ShowdownScores scores{
-            .values = std::vector<HandValue>(seats.size(), HandValue{}),
-            .entries = {},
-        };
+        // Sized up front rather than pushed to.
+        // So a seat that folded has a value to be indexed by, not a gap.
+        std::vector<HandValue> values(seats.size(), HandValue{});
+        std::vector<ShowdownEntry> entries;
 
         for (std::size_t index = 0; index < seats.size(); ++index)
         {
@@ -46,8 +46,8 @@ namespace antwika::holdem
                     static_cast<std::ptrdiff_t>(kHoleCardCount)));
 
             const auto value = evaluate(std::span<const Card>(cards));
-            scores.values[index] = value;
-            scores.entries.push_back(ShowdownEntry{
+            values[index] = value;
+            entries.push_back(ShowdownEntry{
                 .seat = makeSeatId(index),
                 .holeCards = seat.holeCards,
                 .value = value,
@@ -56,18 +56,26 @@ namespace antwika::holdem
 
         // Stable, so seats tied on strength stay in seat order.
         std::stable_sort(
-            scores.entries.begin(),
-            scores.entries.end(),
+            entries.begin(),
+            entries.end(),
             [](const ShowdownEntry &left, const ShowdownEntry &right)
             { return left.value > right.value; });
 
-        return scores;
+        // Handing over two vectors at once can fail to allocate.
+        // The edges gcov reports here are that unwind path only.
+        return ShowdownScores{ // GCOVR_EXCL_LINE
+            .values = std::move(values),
+            .entries = std::move(entries),
+        };
     }
 
     ShowdownScores scoreWithoutShowdown(std::size_t seatCount)
     {
-        return ShowdownScores{
-            .values = std::vector<HandValue>(seatCount, HandValue{}),
+        std::vector<HandValue> values(seatCount, HandValue{});
+
+        // As above: the only edges here are the allocation's.
+        return ShowdownScores{ // GCOVR_EXCL_LINE
+            .values = std::move(values),
             .entries = {},
         };
     }
