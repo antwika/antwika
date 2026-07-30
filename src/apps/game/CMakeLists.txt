@@ -4,6 +4,9 @@ add_executable(antwika_game
     src/GridScene.cpp
     src/GridSink.cpp
     src/InputFold.cpp
+    src/MainMenu.cpp
+    src/MenuLabels.cpp
+    src/MenuSink.cpp
     src/PathIndex.cpp
     src/RenderSystem.cpp
     src/TickPacer.cpp

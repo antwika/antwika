@@ -6,6 +6,9 @@ add_executable(antwika_game_tests
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/GridScene.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/GridSink.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/InputFold.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/MainMenu.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/MenuLabels.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/MenuSink.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/PathIndex.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/RenderSystem.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/TickPacer.cpp
@@ -27,6 +30,10 @@ add_executable(antwika_game_tests
     GridSinkTest.cpp
     InputFoldTest.cpp
     IsoProjectionTest.cpp
+    MainMenuTest.cpp
+    MenuLabelsTest.cpp
+    MenuSinkTest.cpp
+    MenuStateTest.cpp
     PathIndexTest.cpp
     PointerReadingTest.cpp
     RenderSystemTest.cpp
