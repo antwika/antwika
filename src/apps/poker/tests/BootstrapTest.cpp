@@ -609,3 +609,32 @@ TEST(BootstrapTest, Bootstrap_ReachesTheSameResultWithAndWithoutAWindow)
     EXPECT_EQ(windowed, headless);
     EXPECT_EQ(windowedOut.str(), headlessOut.str());
 }
+
+TEST(PrintSummaryTest, WritesEveryBalanceInNameOrder)
+{
+    std::ostringstream out;
+    const RoomSummary summary{
+        .handsPlayed = 3,
+        .balances = {{"Ada", 120}, {"Bob", 80}},
+        .chipsLeftOnTable = 0};
+
+    antwika::poker::printSummary(out, summary);
+
+    EXPECT_EQ(
+        out.str(),
+        "\n=== 3 hands played ===\n  Ada: 120\n  Bob: 80\n");
+}
+
+TEST(PrintSummaryTest, MentionsChipsNobodyHasWonYet)
+{
+    std::ostringstream out;
+    const RoomSummary summary{
+        .handsPlayed = 1, .balances = {}, .chipsLeftOnTable = 45};
+
+    antwika::poker::printSummary(out, summary);
+
+    EXPECT_EQ(
+        out.str(),
+        "\n=== 1 hands played ===\n"
+        "  (45 chips left in an unfinished hand)\n");
+}
