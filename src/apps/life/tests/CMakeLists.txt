@@ -18,6 +18,7 @@ add_executable(antwika_life_tests
     GridTest.cpp
     LifeSystemTest.cpp
     PrintSystemTest.cpp
+    RenderDeterminismTest.cpp
     RenderSystemTest.cpp
     TickPacerTest.cpp
     ReplayIntegrationTest.cpp
