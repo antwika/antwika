@@ -281,6 +281,7 @@ jobs:
             "antwika_task_worker"
             "antwika_task_worker_tests"
             "antwika_time_tests"
+            "antwika_ui_tests"
             "antwika_wfc_tests"
           )
 
