@@ -1,7 +1,6 @@
 {
     "version": "0.5",
     "requires": [
-        "stb/cci.20240531#ede183dce303916dab0c1b835df3926a%1720366012.336",
         "stb/cci.20220909#9fdd7ba3cded1d0560cd366e2003d853%1720366013.797",
         "nlohmann_json/3.12.0#2d634ab0ec8d9f56353e5ccef6d6612c%1744735883.94",
         "json-schema-validator/2.4.0#7a91b14f71f961c2d94a52bd8353d519%1765954078.009",
