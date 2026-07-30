@@ -292,6 +292,7 @@ TEST(PrintSummaryTest, WritesTheStateTheCountsAndTheCamera)
         .state = {.ticksProcessed = 4, .score = 7},
         .paths = {{.x = 1, .y = 1}, {.x = 1, .y = 2}},
         .walkers = {},
+        .buildings = {},
         .camera = Camera(Point{.x = 512, .y = 48})};
 
     antwika::game::printSummary(out, summary);
@@ -301,6 +302,7 @@ TEST(PrintSummaryTest, WritesTheStateTheCountsAndTheCamera)
         "Final state: ticksProcessed=4 score=7\n"
         "Paths laid: 2\n"
         "Walkers: 0\n"
+        "Buildings: 0\n"
         "Camera: pan (512, 48) zoom 3\n");
 }
 
@@ -313,10 +315,32 @@ TEST(PrintSummaryTest, WritesEveryWalkerWhereItStandsAndWhereItFaces)
         .walkers =
             {{.at = {.x = 3, .y = 4},
               .facing = antwika::game::Direction::South}},
+        .buildings = {},
         .camera = Camera(Point{.x = 0, .y = 0})};
 
     antwika::game::printSummary(out, summary);
 
     EXPECT_NE(
         out.str().find("  at (3, 4) facing 2\n"), std::string::npos);
+}
+
+TEST(PrintSummaryTest, WritesEveryBuildingWhereItStandsAndWhatItHolds)
+{
+    std::ostringstream out;
+    const antwika::game::GameSummary summary{
+        .state = {},
+        .paths = {},
+        .walkers = {},
+        .buildings =
+            {{.at = {.x = 6, .y = 2},
+              .kind = antwika::game::BuildingKind::WaterSource,
+              .held = 40,
+              .capacity = 100}},
+        .camera = Camera(Point{.x = 0, .y = 0})};
+
+    antwika::game::printSummary(out, summary);
+
+    EXPECT_NE(
+        out.str().find("  at (6, 2) kind 2 stock 40/100\n"),
+        std::string::npos);
 }

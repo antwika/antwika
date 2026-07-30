@@ -6,6 +6,7 @@
 #include <antwika/ecs/World.hpp>
 #include <antwika/log/mocks/MockLogger.hpp>
 
+#include "antwika/game/Building.hpp"
 #include "antwika/game/Cell.hpp"
 #include "antwika/game/Direction.hpp"
 #include "antwika/game/PathIndex.hpp"
@@ -14,10 +15,20 @@
 
 using antwika::ecs::Entity;
 using antwika::ecs::World;
+using antwika::game::Building;
+using antwika::game::BuildingKind;
 using antwika::game::Cell;
 using antwika::game::Direction;
+using antwika::game::kMaxRisk;
+using antwika::game::kMaxWalkDistance;
+using antwika::game::kRiskRelief;
+using antwika::game::newlyBuilt;
+using antwika::game::newlySpawned;
 using antwika::game::PathIndex;
+using antwika::game::Resource;
+using antwika::game::serve;
 using antwika::game::Walker;
+using antwika::game::WalkerKind;
 using antwika::game::WalkerSystem;
 using antwika::log::mocks::MockLogger;
 
@@ -31,6 +42,25 @@ namespace
             const auto entity = world.create();
             world.add<Cell>(entity, at);
             world.add<Walker>(entity, Walker{.facing = facing});
+            world.commit();
+            return entity;
+        }
+
+        [[nodiscard]] Entity addCarrier(
+            Cell at, Direction facing, WalkerKind kind)
+        {
+            const auto entity = world.create();
+            world.add<Cell>(entity, at);
+            world.add<Walker>(entity, newlySpawned(kind, facing));
+            world.commit();
+            return entity;
+        }
+
+        [[nodiscard]] Entity addBuilding(Cell at, const Building &building)
+        {
+            const auto entity = world.create();
+            world.add<Cell>(entity, at);
+            world.add<Building>(entity, building);
             world.commit();
             return entity;
         }
@@ -162,4 +192,208 @@ TEST_F(WalkerSystemTest, Update_DoesNothingWithNoWalkersAtAll)
     layPath({{.x = 0, .y = 0}});
 
     EXPECT_NO_THROW(tick());
+}
+
+// serve() on its own, without a world to put the two into.
+
+TEST(ServeTest, AFoodWalkerFillsAFoodBuildingAndIsDrawnDown)
+{
+    auto walker = newlySpawned(WalkerKind::Food, Direction::East);
+    auto house = newlyBuilt(BuildingKind::House);
+
+    serve(walker, house);
+
+    EXPECT_EQ(house.stock.held, house.stock.capacity);
+    EXPECT_EQ(walker.carried, 100 - 90);
+}
+
+TEST(ServeTest, AWalkerNeverPushesABuildingPastItsCapacity)
+{
+    auto walker = newlySpawned(WalkerKind::Food, Direction::East);
+    auto house = newlyBuilt(BuildingKind::House);
+    house.stock.held = house.stock.capacity;
+
+    serve(walker, house);
+
+    EXPECT_EQ(house.stock.held, house.stock.capacity);
+    EXPECT_EQ(walker.carried, 100);
+}
+
+TEST(ServeTest, AnEmptyWalkerLeavesABuildingAlone)
+{
+    auto walker = newlySpawned(WalkerKind::Food, Direction::East);
+    walker.carried = 0;
+    auto house = newlyBuilt(BuildingKind::House);
+
+    serve(walker, house);
+
+    EXPECT_EQ(house.stock.held, 10);
+}
+
+TEST(ServeTest, AWaterWalkerLeavesAFoodBuildingAlone)
+{
+    auto walker = newlySpawned(WalkerKind::Water, Direction::East);
+    auto house = newlyBuilt(BuildingKind::House);
+
+    serve(walker, house);
+
+    EXPECT_EQ(house.stock.held, 10);
+    EXPECT_EQ(walker.carried, 100);
+}
+
+TEST(ServeTest, AWaterWalkerFillsWhatStocksWater)
+{
+    auto walker = newlySpawned(WalkerKind::Water, Direction::East);
+    auto well = newlyBuilt(BuildingKind::WaterSource);
+    ASSERT_EQ(well.stock.resource, Resource::Water);
+
+    serve(walker, well);
+
+    EXPECT_EQ(well.stock.held, well.stock.capacity);
+}
+
+TEST(ServeTest, AFiremanTakesTheFireRiskDownAndLeavesTheRest)
+{
+    auto fireman = newlySpawned(WalkerKind::Fireman, Direction::East);
+    auto house = newlyBuilt(BuildingKind::House);
+    house.fireRisk = kMaxRisk - 1;
+    house.collapseRisk = kMaxRisk - 1;
+
+    serve(fireman, house);
+
+    EXPECT_EQ(house.fireRisk, kMaxRisk - 1 - kRiskRelief);
+    EXPECT_EQ(house.collapseRisk, kMaxRisk - 1);
+    EXPECT_EQ(house.stock.held, 10);
+}
+
+TEST(ServeTest, AnArchitectTakesTheCollapseRiskDownAndLeavesTheRest)
+{
+    auto architect = newlySpawned(WalkerKind::Architect, Direction::East);
+    auto house = newlyBuilt(BuildingKind::House);
+    house.fireRisk = kMaxRisk - 1;
+    house.collapseRisk = kMaxRisk - 1;
+
+    serve(architect, house);
+
+    EXPECT_EQ(house.collapseRisk, kMaxRisk - 1 - kRiskRelief);
+    EXPECT_EQ(house.fireRisk, kMaxRisk - 1);
+}
+
+// Relief never pushes a risk below nothing.
+TEST(ServeTest, RiskNeverGoesBelowZero)
+{
+    auto fireman = newlySpawned(WalkerKind::Fireman, Direction::East);
+    auto architect = newlySpawned(WalkerKind::Architect, Direction::East);
+    auto house = newlyBuilt(BuildingKind::House);
+
+    serve(fireman, house);
+    serve(architect, house);
+
+    EXPECT_EQ(house.fireRisk, 0);
+    EXPECT_EQ(house.collapseRisk, 0);
+}
+
+// And the same rules once a world is holding the two.
+
+TEST_F(WalkerSystemTest, Update_TopsUpABuildingBesideThePathCell)
+{
+    layPath({{.x = 0, .y = 0}, {.x = 1, .y = 0}});
+    const auto walker =
+        addCarrier(Cell{.x = 0, .y = 0}, Direction::East, WalkerKind::Food);
+    const auto house =
+        addBuilding(Cell{.x = 0, .y = 1}, newlyBuilt(BuildingKind::House));
+
+    tick();
+
+    EXPECT_EQ(world.get<Building>(house).stock.held, 100);
+    EXPECT_EQ(world.get<Walker>(walker).carried, 10);
+}
+
+TEST_F(WalkerSystemTest, Update_LeavesABuildingDiagonallyOffThePathAlone)
+{
+    layPath({{.x = 0, .y = 0}, {.x = 1, .y = 0}});
+    (void)addCarrier(
+        Cell{.x = 0, .y = 0}, Direction::East, WalkerKind::Food);
+    const auto house =
+        addBuilding(Cell{.x = 1, .y = 1}, newlyBuilt(BuildingKind::House));
+
+    tick();
+
+    EXPECT_EQ(world.get<Building>(house).stock.held, 10);
+}
+
+// Two walkers, one building, one tick: neither delivery may be lost.
+TEST_F(WalkerSystemTest, Update_AddsUpTwoDeliveriesInOneTick)
+{
+    layPath({{.x = 0, .y = 0}, {.x = 1, .y = 0}});
+    const auto house =
+        addBuilding(Cell{.x = 0, .y = 1}, newlyBuilt(BuildingKind::House));
+
+    for (int walker = 0; walker < 2; ++walker)
+    {
+        const auto entity = world.create();
+        world.add<Cell>(entity, Cell{.x = 0, .y = 0});
+        world.add<Walker>(
+            entity,
+            Walker{
+                .facing = Direction::East,
+                .kind = WalkerKind::Food,
+                .carried = 5,
+                .stepsTaken = 0});
+    }
+    world.commit();
+
+    tick();
+
+    EXPECT_EQ(world.get<Building>(house).stock.held, 20);
+}
+
+// Standing still is not being idle.
+TEST_F(WalkerSystemTest, Update_ServesFromACellWithNowhereToGo)
+{
+    layPath({{.x = 0, .y = 0}});
+    (void)addCarrier(
+        Cell{.x = 0, .y = 0}, Direction::East, WalkerKind::Food);
+    const auto house =
+        addBuilding(Cell{.x = 0, .y = 1}, newlyBuilt(BuildingKind::House));
+
+    tick();
+
+    EXPECT_EQ(world.get<Building>(house).stock.held, 100);
+}
+
+TEST_F(WalkerSystemTest, Update_CountsEveryStepItTakes)
+{
+    layPath({{.x = 0, .y = 0}, {.x = 1, .y = 0}, {.x = 2, .y = 0}});
+    const auto walker =
+        addCarrier(Cell{.x = 0, .y = 0}, Direction::East, WalkerKind::Food);
+
+    tick();
+    tick();
+
+    EXPECT_EQ(world.get<Walker>(walker).stepsTaken, 2);
+}
+
+// The distance cap: a walker that has gone far enough is gone.
+TEST_F(WalkerSystemTest, Update_DespawnsAWalkerAtTheDistanceLimit)
+{
+    std::vector<Cell> corridor;
+    for (std::int32_t x = 0; x <= kMaxWalkDistance + 2; ++x)
+    {
+        corridor.push_back(Cell{.x = x, .y = 0});
+    }
+    layPath(corridor);
+    (void)addCarrier(
+        Cell{.x = 0, .y = 0}, Direction::East, WalkerKind::Food);
+
+    for (std::int32_t taken = 0; taken < kMaxWalkDistance; ++taken)
+    {
+        tick();
+    }
+
+    EXPECT_EQ((world.view<Walker, Cell>().size()), 1U);
+
+    tick();
+
+    EXPECT_EQ((world.view<Walker, Cell>().size()), 0U);
 }

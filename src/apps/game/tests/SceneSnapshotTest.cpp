@@ -194,6 +194,7 @@ TEST(SceneSnapshotTest, GameSummaryEqualityComparesEveryField)
         .state = {.ticksProcessed = 1, .score = 2},
         .paths = {Cell{.x = 1, .y = 1}},
         .walkers = {WalkerView{.at = {.x = 2, .y = 2}}},
+        .buildings = {},
         .camera = Camera()};
 
     EXPECT_EQ(base, base);
@@ -213,4 +214,101 @@ TEST(SceneSnapshotTest, GameSummaryEqualityComparesEveryField)
     auto moved = base;
     moved.camera.panBy(1, 0);
     EXPECT_NE(base, moved);
+}
+
+namespace
+{
+    using antwika::game::Building;
+    using antwika::game::BuildingKind;
+    using antwika::game::BuildingView;
+    using antwika::game::newlyBuilt;
+    using antwika::game::WalkerKind;
+
+    void putBuilding(World &world, Cell at, BuildingKind kind)
+    {
+        const auto entity = world.create();
+        world.add<Cell>(entity, at);
+        world.add<Building>(entity, newlyBuilt(kind));
+    }
+} // namespace
+
+TEST(SceneSnapshotTest, SnapshotOf_HasNoBuildingsForAnEmptyWorld)
+{
+    NiceMock<MockLogger> logger;
+    World world(logger);
+    const PathIndex paths;
+
+    const auto snapshot = snapshotOf(world, paths, Camera(), kExtent);
+
+    EXPECT_TRUE(snapshot.buildings.empty());
+}
+
+TEST(SceneSnapshotTest, SnapshotOf_CarriesWhatAFrameNeedsOfABuilding)
+{
+    NiceMock<MockLogger> logger;
+    World world(logger);
+    const PathIndex paths;
+
+    putBuilding(world, Cell{.x = 2, .y = 3}, BuildingKind::FoodSource);
+    world.commit();
+
+    const auto snapshot = snapshotOf(world, paths, Camera(), kExtent);
+
+    ASSERT_EQ(snapshot.buildings.size(), 1U);
+    EXPECT_EQ(
+        snapshot.buildings.front(),
+        (BuildingView{
+            .at = Cell{.x = 2, .y = 3},
+            .kind = BuildingKind::FoodSource,
+            .held = 10,
+            .capacity = 100}));
+}
+
+// Ascending by cell whatever order the entities were created in.
+TEST(SceneSnapshotTest, SnapshotOf_TakesTheBuildingsInAscendingOrder)
+{
+    NiceMock<MockLogger> logger;
+    World world(logger);
+    const PathIndex paths;
+
+    putBuilding(world, Cell{.x = 3, .y = 1}, BuildingKind::House);
+    putBuilding(world, Cell{.x = 0, .y = 7}, BuildingKind::House);
+    putBuilding(world, Cell{.x = 0, .y = 2}, BuildingKind::House);
+    world.commit();
+
+    const auto snapshot = snapshotOf(world, paths, Camera(), kExtent);
+
+    ASSERT_EQ(snapshot.buildings.size(), 3U);
+    EXPECT_EQ(snapshot.buildings[0].at, (Cell{.x = 0, .y = 2}));
+    EXPECT_EQ(snapshot.buildings[1].at, (Cell{.x = 0, .y = 7}));
+    EXPECT_EQ(snapshot.buildings[2].at, (Cell{.x = 3, .y = 1}));
+}
+
+TEST(SceneSnapshotTest, SnapshotOf_CarriesWhatAWalkerIsCarrying)
+{
+    NiceMock<MockLogger> logger;
+    World world(logger);
+    const PathIndex paths;
+
+    const auto entity = world.create();
+    world.add<Cell>(entity, Cell{.x = 1, .y = 1});
+    world.add<Walker>(
+        entity,
+        Walker{
+            .facing = Direction::South,
+            .kind = WalkerKind::Fireman,
+            .carried = 4,
+            .stepsTaken = 9});
+    world.commit();
+
+    const auto snapshot = snapshotOf(world, paths, Camera(), kExtent);
+
+    ASSERT_EQ(snapshot.walkers.size(), 1U);
+    EXPECT_EQ(
+        snapshot.walkers.front(),
+        (WalkerView{
+            .at = Cell{.x = 1, .y = 1},
+            .facing = Direction::South,
+            .kind = WalkerKind::Fireman,
+            .carried = 4}));
 }

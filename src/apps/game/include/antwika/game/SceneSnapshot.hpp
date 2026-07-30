@@ -4,11 +4,13 @@
 
 #include <antwika/ecs/World.hpp>
 
+#include "antwika/game/Building.hpp"
 #include "antwika/game/Camera.hpp"
 #include "antwika/game/Cell.hpp"
 #include "antwika/game/Direction.hpp"
 #include "antwika/game/GridExtent.hpp"
 #include "antwika/game/PathIndex.hpp"
+#include "antwika/game/Walker.hpp"
 
 namespace antwika::game
 {
@@ -22,13 +24,39 @@ namespace antwika::game
     {
         Cell at;
         Direction facing = Direction::East;
+        WalkerKind kind = WalkerKind::Food;
+        std::int32_t carried = 0;
 
         /**
          * @brief Compare two walker views.
          * @param other The view to compare against.
-         * @return True when both the cell and the facing match.
+         * @return True when the cell, the facing, the kind and the load
+         * all match.
          */
         [[nodiscard]] bool operator==(const WalkerView &other) const = default;
+    };
+
+    /**
+     * @brief One building, as a frame needs to know it.
+     *
+     * What it holds and what it can hold, and not the risks or the
+     * countdowns: a frame draws a bar, and everything else about a
+     * building is simulation state a picture has no use for.
+     */
+    struct BuildingView
+    {
+        Cell at;
+        BuildingKind kind = BuildingKind::House;
+        std::int32_t held = 0;
+        std::int32_t capacity = 100;
+
+        /**
+         * @brief Compare two building views.
+         * @param other The view to compare against.
+         * @return True when the cell, the kind and the stock all match.
+         */
+        [[nodiscard]] bool operator==(const BuildingView &other) const
+            = default;
     };
 
     /**
@@ -49,6 +77,16 @@ namespace antwika::game
         std::vector<WalkerView> walkers;
 
         /**
+         * @brief Every building, ascending by cell.
+         *
+         * Ordered like paths are, so a scene may binary-search it rather
+         * than build a second index of its own -- and so that two runs
+         * that put the same buildings up draw them in the same order
+         * whatever order the entities were created in.
+         */
+        std::vector<BuildingView> buildings;
+
+        /**
          * @brief Compare two snapshots.
          * @param other The snapshot to compare against.
          * @return True when every field matches.
@@ -64,7 +102,13 @@ namespace antwika::game
      * because the index is already ordered and a view is not ordered by
      * anything a reader can name.
      *
-     * @param world Read for the walkers, as of its last commit().
+     * Buildings do come from a view over the world, and are sorted after
+     * the fact rather than read from an index: BuildingIndex holds cells
+     * and not the stock a frame needs, so a second pass over the world
+     * would be the price of an order the sort gives directly.
+     *
+     * @param world Read for the walkers and the buildings, as of its last
+     * commit().
      * @param paths Read for the path cells.
      * @param camera The camera to draw through.
      * @param extent The bounds to draw within.

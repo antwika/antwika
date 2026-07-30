@@ -1,5 +1,6 @@
 #include "antwika/game/GridSink.hpp"
 
+#include <array>
 #include <variant>
 
 #include <antwika/engine/Events.hpp>
@@ -14,14 +15,30 @@
 namespace antwika::game
 {
 
+    using antwika::input::Key;
+    using antwika::input::KeyPressed;
     using antwika::input::MouseButton;
     using antwika::input::PointerButtonPressed;
     using antwika::input::PointerMoved;
     using antwika::input::PointerScrolled;
 
+    namespace
+    {
+        // The number keys, in the order the tools are declared.
+        // A table rather than a switch, so the two orders are one fact.
+        constexpr std::array<Key, 6> kToolKeys{
+            Key::Digit1,
+            Key::Digit2,
+            Key::Digit3,
+            Key::Digit4,
+            Key::Digit5,
+            Key::Digit6};
+    } // namespace
+
     GridSink::GridSink(
         World &world,
         PathIndex &paths,
+        BuildingIndex &buildings,
         Camera &camera,
         GridExtent extent,
         SystemScheduler &scheduler,
@@ -29,6 +46,7 @@ namespace antwika::game
         const UiOverlay &overlay)
         : world(world),
           paths(paths),
+          buildings(buildings),
           camera(camera),
           extent(extent),
           scheduler(scheduler),
@@ -56,13 +74,21 @@ namespace antwika::game
         act(*decoded);
     }
 
+    BuildTool GridSink::tool() const noexcept
+    {
+        return selected;
+    }
+
     void GridSink::act(const antwika::input::InputEvent &event)
     {
-        // Whatever the toolbar covers, it covers from the grid too.
-        // A movement is exempt, so a pan begun on the grid can cross it.
-        if (overlay.pointerOverUi()
-            && !std::holds_alternative<PointerMoved>(event))
+        if (const auto *key = std::get_if<KeyPressed>(&event))
         {
+            // A repeat is a key still held, not a key chosen again.
+            if (!key->repeat)
+            {
+                select(key->key);
+            }
+
             return;
         }
 
@@ -72,6 +98,9 @@ namespace antwika::game
             // A press has then already established the pointer's place.
             // Folding a movement changes no button.
             // So asking now is the same as asking before it.
+            //
+            // A movement is never the toolbar's, even over it, so a pan
+            // begun on the grid can cross the bar rather than stop dead.
             if (input.state().mouse().isDown(MouseButton::Middle))
             {
                 // The fold has already moved the pointer here.
@@ -86,6 +115,12 @@ namespace antwika::game
             return;
         }
 
+        // Whatever the toolbar covers, it covers from the grid too.
+        if (overlay.pointerOverUi())
+        {
+            return;
+        }
+
         if (const auto *pressed = std::get_if<PointerButtonPressed>(&event))
         {
             const auto cell =
@@ -93,7 +128,16 @@ namespace antwika::game
 
             if (pressed->button == MouseButton::Left)
             {
-                placePath(cell);
+                const auto kind = buildingFor(selected);
+
+                if (kind.has_value())
+                {
+                    placeBuilding(cell, *kind);
+                }
+                else
+                {
+                    placePath(cell);
+                }
             }
             else if (pressed->button == MouseButton::Right)
             {
@@ -109,9 +153,23 @@ namespace antwika::game
         }
     }
 
+    void GridSink::select(Key key)
+    {
+        for (std::size_t index = 0; index < kToolKeys.size(); ++index)
+        {
+            if (kToolKeys[index] == key)
+            {
+                selected = static_cast<BuildTool>(index);
+                return;
+            }
+        }
+    }
+
     void GridSink::placePath(Cell cell)
     {
-        if (!extent.contains(cell) || paths.has(cell))
+        // A road may not be laid through a building.
+        if (!extent.contains(cell) || paths.has(cell)
+            || buildings.has(cell))
         {
             return;
         }
@@ -120,6 +178,21 @@ namespace antwika::game
         world.add<Cell>(entity, cell);
         world.add<Path>(entity, Path{});
         paths.insert(cell);
+    }
+
+    void GridSink::placeBuilding(Cell cell, BuildingKind kind)
+    {
+        // A building goes on bare ground: not on a road, not on another.
+        if (!extent.contains(cell) || paths.has(cell)
+            || buildings.has(cell))
+        {
+            return;
+        }
+
+        const auto entity = world.create();
+        world.add<Cell>(entity, cell);
+        world.add<Building>(entity, newlyBuilt(kind));
+        buildings.insert(cell);
     }
 
     void GridSink::placeWalker(Cell cell)
@@ -132,7 +205,8 @@ namespace antwika::game
 
         const auto entity = world.create();
         world.add<Cell>(entity, cell);
-        world.add<Walker>(entity, Walker{});
+        world.add<Walker>(
+            entity, newlySpawned(WalkerKind::Food, Direction::East));
     }
 
 } // namespace antwika::game
