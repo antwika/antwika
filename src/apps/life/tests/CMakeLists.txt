@@ -2,11 +2,13 @@ find_package(GTest REQUIRED)
 
 add_executable(antwika_life_tests
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/Board.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/BoardScene.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/BoardSink.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/Grid.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/Life.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/LifeSystem.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/PrintSystem.cpp
+    BoardSceneTest.cpp
     BoardSinkTest.cpp
     BoardTest.cpp
     BootstrapTest.cpp
@@ -25,6 +27,8 @@ target_link_libraries(antwika_life_tests
     PRIVATE
         antwika::ecs
         antwika::engine
+        antwika::gfx
+        antwika::gfx::tests::mocks
         antwika::log::tests::mocks
         antwika::replay
         gtest::gtest

@@ -1,5 +1,6 @@
 add_executable(antwika_life
     src/Board.cpp
+    src/BoardScene.cpp
     src/BoardSink.cpp
     src/Grid.cpp
     src/Life.cpp
@@ -25,6 +26,8 @@ target_link_libraries(antwika_life
     PRIVATE
         antwika::ecs
         antwika::engine
+        antwika::gfx
+        antwika::log
         antwika::replay
         antwika::time
 )
