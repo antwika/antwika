@@ -3,6 +3,7 @@ add_library(antwika_input
     src/CoalescingPointerSource.cpp
     src/IdleMotionSource.cpp
     src/InputEventCodec.cpp
+    src/InputPipeline.cpp
     src/InputState.cpp
     src/Key.cpp
     src/Keyboard.cpp

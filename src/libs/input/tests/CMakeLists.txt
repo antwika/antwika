@@ -12,6 +12,7 @@ add_executable(antwika_input_tests
     InputDeterminismTest.cpp
     InputEventCodecTest.cpp
     InputEventTest.cpp
+    InputPipelineTest.cpp
     InputStateTest.cpp
     KeyModifiersTest.cpp
     KeyTest.cpp
