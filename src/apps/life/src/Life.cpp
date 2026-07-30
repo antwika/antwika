@@ -7,10 +7,10 @@
 #include <antwika/event/Event.hpp>
 #include <antwika/event/EventDispatcher.hpp>
 #include <antwika/event/TickedEventDispatcher.hpp>
-#include <antwika/log/Logger.hpp>
 #include <antwika/replay/EngineLoop.hpp>
 
 #include "antwika/life/BoardSink.hpp"
+#include "antwika/life/Events.hpp"
 #include "antwika/life/Grid.hpp"
 #include "antwika/life/LifeSystem.hpp"
 
@@ -21,7 +21,6 @@ using antwika::engine::StopSignal;
 using antwika::event::Event;
 using antwika::event::EventDispatcher;
 using antwika::event::TickedEventDispatcher;
-using antwika::log::Logger;
 using antwika::replay::EngineLoop;
 
 namespace antwika::life
@@ -35,15 +34,12 @@ namespace antwika::life
     void Life::run()
     {
         dispatcher.dispatch(
-            Event{.name = "Running Antwika Life"}); // GCOVR_EXCL_LINE
+            Event{.name = events::kStarted}); // GCOVR_EXCL_LINE
         engine.start();
     }
 
     Board bootstrap(
-        IClock &clock,
-        IAppender &appender,
-        IFormatter &formatter,
-        ILogPolicy &logPolicy,
+        ILogger &logger,
         IEventSink &eventSink,
         IReplaySource &inputSource,
         std::uint32_t width,
@@ -52,7 +48,6 @@ namespace antwika::life
         std::optional<antwika::time::Tick> maxTicks,
         ITickEventSink *replayRecorder)
     {
-        Logger logger(formatter, logPolicy, clock, appender);
         EventDispatcher dispatcher({eventSink});
 
         World world(logger);

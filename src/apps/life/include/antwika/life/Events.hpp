@@ -18,4 +18,13 @@ namespace antwika::life::events
      */
     inline constexpr const char *kToggleCell = "life.toggle_cell";
 
+    /**
+     * @brief Announces that the simulation started.
+     *
+     * The application generates this itself on every run, so a caller
+     * persisting a replay filters it back out rather than storing it --
+     * see antwika::replay::saveReplayFile.
+     */
+    inline constexpr const char *kStarted = "Running Antwika Life";
+
 } // namespace antwika::life::events

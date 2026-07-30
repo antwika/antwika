@@ -11,6 +11,7 @@
 #include <antwika/event/EventRecorder.hpp>
 #include <antwika/event/TickEventRecorder.hpp>
 #include <antwika/log/Level.hpp>
+#include <antwika/log/Logger.hpp>
 #include <antwika/log/MinimumLevelLogPolicy.hpp>
 #include <antwika/log/PlainFormatter.hpp>
 #include <antwika/log/StreamAppender.hpp>
@@ -18,12 +19,14 @@
 #include <antwika/replay/ReplaySource.hpp>
 #include <antwika/time/SystemClock.hpp>
 
+#include "antwika/life/Events.hpp"
 #include "antwika/life/PrintSystem.hpp"
 
 using antwika::event::EventRecorder;
 using antwika::event::TickEventRecorder;
 using antwika::life::PrintSystem;
 using antwika::log::Level;
+using antwika::log::Logger;
 using antwika::log::MinimumLevelLogPolicy;
 using antwika::log::PlainFormatter;
 using antwika::log::StreamAppender;
@@ -38,7 +41,7 @@ namespace
     constexpr std::string_view kDemoReplayPath = ANTWIKA_LIFE_DEMO_REPLAY_PATH;
 
     constexpr std::array<std::string_view, 1> kSelfGeneratedEventNames{
-        "Running Antwika Life",
+        antwika::life::events::kStarted,
     };
 } // namespace
 
@@ -50,6 +53,7 @@ int main(int argc, char **argv)
     StreamAppender appender(std::cout);
     PlainFormatter formatter;
     MinimumLevelLogPolicy logPolicy(Level::Info);
+    Logger logger(formatter, logPolicy, clock, appender);
     EventRecorder eventSink;
     TickEventRecorder replayRecorder;
     PrintSystem printSystem(kBoardWidth, std::cout);
@@ -65,10 +69,7 @@ int main(int argc, char **argv)
         ReplaySource source(std::move(events));
 
         antwika::life::bootstrap(
-            clock,
-            appender,
-            formatter,
-            logPolicy,
+            logger,
             eventSink,
             source,
             kBoardWidth,

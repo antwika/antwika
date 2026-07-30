@@ -27,7 +27,6 @@ target_link_libraries(antwika_life_tests
         antwika::engine
         antwika::log::tests::mocks
         antwika::replay
-        antwika::time::tests::fakes
         gtest::gtest
 )
 

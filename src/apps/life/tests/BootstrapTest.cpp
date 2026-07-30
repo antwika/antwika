@@ -1,3 +1,4 @@
+#include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
 #include <sstream>
@@ -9,13 +10,9 @@
 #include <antwika/event/EventRecorder.hpp>
 #include <antwika/event/TickEventRecorder.hpp>
 #include <antwika/event/TickEvent.hpp>
-#include <antwika/log/Level.hpp>
-#include <antwika/log/MinimumLevelLogPolicy.hpp>
-#include <antwika/log/NullAppender.hpp>
-#include <antwika/log/PlainFormatter.hpp>
+#include <antwika/log/mocks/MockLogger.hpp>
 #include <antwika/replay/EngineLoopError.hpp>
 #include <antwika/replay/ReplaySource.hpp>
-#include <antwika/time/fakes/FakeClock.hpp>
 
 #include "antwika/life/Events.hpp"
 #include "antwika/life/Life.hpp"
@@ -29,13 +26,10 @@ using antwika::event::TickEventRecorder;
 using antwika::event::TickEvent;
 using antwika::life::Board;
 using antwika::life::PrintSystem;
-using antwika::log::Level;
-using antwika::log::MinimumLevelLogPolicy;
-using antwika::log::NullAppender;
-using antwika::log::PlainFormatter;
+using antwika::log::mocks::MockLogger;
 using antwika::replay::EngineLoopError;
 using antwika::replay::ReplaySource;
-using antwika::time::fakes::FakeClock;
+using ::testing::NiceMock;
 
 namespace
 {
@@ -72,11 +66,7 @@ namespace
 // It seeds a blinker via scripted toggle events, then checks the board.
 TEST(BootstrapTest, Bootstrap_RunsScriptedTicksAndReturnsResultingBoard)
 {
-    std::chrono::system_clock::time_point time{};
-    FakeClock fakeClock(time);
-    NullAppender appender;
-    PlainFormatter formatter;
-    MinimumLevelLogPolicy logPolicy(Level::Info);
+    NiceMock<MockLogger> logger;
     EventRecorder eventSink;
 
     ReplaySource inputSource({
@@ -108,10 +98,7 @@ TEST(BootstrapTest, Bootstrap_RunsScriptedTicksAndReturnsResultingBoard)
     });
 
     auto board = antwika::life::bootstrap(
-        fakeClock,
-        appender,
-        formatter,
-        logPolicy,
+        logger,
         eventSink,
         inputSource,
         5,
@@ -129,11 +116,7 @@ TEST(BootstrapTest, Bootstrap_RunsScriptedTicksAndReturnsResultingBoard)
 // Registering more than one doesn't make them interfere with each other.
 TEST(BootstrapTest, Bootstrap_RunsEveryObserverOncePerTick)
 {
-    std::chrono::system_clock::time_point time{};
-    FakeClock fakeClock(time);
-    NullAppender appender;
-    PlainFormatter formatter;
-    MinimumLevelLogPolicy logPolicy(Level::Info);
+    NiceMock<MockLogger> logger;
     EventRecorder eventSink;
 
     ReplaySource inputSource({
@@ -169,10 +152,7 @@ TEST(BootstrapTest, Bootstrap_RunsEveryObserverOncePerTick)
     CallCountingSystem countingSystem;
 
     auto board = antwika::life::bootstrap(
-        fakeClock,
-        appender,
-        formatter,
-        logPolicy,
+        logger,
         eventSink,
         inputSource,
         5,
@@ -197,11 +177,7 @@ TEST(BootstrapTest, Bootstrap_RunsEveryObserverOncePerTick)
 
 TEST(BootstrapTest, Bootstrap_WithNoScriptedInputStaysAllDead)
 {
-    std::chrono::system_clock::time_point time{};
-    FakeClock fakeClock(time);
-    NullAppender appender;
-    PlainFormatter formatter;
-    MinimumLevelLogPolicy logPolicy(Level::Info);
+    NiceMock<MockLogger> logger;
     EventRecorder eventSink;
 
     ReplaySource inputSource({
@@ -212,10 +188,7 @@ TEST(BootstrapTest, Bootstrap_WithNoScriptedInputStaysAllDead)
     });
 
     auto board = antwika::life::bootstrap(
-        fakeClock,
-        appender,
-        formatter,
-        logPolicy,
+        logger,
         eventSink,
         inputSource,
         4,
@@ -231,11 +204,7 @@ TEST(BootstrapTest, Bootstrap_WithNoScriptedInputStaysAllDead)
 // bootstrap() must register it so it observes every dispatched event.
 TEST(BootstrapTest, Bootstrap_ForwardsDispatchedEventsToATickEventRecorder)
 {
-    std::chrono::system_clock::time_point time{};
-    FakeClock fakeClock(time);
-    NullAppender appender;
-    PlainFormatter formatter;
-    MinimumLevelLogPolicy logPolicy(Level::Info);
+    NiceMock<MockLogger> logger;
     EventRecorder eventSink;
 
     ReplaySource inputSource({
@@ -254,10 +223,7 @@ TEST(BootstrapTest, Bootstrap_ForwardsDispatchedEventsToATickEventRecorder)
     TickEventRecorder replayRecorder;
 
     antwika::life::bootstrap(
-        fakeClock,
-        appender,
-        formatter,
-        logPolicy,
+        logger,
         eventSink,
         inputSource,
         4,
@@ -295,21 +261,14 @@ TEST(BootstrapTest, Bootstrap_ForwardsDispatchedEventsToATickEventRecorder)
 // It should not hang or silently truncate once maxTicks is reached.
 TEST(BootstrapTest, Bootstrap_ThrowsWhenMaxTicksIsReachedWithoutAStopEvent)
 {
-    std::chrono::system_clock::time_point time{};
-    FakeClock fakeClock(time);
-    NullAppender appender;
-    PlainFormatter formatter;
-    MinimumLevelLogPolicy logPolicy(Level::Info);
+    NiceMock<MockLogger> logger;
     EventRecorder eventSink;
 
     ReplaySource inputSource({});
 
     EXPECT_THROW(
         antwika::life::bootstrap(
-            fakeClock,
-            appender,
-            formatter,
-            logPolicy,
+            logger,
             eventSink,
             inputSource,
             4,
