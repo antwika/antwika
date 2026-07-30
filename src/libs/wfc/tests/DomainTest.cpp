@@ -4,7 +4,10 @@
 
 #include <gtest/gtest.h>
 
+#include <antwika/wfc/WfcError.hpp>
+
 using antwika::wfc::Domain;
+using antwika::wfc::WfcError;
 
 TEST(DomainTest, DefaultConstructionHasEveryBitSet)
 {
@@ -26,6 +29,22 @@ TEST(DomainTest, SingletonHasExactlyOneBitSet)
     EXPECT_FALSE(domain.contains(0));
     EXPECT_TRUE(domain.isSingleton());
     EXPECT_EQ(domain.singleValue(), 2U);
+}
+
+TEST(DomainTest, SingleValueThrowsWhenMoreThanOneValueRemains)
+{
+    Domain domain(4);
+    EXPECT_THROW(
+        static_cast<void>(domain.singleValue()), WfcError);
+}
+
+TEST(DomainTest, SingleValueThrowsOnAnEmptyDomain)
+{
+    Domain domain(2);
+    domain.remove(0);
+    domain.remove(1);
+    EXPECT_THROW(
+        static_cast<void>(domain.singleValue()), WfcError);
 }
 
 TEST(DomainTest, RemoveThenAddRestoresExactlyThatBit)

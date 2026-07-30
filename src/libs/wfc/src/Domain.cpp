@@ -1,6 +1,9 @@
 #include "antwika/wfc/Domain.hpp"
 
-#include <cassert>
+#include <algorithm>
+#include <iterator>
+
+#include "antwika/wfc/WfcError.hpp"
 
 namespace antwika::wfc
 {
@@ -120,21 +123,19 @@ namespace antwika::wfc
 
     std::size_t Domain::singleValue() const
     {
-        assert(isSingleton());
-        for (std::size_t i = 0; i < bits.size(); ++i) // GCOVR_EXCL_LINE
+        // This was an assert, and every documented build is Release.
+        // So a non-singleton reached the caller as the value 0 instead.
+        // Solver then reported an unsolved wave Solved.
+        // That is the exact failure blog/008 was written about.
+        if (!isSingleton())
         {
-            if (bits[i])
-            {
-                return i;
-            }
+            throw WfcError(
+                "Domain: singleValue() needs a singleton domain");
         }
-        // Unreachable in practice.
-        // isSingleton() (asserted above) guarantees exactly one bit.
-        // So the loop above always returns before reaching here.
-        // Kept only as a defensive fallback against a violated precondition.
-        // See docs/confirming-unreachable-branches.md.
-        assert(false); // GCOVR_EXCL_LINE
-        return 0; // GCOVR_EXCL_LINE
+
+        // The check above is what makes this search unable to fail.
+        return static_cast<std::size_t>(std::distance(
+            bits.begin(), std::find(bits.begin(), bits.end(), true)));
     }
 
     Domain::const_iterator Domain::begin() const

@@ -11,11 +11,15 @@ namespace antwika::wfc
      * index, or an invalid valueWeights vector (wrong size, or a
      * non-positive weight).
      *
+     * Also thrown by Domain::singleValue() on a domain that is not a
+     * singleton.
+     *
      * Deliberately a single, specific, catchable type, mirroring
      * antwika::ecs::EcsError and antwika::replay::ReplayFormatError.
-     * Never thrown by solve() itself -- an unsatisfiable puzzle and a
-     * budget-exceeded search are both normal, non-exceptional
-     * SolveResults, not errors.
+     * An unsatisfiable puzzle and a budget-exceeded search are both
+     * normal, non-exceptional SolveResults, not errors, so the only
+     * way solve() throws is a wave it was about to report Solved
+     * turning out to hold an undetermined cell.
      */
     class WfcError final : public std::runtime_error
     {

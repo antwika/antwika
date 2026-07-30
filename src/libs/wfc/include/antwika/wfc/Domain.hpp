@@ -111,8 +111,7 @@ namespace antwika::wfc
         /**
          * @brief Get the sole remaining candidate value.
          * @return The single remaining value.
-         *
-         * Precondition: isSingleton() is true.
+         * @throws WfcError if isSingleton() is false.
          */
         [[nodiscard]] std::size_t singleValue() const;
 
