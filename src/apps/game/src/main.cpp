@@ -1,6 +1,8 @@
 #include "antwika/game/Game.hpp"
 
 #include <array>
+#include <cstdlib>
+#include <exception>
 #include <iostream>
 #include <optional>
 #include <string>
@@ -51,20 +53,32 @@ int main(int argc, char **argv)
     EventRecorder eventSink;
     TickEventRecorder replayRecorder;
 
-    auto events = antwika::replay::loadReplayFile(
-        options.replayPath.value_or(std::string(kDemoReplayPath)));
-    ReplaySource source(std::move(events));
+    // Catching is what makes the run's resources unwind at all.
+    // An uncaught exception may call std::terminate without unwinding.
+    // Catching here also lets a failed --record run save what it has.
+    int exitCode = EXIT_SUCCESS;
+    try
+    {
+        auto events = antwika::replay::loadReplayFile(
+            options.replayPath.value_or(std::string(kDemoReplayPath)));
+        ReplaySource source(std::move(events));
 
-    auto state = antwika::game::bootstrap(
-        clock,
-        appender,
-        formatter,
-        logPolicy,
-        eventSink,
-        source,
-        std::nullopt,
-        &replayRecorder);
-    printState(state);
+        auto state = antwika::game::bootstrap(
+            clock,
+            appender,
+            formatter,
+            logPolicy,
+            eventSink,
+            source,
+            std::nullopt,
+            &replayRecorder);
+        printState(state);
+    }
+    catch (const std::exception &error)
+    {
+        std::cerr << "antwika_game: " << error.what() << '\n';
+        exitCode = EXIT_FAILURE;
+    }
 
     if (options.recordPath)
     {
@@ -74,5 +88,5 @@ int main(int argc, char **argv)
             kSelfGeneratedEventNames);
     }
 
-    return 0;
+    return exitCode;
 }

@@ -39,6 +39,12 @@ namespace antwika::task_worker
             WorkerLookup &lookup,
             TaskRegistry &registry);
 
+        TaskDispatchSystem(const TaskDispatchSystem &) = delete;
+        TaskDispatchSystem(TaskDispatchSystem &&) = delete;
+
+        TaskDispatchSystem &operator=(const TaskDispatchSystem &) = delete;
+        TaskDispatchSystem &operator=(TaskDispatchSystem &&) = delete;
+
         /**
          * @brief Refresh idle-worker state, then run the job scheduler
          * with the current idle-worker count as budget, marking each

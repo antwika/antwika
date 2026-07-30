@@ -1,6 +1,8 @@
 #include "antwika/scheduler/Scheduler.hpp"
 
+#include <memory>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include <gmock/gmock.h>
@@ -10,14 +12,17 @@
 
 #include "antwika/scheduler/JobId.hpp"
 #include "antwika/scheduler/Priority.hpp"
+#include "antwika/scheduler/SchedulerError.hpp"
 
 using antwika::scheduler::JobId;
+using antwika::scheduler::kInvalidJobId;
 using antwika::scheduler::kCriticalPriority;
 using antwika::scheduler::kHighPriority;
 using antwika::scheduler::kLowPriority;
 using antwika::scheduler::kNormalPriority;
 using antwika::scheduler::rawValue;
 using antwika::scheduler::Scheduler;
+using antwika::scheduler::SchedulerError;
 using antwika::scheduler::mocks::MockJob;
 using ::testing::NiceMock;
 using ::testing::Return;
@@ -59,6 +64,37 @@ namespace
     private:
         Scheduler &scheduler;
         antwika::scheduler::IJob &next;
+    };
+
+    // Flips a caller-owned flag on destruction.
+    // Lets a test pin down when the Scheduler releases an owned job.
+    class DestructionTrackingJob final : public antwika::scheduler::IJob
+    {
+    public:
+        explicit DestructionTrackingJob(bool &destroyed)
+            : destroyed(destroyed)
+        {
+        }
+
+        ~DestructionTrackingJob() override
+        {
+            destroyed = true;
+        }
+
+        DestructionTrackingJob(const DestructionTrackingJob &) = delete;
+        DestructionTrackingJob(DestructionTrackingJob &&) = delete;
+
+        DestructionTrackingJob &operator=(
+            const DestructionTrackingJob &) = delete;
+        DestructionTrackingJob &operator=(
+            DestructionTrackingJob &&) = delete;
+
+        void execute(antwika::time::Tick) override
+        {
+        }
+
+    private:
+        bool &destroyed;
     };
 
 } // namespace
@@ -203,11 +239,78 @@ TEST(SchedulerTest, LowPriorityJobCanStarveIndefinitely)
 
     for (int i = 0; i < 5; ++i)
     {
-        NiceMock<MockJob> criticalJob;
-        EXPECT_CALL(criticalJob, execute(::testing::_)).Times(1);
-        scheduler.schedule(criticalJob, kCriticalPriority);
+        // Handed over, not kept on the loop's stack frame.
+        // A per-iteration local would in fact run before it died.
+        // But that leans on run() being the only dereference.
+        // This follows the documented contract instead.
+        auto criticalJob = std::make_unique<NiceMock<MockJob>>();
+        EXPECT_CALL(*criticalJob, execute(::testing::_)).Times(1);
+        scheduler.schedule(std::move(criticalJob), kCriticalPriority);
         scheduler.run(0, 1);
     }
 
     EXPECT_EQ(scheduler.pending(), 1U);
+}
+
+TEST(SchedulerTest, ScheduleTakingOwnershipRunsTheJobLikeAnyOther)
+{
+    Scheduler scheduler;
+    std::vector<std::string> log;
+
+    const auto id = scheduler.schedule(
+        std::make_unique<RecordingJob>(log, "owned"), kNormalPriority);
+    const auto executed = scheduler.run(0, 10);
+
+    EXPECT_EQ(executed, (std::vector<JobId>{id}));
+    EXPECT_EQ(log, (std::vector<std::string>{"owned"}));
+}
+
+TEST(SchedulerTest, ScheduleTakingOwnershipKeepsTheJobAliveUntilSchedulerDies)
+{
+    bool destroyed = false;
+
+    {
+        Scheduler scheduler;
+        scheduler.schedule(
+            std::make_unique<DestructionTrackingJob>(destroyed),
+            kNormalPriority);
+        scheduler.run(0, 10);
+
+        // Having run a job is not what releases it.
+        // records keeps its pointer for the Scheduler's whole life.
+        EXPECT_FALSE(destroyed);
+    }
+
+    EXPECT_TRUE(destroyed);
+}
+
+TEST(SchedulerTest, ScheduleTakingOwnershipOfANullJobThrows)
+{
+    Scheduler scheduler;
+
+    EXPECT_THROW(
+        scheduler.schedule(
+            std::unique_ptr<antwika::scheduler::IJob>{}, kNormalPriority),
+        SchedulerError);
+    EXPECT_EQ(scheduler.pending(), 0U);
+}
+
+TEST(SchedulerTest, ScheduleTakingOwnershipReleasesTheJobWhenDependsOnFails)
+{
+    Scheduler scheduler;
+    bool destroyed = false;
+
+    EXPECT_THROW(
+        scheduler.schedule(
+            std::make_unique<DestructionTrackingJob>(destroyed),
+            kNormalPriority,
+            {kInvalidJobId}),
+        SchedulerError);
+
+    EXPECT_TRUE(destroyed);
+    EXPECT_EQ(scheduler.pending(), 0U);
+
+    // Nothing was mutated, so the next job still gets JobId 1.
+    NiceMock<MockJob> job;
+    EXPECT_EQ(rawValue(scheduler.schedule(job, kNormalPriority)), 1U);
 }

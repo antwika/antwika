@@ -175,6 +175,48 @@ public:
   lets the class under test be exercised against a mock/fake in isolation
   (`IEventCodec`, `IFormatter`, and similar).
 
+## Resource management and ownership
+
+Every resource is released by the destructor of the object that owns it.
+There is no `new`, `delete`, `malloc`, or `free` anywhere under `src/`, and
+no cleanup step a caller has to remember.
+
+- **Borrowed collaborators are reference members.** A class that *uses* a
+  collaborator without owning it stores it as `Thing &thing`, and its
+  `@param` says "Must outlive this object" — see `Logger`, `Engine`,
+  `EngineLoop`. This is the default; it's what the constructor-injection
+  style throughout the codebase is built on.
+- **Owned resources are `std::unique_ptr` members.** Reach for
+  `std::shared_ptr` only where type erasure genuinely needs it — the one
+  instance is `World`'s `shared_ptr<void>` component pools, where the
+  control block is what remembers the concrete `ComponentStorage<T>`
+  destructor. A `unique_ptr<void>` there would leak.
+- **Prefer transferring a `std::unique_ptr` over documenting a lifetime
+  rule.** When a class must hold on to something a caller heap-allocated,
+  take it by `std::unique_ptr` value rather than storing a raw pointer and
+  writing the rule in a comment — a doc comment can't be violated at
+  compile time, and a `unique_ptr` parameter can't be got wrong. See
+  `Scheduler::schedule`, which offers both and says which to reach for.
+- **Rule of Five, explicitly.** Any class holding a reference member or
+  owning a resource declares all four copy/move operations — in this
+  codebase always `= delete`, since aliasing borrowed collaborators or
+  relocating what a live borrower points at is never what's wanted. A
+  reference member already deletes both assignment operators implicitly,
+  but not the copy and move constructors — declaring all four is what
+  makes the intent checkable rather than incidental. Plain value types
+  (`GameState`, `Worker`, `Event`, `Board`, `Domain`) declare none of
+  them and stay freely copyable.
+- **Destructors never throw.** A destructor is implicitly `noexcept`, so a
+  throw from one calls `std::terminate`. Use the non-throwing overload of
+  anything fallible — `std::filesystem::remove(path, errorCode)`, not
+  `std::filesystem::remove(path)`.
+- **A pimpl owner declares its destructor.** A class holding a
+  `unique_ptr` to an incomplete type declares `~Thing();` and defines it
+  in the `.cpp`, where the pointee is complete — see `World`.
+- **Files and streams are scoped objects.** Construct an `std::ifstream` /
+  `std::ofstream` where it's needed and let scope close it; never an
+  `.open()` / `.close()` pair.
+
 ## Error handling
 
 Throw one specific, named exception type per failure category

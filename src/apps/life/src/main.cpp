@@ -2,6 +2,8 @@
 
 #include <array>
 #include <cstdint>
+#include <cstdlib>
+#include <exception>
 #include <iostream>
 #include <string>
 #include <string_view>
@@ -52,22 +54,34 @@ int main(int argc, char **argv)
     TickEventRecorder replayRecorder;
     PrintSystem printSystem(kBoardWidth, std::cout);
 
-    auto events = antwika::replay::loadReplayFile(
-        options.replayPath.value_or(std::string(kDemoReplayPath)));
-    ReplaySource source(std::move(events));
+    // Catching is what makes the run's resources unwind at all.
+    // An uncaught exception may call std::terminate without unwinding.
+    // Catching here also lets a failed --record run save what it has.
+    int exitCode = EXIT_SUCCESS;
+    try
+    {
+        auto events = antwika::replay::loadReplayFile(
+            options.replayPath.value_or(std::string(kDemoReplayPath)));
+        ReplaySource source(std::move(events));
 
-    antwika::life::bootstrap(
-        clock,
-        appender,
-        formatter,
-        logPolicy,
-        eventSink,
-        source,
-        kBoardWidth,
-        kBoardHeight,
-        {printSystem},
-        std::nullopt,
-        &replayRecorder);
+        antwika::life::bootstrap(
+            clock,
+            appender,
+            formatter,
+            logPolicy,
+            eventSink,
+            source,
+            kBoardWidth,
+            kBoardHeight,
+            {printSystem},
+            std::nullopt,
+            &replayRecorder);
+    }
+    catch (const std::exception &error)
+    {
+        std::cerr << "antwika_life: " << error.what() << '\n';
+        exitCode = EXIT_FAILURE;
+    }
 
     if (options.recordPath)
     {
@@ -77,5 +91,5 @@ int main(int argc, char **argv)
             kSelfGeneratedEventNames);
     }
 
-    return 0;
+    return exitCode;
 }

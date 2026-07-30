@@ -36,6 +36,12 @@ namespace antwika::task_worker
          */
         StatusPrintSystem(std::ostream &out, TaskRegistry &registry);
 
+        StatusPrintSystem(const StatusPrintSystem &) = delete;
+        StatusPrintSystem(StatusPrintSystem &&) = delete;
+
+        StatusPrintSystem &operator=(const StatusPrintSystem &) = delete;
+        StatusPrintSystem &operator=(StatusPrintSystem &&) = delete;
+
         /**
          * @brief Print this tick's task list, then every Worker's state.
          * @param world Read from for Worker state; never written to.

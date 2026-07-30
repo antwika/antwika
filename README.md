@@ -12,12 +12,14 @@ src/
 ├── apps/
 │   ├── game/
 │   ├── life/
+│   ├── poker/
 │   ├── sudoku/
 │   └── task_worker/
 └── libs/
     ├── ecs/
     ├── engine/
     ├── event/
+    ├── holdem/
     ├── log/
     ├── reducer/
     ├── replay/
@@ -59,8 +61,8 @@ Ctrl + Shift + B
 
 After the build completes, run the compiled binaries on your target machine:
 
-- Linux: `build/bin/antwika_game`, `build/bin/antwika_life`, `build/bin/antwika_sudoku`, `build/bin/antwika_task_worker`
-- Windows: `build/bin/antwika_game.exe`, `build/bin/antwika_life.exe`, `build/bin/antwika_sudoku.exe`, `build/bin/antwika_task_worker.exe`
+- Linux: `build/bin/antwika_game`, `build/bin/antwika_life`, `build/bin/antwika_poker`, `build/bin/antwika_sudoku`, `build/bin/antwika_task_worker`
+- Windows: `build/bin/antwika_game.exe`, `build/bin/antwika_life.exe`, `build/bin/antwika_poker.exe`, `build/bin/antwika_sudoku.exe`, `build/bin/antwika_task_worker.exe`
 
 ## Replays
 
@@ -92,6 +94,31 @@ build/bin/antwika_task_worker --replay demo.replay   # reload it, reproducing th
 
 Tasks are submitted via a `task.submit` event (JSON payload `{"id":..,"priority":..,"durationTicks":..,"label":..}`, plus an optional `"dependsOnId"`), tick-stamped exactly like `life.toggle_cell` — a `TaskSubmissionSink` schedules each parsed task onto the `Scheduler`, and a `TaskDispatchSystem` runs the scheduler each tick with that tick's idle-worker count as its budget, so no more tasks start than there are free workers.
 See [`blog/006-a-job-scheduler-and-a-worker-pool-that-cant-lie-to-itself.md`](blog/006-a-job-scheduler-and-a-worker-pool-that-cant-lie-to-itself.md) for the full design.
+
+## No-limit hold'em
+
+`libs/holdem` (`antwika::holdem`) is a standalone poker library: hand evaluation, the betting rules, side pots, and the loop that asks each player what they want to do.
+
+Its centrepiece is the evaluator.
+A hand's strength collapses to a single 24-bit number where greater is stronger and equal means the two hands split the pot — there is no secondary tie-break anywhere, because every detail poker cares about is already inside the number.
+Getting there is pure bit manipulation: four 13-bit rank masks, one per suit, folded together with shifts, ands and ors.
+Duplicate ranks fall out of pairwise intersections of those masks rather than any counting, straights out of `m & m>>1 & m>>2 & m>>3 & m>>4` over a mask extended by one bit so the ace can also play low, and flushes out of a population count.
+Nothing is enumerated and no five-card subset is ever materialised, so scoring seven cards costs the same as scoring five.
+
+`apps/poker` (`antwika_poker`) is the showcase, and it is a fourth application on the same replay system:
+
+```sh
+build/bin/antwika_poker --record demo.replay   # a cash game, saving who bought in
+build/bin/antwika_poker --replay demo.replay   # reload it, reproducing the same session
+```
+
+One engine tick is one step of the poker loop: dealing a hand, or asking a single player to act.
+A hand runs pre-flop, flop, turn, river and showdown, and the next one is dealt as soon as the last is paid out.
+Balances live outside the games in a `BankrollLedger`, and a `CashGame` is the only door between a bankroll and a seat — so a player can never buy in for more than they actually hold, and the total of every bankroll plus every stack is conserved across a whole session.
+
+Money moving in and out is all a replay stores: `poker.deposit`, `poker.buy_in` and `poker.cash_out` events (JSON payloads `{"player":..,"amount":..}`).
+Not one card and not one action is recorded, because the shuffle is seeded from `RoomConfig` and the agents behind `antwika::holdem::IAgent` are deterministic functions of what they are shown — so a reloaded session deals the same cards and reaches the same chip counts by construction.
+See [`blog/010-a-poker-hand-in-one-number.md`](blog/010-a-poker-hand-in-one-number.md) for the full design, including the short-all-in rule the tests turned up.
 
 ## Wave Function Collapse and Sudoku
 

@@ -21,6 +21,7 @@ Distilled from the actual ask:
 Two more requirements arrived after the plan was already written, mid-conversation, not from re-reading the brief but from a reviewer's actual questions:
 
 8. No entity-index recycling — exhausting the index space logs a fatal error and terminates the process, rather than pretending that's a recoverable condition.
+   (The "terminates the process" half of this was later revised — see [Exhaustion, revisited](#exhaustion-revisited) at the end.)
 9. Consider generalizing the existing reducer pattern into its own library, so entity-component-system state and plain-struct state can both plug into the engine the same way.
 
 Everything below is how those nine turned into `src/libs/ecs` and `src/libs/reducer`.
@@ -79,6 +80,8 @@ TEST(EntityManagerDeathTest, ExhaustingIndexSpaceLogsFatalAndTerminates)
 
 `Level::Fatal` already existed in `antwika::log::Level` before this — nothing had ever actually acted on it.
 This is the first thing in the codebase that does.
+
+(That `std::exit` didn't survive a later review — see [Exhaustion, revisited](#exhaustion-revisited).)
 
 ### Component: a concept, not a base class
 
@@ -237,3 +240,91 @@ It's already tested, working code in `apps/game`, and touching it wasn't asked f
 
 If you're extending this: a concrete system only ever needs `World &` and `antwika::time::Tick`; a concrete component only needs to satisfy `Component` (plain, trivially copyable data); and wiring either the entity-component-system or a plain-struct-plus-reducer into the actual tick loop is application code's job, the same way `GameStateReducer` was wired into `Game::bootstrap` for the replay system — `antwika::ecs` and `antwika::reducer` both stay domain-agnostic on purpose.
 Left undone, on purpose: a real coverage run through `-DENABLE_COVERAGE=ON` to check whether the fatal-exhaustion line's `GCOVR_EXCL_LINE` marker is actually earning its keep, and whether `REQUIREMENTS.md` — whose error-handling language is currently catchable-error-only — should gain a line about the one deliberately uncatchable exception to that rule.
+
+## Exhaustion, revisited
+
+That last loose end got picked up in a later pass — an audit of whether the codebase actually follows RAII, which it does almost everywhere.
+`std::exit(EXIT_FAILURE)` was the exception.
+
+The requirement said "logs a fatal error and terminates the process", and the code did exactly that.
+The problem is what "terminates the process" costs.
+`std::exit` runs static destructors and skips every automatic one, so nothing on the call stack unwinds.
+In `antwika::task_worker::bootstrap` that stack holds a `World`, a `Logger`, and — for a `--record` run — a `TickEventRecorder` whose contents are only written to disk after `bootstrap()` returns.
+Exhausting the index space mid-run therefore threw away the entire recorded replay, silently, on the way out.
+
+That's a strange thing for a project whose whole premise is that a run can be faithfully reproduced from its replay file.
+It was also inconsistent in a way that's hard to defend once you notice it: `EntityManager::destroy` throws `EcsError` for its precondition failure, two functions below one that wouldn't.
+
+So `create()` now throws too:
+
+```cpp
+Entity EntityManager::create()
+{
+    if (nextValue > maxEntities)
+    {
+        logger.log(
+            Level::Fatal,
+            "EntityManager: entity index space exhausted");
+        throw EcsError(
+            "EntityManager: entity index space exhausted");
+    }
+
+    const auto value = nextValue;
+    ++nextValue;
+    aliveFlags.push_back(true);
+    return Entity{value};
+}
+```
+
+The `Level::Fatal` log stays, and it's still the only thing in the codebase that logs at that level.
+"Fatal" describes how serious the condition is; it was never a good reason to skip the destructors on the way out.
+A caller isn't expected to catch this and carry on — it's expected to unwind cleanly, which is a different thing.
+
+Except that swapping `std::exit` for `throw` doesn't, on its own, buy any of that.
+Review caught the gap: `[except.terminate]` leaves it *implementation-defined* whether the stack is unwound when an exception escapes without a handler, and libstdc++ doesn't unwind — `__cxa_throw` calls `std::terminate` from the throw point with every frame still intact.
+None of the three apps had a `catch` anywhere, so the "fix" landed on `abort` instead of `exit`: still no automatic destructors, and now no static ones and no `std::cout` flush either.
+Strictly worse than the thing it replaced.
+
+An exception is only as good as the handler that stops it, so each app's `main` grew one:
+
+```cpp
+int exitCode = EXIT_SUCCESS;
+try
+{
+    auto events = antwika::replay::loadReplayFile(/* ... */);
+    ReplaySource source(std::move(events));
+    antwika::task_worker::bootstrap(/* ... */, source, /* ... */);
+}
+catch (const std::exception &error)
+{
+    std::cerr << "antwika_task_worker: " << error.what() << '\n';
+    exitCode = EXIT_FAILURE;
+}
+
+if (options.recordPath)
+{
+    antwika::replay::saveReplayFile(replayRecorder.getEvents(), /* ... */);
+}
+
+return exitCode;
+```
+
+That's what makes the earlier paragraph about the recorded replay true rather than aspirational.
+`replayRecorder` is declared outside the `try`, so it outlives the failure; the save runs on both paths.
+A run that dies mid-tick now writes the events it *did* record and exits non-zero, instead of taking them to the grave.
+The general lesson is duller than the ECS one: "throw instead of exit" is half a change, and the half that does the work is the handler.
+
+Three smaller consequences fell out of it, all improvements:
+
+- The `GCOVR_EXCL_LINE` marker is gone, and with it the question of whether it was earning its keep.
+  It existed because `EXPECT_DEATH` runs its body in a forked child that gcovr doesn't reliably see.
+  A thrown exception needs no fork, so the line is now covered by an ordinary test.
+- `EntityManagerDeathTest` became `EntityManagerTest.ExhaustingIndexSpaceLogsFatalAndThrows`, and got *stricter* in the process.
+  The death test could only pattern-match `"exhausted"` against the child's stderr; the replacement asserts the exact `Level::Fatal` message through `MockLogger` and the exception type separately.
+- The `REQUIREMENTS.md` question answers itself.
+  There is no longer a deliberately uncatchable exception to the catchable-errors-only rule, so there's nothing to add.
+
+The broader finding from that audit is written up in [`docs/STYLE_GUIDE.md`](../docs/STYLE_GUIDE.md) under "Resource management and ownership".
+Writing the conventions down was itself worth doing: the Rule of Five bullet turned out to describe `src/libs/` accurately and `src/apps/` not at all, where nine classes with reference members declared none of the four operations.
+A reference member implicitly deletes both assignment operators, which is why nobody had noticed — but it leaves copy *construction* generated, so `TaskSubmissionSink` was quietly copyable, duplicate submission history and all.
+Those nine now declare the four too.

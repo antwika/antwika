@@ -38,6 +38,12 @@ namespace antwika::task_worker
             std::string label,
             antwika::time::Tick durationTicks);
 
+        TaskJob(const TaskJob &) = delete;
+        TaskJob(TaskJob &&) = delete;
+
+        TaskJob &operator=(const TaskJob &) = delete;
+        TaskJob &operator=(TaskJob &&) = delete;
+
         /**
          * @brief Claim the lowest-index idle worker for this task.
          * @param tick Unused -- claiming doesn't depend on which tick
