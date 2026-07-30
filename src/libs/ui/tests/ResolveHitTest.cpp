@@ -79,8 +79,8 @@ TEST(ResolveHitTest, Resolve_CountsTheTrailingEdgeAsOutside)
 {
     auto tree = oneWidget(kBox);
 
-    // Half-open: the first pixel past the box belongs to whatever is
-    // next to it, not to the box.
+    // Half-open, so the first pixel past the box is not the box's.
+    // It belongs to whatever is next to it.
     const auto interactions = resolve(tree, at(Point{.x = 20, .y = 25}));
 
     EXPECT_EQ(kNoWidget, interactions.hovered);

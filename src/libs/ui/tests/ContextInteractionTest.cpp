@@ -38,8 +38,8 @@ namespace
 
     constexpr Size kCanvas{.width = 100, .height = 50};
 
-    // A two-glyph label at scale one, with no padding anywhere, puts
-    // the button at (0, 0) and makes it twelve by eight.
+    // A two-glyph label at scale one, and no padding anywhere.
+    // That puts the button at (0, 0) and makes it twelve by eight.
     constexpr Point kOnTheButton{.x = 5, .y = 4};
     constexpr Point kOffTheButton{.x = 50, .y = 40};
 

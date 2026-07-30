@@ -139,8 +139,8 @@ TEST(ResolveTest, Resolve_LeavesAnUnnamedWidgetIdle)
     LayoutTree tree{Node{}};
     const auto node = tree.add(button(kNoWidget));
 
-    // Nothing can hover what the caller did not name, so two kNoWidgets
-    // meeting must not read as a match.
+    // Nothing can hover what the caller did not name.
+    // So two kNoWidgets meeting must not read as a match.
     resolve(tree, Pointer{.position = kInside, .down = true});
 
     EXPECT_EQ(kIdle, tree.node(node).background);

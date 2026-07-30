@@ -111,8 +111,8 @@ namespace antwika::ui
     void Context::button(std::string_view text, ButtonSpec spec)
     {
         // A button told how to look is dressed here and for good.
-        // One left to work it out carries the colours instead, for
-        // resolve() to pick between once there is a layout to hit-test.
+        // One left to work it out carries the colours instead.
+        // resolve() picks between them once there is a layout.
         const auto state = spec.state.value_or(ButtonState::Idle);
 
         const auto style =

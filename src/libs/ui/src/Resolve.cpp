@@ -19,8 +19,8 @@ namespace antwika::ui::detail
 
         [[nodiscard]] bool contains(const Rect &rect, Point point) noexcept
         {
-            // In 64 bits because a right edge is an int32 origin plus a
-            // uint32 extent, which is exactly the sum that wraps.
+            // A right edge is an int32 origin plus a uint32 extent.
+            // That is exactly the sum that wraps, hence 64 bits.
             const auto left = static_cast<std::int64_t>(rect.origin.x);
             const auto top = static_cast<std::int64_t>(rect.origin.y);
             const auto x = static_cast<std::int64_t>(point.x);
@@ -72,8 +72,8 @@ namespace antwika::ui::detail
             }
         }
 
-        // Nothing hovered means nothing to activate, so a press with the
-        // pointer over no widget copies kNoWidget and needs no guard.
+        // Nothing hovered means there is nothing to activate.
+        // So a press over no widget copies kNoWidget, needing no guard.
         if (pointer.pressed)
         {
             interactions.activated = interactions.hovered;
@@ -88,8 +88,8 @@ namespace antwika::ui::detail
                 continue;
             }
 
-            // An unnamed widget can never be the hovered one, and
-            // comparing two kNoWidgets would say otherwise.
+            // An unnamed widget can never be the hovered one.
+            // Comparing two kNoWidgets would say otherwise.
             const bool under = node.id != kNoWidget
                                && node.id == interactions.hovered;
 
