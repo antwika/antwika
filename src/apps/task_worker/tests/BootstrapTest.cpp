@@ -127,16 +127,15 @@ TEST(BootstrapTest, Bootstrap_RunsScriptedTasksToCompletion)
     ReplaySource inputSource(script);
 
     auto finalState = antwika::task_worker::bootstrap(
-        fakeClock,
-        appender,
-        formatter,
-        logPolicy,
-        eventSink,
-        inputSource,
-        kWorkerCount,
-        {},
-        nullptr,
-        kMaxTicks);
+        antwika::task_worker::TaskWorkerConfig{
+            .clock = fakeClock,
+            .appender = appender,
+            .formatter = formatter,
+            .logPolicy = logPolicy,
+            .eventSink = eventSink,
+            .inputSource = inputSource,
+            .workerCount = kWorkerCount,
+            .maxTicks = kMaxTicks});
 
     // At tick 5, Delta's and Beta's workers free simultaneously.
     // Epsilon (Normal) now outranks Gamma (Low) for the freed slot.
@@ -164,16 +163,16 @@ TEST(BootstrapTest, Bootstrap_RunsEveryObserverOncePerTick)
     CallCountingSystem countingSystem;
 
     antwika::task_worker::bootstrap(
-        fakeClock,
-        appender,
-        formatter,
-        logPolicy,
-        eventSink,
-        inputSource,
-        kWorkerCount,
-        {countingSystem},
-        nullptr,
-        kMaxTicks);
+        antwika::task_worker::TaskWorkerConfig{
+            .clock = fakeClock,
+            .appender = appender,
+            .formatter = formatter,
+            .logPolicy = logPolicy,
+            .eventSink = eventSink,
+            .inputSource = inputSource,
+            .workerCount = kWorkerCount,
+            .observers = {countingSystem},
+            .maxTicks = kMaxTicks});
 
     EXPECT_EQ(countingSystem.calls, kExpectedTicks);
 }
@@ -192,16 +191,16 @@ TEST(BootstrapTest, Bootstrap_KeepsACallerSuppliedRegistryInSync)
     TaskRegistry registry;
 
     antwika::task_worker::bootstrap(
-        fakeClock,
-        appender,
-        formatter,
-        logPolicy,
-        eventSink,
-        inputSource,
-        kWorkerCount,
-        {},
-        &registry,
-        kMaxTicks);
+        antwika::task_worker::TaskWorkerConfig{
+            .clock = fakeClock,
+            .appender = appender,
+            .formatter = formatter,
+            .logPolicy = logPolicy,
+            .eventSink = eventSink,
+            .inputSource = inputSource,
+            .workerCount = kWorkerCount,
+            .registry = registry,
+            .maxTicks = kMaxTicks});
 
     // By tick 5, Alpha/Beta/Delta have completed.
     // Gamma and Epsilon are still running, both just started.
@@ -243,16 +242,15 @@ TEST(BootstrapTest, Bootstrap_WithNoScriptedInputAllWorkersStayIdle)
     });
 
     auto finalState = antwika::task_worker::bootstrap(
-        fakeClock,
-        appender,
-        formatter,
-        logPolicy,
-        eventSink,
-        inputSource,
-        2,
-        {},
-        nullptr,
-        kMaxTicks);
+        antwika::task_worker::TaskWorkerConfig{
+            .clock = fakeClock,
+            .appender = appender,
+            .formatter = formatter,
+            .logPolicy = logPolicy,
+            .eventSink = eventSink,
+            .inputSource = inputSource,
+            .workerCount = 2,
+            .maxTicks = kMaxTicks});
 
     EXPECT_EQ(finalState[0], (Worker{WorkerStatus::Idle, 0}));
     EXPECT_EQ(finalState[1], (Worker{WorkerStatus::Idle, 0}));
@@ -284,17 +282,16 @@ TEST(BootstrapTest, Bootstrap_ForwardsDispatchedEventsToATickEventRecorder)
     TickEventRecorder replayRecorder;
 
     antwika::task_worker::bootstrap(
-        fakeClock,
-        appender,
-        formatter,
-        logPolicy,
-        eventSink,
-        inputSource,
-        kWorkerCount,
-        {},
-        nullptr,
-        kMaxTicks,
-        &replayRecorder);
+        antwika::task_worker::TaskWorkerConfig{
+            .clock = fakeClock,
+            .appender = appender,
+            .formatter = formatter,
+            .logPolicy = logPolicy,
+            .eventSink = eventSink,
+            .inputSource = inputSource,
+            .workerCount = kWorkerCount,
+            .maxTicks = kMaxTicks,
+            .replayRecorder = replayRecorder});
 
     EXPECT_EQ(
         replayRecorder.getEvents(),
@@ -329,15 +326,14 @@ TEST(BootstrapTest, Bootstrap_ThrowsWhenMaxTicksIsReachedWithoutAStopEvent)
 
     EXPECT_THROW(
         antwika::task_worker::bootstrap(
-            fakeClock,
-            appender,
-            formatter,
-            logPolicy,
-            eventSink,
-            inputSource,
-            kWorkerCount,
-            {},
-            nullptr,
-            3),
+            antwika::task_worker::TaskWorkerConfig{
+                .clock = fakeClock,
+                .appender = appender,
+                .formatter = formatter,
+                .logPolicy = logPolicy,
+                .eventSink = eventSink,
+                .inputSource = inputSource,
+                .workerCount = kWorkerCount,
+                .maxTicks = 3}),
         EngineLoopError);
 }

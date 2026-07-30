@@ -71,51 +71,91 @@ namespace antwika::task_worker
     };
 
     /**
+     * @brief Everything one run of the simulation is wired out of.
+     *
+     * A struct with designated initialisers rather than a parameter list,
+     * because the list had reached eleven positional arguments, four of
+     * them interchangeable-looking logging pieces and two of them
+     * nullable pointers.
+     * A name per argument is what makes a wrong one a compile error
+     * rather than a silently different run.
+     */
+    struct TaskWorkerConfig
+    {
+        /** @brief Supplies timestamps for the logger. */
+        IClock &clock;
+
+        /** @brief Receives formatted log output. */
+        IAppender &appender;
+
+        /** @brief Renders log records into text. */
+        IFormatter &formatter;
+
+        /** @brief Decides which log records are emitted. */
+        ILogPolicy &logPolicy;
+
+        /** @brief Receives every dispatched event. */
+        IEventSink &eventSink;
+
+        /** @brief Supplies each tick's events, live or replayed. */
+        IReplaySource &inputSource;
+
+        /** @brief Number of Worker entities to seed. */
+        std::uint32_t workerCount;
+
+        /**
+         * @brief Extra systems registered into an "observe" phase.
+         *
+         * The phase runs after "dispatch" every tick. Empty for callers
+         * that only need the final worker states.
+         */
+        std::vector<std::reference_wrapper<ISystem>> observers = {};
+
+        /**
+         * @brief Registry kept in sync with every task's status.
+         *
+         * What a caller-owned observer (e.g. StatusPrintSystem, itself
+         * passed via observers) reads live during the run. Unset,
+         * bootstrap() keeps one of its own, for callers with no need to
+         * observe task status from outside.
+         */
+        std::optional<std::reference_wrapper<TaskRegistry>> registry =
+            std::nullopt;
+
+        /**
+         * @brief Safety cap on how many ticks to run.
+         *
+         * Reached without engine.stop, the run gives up rather than going
+         * on forever. Production callers can leave this unset to run
+         * uncapped; tests should always set it.
+         */
+        std::optional<antwika::time::Tick> maxTicks = std::nullopt;
+
+        /**
+         * @brief Sink receiving every dispatched event, stamped with its
+         * tick.
+         *
+         * What a caller wanting to persist a `--record` file registers,
+         * since a run's actual length is not known ahead of time.
+         */
+        std::optional<std::reference_wrapper<ITickEventSink>>
+            replayRecorder = std::nullopt;
+    };
+
+    /**
      * @brief Wires the ECS world, job scheduler, engine, event, and
      * replay collaborators together, boots the simulation, then drives
      * the tick loop until an engine.stop event is dispatched.
      *
-     * Sources each tick's events from inputSource -- typically
-     * events::kTaskSubmit, submitting tasks over time -- until it
-     * dispatches engine.stop. A hand-scripted "live" run and a loaded
+     * Sources each tick's events from the config's inputSource --
+     * typically events::kTaskSubmit, submitting tasks over time -- until
+     * it dispatches engine.stop. A hand-scripted "live" run and a loaded
      * replay both use this same function, the same contract
      * antwika::life::bootstrap() follows for its own state.
      *
-     * @param clock Supplies timestamps for the logger.
-     * @param appender Receives formatted log output.
-     * @param formatter Renders log records into text.
-     * @param logPolicy Decides which log records are emitted.
-     * @param eventSink Receives every dispatched event.
-     * @param inputSource Supplies each tick's events, live or replayed.
-     * @param workerCount Number of Worker entities to seed.
-     * @param observers Extra systems registered into an "observe" phase
-     * that runs after "dispatch" every tick. Defaults to none, for
-     * callers (like the tests) that only need the final worker states.
-     * @param registry Task registry kept in sync with every submitted
-     * task's pending/completed status, for a caller-owned observer
-     * (e.g. StatusPrintSystem, itself passed via observers) to read
-     * live during the run. Optional: defaults to an internal registry
-     * for callers with no need to observe task status externally.
-     * @param maxTicks Optional safety cap on how many ticks to run before
-     * giving up if engine.stop is never dispatched. Production callers
-     * can leave this unset to run uncapped; tests should always pass one.
-     * @param replayRecorder Optional sink that, if provided, receives
-     * every dispatched event stamped with its tick -- what a caller
-     * wanting to persist a `--record` file should register, since a run's
-     * actual length is no longer known ahead of time. Defaults to none.
+     * @param config What the run is wired out of.
      * @return Every Worker's final state, in creation order.
      */
-    std::vector<Worker> bootstrap(
-        IClock &clock,
-        IAppender &appender,
-        IFormatter &formatter,
-        ILogPolicy &logPolicy,
-        IEventSink &eventSink,
-        IReplaySource &inputSource,
-        std::uint32_t workerCount,
-        std::vector<std::reference_wrapper<ISystem>> observers = {},
-        TaskRegistry *registry = nullptr,
-        std::optional<antwika::time::Tick> maxTicks = std::nullopt,
-        ITickEventSink *replayRecorder = nullptr);
+    std::vector<Worker> bootstrap(const TaskWorkerConfig &config);
 
 } // namespace antwika::task_worker

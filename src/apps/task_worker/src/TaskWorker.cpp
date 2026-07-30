@@ -44,26 +44,19 @@ namespace antwika::task_worker
         engine.start();
     }
 
-    std::vector<Worker> bootstrap(
-        IClock &clock,
-        IAppender &appender,
-        IFormatter &formatter,
-        ILogPolicy &logPolicy,
-        IEventSink &eventSink,
-        IReplaySource &inputSource,
-        std::uint32_t workerCount,
-        std::vector<std::reference_wrapper<ISystem>> observers,
-        TaskRegistry *registry,
-        std::optional<antwika::time::Tick> maxTicks,
-        ITickEventSink *replayRecorder)
+    std::vector<Worker> bootstrap(const TaskWorkerConfig &config)
     {
-        Logger logger(formatter, logPolicy, clock, appender);
-        EventDispatcher dispatcher({eventSink});
+        Logger logger(
+            config.formatter,
+            config.logPolicy,
+            config.clock,
+            config.appender);
+        EventDispatcher dispatcher({config.eventSink});
 
         World world(logger);
         std::vector<Entity> workerEntities;
-        workerEntities.reserve(workerCount);
-        for (std::uint32_t i = 0; i < workerCount; ++i)
+        workerEntities.reserve(config.workerCount);
+        for (std::uint32_t i = 0; i < config.workerCount; ++i)
         {
             const auto entity = world.create();
             world.add<Worker>(entity, Worker{});
@@ -72,8 +65,8 @@ namespace antwika::task_worker
         world.commit();
 
         TaskRegistry localRegistry;
-        TaskRegistry &taskRegistry = registry != nullptr
-                                          ? *registry
+        TaskRegistry &taskRegistry = config.registry.has_value()
+                                          ? config.registry->get()
                                           : localRegistry;
 
         WorkerLookup lookup(world, workerEntities);
@@ -90,7 +83,7 @@ namespace antwika::task_worker
         systemScheduler.addSystem(dispatchPhase, dispatchSystem);
 
         const auto observePhase = systemScheduler.createPhase("observe");
-        for (auto &observer : observers)
+        for (auto &observer : config.observers)
         {
             systemScheduler.addSystem(observePhase, observer.get());
         }
@@ -101,9 +94,9 @@ namespace antwika::task_worker
 
         std::vector<std::reference_wrapper<ITickEventSink>> timedSinks{
             submissionSink, stopSignal};
-        if (replayRecorder != nullptr)
+        if (config.replayRecorder.has_value())
         {
-            timedSinks.push_back(*replayRecorder);
+            timedSinks.push_back(config.replayRecorder->get());
         }
         TickedEventDispatcher tickedDispatcher(dispatcher, timedSinks);
 
@@ -111,8 +104,8 @@ namespace antwika::task_worker
         TaskWorker taskWorker(engine, logger);
         taskWorker.run();
 
-        EngineLoop loop(engine, tickedDispatcher, inputSource);
-        loop.run(stopSignal, maxTicks);
+        EngineLoop loop(engine, tickedDispatcher, config.inputSource);
+        loop.run(stopSignal, config.maxTicks);
 
         std::vector<Worker> finalState;
         finalState.reserve(workerEntities.size());

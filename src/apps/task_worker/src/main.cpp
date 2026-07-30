@@ -81,17 +81,17 @@ int main(int argc, char **argv)
         ReplaySource source(std::move(events));
 
         antwika::task_worker::bootstrap(
-            clock,
-            appender,
-            formatter,
-            logPolicy,
-            eventSink,
-            source,
-            kWorkerCount,
-            {printSystem},
-            &registry,
-            std::nullopt,
-            &replayRecorder);
+            antwika::task_worker::TaskWorkerConfig{
+                .clock = clock,
+                .appender = appender,
+                .formatter = formatter,
+                .logPolicy = logPolicy,
+                .eventSink = eventSink,
+                .inputSource = source,
+                .workerCount = kWorkerCount,
+                .observers = {printSystem},
+                .registry = registry,
+                .replayRecorder = replayRecorder});
     }
     catch (const std::exception &error)
     {
