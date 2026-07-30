@@ -135,6 +135,26 @@ namespace antwika::ui
          *
          * Asking twice gives the same answer: nothing here is consumed.
          *
+         * That ordering is what a caller has to plan around. Activation
+         * is decided during the layout, so a frame reports the press
+         * alongside a picture drawn from the state the press has not
+         * changed yet. The remedy is describe, act, describe again:
+         *
+         * @code
+         * auto frame = describe(canvas, pointer, state);
+         * if (frame.interactions.activated == widgets::kZoomIn)
+         * {
+         *     state.zoomIn();
+         *     // The picture above predates that, so it is described
+         *     // once more and the second frame is the one drawn.
+         *     frame = describe(canvas, pointer, state);
+         * }
+         * @endcode
+         *
+         * Describing twice costs one more layout and no retained state,
+         * which is the price of activating on the press rather than on
+         * a press-then-release match a replay would have to regenerate.
+         *
          * @return The drawing commands and what the pointer did.
          */
         [[nodiscard]] Frame finish();
