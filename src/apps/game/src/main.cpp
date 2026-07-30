@@ -41,6 +41,7 @@
 #include "antwika/game/PathIndex.hpp"
 #include "antwika/game/RenderSystem.hpp"
 #include "antwika/game/TickPacer.hpp"
+#include "antwika/game/UiOverlay.hpp"
 #include "antwika/game/WindowInputSource.hpp"
 
 using antwika::ecs::ISystem;
@@ -52,6 +53,7 @@ using antwika::game::GridScene;
 using antwika::game::PathIndex;
 using antwika::game::RenderSystem;
 using antwika::game::TickPacer;
+using antwika::game::UiOverlay;
 using antwika::game::WindowInputSource;
 using antwika::gfx::Point;
 using antwika::gfx::Size;
@@ -148,8 +150,13 @@ int main(int argc, char **argv)
         Camera camera(kInitialPan);
         PathIndex paths;
         const GridScene scene;
+
+        // Against the size the window was asked for.
+        // Never the size one reports, which nothing records.
+        // That is what makes a recorded click hit the same button.
+        UiOverlay overlay(kWindowSize);
         RenderSystem renderSystem(
-            *window, scene, paths, camera, kExtent);
+            *window, scene, paths, camera, kExtent, overlay);
         SystemSleeper sleeper;
         TickPacer pacer(sleeper, kTickInterval);
 
@@ -195,7 +202,8 @@ int main(int argc, char **argv)
             paths,
             observers,
             std::nullopt,
-            &replayRecorder);
+            &replayRecorder,
+            &overlay);
 
         printSummary(summary);
     }

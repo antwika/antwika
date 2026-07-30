@@ -9,6 +9,7 @@
 #include "antwika/game/GridExtent.hpp"
 #include "antwika/game/GridScene.hpp"
 #include "antwika/game/PathIndex.hpp"
+#include "antwika/game/UiOverlay.hpp"
 
 namespace antwika::game
 {
@@ -46,13 +47,15 @@ namespace antwika::game
          * @param paths Read for the path cells.
          * @param camera Read for where to draw from.
          * @param extent Read for the bounds to draw within.
+         * @param overlay Read for the toolbar's picture, painted last.
          */
         RenderSystem(
             IWindow &window,
             const GridScene &scene,
             const PathIndex &paths,
             const Camera &camera,
-            GridExtent extent);
+            GridExtent extent,
+            const UiOverlay &overlay);
 
         RenderSystem(const RenderSystem &) = delete;
         RenderSystem(RenderSystem &&) = delete;
@@ -73,6 +76,7 @@ namespace antwika::game
         const PathIndex &paths;
         const Camera &camera;
         GridExtent extent;
+        const UiOverlay &overlay;
     };
 
 } // namespace antwika::game

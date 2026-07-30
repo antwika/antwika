@@ -9,7 +9,10 @@ add_executable(antwika_game_tests
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/PathIndex.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/RenderSystem.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/TickPacer.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/Toolbar.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/SceneSnapshot.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/UiOverlay.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/UiSink.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/WalkerSystem.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/WindowInputSource.cpp
     BootstrapTest.cpp
@@ -30,6 +33,9 @@ add_executable(antwika_game_tests
     ReplayDeterminismTest.cpp
     ReplayIntegrationTest.cpp
     TickPacerTest.cpp
+    ToolbarTest.cpp
+    UiOverlayTest.cpp
+    UiSinkTest.cpp
     WalkerSystemTest.cpp
     WindowInputSourceTest.cpp
     WalkerTest.cpp
@@ -53,6 +59,7 @@ target_link_libraries(antwika_game_tests
         antwika::log::tests::mocks
         antwika::replay
         antwika::time::tests::fakes
+        antwika::ui
         gtest::gtest
 )
 

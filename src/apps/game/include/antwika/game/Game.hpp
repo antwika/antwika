@@ -18,6 +18,7 @@
 #include "antwika/game/GameSummary.hpp"
 #include "antwika/game/GridExtent.hpp"
 #include "antwika/game/PathIndex.hpp"
+#include "antwika/game/UiOverlay.hpp"
 
 namespace antwika::game
 {
@@ -95,6 +96,11 @@ namespace antwika::game
      * @param replayRecorder Optional sink that, if provided, receives every
      * dispatched event stamped with its tick -- what a caller wanting to
      * persist a `--record` file should register.
+     * @param overlay Optional shared UI state that, if provided, turns the
+     * toolbar on: a UiSink is registered ahead of the grid's, describing
+     * and resolving the bar against the overlay's canvas. Left out, the run
+     * has no toolbar and every click is the world's. Passed in rather than
+     * created here because a renderer built beforehand has to read it.
      * @return What the run amounted to, for callers and tests.
      * @throws antwika::replay::EngineLoopError If maxTicks is reached
      * without engine.stop.
@@ -111,6 +117,7 @@ namespace antwika::game
         PathIndex &paths,
         std::vector<std::reference_wrapper<ISystem>> observers = {},
         std::optional<antwika::time::Tick> maxTicks = std::nullopt,
-        ITickEventSink *replayRecorder = nullptr);
+        ITickEventSink *replayRecorder = nullptr,
+        UiOverlay *overlay = nullptr);
 
 } // namespace antwika::game

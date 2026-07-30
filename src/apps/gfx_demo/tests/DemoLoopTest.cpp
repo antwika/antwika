@@ -347,8 +347,8 @@ TEST(DemoLoopTest, Run_IgnoresAPressThatLandsOnNoButton)
     EXPECT_EQ(0U, loop.clicks());
 }
 
-// A press carries its own position, so it can be the first thing that
-// ever says where the pointer is.
+// A press carries its own position.
+// So it can be the first thing that ever says where the pointer is.
 TEST(DemoLoopTest, Run_TakesAPressWithNoMovementBeforeIt)
 {
     DemoFixture fixture;

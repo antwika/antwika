@@ -19,6 +19,9 @@
 #include <antwika/input/InputEvent.hpp>
 #include <antwika/input/InputEventCodec.hpp>
 #include <antwika/input/MouseButton.hpp>
+#include <antwika/input/Position.hpp>
+#include <antwika/ui/Pointer.hpp>
+#include <antwika/ui/WidgetId.hpp>
 #include <antwika/log/mocks/MockLogger.hpp>
 #include <antwika/replay/ReplayCli.hpp>
 #include <antwika/replay/ReplaySource.hpp>
@@ -30,6 +33,8 @@
 #include "antwika/game/GridExtent.hpp"
 #include "antwika/game/IsoProjection.hpp"
 #include "antwika/game/PathIndex.hpp"
+#include "antwika/game/Toolbar.hpp"
+#include "antwika/game/UiOverlay.hpp"
 #include "antwika/game/WindowInputSource.hpp"
 
 using antwika::event::Event;
@@ -42,6 +47,8 @@ using antwika::game::cellCentre;
 using antwika::game::GameSummary;
 using antwika::game::GridExtent;
 using antwika::game::PathIndex;
+using antwika::game::Toolbar;
+using antwika::game::UiOverlay;
 using antwika::game::WindowInputSource;
 using antwika::gfx::CloseRequested;
 using antwika::gfx::NullBackend;
@@ -128,6 +135,90 @@ namespace
         return RunResult{
             .summary = std::move(summary),
             .recorded = recorder.getEvents()};
+    }
+
+    // The size the app asks its window for.
+    // Which is the size the bar is laid out and hit-tested against.
+    constexpr antwika::gfx::Size kUiCanvas{.width = 1024, .height = 640};
+
+    [[nodiscard]] RunResult runWithToolbar(
+        antwika::replay::IReplaySource &source)
+    {
+        NiceMock<MockLogger> logger;
+        EventRecorder eventSink;
+        const InputEventCodec codec;
+        Camera camera;
+        PathIndex paths;
+        TickEventRecorder recorder;
+        UiOverlay overlay(kUiCanvas);
+
+        auto summary = antwika::game::bootstrap(
+            logger,
+            eventSink,
+            source,
+            codec,
+            kExtent,
+            camera,
+            paths,
+            {},
+            kMaxTicks,
+            &recorder,
+            &overlay);
+
+        return RunResult{
+            .summary = std::move(summary),
+            .recorded = recorder.getEvents()};
+    }
+
+    // Where a button is, is the layout's business.
+    // So a test looks for a pixel that hits the one it means.
+    [[nodiscard]] antwika::input::Position pixelOn(
+        antwika::ui::WidgetId id)
+    {
+        const Toolbar toolbar;
+        const Camera camera;
+
+        for (std::int32_t y = 0;
+             y < static_cast<std::int32_t>(kUiCanvas.height);
+             y += 4)
+        {
+            for (std::int32_t x = 0;
+                 x < static_cast<std::int32_t>(kUiCanvas.width);
+                 x += 4)
+            {
+                const antwika::ui::Pointer pointer{
+                    .position = antwika::gfx::Point{.x = x, .y = y}};
+
+                if (toolbar.describe(kUiCanvas, pointer, camera)
+                        .interactions.hovered
+                    == id)
+                {
+                    return antwika::input::Position{.x = x, .y = y};
+                }
+            }
+        }
+
+        return antwika::input::Position{};
+    }
+
+    [[nodiscard]] std::vector<TickEvent> toolbarSession()
+    {
+        const InputEventCodec codec;
+        const auto at = pixelOn(antwika::game::widgets::kZoomIn);
+
+        return {
+            TickEvent{
+                .tick = 0,
+                .event = codec.encode(
+                    antwika::input::PointerMoved{.position = at})},
+            TickEvent{
+                .tick = 0,
+                .event = codec.encode(
+                    PointerButtonPressed{
+                        .button = MouseButton::Left, .position = at})},
+            TickEvent{
+                .tick = 2,
+                .event = Event{.name = antwika::engine::events::kStop}}};
     }
 
     [[nodiscard]] Event pressAt(Cell cell, MouseButton button)
@@ -309,4 +400,56 @@ TEST(ReplayDeterminismTest, ClosingTheWindowEndsTheRunAndReplaysTheSame)
     const auto replayed = run(replayedSource);
 
     EXPECT_EQ(replayed.summary, live.summary);
+}
+
+// A click on the toolbar is input like any other.
+// What is recorded is the click.
+// Which button it hit is worked out again on replay.
+TEST(ReplayDeterminismTest, AToolbarClickReplaysToTheSameCamera)
+{
+    auto script = toolbarSession();
+    ReplaySource liveSource(script);
+    const auto live = runWithToolbar(liveSource);
+
+    // The press reached the camera, and nothing else.
+    EXPECT_EQ(
+        antwika::game::kDefaultZoomLevel + 1,
+        live.summary.camera.zoomLevel());
+    EXPECT_TRUE(live.summary.paths.empty());
+
+    const ScratchFile file("antwika-game-toolbar.replay");
+    antwika::replay::saveReplayFile(
+        live.recorded, file.name(), kSelfGeneratedEventNames);
+    auto loaded = antwika::replay::loadReplayFile(file.name());
+
+    // Nothing about a button may be in the file.
+    const InputEventCodec codec;
+    for (const auto &event : loaded)
+    {
+        EXPECT_EQ(event.event.name.rfind("ui.", 0), std::string::npos)
+            << event.event.name;
+        EXPECT_EQ(event.event.name.rfind("game.zoom", 0), std::string::npos)
+            << event.event.name;
+        EXPECT_TRUE(
+            codec.decode(event.event).has_value()
+            || event.event.name == antwika::engine::events::kStop)
+            << event.event.name;
+    }
+
+    ReplaySource replayedSource(std::move(loaded));
+    const auto replayed = runWithToolbar(replayedSource);
+
+    EXPECT_EQ(replayed.summary, live.summary);
+    EXPECT_EQ(replayed.recorded, live.recorded);
+}
+
+// The toolbar is over the grid, so a press on it is not a press on it.
+TEST(ReplayDeterminismTest, AToolbarClickLaysNoPathUnderTheBar)
+{
+    auto script = toolbarSession();
+    ReplaySource source(script);
+
+    const auto result = runWithToolbar(source);
+
+    EXPECT_TRUE(result.summary.paths.empty());
 }

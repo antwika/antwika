@@ -13,6 +13,8 @@
 #include "antwika/game/GameStateReducer.hpp"
 #include "antwika/game/GridSink.hpp"
 #include "antwika/game/SceneSnapshot.hpp"
+#include "antwika/game/Toolbar.hpp"
+#include "antwika/game/UiSink.hpp"
 #include "antwika/game/WalkerSystem.hpp"
 
 using antwika::ecs::SystemScheduler;
@@ -50,7 +52,8 @@ namespace antwika::game
         PathIndex &paths,
         std::vector<std::reference_wrapper<ISystem>> observers,
         std::optional<antwika::time::Tick> maxTicks,
-        ITickEventSink *replayRecorder)
+        ITickEventSink *replayRecorder,
+        UiOverlay *overlay)
     {
         EventDispatcher dispatcher({eventSink});
 
@@ -71,14 +74,26 @@ namespace antwika::game
 
         GameState state;
         GameStateReducer reducer(state);
+
+        // A run with no toolbar still needs something to ask.
+        // An overlay nothing writes covers nothing.
+        // So every click is the world's, which is what that means.
+        UiOverlay noToolbar;
+        UiOverlay &ui = overlay != nullptr ? *overlay : noToolbar;
+
+        const Toolbar toolbar;
+        UiSink uiSink(camera, ui, codec, toolbar, camera);
         GridSink gridSink(
-            world, paths, camera, extent, scheduler, codec);
+            world, paths, camera, extent, scheduler, codec, ui);
         StopSignal stopSignal;
 
         // GridSink runs the scheduler on engine.tick.
         // So anything that must show in this frame is folded before it.
+        // UiSink comes before it for both reasons.
+        // A press is resolved against the bar before the grid sees it.
+        // And the picture is described before the renderer paints it.
         std::vector<std::reference_wrapper<ITickEventSink>> timedSinks{
-            reducer, gridSink, stopSignal};
+            reducer, uiSink, gridSink, stopSignal};
         if (replayRecorder != nullptr)
         {
             timedSinks.push_back(*replayRecorder);
