@@ -4,10 +4,16 @@ add_executable(antwika_game_tests
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/Game.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/GameStateReducer.cpp
     BootstrapTest.cpp
+    CameraTest.cpp
+    CellTest.cpp
+    DirectionTest.cpp
     GameStateReducerTest.cpp
     GameStateTest.cpp
     GameTest.cpp
+    GridExtentTest.cpp
+    IsoProjectionTest.cpp
     ReplayIntegrationTest.cpp
+    WalkingTest.cpp
 )
 
 target_include_directories(antwika_game_tests
@@ -19,6 +25,7 @@ target_link_libraries(antwika_game_tests
     PRIVATE
         antwika::engine::tests::mocks
         antwika::event::tests::mocks
+        antwika::gfx
         antwika::log::tests::mocks
         antwika::replay
         antwika::time::tests::fakes

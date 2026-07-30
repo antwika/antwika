@@ -16,6 +16,7 @@ target_compile_definitions(antwika_game
 target_link_libraries(antwika_game
     PRIVATE
         antwika::engine
+        antwika::gfx
         antwika::replay
         antwika::time
 )
