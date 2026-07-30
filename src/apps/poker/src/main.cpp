@@ -1,6 +1,8 @@
 #include "antwika/poker/PokerRoom.hpp"
 
 #include <array>
+#include <cstdlib>
+#include <exception>
 #include <iostream>
 #include <string>
 #include <string_view>
@@ -55,43 +57,56 @@ int main(int argc, char **argv)
     EventRecorder eventSink;
     TickEventRecorder replayRecorder;
 
-    auto events = antwika::replay::loadReplayFile(
-        options.replayPath.value_or(std::string(kDemoReplayPath)));
-    ReplaySource source(std::move(events));
-
-    // The window is always opened, as in the gfx demo.
-    // Under the headless backend that draws nothing and costs nothing.
-    Logger logger(formatter, logPolicy, clock, appender);
-    const auto backend = antwika::gfx::makeSelectedBackend(logger);
-    SystemSleeper sleeper;
-    const WindowSetup window{
-        .backend = *backend,
-        .sleeper = sleeper,
-        .framePeriod = watch.tickDelay,
-    };
-
-    const auto summary = antwika::poker::bootstrap(
-        clock,
-        appender,
-        formatter,
-        logPolicy,
-        eventSink,
-        source,
-        std::cout,
-        antwika::poker::RoomConfig{},
-        std::nullopt,
-        &replayRecorder,
-        &window);
-
-    std::cout << "\n=== " << summary.handsPlayed << " hands played ===\n";
-    for (const auto &[player, balance] : summary.balances)
+    // Catching is what makes the run's resources unwind at all.
+    // An uncaught exception may call std::terminate without unwinding.
+    // Catching here also lets a failed --record run save what it has.
+    int exitCode = EXIT_SUCCESS;
+    try
     {
-        std::cout << "  " << player << ": " << balance << '\n';
+        auto events = antwika::replay::loadReplayFile(
+            options.replayPath.value_or(std::string(kDemoReplayPath)));
+        ReplaySource source(std::move(events));
+
+        // The window is always opened, as in the gfx demo.
+        // Under the headless backend it draws and costs nothing.
+        Logger logger(formatter, logPolicy, clock, appender);
+        const auto backend = antwika::gfx::makeSelectedBackend(logger);
+        SystemSleeper sleeper;
+        const WindowSetup window{
+            .backend = *backend,
+            .sleeper = sleeper,
+            .framePeriod = watch.tickDelay,
+        };
+
+        const auto summary = antwika::poker::bootstrap(
+            clock,
+            appender,
+            formatter,
+            logPolicy,
+            eventSink,
+            source,
+            std::cout,
+            antwika::poker::RoomConfig{},
+            std::nullopt,
+            &replayRecorder,
+            &window);
+
+        std::cout << "\n=== " << summary.handsPlayed
+                  << " hands played ===\n";
+        for (const auto &[player, balance] : summary.balances)
+        {
+            std::cout << "  " << player << ": " << balance << '\n';
+        }
+        if (summary.chipsLeftOnTable > 0)
+        {
+            std::cout << "  (" << summary.chipsLeftOnTable
+                      << " chips left in an unfinished hand)\n";
+        }
     }
-    if (summary.chipsLeftOnTable > 0)
+    catch (const std::exception &error)
     {
-        std::cout << "  (" << summary.chipsLeftOnTable
-                  << " chips left in an unfinished hand)\n";
+        std::cerr << "antwika_poker: " << error.what() << '\n';
+        exitCode = EXIT_FAILURE;
     }
 
     if (options.recordPath)
@@ -102,5 +117,6 @@ int main(int argc, char **argv)
             kSelfGeneratedEventNames);
     }
 
-    return 0;
+    // A run that threw now says so, rather than always reporting success.
+    return exitCode;
 }
