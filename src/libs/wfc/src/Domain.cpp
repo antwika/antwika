@@ -42,7 +42,8 @@ namespace antwika::wfc
         return copy;
     }
 
-    Domain::Domain(std::size_t alphabetSize) : bits(alphabetSize, true)
+    Domain::Domain(std::size_t alphabetSize)
+        : bits(alphabetSize, true), setCount(alphabetSize)
     {
     }
 
@@ -67,18 +68,24 @@ namespace antwika::wfc
 
     void Domain::remove(std::size_t value)
     {
-        if (value < bits.size())
+        if (!contains(value))
         {
-            bits[value] = false;
+            return;
         }
+
+        bits[value] = false;
+        --setCount;
     }
 
     void Domain::add(std::size_t value)
     {
-        if (value < bits.size())
+        if (value >= bits.size() || contains(value))
         {
-            bits[value] = true;
+            return;
         }
+
+        bits[value] = true;
+        ++setCount;
     }
 
     void Domain::restrictTo(std::size_t value)
@@ -91,6 +98,7 @@ namespace antwika::wfc
         {
             bits[i] = (i == value);
         }
+        setCount = 1;
     }
 
     std::size_t Domain::alphabetSize() const
@@ -100,15 +108,7 @@ namespace antwika::wfc
 
     std::size_t Domain::count() const
     {
-        std::size_t total = 0;
-        for (const bool bit : bits)
-        {
-            if (bit)
-            {
-                ++total;
-            }
-        }
-        return total;
+        return setCount;
     }
 
     bool Domain::isEmpty() const

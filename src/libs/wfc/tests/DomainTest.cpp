@@ -77,6 +77,35 @@ TEST(DomainTest, RemovingEveryValueIsEmpty)
     EXPECT_FALSE(domain.isSingleton());
 }
 
+TEST(DomainTest, RemovingTheSameValueTwiceCountsItOnce)
+{
+    Domain domain(3);
+    domain.remove(1);
+    domain.remove(1);
+
+    EXPECT_EQ(domain.count(), 2U);
+    EXPECT_FALSE(domain.contains(1));
+}
+
+TEST(DomainTest, AddingAValueThatIsStillPresentChangesNothing)
+{
+    Domain domain(3);
+    domain.add(1);
+
+    EXPECT_EQ(domain.count(), 3U);
+    EXPECT_EQ(domain, Domain(3));
+}
+
+TEST(DomainTest, RestrictToCanReinstateAnAlreadyRemovedValue)
+{
+    Domain domain(3);
+    domain.remove(2);
+    domain.restrictTo(2);
+
+    EXPECT_EQ(domain.count(), 1U);
+    EXPECT_EQ(domain.singleValue(), 2U);
+}
+
 TEST(DomainTest, IterationIsAscending)
 {
     Domain domain(6);
