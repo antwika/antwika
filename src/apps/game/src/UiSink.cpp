@@ -7,8 +7,6 @@
 #include <antwika/input/MouseButton.hpp>
 #include <antwika/ui/WidgetId.hpp>
 
-#include "antwika/game/PointerReading.hpp"
-
 namespace antwika::game
 {
 
@@ -32,12 +30,12 @@ namespace antwika::game
     UiSink::UiSink(
         Camera &camera,
         UiOverlay &overlay,
-        const IInputEventCodec &codec,
+        const InputFold &input,
         const Toolbar &toolbar,
         Camera home)
         : camera(camera),
           overlay(overlay),
-          codec(codec),
+          input(input),
           toolbar(toolbar),
           home(home)
     {
@@ -50,29 +48,26 @@ namespace antwika::game
             // Described again here, for the renderer about to paint.
             // What it paints then shows the state this tick ends with.
             refreshAndAct(false);
-            state.beginTick();
             return;
         }
 
-        const auto decoded = codec.decode(event.event);
+        // Whatever the fold was just given, since it runs first.
+        const auto &decoded = input.current();
         if (!decoded.has_value())
         {
             return;
         }
-
-        located = located || locates(*decoded);
-        state.apply(*decoded);
 
         refreshAndAct(isLeftPress(*decoded));
     }
 
     Pointer UiSink::pointerNow(bool pressed) const
     {
-        const auto &mouse = state.mouse();
+        const auto &mouse = input.state().mouse();
 
         return Pointer{
-            .position = located
-                            ? std::optional<Point>{asPoint(mouse.position())}
+            .position = input.located()
+                            ? std::optional<Point>{input.pointer()}
                             : std::nullopt,
             .down = mouse.isDown(MouseButton::Left),
             .pressed = pressed};

@@ -4,12 +4,11 @@
 #include <antwika/ecs/World.hpp>
 #include <antwika/event/ITickEventSink.hpp>
 #include <antwika/event/TickEvent.hpp>
-#include <antwika/input/IInputEventCodec.hpp>
 #include <antwika/input/InputEvent.hpp>
-#include <antwika/input/InputState.hpp>
 
 #include "antwika/game/Camera.hpp"
 #include "antwika/game/GridExtent.hpp"
+#include "antwika/game/InputFold.hpp"
 #include "antwika/game/PathIndex.hpp"
 #include "antwika/game/UiOverlay.hpp"
 
@@ -20,8 +19,6 @@ namespace antwika::game
     using antwika::ecs::World;
     using antwika::event::ITickEventSink;
     using antwika::event::TickEvent;
-    using antwika::input::IInputEventCodec;
-    using antwika::input::InputState;
 
     /**
      * @brief Turns this tick's input into paths, walkers and camera
@@ -66,7 +63,8 @@ namespace antwika::game
          * @param camera Panned and zoomed; read by the renderer.
          * @param extent Bounds which cells a click may reach.
          * @param scheduler Run once per tick, after the commit.
-         * @param codec Decodes the input events off the tick stream.
+         * @param input The folded input, holding the event being
+         * handled; must be registered ahead of this sink.
          * @param overlay Asked whether a click was the toolbar's.
          */
         GridSink(
@@ -75,7 +73,7 @@ namespace antwika::game
             Camera &camera,
             GridExtent extent,
             SystemScheduler &scheduler,
-            const IInputEventCodec &codec,
+            const InputFold &input,
             const UiOverlay &overlay);
 
         GridSink(const GridSink &) = delete;
@@ -87,31 +85,23 @@ namespace antwika::game
         /**
          * @brief Apply a tick event.
          * @param event engine.tick commits the world and runs the
-         * systems; an input.* event is folded and acted on; anything else
-         * is ignored.
-         * @throws antwika::input::InputError If an input.* event carries a
-         * payload of the wrong shape -- raised by the codec, since the
-         * wire format is its to police.
+         * systems; an input.* event is acted on; anything else is
+         * ignored.
          */
         void handle(const TickEvent &event) override;
 
     private:
         void placePath(Cell cell);
         void placeWalker(Cell cell);
-        void act(const antwika::input::InputEvent &event, Point previous,
-                 bool wasDragging);
+        void act(const antwika::input::InputEvent &event);
 
         World &world;
         PathIndex &paths;
         Camera &camera;
         GridExtent extent;
         SystemScheduler &scheduler;
-        const IInputEventCodec &codec;
+        const InputFold &input;
         const UiOverlay &overlay;
-
-        // Held here rather than above the recorder.
-        // A replay then regenerates what a click is read against.
-        InputState state;
     };
 
 } // namespace antwika::game

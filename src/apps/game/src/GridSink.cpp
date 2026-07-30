@@ -25,14 +25,14 @@ namespace antwika::game
         Camera &camera,
         GridExtent extent,
         SystemScheduler &scheduler,
-        const IInputEventCodec &codec,
+        const InputFold &input,
         const UiOverlay &overlay)
         : world(world),
           paths(paths),
           camera(camera),
           extent(extent),
           scheduler(scheduler),
-          codec(codec),
+          input(input),
           overlay(overlay)
     {
     }
@@ -43,32 +43,20 @@ namespace antwika::game
         {
             world.commit();
             scheduler.run(world, event.tick);
-
-            // After the systems, so nothing runs against cleared edges.
-            state.beginTick();
             return;
         }
 
-        const auto decoded = codec.decode(event.event);
+        // Whatever the fold was just given, since it runs first.
+        const auto &decoded = input.current();
         if (!decoded.has_value())
         {
             return;
         }
 
-        // Read what a drag needs before folding this event in.
-        // Applying it is what moves the pointer.
-        const auto previous = asPoint(state.mouse().position());
-        const auto wasDragging = state.mouse().isDown(MouseButton::Middle);
-
-        state.apply(*decoded);
-
-        act(*decoded, previous, wasDragging);
+        act(*decoded);
     }
 
-    void GridSink::act(
-        const antwika::input::InputEvent &event,
-        Point previous,
-        bool wasDragging)
+    void GridSink::act(const antwika::input::InputEvent &event)
     {
         // Whatever the toolbar covers, it covers from the grid too.
         // A movement is exempt, so a pan begun on the grid can cross it.
@@ -82,8 +70,14 @@ namespace antwika::game
         {
             // Only while the middle button is already down.
             // A press has then already established the pointer's place.
-            if (wasDragging)
+            // Folding a movement changes no button.
+            // So asking now is the same as asking before it.
+            if (input.state().mouse().isDown(MouseButton::Middle))
             {
+                // The fold has already moved the pointer here.
+                // So the distance is from where it was one event ago.
+                const auto previous = input.pointerBefore();
+
                 camera.panBy(
                     moved->position.x - previous.x,
                     moved->position.y - previous.y);
@@ -111,10 +105,7 @@ namespace antwika::game
 
         if (const auto *scrolled = std::get_if<PointerScrolled>(&event))
         {
-            camera = zoomedAt(
-                camera,
-                asPoint(state.mouse().position()),
-                scrolled->vertical);
+            camera = zoomedAt(camera, input.pointer(), scrolled->vertical);
         }
     }
 

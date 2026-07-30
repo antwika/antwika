@@ -17,6 +17,7 @@
 #include <antwika/ui/WidgetId.hpp>
 
 #include "antwika/game/Camera.hpp"
+#include "antwika/game/InputFold.hpp"
 #include "antwika/game/Toolbar.hpp"
 #include "antwika/game/UiOverlay.hpp"
 #include "antwika/game/UiSink.hpp"
@@ -24,6 +25,7 @@
 using antwika::event::Event;
 using antwika::event::TickEvent;
 using antwika::game::Camera;
+using antwika::game::InputFold;
 using antwika::game::Toolbar;
 using antwika::game::UiOverlay;
 using antwika::game::UiSink;
@@ -78,10 +80,17 @@ namespace
             return Position{};
         }
 
+        // Through the fold first, as bootstrap() registers it.
+        // What the sink reads is what the fold was just given.
+        void dispatch(const TickEvent &event)
+        {
+            input.handle(event);
+            sink.handle(event);
+        }
+
         void send(const InputEvent &event)
         {
-            sink.handle(
-                TickEvent{.tick = 0, .event = codec.encode(event)});
+            dispatch(TickEvent{.tick = 0, .event = codec.encode(event)});
         }
 
         void pressOn(WidgetId id)
@@ -96,7 +105,7 @@ namespace
 
         void tick()
         {
-            sink.handle(
+            dispatch(
                 TickEvent{
                     .tick = 0,
                     .event =
@@ -106,8 +115,9 @@ namespace
         Camera camera{kHome};
         UiOverlay overlay{kCanvas};
         InputEventCodec codec;
+        InputFold input{codec};
         Toolbar toolbar;
-        UiSink sink{camera, overlay, codec, toolbar, camera};
+        UiSink sink{camera, overlay, input, toolbar, camera};
     };
 } // namespace
 
@@ -235,7 +245,7 @@ TEST_F(UiSinkTest, Handle_IgnoresAnEventThatIsNotInput)
 {
     const auto before = camera;
 
-    sink.handle(
+    dispatch(
         TickEvent{.tick = 0, .event = Event{.name = "game.started"}});
 
     EXPECT_EQ(before, camera);
