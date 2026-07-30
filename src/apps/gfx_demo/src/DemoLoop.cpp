@@ -3,53 +3,23 @@
 #include <optional>
 #include <variant>
 
+#include <antwika/app/PointerReading.hpp>
 #include <antwika/gfx/IWindow.hpp>
-#include <antwika/gfx/Point.hpp>
 #include <antwika/gfx/WindowEvent.hpp>
 #include <antwika/gfx/WindowId.hpp>
-#include <antwika/input/InputEvent.hpp>
 #include <antwika/input/InputState.hpp>
-#include <antwika/input/MouseButton.hpp>
-#include <antwika/input/Position.hpp>
 #include <antwika/ui/Pointer.hpp>
 #include <antwika/ui/WidgetId.hpp>
 
 namespace antwika::gfx_demo
 {
 
+    using antwika::app::locates;
+    using antwika::app::pointerFrom;
     using antwika::gfx::CloseRequested;
-    using antwika::gfx::Point;
-    using antwika::input::InputEvent;
     using antwika::input::InputState;
-    using antwika::input::MouseButton;
-    using antwika::input::PointerButtonPressed;
-    using antwika::input::PointerButtonReleased;
-    using antwika::input::PointerMoved;
-    using antwika::input::Position;
     using antwika::ui::kNoWidget;
     using antwika::ui::Pointer;
-
-    namespace
-    {
-        // input::Position and gfx::Point match field for field.
-        // They stay unrelated types so input need not depend on gfx.
-        // Deciding they mean the same thing is the application's job.
-        // This is the application saying so.
-        [[nodiscard]] Point asPoint(Position position) noexcept
-        {
-            return Point{.x = position.x, .y = position.y};
-        }
-
-        // Until something says where it is, the pointer is nowhere.
-        // The folded default would put it in the window's corner.
-        // A widget can be in that corner, and would look hovered.
-        [[nodiscard]] bool locates(const InputEvent &event) noexcept
-        {
-            return std::holds_alternative<PointerMoved>(event)
-                   || std::holds_alternative<PointerButtonPressed>(event)
-                   || std::holds_alternative<PointerButtonReleased>(event);
-        }
-    } // namespace
 
     DemoLoop::DemoLoop(
         IGfxBackend &backend, IInputBackend &input, const DemoScene &scene)
@@ -103,14 +73,17 @@ namespace antwika::gfx_demo
                 state.apply(*event);
             }
 
-            const auto &mouse = state.mouse();
-            const Pointer pointer{
-                .position =
-                    located ? std::optional<Point>{asPoint(mouse.position())}
-                            : std::nullopt,
-                .down = mouse.isDown(MouseButton::Left),
-                .pressed = mouse.wasPressed(MouseButton::Left)};
+            // Saying that a folded pointer is the pointer a UI wants.
+            // antwika::app is where an application is allowed to say it.
+            const Pointer pointer = pointerFrom(state, located);
 
+            // The size the window reports, not the size it was asked for.
+            // Every other app here refuses to lay a UI out against that.
+            // This demo lays out and hit-tests it in the same frame.
+            // Nothing records the click, so no later run can disagree.
+            // An app with a replay must use the configured size instead.
+            // A hit-test follows the layout, and a layout the canvas.
+            // See game::UiOverlay, which owns a canvas for that reason.
             const auto canvas = window->size();
             auto picture = scene.describe(canvas, pointer, clickCount);
             const auto activated = picture.interactions.activated;

@@ -1,6 +1,7 @@
 #include "antwika/scheduler/Scheduler.hpp"
 
 #include <memory>
+#include <stdexcept>
 #include <string>
 #include <utility>
 #include <vector>
@@ -24,8 +25,10 @@ using antwika::scheduler::rawValue;
 using antwika::scheduler::Scheduler;
 using antwika::scheduler::SchedulerError;
 using antwika::scheduler::mocks::MockJob;
+using ::testing::_;
 using ::testing::NiceMock;
 using ::testing::Return;
+using ::testing::Throw;
 
 namespace
 {
@@ -181,9 +184,9 @@ TEST(SchedulerTest, RunNeverExecutesMoreThanBudget)
     NiceMock<MockJob> jobA;
     NiceMock<MockJob> jobB;
     NiceMock<MockJob> jobC;
-    EXPECT_CALL(jobA, execute(::testing::_)).Times(1);
-    EXPECT_CALL(jobB, execute(::testing::_)).Times(1);
-    EXPECT_CALL(jobC, execute(::testing::_)).Times(0);
+    EXPECT_CALL(jobA, execute(_)).Times(1);
+    EXPECT_CALL(jobB, execute(_)).Times(1);
+    EXPECT_CALL(jobC, execute(_)).Times(0);
 
     scheduler.schedule(jobA, kNormalPriority);
     scheduler.schedule(jobB, kNormalPriority);
@@ -220,7 +223,7 @@ TEST(SchedulerTest, BudgetZeroIsATrueNoOp)
 {
     Scheduler scheduler;
     NiceMock<MockJob> job;
-    EXPECT_CALL(job, execute(::testing::_)).Times(0);
+    EXPECT_CALL(job, execute(_)).Times(0);
 
     scheduler.schedule(job, kNormalPriority);
 
@@ -234,7 +237,7 @@ TEST(SchedulerTest, LowPriorityJobCanStarveIndefinitely)
 {
     Scheduler scheduler;
     NiceMock<MockJob> lowJob;
-    EXPECT_CALL(lowJob, execute(::testing::_)).Times(0);
+    EXPECT_CALL(lowJob, execute(_)).Times(0);
     scheduler.schedule(lowJob, kLowPriority);
 
     for (int i = 0; i < 5; ++i)
@@ -244,7 +247,7 @@ TEST(SchedulerTest, LowPriorityJobCanStarveIndefinitely)
         // But that leans on run() being the only dereference.
         // This follows the documented contract instead.
         auto criticalJob = std::make_unique<NiceMock<MockJob>>();
-        EXPECT_CALL(*criticalJob, execute(::testing::_)).Times(1);
+        EXPECT_CALL(*criticalJob, execute(_)).Times(1);
         scheduler.schedule(std::move(criticalJob), kCriticalPriority);
         scheduler.run(0, 1);
     }
@@ -265,7 +268,25 @@ TEST(SchedulerTest, ScheduleTakingOwnershipRunsTheJobLikeAnyOther)
     EXPECT_EQ(log, (std::vector<std::string>{"owned"}));
 }
 
-TEST(SchedulerTest, ScheduleTakingOwnershipKeepsTheJobAliveUntilSchedulerDies)
+TEST(SchedulerTest, ScheduleTakingOwnershipReleasesTheJobOnceItHasRun)
+{
+    Scheduler scheduler;
+    bool destroyed = false;
+
+    scheduler.schedule(
+        std::make_unique<DestructionTrackingJob>(destroyed),
+        kNormalPriority);
+
+    EXPECT_FALSE(destroyed);
+
+    scheduler.run(0, 10);
+
+    // A long session submits one job per event and never stops.
+    // So a job outliving its own run is memory nothing will free.
+    EXPECT_TRUE(destroyed);
+}
+
+TEST(SchedulerTest, ScheduleTakingOwnershipKeepsAnUnrunJobUntilItDies)
 {
     bool destroyed = false;
 
@@ -274,14 +295,59 @@ TEST(SchedulerTest, ScheduleTakingOwnershipKeepsTheJobAliveUntilSchedulerDies)
         scheduler.schedule(
             std::make_unique<DestructionTrackingJob>(destroyed),
             kNormalPriority);
-        scheduler.run(0, 10);
 
-        // Having run a job is not what releases it.
-        // records keeps its pointer for the Scheduler's whole life.
         EXPECT_FALSE(destroyed);
     }
 
     EXPECT_TRUE(destroyed);
+}
+
+TEST(SchedulerTest, ScheduleTakingOwnershipInterleavesWithBorrowedJobs)
+{
+    // Owned and borrowed jobs share one JobId space.
+    // A releasing Scheduler has to free the right slot for either.
+    Scheduler scheduler;
+    std::vector<std::string> log;
+    RecordingJob borrowed(log, "borrowed");
+    bool destroyed = false;
+
+    const auto borrowedId = scheduler.schedule(borrowed, kNormalPriority);
+    const auto ownedId = scheduler.schedule(
+        std::make_unique<DestructionTrackingJob>(destroyed),
+        kNormalPriority);
+
+    const auto executed = scheduler.run(0, 10);
+
+    EXPECT_EQ(executed, (std::vector<JobId>{borrowedId, ownedId}));
+    EXPECT_EQ(log, (std::vector<std::string>{"borrowed"}));
+    EXPECT_TRUE(destroyed);
+}
+
+TEST(SchedulerTest, AJobThatThrowsStillCountsAsHavingRun)
+{
+    Scheduler scheduler;
+    NiceMock<MockJob> failing;
+    NiceMock<MockJob> waiting;
+
+    EXPECT_CALL(failing, execute(_))
+        .WillOnce(Throw(std::runtime_error("job failed")));
+
+    const auto failingId = scheduler.schedule(failing, kNormalPriority);
+    scheduler.schedule(waiting, kNormalPriority, {failingId});
+
+    EXPECT_THROW(
+        static_cast<void>(scheduler.run(0, 10)), std::runtime_error);
+
+    // Left half-run it would be gone from ready.
+    // It would still be counted as pending.
+    // Its dependent would wait on it forever.
+    EXPECT_EQ(scheduler.pending(), 1U);
+
+    EXPECT_CALL(waiting, execute(_));
+    const auto executed = scheduler.run(1, 10);
+
+    EXPECT_EQ(executed.size(), 1U);
+    EXPECT_TRUE(scheduler.empty());
 }
 
 TEST(SchedulerTest, ScheduleTakingOwnershipOfANullJobThrows)

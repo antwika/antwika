@@ -139,11 +139,17 @@ namespace antwika::input
      * This is what a replay stores, so these names are part of the replay
      * format and may not be changed once written.
      *
+     * A value with no name is refused rather than named "Unknown".
+     * keyFromString rejects a name no key goes by, so the lenient answer
+     * would write a recording that encodes cleanly and then fails to
+     * replay -- in another process, long after the cause was visible.
+     *
      * @param key The key to name.
-     * @return The key's name, e.g. "Escape", or "Unknown" for a value
-     * outside the enumeration.
+     * @return The key's name, e.g. "Escape".
+     * @throws InputError If the value is outside the enumeration, which
+     * only a cast can produce.
      */
-    [[nodiscard]] std::string_view toString(Key key) noexcept;
+    [[nodiscard]] std::string_view toString(Key key);
 
     /**
      * @brief Get the key a persisted name refers to.

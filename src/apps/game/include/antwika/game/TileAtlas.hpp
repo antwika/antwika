@@ -83,14 +83,53 @@ namespace antwika::game
         linkBit(Direction::North) | linkBit(Direction::East)
         | linkBit(Direction::South) | linkBit(Direction::West);
 
+    // Every number above is constexpr, so a wrong layout can fail here.
+    // On screen is the only other place it could fail.
+    // check_layout() in scripts/generate_game_atlas.py asks the same.
+
+    // atlasSlot() wraps a slot round rather than rejecting it.
+    // That is safe only while every derived slot is one the atlas has.
+    // walkerTile() derives the highest of them.
+    static_assert(
+        kFirstWalkerSlot + kDirectionCount <= kAtlasColumns * kAtlasRows,
+        "the atlas has no room for every walker slot");
+
+    // kLinkMask is built from the four directions this file names.
+    // A fifth enumerator would raise kDirectionCount past that mask.
+    // linkBit() would then hand out a bit no road tile has.
+    static_assert(
+        kLinkMask == (1U << kDirectionCount) - 1U,
+        "kDirectionCount must count exactly the named directions");
+
+    // One road tile per link mask is what makes roadTile() a lookup.
+    static_assert(
+        kRoadSlotCount == 1U << kDirectionCount,
+        "there must be a road tile for every link mask");
+
+    // The generator draws kAtlasColumns by kAtlasRows tiles.
+    // kAtlasSize is written that way above.
+    // Saying it again is what makes a hand-typed size a build error.
+    static_assert(
+        kAtlasSize.width == kAtlasColumns * kAtlasTileSize.width
+            && kAtlasSize.height == kAtlasRows * kAtlasTileSize.height,
+        "kAtlasSize must be the grid of tiles the generator draws");
+
     /**
      * @brief Get where a slot's tile is in the atlas.
      *
      * Arithmetic over a slot number rather than a table of rectangles, so
-     * there is no list here that could disagree with the picture. The
-     * picture is drawn by scripts/generate_game_atlas.py from these same
-     * numbers, which is the other half of the same idea: nothing places a
-     * tile by hand, so nothing can place one wrongly.
+     * there is no list here that could disagree with the picture.
+     *
+     * The picture is drawn by scripts/generate_game_atlas.py, which
+     * parses the constants above out of this header rather than restating
+     * them -- so these really are the same numbers, and moving one moves
+     * the art with it. It matches them by name and by shape, so renaming
+     * or rewriting one of the declarations above fails the generator
+     * loudly instead of drifting the picture quietly.
+     *
+     * A road's bit ordering travels the same way: the generator reads the
+     * Direction enumerators in declaration order, since that is what
+     * linkBit() shifts by.
      *
      * The slots run the ground, then the sixteen roads in link-mask
      * order, then the four walkers in Direction order. A road's mask

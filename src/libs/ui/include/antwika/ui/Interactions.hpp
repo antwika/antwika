@@ -24,6 +24,13 @@ namespace antwika::ui
          * One pointer produces one press, and one press lands on one
          * topmost widget, so a second activation in a frame is not
          * expressible.
+         *
+         * A press is resolved while the frame is being laid out, so this
+         * is known only once the picture beside it has been decided.
+         * Whatever the caller then changes in response is therefore not
+         * in that picture: to show it in the same frame, describe the UI
+         * again after acting and draw the second frame instead. See
+         * Context::finish().
          */
         WidgetId activated = kNoWidget;
 

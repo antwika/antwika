@@ -1,6 +1,10 @@
 #pragma once
 
 #include <chrono>
+#include <span>
+
+#include <antwika/replay/CommandLine.hpp>
+#include <antwika/replay/FlagSpec.hpp>
 
 namespace antwika::poker
 {
@@ -24,17 +28,28 @@ namespace antwika::poker
     };
 
     /**
-     * @brief Parse the `--tick-delay-ms <n>` flag.
+     * @brief The flags this app accepts on top of the replay ones.
      *
-     * Sits beside antwika::replay::parseReplayCliOptions rather than in
-     * it: pacing is this app's concern, not something every
-     * replay-driven app needs. Both ignore what they do not recognise,
-     * so a command line can carry either.
-     * @param argc Argument count, as passed to `main()`.
-     * @param argv Argument vector, as passed to `main()`.
-     * @return The recognized options; a flag missing its value, or
-     * naming something that is not a number, is ignored.
+     * Handed to antwika::app::runRecorded(), which parses them in the
+     * same pass as its own.
+     * Parsing `--tick-delay-ms` in a pass of its own is what stopped it
+     * working: the other pass had already refused it.
+     * @return The table, for a main() to pass on.
      */
-    [[nodiscard]] WatchOptions parseWatchOptions(int argc, char **argv);
+    [[nodiscard]] std::span<const antwika::replay::FlagSpec> watchFlags();
+
+    /**
+     * @brief Read the pacing out of an already-parsed command line.
+     *
+     * Pacing is this app's concern rather than something every
+     * replay-driven app needs, which is why the flag is this app's and
+     * not antwika::replay's -- but it is parsed with the others.
+     * @param parsed A command line parsed against a table that included
+     * watchFlags().
+     * @return The pacing asked for; a value that is not a non-negative
+     * number is ignored, as it always was.
+     */
+    [[nodiscard]] WatchOptions watchOptionsFrom(
+        const antwika::replay::CommandLine &parsed);
 
 } // namespace antwika::poker

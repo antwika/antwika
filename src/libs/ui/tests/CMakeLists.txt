@@ -17,6 +17,7 @@ add_executable(antwika_ui_tests
     ScopeTest.cpp
     SizingTest.cpp
     ThemeTest.cpp
+    WidgetIdTest.cpp
 )
 
 target_include_directories(antwika_ui_tests

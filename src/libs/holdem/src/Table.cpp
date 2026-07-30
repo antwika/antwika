@@ -1,18 +1,14 @@
 #include "antwika/holdem/Table.hpp"
 
 #include <algorithm>
-#include <array>
 #include <cstddef>
 #include <cstdint>
-#include <iterator>
 #include <optional>
-#include <span>
 #include <utility>
 #include <vector>
 
 #include "antwika/holdem/Card.hpp"
 #include "antwika/holdem/Chips.hpp"
-#include "antwika/holdem/HandEvaluator.hpp"
 #include "antwika/holdem/HandResult.hpp"
 #include "antwika/holdem/HandValue.hpp"
 #include "antwika/holdem/IllegalActionError.hpp"
@@ -23,6 +19,7 @@
 #include "antwika/holdem/TableStateError.hpp"
 
 #include "Pots.hpp"
+#include "Showdown.hpp"
 
 namespace antwika::holdem
 {
@@ -168,8 +165,7 @@ namespace antwika::holdem
                 "Table: a hand needs two players with chips");
         }
 
-        deck = &newDeck;
-        deck->shuffle();
+        flow.begin(newDeck);
 
         for (auto &seat : seats)
         {
@@ -185,11 +181,8 @@ namespace antwika::holdem
         // So there is always a next one to move the button to.
         buttonSeat = *nextSeatFrom(seats, buttonSeat, isDealtIn);
 
-        communityCards.clear();
         potChips = 0;
-        currentStage = Stage::PreFlop;
-        currentBet = blindLevels.big;
-        lastRaiseSize = blindLevels.big;
+        betting.open(blindLevels.big);
         handInProgress = true;
         ++handCount;
 
@@ -204,7 +197,7 @@ namespace antwika::holdem
 
     Stage Table::stage() const noexcept
     {
-        return currentStage;
+        return flow.stage();
     }
 
     SeatId Table::button() const noexcept
@@ -214,7 +207,7 @@ namespace antwika::holdem
 
     const std::vector<Card> &Table::board() const noexcept
     {
-        return communityCards;
+        return flow.board();
     }
 
     Chips Table::pot() const noexcept
@@ -231,21 +224,21 @@ namespace antwika::holdem
     {
         requireSeatInRange(seat);
         const auto &target = seats[indexOf(seat)];
-        const auto owed = currentBet - target.roundCommitted;
+        const auto owed = betting.owedBy(target.roundCommitted);
 
         // Copying the board into the view can fail to allocate.
         // The edges gcov reports here are that unwind path only.
         const auto owedToCall = std::min(owed, target.stack);
         return TableView{ // GCOVR_EXCL_LINE
             .seat = seat,
-            .stage = currentStage,
+            .stage = flow.stage(),
             .holeCards = target.holeCards,
-            .board = communityCards,
+            .board = flow.board(),
             .pot = potChips,
             .stack = target.stack,
-            .currentBet = currentBet,
+            .currentBet = betting.bet(),
             .toCall = owedToCall,
-            .minRaiseTo = currentBet + lastRaiseSize,
+            .minRaiseTo = betting.minimumRaiseTo(),
             .maxRaiseTo = target.roundCommitted + target.stack,
             .mayRaise = target.mayRaise,
             .playersInHand = countInHand(),
@@ -268,7 +261,7 @@ namespace antwika::holdem
                 seat.inHand = false;
                 break;
             case ActionType::Check:
-                if (seat.roundCommitted < currentBet)
+                if (!betting.isCovered(seat.roundCommitted))
                 {
                     throw IllegalActionError(
                         "Table: cannot check with a bet to call");
@@ -278,7 +271,7 @@ namespace antwika::holdem
                 applyCall(seat);
                 break;
             case ActionType::Bet:
-                if (currentBet != 0)
+                if (betting.isLive())
                 {
                     throw IllegalActionError(
                         "Table: a bet is already live, so raise instead");
@@ -286,7 +279,7 @@ namespace antwika::holdem
                 applyRaise(actor, action.amount);
                 break;
             case ActionType::Raise:
-                if (currentBet == 0)
+                if (!betting.isLive())
                 {
                     throw IllegalActionError(
                         "Table: no bet is live, so bet instead");
@@ -346,7 +339,7 @@ namespace antwika::holdem
 
     void Table::applyCall(Seat &seat)
     {
-        const auto owed = currentBet - seat.roundCommitted;
+        const auto owed = betting.owedBy(seat.roundCommitted);
         if (owed == 0)
         {
             throw IllegalActionError(
@@ -371,26 +364,13 @@ namespace antwika::holdem
             throw IllegalActionError(
                 "Table: cannot stake more than the stack holds");
         }
-        if (target <= currentBet)
-        {
-            throw IllegalActionError(
-                "Table: a raise has to beat the current bet");
-        }
 
-        const auto minimumTo = currentBet + lastRaiseSize;
-        if (target < minimumTo && target != allInTo)
-        {
-            throw IllegalActionError(
-                "Table: below the minimum raise while holding chips back");
-        }
-
-        const auto previousBet = currentBet;
+        // The round owns what beats the live bet; this owns who may.
+        const auto reopened = betting.raiseTo(target, allInTo);
         commit(seat, target - seat.roundCommitted);
-        currentBet = target;
 
-        if (target >= minimumTo)
+        if (reopened)
         {
-            lastRaiseSize = target - previousBet;
             for (auto &other : seats)
             {
                 other.actedThisRound = false;
@@ -421,7 +401,7 @@ namespace antwika::holdem
             for (std::size_t dealt = 0; dealt < players; ++dealt)
             {
                 seat = *nextSeatFrom(seats, seat, isInHand);
-                seats[indexOf(seat)].holeCards[round] = deck->deal();
+                seats[indexOf(seat)].holeCards[round] = flow.dealCard();
             }
         }
     }
@@ -472,7 +452,7 @@ namespace antwika::holdem
         {
             return canStillBet(seat)
                    && (!seat.actedThisRound
-                       || seat.roundCommitted < currentBet);
+                       || !betting.isCovered(seat.roundCommitted));
         };
         if (const auto next = nextSeatFrom(seats, actor, owesOrOwed))
         {
@@ -492,27 +472,14 @@ namespace antwika::holdem
             seat.actedThisRound = false;
             seat.mayRaise = true;
         }
-        currentBet = 0;
-        lastRaiseSize = blindLevels.big;
-    }
-
-    void Table::dealStreet()
-    {
-        const auto count =
-            currentStage == Stage::Flop ? kFlopSize : std::size_t{1};
-        for (std::size_t index = 0; index < count; ++index)
-        {
-            communityCards.push_back(deck->deal());
-        }
+        betting.reset(blindLevels.big);
     }
 
     void Table::closeRound()
     {
-        while (currentStage != Stage::River)
+        while (flow.hasStreetToDeal())
         {
-            currentStage = static_cast<Stage>(
-                static_cast<std::uint8_t>(currentStage) + 1);
-            dealStreet();
+            flow.dealStreet();
             resetBettingRound();
 
             if (countAbleToAct() >= kMinSeats)
@@ -532,50 +499,16 @@ namespace antwika::holdem
         // The survivor is the only seat eligible for any layer.
         // So the split hands them their own uncalled bet back.
         // No separate step is needed for it.
-        const std::vector<HandValue> values(seats.size(), HandValue{});
-        finishHand(values, {});
+        auto scores = scoreWithoutShowdown(seats.size());
+        finishHand(scores.values, std::move(scores.entries));
     }
 
     void Table::finishWithShowdown()
     {
-        currentStage = Stage::Showdown;
+        flow.toShowdown();
 
-        std::vector<HandValue> values(seats.size(), HandValue{});
-        std::vector<ShowdownEntry> entries;
-        for (std::size_t index = 0; index < seats.size(); ++index)
-        {
-            const auto &seat = seats[index];
-            if (!seat.inHand)
-            {
-                continue;
-            }
-
-            std::array<Card, kHoleCardCount + kBoardSize> cards{};
-            std::copy(
-                seat.holeCards.begin(), seat.holeCards.end(), cards.begin());
-            std::copy(
-                communityCards.begin(),
-                communityCards.end(),
-                std::next(
-                    cards.begin(),
-                    static_cast<std::ptrdiff_t>(kHoleCardCount)));
-
-            const auto value = evaluate(std::span<const Card>(cards));
-            values[index] = value;
-            entries.push_back(ShowdownEntry{
-                .seat = makeSeatId(index),
-                .holeCards = seat.holeCards,
-                .value = value,
-            });
-        }
-
-        std::stable_sort(
-            entries.begin(),
-            entries.end(),
-            [](const ShowdownEntry &left, const ShowdownEntry &right)
-            { return left.value > right.value; });
-
-        finishHand(values, std::move(entries));
+        auto scores = scoreShowdown(seats, flow.board());
+        finishHand(scores.values, std::move(scores.entries));
     }
 
     void Table::finishHand(
@@ -615,15 +548,15 @@ namespace antwika::holdem
             .pot = potChips,
             .payouts = payouts,
             .showdown = std::move(entries),
-            .board = communityCards,
-            .stage = currentStage,
+            .board = flow.board(),
+            .stage = flow.stage(),
         };
 
         potChips = 0;
-        currentBet = 0;
+        betting.close();
         toAct = std::nullopt;
         handInProgress = false;
-        deck = nullptr;
+        flow.end();
         for (auto &seat : seats)
         {
             seat.inHand = false;

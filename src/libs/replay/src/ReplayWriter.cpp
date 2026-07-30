@@ -13,8 +13,10 @@ namespace antwika::replay
         constexpr int kTwoSpaces = 2;
     } // namespace
 
-    ReplayWriter::ReplayWriter(ReplayWriter::Layout layout) noexcept
-        : layout(layout)
+    ReplayWriter::ReplayWriter(
+        ReplayWriter::Layout layout,
+        std::optional<gfx::Size> canvas) noexcept
+        : layout(layout), canvas(canvas)
     {
     }
 
@@ -24,7 +26,7 @@ namespace antwika::replay
         const auto indent =
             layout == Layout::Pretty ? kTwoSpaces : kNoIndent;
 
-        out << replayToJson(events).dump(indent) << '\n';
+        out << replayToJson(events, canvas).dump(indent) << '\n';
     }
 
 } // namespace antwika::replay

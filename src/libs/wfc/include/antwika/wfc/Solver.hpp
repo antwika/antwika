@@ -54,6 +54,9 @@ namespace antwika::wfc
          * @return Solved with a valid assignment, Unsatisfiable if
          * every branch was exhausted with no solution, or
          * LimitExceeded if limits.maxSteps was reached first.
+         * @throws WfcError if a wave about to be reported Solved still
+         * holds an undetermined cell, which would be a bug here rather
+         * than anything a caller can provoke.
          */
         [[nodiscard]] SolveResult solve() const;
 

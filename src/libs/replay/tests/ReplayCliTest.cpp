@@ -1,6 +1,5 @@
 #include <gtest/gtest.h>
 
-#include <array>
 #include <cstdio>
 #include <filesystem>
 #include <fstream>
@@ -9,11 +8,13 @@
 #include <system_error>
 #include <vector>
 
+#include "antwika/replay/CommandLineError.hpp"
 #include "antwika/replay/ReplayCli.hpp"
 #include "antwika/replay/ReplayFormatError.hpp"
 
 using antwika::event::Event;
 using antwika::event::TickEvent;
+using antwika::replay::CommandLineError;
 using antwika::replay::loadReplayFile;
 using antwika::replay::parseReplayCliOptions;
 using antwika::replay::ReplayFormatError;
@@ -93,38 +94,59 @@ TEST(ReplayCliTest, ParseReadsBothRecordAndReplayPaths)
     EXPECT_EQ(*options.replayPath, "in.json");
 }
 
-TEST(ReplayCliTest, ParseIgnoresATrailingReplayFlagMissingItsValue)
+TEST(ReplayCliTest, ParseRefusesATrailingReplayFlagMissingItsValue)
 {
     std::vector<std::string> args{"antwika_app", "--replay"};
     auto argv = toArgv(args);
 
-    const auto options = parseReplayCliOptions(
-        static_cast<int>(argv.size()), argv.data());
-
-    EXPECT_FALSE(options.replayPath.has_value());
+    EXPECT_THROW(
+        (void)parseReplayCliOptions(
+            static_cast<int>(argv.size()), argv.data()),
+        CommandLineError);
 }
 
-TEST(ReplayCliTest, ParseIgnoresATrailingRecordFlagMissingItsValue)
+TEST(ReplayCliTest, ParseRefusesATrailingRecordFlagMissingItsValue)
 {
     std::vector<std::string> args{"antwika_app", "--record"};
     auto argv = toArgv(args);
 
-    const auto options = parseReplayCliOptions(
-        static_cast<int>(argv.size()), argv.data());
-
-    EXPECT_FALSE(options.recordPath.has_value());
+    EXPECT_THROW(
+        (void)parseReplayCliOptions(
+            static_cast<int>(argv.size()), argv.data()),
+        CommandLineError);
 }
 
-TEST(ReplayCliTest, ParseIgnoresAnUnrecognizedFlag)
+// The defect this parser exists for.
+// `--replya demo.json` used to start an empty session in silence.
+TEST(ReplayCliTest, ParseRefusesAMisspeltFlag)
 {
-    std::vector<std::string> args{"antwika_app", "--unknown", "value"};
+    std::vector<std::string> args{"antwika_app", "--replya", "demo.json"};
+    auto argv = toArgv(args);
+
+    EXPECT_THROW(
+        (void)parseReplayCliOptions(
+            static_cast<int>(argv.size()), argv.data()),
+        CommandLineError);
+}
+
+TEST(ReplayCliTest, ParseReportsThatHelpWasAskedFor)
+{
+    std::vector<std::string> args{"antwika_app", "--help"};
     auto argv = toArgv(args);
 
     const auto options = parseReplayCliOptions(
         static_cast<int>(argv.size()), argv.data());
 
-    EXPECT_FALSE(options.recordPath.has_value());
-    EXPECT_FALSE(options.replayPath.has_value());
+    EXPECT_TRUE(options.helpRequested);
+}
+
+TEST(ReplayCliTest, ReplayCliFlagsAreTheTwoEveryAppTakes)
+{
+    const auto flags = antwika::replay::replayCliFlags();
+
+    ASSERT_EQ(flags.size(), 2U);
+    EXPECT_EQ(flags[0].name, "--record");
+    EXPECT_EQ(flags[1].name, "--replay");
 }
 
 TEST(ReplayCliTest, LoadReplayFileDecodesAPreviouslySavedDocument)
@@ -148,7 +170,11 @@ TEST(ReplayCliTest, LoadReplayFileDecodesAPreviouslySavedDocument)
 
 TEST(ReplayCliTest, LoadReplayFileThrowsWhenFileCannotBeParsed)
 {
-    ScratchFile file("antwika_replay_cli_load_missing_test.json");
+    ScratchFile file("antwika_replay_cli_load_malformed_test.json");
+    {
+        std::ofstream out(file.string());
+        out << "not a replay document";
+    }
 
     EXPECT_THROW((void)loadReplayFile(file.string()), ReplayFormatError);
 }
@@ -179,30 +205,77 @@ TEST(ReplayCliTest, SaveReplayFileFiltersOutBuiltInTicks)
         }));
 }
 
-TEST(ReplayCliTest, SaveReplayFileFiltersOutExtraSelfGeneratedEventNames)
+// An absent file and a malformed one are not the same failure.
+// They used to produce the same message.
+TEST(ReplayCliTest, LoadReplayFileSaysAMissingFileCouldNotBeOpened)
 {
-    ScratchFile file("antwika_replay_cli_save_extra_test.json");
+    const ScratchFile file("antwika_replay_cli_load_absent_test.json");
+
+    try
+    {
+        (void)loadReplayFile(file.string());
+        FAIL() << "loading an absent replay should have thrown";
+    }
+    catch (const ReplayFormatError &error)
+    {
+        const std::string message = error.what();
+        EXPECT_NE(message.find("could not open"), std::string::npos)
+            << message;
+        EXPECT_NE(message.find(file.string()), std::string::npos)
+            << message;
+    }
+}
+
+// The failure this whole check exists for.
+// A --record run writes once, at the end, and used to lose it in silence.
+TEST(ReplayCliTest, SaveReplayFileSaysAnUnwritablePathCouldNotBeOpened)
+{
+    const std::string path =
+        (std::filesystem::temp_directory_path() / "antwika-no-such-dir"
+         / "out.json")
+            .string();
+
+    try
+    {
+        saveReplayFile({}, path);
+        FAIL() << "saving into an absent directory should have thrown";
+    }
+    catch (const ReplayFormatError &error)
+    {
+        const std::string message = error.what();
+        EXPECT_NE(message.find("could not open"), std::string::npos)
+            << message;
+        EXPECT_NE(message.find(path), std::string::npos) << message;
+    }
+}
+
+// Opening is not writing: a full disk fails only once bytes are flushed.
+// ReplayOutputTest is what covers that throw, on any machine.
+// This one confirms it against a real device where there is one.
+// It may skip freely: skipping it costs no coverage any more.
+TEST(ReplayCliTest, SaveReplayFileThrowsWhenTheBytesCannotBeWritten)
+{
+    if (!std::filesystem::exists("/dev/full"))
+    {
+        GTEST_SKIP() << "no /dev/full to fill";
+    }
+
     std::vector<TickEvent> events{
-        TickEvent{.tick = 0, .event = Event{.name = "Running Antwika App"}},
         TickEvent{
             .tick = 0,
             .event = Event{.name = "game.score_increment", .payload = "1"},
         },
     };
-    constexpr std::array<std::string_view, 1> extraNames{
-        "Running Antwika App",
-    };
 
-    saveReplayFile(events, file.string(), extraNames);
-
-    const auto reloaded = loadReplayFile(file.string());
-    EXPECT_EQ(
-        reloaded,
-        (std::vector<TickEvent>{
-            TickEvent{
-                .tick = 0,
-                .event =
-                    Event{.name = "game.score_increment", .payload = "1"},
-            },
-        }));
+    try
+    {
+        saveReplayFile(events, "/dev/full");
+        FAIL() << "writing to a full device should have thrown";
+    }
+    catch (const ReplayFormatError &error)
+    {
+        const std::string message = error.what();
+        EXPECT_NE(message.find("could not write"), std::string::npos)
+            << message;
+    }
 }

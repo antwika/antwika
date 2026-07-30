@@ -3,6 +3,7 @@ add_executable(antwika_game
     src/GameStateReducer.cpp
     src/GridScene.cpp
     src/GridSink.cpp
+    src/InputFold.cpp
     src/PathIndex.cpp
     src/RenderSystem.cpp
     src/TickPacer.cpp
@@ -33,6 +34,7 @@ target_include_directories(antwika_game
 
 target_link_libraries(antwika_game
     PRIVATE
+        antwika::app
         antwika::ecs
         antwika::engine
         antwika::gfx

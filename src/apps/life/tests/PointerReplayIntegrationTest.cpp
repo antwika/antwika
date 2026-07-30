@@ -14,7 +14,7 @@
 #include <antwika/ecs/World.hpp>
 #include <antwika/engine/Events.hpp>
 #include <antwika/event/Event.hpp>
-#include <antwika/event/EventRecorder.hpp>
+#include <antwika/event/mocks/MockEventSink.hpp>
 #include <antwika/event/TickEvent.hpp>
 #include <antwika/event/TickEventRecorder.hpp>
 #include <antwika/gfx/Size.hpp>
@@ -43,7 +43,7 @@
 using antwika::ecs::ISystem;
 using antwika::ecs::World;
 using antwika::event::Event;
-using antwika::event::EventRecorder;
+using antwika::event::mocks::MockEventSink;
 using antwika::event::TickEvent;
 using antwika::event::TickEventRecorder;
 using antwika::gfx::Size;
@@ -81,10 +81,6 @@ namespace
 
     // Ten pixels a cell, so a coordinate is its cell with a five after.
     constexpr Size kCanvas{.width = 80, .height = 80};
-
-    constexpr std::array<std::string_view, 1> kSelfGeneratedEventNames{
-        antwika::life::events::kStarted,
-    };
 
     constexpr InputCapabilities kPointerOnly{
         .keyboard = false, .pointer = true};
@@ -210,7 +206,7 @@ TEST(PointerReplayIntegrationTest, RecordingADragReplaysToTheSameBoard)
     Board liveBoard;
     {
         NiceMock<MockLogger> logger;
-        EventRecorder eventSink;
+        NiceMock<MockEventSink> eventSink;
         TickEventRecorder replayRecorder;
 
         FakeInputBackend backend(dragRounds(), kPointerOnly);
@@ -218,21 +214,19 @@ TEST(PointerReplayIntegrationTest, RecordingADragReplaysToTheSameBoard)
         LiveInputSource source(fileSource, backend, codec);
 
         liveBoard = antwika::life::bootstrap(
-            logger,
-            eventSink,
-            source,
-            kWidth,
-            kHeight,
-            {},
-            kMaxTicks,
-            &replayRecorder,
-            toggleSinkFactory(codec));
+            antwika::life::LifeConfig{
+                .logger = logger,
+                .eventSink = eventSink,
+                .inputSource = source,
+                .width = kWidth,
+                .height = kHeight,
+                .maxTicks = kMaxTicks,
+                .replayRecorder = replayRecorder,
+                .extraSink = toggleSinkFactory(codec)});
 
         // Through the real save, for the filtering main.cpp relies on.
         antwika::replay::saveReplayFile(
-            replayRecorder.getEvents(),
-            replayFile.string(),
-            kSelfGeneratedEventNames);
+            replayRecorder.getEvents(), replayFile.string());
     }
 
     ASSERT_TRUE(anythingAlive(liveBoard));
@@ -251,19 +245,18 @@ TEST(PointerReplayIntegrationTest, RecordingADragReplaysToTheSameBoard)
 
     // The replayed run: the recording, and no device.
     NiceMock<MockLogger> logger;
-    EventRecorder eventSink;
+    NiceMock<MockEventSink> eventSink;
     ReplaySource replaySource(recorded);
 
     const auto replayedBoard = antwika::life::bootstrap(
-        logger,
-        eventSink,
-        replaySource,
-        kWidth,
-        kHeight,
-        {},
-        kMaxTicks,
-        nullptr,
-        toggleSinkFactory(codec));
+        antwika::life::LifeConfig{
+            .logger = logger,
+            .eventSink = eventSink,
+            .inputSource = replaySource,
+            .width = kWidth,
+            .height = kHeight,
+            .maxTicks = kMaxTicks,
+            .extraSink = toggleSinkFactory(codec)});
 
     EXPECT_EQ(replayedBoard, liveBoard);
 }
@@ -275,7 +268,7 @@ TEST(PointerReplayIntegrationTest, ADragWithinOneTickDrawsWhatItCrossed)
     const InputEventCodec codec;
 
     NiceMock<MockLogger> logger;
-    EventRecorder eventSink;
+    NiceMock<MockEventSink> eventSink;
 
     FakeInputBackend backend(
         {pressAt(15, 15),
@@ -290,15 +283,14 @@ TEST(PointerReplayIntegrationTest, ADragWithinOneTickDrawsWhatItCrossed)
 
     // One tick only, so what is alive is what the drag drew.
     const auto board = antwika::life::bootstrap(
-        logger,
-        eventSink,
-        source,
-        kWidth,
-        kHeight,
-        {},
-        2,
-        nullptr,
-        toggleSinkFactory(codec));
+        antwika::life::LifeConfig{
+            .logger = logger,
+            .eventSink = eventSink,
+            .inputSource = source,
+            .width = kWidth,
+            .height = kHeight,
+            .maxTicks = 2,
+            .extraSink = toggleSinkFactory(codec)});
 
     // A 2x2 block is a still life.
     // So the generation that ran during that tick left it as drawn.
@@ -323,7 +315,7 @@ TEST(PointerReplayIntegrationTest, HoldingTheButtonStopsTheGenerations)
     const InputEventCodec codec;
 
     NiceMock<MockLogger> logger;
-    EventRecorder eventSink;
+    NiceMock<MockEventSink> eventSink;
     BoardRecorder recorder;
 
     // A blinker: three in a row, flipping upright and flat every turn.
@@ -366,15 +358,15 @@ TEST(PointerReplayIntegrationTest, HoldingTheButtonStopsTheGenerations)
     std::vector<std::reference_wrapper<ISystem>> observers{recorder};
 
     antwika::life::bootstrap(
-        logger,
-        eventSink,
-        source,
-        kWidth,
-        kHeight,
-        observers,
-        kMaxTicks,
-        nullptr,
-        toggleSinkFactory(codec));
+        antwika::life::LifeConfig{
+            .logger = logger,
+            .eventSink = eventSink,
+            .inputSource = source,
+            .width = kWidth,
+            .height = kHeight,
+            .observers = observers,
+            .maxTicks = kMaxTicks,
+            .extraSink = toggleSinkFactory(codec)});
 
     const auto &boards = recorder.perTick();
     ASSERT_EQ(boards.size(), 7u);
@@ -426,7 +418,7 @@ namespace
         const InputEventCodec &codec, bool gate)
     {
         NiceMock<MockLogger> logger;
-        EventRecorder eventSink;
+        NiceMock<MockEventSink> eventSink;
         TickEventRecorder replayRecorder;
 
         FakeInputBackend backend(wanderingDragRounds(), kPointerOnly);
@@ -439,15 +431,15 @@ namespace
                  : static_cast<antwika::replay::IReplaySource &>(live);
 
         auto board = antwika::life::bootstrap(
-            logger,
-            eventSink,
-            source,
-            kWidth,
-            kHeight,
-            {},
-            kMaxTicks,
-            &replayRecorder,
-            toggleSinkFactory(codec));
+            antwika::life::LifeConfig{
+                .logger = logger,
+                .eventSink = eventSink,
+                .inputSource = source,
+                .width = kWidth,
+                .height = kHeight,
+                .maxTicks = kMaxTicks,
+                .replayRecorder = replayRecorder,
+                .extraSink = toggleSinkFactory(codec)});
 
         return WanderResult{
             .board = std::move(board),

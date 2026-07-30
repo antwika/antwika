@@ -6,16 +6,19 @@ add_subdirectory(mocks)
 add_executable(antwika_holdem_tests
     ActionTest.cpp
     ActionTypeTest.cpp
+    BettingRoundTest.cpp
     BlindsTest.cpp
     CardTest.cpp
     CardTextTest.cpp
     DeckTest.cpp
     HandCategoryTest.cpp
     HandEvaluatorTest.cpp
+    HandFlowTest.cpp
     HandTextTest.cpp
     HandValueTest.cpp
     PayoutTest.cpp
     PotsTest.cpp
+    ShowdownTest.cpp
     SplitMix64RngTest.cpp
     StageTest.cpp
     TableBettingTest.cpp

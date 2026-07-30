@@ -1,54 +1,36 @@
 #include "antwika/life/Life.hpp"
 
-#include <array>
 #include <chrono>
 #include <cstdint>
-#include <cstdlib>
-#include <exception>
-#include <functional>
 #include <iostream>
 #include <memory>
-#include <optional>
 #include <string>
 #include <string_view>
-#include <vector>
 
-#include <antwika/ecs/ISystem.hpp>
-#include <antwika/event/EventRecorder.hpp>
-#include <antwika/event/TickEventRecorder.hpp>
+#include <antwika/app/ConsoleLogging.hpp>
+#include <antwika/app/RunRecorded.hpp>
 #include <antwika/gfx/SelectedBackend.hpp>
 #include <antwika/gfx/WindowDesc.hpp>
-#include <antwika/input/IdleMotionSource.hpp>
 #include <antwika/input/InputEventCodec.hpp>
-#include <antwika/input/LiveInputSource.hpp>
+#include <antwika/input/InputPipeline.hpp>
 #include <antwika/input/SelectedInputBackend.hpp>
 #include <antwika/log/Level.hpp>
-#include <antwika/log/Logger.hpp>
-#include <antwika/log/MinimumLevelLogPolicy.hpp>
-#include <antwika/log/PlainFormatter.hpp>
-#include <antwika/log/StreamAppender.hpp>
-#include <antwika/replay/IReplaySource.hpp>
-#include <antwika/replay/ReplayCli.hpp>
 #include <antwika/replay/ReplaySource.hpp>
-#include <antwika/time/SystemClock.hpp>
 #include <antwika/time/SystemSleeper.hpp>
 
 #include "antwika/life/BoardScene.hpp"
-#include "antwika/life/Events.hpp"
 #include "antwika/life/PointerToggleSink.hpp"
 #include "antwika/life/PrintSystem.hpp"
 #include "antwika/life/RenderSystem.hpp"
 #include "antwika/life/TickPacer.hpp"
 #include "antwika/life/WindowInputSource.hpp"
 
-using antwika::ecs::ISystem;
+using antwika::app::ConsoleLogging;
+using antwika::app::RecordedRun;
 using antwika::ecs::World;
-using antwika::event::EventRecorder;
-using antwika::event::TickEventRecorder;
 using antwika::gfx::WindowDesc;
-using antwika::input::IdleMotionSource;
 using antwika::input::InputEventCodec;
-using antwika::input::LiveInputSource;
+using antwika::input::InputPipeline;
 using antwika::life::BoardScene;
 using antwika::life::DragState;
 using antwika::life::Grid;
@@ -58,13 +40,7 @@ using antwika::life::RenderSystem;
 using antwika::life::TickPacer;
 using antwika::life::WindowInputSource;
 using antwika::log::Level;
-using antwika::log::Logger;
-using antwika::log::MinimumLevelLogPolicy;
-using antwika::log::PlainFormatter;
-using antwika::log::StreamAppender;
-using antwika::replay::IReplaySource;
 using antwika::replay::ReplaySource;
-using antwika::time::SystemClock;
 using antwika::time::SystemSleeper;
 
 namespace
@@ -85,40 +61,21 @@ namespace
 
     constexpr std::string_view kDemoReplayPath = ANTWIKA_LIFE_DEMO_REPLAY_PATH;
 
-    constexpr std::array<std::string_view, 1> kSelfGeneratedEventNames{
-        antwika::life::events::kStarted,
-    };
-} // namespace
-
-int main(int argc, char **argv)
-{
-    const auto options = antwika::replay::parseReplayCliOptions(argc, argv);
-
-    SystemClock clock;
-    StreamAppender appender(std::cout);
-    PlainFormatter formatter;
-    MinimumLevelLogPolicy logPolicy(Level::Info);
-    Logger logger(formatter, logPolicy, clock, appender);
-    EventRecorder eventSink;
-    TickEventRecorder replayRecorder;
-    PrintSystem printSystem(kBoardWidth, std::cout);
-
-    // Catching is what makes the run's resources unwind at all.
-    // An uncaught exception may call std::terminate without unwinding.
-    // Catching here also lets a failed --record run save what it has.
-    int exitCode = EXIT_SUCCESS;
-    try
+    void run(const RecordedRun &recorded)
     {
-        const auto backend = antwika::gfx::makeSelectedBackend(logger);
-        const bool showsNothing = backend->name() == kHeadlessBackendName;
+        ConsoleLogging logging(std::cout, Level::Info);
+        auto &logger = logging.logger();
 
+        const auto backend = antwika::gfx::makeSelectedBackend(logger);
         const auto inputBackend =
             antwika::input::makeSelectedInputBackend(logger);
+        const bool drawsNothing = backend->name() == kHeadlessBackendName;
 
         logger.log(
             Level::Info,
             "Antwika Life on backend: " + std::string(backend->name())
                 + ", input: " + std::string(inputBackend->name()));
+        antwika::life::announceHowToStop(logger, drawsNothing);
 
         const auto window = backend->createWindow(WindowDesc{
             .title = "Antwika Life",
@@ -126,88 +83,52 @@ int main(int argc, char **argv)
             .resizable = false});
 
         const BoardScene scene;
-        RenderSystem renderSystem(
-            *window, scene, kBoardWidth, kBoardHeight);
+        RenderSystem renderSystem(*window, scene, kBoardWidth, kBoardHeight);
+        PrintSystem printSystem(kBoardWidth, std::cout);
         SystemSleeper sleeper;
         TickPacer pacer(sleeper, kTickInterval);
 
-        // A backend showing nothing leaves the board to be printed.
-        // Either way the run is paced, and paced last, after the frame.
-        // A run with no end of its own would otherwise go flat out.
-        std::vector<std::reference_wrapper<ISystem>> observers{renderSystem};
-        if (showsNothing)
-        {
-            observers.emplace_back(printSystem);
-        }
-        observers.emplace_back(pacer);
-
-        auto events = antwika::replay::loadReplayFile(
-            options.replayPath.value_or(std::string(kDemoReplayPath)));
-        ReplaySource fileSource(std::move(events));
+        ReplaySource fileSource(antwika::app::scriptedEvents(
+            recorded.options.replayPath, kDemoReplayPath));
 
         const InputEventCodec codec;
 
         // Live input is attached only when there is no replay to run.
         // A replay already holds the input it recorded.
         // Reading a device too would make every event arrive twice.
-        IReplaySource *seeded = &fileSource;
-        std::optional<LiveInputSource> liveSource;
-        if (!options.replayPath)
-        {
-            liveSource.emplace(fileSource, *inputBackend, codec);
-            seeded = &*liveSource;
-        }
-
-        // Movement with the button up toggles nothing.
-        // So it is held back rather than recorded, unlike mid-drag.
-        // CoalescingPointerSource deliberately does not join it here.
+        // Idle movement toggles nothing, so it is held back.
+        // Coalescing is deliberately off here.
         // A drag toggles every cell it crosses.
         // Thinning a run of movement inside a tick would skip cells.
-        IdleMotionSource gated(*seeded, codec);
+        InputPipeline input(
+            fileSource,
+            *inputBackend,
+            codec,
+            {.readsDevice = !recorded.options.replayPath.has_value(),
+             .coalescePointerMotion = false,
+             .thinIdleMotion = true});
 
-        WindowInputSource source(gated, *backend, window->id());
+        WindowInputSource source(input, *backend, window->id());
 
-        // The run has no end of its own any more.
-        // It goes on until the window closes, or a replay says to stop.
-        // A headless build reports neither, so Ctrl+C ends one.
-        if (showsNothing)
-        {
-            logger.log(
-                Level::Info,
-                "Antwika Life: this backend has no window to close, so "
-                "press Ctrl+C to stop");
-        }
-
-        antwika::life::bootstrap(
-            logger,
-            eventSink,
-            source,
-            kBoardWidth,
-            kBoardHeight,
-            observers,
-            std::nullopt,
-            // Registered only when there is a file to write.
-            // A run with no end would otherwise keep every event, forever.
-            options.recordPath ? &replayRecorder : nullptr,
-            [&codec](World &world, const Grid &grid, DragState &drag)
+        antwika::life::bootstrap(antwika::life::LifeConfig{
+            .logger = logger,
+            .eventSink = recorded.eventSink,
+            .inputSource = source,
+            .width = kBoardWidth,
+            .height = kBoardHeight,
+            .observers = antwika::life::observersFor(
+                renderSystem, printSystem, pacer, drawsNothing),
+            .replayRecorder = recorded.replayRecorder,
+            .extraSink =
+                [&codec](World &world, const Grid &grid, DragState &drag)
             {
                 return std::make_unique<PointerToggleSink>(
                     world, grid, codec, kWindowSize, drag);
-            });
+            }});
     }
-    catch (const std::exception &error)
-    {
-        std::cerr << "antwika_life: " << error.what() << '\n';
-        exitCode = EXIT_FAILURE;
-    }
+} // namespace
 
-    if (options.recordPath)
-    {
-        antwika::replay::saveReplayFile(
-            replayRecorder.getEvents(),
-            *options.recordPath,
-            kSelfGeneratedEventNames);
-    }
-
-    return exitCode;
+int main(int argc, char **argv)
+{
+    return antwika::app::runRecorded(argc, argv, "antwika_life", run);
 }

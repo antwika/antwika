@@ -2,11 +2,11 @@
 
 #include <functional>
 #include <optional>
+#include <ostream>
 #include <vector>
 
 #include <antwika/ecs/ISystem.hpp>
 #include <antwika/engine/IEngine.hpp>
-#include <antwika/event/IEventDispatcher.hpp>
 #include <antwika/event/IEventSink.hpp>
 #include <antwika/event/ITickEventSink.hpp>
 #include <antwika/input/IInputEventCodec.hpp>
@@ -18,6 +18,7 @@
 #include "antwika/game/GameSummary.hpp"
 #include "antwika/game/GridExtent.hpp"
 #include "antwika/game/PathIndex.hpp"
+#include "antwika/game/UiCanvas.hpp"
 #include "antwika/game/UiOverlay.hpp"
 
 namespace antwika::game
@@ -25,7 +26,6 @@ namespace antwika::game
 
     using antwika::ecs::ISystem;
     using antwika::engine::IEngine;
-    using antwika::event::IEventDispatcher;
     using antwika::event::IEventSink;
     using antwika::event::ITickEventSink;
     using antwika::input::IInputEventCodec;
@@ -33,18 +33,23 @@ namespace antwika::game
     using antwika::replay::IReplaySource;
 
     /**
-     * @brief Announces game startup and starts the engine.
+     * @brief Announces the run in the log and starts the engine.
+     *
+     * The announcement is a log line rather than an event, because
+     * nothing consumes it: as an event, every app dispatched one and then
+     * stripped it by name again before writing a recording, since
+     * persisting it would make a replay dispatch it twice.
      */
     class Game final
     {
     public:
         /**
-         * @brief Construct the game over its engine and event dispatcher.
+         * @brief Construct the game over its engine and logger.
          * @param engine Engine started by run().
-         * @param dispatcher Dispatcher used to announce the game is
+         * @param logger Receives the announcement that the game is
          * running.
          */
-        explicit Game(IEngine &engine, IEventDispatcher &dispatcher);
+        explicit Game(IEngine &engine, ILogger &logger);
 
         Game(const Game &) = delete;
         Game(Game &&) = delete;
@@ -53,13 +58,101 @@ namespace antwika::game
         Game &operator=(Game &&) = delete;
 
         /**
-         * @brief Dispatch a startup event and start the engine.
+         * @brief Log that the game is running and start the engine.
          */
         void run();
 
     private:
         IEngine &engine;
-        IEventDispatcher &dispatcher;
+        ILogger &logger;
+    };
+
+    /**
+     * @brief Everything one run of the game is wired out of.
+     *
+     * A struct with designated initialisers rather than a parameter list,
+     * because the list had grown to eleven positional arguments, two of
+     * them raw pointers distinguishable only by position and one of them
+     * a bare std::nullopt whose meaning was invisible at the call site.
+     * A name per argument is what makes a wrong one a compile error
+     * rather than a silently different run.
+     *
+     * The optional collaborators are std::optional<reference_wrapper>
+     * rather than pointers: absent means absent, and there is no third
+     * state where a caller passed something that is not there.
+     */
+    struct GameConfig
+    {
+        /** @brief Receives the run's diagnostics. */
+        ILogger &logger;
+
+        /** @brief Receives every dispatched event. */
+        IEventSink &eventSink;
+
+        /** @brief Supplies each tick's events, live or replayed. */
+        IReplaySource &inputSource;
+
+        /** @brief Decodes the input events off the tick stream. */
+        const IInputEventCodec &codec;
+
+        /** @brief Bounds which cells a click may reach. */
+        GridExtent extent;
+
+        /**
+         * @brief Folded from input, and read by any renderer.
+         *
+         * Passed in rather than created here because an observer built
+         * before the call has to read it.
+         */
+        Camera &camera;
+
+        /**
+         * @brief Recorded into as tiles are laid.
+         *
+         * Likewise read by an observer built beforehand.
+         */
+        PathIndex &paths;
+
+        /**
+         * @brief Extra systems registered into an "observe" phase.
+         *
+         * The phase runs after "walk" every tick -- a renderer, a pacer.
+         * Empty for callers that only need the final state.
+         */
+        std::vector<std::reference_wrapper<ISystem>> observers = {};
+
+        /**
+         * @brief Safety cap on how many ticks to run.
+         *
+         * Reached without engine.stop, the run gives up rather than going
+         * on forever. Production callers can leave this unset; tests
+         * should always set it.
+         */
+        std::optional<antwika::time::Tick> maxTicks = std::nullopt;
+
+        /**
+         * @brief Sink receiving every dispatched event, stamped with its
+         * tick.
+         *
+         * What a caller wanting to persist a `--record` file registers.
+         */
+        std::optional<std::reference_wrapper<ITickEventSink>>
+            replayRecorder = std::nullopt;
+
+        /**
+         * @brief Shared UI state, which turns the toolbar on.
+         *
+         * Set, a UiSink is registered ahead of the grid's, describing and
+         * resolving the bar against the overlay's canvas -- see
+         * kUiCanvas for why that canvas is the size the window was asked
+         * for. Unset, no UiSink is registered at all, so the run has no
+         * toolbar and every click is the world's.
+         *
+         * Passed in rather than created here because a renderer built
+         * beforehand has to read it.
+         */
+        std::optional<std::reference_wrapper<UiOverlay>> overlay =
+            std::nullopt;
     };
 
     /**
@@ -67,57 +160,36 @@ namespace antwika::game
      * together, boots the game, then drives the tick loop until an
      * engine.stop event is dispatched.
      *
-     * Sources each tick's events from inputSource -- clicks, scrolls and
-     * drags, encoded by antwika::input -- until it dispatches engine.stop.
-     * A live run and a loaded replay both use this same function; they
-     * differ only in what inputSource was built from.
+     * Sources each tick's events from the config's inputSource -- clicks,
+     * scrolls and drags, encoded by antwika::input -- until it dispatches
+     * engine.stop. A live run and a loaded replay both use this same
+     * function; they differ only in what inputSource was built from.
      *
      * Building the logger is the caller's job rather than this function's:
      * a composition root that also has to create a graphics backend needs
      * one before bootstrap() is ever called, and building a second one
      * here would put two loggers over one appender.
      *
-     * @param logger Receives the run's diagnostics.
-     * @param eventSink Receives every dispatched event.
-     * @param inputSource Supplies each tick's events, live or replayed.
-     * @param codec Decodes the input events off the tick stream.
-     * @param extent Bounds which cells a click may reach.
-     * @param camera Folded from input, and read by any renderer. Passed in
-     * rather than created here because an observer built before this call
-     * has to read it.
-     * @param paths Recorded into as tiles are laid; likewise read by an
-     * observer built beforehand.
-     * @param observers Extra systems registered into an "observe" phase
-     * that runs after "walk" every tick -- a renderer, a pacer. Defaults
-     * to none, for callers that only need the final state.
-     * @param maxTicks Optional safety cap on how many ticks to run before
-     * giving up if engine.stop is never dispatched. Production callers can
-     * leave this unset; tests should always pass one.
-     * @param replayRecorder Optional sink that, if provided, receives every
-     * dispatched event stamped with its tick -- what a caller wanting to
-     * persist a `--record` file should register.
-     * @param overlay Optional shared UI state that, if provided, turns the
-     * toolbar on: a UiSink is registered ahead of the grid's, describing
-     * and resolving the bar against the overlay's canvas. Left out, the run
-     * has no toolbar and every click is the world's. Passed in rather than
-     * created here because a renderer built beforehand has to read it.
+     * @param config What the run is wired out of.
      * @return What the run amounted to, for callers and tests.
      * @throws antwika::replay::EngineLoopError If maxTicks is reached
      * without engine.stop.
      * @throws antwika::input::InputError If an input event carries a
      * payload of the wrong shape.
      */
-    GameSummary bootstrap(
-        ILogger &logger,
-        IEventSink &eventSink,
-        IReplaySource &inputSource,
-        const IInputEventCodec &codec,
-        GridExtent extent,
-        Camera &camera,
-        PathIndex &paths,
-        std::vector<std::reference_wrapper<ISystem>> observers = {},
-        std::optional<antwika::time::Tick> maxTicks = std::nullopt,
-        ITickEventSink *replayRecorder = nullptr,
-        UiOverlay *overlay = nullptr);
+    GameSummary bootstrap(const GameConfig &config);
+
+    /**
+     * @brief Write what a run amounted to.
+     *
+     * It lives here rather than in a main() so that a test can read it:
+     * a composition root is excluded from the coverage report, and a
+     * loop over the walkers is exactly what that exclusion should not be
+     * hiding.
+     *
+     * @param out Where the summary is written.
+     * @param summary What the run amounted to.
+     */
+    void printSummary(std::ostream &out, const GameSummary &summary);
 
 } // namespace antwika::game

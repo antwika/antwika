@@ -38,6 +38,7 @@ target_link_libraries(antwika_poker_tests
     PRIVATE
         antwika::engine
         antwika::event
+        antwika::event::tests::mocks
         antwika::gfx
         antwika::gfx::tests::mocks
         antwika::holdem
@@ -46,6 +47,7 @@ target_link_libraries(antwika_poker_tests
         antwika::log::tests::mocks
         antwika::replay
         antwika::time::tests::fakes
+        antwika::ui
         gtest::gtest
 )
 

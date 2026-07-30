@@ -7,7 +7,7 @@
 #include <antwika/ecs/ISystem.hpp>
 #include <antwika/engine/Events.hpp>
 #include <antwika/event/Event.hpp>
-#include <antwika/event/EventRecorder.hpp>
+#include <antwika/event/mocks/MockEventSink.hpp>
 #include <antwika/event/TickEventRecorder.hpp>
 #include <antwika/event/TickEvent.hpp>
 #include <antwika/log/mocks/MockLogger.hpp>
@@ -21,7 +21,7 @@
 using antwika::ecs::ISystem;
 using antwika::ecs::World;
 using antwika::event::Event;
-using antwika::event::EventRecorder;
+using antwika::event::mocks::MockEventSink;
 using antwika::event::TickEventRecorder;
 using antwika::event::TickEvent;
 using antwika::life::Board;
@@ -67,7 +67,7 @@ namespace
 TEST(BootstrapTest, Bootstrap_RunsScriptedTicksAndReturnsResultingBoard)
 {
     NiceMock<MockLogger> logger;
-    EventRecorder eventSink;
+    NiceMock<MockEventSink> eventSink;
 
     ReplaySource inputSource({
         TickEvent{
@@ -98,13 +98,13 @@ TEST(BootstrapTest, Bootstrap_RunsScriptedTicksAndReturnsResultingBoard)
     });
 
     auto board = antwika::life::bootstrap(
-        logger,
-        eventSink,
-        inputSource,
-        5,
-        5,
-        {},
-        10);
+        antwika::life::LifeConfig{
+            .logger = logger,
+            .eventSink = eventSink,
+            .inputSource = inputSource,
+            .width = 5,
+            .height = 5,
+            .maxTicks = 10});
 
     EXPECT_EQ(board.width, 5U);
     EXPECT_EQ(board.height, 5U);
@@ -117,7 +117,7 @@ TEST(BootstrapTest, Bootstrap_RunsScriptedTicksAndReturnsResultingBoard)
 TEST(BootstrapTest, Bootstrap_RunsEveryObserverOncePerTick)
 {
     NiceMock<MockLogger> logger;
-    EventRecorder eventSink;
+    NiceMock<MockEventSink> eventSink;
 
     ReplaySource inputSource({
         TickEvent{
@@ -152,13 +152,14 @@ TEST(BootstrapTest, Bootstrap_RunsEveryObserverOncePerTick)
     CallCountingSystem countingSystem;
 
     auto board = antwika::life::bootstrap(
-        logger,
-        eventSink,
-        inputSource,
-        5,
-        5,
-        {printSystem, countingSystem},
-        10);
+        antwika::life::LifeConfig{
+            .logger = logger,
+            .eventSink = eventSink,
+            .inputSource = inputSource,
+            .width = 5,
+            .height = 5,
+            .observers = {printSystem, countingSystem},
+            .maxTicks = 10});
 
     EXPECT_EQ(countingSystem.calls, 4);
 
@@ -178,7 +179,7 @@ TEST(BootstrapTest, Bootstrap_RunsEveryObserverOncePerTick)
 TEST(BootstrapTest, Bootstrap_WithNoScriptedInputStaysAllDead)
 {
     NiceMock<MockLogger> logger;
-    EventRecorder eventSink;
+    NiceMock<MockEventSink> eventSink;
 
     ReplaySource inputSource({
         TickEvent{
@@ -188,13 +189,13 @@ TEST(BootstrapTest, Bootstrap_WithNoScriptedInputStaysAllDead)
     });
 
     auto board = antwika::life::bootstrap(
-        logger,
-        eventSink,
-        inputSource,
-        4,
-        4,
-        {},
-        10);
+        antwika::life::LifeConfig{
+            .logger = logger,
+            .eventSink = eventSink,
+            .inputSource = inputSource,
+            .width = 4,
+            .height = 4,
+            .maxTicks = 10});
 
     EXPECT_EQ(board.alive, std::vector<bool>(16, false));
 }
@@ -205,7 +206,7 @@ TEST(BootstrapTest, Bootstrap_WithNoScriptedInputStaysAllDead)
 TEST(BootstrapTest, Bootstrap_ForwardsDispatchedEventsToATickEventRecorder)
 {
     NiceMock<MockLogger> logger;
-    EventRecorder eventSink;
+    NiceMock<MockEventSink> eventSink;
 
     ReplaySource inputSource({
         TickEvent{
@@ -223,22 +224,18 @@ TEST(BootstrapTest, Bootstrap_ForwardsDispatchedEventsToATickEventRecorder)
     TickEventRecorder replayRecorder;
 
     antwika::life::bootstrap(
-        logger,
-        eventSink,
-        inputSource,
-        4,
-        4,
-        {},
-        10,
-        &replayRecorder);
+        antwika::life::LifeConfig{
+            .logger = logger,
+            .eventSink = eventSink,
+            .inputSource = inputSource,
+            .width = 4,
+            .height = 4,
+            .maxTicks = 10,
+            .replayRecorder = replayRecorder});
 
     EXPECT_EQ(
         replayRecorder.getEvents(),
         (std::vector<TickEvent>{
-            TickEvent{
-                .tick = 0,
-                .event = Event{.name = "Running Antwika Life"},
-            },
             TickEvent{
                 .tick = 0,
                 .event = Event{
@@ -262,18 +259,83 @@ TEST(BootstrapTest, Bootstrap_ForwardsDispatchedEventsToATickEventRecorder)
 TEST(BootstrapTest, Bootstrap_ThrowsWhenMaxTicksIsReachedWithoutAStopEvent)
 {
     NiceMock<MockLogger> logger;
-    EventRecorder eventSink;
+    NiceMock<MockEventSink> eventSink;
 
     ReplaySource inputSource({});
 
     EXPECT_THROW(
         antwika::life::bootstrap(
-            logger,
-            eventSink,
-            inputSource,
-            4,
-            4,
-            {},
-            3),
+            antwika::life::LifeConfig{
+                .logger = logger,
+                .eventSink = eventSink,
+                .inputSource = inputSource,
+                .width = 4,
+                .height = 4,
+                .maxTicks = 3}),
         EngineLoopError);
+}
+
+namespace
+{
+    /**
+     * @brief A system that does nothing, to be looked for by address.
+     */
+    class NoopSystem final : public ISystem
+    {
+    public:
+        void update(World &, antwika::time::Tick) override
+        {
+        }
+    };
+} // namespace
+
+TEST(ObserversForTest, ABackendThatDrawsLeavesTheBoardUnprinted)
+{
+    NoopSystem renderer;
+    NoopSystem printer;
+    NoopSystem pacer;
+
+    const auto observers = antwika::life::observersFor(
+        renderer, printer, pacer, false);
+
+    ASSERT_EQ(observers.size(), 2U);
+    EXPECT_EQ(&observers[0].get(), &renderer);
+    EXPECT_EQ(&observers[1].get(), &pacer);
+}
+
+TEST(ObserversForTest, ABackendThatDrawsNothingPrintsTheBoardInstead)
+{
+    NoopSystem renderer;
+    NoopSystem printer;
+    NoopSystem pacer;
+
+    const auto observers = antwika::life::observersFor(
+        renderer, printer, pacer, true);
+
+    ASSERT_EQ(observers.size(), 3U);
+    EXPECT_EQ(&observers[0].get(), &renderer);
+    EXPECT_EQ(&observers[1].get(), &printer);
+
+    // Paced last, after the frame, whichever backend is in play.
+    EXPECT_EQ(&observers[2].get(), &pacer);
+}
+
+TEST(AnnounceHowToStopTest, SaysNothingWhenThereIsAWindowToClose)
+{
+    NiceMock<MockLogger> logger;
+
+    EXPECT_CALL(logger, log(::testing::_, ::testing::_)).Times(0);
+
+    antwika::life::announceHowToStop(logger, false);
+}
+
+TEST(AnnounceHowToStopTest, SaysHowToStopAHeadlessRun)
+{
+    NiceMock<MockLogger> logger;
+
+    EXPECT_CALL(
+        logger,
+        log(::testing::_, ::testing::HasSubstr("press Ctrl+C to stop")));
+
+    antwika::life::announceHowToStop(logger, true);
 }

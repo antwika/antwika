@@ -21,7 +21,7 @@
 #include <antwika/holdem/SplitMix64Rng.hpp>
 #include <antwika/holdem/Table.hpp>
 #include <antwika/holdem/TableRunner.hpp>
-#include <antwika/log/Logger.hpp>
+#include <antwika/log/Level.hpp>
 #include <antwika/replay/EngineLoop.hpp>
 
 #include "antwika/poker/AgentStyle.hpp"
@@ -50,7 +50,7 @@ namespace antwika::poker
     using antwika::holdem::SplitMix64Rng;
     using antwika::holdem::Table;
     using antwika::holdem::TableRunner;
-    using antwika::log::Logger;
+    using antwika::log::Level;
     using antwika::replay::EngineLoop;
 
     namespace
@@ -79,33 +79,25 @@ namespace antwika::poker
         }
     } // namespace
 
-    PokerRoom::PokerRoom(IEngine &engine, IEventDispatcher &dispatcher)
-        : engine(engine), dispatcher(dispatcher)
+    PokerRoom::PokerRoom(IEngine &engine, ILogger &logger)
+        : engine(engine), logger(logger)
     {
     }
 
     void PokerRoom::run()
     {
-        dispatcher.dispatch(
-            Event{.name = "Running Antwika Poker"}); // GCOVR_EXCL_LINE
+        logger.log(Level::Info, "Running Antwika Poker");
         engine.start();
     }
 
-    RoomSummary bootstrap(
-        IClock &clock,
-        IAppender &appender,
-        IFormatter &formatter,
-        ILogPolicy &logPolicy,
-        IEventSink &eventSink,
-        IReplaySource &inputSource,
-        std::ostream &out,
-        RoomConfig config,
-        std::optional<antwika::time::Tick> maxTicks,
-        ITickEventSink *replayRecorder,
-        const WindowSetup *window)
+    RoomSummary bootstrap(const RoomSetup &setup)
     {
-        Logger logger(formatter, logPolicy, clock, appender);
-        EventDispatcher dispatcher({eventSink});
+        IClock &clock = setup.clock;
+        IReplaySource &inputSource = setup.inputSource;
+        const RoomConfig &config = setup.room;
+
+        ILogger &logger = setup.logger;
+        EventDispatcher dispatcher({setup.eventSink});
 
         Table table(config.seatCount, config.blinds);
         BankrollLedger ledger;
@@ -127,7 +119,8 @@ namespace antwika::poker
         SplitMix64Rng rng(config.seed);
         Deck deck(rng);
         TableRunner runner(table, deck, std::move(agentRefs));
-        TablePrinter printer(out, game, table, clock, config.tableName);
+        TablePrinter printer(
+            setup.out, game, table, clock, config.tableName);
         PokerRoomSink roomSink(runner, game, ledger, printer);
         StopSignal stopSignal;
 
@@ -141,48 +134,52 @@ namespace antwika::poker
         std::optional<WindowCloseSource> windowSource;
         IReplaySource *source = &inputSource;
 
-        if (window != nullptr)
+        if (setup.window.has_value())
         {
+            const WindowSetup &window = setup.window->get();
+
             // Excluded on the line gcov attributes it to.
             // It is the unwind cleanup for desc's own title string.
             const WindowDesc desc{
                 .title = config.tableName + " -- Antwika Poker",
-                .size = window->size}; // GCOVR_EXCL_LINE
-            tableWindow = window->backend.createWindow(desc);
+                .size = window.size}; // GCOVR_EXCL_LINE
+            tableWindow = window.backend.createWindow(desc);
 
             renderSink.emplace(
                 *tableWindow,
                 scene,
                 table,
                 game,
-                window->sleeper,
-                window->framePeriod,
+                window.sleeper,
+                window.framePeriod,
                 config.tableName);
 
             // After roomSink, which is what steps the table.
             // A frame drawn before that shows the previous tick.
             timedSinks.push_back(*renderSink);
 
-            windowSource.emplace(inputSource, window->backend, *tableWindow);
+            windowSource.emplace(
+                inputSource, window.backend, *tableWindow);
             source = &*windowSource;
         }
 
-        if (replayRecorder != nullptr)
+        if (setup.replayRecorder.has_value())
         {
-            timedSinks.push_back(*replayRecorder);
+            timedSinks.push_back(setup.replayRecorder->get());
         }
         TickedEventDispatcher tickedDispatcher(dispatcher, timedSinks);
 
         Engine engine(logger, tickedDispatcher);
-        PokerRoom room(engine, tickedDispatcher);
+        PokerRoom room(engine, logger);
         room.run();
 
         EngineLoop loop(engine, tickedDispatcher, *source);
-        loop.run(stopSignal, maxTicks);
+        loop.run(stopSignal, setup.maxTicks);
 
         if (tableWindow)
         {
-            if (window->framePeriod > std::chrono::milliseconds{0})
+            if (setup.window->get().framePeriod
+                > std::chrono::milliseconds{0})
             {
                 holdFinalFrame(*windowSource, *renderSink, *tableWindow);
             }
@@ -202,6 +199,23 @@ namespace antwika::poker
             .balances = ledger.balances(),
             .chipsLeftOnTable = leftOnTable,
         };
+    }
+
+    void printSummary(std::ostream &out, const RoomSummary &summary)
+    {
+        out << "\n=== " << summary.handsPlayed << " hands played ===\n";
+        for (const auto &[player, balance] : summary.balances)
+        {
+            out << "  " << player << ": " << balance << '\n';
+        }
+
+        // Chips nobody won are only mentioned when there are some.
+        // A session that ran to the end of a hand has none.
+        if (summary.chipsLeftOnTable > 0)
+        {
+            out << "  (" << summary.chipsLeftOnTable
+                << " chips left in an unfinished hand)\n";
+        }
     }
 
 } // namespace antwika::poker

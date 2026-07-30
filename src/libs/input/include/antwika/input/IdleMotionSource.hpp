@@ -54,6 +54,17 @@ namespace antwika::input
      * cursor would update only when a button, a wheel or a key does,
      * because between those the movements are not in the tick stream to
      * draw from.
+     *
+     * **The name was reviewed and kept**, against a proposal to rename it
+     * for that caveat (DiscardsHoverMotion or similar). It describes what
+     * the decorator does to the stream, which is the level an
+     * IReplaySource is named at, and it is true of every application. What
+     * a name like that would describe is the consequence for an
+     * application that draws a hover -- a property of that application,
+     * not of this class, and one that neither antwika::life nor a headless
+     * run has at all. The caveat belongs where an application chooses the
+     * behaviour, which is InputPipelineOptions::thinIdleMotion, the field
+     * a call site actually sets and where the same warning is written.
      */
     class IdleMotionSource final : public IReplaySource
     {

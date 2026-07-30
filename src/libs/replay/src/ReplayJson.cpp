@@ -1,5 +1,6 @@
 #include "antwika/replay/ReplayJson.hpp"
 
+#include <cstdint>
 #include <string>
 
 #include <nlohmann/json-schema.hpp>
@@ -15,6 +16,19 @@ namespace antwika::replay
 
     namespace
     {
+        nlohmann::json canvasShape()
+        {
+            nlohmann::json shape;
+            shape["type"] = "object";
+            shape["additionalProperties"] = false;
+            shape["required"] = {"width", "height"}; // GCOVR_EXCL_LINE
+            shape["properties"]["width"]["type"] = "integer";
+            shape["properties"]["width"]["minimum"] = 0;
+            shape["properties"]["height"]["type"] = "integer";
+            shape["properties"]["height"]["minimum"] = 0;
+            return shape;
+        }
+
         nlohmann::json replaySchema()
         {
             nlohmann::json schema;
@@ -22,6 +36,11 @@ namespace antwika::replay
             schema["title"] = "antwika replay document";
             schema["type"] = "object";
             schema["additionalProperties"] = false;
+
+            // "canvas" is described but never required.
+            // The version stays at 1 for the same reason.
+            // Every recording written before the field has neither.
+            // Refusing those is what this field must not do.
             schema["required"] =
                 {"magic", "version", "events"}; // GCOVR_EXCL_LINE
             schema["properties"]["magic"]["const"] =
@@ -31,6 +50,7 @@ namespace antwika::replay
             schema["properties"]["events"]["type"] = "array";
             schema["properties"]["events"]["items"] =
                 detail::tickEventShape();
+            schema["properties"]["canvas"] = canvasShape();
             return schema;
         }
 
@@ -42,7 +62,7 @@ namespace antwika::replay
         }
     } // namespace
 
-    std::vector<TickEvent> replayFromJson(const nlohmann::json &j)
+    ReplayDocument replayFromJson(const nlohmann::json &j)
     {
         try
         {
@@ -56,16 +76,40 @@ namespace antwika::replay
                     "validation: ") +
                 error.what());
         }
-        return j.at("events").get<std::vector<TickEvent>>();
-    }
 
-    nlohmann::json replayToJson(const std::vector<TickEvent> &events)
-    {
-        nlohmann::json document;
-        document["magic"] = std::string(detail::kReplayMagic);
-        document["version"] = detail::kReplayFormatVersion;
-        document["events"] = events;
+        ReplayDocument document;
+        document.events = j.at("events").get<std::vector<TickEvent>>();
+
+        const auto canvas = j.find("canvas");
+        if (canvas != j.end())
+        {
+            document.canvas = gfx::Size{
+                .width = canvas->at("width").get<std::uint32_t>(),
+                .height = canvas->at("height").get<std::uint32_t>(),
+            };
+        }
         return document;
+
+        // gcov puts this function's cleanup block on its closing brace.
+        // Returning an aggregate that owns a vector is what creates one.
+        // No input reaches it: the function is covered, the brace is not.
+        // replayToJson below returns by value and reports the same.
+    } // GCOVR_EXCL_LINE
+
+    nlohmann::json replayToJson(
+        const std::vector<TickEvent> &events,
+        std::optional<gfx::Size> canvas)
+    {
+        nlohmann::json encoded;
+        encoded["magic"] = std::string(detail::kReplayMagic);
+        encoded["version"] = detail::kReplayFormatVersion;
+        encoded["events"] = events;
+        if (canvas.has_value())
+        {
+            encoded["canvas"]["width"] = canvas->width;
+            encoded["canvas"]["height"] = canvas->height;
+        }
+        return encoded;
     } // GCOVR_EXCL_LINE
 
 } // namespace antwika::replay

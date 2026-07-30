@@ -4,6 +4,7 @@
 #include <vector>
 
 #include <antwika/event/TickEvent.hpp>
+#include <antwika/replay/CanvasCheck.hpp>
 
 namespace antwika::replay
 {
@@ -16,10 +17,24 @@ namespace antwika::replay
      * Throws ReplayFormatError on a malformed stream (see
      * ReplayFormatError.hpp): a stream that isn't valid JSON, or a
      * document that fails the replay-document schema.
+     *
+     * A document whose canvas disagrees with the caller's is not
+     * malformed, and is warned about rather than thrown on -- see
+     * CanvasCheck for why that boundary is where it is.
      */
     class ReplayReader final
     {
     public:
+        /**
+         * @brief Construct a reader, optionally checking each document's
+         * canvas against the one its events will be resolved against.
+         * @param check What to compare the document's canvas with, and
+         * where to report a difference.
+         * By default neither, which reads a document without looking at
+         * its canvas at all.
+         */
+        explicit ReplayReader(CanvasCheck check = {}) noexcept;
+
         /**
          * @brief Read and decode every event from a JSON replay stream.
          * @param in The stream to read from.
@@ -27,6 +42,9 @@ namespace antwika::replay
          * @throws ReplayFormatError If the stream is malformed.
          */
         [[nodiscard]] std::vector<TickEvent> read(std::istream &in) const;
+
+    private:
+        CanvasCheck check;
     };
 
 } // namespace antwika::replay

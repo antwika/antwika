@@ -33,7 +33,7 @@ namespace antwika::engine
         [[nodiscard]] bool stopped() const noexcept;
 
     private:
-        bool stopped_ = false;
+        bool isStopped = false;
     };
 
 } // namespace antwika::engine

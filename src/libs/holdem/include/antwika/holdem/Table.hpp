@@ -6,9 +6,11 @@
 #include <vector>
 
 #include "antwika/holdem/Action.hpp"
+#include "antwika/holdem/BettingRound.hpp"
 #include "antwika/holdem/Blinds.hpp"
 #include "antwika/holdem/Card.hpp"
 #include "antwika/holdem/Chips.hpp"
+#include "antwika/holdem/HandFlow.hpp"
 #include "antwika/holdem/HandResult.hpp"
 #include "antwika/holdem/HandValue.hpp"
 #include "antwika/holdem/IDeck.hpp"
@@ -36,6 +38,21 @@ namespace antwika::holdem
      * chips left to bet with, and paying out at the end all happen
      * inside apply(). So while isHandInProgress() holds, seatToAct()
      * always names somebody.
+     *
+     * The betting rules, the stage progression and the showdown live in
+     * BettingRound, HandFlow and Showdown.hpp; what stays here is the
+     * coordination between them, and the seats.
+     *
+     * **The seats stay here deliberately, and this was decided rather
+     * than left.** Twenty-three of this class's methods touch the seat
+     * vector, across seating, dealing, betting and payout alike, and
+     * most of them mutate a Seat: blinds move chips, a call moves
+     * chips, a pot pays them back. A Seating class owning the vector
+     * would therefore have to hand a mutable Seat & to all three, at
+     * which point it is a std::vector<Seat> with a bounds check and
+     * nothing has been decoupled. The seats are not a fifth
+     * responsibility -- they are the substrate the other four
+     * coordinate through, which is why they belong to the coordinator.
      */
     class Table final
     {
@@ -217,16 +234,13 @@ namespace antwika::holdem
     private:
         std::vector<Seat> seats;
         Blinds blindLevels;
-        std::vector<Card> communityCards;
         std::optional<HandResult> result;
         std::optional<SeatId> toAct;
-        IDeck *deck = nullptr;
         Chips potChips = 0;
-        Chips currentBet = 0;
-        Chips lastRaiseSize = 0;
+        BettingRound betting;
+        HandFlow flow;
         std::uint64_t handCount = 0;
         SeatId buttonSeat{};
-        Stage currentStage = Stage::PreFlop;
         bool handInProgress = false;
 
         void requireSeatInRange(SeatId seat) const;
@@ -240,7 +254,6 @@ namespace antwika::holdem
         void openBetting(SeatId from);
         void advanceAfterAction(SeatId actor);
         void resetBettingRound() noexcept;
-        void dealStreet();
         void closeRound();
         void finishWithoutShowdown();
         void finishWithShowdown();

@@ -186,6 +186,34 @@ TEST(WorldTest, DestroyingAnAlreadyDeadEntityThrows)
     EXPECT_THROW(world.destroy(entity), EcsError);
 }
 
+TEST(WorldTest, DestroyingAnEntityTwiceInOnePhaseRetiresItOnce)
+{
+    NiceMock<MockLogger> logger;
+    World world(logger);
+    const auto entity = world.create();
+    world.add<Position>(entity, Position{1, 2});
+    world.commit();
+
+    world.destroy(entity);
+    EXPECT_NO_THROW(world.destroy(entity));
+    EXPECT_NO_THROW(world.commit());
+
+    EXPECT_FALSE(world.alive(entity));
+    EXPECT_FALSE(world.has<Position>(entity));
+}
+
+TEST(WorldTest, ASecondCommitDoesNotReapplyTheFirstCommitsOperations)
+{
+    NiceMock<MockLogger> logger;
+    World world(logger);
+    const auto entity = world.create();
+    world.destroy(entity);
+    world.commit();
+
+    EXPECT_NO_THROW(world.commit());
+    EXPECT_FALSE(world.alive(entity));
+}
+
 TEST(WorldTest, RemovingAComponentFromADeadEntityThrows)
 {
     NiceMock<MockLogger> logger;

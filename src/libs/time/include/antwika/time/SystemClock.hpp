@@ -20,4 +20,4 @@ namespace antwika::time
         [[nodiscard]] std::chrono::time_point<std::chrono::system_clock>
         now() const noexcept override;
     };
-}
+} // namespace antwika::time

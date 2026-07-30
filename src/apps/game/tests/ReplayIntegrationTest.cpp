@@ -5,7 +5,7 @@
 
 #include <antwika/engine/Events.hpp>
 #include <antwika/event/Event.hpp>
-#include <antwika/event/EventRecorder.hpp>
+#include <antwika/event/mocks/MockEventSink.hpp>
 #include <antwika/event/TickEvent.hpp>
 #include <antwika/input/InputEventCodec.hpp>
 #include <antwika/log/mocks/MockLogger.hpp>
@@ -21,7 +21,7 @@
 #include "antwika/game/PathIndex.hpp"
 
 using antwika::event::Event;
-using antwika::event::EventRecorder;
+using antwika::event::mocks::MockEventSink;
 using antwika::event::TickEvent;
 using antwika::game::Camera;
 using antwika::game::GameState;
@@ -42,21 +42,21 @@ namespace
     GameState runGame(IReplaySource &source)
     {
         NiceMock<MockLogger> logger;
-        EventRecorder eventSink;
+        NiceMock<MockEventSink> eventSink;
         const InputEventCodec codec;
         Camera camera;
         PathIndex paths;
 
         return antwika::game::bootstrap(
-                   logger,
-                   eventSink,
-                   source,
-                   codec,
-                   GridExtent{.width = 16, .height = 16},
-                   camera,
-                   paths,
-                   {},
-                   kMaxTicks)
+                   antwika::game::GameConfig{
+                       .logger = logger,
+                       .eventSink = eventSink,
+                       .inputSource = source,
+                       .codec = codec,
+                       .extent = GridExtent{.width = 16, .height = 16},
+                       .camera = camera,
+                       .paths = paths,
+                       .maxTicks = kMaxTicks})
             .state;
     }
 } // namespace

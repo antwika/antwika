@@ -43,7 +43,7 @@ namespace antwika::ui
          *
          * A widget activates on the press rather than on a release
          * matched to it, so that nothing has to be remembered between
-         * frames -- see docs/ui-input-plan.md.
+         * frames -- see docs/history/ui-input-plan.md.
          */
         bool pressed = false;
     };

@@ -2,12 +2,10 @@
 
 #include <antwika/event/ITickEventSink.hpp>
 #include <antwika/event/TickEvent.hpp>
-#include <antwika/input/IInputEventCodec.hpp>
-#include <antwika/input/InputEvent.hpp>
-#include <antwika/input/InputState.hpp>
 #include <antwika/ui/Pointer.hpp>
 
 #include "antwika/game/Camera.hpp"
+#include "antwika/game/InputFold.hpp"
 #include "antwika/game/Toolbar.hpp"
 #include "antwika/game/UiOverlay.hpp"
 
@@ -16,8 +14,6 @@ namespace antwika::game
 
     using antwika::event::ITickEventSink;
     using antwika::event::TickEvent;
-    using antwika::input::IInputEventCodec;
-    using antwika::input::InputState;
     using antwika::ui::Pointer;
 
     /**
@@ -40,9 +36,10 @@ namespace antwika::game
      * The canvas comes off the overlay, which is the size the window
      * was asked for rather than the size one reports -- see UiOverlay.
      *
-     * Held state -- the folded pointer, and whether anything has said
-     * where it is -- is regenerated from the same events on replay, so
-     * it needs no recording of its own.
+     * What the pointer is doing comes from the shared InputFold, which
+     * is registered ahead of this sink and holds the app's one answer --
+     * regenerated from the same events on replay, so it needs no
+     * recording of its own.
      */
     class UiSink final : public ITickEventSink
     {
@@ -52,15 +49,16 @@ namespace antwika::game
          * @param camera Zoomed and reset by the buttons. Must outlive
          * this sink.
          * @param overlay Written every tick. Must outlive this sink.
-         * @param codec Decodes the input events off the tick stream.
-         * Must outlive this sink.
+         * @param input The folded input, holding the event being
+         * handled. Must outlive this sink, and must be registered ahead
+         * of it.
          * @param toolbar Describes the bar. Must outlive this sink.
          * @param home The camera "reset view" puts back.
          */
         UiSink(
             Camera &camera,
             UiOverlay &overlay,
-            const IInputEventCodec &codec,
+            const InputFold &input,
             const Toolbar &toolbar,
             Camera home);
 
@@ -72,12 +70,9 @@ namespace antwika::game
 
         /**
          * @brief Apply a tick event.
-         * @param event An input.* event is folded, resolved against the
-         * toolbar and acted on; engine.tick describes the bar once more
-         * for the renderer; anything else is ignored.
-         * @throws antwika::input::InputError If an input.* event carries
-         * a payload of the wrong shape -- raised by the codec, since the
-         * wire format is its to police.
+         * @param event An input.* event is resolved against the toolbar
+         * and acted on; engine.tick describes the bar once more for the
+         * renderer; anything else is ignored.
          */
         void handle(const TickEvent &event) override;
 
@@ -88,15 +83,9 @@ namespace antwika::game
 
         Camera &camera;
         UiOverlay &overlay;
-        const IInputEventCodec &codec;
+        const InputFold &input;
         const Toolbar &toolbar;
         Camera home;
-
-        // Held below the recorder, so a replay folds it again itself.
-        InputState state;
-
-        // Until something says where the pointer is, it is nowhere.
-        bool located = false;
     };
 
 } // namespace antwika::game

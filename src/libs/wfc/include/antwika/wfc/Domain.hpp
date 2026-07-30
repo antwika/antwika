@@ -93,6 +93,11 @@ namespace antwika::wfc
         /**
          * @brief Count remaining candidate values.
          * @return The number of values still present.
+         *
+         * Constant time: the count is maintained by remove(), add() and
+         * restrictTo() rather than scanned for here.
+         * A constraint's prune() asks isEmpty() once per cell pair, so
+         * this being a scan made "is this empty?" the hot loop's cost.
          */
         [[nodiscard]] std::size_t count() const;
 
@@ -111,8 +116,7 @@ namespace antwika::wfc
         /**
          * @brief Get the sole remaining candidate value.
          * @return The single remaining value.
-         *
-         * Precondition: isSingleton() is true.
+         * @throws WfcError if isSingleton() is false.
          */
         [[nodiscard]] std::size_t singleValue() const;
 
@@ -128,10 +132,18 @@ namespace antwika::wfc
          */
         [[nodiscard]] const_iterator end() const;
 
-        bool operator==(const Domain &) const = default;
+        /**
+         * @brief Compare two domains by the values they still hold.
+         * @param other The domain to compare with.
+         * @return True if both hold exactly the same values.
+         */
+        [[nodiscard]] bool operator==(const Domain &other) const;
 
     private:
         std::vector<bool> bits;
+
+        // Kept in step with bits by every mutator, and only by them.
+        std::size_t setCount;
     };
 
 } // namespace antwika::wfc

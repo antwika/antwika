@@ -29,6 +29,7 @@ target_compile_definitions(antwika_poker
 
 target_link_libraries(antwika_poker
     PRIVATE
+        antwika::app
         antwika::engine
         antwika::event
         antwika::gfx
@@ -37,6 +38,7 @@ target_link_libraries(antwika_poker
         antwika::log
         antwika::replay
         antwika::time
+        antwika::ui
 )
 
 if(BUILD_TESTING AND NOT CMAKE_CROSSCOMPILING)

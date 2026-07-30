@@ -1,13 +1,15 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
+#include <sstream>
+
 #include <vector>
 
 #include <antwika/ecs/ISystem.hpp>
 #include <antwika/ecs/World.hpp>
 #include <antwika/engine/Events.hpp>
 #include <antwika/event/Event.hpp>
-#include <antwika/event/EventRecorder.hpp>
+#include <antwika/event/mocks/MockEventSink.hpp>
 #include <antwika/event/TickEvent.hpp>
 #include <antwika/event/TickEventRecorder.hpp>
 #include <antwika/input/InputEvent.hpp>
@@ -27,10 +29,11 @@
 #include "antwika/game/PathIndex.hpp"
 
 using antwika::event::Event;
-using antwika::event::EventRecorder;
+using antwika::event::mocks::MockEventSink;
 using antwika::event::TickEvent;
 using antwika::event::TickEventRecorder;
 using antwika::game::Camera;
+using antwika::gfx::Point;
 using antwika::game::GameState;
 using antwika::game::GridExtent;
 using antwika::game::PathIndex;
@@ -51,7 +54,7 @@ namespace
     struct Harness
     {
         NiceMock<MockLogger> logger;
-        EventRecorder eventSink;
+        NiceMock<MockEventSink> eventSink;
         InputEventCodec codec;
         Camera camera;
         PathIndex paths;
@@ -61,17 +64,21 @@ namespace
             antwika::time::Tick maxTicks,
             antwika::event::ITickEventSink *recorder = nullptr)
         {
-            return antwika::game::bootstrap(
-                logger,
-                eventSink,
-                source,
-                codec,
-                kExtent,
-                camera,
-                paths,
-                {},
-                maxTicks,
-                recorder);
+            antwika::game::GameConfig config{
+                .logger = logger,
+                .eventSink = eventSink,
+                .inputSource = source,
+                .codec = codec,
+                .extent = kExtent,
+                .camera = camera,
+                .paths = paths,
+                .maxTicks = maxTicks};
+            if (recorder != nullptr)
+            {
+                config.replayRecorder = *recorder;
+            }
+
+            return antwika::game::bootstrap(config);
         }
     };
 } // namespace
@@ -150,10 +157,6 @@ TEST(BootstrapTest, Bootstrap_ForwardsDispatchedEventsToATickEventRecorder)
     EXPECT_EQ(
         recorder.getEvents(),
         (std::vector<TickEvent>{
-            TickEvent{
-                .tick = 0,
-                .event = Event{.name = antwika::game::events::kStarted},
-            },
             TickEvent{
                 .tick = 0,
                 .event = Event{
@@ -266,17 +269,54 @@ TEST(BootstrapTest, Bootstrap_RunsEveryObserverOncePerTick)
     CountingObserver second;
 
     antwika::game::bootstrap(
-        harness.logger,
-        harness.eventSink,
-        source,
-        harness.codec,
-        kExtent,
-        harness.camera,
-        harness.paths,
-        {first, second},
-        10);
+        antwika::game::GameConfig{
+            .logger = harness.logger,
+            .eventSink = harness.eventSink,
+            .inputSource = source,
+            .codec = harness.codec,
+            .extent = kExtent,
+            .camera = harness.camera,
+            .paths = harness.paths,
+            .observers = {first, second},
+            .maxTicks = 10});
 
     // Ticks 0, 1 and 2 all run, and the stop ends it after the third.
     EXPECT_EQ(first.ticks, 3U);
     EXPECT_EQ(second.ticks, 3U);
+}
+
+TEST(PrintSummaryTest, WritesTheStateTheCountsAndTheCamera)
+{
+    std::ostringstream out;
+    const antwika::game::GameSummary summary{
+        .state = {.ticksProcessed = 4, .score = 7},
+        .paths = {{.x = 1, .y = 1}, {.x = 1, .y = 2}},
+        .walkers = {},
+        .camera = Camera(Point{.x = 512, .y = 48})};
+
+    antwika::game::printSummary(out, summary);
+
+    EXPECT_EQ(
+        out.str(),
+        "Final state: ticksProcessed=4 score=7\n"
+        "Paths laid: 2\n"
+        "Walkers: 0\n"
+        "Camera: pan (512, 48) zoom 3\n");
+}
+
+TEST(PrintSummaryTest, WritesEveryWalkerWhereItStandsAndWhereItFaces)
+{
+    std::ostringstream out;
+    const antwika::game::GameSummary summary{
+        .state = {},
+        .paths = {},
+        .walkers =
+            {{.at = {.x = 3, .y = 4},
+              .facing = antwika::game::Direction::South}},
+        .camera = Camera(Point{.x = 0, .y = 0})};
+
+    antwika::game::printSummary(out, summary);
+
+    EXPECT_NE(
+        out.str().find("  at (3, 4) facing 2\n"), std::string::npos);
 }
