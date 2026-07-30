@@ -1,9 +1,11 @@
 #pragma once
 
+#include <optional>
 #include <ostream>
 #include <vector>
 
 #include <antwika/event/TickEvent.hpp>
+#include <antwika/gfx/Size.hpp>
 
 namespace antwika::replay
 {
@@ -50,8 +52,15 @@ namespace antwika::replay
          * @param layout How much whitespace to write; readable by
          * default, since something choosing this type directly is
          * usually a person or a test rather than a recording.
+         * @param canvas The canvas the recorded run laid its input out
+         * against, written into the document's header so a later run can
+         * tell that it is replaying against a different one.
+         * Unset writes no canvas at all, which is what a recording with
+         * no pointer input in it has to say on the subject.
          */
-        explicit ReplayWriter(Layout layout = Layout::Pretty) noexcept;
+        explicit ReplayWriter(
+            Layout layout = Layout::Pretty,
+            std::optional<gfx::Size> canvas = std::nullopt) noexcept;
 
         /**
          * @brief Write every event to a stream as one JSON document.
@@ -63,6 +72,7 @@ namespace antwika::replay
 
     private:
         Layout layout;
+        std::optional<gfx::Size> canvas;
     };
 
 } // namespace antwika::replay

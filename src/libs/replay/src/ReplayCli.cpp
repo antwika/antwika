@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <fstream>
+#include <utility>
 
 #include <antwika/engine/Events.hpp>
 
@@ -30,7 +31,8 @@ namespace antwika::replay
         return options;
     } // GCOVR_EXCL_LINE
 
-    std::vector<TickEvent> loadReplayFile(const std::string &path)
+    std::vector<TickEvent> loadReplayFile(
+        const std::string &path, CanvasCheck check)
     {
         std::ifstream replayFile(path);
 
@@ -44,13 +46,14 @@ namespace antwika::replay
                 + path);
         }
 
-        ReplayReader reader;
+        const ReplayReader reader(std::move(check));
         return reader.read(replayFile);
     }
 
     void saveReplayFile(
         std::vector<TickEvent> events,
         const std::string &path,
+        std::optional<gfx::Size> canvas,
         ReplayWriter::Layout layout)
     {
         std::erase_if(
@@ -71,7 +74,7 @@ namespace antwika::replay
                 + path);
         }
 
-        const ReplayWriter writer(layout);
+        const ReplayWriter writer(layout, canvas);
         writer.write(events, replayFile);
 
         // Flushed here rather than by the destructor, which cannot say.

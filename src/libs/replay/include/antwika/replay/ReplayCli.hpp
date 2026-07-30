@@ -6,6 +6,8 @@
 #include <vector>
 
 #include <antwika/event/TickEvent.hpp>
+#include <antwika/gfx/Size.hpp>
+#include <antwika/replay/CanvasCheck.hpp>
 #include <antwika/replay/ReplayWriter.hpp>
 
 namespace antwika::replay
@@ -49,13 +51,17 @@ namespace antwika::replay
     /**
      * @brief Load a replay document from a file and decode its events.
      * @param path Path to the replay file to read.
+     * @param check What to compare the document's recorded canvas with,
+     * and where to warn when the two differ; by default neither, which
+     * loads the file without looking at its canvas.
      * @return The decoded events, in the order they were recorded.
      * @throws ReplayFormatError If the file can't be opened at all, or
      * can't be parsed as a replay document. The two say so differently: a
      * file that is not there is not a malformed one.
+     * A canvas that differs is neither, and only warns.
      */
     [[nodiscard]] std::vector<TickEvent> loadReplayFile(
-        const std::string &path);
+        const std::string &path, CanvasCheck check = {});
 
     /**
      * @brief Write a run's events to a file as a replay document, with the
@@ -70,6 +76,10 @@ namespace antwika::replay
      * those are log lines now, so the tick is all that is regenerated.
      * @param events The dispatched events to persist, in original order.
      * @param path Path to write the replay document to.
+     * @param canvas The canvas this run laid its input out against,
+     * recorded in the document so a later run playing it back against a
+     * different one can be told. Unset writes no canvas, which is what a
+     * recording of an app with no pointer input has to say.
      * @param layout How much whitespace to write; compact by default,
      * since a recorded session is written to be replayed rather than
      * read, and an interactive one gets long enough for the indentation
@@ -82,6 +92,7 @@ namespace antwika::replay
     void saveReplayFile(
         std::vector<TickEvent> events,
         const std::string &path,
+        std::optional<gfx::Size> canvas = std::nullopt,
         ReplayWriter::Layout layout = ReplayWriter::Layout::Compact);
 
 } // namespace antwika::replay
