@@ -227,7 +227,9 @@ TEST(ReplayCliTest, SaveReplayFileSaysAnUnwritablePathCouldNotBeOpened)
 }
 
 // Opening is not writing: a full disk fails only once bytes are flushed.
-// /dev/full is the one portable-enough way to ask for that failure.
+// ReplayOutputTest is what covers that throw, on any machine.
+// This one confirms it against a real device where there is one.
+// It may skip freely: skipping it costs no coverage any more.
 TEST(ReplayCliTest, SaveReplayFileThrowsWhenTheBytesCannotBeWritten)
 {
     if (!std::filesystem::exists("/dev/full"))

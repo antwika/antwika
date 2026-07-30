@@ -6,6 +6,7 @@ add_executable(antwika_replay_tests
     ReplayCliTest.cpp
     ReplayDeterminismTest.cpp
     ReplayJsonTest.cpp
+    ReplayOutputTest.cpp
     ReplaySourceTest.cpp
     ReplayWriterReaderTest.cpp
     TickPacerTest.cpp

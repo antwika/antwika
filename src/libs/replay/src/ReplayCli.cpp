@@ -9,6 +9,7 @@
 #include "antwika/replay/ReplayFormatError.hpp"
 #include "antwika/replay/ReplayReader.hpp"
 #include "antwika/replay/ReplayWriter.hpp"
+#include "ReplayOutput.hpp"
 
 namespace antwika::replay
 {
@@ -75,16 +76,7 @@ namespace antwika::replay
         }
 
         const ReplayWriter writer(layout, canvas);
-        writer.write(events, replayFile);
-
-        // Flushed here rather than by the destructor, which cannot say.
-        // A full disk fails on the flush, not on the open.
-        replayFile.flush();
-        if (!replayFile)
-        {
-            throw ReplayFormatError(
-                "antwika::replay: could not write a replay: " + path);
-        }
+        detail::writeReplayOrThrow(writer, events, replayFile, path);
     }
 
 } // namespace antwika::replay
