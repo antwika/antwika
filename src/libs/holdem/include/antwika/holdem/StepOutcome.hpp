@@ -3,6 +3,7 @@
 #include <cstdint>
 
 #include "antwika/holdem/Action.hpp"
+#include "antwika/holdem/Chips.hpp"
 #include "antwika/holdem/SeatId.hpp"
 #include "antwika/holdem/Stage.hpp"
 
@@ -66,6 +67,32 @@ namespace antwika::holdem
          * @brief What that seat did; meaningful only when prompted.
          */
         Action action{};
+
+        /**
+         * @brief Chips the action moved from that seat's stack into the
+         * pot; meaningful only when prompted.
+         *
+         * What a call actually cost, which the action itself does not
+         * say: Action::amount is the round stake a Bet or Raise names,
+         * and nothing at all for the other three.
+         */
+        Chips staked{};
+
+        /**
+         * @brief The largest stake any seat had in the betting round
+         * before the action; meaningful only when prompted.
+         *
+         * A raise reads as "raises amount - betBefore to amount", and
+         * that subtraction needs the bet the raise was measured against,
+         * which the raise itself has already replaced.
+         */
+        Chips betBefore{};
+
+        /**
+         * @brief Whether the action put in the last chip that seat had;
+         * meaningful only when prompted.
+         */
+        bool allIn = false;
 
         /**
          * @brief The stage the hand stood on after the step.

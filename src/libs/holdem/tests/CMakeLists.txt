@@ -12,6 +12,7 @@ add_executable(antwika_holdem_tests
     DeckTest.cpp
     HandCategoryTest.cpp
     HandEvaluatorTest.cpp
+    HandTextTest.cpp
     HandValueTest.cpp
     PayoutTest.cpp
     PotsTest.cpp

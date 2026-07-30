@@ -25,6 +25,7 @@ using antwika::holdem::fold;
 using antwika::holdem::IAgent;
 using antwika::holdem::makeSeatId;
 using antwika::holdem::parseCards;
+using antwika::holdem::raiseTo;
 using antwika::holdem::StepKind;
 using antwika::holdem::Table;
 using antwika::holdem::TableRunner;
@@ -181,6 +182,64 @@ TEST(TableRunnerTest, Step_ReportsTheActionThatEndsTheHand)
     EXPECT_EQ(outcome.seat, makeSeatId(1));
     EXPECT_EQ(outcome.action, fold());
     EXPECT_FALSE(table.isHandInProgress());
+}
+
+// A call names no amount, because the table decides what it costs.
+// So the step is where a caller finds out what it cost.
+TEST(TableRunnerTest, Step_ReportsWhatACallCostAndWhatItAnswered)
+{
+    Table table(2, kBlinds);
+    table.seatPlayer(makeSeatId(0), 100);
+    table.seatPlayer(makeSeatId(1), 100);
+    auto deck = headsUpDeck();
+    NiceMock<MockAgent> first;
+    NiceMock<MockAgent> second;
+    ON_CALL(second, act).WillByDefault(Return(call()));
+    TableRunner runner(table, deck, pair(first, second));
+
+    static_cast<void>(runner.step());
+    const auto outcome = runner.step();
+
+    EXPECT_EQ(outcome.staked, 5U);
+    EXPECT_EQ(outcome.betBefore, 10U);
+    EXPECT_FALSE(outcome.allIn);
+}
+
+TEST(TableRunnerTest, Step_ReportsTheBetARaiseWasMeasuredAgainst)
+{
+    Table table(2, kBlinds);
+    table.seatPlayer(makeSeatId(0), 100);
+    table.seatPlayer(makeSeatId(1), 100);
+    auto deck = headsUpDeck();
+    NiceMock<MockAgent> first;
+    NiceMock<MockAgent> second;
+    ON_CALL(second, act).WillByDefault(Return(raiseTo(30)));
+    TableRunner runner(table, deck, pair(first, second));
+
+    static_cast<void>(runner.step());
+    const auto outcome = runner.step();
+
+    EXPECT_EQ(outcome.staked, 25U);
+    EXPECT_EQ(outcome.betBefore, 10U);
+    EXPECT_FALSE(outcome.allIn);
+}
+
+TEST(TableRunnerTest, Step_FlagsTheActionThatUsedUpASeatsLastChip)
+{
+    Table table(2, kBlinds);
+    table.seatPlayer(makeSeatId(0), 100);
+    table.seatPlayer(makeSeatId(1), 40);
+    auto deck = headsUpDeck();
+    NiceMock<MockAgent> first;
+    NiceMock<MockAgent> second;
+    ON_CALL(second, act).WillByDefault(Return(raiseTo(40)));
+    TableRunner runner(table, deck, pair(first, second));
+
+    static_cast<void>(runner.step());
+    const auto outcome = runner.step();
+
+    EXPECT_EQ(outcome.staked, 35U);
+    EXPECT_TRUE(outcome.allIn);
 }
 
 TEST(TableRunnerTest, Step_DealsTheNextHandOnceTheLastOneIsPaidOut)

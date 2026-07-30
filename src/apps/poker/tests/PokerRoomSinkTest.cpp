@@ -1,5 +1,6 @@
 #include <gtest/gtest.h>
 
+#include <chrono>
 #include <functional>
 #include <sstream>
 #include <vector>
@@ -15,6 +16,7 @@
 #include <antwika/holdem/TableRunner.hpp>
 
 #include <antwika/holdem/fakes/FakeDeck.hpp>
+#include <antwika/time/fakes/FakeClock.hpp>
 
 #include "antwika/poker/AgentStyle.hpp"
 #include "antwika/poker/BankrollError.hpp"
@@ -45,6 +47,7 @@ using antwika::poker::PokerEventError;
 using antwika::poker::PokerRoomSink;
 using antwika::poker::PolicyAgent;
 using antwika::poker::TablePrinter;
+using antwika::time::fakes::FakeClock;
 
 namespace
 {
@@ -66,7 +69,8 @@ namespace
         FakeDeck deck{parseCards("Ac Kc Ad Kd 2c 3d 4h 7s 9c")};
         std::vector<PolicyAgent> agents;
         std::ostringstream out;
-        TablePrinter printer{out, game, table};
+        FakeClock clock{std::chrono::system_clock::time_point{}};
+        TablePrinter printer{out, game, table, clock, "Antwika"};
 
         Room()
         {

@@ -2,6 +2,7 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <string>
 
 #include <antwika/holdem/Blinds.hpp>
 #include <antwika/holdem/Chips.hpp>
@@ -31,6 +32,11 @@ namespace antwika::poker
          * @brief Smallest stack a player may sit down with.
          */
         Chips minimumBuyIn = 100;
+
+        /**
+         * @brief The name every hand played here is written up under.
+         */
+        std::string tableName = "Antwika";
 
         /**
          * @brief Seed for the shuffle.
