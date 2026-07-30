@@ -102,7 +102,7 @@ namespace antwika::poker
         SplitMix64Rng rng(config.seed);
         Deck deck(rng);
         TableRunner runner(table, deck, std::move(agentRefs));
-        TablePrinter printer(out, game, table);
+        TablePrinter printer(out, game, table, clock, config.tableName);
         PokerRoomSink roomSink(runner, game, ledger, printer);
         StopSignal stopSignal;
 

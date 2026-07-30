@@ -1,20 +1,44 @@
 #pragma once
 
+#include <cstddef>
+#include <optional>
 #include <ostream>
+#include <span>
+#include <string>
+#include <string_view>
+#include <vector>
 
+#include <antwika/holdem/Card.hpp>
+#include <antwika/holdem/Chips.hpp>
+#include <antwika/holdem/HandResult.hpp>
+#include <antwika/holdem/SeatId.hpp>
+#include <antwika/holdem/Stage.hpp>
 #include <antwika/holdem/StepOutcome.hpp>
 #include <antwika/holdem/Table.hpp>
+#include <antwika/time/IClock.hpp>
 
 #include "antwika/poker/CashGame.hpp"
 
 namespace antwika::poker
 {
 
+    using antwika::holdem::Card;
+    using antwika::holdem::Chips;
+    using antwika::holdem::HandResult;
+    using antwika::holdem::SeatId;
+    using antwika::holdem::Stage;
     using antwika::holdem::StepOutcome;
     using antwika::holdem::Table;
+    using antwika::time::IClock;
 
     /**
-     * @brief Narrates a table's steps to a stream.
+     * @brief Writes a table's steps out as a hand history.
+     *
+     * Follows the layout hand-history readers and trackers already
+     * understand: a header naming the hand and the stakes, the seats and
+     * their stacks, one line per posted blind and per decision, a
+     * `*** STREET ***` marker as each card comes out, and a summary
+     * closing the hand off.
      *
      * Reads the table and the cash game rather than being told what to
      * say, so nothing in the game has to carry presentation concerns
@@ -29,9 +53,15 @@ namespace antwika::poker
          * @param out Stream every line is written to.
          * @param game Resolves seats to player names.
          * @param table Read for the board, the pot and hand results.
+         * @param clock Read for the timestamp each hand is headed with.
+         * @param tableName The name the table is announced under.
          */
         TablePrinter(
-            std::ostream &out, const CashGame &game, const Table &table);
+            std::ostream &out,
+            const CashGame &game,
+            const Table &table,
+            IClock &clock,
+            std::string tableName);
 
         TablePrinter(const TablePrinter &) = delete;
         TablePrinter(TablePrinter &&) = delete;
@@ -43,22 +73,66 @@ namespace antwika::poker
          * @brief Describe one step of the table's loop.
          *
          * Prints the deal, each action as it happens, a line whenever a
-         * new street comes out, and the payouts once the hand is over.
-         * An idle table prints nothing, since nothing happened.
+         * new street comes out, and the showdown, the payouts and the
+         * summary once the hand is over. An idle table prints nothing,
+         * since nothing happened.
          * @param outcome What the step did.
          */
         void printStep(const StepOutcome &outcome);
 
     private:
+        /**
+         * @brief What one seat did in the hand being written up.
+         */
+        struct SeatNote
+        {
+            Chips roundStake{};
+            Stage foldedOn{};
+            bool dealtIn = false;
+            bool folded = false;
+        };
+
+        /**
+         * @brief A bet nobody covered, on its way back to its owner.
+         */
+        struct Returned
+        {
+            SeatId seat{};
+            Chips amount{};
+        };
+
         std::ostream &out;
         const CashGame &game;
         const Table &table;
+        IClock &clock;
+        std::string tableName;
+        std::vector<SeatNote> notes;
+        std::optional<SeatId> smallBlindSeat;
+        std::optional<SeatId> bigBlindSeat;
+        Stage stage{};
+        std::size_t boardShown = 0;
 
         void printHandStart();
+        void printBlinds();
+        void printPost(std::string_view blind, SeatId seat);
         void printAction(const StepOutcome &outcome);
+        void printStreets(std::span<const Card> board);
         void printResult();
-        [[nodiscard]] std::string nameOf(
-            antwika::holdem::SeatId seat) const;
+        void printSummary(const HandResult &result, Returned returned);
+
+        [[nodiscard]] Returned uncalledBet() const;
+        [[nodiscard]] Chips collectedBy(
+            SeatId seat, Returned returned) const;
+        [[nodiscard]] std::string outcomeOf(
+            SeatId seat, Returned returned) const;
+        [[nodiscard]] std::string timestamp() const;
+        [[nodiscard]] std::string nameOf(SeatId seat) const;
+        [[nodiscard]] std::string seatLabel(SeatId seat) const;
+        [[nodiscard]] std::string positionsOf(SeatId seat) const;
+        [[nodiscard]] std::optional<SeatId> nextInHand(SeatId from) const;
+        [[nodiscard]] bool handJustEnded() const;
+        [[nodiscard]] bool wasDealtIn(SeatId seat) const;
+        [[nodiscard]] Chips stackBeforeTheHand(SeatId seat) const;
     };
 
 } // namespace antwika::poker
