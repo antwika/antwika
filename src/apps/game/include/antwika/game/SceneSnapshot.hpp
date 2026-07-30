@@ -28,10 +28,28 @@ namespace antwika::game
         std::int32_t carried = 0;
 
         /**
+         * @brief How many cells this walker has moved since it appeared.
+         *
+         * Carried into the picture because it is the walker's own
+         * elapsed tick count, and antwika::animation keeps no time of
+         * its own: a clip is resolved against a number the caller has
+         * already got.  A walker takes exactly one step per tick while
+         * it can move, so this counts the ticks it has been walking --
+         * and a walker with nowhere to go holds it, which is what makes
+         * one standing still stop animating rather than march on the
+         * spot.
+         *
+         * It is simulation state a replay already reproduces, so the
+         * picture stays a function of the recording without a frame
+         * number ever being written to one.
+         */
+        std::int32_t stepsTaken = 0;
+
+        /**
          * @brief Compare two walker views.
          * @param other The view to compare against.
-         * @return True when the cell, the facing, the kind and the load
-         * all match.
+         * @return True when the cell, the facing, the kind, the load and
+         * the distance walked all match.
          */
         [[nodiscard]] bool operator==(const WalkerView &other) const = default;
     };

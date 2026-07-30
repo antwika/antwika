@@ -5,11 +5,15 @@
 #include <cstddef>
 #include <cstdint>
 
+#include <antwika/animation/DirectionalClipSet.hpp>
+#include <antwika/animation/Facing.hpp>
+#include <antwika/animation/Frame.hpp>
 #include <antwika/gfx/Color.hpp>
 #include <antwika/gfx/IRenderer.hpp>
 #include <antwika/gfx/ITexture.hpp>
 #include <antwika/gfx/Rect.hpp>
 #include <antwika/gfx/Size.hpp>
+#include <antwika/time/Tick.hpp>
 
 #include "antwika/game/Camera.hpp"
 #include "antwika/game/Cell.hpp"
@@ -56,6 +60,108 @@ namespace antwika::game
 
         return kTints[static_cast<std::size_t>(kind) % kWalkerKindCount];
     }
+
+    /**
+     * @brief How many frames one walk cycle has.
+     */
+    inline constexpr std::size_t kWalkerCycleFrames = 4;
+
+    /**
+     * @brief How many ticks each frame of the walk cycle stays up.
+     *
+     * More than one on purpose.  A frame that lasted a single tick
+     * would always be resolved at exactly its own start, so every
+     * animation::Frame would come back with a progress of zero and the
+     * gait would step between whole heights.  Two ticks per frame gives
+     * a halfway point, which is what interpolate() then rounds in
+     * pixels rather than in a fraction nobody can see.
+     */
+    inline constexpr antwika::time::Tick kWalkerCycleTicksPerFrame = 2;
+
+    /**
+     * @brief How high a walker stands above its cell at each frame of
+     * the cycle, in sixteenths of the camera's half-width.
+     *
+     * A lift rather than a tile of its own, because the atlas holds one
+     * walker picture per facing and nothing here may invent a second:
+     * TileAtlas addresses slots 17 to 20 and there is no walk strip to
+     * cycle through.  What the clip's frame index chooses is therefore
+     * where the one picture is drawn, not which picture is drawn.
+     *
+     * Measured against the camera rather than in whole pixels for the
+     * reason stockBarBounds() gives: a fixed lift would be invisible at
+     * the furthest zoom and a leap at the closest.
+     */
+    inline constexpr std::array<std::int64_t, kWalkerCycleFrames>
+        kWalkerLiftSixteenths{{0, 2, 3, 2}};
+
+    /**
+     * @brief The denominator kWalkerLiftSixteenths is expressed over.
+     */
+    inline constexpr std::int64_t kWalkerLiftDenominator = 16;
+
+    /**
+     * @brief Get the walk cycle, one clip per facing.
+     *
+     * A antwika::animation::DirectionalClipSet rather than one clip,
+     * because that is the type that says a walker is drawn differently
+     * depending on which way it is going, and because a walker keeps
+     * its elapsed count through a turn: the cycle carries on round the
+     * corner instead of restarting.  The four clips are equal today,
+     * since the art is one tile per facing; the day the atlas grows a
+     * walk strip per facing, this function is the only thing that
+     * changes.
+     *
+     * @return The clip set, rebuilt on each call.
+     */
+    [[nodiscard]] animation::DirectionalClipSet walkerClips();
+
+    /**
+     * @brief Get which way a walker's clip set is asked to face.
+     *
+     * The two enumerations are declared in the same order and
+     * animation::Facing says so, so this is one cast rather than a
+     * table that could drift.
+     *
+     * @param facing The direction the walker is facing.
+     * @return The facing to resolve its clip for.
+     */
+    [[nodiscard]] constexpr animation::Facing facingOf(
+        Direction facing) noexcept
+    {
+        return static_cast<animation::Facing>(
+            directionIndex(facing) % kDirectionCount);
+    }
+
+    /**
+     * @brief Get how high above its cell a walker stands this frame.
+     *
+     * The lift is interpolated between the frame it is on and the one
+     * after it, so the gait is smooth rather than stepped, and the
+     * division happens once in pixels -- which is why Progress is a
+     * fraction and not a float.
+     *
+     * @param frame What the walk cycle resolved to.
+     * @param camera Supplies the zoom the lift is measured against.
+     * @return The lift in pixels, never negative.
+     */
+    [[nodiscard]] std::int32_t walkerLift(
+        const animation::Frame &frame, const Camera &camera) noexcept;
+
+    /**
+     * @brief Get where a walker's tile is blitted.
+     *
+     * Its cell's own bounding box, raised by walkerLift().  Everything
+     * it depends on is in the WalkerView, so the picture is still a
+     * pure function of the snapshot and nothing advances a counter to
+     * produce it.
+     *
+     * @param walker The walker to place.
+     * @param camera Supplies the zoom and the pan.
+     * @return The destination rectangle to blit into.
+     */
+    [[nodiscard]] Rect walkerBounds(
+        const WalkerView &walker, const Camera &camera);
 
     /**
      * @brief Get where a building's stock bar stands on screen.

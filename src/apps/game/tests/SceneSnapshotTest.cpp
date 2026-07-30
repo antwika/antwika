@@ -310,7 +310,8 @@ TEST(SceneSnapshotTest, SnapshotOf_CarriesWhatAWalkerIsCarrying)
             .at = Cell{.x = 1, .y = 1},
             .facing = Direction::South,
             .kind = WalkerKind::Fireman,
-            .carried = 4}));
+            .carried = 4,
+            .stepsTaken = 9}));
 }
 
 TEST(SceneSnapshotTest, WalkerViewEquality_ComparesEachFieldIndependently)
@@ -337,6 +338,10 @@ TEST(SceneSnapshotTest, WalkerViewEquality_ComparesEachFieldIndependently)
 
     other = base;
     other.carried = 6;
+    EXPECT_NE(base, other);
+
+    other = base;
+    other.stepsTaken = 3;
     EXPECT_NE(base, other);
 }
 

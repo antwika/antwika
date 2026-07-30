@@ -39,6 +39,7 @@ target_include_directories(antwika_game
 
 target_link_libraries(antwika_game
     PRIVATE
+        antwika::animation
         antwika::app
         antwika::ecs
         antwika::engine

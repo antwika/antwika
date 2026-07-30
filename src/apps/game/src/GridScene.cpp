@@ -1,11 +1,20 @@
 #include "antwika/game/GridScene.hpp"
 
 #include <algorithm>
+#include <array>
 #include <cstdint>
 #include <vector>
 
+#include <antwika/animation/Clip.hpp>
+#include <antwika/animation/DirectionalClipSet.hpp>
+#include <antwika/animation/Facing.hpp>
+#include <antwika/animation/Frame.hpp>
+#include <antwika/animation/LoopMode.hpp>
+#include <antwika/animation/Playback.hpp>
+#include <antwika/animation/Progress.hpp>
 #include <antwika/gfx/Color.hpp>
 #include <antwika/gfx/Rect.hpp>
+#include <antwika/time/Tick.hpp>
 
 #include "antwika/game/Direction.hpp"
 #include "antwika/game/IsoProjection.hpp"
@@ -76,6 +85,56 @@ namespace antwika::game
             return links;
         }
     } // namespace
+
+    animation::DirectionalClipSet walkerClips()
+    {
+        const auto cycle = animation::uniformClip(
+            0,
+            kWalkerCycleFrames,
+            kWalkerCycleTicksPerFrame,
+            animation::LoopMode::Loop);
+
+        return animation::DirectionalClipSet(
+            std::array<animation::Clip, animation::kFacingCount>{
+                {cycle, cycle, cycle, cycle}});
+    }
+
+    std::int32_t walkerLift(
+        const animation::Frame &frame, const Camera &camera) noexcept
+    {
+        const auto unit = static_cast<std::int64_t>(camera.halfWidth());
+
+        // uniformClip() numbers its frames from zero upwards.
+        // So the index is already this table's own index.
+        // The remainder is what keeps a hand-built frame in range.
+        const auto here = frame.index % kWalkerCycleFrames;
+        const auto next = (here + 1) % kWalkerCycleFrames;
+
+        const auto from =
+            kWalkerLiftSixteenths[here] * unit / kWalkerLiftDenominator;
+        const auto to =
+            kWalkerLiftSixteenths[next] * unit / kWalkerLiftDenominator;
+
+        return static_cast<std::int32_t>(
+            animation::interpolate(from, to, frame.progress));
+    }
+
+    Rect walkerBounds(const WalkerView &walker, const Camera &camera)
+    {
+        // stepsTaken counts up from zero and nothing lowers it.
+        // So the clamp is load-bearing only for a hand-built view.
+        // A negative count would otherwise wrap into a huge elapsed.
+        const auto elapsed = static_cast<antwika::time::Tick>(
+            std::max(0, walker.stepsTaken));
+
+        const auto frame = animation::resolve(
+            walkerClips(), facingOf(walker.facing), elapsed);
+
+        auto bounds = cellBounds(walker.at, camera);
+        bounds.origin.y -= walkerLift(frame, camera);
+
+        return bounds;
+    }
 
     bool GridScene::onCanvas(
         Cell cell, Size canvas, const SceneSnapshot &snapshot)
@@ -149,7 +208,7 @@ namespace antwika::game
             renderer.drawTexture(
                 atlas,
                 walkerTile(walker.facing),
-                cellBounds(walker.at, snapshot.camera),
+                walkerBounds(walker, snapshot.camera),
                 walkerTint(walker.kind));
         }
 
