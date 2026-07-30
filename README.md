@@ -64,6 +64,28 @@ After the build completes, run the compiled binaries on your target machine:
 - Linux: `build/bin/antwika_game`, `build/bin/antwika_life`, `build/bin/antwika_poker`, `build/bin/antwika_sudoku`, `build/bin/antwika_task_worker`
 - Windows: `build/bin/antwika_game.exe`, `build/bin/antwika_life.exe`, `build/bin/antwika_poker.exe`, `build/bin/antwika_sudoku.exe`, `build/bin/antwika_task_worker.exe`
 
+### Choosing a graphics backend
+
+Builds use the `null` graphics backend, which opens windows that draw nothing and needs no display.
+To build against a real one, pick it once:
+
+```
+Ctrl + Shift + P > Tasks: Run Task > Select gfx backend
+```
+
+Choose `null`, `sdl3` or `raylib`.
+`Ctrl + Shift + B` builds that backend from then on, so the choice is made once rather than on every build.
+The same thing works from a terminal:
+
+```sh
+scripts/select_gfx_backend.sh sdl3
+scripts/build.sh
+```
+
+A real backend builds into `build-sdl3/` or `build-raylib/` rather than `build/`, matching what CI does, so switching backends never invalidates the previous one.
+`build/bin/antwika_gfx_demo` opens a window and draws until you close it -- under the `null` backend there is nothing to close, so that build runs until interrupted.
+The selection lives in the untracked `.vscode/gfx-backend`, which makes it yours rather than the repository's.
+
 ## Replays
 
 The engine runs on a fixed timestep and every event dispatched during a run is tick-stamped, so a run can be recorded and later reloaded to reproduce the exact same resulting state:

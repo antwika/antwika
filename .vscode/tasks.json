@@ -66,18 +66,35 @@
             }
         },
         {
+            "label": "Select gfx backend",
+            "type": "shell",
+            "command": "./scripts/select_gfx_backend.sh ${input:gfxBackend}",
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "problemMatcher": []
+        },
+        {
             "label": "Build",
+            "type": "shell",
+            "command": "./scripts/build.sh",
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            }
+        },
+        {
+            "label": "Build (null backend)",
             "dependsOrder": "sequence",
             "dependsOn": [
                 "Conan install",
                 "CMake preset conan-release",
                 "CMake build",
                 "Test"
-            ],
-            "group": {
-                "kind": "build",
-                "isDefault": true
-            }
+            ]
         },
         {
             "label": "Coverage",
@@ -89,6 +106,19 @@
                 "Test (coverage)",
                 "Gcovr coverage report"
             ]
+        }
+    ],
+    "inputs": [
+        {
+            "id": "gfxBackend",
+            "type": "pickString",
+            "description": "Graphics backend for later builds",
+            "options": [
+                "null",
+                "sdl3",
+                "raylib"
+            ],
+            "default": "null"
         }
     ]
 }

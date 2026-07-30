@@ -7,3 +7,6 @@ __pycache__
 
 !profiles/build/
 !CMakePresets.json
+
+# Which gfx backend the VS Code build task builds.
+.vscode/gfx-backend
