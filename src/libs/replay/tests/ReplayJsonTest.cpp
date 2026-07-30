@@ -45,7 +45,7 @@ TEST(ReplayJsonTest, RoundTripsManyEventsInOrder)
         },
     };
     EXPECT_EQ(
-        replayFromJson(replayToJson(ReplayDocument{.events = events})),
+        replayFromJson(replayToJson(events)),
         (ReplayDocument{.events = events}));
 }
 
@@ -114,15 +114,13 @@ TEST(ReplayJsonTest, ReplayToJsonWritesNoCanvasWhenTheDocumentHasNone)
 
 TEST(ReplayJsonTest, RoundTripsTheCanvasTheRecordingWasMadeAgainst)
 {
-    const ReplayDocument document{
-        .events = {},
-        .canvas = Size{.width = 1024, .height = 640},
-    };
+    const auto canvas = Size{.width = 1024, .height = 640};
 
-    const auto encoded = replayToJson(document);
+    const auto encoded = replayToJson({}, canvas);
     EXPECT_EQ(encoded.at("canvas").at("width"), 1024);
     EXPECT_EQ(encoded.at("canvas").at("height"), 640);
-    EXPECT_EQ(replayFromJson(encoded), document);
+    EXPECT_EQ(
+        replayFromJson(encoded), (ReplayDocument{.canvas = canvas}));
 }
 
 // The whole point of the field being optional.
