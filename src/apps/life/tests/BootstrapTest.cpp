@@ -274,3 +274,68 @@ TEST(BootstrapTest, Bootstrap_ThrowsWhenMaxTicksIsReachedWithoutAStopEvent)
                 .maxTicks = 3}),
         EngineLoopError);
 }
+
+namespace
+{
+    /**
+     * @brief A system that does nothing, to be looked for by address.
+     */
+    class NoopSystem final : public ISystem
+    {
+    public:
+        void update(World &, antwika::time::Tick) override
+        {
+        }
+    };
+} // namespace
+
+TEST(ObserversForTest, ABackendThatDrawsLeavesTheBoardUnprinted)
+{
+    NoopSystem renderer;
+    NoopSystem printer;
+    NoopSystem pacer;
+
+    const auto observers = antwika::life::observersFor(
+        renderer, printer, pacer, false);
+
+    ASSERT_EQ(observers.size(), 2U);
+    EXPECT_EQ(&observers[0].get(), &renderer);
+    EXPECT_EQ(&observers[1].get(), &pacer);
+}
+
+TEST(ObserversForTest, ABackendThatDrawsNothingPrintsTheBoardInstead)
+{
+    NoopSystem renderer;
+    NoopSystem printer;
+    NoopSystem pacer;
+
+    const auto observers = antwika::life::observersFor(
+        renderer, printer, pacer, true);
+
+    ASSERT_EQ(observers.size(), 3U);
+    EXPECT_EQ(&observers[0].get(), &renderer);
+    EXPECT_EQ(&observers[1].get(), &printer);
+
+    // Paced last, after the frame, whichever backend is in play.
+    EXPECT_EQ(&observers[2].get(), &pacer);
+}
+
+TEST(AnnounceHowToStopTest, SaysNothingWhenThereIsAWindowToClose)
+{
+    NiceMock<MockLogger> logger;
+
+    EXPECT_CALL(logger, log(::testing::_, ::testing::_)).Times(0);
+
+    antwika::life::announceHowToStop(logger, false);
+}
+
+TEST(AnnounceHowToStopTest, SaysHowToStopAHeadlessRun)
+{
+    NiceMock<MockLogger> logger;
+
+    EXPECT_CALL(
+        logger,
+        log(::testing::_, ::testing::HasSubstr("press Ctrl+C to stop")));
+
+    antwika::life::announceHowToStop(logger, true);
+}

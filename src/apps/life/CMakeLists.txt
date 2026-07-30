@@ -31,6 +31,7 @@ target_compile_definitions(antwika_life
 
 target_link_libraries(antwika_life
     PRIVATE
+        antwika::app
         antwika::ecs
         antwika::engine
         antwika::gfx

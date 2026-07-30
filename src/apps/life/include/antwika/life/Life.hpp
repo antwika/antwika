@@ -33,6 +33,40 @@ namespace antwika::life
     using antwika::replay::IReplaySource;
 
     /**
+     * @brief Pick the systems that watch each tick of a run.
+     *
+     * A backend that draws nothing leaves the board to be printed, and
+     * either way the run is paced -- last, after the frame, since a run
+     * with no end of its own would otherwise go flat out.
+     *
+     * It is a function rather than three lines in a main() because a
+     * composition root is excluded from the coverage report, and which
+     * systems observe a headless run is not a thing to leave unmeasured.
+     *
+     * @param renderer Draws the board each tick.
+     * @param printer Writes the board out, for a run nobody can watch.
+     * @param pacer Holds each tick back to the wall clock.
+     * @param drawsNothing Whether the backend shows anything at all.
+     * @return The observers, in the order they should run.
+     */
+    [[nodiscard]] std::vector<std::reference_wrapper<ISystem>> observersFor(
+        ISystem &renderer,
+        ISystem &printer,
+        ISystem &pacer,
+        bool drawsNothing);
+
+    /**
+     * @brief Say how to stop a run nobody can close a window on.
+     *
+     * The run has no end of its own: it goes on until the window closes,
+     * or until a replay says to stop. A headless build reports neither.
+     *
+     * @param logger Where the notice is written.
+     * @param drawsNothing Whether the backend shows anything at all.
+     */
+    void announceHowToStop(ILogger &logger, bool drawsNothing);
+
+    /**
      * @brief Builds a tick sink over the state bootstrap() owns.
      *
      * A factory rather than a sink, because a sink that folds events into

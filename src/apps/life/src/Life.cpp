@@ -102,4 +102,32 @@ namespace antwika::life
         return readBoard(world, grid);
     }
 
+    std::vector<std::reference_wrapper<ISystem>> observersFor(
+        ISystem &renderer,
+        ISystem &printer,
+        ISystem &pacer,
+        bool drawsNothing)
+    {
+        std::vector<std::reference_wrapper<ISystem>> observers{renderer};
+        if (drawsNothing)
+        {
+            observers.emplace_back(printer);
+        }
+        observers.emplace_back(pacer);
+        return observers;
+    }
+
+    void announceHowToStop(ILogger &logger, bool drawsNothing)
+    {
+        if (!drawsNothing)
+        {
+            return;
+        }
+
+        logger.log(
+            antwika::log::Level::Info,
+            "Antwika Life: this backend has no window to close, so "
+            "press Ctrl+C to stop");
+    }
+
 } // namespace antwika::life

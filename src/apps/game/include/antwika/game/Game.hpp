@@ -2,6 +2,7 @@
 
 #include <functional>
 #include <optional>
+#include <ostream>
 #include <vector>
 
 #include <antwika/ecs/ISystem.hpp>
@@ -177,5 +178,18 @@ namespace antwika::game
      * payload of the wrong shape.
      */
     GameSummary bootstrap(const GameConfig &config);
+
+    /**
+     * @brief Write what a run amounted to.
+     *
+     * It lives here rather than in a main() so that a test can read it:
+     * a composition root is excluded from the coverage report, and a
+     * loop over the walkers is exactly what that exclusion should not be
+     * hiding.
+     *
+     * @param out Where the summary is written.
+     * @param summary What the run amounted to.
+     */
+    void printSummary(std::ostream &out, const GameSummary &summary);
 
 } // namespace antwika::game
