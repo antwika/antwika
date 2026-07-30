@@ -6,6 +6,7 @@ add_executable(antwika_poker
     src/PokerRoomSink.cpp
     src/PolicyAgent.cpp
     src/TablePrinter.cpp
+    src/TableSnapshot.cpp
     src/main.cpp
 )
 

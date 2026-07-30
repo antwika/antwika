@@ -8,6 +8,7 @@ add_executable(antwika_poker_tests
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/PokerRoomSink.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/PolicyAgent.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/TablePrinter.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/TableSnapshot.cpp
     AgentStyleTest.cpp
     BankrollLedgerTest.cpp
     BootstrapTest.cpp
@@ -17,6 +18,7 @@ add_executable(antwika_poker_tests
     ReplayIntegrationTest.cpp
     RoomSummaryTest.cpp
     TablePrinterTest.cpp
+    TableSnapshotTest.cpp
 )
 
 target_include_directories(antwika_poker_tests
