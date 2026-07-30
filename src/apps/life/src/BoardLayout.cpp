@@ -27,10 +27,11 @@ namespace antwika::life
             .width = width,
             .height = height,
             .cell = cell,
-            .originX =
-                static_cast<std::int32_t>((canvas.width - used.width) / 2),
-            .originY =
-                static_cast<std::int32_t>((canvas.height - used.height) / 2)};
+            .origin = {
+                .x = static_cast<std::int32_t>(
+                    (canvas.width - used.width) / 2),
+                .y = static_cast<std::int32_t>(
+                    (canvas.height - used.height) / 2)}};
     }
 
     std::optional<CellCoordinate> cellAt(
@@ -44,9 +45,9 @@ namespace antwika::life
         // Widened before subtracting, so the arithmetic cannot overflow.
         // A pointer far outside the surface should miss, not wrap.
         const auto localX =
-            static_cast<std::int64_t>(x) - layout.originX;
+            static_cast<std::int64_t>(x) - layout.origin.x;
         const auto localY =
-            static_cast<std::int64_t>(y) - layout.originY;
+            static_cast<std::int64_t>(y) - layout.origin.y;
 
         if (localX < 0 || localY < 0)
         {

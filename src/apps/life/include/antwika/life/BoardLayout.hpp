@@ -3,11 +3,13 @@
 #include <cstdint>
 #include <optional>
 
+#include <antwika/gfx/Point.hpp>
 #include <antwika/gfx/Size.hpp>
 
 namespace antwika::life
 {
 
+    using antwika::gfx::Point;
     using antwika::gfx::Size;
 
     /**
@@ -24,8 +26,7 @@ namespace antwika::life
         std::uint32_t width = 0;  ///< Columns on the board.
         std::uint32_t height = 0; ///< Rows on the board.
         std::uint32_t cell = 0;   ///< Pixels along one cell's edge.
-        std::int32_t originX = 0; ///< Left edge of the board on canvas.
-        std::int32_t originY = 0; ///< Top edge of the board on canvas.
+        Point origin{};           ///< Top-left of the board on canvas.
 
         /**
          * @brief Compare two layouts.

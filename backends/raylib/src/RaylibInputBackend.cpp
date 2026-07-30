@@ -116,23 +116,23 @@ namespace antwika::input::raylib
         }
 
         const Vector2 wheel = GetMouseWheelMoveV();
-        const auto horizontal = static_cast<std::int32_t>(wheel.x);
-        const auto vertical = static_cast<std::int32_t>(wheel.y);
+        const PointerScrolled scroll{
+            .horizontal = static_cast<std::int32_t>(wheel.x),
+            .vertical = static_cast<std::int32_t>(wheel.y)};
 
         // Compared against what was last reported, not reported outright.
         // raylib holds this value for a whole frame.
         // A caller draining to empty therefore reads it more than once.
-        if (horizontal != lastHorizontalNotches
-            || vertical != lastVerticalNotches)
+        if (scroll == lastScroll)
         {
-            lastHorizontalNotches = horizontal;
-            lastVerticalNotches = vertical;
+            return;
+        }
 
-            if (horizontal != 0 || vertical != 0)
-            {
-                pending.push_back(PointerScrolled{
-                    .horizontal = horizontal, .vertical = vertical});
-            }
+        lastScroll = scroll;
+
+        if (scroll.horizontal != 0 || scroll.vertical != 0)
+        {
+            pending.push_back(scroll);
         }
     }
 

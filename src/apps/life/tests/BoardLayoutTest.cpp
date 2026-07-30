@@ -5,8 +5,10 @@
 #include <cstdint>
 #include <limits>
 
+#include <antwika/gfx/Point.hpp>
 #include <antwika/gfx/Size.hpp>
 
+using antwika::gfx::Point;
 using antwika::gfx::Size;
 using antwika::life::BoardLayout;
 using antwika::life::CellCoordinate;
@@ -24,8 +26,7 @@ namespace
             .width = 4,
             .height = 4,
             .cell = 10,
-            .originX = 0,
-            .originY = 0};
+            .origin = {.x = 0, .y = 0}};
     }
 } // namespace
 
@@ -42,8 +43,7 @@ TEST(BoardLayoutTest, LayoutFor_CentresWhatIsLeftOver)
 
     ASSERT_TRUE(layout.has_value());
     EXPECT_EQ(layout->cell, 11u);
-    EXPECT_EQ(layout->originX, 0);
-    EXPECT_EQ(layout->originY, 0);
+    EXPECT_EQ(layout->origin, (Point{.x = 0, .y = 0}));
 }
 
 TEST(BoardLayoutTest, LayoutFor_KeepsCellsSquareOnAnOblongCanvas)
@@ -52,8 +52,7 @@ TEST(BoardLayoutTest, LayoutFor_KeepsCellsSquareOnAnOblongCanvas)
 
     ASSERT_TRUE(layout.has_value());
     EXPECT_EQ(layout->cell, 10u);
-    EXPECT_EQ(layout->originX, 30);
-    EXPECT_EQ(layout->originY, 0);
+    EXPECT_EQ(layout->origin, (Point{.x = 30, .y = 0}));
 }
 
 TEST(BoardLayoutTest, LayoutFor_ReturnsNulloptForABoardWithNoColumns)
@@ -95,8 +94,7 @@ TEST(BoardLayoutTest, CellAt_CountsFromTheBoardsOwnOrigin)
         .width = 4,
         .height = 4,
         .cell = 10,
-        .originX = 30,
-        .originY = 5};
+        .origin = {.x = 30, .y = 5}};
 
     EXPECT_FALSE(cellAt(layout, 29, 5).has_value());
     EXPECT_EQ(cellAt(layout, 30, 5), (CellCoordinate{.x = 0, .y = 0}));
@@ -122,8 +120,7 @@ TEST(BoardLayoutTest, CellAt_SurvivesTheExtremesOfAPosition)
         .width = 4,
         .height = 4,
         .cell = 10,
-        .originX = -20,
-        .originY = 20};
+        .origin = {.x = -20, .y = 20}};
 
     constexpr auto lowest = std::numeric_limits<std::int32_t>::min();
     constexpr auto highest = std::numeric_limits<std::int32_t>::max();
@@ -142,16 +139,19 @@ TEST(BoardLayoutTest, Equality_IsFalseWhenAnyFieldDiffers)
     const auto layout = exactLayout();
 
     EXPECT_EQ(layout, exactLayout());
+    EXPECT_NE(layout, (BoardLayout{.width = 5, .height = 4, .cell = 10}));
+    EXPECT_NE(layout, (BoardLayout{.width = 4, .height = 5, .cell = 10}));
+    EXPECT_NE(layout, (BoardLayout{.width = 4, .height = 4, .cell = 11}));
     EXPECT_NE(layout, (BoardLayout{
-        .width = 5, .height = 4, .cell = 10, .originX = 0, .originY = 0}));
+        .width = 4,
+        .height = 4,
+        .cell = 10,
+        .origin = {.x = 1, .y = 0}}));
     EXPECT_NE(layout, (BoardLayout{
-        .width = 4, .height = 5, .cell = 10, .originX = 0, .originY = 0}));
-    EXPECT_NE(layout, (BoardLayout{
-        .width = 4, .height = 4, .cell = 11, .originX = 0, .originY = 0}));
-    EXPECT_NE(layout, (BoardLayout{
-        .width = 4, .height = 4, .cell = 10, .originX = 1, .originY = 0}));
-    EXPECT_NE(layout, (BoardLayout{
-        .width = 4, .height = 4, .cell = 10, .originX = 0, .originY = 1}));
+        .width = 4,
+        .height = 4,
+        .cell = 10,
+        .origin = {.x = 0, .y = 1}}));
 }
 
 TEST(BoardLayoutTest, CellCoordinateEquality_ComparesBothCoordinates)

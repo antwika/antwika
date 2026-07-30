@@ -41,7 +41,7 @@ namespace antwika::life
 
         renderer.drawRect(
             Rect{
-                .origin = {.x = layout->originX, .y = layout->originY},
+                .origin = layout->origin,
                 .size = {
                     .width = cell * board.width,
                     .height = cell * board.height}},
@@ -62,9 +62,9 @@ namespace antwika::life
             renderer.drawRect(
                 Rect{
                     .origin = {
-                        .x = layout->originX +
+                        .x = layout->origin.x +
                              static_cast<std::int32_t>(column * cell),
-                        .y = layout->originY +
+                        .y = layout->origin.y +
                              static_cast<std::int32_t>(row * cell)},
                     .size = {.width = cell, .height = cell}},
                 kAliveCell);

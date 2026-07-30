@@ -3,13 +3,11 @@
 
 #include <array>
 #include <cstddef>
-#include <filesystem>
 #include <functional>
 #include <memory>
 #include <optional>
 #include <string>
 #include <string_view>
-#include <system_error>
 #include <vector>
 
 #include <antwika/ecs/World.hpp>
@@ -20,7 +18,6 @@
 #include <antwika/event/TickEventRecorder.hpp>
 #include <antwika/gfx/Size.hpp>
 #include <antwika/input/Events.hpp>
-#include <antwika/input/IInputBackend.hpp>
 #include <antwika/input/InputCapabilities.hpp>
 #include <antwika/input/InputEvent.hpp>
 #include <antwika/input/InputEventCodec.hpp>
@@ -38,13 +35,14 @@
 #include "antwika/life/Life.hpp"
 #include "antwika/life/PointerToggleSink.hpp"
 
+#include "ScratchFile.hpp"
+
 using antwika::ecs::World;
 using antwika::event::Event;
 using antwika::event::EventRecorder;
 using antwika::event::TickEvent;
 using antwika::event::TickEventRecorder;
 using antwika::gfx::Size;
-using antwika::input::IInputBackend;
 using antwika::input::InputCapabilities;
 using antwika::input::InputEvent;
 using antwika::input::InputEventCodec;
@@ -58,6 +56,7 @@ using antwika::input::fakes::FakeInputBackend;
 using antwika::life::Board;
 using antwika::life::Grid;
 using antwika::life::PointerToggleSink;
+using antwika::life::tests::ScratchFile;
 using antwika::log::mocks::MockLogger;
 using antwika::replay::ReplaySource;
 using ::testing::NiceMock;
@@ -80,89 +79,8 @@ namespace
         antwika::life::events::kStarted,
     };
 
-    /**
-     * @brief IInputBackend reporting one tick's worth of edges per drain.
-     *
-     * FakeInputBackend hands over its whole script the first time it is
-     * drained, which is one tick. A drag crossing tick boundaries is the
-     * more interesting case -- it is what makes the sink's held state
-     * something a replay has to regenerate rather than something that
-     * lives and dies inside a single tick.
-     */
-    class RoundedInputBackend final : public IInputBackend
-    {
-    public:
-        explicit RoundedInputBackend(
-            std::vector<std::vector<InputEvent>> rounds)
-            : rounds(std::move(rounds))
-        {
-        }
-
-        [[nodiscard]] std::string_view name() const override
-        {
-            return "rounded";
-        }
-
-        [[nodiscard]] InputCapabilities capabilities() const override
-        {
-            return InputCapabilities{.keyboard = false, .pointer = true};
-        }
-
-        [[nodiscard]] std::optional<InputEvent> pollEvent() override
-        {
-            if (round >= rounds.size())
-            {
-                return std::nullopt;
-            }
-
-            if (next < rounds[round].size())
-            {
-                auto event = rounds[round][next];
-                ++next;
-                return event;
-            }
-
-            // Reporting an empty queue is what ends this tick's drain.
-            ++round;
-            next = 0;
-
-            return std::nullopt;
-        }
-
-    private:
-        std::vector<std::vector<InputEvent>> rounds;
-        std::size_t round = 0;
-        std::size_t next = 0;
-    };
-
-    // Removes its backing file on scope exit.
-    class ScratchFile
-    {
-    public:
-        explicit ScratchFile(std::string_view name)
-            : path(std::filesystem::temp_directory_path() / name)
-        {
-        }
-
-        ~ScratchFile()
-        {
-            std::error_code ignored;
-            std::filesystem::remove(path, ignored);
-        }
-
-        ScratchFile(const ScratchFile &) = delete;
-        ScratchFile(ScratchFile &&) = delete;
-        ScratchFile &operator=(const ScratchFile &) = delete;
-        ScratchFile &operator=(ScratchFile &&) = delete;
-
-        [[nodiscard]] std::string string() const
-        {
-            return path.string();
-        }
-
-    private:
-        std::filesystem::path path;
-    };
+    constexpr InputCapabilities kPointerOnly{
+        .keyboard = false, .pointer = true};
 
     [[nodiscard]] InputEvent pressAt(std::int32_t x, std::int32_t y)
     {
@@ -187,6 +105,8 @@ namespace
      * The block is drawn inside a single tick, so it is complete before
      * the first generation runs and survives every one after it -- which
      * is what keeps the board this test compares from being empty.
+     * The second drag is spread over three rounds, so the sink's held
+     * state has to survive a tick boundary.
      */
     [[nodiscard]] std::vector<std::vector<InputEvent>> dragRounds()
     {
@@ -262,7 +182,7 @@ TEST(PointerReplayIntegrationTest, RecordingADragReplaysToTheSameBoard)
         EventRecorder eventSink;
         TickEventRecorder replayRecorder;
 
-        RoundedInputBackend backend(dragRounds());
+        FakeInputBackend backend(dragRounds(), kPointerOnly);
         ReplaySource fileSource(stopAt(kStopTick));
         LiveInputSource source(fileSource, backend, codec);
 
@@ -332,7 +252,7 @@ TEST(PointerReplayIntegrationTest, ADragWithinOneTickDrawsWhatItCrossed)
          moveTo(25, 25),
          moveTo(15, 25),
          releaseAt(15, 25)},
-        InputCapabilities{.keyboard = false, .pointer = true});
+        kPointerOnly);
 
     ReplaySource fileSource(stopAt(0));
     LiveInputSource source(fileSource, backend, codec);

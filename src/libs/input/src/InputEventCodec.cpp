@@ -157,39 +157,10 @@ namespace antwika::input
         // Each validator is built once, on the first decode that needs it.
         // The excluded line holds the guard's throw and abort edges.
         // This is the same idiom, and the same exclusion, as BoardSink.
-
-        const Validator &keyDownValidator()
+        template <nlohmann::json (*Build)()>
+        const Validator &validatorFor()
         {
-            static const Validator validator(
-                keyDownSchema()); // GCOVR_EXCL_LINE
-            return validator;
-        }
-
-        const Validator &keyUpValidator()
-        {
-            static const Validator validator(
-                keyUpSchema()); // GCOVR_EXCL_LINE
-            return validator;
-        }
-
-        const Validator &pointerMoveValidator()
-        {
-            static const Validator validator(
-                pointerMoveSchema()); // GCOVR_EXCL_LINE
-            return validator;
-        }
-
-        const Validator &pointerButtonValidator()
-        {
-            static const Validator validator(
-                pointerButtonSchema()); // GCOVR_EXCL_LINE
-            return validator;
-        }
-
-        const Validator &pointerScrollValidator()
-        {
-            static const Validator validator(
-                pointerScrollSchema()); // GCOVR_EXCL_LINE
+            static const Validator validator(Build()); // GCOVR_EXCL_LINE
             return validator;
         }
 
@@ -200,6 +171,18 @@ namespace antwika::input
                 event.payload,
                 validator,
                 "InputEventCodec: " + event.name + " payload");
+        }
+
+        // A press and a release carry the same fields, and one schema.
+        // So they share the reading of it too.
+        template <typename Edge>
+        [[nodiscard]] Edge buttonEdge(const nlohmann::json &payload)
+        {
+            return Edge{
+                .button = mouseButtonFromString(
+                    payload.at("button").get<std::string>()),
+                .position = readPosition(payload),
+                .modifiers = readModifiers(payload)};
         }
 
         /**
@@ -298,7 +281,8 @@ namespace antwika::input
     {
         if (event.name == events::kKeyDown)
         {
-            const auto payload = parsed(event, keyDownValidator());
+            const auto payload =
+                parsed(event, validatorFor<keyDownSchema>());
 
             return KeyPressed{
                 .key = keyFromString(payload.at("key").get<std::string>()),
@@ -308,7 +292,8 @@ namespace antwika::input
 
         if (event.name == events::kKeyUp)
         {
-            const auto payload = parsed(event, keyUpValidator());
+            const auto payload =
+                parsed(event, validatorFor<keyUpSchema>());
 
             return KeyReleased{
                 .key = keyFromString(payload.at("key").get<std::string>()),
@@ -317,36 +302,28 @@ namespace antwika::input
 
         if (event.name == events::kPointerMove)
         {
-            const auto payload = parsed(event, pointerMoveValidator());
+            const auto payload =
+                parsed(event, validatorFor<pointerMoveSchema>());
 
             return PointerMoved{.position = readPosition(payload)};
         }
 
         if (event.name == events::kPointerDown)
         {
-            const auto payload = parsed(event, pointerButtonValidator());
-
-            return PointerButtonPressed{
-                .button = mouseButtonFromString(
-                    payload.at("button").get<std::string>()),
-                .position = readPosition(payload),
-                .modifiers = readModifiers(payload)};
+            return buttonEdge<PointerButtonPressed>(
+                parsed(event, validatorFor<pointerButtonSchema>()));
         }
 
         if (event.name == events::kPointerUp)
         {
-            const auto payload = parsed(event, pointerButtonValidator());
-
-            return PointerButtonReleased{
-                .button = mouseButtonFromString(
-                    payload.at("button").get<std::string>()),
-                .position = readPosition(payload),
-                .modifiers = readModifiers(payload)};
+            return buttonEdge<PointerButtonReleased>(
+                parsed(event, validatorFor<pointerButtonSchema>()));
         }
 
         if (event.name == events::kPointerScroll)
         {
-            const auto payload = parsed(event, pointerScrollValidator());
+            const auto payload =
+                parsed(event, validatorFor<pointerScrollSchema>());
 
             // Excluded for the cleanup a throw mid-aggregate would need.
             // The schema has already ruled that throw out.

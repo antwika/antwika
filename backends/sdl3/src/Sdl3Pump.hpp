@@ -110,7 +110,7 @@ namespace antwika::sdl3
         [[nodiscard]] std::optional<SDL_Event> nextInputEvent();
 
     private:
-        [[nodiscard]] static std::optional<SDL_Event> takeFrom(
+        [[nodiscard]] std::optional<SDL_Event> takeFrom(
             std::deque<SDL_Event> &queue);
 
         void drainSdl();

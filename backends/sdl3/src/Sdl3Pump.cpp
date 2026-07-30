@@ -79,26 +79,22 @@ namespace antwika::sdl3
 
     std::optional<SDL_Event> Sdl3Pump::nextWindowEvent()
     {
-        if (windowEvents.empty())
-        {
-            drainSdl();
-        }
-
         return takeFrom(windowEvents);
     }
 
     std::optional<SDL_Event> Sdl3Pump::nextInputEvent()
     {
-        if (inputEvents.empty())
+        return takeFrom(inputEvents);
+    }
+
+    // Whichever subsystem asks first is what advances both queues.
+    std::optional<SDL_Event> Sdl3Pump::takeFrom(std::deque<SDL_Event> &queue)
+    {
+        if (queue.empty())
         {
             drainSdl();
         }
 
-        return takeFrom(inputEvents);
-    }
-
-    std::optional<SDL_Event> Sdl3Pump::takeFrom(std::deque<SDL_Event> &queue)
-    {
         if (queue.empty())
         {
             return std::nullopt;

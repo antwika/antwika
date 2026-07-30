@@ -2,13 +2,11 @@
 #include <gtest/gtest.h>
 
 #include <array>
-#include <filesystem>
 #include <functional>
 #include <memory>
 #include <optional>
 #include <string>
 #include <string_view>
-#include <system_error>
 #include <vector>
 
 #include <antwika/engine/Events.hpp>
@@ -34,6 +32,8 @@
 #include "antwika/life/RenderSystem.hpp"
 #include "antwika/life/WindowInputSource.hpp"
 
+#include "ScratchFile.hpp"
+
 using antwika::ecs::ISystem;
 using antwika::event::Event;
 using antwika::event::EventRecorder;
@@ -53,6 +53,7 @@ using antwika::life::Board;
 using antwika::life::BoardScene;
 using antwika::life::RenderSystem;
 using antwika::life::WindowInputSource;
+using antwika::life::tests::ScratchFile;
 using antwika::log::mocks::MockLogger;
 using antwika::replay::ReplaySource;
 using ::testing::ByMove;
@@ -73,35 +74,6 @@ namespace
 
     constexpr std::array<std::string_view, 1> kSelfGeneratedEventNames{
         antwika::life::events::kStarted,
-    };
-
-    // Removes its backing file on scope exit.
-    class ScratchFile
-    {
-    public:
-        explicit ScratchFile(std::string_view name)
-            : path(std::filesystem::temp_directory_path() / name)
-        {
-        }
-
-        ~ScratchFile()
-        {
-            std::error_code ignored;
-            std::filesystem::remove(path, ignored);
-        }
-
-        ScratchFile(const ScratchFile &) = delete;
-        ScratchFile(ScratchFile &&) = delete;
-        ScratchFile &operator=(const ScratchFile &) = delete;
-        ScratchFile &operator=(ScratchFile &&) = delete;
-
-        [[nodiscard]] std::string string() const
-        {
-            return path.string();
-        }
-
-    private:
-        std::filesystem::path path;
     };
 
     std::vector<TickEvent> gliderSeed()

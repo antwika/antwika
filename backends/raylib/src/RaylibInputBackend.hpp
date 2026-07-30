@@ -1,7 +1,6 @@
 #pragma once
 
 #include <array>
-#include <cstdint>
 #include <deque>
 #include <optional>
 #include <string_view>
@@ -94,8 +93,7 @@ namespace antwika::input::raylib
         std::deque<InputEvent> pending;
         std::optional<Position> lastPosition;
         std::array<bool, kMouseButtonCount> held{};
-        std::int32_t lastHorizontalNotches = 0;
-        std::int32_t lastVerticalNotches = 0;
+        PointerScrolled lastScroll{};
     };
 
 } // namespace antwika::input::raylib

@@ -164,6 +164,24 @@ namespace antwika::input::sdl3
                 .y = static_cast<std::int32_t>(y)};
         }
 
+        // A press and a release differ only in the type they report.
+        template <typename Edge>
+        [[nodiscard]] std::optional<InputEvent> buttonEdge(
+            const SDL_MouseButtonEvent &event)
+        {
+            const auto button = buttonOf(event.button);
+
+            if (!button)
+            {
+                return std::nullopt;
+            }
+
+            return Edge{
+                .button = *button,
+                .position = positionOf(event.x, event.y),
+                .modifiers = modifiersOf(SDL_GetModState())};
+        }
+
         [[nodiscard]] std::optional<InputEvent> translate(
             const SDL_Event &event)
         {
@@ -195,29 +213,9 @@ namespace antwika::input::sdl3
                 return PointerMoved{
                     .position = positionOf(event.motion.x, event.motion.y)};
             case SDL_EVENT_MOUSE_BUTTON_DOWN:
-            {
-                const auto button = buttonOf(event.button.button);
-                if (!button)
-                {
-                    return std::nullopt;
-                }
-                return PointerButtonPressed{
-                    .button = *button,
-                    .position = positionOf(event.button.x, event.button.y),
-                    .modifiers = modifiersOf(SDL_GetModState())};
-            }
+                return buttonEdge<PointerButtonPressed>(event.button);
             case SDL_EVENT_MOUSE_BUTTON_UP:
-            {
-                const auto button = buttonOf(event.button.button);
-                if (!button)
-                {
-                    return std::nullopt;
-                }
-                return PointerButtonReleased{
-                    .button = *button,
-                    .position = positionOf(event.button.x, event.button.y),
-                    .modifiers = modifiersOf(SDL_GetModState())};
-            }
+                return buttonEdge<PointerButtonReleased>(event.button);
             default:
                 // The pump routes nothing else here.
                 // A wheel event is the one case left.

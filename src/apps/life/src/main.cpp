@@ -176,7 +176,9 @@ int main(int argc, char **argv)
             kBoardHeight,
             observers,
             std::nullopt,
-            &replayRecorder,
+            // Registered only when there is a file to write.
+            // A run with no end would otherwise keep every event, forever.
+            options.recordPath ? &replayRecorder : nullptr,
             [&codec](World &world, const Grid &grid)
             {
                 return std::make_unique<PointerToggleSink>(

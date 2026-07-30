@@ -1,20 +1,23 @@
 #pragma once
 
-#include <cstdint>
 #include <map>
+#include <optional>
 #include <set>
 
+#include <antwika/ecs/Entity.hpp>
 #include <antwika/ecs/World.hpp>
 #include <antwika/event/ITickEventSink.hpp>
 #include <antwika/gfx/Size.hpp>
 #include <antwika/input/IInputEventCodec.hpp>
 #include <antwika/input/Position.hpp>
 
+#include "antwika/life/BoardLayout.hpp"
 #include "antwika/life/Grid.hpp"
 
 namespace antwika::life
 {
 
+    using antwika::ecs::Entity;
     using antwika::ecs::World;
     using antwika::event::ITickEventSink;
     using antwika::event::TickEvent;
@@ -99,10 +102,10 @@ namespace antwika::life
         World &world;
         const Grid &grid;
         const IInputEventCodec &codec;
-        Size canvas;
+        std::optional<BoardLayout> layout;
         bool dragging = false;
-        std::set<std::uint64_t> visited;
-        std::map<std::uint64_t, bool> staged;
+        std::set<Entity> visited;
+        std::map<Entity, bool> staged;
     };
 
 } // namespace antwika::life
