@@ -1,7 +1,7 @@
 #include <gtest/gtest.h>
 
 #include <set>
-#include <string>
+#include <string_view>
 
 #include "antwika/game/MenuLabels.hpp"
 #include "antwika/game/MenuState.hpp"
@@ -50,20 +50,20 @@ TEST(MenuLabelsTest, LabelsFor_WritesEverySwedishLabelInAscii)
 {
     const auto swedish = labelsFor(MenuLanguage::Swedish);
 
-    for (const auto *label :
-         {&swedish.title,
-          &swedish.playGame,
-          &swedish.loadReplay,
-          &swedish.saveReplay,
-          &swedish.resumeGame,
-          &swedish.language,
-          &swedish.english,
-          &swedish.swedish})
+    for (const auto label :
+         {swedish.title,
+          swedish.playGame,
+          swedish.loadReplay,
+          swedish.saveReplay,
+          swedish.resumeGame,
+          swedish.language,
+          swedish.english,
+          swedish.swedish})
     {
-        for (const auto character : *label)
+        for (const auto character : label)
         {
-            EXPECT_GE(character, ' ') << *label;
-            EXPECT_LE(character, '~') << *label;
+            EXPECT_GE(character, ' ') << label;
+            EXPECT_LE(character, '~') << label;
         }
     }
 }
@@ -71,7 +71,7 @@ TEST(MenuLabelsTest, LabelsFor_WritesEverySwedishLabelInAscii)
 TEST(MenuLabelsTest, LabelFor_NamesEveryEntryDifferently)
 {
     const MenuLabels labels;
-    std::set<std::string> names;
+    std::set<std::string_view> names;
 
     for (const auto entry : kMenuEntries)
     {
@@ -88,7 +88,7 @@ TEST(MenuLabelsTest, LabelFor_NamesEveryEntryDifferently)
 TEST(MenuLabelsTest, LabelFor_NamesEveryLanguageDifferently)
 {
     const MenuLabels labels;
-    std::set<std::string> names;
+    std::set<std::string_view> names;
 
     for (const auto language : kMenuLanguages)
     {
@@ -98,4 +98,29 @@ TEST(MenuLabelsTest, LabelFor_NamesEveryLanguageDifferently)
     EXPECT_EQ(kMenuLanguages.size(), names.size());
     EXPECT_EQ(labels.english, labelFor(labels, MenuLanguage::English));
     EXPECT_EQ(labels.swedish, labelFor(labels, MenuLanguage::Swedish));
+}
+
+// The comparison stops at the first field that differs.
+// So each of them is given a difference of its own.
+TEST(MenuLabelsTest, Compare_DiffersOnEveryField)
+{
+    const MenuLabels labels;
+
+    EXPECT_EQ(labels, MenuLabels{});
+
+    for (const auto field :
+         {&MenuLabels::title,
+          &MenuLabels::playGame,
+          &MenuLabels::loadReplay,
+          &MenuLabels::saveReplay,
+          &MenuLabels::resumeGame,
+          &MenuLabels::language,
+          &MenuLabels::english,
+          &MenuLabels::swedish})
+    {
+        MenuLabels other;
+        other.*field = "not what it says";
+
+        EXPECT_NE(labels, other);
+    }
 }

@@ -104,14 +104,14 @@ TEST(MainMenuTest, Describe_DrawsEveryEntryAndTheLanguageSelector)
     EXPECT_THAT(
         textsOf(frame.commands),
         ::testing::IsSupersetOf(
-            {labels.title,
-             labels.playGame,
-             labels.loadReplay,
-             labels.saveReplay,
-             labels.resumeGame,
-             labels.language,
-             labels.english,
-             labels.swedish}));
+            {std::string{labels.title},
+             std::string{labels.playGame},
+             std::string{labels.loadReplay},
+             std::string{labels.saveReplay},
+             std::string{labels.resumeGame},
+             std::string{labels.language},
+             std::string{labels.english},
+             std::string{labels.swedish}}));
 }
 
 // There is nothing to go back to until something has begun.
@@ -124,8 +124,8 @@ TEST(MainMenuTest, Describe_LeavesResumeOutBeforeAGameHasBegun)
 
     EXPECT_THAT(
         textsOf(frame.commands),
-        ::testing::Not(::testing::Contains(
-            labelsFor(MenuLanguage::English).resumeGame)));
+        ::testing::Not(::testing::Contains(std::string{
+            labelsFor(MenuLanguage::English).resumeGame})));
     EXPECT_EQ(
         std::nullopt, pointOn(menuWidgets::kResumeGame, state));
 }
@@ -142,7 +142,9 @@ TEST(MainMenuTest, Describe_WritesEveryLabelInTheChosenLanguage)
     EXPECT_THAT(
         textsOf(frame.commands),
         ::testing::IsSupersetOf(
-            {labels.playGame, labels.loadReplay, labels.language}));
+            {std::string{labels.playGame},
+             std::string{labels.loadReplay},
+             std::string{labels.language}}));
 }
 
 TEST(MainMenuTest, Describe_HasAPixelForEveryEntryOnOffer)

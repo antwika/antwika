@@ -1,6 +1,6 @@
 #pragma once
 
-#include <string>
+#include <string_view>
 
 #include "antwika/game/MenuState.hpp"
 
@@ -17,56 +17,62 @@ namespace antwika::game
      *
      * The defaults are English, so MenuLabels{} is the English
      * catalogue and no second copy of it exists.
+     *
+     * Views rather than strings, because every label here is a literal
+     * and a catalogue that allocates eight times is eight allocations
+     * per described frame.
+     * Whatever hands these out owns the characters, which is what a
+     * catalogue does anyway.
      */
     struct MenuLabels
     {
         /**
          * @brief The heading above the entries.
          */
-        std::string title = "Antwika";
+        std::string_view title = "Antwika";
 
         /**
          * @brief Start a game from the beginning.
          */
-        std::string playGame = "Play game";
+        std::string_view playGame = "Play game";
 
         /**
          * @brief Play a recorded session back.
          */
-        std::string loadReplay = "Load replay";
+        std::string_view loadReplay = "Load replay";
 
         /**
          * @brief Write the session so far out.
          */
-        std::string saveReplay = "Save replay";
+        std::string_view saveReplay = "Save replay";
 
         /**
          * @brief Go back to the game already under way.
          */
-        std::string resumeGame = "Resume game";
+        std::string_view resumeGame = "Resume game";
 
         /**
          * @brief The heading above the language selector.
          */
-        std::string language = "Language";
+        std::string_view language = "Language";
 
         /**
          * @brief What English is called, in English.
          */
-        std::string english = "English";
+        std::string_view english = "English";
 
         /**
          * @brief What Swedish is called, in Swedish.
          */
-        std::string swedish = "Svenska";
+        std::string_view swedish = "Svenska";
 
         /**
          * @brief Compare two catalogues.
          * @param other The catalogue to compare against.
          * @return True when every string matches.
          */
-        [[nodiscard]] bool operator==(const MenuLabels &other) const
-            = default;
+        [[nodiscard]] constexpr bool operator==(
+            const MenuLabels &other) const = default;
     };
 
     /**
@@ -78,16 +84,16 @@ namespace antwika::game
      * @param language The language to write the menu in.
      * @return That language's strings; English is MenuLabels{}.
      */
-    [[nodiscard]] MenuLabels labelsFor(MenuLanguage language);
+    [[nodiscard]] MenuLabels labelsFor(MenuLanguage language) noexcept;
 
     /**
      * @brief Get what an entry is called.
      * @param labels The catalogue to read from.
      * @param entry The entry to name.
-     * @return The entry's label, borrowed from the catalogue.
+     * @return The entry's label, viewed in the catalogue.
      */
-    [[nodiscard]] const std::string &labelFor(
-        const MenuLabels &labels, MenuEntry entry);
+    [[nodiscard]] std::string_view labelFor(
+        const MenuLabels &labels, MenuEntry entry) noexcept;
 
     /**
      * @brief Get what a language is called.
@@ -98,9 +104,9 @@ namespace antwika::game
      *
      * @param labels The catalogue to read from.
      * @param language The language to name.
-     * @return The language's name, borrowed from the catalogue.
+     * @return The language's name, viewed in the catalogue.
      */
-    [[nodiscard]] const std::string &labelFor(
-        const MenuLabels &labels, MenuLanguage language);
+    [[nodiscard]] std::string_view labelFor(
+        const MenuLabels &labels, MenuLanguage language) noexcept;
 
 } // namespace antwika::game

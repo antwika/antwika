@@ -12,49 +12,47 @@ namespace antwika::game
         // A glyph outside that range measures one cell and draws none.
         // The button would then be wider than the label inside it.
         // Restoring the diacritics is a font question, not a menu one.
-        [[nodiscard]] MenuLabels swedishLabels()
-        {
-            return MenuLabels{
-                .title = "Antwika",
-                .playGame = "Spela spel",
-                .loadReplay = "Ladda repris",
-                .saveReplay = "Spara repris",
-                .resumeGame = "Ateruppta spel",
-                .language = "Sprak",
-                .english = "English",
-                .swedish = "Svenska"};
-        }
+        constexpr MenuLabels kSwedish{
+            .title = "Antwika",
+            .playGame = "Spela spel",
+            .loadReplay = "Ladda repris",
+            .saveReplay = "Spara repris",
+            .resumeGame = "Ateruppta spel",
+            .language = "Sprak",
+            .english = "English",
+            .swedish = "Svenska"};
+
+        constexpr std::array<MenuLabels, kMenuLanguageCount> kCatalogue{
+            MenuLabels{}, kSwedish};
     } // namespace
 
-    MenuLabels labelsFor(MenuLanguage language)
+    MenuLabels labelsFor(MenuLanguage language) noexcept
     {
-        const std::array<MenuLabels, kMenuLanguageCount> catalogue{
-            MenuLabels{}, swedishLabels()};
-
-        return catalogue
+        return kCatalogue
             [menuLanguageIndex(language) % kMenuLanguageCount];
     }
 
-    const std::string &labelFor(
-        const MenuLabels &labels, MenuEntry entry)
+    std::string_view labelFor(
+        const MenuLabels &labels, MenuEntry entry) noexcept
     {
         // A table rather than a switch, as Direction.hpp explains.
         // There is then no out-of-range arm for a coverage gate.
-        constexpr std::array<std::string MenuLabels::*, kMenuEntryCount>
-            fields{
-                &MenuLabels::playGame,
-                &MenuLabels::loadReplay,
-                &MenuLabels::saveReplay,
-                &MenuLabels::resumeGame};
+        constexpr std::
+            array<std::string_view MenuLabels::*, kMenuEntryCount>
+                fields{
+                    &MenuLabels::playGame,
+                    &MenuLabels::loadReplay,
+                    &MenuLabels::saveReplay,
+                    &MenuLabels::resumeGame};
 
         return labels.*fields[menuEntryIndex(entry) % kMenuEntryCount];
     }
 
-    const std::string &labelFor(
-        const MenuLabels &labels, MenuLanguage language)
+    std::string_view labelFor(
+        const MenuLabels &labels, MenuLanguage language) noexcept
     {
         constexpr std::
-            array<std::string MenuLabels::*, kMenuLanguageCount>
+            array<std::string_view MenuLabels::*, kMenuLanguageCount>
                 fields{&MenuLabels::english, &MenuLabels::swedish};
 
         return labels
