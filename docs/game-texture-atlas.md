@@ -10,17 +10,20 @@ Repainting a tile is therefore free; *moving* one is not, because the header is 
 
 ## The slot layout
 
-The atlas is a grid of `kAtlasColumns` by `kAtlasRows` cells, each `kAtlasTileSize` pixels.
+The atlas is a grid of `kAtlasColumns` by `kAtlasRows` cells, each `kAtlasTileSize` pixels -- eight by four of them today, in a 1024 by 256 pixel picture.
 Slots are numbered left to right, then top to bottom, and `atlasSlot()` turns a slot number into its rectangle.
 
 Slot 0 is the plain ground tile, named `kGroundSlot`.
 Slots 1 to 16 are the road tiles in link-mask order, starting at `kFirstRoadSlot`.
 Slots 17 to 20 are the walker tiles in `Direction` order, starting at `kFirstWalkerSlot`.
+Slots 21 to 25 are the building tiles in `BuildingKind` order, starting at `kFirstBuildingSlot`: house, food source, water source, fire station, architect post.
 
 A road's slot is its link mask, which is why a junction is a lookup rather than four stubs stepped out by hand.
 The mask's bits are the `Direction` enumerators' own indices, handed out by `linkBit()`: North is 1, East 2, South 4 and West 8.
 So slot 1 is the road that joins nothing, slot 1 + 5 is the one running north to south, and slot 1 + 15 is the four-way crossing.
 The walkers follow in the same declaration order — North, East, South, West.
+The buildings follow `BuildingKind`'s declaration order, and `buildingTile()` derives a slot from it arithmetically, so adding a kind to the enum and painting one more tile is the whole change.
+A building is drawn in one colour and told apart from another by its shape rather than by its hue, because a walker's tile is tinted per `WalkerKind` at blit time and the two must not read as the same language.
 
 Two conventions are worth keeping when the art changes.
 The grid lattice is painted into the ground tile's own edges rather than being lines `game::GridScene` draws, so a tile that loses its edge loses the lattice with it.
