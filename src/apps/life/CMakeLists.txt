@@ -3,6 +3,8 @@ add_executable(antwika_life
     src/BoardLayout.cpp
     src/BoardScene.cpp
     src/BoardSink.cpp
+    src/DragPausedSystem.cpp
+    src/DragState.cpp
     src/Grid.cpp
     src/Life.cpp
     src/LifeSystem.cpp

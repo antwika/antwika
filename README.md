@@ -136,6 +136,7 @@ build-sdl3/bin/antwika_life                   # a glider crossing a 32x32 board
 ```
 
 Drag with the left button held to toggle every cell the pointer crosses, one toggle per cell per drag, and watch the next generation take it from there.
+Holding the button also pauses the simulation, so the board stays still while you draw on it rather than evolving out from under the cursor; the cells you toggle still appear as you draw them, and the generations pick up again when you let go.
 Under the default `null` backend there is no window to draw into, so that build prints the board as ASCII instead, which is what keeps the app runnable in CI with no display present.
 Drawing is a write-only projection of the `World` and never feeds back into it.
 Closing the window enters the engine as an `engine.stop` event through the same `IReplaySource` every other external input goes through, so a run ended by closing a window is recorded like any other input — and replaying that recording headlessly reaches the identical board.

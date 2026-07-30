@@ -22,10 +22,12 @@ namespace antwika::life
         World &world,
         const Grid &grid,
         const IInputEventCodec &codec,
-        Size canvas)
+        Size canvas,
+        DragState &drag)
         : world(world),
           grid(grid),
           codec(codec),
+          drag(drag),
           layout(layoutFor(canvas, grid.width(), grid.height()))
     {
     }
@@ -52,7 +54,7 @@ namespace antwika::life
         {
             if (pressed->button == MouseButton::Left)
             {
-                dragging = true;
+                drag.begin();
 
                 // Cleared on the press, not on the release.
                 // That also copes with a press nothing preceded.
@@ -68,7 +70,7 @@ namespace antwika::life
         {
             if (released->button == MouseButton::Left)
             {
-                dragging = false;
+                drag.end();
             }
 
             return;
@@ -76,7 +78,7 @@ namespace antwika::life
 
         if (const auto *moved = std::get_if<PointerMoved>(&*edge))
         {
-            if (dragging)
+            if (drag.inProgress())
             {
                 toggleAt(moved->position);
             }

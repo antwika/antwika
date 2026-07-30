@@ -12,6 +12,7 @@
 #include <antwika/input/Position.hpp>
 
 #include "antwika/life/BoardLayout.hpp"
+#include "antwika/life/DragState.hpp"
 #include "antwika/life/Grid.hpp"
 
 namespace antwika::life
@@ -49,12 +50,17 @@ namespace antwika::life
      * geometry if a window is resized out from under it, which is why the
      * window this drives is not resizable.
      *
-     * Held state -- whether a button is down, which cells this drag has
-     * already visited, and what this tick has staged -- is folded from the
-     * same events rather than read from a device, so it is regenerated
-     * identically on replay. A cell is toggled at most once per drag, so
-     * dragging back across a cell leaves it as the drag first made it
-     * instead of flickering.
+     * Held state -- which cells this drag has already visited, and what
+     * this tick has staged -- is folded from the same events rather than
+     * read from a device, so it is regenerated identically on replay. A
+     * cell is toggled at most once per drag, so dragging back across a
+     * cell leaves it as the drag first made it instead of flickering.
+     *
+     * Whether a button is down goes into the shared DragState rather than
+     * staying private here, because the generation has to stand still
+     * while the board is being drawn on -- see DragPausedSystem. A press
+     * that lands outside the board still starts a drag, and so still
+     * pauses: what pauses is holding the button, not hitting a cell.
      */
     class PointerToggleSink final : public ITickEventSink
     {
@@ -67,12 +73,15 @@ namespace antwika::life
          * this sink.
          * @param codec Decodes each event. Must outlive this sink.
          * @param canvas Size the board is laid out against, in pixels.
+         * @param drag Told when a drag starts and finishes. Must outlive
+         * this sink.
          */
         PointerToggleSink(
             World &world,
             const Grid &grid,
             const IInputEventCodec &codec,
-            Size canvas);
+            Size canvas,
+            DragState &drag);
 
         PointerToggleSink(const PointerToggleSink &) = delete;
         PointerToggleSink(PointerToggleSink &&) = delete;
@@ -102,8 +111,8 @@ namespace antwika::life
         World &world;
         const Grid &grid;
         const IInputEventCodec &codec;
+        DragState &drag;
         std::optional<BoardLayout> layout;
-        bool dragging = false;
         std::set<Entity> visited;
         std::map<Entity, bool> staged;
     };

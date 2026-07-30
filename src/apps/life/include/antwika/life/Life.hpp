@@ -17,6 +17,7 @@
 #include <antwika/time/Tick.hpp>
 
 #include "antwika/life/Board.hpp"
+#include "antwika/life/DragState.hpp"
 #include "antwika/life/Grid.hpp"
 
 namespace antwika::life
@@ -32,15 +33,15 @@ namespace antwika::life
     using antwika::replay::IReplaySource;
 
     /**
-     * @brief Builds a tick sink over the World and Grid bootstrap() owns.
+     * @brief Builds a tick sink over the state bootstrap() owns.
      *
      * A factory rather than a sink, because a sink that folds events into
-     * the board needs both of those, and neither exists before
-     * bootstrap() creates them. Ownership passes back, so the sink lives
-     * exactly as long as the run it belongs to.
+     * the board needs the World, the Grid and the DragState, and none of
+     * them exists before bootstrap() creates them. Ownership passes back,
+     * so the sink lives exactly as long as the run it belongs to.
      */
     using TickSinkFactory = std::function<
-        std::unique_ptr<ITickEventSink>(World &, const Grid &)>;
+        std::unique_ptr<ITickEventSink>(World &, const Grid &, DragState &)>;
 
     /**
      * @brief Announces simulation startup and starts the engine.
@@ -104,9 +105,10 @@ namespace antwika::life
      * wanting to persist a `--record` file should register, since a run's
      * actual length is no longer known ahead of time. Defaults to none.
      * @param extraSink Optional factory for one more tick sink, called
-     * once with the World and Grid this function owns. A sink folding
-     * events into the board needs both, and neither exists until here --
-     * what main.cpp uses to add PointerToggleSink. Defaults to none.
+     * once with the World, Grid and DragState this function owns. A sink
+     * folding events into the board needs all three, and none exists
+     * until here -- what main.cpp uses to add PointerToggleSink.
+     * Defaults to none.
      * @return The resulting Board, for callers (main.cpp, tests).
      */
     Board bootstrap(

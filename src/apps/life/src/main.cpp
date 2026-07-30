@@ -48,6 +48,7 @@ using antwika::gfx::WindowDesc;
 using antwika::input::InputEventCodec;
 using antwika::input::LiveInputSource;
 using antwika::life::BoardScene;
+using antwika::life::DragState;
 using antwika::life::Grid;
 using antwika::life::PointerToggleSink;
 using antwika::life::PrintSystem;
@@ -179,10 +180,10 @@ int main(int argc, char **argv)
             // Registered only when there is a file to write.
             // A run with no end would otherwise keep every event, forever.
             options.recordPath ? &replayRecorder : nullptr,
-            [&codec](World &world, const Grid &grid)
+            [&codec](World &world, const Grid &grid, DragState &drag)
             {
                 return std::make_unique<PointerToggleSink>(
-                    world, grid, codec, kWindowSize);
+                    world, grid, codec, kWindowSize, drag);
             });
     }
     catch (const std::exception &error)

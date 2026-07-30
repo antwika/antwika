@@ -19,6 +19,7 @@
 #include <antwika/log/mocks/MockLogger.hpp>
 
 #include "antwika/life/Cell.hpp"
+#include "antwika/life/DragState.hpp"
 #include "antwika/life/Events.hpp"
 #include "antwika/life/Grid.hpp"
 
@@ -36,6 +37,7 @@ using antwika::input::PointerMoved;
 using antwika::input::PointerScrolled;
 using antwika::input::Position;
 using antwika::life::Cell;
+using antwika::life::DragState;
 using antwika::life::Grid;
 using antwika::life::PointerToggleSink;
 using antwika::log::mocks::MockLogger;
@@ -129,7 +131,8 @@ namespace
         Grid grid{world, kWidth, kHeight};
         InputEventCodec codec;
         antwika::time::Tick tick = 0;
-        PointerToggleSink sink{world, grid, codec, kCanvas};
+        DragState drag;
+        PointerToggleSink sink{world, grid, codec, kCanvas, drag};
     };
 } // namespace
 
@@ -223,6 +226,39 @@ TEST_F(PointerToggleSinkTest, Handle_IgnoresAReleaseOfAnotherButton)
 
     EXPECT_TRUE(aliveAt(1, 0));
     EXPECT_EQ(aliveCount(), 2u);
+}
+
+// The generation stands still while the board is drawn on.
+// So the drag is reported rather than kept to itself.
+TEST_F(PointerToggleSinkTest, Handle_ReportsADragWhileTheButtonIsDown)
+{
+    EXPECT_FALSE(drag.inProgress());
+
+    press(5, 5);
+    EXPECT_TRUE(drag.inProgress());
+
+    moveTo(15, 5);
+    EXPECT_TRUE(drag.inProgress());
+
+    release(15, 5);
+    EXPECT_FALSE(drag.inProgress());
+}
+
+// What pauses is holding the button, not hitting a cell.
+TEST_F(PointerToggleSinkTest, Handle_ReportsADragThatStartedOffTheBoard)
+{
+    press(-5, -5);
+
+    EXPECT_TRUE(drag.inProgress());
+    EXPECT_EQ(aliveCount(), 0u);
+}
+
+TEST_F(PointerToggleSinkTest, Handle_ReportsNoDragForAnotherButton)
+{
+    feed(PointerButtonPressed{
+        .button = MouseButton::Right, .position = Position{.x = 5, .y = 5}});
+
+    EXPECT_FALSE(drag.inProgress());
 }
 
 // Toggling is what the event says, so drawing over a live cell clears it.
@@ -322,8 +358,9 @@ TEST(PointerToggleSinkCanvasTest, Handle_IgnoresAClickOnACanvasTooSmallToDraw)
     world.commit();
     const InputEventCodec codec;
 
+    DragState drag;
     PointerToggleSink sink(
-        world, grid, codec, Size{.width = 2, .height = 2});
+        world, grid, codec, Size{.width = 2, .height = 2}, drag);
 
     sink.handle(TickEvent{
         .tick = 0,

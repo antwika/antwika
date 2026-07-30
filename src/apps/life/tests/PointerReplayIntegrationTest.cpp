@@ -10,6 +10,7 @@
 #include <string_view>
 #include <vector>
 
+#include <antwika/ecs/ISystem.hpp>
 #include <antwika/ecs/World.hpp>
 #include <antwika/engine/Events.hpp>
 #include <antwika/event/Event.hpp>
@@ -31,12 +32,14 @@
 
 #include "antwika/life/Board.hpp"
 #include "antwika/life/Events.hpp"
+#include "antwika/life/DragState.hpp"
 #include "antwika/life/Grid.hpp"
 #include "antwika/life/Life.hpp"
 #include "antwika/life/PointerToggleSink.hpp"
 
 #include "ScratchFile.hpp"
 
+using antwika::ecs::ISystem;
 using antwika::ecs::World;
 using antwika::event::Event;
 using antwika::event::EventRecorder;
@@ -54,6 +57,8 @@ using antwika::input::PointerMoved;
 using antwika::input::Position;
 using antwika::input::fakes::FakeInputBackend;
 using antwika::life::Board;
+using antwika::life::DragState;
+using antwika::life::readBoardFromView;
 using antwika::life::Grid;
 using antwika::life::PointerToggleSink;
 using antwika::life::tests::ScratchFile;
@@ -81,6 +86,30 @@ namespace
 
     constexpr InputCapabilities kPointerOnly{
         .keyboard = false, .pointer = true};
+
+    /**
+     * @brief Observer keeping the board as it stood after every tick.
+     *
+     * The observe phase runs after the life phase, so each entry is the
+     * board that tick left behind -- which is what makes "this tick
+     * advanced nothing" something a test can state.
+     */
+    class BoardRecorder final : public ISystem
+    {
+    public:
+        void update(World &world, antwika::time::Tick) override
+        {
+            boards.push_back(readBoardFromView(world, kWidth, kHeight));
+        }
+
+        [[nodiscard]] const std::vector<Board> &perTick() const noexcept
+        {
+            return boards;
+        }
+
+    private:
+        std::vector<Board> boards;
+    };
 
     [[nodiscard]] InputEvent pressAt(std::int32_t x, std::int32_t y)
     {
@@ -133,10 +162,10 @@ namespace
     [[nodiscard]] antwika::life::TickSinkFactory toggleSinkFactory(
         const InputEventCodec &codec)
     {
-        return [&codec](World &world, const Grid &grid)
+        return [&codec](World &world, const Grid &grid, DragState &drag)
         {
             return std::make_unique<PointerToggleSink>(
-                world, grid, codec, kCanvas);
+                world, grid, codec, kCanvas, drag);
         };
     }
 
@@ -282,4 +311,84 @@ TEST(PointerReplayIntegrationTest, ADragWithinOneTickDrawsWhatItCrossed)
                 << "at (" << x << ", " << y << ")";
         }
     }
+}
+
+// Drawing on a board that keeps evolving under the cursor is the problem.
+// So while the button is down, no generation runs at all.
+// The press lands off the board, so only the pause can explain these ticks.
+TEST(PointerReplayIntegrationTest, HoldingTheButtonStopsTheGenerations)
+{
+    const InputEventCodec codec;
+
+    NiceMock<MockLogger> logger;
+    EventRecorder eventSink;
+    BoardRecorder recorder;
+
+    // A blinker: three in a row, flipping upright and flat every turn.
+    // So a tick that ran a generation is obvious from the board alone.
+    std::vector<TickEvent> script{
+        TickEvent{
+            .tick = 0,
+            .event = Event{
+                .name = antwika::life::events::kToggleCell,
+                .payload = R"({"x":1,"y":1})"}},
+        TickEvent{
+            .tick = 0,
+            .event = Event{
+                .name = antwika::life::events::kToggleCell,
+                .payload = R"({"x":2,"y":1})"}},
+        TickEvent{
+            .tick = 0,
+            .event = Event{
+                .name = antwika::life::events::kToggleCell,
+                .payload = R"({"x":3,"y":1})"}},
+        TickEvent{
+            .tick = 6,
+            .event = Event{.name = antwika::engine::events::kStop}},
+    };
+
+    FakeInputBackend backend(
+        std::vector<std::vector<InputEvent>>{
+            {},
+            {},
+            {pressAt(-50, -50)},
+            {},
+            {},
+            {releaseAt(-50, -50)},
+        },
+        kPointerOnly);
+
+    ReplaySource fileSource(script);
+    LiveInputSource source(fileSource, backend, codec);
+
+    std::vector<std::reference_wrapper<ISystem>> observers{recorder};
+
+    antwika::life::bootstrap(
+        logger,
+        eventSink,
+        source,
+        kWidth,
+        kHeight,
+        observers,
+        kMaxTicks,
+        nullptr,
+        toggleSinkFactory(codec));
+
+    const auto &boards = recorder.perTick();
+    ASSERT_EQ(boards.size(), 7u);
+
+    // Two boards that are both empty would agree for the wrong reason.
+    ASSERT_TRUE(anythingAlive(boards[1]));
+
+    // Ticks nobody was drawing on: the blinker flips.
+    EXPECT_NE(boards[0], boards[1]);
+
+    // Ticks the button was held down on: nothing moves.
+    EXPECT_EQ(boards[2], boards[1]);
+    EXPECT_EQ(boards[3], boards[2]);
+    EXPECT_EQ(boards[4], boards[3]);
+
+    // And it picks up again where it left off.
+    EXPECT_NE(boards[5], boards[4]);
+    EXPECT_EQ(boards[5], boards[0]);
 }

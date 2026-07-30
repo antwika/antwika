@@ -12,6 +12,7 @@
 #include <antwika/replay/EngineLoop.hpp>
 
 #include "antwika/life/BoardSink.hpp"
+#include "antwika/life/DragPausedSystem.hpp"
 #include "antwika/life/Events.hpp"
 #include "antwika/life/Grid.hpp"
 #include "antwika/life/LifeSystem.hpp"
@@ -59,8 +60,16 @@ namespace antwika::life
 
         SystemScheduler scheduler;
         LifeSystem lifeSystem(grid);
+
+        // A board being drawn on stands still.
+        // A cell toggled on one tick is then still there on the next.
+        // Only a sink reporting a drag can ever start one.
+        // A run that registered none is therefore unaffected.
+        DragState drag;
+        DragPausedSystem pausedLife(lifeSystem, drag);
+
         const auto lifePhase = scheduler.createPhase("life");
-        scheduler.addSystem(lifePhase, lifeSystem);
+        scheduler.addSystem(lifePhase, pausedLife);
 
         const auto observePhase = scheduler.createPhase("observe");
         for (auto &observer : observers)
@@ -79,7 +88,7 @@ namespace antwika::life
         std::unique_ptr<ITickEventSink> extra;
         if (extraSink)
         {
-            extra = extraSink(world, grid);
+            extra = extraSink(world, grid, drag);
             timedSinks.push_back(*extra);
         }
 

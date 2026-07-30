@@ -5,6 +5,8 @@ add_executable(antwika_life_tests
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/BoardLayout.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/BoardScene.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/BoardSink.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/DragPausedSystem.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/DragState.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/Grid.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/Life.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/LifeSystem.cpp
@@ -18,6 +20,8 @@ add_executable(antwika_life_tests
     BoardSinkTest.cpp
     BoardTest.cpp
     BootstrapTest.cpp
+    DragPausedSystemTest.cpp
+    DragStateTest.cpp
     GridTest.cpp
     LifeSystemTest.cpp
     PointerReplayIntegrationTest.cpp
@@ -38,6 +42,7 @@ target_include_directories(antwika_life_tests
 target_link_libraries(antwika_life_tests
     PRIVATE
         antwika::ecs
+        antwika::ecs::tests::mocks
         antwika::engine
         antwika::gfx
         antwika::gfx::tests::mocks
