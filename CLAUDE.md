@@ -45,6 +45,14 @@ The Conan option sets the `ANTWIKA_GFX_BACKEND` CMake variable, which names a di
 The `build_folder_vars` conf is what puts the backend in the preset name, so the sdl3 configuration does not collide with the default build's `conan-release` preset.
 Each configuration has its own lockfile, because selecting a backend changes the dependency graph.
 
+**Updating the lockfiles** after a dependency bump in `conanfile.py` (what Renovate leaves stale):
+
+```sh
+scripts/update_lockfiles.sh   # or: Tasks: Run Task > Update Conan lockfiles
+```
+
+It re-resolves every lockfile from scratch against every profile under `profiles/host/`, since CI builds all of them against the same files.
+
 Set `SDL_VIDEODRIVER=dummy` to run the SDL build with no display, or use `xvfb-run` for any backend, which is how the conformance suite is exercised without a desktop session.
 `raylib` reports `maxWindows() == 1`, since it keeps its one window in global state; the conformance suite skips its multi-window tests for such a backend rather than failing them.
 

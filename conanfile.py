@@ -27,7 +27,7 @@ class AntwikaConan(ConanFile):
         if self.options.gfx_backend == "sdl3":
             self.requires("sdl/3.2.20")
         elif self.options.gfx_backend == "raylib":
-            self.requires("raylib/5.5")
+            self.requires("raylib/6.0")
 
     def build_requirements(self):
         self.test_requires("gtest/1.17.0")
