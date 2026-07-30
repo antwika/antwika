@@ -7,9 +7,6 @@
 #include <antwika/event/IEventDispatcher.hpp>
 #include <antwika/event/IEventSink.hpp>
 #include <antwika/event/ITickEventSink.hpp>
-#include <antwika/log/IAppender.hpp>
-#include <antwika/log/IFormatter.hpp>
-#include <antwika/log/ILogPolicy.hpp>
 #include <antwika/log/ILogger.hpp>
 #include <antwika/replay/IReplaySource.hpp>
 #include <antwika/time/IClock.hpp>
@@ -26,10 +23,7 @@ namespace antwika::poker
     using antwika::event::IEventDispatcher;
     using antwika::event::IEventSink;
     using antwika::event::ITickEventSink;
-    using antwika::log::IAppender;
-    using antwika::log::IFormatter;
     using antwika::log::ILogger;
-    using antwika::log::ILogPolicy;
     using antwika::replay::IReplaySource;
     using antwika::time::IClock;
 
@@ -72,24 +66,32 @@ namespace antwika::poker
      *
      * A struct with designated initialisers rather than a parameter list,
      * because the list had reached eleven positional arguments, four of
-     * them interchangeable-looking logging pieces and two of them raw
-     * pointers a reader can only tell apart by counting.
+     * them interchangeable-looking logging pieces -- now one logger and
+     * the clock the narration needs -- and two of them raw pointers a
+     * reader can only tell apart by counting.
      * A name per argument is what makes a wrong one a compile error
      * rather than a silently different session.
      */
     struct RoomSetup
     {
-        /** @brief Supplies timestamps for the logger. */
+        /**
+         * @brief Stamps each hand in the narration with a time.
+         *
+         * Kept alongside the logger rather than folded into it, because
+         * TablePrinter reads it directly: a hand history says when a
+         * hand was played whether or not anything is being logged.
+         */
         IClock &clock;
 
-        /** @brief Receives formatted log output. */
-        IAppender &appender;
-
-        /** @brief Renders log records into text. */
-        IFormatter &formatter;
-
-        /** @brief Decides which log records are emitted. */
-        ILogPolicy &logPolicy;
+        /**
+         * @brief Where the session says what it is doing.
+         *
+         * Building it is the caller's job rather than this function's:
+         * a second logger built here would be a second logger over one
+         * appender, and the two would interleave their lines.
+         * app::ConsoleLogging is what a composition root builds.
+         */
+        ILogger &logger;
 
         /** @brief Receives every dispatched event. */
         IEventSink &eventSink;
@@ -156,5 +158,18 @@ namespace antwika::poker
      * not be created.
      */
     RoomSummary bootstrap(const RoomSetup &setup);
+
+    /**
+     * @brief Write how a session turned out.
+     *
+     * It lives here rather than in a main() so that a test can read it:
+     * a composition root is excluded from the coverage report, and a
+     * loop and a conditional line are exactly what that exclusion is not
+     * meant to hide.
+     *
+     * @param out Where the summary is written.
+     * @param summary What the session amounted to.
+     */
+    void printSummary(std::ostream &out, const RoomSummary &summary);
 
 } // namespace antwika::poker

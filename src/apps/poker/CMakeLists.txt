@@ -29,6 +29,7 @@ target_compile_definitions(antwika_poker
 
 target_link_libraries(antwika_poker
     PRIVATE
+        antwika::app
         antwika::engine
         antwika::event
         antwika::gfx
