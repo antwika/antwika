@@ -49,10 +49,15 @@ namespace antwika::game
      * Every period below is derived from it, so changing the pace is one
      * edit here rather than one per constant.
      *
-     * It is the reciprocal of main.cpp's TickPacer interval: 40 ms a tick
-     * is twenty-five of them a second.
+     * It is the reciprocal of main.cpp's TickPacer interval: 80 ms a tick
+     * is twelve and a half of them a second.
+     * Whole ticks are what a period can be counted in, so the half is
+     * dropped and every period below comes out a few per cent short of the
+     * wall-clock time its comment names -- which is the right way round,
+     * since a spawn arriving slightly early is better than a building
+     * starving while it waits.
      */
-    inline constexpr std::int32_t kTicksPerSecond = 25;
+    inline constexpr std::int32_t kTicksPerSecond = 12;
 
     /**
      * @brief The most risk a building can carry before it is gone.
@@ -87,7 +92,7 @@ namespace antwika::game
     /**
      * @brief Ticks between one spawn and the next.
      *
-     * One walker a minute, which is sixty seconds' worth of the tick rate
+     * One walker a minute, which is sixty seconds worth of the tick rate
      * assumed by kTicksPerSecond.
      */
     inline constexpr std::int32_t kSpawnPeriodTicks = 60 * kTicksPerSecond;
