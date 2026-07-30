@@ -9,6 +9,7 @@ add_executable(antwika_life_tests
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/LifeSystem.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/PrintSystem.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/RenderSystem.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/TickPacer.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/WindowInputSource.cpp
     BoardSceneTest.cpp
     BoardSinkTest.cpp
@@ -18,6 +19,7 @@ add_executable(antwika_life_tests
     LifeSystemTest.cpp
     PrintSystemTest.cpp
     RenderSystemTest.cpp
+    TickPacerTest.cpp
     ReplayIntegrationTest.cpp
     WindowInputSourceTest.cpp
 )
