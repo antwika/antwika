@@ -59,7 +59,9 @@ namespace
     // And it is why a resize cannot change which cell a pixel means.
     constexpr Point kInitialPan{.x = 512, .y = 48};
 
-    constexpr std::chrono::milliseconds kTickInterval{40};
+    // 12.5 ticks per second, halved from the 25 it used to run at.
+    // A walker crosses a cell per tick, and 25 was too fast to follow.
+    constexpr std::chrono::milliseconds kTickInterval{80};
 
     // Escape ends a live run, and so does closing the window.
     // Neither is available under the headless backend.
