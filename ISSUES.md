@@ -81,9 +81,37 @@ The specific lines they flagged as unmeasured are `walkHome()`'s three
 branches, `RoadGraph::neighbours()`'s two, `headingTo()`'s four, the
 `menuState` ternary's two arms, and `walkerLift()`'s `std::max` clamp.
 
-The orchestrator ran the gate once on the merged branch; the result is in
-the handover summary.
-If it is short, those are the lines to look at first.
+The orchestrator ran the CI-equivalent gate once on the merged branch.
+**It does not pass.**
+
+Measured, with CI's own exclusions (`.*/tests/.*`,
+`.*/apps/[^/]+/src/main\.cpp`, throw and unreachable branches):
+
+- lines **100.0%** (5646 / 5646)
+- functions **99.7%** (1100 / 1103)
+- branches **99.7%** (3841 / 3852)
+
+One of the four gaps is fixed: `Walker::operator==` is defaulted and gained
+an `origin` field that no test varied, so a field-by-field branch was never
+taken.
+`WalkerTest.EqualityComparesEveryOtherFieldIndependently` now varies each
+field on its own.
+
+Three remain, and each needs more than a few minutes:
+
+- `src/apps/game/src/GridScene.cpp` — one branch at the
+  `animation::DirectionalClipSet` construction in `walkerClips()`.
+- `src/libs/ecs/include/antwika/ecs/View.hpp` — functions and branches, and
+  `World.hpp` likewise.
+  These are **template instantiations**, and they were at 100% before this
+  work.
+  The new `View<Building>` and `View<Walker, Cell>` uses instantiate paths
+  the existing tests never reach for those types, so the gap is a missing
+  test per new instantiation rather than a defect.
+
+The `main.cpp` composition roots are excluded by CI and read as 0% under a
+plain `gcovr` invocation; use the workflow's exact filter list from
+`.github/workflows/build.yml` before concluding anything is uncovered.
 
 ## 6. Cosmetic follow-ups nobody owned
 
