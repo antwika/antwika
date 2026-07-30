@@ -9,13 +9,13 @@ namespace antwika::engine
     {
         if (event.event.name == events::kStop)
         {
-            stopped_ = true;
+            isStopped = true;
         }
     }
 
     bool StopSignal::stopped() const noexcept
     {
-        return stopped_;
+        return isStopped;
     }
 
 } // namespace antwika::engine

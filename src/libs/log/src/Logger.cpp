@@ -1,8 +1,6 @@
 #include "antwika/log/Logger.hpp"
 
 #include <chrono>
-#include <format>
-#include <string>
 #include <cstdio>
 
 namespace antwika::log
@@ -22,7 +20,9 @@ namespace antwika::log
         try
         {
             if (!policy.accepts(level))
+            {
                 return;
+            }
 
             const auto now = clock.now();
 
