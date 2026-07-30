@@ -73,6 +73,7 @@ TEST(RunRecordedTest, RunsTheBodyAndSucceeds)
         argv.data(),
         "antwika_test",
         [&ran](const RecordedRun &) { ran = true; },
+        {},
         errors);
 
     EXPECT_TRUE(ran);
@@ -91,6 +92,7 @@ TEST(RunRecordedTest, ReportsAFailureUnderTheProgramsName)
         "antwika_test",
         [](const RecordedRun &)
         { throw std::runtime_error("it went wrong"); },
+        {},
         errors);
 
     EXPECT_EQ(exitCode, EXIT_FAILURE);
@@ -108,6 +110,7 @@ TEST(RunRecordedTest, AttachesNoRecorderWithoutRecord)
         "antwika_test",
         [](const RecordedRun &run)
         { EXPECT_FALSE(run.replayRecorder.has_value()); },
+        {},
         errors));
 }
 
@@ -130,6 +133,7 @@ TEST(RunRecordedTest, SavesWhatTheRecorderWasGiven)
             ASSERT_TRUE(run.replayRecorder.has_value());
             run.replayRecorder->get().handle(kScripted);
         },
+        {},
         errors);
 
     EXPECT_EQ(exitCode, EXIT_SUCCESS);
@@ -155,6 +159,7 @@ TEST(RunRecordedTest, SavesWhatAFailedRunGotTo)
             run.replayRecorder->get().handle(kScripted);
             throw std::runtime_error("it went wrong");
         },
+        {},
         errors);
 
     EXPECT_EQ(exitCode, EXIT_FAILURE);
@@ -175,6 +180,7 @@ TEST(RunRecordedTest, HandsTheBodyThePathToReplay)
         "antwika_test",
         [](const RecordedRun &run)
         { EXPECT_EQ(run.options.replayPath, "demo.json"); },
+        {},
         errors));
 }
 
@@ -226,6 +232,7 @@ TEST(RunRecordedTest, DiscardsWhatIsDispatchedIntoTheSink)
             run.eventSink.handle(kScripted.event);
             run.eventSink.handle({});
         },
+        {},
         errors));
 
     EXPECT_TRUE(errors.str().empty());
@@ -244,6 +251,7 @@ TEST(RunRecordedTest, LetsWhatIsNotAnExceptionThrough)
             argv.data(),
             "antwika_test",
             [](const RecordedRun &) { throw 42; },
+            {},
             errors)),
         int);
 
