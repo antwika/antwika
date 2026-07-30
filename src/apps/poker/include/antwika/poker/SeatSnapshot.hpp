@@ -22,7 +22,7 @@ namespace antwika::poker
         /**
          * @brief Who is sitting here, empty if nobody is.
          */
-        std::string name;
+        std::string name{};
 
         /**
          * @brief Chips in front of this seat, not yet wagered.

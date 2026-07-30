@@ -35,17 +35,17 @@ namespace antwika::poker
         /**
          * @brief The name the table is announced under.
          */
-        std::string tableName;
+        std::string tableName{};
 
         /**
          * @brief Every seat the table has, in clockwise order.
          */
-        std::vector<SeatSnapshot> seats;
+        std::vector<SeatSnapshot> seats{};
 
         /**
          * @brief The community cards as dealt so far.
          */
-        std::vector<Card> board;
+        std::vector<Card> board{};
 
         /**
          * @brief Chips in the middle, zero once a hand is paid out.
