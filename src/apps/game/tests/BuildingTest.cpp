@@ -154,3 +154,40 @@ TEST(CountdownTest, Due_FiresEveryTickForAPeriodOfOne)
     EXPECT_TRUE(due(remaining, 1));
     EXPECT_TRUE(due(remaining, 1));
 }
+
+// Every field, one at a time.
+// A defaulted comparison is a chain, and a chain needs every link.
+TEST(BuildingTest, Equality_ComparesEachFieldIndependently)
+{
+    const auto base = newlyBuilt(BuildingKind::House);
+
+    EXPECT_EQ(base, newlyBuilt(BuildingKind::House));
+
+    auto other = base;
+    other.kind = BuildingKind::FoodSource;
+    EXPECT_NE(base, other);
+
+    other = base;
+    other.stock.held = 99;
+    EXPECT_NE(base, other);
+
+    other = base;
+    other.fireRisk = 5;
+    EXPECT_NE(base, other);
+
+    other = base;
+    other.collapseRisk = 5;
+    EXPECT_NE(base, other);
+
+    other = base;
+    other.drainIn = 5;
+    EXPECT_NE(base, other);
+
+    other = base;
+    other.riskIn = 5;
+    EXPECT_NE(base, other);
+
+    other = base;
+    other.spawnIn = 5;
+    EXPECT_NE(base, other);
+}

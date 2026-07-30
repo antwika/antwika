@@ -23,11 +23,10 @@ namespace antwika::game
             if (walker.stepsTaken >= kMaxWalkDistance)
             {
                 // Where walking home goes.
-                // A route back to where it came from would be worked out
-                // here and followed instead, with the destroy() moved to
-                // the tick it arrives -- one branch, in one place,
-                // because nothing else in this file knows how far it has
-                // come.
+                // A route back would be worked out here and followed.
+                // The destroy() would move to the tick it arrives.
+                // One branch, in one place.
+                // Nothing else here knows how far a walker has come.
                 world.destroy(entity);
                 continue;
             }

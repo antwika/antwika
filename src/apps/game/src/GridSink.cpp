@@ -99,8 +99,8 @@ namespace antwika::game
             // Folding a movement changes no button.
             // So asking now is the same as asking before it.
             //
-            // A movement is never the toolbar's, even over it, so a pan
-            // begun on the grid can cross the bar rather than stop dead.
+            // A movement is never the toolbar's, even over it.
+            // So a pan begun on the grid crosses the bar.
             if (input.state().mouse().isDown(MouseButton::Middle))
             {
                 // The fold has already moved the pointer here.

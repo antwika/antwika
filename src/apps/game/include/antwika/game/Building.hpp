@@ -163,24 +163,29 @@ namespace antwika::game
     [[nodiscard]] constexpr std::optional<BuildingKind> buildingFor(
         BuildTool tool) noexcept
     {
-        switch (tool)
+        if (tool == BuildTool::Path)
         {
-        case BuildTool::House:
-            return BuildingKind::House;
-        case BuildTool::FoodSource:
-            return BuildingKind::FoodSource;
-        case BuildTool::WaterSource:
-            return BuildingKind::WaterSource;
-        case BuildTool::FireStation:
-            return BuildingKind::FireStation;
-        case BuildTool::ArchitectPost:
-            return BuildingKind::ArchitectPost;
-        case BuildTool::Path:
-            break;
+            return std::nullopt;
         }
 
-        return std::nullopt;
+        // The five building tools list the five kinds in one order.
+        // So arithmetic rather than a switch, as turnRight() does.
+        // There is then no case a coverage gate cannot reach.
+        // The static_asserts below hold the two orders together.
+        return static_cast<BuildingKind>(
+            static_cast<std::uint8_t>(tool) - 1);
     }
+
+    static_assert(buildingFor(BuildTool::House) == BuildingKind::House);
+    static_assert(
+        buildingFor(BuildTool::FoodSource) == BuildingKind::FoodSource);
+    static_assert(
+        buildingFor(BuildTool::WaterSource) == BuildingKind::WaterSource);
+    static_assert(
+        buildingFor(BuildTool::FireStation) == BuildingKind::FireStation);
+    static_assert(
+        buildingFor(BuildTool::ArchitectPost)
+        == BuildingKind::ArchitectPost);
 
     /**
      * @brief Get what a building of a kind stocks.

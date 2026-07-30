@@ -49,19 +49,18 @@ namespace antwika::game
     [[nodiscard]] constexpr std::optional<Resource> carriedResource(
         WalkerKind kind) noexcept
     {
-        switch (kind)
+        if (kind == WalkerKind::Fireman || kind == WalkerKind::Architect)
         {
-        case WalkerKind::Food:
-            return Resource::Food;
-        case WalkerKind::Water:
-            return Resource::Water;
-        case WalkerKind::Fireman:
-        case WalkerKind::Architect:
-            break;
+            return std::nullopt;
         }
 
-        return std::nullopt;
+        // The two carrying kinds list the two resources in one order.
+        // So arithmetic rather than a switch, as turnRight() does.
+        return static_cast<Resource>(static_cast<std::uint8_t>(kind));
     }
+
+    static_assert(carriedResource(WalkerKind::Food) == Resource::Food);
+    static_assert(carriedResource(WalkerKind::Water) == Resource::Water);
 
     /**
      * @brief Something that walks the paths, and which way it is facing.

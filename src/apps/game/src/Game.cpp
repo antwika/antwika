@@ -55,11 +55,11 @@ namespace antwika::game
 
         World world(logger);
 
-        // Which cells are built on, kept beside the world for the reason
-        // PathIndex is: a click has to know what a tick has staged and
-        // not yet committed.
-        // It is local rather than a config field because nothing outside
-        // a run reads it -- a frame gets its buildings from the world.
+        // Which cells are built on, kept beside the world.
+        // It is here for the reason PathIndex is.
+        // A click has to see what this tick staged and has not committed.
+        // Local rather than a config field, since nothing outside reads it.
+        // A frame gets its buildings from the world instead.
         BuildingIndex buildings;
 
         SystemScheduler scheduler;
@@ -68,10 +68,9 @@ namespace antwika::game
         scheduler.addSystem(walkPhase, walkerSystem);
 
         // A phase after the walk, not beside it.
-        // Both write the Building component, and one write per phase per
-        // component is what survives a commit.
-        // So a building drains from the stock this tick's deliveries left
-        // it, rather than one of the two writes being lost.
+        // Both of them write the Building component.
+        // One write per component per phase survives a commit.
+        // So a building drains from what this tick's deliveries left it.
         BuildingSystem buildingSystem(paths, buildings);
         const auto buildPhase = scheduler.createPhase("build");
         scheduler.addSystem(buildPhase, buildingSystem);

@@ -174,3 +174,30 @@ TEST(WalkerTest, DestroyingSweepsPoolsTheEntityWasNeverIn)
     EXPECT_FALSE(world.has<Walker>(walker));
     EXPECT_FALSE(world.has<Cell>(walker));
 }
+
+TEST(WalkerComponentTest, Equality_ComparesEachFieldIndependently)
+{
+    constexpr antwika::game::Walker base{
+        .facing = antwika::game::Direction::North,
+        .kind = antwika::game::WalkerKind::Water,
+        .carried = 7,
+        .stepsTaken = 3};
+
+    EXPECT_EQ(base, base);
+
+    auto other = base;
+    other.facing = antwika::game::Direction::South;
+    EXPECT_NE(base, other);
+
+    other = base;
+    other.kind = antwika::game::WalkerKind::Architect;
+    EXPECT_NE(base, other);
+
+    other = base;
+    other.carried = 8;
+    EXPECT_NE(base, other);
+
+    other = base;
+    other.stepsTaken = 4;
+    EXPECT_NE(base, other);
+}

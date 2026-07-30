@@ -26,22 +26,24 @@ namespace antwika::game
     [[nodiscard]] constexpr std::optional<WalkerKind> walkerFor(
         BuildingKind kind) noexcept
     {
-        switch (kind)
+        if (kind == BuildingKind::House)
         {
-        case BuildingKind::FoodSource:
-            return WalkerKind::Food;
-        case BuildingKind::WaterSource:
-            return WalkerKind::Water;
-        case BuildingKind::FireStation:
-            return WalkerKind::Fireman;
-        case BuildingKind::ArchitectPost:
-            return WalkerKind::Architect;
-        case BuildingKind::House:
-            break;
+            return std::nullopt;
         }
 
-        return std::nullopt;
+        // The four spawners list the four walkers in the same order.
+        // Arithmetic rather than a switch, as buildingFor() explains.
+        return static_cast<WalkerKind>(
+            static_cast<std::uint8_t>(kind) - 1);
     }
+
+    static_assert(walkerFor(BuildingKind::FoodSource) == WalkerKind::Food);
+    static_assert(
+        walkerFor(BuildingKind::WaterSource) == WalkerKind::Water);
+    static_assert(
+        walkerFor(BuildingKind::FireStation) == WalkerKind::Fireman);
+    static_assert(
+        walkerFor(BuildingKind::ArchitectPost) == WalkerKind::Architect);
 
     /**
      * @brief Drains, ages and spawns for every building, once a tick.

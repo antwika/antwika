@@ -312,3 +312,88 @@ TEST(SceneSnapshotTest, SnapshotOf_CarriesWhatAWalkerIsCarrying)
             .kind = WalkerKind::Fireman,
             .carried = 4}));
 }
+
+TEST(SceneSnapshotTest, WalkerViewEquality_ComparesEachFieldIndependently)
+{
+    constexpr WalkerView base{
+        .at = {.x = 1, .y = 2},
+        .facing = Direction::North,
+        .kind = WalkerKind::Water,
+        .carried = 5};
+
+    EXPECT_EQ(base, base);
+
+    auto other = base;
+    other.at = Cell{.x = 9, .y = 2};
+    EXPECT_NE(base, other);
+
+    other = base;
+    other.facing = Direction::West;
+    EXPECT_NE(base, other);
+
+    other = base;
+    other.kind = WalkerKind::Fireman;
+    EXPECT_NE(base, other);
+
+    other = base;
+    other.carried = 6;
+    EXPECT_NE(base, other);
+}
+
+TEST(SceneSnapshotTest, BuildingViewEquality_ComparesEachFieldIndependently)
+{
+    constexpr BuildingView base{
+        .at = {.x = 1, .y = 2},
+        .kind = BuildingKind::FireStation,
+        .held = 5,
+        .capacity = 50};
+
+    EXPECT_EQ(base, base);
+
+    auto other = base;
+    other.at = Cell{.x = 9, .y = 2};
+    EXPECT_NE(base, other);
+
+    other = base;
+    other.kind = BuildingKind::House;
+    EXPECT_NE(base, other);
+
+    other = base;
+    other.held = 6;
+    EXPECT_NE(base, other);
+
+    other = base;
+    other.capacity = 60;
+    EXPECT_NE(base, other);
+}
+
+TEST(SceneSnapshotTest, SnapshotEquality_NoticesADifferentSetOfBuildings)
+{
+    const antwika::game::SceneSnapshot base{
+        .camera = Camera(),
+        .extent = kExtent,
+        .paths = {},
+        .walkers = {},
+        .buildings = {}};
+
+    auto other = base;
+    other.buildings.push_back(BuildingView{.at = {.x = 1, .y = 1}});
+
+    EXPECT_EQ(base, base);
+    EXPECT_NE(base, other);
+}
+
+TEST(SceneSnapshotTest, SummaryEquality_NoticesADifferentSetOfBuildings)
+{
+    const antwika::game::GameSummary base{
+        .state = {},
+        .paths = {},
+        .walkers = {},
+        .buildings = {},
+        .camera = Camera()};
+
+    auto other = base;
+    other.buildings.push_back(BuildingView{.at = {.x = 1, .y = 1}});
+
+    EXPECT_NE(base, other);
+}

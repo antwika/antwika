@@ -11,9 +11,8 @@ namespace antwika::game
     namespace
     {
         // North, east, south, west, and always in that order.
-        // A spawn has to pick one road out of up to four, and picking by
-        // anything less definite would put a walker somewhere a replay
-        // could not work out again.
+        // A spawn picks one road out of up to four.
+        // A less definite pick would not replay.
         constexpr std::array<Direction, kDirectionCount> kSearchOrder{
             Direction::North,
             Direction::East,
@@ -50,10 +49,10 @@ namespace antwika::game
 
             if (due(value.riskIn, kRiskPeriodTicks))
             {
-                // Not clamped at kMaxRisk, because reaching it is the
-                // end of the building: gone() takes it out on this same
-                // tick, so there is no state in which a risk sits at the
-                // maximum waiting to be capped.
+                // Not clamped at kMaxRisk.
+                // Reaching it is the end of the building.
+                // gone() takes it out on this very tick.
+                // So no risk ever sits at the maximum to be capped.
                 ++value.fireRisk;
                 ++value.collapseRisk;
             }
