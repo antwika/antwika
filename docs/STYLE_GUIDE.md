@@ -183,6 +183,19 @@ public:
   Enforced by `scripts/check_unused_test_doubles.py` in CI.
 - GMock doubles use `MOCK_METHOD(ReturnType, name, (params), (qualifiers, override))`.
 
+## Application entry points
+
+Every `src/apps/<name>/src/main.cpp` is excluded from the coverage report, and it has to earn that exclusion by holding nothing worth covering.
+The exclusion is the *reason* for the rule, so the two are always read together: a `main` is the one file CI does not measure, so it must be small enough that nothing can go wrong in it.
+
+- **Branchless.** No `if`, `for`, `while`, `switch`, ternary or `try`/`catch` of its own — an untaken branch in an unmeasured file is exactly the gap the gate exists to catch, and here nobody would see it.
+- **One-directional.** Construct, wire, run, return: each statement either builds a collaborator or hands it to the next one, and nothing flows back up.
+- **Minimal.** No argument parsing, no validation, no defaulting, no error handling, no message a test would ever want to assert on.
+- Anything worth covering moves behind a seam the gate *does* see — a parser, a factory, a runner, a sink — and is tested there like any other class.
+- When a `main` grows something a test would want to reach, the fix is to move that thing out, never to relax the gate.
+
+The gcovr `--exclude '.*/apps/[^/]+/src/main\.cpp'` in [`.github/workflows/build.yml`](../.github/workflows/build.yml) is where this is spelled out to CI.
+
 ## CMake
 
 - One `CMakeLists.txt` per module, building a target `antwika_<module>`, aliased to `antwika::<module>`.
@@ -219,5 +232,6 @@ CI backs the rules above that are automatable:
 - Coverage instrumentation and reporting for GNU and LLVM (see the [Coverage](../README.md#coverage) section of the README, and
   [`docs/confirming-unreachable-branches.md`](confirming-unreachable-branches.md)
   for when a gap may be excluded instead of tested).
+  Each app's `main.cpp` is the one file left out of that report, on the terms set out under [Application entry points](#application-entry-points).
 
 Everything else in this guide is convention enforced by review, not by a script — treat a deviation the same way you'd treat any other review comment.
