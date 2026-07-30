@@ -1,5 +1,7 @@
 # Plan: two categories of input, and a replay that stops growing
 
+*Historical: this plan has shipped, and `input::CoalescingPointerSource`/`input::IdleMotionSource` with the `antwika::input` section of `CLAUDE.md` is what supersedes it; it is kept for the reasoning, not as current reference.*
+
 A plan for cutting what a `--record` run writes, by separating the input a run's outcome depends on from the input that merely says where the pointer currently is, and dropping the second category before it ever reaches the recorder.
 
 **Status: built.**

@@ -1,5 +1,7 @@
 # Plan: input for `antwika::ui`
 
+*Historical: this plan has shipped, and `src/libs/ui/`'s `Pointer`/`Interactions` API together with the `antwika::ui` section of `CLAUDE.md` is what supersedes it; it is kept for the reasoning, not as current reference.*
+
 A plan for making a `antwika::ui` button clickable: hover and press appearance a widget works out for itself, an activation the caller can act on, and a click that replays exactly in an app driven by the tick loop.
 
 **Status: built.**

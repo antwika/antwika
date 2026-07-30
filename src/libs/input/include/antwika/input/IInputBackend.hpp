@@ -20,7 +20,7 @@ namespace antwika::input
      * Deliberately says nothing about windows. Reading input does not
      * require opening one, and this library does not depend on
      * antwika::gfx, so an event does not report which surface it arrived
-     * at -- see docs/input-plan.md for what that defers.
+     * at -- see docs/history/input-plan.md for what that defers.
      */
     class IInputBackend
     {
