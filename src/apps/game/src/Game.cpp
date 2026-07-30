@@ -89,14 +89,15 @@ namespace antwika::game
             ui);
         StopSignal stopSignal;
 
-        // The fold is first: what it holds is the event the sinks after
-        // it are being given now, and it is the only thing that clears
-        // an edge, so the tick boundary is one rule in one place.
+        // The fold is first.
+        // What it holds is the event the sinks after it are given now.
+        // It is also the only thing that clears an edge.
+        // So the tick boundary is one rule in one place.
         // GridSink runs the scheduler on engine.tick.
         // So anything that must show in this frame is folded before it.
-        // UiSink still comes before it, so a press is resolved against
-        // the bar before the grid sees it, and the picture is described
-        // before the renderer paints it.
+        // UiSink still comes before it.
+        // So a press is resolved against the bar before the grid sees it.
+        // And the picture is described before the renderer paints it.
         std::vector<std::reference_wrapper<ITickEventSink>> timedSinks{
             input, reducer};
 
