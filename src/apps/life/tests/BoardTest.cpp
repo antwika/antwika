@@ -32,6 +32,60 @@ TEST(BoardTest, ReadBoardSnapshotsEveryCellsAliveStateRowMajor)
     EXPECT_EQ(board.alive, (std::vector<bool>{false, true, false, false}));
 }
 
+// The view-based read has a weaker contract than readBoard().
+// So the strongest thing to assert is that the two agree.
+TEST(BoardTest, ReadBoardFromViewSnapshotsEveryCellRowMajor)
+{
+    NiceMock<MockLogger> logger;
+    World world(logger);
+    Grid grid(world, 3, 2);
+    world.commit();
+
+    world.set<Cell>(grid.entityAt(1, 0), Cell{.alive = true});
+    world.set<Cell>(grid.entityAt(0, 1), Cell{.alive = true});
+    world.commit();
+
+    const auto board = antwika::life::readBoardFromView(world, 3, 2);
+
+    EXPECT_EQ(board.width, 3U);
+    EXPECT_EQ(board.height, 2U);
+    EXPECT_EQ(
+        board.alive,
+        (std::vector<bool>{false, true, false, true, false, false}));
+    EXPECT_EQ(board, antwika::life::readBoard(world, grid));
+}
+
+// A world with more cells than asked for must not overrun the snapshot.
+TEST(BoardTest, ReadBoardFromViewStopsAtTheRequestedDimensions)
+{
+    NiceMock<MockLogger> logger;
+    World world(logger);
+    Grid grid(world, 3, 3);
+    world.commit();
+
+    world.set<Cell>(grid.entityAt(0, 0), Cell{.alive = true});
+    world.commit();
+
+    const auto board = antwika::life::readBoardFromView(world, 2, 1);
+
+    EXPECT_EQ(board.alive, (std::vector<bool>{true, false}));
+}
+
+TEST(BoardTest, ReadBoardFromViewReportsCellsTheWorldHasNoneForAsDead)
+{
+    NiceMock<MockLogger> logger;
+    World world(logger);
+    Grid grid(world, 1, 1);
+    world.commit();
+
+    world.set<Cell>(grid.entityAt(0, 0), Cell{.alive = true});
+    world.commit();
+
+    const auto board = antwika::life::readBoardFromView(world, 2, 2);
+
+    EXPECT_EQ(board.alive, (std::vector<bool>{true, false, false, false}));
+}
+
 TEST(BoardTest, EqualityComparesWidthHeightAndAliveCells)
 {
     const Board reference{
