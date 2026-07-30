@@ -188,8 +188,7 @@ namespace antwika::holdem
         communityCards.clear();
         potChips = 0;
         currentStage = Stage::PreFlop;
-        currentBet = blindLevels.big;
-        lastRaiseSize = blindLevels.big;
+        betting.open(blindLevels.big);
         handInProgress = true;
         ++handCount;
 
@@ -231,7 +230,7 @@ namespace antwika::holdem
     {
         requireSeatInRange(seat);
         const auto &target = seats[indexOf(seat)];
-        const auto owed = currentBet - target.roundCommitted;
+        const auto owed = betting.owedBy(target.roundCommitted);
 
         // Copying the board into the view can fail to allocate.
         // The edges gcov reports here are that unwind path only.
@@ -243,9 +242,9 @@ namespace antwika::holdem
             .board = communityCards,
             .pot = potChips,
             .stack = target.stack,
-            .currentBet = currentBet,
+            .currentBet = betting.bet(),
             .toCall = owedToCall,
-            .minRaiseTo = currentBet + lastRaiseSize,
+            .minRaiseTo = betting.minimumRaiseTo(),
             .maxRaiseTo = target.roundCommitted + target.stack,
             .mayRaise = target.mayRaise,
             .playersInHand = countInHand(),
@@ -268,7 +267,7 @@ namespace antwika::holdem
                 seat.inHand = false;
                 break;
             case ActionType::Check:
-                if (seat.roundCommitted < currentBet)
+                if (!betting.isCovered(seat.roundCommitted))
                 {
                     throw IllegalActionError(
                         "Table: cannot check with a bet to call");
@@ -278,7 +277,7 @@ namespace antwika::holdem
                 applyCall(seat);
                 break;
             case ActionType::Bet:
-                if (currentBet != 0)
+                if (betting.isLive())
                 {
                     throw IllegalActionError(
                         "Table: a bet is already live, so raise instead");
@@ -286,7 +285,7 @@ namespace antwika::holdem
                 applyRaise(actor, action.amount);
                 break;
             case ActionType::Raise:
-                if (currentBet == 0)
+                if (!betting.isLive())
                 {
                     throw IllegalActionError(
                         "Table: no bet is live, so bet instead");
@@ -346,7 +345,7 @@ namespace antwika::holdem
 
     void Table::applyCall(Seat &seat)
     {
-        const auto owed = currentBet - seat.roundCommitted;
+        const auto owed = betting.owedBy(seat.roundCommitted);
         if (owed == 0)
         {
             throw IllegalActionError(
@@ -371,26 +370,13 @@ namespace antwika::holdem
             throw IllegalActionError(
                 "Table: cannot stake more than the stack holds");
         }
-        if (target <= currentBet)
-        {
-            throw IllegalActionError(
-                "Table: a raise has to beat the current bet");
-        }
 
-        const auto minimumTo = currentBet + lastRaiseSize;
-        if (target < minimumTo && target != allInTo)
-        {
-            throw IllegalActionError(
-                "Table: below the minimum raise while holding chips back");
-        }
-
-        const auto previousBet = currentBet;
+        // The round owns what beats the live bet; this owns who may.
+        const auto reopened = betting.raiseTo(target, allInTo);
         commit(seat, target - seat.roundCommitted);
-        currentBet = target;
 
-        if (target >= minimumTo)
+        if (reopened)
         {
-            lastRaiseSize = target - previousBet;
             for (auto &other : seats)
             {
                 other.actedThisRound = false;
@@ -472,7 +458,7 @@ namespace antwika::holdem
         {
             return canStillBet(seat)
                    && (!seat.actedThisRound
-                       || seat.roundCommitted < currentBet);
+                       || !betting.isCovered(seat.roundCommitted));
         };
         if (const auto next = nextSeatFrom(seats, actor, owesOrOwed))
         {
@@ -492,8 +478,7 @@ namespace antwika::holdem
             seat.actedThisRound = false;
             seat.mayRaise = true;
         }
-        currentBet = 0;
-        lastRaiseSize = blindLevels.big;
+        betting.reset(blindLevels.big);
     }
 
     void Table::dealStreet()
@@ -620,7 +605,7 @@ namespace antwika::holdem
         };
 
         potChips = 0;
-        currentBet = 0;
+        betting.close();
         toAct = std::nullopt;
         handInProgress = false;
         deck.reset();

@@ -7,6 +7,7 @@
 #include <vector>
 
 #include "antwika/holdem/Action.hpp"
+#include "antwika/holdem/BettingRound.hpp"
 #include "antwika/holdem/Blinds.hpp"
 #include "antwika/holdem/Card.hpp"
 #include "antwika/holdem/Chips.hpp"
@@ -226,8 +227,7 @@ namespace antwika::holdem
         // An optional reference says "none yet" without a raw pointer.
         std::optional<std::reference_wrapper<IDeck>> deck;
         Chips potChips = 0;
-        Chips currentBet = 0;
-        Chips lastRaiseSize = 0;
+        BettingRound betting;
         std::uint64_t handCount = 0;
         SeatId buttonSeat{};
         Stage currentStage = Stage::PreFlop;

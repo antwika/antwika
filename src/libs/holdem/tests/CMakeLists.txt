@@ -6,6 +6,7 @@ add_subdirectory(mocks)
 add_executable(antwika_holdem_tests
     ActionTest.cpp
     ActionTypeTest.cpp
+    BettingRoundTest.cpp
     BlindsTest.cpp
     CardTest.cpp
     CardTextTest.cpp

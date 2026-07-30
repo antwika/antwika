@@ -1,5 +1,6 @@
 add_library(antwika_holdem
     src/ActionType.cpp
+    src/BettingRound.cpp
     src/CardText.cpp
     src/Deck.cpp
     src/HandCategory.cpp
