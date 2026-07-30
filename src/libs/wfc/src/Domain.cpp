@@ -138,6 +138,13 @@ namespace antwika::wfc
             bits.begin(), std::find(bits.begin(), bits.end(), true)));
     }
 
+    bool Domain::operator==(const Domain &other) const
+    {
+        // count() follows from the bits and never disagrees with them.
+        // Comparing it as well would add an outcome nothing can reach.
+        return bits == other.bits;
+    }
+
     Domain::const_iterator Domain::begin() const
     {
         return const_iterator(&bits, 0);
