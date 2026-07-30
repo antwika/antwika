@@ -502,3 +502,107 @@ TEST_F(WalkerSystemTest, Update_DespawnsAWalkerAlreadyHomeAtTheLimit)
 
     EXPECT_EQ((world.view<Walker, Cell>().size()), 0U);
 }
+
+namespace
+{
+    // One whole life of one walker, as a trace two runs can be
+    // compared on.
+    // Everything a replay has to reproduce is in here: where it was
+    // each tick, which way it faced, and the tick it left the world.
+    struct Step
+    {
+        Cell at;
+        Direction facing;
+
+        [[nodiscard]] bool operator==(const Step &other) const = default;
+    };
+
+    // Run the same board twice over, in worlds that share nothing.
+    [[nodiscard]] std::vector<Step> traceOf(
+        const std::vector<Cell> &roads,
+        Cell from,
+        Cell origin,
+        std::int32_t ticks)
+    {
+        PathIndex paths;
+        for (const auto cell : roads)
+        {
+            (void)paths.insert(cell);
+        }
+
+        ::testing::NiceMock<MockLogger> logger;
+        World world{logger};
+        WalkerSystem system(paths);
+
+        const auto entity = world.create();
+        world.add<Cell>(entity, from);
+        world.add<Walker>(
+            entity,
+            Walker{
+                .facing = Direction::East,
+                .stepsTaken = kMaxWalkDistance,
+                .origin = origin});
+        world.commit();
+
+        std::vector<Step> trace;
+
+        for (std::int32_t tick = 0; tick < ticks; ++tick)
+        {
+            system.update(world, tick);
+            world.commit();
+
+            if (world.view<Walker, Cell>().size() == 0U)
+            {
+                break;
+            }
+
+            trace.push_back(
+                Step{
+                    .at = world.get<Cell>(entity),
+                    .facing = world.get<Walker>(entity).facing});
+        }
+
+        return trace;
+    }
+} // namespace
+
+// Determinism, which is the point of doing the search this way: the
+// route home is a function of the roads and the two cells, and of
+// nothing that varies between runs.
+TEST(WalkerReplayDeterminismTest, WalkingHomeReplaysStepForStep)
+{
+    const std::vector<Cell> roads{
+        {.x = 0, .y = 0},
+        {.x = 1, .y = 0},
+        {.x = 2, .y = 0},
+        {.x = 2, .y = 1},
+        {.x = 1, .y = 1},
+        {.x = 0, .y = 1}};
+
+    const auto first =
+        traceOf(roads, Cell{.x = 2, .y = 0}, Cell{.x = 0, .y = 0}, 8);
+    const auto second =
+        traceOf(roads, Cell{.x = 2, .y = 0}, Cell{.x = 0, .y = 0}, 8);
+
+    // Two equally cheap ways home, so a tie was broken to get here.
+    ASSERT_EQ(first.size(), 2U);
+    EXPECT_EQ(first, second);
+    EXPECT_EQ(
+        first.front(),
+        (Step{.at = Cell{.x = 1, .y = 0}, .facing = Direction::West}));
+}
+
+TEST(WalkerReplayDeterminismTest, ACutRoadEndsItOnTheSameTickBothRuns)
+{
+    // (2,0) joins nothing: the road home was never laid.
+    const std::vector<Cell> roads{
+        {.x = 0, .y = 0}, {.x = 2, .y = 0}, {.x = 3, .y = 0}};
+
+    const auto first =
+        traceOf(roads, Cell{.x = 3, .y = 0}, Cell{.x = 0, .y = 0}, 8);
+    const auto second =
+        traceOf(roads, Cell{.x = 3, .y = 0}, Cell{.x = 0, .y = 0}, 8);
+
+    EXPECT_TRUE(first.empty());
+    EXPECT_EQ(first, second);
+}

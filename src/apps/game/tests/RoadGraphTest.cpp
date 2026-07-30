@@ -27,8 +27,9 @@ using antwika::pathfinding::SearchOutcome;
 
 namespace
 {
-    // The cells a route ran through, which is what a caller wants
-    // rather than the numbers it was searched with.
+    // The cells a route ran through.
+    // That is what a caller wants, rather than the numbers it was
+    // searched with.
     [[nodiscard]] std::vector<Cell> cellsOf(
         const std::vector<NodeId> &nodes)
     {
