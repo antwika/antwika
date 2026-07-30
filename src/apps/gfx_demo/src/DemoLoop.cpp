@@ -1,5 +1,6 @@
 #include "antwika/gfx_demo/DemoLoop.hpp"
 
+#include <optional>
 #include <variant>
 
 #include <antwika/gfx/IWindow.hpp>
@@ -16,11 +17,14 @@ namespace antwika::gfx_demo
     {
     }
 
-    void DemoLoop::run(const WindowDesc &desc, std::uint32_t maxFrames)
+    void DemoLoop::run(
+        const WindowDesc &desc, std::optional<std::uint32_t> maxFrames)
     {
         const auto window = backend.createWindow(desc);
 
-        for (std::uint32_t frame = 0; frame < maxFrames; ++frame)
+        for (std::uint32_t frame = 0;
+             !maxFrames.has_value() || frame < maxFrames.value();
+             ++frame)
         {
             while (const auto event = backend.pollEvent())
             {

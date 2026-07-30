@@ -145,6 +145,33 @@ TEST(DemoLoopTest, Run_IgnoresACloseRequestForSomebodyElsesWindow)
     loop.run(WindowDesc{.title = "Antwika"}, 1);
 }
 
+TEST(DemoLoopTest, Run_WithoutAFrameCapDrawsUntilTheWindowCloses)
+{
+    DemoFixture fixture;
+    fixture.expectOneWindow(true);
+
+    // Two frames go by, then the user closes the window.
+    EXPECT_CALL(fixture.backend, pollEvent())
+        .WillOnce(Return(std::nullopt))
+        .WillOnce(Return(std::nullopt))
+        .WillOnce(Return(WindowEvent{
+            .window = DemoFixture::kOurWindow,
+            .payload = CloseRequested{}}))
+        .WillRepeatedly(Return(std::nullopt));
+
+    EXPECT_CALL(*fixture.window, isOpen())
+        .WillOnce(Return(true))
+        .WillOnce(Return(true))
+        .WillRepeatedly(Return(false));
+
+    EXPECT_CALL(fixture.renderer, present()).Times(2);
+
+    const DemoScene scene;
+    DemoLoop loop(fixture.backend, scene);
+
+    loop.run(WindowDesc{.title = "Antwika"}, std::nullopt);
+}
+
 TEST(DemoLoopTest, Run_OpensAndClosesTheWindowEvenWithNoFrames)
 {
     DemoFixture fixture;

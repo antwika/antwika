@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstdint>
+#include <optional>
 
 #include <antwika/gfx/IGfxBackend.hpp>
 #include <antwika/gfx/WindowDesc.hpp>
@@ -16,9 +17,13 @@ namespace antwika::gfx_demo
     /**
      * @brief Opens a window, draws the scene into it, and closes it.
      *
-     * Frame-capped rather than open-ended, because a backend is free to
-     * never report a close request -- which is exactly what the headless
-     * null backend does, so an uncapped loop would hang CI.
+     * The frame cap is optional, because the two ways this loop is used
+     * want opposite things: a person watching a real window wants it to
+     * stay up until they close it, and a headless run wants to end on
+     * its own.
+     * A backend is free to never report a close request -- which is
+     * exactly what the null backend does -- so an uncapped run against
+     * that backend never finishes.
      */
     class DemoLoop final
     {
@@ -43,10 +48,12 @@ namespace antwika::gfx_demo
          * the window on the way out either way.
          *
          * @param desc What the window should look like.
-         * @param maxFrames How many frames to draw at most.
+         * @param maxFrames How many frames to draw at most, or nullopt to
+         * keep drawing for as long as the window stays open.
          * @throws antwika::gfx::GfxError If the window cannot be created.
          */
-        void run(const WindowDesc &desc, std::uint32_t maxFrames);
+        void run(
+            const WindowDesc &desc, std::optional<std::uint32_t> maxFrames);
 
     private:
         IGfxBackend &backend;

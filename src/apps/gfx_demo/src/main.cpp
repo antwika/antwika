@@ -1,5 +1,6 @@
 #include <cstdint>
 #include <iostream>
+#include <optional>
 #include <string>
 
 #include <antwika/gfx/SelectedBackend.hpp>
@@ -26,7 +27,9 @@ using antwika::time::SystemClock;
 
 namespace
 {
-    constexpr std::uint32_t kDemoFrames = 3;
+    // The demo is something to look at, so it draws until it is closed.
+    // The null backend reports no close, so that build never finishes.
+    constexpr std::optional<std::uint32_t> kUntilWindowClosed = std::nullopt;
 } // namespace
 
 int main()
@@ -50,7 +53,7 @@ int main()
         WindowDesc{
             .title = "Antwika gfx demo",
             .size = {.width = 800, .height = 600}},
-        kDemoFrames);
+        kUntilWindowClosed);
 
     return 0;
 }
