@@ -2,7 +2,6 @@
 
 #include <cstddef>
 #include <cstdint>
-#include <functional>
 #include <optional>
 #include <vector>
 
@@ -11,6 +10,7 @@
 #include "antwika/holdem/Blinds.hpp"
 #include "antwika/holdem/Card.hpp"
 #include "antwika/holdem/Chips.hpp"
+#include "antwika/holdem/HandFlow.hpp"
 #include "antwika/holdem/HandResult.hpp"
 #include "antwika/holdem/HandValue.hpp"
 #include "antwika/holdem/IDeck.hpp"
@@ -219,18 +219,13 @@ namespace antwika::holdem
     private:
         std::vector<Seat> seats;
         Blinds blindLevels;
-        std::vector<Card> communityCards;
         std::optional<HandResult> result;
         std::optional<SeatId> toAct;
-        // The one borrowed collaborator arriving after construction.
-        // A reference member cannot express that, nor the letting go.
-        // An optional reference says "none yet" without a raw pointer.
-        std::optional<std::reference_wrapper<IDeck>> deck;
         Chips potChips = 0;
         BettingRound betting;
+        HandFlow flow;
         std::uint64_t handCount = 0;
         SeatId buttonSeat{};
-        Stage currentStage = Stage::PreFlop;
         bool handInProgress = false;
 
         void requireSeatInRange(SeatId seat) const;
@@ -244,7 +239,6 @@ namespace antwika::holdem
         void openBetting(SeatId from);
         void advanceAfterAction(SeatId actor);
         void resetBettingRound() noexcept;
-        void dealStreet();
         void closeRound();
         void finishWithoutShowdown();
         void finishWithShowdown();
