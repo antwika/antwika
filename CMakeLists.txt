@@ -58,3 +58,52 @@ endif()
 
 add_subdirectory(src)
 add_subdirectory(backends)
+
+# Every executable this project defines, one absolute path per line.
+# CI checks that each one is really on disk after a build, and which
+# executables exist is knowledge CMake already has -- so it writes the
+# list rather than a workflow repeating it, which is what stops a new app
+# or test binary from being added without CI ever looking at it.
+# The paths come from $<TARGET_FILE>, so a cross build's .exe suffix and
+# any future output directory follow along on their own.
+function(antwika_collect_executables directory out_variable)
+    get_property(targets DIRECTORY "${directory}"
+        PROPERTY BUILDSYSTEM_TARGETS)
+    get_property(subdirectories DIRECTORY "${directory}"
+        PROPERTY SUBDIRECTORIES)
+
+    set(collected "")
+
+    foreach(target IN LISTS targets)
+        get_target_property(type ${target} TYPE)
+
+        if(type STREQUAL "EXECUTABLE")
+            list(APPEND collected ${target})
+        endif()
+    endforeach()
+
+    foreach(subdirectory IN LISTS subdirectories)
+        antwika_collect_executables("${subdirectory}" nested)
+        list(APPEND collected ${nested})
+    endforeach()
+
+    set(${out_variable} "${collected}" PARENT_SCOPE)
+endfunction()
+
+antwika_collect_executables("${CMAKE_CURRENT_SOURCE_DIR}"
+    ANTWIKA_EXECUTABLE_TARGETS)
+
+list(SORT ANTWIKA_EXECUTABLE_TARGETS)
+
+set(ANTWIKA_EXECUTABLE_PATHS "")
+
+foreach(target IN LISTS ANTWIKA_EXECUTABLE_TARGETS)
+    list(APPEND ANTWIKA_EXECUTABLE_PATHS "$<TARGET_FILE:${target}>")
+endforeach()
+
+list(JOIN ANTWIKA_EXECUTABLE_PATHS "\n" ANTWIKA_EXECUTABLE_MANIFEST)
+
+file(GENERATE
+    OUTPUT "${CMAKE_BINARY_DIR}/expected-executables.txt"
+    CONTENT "${ANTWIKA_EXECUTABLE_MANIFEST}\n"
+)

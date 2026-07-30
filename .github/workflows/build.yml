@@ -260,64 +260,30 @@ jobs:
           path: coverage-badge.json
           retention-days: 1
 
+      # The list of executables to expect is written by the root
+      # CMakeLists.txt, since CMake is what knows which targets exist.
+      # A hand-maintained copy here could not tell a new binary from a
+      # forgotten one, and the MinGW leg needed a second copy of its own
+      # because a cross build configures no test targets.
       - name: Verify executables
         shell: bash
         run: |
           failed=0
+          manifest="${BUILD_DIR}/expected-executables.txt"
 
-          expected=(
-            "antwika_ecs_tests"
-            "antwika_engine_tests"
-            "antwika_event_tests"
-            "antwika_game"
-            "antwika_game_tests"
-            "antwika_gfx_demo"
-            "antwika_gfx_demo_tests"
-            "antwika_gfx_tests"
-            "antwika_holdem_tests"
-            "antwika_input_tests"
-            "antwika_life"
-            "antwika_life_tests"
-            "antwika_log_tests"
-            "antwika_poker"
-            "antwika_poker_tests"
-            "antwika_reducer_tests"
-            "antwika_replay_tests"
-            "antwika_scheduler_tests"
-            "antwika_sudoku"
-            "antwika_sudoku_tests"
-            "antwika_task_worker"
-            "antwika_task_worker_tests"
-            "antwika_time_tests"
-            "antwika_ui_tests"
-            "antwika_wfc_tests"
-          )
-
-          if [ "${{ matrix.image }}" = "mingw" ]; then
-            extension=".exe"
-
-            expected=(
-              "antwika_game"
-              "antwika_gfx_demo"
-              "antwika_life"
-              "antwika_poker"
-              "antwika_sudoku"
-              "antwika_task_worker"
-            )
-          else
-            extension=""
+          if [ ! -s "$manifest" ]; then
+            echo "Missing or empty manifest: $manifest"
+            exit 1
           fi
 
-          for executable in "${expected[@]}"; do
-            binary="${BUILD_DIR}/bin/${executable}${extension}"
-
+          while IFS= read -r binary; do
             if [ ! -f "$binary" ]; then
               echo "Missing binary: $binary"
               failed=1
             else
               echo "Found: $binary"
             fi
-          done
+          done < "$manifest"
 
           exit $failed
 
