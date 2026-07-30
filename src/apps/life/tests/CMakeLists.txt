@@ -8,6 +8,7 @@ add_executable(antwika_life_tests
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/Life.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/LifeSystem.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/PrintSystem.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/RenderSystem.cpp
     BoardSceneTest.cpp
     BoardSinkTest.cpp
     BoardTest.cpp
@@ -15,6 +16,7 @@ add_executable(antwika_life_tests
     GridTest.cpp
     LifeSystemTest.cpp
     PrintSystemTest.cpp
+    RenderSystemTest.cpp
     ReplayIntegrationTest.cpp
 )
 
