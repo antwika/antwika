@@ -10,6 +10,7 @@ add_executable(antwika_gfx_tests
     ColorTest.cpp
     GlyphsTest.cpp
     IRendererTest.cpp
+    IWindowTest.cpp
     Math3DTest.cpp
     MeshDataTest.cpp
     NullBackendConformanceTest.cpp
