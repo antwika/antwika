@@ -52,6 +52,19 @@ namespace antwika::gfx::raylib
         void drawRect(Rect rect, Color color) override;
 
         /**
+         * @brief Draw a one-pixel-wide line between two points.
+         *
+         * A line whose ends coincide is drawn as a single pixel rather
+         * than passed to DrawLine, which submits a two-vertex GL line
+         * primitive that rasterises nothing when both vertices are the
+         * same point. IRenderer promises that pixel.
+         * @param from One end of the line.
+         * @param to The other end.
+         * @param color The colour to draw in.
+         */
+        void drawLine(Point from, Point to, Color color) override;
+
+        /**
          * @brief Draw a line of text in the built-in fixed-cell font.
          *
          * Painted from gfx::glyphRow() as filled rectangles rather than

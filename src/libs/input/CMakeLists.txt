@@ -1,9 +1,15 @@
 add_library(antwika_input
+    src/ActionMap.cpp
+    src/CoalescingPointerSource.cpp
     src/InputEventCodec.cpp
+    src/InputState.cpp
     src/Key.cpp
+    src/Keyboard.cpp
     src/LiveInputSource.cpp
+    src/Mouse.cpp
     src/MouseButton.cpp
     src/NullInputBackend.cpp
+    src/StopOnKeySource.cpp
 )
 
 add_library(antwika::input ALIAS antwika_input)
@@ -21,10 +27,12 @@ target_include_directories(antwika_input
 # antwika::replay comes in for the replay bridge alone: IReplaySource is
 # the seam live input travels through, and PayloadJson is the shared
 # parse-and-validate step every structured payload already uses.
+# antwika::engine comes in for StopOnKeySource, which names engine.stop.
 # antwika::gfx is deliberately absent, and stays absent -- reading input
 # does not require opening a window.
 target_link_libraries(antwika_input
     PUBLIC
+        antwika::engine
         antwika::event
         antwika::log
         antwika::replay

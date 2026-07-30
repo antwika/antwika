@@ -64,6 +64,17 @@ TEST(NullRendererTest, DrawRect_DiscardsTheRectangleAndTracesIt)
         Color{.green = 255});
 }
 
+TEST(NullRendererTest, DrawLine_DiscardsTheLineAndTracesIt)
+{
+    MockLogger logger;
+    NullRenderer renderer(logger);
+
+    EXPECT_CALL(logger, log(Level::Trace, "gfx.null: draw line"));
+
+    renderer.drawLine(
+        Point{.x = 1, .y = 2}, Point{.x = 30, .y = 40}, Color{.red = 255});
+}
+
 TEST(NullRendererTest, DrawText_DiscardsTheTextAndTracesIt)
 {
     MockLogger logger;

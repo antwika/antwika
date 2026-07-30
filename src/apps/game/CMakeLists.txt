@@ -1,21 +1,32 @@
-add_executable(antwika_game src/Game.cpp src/GameStateReducer.cpp src/main.cpp)
+add_executable(antwika_game
+    src/Game.cpp
+    src/GameStateReducer.cpp
+    src/DiamondSpans.cpp
+    src/GridScene.cpp
+    src/GridSink.cpp
+    src/PathIndex.cpp
+    src/RenderSystem.cpp
+    src/TickPacer.cpp
+    src/SceneSnapshot.cpp
+    src/WalkerSystem.cpp
+    src/WindowInputSource.cpp
+    src/main.cpp
+)
 
 target_include_directories(antwika_game
     PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}/include
 )
 
-set(ANTWIKA_GAME_DEMO_REPLAY_PATH
-    "${CMAKE_CURRENT_SOURCE_DIR}/replays/demo.json")
-
-target_compile_definitions(antwika_game
-    PRIVATE
-        ANTWIKA_GAME_DEMO_REPLAY_PATH="${ANTWIKA_GAME_DEMO_REPLAY_PATH}"
-)
-
 target_link_libraries(antwika_game
     PRIVATE
+        antwika::ecs
         antwika::engine
+        antwika::gfx
+        antwika::gfx_backend
+        antwika::input
+        antwika::input_backend
+        antwika::log
         antwika::replay
         antwika::time
 )

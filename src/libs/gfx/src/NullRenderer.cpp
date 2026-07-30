@@ -28,6 +28,11 @@ namespace antwika::gfx::detail
         logger.log(Level::Trace, "gfx.null: draw rect");
     }
 
+    void NullRenderer::drawLine(Point, Point, Color)
+    {
+        logger.log(Level::Trace, "gfx.null: draw line");
+    }
+
     void NullRenderer::drawText(
         Point, std::string_view, std::uint32_t, Color)
     {

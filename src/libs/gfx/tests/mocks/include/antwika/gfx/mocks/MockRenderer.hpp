@@ -27,6 +27,8 @@ namespace antwika::gfx::mocks
         MOCK_METHOD(void, clear, (Color color), (override));
         MOCK_METHOD(void, drawRect, (Rect rect, Color color), (override));
         MOCK_METHOD(
+            void, drawLine, (Point from, Point to, Color color), (override));
+        MOCK_METHOD(
             void,
             drawText,
             (Point origin,
