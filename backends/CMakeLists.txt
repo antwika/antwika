@@ -27,7 +27,7 @@ endforeach()
 
 # Two real frameworks would compete for one process-global event queue,
 # and whichever polled second would silently lose what the other took --
-# see docs/input-plan.md. That failure is framework-dependent and
+# see docs/history/input-plan.md. That failure is framework-dependent and
 # invisible at runtime, so it is worth refusing rather than trusting.
 if(NOT ANTWIKA_GFX_BACKEND STREQUAL ANTWIKA_INPUT_BACKEND
         AND NOT ANTWIKA_GFX_BACKEND STREQUAL "null"
