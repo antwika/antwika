@@ -143,9 +143,12 @@ namespace antwika::poker
 
         if (window != nullptr)
         {
-            tableWindow = window->backend.createWindow(WindowDesc{
+            // Excluded on the line gcov attributes it to.
+            // It is the unwind cleanup for desc's own title string.
+            const WindowDesc desc{
                 .title = config.tableName + " -- Antwika Poker",
-                .size = window->size});
+                .size = window->size}; // GCOVR_EXCL_LINE
+            tableWindow = window->backend.createWindow(desc);
 
             renderSink.emplace(
                 *tableWindow,

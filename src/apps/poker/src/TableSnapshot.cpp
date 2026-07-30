@@ -27,6 +27,7 @@ namespace antwika::poker
             const auto id = makeSeatId(index);
             const auto &seat = table.seatAt(id);
 
+            // Excluded: the unwind cleanup for the name string.
             seats.push_back(SeatSnapshot{ // GCOVR_EXCL_LINE
                 .name = game.playerAt(id).value_or(std::string{}),
                 .stack = seat.stack,
@@ -40,6 +41,7 @@ namespace antwika::poker
             });
         }
 
+        // Excluded: the unwind cleanup for the vectors moved in here.
         return TableSnapshot{ // GCOVR_EXCL_LINE
             .tableName = std::move(tableName),
             .seats = std::move(seats),

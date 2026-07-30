@@ -305,3 +305,30 @@ TEST_F(TableSceneTest, Draw_DrawsNoSeatsForATableWithNone)
 
     scene.draw(renderer, kCanvas, snapshot);
 }
+
+TEST_F(TableSceneTest, Draw_StartsTheRowsAtTheTopWhenTheyCannotAllFit)
+{
+    // Nine rows need more height than this canvas has at all.
+    // So they start hard against the top rather than above it.
+    // Which leaves the board no room.
+    TableSnapshot snapshot{
+        .tableName = "Antwika",
+        .blinds = {.small = 5, .big = 10},
+        .handsPlayed = 1,
+    };
+    for (int index = 0; index < 9; ++index)
+    {
+        snapshot.seats.push_back(player("p" + std::to_string(index), 100));
+    }
+
+    std::vector<Rect> rects;
+    EXPECT_CALL(renderer, drawRect(_, _))
+        .Times(AnyNumber())
+        .WillRepeatedly([&rects](Rect rect, Color) { rects.push_back(rect); });
+
+    scene.draw(renderer, Size{.width = 320, .height = 200}, snapshot);
+
+    // The first seat box is the one drawn right after the rail.
+    ASSERT_GE(rects.size(), 2);
+    EXPECT_EQ(rects.at(1).origin.y, 0);
+}

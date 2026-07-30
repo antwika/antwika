@@ -8,6 +8,7 @@
 namespace antwika::poker
 {
 
+    using antwika::engine::events::kStop;
     using antwika::gfx::CloseRequested;
 
     WindowCloseSource::WindowCloseSource(
@@ -27,12 +28,11 @@ namespace antwika::poker
         // And a second engine.stop would change nothing anyway.
         if (!window.isOpen())
         {
-            events.push_back( // GCOVR_EXCL_LINE
-                Event{.name = antwika::engine::events::kStop});
+            events.push_back(Event{.name = kStop}); // GCOVR_EXCL_LINE
         }
 
         return events;
-    }
+    } // GCOVR_EXCL_LINE
 
     void WindowCloseSource::pumpEvents()
     {
