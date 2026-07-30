@@ -267,6 +267,7 @@ jobs:
             "antwika_gfx_demo_tests"
             "antwika_gfx_tests"
             "antwika_holdem_tests"
+            "antwika_input_tests"
             "antwika_life"
             "antwika_life_tests"
             "antwika_log_tests"
