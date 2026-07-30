@@ -30,6 +30,7 @@ target_link_libraries(antwika_life
         antwika::ecs
         antwika::engine
         antwika::gfx
+        antwika::gfx_backend
         antwika::log
         antwika::replay
         antwika::time
