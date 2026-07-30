@@ -3,6 +3,7 @@ add_executable(antwika_game
     src/GameStateReducer.cpp
     src/GridScene.cpp
     src/GridSink.cpp
+    src/InputFold.cpp
     src/PathIndex.cpp
     src/RenderSystem.cpp
     src/TickPacer.cpp

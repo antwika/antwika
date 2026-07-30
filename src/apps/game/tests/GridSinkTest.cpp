@@ -6,7 +6,6 @@
 #include <antwika/engine/Events.hpp>
 #include <antwika/event/Event.hpp>
 #include <antwika/event/TickEvent.hpp>
-#include <antwika/input/InputError.hpp>
 #include <antwika/input/InputEvent.hpp>
 #include <antwika/input/InputEventCodec.hpp>
 #include <antwika/input/MouseButton.hpp>
@@ -16,6 +15,7 @@
 #include "antwika/game/Cell.hpp"
 #include "antwika/game/GridExtent.hpp"
 #include "antwika/game/GridSink.hpp"
+#include "antwika/game/InputFold.hpp"
 #include "antwika/game/IsoProjection.hpp"
 #include "antwika/game/Path.hpp"
 #include "antwika/game/PathIndex.hpp"
@@ -31,11 +31,11 @@ using antwika::game::Cell;
 using antwika::game::cellCentre;
 using antwika::game::GridExtent;
 using antwika::game::GridSink;
+using antwika::game::InputFold;
 using antwika::game::Path;
 using antwika::game::PathIndex;
 using antwika::game::UiOverlay;
 using antwika::game::Walker;
-using antwika::input::InputError;
 using antwika::input::InputEvent;
 using antwika::input::InputEventCodec;
 using antwika::input::MouseButton;
@@ -60,10 +60,17 @@ namespace
             return Position{.x = point.x, .y = point.y};
         }
 
+        // Through the fold first, as bootstrap() registers it.
+        // What the sink reads is what the fold was just given.
+        void dispatch(const TickEvent &event)
+        {
+            input.handle(event);
+            sink.handle(event);
+        }
+
         void send(const InputEvent &event)
         {
-            sink.handle(
-                TickEvent{.tick = 0, .event = codec.encode(event)});
+            dispatch(TickEvent{.tick = 0, .event = codec.encode(event)});
         }
 
         void clickAt(Cell cell, MouseButton button)
@@ -75,7 +82,7 @@ namespace
 
         void tick()
         {
-            sink.handle(
+            dispatch(
                 TickEvent{
                     .tick = 0,
                     .event = Event{
@@ -100,12 +107,13 @@ namespace
         Camera camera{antwika::gfx::Point{.x = 400, .y = 40}};
         SystemScheduler scheduler;
         InputEventCodec codec;
+        InputFold input{codec};
 
         // Nothing has drawn a toolbar, so nothing is covered.
         // The tests that care say otherwise for themselves.
         UiOverlay overlay;
         GridSink sink{
-            world, paths, camera, kExtent, scheduler, codec, overlay};
+            world, paths, camera, kExtent, scheduler, input, overlay};
     };
 } // namespace
 
@@ -302,27 +310,13 @@ TEST_F(GridSinkTest, Tick_ClearsTheEdgesSoADragDoesNotCarryOver)
 
 TEST_F(GridSinkTest, Handle_IgnoresAnEventThatIsNotInput)
 {
-    sink.handle(
+    dispatch(
         TickEvent{
             .tick = 0,
             .event = Event{.name = "game.score_increment"}});
 
     EXPECT_EQ(paths.size(), 0U);
     EXPECT_EQ(walkerCount(), 0U);
-}
-
-TEST_F(GridSinkTest, Handle_LetsAMalformedInputPayloadThrough)
-{
-    // The wire format is the codec's to police.
-    // Its error surfaces rather than a second type saying the same.
-    EXPECT_THROW(
-        sink.handle(
-            TickEvent{
-                .tick = 0,
-                .event = Event{
-                    .name = "input.pointer_down",
-                    .payload = "not json"}}),
-        InputError);
 }
 
 // What the toolbar covers, it covers from the grid too.
