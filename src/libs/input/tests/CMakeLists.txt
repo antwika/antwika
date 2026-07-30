@@ -6,7 +6,9 @@ add_subdirectory(mocks)
 
 add_executable(antwika_input_tests
     ActionMapTest.cpp
+    CoalescingPointerSourceTest.cpp
     InputCapabilitiesTest.cpp
+    InputDeterminismTest.cpp
     InputEventCodecTest.cpp
     InputEventTest.cpp
     InputStateTest.cpp
@@ -20,6 +22,7 @@ add_executable(antwika_input_tests
     NullInputBackendTest.cpp
     OffsetTest.cpp
     PositionTest.cpp
+    StopOnKeySourceTest.cpp
 )
 
 target_link_libraries(antwika_input_tests
