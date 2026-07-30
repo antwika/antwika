@@ -7,6 +7,7 @@ add_executable(antwika_life
     src/LifeSystem.cpp
     src/PrintSystem.cpp
     src/RenderSystem.cpp
+    src/WindowInputSource.cpp
     src/main.cpp
 )
 
