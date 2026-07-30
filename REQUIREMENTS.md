@@ -34,6 +34,13 @@ Requirements for the Antwika project, gathered from `README.md`, `blog/001-build
 - Running the same set of `Scheduler::schedule()`/`run()` calls twice from scratch must produce identical `run()` output both times, proven by a test rather than asserted by inspection.
 - `Scheduler::run()` must dispatch ready jobs in priority order (higher priority first) with equal-priority jobs run FIFO by submission order.
 - `Scheduler::run()`'s `budget` parameter must be the only mechanism controlling how many jobs run per call; no job may run outside a `run()` call.
+- Graphics access must go through a backend-agnostic abstraction, and no file under `src/` may reference a concrete graphics framework such as SDL or raylib.
+- A graphics backend that cannot honour a request (including a window asked for with a zero width or height) must raise one specific, catchable error type, the same type for every backend.
+- A headless graphics backend must exist, so tests, CI and replay verification can run with no display and no graphics framework installed.
+- Rendering must be a write-only projection of application state, so a replay recorded against one backend reproduces the same state under any other.
+- A window event must say which window it refers to, since a backend pumps a single event queue for every window it owns.
+- A backend must declare how many windows it can hold open at once, and refuse to exceed it, rather than every backend being required to support several; raylib keeps its one window in global state and cannot.
+- Polling a graphics backend for events must reach an empty queue, so a caller draining it between frames terminates.
 - A job with unmet dependencies (via `schedule()`'s `dependsOn`) must never be dispatched until every dependency has run; dependency cycles must be unreachable through the public API, by construction (id-ordering), not by a runtime check.
 
 ## Should have
@@ -58,4 +65,7 @@ Requirements for the Antwika project, gathered from `README.md`, `blog/001-build
 - The engine won't support capturing live/interactive input into a replay in its current scope; the current replay input is a hand-authored script.
 - MinGW builds won't carry coverage instrumentation (`--coverage` isn't supported by that toolchain).
 - An index over replay events (to avoid the linear scan per tick in `ReplaySource::eventsFor()`) won't be built until replays are long enough for it to matter.
+- Graphics backends won't be loadable at runtime; exactly one is compiled and linked per build, selected by the `ANTWIKA_GFX_BACKEND` CMake variable and the matching `gfx_backend` Conan option.
+- The graphics abstraction won't include GPU, shader, 3D or texture APIs in its current scope; drawing is limited to clearing and filling rectangles.
+- `antwika::gfx` won't report keyboard or pointer input in its current scope, since capturing live input into a replay is itself out of scope.
 - `Scheduler` won't include priority aging or anti-starvation: a continuous stream of higher-priority jobs can, by design, keep a lower-priority job pending indefinitely, since unconditional priority respect is the requirement, not a bug to work around.

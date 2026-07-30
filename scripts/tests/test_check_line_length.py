@@ -62,6 +62,19 @@ def it_finds_violations_across_the_configured_file_globs():
         assert violations[0][2] == 90
 
 
+def it_checks_backend_sources_outside_src():
+    with tempfile.TemporaryDirectory() as tmp:
+        root = Path(tmp)
+        write(root / "backends/sdl3/src/Sdl3Backend.cpp", ("a" * 90) + "\n")
+        write(root / "backends/sdl3/src/Sdl3Backend.hpp", ("b" * 90) + "\n")
+
+        violations = check_line_length.find_violations(root)
+
+        assert len(violations) == 2
+        assert violations[0][0] == root / "backends/sdl3/src/Sdl3Backend.cpp"
+        assert violations[1][0] == root / "backends/sdl3/src/Sdl3Backend.hpp"
+
+
 def it_keeps_every_configured_source_line_at_or_under_eighty_chars():
     root = check_line_length.DEFAULT_ROOT
 
@@ -77,6 +90,7 @@ def main():
         it_flags_a_line_over_eighty_characters,
         it_reports_the_correct_line_number_among_several_lines,
         it_finds_violations_across_the_configured_file_globs,
+        it_checks_backend_sources_outside_src,
         it_keeps_every_configured_source_line_at_or_under_eighty_chars,
     ]
 

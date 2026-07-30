@@ -6,7 +6,14 @@ from pathlib import Path
 
 DEFAULT_ROOT = Path(__file__).resolve().parent.parent
 
-CPP_GLOBS = ("src/**/*.cpp", "src/**/*.hpp")
+# Backends live outside src/ and so outside the coverage gate.
+# The style rules still apply to them.
+CPP_GLOBS = (
+    "src/**/*.cpp",
+    "src/**/*.hpp",
+    "backends/**/*.cpp",
+    "backends/**/*.hpp",
+)
 PYTHON_GLOBS = ("scripts/*.py", "scripts/tests/*.py")
 
 MAX_LINE_LENGTH = 80

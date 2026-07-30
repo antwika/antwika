@@ -2,7 +2,11 @@ CMakePresets.json
 CMakeUserPresets.json
 build
 build-coverage
+build-*
 __pycache__
 
 !profiles/build/
 !CMakePresets.json
+
+# Which gfx backend the VS Code build task builds.
+.vscode/gfx-backend

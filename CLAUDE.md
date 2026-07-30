@@ -23,6 +23,31 @@ ctest --test-dir build --output-on-failure
 
 Or in VS Code: `Ctrl+Shift+B` runs the same sequence as the default build task (see [`.vscode/tasks.json`](.vscode/tasks.json)).
 
+**Choosing a graphics backend** (`null`, `sdl3` or `raylib`; the default `null` needs no graphics framework and draws nothing):
+
+```sh
+conan install . -of build-sdl3 -o gfx_backend=sdl3 \
+  -c tools.cmake.cmake_layout:build_folder_vars="['options.gfx_backend']" \
+  -pr:b=./profiles/build/${CONAN_PROFILE} \
+  -pr:h=./profiles/host/${CONAN_PROFILE} \
+  --build=missing -s build_type=Release --lockfile=conan-sdl3.lock
+
+cmake --preset conan-gfx_backend_sdl3-release
+cmake --build build-sdl3 -j24
+ctest --test-dir build-sdl3 --output-on-failure
+```
+
+This assumes the default build above has been installed at least once.
+[`CMakePresets.json`](CMakePresets.json) includes `build/CMakePresets.json` unconditionally, and its `conan-coverage` preset inherits the `conan-release` one generated there, so CMake refuses to read *any* preset until the default configuration exists.
+On a fresh clone, run the `conan install . -of build` above first.
+
+The Conan option sets the `ANTWIKA_GFX_BACKEND` CMake variable, which names a directory under [`backends/`](backends/); an unknown value fails at configure time with the list of ones that exist.
+The `build_folder_vars` conf is what puts the backend in the preset name, so the sdl3 configuration does not collide with the default build's `conan-release` preset.
+Each configuration has its own lockfile, because selecting a backend changes the dependency graph.
+
+Set `SDL_VIDEODRIVER=dummy` to run the SDL build with no display, or use `xvfb-run` for any backend, which is how the conformance suite is exercised without a desktop session.
+`raylib` reports `maxWindows() == 1`, since it keeps its one window in global state; the conformance suite skips its multi-window tests for such a backend rather than failing them.
+
 **Run a single test binary / test case:**
 
 ```sh
@@ -88,6 +113,8 @@ Only `poker.deposit`/`poker.buy_in`/`poker.cash_out` are persisted: the shuffle 
 - `apps/sudoku` is unrelated to the tick/replay system: it's a showcase for `antwika::wfc` (Wave Function Collapse) — a standalone, dependency-free, deterministic constraint solver operating on a flat, index-addressed `std::vector` of cells with geometry expressed entirely through `IConstraint`s (no grid concept inside the library). `apps/sudoku` expresses the 81-cell puzzle and its row/column/box rules as `AllDifferentConstraint`s over that flat array — see [`blog/005-wave-function-collapse-that-never-guesses.md`](blog/005-wave-function-collapse-that-never-guesses.md).
 
 **Supporting libs**: `antwika::time` (fixed-tick `Tick` type, `IClock`/`SystemClock`) and `antwika::log` (`ILogger`/`Logger`, `IAppender`/`IFormatter`/`ILogPolicy` — composable logging with no global state) are used across apps but carry no tick/replay logic of their own.
+
+`antwika::gfx` abstracts opening and rendering to windows (`IGfxBackend`/`IWindow`/`IRenderer`, `GfxError`), so no code under `src/` names a concrete graphics framework — SDL, raylib and friends arrive as statically linked backends under `backends/`, chosen at build time. Rendering is a write-only projection of state and never feeds back into the tick loop, so replays stay reproducible under the headless `NullBackend`. See [`docs/gfx-plan.md`](docs/gfx-plan.md) for the full design and its phases.
 
 ## Notes for AI agents
 

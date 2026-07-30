@@ -17,6 +17,9 @@ enable_testing()
 option(ENABLE_COVERAGE "Enable coverage" OFF)
 option(ANTWIKA_WARNINGS_AS_ERRORS "Treat compiler warnings as errors" ON)
 
+set(ANTWIKA_GFX_BACKEND "null" CACHE STRING
+    "Graphics backend to compile and link, named after a backends/ subdirectory")
+
 if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
     add_compile_options(
         -Wall
@@ -45,3 +48,4 @@ if(ENABLE_COVERAGE AND BUILD_TESTING AND NOT CMAKE_CROSSCOMPILING)
 endif()
 
 add_subdirectory(src)
+add_subdirectory(backends)

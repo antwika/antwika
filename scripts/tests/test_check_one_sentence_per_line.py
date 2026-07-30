@@ -255,6 +255,22 @@ def it_finds_violations_across_the_configured_file_globs():
         assert violations[0].path == root / "README.md"
 
 
+def it_checks_backend_sources_outside_src():
+    with tempfile.TemporaryDirectory() as tmp:
+        root = Path(tmp)
+        write(
+            root / "backends/sdl3/src/Sdl3Backend.cpp",
+            "// This wraps\n// onto a second line.\nint x;\n",
+        )
+
+        violations = m.find_violations(root)
+
+        assert len(violations) == 1
+        assert (
+            violations[0].path == root / "backends/sdl3/src/Sdl3Backend.cpp"
+        )
+
+
 def main():
     tests = [
         it_detects_two_sentences_sharing_a_line,
@@ -280,6 +296,7 @@ def main():
         it_allows_a_multi_sentence_list_item_split_across_its_own_lines,
         it_keeps_every_comment_at_or_under_eighty_characters,
         it_finds_violations_across_the_configured_file_globs,
+        it_checks_backend_sources_outside_src,
     ]
 
     for test in tests:
