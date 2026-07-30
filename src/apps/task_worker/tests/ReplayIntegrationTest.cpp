@@ -1,10 +1,11 @@
+#include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
 #include <sstream>
 
 #include <antwika/engine/Events.hpp>
 #include <antwika/event/Event.hpp>
-#include <antwika/event/EventRecorder.hpp>
+#include <antwika/event/mocks/MockEventSink.hpp>
 #include <antwika/event/TickEvent.hpp>
 #include <antwika/log/Level.hpp>
 #include <antwika/log/MinimumLevelLogPolicy.hpp>
@@ -21,7 +22,7 @@
 #include "antwika/task_worker/Worker.hpp"
 
 using antwika::event::Event;
-using antwika::event::EventRecorder;
+using antwika::event::mocks::MockEventSink;
 using antwika::event::TickEvent;
 using antwika::log::Level;
 using antwika::log::MinimumLevelLogPolicy;
@@ -33,6 +34,7 @@ using antwika::replay::ReplaySource;
 using antwika::replay::ReplayWriter;
 using antwika::task_worker::Worker;
 using antwika::time::fakes::FakeClock;
+using ::testing::NiceMock;
 
 namespace
 {
@@ -47,7 +49,7 @@ namespace
         NullAppender appender;
         PlainFormatter formatter;
         MinimumLevelLogPolicy logPolicy(Level::Info);
-        EventRecorder eventSink;
+        NiceMock<MockEventSink> eventSink;
 
         return antwika::task_worker::bootstrap(
             antwika::task_worker::TaskWorkerConfig{

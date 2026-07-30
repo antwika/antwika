@@ -1,3 +1,4 @@
+#include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
 #include <algorithm>
@@ -13,7 +14,7 @@
 
 #include <antwika/engine/Events.hpp>
 #include <antwika/event/Event.hpp>
-#include <antwika/event/EventRecorder.hpp>
+#include <antwika/event/mocks/MockEventSink.hpp>
 #include <antwika/event/TickEvent.hpp>
 #include <antwika/event/TickEventRecorder.hpp>
 #include <antwika/gfx/Bitmap.hpp>
@@ -47,7 +48,7 @@
 #include "antwika/poker/WindowSetup.hpp"
 
 using antwika::event::Event;
-using antwika::event::EventRecorder;
+using antwika::event::mocks::MockEventSink;
 using antwika::event::TickEvent;
 using antwika::event::TickEventRecorder;
 using antwika::gfx::Bitmap;
@@ -77,6 +78,7 @@ using antwika::poker::WindowSetup;
 using antwika::time::fakes::FakeClock;
 using antwika::time::fakes::FakeSleeper;
 using namespace std::chrono_literals;
+using ::testing::NiceMock;
 
 namespace
 {
@@ -208,7 +210,7 @@ namespace
         NullAppender appender;
         PlainFormatter formatter;
         MinimumLevelLogPolicy logPolicy(Level::Warning);
-        EventRecorder eventSink;
+        NiceMock<MockEventSink> eventSink;
         TickEventRecorder replayRecorder;
         std::ostringstream out;
 

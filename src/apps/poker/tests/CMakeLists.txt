@@ -38,6 +38,7 @@ target_link_libraries(antwika_poker_tests
     PRIVATE
         antwika::engine
         antwika::event
+        antwika::event::tests::mocks
         antwika::gfx
         antwika::gfx::tests::mocks
         antwika::holdem

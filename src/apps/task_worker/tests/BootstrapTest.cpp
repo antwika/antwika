@@ -1,3 +1,4 @@
+#include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
 #include <optional>
@@ -6,7 +7,7 @@
 #include <antwika/ecs/ISystem.hpp>
 #include <antwika/engine/Events.hpp>
 #include <antwika/event/Event.hpp>
-#include <antwika/event/EventRecorder.hpp>
+#include <antwika/event/mocks/MockEventSink.hpp>
 #include <antwika/event/TickEventRecorder.hpp>
 #include <antwika/event/TickEvent.hpp>
 #include <antwika/log/Level.hpp>
@@ -27,7 +28,7 @@
 using antwika::ecs::ISystem;
 using antwika::ecs::World;
 using antwika::event::Event;
-using antwika::event::EventRecorder;
+using antwika::event::mocks::MockEventSink;
 using antwika::event::TickEventRecorder;
 using antwika::event::TickEvent;
 using antwika::log::Level;
@@ -47,6 +48,7 @@ using antwika::task_worker::TaskStatus;
 using antwika::task_worker::Worker;
 using antwika::task_worker::WorkerStatus;
 using antwika::time::fakes::FakeClock;
+using ::testing::NiceMock;
 
 namespace
 {
@@ -121,7 +123,7 @@ TEST(BootstrapTest, Bootstrap_RunsScriptedTasksToCompletion)
     NullAppender appender;
     PlainFormatter formatter;
     MinimumLevelLogPolicy logPolicy(Level::Info);
-    EventRecorder eventSink;
+    NiceMock<MockEventSink> eventSink;
 
     auto script = demoScript();
     ReplaySource inputSource(script);
@@ -156,7 +158,7 @@ TEST(BootstrapTest, Bootstrap_RunsEveryObserverOncePerTick)
     NullAppender appender;
     PlainFormatter formatter;
     MinimumLevelLogPolicy logPolicy(Level::Info);
-    EventRecorder eventSink;
+    NiceMock<MockEventSink> eventSink;
 
     auto script = demoScript();
     ReplaySource inputSource(script);
@@ -184,7 +186,7 @@ TEST(BootstrapTest, Bootstrap_KeepsACallerSuppliedRegistryInSync)
     NullAppender appender;
     PlainFormatter formatter;
     MinimumLevelLogPolicy logPolicy(Level::Info);
-    EventRecorder eventSink;
+    NiceMock<MockEventSink> eventSink;
 
     auto script = demoScript();
     ReplaySource inputSource(script);
@@ -233,7 +235,7 @@ TEST(BootstrapTest, Bootstrap_WithNoScriptedInputAllWorkersStayIdle)
     NullAppender appender;
     PlainFormatter formatter;
     MinimumLevelLogPolicy logPolicy(Level::Info);
-    EventRecorder eventSink;
+    NiceMock<MockEventSink> eventSink;
 
     ReplaySource inputSource({
         TickEvent{
@@ -266,7 +268,7 @@ TEST(BootstrapTest, Bootstrap_ForwardsDispatchedEventsToATickEventRecorder)
     NullAppender appender;
     PlainFormatter formatter;
     MinimumLevelLogPolicy logPolicy(Level::Info);
-    EventRecorder eventSink;
+    NiceMock<MockEventSink> eventSink;
 
     ReplaySource inputSource({
         TickEvent{
@@ -320,7 +322,7 @@ TEST(BootstrapTest, Bootstrap_ThrowsWhenMaxTicksIsReachedWithoutAStopEvent)
     NullAppender appender;
     PlainFormatter formatter;
     MinimumLevelLogPolicy logPolicy(Level::Info);
-    EventRecorder eventSink;
+    NiceMock<MockEventSink> eventSink;
 
     ReplaySource inputSource({});
 

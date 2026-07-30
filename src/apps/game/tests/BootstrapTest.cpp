@@ -7,7 +7,7 @@
 #include <antwika/ecs/World.hpp>
 #include <antwika/engine/Events.hpp>
 #include <antwika/event/Event.hpp>
-#include <antwika/event/EventRecorder.hpp>
+#include <antwika/event/mocks/MockEventSink.hpp>
 #include <antwika/event/TickEvent.hpp>
 #include <antwika/event/TickEventRecorder.hpp>
 #include <antwika/input/InputEvent.hpp>
@@ -27,7 +27,7 @@
 #include "antwika/game/PathIndex.hpp"
 
 using antwika::event::Event;
-using antwika::event::EventRecorder;
+using antwika::event::mocks::MockEventSink;
 using antwika::event::TickEvent;
 using antwika::event::TickEventRecorder;
 using antwika::game::Camera;
@@ -51,7 +51,7 @@ namespace
     struct Harness
     {
         NiceMock<MockLogger> logger;
-        EventRecorder eventSink;
+        NiceMock<MockEventSink> eventSink;
         InputEventCodec codec;
         Camera camera;
         PathIndex paths;

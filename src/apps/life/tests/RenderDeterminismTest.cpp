@@ -11,7 +11,7 @@
 
 #include <antwika/engine/Events.hpp>
 #include <antwika/event/Event.hpp>
-#include <antwika/event/EventRecorder.hpp>
+#include <antwika/event/mocks/MockEventSink.hpp>
 #include <antwika/event/TickEvent.hpp>
 #include <antwika/event/TickEventRecorder.hpp>
 #include <antwika/gfx/NullBackend.hpp>
@@ -36,7 +36,7 @@
 
 using antwika::ecs::ISystem;
 using antwika::event::Event;
-using antwika::event::EventRecorder;
+using antwika::event::mocks::MockEventSink;
 using antwika::event::TickEvent;
 using antwika::event::TickEventRecorder;
 using antwika::gfx::CloseRequested;
@@ -107,7 +107,7 @@ TEST(
     Board liveBoard;
     {
         NiceMock<MockLogger> logger;
-        EventRecorder eventSink;
+        NiceMock<MockEventSink> eventSink;
         TickEventRecorder replayRecorder;
 
         NiceMock<MockRenderer> renderer;
@@ -170,7 +170,7 @@ TEST(
 
     // The replayed run: the real headless backend, and its real window.
     NiceMock<MockLogger> logger;
-    EventRecorder eventSink;
+    NiceMock<MockEventSink> eventSink;
     NullBackend backend(logger);
     const auto window = backend.createWindow(
         WindowDesc{.title = "replay", .size = {.width = 80, .height = 80}});

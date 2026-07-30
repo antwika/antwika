@@ -52,6 +52,7 @@ target_link_libraries(antwika_life_tests
         antwika::log::tests::mocks
         antwika::replay
         antwika::time::tests::fakes
+        antwika::event::tests::mocks
         gtest::gtest
 )
 

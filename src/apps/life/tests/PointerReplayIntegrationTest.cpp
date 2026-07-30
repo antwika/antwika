@@ -14,7 +14,7 @@
 #include <antwika/ecs/World.hpp>
 #include <antwika/engine/Events.hpp>
 #include <antwika/event/Event.hpp>
-#include <antwika/event/EventRecorder.hpp>
+#include <antwika/event/mocks/MockEventSink.hpp>
 #include <antwika/event/TickEvent.hpp>
 #include <antwika/event/TickEventRecorder.hpp>
 #include <antwika/gfx/Size.hpp>
@@ -43,7 +43,7 @@
 using antwika::ecs::ISystem;
 using antwika::ecs::World;
 using antwika::event::Event;
-using antwika::event::EventRecorder;
+using antwika::event::mocks::MockEventSink;
 using antwika::event::TickEvent;
 using antwika::event::TickEventRecorder;
 using antwika::gfx::Size;
@@ -206,7 +206,7 @@ TEST(PointerReplayIntegrationTest, RecordingADragReplaysToTheSameBoard)
     Board liveBoard;
     {
         NiceMock<MockLogger> logger;
-        EventRecorder eventSink;
+        NiceMock<MockEventSink> eventSink;
         TickEventRecorder replayRecorder;
 
         FakeInputBackend backend(dragRounds(), kPointerOnly);
@@ -245,7 +245,7 @@ TEST(PointerReplayIntegrationTest, RecordingADragReplaysToTheSameBoard)
 
     // The replayed run: the recording, and no device.
     NiceMock<MockLogger> logger;
-    EventRecorder eventSink;
+    NiceMock<MockEventSink> eventSink;
     ReplaySource replaySource(recorded);
 
     const auto replayedBoard = antwika::life::bootstrap(
@@ -268,7 +268,7 @@ TEST(PointerReplayIntegrationTest, ADragWithinOneTickDrawsWhatItCrossed)
     const InputEventCodec codec;
 
     NiceMock<MockLogger> logger;
-    EventRecorder eventSink;
+    NiceMock<MockEventSink> eventSink;
 
     FakeInputBackend backend(
         {pressAt(15, 15),
@@ -315,7 +315,7 @@ TEST(PointerReplayIntegrationTest, HoldingTheButtonStopsTheGenerations)
     const InputEventCodec codec;
 
     NiceMock<MockLogger> logger;
-    EventRecorder eventSink;
+    NiceMock<MockEventSink> eventSink;
     BoardRecorder recorder;
 
     // A blinker: three in a row, flipping upright and flat every turn.
@@ -418,7 +418,7 @@ namespace
         const InputEventCodec &codec, bool gate)
     {
         NiceMock<MockLogger> logger;
-        EventRecorder eventSink;
+        NiceMock<MockEventSink> eventSink;
         TickEventRecorder replayRecorder;
 
         FakeInputBackend backend(wanderingDragRounds(), kPointerOnly);

@@ -8,7 +8,7 @@
 
 #include <antwika/engine/Events.hpp>
 #include <antwika/event/Event.hpp>
-#include <antwika/event/EventRecorder.hpp>
+#include <antwika/event/mocks/MockEventSink.hpp>
 #include <antwika/event/TickEvent.hpp>
 #include <antwika/event/TickEventRecorder.hpp>
 #include <antwika/gfx/NullBackend.hpp>
@@ -40,7 +40,7 @@
 #include "antwika/game/WindowInputSource.hpp"
 
 using antwika::event::Event;
-using antwika::event::EventRecorder;
+using antwika::event::mocks::MockEventSink;
 using antwika::event::TickEvent;
 using antwika::event::TickEventRecorder;
 using antwika::game::Camera;
@@ -116,7 +116,7 @@ namespace
     [[nodiscard]] RunResult run(antwika::replay::IReplaySource &source)
     {
         NiceMock<MockLogger> logger;
-        EventRecorder eventSink;
+        NiceMock<MockEventSink> eventSink;
         const InputEventCodec codec;
         Camera camera;
         PathIndex paths;
@@ -143,7 +143,7 @@ namespace
         antwika::replay::IReplaySource &source)
     {
         NiceMock<MockLogger> logger;
-        EventRecorder eventSink;
+        NiceMock<MockEventSink> eventSink;
         const InputEventCodec codec;
         Camera camera;
         PathIndex paths;
