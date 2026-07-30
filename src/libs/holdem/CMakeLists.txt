@@ -5,6 +5,7 @@ add_library(antwika_holdem
     src/Deck.cpp
     src/HandCategory.cpp
     src/HandEvaluator.cpp
+    src/HandFlow.cpp
     src/HandText.cpp
     src/Pots.cpp
     src/SplitMix64Rng.cpp
