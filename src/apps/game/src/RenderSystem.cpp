@@ -8,11 +8,13 @@ namespace antwika::game
     RenderSystem::RenderSystem(
         IWindow &window,
         const GridScene &scene,
+        const ITexture &atlas,
         const PathIndex &paths,
         const Camera &camera,
         GridExtent extent)
         : window(window),
           scene(scene),
+          atlas(atlas),
           paths(paths),
           camera(camera),
           extent(extent)
@@ -26,7 +28,8 @@ namespace antwika::game
         scene.draw(
             renderer,
             window.size(),
-            snapshotOf(world, paths, camera, extent));
+            snapshotOf(world, paths, camera, extent),
+            atlas);
         renderer.present();
     }
 

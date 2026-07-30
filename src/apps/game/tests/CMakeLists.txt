@@ -3,7 +3,6 @@ find_package(GTest REQUIRED)
 add_executable(antwika_game_tests
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/Game.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/GameStateReducer.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/../src/DiamondSpans.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/GridScene.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/GridSink.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/PathIndex.cpp
@@ -15,7 +14,6 @@ add_executable(antwika_game_tests
     BootstrapTest.cpp
     CameraTest.cpp
     CellTest.cpp
-    DiamondSpansTest.cpp
     DirectionTest.cpp
     GameStateReducerTest.cpp
     GameStateTest.cpp
@@ -27,6 +25,7 @@ add_executable(antwika_game_tests
     PathIndexTest.cpp
     RenderSystemTest.cpp
     SceneSnapshotTest.cpp
+    TileAtlasTest.cpp
     ReplayDeterminismTest.cpp
     ReplayIntegrationTest.cpp
     TickPacerTest.cpp
