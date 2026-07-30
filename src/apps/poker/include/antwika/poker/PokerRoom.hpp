@@ -68,6 +68,76 @@ namespace antwika::poker
     };
 
     /**
+     * @brief Everything one session is wired out of.
+     *
+     * A struct with designated initialisers rather than a parameter list,
+     * because the list had reached eleven positional arguments, four of
+     * them interchangeable-looking logging pieces and two of them raw
+     * pointers a reader can only tell apart by counting.
+     * A name per argument is what makes a wrong one a compile error
+     * rather than a silently different session.
+     */
+    struct RoomSetup
+    {
+        /** @brief Supplies timestamps for the logger. */
+        IClock &clock;
+
+        /** @brief Receives formatted log output. */
+        IAppender &appender;
+
+        /** @brief Renders log records into text. */
+        IFormatter &formatter;
+
+        /** @brief Decides which log records are emitted. */
+        ILogPolicy &logPolicy;
+
+        /** @brief Receives every dispatched event. */
+        IEventSink &eventSink;
+
+        /** @brief Supplies each tick's events, live or replayed. */
+        IReplaySource &inputSource;
+
+        /** @brief Stream the hand-by-hand narration is written to. */
+        std::ostream &out;
+
+        /**
+         * @brief How the room is set up.
+         *
+         * Seats, blinds, minimum buy-in and shuffle seed.
+         */
+        RoomConfig room = {};
+
+        /**
+         * @brief Safety cap on how many ticks to run.
+         *
+         * Reached without engine.stop, the session gives up rather than
+         * going on forever. Production callers can leave this unset;
+         * tests should always set it.
+         */
+        std::optional<antwika::time::Tick> maxTicks = std::nullopt;
+
+        /**
+         * @brief Sink receiving every dispatched event, stamped with its
+         * tick.
+         *
+         * What a caller wanting to persist a `--record` file registers.
+         */
+        std::optional<std::reference_wrapper<ITickEventSink>>
+            replayRecorder = std::nullopt;
+
+        /**
+         * @brief Graphics collaborators, which open a window.
+         *
+         * Set, the table is drawn into that window once per tick.
+         * Closing it ends the session, and it does so through inputSource
+         * like any other external input, so a windowed run and a headless
+         * one reach the same result.
+         */
+        std::optional<std::reference_wrapper<const WindowSetup>> window =
+            std::nullopt;
+    };
+
+    /**
      * @brief Wires the table, the bankrolls, the agents, the engine and
      * the replay collaborators together, then drives the tick loop until
      * an engine.stop event is dispatched.
@@ -75,46 +145,16 @@ namespace antwika::poker
      * One tick is one step of the poker loop: the deal of a hand, or one
      * player being asked to act. Everything a session needs from outside
      * -- who deposited, who bought in for how much, who left -- arrives
-     * as events from inputSource; everything else, cards and decisions
-     * alike, is regenerated deterministically from config.seed and the
-     * agents' fixed policies. That is why a recorded session replays to
-     * the same chip counts without a single card being stored.
+     * as events from the setup's inputSource; everything else, cards and
+     * decisions alike, is regenerated deterministically from the room's
+     * seed and the agents' fixed policies. That is why a recorded session
+     * replays to the same chip counts without a single card being stored.
      *
-     * @param clock Supplies timestamps for the logger.
-     * @param appender Receives formatted log output.
-     * @param formatter Renders log records into text.
-     * @param logPolicy Decides which log records are emitted.
-     * @param eventSink Receives every dispatched event.
-     * @param inputSource Supplies each tick's events, live or replayed.
-     * @param out Stream the hand-by-hand narration is written to.
-     * @param config How the room is set up: seats, blinds, minimum
-     * buy-in and shuffle seed.
-     * @param maxTicks Optional safety cap on how many ticks to run
-     * before giving up if engine.stop is never dispatched. Production
-     * callers can leave this unset; tests should always pass one.
-     * @param replayRecorder Optional sink that, if provided, receives
-     * every dispatched event stamped with its tick -- what a caller
-     * wanting to persist a `--record` file should register.
-     * @param window Optional graphics collaborators that, if provided,
-     * open a window and draw the table into it once per tick. Closing
-     * that window ends the session, and it does so through inputSource
-     * like any other external input, so a windowed run and a headless
-     * one reach the same result.
+     * @param setup What the session is wired out of.
      * @return How the session turned out.
      * @throws antwika::gfx::GfxError If a window was asked for and could
      * not be created.
      */
-    RoomSummary bootstrap(
-        IClock &clock,
-        IAppender &appender,
-        IFormatter &formatter,
-        ILogPolicy &logPolicy,
-        IEventSink &eventSink,
-        IReplaySource &inputSource,
-        std::ostream &out,
-        RoomConfig config = {},
-        std::optional<antwika::time::Tick> maxTicks = std::nullopt,
-        ITickEventSink *replayRecorder = nullptr,
-        const WindowSetup *window = nullptr);
+    RoomSummary bootstrap(const RoomSetup &setup);
 
 } // namespace antwika::poker

@@ -91,17 +91,16 @@ int main(int argc, char **argv)
         };
 
         const auto summary = antwika::poker::bootstrap(
-            clock,
-            appender,
-            formatter,
-            logPolicy,
-            eventSink,
-            source,
-            std::cout,
-            antwika::poker::RoomConfig{},
-            std::nullopt,
-            &replayRecorder,
-            &window);
+            antwika::poker::RoomSetup{
+                .clock = clock,
+                .appender = appender,
+                .formatter = formatter,
+                .logPolicy = logPolicy,
+                .eventSink = eventSink,
+                .inputSource = source,
+                .out = std::cout,
+                .replayRecorder = replayRecorder,
+                .window = window});
 
         std::cout << "\n=== " << summary.handsPlayed
                   << " hands played ===\n";
