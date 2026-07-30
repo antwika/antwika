@@ -41,6 +41,8 @@ Requirements for the Antwika project, gathered from `README.md`, `blog/001-build
 - A window event must say which window it refers to, since a backend pumps a single event queue for every window it owns.
 - A backend must declare how many windows it can hold open at once, and refuse to exceed it, rather than every backend being required to support several; raylib keeps its one window in global state and cannot.
 - Polling a graphics backend for events must reach an empty queue, so a caller draining it between frames terminates.
+- Text drawing must use one built-in fixed-cell bitmap font, defined by `antwika::gfx` and drawn identically by every backend, so a caller can lay text out arithmetically instead of asking a backend to measure it.
+- A window's close request must reach the engine only as replayable input through `IReplaySource`, never by short-circuiting the tick loop.
 - A job with unmet dependencies (via `schedule()`'s `dependsOn`) must never be dispatched until every dependency has run; dependency cycles must be unreachable through the public API, by construction (id-ordering), not by a runtime check.
 
 ## Should have
@@ -53,6 +55,7 @@ Requirements for the Antwika project, gathered from `README.md`, `blog/001-build
 - Coverage badges (GNU and LLVM) should be generated on `main` and published to a dedicated `badges` orphan branch.
 - Dev container images (base, GNU, LLVM, MinGW) should be published to `ghcr.io`, tagged with both the release version and, on the latest release, `latest`.
 - An interface with only one implementation should still be kept where it lets a class be unit-tested against a mock/fake in isolation (e.g. `IEventCodec`, `IFormatter`).
+- A window-driven app should pace its ticks through an injected sleeper rather than a direct sleep call, so its tests still run at full speed.
 
 ## Could have
 
@@ -66,6 +69,7 @@ Requirements for the Antwika project, gathered from `README.md`, `blog/001-build
 - MinGW builds won't carry coverage instrumentation (`--coverage` isn't supported by that toolchain).
 - An index over replay events (to avoid the linear scan per tick in `ReplaySource::eventsFor()`) won't be built until replays are long enough for it to matter.
 - Graphics backends won't be loadable at runtime; exactly one is compiled and linked per build, selected by the `ANTWIKA_GFX_BACKEND` CMake variable and the matching `gfx_backend` Conan option.
-- The graphics abstraction won't include GPU, shader, 3D or texture APIs in its current scope; drawing is limited to clearing and filling rectangles.
+- The graphics abstraction won't include GPU, shader, 3D or texture APIs in its current scope; drawing is limited to clearing, filling rectangles and text in the one built-in font.
+- The graphics abstraction won't load fonts, or offer any font beyond the built-in fixed-cell one, since a second font implies asset loading and per-backend metrics that nothing needs yet.
 - `antwika::gfx` won't report keyboard or pointer input in its current scope, since capturing live input into a replay is itself out of scope.
 - `Scheduler` won't include priority aging or anti-starvation: a continuous stream of higher-priority jobs can, by design, keep a lower-priority job pending indefinitely, since unconditional priority respect is the requirement, not a bug to work around.

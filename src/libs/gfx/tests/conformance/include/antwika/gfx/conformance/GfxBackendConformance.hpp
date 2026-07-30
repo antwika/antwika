@@ -10,6 +10,7 @@
 #include <antwika/gfx/GfxError.hpp>
 #include <antwika/gfx/IGfxBackend.hpp>
 #include <antwika/gfx/IWindow.hpp>
+#include <antwika/gfx/Point.hpp>
 #include <antwika/gfx/Rect.hpp>
 #include <antwika/gfx/WindowDesc.hpp>
 #include <antwika/gfx/WindowId.hpp>
@@ -216,6 +217,26 @@ namespace antwika::gfx::conformance
                     .origin = {.x = 1, .y = 2},
                     .size = {.width = 3, .height = 4}},
                 Color{.red = 255});
+            renderer.drawText(
+                Point{.x = 8, .y = 8}, "Antwika 123", 2, Color{.green = 255});
+            renderer.present();
+        });
+    }
+
+    TYPED_TEST_P(GfxBackendConformance, DrawText_AcceptsAwkwardText)
+    {
+        const auto window = this->backend->createWindow(this->demoDesc());
+        auto &renderer = window->renderer();
+
+        // Nothing here can be checked by reading pixels back.
+        // What a backend must not do is refuse any of it.
+        EXPECT_NO_THROW({
+            renderer.drawText(Point{}, "", 2, Color{.red = 255});
+            renderer.drawText(Point{}, "As", 0, Color{.red = 255});
+            renderer.drawText(Point{}, "\n\t\x7f", 2, Color{.red = 255});
+            renderer.drawText(
+                Point{.x = -50, .y = -50}, "off canvas", 3,
+                Color{.red = 255});
             renderer.present();
         });
     }
@@ -295,6 +316,7 @@ namespace antwika::gfx::conformance
         Close_ClosesTheWindow,
         Close_IsIdempotent,
         Renderer_AcceptsAFrameWithoutThrowing,
+        DrawText_AcceptsAwkwardText,
         PollEvent_DrainsToAnEmptyQueue,
         PollEvent_DrainsAfterAFrameIsDrawn,
         Window_MayOutliveItsBackend);

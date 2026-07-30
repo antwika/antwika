@@ -1,9 +1,13 @@
 #pragma once
 
+#include <cstdint>
+#include <string_view>
+
 #include <antwika/log/ILogger.hpp>
 
 #include "antwika/gfx/Color.hpp"
 #include "antwika/gfx/IRenderer.hpp"
+#include "antwika/gfx/Point.hpp"
 #include "antwika/gfx/Rect.hpp"
 
 namespace antwika::gfx::detail
@@ -45,6 +49,19 @@ namespace antwika::gfx::detail
          * @param color The colour it would have been filled with.
          */
         void drawRect(Rect rect, Color color) override;
+
+        /**
+         * @brief Discard a line of text.
+         * @param origin Where the text would have started.
+         * @param text The characters that would have been drawn.
+         * @param scale The size they would have been drawn at.
+         * @param color The colour they would have been drawn in.
+         */
+        void drawText(
+            Point origin,
+            std::string_view text,
+            std::uint32_t scale,
+            Color color) override;
 
         /**
          * @brief Discard a present.
