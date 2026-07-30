@@ -1,6 +1,7 @@
 #pragma once
 
 #include <optional>
+#include <span>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -8,6 +9,8 @@
 #include <antwika/event/TickEvent.hpp>
 #include <antwika/gfx/Size.hpp>
 #include <antwika/replay/CanvasCheck.hpp>
+#include <antwika/replay/CommandLine.hpp>
+#include <antwika/replay/FlagSpec.hpp>
 #include <antwika/replay/ReplayWriter.hpp>
 
 namespace antwika::replay
@@ -35,15 +38,51 @@ namespace antwika::replay
          * e.g. an app's bundled demo replay.
          */
         std::optional<std::string> replayPath;
+
+        /**
+         * @brief Whether `--help` was asked for.
+         *
+         * A program that sees this should print helpText() and stop,
+         * rather than run whatever else it was told.
+         */
+        bool helpRequested = false;
     };
+
+    /**
+     * @brief The flags every replay-driven app accepts.
+     * @return The table, for an app to parse against directly or to
+     * extend with flags of its own.
+     *
+     * An app with extra flags concatenates this with its own table,
+     * calls parseCommandLine() once, and hands the result to
+     * replayCliOptionsFrom() -- rather than parsing twice, which would
+     * make one of the two passes refuse the other's flags.
+     */
+    [[nodiscard]] std::span<const FlagSpec> replayCliFlags();
+
+    /**
+     * @brief Pick the replay options out of an already-parsed command
+     * line.
+     * @param parsed A command line parsed against a table that included
+     * replayCliFlags().
+     * @return The replay options it holds.
+     */
+    [[nodiscard]] ReplayCliOptions replayCliOptionsFrom(
+        const CommandLine &parsed);
 
     /**
      * @brief Parse the `--record <path>`/`--replay <path>` flags every
      * replay-driven app's `main(argc, argv)` accepts.
      * @param argc Argument count, as passed to `main()`.
      * @param argv Argument vector, as passed to `main()`.
-     * @return The recognized options; flags missing their value, or not
-     * recognized at all, are ignored.
+     * @return The options given.
+     * @throws CommandLineError If a flag is not one of these, or is
+     * missing its value. Both used to be ignored, which is how
+     * `--replya demo.json` started an empty session rather than saying
+     * it was a typo.
+     *
+     * For an app that takes flags of its own, parse against
+     * replayCliFlags() plus that app's own table instead.
      */
     [[nodiscard]] ReplayCliOptions parseReplayCliOptions(
         int argc, char **argv);
@@ -80,11 +119,12 @@ namespace antwika::replay
      * recorded in the document so a later run playing it back against a
      * different one can be told. Unset writes no canvas, which is what a
      * recording of an app with no pointer input has to say.
-     * @param layout How much whitespace to write; compact by default,
-     * since a recorded session is written to be replayed rather than
-     * read, and an interactive one gets long enough for the indentation
-     * to be most of the file. Pass Pretty for a replay meant to be
-     * checked in and edited by hand.
+     * @param layout How much whitespace to write, defaulting to
+     * ReplayWriter::kDefaultLayout, which every entry point here shares.
+     * A recorded session is written to be replayed rather than read, and
+     * an interactive one gets long enough for the indentation to be most
+     * of the file. Pass Pretty for a replay meant to be checked in and
+     * edited by hand.
      * @throws ReplayFormatError If the file can't be opened, or if the
      * bytes can't be written once it is. A recording is written once, at
      * the end of a run, so failing quietly here loses the whole session.
@@ -93,6 +133,6 @@ namespace antwika::replay
         std::vector<TickEvent> events,
         const std::string &path,
         std::optional<gfx::Size> canvas = std::nullopt,
-        ReplayWriter::Layout layout = ReplayWriter::Layout::Compact);
+        ReplayWriter::Layout layout = ReplayWriter::kDefaultLayout);
 
 } // namespace antwika::replay

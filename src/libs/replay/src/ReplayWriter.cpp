@@ -26,9 +26,7 @@ namespace antwika::replay
         const auto indent =
             layout == Layout::Pretty ? kTwoSpaces : kNoIndent;
 
-        const ReplayDocument document{.events = events, .canvas = canvas};
-
-        out << replayToJson(document).dump(indent) << '\n';
+        out << replayToJson(events, canvas).dump(indent) << '\n';
     }
 
 } // namespace antwika::replay

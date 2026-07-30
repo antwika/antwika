@@ -2,6 +2,7 @@ find_package(nlohmann_json REQUIRED)
 find_package(nlohmann_json_schema_validator REQUIRED)
 
 add_library(antwika_replay
+    src/CommandLine.cpp
     src/EngineLoop.cpp
     src/EventJson.cpp
     src/EventSchema.cpp

@@ -89,18 +89,20 @@ namespace antwika::replay
             };
         }
         return document;
-    }
+    } // GCOVR_EXCL_LINE
 
-    nlohmann::json replayToJson(const ReplayDocument &document)
+    nlohmann::json replayToJson(
+        const std::vector<TickEvent> &events,
+        std::optional<gfx::Size> canvas)
     {
         nlohmann::json encoded;
         encoded["magic"] = std::string(detail::kReplayMagic);
         encoded["version"] = detail::kReplayFormatVersion;
-        encoded["events"] = document.events;
-        if (document.canvas.has_value())
+        encoded["events"] = events;
+        if (canvas.has_value())
         {
-            encoded["canvas"]["width"] = document.canvas->width;
-            encoded["canvas"]["height"] = document.canvas->height;
+            encoded["canvas"]["width"] = canvas->width;
+            encoded["canvas"]["height"] = canvas->height;
         }
         return encoded;
     } // GCOVR_EXCL_LINE

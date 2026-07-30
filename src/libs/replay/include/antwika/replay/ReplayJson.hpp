@@ -2,6 +2,11 @@
 
 #include <nlohmann/json.hpp>
 
+#include <optional>
+#include <vector>
+
+#include <antwika/event/TickEvent.hpp>
+#include <antwika/gfx/Size.hpp>
 #include <antwika/replay/ReplayDocument.hpp>
 
 namespace antwika::replay
@@ -18,13 +23,19 @@ namespace antwika::replay
     [[nodiscard]] ReplayDocument replayFromJson(const nlohmann::json &j);
 
     /**
-     * @brief Serialize a replay document to a JSON value matching the
-     * replay-document schema.
-     * @param document The document to serialize.
-     * @return The encoded JSON value, carrying a "canvas" member only if
-     * the document has a canvas to write.
+     * @brief Serialize a sequence of tick events to a JSON value
+     * matching the replay-document schema.
+     * @param events The events to serialize, in the order they occurred.
+     * @param canvas The canvas the run laid its input out against; a
+     * document with nothing to say here carries no "canvas" member.
+     * @return The encoded JSON value.
+     *
+     * Takes the pieces rather than a ReplayDocument, which reading
+     * returns, because a caller writing already holds the events and
+     * assembling a document only to encode it would copy every one.
      */
     [[nodiscard]] nlohmann::json replayToJson(
-        const ReplayDocument &document);
+        const std::vector<TickEvent> &events,
+        std::optional<gfx::Size> canvas = std::nullopt);
 
 } // namespace antwika::replay

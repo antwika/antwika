@@ -1,11 +1,13 @@
 #include "antwika/replay/ReplayCli.hpp"
 
 #include <algorithm>
+#include <array>
 #include <fstream>
 #include <utility>
 
 #include <antwika/engine/Events.hpp>
 
+#include "antwika/replay/CommandLine.hpp"
 #include "antwika/replay/ReplayFormatError.hpp"
 #include "antwika/replay/ReplayReader.hpp"
 #include "antwika/replay/ReplayWriter.hpp"
@@ -14,23 +16,41 @@
 namespace antwika::replay
 {
 
+    namespace
+    {
+        constexpr std::array kReplayFlags{
+            FlagSpec{
+                .name = "--record",
+                .valueName = "<path>",
+                .help = "Write this run's input events to <path>.",
+            },
+            FlagSpec{
+                .name = "--replay",
+                .valueName = "<path>",
+                .help = "Load this run's input events from <path>.",
+            },
+        };
+    } // namespace
+
+    std::span<const FlagSpec> replayCliFlags()
+    {
+        return kReplayFlags;
+    }
+
+    ReplayCliOptions replayCliOptionsFrom(const CommandLine &parsed)
+    {
+        return ReplayCliOptions{
+            .recordPath = parsed.value("--record"),
+            .replayPath = parsed.value("--replay"),
+            .helpRequested = parsed.has(kHelpFlag),
+        };
+    } // GCOVR_EXCL_LINE
+
     ReplayCliOptions parseReplayCliOptions(int argc, char **argv)
     {
-        ReplayCliOptions options;
-        for (int i = 1; i < argc; ++i)
-        {
-            const std::string_view arg = argv[i];
-            if (arg == "--record" && i + 1 < argc)
-            {
-                options.recordPath = argv[++i];
-            }
-            else if (arg == "--replay" && i + 1 < argc)
-            {
-                options.replayPath = argv[++i];
-            }
-        }
-        return options;
-    } // GCOVR_EXCL_LINE
+        return replayCliOptionsFrom(
+            parseCommandLine(argc, argv, replayCliFlags()));
+    }
 
     std::vector<TickEvent> loadReplayFile(
         const std::string &path, CanvasCheck check)
