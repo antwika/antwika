@@ -20,14 +20,28 @@ option(ANTWIKA_WARNINGS_AS_ERRORS "Treat compiler warnings as errors" ON)
 set(ANTWIKA_GFX_BACKEND "null" CACHE STRING
     "Graphics backend to compile and link, named after a backends/ subdirectory")
 
-# Defaults to the graphics choice, so one flag drives both in the common
+# Follows the graphics choice, so one flag drives both in the common
 # case: the default build stays null/null and depends on nothing new,
 # while asking for sdl3 windows gets sdl3 input for free.
 # Setting the two apart is still legal -- input with no window, or a
 # window with no input -- as long as they do not name two real
 # frameworks; backends/CMakeLists.txt is where that is enforced, and why.
-set(ANTWIKA_INPUT_BACKEND "${ANTWIKA_GFX_BACKEND}" CACHE STRING
-    "Input backend to compile and link, named after a backends/ subdirectory")
+#
+# The cache entry holds the sentinel rather than the resolved name,
+# because a CACHE default is taken on the first configure only.
+# Caching the graphics choice instead left it stale the moment an
+# existing build directory was reconfigured with a different
+# -DANTWIKA_GFX_BACKEND, and the guard downstream then refused two
+# different frameworks without anything pointing at the cache as the
+# cause.
+# Resolving into a plain variable of the same name shadows the entry for
+# every subdirectory, so nothing below has to know about the sentinel.
+set(ANTWIKA_INPUT_BACKEND "auto" CACHE STRING
+    "Input backend named after a backends/ subdirectory, or auto to follow ANTWIKA_GFX_BACKEND")
+
+if(ANTWIKA_INPUT_BACKEND STREQUAL "auto")
+    set(ANTWIKA_INPUT_BACKEND "${ANTWIKA_GFX_BACKEND}")
+endif()
 
 if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
     add_compile_options(
