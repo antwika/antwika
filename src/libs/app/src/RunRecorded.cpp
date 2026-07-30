@@ -33,24 +33,32 @@ namespace antwika::app
         const std::function<void(const RecordedRun &)> &body,
         std::ostream &errors)
     {
-        const auto options = antwika::replay::parseReplayCliOptions(
-            argc, argv);
-
         DiscardedEvents eventSink;
         TickEventRecorder replayRecorder;
 
-        RecordedRun run{
-            .options = options,
-            .eventSink = eventSink,
-            .replayRecorder = std::nullopt};
-        if (options.recordPath)
-        {
-            run.replayRecorder = replayRecorder;
-        }
+        // Held out here because the epilogue below still needs it.
+        // Parsing itself is inside the try, deliberately.
+        std::optional<std::string> recordPath;
 
         int exitCode = EXIT_SUCCESS;
         try
         {
+            // A refused flag is a failed run, not a crash.
+            // Parsed outside the try it reaches std::terminate.
+            // That unwinds nothing and names no program.
+            const auto options =
+                antwika::replay::parseReplayCliOptions(argc, argv);
+            recordPath = options.recordPath;
+
+            RecordedRun run{
+                .options = options,
+                .eventSink = eventSink,
+                .replayRecorder = std::nullopt};
+            if (options.recordPath)
+            {
+                run.replayRecorder = replayRecorder;
+            }
+
             body(run);
         }
         catch (const std::exception &error)
@@ -60,10 +68,11 @@ namespace antwika::app
         }
 
         // After the catch, so a run that failed still saves what it got.
-        if (options.recordPath)
+        // A run refused at the command line has nothing to save.
+        if (recordPath)
         {
             antwika::replay::saveReplayFile(
-                replayRecorder.getEvents(), *options.recordPath);
+                replayRecorder.getEvents(), *recordPath);
         }
 
         return exitCode;
