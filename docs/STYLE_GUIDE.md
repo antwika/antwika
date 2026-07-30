@@ -196,6 +196,13 @@ The exclusion is the *reason* for the rule, so the two are always read together:
 
 The gcovr `--exclude '.*/apps/[^/]+/src/main\.cpp'` in [`.github/workflows/build.yml`](../.github/workflows/build.yml) is where this is spelled out to CI.
 
+`antwika::app`'s `runRecorded()` is what makes the rule reachable for a tick-loop app: it owns the argument parsing, the try/catch and the record epilogue every `main` used to repeat, leaving construction and one call.
+
+**`src/apps/sudoku/src/main.cpp` is a deliberate exception, and the only one.**
+It has no tick loop and no replay, so `runRecorded()` does not apply to it at all, and its branches are its own `--puzzle` handling and its solve-outcome reporting.
+It was reviewed and left as it stands rather than given a runner of its own, since a second runner would exist for a single caller.
+A new app follows the rule rather than this exception.
+
 ## CMake
 
 - One `CMakeLists.txt` per module, building a target `antwika_<module>`, aliased to `antwika::<module>`.
