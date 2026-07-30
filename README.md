@@ -28,6 +28,7 @@ src/
     ├── replay/
     ├── scheduler/
     ├── time/
+    ├── ui/
     └── wfc/
 backends/
 ├── null/
@@ -236,6 +237,48 @@ build/bin/antwika_sudoku --puzzle my-puzzle.txt    # solves a puzzle loaded from
 ```
 
 A puzzle file is 81 characters (whitespace ignored) of digits `1`-`9` or a blank marker (`.` or `0`).
+
+## Immediate-mode UI
+
+`libs/ui` (`antwika::ui`) lays out and draws nestable layouts, labels and buttons on top of the four calls `antwika::gfx::IRenderer` offers.
+The caller writes immediate-mode code, and what that code builds is a tree, laid out only once it is finished:
+
+```cpp
+ui::Context ui{canvas, ui::scaledTheme(ui::Theme{}, ui::scaleForCanvas(canvas))};
+
+{
+    const auto screen = ui.panel({.height = ui::kGrow});
+
+    ui.label("Antwika UI");
+
+    {
+        const auto side = ui.panel({.width = ui::kFit, .height = ui::kGrow});
+
+        ui.label("layouts", ui.theme().muted);
+    }
+}
+
+paint(renderer, ui.finish());
+```
+
+Deferring the layout is what makes nesting work: a container cannot size itself from children it has not seen yet, so a one-pass design can only nest when the caller has already worked out every number.
+Measuring runs backwards over the tree and arranging runs forwards, both as flat loops rather than recursion, so there is no nesting depth to exceed.
+
+A container is opened by a `[[nodiscard]]` scope guard and closed when that guard goes out of scope.
+There is no `end()` of any kind, so a mis-nested layout is not something the API can express.
+
+`finish()` returns a `DrawList` — a plain vector of fill and text commands — and `paint()` turns that into renderer calls.
+Keeping the picture as a value is what lets a whole layout be compared against an expected one in a test with no renderer, no window and no graphics framework involved.
+`paint()` neither clears nor presents: a UI is drawn over whatever is already there, and whoever owns the frame decides when it is done.
+
+Nothing here reads a pointer or a keyboard, and nothing it produces reaches the engine.
+A button takes the appearance it should have as an argument, so an application that knows which button is in play can say so, and rendering stays the write-only projection the replay guarantee depends on.
+
+`apps/gfx_demo` (`antwika_gfx_demo`) is the showcase: a header, a sidebar sized from its own longest label, a growing main column, and a row of buttons pushed to the bottom right by growing spacers.
+
+```sh
+build/bin/antwika_gfx_demo    # needs a display; use xvfb-run without one
+```
 
 ## Testing
 

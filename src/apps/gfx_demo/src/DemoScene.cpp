@@ -6,6 +6,11 @@
 #include <antwika/gfx/Color.hpp>
 #include <antwika/gfx/Point.hpp>
 #include <antwika/gfx/Rect.hpp>
+#include <antwika/ui/ButtonState.hpp>
+#include <antwika/ui/Context.hpp>
+#include <antwika/ui/Painter.hpp>
+#include <antwika/ui/Sizing.hpp>
+#include <antwika/ui/Theme.hpp>
 
 namespace antwika::gfx_demo
 {
@@ -13,6 +18,15 @@ namespace antwika::gfx_demo
     using antwika::gfx::Color;
     using antwika::gfx::Point;
     using antwika::gfx::Rect;
+    using antwika::ui::ButtonState;
+    using antwika::ui::Context;
+    using antwika::ui::fixedSize;
+    using antwika::ui::kFit;
+    using antwika::ui::kGrow;
+    using antwika::ui::paint;
+    using antwika::ui::scaledTheme;
+    using antwika::ui::scaleForCanvas;
+    using antwika::ui::Theme;
 
     namespace
     {
@@ -36,6 +50,10 @@ namespace antwika::gfx_demo
         // Bars and gaps are all one unit wide, with a gap at each end.
         // That keeps the row centred whatever the canvas size is.
         constexpr std::uint32_t kUnitsAcross = kBarCount * 2 + 1;
+
+        // The UI panel takes a third of the width.
+        // That keeps the bars and the logo behind it visible.
+        constexpr std::uint32_t kPanelShare = 3;
     } // namespace
 
     void DemoScene::draw(
@@ -88,6 +106,58 @@ namespace antwika::gfx_demo
                                               canvas.height * 13 / 16)},
                 .size = {.width = badge, .height = badge}},
             kWarmTint);
+
+        // Last, so the panel reads as being in front of the scene.
+        paint(renderer, describe(canvas));
+    }
+
+    DrawList DemoScene::describe(Size canvas) const
+    {
+        Context ui{canvas, scaledTheme(Theme{}, scaleForCanvas(canvas))};
+
+        {
+            const auto panel = ui.panel({
+                .width = fixedSize(canvas.width / kPanelShare),
+                .height = kFit});
+
+            ui.label("Antwika UI");
+
+            {
+                const auto body = ui.row({.height = kFit});
+
+                {
+                    // Fitting sizes the sidebar from its own content.
+                    const auto side =
+                        ui.panel({.width = kFit, .height = kGrow});
+
+                    ui.label("layouts", ui.theme().muted);
+                    ui.label("buttons", ui.theme().muted);
+                    ui.label("text", ui.theme().muted);
+                }
+
+                {
+                    const auto main = ui.column({.height = kGrow});
+
+                    ui.label("nested rows");
+                    ui.label("and columns");
+
+                    // Growing room, so the buttons sit at the bottom.
+                    ui.spacer(kGrow);
+
+                    {
+                        const auto actions = ui.row();
+
+                        // And again, so they sit at the right.
+                        ui.spacer(kGrow);
+
+                        ui.button("cancel");
+                        ui.button("ok", ButtonState::Hovered);
+                    }
+                }
+            }
+        }
+
+        return ui.finish();
     }
 
 } // namespace antwika::gfx_demo

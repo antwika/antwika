@@ -16,6 +16,7 @@ target_link_libraries(antwika_gfx_demo_tests
     PRIVATE
         antwika::gfx
         antwika::gfx::tests::mocks
+        antwika::ui
         gtest::gtest
 )
 

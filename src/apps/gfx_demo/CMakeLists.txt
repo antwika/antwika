@@ -26,6 +26,7 @@ target_link_libraries(antwika_gfx_demo
         antwika::gfx_backend
         antwika::log
         antwika::time
+        antwika::ui
 )
 
 if(BUILD_TESTING AND NOT CMAKE_CROSSCOMPILING)

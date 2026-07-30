@@ -47,6 +47,12 @@ Requirements for the Antwika project, gathered from `README.md`, `blog/001-build
 - A texture must be created through the renderer that will draw it, and both destroying that texture after its renderer's window has closed and drawing it through another renderer must be safe.
 - A blit whose source rectangle reaches outside its texture must be refused identically by every backend, since that is the one case where the underlying frameworks disagree.
 - A window's close request must reach the engine only as replayable input through `IReplaySource`, never by short-circuiting the tick loop.
+- UI layout must be a pure function of the described UI and the canvas size, computed arithmetically from the built-in font's metrics without asking a graphics backend to measure anything.
+- UI layouts must nest, and a container must be able to take its size from the content of children it has not seen yet.
+- A widget must never draw outside the container it was declared in, since the graphics abstraction offers no clipping.
+- Leftover pixels from integer division in a layout must be distributed by a specified, tested rule rather than incidentally.
+- No file under `src/libs/ui/` may read a clock, a pointer, a keyboard or any state outside its arguments, so the same described UI and canvas always produce the same picture.
+- A UI must not open or close a container through any call a caller can forget or unbalance.
 - A job with unmet dependencies (via `schedule()`'s `dependsOn`) must never be dispatched until every dependency has run; dependency cycles must be unreachable through the public API, by construction (id-ordering), not by a runtime check.
 - Input access must go through a backend-agnostic abstraction, and no file under `src/` may reference a concrete input framework such as SDL or raylib.
 - The input backend must be selected at build time, by the `ANTWIKA_INPUT_BACKEND` CMake variable and the matching `input_backend` Conan option, which default to the graphics choice so one flag drives both.
@@ -69,6 +75,7 @@ Requirements for the Antwika project, gathered from `README.md`, `blog/001-build
 - Dev container images (base, GNU, LLVM, MinGW) should be published to `ghcr.io`, tagged with both the release version and, on the latest release, `latest`.
 - An interface with only one implementation should still be kept where it lets a class be unit-tested against a mock/fake in isolation (e.g. `IEventCodec`, `IFormatter`).
 - A window-driven app should pace its ticks through an injected sleeper rather than a direct sleep call, so its tests still run at full speed.
+- A UI's picture should be expressible as a value (a list of drawing commands), so a whole layout can be asserted as data rather than looked at or pinned call by call against a mock.
 
 ## Could have
 
@@ -90,3 +97,7 @@ Requirements for the Antwika project, gathered from `README.md`, `blog/001-build
 - `antwika::input` won't fold input events into held device state or bind them to named actions in its current scope; an application that needs "is this button down" derives it from the edges it already receives.
 - The raylib input backend won't report a keyboard in its current scope, and says so through its capabilities rather than claiming a device whose events never arrive.
 - `Scheduler` won't include priority aging or anti-starvation: a continuous stream of higher-priority jobs can, by design, keep a lower-priority job pending indefinitely, since unconditional priority respect is the requirement, not a bug to work around.
+- `antwika::ui` won't read a pointer or a keyboard, and no UI interaction will reach the engine or a replay, in its current scope; a button is told how it should look rather than working it out.
+- `antwika::ui` won't clip, scroll, or draw out of declaration order, since `antwika::gfx` offers no scissor and no z-order; a container that cannot fit its content shrinks it in proportion instead.
+- `antwika::ui` won't wrap text across lines, offer a main-axis alignment mode (a growing spacer expresses leading, trailing and centred content), weight how growing children share leftover room, or animate anything.
+- `antwika::ui` won't carry a style stack or cascade; one plain `Theme` value is passed to a frame and nothing overrides it per widget.
