@@ -1,5 +1,6 @@
 #include "antwika/poker/WatchOptions.hpp"
 
+#include <array>
 #include <charconv>
 #include <chrono>
 #include <string_view>
@@ -8,29 +9,42 @@
 namespace antwika::poker
 {
 
-    WatchOptions parseWatchOptions(int argc, char **argv)
+    namespace
+    {
+        constexpr std::string_view kTickDelayFlag = "--tick-delay-ms";
+
+        constexpr std::array kFlags{
+            antwika::replay::FlagSpec{
+                .name = kTickDelayFlag,
+                .valueName = "<n>",
+                .help = "Hold each tick's frame for <n> milliseconds."}};
+    } // namespace
+
+    std::span<const antwika::replay::FlagSpec> watchFlags()
+    {
+        return kFlags;
+    }
+
+    WatchOptions watchOptionsFrom(const antwika::replay::CommandLine &parsed)
     {
         WatchOptions options;
 
-        for (int index = 1; index < argc; ++index)
+        const auto given = parsed.value(kTickDelayFlag);
+        if (!given)
         {
-            const std::string_view arg = argv[index];
-            if (arg != "--tick-delay-ms" || index + 1 >= argc)
-            {
-                continue;
-            }
+            return options;
+        }
 
-            const std::string_view value = argv[++index];
-            long long milliseconds = 0;
-            const auto parsed = std::from_chars(
-                value.data(), value.data() + value.size(), milliseconds);
+        const std::string_view value = *given;
+        long long milliseconds = 0;
+        const auto read = std::from_chars(
+            value.data(), value.data() + value.size(), milliseconds);
 
-            if (parsed.ec == std::errc{}
-                && parsed.ptr == value.data() + value.size()
-                && milliseconds >= 0)
-            {
-                options.tickDelay = std::chrono::milliseconds{milliseconds};
-            }
+        if (read.ec == std::errc{}
+            && read.ptr == value.data() + value.size()
+            && milliseconds >= 0)
+        {
+            options.tickDelay = std::chrono::milliseconds{milliseconds};
         }
 
         return options;

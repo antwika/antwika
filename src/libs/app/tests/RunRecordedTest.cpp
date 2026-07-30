@@ -7,10 +7,12 @@
 #include <system_error>
 #include <vector>
 
+#include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
 #include <antwika/app/RunRecorded.hpp>
 #include <antwika/event/TickEvent.hpp>
+#include <antwika/replay/FlagSpec.hpp>
 #include <antwika/replay/ReplayCli.hpp>
 #include <antwika/replay/ReplayFormatError.hpp>
 #include <antwika/time/Tick.hpp>
@@ -73,6 +75,7 @@ TEST(RunRecordedTest, RunsTheBodyAndSucceeds)
         argv.data(),
         "antwika_test",
         [&ran](const RecordedRun &) { ran = true; },
+        {},
         errors);
 
     EXPECT_TRUE(ran);
@@ -91,6 +94,7 @@ TEST(RunRecordedTest, ReportsAFailureUnderTheProgramsName)
         "antwika_test",
         [](const RecordedRun &)
         { throw std::runtime_error("it went wrong"); },
+        {},
         errors);
 
     EXPECT_EQ(exitCode, EXIT_FAILURE);
@@ -108,6 +112,7 @@ TEST(RunRecordedTest, AttachesNoRecorderWithoutRecord)
         "antwika_test",
         [](const RecordedRun &run)
         { EXPECT_FALSE(run.replayRecorder.has_value()); },
+        {},
         errors));
 }
 
@@ -130,6 +135,7 @@ TEST(RunRecordedTest, SavesWhatTheRecorderWasGiven)
             ASSERT_TRUE(run.replayRecorder.has_value());
             run.replayRecorder->get().handle(kScripted);
         },
+        {},
         errors);
 
     EXPECT_EQ(exitCode, EXIT_SUCCESS);
@@ -155,6 +161,7 @@ TEST(RunRecordedTest, SavesWhatAFailedRunGotTo)
             run.replayRecorder->get().handle(kScripted);
             throw std::runtime_error("it went wrong");
         },
+        {},
         errors);
 
     EXPECT_EQ(exitCode, EXIT_FAILURE);
@@ -175,6 +182,7 @@ TEST(RunRecordedTest, HandsTheBodyThePathToReplay)
         "antwika_test",
         [](const RecordedRun &run)
         { EXPECT_EQ(run.options.replayPath, "demo.json"); },
+        {},
         errors));
 }
 
@@ -226,6 +234,7 @@ TEST(RunRecordedTest, DiscardsWhatIsDispatchedIntoTheSink)
             run.eventSink.handle(kScripted.event);
             run.eventSink.handle({});
         },
+        {},
         errors));
 
     EXPECT_TRUE(errors.str().empty());
@@ -244,8 +253,60 @@ TEST(RunRecordedTest, LetsWhatIsNotAnExceptionThrough)
             argv.data(),
             "antwika_test",
             [](const RecordedRun &) { throw 42; },
+            {},
             errors)),
         int);
 
     EXPECT_TRUE(errors.str().empty());
+}
+
+TEST(RunRecordedTest, AcceptsAFlagOfTheCallersOwn)
+{
+    std::array<char *, 3> argv{
+        const_cast<char *>("antwika_test"),
+        const_cast<char *>("--tick-delay-ms"),
+        const_cast<char *>("40")};
+    std::ostringstream errors;
+    constexpr std::array extra{antwika::replay::FlagSpec{
+        .name = "--tick-delay-ms",
+        .valueName = "<n>",
+        .help = "Hold each frame."}};
+
+    std::string seen;
+    const int exitCode = runRecorded(
+        3,
+        argv.data(),
+        "antwika_test",
+        [&seen](const RecordedRun &run)
+        { seen = run.commandLine.value("--tick-delay-ms").value_or(""); },
+        extra,
+        errors);
+
+    // One parse, so the app's own flag reaches the body.
+    // Parsed a second time it would be refused by the first pass.
+    EXPECT_EQ(exitCode, EXIT_SUCCESS);
+    EXPECT_EQ(seen, "40");
+    EXPECT_TRUE(errors.str().empty());
+}
+
+TEST(RunRecordedTest, ReportsAFlagNoTableKnows)
+{
+    std::array<char *, 2> argv{
+        const_cast<char *>("antwika_test"),
+        const_cast<char *>("--tick-delay-ms")};
+    std::ostringstream errors;
+
+    bool ran = false;
+    const int exitCode = runRecorded(
+        2,
+        argv.data(),
+        "antwika_test",
+        [&ran](const RecordedRun &) { ran = true; },
+        {},
+        errors);
+
+    EXPECT_EQ(exitCode, EXIT_FAILURE);
+    EXPECT_FALSE(ran);
+    EXPECT_THAT(
+        errors.str(), testing::HasSubstr("antwika_test: "));
 }

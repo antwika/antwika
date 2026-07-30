@@ -31,6 +31,7 @@ namespace antwika::app
         char **argv,
         std::string_view name,
         const std::function<void(const RecordedRun &)> &body,
+        std::span<const FlagSpec> extraFlags,
         std::ostream &errors)
     {
         DiscardedEvents eventSink;
@@ -46,12 +47,23 @@ namespace antwika::app
             // A refused flag is a failed run, not a crash.
             // Parsed outside the try it reaches std::terminate.
             // That unwinds nothing and names no program.
+            //
+            // One parse, against one table.
+            // A second pass refuses whatever the first pass accepted.
+            std::vector<FlagSpec> table(
+                antwika::replay::replayCliFlags().begin(),
+                antwika::replay::replayCliFlags().end());
+            table.insert(table.end(), extraFlags.begin(), extraFlags.end());
+
+            const CommandLine parsed =
+                antwika::replay::parseCommandLine(argc, argv, table);
             const auto options =
-                antwika::replay::parseReplayCliOptions(argc, argv);
+                antwika::replay::replayCliOptionsFrom(parsed);
             recordPath = options.recordPath;
 
             RecordedRun run{
                 .options = options,
+                .commandLine = parsed,
                 .eventSink = eventSink,
                 .replayRecorder = std::nullopt};
             if (options.recordPath)

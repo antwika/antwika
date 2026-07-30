@@ -27,9 +27,10 @@ namespace
 {
     constexpr std::string_view kDemoReplayPath = ANTWIKA_POKER_DEMO_REPLAY_PATH;
 
-    void run(int argc, char **argv, const RecordedRun &recorded)
+    void run(const RecordedRun &recorded)
     {
-        const auto watch = antwika::poker::parseWatchOptions(argc, argv);
+        const auto watch =
+            antwika::poker::watchOptionsFrom(recorded.commandLine);
 
         ConsoleLogging logging(std::cout, Level::Warning);
         SystemClock clock;
@@ -64,9 +65,5 @@ namespace
 int main(int argc, char **argv)
 {
     return antwika::app::runRecorded(
-        argc,
-        argv,
-        "antwika_poker",
-        [argc, argv](const RecordedRun &recorded)
-        { run(argc, argv, recorded); });
+        argc, argv, "antwika_poker", run, antwika::poker::watchFlags());
 }

@@ -4,6 +4,7 @@
 #include <iostream>
 #include <optional>
 #include <ostream>
+#include <span>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -19,6 +20,8 @@ namespace antwika::app
     using antwika::event::IEventSink;
     using antwika::event::ITickEventSink;
     using antwika::event::TickEvent;
+    using antwika::replay::CommandLine;
+    using antwika::replay::FlagSpec;
     using antwika::replay::ReplayCliOptions;
 
     /**
@@ -30,6 +33,17 @@ namespace antwika::app
     {
         /** @brief The `--record`/`--replay` paths the run was given. */
         const ReplayCliOptions &options;
+
+        /**
+         * @brief What the command line held, this app's own flags
+         * included.
+         *
+         * Parsed once, against replayCliFlags() plus whatever extra
+         * flags the caller passed.
+         * A second parse of the same argv would refuse the first one's
+         * flags, which is how `--tick-delay-ms` stopped working.
+         */
+        const CommandLine &commandLine;
 
         /**
          * @brief Where dispatched events go when nothing reads them.
@@ -71,6 +85,8 @@ namespace antwika::app
      * @param argv Argument vector, as passed to main().
      * @param name The program's name, used to prefix a failure.
      * @param body The session to run.
+     * @param extraFlags This app's own flags, parsed in the same pass as
+     * the replay ones so that neither can refuse the other.
      * @param errors Where a failure is reported.
      * @return EXIT_SUCCESS, or EXIT_FAILURE if the body threw.
      */
@@ -79,6 +95,7 @@ namespace antwika::app
         char **argv,
         std::string_view name,
         const std::function<void(const RecordedRun &)> &body,
+        std::span<const FlagSpec> extraFlags = {},
         std::ostream &errors = std::cerr);
 
     /**
