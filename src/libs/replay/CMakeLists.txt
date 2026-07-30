@@ -10,6 +10,8 @@ add_library(antwika_replay
     src/ReplayReader.cpp
     src/ReplaySource.cpp
     src/ReplayWriter.cpp
+    src/TickPacer.cpp
+    src/WindowInputSource.cpp
 )
 
 add_library(antwika::replay ALIAS antwika_replay)
@@ -24,10 +26,16 @@ target_include_directories(antwika_replay
         $<INSTALL_INTERFACE:include>
 )
 
+# antwika::ecs comes in for TickPacer, which is an ecs::ISystem, and
+# antwika::gfx for WindowInputSource, which turns a window event into an
+# engine.stop.
+# Both are one-way: neither of those libraries knows this one exists.
 target_link_libraries(antwika_replay
     PUBLIC
+        antwika::ecs
         antwika::engine
         antwika::event
+        antwika::gfx
         antwika::time
 )
 
