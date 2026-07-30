@@ -4,6 +4,7 @@ add_library(antwika_gfx_backend
     src/SelectedBackend.cpp
     src/Sdl3Backend.cpp
     src/Sdl3Renderer.cpp
+    src/Sdl3Texture.cpp
     src/Sdl3Window.cpp
 )
 

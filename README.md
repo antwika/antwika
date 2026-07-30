@@ -84,6 +84,7 @@ scripts/build.sh
 
 A real backend builds into `build-sdl3/` or `build-raylib/` rather than `build/`, matching what CI does, so switching backends never invalidates the previous one.
 `build/bin/antwika_gfx_demo` opens a window and draws until you close it -- under the `null` backend there is nothing to close, so that build runs until interrupted.
+It draws three bars and blits a PNG logo twice: once whole and untinted, once left-half-only and tinted, which is what a source rectangle and a tint look like side by side.
 The selection lives in the untracked `.vscode/gfx-backend`, which makes it yours rather than the repository's.
 
 ## Replays

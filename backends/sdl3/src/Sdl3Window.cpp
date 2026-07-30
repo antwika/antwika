@@ -104,6 +104,8 @@ namespace antwika::gfx::sdl3
         lastTitle = readTitle(window);
         lastSize = readSize(window);
 
+        // Before SDL_DestroyRenderer, load-bearing for textures.
+        // Freeing a texture after its renderer is undefined.
         sdlRenderer.detach();
 
         SDL_DestroyRenderer(rawRenderer);

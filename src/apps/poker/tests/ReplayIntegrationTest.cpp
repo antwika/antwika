@@ -16,9 +16,11 @@
 #include <antwika/event/EventRecorder.hpp>
 #include <antwika/event/TickEvent.hpp>
 #include <antwika/event/TickEventRecorder.hpp>
+#include <antwika/gfx/Bitmap.hpp>
 #include <antwika/gfx/Color.hpp>
 #include <antwika/gfx/IGfxBackend.hpp>
 #include <antwika/gfx/IRenderer.hpp>
+#include <antwika/gfx/ITexture.hpp>
 #include <antwika/gfx/IWindow.hpp>
 #include <antwika/gfx/Point.hpp>
 #include <antwika/gfx/Rect.hpp>
@@ -48,9 +50,11 @@ using antwika::event::Event;
 using antwika::event::EventRecorder;
 using antwika::event::TickEvent;
 using antwika::event::TickEventRecorder;
+using antwika::gfx::Bitmap;
 using antwika::gfx::Color;
 using antwika::gfx::IGfxBackend;
 using antwika::gfx::IRenderer;
+using antwika::gfx::ITexture;
 using antwika::gfx::IWindow;
 using antwika::gfx::Point;
 using antwika::gfx::Rect;
@@ -168,6 +172,16 @@ namespace
                 void drawRect(Rect, Color) override {}
                 void drawText(
                     Point, std::string_view, std::uint32_t, Color) override
+                {
+                }
+                // The poker table draws no textures, so these are dead.
+                [[nodiscard]] std::unique_ptr<ITexture> createTexture(
+                    const Bitmap &) override
+                {
+                    return nullptr;
+                }
+                void drawTexture(
+                    const ITexture &, Rect, Rect, Color) override
                 {
                 }
                 void present() override { ++frames; }
