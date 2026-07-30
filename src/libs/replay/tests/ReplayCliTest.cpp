@@ -8,11 +8,13 @@
 #include <system_error>
 #include <vector>
 
+#include "antwika/replay/CommandLineError.hpp"
 #include "antwika/replay/ReplayCli.hpp"
 #include "antwika/replay/ReplayFormatError.hpp"
 
 using antwika::event::Event;
 using antwika::event::TickEvent;
+using antwika::replay::CommandLineError;
 using antwika::replay::loadReplayFile;
 using antwika::replay::parseReplayCliOptions;
 using antwika::replay::ReplayFormatError;
@@ -92,38 +94,59 @@ TEST(ReplayCliTest, ParseReadsBothRecordAndReplayPaths)
     EXPECT_EQ(*options.replayPath, "in.json");
 }
 
-TEST(ReplayCliTest, ParseIgnoresATrailingReplayFlagMissingItsValue)
+TEST(ReplayCliTest, ParseRefusesATrailingReplayFlagMissingItsValue)
 {
     std::vector<std::string> args{"antwika_app", "--replay"};
     auto argv = toArgv(args);
 
-    const auto options = parseReplayCliOptions(
-        static_cast<int>(argv.size()), argv.data());
-
-    EXPECT_FALSE(options.replayPath.has_value());
+    EXPECT_THROW(
+        (void)parseReplayCliOptions(
+            static_cast<int>(argv.size()), argv.data()),
+        CommandLineError);
 }
 
-TEST(ReplayCliTest, ParseIgnoresATrailingRecordFlagMissingItsValue)
+TEST(ReplayCliTest, ParseRefusesATrailingRecordFlagMissingItsValue)
 {
     std::vector<std::string> args{"antwika_app", "--record"};
     auto argv = toArgv(args);
 
-    const auto options = parseReplayCliOptions(
-        static_cast<int>(argv.size()), argv.data());
-
-    EXPECT_FALSE(options.recordPath.has_value());
+    EXPECT_THROW(
+        (void)parseReplayCliOptions(
+            static_cast<int>(argv.size()), argv.data()),
+        CommandLineError);
 }
 
-TEST(ReplayCliTest, ParseIgnoresAnUnrecognizedFlag)
+// The defect this parser exists for.
+// `--replya demo.json` used to start an empty session in silence.
+TEST(ReplayCliTest, ParseRefusesAMisspeltFlag)
 {
-    std::vector<std::string> args{"antwika_app", "--unknown", "value"};
+    std::vector<std::string> args{"antwika_app", "--replya", "demo.json"};
+    auto argv = toArgv(args);
+
+    EXPECT_THROW(
+        (void)parseReplayCliOptions(
+            static_cast<int>(argv.size()), argv.data()),
+        CommandLineError);
+}
+
+TEST(ReplayCliTest, ParseReportsThatHelpWasAskedFor)
+{
+    std::vector<std::string> args{"antwika_app", "--help"};
     auto argv = toArgv(args);
 
     const auto options = parseReplayCliOptions(
         static_cast<int>(argv.size()), argv.data());
 
-    EXPECT_FALSE(options.recordPath.has_value());
-    EXPECT_FALSE(options.replayPath.has_value());
+    EXPECT_TRUE(options.helpRequested);
+}
+
+TEST(ReplayCliTest, ReplayCliFlagsAreTheTwoEveryAppTakes)
+{
+    const auto flags = antwika::replay::replayCliFlags();
+
+    ASSERT_EQ(flags.size(), 2U);
+    EXPECT_EQ(flags[0].name, "--record");
+    EXPECT_EQ(flags[1].name, "--replay");
 }
 
 TEST(ReplayCliTest, LoadReplayFileDecodesAPreviouslySavedDocument)
