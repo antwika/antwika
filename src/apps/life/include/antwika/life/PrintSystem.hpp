@@ -37,6 +37,12 @@ namespace antwika::life
          */
         PrintSystem(std::uint32_t width, std::ostream &out);
 
+        PrintSystem(const PrintSystem &) = delete;
+        PrintSystem(PrintSystem &&) = delete;
+
+        PrintSystem &operator=(const PrintSystem &) = delete;
+        PrintSystem &operator=(PrintSystem &&) = delete;
+
         /**
          * @brief Print World's current Cell states as ASCII art.
          * @param world World read from; never written to.

@@ -58,6 +58,12 @@ namespace antwika::task_worker
             WorkerLookup &lookup,
             TaskRegistry &registry);
 
+        TaskSubmissionSink(const TaskSubmissionSink &) = delete;
+        TaskSubmissionSink(TaskSubmissionSink &&) = delete;
+
+        TaskSubmissionSink &operator=(const TaskSubmissionSink &) = delete;
+        TaskSubmissionSink &operator=(TaskSubmissionSink &&) = delete;
+
         /**
          * @brief Apply a tick event's effect.
          * @param event kTick commits and runs one tick of

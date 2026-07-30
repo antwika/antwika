@@ -30,6 +30,13 @@ namespace antwika::task_worker
          */
         explicit WorkerCompletionSystem(TaskRegistry &registry);
 
+        WorkerCompletionSystem(const WorkerCompletionSystem &) = delete;
+        WorkerCompletionSystem(WorkerCompletionSystem &&) = delete;
+
+        WorkerCompletionSystem &operator=(
+            const WorkerCompletionSystem &) = delete;
+        WorkerCompletionSystem &operator=(WorkerCompletionSystem &&) = delete;
+
         /**
          * @brief Decrement every Busy worker's countdown by one, flip
          * to Idle at zero, keeping registry's view of each task's

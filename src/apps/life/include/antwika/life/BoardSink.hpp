@@ -36,6 +36,12 @@ namespace antwika::life
          */
         BoardSink(World &world, const Grid &grid, SystemScheduler &scheduler);
 
+        BoardSink(const BoardSink &) = delete;
+        BoardSink(BoardSink &&) = delete;
+
+        BoardSink &operator=(const BoardSink &) = delete;
+        BoardSink &operator=(BoardSink &&) = delete;
+
         /**
          * @brief Apply a tick event's effect to the referenced World.
          * @param event kTick commits and advances one generation;
