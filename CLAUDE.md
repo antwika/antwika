@@ -139,6 +139,9 @@ A toolbar of zoom and reset-view buttons is drawn over the grid by `game::Toolba
 It defines no event either, for the same reason: what a recording holds is the click.
 `game::UiOverlay` is the one fact the three share, and it owns the canvas the bar is laid out against (the size the window was *asked* for) so nothing can lay it out against one size and hit-test it against another.
 What the bar covers, it covers from the grid too: `GridSink` skips a press or a scroll the overlay reports as covered, though not a movement, so a pan begun on the grid carries on across the bar.
+**A button here lights up on the press rather than on approach**, and that is `input::IdleMotionSource` in this app's chain rather than anything `antwika::ui` decides: idle pointer movement is held back until something reads it, so a hover appearance updates only when a button, a wheel or a key arrives.
+Clicking is unaffected, since the gate releases the latched movement ahead of the press and a press carries its own position.
+Taking the gate out of `main.cpp` would buy live hover back at the recording size it was added to save, which is the trade to weigh if that ever matters more.
 It starts on an empty grid and loads nothing unless `--replay` says so, so
 what a session contains is what somebody clicked.
 It runs until Escape is pressed or the window is closed -- both of which
