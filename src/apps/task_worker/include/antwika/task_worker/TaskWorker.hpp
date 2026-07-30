@@ -10,12 +10,8 @@
 #include <antwika/event/IEventDispatcher.hpp>
 #include <antwika/event/IEventSink.hpp>
 #include <antwika/event/ITickEventSink.hpp>
-#include <antwika/log/IAppender.hpp>
-#include <antwika/log/IFormatter.hpp>
-#include <antwika/log/ILogPolicy.hpp>
 #include <antwika/log/ILogger.hpp>
 #include <antwika/replay/IReplaySource.hpp>
-#include <antwika/time/IClock.hpp>
 #include <antwika/time/Tick.hpp>
 
 #include "antwika/task_worker/TaskRegistry.hpp"
@@ -29,12 +25,8 @@ namespace antwika::task_worker
     using antwika::event::IEventDispatcher;
     using antwika::event::IEventSink;
     using antwika::event::ITickEventSink;
-    using antwika::log::IAppender;
-    using antwika::log::IFormatter;
     using antwika::log::ILogger;
-    using antwika::log::ILogPolicy;
     using antwika::replay::IReplaySource;
-    using antwika::time::IClock;
 
     /**
      * @brief Announces the run in the log and starts the engine.
@@ -75,24 +67,22 @@ namespace antwika::task_worker
      *
      * A struct with designated initialisers rather than a parameter list,
      * because the list had reached eleven positional arguments, four of
-     * them interchangeable-looking logging pieces and two of them
-     * nullable pointers.
+     * them interchangeable-looking logging pieces -- now one logger --
+     * and two of them nullable pointers.
      * A name per argument is what makes a wrong one a compile error
      * rather than a silently different run.
      */
     struct TaskWorkerConfig
     {
-        /** @brief Supplies timestamps for the logger. */
-        IClock &clock;
-
-        /** @brief Receives formatted log output. */
-        IAppender &appender;
-
-        /** @brief Renders log records into text. */
-        IFormatter &formatter;
-
-        /** @brief Decides which log records are emitted. */
-        ILogPolicy &logPolicy;
+        /**
+         * @brief Where this run says what it is doing.
+         *
+         * Building it is the caller's job rather than this function's:
+         * a second logger built here would be a second logger over one
+         * appender, and the two would interleave their lines.
+         * app::ConsoleLogging is what a composition root builds.
+         */
+        ILogger &logger;
 
         /** @brief Receives every dispatched event. */
         IEventSink &eventSink;

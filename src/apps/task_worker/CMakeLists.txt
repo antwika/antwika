@@ -26,6 +26,7 @@ target_compile_definitions(antwika_task_worker
 
 target_link_libraries(antwika_task_worker
     PRIVATE
+        antwika::app
         antwika::ecs
         antwika::engine
         antwika::event

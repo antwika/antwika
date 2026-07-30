@@ -1,35 +1,23 @@
 #include "antwika/task_worker/TaskWorker.hpp"
 
 #include <cstdint>
-#include <cstdlib>
-#include <exception>
 #include <iostream>
-#include <string>
 #include <string_view>
 
-#include <antwika/event/Event.hpp>
-#include <antwika/event/IEventSink.hpp>
-#include <antwika/event/TickEventRecorder.hpp>
+#include <antwika/app/ConsoleLogging.hpp>
+#include <antwika/app/RunRecorded.hpp>
 #include <antwika/log/Level.hpp>
-#include <antwika/log/MinimumLevelLogPolicy.hpp>
-#include <antwika/log/PlainFormatter.hpp>
-#include <antwika/log/StreamAppender.hpp>
-#include <antwika/replay/ReplayCli.hpp>
 #include <antwika/replay/ReplaySource.hpp>
-#include <antwika/time/SystemClock.hpp>
 
 #include "antwika/task_worker/StatusPrintSystem.hpp"
 #include "antwika/task_worker/TaskRegistry.hpp"
 
-using antwika::event::TickEventRecorder;
+using antwika::app::ConsoleLogging;
+using antwika::app::RecordedRun;
 using antwika::log::Level;
-using antwika::log::MinimumLevelLogPolicy;
-using antwika::log::PlainFormatter;
-using antwika::log::StreamAppender;
 using antwika::replay::ReplaySource;
 using antwika::task_worker::StatusPrintSystem;
 using antwika::task_worker::TaskRegistry;
-using antwika::time::SystemClock;
 
 namespace
 {
@@ -38,72 +26,28 @@ namespace
     constexpr std::string_view kDemoReplayPath =
         ANTWIKA_TASK_WORKER_DEMO_REPLAY_PATH;
 
-    /**
-     * @brief Sink for the events nothing in this app reads.
-     *
-     * Every dispatched event has to go somewhere, and an EventRecorder
-     * used to be what went there -- deep-copying both strings of every
-     * event and keeping them for the life of the process, in a run that
-     * ends only when somebody closes the window.
-     * Nothing ever called getEvents() on it.
-     */
-    class DiscardedEvents final : public antwika::event::IEventSink
+    void run(const RecordedRun &recorded)
     {
-    public:
-        void handle(const antwika::event::Event &) override
-        {
-        }
-    };
-
-} // namespace
-
-int main(int argc, char **argv)
-{
-    const auto options = antwika::replay::parseReplayCliOptions(argc, argv);
-
-    SystemClock clock;
-    StreamAppender appender(std::cout);
-    PlainFormatter formatter;
-    MinimumLevelLogPolicy logPolicy(Level::Info);
-    DiscardedEvents eventSink;
-    TickEventRecorder replayRecorder;
-    TaskRegistry registry;
-    StatusPrintSystem printSystem(std::cout, registry);
-
-    // Catching is what makes the run's resources unwind at all.
-    // An uncaught exception may call std::terminate without unwinding.
-    // Catching here also lets a failed --record run save what it has.
-    int exitCode = EXIT_SUCCESS;
-    try
-    {
-        auto events = antwika::replay::loadReplayFile(
-            options.replayPath.value_or(std::string(kDemoReplayPath)));
-        ReplaySource source(std::move(events));
+        ConsoleLogging logging(std::cout, Level::Info);
+        TaskRegistry registry;
+        StatusPrintSystem printSystem(std::cout, registry);
+        ReplaySource source(antwika::app::scriptedEvents(
+            recorded.options.replayPath, kDemoReplayPath));
 
         antwika::task_worker::bootstrap(
             antwika::task_worker::TaskWorkerConfig{
-                .clock = clock,
-                .appender = appender,
-                .formatter = formatter,
-                .logPolicy = logPolicy,
-                .eventSink = eventSink,
+                .logger = logging.logger(),
+                .eventSink = recorded.eventSink,
                 .inputSource = source,
                 .workerCount = kWorkerCount,
                 .observers = {printSystem},
                 .registry = registry,
-                .replayRecorder = replayRecorder});
+                .replayRecorder = recorded.replayRecorder});
     }
-    catch (const std::exception &error)
-    {
-        std::cerr << "antwika_task_worker: " << error.what() << '\n';
-        exitCode = EXIT_FAILURE;
-    }
+} // namespace
 
-    if (options.recordPath)
-    {
-        antwika::replay::saveReplayFile(
-            replayRecorder.getEvents(), *options.recordPath);
-    }
-
-    return exitCode;
+int main(int argc, char **argv)
+{
+    return antwika::app::runRecorded(
+        argc, argv, "antwika_task_worker", run);
 }

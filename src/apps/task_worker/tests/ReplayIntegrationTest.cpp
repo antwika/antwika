@@ -8,14 +8,11 @@
 #include <antwika/event/mocks/MockEventSink.hpp>
 #include <antwika/event/TickEvent.hpp>
 #include <antwika/log/Level.hpp>
-#include <antwika/log/MinimumLevelLogPolicy.hpp>
-#include <antwika/log/NullAppender.hpp>
-#include <antwika/log/PlainFormatter.hpp>
+#include <antwika/log/mocks/MockLogger.hpp>
 #include <antwika/replay/IReplaySource.hpp>
 #include <antwika/replay/ReplayReader.hpp>
 #include <antwika/replay/ReplaySource.hpp>
 #include <antwika/replay/ReplayWriter.hpp>
-#include <antwika/time/fakes/FakeClock.hpp>
 
 #include "antwika/task_worker/Events.hpp"
 #include "antwika/task_worker/TaskWorker.hpp"
@@ -25,15 +22,12 @@ using antwika::event::Event;
 using antwika::event::mocks::MockEventSink;
 using antwika::event::TickEvent;
 using antwika::log::Level;
-using antwika::log::MinimumLevelLogPolicy;
-using antwika::log::NullAppender;
-using antwika::log::PlainFormatter;
 using antwika::replay::IReplaySource;
 using antwika::replay::ReplayReader;
 using antwika::replay::ReplaySource;
 using antwika::replay::ReplayWriter;
 using antwika::task_worker::Worker;
-using antwika::time::fakes::FakeClock;
+using antwika::log::mocks::MockLogger;
 using ::testing::NiceMock;
 
 namespace
@@ -44,19 +38,12 @@ namespace
 
     std::vector<Worker> runTaskWorker(IReplaySource &source)
     {
-        std::chrono::system_clock::time_point time{};
-        FakeClock fakeClock(time);
-        NullAppender appender;
-        PlainFormatter formatter;
-        MinimumLevelLogPolicy logPolicy(Level::Info);
+        NiceMock<MockLogger> logger;
         NiceMock<MockEventSink> eventSink;
 
         return antwika::task_worker::bootstrap(
             antwika::task_worker::TaskWorkerConfig{
-                .clock = fakeClock,
-                .appender = appender,
-                .formatter = formatter,
-                .logPolicy = logPolicy,
+                .logger = logger,
                 .eventSink = eventSink,
                 .inputSource = source,
                 .workerCount = kWorkerCount,
