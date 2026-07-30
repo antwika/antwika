@@ -7,7 +7,7 @@
 #include <antwika/ecs/ISystem.hpp>
 #include <antwika/engine/Events.hpp>
 #include <antwika/event/Event.hpp>
-#include <antwika/event/EventRecorder.hpp>
+#include <antwika/event/mocks/MockEventSink.hpp>
 #include <antwika/event/TickEventRecorder.hpp>
 #include <antwika/event/TickEvent.hpp>
 #include <antwika/log/mocks/MockLogger.hpp>
@@ -21,7 +21,7 @@
 using antwika::ecs::ISystem;
 using antwika::ecs::World;
 using antwika::event::Event;
-using antwika::event::EventRecorder;
+using antwika::event::mocks::MockEventSink;
 using antwika::event::TickEventRecorder;
 using antwika::event::TickEvent;
 using antwika::life::Board;
@@ -67,7 +67,7 @@ namespace
 TEST(BootstrapTest, Bootstrap_RunsScriptedTicksAndReturnsResultingBoard)
 {
     NiceMock<MockLogger> logger;
-    EventRecorder eventSink;
+    NiceMock<MockEventSink> eventSink;
 
     ReplaySource inputSource({
         TickEvent{
@@ -117,7 +117,7 @@ TEST(BootstrapTest, Bootstrap_RunsScriptedTicksAndReturnsResultingBoard)
 TEST(BootstrapTest, Bootstrap_RunsEveryObserverOncePerTick)
 {
     NiceMock<MockLogger> logger;
-    EventRecorder eventSink;
+    NiceMock<MockEventSink> eventSink;
 
     ReplaySource inputSource({
         TickEvent{
@@ -179,7 +179,7 @@ TEST(BootstrapTest, Bootstrap_RunsEveryObserverOncePerTick)
 TEST(BootstrapTest, Bootstrap_WithNoScriptedInputStaysAllDead)
 {
     NiceMock<MockLogger> logger;
-    EventRecorder eventSink;
+    NiceMock<MockEventSink> eventSink;
 
     ReplaySource inputSource({
         TickEvent{
@@ -206,7 +206,7 @@ TEST(BootstrapTest, Bootstrap_WithNoScriptedInputStaysAllDead)
 TEST(BootstrapTest, Bootstrap_ForwardsDispatchedEventsToATickEventRecorder)
 {
     NiceMock<MockLogger> logger;
-    EventRecorder eventSink;
+    NiceMock<MockEventSink> eventSink;
 
     ReplaySource inputSource({
         TickEvent{
@@ -259,7 +259,7 @@ TEST(BootstrapTest, Bootstrap_ForwardsDispatchedEventsToATickEventRecorder)
 TEST(BootstrapTest, Bootstrap_ThrowsWhenMaxTicksIsReachedWithoutAStopEvent)
 {
     NiceMock<MockLogger> logger;
-    EventRecorder eventSink;
+    NiceMock<MockEventSink> eventSink;
 
     ReplaySource inputSource({});
 

@@ -8,7 +8,6 @@
 #include <antwika/event/EventDispatcher.hpp>
 #include <antwika/event/TickedEventDispatcher.hpp>
 #include <antwika/log/Level.hpp>
-#include <antwika/log/Logger.hpp>
 #include <antwika/replay/EngineLoop.hpp>
 #include <antwika/scheduler/Scheduler.hpp>
 
@@ -26,7 +25,6 @@ using antwika::event::Event;
 using antwika::event::EventDispatcher;
 using antwika::event::TickedEventDispatcher;
 using antwika::log::Level;
-using antwika::log::Logger;
 using antwika::replay::EngineLoop;
 using antwika::scheduler::Scheduler;
 
@@ -46,11 +44,7 @@ namespace antwika::task_worker
 
     std::vector<Worker> bootstrap(const TaskWorkerConfig &config)
     {
-        Logger logger(
-            config.formatter,
-            config.logPolicy,
-            config.clock,
-            config.appender);
+        ILogger &logger = config.logger;
         EventDispatcher dispatcher({config.eventSink});
 
         World world(logger);
