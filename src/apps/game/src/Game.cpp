@@ -42,20 +42,13 @@ namespace antwika::game
         engine.start();
     }
 
-    GameSummary bootstrap(
-        ILogger &logger,
-        IEventSink &eventSink,
-        IReplaySource &inputSource,
-        const IInputEventCodec &codec,
-        GridExtent extent,
-        Camera &camera,
-        PathIndex &paths,
-        std::vector<std::reference_wrapper<ISystem>> observers,
-        std::optional<antwika::time::Tick> maxTicks,
-        ITickEventSink *replayRecorder,
-        UiOverlay *overlay)
+    GameSummary bootstrap(const GameConfig &config)
     {
-        EventDispatcher dispatcher({eventSink});
+        ILogger &logger = config.logger;
+        Camera &camera = config.camera;
+        PathIndex &paths = config.paths;
+
+        EventDispatcher dispatcher({config.eventSink});
 
         World world(logger);
 
@@ -67,7 +60,7 @@ namespace antwika::game
         // A phase of its own.
         // A renderer then sees the generation this walk produced.
         const auto observePhase = scheduler.createPhase("observe");
-        for (auto &observer : observers)
+        for (auto &observer : config.observers)
         {
             scheduler.addSystem(observePhase, observer.get());
         }
@@ -79,13 +72,19 @@ namespace antwika::game
         // An overlay nothing writes covers nothing.
         // So every click is the world's, which is what that means.
         UiOverlay noToolbar;
-        const bool hasToolbar = overlay != nullptr;
-        UiOverlay &ui = hasToolbar ? *overlay : noToolbar;
+        const bool hasToolbar = config.overlay.has_value();
+        UiOverlay &ui = hasToolbar ? config.overlay->get() : noToolbar;
 
         const Toolbar toolbar;
-        UiSink uiSink(camera, ui, codec, toolbar, camera);
+        UiSink uiSink(camera, ui, config.codec, toolbar, camera);
         GridSink gridSink(
-            world, paths, camera, extent, scheduler, codec, ui);
+            world,
+            paths,
+            camera,
+            config.extent,
+            scheduler,
+            config.codec,
+            ui);
         StopSignal stopSignal;
 
         // GridSink runs the scheduler on engine.tick.
@@ -108,9 +107,9 @@ namespace antwika::game
         timedSinks.push_back(gridSink);
         timedSinks.push_back(stopSignal);
 
-        if (replayRecorder != nullptr)
+        if (config.replayRecorder.has_value())
         {
-            timedSinks.push_back(*replayRecorder);
+            timedSinks.push_back(config.replayRecorder->get());
         }
         TickedEventDispatcher tickedDispatcher(dispatcher, timedSinks);
 
@@ -118,10 +117,11 @@ namespace antwika::game
         Game game(engine, logger);
         game.run();
 
-        EngineLoop loop(engine, tickedDispatcher, inputSource);
-        loop.run(stopSignal, maxTicks);
+        EngineLoop loop(engine, tickedDispatcher, config.inputSource);
+        loop.run(stopSignal, config.maxTicks);
 
-        const auto frame = snapshotOf(world, paths, camera, extent);
+        const auto frame =
+            snapshotOf(world, paths, camera, config.extent);
 
         // Every branch left on the excluded line is the allocator's.
         // Two are the throw edges of copying the two vectors.

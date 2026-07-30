@@ -123,16 +123,16 @@ namespace
         TickEventRecorder recorder;
 
         auto summary = antwika::game::bootstrap(
-            logger,
-            eventSink,
-            source,
-            codec,
-            kExtent,
-            camera,
-            paths,
-            {},
-            kMaxTicks,
-            &recorder);
+            antwika::game::GameConfig{
+                .logger = logger,
+                .eventSink = eventSink,
+                .inputSource = source,
+                .codec = codec,
+                .extent = kExtent,
+                .camera = camera,
+                .paths = paths,
+                .maxTicks = kMaxTicks,
+                .replayRecorder = recorder});
 
         return RunResult{
             .summary = std::move(summary),
@@ -151,17 +151,17 @@ namespace
         UiOverlay overlay(kUiCanvas);
 
         auto summary = antwika::game::bootstrap(
-            logger,
-            eventSink,
-            source,
-            codec,
-            kExtent,
-            camera,
-            paths,
-            {},
-            kMaxTicks,
-            &recorder,
-            &overlay);
+            antwika::game::GameConfig{
+                .logger = logger,
+                .eventSink = eventSink,
+                .inputSource = source,
+                .codec = codec,
+                .extent = kExtent,
+                .camera = camera,
+                .paths = paths,
+                .maxTicks = kMaxTicks,
+                .replayRecorder = recorder,
+                .overlay = overlay});
 
         return RunResult{
             .summary = std::move(summary),

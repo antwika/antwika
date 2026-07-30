@@ -230,17 +230,17 @@ int main(int argc, char **argv)
         WindowInputSource source(quitting, *backend, window->id());
 
         const auto summary = antwika::game::bootstrap(
-            logger,
-            eventSink,
-            source,
-            codec,
-            kExtent,
-            camera,
-            paths,
-            observers,
-            std::nullopt,
-            &replayRecorder,
-            &overlay);
+            antwika::game::GameConfig{
+                .logger = logger,
+                .eventSink = eventSink,
+                .inputSource = source,
+                .codec = codec,
+                .extent = kExtent,
+                .camera = camera,
+                .paths = paths,
+                .observers = observers,
+                .replayRecorder = replayRecorder,
+                .overlay = overlay});
 
         printSummary(summary);
     }

@@ -61,17 +61,21 @@ namespace
             antwika::time::Tick maxTicks,
             antwika::event::ITickEventSink *recorder = nullptr)
         {
-            return antwika::game::bootstrap(
-                logger,
-                eventSink,
-                source,
-                codec,
-                kExtent,
-                camera,
-                paths,
-                {},
-                maxTicks,
-                recorder);
+            antwika::game::GameConfig config{
+                .logger = logger,
+                .eventSink = eventSink,
+                .inputSource = source,
+                .codec = codec,
+                .extent = kExtent,
+                .camera = camera,
+                .paths = paths,
+                .maxTicks = maxTicks};
+            if (recorder != nullptr)
+            {
+                config.replayRecorder = *recorder;
+            }
+
+            return antwika::game::bootstrap(config);
         }
     };
 } // namespace
@@ -262,15 +266,16 @@ TEST(BootstrapTest, Bootstrap_RunsEveryObserverOncePerTick)
     CountingObserver second;
 
     antwika::game::bootstrap(
-        harness.logger,
-        harness.eventSink,
-        source,
-        harness.codec,
-        kExtent,
-        harness.camera,
-        harness.paths,
-        {first, second},
-        10);
+        antwika::game::GameConfig{
+            .logger = harness.logger,
+            .eventSink = harness.eventSink,
+            .inputSource = source,
+            .codec = harness.codec,
+            .extent = kExtent,
+            .camera = harness.camera,
+            .paths = harness.paths,
+            .observers = {first, second},
+            .maxTicks = 10});
 
     // Ticks 0, 1 and 2 all run, and the stop ends it after the third.
     EXPECT_EQ(first.ticks, 3U);
