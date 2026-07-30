@@ -37,7 +37,7 @@ TEST(MouseButtonTest, KMouseButtonCount_CountsEveryButtonThatHasAName)
     {
         const auto button = static_cast<MouseButton>(index);
 
-        EXPECT_NE(toString(button), "Unknown") << index;
+        EXPECT_NO_THROW(static_cast<void>(toString(button))) << index;
     }
 }
 
@@ -50,11 +50,31 @@ TEST(MouseButtonTest, ToString_NamesAButton)
     EXPECT_EQ(toString(MouseButton::X2), "X2");
 }
 
-TEST(MouseButtonTest, ToString_ReportsUnknownForAValueOutsideTheEnumeration)
+TEST(MouseButtonTest, ToString_ThrowsOnAValueOutsideTheEnumeration)
+{
+    // It fails here, where the offending button is in hand.
+    // Naming it "Unknown" would fail in whatever replays the recording.
+    const auto beyond = static_cast<MouseButton>(kMouseButtonCount);
+
+    EXPECT_THROW(static_cast<void>(toString(beyond)), InputError);
+}
+
+TEST(MouseButtonTest, ToString_SaysWhichValueItRefusedToName)
 {
     const auto beyond = static_cast<MouseButton>(kMouseButtonCount);
 
-    EXPECT_EQ(toString(beyond), "Unknown");
+    try
+    {
+        static_cast<void>(toString(beyond));
+        FAIL() << "expected an InputError";
+    }
+    catch (const InputError &error)
+    {
+        EXPECT_NE(
+            std::string(error.what()).find(
+                std::to_string(kMouseButtonCount)),
+            std::string::npos);
+    }
 }
 
 TEST(MouseButtonTest, ToString_GivesEveryButtonItsOwnName)

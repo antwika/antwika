@@ -39,7 +39,7 @@ TEST(KeyTest, KKeyCount_CountsEveryKeyThatHasAName)
     {
         const auto key = static_cast<Key>(index);
 
-        EXPECT_NE(toString(key), "Unknown") << index;
+        EXPECT_NO_THROW(static_cast<void>(toString(key))) << index;
     }
 }
 
@@ -53,12 +53,32 @@ TEST(KeyTest, ToString_NamesAKey)
     EXPECT_EQ(toString(Key::RightSuper), "RightSuper");
 }
 
-TEST(KeyTest, ToString_ReportsUnknownForAValueOutsideTheEnumeration)
+TEST(KeyTest, ToString_ThrowsOnAValueOutsideTheEnumeration)
 {
     // Reachable only by a cast, which a backend mapping key codes may do.
+    // It fails here, where the offending key is in hand.
+    // Naming it "Unknown" would fail in whatever replays the recording.
     const auto beyond = static_cast<Key>(kKeyCount);
 
-    EXPECT_EQ(toString(beyond), "Unknown");
+    EXPECT_THROW(static_cast<void>(toString(beyond)), InputError);
+}
+
+TEST(KeyTest, ToString_AgreesWithKeyFromStringOnWhatHasNoName)
+{
+    // The asymmetry this replaced let a session record and not replay.
+    const auto beyond = static_cast<Key>(kKeyCount);
+
+    try
+    {
+        static_cast<void>(toString(beyond));
+        FAIL() << "expected an InputError";
+    }
+    catch (const InputError &error)
+    {
+        EXPECT_NE(
+            std::string(error.what()).find(std::to_string(kKeyCount)),
+            std::string::npos);
+    }
 }
 
 TEST(KeyTest, ToString_GivesEveryKeyItsOwnName)

@@ -54,11 +54,17 @@ namespace antwika::input
      * This is what a replay stores, so these names are part of the replay
      * format and may not be changed once written.
      *
+     * A value with no name is refused rather than named "Unknown", for
+     * the reason toString(Key) gives: mouseButtonFromString rejects a
+     * name no button goes by, so the lenient answer would write a
+     * recording that encodes cleanly and then fails to replay.
+     *
      * @param button The button to name.
-     * @return The button's name, e.g. "Left", or "Unknown" for a value
-     * outside the enumeration.
+     * @return The button's name, e.g. "Left".
+     * @throws InputError If the value is outside the enumeration, which
+     * only a cast can produce.
      */
-    [[nodiscard]] std::string_view toString(MouseButton button) noexcept;
+    [[nodiscard]] std::string_view toString(MouseButton button);
 
     /**
      * @brief Get the button a persisted name refers to.

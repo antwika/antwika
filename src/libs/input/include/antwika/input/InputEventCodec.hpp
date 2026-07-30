@@ -24,6 +24,8 @@ namespace antwika::input
          * @brief Encode an input event as a named, JSON-payloaded event.
          * @param event The edge to encode.
          * @return The event to dispatch, and to persist as-is.
+         * @throws InputError If the edge names a key or a button outside
+         * its enumeration, which decoding the result would reject too.
          */
         [[nodiscard]] Event encode(const InputEvent &event) const override;
 

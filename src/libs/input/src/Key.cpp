@@ -107,7 +107,7 @@ namespace antwika::input
         }};
     } // namespace
 
-    std::string_view toString(Key key) noexcept
+    std::string_view toString(Key key)
     {
         for (const auto &entry : kKeyNames)
         {
@@ -117,7 +117,10 @@ namespace antwika::input
             }
         }
 
-        return "Unknown";
+        // The two directions have to agree on what has no name.
+        // "Unknown" here is a recording keyFromString later refuses.
+        throw InputError(
+            "input: no name for key " + std::to_string(keyIndex(key)));
     }
 
     Key keyFromString(std::string_view name)

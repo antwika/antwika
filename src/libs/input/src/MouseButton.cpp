@@ -29,7 +29,7 @@ namespace antwika::input
             }};
     } // namespace
 
-    std::string_view toString(MouseButton button) noexcept
+    std::string_view toString(MouseButton button)
     {
         for (const auto &entry : kMouseButtonNames)
         {
@@ -39,7 +39,10 @@ namespace antwika::input
             }
         }
 
-        return "Unknown";
+        // Refused rather than named, for the reason toString(Key) gives.
+        throw InputError(
+            "input: no name for mouse button "
+            + std::to_string(mouseButtonIndex(button)));
     }
 
     MouseButton mouseButtonFromString(std::string_view name)
