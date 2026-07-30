@@ -237,11 +237,17 @@ namespace antwika::poker
              .padding = metrics.scale,
              .gap = 0});
 
+        // Hoisted so the multiply owns a statement gcov counts.
+        // Inline, it took a line note that never reached 100%.
+        // The computation folds into the block after it.
+        // The sibling above has no arithmetic, and so no note at all.
+        const auto boxPadding = 2 * metrics.scale;
+
         const auto box = ui.column(
             {.width = kGrow,
              .height = kGrow,
              .background = kSeatBox,
-             .padding = 2 * metrics.scale,
+             .padding = boxPadding,
              .gap = 0});
 
         if (!seat.occupied)
