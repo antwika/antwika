@@ -124,7 +124,7 @@ namespace
     }
 } // namespace
 
-// The check the gfx plan asks Phase 6 to make.
+// The check that says rendering stayed out of the tick path.
 // Record a run under a windowed backend, closing the window to end it.
 // Replay that recording headlessly and reach the very same board.
 // Rendering can only stay outside the tick path if this holds.

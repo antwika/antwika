@@ -120,7 +120,7 @@ The only route back in is `poker::WindowCloseSource`, an `IReplaySource` decorat
 
 **Supporting libs**: `antwika::time` (fixed-tick `Tick` type, `IClock`/`SystemClock`) and `antwika::log` (`ILogger`/`Logger`, `IAppender`/`IFormatter`/`ILogPolicy` — composable logging with no global state) are used across apps but carry no tick/replay logic of their own.
 
-`antwika::gfx` abstracts opening and rendering to windows (`IGfxBackend`/`IWindow`/`IRenderer`, `GfxError`), so no code under `src/` names a concrete graphics framework — SDL, raylib and friends arrive as statically linked backends under `backends/`, chosen at build time. Rendering is a write-only projection of state and never feeds back into the tick loop, so replays stay reproducible under the headless `NullBackend`. See [`docs/gfx-plan.md`](docs/gfx-plan.md) for the full design and its phases.
+`antwika::gfx` abstracts opening and rendering to windows (`IGfxBackend`/`IWindow`/`IRenderer`, `GfxError`), so no code under `src/` names a concrete graphics framework — SDL, raylib and friends arrive as statically linked backends under `backends/`, chosen at build time. Rendering is a write-only projection of state and never feeds back into the tick loop, so replays stay reproducible under the headless `NullBackend`. See [`blog/012-a-window-that-cant-talk-back.md`](blog/012-a-window-that-cant-talk-back.md) for how an app hangs rendering off the tick loop without letting it feed back in.
 
 ## Notes for AI agents
 
