@@ -9,6 +9,7 @@
 #include <antwika/gfx/WindowId.hpp>
 #include <antwika/log/Level.hpp>
 
+#include "Sdl3Pump.hpp"
 #include "Sdl3Window.hpp"
 
 namespace antwika::gfx::sdl3
@@ -25,21 +26,24 @@ namespace antwika::gfx::sdl3
         }
     } // namespace
 
+    // The pump raises its own error type, which stops at this seam.
+    // Above here, a graphics failure is only ever a GfxError.
     Sdl3Backend::Sdl3Backend(ILogger &logger)
         : logger(logger)
     {
-        if (!SDL_Init(SDL_INIT_VIDEO))
+        try
         {
-            fail("could not initialise the video subsystem");
+            pump = antwika::sdl3::Sdl3Pump::acquire(logger);
+        }
+        catch (const antwika::sdl3::Sdl3PumpError &error)
+        {
+            throw GfxError(std::string("gfx.") + error.what());
         }
 
-        logger.log(Level::Info, "gfx.sdl3: video subsystem started");
+        logger.log(Level::Debug, "gfx.sdl3: backend ready");
     }
 
-    Sdl3Backend::~Sdl3Backend()
-    {
-        SDL_Quit();
-    }
+    Sdl3Backend::~Sdl3Backend() = default;
 
     std::string_view Sdl3Backend::name() const
     {
@@ -85,10 +89,10 @@ namespace antwika::gfx::sdl3
 
     std::optional<WindowEvent> Sdl3Backend::pollEvent()
     {
-        SDL_Event event;
-
-        while (SDL_PollEvent(&event))
+        while (const auto pending = pump->nextWindowEvent())
         {
+            const auto &event = *pending;
+
             // Read event.window only once the type says SDL filled it.
             if (event.type == SDL_EVENT_WINDOW_CLOSE_REQUESTED)
             {

@@ -11,6 +11,8 @@
 #include <antwika/gfx/WindowEvent.hpp>
 #include <antwika/log/ILogger.hpp>
 
+#include "Sdl3Pump.hpp"
+
 namespace antwika::gfx::sdl3
 {
 
@@ -19,14 +21,16 @@ namespace antwika::gfx::sdl3
     /**
      * @brief IGfxBackend backed by SDL3.
      *
-     * Owns SDL's video subsystem for its whole lifetime: one backend, one
-     * SDL_Init/SDL_Quit pair.
+     * Holds a share of Sdl3Pump for its whole lifetime, which is what
+     * keeps SDL's video subsystem up and, more importantly, what keeps
+     * this backend and an Sdl3InputBackend from stealing each other's
+     * events off the one queue SDL has -- see Sdl3Pump.
      */
     class Sdl3Backend final : public IGfxBackend
     {
     public:
         /**
-         * @brief Initialise SDL's video subsystem.
+         * @brief Take a share of the process's SDL event pump.
          * @param logger Receives the backend's diagnostics.
          * @throws GfxError If SDL's video subsystem failed to start.
          */
@@ -39,7 +43,7 @@ namespace antwika::gfx::sdl3
         Sdl3Backend &operator=(Sdl3Backend &&) = delete;
 
         /**
-         * @brief Shut SDL's video subsystem down.
+         * @brief Let go of the pump, shutting SDL down with the last one.
          */
         ~Sdl3Backend() override;
 
@@ -66,10 +70,11 @@ namespace antwika::gfx::sdl3
             const WindowDesc &desc) override;
 
         /**
-         * @brief Take the next event SDL has for us.
+         * @brief Take the next window event SDL has for us.
          *
-         * Events SDL reports that this abstraction has no equivalent for
-         * are dropped, and polling continues, so the queue always drains.
+         * Window events SDL reports that this abstraction has no
+         * equivalent for are dropped, and polling continues, so the queue
+         * always drains.
          *
          * @return The next translatable event, or nullopt when none is
          * left.
@@ -78,6 +83,7 @@ namespace antwika::gfx::sdl3
 
     private:
         ILogger &logger;
+        std::shared_ptr<antwika::sdl3::Sdl3Pump> pump;
     };
 
 } // namespace antwika::gfx::sdl3

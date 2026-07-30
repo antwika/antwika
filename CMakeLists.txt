@@ -20,6 +20,15 @@ option(ANTWIKA_WARNINGS_AS_ERRORS "Treat compiler warnings as errors" ON)
 set(ANTWIKA_GFX_BACKEND "null" CACHE STRING
     "Graphics backend to compile and link, named after a backends/ subdirectory")
 
+# Defaults to the graphics choice, so one flag drives both in the common
+# case: the default build stays null/null and depends on nothing new,
+# while asking for sdl3 windows gets sdl3 input for free.
+# Setting the two apart is still legal -- input with no window, or a
+# window with no input -- as long as they do not name two real
+# frameworks; backends/CMakeLists.txt is where that is enforced, and why.
+set(ANTWIKA_INPUT_BACKEND "${ANTWIKA_GFX_BACKEND}" CACHE STRING
+    "Input backend to compile and link, named after a backends/ subdirectory")
+
 if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
     add_compile_options(
         -Wall

@@ -44,11 +44,20 @@ Requirements for the Antwika project, gathered from `README.md`, `blog/001-build
 - Text drawing must use one built-in fixed-cell bitmap font, defined by `antwika::gfx` and drawn identically by every backend, so a caller can lay text out arithmetically instead of asking a backend to measure it.
 - A window's close request must reach the engine only as replayable input through `IReplaySource`, never by short-circuiting the tick loop.
 - A job with unmet dependencies (via `schedule()`'s `dependsOn`) must never be dispatched until every dependency has run; dependency cycles must be unreachable through the public API, by construction (id-ordering), not by a runtime check.
+- Input access must go through a backend-agnostic abstraction, and no file under `src/` may reference a concrete input framework such as SDL or raylib.
+- The input backend must be selected at build time, by the `ANTWIKA_INPUT_BACKEND` CMake variable and the matching `input_backend` Conan option, which default to the graphics choice so one flag drives both.
+- A headless input backend must exist, so tests, CI and replay verification can run with no display and no input framework installed.
+- Live input must reach the engine only through `IReplaySource`, so a recorded interactive session replays to the same state; no second entry point may exist.
+- Input events must be persisted with symbolic key and button names, never platform scancodes, so a session recorded under one backend reproduces under another.
+- Translating an input event into application meaning (a click becoming a toggled cell) must happen downstream of the replay recorder, so a replay stores the input and regenerates what it caused.
+- A bad input payload, or a key or button name that no key or button goes by, must raise one specific, catchable error type, the same type for every backend.
+- Polling an input backend must reach an empty queue, so a caller draining it between ticks terminates; a backend reading live state rather than a queue must latch what it has already reported.
+- An input backend must declare which devices it can report at all, and must never report an event for a device it does not claim.
+- Two backends over one framework must never poll that framework's event queue independently; where a framework has a single queue, exactly one place may drain it and route what it finds.
 
 ## Should have
 
 - No RNG/PRNG in the engine, and no reserved field held aside for one later.
-- Live/interactive input capture (as opposed to a hand-authored input script) should stay out of scope until the engine gains a live input source.
 - The GNU coverage badge should be driven toward 100%; the LLVM branch percentage should be treated as informational only, since LLVM's `gcov` emulation can't tag compiler-generated exception-unwind branches the way GCC's can.
 - A feature's diff should go through independent review passes (reuse, simplification, efficiency, altitude) before being considered done, with rationale recorded for any flagged item deliberately left alone.
 - Comments should default to absent, added only when the *why* is non-obvious (a hidden constraint, a subtle invariant, a workaround, surprising behavior), except for Doxygen `@brief`/`@param`/`@return` blocks on public API surface (interfaces, classes, public methods), which document the *what* for generated reference docs and are kept regardless.
@@ -65,11 +74,14 @@ Requirements for the Antwika project, gathered from `README.md`, `blog/001-build
 ## Won't have
 
 - The engine won't include RNG/PRNG support in its current scope.
-- The engine won't support capturing live/interactive input into a replay in its current scope; the current replay input is a hand-authored script.
 - MinGW builds won't carry coverage instrumentation (`--coverage` isn't supported by that toolchain).
 - An index over replay events (to avoid the linear scan per tick in `ReplaySource::eventsFor()`) won't be built until replays are long enough for it to matter.
 - Graphics backends won't be loadable at runtime; exactly one is compiled and linked per build, selected by the `ANTWIKA_GFX_BACKEND` CMake variable and the matching `gfx_backend` Conan option.
 - The graphics abstraction won't include GPU, shader, 3D or texture APIs in its current scope; drawing is limited to clearing, filling rectangles and text in the one built-in font.
 - The graphics abstraction won't load fonts, or offer any font beyond the built-in fixed-cell one, since a second font implies asset loading and per-backend metrics that nothing needs yet.
-- `antwika::gfx` won't report keyboard or pointer input in its current scope, since capturing live input into a replay is itself out of scope.
+- `antwika::gfx` won't report keyboard or pointer input; that travels through `antwika::input`, which does not depend on `antwika::gfx`, so reading input never requires opening a window.
+- Input backends won't be loadable at runtime, for the same reasons graphics backends aren't.
+- The input abstraction won't cover text or IME input, cursor capture or warping, gamepads, or touch, and won't say which window an event arrived at, since every application here has one window.
+- `antwika::input` won't fold input events into held device state or bind them to named actions in its current scope; an application that needs "is this button down" derives it from the edges it already receives.
+- The raylib input backend won't report a keyboard in its current scope, and says so through its capabilities rather than claiming a device whose events never arrive.
 - `Scheduler` won't include priority aging or anti-starvation: a continuous stream of higher-priority jobs can, by design, keep a lower-priority job pending indefinitely, since unconditional priority respect is the requirement, not a bug to work around.

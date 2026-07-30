@@ -1,5 +1,7 @@
 #include "antwika/life/Life.hpp"
 
+#include <memory>
+
 #include <antwika/ecs/SystemScheduler.hpp>
 #include <antwika/ecs/World.hpp>
 #include <antwika/engine/Engine.hpp>
@@ -46,7 +48,8 @@ namespace antwika::life
         std::uint32_t height,
         std::vector<std::reference_wrapper<ISystem>> observers,
         std::optional<antwika::time::Tick> maxTicks,
-        ITickEventSink *replayRecorder)
+        ITickEventSink *replayRecorder,
+        const TickSinkFactory &extraSink)
     {
         EventDispatcher dispatcher({eventSink});
 
@@ -70,6 +73,16 @@ namespace antwika::life
 
         std::vector<std::reference_wrapper<ITickEventSink>> timedSinks{
             boardSink, stopSignal};
+
+        // Held out here rather than inside the if.
+        // The sink has to outlive the reference the dispatcher keeps.
+        std::unique_ptr<ITickEventSink> extra;
+        if (extraSink)
+        {
+            extra = extraSink(world, grid);
+            timedSinks.push_back(*extra);
+        }
+
         if (replayRecorder != nullptr)
         {
             timedSinks.push_back(*replayRecorder);

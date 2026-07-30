@@ -36,13 +36,6 @@
         "name": "life.toggle_cell",
         "payload": "{\"x\":2,\"y\":2}"
       }
-    },
-    {
-      "tick": 130,
-      "event": {
-        "name": "engine.stop",
-        "payload": ""
-      }
     }
   ]
 }

@@ -2,21 +2,26 @@ find_package(GTest REQUIRED)
 
 add_executable(antwika_life_tests
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/Board.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/BoardLayout.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/BoardScene.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/BoardSink.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/Grid.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/Life.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/LifeSystem.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/PointerToggleSink.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/PrintSystem.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/RenderSystem.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/TickPacer.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/WindowInputSource.cpp
+    BoardLayoutTest.cpp
     BoardSceneTest.cpp
     BoardSinkTest.cpp
     BoardTest.cpp
     BootstrapTest.cpp
     GridTest.cpp
     LifeSystemTest.cpp
+    PointerReplayIntegrationTest.cpp
+    PointerToggleSinkTest.cpp
     PrintSystemTest.cpp
     RenderDeterminismTest.cpp
     RenderSystemTest.cpp
@@ -36,6 +41,9 @@ target_link_libraries(antwika_life_tests
         antwika::engine
         antwika::gfx
         antwika::gfx::tests::mocks
+        antwika::input
+        antwika::input::tests::fakes
+        antwika::input::tests::mocks
         antwika::log::tests::mocks
         antwika::replay
         antwika::time::tests::fakes
