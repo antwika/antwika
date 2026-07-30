@@ -1,6 +1,5 @@
 #include "antwika/task_worker/TaskWorker.hpp"
 
-#include <array>
 #include <cstdint>
 #include <cstdlib>
 #include <exception>
@@ -39,9 +38,6 @@ namespace
     constexpr std::string_view kDemoReplayPath =
         ANTWIKA_TASK_WORKER_DEMO_REPLAY_PATH;
 
-    constexpr std::array<std::string_view, 1> kSelfGeneratedEventNames{
-        "Running Antwika TaskWorker",
-    };
 } // namespace
 
 int main(int argc, char **argv)
@@ -89,9 +85,7 @@ int main(int argc, char **argv)
     if (options.recordPath)
     {
         antwika::replay::saveReplayFile(
-            replayRecorder.getEvents(),
-            *options.recordPath,
-            kSelfGeneratedEventNames);
+            replayRecorder.getEvents(), *options.recordPath);
     }
 
     return exitCode;

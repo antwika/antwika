@@ -9,6 +9,7 @@
 #include <antwika/event/Event.hpp>
 #include <antwika/event/EventDispatcher.hpp>
 #include <antwika/event/TickedEventDispatcher.hpp>
+#include <antwika/log/Level.hpp>
 #include <antwika/replay/EngineLoop.hpp>
 
 #include "antwika/life/BoardSink.hpp"
@@ -24,20 +25,20 @@ using antwika::engine::StopSignal;
 using antwika::event::Event;
 using antwika::event::EventDispatcher;
 using antwika::event::TickedEventDispatcher;
+using antwika::log::Level;
 using antwika::replay::EngineLoop;
 
 namespace antwika::life
 {
 
-    Life::Life(IEngine &engine, IEventDispatcher &dispatcher)
-        : engine(engine), dispatcher(dispatcher)
+    Life::Life(IEngine &engine, ILogger &logger)
+        : engine(engine), logger(logger)
     {
     }
 
     void Life::run()
     {
-        dispatcher.dispatch(
-            Event{.name = events::kStarted}); // GCOVR_EXCL_LINE
+        logger.log(Level::Info, "Running Antwika Life");
         engine.start();
     }
 
@@ -99,7 +100,7 @@ namespace antwika::life
         TickedEventDispatcher tickedDispatcher(dispatcher, timedSinks);
 
         Engine engine(logger, tickedDispatcher);
-        Life life(engine, tickedDispatcher);
+        Life life(engine, logger);
         life.run();
 
         EngineLoop loop(engine, tickedDispatcher, inputSource);

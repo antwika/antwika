@@ -310,8 +310,7 @@ TEST(ReplayIntegrationTest, RecordedEventsHoldOnlyTheRoomsOwnInput)
         recorded,
         [](const TickEvent &event)
         {
-            return event.event.name == antwika::engine::events::kTick
-                   || event.event.name == "Running Antwika Poker";
+            return event.event.name == antwika::engine::events::kTick;
         });
 
     EXPECT_EQ(recorded, script);
@@ -341,8 +340,7 @@ TEST(ReplayIntegrationTest, ReplayReproducesASessionEndedByClosingTheWindow)
         recorded,
         [](const TickEvent &event)
         {
-            return event.event.name == antwika::engine::events::kTick
-                   || event.event.name == "Running Antwika Poker";
+            return event.event.name == antwika::engine::events::kTick;
         });
     EXPECT_TRUE(
         std::ranges::any_of(

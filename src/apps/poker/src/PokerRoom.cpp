@@ -21,6 +21,7 @@
 #include <antwika/holdem/SplitMix64Rng.hpp>
 #include <antwika/holdem/Table.hpp>
 #include <antwika/holdem/TableRunner.hpp>
+#include <antwika/log/Level.hpp>
 #include <antwika/log/Logger.hpp>
 #include <antwika/replay/EngineLoop.hpp>
 
@@ -50,6 +51,7 @@ namespace antwika::poker
     using antwika::holdem::SplitMix64Rng;
     using antwika::holdem::Table;
     using antwika::holdem::TableRunner;
+    using antwika::log::Level;
     using antwika::log::Logger;
     using antwika::replay::EngineLoop;
 
@@ -79,15 +81,14 @@ namespace antwika::poker
         }
     } // namespace
 
-    PokerRoom::PokerRoom(IEngine &engine, IEventDispatcher &dispatcher)
-        : engine(engine), dispatcher(dispatcher)
+    PokerRoom::PokerRoom(IEngine &engine, ILogger &logger)
+        : engine(engine), logger(logger)
     {
     }
 
     void PokerRoom::run()
     {
-        dispatcher.dispatch(
-            Event{.name = "Running Antwika Poker"}); // GCOVR_EXCL_LINE
+        logger.log(Level::Info, "Running Antwika Poker");
         engine.start();
     }
 
@@ -174,7 +175,7 @@ namespace antwika::poker
         TickedEventDispatcher tickedDispatcher(dispatcher, timedSinks);
 
         Engine engine(logger, tickedDispatcher);
-        PokerRoom room(engine, tickedDispatcher);
+        PokerRoom room(engine, logger);
         room.run();
 
         EngineLoop loop(engine, tickedDispatcher, *source);

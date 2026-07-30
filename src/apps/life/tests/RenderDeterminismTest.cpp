@@ -72,10 +72,6 @@ namespace
     // So the script deliberately never dispatches engine.stop itself.
     constexpr antwika::time::Tick kTickClosedOn = 4;
 
-    constexpr std::array<std::string_view, 1> kSelfGeneratedEventNames{
-        antwika::life::events::kStarted,
-    };
-
     std::vector<TickEvent> gliderSeed()
     {
         std::vector<TickEvent> script;
@@ -162,9 +158,7 @@ TEST(
         // Through the real save, for the filtering main.cpp relies on.
         // engine.tick must never be fed back in as input.
         antwika::replay::saveReplayFile(
-            replayRecorder.getEvents(),
-            replayFile.string(),
-            kSelfGeneratedEventNames);
+            replayRecorder.getEvents(), replayFile.string());
     }
 
     // The recording must say the run was stopped, and say when.

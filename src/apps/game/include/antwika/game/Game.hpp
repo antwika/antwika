@@ -33,18 +33,23 @@ namespace antwika::game
     using antwika::replay::IReplaySource;
 
     /**
-     * @brief Announces game startup and starts the engine.
+     * @brief Announces the run in the log and starts the engine.
+     *
+     * The announcement is a log line rather than an event, because
+     * nothing consumes it: as an event, every app dispatched one and then
+     * stripped it by name again before writing a recording, since
+     * persisting it would make a replay dispatch it twice.
      */
     class Game final
     {
     public:
         /**
-         * @brief Construct the game over its engine and event dispatcher.
+         * @brief Construct the game over its engine and logger.
          * @param engine Engine started by run().
-         * @param dispatcher Dispatcher used to announce the game is
+         * @param logger Receives the announcement that the game is
          * running.
          */
-        explicit Game(IEngine &engine, IEventDispatcher &dispatcher);
+        explicit Game(IEngine &engine, ILogger &logger);
 
         Game(const Game &) = delete;
         Game(Game &&) = delete;
@@ -53,13 +58,13 @@ namespace antwika::game
         Game &operator=(Game &&) = delete;
 
         /**
-         * @brief Dispatch a startup event and start the engine.
+         * @brief Log that the game is running and start the engine.
          */
         void run();
 
     private:
         IEngine &engine;
-        IEventDispatcher &dispatcher;
+        ILogger &logger;
     };
 
     /**

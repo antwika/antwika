@@ -76,10 +76,6 @@ namespace
     constexpr antwika::time::Tick kMaxTicks = 40;
     constexpr WindowId kWindow{7};
 
-    constexpr std::array<std::string_view, 1> kSelfGeneratedEventNames{
-        antwika::game::events::kStarted,
-    };
-
     // Removes its backing file on scope exit.
     class ScratchFile
     {
@@ -294,7 +290,7 @@ TEST(ReplayDeterminismTest, ARecordedRunReplaysToTheSameState)
 
     const ScratchFile file("antwika-game-determinism.replay");
     antwika::replay::saveReplayFile(
-        live.recorded, file.name(), kSelfGeneratedEventNames);
+        live.recorded, file.name());
     auto loaded = antwika::replay::loadReplayFile(file.name());
 
     ReplaySource replayedSource(std::move(loaded));
@@ -335,7 +331,7 @@ TEST(ReplayDeterminismTest, TheRecordingHoldsClicksAndNoDerivedPlacement)
 
     const ScratchFile file("antwika-game-recording.replay");
     antwika::replay::saveReplayFile(
-        result.recorded, file.name(), kSelfGeneratedEventNames);
+        result.recorded, file.name());
     const auto loaded = antwika::replay::loadReplayFile(file.name());
 
     const InputEventCodec codec;
@@ -343,7 +339,6 @@ TEST(ReplayDeterminismTest, TheRecordingHoldsClicksAndNoDerivedPlacement)
     for (const auto &event : loaded)
     {
         EXPECT_NE(event.event.name, antwika::engine::events::kTick);
-        EXPECT_NE(event.event.name, antwika::game::events::kStarted);
 
         // Nothing named game.place_* may ever appear here.
         EXPECT_EQ(event.event.name.rfind("game.place", 0), std::string::npos)
@@ -394,7 +389,7 @@ TEST(ReplayDeterminismTest, ClosingTheWindowEndsTheRunAndReplaysTheSame)
 
     const ScratchFile file("antwika-game-close.replay");
     antwika::replay::saveReplayFile(
-        live.recorded, file.name(), kSelfGeneratedEventNames);
+        live.recorded, file.name());
     auto loaded = antwika::replay::loadReplayFile(file.name());
 
     // Replayed under a source with no window at all.
@@ -421,7 +416,7 @@ TEST(ReplayDeterminismTest, AToolbarClickReplaysToTheSameCamera)
 
     const ScratchFile file("antwika-game-toolbar.replay");
     antwika::replay::saveReplayFile(
-        live.recorded, file.name(), kSelfGeneratedEventNames);
+        live.recorded, file.name());
     auto loaded = antwika::replay::loadReplayFile(file.name());
 
     // Nothing about a button may be in the file.

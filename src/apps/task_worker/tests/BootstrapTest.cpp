@@ -301,9 +301,6 @@ TEST(BootstrapTest, Bootstrap_ForwardsDispatchedEventsToATickEventRecorder)
         (std::vector<TickEvent>{
             TickEvent{
                 .tick = 0,
-                .event = Event{.name = "Running Antwika TaskWorker"}},
-            TickEvent{
-                .tick = 0,
                 .event = Event{
                     .name = kTaskSubmit,
                     .payload = R"({"id":1,"priority":1,)"

@@ -82,10 +82,6 @@ namespace
     // Ten pixels a cell, so a coordinate is its cell with a five after.
     constexpr Size kCanvas{.width = 80, .height = 80};
 
-    constexpr std::array<std::string_view, 1> kSelfGeneratedEventNames{
-        antwika::life::events::kStarted,
-    };
-
     constexpr InputCapabilities kPointerOnly{
         .keyboard = false, .pointer = true};
 
@@ -230,9 +226,7 @@ TEST(PointerReplayIntegrationTest, RecordingADragReplaysToTheSameBoard)
 
         // Through the real save, for the filtering main.cpp relies on.
         antwika::replay::saveReplayFile(
-            replayRecorder.getEvents(),
-            replayFile.string(),
-            kSelfGeneratedEventNames);
+            replayRecorder.getEvents(), replayFile.string());
     }
 
     ASSERT_TRUE(anythingAlive(liveBoard));

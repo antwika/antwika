@@ -7,6 +7,7 @@
 #include <antwika/event/Event.hpp>
 #include <antwika/event/EventDispatcher.hpp>
 #include <antwika/event/TickedEventDispatcher.hpp>
+#include <antwika/log/Level.hpp>
 #include <antwika/log/Logger.hpp>
 #include <antwika/replay/EngineLoop.hpp>
 #include <antwika/scheduler/Scheduler.hpp>
@@ -24,6 +25,7 @@ using antwika::engine::StopSignal;
 using antwika::event::Event;
 using antwika::event::EventDispatcher;
 using antwika::event::TickedEventDispatcher;
+using antwika::log::Level;
 using antwika::log::Logger;
 using antwika::replay::EngineLoop;
 using antwika::scheduler::Scheduler;
@@ -31,15 +33,14 @@ using antwika::scheduler::Scheduler;
 namespace antwika::task_worker
 {
 
-    TaskWorker::TaskWorker(IEngine &engine, IEventDispatcher &dispatcher)
-        : engine(engine), dispatcher(dispatcher)
+    TaskWorker::TaskWorker(IEngine &engine, ILogger &logger)
+        : engine(engine), logger(logger)
     {
     }
 
     void TaskWorker::run()
     {
-        dispatcher.dispatch(
-            Event{.name = "Running Antwika TaskWorker"}); // GCOVR_EXCL_LINE
+        logger.log(Level::Info, "Running Antwika TaskWorker");
         engine.start();
     }
 
@@ -107,7 +108,7 @@ namespace antwika::task_worker
         TickedEventDispatcher tickedDispatcher(dispatcher, timedSinks);
 
         Engine engine(logger, tickedDispatcher);
-        TaskWorker taskWorker(engine, tickedDispatcher);
+        TaskWorker taskWorker(engine, logger);
         taskWorker.run();
 
         EngineLoop loop(engine, tickedDispatcher, inputSource);

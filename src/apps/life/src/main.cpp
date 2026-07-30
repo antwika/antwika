@@ -85,9 +85,6 @@ namespace
 
     constexpr std::string_view kDemoReplayPath = ANTWIKA_LIFE_DEMO_REPLAY_PATH;
 
-    constexpr std::array<std::string_view, 1> kSelfGeneratedEventNames{
-        antwika::life::events::kStarted,
-    };
 } // namespace
 
 int main(int argc, char **argv)
@@ -204,9 +201,7 @@ int main(int argc, char **argv)
     if (options.recordPath)
     {
         antwika::replay::saveReplayFile(
-            replayRecorder.getEvents(),
-            *options.recordPath,
-            kSelfGeneratedEventNames);
+            replayRecorder.getEvents(), *options.recordPath);
     }
 
     return exitCode;

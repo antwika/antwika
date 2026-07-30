@@ -1,6 +1,5 @@
 #include <gtest/gtest.h>
 
-#include <array>
 #include <cstdio>
 #include <filesystem>
 #include <fstream>
@@ -170,34 +169,6 @@ TEST(ReplayCliTest, SaveReplayFileFiltersOutBuiltInTicks)
     };
 
     saveReplayFile(events, file.string());
-
-    const auto reloaded = loadReplayFile(file.string());
-    EXPECT_EQ(
-        reloaded,
-        (std::vector<TickEvent>{
-            TickEvent{
-                .tick = 0,
-                .event =
-                    Event{.name = "game.score_increment", .payload = "1"},
-            },
-        }));
-}
-
-TEST(ReplayCliTest, SaveReplayFileFiltersOutExtraSelfGeneratedEventNames)
-{
-    ScratchFile file("antwika_replay_cli_save_extra_test.json");
-    std::vector<TickEvent> events{
-        TickEvent{.tick = 0, .event = Event{.name = "Running Antwika App"}},
-        TickEvent{
-            .tick = 0,
-            .event = Event{.name = "game.score_increment", .payload = "1"},
-        },
-    };
-    constexpr std::array<std::string_view, 1> extraNames{
-        "Running Antwika App",
-    };
-
-    saveReplayFile(events, file.string(), extraNames);
 
     const auto reloaded = loadReplayFile(file.string());
     EXPECT_EQ(

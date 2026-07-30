@@ -7,6 +7,7 @@
 #include <antwika/event/Event.hpp>
 #include <antwika/event/EventDispatcher.hpp>
 #include <antwika/event/TickedEventDispatcher.hpp>
+#include <antwika/log/Level.hpp>
 #include <antwika/replay/EngineLoop.hpp>
 
 #include "antwika/game/Events.hpp"
@@ -24,21 +25,20 @@ using antwika::engine::StopSignal;
 using antwika::event::Event;
 using antwika::event::EventDispatcher;
 using antwika::event::TickedEventDispatcher;
+using antwika::log::Level;
 using antwika::replay::EngineLoop;
 
 namespace antwika::game
 {
 
-    Game::Game(IEngine &engine,
-               IEventDispatcher &dispatcher) : engine(engine),
-                                               dispatcher(dispatcher)
+    Game::Game(IEngine &engine, ILogger &logger)
+        : engine(engine), logger(logger)
     {
     }
 
     void Game::run()
     {
-        dispatcher.dispatch(
-            Event{.name = events::kStarted}); // GCOVR_EXCL_LINE
+        logger.log(Level::Info, "Running Antwika Game");
         engine.start();
     }
 
@@ -115,7 +115,7 @@ namespace antwika::game
         TickedEventDispatcher tickedDispatcher(dispatcher, timedSinks);
 
         Engine engine(logger, tickedDispatcher);
-        Game game(engine, tickedDispatcher);
+        Game game(engine, logger);
         game.run();
 
         EngineLoop loop(engine, tickedDispatcher, inputSource);

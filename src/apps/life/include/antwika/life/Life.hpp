@@ -44,17 +44,22 @@ namespace antwika::life
         std::unique_ptr<ITickEventSink>(World &, const Grid &, DragState &)>;
 
     /**
-     * @brief Announces simulation startup and starts the engine.
+     * @brief Announces the run in the log and starts the engine.
+     *
+     * The announcement is a log line rather than an event, because
+     * nothing consumes it: as an event, every app dispatched one and then
+     * stripped it by name again before writing a recording, since
+     * persisting it would make a replay dispatch it twice.
      */
     class Life final
     {
     public:
         /**
-         * @brief Construct the simulation over its engine and dispatcher.
+         * @brief Construct the simulation over its engine and logger.
          * @param engine Engine started by run().
-         * @param dispatcher Dispatcher used to announce startup.
+         * @param logger Receives the announcement that it is running.
          */
-        explicit Life(IEngine &engine, IEventDispatcher &dispatcher);
+        explicit Life(IEngine &engine, ILogger &logger);
 
         Life(const Life &) = delete;
         Life(Life &&) = delete;
@@ -63,13 +68,13 @@ namespace antwika::life
         Life &operator=(Life &&) = delete;
 
         /**
-         * @brief Dispatch a startup event and start the engine.
+         * @brief Log that the simulation is running and start the engine.
          */
         void run();
 
     private:
         IEngine &engine;
-        IEventDispatcher &dispatcher;
+        ILogger &logger;
     };
 
     /**

@@ -152,10 +152,6 @@ TEST(BootstrapTest, Bootstrap_ForwardsDispatchedEventsToATickEventRecorder)
         (std::vector<TickEvent>{
             TickEvent{
                 .tick = 0,
-                .event = Event{.name = antwika::game::events::kStarted},
-            },
-            TickEvent{
-                .tick = 0,
                 .event = Event{
                     .name = antwika::game::events::kScoreIncrement,
                     .payload = R"({"amount":5})",

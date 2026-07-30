@@ -237,10 +237,6 @@ TEST(BootstrapTest, Bootstrap_ForwardsDispatchedEventsToATickEventRecorder)
         (std::vector<TickEvent>{
             TickEvent{
                 .tick = 0,
-                .event = Event{.name = "Running Antwika Life"},
-            },
-            TickEvent{
-                .tick = 0,
                 .event = Event{
                     .name = antwika::life::events::kToggleCell,
                     .payload = R"({"x":1,"y":2})",

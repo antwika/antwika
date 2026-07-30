@@ -10,6 +10,7 @@
 #include <antwika/log/IAppender.hpp>
 #include <antwika/log/IFormatter.hpp>
 #include <antwika/log/ILogPolicy.hpp>
+#include <antwika/log/ILogger.hpp>
 #include <antwika/replay/IReplaySource.hpp>
 #include <antwika/time/IClock.hpp>
 #include <antwika/time/Tick.hpp>
@@ -27,22 +28,28 @@ namespace antwika::poker
     using antwika::event::ITickEventSink;
     using antwika::log::IAppender;
     using antwika::log::IFormatter;
+    using antwika::log::ILogger;
     using antwika::log::ILogPolicy;
     using antwika::replay::IReplaySource;
     using antwika::time::IClock;
 
     /**
-     * @brief Announces the room opening and starts the engine.
+     * @brief Announces the run in the log and starts the engine.
+     *
+     * The announcement is a log line rather than an event, because
+     * nothing consumes it: as an event, every app dispatched one and then
+     * stripped it by name again before writing a recording, since
+     * persisting it would make a replay dispatch it twice.
      */
     class PokerRoom final
     {
     public:
         /**
-         * @brief Construct the room over its engine and dispatcher.
+         * @brief Construct the room over its engine and logger.
          * @param engine Engine started by run().
-         * @param dispatcher Dispatcher used to announce startup.
+         * @param logger Receives the announcement that it is running.
          */
-        explicit PokerRoom(IEngine &engine, IEventDispatcher &dispatcher);
+        explicit PokerRoom(IEngine &engine, ILogger &logger);
 
         PokerRoom(const PokerRoom &) = delete;
         PokerRoom(PokerRoom &&) = delete;
@@ -51,13 +58,13 @@ namespace antwika::poker
         PokerRoom &operator=(PokerRoom &&) = delete;
 
         /**
-         * @brief Dispatch a startup event and start the engine.
+         * @brief Log that the run is under way and start the engine.
          */
         void run();
 
     private:
         IEngine &engine;
-        IEventDispatcher &dispatcher;
+        ILogger &logger;
     };
 
     /**

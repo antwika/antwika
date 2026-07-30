@@ -1,6 +1,5 @@
 #include "antwika/poker/PokerRoom.hpp"
 
-#include <array>
 #include <cstdlib>
 #include <exception>
 #include <iostream>
@@ -39,10 +38,6 @@ using antwika::time::SystemSleeper;
 namespace
 {
     constexpr std::string_view kDemoReplayPath = ANTWIKA_POKER_DEMO_REPLAY_PATH;
-
-    constexpr std::array<std::string_view, 1> kSelfGeneratedEventNames{
-        "Running Antwika Poker",
-    };
 } // namespace
 
 int main(int argc, char **argv)
@@ -112,9 +107,7 @@ int main(int argc, char **argv)
     if (options.recordPath)
     {
         antwika::replay::saveReplayFile(
-            replayRecorder.getEvents(),
-            *options.recordPath,
-            kSelfGeneratedEventNames);
+            replayRecorder.getEvents(), *options.recordPath);
     }
 
     // A run that threw now says so, rather than always reporting success.

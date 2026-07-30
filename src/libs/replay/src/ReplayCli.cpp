@@ -51,20 +51,13 @@ namespace antwika::replay
     void saveReplayFile(
         std::vector<TickEvent> events,
         const std::string &path,
-        std::span<const std::string_view> extraSelfGeneratedEventNames,
         ReplayWriter::Layout layout)
     {
         std::erase_if(
             events,
-            [extraSelfGeneratedEventNames](const TickEvent &event)
+            [](const TickEvent &event)
             {
-                const auto &name = event.event.name;
-                if (name == antwika::engine::events::kTick)
-                {
-                    return true;
-                }
-                return std::ranges::find(extraSelfGeneratedEventNames, name)
-                       != extraSelfGeneratedEventNames.end();
+                return event.event.name == antwika::engine::events::kTick;
             });
 
         std::ofstream replayFile(path);

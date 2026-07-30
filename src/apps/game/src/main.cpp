@@ -1,6 +1,5 @@
 #include "antwika/game/Game.hpp"
 
-#include <array>
 #include <chrono>
 #include <cstdlib>
 #include <exception>
@@ -8,7 +7,6 @@
 #include <functional>
 #include <iostream>
 #include <string>
-#include <string_view>
 #include <vector>
 
 #include <antwika/ecs/ISystem.hpp>
@@ -38,7 +36,6 @@
 #include <antwika/time/SystemSleeper.hpp>
 
 #include "antwika/game/Camera.hpp"
-#include "antwika/game/Events.hpp"
 #include "antwika/game/GridExtent.hpp"
 #include "antwika/game/GridScene.hpp"
 #include "antwika/game/PathIndex.hpp"
@@ -92,13 +89,6 @@ namespace
     // Neither is available under the headless backend.
     // That build therefore runs until it is interrupted.
     constexpr antwika::input::Key kQuitKey = antwika::input::Key::Escape;
-
-    // Only this app's own announcement is filtered from a recording.
-    // No input.* name may ever join it.
-    // That would stop recording the only input a live run has.
-    constexpr std::array<std::string_view, 1> kSelfGeneratedEventNames{
-        antwika::game::events::kStarted,
-    };
 
     void printSummary(const antwika::game::GameSummary &summary)
     {
@@ -246,9 +236,7 @@ int main(int argc, char **argv)
     if (options.recordPath)
     {
         antwika::replay::saveReplayFile(
-            replayRecorder.getEvents(),
-            *options.recordPath,
-            kSelfGeneratedEventNames);
+            replayRecorder.getEvents(), *options.recordPath);
     }
 
     return exitCode;
