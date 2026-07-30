@@ -132,7 +132,12 @@ namespace antwika::wfc
          */
         [[nodiscard]] const_iterator end() const;
 
-        bool operator==(const Domain &) const = default;
+        /**
+         * @brief Compare two domains by the values they still hold.
+         * @param other The domain to compare with.
+         * @return True if both hold exactly the same values.
+         */
+        [[nodiscard]] bool operator==(const Domain &other) const;
 
     private:
         std::vector<bool> bits;
