@@ -1,6 +1,7 @@
 #include "antwika/input/Key.hpp"
 
 #include <array>
+#include <cstddef>
 #include <string>
 #include <string_view>
 
@@ -105,9 +106,62 @@ namespace antwika::input
             {Key::LeftSuper, "LeftSuper"},
             {Key::RightSuper, "RightSuper"},
         }};
+
+        // A row left out value-initialises a {Key{0}, ""} one instead.
+        // So a forgotten key becomes a second, nameless "A".
+        [[nodiscard]] consteval bool namesEveryKeyExactlyOnce()
+        {
+            for (std::size_t index = 0; index < kKeyCount; ++index)
+            {
+                std::size_t rows = 0;
+
+                for (const auto &entry : kKeyNames)
+                {
+                    if (keyIndex(entry.key) == index)
+                    {
+                        ++rows;
+                    }
+                }
+
+                if (rows != 1)
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        // A repeated name is what would make keyFromString ambiguous.
+        // It would silently turn one key into another across a replay.
+        [[nodiscard]] consteval bool namesEveryKeyDistinctly()
+        {
+            const auto count = kKeyNames.size();
+
+            for (std::size_t left = 0; left < count; ++left)
+            {
+                for (std::size_t right = left + 1; right < count; ++right)
+                {
+                    if (kKeyNames[left].name == kKeyNames[right].name)
+                    {
+                        return false;
+                    }
+                }
+            }
+
+            return true;
+        }
+
+        // The claim the table makes about itself, now checked.
+        static_assert(
+            namesEveryKeyExactlyOnce(),
+            "kKeyNames must name every Key exactly once");
+        static_assert(
+            namesEveryKeyDistinctly(),
+            "kKeyNames must not give two keys the same name");
     } // namespace
 
-    std::string_view toString(Key key) noexcept
+    std::string_view toString(Key key)
     {
         for (const auto &entry : kKeyNames)
         {
@@ -117,7 +171,10 @@ namespace antwika::input
             }
         }
 
-        return "Unknown";
+        // The two directions have to agree on what has no name.
+        // "Unknown" here is a recording keyFromString later refuses.
+        throw InputError(
+            "input: no name for key " + std::to_string(keyIndex(key)));
     }
 
     Key keyFromString(std::string_view name)
