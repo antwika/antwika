@@ -2,8 +2,9 @@
 
 A plan for cutting what a `--record` run writes, by separating the input a run's outcome depends on from the input that merely says where the pointer currently is, and dropping the second category before it ever reaches the recorder.
 
-**Status: proposed.**
-Nothing below has been built.
+**Status: built.**
+Every phase below has landed, including the optional fifth.
+Where the plan turned out to be wrong while it was being built, the text says so under [What changed while building it](#what-changed-while-building-it) rather than being quietly corrected, since the reasoning is the point of keeping this document.
 
 ## Context
 
@@ -282,6 +283,26 @@ Give `ReplayWriter` a constructor taking `enum class Layout { Pretty, Compact }`
 `ReplayReader` needs no change; the schema does not either.
 
 Worth doing after Phases 1-3, not before: it is a constant factor on a number those phases make much smaller.
+
+## What changed while building it
+
+**`Mouse` gained `anyDown()` after all.**
+The plan already expected it, and it is one line over the `std::bitset` that was there.
+
+**The gate calls `beginTick()` on its own `InputState`.**
+Nothing reads the per-tick sums it clears -- only `anyDown()` is asked -- but `Mouse::delta()` and `Mouse::scroll()` accumulate whether or not anybody reads them, and a session long enough to motivate this work is long enough to overflow a `std::int32_t` that nothing ever empties.
+
+**`Layout` is nested inside `ReplayWriter`, not free in the namespace.**
+`ReplayWriter::Layout::Compact` says what it configures at the call site; a bare `Layout` in `antwika::replay` would not.
+
+**Compact saves about a third, not the "roughly 40%" Phase 5 guessed.**
+Measured over a recording of twenty pointer movements: 2,796 bytes pretty against 1,720 compact, so 38% goes.
+The test asserts the third rather than the guess.
+
+**The counts in Phase 4 are now assertions.**
+A `game` session of fifteen wandering movements, a middle-drag and a zoom records 21 input events ungated and 8 gated.
+The `life` equivalent goes from 9 movements to 6, since four of its nine are mid-drag and have to survive.
+Both numbers are in tests rather than in this document, so they cannot quietly rot.
 
 ## What this costs
 

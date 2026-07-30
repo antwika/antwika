@@ -39,7 +39,8 @@ namespace antwika::replay
     void saveReplayFile(
         std::vector<TickEvent> events,
         const std::string &path,
-        std::span<const std::string_view> extraSelfGeneratedEventNames)
+        std::span<const std::string_view> extraSelfGeneratedEventNames,
+        ReplayWriter::Layout layout)
     {
         std::erase_if(
             events,
@@ -55,7 +56,7 @@ namespace antwika::replay
             });
 
         std::ofstream replayFile(path);
-        ReplayWriter writer;
+        const ReplayWriter writer(layout);
         writer.write(events, replayFile);
     }
 

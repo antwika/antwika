@@ -18,6 +18,7 @@
 #include <antwika/event/TickEventRecorder.hpp>
 #include <antwika/gfx/SelectedBackend.hpp>
 #include <antwika/gfx/WindowDesc.hpp>
+#include <antwika/input/IdleMotionSource.hpp>
 #include <antwika/input/InputEventCodec.hpp>
 #include <antwika/input/LiveInputSource.hpp>
 #include <antwika/input/SelectedInputBackend.hpp>
@@ -45,6 +46,7 @@ using antwika::ecs::World;
 using antwika::event::EventRecorder;
 using antwika::event::TickEventRecorder;
 using antwika::gfx::WindowDesc;
+using antwika::input::IdleMotionSource;
 using antwika::input::InputEventCodec;
 using antwika::input::LiveInputSource;
 using antwika::life::BoardScene;
@@ -156,7 +158,14 @@ int main(int argc, char **argv)
             seeded = &*liveSource;
         }
 
-        WindowInputSource source(*seeded, *backend, window->id());
+        // Movement with the button up toggles nothing.
+        // So it is held back rather than recorded, unlike mid-drag.
+        // CoalescingPointerSource deliberately does not join it here.
+        // A drag toggles every cell it crosses.
+        // Thinning a run of movement inside a tick would skip cells.
+        IdleMotionSource gated(*seeded, codec);
+
+        WindowInputSource source(gated, *backend, window->id());
 
         // The run has no end of its own any more.
         // It goes on until the window closes, or a replay says to stop.

@@ -83,6 +83,11 @@ namespace antwika::input
         return named(index) && down.test(index);
     }
 
+    bool Mouse::anyDown() const noexcept
+    {
+        return down.any();
+    }
+
     bool Mouse::wasPressed(MouseButton button) const noexcept
     {
         const auto index = mouseButtonIndex(button);
