@@ -214,15 +214,15 @@ TEST(PointerReplayIntegrationTest, RecordingADragReplaysToTheSameBoard)
         LiveInputSource source(fileSource, backend, codec);
 
         liveBoard = antwika::life::bootstrap(
-            logger,
-            eventSink,
-            source,
-            kWidth,
-            kHeight,
-            {},
-            kMaxTicks,
-            &replayRecorder,
-            toggleSinkFactory(codec));
+            antwika::life::LifeConfig{
+                .logger = logger,
+                .eventSink = eventSink,
+                .inputSource = source,
+                .width = kWidth,
+                .height = kHeight,
+                .maxTicks = kMaxTicks,
+                .replayRecorder = replayRecorder,
+                .extraSink = toggleSinkFactory(codec)});
 
         // Through the real save, for the filtering main.cpp relies on.
         antwika::replay::saveReplayFile(
@@ -249,15 +249,14 @@ TEST(PointerReplayIntegrationTest, RecordingADragReplaysToTheSameBoard)
     ReplaySource replaySource(recorded);
 
     const auto replayedBoard = antwika::life::bootstrap(
-        logger,
-        eventSink,
-        replaySource,
-        kWidth,
-        kHeight,
-        {},
-        kMaxTicks,
-        nullptr,
-        toggleSinkFactory(codec));
+        antwika::life::LifeConfig{
+            .logger = logger,
+            .eventSink = eventSink,
+            .inputSource = replaySource,
+            .width = kWidth,
+            .height = kHeight,
+            .maxTicks = kMaxTicks,
+            .extraSink = toggleSinkFactory(codec)});
 
     EXPECT_EQ(replayedBoard, liveBoard);
 }
@@ -284,15 +283,14 @@ TEST(PointerReplayIntegrationTest, ADragWithinOneTickDrawsWhatItCrossed)
 
     // One tick only, so what is alive is what the drag drew.
     const auto board = antwika::life::bootstrap(
-        logger,
-        eventSink,
-        source,
-        kWidth,
-        kHeight,
-        {},
-        2,
-        nullptr,
-        toggleSinkFactory(codec));
+        antwika::life::LifeConfig{
+            .logger = logger,
+            .eventSink = eventSink,
+            .inputSource = source,
+            .width = kWidth,
+            .height = kHeight,
+            .maxTicks = 2,
+            .extraSink = toggleSinkFactory(codec)});
 
     // A 2x2 block is a still life.
     // So the generation that ran during that tick left it as drawn.
@@ -360,15 +358,15 @@ TEST(PointerReplayIntegrationTest, HoldingTheButtonStopsTheGenerations)
     std::vector<std::reference_wrapper<ISystem>> observers{recorder};
 
     antwika::life::bootstrap(
-        logger,
-        eventSink,
-        source,
-        kWidth,
-        kHeight,
-        observers,
-        kMaxTicks,
-        nullptr,
-        toggleSinkFactory(codec));
+        antwika::life::LifeConfig{
+            .logger = logger,
+            .eventSink = eventSink,
+            .inputSource = source,
+            .width = kWidth,
+            .height = kHeight,
+            .observers = observers,
+            .maxTicks = kMaxTicks,
+            .extraSink = toggleSinkFactory(codec)});
 
     const auto &boards = recorder.perTick();
     ASSERT_EQ(boards.size(), 7u);
@@ -433,15 +431,15 @@ namespace
                  : static_cast<antwika::replay::IReplaySource &>(live);
 
         auto board = antwika::life::bootstrap(
-            logger,
-            eventSink,
-            source,
-            kWidth,
-            kHeight,
-            {},
-            kMaxTicks,
-            &replayRecorder,
-            toggleSinkFactory(codec));
+            antwika::life::LifeConfig{
+                .logger = logger,
+                .eventSink = eventSink,
+                .inputSource = source,
+                .width = kWidth,
+                .height = kHeight,
+                .maxTicks = kMaxTicks,
+                .replayRecorder = replayRecorder,
+                .extraSink = toggleSinkFactory(codec)});
 
         return WanderResult{
             .board = std::move(board),

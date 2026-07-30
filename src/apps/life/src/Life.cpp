@@ -42,21 +42,14 @@ namespace antwika::life
         engine.start();
     }
 
-    Board bootstrap(
-        ILogger &logger,
-        IEventSink &eventSink,
-        IReplaySource &inputSource,
-        std::uint32_t width,
-        std::uint32_t height,
-        std::vector<std::reference_wrapper<ISystem>> observers,
-        std::optional<antwika::time::Tick> maxTicks,
-        ITickEventSink *replayRecorder,
-        const TickSinkFactory &extraSink)
+    Board bootstrap(const LifeConfig &config)
     {
-        EventDispatcher dispatcher({eventSink});
+        ILogger &logger = config.logger;
+
+        EventDispatcher dispatcher({config.eventSink});
 
         World world(logger);
-        Grid grid(world, width, height);
+        Grid grid(world, config.width, config.height);
         world.commit();
 
         SystemScheduler scheduler;
@@ -73,7 +66,7 @@ namespace antwika::life
         scheduler.addSystem(lifePhase, pausedLife);
 
         const auto observePhase = scheduler.createPhase("observe");
-        for (auto &observer : observers)
+        for (auto &observer : config.observers)
         {
             scheduler.addSystem(observePhase, observer.get());
         }
@@ -87,15 +80,15 @@ namespace antwika::life
         // Held out here rather than inside the if.
         // The sink has to outlive the reference the dispatcher keeps.
         std::unique_ptr<ITickEventSink> extra;
-        if (extraSink)
+        if (config.extraSink)
         {
-            extra = extraSink(world, grid, drag);
+            extra = config.extraSink(world, grid, drag);
             timedSinks.push_back(*extra);
         }
 
-        if (replayRecorder != nullptr)
+        if (config.replayRecorder.has_value())
         {
-            timedSinks.push_back(*replayRecorder);
+            timedSinks.push_back(config.replayRecorder->get());
         }
         TickedEventDispatcher tickedDispatcher(dispatcher, timedSinks);
 
@@ -103,8 +96,8 @@ namespace antwika::life
         Life life(engine, logger);
         life.run();
 
-        EngineLoop loop(engine, tickedDispatcher, inputSource);
-        loop.run(stopSignal, maxTicks);
+        EngineLoop loop(engine, tickedDispatcher, config.inputSource);
+        loop.run(stopSignal, config.maxTicks);
 
         return readBoard(world, grid);
     }

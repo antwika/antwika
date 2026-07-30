@@ -78,13 +78,78 @@ namespace antwika::life
     };
 
     /**
+     * @brief Everything one run of the simulation is wired out of.
+     *
+     * A struct with designated initialisers rather than a parameter list,
+     * because the list had reached nine positional arguments, two of them
+     * unlabelled numbers next to each other and one a nullable pointer.
+     * A name per argument is what makes a wrong one a compile error
+     * rather than a silently different run.
+     */
+    struct LifeConfig
+    {
+        /** @brief Receives the run's diagnostics. */
+        ILogger &logger;
+
+        /** @brief Receives every dispatched event. */
+        IEventSink &eventSink;
+
+        /** @brief Supplies each tick's events, live or replayed. */
+        IReplaySource &inputSource;
+
+        /** @brief Number of columns in the board. */
+        std::uint32_t width;
+
+        /** @brief Number of rows in the board. */
+        std::uint32_t height;
+
+        /**
+         * @brief Extra systems registered into an "observe" phase.
+         *
+         * The phase runs after "life" every tick, and each system is
+         * fully independent of both LifeSystem and each other (e.g.
+         * PrintSystem). Empty for callers that only need the final Board.
+         */
+        std::vector<std::reference_wrapper<ISystem>> observers = {};
+
+        /**
+         * @brief Safety cap on how many ticks to run.
+         *
+         * Reached without engine.stop, the run gives up rather than going
+         * on forever. Production callers can leave this unset to run
+         * uncapped; tests should always set it.
+         */
+        std::optional<antwika::time::Tick> maxTicks = std::nullopt;
+
+        /**
+         * @brief Sink receiving every dispatched event, stamped with its
+         * tick.
+         *
+         * What a caller wanting to persist a `--record` file registers,
+         * since a run's actual length is not known ahead of time.
+         */
+        std::optional<std::reference_wrapper<ITickEventSink>>
+            replayRecorder = std::nullopt;
+
+        /**
+         * @brief Factory for one more tick sink.
+         *
+         * Called once with the World, Grid and DragState bootstrap()
+         * owns. A sink folding events into the board needs all three, and
+         * none of them exists until then -- what main.cpp uses to add
+         * PointerToggleSink.
+         */
+        TickSinkFactory extraSink = {};
+    };
+
+    /**
      * @brief Wires the ECS world, engine, event, and replay collaborators
      * together, boots the simulation, then drives the tick loop until an
      * engine.stop event is dispatched.
      *
-     * Sources each tick's events from inputSource -- typically
-     * events::kToggleCell, seeding the initial pattern -- until it
-     * dispatches engine.stop. A hand-scripted "live" run and a loaded
+     * Sources each tick's events from the config's inputSource --
+     * typically events::kToggleCell, seeding the initial pattern -- until
+     * it dispatches engine.stop. A hand-scripted "live" run and a loaded
      * replay both use this same function; they differ only in what
      * inputSource was built from, the same contract apps/game's
      * bootstrap() follows for its own state.
@@ -93,38 +158,9 @@ namespace antwika::life
      * composition root that also has to open a window needs one before
      * bootstrap() is ever called (see main.cpp).
      *
-     * @param logger Receives the run's diagnostics.
-     * @param eventSink Receives every dispatched event.
-     * @param inputSource Supplies each tick's events, live or replayed.
-     * @param width Number of columns in the board.
-     * @param height Number of rows in the board.
-     * @param observers Extra systems registered into an "observe" phase
-     * that runs after "life" every tick -- each is fully independent of
-     * both LifeSystem and each other (e.g. PrintSystem). Defaults to
-     * none, for callers (like the tests) that only need the final Board.
-     * @param maxTicks Optional safety cap on how many ticks to run before
-     * giving up if engine.stop is never dispatched. Production callers
-     * can leave this unset to run uncapped; tests should always pass one.
-     * @param replayRecorder Optional sink that, if provided, receives
-     * every dispatched event stamped with its tick -- what a caller
-     * wanting to persist a `--record` file should register, since a run's
-     * actual length is no longer known ahead of time. Defaults to none.
-     * @param extraSink Optional factory for one more tick sink, called
-     * once with the World, Grid and DragState this function owns. A sink
-     * folding events into the board needs all three, and none exists
-     * until here -- what main.cpp uses to add PointerToggleSink.
-     * Defaults to none.
+     * @param config What the run is wired out of.
      * @return The resulting Board, for callers (main.cpp, tests).
      */
-    Board bootstrap(
-        ILogger &logger,
-        IEventSink &eventSink,
-        IReplaySource &inputSource,
-        std::uint32_t width,
-        std::uint32_t height,
-        std::vector<std::reference_wrapper<ISystem>> observers = {},
-        std::optional<antwika::time::Tick> maxTicks = std::nullopt,
-        ITickEventSink *replayRecorder = nullptr,
-        const TickSinkFactory &extraSink = {});
+    Board bootstrap(const LifeConfig &config);
 
 } // namespace antwika::life

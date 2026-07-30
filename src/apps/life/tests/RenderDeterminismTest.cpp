@@ -146,14 +146,15 @@ TEST(
 
         std::vector<std::reference_wrapper<ISystem>> observers{renderSystem};
         liveBoard = antwika::life::bootstrap(
-            logger,
-            eventSink,
-            source,
-            kWidth,
-            kHeight,
-            observers,
-            kMaxTicks,
-            &replayRecorder);
+            antwika::life::LifeConfig{
+                .logger = logger,
+                .eventSink = eventSink,
+                .inputSource = source,
+                .width = kWidth,
+                .height = kHeight,
+                .observers = observers,
+                .maxTicks = kMaxTicks,
+                .replayRecorder = replayRecorder});
 
         // Through the real save, for the filtering main.cpp relies on.
         // engine.tick must never be fed back in as input.
@@ -180,7 +181,14 @@ TEST(
 
     std::vector<std::reference_wrapper<ISystem>> observers{renderSystem};
     const auto replayedBoard = antwika::life::bootstrap(
-        logger, eventSink, source, kWidth, kHeight, observers, kMaxTicks);
+        antwika::life::LifeConfig{
+            .logger = logger,
+            .eventSink = eventSink,
+            .inputSource = source,
+            .width = kWidth,
+            .height = kHeight,
+            .observers = observers,
+            .maxTicks = kMaxTicks});
 
     EXPECT_EQ(replayedBoard, liveBoard);
 

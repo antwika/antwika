@@ -192,22 +192,28 @@ int main(int argc, char **argv)
                 "press Ctrl+C to stop");
         }
 
-        antwika::life::bootstrap(
-            logger,
-            eventSink,
-            source,
-            kBoardWidth,
-            kBoardHeight,
-            observers,
-            std::nullopt,
-            // Registered only when there is a file to write.
-            // A run with no end would otherwise keep every event, forever.
-            options.recordPath ? &replayRecorder : nullptr,
-            [&codec](World &world, const Grid &grid, DragState &drag)
+        antwika::life::LifeConfig config{
+            .logger = logger,
+            .eventSink = eventSink,
+            .inputSource = source,
+            .width = kBoardWidth,
+            .height = kBoardHeight,
+            .observers = observers,
+            .extraSink =
+                [&codec](World &world, const Grid &grid, DragState &drag)
             {
                 return std::make_unique<PointerToggleSink>(
                     world, grid, codec, kWindowSize, drag);
-            });
+            }};
+
+        // Registered only when there is a file to write.
+        // A run with no end would otherwise keep every event, forever.
+        if (options.recordPath)
+        {
+            config.replayRecorder = replayRecorder;
+        }
+
+        antwika::life::bootstrap(config);
     }
     catch (const std::exception &error)
     {

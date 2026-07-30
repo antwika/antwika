@@ -39,13 +39,13 @@ namespace
         EventRecorder eventSink;
 
         return antwika::life::bootstrap(
-            logger,
-            eventSink,
-            source,
-            kWidth,
-            kHeight,
-            {},
-            kMaxTicks);
+            antwika::life::LifeConfig{
+                .logger = logger,
+                .eventSink = eventSink,
+                .inputSource = source,
+                .width = kWidth,
+                .height = kHeight,
+                .maxTicks = kMaxTicks});
     }
 } // namespace
 
