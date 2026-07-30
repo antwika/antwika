@@ -1,18 +1,14 @@
 #include "antwika/holdem/Table.hpp"
 
 #include <algorithm>
-#include <array>
 #include <cstddef>
 #include <cstdint>
-#include <iterator>
 #include <optional>
-#include <span>
 #include <utility>
 #include <vector>
 
 #include "antwika/holdem/Card.hpp"
 #include "antwika/holdem/Chips.hpp"
-#include "antwika/holdem/HandEvaluator.hpp"
 #include "antwika/holdem/HandResult.hpp"
 #include "antwika/holdem/HandValue.hpp"
 #include "antwika/holdem/IllegalActionError.hpp"
@@ -23,6 +19,7 @@
 #include "antwika/holdem/TableStateError.hpp"
 
 #include "Pots.hpp"
+#include "Showdown.hpp"
 
 namespace antwika::holdem
 {
@@ -502,51 +499,16 @@ namespace antwika::holdem
         // The survivor is the only seat eligible for any layer.
         // So the split hands them their own uncalled bet back.
         // No separate step is needed for it.
-        const std::vector<HandValue> values(seats.size(), HandValue{});
-        finishHand(values, {});
+        auto scores = scoreWithoutShowdown(seats.size());
+        finishHand(scores.values, std::move(scores.entries));
     }
 
     void Table::finishWithShowdown()
     {
         flow.toShowdown();
 
-        const auto &board = flow.board();
-        std::vector<HandValue> values(seats.size(), HandValue{});
-        std::vector<ShowdownEntry> entries;
-        for (std::size_t index = 0; index < seats.size(); ++index)
-        {
-            const auto &seat = seats[index];
-            if (!seat.inHand)
-            {
-                continue;
-            }
-
-            std::array<Card, kHoleCardCount + kBoardSize> cards{};
-            std::copy(
-                seat.holeCards.begin(), seat.holeCards.end(), cards.begin());
-            std::copy(
-                board.begin(),
-                board.end(),
-                std::next(
-                    cards.begin(),
-                    static_cast<std::ptrdiff_t>(kHoleCardCount)));
-
-            const auto value = evaluate(std::span<const Card>(cards));
-            values[index] = value;
-            entries.push_back(ShowdownEntry{
-                .seat = makeSeatId(index),
-                .holeCards = seat.holeCards,
-                .value = value,
-            });
-        }
-
-        std::stable_sort(
-            entries.begin(),
-            entries.end(),
-            [](const ShowdownEntry &left, const ShowdownEntry &right)
-            { return left.value > right.value; });
-
-        finishHand(values, std::move(entries));
+        auto scores = scoreShowdown(seats, flow.board());
+        finishHand(scores.values, std::move(scores.entries));
     }
 
     void Table::finishHand(
