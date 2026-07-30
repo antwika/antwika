@@ -116,6 +116,39 @@ One engine tick is one step of the poker loop: dealing a hand, or asking a singl
 A hand runs pre-flop, flop, turn, river and showdown, and the next one is dealt as soon as the last is paid out.
 Balances live outside the games in a `BankrollLedger`, and a `CashGame` is the only door between a bankroll and a seat — so a player can never buy in for more than they actually hold, and the total of every bankroll plus every stack is conserved across a whole session.
 
+Every hand is written out in the hand-history layout trackers and replayers already read, so a session can be pasted straight into one:
+
+```text
+Antwika Hand #2: Hold'em No Limit (5/10) - 2026/07/30 07:34:17
+Table 'Antwika' 6-max Seat #3 is the button
+Seat 1: alice (370 in chips)
+Seat 2: bob (400 in chips)
+Seat 3: carol (430 in chips)
+alice: posts small blind 5
+bob: posts big blind 10
+*** HOLE CARDS ***
+Dealt to alice [Ac As]
+carol: calls 10
+alice: raises 25 to 35
+bob: folds
+carol: calls 25
+*** FLOP *** [5h 2s 5c]
+...
+*** SHOW DOWN ***
+alice: shows [Ac As] (two pair, Aces and Fives)
+carol: shows [7c Js] (two pair, Fives and Deuces)
+alice collected 240 from pot
+*** SUMMARY ***
+Total pot 240 | Rake 0
+Board [5h 2s 5c Kh 2h]
+Seat 1: alice (small blind) showed [Ac As] and won (240) with two pair, Aces and Fives
+Seat 2: bob (big blind) folded before Flop
+Seat 3: carol (button) showed [7c Js] and lost with two pair, Fives and Deuces
+```
+
+Every player's cards are dealt face up here, since a table of bots has nobody to keep them from.
+See [`blog/011-writing-a-hand-history-the-rest-of-the-world-can-read.md`](blog/011-writing-a-hand-history-the-rest-of-the-world-can-read.md) for how the printer gets the numbers that format wants out of a table that never had to track them.
+
 Money moving in and out is all a replay stores: `poker.deposit`, `poker.buy_in` and `poker.cash_out` events (JSON payloads `{"player":..,"amount":..}`).
 Not one card and not one action is recorded, because the shuffle is seeded from `RoomConfig` and the agents behind `antwika::holdem::IAgent` are deterministic functions of what they are shown — so a reloaded session deals the same cards and reaches the same chip counts by construction.
 See [`blog/010-a-poker-hand-in-one-number.md`](blog/010-a-poker-hand-in-one-number.md) for the full design, including the short-all-in rule the tests turned up.
