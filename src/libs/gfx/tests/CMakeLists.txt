@@ -8,6 +8,7 @@ add_executable(antwika_gfx_tests
     BlitTest.cpp
     ColorTest.cpp
     GlyphsTest.cpp
+    IWindowTest.cpp
     NullBackendConformanceTest.cpp
     NullBackendTest.cpp
     NullRendererTest.cpp

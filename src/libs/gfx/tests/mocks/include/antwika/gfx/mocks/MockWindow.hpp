@@ -24,6 +24,7 @@ namespace antwika::gfx::mocks
         MOCK_METHOD(WindowId, id, (), (const, override));
         MOCK_METHOD(bool, isOpen, (), (const, override));
         MOCK_METHOD(std::string, title, (), (const, override));
+        MOCK_METHOD(Size, configuredSize, (), (const, override));
         MOCK_METHOD(Size, size, (), (const, override));
         MOCK_METHOD(IRenderer &, renderer, (), (override));
         MOCK_METHOD(void, setTitle, (std::string_view title), (override));
