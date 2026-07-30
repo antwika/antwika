@@ -2,8 +2,10 @@
 # Draws the texture atlas apps/game renders its grid from.
 # The art is generated rather than painted.
 # So a tile's shape comes from the projection the game draws it with.
-# The slot layout here is the one antwika/game/TileAtlas.hpp addresses.
+# The slot layout is read out of antwika/game/TileAtlas.hpp.
+# Restating it here would be a second set of numbers to keep in step.
 import argparse
+import re
 import struct
 import sys
 import zlib
@@ -13,21 +15,124 @@ DEFAULT_ROOT = Path(__file__).resolve().parent.parent
 
 ATLAS_PATH = Path("src/apps/game/assets/atlas.png")
 
-TILE_WIDTH = 128
-TILE_HEIGHT = 64
-COLUMNS = 8
-ROWS = 3
+# The layout comes from these headers, the ones beside this script.
+# --root says where the picture goes, not what it is drawn from.
+TILE_ATLAS_HEADER = Path(
+    "src/apps/game/include/antwika/game/TileAtlas.hpp"
+)
+DIRECTION_HEADER = Path(
+    "src/apps/game/include/antwika/game/Direction.hpp"
+)
 
-GROUND_SLOT = 0
-FIRST_ROAD_SLOT = 1
-ROAD_SLOT_COUNT = 16
-FIRST_WALKER_SLOT = 17
-WALKER_SLOT_COUNT = 4
 
-LINK_NORTH = 1 << 0
-LINK_EAST = 1 << 1
-LINK_SOUTH = 1 << 2
-LINK_WEST = 1 << 3
+class LayoutError(Exception):
+    """Raised when a header does not say what the layout needs."""
+
+
+def read_header(relative: Path) -> str:
+    path = DEFAULT_ROOT / relative
+    try:
+        return path.read_text(encoding="utf-8")
+    except OSError as error:
+        raise LayoutError(f"Cannot read {path}: {error}") from error
+
+
+def integer_constant(source: str, name: str, where: Path) -> int:
+    """Get the value of an integer constexpr declared in a header."""
+    # Only a literal, never an expression.
+    # A constant the header derives is derived here the same way.
+    match = re.search(
+        rf"constexpr\s+[\w:]+\s+{name}\s*=\s*(\d+)\s*;", source
+    )
+
+    if match is None:
+        raise LayoutError(f"{where}: no integer constant named {name}")
+
+    return int(match.group(1))
+
+
+def size_constant(source: str, name: str, where: Path) -> tuple[int, int]:
+    """Get the width and height of a designated-initialiser Size."""
+    match = re.search(
+        rf"constexpr\s+Size\s+{name}\s*\{{\s*"
+        rf"\.width\s*=\s*(\d+)\s*,\s*\.height\s*=\s*(\d+)\s*\}}",
+        source,
+    )
+
+    if match is None:
+        raise LayoutError(f"{where}: no Size constant named {name}")
+
+    return int(match.group(1)), int(match.group(2))
+
+
+def enumerators(source: str, name: str, where: Path) -> tuple[str, ...]:
+    """Get a scoped enum's enumerator names, in declaration order."""
+    match = re.search(
+        rf"enum\s+class\s+{name}\s*(?::[^{{]*)?\{{([^}}]*)\}}", source
+    )
+
+    if match is None:
+        raise LayoutError(f"{where}: no scoped enum named {name}")
+
+    body = re.sub(r"//[^\n]*", "", match.group(1))
+    found = tuple(
+        entry.split("=")[0].strip()
+        for entry in body.split(",")
+        if entry.split("=")[0].strip()
+    )
+
+    if not found:
+        raise LayoutError(f"{where}: enum {name} has no enumerators")
+
+    return found
+
+
+ATLAS_SOURCE = read_header(TILE_ATLAS_HEADER)
+DIRECTION_SOURCE = read_header(DIRECTION_HEADER)
+
+TILE_WIDTH, TILE_HEIGHT = size_constant(
+    ATLAS_SOURCE, "kAtlasTileSize", TILE_ATLAS_HEADER
+)
+COLUMNS = integer_constant(ATLAS_SOURCE, "kAtlasColumns", TILE_ATLAS_HEADER)
+ROWS = integer_constant(ATLAS_SOURCE, "kAtlasRows", TILE_ATLAS_HEADER)
+
+GROUND_SLOT = integer_constant(
+    ATLAS_SOURCE, "kGroundSlot", TILE_ATLAS_HEADER
+)
+FIRST_ROAD_SLOT = integer_constant(
+    ATLAS_SOURCE, "kFirstRoadSlot", TILE_ATLAS_HEADER
+)
+ROAD_SLOT_COUNT = integer_constant(
+    ATLAS_SOURCE, "kRoadSlotCount", TILE_ATLAS_HEADER
+)
+
+# The directions the game has, in the order linkBit() numbers them.
+DIRECTIONS = enumerators(DIRECTION_SOURCE, "Direction", DIRECTION_HEADER)
+
+# kFirstWalkerSlot is derived in the header, so it is derived here.
+FIRST_WALKER_SLOT = FIRST_ROAD_SLOT + ROAD_SLOT_COUNT
+WALKER_SLOT_COUNT = len(DIRECTIONS)
+
+# linkBit() is 1 << directionIndex(), so a bit is a place in the enum.
+# Reordering Direction therefore moves the art with it.
+LINK_BITS = {
+    name: 1 << index for index, name in enumerate(DIRECTIONS)
+}
+
+
+def link_bit(name: str) -> int:
+    if name not in LINK_BITS:
+        raise LayoutError(
+            f"{DIRECTION_HEADER}: Direction has no enumerator {name}"
+        )
+
+    return LINK_BITS[name]
+
+
+LINK_NORTH = link_bit("North")
+LINK_EAST = link_bit("East")
+LINK_SOUTH = link_bit("South")
+LINK_WEST = link_bit("West")
 
 # Half the width of a road, as a fraction of a cell.
 ROAD_HALF = 0.17
@@ -63,6 +168,41 @@ FACING_STEPS: tuple[tuple[int, int], ...] = (
     (-1, 1),
     (-1, -1),
 )
+
+
+def check_layout() -> None:
+    """Fail loudly when the header asks for art this cannot draw."""
+    # A road tile per link mask, and a mask bit per direction.
+    # So the two counts move together or the numbering is wrong.
+    if ROAD_SLOT_COUNT != 1 << WALKER_SLOT_COUNT:
+        raise LayoutError(
+            f"kRoadSlotCount is {ROAD_SLOT_COUNT}, but "
+            f"{WALKER_SLOT_COUNT} directions make "
+            f"{1 << WALKER_SLOT_COUNT} link masks"
+        )
+
+    slots = 1 + ROAD_SLOT_COUNT + WALKER_SLOT_COUNT
+    if slots > COLUMNS * ROWS:
+        raise LayoutError(
+            f"{slots} slots do not fit in {COLUMNS}x{ROWS} tiles"
+        )
+
+    # The two per-facing tables are written out rather than derived.
+    # A fifth direction would silently leave its walker undrawable.
+    if len(FACING_COLORS) != WALKER_SLOT_COUNT:
+        raise LayoutError(
+            f"{len(FACING_COLORS)} facing colours for "
+            f"{WALKER_SLOT_COUNT} directions"
+        )
+
+    if len(FACING_STEPS) != WALKER_SLOT_COUNT:
+        raise LayoutError(
+            f"{len(FACING_STEPS)} facing steps for "
+            f"{WALKER_SLOT_COUNT} directions"
+        )
+
+
+check_layout()
 
 
 def grid_coords(px: int, py: int) -> tuple[float, float]:
