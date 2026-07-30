@@ -55,6 +55,17 @@ namespace antwika::gfx::conformance
      * queue is empty, because a real window manager is free to resize a
      * window as it appears and to post events nobody asked for. Requiring
      * either would force an honest backend to lie.
+     *
+     * configuredSize() is the exception, and the reason it exists: it is
+     * a number the caller chose, so it is the one window size every
+     * backend can be held to exactly.
+     *
+     * Nothing here asserts that a resizable window can actually be
+     * resized either, for the same reason -- there is no display to drag
+     * an edge on, and a backend with no window system at all (null)
+     * honours the flag by having nothing ever act on it. What a backend
+     * is held to is that it accepts the request and keeps its promises
+     * about both sizes afterwards.
      */
     template <typename BackendTraits>
     class GfxBackendConformance : public ::testing::Test
@@ -65,6 +76,21 @@ namespace antwika::gfx::conformance
             return WindowDesc{
                 .title = "Antwika conformance",
                 .size = {.width = 640, .height = 480}};
+        }
+
+        /**
+         * @brief demoDesc(), but asking to be resizable.
+         *
+         * Deliberately a different size from demoDesc(), so a test
+         * opening one of each can tell the two windows apart by what
+         * they were configured with.
+         */
+        [[nodiscard]] static WindowDesc resizableDesc()
+        {
+            return WindowDesc{
+                .title = "Antwika conformance, resizable",
+                .size = {.width = 320, .height = 240},
+                .resizable = true};
         }
 
         /**
@@ -165,6 +191,72 @@ namespace antwika::gfx::conformance
     {
         const auto window = this->backend->createWindow(this->demoDesc());
 
+        EXPECT_GT(window->size().width, 0u);
+        EXPECT_GT(window->size().height, 0u);
+    }
+
+    TYPED_TEST_P(
+        GfxBackendConformance, ConfiguredSize_IsExactlyWhatWasAskedFor)
+    {
+        const auto window = this->backend->createWindow(this->demoDesc());
+
+        // The one window size a backend may be held to exactly.
+        // Everything an application lays out hangs off this number.
+        EXPECT_EQ(window->configuredSize(), this->demoDesc().size);
+    }
+
+    TYPED_TEST_P(
+        GfxBackendConformance, ConfiguredSize_IsUnchangedByClosingTheWindow)
+    {
+        const auto window = this->backend->createWindow(this->demoDesc());
+
+        window->close();
+
+        EXPECT_EQ(window->configuredSize(), this->demoDesc().size);
+    }
+
+    TYPED_TEST_P(GfxBackendConformance, ConfiguredSize_IsPerWindow)
+    {
+        if (this->backend->maxWindows() < 2)
+        {
+            GTEST_SKIP() << "backend allows only one window at a time";
+        }
+
+        const auto first = this->backend->createWindow(this->demoDesc());
+        const auto second =
+            this->backend->createWindow(this->resizableDesc());
+
+        // A backend keeping this in one global would fail here.
+        EXPECT_EQ(first->configuredSize(), this->demoDesc().size);
+        EXPECT_EQ(second->configuredSize(), this->resizableDesc().size);
+    }
+
+    TYPED_TEST_P(GfxBackendConformance, CreateWindow_AcceptsAResizableWindow)
+    {
+        const auto window =
+            this->backend->createWindow(this->resizableDesc());
+
+        ASSERT_NE(window, nullptr);
+        EXPECT_TRUE(window->isOpen());
+
+        // Nothing headless can drag the edge of a window.
+        // The null backend has no window system to honour the flag with.
+        // What every backend must do is take the request.
+        // And then go on answering for itself afterwards.
+        EXPECT_EQ(window->configuredSize(), this->resizableDesc().size);
+        EXPECT_GT(window->size().width, 0u);
+        EXPECT_GT(window->size().height, 0u);
+    }
+
+    TYPED_TEST_P(GfxBackendConformance, Size_StaysNonZeroAfterClosing)
+    {
+        const auto window =
+            this->backend->createWindow(this->resizableDesc());
+
+        window->close();
+
+        // A closed window latches the last size it saw.
+        // Reporting zero would hand a final frame a degenerate canvas.
         EXPECT_GT(window->size().width, 0u);
         EXPECT_GT(window->size().height, 0u);
     }
@@ -516,6 +608,11 @@ namespace antwika::gfx::conformance
         CreateWindow_RefusesToExceedItsLimit,
         CreateWindow_ReportsTheRequestedTitle,
         CreateWindow_ReportsANonZeroSize,
+        ConfiguredSize_IsExactlyWhatWasAskedFor,
+        ConfiguredSize_IsUnchangedByClosingTheWindow,
+        ConfiguredSize_IsPerWindow,
+        CreateWindow_AcceptsAResizableWindow,
+        Size_StaysNonZeroAfterClosing,
         CreateWindow_ThrowsWhenWidthIsZero,
         CreateWindow_ThrowsWhenHeightIsZero,
         CreateWindow_ReturnsIndependentWindows,
