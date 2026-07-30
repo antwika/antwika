@@ -21,6 +21,13 @@ namespace antwika::game
     {
         constexpr Color kSky{.red = 18, .green = 20, .blue = 28};
 
+        // What a stock bar is drawn out of.
+        // Dark behind, so the filled part reads at any zoom.
+        constexpr Color kStockEmpty{
+            .red = 16, .green = 18, .blue = 24, .alpha = 200};
+        constexpr Color kStockHeld{
+            .red = 96, .green = 200, .blue = 120, .alpha = 255};
+
         // An opaque white tint leaves a texture exactly as it was.
         // The art already carries every colour the grid has.
         constexpr Color kUntinted{
@@ -102,7 +109,36 @@ namespace antwika::game
                 kUntinted);
         }
 
-        // Last, so a walker is never hidden by what it is standing on.
+        // The order is ground, roads, buildings, walkers, stock bars.
+        // Ground and roads are flat and cover their own cell exactly.
+        // So those two layer rather than overlap.
+        //
+        // A building is the first thing here that stands up.
+        // It therefore needs a back-to-front order, and gets one free.
+        // Its art is drawn inside its own cell's bounding box.
+        // Two such boxes overlap only for orthogonal neighbours.
+        // A neighbour differs by one in exactly one coordinate.
+        // So for a neighbour, ascending Cell is ascending screen depth.
+        // The order the snapshot arrives in is already back to front.
+        // Nothing here has to sort or index anything a second time.
+        //
+        // Walkers come after, as they did before buildings existed.
+        // A walker is then never hidden by what it is standing on.
+        // That is also why one beside a building draws over it.
+        for (const auto &building : snapshot.buildings)
+        {
+            if (!onCanvas(building.at, canvas, snapshot))
+            {
+                continue;
+            }
+
+            renderer.drawTexture(
+                atlas,
+                buildingTile(building.kind),
+                cellBounds(building.at, snapshot.camera),
+                kUntinted);
+        }
+
         for (const auto &walker : snapshot.walkers)
         {
             if (!onCanvas(walker.at, canvas, snapshot))
@@ -114,7 +150,37 @@ namespace antwika::game
                 atlas,
                 walkerTile(walker.facing),
                 cellBounds(walker.at, snapshot.camera),
-                kUntinted);
+                walkerTint(walker.kind));
+        }
+
+        // Last of all, since a bar is a readout rather than scenery.
+        // It stands above its cell, outside the box argued about above.
+        // So the only order that reads is one hiding no bar at all.
+        drawStockBars(renderer, canvas, snapshot);
+    }
+
+    void GridScene::drawStockBars(
+        IRenderer &renderer, Size canvas, const SceneSnapshot &snapshot) const
+    {
+        for (const auto &building : snapshot.buildings)
+        {
+            if (!onCanvas(building.at, canvas, snapshot))
+            {
+                continue;
+            }
+
+            renderer.drawRect(
+                stockBarBounds(building.at, snapshot.camera), kStockEmpty);
+
+            const auto filled = stockFillBounds(building, snapshot.camera);
+
+            // An empty bar is its background and nothing else.
+            // A zero-height rectangle draws nothing anyway.
+            // And a call that draws nothing is one to explain.
+            if (filled.size.height > 0)
+            {
+                renderer.drawRect(filled, kStockHeld);
+            }
         }
     }
 

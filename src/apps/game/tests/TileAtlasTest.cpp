@@ -12,12 +12,16 @@
 #include "antwika/game/TileAtlas.hpp"
 
 using antwika::game::atlasSlot;
+using antwika::game::BuildingKind;
+using antwika::game::buildingTile;
 using antwika::game::Direction;
 using antwika::game::groundTile;
 using antwika::game::kAtlasColumns;
 using antwika::game::kAtlasRows;
 using antwika::game::kAtlasSize;
 using antwika::game::kAtlasTileSize;
+using antwika::game::kBuildingSlotCount;
+using antwika::game::kFirstBuildingSlot;
 using antwika::game::kFirstRoadSlot;
 using antwika::game::kFirstWalkerSlot;
 using antwika::game::kLinkMask;
@@ -38,6 +42,15 @@ namespace
             Direction::East,
             Direction::South,
             Direction::West};
+
+    // Every building kind, for the same reason.
+    constexpr std::array<BuildingKind, kBuildingSlotCount>
+        kEveryBuildingKind{
+            BuildingKind::House,
+            BuildingKind::FoodSource,
+            BuildingKind::WaterSource,
+            BuildingKind::FireStation,
+            BuildingKind::ArchitectPost};
 } // namespace
 
 TEST(TileAtlasTest, AtlasSlot_LaysSlotsOutLeftToRightThenDown)
@@ -142,7 +155,7 @@ TEST(TileAtlasTest, WalkerTile_GivesEachFacingATileOfItsOwn)
     EXPECT_EQ(tiles.front(), atlasSlot(kFirstWalkerSlot));
 }
 
-// The ground, the roads and the walkers must not share a slot.
+// No two of the four ranges of tiles may share a slot.
 // Overlapping ranges would draw a road where a walker should be.
 TEST(TileAtlasTest, TheTileRangesDoNotOverlap)
 {
@@ -163,12 +176,53 @@ TEST(TileAtlasTest, TheTileRangesDoNotOverlap)
         origins.insert(tile.origin.y * 10000 + tile.origin.x);
     }
 
+    for (const auto kind : kEveryBuildingKind)
+    {
+        const auto tile = buildingTile(kind);
+        origins.insert(tile.origin.y * 10000 + tile.origin.x);
+    }
+
     EXPECT_EQ(
         origins.size(),
-        1U + kRoadSlotCount + antwika::game::kDirectionCount);
+        1U + kRoadSlotCount + antwika::game::kDirectionCount
+            + kBuildingSlotCount);
 }
 
-// The atlas the generator draws has to be the atlas this addresses.
+TEST(TileAtlasTest, BuildingTile_GivesEachKindATileOfItsOwn)
+{
+    std::vector<Rect> tiles;
+
+    for (const auto kind : kEveryBuildingKind)
+    {
+        tiles.push_back(buildingTile(kind));
+    }
+
+    for (std::size_t i = 0; i < tiles.size(); ++i)
+    {
+        for (std::size_t j = i + 1; j < tiles.size(); ++j)
+        {
+            EXPECT_NE(tiles[i], tiles[j]) << i << " vs " << j;
+        }
+    }
+
+    EXPECT_EQ(tiles.front(), atlasSlot(kFirstBuildingSlot));
+}
+
+// The buildings are the last range in the atlas.
+// So they are what could run off the edge of the picture.
+TEST(TileAtlasTest, BuildingTile_KeepsEveryKindInsideTheAtlas)
+{
+    for (const auto kind : kEveryBuildingKind)
+    {
+        const auto tile = buildingTile(kind);
+
+        EXPECT_LE(
+            tile.origin.y + static_cast<std::int32_t>(tile.size.height),
+            static_cast<std::int32_t>(kAtlasSize.height));
+    }
+}
+
+// The committed art has to be the atlas these numbers address.
 TEST(TileAtlasTest, TheAtlasIsBigEnoughForEverySlotItNames)
 {
     EXPECT_EQ(
@@ -176,4 +230,5 @@ TEST(TileAtlasTest, TheAtlasIsBigEnoughForEverySlotItNames)
     EXPECT_EQ(kAtlasSize.height, kAtlasRows * kAtlasTileSize.height);
     EXPECT_LE(
         kFirstWalkerSlot + antwika::game::kDirectionCount, kSlotCount);
+    EXPECT_LE(kFirstBuildingSlot + kBuildingSlotCount, kSlotCount);
 }

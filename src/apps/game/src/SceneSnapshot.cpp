@@ -12,7 +12,11 @@ namespace antwika::game
         GridExtent extent)
     {
         SceneSnapshot snapshot{
-            .camera = camera, .extent = extent, .paths = {}, .walkers = {}};
+            .camera = camera,
+            .extent = extent,
+            .paths = {},
+            .walkers = {},
+            .buildings = {}};
 
         snapshot.paths.assign(paths.cells().begin(), paths.cells().end());
 

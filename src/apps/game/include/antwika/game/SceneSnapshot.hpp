@@ -1,9 +1,11 @@
 #pragma once
 
+#include <cstdint>
 #include <vector>
 
 #include <antwika/ecs/World.hpp>
 
+#include "antwika/game/Building.hpp"
 #include "antwika/game/Camera.hpp"
 #include "antwika/game/Cell.hpp"
 #include "antwika/game/Direction.hpp"
@@ -16,19 +18,41 @@ namespace antwika::game
     using antwika::ecs::World;
 
     /**
+     * @brief What a walker is carrying, and for whom.
+     */
+    enum class WalkerKind : std::uint8_t
+    {
+        Food,
+        Water,
+        Fireman,
+        Architect,
+    };
+
+    /**
      * @brief One walker, as a frame needs to know it.
      */
     struct WalkerView
     {
         Cell at;
         Direction facing = Direction::East;
+        WalkerKind kind = WalkerKind::Food;
+        std::int32_t carried = 0;
 
-        /**
-         * @brief Compare two walker views.
-         * @param other The view to compare against.
-         * @return True when both the cell and the facing match.
-         */
         [[nodiscard]] bool operator==(const WalkerView &other) const = default;
+    };
+
+    /**
+     * @brief One building, as a frame needs to know it.
+     */
+    struct BuildingView
+    {
+        Cell at;
+        BuildingKind kind = BuildingKind::House;
+        std::int32_t held = 0;
+        std::int32_t capacity = 100;
+
+        [[nodiscard]] bool operator==(const BuildingView &other) const
+            = default;
     };
 
     /**
@@ -47,6 +71,7 @@ namespace antwika::game
         GridExtent extent;
         std::vector<Cell> paths;
         std::vector<WalkerView> walkers;
+        std::vector<BuildingView> buildings;
 
         /**
          * @brief Compare two snapshots.
