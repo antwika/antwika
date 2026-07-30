@@ -1,18 +1,18 @@
 #include "antwika/life/TickPacer.hpp"
 
-#include <thread>
+#include <chrono>
 
 namespace antwika::life
 {
 
-    TickPacer::TickPacer(std::chrono::milliseconds interval)
-        : interval(interval)
+    TickPacer::TickPacer(ISleeper &sleeper, std::chrono::milliseconds interval)
+        : sleeper(sleeper), interval(interval)
     {
     }
 
     void TickPacer::update(World &, antwika::time::Tick)
     {
-        std::this_thread::sleep_for(interval);
+        sleeper.sleep(interval);
     }
 
 } // namespace antwika::life

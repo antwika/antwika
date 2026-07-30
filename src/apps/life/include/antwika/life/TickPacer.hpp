@@ -4,6 +4,7 @@
 
 #include <antwika/ecs/ISystem.hpp>
 #include <antwika/ecs/World.hpp>
+#include <antwika/time/ISleeper.hpp>
 #include <antwika/time/Tick.hpp>
 
 namespace antwika::life
@@ -11,6 +12,7 @@ namespace antwika::life
 
     using antwika::ecs::ISystem;
     using antwika::ecs::World;
+    using antwika::time::ISleeper;
 
     /**
      * @brief Waits a fixed interval every tick, so a run happens at a speed
@@ -22,15 +24,21 @@ namespace antwika::life
      * It touches neither World nor the tick it is given. Waiting changes
      * only how long a run takes, never what it computes, so a replay of a
      * paced run reproduces the same state as an unpaced one.
+     *
+     * The waiting itself belongs to antwika::time::ISleeper, which is what
+     * everything in this project paces through. This is only the
+     * ecs::ISystem shape around it, so a test can assert what was asked for
+     * rather than spending the time.
      */
     class TickPacer final : public ISystem
     {
     public:
         /**
-         * @brief Construct the pacer over how long each tick should take.
+         * @brief Construct the pacer over how it waits, and for how long.
+         * @param sleeper Does the waiting; must outlive this object.
          * @param interval How long to wait, once per tick.
          */
-        explicit TickPacer(std::chrono::milliseconds interval);
+        TickPacer(ISleeper &sleeper, std::chrono::milliseconds interval);
 
         TickPacer(const TickPacer &) = delete;
         TickPacer(TickPacer &&) = delete;
@@ -46,6 +54,7 @@ namespace antwika::life
         void update(World &world, antwika::time::Tick tick) override;
 
     private:
+        ISleeper &sleeper;
         std::chrono::milliseconds interval;
     };
 

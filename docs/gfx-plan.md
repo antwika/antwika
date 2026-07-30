@@ -484,10 +484,14 @@ frame rather than needing the window kept open for it.
 Both are safe; they are not the same shape, and one of them should probably
 win once a third app wants this.
 
-Likewise `apps/life` paces with its own `TickPacer` while `apps/poker` paces
-through `antwika::time::ISleeper`, injected so the bootstrap tests do not
-spend real seconds sleeping.
-Two mechanisms for one job is one too many.
+Pacing is shared rather than duplicated.
+`antwika::time::ISleeper` is the one way anything in this project waits, and
+`SystemSleeper` is the only thing that calls `sleep_for`.
+`apps/life`'s `TickPacer` is the `ecs::ISystem` shape around it and
+`apps/poker` holds one in its render sink, because an ECS app has an observer
+phase to register a system in and a tick-sink app does not.
+Injecting it is what keeps both apps' tests off the wall clock: they assert
+the interval that was asked for instead of spending it.
 
 The one-directional equivalence Phase 6 records applies here too:
 `WindowCloseSource` sits in front of a `--replay` run as well, so closing the
