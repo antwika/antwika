@@ -12,6 +12,7 @@
 #include "antwika/game/Events.hpp"
 #include "antwika/game/GameStateReducer.hpp"
 #include "antwika/game/GridSink.hpp"
+#include "antwika/game/InputFold.hpp"
 #include "antwika/game/SceneSnapshot.hpp"
 #include "antwika/game/Toolbar.hpp"
 #include "antwika/game/UiSink.hpp"
@@ -82,18 +83,22 @@ namespace antwika::game
         UiOverlay &ui = overlay != nullptr ? *overlay : noToolbar;
 
         const Toolbar toolbar;
-        UiSink uiSink(camera, ui, codec, toolbar, camera);
+        InputFold input(codec);
+        UiSink uiSink(camera, ui, input, toolbar, camera);
         GridSink gridSink(
-            world, paths, camera, extent, scheduler, codec, ui);
+            world, paths, camera, extent, scheduler, input, ui);
         StopSignal stopSignal;
 
+        // The fold is first: what it holds is the event the sinks after
+        // it are being given now, and it is the only thing that clears
+        // an edge, so the tick boundary is one rule in one place.
         // GridSink runs the scheduler on engine.tick.
         // So anything that must show in this frame is folded before it.
-        // UiSink comes before it for both reasons.
-        // A press is resolved against the bar before the grid sees it.
-        // And the picture is described before the renderer paints it.
+        // UiSink still comes before it, so a press is resolved against
+        // the bar before the grid sees it, and the picture is described
+        // before the renderer paints it.
         std::vector<std::reference_wrapper<ITickEventSink>> timedSinks{
-            reducer, uiSink, gridSink, stopSignal};
+            input, reducer, uiSink, gridSink, stopSignal};
         if (replayRecorder != nullptr)
         {
             timedSinks.push_back(*replayRecorder);
