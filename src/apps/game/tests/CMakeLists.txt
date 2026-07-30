@@ -8,8 +8,10 @@ add_executable(antwika_game_tests
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/GridSink.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/PathIndex.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/RenderSystem.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/TickPacer.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/SceneSnapshot.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/WalkerSystem.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/WindowInputSource.cpp
     BootstrapTest.cpp
     CameraTest.cpp
     CellTest.cpp
@@ -25,8 +27,11 @@ add_executable(antwika_game_tests
     PathIndexTest.cpp
     RenderSystemTest.cpp
     SceneSnapshotTest.cpp
+    ReplayDeterminismTest.cpp
     ReplayIntegrationTest.cpp
+    TickPacerTest.cpp
     WalkerSystemTest.cpp
+    WindowInputSourceTest.cpp
     WalkerTest.cpp
     WalkingTest.cpp
 )

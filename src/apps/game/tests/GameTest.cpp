@@ -4,6 +4,7 @@
 #include <antwika/engine/mocks/MockEngine.hpp>
 #include <antwika/event/mocks/MockEventDispatcher.hpp>
 
+#include "antwika/game/Events.hpp"
 #include "antwika/game/Game.hpp"
 
 using antwika::engine::mocks::MockEngine;
@@ -21,7 +22,7 @@ TEST(GameTest, Run_DispatchesBootEventAndStartsEngine)
         ::testing::InSequence seq;
         EXPECT_CALL(
             mockEventDispatcher,
-            dispatch(Event{.name = "Running Antwika Game"}))
+            dispatch(Event{.name = antwika::game::events::kStarted}))
             .Times(1);
         EXPECT_CALL(mockEngine, start()).Times(1);
     }
@@ -37,7 +38,7 @@ TEST(GameTest, Run_PropagatesExceptionWhenDispatcherDispatchFails)
 
     EXPECT_CALL(
         mockEventDispatcher,
-        dispatch(Event{.name = "Running Antwika Game"}))
+        dispatch(Event{.name = antwika::game::events::kStarted}))
         .WillOnce(::testing::Throw(std::runtime_error("mockException")));
     EXPECT_CALL(mockEngine, start()).Times(0);
 

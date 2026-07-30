@@ -1,3 +1,4 @@
+#include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
 #include <sstream>
@@ -6,32 +7,33 @@
 #include <antwika/event/Event.hpp>
 #include <antwika/event/EventRecorder.hpp>
 #include <antwika/event/TickEvent.hpp>
-#include <antwika/log/Level.hpp>
-#include <antwika/log/MinimumLevelLogPolicy.hpp>
-#include <antwika/log/NullAppender.hpp>
-#include <antwika/log/PlainFormatter.hpp>
+#include <antwika/input/InputEventCodec.hpp>
+#include <antwika/log/mocks/MockLogger.hpp>
 #include <antwika/replay/IReplaySource.hpp>
 #include <antwika/replay/ReplayReader.hpp>
 #include <antwika/replay/ReplaySource.hpp>
 #include <antwika/replay/ReplayWriter.hpp>
-#include <antwika/time/fakes/FakeClock.hpp>
 
+#include "antwika/game/Camera.hpp"
 #include "antwika/game/Events.hpp"
 #include "antwika/game/Game.hpp"
+#include "antwika/game/GridExtent.hpp"
+#include "antwika/game/PathIndex.hpp"
 
 using antwika::event::Event;
 using antwika::event::EventRecorder;
 using antwika::event::TickEvent;
+using antwika::game::Camera;
 using antwika::game::GameState;
-using antwika::log::Level;
-using antwika::log::MinimumLevelLogPolicy;
-using antwika::log::NullAppender;
-using antwika::log::PlainFormatter;
+using antwika::game::GridExtent;
+using antwika::game::PathIndex;
+using antwika::input::InputEventCodec;
+using antwika::log::mocks::MockLogger;
 using antwika::replay::IReplaySource;
 using antwika::replay::ReplayReader;
 using antwika::replay::ReplaySource;
 using antwika::replay::ReplayWriter;
-using antwika::time::fakes::FakeClock;
+using ::testing::NiceMock;
 
 namespace
 {
@@ -39,21 +41,23 @@ namespace
 
     GameState runGame(IReplaySource &source)
     {
-        std::chrono::system_clock::time_point time{};
-        FakeClock fakeClock(time);
-        NullAppender appender;
-        PlainFormatter formatter;
-        MinimumLevelLogPolicy logPolicy(Level::Info);
+        NiceMock<MockLogger> logger;
         EventRecorder eventSink;
+        const InputEventCodec codec;
+        Camera camera;
+        PathIndex paths;
 
         return antwika::game::bootstrap(
-            fakeClock,
-            appender,
-            formatter,
-            logPolicy,
-            eventSink,
-            source,
-            kMaxTicks);
+                   logger,
+                   eventSink,
+                   source,
+                   codec,
+                   GridExtent{.width = 16, .height = 16},
+                   camera,
+                   paths,
+                   {},
+                   kMaxTicks)
+            .state;
     }
 } // namespace
 

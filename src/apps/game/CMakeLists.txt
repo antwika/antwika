@@ -6,8 +6,10 @@ add_executable(antwika_game
     src/GridSink.cpp
     src/PathIndex.cpp
     src/RenderSystem.cpp
+    src/TickPacer.cpp
     src/SceneSnapshot.cpp
     src/WalkerSystem.cpp
+    src/WindowInputSource.cpp
     src/main.cpp
 )
 
@@ -29,7 +31,10 @@ target_link_libraries(antwika_game
         antwika::ecs
         antwika::engine
         antwika::gfx
+        antwika::gfx_backend
         antwika::input
+        antwika::input_backend
+        antwika::log
         antwika::replay
         antwika::time
 )

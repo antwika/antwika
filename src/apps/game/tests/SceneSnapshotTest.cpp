@@ -9,6 +9,7 @@
 #include "antwika/game/Direction.hpp"
 #include "antwika/game/GridExtent.hpp"
 #include "antwika/game/PathIndex.hpp"
+#include "antwika/game/GameSummary.hpp"
 #include "antwika/game/SceneSnapshot.hpp"
 #include "antwika/game/Walker.hpp"
 
@@ -179,4 +180,37 @@ TEST(SceneSnapshotTest, SnapshotEqualityComparesTheExtentAndTheWalkers)
 
     EXPECT_NE(base, peopled);
     EXPECT_EQ(peopled, snapshotOf(world, paths, Camera(), kExtent));
+}
+
+// GameSummary's defaulted comparison short-circuits.
+// So each field needs a pair that differs in it alone.
+TEST(SceneSnapshotTest, GameSummaryEqualityComparesEveryField)
+{
+    using antwika::game::Camera;
+    using antwika::game::GameState;
+    using antwika::game::GameSummary;
+
+    const GameSummary base{
+        .state = {.ticksProcessed = 1, .score = 2},
+        .paths = {Cell{.x = 1, .y = 1}},
+        .walkers = {WalkerView{.at = {.x = 2, .y = 2}}},
+        .camera = Camera()};
+
+    EXPECT_EQ(base, base);
+
+    auto scored = base;
+    scored.state.score = 99;
+    EXPECT_NE(base, scored);
+
+    auto paved = base;
+    paved.paths.push_back(Cell{.x = 5, .y = 5});
+    EXPECT_NE(base, paved);
+
+    auto peopled = base;
+    peopled.walkers.clear();
+    EXPECT_NE(base, peopled);
+
+    auto moved = base;
+    moved.camera.panBy(1, 0);
+    EXPECT_NE(base, moved);
 }
