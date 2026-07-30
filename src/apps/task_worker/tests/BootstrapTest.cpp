@@ -1,3 +1,4 @@
+#include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
 #include <optional>
@@ -6,16 +7,13 @@
 #include <antwika/ecs/ISystem.hpp>
 #include <antwika/engine/Events.hpp>
 #include <antwika/event/Event.hpp>
-#include <antwika/event/EventRecorder.hpp>
+#include <antwika/event/mocks/MockEventSink.hpp>
 #include <antwika/event/TickEventRecorder.hpp>
 #include <antwika/event/TickEvent.hpp>
 #include <antwika/log/Level.hpp>
-#include <antwika/log/MinimumLevelLogPolicy.hpp>
-#include <antwika/log/NullAppender.hpp>
-#include <antwika/log/PlainFormatter.hpp>
+#include <antwika/log/mocks/MockLogger.hpp>
 #include <antwika/replay/EngineLoopError.hpp>
 #include <antwika/replay/ReplaySource.hpp>
-#include <antwika/time/fakes/FakeClock.hpp>
 
 #include <antwika/scheduler/Priority.hpp>
 
@@ -27,13 +25,10 @@
 using antwika::ecs::ISystem;
 using antwika::ecs::World;
 using antwika::event::Event;
-using antwika::event::EventRecorder;
+using antwika::event::mocks::MockEventSink;
 using antwika::event::TickEventRecorder;
 using antwika::event::TickEvent;
 using antwika::log::Level;
-using antwika::log::MinimumLevelLogPolicy;
-using antwika::log::NullAppender;
-using antwika::log::PlainFormatter;
 using antwika::replay::EngineLoopError;
 using antwika::replay::ReplaySource;
 using antwika::scheduler::kCriticalPriority;
@@ -46,7 +41,8 @@ using antwika::task_worker::TaskRegistry;
 using antwika::task_worker::TaskStatus;
 using antwika::task_worker::Worker;
 using antwika::task_worker::WorkerStatus;
-using antwika::time::fakes::FakeClock;
+using antwika::log::mocks::MockLogger;
+using ::testing::NiceMock;
 
 namespace
 {
@@ -116,22 +112,15 @@ namespace
 
 TEST(BootstrapTest, Bootstrap_RunsScriptedTasksToCompletion)
 {
-    std::chrono::system_clock::time_point time{};
-    FakeClock fakeClock(time);
-    NullAppender appender;
-    PlainFormatter formatter;
-    MinimumLevelLogPolicy logPolicy(Level::Info);
-    EventRecorder eventSink;
+    NiceMock<MockLogger> logger;
+    NiceMock<MockEventSink> eventSink;
 
     auto script = demoScript();
     ReplaySource inputSource(script);
 
     auto finalState = antwika::task_worker::bootstrap(
         antwika::task_worker::TaskWorkerConfig{
-            .clock = fakeClock,
-            .appender = appender,
-            .formatter = formatter,
-            .logPolicy = logPolicy,
+            .logger = logger,
             .eventSink = eventSink,
             .inputSource = inputSource,
             .workerCount = kWorkerCount,
@@ -151,12 +140,8 @@ TEST(BootstrapTest, Bootstrap_RunsScriptedTasksToCompletion)
 
 TEST(BootstrapTest, Bootstrap_RunsEveryObserverOncePerTick)
 {
-    std::chrono::system_clock::time_point time{};
-    FakeClock fakeClock(time);
-    NullAppender appender;
-    PlainFormatter formatter;
-    MinimumLevelLogPolicy logPolicy(Level::Info);
-    EventRecorder eventSink;
+    NiceMock<MockLogger> logger;
+    NiceMock<MockEventSink> eventSink;
 
     auto script = demoScript();
     ReplaySource inputSource(script);
@@ -164,10 +149,7 @@ TEST(BootstrapTest, Bootstrap_RunsEveryObserverOncePerTick)
 
     antwika::task_worker::bootstrap(
         antwika::task_worker::TaskWorkerConfig{
-            .clock = fakeClock,
-            .appender = appender,
-            .formatter = formatter,
-            .logPolicy = logPolicy,
+            .logger = logger,
             .eventSink = eventSink,
             .inputSource = inputSource,
             .workerCount = kWorkerCount,
@@ -179,12 +161,8 @@ TEST(BootstrapTest, Bootstrap_RunsEveryObserverOncePerTick)
 
 TEST(BootstrapTest, Bootstrap_KeepsACallerSuppliedRegistryInSync)
 {
-    std::chrono::system_clock::time_point time{};
-    FakeClock fakeClock(time);
-    NullAppender appender;
-    PlainFormatter formatter;
-    MinimumLevelLogPolicy logPolicy(Level::Info);
-    EventRecorder eventSink;
+    NiceMock<MockLogger> logger;
+    NiceMock<MockEventSink> eventSink;
 
     auto script = demoScript();
     ReplaySource inputSource(script);
@@ -192,10 +170,7 @@ TEST(BootstrapTest, Bootstrap_KeepsACallerSuppliedRegistryInSync)
 
     antwika::task_worker::bootstrap(
         antwika::task_worker::TaskWorkerConfig{
-            .clock = fakeClock,
-            .appender = appender,
-            .formatter = formatter,
-            .logPolicy = logPolicy,
+            .logger = logger,
             .eventSink = eventSink,
             .inputSource = inputSource,
             .workerCount = kWorkerCount,
@@ -228,12 +203,8 @@ TEST(BootstrapTest, Bootstrap_KeepsACallerSuppliedRegistryInSync)
 
 TEST(BootstrapTest, Bootstrap_WithNoScriptedInputAllWorkersStayIdle)
 {
-    std::chrono::system_clock::time_point time{};
-    FakeClock fakeClock(time);
-    NullAppender appender;
-    PlainFormatter formatter;
-    MinimumLevelLogPolicy logPolicy(Level::Info);
-    EventRecorder eventSink;
+    NiceMock<MockLogger> logger;
+    NiceMock<MockEventSink> eventSink;
 
     ReplaySource inputSource({
         TickEvent{
@@ -243,10 +214,7 @@ TEST(BootstrapTest, Bootstrap_WithNoScriptedInputAllWorkersStayIdle)
 
     auto finalState = antwika::task_worker::bootstrap(
         antwika::task_worker::TaskWorkerConfig{
-            .clock = fakeClock,
-            .appender = appender,
-            .formatter = formatter,
-            .logPolicy = logPolicy,
+            .logger = logger,
             .eventSink = eventSink,
             .inputSource = inputSource,
             .workerCount = 2,
@@ -261,12 +229,8 @@ TEST(BootstrapTest, Bootstrap_WithNoScriptedInputAllWorkersStayIdle)
 // bootstrap() must register it so it observes every dispatched event.
 TEST(BootstrapTest, Bootstrap_ForwardsDispatchedEventsToATickEventRecorder)
 {
-    std::chrono::system_clock::time_point time{};
-    FakeClock fakeClock(time);
-    NullAppender appender;
-    PlainFormatter formatter;
-    MinimumLevelLogPolicy logPolicy(Level::Info);
-    EventRecorder eventSink;
+    NiceMock<MockLogger> logger;
+    NiceMock<MockEventSink> eventSink;
 
     ReplaySource inputSource({
         TickEvent{
@@ -283,10 +247,7 @@ TEST(BootstrapTest, Bootstrap_ForwardsDispatchedEventsToATickEventRecorder)
 
     antwika::task_worker::bootstrap(
         antwika::task_worker::TaskWorkerConfig{
-            .clock = fakeClock,
-            .appender = appender,
-            .formatter = formatter,
-            .logPolicy = logPolicy,
+            .logger = logger,
             .eventSink = eventSink,
             .inputSource = inputSource,
             .workerCount = kWorkerCount,
@@ -315,22 +276,15 @@ TEST(BootstrapTest, Bootstrap_ForwardsDispatchedEventsToATickEventRecorder)
 // It should not hang or silently truncate once maxTicks is reached.
 TEST(BootstrapTest, Bootstrap_ThrowsWhenMaxTicksIsReachedWithoutAStopEvent)
 {
-    std::chrono::system_clock::time_point time{};
-    FakeClock fakeClock(time);
-    NullAppender appender;
-    PlainFormatter formatter;
-    MinimumLevelLogPolicy logPolicy(Level::Info);
-    EventRecorder eventSink;
+    NiceMock<MockLogger> logger;
+    NiceMock<MockEventSink> eventSink;
 
     ReplaySource inputSource({});
 
     EXPECT_THROW(
         antwika::task_worker::bootstrap(
             antwika::task_worker::TaskWorkerConfig{
-                .clock = fakeClock,
-                .appender = appender,
-                .formatter = formatter,
-                .logPolicy = logPolicy,
+                .logger = logger,
                 .eventSink = eventSink,
                 .inputSource = inputSource,
                 .workerCount = kWorkerCount,

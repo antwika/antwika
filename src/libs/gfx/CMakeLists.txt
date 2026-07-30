@@ -1,3 +1,8 @@
+# Not on antwika_add_library: stb arrives as a private dependency with
+# its own compile definitions, and one source file is compiled with
+# warnings off.
+# The function writes the blocks a module has nothing to say about, and
+# gfx has three things to say.
 find_package(stb REQUIRED)
 
 add_library(antwika_gfx

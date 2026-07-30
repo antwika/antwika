@@ -1,3 +1,4 @@
+#include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
 #include <algorithm>
@@ -13,7 +14,7 @@
 
 #include <antwika/engine/Events.hpp>
 #include <antwika/event/Event.hpp>
-#include <antwika/event/EventRecorder.hpp>
+#include <antwika/event/mocks/MockEventSink.hpp>
 #include <antwika/event/TickEvent.hpp>
 #include <antwika/event/TickEventRecorder.hpp>
 #include <antwika/gfx/Bitmap.hpp>
@@ -30,9 +31,7 @@
 #include <antwika/gfx/WindowId.hpp>
 #include <antwika/holdem/Blinds.hpp>
 #include <antwika/log/Level.hpp>
-#include <antwika/log/MinimumLevelLogPolicy.hpp>
-#include <antwika/log/NullAppender.hpp>
-#include <antwika/log/PlainFormatter.hpp>
+#include <antwika/log/mocks/MockLogger.hpp>
 #include <antwika/replay/IReplaySource.hpp>
 #include <antwika/replay/ReplayReader.hpp>
 #include <antwika/replay/ReplaySource.hpp>
@@ -47,7 +46,7 @@
 #include "antwika/poker/WindowSetup.hpp"
 
 using antwika::event::Event;
-using antwika::event::EventRecorder;
+using antwika::event::mocks::MockEventSink;
 using antwika::event::TickEvent;
 using antwika::event::TickEventRecorder;
 using antwika::gfx::Bitmap;
@@ -64,9 +63,6 @@ using antwika::gfx::WindowEvent;
 using antwika::gfx::WindowId;
 using antwika::holdem::Blinds;
 using antwika::log::Level;
-using antwika::log::MinimumLevelLogPolicy;
-using antwika::log::NullAppender;
-using antwika::log::PlainFormatter;
 using antwika::replay::IReplaySource;
 using antwika::replay::ReplayReader;
 using antwika::replay::ReplaySource;
@@ -76,7 +72,9 @@ using antwika::poker::RoomSummary;
 using antwika::poker::WindowSetup;
 using antwika::time::fakes::FakeClock;
 using antwika::time::fakes::FakeSleeper;
+using antwika::log::mocks::MockLogger;
 using namespace std::chrono_literals;
+using ::testing::NiceMock;
 
 namespace
 {
@@ -205,18 +203,14 @@ namespace
     {
         std::chrono::system_clock::time_point time{};
         FakeClock clock(time);
-        NullAppender appender;
-        PlainFormatter formatter;
-        MinimumLevelLogPolicy logPolicy(Level::Warning);
-        EventRecorder eventSink;
+        NiceMock<MockLogger> logger;
+        NiceMock<MockEventSink> eventSink;
         TickEventRecorder replayRecorder;
         std::ostringstream out;
 
         antwika::poker::RoomSetup setup{
             .clock = clock,
-            .appender = appender,
-            .formatter = formatter,
-            .logPolicy = logPolicy,
+            .logger = logger,
             .eventSink = eventSink,
             .inputSource = source,
             .out = out,

@@ -5,7 +5,7 @@
 
 #include <antwika/engine/Events.hpp>
 #include <antwika/event/Event.hpp>
-#include <antwika/event/EventRecorder.hpp>
+#include <antwika/event/mocks/MockEventSink.hpp>
 #include <antwika/event/TickEvent.hpp>
 #include <antwika/log/mocks/MockLogger.hpp>
 #include <antwika/replay/IReplaySource.hpp>
@@ -17,7 +17,7 @@
 #include "antwika/life/Life.hpp"
 
 using antwika::event::Event;
-using antwika::event::EventRecorder;
+using antwika::event::mocks::MockEventSink;
 using antwika::event::TickEvent;
 using antwika::life::Board;
 using antwika::log::mocks::MockLogger;
@@ -36,7 +36,7 @@ namespace
     Board runLife(IReplaySource &source)
     {
         NiceMock<MockLogger> logger;
-        EventRecorder eventSink;
+        NiceMock<MockEventSink> eventSink;
 
         return antwika::life::bootstrap(
             antwika::life::LifeConfig{

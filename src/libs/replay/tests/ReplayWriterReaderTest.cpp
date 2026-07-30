@@ -1,16 +1,28 @@
+#include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
 #include <algorithm>
+#include <optional>
 #include <sstream>
 #include <string>
+#include <string_view>
 #include <vector>
 
+#include <antwika/gfx/Size.hpp>
+#include <antwika/log/Level.hpp>
+#include <antwika/log/mocks/MockLogger.hpp>
+
+#include "antwika/replay/CanvasCheck.hpp"
 #include "antwika/replay/ReplayReader.hpp"
 #include "antwika/replay/ReplayWriter.hpp"
 #include "antwika/replay/ReplayFormatError.hpp"
 
 using antwika::event::Event;
 using antwika::event::TickEvent;
+using antwika::gfx::Size;
+using antwika::log::Level;
+using antwika::log::mocks::MockLogger;
+using antwika::replay::CanvasCheck;
 using antwika::replay::ReplayReader;
 using antwika::replay::ReplayWriter;
 using antwika::replay::ReplayFormatError;
@@ -148,4 +160,89 @@ TEST(ReplayWriterReaderTest, ReadsBackWhatCompactWrote)
     writer.write(events, stream);
 
     EXPECT_EQ(reader.read(stream), events);
+}
+
+namespace
+{
+    // Writes a session against `recorded`.
+    // Reads it back against `expected`.
+    // Returns whatever the reader had to say about the difference.
+    [[nodiscard]] std::vector<std::string> warningsFromRoundTrip(
+        std::optional<Size> recorded, std::optional<Size> expected)
+    {
+        std::vector<std::string> warnings;
+        MockLogger logger;
+        EXPECT_CALL(logger, log(Level::Warning, testing::_))
+            .WillRepeatedly(
+                [&warnings](Level, std::string_view message)
+                {
+                    warnings.emplace_back(message);
+                });
+
+        const ReplayWriter writer(
+            ReplayWriter::Layout::Compact, recorded);
+        std::stringstream stream;
+        writer.write(aSession(), stream);
+
+        const ReplayReader reader(
+            CanvasCheck{.canvas = expected, .logger = logger});
+        (void)reader.read(stream);
+
+        return warnings;
+    }
+} // namespace
+
+TEST(ReplayWriterReaderTest, WarnsWhenTheRecordedCanvasIsNotTheOneInUse)
+{
+    const auto warnings = warningsFromRoundTrip(
+        Size{.width = 1024, .height = 640},
+        Size{.width = 800, .height = 600});
+
+    ASSERT_EQ(warnings.size(), 1U);
+    EXPECT_NE(warnings.front().find("1024x640"), std::string::npos)
+        << warnings.front();
+    EXPECT_NE(warnings.front().find("800x600"), std::string::npos)
+        << warnings.front();
+}
+
+TEST(ReplayWriterReaderTest, SaysNothingWhenTheCanvasesMatch)
+{
+    EXPECT_TRUE(
+        warningsFromRoundTrip(
+            Size{.width = 1024, .height = 640},
+            Size{.width = 1024, .height = 640})
+            .empty());
+}
+
+// A recording written before the field says nothing about its canvas.
+// It is taken at face value rather than complained about.
+TEST(ReplayWriterReaderTest, SaysNothingWhenTheRecordingHasNoCanvas)
+{
+    EXPECT_TRUE(
+        warningsFromRoundTrip(
+            std::nullopt, Size{.width = 800, .height = 600})
+            .empty());
+}
+
+TEST(ReplayWriterReaderTest, SaysNothingWhenTheCallerClaimsNoCanvas)
+{
+    EXPECT_TRUE(
+        warningsFromRoundTrip(
+            Size{.width = 1024, .height = 640}, std::nullopt)
+            .empty());
+}
+
+// A check with nowhere to report to is no reason to crash.
+// Nor to reach for a logger of the library's own.
+TEST(ReplayWriterReaderTest, MismatchWithNoLoggerIsReadNormally)
+{
+    const ReplayWriter writer(
+        ReplayWriter::Layout::Compact, Size{.width = 1024, .height = 640});
+    std::stringstream stream;
+    writer.write(aSession(), stream);
+
+    const ReplayReader reader(
+        CanvasCheck{.canvas = Size{.width = 800, .height = 600}});
+
+    EXPECT_EQ(reader.read(stream), aSession());
 }
