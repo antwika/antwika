@@ -52,10 +52,16 @@ namespace antwika::ecs::detail
          *
          * Logs Level::Fatal before throwing, since exhaustion is a
          * fatal condition in practice rather than something a caller is
-         * expected to retry. It still throws rather than calling
-         * std::exit, so the stack unwinds and every scoped resource on
-         * it — an in-progress --record replay file, most visibly — is
+         * expected to retry. Throwing rather than calling std::exit
+         * lets the stack unwind, so every scoped resource on it is
          * released the way it would be on any other error path.
+         *
+         * That unwinding only happens if something actually catches:
+         * an uncaught exception may call std::terminate with the stack
+         * still intact, which libstdc++ does. Every app's main()
+         * therefore catches std::exception around bootstrap(), which
+         * is also what lets a failed --record run still write the
+         * events it recorded before the failure.
          */
         [[nodiscard]] Entity create();
 
