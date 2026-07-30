@@ -4,12 +4,16 @@ add_subdirectory(conformance)
 add_subdirectory(mocks)
 
 add_executable(antwika_gfx_tests
+    BitmapTest.cpp
+    BlitTest.cpp
     ColorTest.cpp
     GlyphsTest.cpp
     NullBackendConformanceTest.cpp
     NullBackendTest.cpp
     NullRendererTest.cpp
+    NullTextureTest.cpp
     NullWindowTest.cpp
+    PngReaderTest.cpp
     PointTest.cpp
     RectTest.cpp
     SizeTest.cpp
@@ -26,6 +30,7 @@ target_link_libraries(antwika_gfx_tests
     PRIVATE
         antwika::gfx
         antwika::gfx::tests::conformance
+        antwika::gfx::tests::mocks
         antwika::log::tests::mocks
         gtest::gtest
 )

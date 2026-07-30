@@ -51,6 +51,12 @@ class AntwikaConan(ConanFile):
         self.requires("nlohmann_json/3.12.0", override=True)
         self.requires("json-schema-validator/2.4.0")
 
+        # Unconditional, unlike the backends below.
+        # antwika::gfx decodes an image once for every backend to
+        # upload, so the decoder is not part of anyone's graph in
+        # particular.
+        self.requires("stb/cci.20240531")
+
         # Either option selecting a framework is enough to need it.
         backends = {str(self.options.gfx_backend), self._input_backend}
 

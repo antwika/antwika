@@ -1,6 +1,12 @@
 #include "NullRenderer.hpp"
 
+#include <memory>
+
 #include <antwika/log/Level.hpp>
+
+#include "antwika/gfx/GfxError.hpp"
+
+#include "NullTexture.hpp"
 
 namespace antwika::gfx::detail
 {
@@ -26,6 +32,26 @@ namespace antwika::gfx::detail
         Point, std::string_view, std::uint32_t, Color)
     {
         logger.log(Level::Trace, "gfx.null: draw text");
+    }
+
+    std::unique_ptr<ITexture> NullRenderer::createTexture(
+        const Bitmap &bitmap)
+    {
+        if (!bitmap.isComplete())
+        {
+            throw GfxError(
+                "gfx.null: bitmap does not hold the pixels it claims");
+        }
+
+        logger.log(Level::Trace, "gfx.null: create texture");
+
+        return std::make_unique<NullTexture>(bitmap.size);
+    }
+
+    void NullRenderer::drawTexture(
+        const ITexture &, Rect, Rect, Color)
+    {
+        logger.log(Level::Trace, "gfx.null: draw texture");
     }
 
     void NullRenderer::present()

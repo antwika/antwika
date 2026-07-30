@@ -4,6 +4,17 @@ add_executable(antwika_gfx_demo
     src/main.cpp
 )
 
+# Baked in at configure time, as the poker app does with its demo
+# replay, so the binary needs no install step and no working directory.
+# Only the app gets this: every test draws a mock texture instead.
+set(ANTWIKA_GFX_DEMO_TEXTURE_PATH
+    "${CMAKE_CURRENT_SOURCE_DIR}/assets/antwika.png")
+
+target_compile_definitions(antwika_gfx_demo
+    PRIVATE
+        ANTWIKA_GFX_DEMO_TEXTURE_PATH="${ANTWIKA_GFX_DEMO_TEXTURE_PATH}"
+)
+
 target_include_directories(antwika_gfx_demo
     PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}/include

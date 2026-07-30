@@ -159,6 +159,11 @@ The `raylib` input backend reports a pointer and no keyboard, and synthesises ed
 
 `antwika::gfx` abstracts opening and rendering to windows (`IGfxBackend`/`IWindow`/`IRenderer`, `GfxError`), so no code under `src/` names a concrete graphics framework — SDL, raylib and friends arrive as statically linked backends under `backends/`, chosen at build time. Rendering is a write-only projection of state and never feeds back into the tick loop, so replays stay reproducible under the headless `NullBackend`. See [`blog/012-a-window-that-cant-talk-back.md`](blog/012-a-window-that-cant-talk-back.md) for how an app hangs rendering off the tick loop without letting it feed back in.
 
+Textures are decoded once and uploaded per backend: `gfx::PngReader::read()` turns a byte stream into a `gfx::Bitmap` of straight RGBA (stb_image, compiled `STB_IMAGE_STATIC` in one TU because raylib links its own copy), `IRenderer::createTexture()` uploads it, and `drawTexture(texture, source, destination, tint)` blits part of it with a colour and alpha modulation.
+The library opens no files — an app does that, as `apps/gfx_demo` does with the PNG path baked in at configure time.
+A texture belongs to the renderer that made it: drawing it through any other draws nothing, and it may safely outlive its window, because each renderer's `detach()` frees its live textures before the framework tears the device down.
+Write-only still holds — `ITexture` is opaque, and there is no pixel read-back, render target or screenshot anywhere in the interface.
+
 ## Notes for AI agents
 
 - **Always work in a separate git worktree, never directly in the primary checkout.** Before making any change, create/enter a dedicated worktree for the task (e.g. `git worktree add ../antwika-<task> -b <task>`), do all editing, building, and testing there, and only merge back when the work is done. This keeps `main` clean and lets several tasks build in parallel without clobbering each other's `build/` directory.

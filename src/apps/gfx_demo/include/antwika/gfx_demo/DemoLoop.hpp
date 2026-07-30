@@ -3,6 +3,7 @@
 #include <cstdint>
 #include <optional>
 
+#include <antwika/gfx/Bitmap.hpp>
 #include <antwika/gfx/IGfxBackend.hpp>
 #include <antwika/gfx/WindowDesc.hpp>
 
@@ -11,6 +12,7 @@
 namespace antwika::gfx_demo
 {
 
+    using antwika::gfx::Bitmap;
     using antwika::gfx::IGfxBackend;
     using antwika::gfx::WindowDesc;
 
@@ -48,12 +50,17 @@ namespace antwika::gfx_demo
          * the window on the way out either way.
          *
          * @param desc What the window should look like.
+         * @param logo Uploaded once, after the window exists, and drawn
+         * into every frame.
          * @param maxFrames How many frames to draw at most, or nullopt to
          * keep drawing for as long as the window stays open.
-         * @throws antwika::gfx::GfxError If the window cannot be created.
+         * @throws antwika::gfx::GfxError If the window or the texture
+         * cannot be created.
          */
         void run(
-            const WindowDesc &desc, std::optional<std::uint32_t> maxFrames);
+            const WindowDesc &desc,
+            const Bitmap &logo,
+            std::optional<std::uint32_t> maxFrames);
 
     private:
         IGfxBackend &backend;

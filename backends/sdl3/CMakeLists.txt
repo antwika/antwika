@@ -39,6 +39,7 @@ if(ANTWIKA_GFX_BACKEND STREQUAL "sdl3")
         src/SelectedBackend.cpp
         src/Sdl3Backend.cpp
         src/Sdl3Renderer.cpp
+        src/Sdl3Texture.cpp
         src/Sdl3Window.cpp
     )
 

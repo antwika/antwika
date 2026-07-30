@@ -5,13 +5,17 @@
 
 #include <cstdint>
 #include <memory>
+#include <vector>
 
+#include <antwika/gfx/Bitmap.hpp>
 #include <antwika/gfx/Color.hpp>
 #include <antwika/gfx/GfxError.hpp>
 #include <antwika/gfx/IGfxBackend.hpp>
+#include <antwika/gfx/ITexture.hpp>
 #include <antwika/gfx/IWindow.hpp>
 #include <antwika/gfx/Point.hpp>
 #include <antwika/gfx/Rect.hpp>
+#include <antwika/gfx/Size.hpp>
 #include <antwika/gfx/WindowDesc.hpp>
 #include <antwika/gfx/WindowId.hpp>
 #include <antwika/log/ILogger.hpp>
@@ -61,6 +65,32 @@ namespace antwika::gfx::conformance
             return WindowDesc{
                 .title = "Antwika conformance",
                 .size = {.width = 640, .height = 480}};
+        }
+
+        /**
+         * @brief A 4x4 bitmap every backend must be able to upload.
+         *
+         * Deliberately tiny and opaque grey, because nothing here can
+         * read a pixel back to check what became of it.
+         */
+        [[nodiscard]] static Bitmap demoBitmap()
+        {
+            constexpr std::uint32_t kSide = 4;
+
+            return Bitmap{
+                .size = {.width = kSide, .height = kSide},
+                .pixels = std::vector<std::uint8_t>(
+                    kSide * kSide * kBytesPerPixel, 128)};
+        }
+
+        /**
+         * @brief The rectangle covering all of demoBitmap().
+         */
+        [[nodiscard]] static Rect wholeBitmap()
+        {
+            return Rect{
+                .origin = {.x = 0, .y = 0},
+                .size = demoBitmap().size};
         }
 
         ::testing::NiceMock<MockLogger> logger;
@@ -241,6 +271,148 @@ namespace antwika::gfx::conformance
         });
     }
 
+    TYPED_TEST_P(GfxBackendConformance, CreateTexture_ReportsTheBitmapSize)
+    {
+        const auto window = this->backend->createWindow(this->demoDesc());
+        const auto texture =
+            window->renderer().createTexture(this->demoBitmap());
+
+        ASSERT_NE(texture, nullptr);
+
+        // The one thing a texture is allowed to report.
+        // It must be the size handed in, not one the framework chose.
+        // Any other answer is the window system reaching the caller.
+        EXPECT_EQ(texture->size(), this->demoBitmap().size);
+    }
+
+    TYPED_TEST_P(
+        GfxBackendConformance, CreateTexture_ThrowsOnAnIncompleteBitmap)
+    {
+        const auto window = this->backend->createWindow(this->demoDesc());
+        auto &renderer = window->renderer();
+
+        EXPECT_THROW(
+            { const auto texture = renderer.createTexture(Bitmap{}); },
+            GfxError);
+
+        // A size with no pixels behind it is the likelier mistake.
+        EXPECT_THROW(
+            {
+                const auto texture = renderer.createTexture(
+                    Bitmap{
+                        .size = {.width = 4, .height = 4},
+                        .pixels = {}});
+            },
+            GfxError);
+    }
+
+    TYPED_TEST_P(
+        GfxBackendConformance, DrawTexture_AcceptsAFrameWithoutThrowing)
+    {
+        const auto window = this->backend->createWindow(this->demoDesc());
+        auto &renderer = window->renderer();
+        const auto texture = renderer.createTexture(this->demoBitmap());
+        const auto whole = this->wholeBitmap();
+
+        EXPECT_NO_THROW({
+            renderer.clear(Color{});
+            renderer.drawTexture(
+                *texture, whole,
+                Rect{
+                    .origin = {.x = 8, .y = 8},
+                    .size = {.width = 4, .height = 4}},
+                Color{.red = 255, .green = 255, .blue = 255});
+            renderer.drawTexture(
+                *texture,
+                Rect{
+                    .origin = {.x = 1, .y = 1},
+                    .size = {.width = 2, .height = 2}},
+                Rect{
+                    .origin = {.x = 40, .y = 40},
+                    .size = {.width = 64, .height = 64}},
+                Color{.red = 255, .green = 80, .blue = 80, .alpha = 128});
+            renderer.drawTexture(
+                *texture, whole,
+                Rect{
+                    .origin = {.x = -20, .y = -20},
+                    .size = {.width = 32, .height = 32}},
+                Color{.red = 255, .green = 255, .blue = 255});
+            renderer.present();
+        });
+    }
+
+    TYPED_TEST_P(GfxBackendConformance, DrawTexture_AcceptsAnUndrawableBlit)
+    {
+        const auto window = this->backend->createWindow(this->demoDesc());
+        auto &renderer = window->renderer();
+        const auto texture = renderer.createTexture(this->demoBitmap());
+        const auto whole = this->wholeBitmap();
+        const Color white{.red = 255, .green = 255, .blue = 255};
+
+        // Nothing here can be checked by reading pixels back.
+        // What a backend must not do is refuse any of it.
+        EXPECT_NO_THROW({
+            renderer.drawTexture(*texture, Rect{}, whole, white);
+            renderer.drawTexture(*texture, whole, Rect{}, white);
+            renderer.drawTexture(
+                *texture,
+                Rect{
+                    .origin = {.x = -1, .y = -1},
+                    .size = {.width = 4, .height = 4}},
+                whole, white);
+            renderer.drawTexture(
+                *texture,
+                Rect{
+                    .origin = {.x = 2, .y = 2},
+                    .size = {.width = 99, .height = 99}},
+                whole, white);
+            renderer.present();
+        });
+    }
+
+    TYPED_TEST_P(
+        GfxBackendConformance, DrawTexture_AcceptsATextureFromAnotherRenderer)
+    {
+        if (this->backend->maxWindows() < 2)
+        {
+            GTEST_SKIP() << "backend allows only one window at a time";
+        }
+
+        const auto first = this->backend->createWindow(this->demoDesc());
+        const auto second = this->backend->createWindow(this->demoDesc());
+        const auto texture =
+            first->renderer().createTexture(this->demoBitmap());
+
+        // Drawing somebody else's texture must draw nothing.
+        // Handing a foreign handle to the framework is the hazard.
+        EXPECT_NO_THROW({
+            second->renderer().drawTexture(
+                *texture, this->wholeBitmap(), this->wholeBitmap(),
+                Color{.red = 255, .green = 255, .blue = 255});
+            second->renderer().present();
+        });
+    }
+
+    TYPED_TEST_P(GfxBackendConformance, Texture_MayOutliveItsWindow)
+    {
+        auto window = this->backend->createWindow(this->demoDesc());
+        auto texture = window->renderer().createTexture(this->demoBitmap());
+
+        window->close();
+
+        // A closed window's renderer stays reachable.
+        // So does a texture made through it.
+        EXPECT_NO_THROW(window->renderer().drawTexture(
+            *texture, this->wholeBitmap(), this->wholeBitmap(),
+            Color{.red = 255, .green = 255, .blue = 255}));
+
+        this->backend.reset();
+
+        // Freeing a texture must not reach a framework that has gone.
+        EXPECT_NO_THROW(window.reset());
+        EXPECT_NO_THROW(texture.reset());
+    }
+
     TYPED_TEST_P(GfxBackendConformance, PollEvent_DrainsToAnEmptyQueue)
     {
         const auto window = this->backend->createWindow(this->demoDesc());
@@ -317,6 +489,12 @@ namespace antwika::gfx::conformance
         Close_IsIdempotent,
         Renderer_AcceptsAFrameWithoutThrowing,
         DrawText_AcceptsAwkwardText,
+        CreateTexture_ReportsTheBitmapSize,
+        CreateTexture_ThrowsOnAnIncompleteBitmap,
+        DrawTexture_AcceptsAFrameWithoutThrowing,
+        DrawTexture_AcceptsAnUndrawableBlit,
+        DrawTexture_AcceptsATextureFromAnotherRenderer,
+        Texture_MayOutliveItsWindow,
         PollEvent_DrainsToAnEmptyQueue,
         PollEvent_DrainsAfterAFrameIsDrawn,
         Window_MayOutliveItsBackend);

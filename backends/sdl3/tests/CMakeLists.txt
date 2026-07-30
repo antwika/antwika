@@ -4,6 +4,7 @@ if(ANTWIKA_GFX_BACKEND STREQUAL "sdl3")
     add_executable(antwika_gfx_backend_sdl3_tests
         ${CMAKE_CURRENT_SOURCE_DIR}/../src/Sdl3Backend.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/../src/Sdl3Renderer.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/../src/Sdl3Texture.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/../src/Sdl3Window.cpp
         Sdl3BackendConformanceTest.cpp
     )
