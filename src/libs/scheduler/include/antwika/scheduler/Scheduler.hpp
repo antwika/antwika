@@ -142,8 +142,17 @@ namespace antwika::scheduler
             bool completed;
         };
 
-        void validateDependencies(
-            const std::vector<JobId> &dependsOn) const;
+        // Sorts, dedupes and rejects an unknown JobId, in that order.
+        // The owning overload does it before parting with the job.
+        // The borrowing one does it before recording anything.
+        // So it is one shared step rather than each overload's own.
+        void normaliseDependencies(std::vector<JobId> &dependsOn) const;
+
+        // Enqueues against a dependency list already through the above.
+        JobId scheduleValidated(
+            IJob &job,
+            Priority priority,
+            std::vector<JobId> dependsOn);
 
         void insertReady(JobId id, Priority priority);
 

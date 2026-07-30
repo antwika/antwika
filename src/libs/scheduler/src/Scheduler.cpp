@@ -45,10 +45,11 @@ namespace antwika::scheduler
         // Such a clause would also see allocation failures.
         // Those can strike once the job is already half-recorded.
         // Untangling that is not what a rejected dependency needs.
-        validateDependencies(dependsOn);
+        normaliseDependencies(dependsOn);
 
         IJob &borrowed = *job;
-        const auto id = schedule(borrowed, priority, std::move(dependsOn));
+        const auto id = scheduleValidated(
+            borrowed, priority, std::move(dependsOn));
 
         // ownedJobs runs in lockstep with records.
         // There is one slot per JobId, empty for a borrowed job.
@@ -57,9 +58,18 @@ namespace antwika::scheduler
         return id;
     }
 
-    void Scheduler::validateDependencies(
-        const std::vector<JobId> &dependsOn) const
+    void Scheduler::normaliseDependencies(
+        std::vector<JobId> &dependsOn) const
     {
+        std::sort(
+            dependsOn.begin(),
+            dependsOn.end(),
+            [](JobId left, JobId right)
+            { return rawValue(left) < rawValue(right); });
+        dependsOn.erase(
+            std::unique(dependsOn.begin(), dependsOn.end()),
+            dependsOn.end());
+
         const auto newRaw = rawValue(nextId);
 
         for (const auto dependency : dependsOn)
@@ -79,19 +89,17 @@ namespace antwika::scheduler
         Priority priority,
         std::vector<JobId> dependsOn)
     {
-        std::sort(
-            dependsOn.begin(),
-            dependsOn.end(),
-            [](JobId left, JobId right)
-            { return rawValue(left) < rawValue(right); });
-        dependsOn.erase(
-            std::unique(dependsOn.begin(), dependsOn.end()),
-            dependsOn.end());
+        normaliseDependencies(dependsOn);
+        return scheduleValidated(job, priority, std::move(dependsOn));
+    }
 
+    JobId Scheduler::scheduleValidated(
+        IJob &job,
+        Priority priority,
+        std::vector<JobId> dependsOn)
+    {
         const auto newId = nextId;
         const auto newRaw = rawValue(newId);
-
-        validateDependencies(dependsOn);
 
         std::size_t unmet = 0;
         for (const auto dependency : dependsOn)
