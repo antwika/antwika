@@ -75,11 +75,12 @@ namespace antwika::game
         GameState state;
         GameStateReducer reducer(state);
 
-        // A run with no toolbar still needs something to ask.
+        // A run with no toolbar still needs something the grid can ask.
         // An overlay nothing writes covers nothing.
         // So every click is the world's, which is what that means.
         UiOverlay noToolbar;
-        UiOverlay &ui = overlay != nullptr ? *overlay : noToolbar;
+        const bool hasToolbar = overlay != nullptr;
+        UiOverlay &ui = hasToolbar ? *overlay : noToolbar;
 
         const Toolbar toolbar;
         UiSink uiSink(camera, ui, codec, toolbar, camera);
@@ -93,7 +94,20 @@ namespace antwika::game
         // A press is resolved against the bar before the grid sees it.
         // And the picture is described before the renderer paints it.
         std::vector<std::reference_wrapper<ITickEventSink>> timedSinks{
-            reducer, uiSink, gridSink, stopSignal};
+            reducer};
+
+        // Registered only when there is somewhere to put the picture.
+        // Otherwise the bar is described against a zero canvas.
+        // Which no click can hit, so nothing is ever hovered or pressed.
+        // "No toolbar" then means no toolbar, not an unhittable one.
+        if (hasToolbar)
+        {
+            timedSinks.push_back(uiSink);
+        }
+
+        timedSinks.push_back(gridSink);
+        timedSinks.push_back(stopSignal);
+
         if (replayRecorder != nullptr)
         {
             timedSinks.push_back(*replayRecorder);

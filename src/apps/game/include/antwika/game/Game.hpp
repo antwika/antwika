@@ -98,9 +98,10 @@ namespace antwika::game
      * persist a `--record` file should register.
      * @param overlay Optional shared UI state that, if provided, turns the
      * toolbar on: a UiSink is registered ahead of the grid's, describing
-     * and resolving the bar against the overlay's canvas. Left out, the run
-     * has no toolbar and every click is the world's. Passed in rather than
-     * created here because a renderer built beforehand has to read it.
+     * and resolving the bar against the overlay's canvas. Left out, no
+     * UiSink is registered at all, so the run has no toolbar and every
+     * click is the world's. Passed in rather than created here because a
+     * renderer built beforehand has to read it.
      * @return What the run amounted to, for callers and tests.
      * @throws antwika::replay::EngineLoopError If maxTicks is reached
      * without engine.stop.
