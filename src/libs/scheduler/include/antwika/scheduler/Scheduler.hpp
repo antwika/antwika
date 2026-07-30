@@ -20,6 +20,14 @@ namespace antwika::scheduler
      *
      * Single-threaded, no RNG, no hashing anywhere in the pending-job
      * or dependency-tracking path.
+     *
+     * Bookkeeping is one fixed row per job ever scheduled, indexed by
+     * its JobId, and those rows are never reclaimed: an id is an index,
+     * and a dependency can only name an id issued before it, which is
+     * what makes a dependency cycle unexpressible rather than checked.
+     * What is reclaimed on completion is the job itself, along with the
+     * list of what waited on it -- the two parts that carry a caller's
+     * own data, and so the two that can be large.
      */
     class Scheduler final
     {
@@ -38,7 +46,10 @@ namespace antwika::scheduler
         /**
          * @brief Enqueue a job this Scheduler takes ownership of.
          * @param job The job to run later; the Scheduler keeps it alive
-         * until the Scheduler itself is destroyed. Prefer this overload
+         * until it has run, and otherwise until the Scheduler itself is
+         * destroyed. A job it has already run is released there and
+         * then, so a long-lived Scheduler doesn't accumulate every job
+         * a session ever submitted. Prefer this overload
          * over the IJob& one whenever the job is heap-allocated purely
          * to be scheduled, since it makes the lifetime rule impossible
          * to get wrong.
@@ -95,6 +106,13 @@ namespace antwika::scheduler
          * jobs known to this Scheduler before this call began are
          * ever eligible, no matter what triggers their readiness
          * during the call.
+         * @throws Whatever a job's execute() throws, after that job has
+         * been completed exactly as a returning one would be: it counts
+         * as run, pending() drops, and its dependents are unblocked.
+         * The Scheduler orders work; it does not judge whether the work
+         * succeeded. Jobs already executed by this call are lost along
+         * with the return value, so a caller who needs to know which
+         * ran should not let a job throw.
          */
         std::vector<JobId> run(antwika::time::Tick tick, std::size_t budget);
 
@@ -129,9 +147,14 @@ namespace antwika::scheduler
 
         void insertReady(JobId id, Priority priority);
 
+        // Marks a job complete and unblocks whatever waited on it.
+        // Called whether its execute() returned or threw.
+        void finish(std::size_t index);
+
         // Jobs handed over by the owning schedule() overload.
         // Declared first so it is destroyed last.
         // records below holds raw IJob* into these.
+        // One slot per JobId, empty for a caller-owned job.
         std::vector<std::unique_ptr<IJob>> ownedJobs;
         // Ready to run, kept sorted by (priority desc, id asc).
         std::vector<Entry> ready;

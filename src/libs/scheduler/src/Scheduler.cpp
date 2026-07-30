@@ -43,13 +43,18 @@ namespace antwika::scheduler
         // A rejected job dies with this parameter on the way out.
         // Undoing it afterwards would need a catch clause instead.
         // Such a clause would also see allocation failures.
-        // Those can strike after records already holds this job.
-        // Dropping the job there would leave a dangling pointer.
+        // Those can strike once the job is already half-recorded.
+        // Untangling that is not what a rejected dependency needs.
         validateDependencies(dependsOn);
 
-        ownedJobs.push_back(std::move(job));
-        return schedule(
-            *ownedJobs.back(), priority, std::move(dependsOn));
+        IJob &borrowed = *job;
+        const auto id = schedule(borrowed, priority, std::move(dependsOn));
+
+        // ownedJobs runs in lockstep with records.
+        // There is one slot per JobId, empty for a borrowed job.
+        // That is what lets finishing a job free it by its own id.
+        ownedJobs[rawValue(id) - 1] = std::move(job);
+        return id;
     }
 
     void Scheduler::validateDependencies(
@@ -101,6 +106,7 @@ namespace antwika::scheduler
 
         nextId = static_cast<JobId>(newRaw + 1);
         records.push_back(JobRecord{priority, &job, false});
+        ownedJobs.emplace_back();
         unmetCount.push_back(unmet);
         dependents.emplace_back();
         ++pendingCount;
@@ -137,27 +143,55 @@ namespace antwika::scheduler
             ready.erase(it);
 
             const auto index = rawValue(id) - 1;
-            records[index].job->execute(tick);
-            records[index].completed = true;
-            --pendingCount;
-            executed.push_back(id);
-
-            for (const auto dependentId : dependents[index])
+            try
             {
-                const auto dependentIndex = rawValue(dependentId) - 1;
-                --unmetCount[dependentIndex];
-                if (unmetCount[dependentIndex] == 0)
-                {
-                    insertReady(
-                        dependentId,
-                        records[dependentIndex].priority);
-                }
+                records[index].job->execute(tick);
             }
-            dependents[index].clear();
+            catch (...)
+            {
+                // A job that throws has still had its turn.
+                // Left half-run it would be gone from ready.
+                // pending() would still count it.
+                // Its dependents would wait on it forever.
+                // So it finishes here exactly as a clean job does.
+                // The exception then carries on to the caller.
+                finish(index);
+                throw;
+            }
+
+            finish(index);
+            executed.push_back(id);
         }
 
         return executed;
     } // GCOVR_EXCL_LINE
+
+    void Scheduler::finish(std::size_t index)
+    {
+        records[index].completed = true;
+        --pendingCount;
+
+        for (const auto dependentId : dependents[index])
+        {
+            const auto dependentIndex = rawValue(dependentId) - 1;
+            --unmetCount[dependentIndex];
+            if (unmetCount[dependentIndex] == 0)
+            {
+                insertReady(
+                    dependentId, records[dependentIndex].priority);
+            }
+        }
+
+        // A completed job is never looked up again.
+        // An empty vector hands the memory back; clear() would not.
+        dependents[index] = {};
+
+        // The row itself has to stay, since a JobId indexes it.
+        // What need not stay is the job, which can be the bulk of it.
+        // Its pointer goes with it so nothing can follow it later.
+        records[index].job = nullptr;
+        ownedJobs[index].reset();
+    }
 
     std::size_t Scheduler::pending() const noexcept
     {
