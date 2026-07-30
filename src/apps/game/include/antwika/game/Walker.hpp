@@ -3,6 +3,7 @@
 #include <cstdint>
 #include <optional>
 
+#include "antwika/game/Cell.hpp"
 #include "antwika/game/Direction.hpp"
 #include "antwika/game/Resource.hpp"
 
@@ -81,10 +82,19 @@ namespace antwika::game
         std::int32_t stepsTaken = 0;
 
         /**
+         * @brief The road cell it set out from, and heads back to.
+         *
+         * The road it stepped out onto rather than the building behind
+         * it, because only roads are in the graph a route home is
+         * searched over -- so home is the door, not the room.
+         */
+        Cell origin = Cell{};
+
+        /**
          * @brief Compare two walkers.
          * @param other The walker to compare against.
-         * @return True when the facing, the kind, the load and the
-         * distance walked all match.
+         * @return True when the facing, the kind, the load, the
+         * distance walked and where it started all match.
          */
         [[nodiscard]] bool operator==(const Walker &other) const = default;
     };
@@ -93,10 +103,14 @@ namespace antwika::game
      * @brief Get a walker as it is the moment it appears.
      * @param kind The kind of walker to send out.
      * @param facing The direction it leaves in.
+     * @param origin The road cell it appears on, which is where a
+     * route home ends; it defaults to the origin cell, so a caller
+     * that has no home to name gets one that is still a road wherever
+     * a board has one there.
      * @return The walker's starting state, loaded if it carries anything.
      */
     [[nodiscard]] constexpr Walker newlySpawned(
-        WalkerKind kind, Direction facing) noexcept
+        WalkerKind kind, Direction facing, Cell origin = Cell{}) noexcept
     {
         const auto carries = carriedResource(kind).has_value();
 
@@ -104,7 +118,8 @@ namespace antwika::game
             .facing = facing,
             .kind = kind,
             .carried = carries ? kWalkerCarryCapacity : 0,
-            .stepsTaken = 0};
+            .stepsTaken = 0,
+            .origin = origin};
     }
 
 } // namespace antwika::game

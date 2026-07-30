@@ -12,6 +12,7 @@ add_executable(antwika_game_tests
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/MenuLabels.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/MenuSink.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/PathIndex.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/RoadGraph.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/RenderSystem.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/TickPacer.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/Toolbar.cpp
@@ -41,6 +42,7 @@ add_executable(antwika_game_tests
     MenuStateTest.cpp
     PathIndexTest.cpp
     PointerReadingTest.cpp
+    RoadGraphTest.cpp
     RenderSystemTest.cpp
     SceneSnapshotTest.cpp
     TileAtlasTest.cpp
@@ -72,6 +74,7 @@ target_link_libraries(antwika_game_tests
         antwika::gfx::tests::mocks
         antwika::input
         antwika::log::tests::mocks
+        antwika::pathfinding
         antwika::replay
         antwika::time::tests::fakes
         antwika::ui

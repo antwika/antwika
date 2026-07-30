@@ -2,6 +2,10 @@
 
 #include <algorithm>
 
+#include <antwika/pathfinding/AStar.hpp>
+#include <antwika/pathfinding/SearchResult.hpp>
+
+#include "antwika/game/RoadGraph.hpp"
 #include "antwika/game/Walking.hpp"
 
 namespace antwika::game
@@ -22,12 +26,11 @@ namespace antwika::game
 
             if (walker.stepsTaken >= kMaxWalkDistance)
             {
-                // Where walking home goes.
-                // A route back would be worked out here and followed.
-                // The destroy() would move to the tick it arrives.
-                // One branch, in one place.
-                // Nothing else here knows how far a walker has come.
-                world.destroy(entity);
+                if (!walkHome(world, entity, at, walker))
+                {
+                    world.destroy(entity);
+                }
+
                 continue;
             }
 
@@ -50,6 +53,38 @@ namespace antwika::game
         {
             world.set<Building>(entity, building);
         }
+    }
+
+    bool WalkerSystem::walkHome(
+        World &world, Entity entity, Cell at, const Walker &walker) const
+    {
+        if (at == walker.origin)
+        {
+            return false;
+        }
+
+        const RoadGraph roads(paths);
+        const auto route = antwika::pathfinding::findPath(
+            roads, nodeFor(at), nodeFor(walker.origin));
+
+        if (route.outcome == antwika::pathfinding::SearchOutcome::NoPath)
+        {
+            return false;
+        }
+
+        // The route runs start-to-goal inclusive.
+        // The start is not the goal here.
+        // So there is always a second node to step onto.
+        const auto onto = cellFor(route.nodes[1]);
+
+        auto heading = walker;
+        heading.facing = headingTo(at, onto);
+        ++heading.stepsTaken;
+
+        world.set<Cell>(entity, onto);
+        world.set<Walker>(entity, heading);
+
+        return true;
     }
 
     void WalkerSystem::deliver(
