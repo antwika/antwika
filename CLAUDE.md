@@ -228,5 +228,23 @@ The canvas it is laid out and hit-tested against must be the configured window s
 - **Always work in a separate git worktree, never directly in the primary checkout.** Before making any change, create/enter a dedicated worktree for the task (`git worktree add .worktrees/<task> -b <task>`), do all editing, building, and testing there, and only merge back when the work is done.
   This keeps `main` clean and lets several tasks build in parallel without clobbering each other's `build/` directory.
   `.worktrees/` is the agreed home for them and `.gitignore` covers it, so a worktree and its build output never show up as untracked state in the primary checkout; `.claude/` and `core.*` are ignored for the same reason.
+- **Always confirm coverage is 100% before calling any work done.** Passing tests are not the bar: the GNU toolchain build must report 100% lines, 100% functions *and* 100% branches, and CI fails the moment any of the three slips.
+  Run it yourself rather than assuming, from the repo root:
+
+  ```sh
+  cmake --preset conan-coverage
+  cmake --build build-coverage -j24
+  ctest --test-dir build-coverage
+  gcovr --root . --filter 'src/.*' --exclude '.*/tests/.*' \
+    --exclude '.*/apps/[^/]+/src/main\.cpp' \
+    --exclude-throw-branches --exclude-unreachable-branches \
+    --print-summary --json-summary --json-summary-pretty \
+    -o coverage-summary.json build-coverage
+  python3 scripts/check_full_coverage.py --summary coverage-summary.json
+  ```
+
+  Those are the same flags the coverage leg of [`.github/workflows/build.yml`](.github/workflows/build.yml) uses, so a local pass means a CI pass; the shorter `gcovr --print-summary` in the Commands section above is for a quick look, not for deciding you are finished.
+  Each app's `src/main.cpp` is excluded because nothing tests a `main()`, which is also why a line you cannot reach does not belong there — read [`docs/confirming-unreachable-branches.md`](docs/confirming-unreachable-branches.md) and prove the branch is unreachable before adding a single `GCOVR_EXCL_LINE`.
+  `coverage-summary.json` is a build artifact; delete it rather than committing it.
 - The blog posts under `blog/` are design write-ups for *why* a piece was built the way it was, written after the fact — read the relevant one before changing a library's core abstraction, since it usually explains a constraint that isn't obvious from the code alone.
 - Prefer running a single test binary (or `--gtest_filter`) over the full `ctest` suite while iterating; run the full suite before considering a change done.
