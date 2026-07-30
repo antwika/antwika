@@ -58,6 +58,8 @@ def it_finds_violations_across_the_configured_file_globs():
 
         assert len(violations) == 1
         assert violations[0][0] == root / "src/libs/foo/src/Foo.cpp"
+        assert violations[0][1] == 1
+        assert violations[0][2] == 90
 
 
 def it_checks_backend_sources_outside_src():
@@ -69,8 +71,8 @@ def it_checks_backend_sources_outside_src():
         violations = check_line_length.find_violations(root)
 
         assert len(violations) == 2
-        assert violations[0][1] == 1
-        assert violations[0][2] == 90
+        assert violations[0][0] == root / "backends/sdl3/src/Sdl3Backend.cpp"
+        assert violations[1][0] == root / "backends/sdl3/src/Sdl3Backend.hpp"
 
 
 def it_keeps_every_configured_source_line_at_or_under_eighty_chars():
