@@ -22,7 +22,6 @@
 #include <antwika/holdem/Table.hpp>
 #include <antwika/holdem/TableRunner.hpp>
 #include <antwika/log/Level.hpp>
-#include <antwika/log/Logger.hpp>
 #include <antwika/replay/EngineLoop.hpp>
 
 #include "antwika/poker/AgentStyle.hpp"
@@ -52,7 +51,6 @@ namespace antwika::poker
     using antwika::holdem::Table;
     using antwika::holdem::TableRunner;
     using antwika::log::Level;
-    using antwika::log::Logger;
     using antwika::replay::EngineLoop;
 
     namespace
@@ -98,8 +96,7 @@ namespace antwika::poker
         IReplaySource &inputSource = setup.inputSource;
         const RoomConfig &config = setup.room;
 
-        Logger logger(
-            setup.formatter, setup.logPolicy, clock, setup.appender);
+        ILogger &logger = setup.logger;
         EventDispatcher dispatcher({setup.eventSink});
 
         Table table(config.seatCount, config.blinds);
@@ -202,6 +199,23 @@ namespace antwika::poker
             .balances = ledger.balances(),
             .chipsLeftOnTable = leftOnTable,
         };
+    }
+
+    void printSummary(std::ostream &out, const RoomSummary &summary)
+    {
+        out << "\n=== " << summary.handsPlayed << " hands played ===\n";
+        for (const auto &[player, balance] : summary.balances)
+        {
+            out << "  " << player << ": " << balance << '\n';
+        }
+
+        // Chips nobody won are only mentioned when there are some.
+        // A session that ran to the end of a hand has none.
+        if (summary.chipsLeftOnTable > 0)
+        {
+            out << "  (" << summary.chipsLeftOnTable
+                << " chips left in an unfinished hand)\n";
+        }
     }
 
 } // namespace antwika::poker
