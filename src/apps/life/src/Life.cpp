@@ -108,13 +108,14 @@ namespace antwika::life
         ISystem &pacer,
         bool drawsNothing)
     {
-        std::vector<std::reference_wrapper<ISystem>> observers{renderer};
+        // Two whole lists rather than one built up in place.
+        // A named vector leaves an unwind cleanup line nothing reaches.
         if (drawsNothing)
         {
-            observers.emplace_back(printer);
+            return {renderer, printer, pacer};
         }
-        observers.emplace_back(pacer);
-        return observers;
+
+        return {renderer, pacer};
     }
 
     void announceHowToStop(ILogger &logger, bool drawsNothing)
