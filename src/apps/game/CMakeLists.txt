@@ -10,6 +10,7 @@ add_executable(antwika_game
     src/MenuLabels.cpp
     src/MenuSink.cpp
     src/PathIndex.cpp
+    src/RoadGraph.cpp
     src/RenderSystem.cpp
     src/TickPacer.cpp
     src/Toolbar.cpp
@@ -47,6 +48,7 @@ target_link_libraries(antwika_game
         antwika::input
         antwika::input_backend
         antwika::log
+        antwika::pathfinding
         antwika::replay
         antwika::time
         antwika::ui

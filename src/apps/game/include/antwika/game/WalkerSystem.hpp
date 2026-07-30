@@ -70,9 +70,15 @@ namespace antwika::game
          * nowhere to go, including backwards. It still serves what is
          * beside it, since standing still is not being idle.
          *
-         * A walker that has already taken kMaxWalkDistance steps is gone
-         * before it serves anything: it is out of the world on the tick
-         * it would have taken its next step.
+         * A walker that has already taken kMaxWalkDistance steps turns
+         * for home instead of wandering on, and serves nothing on the
+         * way: it has run out of round and is only getting back. Its
+         * route is an A* over the roads, worked out afresh each tick
+         * rather than remembered, so a road dug up behind it is noticed
+         * on the very next tick rather than walked into. It leaves the
+         * world the tick it reaches its origin, and the tick a route
+         * home stops existing at all -- which is also what a walker
+         * that was never on a connected road does immediately.
          *
          * @param world The world to read walkers from and stage moves,
          * deliveries and despawns into.
@@ -81,6 +87,12 @@ namespace antwika::game
         void update(World &world, antwika::time::Tick tick) override;
 
     private:
+        [[nodiscard]] bool walkHome(
+            World &world,
+            Entity entity,
+            Cell at,
+            const Walker &walker) const;
+
         static void deliver(
             const World &world,
             Cell at,
