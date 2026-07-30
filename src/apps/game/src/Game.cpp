@@ -16,6 +16,8 @@
 #include "antwika/game/GameStateReducer.hpp"
 #include "antwika/game/GridSink.hpp"
 #include "antwika/game/InputFold.hpp"
+#include "antwika/game/MainMenu.hpp"
+#include "antwika/game/MenuSink.hpp"
 #include "antwika/game/SceneSnapshot.hpp"
 #include "antwika/game/Toolbar.hpp"
 #include "antwika/game/UiSink.hpp"
@@ -93,9 +95,24 @@ namespace antwika::game
         const bool hasToolbar = config.overlay.has_value();
         UiOverlay &ui = hasToolbar ? config.overlay->get() : noToolbar;
 
+        // A run nobody handed a menu still gets one.
+        // F10 is then a menu whose intents nothing outside reads.
+        // Which is what a caller not asking for them means.
+        MenuState unreadMenu;
+        MenuState &menuState = config.menuState.has_value()
+                                   ? config.menuState->get()
+                                   : unreadMenu;
+
         const Toolbar toolbar;
         InputFold input(config.codec);
         UiSink uiSink(camera, ui, input, toolbar, camera);
+
+        // In front of the toolbar's sink rather than beside it.
+        // The menu is modal, so while it is up the bar sees nothing.
+        // Passing uiSink in is what says so, and UiSink learns nothing.
+        const MainMenu mainMenu;
+        MenuSink menuSink(menuState, ui, input, mainMenu, uiSink);
+
         GridSink gridSink(
             world,
             paths,
@@ -113,19 +130,19 @@ namespace antwika::game
         // So the tick boundary is one rule in one place.
         // GridSink runs the scheduler on engine.tick.
         // So anything that must show in this frame is folded before it.
-        // UiSink still comes before it.
+        // MenuSink, and the UiSink behind it, still come before it.
         // So a press is resolved against the bar before the grid sees it.
         // And the picture is described before the renderer paints it.
         std::vector<std::reference_wrapper<ITickEventSink>> timedSinks{
             input, reducer};
 
         // Registered only when there is somewhere to put the picture.
-        // Otherwise the bar is described against a zero canvas.
+        // Otherwise the bar and menu meet a zero canvas.
         // Which no click can hit, so nothing is ever hovered or pressed.
         // "No toolbar" then means no toolbar, not an unhittable one.
         if (hasToolbar)
         {
-            timedSinks.push_back(uiSink);
+            timedSinks.push_back(menuSink);
         }
 
         timedSinks.push_back(gridSink);
