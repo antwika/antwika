@@ -38,6 +38,21 @@ namespace antwika::holdem
      * chips left to bet with, and paying out at the end all happen
      * inside apply(). So while isHandInProgress() holds, seatToAct()
      * always names somebody.
+     *
+     * The betting rules, the stage progression and the showdown live in
+     * BettingRound, HandFlow and Showdown.hpp; what stays here is the
+     * coordination between them, and the seats.
+     *
+     * **The seats stay here deliberately, and this was decided rather
+     * than left.** Twenty-three of this class's methods touch the seat
+     * vector, across seating, dealing, betting and payout alike, and
+     * most of them mutate a Seat: blinds move chips, a call moves
+     * chips, a pot pays them back. A Seating class owning the vector
+     * would therefore have to hand a mutable Seat & to all three, at
+     * which point it is a std::vector<Seat> with a bounds check and
+     * nothing has been decoupled. The seats are not a fifth
+     * responsibility -- they are the substrate the other four
+     * coordinate through, which is why they belong to the coordinator.
      */
     class Table final
     {
