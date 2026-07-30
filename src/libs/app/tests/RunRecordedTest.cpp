@@ -209,3 +209,43 @@ TEST(ScriptedEventsTest, ThrowsWhenTheNamedFileIsNotThere)
         static_cast<void>(scriptedEvents("no-such-replay.json")),
         ReplayFormatError);
 }
+
+TEST(RunRecordedTest, DiscardsWhatIsDispatchedIntoTheSink)
+{
+    std::array<char *, 1> argv{const_cast<char *>("antwika_test")};
+    std::ostringstream errors;
+
+    static_cast<void>(runRecorded(
+        1,
+        argv.data(),
+        "antwika_test",
+        [](const RecordedRun &run)
+        {
+            // Nothing reads these, which is the point of the sink.
+            // Handing it one is still what every dispatcher does.
+            run.eventSink.handle(kScripted.event);
+            run.eventSink.handle({});
+        },
+        errors));
+
+    EXPECT_TRUE(errors.str().empty());
+}
+
+TEST(RunRecordedTest, LetsWhatIsNotAnExceptionThrough)
+{
+    std::array<char *, 1> argv{const_cast<char *>("antwika_test")};
+    std::ostringstream errors;
+
+    // A throw that is not a std::exception is not a failed run.
+    // It is a bug in the body, and hiding it would report success.
+    EXPECT_THROW(
+        static_cast<void>(runRecorded(
+            1,
+            argv.data(),
+            "antwika_test",
+            [](const RecordedRun &) { throw 42; },
+            errors)),
+        int);
+
+    EXPECT_TRUE(errors.str().empty());
+}
