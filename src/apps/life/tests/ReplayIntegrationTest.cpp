@@ -1,3 +1,4 @@
+#include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
 #include <sstream>
@@ -6,15 +7,11 @@
 #include <antwika/event/Event.hpp>
 #include <antwika/event/EventRecorder.hpp>
 #include <antwika/event/TickEvent.hpp>
-#include <antwika/log/Level.hpp>
-#include <antwika/log/MinimumLevelLogPolicy.hpp>
-#include <antwika/log/NullAppender.hpp>
-#include <antwika/log/PlainFormatter.hpp>
+#include <antwika/log/mocks/MockLogger.hpp>
 #include <antwika/replay/IReplaySource.hpp>
 #include <antwika/replay/ReplayReader.hpp>
 #include <antwika/replay/ReplaySource.hpp>
 #include <antwika/replay/ReplayWriter.hpp>
-#include <antwika/time/fakes/FakeClock.hpp>
 
 #include "antwika/life/Events.hpp"
 #include "antwika/life/Life.hpp"
@@ -23,15 +20,12 @@ using antwika::event::Event;
 using antwika::event::EventRecorder;
 using antwika::event::TickEvent;
 using antwika::life::Board;
-using antwika::log::Level;
-using antwika::log::MinimumLevelLogPolicy;
-using antwika::log::NullAppender;
-using antwika::log::PlainFormatter;
+using antwika::log::mocks::MockLogger;
 using antwika::replay::IReplaySource;
 using antwika::replay::ReplayReader;
 using antwika::replay::ReplaySource;
 using antwika::replay::ReplayWriter;
-using antwika::time::fakes::FakeClock;
+using ::testing::NiceMock;
 
 namespace
 {
@@ -41,18 +35,11 @@ namespace
 
     Board runLife(IReplaySource &source)
     {
-        std::chrono::system_clock::time_point time{};
-        FakeClock fakeClock(time);
-        NullAppender appender;
-        PlainFormatter formatter;
-        MinimumLevelLogPolicy logPolicy(Level::Info);
+        NiceMock<MockLogger> logger;
         EventRecorder eventSink;
 
         return antwika::life::bootstrap(
-            fakeClock,
-            appender,
-            formatter,
-            logPolicy,
+            logger,
             eventSink,
             source,
             kWidth,
