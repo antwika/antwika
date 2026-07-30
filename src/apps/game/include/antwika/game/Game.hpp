@@ -17,6 +17,7 @@
 #include "antwika/game/Camera.hpp"
 #include "antwika/game/GameSummary.hpp"
 #include "antwika/game/GridExtent.hpp"
+#include "antwika/game/MenuState.hpp"
 #include "antwika/game/PathIndex.hpp"
 #include "antwika/game/UiCanvas.hpp"
 #include "antwika/game/UiOverlay.hpp"
@@ -152,6 +153,22 @@ namespace antwika::game
          * beforehand has to read it.
          */
         std::optional<std::reference_wrapper<UiOverlay>> overlay =
+            std::nullopt;
+
+        /**
+         * @brief The main menu's state, opened and closed by F10.
+         *
+         * Passed in rather than created here because the caller is what
+         * acts on MenuState::activated: this library opens no file
+         * dialog, so loading and saving are reported as intents and the
+         * composition root does something with them -- see MenuSink.
+         *
+         * Unset, a menu is still wired in over the toolbar and F10 still
+         * works; the state is simply one nothing outside can read. What
+         * decides whether there is a menu at all is the overlay, since a
+         * menu with no canvas would cover nothing and hit-test nothing.
+         */
+        std::optional<std::reference_wrapper<MenuState>> menuState =
             std::nullopt;
     };
 

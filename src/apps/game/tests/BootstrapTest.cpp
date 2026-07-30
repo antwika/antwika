@@ -14,6 +14,7 @@
 #include <antwika/event/TickEventRecorder.hpp>
 #include <antwika/input/InputEvent.hpp>
 #include <antwika/input/InputEventCodec.hpp>
+#include <antwika/input/Key.hpp>
 #include <antwika/input/MouseButton.hpp>
 #include <antwika/log/mocks/MockLogger.hpp>
 #include <antwika/replay/EngineLoopError.hpp>
@@ -26,7 +27,13 @@
 #include "antwika/game/Direction.hpp"
 #include "antwika/game/GridExtent.hpp"
 #include "antwika/game/IsoProjection.hpp"
+#include "antwika/game/MainMenu.hpp"
+#include "antwika/game/MenuSink.hpp"
+#include "antwika/game/MenuState.hpp"
 #include "antwika/game/PathIndex.hpp"
+#include "antwika/game/Toolbar.hpp"
+#include "antwika/game/UiCanvas.hpp"
+#include "antwika/game/UiOverlay.hpp"
 
 using antwika::event::Event;
 using antwika::event::mocks::MockEventSink;
@@ -343,4 +350,202 @@ TEST(PrintSummaryTest, WritesEveryBuildingWhereItStandsAndWhatItHolds)
     EXPECT_NE(
         out.str().find("  at (6, 2) kind 2 stock 40/100\n"),
         std::string::npos);
+}
+
+namespace
+{
+    // Where an entry ends up is the layout's business.
+    // So a test looks for a pixel that hits the one it means.
+    // The same scan ReplayDeterminismTest does over the toolbar.
+    [[nodiscard]] antwika::input::Position menuPixelOn(
+        antwika::ui::WidgetId id, const antwika::game::MenuState &state)
+    {
+        const antwika::game::MainMenu menu;
+        const auto canvas = antwika::game::kUiCanvas;
+
+        for (std::int32_t y = 0;
+             y < static_cast<std::int32_t>(canvas.height);
+             y += 4)
+        {
+            for (std::int32_t x = 0;
+                 x < static_cast<std::int32_t>(canvas.width);
+                 x += 4)
+            {
+                const antwika::ui::Pointer pointer{
+                    .position = Point{.x = x, .y = y}};
+
+                if (menu.describe(canvas, pointer, state)
+                        .interactions.hovered
+                    == id)
+                {
+                    return antwika::input::Position{.x = x, .y = y};
+                }
+            }
+        }
+
+        return antwika::input::Position{.x = -1, .y = -1};
+    }
+
+    // Everything a menu run is wired out of, kept together.
+    // A plain Harness has no overlay, so it has no canvas either.
+    struct MenuHarness
+    {
+        NiceMock<MockLogger> logger;
+        NiceMock<MockEventSink> eventSink;
+        InputEventCodec codec;
+        Camera camera;
+        PathIndex paths;
+        antwika::game::UiOverlay overlay{antwika::game::kUiCanvas};
+        antwika::game::MenuState menuState;
+
+        antwika::game::GameSummary run(
+            ReplaySource &source, bool readsMenuState)
+        {
+            antwika::game::GameConfig config{
+                .logger = logger,
+                .eventSink = eventSink,
+                .inputSource = source,
+                .codec = codec,
+                .extent = kExtent,
+                .camera = camera,
+                .paths = paths,
+                .maxTicks = 10,
+                .overlay = overlay};
+            if (readsMenuState)
+            {
+                config.menuState = menuState;
+            }
+
+            return antwika::game::bootstrap(config);
+        }
+    };
+
+    // What the menu looks like with nothing under the pointer.
+    // A key press says nothing about where a pointer is.
+    [[nodiscard]] antwika::ui::DrawList menuPicture(
+        const antwika::game::MenuState &state)
+    {
+        return antwika::game::MainMenu{}
+            .describe(antwika::game::kUiCanvas, antwika::ui::Pointer{},
+                      state)
+            .commands;
+    }
+} // namespace
+
+// The menu, through the front door: nothing but F10 reaches it.
+TEST(BootstrapMenuTest, Bootstrap_F10PutsTheMenuUpAndPaintsIt)
+{
+    MenuHarness harness;
+    ReplaySource source({
+        TickEvent{
+            .tick = 0,
+            .event = harness.codec.encode(
+                antwika::input::KeyPressed{
+                    .key = antwika::game::kMenuKey})},
+        TickEvent{
+            .tick = 1,
+            .event = Event{.name = antwika::engine::events::kStop}},
+    });
+
+    const auto summary = harness.run(source, true);
+
+    EXPECT_TRUE(harness.menuState.open);
+    EXPECT_EQ(
+        harness.overlay.commands(),
+        menuPicture(antwika::game::MenuState{.open = true}));
+}
+
+// The one thing wiring it in has to keep working: the toolbar.
+// F10 twice leaves the bar's picture in the overlay, not the menu's.
+TEST(BootstrapMenuTest, Bootstrap_F10TwicePutsTheToolbarBack)
+{
+    MenuHarness harness;
+    ReplaySource source({
+        TickEvent{
+            .tick = 0,
+            .event = harness.codec.encode(
+                antwika::input::KeyPressed{
+                    .key = antwika::game::kMenuKey})},
+        TickEvent{
+            .tick = 1,
+            .event = harness.codec.encode(
+                antwika::input::KeyPressed{
+                    .key = antwika::game::kMenuKey})},
+        TickEvent{
+            .tick = 2,
+            .event = Event{.name = antwika::engine::events::kStop}},
+    });
+
+    harness.run(source, true);
+
+    EXPECT_FALSE(harness.menuState.open);
+    EXPECT_EQ(
+        harness.overlay.commands(),
+        antwika::game::Toolbar{}
+            .describe(
+                antwika::game::kUiCanvas,
+                antwika::ui::Pointer{},
+                harness.camera)
+            .commands);
+}
+
+// The intent reaches the caller that asked for it.
+TEST(BootstrapMenuTest, Bootstrap_ReportsWhatWasActivatedToItsCaller)
+{
+    MenuHarness harness;
+    const auto pixel = menuPixelOn(
+        antwika::game::menuWidgets::kSaveReplay,
+        antwika::game::MenuState{.open = true});
+    ASSERT_GE(pixel.x, 0);
+
+    ReplaySource source({
+        TickEvent{
+            .tick = 0,
+            .event = harness.codec.encode(
+                antwika::input::KeyPressed{
+                    .key = antwika::game::kMenuKey})},
+        TickEvent{
+            .tick = 0,
+            .event = harness.codec.encode(
+                antwika::input::PointerButtonPressed{
+                    .button = antwika::input::MouseButton::Left,
+                    .position = pixel})},
+        TickEvent{
+            .tick = 0,
+            .event = Event{.name = antwika::engine::events::kStop}},
+    });
+
+    const auto summary = harness.run(source, true);
+
+    // Saving leaves the session where it was, so the menu stays up.
+    EXPECT_TRUE(harness.menuState.open);
+    EXPECT_EQ(
+        antwika::game::MenuEntry::SaveReplay, harness.menuState.activated);
+
+    // And the click was the menu's, not the world's.
+    EXPECT_TRUE(summary.paths.empty());
+}
+
+// A caller wanting no intents still gets a menu it can open.
+TEST(BootstrapMenuTest, Bootstrap_WiresAMenuEvenWithNoStateToReportTo)
+{
+    MenuHarness harness;
+    ReplaySource source({
+        TickEvent{
+            .tick = 0,
+            .event = harness.codec.encode(
+                antwika::input::KeyPressed{
+                    .key = antwika::game::kMenuKey})},
+        TickEvent{
+            .tick = 1,
+            .event = Event{.name = antwika::engine::events::kStop}},
+    });
+
+    harness.run(source, false);
+
+    // The state it was handed is untouched, and a menu is up anyway.
+    EXPECT_FALSE(harness.menuState.open);
+    EXPECT_EQ(
+        harness.overlay.commands(),
+        menuPicture(antwika::game::MenuState{.open = true}));
 }
