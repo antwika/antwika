@@ -10,7 +10,8 @@
 #include <vector>
 
 #include <antwika/ecs/ISystem.hpp>
-#include <antwika/event/EventRecorder.hpp>
+#include <antwika/event/Event.hpp>
+#include <antwika/event/IEventSink.hpp>
 #include <antwika/event/TickEvent.hpp>
 #include <antwika/event/TickEventRecorder.hpp>
 #include <antwika/gfx/GfxError.hpp>
@@ -46,7 +47,6 @@
 #include "antwika/game/WindowInputSource.hpp"
 
 using antwika::ecs::ISystem;
-using antwika::event::EventRecorder;
 using antwika::event::TickEventRecorder;
 using antwika::game::Camera;
 using antwika::game::GridExtent;
@@ -110,6 +110,23 @@ namespace
                   << summary.camera.pan().y << ") zoom "
                   << summary.camera.zoomLevel() << '\n';
     }
+    /**
+     * @brief Sink for the events nothing in this app reads.
+     *
+     * Every dispatched event has to go somewhere, and an EventRecorder
+     * used to be what went there -- deep-copying both strings of every
+     * event and keeping them for the life of the process, in a run that
+     * ends only when somebody closes the window.
+     * Nothing ever called getEvents() on it.
+     */
+    class DiscardedEvents final : public antwika::event::IEventSink
+    {
+    public:
+        void handle(const antwika::event::Event &) override
+        {
+        }
+    };
+
 } // namespace
 
 int main(int argc, char **argv)
@@ -121,7 +138,7 @@ int main(int argc, char **argv)
     PlainFormatter formatter;
     MinimumLevelLogPolicy logPolicy(Level::Info);
     Logger logger(formatter, logPolicy, clock, appender);
-    EventRecorder eventSink;
+    DiscardedEvents eventSink;
     TickEventRecorder replayRecorder;
 
     // Catching is what makes the run's resources unwind at all.

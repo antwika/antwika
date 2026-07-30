@@ -7,7 +7,8 @@
 #include <string>
 #include <string_view>
 
-#include <antwika/event/EventRecorder.hpp>
+#include <antwika/event/Event.hpp>
+#include <antwika/event/IEventSink.hpp>
 #include <antwika/event/TickEventRecorder.hpp>
 #include <antwika/log/Level.hpp>
 #include <antwika/log/MinimumLevelLogPolicy.hpp>
@@ -20,7 +21,6 @@
 #include "antwika/task_worker/StatusPrintSystem.hpp"
 #include "antwika/task_worker/TaskRegistry.hpp"
 
-using antwika::event::EventRecorder;
 using antwika::event::TickEventRecorder;
 using antwika::log::Level;
 using antwika::log::MinimumLevelLogPolicy;
@@ -38,6 +38,23 @@ namespace
     constexpr std::string_view kDemoReplayPath =
         ANTWIKA_TASK_WORKER_DEMO_REPLAY_PATH;
 
+    /**
+     * @brief Sink for the events nothing in this app reads.
+     *
+     * Every dispatched event has to go somewhere, and an EventRecorder
+     * used to be what went there -- deep-copying both strings of every
+     * event and keeping them for the life of the process, in a run that
+     * ends only when somebody closes the window.
+     * Nothing ever called getEvents() on it.
+     */
+    class DiscardedEvents final : public antwika::event::IEventSink
+    {
+    public:
+        void handle(const antwika::event::Event &) override
+        {
+        }
+    };
+
 } // namespace
 
 int main(int argc, char **argv)
@@ -48,7 +65,7 @@ int main(int argc, char **argv)
     StreamAppender appender(std::cout);
     PlainFormatter formatter;
     MinimumLevelLogPolicy logPolicy(Level::Info);
-    EventRecorder eventSink;
+    DiscardedEvents eventSink;
     TickEventRecorder replayRecorder;
     TaskRegistry registry;
     StatusPrintSystem printSystem(std::cout, registry);
