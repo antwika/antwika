@@ -280,6 +280,40 @@ The `Level::Fatal` log stays, and it's still the only thing in the codebase that
 "Fatal" describes how serious the condition is; it was never a good reason to skip the destructors on the way out.
 A caller isn't expected to catch this and carry on — it's expected to unwind cleanly, which is a different thing.
 
+Except that swapping `std::exit` for `throw` doesn't, on its own, buy any of that.
+Review caught the gap: `[except.terminate]` leaves it *implementation-defined* whether the stack is unwound when an exception escapes without a handler, and libstdc++ doesn't unwind — `__cxa_throw` calls `std::terminate` from the throw point with every frame still intact.
+None of the three apps had a `catch` anywhere, so the "fix" landed on `abort` instead of `exit`: still no automatic destructors, and now no static ones and no `std::cout` flush either.
+Strictly worse than the thing it replaced.
+
+An exception is only as good as the handler that stops it, so each app's `main` grew one:
+
+```cpp
+int exitCode = EXIT_SUCCESS;
+try
+{
+    auto events = antwika::replay::loadReplayFile(/* ... */);
+    ReplaySource source(std::move(events));
+    antwika::task_worker::bootstrap(/* ... */, source, /* ... */);
+}
+catch (const std::exception &error)
+{
+    std::cerr << "antwika_task_worker: " << error.what() << '\n';
+    exitCode = EXIT_FAILURE;
+}
+
+if (options.recordPath)
+{
+    antwika::replay::saveReplayFile(replayRecorder.getEvents(), /* ... */);
+}
+
+return exitCode;
+```
+
+That's what makes the earlier paragraph about the recorded replay true rather than aspirational.
+`replayRecorder` is declared outside the `try`, so it outlives the failure; the save runs on both paths.
+A run that dies mid-tick now writes the events it *did* record and exits non-zero, instead of taking them to the grave.
+The general lesson is duller than the ECS one: "throw instead of exit" is half a change, and the half that does the work is the handler.
+
 Three smaller consequences fell out of it, all improvements:
 
 - The `GCOVR_EXCL_LINE` marker is gone, and with it the question of whether it was earning its keep.
@@ -290,4 +324,7 @@ Three smaller consequences fell out of it, all improvements:
 - The `REQUIREMENTS.md` question answers itself.
   There is no longer a deliberately uncatchable exception to the catchable-errors-only rule, so there's nothing to add.
 
-The broader finding from that audit is written up in [`docs/STYLE_GUIDE.md`](../docs/STYLE_GUIDE.md) under "Resource management and ownership", which now states the ownership conventions the rest of the codebase had been following silently all along.
+The broader finding from that audit is written up in [`docs/STYLE_GUIDE.md`](../docs/STYLE_GUIDE.md) under "Resource management and ownership".
+Writing the conventions down was itself worth doing: the Rule of Five bullet turned out to describe `src/libs/` accurately and `src/apps/` not at all, where nine classes with reference members declared none of the four operations.
+A reference member implicitly deletes both assignment operators, which is why nobody had noticed — but it leaves copy *construction* generated, so `TaskSubmissionSink` was quietly copyable, duplicate submission history and all.
+Those nine now declare the four too.

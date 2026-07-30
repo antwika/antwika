@@ -200,9 +200,12 @@ no cleanup step a caller has to remember.
 - **Rule of Five, explicitly.** Any class holding a reference member or
   owning a resource declares all four copy/move operations — in this
   codebase always `= delete`, since aliasing borrowed collaborators or
-  relocating what a live borrower points at is never what's wanted. Plain
-  value types (`GameState`, `Worker`, `Event`, `Board`, `Domain`) declare
-  none of them and stay freely copyable.
+  relocating what a live borrower points at is never what's wanted. A
+  reference member already deletes both assignment operators implicitly,
+  but not the copy and move constructors — declaring all four is what
+  makes the intent checkable rather than incidental. Plain value types
+  (`GameState`, `Worker`, `Event`, `Board`, `Domain`) declare none of
+  them and stay freely copyable.
 - **Destructors never throw.** A destructor is implicitly `noexcept`, so a
   throw from one calls `std::terminate`. Use the non-throwing overload of
   anything fallible — `std::filesystem::remove(path, errorCode)`, not
