@@ -57,7 +57,8 @@ Requirements for the Antwika project, gathered from `README.md`, `blog/001-build
 - A UI must hold nothing between frames, so a widget activates on the press rather than on a release matched to it and a replay has no interaction state to regenerate.
 - The canvas a UI is laid out and hit-tested against must be a configured constant rather than the size a window reports, so a recorded click resolves to the same widget under any backend and any window manager.
 - A UI must not open or close a container through any call a caller can forget or unbalance.
-- A line must include both of its endpoints, so a line whose ends coincide draws that one pixel; callers step diagonal shapes out of lines, and a dropped endpoint leaves a gap at every corner. Which pixels between the endpoints are lit is left to the backend, since nothing reads a drawn line back.
+- A line must include both of its endpoints, so a line whose ends coincide draws that one pixel; callers step diagonal shapes out of lines, and a dropped endpoint leaves a gap at every corner.
+  Which pixels between the endpoints are lit is left to the backend, since nothing reads a drawn line back.
 - Any projection whose inverse decides which cell a click meant must be exact integer arithmetic, so the answer is identical across toolchains and between a recording and its replay.
 - Camera state that a click is interpreted against must be simulation state, folded from replayable input, never state owned by the renderer -- otherwise a replay resolves recorded clicks against a different view and reproduces different state.
 - Translating input into application meaning must happen downstream of the recorder, so a replay stores the input and regenerates what it caused rather than persisting both.
