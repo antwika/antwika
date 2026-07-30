@@ -18,6 +18,7 @@ add_executable(antwika_holdem_tests
     HandValueTest.cpp
     PayoutTest.cpp
     PotsTest.cpp
+    ShowdownTest.cpp
     SplitMix64RngTest.cpp
     StageTest.cpp
     TableBettingTest.cpp

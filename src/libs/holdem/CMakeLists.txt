@@ -8,6 +8,7 @@ add_library(antwika_holdem
     src/HandFlow.cpp
     src/HandText.cpp
     src/Pots.cpp
+    src/Showdown.cpp
     src/SplitMix64Rng.cpp
     src/Stage.cpp
     src/Table.cpp
