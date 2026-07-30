@@ -28,4 +28,32 @@ namespace antwika::life
         return board;
     } // GCOVR_EXCL_LINE
 
+    Board readBoardFromView(
+        const World &world, std::uint32_t width, std::uint32_t height)
+    {
+        const auto cells = static_cast<std::size_t>(width) * height;
+
+        // The excluded line carries the vector's cleanup landing pad.
+        // It only runs if allocating the cells throws.
+        Board board{
+            .width = width,
+            .height = height,
+            .alive = std::vector<bool>(cells), // GCOVR_EXCL_LINE
+        };
+
+        std::size_t index = 0;
+        for (const auto entity : world.view<Cell>())
+        {
+            if (index == board.alive.size())
+            {
+                break;
+            }
+
+            board.alive[index] = world.get<Cell>(entity).alive;
+            ++index;
+        }
+
+        return board;
+    } // GCOVR_EXCL_LINE
+
 } // namespace antwika::life

@@ -101,11 +101,23 @@ Application code (here, `apps/game`) defines its own state (`GameState`) and eve
 `apps/life` is a second, independent application built on the same replay system, this time with its state held in an `antwika::ecs::World` instead of a plain struct — a Conway's Game of Life board, where each cell is an entity with a `Cell` component and a single `LifeSystem` advances every cell one generation per tick using the double-buffered `World`/`SystemScheduler` machinery described in [`blog/003-an-entity-component-system-with-nowhere-to-hide-a-mutation.md`](blog/003-an-entity-component-system-with-nowhere-to-hide-a-mutation.md):
 
 ```sh
-build/bin/antwika_life --record demo.replay   # seeds a blinker, saves the input
+build/bin/antwika_life --record demo.replay   # seeds a glider, saves the input
 build/bin/antwika_life --replay demo.replay   # reload it, reproducing the same run
 ```
 
 Cells are toggled alive via a `life.toggle_cell` event (JSON payload `{"x":..,"y":..}`), tick-stamped exactly like `game.score_increment` — the same event-driven, replayable pattern applied to ECS state instead of a hand-rolled reducer.
+
+It is also where `antwika::gfx` earns its keep.
+Built against a real graphics backend, `antwika_life` draws the board into a window instead of printing it, one frame per tick, paced so a generation at a time can actually be watched:
+
+```sh
+scripts/select_gfx_backend.sh sdl3 && scripts/build.sh
+build-sdl3/bin/antwika_life                   # a glider crossing a 32x32 board
+```
+
+Under the default `null` backend there is no window to draw into, so that build prints the board as ASCII instead, which is what keeps the app runnable in CI with no display present.
+Drawing is a write-only projection of the `World` and never feeds back into it.
+Closing the window enters the engine as an `engine.stop` event through the same `IReplaySource` every other external input goes through, so a run ended by closing a window is recorded like any other input — and replaying that recording headlessly reaches the identical board.
 
 `apps/task_worker` is a third application, this time combining `antwika::ecs` with a new `antwika::scheduler` library: a fixed pool of `Worker` entities pulls tasks off a deterministic, priority-ordered, budget-bounded `antwika::scheduler::Scheduler`, submitted over time via a `task.submit` event and, optionally, chained to an earlier task with a dependency edge:
 

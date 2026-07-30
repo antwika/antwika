@@ -398,15 +398,53 @@ the project a visible, replayable, deterministic demo.
 Then the blog post, per the project's usual practice of writing up a design
 after the fact.
 
+Done. `apps/life` gained four classes, all wired from its `main.cpp`:
+
+- `BoardScene` draws a `Board` as rectangles, stateless and deterministic, so
+  the picture is asserted against `MockRenderer` rather than looked at.
+- `RenderSystem` is the observer, in the same "observe" phase `PrintSystem`
+  runs in.
+  It reads `World` and never writes it.
+- `WindowInputSource` decorates the run's `IReplaySource` and turns a
+  `CloseRequested` for its window into an `engine.stop` event.
+  That is the gfx-to-event adapter this document asks the application to own.
+- `TickPacer` waits a fixed interval per tick, registered last so the order is
+  present-then-wait.
+
+`PrintSystem` is complemented rather than replaced.
+The default `null` backend draws nothing, so a build using it prints the board
+instead and skips the pacing, and stays the thing CI can run with no display.
+
+Two things worth knowing that only became visible while building it.
+
+The render system must not own the window.
+The tick carrying `engine.stop` still runs to completion, so closing the
+window as the event is translated would leave that tick drawing into a closed
+window -- undefined behaviour on a real backend, and invisible under
+`NullBackend` and under mocks.
+Window lifetime therefore stays with the composition root, and `RenderSystem`
+has no `isOpen()` check at all.
+
+The equivalence this document asks for holds in one direction only.
+`RenderDeterminismTest` proves the guaranteed half: a run recorded under a
+windowed backend and ended by closing the window replays identically under
+`NullBackend`.
+But `WindowInputSource` sits in front of a `--replay` run too, so closing the
+window part way through a replay injects a stop the file does not contain and
+ends the run early.
+That is the right behaviour for somebody closing a window, and it means a
+replay reproduces a recorded run exactly only when it is left to finish.
+
 ### Phase 7 — `apps/poker` draws itself
 
-Done ahead of Phase 6, and for the same reasons: poker is the project's
-showcase, and a hand history is exactly the kind of thing worth seeing
-rather than reading.
+Done. The same step again for the project's showcase, and the one that
+finally needed text: a poker table with no card ranks, names or chip counts
+on it is not worth looking at.
+That is where `IRenderer::drawText` came from -- see
+[Deferred deliberately](#deferred-deliberately).
 
-It added `IRenderer::drawText` (see
-[Deferred deliberately](#deferred-deliberately)) and shaped how an app hangs
-rendering off the tick loop:
+`apps/poker` reaches the same place as `apps/life` by a deliberately
+different route, because it has no ECS to hang an observer off:
 
 - `poker::snapshotOf()` produces an immutable `poker::TableSnapshot`, the
   spectator's counterpart to `holdem::TableView`.
@@ -433,6 +471,28 @@ The equivalence proof from
 [Keeping rendering out of the tick path](#keeping-rendering-out-of-the-tick-path)
 is in place both as a unit test and by hand: a session recorded under sdl3
 replays under `null` to identical output.
+
+Two things differ from Phase 6 on purpose, and one of its findings applies
+here unchanged.
+
+Phase 6 keeps window lifetime in the composition root and gives its render
+system no `isOpen()` check, because the tick carrying `engine.stop` still runs
+to completion and would otherwise draw into a closed window.
+`poker` closes the window inside `WindowCloseSource` and guards
+`TableRenderSink::render()` with `isOpen()` instead, which skips that last
+frame rather than needing the window kept open for it.
+Both are safe; they are not the same shape, and one of them should probably
+win once a third app wants this.
+
+Likewise `apps/life` paces with its own `TickPacer` while `apps/poker` paces
+through `antwika::time::ISleeper`, injected so the bootstrap tests do not
+spend real seconds sleeping.
+Two mechanisms for one job is one too many.
+
+The one-directional equivalence Phase 6 records applies here too:
+`WindowCloseSource` sits in front of a `--replay` run as well, so closing the
+window part way through a replay ends it early, and a replay reproduces a
+recorded session exactly only when it is left to finish.
 
 ## Documentation and requirements to update
 

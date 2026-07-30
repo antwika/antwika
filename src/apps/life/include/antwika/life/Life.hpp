@@ -10,11 +10,8 @@
 #include <antwika/event/IEventDispatcher.hpp>
 #include <antwika/event/IEventSink.hpp>
 #include <antwika/event/ITickEventSink.hpp>
-#include <antwika/log/IAppender.hpp>
-#include <antwika/log/IFormatter.hpp>
-#include <antwika/log/ILogPolicy.hpp>
+#include <antwika/log/ILogger.hpp>
 #include <antwika/replay/IReplaySource.hpp>
-#include <antwika/time/IClock.hpp>
 #include <antwika/time/Tick.hpp>
 
 #include "antwika/life/Board.hpp"
@@ -27,11 +24,8 @@ namespace antwika::life
     using antwika::event::IEventDispatcher;
     using antwika::event::IEventSink;
     using antwika::event::ITickEventSink;
-    using antwika::log::IAppender;
-    using antwika::log::IFormatter;
-    using antwika::log::ILogPolicy;
+    using antwika::log::ILogger;
     using antwika::replay::IReplaySource;
-    using antwika::time::IClock;
 
     /**
      * @brief Announces simulation startup and starts the engine.
@@ -74,10 +68,11 @@ namespace antwika::life
      * inputSource was built from, the same contract apps/game's
      * bootstrap() follows for its own state.
      *
-     * @param clock Supplies timestamps for the logger.
-     * @param appender Receives formatted log output.
-     * @param formatter Renders log records into text.
-     * @param logPolicy Decides which log records are emitted.
+     * Building the logger is the caller's job, not this function's -- a
+     * composition root that also has to open a window needs one before
+     * bootstrap() is ever called (see main.cpp).
+     *
+     * @param logger Receives the run's diagnostics.
      * @param eventSink Receives every dispatched event.
      * @param inputSource Supplies each tick's events, live or replayed.
      * @param width Number of columns in the board.
@@ -96,10 +91,7 @@ namespace antwika::life
      * @return The resulting Board, for callers (main.cpp, tests).
      */
     Board bootstrap(
-        IClock &clock,
-        IAppender &appender,
-        IFormatter &formatter,
-        ILogPolicy &logPolicy,
+        ILogger &logger,
         IEventSink &eventSink,
         IReplaySource &inputSource,
         std::uint32_t width,
