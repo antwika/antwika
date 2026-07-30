@@ -79,6 +79,9 @@ namespace antwika::ecs
          *
          * Takes effect at the next commit(): every component it has is
          * removed from its storage and its index is permanently retired.
+         * Staging the same entity twice in one phase is allowed, and
+         * retires it once — nothing is applied until commit(), so the
+         * second call sees it alive just like the first.
          */
         void destroy(Entity entity);
 
@@ -223,6 +226,9 @@ namespace antwika::ecs
          *
          * Staged operations run in the exact order they were called, so
          * the result never depends on how they're stored internally.
+         * Should one of them throw, the exception propagates, but the
+         * staging list is still emptied and every buffer still swapped:
+         * a commit either happens or doesn't, never halfway.
          */
         void commit();
 
