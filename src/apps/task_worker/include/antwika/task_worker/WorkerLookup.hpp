@@ -40,6 +40,12 @@ namespace antwika::task_worker
          */
         WorkerLookup(World &world, std::vector<Entity> workers);
 
+        WorkerLookup(const WorkerLookup &) = delete;
+        WorkerLookup(WorkerLookup &&) = delete;
+
+        WorkerLookup &operator=(const WorkerLookup &) = delete;
+        WorkerLookup &operator=(WorkerLookup &&) = delete;
+
         /**
          * @brief Resync the idle/busy cache from World's committed
          * (front-buffer) Worker state.

@@ -6,14 +6,15 @@ namespace antwika::ecs
 {
 
     /**
-     * @brief Thrown for a recoverable ECS misuse: accessing a dead or
-     * unknown entity, or a component an entity doesn't have.
+     * @brief Thrown for an ECS misuse: accessing a dead or unknown
+     * entity, a component an entity doesn't have, or an exhausted
+     * entity-index space.
      *
      * Deliberately a single, specific, catchable type, mirroring
      * antwika::replay::ReplayFormatError, rather than a vague
-     * std::runtime_error. Entity-index exhaustion is not reported this
-     * way — see EntityManager, which logs fatal and terminates instead,
-     * since that condition isn't one an application could recover from.
+     * std::runtime_error. Index exhaustion is logged at Level::Fatal
+     * before being thrown — see EntityManager — since a caller isn't
+     * expected to recover from it, only to unwind cleanly.
      */
     class EcsError final : public std::runtime_error
     {

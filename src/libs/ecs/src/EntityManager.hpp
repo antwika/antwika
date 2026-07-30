@@ -20,8 +20,7 @@ namespace antwika::ecs::detail
      * no free list. The only thing a generation counter guards against
      * is a stale handle aliasing a recycled index, which can't happen
      * if indices are never recycled. Exhausting the index space logs a
-     * fatal error and terminates the process instead of throwing —
-     * see create().
+     * fatal error and throws — see create().
      */
     class EntityManager final
     {
@@ -48,11 +47,21 @@ namespace antwika::ecs::detail
         /**
          * @brief Allocate the next entity value.
          * @return A newly-allocated, never-before-used Entity.
+         * @throws EcsError if the index space configured by maxEntities
+         * is exhausted.
          *
-         * Logs Level::Fatal and terminates the process
-         * (std::exit(EXIT_FAILURE)) if the index space configured by
-         * maxEntities is exhausted, rather than throwing EcsError —
-         * this condition is not one an application can recover from.
+         * Logs Level::Fatal before throwing, since exhaustion is a
+         * fatal condition in practice rather than something a caller is
+         * expected to retry. Throwing rather than calling std::exit
+         * lets the stack unwind, so every scoped resource on it is
+         * released the way it would be on any other error path.
+         *
+         * That unwinding only happens if something actually catches:
+         * an uncaught exception may call std::terminate with the stack
+         * still intact, which libstdc++ does. Every app's main()
+         * therefore catches std::exception around bootstrap(), which
+         * is also what lets a failed --record run still write the
+         * events it recorded before the failure.
          */
         [[nodiscard]] Entity create();
 

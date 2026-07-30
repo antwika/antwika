@@ -2,8 +2,10 @@
 
 #include <algorithm>
 #include <cstdint>
+#include <memory>
 #include <optional>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include <nlohmann/json-schema.hpp>
@@ -90,7 +92,7 @@ namespace antwika::task_worker
         const auto alreadySubmitted = std::find_if(
             submitted.begin(),
             submitted.end(),
-            [taskId](const auto &entry) { return entry.first == taskId; });
+            [taskId](const auto &entry) { return entry.taskId == taskId; });
         if (alreadySubmitted != submitted.end())
         {
             throw TaskSubmissionError(
@@ -114,28 +116,26 @@ namespace antwika::task_worker
                 submitted.begin(),
                 submitted.end(),
                 [dependsOnTaskId](const auto &entry)
-                { return entry.first == dependsOnTaskId; });
+                { return entry.taskId == dependsOnTaskId; });
             if (found == submitted.end())
             {
                 throw TaskSubmissionError(
                     "TaskSubmissionSink: dependsOnId refers to a task "
                     "id that was never submitted");
             }
-            dependsOn.push_back(found->second);
-            const auto dependencyIndex =
-                antwika::scheduler::rawValue(found->second) - 1;
-            dependencyInfo = TaskDependency{
-                dependsOnTaskId, jobs[dependencyIndex]->label()};
+            dependsOn.push_back(found->jobId);
+            dependencyInfo =
+                TaskDependency{dependsOnTaskId, found->label};
         }
 
         auto job = std::make_unique<TaskJob>(
-            lookup, taskId, std::move(label), durationTicks);
-        const auto jobId =
-            jobScheduler.schedule(*job, priority, dependsOn);
+            lookup, taskId, label, durationTicks);
+        const auto jobId = jobScheduler.schedule(
+            std::move(job), priority, dependsOn);
         registry.submit(
-            taskId, job->label(), priority, durationTicks, dependencyInfo);
-        submitted.emplace_back(taskId, jobId);
-        jobs.push_back(std::move(job));
+            taskId, label, priority, durationTicks, dependencyInfo);
+        submitted.push_back(
+            Submission{taskId, jobId, std::move(label)});
     }
 
 } // namespace antwika::task_worker

@@ -1,6 +1,8 @@
 #include "antwika/scheduler/Scheduler.hpp"
 
 #include <algorithm>
+#include <memory>
+#include <utility>
 
 #include "antwika/scheduler/SchedulerError.hpp"
 
@@ -27,6 +29,47 @@ namespace antwika::scheduler
     } // namespace
 
     JobId Scheduler::schedule(
+        std::unique_ptr<IJob> job,
+        Priority priority,
+        std::vector<JobId> dependsOn)
+    {
+        if (job == nullptr)
+        {
+            throw SchedulerError(
+                "Scheduler::schedule: job must not be null");
+        }
+
+        // Validated before ownership moves, so there is nothing to undo.
+        // A rejected job dies with this parameter on the way out.
+        // Undoing it afterwards would need a catch clause instead.
+        // Such a clause would also see allocation failures.
+        // Those can strike after records already holds this job.
+        // Dropping the job there would leave a dangling pointer.
+        validateDependencies(dependsOn);
+
+        ownedJobs.push_back(std::move(job));
+        return schedule(
+            *ownedJobs.back(), priority, std::move(dependsOn));
+    }
+
+    void Scheduler::validateDependencies(
+        const std::vector<JobId> &dependsOn) const
+    {
+        const auto newRaw = rawValue(nextId);
+
+        for (const auto dependency : dependsOn)
+        {
+            const auto dependencyRaw = rawValue(dependency);
+            if (dependencyRaw == 0 || dependencyRaw >= newRaw)
+            {
+                throw SchedulerError(
+                    "Scheduler::schedule: dependsOn contains an "
+                    "unknown JobId");
+            }
+        }
+    }
+
+    JobId Scheduler::schedule(
         IJob &job,
         Priority priority,
         std::vector<JobId> dependsOn)
@@ -43,16 +86,7 @@ namespace antwika::scheduler
         const auto newId = nextId;
         const auto newRaw = rawValue(newId);
 
-        for (const auto dependency : dependsOn)
-        {
-            const auto dependencyRaw = rawValue(dependency);
-            if (dependencyRaw == 0 || dependencyRaw >= newRaw)
-            {
-                throw SchedulerError(
-                    "Scheduler::schedule: dependsOn contains an "
-                    "unknown JobId");
-            }
-        }
+        validateDependencies(dependsOn);
 
         std::size_t unmet = 0;
         for (const auto dependency : dependsOn)

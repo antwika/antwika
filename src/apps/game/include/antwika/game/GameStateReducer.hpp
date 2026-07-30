@@ -28,6 +28,12 @@ namespace antwika::game
          */
         explicit GameStateReducer(GameState &state);
 
+        GameStateReducer(const GameStateReducer &) = delete;
+        GameStateReducer(GameStateReducer &&) = delete;
+
+        GameStateReducer &operator=(const GameStateReducer &) = delete;
+        GameStateReducer &operator=(GameStateReducer &&) = delete;
+
         /**
          * @brief Apply a tick event's effect to the referenced GameState.
          * @param event The event to fold in. kTick increments ticksProcessed;
