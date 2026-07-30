@@ -109,13 +109,16 @@ The selection lives in the untracked `.vscode/gfx-backend`, which makes it yours
 The engine runs on a fixed timestep and every event dispatched during a run is tick-stamped, so a run can be recorded and later reloaded to reproduce the exact same resulting state:
 
 ```sh
-build/bin/antwika_game --record demo.replay   # run once, save the input as a replay
-build/bin/antwika_game --replay demo.replay   # reload it, reproducing the same run
+build/bin/antwika_game                        # empty grid, runs until you quit
+build/bin/antwika_game --record demo.replay   # the same, saving what you did
+build/bin/antwika_game --replay demo.replay   # reload it, reproducing the run
 ```
 
 Both modes go through the same `antwika::game::bootstrap()` entry point and the same fixed-timestep tick loop (`antwika::replay::EngineLoop`) — replay mode only differs in where each tick's events come from.
 `apps/game` itself is an isometric grid you build on with the mouse: left-click lays a path, right-click drops a walker onto it, middle-drag pans and the wheel zooms.
 Walkers advance a cell per tick, preferring a right turn at an intersection and reversing at a dead end.
+It starts empty and loads nothing unless `--replay` asks it to, and runs until you press Escape or close the window -- both of which are input, so both end up in a recording.
+Under the `null` backend neither is available, so that build runs until interrupted; `src/apps/game/replays/demo.json` is a sample session to feed `--replay` if you want to watch one without a mouse.
 What a recording holds is the clicks, not what they caused: the app defines no event for placing a path, so a replay stores the click and regenerates the placement rather than persisting both.
 Application code defines its own state (`GameState`) and events (e.g. `game.score_increment`) on top of the engine's built-in per-tick event (`engine.tick`), both reacted to through the same `ITickEventSink` mechanism — see [`blog/001-building-a-deterministic-replay-system.md`](blog/001-building-a-deterministic-replay-system.md) for the full design and how to add your own.
 

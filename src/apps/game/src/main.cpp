@@ -12,6 +12,7 @@
 
 #include <antwika/ecs/ISystem.hpp>
 #include <antwika/event/EventRecorder.hpp>
+#include <antwika/event/TickEvent.hpp>
 #include <antwika/event/TickEventRecorder.hpp>
 #include <antwika/gfx/Point.hpp>
 #include <antwika/gfx/SelectedBackend.hpp>
@@ -19,8 +20,10 @@
 #include <antwika/gfx/WindowDesc.hpp>
 #include <antwika/input/CoalescingPointerSource.hpp>
 #include <antwika/input/InputEventCodec.hpp>
+#include <antwika/input/Key.hpp>
 #include <antwika/input/LiveInputSource.hpp>
 #include <antwika/input/SelectedInputBackend.hpp>
+#include <antwika/input/StopOnKeySource.hpp>
 #include <antwika/log/Level.hpp>
 #include <antwika/log/Logger.hpp>
 #include <antwika/log/MinimumLevelLogPolicy.hpp>
@@ -56,6 +59,7 @@ using antwika::gfx::WindowDesc;
 using antwika::input::CoalescingPointerSource;
 using antwika::input::InputEventCodec;
 using antwika::input::LiveInputSource;
+using antwika::input::StopOnKeySource;
 using antwika::log::Level;
 using antwika::log::Logger;
 using antwika::log::MinimumLevelLogPolicy;
@@ -78,11 +82,10 @@ namespace
 
     constexpr std::chrono::milliseconds kTickInterval{40};
 
-    // The backend that draws nothing.
-    // A build using it has nothing to watch and nothing to wait for.
-    constexpr std::string_view kHeadlessBackendName = "null";
-
-    constexpr std::string_view kDemoReplayPath = ANTWIKA_GAME_DEMO_REPLAY_PATH;
+    // Escape ends a live run, and so does closing the window.
+    // Neither is available under the headless backend.
+    // That build therefore runs until it is interrupted.
+    constexpr antwika::input::Key kQuitKey = antwika::input::Key::Escape;
 
     // Only this app's own announcement is filtered from a recording.
     // No input.* name may ever join it.
@@ -134,9 +137,6 @@ int main(int argc, char **argv)
         const auto backend = antwika::gfx::makeSelectedBackend(logger);
         const auto inputBackend =
             antwika::input::makeSelectedInputBackend(logger);
-        const bool showsNothing =
-            backend->name() == kHeadlessBackendName;
-
         logger.log(
             Level::Info,
             "Antwika Game on backends: " + std::string(backend->name())
@@ -153,17 +153,21 @@ int main(int argc, char **argv)
         SystemSleeper sleeper;
         TickPacer pacer(sleeper, kTickInterval);
 
-        // A backend showing nothing gives nobody a reason to wait.
+        // Paced even under the backend that draws nothing.
+        // That build used to stop after its scripted run.
+        // An unbounded one would spin a core flat out instead.
         std::vector<std::reference_wrapper<ISystem>> observers{
-            renderSystem};
-        if (!showsNothing)
-        {
-            observers.emplace_back(pacer);
-        }
+            renderSystem, pacer};
 
-        auto events = antwika::replay::loadReplayFile(
-            options.replayPath.value_or(std::string(kDemoReplayPath)));
-        ReplaySource fileSource(std::move(events));
+        // Nothing is scripted unless a replay was asked for.
+        // A plain run starts empty and builds only what gets clicked.
+        std::vector<antwika::event::TickEvent> scripted;
+        if (options.replayPath)
+        {
+            scripted =
+                antwika::replay::loadReplayFile(*options.replayPath);
+        }
+        ReplaySource fileSource(std::move(scripted));
 
         // A --replay run must not attach a live source.
         // Every input would arrive twice: from the file and the device.
@@ -174,7 +178,12 @@ int main(int argc, char **argv)
         antwika::replay::IReplaySource &inner =
             live ? static_cast<antwika::replay::IReplaySource &>(liveSource)
                  : static_cast<antwika::replay::IReplaySource &>(fileSource);
-        WindowInputSource source(inner, *backend, window->id());
+
+        // Both ways out are input, so both record and both replay.
+        // A replay carrying its own stop simply gets a second one.
+        // StopSignal ends the run on whichever arrives first.
+        StopOnKeySource quitting(inner, codec, kQuitKey);
+        WindowInputSource source(quitting, *backend, window->id());
 
         const auto summary = antwika::game::bootstrap(
             logger,

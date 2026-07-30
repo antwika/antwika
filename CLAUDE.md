@@ -72,6 +72,7 @@ build/bin/antwika_replay_tests --gtest_filter='ReplayReaderTest.*'
 **Run the apps:**
 
 ```sh
+build/bin/antwika_game                        # empty grid, runs until quit
 build/bin/antwika_game --record demo.replay   # or --replay demo.replay
 build/bin/antwika_life                        # runs until stopped
 build/bin/antwika_life --record demo.replay
@@ -131,6 +132,14 @@ The plain `GameState` struct and its `GameStateReducer` are still there, folding
 **The camera is simulation state, not render state**, which is the load-bearing decision: a click arrives as a pixel, and which cell it means depends entirely on the camera, so a renderer-owned camera would leave a replay resolving recorded clicks against a different view.
 That is also why zoom is an index into a table of whole tile sizes rather than a scale factor, why `game::floorDiv()` exists instead of `operator/`, and why the projection is anchored to the camera's pan rather than the canvas centre -- anchoring to the centre would make a window resize change which cell a pixel means.
 **The app defines no event for placing anything**: a click is the input, `game::GridSink` turns it into a placement inside the tick path, and the replay stores the click and regenerates the placement -- persisting both would lay two tiles per click.
+It starts on an empty grid and loads nothing unless `--replay` says so, so
+what a session contains is what somebody clicked.
+It runs until Escape is pressed or the window is closed -- both of which
+are input, so both are recorded and both replay.
+Neither reaches the `null` backend, so that build runs until interrupted,
+and a `--record` there never gets to save.
+`src/apps/game/replays/demo.json` is a sample session to pass to
+`--replay`.
 See [`blog/013-the-camera-is-simulation-state.md`](blog/013-the-camera-is-simulation-state.md).
 - `apps/life` (Conway's Game of Life) holds state in an `antwika::ecs::World` instead: each cell is an entity with a `Cell` component, and a single `LifeSystem` advances every cell one generation per tick via the double-buffered `World`/`SystemScheduler` — see [`blog/003-an-entity-component-system-with-nowhere-to-hide-a-mutation.md`](blog/003-an-entity-component-system-with-nowhere-to-hide-a-mutation.md).
 Cells are toggled either by a scripted `life.toggle_cell` event or by dragging over them with the mouse.
