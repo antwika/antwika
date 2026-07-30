@@ -168,8 +168,8 @@ namespace antwika::holdem
                 "Table: a hand needs two players with chips");
         }
 
-        deck = &newDeck;
-        deck->shuffle();
+        deck = newDeck;
+        deck->get().shuffle();
 
         for (auto &seat : seats)
         {
@@ -421,7 +421,7 @@ namespace antwika::holdem
             for (std::size_t dealt = 0; dealt < players; ++dealt)
             {
                 seat = *nextSeatFrom(seats, seat, isInHand);
-                seats[indexOf(seat)].holeCards[round] = deck->deal();
+                seats[indexOf(seat)].holeCards[round] = deck->get().deal();
             }
         }
     }
@@ -502,7 +502,7 @@ namespace antwika::holdem
             currentStage == Stage::Flop ? kFlopSize : std::size_t{1};
         for (std::size_t index = 0; index < count; ++index)
         {
-            communityCards.push_back(deck->deal());
+            communityCards.push_back(deck->get().deal());
         }
     }
 
@@ -623,7 +623,7 @@ namespace antwika::holdem
         currentBet = 0;
         toAct = std::nullopt;
         handInProgress = false;
-        deck = nullptr;
+        deck.reset();
         for (auto &seat : seats)
         {
             seat.inHand = false;

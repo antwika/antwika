@@ -2,6 +2,7 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <functional>
 #include <optional>
 #include <vector>
 
@@ -220,7 +221,10 @@ namespace antwika::holdem
         std::vector<Card> communityCards;
         std::optional<HandResult> result;
         std::optional<SeatId> toAct;
-        IDeck *deck = nullptr;
+        // The one borrowed collaborator arriving after construction.
+        // A reference member cannot express that, nor the letting go.
+        // An optional reference says "none yet" without a raw pointer.
+        std::optional<std::reference_wrapper<IDeck>> deck;
         Chips potChips = 0;
         Chips currentBet = 0;
         Chips lastRaiseSize = 0;
