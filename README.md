@@ -11,6 +11,7 @@ A C++23 game project built with CMake, Conan, and GoogleTest, developed inside V
 src/
 ├── apps/
 │   ├── game/
+│   ├── gfx_demo/
 │   ├── life/
 │   ├── poker/
 │   ├── sudoku/
@@ -19,17 +20,24 @@ src/
     ├── ecs/
     ├── engine/
     ├── event/
+    ├── gfx/
     ├── holdem/
+    ├── input/
     ├── log/
     ├── reducer/
     ├── replay/
     ├── scheduler/
     ├── time/
     └── wfc/
+backends/
+├── null/
+├── raylib/
+└── sdl3/
 blog/
 ```
 
 Each library and app has its own `CMakeLists.txt`, `include/`, `src/`, and `tests/` directory.
+`backends/` sits outside `src/` and holds the concrete graphics and input frameworks, one directory per framework, exactly one of which is compiled into a given build.
 See [`docs/STYLE_GUIDE.md`](docs/STYLE_GUIDE.md) for the project's C++/CMake/Python coding conventions.
 
 `blog/` holds write-ups about notable changes to the project — see [`blog/001-building-a-deterministic-replay-system.md`](blog/001-building-a-deterministic-replay-system.md) for the design and requirements behind the replay system below, and [`blog/003-an-entity-component-system-with-nowhere-to-hide-a-mutation.md`](blog/003-an-entity-component-system-with-nowhere-to-hide-a-mutation.md) for the `antwika::ecs` and `antwika::reducer` libraries under `libs/ecs/` and `libs/reducer/`.
@@ -64,9 +72,9 @@ After the build completes, run the compiled binaries on your target machine:
 - Linux: `build/bin/antwika_game`, `build/bin/antwika_life`, `build/bin/antwika_poker`, `build/bin/antwika_sudoku`, `build/bin/antwika_task_worker`
 - Windows: `build/bin/antwika_game.exe`, `build/bin/antwika_life.exe`, `build/bin/antwika_poker.exe`, `build/bin/antwika_sudoku.exe`, `build/bin/antwika_task_worker.exe`
 
-### Choosing a graphics backend
+### Choosing a graphics and input backend
 
-Builds use the `null` graphics backend, which opens windows that draw nothing and needs no display.
+Builds use the `null` graphics and input backends, which open windows that draw nothing, report no input, and need no display.
 To build against a real one, pick it once:
 
 ```
@@ -83,6 +91,14 @@ scripts/build.sh
 ```
 
 A real backend builds into `build-sdl3/` or `build-raylib/` rather than `build/`, matching what CI does, so switching backends never invalidates the previous one.
+The choice drives input as well as graphics: the `input_backend` Conan option and the `ANTWIKA_INPUT_BACKEND` CMake variable both default to whatever was picked for graphics, so `sdl3` windows come with `sdl3` keyboard and mouse.
+Setting them apart is allowed for input with no window, or a window with no input:
+
+```sh
+conan install . -of build-sdl3-input -o gfx_backend=null -o input_backend=sdl3 ...
+```
+
+Naming two different real frameworks is refused at configure time, because they would fight over one operating-system event queue and whichever polled second would silently lose events.
 `build/bin/antwika_gfx_demo` opens a window and draws until you close it -- under the `null` backend there is nothing to close, so that build runs until interrupted.
 It draws three bars and blits a PNG logo twice: once whole and untinted, once left-half-only and tinted, which is what a source rectangle and a tint look like side by side.
 The selection lives in the untracked `.vscode/gfx-backend`, which makes it yours rather than the repository's.
@@ -102,23 +118,30 @@ Application code (here, `apps/game`) defines its own state (`GameState`) and eve
 `apps/life` is a second, independent application built on the same replay system, this time with its state held in an `antwika::ecs::World` instead of a plain struct — a Conway's Game of Life board, where each cell is an entity with a `Cell` component and a single `LifeSystem` advances every cell one generation per tick using the double-buffered `World`/`SystemScheduler` machinery described in [`blog/003-an-entity-component-system-with-nowhere-to-hide-a-mutation.md`](blog/003-an-entity-component-system-with-nowhere-to-hide-a-mutation.md):
 
 ```sh
-build/bin/antwika_life --record demo.replay   # seeds a glider, saves the input
-build/bin/antwika_life --replay demo.replay   # reload it, reproducing the same run
+build/bin/antwika_life                        # seeds a glider, then runs on
+build/bin/antwika_life --record demo.replay   # save the input as a replay
+build/bin/antwika_life --replay demo.replay   # reload it, reproducing the run
 ```
 
 Cells are toggled alive via a `life.toggle_cell` event (JSON payload `{"x":..,"y":..}`), tick-stamped exactly like `game.score_increment` — the same event-driven, replayable pattern applied to ECS state instead of a hand-rolled reducer.
 
-It is also where `antwika::gfx` earns its keep.
-Built against a real graphics backend, `antwika_life` draws the board into a window instead of printing it, one frame per tick, paced so a generation at a time can actually be watched:
+The run has no end of its own: it goes on until the window is closed, or until a replay says to stop.
+A headless build reports neither, so `Ctrl+C` is what ends one.
+
+It is also where `antwika::gfx` and `antwika::input` earn their keep.
+Built against a real backend, `antwika_life` draws the board into a window instead of printing it, one frame per tick, and lets you draw on that board with the mouse:
 
 ```sh
 scripts/select_gfx_backend.sh sdl3 && scripts/build.sh
 build-sdl3/bin/antwika_life                   # a glider crossing a 32x32 board
 ```
 
+Drag with the left button held to toggle every cell the pointer crosses, one toggle per cell per drag, and watch the next generation take it from there.
+Holding the button also pauses the simulation, so the board stays still while you draw on it rather than evolving out from under the cursor; the cells you toggle still appear as you draw them, and the generations pick up again when you let go.
 Under the default `null` backend there is no window to draw into, so that build prints the board as ASCII instead, which is what keeps the app runnable in CI with no display present.
 Drawing is a write-only projection of the `World` and never feeds back into it.
 Closing the window enters the engine as an `engine.stop` event through the same `IReplaySource` every other external input goes through, so a run ended by closing a window is recorded like any other input — and replaying that recording headlessly reaches the identical board.
+The mouse arrives the same way, as `input.pointer_down`/`input.pointer_move`/`input.pointer_up` events: what a `--record` run persists is the click, and which cell it toggled is derived from it again on replay.
 
 `apps/task_worker` is a third application, this time combining `antwika::ecs` with a new `antwika::scheduler` library: a fixed pool of `Worker` entities pulls tasks off a deterministic, priority-ordered, budget-bounded `antwika::scheduler::Scheduler`, submitted over time via a `task.submit` event and, optionally, chained to an earlier task with a dependency edge:
 

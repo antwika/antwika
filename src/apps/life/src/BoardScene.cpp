@@ -6,6 +6,8 @@
 #include <antwika/gfx/Color.hpp>
 #include <antwika/gfx/Rect.hpp>
 
+#include "antwika/life/BoardLayout.hpp"
+
 namespace antwika::life
 {
 
@@ -26,32 +28,23 @@ namespace antwika::life
     {
         renderer.clear(kBackground);
 
-        if (board.width == 0 || board.height == 0)
+        // Drawing a cell and hitting one are the same question.
+        // So both go through layoutFor().
+        const auto layout = layoutFor(canvas, board.width, board.height);
+
+        if (!layout)
         {
             return;
         }
 
-        const auto byWidth = canvas.width / board.width;
-        const auto byHeight = canvas.height / board.height;
-        const auto cell = byWidth < byHeight ? byWidth : byHeight;
-
-        // Cells are never rounded up to a minimum size.
-        // The smaller quotient keeps the board inside the canvas.
-        // So the centring offsets below cannot underflow.
-        if (cell == 0)
-        {
-            return;
-        }
-
-        const auto used = Size{
-            .width = cell * board.width, .height = cell * board.height};
-        const auto originX =
-            static_cast<std::int32_t>((canvas.width - used.width) / 2);
-        const auto originY =
-            static_cast<std::int32_t>((canvas.height - used.height) / 2);
+        const auto cell = layout->cell;
 
         renderer.drawRect(
-            Rect{.origin = {.x = originX, .y = originY}, .size = used},
+            Rect{
+                .origin = layout->origin,
+                .size = {
+                    .width = cell * board.width,
+                    .height = cell * board.height}},
             kDeadCells);
 
         for (std::size_t index = 0; index < board.alive.size(); ++index)
@@ -69,9 +62,10 @@ namespace antwika::life
             renderer.drawRect(
                 Rect{
                     .origin = {
-                        .x = originX +
+                        .x = layout->origin.x +
                              static_cast<std::int32_t>(column * cell),
-                        .y = originY + static_cast<std::int32_t>(row * cell)},
+                        .y = layout->origin.y +
+                             static_cast<std::int32_t>(row * cell)},
                     .size = {.width = cell, .height = cell}},
                 kAliveCell);
         }

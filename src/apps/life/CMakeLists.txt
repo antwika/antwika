@@ -1,10 +1,14 @@
 add_executable(antwika_life
     src/Board.cpp
+    src/BoardLayout.cpp
     src/BoardScene.cpp
     src/BoardSink.cpp
+    src/DragPausedSystem.cpp
+    src/DragState.cpp
     src/Grid.cpp
     src/Life.cpp
     src/LifeSystem.cpp
+    src/PointerToggleSink.cpp
     src/PrintSystem.cpp
     src/RenderSystem.cpp
     src/TickPacer.cpp
@@ -31,6 +35,8 @@ target_link_libraries(antwika_life
         antwika::engine
         antwika::gfx
         antwika::gfx_backend
+        antwika::input
+        antwika::input_backend
         antwika::log
         antwika::replay
         antwika::time

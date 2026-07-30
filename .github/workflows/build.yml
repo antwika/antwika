@@ -318,11 +318,11 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
 
-    # The default build selects the null backend, so nothing above ever
+    # The default build selects the null backends, so nothing above ever
     # compiles a line of backends/sdl3 or backends/raylib. This job is
-    # what keeps them from rotting: it builds each real backend and runs
-    # the shared conformance suite against it under Xvfb, since the
-    # runner has no display of its own.
+    # what keeps them from rotting: it builds each real backend, graphics
+    # and input alike, and runs both shared conformance suites against it
+    # under Xvfb, since the runner has no display of its own.
     strategy:
       fail-fast: false
       matrix:
@@ -395,24 +395,34 @@ jobs:
         shell: bash
         run: xvfb-run -a ctest --test-dir "$BUILD_DIR" --output-on-failure
 
-      - name: Verify the conformance suite actually ran
+      - name: Verify the conformance suites actually ran
         shell: bash
         run: |
-          binary="${BUILD_DIR}/bin/antwika_gfx_backend_${{ matrix.backend }}_tests"
+          failed=0
 
-          if [ ! -f "$binary" ]; then
-            echo "Missing binary: $binary"
-            exit 1
-          fi
+          # One selection drives both subsystems, so both suites exist.
+          for subsystem in gfx input; do
+            binary="${BUILD_DIR}/bin/antwika_${subsystem}_backend_${{ matrix.backend }}_tests"
 
-          # A conformance suite that skipped everything would pass while
-          # proving nothing, so insist it reported some passes.
-          xvfb-run -a "$binary" 2>&1 | tee conformance.log
+            if [ ! -f "$binary" ]; then
+              echo "Missing binary: $binary"
+              failed=1
+              continue
+            fi
 
-          if ! grep -qE '^\[  PASSED  \] [1-9][0-9]* test' conformance.log; then
-            echo "The conformance suite passed no tests"
-            exit 1
-          fi
+            log="conformance-${subsystem}.log"
+
+            # A suite that skipped everything would pass while proving
+            # nothing, so insist it reported some passes.
+            xvfb-run -a "$binary" 2>&1 | tee "$log"
+
+            if ! grep -qE '^\[  PASSED  \] [1-9][0-9]* test' "$log"; then
+              echo "The ${subsystem} conformance suite passed no tests"
+              failed=1
+            fi
+          done
+
+          exit $failed
 
   coverage-badges:
     name: Publish coverage badges

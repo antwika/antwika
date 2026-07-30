@@ -23,7 +23,7 @@ ctest --test-dir build --output-on-failure
 
 Or in VS Code: `Ctrl+Shift+B` runs the same sequence as the default build task (see [`.vscode/tasks.json`](.vscode/tasks.json)).
 
-**Choosing a graphics backend** (`null`, `sdl3` or `raylib`; the default `null` needs no graphics framework and draws nothing):
+**Choosing a graphics and input backend** (`null`, `sdl3` or `raylib`; the default `null` needs no framework, draws nothing and reports no input):
 
 ```sh
 conan install . -of build-sdl3 -o gfx_backend=sdl3 \
@@ -44,6 +44,12 @@ On a fresh clone, run the `conan install . -of build` above first.
 The Conan option sets the `ANTWIKA_GFX_BACKEND` CMake variable, which names a directory under [`backends/`](backends/); an unknown value fails at configure time with the list of ones that exist.
 The `build_folder_vars` conf is what puts the backend in the preset name, so the sdl3 configuration does not collide with the default build's `conan-release` preset.
 Each configuration has its own lockfile, because selecting a backend changes the dependency graph.
+
+Input has its own selection, `-o input_backend=` and the `ANTWIKA_INPUT_BACKEND` CMake variable, defaulting to `auto`, which resolves to whatever `gfx_backend` is.
+So the command above gets sdl3 keyboard and mouse for free, and the default build stays `null`/`null` with no new dependency.
+Setting the two apart is legal for input with no window (`-o gfx_backend=null -o input_backend=sdl3`) or a window with no input.
+Naming two *different* real frameworks is refused, by `validate()` in [`conanfile.py`](conanfile.py) and again in [`backends/CMakeLists.txt`](backends/CMakeLists.txt): they would fight over one process-global event queue, and whichever polled second would silently lose events.
+A directory selected for one subsystem only builds that subsystem's target, which is why each `backends/<name>/CMakeLists.txt` guards its two targets separately.
 
 **Updating the lockfiles** after a dependency bump in `conanfile.py` (what Renovate leaves stale):
 
@@ -67,11 +73,17 @@ build/bin/antwika_replay_tests --gtest_filter='ReplayReaderTest.*'
 
 ```sh
 build/bin/antwika_game --record demo.replay   # or --replay demo.replay
+build/bin/antwika_life                        # runs until stopped
 build/bin/antwika_life --record demo.replay
 build/bin/antwika_task_worker --record demo.replay
 build/bin/antwika_poker --record demo.replay
 build/bin/antwika_sudoku [--puzzle my-puzzle.txt]
 ```
+
+`antwika_life` opens a window, draws the board each tick, and takes mouse input.
+It has no end of its own: it runs until the window is closed, or until a replay dispatches `engine.stop`.
+A headless build reports neither, so `Ctrl+C` is what ends one -- and a `--record` run only writes its file once the run ends.
+Both the windowed and the headless run are paced through `TickPacer`, since a run that never ends would otherwise go flat out.
 
 `antwika_poker` also opens a window and draws the table each tick.
 `--tick-delay-ms <n>` holds each frame for `n` ms and keeps the final frame up until the window is closed; it defaults to 0, which is what keeps the default terminal run unchanged and stops the `null` backend (which never reports a close) from wedging it.
@@ -114,7 +126,17 @@ The system is layered as small, single-purpose libraries under `src/libs/`, comp
 **Application state**: each app owns its state and how events mutate it — the engine has no opinion here.
 
 - `apps/game` holds state as a plain `GameState` struct, mutated by `GameStateReducer` (an `antwika::reducer::IReducer` implementation) reacting to tick-stamped events through `ITickEventSink`.
-- `apps/life` (Conway's Game of Life) holds state in an `antwika::ecs::World` instead: each cell is an entity with a `Cell` component, and a single `LifeSystem` advances every cell one generation per tick via the double-buffered `World`/`SystemScheduler` — see [`blog/003-an-entity-component-system-with-nowhere-to-hide-a-mutation.md`](blog/003-an-entity-component-system-with-nowhere-to-hide-a-mutation.md). Cells are toggled via a `life.toggle_cell` event.
+- `apps/life` (Conway's Game of Life) holds state in an `antwika::ecs::World` instead: each cell is an entity with a `Cell` component, and a single `LifeSystem` advances every cell one generation per tick via the double-buffered `World`/`SystemScheduler` — see [`blog/003-an-entity-component-system-with-nowhere-to-hide-a-mutation.md`](blog/003-an-entity-component-system-with-nowhere-to-hide-a-mutation.md).
+Cells are toggled either by a scripted `life.toggle_cell` event or by dragging over them with the mouse.
+The drag is `antwika::input`'s side: `input::LiveInputSource` puts each edge into the tick stream, and `life::PointerToggleSink` decodes the `input.pointer_*` events and toggles the cell under the pointer — so a `--record` run persists the click and regenerates the toggle, per the rule that a replay holds only external input.
+Where a cell is drawn and which cell a click lands in are one function, `life::layoutFor()`/`life::cellAt()` in `BoardLayout.hpp`, shared by `BoardScene` and `PointerToggleSink` so the two cannot drift.
+That mapping is against the *configured* window size rather than the size a window reports, and the window is not resizable, which is what keeps a recorded session landing on the same cells under a different backend.
+`PointerToggleSink` toggles a cell at most once per drag, and keeps its own note of what the current tick staged, because `World` hands out the committed board and would otherwise let two drags over one cell in a tick collapse into one toggle.
+Holding the button pauses the generations: the sink reports the drag through a shared `life::DragState`, and `life::DragPausedSystem` wraps `LifeSystem` and stages nothing while a drag is under way.
+Only that one system stops — the tick, the commit and every observer still run, so the cells being drawn appear immediately, which is the whole point of pausing.
+A press that lands off the board still pauses, since what pauses is holding the button rather than hitting a cell.
+Which ticks were paused follows from the recorded presses and releases, so a replay pauses on exactly the same ones.
+The run is uncapped: only closing the window (via `WindowInputSource`) or a replay's `engine.stop` ends it.
 - `apps/task_worker` combines `antwika::ecs` with `antwika::scheduler`: a fixed pool of `Worker` entities pulls tasks off a deterministic, priority-ordered, budget-bounded `Scheduler`. `task.submit` events (parsed `id,priority,durationTicks,label[,dependsOnId]`) are scheduled by `TaskSubmissionSink`; `TaskDispatchSystem` runs the scheduler once per tick with that tick's idle-worker count as its budget, so dispatch never exceeds free workers. Dependency cycles are unreachable by construction (id-ordering), not by a runtime check — see [`blog/006-a-job-scheduler-and-a-worker-pool-that-cant-lie-to-itself.md`](blog/006-a-job-scheduler-and-a-worker-pool-that-cant-lie-to-itself.md).
 - `apps/poker` is a no-limit Texas hold'em cash game on top of a new `antwika::holdem` library.
 One engine tick is one step of the poker loop: a deal, or one player being asked to act, through `holdem::TableRunner` and `holdem::IAgent`.
@@ -127,6 +149,13 @@ The only route back in is `poker::WindowCloseSource`, an `IReplaySource` decorat
 - `apps/sudoku` is unrelated to the tick/replay system: it's a showcase for `antwika::wfc` (Wave Function Collapse) — a standalone, dependency-free, deterministic constraint solver operating on a flat, index-addressed `std::vector` of cells with geometry expressed entirely through `IConstraint`s (no grid concept inside the library). `apps/sudoku` expresses the 81-cell puzzle and its row/column/box rules as `AllDifferentConstraint`s over that flat array — see [`blog/005-wave-function-collapse-that-never-guesses.md`](blog/005-wave-function-collapse-that-never-guesses.md).
 
 **Supporting libs**: `antwika::time` (fixed-tick `Tick` type, `IClock`/`SystemClock`) and `antwika::log` (`ILogger`/`Logger`, `IAppender`/`IFormatter`/`ILogPolicy` — composable logging with no global state) are used across apps but carry no tick/replay logic of their own.
+
+`antwika::input` abstracts reading a keyboard and a pointer (`IInputBackend`/`InputEvent`/`InputCapabilities`, `InputError`), so no code under `src/` names a concrete input framework; backends live under [`backends/`](backends/) beside the graphics ones and are chosen at build time by `ANTWIKA_INPUT_BACKEND`.
+It deliberately does **not** depend on `antwika::gfx`, and `antwika::gfx` does not depend on it — reading input does not require opening a window, which is why `input::Position` duplicates `gfx::Point` rather than reusing it, and why an input event does not say which window it arrived at.
+Every `InputEvent` is an *edge* (a press, a release, a move, a notch) and never a statement of what is currently held, which is what lets a queue-based framework (SDL) and a state-polling one (raylib) implement the same interface.
+Live input reaches the engine only through `IReplaySource`, via `LiveInputSource`, and is persisted by `InputEventCodec` as `input.*` events with symbolic key and button names rather than platform scancodes, so a session recorded under one backend replays under another; no `input.*` name may ever be added to an app's `kSelfGeneratedEventNames`.
+Because SDL drains one process-global queue for windows *and* input, `backends/sdl3` owns a reference-counted `Sdl3Pump` shared by both of its targets, which calls `SDL_PollEvent` once and routes each event into a window queue or an input queue — see [`docs/input-plan.md`](docs/input-plan.md) for why that sharing belongs in `backends/` rather than in `src/`.
+The `raylib` input backend reports a pointer and no keyboard, and synthesises edges by diffing state, since raylib has no queue at all.
 
 `antwika::gfx` abstracts opening and rendering to windows (`IGfxBackend`/`IWindow`/`IRenderer`, `GfxError`), so no code under `src/` names a concrete graphics framework — SDL, raylib and friends arrive as statically linked backends under `backends/`, chosen at build time. Rendering is a write-only projection of state and never feeds back into the tick loop, so replays stay reproducible under the headless `NullBackend`. See [`blog/012-a-window-that-cant-talk-back.md`](blog/012-a-window-that-cant-talk-back.md) for how an app hangs rendering off the tick loop without letting it feed back in.
 

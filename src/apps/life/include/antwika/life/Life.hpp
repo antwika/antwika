@@ -2,10 +2,12 @@
 
 #include <cstdint>
 #include <functional>
+#include <memory>
 #include <optional>
 #include <vector>
 
 #include <antwika/ecs/ISystem.hpp>
+#include <antwika/ecs/World.hpp>
 #include <antwika/engine/IEngine.hpp>
 #include <antwika/event/IEventDispatcher.hpp>
 #include <antwika/event/IEventSink.hpp>
@@ -15,17 +17,31 @@
 #include <antwika/time/Tick.hpp>
 
 #include "antwika/life/Board.hpp"
+#include "antwika/life/DragState.hpp"
+#include "antwika/life/Grid.hpp"
 
 namespace antwika::life
 {
 
     using antwika::ecs::ISystem;
+    using antwika::ecs::World;
     using antwika::engine::IEngine;
     using antwika::event::IEventDispatcher;
     using antwika::event::IEventSink;
     using antwika::event::ITickEventSink;
     using antwika::log::ILogger;
     using antwika::replay::IReplaySource;
+
+    /**
+     * @brief Builds a tick sink over the state bootstrap() owns.
+     *
+     * A factory rather than a sink, because a sink that folds events into
+     * the board needs the World, the Grid and the DragState, and none of
+     * them exists before bootstrap() creates them. Ownership passes back,
+     * so the sink lives exactly as long as the run it belongs to.
+     */
+    using TickSinkFactory = std::function<
+        std::unique_ptr<ITickEventSink>(World &, const Grid &, DragState &)>;
 
     /**
      * @brief Announces simulation startup and starts the engine.
@@ -88,6 +104,11 @@ namespace antwika::life
      * every dispatched event stamped with its tick -- what a caller
      * wanting to persist a `--record` file should register, since a run's
      * actual length is no longer known ahead of time. Defaults to none.
+     * @param extraSink Optional factory for one more tick sink, called
+     * once with the World, Grid and DragState this function owns. A sink
+     * folding events into the board needs all three, and none exists
+     * until here -- what main.cpp uses to add PointerToggleSink.
+     * Defaults to none.
      * @return The resulting Board, for callers (main.cpp, tests).
      */
     Board bootstrap(
@@ -98,6 +119,7 @@ namespace antwika::life
         std::uint32_t height,
         std::vector<std::reference_wrapper<ISystem>> observers = {},
         std::optional<antwika::time::Tick> maxTicks = std::nullopt,
-        ITickEventSink *replayRecorder = nullptr);
+        ITickEventSink *replayRecorder = nullptr,
+        const TickSinkFactory &extraSink = {});
 
 } // namespace antwika::life

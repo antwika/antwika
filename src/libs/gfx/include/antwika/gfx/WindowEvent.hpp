@@ -44,8 +44,10 @@ namespace antwika::gfx
      * @brief What happened, without saying who it happened to.
      *
      * Deliberately limited to lifetime events. Keyboard and pointer input
-     * belong with the work that feeds live input into replays, which is
-     * out of scope until there is a live input source to record from.
+     * travel through antwika::input instead, which does not depend on this
+     * library and is not depended on by it: reading input does not require
+     * opening a window, and putting input here would have made every
+     * consumer of it link a graphics library and open one first.
      */
     using WindowEventPayload = std::variant<CloseRequested, Resized>;
 

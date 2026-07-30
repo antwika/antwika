@@ -5,6 +5,34 @@ keyboard and a mouse, with the concrete input framework (SDL, raylib, ...)
 chosen at build time and never named by Antwika's own source, and with live
 input entering the engine only through the existing replay seam.
 
+## Status
+
+Phases 1, 3, 4 and 5 have landed, along with the parts of 6 and 7 that
+`apps/life`'s mouse input needed.
+What exists: the vocabulary and the seam, `ANTWIKA_INPUT_BACKEND` and the
+`input_backend` Conan option, the conformance suite, `Events.hpp`,
+`IInputEventCodec`/`InputEventCodec`, `LiveInputSource`, the shared
+`Sdl3Pump` with a full `Sdl3InputBackend`, a pointer-only
+`RaylibInputBackend`, and drag-to-toggle in `apps/life` through
+`life::PointerToggleSink`.
+
+What is still outstanding, and why:
+
+- **Phase 2 entirely.**
+  `Keyboard`, `Mouse`, `InputState`, `Binding` and `ActionMap` are not
+  built.
+  Nothing needs them yet: `PointerToggleSink` folds the two pieces of held
+  state it cares about itself, and no application binds a named action.
+- **`StopOnKeySource`.**
+  `apps/life` stops on a window close, which `life::WindowInputSource`
+  already turns into `engine.stop`.
+- **The raylib keyboard.**
+  `RaylibInputBackend` reports a pointer only, and says so through
+  `capabilities()`.
+  A keyboard needs a raylib-keycode table nothing has asked for.
+- **`apps/gfx_demo`.**
+  Phase 7's other half: `DemoLoop` still takes no `IInputBackend`.
+
 ## Goals
 
 - One abstraction that Antwika code reads input through, expressed only in
