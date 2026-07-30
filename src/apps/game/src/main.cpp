@@ -4,6 +4,7 @@
 #include <chrono>
 #include <cstdlib>
 #include <exception>
+#include <fstream>
 #include <functional>
 #include <iostream>
 #include <string>
@@ -15,10 +16,12 @@
 #include <antwika/event/TickEvent.hpp>
 #include <antwika/event/TickEventRecorder.hpp>
 #include <antwika/gfx/Point.hpp>
+#include <antwika/gfx/PngReader.hpp>
 #include <antwika/gfx/SelectedBackend.hpp>
 #include <antwika/gfx/Size.hpp>
 #include <antwika/gfx/WindowDesc.hpp>
 #include <antwika/input/CoalescingPointerSource.hpp>
+#include <antwika/input/IdleMotionSource.hpp>
 #include <antwika/input/InputEventCodec.hpp>
 #include <antwika/input/Key.hpp>
 #include <antwika/input/LiveInputSource.hpp>
@@ -56,9 +59,11 @@ using antwika::game::TickPacer;
 using antwika::game::UiOverlay;
 using antwika::game::WindowInputSource;
 using antwika::gfx::Point;
+using antwika::gfx::PngReader;
 using antwika::gfx::Size;
 using antwika::gfx::WindowDesc;
 using antwika::input::CoalescingPointerSource;
+using antwika::input::IdleMotionSource;
 using antwika::input::InputEventCodec;
 using antwika::input::LiveInputSource;
 using antwika::input::StopOnKeySource;
@@ -147,6 +152,17 @@ int main(int argc, char **argv)
         const auto window = backend->createWindow(
             WindowDesc{.title = "Antwika Game", .size = kWindowSize});
 
+        // Opening the file is the application's job, not the library's.
+        // antwika::gfx decodes bytes and never goes looking for them.
+        std::ifstream atlasFile(
+            ANTWIKA_GAME_ATLAS_PATH, std::ios::binary);
+        const auto atlasBitmap = PngReader{}.read(atlasFile);
+
+        // After the window, since a backend may have no device yet.
+        // Declared after it too, so it is destroyed first.
+        const auto atlas =
+            window->renderer().createTexture(atlasBitmap);
+
         Camera camera(kInitialPan);
         PathIndex paths;
         const GridScene scene;
@@ -156,7 +172,7 @@ int main(int argc, char **argv)
         // That is what makes a recorded click hit the same button.
         UiOverlay overlay(kWindowSize);
         RenderSystem renderSystem(
-            *window, scene, paths, camera, kExtent, overlay);
+            *window, scene, *atlas, paths, camera, kExtent, overlay);
         SystemSleeper sleeper;
         TickPacer pacer(sleeper, kTickInterval);
 
@@ -180,16 +196,21 @@ int main(int argc, char **argv)
         // Every input would arrive twice: from the file and the device.
         const bool live = !options.replayPath.has_value();
         const InputEventCodec codec;
-        CoalescingPointerSource coalesced(fileSource);
-        LiveInputSource liveSource(coalesced, *inputBackend, codec);
-        antwika::replay::IReplaySource &inner =
+        LiveInputSource liveSource(fileSource, *inputBackend, codec);
+        antwika::replay::IReplaySource &polled =
             live ? static_cast<antwika::replay::IReplaySource &>(liveSource)
                  : static_cast<antwika::replay::IReplaySource &>(fileSource);
+
+        // Outside the live source, so they thin what the device reported.
+        // Inside it, they would only ever have seen the scripted file.
+        // In both branches, so a replay is thinned exactly as a run is.
+        CoalescingPointerSource coalesced(polled);
+        IdleMotionSource gated(coalesced, codec);
 
         // Both ways out are input, so both record and both replay.
         // A replay carrying its own stop simply gets a second one.
         // StopSignal ends the run on whichever arrives first.
-        StopOnKeySource quitting(inner, codec, kQuitKey);
+        StopOnKeySource quitting(gated, codec, kQuitKey);
         WindowInputSource source(quitting, *backend, window->id());
 
         const auto summary = antwika::game::bootstrap(

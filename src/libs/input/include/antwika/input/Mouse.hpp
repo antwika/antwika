@@ -90,6 +90,17 @@ namespace antwika::input
         [[nodiscard]] bool isDown(MouseButton button) const noexcept;
 
         /**
+         * @brief Check whether any button at all is currently held.
+         *
+         * The question a gesture asks before it asks which button: a
+         * movement means something while anything is down, and means
+         * nothing while nothing is.
+         *
+         * @return True while at least one button is down.
+         */
+        [[nodiscard]] bool anyDown() const noexcept;
+
+        /**
          * @brief Check whether a button went down this tick.
          * @param button The button to ask about.
          * @return True if it was pressed since the last beginTick().

@@ -19,6 +19,7 @@
 #include <antwika/event/TickEventRecorder.hpp>
 #include <antwika/gfx/Size.hpp>
 #include <antwika/input/Events.hpp>
+#include <antwika/input/IdleMotionSource.hpp>
 #include <antwika/input/InputCapabilities.hpp>
 #include <antwika/input/InputEvent.hpp>
 #include <antwika/input/InputEventCodec.hpp>
@@ -46,6 +47,7 @@ using antwika::event::EventRecorder;
 using antwika::event::TickEvent;
 using antwika::event::TickEventRecorder;
 using antwika::gfx::Size;
+using antwika::input::IdleMotionSource;
 using antwika::input::InputCapabilities;
 using antwika::input::InputEvent;
 using antwika::input::InputEventCodec;
@@ -391,4 +393,88 @@ TEST(PointerReplayIntegrationTest, HoldingTheButtonStopsTheGenerations)
     // And it picks up again where it left off.
     EXPECT_NE(boards[5], boards[4]);
     EXPECT_EQ(boards[5], boards[0]);
+}
+
+namespace
+{
+    // The same two drags, with the pointer wandering to each one first.
+    // None of that wandering toggles anything.
+    // So the gate can hold it back without the board noticing.
+    [[nodiscard]] std::vector<std::vector<InputEvent>> wanderingDragRounds()
+    {
+        return {
+            {moveTo(5, 5), moveTo(15, 5), moveTo(15, 15)},
+            {pressAt(15, 15),
+             moveTo(25, 15),
+             moveTo(25, 25),
+             moveTo(15, 25),
+             releaseAt(15, 25)},
+            {moveTo(35, 35), moveTo(45, 45)},
+            {pressAt(55, 55)},
+            {moveTo(65, 55)},
+            {releaseAt(65, 55)},
+        };
+    }
+
+    struct WanderResult
+    {
+        Board board;
+        std::vector<TickEvent> recorded;
+    };
+
+    [[nodiscard]] WanderResult runWandering(
+        const InputEventCodec &codec, bool gate)
+    {
+        NiceMock<MockLogger> logger;
+        EventRecorder eventSink;
+        TickEventRecorder replayRecorder;
+
+        FakeInputBackend backend(wanderingDragRounds(), kPointerOnly);
+        ReplaySource fileSource(stopAt(kStopTick));
+        LiveInputSource live(fileSource, backend, codec);
+        IdleMotionSource gated(live, codec);
+
+        antwika::replay::IReplaySource &source =
+            gate ? static_cast<antwika::replay::IReplaySource &>(gated)
+                 : static_cast<antwika::replay::IReplaySource &>(live);
+
+        auto board = antwika::life::bootstrap(
+            logger,
+            eventSink,
+            source,
+            kWidth,
+            kHeight,
+            {},
+            kMaxTicks,
+            &replayRecorder,
+            toggleSinkFactory(codec));
+
+        return WanderResult{
+            .board = std::move(board),
+            .recorded = replayRecorder.getEvents()};
+    }
+} // namespace
+
+// A drag toggles every cell it crosses, so this app cannot thin one.
+// Movement with the button up toggles nothing at all, though.
+// Holding that back therefore has to leave exactly the same board.
+TEST(PointerReplayIntegrationTest, TheIdleMotionGateLeavesTheSameBoard)
+{
+    const InputEventCodec codec;
+
+    const auto ungated = runWandering(codec, false);
+    const auto gated = runWandering(codec, true);
+
+    EXPECT_EQ(gated.board.alive, ungated.board.alive);
+    EXPECT_TRUE(anythingAlive(gated.board));
+
+    // Four movements happened mid-drag, and all four are kept.
+    // Five wandered with the button up, of which two survive.
+    // Each is the last before a press, and superseded the one before it.
+    EXPECT_EQ(
+        countNamed(ungated.recorded, antwika::input::events::kPointerMove),
+        9U);
+    EXPECT_EQ(
+        countNamed(gated.recorded, antwika::input::events::kPointerMove),
+        6U);
 }

@@ -87,6 +87,39 @@ TEST(MouseTest, Apply_MarksAReleasedButtonNoLongerHeld)
     EXPECT_TRUE(mouse.wasReleased(MouseButton::Middle));
 }
 
+TEST(MouseTest, AnyDown_ReportsNothingHeldBeforeAnyPress)
+{
+    Mouse mouse;
+
+    mouse.apply(PointerMoved{.position = {.x = 1, .y = 2}});
+
+    EXPECT_FALSE(mouse.anyDown());
+}
+
+TEST(MouseTest, AnyDown_ReportsAHeldButtonWithoutBeingToldWhichOne)
+{
+    Mouse mouse;
+
+    mouse.apply(PointerButtonPressed{.button = MouseButton::Middle});
+
+    EXPECT_TRUE(mouse.anyDown());
+
+    mouse.apply(PointerButtonReleased{.button = MouseButton::Middle});
+
+    EXPECT_FALSE(mouse.anyDown());
+}
+
+TEST(MouseTest, AnyDown_StaysTrueWhileOneOfTwoButtonsIsStillHeld)
+{
+    Mouse mouse;
+    mouse.apply(PointerButtonPressed{.button = MouseButton::Left});
+    mouse.apply(PointerButtonPressed{.button = MouseButton::Right});
+
+    mouse.apply(PointerButtonReleased{.button = MouseButton::Left});
+
+    EXPECT_TRUE(mouse.anyDown());
+}
+
 TEST(MouseTest, Apply_TakesThePositionAPressReports)
 {
     Mouse mouse;

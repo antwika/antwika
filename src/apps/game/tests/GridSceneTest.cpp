@@ -1,8 +1,8 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
-#include <optional>
-#include <string>
+#include <cstddef>
+#include <cstdint>
 #include <vector>
 
 #include <antwika/gfx/Color.hpp>
@@ -10,6 +10,7 @@
 #include <antwika/gfx/Rect.hpp>
 #include <antwika/gfx/Size.hpp>
 #include <antwika/gfx/mocks/MockRenderer.hpp>
+#include <antwika/gfx/mocks/MockTexture.hpp>
 
 #include "antwika/game/Camera.hpp"
 #include "antwika/game/Cell.hpp"
@@ -18,75 +19,83 @@
 #include "antwika/game/GridScene.hpp"
 #include "antwika/game/IsoProjection.hpp"
 #include "antwika/game/SceneSnapshot.hpp"
+#include "antwika/game/TileAtlas.hpp"
 
 using antwika::game::Camera;
 using antwika::game::Cell;
-using antwika::game::cellCentre;
+using antwika::game::cellBounds;
 using antwika::game::Direction;
 using antwika::game::GridExtent;
 using antwika::game::GridScene;
+using antwika::game::groundTile;
+using antwika::game::linkBit;
+using antwika::game::roadTile;
 using antwika::game::SceneSnapshot;
+using antwika::game::walkerTile;
 using antwika::game::WalkerView;
 using antwika::gfx::Color;
+using antwika::gfx::ITexture;
 using antwika::gfx::Point;
 using antwika::gfx::Rect;
 using antwika::gfx::Size;
 using antwika::gfx::mocks::MockRenderer;
+using antwika::gfx::mocks::MockTexture;
 using ::testing::_;
 using ::testing::AnyNumber;
+using ::testing::InSequence;
 using ::testing::NiceMock;
 
 namespace
 {
     constexpr Size kCanvas{.width = 640, .height = 480};
 
-    // Records the calls, so the picture can be inspected as a whole.
+    constexpr Color kUntinted{
+        .red = 255, .green = 255, .blue = 255, .alpha = 255};
+
+    // Records the blits, so the picture can be inspected as a whole.
     // Otherwise it could only be asserted call by call.
     class RecordingRenderer : public NiceMock<MockRenderer>
     {
     public:
         RecordingRenderer()
         {
-            ON_CALL(*this, drawLine(_, _, _))
+            ON_CALL(*this, drawTexture(_, _, _, _))
                 .WillByDefault(
-                    [this](Point from, Point to, Color color)
+                    [this](
+                        const ITexture &texture,
+                        Rect source,
+                        Rect destination,
+                        Color tint)
                     {
-                        lines.push_back(Line{from, to, color});
+                        blits.push_back(
+                            Blit{&texture, source, destination, tint});
                     });
-            ON_CALL(*this, drawRect(_, _))
-                .WillByDefault(
-                    [this](Rect rect, Color color)
-                    { rects.push_back(Fill{rect, color}); });
         }
 
-        struct Line
+        struct Blit
         {
-            Point from;
-            Point to;
-            Color color;
+            const ITexture *texture;
+            Rect source;
+            Rect destination;
+            Color tint;
         };
 
-        struct Fill
-        {
-            Rect rect;
-            Color color;
-        };
-
-        [[nodiscard]] std::size_t linesOf(Color color) const
+        [[nodiscard]] std::size_t blitsOf(Rect source) const
         {
             std::size_t count = 0;
-            for (const auto &line : lines)
+
+            for (const auto &blit : blits)
             {
-                if (line.color == color)
+                if (blit.source == source)
                 {
                     ++count;
                 }
             }
+
             return count;
         }
 
-        std::vector<Line> lines;
-        std::vector<Fill> rects;
+        std::vector<Blit> blits;
     };
 
     [[nodiscard]] SceneSnapshot snapshot(
@@ -103,138 +112,47 @@ namespace
     }
 } // namespace
 
-TEST(GridSceneTest, Draw_ClearsThenLaysTheGroundBeforeAnythingElse)
+class GridSceneTest : public ::testing::Test
 {
-    MockRenderer renderer;
-    const GridScene scene;
+protected:
+    RecordingRenderer renderer;
+    NiceMock<MockTexture> atlas;
+    GridScene scene;
+};
 
-    ::testing::InSequence order;
-    EXPECT_CALL(renderer, clear(_));
-    EXPECT_CALL(
-        renderer,
-        drawRect(
-            Rect{.origin = {.x = 0, .y = 0}, .size = kCanvas}, _));
-    EXPECT_CALL(renderer, drawLine(_, _, _)).Times(AnyNumber());
+TEST_F(GridSceneTest, Draw_ClearsBeforeLayingAnyGround)
+{
+    MockRenderer strict;
+    const InSequence order;
+
+    EXPECT_CALL(strict, clear(_));
+    EXPECT_CALL(strict, drawTexture(_, _, _, _)).Times(AnyNumber());
 
     scene.draw(
-        renderer,
+        strict,
         kCanvas,
-        snapshot(Camera(Point{.x = 300, .y = 40}, 2),
-                 GridExtent{.width = 2, .height = 2}));
+        snapshot(
+            Camera(Point{.x = 300, .y = 40}, 2),
+            GridExtent{.width = 2, .height = 2}),
+        atlas);
 }
 
-TEST(GridSceneTest, Draw_DrawsTwoLatticeEdgesPerVisibleCell)
+TEST_F(GridSceneTest, Draw_LaysOneGroundTilePerVisibleCell)
 {
-    RecordingRenderer renderer;
-    const GridScene scene;
     constexpr GridExtent extent{.width = 3, .height = 3};
 
     scene.draw(
         renderer,
         kCanvas,
-        snapshot(Camera(Point{.x = 300, .y = 40}, 2), extent));
+        snapshot(Camera(Point{.x = 300, .y = 40}, 2), extent),
+        atlas);
 
-    // Two per cell, and no more.
-    // The other two edges of each diamond belong to its neighbours.
-    EXPECT_EQ(renderer.lines.size(), 2U * 3U * 3U);
+    EXPECT_EQ(renderer.blitsOf(groundTile()), 3U * 3U);
+    EXPECT_EQ(renderer.blits.size(), 3U * 3U);
 }
 
-TEST(GridSceneTest, Draw_FillsAPathCellWithLinesAcrossItsDiamond)
+TEST_F(GridSceneTest, Draw_BlitsEachTileIntoItsOwnCellsBounds)
 {
-    RecordingRenderer renderer;
-    const GridScene scene;
-    const Camera camera(Point{.x = 300, .y = 40}, 2);
-    constexpr Cell path{.x = 1, .y = 1};
-
-    scene.draw(
-        renderer,
-        kCanvas,
-        snapshot(camera, GridExtent{.width = 3, .height = 3}, {path}));
-
-    // One line per row of the diamond, top corner to bottom corner.
-    const auto expected =
-        2U * static_cast<std::size_t>(camera.halfHeight()) + 1U;
-    EXPECT_EQ(
-        renderer.linesOf(
-            Color{.red = 176, .green = 150, .blue = 96}),
-        expected);
-}
-
-TEST(GridSceneTest, Draw_CentresAPathFillOnItsCell)
-{
-    RecordingRenderer renderer;
-    const GridScene scene;
-    const Camera camera(Point{.x = 300, .y = 40}, 2);
-    constexpr Cell path{.x = 1, .y = 1};
-
-    scene.draw(
-        renderer,
-        kCanvas,
-        snapshot(camera, GridExtent{.width = 3, .height = 3}, {path}));
-
-    const auto centre = cellCentre(path, camera);
-    constexpr Color kPath{.red = 176, .green = 150, .blue = 96};
-
-    // The widest of the tile's own spans runs through its middle.
-    std::optional<RecordingRenderer::Line> widest;
-    for (const auto &line : renderer.lines)
-    {
-        if (line.color != kPath)
-        {
-            continue;
-        }
-
-        if (!widest || line.to.x - line.from.x
-                           > widest->to.x - widest->from.x)
-        {
-            widest = line;
-        }
-    }
-
-    ASSERT_TRUE(widest.has_value());
-    EXPECT_EQ(widest->from.y, centre.y);
-    EXPECT_EQ(widest->to.y, centre.y);
-}
-
-TEST(GridSceneTest, Draw_MakesTheDiamondSymmetricAboutItsCentreRow)
-{
-    RecordingRenderer renderer;
-    const GridScene scene;
-    const Camera camera(Point{.x = 300, .y = 40}, 2);
-
-    scene.draw(
-        renderer,
-        kCanvas,
-        snapshot(
-            camera,
-            GridExtent{.width = 1, .height = 1},
-            {Cell{.x = 0, .y = 0}}));
-
-    const auto centre = cellCentre(Cell{.x = 0, .y = 0}, camera);
-    constexpr Color kPath{.red = 176, .green = 150, .blue = 96};
-
-    std::size_t spans = 0;
-    for (const auto &line : renderer.lines)
-    {
-        if (line.color != kPath)
-        {
-            continue;
-        }
-
-        ++spans;
-
-        // Every span is centred on the cell's column.
-        EXPECT_EQ(line.from.x - centre.x, centre.x - line.to.x)
-            << "row " << line.from.y;
-    }
-
-    EXPECT_GT(spans, 0U);
-}
-
-TEST(GridSceneTest, Draw_DrawsAWalkerSmallerThanItsTile)
-{
-    RecordingRenderer renderer;
-    const GridScene scene;
     const Camera camera(Point{.x = 300, .y = 40}, 2);
     constexpr Cell where{.x = 1, .y = 1};
 
@@ -243,27 +161,105 @@ TEST(GridSceneTest, Draw_DrawsAWalkerSmallerThanItsTile)
         kCanvas,
         snapshot(
             camera,
-            GridExtent{.width = 3, .height = 3},
+            GridExtent{},
             {where},
-            {WalkerView{.at = where, .facing = Direction::East}}));
+            {WalkerView{.at = where, .facing = Direction::East}}),
+        atlas);
 
-    const auto walkerRows =
-        2U * static_cast<std::size_t>(camera.halfHeight() / 2) + 1U;
-    const auto pathRows =
-        2U * static_cast<std::size_t>(camera.halfHeight()) + 1U;
+    ASSERT_EQ(renderer.blits.size(), 2U);
 
-    EXPECT_LT(walkerRows, pathRows);
-    EXPECT_EQ(
-        renderer.linesOf(Color{.red = 232, .green = 200, .blue = 96}),
-        walkerRows);
+    for (const auto &blit : renderer.blits)
+    {
+        EXPECT_EQ(blit.destination, cellBounds(where, camera));
+    }
 }
 
-TEST(GridSceneTest, Draw_ColoursAWalkerByWhichWayItFaces)
+// The art carries every colour the grid has.
+// A tint would mean the picture was decided in two places.
+TEST_F(GridSceneTest, Draw_BlitsTheAtlasItIsGivenAndTintsNothing)
 {
-    const Camera camera(Point{.x = 300, .y = 40}, 2);
+    scene.draw(
+        renderer,
+        kCanvas,
+        snapshot(
+            Camera(Point{.x = 300, .y = 40}, 2),
+            GridExtent{.width = 2, .height = 2},
+            {Cell{.x = 0, .y = 0}},
+            {WalkerView{.at = Cell{.x = 0, .y = 0}}}),
+        atlas);
+
+    ASSERT_FALSE(renderer.blits.empty());
+
+    for (const auto &blit : renderer.blits)
+    {
+        EXPECT_EQ(blit.texture, &atlas);
+        EXPECT_EQ(blit.tint, kUntinted);
+    }
+}
+
+TEST_F(GridSceneTest, Draw_DrawsAnIsolatedRoadWithNoLinksAtAll)
+{
+    scene.draw(
+        renderer,
+        kCanvas,
+        snapshot(
+            Camera(Point{.x = 300, .y = 40}, 2),
+            GridExtent{},
+            {Cell{.x = 1, .y = 1}}),
+        atlas);
+
+    EXPECT_EQ(renderer.blitsOf(roadTile(0)), 1U);
+}
+
+TEST_F(GridSceneTest, Draw_ChoosesARoadTileFromTheNeighboursItHas)
+{
+    // A straight west-to-east run, so the middle cell is a through road.
+    scene.draw(
+        renderer,
+        kCanvas,
+        snapshot(
+            Camera(Point{.x = 300, .y = 40}, 2),
+            GridExtent{},
+            {Cell{.x = 0, .y = 1},
+             Cell{.x = 1, .y = 1},
+             Cell{.x = 2, .y = 1}}),
+        atlas);
+
+    EXPECT_EQ(
+        renderer.blitsOf(
+            roadTile(linkBit(Direction::East) | linkBit(Direction::West))),
+        1U);
+
+    // And each end is a road with the one link back into the run.
+    EXPECT_EQ(renderer.blitsOf(roadTile(linkBit(Direction::East))), 1U);
+    EXPECT_EQ(renderer.blitsOf(roadTile(linkBit(Direction::West))), 1U);
+}
+
+// North and south have to reach the mask too, not only east and west.
+TEST_F(GridSceneTest, Draw_ChoosesTheJunctionTileWhereFourRoadsMeet)
+{
+    scene.draw(
+        renderer,
+        kCanvas,
+        snapshot(
+            Camera(Point{.x = 300, .y = 40}, 2),
+            GridExtent{},
+            // Ascending, as PathIndex's set hands them over.
+            {Cell{.x = 0, .y = 1},
+             Cell{.x = 1, .y = 0},
+             Cell{.x = 1, .y = 1},
+             Cell{.x = 1, .y = 2},
+             Cell{.x = 2, .y = 1}}),
+        atlas);
+
+    EXPECT_EQ(
+        renderer.blitsOf(roadTile(antwika::game::kLinkMask)), 1U);
+}
+
+TEST_F(GridSceneTest, Draw_ChoosesAWalkerTileByWhichWayItFaces)
+{
     constexpr Cell where{.x = 1, .y = 1};
 
-    std::vector<Color> seen;
     for (const auto facing : {
              Direction::North,
              Direction::East,
@@ -271,39 +267,48 @@ TEST(GridSceneTest, Draw_ColoursAWalkerByWhichWayItFaces)
              Direction::West,
          })
     {
-        RecordingRenderer renderer;
-        const GridScene scene;
+        RecordingRenderer each;
 
         scene.draw(
-            renderer,
+            each,
             kCanvas,
             snapshot(
-                camera,
-                GridExtent{.width = 3, .height = 3},
+                Camera(Point{.x = 300, .y = 40}, 2),
+                GridExtent{},
                 {},
-                {WalkerView{.at = where, .facing = facing}}));
+                {WalkerView{.at = where, .facing = facing}}),
+            atlas);
 
-        // Walkers are drawn last, so the final line is one of theirs.
-        ASSERT_FALSE(renderer.lines.empty());
-        seen.push_back(renderer.lines.back().color);
-    }
-
-    // Four facings, four distinct colours.
-    for (std::size_t i = 0; i < seen.size(); ++i)
-    {
-        for (std::size_t j = i + 1; j < seen.size(); ++j)
-        {
-            EXPECT_NE(seen[i], seen[j]) << i << " vs " << j;
-        }
+        ASSERT_EQ(each.blits.size(), 1U);
+        EXPECT_EQ(each.blits.front().source, walkerTile(facing));
     }
 }
 
-// The culling claim, asserted rather than assumed.
-TEST(GridSceneTest, Draw_SkipsAPathCellEntirelyOffTheCanvas)
+// A walker is never hidden by the road it is standing on.
+TEST_F(GridSceneTest, Draw_BlitsAWalkerAfterTheGroundAndTheRoad)
 {
-    RecordingRenderer renderer;
-    const GridScene scene;
+    constexpr Cell where{.x = 0, .y = 0};
 
+    scene.draw(
+        renderer,
+        kCanvas,
+        snapshot(
+            Camera(Point{.x = 300, .y = 40}, 2),
+            GridExtent{.width = 1, .height = 1},
+            {where},
+            {WalkerView{.at = where, .facing = Direction::North}}),
+        atlas);
+
+    ASSERT_EQ(renderer.blits.size(), 3U);
+    EXPECT_EQ(renderer.blits[0].source, groundTile());
+    EXPECT_EQ(renderer.blits[1].source, roadTile(0));
+    EXPECT_EQ(
+        renderer.blits[2].source, walkerTile(Direction::North));
+}
+
+// The culling claim, asserted rather than assumed.
+TEST_F(GridSceneTest, Draw_SkipsEverythingEntirelyOffTheCanvas)
+{
     // Panned far away, so nothing reaches the canvas at all.
     scene.draw(
         renderer,
@@ -312,78 +317,14 @@ TEST(GridSceneTest, Draw_SkipsAPathCellEntirelyOffTheCanvas)
             Camera(Point{.x = -100000, .y = -100000}, 2),
             GridExtent{.width = 4, .height = 4},
             {Cell{.x = 1, .y = 1}},
-            {WalkerView{.at = Cell{.x = 2, .y = 2}}}));
+            {WalkerView{.at = Cell{.x = 2, .y = 2}}}),
+        atlas);
 
-    EXPECT_TRUE(renderer.lines.empty());
-}
-
-TEST(GridSceneTest, Draw_StillLaysTheGroundWhenEverythingIsCulled)
-{
-    RecordingRenderer renderer;
-    const GridScene scene;
-
-    scene.draw(
-        renderer,
-        kCanvas,
-        snapshot(
-            Camera(Point{.x = -100000, .y = -100000}, 2),
-            GridExtent{.width = 4, .height = 4}));
-
-    EXPECT_EQ(renderer.rects.size(), 1U);
-}
-
-// A canvas smaller than a tile is the underflow trap blog/012 found.
-TEST(GridSceneTest, Draw_SurvivesACanvasSmallerThanOneTile)
-{
-    RecordingRenderer renderer;
-    const GridScene scene;
-
-    scene.draw(
-        renderer,
-        Size{.width = 1, .height = 1},
-        snapshot(
-            Camera(Point{}, 4),
-            GridExtent{.width = 2, .height = 2},
-            {Cell{.x = 0, .y = 0}}));
-
-    // Nothing ran off into a four-billion-pixel line.
-    for (const auto &line : renderer.lines)
-    {
-        EXPECT_LT(std::abs(line.to.x - line.from.x), 1000);
-        EXPECT_LT(std::abs(line.to.y - line.from.y), 1000);
-    }
-}
-
-TEST(GridSceneTest, Draw_HandlesAnExtentWithNoCells)
-{
-    RecordingRenderer renderer;
-    const GridScene scene;
-
-    scene.draw(
-        renderer, kCanvas, snapshot(Camera(), GridExtent{}));
-
-    EXPECT_TRUE(renderer.lines.empty());
-    EXPECT_EQ(renderer.rects.size(), 1U);
-}
-
-TEST(GridSceneTest, Draw_PresentsNothingItself)
-{
-    MockRenderer renderer;
-    const GridScene scene;
-
-    // Presenting belongs to whatever owns the frame, not to the scene.
-    EXPECT_CALL(renderer, present()).Times(0);
-    EXPECT_CALL(renderer, clear(_)).Times(AnyNumber());
-    EXPECT_CALL(renderer, drawRect(_, _)).Times(AnyNumber());
-    EXPECT_CALL(renderer, drawLine(_, _, _)).Times(AnyNumber());
-
-    scene.draw(
-        renderer, kCanvas, snapshot(Camera(), GridExtent{.width = 1,
-                                                         .height = 1}));
+    EXPECT_TRUE(renderer.blits.empty());
 }
 
 // Culling has to reject a cell past every edge, not only the near ones.
-TEST(GridSceneTest, Draw_SkipsCellsPastEachEdgeOfTheCanvas)
+TEST_F(GridSceneTest, Draw_SkipsCellsPastEachEdgeOfTheCanvas)
 {
     for (const auto pan : {
              Point{.x = -100000, .y = 0},
@@ -392,19 +333,117 @@ TEST(GridSceneTest, Draw_SkipsCellsPastEachEdgeOfTheCanvas)
              Point{.x = 0, .y = 100000},
          })
     {
-        RecordingRenderer renderer;
-        const GridScene scene;
+        RecordingRenderer each;
 
         scene.draw(
-            renderer,
+            each,
             kCanvas,
             snapshot(
                 Camera(pan, 2),
                 GridExtent{.width = 2, .height = 2},
                 {Cell{.x = 0, .y = 0}},
-                {WalkerView{.at = Cell{.x = 1, .y = 1}}}));
+                {WalkerView{.at = Cell{.x = 1, .y = 1}}}),
+            atlas);
 
-        EXPECT_TRUE(renderer.lines.empty())
+        EXPECT_TRUE(each.blits.empty())
             << "pan " << pan.x << "," << pan.y;
     }
+}
+
+TEST_F(GridSceneTest, Draw_StillClearsWhenEverythingIsCulled)
+{
+    MockRenderer strict;
+
+    EXPECT_CALL(strict, clear(_));
+    EXPECT_CALL(strict, drawTexture(_, _, _, _)).Times(0);
+
+    scene.draw(
+        strict,
+        kCanvas,
+        snapshot(
+            Camera(Point{.x = -100000, .y = -100000}, 2),
+            GridExtent{.width = 4, .height = 4}),
+        atlas);
+}
+
+TEST_F(GridSceneTest, Draw_HandlesAnExtentWithNoCells)
+{
+    scene.draw(renderer, kCanvas, snapshot(Camera(), GridExtent{}), atlas);
+
+    EXPECT_TRUE(renderer.blits.empty());
+}
+
+// A canvas smaller than a tile is the underflow trap blog/012 found.
+TEST_F(GridSceneTest, Draw_SurvivesACanvasSmallerThanOneTile)
+{
+    scene.draw(
+        renderer,
+        Size{.width = 1, .height = 1},
+        snapshot(
+            Camera(Point{}, 4),
+            GridExtent{.width = 2, .height = 2},
+            {Cell{.x = 0, .y = 0}}),
+        atlas);
+
+    // Nothing ran off into a four-billion-pixel destination.
+    for (const auto &blit : renderer.blits)
+    {
+        EXPECT_LT(blit.destination.size.width, 1000U);
+        EXPECT_LT(blit.destination.size.height, 1000U);
+    }
+}
+
+// Every zoom level samples the same art, since the atlas holds one size.
+TEST_F(GridSceneTest, Draw_SamplesTheSameSourceAtEveryZoom)
+{
+    for (std::size_t zoom = 0; zoom < antwika::game::kZoomHalfWidths.size();
+         ++zoom)
+    {
+        RecordingRenderer each;
+        const Camera camera(Point{.x = 300, .y = 200}, zoom);
+
+        scene.draw(
+            each,
+            kCanvas,
+            snapshot(camera, GridExtent{.width = 1, .height = 1}),
+            atlas);
+
+        ASSERT_EQ(each.blits.size(), 1U);
+        EXPECT_EQ(each.blits.front().source, groundTile());
+        EXPECT_EQ(
+            each.blits.front().destination,
+            cellBounds(Cell{.x = 0, .y = 0}, camera));
+    }
+}
+
+TEST_F(GridSceneTest, Draw_PresentsNothingItself)
+{
+    MockRenderer strict;
+
+    // Presenting belongs to whatever owns the frame, not to the scene.
+    EXPECT_CALL(strict, present()).Times(0);
+    EXPECT_CALL(strict, clear(_)).Times(AnyNumber());
+    EXPECT_CALL(strict, drawTexture(_, _, _, _)).Times(AnyNumber());
+
+    scene.draw(
+        strict,
+        kCanvas,
+        snapshot(Camera(), GridExtent{.width = 1, .height = 1}),
+        atlas);
+}
+
+TEST_F(GridSceneTest, Draw_AsksNothingOfTheTextureItBlits)
+{
+    // The atlas layout is fixed, so the scene never has to measure it.
+    EXPECT_CALL(atlas, size()).Times(0);
+
+    scene.draw(
+        renderer,
+        kCanvas,
+        snapshot(
+            Camera(),
+            GridExtent{.width = 1, .height = 1},
+            {Cell{.x = 0, .y = 0}},
+            {WalkerView{}}),
+        atlas);
 }

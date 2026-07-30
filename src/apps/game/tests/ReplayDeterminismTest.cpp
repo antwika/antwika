@@ -16,6 +16,7 @@
 #include <antwika/gfx/WindowEvent.hpp>
 #include <antwika/gfx/WindowId.hpp>
 #include <antwika/gfx/mocks/MockGfxBackend.hpp>
+#include <antwika/input/IdleMotionSource.hpp>
 #include <antwika/input/InputEvent.hpp>
 #include <antwika/input/InputEventCodec.hpp>
 #include <antwika/input/MouseButton.hpp>
@@ -55,9 +56,12 @@ using antwika::gfx::NullBackend;
 using antwika::gfx::WindowEvent;
 using antwika::gfx::WindowId;
 using antwika::gfx::mocks::MockGfxBackend;
+using antwika::input::IdleMotionSource;
 using antwika::input::InputEventCodec;
 using antwika::input::MouseButton;
 using antwika::input::PointerButtonPressed;
+using antwika::input::PointerButtonReleased;
+using antwika::input::PointerMoved;
 using antwika::input::PointerScrolled;
 using antwika::log::mocks::MockLogger;
 using antwika::replay::ReplaySource;
@@ -452,4 +456,134 @@ TEST(ReplayDeterminismTest, AToolbarClickLaysNoPathUnderTheBar)
     const auto result = runWithToolbar(source);
 
     EXPECT_TRUE(result.summary.paths.empty());
+}
+
+namespace
+{
+    [[nodiscard]] Event moveTo(std::int32_t x, std::int32_t y)
+    {
+        const InputEventCodec codec;
+        return codec.encode(PointerMoved{.position = {.x = x, .y = y}});
+    }
+
+    // The session the idle-motion gate exists for.
+    // A wander across the window, then a middle-drag that pans.
+    // Then another wander, and a zoom anchored where it left off.
+    [[nodiscard]] std::vector<TickEvent> wanderingSession()
+    {
+        const InputEventCodec codec;
+        std::vector<TickEvent> events;
+        antwika::time::Tick tick = 0;
+
+        const auto wander =
+            [&events, &tick](std::int32_t from, std::int32_t to)
+        {
+            for (std::int32_t step = from; step < to; ++step)
+            {
+                events.push_back(
+                    TickEvent{
+                        .tick = tick++,
+                        .event = moveTo(300 + step * 4, 200 + step * 3)});
+            }
+        };
+
+        wander(0, 10);
+
+        events.push_back(
+            TickEvent{
+                .tick = tick++,
+                .event = codec.encode(
+                    PointerButtonPressed{
+                        .button = MouseButton::Middle,
+                        .position = {.x = 336, .y = 227}})});
+
+        // Held, so every one of these moves the camera.
+        for (std::int32_t step = 1; step <= 3; ++step)
+        {
+            events.push_back(
+                TickEvent{
+                    .tick = tick++,
+                    .event = moveTo(336 + step * 10, 227 - step * 5)});
+        }
+
+        events.push_back(
+            TickEvent{
+                .tick = tick++,
+                .event = codec.encode(
+                    PointerButtonReleased{
+                        .button = MouseButton::Middle,
+                        .position = {.x = 366, .y = 212}})});
+
+        wander(10, 15);
+
+        events.push_back(
+            TickEvent{
+                .tick = tick++,
+                .event = codec.encode(PointerScrolled{.vertical = -1})});
+
+        events.push_back(
+            TickEvent{
+                .tick = tick + 1,
+                .event = Event{.name = antwika::engine::events::kStop}});
+
+        return events;
+    }
+
+    [[nodiscard]] std::size_t inputEventsIn(
+        const std::vector<TickEvent> &events)
+    {
+        const InputEventCodec codec;
+
+        std::size_t count = 0;
+        for (const auto &event : events)
+        {
+            if (codec.decode(event.event).has_value())
+            {
+                ++count;
+            }
+        }
+        return count;
+    }
+} // namespace
+
+// What the gate must not cost this app: the pan or the zoom anchor.
+// A dropped mid-drag movement would shorten the pan.
+// A dropped last movement before the wheel would anchor a stale zoom.
+TEST(ReplayDeterminismTest, TheIdleMotionGateLeavesTheCameraWhereItWas)
+{
+    const InputEventCodec codec;
+
+    ReplaySource ungatedSource(wanderingSession());
+    const auto ungated = run(ungatedSource);
+
+    ReplaySource gatedSource(wanderingSession());
+    IdleMotionSource gate(gatedSource, codec);
+    const auto gated = run(gate);
+
+    EXPECT_EQ(gated.summary, ungated.summary);
+
+    // Neither run may have simply sat still.
+    EXPECT_NE(ungated.summary.camera.pan(), Camera().pan());
+    EXPECT_LT(
+        ungated.summary.camera.zoomLevel(),
+        antwika::game::kDefaultZoomLevel);
+}
+
+TEST(ReplayDeterminismTest, TheIdleMotionGateShortensTheRecording)
+{
+    const InputEventCodec codec;
+
+    ReplaySource ungatedSource(wanderingSession());
+    const auto ungated = run(ungatedSource);
+
+    ReplaySource gatedSource(wanderingSession());
+    IdleMotionSource gate(gatedSource, codec);
+    const auto gated = run(gate);
+
+    // Fifteen wandering movements in, and two out.
+    // One is released ahead of the press, one ahead of the scroll.
+    // The other thirteen went unread.
+    // The press, the drag, the release and the scroll all stay.
+    EXPECT_EQ(inputEventsIn(ungated.recorded), 21U);
+    EXPECT_EQ(inputEventsIn(gated.recorded), 8U);
 }

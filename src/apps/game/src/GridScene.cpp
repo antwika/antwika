@@ -2,38 +2,29 @@
 
 #include <algorithm>
 #include <cstdint>
+#include <vector>
 
 #include <antwika/gfx/Color.hpp>
-#include <antwika/gfx/Point.hpp>
 #include <antwika/gfx/Rect.hpp>
 
+#include "antwika/game/Direction.hpp"
 #include "antwika/game/IsoProjection.hpp"
-
-#include "DiamondSpans.hpp"
+#include "antwika/game/TileAtlas.hpp"
 
 namespace antwika::game
 {
 
     using antwika::gfx::Color;
-    using antwika::gfx::Point;
     using antwika::gfx::Rect;
-    using antwika::game::detail::fillDiamond;
 
     namespace
     {
         constexpr Color kSky{.red = 18, .green = 20, .blue = 28};
-        constexpr Color kGround{.red = 44, .green = 58, .blue = 46};
-        constexpr Color kLattice{.red = 66, .green = 84, .blue = 70};
-        constexpr Color kPath{.red = 176, .green = 150, .blue = 96};
 
-        // A walker's colour says which way it is facing.
-        // A turn is then visible in a still frame, not only in motion.
-        constexpr std::array<Color, kDirectionCount> kFacingColors{{
-            {.red = 232, .green = 96, .blue = 96},
-            {.red = 232, .green = 200, .blue = 96},
-            {.red = 96, .green = 200, .blue = 232},
-            {.red = 168, .green = 120, .blue = 232},
-        }};
+        // An opaque white tint leaves a texture exactly as it was.
+        // The art already carries every colour the grid has.
+        constexpr Color kUntinted{
+            .red = 255, .green = 255, .blue = 255, .alpha = 255};
 
         [[nodiscard]] bool overlaps(Rect box, Size canvas) noexcept
         {
@@ -47,6 +38,36 @@ namespace antwika::game
                    && box.origin.y
                           <= static_cast<std::int32_t>(canvas.height);
         }
+
+        // The paths arrive in ascending order.
+        // So asking about one is a search rather than a scan.
+        [[nodiscard]] bool paved(
+            const std::vector<Cell> &paths, Cell cell) noexcept
+        {
+            return std::binary_search(paths.begin(), paths.end(), cell);
+        }
+
+        [[nodiscard]] std::uint8_t linksAt(
+            const std::vector<Cell> &paths, Cell cell) noexcept
+        {
+            std::uint8_t links = 0;
+
+            for (const auto direction : {
+                     Direction::North,
+                     Direction::East,
+                     Direction::South,
+                     Direction::West,
+                 })
+            {
+                if (paved(paths, step(cell, direction)))
+                {
+                    links = static_cast<std::uint8_t>(
+                        links | linkBit(direction));
+                }
+            }
+
+            return links;
+        }
     } // namespace
 
     bool GridScene::onCanvas(
@@ -56,22 +77,17 @@ namespace antwika::game
     }
 
     void GridScene::draw(
-        IRenderer &renderer, Size canvas, const SceneSnapshot &snapshot) const
+        IRenderer &renderer,
+        Size canvas,
+        const SceneSnapshot &snapshot,
+        const ITexture &atlas) const
     {
         renderer.clear(kSky);
 
-        // Diamonds tessellate, so one rectangle is the whole ground.
-        // Only what differs from it needs drawing per cell.
-        renderer.drawRect(
-            Rect{.origin = {.x = 0, .y = 0}, .size = canvas}, kGround);
+        drawGround(renderer, canvas, snapshot, atlas);
 
-        drawLattice(renderer, canvas, snapshot);
-
-        const auto halfWidth =
-            static_cast<std::int32_t>(snapshot.camera.halfWidth());
-        const auto halfHeight =
-            static_cast<std::int32_t>(snapshot.camera.halfHeight());
-
+        // A road covers the ground tile it is laid on exactly.
+        // So it is drawn over one rather than instead of one.
         for (const auto cell : snapshot.paths)
         {
             if (!onCanvas(cell, canvas, snapshot))
@@ -79,15 +95,14 @@ namespace antwika::game
                 continue;
             }
 
-            fillDiamond(
-                renderer,
-                cellCentre(cell, snapshot.camera),
-                halfWidth,
-                halfHeight,
-                kPath);
+            renderer.drawTexture(
+                atlas,
+                roadTile(linksAt(snapshot.paths, cell)),
+                cellBounds(cell, snapshot.camera),
+                kUntinted);
         }
 
-        // Inset, so the path underneath still reads as a path.
+        // Last, so a walker is never hidden by what it is standing on.
         for (const auto &walker : snapshot.walkers)
         {
             if (!onCanvas(walker.at, canvas, snapshot))
@@ -95,18 +110,19 @@ namespace antwika::game
                 continue;
             }
 
-            fillDiamond(
-                renderer,
-                cellCentre(walker.at, snapshot.camera),
-                halfWidth / 2,
-                halfHeight / 2,
-                kFacingColors[directionIndex(walker.facing)
-                              % kDirectionCount]);
+            renderer.drawTexture(
+                atlas,
+                walkerTile(walker.facing),
+                cellBounds(walker.at, snapshot.camera),
+                kUntinted);
         }
     }
 
-    void GridScene::drawLattice(
-        IRenderer &renderer, Size canvas, const SceneSnapshot &snapshot) const
+    void GridScene::drawGround(
+        IRenderer &renderer,
+        Size canvas,
+        const SceneSnapshot &snapshot,
+        const ITexture &atlas) const
     {
         for (std::int32_t y = 0; y < snapshot.extent.height; ++y)
         {
@@ -119,17 +135,11 @@ namespace antwika::game
                     continue;
                 }
 
-                const auto top = cellToScreen(cell, snapshot.camera);
-                const auto left = cellToScreen(
-                    Cell{.x = x, .y = y + 1}, snapshot.camera);
-                const auto right = cellToScreen(
-                    Cell{.x = x + 1, .y = y}, snapshot.camera);
-
-                // This cell's two upper edges only.
-                // The lower two are its neighbours' upper ones.
-                // So every shared edge is drawn once, not twice.
-                renderer.drawLine(top, left, kLattice);
-                renderer.drawLine(top, right, kLattice);
+                renderer.drawTexture(
+                    atlas,
+                    groundTile(),
+                    cellBounds(cell, snapshot.camera),
+                    kUntinted);
             }
         }
     }

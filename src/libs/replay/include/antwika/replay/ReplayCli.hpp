@@ -7,6 +7,7 @@
 #include <vector>
 
 #include <antwika/event/TickEvent.hpp>
+#include <antwika/replay/ReplayWriter.hpp>
 
 namespace antwika::replay
 {
@@ -68,10 +69,16 @@ namespace antwika::replay
      * @param extraSelfGeneratedEventNames Additional event names to filter
      * out before writing, e.g. an app's own unconditional startup
      * announcement.
+     * @param layout How much whitespace to write; compact by default,
+     * since a recorded session is written to be replayed rather than
+     * read, and an interactive one gets long enough for the indentation
+     * to be most of the file. Pass Pretty for a replay meant to be
+     * checked in and edited by hand.
      */
     void saveReplayFile(
         std::vector<TickEvent> events,
         const std::string &path,
-        std::span<const std::string_view> extraSelfGeneratedEventNames = {});
+        std::span<const std::string_view> extraSelfGeneratedEventNames = {},
+        ReplayWriter::Layout layout = ReplayWriter::Layout::Compact);
 
 } // namespace antwika::replay

@@ -10,12 +10,14 @@ namespace antwika::game
     RenderSystem::RenderSystem(
         IWindow &window,
         const GridScene &scene,
+        const ITexture &atlas,
         const PathIndex &paths,
         const Camera &camera,
         GridExtent extent,
         const UiOverlay &overlay)
         : window(window),
           scene(scene),
+          atlas(atlas),
           paths(paths),
           camera(camera),
           extent(extent),
@@ -30,7 +32,8 @@ namespace antwika::game
         scene.draw(
             renderer,
             window.size(),
-            snapshotOf(world, paths, camera, extent));
+            snapshotOf(world, paths, camera, extent),
+            atlas);
 
         // Over the grid, and last, so the bar reads as being in front.
         // Laid out against the size the window was asked for.
