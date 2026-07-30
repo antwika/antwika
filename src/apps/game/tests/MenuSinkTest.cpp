@@ -137,13 +137,7 @@ namespace
     {
     protected:
         ::testing::NiceMock<MockTickEventSink> toolbar;
-        MenuSink modal{
-            state,
-            overlay,
-            input,
-            menu,
-            std::optional<std::reference_wrapper<
-                antwika::event::ITickEventSink>>{toolbar}};
+        MenuSink modal{state, overlay, input, menu, toolbar};
 
         void dispatchModal(const TickEvent &event)
         {
