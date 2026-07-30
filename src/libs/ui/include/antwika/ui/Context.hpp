@@ -7,9 +7,10 @@
 #include <antwika/gfx/Size.hpp>
 
 #include "antwika/ui/Axis.hpp"
-#include "antwika/ui/ButtonState.hpp"
+#include "antwika/ui/ButtonSpec.hpp"
 #include "antwika/ui/ContainerSpec.hpp"
-#include "antwika/ui/DrawList.hpp"
+#include "antwika/ui/Frame.hpp"
+#include "antwika/ui/Pointer.hpp"
 #include "antwika/ui/Scope.hpp"
 #include "antwika/ui/Sizing.hpp"
 #include "antwika/ui/Theme.hpp"
@@ -31,8 +32,8 @@ namespace antwika::ui
      * has not seen yet, which is what makes nesting work at all.
      *
      * Holds nothing between frames and reads nothing outside its
-     * arguments, so the same declarations and the same canvas always
-     * produce the same picture.
+     * arguments, so the same declarations, canvas and pointer always
+     * produce the same picture and the same interactions.
      */
     class Context final
     {
@@ -41,8 +42,11 @@ namespace antwika::ui
          * @brief Begin one frame's UI.
          * @param canvas The area the UI is laid out into.
          * @param theme The colours and metrics widgets draw from.
+         * @param pointer Where the pointer is and what it is doing, in
+         * the same pixels the canvas is measured in. Left out, this
+         * frame has no pointer and nothing can be hovered or activated.
          */
-        Context(Size canvas, Theme theme);
+        Context(Size canvas, Theme theme, Pointer pointer = {});
 
         /**
          * @brief Discard the frame.
@@ -101,14 +105,14 @@ namespace antwika::ui
 
         /**
          * @brief Add a button: a filled box around a centred label.
+         *
+         * Named in the spec, it works out its own appearance from the
+         * pointer and reports being pressed through finish().
+         *
          * @param text The button's label.
-         * @param state How it should look; the caller decides.
-         * @param width How wide, defaulting to fitting its label.
+         * @param spec What the button is being asked for.
          */
-        void button(
-            std::string_view text,
-            ButtonState state = ButtonState::Idle,
-            Sizing width = kFit);
+        void button(std::string_view text, ButtonSpec spec = {});
 
         /**
          * @brief Add an empty child that takes up room.
@@ -123,13 +127,17 @@ namespace antwika::ui
         void spacer(Sizing along);
 
         /**
-         * @brief Lay the frame out and produce the picture it describes.
+         * @brief Lay the frame out, resolve the pointer against it, and
+         * produce the picture it describes.
+         *
+         * The pointer is resolved against this frame's layout, so what a
+         * press hit is what the same call is about to draw.
          *
          * Asking twice gives the same answer: nothing here is consumed.
          *
-         * @return The drawing commands, in the order they are drawn.
+         * @return The drawing commands and what the pointer did.
          */
-        [[nodiscard]] DrawList finish();
+        [[nodiscard]] Frame finish();
 
     private:
         friend class Scope;
@@ -140,6 +148,7 @@ namespace antwika::ui
 
         Size canvasSize;
         Theme themeValue;
+        Pointer pointerValue;
         std::unique_ptr<detail::LayoutTree> tree;
     };
 

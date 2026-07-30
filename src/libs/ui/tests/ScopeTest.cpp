@@ -62,7 +62,7 @@ TEST(ScopeTest, Scope_ReopensTheParentWhenItEnds)
                     {.origin = {.x = 0, .y = 20},
                      .size = {.width = 100, .height = 20}},
                 .color = kPanel}}),
-        ui.finish());
+        ui.finish().commands);
 }
 
 // A panel opened inside another is inset by the outer one's padding.
@@ -89,5 +89,5 @@ TEST(ScopeTest, Scope_PutsWhatFollowsInsideTheOpenContainer)
                     {.origin = {.x = 5, .y = 5},
                      .size = {.width = 90, .height = 10}},
                 .color = kPanel}}),
-        ui.finish());
+        ui.finish().commands);
 }

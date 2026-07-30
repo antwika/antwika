@@ -13,7 +13,9 @@
 #include "antwika/ui/Alignment.hpp"
 #include "antwika/ui/Axis.hpp"
 #include "antwika/ui/Sizing.hpp"
+#include "antwika/ui/WidgetId.hpp"
 
+#include "Interactive.hpp"
 #include "NodeKind.hpp"
 
 namespace antwika::ui::detail
@@ -87,6 +89,24 @@ namespace antwika::ui::detail
          * was never given.
          */
         std::optional<Color> background{};
+
+        /**
+         * @brief Which widget a pointer landing here is landing on.
+         *
+         * kNoWidget for everything the caller did not name, which is
+         * what keeps a button's own spacers and label from being hit
+         * instead of the button.
+         */
+        WidgetId id = kNoWidget;
+
+        /**
+         * @brief The colours this node's background is resolved from.
+         *
+         * Absent for every node whose background is already decided:
+         * anything that is not interactive, and a button whose caller
+         * said how it must look.
+         */
+        std::optional<Interactive> style{};
 
         /**
          * @brief The characters this text node draws.

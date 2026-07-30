@@ -151,13 +151,13 @@ namespace antwika::gfx_demo
                         ui.spacer(kGrow);
 
                         ui.button("cancel");
-                        ui.button("ok", ButtonState::Hovered);
+                        ui.button("ok", {.state = ButtonState::Hovered});
                     }
                 }
             }
         }
 
-        return ui.finish();
+        return ui.finish().commands;
     }
 
 } // namespace antwika::gfx_demo
