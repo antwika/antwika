@@ -35,6 +35,7 @@
 #include "antwika/game/IsoProjection.hpp"
 #include "antwika/game/PathIndex.hpp"
 #include "antwika/game/Toolbar.hpp"
+#include "antwika/game/UiCanvas.hpp"
 #include "antwika/game/UiOverlay.hpp"
 #include "antwika/game/WindowInputSource.hpp"
 
@@ -47,6 +48,7 @@ using antwika::game::Cell;
 using antwika::game::cellCentre;
 using antwika::game::GameSummary;
 using antwika::game::GridExtent;
+using antwika::game::kUiCanvas;
 using antwika::game::PathIndex;
 using antwika::game::Toolbar;
 using antwika::game::UiOverlay;
@@ -140,10 +142,6 @@ namespace
             .summary = std::move(summary),
             .recorded = recorder.getEvents()};
     }
-
-    // The size the app asks its window for.
-    // Which is the size the bar is laid out and hit-tested against.
-    constexpr antwika::gfx::Size kUiCanvas{.width = 1024, .height = 640};
 
     [[nodiscard]] RunResult runWithToolbar(
         antwika::replay::IReplaySource &source)

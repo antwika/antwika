@@ -18,7 +18,6 @@
 #include <antwika/gfx/Point.hpp>
 #include <antwika/gfx/PngReader.hpp>
 #include <antwika/gfx/SelectedBackend.hpp>
-#include <antwika/gfx/Size.hpp>
 #include <antwika/gfx/WindowDesc.hpp>
 #include <antwika/input/CoalescingPointerSource.hpp>
 #include <antwika/input/IdleMotionSource.hpp>
@@ -44,6 +43,7 @@
 #include "antwika/game/PathIndex.hpp"
 #include "antwika/game/RenderSystem.hpp"
 #include "antwika/game/TickPacer.hpp"
+#include "antwika/game/UiCanvas.hpp"
 #include "antwika/game/UiOverlay.hpp"
 #include "antwika/game/WindowInputSource.hpp"
 
@@ -60,7 +60,6 @@ using antwika::game::UiOverlay;
 using antwika::game::WindowInputSource;
 using antwika::gfx::Point;
 using antwika::gfx::PngReader;
-using antwika::gfx::Size;
 using antwika::gfx::WindowDesc;
 using antwika::input::CoalescingPointerSource;
 using antwika::input::IdleMotionSource;
@@ -78,7 +77,6 @@ using antwika::time::SystemSleeper;
 
 namespace
 {
-    constexpr Size kWindowSize{.width = 1024, .height = 640};
     constexpr GridExtent kExtent{.width = 24, .height = 24};
 
     // The origin cell's top corner starts here.
@@ -149,8 +147,11 @@ int main(int argc, char **argv)
             "Antwika Game on backends: " + std::string(backend->name())
                 + " / " + std::string(inputBackend->name()));
 
-        const auto window = backend->createWindow(
-            WindowDesc{.title = "Antwika Game", .size = kWindowSize});
+        // Asked for the canvas the toolbar is resolved against.
+        // Stating the two separately is what lets them disagree.
+        const auto window = backend->createWindow(WindowDesc{
+            .title = "Antwika Game",
+            .size = antwika::game::kUiCanvas});
 
         // Opening the file is the application's job, not the library's.
         // antwika::gfx decodes bytes and never goes looking for them.
@@ -170,7 +171,7 @@ int main(int argc, char **argv)
         // Against the size the window was asked for.
         // Never the size one reports, which nothing records.
         // That is what makes a recorded click hit the same button.
-        UiOverlay overlay(kWindowSize);
+        UiOverlay overlay(antwika::game::kUiCanvas);
         RenderSystem renderSystem(
             *window, scene, *atlas, paths, camera, kExtent, overlay);
         SystemSleeper sleeper;
