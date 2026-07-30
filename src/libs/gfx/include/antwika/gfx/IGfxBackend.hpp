@@ -58,6 +58,10 @@ namespace antwika::gfx
          * more than one can be open, opening a second does not disturb
          * the first, and either can be closed on its own.
          *
+         * The returned window owns itself and may outlive this backend.
+         * Destroying it afterwards is safe; drawing into it is not
+         * guaranteed to reach a screen.
+         *
          * @param desc What the window should look like.
          * @return The new window, never null.
          * @throws GfxError If the window could not be created, including

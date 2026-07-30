@@ -63,7 +63,7 @@ namespace antwika::gfx::sdl3
             desc.title.c_str(),
             static_cast<int>(desc.size.width),
             static_cast<int>(desc.size.height),
-            0);
+            desc.resizable ? SDL_WINDOW_RESIZABLE : 0);
 
         if (window == nullptr)
         {
@@ -89,19 +89,18 @@ namespace antwika::gfx::sdl3
 
         while (SDL_PollEvent(&event))
         {
-            const WindowId window{event.window.windowID};
-
+            // Read event.window only once the type says SDL filled it.
             if (event.type == SDL_EVENT_WINDOW_CLOSE_REQUESTED)
             {
                 return WindowEvent{
-                    .window = window,
+                    .window = WindowId{event.window.windowID},
                     .payload = CloseRequested{}};
             }
 
             if (event.type == SDL_EVENT_WINDOW_RESIZED)
             {
                 return WindowEvent{
-                    .window = window,
+                    .window = WindowId{event.window.windowID},
                     .payload = Resized{
                         .size = {
                             .width = static_cast<std::uint32_t>(

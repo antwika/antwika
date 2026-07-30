@@ -47,7 +47,13 @@ namespace antwika::gfx::raylib
         RaylibBackend &operator=(const RaylibBackend &) = delete;
         RaylibBackend &operator=(RaylibBackend &&) = delete;
 
-        ~RaylibBackend() override = default;
+        /**
+         * @brief Cut the live window loose, if one is still open.
+         *
+         * A window may outlive the backend that made it, so the link
+         * back to here has to be broken before this object goes away.
+         */
+        ~RaylibBackend() override;
 
         /**
          * @brief Get the backend's name.
@@ -73,6 +79,12 @@ namespace antwika::gfx::raylib
 
         /**
          * @brief Take the next event the live window has to report.
+         *
+         * One deviation from IGfxBackend, which raylib gives no way
+         * around: while the window is minimised, raylib's own close
+         * check waits for a window system event instead of returning, so
+         * this call blocks until the window is restored.
+         *
          * @return The next event, or nullopt when there is none.
          */
         [[nodiscard]] std::optional<WindowEvent> pollEvent() override;

@@ -237,6 +237,47 @@ namespace antwika::gfx::conformance
         SUCCEED();
     }
 
+    TYPED_TEST_P(GfxBackendConformance, PollEvent_DrainsAfterAFrameIsDrawn)
+    {
+        const auto window = this->backend->createWindow(WindowDesc{
+            .title = "Antwika conformance",
+            .size = {.width = 640, .height = 480},
+            .resizable = true});
+
+        auto &renderer = window->renderer();
+
+        // A backend reading live state must latch what it reported.
+        // Otherwise the same state comes back on every poll.
+        // Presenting is when such a backend looks at the window system.
+        for (std::uint32_t frame = 0; frame < 3; ++frame)
+        {
+            renderer.clear(Color{.red = 8, .green = 8, .blue = 8});
+            renderer.present();
+
+            std::uint32_t polls = 0;
+
+            while (this->backend->pollEvent())
+            {
+                ++polls;
+
+                ASSERT_LT(polls, kPollLimit)
+                    << "pollEvent never reported an empty queue";
+            }
+        }
+
+        SUCCEED();
+    }
+
+    TYPED_TEST_P(GfxBackendConformance, Window_MayOutliveItsBackend)
+    {
+        auto window = this->backend->createWindow(this->demoDesc());
+
+        this->backend.reset();
+
+        // Destroying the window must not reach back into its backend.
+        EXPECT_NO_THROW(window.reset());
+    }
+
     REGISTER_TYPED_TEST_SUITE_P(
         GfxBackendConformance,
         Name_IsNotEmpty,
@@ -254,6 +295,8 @@ namespace antwika::gfx::conformance
         Close_ClosesTheWindow,
         Close_IsIdempotent,
         Renderer_AcceptsAFrameWithoutThrowing,
-        PollEvent_DrainsToAnEmptyQueue);
+        PollEvent_DrainsToAnEmptyQueue,
+        PollEvent_DrainsAfterAFrameIsDrawn,
+        Window_MayOutliveItsBackend);
 
 } // namespace antwika::gfx::conformance

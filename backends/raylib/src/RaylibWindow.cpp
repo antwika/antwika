@@ -30,7 +30,7 @@ namespace antwika::gfx::raylib
         WindowId id,
         const WindowDesc &desc)
         : logger(logger),
-          backend(backend),
+          backend(&backend),
           windowId(id),
           windowTitle(desc.title)
     {
@@ -41,7 +41,23 @@ namespace antwika::gfx::raylib
 
         if (!IsWindowReady())
         {
+            // InitWindow may have got part way up before giving up.
+            // Only CloseWindow releases that.
+            CloseWindow();
+
             throw GfxError("gfx.raylib: could not open the window");
+        }
+
+        // Set both ways round, not just when asked for.
+        // raylib keeps its window flags in globals outliving a window.
+        // One resizable window would make every later one resizable.
+        if (desc.resizable)
+        {
+            SetWindowState(FLAG_WINDOW_RESIZABLE);
+        }
+        else
+        {
+            ClearWindowState(FLAG_WINDOW_RESIZABLE);
         }
 
         lastSize = currentSize();
@@ -105,9 +121,17 @@ namespace antwika::gfx::raylib
         CloseWindow();
         open = false;
 
-        backend.forgetWindow(*this);
+        if (backend != nullptr)
+        {
+            backend->forgetWindow(*this);
+        }
 
         logger.log(Level::Debug, "gfx.raylib: closed window");
+    }
+
+    void RaylibWindow::forgetBackend()
+    {
+        backend = nullptr;
     }
 
     std::optional<WindowEvent> RaylibWindow::takePendingEvent()
@@ -126,9 +150,14 @@ namespace antwika::gfx::raylib
                 .payload = CloseRequested{}};
         }
 
-        if (IsWindowResized())
+        // Not IsWindowResized(): that stays true until the next poll.
+        // Only EndDrawing polls, so draining between frames never ends.
+        // The size itself is the latch instead.
+        const Size current = currentSize();
+
+        if (current != lastSize)
         {
-            lastSize = currentSize();
+            lastSize = current;
 
             return WindowEvent{
                 .window = windowId,

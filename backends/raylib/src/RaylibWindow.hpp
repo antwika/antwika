@@ -102,18 +102,28 @@ namespace antwika::gfx::raylib
         /**
          * @brief Translate raylib's window state into one event.
          *
-         * raylib has no event queue, only state to look at. A close
-         * request is latched and reported once, because raylib keeps
-         * saying the window should close for as long as it should, and a
-         * queue that never empties would never drain.
+         * raylib has no event queue, only state to look at, and that
+         * state stays set for as long as it is true rather than being
+         * consumed by reading it. Every event this reports is therefore
+         * latched against what was last reported, so a caller draining
+         * the queue reaches the end of it.
          *
          * @return The next event, or nullopt when there is nothing new.
          */
         [[nodiscard]] std::optional<WindowEvent> takePendingEvent();
 
+        /**
+         * @brief Stop pointing at a backend that is being destroyed.
+         *
+         * A window may outlive the backend that made it, and closing one
+         * tells its backend so. Without this that call would land on a
+         * destroyed object.
+         */
+        void forgetBackend();
+
     private:
         ILogger &logger;
-        RaylibBackend &backend;
+        RaylibBackend *backend;
         RaylibRenderer raylibRenderer;
         WindowId windowId;
         std::string windowTitle;

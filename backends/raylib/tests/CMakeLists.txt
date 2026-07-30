@@ -5,6 +5,7 @@ add_executable(antwika_gfx_backend_raylib_tests
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/RaylibRenderer.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/RaylibWindow.cpp
     RaylibBackendConformanceTest.cpp
+    RaylibBackendTest.cpp
 )
 
 target_include_directories(antwika_gfx_backend_raylib_tests

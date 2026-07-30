@@ -19,6 +19,14 @@ namespace antwika::gfx::raylib
         SetTraceLogLevel(LOG_WARNING);
     }
 
+    RaylibBackend::~RaylibBackend()
+    {
+        if (live != nullptr)
+        {
+            live->forgetBackend();
+        }
+    }
+
     std::string_view RaylibBackend::name() const
     {
         return "raylib";
