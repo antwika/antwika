@@ -1,6 +1,9 @@
 #include "antwika/wfc/Domain.hpp"
 
-#include <cassert>
+#include <algorithm>
+#include <iterator>
+
+#include "antwika/wfc/WfcError.hpp"
 
 namespace antwika::wfc
 {
@@ -39,7 +42,8 @@ namespace antwika::wfc
         return copy;
     }
 
-    Domain::Domain(std::size_t alphabetSize) : bits(alphabetSize, true)
+    Domain::Domain(std::size_t alphabetSize)
+        : bits(alphabetSize, true), setCount(alphabetSize)
     {
     }
 
@@ -64,18 +68,24 @@ namespace antwika::wfc
 
     void Domain::remove(std::size_t value)
     {
-        if (value < bits.size())
+        if (!contains(value))
         {
-            bits[value] = false;
+            return;
         }
+
+        bits[value] = false;
+        --setCount;
     }
 
     void Domain::add(std::size_t value)
     {
-        if (value < bits.size())
+        if (value >= bits.size() || contains(value))
         {
-            bits[value] = true;
+            return;
         }
+
+        bits[value] = true;
+        ++setCount;
     }
 
     void Domain::restrictTo(std::size_t value)
@@ -88,6 +98,7 @@ namespace antwika::wfc
         {
             bits[i] = (i == value);
         }
+        setCount = 1;
     }
 
     std::size_t Domain::alphabetSize() const
@@ -97,15 +108,7 @@ namespace antwika::wfc
 
     std::size_t Domain::count() const
     {
-        std::size_t total = 0;
-        for (const bool bit : bits)
-        {
-            if (bit)
-            {
-                ++total;
-            }
-        }
-        return total;
+        return setCount;
     }
 
     bool Domain::isEmpty() const
@@ -120,21 +123,19 @@ namespace antwika::wfc
 
     std::size_t Domain::singleValue() const
     {
-        assert(isSingleton());
-        for (std::size_t i = 0; i < bits.size(); ++i) // GCOVR_EXCL_LINE
+        // This was an assert, and every documented build is Release.
+        // So a non-singleton reached the caller as the value 0 instead.
+        // Solver then reported an unsolved wave Solved.
+        // That is the exact failure blog/008 was written about.
+        if (!isSingleton())
         {
-            if (bits[i])
-            {
-                return i;
-            }
+            throw WfcError(
+                "Domain: singleValue() needs a singleton domain");
         }
-        // Unreachable in practice.
-        // isSingleton() (asserted above) guarantees exactly one bit.
-        // So the loop above always returns before reaching here.
-        // Kept only as a defensive fallback against a violated precondition.
-        // See docs/confirming-unreachable-branches.md.
-        assert(false); // GCOVR_EXCL_LINE
-        return 0; // GCOVR_EXCL_LINE
+
+        // The check above is what makes this search unable to fail.
+        return static_cast<std::size_t>(std::distance(
+            bits.begin(), std::find(bits.begin(), bits.end(), true)));
     }
 
     Domain::const_iterator Domain::begin() const

@@ -4,7 +4,10 @@
 
 #include <gtest/gtest.h>
 
+#include <antwika/wfc/WfcError.hpp>
+
 using antwika::wfc::Domain;
+using antwika::wfc::WfcError;
 
 TEST(DomainTest, DefaultConstructionHasEveryBitSet)
 {
@@ -26,6 +29,22 @@ TEST(DomainTest, SingletonHasExactlyOneBitSet)
     EXPECT_FALSE(domain.contains(0));
     EXPECT_TRUE(domain.isSingleton());
     EXPECT_EQ(domain.singleValue(), 2U);
+}
+
+TEST(DomainTest, SingleValueThrowsWhenMoreThanOneValueRemains)
+{
+    Domain domain(4);
+    EXPECT_THROW(
+        static_cast<void>(domain.singleValue()), WfcError);
+}
+
+TEST(DomainTest, SingleValueThrowsOnAnEmptyDomain)
+{
+    Domain domain(2);
+    domain.remove(0);
+    domain.remove(1);
+    EXPECT_THROW(
+        static_cast<void>(domain.singleValue()), WfcError);
 }
 
 TEST(DomainTest, RemoveThenAddRestoresExactlyThatBit)
@@ -56,6 +75,35 @@ TEST(DomainTest, RemovingEveryValueIsEmpty)
     EXPECT_TRUE(domain.isEmpty());
     EXPECT_EQ(domain.count(), 0U);
     EXPECT_FALSE(domain.isSingleton());
+}
+
+TEST(DomainTest, RemovingTheSameValueTwiceCountsItOnce)
+{
+    Domain domain(3);
+    domain.remove(1);
+    domain.remove(1);
+
+    EXPECT_EQ(domain.count(), 2U);
+    EXPECT_FALSE(domain.contains(1));
+}
+
+TEST(DomainTest, AddingAValueThatIsStillPresentChangesNothing)
+{
+    Domain domain(3);
+    domain.add(1);
+
+    EXPECT_EQ(domain.count(), 3U);
+    EXPECT_EQ(domain, Domain(3));
+}
+
+TEST(DomainTest, RestrictToCanReinstateAnAlreadyRemovedValue)
+{
+    Domain domain(3);
+    domain.remove(2);
+    domain.restrictTo(2);
+
+    EXPECT_EQ(domain.count(), 1U);
+    EXPECT_EQ(domain.singleValue(), 2U);
 }
 
 TEST(DomainTest, IterationIsAscending)

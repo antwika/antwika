@@ -1,6 +1,39 @@
 #include "antwika/ecs/World.hpp"
 
+#include <utility>
+
 #include "EntityManager.hpp"
+
+namespace
+{
+
+    // Runs its action however the enclosing scope is left.
+    // commit() needs the world whole after a throwing staged operation.
+    // A guard is the one form of that which cannot be jumped over.
+    template <typename Action>
+    class ScopeGuard final
+    {
+    public:
+        explicit ScopeGuard(Action action) : action(std::move(action))
+        {
+        }
+
+        ~ScopeGuard()
+        {
+            action();
+        }
+
+        ScopeGuard(const ScopeGuard &) = delete;
+        ScopeGuard(ScopeGuard &&) = delete;
+
+        ScopeGuard &operator=(const ScopeGuard &) = delete;
+        ScopeGuard &operator=(ScopeGuard &&) = delete;
+
+    private:
+        Action action;
+    };
+
+} // namespace
 
 namespace antwika::ecs
 {
@@ -25,7 +58,20 @@ namespace antwika::ecs
             throw EcsError("World: entity is not alive");
         }
 
-        pendingOps.push_back([this, entity] { retire(entity); });
+        pendingOps.push_back(
+            [this, entity]
+            {
+                // Nothing is applied until commit().
+                // So a second destroy() in one phase saw it alive too.
+                // Retiring twice would throw rather than mean anything.
+                // This is a no-op for the reason remove<T>() is one.
+                if (!alive(entity))
+                {
+                    return;
+                }
+
+                retire(entity);
+            });
     }
 
     bool World::alive(Entity entity) const noexcept
@@ -35,15 +81,23 @@ namespace antwika::ecs
 
     void World::commit()
     {
+        // Leaving early would keep surviving ops staged for next time.
+        // It would also skip every buffer swap.
+        // The world would then be half-applied, and wrong much later.
+        const ScopeGuard guard(
+            [this]
+            {
+                pendingOps.clear();
+
+                for (const auto &commitCallback : commitCallbacks)
+                {
+                    commitCallback();
+                }
+            });
+
         for (const auto &op : pendingOps)
         {
             op();
-        }
-        pendingOps.clear();
-
-        for (const auto &commitCallback : commitCallbacks)
-        {
-            commitCallback();
         }
     }
 

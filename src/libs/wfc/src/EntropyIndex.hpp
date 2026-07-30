@@ -15,7 +15,7 @@ namespace antwika::wfc::detail
 
     // Private, incrementally maintained lowest-entropy-cell picker.
     //
-    // Keyed on (entropy, cellIndex) in a std::set, ordered ascending.
+    // Keyed on (sortKey, cellIndex) in a std::set, ordered ascending.
     // pickNext() is then a single begin() lookup.
     // update() is a single erase+insert.
     // Neither rescans the whole wave.
@@ -44,7 +44,11 @@ namespace antwika::wfc::detail
         std::vector<std::optional<std::pair<double, std::size_t>>>
             cellKey;
 
-        [[nodiscard]] double computeEntropy(const Domain &domain) const;
+        // Orders cells the way entropy would.
+        // It does not inherit the last ULP of this build's libm.
+        // Uniform weights key on the candidate count itself.
+        // Weighted ones key on the entropy in whole 1e-9 steps.
+        [[nodiscard]] double sortKey(const Domain &domain) const;
     };
 
 } // namespace antwika::wfc::detail
