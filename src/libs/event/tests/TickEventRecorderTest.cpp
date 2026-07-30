@@ -18,3 +18,16 @@ TEST(TickEventRecorderTest, handle)
     EXPECT_EQ(
         events[1], (TickEvent{.tick = 1, .event = Event{.name = "bar"}}));
 }
+
+TEST(TickEventRecorderTest, GetEvents_HandsBackTheRecordingItself)
+{
+    // By reference, so asking what has been recorded costs nothing.
+    TickEventRecorder replayRecorder;
+    const auto &events = replayRecorder.getEvents();
+
+    EXPECT_TRUE(events.empty());
+
+    replayRecorder.handle(TickEvent{.tick = 0, .event = Event{.name = "foo"}});
+
+    EXPECT_EQ(events.size(), 1U);
+}

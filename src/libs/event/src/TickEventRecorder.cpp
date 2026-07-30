@@ -8,7 +8,7 @@ namespace antwika::event
         events.push_back(event);
     }
 
-    std::vector<TickEvent> TickEventRecorder::getEvents() const
+    const std::vector<TickEvent> &TickEventRecorder::getEvents() const
     {
         return events;
     }

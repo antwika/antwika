@@ -26,7 +26,7 @@ namespace antwika::event
          * @brief Get all events recorded so far.
          * @return The recorded events, in the order they were received.
          */
-        [[nodiscard]] std::vector<Event> getEvents() const override;
+        [[nodiscard]] const std::vector<Event> &getEvents() const override;
 
     private:
         std::vector<Event> events;
