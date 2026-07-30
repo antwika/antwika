@@ -2,6 +2,20 @@
 
 #include <cmath>
 
+namespace
+{
+
+    // Turns a weighted entropy into a whole number of steps.
+    // std::log is not required to be correctly rounded.
+    // glibc, LLVM's libm and mingw's CRT may differ in the last ULP.
+    // A difference that small cannot survive this granularity.
+    // Two entropies a whole step apart still order as they should.
+    // A value landing on a step boundary can still disagree.
+    // That residue is why the uniform case avoids std::log entirely.
+    constexpr double kWeightedKeySteps = 1e9;
+
+} // namespace
+
 namespace antwika::wfc::detail
 {
 
@@ -15,11 +29,15 @@ namespace antwika::wfc::detail
         }
     }
 
-    double EntropyIndex::computeEntropy(const Domain &domain) const
+    double EntropyIndex::sortKey(const Domain &domain) const
     {
+        // Uniform weights make the entropy log(count).
+        // log is monotonic, so the count orders the cells identically.
+        // A small count is also exact in a double, which log is not.
+        // So the one toolchain-dependent number leaves this path.
         if (valueWeights.empty())
         {
-            return std::log(static_cast<double>(domain.count()));
+            return static_cast<double>(domain.count());
         }
 
         double totalWeight = 0.0;
@@ -30,7 +48,10 @@ namespace antwika::wfc::detail
             totalWeight += weight;
             weightedLogSum += weight * std::log(weight);
         }
-        return std::log(totalWeight) - weightedLogSum / totalWeight;
+
+        const double entropy =
+            std::log(totalWeight) - weightedLogSum / totalWeight;
+        return std::round(entropy * kWeightedKeySteps);
     }
 
     void EntropyIndex::update(std::size_t cell, const Domain &domain)
@@ -46,8 +67,7 @@ namespace antwika::wfc::detail
             return;
         }
 
-        const std::pair<double, std::size_t> key{
-            computeEntropy(domain), cell};
+        const std::pair<double, std::size_t> key{sortKey(domain), cell};
         keysByEntropy.insert(key);
         cellKey[cell] = key;
     }
