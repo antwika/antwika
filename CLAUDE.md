@@ -125,7 +125,13 @@ The system is layered as small, single-purpose libraries under `src/libs/`, comp
 
 **Application state**: each app owns its state and how events mutate it — the engine has no opinion here.
 
-- `apps/game` holds state as a plain `GameState` struct, mutated by `GameStateReducer` (an `antwika::reducer::IReducer` implementation) reacting to tick-stamped events through `ITickEventSink`.
+- `apps/game` is an isometric grid you build on with the mouse: left-click lays a path tile, right-click drops a walker onto one, middle-drag pans and the wheel zooms.
+Walkers advance one cell per tick along the paths, preferring a right turn at an intersection and reversing at a dead end -- both of which fall out of one preference order in `game::nextFacing()` rather than two rules.
+The plain `GameState` struct and its `GameStateReducer` are still there, folding `game.score_increment` alongside the grid.
+**The camera is simulation state, not render state**, which is the load-bearing decision: a click arrives as a pixel, and which cell it means depends entirely on the camera, so a renderer-owned camera would leave a replay resolving recorded clicks against a different view.
+That is also why zoom is an index into a table of whole tile sizes rather than a scale factor, why `game::floorDiv()` exists instead of `operator/`, and why the projection is anchored to the camera's pan rather than the canvas centre -- anchoring to the centre would make a window resize change which cell a pixel means.
+**The app defines no event for placing anything**: a click is the input, `game::GridSink` turns it into a placement inside the tick path, and the replay stores the click and regenerates the placement -- persisting both would lay two tiles per click.
+See [`blog/013-the-camera-is-simulation-state.md`](blog/013-the-camera-is-simulation-state.md).
 - `apps/life` (Conway's Game of Life) holds state in an `antwika::ecs::World` instead: each cell is an entity with a `Cell` component, and a single `LifeSystem` advances every cell one generation per tick via the double-buffered `World`/`SystemScheduler` — see [`blog/003-an-entity-component-system-with-nowhere-to-hide-a-mutation.md`](blog/003-an-entity-component-system-with-nowhere-to-hide-a-mutation.md).
 Cells are toggled either by a scripted `life.toggle_cell` event or by dragging over them with the mouse.
 The drag is `antwika::input`'s side: `input::LiveInputSource` puts each edge into the tick stream, and `life::PointerToggleSink` decodes the `input.pointer_*` events and toggles the cell under the pointer — so a `--record` run persists the click and regenerates the toggle, per the rule that a replay holds only external input.

@@ -46,7 +46,6 @@ Requirements for the Antwika project, gathered from `README.md`, `blog/001-build
 - Image decoding must accept a byte stream rather than a path, so `antwika::gfx` opens no files and every decoder failure is provable headlessly.
 - A texture must be created through the renderer that will draw it, and both destroying that texture after its renderer's window has closed and drawing it through another renderer must be safe.
 - A blit whose source rectangle reaches outside its texture must be refused identically by every backend, since that is the one case where the underlying frameworks disagree.
-- A line must include both of its endpoints, so a line whose ends coincide draws that one pixel; callers step diagonal shapes out of lines, and a dropped endpoint leaves a gap at every corner. Which pixels between the endpoints are lit is left to the backend, since nothing reads a drawn line back.
 - A window's close request must reach the engine only as replayable input through `IReplaySource`, never by short-circuiting the tick loop.
 - UI layout must be a pure function of the described UI and the canvas size, computed arithmetically from the built-in font's metrics without asking a graphics backend to measure anything.
 - UI layouts must nest, and a container must be able to take its size from the content of children it has not seen yet.
@@ -54,6 +53,10 @@ Requirements for the Antwika project, gathered from `README.md`, `blog/001-build
 - Leftover pixels from integer division in a layout must be distributed by a specified, tested rule rather than incidentally.
 - No file under `src/libs/ui/` may read a clock, a pointer, a keyboard or any state outside its arguments, so the same described UI and canvas always produce the same picture.
 - A UI must not open or close a container through any call a caller can forget or unbalance.
+- A line must include both of its endpoints, so a line whose ends coincide draws that one pixel; callers step diagonal shapes out of lines, and a dropped endpoint leaves a gap at every corner. Which pixels between the endpoints are lit is left to the backend, since nothing reads a drawn line back.
+- Any projection whose inverse decides which cell a click meant must be exact integer arithmetic, so the answer is identical across toolchains and between a recording and its replay.
+- Camera state that a click is interpreted against must be simulation state, folded from replayable input, never state owned by the renderer -- otherwise a replay resolves recorded clicks against a different view and reproduces different state.
+- Translating input into application meaning must happen downstream of the recorder, so a replay stores the input and regenerates what it caused rather than persisting both.
 - A job with unmet dependencies (via `schedule()`'s `dependsOn`) must never be dispatched until every dependency has run; dependency cycles must be unreachable through the public API, by construction (id-ordering), not by a runtime check.
 - Input access must go through a backend-agnostic abstraction, and no file under `src/` may reference a concrete input framework such as SDL or raylib.
 - The input backend must be selected at build time, by the `ANTWIKA_INPUT_BACKEND` CMake variable and the matching `input_backend` Conan option, which default to the graphics choice so one flag drives both.
@@ -97,6 +100,7 @@ Requirements for the Antwika project, gathered from `README.md`, `blog/001-build
 - The input abstraction won't cover text or IME input, cursor capture or warping, gamepads, or touch, and won't say which window an event arrived at, since every application here has one window.
 - `antwika::input` won't fold input events into held device state or bind them to named actions in its current scope; an application that needs "is this button down" derives it from the edges it already receives.
 - The raylib input backend won't report a keyboard in its current scope, and says so through its capabilities rather than claiming a device whose events never arrive.
+- Walkers in `apps/game` won't collide: two may occupy one cell, because nothing requires otherwise and a rule to avoid it would be a requirement nobody asked for.
 - `Scheduler` won't include priority aging or anti-starvation: a continuous stream of higher-priority jobs can, by design, keep a lower-priority job pending indefinitely, since unconditional priority respect is the requirement, not a bug to work around.
 - `antwika::ui` won't read a pointer or a keyboard, and no UI interaction will reach the engine or a replay, in its current scope; a button is told how it should look rather than working it out.
 - `antwika::ui` won't clip, scroll, or draw out of declaration order, since `antwika::gfx` offers no scissor and no z-order; a container that cannot fit its content shrinks it in proportion instead.

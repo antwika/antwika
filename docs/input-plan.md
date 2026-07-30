@@ -7,31 +7,35 @@ input entering the engine only through the existing replay seam.
 
 ## Status
 
-Phases 1, 3, 4 and 5 have landed, along with the parts of 6 and 7 that
-`apps/life`'s mouse input needed.
-What exists: the vocabulary and the seam, `ANTWIKA_INPUT_BACKEND` and the
-`input_backend` Conan option, the conformance suite, `Events.hpp`,
-`IInputEventCodec`/`InputEventCodec`, `LiveInputSource`, the shared
-`Sdl3Pump` with a full `Sdl3InputBackend`, a pointer-only
-`RaylibInputBackend`, and drag-to-toggle in `apps/life` through
-`life::PointerToggleSink`.
+Delivered.
+Every phase has landed: the vocabulary and the seam,
+`ANTWIKA_INPUT_BACKEND` and the `input_backend` Conan option, the
+conformance suite, `Events.hpp`, `IInputEventCodec`/`InputEventCodec`,
+`LiveInputSource`, the shared `Sdl3Pump` with a full `Sdl3InputBackend`,
+a pointer-only `RaylibInputBackend`, the device state and action mapping
+of Phase 2, and `StopOnKeySource`.
 
-What is still outstanding, and why:
+Two applications use it: `apps/life` toggles cells by dragging through
+`life::PointerToggleSink`, and `apps/game` is an isometric grid built
+entirely with the mouse -- see
+[`blog/013`](../blog/013-the-camera-is-simulation-state.md).
 
-- **Phase 2 entirely.**
-  `Keyboard`, `Mouse`, `InputState`, `Binding` and `ActionMap` are not
-  built.
-  Nothing needs them yet: `PointerToggleSink` folds the two pieces of held
-  state it cares about itself, and no application binds a named action.
-- **`StopOnKeySource`.**
-  `apps/life` stops on a window close, which `life::WindowInputSource`
-  already turns into `engine.stop`.
-- **The raylib keyboard.**
+Three departures from this plan are worth recording:
+
+- **`CoalescingPointerSource` is not in it.**
+  Drag-panning needs pointer movement in the tick path, and a window
+  system reports motion far faster than an application ticks, so a minute
+  of dragging would otherwise record tens of thousands of events for a
+  position that is read once per tick.
+  It sits upstream of the recorder, so what a recording holds is exactly
+  what the run consumed.
+- **The raylib keyboard is still absent.**
   `RaylibInputBackend` reports a pointer only, and says so through
-  `capabilities()`.
+  `capabilities()` rather than pretending.
   A keyboard needs a raylib-keycode table nothing has asked for.
-- **`apps/gfx_demo`.**
-  Phase 7's other half: `DemoLoop` still takes no `IInputBackend`.
+- **`apps/gfx_demo` still takes no `IInputBackend`.**
+  Phase 7's other half went to `apps/game` instead, which had more to
+  click on.
 
 ## Goals
 
