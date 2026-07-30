@@ -141,4 +141,23 @@ namespace antwika::game
         // Nothing between its construction and the return throws.
     } // GCOVR_EXCL_LINE
 
+    void printSummary(std::ostream &out, const GameSummary &summary)
+    {
+        out << "Final state: ticksProcessed="
+            << summary.state.ticksProcessed
+            << " score=" << summary.state.score << '\n';
+        out << "Paths laid: " << summary.paths.size() << '\n';
+        out << "Walkers: " << summary.walkers.size() << '\n';
+
+        for (const auto &walker : summary.walkers)
+        {
+            out << "  at (" << walker.at.x << ", " << walker.at.y
+                << ") facing " << directionIndex(walker.facing) << '\n';
+        }
+
+        out << "Camera: pan (" << summary.camera.pan().x << ", "
+            << summary.camera.pan().y << ") zoom "
+            << summary.camera.zoomLevel() << '\n';
+    }
+
 } // namespace antwika::game
