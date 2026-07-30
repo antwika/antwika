@@ -2,7 +2,7 @@
 
 *Post 12*
 
-`antwika::gfx` has been able to open a window and fill rectangles since the [SDL and raylib backends landed](../docs/gfx-plan.md), but the only thing using it was `apps/gfx_demo`, which draws three bars that never change.
+`antwika::gfx` has been able to open a window and fill rectangles since the SDL and raylib backends landed, but the only thing using it was `apps/gfx_demo`, which draws three bars that never change.
 Meanwhile `apps/life` had a board worth looking at and printed it as `#` and `.`.
 This post is about connecting the two, and about the two decisions that turned out to be load-bearing — neither of which is "how do I draw a square".
 
@@ -42,7 +42,7 @@ And that in turn means `RenderSystem` needs no `isOpen()` guard — which is goo
 
 ## Closing a window is input, so it goes where input goes
 
-The [gfx plan](../docs/gfx-plan.md) asked for this up front: `antwika::gfx` must not depend on `antwika::event`, so turning a `gfx::WindowEvent` into an `antwika::event::Event` is the application's job.
+That was a constraint from the start: `antwika::gfx` must not depend on `antwika::event`, so turning a `gfx::WindowEvent` into an `antwika::event::Event` is the application's job.
 `WindowInputSource` is that adapter, and it is a decorator over `IReplaySource`:
 
 ```cpp
@@ -102,5 +102,5 @@ An observer that observes nothing is a slightly odd object, but it is in the rig
 The last decision was what to do with `PrintSystem`.
 "Instead of the console" was the goal, and deleting the ASCII output is nevertheless wrong, because `null` is the *default* backend: a default build with no printer produces a program that opens no window and says nothing, which reads as broken to anyone who just cloned the repository.
 So `main` asks the backend its name and registers the printer when it draws nothing — and skips the pacing in the same breath, since a build with nothing to watch has nothing to wait for.
-The gfx plan said "replace or complement".
+Replacing the printer or complementing it were both on the table.
 The default backend is the argument for complement.

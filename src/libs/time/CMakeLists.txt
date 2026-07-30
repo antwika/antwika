@@ -1,5 +1,6 @@
 add_library(antwika_time
     src/SystemClock.cpp
+    src/SystemSleeper.cpp
 )
 
 add_library(antwika::time ALIAS antwika_time)

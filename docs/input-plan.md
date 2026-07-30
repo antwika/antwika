@@ -20,8 +20,8 @@ input entering the engine only through the existing replay seam.
   session records to a replay and that replay reproduces the same state.
 - Reading input does not require opening a window.
 
-The last goal is what separates this plan from
-[`gfx-plan.md`](gfx-plan.md), and it drives the central decision below.
+The last goal is what separates this plan from the graphics work, and it
+drives the central decision below.
 Scope is keyboard and mouse; see
 [Deferred deliberately](#deferred-deliberately) for what that excludes.
 
@@ -32,18 +32,19 @@ Every app is driven by a hand-authored replay script: `main.cpp` loads a
 JSON file, wraps it in `replay::ReplaySource`, and `--record` merely
 re-serializes the input it just consumed.
 
-Three documents already name this work as the next step, and two of them
-currently forbid it:
+Two documents already name this work as the next step, and both currently
+forbid it:
 
 - `REQUIREMENTS.md`, Should have: "Live/interactive input capture ... should
   stay out of scope until the engine gains a live input source."
-- [`gfx-plan.md`](gfx-plan.md), Deferred deliberately: "**Live input capture
-  into replays.** `pollEvent()` finally makes this possible ... It should be
-  picked up as its own piece of work once a backend exists, not folded into
-  this one."
 - `src/libs/gfx/include/antwika/gfx/WindowEvent.hpp`: "Keyboard and pointer
   input belong with the work that feeds live input into replays, which is
   out of scope until there is a live input source to record from."
+
+`antwika::gfx` deliberately stopped at window lifetime events for the same
+reason: `pollEvent()` made keyboard and pointer reporting possible, and it
+was left as its own piece of work rather than folded into the graphics
+abstraction.
 
 This library is that live input source.
 
@@ -54,8 +55,8 @@ does not depend on `antwika::input`.
 Neither library appears in the other's `target_link_libraries`.
 
 The alternative was to add key and pointer alternatives to
-`gfx::WindowEventPayload`, which the gfx plan's header table originally
-anticipated.
+`gfx::WindowEventPayload`, which is where the graphics work originally
+expected them to go.
 That was rejected: it would make every input consumer link a graphics
 library and open a window before it could read a key, and an application
 listening for input without a window is a legitimate thing to want.
@@ -105,8 +106,8 @@ backends/raylib/   + antwika_input_backend  RaylibInputBackend, state diff
 ```
 
 `backends/` sits at the repository root, outside `src/`, for the reason
-[`gfx-plan.md`](gfx-plan.md) gives and this plan repeats under
-[Coverage](#coverage-the-same-constraint-the-same-answer).
+given under [Coverage](#coverage-the-same-constraint-the-same-answer) --
+the same one that put the graphics backends there.
 
 Every backend directory builds a target named `antwika_input_backend`,
 aliased to `antwika::input_backend`, exactly as it already does for
@@ -602,11 +603,8 @@ A new `PointerToggleSink` holds the `World &` and the grid geometry, decodes
 `input.pointer_down`, and toggles the cell under the cursor -- a new sink
 beside `BoardSink` rather than a change to it.
 
-This needs something to click on, so it also delivers the render system that
-is [`gfx-plan.md`](gfx-plan.md)'s Phase 6, the one phase of that plan still
-outstanding.
-If that proves too large to carry here, it is the natural split point: the
-render system can land first, on its own.
+This needs something to click on, which `apps/life` already has: its
+`RenderSystem` draws the board into a window a generation at a time.
 
 Ends with the end-to-end proof: record a live session under sdl3, replay it
 under the null backends, and assert the final `World` state is identical.
@@ -632,8 +630,6 @@ after the fact.
 - `REQUIREMENTS.md` gains Won't-haves: no text or IME input, no cursor
   capture, no gamepad, no touch, no window attribution of input events, and
   no runtime-loadable input backends.
-- [`gfx-plan.md`](gfx-plan.md)'s "Live input capture into replays" deferral
-  points here.
 - `src/libs/gfx/include/antwika/gfx/WindowEvent.hpp`'s "out of scope until
   there is a live input source" comment is now stale, and should say that
   input travels through `antwika::input` instead, and why.

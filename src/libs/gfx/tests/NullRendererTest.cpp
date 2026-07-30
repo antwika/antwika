@@ -5,11 +5,13 @@
 #include <antwika/log/mocks/MockLogger.hpp>
 
 #include "antwika/gfx/Color.hpp"
+#include "antwika/gfx/Point.hpp"
 #include "antwika/gfx/Rect.hpp"
 
 #include "NullRenderer.hpp"
 
 using antwika::gfx::Color;
+using antwika::gfx::Point;
 using antwika::gfx::Rect;
 using antwika::gfx::detail::NullRenderer;
 using antwika::log::Level;
@@ -37,6 +39,17 @@ TEST(NullRendererTest, DrawRect_DiscardsTheRectangleAndTracesIt)
             .origin = {.x = 10, .y = 20},
             .size = {.width = 30, .height = 40}},
         Color{.green = 255});
+}
+
+TEST(NullRendererTest, DrawText_DiscardsTheTextAndTracesIt)
+{
+    MockLogger logger;
+    NullRenderer renderer(logger);
+
+    EXPECT_CALL(logger, log(Level::Trace, "gfx.null: draw text"));
+
+    renderer.drawText(
+        Point{.x = 5, .y = 6}, "As", 2, Color{.blue = 255});
 }
 
 TEST(NullRendererTest, Present_DiscardsTheFrameAndTracesIt)

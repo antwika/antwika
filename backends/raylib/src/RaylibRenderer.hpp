@@ -1,7 +1,11 @@
 #pragma once
 
+#include <cstdint>
+#include <string_view>
+
 #include <antwika/gfx/Color.hpp>
 #include <antwika/gfx/IRenderer.hpp>
+#include <antwika/gfx/Point.hpp>
 #include <antwika/gfx/Rect.hpp>
 
 namespace antwika::gfx::raylib
@@ -38,6 +42,26 @@ namespace antwika::gfx::raylib
          * @param color The colour to fill it with.
          */
         void drawRect(Rect rect, Color color) override;
+
+        /**
+         * @brief Draw a line of text in the built-in fixed-cell font.
+         *
+         * Painted from gfx::glyphRow() as filled rectangles rather than
+         * with raylib's own DrawText, even though raylib ships a default
+         * font that would make that a one-liner. That font is not
+         * fixed-cell, so using it would break the metrics gfx::textSize()
+         * promises and make this backend draw a different picture from
+         * every other one.
+         * @param origin Top-left corner of the first glyph's cell.
+         * @param text The characters to draw.
+         * @param scale Pixels per glyph pixel.
+         * @param color The colour to draw the lit pixels in.
+         */
+        void drawText(
+            Point origin,
+            std::string_view text,
+            std::uint32_t scale,
+            Color color) override;
 
         /**
          * @brief Close the drawing bracket, presenting the frame.

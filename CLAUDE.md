@@ -73,6 +73,10 @@ build/bin/antwika_poker --record demo.replay
 build/bin/antwika_sudoku [--puzzle my-puzzle.txt]
 ```
 
+`antwika_poker` also opens a window and draws the table each tick.
+`--tick-delay-ms <n>` holds each frame for `n` ms and keeps the final frame up until the window is closed; it defaults to 0, which is what keeps the default terminal run unchanged and stops the `null` backend (which never reports a close) from wedging it.
+A real backend needs a display, so use `SDL_VIDEODRIVER=dummy` or `xvfb-run` without one.
+
 **Coverage build** (separate `build-coverage/` dir, GNU/LLVM only — not MinGW):
 
 ```sh
@@ -118,11 +122,13 @@ One engine tick is one step of the poker loop: a deal, or one player being asked
 The app tracks balances outside the games in `poker::BankrollLedger`, and `poker::CashGame` is the only path between a bankroll and a seat, so a buy-in can never exceed what a player holds.
 Only `poker.deposit`/`poker.buy_in`/`poker.cash_out` are persisted: the shuffle is seeded from `RoomConfig` and `poker::PolicyAgent` is a pure function of the `TableView` it is handed, so cards and decisions are regenerated rather than recorded -- see [`blog/010-a-poker-hand-in-one-number.md`](blog/010-a-poker-hand-in-one-number.md).
 `poker::TablePrinter` writes every hand out in the standard hand-history layout, deriving the blinds, the raise sizes and the uncalled bet from `holdem::StepOutcome` rather than recomputing the betting -- see [`blog/011-writing-a-hand-history-the-rest-of-the-world-can-read.md`](blog/011-writing-a-hand-history-the-rest-of-the-world-can-read.md).
+The same session draws itself through `antwika::gfx`, split so that rendering is write-only in structure rather than by promise: `poker::snapshotOf()` takes an immutable `poker::TableSnapshot` (the spectator's answer to `holdem::TableView`), `poker::TableScene` turns that into drawing calls, and `poker::TableRenderSink` runs it once per `engine.tick` -- registered *after* `PokerRoomSink`, since that is what steps the table.
+The only route back in is `poker::WindowCloseSource`, an `IReplaySource` decorator that appends `engine.stop` once the window has gone, so a close is ordinary replay input and lands in a `--record` file like anything else.
 - `apps/sudoku` is unrelated to the tick/replay system: it's a showcase for `antwika::wfc` (Wave Function Collapse) — a standalone, dependency-free, deterministic constraint solver operating on a flat, index-addressed `std::vector` of cells with geometry expressed entirely through `IConstraint`s (no grid concept inside the library). `apps/sudoku` expresses the 81-cell puzzle and its row/column/box rules as `AllDifferentConstraint`s over that flat array — see [`blog/005-wave-function-collapse-that-never-guesses.md`](blog/005-wave-function-collapse-that-never-guesses.md).
 
 **Supporting libs**: `antwika::time` (fixed-tick `Tick` type, `IClock`/`SystemClock`) and `antwika::log` (`ILogger`/`Logger`, `IAppender`/`IFormatter`/`ILogPolicy` — composable logging with no global state) are used across apps but carry no tick/replay logic of their own.
 
-`antwika::gfx` abstracts opening and rendering to windows (`IGfxBackend`/`IWindow`/`IRenderer`, `GfxError`), so no code under `src/` names a concrete graphics framework — SDL, raylib and friends arrive as statically linked backends under `backends/`, chosen at build time. Rendering is a write-only projection of state and never feeds back into the tick loop, so replays stay reproducible under the headless `NullBackend`. See [`docs/gfx-plan.md`](docs/gfx-plan.md) for the full design and its phases.
+`antwika::gfx` abstracts opening and rendering to windows (`IGfxBackend`/`IWindow`/`IRenderer`, `GfxError`), so no code under `src/` names a concrete graphics framework — SDL, raylib and friends arrive as statically linked backends under `backends/`, chosen at build time. Rendering is a write-only projection of state and never feeds back into the tick loop, so replays stay reproducible under the headless `NullBackend`. See [`blog/012-a-window-that-cant-talk-back.md`](blog/012-a-window-that-cant-talk-back.md) for how an app hangs rendering off the tick loop without letting it feed back in.
 
 ## Notes for AI agents
 

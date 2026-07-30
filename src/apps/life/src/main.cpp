@@ -24,6 +24,7 @@
 #include <antwika/replay/ReplayCli.hpp>
 #include <antwika/replay/ReplaySource.hpp>
 #include <antwika/time/SystemClock.hpp>
+#include <antwika/time/SystemSleeper.hpp>
 
 #include "antwika/life/BoardScene.hpp"
 #include "antwika/life/Events.hpp"
@@ -48,6 +49,7 @@ using antwika::log::PlainFormatter;
 using antwika::log::StreamAppender;
 using antwika::replay::ReplaySource;
 using antwika::time::SystemClock;
+using antwika::time::SystemSleeper;
 
 namespace
 {
@@ -102,7 +104,8 @@ int main(int argc, char **argv)
         const BoardScene scene;
         RenderSystem renderSystem(
             *window, scene, kBoardWidth, kBoardHeight);
-        TickPacer pacer(kTickInterval);
+        SystemSleeper sleeper;
+        TickPacer pacer(sleeper, kTickInterval);
 
         // A backend showing nothing leaves the board to be printed.
         // It also gives nobody a reason to wait between generations.

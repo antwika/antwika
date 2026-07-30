@@ -1,7 +1,9 @@
 add_library(antwika_gfx
+    src/Glyphs.cpp
     src/NullBackend.cpp
     src/NullRenderer.cpp
     src/NullWindow.cpp
+    src/TextLayout.cpp
 )
 
 add_library(antwika::gfx ALIAS antwika_gfx)

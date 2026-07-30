@@ -2,8 +2,12 @@
 
 #include <SDL3/SDL.h>
 
+#include <cstdint>
+#include <string_view>
+
 #include <antwika/gfx/Color.hpp>
 #include <antwika/gfx/IRenderer.hpp>
+#include <antwika/gfx/Point.hpp>
 #include <antwika/gfx/Rect.hpp>
 #include <antwika/log/ILogger.hpp>
 
@@ -47,6 +51,23 @@ namespace antwika::gfx::sdl3
          * @param color The colour to fill it with.
          */
         void drawRect(Rect rect, Color color) override;
+
+        /**
+         * @brief Draw a line of text in the built-in fixed-cell font.
+         *
+         * Painted from gfx::glyphRow() as filled rectangles rather than
+         * through SDL_ttf, so the backend needs no font file and no extra
+         * dependency, and draws the same glyphs as every other backend.
+         * @param origin Top-left corner of the first glyph's cell.
+         * @param text The characters to draw.
+         * @param scale Pixels per glyph pixel.
+         * @param color The colour to draw the lit pixels in.
+         */
+        void drawText(
+            Point origin,
+            std::string_view text,
+            std::uint32_t scale,
+            Color color) override;
 
         /**
          * @brief Present everything drawn since the last present.

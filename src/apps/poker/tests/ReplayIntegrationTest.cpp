@@ -2,8 +2,13 @@
 
 #include <algorithm>
 #include <chrono>
+#include <cstddef>
+#include <cstdint>
+#include <memory>
+#include <optional>
 #include <sstream>
 #include <string>
+#include <string_view>
 #include <vector>
 
 #include <antwika/engine/Events.hpp>
@@ -11,6 +16,16 @@
 #include <antwika/event/EventRecorder.hpp>
 #include <antwika/event/TickEvent.hpp>
 #include <antwika/event/TickEventRecorder.hpp>
+#include <antwika/gfx/Color.hpp>
+#include <antwika/gfx/IGfxBackend.hpp>
+#include <antwika/gfx/IRenderer.hpp>
+#include <antwika/gfx/IWindow.hpp>
+#include <antwika/gfx/Point.hpp>
+#include <antwika/gfx/Rect.hpp>
+#include <antwika/gfx/Size.hpp>
+#include <antwika/gfx/WindowDesc.hpp>
+#include <antwika/gfx/WindowEvent.hpp>
+#include <antwika/gfx/WindowId.hpp>
 #include <antwika/holdem/Blinds.hpp>
 #include <antwika/log/Level.hpp>
 #include <antwika/log/MinimumLevelLogPolicy.hpp>
@@ -21,16 +36,28 @@
 #include <antwika/replay/ReplaySource.hpp>
 #include <antwika/replay/ReplayWriter.hpp>
 #include <antwika/time/fakes/FakeClock.hpp>
+#include <antwika/time/fakes/FakeSleeper.hpp>
 
 #include "antwika/poker/Events.hpp"
 #include "antwika/poker/PokerRoom.hpp"
 #include "antwika/poker/RoomConfig.hpp"
 #include "antwika/poker/RoomSummary.hpp"
+#include "antwika/poker/WindowSetup.hpp"
 
 using antwika::event::Event;
 using antwika::event::EventRecorder;
 using antwika::event::TickEvent;
 using antwika::event::TickEventRecorder;
+using antwika::gfx::Color;
+using antwika::gfx::IGfxBackend;
+using antwika::gfx::IRenderer;
+using antwika::gfx::IWindow;
+using antwika::gfx::Point;
+using antwika::gfx::Rect;
+using antwika::gfx::Size;
+using antwika::gfx::WindowDesc;
+using antwika::gfx::WindowEvent;
+using antwika::gfx::WindowId;
 using antwika::holdem::Blinds;
 using antwika::log::Level;
 using antwika::log::MinimumLevelLogPolicy;
@@ -42,7 +69,10 @@ using antwika::replay::ReplaySource;
 using antwika::replay::ReplayWriter;
 using antwika::poker::RoomConfig;
 using antwika::poker::RoomSummary;
+using antwika::poker::WindowSetup;
 using antwika::time::fakes::FakeClock;
+using antwika::time::fakes::FakeSleeper;
+using namespace std::chrono_literals;
 
 namespace
 {
@@ -64,7 +94,99 @@ namespace
         bool operator==(const Session &other) const = default;
     };
 
-    [[nodiscard]] Session runSession(IReplaySource &source)
+    // Draws every frame into nothing.
+    // Reports a close once it has drawn enough of them.
+    class SpectatorBackend final : public IGfxBackend
+    {
+    public:
+        explicit SpectatorBackend(std::size_t closeAfterFrames)
+            : closeAt(closeAfterFrames)
+        {
+        }
+
+        [[nodiscard]] std::string_view name() const override
+        {
+            return "spectator";
+        }
+
+        [[nodiscard]] std::size_t maxWindows() const override { return 1; }
+
+        [[nodiscard]] std::unique_ptr<IWindow> createWindow(
+            const WindowDesc &) override
+        {
+            auto owned = std::make_unique<SpectatorWindow>(frames);
+            window = owned.get();
+            return owned;
+        }
+
+        [[nodiscard]] std::optional<WindowEvent> pollEvent() override
+        {
+            if (window != nullptr && frames >= closeAt)
+            {
+                window->shut();
+            }
+            return std::nullopt;
+        }
+
+    private:
+        class SpectatorWindow final : public IWindow
+        {
+        public:
+            explicit SpectatorWindow(std::size_t &frames)
+                : drawnInto(frames)
+            {
+            }
+
+            [[nodiscard]] WindowId id() const override
+            {
+                return WindowId{1};
+            }
+            [[nodiscard]] bool isOpen() const override { return open; }
+            [[nodiscard]] std::string title() const override
+            {
+                return "Antwika";
+            }
+            [[nodiscard]] Size size() const override
+            {
+                return Size{.width = 1024, .height = 640};
+            }
+            [[nodiscard]] IRenderer &renderer() override
+            {
+                return drawnInto;
+            }
+            void setTitle(std::string_view) override {}
+            void close() override { open = false; }
+            void shut() { open = false; }
+
+        private:
+            class Counter final : public IRenderer
+            {
+            public:
+                explicit Counter(std::size_t &frames) : frames(frames) {}
+
+                void clear(Color) override {}
+                void drawRect(Rect, Color) override {}
+                void drawText(
+                    Point, std::string_view, std::uint32_t, Color) override
+                {
+                }
+                void present() override { ++frames; }
+
+            private:
+                std::size_t &frames;
+            };
+
+            Counter drawnInto;
+            bool open = true;
+        };
+
+        std::size_t closeAt;
+        std::size_t frames = 0;
+        SpectatorWindow *window = nullptr;
+    };
+
+    [[nodiscard]] Session runSession(
+        IReplaySource &source, const WindowSetup *window = nullptr)
     {
         std::chrono::system_clock::time_point time{};
         FakeClock clock(time);
@@ -85,7 +207,8 @@ namespace
             out,
             kRoom,
             kMaxTicks,
-            &replayRecorder);
+            &replayRecorder,
+            window);
 
         return Session{
             .summary = std::move(summary),
@@ -177,4 +300,53 @@ TEST(ReplayIntegrationTest, RecordedEventsHoldOnlyTheRoomsOwnInput)
         });
 
     EXPECT_EQ(recorded, script);
+}
+
+// Closing the window is external input like any other.
+// It enters through the IReplaySource, so it lands in the recording.
+// Replaying that recording headlessly ends at the same point.
+// With the same chips, and no window involved at all.
+TEST(ReplayIntegrationTest, ReplayReproducesASessionEndedByClosingTheWindow)
+{
+    // Far fewer frames than the script's own stop event needs.
+    // So the close is what ends this session.
+    SpectatorBackend backend(30);
+    FakeSleeper sleeper;
+    const WindowSetup window{
+        .backend = backend, .sleeper = sleeper, .framePeriod = 80ms};
+
+    const auto script = liveScript();
+    ReplaySource liveSource(script);
+    const auto watched = runSession(liveSource, &window);
+
+    // The stop the window injected is in here.
+    // Nothing downstream knows it came from a window.
+    auto recorded = watched.recorded;
+    std::erase_if(
+        recorded,
+        [](const TickEvent &event)
+        {
+            return event.event.name == antwika::engine::events::kTick
+                   || event.event.name == "Running Antwika Poker";
+        });
+    EXPECT_TRUE(
+        std::ranges::any_of(
+            recorded,
+            [](const TickEvent &event)
+            {
+                return event.event.name == antwika::engine::events::kStop;
+            }));
+
+    ReplayWriter writer;
+    std::stringstream replayStream;
+    writer.write(recorded, replayStream);
+
+    ReplayReader reader;
+    auto loadedEvents = reader.read(replayStream);
+    ReplaySource replaySource(loadedEvents);
+    const auto replayed = runSession(replaySource);
+
+    EXPECT_EQ(replayed.summary, watched.summary);
+    EXPECT_EQ(replayed.narration, watched.narration);
+    EXPECT_LT(watched.summary.handsPlayed, 20U);
 }

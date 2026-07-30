@@ -16,6 +16,7 @@
 
 #include "antwika/poker/RoomConfig.hpp"
 #include "antwika/poker/RoomSummary.hpp"
+#include "antwika/poker/WindowSetup.hpp"
 
 namespace antwika::poker
 {
@@ -87,7 +88,14 @@ namespace antwika::poker
      * @param replayRecorder Optional sink that, if provided, receives
      * every dispatched event stamped with its tick -- what a caller
      * wanting to persist a `--record` file should register.
+     * @param window Optional graphics collaborators that, if provided,
+     * open a window and draw the table into it once per tick. Closing
+     * that window ends the session, and it does so through inputSource
+     * like any other external input, so a windowed run and a headless
+     * one reach the same result.
      * @return How the session turned out.
+     * @throws antwika::gfx::GfxError If a window was asked for and could
+     * not be created.
      */
     RoomSummary bootstrap(
         IClock &clock,
@@ -99,6 +107,7 @@ namespace antwika::poker
         std::ostream &out,
         RoomConfig config = {},
         std::optional<antwika::time::Tick> maxTicks = std::nullopt,
-        ITickEventSink *replayRecorder = nullptr);
+        ITickEventSink *replayRecorder = nullptr,
+        const WindowSetup *window = nullptr);
 
 } // namespace antwika::poker
