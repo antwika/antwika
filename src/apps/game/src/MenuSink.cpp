@@ -134,7 +134,12 @@ namespace antwika::game
 
         if (!state.open)
         {
-            overlay.set({}, false);
+            // The menu is gone, so nothing of it is left to paint.
+            // It still reports the grid as covered for this tick.
+            // Only a press can have closed it, and GridSink runs after.
+            // A press that dismissed the menu must not also lay a tile.
+            // The next tick sets the overlay afresh from the toolbar.
+            overlay.set({}, true);
 
             return;
         }

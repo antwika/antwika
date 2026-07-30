@@ -244,7 +244,10 @@ TEST_F(MenuSinkTest, Press_StartsAGameOnPlayGame)
     EXPECT_TRUE(state.gameBegun);
     EXPECT_FALSE(state.open);
     EXPECT_TRUE(overlay.commands().empty());
-    EXPECT_FALSE(overlay.pointerOverUi());
+
+    // The menu is down, but this is still the press that dismissed it.
+    // GridSink runs after this sink and has not seen it yet.
+    EXPECT_TRUE(overlay.pointerOverUi());
 }
 
 TEST_F(MenuSinkTest, Press_ReportsLoadingWithoutOpeningAnything)
