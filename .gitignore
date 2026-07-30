@@ -1,12 +1,24 @@
-CMakePresets.json
-CMakeUserPresets.json
-build
-build-coverage
-build-*
+# The generated build directories, anchored to the repository root.
+# An unanchored "build" also matched profiles/build/, which is tracked,
+# and the un-ignore that used to cancel it read as a mistake.
+/build
+/build-*
+
+# Written into the source directory by conan install.
+# The CMakePresets.json beside it is tracked, and the generated one it
+# includes lives under build/, which is already ignored.
+/CMakeUserPresets.json
+
 __pycache__
 
-!profiles/build/
-!CMakePresets.json
+# Agent worktrees and per-agent tool configuration.
+# Both sit inside the checkout for convenience and neither is part of
+# it; CLAUDE.md points agents at .worktrees/ for the same reason.
+/.claude/
+/.worktrees/
+
+# A crash drops one of these next to whatever was running.
+core.*
 
 # Which gfx backend the VS Code build task builds.
 .vscode/gfx-backend

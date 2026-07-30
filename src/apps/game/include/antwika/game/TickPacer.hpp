@@ -28,7 +28,7 @@ namespace antwika::game
      * The third copy of this class, after apps/life's and the pacing
      * apps/poker does inside its render sink.
      * It belongs in antwika::replay as a PacedReplaySource, which
-     * docs/input-plan.md already names as the eventual home for pacing;
+     * docs/history/input-plan.md names as the eventual home for pacing;
      * moving it touches two working apps and is its own commit.
      *
      * The waiting itself belongs to antwika::time::ISleeper, which is what

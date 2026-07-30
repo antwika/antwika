@@ -1,5 +1,7 @@
 # Plan: adding an `input` library
 
+*Historical: this plan has shipped, and the code it describes -- `src/libs/input/`, the `backends/*/input` targets and the `ANTWIKA_INPUT_BACKEND` selection -- is what supersedes it; it is kept for the reasoning, not as current reference.*
+
 A plan for adding input handling to Antwika: an abstraction over reading a
 keyboard and a mouse, with the concrete input framework (SDL, raylib, ...)
 chosen at build time and never named by Antwika's own source, and with live

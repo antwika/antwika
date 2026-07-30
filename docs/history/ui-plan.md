@@ -1,5 +1,7 @@
 # Plan: adding a `ui` library
 
+*Historical: this plan has shipped, and `src/libs/ui/` together with the `antwika::ui` section of `CLAUDE.md` is what supersedes it; it is kept for the reasoning, not as current reference.*
+
 A plan for adding an immediate-mode UI library to Antwika: nestable layouts, buttons and text, drawn through the existing four-call `antwika::gfx::IRenderer` and laid out arithmetically with no help from any graphics framework.
 
 **Status: built.**

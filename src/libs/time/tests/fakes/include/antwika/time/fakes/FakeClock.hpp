@@ -55,4 +55,4 @@ namespace antwika::time::fakes
     private:
         std::chrono::time_point<std::chrono::system_clock> current;
     };
-}
+} // namespace antwika::time::fakes

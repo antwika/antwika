@@ -31,15 +31,22 @@ def include_path_for(header: Path) -> str:
     return "/".join(parts[index + 1 :])
 
 
-def is_included_anywhere(include_path: str, root: Path) -> bool:
+def collect_included_paths(root: Path) -> set[str]:
+    # Every path any .cpp under src/ includes, read in one pass.
+    # Asking per test double re-read the whole tree once per double.
+    included: set[str] = set()
+
     for cpp_file in (root / "src").rglob("*.cpp"):
         text = cpp_file.read_text(errors="ignore")
-        if any(
-            match.group(1) == include_path
-            for match in INCLUDE_PATTERN.finditer(text)
-        ):
-            return True
-    return False
+        included.update(
+            match.group(1) for match in INCLUDE_PATTERN.finditer(text)
+        )
+
+    return included
+
+
+def is_included_anywhere(include_path: str, root: Path) -> bool:
+    return include_path in collect_included_paths(root)
 
 
 def main() -> int:
@@ -62,10 +69,12 @@ def main() -> int:
         )
         return 1
 
+    included = collect_included_paths(args.root)
+
     orphans = [
         header
         for header in doubles
-        if not is_included_anywhere(include_path_for(header), args.root)
+        if include_path_for(header) not in included
     ]
 
     if orphans:

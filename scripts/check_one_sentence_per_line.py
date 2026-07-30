@@ -10,7 +10,17 @@ from pathlib import Path
 
 DEFAULT_ROOT = Path(__file__).resolve().parent.parent
 
-MARKDOWN_GLOBS = ("README.md", "blog/*.md")
+# Every markdown document that is still maintained.
+# docs/*.md is deliberately not recursive: the finished plans under
+# docs/history/ are a record of what was decided rather than prose
+# anyone edits, so reflowing them would churn a frozen document.
+MARKDOWN_GLOBS = (
+    "README.md",
+    "CLAUDE.md",
+    "REQUIREMENTS.md",
+    "blog/*.md",
+    "docs/*.md",
+)
 # Backends live outside src/ and so outside the coverage gate.
 # The style rules still apply to them.
 CPP_GLOBS = (
