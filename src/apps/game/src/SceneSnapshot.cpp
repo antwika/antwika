@@ -32,7 +32,8 @@ namespace antwika::game
                     .at = world.get<Cell>(entity),
                     .facing = walker.facing,
                     .kind = walker.kind,
-                    .carried = walker.carried});
+                    .carried = walker.carried,
+                    .stepsTaken = walker.stepsTaken});
         }
 
         for (const auto entity : world.view<Building, Cell>())

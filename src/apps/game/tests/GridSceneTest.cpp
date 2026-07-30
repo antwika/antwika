@@ -13,6 +13,12 @@
 #include <antwika/gfx/mocks/MockRenderer.hpp>
 #include <antwika/gfx/mocks/MockTexture.hpp>
 
+#include <antwika/animation/Clip.hpp>
+#include <antwika/animation/Facing.hpp>
+#include <antwika/animation/Frame.hpp>
+#include <antwika/animation/LoopMode.hpp>
+#include <antwika/animation/Progress.hpp>
+
 #include "antwika/game/Camera.hpp"
 #include "antwika/game/Cell.hpp"
 #include "antwika/game/Direction.hpp"
@@ -33,6 +39,8 @@ using antwika::game::Direction;
 using antwika::game::GridExtent;
 using antwika::game::GridScene;
 using antwika::game::groundTile;
+using antwika::game::kWalkerCycleFrames;
+using antwika::game::kWalkerCycleTicksPerFrame;
 using antwika::game::linkBit;
 using antwika::game::roadTile;
 using antwika::game::SceneSnapshot;
@@ -913,6 +921,7 @@ TEST_F(GridSceneTest, WalkerView_ComparesEveryFieldIndependently)
     EXPECT_NE(same, (WalkerView{.at = {}, .facing = Direction::West}));
     EXPECT_NE(same, (WalkerView{.at = {}, .kind = WalkerKind::Fireman}));
     EXPECT_NE(same, (WalkerView{.at = {}, .carried = 3}));
+    EXPECT_NE(same, (WalkerView{.at = {}, .stepsTaken = 3}));
 }
 
 TEST_F(GridSceneTest, BuildingView_ComparesEveryFieldIndependently)
@@ -935,4 +944,161 @@ TEST_F(GridSceneTest, SceneSnapshot_ComparesTheBuildingsToo)
     EXPECT_NE(
         empty,
         snapshot(Camera(), GridExtent{}, {}, {}, {BuildingView{}}));
+}
+
+// The walk cycle, which is antwika::animation's side of this app.
+// A walker is placed by a clip resolved against its own step count.
+// Nothing here advances anything: the same view always draws the same.
+TEST_F(GridSceneTest, WalkerClips_GivesOneWalkCycleToEveryFacing)
+{
+    const auto clips = antwika::game::walkerClips();
+
+    for (const auto facing : {
+             Direction::North,
+             Direction::East,
+             Direction::South,
+             Direction::West,
+         })
+    {
+        const auto &clip = clips.clipFor(antwika::game::facingOf(facing));
+
+        EXPECT_EQ(clip.frames().size(), kWalkerCycleFrames);
+        EXPECT_EQ(clip.loop(), antwika::animation::LoopMode::Loop);
+        EXPECT_EQ(
+            clip.durationTicks(),
+            kWalkerCycleFrames * kWalkerCycleTicksPerFrame);
+    }
+}
+
+TEST_F(GridSceneTest, FacingOf_NamesTheSameQuarterTurnAnimationDoes)
+{
+    EXPECT_EQ(
+        antwika::game::facingOf(Direction::North),
+        antwika::animation::Facing::North);
+    EXPECT_EQ(
+        antwika::game::facingOf(Direction::East),
+        antwika::animation::Facing::East);
+    EXPECT_EQ(
+        antwika::game::facingOf(Direction::South),
+        antwika::animation::Facing::South);
+    EXPECT_EQ(
+        antwika::game::facingOf(Direction::West),
+        antwika::animation::Facing::West);
+}
+
+// The gait is smooth because a frame lasts more than one tick.
+// Half way through a frame is half way between two lifts.
+TEST_F(GridSceneTest, WalkerLift_InterpolatesTowardsTheNextFrame)
+{
+    const Camera camera(Point{}, 4);
+    const auto unit = static_cast<std::int64_t>(camera.halfWidth());
+
+    const antwika::animation::Frame flat{
+        .index = 0,
+        .progress = antwika::animation::Progress(0, 2),
+        .finished = false};
+    const antwika::animation::Frame rising{
+        .index = 0,
+        .progress = antwika::animation::Progress(1, 2),
+        .finished = false};
+
+    EXPECT_EQ(antwika::game::walkerLift(flat, camera), 0);
+    EXPECT_EQ(
+        antwika::game::walkerLift(rising, camera),
+        static_cast<std::int32_t>(unit * 2 / 16 / 2));
+}
+
+// The table is read round, so a frame index past its end still answers.
+TEST_F(GridSceneTest, WalkerLift_WrapsTheLiftTableRatherThanRunningOff)
+{
+    const Camera camera(Point{}, 4);
+
+    const antwika::animation::Frame last{
+        .index = kWalkerCycleFrames - 1,
+        .progress = antwika::animation::Progress(0, 2),
+        .finished = false};
+    const antwika::animation::Frame beyond{
+        .index = kWalkerCycleFrames * 3 - 1,
+        .progress = antwika::animation::Progress(0, 2),
+        .finished = false};
+
+    EXPECT_EQ(
+        antwika::game::walkerLift(beyond, camera),
+        antwika::game::walkerLift(last, camera));
+}
+
+TEST_F(GridSceneTest, WalkerBounds_SitsOnItsCellBeforeItHasWalked)
+{
+    const Camera camera(Point{.x = 300, .y = 40}, 2);
+    constexpr WalkerView still{.at = Cell{.x = 1, .y = 1}};
+
+    EXPECT_EQ(
+        antwika::game::walkerBounds(still, camera),
+        cellBounds(still.at, camera));
+}
+
+TEST_F(GridSceneTest, WalkerBounds_RaisesAWalkerPartWayThroughItsCycle)
+{
+    const Camera camera(Point{.x = 300, .y = 40}, 4);
+    constexpr Cell where{.x = 1, .y = 1};
+
+    const auto grounded = antwika::game::walkerBounds(
+        WalkerView{.at = where, .stepsTaken = 0}, camera);
+    const auto lifted = antwika::game::walkerBounds(
+        WalkerView{.at = where, .stepsTaken = 3}, camera);
+
+    EXPECT_EQ(grounded, cellBounds(where, camera));
+    EXPECT_LT(lifted.origin.y, grounded.origin.y);
+    EXPECT_EQ(lifted.origin.x, grounded.origin.x);
+    EXPECT_EQ(lifted.size, grounded.size);
+}
+
+// A negative count is not something WalkerSystem can produce.
+// A hand-built view can, and it must not wrap into a huge elapsed time.
+TEST_F(GridSceneTest, WalkerBounds_ReadsANegativeStepCountAsNotYetWalking)
+{
+    const Camera camera(Point{.x = 300, .y = 40}, 4);
+    constexpr Cell where{.x = 1, .y = 1};
+
+    EXPECT_EQ(
+        antwika::game::walkerBounds(
+            WalkerView{.at = where, .stepsTaken = -7}, camera),
+        cellBounds(where, camera));
+}
+
+// The cycle carries on through a turn rather than restarting.
+// That is why the elapsed count lives on the walker, not on a clip.
+TEST_F(GridSceneTest, WalkerBounds_KeepsTheCycleAcrossAChangeOfFacing)
+{
+    const Camera camera(Point{.x = 300, .y = 40}, 4);
+    constexpr Cell where{.x = 1, .y = 1};
+
+    const auto north = antwika::game::walkerBounds(
+        WalkerView{.at = where, .facing = Direction::North, .stepsTaken = 3},
+        camera);
+    const auto west = antwika::game::walkerBounds(
+        WalkerView{.at = where, .facing = Direction::West, .stepsTaken = 3},
+        camera);
+
+    EXPECT_EQ(north, west);
+}
+
+// The whole point of the library: the picture is a function of state.
+TEST_F(GridSceneTest, Draw_BlitsAWalkerWhereItsWalkCycleSaysItStands)
+{
+    const Camera camera(Point{.x = 300, .y = 40}, 4);
+    const WalkerView walker{.at = Cell{.x = 1, .y = 1}, .stepsTaken = 3};
+
+    scene.draw(
+        renderer,
+        kCanvas,
+        snapshot(camera, GridExtent{}, {}, {walker}),
+        atlas);
+
+    ASSERT_EQ(renderer.blits.size(), 1U);
+    EXPECT_EQ(
+        renderer.blits.front().destination,
+        antwika::game::walkerBounds(walker, camera));
+    EXPECT_NE(
+        renderer.blits.front().destination, cellBounds(walker.at, camera));
 }

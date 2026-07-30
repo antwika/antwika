@@ -64,6 +64,7 @@ target_include_directories(antwika_game_tests
 
 target_link_libraries(antwika_game_tests
     PRIVATE
+        antwika::animation
         antwika::engine::tests::mocks
         antwika::event::tests::mocks
         antwika::ecs
