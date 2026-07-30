@@ -14,6 +14,7 @@ target_include_directories(antwika_gfx_demo_tests
 
 target_link_libraries(antwika_gfx_demo_tests
     PRIVATE
+        antwika::app
         antwika::gfx
         antwika::gfx::tests::mocks
         antwika::input

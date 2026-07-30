@@ -1,37 +1,26 @@
 #include <cstdint>
 #include <cstdlib>
 #include <exception>
-#include <fstream>
 #include <iostream>
 #include <optional>
 #include <string>
 
-#include <antwika/gfx/Bitmap.hpp>
-#include <antwika/gfx/GfxError.hpp>
-#include <antwika/gfx/PngReader.hpp>
+#include <antwika/app/ConsoleLogging.hpp>
+#include <antwika/app/PngFile.hpp>
 #include <antwika/gfx/SelectedBackend.hpp>
 #include <antwika/gfx/WindowDesc.hpp>
 #include <antwika/input/SelectedInputBackend.hpp>
 #include <antwika/log/Level.hpp>
-#include <antwika/log/Logger.hpp>
-#include <antwika/log/MinimumLevelLogPolicy.hpp>
-#include <antwika/log/PlainFormatter.hpp>
-#include <antwika/log/StreamAppender.hpp>
-#include <antwika/time/SystemClock.hpp>
 
 #include "antwika/gfx_demo/DemoLoop.hpp"
 #include "antwika/gfx_demo/DemoScene.hpp"
 
-using antwika::gfx::PngReader;
+using antwika::app::ConsoleLogging;
+using antwika::app::readPngFile;
 using antwika::gfx::WindowDesc;
 using antwika::gfx_demo::DemoLoop;
 using antwika::gfx_demo::DemoScene;
 using antwika::log::Level;
-using antwika::log::Logger;
-using antwika::log::MinimumLevelLogPolicy;
-using antwika::log::PlainFormatter;
-using antwika::log::StreamAppender;
-using antwika::time::SystemClock;
 
 namespace
 {
@@ -42,11 +31,8 @@ namespace
 
 int main()
 {
-    SystemClock clock;
-    StreamAppender appender(std::cout);
-    PlainFormatter formatter;
-    MinimumLevelLogPolicy logPolicy(Level::Info);
-    Logger logger(formatter, logPolicy, clock, appender);
+    ConsoleLogging logging(std::cout, Level::Info);
+    auto &logger = logging.logger();
 
     // Catching is what makes the run's resources unwind at all.
     // An uncaught exception may call std::terminate without unwinding.
@@ -63,18 +49,8 @@ int main()
             "Antwika gfx demo on backends: " + std::string(backend->name())
                 + " / " + std::string(inputBackend->name()));
 
-        // Opening the file is the application's job, not the library's.
-        // antwika::gfx decodes bytes and never goes looking for them.
-        // Which is why saying it is missing is this app's job too.
-        std::ifstream file(
-            ANTWIKA_GFX_DEMO_TEXTURE_PATH, std::ios::binary);
-        if (!file.is_open())
-        {
-            throw antwika::gfx::GfxError(
-                std::string("antwika_gfx_demo: could not open the logo: ")
-                + ANTWIKA_GFX_DEMO_TEXTURE_PATH);
-        }
-        const auto logo = PngReader{}.read(file);
+        const auto logo = readPngFile(
+            ANTWIKA_GFX_DEMO_TEXTURE_PATH, "antwika_gfx_demo");
 
         const DemoScene scene;
         DemoLoop loop(*backend, *inputBackend, scene);
