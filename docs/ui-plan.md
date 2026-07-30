@@ -584,6 +584,8 @@ And `docs/input-plan.md` is left alone -- though note in passing that its `:352-
 
 - **All pointer and keyboard input, hit-testing and interaction.**
   This is the scope decision, not an oversight.
+  *Pointer input and clickable buttons have since been built -- see [`docs/ui-input-plan.md`](ui-input-plan.md).
+  Keyboard input, focus and any widget carrying a value are still deferred, for the reasons that document gives.*
   `antwika::input` is vocabulary-only today -- no folded device state, no input backend under `backends/`, and `NullInputBackend::pollEvent()` always returns nullopt -- so no button could be clicked in any build that exists.
   Adding interaction later is additive: the described tree is already the thing a hit-test would consult, and `ButtonState` is already the seam a resolved hover would feed.
 - **Anything crossing back into the engine or a replay.**

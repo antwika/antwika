@@ -51,12 +51,17 @@ Requirements for the Antwika project, gathered from `README.md`, `blog/001-build
 - UI layouts must nest, and a container must be able to take its size from the content of children it has not seen yet.
 - A widget must never draw outside the container it was declared in, since the graphics abstraction offers no clipping.
 - Leftover pixels from integer division in a layout must be distributed by a specified, tested rule rather than incidentally.
-- No file under `src/libs/ui/` may read a clock, a pointer, a keyboard or any state outside its arguments, so the same described UI and canvas always produce the same picture.
+- No file under `src/libs/ui/` may read a clock, a keyboard or any state outside its arguments, so the same described UI, canvas and pointer always produce the same picture and the same interactions.
+- A UI must resolve the pointer against the layout of the same frame it draws, so what a press hit is what was on screen when it was pressed.
+- A UI widget must be identified by a symbolic id supplied by the caller, never by where it fell in the declaration order, since that id is what crosses back into application state.
+- A UI must hold nothing between frames, so a widget activates on the press rather than on a release matched to it and a replay has no interaction state to regenerate.
+- The canvas a UI is laid out and hit-tested against must be a configured constant rather than the size a window reports, so a recorded click resolves to the same widget under any backend and any window manager.
 - A UI must not open or close a container through any call a caller can forget or unbalance.
 - A line must include both of its endpoints, so a line whose ends coincide draws that one pixel; callers step diagonal shapes out of lines, and a dropped endpoint leaves a gap at every corner. Which pixels between the endpoints are lit is left to the backend, since nothing reads a drawn line back.
 - Any projection whose inverse decides which cell a click meant must be exact integer arithmetic, so the answer is identical across toolchains and between a recording and its replay.
 - Camera state that a click is interpreted against must be simulation state, folded from replayable input, never state owned by the renderer -- otherwise a replay resolves recorded clicks against a different view and reproduces different state.
 - Translating input into application meaning must happen downstream of the recorder, so a replay stores the input and regenerates what it caused rather than persisting both.
+- Translating a UI activation into application meaning must happen downstream of the recorder too, and no UI interaction may be persisted: a replay stores the click and regenerates which widget it activated.
 - A job with unmet dependencies (via `schedule()`'s `dependsOn`) must never be dispatched until every dependency has run; dependency cycles must be unreachable through the public API, by construction (id-ordering), not by a runtime check.
 - Input access must go through a backend-agnostic abstraction, and no file under `src/` may reference a concrete input framework such as SDL or raylib.
 - The input backend must be selected at build time, by the `ANTWIKA_INPUT_BACKEND` CMake variable and the matching `input_backend` Conan option, which default to the graphics choice so one flag drives both.
@@ -80,6 +85,7 @@ Requirements for the Antwika project, gathered from `README.md`, `blog/001-build
 - An interface with only one implementation should still be kept where it lets a class be unit-tested against a mock/fake in isolation (e.g. `IEventCodec`, `IFormatter`).
 - A window-driven app should pace its ticks through an injected sleeper rather than a direct sleep call, so its tests still run at full speed.
 - A UI's picture should be expressible as a value (a list of drawing commands), so a whole layout can be asserted as data rather than looked at or pinned call by call against a mock.
+- A UI should report whether the pointer is over anything it filled in, so an application can keep a click that landed on a panel from also reaching what the panel covers.
 
 ## Could have
 
@@ -102,7 +108,10 @@ Requirements for the Antwika project, gathered from `README.md`, `blog/001-build
 - The raylib input backend won't report a keyboard in its current scope, and says so through its capabilities rather than claiming a device whose events never arrive.
 - Walkers in `apps/game` won't collide: two may occupy one cell, because nothing requires otherwise and a rule to avoid it would be a requirement nobody asked for.
 - `Scheduler` won't include priority aging or anti-starvation: a continuous stream of higher-priority jobs can, by design, keep a lower-priority job pending indefinitely, since unconditional priority respect is the requirement, not a bug to work around.
-- `antwika::ui` won't read a pointer or a keyboard, and no UI interaction will reach the engine or a replay, in its current scope; a button is told how it should look rather than working it out.
+- `antwika::ui` won't read a keyboard, hold focus, or offer any widget that carries a value (a text field, a slider, a checkbox) in its current scope.
+- `antwika::ui` won't retain interaction state between frames, so there is no pointer capture and no release-to-activate; a caller that wants either builds it above the library.
+- `antwika::ui` won't read a clock, so nothing depends on how long a pointer rested or how quickly two clicks arrived -- no double-click, no hover delay, no tooltip.
+- `antwika::ui` won't reach a device: the pointer arrives as an argument, so the library depends on `antwika::gfx` and nothing else.
 - `antwika::ui` won't clip, scroll, or draw out of declaration order, since `antwika::gfx` offers no scissor and no z-order; a container that cannot fit its content shrinks it in proportion instead.
 - `antwika::ui` won't wrap text across lines, offer a main-axis alignment mode (a growing spacer expresses leading, trailing and centred content), weight how growing children share leftover room, or animate anything.
 - `antwika::ui` won't carry a style stack or cascade; one plain `Theme` value is passed to a frame and nothing overrides it per widget.

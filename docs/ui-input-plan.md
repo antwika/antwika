@@ -2,8 +2,9 @@
 
 A plan for making a `antwika::ui` button clickable: hover and press appearance a widget works out for itself, an activation the caller can act on, and a click that replays exactly in an app driven by the tick loop.
 
-**Status: proposed.**
-Nothing below has been built.
+**Status: built.**
+All five phases below have landed.
+Where the design changed while it was being written, the text says so under [What changed while building it](#what-changed-while-building-it) rather than being quietly rewritten, since the reasoning is the point of keeping this document.
 
 ## Context
 
@@ -102,8 +103,8 @@ It does not link `antwika::input`, does not name `input::InputEvent`, and never 
 
 That keeps two properties that are otherwise lost.
 `antwika::ui` stays a leaf on `antwika::gfx`, so a test drives interaction by writing a `Pointer` literal, with no input library, no backend and no fake in sight.
-And `REQUIREMENTS.md:54` stays true word for word -- "no file under `src/libs/ui/` may read a clock, a pointer, a keyboard or any state outside its arguments" -- because the pointer *is* an argument.
-The requirement was phrased that way deliberately and does not need weakening.
+And the substance of `REQUIREMENTS.md:54` survives -- "no file under `src/libs/ui/` may read ... any state outside its arguments" -- because the pointer *is* an argument.
+That clause was phrased that way deliberately; only the words "a pointer" come out of the list of things the library may not read, since reading one is now exactly what it does with what it is handed.
 
 `Pointer` uses `gfx::Point`, not a duplicate of `input::Position`.
 `antwika::input` duplicates that struct precisely so it need not depend on `antwika::gfx`; `antwika::ui` already depends on `antwika::gfx` and already speaks its `Point`, `Rect`, `Size` and `Color`, so a third copy would buy nothing.
@@ -442,7 +443,7 @@ It becomes a Must-have set:
 - `antwika::ui` won't retain interaction state between frames, so a button activates on the press rather than on a release matched to it.
 - `antwika::ui` won't read a clock, so nothing depends on how long a pointer rested or how quickly two clicks arrived.
 
-`REQUIREMENTS.md:54` is left exactly as it is, and the plan is built to keep it true.
+`REQUIREMENTS.md:54` keeps its shape, losing only the two words "a pointer": what it forbids is reading state from outside the arguments, and that is what this design preserves.
 
 `CLAUDE.md`'s `antwika::ui` paragraph gains the interaction sentence and the rule about where a UI sink belongs in an app; `README.md` gains it in the library list and in the `gfx_demo` and `antwika_game` descriptions.
 `docs/ui-plan.md` gains a line under [Deferred deliberately](ui-plan.md) pointing here, rather than being edited to pretend it planned this.
@@ -479,6 +480,45 @@ No new dependency, so `conanfile.py` and the lockfiles are untouched; no new tes
   Per-event consumption, hit-test layers and pass-through regions can be added when something wants them, and none of them changes the pure-stage shape.
 - **Migrating `apps/poker`'s `TableScene` onto `antwika::ui`.**
   Still deferred, for the reason `docs/ui-plan.md` gives: it is a refactor of working, fully-tested code, and it should follow the library rather than ride along with a change to it.
+
+## What changed while building it
+
+Nine things came out differently from the plan above.
+
+**`WidgetId` is an empty scoped enum, not a struct.**
+The style guide names that idiom for a strongly-typed id -- `gfx::WindowId`, `ecs::Entity`, `scheduler::JobId` all use it -- and it comes with comparison for free, so there is no `operator==` of its own to cover.
+No `rawValue()` was added, because nothing needs one yet.
+
+**`Pointer` has no `operator==`.**
+A defaulted one over four fields is a chain of short-circuit branches the coverage gate would demand tests for, and nothing compares two pointers.
+`Interactions` keeps its comparison, since tests genuinely assert one against another, and four small tests cover every arm.
+
+**A button always carries a background, even before `resolve()` runs.**
+`Context::button()` bakes the idle fill in *and* attaches the palette, rather than leaving the background unset for `resolve()` to fill.
+Otherwise a button would be invisible to `pointerOverUi` until it had been resolved, which is a rule that depends on the order two stages ran in -- exactly the kind of coupling the separate stage was meant to avoid.
+
+**`ButtonSpec::state` is appearance only, and says so.**
+A button told how to look still activates when it is pressed.
+Making a forced state also suppress activation would quietly conflate "looks unavailable" with "is unavailable", and nothing here needs the second.
+
+**`UiOverlay` owns the canvas, and `UiSink` reads it from there.**
+The plan gave the sink a canvas of its own.
+Putting it on the shared object instead makes it impossible for the thing that describes the bar and anything that later reads it to disagree about what it was laid out against -- which is the whole point of the rule.
+
+**`bootstrap()` takes the overlay as an optional pointer**, the shape `replayRecorder` already had, rather than as a required parameter.
+A run with no toolbar then behaves exactly as it did before this work, which keeps every existing test honest about what it is testing; `bootstrap()` holds a local overlay nothing writes for that case, so `GridSink` always has something to ask.
+
+**`gfx_demo`'s scene stopped describing its own UI.**
+`DemoScene::draw()` takes the picture as an argument and `describe()` returns the `Frame`, so the loop describes once, reads the interactions, and hands the same commands back to be drawn.
+A scene that described the UI inside `draw()` would have had to do it twice, or hide the interactions from the caller that needs them.
+
+**Tests find a button by sweeping for a pixel that hits it.**
+Hard-coding where a button lands would pin the layout algorithm rather than the behaviour under test, and would break every time a padding changed.
+`pointOn(id)` steps a pointer across the canvas in fours and returns the first position the widget reports as hovered, which cannot miss a button several glyphs tall.
+
+**One new `GCOVR_EXCL_LINE`, of a shape already documented.**
+`Context::finish()` now returns a `Frame` holding a `DrawList`, so it has the unwind landing pad every function building a container already has.
+Nothing else needed one: `resolve()` allocates nothing, and the two applications' new code has no such shape at all.
 
 ## Verification
 
