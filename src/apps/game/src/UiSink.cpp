@@ -4,10 +4,10 @@
 #include <variant>
 
 #include <antwika/engine/Events.hpp>
-#include <antwika/gfx/Point.hpp>
 #include <antwika/input/MouseButton.hpp>
-#include <antwika/input/Position.hpp>
 #include <antwika/ui/WidgetId.hpp>
+
+#include "antwika/game/PointerReading.hpp"
 
 namespace antwika::game
 {
@@ -15,28 +15,10 @@ namespace antwika::game
     using antwika::input::InputEvent;
     using antwika::input::MouseButton;
     using antwika::input::PointerButtonPressed;
-    using antwika::input::PointerButtonReleased;
-    using antwika::input::PointerMoved;
-    using antwika::input::Position;
     using antwika::ui::kNoWidget;
 
     namespace
     {
-        // The same field-for-field reading GridSink makes.
-        [[nodiscard]] Point asPoint(Position position) noexcept
-        {
-            return Point{.x = position.x, .y = position.y};
-        }
-
-        // The folded default would put the pointer in the corner.
-        // A button can be in that corner, and would look hovered.
-        [[nodiscard]] bool locates(const InputEvent &event) noexcept
-        {
-            return std::holds_alternative<PointerMoved>(event)
-                   || std::holds_alternative<PointerButtonPressed>(event)
-                   || std::holds_alternative<PointerButtonReleased>(event);
-        }
-
         [[nodiscard]] bool isLeftPress(const InputEvent &event) noexcept
         {
             const auto *pressed =

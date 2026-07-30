@@ -26,6 +26,7 @@ add_executable(antwika_game_tests
     GridSinkTest.cpp
     IsoProjectionTest.cpp
     PathIndexTest.cpp
+    PointerReadingTest.cpp
     RenderSystemTest.cpp
     SceneSnapshotTest.cpp
     TileAtlasTest.cpp

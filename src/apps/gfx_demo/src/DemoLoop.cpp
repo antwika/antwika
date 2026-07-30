@@ -31,6 +31,11 @@ namespace antwika::gfx_demo
 
     namespace
     {
+        // apps/game reads a pointer the same way, in PointerReading.hpp.
+        // The two stay separate because no app includes another's.
+        // Nor may antwika::ui and antwika::input depend on each other.
+        // Sharing them wants an adapter in a library, not a fourth copy.
+
         // input::Position and gfx::Point match field for field.
         // They stay unrelated types so input need not depend on gfx.
         // Deciding they mean the same thing is the application's job.

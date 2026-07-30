@@ -4,11 +4,11 @@
 
 #include <antwika/engine/Events.hpp>
 #include <antwika/input/MouseButton.hpp>
-#include <antwika/input/Position.hpp>
 
 #include "antwika/game/Cell.hpp"
 #include "antwika/game/IsoProjection.hpp"
 #include "antwika/game/Path.hpp"
+#include "antwika/game/PointerReading.hpp"
 #include "antwika/game/Walker.hpp"
 
 namespace antwika::game
@@ -18,19 +18,6 @@ namespace antwika::game
     using antwika::input::PointerButtonPressed;
     using antwika::input::PointerMoved;
     using antwika::input::PointerScrolled;
-    using antwika::input::Position;
-
-    namespace
-    {
-        // input::Position and gfx::Point match field for field.
-        // They stay unrelated types so input need not depend on gfx.
-        // Deciding they mean the same thing is the application's job.
-        // This is the application saying so.
-        [[nodiscard]] Point asPoint(Position position) noexcept
-        {
-            return Point{.x = position.x, .y = position.y};
-        }
-    } // namespace
 
     GridSink::GridSink(
         World &world,
