@@ -10,6 +10,8 @@
 #include <antwika/log/Level.hpp>
 #include <antwika/replay/EngineLoop.hpp>
 
+#include "antwika/game/BuildingIndex.hpp"
+#include "antwika/game/BuildingSystem.hpp"
 #include "antwika/game/Events.hpp"
 #include "antwika/game/GameStateReducer.hpp"
 #include "antwika/game/GridSink.hpp"
@@ -53,10 +55,25 @@ namespace antwika::game
 
         World world(logger);
 
+        // Which cells are built on, kept beside the world.
+        // It is here for the reason PathIndex is.
+        // A click has to see what this tick staged and has not committed.
+        // Local rather than a config field, since nothing outside reads it.
+        // A frame gets its buildings from the world instead.
+        BuildingIndex buildings;
+
         SystemScheduler scheduler;
         WalkerSystem walkerSystem(paths);
         const auto walkPhase = scheduler.createPhase("walk");
         scheduler.addSystem(walkPhase, walkerSystem);
+
+        // A phase after the walk, not beside it.
+        // Both of them write the Building component.
+        // One write per component per phase survives a commit.
+        // So a building drains from what this tick's deliveries left it.
+        BuildingSystem buildingSystem(paths, buildings);
+        const auto buildPhase = scheduler.createPhase("build");
+        scheduler.addSystem(buildPhase, buildingSystem);
 
         // A phase of its own.
         // A renderer then sees the generation this walk produced.
@@ -82,6 +99,7 @@ namespace antwika::game
         GridSink gridSink(
             world,
             paths,
+            buildings,
             camera,
             config.extent,
             scheduler,
@@ -136,6 +154,7 @@ namespace antwika::game
             .state = state,
             .paths = frame.paths,
             .walkers = frame.walkers,
+            .buildings = frame.buildings,
             .camera = camera};
         // The excluded line is the local summary's unwind destructor.
         // Nothing between its construction and the return throws.
@@ -153,6 +172,16 @@ namespace antwika::game
         {
             out << "  at (" << walker.at.x << ", " << walker.at.y
                 << ") facing " << directionIndex(walker.facing) << '\n';
+        }
+
+        out << "Buildings: " << summary.buildings.size() << '\n';
+
+        for (const auto &building : summary.buildings)
+        {
+            out << "  at (" << building.at.x << ", " << building.at.y
+                << ") kind "
+                << static_cast<int>(building.kind) << " stock "
+                << building.held << "/" << building.capacity << '\n';
         }
 
         out << "Camera: pan (" << summary.camera.pan().x << ", "

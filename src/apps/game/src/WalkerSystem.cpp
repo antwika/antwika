@@ -1,7 +1,7 @@
 #include "antwika/game/WalkerSystem.hpp"
 
-#include "antwika/game/Cell.hpp"
-#include "antwika/game/Walker.hpp"
+#include <algorithm>
+
 #include "antwika/game/Walking.hpp"
 
 namespace antwika::game
@@ -13,22 +13,104 @@ namespace antwika::game
 
     void WalkerSystem::update(World &world, antwika::time::Tick)
     {
+        std::map<Entity, Building> served;
+
         for (const auto entity : world.view<Walker, Cell>())
         {
             const auto at = world.get<Cell>(entity);
-            const auto facing = world.get<Walker>(entity).facing;
+            auto walker = world.get<Walker>(entity);
+
+            if (walker.stepsTaken >= kMaxWalkDistance)
+            {
+                // Where walking home goes.
+                // A route back would be worked out here and followed.
+                // The destroy() would move to the tick it arrives.
+                // One branch, in one place.
+                // Nothing else here knows how far a walker has come.
+                world.destroy(entity);
+                continue;
+            }
+
+            deliver(world, at, walker, served);
 
             const auto heading =
-                nextFacing(facing, paths.neighboursOf(at));
+                nextFacing(walker.facing, paths.neighboursOf(at));
 
-            if (!heading.has_value())
+            if (heading.has_value())
+            {
+                walker.facing = *heading;
+                ++walker.stepsTaken;
+                world.set<Cell>(entity, step(at, *heading));
+            }
+
+            world.set<Walker>(entity, walker);
+        }
+
+        for (const auto &[entity, building] : served)
+        {
+            world.set<Building>(entity, building);
+        }
+    }
+
+    void WalkerSystem::deliver(
+        const World &world,
+        Cell at,
+        Walker &walker,
+        std::map<Entity, Building> &served)
+    {
+        for (const auto entity : world.view<Building, Cell>())
+        {
+            if (!orthogonallyAdjacent(at, world.get<Cell>(entity)))
             {
                 continue;
             }
 
-            world.set<Walker>(entity, Walker{.facing = *heading});
-            world.set<Cell>(entity, step(at, *heading));
+            // Whatever an earlier walker left it this tick, if any.
+            const auto found = served.find(entity);
+            auto &building =
+                found != served.end()
+                    ? found->second
+                    : served
+                          .emplace(entity, world.get<Building>(entity))
+                          .first->second;
+
+            serve(walker, building);
         }
+    }
+
+    void serve(Walker &walker, Building &building)
+    {
+        const auto carries = carriedResource(walker.kind);
+
+        if (!carries.has_value())
+        {
+            if (walker.kind == WalkerKind::Fireman)
+            {
+                building.fireRisk =
+                    std::max(0, building.fireRisk - kRiskRelief);
+                return;
+            }
+
+            building.collapseRisk =
+                std::max(0, building.collapseRisk - kRiskRelief);
+            return;
+        }
+
+        if (*carries != building.stock.resource)
+        {
+            return;
+        }
+
+        const auto room = building.stock.capacity - building.stock.held;
+        const auto amount = std::min(walker.carried, room);
+
+        if (amount <= 0)
+        {
+            return;
+        }
+
+        building.stock.held += amount;
+        walker.carried -= amount;
     }
 
 } // namespace antwika::game

@@ -1,6 +1,9 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
+#include <utility>
+#include <vector>
+
 #include <antwika/ecs/SystemScheduler.hpp>
 #include <antwika/ecs/World.hpp>
 #include <antwika/engine/Events.hpp>
@@ -11,6 +14,8 @@
 #include <antwika/input/MouseButton.hpp>
 #include <antwika/log/mocks/MockLogger.hpp>
 
+#include "antwika/game/Building.hpp"
+#include "antwika/game/BuildingIndex.hpp"
 #include "antwika/game/Camera.hpp"
 #include "antwika/game/Cell.hpp"
 #include "antwika/game/GridExtent.hpp"
@@ -26,6 +31,10 @@ using antwika::ecs::SystemScheduler;
 using antwika::ecs::World;
 using antwika::event::Event;
 using antwika::event::TickEvent;
+using antwika::game::Building;
+using antwika::game::BuildingIndex;
+using antwika::game::BuildingKind;
+using antwika::game::BuildTool;
 using antwika::game::Camera;
 using antwika::game::Cell;
 using antwika::game::cellCentre;
@@ -38,6 +47,8 @@ using antwika::game::UiOverlay;
 using antwika::game::Walker;
 using antwika::input::InputEvent;
 using antwika::input::InputEventCodec;
+using antwika::input::Key;
+using antwika::input::KeyPressed;
 using antwika::input::MouseButton;
 using antwika::input::PointerButtonPressed;
 using antwika::input::PointerButtonReleased;
@@ -112,8 +123,16 @@ namespace
         // Nothing has drawn a toolbar, so nothing is covered.
         // The tests that care say otherwise for themselves.
         UiOverlay overlay;
+        BuildingIndex buildings;
         GridSink sink{
-            world, paths, camera, kExtent, scheduler, input, overlay};
+            world,
+            paths,
+            buildings,
+            camera,
+            kExtent,
+            scheduler,
+            input,
+            overlay};
     };
 } // namespace
 
@@ -355,4 +374,134 @@ TEST_F(GridSinkTest, Move_KeepsPanningAcrossTheToolbar)
     send(PointerMoved{.position = Position{.x = 110, .y = 100}});
 
     EXPECT_EQ(before.x + 10, camera.pan().x);
+}
+
+// Choosing what to build is a key press, and nothing else.
+
+TEST_F(GridSinkTest, Keys_SelectTheRoadToolAndEachBuilding)
+{
+    const std::vector<std::pair<Key, BuildTool>> bindings{
+        {Key::Digit1, BuildTool::Path},
+        {Key::Digit2, BuildTool::House},
+        {Key::Digit3, BuildTool::FoodSource},
+        {Key::Digit4, BuildTool::WaterSource},
+        {Key::Digit5, BuildTool::FireStation},
+        {Key::Digit6, BuildTool::ArchitectPost}};
+
+    for (const auto &[key, tool] : bindings)
+    {
+        send(KeyPressed{.key = key});
+        EXPECT_EQ(sink.tool(), tool);
+    }
+}
+
+TEST_F(GridSinkTest, Keys_StartOnTheRoadTool)
+{
+    EXPECT_EQ(sink.tool(), BuildTool::Path);
+}
+
+TEST_F(GridSinkTest, Keys_LeaveTheToolAloneForAKeyThatBindsNothing)
+{
+    send(KeyPressed{.key = Key::Digit2});
+    send(KeyPressed{.key = Key::Q});
+
+    EXPECT_EQ(sink.tool(), BuildTool::House);
+}
+
+// Holding a number down is not choosing again.
+TEST_F(GridSinkTest, Keys_IgnoreARepeat)
+{
+    send(KeyPressed{.key = Key::Digit2});
+    send(KeyPressed{.key = Key::Digit3, .repeat = true});
+
+    EXPECT_EQ(sink.tool(), BuildTool::House);
+}
+
+// A key press is not the toolbar's, wherever the pointer happens to be.
+TEST_F(GridSinkTest, Keys_SelectEvenWhileThePointerIsOverTheToolbar)
+{
+    overlay.set({}, true);
+    send(KeyPressed{.key = Key::Digit4});
+
+    EXPECT_EQ(sink.tool(), BuildTool::WaterSource);
+}
+
+TEST_F(GridSinkTest, LeftPress_PutsUpTheSelectedBuilding)
+{
+    constexpr Cell target{.x = 4, .y = 5};
+
+    send(KeyPressed{.key = Key::Digit3});
+    clickAt(target, MouseButton::Left);
+    world.commit();
+
+    ASSERT_EQ((world.view<Building, Cell>().size()), 1U);
+    const auto entity = *world.view<Building, Cell>().begin();
+    EXPECT_EQ(world.get<Cell>(entity), target);
+    EXPECT_EQ(world.get<Building>(entity).kind, BuildingKind::FoodSource);
+    EXPECT_TRUE(buildings.has(target));
+    EXPECT_EQ(paths.size(), 0U);
+}
+
+// One cell, one building, even for two clicks inside one tick.
+TEST_F(GridSinkTest, LeftPress_PutsUpNoSecondBuildingOnTheSameCell)
+{
+    constexpr Cell target{.x = 4, .y = 5};
+
+    send(KeyPressed{.key = Key::Digit2});
+    clickAt(target, MouseButton::Left);
+    clickAt(target, MouseButton::Left);
+    world.commit();
+
+    EXPECT_EQ((world.view<Building, Cell>().size()), 1U);
+    EXPECT_EQ(buildings.size(), 1U);
+}
+
+TEST_F(GridSinkTest, LeftPress_PutsUpNoBuildingOnARoad)
+{
+    constexpr Cell target{.x = 4, .y = 5};
+
+    clickAt(target, MouseButton::Left);
+    send(KeyPressed{.key = Key::Digit2});
+    clickAt(target, MouseButton::Left);
+    world.commit();
+
+    EXPECT_EQ((world.view<Building, Cell>().size()), 0U);
+    EXPECT_EQ(buildings.size(), 0U);
+}
+
+TEST_F(GridSinkTest, LeftPress_PutsUpNoBuildingOutsideTheExtent)
+{
+    send(KeyPressed{.key = Key::Digit2});
+    clickAt(Cell{.x = -1, .y = 0}, MouseButton::Left);
+    world.commit();
+
+    EXPECT_EQ((world.view<Building, Cell>().size()), 0U);
+}
+
+// A road may not be laid through a building either.
+TEST_F(GridSinkTest, LeftPress_LaysNoRoadThroughABuilding)
+{
+    constexpr Cell target{.x = 4, .y = 5};
+
+    send(KeyPressed{.key = Key::Digit2});
+    clickAt(target, MouseButton::Left);
+    send(KeyPressed{.key = Key::Digit1});
+    clickAt(target, MouseButton::Left);
+
+    EXPECT_FALSE(paths.has(target));
+}
+
+TEST_F(GridSinkTest, RightPress_PutsOutALoadedFoodWalker)
+{
+    constexpr Cell target{.x = 2, .y = 2};
+    clickAt(target, MouseButton::Left);
+    clickAt(target, MouseButton::Right);
+    world.commit();
+
+    ASSERT_EQ(walkerCount(), 1U);
+    const auto entity = *world.view<Walker, Cell>().begin();
+    EXPECT_EQ(world.get<Walker>(entity).kind, antwika::game::WalkerKind::Food);
+    EXPECT_EQ(
+        world.get<Walker>(entity).carried,
+        antwika::game::kWalkerCarryCapacity);
 }

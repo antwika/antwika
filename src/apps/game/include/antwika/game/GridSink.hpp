@@ -5,7 +5,10 @@
 #include <antwika/event/ITickEventSink.hpp>
 #include <antwika/event/TickEvent.hpp>
 #include <antwika/input/InputEvent.hpp>
+#include <antwika/input/Key.hpp>
 
+#include "antwika/game/Building.hpp"
+#include "antwika/game/BuildingIndex.hpp"
 #include "antwika/game/Camera.hpp"
 #include "antwika/game/GridExtent.hpp"
 #include "antwika/game/InputFold.hpp"
@@ -38,10 +41,17 @@ namespace antwika::game
      *
      * | Gesture | Effect |
      * | --- | --- |
-     * | left press | place a path at the clicked cell |
+     * | left press | put down whatever the selected tool builds |
      * | right press | place a walker, only if that cell has a path |
      * | middle drag | pan the camera |
      * | scroll | zoom, keeping the cell under the cursor put |
+     * | 1 .. 6 | select the road tool, or one of the five buildings |
+     *
+     * The selected tool is state of this sink's own, not a mode a menu
+     * holds: it decides what a recorded click means, so a replay must
+     * arrive at the same one, and it does because the key press that
+     * chose it is recorded like every other input. A repeat is ignored,
+     * since holding a number down is not choosing again.
      *
      * A press the toolbar is under never reaches the grid: what the UI
      * covers, it covers from the world too -- see UiOverlay. A movement
@@ -58,8 +68,12 @@ namespace antwika::game
     public:
         /**
          * @brief Construct the sink over everything it drives.
-         * @param world Path and walker entities are created here.
+         * @param world Path, walker and building entities are created
+         * here.
          * @param paths Recorded into, and consulted before placing.
+         * @param buildings Recorded into, and consulted before placing --
+         * it is what stops one tick's two clicks stacking two buildings
+         * on a cell the world has not shown yet.
          * @param camera Panned and zoomed; read by the renderer.
          * @param extent Bounds which cells a click may reach.
          * @param scheduler Run once per tick, after the commit.
@@ -70,6 +84,7 @@ namespace antwika::game
         GridSink(
             World &world,
             PathIndex &paths,
+            BuildingIndex &buildings,
             Camera &camera,
             GridExtent extent,
             SystemScheduler &scheduler,
@@ -90,18 +105,34 @@ namespace antwika::game
          */
         void handle(const TickEvent &event) override;
 
+        /**
+         * @brief Get which tool a left click currently puts down.
+         *
+         * Exposed so that something drawing the session can say what is
+         * selected. It is read-only on purpose: the only way to change it
+         * is a key press, which is what a recording holds.
+         *
+         * @return The selected tool.
+         */
+        [[nodiscard]] BuildTool tool() const noexcept;
+
     private:
         void placePath(Cell cell);
+        void placeBuilding(Cell cell, BuildingKind kind);
         void placeWalker(Cell cell);
+        void select(antwika::input::Key key);
         void act(const antwika::input::InputEvent &event);
 
         World &world;
         PathIndex &paths;
+        BuildingIndex &buildings;
         Camera &camera;
         GridExtent extent;
         SystemScheduler &scheduler;
         const InputFold &input;
         const UiOverlay &overlay;
+
+        BuildTool selected = BuildTool::Path;
     };
 
 } // namespace antwika::game

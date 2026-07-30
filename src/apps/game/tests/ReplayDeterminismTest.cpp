@@ -19,6 +19,7 @@
 #include <antwika/input/IdleMotionSource.hpp>
 #include <antwika/input/InputEvent.hpp>
 #include <antwika/input/InputEventCodec.hpp>
+#include <antwika/input/Key.hpp>
 #include <antwika/input/MouseButton.hpp>
 #include <antwika/input/Position.hpp>
 #include <antwika/ui/Pointer.hpp>
@@ -27,6 +28,7 @@
 #include <antwika/replay/ReplayCli.hpp>
 #include <antwika/replay/ReplaySource.hpp>
 
+#include "antwika/game/Building.hpp"
 #include "antwika/game/Camera.hpp"
 #include "antwika/game/Cell.hpp"
 #include "antwika/game/Events.hpp"
@@ -60,6 +62,8 @@ using antwika::gfx::WindowId;
 using antwika::gfx::mocks::MockGfxBackend;
 using antwika::input::IdleMotionSource;
 using antwika::input::InputEventCodec;
+using antwika::input::Key;
+using antwika::input::KeyPressed;
 using antwika::input::MouseButton;
 using antwika::input::PointerButtonPressed;
 using antwika::input::PointerButtonReleased;
@@ -579,4 +583,155 @@ TEST(ReplayDeterminismTest, TheIdleMotionGateShortensTheRecording)
     // The press, the drag, the release and the scroll all stay.
     EXPECT_EQ(inputEventsIn(ungated.recorded), 21U);
     EXPECT_EQ(inputEventsIn(gated.recorded), 8U);
+}
+
+namespace
+{
+    using antwika::game::BuildingKind;
+    using antwika::game::kSpawnPeriodTicks;
+
+    // Long enough for a source to send a walker out.
+    // And for that walker to run out of legs.
+    constexpr antwika::time::Tick kTownStop = kSpawnPeriodTicks + 60;
+
+    [[nodiscard]] RunResult runTown(antwika::replay::IReplaySource &source)
+    {
+        NiceMock<MockLogger> logger;
+        NiceMock<MockEventSink> eventSink;
+        const InputEventCodec codec;
+        Camera camera;
+        PathIndex paths;
+        TickEventRecorder recorder;
+
+        auto summary = antwika::game::bootstrap(
+            antwika::game::GameConfig{
+                .logger = logger,
+                .eventSink = eventSink,
+                .inputSource = source,
+                .codec = codec,
+                .extent = kExtent,
+                .camera = camera,
+                .paths = paths,
+                .maxTicks = kTownStop + 40,
+                .replayRecorder = recorder});
+
+        return RunResult{
+            .summary = std::move(summary),
+            .recorded = recorder.getEvents()};
+    }
+
+    // A whole little town, put up with clicks and number keys.
+    // A road, a food source beside it, and a house further along.
+    [[nodiscard]] std::vector<TickEvent> townSession()
+    {
+        const InputEventCodec codec;
+        std::vector<TickEvent> events;
+
+        for (std::int32_t x = 1; x <= 10; ++x)
+        {
+            events.push_back(
+                TickEvent{
+                    .tick = 0,
+                    .event = pressAt(
+                        Cell{.x = x, .y = 2}, MouseButton::Left)});
+        }
+
+        events.push_back(
+            TickEvent{
+                .tick = 0,
+                .event = codec.encode(KeyPressed{.key = Key::Digit3})});
+        events.push_back(
+            TickEvent{
+                .tick = 0,
+                .event =
+                    pressAt(Cell{.x = 1, .y = 1}, MouseButton::Left)});
+
+        events.push_back(
+            TickEvent{
+                .tick = 0,
+                .event = codec.encode(KeyPressed{.key = Key::Digit2})});
+        events.push_back(
+            TickEvent{
+                .tick = 0,
+                .event =
+                    pressAt(Cell{.x = 5, .y = 3}, MouseButton::Left)});
+
+        events.push_back(
+            TickEvent{
+                .tick = kTownStop,
+                .event = Event{.name = antwika::engine::events::kStop}});
+
+        return events;
+    }
+} // namespace
+
+// The claim, for everything a building does.
+TEST(ReplayDeterminismTest, ATownReplaysToTheSameState)
+{
+    auto script = townSession();
+    ReplaySource liveSource(script);
+    const auto live = runTown(liveSource);
+
+    const ScratchFile file("antwika-game-town.replay");
+    antwika::replay::saveReplayFile(live.recorded, file.name());
+    auto loaded = antwika::replay::loadReplayFile(file.name());
+
+    ReplaySource replayedSource(std::move(loaded));
+    const auto replayed = runTown(replayedSource);
+
+    EXPECT_EQ(replayed.summary, live.summary);
+    EXPECT_EQ(replayed.recorded, live.recorded);
+}
+
+// Two runs that both did nothing would agree for the wrong reason.
+// So say what the town actually got up to.
+TEST(ReplayDeterminismTest, TheTownSpawnsDeliversAndRunsAWalkerOutOfLegs)
+{
+    auto script = townSession();
+    ReplaySource source(script);
+
+    const auto result = runTown(source);
+
+    EXPECT_EQ(result.summary.paths.size(), 10U);
+    ASSERT_EQ(result.summary.buildings.size(), 2U);
+
+    // Ascending by cell, so the source comes first.
+    EXPECT_EQ(result.summary.buildings[0].at, (Cell{.x = 1, .y = 1}));
+    EXPECT_EQ(result.summary.buildings[0].kind, BuildingKind::FoodSource);
+
+    const auto &house = result.summary.buildings[1];
+    EXPECT_EQ(house.at, (Cell{.x = 5, .y = 3}));
+    EXPECT_EQ(house.kind, BuildingKind::House);
+
+    // A walker came past and left it better off than it was built.
+    EXPECT_GT(house.held, 10);
+    EXPECT_LE(house.held, house.capacity);
+
+    // And then walked itself out of the world.
+    EXPECT_TRUE(result.summary.walkers.empty());
+}
+
+// The rule again, for the two new ways to change the world.
+TEST(ReplayDeterminismTest, TheTownRecordingHoldsOnlyInput)
+{
+    auto script = townSession();
+    ReplaySource source(script);
+
+    const auto result = runTown(source);
+
+    const ScratchFile file("antwika-game-town-input.replay");
+    antwika::replay::saveReplayFile(result.recorded, file.name());
+    const auto loaded = antwika::replay::loadReplayFile(file.name());
+
+    const InputEventCodec codec;
+    for (const auto &event : loaded)
+    {
+        EXPECT_TRUE(
+            codec.decode(event.event).has_value()
+            || event.event.name == antwika::engine::events::kStop)
+            << event.event.name;
+    }
+
+    // Every click, both number keys, and the stop.
+    EXPECT_EQ(loaded.size(), townSession().size());
 }

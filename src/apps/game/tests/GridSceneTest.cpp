@@ -108,7 +108,8 @@ namespace
             .camera = camera,
             .extent = extent,
             .paths = std::move(paths),
-            .walkers = std::move(walkers)};
+            .walkers = std::move(walkers),
+            .buildings = {}};
     }
 } // namespace
 

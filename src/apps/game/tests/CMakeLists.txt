@@ -1,6 +1,8 @@
 find_package(GTest REQUIRED)
 
 add_executable(antwika_game_tests
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/BuildingIndex.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/BuildingSystem.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/Game.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/GameStateReducer.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/GridScene.cpp
@@ -19,6 +21,9 @@ add_executable(antwika_game_tests
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/WalkerSystem.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/WindowInputSource.cpp
     BootstrapTest.cpp
+    BuildingIndexTest.cpp
+    BuildingSystemTest.cpp
+    BuildingTest.cpp
     CameraTest.cpp
     CellTest.cpp
     DirectionTest.cpp

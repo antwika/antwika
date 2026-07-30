@@ -29,6 +29,7 @@ namespace antwika::game
         GameState state;
         std::vector<Cell> paths;
         std::vector<WalkerView> walkers;
+        std::vector<BuildingView> buildings;
         Camera camera;
 
         /**

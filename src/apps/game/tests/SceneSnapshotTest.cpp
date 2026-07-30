@@ -194,6 +194,7 @@ TEST(SceneSnapshotTest, GameSummaryEqualityComparesEveryField)
         .state = {.ticksProcessed = 1, .score = 2},
         .paths = {Cell{.x = 1, .y = 1}},
         .walkers = {WalkerView{.at = {.x = 2, .y = 2}}},
+        .buildings = {},
         .camera = Camera()};
 
     EXPECT_EQ(base, base);
@@ -213,4 +214,186 @@ TEST(SceneSnapshotTest, GameSummaryEqualityComparesEveryField)
     auto moved = base;
     moved.camera.panBy(1, 0);
     EXPECT_NE(base, moved);
+}
+
+namespace
+{
+    using antwika::game::Building;
+    using antwika::game::BuildingKind;
+    using antwika::game::BuildingView;
+    using antwika::game::newlyBuilt;
+    using antwika::game::WalkerKind;
+
+    void putBuilding(World &world, Cell at, BuildingKind kind)
+    {
+        const auto entity = world.create();
+        world.add<Cell>(entity, at);
+        world.add<Building>(entity, newlyBuilt(kind));
+    }
+} // namespace
+
+TEST(SceneSnapshotTest, SnapshotOf_HasNoBuildingsForAnEmptyWorld)
+{
+    NiceMock<MockLogger> logger;
+    World world(logger);
+    const PathIndex paths;
+
+    const auto snapshot = snapshotOf(world, paths, Camera(), kExtent);
+
+    EXPECT_TRUE(snapshot.buildings.empty());
+}
+
+TEST(SceneSnapshotTest, SnapshotOf_CarriesWhatAFrameNeedsOfABuilding)
+{
+    NiceMock<MockLogger> logger;
+    World world(logger);
+    const PathIndex paths;
+
+    putBuilding(world, Cell{.x = 2, .y = 3}, BuildingKind::FoodSource);
+    world.commit();
+
+    const auto snapshot = snapshotOf(world, paths, Camera(), kExtent);
+
+    ASSERT_EQ(snapshot.buildings.size(), 1U);
+    EXPECT_EQ(
+        snapshot.buildings.front(),
+        (BuildingView{
+            .at = Cell{.x = 2, .y = 3},
+            .kind = BuildingKind::FoodSource,
+            .held = 10,
+            .capacity = 100}));
+}
+
+// Ascending by cell whatever order the entities were created in.
+TEST(SceneSnapshotTest, SnapshotOf_TakesTheBuildingsInAscendingOrder)
+{
+    NiceMock<MockLogger> logger;
+    World world(logger);
+    const PathIndex paths;
+
+    putBuilding(world, Cell{.x = 3, .y = 1}, BuildingKind::House);
+    putBuilding(world, Cell{.x = 0, .y = 7}, BuildingKind::House);
+    putBuilding(world, Cell{.x = 0, .y = 2}, BuildingKind::House);
+    world.commit();
+
+    const auto snapshot = snapshotOf(world, paths, Camera(), kExtent);
+
+    ASSERT_EQ(snapshot.buildings.size(), 3U);
+    EXPECT_EQ(snapshot.buildings[0].at, (Cell{.x = 0, .y = 2}));
+    EXPECT_EQ(snapshot.buildings[1].at, (Cell{.x = 0, .y = 7}));
+    EXPECT_EQ(snapshot.buildings[2].at, (Cell{.x = 3, .y = 1}));
+}
+
+TEST(SceneSnapshotTest, SnapshotOf_CarriesWhatAWalkerIsCarrying)
+{
+    NiceMock<MockLogger> logger;
+    World world(logger);
+    const PathIndex paths;
+
+    const auto entity = world.create();
+    world.add<Cell>(entity, Cell{.x = 1, .y = 1});
+    world.add<Walker>(
+        entity,
+        Walker{
+            .facing = Direction::South,
+            .kind = WalkerKind::Fireman,
+            .carried = 4,
+            .stepsTaken = 9});
+    world.commit();
+
+    const auto snapshot = snapshotOf(world, paths, Camera(), kExtent);
+
+    ASSERT_EQ(snapshot.walkers.size(), 1U);
+    EXPECT_EQ(
+        snapshot.walkers.front(),
+        (WalkerView{
+            .at = Cell{.x = 1, .y = 1},
+            .facing = Direction::South,
+            .kind = WalkerKind::Fireman,
+            .carried = 4}));
+}
+
+TEST(SceneSnapshotTest, WalkerViewEquality_ComparesEachFieldIndependently)
+{
+    constexpr WalkerView base{
+        .at = {.x = 1, .y = 2},
+        .facing = Direction::North,
+        .kind = WalkerKind::Water,
+        .carried = 5};
+
+    EXPECT_EQ(base, base);
+
+    auto other = base;
+    other.at = Cell{.x = 9, .y = 2};
+    EXPECT_NE(base, other);
+
+    other = base;
+    other.facing = Direction::West;
+    EXPECT_NE(base, other);
+
+    other = base;
+    other.kind = WalkerKind::Fireman;
+    EXPECT_NE(base, other);
+
+    other = base;
+    other.carried = 6;
+    EXPECT_NE(base, other);
+}
+
+TEST(SceneSnapshotTest, BuildingViewEquality_ComparesEachFieldIndependently)
+{
+    constexpr BuildingView base{
+        .at = {.x = 1, .y = 2},
+        .kind = BuildingKind::FireStation,
+        .held = 5,
+        .capacity = 50};
+
+    EXPECT_EQ(base, base);
+
+    auto other = base;
+    other.at = Cell{.x = 9, .y = 2};
+    EXPECT_NE(base, other);
+
+    other = base;
+    other.kind = BuildingKind::House;
+    EXPECT_NE(base, other);
+
+    other = base;
+    other.held = 6;
+    EXPECT_NE(base, other);
+
+    other = base;
+    other.capacity = 60;
+    EXPECT_NE(base, other);
+}
+
+TEST(SceneSnapshotTest, SnapshotEquality_NoticesADifferentSetOfBuildings)
+{
+    const antwika::game::SceneSnapshot base{
+        .camera = Camera(),
+        .extent = kExtent,
+        .paths = {},
+        .walkers = {},
+        .buildings = {}};
+
+    auto other = base;
+    other.buildings.push_back(BuildingView{.at = {.x = 1, .y = 1}});
+
+    EXPECT_EQ(base, base);
+    EXPECT_NE(base, other);
+}
+
+TEST(SceneSnapshotTest, SummaryEquality_NoticesADifferentSetOfBuildings)
+{
+    const antwika::game::GameSummary base{
+        .state = {},
+        .paths = {},
+        .walkers = {},
+        .buildings = {},
+        .camera = Camera()};
+
+    auto other = base;
+    other.buildings.push_back(BuildingView{.at = {.x = 1, .y = 1}});
+
+    EXPECT_NE(base, other);
 }
