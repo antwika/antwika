@@ -5,15 +5,20 @@ add_subdirectory(fakes)
 add_subdirectory(mocks)
 
 add_executable(antwika_input_tests
+    ActionMapTest.cpp
     InputCapabilitiesTest.cpp
     InputEventCodecTest.cpp
     InputEventTest.cpp
+    InputStateTest.cpp
     KeyModifiersTest.cpp
     KeyTest.cpp
+    KeyboardTest.cpp
     LiveInputSourceTest.cpp
     MouseButtonTest.cpp
+    MouseTest.cpp
     NullInputBackendConformanceTest.cpp
     NullInputBackendTest.cpp
+    OffsetTest.cpp
     PositionTest.cpp
 )
 

@@ -1,7 +1,11 @@
 add_library(antwika_input
+    src/ActionMap.cpp
     src/InputEventCodec.cpp
+    src/InputState.cpp
     src/Key.cpp
+    src/Keyboard.cpp
     src/LiveInputSource.cpp
+    src/Mouse.cpp
     src/MouseButton.cpp
     src/NullInputBackend.cpp
 )
