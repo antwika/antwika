@@ -59,8 +59,16 @@ namespace antwika::gfx::detail
 
         /**
          * @brief Get the size the window was created with.
-         * @return The size in pixels, which never changes: nothing can
-         * resize a window that is not on a screen.
+         * @return WindowDesc::size, unchanged.
+         */
+        [[nodiscard]] Size configuredSize() const override;
+
+        /**
+         * @brief Get the size the window reports.
+         * @return The same as configuredSize(), which never changes:
+         * nothing can resize a window that is not on a screen, so a
+         * headless run honours WindowDesc::resizable by having nothing
+         * ever act on it.
          */
         [[nodiscard]] Size size() const override;
 

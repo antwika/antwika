@@ -32,7 +32,8 @@ namespace antwika::gfx::raylib
         : logger(logger),
           backend(&backend),
           windowId(id),
-          windowTitle(desc.title)
+          windowTitle(desc.title),
+          requestedSize(desc.size)
     {
         InitWindow(
             static_cast<int>(desc.size.width),
@@ -83,6 +84,11 @@ namespace antwika::gfx::raylib
     std::string RaylibWindow::title() const
     {
         return windowTitle;
+    }
+
+    Size RaylibWindow::configuredSize() const
+    {
+        return requestedSize;
     }
 
     Size RaylibWindow::size() const

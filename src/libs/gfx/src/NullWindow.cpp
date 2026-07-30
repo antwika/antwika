@@ -31,6 +31,11 @@ namespace antwika::gfx::detail
         return windowTitle;
     }
 
+    Size NullWindow::configuredSize() const
+    {
+        return windowSize;
+    }
+
     Size NullWindow::size() const
     {
         return windowSize;
