@@ -205,8 +205,8 @@ namespace antwika::game
 
         const auto entity = world.create();
         world.add<Cell>(entity, cell);
-        // No building sent this one, so where it was dropped is the
-        // only home it has.
+        // No building sent this one.
+        // So where it was dropped is the only home it has.
         world.add<Walker>(
             entity, newlySpawned(WalkerKind::Food, Direction::East, cell));
     }

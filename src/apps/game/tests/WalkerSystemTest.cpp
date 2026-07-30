@@ -505,10 +505,8 @@ TEST_F(WalkerSystemTest, Update_DespawnsAWalkerAlreadyHomeAtTheLimit)
 
 namespace
 {
-    // One whole life of one walker, as a trace two runs can be
-    // compared on.
-    // Everything a replay has to reproduce is in here: where it was
-    // each tick, which way it faced, and the tick it left the world.
+    // One whole life of one walker, as a comparable trace.
+    // Where it was each tick, which way it faced, and when it went.
     struct Step
     {
         Cell at;
@@ -566,9 +564,9 @@ namespace
     }
 } // namespace
 
-// Determinism, which is the point of doing the search this way: the
-// route home is a function of the roads and the two cells, and of
-// nothing that varies between runs.
+// Determinism is the point of doing the search this way.
+// A route home is a function of the roads and the two cells.
+// Nothing that varies between runs gets a say in it.
 TEST(WalkerReplayDeterminismTest, WalkingHomeReplaysStepForStep)
 {
     const std::vector<Cell> roads{

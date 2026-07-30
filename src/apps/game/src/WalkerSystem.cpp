@@ -72,8 +72,9 @@ namespace antwika::game
             return false;
         }
 
-        // The route runs start-to-goal inclusive and the start is not
-        // the goal, so there is always a second node to step onto.
+        // The route runs start-to-goal inclusive.
+        // The start is not the goal here.
+        // So there is always a second node to step onto.
         const auto onto = cellFor(route.nodes[1]);
 
         auto heading = walker;

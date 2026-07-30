@@ -92,9 +92,8 @@ namespace antwika::game
 
             const auto entity = world.create();
             world.add<Cell>(entity, onto);
-            // Its way home is the road it steps out onto, not `at`:
-            // the building's own cell has no road for a search to
-            // stand on.
+            // Its way home is the road it steps out onto, not `at`.
+            // A building's own cell has no road to stand on.
             world.add<Walker>(
                 entity, newlySpawned(kind, direction, onto));
 
