@@ -10,6 +10,15 @@
             }
         },
         {
+            "label": "Update Conan lockfiles",
+            "type": "shell",
+            "command": "./scripts/update_lockfiles.sh",
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "problemMatcher": []
+        },
+        {
             "label": "CMake preset conan-release",
             "type": "shell",
             "command": "cmake --preset conan-release",
