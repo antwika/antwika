@@ -37,6 +37,7 @@ target_link_libraries(antwika_poker
         antwika::log
         antwika::replay
         antwika::time
+        antwika::ui
 )
 
 if(BUILD_TESTING AND NOT CMAKE_CROSSCOMPILING)

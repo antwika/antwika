@@ -4,6 +4,7 @@
 #include <cstdint>
 #include <string>
 #include <string_view>
+#include <variant>
 #include <vector>
 
 #include <antwika/gfx/Color.hpp>
@@ -12,6 +13,8 @@
 #include <antwika/gfx/mocks/MockRenderer.hpp>
 #include <antwika/holdem/CardText.hpp>
 #include <antwika/holdem/Stage.hpp>
+#include <antwika/ui/DrawCommand.hpp>
+#include <antwika/ui/Interactions.hpp>
 
 #include "antwika/poker/SeatSnapshot.hpp"
 #include "antwika/poker/TableScene.hpp"
@@ -306,11 +309,10 @@ TEST_F(TableSceneTest, Draw_DrawsNoSeatsForATableWithNone)
     scene.draw(renderer, kCanvas, snapshot);
 }
 
-TEST_F(TableSceneTest, Draw_StartsTheRowsAtTheTopWhenTheyCannotAllFit)
+TEST_F(TableSceneTest, Draw_ShrinksRowsThatCannotAllFitRatherThanOverflowing)
 {
-    // Nine rows need more height than this canvas has at all.
-    // So they start hard against the top rather than above it.
-    // Which leaves the board no room.
+    // Nine rows want more height than this canvas has at all.
+    // The layout shares out what there is instead of running past it.
     TableSnapshot snapshot{
         .tableName = "Antwika",
         .blinds = {.small = 5, .big = 10},
@@ -321,14 +323,49 @@ TEST_F(TableSceneTest, Draw_StartsTheRowsAtTheTopWhenTheyCannotAllFit)
         snapshot.seats.push_back(player("p" + std::to_string(index), 100));
     }
 
+    constexpr Size canvas{.width = 320, .height = 200};
     std::vector<Rect> rects;
     EXPECT_CALL(renderer, drawRect(_, _))
         .Times(AnyNumber())
         .WillRepeatedly([&rects](Rect rect, Color) { rects.push_back(rect); });
 
-    scene.draw(renderer, Size{.width = 320, .height = 200}, snapshot);
+    scene.draw(renderer, canvas, snapshot);
 
-    // The first seat box is the one drawn right after the rail.
-    ASSERT_GE(rects.size(), 2);
-    EXPECT_EQ(rects.at(1).origin.y, 0);
+    ASSERT_FALSE(rects.empty());
+    for (const auto &rect : rects)
+    {
+        EXPECT_GE(rect.origin.y, 0);
+        EXPECT_LE(
+            rect.origin.y + static_cast<std::int32_t>(rect.size.height),
+            static_cast<std::int32_t>(canvas.height));
+    }
+}
+
+TEST_F(TableSceneTest, Describe_IsThePictureDrawPaints)
+{
+    // The frame is the picture as a value.
+    // So one table compares against another with no renderer involved.
+    const auto frame = scene.describe(kCanvas, liveTable());
+
+    EXPECT_FALSE(frame.commands.empty());
+    EXPECT_EQ(frame.commands, scene.describe(kCanvas, liveTable()).commands);
+
+    // Nothing on this table can be pointed at, so nothing reports being.
+    EXPECT_EQ(frame.interactions, antwika::ui::Interactions{});
+}
+
+TEST_F(TableSceneTest, Describe_FillsTheRailAcrossTheTopOfTheCanvas)
+{
+    constexpr Color kRail{.red = 40, .green = 26, .blue = 18};
+
+    const auto frame = scene.describe(kCanvas, idleTable());
+
+    ASSERT_FALSE(frame.commands.empty());
+    const auto *rail = std::get_if<antwika::ui::FillRect>(&frame.commands[0]);
+
+    ASSERT_NE(rail, nullptr);
+    EXPECT_EQ(rail->color, kRail);
+    EXPECT_EQ(rail->rect.origin.x, 0);
+    EXPECT_EQ(rail->rect.origin.y, 0);
+    EXPECT_EQ(rail->rect.size.width, kCanvas.width);
 }

@@ -46,6 +46,7 @@ target_link_libraries(antwika_poker_tests
         antwika::log::tests::mocks
         antwika::replay
         antwika::time::tests::fakes
+        antwika::ui
         gtest::gtest
 )
 
