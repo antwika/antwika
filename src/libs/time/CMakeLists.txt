@@ -1,39 +1,9 @@
-add_library(antwika_time
-    src/SystemClock.cpp
-    src/SystemSleeper.cpp
-)
-
-add_library(antwika::time ALIAS antwika_time)
-
-set_target_properties(antwika_time PROPERTIES
-    WINDOWS_EXPORT_ALL_SYMBOLS ON
-)
-
-target_include_directories(antwika_time
-    PUBLIC
-        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-        $<INSTALL_INTERFACE:include>
-)
-
-if(BUILD_TESTING AND NOT CMAKE_CROSSCOMPILING)
-    add_subdirectory(tests)
-endif()
-
-install(
-    TARGETS antwika_time
-    EXPORT antwika_timeTargets
-    ARCHIVE DESTINATION lib
-    LIBRARY DESTINATION lib
-    RUNTIME DESTINATION bin
-)
-
-install(
-    DIRECTORY include/
-    DESTINATION include
-)
-
-install(
-    EXPORT antwika_timeTargets
-    NAMESPACE antwika::
-    DESTINATION lib/cmake/antwika
+# The first module on cmake/AntwikaModule.cmake, as a worked example.
+# The other 61 still spell the seven blocks out, and converting them is
+# its own change, since it touches every module at once.
+antwika_add_library(
+    NAME time
+    SOURCES
+        src/SystemClock.cpp
+        src/SystemSleeper.cpp
 )

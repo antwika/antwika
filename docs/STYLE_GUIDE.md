@@ -190,6 +190,8 @@ public:
 - Link against the `antwika::<other-module>` alias, never the raw target name.
 - Tests are only added `if(BUILD_TESTING AND NOT CMAKE_CROSSCOMPILING)`.
 - Install rules (`ARCHIVE`/`LIBRARY`/`RUNTIME` destinations, the header directory, and an export set namespaced `antwika::`) are mirrored across every module.
+- `antwika_add_library(NAME <module> SOURCES ... DEPENDS antwika::<other>)` from `cmake/AntwikaModule.cmake` writes all of the above, and a module with nothing unusual to say should use it -- `src/libs/time/CMakeLists.txt` is the worked example.
+  A module that genuinely differs still spells its own rules out, so the difference stays visible.
 
 ## Python (checker scripts)
 
