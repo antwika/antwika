@@ -1,15 +1,31 @@
 #include <gtest/gtest.h>
 
 #include <chrono>
+#include <cstddef>
+#include <cstdint>
 #include <map>
+#include <memory>
+#include <optional>
 #include <sstream>
 #include <string>
+#include <string_view>
 #include <vector>
 
 #include <antwika/engine/Events.hpp>
 #include <antwika/event/Event.hpp>
 #include <antwika/event/EventRecorder.hpp>
 #include <antwika/event/TickEvent.hpp>
+#include <antwika/gfx/Color.hpp>
+#include <antwika/gfx/GfxError.hpp>
+#include <antwika/gfx/IGfxBackend.hpp>
+#include <antwika/gfx/IRenderer.hpp>
+#include <antwika/gfx/IWindow.hpp>
+#include <antwika/gfx/Point.hpp>
+#include <antwika/gfx/Rect.hpp>
+#include <antwika/gfx/Size.hpp>
+#include <antwika/gfx/WindowDesc.hpp>
+#include <antwika/gfx/WindowEvent.hpp>
+#include <antwika/gfx/WindowId.hpp>
 #include <antwika/holdem/Blinds.hpp>
 #include <antwika/log/Level.hpp>
 #include <antwika/log/MinimumLevelLogPolicy.hpp>
@@ -18,16 +34,29 @@
 #include <antwika/replay/IReplaySource.hpp>
 #include <antwika/replay/ReplaySource.hpp>
 #include <antwika/time/fakes/FakeClock.hpp>
+#include <antwika/time/fakes/FakeSleeper.hpp>
 
 #include "antwika/poker/BankrollError.hpp"
 #include "antwika/poker/Events.hpp"
 #include "antwika/poker/PokerRoom.hpp"
 #include "antwika/poker/RoomConfig.hpp"
 #include "antwika/poker/RoomSummary.hpp"
+#include "antwika/poker/WindowSetup.hpp"
 
 using antwika::event::Event;
 using antwika::event::EventRecorder;
 using antwika::event::TickEvent;
+using antwika::gfx::Color;
+using antwika::gfx::GfxError;
+using antwika::gfx::IGfxBackend;
+using antwika::gfx::IRenderer;
+using antwika::gfx::IWindow;
+using antwika::gfx::Point;
+using antwika::gfx::Rect;
+using antwika::gfx::Size;
+using antwika::gfx::WindowDesc;
+using antwika::gfx::WindowEvent;
+using antwika::gfx::WindowId;
 using antwika::holdem::Blinds;
 using antwika::log::Level;
 using antwika::log::MinimumLevelLogPolicy;
@@ -38,11 +67,16 @@ using antwika::replay::ReplaySource;
 using antwika::poker::BankrollError;
 using antwika::poker::RoomConfig;
 using antwika::poker::RoomSummary;
+using antwika::poker::WindowSetup;
 using antwika::time::fakes::FakeClock;
+using antwika::time::fakes::FakeSleeper;
+using namespace std::chrono_literals;
 
 namespace
 {
     constexpr antwika::time::Tick kMaxTicks = 400;
+
+    constexpr WindowId kOurWindow{1};
 
     constexpr RoomConfig kThreeHandedRoom{
         .seatCount = 3,
@@ -63,7 +97,8 @@ namespace
     [[nodiscard]] RoomSummary runRoom(
         IReplaySource &source,
         std::ostream &out,
-        RoomConfig config = kThreeHandedRoom)
+        RoomConfig config = kThreeHandedRoom,
+        const WindowSetup *window = nullptr)
     {
         std::chrono::system_clock::time_point time{};
         FakeClock clock(time);
@@ -81,8 +116,129 @@ namespace
             source,
             out,
             config,
-            kMaxTicks);
+            kMaxTicks,
+            nullptr,
+            window);
     }
+
+    // Counts frames, and stands in for a renderer nobody inspects.
+    class CountingRenderer final : public IRenderer
+    {
+    public:
+        void clear(Color) override {}
+        void drawRect(Rect, Color) override {}
+        void drawText(Point, std::string_view, std::uint32_t, Color) override
+        {
+        }
+        void present() override { ++presents; }
+
+        std::size_t presents = 0;
+    };
+
+    // A window that really opens and closes.
+    // Three collaborators read isOpen() within one tick.
+    // A call-count script would say nothing about what each of them saw.
+    class FakeWindow final : public IWindow
+    {
+    public:
+        [[nodiscard]] WindowId id() const override { return kOurWindow; }
+
+        [[nodiscard]] bool isOpen() const override { return open; }
+
+        [[nodiscard]] std::string title() const override { return "Antwika"; }
+
+        [[nodiscard]] Size size() const override
+        {
+            return Size{.width = 1024, .height = 640};
+        }
+
+        [[nodiscard]] IRenderer &renderer() override { return drawnInto; }
+
+        void setTitle(std::string_view) override {}
+
+        void close() override { open = false; }
+
+        [[nodiscard]] std::size_t frames() const noexcept
+        {
+            return drawnInto.presents;
+        }
+
+        // Like somebody closing the window after enough frames.
+        void closeAfter(std::optional<std::size_t> frames)
+        {
+            closeAt = frames;
+        }
+
+        void closeIfSeenEnough()
+        {
+            if (closeAt.has_value() && frames() >= *closeAt)
+            {
+                open = false;
+            }
+        }
+
+    private:
+        CountingRenderer drawnInto;
+        std::optional<std::size_t> closeAt;
+        bool open = true;
+    };
+
+    // A close request only ever arrives from the backend's queue.
+    class FakeBackend final : public IGfxBackend
+    {
+    public:
+        [[nodiscard]] std::string_view name() const override
+        {
+            return "fake";
+        }
+
+        [[nodiscard]] std::size_t maxWindows() const override { return 1; }
+
+        [[nodiscard]] std::unique_ptr<IWindow> createWindow(
+            const WindowDesc &desc) override
+        {
+            titles.push_back(desc.title);
+            auto owned = std::make_unique<FakeWindow>();
+            owned->closeAfter(closeAt);
+            window = owned.get();
+            return owned;
+        }
+
+        [[nodiscard]] std::optional<WindowEvent> pollEvent() override
+        {
+            if (window != nullptr)
+            {
+                window->closeIfSeenEnough();
+            }
+            return std::nullopt;
+        }
+
+        std::optional<std::size_t> closeAt;
+        std::vector<std::string> titles;
+        FakeWindow *window = nullptr;
+    };
+
+    class ThrowingBackend final : public IGfxBackend
+    {
+    public:
+        [[nodiscard]] std::string_view name() const override
+        {
+            return "throwing";
+        }
+
+        [[nodiscard]] std::size_t maxWindows() const override { return 1; }
+
+        [[nodiscard]] std::unique_ptr<IWindow> createWindow(
+            const WindowDesc &) override
+        {
+            throw GfxError("no display");
+        }
+
+        [[nodiscard]] std::optional<WindowEvent> pollEvent() override
+        {
+            return std::nullopt;
+        }
+    };
 
     [[nodiscard]] std::vector<TickEvent> threeHandedSession(
         antwika::time::Tick stopAt)
@@ -245,4 +401,201 @@ TEST(BootstrapTest, Bootstrap_DealsDifferentCardsForADifferentSeed)
     static_cast<void>(runRoom(secondSource, secondOut, otherSeed));
 
     EXPECT_NE(firstOut.str(), secondOut.str());
+}
+
+TEST(BootstrapTest, Bootstrap_OpensNoWindowWhenNotGivenOne)
+{
+    // Which is the path every other test in this file takes.
+    auto script = threeHandedSession(60);
+    ReplaySource source(script);
+    std::ostringstream out;
+
+    const auto summary = runRoom(source, out);
+
+    EXPECT_GT(summary.handsPlayed, 0U);
+}
+
+TEST(BootstrapTest, Bootstrap_NamesTheWindowAfterTheTable)
+{
+    auto script = threeHandedSession(20);
+    ReplaySource source(script);
+    std::ostringstream out;
+    FakeBackend backend;
+    FakeSleeper sleeper;
+    const WindowSetup window{.backend = backend, .sleeper = sleeper};
+
+    static_cast<void>(runRoom(source, out, kThreeHandedRoom, &window));
+
+    ASSERT_EQ(backend.titles.size(), 1);
+    EXPECT_EQ(backend.titles.at(0), "Antwika -- Antwika Poker");
+}
+
+TEST(BootstrapTest, Bootstrap_DrawsOneFramePerTick)
+{
+    constexpr antwika::time::Tick kStopAt = 40;
+    auto script = threeHandedSession(kStopAt);
+    ReplaySource source(script);
+    std::ostringstream out;
+    FakeBackend backend;
+    FakeSleeper sleeper;
+    const WindowSetup window{.backend = backend, .sleeper = sleeper};
+
+    static_cast<void>(runRoom(source, out, kThreeHandedRoom, &window));
+
+    // The loop runs the tick carrying the stop to completion.
+    // So the frame count is one past the tick the stop sits on.
+    ASSERT_NE(backend.window, nullptr);
+    EXPECT_EQ(backend.window->frames(), kStopAt + 1);
+}
+
+TEST(BootstrapTest, Bootstrap_DrawsTheTableAfterItHasStepped)
+{
+    // The render sink must sit after the sink that steps the table.
+    // Nothing but this test says so.
+    // A frame drawn first would show an idle table on the deal.
+    auto script = threeHandedSession(1);
+    ReplaySource source(script);
+    std::ostringstream out;
+    FakeBackend backend;
+    FakeSleeper sleeper;
+    const WindowSetup window{.backend = backend, .sleeper = sleeper};
+
+    static_cast<void>(runRoom(source, out, kThreeHandedRoom, &window));
+
+    // Tick 0 seats everyone and deals.
+    // So the first frame already has a hand in progress.
+    EXPECT_NE(out.str().find("Antwika Hand #1"), std::string::npos);
+    ASSERT_NE(backend.window, nullptr);
+    EXPECT_GT(backend.window->frames(), 0U);
+}
+
+TEST(BootstrapTest, Bootstrap_PacesEveryFrameItDraws)
+{
+    auto script = threeHandedSession(10);
+    ReplaySource source(script);
+    std::ostringstream out;
+    FakeBackend backend;
+    FakeSleeper sleeper;
+    const WindowSetup window{
+        .backend = backend, .sleeper = sleeper, .framePeriod = 80ms};
+    backend.closeAt = 4;
+
+    static_cast<void>(runRoom(source, out, kThreeHandedRoom, &window));
+
+    ASSERT_FALSE(sleeper.requested().empty());
+    for (const auto requested : sleeper.requested())
+    {
+        EXPECT_EQ(requested, 80ms);
+    }
+}
+
+TEST(BootstrapTest, Bootstrap_StopsWhenTheWindowIsClosed)
+{
+    // No stop event anywhere in the script.
+    // And a tick cap far beyond what the session needs.
+    // So returning at all is only possible through the injected stop.
+    std::vector<TickEvent> script;
+    for (const auto *player : {"alice", "bob", "carol"})
+    {
+        script.push_back(at(
+            0,
+            antwika::poker::events::kDeposit,
+            std::string(R"({"player":")") + player + R"(","amount":1000})"));
+        script.push_back(at(
+            0,
+            antwika::poker::events::kBuyIn,
+            std::string(R"({"player":")") + player + R"(","amount":300})"));
+    }
+    ReplaySource source(script);
+    std::ostringstream out;
+    FakeBackend backend;
+    FakeSleeper sleeper;
+    const WindowSetup window{.backend = backend, .sleeper = sleeper};
+    backend.closeAt = 5;
+
+    const auto summary = runRoom(source, out, kThreeHandedRoom, &window);
+
+    EXPECT_GT(summary.handsPlayed, 0U);
+    ASSERT_NE(backend.window, nullptr);
+    EXPECT_FALSE(backend.window->isOpen());
+}
+
+TEST(BootstrapTest, Bootstrap_HoldsTheFinalFrameUntilTheWindowIsClosed)
+{
+    constexpr antwika::time::Tick kStopAt = 20;
+    constexpr std::size_t kExtraFrames = 3;
+    auto script = threeHandedSession(kStopAt);
+    ReplaySource source(script);
+    std::ostringstream out;
+    FakeBackend backend;
+    FakeSleeper sleeper;
+    const WindowSetup window{
+        .backend = backend, .sleeper = sleeper, .framePeriod = 80ms};
+    backend.closeAt = kStopAt + 1 + kExtraFrames;
+
+    static_cast<void>(runRoom(source, out, kThreeHandedRoom, &window));
+
+    ASSERT_NE(backend.window, nullptr);
+    EXPECT_EQ(backend.window->frames(), kStopAt + 1 + kExtraFrames);
+}
+
+TEST(BootstrapTest, Bootstrap_HoldsNoFinalFrameWhenNobodyAskedToWatch)
+{
+    // A zero frame period means nobody asked to watch.
+    // Holding would hang under a backend that never reports a close.
+    constexpr antwika::time::Tick kStopAt = 20;
+    auto script = threeHandedSession(kStopAt);
+    ReplaySource source(script);
+    std::ostringstream out;
+    FakeBackend backend;
+    FakeSleeper sleeper;
+    const WindowSetup window{.backend = backend, .sleeper = sleeper};
+
+    static_cast<void>(runRoom(source, out, kThreeHandedRoom, &window));
+
+    ASSERT_NE(backend.window, nullptr);
+    EXPECT_EQ(backend.window->frames(), kStopAt + 1);
+    EXPECT_FALSE(backend.window->isOpen());
+}
+
+TEST(BootstrapTest, Bootstrap_PropagatesAGfxErrorFromWindowCreation)
+{
+    auto script = threeHandedSession(20);
+    ReplaySource source(script);
+    std::ostringstream out;
+    ThrowingBackend backend;
+    FakeSleeper sleeper;
+    const WindowSetup window{.backend = backend, .sleeper = sleeper};
+
+    EXPECT_THROW(
+        static_cast<void>(runRoom(source, out, kThreeHandedRoom, &window)),
+        GfxError);
+}
+
+// Rendering is a write-only projection of the game.
+// So a session that drew itself reaches the same chip counts.
+// And tells the same story as one that did not.
+TEST(BootstrapTest, Bootstrap_ReachesTheSameResultWithAndWithoutAWindow)
+{
+    constexpr antwika::time::Tick kStopAt = 120;
+    auto script = threeHandedSession(kStopAt);
+
+    ReplaySource headlessSource(script);
+    std::ostringstream headlessOut;
+    const auto headless = runRoom(headlessSource, headlessOut);
+
+    ReplaySource windowedSource(script);
+    std::ostringstream windowedOut;
+    FakeBackend backend;
+    FakeSleeper sleeper;
+    const WindowSetup window{
+        .backend = backend, .sleeper = sleeper, .framePeriod = 80ms};
+    // Watched all the way through, then closed by hand.
+    // So this run takes the paced and held-open path.
+    backend.closeAt = kStopAt + 3;
+    const auto windowed =
+        runRoom(windowedSource, windowedOut, kThreeHandedRoom, &window);
+
+    EXPECT_EQ(windowed, headless);
+    EXPECT_EQ(windowedOut.str(), headlessOut.str());
 }

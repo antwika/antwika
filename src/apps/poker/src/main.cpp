@@ -7,24 +7,32 @@
 
 #include <antwika/event/EventRecorder.hpp>
 #include <antwika/event/TickEventRecorder.hpp>
+#include <antwika/gfx/SelectedBackend.hpp>
 #include <antwika/log/Level.hpp>
+#include <antwika/log/Logger.hpp>
 #include <antwika/log/MinimumLevelLogPolicy.hpp>
 #include <antwika/log/PlainFormatter.hpp>
 #include <antwika/log/StreamAppender.hpp>
 #include <antwika/replay/ReplayCli.hpp>
 #include <antwika/replay/ReplaySource.hpp>
 #include <antwika/time/SystemClock.hpp>
+#include <antwika/time/SystemSleeper.hpp>
 
 #include "antwika/poker/RoomConfig.hpp"
+#include "antwika/poker/WatchOptions.hpp"
+#include "antwika/poker/WindowSetup.hpp"
 
 using antwika::event::EventRecorder;
 using antwika::event::TickEventRecorder;
 using antwika::log::Level;
+using antwika::log::Logger;
 using antwika::log::MinimumLevelLogPolicy;
 using antwika::log::PlainFormatter;
 using antwika::log::StreamAppender;
+using antwika::poker::WindowSetup;
 using antwika::replay::ReplaySource;
 using antwika::time::SystemClock;
+using antwika::time::SystemSleeper;
 
 namespace
 {
@@ -38,6 +46,7 @@ namespace
 int main(int argc, char **argv)
 {
     const auto options = antwika::replay::parseReplayCliOptions(argc, argv);
+    const auto watch = antwika::poker::parseWatchOptions(argc, argv);
 
     SystemClock clock;
     StreamAppender appender(std::cout);
@@ -50,6 +59,17 @@ int main(int argc, char **argv)
         options.replayPath.value_or(std::string(kDemoReplayPath)));
     ReplaySource source(std::move(events));
 
+    // The window is always opened, as in the gfx demo.
+    // Under the headless backend that draws nothing and costs nothing.
+    Logger logger(formatter, logPolicy, clock, appender);
+    const auto backend = antwika::gfx::makeSelectedBackend(logger);
+    SystemSleeper sleeper;
+    const WindowSetup window{
+        .backend = *backend,
+        .sleeper = sleeper,
+        .framePeriod = watch.tickDelay,
+    };
+
     const auto summary = antwika::poker::bootstrap(
         clock,
         appender,
@@ -60,7 +80,8 @@ int main(int argc, char **argv)
         std::cout,
         antwika::poker::RoomConfig{},
         std::nullopt,
-        &replayRecorder);
+        &replayRecorder,
+        &window);
 
     std::cout << "\n=== " << summary.handsPlayed << " hands played ===\n";
     for (const auto &[player, balance] : summary.balances)

@@ -1,8 +1,11 @@
 #include "antwika/poker/PokerRoom.hpp"
 
 #include <array>
+#include <chrono>
 #include <cstddef>
 #include <functional>
+#include <memory>
+#include <optional>
 #include <vector>
 
 #include <antwika/engine/Engine.hpp>
@@ -10,6 +13,8 @@
 #include <antwika/event/Event.hpp>
 #include <antwika/event/EventDispatcher.hpp>
 #include <antwika/event/TickedEventDispatcher.hpp>
+#include <antwika/gfx/IWindow.hpp>
+#include <antwika/gfx/WindowDesc.hpp>
 #include <antwika/holdem/Deck.hpp>
 #include <antwika/holdem/IAgent.hpp>
 #include <antwika/holdem/SeatId.hpp>
@@ -25,6 +30,9 @@
 #include "antwika/poker/PokerRoomSink.hpp"
 #include "antwika/poker/PolicyAgent.hpp"
 #include "antwika/poker/TablePrinter.hpp"
+#include "antwika/poker/TableRenderSink.hpp"
+#include "antwika/poker/TableScene.hpp"
+#include "antwika/poker/WindowCloseSource.hpp"
 
 namespace antwika::poker
 {
@@ -34,6 +42,8 @@ namespace antwika::poker
     using antwika::event::Event;
     using antwika::event::EventDispatcher;
     using antwika::event::TickedEventDispatcher;
+    using antwika::gfx::IWindow;
+    using antwika::gfx::WindowDesc;
     using antwika::holdem::Deck;
     using antwika::holdem::IAgent;
     using antwika::holdem::makeSeatId;
@@ -53,6 +63,20 @@ namespace antwika::poker
             AgentStyle::Tight,
             AgentStyle::Aggressive,
         };
+
+        // A window that vanished on the last tick would hide the end.
+        // The sink paces each frame, so this waits rather than spins.
+        void holdFinalFrame(
+            WindowCloseSource &source,
+            const TableRenderSink &sink,
+            const IWindow &window)
+        {
+            while (window.isOpen())
+            {
+                source.pumpEvents();
+                sink.render();
+            }
+        }
     } // namespace
 
     PokerRoom::PokerRoom(IEngine &engine, IEventDispatcher &dispatcher)
@@ -77,7 +101,8 @@ namespace antwika::poker
         std::ostream &out,
         RoomConfig config,
         std::optional<antwika::time::Tick> maxTicks,
-        ITickEventSink *replayRecorder)
+        ITickEventSink *replayRecorder,
+        const WindowSetup *window)
     {
         Logger logger(formatter, logPolicy, clock, appender);
         EventDispatcher dispatcher({eventSink});
@@ -108,6 +133,37 @@ namespace antwika::poker
 
         std::vector<std::reference_wrapper<ITickEventSink>> timedSinks{
             roomSink, stopSignal};
+
+        // Declared before the optionals that hold references to it.
+        std::unique_ptr<IWindow> tableWindow;
+        const TableScene scene;
+        std::optional<TableRenderSink> renderSink;
+        std::optional<WindowCloseSource> windowSource;
+        IReplaySource *source = &inputSource;
+
+        if (window != nullptr)
+        {
+            tableWindow = window->backend.createWindow(WindowDesc{
+                .title = config.tableName + " -- Antwika Poker",
+                .size = window->size});
+
+            renderSink.emplace(
+                *tableWindow,
+                scene,
+                table,
+                game,
+                window->sleeper,
+                window->framePeriod,
+                config.tableName);
+
+            // After roomSink, which is what steps the table.
+            // A frame drawn before that shows the previous tick.
+            timedSinks.push_back(*renderSink);
+
+            windowSource.emplace(inputSource, window->backend, *tableWindow);
+            source = &*windowSource;
+        }
+
         if (replayRecorder != nullptr)
         {
             timedSinks.push_back(*replayRecorder);
@@ -118,8 +174,17 @@ namespace antwika::poker
         PokerRoom room(engine, tickedDispatcher);
         room.run();
 
-        EngineLoop loop(engine, tickedDispatcher, inputSource);
+        EngineLoop loop(engine, tickedDispatcher, *source);
         loop.run(stopSignal, maxTicks);
+
+        if (tableWindow)
+        {
+            if (window->framePeriod > std::chrono::milliseconds{0})
+            {
+                holdFinalFrame(*windowSource, *renderSink, *tableWindow);
+            }
+            tableWindow->close();
+        }
 
         static_cast<void>(game.cashOutEveryone());
 
