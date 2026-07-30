@@ -37,6 +37,10 @@ cmake --build build-sdl3 -j24
 ctest --test-dir build-sdl3 --output-on-failure
 ```
 
+This assumes the default build above has been installed at least once.
+[`CMakePresets.json`](CMakePresets.json) includes `build/CMakePresets.json` unconditionally, and its `conan-coverage` preset inherits the `conan-release` one generated there, so CMake refuses to read *any* preset until the default configuration exists.
+On a fresh clone, run the `conan install . -of build` above first.
+
 The Conan option sets the `ANTWIKA_GFX_BACKEND` CMake variable, which names a directory under [`backends/`](backends/); an unknown value fails at configure time with the list of ones that exist.
 The `build_folder_vars` conf is what puts the backend in the preset name, so the sdl3 configuration does not collide with the default build's `conan-release` preset.
 Each configuration has its own lockfile, because selecting a backend changes the dependency graph.

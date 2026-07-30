@@ -348,9 +348,26 @@ jobs:
         uses: actions/cache@v6
         with:
           path: ~/.conan2
-          key: conan-gnu-${{ matrix.backend }}-${{ hashFiles('conanfile.py', format('conan-{0}.lock', matrix.backend), 'profiles/build/gcc-linux-x86_64', 'profiles/host/gcc-linux-x86_64') }}
+          key: conan-gnu-${{ matrix.backend }}-${{ hashFiles('conanfile.py', 'conan.lock', format('conan-{0}.lock', matrix.backend), 'profiles/build/gcc-linux-x86_64', 'profiles/host/gcc-linux-x86_64') }}
           restore-keys: |
             conan-gnu-${{ matrix.backend }}-
+
+      # The tracked CMakePresets.json includes build/CMakePresets.json
+      # unconditionally, and its conan-coverage preset inherits the
+      # conan-release one generated there.
+      # CMake refuses to read any preset at all until both exist, so the
+      # default configuration has to be installed even though this job
+      # builds a different one.
+      - name: Install the default configuration, for its presets
+        shell: bash
+        run: |
+          conan install . \
+            -of build \
+            -pr:b=./profiles/build/${CONAN_PROFILE} \
+            -pr:h=./profiles/host/${CONAN_PROFILE} \
+            --build=missing \
+            -s build_type=Release \
+            --lockfile=conan.lock
 
       - name: Install dependencies
         shell: bash
