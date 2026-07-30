@@ -213,7 +213,7 @@ jobs:
 
       - name: Test
         shell: bash
-        run: ctest --test-dir "$BUILD_DIR"
+        run: ctest --test-dir "$BUILD_DIR" --output-on-failure
 
       - name: Test coverage badge script
         if: matrix.coverage
