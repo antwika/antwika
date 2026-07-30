@@ -52,9 +52,15 @@ namespace antwika::holdem
         // Table runs the board out itself when nobody can wager.
         const auto actor = *table.seatToAct();
         const auto stageBefore = table.stage();
-        const auto action = agents[indexOf(actor)].get().act(
-            table.viewFor(actor));
+        const auto view = table.viewFor(actor);
+        const auto committedBefore = table.seatAt(actor).committed;
+        const auto action = agents[indexOf(actor)].get().act(view);
         table.apply(action);
+
+        // Measured against the commitment rather than the stack.
+        // An action that ends the hand is paid out before we look.
+        // A payout lands in the stack and would hide what went in.
+        const auto staked = table.seatAt(actor).committed - committedBefore;
 
         return StepOutcome{
             .kind = table.isHandInProgress() ? StepKind::Acted
@@ -62,6 +68,9 @@ namespace antwika::holdem
             .prompted = true,
             .seat = actor,
             .action = action,
+            .staked = staked,
+            .betBefore = view.currentBet,
+            .allIn = staked == view.stack,
             .stage = table.stage(),
             .stageAdvanced = table.stage() != stageBefore,
         };
