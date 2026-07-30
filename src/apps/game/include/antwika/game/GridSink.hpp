@@ -11,6 +11,7 @@
 #include "antwika/game/Camera.hpp"
 #include "antwika/game/GridExtent.hpp"
 #include "antwika/game/PathIndex.hpp"
+#include "antwika/game/UiOverlay.hpp"
 
 namespace antwika::game
 {
@@ -45,6 +46,11 @@ namespace antwika::game
      * | middle drag | pan the camera |
      * | scroll | zoom, keeping the cell under the cursor put |
      *
+     * A press the toolbar is under never reaches the grid: what the UI
+     * covers, it covers from the world too -- see UiOverlay. A movement
+     * is exempt, so a pan that began on the grid carries on across the
+     * bar rather than stopping dead under it.
+     *
      * Middle-button drag rather than left, so that placement can stay on
      * the press: a left-drag pan would need a "moved more than N pixels,
      * so that was a drag" rule, which moves placement to the release and
@@ -61,6 +67,7 @@ namespace antwika::game
          * @param extent Bounds which cells a click may reach.
          * @param scheduler Run once per tick, after the commit.
          * @param codec Decodes the input events off the tick stream.
+         * @param overlay Asked whether a click was the toolbar's.
          */
         GridSink(
             World &world,
@@ -68,7 +75,8 @@ namespace antwika::game
             Camera &camera,
             GridExtent extent,
             SystemScheduler &scheduler,
-            const IInputEventCodec &codec);
+            const IInputEventCodec &codec,
+            const UiOverlay &overlay);
 
         GridSink(const GridSink &) = delete;
         GridSink(GridSink &&) = delete;
@@ -99,6 +107,7 @@ namespace antwika::game
         GridExtent extent;
         SystemScheduler &scheduler;
         const IInputEventCodec &codec;
+        const UiOverlay &overlay;
 
         // Held here rather than above the recorder.
         // A replay then regenerates what a click is read against.

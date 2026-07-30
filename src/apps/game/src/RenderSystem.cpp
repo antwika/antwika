@@ -1,5 +1,7 @@
 #include "antwika/game/RenderSystem.hpp"
 
+#include <antwika/ui/Painter.hpp>
+
 #include "antwika/game/SceneSnapshot.hpp"
 
 namespace antwika::game
@@ -11,13 +13,15 @@ namespace antwika::game
         const ITexture &atlas,
         const PathIndex &paths,
         const Camera &camera,
-        GridExtent extent)
+        GridExtent extent,
+        const UiOverlay &overlay)
         : window(window),
           scene(scene),
           atlas(atlas),
           paths(paths),
           camera(camera),
-          extent(extent)
+          extent(extent),
+          overlay(overlay)
     {
     }
 
@@ -30,6 +34,12 @@ namespace antwika::game
             window.size(),
             snapshotOf(world, paths, camera, extent),
             atlas);
+
+        // Over the grid, and last, so the bar reads as being in front.
+        // Laid out against the size the window was asked for.
+        // That is the size UiSink described it against.
+        // And the size a recorded click was resolved against.
+        antwika::ui::paint(renderer, overlay.commands());
         renderer.present();
     }
 

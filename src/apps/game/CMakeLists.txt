@@ -6,7 +6,10 @@ add_executable(antwika_game
     src/PathIndex.cpp
     src/RenderSystem.cpp
     src/TickPacer.cpp
+    src/Toolbar.cpp
     src/SceneSnapshot.cpp
+    src/UiOverlay.cpp
+    src/UiSink.cpp
     src/WalkerSystem.cpp
     src/WindowInputSource.cpp
     src/main.cpp
@@ -39,6 +42,7 @@ target_link_libraries(antwika_game
         antwika::log
         antwika::replay
         antwika::time
+        antwika::ui
 )
 
 if(BUILD_TESTING AND NOT CMAKE_CROSSCOMPILING)

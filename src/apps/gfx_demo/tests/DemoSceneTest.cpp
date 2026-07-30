@@ -8,6 +8,7 @@
 #include <vector>
 
 #include <antwika/gfx/Color.hpp>
+#include <antwika/gfx/Point.hpp>
 #include <antwika/gfx/Rect.hpp>
 #include <antwika/gfx/Size.hpp>
 #include <antwika/gfx/TextLayout.hpp>
@@ -15,19 +16,25 @@
 #include <antwika/gfx/mocks/MockTexture.hpp>
 #include <antwika/ui/DrawCommand.hpp>
 #include <antwika/ui/DrawList.hpp>
+#include <antwika/ui/Pointer.hpp>
+#include <antwika/ui/WidgetId.hpp>
 
 #include "antwika/gfx_demo/DemoScene.hpp"
 
 using antwika::gfx::Color;
+using antwika::gfx::Point;
 using antwika::gfx::Rect;
 using antwika::gfx::Size;
 using antwika::gfx::textSize;
 using antwika::gfx::mocks::MockRenderer;
 using antwika::gfx::mocks::MockTexture;
 using antwika::gfx_demo::DemoScene;
+namespace widgets = antwika::gfx_demo::widgets;
 using antwika::ui::DrawList;
 using antwika::ui::DrawText;
 using antwika::ui::FillRect;
+using antwika::ui::Pointer;
+using antwika::ui::WidgetId;
 using ::testing::_;
 using ::testing::AnyNumber;
 using ::testing::InSequence;
@@ -77,6 +84,32 @@ namespace
         }
 
         return colors;
+    }
+
+    // Where a widget ended up is the layout's business.
+    // So a test looks for a pixel that hits the one it means.
+    // Stepping by four cannot miss a button several glyphs tall.
+    [[nodiscard]] Pointer pointerOn(WidgetId id)
+    {
+        const DemoScene scene;
+
+        for (std::int32_t y = 0; y < static_cast<std::int32_t>(
+                 kCanvas.height); y += 4)
+        {
+            for (std::int32_t x = 0; x < static_cast<std::int32_t>(
+                     kCanvas.width); x += 4)
+            {
+                const Pointer pointer{.position = Point{.x = x, .y = y}};
+
+                if (scene.describe(kCanvas, pointer).interactions.hovered
+                    == id)
+                {
+                    return pointer;
+                }
+            }
+        }
+
+        return Pointer{};
     }
 
     [[nodiscard]] std::optional<DrawText> firstTextOf(
@@ -147,7 +180,7 @@ TEST_F(DemoSceneTest, Draw_ClearsThenDrawsOneBarPerColourInOrder)
 
     EXPECT_CALL(renderer, drawTexture(_, _, _, _)).Times(2);
 
-    scene.draw(renderer, kCanvas, logo);
+    scene.draw(renderer, kCanvas, logo, scene.describe(kCanvas).commands);
 }
 
 TEST_F(DemoSceneTest, Draw_BlitsTheWholeLogoUntintedAboveTheBars)
@@ -168,7 +201,7 @@ TEST_F(DemoSceneTest, Draw_BlitsTheWholeLogoUntintedAboveTheBars)
                 .size = {.width = 50, .height = 50}},
             kUntinted));
 
-    scene.draw(renderer, kCanvas, logo);
+    scene.draw(renderer, kCanvas, logo, scene.describe(kCanvas).commands);
 }
 
 TEST_F(DemoSceneTest, Draw_BlitsTheLogosLeftHalfTintedBelowTheBars)
@@ -190,7 +223,7 @@ TEST_F(DemoSceneTest, Draw_BlitsTheLogosLeftHalfTintedBelowTheBars)
                 .size = {.width = 50, .height = 50}},
             kWarmTint));
 
-    scene.draw(renderer, kCanvas, logo);
+    scene.draw(renderer, kCanvas, logo, scene.describe(kCanvas).commands);
 }
 
 TEST_F(DemoSceneTest, Draw_AsksTheTextureForItsSizeRatherThanAssuming)
@@ -220,7 +253,7 @@ TEST_F(DemoSceneTest, Draw_AsksTheTextureForItsSizeRatherThanAssuming)
                 .size = {.width = 10, .height = 10}},
             _, kWarmTint));
 
-    scene.draw(renderer, kCanvas, logo);
+    scene.draw(renderer, kCanvas, logo, scene.describe(kCanvas).commands);
 }
 
 TEST_F(DemoSceneTest, Draw_ScalesTheBarsToTheCanvas)
@@ -252,20 +285,25 @@ TEST_F(DemoSceneTest, Draw_ScalesTheBarsToTheCanvas)
                 .size = {.width = 200, .height = 400}},
             ::testing::_));
 
-    scene.draw(renderer, Size{.width = 1400, .height = 800}, logo);
+    scene.draw(
+        renderer,
+        Size{.width = 1400, .height = 800},
+        logo,
+        DrawList{});
 }
 
 TEST_F(DemoSceneTest, Describe_DrawsEveryLabelAndButton)
 {
     EXPECT_THAT(
-        textsOf(scene.describe(kCanvas)),
+        textsOf(scene.describe(kCanvas).commands),
         ::testing::IsSupersetOf(
             {"Antwika UI",
              "layouts",
              "buttons",
              "text",
-             "cancel",
-             "ok"}));
+             "clicks 0",
+             "reset",
+             "count"}));
 }
 
 // Nothing here can clip.
@@ -275,7 +313,7 @@ TEST_F(DemoSceneTest, Describe_KeepsEveryWidgetInsideTheCanvas)
     const auto right = static_cast<std::int32_t>(kCanvas.width);
     const auto bottom = static_cast<std::int32_t>(kCanvas.height);
 
-    for (const auto &command : scene.describe(kCanvas))
+    for (const auto &command : scene.describe(kCanvas).commands)
     {
         if (const auto *fill = std::get_if<FillRect>(&command))
         {
@@ -308,13 +346,47 @@ TEST_F(DemoSceneTest, Describe_KeepsEveryWidgetInsideTheCanvas)
 }
 
 // A hovered button is meant to look different from an idle one.
-// That is the whole reason a caller gets to say which is which.
+// Nothing tells it which it is: it works that out from the pointer.
 TEST_F(DemoSceneTest, Describe_ShowsAHoveredButtonDifferently)
 {
-    const auto fills = fillsOf(scene.describe(kCanvas));
+    const auto resting = fillsOf(scene.describe(kCanvas).commands);
+    const auto over = fillsOf(
+        scene.describe(kCanvas, pointerOn(widgets::kCount)).commands);
 
-    ASSERT_GE(fills.size(), 2U);
-    EXPECT_NE(fills.at(fills.size() - 2), fills.back());
+    ASSERT_EQ(resting.size(), over.size());
+    EXPECT_NE(resting, over);
+}
+
+TEST_F(DemoSceneTest, Describe_ReportsWhichButtonAPressLandedOn)
+{
+    auto pointer = pointerOn(widgets::kCount);
+    pointer.pressed = true;
+
+    const auto frame = scene.describe(kCanvas, pointer);
+
+    EXPECT_EQ(widgets::kCount, frame.interactions.activated);
+}
+
+TEST_F(DemoSceneTest, Describe_ReportsNoActivationForAPressOffThePanel)
+{
+    const Pointer pointer{
+        .position = Point{
+            .x = static_cast<std::int32_t>(kCanvas.width) - 1,
+            .y = static_cast<std::int32_t>(kCanvas.height) - 1},
+        .down = true,
+        .pressed = true};
+
+    const auto frame = scene.describe(kCanvas, pointer);
+
+    EXPECT_EQ(antwika::ui::kNoWidget, frame.interactions.activated);
+    EXPECT_FALSE(frame.interactions.pointerOverUi);
+}
+
+TEST_F(DemoSceneTest, Describe_CountsUpWhatItIsToldToShow)
+{
+    EXPECT_THAT(
+        textsOf(scene.describe(kCanvas, Pointer{}, 12).commands),
+        ::testing::Contains("clicks 12"));
 }
 
 // The panel takes a third of the width.
@@ -323,7 +395,7 @@ TEST_F(DemoSceneTest, Describe_LeavesTheRestOfTheCanvasAlone)
 {
     const auto third = static_cast<std::int32_t>(kCanvas.width / 3);
 
-    for (const auto &command : scene.describe(kCanvas))
+    for (const auto &command : scene.describe(kCanvas).commands)
     {
         const auto *fill = std::get_if<FillRect>(&command);
 
@@ -341,10 +413,10 @@ TEST_F(DemoSceneTest, Describe_LeavesTheRestOfTheCanvasAlone)
 
 TEST_F(DemoSceneTest, Describe_ScalesTheTextToTheCanvas)
 {
-    const auto small =
-        firstTextOf(scene.describe(Size{.width = 320, .height = 100}));
-    const auto large =
-        firstTextOf(scene.describe(Size{.width = 1280, .height = 720}));
+    const auto small = firstTextOf(
+        scene.describe(Size{.width = 320, .height = 100}).commands);
+    const auto large = firstTextOf(
+        scene.describe(Size{.width = 1280, .height = 720}).commands);
 
     ASSERT_TRUE(small.has_value());
     ASSERT_TRUE(large.has_value());
@@ -357,7 +429,8 @@ TEST_F(DemoSceneTest, Describe_ScalesTheTextToTheCanvas)
 // Text is never drawn outside the canvas instead.
 TEST_F(DemoSceneTest, Describe_DrawsNoTextOnACanvasTooSmallForAny)
 {
-    const auto picture = scene.describe(Size{.width = 1, .height = 1});
+    const auto picture =
+        scene.describe(Size{.width = 1, .height = 1}).commands;
 
     EXPECT_TRUE(textsOf(picture).empty());
 }
@@ -371,5 +444,5 @@ TEST_F(DemoSceneTest, Draw_PaintsThePanelAfterTheTextures)
     EXPECT_CALL(renderer, drawTexture(_, _, _, _)).Times(2);
     EXPECT_CALL(renderer, drawText(_, _, _, _)).Times(AnyNumber());
 
-    scene.draw(renderer, kCanvas, logo);
+    scene.draw(renderer, kCanvas, logo, scene.describe(kCanvas).commands);
 }

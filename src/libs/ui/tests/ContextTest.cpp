@@ -41,7 +41,7 @@ TEST(ContextTest, Finish_GivesNothingForAFrameWithNoWidgets)
 {
     Context ui{kCanvas, plainTheme()};
 
-    EXPECT_EQ(DrawList{}, ui.finish());
+    EXPECT_EQ(DrawList{}, ui.finish().commands);
 }
 
 TEST(ContextTest, Theme_IsTheOneItWasGiven)
@@ -60,7 +60,7 @@ TEST(ContextTest, Row_DrawsNothingOfItsOwn)
         const auto row = ui.row({.height = fixedSize(10)});
     }
 
-    EXPECT_EQ(DrawList{}, ui.finish());
+    EXPECT_EQ(DrawList{}, ui.finish().commands);
 }
 
 TEST(ContextTest, Column_StacksItsChildrenDownwards)
@@ -82,7 +82,7 @@ TEST(ContextTest, Column_StacksItsChildrenDownwards)
                 .text = "cd",
                 .scale = 1,
                 .color = kInk}}),
-        ui.finish());
+        ui.finish().commands);
 }
 
 TEST(ContextTest, Context_PutsTheThemeGapBetweenChildren)
@@ -92,7 +92,7 @@ TEST(ContextTest, Context_PutsTheThemeGapBetweenChildren)
     ui.label("ab");
     ui.label("cd");
 
-    const auto commands = ui.finish();
+    const auto commands = ui.finish().commands;
 
     ASSERT_EQ(2U, commands.size());
 
@@ -117,7 +117,7 @@ TEST(ContextTest, Context_PrefersAGapAskedForOverTheThemes)
         ui.label("cd");
     }
 
-    const auto commands = ui.finish();
+    const auto commands = ui.finish().commands;
 
     ASSERT_EQ(2U, commands.size());
     EXPECT_EQ(
@@ -136,7 +136,7 @@ TEST(ContextTest, Finish_GivesTheSameAnswerTwice)
 
     ui.label("ab");
 
-    const auto first = ui.finish();
+    const auto first = ui.finish().commands;
 
-    EXPECT_EQ(first, ui.finish());
+    EXPECT_EQ(first, ui.finish().commands);
 }

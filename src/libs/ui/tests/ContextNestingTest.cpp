@@ -73,7 +73,7 @@ TEST(ContextNestingTest, Nesting_DrawsARowInsideAColumnInsideAPanel)
                 .text = "ab",
                 .scale = 1,
                 .color = kInk}}),
-        ui.finish());
+        ui.finish().commands);
 }
 
 // The whole point of fitting.
@@ -99,7 +99,7 @@ TEST(ContextNestingTest, Nesting_LetsAFittingContainerSizeItself)
                 .text = "ab",
                 .scale = 1,
                 .color = kInk}}),
-        ui.finish());
+        ui.finish().commands);
 }
 
 // Two columns side by side in a row, each holding its own child.
@@ -134,5 +134,5 @@ TEST(ContextNestingTest, Nesting_PutsSiblingColumnsSideBySide)
                 .text = "cd",
                 .scale = 1,
                 .color = kInk}}),
-        ui.finish());
+        ui.finish().commands);
 }

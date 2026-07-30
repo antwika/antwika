@@ -19,6 +19,7 @@
 #include "antwika/game/IsoProjection.hpp"
 #include "antwika/game/Path.hpp"
 #include "antwika/game/PathIndex.hpp"
+#include "antwika/game/UiOverlay.hpp"
 #include "antwika/game/Walker.hpp"
 
 using antwika::ecs::SystemScheduler;
@@ -32,6 +33,7 @@ using antwika::game::GridExtent;
 using antwika::game::GridSink;
 using antwika::game::Path;
 using antwika::game::PathIndex;
+using antwika::game::UiOverlay;
 using antwika::game::Walker;
 using antwika::input::InputError;
 using antwika::input::InputEvent;
@@ -98,8 +100,12 @@ namespace
         Camera camera{antwika::gfx::Point{.x = 400, .y = 40}};
         SystemScheduler scheduler;
         InputEventCodec codec;
+
+        // Nothing has drawn a toolbar, so nothing is covered.
+        // The tests that care say otherwise for themselves.
+        UiOverlay overlay;
         GridSink sink{
-            world, paths, camera, kExtent, scheduler, codec};
+            world, paths, camera, kExtent, scheduler, codec, overlay};
     };
 } // namespace
 
@@ -317,4 +323,42 @@ TEST_F(GridSinkTest, Handle_LetsAMalformedInputPayloadThrough)
                     .name = "input.pointer_down",
                     .payload = "not json"}}),
         InputError);
+}
+
+// What the toolbar covers, it covers from the grid too.
+TEST_F(GridSinkTest, LeftPress_LaysNoPathWhereTheToolbarIs)
+{
+    constexpr Cell target{.x = 3, .y = 4};
+
+    overlay.set({}, true);
+    clickAt(target, MouseButton::Left);
+
+    EXPECT_FALSE(paths.has(target));
+    EXPECT_EQ(paths.size(), 0U);
+}
+
+TEST_F(GridSinkTest, Scroll_DoesNotZoomWhereTheToolbarIs)
+{
+    const auto before = camera;
+
+    overlay.set({}, true);
+    send(PointerScrolled{.vertical = 1});
+
+    EXPECT_EQ(before, camera);
+}
+
+// A pan begun on the grid must not stop dead under the bar.
+TEST_F(GridSinkTest, Move_KeepsPanningAcrossTheToolbar)
+{
+    send(
+        PointerButtonPressed{
+            .button = MouseButton::Middle,
+            .position = Position{.x = 100, .y = 100}});
+
+    const auto before = camera.pan();
+
+    overlay.set({}, true);
+    send(PointerMoved{.position = Position{.x = 110, .y = 100}});
+
+    EXPECT_EQ(before.x + 10, camera.pan().x);
 }

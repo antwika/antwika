@@ -65,7 +65,7 @@ TEST(ContextWidgetsTest, Label_UsesTheThemesTextColour)
 
     ui.label("ab");
 
-    const auto commands = ui.finish();
+    const auto commands = ui.finish().commands;
 
     ASSERT_EQ(1U, commands.size());
     EXPECT_EQ(kInk, std::get<DrawText>(commands.at(0)).color);
@@ -77,7 +77,7 @@ TEST(ContextWidgetsTest, Label_TakesAColourOfItsOwn)
 
     ui.label("ab", ui.theme().muted);
 
-    const auto commands = ui.finish();
+    const auto commands = ui.finish().commands;
 
     ASSERT_EQ(1U, commands.size());
     EXPECT_EQ(kMuted, std::get<DrawText>(commands.at(0)).color);
@@ -89,7 +89,7 @@ TEST(ContextWidgetsTest, Button_DrawsAFilledBoxAroundItsLabel)
 
     ui.button("ab");
 
-    const auto commands = ui.finish();
+    const auto commands = ui.finish().commands;
 
     ASSERT_EQ(2U, commands.size());
     EXPECT_EQ(
@@ -112,18 +112,18 @@ TEST(ContextWidgetsTest, Button_UsesTheHoveredFillWhenToldTo)
 {
     Context ui{kCanvas, plainTheme()};
 
-    ui.button("ab", ButtonState::Hovered);
+    ui.button("ab", {.state = ButtonState::Hovered});
 
-    EXPECT_EQ(kHovered, fillColorOf(ui.finish()));
+    EXPECT_EQ(kHovered, fillColorOf(ui.finish().commands));
 }
 
 TEST(ContextWidgetsTest, Button_UsesThePressedFillWhenToldTo)
 {
     Context ui{kCanvas, plainTheme()};
 
-    ui.button("ab", ButtonState::Pressed);
+    ui.button("ab", {.state = ButtonState::Pressed});
 
-    EXPECT_EQ(kPressed, fillColorOf(ui.finish()));
+    EXPECT_EQ(kPressed, fillColorOf(ui.finish().commands));
 }
 
 // A growing button centres its label out of the room it was given.
@@ -131,9 +131,9 @@ TEST(ContextWidgetsTest, Button_CentresItsLabelWhenAskedToGrow)
 {
     Context ui{kCanvas, plainTheme()};
 
-    ui.button("ab", ButtonState::Idle, kGrow);
+    ui.button("ab", {.width = kGrow});
 
-    const auto commands = ui.finish();
+    const auto commands = ui.finish().commands;
 
     ASSERT_EQ(2U, commands.size());
     EXPECT_EQ(
@@ -160,7 +160,7 @@ TEST(ContextWidgetsTest, Spacer_PushesWhatFollowsToTheEndOfARow)
         ui.label("ab");
     }
 
-    const auto commands = ui.finish();
+    const auto commands = ui.finish().commands;
 
     ASSERT_EQ(1U, commands.size());
     EXPECT_EQ(88, std::get<DrawText>(commands.at(0)).origin.x);
@@ -177,7 +177,7 @@ TEST(ContextWidgetsTest, Spacer_PushesWhatFollowsToTheBottomOfAColumn)
         ui.label("ab");
     }
 
-    const auto commands = ui.finish();
+    const auto commands = ui.finish().commands;
 
     ASSERT_EQ(1U, commands.size());
     EXPECT_EQ(92, std::get<DrawText>(commands.at(0)).origin.y);
@@ -191,7 +191,7 @@ TEST(ContextWidgetsTest, Panel_FillsInTheThemesBackgroundAndPadding)
 
     ui.label("ab");
 
-    const auto commands = ui.finish();
+    const auto commands = ui.finish().commands;
 
     ASSERT_EQ(2U, commands.size());
     EXPECT_EQ(kPanel, fillColorOf(commands));
@@ -211,7 +211,7 @@ TEST(ContextWidgetsTest, Panel_KeepsABackgroundAndPaddingAskedFor)
 
     ui.label("ab");
 
-    const auto commands = ui.finish();
+    const auto commands = ui.finish().commands;
 
     ASSERT_EQ(2U, commands.size());
     EXPECT_EQ(kAccent, fillColorOf(commands));

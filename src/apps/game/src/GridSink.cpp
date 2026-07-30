@@ -38,13 +38,15 @@ namespace antwika::game
         Camera &camera,
         GridExtent extent,
         SystemScheduler &scheduler,
-        const IInputEventCodec &codec)
+        const IInputEventCodec &codec,
+        const UiOverlay &overlay)
         : world(world),
           paths(paths),
           camera(camera),
           extent(extent),
           scheduler(scheduler),
-          codec(codec)
+          codec(codec),
+          overlay(overlay)
     {
     }
 
@@ -81,6 +83,14 @@ namespace antwika::game
         Point previous,
         bool wasDragging)
     {
+        // Whatever the toolbar covers, it covers from the grid too.
+        // A movement is exempt, so a pan begun on the grid can cross it.
+        if (overlay.pointerOverUi()
+            && !std::holds_alternative<PointerMoved>(event))
+        {
+            return;
+        }
+
         if (const auto *moved = std::get_if<PointerMoved>(&event))
         {
             // Only while the middle button is already down.

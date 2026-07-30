@@ -1,6 +1,7 @@
 #include "antwika/ui/Context.hpp"
 
 #include <memory>
+#include <optional>
 #include <string>
 #include <string_view>
 #include <utility>
@@ -11,10 +12,12 @@
 #include "antwika/ui/Sizing.hpp"
 
 #include "Flatten.hpp"
+#include "Interactive.hpp"
 #include "Layout.hpp"
 #include "LayoutTree.hpp"
 #include "Node.hpp"
 #include "NodeKind.hpp"
+#include "Resolve.hpp"
 
 namespace antwika::ui
 {
@@ -26,6 +29,7 @@ namespace antwika::ui
 
     namespace
     {
+        using detail::Interactive;
         using detail::Node;
 
         Color buttonFill(const Theme &theme, ButtonState state) noexcept
@@ -44,9 +48,10 @@ namespace antwika::ui
         }
     } // namespace
 
-    Context::Context(Size canvas, Theme theme)
+    Context::Context(Size canvas, Theme theme, Pointer pointer)
         : canvasSize{canvas},
           themeValue{theme},
+          pointerValue{std::move(pointer)},
           tree{std::make_unique<detail::LayoutTree>(Node{ // GCOVR_EXCL_LINE
               .axis = Axis::Column,
               .width = kGrow,
@@ -103,16 +108,29 @@ namespace antwika::ui
             .textColor = color});
     }
 
-    void Context::button(
-        std::string_view text, ButtonState state, Sizing width)
+    void Context::button(std::string_view text, ButtonSpec spec)
     {
+        // A button told how to look is dressed here and for good.
+        // One left to work it out carries the colours instead.
+        // resolve() picks between them once there is a layout.
+        const auto state = spec.state.value_or(ButtonState::Idle);
+
+        const auto style =
+            spec.state ? std::optional<Interactive>{}
+                       : std::optional<Interactive>{Interactive{
+                             .idle = themeValue.buttonIdle,
+                             .hovered = themeValue.buttonHovered,
+                             .pressed = themeValue.buttonPressed}};
+
         tree->open(Node{ // GCOVR_EXCL_LINE
             .axis = Axis::Row,
-            .width = width,
+            .width = spec.width,
             .height = kFit,
             .cross = Alignment::Center,
             .padding = themeValue.buttonPadding,
-            .background = buttonFill(themeValue, state)});
+            .background = buttonFill(themeValue, state),
+            .id = spec.id,
+            .style = style});
 
         // Growing room on both sides is what centres the label.
         // It comes out of the distribution the layout already does.
@@ -143,11 +161,15 @@ namespace antwika::ui
         tree->add(std::move(node));
     }
 
-    DrawList Context::finish()
+    Frame Context::finish()
     {
         detail::layout(*tree, canvasSize);
 
-        return detail::flatten(*tree);
+        const auto interactions = detail::resolve(*tree, pointerValue);
+
+        return Frame{ // GCOVR_EXCL_LINE
+            .commands = detail::flatten(*tree),
+            .interactions = interactions};
     }
 
     void Context::closeContainer() noexcept

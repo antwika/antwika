@@ -18,6 +18,7 @@
 #include "antwika/game/PathIndex.hpp"
 #include "antwika/game/RenderSystem.hpp"
 #include "antwika/game/TileAtlas.hpp"
+#include "antwika/game/UiOverlay.hpp"
 
 using antwika::ecs::World;
 using antwika::game::Camera;
@@ -27,6 +28,7 @@ using antwika::game::GridScene;
 using antwika::game::PathIndex;
 using antwika::game::RenderSystem;
 using antwika::game::roadTile;
+using antwika::game::UiOverlay;
 using antwika::gfx::Size;
 using antwika::gfx::mocks::MockRenderer;
 using antwika::gfx::mocks::MockTexture;
@@ -52,6 +54,7 @@ TEST(RenderSystemTest, Update_DrawsAndThenPresentsExactlyOneFrame)
     PathIndex paths;
     const Camera camera;
     const GridScene scene;
+    const UiOverlay overlay;
     NiceMock<MockTexture> atlas;
 
     NiceMock<MockRenderer> renderer;
@@ -59,7 +62,8 @@ TEST(RenderSystemTest, Update_DrawsAndThenPresentsExactlyOneFrame)
     ON_CALL(window, renderer()).WillByDefault(ReturnRef(renderer));
     ON_CALL(window, size()).WillByDefault(Return(kCanvas));
 
-    RenderSystem system(window, scene, atlas, paths, camera, kExtent);
+    RenderSystem system(
+        window, scene, atlas, paths, camera, kExtent, overlay);
 
     ::testing::InSequence order;
     EXPECT_CALL(renderer, clear(_));
@@ -76,6 +80,7 @@ TEST(RenderSystemTest, Update_ReadsTheWindowsSizeEveryTick)
     PathIndex paths;
     const Camera camera;
     const GridScene scene;
+    const UiOverlay overlay;
     NiceMock<MockTexture> atlas;
 
     NiceMock<MockRenderer> renderer;
@@ -87,7 +92,8 @@ TEST(RenderSystemTest, Update_ReadsTheWindowsSizeEveryTick)
         .WillOnce(Return(kCanvas))
         .WillOnce(Return(Size{.width = 640, .height = 480}));
 
-    RenderSystem system(window, scene, atlas, paths, camera, kExtent);
+    RenderSystem system(
+        window, scene, atlas, paths, camera, kExtent, overlay);
 
     system.update(world, 0);
     system.update(world, 1);
@@ -101,6 +107,7 @@ TEST(RenderSystemTest, Update_DrawsThePathsItIsGiven)
     paths.insert(Cell{.x = 0, .y = 0});
     const Camera camera;
     const GridScene scene;
+    const UiOverlay overlay;
     NiceMock<MockTexture> atlas;
 
     NiceMock<MockRenderer> renderer;
@@ -108,7 +115,8 @@ TEST(RenderSystemTest, Update_DrawsThePathsItIsGiven)
     ON_CALL(window, renderer()).WillByDefault(ReturnRef(renderer));
     ON_CALL(window, size()).WillByDefault(Return(kCanvas));
 
-    RenderSystem system(window, scene, atlas, paths, camera, kExtent);
+    RenderSystem system(
+        window, scene, atlas, paths, camera, kExtent, overlay);
 
     // The ground alone is one blit per cell.
     // A lone road adds its own, from the tile with no links.

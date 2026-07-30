@@ -4,6 +4,7 @@ add_library(antwika_ui
     src/Layout.cpp
     src/LayoutTree.cpp
     src/Painter.cpp
+    src/Resolve.cpp
     src/Scope.cpp
     src/Theme.cpp
 )

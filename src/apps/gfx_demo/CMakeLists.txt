@@ -24,6 +24,8 @@ target_link_libraries(antwika_gfx_demo
     PRIVATE
         antwika::gfx
         antwika::gfx_backend
+        antwika::input
+        antwika::input_backend
         antwika::log
         antwika::time
         antwika::ui

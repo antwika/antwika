@@ -2,11 +2,11 @@
 
 #include <array>
 #include <cstdint>
+#include <string>
 
 #include <antwika/gfx/Color.hpp>
 #include <antwika/gfx/Point.hpp>
 #include <antwika/gfx/Rect.hpp>
-#include <antwika/ui/ButtonState.hpp>
 #include <antwika/ui/Context.hpp>
 #include <antwika/ui/Painter.hpp>
 #include <antwika/ui/Sizing.hpp>
@@ -18,7 +18,6 @@ namespace antwika::gfx_demo
     using antwika::gfx::Color;
     using antwika::gfx::Point;
     using antwika::gfx::Rect;
-    using antwika::ui::ButtonState;
     using antwika::ui::Context;
     using antwika::ui::fixedSize;
     using antwika::ui::kFit;
@@ -57,7 +56,10 @@ namespace antwika::gfx_demo
     } // namespace
 
     void DemoScene::draw(
-        IRenderer &renderer, Size canvas, const ITexture &logo) const
+        IRenderer &renderer,
+        Size canvas,
+        const ITexture &logo,
+        const DrawList &overlay) const
     {
         renderer.clear(kBackground);
 
@@ -108,12 +110,14 @@ namespace antwika::gfx_demo
             kWarmTint);
 
         // Last, so the panel reads as being in front of the scene.
-        paint(renderer, describe(canvas));
+        paint(renderer, overlay);
     }
 
-    DrawList DemoScene::describe(Size canvas) const
+    Frame DemoScene::describe(
+        Size canvas, Pointer pointer, std::uint32_t clicks) const
     {
-        Context ui{canvas, scaledTheme(Theme{}, scaleForCanvas(canvas))};
+        Context ui{
+            canvas, scaledTheme(Theme{}, scaleForCanvas(canvas)), pointer};
 
         {
             const auto panel = ui.panel({
@@ -141,6 +145,9 @@ namespace antwika::gfx_demo
                     ui.label("nested rows");
                     ui.label("and columns");
 
+                    // The one thing on screen that a press changes.
+                    ui.label("clicks " + std::to_string(clicks));
+
                     // Growing room, so the buttons sit at the bottom.
                     ui.spacer(kGrow);
 
@@ -150,8 +157,8 @@ namespace antwika::gfx_demo
                         // And again, so they sit at the right.
                         ui.spacer(kGrow);
 
-                        ui.button("cancel");
-                        ui.button("ok", ButtonState::Hovered);
+                        ui.button("reset", {.id = widgets::kReset});
+                        ui.button("count", {.id = widgets::kCount});
                     }
                 }
             }

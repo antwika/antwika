@@ -266,7 +266,9 @@ ui::Context ui{canvas, ui::scaledTheme(ui::Theme{}, ui::scaleForCanvas(canvas))}
     }
 }
 
-paint(renderer, ui.finish());
+const auto frame = ui.finish();
+
+paint(renderer, frame.commands);
 ```
 
 Deferring the layout is what makes nesting work: a container cannot size itself from children it has not seen yet, so a one-pass design can only nest when the caller has already worked out every number.
@@ -275,14 +277,37 @@ Measuring runs backwards over the tree and arranging runs forwards, both as flat
 A container is opened by a `[[nodiscard]]` scope guard and closed when that guard goes out of scope.
 There is no `end()` of any kind, so a mis-nested layout is not something the API can express.
 
-`finish()` returns a `DrawList` — a plain vector of fill and text commands — and `paint()` turns that into renderer calls.
+`finish()` returns a `Frame`: a `DrawList` — a plain vector of fill and text commands — and what the pointer did to the widgets.
+`paint()` turns the commands into renderer calls.
 Keeping the picture as a value is what lets a whole layout be compared against an expected one in a test with no renderer, no window and no graphics framework involved.
 `paint()` neither clears nor presents: a UI is drawn over whatever is already there, and whoever owns the frame decides when it is done.
 
-Nothing here reads a pointer or a keyboard, and nothing it produces reaches the engine.
-A button takes the appearance it should have as an argument, so an application that knows which button is in play can say so, and rendering stays the write-only projection the replay guarantee depends on.
+A button can be clicked.
+Name it in its spec and it works out its own hovered and pressed appearance, and `finish().interactions` reports which one a press landed on:
+
+```cpp
+constexpr ui::WidgetId kOk{1};
+
+ui::Context ui{canvas, theme, pointer};
+
+ui.button("ok", {.id = kOk});
+
+if (ui.finish().interactions.activated == kOk)
+{
+    // ...
+}
+```
+
+The pointer arrives as an argument rather than from a device, so the library still depends on `antwika::gfx` and nothing else — an application folds `antwika::input`'s edges into an `InputState` and hands the result across as a value.
+Everything is resolved against the layout of the frame being drawn, so what a press hit is what was on screen when it was pressed.
+
+Nothing is retained between frames: a widget activates on the press rather than on a release matched to it, which is what keeps the whole library a pure function of its declarations, its canvas and its pointer.
+A button can still be told how to look, for the application that knows which one is in play.
+
+An application drives all of this from inside its tick loop, downstream of the replay recorder, so a recorded click regenerates the button press rather than the press being recorded as well — `apps/game`'s `UiSink` is the worked example.
 
 `apps/gfx_demo` (`antwika_gfx_demo`) is the showcase: a header, a sidebar sized from its own longest label, a growing main column, and a row of buttons pushed to the bottom right by growing spacers.
+The buttons work: one counts your clicks and the other puts the count back to zero.
 
 ```sh
 build/bin/antwika_gfx_demo    # needs a display; use xvfb-run without one
