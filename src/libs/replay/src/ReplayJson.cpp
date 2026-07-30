@@ -89,6 +89,11 @@ namespace antwika::replay
             };
         }
         return document;
+
+        // gcov puts this function's cleanup block on its closing brace.
+        // Returning an aggregate that owns a vector is what creates one.
+        // No input reaches it: the function is covered, the brace is not.
+        // replayToJson below returns by value and reports the same.
     } // GCOVR_EXCL_LINE
 
     nlohmann::json replayToJson(
