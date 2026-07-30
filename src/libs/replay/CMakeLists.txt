@@ -7,6 +7,7 @@ add_library(antwika_replay
     src/EventSchema.cpp
     src/ReplayCli.cpp
     src/ReplayJson.cpp
+    src/ReplayOutput.cpp
     src/ReplayReader.cpp
     src/ReplaySource.cpp
     src/ReplayWriter.cpp
