@@ -1,8 +1,12 @@
 add_executable(antwika_game
     src/Game.cpp
     src/GameStateReducer.cpp
+    src/DiamondSpans.cpp
+    src/GridScene.cpp
     src/GridSink.cpp
     src/PathIndex.cpp
+    src/RenderSystem.cpp
+    src/SceneSnapshot.cpp
     src/WalkerSystem.cpp
     src/main.cpp
 )
