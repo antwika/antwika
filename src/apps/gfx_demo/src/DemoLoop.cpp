@@ -116,6 +116,13 @@ namespace antwika::gfx_demo
                 .down = mouse.isDown(MouseButton::Left),
                 .pressed = mouse.wasPressed(MouseButton::Left)};
 
+            // The size the window reports, not the size it was asked for.
+            // Every other app here refuses to lay a UI out against that.
+            // This demo lays out and hit-tests it in the same frame.
+            // Nothing records the click, so no later run can disagree.
+            // An app with a replay must use the configured size instead.
+            // A hit-test follows the layout, and a layout the canvas.
+            // See game::UiOverlay, which owns a canvas for that reason.
             const auto canvas = window->size();
             auto picture = scene.describe(canvas, pointer, clickCount);
             const auto activated = picture.interactions.activated;
