@@ -3,6 +3,7 @@ find_package(raylib REQUIRED)
 add_library(antwika_gfx_backend
     src/RaylibBackend.cpp
     src/RaylibRenderer.cpp
+    src/RaylibTexture.cpp
     src/RaylibWindow.cpp
     src/SelectedBackend.cpp
 )

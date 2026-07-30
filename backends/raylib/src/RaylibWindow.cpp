@@ -116,6 +116,8 @@ namespace antwika::gfx::raylib
 
         lastSize = currentSize();
 
+        // Before CloseWindow, and load-bearing for textures.
+        // detach() unloads them while the GL context still exists.
         raylibRenderer.detach();
 
         CloseWindow();

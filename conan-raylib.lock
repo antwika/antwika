@@ -2,6 +2,7 @@
     "version": "0.5",
     "requires": [
         "xorg/system#87ea3cbfa907ff490f4ece2f5fa3dbb9%1781197504.821",
+        "stb/cci.20240531#ede183dce303916dab0c1b835df3926a%1720366012.336",
         "raylib/6.0#4e39a8be96a10eb27035f97e83620a2d%1778514330.619",
         "opengl/system#cfcf523b9d2bad75cbf377f56562634c%1762526044.744",
         "nlohmann_json/3.12.0#2d634ab0ec8d9f56353e5ccef6d6612c%1744735883.94",

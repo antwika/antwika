@@ -18,9 +18,15 @@ namespace antwika::gfx_demo
     }
 
     void DemoLoop::run(
-        const WindowDesc &desc, std::optional<std::uint32_t> maxFrames)
+        const WindowDesc &desc,
+        const Bitmap &logo,
+        std::optional<std::uint32_t> maxFrames)
     {
         const auto window = backend.createWindow(desc);
+
+        // After the window, since a backend may have no device yet.
+        // Declared after it too, so it is destroyed first.
+        const auto texture = window->renderer().createTexture(logo);
 
         for (std::uint32_t frame = 0;
              !maxFrames.has_value() || frame < maxFrames.value();
@@ -46,7 +52,7 @@ namespace antwika::gfx_demo
                 break;
             }
 
-            scene.draw(window->renderer(), window->size());
+            scene.draw(window->renderer(), window->size(), *texture);
             window->renderer().present();
         }
 

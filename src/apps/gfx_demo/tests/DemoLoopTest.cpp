@@ -1,20 +1,26 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
+#include <cstdint>
 #include <memory>
 #include <optional>
+#include <vector>
 
+#include <antwika/gfx/Bitmap.hpp>
 #include <antwika/gfx/Size.hpp>
 #include <antwika/gfx/WindowDesc.hpp>
 #include <antwika/gfx/WindowEvent.hpp>
 #include <antwika/gfx/mocks/MockGfxBackend.hpp>
 #include <antwika/gfx/mocks/MockRenderer.hpp>
+#include <antwika/gfx/mocks/MockTexture.hpp>
 #include <antwika/gfx/mocks/MockWindow.hpp>
 
 #include "antwika/gfx_demo/DemoLoop.hpp"
 #include "antwika/gfx_demo/DemoScene.hpp"
 
+using antwika::gfx::Bitmap;
 using antwika::gfx::CloseRequested;
+using antwika::gfx::ITexture;
 using antwika::gfx::IWindow;
 using antwika::gfx::Resized;
 using antwika::gfx::Size;
@@ -23,6 +29,7 @@ using antwika::gfx::WindowEvent;
 using antwika::gfx::WindowId;
 using antwika::gfx::mocks::MockGfxBackend;
 using antwika::gfx::mocks::MockRenderer;
+using antwika::gfx::mocks::MockTexture;
 using antwika::gfx::mocks::MockWindow;
 using antwika::gfx_demo::DemoLoop;
 using antwika::gfx_demo::DemoScene;
@@ -46,6 +53,14 @@ namespace
         static constexpr WindowId kOurWindow{1};
         static constexpr WindowId kSomeoneElsesWindow{99};
 
+        // A real 1x1 bitmap for the loop to hand to createTexture.
+        static Bitmap logo()
+        {
+            return Bitmap{
+                .size = {.width = 1, .height = 1},
+                .pixels = std::vector<std::uint8_t>{1, 2, 3, 255}};
+        }
+
         void expectOneWindow(bool open)
         {
             auto owned = std::make_unique<NiceMock<MockWindow>>();
@@ -60,6 +75,13 @@ namespace
             EXPECT_CALL(backend, createWindow(::testing::_))
                 .WillOnce(Return(ByMove(
                     std::unique_ptr<IWindow>(std::move(owned)))));
+
+            // WillOnce is the assertion here.
+            // The upload happens once a run, not once a frame.
+            EXPECT_CALL(renderer, createTexture(::testing::_))
+                .WillOnce(Return(ByMove(
+                    std::unique_ptr<ITexture>(
+                        std::make_unique<NiceMock<MockTexture>>()))));
         }
     };
 } // namespace
@@ -78,7 +100,7 @@ TEST(DemoLoopTest, Run_DrawsAndPresentsOncePerFrame)
     const DemoScene scene;
     DemoLoop loop(fixture.backend, scene);
 
-    loop.run(WindowDesc{.title = "Antwika"}, 2);
+    loop.run(WindowDesc{.title = "Antwika"}, DemoFixture::logo(), 2);
 }
 
 TEST(DemoLoopTest, Run_ClosesTheWindowWhenTheBackendReportsACloseRequest)
@@ -101,7 +123,7 @@ TEST(DemoLoopTest, Run_ClosesTheWindowWhenTheBackendReportsACloseRequest)
     // Closing an already-closed window is part of IWindow's contract.
     EXPECT_CALL(*fixture.window, close()).Times(2);
 
-    loop.run(WindowDesc{.title = "Antwika"}, 10);
+    loop.run(WindowDesc{.title = "Antwika"}, DemoFixture::logo(), 10);
 }
 
 TEST(DemoLoopTest, Run_KeepsDrawingThroughEventsThatAreNotCloseRequests)
@@ -120,7 +142,7 @@ TEST(DemoLoopTest, Run_KeepsDrawingThroughEventsThatAreNotCloseRequests)
     const DemoScene scene;
     DemoLoop loop(fixture.backend, scene);
 
-    loop.run(WindowDesc{.title = "Antwika"}, 1);
+    loop.run(WindowDesc{.title = "Antwika"}, DemoFixture::logo(), 1);
 }
 
 TEST(DemoLoopTest, Run_IgnoresACloseRequestForSomebodyElsesWindow)
@@ -142,7 +164,7 @@ TEST(DemoLoopTest, Run_IgnoresACloseRequestForSomebodyElsesWindow)
     // Only the one on the way out, never one caused by that event.
     EXPECT_CALL(*fixture.window, close()).Times(1);
 
-    loop.run(WindowDesc{.title = "Antwika"}, 1);
+    loop.run(WindowDesc{.title = "Antwika"}, DemoFixture::logo(), 1);
 }
 
 TEST(DemoLoopTest, Run_WithoutAFrameCapDrawsUntilTheWindowCloses)
@@ -169,7 +191,25 @@ TEST(DemoLoopTest, Run_WithoutAFrameCapDrawsUntilTheWindowCloses)
     const DemoScene scene;
     DemoLoop loop(fixture.backend, scene);
 
-    loop.run(WindowDesc{.title = "Antwika"}, std::nullopt);
+    loop.run(WindowDesc{.title = "Antwika"}, DemoFixture::logo(), std::nullopt);
+}
+
+TEST(DemoLoopTest, Run_UploadsTheTextureOnceForTheWholeRun)
+{
+    DemoFixture fixture;
+    fixture.expectOneWindow(true);
+
+    ON_CALL(fixture.backend, pollEvent())
+        .WillByDefault(Return(std::nullopt));
+
+    // Three frames drawn.
+    // The WillOnce in expectOneWindow says one upload even so.
+    EXPECT_CALL(fixture.renderer, present()).Times(3);
+
+    const DemoScene scene;
+    DemoLoop loop(fixture.backend, scene);
+
+    loop.run(WindowDesc{.title = "Antwika"}, DemoFixture::logo(), 3);
 }
 
 TEST(DemoLoopTest, Run_OpensAndClosesTheWindowEvenWithNoFrames)
@@ -185,5 +225,5 @@ TEST(DemoLoopTest, Run_OpensAndClosesTheWindowEvenWithNoFrames)
 
     EXPECT_CALL(*fixture.window, close()).Times(1);
 
-    loop.run(WindowDesc{.title = "Antwika"}, 0);
+    loop.run(WindowDesc{.title = "Antwika"}, DemoFixture::logo(), 0);
 }

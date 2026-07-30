@@ -1,12 +1,15 @@
 #pragma once
 
 #include <cstdint>
+#include <memory>
 #include <string_view>
 
 #include <antwika/log/ILogger.hpp>
 
+#include "antwika/gfx/Bitmap.hpp"
 #include "antwika/gfx/Color.hpp"
 #include "antwika/gfx/IRenderer.hpp"
+#include "antwika/gfx/ITexture.hpp"
 #include "antwika/gfx/Point.hpp"
 #include "antwika/gfx/Rect.hpp"
 
@@ -62,6 +65,31 @@ namespace antwika::gfx::detail
             std::string_view text,
             std::uint32_t scale,
             Color color) override;
+
+        /**
+         * @brief Create a texture that holds nothing but its size.
+         *
+         * Still checks the bitmap, so an application that would be
+         * refused by a real backend is refused here too.
+         * @param bitmap The pixels that would have been uploaded.
+         * @return A texture reporting the bitmap's size.
+         * @throws GfxError If the bitmap is not complete.
+         */
+        [[nodiscard]] std::unique_ptr<ITexture> createTexture(
+            const Bitmap &bitmap) override;
+
+        /**
+         * @brief Discard a blit.
+         * @param texture The texture that would have been sampled.
+         * @param source The region that would have been taken.
+         * @param destination The region that would have been filled.
+         * @param tint The tint it would have been drawn through.
+         */
+        void drawTexture(
+            const ITexture &texture,
+            Rect source,
+            Rect destination,
+            Color tint) override;
 
         /**
          * @brief Discard a present.
