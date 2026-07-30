@@ -39,11 +39,17 @@ namespace antwika::replay
 
     ReplayCliOptions replayCliOptionsFrom(const CommandLine &parsed)
     {
-        return ReplayCliOptions{
-            .recordPath = parsed.value("--record"),
-            .replayPath = parsed.value("--replay"),
-            .helpRequested = parsed.has(kHelpFlag),
-        };
+        // Members assigned one at a time, not built as an aggregate.
+        // An aggregate unwinds members it built if a later one throws.
+        // gcov counts one such landing pad per member.
+        // None are reachable without an allocation failure.
+        // All share the one line with real branches.
+        // An exclusion there would take those too.
+        ReplayCliOptions options;
+        options.recordPath = parsed.value("--record");
+        options.replayPath = parsed.value("--replay");
+        options.helpRequested = parsed.has(kHelpFlag);
+        return options;
     } // GCOVR_EXCL_LINE
 
     ReplayCliOptions parseReplayCliOptions(int argc, char **argv)

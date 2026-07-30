@@ -142,6 +142,6 @@ namespace antwika::replay
         appendFlagLine(text, helpSpec(), width);
 
         return text;
-    }
+    } // GCOVR_EXCL_LINE
 
 } // namespace antwika::replay
