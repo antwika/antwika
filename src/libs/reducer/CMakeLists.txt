@@ -1,3 +1,7 @@
+# Not on antwika_add_library: reducer is header-only, so it has no
+# sources to compile, no archive to install, and an INTERFACE include
+# directory rather than a PUBLIC one.
+# It is the only library in the tree shaped that way.
 add_library(antwika_reducer INTERFACE)
 
 add_library(antwika::reducer ALIAS antwika_reducer)
