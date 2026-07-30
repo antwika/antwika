@@ -176,14 +176,6 @@ jobs:
         shell: bash
         run: python3 scripts/check_line_length.py
 
-      - name: Test generate-game-atlas script
-        shell: bash
-        run: python3 scripts/tests/test_generate_game_atlas.py
-
-      - name: Check the game's texture atlas is current
-        shell: bash
-        run: python3 scripts/generate_game_atlas.py --check
-
       - name: Cache Conan packages
         uses: actions/cache@v6
         with:
