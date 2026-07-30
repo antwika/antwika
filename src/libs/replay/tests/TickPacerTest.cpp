@@ -87,4 +87,22 @@ TEST(TickPacerTest, Update_LeavesTheWorldUnchanged)
     world.commit();
 
     EXPECT_EQ(world.get<Marker>(entity), (Marker{.value = 3}));
+
+    // Removing and destroying instantiate the rest of this storage.
+    // A type used only here would leave its unused members uncovered.
+    // The coverage gate counts those as functions.
+    // Destroying is what reaches the pool's own removal callback.
+    world.remove<Marker>(entity);
+    world.commit();
+
+    EXPECT_FALSE(world.has<Marker>(entity));
+
+    const auto second = world.create();
+    world.add<Marker>(second, Marker{.value = 7});
+    world.commit();
+
+    world.destroy(second);
+    world.commit();
+
+    EXPECT_FALSE(world.has<Marker>(second));
 }
