@@ -28,7 +28,7 @@ class AntwikaConan(ConanFile):
         # antwika::gfx decodes an image once for every backend to
         # upload, so the decoder is not part of anyone's graph in
         # particular.
-        self.requires("stb/cci.20240531")
+        self.requires("stb/cci.20220909")
 
         if self.options.gfx_backend == "sdl3":
             self.requires("sdl/3.2.20")
