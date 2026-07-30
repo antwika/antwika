@@ -15,6 +15,7 @@
 #include <antwika/event/EventRecorder.hpp>
 #include <antwika/event/TickEvent.hpp>
 #include <antwika/event/TickEventRecorder.hpp>
+#include <antwika/gfx/GfxError.hpp>
 #include <antwika/gfx/Point.hpp>
 #include <antwika/gfx/PngReader.hpp>
 #include <antwika/gfx/SelectedBackend.hpp>
@@ -155,8 +156,15 @@ int main(int argc, char **argv)
 
         // Opening the file is the application's job, not the library's.
         // antwika::gfx decodes bytes and never goes looking for them.
+        // Which is why saying it is missing is this app's job too.
         std::ifstream atlasFile(
             ANTWIKA_GAME_ATLAS_PATH, std::ios::binary);
+        if (!atlasFile.is_open())
+        {
+            throw antwika::gfx::GfxError(
+                std::string("antwika_game: could not open the atlas: ")
+                + ANTWIKA_GAME_ATLAS_PATH);
+        }
         const auto atlasBitmap = PngReader{}.read(atlasFile);
 
         // After the window, since a backend may have no device yet.

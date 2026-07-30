@@ -51,8 +51,9 @@ namespace antwika::replay
      * @brief Load a replay document from a file and decode its events.
      * @param path Path to the replay file to read.
      * @return The decoded events, in the order they were recorded.
-     * @throws ReplayFormatError If the file can't be parsed as a replay
-     * document.
+     * @throws ReplayFormatError If the file can't be opened at all, or
+     * can't be parsed as a replay document. The two say so differently: a
+     * file that is not there is not a malformed one.
      */
     [[nodiscard]] std::vector<TickEvent> loadReplayFile(
         const std::string &path);
@@ -74,6 +75,9 @@ namespace antwika::replay
      * read, and an interactive one gets long enough for the indentation
      * to be most of the file. Pass Pretty for a replay meant to be
      * checked in and edited by hand.
+     * @throws ReplayFormatError If the file can't be opened, or if the
+     * bytes can't be written once it is. A recording is written once, at
+     * the end of a run, so failing quietly here loses the whole session.
      */
     void saveReplayFile(
         std::vector<TickEvent> events,

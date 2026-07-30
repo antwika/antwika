@@ -7,6 +7,7 @@
 #include <string>
 
 #include <antwika/gfx/Bitmap.hpp>
+#include <antwika/gfx/GfxError.hpp>
 #include <antwika/gfx/PngReader.hpp>
 #include <antwika/gfx/SelectedBackend.hpp>
 #include <antwika/gfx/WindowDesc.hpp>
@@ -64,8 +65,15 @@ int main()
 
         // Opening the file is the application's job, not the library's.
         // antwika::gfx decodes bytes and never goes looking for them.
+        // Which is why saying it is missing is this app's job too.
         std::ifstream file(
             ANTWIKA_GFX_DEMO_TEXTURE_PATH, std::ios::binary);
+        if (!file.is_open())
+        {
+            throw antwika::gfx::GfxError(
+                std::string("antwika_gfx_demo: could not open the logo: ")
+                + ANTWIKA_GFX_DEMO_TEXTURE_PATH);
+        }
         const auto logo = PngReader{}.read(file);
 
         const DemoScene scene;
