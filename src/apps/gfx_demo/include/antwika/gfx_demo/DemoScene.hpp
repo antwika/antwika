@@ -3,6 +3,7 @@
 #include <antwika/gfx/IRenderer.hpp>
 #include <antwika/gfx/ITexture.hpp>
 #include <antwika/gfx/Size.hpp>
+#include <antwika/ui/DrawList.hpp>
 
 namespace antwika::gfx_demo
 {
@@ -10,11 +11,12 @@ namespace antwika::gfx_demo
     using antwika::gfx::IRenderer;
     using antwika::gfx::ITexture;
     using antwika::gfx::Size;
+    using antwika::ui::DrawList;
 
     /**
      * @brief Draws the demo's picture: a flat background, a row of
-     * evenly spaced bars sized relative to the canvas, and the logo
-     * blitted twice.
+     * evenly spaced bars sized relative to the canvas, the logo blitted
+     * twice, and a panel of nested layouts laid out through antwika::ui.
      *
      * Stateless and deterministic on purpose. The same canvas size always
      * produces the same drawing calls in the same order, which is what
@@ -36,6 +38,17 @@ namespace antwika::gfx_demo
          */
         void draw(
             IRenderer &renderer, Size canvas, const ITexture &logo) const;
+
+        /**
+         * @brief Build the UI panel's picture without drawing it.
+         *
+         * Separate from draw() so a test can inspect the whole panel
+         * with no renderer involved at all.
+         *
+         * @param canvas The size of the area being drawn into.
+         * @return The drawing commands, in the order they are drawn.
+         */
+        [[nodiscard]] DrawList describe(Size canvas) const;
     };
 
 } // namespace antwika::gfx_demo
