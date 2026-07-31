@@ -36,6 +36,27 @@ Each has its own test under `scripts/tests/`, run with e.g. `python3 scripts/tes
 
 The one-sentence-per-line rule applies to this wiki too.
 
+## Adding a module
+
+A library or app is a directory under `src/libs/` or `src/apps/` owning its own `CMakeLists.txt`, `include/`, `src/` and `tests/`, and building an `antwika_<module>` target aliased to `antwika::<module>`.
+
+Use `antwika_add_library()` from [`cmake/AntwikaModule.cmake`](../cmake/AntwikaModule.cmake) rather than writing those blocks by hand:
+
+```cmake
+antwika_add_library(
+    NAME mylib
+    SOURCES
+        src/Thing.cpp
+    DEPENDS
+        antwika::log
+)
+```
+
+It writes the target, the alias, the include directories, the install and export rules, and the test subdirectory — everything a module has nothing particular to say about.
+Write them out longhand only when a module genuinely differs: [`gfx`](libraries/gfx.md) does, because it has a private dependency with its own compile definitions and one file compiled with warnings off, and its `CMakeLists.txt` opens by saying so.
+
+Then add the directory to the `src/libs/CMakeLists.txt` or `src/apps/CMakeLists.txt` listing.
+
 ## Tests
 
 Tests are written with GoogleTest, registered with CTest, and live in the module's own `tests/` directory.
@@ -59,7 +80,7 @@ CI requires **100% line, function and branch coverage** on the GNU leg, checked 
 ```sh
 cmake --preset conan-coverage
 cmake --build build-coverage -j24
-ctest --test-dir build-coverage
+ctest --test-dir build-coverage -j"$(nproc)"
 gcovr --root . --filter 'src/.*' --exclude '.*/tests/.*' --print-summary build-coverage
 ```
 

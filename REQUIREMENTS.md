@@ -123,14 +123,16 @@ Requirements for the Antwika project, gathered from `README.md`, `blog/001-build
 - The raylib input backend won't report a keyboard in its current scope, and says so through its capabilities rather than claiming a device whose events never arrive.
 - Walkers in `apps/game` won't collide: two may occupy one cell, because nothing requires otherwise and a rule to avoid it would be a requirement nobody asked for.
 - `Scheduler` won't include priority aging or anti-starvation: a continuous stream of higher-priority jobs can, by design, keep a lower-priority job pending indefinitely, since unconditional priority respect is the requirement, not a bug to work around.
-- `antwika::ui` won't read a keyboard, hold focus, or offer any widget that carries a value (a text field, a slider, a checkbox) in its current scope.
+- `antwika::ui` won't read a keyboard or hold focus *itself*: key edges arrive as a value argument and this frame's focus comes back out, so the state lives in application state where a replay regenerates it.
+- `antwika::ui` won't offer a slider or a checkbox in its current scope; a text field and a dropdown exist, and hold none of their own state for the same reason focus does not.
 - `antwika::ui` won't retain interaction state between frames, so there is no pointer capture and no release-to-activate; a caller that wants either builds it above the library.
 - `antwika::ui` won't read a clock, so nothing depends on how long a pointer rested or how quickly two clicks arrived -- no double-click, no hover delay, no tooltip.
 - `antwika::ui` won't reach a device: the pointer arrives as an argument, so the library depends on `antwika::gfx` and nothing else.
 - `antwika::ui` won't clip, scroll, or draw out of declaration order, since `antwika::gfx` offers no scissor and no z-order; a container that cannot fit its content shrinks it in proportion instead.
 - `antwika::ui` won't wrap text across lines, offer a main-axis alignment mode (a growing spacer expresses leading, trailing and centred content), weight how growing children share leftover room, or animate anything.
 - `antwika::ui` won't carry a style stack or cascade; one plain `Theme` value is passed to a frame and nothing overrides it per widget.
-- An application attaching `input::IdleMotionSource` won't draw anything that follows a free-moving pointer (a hover highlight, a rubber band, a custom cursor), since the movements between clicks are deliberately not in the tick stream.
+- An application attaching `input::IdleMotionSource` won't have those movements in its *recording*, since the gate is upstream of the recorder; drawing something that follows a free-moving pointer is done from `input::PointerHintChannel` instead, which is not an event and is in no recording.
+- What is read off `input::PointerHintChannel` won't decide anything but what is drawn: a live run and its replay deliberately disagree on the value, so folding one into simulation state would make the two diverge silently.
 - Sound backends won't be loadable at runtime, for the same reasons graphics and input backends aren't.
 - `antwika::sound` won't run a thread of its own, hold a lock, or carry a lock-free queue in its current scope; a device renders when it is pumped, on the thread that pumped it.
 - `antwika::sound` won't resample, so a waveform at one rate cannot be played by a device at another; converting a file is done once, offline, rather than per buffer.

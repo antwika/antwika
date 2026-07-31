@@ -10,13 +10,17 @@ Describing a nestable layout of rows, columns, panels, labels and buttons, and t
 
 | Header | Type | Role |
 | --- | --- | --- |
-| `Context.hpp` | `Context` | The immediate-mode surface: `row()`, `column()`, `panel()`, `label()`, `button()`, `spacer()`, `finish()`. |
+| `Context.hpp` | `Context` | The immediate-mode surface: `row()`, `column()`, `panel()`, `label()`, `button()`, `textField()`, `dropdown()`, `spacer()`, `finish()`. |
 | `Scope.hpp` | `Scope` | A `[[nodiscard]]` guard returned by every container call, closing it in its destructor. |
-| `Frame.hpp` | `Frame` | What `finish()` returns: `commands` (a `DrawList`) plus `interactions`. |
+| `Frame.hpp` | `Frame` | What `finish()` returns: `commands` (a `DrawList`), `interactions`, and `rects`. |
 | `DrawList.hpp`, `DrawCommand.hpp` | `DrawList`, `FillRect`, `DrawText` | The picture, as plain comparable values. |
 | `Painter.hpp` | `paint()` | The only thing in the library that touches an `IRenderer`. |
 | `Pointer.hpp` | `Pointer` | The pointer, passed in as an argument; the default is no pointer at all. |
-| `Interactions.hpp` | `Interactions` | The `hovered` and `activated` `WidgetId`, and whether the pointer is over anything the UI filled in. |
+| `Interactions.hpp` | `Interactions` | The `hovered`, `activated` and `focused` `WidgetId`, the `edit` and `chosen` results, and whether the pointer is over anything the UI filled in. |
+| `Keyboard.hpp` | `Keyboard`, `Key` | Key edges in arrival order, plus a `typed` view of the characters; defaults to none. |
+| `TextFieldSpec.hpp` | `TextFieldSpec`, `TextEdit` | A field's characters, caret and focus going in; what happened coming out. |
+| `DropdownSpec.hpp` | `DropdownSpec`, `OptionChoice` | A list's open/closed and selected state going in; what was chosen coming out. |
+| `WidgetRects.hpp` | `WidgetRects` | One `gfx::Rect` per distinct id the frame named, with `find(id)`. |
 | `WidgetId.hpp` | `WidgetId` | A caller-supplied symbolic id. |
 | `ButtonSpec.hpp`, `ButtonState.hpp`, `ContainerSpec.hpp` | — | How a widget is described. |
 | `Sizing.hpp`, `SizeMode`, `Axis.hpp`, `Alignment.hpp` | — | How space is asked for and shared. |
@@ -49,6 +53,36 @@ There is no pointer capture, no double-click and no hover delay, because the lib
 
 **Ids are symbolic, not positional.**
 A `WidgetId` is supplied by the caller rather than derived from declaration order, because that id is what crosses back into application state.
+
+**The keyboard is an argument too, and focus is passed through rather than kept.**
+Key edges arrive as a `ui::Keyboard` value — symbolic `ui::Key` values in arrival order, defined by this library rather than by any framework — defaulting to none, so an existing caller's output is byte-identical.
+
+Focus is the one thing a keyboard UI needs that outlives a frame, and it does not live here: last frame's focused id goes *in* as a `Context` argument and this frame's comes back *out* as `Interactions::focused`.
+So the state sits in application state, where a replay regenerates it from the recorded key presses, and the library stays as stateless as press-time activation requires.
+
+The tab order is the arena's ascending index, which is declaration order, so no second order can drift from the layout.
+A repeated id is one stop, an unnamed button is none, Tab from nothing takes the first widget and Shift+Tab the last, and both wrap.
+Once focus is in play, a pointer press moves focus to whatever it activated, so the ring and the keystrokes cannot end up on different widgets — and a caller using the pointer alone never gains a ring it did not ask for.
+
+Enter reports through `Interactions::activated` exactly as a press does, so one code path handles both.
+The focus ring is four `FillRect`s appended *after* every widget, since `IRenderer` has no stroke and a container declared later would otherwise paint over a ring drawn in place.
+
+**A text field and a dropdown hold nothing of their own either.**
+A field's characters and caret arrive in `TextFieldSpec`, a list's open/closed and selected state in `DropdownSpec`, and what happened comes back as `Interactions::edit` and `Interactions::chosen`.
+The application owns all of it, so a replay regenerates it from the recorded input rather than from anything the UI remembered.
+
+Typing arrives on the same `Keyboard` the focus keys do rather than as a second input channel, and `TextFieldSpec::focused` is an override on top of the focus the `Context` was handed, so Tab reaches a field and Enter submits the one it landed on.
+
+An open dropdown's list is an *overlay*: out of its parent's flow, hung beneath the box it dropped from, painted after every other command and hit-tested before them — which is the only way to be on top when `gfx` offers no depth but paint order.
+
+**Where a widget ended up is a third answer off the same layout.**
+`Frame::rects` reports one rectangle per distinct id the frame named, and `find(id)` answers nothing for an id this frame did not declare.
+It exists so an application drawing its own art around a UI places that art *from* the layout rather than beside it: two independently computed layouts agree only until either one changes, which is precisely how [poker](../apps/poker.md)'s card art and its labels came to disagree.
+
+`ContainerSpec` therefore carries an id as well, so a row or a panel can be named — which also makes it something the pointer reports, since that is the one thing an id means here.
+The mapping is collected *inside* the arranging pass rather than by a pass of its own, so the rectangle reported is the one the flattening drew from by construction, including under the proportional shrink a cramped container applies.
+
+Reading a rect back is safe anywhere, including inside the tick path, because a layout is a pure function of the declarations, the theme and the canvas — which is what makes it unlike [`input`](input.md)'s `PointerHintChannel`.
 
 **There is no clipping, so containment is the layout's job.**
 `IRenderer` has no scissor, so a container with too little room shrinks its children in proportion rather than letting them escape.

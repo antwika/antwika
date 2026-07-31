@@ -61,6 +61,23 @@ Every `InputEvent` is an edge, which is what lets a queue-based framework and a 
 **Job / budget** — a [`scheduler`](libraries/scheduler.md) unit of work and the cap on how many run in one `run()` call.
 `budget` is the only throttle; no job runs outside a `run()`.
 
+**Frame pass** — an `app::IFramePass`, drawn in the gap between two ticks by `app::FramePacedSource`.
+It is handed an `animation::Progress` and no `World`, no `Tick` and no dispatcher, so a pass cannot change what the simulation computes.
+
+**Progress** — `animation::Progress`, an exact rational position within something: a numerator and a denominator rather than a float, so the same frame is the same pixel on every toolchain.
+
+**Pointer hint** — `input::PointerHint`, carried on a channel that is not an event and is in no recording.
+What is read off it may decide what is *drawn* and nothing else, because a live run and its replay deliberately disagree on its value.
+
+**Footprint** — the block of cells a building covers, from a table keyed by its kind rather than a field on the component.
+Restricted to squares, because a square block projects to the same 2:1 diamond one atlas tile already is.
+
+**Frame (of audio)** — one sample per channel, at one instant.
+A render callback is told the **absolute** index of its first frame, counted from when the device started, which is what makes a scheduled sound land where it was placed.
+
+**Pumped (of a device)** — rendered only when a caller asks, on the caller's own thread, as opposed to *self-driven* on a thread the framework owns.
+Every sound device in the project is pumped, which is why the project has no second concurrency model.
+
 **Domain (in WFC)** — the set of values a cell may still take, narrowed by constraints until one remains.
 
 **Hand value** — `holdem::HandValue`, a single comparable number a 5–7 card hand evaluates to; greater is stronger and equal is a split pot.
