@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstdint>
+#include <string_view>
 #include <vector>
 
 namespace antwika::ui
@@ -41,8 +42,32 @@ namespace antwika::ui
          *
          * Named for what it does rather than for the key it usually is,
          * since an application is free to bind Space to it as well.
+         * A focused text field reads the same edge as its submit.
          */
         Activate,
+
+        /**
+         * @brief Take the character before a text field's caret.
+         */
+        Backspace,
+
+        /**
+         * @brief Give up on what a text field is holding: Escape.
+         *
+         * What giving up means is the application's to decide, since
+         * only it knows what the field held before it was opened.
+         */
+        Cancel,
+
+        /**
+         * @brief Move a text field's caret one character back.
+         */
+        MoveLeft,
+
+        /**
+         * @brief Move a text field's caret one character on.
+         */
+        MoveRight,
     };
 
     /**
@@ -63,6 +88,18 @@ namespace antwika::ui
          * @brief The keys that went down this frame, in arrival order.
          */
         std::vector<Key> keys{};
+
+        /**
+         * @brief The characters that arrived this frame, in order.
+         *
+         * Apart from the keys because a character is not an edge with a
+         * meaning of its own: only a focused text field has any use for
+         * one, and it takes them all in before it reads a single key.
+         *
+         * A view rather than a string: the caller owns the buffer and
+         * must keep it alive for as long as the Context is.
+         */
+        std::string_view typed{};
 
         /**
          * @brief Compare two frames' keyboards.

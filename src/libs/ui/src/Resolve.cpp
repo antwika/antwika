@@ -3,12 +3,14 @@
 #include <algorithm>
 #include <cstddef>
 #include <cstdint>
+#include <optional>
 #include <vector>
 
 #include <antwika/gfx/Point.hpp>
 #include <antwika/gfx/Rect.hpp>
 
 #include "antwika/ui/Keyboard.hpp"
+#include "antwika/ui/OptionChoice.hpp"
 #include "antwika/ui/WidgetId.hpp"
 
 #include "Interactive.hpp"
@@ -135,13 +137,19 @@ namespace antwika::ui::detail
     {
         Interactions interactions;
 
-        if (pointer.position)
-        {
+        std::optional<OptionChoice> option;
+
+        // An overlay is painted after everything else.
+        // So it is in front, and so it is hit first.
+        // Two passes are what say that.
+        // One descending loop can only mean the arena's own order.
+        const auto scan = [&](bool overlay) {
             for (std::size_t index = tree.size(); index-- > 0;)
             {
                 const auto &node = tree.node(index);
 
-                if (!contains(node.arranged, *pointer.position))
+                if (node.overlay != overlay
+                    || !contains(node.arranged, *pointer.position))
                 {
                     continue;
                 }
@@ -156,7 +164,23 @@ namespace antwika::ui::detail
                 {
                     interactions.hovered = node.id;
                 }
+
+                // An option reports its index rather than its id.
+                // So it is tracked apart from the hovered widget.
+                // An unnamed option therefore still answers.
+                if (node.optionOwner != kNoWidget && !option)
+                {
+                    option = OptionChoice{
+                        .dropdown = node.optionOwner,
+                        .index = node.optionIndex};
+                }
             }
+        };
+
+        if (pointer.position)
+        {
+            scan(true);
+            scan(false);
         }
 
         // Nothing hovered means there is nothing to activate.
@@ -164,6 +188,7 @@ namespace antwika::ui::detail
         if (pointer.pressed)
         {
             interactions.activated = interactions.hovered;
+            interactions.chosen = option;
         }
 
         // Focus is in play once the caller has some or sends a key.
@@ -202,7 +227,13 @@ namespace antwika::ui::detail
                 continue;
             }
 
-            focus = step(focusables, focus, key == Key::FocusNext);
+            // The editing keys belong to whatever is focused.
+            // They are read where a text field is declared.
+            // So focus itself only ever moves on the two that name it.
+            if (key == Key::FocusNext || key == Key::FocusPrevious)
+            {
+                focus = step(focusables, focus, key == Key::FocusNext);
+            }
         }
 
         interactions.focused = focus;
@@ -231,6 +262,8 @@ namespace antwika::ui::detail
         }
 
         return interactions;
-    }
+        // Only an unwind destroys the reported edit at this brace.
+        // Nothing between its construction and the return throws.
+    } // GCOVR_EXCL_LINE
 
 } // namespace antwika::ui::detail

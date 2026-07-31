@@ -181,12 +181,16 @@ namespace antwika::ui
     {
         detail::layout(*tree, canvasSize);
 
-        const auto interactions = detail::resolve(
+        auto interactions = detail::resolve(
             *tree, pointerValue, keyboardValue, focusValue);
+
+        // The edit was worked out where the field was declared.
+        // It needs no layout, unlike everything the pointer decides.
+        interactions.edit = pendingEdit;
 
         return Frame{ // GCOVR_EXCL_LINE
             .commands = detail::flatten(*tree),
-            .interactions = interactions};
+            .interactions = std::move(interactions)};
     }
 
     void Context::closeContainer() noexcept

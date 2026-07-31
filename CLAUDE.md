@@ -274,6 +274,10 @@ The tab order is the arena's ascending index, which is declaration order, so no 
 Once focus is in play — the caller passed some in, or sent a key — a pointer press moves focus to whatever it activated, so the ring and the keystrokes cannot end up on different widgets; a caller using the pointer alone never has focus in play and so never gains a ring it did not ask for.
 Enter reports through `Interactions::activated` exactly as a press does, so one code path handles both.
 The focused widget draws `Theme::focusRing` (yellow) `Theme::focusRingThickness` pixels thick as four `FillRect`s appended *after* every widget, since `IRenderer` has no stroke and a container declared later would otherwise paint over a ring drawn in place.
+**A text field and a dropdown hold nothing of their own either**, which is the same rule read out loud: a field's characters and caret arrive in `ui::TextFieldSpec`, a list's open/closed and selected state in `ui::DropdownSpec`, and what happened comes back as `ui::Interactions::edit` (a `ui::TextEdit`) and `ui::Interactions::chosen` (a `ui::OptionChoice`).
+The application owns all of it, so a replay regenerates it from the recorded input rather than from anything the UI remembered.
+Typing arrives on the same `ui::Keyboard` the focus keys do -- `ui::Key::Backspace`/`Cancel`/`MoveLeft`/`MoveRight` beside `FocusNext`/`FocusPrevious`/`Activate`, plus a `typed` view of the characters -- rather than as a second input channel, and `TextFieldSpec::focused` is an override on top of the focus `Context` was handed, so Tab reaches a field and Enter submits the one it landed on.
+An open dropdown's list is an *overlay*: out of its parent's flow, hung beneath the box it dropped from, painted after every other command and hit-tested before them -- which is the only way to be on top when `antwika::gfx` offers no depth but paint order.
 
 ## Notes for AI agents
 

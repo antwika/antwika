@@ -7,6 +7,8 @@ add_executable(antwika_ui_tests
     ContextTest.cpp
     ContextWidgetsTest.cpp
     DrawCommandTest.cpp
+    DropdownTest.cpp
+    FieldValueTest.cpp
     FlattenTest.cpp
     InteractionsTest.cpp
     LayoutDegenerateTest.cpp
@@ -18,6 +20,7 @@ add_executable(antwika_ui_tests
     ResolveTest.cpp
     ScopeTest.cpp
     SizingTest.cpp
+    TextFieldTest.cpp
     ThemeTest.cpp
     WidgetIdTest.cpp
 )
