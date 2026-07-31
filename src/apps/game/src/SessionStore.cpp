@@ -1,21 +1,11 @@
 #include "antwika/game/SessionStore.hpp"
 
-#include <cstddef>
-#include <vector>
-
-#include <antwika/ecs/Entity.hpp>
-
 #include "antwika/game/Building.hpp"
-#include "antwika/game/BuildingIndex.hpp"
-#include "antwika/game/Cell.hpp"
-#include "antwika/game/Footprint.hpp"
-#include "antwika/game/Path.hpp"
+#include "antwika/game/CityGrid.hpp"
 #include "antwika/game/Walker.hpp"
 
 namespace antwika::game
 {
-
-    using antwika::ecs::Entity;
 
     SessionStore::SessionStore(
         World &world,
@@ -42,90 +32,50 @@ namespace antwika::game
 
     void SessionStore::restore(const SaveGame &save)
     {
-        // Collected before anything is staged.
-        // Destroying mid-walk would be walking what is being changed.
-        std::vector<Entity> standing;
-        for (const auto entity : world.view<Cell>())
-        {
-            standing.push_back(entity);
-        }
-
-        for (const auto entity : standing)
-        {
-            world.destroy(entity);
-        }
-
         paths = pathIndexOf(save);
-        built = BuildingIndex{};
         camera = save.camera;
         state = save.state;
 
-        for (const auto cell : save.paths)
+        // Translated rather than laid down here.
+        // Putting entities on the live grid is one piece of code.
+        // The city switch uses the very same one -- see CityGrid.
+        // So the create-before-add rule is stated once.
+        CityGrid grid;
+        grid.walkers.reserve(save.walkers.size());
+        grid.buildings.reserve(save.buildings.size());
+
+        for (const auto &walker : save.walkers)
         {
-            const auto entity = world.create();
-            world.add<Cell>(entity, cell);
-            world.add<Path>(entity, Path{});
+            grid.walkers.push_back(
+                StoredWalker{
+                    .at = walker.at,
+                    .walker =
+                        Walker{
+                            .facing = walker.facing,
+                            .kind = walker.kind,
+                            .carried = walker.carried,
+                            .stepsUntilHome = walker.stepsUntilHome,
+                            .ticksUntilStep = walker.ticksUntilStep},
+                    .home = walker.home});
         }
 
-        // **Every entity is created before any component is added.**
-        // create() is immediate where add() is staged.
-        // So the handles exist now and the components do not.
-        // A link therefore has to be built into the component.
-        // Reading one back would ask for what has not been given yet.
-        std::vector<Entity> walkers;
-        std::vector<Entity> buildings;
-
-        walkers.reserve(save.walkers.size());
-        buildings.reserve(save.buildings.size());
-
-        for (std::size_t index = 0; index < save.walkers.size(); ++index)
+        for (const auto &building : save.buildings)
         {
-            walkers.push_back(world.create());
+            grid.buildings.push_back(
+                StoredBuilding{
+                    .at = building.at,
+                    .building =
+                        Building{
+                            .kind = building.kind,
+                            .stock = building.stock,
+                            .risk = building.risk,
+                            .ticksUntilSpawn = building.ticksUntilSpawn,
+                            .ticksUntilDrain = building.ticksUntilDrain,
+                            .ticksUntilRisk = building.ticksUntilRisk},
+                    .walker = building.walker});
         }
 
-        for (std::size_t index = 0; index < save.buildings.size(); ++index)
-        {
-            buildings.push_back(world.create());
-        }
-
-        for (std::size_t index = 0; index < save.walkers.size(); ++index)
-        {
-            const auto &walker = save.walkers[index];
-
-            world.add<Cell>(walkers[index], walker.at);
-            world.add<Walker>(
-                walkers[index],
-                Walker{
-                    .facing = walker.facing,
-                    .kind = walker.kind,
-                    .carried = walker.carried,
-                    .stepsUntilHome = walker.stepsUntilHome,
-                    .home = walker.home.has_value()
-                        ? buildings[*walker.home]
-                        : antwika::ecs::kNullEntity,
-                    .ticksUntilStep = walker.ticksUntilStep});
-        }
-
-        for (std::size_t index = 0; index < save.buildings.size(); ++index)
-        {
-            const auto &building = save.buildings[index];
-
-            world.add<Cell>(buildings[index], building.at);
-            world.add<Building>(
-                buildings[index],
-                Building{
-                    .kind = building.kind,
-                    .stock = building.stock,
-                    .risk = building.risk,
-                    .ticksUntilSpawn = building.ticksUntilSpawn,
-                    .ticksUntilDrain = building.ticksUntilDrain,
-                    .ticksUntilRisk = building.ticksUntilRisk,
-                    .walker = building.walker.has_value()
-                        ? walkers[*building.walker]
-                        : antwika::ecs::kNullEntity});
-            (void)built.insert(
-                building.at, footprintOf(building.kind));
-        }
+        restoreCityGrid(world, built, paths, grid);
     }
 
 } // namespace antwika::game

@@ -21,12 +21,18 @@ Both predate the fix; they were simply far apart on screen.
 Choosing means either hiding the label until showdown (a spectator app arguably wants that information) or always drawing the face (which retires `kCardBackSlot`).
 Left as it was rather than decided for you.
 
-### 2. Per-city entities in `apps/game`
+### 2. Per-city entities in `apps/game` -- fixed, with one thing left for you
 
-Roads and the camera are per city.
-Walkers and buildings still live in one `World` and leak across cities.
-Fixing it needs a city tag on entities *and* a save-format bump, since `SaveGame` carries one grid.
-That is a design decision about what a city *is*, so it was not made unilaterally.
+Walkers and buildings are per city now, exactly as the roads and the camera already were.
+A city keeps its contents as a `game::CityGrid` value while it is put away, and `WorldMapState` destroys and recreates the entities on the one live `World` as cities are swapped -- so no city tag on an entity and no filter in any system was needed, and no save-format bump was either.
+
+The decision that had been left open is therefore: **a city is a grid, and what stands on it belongs to it.**
+The four are independent, and a city nobody is looking at neither runs nor shows anywhere else.
+
+**What is left for you:** a save still carries *one* grid -- the live city's -- which is what version 2 has always meant, and it is why no bump was needed.
+It is also what a save has always done with the roads and the camera, so the file is consistent rather than newly lossy.
+But it does mean "save, load, and the three cities you were not in are empty".
+Making a save carry the whole session is a version 3 with a migration that reads a version 2 document as the one city it was written from -- straightforward, and a decision about what a *save* is rather than what a city is, so it was not made unilaterally either.
 
 ### 3. Demolition
 

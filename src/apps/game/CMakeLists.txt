@@ -4,6 +4,7 @@ add_executable(antwika_game
     src/BuildGhost.cpp
     src/BuildingIndex.cpp
     src/BuildingSystem.cpp
+    src/CityGrid.cpp
     src/Game.cpp
     src/GameStateReducer.cpp
     src/GridScene.cpp

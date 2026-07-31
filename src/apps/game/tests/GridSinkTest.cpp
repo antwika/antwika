@@ -12,6 +12,7 @@
 #include <antwika/log/mocks/MockLogger.hpp>
 
 #include "antwika/game/BuildingIndex.hpp"
+#include "antwika/game/LiveGrid.hpp"
 #include "antwika/game/Camera.hpp"
 #include "antwika/game/Cell.hpp"
 #include "antwika/game/GridExtent.hpp"
@@ -29,6 +30,7 @@ using antwika::ecs::World;
 using antwika::event::Event;
 using antwika::event::TickEvent;
 using antwika::game::BuildingIndex;
+using antwika::game::LiveGrid;
 using antwika::game::Camera;
 using antwika::game::Cell;
 using antwika::game::cellCentre;
@@ -120,6 +122,11 @@ namespace
         UiOverlay overlay;
 
         // One city, permanently open, as a run with no world map has.
+        LiveGrid live{
+            .world = world,
+            .paths = paths,
+            .built = built,
+            .camera = camera};
         WorldMapState cities{WorldMap{}};
         GridSink sink{
             world,
@@ -378,7 +385,7 @@ TEST_F(GridSinkTest, Move_KeepsPanningAcrossTheToolbar)
 // The mode gate says so a tick later; this says so at once.
 TEST_F(GridSinkTest, LeftPress_LaysNothingWhileNoCityIsOpen)
 {
-    cities.closeCity(paths, camera);
+    cities.closeCity(live);
 
     clickAt(Cell{.x = 3, .y = 4}, MouseButton::Left);
 
@@ -390,7 +397,7 @@ TEST_F(GridSinkTest, LeftPress_LaysNothingWhileNoCityIsOpen)
 TEST_F(GridSinkTest, Tick_StillRunsWhileNoCityIsOpen)
 {
     clickAt(Cell{.x = 3, .y = 4}, MouseButton::Left);
-    cities.closeCity(paths, camera);
+    cities.closeCity(live);
 
     tick();
 
