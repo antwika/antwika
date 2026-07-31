@@ -55,17 +55,21 @@ namespace antwika::replay
             return; // The caller's schema refuses it, and says why.
         }
 
-        auto version = documentVersion(document, versionKey);
-        if (version > current)
+        const auto stated = documentVersion(document, versionKey);
+        if (stated > current)
         {
             throw SchemaVersionError(std::format(
                 "antwika::replay: this document states schema version "
                 "{}, and this build reads up to version {}; it was "
                 "written by a newer release",
-                version,
+                stated,
                 current));
         }
 
+        // Read once, up here, rather than again in the gap message.
+        // Re-reading holds only while every migration obeys the rule.
+        // That rule is IMigration's, and this chain does not enforce it.
+        auto version = stated;
         while (version < current)
         {
             const IMigration *const step = stepFrom(version);
@@ -76,7 +80,7 @@ namespace antwika::replay
                     "version {}, and no migration reads version {} on "
                     "the way to version {}; the migration chain has a "
                     "gap",
-                    documentVersion(document, versionKey),
+                    stated,
                     version,
                     current));
             }

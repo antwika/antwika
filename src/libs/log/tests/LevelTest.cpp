@@ -5,7 +5,7 @@
 
 using antwika::log::Level;
 
-TEST(LevelTest, ToString)
+TEST(LevelTest, ToString_NamesEveryLevelAndAnythingElse)
 {
     EXPECT_EQ(toString(Level::Trace), "TRACE");
     EXPECT_EQ(toString(Level::Debug), "DEBUG");

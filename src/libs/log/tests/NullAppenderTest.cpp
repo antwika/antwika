@@ -4,7 +4,7 @@
 
 using antwika::log::NullAppender;
 
-TEST(NullAppenderTest, Append)
+TEST(NullAppenderTest, Append_DiscardsTheMessage)
 {
     NullAppender appender;
     appender.append("Message");
