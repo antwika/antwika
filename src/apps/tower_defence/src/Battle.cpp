@@ -76,6 +76,16 @@ namespace antwika::tower_defence
 
     void Battle::spawn()
     {
+        // Two things a caller can hand in that a mob cannot exist over.
+        // A period of zero is a modulo by zero.
+        // A level with no path gives a mob no cell to stand on.
+        // Both fire() and snapshotOf() read the cell it stands on.
+        // Spawning nothing is what keeps either from being reachable.
+        if (config.spawnPeriodTicks == 0 || levelData.path.empty())
+        {
+            return;
+        }
+
         if (tickCount % config.spawnPeriodTicks != 0)
         {
             return;
