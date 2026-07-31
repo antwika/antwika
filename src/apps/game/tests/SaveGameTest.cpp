@@ -226,6 +226,7 @@ TEST(SaveGameTest, TakesASaveFromASummary)
         .state = expected.state,
         .paths = expected.paths,
         .walkers = expected.walkers,
+        .buildings = {},
         .camera = expected.camera,
     };
 

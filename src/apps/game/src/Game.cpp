@@ -227,6 +227,7 @@ namespace antwika::game
             .state = state,
             .paths = frame.paths,
             .walkers = frame.walkers,
+            .buildings = frame.buildings,
             .camera = camera};
         // The excluded line is the local summary's unwind destructor.
         // Nothing between its construction and the return throws.
@@ -244,6 +245,14 @@ namespace antwika::game
         {
             out << "  at (" << walker.at.x << ", " << walker.at.y
                 << ") facing " << directionIndex(walker.facing) << '\n';
+        }
+
+        out << "Buildings: " << summary.buildings.size() << '\n';
+
+        for (const auto &building : summary.buildings)
+        {
+            out << "  " << toolLabel(building.kind) << " at ("
+                << building.at.x << ", " << building.at.y << ")\n";
         }
 
         out << "Camera: pan (" << summary.camera.pan().x << ", "

@@ -34,6 +34,7 @@
 #include "antwika/game/UiCanvas.hpp"
 #include "antwika/game/UiOverlay.hpp"
 #include "antwika/game/PathIndex.hpp"
+#include "antwika/game/BuildTool.hpp"
 #include "antwika/game/SaveGame.hpp"
 #include "antwika/game/WorldMap.hpp"
 #include "antwika/game/WorldMapLayout.hpp"
@@ -312,6 +313,7 @@ TEST(PrintSummaryTest, WritesTheStateTheCountsAndTheCamera)
         .state = {.ticksProcessed = 4, .score = 7},
         .paths = {{.x = 1, .y = 1}, {.x = 1, .y = 2}},
         .walkers = {},
+        .buildings = {},
         .camera = Camera(Point{.x = 512, .y = 48})};
 
     antwika::game::printSummary(out, summary);
@@ -321,6 +323,7 @@ TEST(PrintSummaryTest, WritesTheStateTheCountsAndTheCamera)
         "Final state: ticksProcessed=4 score=7\n"
         "Paths laid: 2\n"
         "Walkers: 0\n"
+        "Buildings: 0\n"
         "Camera: pan (512, 48) zoom 3\n");
 }
 
@@ -333,6 +336,7 @@ TEST(PrintSummaryTest, WritesEveryWalkerWhereItStandsAndWhereItFaces)
         .walkers =
             {{.at = {.x = 3, .y = 4},
               .facing = antwika::game::Direction::South}},
+        .buildings = {},
         .camera = Camera(Point{.x = 0, .y = 0})};
 
     antwika::game::printSummary(out, summary);
@@ -729,4 +733,25 @@ TEST(BootstrapTest, Bootstrap_StartsFromASaveWhenGivenOne)
     EXPECT_EQ(summary.paths, start.paths);
     EXPECT_EQ(summary.camera, start.camera);
     EXPECT_EQ(summary.state.score, 4U);
+}
+
+TEST(PrintSummaryTest, WritesEveryBuildingAndWhatItIs)
+{
+    std::ostringstream out;
+    const antwika::game::GameSummary summary{
+        .state = {},
+        .paths = {},
+        .walkers = {},
+        .buildings =
+            {{.at = {.x = 1, .y = 2},
+              .kind = antwika::game::BuildTool::House},
+             {.at = {.x = 3, .y = 4},
+              .kind = antwika::game::BuildTool::Tower}},
+        .camera = Camera(Point{.x = 0, .y = 0})};
+
+    antwika::game::printSummary(out, summary);
+
+    EXPECT_NE(out.str().find("Buildings: 2\n"), std::string::npos);
+    EXPECT_NE(out.str().find("  house at (1, 2)\n"), std::string::npos);
+    EXPECT_NE(out.str().find("  tower at (3, 4)\n"), std::string::npos);
 }

@@ -40,6 +40,7 @@ namespace antwika::game
                 .state = state,
                 .paths = frame.paths,
                 .walkers = frame.walkers,
+                .buildings = frame.buildings,
                 .camera = camera},
             extent,
             seed);
