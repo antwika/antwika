@@ -103,8 +103,13 @@ The migrations that look worthwhile, in rough order of value:
    Mechanically a rename plus a member rename, but it touches `IsoProjection`, `PathIndex`, `GridSink`, `SceneSnapshot` and their tests, so it is the largest of these.
 3. `game::Path` -> `using Path = ecs_commons::Tag<struct PathKind>;`.
    One line, once `game::Cell` has moved or independently of it.
-4. `task_worker::WorkerCompletionSystem` -> keep the system, but hold the countdown in a `Lifetime` and let `LifetimeSystem` do the decrement, leaving the completion system to react to expiry.
-   This one needs thought: today the system also reports progress to `TaskRegistry` every tick, so the split is not free.
+4. `task_worker::WorkerCompletionSystem` -> **do not** move the countdown into a `Lifetime`, which is what this list suggested when it was written.
+   `LifetimeSystem` destroys the entity when the countdown reaches zero, and `Lifetime.hpp` says so plainly: an app that wants the entity to outlive the countdown is told to keep its own component and count that down instead.
+   `task_worker` is exactly that app.
+   Its workers are created once in `TaskWorker.cpp` and never destroyed -- a finished worker goes Idle and waits for the next task -- so the substitution would delete one worker from a fixed pool per completed task.
+   There is no "react to expiry" hook that could prevent it either, because in this library expiry *is* the destruction.
+   What could be shared is the decrement on its own, a `Lifetime` with no system attached; that is not what `ecs_commons` offers today, and no second caller has asked for it.
+   The system also reports progress to `TaskRegistry` on every tick it decrements, which any shared decrement would have to leave a place for.
 5. `game::WalkerSystem` -> `MovementSystem` is *not* a drop-in, because a walker's step comes from `nextFacing()` rather than a stored velocity.
    The plausible shape is for `WalkerSystem` to write a `Velocity` and let `MovementSystem` integrate it.
    What that shape does **not** buy is the cadence: a walker already moves once every `game::kTicksPerStep` ticks, counted down in its own `Walker` component rather than off the tick number, and neither half of this library can express that.
@@ -112,3 +117,18 @@ The migrations that look worthwhile, in rough order of value:
    A commons answer would be a per-entity cadence component, which no second caller has asked for yet.
 
 `life` is the odd one out: its cells never move, never expire and have no label, so it has nothing to migrate beyond possibly keying its `Grid` on `GridPosition`.
+
+### Which of those are safe today
+
+Rechecked against the apps as they now stand, since three of the five were written against a shape the apps have since moved on from.
+
+- **2 and 3 are drop-ins.**
+  `game::Cell` and `GridPosition` are field-for-field identical, ordering and all, and `game::Path` and `Tag<Kind>` are both empty structs with a defaulted `==`.
+  Both are mechanical; only their blast radius is large.
+- **1 is a drop-in for the type and not for the call sites**, per the null-termination note above.
+  It is still worth doing; it is just two edits rather than one.
+- **4 and 5 are not migrations at all** and should be struck rather than scheduled.
+  Both would replace something an app already does correctly with something this library cannot express.
+
+Nothing here needs the library changed to make a migration possible.
+The two components a migration would want and not find -- a `Lifetime` that expires without destroying, and a per-entity cadence -- are each wanted by exactly one caller today, which is the same bar `Health` and `Parent` failed above.
