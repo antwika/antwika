@@ -11,9 +11,9 @@ This is the most complete composition in the project: reducer state, an ECS, an 
 ## Running it
 
 ```sh
-build/bin/antwika_game
-build/bin/antwika_game --record demo.replay
-build/bin/antwika_game --replay src/apps/game/replays/demo.json
+build/bin/antwika_game/antwika_game
+build/bin/antwika_game/antwika_game --record demo.replay
+build/bin/antwika_game/antwika_game --replay src/apps/game/replays/demo.json
 ```
 
 Left-click places whatever the toolbar has selected, right-click drops a walker onto a road, middle-drag pans, and the wheel zooms.

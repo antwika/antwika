@@ -55,6 +55,19 @@ antwika_add_library(
 It writes the target, the alias, the include directories, the install and export rules, and the test subdirectory — everything a module has nothing particular to say about.
 Write them out longhand only when a module genuinely differs: [`gfx`](libraries/gfx.md) does, because it has a private dependency with its own compile definitions and one file compiled with warnings off, and its `CMakeLists.txt` opens by saying so.
 
+An app calls `antwika_bundle_app()` as well, which gives it a directory of its own under `bin/` and copies whatever it opens in beside the executable:
+
+```cmake
+antwika_bundle_app(
+    TARGET antwika_myapp
+    ASSETS
+        assets/atlas.png
+)
+```
+
+It finds those files at run time with `antwika::app::assetPath()`, which answers relative to the running executable rather than the working directory.
+Never bake a path in at configure time: that is the building machine's path, and a cross build's building machine is never the one that runs the result.
+
 Then add the directory to the `src/libs/CMakeLists.txt` or `src/apps/CMakeLists.txt` listing.
 
 ## Tests

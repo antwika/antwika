@@ -3,6 +3,7 @@ find_package(GTest REQUIRED)
 add_subdirectory(fakes)
 
 add_executable(antwika_app_tests
+    AssetPathTest.cpp
     ConsoleLoggingTest.cpp
     FramePacedSourceTest.cpp
     PngFileTest.cpp

@@ -11,9 +11,9 @@ The interesting part is that WFC is a constraint solver, not a path guarantee: "
 ## Running it
 
 ```sh
-build/bin/antwika_tower_defence
-build/bin/antwika_tower_defence --record demo.replay
-build/bin/antwika_tower_defence --replay src/apps/tower_defence/replays/demo.json
+build/bin/antwika_tower_defence/antwika_tower_defence
+build/bin/antwika_tower_defence/antwika_tower_defence --record demo.replay
+build/bin/antwika_tower_defence/antwika_tower_defence --replay src/apps/tower_defence/replays/demo.json
 ```
 
 It opens a window, draws the level each tick and takes mouse input.

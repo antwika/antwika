@@ -9,10 +9,10 @@ A whole domain library ([`holdem`](../libraries/holdem.md)) driven by the tick l
 ## Running it
 
 ```sh
-build/bin/antwika_poker
-build/bin/antwika_poker --record demo.replay
-build/bin/antwika_poker --replay src/apps/poker/replays/demo.json
-build/bin/antwika_poker --tick-delay-ms 250
+build/bin/antwika_poker/antwika_poker
+build/bin/antwika_poker/antwika_poker --record demo.replay
+build/bin/antwika_poker/antwika_poker --replay src/apps/poker/replays/demo.json
+build/bin/antwika_poker/antwika_poker --tick-delay-ms 250
 ```
 
 One engine tick is one step of the poker loop: a deal, or one player being asked to act.

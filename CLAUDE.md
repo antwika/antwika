@@ -99,19 +99,25 @@ build/bin/antwika_replay_tests --gtest_filter='ReplayReaderTest.*'
 **Run the apps:**
 
 ```sh
-build/bin/antwika_game                        # empty grid, runs until quit
-build/bin/antwika_game --record demo.replay   # or --replay demo.replay
-build/bin/antwika_life                        # runs until stopped
-build/bin/antwika_life --record demo.replay
-build/bin/antwika_task_worker --record demo.replay
-build/bin/antwika_poker --record demo.replay
-build/bin/antwika_sudoku [--puzzle my-puzzle.txt]
-build/bin/antwika_gfx_demo                    # runs until the window is closed
-build/bin/antwika_gfx3d_demo                  # spinning cube, 900 frames
-build/bin/antwika_sound_demo                  # eight notes; silent under null
-build/bin/antwika_sound_demo my-sound.wav     # or play a file instead
-build/bin/antwika_tower_defence               # or --record / --replay
+build/bin/antwika_game/antwika_game                      # empty grid, runs until quit
+build/bin/antwika_game/antwika_game --record demo.replay # or --replay demo.replay
+build/bin/antwika_life/antwika_life                      # runs until stopped
+build/bin/antwika_life/antwika_life --record demo.replay
+build/bin/antwika_task_worker/antwika_task_worker --record demo.replay
+build/bin/antwika_poker/antwika_poker --record demo.replay
+build/bin/antwika_sudoku/antwika_sudoku [--puzzle my-puzzle.txt]
+build/bin/antwika_gfx_demo/antwika_gfx_demo              # runs until the window is closed
+build/bin/antwika_gfx3d_demo/antwika_gfx3d_demo          # spinning cube, 900 frames
+build/bin/antwika_sound_demo/antwika_sound_demo          # eight notes; silent under null
+build/bin/antwika_sound_demo/antwika_sound_demo my.wav   # or play a file instead
+build/bin/antwika_tower_defence/antwika_tower_defence    # or --record / --replay
 ```
+
+**Every application gets a directory of its own under `bin/`**, holding the executable, whatever it opens and -- on MinGW -- the runtime DLLs it needs to start, all put there by `antwika_bundle_app()` in [`cmake/AntwikaModule.cmake`](cmake/AntwikaModule.cmake).
+Two applications ship an `atlas.png` and three a `demo.json`, so one shared `bin/` was one atlas and one demo replay between them the moment either had to sit beside its binary.
+An application finds those files through `antwika::app::assetPath()`, which asks the operating system where the running executable is (`/proc/self/exe`, `GetModuleFileNameW`) rather than reading the working directory -- so starting one from anywhere still works, and `antwika::app` is the one place under `src/` that names an operating system.
+What this replaces is a path baked in at configure time, which was the *building* machine's path: right on the machine that built it, and a directory that does not exist on any other, so every cross-built executable that opened anything died on its first line.
+Test binaries stay directly in `bin/`, since they open nothing.
 
 `antwika_tower_defence` opens a window, draws the level each tick and takes mouse input.
 Like `antwika_life` it has no end of its own: it runs until the window is closed, or until a replay dispatches `engine.stop`.
@@ -363,7 +369,7 @@ A window may be resizable, and the two sizes it then has are deliberately named 
 **Nothing in a simulation may be driven from the reported size** — laying out or hit-testing against it would make a window resize change what a recorded click means — so it is only ever used to place what is drawn inside the drawable area; see [`docs/resizable-windows.md`](docs/resizable-windows.md).
 
 Textures are decoded once and uploaded per backend: `gfx::PngReader::read()` turns a byte stream into a `gfx::Bitmap` of straight RGBA (stb_image, compiled `STB_IMAGE_STATIC` in one TU because raylib links its own copy), `IRenderer::createTexture()` uploads it, and `drawTexture(texture, source, destination, tint)` blits part of it with a colour and alpha modulation.
-The library opens no files — an app does that, as `apps/gfx_demo` does with the PNG path baked in at configure time.
+The library opens no files — an app does that, as `apps/gfx_demo` does with `app::assetPath()`, which finds the PNG shipped in the application's own directory under `bin/`.
 A texture belongs to the renderer that made it: drawing it through any other draws nothing, and it may safely outlive its window, because each renderer's `detach()` frees its live textures before the framework tears the device down.
 Write-only still holds — `ITexture` is opaque, and there is no pixel read-back, render target or screenshot anywhere in the interface.
 

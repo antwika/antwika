@@ -10,7 +10,7 @@ One frame, both halves.
 ## Running it
 
 ```sh
-build/bin/antwika_gfx3d_demo
+build/bin/antwika_gfx3d_demo/antwika_gfx3d_demo
 ```
 
 It draws a fixed number of frames and stops, rather than running until the window closes.

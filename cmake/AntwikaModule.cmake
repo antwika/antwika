@@ -3,8 +3,93 @@
 # so anything cross-cutting is 62 identical edits with nothing checking
 # that none was missed.
 # A module that genuinely differs -- gfx's stb, a backend's framework
-# link, an app's baked-in asset path -- keeps writing its own rules, and
-# then the difference is visible for the right reason.
+# link -- keeps writing its own rules, and then the difference is
+# visible for the right reason.
+
+# The runtime a MinGW build's executables need standing beside them.
+# Found once here rather than by each application repeating the same
+# three lookups, which is what nine of them were doing.
+if(MINGW)
+    set(ANTWIKA_MINGW_RUNTIME_DLLS "")
+
+    foreach(name
+        libgcc_s_seh-1.dll
+        libstdc++-6.dll
+        libwinpthread-1.dll
+    )
+        execute_process(
+            COMMAND ${CMAKE_CXX_COMPILER} -print-file-name=${name}
+            OUTPUT_VARIABLE found
+            OUTPUT_STRIP_TRAILING_WHITESPACE
+        )
+
+        if(EXISTS "${found}")
+            list(APPEND ANTWIKA_MINGW_RUNTIME_DLLS "${found}")
+        endif()
+    endforeach()
+endif()
+
+# Gives an application a directory of its own under bin/, holding the
+# executable, everything it opens and everything it needs to start.
+#
+# One shared bin/ was fine while an application was a single file and
+# stopped being fine the moment one had to open something beside it:
+# nine applications in one directory is nine applications sharing one
+# atlas.png, and two of them do have one.
+#
+# ASSETS are copied there rather than named at configure time, which is
+# the substantive change.  A path baked into the binary is the building
+# machine's, and that is the running machine's path right up until it is
+# not -- a cross build's never was, so every MinGW executable that
+# opened anything died on its first line looking for a directory that
+# exists only inside the container that built it.
+# The counterpart is antwika::app's assetPath(), which asks where the
+# executable is rather than where the working directory is, so starting
+# one from somewhere else still works.
+function(antwika_bundle_app)
+    cmake_parse_arguments(PARSE_ARGV 0 ARG "" "TARGET" "ASSETS")
+
+    if(NOT ARG_TARGET)
+        message(FATAL_ERROR "antwika_bundle_app: TARGET is required")
+    endif()
+
+    if(ARG_UNPARSED_ARGUMENTS)
+        message(FATAL_ERROR
+            "antwika_bundle_app(${ARG_TARGET}): unrecognised arguments "
+            "'${ARG_UNPARSED_ARGUMENTS}'")
+    endif()
+
+    set_target_properties(${ARG_TARGET} PROPERTIES
+        RUNTIME_OUTPUT_DIRECTORY
+            "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/${ARG_TARGET}"
+    )
+
+    # An asset named here and missing is a build that fails now rather
+    # than an application that starts and cannot draw.
+    foreach(asset IN LISTS ARG_ASSETS)
+        set(source "${CMAKE_CURRENT_SOURCE_DIR}/${asset}")
+
+        if(NOT EXISTS "${source}")
+            message(FATAL_ERROR
+                "antwika_bundle_app(${ARG_TARGET}): no such asset "
+                "'${source}'")
+        endif()
+
+        add_custom_command(TARGET ${ARG_TARGET} POST_BUILD
+            COMMAND ${CMAKE_COMMAND} -E copy_if_different
+                "${source}"
+                "$<TARGET_FILE_DIR:${ARG_TARGET}>"
+        )
+    endforeach()
+
+    foreach(dll IN LISTS ANTWIKA_MINGW_RUNTIME_DLLS)
+        add_custom_command(TARGET ${ARG_TARGET} POST_BUILD
+            COMMAND ${CMAKE_COMMAND} -E copy_if_different
+                "${dll}"
+                "$<TARGET_FILE_DIR:${ARG_TARGET}>"
+        )
+    endforeach()
+endfunction()
 
 # Defines antwika_<NAME>, aliased to antwika::<NAME>, from SOURCES.
 # DEPENDS is linked PUBLIC, since a module's headers are what its

@@ -8,6 +8,7 @@
 #include <string_view>
 #include <vector>
 
+#include <antwika/app/AssetPath.hpp>
 #include <antwika/app/ConsoleLogging.hpp>
 #include <antwika/app/FramePacedSource.hpp>
 #include <antwika/app/PngFile.hpp>
@@ -125,7 +126,7 @@ namespace
             .size = antwika::game::kUiCanvas});
 
         const auto atlasBitmap = antwika::app::readPngFile(
-            ANTWIKA_GAME_ATLAS_PATH, "antwika_game");
+            antwika::app::assetPath("atlas.png"), "antwika_game");
 
         // Nothing regenerates the art now.
         // So a wrong-sized export is an ordinary mistake.

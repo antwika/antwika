@@ -9,9 +9,9 @@ Application state held in an [`ecs`](../libraries/ecs.md) `World` rather than a 
 ## Running it
 
 ```sh
-build/bin/antwika_life
-build/bin/antwika_life --record demo.replay
-build/bin/antwika_life --replay src/apps/life/replays/demo.json
+build/bin/antwika_life/antwika_life
+build/bin/antwika_life/antwika_life --record demo.replay
+build/bin/antwika_life/antwika_life --replay src/apps/life/replays/demo.json
 ```
 
 It opens a window, draws the board each tick, and takes mouse input; drag over cells to toggle them.

@@ -93,17 +93,17 @@ Without a display, set `SDL_VIDEODRIVER=dummy` for the SDL build, or wrap any ba
 ## Running the apps
 
 ```sh
-build/bin/antwika_game                        # empty grid, runs until quit
-build/bin/antwika_game --record demo.replay   # or --replay demo.replay
-build/bin/antwika_life
-build/bin/antwika_life --record demo.replay
-build/bin/antwika_task_worker --record demo.replay
-build/bin/antwika_poker --record demo.replay
-build/bin/antwika_sudoku [--puzzle my-puzzle.txt]
-build/bin/antwika_tower_defence               # or --record / --replay
-build/bin/antwika_gfx_demo
-build/bin/antwika_gfx3d_demo                  # spinning cube, a fixed frame count
-build/bin/antwika_sound_demo [my-sound.wav]   # silent under the null backend
+build/bin/antwika_game/antwika_game                        # empty grid, runs until quit
+build/bin/antwika_game/antwika_game --record demo.replay   # or --replay demo.replay
+build/bin/antwika_life/antwika_life
+build/bin/antwika_life/antwika_life --record demo.replay
+build/bin/antwika_task_worker/antwika_task_worker --record demo.replay
+build/bin/antwika_poker/antwika_poker --record demo.replay
+build/bin/antwika_sudoku/antwika_sudoku [--puzzle my-puzzle.txt]
+build/bin/antwika_tower_defence/antwika_tower_defence               # or --record / --replay
+build/bin/antwika_gfx_demo/antwika_gfx_demo
+build/bin/antwika_gfx3d_demo/antwika_gfx3d_demo                  # spinning cube, a fixed frame count
+build/bin/antwika_sound_demo/antwika_sound_demo [my-sound.wav]   # silent under the null backend
 ```
 
 On Windows the binaries carry a `.exe` suffix.

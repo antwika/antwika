@@ -81,10 +81,11 @@ Build and test the project using:
 Ctrl + Shift + B
 ```
 
-After the build completes, run the compiled binaries on your target machine:
+After the build completes, run the compiled binaries on your target machine.
+Each application has a directory of its own under `build/bin/`, holding the executable and everything it opens:
 
-- Linux: `build/bin/antwika_game`, `build/bin/antwika_life`, `build/bin/antwika_poker`, `build/bin/antwika_sudoku`, `build/bin/antwika_task_worker`
-- Windows: `build/bin/antwika_game.exe`, `build/bin/antwika_life.exe`, `build/bin/antwika_poker.exe`, `build/bin/antwika_sudoku.exe`, `build/bin/antwika_task_worker.exe`
+- Linux: `build/bin/antwika_game/antwika_game`, `build/bin/antwika_life/antwika_life`, `build/bin/antwika_poker/antwika_poker`, `build/bin/antwika_sudoku/antwika_sudoku`, `build/bin/antwika_task_worker/antwika_task_worker`
+- Windows: `build/bin/antwika_game/antwika_game.exe`, `build/bin/antwika_life/antwika_life.exe`, `build/bin/antwika_poker/antwika_poker.exe`, `build/bin/antwika_sudoku/antwika_sudoku.exe`, `build/bin/antwika_task_worker/antwika_task_worker.exe`
 
 ### Choosing a graphics and input backend
 
@@ -124,16 +125,16 @@ Ctrl + Shift + P > Tasks: Run Task > Select sound backend
 ```sh
 scripts/select_backend.sh sound sdl3   # null or sdl3; raylib has no sound seam
 scripts/build.sh
-build/bin/antwika_sound_demo           # eight notes, now audible
+build/bin/antwika_sound_demo/antwika_sound_demo           # eight notes, now audible
 ```
 
 The two are independent, so `sound sdl3` with `gfx null` is an ordinary selection: sound with no window.
 
 Naming two different real frameworks anywhere is refused at configure time.
 Graphics and input would fight over one operating-system event queue, and whichever polled second would silently lose events; and a second framework of any kind doubles the dependency graph of a build that only needs one.
-`build/bin/antwika_gfx_demo` opens a window and draws until you close it -- under the `null` backend there is nothing to close, so that build runs until interrupted.
+`build/bin/antwika_gfx_demo/antwika_gfx_demo` opens a window and draws until you close it -- under the `null` backend there is nothing to close, so that build runs until interrupted.
 It draws three bars and blits a PNG logo twice: once whole and untinted, once left-half-only and tinted, which is what a source rectangle and a tint look like side by side.
-`build/bin/antwika_gfx3d_demo` is its counterpart for the 3D half: a cube drawn through `gfx::IRenderer3D`, turned by the tick count rather than by a clock, with a caption drawn over it through the 2D calls.
+`build/bin/antwika_gfx3d_demo/antwika_gfx3d_demo` is its counterpart for the 3D half: a cube drawn through `gfx::IRenderer3D`, turned by the tick count rather than by a clock, with a caption drawn over it through the 2D calls.
 It stops after a fixed number of frames, because the `null` backend reports no close and that is the build every CI leg produces.
 Each selection lives in an untracked file, `.vscode/gfx-backend` and `.vscode/sound-backend`, which makes it yours rather than the repository's.
 
@@ -142,9 +143,9 @@ Each selection lives in an untracked file, `.vscode/gfx-backend` and `.vscode/so
 The engine runs on a fixed timestep and every event dispatched during a run is tick-stamped, so a run can be recorded and later reloaded to reproduce the exact same resulting state:
 
 ```sh
-build/bin/antwika_game                        # empty grid, runs until you quit
-build/bin/antwika_game --record demo.replay   # the same, saving what you did
-build/bin/antwika_game --replay demo.replay   # reload it, reproducing the run
+build/bin/antwika_game/antwika_game                        # empty grid, runs until you quit
+build/bin/antwika_game/antwika_game --record demo.replay   # the same, saving what you did
+build/bin/antwika_game/antwika_game --replay demo.replay   # reload it, reproducing the run
 ```
 
 Both modes go through the same `antwika::game::bootstrap()` entry point and the same fixed-timestep tick loop (`antwika::replay::EngineLoop`) — replay mode only differs in where each tick's events come from.
@@ -160,9 +161,9 @@ Application code defines its own state (`GameState`) and events (e.g. `game.scor
 `apps/life` is a second, independent application built on the same replay system, this time with its state held in an `antwika::ecs::World` instead of a plain struct — a Conway's Game of Life board, where each cell is an entity with a `Cell` component and a single `LifeSystem` advances every cell one generation per tick using the double-buffered `World`/`SystemScheduler` machinery described in [`blog/003-an-entity-component-system-with-nowhere-to-hide-a-mutation.md`](blog/003-an-entity-component-system-with-nowhere-to-hide-a-mutation.md):
 
 ```sh
-build/bin/antwika_life                        # seeds a glider, then runs on
-build/bin/antwika_life --record demo.replay   # save the input as a replay
-build/bin/antwika_life --replay demo.replay   # reload it, reproducing the run
+build/bin/antwika_life/antwika_life                        # seeds a glider, then runs on
+build/bin/antwika_life/antwika_life --record demo.replay   # save the input as a replay
+build/bin/antwika_life/antwika_life --replay demo.replay   # reload it, reproducing the run
 ```
 
 Cells are toggled alive via a `life.toggle_cell` event (JSON payload `{"x":..,"y":..}`), tick-stamped exactly like `game.score_increment` — the same event-driven, replayable pattern applied to ECS state instead of a hand-rolled reducer.
@@ -175,7 +176,7 @@ Built against a real backend, `antwika_life` draws the board into a window inste
 
 ```sh
 scripts/select_backend.sh gfx sdl3 && scripts/build.sh
-build/bin/antwika_life                        # a glider crossing a 32x32 board
+build/bin/antwika_life/antwika_life                        # a glider crossing a 32x32 board
 ```
 
 Drag with the left button held to toggle every cell the pointer crosses, one toggle per cell per drag, and watch the next generation take it from there.
@@ -188,8 +189,8 @@ The mouse arrives the same way, as `input.pointer_down`/`input.pointer_move`/`in
 `apps/task_worker` is a third application, this time combining `antwika::ecs` with a new `antwika::scheduler` library: a fixed pool of `Worker` entities pulls tasks off a deterministic, priority-ordered, budget-bounded `antwika::scheduler::Scheduler`, submitted over time via a `task.submit` event and, optionally, chained to an earlier task with a dependency edge:
 
 ```sh
-build/bin/antwika_task_worker --record demo.replay   # submits a mixed-priority task burst
-build/bin/antwika_task_worker --replay demo.replay   # reload it, reproducing the same run
+build/bin/antwika_task_worker/antwika_task_worker --record demo.replay   # submits a mixed-priority task burst
+build/bin/antwika_task_worker/antwika_task_worker --replay demo.replay   # reload it, reproducing the same run
 ```
 
 Tasks are submitted via a `task.submit` event (JSON payload `{"id":..,"priority":..,"durationTicks":..,"label":..}`, plus an optional `"dependsOnId"`), tick-stamped exactly like `life.toggle_cell` — a `TaskSubmissionSink` schedules each parsed task onto the `Scheduler`, and a `TaskDispatchSystem` runs the scheduler each tick with that tick's idle-worker count as its budget, so no more tasks start than there are free workers.
@@ -208,9 +209,9 @@ Nothing is enumerated and no five-card subset is ever materialised, so scoring s
 `apps/poker` (`antwika_poker`) is the showcase, and it is a fourth application on the same replay system:
 
 ```sh
-build/bin/antwika_poker --record demo.replay   # a cash game, saving who bought in
-build/bin/antwika_poker --replay demo.replay   # reload it, reproducing the same session
-build/bin/antwika_poker --tick-delay-ms 150     # watch it, with a gfx backend selected
+build/bin/antwika_poker/antwika_poker --record demo.replay   # a cash game, saving who bought in
+build/bin/antwika_poker/antwika_poker --replay demo.replay   # reload it, reproducing the same session
+build/bin/antwika_poker/antwika_poker --tick-delay-ms 150     # watch it, with a gfx backend selected
 ```
 
 One engine tick is one step of the poker loop: dealing a hand, or asking a single player to act.
@@ -273,8 +274,8 @@ Geometry is entirely up to the caller, expressed as `IConstraint`s over cell ind
 `apps/sudoku` (`antwika_sudoku`) is the showcase: it expresses a Sudoku puzzle as an 81-cell wave and its row/column/3x3-box rules as 27 `AllDifferentConstraint`s over that flat array, then hands both to `antwika::wfc::Solver` — no 2D-grid code inside the library at all.
 
 ```sh
-build/bin/antwika_sudoku                          # solves a built-in demo puzzle
-build/bin/antwika_sudoku --puzzle my-puzzle.txt    # solves a puzzle loaded from a file
+build/bin/antwika_sudoku/antwika_sudoku                          # solves a built-in demo puzzle
+build/bin/antwika_sudoku/antwika_sudoku --puzzle my-puzzle.txt    # solves a puzzle loaded from a file
 ```
 
 A puzzle file is 81 characters (whitespace ignored) of digits `1`-`9` or a blank marker (`.` or `0`).
@@ -343,7 +344,7 @@ An application drives all of this from inside its tick loop, downstream of the r
 The buttons work: one counts your clicks and the other puts the count back to zero.
 
 ```sh
-build/bin/antwika_gfx_demo    # needs a display; use xvfb-run without one
+build/bin/antwika_gfx_demo/antwika_gfx_demo    # needs a display; use xvfb-run without one
 ```
 
 ## Sound
@@ -378,8 +379,8 @@ See [`docs/sound.md`](docs/sound.md) for why the threading, the absolute frame i
 `apps/sound_demo` (`antwika_sound_demo`) is the showcase: eight notes placed at exact frame positions, panned across the stereo field, played through whichever backend was selected.
 
 ```sh
-build/bin/antwika_sound_demo                  # a generated tone, silent under null
-build/bin/antwika_sound_demo my-sound.wav     # or play a file instead
+build/bin/antwika_sound_demo/antwika_sound_demo                  # a generated tone, silent under null
+build/bin/antwika_sound_demo/antwika_sound_demo my-sound.wav     # or play a file instead
 ```
 
 Under the default `null` backend it renders every frame and plays nothing, which is what makes it safe for a CI leg to run.

@@ -9,8 +9,8 @@
 ## Running it
 
 ```sh
-build/bin/antwika_sound_demo                  # a generated tone
-build/bin/antwika_sound_demo my-sound.wav     # or play a file instead
+build/bin/antwika_sound_demo/antwika_sound_demo                  # a generated tone
+build/bin/antwika_sound_demo/antwika_sound_demo my-sound.wav     # or play a file instead
 ```
 
 Under the default `null` backend it renders every frame and plays nothing, which is what makes it safe for a CI leg to run.

@@ -3,6 +3,7 @@
 #include <optional>
 #include <string>
 
+#include <antwika/app/AssetPath.hpp>
 #include <antwika/app/ConsoleLogging.hpp>
 #include <antwika/app/PngFile.hpp>
 #include <antwika/app/RunGuarded.hpp>
@@ -14,6 +15,7 @@
 #include "antwika/gfx_demo/DemoLoop.hpp"
 #include "antwika/gfx_demo/DemoScene.hpp"
 
+using antwika::app::assetPath;
 using antwika::app::ConsoleLogging;
 using antwika::app::readPngFile;
 using antwika::app::runGuarded;
@@ -49,7 +51,7 @@ int main()
                     + std::string(inputBackend->name()));
 
             const auto logo = readPngFile(
-                ANTWIKA_GFX_DEMO_TEXTURE_PATH, "antwika_gfx_demo");
+                assetPath("antwika.png"), "antwika_gfx_demo");
 
             const DemoScene scene;
             DemoLoop loop(*backend, *inputBackend, scene);

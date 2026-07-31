@@ -211,6 +211,9 @@ A new app follows the rule rather than this exception.
 - Install rules (`ARCHIVE`/`LIBRARY`/`RUNTIME` destinations, the header directory, and an export set namespaced `antwika::`) are mirrored across every module.
 - `antwika_add_library(NAME <module> SOURCES ... DEPENDS antwika::<other>)` from `cmake/AntwikaModule.cmake` writes all of the above, and a module with nothing unusual to say should use it -- `src/libs/time/CMakeLists.txt` is the worked example.
   A module that genuinely differs still spells its own rules out, so the difference stays visible.
+- `antwika_bundle_app(TARGET <target> [ASSETS <path>...])` from the same file is an application's counterpart, and every application under `src/apps/` calls it.
+  It gives the executable a directory of its own under `bin/`, copies the named assets in beside it, and on MinGW copies the runtime DLLs in too.
+  An asset is found at run time with `antwika::app::assetPath()`, never by a path baked in at configure time: that path is the building machine's, and a cross build's building machine is never the one that runs the result.
 
 ## Python (checker scripts)
 
