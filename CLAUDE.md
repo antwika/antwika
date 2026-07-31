@@ -128,6 +128,13 @@ Each module (lib or app) owns its own `CMakeLists.txt`, `include/`, `src/`, and 
   Only externally-supplied events are persisted — anything the engine regenerates deterministically on its own (like `engine.tick`) is never stored in the replay.
   `ReplayWriter::Layout` chooses whether a document is indented: `saveReplayFile()` writes `Compact`, since a `--record` run is read by `ReplayReader` rather than by a person, while the demo replays checked in under `src/apps/*/replays/` stay `Pretty` and diffable.
 - `ReplayFormatError` / `EngineLoopError` are the specific exception types for bad replay input and loop misuse respectively, following the project's one-exception-type-per-failure-category rule.
+  `SchemaVersionError` narrows the first to the one cause a caller may want to word differently: a document this build cannot bring to the current schema version.
+- **Every persisted schema states its version**, named in `antwika/replay/SchemaVersion.hpp` rather than written at a call site — the replay document in its own `"version"` member, the tick-event schema in its `$id`, since an event repeats thousands of times per document and its revision is fixed by the document holding it.
+  Reading is `parse -> read version -> migrate -> validate -> decode`, and validating *after* migrating is what lets exactly one schema exist rather than one per revision.
+  A document with no version member is version 1, which is what every file written before this says.
+  `MigrationChain` applies single-step `IMigration`s (N to N+1) until a document reaches current — single-step so the number of migrations stays linear in bumps rather than quadratic — and it is generic over an `nlohmann::json` and a version key, so a save file uses the same mechanism with its own list and its own current version.
+  Chains are constructed and injected, never registered globally; `standardReplayMigrations()` is the replay document's factory, and `ReplayReader` takes one.
+  See [`docs/schema-versioning.md`](docs/schema-versioning.md) for what counts as a breaking change and how to bump.
 - `antwika::replay::ReplayCli` parses the `--record <path>` / `--replay <path>` flags shared by every app's `main.cpp`.
 
 **Application state**: each app owns its state and how events mutate it — the engine has no opinion here.

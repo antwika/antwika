@@ -8,7 +8,6 @@
 #include <antwika/log/Level.hpp>
 #include <antwika/replay/ReplayFormatError.hpp>
 #include <antwika/replay/ReplayJson.hpp>
-
 namespace antwika::replay
 {
 
@@ -47,8 +46,9 @@ namespace antwika::replay
         }
     } // namespace
 
-    ReplayReader::ReplayReader(CanvasCheck check) noexcept
-        : check(std::move(check))
+    ReplayReader::ReplayReader(
+        CanvasCheck check, MigrationChain migrations)
+        : check(std::move(check)), migrations(std::move(migrations))
     {
     }
 
@@ -65,6 +65,8 @@ namespace antwika::replay
                 "antwika::replay: not a valid replay stream (not valid "
                 "JSON)");
         }
+
+        migrations.migrate(parsed);
 
         ReplayDocument document = replayFromJson(parsed);
         warnIfCanvasDiffers(check, document);
