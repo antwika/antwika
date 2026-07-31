@@ -6,6 +6,8 @@
 
 #include <nlohmann/json.hpp>
 
+#include <antwika/replay/MigrationChain.hpp>
+
 #include "antwika/game/Camera.hpp"
 #include "antwika/game/Cell.hpp"
 #include "antwika/game/GameState.hpp"
@@ -17,12 +19,17 @@
 namespace antwika::game
 {
 
+    using antwika::replay::MigrationChain;
+
     /**
      * @brief What every document of this format says it is.
      *
      * Checked before anything else is read, so a replay handed to the
      * loader is refused as the wrong kind of file rather than as a save
      * with every member missing.
+     * That check matters more now that both formats state their version
+     * in the same member: the magic is the only thing telling them
+     * apart.
      */
     inline constexpr std::string_view kSaveMagic = "antwika-game-save";
 
@@ -32,10 +39,28 @@ namespace antwika::game
      * An explicit integer from the first version rather than one added
      * once a second version was needed, because a document written
      * without one can only be dated by guessing.
-     * A document that carries no schemaVersion at all is read as 1, which
-     * is what makes this constant's first value free to assume.
+     * A document that states no version at all is read as 1, which is
+     * what makes this constant's first value free to assume.
+     *
+     * Stated in antwika::replay::kSchemaVersionKey -- "version" -- the
+     * one member every persisted document in this code base carries its
+     * version in, rather than a name of this format's own.
      */
     inline constexpr std::uint32_t kSaveFormatVersion = 1;
+
+    /**
+     * @brief Build the migration chain for the save document format.
+     * @return A chain that brings a save document of any version this
+     * build still reads up to kSaveFormatVersion.
+     *
+     * The save format's answer to standardReplayMigrations(), and the
+     * whole reason MigrationChain is generic over the document: this
+     * names its own list, its own current version and nothing else.
+     * Empty today, because the format is still at version 1.
+     * A factory rather than a constant, so that adding the first
+     * migration changes one function and nothing else.
+     */
+    [[nodiscard]] MigrationChain standardSaveMigrations();
 
     /**
      * @brief A whole session, as a save file holds it.
@@ -119,12 +144,14 @@ namespace antwika::game
      * Four stages, in this order: read the document's version, migrate it
      * up to kSaveFormatVersion, validate it against this version's
      * schema, then decode it.
+     * The first two are standardSaveMigrations()'s, which also stamps the
+     * version it brought the document to.
      * Validating after migrating rather than before is what lets one
      * schema describe the current version only.
      *
      * @param j The document to read.
      * @return The decoded state.
-     * @throws SaveFormatError If j is not an object, carries a version
+     * @throws SaveFormatError If j is not an object, states a version
      * this build cannot reach, fails the schema, or names a direction
      * that is not one of the four.
      */

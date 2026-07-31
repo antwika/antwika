@@ -37,6 +37,7 @@ add_executable(antwika_game_tests
     SaveCliTest.cpp
     SaveGameFileTest.cpp
     SaveGameTest.cpp
+    SaveMigrationTest.cpp
     SceneSnapshotTest.cpp
     TileAtlasTest.cpp
     ReplayDeterminismTest.cpp
