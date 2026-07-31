@@ -5,6 +5,11 @@
 
 A C++23 game project built with CMake, Conan, and GoogleTest, developed inside VS Code Dev Containers for a fully reproducible toolchain across Linux (GNU/LLVM) and Windows (MinGW).
 
+## Wiki
+
+[`wiki/Home.md`](wiki/Home.md) is the project wiki: a page per library and per app, plus architecture, getting-started, contributing and glossary pages.
+It is plain markdown with relative links, so it reads on GitHub and in an editor with no tooling.
+
 ## Project structure
 
 ```
