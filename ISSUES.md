@@ -1,126 +1,105 @@
 # Issues needing your input
 
-Every task in the batch was attempted and merged.
-These are the decisions the agents could not make for you, plus the follow-ups worth knowing about.
-Each entry says what was blocked, the question, and what shipped instead so nothing is silently missing.
+Everything asked for was built.
+This is what is left for you to decide, and what you should know before reviewing.
 
-The branch to review is `agents/integration`.
-
----
-
-## 1. There is no walker spawner to make "spawn more often" mean anything
-
-**Task:** "It seems like the walkers are spawning a bit too infrequently, can you make them spawn more often?"
-
-**Blocker:** `apps/game` has no automatic walker spawner and no spawn interval at all.
-A walker exists only because somebody right-clicked a path tile — `game::GridSink::placeWalker()` is the single place a `Walker` component is ever added, and it runs off an `input.pointer_button_pressed` event.
-There is no timer, no rate, no budget and no interval constant anywhere near walkers.
-The only per-tick interval in the app is `kTickInterval` in `main.cpp`, which is `TickPacer`'s wall-clock pacing for the whole run — halving that would double the speed of everything, including the walking cadence the other half of this task just halved.
-
-**Question:** which did you mean?
-
-- (a) Add a new automatic spawner that drops a walker every N ticks — if so, onto which tile, and what N?
-- (b) Make one right-click drop two walkers.
-- (c) Halve `kTickInterval` so the whole simulation runs twice as fast.
-
-**Shipped instead:** the other half of the task only.
-Walkers now advance one cell every two ticks, via a per-walker integer countdown in the `Walker` component.
-A tick-number modulus was rejected because it would make walkers dropped on different ticks march in lockstep.
+The branch is `agents/integration`.
 
 ---
 
-## 2. The placement ghost cannot follow a freely moving pointer
+## Still open — your call
 
-**Task:** "Show a placeholder (with slight opacity) to indicate where a building would be placed."
+### 1. A face-down hole card now shows its rank
 
-**Blocker:** `apps/game` attaches `input::IdleMotionSource`, which deliberately withholds pointer movement while no button is held, so that a `--record` file does not fill up with positions nothing ever read.
-The ghost is therefore restated only when a click, a wheel or a key arrives: it jumps to where the last click was rather than gliding under the cursor.
-This is the trade `CLAUDE.md` already describes for the toolbar's hover appearance, now visible on the grid as well.
+`apps/poker` drew its card art and its card labels from two independently computed layouts, which disagreed by enough that a card's rank and suit landed on the *neighbouring* card.
+That is fixed: both now come from one layout.
 
-**Question:** is a live ghost worth what removing the gate costs a recording?
+The side effect is that two behaviours which always disagreed are now visible together.
+Before showdown the art draws a card *back* while the label still prints the rank and suit — so a face-down card reads as a back with `As` written on it.
+Both predate the fix; they were simply far apart on screen.
 
-There is a middle answer: keep the gate, but let it release a latched movement once per tick even with no button held.
-That costs one recorded movement per tick instead of one per reported pixel.
+Choosing means either hiding the label until showdown (a spectator app arguably wants that information) or always drawing the face (which retires `kCardBackSlot`).
+Left as it was rather than decided for you.
 
-**Shipped instead:** the ghost as described, at `alpha = 110`, drawn from the same tile the real placement uses.
-The limitation is documented in `BuildGhost`'s and `GridSink`'s headers so nobody reads it as a bug.
+### 2. Per-city entities in `apps/game`
 
----
+Roads and the camera are per city.
+Walkers and buildings still live in one `World` and leak across cities.
+Fixing it needs a city tag on entities *and* a save-format bump, since `SaveGame` carries one grid.
+That is a design decision about what a city *is*, so it was not made unilaterally.
 
-## 3. Should a finished run report what was built?
+### 3. Demolition
 
-**Task:** follows from the build palette.
+Nothing in `apps/game` can remove a building.
+This surfaced as a coverage gap — `ComponentStorage<Building>::remove` was dead code — and was closed by making loading destroy the old city, but that is a workaround.
+A demolish tool is probably the real gap.
+Not built, because it is a new mechanic rather than a fix.
 
-**Blocker:** `GameSummary` and `Game.cpp` were owned by a different agent this session, so `printSummary()` still reports only paths and walkers, not buildings.
+### 4. 3D has no caller
 
-**Question:** should a finished run print what was built, alongside "Paths laid" and "Walkers"?
+`gfx::IRenderer3D` is implemented by `null` and `raylib`, with `apps/gfx3d_demo` proving it renders.
+`sdl3` reports no 3D renderer, which is a conforming answer rather than a gap.
 
-**Shipped instead:** nothing.
-The buildings are already in the `World` and in `SceneSnapshot`, so this is a two-line addition whenever you want it.
+But nothing in the repo *wants* 3D yet.
+The interface is speculative until an app needs it, and it was built additively so it costs nothing while it waits.
+Say if you want a real use, or want it withdrawn.
 
----
+### 5. Which key returns from a city to the world map
 
-## 4. 3D rendering: how far did you actually want to go?
-
-**Task:** "You may refactor the code base to support actual 3D rendering."
-
-**What shipped:** GLM as a dependency, a render-side `Vec3`/`Mat4`/`Transform`/`Camera3D` math layer, and `IRenderer3D` as a sibling interface discovered through a non-pure `IRenderer::renderer3d()` that returns `nullptr` by default.
-The `null` backend implements the whole thing.
-The 2D API is untouched, which is why nothing else in the repo broke.
-
-**Question:** no real backend draws 3D yet — `sdl3` and `raylib` inherit the `nullptr` default, because building raylib from source did not fit the time budget.
-Do you want a real backend implementation next (raylib is much the easier of the two), and do you want an `apps/gfx3d_demo` to prove it?
-
-There is a deeper question this task did not settle: nothing in the repo currently *wants* 3D.
-The interface is speculative until an app needs it, and it was built additively precisely so that it costs nothing while it waits.
+`Escape` was already spent on quitting, so `M` was chosen.
+Decided, not blocked — but easy to change and worth your eye.
 
 ---
 
-## 5. Three finished modules are not reachable from the running game
+## Decisions taken on your behalf
 
-Not a design problem — a concurrency one.
-`main.cpp`, `Game.cpp` and `RenderSystem` could only be owned by one agent at a time, and the main-menu agent had them.
-So these are complete and tested, but not yet wired in:
+Each was a judgement call, is reversible, and the reasoning is in the commit body.
 
-- **World map.**
-  Generation, city placement, layout, scene and click-sink are done and tested.
-  The "World Map" entry on the main menu is an inert placeholder (a `ButtonSpec` with no id, so it cannot be hovered or activated rather than merely looking disabled).
-  The agent left a five-step integration hook in `WorldMap.hpp`.
-- **Save/load.**
-  The versioned format, the migration chain, the file I/O and `--save`/`--load` flag parsing are done and tested.
-  Nothing calls them yet, and the "Load Game" menu entry is the same kind of placeholder.
-- **The text field and dropdown.**
-  Both widgets are done, tested and at 100% coverage, but nothing in `apps/game` uses them yet — so the replay picker you asked for exists as capability, not as a screen.
-
-**Question:** none — this is simply the top follow-up, and the natural next session.
-Flagging it so you are not surprised that the world map passes tests but does not appear on screen.
+- **A player with chips in the pot may not leave a hand, folded or not.**
+  A stake is committed to the pot rather than lent to it, and folding forfeits the claim without withdrawing the chips — which is also what a card room does.
+- **Invalid blinds are refused at the `Table` constructor** rather than clamped by a saturating subtraction.
+  A clamp would leave the pot exactly as wrong while replacing an absurd number with a plausible one, which is harder to find.
+- **The save format adopted `"version"`**, matching replay documents, rather than its own `"schemaVersion"`.
+  Replay files with `"version"` already exist on disk; no save file did, so the format with no users paid the cost.
+- **Buildings spawn a walker every 20 ticks** onto the lowest-ordered adjacent road, from a per-building countdown.
+  Towers spawn nobody.
+  A building with no road holds its countdown at zero rather than banking one, so laying a road releases one walker and not a queue.
+- **The save-file list is read once at startup**, not inside the tick path.
+  Re-listing a directory mid-run would not replay.
 
 ---
 
-## 6. Which key returns from a city map to the world map?
+## What you should know before reviewing
 
-**Decided, not blocked — but worth your review.**
-`Escape` is already spent on quitting, so the world-map agent chose `M`.
-Say if you want something else.
+### The coverage gate has one documented exclusion
 
----
+`View.hpp`'s two lambdas carry `GCOVR_EXCL_LINE` for a reason that is new to this repo, and is written up as case (d) in `docs/confirming-unreachable-branches.md`.
 
-## 7. Two conventions were changed to make things agree
+gcov emits one function record per template instantiation.
+Where a caller inlines the body, the shared out-of-line copy is never called, so its record reads zero — while the line counters, attributed through the inline expansion, show the code running.
+Three such records were at zero with every line inside them covered.
 
-Both were judgement calls made to remove an inconsistency, and both are cheap to reverse now and expensive later.
+The exclusion is coarser than the others in this file: the marker is per *source* line and every instantiation shares one, so it drops the covered records too.
+That is stated in the doc rather than hidden.
+`gcovr --merge-mode-functions=merge-use-line-max` looks like the right fix and is not — the records are distinct symbols, not copies gcovr will fold.
 
-- **The save format adopted `"version"` as its schema-version key**, matching replay documents, rather than its own `"schemaVersion"`.
-  Reasoning: replay files with `"version"` already exist on disk; no save file does yet, so the format with zero users paid the cost.
-  Consequence: a replay and a save now look alike at the version member, and `"magic"` (`"antwika-game-save"`) is the only thing distinguishing them — it is checked.
-- **`SchemaVersionError` narrows `ReplayFormatError`** rather than sitting beside it, so every existing `catch (ReplayFormatError &)` keeps working while a caller that wants to say "this file is from a newer release" can catch the narrower type.
+### A test flake was found and fixed, and I cannot prove it is gone
 
----
+Two `apps/game` save/load tests failed only under full-suite parallel load.
+Two causes, both real:
 
-## 8. Coverage is verified for some of the new code, not all of it
+1. CTest registers every case as its own process, and the fixtures named their scratch directory after the *fixture* — so concurrent cases deleted each other's files.
+2. The name was then the same on every run, so a fixture that removes the directory and immediately recreates it races the filesystem retiring and reissuing one entry.
 
-CI requires 100% line/function/branch coverage on the GNU leg.
-Four agents ran a real coverage build and confirmed 100% on their code (`ecs_commons`, `libs/ui`, the `game` save files, `libs/replay`).
-The rest wrote tests aimed at every branch but did not run `gcovr`, because a coverage build on a machine running many concurrent compiles was not affordable inside the time budget.
+Both are fixed (per-case naming, plus the process id).
+The suite has been green for six consecutive full runs since.
+But the original failure rate was roughly one run in four, so six green runs is evidence, not proof.
+If it recurs, the fixtures are `SaveLoadSinkTest` and `SaveDirectoryTest` and the helper is `src/apps/game/tests/ScratchDirectory.hpp`.
 
-**Expect the coverage gate to be the first thing that fails in CI**, most likely in `apps/tower_defence` (`BattleScene.cpp`'s colour arms, `GridLayout.cpp`'s early returns) and `apps/game`'s world map.
-This is a known gap, not a surprise.
+### Two tests are slow by construction
+
+`SaveLoadSinkTest`'s `pixelOn()` finds a widget by scanning 163,840 canvas positions and calling `describe()` at each.
+That is 4-9 seconds per case under coverage instrumentation.
+It is correct and it is why those cases are under load long enough to have exposed the bug above.
+`ui::Frame::rects` — added this session — now makes a widget's rectangle directly askable, so that helper could become a lookup.
+Not done, because the tests belonged to another agent's lane while it was still running.
