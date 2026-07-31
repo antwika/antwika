@@ -19,19 +19,28 @@ using antwika::game::Walker;
 using antwika::log::mocks::MockLogger;
 using ::testing::NiceMock;
 
-TEST(WalkerTest, DefaultConstructedFacesEast)
+TEST(WalkerTest, DefaultConstructedFacesEastAndIsDueToStep)
 {
     constexpr Walker walker;
 
     EXPECT_EQ(walker.facing, Direction::East);
+    EXPECT_EQ(walker.ticksUntilStep, 0U);
 }
 
-TEST(WalkerTest, EqualityComparesTheFacing)
+TEST(WalkerTest, EqualityComparesTheFacingAndTheCountdown)
 {
-    constexpr Walker walker{.facing = Direction::North};
+    constexpr Walker walker{
+        .facing = Direction::North, .ticksUntilStep = 1};
 
-    EXPECT_EQ(walker, (Walker{.facing = Direction::North}));
-    EXPECT_NE(walker, (Walker{.facing = Direction::South}));
+    EXPECT_EQ(
+        walker,
+        (Walker{.facing = Direction::North, .ticksUntilStep = 1}));
+    EXPECT_NE(
+        walker,
+        (Walker{.facing = Direction::South, .ticksUntilStep = 1}));
+    EXPECT_NE(
+        walker,
+        (Walker{.facing = Direction::North, .ticksUntilStep = 0}));
 }
 
 TEST(WalkerTest, PathTagsCompareEqualToEachOther)
