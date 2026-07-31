@@ -11,11 +11,13 @@
 #include <antwika/gfx/Rect.hpp>
 #include <antwika/gfx/Size.hpp>
 #include <antwika/gfx/mocks/MockRenderer.hpp>
+#include <antwika/gfx/mocks/MockTexture.hpp>
 #include <antwika/holdem/CardText.hpp>
 #include <antwika/holdem/Stage.hpp>
 #include <antwika/ui/DrawCommand.hpp>
 #include <antwika/ui/Interactions.hpp>
 
+#include "antwika/poker/PokerAtlas.hpp"
 #include "antwika/poker/SeatSnapshot.hpp"
 #include "antwika/poker/TableScene.hpp"
 #include "antwika/poker/TableSnapshot.hpp"
@@ -368,4 +370,244 @@ TEST_F(TableSceneTest, Describe_FillsTheRailAcrossTheTopOfTheCanvas)
     EXPECT_EQ(rail->rect.origin.x, 0);
     EXPECT_EQ(rail->rect.origin.y, 0);
     EXPECT_EQ(rail->rect.size.width, kCanvas.width);
+}
+
+// --- The art layer -------------------------------------------------
+
+namespace
+{
+    using antwika::poker::ArtBlit;
+
+    [[nodiscard]] std::size_t blitsOf(
+        const std::vector<ArtBlit> &art, Rect source)
+    {
+        std::size_t found = 0;
+        for (const auto &blit : art)
+        {
+            found += blit.source == source ? 1U : 0U;
+        }
+
+        return found;
+    }
+
+    [[nodiscard]] bool anyBlitTinted(
+        const std::vector<ArtBlit> &art, Rect source, Color tint)
+    {
+        for (const auto &blit : art)
+        {
+            if (blit.source == source && blit.tint == tint)
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+} // namespace
+
+TEST(TableArtTest, DescribeArt_TilesTheFeltAcrossTheWholeCanvas)
+{
+    const TableScene scene;
+    const auto art = scene.describeArt(kCanvas, idleTable());
+
+    const auto felt = antwika::poker::sourceOf(antwika::poker::kFeltSlot);
+    const auto across = kCanvas.width / antwika::poker::kAtlasSlotSize.width;
+    const auto down = kCanvas.height / antwika::poker::kAtlasSlotSize.height;
+
+    EXPECT_EQ(blitsOf(art, felt), across * down);
+
+    // The first tile is the top-left corner, exactly one slot across.
+    ASSERT_FALSE(art.empty());
+    EXPECT_EQ(
+        art.front(),
+        (ArtBlit{
+            .source = felt,
+            .destination =
+                Rect{
+                    .origin = {.x = 0, .y = 0},
+                    .size = antwika::poker::kAtlasSlotSize},
+            .tint = Color{
+                .red = 255, .green = 255, .blue = 255, .alpha = 255}}));
+}
+
+TEST(TableArtTest, DescribeArt_GivesEverySeatAPlate)
+{
+    const TableScene scene;
+    auto snapshot = idleTable();
+    const auto art = scene.describeArt(kCanvas, snapshot);
+
+    EXPECT_EQ(
+        blitsOf(art, antwika::poker::sourceOf(antwika::poker::kPlateSlot)),
+        snapshot.seats.size());
+}
+
+TEST(TableArtTest, DescribeArt_SeatsOnlyTheOccupied)
+{
+    const TableScene scene;
+    auto snapshot = liveTable();
+    snapshot.seats.push_back(SeatSnapshot{});
+
+    const auto art = scene.describeArt(kCanvas, snapshot);
+
+    // A chair each for those taken, a plate each for all of them.
+    EXPECT_EQ(
+        blitsOf(art, antwika::poker::sourceOf(antwika::poker::kChairSlot)),
+        snapshot.seats.size() - 1);
+    EXPECT_EQ(
+        blitsOf(art, antwika::poker::sourceOf(antwika::poker::kPlateSlot)),
+        snapshot.seats.size());
+}
+
+TEST(TableArtTest, DescribeArt_DrawsTheBoardFaceUpAsThreeBlitsACard)
+{
+    const TableScene scene;
+    auto snapshot = idleTable();
+    snapshot.board = parseCards("Ah Kd 7c");
+
+    const auto art = scene.describeArt(kCanvas, snapshot);
+
+    EXPECT_EQ(
+        blitsOf(art, antwika::poker::sourceOf(antwika::poker::kCardFaceSlot)),
+        3U);
+    EXPECT_EQ(
+        blitsOf(art, antwika::poker::sourceOf(antwika::poker::kCardBackSlot)),
+        0U);
+
+    // A red suit and a black one are the same glyph, tinted apart.
+    EXPECT_TRUE(anyBlitTinted(
+        art,
+        antwika::poker::sourceOfSuit(antwika::holdem::Suit::Hearts),
+        kRedSuit));
+    EXPECT_TRUE(anyBlitTinted(
+        art,
+        antwika::poker::sourceOfSuit(antwika::holdem::Suit::Clubs),
+        kBlackSuit));
+}
+
+TEST(TableArtTest, DescribeArt_KeepsHoleCardsFaceDownBeforeShowdown)
+{
+    const TableScene scene;
+    auto snapshot = liveTable();
+    snapshot.board.clear();
+    snapshot.stage = Stage::Flop;
+
+    const auto art = scene.describeArt(kCanvas, snapshot);
+
+    // Two seats in the hand, two cards each, none of them anybody's.
+    EXPECT_EQ(
+        blitsOf(art, antwika::poker::sourceOf(antwika::poker::kCardBackSlot)),
+        4U);
+    EXPECT_EQ(
+        blitsOf(art, antwika::poker::sourceOf(antwika::poker::kCardFaceSlot)),
+        0U);
+}
+
+TEST(TableArtTest, DescribeArt_TurnsHoleCardsOverAtShowdown)
+{
+    const TableScene scene;
+    auto snapshot = liveTable();
+    snapshot.board.clear();
+    snapshot.stage = Stage::Showdown;
+
+    const auto art = scene.describeArt(kCanvas, snapshot);
+
+    EXPECT_EQ(
+        blitsOf(art, antwika::poker::sourceOf(antwika::poker::kCardBackSlot)),
+        0U);
+    EXPECT_EQ(
+        blitsOf(art, antwika::poker::sourceOf(antwika::poker::kCardFaceSlot)),
+        4U);
+}
+
+TEST(TableArtTest, DescribeArt_MarksTheButtonTheBetAndWhoseTurnItIs)
+{
+    const TableScene scene;
+    const auto snapshot = liveTable();
+
+    const auto art = scene.describeArt(kCanvas, snapshot);
+
+    EXPECT_EQ(
+        blitsOf(
+            art, antwika::poker::sourceOf(antwika::poker::kDealerButtonSlot)),
+        1U);
+    EXPECT_EQ(
+        blitsOf(art, antwika::poker::sourceOf(antwika::poker::kToActSlot)),
+        1U);
+    // One for the pot, one in front of the seat that has bet.
+    EXPECT_EQ(
+        blitsOf(art, antwika::poker::sourceOf(antwika::poker::kChipSlot)),
+        2U);
+}
+
+TEST(TableArtTest, DescribeArt_HidesTheButtonBeforeTheFirstDeal)
+{
+    const TableScene scene;
+    auto snapshot = liveTable();
+    snapshot.handsPlayed = 0;
+
+    const auto art = scene.describeArt(kCanvas, snapshot);
+
+    EXPECT_EQ(
+        blitsOf(
+            art, antwika::poker::sourceOf(antwika::poker::kDealerButtonSlot)),
+        0U);
+}
+
+TEST(TableArtTest, DescribeArt_SurvivesACanvasWithNoRoomAboveTheSeats)
+{
+    const TableScene scene;
+    auto snapshot = idleTable();
+    snapshot.board = parseCards("Ah Kd 7c");
+
+    // Too short for the seat rows, let alone a board above them.
+    const auto art =
+        scene.describeArt(Size{.width = 40, .height = 24}, snapshot);
+
+    EXPECT_FALSE(art.empty());
+    for (const auto &blit : art)
+    {
+        EXPECT_GE(blit.destination.origin.x, 0);
+        EXPECT_GE(blit.destination.origin.y, 0);
+    }
+}
+
+TEST(TableArtTest, DescribeArt_DrawsNothingForASeatlessTable)
+{
+    const TableScene scene;
+    TableSnapshot snapshot;
+
+    const auto art = scene.describeArt(kCanvas, snapshot);
+
+    EXPECT_EQ(
+        blitsOf(art, antwika::poker::sourceOf(antwika::poker::kPlateSlot)),
+        0U);
+}
+
+TEST(TableArtTest, Draw_PaintsTheArtBeforeTheText)
+{
+    NiceMock<MockRenderer> renderer;
+    NiceMock<antwika::gfx::mocks::MockTexture> atlas;
+    const TableScene scene;
+    const auto snapshot = idleTable();
+
+    EXPECT_CALL(renderer, clear(_)).Times(1);
+    EXPECT_CALL(renderer, drawRect(_, _)).Times(AnyNumber());
+    EXPECT_CALL(renderer, drawText(_, _, _, _)).Times(AnyNumber());
+    EXPECT_CALL(renderer, drawTexture(_, _, _, _))
+        .Times(static_cast<int>(scene.describeArt(kCanvas, snapshot).size()));
+
+    scene.draw(renderer, kCanvas, snapshot, &atlas);
+}
+
+TEST(TableArtTest, Draw_DrawsNoTextureWithoutAnAtlas)
+{
+    NiceMock<MockRenderer> renderer;
+    const TableScene scene;
+
+    EXPECT_CALL(renderer, clear(_)).Times(1);
+    EXPECT_CALL(renderer, drawRect(_, _)).Times(AnyNumber());
+    EXPECT_CALL(renderer, drawText(_, _, _, _)).Times(AnyNumber());
+    EXPECT_CALL(renderer, drawTexture(_, _, _, _)).Times(0);
+
+    scene.draw(renderer, kCanvas, idleTable());
 }

@@ -14,6 +14,17 @@ add_executable(antwika_poker
     src/main.cpp
 )
 
+# Baked in at configure time, as apps/game does with its atlas, so the
+# binary needs no install step and no working directory.
+# Only the app gets this: every test draws through a mock instead.
+set(ANTWIKA_POKER_ATLAS_PATH
+    "${CMAKE_CURRENT_SOURCE_DIR}/assets/atlas.png")
+
+target_compile_definitions(antwika_poker
+    PRIVATE
+        ANTWIKA_POKER_ATLAS_PATH="${ANTWIKA_POKER_ATLAS_PATH}"
+)
+
 target_include_directories(antwika_poker
     PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}/include

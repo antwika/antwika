@@ -7,12 +7,15 @@
 
 #include <antwika/gfx/Color.hpp>
 #include <antwika/gfx/Glyphs.hpp>
+#include <antwika/gfx/Rect.hpp>
 #include <antwika/holdem/CardText.hpp>
 #include <antwika/holdem/Stage.hpp>
 #include <antwika/ui/Alignment.hpp>
 #include <antwika/ui/Painter.hpp>
 #include <antwika/ui/Sizing.hpp>
 #include <antwika/ui/Theme.hpp>
+
+#include "antwika/poker/PokerAtlas.hpp"
 
 namespace antwika::poker
 {
@@ -44,6 +47,28 @@ namespace antwika::poker
         constexpr Color kToAct{.red = 232, .green = 196, .blue = 72};
         constexpr Color kStackBar{.red = 72, .green = 160, .blue = 216};
         constexpr Color kInFront{.red = 224, .green = 176, .blue = 64};
+
+        // An opaque white tint draws a slot of the atlas unchanged.
+        constexpr Color kWhite{
+            .red = 255, .green = 255, .blue = 255, .alpha = 255};
+
+        // Below this a card is fewer pixels than it has glyphs.
+        constexpr std::uint32_t kMinimumCardWidth = 8;
+
+        // Every art rectangle is built here.
+        // So no other line in this file casts a width into an origin.
+        [[nodiscard]] Rect rectAt(
+            std::uint32_t left,
+            std::uint32_t top,
+            std::uint32_t width,
+            std::uint32_t height) noexcept
+        {
+            return Rect{
+                .origin =
+                    {.x = static_cast<std::int32_t>(left),
+                     .y = static_cast<std::int32_t>(top)},
+                .size = {.width = width, .height = height}};
+        }
 
         // Two glyph cells for the rank and the suit, one for padding.
         [[nodiscard]] std::uint32_t cardWidth(std::uint32_t scale) noexcept
@@ -103,13 +128,286 @@ namespace antwika::poker
     } // namespace
 
     void TableScene::draw(
-        IRenderer &renderer, Size canvas, const TableSnapshot &snapshot) const
+        IRenderer &renderer,
+        Size canvas,
+        const TableSnapshot &snapshot,
+        const ITexture *atlas) const
     {
         // ui::paint() deliberately neither clears nor presents.
         // So the felt behind the picture is still this scene's to lay.
+        // It is still laid under the art, since a blit may be shaped.
         renderer.clear(kFelt);
 
+        // No atlas is an ordinary state rather than a failure.
+        // A test draws through a mock that was never handed one.
+        if (atlas != nullptr)
+        {
+            for (const auto &blit : describeArt(canvas, snapshot))
+            {
+                renderer.drawTexture(
+                    *atlas, blit.source, blit.destination, blit.tint);
+            }
+        }
+
         ui::paint(renderer, describe(canvas, snapshot).commands);
+    }
+
+    TableScene::ArtMetrics TableScene::artMetricsFor(
+        Size canvas, const TableSnapshot &snapshot)
+    {
+        const auto scale = scaleForCanvas(canvas);
+        const auto rows = std::max<std::uint32_t>(
+            1, static_cast<std::uint32_t>(snapshot.seats.size()));
+
+        // The same share of the canvas the ui rows take.
+        // So the art lands under the text rather than beside it.
+        const auto rowHeight =
+            std::max(seatRowHeight(scale), canvas.height / 2 / rows);
+        const auto seatRoom = rowHeight * rows;
+
+        // A table with more seats than canvas has no room above them.
+        const auto seatTop =
+            seatRoom < canvas.height ? canvas.height - seatRoom : 0;
+
+        const auto cardWidth =
+            std::max<std::uint32_t>(kMinimumCardWidth, canvas.width / 18);
+        const auto cardHeight = cardWidth * 3 / 2;
+
+        // Centred in whatever the seats left, or hard against the top.
+        const auto boardTop =
+            seatTop > cardHeight ? (seatTop - cardHeight) / 2 : 0;
+
+        return ArtMetrics{
+            .cardWidth = cardWidth,
+            .cardHeight = cardHeight,
+            .rowHeight = rowHeight,
+            .seatTop = seatTop,
+            .boardTop = boardTop,
+        };
+    }
+
+    void TableScene::appendFelt(std::vector<ArtBlit> &art, Size canvas)
+    {
+        // Tiled rather than stretched.
+        // The felt is textured, so blowing one up would show it.
+        const auto tile = kAtlasSlotSize.width;
+        const auto across = (canvas.width + tile - 1) / tile;
+        const auto down = (canvas.height + tile - 1) / tile;
+
+        for (std::uint32_t row = 0; row < down; ++row)
+        {
+            for (std::uint32_t column = 0; column < across; ++column)
+            {
+                art.push_back(ArtBlit{
+                    .source = sourceOf(kFeltSlot),
+                    .destination = rectAt(
+                        column * tile, row * tile, tile, tile),
+                    .tint = kWhite});
+            }
+        }
+    }
+
+    void TableScene::appendCard(
+        std::vector<ArtBlit> &art,
+        holdem::Card card,
+        Rect destination,
+        bool faceUp)
+    {
+        if (!faceUp)
+        {
+            art.push_back(ArtBlit{
+                .source = sourceOf(kCardBackSlot),
+                .destination = destination,
+                .tint = kWhite});
+
+            return;
+        }
+
+        art.push_back(ArtBlit{
+            .source = sourceOf(kCardFaceSlot),
+            .destination = destination,
+            .tint = kWhite});
+
+        // A rank glyph over a suit glyph, rather than one of 52 faces.
+        // Both are drawn white, so the tint is what colours the suit.
+        const auto ink = isRedSuit(card) ? kRedSuit : kBlackSuit;
+        const auto width = destination.size.width;
+        const auto height = destination.size.height;
+        const auto glyph = width / 2;
+
+        art.push_back(ArtBlit{
+            .source = rankSourceOf(card),
+            .destination = Rect{
+                .origin = {
+                    .x = destination.origin.x
+                         + static_cast<std::int32_t>(width / 8),
+                    .y = destination.origin.y
+                         + static_cast<std::int32_t>(height / 10)},
+                .size = {.width = glyph, .height = glyph}},
+            .tint = ink});
+
+        art.push_back(ArtBlit{
+            .source = suitSourceOf(card),
+            .destination = Rect{
+                .origin = {
+                    .x = destination.origin.x
+                         + static_cast<std::int32_t>(width - glyph
+                                                     - width / 8),
+                    .y = destination.origin.y
+                         + static_cast<std::int32_t>(height - glyph
+                                                     - height / 10)},
+                .size = {.width = glyph, .height = glyph}},
+            .tint = ink});
+    }
+
+    void TableScene::appendBoard(
+        std::vector<ArtBlit> &art,
+        Size canvas,
+        const TableSnapshot &snapshot,
+        ArtMetrics metrics)
+    {
+        const auto gap = std::max<std::uint32_t>(1, metrics.cardWidth / 8);
+        const auto count =
+            static_cast<std::uint32_t>(snapshot.board.size());
+        const auto span = count * metrics.cardWidth
+                          + (count == 0 ? 0 : (count - 1) * gap);
+
+        // The board is always shown face up: it is everybody's.
+        auto left = canvas.width > span ? (canvas.width - span) / 2 : 0;
+        for (const auto card : snapshot.board)
+        {
+            appendCard(
+                art,
+                card,
+                rectAt(
+                    left,
+                    metrics.boardTop,
+                    metrics.cardWidth,
+                    metrics.cardHeight),
+                true);
+            left += metrics.cardWidth + gap;
+        }
+
+        // A chip under the middle, which is where the pot is written.
+        const auto chip = metrics.cardHeight / 2;
+        art.push_back(ArtBlit{
+            .source = sourceOf(kChipSlot),
+            .destination = rectAt(
+                canvas.width / 2 - chip / 2,
+                metrics.boardTop + metrics.cardHeight + gap,
+                chip,
+                chip),
+            .tint = kWhite});
+    }
+
+    void TableScene::appendSeats(
+        std::vector<ArtBlit> &art,
+        Size canvas,
+        const TableSnapshot &snapshot,
+        ArtMetrics metrics)
+    {
+        const auto inset = metrics.rowHeight / 8;
+        const auto plateHeight = metrics.rowHeight - 2 * inset;
+        const auto seatCardHeight =
+            std::min(metrics.cardHeight, plateHeight);
+        const auto seatCardWidth = seatCardHeight * 2 / 3;
+        const auto marker =
+            std::max<std::uint32_t>(1, seatCardHeight / 2);
+
+        std::uint32_t index = 0;
+        for (const auto &seat : snapshot.seats)
+        {
+            const auto top = metrics.seatTop + index * metrics.rowHeight;
+            ++index;
+
+            // A plate for every seat, taken or not.
+            // So the table shows how many places it has.
+            art.push_back(ArtBlit{
+                .source = sourceOf(kPlateSlot),
+                .destination = rectAt(
+                    inset,
+                    top + inset,
+                    canvas.width - 2 * inset,
+                    plateHeight),
+                .tint = kWhite});
+
+            if (!seat.occupied)
+            {
+                continue;
+            }
+
+            art.push_back(ArtBlit{
+                .source = sourceOf(kChairSlot),
+                .destination =
+                    rectAt(inset, top + inset, plateHeight, plateHeight),
+                .tint = kWhite});
+
+            // Two cards at the right edge, then the furniture leftwards.
+            auto right = canvas.width - inset;
+
+            if (seat.inHand)
+            {
+                // Face up only once every hand is over the same cards.
+                const auto faceUp = snapshot.stage == Stage::Showdown;
+                for (const auto card : seat.holeCards)
+                {
+                    right -= seatCardWidth + inset;
+                    appendCard(
+                        art,
+                        card,
+                        rectAt(
+                            right,
+                            top + inset,
+                            seatCardWidth,
+                            seatCardHeight),
+                        faceUp);
+                }
+            }
+
+            if (seat.roundCommitted > 0)
+            {
+                right -= marker + inset;
+                art.push_back(ArtBlit{
+                    .source = sourceOf(kChipSlot),
+                    .destination =
+                        rectAt(right, top + inset, marker, marker),
+                    .tint = kWhite});
+            }
+
+            if (seat.isButton && snapshot.handsPlayed > 0)
+            {
+                right -= marker + inset;
+                art.push_back(ArtBlit{
+                    .source = sourceOf(kDealerButtonSlot),
+                    .destination =
+                        rectAt(right, top + inset, marker, marker),
+                    .tint = kWhite});
+            }
+
+            if (seat.isToAct)
+            {
+                // Over the chair.
+                // Which is where an eye hunting for a turn already is.
+                art.push_back(ArtBlit{
+                    .source = sourceOf(kToActSlot),
+                    .destination =
+                        rectAt(inset, top + inset, marker, marker),
+                    .tint = kToAct});
+            }
+        }
+    }
+
+    std::vector<ArtBlit> TableScene::describeArt(
+        Size canvas, const TableSnapshot &snapshot) const
+    {
+        const auto metrics = artMetricsFor(canvas, snapshot);
+
+        std::vector<ArtBlit> art;
+        appendFelt(art, canvas);
+        appendBoard(art, canvas, snapshot, metrics);
+        appendSeats(art, canvas, snapshot, metrics);
+
+        return art;
     }
 
     Frame TableScene::describe(

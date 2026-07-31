@@ -123,6 +123,16 @@ namespace
         return antwika::poker::bootstrap(setup);
     }
 
+    // An uploaded atlas, opaque to everything that holds it.
+    class FakeTexture final : public ITexture
+    {
+    public:
+        [[nodiscard]] Size size() const override
+        {
+            return Size{.width = 1, .height = 1};
+        }
+    };
+
     // Counts frames, and stands in for a renderer nobody inspects.
     class CountingRenderer final : public IRenderer
     {
@@ -133,16 +143,24 @@ namespace
         void drawText(Point, std::string_view, std::uint32_t, Color) override
         {
         }
-        // The poker table draws no textures, so nothing calls these.
+        // A texture that is never looked at, only handed back.
+        // The scene needs one to have anything to blit through.
         [[nodiscard]] std::unique_ptr<ITexture> createTexture(
             const Bitmap &) override
         {
-            return nullptr;
+            ++uploads;
+
+            return std::make_unique<FakeTexture>();
         }
-        void drawTexture(const ITexture &, Rect, Rect, Color) override {}
+        void drawTexture(const ITexture &, Rect, Rect, Color) override
+        {
+            ++blits;
+        }
         void present() override { ++presents; }
 
         std::size_t presents = 0;
+        std::size_t uploads = 0;
+        std::size_t blits = 0;
     };
 
     // A window that really opens and closes.
@@ -171,6 +189,16 @@ namespace
         [[nodiscard]] std::size_t frames() const noexcept
         {
             return drawnInto.presents;
+        }
+
+        [[nodiscard]] std::size_t uploads() const noexcept
+        {
+            return drawnInto.uploads;
+        }
+
+        [[nodiscard]] std::size_t blits() const noexcept
+        {
+            return drawnInto.blits;
         }
 
         // Like somebody closing the window after enough frames.
@@ -662,4 +690,43 @@ TEST(PrintSummaryTest, MentionsChipsNobodyHasWonYet)
         out.str(),
         "\n=== 1 hands played ===\n"
         "  (45 chips left in an unfinished hand)\n");
+}
+
+// The atlas is uploaded once, by whoever owns the renderer.
+// A texture belongs to the renderer that made it.
+// So it is uploaded nowhere else, and nothing is blitted without it.
+TEST(BootstrapTest, Bootstrap_UploadsTheAtlasAndDrawsThroughIt)
+{
+    auto script = threeHandedSession(20);
+    ReplaySource source(script);
+    std::ostringstream out;
+    FakeBackend backend;
+    FakeSleeper sleeper;
+    const antwika::gfx::Bitmap atlas{
+        .size = {.width = 1, .height = 1},
+        .pixels = std::vector<std::uint8_t>{255, 255, 255, 255}};
+    const WindowSetup window{
+        .backend = backend, .sleeper = sleeper, .atlas = &atlas};
+
+    static_cast<void>(runRoom(source, out, kThreeHandedRoom, &window));
+
+    ASSERT_NE(backend.window, nullptr);
+    EXPECT_EQ(backend.window->uploads(), 1U);
+    EXPECT_GT(backend.window->blits(), 0U);
+}
+
+TEST(BootstrapTest, Bootstrap_UploadsNothingWithoutAnAtlas)
+{
+    auto script = threeHandedSession(20);
+    ReplaySource source(script);
+    std::ostringstream out;
+    FakeBackend backend;
+    FakeSleeper sleeper;
+    const WindowSetup window{.backend = backend, .sleeper = sleeper};
+
+    static_cast<void>(runRoom(source, out, kThreeHandedRoom, &window));
+
+    ASSERT_NE(backend.window, nullptr);
+    EXPECT_EQ(backend.window->uploads(), 0U);
+    EXPECT_EQ(backend.window->blits(), 0U);
 }
