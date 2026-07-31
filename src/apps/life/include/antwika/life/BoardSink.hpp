@@ -46,6 +46,8 @@ namespace antwika::life
          * @brief Apply a tick event's effect to the referenced World.
          * @param event kTick commits and advances one generation;
          * kToggleCell flips one cell, staged for the next commit.
+         * @throws BoardSinkError If a kToggleCell payload cannot be
+         * parsed, or names a cell the board does not have.
          */
         void handle(const TickEvent &event) override;
 

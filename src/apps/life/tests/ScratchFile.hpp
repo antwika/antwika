@@ -16,7 +16,7 @@ namespace antwika::life::tests
      * because the filtering those do is what main.cpp relies on. That
      * needs somewhere to put the file, and something to clean it up.
      */
-    class ScratchFile
+    class ScratchFile final
     {
     public:
         /**
