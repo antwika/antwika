@@ -100,11 +100,12 @@ Choose `null`, `sdl3` or `raylib`.
 The same thing works from a terminal:
 
 ```sh
-scripts/select_gfx_backend.sh sdl3
+scripts/select_backend.sh gfx sdl3
 scripts/build.sh
 ```
 
-A real backend builds into `build-sdl3/` or `build-raylib/` rather than `build/`, matching what CI does, so switching backends never invalidates the previous one.
+Everything lands in `build/` whatever is selected, so there is one build folder to know about rather than one per permutation.
+That is the one place this deliberately parts company with CI, which gives each backend a folder of its own because its legs run in parallel and cache separately; the cost here is that switching backends reconfigures and largely rebuilds, since the selection is a cache variable deciding what `backends/` compiles.
 The choice drives input as well as graphics: the `input_backend` Conan option and the `ANTWIKA_INPUT_BACKEND` CMake variable both default to whatever was picked for graphics, so `sdl3` windows come with `sdl3` keyboard and mouse.
 Setting them apart is allowed for input with no window, or a window with no input:
 
@@ -114,10 +115,19 @@ conan install . -of build-sdl3-input -o gfx_backend=null -o input_backend=sdl3 .
 
 Sound is chosen separately, by `sound_backend` and `ANTWIKA_SOUND_BACKEND`, and it deliberately does **not** follow the graphics choice the way input does.
 Input follows because a window nobody can click is useless; sound is orthogonal, and following would mean every existing `sdl3` build silently began opening an audio device.
+So it has a selection of its own, picked and remembered exactly like the graphics one:
+
+```
+Ctrl + Shift + P > Tasks: Run Task > Select sound backend
+```
 
 ```sh
-conan install . -of build-sdl3 -o gfx_backend=sdl3 -o sound_backend=sdl3 ...
+scripts/select_backend.sh sound sdl3   # null or sdl3; raylib has no sound seam
+scripts/build.sh
+build/bin/antwika_sound_demo           # eight notes, now audible
 ```
+
+The two are independent, so `sound sdl3` with `gfx null` is an ordinary selection: sound with no window.
 
 Naming two different real frameworks anywhere is refused at configure time.
 Graphics and input would fight over one operating-system event queue, and whichever polled second would silently lose events; and a second framework of any kind doubles the dependency graph of a build that only needs one.
@@ -125,7 +135,7 @@ Graphics and input would fight over one operating-system event queue, and whiche
 It draws three bars and blits a PNG logo twice: once whole and untinted, once left-half-only and tinted, which is what a source rectangle and a tint look like side by side.
 `build/bin/antwika_gfx3d_demo` is its counterpart for the 3D half: a cube drawn through `gfx::IRenderer3D`, turned by the tick count rather than by a clock, with a caption drawn over it through the 2D calls.
 It stops after a fixed number of frames, because the `null` backend reports no close and that is the build every CI leg produces.
-The selection lives in the untracked `.vscode/gfx-backend`, which makes it yours rather than the repository's.
+Each selection lives in an untracked file, `.vscode/gfx-backend` and `.vscode/sound-backend`, which makes it yours rather than the repository's.
 
 ## Replays
 
@@ -164,8 +174,8 @@ It is also where `antwika::gfx` and `antwika::input` earn their keep.
 Built against a real backend, `antwika_life` draws the board into a window instead of printing it, one frame per tick, and lets you draw on that board with the mouse:
 
 ```sh
-scripts/select_gfx_backend.sh sdl3 && scripts/build.sh
-build-sdl3/bin/antwika_life                   # a glider crossing a 32x32 board
+scripts/select_backend.sh gfx sdl3 && scripts/build.sh
+build/bin/antwika_life                        # a glider crossing a 32x32 board
 ```
 
 Drag with the left button held to toggle every cell the pointer crosses, one toggle per cell per drag, and watch the next generation take it from there.
@@ -200,7 +210,7 @@ Nothing is enumerated and no five-card subset is ever materialised, so scoring s
 ```sh
 build/bin/antwika_poker --record demo.replay   # a cash game, saving who bought in
 build/bin/antwika_poker --replay demo.replay   # reload it, reproducing the same session
-build-sdl3/bin/antwika_poker --tick-delay-ms 150   # or watch it, in a window
+build/bin/antwika_poker --tick-delay-ms 150     # watch it, with a gfx backend selected
 ```
 
 One engine tick is one step of the poker loop: dealing a hand, or asking a single player to act.

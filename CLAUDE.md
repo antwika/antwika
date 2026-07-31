@@ -23,7 +23,18 @@ cmake --build build -j24
 ctest --test-dir build --output-on-failure
 ```
 
-Or in VS Code: `Ctrl+Shift+B` runs the same sequence as the default build task (see [`.vscode/tasks.json`](.vscode/tasks.json)).
+Or in VS Code: `Ctrl+Shift+B` runs [`scripts/build.sh`](scripts/build.sh), which is that sequence plus whichever backends are selected (see [`.vscode/tasks.json`](.vscode/tasks.json)).
+
+```sh
+scripts/select_backend.sh gfx sdl3     # Tasks: Run Task > Select gfx backend
+scripts/select_backend.sh sound sdl3   # Tasks: Run Task > Select sound backend
+scripts/build.sh                       # Ctrl+Shift+B
+```
+
+A selection is a line in the untracked `.vscode/<subsystem>-backend`, read on every build, so it is made once rather than on every build and is per-developer rather than the repository's.
+Input is not selectable there, since its option is `auto` and follows graphics.
+**That path keeps one build folder**, `build/` under the `conan-release` preset, whatever is selected -- which is why it passes no `build_folder_vars` conf and needs no separate install of the default configuration.
+The by-hand commands below and CI both keep a folder per backend instead, because CI's legs run in parallel and cache separately; a developer switches one at a time, so the cost of one folder is a reconfigure and a mostly-full rebuild on a switch, and the benefit is not owning a `build-*` tree per permutation.
 
 **Choosing a graphics and input backend** (`null`, `sdl3` or `raylib`; the default `null` needs no framework, draws nothing and reports no input):
 

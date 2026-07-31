@@ -41,13 +41,16 @@ build/bin/antwika_replay_tests --gtest_filter='ReplayReaderTest.*'
 Builds default to the `null` graphics and input backends, which need no framework, draw nothing, report no input, and need no display.
 The real backends are `sdl3` and `raylib`.
 
-From VS Code, `Tasks: Run Task > Select gfx backend` makes the choice once and `Ctrl+Shift+B` honours it from then on.
+From VS Code, `Tasks: Run Task > Select gfx backend` makes the choice once and `Ctrl+Shift+B` honours it from then on; `Select sound backend` is its counterpart for sound.
 From a terminal:
 
 ```sh
-scripts/select_gfx_backend.sh sdl3
+scripts/select_backend.sh gfx sdl3     # and/or: select_backend.sh sound sdl3
 scripts/build.sh
 ```
+
+Either way the build lands in `build/`, whatever is selected.
+The selections live in the untracked `.vscode/gfx-backend` and `.vscode/sound-backend`.
 
 Or by hand:
 
@@ -63,7 +66,8 @@ cmake --build build-sdl3 -j24
 ctest --test-dir build-sdl3 --output-on-failure
 ```
 
-A real backend builds into its own directory (`build-sdl3/`, `build-raylib/`), so switching never invalidates the previous configuration.
+By hand, a real backend builds into its own directory (`build-sdl3/`, `build-raylib/`), which is what CI does and why the backend has to appear in the preset name.
+`scripts/build.sh` deliberately does not: it keeps one `build/`, since a developer switches between backends one at a time where CI's legs run in parallel.
 Each configuration has its own lockfile, because selecting a backend changes the dependency graph.
 
 The Conan `gfx_backend` option sets the `ANTWIKA_GFX_BACKEND` CMake variable, which names a directory under `backends/`; an unknown value fails at configure time with the list of ones that exist.
