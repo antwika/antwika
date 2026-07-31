@@ -8,7 +8,7 @@
 #include <antwika/event/EventDispatcher.hpp>
 #include <antwika/event/TickedEventDispatcher.hpp>
 #include <antwika/log/Level.hpp>
-#include <antwika/replay/EngineLoop.hpp>
+#include <antwika/simulation/EngineLoop.hpp>
 
 #include "antwika/ui_demo/DemoScene.hpp"
 #include "antwika/ui_demo/DemoSink.hpp"
@@ -20,7 +20,7 @@ namespace antwika::ui_demo
     using antwika::engine::StopSignal;
     using antwika::event::EventDispatcher;
     using antwika::event::TickedEventDispatcher;
-    using antwika::replay::EngineLoop;
+    using antwika::simulation::EngineLoop;
 
     DemoSummary bootstrap(const UiDemoConfig &config)
     {

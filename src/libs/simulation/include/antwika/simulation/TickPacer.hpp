@@ -7,7 +7,7 @@
 #include <antwika/time/ISleeper.hpp>
 #include <antwika/time/Tick.hpp>
 
-namespace antwika::replay
+namespace antwika::simulation
 {
 
     using antwika::ecs::ISystem;
@@ -66,4 +66,4 @@ namespace antwika::replay
         std::chrono::milliseconds interval;
     };
 
-} // namespace antwika::replay
+} // namespace antwika::simulation

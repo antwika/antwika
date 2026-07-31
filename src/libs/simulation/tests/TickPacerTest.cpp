@@ -1,4 +1,4 @@
-#include "antwika/replay/TickPacer.hpp"
+#include "antwika/simulation/TickPacer.hpp"
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
@@ -10,7 +10,7 @@
 #include <antwika/time/fakes/FakeSleeper.hpp>
 
 using antwika::ecs::World;
-using antwika::replay::TickPacer;
+using antwika::simulation::TickPacer;
 using antwika::log::mocks::MockLogger;
 using antwika::time::fakes::FakeSleeper;
 using ::testing::NiceMock;

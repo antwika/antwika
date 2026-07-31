@@ -1,16 +1,16 @@
-#include "antwika/replay/EngineLoop.hpp"
+#include "antwika/simulation/EngineLoop.hpp"
 
 #include <utility>
 
-#include "antwika/replay/EngineLoopError.hpp"
+#include "antwika/simulation/EngineLoopError.hpp"
 
-namespace antwika::replay
+namespace antwika::simulation
 {
 
     EngineLoop::EngineLoop(
         IEngine &engine,
         TickedEventDispatcher &dispatcher,
-        IReplaySource &source)
+        ITickSource &source)
         : engine(engine), dispatcher(dispatcher), source(source)
     {
     }
@@ -43,4 +43,4 @@ namespace antwika::replay
         }
     }
 
-} // namespace antwika::replay
+} // namespace antwika::simulation

@@ -11,7 +11,7 @@
 #include <antwika/event/TickEventRecorder.hpp>
 #include <antwika/event/TickEvent.hpp>
 #include <antwika/log/mocks/MockLogger.hpp>
-#include <antwika/replay/EngineLoopError.hpp>
+#include <antwika/simulation/EngineLoopError.hpp>
 #include <antwika/replay/ReplaySource.hpp>
 
 #include "antwika/life/Events.hpp"
@@ -27,7 +27,7 @@ using antwika::event::TickEvent;
 using antwika::life::Board;
 using antwika::life::PrintSystem;
 using antwika::log::mocks::MockLogger;
-using antwika::replay::EngineLoopError;
+using antwika::simulation::EngineLoopError;
 using antwika::replay::ReplaySource;
 using ::testing::NiceMock;
 

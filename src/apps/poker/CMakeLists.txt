@@ -30,6 +30,7 @@ target_link_libraries(antwika_poker
         antwika::log
         antwika::replay
         antwika::rng
+        antwika::simulation
         antwika::time
         antwika::ui
 )

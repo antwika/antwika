@@ -30,6 +30,7 @@ target_link_libraries(antwika_tower_defence
         antwika::log
         antwika::replay
         antwika::rng
+        antwika::simulation
         antwika::time
         antwika::ui
         antwika::wfc

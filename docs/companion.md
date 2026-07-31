@@ -85,7 +85,7 @@ Which is also why the tick count is in the snapshot at all: it is the one number
 ### Why the pacer is a sink
 
 A session has no end of its own -- it runs until the window is closed, or until a replay dispatches `engine.stop` -- so an unpaced one would spend a whole day of companion time in a fraction of a second.
-The waiting is `replay::TickPacer`'s, which is the one pacer this project has; `companion::PacingSink` is only the `ITickEventSink` shape around it.
+The waiting is `simulation::TickPacer`'s, which is the one pacer this project has; `companion::PacingSink` is only the `ITickEventSink` shape around it.
 That class is an `ecs::ISystem` because the two applications that reach for it keep their state in a `World` and register it as an observer, and this one keeps its state in a plain value.
 The only thing between the two is the `World` in the signature, which `TickPacer`'s own documentation says it neither reads nor writes, so an empty one is the whole adapter -- and the alternative was a third copy of a class the project has already deduplicated twice.
 

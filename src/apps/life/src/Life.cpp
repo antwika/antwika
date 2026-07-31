@@ -10,7 +10,7 @@
 #include <antwika/event/EventDispatcher.hpp>
 #include <antwika/event/TickedEventDispatcher.hpp>
 #include <antwika/log/Level.hpp>
-#include <antwika/replay/EngineLoop.hpp>
+#include <antwika/simulation/EngineLoop.hpp>
 
 #include "antwika/life/BoardSink.hpp"
 #include "antwika/life/DragPausedSystem.hpp"
@@ -26,7 +26,7 @@ using antwika::event::Event;
 using antwika::event::EventDispatcher;
 using antwika::event::TickedEventDispatcher;
 using antwika::log::Level;
-using antwika::replay::EngineLoop;
+using antwika::simulation::EngineLoop;
 
 namespace antwika::life
 {

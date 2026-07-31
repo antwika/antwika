@@ -21,6 +21,7 @@ antwika_add_library(
         antwika::input
         antwika::log
         antwika::replay
+        antwika::simulation
         antwika::sound
         antwika::time
         antwika::ui

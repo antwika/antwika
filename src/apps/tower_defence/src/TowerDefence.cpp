@@ -8,7 +8,7 @@
 #include <antwika/event/EventDispatcher.hpp>
 #include <antwika/event/TickedEventDispatcher.hpp>
 #include <antwika/log/Level.hpp>
-#include <antwika/replay/EngineLoop.hpp>
+#include <antwika/simulation/EngineLoop.hpp>
 
 #include "antwika/tower_defence/BattleSink.hpp"
 #include "antwika/tower_defence/ScoreSink.hpp"
@@ -22,7 +22,7 @@ namespace antwika::tower_defence
     using antwika::event::EventDispatcher;
     using antwika::event::TickedEventDispatcher;
 
-    using antwika::replay::EngineLoop;
+    using antwika::simulation::EngineLoop;
 
     BattleSummary bootstrap(const TowerDefenceConfig &config)
     {

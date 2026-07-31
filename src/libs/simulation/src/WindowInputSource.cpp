@@ -1,18 +1,18 @@
-#include "antwika/replay/WindowInputSource.hpp"
+#include "antwika/simulation/WindowInputSource.hpp"
 
 #include <variant>
 
 #include <antwika/engine/Events.hpp>
 #include <antwika/gfx/WindowEvent.hpp>
 
-namespace antwika::replay
+namespace antwika::simulation
 {
 
     using antwika::engine::events::kStop;
     using antwika::gfx::CloseRequested;
 
     WindowInputSource::WindowInputSource(
-        IReplaySource &inner, IGfxBackend &backend, WindowId window)
+        ITickSource &inner, IGfxBackend &backend, WindowId window)
         : inner(inner), backend(backend), window(window)
     {
     }
@@ -47,4 +47,4 @@ namespace antwika::replay
         return events;
     } // GCOVR_EXCL_LINE
 
-} // namespace antwika::replay
+} // namespace antwika::simulation

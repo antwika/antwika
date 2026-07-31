@@ -69,6 +69,7 @@ target_link_libraries(antwika_game
         antwika::pathfinding
         antwika::replay
         antwika::rng
+        antwika::simulation
         antwika::time
         antwika::ui
         antwika::wfc

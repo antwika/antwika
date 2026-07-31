@@ -26,6 +26,7 @@ target_link_libraries(antwika_ui_demo
         antwika::input_backend
         antwika::log
         antwika::replay
+        antwika::simulation
         antwika::time
         antwika::ui
 )
