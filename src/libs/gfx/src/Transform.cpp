@@ -20,9 +20,8 @@ namespace antwika::gfx
     {
         const Mat4 identity = identityMatrix();
 
-        // Composed from three stable-extension rotations rather than
-        // glm::eulerAngleZYX, which lives in GLM's experimental GTX and
-        // would have to be opted into with a global define.
+        // Three stable-extension rotations, not glm::eulerAngleZYX.
+        // That one is GTX, needing a global experimental define.
         const Mat4 rotation =
             glm::rotate(identity, rotationRadians.z, kZAxis)
             * glm::rotate(identity, rotationRadians.y, kYAxis)

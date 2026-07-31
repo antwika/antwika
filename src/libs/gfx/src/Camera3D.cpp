@@ -89,11 +89,8 @@ namespace antwika::gfx
 
     Mat4 Camera3D::view() const
     {
-        // glm::lookAt normalises the eye-to-target direction, which is
-        // a division by zero when the two coincide. Reporting the
-        // identity keeps a drawing call producing numbers rather than
-        // NaNs, and a camera sitting on its own target has nothing to
-        // show anyway.
+        // A coincident eye and target divide by zero in glm::lookAt.
+        // The identity keeps a draw producing numbers, not NaNs.
         if (eye == lookAt)
         {
             return identityMatrix();
