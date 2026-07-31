@@ -112,7 +112,13 @@ namespace antwika::app
                 antwika::replay::saveReplayFile(
                     replayRecorder.getEvents(), *recordPath);
             }
-            catch (const std::exception &error)
+            // gcov -b tags this handler's non-matching edge.
+            // It is taken only by a throw that is not a std::exception.
+            // The catch above is reached by one, from the caller's body.
+            // This try calls no caller code at all.
+            // saveReplayFile throws ReplayFormatError, and nothing else.
+            // See docs/confirming-unreachable-branches.md.
+            catch (const std::exception &error) // GCOVR_EXCL_LINE
             {
                 report(error);
             }
