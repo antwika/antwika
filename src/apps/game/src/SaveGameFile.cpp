@@ -29,7 +29,7 @@ namespace antwika::game
         {
             in >> document;
         }
-        catch (const nlohmann::json::exception &error)
+        catch (const nlohmann::json::exception &error) // GCOVR_EXCL_LINE
         {
             throw SaveFormatError(
                 std::string("antwika::game: save is not valid JSON: ")

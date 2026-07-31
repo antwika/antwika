@@ -53,7 +53,7 @@ namespace antwika::game
             shape["minimum"] = std::numeric_limits<std::int32_t>::min();
             shape["maximum"] = std::numeric_limits<std::int32_t>::max();
             return shape;
-        }
+        } // GCOVR_EXCL_LINE
 
         nlohmann::json cellShape()
         {
@@ -83,15 +83,14 @@ namespace antwika::game
             shape["type"] = "integer";
             shape["minimum"] = 0;
             return shape;
-        }
+        } // GCOVR_EXCL_LINE
 
         nlohmann::json stateShape()
         {
             nlohmann::json shape;
             shape["type"] = "object";
             shape["additionalProperties"] = false;
-            shape["required"] = // GCOVR_EXCL_LINE
-                {"ticksProcessed", "score"};
+            shape["required"] = {"ticksProcessed", "score"}; // GCOVR_EXCL_LINE
             shape["properties"]["ticksProcessed"] = countShape();
             shape["properties"]["score"] = countShape();
             return shape;
@@ -113,8 +112,9 @@ namespace antwika::game
             nlohmann::json shape;
             shape["type"] = "object";
             shape["additionalProperties"] = false;
-            shape["required"] = // GCOVR_EXCL_LINE
-                {"panX", "panY", "zoomLevel"};
+            // GCOVR_EXCL_START
+            shape["required"] = {"panX", "panY", "zoomLevel"};
+            // GCOVR_EXCL_STOP
             shape["properties"]["panX"] = coordinateShape();
             shape["properties"]["panY"] = coordinateShape();
             shape["properties"]["zoomLevel"] = countShape();
@@ -127,7 +127,7 @@ namespace antwika::game
             shape["type"] = "array";
             shape["items"] = std::move(items);
             return shape;
-        }
+        } // GCOVR_EXCL_LINE
 
         nlohmann::json saveSchema()
         {
@@ -141,14 +141,16 @@ namespace antwika::game
             // A document without one is read as version 1 instead.
             // By the time this runs the document has been migrated.
             // So the only version it may carry is the current one.
-            schema["required"] = // GCOVR_EXCL_LINE
-                {"magic",
-                 "state",
-                 "extent",
-                 "camera",
-                 "paths",
-                 "walkers",
-                 "seed"};
+            // GCOVR_EXCL_START
+            schema["required"] = {
+                "magic",
+                "state",
+                "extent",
+                "camera",
+                "paths",
+                "walkers",
+                "seed"};
+            // GCOVR_EXCL_STOP
             schema["properties"]["magic"]["const"] =
                 std::string(kSaveMagic);
             schema["properties"]["schemaVersion"]["const"] =
@@ -247,12 +249,13 @@ namespace antwika::game
             .height =
                 document.at("extent").at("height").get<std::int32_t>(),
         };
-        save.camera = Camera(
-            Point{
-                .x = document.at("camera").at("panX").get<std::int32_t>(),
-                .y = document.at("camera").at("panY").get<std::int32_t>(),
-            },
-            document.at("camera").at("zoomLevel").get<std::size_t>());
+        const Point pan{
+            .x = document.at("camera").at("panX").get<std::int32_t>(),
+            .y = document.at("camera").at("panY").get<std::int32_t>(),
+        };
+        const auto zoom =
+            document.at("camera").at("zoomLevel").get<std::size_t>();
+        save.camera = Camera(pan, zoom);
 
         for (const auto &cell : document.at("paths"))
         {
