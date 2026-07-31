@@ -228,6 +228,23 @@ Your specification named only two violations -- leaving it hungry, and tapping w
 it sleeps -- so harmlessness was the conservative reading.
 Making it a third violation is one arm of `Pet::tap()`.
 
+### R9b. Three choices in the pause and the counters
+
+- **The tick counter does not freeze while paused.**
+  It shows the engine tick, which by design keeps advancing -- that is the whole
+  point of a `life`-style pause, where the tick, the commit and every observer go on
+  running and only the simulation systems stop.
+  A "ticks simulated" counter instead is a one-line change in `UiSink`.
+- **A pause survives leaving the city.**
+  Pausing, going to the world map and coming back leaves the run paused.
+  Simple and defensible, but nobody stated it either way.
+- **The FPS readout shows 0 for the first second**, and only over the city screen.
+  A "--" placeholder, or a readout in every mode, are both easy.
+
+Worth knowing about the pause itself: it is a *build* pause rather than a freeze.
+`WalkerSystem`, `BuildingSystem` and `SpawnSystem` stop; the camera, the toolbar and
+placement keep working, so a paused city can still be panned over and built on.
+
 ### R10. Smaller calls, grouped
 
 - **The companion reaches `TickPacer` through an adapter holding an empty
@@ -261,10 +278,12 @@ These are simply not done, and are recorded so they are not discovered later.
   Every agent was scoped away from that file so twelve of them would not collide in
   it, which is exactly why nobody added their line.
   It needs one line each.
-- **Coverage was not re-measured after the library split.**
-  Each agent measured its own module at 100% before merging, and the split moves no
-  lines and carried both halves' tests with their code, but no instrumented build was
-  run over the final merged tree.
+- **Coverage over the final merged tree** was measured after everything landed,
+  rather than trusted from the per-agent runs.
+  Each agent measured its own module at 100% before merging, but two things made a
+  combined run worth having: the library split moved files between modules, and the
+  toolbar/HUD agent's own coverage run was interrupted before it reported.
+  The result of that combined run is recorded at the end of this file.
 - **Only the `gcc-linux-x86_64` profile was built.**
   The LLVM and MinGW legs are untested locally; CI covers them.
 - **`apps/game` does not yet use the new `antwika::ui` hover pass.**
