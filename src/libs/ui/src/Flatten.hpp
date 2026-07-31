@@ -20,8 +20,25 @@ namespace antwika::ui::detail
      * too tall for its box is left out altogether, since antwika::gfx can
      * draw no part of a glyph.
      *
-     * The focused widget's border is appended after everything else, as
-     * four filled bars, so that nothing declared later paints over it.
+     * A focus border is four filled bars rather than a stroke, since
+     * antwika::gfx has neither a stroke nor a scissor.
+     *
+     * The arena is walked twice, once per layer, and each layer's
+     * borders come after that layer's widgets. So the commands arrive
+     * in exactly four runs, in this order and no other:
+     *
+     * 1. every widget not in an overlay;
+     * 2. the focus border of one of those, if that is where focus is;
+     * 3. every widget of an open dropdown's overlay;
+     * 4. the focus border of one of those, if that is where focus is.
+     *
+     * Two layers because antwika::gfx has no depth of any kind, so
+     * being on top is being last.
+     * Borders after widgets within a layer because a container declared
+     * later would otherwise paint over one.
+     * Borders inside their layer rather than all at the end because an
+     * overlay must cover the ring of what it drops over, exactly as it
+     * covers the widget itself.
      *
      * @param tree The arena, already laid out.
      * @return The commands, in the order they are drawn.

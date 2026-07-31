@@ -176,6 +176,8 @@ namespace antwika::ui::detail
     {
         DrawList commands;
 
+        // Base widgets, base border, overlay widgets, overlay border.
+        // Flatten.hpp says why that is the only order there is.
         emitLayer(tree, false, commands);
         emitLayer(tree, true, commands);
 
