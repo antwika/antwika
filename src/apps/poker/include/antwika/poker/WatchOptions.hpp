@@ -10,6 +10,17 @@ namespace antwika::poker
 {
 
     /**
+     * @brief How long one poker action takes when nobody said.
+     *
+     * One tick is one step of the poker loop -- a deal, or one player
+     * being asked to act -- and at full speed a whole session is over
+     * before a spectator has read a line of it.
+     * A second per action is what makes it watchable, and
+     * `--tick-delay-ms 0` is still there for the run that wants none.
+     */
+    inline constexpr std::chrono::milliseconds kDefaultTickDelay{1000};
+
+    /**
      * @brief How the poker app was asked to pace what it draws.
      */
     struct WatchOptions
@@ -17,12 +28,24 @@ namespace antwika::poker
         /**
          * @brief How long to hold each tick's frame.
          *
-         * Zero, the default, means nobody asked to watch: the session
-         * runs at full speed and the window is not held open once it
-         * ends. That is what keeps `antwika_poker` a terminal program
-         * under the headless backend, which never reports a close.
+         * Defaults to kDefaultTickDelay, so an unadorned run is paced at
+         * one poker action per second.
+         * Pacing is wall-clock only: it is a sleep between ticks and
+         * changes nothing the tick loop computes, so a session paced at
+         * any speed reaches the same chip counts.
          */
-        std::chrono::milliseconds tickDelay{0};
+        std::chrono::milliseconds tickDelay{kDefaultTickDelay};
+
+        /**
+         * @brief Whether to keep the last frame up until the window goes.
+         *
+         * Only somebody who named `--tick-delay-ms` with a positive value
+         * is watching a window, and only they want the end held up.
+         * It is deliberately not "the pacing is non-zero": the default
+         * pacing applies to the terminal run too, and holding there would
+         * hang under the headless backend, which never reports a close.
+         */
+        bool holdFinalFrame{false};
 
         bool operator==(const WatchOptions &other) const = default;
     };

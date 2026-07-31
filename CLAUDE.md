@@ -88,7 +88,8 @@ A headless build reports neither, so `Ctrl+C` is what ends one -- and a `--recor
 Both the windowed and the headless run are paced through `TickPacer`, since a run that never ends would otherwise go flat out.
 
 `antwika_poker` also opens a window and draws the table each tick.
-`--tick-delay-ms <n>` holds each frame for `n` ms and keeps the final frame up until the window is closed; it defaults to 0, which is what keeps the default terminal run unchanged and stops the `null` backend (which never reports a close) from wedging it.
+`--tick-delay-ms <n>` holds each frame for `n` ms; it defaults to 1000, since one tick is one poker action and a session is unwatchable without it, and `--tick-delay-ms 0` runs flat out.
+Naming the flag with a positive value *also* keeps the final frame up until the window is closed, which is a separate answer from the pacing (`WindowSetup::holdFinalFrame`) precisely so the default paced run still ends under the `null` backend, which never reports a close and would otherwise wedge.
 A real backend needs a display, so use `SDL_VIDEODRIVER=dummy` or `xvfb-run` without one.
 
 **Coverage build** (separate `build-coverage/` dir, GNU/LLVM only — not MinGW):

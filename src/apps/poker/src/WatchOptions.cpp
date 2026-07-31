@@ -17,7 +17,8 @@ namespace antwika::poker
             antwika::replay::FlagSpec{
                 .name = kTickDelayFlag,
                 .valueName = "<n>",
-                .help = "Hold each tick's frame for <n> milliseconds."}};
+                .help = "Hold each tick's frame for <n> milliseconds "
+                        "(default 1000; 0 runs flat out)."}};
     } // namespace
 
     std::span<const antwika::replay::FlagSpec> watchFlags()
@@ -45,6 +46,10 @@ namespace antwika::poker
             && milliseconds >= 0)
         {
             options.tickDelay = std::chrono::milliseconds{milliseconds};
+
+            // Naming a positive delay is what "I am watching" means.
+            // Naming zero is asking for the flat-out run, which ends.
+            options.holdFinalFrame = milliseconds > 0;
         }
 
         return options;

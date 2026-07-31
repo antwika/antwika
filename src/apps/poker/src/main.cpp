@@ -46,6 +46,7 @@ namespace
             .backend = *backend,
             .sleeper = sleeper,
             .framePeriod = watch.tickDelay,
+            .holdFinalFrame = watch.holdFinalFrame,
         };
 
         antwika::poker::printSummary(
