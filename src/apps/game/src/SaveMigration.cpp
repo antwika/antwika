@@ -1,59 +1,44 @@
 #include "SaveMigration.hpp"
 
-#include <string>
+#include <antwika/replay/MigrationChain.hpp>
+#include <antwika/replay/SchemaVersionError.hpp>
 
 #include "antwika/game/SaveFormatError.hpp"
 #include "antwika/game/SaveGame.hpp"
 
-namespace antwika::game::detail
+namespace antwika::game
 {
 
-    namespace
+    MigrationChain standardSaveMigrations()
     {
-        constexpr const char *kVersionMember = "schemaVersion";
-    } // namespace
-
-    std::uint32_t saveVersionOf(const nlohmann::json &j)
-    {
-        // Asked before the schema runs.
-        // So this is the one place that has to say "not an object".
-        if (!j.is_object())
-        {
-            throw SaveFormatError(
-                "antwika::game: a save document must be a JSON object");
-        }
-
-        const auto version = j.find(kVersionMember);
-        if (version == j.end())
-        {
-            return 1;
-        }
-
-        if (!version->is_number_unsigned())
-        {
-            throw SaveFormatError(
-                "antwika::game: a save's schemaVersion must be a "
-                "non-negative integer");
-        }
-
-        return version->get<std::uint32_t>();
+        // Nothing to migrate yet: the format is at version 1.
+        // Bumping kSaveFormatVersion adds one migration here.
+        // The version key is the shared one, so none is passed.
+        return MigrationChain({}, kSaveFormatVersion);
     }
 
-    void migrateSaveDocument(nlohmann::json &document, std::uint32_t from)
+    namespace detail
     {
-        // See the header: this body is the seam.
-        // replay's migration chain replaces it whole.
-        // The cast marks the argument used while one version exists.
-        (void)document;
 
-        if (from != kSaveFormatVersion)
+        void migrateSaveDocument(nlohmann::json &document)
         {
-            throw SaveFormatError(
-                "antwika::game: a save of schema version "
-                + std::to_string(from)
-                + " cannot be read by this build, which reads version "
-                + std::to_string(kSaveFormatVersion));
+            try
+            {
+                standardSaveMigrations().migrate(document);
+            }
+            // GCOVR_EXCL_START
+            catch (const replay::SchemaVersionError &error)
+            {
+                // Translated rather than let through.
+                // A bad save is this app's failure category.
+                // saveGameFromJson() promises one exception type.
+                // The chain's message names both versions already.
+                // So it is carried through rather than rewritten.
+                throw SaveFormatError(error.what());
+            }
+            // GCOVR_EXCL_STOP
         }
-    }
 
-} // namespace antwika::game::detail
+    } // namespace detail
+
+} // namespace antwika::game

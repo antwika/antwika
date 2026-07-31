@@ -5,6 +5,8 @@
 
 #include <nlohmann/json.hpp>
 
+#include <antwika/replay/SchemaVersion.hpp>
+
 #include "antwika/game/SaveFormatError.hpp"
 #include "antwika/game/SaveGame.hpp"
 
@@ -15,6 +17,7 @@ using antwika::game::GameState;
 using antwika::game::GameSummary;
 using antwika::game::GridExtent;
 using antwika::game::kSaveFormatVersion;
+using antwika::replay::kSchemaVersionKey;
 using antwika::game::pathIndexOf;
 using antwika::game::Point;
 using antwika::game::SaveFormatError;
@@ -83,11 +86,14 @@ TEST(SaveGameTest, RoundTripsEveryDirection)
     EXPECT_EQ(saveGameFromJson(saveGameToJson(original)), original);
 }
 
+// The key is antwika::replay's, not one of this format's own.
+// Every persisted document in the code base states its version there.
 TEST(SaveGameTest, WritesTheCurrentSchemaVersion)
 {
     const auto encoded = saveGameToJson(populated());
 
-    EXPECT_EQ(encoded.at("schemaVersion").get<std::uint32_t>(),
+    EXPECT_EQ(encoded.at(std::string(kSchemaVersionKey))
+                  .get<std::uint32_t>(),
               kSaveFormatVersion);
     EXPECT_EQ(encoded.at("magic").get<std::string>(),
               "antwika-game-save");
@@ -108,7 +114,7 @@ TEST(SaveGameTest, WritesDirectionsByName)
 TEST(SaveGameTest, TreatsAnAbsentVersionAsVersionOne)
 {
     auto encoded = saveGameToJson(populated());
-    encoded.erase("schemaVersion");
+    encoded.erase(std::string(kSchemaVersionKey));
 
     EXPECT_EQ(saveGameFromJson(encoded), populated());
 }
@@ -116,7 +122,8 @@ TEST(SaveGameTest, TreatsAnAbsentVersionAsVersionOne)
 TEST(SaveGameTest, RejectsANewerVersion)
 {
     auto encoded = saveGameToJson(populated());
-    encoded["schemaVersion"] = kSaveFormatVersion + 1;
+    encoded[std::string(kSchemaVersionKey)] =
+        kSaveFormatVersion + 1;
 
     EXPECT_THROW((void)saveGameFromJson(encoded), SaveFormatError);
 }
@@ -124,7 +131,7 @@ TEST(SaveGameTest, RejectsANewerVersion)
 TEST(SaveGameTest, RejectsAnOlderVersionWithNoMigration)
 {
     auto encoded = saveGameToJson(populated());
-    encoded["schemaVersion"] = 0;
+    encoded[std::string(kSchemaVersionKey)] = 0;
 
     EXPECT_THROW((void)saveGameFromJson(encoded), SaveFormatError);
 }
@@ -132,7 +139,7 @@ TEST(SaveGameTest, RejectsAnOlderVersionWithNoMigration)
 TEST(SaveGameTest, RejectsAVersionThatIsNotAnInteger)
 {
     auto encoded = saveGameToJson(populated());
-    encoded["schemaVersion"] = "one";
+    encoded[std::string(kSchemaVersionKey)] = "one";
 
     EXPECT_THROW((void)saveGameFromJson(encoded), SaveFormatError);
 }

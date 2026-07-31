@@ -8,6 +8,8 @@
 
 #include <nlohmann/json-schema.hpp>
 
+#include <antwika/replay/SchemaVersion.hpp>
+
 #include "antwika/game/Direction.hpp"
 #include "antwika/game/SaveFormatError.hpp"
 #include "SaveMigration.hpp"
@@ -137,7 +139,7 @@ namespace antwika::game
             schema["type"] = "object";
             schema["additionalProperties"] = false;
 
-            // schemaVersion is described but not required.
+            // The version member is described but not required.
             // A document without one is read as version 1 instead.
             // By the time this runs the document has been migrated.
             // So the only version it may carry is the current one.
@@ -153,8 +155,8 @@ namespace antwika::game
             // GCOVR_EXCL_STOP
             schema["properties"]["magic"]["const"] =
                 std::string(kSaveMagic);
-            schema["properties"]["schemaVersion"]["const"] =
-                kSaveFormatVersion;
+            schema["properties"][std::string(replay::kSchemaVersionKey)]
+                  ["const"] = kSaveFormatVersion;
             schema["properties"]["state"] = stateShape();
             schema["properties"]["extent"] = extentShape();
             schema["properties"]["camera"] = cameraShape();
@@ -192,7 +194,8 @@ namespace antwika::game
     {
         nlohmann::json encoded;
         encoded["magic"] = std::string(kSaveMagic);
-        encoded["schemaVersion"] = kSaveFormatVersion;
+        encoded[std::string(replay::kSchemaVersionKey)] =
+            kSaveFormatVersion;
         encoded["state"]["ticksProcessed"] = save.state.ticksProcessed;
         encoded["state"]["score"] = save.state.score;
         encoded["extent"]["width"] = save.extent.width;
@@ -225,7 +228,7 @@ namespace antwika::game
     SaveGame saveGameFromJson(const nlohmann::json &j)
     {
         auto document = j;
-        detail::migrateSaveDocument(document, detail::saveVersionOf(j));
+        detail::migrateSaveDocument(document);
 
         try
         {
