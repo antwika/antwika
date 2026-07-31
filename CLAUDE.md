@@ -80,7 +80,12 @@ build/bin/antwika_life --record demo.replay
 build/bin/antwika_task_worker --record demo.replay
 build/bin/antwika_poker --record demo.replay
 build/bin/antwika_sudoku [--puzzle my-puzzle.txt]
+build/bin/antwika_tower_defence               # or --record / --replay
 ```
+
+`antwika_tower_defence` opens a window, draws the level each tick and takes mouse input.
+Like `antwika_life` it has no end of its own: it runs until the window is closed, or until a replay dispatches `engine.stop`.
+A headless build reports neither, so `Ctrl+C` is what ends one -- and a `--record` run only writes its file once the run ends.
 
 `antwika_life` opens a window, draws the board each tick, and takes mouse input.
 It has no end of its own: it runs until the window is closed, or until a replay dispatches `engine.stop`.
@@ -187,6 +192,24 @@ Each module (lib or app) owns its own `CMakeLists.txt`, `include/`, `src/`, and 
   `TableScene` returns the art as a second value beside its `ui::Frame` -- a `std::vector<poker::ArtBlit>` from `describeArt()`, painted *before* `ui::paint()` so the names and stacks read on top of it -- because `ui::DrawList` holds rectangles and text and no texture command, and inventing one there would make every `antwika::ui` caller pay for it.
   `main.cpp` decodes the PNG and `PokerRoom` uploads it, since a texture belongs to the renderer that made it and the room is what owns the window; a null atlas is an ordinary state, which is what lets a test assert a session's chip counts without any art at all.
   The only route back in is `poker::WindowCloseSource`, an `IReplaySource` decorator that appends `engine.stop` once the window has gone, so a close is ordinary replay input and lands in a `--record` file like anything else.
+- `apps/tower_defence` generates its level with `antwika::wfc` and walks mobs along it.
+  The interesting part is that WFC is a constraint solver, not a path guarantee, and a linear non-intersecting path is a global property plain adjacency rules will happily break.
+  It is arranged in three layers rather than checked for afterwards.
+  The tile alphabet in `LevelTile.hpp` has no symbol open on more than two sides, so a T-junction or a crossroads is not expressible.
+  Exactly one `Start` and one `End` are allowed anywhere in the wave and both are pinned to a border cell, so the solution is a union of simple cycles plus exactly one simple path whose two ends are the only degree-one cells -- walking out of `Start` therefore always arrives at `End`.
+  Any cell the walk misses is a stray cycle, which `generateLevel()` erases rather than rejects, so generation never reseeds for the sake of linearity.
+  `LevelGeneratorTest` asserts that property over forty seeds.
+  Wall columns with one gap each keep the grid connected while forcing the path to weave, and `Tile::Empty` is symbol 0 because `wfc::Solver` tries candidates in ascending order.
+  A tight per-attempt step budget with many reseeds beat one large budget by roughly twenty times: a hard seed is cheaper to abandon than to grind out.
+  `td::Battle` is the simulation -- integer throughout, no clock and no global generator, so it is a pure function of the tick count and the state.
+  A tower's target needs no tie-break: mobs are kept in spawn order and all advance one cell per tick, so no two ever share a path index.
+  **The app defines no event for placing a tower**: a click is the input, `td::TowerPlacementSink` turns it into a placement inside the tick path, and the replay stores the click and regenerates the placement -- persisting both would build two towers per click.
+  Rendering is a write-only projection in structure rather than by promise: `td::snapshotOf()` takes an immutable `td::BattleSnapshot`, `td::BattleScene` turns that into drawing calls, and `td::RenderSink` runs it once per `engine.tick`, registered after `BattleSink` and `ScoreSink` so a frame is of the state the tick ended with.
+  The running score is drawn by `antwika::ui`, described by `td::ScoreSink` inside the tick path and painted from `td::ScoreOverlay`, so no `ui.*` event exists here either.
+  `td::GridLayout.hpp` is the one place the pixel-to-cell mapping lives, shared by the scene and the placement sink so the board somebody sees and the board they can build on cannot drift.
+  It reserves a strip along the top for the score bar and lays the grid out below it, which is why a click on the bar falls outside the grid and builds nothing -- no sink has to ask the UI whether it covered the pointer.
+  It starts on an empty grid and loads nothing unless `--replay` says so, so what a session contains is what somebody clicked.
+  `src/apps/tower_defence/replays/demo.json` is a sample session to pass to `--replay`.
 - `apps/sudoku` is unrelated to the tick/replay system: it's a showcase for `antwika::wfc` (Wave Function Collapse) — a standalone, dependency-free, deterministic constraint solver operating on a flat, index-addressed `std::vector` of cells with geometry expressed entirely through `IConstraint`s (no grid concept inside the library).
   `apps/sudoku` expresses the 81-cell puzzle and its row/column/box rules as `AllDifferentConstraint`s over that flat array — see [`blog/005-wave-function-collapse-that-never-guesses.md`](blog/005-wave-function-collapse-that-never-guesses.md).
 
