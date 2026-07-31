@@ -10,11 +10,13 @@
 #include "antwika/ui/Alignment.hpp"
 #include "antwika/ui/Axis.hpp"
 #include "antwika/ui/Context.hpp"
+#include "antwika/ui/Keyboard.hpp"
 #include "antwika/ui/Sizing.hpp"
 #include "antwika/ui/TextEdit.hpp"
 #include "antwika/ui/TextFieldSpec.hpp"
-#include "antwika/ui/TextInput.hpp"
+#include "antwika/ui/WidgetId.hpp"
 
+#include "FocusRing.hpp"
 #include "LayoutTree.hpp"
 #include "Node.hpp"
 #include "Saturate.hpp"
@@ -28,6 +30,7 @@ namespace antwika::ui
     namespace
     {
         using detail::clampToU32;
+        using detail::FocusRing;
         using detail::Node;
 
         /**
@@ -36,6 +39,11 @@ namespace antwika::ui
          * Applied to a copy of the caller's characters, never to the
          * caller's own: this library holds nothing between frames, so
          * what it can offer is the answer, not the edit.
+         *
+         * The characters go in first and the keys are read after, in
+         * the order they arrived.
+         * A character is not an edge with a meaning of its own.
+         * So there is nothing for it to be interleaved with.
          *
          * @param spec The field being typed into.
          * @param cursor The caret, already brought inside the text.
@@ -46,14 +54,12 @@ namespace antwika::ui
         std::optional<TextEdit> editFor(
             const TextFieldSpec &spec,
             std::size_t cursor,
-            const TextInput &keys)
+            const Keyboard &keys)
         {
             TextEdit edit{
                 .field = spec.id,
                 .text = std::string{spec.text}, // GCOVR_EXCL_LINE
-                .cursor = cursor,
-                .submitted = keys.submit,
-                .cancelled = keys.cancel}; // GCOVR_EXCL_LINE
+                .cursor = cursor}; // GCOVR_EXCL_LINE
 
             bool moved = false;
 
@@ -64,24 +70,41 @@ namespace antwika::ui
                 moved = true;
             }
 
-            // Backspace at the start has nothing before it to take.
-            if (keys.backspace && edit.cursor > 0)
+            for (const auto key : keys.keys)
             {
-                edit.text.erase(edit.cursor - 1, 1);
-                --edit.cursor;
-                moved = true;
-            }
+                // Backspace at the start has nothing to take.
+                if (key == Key::Backspace && edit.cursor > 0)
+                {
+                    edit.text.erase(edit.cursor - 1, 1);
+                    --edit.cursor;
+                    moved = true;
+                }
 
-            if (keys.left && edit.cursor > 0)
-            {
-                --edit.cursor;
-                moved = true;
-            }
+                if (key == Key::MoveLeft && edit.cursor > 0)
+                {
+                    --edit.cursor;
+                    moved = true;
+                }
 
-            if (keys.right && edit.cursor < edit.text.size())
-            {
-                ++edit.cursor;
-                moved = true;
+                if (key == Key::MoveRight
+                    && edit.cursor < edit.text.size())
+                {
+                    ++edit.cursor;
+                    moved = true;
+                }
+
+                // The same edge resolve() activates the field on.
+                if (key == Key::Activate)
+                {
+                    edit.submitted = true;
+                }
+
+                if (key == Key::Cancel)
+                {
+                    edit.cancelled = true;
+                }
+
+                // A focus key is focus's alone, and moves no caret.
             }
 
             if (!moved && !edit.submitted && !edit.cancelled)
@@ -99,13 +122,21 @@ namespace antwika::ui
         // So a caller may hand an applied edit's cursor straight back.
         const auto cursor = std::min(spec.cursor, spec.text.size());
 
-        if (spec.focused)
+        // The spec's own flag overrides the focus this frame got.
+        // Focus moves inside finish().
+        // So a field describing itself knows where focus started.
+        // That is the rule a button's activation already follows.
+        const bool focused =
+            spec.focused
+            || (spec.id != kNoWidget && spec.id == focusValue);
+
+        if (focused)
         {
-            pendingEdit = editFor(spec, cursor, keysValue);
+            pendingEdit = editFor(spec, cursor, keyboardValue);
         }
 
         const auto fill =
-            spec.focused ? themeValue.fieldFocused : themeValue.field;
+            focused ? themeValue.fieldFocused : themeValue.field;
 
         tree->open(Node{ // GCOVR_EXCL_LINE
             .axis = Axis::Row,
@@ -115,7 +146,10 @@ namespace antwika::ui
             .padding = themeValue.buttonPadding,
             .gap = 0,
             .background = fill,
-            .id = spec.id});
+            .id = spec.id,
+            .focusStyle = FocusRing{
+                .color = themeValue.focusRing,
+                .thickness = themeValue.focusRingThickness}});
 
         // The caret sits between two pieces of one line.
         // So a row of three children is the whole of it.
@@ -128,7 +162,7 @@ namespace antwika::ui
             label(head, themeValue.text);
         }
 
-        if (spec.focused)
+        if (focused)
         {
             const auto height = clampToU32(
                 std::uint64_t{antwika::gfx::kGlyphLineHeight}

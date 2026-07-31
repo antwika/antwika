@@ -10,6 +10,7 @@
 #include "antwika/ui/Sizing.hpp"
 #include "antwika/ui/WidgetId.hpp"
 
+#include "FocusRing.hpp"
 #include "Interactive.hpp"
 #include "LayoutTree.hpp"
 #include "Node.hpp"
@@ -22,6 +23,7 @@ namespace antwika::ui
 
     namespace
     {
+        using detail::FocusRing;
         using detail::Interactive;
         using detail::Node;
 
@@ -55,6 +57,12 @@ namespace antwika::ui
             .hovered = themeValue.buttonHovered,
             .pressed = themeValue.buttonPressed};
 
+        // The box and every option are stops in the tab order.
+        // A closed list has one stop, and an open one has its options.
+        const FocusRing ring{
+            .color = themeValue.focusRing,
+            .thickness = themeValue.focusRingThickness};
+
         const auto anchor = tree->open(Node{ // GCOVR_EXCL_LINE
             .axis = Axis::Row,
             .width = spec.width,
@@ -64,7 +72,8 @@ namespace antwika::ui
             .gap = themeValue.gap,
             .background = themeValue.buttonIdle,
             .id = spec.id,
-            .style = style});
+            .style = style,
+            .focusStyle = ring});
 
         // Anything outside the options shows the placeholder.
         // So kNoOption needs no arm of its own.
@@ -107,6 +116,7 @@ namespace antwika::ui
                 .background = themeValue.buttonIdle,
                 .id = optionId(spec.optionIdBase, index),
                 .style = style,
+                .focusStyle = ring,
                 .optionOwner = spec.id,
                 .optionIndex = index});
 

@@ -15,6 +15,7 @@
 #include "antwika/ui/DrawCommand.hpp"
 #include "antwika/ui/DrawList.hpp"
 #include "antwika/ui/DropdownSpec.hpp"
+#include "antwika/ui/Keyboard.hpp"
 #include "antwika/ui/Pointer.hpp"
 #include "antwika/ui/Theme.hpp"
 #include "antwika/ui/WidgetId.hpp"
@@ -27,6 +28,8 @@ using antwika::ui::DrawList;
 using antwika::ui::DrawText;
 using antwika::ui::DropdownSpec;
 using antwika::ui::FillRect;
+using antwika::ui::Key;
+using antwika::ui::Keyboard;
 using antwika::ui::kNoOption;
 using antwika::ui::kNoWidget;
 using antwika::ui::OptionChoice;
@@ -327,4 +330,65 @@ TEST(DropdownTest, TheFrontmostOfTwoOverlappingListsAnswers)
         (OptionChoice{.dropdown = kBelow, .index = 0}),
         *interactions.chosen);
     EXPECT_EQ(WidgetId{200}, interactions.activated);
+}
+
+TEST(DropdownTest, TabWalksTheBoxAndThenItsOpenOptions)
+{
+    auto spec = pickerSpec();
+    spec.open = true;
+
+    Context ui{
+        kCanvas,
+        plainTheme(),
+        Pointer{},
+        Keyboard{.keys = {Key::FocusNext, Key::FocusNext}}};
+
+    ui.dropdown(spec);
+
+    EXPECT_EQ(WidgetId{100}, ui.finish().interactions.focused);
+}
+
+TEST(DropdownTest, AFocusedOptionsRingIsDrawnWithTheListItIsIn)
+{
+    auto spec = pickerSpec();
+    spec.open = true;
+
+    Context ui{
+        kCanvas, plainTheme(), Pointer{}, Keyboard{}, WidgetId{100}};
+
+    ui.dropdown(spec);
+
+    const auto commands = ui.finish().commands;
+    const auto ring = Theme{}.focusRing;
+
+    // The four bars come after every option rather than before them.
+    ASSERT_GE(commands.size(), 4U);
+
+    for (auto index = commands.size() - 4; index < commands.size();
+         ++index)
+    {
+        EXPECT_EQ(ring, std::get<FillRect>(commands.at(index)).color);
+    }
+}
+
+TEST(DropdownTest, EnterChoosesNothingByItself)
+{
+    auto spec = pickerSpec();
+    spec.open = true;
+
+    Context ui{
+        kCanvas,
+        plainTheme(),
+        Pointer{},
+        Keyboard{.keys = {Key::Activate}},
+        WidgetId{101}};
+
+    ui.dropdown(spec);
+
+    const auto interactions = ui.finish().interactions;
+
+    // An option's index rides on the pointer's hit.
+    // So a keystroke reports the id and the caller maps it back.
+    EXPECT_EQ(WidgetId{101}, interactions.activated);
+    EXPECT_FALSE(interactions.chosen.has_value());
 }

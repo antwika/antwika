@@ -14,7 +14,7 @@
 #include "antwika/ui/Pointer.hpp"
 #include "antwika/ui/Sizing.hpp"
 #include "antwika/ui/TextFieldSpec.hpp"
-#include "antwika/ui/TextInput.hpp"
+#include "antwika/ui/Keyboard.hpp"
 #include "antwika/ui/Theme.hpp"
 #include "antwika/ui/WidgetId.hpp"
 
@@ -29,7 +29,8 @@ using antwika::ui::fixedSize;
 using antwika::ui::kCaretAtEnd;
 using antwika::ui::Pointer;
 using antwika::ui::TextFieldSpec;
-using antwika::ui::TextInput;
+using antwika::ui::Key;
+using antwika::ui::Keyboard;
 using antwika::ui::Theme;
 using antwika::ui::WidgetId;
 
@@ -201,7 +202,7 @@ TEST(TextFieldTest, TheCaretSitsAtTheStartOfAnEmptyFocusedField)
 
 TEST(TextFieldTest, AnUnfocusedFieldReportsNoEditAtAll)
 {
-    Context ui{kCanvas, plainTheme(), Pointer{}, TextInput{.typed = "c"}};
+    Context ui{kCanvas, plainTheme(), Pointer{}, Keyboard{.typed = "c"}};
 
     ui.textField(TextFieldSpec{.id = kName, .text = "ab"});
 
@@ -210,7 +211,7 @@ TEST(TextFieldTest, AnUnfocusedFieldReportsNoEditAtAll)
 
 TEST(TextFieldTest, AQuietFrameReportsNoEditEither)
 {
-    Context ui{kCanvas, plainTheme(), Pointer{}, TextInput{}};
+    Context ui{kCanvas, plainTheme(), Pointer{}, Keyboard{}};
 
     ui.textField(
         TextFieldSpec{.id = kName, .text = "ab", .focused = true});
@@ -220,7 +221,7 @@ TEST(TextFieldTest, AQuietFrameReportsNoEditEither)
 
 TEST(TextFieldTest, TypingIsReportedAsTheTextItWouldMake)
 {
-    Context ui{kCanvas, plainTheme(), Pointer{}, TextInput{.typed = "cd"}};
+    Context ui{kCanvas, plainTheme(), Pointer{}, Keyboard{.typed = "cd"}};
 
     ui.textField(
         TextFieldSpec{.id = kName, .text = "ab", .focused = true});
@@ -238,7 +239,7 @@ TEST(TextFieldTest, TypingIsReportedAsTheTextItWouldMake)
 
 TEST(TextFieldTest, TypingGoesInWhereTheCursorIs)
 {
-    Context ui{kCanvas, plainTheme(), Pointer{}, TextInput{.typed = "X"}};
+    Context ui{kCanvas, plainTheme(), Pointer{}, Keyboard{.typed = "X"}};
 
     ui.textField(TextFieldSpec{
         .id = kName, .text = "ab", .cursor = 1, .focused = true});
@@ -253,7 +254,7 @@ TEST(TextFieldTest, TypingGoesInWhereTheCursorIs)
 TEST(TextFieldTest, BackspaceTakesTheCharacterBeforeTheCursor)
 {
     Context ui{
-        kCanvas, plainTheme(), Pointer{}, TextInput{.backspace = true}};
+        kCanvas, plainTheme(), Pointer{}, Keyboard{.keys = {Key::Backspace}}};
 
     ui.textField(
         TextFieldSpec{.id = kName, .text = "abc", .focused = true});
@@ -268,7 +269,7 @@ TEST(TextFieldTest, BackspaceTakesTheCharacterBeforeTheCursor)
 TEST(TextFieldTest, BackspaceAtTheStartChangesNothing)
 {
     Context ui{
-        kCanvas, plainTheme(), Pointer{}, TextInput{.backspace = true}};
+        kCanvas, plainTheme(), Pointer{}, Keyboard{.keys = {Key::Backspace}}};
 
     ui.textField(TextFieldSpec{
         .id = kName, .text = "abc", .cursor = 0, .focused = true});
@@ -279,7 +280,7 @@ TEST(TextFieldTest, BackspaceAtTheStartChangesNothing)
 TEST(TextFieldTest, TheArrowsWalkTheCursorAndStopAtTheEnds)
 {
     Context left{
-        kCanvas, plainTheme(), Pointer{}, TextInput{.left = true}};
+        kCanvas, plainTheme(), Pointer{}, Keyboard{.keys = {Key::MoveLeft}}};
 
     left.textField(
         TextFieldSpec{.id = kName, .text = "ab", .focused = true});
@@ -291,7 +292,7 @@ TEST(TextFieldTest, TheArrowsWalkTheCursorAndStopAtTheEnds)
     EXPECT_EQ("ab", walked->text);
 
     Context start{
-        kCanvas, plainTheme(), Pointer{}, TextInput{.left = true}};
+        kCanvas, plainTheme(), Pointer{}, Keyboard{.keys = {Key::MoveLeft}}};
 
     start.textField(TextFieldSpec{
         .id = kName, .text = "ab", .cursor = 0, .focused = true});
@@ -299,7 +300,7 @@ TEST(TextFieldTest, TheArrowsWalkTheCursorAndStopAtTheEnds)
     EXPECT_FALSE(start.finish().interactions.edit.has_value());
 
     Context right{
-        kCanvas, plainTheme(), Pointer{}, TextInput{.right = true}};
+        kCanvas, plainTheme(), Pointer{}, Keyboard{.keys = {Key::MoveRight}}};
 
     right.textField(TextFieldSpec{
         .id = kName, .text = "ab", .cursor = 0, .focused = true});
@@ -310,7 +311,7 @@ TEST(TextFieldTest, TheArrowsWalkTheCursorAndStopAtTheEnds)
     EXPECT_EQ(1U, forward->cursor);
 
     Context end{
-        kCanvas, plainTheme(), Pointer{}, TextInput{.right = true}};
+        kCanvas, plainTheme(), Pointer{}, Keyboard{.keys = {Key::MoveRight}}};
 
     end.textField(
         TextFieldSpec{.id = kName, .text = "ab", .focused = true});
@@ -321,7 +322,7 @@ TEST(TextFieldTest, TheArrowsWalkTheCursorAndStopAtTheEnds)
 TEST(TextFieldTest, EnterAndEscapeAreReportedWithoutChangingTheText)
 {
     Context submit{
-        kCanvas, plainTheme(), Pointer{}, TextInput{.submit = true}};
+        kCanvas, plainTheme(), Pointer{}, Keyboard{.keys = {Key::Activate}}};
 
     submit.textField(
         TextFieldSpec{.id = kName, .text = "ab", .focused = true});
@@ -334,7 +335,7 @@ TEST(TextFieldTest, EnterAndEscapeAreReportedWithoutChangingTheText)
     EXPECT_EQ("ab", submitted->text);
 
     Context cancel{
-        kCanvas, plainTheme(), Pointer{}, TextInput{.cancel = true}};
+        kCanvas, plainTheme(), Pointer{}, Keyboard{.keys = {Key::Cancel}}};
 
     cancel.textField(
         TextFieldSpec{.id = kName, .text = "ab", .focused = true});
@@ -347,7 +348,7 @@ TEST(TextFieldTest, EnterAndEscapeAreReportedWithoutChangingTheText)
 
 TEST(TextFieldTest, ACursorPastTheEndIsTheEnd)
 {
-    Context ui{kCanvas, plainTheme(), Pointer{}, TextInput{.typed = "c"}};
+    Context ui{kCanvas, plainTheme(), Pointer{}, Keyboard{.typed = "c"}};
 
     ui.textField(TextFieldSpec{
         .id = kName, .text = "ab", .cursor = 99, .focused = true});
@@ -395,4 +396,76 @@ TEST(TextFieldTest, ACaretIsAtLeastOnePixelWideAtAZeroScale)
 
     ASSERT_EQ(1U, carets.size());
     EXPECT_EQ(1U, carets.at(0).rect.size.width);
+}
+
+TEST(TextFieldTest, TabReachesAFieldAndTheNextFrameTypesIntoIt)
+{
+    Context first{
+        kCanvas,
+        plainTheme(),
+        Pointer{},
+        Keyboard{.keys = {Key::FocusNext}}};
+
+    first.textField(TextFieldSpec{.id = kName, .text = "ab"});
+
+    const auto reached = first.finish();
+
+    // Focus moves inside finish(), so this frame is still unfocused.
+    EXPECT_EQ(kName, reached.interactions.focused);
+    EXPECT_FALSE(reached.interactions.edit.has_value());
+    EXPECT_TRUE(caretsOf(reached.commands).empty());
+
+    Context second{
+        kCanvas,
+        plainTheme(),
+        Pointer{},
+        Keyboard{.typed = "c"},
+        reached.interactions.focused};
+
+    second.textField(TextFieldSpec{.id = kName, .text = "ab"});
+
+    const auto typed = second.finish();
+
+    ASSERT_TRUE(typed.interactions.edit.has_value());
+    EXPECT_EQ("abc", typed.interactions.edit->text);
+
+    // Focused by the library rather than by the spec.
+    // So it draws a caret and takes the focused fill unasked.
+    EXPECT_EQ(1U, caretsOf(typed.commands).size());
+    EXPECT_EQ(kFocused, std::get<FillRect>(typed.commands.at(0)).color);
+}
+
+TEST(TextFieldTest, EnterOnAFocusedFieldActivatesItAndSubmitsIt)
+{
+    Context ui{
+        kCanvas,
+        plainTheme(),
+        Pointer{},
+        Keyboard{.keys = {Key::Activate}},
+        kName};
+
+    ui.textField(TextFieldSpec{.id = kName, .text = "ab"});
+
+    const auto frame = ui.finish();
+
+    EXPECT_EQ(kName, frame.interactions.activated);
+    ASSERT_TRUE(frame.interactions.edit.has_value());
+    EXPECT_TRUE(frame.interactions.edit->submitted);
+    EXPECT_EQ("ab", frame.interactions.edit->text);
+}
+
+TEST(TextFieldTest, TabbingAwayLeavesTheCaretWhereItWas)
+{
+    Context ui{
+        kCanvas,
+        plainTheme(),
+        Pointer{},
+        Keyboard{.keys = {Key::FocusPrevious}},
+        kName};
+
+    ui.textField(TextFieldSpec{
+        .id = kName, .text = "ab", .cursor = 1, .focused = true});
+
+    // A focus key moves no caret, so this frame reports no edit.
+    EXPECT_FALSE(ui.finish().interactions.edit.has_value());
 }

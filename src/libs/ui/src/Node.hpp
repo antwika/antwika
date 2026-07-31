@@ -15,6 +15,7 @@
 #include "antwika/ui/Sizing.hpp"
 #include "antwika/ui/WidgetId.hpp"
 
+#include "FocusRing.hpp"
 #include "Interactive.hpp"
 #include "NodeKind.hpp"
 
@@ -107,6 +108,29 @@ namespace antwika::ui::detail
          * said how it must look.
          */
         std::optional<Interactive> style{};
+
+        /**
+         * @brief The border this node would draw if it were focused.
+         *
+         * Present exactly on the nodes the keyboard can reach, so this
+         * is what makes a node focusable as well as what says how the
+         * ring looks. Absent on everything else, including a container
+         * and a button's own label.
+         *
+         * A node carrying one but named kNoWidget is skipped all the
+         * same: focus crosses back into application state as an id, so
+         * a widget nothing can name is a widget nothing can focus.
+         */
+        std::optional<FocusRing> focusStyle{};
+
+        /**
+         * @brief The border this node is actually drawing, if any.
+         *
+         * focusStyle is the source and this is the resolved answer,
+         * exactly as style is the source of background. Written by
+         * resolve() on the focused node alone.
+         */
+        std::optional<FocusRing> focusRing{};
 
         /**
          * @brief The characters this text node draws.

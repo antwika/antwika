@@ -12,13 +12,14 @@
 #include "antwika/ui/ContainerSpec.hpp"
 #include "antwika/ui/DropdownSpec.hpp"
 #include "antwika/ui/Frame.hpp"
+#include "antwika/ui/Keyboard.hpp"
 #include "antwika/ui/Pointer.hpp"
 #include "antwika/ui/Scope.hpp"
 #include "antwika/ui/Sizing.hpp"
 #include "antwika/ui/TextEdit.hpp"
 #include "antwika/ui/TextFieldSpec.hpp"
-#include "antwika/ui/TextInput.hpp"
 #include "antwika/ui/Theme.hpp"
+#include "antwika/ui/WidgetId.hpp"
 
 namespace antwika::ui
 {
@@ -37,8 +38,14 @@ namespace antwika::ui
      * has not seen yet, which is what makes nesting work at all.
      *
      * Holds nothing between frames and reads nothing outside its
-     * arguments, so the same declarations, canvas and pointer always
-     * produce the same picture and the same interactions.
+     * arguments, so the same declarations, canvas, pointer, keyboard and
+     * focus always produce the same picture and the same interactions.
+     *
+     * Focus is the one thing a keyboard UI needs that outlives a frame,
+     * and it is passed through rather than kept: it goes in here and
+     * comes back out as Frame::interactions.focused, so what remembers
+     * it is application state a replay already regenerates. See
+     * Interactions::focused.
      */
     class Context final
     {
@@ -50,14 +57,21 @@ namespace antwika::ui
          * @param pointer Where the pointer is and what it is doing, in
          * the same pixels the canvas is measured in. Left out, this
          * frame has no pointer and nothing can be hovered or activated.
-         * @param keys What was typed this frame. Left out, nothing was,
-         * and no field reports an edit.
+         * @param keyboard The key edges and characters this frame, in
+         * arrival order. Left out, this frame has no keyboard, focus
+         * stays where the caller had it, nothing can be activated by a
+         * keystroke and no field reports an edit.
+         * @param focus The widget focused going in, which is the
+         * focused id the previous frame handed back. Left out, this
+         * frame starts with nothing focused, which is where Tab starts
+         * from.
          */
         Context(
             Size canvas,
             Theme theme,
             Pointer pointer = {},
-            TextInput keys = {});
+            Keyboard keyboard = {},
+            WidgetId focus = kNoWidget);
 
         /**
          * @brief Discard the frame.
@@ -119,6 +133,9 @@ namespace antwika::ui
          *
          * Named in the spec, it works out its own appearance from the
          * pointer and reports being pressed through finish().
+         * A named button is also what Tab stops at, in the order the
+         * buttons were declared, and draws the theme's border while it
+         * is the focused one.
          *
          * @param text The button's label.
          * @param spec What the button is being asked for.
@@ -172,11 +189,14 @@ namespace antwika::ui
         void spacer(Sizing along);
 
         /**
-         * @brief Lay the frame out, resolve the pointer against it, and
-         * produce the picture it describes.
+         * @brief Lay the frame out, resolve the pointer and the keyboard
+         * against it, and produce the picture it describes.
          *
          * The pointer is resolved against this frame's layout, so what a
          * press hit is what the same call is about to draw.
+         *
+         * The returned focus is this frame's answer, and the caller's to
+         * keep and hand back next frame.
          *
          * Asking twice gives the same answer: nothing here is consumed.
          *
@@ -214,7 +234,8 @@ namespace antwika::ui
         Size canvasSize;
         Theme themeValue;
         Pointer pointerValue;
-        TextInput keysValue;
+        Keyboard keyboardValue;
+        WidgetId focusValue;
 
         /**
          * @brief What the focused field's typing came to, if anything.
