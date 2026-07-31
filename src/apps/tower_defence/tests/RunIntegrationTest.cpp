@@ -1,4 +1,6 @@
+#include <cstddef>
 #include <cstdint>
+#include <memory>
 #include <vector>
 
 #include <gmock/gmock.h>
@@ -6,8 +8,10 @@
 
 #include <antwika/engine/Events.hpp>
 #include <antwika/event/Event.hpp>
+#include <antwika/event/ITickEventSink.hpp>
 #include <antwika/event/mocks/MockEventSink.hpp>
 #include <antwika/event/TickEvent.hpp>
+#include <antwika/event/TickEventRecorder.hpp>
 #include <antwika/input/InputEvent.hpp>
 #include <antwika/input/InputEventCodec.hpp>
 #include <antwika/input/MouseButton.hpp>
@@ -20,6 +24,7 @@
 using antwika::event::Event;
 using antwika::event::mocks::MockEventSink;
 using antwika::event::TickEvent;
+using antwika::event::TickEventRecorder;
 using antwika::gfx::Size;
 using antwika::input::InputEventCodec;
 using antwika::input::MouseButton;
@@ -68,6 +73,49 @@ namespace
                 .event = Event{
                     .name = antwika::engine::events::kStop}}};
     }
+
+    // What the watcher below saw, kept outside it because bootstrap()
+    // owns the sink and destroys it before it returns.
+    struct WatchedTicks
+    {
+        std::uint64_t ticks = 0;
+        std::size_t towers = 0;
+        std::size_t commands = 0;
+    };
+
+    // Stands in for the renderer main.cpp hands bootstrap(): a sink
+    // built over the Battle and the ScoreOverlay the run owns, neither
+    // of which exists before a level has been generated.
+    // It reads the same two things RenderSink does, so what it sees is
+    // what a frame would have been drawn from.
+    class FinishedTickWatcher final
+        : public antwika::event::ITickEventSink
+    {
+    public:
+        FinishedTickWatcher(
+            const antwika::tower_defence::Battle &battle,
+            const antwika::tower_defence::ScoreOverlay &overlay,
+            WatchedTicks &seen)
+            : battle(battle), overlay(overlay), seen(seen)
+        {
+        }
+
+        void handle(const TickEvent &event) override
+        {
+            if (event.event.name != antwika::engine::events::kTick)
+            {
+                return;
+            }
+            ++seen.ticks;
+            seen.towers = battle.towers().size();
+            seen.commands = overlay.commands().size();
+        }
+
+    private:
+        const antwika::tower_defence::Battle &battle;
+        const antwika::tower_defence::ScoreOverlay &overlay;
+        WatchedTicks &seen;
+    };
 
     BattleSummary runOnce()
     {
@@ -119,4 +167,88 @@ TEST(RunIntegrationTest, AClickOnTheBarBuildsNothingButAClickOnGroundDoes)
 {
     const BattleSummary summary = runOnce();
     EXPECT_EQ(summary.towers, 1U);
+}
+
+// main.cpp hangs the renderer off the run with the extraSink factory,
+// since a sink drawing the battle needs state bootstrap() only has once
+// it has generated a level.
+// The sink must be registered last, so what it reads is the state the
+// tick ended with rather than the state it started from.
+TEST(RunIntegrationTest, TheExtraSinkSeesEveryFinishedTick)
+{
+    NiceMock<MockLogger> logger;
+    NiceMock<MockEventSink> eventSink;
+    const InputEventCodec codec;
+    ReplaySource source(script());
+
+    WatchedTicks seen;
+    const BattleSummary summary =
+        antwika::tower_defence::bootstrap(TowerDefenceConfig{
+            .logger = logger,
+            .eventSink = eventSink,
+            .inputSource = source,
+            .codec = codec,
+            .canvas = kCanvas,
+            .level = LevelConfig{
+                .width = kWidth, .height = kHeight, .seed = 3},
+            .battle = BattleConfig{.spawnPeriodTicks = 3},
+            .maxTicks = kMaxTicks,
+            .extraSink =
+                [&seen](
+                    const antwika::tower_defence::Battle &battle,
+                    const antwika::tower_defence::ScoreOverlay &overlay)
+            {
+                return std::make_unique<FinishedTickWatcher>(
+                    battle, overlay, seen);
+            }});
+
+    EXPECT_EQ(seen.ticks, summary.ticks);
+
+    // The tower the ground click built, and the bar ScoreSink described
+    // before this sink ran.
+    EXPECT_EQ(seen.towers, summary.towers);
+    EXPECT_GT(seen.commands, 0U);
+}
+
+// A caller wanting to persist a `--record` file has no pre-known
+// script, so it passes an optional replayRecorder instead.
+// bootstrap() must register it, and only the input has to come back:
+// the level, the mobs and the towers are all regenerated.
+TEST(RunIntegrationTest, TheReplayRecorderReceivesEveryDispatchedEvent)
+{
+    NiceMock<MockLogger> logger;
+    NiceMock<MockEventSink> eventSink;
+    const InputEventCodec codec;
+    ReplaySource source(script());
+    TickEventRecorder recorder;
+
+    const BattleSummary summary =
+        antwika::tower_defence::bootstrap(TowerDefenceConfig{
+            .logger = logger,
+            .eventSink = eventSink,
+            .inputSource = source,
+            .codec = codec,
+            .canvas = kCanvas,
+            .level = LevelConfig{
+                .width = kWidth, .height = kHeight, .seed = 3},
+            .battle = BattleConfig{.spawnPeriodTicks = 3},
+            .maxTicks = kMaxTicks,
+            .replayRecorder = recorder});
+
+    // Every dispatched event reaches the recorder, engine.tick and all.
+    // What a saved file keeps is the run's *input*, so that is what is
+    // asserted here: the ticks are regenerated, and nothing about the
+    // level, the mobs or the towers was ever an event to begin with.
+    std::vector<TickEvent> supplied;
+    for (const TickEvent &event : recorder.getEvents())
+    {
+        if (event.event.name != antwika::engine::events::kTick)
+        {
+            supplied.push_back(event);
+        }
+    }
+
+    EXPECT_EQ(supplied, script());
+    EXPECT_EQ(
+        recorder.getEvents().size(), supplied.size() + summary.ticks);
 }
