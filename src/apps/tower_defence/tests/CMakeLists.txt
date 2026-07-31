@@ -1,8 +1,10 @@
 find_package(GTest REQUIRED)
 
 add_executable(antwika_tower_defence_tests
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/Battle.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/LevelGenerator.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/LevelTile.cpp
+    BattleTest.cpp
     LevelGeneratorTest.cpp
     LevelTileTest.cpp
 )
