@@ -120,6 +120,26 @@ def it_leaves_the_glyph_slots_white_so_a_tint_decides_the_colour():
                 assert tuple(pixels[at : at + 3]) == (255, 255, 255)
 
 
+def it_refuses_a_slot_two_painters_share_or_one_off_the_atlas():
+    capacity = generate_poker_atlas.COLUMNS * generate_poker_atlas.ROWS
+
+    try:
+        generate_poker_atlas.check_slots([0, 1, 1])
+    except generate_poker_atlas.LayoutError as error:
+        assert "share slot" in str(error)
+    else:
+        raise AssertionError("a shared slot was accepted")
+
+    try:
+        generate_poker_atlas.check_slots([0, capacity])
+    except generate_poker_atlas.LayoutError as error:
+        assert "outside" in str(error)
+    else:
+        raise AssertionError("a slot off the atlas was accepted")
+
+    generate_poker_atlas.check_slots([0, capacity - 1])
+
+
 def it_renders_the_same_bytes_every_time():
     assert generate_poker_atlas.render() == generate_poker_atlas.render()
 
@@ -157,6 +177,7 @@ def main():
         it_draws_a_distinct_glyph_for_every_rank,
         it_covers_the_felt_tile_edge_to_edge,
         it_leaves_the_glyph_slots_white_so_a_tint_decides_the_colour,
+        it_refuses_a_slot_two_painters_share_or_one_off_the_atlas,
         it_renders_the_same_bytes_every_time,
         it_writes_a_png_and_then_reports_it_as_current,
         it_reports_a_missing_atlas,

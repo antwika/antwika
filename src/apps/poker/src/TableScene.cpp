@@ -129,8 +129,7 @@ namespace antwika::poker
 
         // How tall one seat row is, for the art and for the ui alike.
         // Half the canvas, shared out, unless that is unreadably thin.
-        // A table too tall for its window is shrunk to fit by the
-        // layout.
+        // The layout shrinks a table too tall for its window.
         // Which is the guard this file used to write by hand.
         //
         // Written once because the two describe the same rows.
