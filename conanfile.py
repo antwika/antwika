@@ -57,6 +57,11 @@ class AntwikaConan(ConanFile):
         # particular.
         self.requires("stb/cci.20220909")
 
+        # Also unconditional, and for the same reason: antwika::gfx's
+        # 3D math types are built on GLM whichever backend draws them.
+        # Header-only, so it costs a link line nothing.
+        self.requires("glm/1.0.1")
+
         # Either option selecting a framework is enough to need it.
         backends = {str(self.options.gfx_backend), self._input_backend}
 
