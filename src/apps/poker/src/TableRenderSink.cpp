@@ -11,6 +11,7 @@ namespace antwika::poker
 
     TableRenderSink::TableRenderSink(
         IWindow &window,
+        Size canvas,
         const TableScene &scene,
         const Table &table,
         const CashGame &game,
@@ -19,6 +20,7 @@ namespace antwika::poker
         std::string tableName,
         const ITexture *atlas)
         : window(window),
+          canvas(canvas),
           scene(scene),
           table(table),
           game(game),
@@ -49,7 +51,7 @@ namespace antwika::poker
         auto &renderer = window.renderer();
         scene.draw(
             renderer,
-            window.size(),
+            canvas,
             snapshotOf(table, game, tableName),
             atlas);
         renderer.present();

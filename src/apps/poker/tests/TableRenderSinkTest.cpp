@@ -35,6 +35,7 @@ using antwika::poker::TableScene;
 using antwika::time::fakes::FakeSleeper;
 using ::testing::_;
 using ::testing::AnyNumber;
+using ::testing::AtLeast;
 using ::testing::NiceMock;
 using ::testing::Return;
 using ::testing::ReturnRef;
@@ -43,6 +44,8 @@ using namespace std::chrono_literals;
 namespace
 {
     constexpr auto kFramePeriod = 80ms;
+
+    constexpr Size kCanvas{.width = 1024, .height = 640};
 
     [[nodiscard]] TickEvent tickAt(antwika::time::Tick tick)
     {
@@ -78,7 +81,14 @@ protected:
     FakeSleeper sleeper;
 
     TableRenderSink sink{
-        window, scene, table, game, sleeper, kFramePeriod, "Antwika"};
+        window,
+        kCanvas,
+        scene,
+        table,
+        game,
+        sleeper,
+        kFramePeriod,
+        "Antwika"};
 };
 
 TEST_F(TableRenderSinkTest, Handle_DrawsAndPresentsOneFramePerTick)
@@ -142,6 +152,37 @@ TEST_F(TableRenderSinkTest, Render_ShowsTheTableItWasGiven)
     EXPECT_CALL(renderer, drawText(_, "alice", _, _));
     EXPECT_CALL(renderer, drawText(_, "300", _, _));
     EXPECT_CALL(renderer, present());
+
+    sink.render();
+}
+
+// The size the window was asked for, never the size it reports.
+// A layout is a function of its canvas.
+// The art is a function of that layout.
+// A frame described against a resized window would misplace both.
+TEST_F(TableRenderSinkTest, Render_LaysOutAgainstTheConfiguredSize)
+{
+    NiceMock<MockWindow> small;
+    ON_CALL(small, isOpen()).WillByDefault(Return(true));
+    ON_CALL(small, renderer()).WillByDefault(ReturnRef(renderer));
+
+    // Wildly bigger than the canvas, and a different glyph scale.
+    ON_CALL(small, size())
+        .WillByDefault(Return(Size{.width = 1920, .height = 1200}));
+
+    TableRenderSink sink{
+        small,
+        Size{.width = 320, .height = 200},
+        scene,
+        table,
+        game,
+        sleeper,
+        kFramePeriod,
+        "Antwika"};
+
+    // One pixel per glyph pixel is what 200 rows asks for.
+    EXPECT_CALL(renderer, drawText(_, _, 1, _)).Times(AtLeast(1));
+    EXPECT_CALL(renderer, drawText(_, _, 3, _)).Times(0);
 
     sink.render();
 }

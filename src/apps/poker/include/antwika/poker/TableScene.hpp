@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstddef>
 #include <cstdint>
 #include <span>
 
@@ -13,6 +14,8 @@
 #include <antwika/holdem/Card.hpp>
 #include <antwika/ui/Context.hpp>
 #include <antwika/ui/Frame.hpp>
+#include <antwika/ui/WidgetId.hpp>
+#include <antwika/ui/WidgetRects.hpp>
 
 #include "antwika/poker/SeatSnapshot.hpp"
 #include "antwika/poker/TableSnapshot.hpp"
@@ -27,6 +30,8 @@ namespace antwika::poker
     using antwika::gfx::Size;
     using antwika::ui::Context;
     using antwika::ui::Frame;
+    using antwika::ui::WidgetId;
+    using antwika::ui::WidgetRects;
 
     /**
      * @brief One blit of the table's texture atlas.
@@ -68,6 +73,14 @@ namespace antwika::poker
      * What is still worked out here is what a picture of a poker table
      * is: how tall a seat row has to be to be readable, and how wide a
      * card is in glyphs.
+     *
+     * **There is one layout, and the art is placed from it.** describe()
+     * names a container for every card, seat and badge the art has to
+     * land on, and describeArt() reads those rectangles back out of the
+     * frame rather than working out its own. Two layouts computed side
+     * by side agree only until either one of them changes, which is how
+     * this file once came to draw every card twice, at two sizes, with
+     * the rank and suit printed across the gap between two of them.
      */
     class TableScene final
     {
@@ -92,14 +105,25 @@ namespace antwika::poker
          *
          * Painted *before* the frame describe() returns, since the art
          * is the felt, the cards and the furniture, and the text has to
-         * read on top of it.
+         * read on top of it. Described *after* it, since every blit but
+         * the felt is placed from a rectangle that frame laid out.
          *
-         * @param canvas The size of the area being drawn into.
+         * An id the frame did not declare draws nothing. That is the
+         * whole of the fallback: inventing a rectangle for it here is
+         * the second layout this signature exists to delete.
+         *
+         * @param canvas The size of the area being drawn into. Only the
+         * felt uses it, since the felt covers the whole window and
+         * belongs to no widget.
+         * @param rects Where describe() put every widget the art lands
+         * on, from the same frame that is about to be painted.
          * @param snapshot What to draw.
          * @return Every blit, in the order they are painted.
          */
         [[nodiscard]] std::vector<ArtBlit> describeArt(
-            Size canvas, const TableSnapshot &snapshot) const;
+            Size canvas,
+            const WidgetRects &rects,
+            const TableSnapshot &snapshot) const;
 
         /**
          * @brief Work out the picture without drawing it.
@@ -127,6 +151,7 @@ namespace antwika::poker
          */
         struct SeatMetrics
         {
+            std::size_t index = 0;
             std::uint32_t rowHeight = 0;
             std::uint32_t barRoom = 0;
             Chips largestStack = 1;
@@ -134,39 +159,24 @@ namespace antwika::poker
             bool showButton = false;
         };
 
-        /**
-         * @brief What the art layer is laid out against.
-         *
-         * Worked out once for the whole canvas, since every one of them
-         * is a function of the canvas and the number of seats rather
-         * than of the seat being drawn.
-         */
-        struct ArtMetrics
-        {
-            std::uint32_t cardWidth = 0;
-            std::uint32_t cardHeight = 0;
-            std::uint32_t rowHeight = 0;
-            std::uint32_t seatTop = 0;
-            std::uint32_t boardTop = 0;
-        };
-
-        [[nodiscard]] static ArtMetrics artMetricsFor(
-            Size canvas, const TableSnapshot &snapshot);
-
         static void appendFelt(
             std::vector<ArtBlit> &art, Size canvas);
 
         static void appendBoard(
             std::vector<ArtBlit> &art,
-            Size canvas,
-            const TableSnapshot &snapshot,
-            ArtMetrics metrics);
+            const WidgetRects &rects,
+            const TableSnapshot &snapshot);
 
         static void appendSeats(
             std::vector<ArtBlit> &art,
-            Size canvas,
+            const WidgetRects &rects,
+            const TableSnapshot &snapshot);
+
+        static void appendSeat(
+            std::vector<ArtBlit> &art,
+            const WidgetRects &rects,
             const TableSnapshot &snapshot,
-            ArtMetrics metrics);
+            std::size_t index);
 
         static void appendCard(
             std::vector<ArtBlit> &art,
@@ -193,13 +203,22 @@ namespace antwika::poker
             const SeatSnapshot &seat,
             SeatMetrics metrics) const;
 
+        void describeBadges(
+            Context &ui,
+            const SeatSnapshot &seat,
+            SeatMetrics metrics) const;
+
         void describeCards(
             Context &ui,
             std::span<const holdem::Card> cards,
-            std::uint32_t scale) const;
+            std::uint32_t scale,
+            WidgetId first) const;
 
         void describeCard(
-            Context &ui, holdem::Card card, std::uint32_t scale) const;
+            Context &ui,
+            holdem::Card card,
+            std::uint32_t scale,
+            WidgetId id) const;
     };
 
 } // namespace antwika::poker

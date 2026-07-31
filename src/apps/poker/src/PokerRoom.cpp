@@ -157,6 +157,7 @@ namespace antwika::poker
 
             renderSink.emplace(
                 *tableWindow,
+                window.size,
                 scene,
                 table,
                 game,
