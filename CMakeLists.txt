@@ -73,6 +73,26 @@ if(ENABLE_COVERAGE AND BUILD_TESTING AND NOT CMAKE_CROSSCOMPILING)
     endif()
 endif()
 
+# One precompiled header, shared by every test target.
+# See the loop at the bottom of this file for why it is worth having and
+# why it has to be exactly one.
+if(BUILD_TESTING AND NOT CMAKE_CROSSCOMPILING)
+    find_package(GTest REQUIRED)
+
+    file(WRITE "${CMAKE_BINARY_DIR}/antwika_test_pch.cpp" "")
+
+    add_library(antwika_test_pch OBJECT
+        "${CMAKE_BINARY_DIR}/antwika_test_pch.cpp")
+
+    target_link_libraries(antwika_test_pch PRIVATE gtest::gtest)
+
+    target_precompile_headers(antwika_test_pch
+        PRIVATE
+            <gmock/gmock.h>
+            <gtest/gtest.h>
+    )
+endif()
+
 add_subdirectory(src)
 add_subdirectory(backends)
 
@@ -111,6 +131,57 @@ antwika_collect_executables("${CMAKE_CURRENT_SOURCE_DIR}"
     ANTWIKA_EXECUTABLE_TARGETS)
 
 list(SORT ANTWIKA_EXECUTABLE_TARGETS)
+
+# <gtest/gtest.h> and <gmock/gmock.h> cost about a second to parse, and
+# 273 of this project's 490 translation units are tests -- roughly a
+# fifth of a clean build spent on the same two headers.
+# Unlike a unity build this moves no symbol between translation units,
+# so nothing about what compiles or what a test asserts changes.
+#
+# REUSE_FROM rather than a header per target, because the 24 test
+# targets average eleven translation units each and building a
+# precompiled header costs about what eleven of them save.
+# Giving each target its own was measured at 24.4 CPU-minutes against
+# 24.6 without any -- a wash -- so the saving only exists if the header
+# is built once and every target shares it.
+#
+# It is applied here, from the list of targets CMake already collected,
+# rather than by 24 identical edits to the tests/CMakeLists.txt files
+# with nothing checking that none was missed -- the same reasoning
+# cmake/AntwikaModule.cmake opens with.
+foreach(target IN LISTS ANTWIKA_EXECUTABLE_TARGETS)
+    if(TARGET antwika_test_pch AND target MATCHES "_tests$")
+        target_precompile_headers(${target} REUSE_FROM antwika_test_pch)
+
+        # A test target compiles the application sources it covers, and
+        # a precompiled header is force-included into every source of a
+        # target rather than into the ones that wanted it.
+        # Letting it reach those would put <gmock/gmock.h> ahead of
+        # application code that the app itself builds without it, which
+        # is a different translation unit from the one that ships -- and
+        # it is not theoretical: doing so moved
+        # apps/poker/src/TablePrinter.cpp from 255 covered branches to
+        # 253, so the coverage gate would have been reporting on code
+        # GoogleTest had helped compile.
+        # A target's own directory is its tests/, so anything outside it
+        # is application source and opts out.
+        get_target_property(target_directory ${target} SOURCE_DIR)
+        get_target_property(target_sources ${target} SOURCES)
+
+        foreach(source IN LISTS target_sources)
+            get_filename_component(resolved "${source}" REALPATH
+                BASE_DIR "${target_directory}")
+
+            string(FIND "${resolved}" "${target_directory}/" inside)
+
+            if(NOT inside EQUAL 0)
+                set_source_files_properties("${source}"
+                    TARGET_DIRECTORY ${target}
+                    PROPERTIES SKIP_PRECOMPILE_HEADERS ON)
+            endif()
+        endforeach()
+    endif()
+endforeach()
 
 set(ANTWIKA_EXECUTABLE_PATHS "")
 

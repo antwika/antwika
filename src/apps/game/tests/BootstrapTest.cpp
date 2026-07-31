@@ -22,6 +22,8 @@
 #include <antwika/replay/EngineLoopError.hpp>
 #include <antwika/replay/ReplaySource.hpp>
 
+#include "WidgetPixel.hpp"
+
 #include "antwika/game/AppMode.hpp"
 #include "antwika/game/Camera.hpp"
 #include "antwika/game/Events.hpp"
@@ -357,28 +359,16 @@ namespace
     {
         const antwika::game::MainMenuScene scene;
 
-        for (std::int32_t y = 0;
-             y < static_cast<std::int32_t>(antwika::game::kUiCanvas.height);
-             y += 2)
-        {
-            for (std::int32_t x = 0;
-                 x
-                 < static_cast<std::int32_t>(antwika::game::kUiCanvas.width);
-                 x += 2)
-            {
-                const antwika::ui::Pointer pointer{
-                    .position = antwika::gfx::Point{.x = x, .y = y}};
+        const auto centre = antwika::game::tests::widgetCentre(
+            scene.describe(antwika::game::kUiCanvas, antwika::ui::Pointer{}),
+            id);
 
-                if (scene.describe(antwika::game::kUiCanvas, pointer)
-                        .interactions.hovered
-                    == id)
-                {
-                    return antwika::input::Position{.x = x, .y = y};
-                }
-            }
+        if (!centre.has_value())
+        {
+            return antwika::input::Position{};
         }
 
-        return antwika::input::Position{};
+        return antwika::input::Position{.x = centre->x, .y = centre->y};
     }
 
     struct MenuHarness

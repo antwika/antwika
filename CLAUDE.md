@@ -104,11 +104,18 @@ A real backend needs a display, so use `SDL_VIDEODRIVER=dummy` or `xvfb-run` wit
 ```sh
 cmake --preset conan-coverage
 cmake --build build-coverage -j24
-ctest --test-dir build-coverage
+ctest --test-dir build-coverage -j"$(nproc)"
 gcovr --root . --filter 'src/.*' --exclude '.*/tests/.*' --print-summary build-coverage
 ```
 
 CI requires 100% line/function/branch coverage on the GNU leg (`scripts/check_full_coverage.py`); see [`docs/confirming-unreachable-branches.md`](docs/confirming-unreachable-branches.md) before excluding any line with `GCOVR_EXCL_LINE`.
+Instrumented tests contend on the `.gcda` writes, so `-j` scales sublinearly, but the totals it reports are identical to a serial run's.
+
+**Three things keep that step from getting slow again, and each is load-bearing.**
+The coverage build is `-O0`, which is 20x slower than the release build at everything, so a test that repeats expensive work pays 20x for it -- `-Og` is not the escape, because inlining merges functions and rewrites branches and takes the gate from 100% to 92.4%.
+So a wide soak belongs in an optimised build, as `LevelGeneratorTest`'s does.
+A test looking for where a widget ended up asks `ui::Frame::rects`, never a sweep over the canvas re-running `describe()` per pixel -- `src/apps/game/tests/WidgetPixel.hpp` is the one helper for it, and the sweep it replaced was 163,840 layouts per lookup and 48 seconds of one fixture.
+Test targets share one precompiled header, built once and reused (`REUSE_FROM` at the bottom of the root `CMakeLists.txt`), because a header per target costs about what it saves; it is scoped off the application sources a test target compiles, since force-including `<gmock/gmock.h>` into those changes the code the gate is measuring.
 
 **Checker scripts** (all enforced in CI, all runnable locally the same way):
 
@@ -208,7 +215,10 @@ Each module (lib or app) owns its own `CMakeLists.txt`, `include/`, `src/`, and 
   The tile alphabet in `LevelTile.hpp` has no symbol open on more than two sides, so a T-junction or a crossroads is not expressible.
   Exactly one `Start` and one `End` are allowed anywhere in the wave and both are pinned to a border cell, so the solution is a union of simple cycles plus exactly one simple path whose two ends are the only degree-one cells -- walking out of `Start` therefore always arrives at `End`.
   Any cell the walk misses is a stray cycle, which `generateLevel()` erases rather than rejects, so generation never reseeds for the sake of linearity.
-  `LevelGeneratorTest` asserts that property over forty seeds.
+  `LevelGeneratorTest` asserts that property over forty seeds -- but only in an optimised build, because generating one level costs ~2.9s under the coverage build's `-O0` against ~0.14s at `-O2`, and forty of them was a third of the entire CI test step.
+  `src/apps/tower_defence/tests/CMakeLists.txt` sets the two seed counts from `ENABLE_COVERAGE`: eight seeds under instrumentation, which is measured to reach every line, function and branch of the generator, and forty otherwise.
+  CI runs the wide sweep in the GNU leg's "Soak the level generator" step, which builds that one target against `conan-release`.
+  So the coverage legs prove the coverage and an optimised build proves the property, and neither pays for the other.
   Wall columns with one gap each keep the grid connected while forcing the path to weave, and `Tile::Empty` is symbol 0 because `wfc::Solver` tries candidates in ascending order.
   A tight per-attempt step budget with many reseeds beat one large budget by roughly twenty times: a hard seed is cheaper to abandon than to grind out.
   `td::Battle` is the simulation -- integer throughout, no clock and no global generator, so it is a pure function of the tick count and the state.

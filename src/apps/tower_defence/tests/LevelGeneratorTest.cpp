@@ -22,10 +22,26 @@ using antwika::tower_defence::openSides;
 using antwika::tower_defence::Side;
 using antwika::tower_defence::Tile;
 
+// Both counts are chosen by tests/CMakeLists.txt.
+// A build naming neither gets the wide sweep, not the cheap one.
+#ifndef ANTWIKA_LEVEL_SEED_COUNT
+#define ANTWIKA_LEVEL_SEED_COUNT 40
+#endif
+
+#ifndef ANTWIKA_LEVEL_PROPERTY_SEED_COUNT
+#define ANTWIKA_LEVEL_PROPERTY_SEED_COUNT 40
+#endif
+
 namespace
 {
     // How many seeds the linearity property is asserted over.
-    constexpr std::uint64_t kSeedCount = 40;
+    constexpr std::uint64_t kSeedCount = ANTWIKA_LEVEL_SEED_COUNT;
+
+    // What a case reading some other property off a level takes.
+    // The soak above is what reaches every branch of the generator.
+    // So these state their assertion and leave the width to it.
+    constexpr std::uint64_t kPropertySeedCount =
+        ANTWIKA_LEVEL_PROPERTY_SEED_COUNT;
 
     bool adjacent(const Cell &left, const Cell &right)
     {
@@ -100,7 +116,7 @@ namespace
 
     TEST(LevelGeneratorTest, EveryOpenSideMeetsAnOpenSide)
     {
-        for (std::uint64_t seed = 0; seed < 8; ++seed)
+        for (std::uint64_t seed = 0; seed < kPropertySeedCount; ++seed)
         {
             const Level level = generateLevel({.seed = seed});
             for (const Cell &cell : level.path)
@@ -148,7 +164,7 @@ namespace
     {
         const std::vector<Cell> reference = generateLevel({.seed = 0}).path;
         bool sawADifferentPath = false;
-        for (std::uint64_t seed = 1; seed < 8; ++seed)
+        for (std::uint64_t seed = 1; seed < kPropertySeedCount; ++seed)
         {
             sawADifferentPath = sawADifferentPath
                 || generateLevel({.seed = seed}).path != reference;
@@ -172,7 +188,7 @@ namespace
     // The walk out of Start need not be able to reach that row.
     TEST(LevelGeneratorTest, TheEndColumnIsNeverWalled)
     {
-        for (std::uint64_t seed = 0; seed < 8; ++seed)
+        for (std::uint64_t seed = 0; seed < kPropertySeedCount; ++seed)
         {
             const Level level = generateLevel(
                 {.width = 7, .height = 5, .seed = seed});

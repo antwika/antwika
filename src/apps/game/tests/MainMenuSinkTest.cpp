@@ -15,6 +15,8 @@
 #include <antwika/ui/Pointer.hpp>
 #include <antwika/ui/WidgetId.hpp>
 
+#include "WidgetPixel.hpp"
+
 #include "antwika/game/AppMode.hpp"
 #include "antwika/game/InputFold.hpp"
 #include "antwika/game/MainMenuScene.hpp"
@@ -30,6 +32,7 @@ using antwika::game::InputFold;
 using antwika::game::MainMenuScene;
 using antwika::game::MainMenuSink;
 using antwika::game::UiOverlay;
+using antwika::game::tests::widgetCentre;
 using antwika::gfx::Point;
 using antwika::gfx::Size;
 using antwika::input::InputEvent;
@@ -53,29 +56,18 @@ namespace
     {
     protected:
         // Where an item is, is the layout's business.
-        // So a test looks for a pixel that hits the one it means.
+        // So a test asks the layout for the one it means.
         [[nodiscard]] Position pixelOn(WidgetId id) const
         {
-            for (std::int32_t y = 0;
-                 y < static_cast<std::int32_t>(kCanvas.height);
-                 y += 4)
-            {
-                for (std::int32_t x = 0;
-                     x < static_cast<std::int32_t>(kCanvas.width);
-                     x += 4)
-                {
-                    const Pointer pointer{.position = Point{.x = x, .y = y}};
+            const auto centre =
+                widgetCentre(scene.describe(kCanvas, Pointer{}), id);
 
-                    if (scene.describe(kCanvas, pointer)
-                            .interactions.hovered
-                        == id)
-                    {
-                        return Position{.x = x, .y = y};
-                    }
-                }
+            if (!centre.has_value())
+            {
+                return Position{};
             }
 
-            return Position{};
+            return Position{.x = centre->x, .y = centre->y};
         }
 
         // Through the fold first, as bootstrap() registers it.
