@@ -28,10 +28,14 @@ namespace antwika::ui::detail
      * index, which is declaration order, so Tab goes down the layout in
      * the order it was written and wraps round at the end.
      *
-     * The two are made to agree rather than left to disagree. A pointer
-     * press moves focus to whatever it activated, so tabbing on from a
-     * clicked button carries on from there rather than from wherever the
-     * keyboard happened to be left.
+     * The two are made to agree rather than left to disagree, but only
+     * once focus is in play at all -- meaning the caller passed some in
+     * or sent a key. A pointer press then moves focus to whatever it
+     * activated, so tabbing on from a clicked button carries on from
+     * there rather than from wherever the keyboard was left.
+     *
+     * A caller using the pointer alone never has focus in play, and so
+     * draws exactly what it drew before any of this existed.
      *
      * @param tree The arranged arena; every styled node's background and
      * the focused node's border are written.

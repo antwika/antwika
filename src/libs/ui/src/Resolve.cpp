@@ -166,10 +166,14 @@ namespace antwika::ui::detail
             interactions.activated = interactions.hovered;
         }
 
-        // The pointer takes focus along with it.
+        // Focus is in play once the caller has some or sends a key.
+        // Only then does the pointer take focus along with it.
         // So tabbing on carries on from the button that was clicked.
-        // Otherwise the ring and the keystrokes would drift apart.
-        if (interactions.activated != kNoWidget)
+        // A caller using the pointer alone is left exactly as it was.
+        const bool focusInPlay =
+            focus != kNoWidget || !keyboard.keys.empty();
+
+        if (focusInPlay && interactions.activated != kNoWidget)
         {
             focus = interactions.activated;
         }

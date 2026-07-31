@@ -225,6 +225,32 @@ TEST(ResolveFocusTest, Resolve_MovesFocusToWhatThePointerActivated)
     EXPECT_EQ(kThird, interactions.focused);
 }
 
+// A caller using the pointer alone never has focus in play.
+// So it draws exactly what it drew before any of this existed.
+TEST(ResolveFocusTest, Resolve_LeavesAPointerOnlyCallerWithoutFocus)
+{
+    auto tree = threeButtons();
+
+    const auto interactions = resolve(
+        tree, Pointer{.position = kInside, .pressed = true});
+
+    EXPECT_EQ(kThird, interactions.activated);
+    EXPECT_EQ(kNoWidget, interactions.focused);
+}
+
+// A key is enough to put focus in play, even with nothing focused yet.
+TEST(ResolveFocusTest, Resolve_MovesFocusOnAPressOnceAKeyHasArrived)
+{
+    auto tree = threeButtons();
+
+    const auto interactions = resolve(
+        tree,
+        Pointer{.position = kInside, .pressed = true},
+        Keyboard{.keys = {Key::Activate}});
+
+    EXPECT_EQ(kThird, interactions.focused);
+}
+
 TEST(ResolveFocusTest, Resolve_LeavesFocusAloneWhenNothingIsPressed)
 {
     auto tree = threeButtons();
