@@ -111,6 +111,7 @@ build/bin/antwika_gfx3d_demo/antwika_gfx3d_demo          # spinning cube, 900 fr
 build/bin/antwika_sound_demo/antwika_sound_demo          # eight notes; silent under null
 build/bin/antwika_sound_demo/antwika_sound_demo my.wav   # or play a file instead
 build/bin/antwika_tower_defence/antwika_tower_defence    # or --record / --replay
+build/bin/antwika_ui_demo/antwika_ui_demo                # every antwika::ui element, 1500 ticks
 ```
 
 **Every application gets a directory of its own under `bin/`**, holding the executable, whatever it opens and -- on MinGW -- the runtime DLLs it needs to start, all put there by `antwika_bundle_app()` in [`cmake/AntwikaModule.cmake`](cmake/AntwikaModule.cmake).
