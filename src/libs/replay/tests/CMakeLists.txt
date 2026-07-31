@@ -4,6 +4,7 @@ add_executable(antwika_replay_tests
     CommandLineTest.cpp
     EngineLoopTest.cpp
     EventJsonTest.cpp
+    MigrationChainTest.cpp
     ReplayCliTest.cpp
     ReplayDeterminismTest.cpp
     ReplayDocumentTest.cpp

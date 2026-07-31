@@ -151,11 +151,12 @@ TEST(SchemaVersionTest, ANewerVersionIsRefusedAndNamed)
     {
         const std::string message = error.what();
         EXPECT_NE(message.find("version 2"), std::string::npos);
-        EXPECT_NE(message.find("reads version 1"), std::string::npos);
+        EXPECT_NE(
+            message.find("up to version 1"), std::string::npos);
     }
 }
 
-TEST(SchemaVersionTest, AnOlderVersionThisBuildDroppedIsRefused)
+TEST(SchemaVersionTest, AVersionNoMigrationReachesCurrentFromIsRefused)
 {
     std::istringstream in(replayText(R"("version":0,)"));
     EXPECT_THROW(

@@ -3,15 +3,11 @@
 #include <nlohmann/json.hpp>
 
 #include <format>
-#include <string>
 #include <utility>
 
 #include <antwika/log/Level.hpp>
 #include <antwika/replay/ReplayFormatError.hpp>
 #include <antwika/replay/ReplayJson.hpp>
-#include <antwika/replay/SchemaVersion.hpp>
-#include <antwika/replay/SchemaVersionError.hpp>
-
 namespace antwika::replay
 {
 
@@ -48,37 +44,11 @@ namespace antwika::replay
                     check.canvas->width,
                     check.canvas->height));
         }
-
-        // The version is read before anything else is looked at.
-        // A document from a newer build may parse and may validate.
-        // It can still mean something else entirely.
-        // So "which revision is this" has to be answered first.
-        void bringToCurrentVersion(nlohmann::json &parsed)
-        {
-            if (!parsed.is_object())
-            {
-                return; // The schema refuses it, and says why better.
-            }
-
-            const auto version = documentVersion(parsed);
-            if (version != kReplayDocumentVersion)
-            {
-                throw SchemaVersionError(std::format(
-                    "antwika::replay: this replay states schema version "
-                    "{}, and this build reads version {}",
-                    version,
-                    kReplayDocumentVersion));
-            }
-
-            // A document with no version member is version 1.
-            // Stamping it here is what lets the schema require one.
-            parsed[std::string(kSchemaVersionKey)] =
-                kReplayDocumentVersion;
-        }
     } // namespace
 
-    ReplayReader::ReplayReader(CanvasCheck check) noexcept
-        : check(std::move(check))
+    ReplayReader::ReplayReader(
+        CanvasCheck check, MigrationChain migrations)
+        : check(std::move(check)), migrations(std::move(migrations))
     {
     }
 
@@ -96,7 +66,7 @@ namespace antwika::replay
                 "JSON)");
         }
 
-        bringToCurrentVersion(parsed);
+        migrations.migrate(parsed);
 
         ReplayDocument document = replayFromJson(parsed);
         warnIfCanvasDiffers(check, document);
