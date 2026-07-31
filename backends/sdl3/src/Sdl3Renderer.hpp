@@ -143,6 +143,23 @@ namespace antwika::gfx::sdl3
         void forgetTexture(const Sdl3Texture &texture) noexcept;
 
     private:
+        /**
+         * @brief Set the colour to draw in and how to combine it.
+         *
+         * SDL's draw blend mode starts at SDL_BLENDMODE_NONE, which
+         * writes a colour's channels straight over the destination and
+         * its alpha with them.
+         * A gfx::Color is documented as straight, non-premultiplied
+         * alpha, and every other backend blends, so an alpha below 255
+         * has to mean the same thing here.
+         * It is named on every call rather than once at construction,
+         * because clear() is the one call that must not blend.
+         * @param color The colour to draw in.
+         * @param blend How to combine it with what is already drawn.
+         * @return False when SDL declined either, having warned.
+         */
+        [[nodiscard]] bool setDrawColor(Color color, SDL_BlendMode blend);
+
         ILogger &logger;
         SDL_Renderer *renderer;
 
