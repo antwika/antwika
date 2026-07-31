@@ -6,9 +6,14 @@
 #include <vector>
 
 #include <antwika/gfx/Bitmap.hpp>
+#include <antwika/gfx/Camera3D.hpp>
 #include <antwika/gfx/Color.hpp>
+#include <antwika/gfx/IMesh.hpp>
 #include <antwika/gfx/IRenderer.hpp>
+#include <antwika/gfx/IRenderer3D.hpp>
 #include <antwika/gfx/ITexture.hpp>
+#include <antwika/gfx/Math3D.hpp>
+#include <antwika/gfx/MeshData.hpp>
 #include <antwika/gfx/Point.hpp>
 #include <antwika/gfx/Rect.hpp>
 
@@ -16,27 +21,50 @@ namespace antwika::gfx::raylib
 {
 
     // Forward-declared rather than included.
-    // Its header names a raylib type, and raylib's are global.
+    // Their headers name raylib types, and raylib's are global.
+    class RaylibMaterial;
+    class RaylibMesh;
     class RaylibTexture;
 
     /**
-     * @brief Draws into raylib's one window.
+     * @brief Draws into raylib's one window, in two dimensions and in
+     * three.
      *
      * raylib wants drawing bracketed by BeginDrawing/EndDrawing, which
      * IRenderer has no equivalent of. The bracket is opened lazily by the
      * first drawing call and closed by present(), so callers keep the
      * clear/draw/present shape every other backend uses.
+     *
+     * The 3D half is this same object, as the null backend's is, because
+     * both halves draw into one frame through one lazily-opened bracket:
+     * two objects would each have to know when the other had opened it.
      */
-    class RaylibRenderer final : public IRenderer
+    class RaylibRenderer final
+        : public IRenderer
+        , public IRenderer3D
     {
     public:
-        RaylibRenderer() = default;
+        /**
+         * @brief Construct a renderer with nothing loaded.
+         *
+         * Declared here and defined in the implementation file, for the
+         * reason the destructor is.
+         */
+        RaylibRenderer();
 
         RaylibRenderer(const RaylibRenderer &) = delete;
         RaylibRenderer(RaylibRenderer &&) = delete;
 
         RaylibRenderer &operator=(const RaylibRenderer &) = delete;
         RaylibRenderer &operator=(RaylibRenderer &&) = delete;
+
+        /**
+         * @brief Release the material, if detach() has not already.
+         *
+         * Declared here and defined in the implementation file, because
+         * the material is held through a pointer to an incomplete type.
+         */
+        ~RaylibRenderer() override;
 
         /**
          * @brief Fill the whole drawable area with one colour.
@@ -112,6 +140,46 @@ namespace antwika::gfx::raylib
             Color tint) override;
 
         /**
+         * @brief Offer this renderer's 3D half.
+         * @return This renderer, which is also an IRenderer3D.
+         */
+        [[nodiscard]] IRenderer3D *renderer3d() override;
+
+        /**
+         * @brief Upload an indexed triangle list as a raylib mesh.
+         *
+         * raylib indexes a mesh with 16-bit indices, so a mesh with more
+         * vertices than one of those can address is refused rather than
+         * silently wrapped around.
+         * That is a limit of this backend and not of MeshData, which
+         * says 32 bits, so it is reported as the failure it is.
+         * @param mesh The geometry to upload.
+         * @return The new mesh, never null.
+         * @throws GfxError If the data is not complete, if it holds more
+         * vertices than a 16-bit index can address, if the window has
+         * closed, or if raylib could not hold the geometry.
+         */
+        [[nodiscard]] std::unique_ptr<IMesh> createMesh(
+            const MeshData &mesh) override;
+
+        /**
+         * @brief Draw a mesh through a camera.
+         *
+         * Declines a mesh this renderer did not create, exactly as
+         * drawTexture() declines a foreign texture and for the same
+         * reason.
+         * @param mesh The geometry to draw.
+         * @param model Takes the mesh's own space to world space.
+         * @param camera Takes world space to clip space.
+         * @param tint Multiplied into every vertex colour.
+         */
+        void drawMesh(
+            const IMesh &mesh,
+            const Mat4 &model,
+            const Camera3D &camera,
+            Color tint) override;
+
+        /**
          * @brief Close the drawing bracket, presenting the frame.
          */
         void present() override;
@@ -119,8 +187,9 @@ namespace antwika::gfx::raylib
         /**
          * @brief Close any open bracket before the window goes away.
          *
-         * Unloads every live texture first, because raylib frees one
-         * through the GL context CloseWindow() destroys.
+         * Unloads every live texture and mesh first, and releases the
+         * material, because raylib frees each of them through the GL
+         * context CloseWindow() destroys.
          */
         void detach();
 
@@ -137,6 +206,19 @@ namespace antwika::gfx::raylib
          */
         void forgetTexture(const RaylibTexture &texture) noexcept;
 
+        /**
+         * @brief Start tracking a mesh created by this renderer.
+         * @param mesh The mesh, which must call forgetMesh() before it
+         * is destroyed.
+         */
+        void rememberMesh(RaylibMesh &mesh);
+
+        /**
+         * @brief Stop tracking a mesh that is destroying itself.
+         * @param mesh The mesh; one never tracked is ignored.
+         */
+        void forgetMesh(const RaylibMesh &mesh) noexcept;
+
     private:
         void beginIfNeeded();
 
@@ -146,6 +228,13 @@ namespace antwika::gfx::raylib
         // Not owned: each texture owns itself and deregisters here.
         // Only how detach() reaches them while the context lives.
         std::vector<RaylibTexture *> liveTextures;
+
+        // Meshes are tracked the same way, and for the same reason.
+        std::vector<RaylibMesh *> liveMeshes;
+
+        // Loaded on the first mesh drawn, not at construction.
+        // A renderer exists before its window's GL context does.
+        std::unique_ptr<RaylibMaterial> material;
     };
 
 } // namespace antwika::gfx::raylib
