@@ -45,9 +45,30 @@ namespace antwika::game
      * | Gesture | Effect |
      * | --- | --- |
      * | left press | place the selected tool's thing at the clicked cell |
-     * | right press | place a walker, only if that cell has a path |
+     * | right press | leave build mode, or place a walker -- see below |
      * | middle drag | pan the camera |
      * | scroll | zoom, keeping the cell under the cursor put |
+     *
+     * **A right press means one of two things, and the palette decides
+     * which.** While a building tool is selected it cancels: the palette
+     * goes back to BuildTool::Road and nothing is placed by that press.
+     * Otherwise -- which is to say with the road tool selected, the tool
+     * a session starts with and the one a cancel returns to -- it drops
+     * a walker on the path under the pointer, exactly as it always did.
+     *
+     * That split is what reconciles two claims on one button rather than
+     * letting either silently replace the other, and Road is "normal
+     * play" because it is the state a fresh session holds and the state
+     * a cancel returns to, so cancelling twice is cancelling once and
+     * the palette is never left showing a tool no button holds down.
+     * A right press the toolbar covers cancels nothing, since what the
+     * bar covers it covers from the grid.
+     *
+     * **Leaving build mode follows the rule placing follows, so it is
+     * no more an event than laying a tile is.** What a recording holds is
+     * the right press; a replay resolves it against the same selection
+     * and arrives at the same one, exactly as a palette press is
+     * regenerated rather than stored -- see UiOverlay and Events.hpp.
      *
      * A press the toolbar is under never reaches the grid: what the UI
      * covers, it covers from the world too -- see UiOverlay. A movement
@@ -91,7 +112,9 @@ namespace antwika::game
          * @param scheduler Run once per tick, after the commit.
          * @param input The folded input, holding the event being
          * handled; must be registered ahead of this sink.
-         * @param overlay Asked whether a click was the toolbar's.
+         * @param overlay Asked whether a click was the toolbar's, and
+         * which tool is selected; a right press puts the road tool back
+         * into it, which is the one thing this sink writes there.
          * @param cities Asked whether a city is open at all; nothing is
          * placed, panned or zoomed while none is.
          */
@@ -102,7 +125,7 @@ namespace antwika::game
             GridExtent extent,
             SystemScheduler &scheduler,
             const InputFold &input,
-            const UiOverlay &overlay,
+            UiOverlay &overlay,
             const WorldMapState &cities,
             BuildingIndex &built);
 
@@ -124,6 +147,7 @@ namespace antwika::game
         void place(Cell cell, BuildTool tool);
         void placePath(Cell cell);
         void placeBuilding(Cell cell, BuildingKind kind);
+        void cancelToolOrPlaceWalker(Cell cell);
         void placeWalker(Cell cell);
         void act(const antwika::input::InputEvent &event);
 
@@ -133,7 +157,7 @@ namespace antwika::game
         GridExtent extent;
         SystemScheduler &scheduler;
         const InputFold &input;
-        const UiOverlay &overlay;
+        UiOverlay &overlay;
         const WorldMapState &cities;
 
         // Which cells already hold a building.

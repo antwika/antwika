@@ -53,6 +53,7 @@ add_executable(antwika_game_tests
     DirectionTest.cpp
     GameStateReducerTest.cpp
     GameStateTest.cpp
+    FootprintOutlineTest.cpp
     FootprintTest.cpp
     GameTest.cpp
     GridExtentTest.cpp
