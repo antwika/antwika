@@ -181,7 +181,11 @@ namespace antwika::tower_defence
                 }
             }
             return table;
-        }
+            // The closing brace carries an unwind landing pad.
+            // It destroys the local CompatibilityTable's vector.
+            // Nothing between its construction and the return throws.
+            // So gcov reports the call never executed, always.
+        } // GCOVR_EXCL_LINE
 
         std::vector<AdjacencyConstraint> buildConstraints(
             const LevelConfig &config,
@@ -219,7 +223,9 @@ namespace antwika::tower_defence
                 }
             }
             return constraints;
-        }
+            // Same unwind landing pad as buildCompatibility() above.
+            // Here it is for the local vector of constraints.
+        } // GCOVR_EXCL_LINE
 
         // Walk out of Start and keep going.
         // Every tile has at most two open sides.
@@ -238,12 +244,15 @@ namespace antwika::tower_defence
                 solved.push_back(tileFromSymbol(value));
             }
 
+            // The last initialiser carries an unwind branch.
+            // It destroys the tiles vector if the aggregate throws.
+            // Only an allocation failure can take it.
             Level level{
                 .width = config.width,
                 .height = config.height,
                 .tiles = std::vector<Tile>(
                     assignment.size(), Tile::Empty),
-                .path = {}};
+                .path = {}}; // GCOVR_EXCL_LINE
 
             Cell current = layout.start;
             std::uint8_t entryMask = 0;

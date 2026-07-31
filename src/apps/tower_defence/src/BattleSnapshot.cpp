@@ -5,13 +5,17 @@ namespace antwika::tower_defence
 
     BattleSnapshot snapshotOf(const Battle &battle)
     {
+        // The last initialiser carries the unwind branches.
+        // They destroy the level copy and the two vectors.
+        // Only an aggregate throwing part-built reaches them.
+        // So only an allocation failure can take them.
         BattleSnapshot snapshot{
             .level = battle.level(),
             .mobs = {},
             .towers = {},
             .towerRangeSquared = battle.settings().towerRangeSquared,
             .score = battle.score(),
-            .leaks = battle.leaks()};
+            .leaks = battle.leaks()}; // GCOVR_EXCL_LINE
 
         snapshot.mobs.reserve(battle.mobs().size());
         for (const Mob &mob : battle.mobs())
@@ -26,7 +30,9 @@ namespace antwika::tower_defence
         }
 
         return snapshot;
-    }
+        // The closing brace is the local snapshot's landing pad.
+        // Nothing above it throws.
+    } // GCOVR_EXCL_LINE
 
     std::uint32_t rangeRadius(const std::uint32_t rangeSquared)
     {

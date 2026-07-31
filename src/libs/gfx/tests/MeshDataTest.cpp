@@ -1,9 +1,12 @@
 #include <gtest/gtest.h>
 
+#include "antwika/gfx/Color.hpp"
 #include "antwika/gfx/Math3D.hpp"
 #include "antwika/gfx/MeshData.hpp"
 
+using antwika::gfx::Color;
 using antwika::gfx::MeshData;
+using antwika::gfx::Vec2;
 using antwika::gfx::Vec3;
 using antwika::gfx::Vertex3D;
 
@@ -20,6 +23,9 @@ namespace
     }
 } // namespace
 
+// A defaulted operator== stops at the first field that differs.
+// So each one has to be asked about on its own.
+// Otherwise the name of this test is not true of it.
 TEST(Vertex3DTest, Equality_ComparesEveryField)
 {
     const Vertex3D left;
@@ -27,8 +33,20 @@ TEST(Vertex3DTest, Equality_ComparesEveryField)
 
     EXPECT_EQ(left, right);
 
+    right = left;
     right.position = Vec3{1.0F, 0.0F, 0.0F};
+    EXPECT_NE(left, right);
 
+    right = left;
+    right.normal = Vec3{0.0F, 1.0F, 0.0F};
+    EXPECT_NE(left, right);
+
+    right = left;
+    right.texCoord = Vec2{1.0F, 0.0F};
+    EXPECT_NE(left, right);
+
+    right = left;
+    right.color = Color{0, 0, 0, 255};
     EXPECT_NE(left, right);
 }
 

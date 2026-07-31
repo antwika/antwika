@@ -235,7 +235,11 @@ namespace antwika::poker
         const auto height = destination.size.height;
         const auto glyph = width / 2;
 
-        art.push_back(ArtBlit{
+        // gcov attributes one block to the line below.
+        // It is the unwind cleanup for the temporary being pushed.
+        // gcov marks it unreachable itself, as $$$$$ under `gcov -a`.
+        // Every other line of this statement runs per face-up card.
+        art.push_back(ArtBlit{ // GCOVR_EXCL_LINE
             .source = rankSourceOf(card),
             .destination = Rect{
                 .origin = {
@@ -408,7 +412,9 @@ namespace antwika::poker
         appendSeats(art, canvas, snapshot, metrics);
 
         return art;
-    }
+        // The closing brace is the local vector's landing pad.
+        // Nothing between its construction and the return throws.
+    } // GCOVR_EXCL_LINE
 
     Frame TableScene::describe(
         Size canvas, const TableSnapshot &snapshot) const

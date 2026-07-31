@@ -32,6 +32,9 @@ namespace
     }
 } // namespace
 
+// A defaulted operator== stops at the first field that differs.
+// So each one has to be asked about on its own.
+// Otherwise the name of this test is not true of it.
 TEST(PerspectiveTest, Equality_ComparesEveryField)
 {
     const Perspective left;
@@ -39,8 +42,20 @@ TEST(PerspectiveTest, Equality_ComparesEveryField)
 
     EXPECT_EQ(left, right);
 
+    right = left;
     right.fovYRadians = kQuarterTurn;
+    EXPECT_NE(left, right);
 
+    right = left;
+    right.aspectRatio = 2.0F;
+    EXPECT_NE(left, right);
+
+    right = left;
+    right.nearPlane = 0.5F;
+    EXPECT_NE(left, right);
+
+    right = left;
+    right.farPlane = 200.0F;
     EXPECT_NE(left, right);
 }
 
@@ -51,8 +66,20 @@ TEST(OrthographicTest, Equality_ComparesEveryField)
 
     EXPECT_EQ(left, right);
 
+    right = left;
     right.halfWidth = 2.0F;
+    EXPECT_NE(left, right);
 
+    right = left;
+    right.halfHeight = 2.0F;
+    EXPECT_NE(left, right);
+
+    right = left;
+    right.nearPlane = -50.0F;
+    EXPECT_NE(left, right);
+
+    right = left;
+    right.farPlane = 200.0F;
     EXPECT_NE(left, right);
 }
 
