@@ -107,8 +107,18 @@ namespace antwika::game
         // Worked out here rather than in a sink, for the ghost's reason.
         // No replay reproduces a hint.
         // So nothing folded from one may reach what a replay does.
+        // See docs/confirming-unreachable-branches.md, signature (b).
+        // The marker below is the unwind landing pad of hoverFor().
+        // gcov -b reports it as "call 0 never executed".
+        // Every other line of this statement runs once per drawGrid().
+        // Nothing branches between them, so no test can part them.
+        // The real forRenderingOnly() call is attributed to "latest,".
+        // Which is an argument line holding no call at all.
+        // ghostFor() above has the very same landing pad.
+        // There it shares a line with a call that did run.
+        // So it costs a line here and none there.
         latest.hover = hoverFor(
-            setup.hint.forRenderingOnly(),
+            setup.hint.forRenderingOnly(), // GCOVR_EXCL_LINE
             setup.camera,
             latest,
             setup.overlay.pointerOverUi());
