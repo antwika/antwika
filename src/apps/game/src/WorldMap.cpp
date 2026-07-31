@@ -26,21 +26,21 @@ namespace antwika::game
     namespace
     {
         // How far apart the seeded anchors sit, in cells.
-        // Also how many ladder steps two neighbouring anchors may
-        // differ by, which is the same number for a reason: a partial
-        // assignment on a grid extends to a whole one exactly when no
-        // two pinned cells differ by more than the distance between
-        // them, so pinning at distance N and within N keeps the wave
-        // satisfiable whatever the seed picks.
+        // Also how many ladder steps two of them may differ by.
+        // That is the same number for a reason.
+        // A partial assignment on a grid extends to a whole one.
+        // Only when no pinned pair differs by more than its gap.
+        // So pinning at distance N and within N is always solvable.
         constexpr std::uint32_t kAnchorSpacing = 2;
         constexpr std::int64_t kAnchorReach = kAnchorSpacing;
 
         constexpr std::uint32_t kMinimumSide = 4;
 
-        // splitmix64, so the seed is mixed by shifts and multiplies
-        // that behave identically on every target.
-        // Deliberately not <random>: its engines are portable but its
-        // distributions are not, and rand() is out of the question.
+        // splitmix64: shifts and multiplies, and nothing else.
+        // Those behave identically on every target.
+        // Deliberately not <random>.
+        // Its engines are portable but its distributions are not.
+        // rand() is out of the question for the same reason.
         std::uint64_t nextRandom(std::uint64_t &state)
         {
             state += 0x9E3779B97F4A7C15ULL;
@@ -50,8 +50,8 @@ namespace antwika::game
             return z ^ (z >> 31);
         }
 
-        // The one adjacency rule: neighbours differ by at most one
-        // step along Terrain.hpp's elevation ladder.
+        // The one adjacency rule.
+        // Neighbours differ by at most one ladder step.
         CompatibilityTable ladderTable()
         {
             CompatibilityTable table(kTerrainCount);
@@ -94,10 +94,10 @@ namespace antwika::game
             return constraints;
         } // GCOVR_EXCL_LINE
 
-        // How good a land cell is to build a city on, most significant
-        // first: land neighbours, then nearness to plains.
-        // Both are small integers, so no ordering here can depend on a
-        // floating-point comparison.
+        // How good a land cell is to build a city on.
+        // Land neighbours first, then nearness to plains.
+        // Both are small integers.
+        // So no ordering here can depend on a float comparison.
         struct Candidate
         {
             bool has = false;
@@ -147,8 +147,8 @@ namespace antwika::game
             return count;
         }
 
-        // Distance from plains along the ladder, so plains beats
-        // forest beats hills beats mountain.
+        // Distance from plains along the ladder.
+        // So plains beats forest beats hills beats mountain.
         std::size_t plainsRank(Terrain terrain)
         {
             const std::size_t symbol = symbolOf(terrain);
@@ -343,9 +343,9 @@ namespace antwika::game
                 "World map has too little land to seat four cities");
         }
 
-        // A quadrant that came up all water still owes a city, so it
-        // takes the best land cell nobody has claimed.
-        // The land count above is what makes this always find one.
+        // A quadrant that came up all water still owes a city.
+        // It takes the best land cell nobody has claimed.
+        // The land count above is what makes this find one.
         for (Candidate &slot : best)
         {
             if (slot.has)

@@ -24,8 +24,8 @@ namespace antwika::game
         constexpr Color kCityFill{230, 210, 120, 255};
         constexpr Color kCityLabel{30, 25, 20, 255};
 
-        // A city marker is a third of a tile, centred, so the terrain
-        // under it stays readable.
+        // A city marker is a third of a tile, centred.
+        // The terrain under it then stays readable.
         constexpr std::int32_t kMarkerInset = kWorldTileSize / 3;
     } // namespace
 
