@@ -306,6 +306,13 @@ The focused widget draws `Theme::focusRing` (yellow) `Theme::focusRingThickness`
 The application owns all of it, so a replay regenerates it from the recorded input rather than from anything the UI remembered.
 Typing arrives on the same `ui::Keyboard` the focus keys do -- `ui::Key::Backspace`/`Cancel`/`MoveLeft`/`MoveRight` beside `FocusNext`/`FocusPrevious`/`Activate`, plus a `typed` view of the characters -- rather than as a second input channel, and `TextFieldSpec::focused` is an override on top of the focus `Context` was handed, so Tab reaches a field and Enter submits the one it landed on.
 An open dropdown's list is an *overlay*: out of its parent's flow, hung beneath the box it dropped from, painted after every other command and hit-tested before them -- which is the only way to be on top when `antwika::gfx` offers no depth but paint order.
+**Where a widget ended up is the third answer off the one layout**: `Frame::rects` is a `ui::WidgetRects`, one `gfx::Rect` per distinct `ui::WidgetId` the frame named, with `find(id)` answering nothing for an id this frame did not declare.
+It exists so an application drawing its own art around a UI places that art *from* the layout rather than beside it -- two independently computed layouts agree only until either one changes, which is precisely how `apps/poker`'s card art and its `antwika::ui` labels came to disagree.
+`ui::ContainerSpec` therefore carries an `id` as well, so a row or a panel can be named; that also makes it something the pointer reports as hovered or activated, since that is the one thing an id means here, and a child sits at a higher index so it still wins the hit-test against the container holding it.
+Every named node answers rather than only containers, because a node carries one id whatever kind it is and a button's rectangle is as useful to something drawing behind it as a row's is.
+The mapping is collected *inside* the arranging pass rather than by a pass of its own, so the rectangle reported is the one `flatten()` drew from by construction -- including under the proportional shrink a container with too little room applies, which is exactly where a repeated sum would diverge.
+A repeated id keeps its last declaration, following the existing rule that two nodes sharing an id are one widget.
+A caller that names nothing pays one integer comparison per node and a vector that never allocates, and reading a rect back is safe anywhere including inside the tick path, because a layout is a pure function of the declarations, the theme and the canvas -- which is what makes it unlike `input::PointerHintChannel`.
 
 ## Notes for AI agents
 

@@ -11,6 +11,7 @@ antwika_add_library(
         src/Scope.cpp
         src/TextField.cpp
         src/Theme.cpp
+        src/WidgetRects.cpp
     DEPENDS
         antwika::gfx
 )

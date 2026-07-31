@@ -23,6 +23,7 @@ add_executable(antwika_ui_tests
     TextFieldTest.cpp
     ThemeTest.cpp
     WidgetIdTest.cpp
+    WidgetRectsTest.cpp
 )
 
 target_include_directories(antwika_ui_tests
