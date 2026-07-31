@@ -27,6 +27,7 @@
 #include <antwika/replay/ReplayCli.hpp>
 #include <antwika/replay/ReplaySource.hpp>
 
+#include "antwika/game/AppMode.hpp"
 #include "antwika/game/Camera.hpp"
 #include "antwika/game/Cell.hpp"
 #include "antwika/game/Events.hpp"
@@ -43,6 +44,8 @@ using antwika::event::Event;
 using antwika::event::mocks::MockEventSink;
 using antwika::event::TickEvent;
 using antwika::event::TickEventRecorder;
+using antwika::game::AppMode;
+using antwika::game::AppModeState;
 using antwika::game::Camera;
 using antwika::game::Cell;
 using antwika::game::cellCentre;
@@ -122,6 +125,9 @@ namespace
         PathIndex paths;
         TickEventRecorder recorder;
 
+        // The subject here is the grid, so a run starts there.
+        AppModeState mode{AppMode::Playing};
+
         auto summary = antwika::game::bootstrap(
             antwika::game::GameConfig{
                 .logger = logger,
@@ -131,6 +137,7 @@ namespace
                 .extent = kExtent,
                 .camera = camera,
                 .paths = paths,
+                .mode = mode,
                 .maxTicks = kMaxTicks,
                 .replayRecorder = recorder});
 
@@ -148,6 +155,9 @@ namespace
         Camera camera;
         PathIndex paths;
         TickEventRecorder recorder;
+
+        // The subject here is the grid, so a run starts there.
+        AppModeState mode{AppMode::Playing};
         UiOverlay overlay(kUiCanvas);
 
         auto summary = antwika::game::bootstrap(
@@ -159,6 +169,7 @@ namespace
                 .extent = kExtent,
                 .camera = camera,
                 .paths = paths,
+                .mode = mode,
                 .maxTicks = kMaxTicks,
                 .replayRecorder = recorder,
                 .overlay = overlay});

@@ -1,11 +1,16 @@
 find_package(GTest REQUIRED)
 
 add_executable(antwika_game_tests
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/AppMode.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/Game.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/GameStateReducer.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/GridScene.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/GridSink.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/InputFold.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/MainMenuScene.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/MainMenuSink.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/ModeGatedSink.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/ModeGatedSystem.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/PathIndex.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/RenderSystem.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/SaveCli.cpp
@@ -19,6 +24,7 @@ add_executable(antwika_game_tests
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/UiSink.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/WalkerSystem.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/WindowInputSource.cpp
+    AppModeTest.cpp
     BootstrapTest.cpp
     BuildPaletteTest.cpp
     CameraTest.cpp
@@ -32,6 +38,9 @@ add_executable(antwika_game_tests
     GridSinkTest.cpp
     InputFoldTest.cpp
     IsoProjectionTest.cpp
+    MainMenuSceneTest.cpp
+    MainMenuSinkTest.cpp
+    ModeGateTest.cpp
     PathIndexTest.cpp
     PointerReadingTest.cpp
     RenderSystemTest.cpp

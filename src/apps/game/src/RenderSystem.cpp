@@ -14,20 +14,35 @@ namespace antwika::game
         const PathIndex &paths,
         const Camera &camera,
         GridExtent extent,
-        const UiOverlay &overlay)
+        const UiOverlay &overlay,
+        const AppModeState &mode,
+        const MainMenuScene &menuScene,
+        const UiOverlay &menuOverlay)
         : window(window),
           scene(scene),
           atlas(atlas),
           paths(paths),
           camera(camera),
           extent(extent),
-          overlay(overlay)
+          overlay(overlay),
+          mode(mode),
+          menuScene(menuScene),
+          menuOverlay(menuOverlay)
     {
     }
 
     void RenderSystem::update(World &world, antwika::time::Tick)
     {
         auto &renderer = window.renderer();
+
+        if (mode.mode() == AppMode::MainMenu)
+        {
+            // The whole screen, with no grid behind it.
+            // The menu is a mode rather than a modal -- see AppMode.hpp.
+            menuScene.draw(renderer, menuOverlay.commands());
+            renderer.present();
+            return;
+        }
 
         scene.draw(
             renderer,

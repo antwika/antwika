@@ -6,9 +6,11 @@
 #include <antwika/gfx/IWindow.hpp>
 #include <antwika/time/Tick.hpp>
 
+#include "antwika/game/AppMode.hpp"
 #include "antwika/game/Camera.hpp"
 #include "antwika/game/GridExtent.hpp"
 #include "antwika/game/GridScene.hpp"
+#include "antwika/game/MainMenuScene.hpp"
 #include "antwika/game/PathIndex.hpp"
 #include "antwika/game/UiOverlay.hpp"
 
@@ -21,7 +23,12 @@ namespace antwika::game
     using antwika::gfx::IWindow;
 
     /**
-     * @brief Draws the grid into a window, once per tick.
+     * @brief Draws whichever mode the app is in, once per tick.
+     *
+     * Which one that is, is simulation state it only reads -- see
+     * AppMode.hpp. A mode owns the whole screen: the menu is not painted
+     * over a grid that is still running, and the grid is not painted
+     * under a menu.
      *
      * An observer on the same terms as apps/life's RenderSystem: it only
      * reads, and knows nothing about the systems it shares a tick with.
@@ -59,6 +66,9 @@ namespace antwika::game
          * @param camera Read for where to draw from.
          * @param extent Read for the bounds to draw within.
          * @param overlay Read for the toolbar's picture, painted last.
+         * @param mode Read for which mode's picture to draw.
+         * @param menuScene Draws the main menu.
+         * @param menuOverlay Read for the menu's picture.
          */
         RenderSystem(
             IWindow &window,
@@ -67,7 +77,10 @@ namespace antwika::game
             const PathIndex &paths,
             const Camera &camera,
             GridExtent extent,
-            const UiOverlay &overlay);
+            const UiOverlay &overlay,
+            const AppModeState &mode,
+            const MainMenuScene &menuScene,
+            const UiOverlay &menuOverlay);
 
         RenderSystem(const RenderSystem &) = delete;
         RenderSystem(RenderSystem &&) = delete;
@@ -90,6 +103,9 @@ namespace antwika::game
         const Camera &camera;
         GridExtent extent;
         const UiOverlay &overlay;
+        const AppModeState &mode;
+        const MainMenuScene &menuScene;
+        const UiOverlay &menuOverlay;
     };
 
 } // namespace antwika::game

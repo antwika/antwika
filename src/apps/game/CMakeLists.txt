@@ -1,9 +1,14 @@
 add_executable(antwika_game
+    src/AppMode.cpp
     src/Game.cpp
     src/GameStateReducer.cpp
     src/GridScene.cpp
     src/GridSink.cpp
     src/InputFold.cpp
+    src/MainMenuScene.cpp
+    src/MainMenuSink.cpp
+    src/ModeGatedSink.cpp
+    src/ModeGatedSystem.cpp
     src/PathIndex.cpp
     src/RenderSystem.cpp
     src/SaveCli.cpp

@@ -14,6 +14,7 @@
 #include <antwika/replay/ReplaySource.hpp>
 #include <antwika/replay/ReplayWriter.hpp>
 
+#include "antwika/game/AppMode.hpp"
 #include "antwika/game/Camera.hpp"
 #include "antwika/game/Events.hpp"
 #include "antwika/game/Game.hpp"
@@ -23,6 +24,8 @@
 using antwika::event::Event;
 using antwika::event::mocks::MockEventSink;
 using antwika::event::TickEvent;
+using antwika::game::AppMode;
+using antwika::game::AppModeState;
 using antwika::game::Camera;
 using antwika::game::GameState;
 using antwika::game::GridExtent;
@@ -47,6 +50,10 @@ namespace
         Camera camera;
         PathIndex paths;
 
+        // Both runs start in the same mode, which is the point:
+        // nothing about being a replay may change what a click means.
+        AppModeState mode{AppMode::Playing};
+
         return antwika::game::bootstrap(
                    antwika::game::GameConfig{
                        .logger = logger,
@@ -56,6 +63,7 @@ namespace
                        .extent = GridExtent{.width = 16, .height = 16},
                        .camera = camera,
                        .paths = paths,
+                       .mode = mode,
                        .maxTicks = kMaxTicks})
             .state;
     }
