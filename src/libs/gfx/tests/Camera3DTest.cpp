@@ -32,6 +32,30 @@ namespace
     }
 } // namespace
 
+TEST(PerspectiveTest, Equality_ComparesEveryField)
+{
+    const Perspective left;
+    Perspective right;
+
+    EXPECT_EQ(left, right);
+
+    right.fovYRadians = kQuarterTurn;
+
+    EXPECT_NE(left, right);
+}
+
+TEST(OrthographicTest, Equality_ComparesEveryField)
+{
+    const Orthographic left;
+    Orthographic right;
+
+    EXPECT_EQ(left, right);
+
+    right.halfWidth = 2.0F;
+
+    EXPECT_NE(left, right);
+}
+
 TEST(Camera3DTest, View_DefaultCameraLooksDownNegativeZ)
 {
     EXPECT_TRUE(approxEqual(Camera3D{}.view(), identityMatrix()));
