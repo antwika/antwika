@@ -7,16 +7,16 @@
 #include <antwika/holdem/Card.hpp>
 #include <antwika/holdem/Deck.hpp>
 #include <antwika/holdem/DeckExhaustedError.hpp>
-#include <antwika/holdem/SplitMix64Rng.hpp>
+#include <antwika/rng/SplitMix64Rng.hpp>
 
-#include <antwika/holdem/fakes/FakeRng.hpp>
+#include <antwika/rng/fakes/FakeRng.hpp>
 
 using antwika::holdem::Card;
 using antwika::holdem::Deck;
 using antwika::holdem::DeckExhaustedError;
 using antwika::holdem::kCardCount;
-using antwika::holdem::SplitMix64Rng;
-using antwika::holdem::fakes::FakeRng;
+using antwika::rng::SplitMix64Rng;
+using antwika::rng::fakes::FakeRng;
 
 namespace
 {

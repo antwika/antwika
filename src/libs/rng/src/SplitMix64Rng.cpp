@@ -1,8 +1,8 @@
-#include "antwika/holdem/SplitMix64Rng.hpp"
+#include "antwika/rng/SplitMix64Rng.hpp"
 
 #include <cstdint>
 
-namespace antwika::holdem
+namespace antwika::rng
 {
 
     namespace
@@ -25,4 +25,4 @@ namespace antwika::holdem
         return drawn ^ (drawn >> 31U);
     }
 
-} // namespace antwika::holdem
+} // namespace antwika::rng

@@ -11,8 +11,9 @@ antwika_add_library(
         src/HandText.cpp
         src/Pots.cpp
         src/Showdown.cpp
-        src/SplitMix64Rng.cpp
         src/Stage.cpp
         src/Table.cpp
         src/TableRunner.cpp
+    DEPENDS
+        antwika::rng
 )

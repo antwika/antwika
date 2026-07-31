@@ -9,7 +9,7 @@
 namespace antwika::holdem
 {
 
-    Deck::Deck(IRng &rng) : rng(rng)
+    Deck::Deck(rng::IRng &rng) : rng(rng)
     {
         for (std::size_t index = 0; index < kCardCount; ++index)
         {

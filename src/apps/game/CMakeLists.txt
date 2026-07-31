@@ -60,6 +60,7 @@ target_link_libraries(antwika_game
         antwika::log
         antwika::pathfinding
         antwika::replay
+        antwika::rng
         antwika::time
         antwika::ui
         antwika::wfc

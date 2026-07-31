@@ -2,9 +2,9 @@
 
 #include <cstdint>
 
-#include "antwika/holdem/IRng.hpp"
+#include "antwika/rng/IRng.hpp"
 
-namespace antwika::holdem
+namespace antwika::rng
 {
 
     /**
@@ -15,6 +15,10 @@ namespace antwika::holdem
      * the same seed yields the same stream on every platform the project
      * builds for -- which is what a recorded hand of poker needs in
      * order to deal itself the same way on replay.
+     *
+     * The sequence is part of the contract rather than an implementation
+     * detail, since recorded sessions and checked-in demo replays are
+     * reproduced from it.
      */
     class SplitMix64Rng final : public IRng
     {
@@ -35,4 +39,4 @@ namespace antwika::holdem
         std::uint64_t state;
     };
 
-} // namespace antwika::holdem
+} // namespace antwika::rng

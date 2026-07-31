@@ -27,6 +27,7 @@ Each page covers what the library is for, its key headers and types, what it dep
 | [ecs](libraries/ecs.md) | Double-buffered entity/component `World` with staged mutations. |
 | [scheduler](libraries/scheduler.md) | Deterministic, priority-ordered, budget-bounded job dispatch. |
 | [wfc](libraries/wfc.md) | Wave Function Collapse over a flat cell array, with no grid concept inside. |
+| [rng](libraries/rng.md) | Seeded pseudo-random bits, with the output sequence as part of the contract. |
 | [holdem](libraries/holdem.md) | No-limit Texas hold'em rules, side pots, and a hand evaluated into one number. |
 | [ecs_commons](libraries/ecs_commons.md) | The vocabulary half of the ECS: positions, velocities, countdowns, names, tags. |
 | [pathfinding](libraries/pathfinding.md) | A* over an abstract graph, with a total ordering so a route is reproducible. |

@@ -18,11 +18,11 @@
 #include <antwika/holdem/Deck.hpp>
 #include <antwika/holdem/IAgent.hpp>
 #include <antwika/holdem/SeatId.hpp>
-#include <antwika/holdem/SplitMix64Rng.hpp>
 #include <antwika/holdem/Table.hpp>
 #include <antwika/holdem/TableRunner.hpp>
 #include <antwika/log/Level.hpp>
 #include <antwika/replay/EngineLoop.hpp>
+#include <antwika/rng/SplitMix64Rng.hpp>
 
 #include "antwika/poker/AgentStyle.hpp"
 #include "antwika/poker/BankrollLedger.hpp"
@@ -48,11 +48,11 @@ namespace antwika::poker
     using antwika::holdem::Deck;
     using antwika::holdem::IAgent;
     using antwika::holdem::makeSeatId;
-    using antwika::holdem::SplitMix64Rng;
     using antwika::holdem::Table;
     using antwika::holdem::TableRunner;
     using antwika::log::Level;
     using antwika::replay::EngineLoop;
+    using antwika::rng::SplitMix64Rng;
 
     namespace
     {

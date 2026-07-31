@@ -29,6 +29,7 @@ target_link_libraries(antwika_poker
         antwika::holdem
         antwika::log
         antwika::replay
+        antwika::rng
         antwika::time
         antwika::ui
 )

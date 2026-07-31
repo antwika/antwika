@@ -4,6 +4,7 @@
 #include <cstdint>
 #include <functional>
 
+#include <antwika/rng/SplitMix64Rng.hpp>
 #include <antwika/wfc/AdjacencyConstraint.hpp>
 #include <antwika/wfc/CompatibilityTable.hpp>
 #include <antwika/wfc/IConstraint.hpp>
@@ -15,6 +16,7 @@
 namespace antwika::game
 {
 
+    using antwika::rng::SplitMix64Rng;
     using antwika::wfc::AdjacencyConstraint;
     using antwika::wfc::CompatibilityTable;
     using antwika::wfc::Domain;
@@ -35,20 +37,6 @@ namespace antwika::game
         constexpr std::int64_t kAnchorReach = kAnchorSpacing;
 
         constexpr std::uint32_t kMinimumSide = 4;
-
-        // splitmix64: shifts and multiplies, and nothing else.
-        // Those behave identically on every target.
-        // Deliberately not <random>.
-        // Its engines are portable but its distributions are not.
-        // rand() is out of the question for the same reason.
-        std::uint64_t nextRandom(std::uint64_t &state)
-        {
-            state += 0x9E3779B97F4A7C15ULL;
-            std::uint64_t z = state;
-            z = (z ^ (z >> 30)) * 0xBF58476D1CE4E5B9ULL;
-            z = (z ^ (z >> 27)) * 0x94D049BB133111EBULL;
-            return z ^ (z >> 31);
-        }
 
         // The one adjacency rule.
         // Neighbours differ by at most one ladder step.
@@ -214,7 +202,7 @@ namespace antwika::game
 
         std::vector<std::int64_t> anchors(
             static_cast<std::size_t>(latticeWidth) * latticeHeight, 0);
-        std::uint64_t state = config.seed;
+        SplitMix64Rng rng(config.seed);
 
         for (std::uint32_t ly = 0; ly < latticeHeight; ++ly)
         {
@@ -242,8 +230,7 @@ namespace antwika::game
                 const std::uint64_t span =
                     static_cast<std::uint64_t>(high - low) + 1;
                 const std::int64_t value = low
-                    + static_cast<std::int64_t>(
-                        nextRandom(state) % span);
+                    + static_cast<std::int64_t>(rng.next() % span);
                 anchors[slot] = value;
 
                 const std::size_t cell =
