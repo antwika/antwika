@@ -184,7 +184,7 @@ Each module (lib or app) owns its own `CMakeLists.txt`, `include/`, `src/`, and 
   `MigrationChain` applies single-step `IMigration`s (N to N+1) until a document reaches current — single-step so the number of migrations stays linear in bumps rather than quadratic — and it is generic over an `nlohmann::json` and a version key, so a save file uses the same mechanism with its own list and its own current version.
   Chains are constructed and injected, never registered globally; `standardReplayMigrations()` is the replay document's factory, and `ReplayReader` takes one.
   See [`docs/schema-versioning.md`](docs/schema-versioning.md) for what counts as a breaking change and how to bump.
-- `antwika::replay::ReplayCli` parses the `--record <path>` / `--replay <path>` flags shared by every app's `main.cpp`.
+- `antwika::replay::ReplayCli` names the `--record <path>` / `--replay <path>` flags shared by every app's `main.cpp`, and hands the parsing itself to `antwika::cli`.
 
 **Application state**: each app owns its state and how events mutate it — the engine has no opinion here.
 
@@ -313,6 +313,15 @@ See [`docs/pathfinding.md`](docs/pathfinding.md).
 There is deliberately no `Animator` you advance — that would be simulation state hidden in a renderer, and a renderer calling `advance()` is the replay-drift bug that looks fine live.
 It depends on `antwika::time` and nothing else, so it cannot name a texture or a rectangle: a `Frame` is an index the app maps to an atlas slot, and sub-tick position is an exact rational `Progress` rather than a float.
 See [`docs/animation.md`](docs/animation.md).
+
+`antwika::cli` is the flag parsing every `main()` shares -- `FlagSpec`, `parseCommandLine()`, `helpText()`, `CommandLine`, `CommandLineError` -- and it depends on **nothing**, which is the whole reason it is its own library.
+It lived in `antwika::replay` while `--record` and `--replay` were the only flags anything took, and by the time `apps/game` had `--save`/`--load` and `apps/poker` had `--tick-delay-ms`, reading two dashes and a word meant linking a JSON replay format, a schema validator and a migration chain.
+`ReplayCli` stayed in `antwika::replay`, since naming `--record` and `--replay` is that library's business where reading them is not.
+**One `FlagSpec` table is both the parser's input and the help text's**, so a flag that parses but is undocumented is not expressible, and `kHelpFlag` is declared by the library rather than by a caller so no program can forget `--help` or document one it does not accept.
+**A program parses once, against one concatenated table**: an unrecognised argument is a `CommandLineError` rather than something ignored -- which is what `--replya demo.json` used to be, quietly starting an empty session -- so a second pass would refuse whatever the first accepted, and that is precisely how `apps/poker`'s `--tick-delay-ms` once stopped working.
+That is why each layer offers a *table* and a reader (`replayCliFlags()`/`replayCliOptionsFrom()`, `game::saveCliFlags()`/`saveCliOptionsFrom()`, `poker::watchFlags()`/`watchOptionsFrom()`) rather than a parser, and why `app::runRecorded()` is the one place they are appended and parsed.
+`antwika/replay/CommandLine.hpp`, `FlagSpec.hpp` and `CommandLineError.hpp` remain as `using` re-exports of the `antwika::cli` names, so a caller still spelling them `antwika::replay::` compiles unchanged; they name the same types, and nothing new should be written against them.
+See [`docs/cli.md`](docs/cli.md).
 
 `antwika::i18n` is a message catalogue keyed by a symbolic `MessageId` rather than by the English string, which is what lets a test assert that every locale covers **exactly** the same id set — a missing translation fails the build instead of leaking English into a Swedish UI.
 Lookup is total and never throws, since it runs while a frame is being drawn: active catalogue, then the default locale, then the id's own name in exclamation marks, with every result carrying an `Exact`/`Fallback`/`Missing` origin so a caller can tell which of the three it got.

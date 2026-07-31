@@ -36,6 +36,7 @@ Each page covers what the library is for, its key headers and types, what it dep
 | [sound](libraries/sound.md) | PCM decoding, mixing and playback, on the thread that pumps it. |
 | [animation](libraries/animation.md) | Which frame to show, as a pure function of a tick the caller already has. |
 | [i18n](libraries/i18n.md) | A message catalogue keyed by a symbolic id rather than by English. |
+| [cli](libraries/cli.md) | Flag tables, one parse, and a help text that cannot disagree with it. |
 | [time](libraries/time.md) | The `Tick` type, `IClock` and `ISleeper`. |
 | [log](libraries/log.md) | Composable logging with no global state. |
 | [app](libraries/app.md) | The wiring every app's `main.cpp` would otherwise repeat. |

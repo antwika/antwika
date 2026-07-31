@@ -93,6 +93,7 @@ graph TD
     animation[animation]
     i18n[i18n]
     sound[sound]
+    cli[cli]
 
     log --> time
     event --> time
@@ -104,6 +105,7 @@ graph TD
     gfx --> log
     scheduler --> time
     ui --> gfx
+    replay --> cli
     replay --> ecs
     replay --> engine
     replay --> event
@@ -120,6 +122,7 @@ graph TD
     animation --> time
     sound --> log
     app --> animation
+    app --> cli
     app --> event
     app --> gfx
     app --> input
@@ -130,7 +133,7 @@ graph TD
     app --> ui
 ```
 
-`wfc`, `holdem`, `pathfinding` and `i18n` have no `antwika` dependencies at all: all four are standalone domain libraries.
+`wfc`, `holdem`, `pathfinding`, `i18n` and `cli` have no `antwika` dependencies at all: all five are standalone libraries.
 
 Two edges deserve a note.
 `replay` links `ecs` for `TickPacer` (which is an `ecs::ISystem`) and `gfx` for `WindowInputSource` and for the `gfx::Size` a replay records its canvas as.

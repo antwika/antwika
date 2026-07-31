@@ -19,7 +19,7 @@ It holds no simulation logic of its own — everything here is glue that was dup
 
 ## Depends on
 
-[`event`](event.md), [`gfx`](gfx.md), [`input`](input.md), [`log`](log.md), [`replay`](replay.md), [`time`](time.md), [`ui`](ui.md).
+[`cli`](cli.md), [`event`](event.md), [`gfx`](gfx.md), [`input`](input.md), [`log`](log.md), [`replay`](replay.md), [`time`](time.md), [`ui`](ui.md).
 It is the widest library in the project, and that is the point: it is where the seams are joined, so no other library has to know about more than its own neighbours.
 
 ## Non-obvious decisions

@@ -23,7 +23,8 @@ This is where the project's central claim lives: live and replay runs go through
 | `ReplayFormatError.hpp` | `ReplayFormatError` | Bad replay input. |
 | `SchemaVersionError.hpp` | `SchemaVersionError` | Narrower: a document this build cannot bring to the current version. |
 | `EngineLoopError.hpp` | `EngineLoopError` | Loop misuse. |
-| `ReplayCli.hpp`, `CommandLine.hpp`, `FlagSpec.hpp`, `CommandLineError.hpp` | `ReplayCliOptions`, `CommandLine`, `FlagSpec` | The `--record <path>` / `--replay <path>` flags every app shares. |
+| `ReplayCli.hpp` | `ReplayCliOptions`, `replayCliFlags()` | The `--record <path>` / `--replay <path>` flags every app shares; the parsing is [`cli`](cli.md)'s. |
+| `CommandLine.hpp`, `FlagSpec.hpp`, `CommandLineError.hpp` | — | `using` re-exports of the [`cli`](cli.md) names, kept so the old spelling still compiles. |
 | `TickPacer.hpp` | `TickPacer` | An `ecs::ISystem` that sleeps through an injected `time::ISleeper` so a windowed run does not spin. |
 | `TickEventRecorder.hpp` | `TickEventRecorder` | Records what was dispatched, minus each app's self-generated events. |
 | `WindowInputSource.hpp` | `WindowInputSource` | An `IReplaySource` that turns a window close request into `engine.stop`. |
@@ -31,7 +32,7 @@ This is where the project's central claim lives: live and replay runs go through
 
 ## Depends on
 
-[`ecs`](ecs.md), [`engine`](engine.md), [`event`](event.md), [`gfx`](gfx.md), [`log`](log.md), [`time`](time.md).
+[`cli`](cli.md), [`ecs`](ecs.md), [`engine`](engine.md), [`event`](event.md), [`gfx`](gfx.md), [`log`](log.md), [`time`](time.md).
 `ecs` is there for `TickPacer` and `gfx` for `WindowInputSource` and the recorded canvas size — both narrow, deliberate edges.
 
 ## Non-obvious decisions
