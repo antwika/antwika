@@ -130,7 +130,7 @@ Proves `holdem::TableRunner` composes into something larger than one table, and 
 
 ### Blackjack or hearts
 
-A second card game built on `holdem::Card`, `IDeck`, `Deck` and `IRng` without touching `Table` or the evaluator.
+A second card game built on `holdem::Card`, `IDeck`, `Deck` and `rng::IRng` without touching `Table` or the evaluator.
 The value is negative space: it shows which parts of `holdem` are card primitives and which are poker rules, and would likely justify splitting a `antwika::cards` library out.
 Proves the primitives are not secretly poker-shaped.
 **Difficulty: small.**
@@ -232,9 +232,11 @@ Proves that "the library holds no geometry" is a repeatable pattern rather than 
 
 ### `antwika::rng`
 
-`holdem::SplitMix64Rng` and `holdem::IRng` are general-purpose and are stuck inside a poker library.
-Lift them out, add a positional hash (`hash(seed, x, y) -> value`) for anything that needs randomness as a function of position rather than of call order.
-Proves the repo's stance on randomness — seeded, positional, never ambient — in one place instead of implicitly in three.
+The lift has landed: `IRng` and `SplitMix64Rng` are `src/libs/rng/` now, and the three hand-copied splitmix64 implementations under `apps/poker`, `apps/game` and `apps/tower_defence` are one library between them.
+See [`docs/rng.md`](docs/rng.md).
+
+What is left is the positional hash (`hash(seed, x, y) -> value`), for anything that needs randomness as a function of position rather than of call order.
+Nothing needs one yet — every caller today draws in a fixed order from a fixed seed — so it is waiting for its first customer rather than being built ahead of one.
 **Difficulty: small.**
 
 ### `antwika::fixed`

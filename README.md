@@ -38,6 +38,7 @@ src/
     ├── log/
     ├── pathfinding/
     ├── replay/
+    ├── rng/
     ├── scheduler/
     ├── sound/
     ├── time/

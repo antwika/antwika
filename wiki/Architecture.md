@@ -87,6 +87,7 @@ graph TD
     ui[ui]
     app[app]
     wfc[wfc]
+    rng[rng]
     holdem[holdem]
     ecs_commons[ecs_commons]
     pathfinding[pathfinding]
@@ -115,6 +116,7 @@ graph TD
     input --> log
     input --> replay
     input --> time
+    holdem --> rng
     ecs_commons --> ecs
     ecs_commons --> time
     animation --> time
@@ -130,7 +132,8 @@ graph TD
     app --> ui
 ```
 
-`wfc`, `holdem`, `pathfinding` and `i18n` have no `antwika` dependencies at all: all four are standalone domain libraries.
+`wfc`, `rng`, `pathfinding` and `i18n` have no `antwika` dependencies at all: all four are standalone domain libraries.
+`holdem` has exactly one, `rng`, for the shuffle's bits.
 
 Two edges deserve a note.
 `replay` links `ecs` for `TickPacer` (which is an `ecs::ISystem`) and `gfx` for `WindowInputSource` and for the `gfx::Size` a replay records its canvas as.
