@@ -5,6 +5,9 @@
 #include <antwika/engine/Events.hpp>
 #include <antwika/input/MouseButton.hpp>
 
+#include "antwika/game/BuildGhost.hpp"
+#include "antwika/game/BuildTool.hpp"
+#include "antwika/game/Building.hpp"
 #include "antwika/game/Cell.hpp"
 #include "antwika/game/IsoProjection.hpp"
 #include "antwika/game/Path.hpp"
@@ -54,6 +57,37 @@ namespace antwika::game
         }
 
         act(*decoded);
+
+        // After acting, not before.
+        // A pan or a zoom here moves which cell the pointer is over.
+        // And the ghost shows where the *next* click would land.
+        updateGhost();
+    }
+
+    void GridSink::updateGhost()
+    {
+        BuildGhost wanted{.at = {}, .tool = overlay.tool(), .visible = false};
+
+        // Nowhere to draw one until the pointer has been placed.
+        // And nothing to draw under the bar, which covers the grid.
+        if (input.located() && !overlay.pointerOverUi())
+        {
+            const auto cell = screenToCell(input.pointer(), camera);
+
+            if (extent.contains(cell))
+            {
+                wanted.at = cell;
+                wanted.visible = true;
+            }
+        }
+
+        if (!ghost.has_value())
+        {
+            ghost = world.create();
+        }
+
+        // add() overwrites, so this is the one staging call it needs.
+        world.add<BuildGhost>(*ghost, wanted);
     }
 
     void GridSink::act(const antwika::input::InputEvent &event)
@@ -93,7 +127,7 @@ namespace antwika::game
 
             if (pressed->button == MouseButton::Left)
             {
-                placePath(cell);
+                place(cell, overlay.tool());
             }
             else if (pressed->button == MouseButton::Right)
             {
@@ -109,9 +143,22 @@ namespace antwika::game
         }
     }
 
+    void GridSink::place(Cell cell, BuildTool tool)
+    {
+        // One decision, taken where the click is.
+        // Rather than a button meaning one thing and the palette another.
+        if (placesBuilding(tool))
+        {
+            placeBuilding(cell, tool);
+            return;
+        }
+
+        placePath(cell);
+    }
+
     void GridSink::placePath(Cell cell)
     {
-        if (!extent.contains(cell) || paths.has(cell))
+        if (!extent.contains(cell) || paths.has(cell) || built.contains(cell))
         {
             return;
         }
@@ -120,6 +167,24 @@ namespace antwika::game
         world.add<Cell>(entity, cell);
         world.add<Path>(entity, Path{});
         paths.insert(cell);
+    }
+
+    void GridSink::placeBuilding(Cell cell, BuildTool tool)
+    {
+        // A cell holds one thing, and a road is a thing.
+        // The note is kept here rather than read out of the World.
+        // The World hands out the last commit.
+        // Two clicks in one tick would then build twice on one cell.
+        // That is the trap life::PointerToggleSink describes.
+        if (!extent.contains(cell) || paths.has(cell) || built.contains(cell))
+        {
+            return;
+        }
+
+        const auto entity = world.create();
+        world.add<Cell>(entity, cell);
+        world.add<Building>(entity, Building{.kind = tool});
+        built.insert(cell);
     }
 
     void GridSink::placeWalker(Cell cell)

@@ -3,6 +3,8 @@
 #include <antwika/gfx/Size.hpp>
 #include <antwika/ui/DrawList.hpp>
 
+#include "antwika/game/BuildTool.hpp"
+
 namespace antwika::game
 {
 
@@ -10,12 +12,21 @@ namespace antwika::game
     using antwika::ui::DrawList;
 
     /**
-     * @brief The toolbar's picture, and whether it is under the pointer.
+     * @brief The toolbar's picture, whether it is under the pointer, and
+     * which tool it has selected.
      *
      * The one thing three collaborators have to agree on: UiSink writes
      * it once per tick, RenderSystem paints it over the grid, and
      * GridSink asks it whether a click was the toolbar's before treating
-     * the click as the world's.
+     * the click as the world's -- and, when it is the world's, which of
+     * the palette's tools that click is now for.
+     *
+     * **The selected tool is simulation state**, in the same sense the
+     * camera is: what a recorded click *means* depends on it, so it has
+     * to be regenerated rather than recorded. It lives here rather than
+     * in the Toolbar because the Toolbar is a pure function described
+     * afresh every tick, and it lives here rather than beside the camera
+     * because these are exactly the two collaborators that need it.
      *
      * A small shared state object rather than one asking the other, so
      * the renderer need not know what a pointer is and the grid need not
@@ -68,10 +79,24 @@ namespace antwika::game
          */
         [[nodiscard]] bool pointerOverUi() const noexcept;
 
+        /**
+         * @brief Choose what a left click on the grid now places.
+         * @param tool The tool the palette has selected.
+         */
+        void select(BuildTool tool) noexcept;
+
+        /**
+         * @brief Get what a left click on the grid places.
+         * @return The selected tool; Road until something selects
+         * another, so a run with no toolbar lays paths as it always did.
+         */
+        [[nodiscard]] BuildTool tool() const noexcept;
+
     private:
         Size area;
         DrawList picture;
         bool covered = false;
+        BuildTool selected = BuildTool::Road;
     };
 
 } // namespace antwika::game

@@ -1,5 +1,6 @@
 #include "antwika/game/UiSink.hpp"
 
+#include <cstddef>
 #include <optional>
 #include <variant>
 
@@ -14,6 +15,7 @@ namespace antwika::game
     using antwika::input::MouseButton;
     using antwika::input::PointerButtonPressed;
     using antwika::ui::kNoWidget;
+    using antwika::ui::WidgetId;
 
     namespace
     {
@@ -76,7 +78,7 @@ namespace antwika::game
     void UiSink::refreshAndAct(bool pressed)
     {
         auto frame = toolbar.describe(
-            overlay.canvas(), pointerNow(pressed), camera);
+            overlay.canvas(), pointerNow(pressed), camera, overlay.tool());
         const auto activated = frame.interactions.activated;
 
         if (activated == widgets::kZoomIn)
@@ -91,6 +93,10 @@ namespace antwika::game
         {
             camera = home;
         }
+        else
+        {
+            selectFrom(activated);
+        }
 
         // The zoom the bar reports has just changed.
         // So it is described once more.
@@ -98,11 +104,30 @@ namespace antwika::game
         if (activated != kNoWidget)
         {
             frame = toolbar.describe(
-                overlay.canvas(), pointerNow(pressed), camera);
+                overlay.canvas(),
+                pointerNow(pressed),
+                camera,
+                overlay.tool());
         }
 
         overlay.set(
             std::move(frame.commands), frame.interactions.pointerOverUi);
+    }
+
+    void UiSink::selectFrom(WidgetId activated)
+    {
+        // Searched rather than subtracted from kFirstTool.
+        // A widget this bar lacks cannot become a tool it has.
+        for (std::size_t index = 0; index < kBuildToolCount; ++index)
+        {
+            const auto tool = static_cast<BuildTool>(index);
+
+            if (activated == widgets::toolWidget(tool))
+            {
+                overlay.select(tool);
+                return;
+            }
+        }
     }
 
 } // namespace antwika::game

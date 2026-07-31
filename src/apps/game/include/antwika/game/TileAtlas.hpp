@@ -5,6 +5,7 @@
 #include <antwika/gfx/Rect.hpp>
 #include <antwika/gfx/Size.hpp>
 
+#include "antwika/game/BuildTool.hpp"
 #include "antwika/game/Direction.hpp"
 
 namespace antwika::game
@@ -61,6 +62,22 @@ namespace antwika::game
         kFirstRoadSlot + kRoadSlotCount;
 
     /**
+     * @brief The slot holding the first building.
+     */
+    inline constexpr std::uint32_t kFirstBuildingSlot =
+        kFirstWalkerSlot + kDirectionCount;
+
+    /**
+     * @brief How many building tiles there are, one per building tool.
+     *
+     * A literal rather than kBuildToolCount - 1, because
+     * scripts/generate_game_atlas.py reads this number out of this
+     * header to know how many buildings to draw, and it reads literals.
+     * The static_assert below is what stops the two disagreeing.
+     */
+    inline constexpr std::uint32_t kBuildingSlotCount = 3;
+
+    /**
      * @brief Get which bit of a link mask stands for one direction.
      *
      * The direction's own index, so a mask and a Direction cannot drift
@@ -89,10 +106,17 @@ namespace antwika::game
 
     // atlasSlot() wraps a slot round rather than rejecting it.
     // That is safe only while every derived slot is one the atlas has.
-    // walkerTile() derives the highest of them.
+    // buildingTile() derives the highest of them.
     static_assert(
-        kFirstWalkerSlot + kDirectionCount <= kAtlasColumns * kAtlasRows,
-        "the atlas has no room for every walker slot");
+        kFirstBuildingSlot + kBuildingSlotCount
+            <= kAtlasColumns * kAtlasRows,
+        "the atlas has no room for every building slot");
+
+    // One building tile per tool that places one.
+    // Adding a tool without drawing it would show somebody else's art.
+    static_assert(
+        kBuildingSlotCount == kBuildToolCount - 1,
+        "there must be a building tile for every building tool");
 
     // kLinkMask is built from the four directions this file names.
     // A fifth enumerator would raise kDirectionCount past that mask.
@@ -132,9 +156,10 @@ namespace antwika::game
      * linkBit() shifts by.
      *
      * The slots run the ground, then the sixteen roads in link-mask
-     * order, then the four walkers in Direction order. A road's mask
-     * indexing its own slot is what makes a junction's art a lookup
-     * rather than four decisions.
+     * order, then the four walkers in Direction order, then the
+     * buildings in BuildTool order. A road's mask indexing its own slot
+     * is what makes a junction's art a lookup rather than four
+     * decisions.
      *
      * @param slot The slot to place; one past the last wraps round rather
      * than being rejected, since every caller here derives its own.
@@ -184,6 +209,37 @@ namespace antwika::game
             kFirstWalkerSlot
             + static_cast<std::uint32_t>(
                 directionIndex(facing) % kDirectionCount));
+    }
+
+    /**
+     * @brief Get the tile a building this tool placed is drawn from.
+     * @param tool The tool that placed it; Road places no building and
+     * gives the first building's tile, so ask placesBuilding() first.
+     * @return The building tile's rectangle, in atlas pixels.
+     */
+    [[nodiscard]] constexpr Rect buildingTile(BuildTool tool) noexcept
+    {
+        return atlasSlot(
+            kFirstBuildingSlot
+            + static_cast<std::uint32_t>(
+                buildingIndex(tool) % kBuildingSlotCount));
+    }
+
+    /**
+     * @brief Get the tile a tool's placement would be drawn from.
+     *
+     * The one place the palette's choice becomes art, so the ghost and
+     * the thing it stands for cannot come from two different decisions.
+     *
+     * @param tool The selected tool.
+     * @param links Which neighbours a road would run to; ignored for
+     * every other tool.
+     * @return The tile's rectangle, in atlas pixels.
+     */
+    [[nodiscard]] constexpr Rect toolTile(
+        BuildTool tool, std::uint8_t links) noexcept
+    {
+        return placesBuilding(tool) ? buildingTile(tool) : roadTile(links);
     }
 
 } // namespace antwika::game
