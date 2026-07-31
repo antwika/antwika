@@ -71,23 +71,6 @@ namespace antwika::replay
         const CommandLine &parsed);
 
     /**
-     * @brief Parse the `--record <path>`/`--replay <path>` flags every
-     * replay-driven app's `main(argc, argv)` accepts.
-     * @param argc Argument count, as passed to `main()`.
-     * @param argv Argument vector, as passed to `main()`.
-     * @return The options given.
-     * @throws CommandLineError If a flag is not one of these, or is
-     * missing its value. Both used to be ignored, which is how
-     * `--replya demo.json` started an empty session rather than saying
-     * it was a typo.
-     *
-     * For an app that takes flags of its own, parse against
-     * replayCliFlags() plus that app's own table instead.
-     */
-    [[nodiscard]] ReplayCliOptions parseReplayCliOptions(
-        int argc, char **argv);
-
-    /**
      * @brief Load a replay document from a file and decode its events.
      * @param path Path to the replay file to read.
      * @param check What to compare the document's recorded canvas with,

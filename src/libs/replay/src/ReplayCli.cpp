@@ -52,12 +52,6 @@ namespace antwika::replay
         return options;
     } // GCOVR_EXCL_LINE
 
-    ReplayCliOptions parseReplayCliOptions(int argc, char **argv)
-    {
-        return replayCliOptionsFrom(
-            parseCommandLine(argc, argv, replayCliFlags()));
-    }
-
     std::vector<TickEvent> loadReplayFile(
         const std::string &path, CanvasCheck check)
     {
