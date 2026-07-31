@@ -593,10 +593,19 @@ namespace antwika::holdem
         toAct = std::nullopt;
         handInProgress = false;
         flow.end();
+        // Every per-round figure goes back to what a fresh seat holds.
+        // betting.close() has just zeroed the live bet above them.
+        // A seat still holding roundCommitted would owe a negative.
+        // viewFor() reported that as owing its whole stack to call.
+        // committed is the one exception and stays where it is.
+        // TableRunner reads it either side of apply() for the stake.
+        // A hand-ending action is paid out before it looks.
         for (auto &seat : seats)
         {
             seat.inHand = false;
             seat.actedThisRound = false;
+            seat.roundCommitted = 0;
+            seat.mayRaise = true;
         }
     }
 

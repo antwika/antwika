@@ -249,6 +249,30 @@ TEST(TableStageTest, StartHand_RunsOutTheBoardWhenOnlyTheSmallBlindIsAllIn)
     EXPECT_EQ(table.seatAt(makeSeatId(1)).stack, 0U);
 }
 
+// Nothing is owed once the hand is paid out and the round is closed.
+// finishHand() left roundCommitted holding the last street's stake.
+// betting.close() zeroed the live bet out from under it.
+// owedBy() then subtracted that stake from nothing at all.
+// std::min clamped the unsigned wrap into a plausible-looking answer.
+// A seat between hands was reported as owing its whole stack to call.
+TEST(TableStageTest, ViewFor_OwesNothingOnceTheHandHasFinished)
+{
+    Table table(2, kBlinds);
+    table.seatPlayer(makeSeatId(0), 100);
+    table.seatPlayer(makeSeatId(1), 100);
+    auto deck = headsUpDeck();
+    table.startHand(deck);
+    table.apply(fold());
+
+    const auto view = table.viewFor(makeSeatId(0));
+    EXPECT_EQ(view.toCall, 0U);
+    EXPECT_EQ(view.currentBet, 0U);
+    EXPECT_EQ(view.maxRaiseTo, view.stack);
+    EXPECT_TRUE(view.mayRaise);
+    EXPECT_EQ(table.seatAt(makeSeatId(0)).roundCommitted, 0U);
+    EXPECT_EQ(table.viewFor(makeSeatId(1)).toCall, 0U);
+}
+
 TEST(TableStageTest, Apply_LeavesTheStageAloneWhenAFoldEndsTheHandEarly)
 {
     Table table(2, kBlinds);

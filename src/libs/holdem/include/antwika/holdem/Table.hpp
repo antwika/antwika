@@ -200,6 +200,9 @@ namespace antwika::holdem
 
         /**
          * @brief Take a snapshot of what one seat may see.
+         *
+         * Legal between hands as well as during one, where it reports a
+         * seat owing nothing and free to stake its whole stack.
          * @param seat The seat to build the view for, normally
          * seatToAct().
          * @return That seat's view of the hand.
