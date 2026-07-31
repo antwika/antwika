@@ -103,6 +103,7 @@ namespace antwika::tower_defence
         void step();
 
         [[nodiscard]] const Level &level() const;
+        [[nodiscard]] const BattleConfig &settings() const;
         [[nodiscard]] const std::vector<Mob> &mobs() const;
         [[nodiscard]] const std::vector<Tower> &towers() const;
         [[nodiscard]] std::uint64_t score() const;

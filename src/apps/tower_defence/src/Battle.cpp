@@ -140,6 +140,11 @@ namespace antwika::tower_defence
         return levelData;
     }
 
+    const BattleConfig &Battle::settings() const
+    {
+        return config;
+    }
+
     const std::vector<Mob> &Battle::mobs() const
     {
         return living;
