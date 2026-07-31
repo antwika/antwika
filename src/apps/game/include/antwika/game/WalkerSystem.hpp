@@ -13,7 +13,12 @@ namespace antwika::game
     using antwika::ecs::World;
 
     /**
-     * @brief Advances every walker one cell per tick, along the paths.
+     * @brief Advances every walker along the paths, a cell at a time.
+     *
+     * A step takes kTicksPerStep ticks: on the ticks in between, the
+     * walker's own countdown is all that moves. The countdown is per
+     * walker rather than a modulus on the tick number, so walkers dropped
+     * on different ticks do not march in lockstep.
      *
      * The rule itself is nextFacing(), which is a pure function this only
      * feeds. Three properties come free from antwika::ecs and none needs
@@ -51,9 +56,13 @@ namespace antwika::game
         /**
          * @brief Move each walker one cell, or leave it where it is.
          *
+         * A walker part-way through a step stays put and counts down.
+         *
          * A walker whose cell has no path neighbour at all stays put and
          * keeps its facing -- it was dropped on a one-tile path and has
-         * nowhere to go, including backwards.
+         * nowhere to go, including backwards. Its countdown is already
+         * spent, so it looks for a way on every tick rather than every
+         * other one.
          *
          * @param world The world to read walkers from and stage moves
          * into.

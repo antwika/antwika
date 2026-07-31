@@ -116,7 +116,7 @@ build/bin/antwika_game --replay demo.replay   # reload it, reproducing the run
 
 Both modes go through the same `antwika::game::bootstrap()` entry point and the same fixed-timestep tick loop (`antwika::replay::EngineLoop`) — replay mode only differs in where each tick's events come from.
 `apps/game` itself is an isometric grid you build on with the mouse: left-click lays a path, right-click drops a walker onto it, middle-drag pans and the wheel zooms.
-Walkers advance a cell per tick, preferring a right turn at an intersection and reversing at a dead end.
+Walkers advance a cell every second tick, preferring a right turn at an intersection and reversing at a dead end.
 The ground, the roads and the walkers are all blitted from one texture atlas (`src/apps/game/assets/atlas.png`), so the scene draws no shape of its own: the grid lines are painted into the ground tile's own edges, and a road's sixteen tiles are addressed by which neighbours it joins, which makes a junction a lookup rather than four stubs stepped out by hand.
 That picture is drawn by `scripts/generate_game_atlas.py` from the same slot numbers `antwika/game/TileAtlas.hpp` addresses it with, and CI fails if the committed one has drifted from the generator.
 It starts empty and loads nothing unless `--replay` asks it to, and runs until you press Escape or close the window -- both of which are input, so both end up in a recording.
