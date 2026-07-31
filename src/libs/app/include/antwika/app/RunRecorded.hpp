@@ -81,13 +81,22 @@ namespace antwika::app
      * uncaught exception may call std::terminate without unwinding. It
      * is also what lets a failed `--record` run save what it got to.
      *
+     * `--help` is answered here rather than run: the table this parsed
+     * against is rendered to `help` and the body is never called, which
+     * is what makes every app's `--help` work without a branch in its
+     * `main()`. A `--record` given alongside it writes nothing, since
+     * asking what the flags are is not a session.
+     *
      * @param argc Argument count, as passed to main().
      * @param argv Argument vector, as passed to main().
-     * @param name The program's name, used to prefix a failure.
+     * @param name The program's name, used to prefix a failure and to
+     * head the help text.
      * @param body The session to run.
      * @param extraFlags This app's own flags, parsed in the same pass as
      * the replay ones so that neither can refuse the other.
      * @param errors Where a failure is reported.
+     * @param help Where `--help` is answered; standard output, because a
+     * question that was asked for is not a diagnostic.
      * @return EXIT_SUCCESS, or EXIT_FAILURE if the body threw.
      */
     int runRecorded(
@@ -96,7 +105,8 @@ namespace antwika::app
         std::string_view name,
         const std::function<void(const RecordedRun &)> &body,
         std::span<const FlagSpec> extraFlags = {},
-        std::ostream &errors = std::cerr);
+        std::ostream &errors = std::cerr,
+        std::ostream &help = std::cout);
 
     /**
      * @brief Load the events a run is seeded with.

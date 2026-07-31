@@ -323,6 +323,71 @@ TEST(RunRecordedTest, AcceptsAFlagOfTheCallersOwn)
     EXPECT_TRUE(errors.str().empty());
 }
 
+// Every app parsed --help and no app printed anything.
+// The flag tables carry a help string each, rendered nowhere.
+// So `antwika_game --help` used to start a session instead.
+TEST(RunRecordedTest, AnswersHelpWithoutRunningTheBody)
+{
+    std::array<char *, 2> argv{
+        const_cast<char *>("antwika_test"),
+        const_cast<char *>("--help")};
+    std::ostringstream errors;
+    std::ostringstream help;
+    constexpr std::array extra{antwika::replay::FlagSpec{
+        .name = "--tick-delay-ms",
+        .valueName = "<n>",
+        .help = "Hold each frame."}};
+
+    bool ran = false;
+    const int exitCode = runRecorded(
+        2,
+        argv.data(),
+        "antwika_test",
+        [&ran](const RecordedRun &) { ran = true; },
+        extra,
+        errors,
+        help);
+
+    EXPECT_FALSE(ran);
+    EXPECT_EQ(exitCode, EXIT_SUCCESS);
+    EXPECT_TRUE(errors.str().empty());
+
+    // One table, so the app's own flag is in it beside the shared ones.
+    // And --help documents itself.
+    EXPECT_THAT(help.str(), testing::HasSubstr("Usage: antwika_test"));
+    EXPECT_THAT(help.str(), testing::HasSubstr("--record <path>"));
+    EXPECT_THAT(help.str(), testing::HasSubstr("--replay <path>"));
+    EXPECT_THAT(help.str(), testing::HasSubstr("--tick-delay-ms <n>"));
+    EXPECT_THAT(help.str(), testing::HasSubstr("Hold each frame."));
+    EXPECT_THAT(help.str(), testing::HasSubstr("--help"));
+}
+
+// Asking what the flags are is not a session, so it records none.
+TEST(RunRecordedTest, WritesNoRecordingWhenHelpWasAskedFor)
+{
+    const TempFile file("antwika-app-help.json");
+    const std::string path = file.name();
+    std::array<char *, 4> argv{
+        const_cast<char *>("antwika_test"),
+        const_cast<char *>("--record"),
+        const_cast<char *>(path.c_str()),
+        const_cast<char *>("--help")};
+    std::ostringstream errors;
+    std::ostringstream help;
+
+    const int exitCode = runRecorded(
+        4,
+        argv.data(),
+        "antwika_test",
+        [](const RecordedRun &) { FAIL() << "the body should not run"; },
+        {},
+        errors,
+        help);
+
+    EXPECT_EQ(exitCode, EXIT_SUCCESS);
+    EXPECT_FALSE(std::filesystem::exists(path));
+}
+
 TEST(RunRecordedTest, ReportsAFlagNoTableKnows)
 {
     std::array<char *, 2> argv{

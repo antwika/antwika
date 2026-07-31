@@ -32,7 +32,8 @@ namespace antwika::app
         std::string_view name,
         const std::function<void(const RecordedRun &)> &body,
         std::span<const FlagSpec> extraFlags,
-        std::ostream &errors)
+        std::ostream &errors,
+        std::ostream &help)
     {
         DiscardedEvents eventSink;
         TickEventRecorder replayRecorder;
@@ -66,19 +67,30 @@ namespace antwika::app
                 antwika::replay::parseCommandLine(argc, argv, table);
             const auto options =
                 antwika::replay::replayCliOptionsFrom(parsed);
-            recordPath = options.recordPath;
 
-            RecordedRun run{
-                .options = options,
-                .commandLine = parsed,
-                .eventSink = eventSink,
-                .replayRecorder = std::nullopt};
-            if (options.recordPath)
+            // --help is a question, not a run.
+            // Answering it starts no session and writes no recording.
+            // recordPath is left unset, so the epilogue below skips.
+            if (options.helpRequested)
             {
-                run.replayRecorder = replayRecorder;
+                help << antwika::replay::helpText(name, table);
             }
+            else
+            {
+                recordPath = options.recordPath;
 
-            body(run);
+                RecordedRun run{
+                    .options = options,
+                    .commandLine = parsed,
+                    .eventSink = eventSink,
+                    .replayRecorder = std::nullopt};
+                if (options.recordPath)
+                {
+                    run.replayRecorder = replayRecorder;
+                }
+
+                body(run);
+            }
         }
         catch (const std::exception &error)
         {
