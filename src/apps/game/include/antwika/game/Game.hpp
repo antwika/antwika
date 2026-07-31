@@ -14,6 +14,7 @@
 #include <antwika/replay/IReplaySource.hpp>
 #include <antwika/time/Tick.hpp>
 
+#include "antwika/game/AppMode.hpp"
 #include "antwika/game/Camera.hpp"
 #include "antwika/game/GameSummary.hpp"
 #include "antwika/game/GridExtent.hpp"
@@ -114,6 +115,20 @@ namespace antwika::game
         PathIndex &paths;
 
         /**
+         * @brief Which screen the run is on, folded by the tick path.
+         *
+         * Passed in rather than created here for the same reason the
+         * camera is: a renderer built before this call has to read it to
+         * know which mode's picture to draw.
+         *
+         * Its constructor is where a run says which mode it starts in.
+         * The application leaves that defaulted, so a session opens at
+         * the main menu; a test whose subject is the grid constructs one
+         * as AppMode::Playing rather than clicking its way there.
+         */
+        AppModeState &mode;
+
+        /**
          * @brief Extra systems registered into an "observe" phase.
          *
          * The phase runs after "walk" every tick -- a renderer, a pacer.
@@ -152,6 +167,25 @@ namespace antwika::game
          * beforehand has to read it.
          */
         std::optional<std::reference_wrapper<UiOverlay>> overlay =
+            std::nullopt;
+
+        /**
+         * @brief The main menu's own picture, which turns the menu on.
+         *
+         * A second overlay rather than the toolbar's, because the two
+         * belong to different modes and neither may overwrite the
+         * other's picture.
+         *
+         * Unset, the menu is described against a zero canvas, which no
+         * click can hit -- so a run that starts in AppMode::MainMenu
+         * without one never leaves it. Every caller starting at the menu
+         * must therefore set this; one starting in AppMode::Playing need
+         * not, and a test whose subject is the grid does not.
+         *
+         * Passed in rather than created here because a renderer built
+         * beforehand has to read it.
+         */
+        std::optional<std::reference_wrapper<UiOverlay>> menuOverlay =
             std::nullopt;
     };
 

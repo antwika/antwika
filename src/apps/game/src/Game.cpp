@@ -14,6 +14,10 @@
 #include "antwika/game/GameStateReducer.hpp"
 #include "antwika/game/GridSink.hpp"
 #include "antwika/game/InputFold.hpp"
+#include "antwika/game/MainMenuScene.hpp"
+#include "antwika/game/MainMenuSink.hpp"
+#include "antwika/game/ModeGatedSink.hpp"
+#include "antwika/game/ModeGatedSystem.hpp"
 #include "antwika/game/SceneSnapshot.hpp"
 #include "antwika/game/Toolbar.hpp"
 #include "antwika/game/UiSink.hpp"
@@ -53,10 +57,18 @@ namespace antwika::game
 
         World world(logger);
 
+        AppModeState &mode = config.mode;
+
         SystemScheduler scheduler;
         WalkerSystem walkerSystem(paths);
+
+        // The walkers stop with the grid they walk on.
+        // Only that system stops: the tick, the commit and every
+        // observer still run, so the menu is drawn and the run is paced.
+        ModeGatedSystem gatedWalkers(
+            walkerSystem, mode, AppMode::Playing);
         const auto walkPhase = scheduler.createPhase("walk");
-        scheduler.addSystem(walkPhase, walkerSystem);
+        scheduler.addSystem(walkPhase, gatedWalkers);
 
         // A phase of its own.
         // A renderer then sees the generation this walk produced.
@@ -76,6 +88,13 @@ namespace antwika::game
         const bool hasToolbar = config.overlay.has_value();
         UiOverlay &ui = hasToolbar ? config.overlay->get() : noToolbar;
 
+        // The menu's own picture, never the toolbar's: the two belong to
+        // different modes, and one may not overwrite the other.
+        UiOverlay noMenu;
+        UiOverlay &menuUi = config.menuOverlay.has_value()
+                                ? config.menuOverlay->get()
+                                : noMenu;
+
         const Toolbar toolbar;
         InputFold input(config.codec);
         UiSink uiSink(camera, ui, input, toolbar, camera);
@@ -89,6 +108,16 @@ namespace antwika::game
             ui);
         StopSignal stopSignal;
 
+        const MainMenuScene menuScene;
+        MainMenuSink menuSink(
+            mode, menuUi, input, menuScene, stopSignal);
+
+        // Gated on the mode rather than checking one themselves: what a
+        // mode changes is what a click *means*, and engine.tick still
+        // reaches both -- see ModeGatedSink.
+        ModeGatedSink playingUi(uiSink, mode, AppMode::Playing);
+        ModeGatedSink playingGrid(gridSink, mode, AppMode::Playing);
+
         // The fold is first.
         // What it holds is the event the sinks after it are given now.
         // It is also the only thing that clears an edge.
@@ -98,8 +127,12 @@ namespace antwika::game
         // UiSink still comes before it.
         // So a press is resolved against the bar before the grid sees it.
         // And the picture is described before the renderer paints it.
+        // The mode is committed straight after the fold, so a change
+        // staged last tick has landed before anything gated reads it.
+        // MainMenuSink is before the grid's for the same reason UiSink
+        // is: a press is resolved against what is on screen first.
         std::vector<std::reference_wrapper<ITickEventSink>> timedSinks{
-            input, reducer};
+            input, mode, reducer, menuSink};
 
         // Registered only when there is somewhere to put the picture.
         // Otherwise the bar is described against a zero canvas.
@@ -107,10 +140,10 @@ namespace antwika::game
         // "No toolbar" then means no toolbar, not an unhittable one.
         if (hasToolbar)
         {
-            timedSinks.push_back(uiSink);
+            timedSinks.push_back(playingUi);
         }
 
-        timedSinks.push_back(gridSink);
+        timedSinks.push_back(playingGrid);
         timedSinks.push_back(stopSignal);
 
         if (config.replayRecorder.has_value())

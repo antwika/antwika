@@ -20,9 +20,11 @@
 #include <antwika/replay/ReplaySource.hpp>
 #include <antwika/time/SystemSleeper.hpp>
 
+#include "antwika/game/AppMode.hpp"
 #include "antwika/game/Camera.hpp"
 #include "antwika/game/GridExtent.hpp"
 #include "antwika/game/GridScene.hpp"
+#include "antwika/game/MainMenuScene.hpp"
 #include "antwika/game/PathIndex.hpp"
 #include "antwika/game/RenderSystem.hpp"
 #include "antwika/game/TickPacer.hpp"
@@ -33,9 +35,11 @@
 using antwika::app::ConsoleLogging;
 using antwika::app::RecordedRun;
 using antwika::ecs::ISystem;
+using antwika::game::AppModeState;
 using antwika::game::Camera;
 using antwika::game::GridExtent;
 using antwika::game::GridScene;
+using antwika::game::MainMenuScene;
 using antwika::game::PathIndex;
 using antwika::game::RenderSystem;
 using antwika::game::TickPacer;
@@ -95,13 +99,31 @@ namespace
         Camera camera(kInitialPan);
         PathIndex paths;
         const GridScene scene;
+        const MainMenuScene menuScene;
+
+        // A run opens at the main menu, which is a mode of its own and
+        // not a window over a grid that is already running.
+        // Nothing on the command line changes that: a --replay run boots
+        // into the same mode a live one does, so what a recorded click
+        // means cannot depend on how the binary was started.
+        AppModeState mode;
 
         // Against the size the window was asked for.
         // Never the size one reports, which nothing records.
         // That is what makes a recorded click hit the same button.
         UiOverlay overlay(antwika::game::kUiCanvas);
+        UiOverlay menuOverlay(antwika::game::kUiCanvas);
         RenderSystem renderSystem(
-            *window, scene, *atlas, paths, camera, kExtent, overlay);
+            *window,
+            scene,
+            *atlas,
+            paths,
+            camera,
+            kExtent,
+            overlay,
+            mode,
+            menuScene,
+            menuOverlay);
         SystemSleeper sleeper;
         TickPacer pacer(sleeper, kTickInterval);
 
@@ -145,9 +167,11 @@ namespace
                 .extent = kExtent,
                 .camera = camera,
                 .paths = paths,
+                .mode = mode,
                 .observers = observers,
                 .replayRecorder = recorded.replayRecorder,
-                .overlay = overlay}));
+                .overlay = overlay,
+                .menuOverlay = menuOverlay}));
     }
 } // namespace
 

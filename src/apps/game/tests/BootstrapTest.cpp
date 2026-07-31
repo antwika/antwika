@@ -19,6 +19,7 @@
 #include <antwika/replay/EngineLoopError.hpp>
 #include <antwika/replay/ReplaySource.hpp>
 
+#include "antwika/game/AppMode.hpp"
 #include "antwika/game/Camera.hpp"
 #include "antwika/game/Events.hpp"
 #include "antwika/game/Game.hpp"
@@ -32,6 +33,8 @@ using antwika::event::Event;
 using antwika::event::mocks::MockEventSink;
 using antwika::event::TickEvent;
 using antwika::event::TickEventRecorder;
+using antwika::game::AppMode;
+using antwika::game::AppModeState;
 using antwika::game::Camera;
 using antwika::gfx::Point;
 using antwika::game::GameState;
@@ -59,6 +62,10 @@ namespace
         Camera camera;
         PathIndex paths;
 
+        // The subject of these tests is the grid, so a run starts
+        // there rather than clicking its way past the menu.
+        AppModeState mode{AppMode::Playing};
+
         antwika::game::GameSummary run(
             ReplaySource &source,
             antwika::time::Tick maxTicks,
@@ -72,6 +79,7 @@ namespace
                 .extent = kExtent,
                 .camera = camera,
                 .paths = paths,
+                .mode = mode,
                 .maxTicks = maxTicks};
             if (recorder != nullptr)
             {
@@ -277,6 +285,7 @@ TEST(BootstrapTest, Bootstrap_RunsEveryObserverOncePerTick)
             .extent = kExtent,
             .camera = harness.camera,
             .paths = harness.paths,
+            .mode = harness.mode,
             .observers = {first, second},
             .maxTicks = 10});
 
