@@ -8,6 +8,10 @@ add_executable(antwika_game_tests
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/InputFold.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/PathIndex.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/RenderSystem.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/SaveCli.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/SaveGame.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/SaveGameFile.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/SaveMigration.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/TickPacer.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/Toolbar.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/SceneSnapshot.cpp
@@ -30,6 +34,9 @@ add_executable(antwika_game_tests
     PathIndexTest.cpp
     PointerReadingTest.cpp
     RenderSystemTest.cpp
+    SaveCliTest.cpp
+    SaveGameFileTest.cpp
+    SaveGameTest.cpp
     SceneSnapshotTest.cpp
     TileAtlasTest.cpp
     ReplayDeterminismTest.cpp

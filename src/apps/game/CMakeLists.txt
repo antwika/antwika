@@ -6,6 +6,10 @@ add_executable(antwika_game
     src/InputFold.cpp
     src/PathIndex.cpp
     src/RenderSystem.cpp
+    src/SaveCli.cpp
+    src/SaveGame.cpp
+    src/SaveGameFile.cpp
+    src/SaveMigration.cpp
     src/TickPacer.cpp
     src/Toolbar.cpp
     src/SceneSnapshot.cpp
