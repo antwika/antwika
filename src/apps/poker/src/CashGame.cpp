@@ -5,6 +5,7 @@
 #include <string>
 #include <vector>
 
+#include <antwika/holdem/Seat.hpp>
 #include <antwika/holdem/SeatId.hpp>
 
 #include "antwika/poker/CashGameError.hpp"
@@ -14,6 +15,22 @@ namespace antwika::poker
 
     using antwika::holdem::indexOf;
     using antwika::holdem::makeSeatId;
+
+    namespace
+    {
+
+        // The same rule Table::removePlayer() enforces.
+        // A folded player's stake is in the pot until it is paid out.
+        // So the seat is not theirs to vacate yet.
+        [[nodiscard]] bool hasChipsInThePot(
+            const Table &table, SeatId seat)
+        {
+            const auto &state = table.seatAt(seat);
+            return table.isHandInProgress()
+                   && (state.inHand || state.committed > 0);
+        }
+
+    } // namespace
 
     CashGame::CashGame(
         Table &table, BankrollLedger &ledger, Chips minimumBuyIn)
@@ -69,7 +86,7 @@ namespace antwika::poker
             throw CashGameError(
                 "CashGame: " + player + " is not at the table");
         }
-        if (table.seatAt(*seated).inHand)
+        if (hasChipsInThePot(table, *seated))
         {
             throw CashGameError(
                 "CashGame: " + player
@@ -132,7 +149,7 @@ namespace antwika::poker
 
             // A hand still running owns those chips.
             // They stay put rather than being pulled out from under it.
-            if (table.seatAt(seat).inHand)
+            if (hasChipsInThePot(table, seat))
             {
                 continue;
             }

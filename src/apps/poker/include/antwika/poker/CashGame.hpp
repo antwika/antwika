@@ -62,9 +62,13 @@ namespace antwika::poker
         /**
          * @brief Take a player's remaining chips back to their bankroll
          * and free their seat.
+         *
+         * Folding does not free the seat: a folded player's stake is
+         * still contesting the pot, so leaving waits for the hand to be
+         * paid out either way.
          * @param player The player's name.
-         * @throws CashGameError If they are not seated, or are in a live
-         * hand.
+         * @throws CashGameError If they are not seated, or have chips in
+         * a pot the current hand has yet to pay out.
          */
         void cashOut(const std::string &player);
 

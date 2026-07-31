@@ -120,9 +120,15 @@ namespace antwika::holdem
 
         /**
          * @brief Empty a seat.
+         *
+         * Refused while the hand this seat has chips in is still being
+         * played, whether or not it has folded: a folded player's stake
+         * is still in the pot, and clearing the seat would delete it
+         * from the contributions the side pots are built from.
+         * A seat that has staked nothing may leave at any time.
          * @param seat The seat to clear; already-empty is fine.
-         * @throws TableStateError If seat is out of range, or its player
-         * is in the current hand.
+         * @throws TableStateError If seat is out of range, or a hand is
+         * in progress and its player has chips in the pot.
          */
         void removePlayer(SeatId seat);
 

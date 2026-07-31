@@ -34,6 +34,12 @@ namespace
     {
         return FakeDeck(parseCards("Ac Kc Ad Kd 2c 3d 4h 7s 9c"));
     }
+
+    [[nodiscard]] FakeDeck threePlayerDeck()
+    {
+        return FakeDeck(
+            parseCards("Ac Kc Qc Ad Kd Qd 2c 3d 4h 7s 9h"));
+    }
 } // namespace
 
 TEST(CashGameTest, BuyIn_MovesChipsFromTheBankrollOntoASeat)
@@ -162,6 +168,32 @@ TEST(CashGameTest, CashOut_RefusesSomebodyInTheMiddleOfAHand)
     table.startHand(deck);
 
     EXPECT_THROW(game.cashOut("alice"), CashGameError);
+}
+
+// Folding gives up the cards, not the chips already in the middle.
+// Those go on contesting a pot the hand has yet to pay out.
+// So the desk cannot hand them back and free the seat over the top.
+TEST(CashGameTest, CashOut_RefusesAFolderWhoseChipsAreStillInThePot)
+{
+    Table table(3, kBlinds);
+    BankrollLedger ledger;
+    ledger.deposit("alice", 500);
+    ledger.deposit("bob", 500);
+    ledger.deposit("carol", 500);
+    CashGame game(table, ledger, kMinBuyIn);
+    static_cast<void>(game.buyIn("alice", 200));
+    static_cast<void>(game.buyIn("bob", 200));
+    static_cast<void>(game.buyIn("carol", 200));
+    auto deck = threePlayerDeck();
+    table.startHand(deck);
+
+    // Bob has the button and limps, then carol folds the small blind.
+    table.apply(antwika::holdem::call());
+    table.apply(antwika::holdem::fold());
+
+    ASSERT_FALSE(table.seatAt(makeSeatId(2)).inHand);
+    EXPECT_THROW(game.cashOut("carol"), CashGameError);
+    EXPECT_TRUE(game.seatOf("carol").has_value());
 }
 
 TEST(CashGameTest, CashOutBustedPlayers_SendsHomeOnlyTheEmptyStacks)

@@ -134,10 +134,20 @@ namespace antwika::holdem
     {
         requireSeatInRange(seat);
         auto &target = seats[indexOf(seat)];
-        if (target.inHand)
+
+        // Folding gives up the cards, not the chips already staked.
+        // Those still belong to a pot this hand has to pay out.
+        // Clearing the seat drops them from what finishHand() sees.
+        // The payouts would fall short by exactly that stake.
+        // Clearing the pot afterwards would discard the difference.
+        // So leaving waits for the hand to settle, folded or not.
+        // That is also what a card room makes a player do.
+        // A seat that has staked nothing is free to go at any time.
+        if (handInProgress && (target.inHand || target.committed > 0))
         {
             throw TableStateError(
-                "Table: a player in the hand cannot leave the table");
+                "Table: a player with chips in the pot cannot leave "
+                "the table");
         }
         target = Seat{};
     }
