@@ -109,14 +109,13 @@ namespace
     }
 
     // Enough characters that the name outgrows a short string.
-    // A run that only ever typed a handful would leave the copy in
-    // DemoSummary taking one path and never the other.
+    // A shorter run leaves DemoSummary's copy on one path only.
     constexpr std::size_t kTypedCharacters = 20;
     constexpr antwika::time::Tick kTypingBudget = kTypedCharacters + 4;
 
     // Choose the text field's page, press the field, then type.
-    // Nothing here says "the field now holds this": what is recorded
-    // is the key press, and the characters are worked out again.
+    // Nothing here says "the field now holds this".
+    // The key press is recorded and the characters worked out again.
     [[nodiscard]] std::vector<TickEvent> typingScript()
     {
         const InputEventCodec codec;

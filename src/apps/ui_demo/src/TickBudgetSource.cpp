@@ -13,11 +13,10 @@ namespace antwika::ui_demo
     {
     }
 
-    // The two excluded lines below are poker::WindowCloseSource's, for
-    // its reasons: an Event carries a std::string, so appending one has
-    // a throw edge and an allocating edge a short literal never takes,
-    // and the closing brace is the landing pad that frees the vector on
-    // an unwind nothing here can produce.
+    // The two excluded lines below are poker::WindowCloseSource's.
+    // Appending an Event has a throw edge and an allocating edge.
+    // A short literal never takes either.
+    // The closing brace is an unwind landing pad nothing here reaches.
     // See docs/confirming-unreachable-branches.md.
     std::vector<Event> TickBudgetSource::eventsFor(
         const antwika::time::Tick tick)
