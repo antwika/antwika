@@ -9,6 +9,8 @@
 #include <string_view>
 #include <vector>
 
+#include <antwika/cli/CommandLine.hpp>
+#include <antwika/cli/FlagSpec.hpp>
 #include <antwika/event/IEventSink.hpp>
 #include <antwika/event/ITickEventSink.hpp>
 #include <antwika/event/TickEvent.hpp>
@@ -17,11 +19,11 @@
 namespace antwika::app
 {
 
+    using antwika::cli::CommandLine;
+    using antwika::cli::FlagSpec;
     using antwika::event::IEventSink;
     using antwika::event::ITickEventSink;
     using antwika::event::TickEvent;
-    using antwika::replay::CommandLine;
-    using antwika::replay::FlagSpec;
     using antwika::replay::ReplayCliOptions;
 
     /**

@@ -60,7 +60,7 @@ namespace antwika::app
                     table.end(), extraFlags.begin(), extraFlags.end());
 
                 const CommandLine parsed =
-                    antwika::replay::parseCommandLine(argc, argv, table);
+                    antwika::cli::parseCommandLine(argc, argv, table);
                 const auto options =
                     antwika::replay::replayCliOptionsFrom(parsed);
 
@@ -70,7 +70,7 @@ namespace antwika::app
                 // recordPath is left unset, so the epilogue skips.
                 if (options.helpRequested)
                 {
-                    help << antwika::replay::helpText(name, table);
+                    help << antwika::cli::helpText(name, table);
                     return;
                 }
 
