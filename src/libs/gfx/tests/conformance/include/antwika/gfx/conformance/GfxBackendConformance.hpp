@@ -3,6 +3,7 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
+#include <cstddef>
 #include <cstdint>
 #include <memory>
 #include <vector>
@@ -12,6 +13,7 @@
 #include <antwika/gfx/Color.hpp>
 #include <antwika/gfx/GfxError.hpp>
 #include <antwika/gfx/IGfxBackend.hpp>
+#include <antwika/gfx/IMesh.hpp>
 #include <antwika/gfx/IRenderer3D.hpp>
 #include <antwika/gfx/ITexture.hpp>
 #include <antwika/gfx/IWindow.hpp>
@@ -37,6 +39,56 @@ namespace antwika::gfx::conformance
      * before the backend is declared to be looping forever.
      */
     inline constexpr std::uint32_t kPollLimit = 1000;
+
+    /**
+     * @brief A texture no backend made, and none may reach inside.
+     *
+     * ITexture is opaque, so a renderer handed one has to ask whether
+     * it is even its own before reaching for a native handle.
+     * The two-window tests ask that question of a texture from a
+     * sibling renderer, and skip on a backend that allows one window;
+     * this asks it of an implementation no backend has ever seen, which
+     * every backend can be asked.
+     */
+    class ForeignTexture final : public ITexture
+    {
+    public:
+        /**
+         * @brief Report a size, as any texture must.
+         * @return A plausible one; nothing should be asking.
+         */
+        [[nodiscard]] Size size() const override
+        {
+            return Size{.width = 4, .height = 4};
+        }
+    };
+
+    /**
+     * @brief A mesh no backend made, and none may reach inside.
+     *
+     * IMesh's answer to ForeignTexture, for the same question.
+     */
+    class ForeignMesh final : public IMesh
+    {
+    public:
+        /**
+         * @brief Report a vertex count, as any mesh must.
+         * @return Three, being one triangle's worth.
+         */
+        [[nodiscard]] std::size_t vertexCount() const override
+        {
+            return 3;
+        }
+
+        /**
+         * @brief Report a triangle count, as any mesh must.
+         * @return One.
+         */
+        [[nodiscard]] std::size_t triangleCount() const override
+        {
+            return 1;
+        }
+    };
 
     /**
      * @brief The behaviour every IGfxBackend must share, whichever
@@ -497,6 +549,24 @@ namespace antwika::gfx::conformance
         });
     }
 
+    TYPED_TEST_P(
+        GfxBackendConformance, DrawTexture_AcceptsATextureOfAnotherKind)
+    {
+        const auto window = this->backend->createWindow(this->demoDesc());
+        const ForeignTexture foreign;
+        const auto whole = this->wholeBitmap();
+
+        // The test above skips on a single-window backend.
+        // That leaves its "is this even mine?" guard unasked.
+        // This one needs a single window, so every backend answers.
+        EXPECT_NO_THROW({
+            window->renderer().drawTexture(
+                foreign, whole, whole,
+                Color{.red = 255, .green = 255, .blue = 255});
+            window->renderer().present();
+        });
+    }
+
     TYPED_TEST_P(GfxBackendConformance, Texture_MayOutliveItsWindow)
     {
         auto window = this->backend->createWindow(this->demoDesc());
@@ -685,6 +755,30 @@ namespace antwika::gfx::conformance
         });
     }
 
+    TYPED_TEST_P(GfxBackendConformance, DrawMesh_AcceptsAMeshOfAnotherKind)
+    {
+        const auto window = this->backend->createWindow(this->demoDesc());
+        auto *renderer = this->renderer3dOf(*window);
+
+        if (renderer == nullptr)
+        {
+            GTEST_SKIP() << "backend offers no 3D renderer";
+        }
+
+        const ForeignMesh foreign;
+
+        // ForeignTexture's question, asked of geometry.
+        // A buffer name that was never there is the hazard.
+        EXPECT_NO_THROW({
+            renderer->drawMesh(
+                foreign,
+                identityMatrix(),
+                this->demoCamera(),
+                Color{.red = 255, .green = 255, .blue = 255});
+            window->renderer().present();
+        });
+    }
+
     TYPED_TEST_P(GfxBackendConformance, Mesh_MayOutliveItsWindow)
     {
         auto window = this->backend->createWindow(this->demoDesc());
@@ -796,12 +890,14 @@ namespace antwika::gfx::conformance
         DrawTexture_AcceptsAFrameWithoutThrowing,
         DrawTexture_AcceptsAnUndrawableBlit,
         DrawTexture_AcceptsATextureFromAnotherRenderer,
+        DrawTexture_AcceptsATextureOfAnotherKind,
         Texture_MayOutliveItsWindow,
         CreateMesh_ReportsTheGeometrysCounts,
         CreateMesh_ThrowsOnIncompleteData,
         DrawMesh_AcceptsAFrameWithoutThrowing,
         DrawMesh_AcceptsAnAwkwardCamera,
         DrawMesh_AcceptsAMeshFromAnotherRenderer,
+        DrawMesh_AcceptsAMeshOfAnotherKind,
         Mesh_MayOutliveItsWindow,
         PollEvent_DrainsToAnEmptyQueue,
         PollEvent_DrainsAfterAFrameIsDrawn,
