@@ -34,17 +34,23 @@ namespace antwika::game
         UiOverlay &overlay,
         const InputFold &input,
         const Toolbar &toolbar,
+        PauseState &pause,
         Camera home)
         : camera(camera),
           overlay(overlay),
           input(input),
           toolbar(toolbar),
+          pause(pause),
           home(home)
     {
     }
 
     void UiSink::handle(const TickEvent &event)
     {
+        // Off the event rather than counted here.
+        // So the number on the bar is the simulation's own.
+        tick = event.tick;
+
         if (event.event.name == antwika::engine::events::kTick)
         {
             // Described again here, for the renderer about to paint.
@@ -77,8 +83,7 @@ namespace antwika::game
 
     void UiSink::refreshAndAct(bool pressed)
     {
-        auto frame = toolbar.describe(
-            overlay.canvas(), pointerNow(pressed), camera, overlay.tool());
+        auto frame = describeNow(pressed);
         const auto activated = frame.interactions.activated;
 
         if (activated == widgets::kZoomIn)
@@ -93,25 +98,37 @@ namespace antwika::game
         {
             camera = home;
         }
+        else if (activated == widgets::kPauseResume)
+        {
+            pause.toggle();
+        }
         else
         {
             selectFrom(activated);
         }
 
         // The zoom the bar reports has just changed.
+        // So has the pause button's label.
         // So it is described once more.
         // Otherwise it would show the level it was pressed at.
         if (activated != kNoWidget)
         {
-            frame = toolbar.describe(
-                overlay.canvas(),
-                pointerNow(pressed),
-                camera,
-                overlay.tool());
+            frame = describeNow(pressed);
         }
 
         overlay.set(
             std::move(frame.commands), frame.interactions.pointerOverUi);
+    }
+
+    Frame UiSink::describeNow(bool pressed) const
+    {
+        return toolbar.describe(
+            overlay.canvas(),
+            pointerNow(pressed),
+            camera,
+            overlay.tool(),
+            pause.paused(),
+            tick);
     }
 
     void UiSink::selectFrom(WidgetId activated)

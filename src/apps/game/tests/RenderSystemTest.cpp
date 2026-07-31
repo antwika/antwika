@@ -1,7 +1,9 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
+#include <chrono>
 #include <cstddef>
+#include <string_view>
 
 #include <antwika/ecs/World.hpp>
 #include <antwika/engine/Events.hpp>
@@ -15,11 +17,13 @@
 #include <antwika/input/PointerHint.hpp>
 #include <antwika/input/PointerHintChannel.hpp>
 #include <antwika/log/mocks/MockLogger.hpp>
+#include <antwika/time/fakes/FakeClock.hpp>
 
 #include "antwika/game/AppMode.hpp"
 #include "antwika/game/BuildingIndex.hpp"
 #include "antwika/game/Camera.hpp"
 #include "antwika/game/Cell.hpp"
+#include "antwika/game/FrameMeter.hpp"
 #include "antwika/game/GridExtent.hpp"
 #include "antwika/game/GridScene.hpp"
 #include "antwika/game/IsoProjection.hpp"
@@ -54,6 +58,7 @@ using antwika::gfx::mocks::MockRenderer;
 using antwika::gfx::mocks::MockTexture;
 using antwika::gfx::mocks::MockWindow;
 using antwika::log::mocks::MockLogger;
+using antwika::time::fakes::FakeClock;
 using ::testing::_;
 using ::testing::AnyNumber;
 using ::testing::NiceMock;
@@ -260,6 +265,42 @@ TEST_F(RenderSystemTest, Update_DrawsNoGhostUnderTheToolbar)
 
     EXPECT_CALL(renderer, drawTexture(_, _, _, _))
         .Times(static_cast<int>(kExtent.width * kExtent.height));
+
+    system.update(world, 0);
+}
+
+// The frame rate is measured against a wall clock.
+// So it is counted and drawn here, and reaches no simulation.
+TEST_F(RenderSystemTest, Update_CountsAndDrawsTheFrameRateWhenAskedTo)
+{
+    FakeClock clock{std::chrono::time_point<std::chrono::system_clock>{}};
+    antwika::game::FrameMeter meter{clock};
+
+    auto withMeter = setup();
+    withMeter.fps = meter;
+    RenderSystem system(withMeter);
+
+    // One frame opens the window, and one a second later closes it.
+    system.update(world, 0);
+    clock.advance(std::chrono::seconds{1});
+    system.update(world, 1);
+
+    ASSERT_EQ(1U, meter.perSecond());
+
+    // The third frame is the one that gets to draw the answer.
+    EXPECT_CALL(
+        renderer, drawText(_, std::string_view{"fps 1"}, _, _));
+
+    system.update(world, 2);
+}
+
+// A run that offers no clock draws no readout.
+// Which is what every caller whose subject is the picture asks for.
+TEST_F(RenderSystemTest, Update_DrawsNoReadoutWithoutAMeter)
+{
+    RenderSystem system(setup());
+
+    EXPECT_CALL(renderer, drawText(_, _, _, _)).Times(0);
 
     system.update(world, 0);
 }

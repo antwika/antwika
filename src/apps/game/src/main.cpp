@@ -24,12 +24,14 @@
 #include <antwika/input/SelectedInputBackend.hpp>
 #include <antwika/log/Level.hpp>
 #include <antwika/replay/ReplaySource.hpp>
+#include <antwika/time/SystemClock.hpp>
 #include <antwika/time/SystemSleeper.hpp>
 
 #include "antwika/game/AppMode.hpp"
 #include "antwika/game/AtlasImage.hpp"
 #include "antwika/game/BuildingIndex.hpp"
 #include "antwika/game/Camera.hpp"
+#include "antwika/game/FrameMeter.hpp"
 #include "antwika/game/GridExtent.hpp"
 #include "antwika/game/GridScene.hpp"
 #include "antwika/game/MainMenuScene.hpp"
@@ -167,6 +169,13 @@ namespace
         const WorldMapScene worldScene;
         WorldMapState cities(antwika::game::generateWorldMap(kWorld));
 
+        // The one wall clock in this application.
+        // It reaches the renderer and nothing else.
+        // What it measures is how often a frame is drawn.
+        // No replay reproduces that, so nothing simulated may read it.
+        const antwika::time::SystemClock clock;
+        antwika::game::FrameMeter frameMeter(clock);
+
         RenderSystem renderSystem(antwika::game::RenderSetup{
             .window = *window,
             .mode = mode,
@@ -184,7 +193,8 @@ namespace
             .saveScene = saveScene,
             .saveOverlay = saveOverlay,
             .worldScene = worldScene,
-            .cities = cities});
+            .cities = cities,
+            .fps = frameMeter});
         SystemSleeper sleeper;
 
         // The pacing lives in the source now, not in an observer.

@@ -97,6 +97,83 @@ TEST(ToolbarTest, Describe_DrawsEveryButtonAndTheZoomItIsAt)
              "zoom " + std::to_string(camera.zoomLevel())}));
 }
 
+// Labelled with what pressing it does, so the two states read apart.
+TEST(ToolbarTest, Describe_LabelsThePauseButtonFromWhatItWouldDo)
+{
+    const Toolbar toolbar;
+    const Camera camera;
+
+    EXPECT_THAT(
+        textsOf(
+            toolbar
+                .describe(
+                    kCanvas,
+                    Pointer{},
+                    camera,
+                    antwika::game::BuildTool::Road,
+                    false)
+                .commands),
+        ::testing::Contains(std::string{"pause"}));
+
+    EXPECT_THAT(
+        textsOf(
+            toolbar
+                .describe(
+                    kCanvas,
+                    Pointer{},
+                    camera,
+                    antwika::game::BuildTool::Road,
+                    true)
+                .commands),
+        ::testing::Contains(std::string{"resume"}));
+}
+
+// The tick is simulation state, read back out where it can be seen.
+TEST(ToolbarTest, Describe_ReportsTheTickItIsGiven)
+{
+    const Toolbar toolbar;
+    const Camera camera;
+
+    EXPECT_THAT(
+        textsOf(
+            toolbar
+                .describe(
+                    kCanvas,
+                    Pointer{},
+                    camera,
+                    antwika::game::BuildTool::Road,
+                    false,
+                    1234)
+                .commands),
+        ::testing::Contains(std::string{"tick 1234"}));
+}
+
+// The picture is a value, so the whole bar is one comparison.
+// A frame rate would break this, which is why none is described here.
+TEST(ToolbarTest, Describe_IsAPureFunctionOfWhatItIsGiven)
+{
+    const Toolbar toolbar;
+    const Camera camera;
+
+    const auto once = toolbar.describe(
+        kCanvas, Pointer{}, camera, antwika::game::BuildTool::Road, true, 7);
+    const auto again = toolbar.describe(
+        kCanvas, Pointer{}, camera, antwika::game::BuildTool::Road, true, 7);
+
+    EXPECT_EQ(once.commands, again.commands);
+    EXPECT_NE(
+        once.commands,
+        toolbar
+            .describe(
+                kCanvas,
+                Pointer{},
+                camera,
+                antwika::game::BuildTool::Road,
+                false,
+                7)
+            .commands);
+}
+
 TEST(ToolbarTest, Describe_ReportsTheZoomTheCameraIsActuallyAt)
 {
     const Toolbar toolbar;
@@ -115,6 +192,7 @@ TEST(ToolbarTest, Describe_HasAPixelForEveryButton)
     EXPECT_TRUE(pointOn(widgets::kZoomOut).has_value());
     EXPECT_TRUE(pointOn(widgets::kZoomIn).has_value());
     EXPECT_TRUE(pointOn(widgets::kResetView).has_value());
+    EXPECT_TRUE(pointOn(widgets::kPauseResume).has_value());
 }
 
 TEST(ToolbarTest, Describe_ReportsAPressOnTheButtonUnderThePointer)

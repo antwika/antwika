@@ -47,6 +47,7 @@
 #include "antwika/game/IsoProjection.hpp"
 #include "antwika/game/Path.hpp"
 #include "antwika/game/PathIndex.hpp"
+#include "antwika/game/PauseState.hpp"
 #include "antwika/game/SceneSnapshot.hpp"
 #include "antwika/game/TileAtlas.hpp"
 #include "antwika/game/Toolbar.hpp"
@@ -79,6 +80,7 @@ using antwika::game::cellCentre;
 using antwika::game::GridExtent;
 using antwika::game::GridScene;
 using antwika::game::GridSink;
+using antwika::game::PauseState;
 using antwika::game::WorldMap;
 using antwika::game::WorldMapState;
 using antwika::game::InputFold;
@@ -320,7 +322,8 @@ namespace
         InputFold input{codec};
         UiOverlay overlay{kCanvas};
         Toolbar toolbar;
-        UiSink uiSink{camera, overlay, input, toolbar, camera};
+        PauseState pause;
+        UiSink uiSink{camera, overlay, input, toolbar, pause, camera};
         WorldMapState cities{WorldMap{}};
         GridSink gridSink{
             world,

@@ -1,7 +1,11 @@
+#include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
 #include <cstdint>
 #include <optional>
+#include <string>
+#include <variant>
+#include <vector>
 
 #include <antwika/engine/Events.hpp>
 #include <antwika/event/Event.hpp>
@@ -13,6 +17,8 @@
 #include <antwika/input/Key.hpp>
 #include <antwika/input/MouseButton.hpp>
 #include <antwika/input/Position.hpp>
+#include <antwika/ui/DrawCommand.hpp>
+#include <antwika/ui/DrawList.hpp>
 #include <antwika/ui/Pointer.hpp>
 #include <antwika/ui/WidgetId.hpp>
 
@@ -20,6 +26,7 @@
 
 #include "antwika/game/Camera.hpp"
 #include "antwika/game/InputFold.hpp"
+#include "antwika/game/PauseState.hpp"
 #include "antwika/game/Toolbar.hpp"
 #include "antwika/game/UiOverlay.hpp"
 #include "antwika/game/UiSink.hpp"
@@ -28,6 +35,7 @@ using antwika::event::Event;
 using antwika::event::TickEvent;
 using antwika::game::Camera;
 using antwika::game::InputFold;
+using antwika::game::PauseState;
 using antwika::game::Toolbar;
 using antwika::game::UiOverlay;
 using antwika::game::UiSink;
@@ -42,6 +50,8 @@ using antwika::input::PointerButtonPressed;
 using antwika::input::PointerButtonReleased;
 using antwika::input::PointerMoved;
 using antwika::input::Position;
+using antwika::ui::DrawList;
+using antwika::ui::DrawText;
 using antwika::ui::Pointer;
 using antwika::ui::WidgetId;
 namespace widgets = antwika::game::widgets;
@@ -53,6 +63,21 @@ namespace
 
     // Away from the bar, which sits in the top-left corner.
     constexpr Position kOnTheGrid{.x = 1000, .y = 600};
+
+    [[nodiscard]] std::vector<std::string> textsOf(const DrawList &commands)
+    {
+        std::vector<std::string> texts;
+
+        for (const auto &command : commands)
+        {
+            if (const auto *text = std::get_if<DrawText>(&command))
+            {
+                texts.push_back(text->text);
+            }
+        }
+
+        return texts;
+    }
 
     class UiSinkTest : public ::testing::Test
     {
@@ -109,7 +134,8 @@ namespace
         InputEventCodec codec;
         InputFold input{codec};
         Toolbar toolbar;
-        UiSink sink{camera, overlay, input, toolbar, camera};
+        PauseState pause;
+        UiSink sink{camera, overlay, input, toolbar, pause, camera};
     };
 } // namespace
 
@@ -140,6 +166,49 @@ TEST_F(UiSinkTest, Press_PutsTheCameraBackOnTheResetButton)
     pressOn(widgets::kResetView);
 
     EXPECT_EQ(home, camera);
+}
+
+// The button reaches simulation state, inside the tick path.
+// It defines no event of its own: what a replay holds is the click.
+TEST_F(UiSinkTest, Press_HoldsTheSimulationStillOnThePauseButton)
+{
+    pressOn(widgets::kPauseResume);
+
+    EXPECT_TRUE(pause.paused());
+}
+
+TEST_F(UiSinkTest, Press_LetsTheRunGoAgainOnTheSecondPress)
+{
+    pressOn(widgets::kPauseResume);
+    pressOn(widgets::kPauseResume);
+
+    EXPECT_FALSE(pause.paused());
+}
+
+// Otherwise the button would still say "pause" on the tick it paused on.
+TEST_F(UiSinkTest, Press_RelabelsTheButtonInTheSameTickItWasPressed)
+{
+    pressOn(widgets::kPauseResume);
+
+    EXPECT_THAT(
+        textsOf(overlay.commands()),
+        ::testing::Contains(std::string{"resume"}));
+}
+
+// The bar reports the tick the run is on, off the event being handled.
+TEST_F(UiSinkTest, Tick_ReportsTheTickTheEventCarried)
+{
+    dispatch(
+        TickEvent{
+            .tick = 12,
+            .event = Event{.name = antwika::engine::events::kTick}});
+
+    EXPECT_EQ(
+        toolbar
+            .describe(
+                kCanvas, Pointer{}, camera, overlay.tool(), false, 12)
+            .commands,
+        overlay.commands());
 }
 
 TEST_F(UiSinkTest, Press_LeavesTheCameraAloneAwayFromTheBar)
