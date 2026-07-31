@@ -126,7 +126,7 @@ namespace
         TickEventRecorder recorder;
 
         // The subject here is the grid, so a run starts there.
-        AppModeState mode{AppMode::Playing};
+        AppModeState mode{AppMode::CityMap};
 
         auto summary = antwika::game::bootstrap(
             antwika::game::GameConfig{
@@ -157,7 +157,7 @@ namespace
         TickEventRecorder recorder;
 
         // The subject here is the grid, so a run starts there.
-        AppModeState mode{AppMode::Playing};
+        AppModeState mode{AppMode::CityMap};
         UiOverlay overlay(kUiCanvas);
 
         auto summary = antwika::game::bootstrap(

@@ -132,12 +132,12 @@ TEST_F(MainMenuSinkTest, PressingNewGameAsksForThePlayingMode)
 
     // Staged, not applied: the same click must not also reach the grid.
     EXPECT_EQ(mode.mode(), AppMode::MainMenu);
-    EXPECT_EQ(mode.next(), AppMode::Playing);
+    EXPECT_EQ(mode.next(), AppMode::CityMap);
 
     // And applied at the boundary, which the state itself owns.
     mode.handle(TickEvent{
         .tick = 0, .event = Event{.name = antwika::engine::events::kTick}});
-    EXPECT_EQ(mode.mode(), AppMode::Playing);
+    EXPECT_EQ(mode.mode(), AppMode::CityMap);
 }
 
 TEST_F(MainMenuSinkTest, PressingQuitStopsTheRun)
@@ -157,29 +157,37 @@ TEST_F(MainMenuSinkTest, APressThatMissesEveryItemChangesNothing)
     EXPECT_FALSE(stop.stopped());
 }
 
-// The placeholders are inert, not merely painted to look it.
+TEST_F(MainMenuSinkTest, PressingWorldMapAsksForTheWorldMapMode)
+{
+    pressAt(pixelOn(menuWidgets::kWorldMap));
+
+    EXPECT_EQ(mode.mode(), AppMode::MainMenu);
+    EXPECT_EQ(mode.next(), AppMode::WorldMap);
+}
+
+// The remaining placeholder is inert, not merely painted to look it.
 // An unnamed button cannot be hovered.
 // So nothing can ever be resolved to one.
-TEST_F(MainMenuSinkTest, ThePlaceholderItemsCannotBePressed)
+TEST_F(MainMenuSinkTest, ThePlaceholderItemCannotBePressed)
 {
-    const auto quit = pixelOn(menuWidgets::kQuit);
     const auto newGame = pixelOn(menuWidgets::kNewGame);
+    const auto worldMap = pixelOn(menuWidgets::kWorldMap);
 
-    // Between the two named items are the two placeholders.
-    for (std::int32_t y = newGame.y; y <= quit.y; y += 2)
+    // Between those two named items sits the one placeholder.
+    for (std::int32_t y = newGame.y; y <= worldMap.y; y += 2)
     {
         pressAt(Position{.x = newGame.x, .y = y});
     }
 
     // Every press hit one of the two named items or nothing at all.
-    // So nothing else in the menu could have acted.
-    EXPECT_EQ(mode.next(), AppMode::Playing);
-    EXPECT_TRUE(stop.stopped());
+    // Whichever came last is the mode; neither is the placeholder's.
+    EXPECT_EQ(mode.next(), AppMode::WorldMap);
+    EXPECT_FALSE(stop.stopped());
 }
 
 TEST_F(MainMenuSinkTest, NothingHappensOutsideTheMainMenuMode)
 {
-    mode.request(AppMode::Playing);
+    mode.request(AppMode::CityMap);
     mode.handle(TickEvent{
         .tick = 0, .event = Event{.name = antwika::engine::events::kTick}});
 

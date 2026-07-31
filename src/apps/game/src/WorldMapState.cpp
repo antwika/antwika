@@ -17,30 +17,39 @@ namespace antwika::game
         return map;
     }
 
-    MapView WorldMapState::view() const noexcept
+    bool WorldMapState::cityOpen() const noexcept
     {
-        return showing;
+        return open;
     }
 
-    std::size_t WorldMapState::openCity() const
+    std::size_t WorldMapState::city() const noexcept
     {
-        if (showing != MapView::City)
-        {
-            throw WorldMapError("No city is open");
-        }
-        return city;
+        return live;
     }
 
-    void WorldMapState::openCityAt(std::size_t index)
+    void WorldMapState::openCityAt(
+        std::size_t index, PathIndex &livePaths, Camera &liveCamera)
     {
         requireCity(index);
-        city = index;
-        showing = MapView::City;
+        closeCity(livePaths, liveCamera);
+
+        live = index;
+        open = true;
+        livePaths = paths[index];
+        liveCamera = cameras[index];
     }
 
-    void WorldMapState::closeCity()
+    void WorldMapState::closeCity(
+        PathIndex &livePaths, Camera &liveCamera)
     {
-        showing = MapView::World;
+        if (!open)
+        {
+            return;
+        }
+
+        paths[live] = livePaths;
+        cameras[live] = liveCamera;
+        open = false;
     }
 
     PathIndex &WorldMapState::cityPaths(std::size_t index)

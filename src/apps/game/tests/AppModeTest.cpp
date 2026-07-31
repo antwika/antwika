@@ -33,9 +33,9 @@ TEST(AppModeTest, ARunStartsAtTheMainMenu)
 
 TEST(AppModeTest, ARunCanBeAskedToStartSomewhereElse)
 {
-    const AppModeState mode{AppMode::Playing};
+    const AppModeState mode{AppMode::CityMap};
 
-    EXPECT_EQ(mode.mode(), AppMode::Playing);
+    EXPECT_EQ(mode.mode(), AppMode::CityMap);
 }
 
 // The whole point of staging.
@@ -44,26 +44,26 @@ TEST(AppModeTest, ARequestedModeIsNotTheModeUntilTheTickBoundary)
 {
     AppModeState mode;
 
-    mode.request(AppMode::Playing);
+    mode.request(AppMode::CityMap);
 
     EXPECT_EQ(mode.mode(), AppMode::MainMenu);
-    EXPECT_EQ(mode.next(), AppMode::Playing);
+    EXPECT_EQ(mode.next(), AppMode::CityMap);
 }
 
 TEST(AppModeTest, EngineTickAppliesWhateverWasStaged)
 {
     AppModeState mode;
-    mode.request(AppMode::Playing);
+    mode.request(AppMode::CityMap);
 
     mode.handle(tick());
 
-    EXPECT_EQ(mode.mode(), AppMode::Playing);
+    EXPECT_EQ(mode.mode(), AppMode::CityMap);
 }
 
 TEST(AppModeTest, AnythingButATickLeavesTheModeAlone)
 {
     AppModeState mode;
-    mode.request(AppMode::Playing);
+    mode.request(AppMode::CityMap);
 
     mode.handle(TickEvent{
         .tick = 0, .event = Event{.name = "input.pointer_down"}});
@@ -73,9 +73,9 @@ TEST(AppModeTest, AnythingButATickLeavesTheModeAlone)
 
 TEST(AppModeTest, ATickWithNothingStagedChangesNothing)
 {
-    AppModeState mode{AppMode::Playing};
+    AppModeState mode{AppMode::CityMap};
 
     mode.handle(tick());
 
-    EXPECT_EQ(mode.mode(), AppMode::Playing);
+    EXPECT_EQ(mode.mode(), AppMode::CityMap);
 }

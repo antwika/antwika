@@ -4,6 +4,7 @@
 #include <antwika/ecs/World.hpp>
 #include <antwika/gfx/ITexture.hpp>
 #include <antwika/gfx/IWindow.hpp>
+#include <antwika/gfx/Size.hpp>
 #include <antwika/time/Tick.hpp>
 
 #include "antwika/game/AppMode.hpp"
@@ -13,6 +14,8 @@
 #include "antwika/game/MainMenuScene.hpp"
 #include "antwika/game/PathIndex.hpp"
 #include "antwika/game/UiOverlay.hpp"
+#include "antwika/game/WorldMapScene.hpp"
+#include "antwika/game/WorldMapState.hpp"
 
 namespace antwika::game
 {
@@ -21,14 +24,78 @@ namespace antwika::game
     using antwika::ecs::World;
     using antwika::gfx::ITexture;
     using antwika::gfx::IWindow;
+    using antwika::gfx::Size;
+
+    /**
+     * @brief Everything the renderer draws each mode's picture out of.
+     *
+     * A struct with designated initialisers rather than a parameter list,
+     * for the reason GameConfig gives: one screen per mode means one
+     * scene and one overlay per mode, and a positional list of them is a
+     * row of same-typed references distinguishable only by where they
+     * sit.
+     *
+     * Every member is borrowed and must outlive the RenderSystem.
+     */
+    struct RenderSetup
+    {
+        /** @brief Window whose renderer receives each frame. */
+        IWindow &window;
+
+        /** @brief Which mode's picture to draw; only ever read. */
+        const AppModeState &mode;
+
+        /**
+         * @brief The area every mode is laid out against.
+         *
+         * The size the window was *asked* for, never the size one
+         * reports -- see UiCanvas.hpp. The world map is centred in it,
+         * and WorldMapSink resolves a click against the same number.
+         */
+        Size canvas;
+
+        /** @brief Turns a grid snapshot into drawing calls. */
+        const GridScene &scene;
+
+        /**
+         * @brief The texture every tile is blitted from.
+         *
+         * It must have come from this window's renderer.
+         */
+        const ITexture &atlas;
+
+        /** @brief Read for the live city's path cells. */
+        const PathIndex &paths;
+
+        /** @brief Read for where the live city is drawn from. */
+        const Camera &camera;
+
+        /** @brief Read for the bounds to draw within. */
+        GridExtent extent;
+
+        /** @brief Read for the toolbar's picture, painted last. */
+        const UiOverlay &overlay;
+
+        /** @brief Draws the main menu. */
+        const MainMenuScene &menuScene;
+
+        /** @brief Read for the menu's picture. */
+        const UiOverlay &menuOverlay;
+
+        /** @brief Draws the world and its cities. */
+        const WorldMapScene &worldScene;
+
+        /** @brief Read for the world to draw, and which city is open. */
+        const WorldMapState &cities;
+    };
 
     /**
      * @brief Draws whichever mode the app is in, once per tick.
      *
      * Which one that is, is simulation state it only reads -- see
      * AppMode.hpp. A mode owns the whole screen: the menu is not painted
-     * over a grid that is still running, and the grid is not painted
-     * under a menu.
+     * over a grid that is still running, the grid is not painted under a
+     * menu, and the world map is not painted beside either.
      *
      * An observer on the same terms as apps/life's RenderSystem: it only
      * reads, and knows nothing about the systems it shares a tick with.
@@ -50,37 +117,19 @@ namespace antwika::game
      * handling of its own. That size reaches nothing but the culling test
      * and the drawing calls, which is what keeps a resize from perturbing
      * the simulation -- and why the projection is anchored to the camera's
-     * pan rather than to the canvas centre.
+     * pan rather than to the canvas centre. The *world map* is laid out
+     * against the configured canvas instead, never the reported size, for
+     * the reason the toolbar is: a click on a city is resolved against
+     * that layout.
      */
     class RenderSystem final : public ISystem
     {
     public:
         /**
          * @brief Construct the system over what it draws and reads.
-         * @param window Window whose renderer receives each frame.
-         * @param scene Turns a snapshot into drawing calls.
-         * @param atlas The texture every tile is blitted from; it must
-         * have come from this window's renderer, and must outlive this
-         * system.
-         * @param paths Read for the path cells.
-         * @param camera Read for where to draw from.
-         * @param extent Read for the bounds to draw within.
-         * @param overlay Read for the toolbar's picture, painted last.
-         * @param mode Read for which mode's picture to draw.
-         * @param menuScene Draws the main menu.
-         * @param menuOverlay Read for the menu's picture.
+         * @param setup Everything it draws each mode's picture out of.
          */
-        RenderSystem(
-            IWindow &window,
-            const GridScene &scene,
-            const ITexture &atlas,
-            const PathIndex &paths,
-            const Camera &camera,
-            GridExtent extent,
-            const UiOverlay &overlay,
-            const AppModeState &mode,
-            const MainMenuScene &menuScene,
-            const UiOverlay &menuOverlay);
+        explicit RenderSystem(const RenderSetup &setup);
 
         RenderSystem(const RenderSystem &) = delete;
         RenderSystem(RenderSystem &&) = delete;
@@ -96,16 +145,9 @@ namespace antwika::game
         void update(World &world, antwika::time::Tick tick) override;
 
     private:
-        IWindow &window;
-        const GridScene &scene;
-        const ITexture &atlas;
-        const PathIndex &paths;
-        const Camera &camera;
-        GridExtent extent;
-        const UiOverlay &overlay;
-        const AppModeState &mode;
-        const MainMenuScene &menuScene;
-        const UiOverlay &menuOverlay;
+        void drawGrid(const World &world);
+
+        RenderSetup setup;
     };
 
 } // namespace antwika::game

@@ -4,6 +4,9 @@
 #include <cstddef>
 
 #include <antwika/ecs/World.hpp>
+#include <antwika/engine/Events.hpp>
+#include <antwika/event/Event.hpp>
+#include <antwika/event/TickEvent.hpp>
 #include <antwika/gfx/Rect.hpp>
 #include <antwika/gfx/Size.hpp>
 #include <antwika/gfx/mocks/MockRenderer.hpp>
@@ -11,9 +14,9 @@
 #include <antwika/gfx/mocks/MockWindow.hpp>
 #include <antwika/log/mocks/MockLogger.hpp>
 
+#include "antwika/game/AppMode.hpp"
 #include "antwika/game/Camera.hpp"
 #include "antwika/game/Cell.hpp"
-#include "antwika/game/AppMode.hpp"
 #include "antwika/game/GridExtent.hpp"
 #include "antwika/game/GridScene.hpp"
 #include "antwika/game/MainMenuScene.hpp"
@@ -21,6 +24,9 @@
 #include "antwika/game/RenderSystem.hpp"
 #include "antwika/game/TileAtlas.hpp"
 #include "antwika/game/UiOverlay.hpp"
+#include "antwika/game/WorldMap.hpp"
+#include "antwika/game/WorldMapScene.hpp"
+#include "antwika/game/WorldMapState.hpp"
 
 using antwika::ecs::World;
 using antwika::game::AppMode;
@@ -31,9 +37,12 @@ using antwika::game::GridExtent;
 using antwika::game::GridScene;
 using antwika::game::MainMenuScene;
 using antwika::game::PathIndex;
+using antwika::game::RenderSetup;
 using antwika::game::RenderSystem;
 using antwika::game::roadTile;
 using antwika::game::UiOverlay;
+using antwika::game::WorldMapScene;
+using antwika::game::WorldMapState;
 using antwika::gfx::Size;
 using antwika::gfx::mocks::MockRenderer;
 using antwika::gfx::mocks::MockTexture;
@@ -50,37 +59,72 @@ namespace
 {
     constexpr Size kCanvas{.width = 320, .height = 240};
     constexpr GridExtent kExtent{.width = 2, .height = 2};
+
+    class RenderSystemTest : public ::testing::Test
+    {
+    protected:
+        RenderSystemTest()
+        {
+            ON_CALL(window, renderer()).WillByDefault(ReturnRef(renderer));
+            ON_CALL(window, size()).WillByDefault(Return(kCanvas));
+        }
+
+        // Through request-then-commit, as the tick path does it.
+        void putInMode(AppMode wanted)
+        {
+            mode.request(wanted);
+            mode.handle(
+                antwika::event::TickEvent{
+                    .tick = 0,
+                    .event = antwika::event::Event{
+                        .name = antwika::engine::events::kTick}});
+        }
+
+        [[nodiscard]] RenderSetup setup()
+        {
+            return RenderSetup{
+                .window = window,
+                .mode = mode,
+                .canvas = kCanvas,
+                .scene = scene,
+                .atlas = atlas,
+                .paths = paths,
+                .camera = camera,
+                .extent = kExtent,
+                .overlay = overlay,
+                .menuScene = menuScene,
+                .menuOverlay = menuOverlay,
+                .worldScene = worldScene,
+                .cities = cities};
+        }
+
+        NiceMock<MockLogger> logger;
+        World world{logger};
+        PathIndex paths;
+        Camera camera;
+        const GridScene scene{};
+        const MainMenuScene menuScene{};
+        const WorldMapScene worldScene{};
+        UiOverlay overlay;
+        UiOverlay menuOverlay{kCanvas};
+        NiceMock<MockTexture> atlas;
+        NiceMock<MockRenderer> renderer;
+        NiceMock<MockWindow> window;
+
+        // The subject of most of these is the grid.
+        // So a run is put on it rather than clicking its way there.
+        AppModeState mode{AppMode::CityMap};
+
+        // A small world, since only the mode branch is under test.
+        WorldMapState cities{antwika::game::generateWorldMap(
+            antwika::game::WorldMapConfig{
+                .width = 6, .height = 6, .seed = 1})};
+    };
 } // namespace
 
-TEST(RenderSystemTest, Update_DrawsAndThenPresentsExactlyOneFrame)
+TEST_F(RenderSystemTest, Update_DrawsAndThenPresentsExactlyOneFrame)
 {
-    NiceMock<MockLogger> logger;
-    World world(logger);
-    PathIndex paths;
-    const Camera camera;
-    const GridScene scene;
-    const UiOverlay overlay;
-    NiceMock<MockTexture> atlas;
-
-    NiceMock<MockRenderer> renderer;
-    NiceMock<MockWindow> window;
-    ON_CALL(window, renderer()).WillByDefault(ReturnRef(renderer));
-    ON_CALL(window, size()).WillByDefault(Return(kCanvas));
-
-    AppModeState mode{AppMode::Playing};
-    const MainMenuScene menuScene;
-    UiOverlay menuOverlay;
-    RenderSystem system(
-        window,
-        scene,
-        atlas,
-        paths,
-        camera,
-        kExtent,
-        overlay,
-        mode,
-        menuScene,
-        menuOverlay);
+    RenderSystem system(setup());
 
     ::testing::InSequence order;
     EXPECT_CALL(renderer, clear(_));
@@ -90,74 +134,24 @@ TEST(RenderSystemTest, Update_DrawsAndThenPresentsExactlyOneFrame)
     system.update(world, 0);
 }
 
-TEST(RenderSystemTest, Update_ReadsTheWindowsSizeEveryTick)
+TEST_F(RenderSystemTest, Update_ReadsTheWindowsSizeEveryTick)
 {
-    NiceMock<MockLogger> logger;
-    World world(logger);
-    PathIndex paths;
-    const Camera camera;
-    const GridScene scene;
-    const UiOverlay overlay;
-    NiceMock<MockTexture> atlas;
-
-    NiceMock<MockRenderer> renderer;
-    NiceMock<MockWindow> window;
-    ON_CALL(window, renderer()).WillByDefault(ReturnRef(renderer));
+    RenderSystem system(setup());
 
     // A resize needs no handling of its own, so long as it is re-read.
     EXPECT_CALL(window, size())
         .WillOnce(Return(kCanvas))
         .WillOnce(Return(Size{.width = 640, .height = 480}));
 
-    AppModeState mode{AppMode::Playing};
-    const MainMenuScene menuScene;
-    UiOverlay menuOverlay;
-    RenderSystem system(
-        window,
-        scene,
-        atlas,
-        paths,
-        camera,
-        kExtent,
-        overlay,
-        mode,
-        menuScene,
-        menuOverlay);
-
     system.update(world, 0);
     system.update(world, 1);
 }
 
-TEST(RenderSystemTest, Update_DrawsThePathsItIsGiven)
+TEST_F(RenderSystemTest, Update_DrawsThePathsItIsGiven)
 {
-    NiceMock<MockLogger> logger;
-    World world(logger);
-    PathIndex paths;
     paths.insert(Cell{.x = 0, .y = 0});
-    const Camera camera;
-    const GridScene scene;
-    const UiOverlay overlay;
-    NiceMock<MockTexture> atlas;
 
-    NiceMock<MockRenderer> renderer;
-    NiceMock<MockWindow> window;
-    ON_CALL(window, renderer()).WillByDefault(ReturnRef(renderer));
-    ON_CALL(window, size()).WillByDefault(Return(kCanvas));
-
-    AppModeState mode{AppMode::Playing};
-    const MainMenuScene menuScene;
-    UiOverlay menuOverlay;
-    RenderSystem system(
-        window,
-        scene,
-        atlas,
-        paths,
-        camera,
-        kExtent,
-        overlay,
-        mode,
-        menuScene,
-        menuOverlay);
+    RenderSystem system(setup());
 
     // The ground alone is one blit per cell.
     // A lone road adds its own, from the tile with no links.
@@ -170,39 +164,33 @@ TEST(RenderSystemTest, Update_DrawsThePathsItIsGiven)
 
 // A mode owns the whole screen.
 // So in the menu no tile is blitted at all, whatever the grid holds.
-TEST(RenderSystemTest, Update_DrawsTheMenuAndNoGridInTheMainMenuMode)
+TEST_F(RenderSystemTest, Update_DrawsTheMenuAndNoGridInTheMainMenuMode)
 {
-    NiceMock<MockLogger> logger;
-    World world(logger);
-    PathIndex paths;
     paths.insert(Cell{.x = 0, .y = 0});
-    Camera camera;
-    const GridScene scene;
-    UiOverlay overlay;
-    NiceMock<MockWindow> window;
-    NiceMock<MockRenderer> renderer;
-    NiceMock<MockTexture> atlas;
+    putInMode(AppMode::MainMenu);
 
-    ON_CALL(window, renderer()).WillByDefault(ReturnRef(renderer));
-    ON_CALL(window, size()).WillByDefault(Return(kCanvas));
-
-    AppModeState mode;
-    const MainMenuScene menuScene;
-    UiOverlay menuOverlay{kCanvas};
-    RenderSystem system(
-        window,
-        scene,
-        atlas,
-        paths,
-        camera,
-        kExtent,
-        overlay,
-        mode,
-        menuScene,
-        menuOverlay);
+    RenderSystem system(setup());
 
     EXPECT_CALL(renderer, drawTexture(_, _, _, _)).Times(0);
     EXPECT_CALL(renderer, clear(_));
+    EXPECT_CALL(renderer, present());
+
+    system.update(world, 0);
+}
+
+// Likewise for the world map: rectangles, and not one tile of any grid.
+TEST_F(RenderSystemTest, Update_DrawsTheWorldMapAndNoGridInThatMode)
+{
+    paths.insert(Cell{.x = 0, .y = 0});
+    putInMode(AppMode::WorldMap);
+
+    RenderSystem system(setup());
+
+    EXPECT_CALL(renderer, drawTexture(_, _, _, _)).Times(0);
+    EXPECT_CALL(renderer, clear(_));
+
+    // Thirty-six tiles, and a marker for each of the four cities.
+    EXPECT_CALL(renderer, drawRect(_, _)).Times(6 * 6 + 4);
     EXPECT_CALL(renderer, present());
 
     system.update(world, 0);

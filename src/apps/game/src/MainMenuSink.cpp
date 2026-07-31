@@ -95,7 +95,11 @@ namespace antwika::game
             // Staged rather than applied here.
             // So the click that leaves the menu is not also the grid's.
             // See AppMode.hpp.
-            mode.request(AppMode::Playing);
+            mode.request(AppMode::CityMap);
+        }
+        else if (activated == menuWidgets::kWorldMap)
+        {
+            mode.request(AppMode::WorldMap);
         }
         else if (activated == menuWidgets::kQuit)
         {

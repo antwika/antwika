@@ -21,6 +21,7 @@
 #include "antwika/game/PathIndex.hpp"
 #include "antwika/game/UiCanvas.hpp"
 #include "antwika/game/UiOverlay.hpp"
+#include "antwika/game/WorldMapState.hpp"
 
 namespace antwika::game
 {
@@ -124,7 +125,7 @@ namespace antwika::game
          * Its constructor is where a run says which mode it starts in.
          * The application leaves that defaulted, so a session opens at
          * the main menu; a test whose subject is the grid constructs one
-         * as AppMode::Playing rather than clicking its way there.
+         * as AppMode::CityMap rather than clicking its way there.
          */
         AppModeState &mode;
 
@@ -179,7 +180,7 @@ namespace antwika::game
          * Unset, the menu is described against a zero canvas, which no
          * click can hit -- so a run that starts in AppMode::MainMenu
          * without one never leaves it. Every caller starting at the menu
-         * must therefore set this; one starting in AppMode::Playing need
+         * must therefore set this; one starting in AppMode::CityMap need
          * not, and a test whose subject is the grid does not.
          *
          * Passed in rather than created here because a renderer built
@@ -187,6 +188,35 @@ namespace antwika::game
          */
         std::optional<std::reference_wrapper<UiOverlay>> menuOverlay =
             std::nullopt;
+
+        /**
+         * @brief The world and its cities, which turns the world map on.
+         *
+         * Set, a WorldMapSink is registered ahead of the grid's, so a
+         * press on a city opens it and the way-back key puts it away.
+         * The grid the session builds on is swapped in and out of this
+         * as cities are opened -- see WorldMapState.
+         *
+         * Unset, the run has one city and one grid, which is what every
+         * caller whose subject is the grid wants: bootstrap() then keeps
+         * a world of its own with city 0 permanently open, so nothing is
+         * gated off by a world map that is not there.
+         *
+         * Passed in rather than created here because a renderer built
+         * beforehand has to read it, and because generating a world is
+         * the composition root's decision -- it is what owns the seed.
+         */
+        std::optional<std::reference_wrapper<WorldMapState>> world =
+            std::nullopt;
+
+        /**
+         * @brief The area every mode's UI is laid out against.
+         *
+         * The size the window was *asked* for, which the world map is
+         * centred in and which a click on a city is resolved against.
+         * Defaulted to kUiCanvas, the one number the shipped app uses.
+         */
+        Size canvas = kUiCanvas;
     };
 
     /**

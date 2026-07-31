@@ -29,14 +29,16 @@ namespace antwika::game
         GridExtent extent,
         SystemScheduler &scheduler,
         const InputFold &input,
-        const UiOverlay &overlay)
+        const UiOverlay &overlay,
+        const WorldMapState &cities)
         : world(world),
           paths(paths),
           camera(camera),
           extent(extent),
           scheduler(scheduler),
           input(input),
-          overlay(overlay)
+          overlay(overlay),
+          cities(cities)
     {
     }
 
@@ -46,6 +48,13 @@ namespace antwika::game
         {
             world.commit();
             scheduler.run(world, event.tick);
+            return;
+        }
+
+        // A world-map click is not a click on any grid.
+        // The mode gate says so a tick later; this says so at once.
+        if (!cities.cityOpen())
+        {
             return;
         }
 

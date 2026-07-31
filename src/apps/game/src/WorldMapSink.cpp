@@ -1,5 +1,6 @@
 #include "antwika/game/WorldMapSink.hpp"
 
+#include <cstddef>
 #include <optional>
 #include <variant>
 
@@ -18,8 +19,18 @@ namespace antwika::game
     using antwika::input::PointerButtonPressed;
 
     WorldMapSink::WorldMapSink(
-        WorldMapState &state, const InputFold &input, Size canvas)
-        : state(state), input(input), canvas(canvas)
+        WorldMapState &state,
+        AppModeState &mode,
+        PathIndex &paths,
+        Camera &camera,
+        const InputFold &input,
+        Size canvas)
+        : state(state),
+          mode(mode),
+          paths(paths),
+          camera(camera),
+          input(input),
+          canvas(canvas)
     {
     }
 
@@ -37,36 +48,46 @@ namespace antwika::game
         {
             // A repeat is a held key, not a fresh press.
             // Holding it should not keep re-closing the map.
-            if (key->key == kWorldMapKey && !key->repeat)
+            if (key->key == kWorldMapKey && !key->repeat
+                && mode.mode() == AppMode::CityMap)
             {
-                state.closeCity();
+                state.closeCity(paths, camera);
+                mode.request(AppMode::WorldMap);
             }
             return;
         }
 
         const auto *pressed = std::get_if<PointerButtonPressed>(&*decoded);
         if (pressed == nullptr || pressed->button != MouseButton::Left
-            || state.view() != MapView::World)
+            || mode.mode() != AppMode::WorldMap)
         {
             return;
         }
 
+        openCityUnder(Point{pressed->position.x, pressed->position.y});
+    }
+
+    void WorldMapSink::openCityUnder(Point pixel)
+    {
         const WorldMap &world = state.world();
-        const std::optional<Cell> cell = worldCellAt(
-            canvas,
-            world.width,
-            world.height,
-            Point{pressed->position.x, pressed->position.y});
+        const std::optional<Cell> cell =
+            worldCellAt(canvas, world.width, world.height, pixel);
         if (!cell.has_value())
         {
             return;
         }
 
         const std::size_t city = world.cityAt(*cell);
-        if (city < kCityCount)
+        if (city >= kCityCount)
         {
-            state.openCityAt(city);
+            return;
         }
+
+        state.openCityAt(city, paths, camera);
+
+        // Staged, not applied.
+        // So this very click cannot also be read by the grid it opens.
+        mode.request(AppMode::CityMap);
     }
 
 } // namespace antwika::game

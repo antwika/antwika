@@ -22,6 +22,7 @@
 #include "antwika/game/Toolbar.hpp"
 #include "antwika/game/UiSink.hpp"
 #include "antwika/game/WalkerSystem.hpp"
+#include "antwika/game/WorldMapSink.hpp"
 
 using antwika::ecs::SystemScheduler;
 using antwika::ecs::World;
@@ -67,7 +68,7 @@ namespace antwika::game
         // The tick, the commit and every observer still run.
         // So the menu is drawn and the run is still paced.
         ModeGatedSystem gatedWalkers(
-            walkerSystem, mode, AppMode::Playing);
+            walkerSystem, mode, AppMode::CityMap);
         const auto walkPhase = scheduler.createPhase("walk");
         scheduler.addSystem(walkPhase, gatedWalkers);
 
@@ -97,6 +98,13 @@ namespace antwika::game
                                 ? config.menuOverlay->get()
                                 : noMenu;
 
+        // A run with no world map still has one city, permanently open.
+        // So the grid is not gated off by a map that is not there.
+        // The world itself is empty, and nothing draws it.
+        WorldMapState oneCity{WorldMap{}};
+        WorldMapState &cities =
+            config.world.has_value() ? config.world->get() : oneCity;
+
         const Toolbar toolbar;
         InputFold input(config.codec);
         UiSink uiSink(camera, ui, input, toolbar, camera);
@@ -107,7 +115,10 @@ namespace antwika::game
             config.extent,
             scheduler,
             input,
-            ui);
+            ui,
+            cities);
+        WorldMapSink worldSink(
+            cities, mode, paths, camera, input, config.canvas);
         StopSignal stopSignal;
 
         const MainMenuScene menuScene;
@@ -117,8 +128,8 @@ namespace antwika::game
         // Gated on the mode rather than checking one themselves.
         // What a mode changes is what a click means.
         // So engine.tick still reaches both -- see ModeGatedSink.
-        ModeGatedSink playingUi(uiSink, mode, AppMode::Playing);
-        ModeGatedSink playingGrid(gridSink, mode, AppMode::Playing);
+        ModeGatedSink playingUi(uiSink, mode, AppMode::CityMap);
+        ModeGatedSink playingGrid(gridSink, mode, AppMode::CityMap);
 
         // The fold is first.
         // What it holds is the event the sinks after it are given now.
@@ -133,6 +144,8 @@ namespace antwika::game
         // A change staged last tick lands before anything gated reads it.
         // MainMenuSink is before the grid's for the reason UiSink is.
         // A press is resolved against what is on screen first.
+        // WorldMapSink is between the bar and the grid for the same one.
+        // A press that opens a city must not also build in it.
         std::vector<std::reference_wrapper<ITickEventSink>> timedSinks{
             input, mode, reducer, menuSink};
 
@@ -143,6 +156,14 @@ namespace antwika::game
         if (hasToolbar)
         {
             timedSinks.push_back(playingUi);
+        }
+
+        // Registered only when there is a world to map.
+        // A run with one city has nowhere to go back to.
+        // The way-back key would then put its only grid away.
+        if (config.world.has_value())
+        {
+            timedSinks.push_back(worldSink);
         }
 
         timedSinks.push_back(playingGrid);

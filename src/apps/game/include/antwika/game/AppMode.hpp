@@ -20,9 +20,8 @@ namespace antwika::game
      * modal stack here, and adding one would be the wrong shape -- a
      * menu is not "the grid, plus a dialog".
      *
-     * New modes are added here as the app grows a world map and a
-     * save/load screen; each one gets its own scene and its own sink, and
-     * is reached by requesting it on the AppModeState below.
+     * Each mode gets its own scene and its own sink, and is reached by
+     * requesting it on the AppModeState below.
      */
     enum class AppMode : std::uint8_t
     {
@@ -32,9 +31,26 @@ namespace antwika::game
         MainMenu = 0,
 
         /**
-         * @brief The isometric grid: placing, walking, panning, zooming.
+         * @brief The world and its cities, drawn square rather than
+         * isometric.
          */
-        Playing,
+        WorldMap,
+
+        /**
+         * @brief The isometric grid: placing, walking, panning, zooming.
+         *
+         * Named for the map it shows rather than for "playing", now that
+         * the world map is a screen you play on too. It is the one mode
+         * a city's grid is up in: WorldMapState says *which* city, and a
+         * second enumerator saying the same thing would be a second
+         * truth to keep in step.
+         */
+        CityMap,
+
+        /**
+         * @brief The picker a session is written to or read back from.
+         */
+        SaveLoad,
     };
 
     /**

@@ -69,11 +69,9 @@ namespace antwika::game
                     "Load Game",
                     {.width = kGrow, .state = ButtonState::Pressed});
 
-                // TODO(game-world-map): likewise.
-                // That is for whatever adds the world map and its cities.
                 ui.button(
                     "World Map",
-                    {.width = kGrow, .state = ButtonState::Pressed});
+                    {.id = menuWidgets::kWorldMap, .width = kGrow});
 
                 ui.button(
                     "Quit", {.id = menuWidgets::kQuit, .width = kGrow});

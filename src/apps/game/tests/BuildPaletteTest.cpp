@@ -34,6 +34,7 @@
 #include "antwika/game/GridExtent.hpp"
 #include "antwika/game/GridScene.hpp"
 #include "antwika/game/GridSink.hpp"
+#include "antwika/game/WorldMapState.hpp"
 #include "antwika/game/InputFold.hpp"
 #include "antwika/game/IsoProjection.hpp"
 #include "antwika/game/Path.hpp"
@@ -62,6 +63,8 @@ using antwika::game::cellCentre;
 using antwika::game::GridExtent;
 using antwika::game::GridScene;
 using antwika::game::GridSink;
+using antwika::game::WorldMap;
+using antwika::game::WorldMapState;
 using antwika::game::InputFold;
 using antwika::game::kBuildToolCount;
 using antwika::game::Path;
@@ -305,8 +308,16 @@ namespace
         UiOverlay overlay{kCanvas};
         Toolbar toolbar;
         UiSink uiSink{camera, overlay, input, toolbar, camera};
+        WorldMapState cities{WorldMap{}};
         GridSink gridSink{
-            world, paths, camera, kExtent, scheduler, input, overlay};
+            world,
+            paths,
+            camera,
+            kExtent,
+            scheduler,
+            input,
+            overlay,
+            cities};
     };
 } // namespace
 

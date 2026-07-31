@@ -31,6 +31,9 @@
 #include "antwika/game/UiCanvas.hpp"
 #include "antwika/game/UiOverlay.hpp"
 #include "antwika/game/WindowInputSource.hpp"
+#include "antwika/game/WorldMap.hpp"
+#include "antwika/game/WorldMapScene.hpp"
+#include "antwika/game/WorldMapState.hpp"
 
 using antwika::app::ConsoleLogging;
 using antwika::app::RecordedRun;
@@ -45,6 +48,9 @@ using antwika::game::RenderSystem;
 using antwika::game::TickPacer;
 using antwika::game::UiOverlay;
 using antwika::game::WindowInputSource;
+using antwika::game::WorldMapConfig;
+using antwika::game::WorldMapScene;
+using antwika::game::WorldMapState;
 using antwika::gfx::Point;
 using antwika::gfx::WindowDesc;
 using antwika::input::InputEventCodec;
@@ -69,6 +75,12 @@ namespace
     // Neither is available under the headless backend.
     // That build therefore runs until it is interrupted.
     constexpr antwika::input::Key kQuitKey = antwika::input::Key::Escape;
+
+    // The world is a pure function of this.
+    // So a replay carries the number and the map comes back identical.
+    // It is a constant rather than a flag.
+    // A flag would let two runs of one recording be on two worlds.
+    constexpr WorldMapConfig kWorld{.width = 24, .height = 16, .seed = 7};
 
     void run(const RecordedRun &recorded)
     {
@@ -113,17 +125,24 @@ namespace
         // That is what makes a recorded click hit the same button.
         UiOverlay overlay(antwika::game::kUiCanvas);
         UiOverlay menuOverlay(antwika::game::kUiCanvas);
-        RenderSystem renderSystem(
-            *window,
-            scene,
-            *atlas,
-            paths,
-            camera,
-            kExtent,
-            overlay,
-            mode,
-            menuScene,
-            menuOverlay);
+
+        const WorldMapScene worldScene;
+        WorldMapState cities(antwika::game::generateWorldMap(kWorld));
+
+        RenderSystem renderSystem(antwika::game::RenderSetup{
+            .window = *window,
+            .mode = mode,
+            .canvas = antwika::game::kUiCanvas,
+            .scene = scene,
+            .atlas = *atlas,
+            .paths = paths,
+            .camera = camera,
+            .extent = kExtent,
+            .overlay = overlay,
+            .menuScene = menuScene,
+            .menuOverlay = menuOverlay,
+            .worldScene = worldScene,
+            .cities = cities});
         SystemSleeper sleeper;
         TickPacer pacer(sleeper, kTickInterval);
 
@@ -171,7 +190,9 @@ namespace
                 .observers = observers,
                 .replayRecorder = recorded.replayRecorder,
                 .overlay = overlay,
-                .menuOverlay = menuOverlay}));
+                .menuOverlay = menuOverlay,
+                .world = cities,
+                .canvas = antwika::game::kUiCanvas}));
     }
 } // namespace
 
