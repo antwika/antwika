@@ -428,13 +428,25 @@ namespace antwika::holdem
 
     void Table::openBetting(SeatId from)
     {
-        if (countAbleToAct() >= kMinSeats)
+        const auto next = nextSeatFrom(seats, from, canStillBet);
+
+        // Two players holding chips have an ordinary round between them.
+        // One on its own still has a decision when it owes the blind.
+        // No-limit gives that player call-or-fold.
+        // Skipping it treats them as all-in for what they posted.
+        // That caps them out of a layer they never paid for.
+        // On a later street resetBettingRound() has zeroed every debt.
+        // So the second test only ever fires pre-flop.
+        const auto owes =
+            next
+            && !betting.isCovered(seats[indexOf(*next)].roundCommitted);
+        if (countAbleToAct() >= kMinSeats || owes)
         {
-            toAct = nextSeatFrom(seats, from, canStillBet);
+            toAct = next;
             return;
         }
 
-        // Nobody is left with chips to wager.
+        // Nobody is left owing chips they could still wager with.
         // So there is nothing to decide on this street or any later one.
         toAct = std::nullopt;
         closeRound();
