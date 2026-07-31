@@ -154,7 +154,7 @@ Proves the repo's central claim mechanically instead of by argument, and turns "
 ### Atlas editor
 
 Open `atlas.png`, show the slot grid `TileAtlas.hpp` addresses it with, and let a slot be picked and previewed under the isometric projection.
-It closes the loop with `scripts/generate_game_atlas.py`, which currently has no visual counterpart.
+Now that the art is hand-drawn rather than generated, it is the only thing that would show an artist their tile in the projection it is blitted through, which is where a nearly-right diamond stops being nearly right.
 Proves `gfx::PngReader`, texture sub-rect blitting and `ui` together in a tool rather than a demo.
 **Difficulty: small.**
 

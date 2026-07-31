@@ -28,9 +28,9 @@ env:
   IMAGE_PREFIX: ${{ github.repository_owner }}/antwika-dev
 
 jobs:
-  # The checker scripts and the atlas generators are pure Python over
-  # the tracked files, so they say the same thing whichever toolchain is
-  # installed.
+  # The checker scripts and the poker atlas generator are pure Python
+  # over the tracked files, so they say the same thing whichever
+  # toolchain is installed.
   # They used to run in all three app legs, which was three identical
   # answers paid for three times and none of them before the images had
   # been built.
@@ -70,14 +70,6 @@ jobs:
       - name: Check line length
         shell: bash
         run: python3 scripts/check_line_length.py
-
-      - name: Test generate-game-atlas script
-        shell: bash
-        run: python3 scripts/tests/test_generate_game_atlas.py
-
-      - name: Check the game's texture atlas is current
-        shell: bash
-        run: python3 scripts/generate_game_atlas.py --check
 
       - name: Test generate-poker-atlas script
         shell: bash

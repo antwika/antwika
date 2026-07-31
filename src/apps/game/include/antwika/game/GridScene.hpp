@@ -63,8 +63,8 @@ namespace antwika::game
          * @param canvas The size of the area being drawn into.
          * @param snapshot What to draw.
          * @param atlas The texture every tile is blitted from; it must
-         * have come from this renderer, and must be the atlas
-         * scripts/generate_game_atlas.py draws.
+         * have come from this renderer, and must be laid out the way
+         * TileAtlas.hpp addresses it.
          * @param subTick How far through the tick this frame falls; zero
          * on the frame the tick itself draws.
          */

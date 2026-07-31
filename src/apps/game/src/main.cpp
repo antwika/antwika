@@ -26,6 +26,7 @@
 #include <antwika/time/SystemSleeper.hpp>
 
 #include "antwika/game/AppMode.hpp"
+#include "antwika/game/AtlasImage.hpp"
 #include "antwika/game/Camera.hpp"
 #include "antwika/game/GridExtent.hpp"
 #include "antwika/game/GridScene.hpp"
@@ -124,6 +125,11 @@ namespace
 
         const auto atlasBitmap = antwika::app::readPngFile(
             ANTWIKA_GAME_ATLAS_PATH, "antwika_game");
+
+        // Nothing regenerates the art now.
+        // So a wrong-sized export is an ordinary mistake.
+        // Refused here, since a blit past the edge draws nothing.
+        antwika::game::requireAtlasSize(atlasBitmap);
 
         // After the window, since a backend may have no device yet.
         // Declared after it too, so it is destroyed first.
