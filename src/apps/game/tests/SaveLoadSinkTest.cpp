@@ -22,6 +22,8 @@
 #include <antwika/ui/Pointer.hpp>
 #include <antwika/ui/WidgetId.hpp>
 
+#include "ScratchDirectory.hpp"
+
 #include "antwika/game/AppMode.hpp"
 #include "antwika/game/Camera.hpp"
 #include "antwika/game/Cell.hpp"
@@ -41,6 +43,7 @@
 namespace
 {
 
+    using antwika::game::tests::scratchDirectory;
     using antwika::ecs::World;
     using antwika::event::Event;
     using antwika::event::TickEvent;
@@ -82,9 +85,7 @@ namespace
     {
     protected:
         SaveLoadSinkTest()
-            : directory(
-                  std::filesystem::temp_directory_path()
-                  / "antwika_save_load_sink_test")
+            : directory(scratchDirectory("antwika_save_load_sink_test_"))
         {
             std::error_code ignored;
             std::filesystem::remove_all(directory, ignored);

@@ -6,11 +6,14 @@
 #include <system_error>
 #include <vector>
 
+#include "ScratchDirectory.hpp"
+
 #include "antwika/game/SaveDirectory.hpp"
 
 namespace
 {
 
+    using antwika::game::tests::scratchDirectory;
     using antwika::game::listSaveGames;
     using antwika::game::saveGamePath;
 
@@ -19,9 +22,7 @@ namespace
     {
     protected:
         SaveDirectoryTest()
-            : directory(
-                  std::filesystem::temp_directory_path()
-                  / "antwika_save_directory_test")
+            : directory(scratchDirectory("antwika_save_directory_test_"))
         {
             std::error_code ignored;
             std::filesystem::remove_all(directory, ignored);
