@@ -101,11 +101,11 @@ namespace
         const GridScene scene;
         const MainMenuScene menuScene;
 
-        // A run opens at the main menu, which is a mode of its own and
-        // not a window over a grid that is already running.
-        // Nothing on the command line changes that: a --replay run boots
-        // into the same mode a live one does, so what a recorded click
-        // means cannot depend on how the binary was started.
+        // A run opens at the main menu.
+        // That is a mode of its own, not a window over a running grid.
+        // Nothing on the command line changes it.
+        // A --replay run boots into the same mode a live one does.
+        // So what a recorded click means cannot depend on the flags.
         AppModeState mode;
 
         // Against the size the window was asked for.

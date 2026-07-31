@@ -29,8 +29,8 @@ using ::testing::NiceMock;
 
 namespace
 {
-    // A counter rather than a mock: what is asserted is how many times
-    // something ran, which a mock would express less directly.
+    // A counter rather than a mock.
+    // What is asserted is how many times something ran.
     class CountingSink final : public ITickEventSink
     {
     public:
@@ -89,8 +89,8 @@ TEST(ModeGatedSinkTest, InputIsDroppedInAnyOtherMode)
     EXPECT_EQ(inner.calls, 0U);
 }
 
-// The carve-out the whole design rests on: a tick that stopped arriving
-// would stop the renderer and the pacer with it.
+// The carve-out the whole design rests on.
+// A tick that stopped arriving would stop the renderer and the pacer.
 TEST(ModeGatedSinkTest, EngineTickAlwaysReachesTheSink)
 {
     CountingSink inner;

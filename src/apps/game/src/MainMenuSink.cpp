@@ -46,8 +46,9 @@ namespace antwika::game
 
     void MainMenuSink::handle(const TickEvent &event)
     {
-        // Nothing at all in any other mode: the menu is a mode of its
-        // own rather than a window over one that is still running.
+        // Nothing at all in any other mode.
+        // The menu is a mode of its own.
+        // It is not a window over one that is still running.
         if (mode.mode() != AppMode::MainMenu)
         {
             return;
@@ -91,15 +92,16 @@ namespace antwika::game
 
         if (activated == menuWidgets::kNewGame)
         {
-            // Staged, so the click that leaves the menu is not also read
-            // as a click on the grid it reveals -- see AppMode.hpp.
+            // Staged rather than applied here.
+            // So the click that leaves the menu is not also the grid's.
+            // See AppMode.hpp.
             mode.request(AppMode::Playing);
         }
         else if (activated == menuWidgets::kQuit)
         {
-            // The loop's own signal rather than an event on the wire:
-            // the recording holds the click, and the stop follows from
-            // it, exactly as a placement follows from a click on a cell.
+            // The loop's own signal rather than an event on the wire.
+            // The recording holds the click, and the stop follows from it.
+            // Exactly as a placement follows from a click on a cell.
             stop.handle(TickEvent{
                 .tick = event.tick,
                 .event = Event{.name = antwika::engine::events::kStop}});

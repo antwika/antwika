@@ -27,13 +27,13 @@ namespace antwika::game
 
     namespace
     {
-        // Darker than the grid's sky, so the two modes do not look like
-        // the same screen with something laid over it.
+        // Darker than the grid's sky.
+        // The two modes must not read as one screen with a layer over it.
         constexpr Color kBackdrop{.red = 10, .green = 12, .blue = 18};
 
-        // Wide enough that every item is the same width: the items grow
-        // into a card that does not, so the row a pointer is over is
-        // decided by height alone.
+        // Wide enough that every item comes out the same width.
+        // The items grow into a card that does not.
+        // So which item a pointer is over is decided by height alone.
         constexpr std::uint32_t kCardWidth = 260;
     } // namespace
 
@@ -60,17 +60,17 @@ namespace antwika::game
                     "New Game",
                     {.id = menuWidgets::kNewGame, .width = kGrow});
 
-                // TODO(game-save-load): give this an id and a mode of
-                // its own once there is a saved game to load.
-                // Unnamed on purpose: a button with no WidgetId cannot
-                // be hovered or activated, so the placeholder is inert
-                // rather than merely painted to look that way.
+                // TODO(game-save-load): give this an id and a mode.
+                // That is for whatever adds a saved game to load.
+                // It is unnamed on purpose until then.
+                // A button with no WidgetId cannot be hovered.
+                // So the placeholder is inert, not merely painted so.
                 ui.button(
                     "Load Game",
                     {.width = kGrow, .state = ButtonState::Pressed});
 
-                // TODO(game-world-map): likewise, once the world map and
-                // its cities exist to be selected from here.
+                // TODO(game-world-map): likewise.
+                // That is for whatever adds the world map and its cities.
                 ui.button(
                     "World Map",
                     {.width = kGrow, .state = ButtonState::Pressed});

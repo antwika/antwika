@@ -34,8 +34,8 @@ TEST(MainMenuSceneTest, TheMenuDescribesItselfWithNoPointerAtAll)
     EXPECT_EQ(frame.interactions.activated, antwika::ui::kNoWidget);
 }
 
-// The same canvas and pointer always produce the same picture, which is
-// what lets a recorded click be resolved to the same item.
+// The same canvas and pointer always produce the same picture.
+// That is what lets a recorded click resolve to the same item.
 TEST(MainMenuSceneTest, TheSameArgumentsProduceTheSamePicture)
 {
     const MainMenuScene scene;
@@ -71,8 +71,8 @@ TEST(MainMenuSceneTest, APressOnAnItemActivatesIt)
     EXPECT_TRUE(foundQuit);
 }
 
-// A mode owns the whole screen, so the menu clears rather than being
-// drawn over whatever was underneath it.
+// A mode owns the whole screen.
+// So the menu clears rather than being drawn over what was there.
 TEST(MainMenuSceneTest, DrawClearsBeforePaintingThePicture)
 {
     const MainMenuScene scene;

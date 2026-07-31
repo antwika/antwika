@@ -157,8 +157,9 @@ TEST_F(MainMenuSinkTest, APressThatMissesEveryItemChangesNothing)
     EXPECT_FALSE(stop.stopped());
 }
 
-// The placeholders are inert rather than merely painted to look it: an
-// unnamed button cannot be hovered, so nothing can be resolved to one.
+// The placeholders are inert, not merely painted to look it.
+// An unnamed button cannot be hovered.
+// So nothing can ever be resolved to one.
 TEST_F(MainMenuSinkTest, ThePlaceholderItemsCannotBePressed)
 {
     const auto quit = pixelOn(menuWidgets::kQuit);
@@ -170,8 +171,8 @@ TEST_F(MainMenuSinkTest, ThePlaceholderItemsCannotBePressed)
         pressAt(Position{.x = newGame.x, .y = y});
     }
 
-    // Every press either hit one of the two named items or nothing at
-    // all, so nothing else in the menu could have acted.
+    // Every press hit one of the two named items or nothing at all.
+    // So nothing else in the menu could have acted.
     EXPECT_EQ(mode.next(), AppMode::Playing);
     EXPECT_TRUE(stop.stopped());
 }

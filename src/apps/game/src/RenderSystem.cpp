@@ -37,8 +37,8 @@ namespace antwika::game
 
         if (mode.mode() == AppMode::MainMenu)
         {
-            // The whole screen, with no grid behind it: the menu is a
-            // mode rather than a modal -- see AppMode.hpp.
+            // The whole screen, with no grid behind it.
+            // The menu is a mode rather than a modal -- see AppMode.hpp.
             menuScene.draw(renderer, menuOverlay.commands());
             renderer.present();
             return;

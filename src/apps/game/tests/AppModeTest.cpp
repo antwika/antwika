@@ -21,8 +21,8 @@ namespace
     }
 } // namespace
 
-// The one the application never states, and the one every other agent
-// building on this has to be able to rely on.
+// The one the application never states.
+// Everything built on top of this mode machinery relies on it.
 TEST(AppModeTest, ARunStartsAtTheMainMenu)
 {
     const AppModeState mode;
@@ -38,8 +38,8 @@ TEST(AppModeTest, ARunCanBeAskedToStartSomewhereElse)
     EXPECT_EQ(mode.mode(), AppMode::Playing);
 }
 
-// The whole point of staging: the click that leaves the menu must not
-// also be read by the mode it reveals.
+// The whole point of staging.
+// The click that leaves the menu must not be read by the mode it reveals.
 TEST(AppModeTest, ARequestedModeIsNotTheModeUntilTheTickBoundary)
 {
     AppModeState mode;

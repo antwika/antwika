@@ -63,8 +63,9 @@ namespace antwika::game
         WalkerSystem walkerSystem(paths);
 
         // The walkers stop with the grid they walk on.
-        // Only that system stops: the tick, the commit and every
-        // observer still run, so the menu is drawn and the run is paced.
+        // Only that one system stops.
+        // The tick, the commit and every observer still run.
+        // So the menu is drawn and the run is still paced.
         ModeGatedSystem gatedWalkers(
             walkerSystem, mode, AppMode::Playing);
         const auto walkPhase = scheduler.createPhase("walk");
@@ -88,8 +89,9 @@ namespace antwika::game
         const bool hasToolbar = config.overlay.has_value();
         UiOverlay &ui = hasToolbar ? config.overlay->get() : noToolbar;
 
-        // The menu's own picture, never the toolbar's: the two belong to
-        // different modes, and one may not overwrite the other.
+        // The menu's own picture, never the toolbar's.
+        // The two belong to different modes.
+        // Neither may overwrite the other's.
         UiOverlay noMenu;
         UiOverlay &menuUi = config.menuOverlay.has_value()
                                 ? config.menuOverlay->get()
@@ -112,9 +114,9 @@ namespace antwika::game
         MainMenuSink menuSink(
             mode, menuUi, input, menuScene, stopSignal);
 
-        // Gated on the mode rather than checking one themselves: what a
-        // mode changes is what a click *means*, and engine.tick still
-        // reaches both -- see ModeGatedSink.
+        // Gated on the mode rather than checking one themselves.
+        // What a mode changes is what a click means.
+        // So engine.tick still reaches both -- see ModeGatedSink.
         ModeGatedSink playingUi(uiSink, mode, AppMode::Playing);
         ModeGatedSink playingGrid(gridSink, mode, AppMode::Playing);
 
@@ -127,10 +129,10 @@ namespace antwika::game
         // UiSink still comes before it.
         // So a press is resolved against the bar before the grid sees it.
         // And the picture is described before the renderer paints it.
-        // The mode is committed straight after the fold, so a change
-        // staged last tick has landed before anything gated reads it.
-        // MainMenuSink is before the grid's for the same reason UiSink
-        // is: a press is resolved against what is on screen first.
+        // The mode is committed straight after the fold.
+        // A change staged last tick lands before anything gated reads it.
+        // MainMenuSink is before the grid's for the reason UiSink is.
+        // A press is resolved against what is on screen first.
         std::vector<std::reference_wrapper<ITickEventSink>> timedSinks{
             input, mode, reducer, menuSink};
 

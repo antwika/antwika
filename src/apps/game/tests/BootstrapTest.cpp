@@ -15,6 +15,9 @@
 #include <antwika/input/InputEvent.hpp>
 #include <antwika/input/InputEventCodec.hpp>
 #include <antwika/input/MouseButton.hpp>
+#include <antwika/input/Position.hpp>
+#include <antwika/ui/Pointer.hpp>
+#include <antwika/ui/WidgetId.hpp>
 #include <antwika/log/mocks/MockLogger.hpp>
 #include <antwika/replay/EngineLoopError.hpp>
 #include <antwika/replay/ReplaySource.hpp>
@@ -27,6 +30,9 @@
 #include "antwika/game/Direction.hpp"
 #include "antwika/game/GridExtent.hpp"
 #include "antwika/game/IsoProjection.hpp"
+#include "antwika/game/MainMenuScene.hpp"
+#include "antwika/game/UiCanvas.hpp"
+#include "antwika/game/UiOverlay.hpp"
 #include "antwika/game/PathIndex.hpp"
 
 using antwika::event::Event;
@@ -62,8 +68,8 @@ namespace
         Camera camera;
         PathIndex paths;
 
-        // The subject of these tests is the grid, so a run starts
-        // there rather than clicking its way past the menu.
+        // The subject of these tests is the grid.
+        // So a run starts there rather than clicking past the menu.
         AppModeState mode{AppMode::Playing};
 
         antwika::game::GameSummary run(
@@ -328,4 +334,194 @@ TEST(PrintSummaryTest, WritesEveryWalkerWhereItStandsAndWhereItFaces)
 
     EXPECT_NE(
         out.str().find("  at (3, 4) facing 2\n"), std::string::npos);
+}
+
+// The menu is a mode of its own.
+// So bootstrap() has to be able to boot into it.
+// And nothing on the command line may decide which.
+namespace
+{
+    // Where an item is, is the layout's business.
+    [[nodiscard]] antwika::input::Position menuPixelOn(
+        antwika::ui::WidgetId id)
+    {
+        const antwika::game::MainMenuScene scene;
+
+        for (std::int32_t y = 0;
+             y < static_cast<std::int32_t>(antwika::game::kUiCanvas.height);
+             y += 2)
+        {
+            for (std::int32_t x = 0;
+                 x
+                 < static_cast<std::int32_t>(antwika::game::kUiCanvas.width);
+                 x += 2)
+            {
+                const antwika::ui::Pointer pointer{
+                    .position = antwika::gfx::Point{.x = x, .y = y}};
+
+                if (scene.describe(antwika::game::kUiCanvas, pointer)
+                        .interactions.hovered
+                    == id)
+                {
+                    return antwika::input::Position{.x = x, .y = y};
+                }
+            }
+        }
+
+        return antwika::input::Position{};
+    }
+
+    struct MenuHarness
+    {
+        NiceMock<MockLogger> logger;
+        NiceMock<MockEventSink> eventSink;
+        InputEventCodec codec;
+        Camera camera;
+        PathIndex paths;
+        AppModeState mode;
+        antwika::game::UiOverlay menuOverlay{antwika::game::kUiCanvas};
+
+        antwika::game::GameSummary run(ReplaySource &source)
+        {
+            return antwika::game::bootstrap(
+                antwika::game::GameConfig{
+                    .logger = logger,
+                    .eventSink = eventSink,
+                    .inputSource = source,
+                    .codec = codec,
+                    .extent = kExtent,
+                    .camera = camera,
+                    .paths = paths,
+                    .mode = mode,
+                    .maxTicks = 10,
+                    .menuOverlay = menuOverlay});
+        }
+    };
+
+    [[nodiscard]] TickEvent leftPressAt(
+        const InputEventCodec &codec,
+        antwika::time::Tick tick,
+        antwika::input::Position at)
+    {
+        return TickEvent{
+            .tick = tick,
+            .event = codec.encode(
+                antwika::input::PointerButtonPressed{
+                    .button = antwika::input::MouseButton::Left,
+                    .position = at})};
+    }
+} // namespace
+
+TEST(BootstrapTest, Bootstrap_StartsAtTheMainMenu)
+{
+    MenuHarness harness;
+    ReplaySource source({
+        TickEvent{
+            .tick = 1,
+            .event = Event{.name = antwika::engine::events::kStop}},
+    });
+
+    harness.run(source);
+
+    EXPECT_EQ(harness.mode.mode(), antwika::game::AppMode::MainMenu);
+}
+
+// A click on the grid while the menu is up is not the grid's click.
+TEST(BootstrapTest, Bootstrap_LaysNoPathWhileTheMenuIsUp)
+{
+    MenuHarness harness;
+    const InputEventCodec codec;
+    const auto onTheGrid = antwika::input::Position{
+        .x = antwika::game::cellCentre(
+                 antwika::game::Cell{.x = 1, .y = 1}, harness.camera)
+                 .x,
+        .y = antwika::game::cellCentre(
+                 antwika::game::Cell{.x = 1, .y = 1}, harness.camera)
+                 .y};
+
+    ReplaySource source({
+        leftPressAt(codec, 0, onTheGrid),
+        TickEvent{
+            .tick = 1,
+            .event = Event{.name = antwika::engine::events::kStop}},
+    });
+
+    const auto summary = harness.run(source);
+
+    EXPECT_TRUE(summary.paths.empty());
+}
+
+TEST(BootstrapTest, Bootstrap_PressingNewGameLeavesTheMenuForTheGrid)
+{
+    MenuHarness harness;
+    const InputEventCodec codec;
+
+    ReplaySource source({
+        leftPressAt(
+            codec, 0, menuPixelOn(antwika::game::menuWidgets::kNewGame)),
+        TickEvent{
+            .tick = 2,
+            .event = Event{.name = antwika::engine::events::kStop}},
+    });
+
+    harness.run(source);
+
+    EXPECT_EQ(harness.mode.mode(), antwika::game::AppMode::Playing);
+}
+
+// And once it has, the grid takes clicks exactly as it always did.
+TEST(BootstrapTest, Bootstrap_LaysPathsOnceTheMenuHasBeenLeft)
+{
+    MenuHarness harness;
+    const InputEventCodec codec;
+    const auto centre = antwika::game::cellCentre(
+        antwika::game::Cell{.x = 1, .y = 1}, harness.camera);
+
+    ReplaySource source({
+        leftPressAt(
+            codec, 0, menuPixelOn(antwika::game::menuWidgets::kNewGame)),
+        leftPressAt(
+            codec,
+            1,
+            antwika::input::Position{.x = centre.x, .y = centre.y}),
+        TickEvent{
+            .tick = 2,
+            .event = Event{.name = antwika::engine::events::kStop}},
+    });
+
+    const auto summary = harness.run(source);
+
+    EXPECT_EQ(summary.paths.size(), 1U);
+}
+
+TEST(BootstrapTest, Bootstrap_PressingQuitEndsTheRun)
+{
+    MenuHarness harness;
+    const InputEventCodec codec;
+
+    ReplaySource source({
+        leftPressAt(
+            codec, 0, menuPixelOn(antwika::game::menuWidgets::kQuit)),
+    });
+
+    // No engine.stop in the script at all.
+    // Reaching maxTicks would throw.
+    // So completing the run is what proves the menu stopped it.
+    EXPECT_NO_THROW(harness.run(source));
+}
+
+// replays/demo.json opens by clicking here.
+// A recording is only as good as the layout it was made against.
+// So the pixel it holds is asserted here.
+// Otherwise it is rediscovered by hand every time an item moves.
+TEST(BootstrapTest, Bootstrap_TheDemoReplaysOpeningClickHitsNewGame)
+{
+    const antwika::game::MainMenuScene scene;
+    const antwika::ui::Pointer pointer{
+        .position = antwika::gfx::Point{.x = 500, .y = 250}};
+
+    EXPECT_EQ(
+        scene.describe(antwika::game::kUiCanvas, pointer)
+            .interactions.hovered,
+        antwika::game::menuWidgets::kNewGame);
 }
