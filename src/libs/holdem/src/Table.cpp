@@ -70,6 +70,20 @@ namespace antwika::holdem
             throw TableStateError(
                 "Table: a table seats between 2 and 9 players");
         }
+
+        // Blinds is a plain aggregate with no invariant of its own.
+        // This is the one door it reaches the betting rules through.
+        // postBlinds() stakes the small blind against a live big one.
+        // A small blind above it therefore owes a negative amount.
+        // Chips is unsigned, so owedBy() wraps that figure instead.
+        // commit() then hands the wrapped one to the next raise.
+        // Refusing beats clamping the subtraction at the read.
+        // A clamp leaves the pot just as wrong and harder to notice.
+        if (blinds.small > blinds.big)
+        {
+            throw TableStateError(
+                "Table: the small blind cannot exceed the big blind");
+        }
         seats.resize(seatCount);
     }
 
@@ -134,10 +148,20 @@ namespace antwika::holdem
     {
         requireSeatInRange(seat);
         auto &target = seats[indexOf(seat)];
-        if (target.inHand)
+
+        // Folding gives up the cards, not the chips already staked.
+        // Those still belong to a pot this hand has to pay out.
+        // Clearing the seat drops them from what finishHand() sees.
+        // The payouts would fall short by exactly that stake.
+        // Clearing the pot afterwards would discard the difference.
+        // So leaving waits for the hand to settle, folded or not.
+        // That is also what a card room makes a player do.
+        // A seat that has staked nothing is free to go at any time.
+        if (handInProgress && (target.inHand || target.committed > 0))
         {
             throw TableStateError(
-                "Table: a player in the hand cannot leave the table");
+                "Table: a player with chips in the pot cannot leave "
+                "the table");
         }
         target = Seat{};
     }
@@ -428,13 +452,25 @@ namespace antwika::holdem
 
     void Table::openBetting(SeatId from)
     {
-        if (countAbleToAct() >= kMinSeats)
+        const auto next = nextSeatFrom(seats, from, canStillBet);
+
+        // Two players holding chips have an ordinary round between them.
+        // One on its own still has a decision when it owes the blind.
+        // No-limit gives that player call-or-fold.
+        // Skipping it treats them as all-in for what they posted.
+        // That caps them out of a layer they never paid for.
+        // On a later street resetBettingRound() has zeroed every debt.
+        // So the second test only ever fires pre-flop.
+        const auto owes =
+            next
+            && !betting.isCovered(seats[indexOf(*next)].roundCommitted);
+        if (countAbleToAct() >= kMinSeats || owes)
         {
-            toAct = nextSeatFrom(seats, from, canStillBet);
+            toAct = next;
             return;
         }
 
-        // Nobody is left with chips to wager.
+        // Nobody is left owing chips they could still wager with.
         // So there is nothing to decide on this street or any later one.
         toAct = std::nullopt;
         closeRound();
@@ -557,10 +593,19 @@ namespace antwika::holdem
         toAct = std::nullopt;
         handInProgress = false;
         flow.end();
+        // Every per-round figure goes back to what a fresh seat holds.
+        // betting.close() has just zeroed the live bet above them.
+        // A seat still holding roundCommitted would owe a negative.
+        // viewFor() reported that as owing its whole stack to call.
+        // committed is the one exception and stays where it is.
+        // TableRunner reads it either side of apply() for the stake.
+        // A hand-ending action is paid out before it looks.
         for (auto &seat : seats)
         {
             seat.inHand = false;
             seat.actedThisRound = false;
+            seat.roundCommitted = 0;
+            seat.mayRaise = true;
         }
     }
 

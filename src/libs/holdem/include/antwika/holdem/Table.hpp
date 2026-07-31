@@ -61,8 +61,12 @@ namespace antwika::holdem
          * @brief Construct an empty table.
          * @param seatCount How many seats it has, in
          * [kMinSeats, kMaxSeats].
-         * @param blinds The forced bets, which also fix the minimum bet.
-         * @throws TableStateError If seatCount is out of range.
+         * @param blinds The forced bets, which also fix the minimum bet;
+         * the small blind may not exceed the big one, since a seat
+         * would then be committed above the bet it is meant to be
+         * chasing.
+         * @throws TableStateError If seatCount is out of range, or the
+         * small blind exceeds the big blind.
          */
         Table(std::size_t seatCount, Blinds blinds);
 
@@ -120,9 +124,15 @@ namespace antwika::holdem
 
         /**
          * @brief Empty a seat.
+         *
+         * Refused while the hand this seat has chips in is still being
+         * played, whether or not it has folded: a folded player's stake
+         * is still in the pot, and clearing the seat would delete it
+         * from the contributions the side pots are built from.
+         * A seat that has staked nothing may leave at any time.
          * @param seat The seat to clear; already-empty is fine.
-         * @throws TableStateError If seat is out of range, or its player
-         * is in the current hand.
+         * @throws TableStateError If seat is out of range, or a hand is
+         * in progress and its player has chips in the pot.
          */
         void removePlayer(SeatId seat);
 
@@ -190,6 +200,9 @@ namespace antwika::holdem
 
         /**
          * @brief Take a snapshot of what one seat may see.
+         *
+         * Legal between hands as well as during one, where it reports a
+         * seat owing nothing and free to stake its whole stack.
          * @param seat The seat to build the view for, normally
          * seatToAct().
          * @return That seat's view of the hand.
