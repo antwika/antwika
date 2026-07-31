@@ -19,11 +19,20 @@ namespace antwika::tower_defence
     /**
      * @brief Pixels reserved along the top of the canvas for the score.
      *
-     * The grid is laid out below it rather than under it.
+     * The grid is laid out below the strip rather than under it.
      * That is what makes a click on the score bar hit no cell at all,
-     * with no sink having to ask a UI whether it covered the pointer.
+     * with no sink having to ask a UI whether it covered the pointer --
+     * but only while the strip is at least as tall as the bar drawn in
+     * it, which a fixed pixel count stops being on a taller canvas.
+     * So the strip is the bar's own height: a panel's padding above and
+     * below one line of text, every one of them scaled the way
+     * describeScoreBar() scales them.
+     * ScoreBarStripTest asserts the two still agree.
+     *
+     * @param canvas Size of the surface being drawn into.
+     * @return Height of the strip, in pixels.
      */
-    inline constexpr std::uint32_t kScoreBarHeight = 48;
+    [[nodiscard]] std::uint32_t scoreBarHeight(Size canvas) noexcept;
 
     /**
      * @brief Where the grid lands on the canvas, in pixels.
@@ -49,7 +58,7 @@ namespace antwika::tower_defence
      * @brief Work out where a grid of this size lands on this canvas.
      *
      * Cells are square and a whole number of pixels across, and the grid
-     * is centred in whatever is left below the score bar.
+     * is centred in whatever is left below scoreBarHeight(canvas).
      * Nothing is ever rounded up, so the grid always fits and the
      * centring offsets cannot go negative.
      *

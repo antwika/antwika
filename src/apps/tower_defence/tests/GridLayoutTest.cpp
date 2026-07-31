@@ -9,7 +9,7 @@ using antwika::tower_defence::Cell;
 using antwika::tower_defence::cellAt;
 using antwika::tower_defence::cellRect;
 using antwika::tower_defence::GridLayout;
-using antwika::tower_defence::kScoreBarHeight;
+using antwika::tower_defence::scoreBarHeight;
 using antwika::tower_defence::layoutFor;
 
 namespace
@@ -26,7 +26,7 @@ namespace
         // 720 - 48 leaves 672; eight rows of 80 leave 32 to share.
         EXPECT_EQ(
             layout->origin.y,
-            static_cast<std::int32_t>(kScoreBarHeight + 16));
+            static_cast<std::int32_t>(scoreBarHeight(kCanvas) + 16));
     }
 
     TEST(GridLayoutTest, AnEmptyGridHasNoLayout)
@@ -37,12 +37,20 @@ namespace
 
     TEST(GridLayoutTest, ACanvasWithNoRoomHasNoLayout)
     {
+        // A canvas the score bar alone fills leaves no rows at all.
+        constexpr Size kShort{.width = 960, .height = 16};
+        ASSERT_EQ(scoreBarHeight(kShort), kShort.height);
+        EXPECT_FALSE(layoutFor(kShort, 12, 8).has_value());
+
+        // Room below the bar, but not a whole pixel for every column.
         EXPECT_FALSE(
-            layoutFor({.width = 960, .height = kScoreBarHeight}, 12, 8)
-                .has_value());
-        EXPECT_FALSE(
-            layoutFor({.width = 4, .height = kScoreBarHeight + 4}, 12, 8)
-                .has_value());
+            layoutFor({.width = 4, .height = 20}, 12, 8).has_value());
+    }
+
+    // The window the app opens, whose numbers every other test uses.
+    TEST(GridLayoutTest, TheAppsOwnCanvasReservesFortyEightPixels)
+    {
+        EXPECT_EQ(scoreBarHeight(kCanvas), 48U);
     }
 
     TEST(GridLayoutTest, APointFindsTheCellItLandsIn)
