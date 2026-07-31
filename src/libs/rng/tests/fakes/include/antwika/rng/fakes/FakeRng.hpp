@@ -5,12 +5,12 @@
 #include <utility>
 #include <vector>
 
-#include <antwika/holdem/IRng.hpp>
+#include <antwika/rng/IRng.hpp>
 
-namespace antwika::holdem::fakes
+namespace antwika::rng::fakes
 {
 
-    using antwika::holdem::IRng;
+    using antwika::rng::IRng;
 
     /**
      * @brief IRng that hands back a scripted sequence, cycling once it
@@ -44,4 +44,4 @@ namespace antwika::holdem::fakes
         std::size_t position = 0;
     };
 
-} // namespace antwika::holdem::fakes
+} // namespace antwika::rng::fakes

@@ -4,9 +4,9 @@
 #include <set>
 #include <vector>
 
-#include <antwika/holdem/SplitMix64Rng.hpp>
+#include <antwika/rng/SplitMix64Rng.hpp>
 
-using antwika::holdem::SplitMix64Rng;
+using antwika::rng::SplitMix64Rng;
 
 namespace
 {
@@ -23,8 +23,9 @@ namespace
     }
 } // namespace
 
-// This is what makes a recorded hand deal itself the same way twice.
+// This is what makes a recorded session regenerate itself unchanged.
 // So it is pinned to the published output, not merely to itself.
+// Changing this expectation invalidates every replay in the repository.
 TEST(SplitMix64RngTest, Next_MatchesThePublishedSequenceForSeedZero)
 {
     const std::vector<std::uint64_t> expected{
