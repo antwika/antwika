@@ -1,0 +1,66 @@
+# Glossary
+
+**Tick** — the simulation's unit of time, `antwika::time::Tick`, an unsigned counter.
+The engine advances one tick at a time and never sees a wall-clock delta, which is what makes a run independent of how fast the machine was.
+
+**Event** — `antwika::event::Event`, a `name` and an opaque string `payload`.
+Names are dot-namespaced by whoever owns them: `engine.tick`, `input.pointer_down`, `game.score_increment`, `life.toggle_cell`, `task.submit`, `poker.buy_in`.
+There is one mechanism, with no distinction between built-in and application-defined kinds.
+
+**TickEvent** — an `Event` bound to the tick it occurred on.
+
+**Dispatcher** — an `IEventDispatcher` that fans an event out to registered sinks.
+`TickedEventDispatcher` is the one the loop uses; it stamps the current tick on.
+
+**Sink** — an `ITickEventSink`: something that observes events and does something with them.
+This is where an application turns input into meaning — a click into a placed tile, a payload into a scheduled job.
+A sink runs inside the tick path, downstream of the recorder, which is what lets a replay store the input and regenerate what it caused.
+
+**Replay source** — an `IReplaySource`, asked `eventsFor(tick)` once per tick.
+This is the only seam between a live run and a replayed one: a replayed run is served by `ReplaySource` from a file, a live run by `input::LiveInputSource` over a backend.
+
+**Decorator (of a source)** — a source wrapping another source to add or remove events: `WindowInputSource`, `WindowCloseSource`, `StopOnKeySource`, `CoalescingPointerSource`, `IdleMotionSource`.
+Anything that thins a recording must be a decorator upstream of the recorder, never a filter applied afterwards.
+
+**Recorder** — `TickEventRecorder`, which collects what passed through for a `--record` run.
+It is the only place a reduction of what is recorded may happen.
+
+**Replay** — a JSON document of the external input a run consumed, written by `ReplayWriter` and read by `ReplayReader`.
+It holds only what the engine cannot regenerate: never `engine.tick`, never a placement derived from a click, never a card dealt from a seeded shuffle.
+
+**Self-generated event** — an event the engine or the application regenerates deterministically each run, and therefore never records.
+Each app declares its own list; no `input.*` name may ever appear in one.
+
+**Engine loop** — `replay::EngineLoop`, the one code path both live and replayed runs go through.
+
+**Reducer** — an `IReducer<State>`: a pure function from a previous state and an event to a next state.
+`ReducerSink` is what plugs one into the dispatcher.
+
+**Entity / component / world** — the [`ecs`](libraries/ecs.md) alternative to a reducer.
+An `Entity` is an opaque id, a component is a value attached to one, and the `World` is double-buffered so mutations are staged and become visible at a commit between ticks.
+
+**System** — an `ecs::ISystem`, `update(World &, Tick)`, run once per tick by a `SystemScheduler` in `Phase` order.
+
+**Backend** — a concrete framework implementation under `backends/`, chosen at build time and statically linked.
+Graphics backends implement `gfx::IGfxBackend`, input backends `input::IInputBackend`; `null`, `sdl3` and `raylib` exist.
+The `null` pair is headless: it needs no framework, draws nothing and reports no input.
+
+**Conformance suite** — the shared test body every backend of a kind must pass, so the abstraction means the same thing under each.
+
+**Snapshot** — an immutable value describing state for drawing, handed to a scene: `game::SceneSnapshot`, `poker::TableSnapshot`.
+It is the structural half of "rendering is write-only" — a scene is given a value it cannot write back through.
+
+**Scene** — the code that turns a snapshot into drawing calls, e.g. `game::GridScene`, `poker::TableScene`, `life::BoardScene`.
+
+**Canvas** — the window size a UI or a board layout is computed against.
+It is always the size the window was *asked* for, never the size a window reports, so a recorded click resolves to the same widget or cell under any backend.
+
+**Edge (of input)** — a press, a release, a movement or a scroll notch, as opposed to a statement of what is currently held.
+Every `InputEvent` is an edge, which is what lets a queue-based framework and a state-polling one implement the same interface.
+
+**Job / budget** — a [`scheduler`](libraries/scheduler.md) unit of work and the cap on how many run in one `run()` call.
+`budget` is the only throttle; no job runs outside a `run()`.
+
+**Domain (in WFC)** — the set of values a cell may still take, narrowed by constraints until one remains.
+
+**Hand value** — `holdem::HandValue`, a single comparable number a 5–7 card hand evaluates to; greater is stronger and equal is a split pot.
