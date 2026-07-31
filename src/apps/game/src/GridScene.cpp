@@ -12,6 +12,8 @@
 #include "antwika/game/Footprint.hpp"
 #include "antwika/game/FootprintOutline.hpp"
 #include "antwika/game/IsoProjection.hpp"
+#include "antwika/game/ReadoutPanel.hpp"
+#include "antwika/game/ResourceBar.hpp"
 #include "antwika/game/TileAtlas.hpp"
 #include "antwika/game/WalkerMotion.hpp"
 
@@ -94,6 +96,23 @@ namespace antwika::game
 
             return links;
         }
+
+        // The track always, the fill only when there is any of it.
+        // A rectangle of no height is a drawing call that draws nothing.
+        void paintBars(
+            IRenderer &renderer, const std::vector<ResourceBar> &bars)
+        {
+            for (const auto &bar : bars)
+            {
+                renderer.drawRect(bar.track, kBarTrack);
+
+                if (bar.fill.size.height > 0)
+                {
+                    renderer.drawRect(
+                        bar.fill, resourceColour(bar.resource));
+                }
+            }
+        }
     } // namespace
 
     bool GridScene::onCanvas(
@@ -164,7 +183,71 @@ namespace antwika::game
                 atlas, walkerTile(walker.facing), bounds, kUntinted);
         }
 
+        // After every sprite.
+        // A gauge is then never hidden by what stands in front of it.
+        drawBars(renderer, canvas, snapshot, subTick);
+
         drawGhost(renderer, canvas, snapshot, atlas);
+
+        // Last of all, since it is what somebody is reading.
+        drawReadout(renderer, canvas, snapshot);
+    }
+
+    void GridScene::drawBars(
+        IRenderer &renderer,
+        Size canvas,
+        const SceneSnapshot &snapshot,
+        Progress subTick) const
+    {
+        // Culled on the sprite's own box rather than the bar's.
+        // A gauge is drawn exactly when what it belongs to is.
+        for (const auto &building : snapshot.buildings)
+        {
+            const auto bounds = footprintBounds(
+                building.at, footprintOf(building.kind), snapshot.camera);
+
+            if (!overlaps(bounds, canvas))
+            {
+                continue;
+            }
+
+            paintBars(renderer, buildingBars(building, snapshot.camera));
+        }
+
+        for (const auto &walker : snapshot.walkers)
+        {
+            const auto bounds =
+                walkerBounds(walker, snapshot.camera, subTick);
+
+            if (!overlaps(bounds, canvas))
+            {
+                continue;
+            }
+
+            paintBars(
+                renderer, walkerBars(walker, snapshot.camera, subTick));
+        }
+    }
+
+    void GridScene::drawReadout(
+        IRenderer &renderer,
+        Size canvas,
+        const SceneSnapshot &snapshot) const
+    {
+        const auto panel = readoutPanel(snapshot.hover, canvas);
+
+        if (panel.lines.empty())
+        {
+            return;
+        }
+
+        renderer.drawRect(panel.box, kReadoutBackdrop);
+
+        for (const auto &line : panel.lines)
+        {
+            renderer.drawText(
+                line.origin, line.text, kReadoutTextScale, line.colour);
+        }
     }
 
     void GridScene::drawGhost(

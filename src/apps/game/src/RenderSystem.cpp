@@ -5,6 +5,7 @@
 
 #include "antwika/game/BuildGhost.hpp"
 #include "antwika/game/FpsReadout.hpp"
+#include "antwika/game/Hover.hpp"
 #include "antwika/game/SceneSnapshot.hpp"
 
 namespace antwika::game
@@ -99,6 +100,18 @@ namespace antwika::game
             setup.overlay.pointerOverUi(),
             setup.paths,
             setup.built);
+
+        // Off the same channel and under the same rule as the ghost.
+        // Read against the snapshot this frame is about to draw.
+        // So the panel and what is on screen are the one picture.
+        // Worked out here rather than in a sink, for the ghost's reason.
+        // No replay reproduces a hint.
+        // So nothing folded from one may reach what a replay does.
+        latest.hover = hoverFor(
+            setup.hint.forRenderingOnly(),
+            setup.camera,
+            latest,
+            setup.overlay.pointerOverUi());
 
         setup.scene.draw(
             renderer, setup.window.size(), latest, setup.atlas, subTick);

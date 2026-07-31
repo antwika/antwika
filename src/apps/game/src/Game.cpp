@@ -279,7 +279,7 @@ namespace antwika::game
             .state = state,
             .paths = frame.paths,
             .walkers = walkerViewsOf(world),
-            .buildings = frame.buildings,
+            .buildings = buildingViewsOf(world),
             .camera = camera};
         // The excluded line is the local summary's unwind destructor.
         // Nothing between its construction and the return throws.

@@ -22,7 +22,8 @@ namespace antwika::game
             .paths = {},
             .walkers = {},
             .buildings = {},
-            .ghost = {}};
+            .ghost = {},
+            .hover = {}};
 
         snapshot.paths.assign(paths.cells().begin(), paths.cells().end());
 
@@ -47,15 +48,20 @@ namespace antwika::game
                     .at = world.get<Cell>(entity),
                     .facing = walker.facing,
                     .from = walker.from,
-                    .ticksIntoStep = into});
+                    .ticksIntoStep = into,
+                    .kind = walker.kind,
+                    .carried = walker.carried});
         }
 
         for (const auto entity : world.view<Building, Cell>())
         {
+            const auto building = world.get<Building>(entity);
+
             snapshot.buildings.push_back(
-                BuildingView{
+                BuildingSprite{
                     .at = world.get<Cell>(entity),
-                    .kind = world.get<Building>(entity).kind});
+                    .kind = building.kind,
+                    .stock = building.stock});
         }
 
         // **Painter's order, no longer optional.**
@@ -67,7 +73,7 @@ namespace antwika::game
         // So nothing depends on how the view walked the world.
         std::ranges::sort(
             snapshot.buildings,
-            [](const BuildingView &left, const BuildingView &right)
+            [](const BuildingSprite &left, const BuildingSprite &right)
             {
                 const auto depth = left.at.x + left.at.y;
                 const auto other = right.at.x + right.at.y;
@@ -91,6 +97,23 @@ namespace antwika::game
                 WalkerView{
                     .at = world.get<Cell>(entity),
                     .facing = world.get<Walker>(entity).facing});
+        }
+
+        return views;
+        // The excluded line is the local vector's unwind destructor.
+        // Nothing between its construction and the return throws.
+    } // GCOVR_EXCL_LINE
+
+    std::vector<BuildingView> buildingViewsOf(const World &world)
+    {
+        std::vector<BuildingView> views;
+
+        for (const auto entity : world.view<Building, Cell>())
+        {
+            views.push_back(
+                BuildingView{
+                    .at = world.get<Cell>(entity),
+                    .kind = world.get<Building>(entity).kind});
         }
 
         return views;

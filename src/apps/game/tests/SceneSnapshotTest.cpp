@@ -226,6 +226,14 @@ TEST(SceneSnapshotTest, WalkerSpriteEqualityComparesEveryField)
     auto later = sprite;
     later.ticksIntoStep = 0;
     EXPECT_NE(sprite, later);
+
+    auto other = sprite;
+    other.kind = antwika::game::WalkerKind::Water;
+    EXPECT_NE(sprite, other);
+
+    auto spent = sprite;
+    spent.carried = sprite.carried + 1;
+    EXPECT_NE(sprite, spent);
 }
 
 TEST(SceneSnapshotTest, SnapshotOf_TakesEveryWalker)
@@ -383,4 +391,90 @@ TEST(SceneSnapshotTest, SnapshotOf_OrdersTheBuildingsBackToFront)
     EXPECT_EQ(snapshot.buildings[0].at, (Cell{.x = 0, .y = 1}));
     EXPECT_EQ(snapshot.buildings[1].at, (Cell{.x = 1, .y = 0}));
     EXPECT_EQ(snapshot.buildings[2].at, (Cell{.x = 3, .y = 3}));
+}
+
+TEST(SceneSnapshotTest, SnapshotOf_TakesWhatEachWalkerIsCarrying)
+{
+    NiceMock<MockLogger> logger;
+    World world(logger);
+    const PathIndex paths;
+
+    const auto entity = world.create();
+    world.add<Cell>(entity, Cell{.x = 1, .y = 1});
+    world.add<Walker>(
+        entity,
+        Walker{
+            .kind = antwika::game::WalkerKind::Water, .carried = 42});
+    world.commit();
+
+    const auto snapshot = snapshotOf(world, paths, Camera(), kExtent);
+
+    ASSERT_EQ(snapshot.walkers.size(), 1U);
+    EXPECT_EQ(snapshot.walkers[0].kind, antwika::game::WalkerKind::Water);
+    EXPECT_EQ(snapshot.walkers[0].carried, 42);
+}
+
+// The picture needs the stock; the state a summary compares must not.
+// So the sprite carries it and BuildingView does not -- see WalkerView.
+TEST(SceneSnapshotTest, SnapshotOf_TakesWhatEachBuildingIsHolding)
+{
+    NiceMock<MockLogger> logger;
+    World world(logger);
+    const PathIndex paths;
+
+    const auto entity = world.create();
+    world.add<Cell>(entity, Cell{.x = 2, .y = 2});
+    world.add<antwika::game::Building>(
+        entity,
+        antwika::game::Building{
+            .kind = antwika::game::BuildingKind::House,
+            .stock = {17, 71}});
+    world.commit();
+
+    const auto snapshot = snapshotOf(world, paths, Camera(), kExtent);
+
+    ASSERT_EQ(snapshot.buildings.size(), 1U);
+    EXPECT_EQ(snapshot.buildings[0].at, (Cell{.x = 2, .y = 2}));
+    EXPECT_EQ(
+        snapshot.buildings[0].kind, antwika::game::BuildingKind::House);
+    EXPECT_EQ(snapshot.buildings[0].stock[0], 17);
+    EXPECT_EQ(snapshot.buildings[0].stock[1], 71);
+}
+
+TEST(SceneSnapshotTest, BuildingViewsOf_ReportsEachBuildingAsState)
+{
+    NiceMock<MockLogger> logger;
+    World world(logger);
+
+    // Put up front to back, which is the order a session had them in.
+    // A summary reports a session rather than a screen, so it keeps it.
+    for (const auto at : {
+             Cell{.x = 3, .y = 3},
+             Cell{.x = 0, .y = 1}})
+    {
+        const auto entity = world.create();
+        world.add<Cell>(entity, at);
+        world.add<antwika::game::Building>(
+            entity,
+            antwika::game::Building{
+                .kind = antwika::game::BuildingKind::House,
+                .stock = {5, 6}});
+    }
+    world.commit();
+
+    EXPECT_EQ(
+        antwika::game::buildingViewsOf(world),
+        (std::vector<antwika::game::BuildingView>{
+            {.at = {.x = 3, .y = 3},
+             .kind = antwika::game::BuildingKind::House},
+            {.at = {.x = 0, .y = 1},
+             .kind = antwika::game::BuildingKind::House}}));
+}
+
+TEST(SceneSnapshotTest, BuildingViewsOf_ReportsNothingWithNoBuildings)
+{
+    NiceMock<MockLogger> logger;
+    World world(logger);
+
+    EXPECT_TRUE(antwika::game::buildingViewsOf(world).empty());
 }

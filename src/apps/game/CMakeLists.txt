@@ -11,6 +11,7 @@ add_executable(antwika_game
     src/GridScene.cpp
     src/GridSink.cpp
     src/Homing.cpp
+    src/Hover.cpp
     src/InputFold.cpp
     src/MainMenuScene.cpp
     src/MainMenuSink.cpp
@@ -20,6 +21,8 @@ add_executable(antwika_game
     src/PauseGatedSystem.cpp
     src/PauseState.cpp
     src/Placement.cpp
+    src/ReadoutPanel.cpp
+    src/ResourceBar.cpp
     src/RenderSystem.cpp
     src/KeyText.cpp
     src/SaveCli.cpp
