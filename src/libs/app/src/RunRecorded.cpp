@@ -42,6 +42,13 @@ namespace antwika::app
         std::optional<std::string> recordPath;
 
         int exitCode = EXIT_SUCCESS;
+        const auto report = [&errors, &name, &exitCode](
+                                const std::exception &error)
+        {
+            errors << name << ": " << error.what() << '\n';
+            exitCode = EXIT_FAILURE;
+        };
+
         try
         {
             // A refused flag is a failed run, not a crash.
@@ -75,16 +82,28 @@ namespace antwika::app
         }
         catch (const std::exception &error)
         {
-            errors << name << ": " << error.what() << '\n';
-            exitCode = EXIT_FAILURE;
+            report(error);
         }
 
         // After the catch, so a run that failed still saves what it got.
         // A run refused at the command line has nothing to save.
+        //
+        // Saving throws on its own account too.
+        // An unwritable path, or a full disk.
+        // Uncaught, that throw leaves runRecorded() entirely.
+        // A main() has no catch of its own, by design.
+        // So the process terminated rather than saying which path.
         if (recordPath)
         {
-            antwika::replay::saveReplayFile(
-                replayRecorder.getEvents(), *recordPath);
+            try
+            {
+                antwika::replay::saveReplayFile(
+                    replayRecorder.getEvents(), *recordPath);
+            }
+            catch (const std::exception &error)
+            {
+                report(error);
+            }
         }
 
         return exitCode;

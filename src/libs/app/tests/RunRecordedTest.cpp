@@ -168,6 +168,40 @@ TEST(RunRecordedTest, SavesWhatAFailedRunGotTo)
     EXPECT_EQ(loadReplayFile(file.name()), std::vector{kScripted});
 }
 
+// Saving is the last thing a --record run does.
+// It throws when the path will not take the bytes.
+// That throw used to leave runRecorded() entirely.
+// A main() has no catch of its own, by design.
+// So a mistyped --record path terminated the process in silence.
+TEST(RunRecordedTest, ReportsARecordingItCouldNotSave)
+{
+    const std::string path =
+        (std::filesystem::temp_directory_path() / "antwika-no-such-dir"
+         / "out.json")
+            .string();
+    std::array<char *, 3> argv{
+        const_cast<char *>("antwika_test"),
+        const_cast<char *>("--record"),
+        const_cast<char *>(path.c_str())};
+    std::ostringstream errors;
+
+    bool ran = false;
+    const int exitCode = runRecorded(
+        3,
+        argv.data(),
+        "antwika_test",
+        [&ran](const RecordedRun &) { ran = true; },
+        {},
+        errors);
+
+    // The run itself happened; only its recording could not be kept.
+    EXPECT_TRUE(ran);
+    EXPECT_EQ(exitCode, EXIT_FAILURE);
+    EXPECT_THAT(errors.str(), testing::HasSubstr("antwika_test: "));
+    EXPECT_THAT(errors.str(), testing::HasSubstr("could not open"));
+    EXPECT_THAT(errors.str(), testing::HasSubstr(path));
+}
+
 TEST(RunRecordedTest, HandsTheBodyThePathToReplay)
 {
     std::array<char *, 3> argv{
