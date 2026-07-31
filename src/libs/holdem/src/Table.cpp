@@ -70,6 +70,20 @@ namespace antwika::holdem
             throw TableStateError(
                 "Table: a table seats between 2 and 9 players");
         }
+
+        // Blinds is a plain aggregate with no invariant of its own.
+        // This is the one door it reaches the betting rules through.
+        // postBlinds() stakes the small blind against a live big one.
+        // A small blind above it therefore owes a negative amount.
+        // Chips is unsigned, so owedBy() wraps that figure instead.
+        // commit() then hands the wrapped one to the next raise.
+        // Refusing beats clamping the subtraction at the read.
+        // A clamp leaves the pot just as wrong and harder to notice.
+        if (blinds.small > blinds.big)
+        {
+            throw TableStateError(
+                "Table: the small blind cannot exceed the big blind");
+        }
         seats.resize(seatCount);
     }
 

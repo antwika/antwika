@@ -61,8 +61,12 @@ namespace antwika::holdem
          * @brief Construct an empty table.
          * @param seatCount How many seats it has, in
          * [kMinSeats, kMaxSeats].
-         * @param blinds The forced bets, which also fix the minimum bet.
-         * @throws TableStateError If seatCount is out of range.
+         * @param blinds The forced bets, which also fix the minimum bet;
+         * the small blind may not exceed the big one, since a seat
+         * would then be committed above the bet it is meant to be
+         * chasing.
+         * @throws TableStateError If seatCount is out of range, or the
+         * small blind exceeds the big blind.
          */
         Table(std::size_t seatCount, Blinds blinds);
 

@@ -47,6 +47,25 @@ TEST(TableSeatingTest, Construct_RejectsATableWithTooManySeats)
     EXPECT_THROW(Table(10, kBlinds), TableStateError);
 }
 
+// A small blind above the big one is a debt that runs backwards.
+// The seat posting it is committed above the live bet it chases.
+// owedBy() then subtracts the larger figure from the smaller one.
+// Chips is unsigned, so that wraps rather than going negative.
+TEST(TableSeatingTest, Construct_RejectsASmallBlindAboveTheBigBlind)
+{
+    EXPECT_THROW(
+        Table(2, Blinds{.small = 10, .big = 5}), TableStateError);
+}
+
+// Equal blinds are unusual but not contradictory.
+// Nobody is ever owed a negative amount, so they are allowed.
+TEST(TableSeatingTest, Construct_AcceptsBlindsOfTheSameSize)
+{
+    const Table table(2, Blinds{.small = 10, .big = 10});
+
+    EXPECT_EQ(table.blinds(), (Blinds{.small = 10, .big = 10}));
+}
+
 TEST(TableSeatingTest, Construct_LeavesEverySeatEmpty)
 {
     Table table(6, kBlinds);
