@@ -26,7 +26,7 @@ Neither reaches the `null` backend, so a default build runs until interrupted, a
 
 ## How it is put together
 
-- `GameState` and `GameStateReducer` fold `game.score_increment` — the app's only event name — through [`reducer`](../libraries/reducer.md).
+- `GameState` and `GameStateReducer` fold `game.score_increment` — the app's only event name — through an ordinary [`event`](../libraries/event.md) sink.
 - `Camera`, `IsoProjection.hpp`, `GridExtent`, `Cell`, `Path`, `PathIndex` hold the grid and the view.
 - `GridSink` turns pointer events into placements, pans and zooms; `UiSink` describes and resolves the toolbar; `InputFold` and `PointerReading` fold edges into a pointer.
 - `WalkerSystem` advances each `Walker` one cell per tick; `nextFacing()` in `Walking.hpp` is one preference order.

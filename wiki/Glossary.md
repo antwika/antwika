@@ -33,10 +33,10 @@ Each app declares its own list; no `input.*` name may ever appear in one.
 
 **Engine loop** — `replay::EngineLoop`, the one code path both live and replayed runs go through.
 
-**Reducer** — an `IReducer<State>`: a pure function from a previous state and an event to a next state.
-`ReducerSink` is what plugs one into the dispatcher.
+**Reducer** — an `ITickEventSink` that folds each event into a state value it owns, such as `game::GameStateReducer`.
+It is a naming convention rather than a library: nothing in `src/libs/` defines the term.
 
-**Entity / component / world** — the [`ecs`](libraries/ecs.md) alternative to a reducer.
+**Entity / component / world** — the [`ecs`](libraries/ecs.md) alternative to a reducer fold.
 An `Entity` is an opaque id, a component is a value attached to one, and the `World` is double-buffered so mutations are staged and become visible at a commit between ticks.
 
 **System** — an `ecs::ISystem`, `update(World &, Tick)`, run once per tick by a `SystemScheduler` in `Phase` order.
