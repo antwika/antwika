@@ -695,17 +695,22 @@ namespace antwika::poker
         // It carries no fill of its own.
         // The face is a slot of the atlas.
         // A colour over it would be the picture painted twice.
+        // Hoisted so each multiply owns a statement gcov counts.
+        // Inline, they take a line note that never reaches 100%.
+        const auto sides = kGlyphAdvance * scale;
+        const auto shoulder = kGlyphLineHeight * scale;
+
         const auto face = ui.column(
             {.width = kFit,
              .height = kFit,
              .cross = Alignment::Center,
-             .padding = kGlyphAdvance * scale,
+             .padding = sides,
              .gap = 0,
              .id = id});
 
-        ui.spacer(fixedSize(kGlyphLineHeight * scale));
+        ui.spacer(fixedSize(shoulder));
         ui.label(holdem::toString(card), suitColor(card));
-        ui.spacer(fixedSize(kGlyphLineHeight * scale));
+        ui.spacer(fixedSize(shoulder));
     }
 
 } // namespace antwika::poker
