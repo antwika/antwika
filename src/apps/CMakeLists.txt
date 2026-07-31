@@ -1,3 +1,4 @@
+add_subdirectory(atlas_editor)
 add_subdirectory(companion)
 add_subdirectory(game)
 add_subdirectory(gfx3d_demo)

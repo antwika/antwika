@@ -113,6 +113,9 @@ build/bin/antwika_sound_demo/antwika_sound_demo my.wav   # or play a file instea
 build/bin/antwika_tower_defence/antwika_tower_defence    # or --record / --replay
 build/bin/antwika_ui_demo/antwika_ui_demo                # every antwika::ui element, 1500 ticks
 build/bin/antwika_companion/antwika_companion            # tap to feed it
+build/bin/antwika_atlas_editor/antwika_atlas_editor      # blank 1024x256 sheet
+build/bin/antwika_atlas_editor/antwika_atlas_editor \
+    --image src/apps/game/assets/atlas.png --out mine.png
 ```
 
 **Every application gets a directory of its own under `bin/`**, holding the executable, whatever it opens and -- on MinGW -- the runtime DLLs it needs to start, all put there by `antwika_bundle_app()` in [`cmake/AntwikaModule.cmake`](cmake/AntwikaModule.cmake).
@@ -129,6 +132,13 @@ See [`docs/companion.md`](docs/companion.md) for the rules and the numbers.
 `antwika_tower_defence` opens a window, draws the level each tick and takes mouse input.
 Like `antwika_life` it has no end of its own: it runs until the window is closed, or until a replay dispatches `engine.stop`.
 A headless build reports neither, so `Ctrl+C` is what ends one -- and a `--record` run only writes its file once the run ends.
+
+`antwika_atlas_editor` is a pixel editor for the sheet `apps/game` blits, and it needs a real backend to be of any use -- the `null` one draws nothing to paint on.
+`--image` is the PNG it opens and `--out` is the one a save writes, and neither defaults to the other: the sheet somebody opens first is the game's own, and one stray click should not replace the art with it.
+`--tile <w>x<h>` is what the grid overlay divides the sheet into and is a drawing aid alone -- no tool, no click and no saved byte depends on it.
+It ends on Escape or on the window closing, and otherwise after `--max-ticks` (default 90000, an hour at its frame period; `0` removes the cap).
+That cap ends a session by *asking it to stop* through `atlas_editor::TickLimitSource` rather than through `EngineLoop`'s own `maxTicks`, which throws -- running out of the ticks somebody asked for is not a failure, and a `--record` run has to reach its epilogue to save.
+See [`docs/atlas-editor.md`](docs/atlas-editor.md).
 
 `antwika_life` opens a window, draws the board each tick, and takes mouse input.
 It has no end of its own: it runs until the window is closed, or until a replay dispatches `engine.stop`.
@@ -280,6 +290,16 @@ Each module (lib or app) owns its own `CMakeLists.txt`, `include/`, `src/`, and 
   `game::readoutPanel()` lays that answer out into a plain value of a box and coloured lines, painted through `IRenderer` rather than through `antwika::ui` -- deliberately, because this app's UI is described and resolved inside the tick path by `UiSink`, and taking a panel driven by an unrecorded hint through that path is precisely what the channel forbids.
   The panel lists the resources the bars gauge rather than every number a building holds, so a reader is never told two stories about one building; its captions are a table of their own rather than the names a save file writes, since a persisted name may not change to suit a caption.
   `HoverTest` runs one recorded stream twice, with and without a pointer over the grid, and asserts the same `GameSummary` out of both -- and that the watched run really did draw a readout, so the two cannot agree for the wrong reason.
+- `apps/atlas_editor` is a pixel editor for the sheet `apps/game` blits, and it is an ordinary application of the tick loop rather than a tool bolted on beside one.
+  One tick is one frame, a click is the only input, and **it defines no event of its own**: `atlas_editor::EditorSink` turns a press into a painted pixel inside the tick path, so a `--record` file holds the click and a replay works out again which pixel it landed on and what colour went there.
+  `atlas_editor::CanvasView` is `game::Camera`'s counterpart and is simulation state for the same reason -- which pixel a click means depends entirely on it -- so zoom is an index into a table of whole scales and `floorDiv` does the mapping, never a float.
+  `atlas_editor::Canvas` owns the pixels and counts its changes, and that revision is what `RenderSink` compares against to decide whether to upload the sheet again; painting a pixel the colour it already holds is not a change, so a stroke that crosses one pixel ten times uploads nothing.
+  **There is no undo**, deliberately: a stack of past sheets would be state a replay could not regenerate, and every edit is already recorded as the click that made it, so replaying a session up to a point is the undo this design has.
+  `atlas_editor::IAtlasStore` is the one seam to a filesystem -- `PngAtlasStore` reads and writes PNGs through `gfx::PngReader`/`gfx::PngWriter` -- which is what lets every other class here be exercised with no file on disk.
+  A failed save or load is reported in the status line rather than thrown out of the tick loop, since an editor that unwinds takes an afternoon's work with it.
+  **It is the one app in the tree that thins nothing out of its recording**: coalescing would drop every pixel of a stroke but the last, and gating idle movement would freeze the pixel readout between clicks -- and that readout is simulation state, so it may not come off `input::PointerHintChannel`.
+  A recording therefore grows at the window system's rate, which is the price of the movement being the art.
+  See [`docs/atlas-editor.md`](docs/atlas-editor.md).
 - `apps/life` (Conway's Game of Life) holds state in an `antwika::ecs::World` instead: each cell is an entity with a `Cell` component, and a single `LifeSystem` advances every cell one generation per tick via the double-buffered `World`/`SystemScheduler` — see [`blog/003-an-entity-component-system-with-nowhere-to-hide-a-mutation.md`](blog/003-an-entity-component-system-with-nowhere-to-hide-a-mutation.md).
   Cells are toggled either by a scripted `life.toggle_cell` event or by dragging over them with the mouse.
   The drag is `antwika::input`'s side: `input::LiveInputSource` puts each edge into the tick stream, and `life::PointerToggleSink` decodes the `input.pointer_*` events and toggles the cell under the pointer — so a `--record` run persists the click and regenerates the toggle, per the rule that a replay holds only external input.
@@ -443,7 +463,10 @@ A window may be resizable, and the two sizes it then has are deliberately named 
 **Nothing in a simulation may be driven from the reported size** — laying out or hit-testing against it would make a window resize change what a recorded click means — so it is only ever used to place what is drawn inside the drawable area; see [`docs/resizable-windows.md`](docs/resizable-windows.md).
 
 Textures are decoded once and uploaded per backend: `gfx::PngReader::read()` turns a byte stream into a `gfx::Bitmap` of straight RGBA (stb_image, compiled `STB_IMAGE_STATIC` in one TU because raylib links its own copy), `IRenderer::createTexture()` uploads it, and `drawTexture(texture, source, destination, tint)` blits part of it with a colour and alpha modulation.
-The library opens no files — an app does that, as `apps/gfx_demo` does with `app::assetPath()`, which finds the PNG shipped in the application's own directory under `bin/`.
+`gfx::PngWriter::write(bitmap, out)` is the way back out, on exactly `PngReader`'s terms: it takes a stream rather than a path, so every refusal it can produce is reachable from an in-memory stream and provable with no fixture on disk, and its argument order is `ReplayWriter`'s.
+It flushes before it checks the stream, because a file small enough to sit in one buffer would otherwise be refused by the filesystem and thrown away in silence -- a save that loses a sheet quietly is the one failure an editor cannot recover from.
+stb_image_write is compiled in one translation unit of its own (`STB_IMAGE_WRITE_STATIC`, `STBI_WRITE_NO_STDIO`, warnings off) for the reasons `StbImage.cpp` gives.
+The library opens no files — an app does that, as `apps/gfx_demo` does with `app::assetPath()`, which finds the PNG shipped in the application's own directory under `bin/`, and as `apps/atlas_editor` does with its `PngAtlasStore`.
 A texture belongs to the renderer that made it: drawing it through any other draws nothing, and it may safely outlive its window, because each renderer's `detach()` frees its live textures before the framework tears the device down.
 Write-only still holds — `ITexture` is opaque, and there is no pixel read-back, render target or screenshot anywhere in the interface.
 
