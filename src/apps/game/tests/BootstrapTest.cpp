@@ -34,6 +34,13 @@
 #include "antwika/game/UiCanvas.hpp"
 #include "antwika/game/UiOverlay.hpp"
 #include "antwika/game/PathIndex.hpp"
+#include "antwika/game/BuildTool.hpp"
+#include "antwika/game/SaveGame.hpp"
+#include "antwika/game/Toolbar.hpp"
+#include "antwika/game/WorldMap.hpp"
+#include "antwika/game/WorldMapLayout.hpp"
+#include "antwika/game/WorldMapSink.hpp"
+#include "antwika/game/WorldMapState.hpp"
 
 using antwika::event::Event;
 using antwika::event::mocks::MockEventSink;
@@ -70,7 +77,7 @@ namespace
 
         // The subject of these tests is the grid.
         // So a run starts there rather than clicking past the menu.
-        AppModeState mode{AppMode::Playing};
+        AppModeState mode{AppMode::CityMap};
 
         antwika::game::GameSummary run(
             ReplaySource &source,
@@ -307,6 +314,7 @@ TEST(PrintSummaryTest, WritesTheStateTheCountsAndTheCamera)
         .state = {.ticksProcessed = 4, .score = 7},
         .paths = {{.x = 1, .y = 1}, {.x = 1, .y = 2}},
         .walkers = {},
+        .buildings = {},
         .camera = Camera(Point{.x = 512, .y = 48})};
 
     antwika::game::printSummary(out, summary);
@@ -316,6 +324,7 @@ TEST(PrintSummaryTest, WritesTheStateTheCountsAndTheCamera)
         "Final state: ticksProcessed=4 score=7\n"
         "Paths laid: 2\n"
         "Walkers: 0\n"
+        "Buildings: 0\n"
         "Camera: pan (512, 48) zoom 3\n");
 }
 
@@ -328,6 +337,7 @@ TEST(PrintSummaryTest, WritesEveryWalkerWhereItStandsAndWhereItFaces)
         .walkers =
             {{.at = {.x = 3, .y = 4},
               .facing = antwika::game::Direction::South}},
+        .buildings = {},
         .camera = Camera(Point{.x = 0, .y = 0})};
 
     antwika::game::printSummary(out, summary);
@@ -466,7 +476,7 @@ TEST(BootstrapTest, Bootstrap_PressingNewGameLeavesTheMenuForTheGrid)
 
     harness.run(source);
 
-    EXPECT_EQ(harness.mode.mode(), antwika::game::AppMode::Playing);
+    EXPECT_EQ(harness.mode.mode(), antwika::game::AppMode::CityMap);
 }
 
 // And once it has, the grid takes clicks exactly as it always did.
@@ -524,4 +534,250 @@ TEST(BootstrapTest, Bootstrap_TheDemoReplaysOpeningClickHitsNewGame)
         scene.describe(antwika::game::kUiCanvas, pointer)
             .interactions.hovered,
         antwika::game::menuWidgets::kNewGame);
+}
+
+// The world map, through the front door: menu, world, city, grid, back.
+namespace
+{
+    constexpr antwika::game::WorldMapConfig kWorld{
+        .width = 16, .height = 12, .seed = 11};
+
+    struct WorldHarness
+    {
+        NiceMock<MockLogger> logger;
+        NiceMock<MockEventSink> eventSink;
+        InputEventCodec codec;
+        Camera camera;
+        PathIndex paths;
+        AppModeState mode;
+        antwika::game::UiOverlay menuOverlay{antwika::game::kUiCanvas};
+        antwika::game::WorldMapState cities{
+            antwika::game::generateWorldMap(kWorld)};
+
+        antwika::game::GameSummary run(ReplaySource &source)
+        {
+            return antwika::game::bootstrap(
+                antwika::game::GameConfig{
+                    .logger = logger,
+                    .eventSink = eventSink,
+                    .inputSource = source,
+                    .codec = codec,
+                    .extent = kExtent,
+                    .camera = camera,
+                    .paths = paths,
+                    .mode = mode,
+                    .maxTicks = 20,
+                    .menuOverlay = menuOverlay,
+                    .world = cities});
+        }
+
+        // The top-left corner of a city's tile, plus a pixel.
+        [[nodiscard]] antwika::input::Position cityPixel(std::size_t city)
+        {
+            const auto rect = antwika::game::worldTileRect(
+                antwika::game::kUiCanvas,
+                cities.world().width,
+                cities.world().height,
+                cities.world().cityCell(city));
+            return antwika::input::Position{
+                .x = rect.origin.x + 1, .y = rect.origin.y + 1};
+        }
+    };
+} // namespace
+
+TEST(BootstrapTest, Bootstrap_PressingWorldMapLeavesTheMenuForTheWorld)
+{
+    WorldHarness harness;
+    const InputEventCodec codec;
+
+    ReplaySource source({
+        leftPressAt(
+            codec, 0, menuPixelOn(antwika::game::menuWidgets::kWorldMap)),
+        TickEvent{
+            .tick = 2,
+            .event = Event{.name = antwika::engine::events::kStop}},
+    });
+
+    harness.run(source);
+
+    EXPECT_EQ(harness.mode.mode(), antwika::game::AppMode::WorldMap);
+}
+
+// The click that opens a city must not also build in it.
+TEST(BootstrapTest, Bootstrap_OpeningACityLaysNothingOnItsGrid)
+{
+    WorldHarness harness;
+    const InputEventCodec codec;
+
+    ReplaySource source({
+        leftPressAt(
+            codec, 0, menuPixelOn(antwika::game::menuWidgets::kWorldMap)),
+        leftPressAt(codec, 1, harness.cityPixel(2)),
+        TickEvent{
+            .tick = 3,
+            .event = Event{.name = antwika::engine::events::kStop}},
+    });
+
+    const auto summary = harness.run(source);
+
+    EXPECT_EQ(harness.mode.mode(), antwika::game::AppMode::CityMap);
+    EXPECT_EQ(harness.cities.city(), 2U);
+    EXPECT_TRUE(summary.paths.empty());
+}
+
+TEST(BootstrapTest, Bootstrap_BuildsInTheCityItOpenedAndKeepsItOnTheWayBack)
+{
+    WorldHarness harness;
+    const InputEventCodec codec;
+    const auto centre = antwika::game::cellCentre(
+        antwika::game::Cell{.x = 2, .y = 3}, Camera());
+
+    ReplaySource source({
+        leftPressAt(
+            codec, 0, menuPixelOn(antwika::game::menuWidgets::kWorldMap)),
+        leftPressAt(codec, 1, harness.cityPixel(1)),
+        leftPressAt(
+            codec,
+            2,
+            antwika::input::Position{.x = centre.x, .y = centre.y}),
+        TickEvent{
+            .tick = 3,
+            .event = codec.encode(
+                antwika::input::KeyPressed{
+                    .key = antwika::game::kWorldMapKey})},
+        TickEvent{
+            .tick = 5,
+            .event = Event{.name = antwika::engine::events::kStop}},
+    });
+
+    harness.run(source);
+
+    EXPECT_EQ(harness.mode.mode(), antwika::game::AppMode::WorldMap);
+    EXPECT_FALSE(harness.cities.cityOpen());
+    EXPECT_TRUE(
+        harness.cities.cityPaths(1).has(antwika::game::Cell{.x = 2, .y = 3}));
+    EXPECT_FALSE(
+        harness.cities.cityPaths(0).has(antwika::game::Cell{.x = 2, .y = 3}));
+}
+
+// Save and load, through the front door.
+namespace
+{
+    struct SaveHarness
+    {
+        NiceMock<MockLogger> logger;
+        NiceMock<MockEventSink> eventSink;
+        InputEventCodec codec;
+        Camera camera;
+        PathIndex paths;
+        AppModeState mode;
+        antwika::game::UiOverlay menuOverlay{antwika::game::kUiCanvas};
+        antwika::game::UiOverlay saveOverlay{antwika::game::kUiCanvas};
+
+        antwika::game::GameSummary run(
+            ReplaySource &source,
+            std::optional<antwika::game::SaveGame> start = std::nullopt)
+        {
+            return antwika::game::bootstrap(
+                antwika::game::GameConfig{
+                    .logger = logger,
+                    .eventSink = eventSink,
+                    .inputSource = source,
+                    .codec = codec,
+                    .extent = kExtent,
+                    .camera = camera,
+                    .paths = paths,
+                    .mode = mode,
+                    .maxTicks = 20,
+                    .menuOverlay = menuOverlay,
+                    .saveOverlay = saveOverlay,
+                    .start = std::move(start)});
+        }
+    };
+} // namespace
+
+TEST(BootstrapTest, Bootstrap_PressingLoadGameOpensTheSaveScreen)
+{
+    SaveHarness harness;
+    const InputEventCodec codec;
+
+    ReplaySource source({
+        leftPressAt(
+            codec, 0, menuPixelOn(antwika::game::menuWidgets::kLoadGame)),
+        TickEvent{
+            .tick = 2,
+            .event = Event{.name = antwika::engine::events::kStop}},
+    });
+
+    harness.run(source);
+
+    EXPECT_EQ(harness.mode.mode(), antwika::game::AppMode::SaveLoad);
+}
+
+// What `--load` does, restored through the very store the button uses.
+TEST(BootstrapTest, Bootstrap_StartsFromASaveWhenGivenOne)
+{
+    SaveHarness harness;
+    antwika::game::SaveGame start;
+    start.paths = {{.x = 5, .y = 6}, {.x = 6, .y = 6}};
+    start.state = GameState{.ticksProcessed = 0, .score = 4};
+    start.camera = Camera(Point{.x = 7, .y = 8}, 1);
+
+    ReplaySource source({
+        TickEvent{
+            .tick = 1,
+            .event = Event{.name = antwika::engine::events::kStop}},
+    });
+
+    const auto summary = harness.run(source, start);
+
+    EXPECT_EQ(summary.paths, start.paths);
+    EXPECT_EQ(summary.camera, start.camera);
+    EXPECT_EQ(summary.state.score, 4U);
+}
+
+TEST(PrintSummaryTest, WritesEveryBuildingAndWhatItIs)
+{
+    std::ostringstream out;
+    const antwika::game::GameSummary summary{
+        .state = {},
+        .paths = {},
+        .walkers = {},
+        .buildings =
+            {{.at = {.x = 1, .y = 2},
+              .kind = antwika::game::BuildTool::House},
+             {.at = {.x = 3, .y = 4},
+              .kind = antwika::game::BuildTool::Tower}},
+        .camera = Camera(Point{.x = 0, .y = 0})};
+
+    antwika::game::printSummary(out, summary);
+
+    EXPECT_NE(out.str().find("Buildings: 2\n"), std::string::npos);
+    EXPECT_NE(out.str().find("  house at (1, 2)\n"), std::string::npos);
+    EXPECT_NE(out.str().find("  tower at (3, 4)\n"), std::string::npos);
+}
+
+// replays/demo.json presses the House palette button at this pixel.
+// It then places at the cell the pixel below maps to.
+// A recording is only as good as the layout it was made against.
+// So both pixels are pinned here rather than rediscovered by hand.
+TEST(BootstrapTest, Bootstrap_TheDemoReplaysPaletteClickHitsTheHouse)
+{
+    const antwika::game::Toolbar toolbar;
+    const Camera camera;
+    const antwika::ui::Pointer pointer{
+        .position = antwika::gfx::Point{.x = 88, .y = 56}};
+
+    EXPECT_EQ(
+        toolbar.describe(antwika::game::kUiCanvas, pointer, camera)
+            .interactions.hovered,
+        antwika::game::widgets::toolWidget(
+            antwika::game::BuildTool::House));
+
+    // And the placement lands beside the road the demo laid.
+    EXPECT_EQ(
+        antwika::game::screenToCell(
+            antwika::gfx::Point{.x = 544, .y = 176},
+            Camera(Point{.x = 512, .y = 48})),
+        (antwika::game::Cell{.x = 4, .y = 3}));
 }

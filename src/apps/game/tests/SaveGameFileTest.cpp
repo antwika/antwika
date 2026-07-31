@@ -2,6 +2,7 @@
 
 #include <filesystem>
 #include <fstream>
+#include <optional>
 #include <sstream>
 #include <string>
 #include <string_view>
@@ -143,4 +144,29 @@ TEST(SaveGameFileTest, ReportsAWriteThatFailsAfterTheOpen)
     }
 
     EXPECT_THROW(saveGameFile(populated(), "/dev/full"), SaveFormatError);
+}
+
+// The two flags' whole behaviour, where a test can reach it.
+// An app's main() may hold no branch, being unmeasured.
+TEST(SaveGameFileTest, NothingIsReadOrWrittenWhenNoPathWasNamed)
+{
+    EXPECT_FALSE(
+        antwika::game::loadGameFileIfNamed(std::nullopt).has_value());
+
+    // A path that could never be written to, which is not attempted.
+    EXPECT_NO_THROW(
+        antwika::game::saveGameFileIfNamed(populated(), std::nullopt));
+}
+
+TEST(SaveGameFileTest, ANamedPathIsWrittenAndReadBack)
+{
+    const ScratchFile file("antwika_game_save_if_named.json");
+    const std::optional<std::string> path{file.string()};
+
+    antwika::game::saveGameFileIfNamed(populated(), path);
+
+    const auto loaded = antwika::game::loadGameFileIfNamed(path);
+
+    ASSERT_TRUE(loaded.has_value());
+    EXPECT_EQ(*loaded, populated());
 }

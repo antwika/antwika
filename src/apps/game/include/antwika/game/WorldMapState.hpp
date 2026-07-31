@@ -11,17 +11,8 @@ namespace antwika::game
 {
 
     /**
-     * @brief Which of the two maps is showing.
-     */
-    enum class MapView
-    {
-        World,
-        City,
-    };
-
-    /**
-     * @brief Which map is showing, and what has been built on each
-     * city's grid.
+     * @brief Which city is open, and what has been built on each city's
+     * grid.
      *
      * **Simulation state, not render state**, for exactly the reason
      * Camera is: a click arrives as a pixel, and what that pixel means
@@ -30,6 +21,14 @@ namespace antwika::game
      * whichever map it happened to be on -- still deterministically,
      * just deterministically wrong. So this is folded from replayable
      * input like anything else, and the renderer only reads it.
+     *
+     * Which *screen* is up is AppMode's answer rather than a MapView of
+     * this class's own. There used to be both, and two enumerations
+     * saying the same thing are two truths to keep in step: a sink that
+     * requested AppMode::WorldMap and forgot to close the city here
+     * would leave the two disagreeing, and nothing would say so. What
+     * is left here is the question AppMode cannot answer -- *which*
+     * city, and what is on its grid.
      *
      * The world itself is generated from an integer seed held in
      * WorldMapConfig, so what a replay carries is the seed rather than
@@ -40,6 +39,16 @@ namespace antwika::game
      * from where it was left. They live here rather than in one shared
      * grid because "the grid" is per city: two cities that shared a
      * PathIndex would show each other's roads.
+     *
+     * **A session still builds on one live PathIndex and one live
+     * Camera**, which openCityAt() and closeCity() swap these in and out
+     * of. That is what keeps every collaborator that builds, walks or
+     * draws the grid holding one reference rather than resolving a city
+     * index on every call -- and it is what a save file already assumes,
+     * since SaveGame carries one grid. The entities on that grid live in
+     * one ecs::World and are *not* swapped, so a walker or a building
+     * outlives the city it was placed in; see
+     * ISSUES-game-integrate.md.
      */
     class WorldMapState final
     {
@@ -59,34 +68,47 @@ namespace antwika::game
         [[nodiscard]] const WorldMap &world() const noexcept;
 
         /**
-         * @brief Get which map is showing.
-         * @return World until a city is opened.
+         * @brief Check whether a city's grid is the live one.
+         * @return True until closeCity() puts it away. A freshly
+         * constructed state has city 0 open, so a run that never opens
+         * the world map builds on one grid exactly as it always did.
          */
-        [[nodiscard]] MapView view() const noexcept;
+        [[nodiscard]] bool cityOpen() const noexcept;
 
         /**
-         * @brief Get which city is open.
-         * @return The open city's index.
-         * @throws WorldMapError If the world map is showing, since
-         * there is then no answer rather than a default one.
+         * @brief Get which city the live grid belongs to.
+         * @return The last opened city's index, zero until one is.
+         * Always a real index, so a renderer needs no fallback for the
+         * tick between a city being put away and the world map coming
+         * up.
          */
-        [[nodiscard]] std::size_t openCity() const;
+        [[nodiscard]] std::size_t city() const noexcept;
 
         /**
-         * @brief Open a city's map.
-         * @param city An index below kCityCount.
+         * @brief Open a city, swapping its grid in as the live one.
+         *
+         * Whatever is on the live grid is put away with the city that
+         * is open first, so opening the one that is already open is a
+         * no-op rather than a way of losing what is on it.
+         *
+         * @param index An index below kCityCount.
+         * @param paths The live path index, swapped.
+         * @param camera The live camera, swapped.
          * @throws WorldMapError If the index names no city.
          */
-        void openCityAt(std::size_t city);
+        void openCityAt(std::size_t index, PathIndex &paths, Camera &camera);
 
         /**
-         * @brief Go back to the world map, keeping the city's grid.
+         * @brief Put the live grid away with the city it belongs to.
          *
-         * Doing this while the world map is already showing changes
-         * nothing, which is what makes a stray press on the way-back
-         * key a no-op rather than an error.
+         * Doing this while no city is open changes nothing, which is
+         * what makes a stray press on the way-back key a no-op rather
+         * than an error.
+         *
+         * @param paths The live path index, kept with the city.
+         * @param camera The live camera, kept with the city.
          */
-        void closeCity();
+        void closeCity(PathIndex &paths, Camera &camera);
 
         /**
          * @brief Get a city's paths, for building on.
@@ -124,8 +146,8 @@ namespace antwika::game
         void requireCity(std::size_t city) const;
 
         WorldMap map;
-        MapView showing = MapView::World;
-        std::size_t city = 0;
+        bool open = true;
+        std::size_t live = 0;
         std::array<PathIndex, kCityCount> paths{};
         std::array<Camera, kCityCount> cameras{
             Camera{}, Camera{}, Camera{}, Camera{}};

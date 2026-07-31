@@ -132,12 +132,12 @@ TEST_F(MainMenuSinkTest, PressingNewGameAsksForThePlayingMode)
 
     // Staged, not applied: the same click must not also reach the grid.
     EXPECT_EQ(mode.mode(), AppMode::MainMenu);
-    EXPECT_EQ(mode.next(), AppMode::Playing);
+    EXPECT_EQ(mode.next(), AppMode::CityMap);
 
     // And applied at the boundary, which the state itself owns.
     mode.handle(TickEvent{
         .tick = 0, .event = Event{.name = antwika::engine::events::kTick}});
-    EXPECT_EQ(mode.mode(), AppMode::Playing);
+    EXPECT_EQ(mode.mode(), AppMode::CityMap);
 }
 
 TEST_F(MainMenuSinkTest, PressingQuitStopsTheRun)
@@ -157,29 +157,39 @@ TEST_F(MainMenuSinkTest, APressThatMissesEveryItemChangesNothing)
     EXPECT_FALSE(stop.stopped());
 }
 
-// The placeholders are inert, not merely painted to look it.
-// An unnamed button cannot be hovered.
-// So nothing can ever be resolved to one.
-TEST_F(MainMenuSinkTest, ThePlaceholderItemsCannotBePressed)
+TEST_F(MainMenuSinkTest, PressingWorldMapAsksForTheWorldMapMode)
 {
-    const auto quit = pixelOn(menuWidgets::kQuit);
+    pressAt(pixelOn(menuWidgets::kWorldMap));
+
+    EXPECT_EQ(mode.mode(), AppMode::MainMenu);
+    EXPECT_EQ(mode.next(), AppMode::WorldMap);
+}
+
+TEST_F(MainMenuSinkTest, PressingLoadGameAsksForTheSaveScreen)
+{
+    pressAt(pixelOn(menuWidgets::kLoadGame));
+
+    EXPECT_EQ(mode.mode(), AppMode::MainMenu);
+    EXPECT_EQ(mode.next(), AppMode::SaveLoad);
+}
+
+// Every item now names a widget, and each names its own.
+// A press walking down the card therefore hits four different ones.
+TEST_F(MainMenuSinkTest, EveryItemIsReachableAndDistinct)
+{
     const auto newGame = pixelOn(menuWidgets::kNewGame);
+    const auto load = pixelOn(menuWidgets::kLoadGame);
+    const auto world = pixelOn(menuWidgets::kWorldMap);
+    const auto quit = pixelOn(menuWidgets::kQuit);
 
-    // Between the two named items are the two placeholders.
-    for (std::int32_t y = newGame.y; y <= quit.y; y += 2)
-    {
-        pressAt(Position{.x = newGame.x, .y = y});
-    }
-
-    // Every press hit one of the two named items or nothing at all.
-    // So nothing else in the menu could have acted.
-    EXPECT_EQ(mode.next(), AppMode::Playing);
-    EXPECT_TRUE(stop.stopped());
+    EXPECT_LT(newGame.y, load.y);
+    EXPECT_LT(load.y, world.y);
+    EXPECT_LT(world.y, quit.y);
 }
 
 TEST_F(MainMenuSinkTest, NothingHappensOutsideTheMainMenuMode)
 {
-    mode.request(AppMode::Playing);
+    mode.request(AppMode::CityMap);
     mode.handle(TickEvent{
         .tick = 0, .event = Event{.name = antwika::engine::events::kTick}});
 
@@ -197,5 +207,19 @@ TEST_F(MainMenuSinkTest, AnEventThatIsNotInputIsIgnored)
         .tick = 0, .event = Event{.name = "game.score_increment"}});
 
     EXPECT_TRUE(overlay.commands().empty());
+    EXPECT_EQ(mode.next(), AppMode::MainMenu);
+}
+
+// A press is the left button's, and only the left button's.
+TEST_F(MainMenuSinkTest, AMiddlePressActivatesNothing)
+{
+    const auto at = pixelOn(menuWidgets::kQuit);
+
+    send(PointerMoved{.position = at});
+    send(
+        PointerButtonPressed{
+            .button = MouseButton::Middle, .position = at});
+
+    EXPECT_FALSE(stop.stopped());
     EXPECT_EQ(mode.next(), AppMode::MainMenu);
 }

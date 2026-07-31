@@ -26,6 +26,10 @@
 #include <antwika/ui/Pointer.hpp>
 #include <antwika/ui/WidgetId.hpp>
 
+#include <optional>
+
+#include <antwika/input/PointerHint.hpp>
+
 #include "antwika/game/BuildGhost.hpp"
 #include "antwika/game/BuildTool.hpp"
 #include "antwika/game/Building.hpp"
@@ -34,6 +38,7 @@
 #include "antwika/game/GridExtent.hpp"
 #include "antwika/game/GridScene.hpp"
 #include "antwika/game/GridSink.hpp"
+#include "antwika/game/WorldMapState.hpp"
 #include "antwika/game/InputFold.hpp"
 #include "antwika/game/IsoProjection.hpp"
 #include "antwika/game/Path.hpp"
@@ -49,6 +54,7 @@ using antwika::ecs::World;
 using antwika::event::Event;
 using antwika::event::TickEvent;
 using antwika::game::BuildGhost;
+using antwika::game::ghostFor;
 using antwika::game::Building;
 using antwika::game::BuildingView;
 using antwika::game::buildingIndex;
@@ -62,6 +68,8 @@ using antwika::game::cellCentre;
 using antwika::game::GridExtent;
 using antwika::game::GridScene;
 using antwika::game::GridSink;
+using antwika::game::WorldMap;
+using antwika::game::WorldMapState;
 using antwika::game::InputFold;
 using antwika::game::kBuildToolCount;
 using antwika::game::Path;
@@ -279,13 +287,6 @@ namespace
                     .button = button, .position = pixelOf(cell)});
         }
 
-        [[nodiscard]] BuildGhost ghost()
-        {
-            world.commit();
-
-            return snapshotOf(world, paths, camera, kExtent).ghost;
-        }
-
         [[nodiscard]] std::vector<BuildingView> buildings()
         {
             world.commit();
@@ -305,8 +306,16 @@ namespace
         UiOverlay overlay{kCanvas};
         Toolbar toolbar;
         UiSink uiSink{camera, overlay, input, toolbar, camera};
+        WorldMapState cities{WorldMap{}};
         GridSink gridSink{
-            world, paths, camera, kExtent, scheduler, input, overlay};
+            world,
+            paths,
+            camera,
+            kExtent,
+            scheduler,
+            input,
+            overlay,
+            cities};
     };
 } // namespace
 
@@ -415,52 +424,90 @@ TEST_F(PaletteSinkTest, ABuildingGoesNowhereOutsideTheExtent)
     EXPECT_TRUE(buildings().empty());
 }
 
-TEST_F(PaletteSinkTest, TheGhostFollowsThePointerAndTheSelectedTool)
+// The ghost is worked out on the render side, from an unrecorded hint.
+// So it is a pure function rather than anything a sink stages.
+namespace
+{
+    [[nodiscard]] antwika::input::PointerHint hintOn(
+        Cell cell, const Camera &camera)
+    {
+        const auto point = cellCentre(cell, camera);
+        return antwika::input::PointerHint{
+            .position = {.x = point.x, .y = point.y}};
+    }
+} // namespace
+
+TEST(BuildGhostTest, GhostFor_FollowsThePointerAndTheSelectedTool)
 {
     constexpr Cell target{.x = 6, .y = 3};
+    const Camera camera;
 
-    pressOn(widgets::toolWidget(BuildTool::Tower));
-    clickAt(target, MouseButton::Left);
-
-    const auto shown = ghost();
+    const auto shown = ghostFor(
+        hintOn(target, camera),
+        camera,
+        kExtent,
+        BuildTool::Tower,
+        false);
 
     EXPECT_TRUE(shown.visible);
     EXPECT_EQ(shown.at, target);
     EXPECT_EQ(shown.tool, BuildTool::Tower);
 }
 
-TEST_F(PaletteSinkTest, TheGhostIsInvisibleUntilSomethingLocatesThePointer)
+TEST(BuildGhostTest, GhostFor_IsInvisibleUntilSomethingLocatesThePointer)
 {
-    send(KeyPressed{.key = Key::Escape});
+    const auto shown = ghostFor(
+        std::nullopt, Camera(), kExtent, BuildTool::Road, false);
 
-    EXPECT_FALSE(ghost().visible);
+    EXPECT_FALSE(shown.visible);
+    EXPECT_EQ(shown.tool, BuildTool::Road);
 }
 
-TEST_F(PaletteSinkTest, TheGhostIsInvisibleOffTheGrid)
+TEST(BuildGhostTest, GhostFor_IsInvisibleOffTheGrid)
 {
-    clickAt(Cell{.x = -3, .y = -3}, MouseButton::Left);
+    const Camera camera;
 
-    EXPECT_FALSE(ghost().visible);
+    EXPECT_FALSE(
+        ghostFor(
+            hintOn(Cell{.x = -3, .y = -3}, camera),
+            camera,
+            kExtent,
+            BuildTool::Road,
+            false)
+            .visible);
 }
 
-TEST_F(PaletteSinkTest, TheGhostIsInvisibleUnderTheToolbar)
+// What the bar covers, it covers from the ghost too.
+// The answer comes *from* UiOverlay, never the other way round.
+TEST(BuildGhostTest, GhostFor_IsInvisibleUnderTheToolbar)
 {
-    pressOn(widgets::kZoomIn);
+    const Camera camera;
 
-    ASSERT_TRUE(overlay.pointerOverUi());
-    EXPECT_FALSE(ghost().visible);
+    EXPECT_FALSE(
+        ghostFor(
+            hintOn(Cell{.x = 1, .y = 1}, camera),
+            camera,
+            kExtent,
+            BuildTool::Road,
+            true)
+            .visible);
 }
 
-TEST_F(PaletteSinkTest, TheGhostSurvivesTheTickThatCommitsIt)
+// Reading simulation state in order to draw is fine.
+// Which cell a pixel means is a function of the camera.
+TEST(BuildGhostTest, GhostFor_ResolvesThroughTheCameraItIsGiven)
 {
-    constexpr Cell target{.x = 1, .y = 1};
+    const Camera panned(antwika::gfx::Point{.x = 200, .y = 30});
 
-    clickAt(target, MouseButton::Left);
-    tick();
-    clickAt(target, MouseButton::Left);
+    const auto shown = ghostFor(
+        hintOn(Cell{.x = 2, .y = 2}, panned),
+        panned,
+        kExtent,
+        BuildTool::House,
+        false);
 
-    EXPECT_TRUE(ghost().visible);
-    EXPECT_EQ(ghost().at, target);
+    EXPECT_TRUE(shown.visible);
+    EXPECT_EQ(shown.at, (Cell{.x = 2, .y = 2}));
 }
 
 TEST(SceneSnapshotBuildTest, AnUntouchedWorldHasNoBuildingsAndNoGhost)
@@ -475,7 +522,7 @@ TEST(SceneSnapshotBuildTest, AnUntouchedWorldHasNoBuildingsAndNoGhost)
     EXPECT_FALSE(snapshot.ghost.visible);
 }
 
-TEST(SceneSnapshotBuildTest, SnapshotOf_TakesTheBuildingsAndTheGhost)
+TEST(SceneSnapshotBuildTest, SnapshotOf_TakesTheBuildingsAndNoGhost)
 {
     NiceMock<MockLogger> logger;
     World world(logger);
@@ -485,14 +532,6 @@ TEST(SceneSnapshotBuildTest, SnapshotOf_TakesTheBuildingsAndTheGhost)
     world.add<Cell>(shop, Cell{.x = 2, .y = 3});
     world.add<Building>(shop, Building{.kind = BuildTool::Shop});
 
-    const auto marker = world.create();
-    world.add<BuildGhost>(
-        marker,
-        BuildGhost{
-            .at = Cell{.x = 4, .y = 5},
-            .tool = BuildTool::House,
-            .visible = true});
-
     world.commit();
 
     const auto snapshot = snapshotOf(world, paths, Camera(), kExtent);
@@ -500,9 +539,9 @@ TEST(SceneSnapshotBuildTest, SnapshotOf_TakesTheBuildingsAndTheGhost)
     ASSERT_EQ(snapshot.buildings.size(), 1U);
     EXPECT_EQ(snapshot.buildings[0].at, (Cell{.x = 2, .y = 3}));
     EXPECT_EQ(snapshot.buildings[0].kind, BuildTool::Shop);
-    EXPECT_TRUE(snapshot.ghost.visible);
-    EXPECT_EQ(snapshot.ghost.at, (Cell{.x = 4, .y = 5}));
-    EXPECT_EQ(snapshot.ghost.tool, BuildTool::House);
+
+    // Whoever draws fills this in, from a channel no replay holds.
+    EXPECT_FALSE(snapshot.ghost.visible);
 }
 
 namespace

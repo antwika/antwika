@@ -70,8 +70,8 @@ namespace
 TEST(ModeGatedSinkTest, InputReachesTheSinkInItsOwnMode)
 {
     CountingSink inner;
-    const AppModeState mode{AppMode::Playing};
-    ModeGatedSink gate(inner, mode, AppMode::Playing);
+    const AppModeState mode{AppMode::CityMap};
+    ModeGatedSink gate(inner, mode, AppMode::CityMap);
 
     gate.handle(click());
 
@@ -82,7 +82,7 @@ TEST(ModeGatedSinkTest, InputIsDroppedInAnyOtherMode)
 {
     CountingSink inner;
     const AppModeState mode{AppMode::MainMenu};
-    ModeGatedSink gate(inner, mode, AppMode::Playing);
+    ModeGatedSink gate(inner, mode, AppMode::CityMap);
 
     gate.handle(click());
 
@@ -95,7 +95,7 @@ TEST(ModeGatedSinkTest, EngineTickAlwaysReachesTheSink)
 {
     CountingSink inner;
     const AppModeState mode{AppMode::MainMenu};
-    ModeGatedSink gate(inner, mode, AppMode::Playing);
+    ModeGatedSink gate(inner, mode, AppMode::CityMap);
 
     gate.handle(tick());
 
@@ -107,8 +107,8 @@ TEST(ModeGatedSystemTest, TheSystemRunsInItsOwnMode)
     NiceMock<MockLogger> logger;
     World world(logger);
     CountingSystem inner;
-    const AppModeState mode{AppMode::Playing};
-    ModeGatedSystem gate(inner, mode, AppMode::Playing);
+    const AppModeState mode{AppMode::CityMap};
+    ModeGatedSystem gate(inner, mode, AppMode::CityMap);
 
     gate.update(world, 0);
 
@@ -121,7 +121,7 @@ TEST(ModeGatedSystemTest, TheSystemStagesNothingInAnyOtherMode)
     World world(logger);
     CountingSystem inner;
     const AppModeState mode{AppMode::MainMenu};
-    ModeGatedSystem gate(inner, mode, AppMode::Playing);
+    ModeGatedSystem gate(inner, mode, AppMode::CityMap);
 
     gate.update(world, 0);
 

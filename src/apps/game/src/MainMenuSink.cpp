@@ -95,14 +95,25 @@ namespace antwika::game
             // Staged rather than applied here.
             // So the click that leaves the menu is not also the grid's.
             // See AppMode.hpp.
-            mode.request(AppMode::Playing);
+            mode.request(AppMode::CityMap);
+        }
+        else if (activated == menuWidgets::kWorldMap)
+        {
+            mode.request(AppMode::WorldMap);
+        }
+        else if (activated == menuWidgets::kLoadGame)
+        {
+            mode.request(AppMode::SaveLoad);
         }
         else if (activated == menuWidgets::kQuit)
         {
             // The loop's own signal rather than an event on the wire.
             // The recording holds the click, and the stop follows from it.
             // Exactly as a placement follows from a click on a cell.
-            stop.handle(TickEvent{
+            // The excluded line's remaining branches are allocator's.
+            // The event's name is a literal too short to reach a heap.
+            // The rest are the unwind edges beside that.
+            stop.handle(TickEvent{ // GCOVR_EXCL_LINE
                 .tick = event.tick,
                 .event = Event{.name = antwika::engine::events::kStop}});
         }

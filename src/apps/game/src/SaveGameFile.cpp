@@ -76,4 +76,26 @@ namespace antwika::game
         return readSaveGame(file);
     }
 
+    std::optional<SaveGame> loadGameFileIfNamed(
+        const std::optional<std::string> &path)
+    {
+        if (!path.has_value())
+        {
+            return std::nullopt;
+        }
+
+        return loadGameFile(*path);
+    }
+
+    void saveGameFileIfNamed(
+        const SaveGame &save, const std::optional<std::string> &path)
+    {
+        if (!path.has_value())
+        {
+            return;
+        }
+
+        saveGameFile(save, *path);
+    }
+
 } // namespace antwika::game

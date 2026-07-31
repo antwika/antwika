@@ -1,9 +1,7 @@
 #pragma once
 
-#include <optional>
 #include <set>
 
-#include <antwika/ecs/Entity.hpp>
 #include <antwika/ecs/SystemScheduler.hpp>
 #include <antwika/ecs/World.hpp>
 #include <antwika/event/ITickEventSink.hpp>
@@ -17,11 +15,11 @@
 #include "antwika/game/InputFold.hpp"
 #include "antwika/game/PathIndex.hpp"
 #include "antwika/game/UiOverlay.hpp"
+#include "antwika/game/WorldMapState.hpp"
 
 namespace antwika::game
 {
 
-    using antwika::ecs::Entity;
     using antwika::ecs::SystemScheduler;
     using antwika::ecs::World;
     using antwika::event::ITickEventSink;
@@ -67,13 +65,18 @@ namespace antwika::game
      * pressing a palette button is no more an event than pressing a zoom
      * button is.
      *
-     * Every input event also restates the BuildGhost: where the selected
-     * tool would land if it were clicked now. It is worked out here
-     * rather than by the renderer because it is a function of the camera,
-     * and it goes into the World because that is the only thing a
-     * SceneSnapshot is taken from. **It follows the pointer only on a
-     * click, a wheel or a key**, since input::IdleMotionSource holds back
-     * movement while no button is held -- see BuildGhost.
+     * **It knows nothing about the placement ghost**, which is drawn
+     * from input::PointerHintChannel on the render side. A replay does
+     * not reproduce that channel, so a sink reading one would fold a
+     * value into state that a replay cannot regenerate -- see
+     * BuildGhost.
+     *
+     * Nothing at all is placed while no city is open. The mode gate this
+     * sink is wrapped in already keeps a world-map click away from the
+     * grid, and this is the second half of that: a city is put away the
+     * moment the way-back key arrives, while the mode it staged does not
+     * land until the tick boundary, so the events after it in that tick
+     * would otherwise still be the grid's.
      */
     class GridSink final : public ITickEventSink
     {
@@ -88,6 +91,8 @@ namespace antwika::game
          * @param input The folded input, holding the event being
          * handled; must be registered ahead of this sink.
          * @param overlay Asked whether a click was the toolbar's.
+         * @param cities Asked whether a city is open at all; nothing is
+         * placed, panned or zoomed while none is.
          */
         GridSink(
             World &world,
@@ -96,7 +101,8 @@ namespace antwika::game
             GridExtent extent,
             SystemScheduler &scheduler,
             const InputFold &input,
-            const UiOverlay &overlay);
+            const UiOverlay &overlay,
+            const WorldMapState &cities);
 
         GridSink(const GridSink &) = delete;
         GridSink(GridSink &&) = delete;
@@ -118,7 +124,6 @@ namespace antwika::game
         void placeBuilding(Cell cell, BuildTool tool);
         void placeWalker(Cell cell);
         void act(const antwika::input::InputEvent &event);
-        void updateGhost();
 
         World &world;
         PathIndex &paths;
@@ -127,16 +132,12 @@ namespace antwika::game
         SystemScheduler &scheduler;
         const InputFold &input;
         const UiOverlay &overlay;
+        const WorldMapState &cities;
 
         // Which cells already hold a building.
         // PathIndex is the same note for roads.
         // This one is private: nothing outside asks for it.
         std::set<Cell> built;
-
-        // The one entity the ghost's component lives on.
-        // Made when the first input arrives, not in the constructor.
-        // A run that takes no input then creates nothing.
-        std::optional<Entity> ghost;
     };
 
 } // namespace antwika::game

@@ -52,7 +52,7 @@ namespace
 
         // Both runs start in the same mode, which is the point:
         // nothing about being a replay may change what a click means.
-        AppModeState mode{AppMode::Playing};
+        AppModeState mode{AppMode::CityMap};
 
         return antwika::game::bootstrap(
                    antwika::game::GameConfig{

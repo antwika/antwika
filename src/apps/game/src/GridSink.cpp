@@ -5,7 +5,6 @@
 #include <antwika/engine/Events.hpp>
 #include <antwika/input/MouseButton.hpp>
 
-#include "antwika/game/BuildGhost.hpp"
 #include "antwika/game/BuildTool.hpp"
 #include "antwika/game/Building.hpp"
 #include "antwika/game/Cell.hpp"
@@ -29,14 +28,16 @@ namespace antwika::game
         GridExtent extent,
         SystemScheduler &scheduler,
         const InputFold &input,
-        const UiOverlay &overlay)
+        const UiOverlay &overlay,
+        const WorldMapState &cities)
         : world(world),
           paths(paths),
           camera(camera),
           extent(extent),
           scheduler(scheduler),
           input(input),
-          overlay(overlay)
+          overlay(overlay),
+          cities(cities)
     {
     }
 
@@ -49,6 +50,13 @@ namespace antwika::game
             return;
         }
 
+        // A world-map click is not a click on any grid.
+        // The mode gate says so a tick later; this says so at once.
+        if (!cities.cityOpen())
+        {
+            return;
+        }
+
         // Whatever the fold was just given, since it runs first.
         const auto &decoded = input.current();
         if (!decoded.has_value())
@@ -57,37 +65,6 @@ namespace antwika::game
         }
 
         act(*decoded);
-
-        // After acting, not before.
-        // A pan or a zoom here moves which cell the pointer is over.
-        // And the ghost shows where the *next* click would land.
-        updateGhost();
-    }
-
-    void GridSink::updateGhost()
-    {
-        BuildGhost wanted{.at = {}, .tool = overlay.tool(), .visible = false};
-
-        // Nowhere to draw one until the pointer has been placed.
-        // And nothing to draw under the bar, which covers the grid.
-        if (input.located() && !overlay.pointerOverUi())
-        {
-            const auto cell = screenToCell(input.pointer(), camera);
-
-            if (extent.contains(cell))
-            {
-                wanted.at = cell;
-                wanted.visible = true;
-            }
-        }
-
-        if (!ghost.has_value())
-        {
-            ghost = world.create();
-        }
-
-        // add() overwrites, so this is the one staging call it needs.
-        world.add<BuildGhost>(*ghost, wanted);
     }
 
     void GridSink::act(const antwika::input::InputEvent &event)

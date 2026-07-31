@@ -15,6 +15,7 @@
 #include "antwika/game/Cell.hpp"
 #include "antwika/game/GridExtent.hpp"
 #include "antwika/game/GridSink.hpp"
+#include "antwika/game/WorldMapState.hpp"
 #include "antwika/game/InputFold.hpp"
 #include "antwika/game/IsoProjection.hpp"
 #include "antwika/game/Path.hpp"
@@ -31,6 +32,8 @@ using antwika::game::Cell;
 using antwika::game::cellCentre;
 using antwika::game::GridExtent;
 using antwika::game::GridSink;
+using antwika::game::WorldMap;
+using antwika::game::WorldMapState;
 using antwika::game::InputFold;
 using antwika::game::Path;
 using antwika::game::PathIndex;
@@ -112,8 +115,18 @@ namespace
         // Nothing has drawn a toolbar, so nothing is covered.
         // The tests that care say otherwise for themselves.
         UiOverlay overlay;
+
+        // One city, permanently open, as a run with no world map has.
+        WorldMapState cities{WorldMap{}};
         GridSink sink{
-            world, paths, camera, kExtent, scheduler, input, overlay};
+            world,
+            paths,
+            camera,
+            kExtent,
+            scheduler,
+            input,
+            overlay,
+            cities};
     };
 } // namespace
 
@@ -355,4 +368,27 @@ TEST_F(GridSinkTest, Move_KeepsPanningAcrossTheToolbar)
     send(PointerMoved{.position = Position{.x = 110, .y = 100}});
 
     EXPECT_EQ(before.x + 10, camera.pan().x);
+}
+
+// A press on the world map is not a press on any city's grid.
+// The mode gate says so a tick later; this says so at once.
+TEST_F(GridSinkTest, LeftPress_LaysNothingWhileNoCityIsOpen)
+{
+    cities.closeCity(paths, camera);
+
+    clickAt(Cell{.x = 3, .y = 4}, MouseButton::Left);
+
+    EXPECT_FALSE(paths.has(Cell{.x = 3, .y = 4}));
+    EXPECT_EQ(0U, pathEntityCount());
+}
+
+// And the tick still arrives, so the world still commits.
+TEST_F(GridSinkTest, Tick_StillRunsWhileNoCityIsOpen)
+{
+    clickAt(Cell{.x = 3, .y = 4}, MouseButton::Left);
+    cities.closeCity(paths, camera);
+
+    tick();
+
+    EXPECT_EQ(1U, pathEntityCount());
 }

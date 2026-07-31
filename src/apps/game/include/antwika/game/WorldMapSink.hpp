@@ -5,7 +5,10 @@
 #include <antwika/gfx/Size.hpp>
 #include <antwika/input/Key.hpp>
 
+#include "antwika/game/AppMode.hpp"
+#include "antwika/game/Camera.hpp"
 #include "antwika/game/InputFold.hpp"
+#include "antwika/game/PathIndex.hpp"
 #include "antwika/game/WorldMapState.hpp"
 
 namespace antwika::game
@@ -43,6 +46,18 @@ namespace antwika::game
      * | left press on a city, world map showing | open that city |
      * | kWorldMapKey, a city showing | go back to the world map |
      *
+     * The screen it changes to is *staged* on the AppModeState rather
+     * than applied here, so the click that opens a city is not also read
+     * as a click on the grid it reveals -- see AppMode.hpp. What is
+     * applied at once is the grid swap, which nothing else this tick
+     * reads: every collaborator that touches the grid is gated on the
+     * mode, and the mode is still the one this tick began in.
+     *
+     * It gates itself on the mode rather than being wrapped in a
+     * ModeGatedSink, because it is the one sink that acts in two modes:
+     * a press means a city on the world map and nothing at all on a
+     * city's grid, and the key means the reverse.
+     *
      * Register it after InputFold, whose current() it reads, and
      * before GridSink, so that a press which selects a city is not
      * also a press on the city's grid.
@@ -58,13 +73,22 @@ namespace antwika::game
     public:
         /**
          * @brief Construct the sink over what it switches.
-         * @param state Which map is showing; written by this sink.
+         * @param state Which city is open, and every city's grid.
+         * @param mode The app's mode; asked for the screen the switch
+         * leads to. Must outlive this sink.
+         * @param paths The live path index, swapped between cities.
+         * @param camera The live camera, swapped between cities.
          * @param input The folded input, holding the event being
          * handled; must be registered ahead of this sink.
          * @param canvas The area the world map is laid out in.
          */
         WorldMapSink(
-            WorldMapState &state, const InputFold &input, Size canvas);
+            WorldMapState &state,
+            AppModeState &mode,
+            PathIndex &paths,
+            Camera &camera,
+            const InputFold &input,
+            Size canvas);
 
         WorldMapSink(const WorldMapSink &) = delete;
         WorldMapSink(WorldMapSink &&) = delete;
@@ -81,7 +105,12 @@ namespace antwika::game
         void handle(const TickEvent &event) override;
 
     private:
+        void openCityUnder(Point pixel);
+
         WorldMapState &state;
+        AppModeState &mode;
+        PathIndex &paths;
+        Camera &camera;
         const InputFold &input;
         Size canvas;
     };

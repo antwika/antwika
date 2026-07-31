@@ -194,6 +194,7 @@ TEST(SceneSnapshotTest, GameSummaryEqualityComparesEveryField)
         .state = {.ticksProcessed = 1, .score = 2},
         .paths = {Cell{.x = 1, .y = 1}},
         .walkers = {WalkerView{.at = {.x = 2, .y = 2}}},
+        .buildings = {},
         .camera = Camera()};
 
     EXPECT_EQ(base, base);

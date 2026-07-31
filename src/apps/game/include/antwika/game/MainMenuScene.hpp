@@ -40,6 +40,16 @@ namespace antwika::game
          * @brief End the run.
          */
         inline constexpr WidgetId kQuit{102};
+
+        /**
+         * @brief Open the picker a session is read back from.
+         */
+        inline constexpr WidgetId kLoadGame{103};
+
+        /**
+         * @brief Leave the menu for the world and its cities.
+         */
+        inline constexpr WidgetId kWorldMap{104};
     } // namespace menuWidgets
 
     /**

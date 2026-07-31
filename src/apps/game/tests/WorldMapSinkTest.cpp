@@ -10,8 +10,11 @@
 #include <antwika/input/MouseButton.hpp>
 #include <antwika/input/Position.hpp>
 
+#include "antwika/game/AppMode.hpp"
+#include "antwika/game/Camera.hpp"
 #include "antwika/game/Cell.hpp"
 #include "antwika/game/InputFold.hpp"
+#include "antwika/game/PathIndex.hpp"
 #include "antwika/game/WorldMap.hpp"
 #include "antwika/game/WorldMapLayout.hpp"
 #include "antwika/game/WorldMapSink.hpp"
@@ -22,11 +25,14 @@ namespace
 
     using antwika::event::Event;
     using antwika::event::TickEvent;
+    using antwika::game::AppMode;
+    using antwika::game::AppModeState;
+    using antwika::game::Camera;
     using antwika::game::Cell;
     using antwika::game::generateWorldMap;
     using antwika::game::InputFold;
     using antwika::game::kWorldMapKey;
-    using antwika::game::MapView;
+    using antwika::game::PathIndex;
     using antwika::game::WorldMapSink;
     using antwika::game::WorldMapState;
     using antwika::game::worldTileRect;
@@ -56,12 +62,14 @@ namespace
             sink.handle(wrapped);
         }
 
+        // The boundary the app applies a staged mode at.
         void tick()
         {
             const TickEvent wrapped{
                 .tick = 0,
                 .event = Event{.name = antwika::engine::events::kTick}};
             input.handle(wrapped);
+            mode.handle(wrapped);
             sink.handle(wrapped);
         }
 
@@ -84,18 +92,41 @@ namespace
                     .position = pixelOn(cell)});
         }
 
+        // Open a city and let the staged mode land, as a run does.
+        void openCity(std::size_t city)
+        {
+            leftPressOn(state.world().cityCell(city));
+            tick();
+        }
+
         InputEventCodec codec;
         InputFold input{codec};
         WorldMapState state{generateWorldMap({16, 12, 11})};
-        WorldMapSink sink{state, input, kCanvas};
+        AppModeState mode{AppMode::WorldMap};
+        PathIndex paths;
+        Camera camera;
+        WorldMapSink sink{state, mode, paths, camera, input, kCanvas};
     };
 
     TEST_F(WorldMapSinkTest, ClickingACityOpensIt)
     {
         leftPressOn(state.world().cityCell(2));
 
-        EXPECT_EQ(state.view(), MapView::City);
-        EXPECT_EQ(state.openCity(), 2U);
+        EXPECT_TRUE(state.cityOpen());
+        EXPECT_EQ(state.city(), 2U);
+
+        // Staged, so the click that opened it is not the grid's.
+        EXPECT_EQ(mode.mode(), AppMode::WorldMap);
+        EXPECT_EQ(mode.next(), AppMode::CityMap);
+    }
+
+    TEST_F(WorldMapSinkTest, OpeningACitySwapsItsGridIn)
+    {
+        state.cityPaths(2).insert(Cell{5, 6});
+
+        openCity(2);
+
+        EXPECT_TRUE(paths.has(Cell{5, 6}));
     }
 
     TEST_F(WorldMapSinkTest, ClickingEmptyLandOpensNothing)
@@ -112,7 +143,7 @@ namespace
                     == antwika::game::kCityCount)
                 {
                     leftPressOn(cell);
-                    EXPECT_EQ(state.view(), MapView::World);
+                    EXPECT_EQ(mode.next(), AppMode::WorldMap);
                     return;
                 }
             }
@@ -127,7 +158,7 @@ namespace
                 .button = MouseButton::Left,
                 .position = Position{.x = 0, .y = 0}});
 
-        EXPECT_EQ(state.view(), MapView::World);
+        EXPECT_EQ(mode.next(), AppMode::WorldMap);
     }
 
     TEST_F(WorldMapSinkTest, OnlyTheLeftButtonSelects)
@@ -137,39 +168,52 @@ namespace
                 .button = MouseButton::Right,
                 .position = pixelOn(state.world().cityCell(0))});
 
-        EXPECT_EQ(state.view(), MapView::World);
+        EXPECT_EQ(mode.next(), AppMode::WorldMap);
     }
 
     TEST_F(WorldMapSinkTest, ACityMapSwallowsAFurtherClick)
     {
-        leftPressOn(state.world().cityCell(0));
+        openCity(0);
         leftPressOn(state.world().cityCell(3));
 
-        EXPECT_EQ(state.openCity(), 0U);
+        EXPECT_EQ(state.city(), 0U);
+        EXPECT_EQ(mode.next(), AppMode::CityMap);
     }
 
-    TEST_F(WorldMapSinkTest, TheWorldMapKeyGoesBack)
+    TEST_F(WorldMapSinkTest, TheWorldMapKeyGoesBackAndKeepsTheGrid)
     {
-        leftPressOn(state.world().cityCell(1));
+        openCity(1);
+        paths.insert(Cell{2, 2});
         send(KeyPressed{.key = kWorldMapKey});
 
-        EXPECT_EQ(state.view(), MapView::World);
+        EXPECT_FALSE(state.cityOpen());
+        EXPECT_EQ(mode.next(), AppMode::WorldMap);
+        EXPECT_TRUE(state.cityPaths(1).has(Cell{2, 2}));
     }
 
     TEST_F(WorldMapSinkTest, AHeldWorldMapKeyRepeatIsIgnored)
     {
-        leftPressOn(state.world().cityCell(1));
+        openCity(1);
         send(KeyPressed{.key = kWorldMapKey, .repeat = true});
 
-        EXPECT_EQ(state.view(), MapView::City);
+        EXPECT_TRUE(state.cityOpen());
+        EXPECT_EQ(mode.next(), AppMode::CityMap);
     }
 
     TEST_F(WorldMapSinkTest, AnotherKeyDoesNothing)
     {
-        leftPressOn(state.world().cityCell(1));
+        openCity(1);
         send(KeyPressed{.key = Key::Escape});
 
-        EXPECT_EQ(state.view(), MapView::City);
+        EXPECT_TRUE(state.cityOpen());
+    }
+
+    TEST_F(WorldMapSinkTest, TheWorldMapKeyOffACityDoesNothing)
+    {
+        send(KeyPressed{.key = kWorldMapKey});
+
+        EXPECT_TRUE(state.cityOpen());
+        EXPECT_EQ(mode.next(), AppMode::WorldMap);
     }
 
     TEST_F(WorldMapSinkTest, NonInputEventsAndOtherEdgesAreIgnored)
@@ -181,7 +225,7 @@ namespace
                 .button = MouseButton::Left,
                 .position = pixelOn(state.world().cityCell(0))});
 
-        EXPECT_EQ(state.view(), MapView::World);
+        EXPECT_EQ(mode.next(), AppMode::WorldMap);
     }
 
 } // namespace
