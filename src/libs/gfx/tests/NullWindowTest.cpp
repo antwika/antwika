@@ -25,6 +25,14 @@ namespace
             .title = "Antwika",
             .size = {.width = 640, .height = 480}};
     }
+
+    WindowDesc resizableDesc()
+    {
+        return WindowDesc{
+            .title = "Antwika",
+            .size = {.width = 640, .height = 480},
+            .resizable = true};
+    }
 } // namespace
 
 TEST(NullWindowTest, IsOpen_IsTrueForANewWindow)
@@ -58,6 +66,35 @@ TEST(NullWindowTest, Size_IsTheRequestedSize)
 
     EXPECT_EQ(window.size().width, 640u);
     EXPECT_EQ(window.size().height, 480u);
+}
+
+TEST(NullWindowTest, ConfiguredSize_IsTheRequestedSize)
+{
+    NiceMock<MockLogger> logger;
+    NullWindow window(logger, kWindowId, demoDesc());
+
+    EXPECT_EQ(window.configuredSize(), demoDesc().size);
+}
+
+TEST(NullWindowTest, Size_MatchesConfiguredSizeWhenResizable)
+{
+    NiceMock<MockLogger> logger;
+    NullWindow window(logger, kWindowId, resizableDesc());
+
+    // Asking for a resizable window off a screen changes nothing.
+    // There is no window system here to act on the request.
+    EXPECT_EQ(window.size(), window.configuredSize());
+}
+
+TEST(NullWindowTest, ConfiguredSize_SurvivesClosingTheWindow)
+{
+    NiceMock<MockLogger> logger;
+    NullWindow window(logger, kWindowId, demoDesc());
+
+    window.close();
+
+    EXPECT_EQ(window.configuredSize(), demoDesc().size);
+    EXPECT_EQ(window.size(), demoDesc().size);
 }
 
 TEST(NullWindowTest, SetTitle_ReplacesTheTitle)

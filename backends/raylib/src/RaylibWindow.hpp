@@ -77,8 +77,17 @@ namespace antwika::gfx::raylib
         [[nodiscard]] std::string title() const override;
 
         /**
+         * @brief Get the size the window was created with.
+         * @return WindowDesc::size, unchanged. raylib's window flags are
+         * global and outlive a window, so this is the only size that is
+         * safe to say belongs to this window in particular.
+         */
+        [[nodiscard]] Size configuredSize() const override;
+
+        /**
          * @brief Get the size of the window's drawable area.
          * @return The size raylib reports, or the last one seen if closed.
+         * On a resizable window this follows the user around.
          */
         [[nodiscard]] Size size() const override;
 
@@ -127,6 +136,7 @@ namespace antwika::gfx::raylib
         RaylibRenderer raylibRenderer;
         WindowId windowId;
         std::string windowTitle;
+        Size requestedSize;
         Size lastSize;
         bool open = true;
         bool closeReported = false;

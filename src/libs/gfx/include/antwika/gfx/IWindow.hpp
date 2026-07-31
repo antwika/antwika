@@ -41,7 +41,56 @@ namespace antwika::gfx
         [[nodiscard]] virtual std::string title() const = 0;
 
         /**
-         * @brief Get the size of the window's drawable area.
+         * @brief Get the size this window was created with.
+         *
+         * The *configured* size: whatever WindowDesc::size asked for,
+         * reported back unchanged for as long as the window lives, under
+         * every backend, whether or not the window is resizable and
+         * whether or not it is still open.
+         *
+         * This is the size an application lays out and hit-tests
+         * against. It is a number the application chose, so it is the
+         * same on the machine that recorded a session and on the one
+         * replaying it.
+         *
+         * Alone among IWindow's members this one is not pure, and the
+         * default answers with size(). That is exactly right for
+         * anything with no window system behind it to disagree with --
+         * a test double, or a window that cannot be resized -- and it is
+         * what lets an existing implementation stay as it is. Every
+         * backend that can be handed a size and then be given a
+         * different one overrides it.
+         *
+         * @return The size in pixels, never zero in either dimension.
+         */
+        [[nodiscard]] virtual Size configuredSize() const
+        {
+            return size();
+        }
+
+        /**
+         * @brief Get the size of the window's drawable area, as the
+         * window system currently reports it.
+         *
+         * Read this as the *reported* size. It is read-only information
+         * flowing outwards from the window system, and on a resizable
+         * window it changes whenever somebody drags an edge; on a window
+         * that is not resizable it may still differ from
+         * configuredSize(), because a window manager is free to hand
+         * back something other than what was asked for.
+         *
+         * **Nothing in a simulation may be driven from this.** Feeding
+         * it back into the tick loop is what blog/012 rules out: a
+         * replay would then resolve recorded input against whatever size
+         * the window happened to be, rather than against the size the
+         * application chose. Use configuredSize() for layout, for
+         * hit-testing, and for anything a replay has to reproduce; use
+         * this only to place what is drawn inside the drawable area.
+         *
+         * A closed window keeps reporting the last size it saw rather
+         * than zero, so a caller draining a final frame is not handed a
+         * degenerate canvas.
+         *
          * @return The size in pixels.
          */
         [[nodiscard]] virtual Size size() const = 0;

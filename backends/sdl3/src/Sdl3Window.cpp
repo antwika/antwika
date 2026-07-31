@@ -35,13 +35,15 @@ namespace antwika::gfx::sdl3
     Sdl3Window::Sdl3Window(
         ILogger &logger,
         SDL_Window *window,
-        SDL_Renderer *renderer)
+        SDL_Renderer *renderer,
+        Size configured)
         : logger(logger),
           sdlRenderer(logger, renderer),
           window(window),
           rawRenderer(renderer),
           windowId(WindowId{SDL_GetWindowID(window)}),
           lastTitle(readTitle(window)),
+          requestedSize(configured),
           lastSize(readSize(window))
     {
     }
@@ -64,6 +66,11 @@ namespace antwika::gfx::sdl3
     std::string Sdl3Window::title() const
     {
         return window == nullptr ? lastTitle : readTitle(window);
+    }
+
+    Size Sdl3Window::configuredSize() const
+    {
+        return requestedSize;
     }
 
     Size Sdl3Window::size() const

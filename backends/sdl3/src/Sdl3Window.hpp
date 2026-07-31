@@ -34,11 +34,14 @@ namespace antwika::gfx::sdl3
          * @param logger Receives this window's diagnostics.
          * @param window The SDL window, already created.
          * @param renderer The SDL renderer for that window.
+         * @param configured The size WindowDesc asked for, which is not
+         * necessarily the size SDL went on to create.
          */
         Sdl3Window(
             ILogger &logger,
             SDL_Window *window,
-            SDL_Renderer *renderer);
+            SDL_Renderer *renderer,
+            Size configured);
 
         Sdl3Window(const Sdl3Window &) = delete;
         Sdl3Window(Sdl3Window &&) = delete;
@@ -70,8 +73,16 @@ namespace antwika::gfx::sdl3
         [[nodiscard]] std::string title() const override;
 
         /**
+         * @brief Get the size the window was created with.
+         * @return WindowDesc::size, unchanged by anything SDL or a
+         * window manager later does to the window.
+         */
+        [[nodiscard]] Size configuredSize() const override;
+
+        /**
          * @brief Get the size of the window's drawable area.
          * @return The size SDL reports, or the last one seen if closed.
+         * On a resizable window this follows the user around.
          */
         [[nodiscard]] Size size() const override;
 
@@ -99,6 +110,7 @@ namespace antwika::gfx::sdl3
         SDL_Renderer *rawRenderer;
         WindowId windowId;
         std::string lastTitle;
+        Size requestedSize;
         Size lastSize;
     };
 

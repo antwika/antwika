@@ -237,6 +237,21 @@ Each module (lib or app) owns its own `CMakeLists.txt`, `include/`, `src/`, and 
 **Supporting libs**: `antwika::time` (fixed-tick `Tick` type, `IClock`/`SystemClock`) and `antwika::log` (`ILogger`/`Logger`, `IAppender`/`IFormatter`/`ILogPolicy` — composable logging with no global state) are used across apps but carry no tick/replay logic of their own.
 `antwika::ecs_commons` is the vocabulary half of the ECS -- `GridPosition`, `Velocity`, `Lifetime`, `Name`, `Tag<Kind>` and the `MovementSystem`/`LifetimeSystem`/`PeriodicSystem` that act on them -- kept out of `antwika::ecs` because that library is the mechanism and these are content, so an app wanting the scheduler does not link a countdown it never uses; see [`docs/ecs-commons.md`](docs/ecs-commons.md).
 
+`antwika::pathfinding` is an A* that knows nothing about grids: the world arrives through an `IGraph` supplying `neighbours()` and `heuristic()`, and no cell, coordinate or extent appears in the core — `GridGraph` is a 4-connected convenience layered on top for the callers that do have a grid.
+A missing path is `SearchOutcome::NoPath`, an ordinary answer rather than an exception, so `PathfindingError` is left for genuine precondition breaches like a negative edge cost.
+The open set orders on estimated total cost, then remaining estimate, then ascending `NodeId`, and that third key is what makes the order **total**: no two entries ever compare equivalent, so the heap never gets to choose and an equal-cost route resolves the same way on every run and every toolchain — which is the only reason a replay may depend on a path at all.
+See [`docs/pathfinding.md`](docs/pathfinding.md).
+
+`antwika::animation` resolves which frame to show and holds no time of its own: a `Clip` is keyframes plus a loop policy, and `resolve(clip, elapsedTicks)` is a pure function of the tick the caller already has.
+There is deliberately no `Animator` you advance — that would be simulation state hidden in a renderer, and a renderer calling `advance()` is the replay-drift bug that looks fine live.
+It depends on `antwika::time` and nothing else, so it cannot name a texture or a rectangle: a `Frame` is an index the app maps to an atlas slot, and sub-tick position is an exact rational `Progress` rather than a float.
+See [`docs/animation.md`](docs/animation.md).
+
+`antwika::i18n` is a message catalogue keyed by a symbolic `MessageId` rather than by the English string, which is what lets a test assert that every locale covers **exactly** the same id set — a missing translation fails the build instead of leaking English into a Swedish UI.
+Lookup is total and never throws, since it runs while a frame is being drawn: active catalogue, then the default locale, then the id's own name in exclamation marks, with every result carrying an `Exact`/`Fallback`/`Missing` origin so a caller can tell which of the three it got.
+Catalogues are compiled in rather than loaded, so the library opens no files.
+See [`docs/i18n.md`](docs/i18n.md).
+
 `antwika::input` abstracts reading a keyboard and a pointer (`IInputBackend`/`InputEvent`/`InputCapabilities`, `InputError`), so no code under `src/` names a concrete input framework; backends live under [`backends/`](backends/) beside the graphics ones and are chosen at build time by `ANTWIKA_INPUT_BACKEND`.
 It deliberately does **not** depend on `antwika::gfx`, and `antwika::gfx` does not depend on it — reading input does not require opening a window, which is why `input::Position` duplicates `gfx::Point` rather than reusing it, and why an input event does not say which window it arrived at.
 **That rule is about the source, not the link line**: no file under `src/libs/input` includes a `<antwika/gfx/...>` header or names a `gfx::` type, and that is what it forbids.
@@ -269,6 +284,8 @@ The `raylib` input backend reports a pointer and no keyboard, and synthesises ed
 `antwika::gfx` abstracts opening and rendering to windows (`IGfxBackend`/`IWindow`/`IRenderer`, `GfxError`), so no code under `src/` names a concrete graphics framework — SDL, raylib and friends arrive as statically linked backends under `backends/`, chosen at build time.
 Rendering is a write-only projection of state and never feeds back into the tick loop, so replays stay reproducible under the headless `NullBackend`.
 See [`blog/012-a-window-that-cant-talk-back.md`](blog/012-a-window-that-cant-talk-back.md) for how an app hangs rendering off the tick loop without letting it feed back in.
+A window may be resizable, and the two sizes it then has are deliberately named apart: `IWindow::configuredSize()` is the size the app asked for and is the same number on the recording and the replaying machine, while `IWindow::size()` is what the window currently reports.
+**Nothing in a simulation may be driven from the reported size** — laying out or hit-testing against it would make a window resize change what a recorded click means — so it is only ever used to place what is drawn inside the drawable area; see [`docs/resizable-windows.md`](docs/resizable-windows.md).
 
 Textures are decoded once and uploaded per backend: `gfx::PngReader::read()` turns a byte stream into a `gfx::Bitmap` of straight RGBA (stb_image, compiled `STB_IMAGE_STATIC` in one TU because raylib links its own copy), `IRenderer::createTexture()` uploads it, and `drawTexture(texture, source, destination, tint)` blits part of it with a colour and alpha modulation.
 The library opens no files — an app does that, as `apps/gfx_demo` does with the PNG path baked in at configure time.

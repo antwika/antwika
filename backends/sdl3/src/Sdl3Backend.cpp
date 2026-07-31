@@ -84,7 +84,8 @@ namespace antwika::gfx::sdl3
 
         logger.log(Level::Debug, "gfx.sdl3: created window");
 
-        return std::make_unique<Sdl3Window>(logger, window, renderer);
+        return std::make_unique<Sdl3Window>(
+            logger, window, renderer, desc.size);
     }
 
     std::optional<WindowEvent> Sdl3Backend::pollEvent()
