@@ -6,7 +6,7 @@ using antwika::event::Event;
 using antwika::event::TickEventRecorder;
 using antwika::event::TickEvent;
 
-TEST(TickEventRecorderTest, handle)
+TEST(TickEventRecorderTest, Handle_AppendsEveryEventInOrder)
 {
     TickEventRecorder replayRecorder;
     replayRecorder.handle(TickEvent{.tick = 0, .event = Event{.name = "foo"}});

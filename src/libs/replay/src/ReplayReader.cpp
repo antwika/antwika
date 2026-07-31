@@ -8,6 +8,7 @@
 #include <antwika/log/Level.hpp>
 #include <antwika/replay/ReplayFormatError.hpp>
 #include <antwika/replay/ReplayJson.hpp>
+
 namespace antwika::replay
 {
 

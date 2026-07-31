@@ -4,7 +4,7 @@
 
 using antwika::time::SystemClock;
 
-TEST(SystemClockTest, Now)
+TEST(SystemClockTest, Now_ReportsTheSystemClock)
 {
     SystemClock clock;
     EXPECT_NO_THROW((void)clock.now());

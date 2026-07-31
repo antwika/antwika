@@ -8,7 +8,7 @@ using antwika::event::Event;
 using antwika::event::EventDispatcher;
 using antwika::event::mocks::MockEventSink;
 
-TEST(EventDispatcherTest, Dispatch)
+TEST(EventDispatcherTest, Dispatch_DeliversTheEventToEverySink)
 {
     MockEventSink mockEventSink;
     EventDispatcher eventDispatcher({mockEventSink});

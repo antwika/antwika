@@ -120,7 +120,7 @@ namespace
 // What gets serialized here is the original input script.
 // That's scriptedLiveEvents, not liveRecording's full history.
 // liveRecording's history is a strictly larger, derived set.
-// See blog/2026-07-27-building-a-deterministic-replay-system.md for details.
+// See blog/001-building-a-deterministic-replay-system.md for details.
 TEST(
     ReplayDeterminismTest,
     LoadingAReplayReproducesTheSameStateAsTheOriginalRun)
