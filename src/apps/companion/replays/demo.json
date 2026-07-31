@@ -1,0 +1,41 @@
+{
+  "magic": "antwika-replay",
+  "version": 1,
+  "events": [
+    {
+      "tick": 165,
+      "event": {
+        "name": "input.pointer_down",
+        "payload": "{\"alt\":false,\"button\":\"Left\",\"control\":false,\"shift\":false,\"super\":false,\"x\":64,\"y\":64}"
+      }
+    },
+    {
+      "tick": 330,
+      "event": {
+        "name": "input.pointer_down",
+        "payload": "{\"alt\":false,\"button\":\"Left\",\"control\":false,\"shift\":false,\"super\":false,\"x\":64,\"y\":64}"
+      }
+    },
+    {
+      "tick": 450,
+      "event": {
+        "name": "input.pointer_down",
+        "payload": "{\"alt\":false,\"button\":\"Left\",\"control\":false,\"shift\":false,\"super\":false,\"x\":64,\"y\":64}"
+      }
+    },
+    {
+      "tick": 690,
+      "event": {
+        "name": "input.pointer_down",
+        "payload": "{\"alt\":false,\"button\":\"Left\",\"control\":false,\"shift\":false,\"super\":false,\"x\":64,\"y\":64}"
+      }
+    },
+    {
+      "tick": 760,
+      "event": {
+        "name": "engine.stop",
+        "payload": ""
+      }
+    }
+  ]
+}
