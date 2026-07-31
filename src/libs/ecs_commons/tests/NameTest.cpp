@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <string>
 
 #include <gtest/gtest.h>
@@ -31,6 +32,20 @@ TEST(NameTest, TextThatExactlyFillsTheBufferKeepsEveryCharacter)
     const std::string exact(kNameMaxLength, 'y');
 
     EXPECT_EQ(view(makeName(exact)), exact);
+}
+
+// The trap this type carries, pinned rather than only described.
+// A full-length Name has no NUL anywhere in it.
+// So text.data() is not a C string and never becomes one.
+// Anything that reads until a NUL has to be handed view() instead.
+TEST(NameTest, TextThatExactlyFillsTheBufferLeavesNoTerminator)
+{
+    const Name full = makeName(std::string(kNameMaxLength, 'z'));
+
+    EXPECT_EQ(full.text.size(), kNameMaxLength);
+    EXPECT_EQ(
+        std::find(full.text.begin(), full.text.end(), '\0'),
+        full.text.end());
 }
 
 TEST(NameTest, ComparesByTheWholeBuffer)

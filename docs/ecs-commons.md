@@ -51,8 +51,9 @@ This is the survey the library was populated from, not a generic ECS wishlist.
   `ecs_commons::Name`, `makeName()` and `view()` are that same workaround, written once.
 - `task_worker::Worker::remainingTicks` and `WorkerCompletionSystem` (`src/apps/task_worker/src/WorkerCompletionSystem.cpp`) count a `Tick` down and act at zero.
   `Lifetime` and `LifetimeSystem` are the countdown half, with the app keeping the "what happens at zero" half.
-- `game::WalkerSystem` (`src/apps/game/src/WalkerSystem.cpp`) steps every walker one cell per tick, staging into the back buffer.
+- `game::WalkerSystem` (`src/apps/game/src/WalkerSystem.cpp`) steps every walker one cell every `game::kTicksPerStep` ticks, staging into the back buffer.
   `Velocity` and `MovementSystem` are the integration half, with the pathfinding staying app-side.
+  Note that the cadence is *not* the half `PeriodicSystem` covers -- see migration 5 below for why.
 - `game::Path` (`src/apps/game/include/antwika/game/Path.hpp`) is an empty struct used purely as a marker, which is exactly `ecs_commons::Tag<Kind>`.
 - `life::DragPausedSystem` (`src/apps/life/src/DragPausedSystem.cpp`) is an `ISystem` that wraps another and conditionally declines to run it.
   `PeriodicSystem` is the same decorator shape, with the condition being the tick number.
@@ -94,14 +95,40 @@ Nothing was refactored as part of adding this library, because several apps were
 The migrations that look worthwhile, in rough order of value:
 
 1. `task_worker::Worker::label` / `makeWorkerLabel()` -> `ecs_commons::Name` / `makeName()`.
-   This is a straight substitution: the buffer size and the truncation behaviour already match.
+   The truncation behaviour matches, but the buffer is **not** the same size and this is **not** a straight substitution.
+   `Worker::label` is `std::array<char, kWorkerLabelMaxLength + 1>` and is always null-terminated; `Name::text` is `std::array<char, kNameMaxLength>` with no terminator slot at all.
+   `StatusPrintSystem.cpp` streams `worker.label.data()`, which reads until a NUL, so substituting the type without also changing that call site to `view(worker.name)` reads past the end of the array for any label of exactly 31 characters.
+   Migrate the call site and the type together, or not at all.
 2. `game::Cell` -> `ecs_commons::GridPosition`.
    Mechanically a rename plus a member rename, but it touches `IsoProjection`, `PathIndex`, `GridSink`, `SceneSnapshot` and their tests, so it is the largest of these.
 3. `game::Path` -> `using Path = ecs_commons::Tag<struct PathKind>;`.
    One line, once `game::Cell` has moved or independently of it.
-4. `task_worker::WorkerCompletionSystem` -> keep the system, but hold the countdown in a `Lifetime` and let `LifetimeSystem` do the decrement, leaving the completion system to react to expiry.
-   This one needs thought: today the system also reports progress to `TaskRegistry` every tick, so the split is not free.
+4. `task_worker::WorkerCompletionSystem` -> **do not** move the countdown into a `Lifetime`, which is what this list suggested when it was written.
+   `LifetimeSystem` destroys the entity when the countdown reaches zero, and `Lifetime.hpp` says so plainly: an app that wants the entity to outlive the countdown is told to keep its own component and count that down instead.
+   `task_worker` is exactly that app.
+   Its workers are created once in `TaskWorker.cpp` and never destroyed -- a finished worker goes Idle and waits for the next task -- so the substitution would delete one worker from a fixed pool per completed task.
+   There is no "react to expiry" hook that could prevent it either, because in this library expiry *is* the destruction.
+   What could be shared is the decrement on its own, a `Lifetime` with no system attached; that is not what `ecs_commons` offers today, and no second caller has asked for it.
+   The system also reports progress to `TaskRegistry` on every tick it decrements, which any shared decrement would have to leave a place for.
 5. `game::WalkerSystem` -> `MovementSystem` is *not* a drop-in, because a walker's step comes from `nextFacing()` rather than a stored velocity.
-   The plausible shape is for `WalkerSystem` to write a `Velocity` and let `MovementSystem` integrate it, which would also make a walker's speed expressible.
+   The plausible shape is for `WalkerSystem` to write a `Velocity` and let `MovementSystem` integrate it.
+   What that shape does **not** buy is the cadence: a walker already moves once every `game::kTicksPerStep` ticks, counted down in its own `Walker` component rather than off the tick number, and neither half of this library can express that.
+   `Velocity` is whole cells per tick with no notion of a slower one, and `PeriodicSystem` gates a whole system on `tick % period`, which is the tick number -- so composing the two would move a per-entity countdown back onto the global clock and make every walker share one speed by construction.
+   A commons answer would be a per-entity cadence component, which no second caller has asked for yet.
 
 `life` is the odd one out: its cells never move, never expire and have no label, so it has nothing to migrate beyond possibly keying its `Grid` on `GridPosition`.
+
+### Which of those are safe today
+
+Rechecked against the apps as they now stand, since three of the five were written against a shape the apps have since moved on from.
+
+- **2 and 3 are drop-ins.**
+  `game::Cell` and `GridPosition` are field-for-field identical, ordering and all, and `game::Path` and `Tag<Kind>` are both empty structs with a defaulted `==`.
+  Both are mechanical; only their blast radius is large.
+- **1 is a drop-in for the type and not for the call sites**, per the null-termination note above.
+  It is still worth doing; it is just two edits rather than one.
+- **4 and 5 are not migrations at all** and should be struck rather than scheduled.
+  Both would replace something an app already does correctly with something this library cannot express.
+
+Nothing here needs the library changed to make a migration possible.
+The two components a migration would want and not find -- a `Lifetime` that expires without destroying, and a per-entity cadence -- are each wanted by exactly one caller today, which is the same bar `Health` and `Parent` failed above.

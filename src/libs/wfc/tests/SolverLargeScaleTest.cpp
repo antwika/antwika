@@ -6,14 +6,14 @@
 
 #include <antwika/wfc/AdjacencyConstraint.hpp>
 #include <antwika/wfc/CompatibilityTable.hpp>
+#include <antwika/wfc/ConstraintRefs.hpp>
 #include <antwika/wfc/Domain.hpp>
-#include <antwika/wfc/IConstraint.hpp>
 #include <antwika/wfc/SolveResult.hpp>
 
 using antwika::wfc::AdjacencyConstraint;
 using antwika::wfc::CompatibilityTable;
 using antwika::wfc::Domain;
-using antwika::wfc::IConstraint;
+using antwika::wfc::referencesTo;
 using antwika::wfc::SolveOutcome;
 using antwika::wfc::Solver;
 
@@ -45,8 +45,7 @@ TEST(SolverLargeScaleTest, ThousandsOfCellsCompleteWithValidAssignment)
             i, i + 1, makeFullyCompatibleTable());
     }
 
-    std::vector<std::reference_wrapper<const IConstraint>> constraintRefs(
-        constraints.begin(), constraints.end());
+    const auto constraintRefs = referencesTo(constraints);
 
     Solver solver(wave, constraintRefs);
     const auto result = solver.solve();

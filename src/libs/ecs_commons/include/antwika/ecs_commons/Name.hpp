@@ -8,7 +8,15 @@ namespace antwika::ecs_commons
 {
 
     /**
-     * @brief Max characters a Name holds, excluding the terminator.
+     * @brief Max characters a Name holds, which is also the whole size
+     * of its buffer.
+     *
+     * There is no terminator slot, deliberately: a Name is read through
+     * view(), which needs no terminator, and reserving a byte for one
+     * would buy nothing view() does not already give.
+     * The consequence a caller has to know is that Name::text is not a
+     * C string -- a name of exactly this length has no NUL after it, so
+     * text.data() may not be handed to anything that looks for one.
      */
     inline constexpr std::size_t kNameMaxLength = 31;
 
