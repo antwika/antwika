@@ -91,6 +91,10 @@ namespace antwika::gfx3d_demo
                      Vec3{-kHalf, -kHalf, kHalf}},
                 .color = {.red = 60, .green = 200, .blue = 210}}};
 
+        /// Which corners the two triangles of one face are made of.
+        constexpr std::array<std::uint32_t, 6> kQuadIndices{
+            0, 1, 2, 0, 2, 3};
+
         /// Where each corner samples a texture, in the same order.
         constexpr std::array<Vec2, kCorners> kCornerTexCoords{
             Vec2{0.0F, 0.0F},
@@ -105,7 +109,7 @@ namespace antwika::gfx3d_demo
         MeshData mesh;
 
         mesh.vertices.reserve(kFaces.size() * kCorners);
-        mesh.indices.reserve(kFaces.size() * 6);
+        mesh.indices.reserve(kFaces.size() * kQuadIndices.size());
 
         for (const Face &face : kFaces)
         {
@@ -125,17 +129,16 @@ namespace antwika::gfx3d_demo
                         .color = face.color});
             }
 
-            mesh.indices.insert(
-                mesh.indices.end(),
-                {first,
-                 first + 1,
-                 first + 2,
-                 first,
-                 first + 2,
-                 first + 3});
+            for (const std::uint32_t offset : kQuadIndices)
+            {
+                mesh.indices.push_back(first + offset);
+            }
         }
 
+        // gcov puts an unreachable landing pad on the closing brace.
+        // It does that once per vector this function grows.
+        // WorldMapScene::worldSnapshotOf() is excluded for that too.
         return mesh;
-    }
+    } // GCOVR_EXCL_LINE
 
 } // namespace antwika::gfx3d_demo

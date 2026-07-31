@@ -11,6 +11,7 @@ namespace antwika::gfx3d_demo
 {
 
     using antwika::gfx::Color;
+    using antwika::gfx::Perspective;
     using antwika::gfx::Point;
     using antwika::gfx::Transform;
     using antwika::gfx::Vec3;
@@ -71,15 +72,15 @@ namespace antwika::gfx3d_demo
             : static_cast<float>(canvas.width)
                 / static_cast<float>(canvas.height);
 
-        return Camera3D{
-            kEye,
-            kOrigin,
-            kUp,
-            antwika::gfx::Perspective{
-                .fovYRadians = kFieldOfView,
-                .aspectRatio = aspect,
-                .nearPlane = kNearPlane,
-                .farPlane = kFarPlane}};
+        // Named rather than built inside the braces below.
+        // A temporary there leaves gcov an unwind block on its line.
+        const Perspective projection{
+            .fovYRadians = kFieldOfView,
+            .aspectRatio = aspect,
+            .nearPlane = kNearPlane,
+            .farPlane = kFarPlane};
+
+        return Camera3D{kEye, kOrigin, kUp, projection};
     }
 
     void SpinScene::draw(
