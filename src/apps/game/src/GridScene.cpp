@@ -26,6 +26,12 @@ namespace antwika::game
         constexpr Color kUntinted{
             .red = 255, .green = 255, .blue = 255, .alpha = 255};
 
+        // The same art, mostly transparent.
+        // A placeholder then reads as the thing it stands for.
+        // drawTexture() modulates alpha, so no second tile is needed.
+        constexpr Color kGhostly{
+            .red = 255, .green = 255, .blue = 255, .alpha = 110};
+
         [[nodiscard]] bool overlaps(Rect box, Size canvas) noexcept
         {
             const auto right =
@@ -102,6 +108,21 @@ namespace antwika::game
                 kUntinted);
         }
 
+        // Over the road it may stand beside, under the walkers.
+        for (const auto &building : snapshot.buildings)
+        {
+            if (!onCanvas(building.at, canvas, snapshot))
+            {
+                continue;
+            }
+
+            renderer.drawTexture(
+                atlas,
+                buildingTile(building.kind),
+                cellBounds(building.at, snapshot.camera),
+                kUntinted);
+        }
+
         // Last, so a walker is never hidden by what it is standing on.
         for (const auto &walker : snapshot.walkers)
         {
@@ -116,6 +137,31 @@ namespace antwika::game
                 cellBounds(walker.at, snapshot.camera),
                 kUntinted);
         }
+
+        drawGhost(renderer, canvas, snapshot, atlas);
+    }
+
+    void GridScene::drawGhost(
+        IRenderer &renderer,
+        Size canvas,
+        const SceneSnapshot &snapshot,
+        const ITexture &atlas) const
+    {
+        const auto &ghost = snapshot.ghost;
+
+        if (!ghost.visible || !onCanvas(ghost.at, canvas, snapshot))
+        {
+            return;
+        }
+
+        // A road ghost shows the junction it would become.
+        // Worked out the same way a laid one is.
+        // So what is previewed is what is placed.
+        renderer.drawTexture(
+            atlas,
+            toolTile(ghost.tool, linksAt(snapshot.paths, ghost.at)),
+            cellBounds(ghost.at, snapshot.camera),
+            kGhostly);
     }
 
     void GridScene::drawGround(

@@ -1,5 +1,7 @@
 #include "antwika/game/SceneSnapshot.hpp"
 
+#include "antwika/game/BuildGhost.hpp"
+#include "antwika/game/Building.hpp"
 #include "antwika/game/Walker.hpp"
 
 namespace antwika::game
@@ -12,7 +14,12 @@ namespace antwika::game
         GridExtent extent)
     {
         SceneSnapshot snapshot{
-            .camera = camera, .extent = extent, .paths = {}, .walkers = {}};
+            .camera = camera,
+            .extent = extent,
+            .paths = {},
+            .walkers = {},
+            .buildings = {},
+            .ghost = {}};
 
         snapshot.paths.assign(paths.cells().begin(), paths.cells().end());
 
@@ -22,6 +29,22 @@ namespace antwika::game
                 WalkerView{
                     .at = world.get<Cell>(entity),
                     .facing = world.get<Walker>(entity).facing});
+        }
+
+        for (const auto entity : world.view<Building, Cell>())
+        {
+            snapshot.buildings.push_back(
+                BuildingView{
+                    .at = world.get<Cell>(entity),
+                    .kind = world.get<Building>(entity).kind});
+        }
+
+        // At most one, since GridSink keeps one entity for it.
+        // A loop rather than an id.
+        // The snapshot then needs no way of being told which entity.
+        for (const auto entity : world.view<BuildGhost>())
+        {
+            snapshot.ghost = world.get<BuildGhost>(entity);
         }
 
         return snapshot;

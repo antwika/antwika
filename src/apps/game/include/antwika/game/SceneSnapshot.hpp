@@ -4,6 +4,8 @@
 
 #include <antwika/ecs/World.hpp>
 
+#include "antwika/game/BuildGhost.hpp"
+#include "antwika/game/BuildTool.hpp"
 #include "antwika/game/Camera.hpp"
 #include "antwika/game/Cell.hpp"
 #include "antwika/game/Direction.hpp"
@@ -32,6 +34,23 @@ namespace antwika::game
     };
 
     /**
+     * @brief One building, as a frame needs to know it.
+     */
+    struct BuildingView
+    {
+        Cell at;
+        BuildTool kind = BuildTool::House;
+
+        /**
+         * @brief Compare two building views.
+         * @param other The view to compare against.
+         * @return True when both the cell and the tool match.
+         */
+        [[nodiscard]] bool operator==(
+            const BuildingView &other) const = default;
+    };
+
+    /**
      * @brief Everything one frame needs, and nothing that can change under
      * it.
      *
@@ -47,6 +66,17 @@ namespace antwika::game
         GridExtent extent;
         std::vector<Cell> paths;
         std::vector<WalkerView> walkers;
+        std::vector<BuildingView> buildings;
+
+        /**
+         * @brief Where the selected tool would land if it were clicked.
+         *
+         * A picture rather than a fact about the world, but one only the
+         * simulation can work out, since which cell a pixel means is a
+         * function of the camera -- see BuildGhost. Invisible by default,
+         * so a snapshot of a world nobody has pointed at draws none.
+         */
+        BuildGhost ghost;
 
         /**
          * @brief Compare two snapshots.

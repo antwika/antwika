@@ -30,4 +30,14 @@ namespace antwika::game
         return covered;
     }
 
+    void UiOverlay::select(BuildTool tool) noexcept
+    {
+        selected = tool;
+    }
+
+    BuildTool UiOverlay::tool() const noexcept
+    {
+        return selected;
+    }
+
 } // namespace antwika::game

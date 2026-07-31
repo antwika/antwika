@@ -15,7 +15,8 @@ namespace antwika::game
     using antwika::gfx::Size;
 
     /**
-     * @brief Draws a snapshot: the ground, the roads and the walkers.
+     * @brief Draws a snapshot: the ground, the roads, the buildings, the
+     * walkers and the placement ghost.
      *
      * Stateless and deterministic on purpose, like apps/life's BoardScene
      * and apps/poker's TableScene. The same snapshot and canvas always
@@ -33,6 +34,13 @@ namespace antwika::game
      * paths, which arrive in ascending order -- so a neighbour is a
      * binary search rather than a second index the scene would have to be
      * handed and kept in step with.
+     *
+     * The ghost is drawn last and at reduced alpha, from the same tile
+     * the real placement would use, so a placeholder cannot come to look
+     * like something the palette does not place. Where it goes is in the
+     * snapshot rather than read off a pointer here: which cell a pixel
+     * means is a function of the camera, and the camera is simulation
+     * state -- see BuildGhost.
      *
      * Two things keep the cost proportional to what is on screen rather
      * than to how big the grid is. Only cells whose diamonds reach the
@@ -58,6 +66,12 @@ namespace antwika::game
 
     private:
         void drawGround(
+            IRenderer &renderer,
+            Size canvas,
+            const SceneSnapshot &snapshot,
+            const ITexture &atlas) const;
+
+        void drawGhost(
             IRenderer &renderer,
             Size canvas,
             const SceneSnapshot &snapshot,

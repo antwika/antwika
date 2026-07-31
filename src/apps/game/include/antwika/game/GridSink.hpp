@@ -1,12 +1,18 @@
 #pragma once
 
+#include <optional>
+#include <set>
+
+#include <antwika/ecs/Entity.hpp>
 #include <antwika/ecs/SystemScheduler.hpp>
 #include <antwika/ecs/World.hpp>
 #include <antwika/event/ITickEventSink.hpp>
 #include <antwika/event/TickEvent.hpp>
 #include <antwika/input/InputEvent.hpp>
 
+#include "antwika/game/BuildTool.hpp"
 #include "antwika/game/Camera.hpp"
+#include "antwika/game/Cell.hpp"
 #include "antwika/game/GridExtent.hpp"
 #include "antwika/game/InputFold.hpp"
 #include "antwika/game/PathIndex.hpp"
@@ -15,6 +21,7 @@
 namespace antwika::game
 {
 
+    using antwika::ecs::Entity;
     using antwika::ecs::SystemScheduler;
     using antwika::ecs::World;
     using antwika::event::ITickEventSink;
@@ -38,7 +45,7 @@ namespace antwika::game
      *
      * | Gesture | Effect |
      * | --- | --- |
-     * | left press | place a path at the clicked cell |
+     * | left press | place the selected tool's thing at the clicked cell |
      * | right press | place a walker, only if that cell has a path |
      * | middle drag | pan the camera |
      * | scroll | zoom, keeping the cell under the cursor put |
@@ -52,6 +59,21 @@ namespace antwika::game
      * the press: a left-drag pan would need a "moved more than N pixels,
      * so that was a drag" rule, which moves placement to the release and
      * invents a threshold nothing else here justifies.
+     *
+     * What a left press places is whatever UiOverlay says the palette has
+     * selected -- a road or one of the buildings. That selection is
+     * simulation state for the same reason the camera is: a replay
+     * carries the click and has to arrive at the same tool again, so
+     * pressing a palette button is no more an event than pressing a zoom
+     * button is.
+     *
+     * Every input event also restates the BuildGhost: where the selected
+     * tool would land if it were clicked now. It is worked out here
+     * rather than by the renderer because it is a function of the camera,
+     * and it goes into the World because that is the only thing a
+     * SceneSnapshot is taken from. **It follows the pointer only on a
+     * click, a wheel or a key**, since input::IdleMotionSource holds back
+     * movement while no button is held -- see BuildGhost.
      */
     class GridSink final : public ITickEventSink
     {
@@ -91,9 +113,12 @@ namespace antwika::game
         void handle(const TickEvent &event) override;
 
     private:
+        void place(Cell cell, BuildTool tool);
         void placePath(Cell cell);
+        void placeBuilding(Cell cell, BuildTool tool);
         void placeWalker(Cell cell);
         void act(const antwika::input::InputEvent &event);
+        void updateGhost();
 
         World &world;
         PathIndex &paths;
@@ -102,6 +127,16 @@ namespace antwika::game
         SystemScheduler &scheduler;
         const InputFold &input;
         const UiOverlay &overlay;
+
+        // Which cells already hold a building.
+        // PathIndex is the same note for roads.
+        // This one is private: nothing outside asks for it.
+        std::set<Cell> built;
+
+        // The one entity the ghost's component lives on.
+        // Made when the first input arrives, not in the constructor.
+        // A run that takes no input then creates nothing.
+        std::optional<Entity> ghost;
     };
 
 } // namespace antwika::game
