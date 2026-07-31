@@ -80,6 +80,7 @@ build/bin/antwika_life --record demo.replay
 build/bin/antwika_task_worker --record demo.replay
 build/bin/antwika_poker --record demo.replay
 build/bin/antwika_sudoku [--puzzle my-puzzle.txt]
+build/bin/antwika_gfx_demo                    # runs until the window is closed
 build/bin/antwika_gfx3d_demo                  # spinning cube, 900 frames
 build/bin/antwika_tower_defence               # or --record / --replay
 ```
@@ -209,6 +210,7 @@ Each module (lib or app) owns its own `CMakeLists.txt`, `include/`, `src/`, and 
   The running score is drawn by `antwika::ui`, described by `td::ScoreSink` inside the tick path and painted from `td::ScoreOverlay`, so no `ui.*` event exists here either.
   `td::GridLayout.hpp` is the one place the pixel-to-cell mapping lives, shared by the scene and the placement sink so the board somebody sees and the board they can build on cannot drift.
   It reserves a strip along the top for the score bar and lays the grid out below it, which is why a click on the bar falls outside the grid and builds nothing -- no sink has to ask the UI whether it covered the pointer.
+  That strip is `td::scoreBarHeight(canvas)` -- the height the bar itself lays out to, derived from the same theme padding and glyph line height -- rather than a fixed pixel count, which only matched the bar at one window size and left the bar covering grid rows at any taller one.
   It starts on an empty grid and loads nothing unless `--replay` says so, so what a session contains is what somebody clicked.
   `src/apps/tower_defence/replays/demo.json` is a sample session to pass to `--replay`.
 - `apps/sudoku` is unrelated to the tick/replay system: it's a showcase for `antwika::wfc` (Wave Function Collapse) — a standalone, dependency-free, deterministic constraint solver operating on a flat, index-addressed `std::vector` of cells with geometry expressed entirely through `IConstraint`s (no grid concept inside the library).
