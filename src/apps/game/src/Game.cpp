@@ -19,6 +19,7 @@
 #include "antwika/game/MainMenuSink.hpp"
 #include "antwika/game/ModeGatedSink.hpp"
 #include "antwika/game/ModeGatedSystem.hpp"
+#include "antwika/game/SaveGameFile.hpp"
 #include "antwika/game/SaveLoadScene.hpp"
 #include "antwika/game/SaveLoadSink.hpp"
 #include "antwika/game/SaveLoadState.hpp"
@@ -162,7 +163,13 @@ namespace antwika::game
                                 : noSaveScreen;
 
         SessionStore session(
-            world, paths, camera, state, config.extent, config.seed);
+            world,
+            paths,
+            config.built,
+            camera,
+            state,
+            config.extent,
+            config.seed);
 
         // Restored before the first tick.
         // Through the very store the Load button uses.
@@ -241,6 +248,11 @@ namespace antwika::game
 
         EngineLoop loop(engine, tickedDispatcher, config.inputSource);
         loop.run(stopSignal, config.maxTicks);
+
+        // Taken while the World is still here.
+        // A save is read out of it rather than out of the summary.
+        antwika::game::saveGameFileIfNamed(
+            session.take(), config.savePath);
 
         const auto frame =
             snapshotOf(world, paths, camera, config.extent);

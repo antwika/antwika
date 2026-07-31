@@ -22,7 +22,7 @@ using antwika::game::readSaveGame;
 using antwika::game::SaveFormatError;
 using antwika::game::SaveGame;
 using antwika::game::saveGameFile;
-using antwika::game::WalkerView;
+using antwika::game::SavedWalker;
 using antwika::game::writeSaveGame;
 
 namespace
@@ -67,7 +67,7 @@ namespace
         save.camera = Camera(Point{.x = 4, .y = 8}, 2);
         save.paths = {Cell{.x = 2, .y = 2}};
         save.walkers = {
-            WalkerView{.at = {.x = 2, .y = 2}, .facing = Direction::North}};
+            SavedWalker{.at = {.x = 2, .y = 2}, .facing = Direction::North}};
         save.seed = 12345;
         return save;
     }

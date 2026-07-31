@@ -26,6 +26,7 @@
 #include "WidgetPixel.hpp"
 
 #include "antwika/game/AppMode.hpp"
+#include "antwika/game/BuildingIndex.hpp"
 #include "antwika/game/Camera.hpp"
 #include "antwika/game/Cell.hpp"
 #include "antwika/game/GameState.hpp"
@@ -189,10 +190,11 @@ namespace
         ::testing::NiceMock<MockLogger> logger;
         World world{logger};
         PathIndex paths;
+        antwika::game::BuildingIndex built;
         Camera camera;
         GameState gameState;
         SessionStore session{
-            world, paths, camera, gameState, kExtent, 5};
+            world, paths, built, camera, gameState, kExtent, 5};
         AppModeState mode{AppMode::SaveLoad};
         UiOverlay overlay{kCanvas};
         InputFold input{codec};

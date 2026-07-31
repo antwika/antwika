@@ -6,6 +6,7 @@
 
 #include "antwika/game/BuildTool.hpp"
 #include "antwika/game/Building.hpp"
+#include "antwika/game/BuildingIndex.hpp"
 #include "antwika/game/Camera.hpp"
 #include "antwika/game/Cell.hpp"
 #include "antwika/game/Direction.hpp"
@@ -32,7 +33,7 @@ namespace
     using antwika::game::SaveGame;
     using antwika::game::SessionStore;
     using antwika::game::Walker;
-    using antwika::game::WalkerView;
+    using antwika::game::SavedWalker;
     using antwika::log::mocks::MockLogger;
 
     constexpr GridExtent kExtent{.width = 16, .height = 16};
@@ -57,9 +58,10 @@ namespace
         ::testing::NiceMock<MockLogger> logger;
         World world{logger};
         PathIndex paths;
+        antwika::game::BuildingIndex built;
         Camera camera;
         GameState state;
-        SessionStore store{world, paths, camera, state, kExtent, 42};
+        SessionStore store{world, paths, built, camera, state, kExtent, 42};
     };
 
     TEST_F(SessionStoreTest, Take_HoldsTheGridTheCameraAndTheState)
@@ -160,4 +162,95 @@ namespace
         }
     }
 
+} // namespace
+
+namespace
+{
+    // The link is written as a pair of indices.
+    // So what comes back has to be handles that name each other.
+    TEST_F(SessionStoreTest, Restore_TiesABuildingBackToItsWalker)
+    {
+        const auto source = world.create();
+        world.add<Cell>(source, Cell{.x = 4, .y = 4});
+
+        const auto walker = world.create();
+        world.add<Cell>(walker, Cell{.x = 1, .y = 1});
+        world.add<antwika::game::Walker>(walker, antwika::game::Walker{});
+
+        world.add<antwika::game::Building>(
+            source, antwika::game::Building{.walker = walker});
+        world.commit();
+
+        const auto saved = store.take();
+        ASSERT_EQ(saved.buildings.size(), 1U);
+        ASSERT_EQ(saved.walkers.size(), 1U);
+        ASSERT_EQ(saved.buildings[0].walker, 0U);
+
+        store.restore(saved);
+        world.commit();
+
+        antwika::ecs::Entity restoredBuilding{};
+        for (const auto entity : world.view<antwika::game::Building>())
+        {
+            restoredBuilding = entity;
+        }
+
+        const auto out = world.get<antwika::game::Building>(
+            restoredBuilding).walker;
+
+        ASSERT_TRUE(world.alive(out));
+        EXPECT_EQ(
+            world.get<antwika::game::Walker>(out).home, restoredBuilding);
+    }
+
+    TEST_F(SessionStoreTest, Restore_PutsBackABuildingsStockAndCountdowns)
+    {
+        const auto source = world.create();
+        world.add<Cell>(source, Cell{.x = 4, .y = 4});
+        world.add<antwika::game::Building>(
+            source,
+            antwika::game::Building{
+                .kind = antwika::game::BuildingKind::WaterSource,
+                .stock = {11, 22},
+                .risk = 33,
+                .ticksUntilSpawn = 44,
+                .ticksUntilDrain = 55,
+                .ticksUntilRisk = 66});
+        world.commit();
+
+        const auto saved = store.take();
+        store.restore(saved);
+        world.commit();
+
+        for (const auto entity : world.view<antwika::game::Building>())
+        {
+            const auto building = world.get<antwika::game::Building>(entity);
+
+            EXPECT_EQ(
+                building.kind, antwika::game::BuildingKind::WaterSource);
+            EXPECT_EQ(building.risk, 33);
+            EXPECT_EQ(building.ticksUntilSpawn, 44);
+            EXPECT_EQ(building.ticksUntilDrain, 55);
+            EXPECT_EQ(building.ticksUntilRisk, 66);
+        }
+    }
+
+    // The index has to describe the restored city.
+    // Otherwise a cell of the old one would refuse to be built on.
+    TEST_F(SessionStoreTest, Restore_RebuildsTheOccupancyIndex)
+    {
+        const auto source = world.create();
+        world.add<Cell>(source, Cell{.x = 4, .y = 4});
+        world.add<antwika::game::Building>(
+            source, antwika::game::Building{});
+        world.commit();
+        built.insert(Cell{.x = 4, .y = 4});
+        built.insert(Cell{.x = 9, .y = 9});
+
+        const auto saved = store.take();
+        store.restore(saved);
+
+        EXPECT_TRUE(built.has(Cell{.x = 4, .y = 4}));
+        EXPECT_FALSE(built.has(Cell{.x = 9, .y = 9}));
+    }
 } // namespace

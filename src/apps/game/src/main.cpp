@@ -251,12 +251,9 @@ namespace
                 .saveDirectory = std::string(kSaveDirectory),
                 .start = antwika::game::loadGameFileIfNamed(
                     saveOptions.loadPath),
+                .savePath = saveOptions.savePath,
                 .seed = kWorld.seed,
                 .canvas = antwika::game::kUiCanvas});
-
-        antwika::game::saveGameFileIfNamed(
-            antwika::game::saveGameOf(summary, kExtent, kWorld.seed),
-            saveOptions.savePath);
 
         antwika::game::printSummary(std::cout, summary);
     }

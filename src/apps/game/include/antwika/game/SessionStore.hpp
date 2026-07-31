@@ -4,6 +4,7 @@
 
 #include <antwika/ecs/World.hpp>
 
+#include "antwika/game/BuildingIndex.hpp"
 #include "antwika/game/Camera.hpp"
 #include "antwika/game/GameState.hpp"
 #include "antwika/game/GridExtent.hpp"
@@ -54,6 +55,7 @@ namespace antwika::game
         SessionStore(
             World &world,
             PathIndex &paths,
+            BuildingIndex &built,
             Camera &camera,
             GameState &state,
             GridExtent extent,
@@ -93,6 +95,7 @@ namespace antwika::game
     private:
         World &world;
         PathIndex &paths;
+        BuildingIndex &built;
         Camera &camera;
         GameState &state;
         GridExtent extent;

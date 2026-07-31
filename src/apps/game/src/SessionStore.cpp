@@ -1,13 +1,14 @@
 #include "antwika/game/SessionStore.hpp"
 
+#include <cstddef>
 #include <vector>
 
 #include <antwika/ecs/Entity.hpp>
 
+#include "antwika/game/Building.hpp"
+#include "antwika/game/BuildingIndex.hpp"
 #include "antwika/game/Cell.hpp"
-#include "antwika/game/GameSummary.hpp"
 #include "antwika/game/Path.hpp"
-#include "antwika/game/SceneSnapshot.hpp"
 #include "antwika/game/Walker.hpp"
 
 namespace antwika::game
@@ -18,12 +19,14 @@ namespace antwika::game
     SessionStore::SessionStore(
         World &world,
         PathIndex &paths,
+        BuildingIndex &built,
         Camera &camera,
         GameState &state,
         GridExtent extent,
         std::uint64_t seed)
         : world(world),
           paths(paths),
+          built(built),
           camera(camera),
           state(state),
           extent(extent),
@@ -33,23 +36,8 @@ namespace antwika::game
 
     SaveGame SessionStore::take() const
     {
-        const auto frame = snapshotOf(world, paths, camera, extent);
-
-        // Every branch left on the excluded line is the allocator's.
-        // Three are the throw edges of copying the three vectors.
-        // The rest are heap branches nothing here is big enough for.
-        // And the unwind paths that go with them.
-        // Confirmed with gcov -b, as the coverage doc requires.
-        return saveGameOf(
-            GameSummary{ // GCOVR_EXCL_LINE
-                .state = state,
-                .paths = frame.paths,
-                .walkers = walkerViewsOf(world),
-                .buildings = frame.buildings,
-                .camera = camera},
-            extent,
-            seed);
-    } // GCOVR_EXCL_LINE
+        return saveGameOf(world, paths, camera, state, extent, seed);
+    }
 
     void SessionStore::restore(const SaveGame &save)
     {
@@ -67,6 +55,7 @@ namespace antwika::game
         }
 
         paths = pathIndexOf(save);
+        built = BuildingIndex{};
         camera = save.camera;
         state = save.state;
 
@@ -77,11 +66,63 @@ namespace antwika::game
             world.add<Path>(entity, Path{});
         }
 
-        for (const auto &walker : save.walkers)
+        // **Every entity is created before any component is added.**
+        // create() is immediate where add() is staged.
+        // So the handles exist now and the components do not.
+        // A link therefore has to be built into the component.
+        // Reading one back would ask for what has not been given yet.
+        std::vector<Entity> walkers;
+        std::vector<Entity> buildings;
+
+        walkers.reserve(save.walkers.size());
+        buildings.reserve(save.buildings.size());
+
+        for (std::size_t index = 0; index < save.walkers.size(); ++index)
         {
-            const auto entity = world.create();
-            world.add<Cell>(entity, walker.at);
-            world.add<Walker>(entity, Walker{.facing = walker.facing});
+            walkers.push_back(world.create());
+        }
+
+        for (std::size_t index = 0; index < save.buildings.size(); ++index)
+        {
+            buildings.push_back(world.create());
+        }
+
+        for (std::size_t index = 0; index < save.walkers.size(); ++index)
+        {
+            const auto &walker = save.walkers[index];
+
+            world.add<Cell>(walkers[index], walker.at);
+            world.add<Walker>(
+                walkers[index],
+                Walker{
+                    .facing = walker.facing,
+                    .kind = walker.kind,
+                    .carried = walker.carried,
+                    .stepsUntilHome = walker.stepsUntilHome,
+                    .home = walker.home.has_value()
+                        ? buildings[*walker.home]
+                        : antwika::ecs::kNullEntity,
+                    .ticksUntilStep = walker.ticksUntilStep});
+        }
+
+        for (std::size_t index = 0; index < save.buildings.size(); ++index)
+        {
+            const auto &building = save.buildings[index];
+
+            world.add<Cell>(buildings[index], building.at);
+            world.add<Building>(
+                buildings[index],
+                Building{
+                    .kind = building.kind,
+                    .stock = building.stock,
+                    .risk = building.risk,
+                    .ticksUntilSpawn = building.ticksUntilSpawn,
+                    .ticksUntilDrain = building.ticksUntilDrain,
+                    .ticksUntilRisk = building.ticksUntilRisk,
+                    .walker = building.walker.has_value()
+                        ? walkers[*building.walker]
+                        : antwika::ecs::kNullEntity});
+            built.insert(building.at);
         }
     }
 

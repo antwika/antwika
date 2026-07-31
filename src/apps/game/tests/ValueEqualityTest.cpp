@@ -148,7 +148,8 @@ namespace
         save.camera = Camera(antwika::gfx::Point{.x = 4, .y = 5}, 1);
         save.paths = {Cell{.x = 1, .y = 1}};
         save.walkers = {
-            WalkerView{.at = {.x = 2, .y = 2}, .facing = Direction::West}};
+            antwika::game::SavedWalker{
+                .at = {.x = 2, .y = 2}, .facing = Direction::West}};
         save.seed = 7;
         return save;
     }

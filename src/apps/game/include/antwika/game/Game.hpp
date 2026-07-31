@@ -265,6 +265,17 @@ namespace antwika::game
         std::optional<SaveGame> start = std::nullopt;
 
         /**
+         * @brief Where to write the session as the run ends, if anywhere.
+         *
+         * Written from in here rather than by the caller, because a save
+         * is taken from the World and the World does not outlive this
+         * call.
+         * It is the mirror of `start`, which loads through the same
+         * store the Load button uses.
+         */
+        std::optional<std::string> savePath = std::nullopt;
+
+        /**
          * @brief The seed every generated part of the session came from.
          *
          * Written into a save so that a resumed session regenerates the
