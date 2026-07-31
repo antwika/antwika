@@ -3,6 +3,7 @@
 #include <antwika/event/ITickEventSink.hpp>
 #include <antwika/event/TickEvent.hpp>
 #include <antwika/ui/Pointer.hpp>
+#include <antwika/ui/WidgetId.hpp>
 
 #include "antwika/game/Camera.hpp"
 #include "antwika/game/InputFold.hpp"
@@ -15,6 +16,7 @@ namespace antwika::game
     using antwika::event::ITickEventSink;
     using antwika::event::TickEvent;
     using antwika::ui::Pointer;
+    using antwika::ui::WidgetId;
 
     /**
      * @brief Turns this tick's input into toolbar presses, and the
@@ -80,6 +82,8 @@ namespace antwika::game
         [[nodiscard]] Pointer pointerNow(bool pressed) const;
 
         void refreshAndAct(bool pressed);
+
+        void selectFrom(WidgetId activated);
 
         Camera &camera;
         UiOverlay &overlay;

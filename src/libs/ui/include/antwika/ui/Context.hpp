@@ -1,6 +1,7 @@
 #pragma once
 
 #include <memory>
+#include <optional>
 #include <string_view>
 
 #include <antwika/gfx/Color.hpp>
@@ -9,11 +10,16 @@
 #include "antwika/ui/Axis.hpp"
 #include "antwika/ui/ButtonSpec.hpp"
 #include "antwika/ui/ContainerSpec.hpp"
+#include "antwika/ui/DropdownSpec.hpp"
 #include "antwika/ui/Frame.hpp"
+#include "antwika/ui/Keyboard.hpp"
 #include "antwika/ui/Pointer.hpp"
 #include "antwika/ui/Scope.hpp"
 #include "antwika/ui/Sizing.hpp"
+#include "antwika/ui/TextEdit.hpp"
+#include "antwika/ui/TextFieldSpec.hpp"
 #include "antwika/ui/Theme.hpp"
+#include "antwika/ui/WidgetId.hpp"
 
 namespace antwika::ui
 {
@@ -32,8 +38,14 @@ namespace antwika::ui
      * has not seen yet, which is what makes nesting work at all.
      *
      * Holds nothing between frames and reads nothing outside its
-     * arguments, so the same declarations, canvas and pointer always
-     * produce the same picture and the same interactions.
+     * arguments, so the same declarations, canvas, pointer, keyboard and
+     * focus always produce the same picture and the same interactions.
+     *
+     * Focus is the one thing a keyboard UI needs that outlives a frame,
+     * and it is passed through rather than kept: it goes in here and
+     * comes back out as Frame::interactions.focused, so what remembers
+     * it is application state a replay already regenerates. See
+     * Interactions::focused.
      */
     class Context final
     {
@@ -45,8 +57,21 @@ namespace antwika::ui
          * @param pointer Where the pointer is and what it is doing, in
          * the same pixels the canvas is measured in. Left out, this
          * frame has no pointer and nothing can be hovered or activated.
+         * @param keyboard The key edges and characters this frame, in
+         * arrival order. Left out, this frame has no keyboard, focus
+         * stays where the caller had it, nothing can be activated by a
+         * keystroke and no field reports an edit.
+         * @param focus The widget focused going in, which is the
+         * focused id the previous frame handed back. Left out, this
+         * frame starts with nothing focused, which is where Tab starts
+         * from.
          */
-        Context(Size canvas, Theme theme, Pointer pointer = {});
+        Context(
+            Size canvas,
+            Theme theme,
+            Pointer pointer = {},
+            Keyboard keyboard = {},
+            WidgetId focus = kNoWidget);
 
         /**
          * @brief Discard the frame.
@@ -108,11 +133,48 @@ namespace antwika::ui
          *
          * Named in the spec, it works out its own appearance from the
          * pointer and reports being pressed through finish().
+         * A named button is also what Tab stops at, in the order the
+         * buttons were declared, and draws the theme's border while it
+         * is the focused one.
          *
          * @param text The button's label.
          * @param spec What the button is being asked for.
          */
         void button(std::string_view text, ButtonSpec spec = {});
+
+        /**
+         * @brief Add a box holding characters somebody typed.
+         *
+         * **The characters are the caller's, not this library's.** They
+         * arrive in the spec and any edit comes back through
+         * Interactions::edit, because nothing here is retained between
+         * frames: a field that owned what was typed would be state a
+         * replay could not regenerate. See TextFieldSpec.
+         *
+         * Only a focused field draws a caret and reports an edit, so a
+         * frame's typing lands in exactly one field however many are
+         * declared.
+         *
+         * @param spec What the field is being asked for.
+         */
+        void textField(const TextFieldSpec &spec);
+
+        /**
+         * @brief Add a box naming one of a list of options.
+         *
+         * **Whether the list is open is the caller's, not this
+         * library's**, for the same reason a field's characters are:
+         * see DropdownSpec.
+         *
+         * An open list is drawn over whatever sits below the box rather
+         * than pushing it aside, and is hit before it. Both fall out of
+         * the list being an overlay: painted after every other command
+         * and hit-tested before them, since antwika::gfx offers no depth
+         * of its own.
+         *
+         * @param spec What the dropdown is being asked for.
+         */
+        void dropdown(const DropdownSpec &spec);
 
         /**
          * @brief Add an empty child that takes up room.
@@ -127,11 +189,14 @@ namespace antwika::ui
         void spacer(Sizing along);
 
         /**
-         * @brief Lay the frame out, resolve the pointer against it, and
-         * produce the picture it describes.
+         * @brief Lay the frame out, resolve the pointer and the keyboard
+         * against it, and produce the picture it describes.
          *
          * The pointer is resolved against this frame's layout, so what a
          * press hit is what the same call is about to draw.
+         *
+         * The returned focus is this frame's answer, and the caller's to
+         * keep and hand back next frame.
          *
          * Asking twice gives the same answer: nothing here is consumed.
          *
@@ -155,7 +220,8 @@ namespace antwika::ui
          * which is the price of activating on the press rather than on
          * a press-then-release match a replay would have to regenerate.
          *
-         * @return The drawing commands and what the pointer did.
+         * @return The drawing commands, and what the pointer and the
+         * keyboard did.
          */
         [[nodiscard]] Frame finish();
 
@@ -169,6 +235,19 @@ namespace antwika::ui
         Size canvasSize;
         Theme themeValue;
         Pointer pointerValue;
+        Keyboard keyboardValue;
+        WidgetId focusValue;
+
+        /**
+         * @brief What the focused field's typing came to, if anything.
+         *
+         * Worked out where the field is declared, since that is where
+         * both the characters and the keys are known, and handed over by
+         * finish(). It needs no layout, unlike everything the pointer
+         * decides.
+         */
+        std::optional<TextEdit> pendingEdit{};
+
         std::unique_ptr<detail::LayoutTree> tree;
     };
 

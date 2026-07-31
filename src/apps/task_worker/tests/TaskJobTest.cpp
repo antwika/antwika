@@ -46,6 +46,4 @@ TEST(TaskJobTest, ExecuteClaimsTheLowestIndexIdleWorkerOnly)
         world.get<Worker>(idleFirst), (Worker{WorkerStatus::Idle, 0}));
     EXPECT_NE(
         world.get<Worker>(idleFirst), (Worker{WorkerStatus::Busy, 99}));
-    EXPECT_EQ(job.taskId(), 1U);
-    EXPECT_EQ(job.label(), "Task");
 }

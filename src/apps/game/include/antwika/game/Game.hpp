@@ -1,8 +1,10 @@
 #pragma once
 
+#include <cstdint>
 #include <functional>
 #include <optional>
 #include <ostream>
+#include <string>
 #include <vector>
 
 #include <antwika/ecs/ISystem.hpp>
@@ -14,12 +16,15 @@
 #include <antwika/replay/IReplaySource.hpp>
 #include <antwika/time/Tick.hpp>
 
+#include "antwika/game/AppMode.hpp"
 #include "antwika/game/Camera.hpp"
 #include "antwika/game/GameSummary.hpp"
 #include "antwika/game/GridExtent.hpp"
 #include "antwika/game/PathIndex.hpp"
+#include "antwika/game/SaveGame.hpp"
 #include "antwika/game/UiCanvas.hpp"
 #include "antwika/game/UiOverlay.hpp"
+#include "antwika/game/WorldMapState.hpp"
 
 namespace antwika::game
 {
@@ -114,6 +119,20 @@ namespace antwika::game
         PathIndex &paths;
 
         /**
+         * @brief Which screen the run is on, folded by the tick path.
+         *
+         * Passed in rather than created here for the same reason the
+         * camera is: a renderer built before this call has to read it to
+         * know which mode's picture to draw.
+         *
+         * Its constructor is where a run says which mode it starts in.
+         * The application leaves that defaulted, so a session opens at
+         * the main menu; a test whose subject is the grid constructs one
+         * as AppMode::CityMap rather than clicking its way there.
+         */
+        AppModeState &mode;
+
+        /**
          * @brief Extra systems registered into an "observe" phase.
          *
          * The phase runs after "walk" every tick -- a renderer, a pacer.
@@ -153,6 +172,103 @@ namespace antwika::game
          */
         std::optional<std::reference_wrapper<UiOverlay>> overlay =
             std::nullopt;
+
+        /**
+         * @brief The main menu's own picture, which turns the menu on.
+         *
+         * A second overlay rather than the toolbar's, because the two
+         * belong to different modes and neither may overwrite the
+         * other's picture.
+         *
+         * Unset, the menu is described against a zero canvas, which no
+         * click can hit -- so a run that starts in AppMode::MainMenu
+         * without one never leaves it. Every caller starting at the menu
+         * must therefore set this; one starting in AppMode::CityMap need
+         * not, and a test whose subject is the grid does not.
+         *
+         * Passed in rather than created here because a renderer built
+         * beforehand has to read it.
+         */
+        std::optional<std::reference_wrapper<UiOverlay>> menuOverlay =
+            std::nullopt;
+
+        /**
+         * @brief The world and its cities, which turns the world map on.
+         *
+         * Set, a WorldMapSink is registered ahead of the grid's, so a
+         * press on a city opens it and the way-back key puts it away.
+         * The grid the session builds on is swapped in and out of this
+         * as cities are opened -- see WorldMapState.
+         *
+         * Unset, the run has one city and one grid, which is what every
+         * caller whose subject is the grid wants: bootstrap() then keeps
+         * a world of its own with city 0 permanently open, so nothing is
+         * gated off by a world map that is not there.
+         *
+         * Passed in rather than created here because a renderer built
+         * beforehand has to read it, and because generating a world is
+         * the composition root's decision -- it is what owns the seed.
+         */
+        std::optional<std::reference_wrapper<WorldMapState>> world =
+            std::nullopt;
+
+        /**
+         * @brief The save/load screen's own picture, which turns it on.
+         *
+         * A third overlay rather than the menu's or the toolbar's, for
+         * the reason the menu has one of its own: the three belong to
+         * different modes and none may overwrite another's picture.
+         *
+         * Unset, the screen is described against a zero canvas, which no
+         * click can hit -- so a run that reaches AppMode::SaveLoad
+         * without one never leaves it. Every caller offering the menu's
+         * "Load Game" must therefore set this.
+         *
+         * Passed in rather than created here because a renderer built
+         * beforehand has to read it.
+         */
+        std::optional<std::reference_wrapper<UiOverlay>> saveOverlay =
+            std::nullopt;
+
+        /**
+         * @brief The saves that existed when the run started.
+         *
+         * Read once, before the loop, and fixed for the run -- see
+         * listSaveGames() for why a directory may not be read from
+         * inside the tick path.
+         */
+        std::vector<std::string> saves = {};
+
+        /**
+         * @brief Where the save/load screen writes and reads.
+         */
+        std::string saveDirectory = {};
+
+        /**
+         * @brief The state to resume from, if `--load` named one.
+         *
+         * Restored through the same SessionStore the Load button uses,
+         * before the first tick, so a session resumed from the command
+         * line and one resumed mid-run cannot come out differently.
+         */
+        std::optional<SaveGame> start = std::nullopt;
+
+        /**
+         * @brief The seed every generated part of the session came from.
+         *
+         * Written into a save so that a resumed session regenerates the
+         * same world -- see SaveGame::seed.
+         */
+        std::uint64_t seed = 0;
+
+        /**
+         * @brief The area every mode's UI is laid out against.
+         *
+         * The size the window was *asked* for, which the world map is
+         * centred in and which a click on a city is resolved against.
+         * Defaulted to kUiCanvas, the one number the shipped app uses.
+         */
+        Size canvas = kUiCanvas;
     };
 
     /**

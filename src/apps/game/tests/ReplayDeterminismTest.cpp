@@ -27,7 +27,9 @@
 #include <antwika/replay/ReplayCli.hpp>
 #include <antwika/replay/ReplaySource.hpp>
 
+#include "antwika/game/AppMode.hpp"
 #include "antwika/game/Camera.hpp"
+#include "antwika/game/BuildTool.hpp"
 #include "antwika/game/Cell.hpp"
 #include "antwika/game/Events.hpp"
 #include "antwika/game/Game.hpp"
@@ -43,6 +45,8 @@ using antwika::event::Event;
 using antwika::event::mocks::MockEventSink;
 using antwika::event::TickEvent;
 using antwika::event::TickEventRecorder;
+using antwika::game::AppMode;
+using antwika::game::AppModeState;
 using antwika::game::Camera;
 using antwika::game::Cell;
 using antwika::game::cellCentre;
@@ -122,6 +126,9 @@ namespace
         PathIndex paths;
         TickEventRecorder recorder;
 
+        // The subject here is the grid, so a run starts there.
+        AppModeState mode{AppMode::CityMap};
+
         auto summary = antwika::game::bootstrap(
             antwika::game::GameConfig{
                 .logger = logger,
@@ -131,6 +138,7 @@ namespace
                 .extent = kExtent,
                 .camera = camera,
                 .paths = paths,
+                .mode = mode,
                 .maxTicks = kMaxTicks,
                 .replayRecorder = recorder});
 
@@ -148,6 +156,9 @@ namespace
         Camera camera;
         PathIndex paths;
         TickEventRecorder recorder;
+
+        // The subject here is the grid, so a run starts there.
+        AppModeState mode{AppMode::CityMap};
         UiOverlay overlay(kUiCanvas);
 
         auto summary = antwika::game::bootstrap(
@@ -159,6 +170,7 @@ namespace
                 .extent = kExtent,
                 .camera = camera,
                 .paths = paths,
+                .mode = mode,
                 .maxTicks = kMaxTicks,
                 .replayRecorder = recorder,
                 .overlay = overlay});
@@ -579,4 +591,88 @@ TEST(ReplayDeterminismTest, TheIdleMotionGateShortensTheRecording)
     // The press, the drag, the release and the scroll all stay.
     EXPECT_EQ(inputEventsIn(ungated.recorded), 21U);
     EXPECT_EQ(inputEventsIn(gated.recorded), 8U);
+}
+
+// A spawner is a pure function of the tick and the state.
+// So the walkers it produced have to come back identically.
+namespace
+{
+    [[nodiscard]] std::vector<TickEvent> buildingSession()
+    {
+        const InputEventCodec codec;
+        const auto palette =
+            pixelOn(antwika::game::widgets::toolWidget(
+                antwika::game::BuildTool::House));
+
+        std::vector<TickEvent> events{
+            TickEvent{
+                .tick = 0,
+                .event = codec.encode(
+                    antwika::input::PointerMoved{.position = palette})},
+            TickEvent{
+                .tick = 0,
+                .event = codec.encode(
+                    PointerButtonPressed{
+                        .button = MouseButton::Left,
+                        .position = palette})}};
+
+        // A road beside where the houses go, laid with the road tool.
+        // The palette is on House now, so the road comes first.
+        events.insert(
+            events.begin(),
+            TickEvent{
+                .tick = 0,
+                .event = pressAt(Cell{.x = 4, .y = 3}, MouseButton::Left)});
+        events.insert(
+            events.begin() + 1,
+            TickEvent{
+                .tick = 0,
+                .event = pressAt(Cell{.x = 5, .y = 3}, MouseButton::Left)});
+
+        // Two houses, placed a tick apart, so their cadences differ.
+        events.push_back(
+            TickEvent{
+                .tick = 1,
+                .event = pressAt(Cell{.x = 4, .y = 2}, MouseButton::Left)});
+        events.push_back(
+            TickEvent{
+                .tick = 2,
+                .event = pressAt(Cell{.x = 5, .y = 2}, MouseButton::Left)});
+
+        events.push_back(
+            TickEvent{
+                .tick = 30,
+                .event = Event{.name = antwika::engine::events::kStop}});
+
+        return events;
+    }
+} // namespace
+
+TEST(ReplayDeterminismTest, ABuildingsWalkersAreRegeneratedRatherThanStored)
+{
+    auto script = buildingSession();
+    ReplaySource liveSource(script);
+    const auto live = runWithToolbar(liveSource);
+
+    // Two houses, and both of them sent somebody out.
+    ASSERT_EQ(live.summary.buildings.size(), 2U);
+    EXPECT_GE(live.summary.walkers.size(), 2U);
+
+    // Nothing of the spawn is on the wire; every event is input or tick.
+    for (const auto &event : live.recorded)
+    {
+        EXPECT_TRUE(
+            event.event.name.starts_with("input.")
+            || event.event.name == antwika::engine::events::kTick
+            || event.event.name == antwika::engine::events::kStop);
+    }
+
+    const ScratchFile file("antwika-game-spawn.replay");
+    antwika::replay::saveReplayFile(live.recorded, file.name());
+    auto loaded = antwika::replay::loadReplayFile(file.name());
+
+    ReplaySource replayedSource(std::move(loaded));
+    const auto replayed = runWithToolbar(replayedSource);
+
+    EXPECT_EQ(replayed.summary, live.summary);
 }

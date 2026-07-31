@@ -20,7 +20,9 @@ namespace antwika::input
      * Deliberately says nothing about windows. Reading input does not
      * require opening one, and this library does not depend on
      * antwika::gfx, so an event does not report which surface it arrived
-     * at -- see docs/history/input-plan.md for what that defers.
+     * at. That defers multi-window input routing, which would need a
+     * second id vocabulary alongside gfx::WindowId and is worth designing
+     * against a real two-window application rather than guessing at.
      */
     class IInputBackend
     {

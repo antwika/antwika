@@ -80,8 +80,12 @@ namespace antwika::gfx_demo
 
         const Size logoSize = logo.size();
         const std::uint32_t badge = canvas.height / 8;
-        const auto centred =
-            static_cast<std::int32_t>((canvas.width - badge) / 2);
+
+        // A canvas far taller than it is wide gets a wider badge.
+        // An unsigned subtraction there wraps to four billion.
+        // So a badge that wide goes hard against the left edge.
+        const auto centred = static_cast<std::int32_t>(
+            canvas.width > badge ? (canvas.width - badge) / 2 : 0);
 
         // The whole texture, untinted, above the bars.
         renderer.drawTexture(

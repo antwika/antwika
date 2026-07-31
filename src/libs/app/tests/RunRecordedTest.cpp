@@ -168,6 +168,40 @@ TEST(RunRecordedTest, SavesWhatAFailedRunGotTo)
     EXPECT_EQ(loadReplayFile(file.name()), std::vector{kScripted});
 }
 
+// Saving is the last thing a --record run does.
+// It throws when the path will not take the bytes.
+// That throw used to leave runRecorded() entirely.
+// A main() has no catch of its own, by design.
+// So a mistyped --record path terminated the process in silence.
+TEST(RunRecordedTest, ReportsARecordingItCouldNotSave)
+{
+    const std::string path =
+        (std::filesystem::temp_directory_path() / "antwika-no-such-dir"
+         / "out.json")
+            .string();
+    std::array<char *, 3> argv{
+        const_cast<char *>("antwika_test"),
+        const_cast<char *>("--record"),
+        const_cast<char *>(path.c_str())};
+    std::ostringstream errors;
+
+    bool ran = false;
+    const int exitCode = runRecorded(
+        3,
+        argv.data(),
+        "antwika_test",
+        [&ran](const RecordedRun &) { ran = true; },
+        {},
+        errors);
+
+    // The run itself happened; only its recording could not be kept.
+    EXPECT_TRUE(ran);
+    EXPECT_EQ(exitCode, EXIT_FAILURE);
+    EXPECT_THAT(errors.str(), testing::HasSubstr("antwika_test: "));
+    EXPECT_THAT(errors.str(), testing::HasSubstr("could not open"));
+    EXPECT_THAT(errors.str(), testing::HasSubstr(path));
+}
+
 TEST(RunRecordedTest, HandsTheBodyThePathToReplay)
 {
     std::array<char *, 3> argv{
@@ -287,6 +321,71 @@ TEST(RunRecordedTest, AcceptsAFlagOfTheCallersOwn)
     EXPECT_EQ(exitCode, EXIT_SUCCESS);
     EXPECT_EQ(seen, "40");
     EXPECT_TRUE(errors.str().empty());
+}
+
+// Every app parsed --help and no app printed anything.
+// The flag tables carry a help string each, rendered nowhere.
+// So `antwika_game --help` used to start a session instead.
+TEST(RunRecordedTest, AnswersHelpWithoutRunningTheBody)
+{
+    std::array<char *, 2> argv{
+        const_cast<char *>("antwika_test"),
+        const_cast<char *>("--help")};
+    std::ostringstream errors;
+    std::ostringstream help;
+    constexpr std::array extra{antwika::replay::FlagSpec{
+        .name = "--tick-delay-ms",
+        .valueName = "<n>",
+        .help = "Hold each frame."}};
+
+    bool ran = false;
+    const int exitCode = runRecorded(
+        2,
+        argv.data(),
+        "antwika_test",
+        [&ran](const RecordedRun &) { ran = true; },
+        extra,
+        errors,
+        help);
+
+    EXPECT_FALSE(ran);
+    EXPECT_EQ(exitCode, EXIT_SUCCESS);
+    EXPECT_TRUE(errors.str().empty());
+
+    // One table, so the app's own flag is in it beside the shared ones.
+    // And --help documents itself.
+    EXPECT_THAT(help.str(), testing::HasSubstr("Usage: antwika_test"));
+    EXPECT_THAT(help.str(), testing::HasSubstr("--record <path>"));
+    EXPECT_THAT(help.str(), testing::HasSubstr("--replay <path>"));
+    EXPECT_THAT(help.str(), testing::HasSubstr("--tick-delay-ms <n>"));
+    EXPECT_THAT(help.str(), testing::HasSubstr("Hold each frame."));
+    EXPECT_THAT(help.str(), testing::HasSubstr("--help"));
+}
+
+// Asking what the flags are is not a session, so it records none.
+TEST(RunRecordedTest, WritesNoRecordingWhenHelpWasAskedFor)
+{
+    const TempFile file("antwika-app-help.json");
+    const std::string path = file.name();
+    std::array<char *, 4> argv{
+        const_cast<char *>("antwika_test"),
+        const_cast<char *>("--record"),
+        const_cast<char *>(path.c_str()),
+        const_cast<char *>("--help")};
+    std::ostringstream errors;
+    std::ostringstream help;
+
+    const int exitCode = runRecorded(
+        4,
+        argv.data(),
+        "antwika_test",
+        [](const RecordedRun &) { FAIL() << "the body should not run"; },
+        {},
+        errors,
+        help);
+
+    EXPECT_EQ(exitCode, EXIT_SUCCESS);
+    EXPECT_FALSE(std::filesystem::exists(path));
 }
 
 TEST(RunRecordedTest, ReportsAFlagNoTableKnows)

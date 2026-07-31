@@ -1,10 +1,11 @@
 #include "antwika/app/RunRecorded.hpp"
 
 #include <cstdlib>
-#include <exception>
 
 #include <antwika/event/Event.hpp>
 #include <antwika/event/TickEventRecorder.hpp>
+
+#include "antwika/app/RunGuarded.hpp"
 
 namespace antwika::app
 {
@@ -32,7 +33,8 @@ namespace antwika::app
         std::string_view name,
         const std::function<void(const RecordedRun &)> &body,
         std::span<const FlagSpec> extraFlags,
-        std::ostream &errors)
+        std::ostream &errors,
+        std::ostream &help)
     {
         DiscardedEvents eventSink;
         TickEventRecorder replayRecorder;
@@ -41,50 +43,75 @@ namespace antwika::app
         // Parsing itself is inside the try, deliberately.
         std::optional<std::string> recordPath;
 
-        int exitCode = EXIT_SUCCESS;
-        try
-        {
-            // A refused flag is a failed run, not a crash.
-            // Parsed outside the try it reaches std::terminate.
-            // That unwinds nothing and names no program.
-            //
-            // One parse, against one table.
-            // A second pass refuses whatever the first pass accepted.
-            std::vector<FlagSpec> table(
-                antwika::replay::replayCliFlags().begin(),
-                antwika::replay::replayCliFlags().end());
-            table.insert(table.end(), extraFlags.begin(), extraFlags.end());
-
-            const CommandLine parsed =
-                antwika::replay::parseCommandLine(argc, argv, table);
-            const auto options =
-                antwika::replay::replayCliOptionsFrom(parsed);
-            recordPath = options.recordPath;
-
-            RecordedRun run{
-                .options = options,
-                .commandLine = parsed,
-                .eventSink = eventSink,
-                .replayRecorder = std::nullopt};
-            if (options.recordPath)
+        int exitCode = runGuarded(
+            name,
+            [&]
             {
-                run.replayRecorder = replayRecorder;
-            }
+                // A refused flag is a failed run, not a crash.
+                // Parsed outside the guard it reaches std::terminate.
+                // That unwinds nothing and names no program.
+                //
+                // One parse, against one table.
+                // A second pass refuses whatever the first accepted.
+                std::vector<FlagSpec> table(
+                    antwika::replay::replayCliFlags().begin(),
+                    antwika::replay::replayCliFlags().end());
+                table.insert(
+                    table.end(), extraFlags.begin(), extraFlags.end());
 
-            body(run);
-        }
-        catch (const std::exception &error)
-        {
-            errors << name << ": " << error.what() << '\n';
-            exitCode = EXIT_FAILURE;
-        }
+                const CommandLine parsed =
+                    antwika::replay::parseCommandLine(argc, argv, table);
+                const auto options =
+                    antwika::replay::replayCliOptionsFrom(parsed);
 
-        // After the catch, so a run that failed still saves what it got.
+                // --help is a question, not a run.
+                // Answering it starts no session.
+                // It writes no recording either.
+                // recordPath is left unset, so the epilogue skips.
+                if (options.helpRequested)
+                {
+                    help << antwika::replay::helpText(name, table);
+                    return;
+                }
+
+                recordPath = options.recordPath;
+
+                RecordedRun run{
+                    .options = options,
+                    .commandLine = parsed,
+                    .eventSink = eventSink,
+                    .replayRecorder = std::nullopt};
+                if (options.recordPath)
+                {
+                    run.replayRecorder = replayRecorder;
+                }
+
+                body(run);
+            },
+            errors);
+
+        // After the guard, so a run that failed still saves what it got.
         // A run refused at the command line has nothing to save.
+        //
+        // Saving throws on its own account too.
+        // An unwritable path, or a full disk.
+        // Unguarded, that throw leaves runRecorded() entirely.
+        // A main() has no catch of its own, by design.
+        // So the process terminated rather than saying which path.
         if (recordPath)
         {
-            antwika::replay::saveReplayFile(
-                replayRecorder.getEvents(), *recordPath);
+            const int saveCode = runGuarded(
+                name,
+                [&]
+                {
+                    antwika::replay::saveReplayFile(
+                        replayRecorder.getEvents(), *recordPath);
+                },
+                errors);
+            if (saveCode != EXIT_SUCCESS)
+            {
+                exitCode = saveCode;
+            }
         }
 
         return exitCode;

@@ -11,19 +11,23 @@ namespace antwika::poker
 
     TableRenderSink::TableRenderSink(
         IWindow &window,
+        Size canvas,
         const TableScene &scene,
         const Table &table,
         const CashGame &game,
         ISleeper &sleeper,
         std::chrono::milliseconds framePeriod,
-        std::string tableName)
+        std::string tableName,
+        const ITexture *atlas)
         : window(window),
+          canvas(canvas),
           scene(scene),
           table(table),
           game(game),
           sleeper(sleeper),
           framePeriod(framePeriod),
-          tableName(std::move(tableName))
+          tableName(std::move(tableName)),
+          atlas(atlas)
     {
     }
 
@@ -46,7 +50,10 @@ namespace antwika::poker
 
         auto &renderer = window.renderer();
         scene.draw(
-            renderer, window.size(), snapshotOf(table, game, tableName));
+            renderer,
+            canvas,
+            snapshotOf(table, game, tableName),
+            atlas);
         renderer.present();
 
         // Poker at one step per tick is unwatchable without this.

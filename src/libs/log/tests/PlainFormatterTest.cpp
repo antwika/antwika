@@ -8,7 +8,7 @@
 
 using antwika::log::PlainFormatter;
 
-TEST(PlainFormatterTest, Append)
+TEST(PlainFormatterTest, Format_RendersTheTimestampLevelAndMessage)
 {
     std::chrono::system_clock::time_point time{};
     std::string message = "Message";

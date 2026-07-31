@@ -68,7 +68,7 @@ TEST_F(WalkerSystemTest, Update_AdvancesOneCellAlongAStraightPath)
     EXPECT_EQ(world.get<Walker>(walker).facing, Direction::East);
 }
 
-TEST_F(WalkerSystemTest, Update_AdvancesAgainOnTheFollowingTick)
+TEST_F(WalkerSystemTest, Update_StaysPutOnTheTickAfterAStep)
 {
     layPath({{.x = 0, .y = 0}, {.x = 1, .y = 0}, {.x = 2, .y = 0}});
     const auto walker = addWalker(Cell{.x = 0, .y = 0}, Direction::East);
@@ -76,7 +76,44 @@ TEST_F(WalkerSystemTest, Update_AdvancesAgainOnTheFollowingTick)
     tick();
     tick();
 
+    // A step takes two ticks, so the second one only counts down.
+    EXPECT_EQ(world.get<Cell>(walker), (Cell{.x = 1, .y = 0}));
+    EXPECT_EQ(world.get<Walker>(walker).facing, Direction::East);
+}
+
+TEST_F(WalkerSystemTest, Update_AdvancesAgainOnEveryOtherTick)
+{
+    layPath({{.x = 0, .y = 0}, {.x = 1, .y = 0}, {.x = 2, .y = 0}});
+    const auto walker = addWalker(Cell{.x = 0, .y = 0}, Direction::East);
+
+    tick();
+    tick();
+    tick();
+
     EXPECT_EQ(world.get<Cell>(walker), (Cell{.x = 2, .y = 0}));
+}
+
+// The cadence is the walker's own, not a modulus on the tick number.
+TEST_F(WalkerSystemTest, Update_KeepsEachWalkersOwnCadence)
+{
+    layPath(
+        {{.x = 0, .y = 0},
+         {.x = 1, .y = 0},
+         {.x = 2, .y = 0},
+         {.x = 3, .y = 0},
+         {.x = 4, .y = 0}});
+    const auto early = addWalker(Cell{.x = 0, .y = 0}, Direction::East);
+
+    tick();
+
+    // Dropped a tick after the first, so it steps on the other ticks.
+    const auto late = addWalker(Cell{.x = 3, .y = 0}, Direction::East);
+
+    tick();
+    tick();
+
+    EXPECT_EQ(world.get<Cell>(early), (Cell{.x = 2, .y = 0}));
+    EXPECT_EQ(world.get<Cell>(late), (Cell{.x = 4, .y = 0}));
 }
 
 TEST_F(WalkerSystemTest, Update_TakesTheRightArmAtATJunction)

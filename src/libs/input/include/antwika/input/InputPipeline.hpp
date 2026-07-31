@@ -1,5 +1,6 @@
 #pragma once
 
+#include <functional>
 #include <optional>
 #include <vector>
 
@@ -13,6 +14,8 @@
 #include "antwika/input/IdleMotionSource.hpp"
 #include "antwika/input/Key.hpp"
 #include "antwika/input/LiveInputSource.hpp"
+#include "antwika/input/PointerHintChannel.hpp"
+#include "antwika/input/PointerHintSource.hpp"
 #include "antwika/input/StopOnKeySource.hpp"
 
 namespace antwika::input
@@ -55,12 +58,32 @@ namespace antwika::input
          * @brief Whether to hold back pointer movement that arrives while
          * no button is held.
          *
-         * **Not for an application that draws anything following a
-         * free-moving pointer**, for the reason IdleMotionSource gives:
-         * a hover highlight updates only when a button, a wheel or a key
-         * arrives.
+         * An application that draws something following a free-moving
+         * pointer -- a hover highlight, a placement ghost, a custom
+         * cursor -- must not draw it from the tick stream while this is
+         * on, because between two clicks the movements are not in that
+         * stream to draw from. It should name a pointerHint below and
+         * draw from that instead, which is what the channel exists for
+         * and what makes the two settings a pair rather than a choice.
          */
         bool thinIdleMotion = false;
+
+        /**
+         * @brief Where to publish the pointer's position for something
+         * to draw from, if anywhere.
+         *
+         * Off unless an application names a channel, so nothing is
+         * attached, nothing observes, and a run that names none records
+         * byte for byte what it recorded before this existed.
+         *
+         * **What arrives there may decide what is drawn and nothing
+         * else**, for the reason PointerHintChannel gives at length: it
+         * is the one value in the system a replay does not reproduce, so
+         * anything a replay *does* reproduce must not be a function of
+         * it.
+         */
+        std::optional<std::reference_wrapper<PointerHintChannel>>
+            pointerHint = std::nullopt;
 
         /**
          * @brief The key, if any, whose press ends the run.
@@ -74,8 +97,9 @@ namespace antwika::input
      *
      * The stack is, innermost first:
      *
-     *     inner -> LiveInputSource -> CoalescingPointerSource
-     *           -> IdleMotionSource -> StopOnKeySource
+     *     inner -> LiveInputSource -> PointerHintSource
+     *           -> CoalescingPointerSource -> IdleMotionSource
+     *           -> StopOnKeySource
      *
      * and every step of that order carries meaning that used to live in
      * a comment in a main.cpp.
@@ -86,6 +110,13 @@ namespace antwika::input
      * replays consistently -- and thins nothing, because it only ever
      * sees the file. That was a real bug, fixed in 277c54b, and it is the
      * reason this class exists rather than a comment saying to be careful.
+     *
+     * **PointerHintSource comes straight after it, so no thinning
+     * decorator can hide a movement from the hint channel.** What it
+     * publishes is what the device reported, not what survived the
+     * thinning -- which is the entire reason an application can gate its
+     * recording and still draw a hover. It alters no event, so where it
+     * sits changes nothing about the stream; only what it can see.
      *
      * **The thinning decorators are attached whether or not a device is
      * read.** A hand-authored file with several movements in one tick
@@ -102,6 +133,11 @@ namespace antwika::input
      * place a reduction may happen: doing it downstream would make the
      * recording disagree with the run that wrote it, and doing it in a
      * backend would hide it behind the seam.
+     *
+     * The hint channel does not qualify that rule, because it is not a
+     * reduction of anything. Nothing leaves the stream on its account;
+     * a second, unrecorded copy of a position is set beside the stream,
+     * for drawing and for nothing else.
      */
     class InputPipeline final : public IReplaySource
     {
@@ -145,6 +181,7 @@ namespace antwika::input
         // Each holds a reference into the one engaged before it.
         // Neither copyable nor movable, so those references stay put.
         std::optional<LiveInputSource> live;
+        std::optional<PointerHintSource> hinting;
         std::optional<CoalescingPointerSource> coalescing;
         std::optional<IdleMotionSource> idle;
         std::optional<StopOnKeySource> stopping;

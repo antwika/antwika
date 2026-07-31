@@ -204,6 +204,29 @@ TEST_F(DemoSceneTest, Draw_BlitsTheWholeLogoUntintedAboveTheBars)
     scene.draw(renderer, kCanvas, logo, scene.describe(kCanvas).commands);
 }
 
+// The badge is an eighth of the height.
+// So a tall narrow window makes it wider than the canvas.
+// The centring subtraction is unsigned and used to wrap there.
+TEST_F(DemoSceneTest, Draw_KeepsTheBadgeOnTheCanvasWhenItIsTooWide)
+{
+    EXPECT_CALL(renderer, clear(_));
+    EXPECT_CALL(renderer, drawTexture(_, _, _, kWarmTint));
+
+    // 900/8 is a 112px badge across a canvas 100px wide.
+    EXPECT_CALL(
+        renderer,
+        drawTexture(
+            Ref(logo),
+            _,
+            Rect{
+                .origin = {.x = 0, .y = 56},
+                .size = {.width = 112, .height = 112}},
+            kUntinted));
+
+    scene.draw(
+        renderer, Size{.width = 100, .height = 900}, logo, DrawList{});
+}
+
 TEST_F(DemoSceneTest, Draw_BlitsTheLogosLeftHalfTintedBelowTheBars)
 {
     EXPECT_CALL(renderer, clear(_));

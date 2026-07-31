@@ -19,6 +19,8 @@ antwika_add_library(
         src/Mouse.cpp
         src/MouseButton.cpp
         src/NullInputBackend.cpp
+        src/PointerHintChannel.cpp
+        src/PointerHintSource.cpp
         src/StopOnKeySource.cpp
     DEPENDS
         antwika::engine

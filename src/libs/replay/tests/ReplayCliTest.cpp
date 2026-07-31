@@ -16,7 +16,6 @@ using antwika::event::Event;
 using antwika::event::TickEvent;
 using antwika::replay::CommandLineError;
 using antwika::replay::loadReplayFile;
-using antwika::replay::parseReplayCliOptions;
 using antwika::replay::ReplayFormatError;
 using antwika::replay::saveReplayFile;
 
@@ -65,15 +64,25 @@ namespace
         }
         return argv;
     }
+
+    // The composition every caller makes: one parse against one table.
+    // app::runRecorded() makes the same one.
+    // It appends the app's own flags to replayCliFlags() first.
+    antwika::replay::ReplayCliOptions optionsFrom(
+        const std::vector<std::string> &args)
+    {
+        auto argv = toArgv(args);
+        return antwika::replay::replayCliOptionsFrom(
+            antwika::replay::parseCommandLine(
+                static_cast<int>(argv.size()),
+                argv.data(),
+                antwika::replay::replayCliFlags()));
+    }
 } // namespace
 
 TEST(ReplayCliTest, ParseReturnsNoPathsWhenNoFlagsAreGiven)
 {
-    std::vector<std::string> args{"antwika_app"};
-    auto argv = toArgv(args);
-
-    const auto options = parseReplayCliOptions(
-        static_cast<int>(argv.size()), argv.data());
+    const auto options = optionsFrom({"antwika_app"});
 
     EXPECT_FALSE(options.recordPath.has_value());
     EXPECT_FALSE(options.replayPath.has_value());
@@ -81,12 +90,8 @@ TEST(ReplayCliTest, ParseReturnsNoPathsWhenNoFlagsAreGiven)
 
 TEST(ReplayCliTest, ParseReadsBothRecordAndReplayPaths)
 {
-    std::vector<std::string> args{
-        "antwika_app", "--record", "out.json", "--replay", "in.json"};
-    auto argv = toArgv(args);
-
-    const auto options = parseReplayCliOptions(
-        static_cast<int>(argv.size()), argv.data());
+    const auto options = optionsFrom(
+        {"antwika_app", "--record", "out.json", "--replay", "in.json"});
 
     ASSERT_TRUE(options.recordPath.has_value());
     EXPECT_EQ(*options.recordPath, "out.json");
@@ -96,23 +101,15 @@ TEST(ReplayCliTest, ParseReadsBothRecordAndReplayPaths)
 
 TEST(ReplayCliTest, ParseRefusesATrailingReplayFlagMissingItsValue)
 {
-    std::vector<std::string> args{"antwika_app", "--replay"};
-    auto argv = toArgv(args);
-
     EXPECT_THROW(
-        (void)parseReplayCliOptions(
-            static_cast<int>(argv.size()), argv.data()),
+        (void)optionsFrom({"antwika_app", "--replay"}),
         CommandLineError);
 }
 
 TEST(ReplayCliTest, ParseRefusesATrailingRecordFlagMissingItsValue)
 {
-    std::vector<std::string> args{"antwika_app", "--record"};
-    auto argv = toArgv(args);
-
     EXPECT_THROW(
-        (void)parseReplayCliOptions(
-            static_cast<int>(argv.size()), argv.data()),
+        (void)optionsFrom({"antwika_app", "--record"}),
         CommandLineError);
 }
 
@@ -120,22 +117,14 @@ TEST(ReplayCliTest, ParseRefusesATrailingRecordFlagMissingItsValue)
 // `--replya demo.json` used to start an empty session in silence.
 TEST(ReplayCliTest, ParseRefusesAMisspeltFlag)
 {
-    std::vector<std::string> args{"antwika_app", "--replya", "demo.json"};
-    auto argv = toArgv(args);
-
     EXPECT_THROW(
-        (void)parseReplayCliOptions(
-            static_cast<int>(argv.size()), argv.data()),
+        (void)optionsFrom({"antwika_app", "--replya", "demo.json"}),
         CommandLineError);
 }
 
 TEST(ReplayCliTest, ParseReportsThatHelpWasAskedFor)
 {
-    std::vector<std::string> args{"antwika_app", "--help"};
-    auto argv = toArgv(args);
-
-    const auto options = parseReplayCliOptions(
-        static_cast<int>(argv.size()), argv.data());
+    const auto options = optionsFrom({"antwika_app", "--help"});
 
     EXPECT_TRUE(options.helpRequested);
 }

@@ -42,7 +42,13 @@ namespace antwika::ecs
             matching = smallestEntitiesOf(storages...);
             std::erase_if(
                 matching,
-                [&](Entity entity)
+                // The marker is for the function record, not a branch.
+                // gcov emits one such record per instantiation.
+                // An inlining caller leaves this copy uncalled.
+                // It therefore reports zero.
+                // Every line inside it is covered all the same.
+                // See docs/confirming-unreachable-branches.md, (d).
+                [&](Entity entity) // GCOVR_EXCL_LINE
                 {
                     return !(
                         ... && storages->contains(entity)); // GCOVR_EXCL_LINE
@@ -74,7 +80,9 @@ namespace antwika::ecs
             std::vector<Entity> smallest;
             std::size_t smallestSize = std::numeric_limits<std::size_t>::max();
 
-            auto consider = [&](auto *storage)
+            // An uncalled out-of-line copy, exactly as above.
+            // See docs/confirming-unreachable-branches.md, (d).
+            auto consider = [&](auto *storage) // GCOVR_EXCL_LINE
             {
                 const auto entities = storage->entities();
                 if (entities.size() < smallestSize) // GCOVR_EXCL_LINE

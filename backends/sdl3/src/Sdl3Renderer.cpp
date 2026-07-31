@@ -10,6 +10,7 @@
 #include <antwika/gfx/Blit.hpp>
 #include <antwika/gfx/GfxError.hpp>
 #include <antwika/gfx/Glyphs.hpp>
+#include <antwika/gfx/TextRaster.hpp>
 #include <antwika/log/Level.hpp>
 
 #include "Sdl3Texture.hpp"
@@ -122,38 +123,22 @@ namespace antwika::gfx::sdl3
             return;
         }
 
-        const auto step = static_cast<float>(scale);
         std::vector<SDL_FRect> pixels;
         pixels.reserve(text.size() * kGlyphWidth * kGlyphHeight);
 
-        for (std::size_t cell = 0; cell < text.size(); ++cell)
-        {
-            const auto left =
-                static_cast<float>(origin.x)
-                + static_cast<float>(cell * kGlyphAdvance * scale);
-
-            for (std::uint32_t row = 0; row < kGlyphHeight; ++row)
-            {
-                const auto bits = glyphRow(text[cell], row);
-
-                for (std::uint32_t column = 0; column < kGlyphWidth;
-                     ++column)
-                {
-                    const auto shift = kGlyphWidth - 1 - column;
-                    if (((bits >> shift) & 1U) == 0)
-                    {
-                        continue;
-                    }
-
-                    pixels.push_back(SDL_FRect{
-                        .x = left + static_cast<float>(column * scale),
-                        .y = static_cast<float>(origin.y)
-                             + static_cast<float>(row * scale),
-                        .w = step,
-                        .h = step});
-                }
-            }
-        }
+        // Where the lit pixels are is gfx's answer, not this backend's.
+        // Every backend has to draw the same glyphs in the same places.
+        forEachGlyphPixel(
+            origin,
+            text,
+            scale,
+            [&pixels](Rect pixel) {
+                pixels.push_back(SDL_FRect{
+                    .x = static_cast<float>(pixel.origin.x),
+                    .y = static_cast<float>(pixel.origin.y),
+                    .w = static_cast<float>(pixel.size.width),
+                    .h = static_cast<float>(pixel.size.height)});
+            });
 
         if (pixels.empty())
         {

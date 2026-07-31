@@ -10,16 +10,15 @@ from pathlib import Path
 
 DEFAULT_ROOT = Path(__file__).resolve().parent.parent
 
-# Every markdown document that is still maintained.
-# docs/*.md is deliberately not recursive: the finished plans under
-# docs/history/ are a record of what was decided rather than prose
-# anyone edits, so reflowing them would churn a frozen document.
+# Every markdown document in the repository.
+# docs/ holds only documents that are still normative, so all of it is
+# prose somebody still edits and all of it is checked.
 MARKDOWN_GLOBS = (
     "README.md",
     "CLAUDE.md",
     "REQUIREMENTS.md",
     "blog/*.md",
-    "docs/*.md",
+    "docs/**/*.md",
 )
 # Backends live outside src/ and so outside the coverage gate.
 # The style rules still apply to them.

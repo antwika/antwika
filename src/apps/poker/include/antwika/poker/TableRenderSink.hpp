@@ -5,7 +5,9 @@
 
 #include <antwika/event/ITickEventSink.hpp>
 #include <antwika/event/TickEvent.hpp>
+#include <antwika/gfx/ITexture.hpp>
 #include <antwika/gfx/IWindow.hpp>
+#include <antwika/gfx/Size.hpp>
 #include <antwika/holdem/Table.hpp>
 #include <antwika/time/ISleeper.hpp>
 
@@ -17,7 +19,9 @@ namespace antwika::poker
 
     using antwika::event::ITickEventSink;
     using antwika::event::TickEvent;
+    using antwika::gfx::ITexture;
     using antwika::gfx::IWindow;
+    using antwika::gfx::Size;
     using antwika::holdem::Table;
     using antwika::time::ISleeper;
 
@@ -39,6 +43,11 @@ namespace antwika::poker
         /**
          * @brief Construct the sink over its collaborators.
          * @param window Drawn into; must outlive this object.
+         * @param canvas The size the window was asked for.
+         * The configured size rather than the size the window reports,
+         * for the reason every other scene here lays out against one.
+         * A layout is a function of its canvas, and the art is now a
+         * function of that layout.
          * @param scene Turns a snapshot into drawing calls.
          * @param table Read for the state to draw.
          * @param game Read for who is sitting where.
@@ -46,15 +55,19 @@ namespace antwika::poker
          * @param framePeriod How long to hold each frame; zero draws as
          * fast as the ticks arrive.
          * @param tableName The name the table is announced under.
+         * @param atlas The art the table is drawn from, or null to draw
+         * only what antwika::ui can; must outlive this object.
          */
         TableRenderSink(
             IWindow &window,
+            Size canvas,
             const TableScene &scene,
             const Table &table,
             const CashGame &game,
             ISleeper &sleeper,
             std::chrono::milliseconds framePeriod,
-            std::string tableName);
+            std::string tableName,
+            const ITexture *atlas = nullptr);
 
         TableRenderSink(const TableRenderSink &) = delete;
         TableRenderSink(TableRenderSink &&) = delete;
@@ -77,12 +90,14 @@ namespace antwika::poker
 
     private:
         IWindow &window;
+        Size canvas;
         const TableScene &scene;
         const Table &table;
         const CashGame &game;
         ISleeper &sleeper;
         std::chrono::milliseconds framePeriod;
         std::string tableName;
+        const ITexture *atlas;
     };
 
 } // namespace antwika::poker

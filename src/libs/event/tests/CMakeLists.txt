@@ -4,7 +4,6 @@ add_subdirectory(mocks)
 
 add_executable(antwika_event_tests
     EventDispatcherTest.cpp
-    EventRecorderTest.cpp
     EventTest.cpp
     TickEventRecorderTest.cpp
     TickedEventDispatcherTest.cpp

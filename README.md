@@ -5,6 +5,11 @@
 
 A C++23 game project built with CMake, Conan, and GoogleTest, developed inside VS Code Dev Containers for a fully reproducible toolchain across Linux (GNU/LLVM) and Windows (MinGW).
 
+## Wiki
+
+[`wiki/Home.md`](wiki/Home.md) is the project wiki: a page per library and per app, plus architecture, getting-started, contributing and glossary pages.
+It is plain markdown with relative links, so it reads on GitHub and in an editor with no tooling.
+
 ## Project structure
 
 ```
@@ -24,7 +29,6 @@ src/
     ├── holdem/
     ├── input/
     ├── log/
-    ├── reducer/
     ├── replay/
     ├── scheduler/
     ├── time/
@@ -41,7 +45,7 @@ Each library and app has its own `CMakeLists.txt`, `include/`, `src/`, and `test
 `backends/` sits outside `src/` and holds the concrete graphics and input frameworks, one directory per framework, exactly one of which is compiled into a given build.
 See [`docs/STYLE_GUIDE.md`](docs/STYLE_GUIDE.md) for the project's C++/CMake/Python coding conventions.
 
-`blog/` holds write-ups about notable changes to the project — see [`blog/001-building-a-deterministic-replay-system.md`](blog/001-building-a-deterministic-replay-system.md) for the design and requirements behind the replay system below, and [`blog/003-an-entity-component-system-with-nowhere-to-hide-a-mutation.md`](blog/003-an-entity-component-system-with-nowhere-to-hide-a-mutation.md) for the `antwika::ecs` and `antwika::reducer` libraries under `libs/ecs/` and `libs/reducer/`.
+`blog/` holds write-ups about notable changes to the project — see [`blog/001-building-a-deterministic-replay-system.md`](blog/001-building-a-deterministic-replay-system.md) for the design and requirements behind the replay system below, and [`blog/003-an-entity-component-system-with-nowhere-to-hide-a-mutation.md`](blog/003-an-entity-component-system-with-nowhere-to-hide-a-mutation.md) for the `antwika::ecs` library under `libs/ecs/`.
 
 ## Quick start
 
@@ -102,6 +106,8 @@ conan install . -of build-sdl3-input -o gfx_backend=null -o input_backend=sdl3 .
 Naming two different real frameworks is refused at configure time, because they would fight over one operating-system event queue and whichever polled second would silently lose events.
 `build/bin/antwika_gfx_demo` opens a window and draws until you close it -- under the `null` backend there is nothing to close, so that build runs until interrupted.
 It draws three bars and blits a PNG logo twice: once whole and untinted, once left-half-only and tinted, which is what a source rectangle and a tint look like side by side.
+`build/bin/antwika_gfx3d_demo` is its counterpart for the 3D half: a cube drawn through `gfx::IRenderer3D`, turned by the tick count rather than by a clock, with a caption drawn over it through the 2D calls.
+It stops after a fixed number of frames, because the `null` backend reports no close and that is the build every CI leg produces.
 The selection lives in the untracked `.vscode/gfx-backend`, which makes it yours rather than the repository's.
 
 ## Replays
@@ -116,7 +122,7 @@ build/bin/antwika_game --replay demo.replay   # reload it, reproducing the run
 
 Both modes go through the same `antwika::game::bootstrap()` entry point and the same fixed-timestep tick loop (`antwika::replay::EngineLoop`) — replay mode only differs in where each tick's events come from.
 `apps/game` itself is an isometric grid you build on with the mouse: left-click lays a path, right-click drops a walker onto it, middle-drag pans and the wheel zooms.
-Walkers advance a cell per tick, preferring a right turn at an intersection and reversing at a dead end.
+Walkers advance a cell every second tick, preferring a right turn at an intersection and reversing at a dead end.
 The ground, the roads and the walkers are all blitted from one texture atlas (`src/apps/game/assets/atlas.png`), so the scene draws no shape of its own: the grid lines are painted into the ground tile's own edges, and a road's sixteen tiles are addressed by which neighbours it joins, which makes a junction a lookup rather than four stubs stepped out by hand.
 That picture is drawn by `scripts/generate_game_atlas.py` from the same slot numbers `antwika/game/TileAtlas.hpp` addresses it with, and CI fails if the committed one has drifted from the generator.
 It starts empty and loads nothing unless `--replay` asks it to, and runs until you press Escape or close the window -- both of which are input, so both end up in a recording.

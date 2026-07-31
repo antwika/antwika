@@ -5,17 +5,26 @@
 # gfx has three things to say.
 find_package(stb REQUIRED)
 
+# glm is header-only and PUBLIC: Math3D.hpp aliases its vector and
+# matrix types rather than wrapping them, so anything including a gfx
+# 3D header includes glm's.
+find_package(glm REQUIRED)
+
 add_library(antwika_gfx
     src/Bitmap.cpp
     src/Blit.cpp
+    src/Camera3D.cpp
     src/Glyphs.cpp
+    src/MeshData.cpp
     src/NullBackend.cpp
+    src/NullMesh.cpp
     src/NullRenderer.cpp
     src/NullTexture.cpp
     src/NullWindow.cpp
     src/PngReader.cpp
     src/StbImage.cpp
     src/TextLayout.cpp
+    src/Transform.cpp
 )
 
 add_library(antwika::gfx ALIAS antwika_gfx)
@@ -39,6 +48,7 @@ target_include_directories(antwika_gfx
 target_link_libraries(antwika_gfx
     PUBLIC
         antwika::log
+        glm::glm
     PRIVATE
         stb::stb
 )

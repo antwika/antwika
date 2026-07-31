@@ -105,6 +105,9 @@ FIRST_ROAD_SLOT = integer_constant(
 ROAD_SLOT_COUNT = integer_constant(
     ATLAS_SOURCE, "kRoadSlotCount", TILE_ATLAS_HEADER
 )
+BUILDING_SLOT_COUNT = integer_constant(
+    ATLAS_SOURCE, "kBuildingSlotCount", TILE_ATLAS_HEADER
+)
 
 # The directions the game has, in the order linkBit() numbers them.
 DIRECTIONS = enumerators(DIRECTION_SOURCE, "Direction", DIRECTION_HEADER)
@@ -112,6 +115,9 @@ DIRECTIONS = enumerators(DIRECTION_SOURCE, "Direction", DIRECTION_HEADER)
 # kFirstWalkerSlot is derived in the header, so it is derived here.
 FIRST_WALKER_SLOT = FIRST_ROAD_SLOT + ROAD_SLOT_COUNT
 WALKER_SLOT_COUNT = len(DIRECTIONS)
+
+# kFirstBuildingSlot is derived the same way, for the same reason.
+FIRST_BUILDING_SLOT = FIRST_WALKER_SLOT + WALKER_SLOT_COUNT
 
 # linkBit() is 1 << directionIndex(), so a bit is a place in the enum.
 # Reordering Direction therefore moves the art with it.
@@ -160,13 +166,26 @@ FACING_COLORS: tuple[Rgba, ...] = (
     (168, 120, 232, 255),
 )
 
-# Which way each facing points on screen, in half-tiles.
+# Which way each facing points on screen, as a sign per axis.
+# walker_pixel() is what turns a sign into a pixel count.
 # North is -y in grid space, which the projection shears up and right.
 FACING_STEPS: tuple[tuple[int, int], ...] = (
     (1, -1),
     (1, 1),
     (-1, 1),
     (-1, -1),
+)
+
+# One building per tool that places one, in BuildTool's own order.
+# Each is a footprint half-width, a wall height, a roof and a wall.
+# The footprint and the wall keep a building inside its cell.
+# The roof is the footprint raised by the wall.
+# So a tall building needs a small footprint.
+# Otherwise its ridge leaves the diamond and gets clipped.
+BUILDINGS: tuple[tuple[float, float, Rgba, Rgba], ...] = (
+    (0.34, 8.0, (198, 104, 84, 255), (206, 190, 162, 255)),
+    (0.38, 10.0, (86, 146, 202, 255), (228, 218, 196, 255)),
+    (0.24, 14.0, (146, 148, 168, 255), (182, 186, 200, 255)),
 )
 
 
@@ -181,7 +200,17 @@ def check_layout() -> None:
             f"{1 << WALKER_SLOT_COUNT} link masks"
         )
 
-    slots = 1 + ROAD_SLOT_COUNT + WALKER_SLOT_COUNT
+    # The buildings are written out here rather than derived.
+    # A fourth building tool would otherwise be left undrawable.
+    if len(BUILDINGS) != BUILDING_SLOT_COUNT:
+        raise LayoutError(
+            f"{len(BUILDINGS)} buildings drawn for "
+            f"{BUILDING_SLOT_COUNT} building slots"
+        )
+
+    slots = (
+        1 + ROAD_SLOT_COUNT + WALKER_SLOT_COUNT + BUILDING_SLOT_COUNT
+    )
     if slots > COLUMNS * ROWS:
         raise LayoutError(
             f"{slots} slots do not fit in {COLUMNS}x{ROWS} tiles"
@@ -328,6 +357,49 @@ def walker_pixel(px: int, py: int, facing: int) -> Rgba:
     return TRANSPARENT
 
 
+def building_pixel(px: int, py: int, kind: int) -> Rgba:
+    half, wall, roof, side = BUILDINGS[kind]
+
+    # The roof is the footprint seen `wall` pixels further down.
+    # So one footprint test, asked twice, draws a whole box.
+    roof_east, roof_south = grid_coords(px, py + wall)
+    if max(abs(roof_east), abs(roof_south)) <= half:
+        return shade(roof, noise(px, py, 5))
+
+    base_east, base_south = grid_coords(px, py)
+    if max(abs(base_east), abs(base_south)) <= half:
+        # Which wall is showing, from which side of the ridge it is on.
+        # The left one is turned away from the light, so it is darker.
+        lit = -18 if px + 0.5 < TILE_WIDTH / 2 else 10
+        return shade(side, lit + noise(px, py, 4))
+
+    # The same shadow a walker gets, and for the same reason.
+    if in_ellipse(
+        px, py, TILE_WIDTH / 2, TILE_HEIGHT / 2 + 4.0, 26.0, 13.0
+    ):
+        return SHADOW
+
+    return TRANSPARENT
+
+
+def check_slots(slots: list[int]) -> None:
+    """Refuse a slot list two painters share, or one off the atlas."""
+    # A dict would have let the second painter win, silently.
+    # An out-of-range slice assignment extends a bytearray.
+    # It does not raise, and png_bytes() then ignores the tail.
+    # So the atlas would simply come out wrong, with no failure.
+    duplicated = sorted({s for s in slots if slots.count(s) > 1})
+    if duplicated:
+        raise LayoutError(f"two painters share slot(s) {duplicated}")
+
+    capacity = COLUMNS * ROWS
+    outside = sorted(s for s in slots if not 0 <= s < capacity)
+    if outside:
+        raise LayoutError(
+            f"slot(s) {outside} are outside a {COLUMNS}x{ROWS} atlas"
+        )
+
+
 def slot_origin(slot: int) -> tuple[int, int]:
     return (slot % COLUMNS) * TILE_WIDTH, (slot // COLUMNS) * TILE_HEIGHT
 
@@ -338,19 +410,35 @@ def build_atlas() -> tuple[int, int, bytearray]:
     height = ROWS * TILE_HEIGHT
     pixels = bytearray(width * height * 4)
 
-    painters = {GROUND_SLOT: ground_pixel}
+    painters = [(GROUND_SLOT, ground_pixel)]
 
     for links in range(ROAD_SLOT_COUNT):
-        painters[FIRST_ROAD_SLOT + links] = (
-            lambda px, py, links=links: road_pixel(px, py, links)
+        painters.append(
+            (
+                FIRST_ROAD_SLOT + links,
+                lambda px, py, links=links: road_pixel(px, py, links),
+            )
         )
 
     for facing in range(WALKER_SLOT_COUNT):
-        painters[FIRST_WALKER_SLOT + facing] = (
-            lambda px, py, facing=facing: walker_pixel(px, py, facing)
+        painters.append(
+            (
+                FIRST_WALKER_SLOT + facing,
+                lambda px, py, facing=facing: walker_pixel(px, py, facing),
+            )
         )
 
-    for slot, painter in painters.items():
+    for kind in range(BUILDING_SLOT_COUNT):
+        painters.append(
+            (
+                FIRST_BUILDING_SLOT + kind,
+                lambda px, py, kind=kind: building_pixel(px, py, kind),
+            )
+        )
+
+    check_slots([slot for slot, _ in painters])
+
+    for slot, painter in painters:
         left, top = slot_origin(slot)
 
         for py in range(TILE_HEIGHT):
@@ -394,7 +482,9 @@ def render() -> bytes:
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description=__doc__)
+    parser = argparse.ArgumentParser(
+        description="Generate the game's texture atlas from TileAtlas.hpp."
+    )
     parser.add_argument(
         "--root",
         type=Path,

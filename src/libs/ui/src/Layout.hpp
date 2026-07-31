@@ -2,6 +2,8 @@
 
 #include <antwika/gfx/Size.hpp>
 
+#include "antwika/ui/WidgetRects.hpp"
+
 #include "LayoutTree.hpp"
 
 namespace antwika::ui::detail
@@ -24,9 +26,21 @@ namespace antwika::ui::detail
      * A container with more content than room shrinks its children in
      * proportion instead of dropping the ones that do not fit.
      *
+     * Where each named node ended up is read out of the arranging pass
+     * itself rather than from a pass of its own.
+     * By the time that loop reaches a node, the node's own area is final
+     * -- a parent sits at a lower index and is what placed it -- so the
+     * rectangle collected here is the one flatten() is about to draw
+     * from, by construction rather than by agreement.
+     *
      * @param tree The arena to lay out, modified in place.
      * @param canvas The area the root node fills.
+     * @param rects Receives one entry per distinct named id, or null to
+     * collect nothing. A caller that wants no mapping builds none: the
+     * cost of asking for one is a comparison per node and a vector that
+     * stays empty until a node is named.
      */
-    void layout(LayoutTree &tree, Size canvas);
+    void layout(
+        LayoutTree &tree, Size canvas, WidgetRects *rects = nullptr);
 
 } // namespace antwika::ui::detail

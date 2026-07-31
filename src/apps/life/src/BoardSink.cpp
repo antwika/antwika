@@ -67,6 +67,18 @@ namespace antwika::life
             const auto x = parsed.at("x").get<std::uint32_t>();
             const auto y = parsed.at("y").get<std::uint32_t>();
 
+            // The schema bounds a coordinate by its type alone.
+            // The board's size is not known where it is built.
+            // So a valid coordinate can still name no cell at all.
+            // Unchecked, Grid::entityAt() threw std::out_of_range.
+            // A bare standard exception is what a named one replaces.
+            if (!grid.contains(x, y))
+            {
+                throw BoardSinkError(
+                    "BoardSink: life.toggle_cell names a cell outside "
+                    "the board");
+            }
+
             const auto entity = grid.entityAt(x, y);
             const auto wasAlive = world.get<Cell>(entity).alive;
             world.set<Cell>(entity, Cell{.alive = !wasAlive});

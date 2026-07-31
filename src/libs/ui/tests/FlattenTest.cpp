@@ -4,6 +4,8 @@
 #include <optional>
 #include <string>
 #include <utility>
+#include <variant>
+#include <vector>
 
 #include <antwika/gfx/Color.hpp>
 #include <antwika/gfx/Rect.hpp>
@@ -15,6 +17,7 @@
 #include "antwika/ui/Sizing.hpp"
 
 #include "Flatten.hpp"
+#include "FocusRing.hpp"
 #include "Layout.hpp"
 #include "LayoutTree.hpp"
 #include "Node.hpp"
@@ -29,6 +32,7 @@ using antwika::ui::DrawText;
 using antwika::ui::FillRect;
 using antwika::ui::kGrow;
 using antwika::ui::detail::flatten;
+using antwika::ui::detail::FocusRing;
 using antwika::ui::detail::LayoutTree;
 using antwika::ui::detail::layout;
 using antwika::ui::detail::Node;
@@ -56,6 +60,32 @@ namespace
     constexpr Rect kRoomy{
         .origin = {.x = 5, .y = 7},
         .size = {.width = 100, .height = 20}};
+
+    constexpr Rect kBox{
+        .origin = {.x = 0, .y = 0},
+        .size = {.width = 10, .height = 10}};
+
+    // One filled, bordered widget, in whichever layer is asked for.
+    Node bordered(Color fill, Color ring, bool overlay)
+    {
+        return Node{
+            .background = fill,
+            .focusRing = FocusRing{.color = ring, .thickness = 1},
+            .overlay = overlay,
+            .arranged = kBox};
+    }
+
+    [[nodiscard]] std::vector<Color> colorsOf(const DrawList &commands)
+    {
+        std::vector<Color> colors;
+
+        for (const auto &command : commands)
+        {
+            colors.push_back(std::get<FillRect>(command).color);
+        }
+
+        return colors;
+    }
 } // namespace
 
 TEST(FlattenTest, Flatten_EmitsNothingForNodesWithNothingToDraw)
@@ -188,6 +218,39 @@ TEST(FlattenTest, Flatten_DrawsAContainerBeforeWhatIsInsideIt)
                 .scale = 1,
                 .color = kInk}}),
         flatten(tree));
+}
+
+// The one ordering guarantee flatten() makes, asserted end to end.
+// Base widgets, then the base border, then the overlay, then its own.
+// An overlay covers the ring of what it drops over as it does the box.
+// That is what puts each layer's borders inside that layer.
+TEST(FlattenTest, Flatten_EmitsEachLayersBorderWithThatLayer)
+{
+    constexpr Color kBaseFill{.red = 10};
+    constexpr Color kBaseRing{.red = 20};
+    constexpr Color kOverFill{.red = 30};
+    constexpr Color kOverRing{.red = 40};
+
+    LayoutTree tree{container(std::nullopt)};
+
+    // Declared base first, but the overlay would be hit first.
+    tree.add(bordered(kBaseFill, kBaseRing, false));
+    tree.add(bordered(kOverFill, kOverRing, true));
+
+    // One fill and four bars per layer, since a border has no stroke.
+    EXPECT_EQ(
+        (std::vector<Color>{
+            kBaseFill,
+            kBaseRing,
+            kBaseRing,
+            kBaseRing,
+            kBaseRing,
+            kOverFill,
+            kOverRing,
+            kOverRing,
+            kOverRing,
+            kOverRing}),
+        colorsOf(flatten(tree)));
 }
 
 // The whole pipeline as one value, from a declared tree to a picture.

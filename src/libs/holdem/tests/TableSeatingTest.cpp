@@ -29,6 +29,12 @@ namespace
     {
         return FakeDeck(parseCards("Ac Kc Ad Kd 2c 3c 4c 5c 6c"));
     }
+
+    [[nodiscard]] FakeDeck threePlayerDeck()
+    {
+        return FakeDeck(
+            parseCards("Ac Kc Qc Ad Kd Qd 2c 3d 4h 7s 9h"));
+    }
 } // namespace
 
 TEST(TableSeatingTest, Construct_RejectsATableWithTooFewSeats)
@@ -39,6 +45,25 @@ TEST(TableSeatingTest, Construct_RejectsATableWithTooFewSeats)
 TEST(TableSeatingTest, Construct_RejectsATableWithTooManySeats)
 {
     EXPECT_THROW(Table(10, kBlinds), TableStateError);
+}
+
+// A small blind above the big one is a debt that runs backwards.
+// The seat posting it is committed above the live bet it chases.
+// owedBy() then subtracts the larger figure from the smaller one.
+// Chips is unsigned, so that wraps rather than going negative.
+TEST(TableSeatingTest, Construct_RejectsASmallBlindAboveTheBigBlind)
+{
+    EXPECT_THROW(
+        Table(2, Blinds{.small = 10, .big = 5}), TableStateError);
+}
+
+// Equal blinds are unusual but not contradictory.
+// Nobody is ever owed a negative amount, so they are allowed.
+TEST(TableSeatingTest, Construct_AcceptsBlindsOfTheSameSize)
+{
+    const Table table(2, Blinds{.small = 10, .big = 10});
+
+    EXPECT_EQ(table.blinds(), (Blinds{.small = 10, .big = 10}));
 }
 
 TEST(TableSeatingTest, Construct_LeavesEverySeatEmpty)
@@ -142,6 +167,66 @@ TEST(TableSeatingTest, RemovePlayer_RefusesToPullAPlayerOutOfALiveHand)
     table.startHand(deck);
 
     EXPECT_THROW(table.removePlayer(makeSeatId(0)), TableStateError);
+}
+
+// Folding gives up the cards, not the chips already in the middle.
+// Emptying the seat drops that stake from what finishHand() sees.
+// The payouts would then fall short by exactly it.
+// Clearing the pot afterwards would discard the difference for good.
+TEST(TableSeatingTest, RemovePlayer_RefusesAFolderWhoseChipsAreStillIn)
+{
+    Table table(3, kBlinds);
+    table.seatPlayer(makeSeatId(0), 100);
+    table.seatPlayer(makeSeatId(1), 100);
+    table.seatPlayer(makeSeatId(2), 100);
+    auto deck = threePlayerDeck();
+    table.startHand(deck);
+
+    // Seat 1 has the button and limps, then the small blind folds.
+    table.apply(antwika::holdem::call());
+    table.apply(antwika::holdem::fold());
+
+    ASSERT_FALSE(table.seatAt(makeSeatId(2)).inHand);
+    ASSERT_EQ(table.seatAt(makeSeatId(2)).committed, 5U);
+    EXPECT_THROW(table.removePlayer(makeSeatId(2)), TableStateError);
+}
+
+// A seat that never put a chip in owes the pot nothing.
+// Sitting down mid-hand and leaving again takes nothing with it.
+TEST(TableSeatingTest, RemovePlayer_LetsASeatWithNothingInTheMiddleLeave)
+{
+    Table table(3, kBlinds);
+    table.seatPlayer(makeSeatId(0), 100);
+    table.seatPlayer(makeSeatId(1), 100);
+    auto deck = threePlayerDeck();
+    table.startHand(deck);
+    table.seatPlayer(makeSeatId(2), 100);
+
+    table.removePlayer(makeSeatId(2));
+
+    EXPECT_FALSE(table.seatAt(makeSeatId(2)).occupied);
+}
+
+// Once the hand is paid out the stake is history rather than a claim.
+// A seat goes on reporting what it committed until the next deal.
+// So the refusal has to turn on the hand being live.
+// Turning on that figure alone would strand everyone at the table.
+TEST(TableSeatingTest, RemovePlayer_LetsAFolderLeaveOnceTheHandIsPaidOut)
+{
+    Table table(3, kBlinds);
+    table.seatPlayer(makeSeatId(0), 100);
+    table.seatPlayer(makeSeatId(1), 100);
+    table.seatPlayer(makeSeatId(2), 100);
+    auto deck = threePlayerDeck();
+    table.startHand(deck);
+    table.apply(antwika::holdem::fold());
+    table.apply(antwika::holdem::fold());
+
+    ASSERT_FALSE(table.isHandInProgress());
+    ASSERT_EQ(table.seatAt(makeSeatId(2)).committed, 5U);
+    table.removePlayer(makeSeatId(2));
+
+    EXPECT_FALSE(table.seatAt(makeSeatId(2)).occupied);
 }
 
 TEST(TableSeatingTest, AddChips_TopsUpAStackBetweenHands)

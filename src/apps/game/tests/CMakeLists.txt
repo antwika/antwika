@@ -1,21 +1,44 @@
 find_package(GTest REQUIRED)
 
 add_executable(antwika_game_tests
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/AppMode.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/BuildGhost.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/Game.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/GameStateReducer.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/GridScene.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/GridSink.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/InputFold.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/MainMenuScene.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/MainMenuSink.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/ModeGatedSink.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/ModeGatedSystem.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/PathIndex.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/RenderSystem.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/KeyText.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/SaveCli.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/SaveGame.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/SaveGameFile.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/SaveDirectory.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/SaveLoadScene.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/SaveLoadSink.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/SaveLoadState.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/SaveMigration.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/SessionStore.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/SpawnSystem.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/TickPacer.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/Toolbar.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/SceneSnapshot.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/UiOverlay.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/UiSink.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/WalkerSystem.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/WorldMap.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/WorldMapScene.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/WorldMapSink.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/WorldMapState.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/WindowInputSource.cpp
+    AppModeTest.cpp
     BootstrapTest.cpp
+    BuildPaletteTest.cpp
     CameraTest.cpp
     CellTest.cpp
     DirectionTest.cpp
@@ -26,19 +49,39 @@ add_executable(antwika_game_tests
     GridSceneTest.cpp
     GridSinkTest.cpp
     InputFoldTest.cpp
+    KeyTextTest.cpp
     IsoProjectionTest.cpp
+    MainMenuSceneTest.cpp
+    MainMenuSinkTest.cpp
+    ModeGateTest.cpp
     PathIndexTest.cpp
     PointerReadingTest.cpp
     RenderSystemTest.cpp
+    SaveCliTest.cpp
+    SaveDirectoryTest.cpp
+    SaveLoadSceneTest.cpp
+    SaveLoadSinkTest.cpp
+    SaveLoadStateTest.cpp
+    SaveGameFileTest.cpp
+    SaveGameTest.cpp
+    SaveMigrationTest.cpp
     SceneSnapshotTest.cpp
+    SessionStoreTest.cpp
+    SpawnSystemTest.cpp
     TileAtlasTest.cpp
     ReplayDeterminismTest.cpp
     ReplayIntegrationTest.cpp
     TickPacerTest.cpp
     ToolbarTest.cpp
     UiOverlayTest.cpp
+    ValueEqualityTest.cpp
     UiSinkTest.cpp
     WalkerSystemTest.cpp
+    WorldMapTest.cpp
+    WorldMapLayoutTest.cpp
+    WorldMapSceneTest.cpp
+    WorldMapSinkTest.cpp
+    WorldMapStateTest.cpp
     WindowInputSourceTest.cpp
     WalkerTest.cpp
     WalkingTest.cpp
@@ -62,6 +105,7 @@ target_link_libraries(antwika_game_tests
         antwika::replay
         antwika::time::tests::fakes
         antwika::ui
+        antwika::wfc
         gtest::gtest
 )
 

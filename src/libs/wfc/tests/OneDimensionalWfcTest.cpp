@@ -6,13 +6,14 @@
 
 #include <antwika/wfc/AdjacencyConstraint.hpp>
 #include <antwika/wfc/CompatibilityTable.hpp>
+#include <antwika/wfc/ConstraintRefs.hpp>
 #include <antwika/wfc/Domain.hpp>
-#include <antwika/wfc/IConstraint.hpp>
 #include <antwika/wfc/SolveResult.hpp>
 
 using antwika::wfc::AdjacencyConstraint;
 using antwika::wfc::CompatibilityTable;
 using antwika::wfc::Domain;
+using antwika::wfc::referencesTo;
 using antwika::wfc::SolveOutcome;
 using antwika::wfc::Solver;
 
@@ -47,8 +48,7 @@ TEST(OneDimensionalWfcTest, StripSolvesWithOnlyCompatibleNeighbors)
         constraints.emplace_back(i, i + 1, makeTable());
     }
 
-    std::vector<std::reference_wrapper<const antwika::wfc::IConstraint>>
-        constraintRefs(constraints.begin(), constraints.end());
+    const auto constraintRefs = referencesTo(constraints);
 
     Solver solver(wave, constraintRefs);
     const auto result = solver.solve();
@@ -78,8 +78,7 @@ TEST(OneDimensionalWfcTest, SolvingIsDeterministic)
         constraints.emplace_back(i, i + 1, makeTable());
     }
 
-    std::vector<std::reference_wrapper<const antwika::wfc::IConstraint>>
-        constraintRefs(constraints.begin(), constraints.end());
+    const auto constraintRefs = referencesTo(constraints);
 
     Solver solverA(wave, constraintRefs);
     Solver solverB(wave, constraintRefs);

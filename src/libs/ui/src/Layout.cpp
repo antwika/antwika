@@ -12,6 +12,8 @@
 #include "antwika/ui/Alignment.hpp"
 #include "antwika/ui/Axis.hpp"
 #include "antwika/ui/Sizing.hpp"
+#include "antwika/ui/WidgetId.hpp"
+#include "antwika/ui/WidgetRects.hpp"
 
 #include "LayoutTree.hpp"
 #include "Node.hpp"
@@ -144,6 +146,13 @@ namespace antwika::ui::detail
                      child = tree.node(child).nextSibling)
                 {
                     const auto &value = tree.node(child);
+
+                    // An overlay asks its parent for nothing.
+                    // It is placed against its anchor instead.
+                    if (value.overlayAnchor != kNoNode)
+                    {
+                        continue;
+                    }
 
                     along += mainDemand(value, node.axis);
                     across =
@@ -298,7 +307,10 @@ namespace antwika::ui::detail
                  child != kNoNode;
                  child = tree.node(child).nextSibling)
             {
-                children.push_back(child);
+                if (tree.node(child).overlayAnchor == kNoNode)
+                {
+                    children.push_back(child);
+                }
             }
 
             if (children.empty())
@@ -367,9 +379,72 @@ namespace antwika::ui::detail
 
             place(tree, children, extents, box);
         }
+
+        /**
+         * @brief Hang an overlay beneath the node it was anchored to.
+         *
+         * Its anchor's index is below its own, and an anchor is placed
+         * by its own parent, so by the time the ascending pass reaches
+         * an overlay its anchor has already been arranged.
+         *
+         * As wide as its anchor at least, so a list of short options
+         * still lines up with the box it dropped out of.
+         */
+        void placeOverlay(LayoutTree &tree, std::size_t index)
+        {
+            const auto &anchor =
+                tree.node(tree.node(index).overlayAnchor);
+            const auto below = anchor.arranged.origin.y
+                               + static_cast<std::int32_t>(
+                                   anchor.arranged.size.height);
+            auto &node = tree.node(index);
+
+            node.arranged = Rect{
+                .origin = {.x = anchor.arranged.origin.x, .y = below},
+                .size = {
+                    .width = std::max(
+                        node.measured.width, anchor.arranged.size.width),
+                    .height = node.measured.height}};
+        }
+
+        /**
+         * @brief Note where one named node ended up.
+         *
+         * A repeated id overwrites the entry it already has rather than
+         * adding a second, so one widget answers with one rectangle.
+         * The pass runs upwards, so what is left is the last declaration
+         * -- the node painted over the other, and the one the hit-test
+         * calls topmost within its layer.
+         *
+         * The scan is linear because a frame names a handful of widgets
+         * and a handful is cheaper to walk than to hash.
+         *
+         * @param rects Where to note it, or null to note nothing.
+         * @param node The node, already arranged.
+         */
+        void record(WidgetRects *rects, const Node &node)
+        {
+            if (rects == nullptr || node.id == kNoWidget)
+            {
+                return;
+            }
+
+            for (auto &entry : rects->entries)
+            {
+                if (entry.id == node.id)
+                {
+                    entry.rect = node.arranged;
+
+                    return;
+                }
+            }
+
+            rects->entries.push_back(
+                WidgetRect{.id = node.id, .rect = node.arranged});
+        }
     } // namespace
 
-    void layout(LayoutTree &tree, Size canvas)
+    void layout(LayoutTree &tree, Size canvas, WidgetRects *rects)
     {
         measure(tree);
 
@@ -378,7 +453,17 @@ namespace antwika::ui::detail
 
         for (std::size_t index = 0; index < tree.size(); ++index)
         {
+            if (tree.node(index).overlayAnchor != kNoNode)
+            {
+                placeOverlay(tree, index);
+            }
+
             arrangeChildren(tree, index);
+
+            // A parent sits at a lower index and is what placed this one.
+            // So its own area is settled by the time this reads it.
+            // Arranging its children writes theirs and never its own.
+            record(rects, tree.node(index));
         }
     }
 

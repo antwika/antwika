@@ -109,9 +109,8 @@ inline constexpr Priority kNormalPriority{1};
   Never explain *what* the code does — a well-named identifier already does that.
 - **Exception**: every public API surface (interfaces, classes, public methods) carries a Doxygen `@brief`/`@param`/`@return`/`@throws` block, kept regardless of whether the *why*-only rule above would otherwise justify one.
   These document the *what*, for generated reference docs.
-- **One sentence per line**, however long that line gets, in every `//` and `#` comment and in every markdown document that is still maintained: `README.md`, `CLAUDE.md`, `REQUIREMENTS.md`, `blog/*.md` and `docs/*.md`.
+- **One sentence per line**, however long that line gets, in every `//` and `#` comment and in every markdown document in the repository: `README.md`, `CLAUDE.md`, `REQUIREMENTS.md`, `blog/*.md` and `docs/**/*.md`.
   Never let two sentences share a line, and never wrap one sentence across two lines.
-  The finished plans under `docs/history/` are the one exemption, since they record what was decided rather than being prose anyone still edits.
   Enforced by `scripts/check_one_sentence_per_line.py` in CI.
 
 ```cpp

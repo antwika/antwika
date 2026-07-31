@@ -19,8 +19,14 @@ namespace antwika::replay
      * Deliberately a single, specific, catchable type, so that a
      * malformed replay is not an unspecific std::runtime_error from a
      * JSON parser two libraries away.
+     *
+     * Not final: SchemaVersionError narrows it to the one cause a caller
+     * may want to word differently, a document from a newer build.
+     * Nothing else derives from it, and nothing else should -- a new
+     * subclass has to be a strictly narrower answer to the same
+     * question, "can this build read this document at all".
      */
-    class ReplayFormatError final : public std::runtime_error
+    class ReplayFormatError : public std::runtime_error
     {
     public:
         using std::runtime_error::runtime_error;

@@ -1,6 +1,8 @@
 add_subdirectory(game)
+add_subdirectory(gfx3d_demo)
 add_subdirectory(gfx_demo)
 add_subdirectory(life)
 add_subdirectory(poker)
 add_subdirectory(sudoku)
 add_subdirectory(task_worker)
+add_subdirectory(tower_defence)

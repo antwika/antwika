@@ -1,6 +1,5 @@
 #pragma once
 
-#include <cstdint>
 #include <string_view>
 
 /**
@@ -14,12 +13,17 @@
  *      "version": 1,
  *      "events": [{"tick": 0, "event": {"name": "", "payload": ""}}]}
  *
- * The two constants below are what "magic" and "version" must hold.
- * ReplayJson.cpp turns them into the JSON Schema a document is validated
- * against, and EventSchema.cpp describes the events array's items.
+ * The magic below is what "magic" must hold.
+ * "version" holds antwika::replay::kReplayDocumentVersion, which is
+ * public because a caller may want to say which revision it writes.
+ * ReplayJson.cpp turns the two into the JSON Schema a document is
+ * validated against, and EventSchema.cpp describes the events array's
+ * items.
  *
  * Bumping the version is how the document's shape evolves; a reader
- * refuses a version it does not know rather than guessing at it.
+ * refuses a version it does not know rather than guessing at it, and a
+ * bump comes with a migration so that older documents still load.
+ * See antwika/replay/SchemaVersion.hpp for when a bump is called for.
  */
 namespace antwika::replay::detail
 {
@@ -33,10 +37,5 @@ namespace antwika::replay::detail
      * session.
      */
     inline constexpr std::string_view kReplayMagic = "antwika-replay";
-
-    /**
-     * @brief What a replay document's "version" member has to say.
-     */
-    inline constexpr std::uint32_t kReplayFormatVersion = 1;
 
 } // namespace antwika::replay::detail

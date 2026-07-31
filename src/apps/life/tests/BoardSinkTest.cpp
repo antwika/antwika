@@ -226,6 +226,40 @@ TEST(BoardSinkTest, ToggleCellPayloadWithNegativeFieldThrows)
         BoardSinkError);
 }
 
+// The schema bounds a coordinate by its type, not by the board.
+// So a coordinate can be perfectly valid and still name no cell.
+// Before this, Grid::entityAt() threw std::out_of_range instead.
+TEST(BoardSinkTest, ToggleCellPayloadOutsideTheBoardThrowsBoardSinkError)
+{
+    NiceMock<MockLogger> logger;
+    World world(logger);
+    Grid grid(world, 2, 2);
+    world.commit();
+
+    SystemScheduler scheduler;
+    BoardSink sink(world, grid, scheduler);
+
+    EXPECT_THROW(
+        sink.handle(TickEvent{
+            .tick = 0,
+            .event = Event{
+                .name = antwika::life::events::kToggleCell,
+                .payload = R"({"x":1000,"y":0})",
+            },
+        }),
+        BoardSinkError);
+
+    EXPECT_THROW(
+        sink.handle(TickEvent{
+            .tick = 0,
+            .event = Event{
+                .name = antwika::life::events::kToggleCell,
+                .payload = R"({"x":0,"y":1000})",
+            },
+        }),
+        BoardSinkError);
+}
+
 TEST(BoardSinkTest, ToggleCellPayloadWithXFieldOutOfUint32RangeThrows)
 {
     NiceMock<MockLogger> logger;

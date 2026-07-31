@@ -1,16 +1,21 @@
 #pragma once
 
+#include <set>
+
 #include <antwika/ecs/SystemScheduler.hpp>
 #include <antwika/ecs/World.hpp>
 #include <antwika/event/ITickEventSink.hpp>
 #include <antwika/event/TickEvent.hpp>
 #include <antwika/input/InputEvent.hpp>
 
+#include "antwika/game/BuildTool.hpp"
 #include "antwika/game/Camera.hpp"
+#include "antwika/game/Cell.hpp"
 #include "antwika/game/GridExtent.hpp"
 #include "antwika/game/InputFold.hpp"
 #include "antwika/game/PathIndex.hpp"
 #include "antwika/game/UiOverlay.hpp"
+#include "antwika/game/WorldMapState.hpp"
 
 namespace antwika::game
 {
@@ -38,7 +43,7 @@ namespace antwika::game
      *
      * | Gesture | Effect |
      * | --- | --- |
-     * | left press | place a path at the clicked cell |
+     * | left press | place the selected tool's thing at the clicked cell |
      * | right press | place a walker, only if that cell has a path |
      * | middle drag | pan the camera |
      * | scroll | zoom, keeping the cell under the cursor put |
@@ -52,6 +57,26 @@ namespace antwika::game
      * the press: a left-drag pan would need a "moved more than N pixels,
      * so that was a drag" rule, which moves placement to the release and
      * invents a threshold nothing else here justifies.
+     *
+     * What a left press places is whatever UiOverlay says the palette has
+     * selected -- a road or one of the buildings. That selection is
+     * simulation state for the same reason the camera is: a replay
+     * carries the click and has to arrive at the same tool again, so
+     * pressing a palette button is no more an event than pressing a zoom
+     * button is.
+     *
+     * **It knows nothing about the placement ghost**, which is drawn
+     * from input::PointerHintChannel on the render side. A replay does
+     * not reproduce that channel, so a sink reading one would fold a
+     * value into state that a replay cannot regenerate -- see
+     * BuildGhost.
+     *
+     * Nothing at all is placed while no city is open. The mode gate this
+     * sink is wrapped in already keeps a world-map click away from the
+     * grid, and this is the second half of that: a city is put away the
+     * moment the way-back key arrives, while the mode it staged does not
+     * land until the tick boundary, so the events after it in that tick
+     * would otherwise still be the grid's.
      */
     class GridSink final : public ITickEventSink
     {
@@ -66,6 +91,8 @@ namespace antwika::game
          * @param input The folded input, holding the event being
          * handled; must be registered ahead of this sink.
          * @param overlay Asked whether a click was the toolbar's.
+         * @param cities Asked whether a city is open at all; nothing is
+         * placed, panned or zoomed while none is.
          */
         GridSink(
             World &world,
@@ -74,7 +101,8 @@ namespace antwika::game
             GridExtent extent,
             SystemScheduler &scheduler,
             const InputFold &input,
-            const UiOverlay &overlay);
+            const UiOverlay &overlay,
+            const WorldMapState &cities);
 
         GridSink(const GridSink &) = delete;
         GridSink(GridSink &&) = delete;
@@ -91,7 +119,9 @@ namespace antwika::game
         void handle(const TickEvent &event) override;
 
     private:
+        void place(Cell cell, BuildTool tool);
         void placePath(Cell cell);
+        void placeBuilding(Cell cell, BuildTool tool);
         void placeWalker(Cell cell);
         void act(const antwika::input::InputEvent &event);
 
@@ -102,6 +132,12 @@ namespace antwika::game
         SystemScheduler &scheduler;
         const InputFold &input;
         const UiOverlay &overlay;
+        const WorldMapState &cities;
+
+        // Which cells already hold a building.
+        // PathIndex is the same note for roads.
+        // This one is private: nothing outside asks for it.
+        std::set<Cell> built;
     };
 
 } // namespace antwika::game

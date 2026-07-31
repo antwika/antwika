@@ -58,10 +58,7 @@ using ::testing::ReturnRef;
 
 namespace
 {
-    /**
-     * @brief Holds the mock window a backend is about to hand out, so a
-     * test can still assert on it after ownership has moved away.
-     */
+    // The size every test lays its widgets out against.
     constexpr Size kCanvas{.width = 700, .height = 400};
 
     // The window a run draws into, which is what a click lands in.
@@ -89,6 +86,10 @@ namespace
                 }
             }
         }
+
+        // A silent fallback presses on nothing at all.
+        // A test asserting a count of zero would then pass.
+        ADD_FAILURE() << "no pixel of the canvas hovers a widget";
 
         return Position{};
     }
@@ -320,12 +321,16 @@ TEST(DemoLoopTest, Run_PutsTheCountBackOnAPressOnTheResetButton)
     const DemoScene scene;
     FakeInputBackend input(std::vector<std::vector<InputEvent>>{
         clickAt(positionOn(widgets::kCount)),
-        clickAt(positionOn(widgets::kReset))});
+        clickAt(positionOn(widgets::kReset)),
+        clickAt(positionOn(widgets::kCount))});
     DemoLoop loop(fixture.backend, input, scene);
 
-    loop.run(WindowDesc{.title = "Antwika"}, DemoFixture::logo(), 2);
+    loop.run(WindowDesc{.title = "Antwika"}, DemoFixture::logo(), 3);
 
-    EXPECT_EQ(0U, loop.clicks());
+    // Counting again after the reset is what tells the two apart.
+    // A reset that did nothing would leave two.
+    // A count that did nothing would leave none.
+    EXPECT_EQ(1U, loop.clicks());
 }
 
 TEST(DemoLoopTest, Run_IgnoresAPressThatLandsOnNoButton)

@@ -13,12 +13,15 @@ antwika_add_library(
         src/EngineLoop.cpp
         src/EventJson.cpp
         src/EventSchema.cpp
+        src/MigrationChain.cpp
         src/ReplayCli.cpp
         src/ReplayJson.cpp
+        src/ReplayMigrations.cpp
         src/ReplayOutput.cpp
         src/ReplayReader.cpp
         src/ReplaySource.cpp
         src/ReplayWriter.cpp
+        src/SchemaVersion.cpp
         src/TickPacer.cpp
         src/WindowInputSource.cpp
     DEPENDS

@@ -6,6 +6,7 @@
 #include "antwika/game/Cell.hpp"
 #include "antwika/game/GameState.hpp"
 #include "antwika/game/SceneSnapshot.hpp"
+#include "antwika/game/Toolbar.hpp"
 
 namespace antwika::game
 {
@@ -29,6 +30,16 @@ namespace antwika::game
         GameState state;
         std::vector<Cell> paths;
         std::vector<WalkerView> walkers;
+
+        /**
+         * @brief Every building placed, in the order they were placed.
+         *
+         * Here for the same reason the walkers are: a run that built
+         * something should be able to say so, and a live run and its
+         * replay disagreeing about it should fail the comparison.
+         */
+        std::vector<BuildingView> buildings;
+
         Camera camera;
 
         /**

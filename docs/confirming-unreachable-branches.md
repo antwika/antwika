@@ -69,6 +69,30 @@ It never shows as covered no matter how many normal, non-throwing calls exercise
 **(c) A branch direction that's mathematically impossible given the surrounding code**, independent of exceptions entirely.
 This one needs the most care, because it's a genuine logic argument, not a tag you can just read off — write out why the "other" direction can never be taken, and be suspicious of your own reasoning if the argument takes more than a sentence or two.
 
+**(d) A *function* record at zero for a template in a header, where every line inside it is covered.**
+This one is about the function denominator rather than lines or branches, and it is the only signature here that is a tooling artifact rather than a fact about the code.
+
+gcov emits one function record per instantiation.
+Where a caller inlines the body, the out-of-line copy that other translation units share is never actually called, so its record reads `called 0` — while the line counters, which are attributed through the inline expansion, show the code running.
+A function whose body lines executed and whose record says zero is the signature; the two cannot both be true of the same call.
+
+Confirm it, don't assume it.
+Export the per-file JSON (step 1) restricted to the header, and check that the zero-count function's *lines* are covered:
+
+```sh
+gcovr --root . --filter 'src/libs/ecs/include/antwika/ecs/View.hpp' \
+    --exclude-throw-branches --exclude-unreachable-branches \
+    --json out.json build-coverage
+```
+
+Then find a caller and read its own `.gcov`: if the call site's line has a non-zero count, the function ran.
+`gcovr --merge-mode-functions=merge-use-line-max` looks like it should fix this and does not — the records are distinct symbols, not copies gcovr will fold.
+
+**Excluding here is coarser than for (a)–(c), and you must say so.**
+The marker is per *source* line, and every instantiation of a template shares one line — so excluding it drops the covered records too, not only the zero ones.
+In `View.hpp` that meant taking the function denominator from 1357 to 1343 to remove three artifacts.
+Accept that only when the alternative is a permanently red gate, put the marker on the function's own declaration line (not its body), and write the reason beside it.
+
 ### 5. Exclude the exact line the count is attributed to
 
 Add `// GCOVR_EXCL_LINE` on the line `gcov` actually attributes the zero count to — not necessarily the line you'd guess.

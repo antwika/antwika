@@ -15,7 +15,7 @@ namespace antwika::time
     class IClock
     {
     public:
-        virtual ~IClock() = default; // GCOVR_EXCL_LINE
+        virtual ~IClock() = default;
 
         /**
          * @brief Get the current point in time.
