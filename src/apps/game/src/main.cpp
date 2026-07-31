@@ -173,6 +173,7 @@ namespace
             .scene = scene,
             .atlas = *atlas,
             .paths = paths,
+            .built = built,
             .camera = camera,
             .extent = kExtent,
             .overlay = overlay,

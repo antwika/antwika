@@ -13,6 +13,7 @@
 #include "antwika/game/BuildingIndex.hpp"
 #include "antwika/game/BuildingKind.hpp"
 #include "antwika/game/Cell.hpp"
+#include "antwika/game/Footprint.hpp"
 #include "antwika/game/Resource.hpp"
 #include "antwika/game/Walker.hpp"
 
@@ -23,6 +24,8 @@ using antwika::game::BuildingIndex;
 using antwika::game::BuildingKind;
 using antwika::game::BuildingSystem;
 using antwika::game::Cell;
+using antwika::game::Footprint;
+using antwika::game::footprintOf;
 using antwika::game::kDrainPeriodTicks;
 using antwika::game::kMaxRisk;
 using antwika::game::kRiskPeriodTicks;
@@ -46,7 +49,7 @@ namespace
             world.add<Cell>(entity, at);
             world.add<Building>(entity, building);
             world.commit();
-            built.insert(at);
+            built.insert(at, footprintOf(building.kind));
             return entity;
         }
 
@@ -304,4 +307,38 @@ TEST_F(BuildingSystemTest, Update_LeavesTheWalkerOfADemolishedBuilding)
 TEST_F(BuildingSystemTest, Update_DoesNothingWithNoBuildingsAtAll)
 {
     EXPECT_NO_THROW(run(1));
+}
+
+TEST_F(BuildingSystemTest, Update_ReachesABuildingByAnyCellOfItsBlock)
+{
+    // Beside the block's far corner rather than its origin.
+    // One cell's neighbours would never have matched it.
+    const auto source = build(
+        Cell{.x = 4, .y = 4},
+        Building{
+            .kind = BuildingKind::FoodSource, .stock = {10, 10}});
+
+    sendWalker(
+        Cell{.x = 6, .y = 5},
+        Walker{.kind = WalkerKind::Food, .carried = 20});
+
+    run(1);
+
+    EXPECT_EQ(
+        world.get<Building>(source).stock[resourceIndex(Resource::Food)],
+        30);
+}
+
+TEST_F(BuildingSystemTest, Update_ClearsEveryCellOfADemolishedBlock)
+{
+    build(
+        Cell{.x = 4, .y = 4},
+        Building{.kind = BuildingKind::FoodSource, .risk = kMaxRisk});
+
+    ASSERT_TRUE(built.has(Cell{.x = 5, .y = 5}));
+
+    run(1);
+
+    EXPECT_FALSE(built.has(Cell{.x = 4, .y = 4}));
+    EXPECT_FALSE(built.has(Cell{.x = 5, .y = 5}));
 }

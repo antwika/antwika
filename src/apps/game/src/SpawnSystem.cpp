@@ -1,10 +1,12 @@
 #include "antwika/game/SpawnSystem.hpp"
 
 #include <cstddef>
+#include <cstdint>
 
 #include "antwika/game/Building.hpp"
 #include "antwika/game/BuildingKind.hpp"
 #include "antwika/game/Direction.hpp"
+#include "antwika/game/Footprint.hpp"
 #include "antwika/game/Walker.hpp"
 
 namespace antwika::game
@@ -14,25 +16,39 @@ namespace antwika::game
     {
     }
 
-    std::optional<Cell> spawnCellFor(Cell at, const PathIndex &paths)
+    std::optional<Cell> spawnCellFor(
+        Cell origin, Footprint footprint, const PathIndex &paths)
     {
         std::optional<Cell> best;
 
-        for (std::size_t index = 0; index < kDirectionCount; ++index)
+        // Every cell of the block, and every road beside one.
+        // A block's own cells are skipped by paths.has().
+        // Nothing can be both a road and a building.
+        for (std::int32_t dy = 0; dy < footprint.height; ++dy)
         {
-            const Cell beside =
-                step(at, static_cast<Direction>(index));
-
-            if (!paths.has(beside))
+            for (std::int32_t dx = 0; dx < footprint.width; ++dx)
             {
-                continue;
-            }
+                const Cell on{.x = origin.x + dx, .y = origin.y + dy};
 
-            // The lowest neighbour, in Cell's own ordering.
-            // Two roads beside one house must pick the same one always.
-            if (!best.has_value() || beside < *best)
-            {
-                best = beside;
+                for (std::size_t index = 0; index < kDirectionCount;
+                     ++index)
+                {
+                    const Cell beside =
+                        step(on, static_cast<Direction>(index));
+
+                    if (!paths.has(beside))
+                    {
+                        continue;
+                    }
+
+                    // The lowest, in Cell's own ordering.
+                    // Two roads beside one building pick the same one.
+                    // Whichever order the walk happened to find them.
+                    if (!best.has_value() || beside < *best)
+                    {
+                        best = beside;
+                    }
+                }
             }
         }
 
@@ -80,8 +96,10 @@ namespace antwika::game
 
             // Held at zero, not reset.
             // A house with no road is ready and waiting rather than owed.
-            const auto onto =
-                spawnCellFor(world.get<Cell>(entity), paths);
+            const auto onto = spawnCellFor(
+                world.get<Cell>(entity),
+                footprintOf(building.kind),
+                paths);
 
             if (!onto.has_value() || out >= kWalkerLimit)
             {

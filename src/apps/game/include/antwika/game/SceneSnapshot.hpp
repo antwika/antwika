@@ -81,6 +81,7 @@ namespace antwika::game
      */
     struct BuildingView
     {
+        /** @brief The minimum-x, minimum-y cell of its block. */
         Cell at;
         BuildingKind kind = BuildingKind::House;
 

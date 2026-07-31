@@ -10,6 +10,7 @@
 #include "antwika/game/BuildTool.hpp"
 #include "antwika/game/Building.hpp"
 #include "antwika/game/Cell.hpp"
+#include "antwika/game/Footprint.hpp"
 #include "antwika/game/PathIndex.hpp"
 #include "antwika/game/SpawnSystem.hpp"
 #include "antwika/game/Walker.hpp"
@@ -23,6 +24,7 @@ namespace
     using antwika::game::BuildingKind;
     using antwika::game::BuildTool;
     using antwika::game::Cell;
+    using antwika::game::Footprint;
     using antwika::game::kSpawnPeriodTicks;
     using antwika::game::kWalkerLimit;
     using antwika::game::PathIndex;
@@ -87,7 +89,8 @@ namespace
         pave(Cell{.x = 6, .y = 5});
         pave(Cell{.x = 4, .y = 5});
 
-        const auto onto = spawnCellFor(Cell{.x = 5, .y = 5}, paths);
+        const auto onto =
+            spawnCellFor(Cell{.x = 5, .y = 5}, Footprint{}, paths);
 
         ASSERT_TRUE(onto.has_value());
         EXPECT_EQ(*onto, (Cell{.x = 4, .y = 5}));
@@ -98,7 +101,9 @@ namespace
         // Under it is not beside it.
         pave(Cell{.x = 5, .y = 5});
 
-        EXPECT_FALSE(spawnCellFor(Cell{.x = 5, .y = 5}, paths).has_value());
+        EXPECT_FALSE(
+            spawnCellFor(Cell{.x = 5, .y = 5}, Footprint{}, paths)
+                .has_value());
     }
 
     TEST_F(SpawnSystemTest, Update_SendsNobodyOutBeforeTheIntervalIsUp)
@@ -335,5 +340,49 @@ namespace
             EXPECT_EQ(
                 world.get<Walker>(entity).carried, antwika::game::kWalkerLoad);
         }
+    }
+} // namespace
+
+namespace
+{
+    // A road against a block's far corner is beside the building.
+    // One cell's four neighbours would never have found it.
+    TEST_F(SpawnSystemTest, SpawnCellFor_LooksRoundTheWholeBlock)
+    {
+        pave(Cell{.x = 6, .y = 5});
+
+        EXPECT_FALSE(
+            spawnCellFor(Cell{.x = 4, .y = 4}, Footprint{}, paths)
+                .has_value());
+
+        EXPECT_EQ(
+            spawnCellFor(
+                Cell{.x = 4, .y = 4}, Footprint{.width = 2, .height = 2},
+                paths),
+            (Cell{.x = 6, .y = 5}));
+    }
+
+    // Two roads against one block pick the same one every time.
+    // Whichever order the perimeter walk found them.
+    TEST_F(SpawnSystemTest, SpawnCellFor_StillTakesTheLowestOfTheBlock)
+    {
+        pave(Cell{.x = 6, .y = 5});
+        pave(Cell{.x = 4, .y = 3});
+
+        EXPECT_EQ(
+            spawnCellFor(
+                Cell{.x = 4, .y = 4}, Footprint{.width = 2, .height = 2},
+                paths),
+            (Cell{.x = 4, .y = 3}));
+    }
+
+    TEST_F(SpawnSystemTest, Update_SendsOneOutOfABlockOfMoreThanOneCell)
+    {
+        build(Cell{.x = 4, .y = 4}, BuildingKind::FoodSource);
+        pave(Cell{.x = 6, .y = 5});
+
+        run(kSpawnPeriodTicks);
+
+        EXPECT_EQ(walkers(), 1U);
     }
 } // namespace

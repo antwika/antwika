@@ -5,9 +5,11 @@
 #include <antwika/input/PointerHint.hpp>
 
 #include "antwika/game/BuildTool.hpp"
+#include "antwika/game/BuildingIndex.hpp"
 #include "antwika/game/Camera.hpp"
 #include "antwika/game/Cell.hpp"
 #include "antwika/game/GridExtent.hpp"
+#include "antwika/game/PathIndex.hpp"
 
 namespace antwika::game
 {
@@ -54,6 +56,20 @@ namespace antwika::game
         bool visible = false;
 
         /**
+         * @brief Whether clicking here would actually put it up.
+         *
+         * Worked out from the very predicate GridSink places through, so
+         * what a preview promises and what a click delivers cannot come
+         * apart.
+         *
+         * **Reading simulation state in order to draw is allowed**, and
+         * is not what this file's rule forbids: what may not happen is a
+         * *sink* writing state from a hint, since the hint is the one
+         * value no replay reproduces.
+         */
+        bool valid = false;
+
+        /**
          * @brief Compare two ghosts.
          * @param other The ghost to compare against.
          * @return True when every field matches.
@@ -92,6 +108,8 @@ namespace antwika::game
         const Camera &camera,
         GridExtent extent,
         BuildTool tool,
-        bool coveredByUi) noexcept;
+        bool coveredByUi,
+        const PathIndex &paths,
+        const BuildingIndex &built);
 
 } // namespace antwika::game

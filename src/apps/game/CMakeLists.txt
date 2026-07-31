@@ -15,6 +15,7 @@ add_executable(antwika_game
     src/ModeGatedSink.cpp
     src/ModeGatedSystem.cpp
     src/PathIndex.cpp
+    src/Placement.cpp
     src/RenderSystem.cpp
     src/KeyText.cpp
     src/SaveCli.cpp

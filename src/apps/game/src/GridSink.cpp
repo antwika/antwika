@@ -9,7 +9,9 @@
 #include "antwika/game/Building.hpp"
 #include "antwika/game/Cell.hpp"
 #include "antwika/game/IsoProjection.hpp"
+#include "antwika/game/Footprint.hpp"
 #include "antwika/game/Path.hpp"
+#include "antwika/game/Placement.hpp"
 #include "antwika/game/PointerReading.hpp"
 #include "antwika/game/Walker.hpp"
 
@@ -139,7 +141,7 @@ namespace antwika::game
 
     void GridSink::placePath(Cell cell)
     {
-        if (!extent.contains(cell) || paths.has(cell) || built.has(cell))
+        if (!canPave(cell, extent, paths, built))
         {
             return;
         }
@@ -152,12 +154,14 @@ namespace antwika::game
 
     void GridSink::placeBuilding(Cell cell, BuildingKind kind)
     {
+        const auto footprint = footprintOf(kind);
+
         // A cell holds one thing, and a road is a thing.
-        // The note is kept here rather than read out of the World.
+        // The note is kept in the index, not read out of the World.
         // The World hands out the last commit.
-        // Two clicks in one tick would then build twice on one cell.
+        // So two clicks in one tick would build twice on one cell.
         // That is the trap life::PointerToggleSink describes.
-        if (!extent.contains(cell) || paths.has(cell) || built.has(cell))
+        if (!canPlace(cell, footprint, extent, paths, built))
         {
             return;
         }
@@ -165,7 +169,7 @@ namespace antwika::game
         const auto entity = world.create();
         world.add<Cell>(entity, cell);
         world.add<Building>(entity, Building{.kind = kind});
-        built.insert(cell);
+        (void)built.insert(cell, footprint);
     }
 
     void GridSink::placeWalker(Cell cell)

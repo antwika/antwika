@@ -2,7 +2,9 @@
 
 #include <cstdint>
 
+#include "antwika/game/Building.hpp"
 #include "antwika/game/Cell.hpp"
+#include "antwika/game/Footprint.hpp"
 #include "antwika/game/Homing.hpp"
 #include "antwika/game/Walker.hpp"
 #include "antwika/game/Walking.hpp"
@@ -89,7 +91,10 @@ namespace antwika::game
         }
 
         const auto door = world.get<Cell>(walker.home);
-        const auto heading = stepTowards(at, door, paths, extent);
+        const auto footprint =
+            footprintOf(world.get<Building>(walker.home).kind);
+        const auto heading =
+            stepTowards(at, door, footprint, paths, extent);
 
         // Walled off, or the road under it has gone.
         // Either way its budget is spent and there is nowhere to go.
@@ -102,8 +107,9 @@ namespace antwika::game
         const auto onto = step(at, *heading);
 
         // Arriving is stepping onto the building itself.
-        // Which is the one cell of the route that is not a road.
-        if (onto == door)
+        // Any cell of its block will do.
+        // The whole thing is what the walker was heading for.
+        if (covers(door, footprint, onto))
         {
             world.destroy(entity);
             return;

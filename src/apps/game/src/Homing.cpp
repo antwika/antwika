@@ -1,6 +1,7 @@
 #include "antwika/game/Homing.hpp"
 
 #include <cstddef>
+#include <cstdint>
 #include <vector>
 
 #include <antwika/pathfinding/AStar.hpp>
@@ -27,7 +28,10 @@ namespace antwika::game
         // A building does not stand on a road.
         // So without that exception nobody could ever arrive.
         [[nodiscard]] std::vector<bool> passableOver(
-            const PathIndex &paths, GridExtent extent, Cell goal)
+            const PathIndex &paths,
+            GridExtent extent,
+            Cell goal,
+            Footprint footprint)
         {
             const auto width = static_cast<std::size_t>(extent.width);
             const auto height = static_cast<std::size_t>(extent.height);
@@ -47,15 +51,32 @@ namespace antwika::game
                          + static_cast<std::size_t>(road.x)] = true;
             }
 
-            passable[static_cast<std::size_t>(goal.y) * width
-                     + static_cast<std::size_t>(goal.x)] = true;
+            for (std::int32_t dy = 0; dy < footprint.height; ++dy)
+            {
+                for (std::int32_t dx = 0; dx < footprint.width; ++dx)
+                {
+                    const Cell on{.x = goal.x + dx, .y = goal.y + dy};
+
+                    if (!extent.contains(on))
+                    {
+                        continue;
+                    }
+
+                    passable[static_cast<std::size_t>(on.y) * width
+                             + static_cast<std::size_t>(on.x)] = true;
+                }
+            }
 
             return passable;
         }
     } // namespace
 
     std::optional<Direction> stepTowards(
-        Cell from, Cell goal, const PathIndex &paths, GridExtent extent)
+        Cell from,
+        Cell goal,
+        Footprint footprint,
+        const PathIndex &paths,
+        GridExtent extent)
     {
         // A degenerate extent holds nothing, so nothing is reachable.
         // Asked before GridGraph, which refuses a non-positive extent.
@@ -65,7 +86,9 @@ namespace antwika::game
         }
 
         const GridGraph graph(
-            extent.width, extent.height, passableOver(paths, extent, goal));
+            extent.width,
+            extent.height,
+            passableOver(paths, extent, goal, footprint));
 
         const auto result = antwika::pathfinding::findPath(
             graph, graph.nodeAt(asGridCell(from)),

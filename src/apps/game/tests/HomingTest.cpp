@@ -6,11 +6,13 @@
 
 #include "antwika/game/Cell.hpp"
 #include "antwika/game/Direction.hpp"
+#include "antwika/game/Footprint.hpp"
 #include "antwika/game/GridExtent.hpp"
 #include "antwika/game/PathIndex.hpp"
 
 using antwika::game::Cell;
 using antwika::game::Direction;
+using antwika::game::Footprint;
 using antwika::game::GridExtent;
 using antwika::game::PathIndex;
 using antwika::game::stepTowards;
@@ -39,7 +41,11 @@ TEST(HomingTest, StepTowards_HeadsStraightDownACorridor)
 
     EXPECT_EQ(
         stepTowards(
-            Cell{.x = 1, .y = 0}, Cell{.x = 4, .y = 0}, paths, kExtent),
+            Cell{.x = 1, .y = 0},
+            Cell{.x = 4, .y = 0},
+            Footprint{},
+            paths,
+            kExtent),
         Direction::East);
 }
 
@@ -51,7 +57,11 @@ TEST(HomingTest, StepTowards_ReportsTheStepOntoAnAdjacentGoal)
 
     EXPECT_EQ(
         stepTowards(
-            Cell{.x = 1, .y = 0}, Cell{.x = 2, .y = 0}, paths, kExtent),
+            Cell{.x = 1, .y = 0},
+            Cell{.x = 2, .y = 0},
+            Footprint{},
+            paths,
+            kExtent),
         Direction::East);
 }
 
@@ -67,7 +77,11 @@ TEST(HomingTest, StepTowards_GoesRoundAnUnpavedCell)
 
     EXPECT_EQ(
         stepTowards(
-            Cell{.x = 0, .y = 0}, Cell{.x = 2, .y = 0}, paths, kExtent),
+            Cell{.x = 0, .y = 0},
+            Cell{.x = 2, .y = 0},
+            Footprint{},
+            paths,
+            kExtent),
         Direction::South);
 }
 
@@ -77,7 +91,11 @@ TEST(HomingTest, StepTowards_ReportsNothingWhenTheGoalIsWalledOff)
 
     EXPECT_FALSE(
         stepTowards(
-            Cell{.x = 0, .y = 0}, Cell{.x = 5, .y = 5}, paths, kExtent)
+            Cell{.x = 0, .y = 0},
+            Cell{.x = 5, .y = 5},
+            Footprint{},
+            paths,
+            kExtent)
             .has_value());
 }
 
@@ -87,7 +105,11 @@ TEST(HomingTest, StepTowards_ReportsNothingFromOutsideTheExtent)
 
     EXPECT_FALSE(
         stepTowards(
-            Cell{.x = -1, .y = 0}, Cell{.x = 1, .y = 1}, paths, kExtent)
+            Cell{.x = -1, .y = 0},
+            Cell{.x = 1, .y = 1},
+            Footprint{},
+            paths,
+            kExtent)
             .has_value());
 }
 
@@ -97,7 +119,11 @@ TEST(HomingTest, StepTowards_ReportsNothingForAGoalOutsideTheExtent)
 
     EXPECT_FALSE(
         stepTowards(
-            Cell{.x = 1, .y = 1}, Cell{.x = 99, .y = 99}, paths, kExtent)
+            Cell{.x = 1, .y = 1},
+            Cell{.x = 99, .y = 99},
+            Footprint{},
+            paths,
+            kExtent)
             .has_value());
 }
 
@@ -109,7 +135,11 @@ TEST(HomingTest, StepTowards_ReportsNothingOnADegenerateExtent)
 
     EXPECT_FALSE(
         stepTowards(
-            Cell{}, Cell{}, paths, GridExtent{.width = 0, .height = 0})
+            Cell{},
+            Cell{},
+            Footprint{},
+            paths,
+            GridExtent{.width = 0, .height = 0})
             .has_value());
 }
 
@@ -119,7 +149,11 @@ TEST(HomingTest, StepTowards_ReportsNothingWhenAlreadyThere)
 
     EXPECT_FALSE(
         stepTowards(
-            Cell{.x = 1, .y = 1}, Cell{.x = 1, .y = 1}, paths, kExtent)
+            Cell{.x = 1, .y = 1},
+            Cell{.x = 1, .y = 1},
+            Footprint{},
+            paths,
+            kExtent)
             .has_value());
 }
 
@@ -133,7 +167,11 @@ TEST(HomingTest, StepTowards_IgnoresARoadOutsideTheExtent)
 
     EXPECT_EQ(
         stepTowards(
-            Cell{.x = 1, .y = 0}, Cell{.x = 3, .y = 0}, paths, kExtent),
+            Cell{.x = 1, .y = 0},
+            Cell{.x = 3, .y = 0},
+            Footprint{},
+            paths,
+            kExtent),
         Direction::East);
 }
 
@@ -150,13 +188,22 @@ TEST(HomingTest, StepTowards_BreaksATieTheSameWayEveryTime)
          {.x = 1, .y = 1}});
 
     const auto first =
-        stepTowards(Cell{.x = 0, .y = 0}, Cell{.x = 1, .y = 1}, paths, kExtent);
+        stepTowards(
+            Cell{.x = 0, .y = 0},
+            Cell{.x = 1, .y = 1},
+            Footprint{},
+            paths,
+            kExtent);
 
     for (int again = 0; again < 8; ++again)
     {
         EXPECT_EQ(
             stepTowards(
-                Cell{.x = 0, .y = 0}, Cell{.x = 1, .y = 1}, paths, kExtent),
+                Cell{.x = 0, .y = 0},
+                Cell{.x = 1, .y = 1},
+                Footprint{},
+                paths,
+                kExtent),
             first);
     }
 }
@@ -175,15 +222,86 @@ TEST(HomingTest, StepTowards_ReadsEveryHeadingOffTheDelta)
     constexpr Cell middle{.x = 2, .y = 2};
 
     EXPECT_EQ(
-        stepTowards(middle, Cell{.x = 0, .y = 2}, paths, kExtent),
+        stepTowards(
+            middle,
+            Cell{.x = 0, .y = 2},
+            Footprint{},
+            paths,
+            kExtent),
         Direction::West);
     EXPECT_EQ(
-        stepTowards(middle, Cell{.x = 4, .y = 2}, paths, kExtent),
+        stepTowards(
+            middle,
+            Cell{.x = 4, .y = 2},
+            Footprint{},
+            paths,
+            kExtent),
         Direction::East);
     EXPECT_EQ(
-        stepTowards(middle, Cell{.x = 2, .y = 0}, paths, kExtent),
+        stepTowards(
+            middle,
+            Cell{.x = 2, .y = 0},
+            Footprint{},
+            paths,
+            kExtent),
         Direction::North);
     EXPECT_EQ(
-        stepTowards(middle, Cell{.x = 2, .y = 4}, paths, kExtent),
+        stepTowards(
+            middle,
+            Cell{.x = 2, .y = 4},
+            Footprint{},
+            paths,
+            kExtent),
         Direction::South);
+}
+
+// The goal is a block.
+// So every cell of it is reachable and any of them is an arrival.
+TEST(HomingTest, StepTowards_ReachesABlockByItsNearestCell)
+{
+    const auto paths = paved({{.x = 4, .y = 1}, {.x = 4, .y = 2}});
+
+    // A two-by-two at (2,1) covers (2,1), (3,1), (2,2) and (3,2).
+    // So a walker east of it steps onto the near corner.
+    EXPECT_EQ(
+        stepTowards(
+            Cell{.x = 4, .y = 1},
+            Cell{.x = 2, .y = 1},
+            Footprint{.width = 2, .height = 2},
+            paths,
+            kExtent),
+        Direction::West);
+}
+
+TEST(HomingTest, StepTowards_ReportsNothingForABlockWalledOff)
+{
+    const auto paths = paved({{.x = 7, .y = 7}});
+
+    EXPECT_FALSE(
+        stepTowards(
+            Cell{.x = 7, .y = 7},
+            Cell{.x = 0, .y = 0},
+            Footprint{.width = 2, .height = 2},
+            paths,
+            kExtent)
+            .has_value());
+}
+
+// Placement never allows a block off the edge.
+// But this is a free function.
+// Its guard has to hold for what it is handed.
+TEST(HomingTest, StepTowards_IgnoresBlockCellsOutsideTheExtent)
+{
+    const auto paths = paved({{.x = 6, .y = 7}});
+
+    // A two-by-two at the far corner runs off both edges.
+    // So only the corner cell itself may be passed through.
+    EXPECT_EQ(
+        stepTowards(
+            Cell{.x = 6, .y = 7},
+            Cell{.x = 7, .y = 7},
+            Footprint{.width = 2, .height = 2},
+            paths,
+            kExtent),
+        Direction::East);
 }

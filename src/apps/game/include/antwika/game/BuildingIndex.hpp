@@ -4,6 +4,7 @@
 #include <set>
 
 #include "antwika/game/Cell.hpp"
+#include "antwika/game/Footprint.hpp"
 
 namespace antwika::game
 {
@@ -31,25 +32,41 @@ namespace antwika::game
     {
     public:
         /**
-         * @brief Record that a cell now has a building.
-         * @param cell The cell to record.
-         * @return True if this added it, false if one was already there.
+         * @brief Record a building standing on a block of cells.
+         *
+         * Every covered cell is recorded, not only the origin, so a
+         * road laid against the far corner of a three-by-three finds
+         * something there.
+         *
+         * @param origin The minimum-x, minimum-y cell of the block.
+         * @param footprint How many cells across and down it covers.
+         * @return True if this added it, false if any covered cell was
+         * already taken -- in which case nothing is recorded at all.
          */
-        bool insert(Cell cell);
+        bool insert(Cell origin, Footprint footprint);
 
         /**
-         * @brief Forget that a cell has a building.
-         * @param cell The cell to clear.
-         * @return True if this removed a record, false if there was none.
+         * @brief Forget the building standing on a block of cells.
+         * @param origin The minimum-x, minimum-y cell of the block.
+         * @param footprint How many cells across and down it covers.
+         * @return True if this removed anything.
          */
-        bool erase(Cell cell);
+        bool erase(Cell origin, Footprint footprint);
 
         /**
-         * @brief Check whether a cell has a building.
+         * @brief Check whether a cell has a building standing on it.
          * @param cell The cell to ask about.
-         * @return True when one has been recorded there.
+         * @return True when some building covers it.
          */
         [[nodiscard]] bool has(Cell cell) const;
+
+        /**
+         * @brief Check whether a whole block is clear.
+         * @param origin Where the block would start.
+         * @param footprint How many cells across and down it covers.
+         * @return True when no covered cell already has a building.
+         */
+        [[nodiscard]] bool free(Cell origin, Footprint footprint) const;
 
         /**
          * @brief Get how many cells have buildings.

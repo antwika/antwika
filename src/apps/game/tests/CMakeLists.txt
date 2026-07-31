@@ -17,6 +17,7 @@ add_executable(antwika_game_tests
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/ModeGatedSink.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/ModeGatedSystem.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/PathIndex.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/Placement.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/RenderSystem.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/KeyText.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/SaveCli.cpp
@@ -52,6 +53,7 @@ add_executable(antwika_game_tests
     DirectionTest.cpp
     GameStateReducerTest.cpp
     GameStateTest.cpp
+    FootprintTest.cpp
     GameTest.cpp
     GridExtentTest.cpp
     GridSceneTest.cpp
@@ -64,6 +66,7 @@ add_executable(antwika_game_tests
     MainMenuSinkTest.cpp
     ModeGateTest.cpp
     PathIndexTest.cpp
+    PlacementTest.cpp
     PointerReadingTest.cpp
     RenderSystemTest.cpp
     SaveCliTest.cpp

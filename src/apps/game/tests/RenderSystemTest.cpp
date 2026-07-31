@@ -17,6 +17,7 @@
 #include <antwika/log/mocks/MockLogger.hpp>
 
 #include "antwika/game/AppMode.hpp"
+#include "antwika/game/BuildingIndex.hpp"
 #include "antwika/game/Camera.hpp"
 #include "antwika/game/Cell.hpp"
 #include "antwika/game/GridExtent.hpp"
@@ -94,6 +95,7 @@ namespace
                 .scene = scene,
                 .atlas = atlas,
                 .paths = paths,
+                .built = built,
                 .camera = camera,
                 .extent = kExtent,
                 .overlay = overlay,
@@ -109,6 +111,7 @@ namespace
         NiceMock<MockLogger> logger;
         World world{logger};
         PathIndex paths;
+        antwika::game::BuildingIndex built;
         Camera camera;
         const GridScene scene{};
         const MainMenuScene menuScene{};

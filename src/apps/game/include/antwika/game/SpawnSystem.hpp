@@ -8,6 +8,7 @@
 #include <antwika/time/Tick.hpp>
 
 #include "antwika/game/Cell.hpp"
+#include "antwika/game/Footprint.hpp"
 #include "antwika/game/PathIndex.hpp"
 
 namespace antwika::game
@@ -46,7 +47,7 @@ namespace antwika::game
      * road.
      */
     [[nodiscard]] std::optional<Cell> spawnCellFor(
-        Cell at, const PathIndex &paths);
+        Cell origin, Footprint footprint, const PathIndex &paths);
 
     /**
      * @brief Sends a walker out of every building, on its own cadence.

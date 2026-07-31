@@ -85,7 +85,9 @@ namespace antwika::game
             setup.camera,
             setup.extent,
             setup.overlay.tool(),
-            setup.overlay.pointerOverUi());
+            setup.overlay.pointerOverUi(),
+            setup.paths,
+            setup.built);
 
         setup.scene.draw(
             renderer, setup.window.size(), latest, setup.atlas, subTick);

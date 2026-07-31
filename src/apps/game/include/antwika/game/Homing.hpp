@@ -4,6 +4,7 @@
 
 #include "antwika/game/Cell.hpp"
 #include "antwika/game/Direction.hpp"
+#include "antwika/game/Footprint.hpp"
 #include "antwika/game/GridExtent.hpp"
 #include "antwika/game/PathIndex.hpp"
 
@@ -34,11 +35,16 @@ namespace antwika::game
      * exist would renumber every node as one was laid, and with it the
      * tie-break.
      *
-     * The goal is passable by exception, since a building does not
-     * stand on a road and would otherwise be unreachable.
+     * Every cell of the goal's block is passable by exception, since a
+     * building does not stand on a road and would otherwise be
+     * unreachable.
+     * The search heads for the block's origin, which is its
+     * lexicographic minimum and therefore a stable choice whichever
+     * corner a walker happens to approach from.
      *
      * @param from Where the walker is; must be a road to get anywhere.
-     * @param goal Where it is heading.
+     * @param goal The minimum-x, minimum-y cell of where it is heading.
+     * @param footprint How many cells across and down the goal covers.
      * @param paths The roads a route may run along.
      * @param extent The bounds the search is numbered over.
      * @return The direction of the first step, or nullopt when there is
@@ -47,6 +53,10 @@ namespace antwika::game
      * a degenerate extent, rather than an error in any of those cases.
      */
     [[nodiscard]] std::optional<Direction> stepTowards(
-        Cell from, Cell goal, const PathIndex &paths, GridExtent extent);
+        Cell from,
+        Cell goal,
+        Footprint footprint,
+        const PathIndex &paths,
+        GridExtent extent);
 
 } // namespace antwika::game

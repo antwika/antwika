@@ -9,6 +9,7 @@
 #include "antwika/game/BuildingIndex.hpp"
 #include "antwika/game/Camera.hpp"
 #include "antwika/game/Cell.hpp"
+#include "antwika/game/Footprint.hpp"
 #include "antwika/game/Direction.hpp"
 #include "antwika/game/GameState.hpp"
 #include "antwika/game/GridExtent.hpp"
@@ -244,8 +245,8 @@ namespace
         world.add<antwika::game::Building>(
             source, antwika::game::Building{});
         world.commit();
-        built.insert(Cell{.x = 4, .y = 4});
-        built.insert(Cell{.x = 9, .y = 9});
+        built.insert(Cell{.x = 4, .y = 4}, antwika::game::Footprint{});
+        built.insert(Cell{.x = 9, .y = 9}, antwika::game::Footprint{});
 
         const auto saved = store.take();
         store.restore(saved);

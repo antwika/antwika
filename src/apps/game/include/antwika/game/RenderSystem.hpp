@@ -11,6 +11,7 @@
 #include <antwika/time/Tick.hpp>
 
 #include "antwika/game/AppMode.hpp"
+#include "antwika/game/BuildingIndex.hpp"
 #include "antwika/game/Camera.hpp"
 #include "antwika/game/GridExtent.hpp"
 #include "antwika/game/GridScene.hpp"
@@ -70,6 +71,9 @@ namespace antwika::game
 
         /** @brief Read for the live city's path cells. */
         const PathIndex &paths;
+
+        /** @brief Which cells hold a building, for the ghost. */
+        const BuildingIndex &built;
 
         /** @brief Read for where the live city is drawn from. */
         const Camera &camera;

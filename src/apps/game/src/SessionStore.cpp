@@ -8,6 +8,7 @@
 #include "antwika/game/Building.hpp"
 #include "antwika/game/BuildingIndex.hpp"
 #include "antwika/game/Cell.hpp"
+#include "antwika/game/Footprint.hpp"
 #include "antwika/game/Path.hpp"
 #include "antwika/game/Walker.hpp"
 
@@ -122,7 +123,8 @@ namespace antwika::game
                     .walker = building.walker.has_value()
                         ? walkers[*building.walker]
                         : antwika::ecs::kNullEntity});
-            built.insert(building.at);
+            (void)built.insert(
+                building.at, footprintOf(building.kind));
         }
     }
 

@@ -1,5 +1,6 @@
 #include "antwika/game/SceneSnapshot.hpp"
 
+#include <algorithm>
 #include <cstdint>
 #include <vector>
 
@@ -56,6 +57,24 @@ namespace antwika::game
                     .at = world.get<Cell>(entity),
                     .kind = world.get<Building>(entity).kind});
         }
+
+        // **Painter's order, no longer optional.**
+        // One-cell buildings could never overlap.
+        // So placement order was as good as any.
+        // A block drawn before what is behind it is the wrong picture.
+        // Screen depth here is x + y.
+        // The tie-break on x makes the order total.
+        // So nothing depends on how the view walked the world.
+        std::ranges::sort(
+            snapshot.buildings,
+            [](const BuildingView &left, const BuildingView &right)
+            {
+                const auto depth = left.at.x + left.at.y;
+                const auto other = right.at.x + right.at.y;
+
+                return depth != other ? depth < other
+                                      : left.at.x < right.at.x;
+            });
 
         return snapshot;
         // The excluded line is the local snapshot's unwind destructor.

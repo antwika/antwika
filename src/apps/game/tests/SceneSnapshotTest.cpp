@@ -4,6 +4,7 @@
 #include <antwika/ecs/World.hpp>
 #include <antwika/log/mocks/MockLogger.hpp>
 
+#include "antwika/game/Building.hpp"
 #include "antwika/game/Camera.hpp"
 #include "antwika/game/Cell.hpp"
 #include "antwika/game/Direction.hpp"
@@ -350,4 +351,36 @@ TEST(SceneSnapshotTest, GameSummaryEqualityComparesEveryField)
     auto moved = base;
     moved.camera.panBy(1, 0);
     EXPECT_NE(base, moved);
+}
+
+// With one-cell buildings two could never overlap.
+// So placement order was as good as any.
+// A block drawn before what is behind it is the wrong picture.
+TEST(SceneSnapshotTest, SnapshotOf_OrdersTheBuildingsBackToFront)
+{
+    NiceMock<MockLogger> logger;
+    World world(logger);
+    const PathIndex paths;
+
+    // Added front to back, so placement order is the wrong order.
+    for (const auto at : {
+             antwika::game::Cell{.x = 3, .y = 3},
+             antwika::game::Cell{.x = 0, .y = 1},
+             antwika::game::Cell{.x = 1, .y = 0}})
+    {
+        const auto entity = world.create();
+        world.add<Cell>(entity, at);
+        world.add<antwika::game::Building>(
+            entity, antwika::game::Building{});
+    }
+    world.commit();
+
+    const auto snapshot = snapshotOf(world, paths, Camera(), kExtent);
+
+    ASSERT_EQ(snapshot.buildings.size(), 3U);
+
+    // Depth is x + y, and the tie between (0,1) and (1,0) breaks on x.
+    EXPECT_EQ(snapshot.buildings[0].at, (Cell{.x = 0, .y = 1}));
+    EXPECT_EQ(snapshot.buildings[1].at, (Cell{.x = 1, .y = 0}));
+    EXPECT_EQ(snapshot.buildings[2].at, (Cell{.x = 3, .y = 3}));
 }

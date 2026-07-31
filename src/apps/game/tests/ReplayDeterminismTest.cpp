@@ -624,28 +624,32 @@ namespace
                         .button = MouseButton::Left,
                         .position = palette})}};
 
-        // A road beside where the sources go, laid with the road tool.
-        // The palette is on a building now, so the road comes first.
-        events.insert(
-            events.begin(),
-            TickEvent{
-                .tick = 0,
-                .event = pressAt(Cell{.x = 4, .y = 3}, MouseButton::Left)});
-        events.insert(
-            events.begin() + 1,
-            TickEvent{
-                .tick = 0,
-                .event = pressAt(Cell{.x = 5, .y = 3}, MouseButton::Left)});
+        // A road laid with the road tool before the palette moves off.
+        // It runs above both blocks rather than between them.
+        // A source is two cells square.
+        // It would swallow a road laid under its own footprint.
+        // Kept well down the grid.
+        // The toolbar covers the top, and a press it covers is dropped.
+        for (std::int32_t x = 2; x <= 6; ++x)
+        {
+            events.insert(
+                events.begin() + (x - 2),
+                TickEvent{
+                    .tick = 0,
+                    .event =
+                        pressAt(Cell{.x = x, .y = 4}, MouseButton::Left)});
+        }
 
         // Two sources, placed a tick apart, so their cadences differ.
+        // Two cells apart as well, so their blocks do not overlap.
         events.push_back(
             TickEvent{
                 .tick = 1,
-                .event = pressAt(Cell{.x = 4, .y = 2}, MouseButton::Left)});
+                .event = pressAt(Cell{.x = 2, .y = 5}, MouseButton::Left)});
         events.push_back(
             TickEvent{
                 .tick = 2,
-                .event = pressAt(Cell{.x = 5, .y = 2}, MouseButton::Left)});
+                .event = pressAt(Cell{.x = 5, .y = 5}, MouseButton::Left)});
 
         events.push_back(
             TickEvent{

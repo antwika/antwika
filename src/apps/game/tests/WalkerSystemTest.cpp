@@ -399,3 +399,31 @@ TEST_F(WalkerSystemTest, Update_KeepsATiredWalkerCountingDownBetweenSteps)
     EXPECT_EQ(world.get<Cell>(walker), (Cell{.x = 2, .y = 0}));
     EXPECT_TRUE(world.alive(walker));
 }
+
+namespace
+{
+    // Arriving is a step onto any cell of the block.
+    // Otherwise a walker circles a block hunting for one corner.
+    TEST_F(WalkerSystemTest, Update_ArrivesAtAnyCellOfItsBuildingsBlock)
+    {
+        layPath({{.x = 4, .y = 1}});
+
+        const auto home = world.create();
+        world.add<Cell>(home, Cell{.x = 2, .y = 1});
+        world.add<antwika::game::Building>(
+            home,
+            antwika::game::Building{
+                .kind = antwika::game::BuildingKind::FoodSource});
+
+        const auto walker = world.create();
+        world.add<Cell>(walker, Cell{.x = 4, .y = 1});
+        world.add<Walker>(
+            walker, Walker{.stepsUntilHome = 0, .home = home});
+        world.commit();
+
+        tick();
+
+        // (3,1) is the block's east edge, so one step west arrives.
+        EXPECT_FALSE(world.alive(walker));
+    }
+} // namespace

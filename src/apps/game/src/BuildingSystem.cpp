@@ -11,6 +11,7 @@
 #include "antwika/game/BuildingKind.hpp"
 #include "antwika/game/Cell.hpp"
 #include "antwika/game/Direction.hpp"
+#include "antwika/game/Footprint.hpp"
 #include "antwika/game/Resource.hpp"
 #include "antwika/game/Walker.hpp"
 
@@ -75,6 +76,12 @@ namespace antwika::game
             walker.carried -= given;
         }
 
+        // No guard against serving one building twice.
+        // A rectangle cannot be touched twice from one outside cell.
+        // Two of a cell's neighbours in it would put the cell in it.
+        // An opposite pair spans the cell in one axis.
+        // A perpendicular pair spans it in both.
+        // So it would be a road under a building, which nothing places.
         void deliver(World &world, const Standing &standing, Pending &pending)
         {
             for (const auto entity : world.view<Walker, Cell>())
@@ -164,7 +171,21 @@ namespace antwika::game
 
         for (const auto entity : world.view<Building, Cell>())
         {
-            standing.emplace(world.get<Cell>(entity), entity);
+            const auto origin = world.get<Cell>(entity);
+            const auto footprint =
+                footprintOf(world.get<Building>(entity).kind);
+
+            // Keyed by every cell the block stands on.
+            // So a walker beside its far corner finds it.
+            for (std::int32_t dy = 0; dy < footprint.height; ++dy)
+            {
+                for (std::int32_t dx = 0; dx < footprint.width; ++dx)
+                {
+                    standing.emplace(
+                        Cell{.x = origin.x + dx, .y = origin.y + dy},
+                        entity);
+                }
+            }
         }
 
         Pending pending;
@@ -176,7 +197,8 @@ namespace antwika::game
         {
             if (isLost(building))
             {
-                built.erase(world.get<Cell>(entity));
+                built.erase(
+                    world.get<Cell>(entity), footprintOf(building.kind));
                 world.destroy(entity);
                 continue;
             }

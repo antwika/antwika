@@ -70,6 +70,8 @@ using antwika::game::BuildingIndex;
 using antwika::game::Camera;
 using antwika::game::Cell;
 using antwika::game::cellBounds;
+using antwika::game::footprintBounds;
+using antwika::game::footprintOf;
 using antwika::game::cellCentre;
 using antwika::game::GridExtent;
 using antwika::game::GridScene;
@@ -391,6 +393,40 @@ TEST_F(PaletteSinkTest, TheRoadStaysWhatALeftClickPlacesByDefault)
     EXPECT_TRUE(buildings().empty());
 }
 
+// A block holds every cell, not only the one clicked.
+// Asserted through the real sink rather than through the index.
+TEST_F(PaletteSinkTest, ABlockHoldsEveryCellItCovers)
+{
+    constexpr Cell target{.x = 2, .y = 6};
+
+    pressOn(widgets::toolWidget(BuildTool::FoodSource));
+    clickAt(target, MouseButton::Left);
+
+    ASSERT_EQ(buildings().size(), 1U);
+
+    // A road on the block's far corner is refused all the same.
+    pressOn(widgets::toolWidget(BuildTool::Road));
+    clickAt(Cell{.x = 3, .y = 7}, MouseButton::Left);
+
+    EXPECT_EQ(paths.size(), 0U);
+
+    // And one just past it is not.
+    clickAt(Cell{.x = 4, .y = 7}, MouseButton::Left);
+
+    EXPECT_EQ(paths.size(), 1U);
+}
+
+TEST_F(PaletteSinkTest, ABlockRefusesToOverlapAnother)
+{
+    pressOn(widgets::toolWidget(BuildTool::FoodSource));
+    clickAt(Cell{.x = 2, .y = 6}, MouseButton::Left);
+
+    // Overlapping at one corner only, which is still overlapping.
+    clickAt(Cell{.x = 3, .y = 7}, MouseButton::Left);
+
+    EXPECT_EQ(buildings().size(), 1U);
+}
+
 TEST_F(PaletteSinkTest, ACellTakesOneThingOnly)
 {
     constexpr Cell target{.x = 2, .y = 6};
@@ -439,6 +475,11 @@ TEST_F(PaletteSinkTest, ABuildingGoesNowhereOutsideTheExtent)
 // So it is a pure function rather than anything a sink stages.
 namespace
 {
+    // Nothing laid and nothing built.
+    // So these tests are about where a ghost goes.
+    const PathIndex kNoPaths;
+    const BuildingIndex kNothingBuilt;
+
     [[nodiscard]] antwika::input::PointerHint hintOn(
         Cell cell, const Camera &camera)
     {
@@ -458,7 +499,9 @@ TEST(BuildGhostTest, GhostFor_FollowsThePointerAndTheSelectedTool)
         camera,
         kExtent,
         BuildTool::WaterSource,
-        false);
+        false,
+        kNoPaths,
+        kNothingBuilt);
 
     EXPECT_TRUE(shown.visible);
     EXPECT_EQ(shown.at, target);
@@ -468,7 +511,13 @@ TEST(BuildGhostTest, GhostFor_FollowsThePointerAndTheSelectedTool)
 TEST(BuildGhostTest, GhostFor_IsInvisibleUntilSomethingLocatesThePointer)
 {
     const auto shown = ghostFor(
-        std::nullopt, Camera(), kExtent, BuildTool::Road, false);
+        std::nullopt,
+        Camera(),
+        kExtent,
+        BuildTool::Road,
+        false,
+        kNoPaths,
+        kNothingBuilt);
 
     EXPECT_FALSE(shown.visible);
     EXPECT_EQ(shown.tool, BuildTool::Road);
@@ -484,7 +533,9 @@ TEST(BuildGhostTest, GhostFor_IsInvisibleOffTheGrid)
             camera,
             kExtent,
             BuildTool::Road,
-            false)
+            false,
+            kNoPaths,
+            kNothingBuilt)
             .visible);
 }
 
@@ -500,7 +551,9 @@ TEST(BuildGhostTest, GhostFor_IsInvisibleUnderTheToolbar)
             camera,
             kExtent,
             BuildTool::Road,
-            true)
+            true,
+            kNoPaths,
+            kNothingBuilt)
             .visible);
 }
 
@@ -515,7 +568,9 @@ TEST(BuildGhostTest, GhostFor_ResolvesThroughTheCameraItIsGiven)
         panned,
         kExtent,
         BuildTool::House,
-        false);
+        false,
+        kNoPaths,
+        kNothingBuilt);
 
     EXPECT_TRUE(shown.visible);
     EXPECT_EQ(shown.at, (Cell{.x = 2, .y = 2}));
@@ -612,7 +667,10 @@ TEST(GridSceneBuildTest, ABuildingIsOneBlitOfItsOwnTile)
         blits[0].source, buildingTile(BuildingKind::FoodSource));
     EXPECT_EQ(
         blits[0].destination,
-        cellBounds(Cell{.x = 0, .y = 0}, snapshot.camera));
+        footprintBounds(
+            Cell{.x = 0, .y = 0},
+            footprintOf(BuildingKind::FoodSource),
+            snapshot.camera));
 }
 
 TEST(GridSceneBuildTest, ABuildingOffTheCanvasIsNotDrawn)
@@ -633,7 +691,8 @@ TEST(GridSceneBuildTest, TheGhostIsDrawnLastAndSeeThrough)
     snapshot.ghost = BuildGhost{
         .at = Cell{.x = 0, .y = 0},
         .tool = BuildTool::WaterSource,
-        .visible = true};
+        .visible = true,
+        .valid = true};
 
     const auto blits = blitsOf(snapshot);
 
@@ -650,7 +709,8 @@ TEST(GridSceneBuildTest, ARoadGhostShowsTheJunctionItWouldBecome)
     snapshot.ghost = BuildGhost{
         .at = Cell{.x = 0, .y = 0},
         .tool = BuildTool::Road,
-        .visible = true};
+        .visible = true,
+        .valid = true};
 
     const auto blits = blitsOf(snapshot);
 
@@ -680,4 +740,104 @@ TEST(GridSceneBuildTest, AnInvisibleOrOffscreenGhostIsNotDrawn)
         .visible = true};
 
     EXPECT_TRUE(blitsOf(away).empty());
+}
+
+TEST(BuildGhostTest, GhostFor_SaysAClearBlockWouldLand)
+{
+    constexpr Cell target{.x = 6, .y = 3};
+    const Camera camera;
+
+    const auto shown = ghostFor(
+        hintOn(target, camera),
+        camera,
+        kExtent,
+        BuildTool::FoodSource,
+        false,
+        kNoPaths,
+        kNothingBuilt);
+
+    EXPECT_TRUE(shown.visible);
+    EXPECT_TRUE(shown.valid);
+}
+
+// Shown rather than hidden.
+// So a refusal is something to act on rather than a disappearance.
+TEST(BuildGhostTest, GhostFor_ShowsABlockedBlockAndSaysItWouldNot)
+{
+    constexpr Cell target{.x = 6, .y = 3};
+    const Camera camera;
+
+    PathIndex paths;
+    paths.insert(Cell{.x = 7, .y = 4});
+
+    const auto shown = ghostFor(
+        hintOn(target, camera),
+        camera,
+        kExtent,
+        BuildTool::FoodSource,
+        false,
+        paths,
+        kNothingBuilt);
+
+    EXPECT_TRUE(shown.visible);
+    EXPECT_FALSE(shown.valid);
+}
+
+TEST(BuildGhostTest, GhostFor_HidesABlockHangingOffTheGrid)
+{
+    const Camera camera;
+    const Cell corner{.x = kExtent.width - 1, .y = kExtent.height - 1};
+
+    const auto shown = ghostFor(
+        hintOn(corner, camera),
+        camera,
+        kExtent,
+        BuildTool::ArchitectPost,
+        false,
+        kNoPaths,
+        kNothingBuilt);
+
+    EXPECT_FALSE(shown.visible);
+}
+
+TEST(BuildGhostTest, GhostEqualityComparesEveryField)
+{
+    constexpr BuildGhost base{
+        .at = Cell{.x = 1, .y = 2},
+        .tool = BuildTool::House,
+        .visible = true,
+        .valid = true};
+
+    EXPECT_EQ(base, base);
+
+    auto moved = base;
+    moved.at = Cell{.x = 9, .y = 9};
+    EXPECT_NE(base, moved);
+
+    auto other = base;
+    other.tool = BuildTool::Road;
+    EXPECT_NE(base, other);
+
+    auto hidden = base;
+    hidden.visible = false;
+    EXPECT_NE(base, hidden);
+
+    auto blocked = base;
+    blocked.valid = false;
+    EXPECT_NE(base, blocked);
+}
+
+TEST(GridSceneBuildTest, ABlockedGhostIsDrawnInADifferentTint)
+{
+    auto snapshot = emptySnapshot();
+    snapshot.ghost = BuildGhost{
+        .at = Cell{.x = 0, .y = 0},
+        .tool = BuildTool::House,
+        .visible = true,
+        .valid = false};
+
+    const auto blits = blitsOf(snapshot);
+
+    ASSERT_EQ(blits.size(), 1U);
+    EXPECT_NE(blits[0].tint, kGhostly);
 }
