@@ -16,6 +16,12 @@ namespace antwika::input
             outermost = &*live;
         }
 
+        if (options.pointerHint)
+        {
+            hinting.emplace(*outermost, codec, options.pointerHint->get());
+            outermost = &*hinting;
+        }
+
         if (options.coalescePointerMotion)
         {
             coalescing.emplace(*outermost);
