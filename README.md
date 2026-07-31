@@ -342,6 +342,16 @@ A button can still be told how to look, for the application that knows which one
 
 An application drives all of this from inside its tick loop, downstream of the replay recorder, so a recorded click regenerates the button press rather than the press being recorded as well — `apps/game`'s `UiSink` is the worked example.
 
+Hover is the one thing that does *not* go through there, deliberately: it is visual candy, it cannot affect what a run computes, and a `--record` file that held every pointer movement would grow at the window system's rate rather than the application's.
+So a free-moving pointer reaches the render side on `input::PointerHintChannel`, which no recording holds, and `ui::applyHover()` repaints a finished picture from it:
+
+```cpp
+applyHover(frame.commands, frame.hoverTargets, hoverFrom(hints.forRenderingOnly()));
+```
+
+That function is handed a draw list and two read-only values and never a `Frame`, and a `ui::HoverPointer` has no `pressed` field to begin with, so a hover cannot decide what a run computes rather than merely being asked not to.
+See [`docs/hover-is-not-simulation.md`](docs/hover-is-not-simulation.md).
+
 `apps/gfx_demo` (`antwika_gfx_demo`) is the showcase: a header, a sidebar sized from its own longest label, a growing main column, and a row of buttons pushed to the bottom right by growing spacers.
 The buttons work: one counts your clicks and the other puts the count back to zero.
 

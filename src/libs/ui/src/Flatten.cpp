@@ -9,6 +9,8 @@
 #include <antwika/gfx/TextLayout.hpp>
 
 #include "antwika/ui/DrawCommand.hpp"
+#include "antwika/ui/HoverTarget.hpp"
+#include "antwika/ui/WidgetId.hpp"
 
 #include "FocusRing.hpp"
 #include "NodeKind.hpp"
@@ -100,9 +102,13 @@ namespace antwika::ui::detail
          * @param tree The arena, already laid out.
          * @param overlay Which layer to emit.
          * @param commands Receives this layer's commands.
+         * @param targets Receives this layer's hover targets, or null.
          */
         void emitLayer(
-            const LayoutTree &tree, bool overlay, DrawList &commands)
+            const LayoutTree &tree,
+            bool overlay,
+            DrawList &commands,
+            HoverTargets *targets)
         {
             for (std::size_t index = 0; index < tree.size(); ++index)
             {
@@ -115,6 +121,21 @@ namespace antwika::ui::detail
 
                 if (node.background)
                 {
+                    // A widget working its appearance out has colours.
+                    // One the caller dressed carries none of them.
+                    // Unnamed is unhoverable, as resolve() has it too.
+                    if (targets != nullptr && node.style
+                        && node.id != kNoWidget)
+                    {
+                        targets->push_back(HoverTarget{
+                            .id = node.id,
+                            .rect = node.arranged,
+                            .command = commands.size(),
+                            .idle = node.style->idle,
+                            .hovered = node.style->hovered,
+                            .held = node.pressed});
+                    }
+
                     commands.push_back(FillRect{
                         .rect = node.arranged,
                         .color = *node.background});
@@ -172,14 +193,14 @@ namespace antwika::ui::detail
         }
     } // namespace
 
-    DrawList flatten(const LayoutTree &tree)
+    DrawList flatten(const LayoutTree &tree, HoverTargets *targets)
     {
         DrawList commands;
 
         // Base widgets, base border, overlay widgets, overlay border.
         // Flatten.hpp says why that is the only order there is.
-        emitLayer(tree, false, commands);
-        emitLayer(tree, true, commands);
+        emitLayer(tree, false, commands, targets);
+        emitLayer(tree, true, commands, targets);
 
         return commands;
         // Only an unwind destroys commands at this brace.

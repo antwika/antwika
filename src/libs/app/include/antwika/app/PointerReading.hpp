@@ -1,12 +1,15 @@
 #pragma once
 
+#include <optional>
 #include <variant>
 
 #include <antwika/gfx/Point.hpp>
 #include <antwika/input/InputEvent.hpp>
 #include <antwika/input/InputState.hpp>
 #include <antwika/input/MouseButton.hpp>
+#include <antwika/input/PointerHint.hpp>
 #include <antwika/input/Position.hpp>
+#include <antwika/ui/HoverPointer.hpp>
 #include <antwika/ui/Pointer.hpp>
 
 namespace antwika::app
@@ -16,7 +19,9 @@ namespace antwika::app
     using antwika::input::InputEvent;
     using antwika::input::InputState;
     using antwika::input::MouseButton;
+    using antwika::input::PointerHint;
     using antwika::input::Position;
+    using antwika::ui::HoverPointer;
     using antwika::ui::Pointer;
 
     /**
@@ -81,5 +86,36 @@ namespace antwika::app
         const InputState &state,
         bool located,
         MouseButton button = MouseButton::Left) noexcept;
+
+    /**
+     * @brief Read a pointer hint as the hover pointer a picture wants.
+     *
+     * The other half of the sentence pointerFrom() says, and the reason
+     * it is a second function rather than one more field on the first:
+     * these two positions come from different places and mean different
+     * things. A ui::Pointer is folded from the recorded event stream and
+     * decides what a run computes; a ui::HoverPointer comes off
+     * input::PointerHintChannel, which a replay does not reproduce, and
+     * may decide only what is drawn.
+     *
+     * Keeping them apart in the type system is what stops one being
+     * passed where the other belongs, and this is the one place an
+     * application converts between the two libraries that will not name
+     * each other. See docs/hover-is-not-simulation.md.
+     *
+     * @param hint What PointerHintChannel::forRenderingOnly() answered,
+     * which is nothing until the pointer has been seen at all.
+     * @return Where to draw a hover, or nowhere.
+     */
+    [[nodiscard]] constexpr HoverPointer hoverFrom(
+        const std::optional<PointerHint> &hint) noexcept
+    {
+        if (!hint)
+        {
+            return HoverPointer{};
+        }
+
+        return HoverPointer{.position = asPoint(hint->position)};
+    }
 
 } // namespace antwika::app
