@@ -283,7 +283,14 @@ These are simply not done, and are recorded so they are not discovered later.
   Each agent measured its own module at 100% before merging, but two things made a
   combined run worth having: the library split moved files between modules, and the
   toolbar/HUD agent's own coverage run was interrupted before it reported.
-  The result of that combined run is recorded at the end of this file.
+  That run found two gaps and both are now closed, so the gate reports 100%
+  lines, functions and branches over the merged tree.
+  One of them, three branches in `src/libs/ecs/include/antwika/ecs/View.hpp`,
+  **predates this work**: the file is byte-identical to `main`, and the cause is
+  `gcovr --exclude-throw-branches` failing to strip three allocation-failure edges
+  that raw `gcov -b` tags `(throw)`.
+  So `main` very probably fails the gate today for the same reason.
+  That was inferred rather than proven -- no coverage build of `main` was run.
 - **Only the `gcc-linux-x86_64` profile was built.**
   The LLVM and MinGW legs are untested locally; CI covers them.
 - **`apps/game` does not yet use the new `antwika::ui` hover pass.**
