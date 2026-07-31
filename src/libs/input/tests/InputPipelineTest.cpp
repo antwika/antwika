@@ -3,6 +3,7 @@
 #include <gtest/gtest.h>
 
 #include <cstdint>
+#include <optional>
 #include <string>
 #include <utility>
 #include <vector>
@@ -31,9 +32,9 @@ using antwika::input::Key;
 using antwika::input::KeyPressed;
 using antwika::input::MouseButton;
 using antwika::input::PointerButtonPressed;
+using antwika::input::PointerButtonReleased;
 using antwika::input::PointerHint;
 using antwika::input::PointerHintChannel;
-using antwika::input::PointerButtonReleased;
 using antwika::input::PointerMoved;
 using antwika::input::fakes::FakeInputBackend;
 using antwika::replay::ReplaySource;
@@ -280,6 +281,55 @@ TEST(InputPipelineTest, EventsFor_RecordsTheSameStreamWithAChannelAndWithout)
     EXPECT_EQ(
         channel.forRenderingOnly(),
         (PointerHint{.position = {.x = 9, .y = 9}}));
+}
+
+TEST(InputPipelineTest, EventsFor_HintsDifferBetweenARunAndItsReplay)
+{
+    // The hazard the channel carries, pinned rather than described.
+    // Both runs see one stream, so both reach one state.
+    // They do not see one hint, and nothing can make them.
+    // Anything a replay reproduces must therefore not read one.
+    const std::vector<std::vector<InputEvent>> script{
+        {moved(1, 1), moved(2, 2)},
+        {PointerButtonPressed{
+            .button = MouseButton::Left, .position = {.x = 5, .y = 5}}}};
+
+    ReplaySource nothingScripted({});
+    FakeInputBackend backend(script);
+    PointerHintChannel liveChannel;
+    InputPipelineOptions options = kEverything;
+    options.pointerHint = liveChannel;
+    InputPipeline live(nothingScripted, backend, kCodec, options);
+
+    std::vector<TickEvent> recorded;
+    for (auto &event : live.eventsFor(0))
+    {
+        recorded.push_back(at(0, std::move(event)));
+    }
+
+    // Held back by the gate, and on the channel all the same.
+    const auto duringTheRun = liveChannel.forRenderingOnly();
+    EXPECT_TRUE(recorded.empty());
+    EXPECT_EQ(duringTheRun, (PointerHint{.position = {.x = 2, .y = 2}}));
+
+    for (auto &event : live.eventsFor(1))
+    {
+        recorded.push_back(at(1, std::move(event)));
+    }
+
+    InputPipelineOptions replaying = options;
+    replaying.readsDevice = false;
+    PointerHintChannel replayedChannel;
+    replaying.pointerHint = replayedChannel;
+
+    ReplaySource recordedSource(recorded);
+    FakeInputBackend untouched;
+    InputPipeline replayed(recordedSource, untouched, kCodec, replaying);
+
+    EXPECT_TRUE(replayed.eventsFor(0).empty());
+
+    // The same tick of the same session, and no hint at all.
+    EXPECT_EQ(replayedChannel.forRenderingOnly(), std::nullopt);
 }
 
 TEST(InputPipelineTest, EventsFor_PublishesWithNeitherThinnerAttached)
