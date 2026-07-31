@@ -2,6 +2,7 @@
 
 #include <gtest/gtest.h>
 
+#include <array>
 #include <cstddef>
 #include <cstdint>
 #include <string>
@@ -241,12 +242,27 @@ TEST(HoverTest, HoverPointer_ReportsNoPositionByDefault)
 
 TEST(HoverTest, HoverTarget_ComparesEveryFieldItCarries)
 {
-    auto target = twoTargets().at(0);
-    const auto same = target;
+    const auto original = twoTargets().at(0);
 
-    EXPECT_EQ(same, target);
+    EXPECT_EQ(original, twoTargets().at(0));
 
-    target.held = true;
+    // One flip per field, and a comparison may skip none of them.
+    // Skipping one calls two targets the same widget, drawn the same.
+    using Change = void (*)(HoverTarget &);
 
-    EXPECT_NE(same, target);
+    const std::array<Change, 6> changes{
+        [](HoverTarget &target) { target.id = kSecond; },
+        [](HoverTarget &target) { target.rect = boxAt(20); },
+        [](HoverTarget &target) { target.command = 4; },
+        [](HoverTarget &target) { target.idle = kHeld; },
+        [](HoverTarget &target) { target.hovered = kHeld; },
+        [](HoverTarget &target) { target.held = true; }};
+
+    for (const auto &change : changes)
+    {
+        auto changed = original;
+        change(changed);
+
+        EXPECT_NE(original, changed);
+    }
 }
