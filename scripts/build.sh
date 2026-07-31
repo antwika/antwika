@@ -99,6 +99,26 @@ conan install . \
 cmake --preset conan-release
 cmake --build build -j24
 
+# Every tests/ directory is guarded by NOT CMAKE_CROSSCOMPILING, so a
+# cross build has no tests to run -- and its executables would not run
+# on this machine even if it had.
+# Saying so and stopping is what keeps a MinGW build from ending in an
+# xvfb-run that was never going to help.
+# The two profiles are the same fact CMake crosscompiles on, read from
+# the same files the install above already names.
+profile_os() {
+    sed -n 's/^os=//p' "profiles/$1/${CONAN_PROFILE}"
+}
+
+host_os=$(profile_os host)
+build_os=$(profile_os build)
+
+if [ "$host_os" != "$build_os" ]; then
+    echo "==> Built for $host_os on $build_os, so no tests are run"
+    echo "The executables in build/bin/ run on $host_os."
+    exit 0
+fi
+
 # A dev container has neither a display nor a sound card, so a real
 # backend's conformance suite needs a headless runner.
 # The suite is split in two rather than run under one, which is the

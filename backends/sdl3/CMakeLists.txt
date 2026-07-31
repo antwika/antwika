@@ -187,12 +187,12 @@ if(BUILD_TESTING AND NOT CMAKE_CROSSCOMPILING)
     add_subdirectory(tests)
 endif()
 
-# SDL ships its own runtime DLL, which is this backend's business rather
-# than any app's.
-if(MINGW)
-    add_custom_command(TARGET antwika_sdl3_runtime POST_BUILD
-        COMMAND ${CMAKE_COMMAND} -E copy_if_different
-            $<TARGET_FILE:SDL3::SDL3>
-            ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}
-    )
-endif()
+# Nothing copies an SDL runtime DLL beside the apps, because there is
+# not one: Conan builds sdl static by default, so SDL3::SDL3 is a
+# libSDL3.a that lands inside every executable that links it.
+# The block that used to be here copied $<TARGET_FILE:SDL3::SDL3>, which
+# could never have worked whichever way sdl was built -- CMakeDeps
+# declares a component as an INTERFACE IMPORTED target, and an interface
+# target has no file for that expression to name.
+# It failed at configure time rather than quietly, and only on MinGW,
+# which is the one leg CI never builds a backend on.
