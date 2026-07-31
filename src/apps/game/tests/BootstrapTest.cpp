@@ -36,6 +36,7 @@
 #include "antwika/game/PathIndex.hpp"
 #include "antwika/game/BuildTool.hpp"
 #include "antwika/game/SaveGame.hpp"
+#include "antwika/game/Toolbar.hpp"
 #include "antwika/game/WorldMap.hpp"
 #include "antwika/game/WorldMapLayout.hpp"
 #include "antwika/game/WorldMapSink.hpp"
@@ -754,4 +755,29 @@ TEST(PrintSummaryTest, WritesEveryBuildingAndWhatItIs)
     EXPECT_NE(out.str().find("Buildings: 2\n"), std::string::npos);
     EXPECT_NE(out.str().find("  house at (1, 2)\n"), std::string::npos);
     EXPECT_NE(out.str().find("  tower at (3, 4)\n"), std::string::npos);
+}
+
+// replays/demo.json presses the House palette button at this pixel.
+// It then places at the cell the pixel below maps to.
+// A recording is only as good as the layout it was made against.
+// So both pixels are pinned here rather than rediscovered by hand.
+TEST(BootstrapTest, Bootstrap_TheDemoReplaysPaletteClickHitsTheHouse)
+{
+    const antwika::game::Toolbar toolbar;
+    const Camera camera;
+    const antwika::ui::Pointer pointer{
+        .position = antwika::gfx::Point{.x = 88, .y = 56}};
+
+    EXPECT_EQ(
+        toolbar.describe(antwika::game::kUiCanvas, pointer, camera)
+            .interactions.hovered,
+        antwika::game::widgets::toolWidget(
+            antwika::game::BuildTool::House));
+
+    // And the placement lands beside the road the demo laid.
+    EXPECT_EQ(
+        antwika::game::screenToCell(
+            antwika::gfx::Point{.x = 544, .y = 176},
+            Camera(Point{.x = 512, .y = 48})),
+        (antwika::game::Cell{.x = 4, .y = 3}));
 }
