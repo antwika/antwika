@@ -138,6 +138,11 @@ namespace antwika::ui
         const auto fill =
             focused ? themeValue.fieldFocused : themeValue.field;
 
+        // A field is a stop in the tab order like a button is.
+        const FocusRing ring{
+            .color = themeValue.focusRing,
+            .thickness = themeValue.focusRingThickness};
+
         tree->open(Node{ // GCOVR_EXCL_LINE
             .axis = Axis::Row,
             .width = spec.width,
@@ -147,9 +152,7 @@ namespace antwika::ui
             .gap = 0,
             .background = fill,
             .id = spec.id,
-            .focusStyle = FocusRing{
-                .color = themeValue.focusRing,
-                .thickness = themeValue.focusRingThickness}});
+            .focusStyle = ring});
 
         // The caret sits between two pieces of one line.
         // So a row of three children is the whole of it.
