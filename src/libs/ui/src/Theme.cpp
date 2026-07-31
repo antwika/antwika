@@ -34,6 +34,7 @@ namespace antwika::ui
         base.padding = scaled(base.padding, scale);
         base.gap = scaled(base.gap, scale);
         base.buttonPadding = scaled(base.buttonPadding, scale);
+        base.focusRingThickness = scaled(base.focusRingThickness, scale);
 
         return base;
     }

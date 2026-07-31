@@ -59,6 +59,14 @@ namespace antwika::ui
         Color buttonText{.red = 240, .green = 240, .blue = 240};
 
         /**
+         * @brief The border drawn around the focused widget.
+         *
+         * Yellow, because focus has to read as focus against every
+         * button colour above it rather than as one more shade of them.
+         */
+        Color focusRing{.red = 244, .green = 208, .blue = 63};
+
+        /**
          * @brief Pixels per glyph pixel for every label.
          */
         std::uint32_t textScale = 1;
@@ -77,6 +85,14 @@ namespace antwika::ui
          * @brief Inset on every side of a button's label.
          */
         std::uint32_t buttonPadding = 6;
+
+        /**
+         * @brief How thick the focused widget's border is.
+         *
+         * Zero draws no border at all, which is how an application that
+         * wants keyboard focus without a ring asks for it.
+         */
+        std::uint32_t focusRingThickness = 2;
     };
 
     /**

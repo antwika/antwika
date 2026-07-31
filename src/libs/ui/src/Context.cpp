@@ -12,6 +12,7 @@
 #include "antwika/ui/Sizing.hpp"
 
 #include "Flatten.hpp"
+#include "FocusRing.hpp"
 #include "Interactive.hpp"
 #include "Layout.hpp"
 #include "LayoutTree.hpp"
@@ -48,10 +49,17 @@ namespace antwika::ui
         }
     } // namespace
 
-    Context::Context(Size canvas, Theme theme, Pointer pointer)
+    Context::Context(
+        Size canvas,
+        Theme theme,
+        Pointer pointer,
+        Keyboard keyboard,
+        WidgetId focus)
         : canvasSize{canvas},
           themeValue{theme},
           pointerValue{std::move(pointer)},
+          keyboardValue{std::move(keyboard)},
+          focusValue{focus},
           tree{std::make_unique<detail::LayoutTree>(Node{ // GCOVR_EXCL_LINE
               .axis = Axis::Column,
               .width = kGrow,
@@ -122,6 +130,13 @@ namespace antwika::ui
                              .hovered = themeValue.buttonHovered,
                              .pressed = themeValue.buttonPressed}};
 
+        // Every button carries one, named or not.
+        // resolve() is the one place that skips the unnamed ones.
+        // An id is what focus crosses back into application state as.
+        const detail::FocusRing ring{
+            .color = themeValue.focusRing,
+            .thickness = themeValue.focusRingThickness};
+
         tree->open(Node{ // GCOVR_EXCL_LINE
             .axis = Axis::Row,
             .width = spec.width,
@@ -130,7 +145,8 @@ namespace antwika::ui
             .padding = themeValue.buttonPadding,
             .background = buttonFill(themeValue, state),
             .id = spec.id,
-            .style = style});
+            .style = style,
+            .focusStyle = ring});
 
         // Growing room on both sides is what centres the label.
         // It comes out of the distribution the layout already does.
@@ -165,7 +181,8 @@ namespace antwika::ui
     {
         detail::layout(*tree, canvasSize);
 
-        const auto interactions = detail::resolve(*tree, pointerValue);
+        const auto interactions = detail::resolve(
+            *tree, pointerValue, keyboardValue, focusValue);
 
         return Frame{ // GCOVR_EXCL_LINE
             .commands = detail::flatten(*tree),

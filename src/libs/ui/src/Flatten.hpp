@@ -20,6 +20,9 @@ namespace antwika::ui::detail
      * too tall for its box is left out altogether, since antwika::gfx can
      * draw no part of a glyph.
      *
+     * The focused widget's border is appended after everything else, as
+     * four filled bars, so that nothing declared later paints over it.
+     *
      * @param tree The arena, already laid out.
      * @return The commands, in the order they are drawn.
      */
