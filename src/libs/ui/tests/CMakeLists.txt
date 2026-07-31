@@ -2,6 +2,7 @@ find_package(GTest REQUIRED)
 
 add_executable(antwika_ui_tests
     ContextInteractionTest.cpp
+    ContextKeyboardTest.cpp
     ContextNestingTest.cpp
     ContextTest.cpp
     ContextWidgetsTest.cpp
@@ -12,6 +13,7 @@ add_executable(antwika_ui_tests
     LayoutTest.cpp
     LayoutTreeTest.cpp
     PainterTest.cpp
+    ResolveFocusTest.cpp
     ResolveHitTest.cpp
     ResolveTest.cpp
     ScopeTest.cpp

@@ -36,6 +36,17 @@ TEST(InteractionsTest, Equality_DiffersOnTheActivatedWidget)
     EXPECT_NE(kBoth, other);
 }
 
+TEST(InteractionsTest, Equality_DiffersOnTheFocusedWidget)
+{
+    constexpr Interactions other{
+        .hovered = kWidget,
+        .activated = kWidget,
+        .focused = kOther,
+        .pointerOverUi = true};
+
+    EXPECT_NE(kBoth, other);
+}
+
 TEST(InteractionsTest, Equality_DiffersOnWhetherThePointerIsOverTheUi)
 {
     constexpr Interactions other{
