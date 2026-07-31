@@ -13,7 +13,7 @@ They are also shaped so the directory could later be pushed to a GitHub wiki rep
 - [Getting Started](Getting-Started.md) — dev containers, the Conan/CMake/CTest cycle, backend selection, and how to run each app.
 - [Architecture](Architecture.md) — the layering, the tick loop, the determinism rule, and the library dependency graph.
 - [Contributing](Contributing.md) — the worktree rule, the checker scripts, the coverage gate, and commit conventions.
-- [Glossary](Glossary.md) — tick, event, replay source, sink, system, reducer, backend, snapshot, and the rest of the vocabulary.
+- [Glossary](Glossary.md) — tick, event, replay source, sink, system, backend, snapshot, and the rest of the vocabulary.
 
 ## Libraries
 
@@ -33,7 +33,6 @@ Each page covers what the library is for, its key headers and types, what it dep
 | [input](libraries/input.md) | Backend-agnostic keyboard and pointer edges, delivered as replay input. |
 | [time](libraries/time.md) | The `Tick` type, `IClock` and `ISleeper`. |
 | [log](libraries/log.md) | Composable logging with no global state. |
-| [reducer](libraries/reducer.md) | Folding events into a plain state value. |
 | [app](libraries/app.md) | The wiring every app's `main.cpp` would otherwise repeat. |
 
 ## Applications

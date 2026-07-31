@@ -12,7 +12,7 @@ They encode a small number of opinions, and a showcase app is worth building whe
   An idea that needs wall-clock time, a hash-ordered container, an unseeded RNG or a floating-point reduction over an unspecified order is not a showcase, it is a bug report waiting to happen.
 - **It must be replayable, and the replay must hold only external input.** If the app can regenerate something from the tick stream, the recording must not contain it.
   `apps/game` records the click and regenerates the tile; that is the shape every new app should take.
-- **It must have nowhere to hide state.** State lives in an `ecs::World`, a `reducer::IReducer` fold, or a plainly-owned struct the app admits to owning.
+- **It must have nowhere to hide state.** State lives in an `ecs::World`, an `ITickEventSink` fold, or a plainly-owned struct the app admits to owning.
   A cache that a renderer keeps between frames, or a static local anywhere, disqualifies an idea until it is designed out.
 - **Rendering must stay write-only.** A scene reads a snapshot and draws; it never answers a question the simulation asked.
 - **It should be testable without a device.** The best ideas here are ones where the interesting part is a pure function over values, so a test asserts with `EXPECT_EQ` and no mock, the way `ui::DrawList` and `holdem::HandValue` do.
@@ -48,15 +48,15 @@ Proves that "deterministic across toolchains" is a property this repo can actual
 ### Traffic lights
 
 Cars advance along the road network `apps/game` already builds, obeying signals that cycle on a fixed tick schedule.
-It reuses `game`'s grid, camera and atlas, so the new code is the vehicle system and the signal reducer.
-Proves the isometric grid and the camera-as-simulation-state decision hold up when something other than a walker moves on them, and gives `reducer::IReducer` a second real user.
+It reuses `game`'s grid, camera and atlas, so the new code is the vehicle system and the signal fold.
+Proves the isometric grid and the camera-as-simulation-state decision hold up when something other than a walker moves on them.
 **Difficulty: small**, given `apps/game`.
 
 ### Elevator bank
 
 Several cars serve a building of floors against a queue of requests, under a dispatch policy that is a pure function of the pending requests and car positions.
 The showcase is that swapping the policy swaps the whole behaviour with no other change, and a recorded set of requests replays identically under any policy.
-Proves the `reducer` fold and the "policy is a pure function of a view" pattern `poker::PolicyAgent` established, outside poker.
+Proves the "policy is a pure function of a view" pattern `poker::PolicyAgent` established, outside poker.
 **Difficulty: small.**
 
 ## Constraint solving (`wfc`)
@@ -192,7 +192,7 @@ Proves that a fixed-tick loop is a viable basis for a reflex game, and would sur
 
 ### Chess with a clock
 
-Legal move generation as a pure function, state as a `reducer` fold, and a hand history written the way `poker::TablePrinter` writes one — but in PGN, which the rest of the world already reads.
+Legal move generation as a pure function, state as an `ITickEventSink` fold, and a hand history written the way `poker::TablePrinter` writes one — but in PGN, which the rest of the world already reads.
 The clock is tick-derived, so it replays exactly.
 Proves the "export a format other tools consume" pattern generalises beyond hand histories.
 **Difficulty: medium.**

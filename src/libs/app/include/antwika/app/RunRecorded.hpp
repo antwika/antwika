@@ -77,9 +77,11 @@ namespace antwika::app
      * an application's main.cpp is deliberately excluded from the
      * coverage report.
      *
-     * Catching is what makes the run's resources unwind at all: an
-     * uncaught exception may call std::terminate without unwinding. It
-     * is also what lets a failed `--record` run save what it got to.
+     * Catching is runGuarded()'s job, and this calls it twice: once
+     * around the parse and the body, once around the save. Two guards
+     * rather than one is what lets a failed `--record` run still save
+     * what it got to, and lets an unwritable path be reported rather
+     * than thrown out of a main() that has no catch of its own.
      *
      * `--help` is answered here rather than run: the table this parsed
      * against is rendered to `help` and the body is never called, which

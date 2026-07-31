@@ -71,11 +71,14 @@ namespace antwika::replay
 
     /**
      * @brief The version of the tick-event schema nested inside a replay
-     * document and used standalone by eventFromJson().
+     * document as the "items" of its "events".
      *
-     * Carried in the schema's "$id" rather than in each event, since an
-     * event is repeated thousands of times in one document and its
-     * revision is fixed by the document that holds it.
+     * Stated here rather than in each event, since an event is repeated
+     * thousands of times in one document and its revision is fixed by
+     * the document that holds it.
+     * Nothing writes it into a file: it is a number to bump and reason
+     * about when the event shape changes, and what a reader actually
+     * dispatches on is the document version beside it.
      */
     inline constexpr std::uint32_t kTickEventSchemaVersion = 1;
 

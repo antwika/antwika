@@ -64,7 +64,7 @@ This is what makes a replay reproduce state by construction rather than by conve
 
 The engine has no opinion about application state.
 
-- A plain value folded by an `antwika::reducer::IReducer` — `apps/game`'s `GameState` is the example.
+- A plain value folded by an `ITickEventSink` the app owns — `apps/game`'s `GameState` and its `GameStateReducer` are the example.
 - An `antwika::ecs::World` of entities and components advanced by `ISystem`s — `apps/life` and `apps/task_worker` do this.
 
 Both are driven from the same event stream, so the choice is per app rather than per engine.
@@ -83,7 +83,6 @@ graph TD
     gfx[gfx]
     replay[replay]
     input[input]
-    reducer[reducer]
     scheduler[scheduler]
     ui[ui]
     app[app]
@@ -98,7 +97,6 @@ graph TD
     ecs --> log
     ecs --> time
     gfx --> log
-    reducer --> event
     scheduler --> time
     ui --> gfx
     replay --> ecs

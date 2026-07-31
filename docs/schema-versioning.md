@@ -9,7 +9,8 @@ The constants it talks about live in [`antwika/replay/SchemaVersion.hpp`](../src
 ## The versioned documents
 
 - The replay document `ReplayReader` and `ReplayWriter` read and write is at `kReplayDocumentVersion` (1), stated in the document's own `"version"` member.
-- The tick-event schema, used standalone by `eventFromJson()` and as the `items` of a replay's `events`, is at `kTickEventSchemaVersion` (1), stated in the schema's `$id` rather than in each event.
+- The tick-event schema, nested as the `items` of a replay's `events`, is at `kTickEventSchemaVersion` (1), stated once rather than in each event.
+  No file carries that number: an event only ever appears inside a replay document, so the document's own `"version"` is what a reader dispatches on, and this constant is what a change to the event shape is reasoned about against.
 
 Every app event payload schema (`life.toggle_cell`, `game.score_increment`, `task.submit`, `poker.*`, `input.*`) is validated through `parseAndValidatePayload()` and carries no version of its own, on purpose.
 A payload only ever appears inside a replay document, so the document's version already says which revision of the payloads it holds, and a version member in every payload string would be one fact repeated once per event.

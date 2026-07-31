@@ -18,7 +18,7 @@ There is exactly one mechanism, with no special-casing between events the engine
 | `ITickEventSink.hpp` | `ITickEventSink` | `handle(const TickEvent &)` — the tick-aware form, and what apps mostly implement. |
 | `EventDispatcher.hpp` | `EventDispatcher` | The plain implementation. |
 | `TickedEventDispatcher.hpp` | `TickedEventDispatcher` | Stamps the current tick onto each event and fans it out to `ITickEventSink`s. |
-| `EventRecorder.hpp` / `TickEventRecorder.hpp` | `EventRecorder`, `TickEventRecorder` | Collect what passed through, for a `--record` run. |
+| `TickEventRecorder.hpp` | `TickEventRecorder` | Collects what passed through, for a `--record` run. |
 
 `MockEventDispatcher`, `MockEventSink` and `MockTickEventSink` live under `tests/mocks/`.
 

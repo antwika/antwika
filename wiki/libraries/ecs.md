@@ -5,7 +5,7 @@
 ## What it is for
 
 Holding application state as entities carrying components, advanced once per tick by systems.
-It is one of the two ways an app can hold state in this project; the other is a plain value folded by a [`reducer`](reducer.md).
+It is one of the two ways an app can hold state in this project; the other is a plain value folded by an `ITickEventSink` the app owns.
 
 ## Key types
 

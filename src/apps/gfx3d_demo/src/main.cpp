@@ -1,11 +1,10 @@
 #include <cstdint>
-#include <cstdlib>
-#include <exception>
 #include <iostream>
 #include <optional>
 #include <string>
 
 #include <antwika/app/ConsoleLogging.hpp>
+#include <antwika/app/RunGuarded.hpp>
 #include <antwika/gfx/SelectedBackend.hpp>
 #include <antwika/gfx/WindowDesc.hpp>
 #include <antwika/log/Level.hpp>
@@ -15,6 +14,7 @@
 #include "antwika/gfx3d_demo/SpinScene.hpp"
 
 using antwika::app::ConsoleLogging;
+using antwika::app::runGuarded;
 using antwika::gfx::WindowDesc;
 using antwika::gfx3d_demo::cubeMesh;
 using antwika::gfx3d_demo::SpinLoop;
@@ -38,39 +38,30 @@ int main()
     ConsoleLogging logging(std::cout, Level::Info);
     auto &logger = logging.logger();
 
-    // Catching is what makes the run's resources unwind at all.
-    // An uncaught exception may call std::terminate without unwinding.
-    // A window and a mesh are what would be left behind here.
-    int exitCode = EXIT_SUCCESS;
-    try
-    {
-        const auto backend = antwika::gfx::makeSelectedBackend(logger);
+    return runGuarded(
+        "antwika_gfx3d_demo",
+        [&logger]
+        {
+            const auto backend = antwika::gfx::makeSelectedBackend(logger);
 
-        logger.log(
-            Level::Info,
-            "Antwika gfx3d demo on backend: "
-                + std::string(backend->name()));
+            logger.log(
+                Level::Info,
+                "Antwika gfx3d demo on backend: "
+                    + std::string(backend->name()));
 
-        const SpinScene scene;
-        SpinLoop loop(*backend, scene);
+            const SpinScene scene;
+            SpinLoop loop(*backend, scene);
 
-        loop.run(
-            WindowDesc{
-                .title = "Antwika gfx3d demo",
-                .size = {.width = 800, .height = 600}},
-            cubeMesh(),
-            kDemoFrames);
+            loop.run(
+                WindowDesc{
+                    .title = "Antwika gfx3d demo",
+                    .size = {.width = 800, .height = 600}},
+                cubeMesh(),
+                kDemoFrames);
 
-        logger.log(
-            Level::Info,
-            "Antwika gfx3d demo drew "
-                + std::to_string(loop.ticks()) + " ticks");
-    }
-    catch (const std::exception &error)
-    {
-        std::cerr << "antwika_gfx3d_demo: " << error.what() << '\n';
-        exitCode = EXIT_FAILURE;
-    }
-
-    return exitCode;
+            logger.log(
+                Level::Info,
+                "Antwika gfx3d demo drew "
+                    + std::to_string(loop.ticks()) + " ticks");
+        });
 }

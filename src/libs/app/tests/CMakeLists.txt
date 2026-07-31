@@ -4,6 +4,7 @@ add_executable(antwika_app_tests
     ConsoleLoggingTest.cpp
     PngFileTest.cpp
     PointerReadingTest.cpp
+    RunGuardedTest.cpp
     RunRecordedTest.cpp
 )
 
