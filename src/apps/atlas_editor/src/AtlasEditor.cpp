@@ -10,7 +10,7 @@
 #include <antwika/event/EventDispatcher.hpp>
 #include <antwika/event/TickedEventDispatcher.hpp>
 #include <antwika/log/Level.hpp>
-#include <antwika/replay/EngineLoop.hpp>
+#include <antwika/simulation/EngineLoop.hpp>
 
 #include "antwika/atlas_editor/Canvas.hpp"
 #include "antwika/atlas_editor/EditorSink.hpp"
@@ -22,7 +22,7 @@ namespace antwika::atlas_editor
     using antwika::engine::StopSignal;
     using antwika::event::EventDispatcher;
     using antwika::event::TickedEventDispatcher;
-    using antwika::replay::EngineLoop;
+    using antwika::simulation::EngineLoop;
 
     namespace
     {

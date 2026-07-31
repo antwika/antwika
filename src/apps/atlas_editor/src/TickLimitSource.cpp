@@ -10,7 +10,7 @@ namespace antwika::atlas_editor
     using antwika::engine::events::kStop;
 
     TickLimitSource::TickLimitSource(
-        IReplaySource &inner, std::optional<antwika::time::Tick> limit)
+        ITickSource &inner, std::optional<antwika::time::Tick> limit)
         : inner(inner), limit(limit)
     {
     }

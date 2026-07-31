@@ -4,14 +4,14 @@
 #include <vector>
 
 #include <antwika/event/Event.hpp>
-#include <antwika/replay/IReplaySource.hpp>
+#include <antwika/simulation/ITickSource.hpp>
 #include <antwika/time/Tick.hpp>
 
 namespace antwika::atlas_editor
 {
 
     using antwika::event::Event;
-    using antwika::replay::IReplaySource;
+    using antwika::simulation::ITickSource;
 
     /**
      * @brief Ends a session after a given number of ticks, by asking it
@@ -34,7 +34,7 @@ namespace antwika::atlas_editor
      * forgotten stop event, and the wrong one for a session that simply
      * ran as long as it was asked to.
      */
-    class TickLimitSource final : public IReplaySource
+    class TickLimitSource final : public ITickSource
     {
     public:
         /**
@@ -45,7 +45,7 @@ namespace antwika::atlas_editor
          * which is what somebody in front of a real window asks for.
          */
         TickLimitSource(
-            IReplaySource &inner,
+            ITickSource &inner,
             std::optional<antwika::time::Tick> limit);
 
         TickLimitSource(const TickLimitSource &) = delete;
@@ -65,7 +65,7 @@ namespace antwika::atlas_editor
             antwika::time::Tick tick) override;
 
     private:
-        IReplaySource &inner;
+        ITickSource &inner;
         std::optional<antwika::time::Tick> limit;
     };
 

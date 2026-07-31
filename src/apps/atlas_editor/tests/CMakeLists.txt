@@ -45,6 +45,7 @@ target_link_libraries(antwika_atlas_editor_tests
         antwika::input
         antwika::log::tests::mocks
         antwika::replay
+        antwika::simulation
         antwika::time::tests::fakes
         antwika::ui
         gtest::gtest
