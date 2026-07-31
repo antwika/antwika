@@ -49,11 +49,22 @@ namespace antwika::input
      * the live one, so both run the same pipeline; running an already
      * gated stream through it again changes nothing.
      *
-     * **Not for an application that draws anything following a
-     * free-moving pointer.** A hover highlight, a rubber band or a custom
-     * cursor would update only when a button, a wheel or a key does,
-     * because between those the movements are not in the tick stream to
-     * draw from.
+     * **Nothing following a free-moving pointer may be drawn from the
+     * tick stream while this is attached.** A hover highlight, a rubber
+     * band or a custom cursor read from there would update only when a
+     * button, a wheel or a key does, because between those the movements
+     * are not in that stream to draw from.
+     *
+     * That used to be the end of it, and it no longer is:
+     * PointerHintChannel publishes the pointer's position on a channel
+     * that is not the event stream, written by a PointerHintSource that
+     * InputPipeline attaches inside this decorator and therefore sees
+     * every movement this holds back. An application wanting both a thin
+     * recording and a live hover names both settings, which is why
+     * InputPipelineOptions describes them as a pair. What this class does
+     * is unchanged -- the caveat above is still exactly true of the
+     * stream, and reading a hint into anything a replay reproduces is
+     * forbidden for reasons PointerHintChannel sets out at length.
      *
      * **The name was reviewed and kept**, against a proposal to rename it
      * for that caveat (DiscardsHoverMotion or similar). It describes what
