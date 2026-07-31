@@ -8,6 +8,7 @@ antwika_add_library(
         src/ConsoleLogging.cpp
         src/PngFile.cpp
         src/PointerReading.cpp
+        src/RunGuarded.cpp
         src/RunRecorded.cpp
     DEPENDS
         antwika::event
