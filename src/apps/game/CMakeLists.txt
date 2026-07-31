@@ -4,18 +4,26 @@ add_executable(antwika_game
     src/BuildGhost.cpp
     src/BuildingIndex.cpp
     src/BuildingSystem.cpp
+    src/CityGrid.cpp
+    src/FpsReadout.cpp
+    src/FrameMeter.cpp
     src/Game.cpp
     src/GameStateReducer.cpp
     src/GridScene.cpp
     src/GridSink.cpp
     src/Homing.cpp
+    src/Hover.cpp
     src/InputFold.cpp
     src/MainMenuScene.cpp
     src/MainMenuSink.cpp
     src/ModeGatedSink.cpp
     src/ModeGatedSystem.cpp
     src/PathIndex.cpp
+    src/PauseGatedSystem.cpp
+    src/PauseState.cpp
     src/Placement.cpp
+    src/ReadoutPanel.cpp
+    src/ResourceBar.cpp
     src/RenderSystem.cpp
     src/KeyText.cpp
     src/SaveCli.cpp
@@ -60,6 +68,8 @@ target_link_libraries(antwika_game
         antwika::log
         antwika::pathfinding
         antwika::replay
+        antwika::rng
+        antwika::simulation
         antwika::time
         antwika::ui
         antwika::wfc

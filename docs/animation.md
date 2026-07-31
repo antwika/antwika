@@ -8,7 +8,7 @@ This document is about why that is the design rather than an omission, because t
 
 ## The rule it is serving
 
-`antwika::replay::EngineLoop` is the one code path shared by a live run and a replay, and what makes a replay reproduce a session is that only externally-supplied input is persisted.
+`antwika::simulation::EngineLoop` is the one code path shared by a live run and a replay, and what makes a replay reproduce a session is that only externally-supplied input is persisted.
 Everything the engine can regenerate deterministically is regenerated instead of recorded, which is why `engine.tick` is never written to a replay file and why `apps/game` stores a click rather than the tile the click placed.
 
 An animation is regenerable in exactly that sense.

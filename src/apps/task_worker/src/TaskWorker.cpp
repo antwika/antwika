@@ -8,7 +8,7 @@
 #include <antwika/event/EventDispatcher.hpp>
 #include <antwika/event/TickedEventDispatcher.hpp>
 #include <antwika/log/Level.hpp>
-#include <antwika/replay/EngineLoop.hpp>
+#include <antwika/simulation/EngineLoop.hpp>
 #include <antwika/scheduler/Scheduler.hpp>
 
 #include "antwika/task_worker/TaskDispatchSystem.hpp"
@@ -25,7 +25,7 @@ using antwika::event::Event;
 using antwika::event::EventDispatcher;
 using antwika::event::TickedEventDispatcher;
 using antwika::log::Level;
-using antwika::replay::EngineLoop;
+using antwika::simulation::EngineLoop;
 using antwika::scheduler::Scheduler;
 
 namespace antwika::task_worker

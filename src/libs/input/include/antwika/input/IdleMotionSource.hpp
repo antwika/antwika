@@ -4,7 +4,7 @@
 #include <vector>
 
 #include <antwika/event/Event.hpp>
-#include <antwika/replay/IReplaySource.hpp>
+#include <antwika/simulation/ITickSource.hpp>
 #include <antwika/time/Tick.hpp>
 
 #include "antwika/input/IInputEventCodec.hpp"
@@ -14,7 +14,7 @@ namespace antwika::input
 {
 
     using antwika::event::Event;
-    using antwika::replay::IReplaySource;
+    using antwika::simulation::ITickSource;
 
     /**
      * @brief Holds back pointer movement that arrives while no button is
@@ -69,7 +69,7 @@ namespace antwika::input
      * **The name was reviewed and kept**, against a proposal to rename it
      * for that caveat (DiscardsHoverMotion or similar). It describes what
      * the decorator does to the stream, which is the level an
-     * IReplaySource is named at, and it is true of every application. What
+     * ITickSource is named at, and it is true of every application. What
      * a name like that would describe is the consequence for an
      * application that draws a hover -- a property of that application,
      * not of this class, and one that neither antwika::life nor a headless
@@ -77,7 +77,7 @@ namespace antwika::input
      * behaviour, which is InputPipelineOptions::thinIdleMotion, the field
      * a call site actually sets and where the same warning is written.
      */
-    class IdleMotionSource final : public IReplaySource
+    class IdleMotionSource final : public ITickSource
     {
     public:
         /**
@@ -87,7 +87,7 @@ namespace antwika::input
          * @param codec Decodes each event, to recognise movement and to
          * fold which buttons are down. Must outlive this object.
          */
-        IdleMotionSource(IReplaySource &inner, const IInputEventCodec &codec);
+        IdleMotionSource(ITickSource &inner, const IInputEventCodec &codec);
 
         IdleMotionSource(const IdleMotionSource &) = delete;
         IdleMotionSource(IdleMotionSource &&) = delete;
@@ -109,7 +109,7 @@ namespace antwika::input
             antwika::time::Tick tick) override;
 
     private:
-        IReplaySource &inner;
+        ITickSource &inner;
         const IInputEventCodec &codec;
 
         // Folded from what arrives, never read from a device.

@@ -2,11 +2,13 @@
 
 #include <antwika/event/ITickEventSink.hpp>
 #include <antwika/event/TickEvent.hpp>
+#include <antwika/time/Tick.hpp>
 #include <antwika/ui/Pointer.hpp>
 #include <antwika/ui/WidgetId.hpp>
 
 #include "antwika/game/Camera.hpp"
 #include "antwika/game/InputFold.hpp"
+#include "antwika/game/PauseState.hpp"
 #include "antwika/game/Toolbar.hpp"
 #include "antwika/game/UiOverlay.hpp"
 
@@ -38,6 +40,11 @@ namespace antwika::game
      * The canvas comes off the overlay, which is the size the window
      * was asked for rather than the size one reports -- see UiOverlay.
      *
+     * The pause button is the same rule read out loud: pressing it
+     * toggles PauseState here, in the tick path, so a replay pauses on
+     * precisely the ticks the live run paused on. Nothing about a pause
+     * is persisted, and no `game.pause` event exists to persist.
+     *
      * What the pointer is doing comes from the shared InputFold, which
      * is registered ahead of this sink and holds the app's one answer --
      * regenerated from the same events on replay, so it needs no
@@ -55,6 +62,8 @@ namespace antwika::game
          * handled. Must outlive this sink, and must be registered ahead
          * of it.
          * @param toolbar Describes the bar. Must outlive this sink.
+         * @param pause Toggled by the pause button, and read to label
+         * it. Must outlive this sink.
          * @param home The camera "reset view" puts back.
          */
         UiSink(
@@ -62,6 +71,7 @@ namespace antwika::game
             UiOverlay &overlay,
             const InputFold &input,
             const Toolbar &toolbar,
+            PauseState &pause,
             Camera home);
 
         UiSink(const UiSink &) = delete;
@@ -81,6 +91,8 @@ namespace antwika::game
     private:
         [[nodiscard]] Pointer pointerNow(bool pressed) const;
 
+        [[nodiscard]] Frame describeNow(bool pressed) const;
+
         void refreshAndAct(bool pressed);
 
         void selectFrom(WidgetId activated);
@@ -89,7 +101,14 @@ namespace antwika::game
         UiOverlay &overlay;
         const InputFold &input;
         const Toolbar &toolbar;
+        PauseState &pause;
         Camera home;
+
+        // The tick the bar reports, off the event being handled.
+        // Every tick event carries the tick it belongs to.
+        // So this is the simulation's count rather than a second one.
+        // A replay hands over the same numbers in the same order.
+        antwika::time::Tick tick = 0;
     };
 
 } // namespace antwika::game

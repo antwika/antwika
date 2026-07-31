@@ -13,12 +13,12 @@
 #include <antwika/holdem/Deck.hpp>
 #include <antwika/holdem/IAgent.hpp>
 #include <antwika/holdem/SeatId.hpp>
-#include <antwika/holdem/SplitMix64Rng.hpp>
 #include <antwika/holdem/Stage.hpp>
 #include <antwika/holdem/StepOutcome.hpp>
 #include <antwika/holdem/Table.hpp>
 #include <antwika/holdem/TableRunner.hpp>
 #include <antwika/holdem/TableView.hpp>
+#include <antwika/rng/SplitMix64Rng.hpp>
 
 #include "antwika/poker/AgentStyle.hpp"
 #include "antwika/poker/PolicyAgent.hpp"
@@ -30,7 +30,6 @@ using antwika::holdem::Deck;
 using antwika::holdem::IAgent;
 using antwika::holdem::makeSeatId;
 using antwika::holdem::parseCards;
-using antwika::holdem::SplitMix64Rng;
 using antwika::holdem::Stage;
 using antwika::holdem::StepKind;
 using antwika::holdem::Table;
@@ -39,6 +38,7 @@ using antwika::holdem::TableView;
 using antwika::poker::AgentStyle;
 using antwika::poker::handStrength;
 using antwika::poker::PolicyAgent;
+using antwika::rng::SplitMix64Rng;
 
 namespace
 {

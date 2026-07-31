@@ -118,7 +118,7 @@ namespace
         std::vector<TickEvent> recorded;
     };
 
-    [[nodiscard]] RunResult run(antwika::replay::IReplaySource &source)
+    [[nodiscard]] RunResult run(antwika::simulation::ITickSource &source)
     {
         NiceMock<MockLogger> logger;
         NiceMock<MockEventSink> eventSink;
@@ -151,7 +151,7 @@ namespace
     }
 
     [[nodiscard]] RunResult runWithToolbar(
-        antwika::replay::IReplaySource &source)
+        antwika::simulation::ITickSource &source)
     {
         NiceMock<MockLogger> logger;
         NiceMock<MockEventSink> eventSink;
@@ -659,6 +659,92 @@ namespace
         return events;
     }
 } // namespace
+
+namespace
+{
+    // A session that leaves build mode with a right click.
+    // The house is selected, cancelled, and the same cell clicked again.
+    // So what the run ends with says which tool that last click meant.
+    [[nodiscard]] std::vector<TickEvent> cancelSession()
+    {
+        const InputEventCodec codec;
+        const auto palette = pixelOn(
+            antwika::game::widgets::toolWidget(
+                antwika::game::BuildTool::House));
+
+        return {
+            TickEvent{
+                .tick = 0,
+                .event = codec.encode(
+                    antwika::input::PointerMoved{.position = palette})},
+            TickEvent{
+                .tick = 0,
+                .event = codec.encode(
+                    PointerButtonPressed{
+                        .button = MouseButton::Left,
+                        .position = palette})},
+            TickEvent{
+                .tick = 1,
+                .event =
+                    pressAt(Cell{.x = 3, .y = 5}, MouseButton::Right)},
+            TickEvent{
+                .tick = 2,
+                .event = pressAt(Cell{.x = 3, .y = 5}, MouseButton::Left)},
+            TickEvent{
+                .tick = 4,
+                .event = Event{.name = antwika::engine::events::kStop}}};
+    }
+} // namespace
+
+// Leaving build mode is a click and nothing else on the wire.
+// So a replay has to arrive at the same palette from the same clicks.
+TEST(ReplayDeterminismTest, ARightClickCancelReplaysToTheSameState)
+{
+    auto script = cancelSession();
+    ReplaySource liveSource(script);
+    const auto live = runWithToolbar(liveSource);
+
+    // The cancel landed: the last click laid a road, not a house.
+    EXPECT_TRUE(live.summary.buildings.empty());
+    ASSERT_EQ(live.summary.paths.size(), 1U);
+    EXPECT_EQ(live.summary.paths[0], (Cell{.x = 3, .y = 5}));
+
+    const ScratchFile file("antwika-game-cancel.replay");
+    antwika::replay::saveReplayFile(live.recorded, file.name());
+    auto loaded = antwika::replay::loadReplayFile(file.name());
+
+    // Nothing about a mode may be in the file, only the clicks.
+    const InputEventCodec codec;
+    for (const auto &event : loaded)
+    {
+        EXPECT_TRUE(
+            codec.decode(event.event).has_value()
+            || event.event.name == antwika::engine::events::kStop)
+            << event.event.name;
+    }
+
+    ReplaySource replayedSource(std::move(loaded));
+    const auto replayed = runWithToolbar(replayedSource);
+
+    EXPECT_EQ(replayed.summary, live.summary);
+    EXPECT_EQ(replayed.recorded, live.recorded);
+}
+
+// Two runs that both did nothing would agree for the wrong reason.
+// Without the cancel that same last click puts a house up instead.
+TEST(ReplayDeterminismTest, TheCancelIsWhatChangesWhatTheLastClickPlaces)
+{
+    auto script = cancelSession();
+
+    // Drop the right click, and only it.
+    script.erase(script.begin() + 2);
+
+    ReplaySource source(script);
+    const auto result = runWithToolbar(source);
+
+    EXPECT_EQ(result.summary.buildings.size(), 1U);
+    EXPECT_TRUE(result.summary.paths.empty());
+}
 
 TEST(ReplayDeterminismTest, ABuildingsWalkersAreRegeneratedRatherThanStored)
 {

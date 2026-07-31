@@ -9,7 +9,7 @@
 #include <antwika/event/TickEvent.hpp>
 #include <antwika/log/Level.hpp>
 #include <antwika/log/mocks/MockLogger.hpp>
-#include <antwika/replay/IReplaySource.hpp>
+#include <antwika/simulation/ITickSource.hpp>
 #include <antwika/replay/ReplayReader.hpp>
 #include <antwika/replay/ReplaySource.hpp>
 #include <antwika/replay/ReplayWriter.hpp>
@@ -22,7 +22,7 @@ using antwika::event::Event;
 using antwika::event::mocks::MockEventSink;
 using antwika::event::TickEvent;
 using antwika::log::Level;
-using antwika::replay::IReplaySource;
+using antwika::simulation::ITickSource;
 using antwika::replay::ReplayReader;
 using antwika::replay::ReplaySource;
 using antwika::replay::ReplayWriter;
@@ -36,7 +36,7 @@ namespace
     constexpr antwika::time::Tick kMaxTicks = 10;
     constexpr std::uint32_t kWorkerCount = 2;
 
-    std::vector<Worker> runTaskWorker(IReplaySource &source)
+    std::vector<Worker> runTaskWorker(ITickSource &source)
     {
         NiceMock<MockLogger> logger;
         NiceMock<MockEventSink> eventSink;

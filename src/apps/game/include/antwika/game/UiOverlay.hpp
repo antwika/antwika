@@ -21,6 +21,12 @@ namespace antwika::game
      * the click as the world's -- and, when it is the world's, which of
      * the palette's tools that click is now for.
      *
+     * Two of them select: UiSink when a palette button is pressed, and
+     * GridSink when a right press on the grid leaves build mode.
+     * Both do it inside the tick path and neither persists an event for
+     * it, which is what keeps the selection regenerated rather than
+     * recorded -- see GridSink for the rule a right press follows.
+     *
      * **The selected tool is simulation state**, in the same sense the
      * camera is: what a recorded click *means* depends on it, so it has
      * to be regenerated rather than recorded. It lives here rather than

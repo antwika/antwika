@@ -4,7 +4,7 @@
 
 The system is a set of small, single-purpose libraries under `src/libs/`, composed by applications under `src/apps/`.
 Every module — library or app — owns its own `CMakeLists.txt`, `include/`, `src/` and `tests/`, and builds a `antwika_<module>` target aliased to `antwika::<module>`.
-Public headers live at `include/antwika/<module>/`, so an include always reads `<antwika/replay/EngineLoop.hpp>` and the module a type came from is visible at the include line.
+Public headers live at `include/antwika/<module>/`, so an include always reads `<antwika/simulation/EngineLoop.hpp>` and the module a type came from is visible at the include line.
 
 Concrete frameworks live outside `src/` entirely, under `backends/`, one directory per framework.
 Exactly one graphics backend and one input backend are compiled into a given build, chosen at configure time.
@@ -18,7 +18,7 @@ Three consequences do most of the work.
 
 **The engine runs on a fixed timestep.**
 `Engine::step()` takes a `time::Tick`, never a wall-clock delta, so nothing in the simulation can depend on how fast the machine ran.
-Pacing a real-time app is a separate concern, handled by `replay::TickPacer` outside the simulation.
+Pacing a real-time app is a separate concern, handled by `simulation::TickPacer` outside the simulation.
 
 **A replay stores only external input.**
 Anything the engine regenerates deterministically on its own — `engine.tick` above all — is never written to the file.
@@ -34,13 +34,13 @@ Rendering is the mirror image of the same rule: it is a write-only projection of
 
 ## The tick loop
 
-`replay::EngineLoop` is the one code path shared by live and replay runs.
-Each tick it asks an `IReplaySource` for that tick's events, dispatches them through a `TickedEventDispatcher`, then steps the engine.
+`simulation::EngineLoop` is the one code path shared by live and replay runs.
+Each tick it asks an `ITickSource` for that tick's events, dispatches them through a `TickedEventDispatcher`, then steps the engine.
 
 ```mermaid
 sequenceDiagram
     participant Loop as EngineLoop
-    participant Src as IReplaySource
+    participant Src as ITickSource
     participant Disp as TickedEventDispatcher
     participant Sinks as ITickEventSink chain
     participant Eng as IEngine
@@ -55,7 +55,7 @@ sequenceDiagram
     Loop->>Loop: stop requested?
 ```
 
-Live and replay differ **only** in what implements `IReplaySource`.
+Live and replay differ **only** in what implements `ITickSource`.
 A replayed run uses `ReplaySource`, fed from a file by `ReplayReader`.
 A live run uses `input::LiveInputSource` over an input backend, usually wrapped in decorators and in `WindowInputSource` so that closing a window arrives as ordinary replay input rather than short-circuiting the loop.
 This is what makes a replay reproduce state by construction rather than by convention.
@@ -81,18 +81,21 @@ graph TD
     engine[engine]
     ecs[ecs]
     gfx[gfx]
+    simulation[simulation]
     replay[replay]
     input[input]
     scheduler[scheduler]
     ui[ui]
     app[app]
     wfc[wfc]
+    rng[rng]
     holdem[holdem]
     ecs_commons[ecs_commons]
     pathfinding[pathfinding]
     animation[animation]
     i18n[i18n]
     sound[sound]
+    cli[cli]
 
     log --> time
     event --> time
@@ -104,37 +107,48 @@ graph TD
     gfx --> log
     scheduler --> time
     ui --> gfx
-    replay --> ecs
+    simulation --> ecs
+    simulation --> engine
+    simulation --> event
+    simulation --> gfx
+    simulation --> time
+    replay --> cli
     replay --> engine
     replay --> event
     replay --> gfx
     replay --> log
+    replay --> simulation
     replay --> time
     input --> engine
     input --> event
     input --> log
     input --> replay
+    input --> simulation
     input --> time
+    holdem --> rng
     ecs_commons --> ecs
     ecs_commons --> time
     animation --> time
     sound --> log
     app --> animation
+    app --> cli
     app --> event
     app --> gfx
     app --> input
     app --> log
     app --> replay
+    app --> simulation
     app --> sound
     app --> time
     app --> ui
 ```
 
-`wfc`, `holdem`, `pathfinding` and `i18n` have no `antwika` dependencies at all: all four are standalone domain libraries.
+`wfc`, `rng`, `pathfinding`, `i18n` and `cli` have no `antwika` dependencies at all: all five are standalone libraries.
+`holdem` has exactly one, `rng`, for the shuffle's bits.
 
 Two edges deserve a note.
-`replay` links `ecs` for `TickPacer` (which is an `ecs::ISystem`) and `gfx` for `WindowInputSource` and for the `gfx::Size` a replay records its canvas as.
-`input` links `replay` because every source it offers is an `IReplaySource` — and therefore has `gfx` in its transitive link set, even though the rule that `input` does not depend on `gfx` still holds.
+`simulation` links `ecs` for `TickPacer` (which is an `ecs::ISystem`) and `gfx` for `WindowInputSource`; `replay` links `gfx` for the `gfx::Size` a replay records its canvas as, and `simulation` because `ReplaySource` implements its seam.
+`input` links `simulation` because every source it offers is an `ITickSource` — and therefore has `gfx` in its transitive link set, even though the rule that `input` does not depend on `gfx` still holds.
 That rule is about the source, not the link line: no file under `src/libs/input` includes a `<antwika/gfx/...>` header or names a `gfx::` type.
 This was reviewed and accepted rather than overlooked, so finding `gfx` in `antwika_input`'s transitive links is not a violation.
 

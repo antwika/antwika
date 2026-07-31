@@ -19,7 +19,6 @@ add_executable(antwika_holdem_tests
     PayoutTest.cpp
     PotsTest.cpp
     ShowdownTest.cpp
-    SplitMix64RngTest.cpp
     StageTest.cpp
     TableBettingTest.cpp
     TableRunnerTest.cpp
@@ -38,6 +37,7 @@ target_link_libraries(antwika_holdem_tests
         antwika::holdem
         antwika::holdem::tests::fakes
         antwika::holdem::tests::mocks
+        antwika::rng::tests::fakes
         gtest::gtest
 )
 

@@ -16,7 +16,7 @@ There is one mechanism, with no distinction between built-in and application-def
 This is where an application turns input into meaning — a click into a placed tile, a payload into a scheduled job.
 A sink runs inside the tick path, downstream of the recorder, which is what lets a replay store the input and regenerate what it caused.
 
-**Replay source** — an `IReplaySource`, asked `eventsFor(tick)` once per tick.
+**Tick source** — an `ITickSource`, asked `eventsFor(tick)` once per tick.
 This is the only seam between a live run and a replayed one: a replayed run is served by `ReplaySource` from a file, a live run by `input::LiveInputSource` over a backend.
 
 **Decorator (of a source)** — a source wrapping another source to add or remove events: `WindowInputSource`, `WindowCloseSource`, `StopOnKeySource`, `CoalescingPointerSource`, `IdleMotionSource`.
@@ -31,7 +31,7 @@ It holds only what the engine cannot regenerate: never `engine.tick`, never a pl
 **Self-generated event** — an event the engine or the application regenerates deterministically each run, and therefore never records.
 Each app declares its own list; no `input.*` name may ever appear in one.
 
-**Engine loop** — `replay::EngineLoop`, the one code path both live and replayed runs go through.
+**Engine loop** — `simulation::EngineLoop`, the one code path both live and replayed runs go through.
 
 **Reducer** — an `ITickEventSink` that folds each event into a state value it owns, such as `game::GameStateReducer`.
 It is a naming convention rather than a library: nothing in `src/libs/` defines the term.

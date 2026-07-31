@@ -23,10 +23,12 @@ Each page covers what the library is for, its key headers and types, what it dep
 | --- | --- |
 | [engine](libraries/engine.md) | Steps one fixed tick at a time and knows nothing about any app. |
 | [event](libraries/event.md) | The one uniform event mechanism: `Event`, `TickEvent`, dispatchers and sinks. |
-| [replay](libraries/replay.md) | The shared live/replay loop, the JSON replay format, and the CLI flags. |
+| [simulation](libraries/simulation.md) | The shared live/replay tick loop, its `ITickSource` seam, and the pacing around it. |
+| [replay](libraries/replay.md) | The JSON replay format, its migrations, and the CLI flags. |
 | [ecs](libraries/ecs.md) | Double-buffered entity/component `World` with staged mutations. |
 | [scheduler](libraries/scheduler.md) | Deterministic, priority-ordered, budget-bounded job dispatch. |
 | [wfc](libraries/wfc.md) | Wave Function Collapse over a flat cell array, with no grid concept inside. |
+| [rng](libraries/rng.md) | Seeded pseudo-random bits, with the output sequence as part of the contract. |
 | [holdem](libraries/holdem.md) | No-limit Texas hold'em rules, side pots, and a hand evaluated into one number. |
 | [ecs_commons](libraries/ecs_commons.md) | The vocabulary half of the ECS: positions, velocities, countdowns, names, tags. |
 | [pathfinding](libraries/pathfinding.md) | A* over an abstract graph, with a total ordering so a route is reproducible. |
@@ -36,6 +38,7 @@ Each page covers what the library is for, its key headers and types, what it dep
 | [sound](libraries/sound.md) | PCM decoding, mixing and playback, on the thread that pumps it. |
 | [animation](libraries/animation.md) | Which frame to show, as a pure function of a tick the caller already has. |
 | [i18n](libraries/i18n.md) | A message catalogue keyed by a symbolic id rather than by English. |
+| [cli](libraries/cli.md) | Flag tables, one parse, and a help text that cannot disagree with it. |
 | [time](libraries/time.md) | The `Tick` type, `IClock` and `ISleeper`. |
 | [log](libraries/log.md) | Composable logging with no global state. |
 | [app](libraries/app.md) | The wiring every app's `main.cpp` would otherwise repeat. |

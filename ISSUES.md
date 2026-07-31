@@ -5,6 +5,12 @@ This is what is left for you to decide, and what you should know before reviewin
 
 The branch is `agents/integration`.
 
+An additional round of parallel work has since been merged to
+`integration/parallel-tasks`; its open questions are appended at the bottom of this
+file under "Round two".
+The entries in this first half are from the earlier session and are unchanged,
+except where round two closed one, which is noted in place.
+
 ---
 
 ## Still open — your call
@@ -21,12 +27,18 @@ Both predate the fix; they were simply far apart on screen.
 Choosing means either hiding the label until showdown (a spectator app arguably wants that information) or always drawing the face (which retires `kCardBackSlot`).
 Left as it was rather than decided for you.
 
-### 2. Per-city entities in `apps/game`
+### 2. Per-city entities in `apps/game` -- fixed, with one thing left for you
 
-Roads and the camera are per city.
-Walkers and buildings still live in one `World` and leak across cities.
-Fixing it needs a city tag on entities *and* a save-format bump, since `SaveGame` carries one grid.
-That is a design decision about what a city *is*, so it was not made unilaterally.
+Walkers and buildings are per city now, exactly as the roads and the camera already were.
+A city keeps its contents as a `game::CityGrid` value while it is put away, and `WorldMapState` destroys and recreates the entities on the one live `World` as cities are swapped -- so no city tag on an entity and no filter in any system was needed, and no save-format bump was either.
+
+The decision that had been left open is therefore: **a city is a grid, and what stands on it belongs to it.**
+The four are independent, and a city nobody is looking at neither runs nor shows anywhere else.
+
+**What is left for you:** a save still carries *one* grid -- the live city's -- which is what version 2 has always meant, and it is why no bump was needed.
+It is also what a save has always done with the roads and the camera, so the file is consistent rather than newly lossy.
+But it does mean "save, load, and the three cities you were not in are empty".
+Making a save carry the whole session is a version 3 with a migration that reads a version 2 document as the one city it was written from -- straightforward, and a decision about what a *save* is rather than what a city is, so it was not made unilaterally either.
 
 ### 3. Demolition
 
@@ -103,3 +115,189 @@ That is 4-9 seconds per case under coverage instrumentation.
 It is correct and it is why those cases are under load long enough to have exposed the bug above.
 `ui::Frame::rects` — added this session — now makes a widget's rectangle directly askable, so that helper could become a lookup.
 Not done, because the tests belonged to another agent's lane while it was still running.
+
+---
+
+# Round two
+
+Thirteen agents worked the task list of 2026-07-31: twelve in parallel, then one
+more for the library split once their work was merged.
+Everything asked for was built, and the questions below are the ones the agents
+declined to answer for you.
+None of them blocked any work -- each was implemented the conservative way, and the
+question is only whether that choice should stand.
+
+All of it is on `integration/parallel-tasks`: 39 commits, 2942 tests passing, all
+three checker scripts green, every new module reporting 100% line, function and
+branch coverage under CI's own gcovr flags.
+
+## Decisions the agents declined to make
+
+### R1. Should a save carry the whole session, or only the live city?
+
+This is the one that came out of your world-map bug, and it is the most consequential
+question in this file.
+
+Buildings and walkers leaked across cities because `WorldMapState` swapped a
+`PathIndex` and a `Camera` per city while the entities standing on the grid lived in
+one shared `ecs::World` with nothing saying which city they belonged to.
+That is fixed: a closed city is now stored as a `CityGrid` of plain values.
+
+The save format was **not** bumped, because a save carries one grid -- the live
+city's -- exactly as it already did for the roads and the camera.
+So every existing version-2 file still loads.
+But it does mean that saving, loading and then walking to another city finds it
+empty.
+Making a save carry all four cities is a version 3 plus a migration reading a v2
+document as the one city it was written from, and it is a decision about what a
+*save* is rather than a bug.
+
+### R2. Which of the two backends is right about texture scaling?
+
+Found while fixing the SDL3 transparency bug, and left deliberately unfixed because
+it is an aesthetic call rather than a defect.
+
+SDL3 defaults a texture to `SDL_SCALEMODE_LINEAR`; raylib's `rlLoadTexture` sets
+`GL_NEAREST`; nothing in this repository sets either.
+So a scaled blit is smoothed under one backend and crisp under the other -- measured
+at 667 distinct colours against 105 on the same `antwika_gfx_demo` frame.
+It matters most for `apps/game` and `apps/poker`, whose pixel-art atlases are scaled
+to whole tile sizes.
+Nearest is almost certainly what pixel art wants and would make the two backends
+agree, but linear is defensible for art that is not pixel art.
+It is a one-line addition to `createTexture()` plus a line in `IRenderer`'s contract.
+
+### R3. Is `ITickSource` the name you want?
+
+`antwika::replay` was split rather than renamed: `antwika::simulation` owns the loop
+(`EngineLoop`, `TickPacer`, `WindowInputSource`, and the seam) and `antwika::replay`
+owns the recording and its format, depending on it.
+The reasoning is in `wiki/libraries/simulation.md`.
+
+`IReplaySource` was renamed `ITickSource` as part of that, since seven of its
+implementers never touch a recording.
+`ITickEventSource` is more literally accurate -- it supplies a tick's *events* -- and
+was passed over for line length.
+
+### R4. Should the build-placement border draw for the road tool too?
+
+It does today, on the grounds that a road is a 1x1 footprint and that a border
+appearing for five tools and not the sixth reads as a bug.
+Your request said "when placing a new building", so if roads should be bare it is a
+one-line change in `drawGhost()`.
+
+### R5. Should cancelling build mode reach a genuine "nothing selected" state?
+
+Right-click currently leaves build mode by falling back to the road tool, because
+right-click with the road tool selected already means "drop a walker" and the
+recorded right-clicks in `src/apps/game/replays/demo.json` still have to mean that.
+A true "no tool selected" state is the classic city-builder behaviour and is what a
+future reader will probably expect, but it needs `UiOverlay::tool()` to become an
+optional and it changes what already-recorded left clicks mean.
+
+### R6. Are the `antwika::cli` transitional headers permanent?
+
+`antwika/replay/CommandLine.hpp`, `FlagSpec.hpp` and `CommandLineError.hpp` are
+`using` re-exports left behind so that `game::SaveCli` and `poker::WatchOptions`
+compiled untouched while four other agents were editing those apps.
+They are commented as transitional and still have roughly eight callers.
+Retiring them means migrating those callers and deleting the three headers.
+
+Note that the later library split deliberately left **no** such shims, on the
+grounds that it moved all 113 of its call sites in the same commit, so shims would
+have been dead on arrival.
+The two answers should probably agree.
+
+### R7. Should `antwika::cli` support positional arguments?
+
+It is flags-only, which is what every caller needs.
+`apps/sound_demo` takes a bare filename rather than a flag, so it is the one CLI that
+cannot migrate onto the library until positionals exist.
+
+### R8. Should `antwika::rng` grow the positional hash `IDEAS.md` asks for?
+
+`hash(seed, x, y) -> value` was not built: no call site needs randomness as a
+function of position, since every one draws in a fixed order from a fixed seed.
+The `IDEAS.md` entry was narrowed rather than deleted.
+
+### R9. Should over-feeding the companion annoy it?
+
+A tap while the companion is awake and not hungry currently does nothing, which is
+what stops tap-spamming being a strategy.
+Your specification named only two violations -- leaving it hungry, and tapping while
+it sleeps -- so harmlessness was the conservative reading.
+Making it a third violation is one arm of `Pet::tap()`.
+
+### R9b. Three choices in the pause and the counters
+
+- **The tick counter does not freeze while paused.**
+  It shows the engine tick, which by design keeps advancing -- that is the whole
+  point of a `life`-style pause, where the tick, the commit and every observer go on
+  running and only the simulation systems stop.
+  A "ticks simulated" counter instead is a one-line change in `UiSink`.
+- **A pause survives leaving the city.**
+  Pausing, going to the world map and coming back leaves the run paused.
+  Simple and defensible, but nobody stated it either way.
+- **The FPS readout shows 0 for the first second**, and only over the city screen.
+  A "--" placeholder, or a readout in every mode, are both easy.
+
+Worth knowing about the pause itself: it is a *build* pause rather than a freeze.
+`WalkerSystem`, `BuildingSystem` and `SpawnSystem` stop; the camera, the toolbar and
+placement keep working, so a paused city can still be panned over and built on.
+
+### R10. Smaller calls, grouped
+
+- **The companion reaches `TickPacer` through an adapter holding an empty
+  `ecs::World`**, because `TickPacer` is an `ecs::ISystem` and the app keeps no
+  world.
+  Judged better than a third copy of a class the project has already deduplicated
+  twice; moving the sleep into `RenderSink` is a two-line change if the empty world
+  reads as a smell.
+- **`FakeRng` moved into `antwika::rng`'s own `tests/fakes/`**, so
+  `antwika_holdem_tests` now links another module's fakes.
+  Already the norm here, but worth confirming.
+- **The atlas editor's palette is twelve compiled-in colours.**
+  An artist may want different ones, or a hex-entry field instead.
+- **`antwika::ttf` refuses OpenType/CFF fonts and font collections by name**, though
+  stb could read CFF; supporting it means a second outline path and a second
+  synthetic fixture.
+  Its `GlyphAtlas::Options` defaults (512-pixel maximum width, 1-pixel padding) are
+  guesses at what a first caller wants.
+- **The hover readout in `apps/game` lists only the resources its bars gauge**, so a
+  *source* building shows just its name rather than the inert stock it holds --
+  chosen so the panel and the bars never tell two stories.
+  A carrying walker shows its bar even when empty, since "this food walker is spent"
+  is worth seeing.
+
+## Known gaps, no decision needed
+
+These are simply not done, and are recorded so they are not discovered later.
+
+- **`README.md` lists the project's applications and omits all four new ones**
+  (`ui_demo`, `companion`, `atlas_editor`, and the `gfx3d_demo` line's neighbours).
+  Every agent was scoped away from that file so twelve of them would not collide in
+  it, which is exactly why nobody added their line.
+  It needs one line each.
+- **Coverage over the final merged tree** was measured after everything landed,
+  rather than trusted from the per-agent runs.
+  Each agent measured its own module at 100% before merging, but two things made a
+  combined run worth having: the library split moved files between modules, and the
+  toolbar/HUD agent's own coverage run was interrupted before it reported.
+  That run found two gaps and both are now closed, so the gate reports 100%
+  lines, functions and branches over the merged tree.
+  One of them, three branches in `src/libs/ecs/include/antwika/ecs/View.hpp`,
+  **predates this work**: the file is byte-identical to `main`, and the cause is
+  `gcovr --exclude-throw-branches` failing to strip three allocation-failure edges
+  that raw `gcov -b` tags `(throw)`.
+  So `main` very probably fails the gate today for the same reason.
+  That was inferred rather than proven -- no coverage build of `main` was run.
+- **Only the `gcc-linux-x86_64` profile was built.**
+  The LLVM and MinGW legs are untested locally; CI covers them.
+- **`apps/game` does not yet use the new `antwika::ui` hover pass.**
+  Adopting it is one `applyHover()` call in `main.cpp` -- `Toolbar` and `UiSink` need
+  no change at all -- and it would retire the limitation `CLAUDE.md` still documents,
+  that a button there lights up on the press rather than on approach.
+  It was deferred only because three agents were editing that app at the time.
+- **`ISSUES-game-integrate.md`'s third section is stale.**
+  It says a save carries no buildings; the format is version 2 and has carried them
+  for a while.

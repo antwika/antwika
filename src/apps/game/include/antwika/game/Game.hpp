@@ -13,7 +13,7 @@
 #include <antwika/event/ITickEventSink.hpp>
 #include <antwika/input/IInputEventCodec.hpp>
 #include <antwika/log/ILogger.hpp>
-#include <antwika/replay/IReplaySource.hpp>
+#include <antwika/simulation/ITickSource.hpp>
 #include <antwika/time/Tick.hpp>
 
 #include "antwika/game/AppMode.hpp"
@@ -36,7 +36,7 @@ namespace antwika::game
     using antwika::event::ITickEventSink;
     using antwika::input::IInputEventCodec;
     using antwika::log::ILogger;
-    using antwika::replay::IReplaySource;
+    using antwika::simulation::ITickSource;
 
     /**
      * @brief Announces the run in the log and starts the engine.
@@ -96,7 +96,7 @@ namespace antwika::game
         IEventSink &eventSink;
 
         /** @brief Supplies each tick's events, live or replayed. */
-        IReplaySource &inputSource;
+        ITickSource &inputSource;
 
         /** @brief Decodes the input events off the tick stream. */
         const IInputEventCodec &codec;
@@ -310,7 +310,7 @@ namespace antwika::game
      *
      * @param config What the run is wired out of.
      * @return What the run amounted to, for callers and tests.
-     * @throws antwika::replay::EngineLoopError If maxTicks is reached
+     * @throws antwika::simulation::EngineLoopError If maxTicks is reached
      * without engine.stop.
      * @throws antwika::input::InputError If an input event carries a
      * payload of the wrong shape.

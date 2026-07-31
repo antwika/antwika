@@ -1,5 +1,7 @@
+#include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
+#include <antwika/ecs/World.hpp>
 #include <antwika/engine/Events.hpp>
 #include <antwika/event/Event.hpp>
 #include <antwika/event/TickEvent.hpp>
@@ -9,12 +11,19 @@
 #include <antwika/input/Key.hpp>
 #include <antwika/input/MouseButton.hpp>
 #include <antwika/input/Position.hpp>
+#include <antwika/log/mocks/MockLogger.hpp>
 
 #include "antwika/game/AppMode.hpp"
+#include "antwika/game/Building.hpp"
+#include "antwika/game/BuildingIndex.hpp"
+#include "antwika/game/BuildingKind.hpp"
 #include "antwika/game/Camera.hpp"
 #include "antwika/game/Cell.hpp"
+#include "antwika/game/Footprint.hpp"
 #include "antwika/game/InputFold.hpp"
+#include "antwika/game/LiveGrid.hpp"
 #include "antwika/game/PathIndex.hpp"
+#include "antwika/game/Walker.hpp"
 #include "antwika/game/WorldMap.hpp"
 #include "antwika/game/WorldMapLayout.hpp"
 #include "antwika/game/WorldMapSink.hpp"
@@ -23,6 +32,7 @@
 namespace
 {
 
+    using antwika::ecs::World;
     using antwika::event::Event;
     using antwika::event::TickEvent;
     using antwika::game::AppMode;
@@ -30,9 +40,14 @@ namespace
     using antwika::game::Camera;
     using antwika::game::Cell;
     using antwika::game::generateWorldMap;
+    using antwika::game::Building;
+    using antwika::game::BuildingIndex;
+    using antwika::game::BuildingKind;
     using antwika::game::InputFold;
+    using antwika::game::LiveGrid;
     using antwika::game::kWorldMapKey;
     using antwika::game::PathIndex;
+    using antwika::game::Walker;
     using antwika::game::WorldMapSink;
     using antwika::game::WorldMapState;
     using antwika::game::worldTileRect;
@@ -46,6 +61,7 @@ namespace
     using antwika::input::PointerButtonReleased;
     using antwika::input::PointerMoved;
     using antwika::input::Position;
+    using antwika::log::mocks::MockLogger;
 
     constexpr Size kCanvas{.width = 1024, .height = 640};
 
@@ -99,13 +115,50 @@ namespace
             tick();
         }
 
+        // The way back to the map, which a further click needs.
+        void goBack()
+        {
+            send(KeyPressed{.key = kWorldMapKey});
+            tick();
+        }
+
+        void putUp(Cell cell, BuildingKind kind)
+        {
+            const auto entity = world.create();
+            world.add<Cell>(entity, cell);
+            world.add<Building>(entity, Building{.kind = kind});
+            (void)built.insert(cell, antwika::game::footprintOf(kind));
+        }
+
+        void dropWalker(Cell cell)
+        {
+            const auto entity = world.create();
+            world.add<Cell>(entity, cell);
+            world.add<Walker>(entity, Walker{});
+        }
+
+        template <typename Component>
+        [[nodiscard]] std::size_t standing()
+        {
+            world.commit();
+            return world.view<Component, Cell>().size();
+        }
+
+        ::testing::NiceMock<MockLogger> logger;
         InputEventCodec codec;
         InputFold input{codec};
+        World world{logger};
         WorldMapState state{generateWorldMap({16, 12, 11})};
         AppModeState mode{AppMode::WorldMap};
         PathIndex paths;
+        BuildingIndex built;
         Camera camera;
-        WorldMapSink sink{state, mode, paths, camera, input, kCanvas};
+        LiveGrid live{
+            .world = world,
+            .paths = paths,
+            .built = built,
+            .camera = camera};
+        WorldMapSink sink{state, mode, live, input, kCanvas};
     };
 
     TEST_F(WorldMapSinkTest, ClickingACityOpensIt)
@@ -127,6 +180,26 @@ namespace
         openCity(2);
 
         EXPECT_TRUE(paths.has(Cell{5, 6}));
+    }
+
+    // What the world map is for, from the outside.
+    // Two clicks and a key, and each city shows only its own.
+    TEST_F(WorldMapSinkTest, OpeningACitySwapsItsBuildingsAndWalkersIn)
+    {
+        putUp(Cell{4, 4}, BuildingKind::House);
+        dropWalker(Cell{5, 5});
+        world.commit();
+
+        openCity(2);
+        EXPECT_EQ(standing<Building>(), 0U);
+        EXPECT_EQ(standing<Walker>(), 0U);
+        EXPECT_FALSE(built.has(Cell{4, 4}));
+
+        goBack();
+        openCity(0);
+        EXPECT_EQ(standing<Building>(), 1U);
+        EXPECT_EQ(standing<Walker>(), 1U);
+        EXPECT_TRUE(built.has(Cell{4, 4}));
     }
 
     TEST_F(WorldMapSinkTest, ClickingEmptyLandOpensNothing)

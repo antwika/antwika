@@ -3,15 +3,16 @@
 #include <array>
 #include <cstddef>
 
+#include <antwika/rng/IRng.hpp>
+
 #include "antwika/holdem/Card.hpp"
 #include "antwika/holdem/IDeck.hpp"
-#include "antwika/holdem/IRng.hpp"
 
 namespace antwika::holdem
 {
 
     /**
-     * @brief A 52-card deck, shuffled by Fisher-Yates over an IRng.
+     * @brief A 52-card deck, shuffled by Fisher-Yates over an rng::IRng.
      *
      * Fisher-Yates by hand rather than std::shuffle, whose card order is
      * unspecified and does differ between standard library
@@ -28,7 +29,7 @@ namespace antwika::holdem
          * dealing.
          * @param rng Draws the swap positions for every shuffle().
          */
-        explicit Deck(IRng &rng);
+        explicit Deck(rng::IRng &rng);
 
         /**
          * @brief Return every card to the deck and re-order it.
@@ -49,7 +50,7 @@ namespace antwika::holdem
         [[nodiscard]] std::size_t remaining() const noexcept;
 
     private:
-        IRng &rng;
+        rng::IRng &rng;
         std::array<Card, kCardCount> cards{};
         std::size_t dealt = 0;
     };

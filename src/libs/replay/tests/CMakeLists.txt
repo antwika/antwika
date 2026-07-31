@@ -1,8 +1,6 @@
 find_package(GTest REQUIRED)
 
 add_executable(antwika_replay_tests
-    CommandLineTest.cpp
-    EngineLoopTest.cpp
     EventJsonTest.cpp
     MigrationChainTest.cpp
     ReplayCliTest.cpp
@@ -13,8 +11,6 @@ add_executable(antwika_replay_tests
     ReplaySourceTest.cpp
     ReplayWriterReaderTest.cpp
     SchemaVersionTest.cpp
-    TickPacerTest.cpp
-    WindowInputSourceTest.cpp
 )
 
 target_include_directories(antwika_replay_tests
@@ -25,11 +21,8 @@ target_include_directories(antwika_replay_tests
 target_link_libraries(antwika_replay_tests
     PRIVATE
         antwika::replay
-        antwika::engine::tests::mocks
-        antwika::event::tests::mocks
-        antwika::gfx::tests::mocks
+        antwika::simulation
         antwika::log::tests::mocks
-        antwika::time::tests::fakes
         gtest::gtest
 )
 

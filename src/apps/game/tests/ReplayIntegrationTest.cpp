@@ -9,7 +9,7 @@
 #include <antwika/event/TickEvent.hpp>
 #include <antwika/input/InputEventCodec.hpp>
 #include <antwika/log/mocks/MockLogger.hpp>
-#include <antwika/replay/IReplaySource.hpp>
+#include <antwika/simulation/ITickSource.hpp>
 #include <antwika/replay/ReplayReader.hpp>
 #include <antwika/replay/ReplaySource.hpp>
 #include <antwika/replay/ReplayWriter.hpp>
@@ -33,7 +33,7 @@ using antwika::game::GridExtent;
 using antwika::game::PathIndex;
 using antwika::input::InputEventCodec;
 using antwika::log::mocks::MockLogger;
-using antwika::replay::IReplaySource;
+using antwika::simulation::ITickSource;
 using antwika::replay::ReplayReader;
 using antwika::replay::ReplaySource;
 using antwika::replay::ReplayWriter;
@@ -43,7 +43,7 @@ namespace
 {
     constexpr antwika::time::Tick kMaxTicks = 10;
 
-    GameState runGame(IReplaySource &source)
+    GameState runGame(ITickSource &source)
     {
         NiceMock<MockLogger> logger;
         NiceMock<MockEventSink> eventSink;

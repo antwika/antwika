@@ -27,6 +27,7 @@ src/
 └── libs/
     ├── animation/
     ├── app/
+    ├── cli/
     ├── ecs/
     ├── ecs_commons/
     ├── engine/
@@ -38,9 +39,12 @@ src/
     ├── log/
     ├── pathfinding/
     ├── replay/
+    ├── rng/
     ├── scheduler/
+    ├── simulation/
     ├── sound/
     ├── time/
+    ├── ttf/
     ├── ui/
     └── wfc/
 backends/
@@ -148,7 +152,7 @@ build/bin/antwika_game/antwika_game --record demo.replay   # the same, saving wh
 build/bin/antwika_game/antwika_game --replay demo.replay   # reload it, reproducing the run
 ```
 
-Both modes go through the same `antwika::game::bootstrap()` entry point and the same fixed-timestep tick loop (`antwika::replay::EngineLoop`) — replay mode only differs in where each tick's events come from.
+Both modes go through the same `antwika::game::bootstrap()` entry point and the same fixed-timestep tick loop (`antwika::simulation::EngineLoop`) — replay mode only differs in where each tick's events come from.
 `apps/game` itself is an isometric grid you build on with the mouse: left-click lays a path, right-click drops a walker onto it, middle-drag pans and the wheel zooms.
 Walkers advance a cell every second tick, preferring a right turn at an intersection and reversing at a dead end.
 The ground, the roads and the walkers are all blitted from one texture atlas (`src/apps/game/assets/atlas.png`), so the scene draws no shape of its own: the grid lines are painted into the ground tile's own edges, and a road's sixteen tiles are addressed by which neighbours it joins, which makes a junction a lookup rather than four stubs stepped out by hand.
@@ -183,7 +187,7 @@ Drag with the left button held to toggle every cell the pointer crosses, one tog
 Holding the button also pauses the simulation, so the board stays still while you draw on it rather than evolving out from under the cursor; the cells you toggle still appear as you draw them, and the generations pick up again when you let go.
 Under the default `null` backend there is no window to draw into, so that build prints the board as ASCII instead, which is what keeps the app runnable in CI with no display present.
 Drawing is a write-only projection of the `World` and never feeds back into it.
-Closing the window enters the engine as an `engine.stop` event through the same `IReplaySource` every other external input goes through, so a run ended by closing a window is recorded like any other input — and replaying that recording headlessly reaches the identical board.
+Closing the window enters the engine as an `engine.stop` event through the same `ITickSource` every other external input goes through, so a run ended by closing a window is recorded like any other input — and replaying that recording headlessly reaches the identical board.
 The mouse arrives the same way, as `input.pointer_down`/`input.pointer_move`/`input.pointer_up` events: what a `--record` run persists is the click, and which cell it toggled is derived from it again on replay.
 
 `apps/task_worker` is a third application, this time combining `antwika::ecs` with a new `antwika::scheduler` library: a fixed pool of `Worker` entities pulls tasks off a deterministic, priority-ordered, budget-bounded `antwika::scheduler::Scheduler`, submitted over time via a `task.submit` event and, optionally, chained to an earlier task with a dependency edge:
@@ -256,7 +260,7 @@ The same session also draws itself, through `antwika::gfx`: felt, the board, the
 Under the default `null` backend the window draws nothing, so the terminal run is exactly what it always was.
 A real backend needs a display — `SDL_VIDEODRIVER=dummy` or `xvfb-run` otherwise.
 
-Closing the window ends the session, and it does so as a `engine.stop` fed in through the `IReplaySource` the loop already reads from, never by reaching into the loop.
+Closing the window ends the session, and it does so as a `engine.stop` fed in through the `ITickSource` the loop already reads from, never by reaching into the loop.
 That is what keeps drawing a write-only projection: a windowed run reaches the same chip counts as a headless one, and a session ended by closing the window replays under `null` to the same result.
 
 Money moving in and out is all a replay stores: `poker.deposit`, `poker.buy_in` and `poker.cash_out` events (JSON payloads `{"player":..,"amount":..}`).
@@ -339,6 +343,16 @@ Nothing is retained between frames: a widget activates on the press rather than 
 A button can still be told how to look, for the application that knows which one is in play.
 
 An application drives all of this from inside its tick loop, downstream of the replay recorder, so a recorded click regenerates the button press rather than the press being recorded as well — `apps/game`'s `UiSink` is the worked example.
+
+Hover is the one thing that does *not* go through there, deliberately: it is visual candy, it cannot affect what a run computes, and a `--record` file that held every pointer movement would grow at the window system's rate rather than the application's.
+So a free-moving pointer reaches the render side on `input::PointerHintChannel`, which no recording holds, and `ui::applyHover()` repaints a finished picture from it:
+
+```cpp
+applyHover(frame.commands, frame.hoverTargets, hoverFrom(hints.forRenderingOnly()));
+```
+
+That function is handed a draw list and two read-only values and never a `Frame`, and a `ui::HoverPointer` has no `pressed` field to begin with, so a hover cannot decide what a run computes rather than merely being asked not to.
+See [`docs/hover-is-not-simulation.md`](docs/hover-is-not-simulation.md).
 
 `apps/gfx_demo` (`antwika_gfx_demo`) is the showcase: a header, a sidebar sized from its own longest label, a growing main column, and a row of buttons pushed to the bottom right by growing spacers.
 The buttons work: one counts your clicks and the other puts the count back to zero.

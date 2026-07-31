@@ -12,7 +12,7 @@ namespace antwika::poker
     using antwika::gfx::CloseRequested;
 
     WindowCloseSource::WindowCloseSource(
-        IReplaySource &inner, IGfxBackend &backend, IWindow &window)
+        ITickSource &inner, IGfxBackend &backend, IWindow &window)
         : inner(inner), backend(backend), window(window)
     {
     }

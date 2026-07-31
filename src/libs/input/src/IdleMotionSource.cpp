@@ -9,7 +9,7 @@ namespace antwika::input
 {
 
     IdleMotionSource::IdleMotionSource(
-        IReplaySource &inner, const IInputEventCodec &codec)
+        ITickSource &inner, const IInputEventCodec &codec)
         : inner(inner), codec(codec)
     {
     }

@@ -2,7 +2,10 @@
 
 #include <cstddef>
 
+#include <antwika/ecs/Entity.hpp>
+
 #include "antwika/game/BuildGhost.hpp"
+#include "antwika/game/Building.hpp"
 #include "antwika/game/BuildTool.hpp"
 #include "antwika/game/Camera.hpp"
 #include "antwika/game/Cell.hpp"
@@ -24,6 +27,8 @@ namespace
 {
 
     using antwika::game::BuildGhost;
+    using antwika::game::Building;
+    using antwika::game::BuildingSprite;
     using antwika::game::BuildingView;
     using antwika::game::BuildingKind;
     using antwika::game::BuildTool;
@@ -33,6 +38,7 @@ namespace
     using antwika::game::GameState;
     using antwika::game::GameSummary;
     using antwika::game::GridExtent;
+    using antwika::game::HoverReadout;
     using antwika::game::SaveGame;
     using antwika::game::SceneSnapshot;
     using antwika::game::Terrain;
@@ -78,6 +84,24 @@ namespace
             base, [](BuildingView &b) { b.kind = BuildingKind::WaterSource; });
     }
 
+    TEST(SceneSnapshotTest, BuildingSpriteEqualityComparesEveryField)
+    {
+        const BuildingSprite base{
+            .at = {.x = 3, .y = 4},
+            .kind = BuildingKind::House,
+            .stock = {10, 20}};
+
+        expectMemberCompared(
+            base, [](BuildingSprite &b) { b.at = Cell{.x = 0, .y = 0}; });
+        expectMemberCompared(
+            base,
+            [](BuildingSprite &b) { b.kind = BuildingKind::WaterSource; });
+        expectMemberCompared(
+            base, [](BuildingSprite &b) { b.stock[0] = 99; });
+        expectMemberCompared(
+            base, [](BuildingSprite &b) { b.stock[1] = 99; });
+    }
+
     [[nodiscard]] SceneSnapshot populatedSnapshot()
     {
         return SceneSnapshot{
@@ -86,9 +110,11 @@ namespace
             .paths = {Cell{.x = 1, .y = 1}},
             .walkers = {WalkerSprite{.at = {.x = 2, .y = 2}}},
             .buildings =
-                {BuildingView{
+                {BuildingSprite{
                     .at = {.x = 3, .y = 3}, .kind = BuildingKind::House}},
-            .ghost = BuildGhost{.at = {.x = 4, .y = 4}}};
+            .ghost = BuildGhost{.at = {.x = 4, .y = 4}},
+            .hover = HoverReadout{
+                .anchor = antwika::gfx::Point{.x = 6, .y = 7}}};
     }
 
     TEST(SceneSnapshotTest, EqualityComparesEveryField)
@@ -110,6 +136,8 @@ namespace
         expectMemberCompared(
             base,
             [](SceneSnapshot &s) { s.ghost.visible = !s.ghost.visible; });
+        expectMemberCompared(
+            base, [](SceneSnapshot &s) { s.hover.anchor.x = 99; });
     }
 
     [[nodiscard]] GameSummary populatedSummary()
@@ -225,6 +253,34 @@ namespace
             base,
             [](WorldMapSnapshot &s)
             { s.cities[3] = Cell{.x = 5, .y = 5}; });
+    }
+
+    // The component itself, which no other value test reaches.
+    TEST(BuildingTest, EqualityComparesEveryField)
+    {
+        const Building base{
+            .kind = BuildingKind::FoodSource,
+            .stock = {1, 2},
+            .risk = 3,
+            .ticksUntilSpawn = 4,
+            .ticksUntilDrain = 5,
+            .ticksUntilRisk = 6,
+            .walker = antwika::ecs::Entity{7}};
+
+        expectMemberCompared(
+            base, [](Building &b) { b.kind = BuildingKind::House; });
+        expectMemberCompared(base, [](Building &b) { b.stock[0] = 99; });
+        expectMemberCompared(base, [](Building &b) { b.risk = 99; });
+        expectMemberCompared(
+            base, [](Building &b) { b.ticksUntilSpawn = 99; });
+        expectMemberCompared(
+            base, [](Building &b) { b.ticksUntilDrain = 99; });
+        expectMemberCompared(
+            base, [](Building &b) { b.ticksUntilRisk = 99; });
+        expectMemberCompared(
+            base,
+            [](Building &b)
+            { b.walker = antwika::ecs::kNullEntity; });
     }
 
 } // namespace

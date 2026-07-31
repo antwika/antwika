@@ -4,6 +4,8 @@
 #include <antwika/ui/Painter.hpp>
 
 #include "antwika/game/BuildGhost.hpp"
+#include "antwika/game/FpsReadout.hpp"
+#include "antwika/game/Hover.hpp"
 #include "antwika/game/SceneSnapshot.hpp"
 
 namespace antwika::game
@@ -34,6 +36,16 @@ namespace antwika::game
     void RenderSystem::draw(antwika::animation::Progress subTick)
     {
         auto &renderer = setup.window.renderer();
+
+        // Counted here rather than in update().
+        // This is the one thing that runs exactly once per frame.
+        // update() draws the tick's own frame by calling it.
+        // app::FramePacedSource calls it again for each frame between.
+        // The count goes nowhere but the readout below.
+        if (setup.fps.has_value())
+        {
+            setup.fps->get().record();
+        }
 
         if (setup.mode.mode() == AppMode::MainMenu)
         {
@@ -89,6 +101,28 @@ namespace antwika::game
             setup.paths,
             setup.built);
 
+        // Off the same channel and under the same rule as the ghost.
+        // Read against the snapshot this frame is about to draw.
+        // So the panel and what is on screen are the one picture.
+        // Worked out here rather than in a sink, for the ghost's reason.
+        // No replay reproduces a hint.
+        // So nothing folded from one may reach what a replay does.
+        // See docs/confirming-unreachable-branches.md, signature (b).
+        // The marker below is the unwind landing pad of hoverFor().
+        // gcov -b reports it as "call 0 never executed".
+        // Every other line of this statement runs once per drawGrid().
+        // Nothing branches between them, so no test can part them.
+        // The real forRenderingOnly() call is attributed to "latest,".
+        // Which is an argument line holding no call at all.
+        // ghostFor() above has the very same landing pad.
+        // There it shares a line with a call that did run.
+        // So it costs a line here and none there.
+        latest.hover = hoverFor(
+            setup.hint.forRenderingOnly(), // GCOVR_EXCL_LINE
+            setup.camera,
+            latest,
+            setup.overlay.pointerOverUi());
+
         setup.scene.draw(
             renderer, setup.window.size(), latest, setup.atlas, subTick);
 
@@ -97,6 +131,18 @@ namespace antwika::game
         // That is the size UiSink described it against.
         // And the size a recorded click was resolved against.
         antwika::ui::paint(renderer, setup.overlay.commands());
+
+        // Described here rather than in a sink.
+        // Everything else painted in this app is described in one.
+        // The number is off a wall clock, which no tick may see.
+        // On the city's screen alone, since a mode owns the screen.
+        if (setup.fps.has_value())
+        {
+            antwika::ui::paint(
+                renderer,
+                describeFps(
+                    setup.canvas, setup.fps->get().perSecond()));
+        }
     }
 
 } // namespace antwika::game

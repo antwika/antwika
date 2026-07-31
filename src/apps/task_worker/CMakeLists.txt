@@ -25,6 +25,7 @@ target_link_libraries(antwika_task_worker
         antwika::log
         antwika::replay
         antwika::scheduler
+        antwika::simulation
         antwika::time
 )
 

@@ -88,7 +88,15 @@ namespace antwika::ecs
                 if (entities.size() < smallestSize) // GCOVR_EXCL_LINE
                 {
                     smallestSize = entities.size();
+
+                    // Three allocation-failure unwind edges live here.
+                    // gcov -b tags every one of them "(throw)".
+                    // So this is (a) rather than the (d) around it.
+                    // gcovr's own classifier disagrees and keeps them.
+                    // Which the doc says to answer by trusting gcov.
+                    // GCOVR_EXCL_START
                     smallest.assign(entities.begin(), entities.end());
+                    // GCOVR_EXCL_STOP
                 }
             };
             (consider(storages), ...);

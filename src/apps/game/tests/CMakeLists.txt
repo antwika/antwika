@@ -6,18 +6,26 @@ add_executable(antwika_game_tests
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/BuildGhost.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/BuildingIndex.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/BuildingSystem.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/CityGrid.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/FpsReadout.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/FrameMeter.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/Game.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/GameStateReducer.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/GridScene.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/GridSink.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/Homing.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/Hover.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/InputFold.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/MainMenuScene.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/MainMenuSink.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/ModeGatedSink.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/ModeGatedSystem.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/PathIndex.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/PauseGatedSystem.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/PauseState.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/Placement.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/ReadoutPanel.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/ResourceBar.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/RenderSystem.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/KeyText.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/SaveCli.cpp
@@ -50,15 +58,20 @@ add_executable(antwika_game_tests
     BuildingSystemTest.cpp
     CameraTest.cpp
     CellTest.cpp
+    CityGridTest.cpp
     DirectionTest.cpp
     GameStateReducerTest.cpp
     GameStateTest.cpp
+    FootprintOutlineTest.cpp
     FootprintTest.cpp
+    FpsReadoutTest.cpp
+    FrameMeterTest.cpp
     GameTest.cpp
     GridExtentTest.cpp
     GridSceneTest.cpp
     GridSinkTest.cpp
     HomingTest.cpp
+    HoverTest.cpp
     InputFoldTest.cpp
     KeyTextTest.cpp
     IsoProjectionTest.cpp
@@ -66,8 +79,13 @@ add_executable(antwika_game_tests
     MainMenuSinkTest.cpp
     ModeGateTest.cpp
     PathIndexTest.cpp
+    PauseDeterminismTest.cpp
+    PauseGatedSystemTest.cpp
+    PauseStateTest.cpp
     PlacementTest.cpp
     PointerReadingTest.cpp
+    ReadoutPanelTest.cpp
+    ResourceBarTest.cpp
     RenderSystemTest.cpp
     SaveCliTest.cpp
     SaveDirectoryTest.cpp
@@ -120,6 +138,8 @@ target_link_libraries(antwika_game_tests
         antwika::log::tests::mocks
         antwika::pathfinding
         antwika::replay
+        antwika::rng
+        antwika::simulation
         antwika::time::tests::fakes
         antwika::ui
         antwika::wfc

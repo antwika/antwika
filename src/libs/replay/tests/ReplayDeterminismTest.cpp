@@ -15,7 +15,7 @@
 #include <antwika/event/TickedEventDispatcher.hpp>
 #include <antwika/log/mocks/MockLogger.hpp>
 
-#include "antwika/replay/EngineLoop.hpp"
+#include "antwika/simulation/EngineLoop.hpp"
 #include "antwika/replay/ReplayReader.hpp"
 #include "antwika/replay/ReplaySource.hpp"
 #include "antwika/replay/ReplayWriter.hpp"
@@ -29,7 +29,7 @@ using antwika::event::TickEventRecorder;
 using antwika::event::TickedEventDispatcher;
 using antwika::event::TickEvent;
 using antwika::log::mocks::MockLogger;
-using antwika::replay::EngineLoop;
+using antwika::simulation::EngineLoop;
 using antwika::replay::ReplayReader;
 using antwika::replay::ReplaySource;
 using antwika::replay::ReplayWriter;

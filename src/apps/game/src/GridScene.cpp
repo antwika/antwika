@@ -1,6 +1,7 @@
 #include "antwika/game/GridScene.hpp"
 
 #include <algorithm>
+#include <cstddef>
 #include <cstdint>
 #include <vector>
 
@@ -9,7 +10,10 @@
 
 #include "antwika/game/Direction.hpp"
 #include "antwika/game/Footprint.hpp"
+#include "antwika/game/FootprintOutline.hpp"
 #include "antwika/game/IsoProjection.hpp"
+#include "antwika/game/ReadoutPanel.hpp"
+#include "antwika/game/ResourceBar.hpp"
 #include "antwika/game/TileAtlas.hpp"
 #include "antwika/game/WalkerMotion.hpp"
 
@@ -39,6 +43,16 @@ namespace antwika::game
         // A preview that vanishes leaves them guessing what blocked it.
         constexpr Color kBlocked{
             .red = 255, .green = 90, .blue = 90, .alpha = 110};
+
+        // The border round the block, at full strength.
+        // The tile inside it is faint on purpose, being a placeholder.
+        // An edge as faint would be the one thing here nobody could see.
+        constexpr Color kGhostEdge{
+            .red = 255, .green = 255, .blue = 255, .alpha = 220};
+
+        // Reddened for the same reason the tile inside it is.
+        constexpr Color kBlockedEdge{
+            .red = 255, .green = 90, .blue = 90, .alpha = 220};
 
         [[nodiscard]] bool overlaps(Rect box, Size canvas) noexcept
         {
@@ -81,6 +95,23 @@ namespace antwika::game
             }
 
             return links;
+        }
+
+        // The track always, the fill only when there is any of it.
+        // A rectangle of no height is a drawing call that draws nothing.
+        void paintBars(
+            IRenderer &renderer, const std::vector<ResourceBar> &bars)
+        {
+            for (const auto &bar : bars)
+            {
+                renderer.drawRect(bar.track, kBarTrack);
+
+                if (bar.fill.size.height > 0)
+                {
+                    renderer.drawRect(
+                        bar.fill, resourceColour(bar.resource));
+                }
+            }
         }
     } // namespace
 
@@ -152,7 +183,71 @@ namespace antwika::game
                 atlas, walkerTile(walker.facing), bounds, kUntinted);
         }
 
+        // After every sprite.
+        // A gauge is then never hidden by what stands in front of it.
+        drawBars(renderer, canvas, snapshot, subTick);
+
         drawGhost(renderer, canvas, snapshot, atlas);
+
+        // Last of all, since it is what somebody is reading.
+        drawReadout(renderer, canvas, snapshot);
+    }
+
+    void GridScene::drawBars(
+        IRenderer &renderer,
+        Size canvas,
+        const SceneSnapshot &snapshot,
+        Progress subTick) const
+    {
+        // Culled on the sprite's own box rather than the bar's.
+        // A gauge is drawn exactly when what it belongs to is.
+        for (const auto &building : snapshot.buildings)
+        {
+            const auto bounds = footprintBounds(
+                building.at, footprintOf(building.kind), snapshot.camera);
+
+            if (!overlaps(bounds, canvas))
+            {
+                continue;
+            }
+
+            paintBars(renderer, buildingBars(building, snapshot.camera));
+        }
+
+        for (const auto &walker : snapshot.walkers)
+        {
+            const auto bounds =
+                walkerBounds(walker, snapshot.camera, subTick);
+
+            if (!overlaps(bounds, canvas))
+            {
+                continue;
+            }
+
+            paintBars(
+                renderer, walkerBars(walker, snapshot.camera, subTick));
+        }
+    }
+
+    void GridScene::drawReadout(
+        IRenderer &renderer,
+        Size canvas,
+        const SceneSnapshot &snapshot) const
+    {
+        const auto panel = readoutPanel(snapshot.hover, canvas);
+
+        if (panel.lines.empty())
+        {
+            return;
+        }
+
+        renderer.drawRect(panel.box, kReadoutBackdrop);
+
+        for (const auto &line : panel.lines)
+        {
+            renderer.drawText(
+                line.origin, line.text, kReadoutTextScale, line.colour);
+        }
     }
 
     void GridScene::drawGhost(
@@ -188,6 +283,28 @@ namespace antwika::game
             toolTile(ghost.tool, linksAt(snapshot.paths, ghost.at)),
             bounds,
             ghost.valid ? kGhostly : kBlocked);
+
+        // A border round exactly the cells the click will take.
+        // A faint tile says roughly where; an edge says precisely what.
+        // Traced round the very box the tile above was blitted into.
+        // So a preview and its border cannot show two extents.
+        // Four lines rather than four fills, the edges being diagonal.
+        // drawRect() takes an upright box, so it cannot draw one.
+        // Which is why ui's focus ring is four fills and this is not.
+        // drawLine() exists to step diagonal shapes out of.
+        // Where its middle pixels land is the backend's business.
+        // Nothing reads a line back, so no replay can hear about it.
+        const auto corners =
+            footprintOutline(ghost.at, footprint, snapshot.camera);
+        const auto edge = ghost.valid ? kGhostEdge : kBlockedEdge;
+
+        for (std::size_t corner = 0; corner < corners.size(); ++corner)
+        {
+            renderer.drawLine(
+                corners[corner],
+                corners[(corner + 1) % corners.size()],
+                edge);
+        }
     }
 
     void GridScene::drawGround(

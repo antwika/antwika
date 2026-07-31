@@ -9,7 +9,7 @@ This document is about why that is the design rather than a stage it has not rea
 ## Two rules it is serving
 
 The first is the one every library here serves.
-`antwika::replay::EngineLoop` is the one code path shared by a live run and a replay, and what makes a replay reproduce a session is that only externally-supplied input is persisted.
+`antwika::simulation::EngineLoop` is the one code path shared by a live run and a replay, and what makes a replay reproduce a session is that only externally-supplied input is persisted.
 A sound is not input: which sound plays at tick 4,096 is a consequence of the tick and the state, so it has no business being in a recording, and the way to keep it out of one is to leave the library nothing that could put it there.
 
 The second is narrower and is the reason for the threading answer.

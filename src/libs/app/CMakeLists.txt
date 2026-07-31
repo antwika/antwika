@@ -15,11 +15,13 @@ antwika_add_library(
         src/WavFile.cpp
     DEPENDS
         antwika::animation
+        antwika::cli
         antwika::event
         antwika::gfx
         antwika::input
         antwika::log
         antwika::replay
+        antwika::simulation
         antwika::sound
         antwika::time
         antwika::ui

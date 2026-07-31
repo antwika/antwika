@@ -3,7 +3,7 @@
 #include <vector>
 
 #include <antwika/event/Event.hpp>
-#include <antwika/replay/IReplaySource.hpp>
+#include <antwika/simulation/ITickSource.hpp>
 #include <antwika/time/Tick.hpp>
 
 #include "antwika/input/IInputBackend.hpp"
@@ -13,13 +13,13 @@ namespace antwika::input
 {
 
     using antwika::event::Event;
-    using antwika::replay::IReplaySource;
+    using antwika::simulation::ITickSource;
 
     /**
      * @brief Adds whatever a keyboard and a pointer did to another
      * source's events, encoded as input.* events.
      *
-     * This is the only way live input reaches the engine. IReplaySource is
+     * This is the only way live input reaches the engine. ITickSource is
      * the seam the tick loop already asks once per tick, so input arriving
      * through it is recorded by the same TickEventRecorder that records
      * everything else, and a `--record` run therefore replays to the same
@@ -43,7 +43,7 @@ namespace antwika::input
      * recorded input arrives alongside the live input and every event
      * happens twice.
      */
-    class LiveInputSource final : public IReplaySource
+    class LiveInputSource final : public ITickSource
     {
     public:
         /**
@@ -55,7 +55,7 @@ namespace antwika::input
          * @param codec Encodes each edge. Must outlive this source.
          */
         LiveInputSource(
-            IReplaySource &inner,
+            ITickSource &inner,
             IInputBackend &backend,
             const IInputEventCodec &codec);
 
@@ -80,7 +80,7 @@ namespace antwika::input
             antwika::time::Tick tick) override;
 
     private:
-        IReplaySource &inner;
+        ITickSource &inner;
         IInputBackend &backend;
         const IInputEventCodec &codec;
     };

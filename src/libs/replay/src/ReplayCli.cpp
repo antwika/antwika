@@ -5,9 +5,9 @@
 #include <fstream>
 #include <utility>
 
+#include <antwika/cli/CommandLine.hpp>
 #include <antwika/engine/Events.hpp>
 
-#include "antwika/replay/CommandLine.hpp"
 #include "antwika/replay/ReplayFormatError.hpp"
 #include "antwika/replay/ReplayReader.hpp"
 #include "antwika/replay/ReplayWriter.hpp"
@@ -19,12 +19,12 @@ namespace antwika::replay
     namespace
     {
         constexpr std::array kReplayFlags{
-            FlagSpec{
+            cli::FlagSpec{
                 .name = "--record",
                 .valueName = "<path>",
                 .help = "Write this run's input events to <path>.",
             },
-            FlagSpec{
+            cli::FlagSpec{
                 .name = "--replay",
                 .valueName = "<path>",
                 .help = "Load this run's input events from <path>.",
@@ -32,12 +32,12 @@ namespace antwika::replay
         };
     } // namespace
 
-    std::span<const FlagSpec> replayCliFlags()
+    std::span<const cli::FlagSpec> replayCliFlags()
     {
         return kReplayFlags;
     }
 
-    ReplayCliOptions replayCliOptionsFrom(const CommandLine &parsed)
+    ReplayCliOptions replayCliOptionsFrom(const cli::CommandLine &parsed)
     {
         // Members assigned one at a time, not built as an aggregate.
         // An aggregate unwinds members it built if a later one throws.
@@ -48,7 +48,7 @@ namespace antwika::replay
         ReplayCliOptions options;
         options.recordPath = parsed.value("--record");
         options.replayPath = parsed.value("--replay");
-        options.helpRequested = parsed.has(kHelpFlag);
+        options.helpRequested = parsed.has(cli::kHelpFlag);
         return options;
     } // GCOVR_EXCL_LINE
 

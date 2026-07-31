@@ -5,7 +5,7 @@
 #include <antwika/event/Event.hpp>
 #include <antwika/gfx/IGfxBackend.hpp>
 #include <antwika/gfx/WindowId.hpp>
-#include <antwika/replay/IReplaySource.hpp>
+#include <antwika/simulation/ITickSource.hpp>
 #include <antwika/time/Tick.hpp>
 
 namespace antwika::game
@@ -14,7 +14,7 @@ namespace antwika::game
     using antwika::event::Event;
     using antwika::gfx::IGfxBackend;
     using antwika::gfx::WindowId;
-    using antwika::replay::IReplaySource;
+    using antwika::simulation::ITickSource;
 
     /**
      * @brief Adds "the window was closed" to another source's events, as an
@@ -23,7 +23,7 @@ namespace antwika::game
      * This is the whole reason antwika::gfx knows nothing about
      * antwika::event: turning a gfx::WindowEvent into an
      * antwika::event::Event is the application's job, so a window reaches
-     * the engine through IReplaySource like any other external input. That
+     * the engine through ITickSource like any other external input. That
      * makes closing a window recordable, and therefore replayable -- a
      * `--record` run stops at the tick it was closed on, and replaying that
      * file stops at the same tick.
@@ -52,7 +52,7 @@ namespace antwika::game
      * serves all of a backend's windows. A second consumer of the same
      * backend would find its events already taken.
      */
-    class WindowInputSource final : public IReplaySource
+    class WindowInputSource final : public ITickSource
     {
     public:
         /**
@@ -64,7 +64,7 @@ namespace antwika::game
          * @param window Id of the window whose close requests count.
          */
         WindowInputSource(
-            IReplaySource &inner, IGfxBackend &backend, WindowId window);
+            ITickSource &inner, IGfxBackend &backend, WindowId window);
 
         WindowInputSource(const WindowInputSource &) = delete;
         WindowInputSource(WindowInputSource &&) = delete;
@@ -87,7 +87,7 @@ namespace antwika::game
             antwika::time::Tick tick) override;
 
     private:
-        IReplaySource &inner;
+        ITickSource &inner;
         IGfxBackend &backend;
         WindowId window;
     };

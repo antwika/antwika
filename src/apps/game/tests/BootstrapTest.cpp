@@ -19,7 +19,7 @@
 #include <antwika/ui/Pointer.hpp>
 #include <antwika/ui/WidgetId.hpp>
 #include <antwika/log/mocks/MockLogger.hpp>
-#include <antwika/replay/EngineLoopError.hpp>
+#include <antwika/simulation/EngineLoopError.hpp>
 #include <antwika/replay/ReplaySource.hpp>
 
 #include "WidgetPixel.hpp"
@@ -58,7 +58,7 @@ using antwika::game::GridExtent;
 using antwika::game::PathIndex;
 using antwika::input::InputEventCodec;
 using antwika::log::mocks::MockLogger;
-using antwika::replay::EngineLoopError;
+using antwika::simulation::EngineLoopError;
 using antwika::replay::ReplaySource;
 using ::testing::NiceMock;
 

@@ -1,0 +1,173 @@
+#pragma once
+
+#include <cstddef>
+#include <optional>
+#include <vector>
+
+#include <antwika/ecs/World.hpp>
+
+#include "antwika/game/Building.hpp"
+#include "antwika/game/BuildingIndex.hpp"
+#include "antwika/game/Cell.hpp"
+#include "antwika/game/PathIndex.hpp"
+#include "antwika/game/Walker.hpp"
+
+namespace antwika::game
+{
+
+    using antwika::ecs::World;
+
+    /**
+     * @brief One walker, as a city keeps it while it is put away.
+     *
+     * The component itself rather than a copy of the fields worth
+     * remembering, so a member added to Walker is carried across a city
+     * switch without this type hearing about it. That is the opposite
+     * choice from SavedWalker, and deliberately: a file has to name
+     * every field it holds because a reader of it may be a different
+     * build, while this never leaves the process that wrote it.
+     */
+    struct StoredWalker
+    {
+        /** @brief Where it stands. */
+        Cell at;
+
+        /**
+         * @brief What it is doing there.
+         *
+         * Its `home` is always kNullEntity here: a stored city holds no
+         * entity handle at all, since a handle means nothing once the
+         * entity it named has been destroyed and remade. Which building
+         * sent it is the index below.
+         */
+        Walker walker;
+
+        /**
+         * @brief Which stored building sent it, by index.
+         *
+         * **An index rather than the ecs::Entity it is in memory**, for
+         * SavedWalker's reason: opening a city destroys and recreates
+         * every entity on the grid, so the recreated building is a
+         * different id from the one that was put away.
+         */
+        std::optional<std::size_t> home = std::nullopt;
+
+        /**
+         * @brief Compare two stored walkers.
+         * @param other The walker to compare against.
+         * @return True when every field matches.
+         */
+        [[nodiscard]] bool operator==(const StoredWalker &other) const
+            = default;
+    };
+
+    /**
+     * @brief One building, as a city keeps it while it is put away.
+     *
+     * Every countdown comes along, exactly as a save carries them: a
+     * city reopened with all of them reset is a city whose buildings
+     * drain, risk and spawn in lockstep from then on.
+     */
+    struct StoredBuilding
+    {
+        /** @brief Where it stands, at the minimum corner of its block. */
+        Cell at;
+
+        /**
+         * @brief What it is and what it holds.
+         *
+         * Its `walker` is always kNullEntity here, for the reason
+         * StoredWalker::walker gives; which walker it has out is the
+         * index below.
+         */
+        Building building;
+
+        /** @brief Which stored walker it has out, by index. */
+        std::optional<std::size_t> walker = std::nullopt;
+
+        /**
+         * @brief Compare two stored buildings.
+         * @param other The building to compare against.
+         * @return True when every field matches.
+         */
+        [[nodiscard]] bool operator==(const StoredBuilding &other) const
+            = default;
+    };
+
+    /**
+     * @brief Everything standing on one city's grid, as a value.
+     *
+     * A city that is not the live one has no entities of its own, since
+     * there is one World and the entities in it are the live city's.
+     * This is what a closed city keeps instead, and it is a plain
+     * comparable value so "these two cities hold the same things" is one
+     * EXPECT_EQ.
+     *
+     * The roads are **not** here: they are the PathIndex the city keeps
+     * anyway, and a second list of them would be a second truth to keep
+     * in step. restoreCityGrid() lays the path entities back down from
+     * that index instead.
+     */
+    struct CityGrid
+    {
+        /** @brief Every walker, in the world's own order. */
+        std::vector<StoredWalker> walkers;
+
+        /** @brief Every building, in the world's own order. */
+        std::vector<StoredBuilding> buildings;
+
+        /**
+         * @brief Compare two city grids.
+         * @param other The grid to compare against.
+         * @return True when both hold the same things in the same order.
+         */
+        [[nodiscard]] bool operator==(const CityGrid &other) const
+            = default;
+    };
+
+    /**
+     * @brief Take everything standing on the live grid as a value.
+     *
+     * Read as of the last commit(), like every other read of a World, so
+     * a caller with staged writes it wants included commits first -- see
+     * WorldMapState::closeCity, which is the one caller that has any.
+     *
+     * The building/walker link is written as a pair of indices into the
+     * two arrays this produces, exactly as saveGameOf() writes it, so
+     * nothing here depends on how one run happened to number its
+     * entities.
+     *
+     * @param world Read for the walkers and the buildings.
+     * @return What is standing there.
+     */
+    [[nodiscard]] CityGrid cityGridOf(const World &world);
+
+    /**
+     * @brief Put a city's contents onto the live grid.
+     *
+     * Everything already standing there is destroyed rather than added
+     * to, since opening a city is showing that city and not merging two.
+     * Both the destruction and the creation are *staged*, the way every
+     * other write to a World is, so they land at the next commit()
+     * together -- which is what keeps a switch that happens part-way
+     * through a tick from being half-visible to whatever runs after it.
+     *
+     * Every entity is created before any component is added, because
+     * create() is immediate where add() is staged: a link therefore has
+     * to be built into the component rather than written onto it
+     * afterwards.
+     *
+     * @param world Where the entities are destroyed and recreated.
+     * @param built Rebuilt from the buildings this puts down, so it
+     * cannot describe a city other than the live one.
+     * @param paths The roads of the city being opened; one path entity
+     * is laid per cell, so the World and the index agree.
+     * @param grid What to put down.
+     */
+    void restoreCityGrid(
+        World &world,
+        BuildingIndex &built,
+        const PathIndex &paths,
+        const CityGrid &grid);
+
+} // namespace antwika::game

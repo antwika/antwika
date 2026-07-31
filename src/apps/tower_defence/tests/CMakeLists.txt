@@ -36,6 +36,7 @@ target_link_libraries(antwika_tower_defence_tests
         antwika::input
         antwika::log::tests::mocks
         antwika::replay
+        antwika::rng
         antwika::time::tests::fakes
         antwika::ui
         antwika::wfc

@@ -38,6 +38,7 @@
 #include "antwika/game/BuildingIndex.hpp"
 #include "antwika/game/Camera.hpp"
 #include "antwika/game/Cell.hpp"
+#include "antwika/game/FootprintOutline.hpp"
 #include "antwika/game/GridExtent.hpp"
 #include "antwika/game/GridScene.hpp"
 #include "antwika/game/GridSink.hpp"
@@ -46,6 +47,7 @@
 #include "antwika/game/IsoProjection.hpp"
 #include "antwika/game/Path.hpp"
 #include "antwika/game/PathIndex.hpp"
+#include "antwika/game/PauseState.hpp"
 #include "antwika/game/SceneSnapshot.hpp"
 #include "antwika/game/TileAtlas.hpp"
 #include "antwika/game/Toolbar.hpp"
@@ -60,7 +62,7 @@ using antwika::game::tests::widgetCentre;
 using antwika::game::BuildGhost;
 using antwika::game::ghostFor;
 using antwika::game::Building;
-using antwika::game::BuildingView;
+using antwika::game::BuildingSprite;
 using antwika::game::buildingKindIndex;
 using antwika::game::buildingTile;
 using antwika::game::BuildingKind;
@@ -72,10 +74,13 @@ using antwika::game::Cell;
 using antwika::game::cellBounds;
 using antwika::game::footprintBounds;
 using antwika::game::footprintOf;
+using antwika::game::footprintOutline;
+using antwika::game::kOutlineCorners;
 using antwika::game::cellCentre;
 using antwika::game::GridExtent;
 using antwika::game::GridScene;
 using antwika::game::GridSink;
+using antwika::game::PauseState;
 using antwika::game::WorldMap;
 using antwika::game::WorldMapState;
 using antwika::game::InputFold;
@@ -298,7 +303,7 @@ namespace
                     .button = button, .position = pixelOf(cell)});
         }
 
-        [[nodiscard]] std::vector<BuildingView> buildings()
+        [[nodiscard]] std::vector<BuildingSprite> buildings()
         {
             world.commit();
 
@@ -317,7 +322,8 @@ namespace
         InputFold input{codec};
         UiOverlay overlay{kCanvas};
         Toolbar toolbar;
-        UiSink uiSink{camera, overlay, input, toolbar, camera};
+        PauseState pause;
+        UiSink uiSink{camera, overlay, input, toolbar, pause, camera};
         WorldMapState cities{WorldMap{}};
         GridSink gridSink{
             world,
@@ -391,6 +397,38 @@ TEST_F(PaletteSinkTest, TheRoadStaysWhatALeftClickPlacesByDefault)
 
     EXPECT_TRUE(paths.has(target));
     EXPECT_TRUE(buildings().empty());
+}
+
+// The rule a right press follows, through the real bar and grid.
+// Selected with a button, cancelled with a click, back to normal play.
+TEST_F(PaletteSinkTest, ARightClickLeavesBuildModeAndTheRoadTakesOver)
+{
+    constexpr Cell target{.x = 3, .y = 4};
+
+    pressOn(widgets::toolWidget(BuildTool::House));
+    clickAt(target, MouseButton::Right);
+
+    EXPECT_EQ(overlay.tool(), BuildTool::Road);
+
+    // So the next left click lays a road rather than putting a house up.
+    clickAt(target, MouseButton::Left);
+
+    EXPECT_TRUE(paths.has(target));
+    EXPECT_TRUE(buildings().empty());
+}
+
+// The bar is described again after a cancel, so it shows the change.
+// Otherwise the road button would not look held down until the next.
+TEST_F(PaletteSinkTest, ARightClickIsShownOnTheBarStraightAway)
+{
+    pressOn(widgets::toolWidget(BuildTool::House));
+    clickAt(Cell{.x = 3, .y = 4}, MouseButton::Right);
+    tick();
+
+    const auto road =
+        toolbar.describe(kCanvas, Pointer{}, camera, BuildTool::Road);
+
+    EXPECT_EQ(overlay.commands(), road.commands);
 }
 
 // A block holds every cell, not only the one clicked.
@@ -629,7 +667,8 @@ namespace
             .paths = {},
             .walkers = {},
             .buildings = {},
-            .ghost = {}};
+            .ghost = {},
+            .hover = {}};
     }
 
     [[nodiscard]] std::vector<Blit> blitsOf(const SceneSnapshot &snapshot)
@@ -656,7 +695,7 @@ TEST(GridSceneBuildTest, ABuildingIsOneBlitOfItsOwnTile)
 {
     auto snapshot = emptySnapshot();
     snapshot.buildings.push_back(
-        BuildingView{
+        BuildingSprite{
             .at = Cell{.x = 0, .y = 0},
             .kind = BuildingKind::FoodSource});
 
@@ -677,8 +716,9 @@ TEST(GridSceneBuildTest, ABuildingOffTheCanvasIsNotDrawn)
 {
     auto snapshot = emptySnapshot();
     snapshot.buildings.push_back(
-        BuildingView{
-            .at = Cell{.x = 900, .y = -900}, .kind = BuildingKind::House});
+        BuildingSprite{
+            .at = Cell{.x = 900, .y = -900},
+            .kind = BuildingKind::House});
 
     EXPECT_TRUE(blitsOf(snapshot).empty());
 }
@@ -687,7 +727,8 @@ TEST(GridSceneBuildTest, TheGhostIsDrawnLastAndSeeThrough)
 {
     auto snapshot = emptySnapshot();
     snapshot.buildings.push_back(
-        BuildingView{.at = Cell{.x = 0, .y = 0}, .kind = BuildingKind::House});
+        BuildingSprite{
+            .at = Cell{.x = 0, .y = 0}, .kind = BuildingKind::House});
     snapshot.ghost = BuildGhost{
         .at = Cell{.x = 0, .y = 0},
         .tool = BuildTool::WaterSource,
@@ -840,4 +881,150 @@ TEST(GridSceneBuildTest, ABlockedGhostIsDrawnInADifferentTint)
 
     ASSERT_EQ(blits.size(), 1U);
     EXPECT_NE(blits[0].tint, kGhostly);
+}
+
+// The border round the block, which is four lines rather than a fill.
+// A diamond's edges are diagonal and drawRect takes an upright box.
+namespace
+{
+    struct Line
+    {
+        Point from;
+        Point to;
+        Color color;
+
+        [[nodiscard]] bool operator==(const Line &other) const = default;
+    };
+
+    [[nodiscard]] std::vector<Line> linesOf(const SceneSnapshot &snapshot)
+    {
+        std::vector<Line> lines;
+        NiceMock<MockRenderer> renderer;
+        const NiceMock<MockTexture> atlas;
+
+        ON_CALL(renderer, drawLine(_, _, _))
+            .WillByDefault(
+                [&lines](Point from, Point to, Color color)
+                { lines.push_back(Line{from, to, color}); });
+
+        const GridScene scene;
+        scene.draw(renderer, kCanvas, snapshot, atlas);
+
+        return lines;
+    }
+
+    // What a border is: every corner joined to the next, and closed.
+    [[nodiscard]] std::vector<Line> loopOf(
+        const std::array<Point, kOutlineCorners> &corners, Color color)
+    {
+        std::vector<Line> loop;
+
+        for (std::size_t corner = 0; corner < corners.size(); ++corner)
+        {
+            loop.push_back(
+                Line{
+                    corners[corner],
+                    corners[(corner + 1) % corners.size()],
+                    color});
+        }
+
+        return loop;
+    }
+
+    [[nodiscard]] SceneSnapshot ghostSnapshot(BuildTool tool, bool valid)
+    {
+        auto snapshot = emptySnapshot();
+        snapshot.ghost = BuildGhost{
+            .at = Cell{.x = 0, .y = 0},
+            .tool = tool,
+            .visible = true,
+            .valid = valid};
+
+        return snapshot;
+    }
+} // namespace
+
+TEST(GridSceneBuildTest, TheGhostIsBorderedRoundItsWholeBlock)
+{
+    const auto snapshot = ghostSnapshot(BuildTool::FoodSource, true);
+    const auto lines = linesOf(snapshot);
+
+    ASSERT_EQ(lines.size(), kOutlineCorners);
+    EXPECT_EQ(
+        lines,
+        loopOf(
+            footprintOutline(
+                snapshot.ghost.at,
+                footprintOf(BuildingKind::FoodSource),
+                snapshot.camera),
+            lines.front().color));
+}
+
+// The border is the block the click takes, so a road's is one cell.
+TEST(GridSceneBuildTest, ARoadGhostIsBorderedRoundTheOneCell)
+{
+    const auto snapshot = ghostSnapshot(BuildTool::Road, true);
+    const auto lines = linesOf(snapshot);
+
+    EXPECT_EQ(
+        lines,
+        loopOf(
+            footprintOutline(
+                snapshot.ghost.at,
+                antwika::game::Footprint{},
+                snapshot.camera),
+            lines.front().color));
+}
+
+// The same border the ghost tile is drawn in, taken round the same box.
+// Two ways of working that box out is exactly what this rules out.
+TEST(GridSceneBuildTest, TheBorderTracesTheBoxTheGhostIsBlittedInto)
+{
+    const auto snapshot = ghostSnapshot(BuildTool::ArchitectPost, true);
+    const auto lines = linesOf(snapshot);
+    const auto blits = blitsOf(snapshot);
+
+    ASSERT_EQ(blits.size(), 1U);
+    ASSERT_EQ(lines.size(), kOutlineCorners);
+
+    const auto box = blits.front().destination;
+    const auto right =
+        box.origin.x + static_cast<std::int32_t>(box.size.width) - 1;
+    const auto bottom =
+        box.origin.y + static_cast<std::int32_t>(box.size.height) - 1;
+
+    for (const auto &line : lines)
+    {
+        for (const auto point : {line.from, line.to})
+        {
+            EXPECT_GE(point.x, box.origin.x);
+            EXPECT_LE(point.x, right);
+            EXPECT_GE(point.y, box.origin.y);
+            EXPECT_LE(point.y, bottom);
+        }
+    }
+}
+
+TEST(GridSceneBuildTest, ABlockedGhostIsBorderedInADifferentColour)
+{
+    const auto refused = linesOf(ghostSnapshot(BuildTool::House, false));
+    const auto allowed = linesOf(ghostSnapshot(BuildTool::House, true));
+
+    ASSERT_EQ(refused.size(), kOutlineCorners);
+    ASSERT_EQ(allowed.size(), kOutlineCorners);
+    EXPECT_NE(refused.front().color, allowed.front().color);
+
+    // The refusal is opaque, unlike the tile it surrounds.
+    // An edge as faint as the placeholder is the one nobody would see.
+    EXPECT_GT(refused.front().color.alpha, kGhostly.alpha);
+}
+
+TEST(GridSceneBuildTest, NothingIsBorderedWithNoGhostToBorder)
+{
+    EXPECT_TRUE(linesOf(emptySnapshot()).empty());
+
+    auto away = ghostSnapshot(BuildTool::House, true);
+    away.ghost.at = Cell{.x = 900, .y = -900};
+
+    EXPECT_TRUE(linesOf(away).empty());
 }

@@ -11,8 +11,8 @@
 #include <gtest/gtest.h>
 
 #include <antwika/app/RunRecorded.hpp>
+#include <antwika/cli/FlagSpec.hpp>
 #include <antwika/event/TickEvent.hpp>
-#include <antwika/replay/FlagSpec.hpp>
 #include <antwika/replay/ReplayCli.hpp>
 #include <antwika/replay/ReplayFormatError.hpp>
 #include <antwika/time/Tick.hpp>
@@ -301,7 +301,7 @@ TEST(RunRecordedTest, AcceptsAFlagOfTheCallersOwn)
         const_cast<char *>("--tick-delay-ms"),
         const_cast<char *>("40")};
     std::ostringstream errors;
-    constexpr std::array extra{antwika::replay::FlagSpec{
+    constexpr std::array extra{antwika::cli::FlagSpec{
         .name = "--tick-delay-ms",
         .valueName = "<n>",
         .help = "Hold each frame."}};
@@ -333,7 +333,7 @@ TEST(RunRecordedTest, AnswersHelpWithoutRunningTheBody)
         const_cast<char *>("--help")};
     std::ostringstream errors;
     std::ostringstream help;
-    constexpr std::array extra{antwika::replay::FlagSpec{
+    constexpr std::array extra{antwika::cli::FlagSpec{
         .name = "--tick-delay-ms",
         .valueName = "<n>",
         .help = "Hold each frame."}};

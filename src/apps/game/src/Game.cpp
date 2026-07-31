@@ -8,17 +8,20 @@
 #include <antwika/event/EventDispatcher.hpp>
 #include <antwika/event/TickedEventDispatcher.hpp>
 #include <antwika/log/Level.hpp>
-#include <antwika/replay/EngineLoop.hpp>
+#include <antwika/simulation/EngineLoop.hpp>
 
 #include "antwika/game/Events.hpp"
 #include "antwika/game/GameStateReducer.hpp"
 #include "antwika/game/BuildingSystem.hpp"
 #include "antwika/game/GridSink.hpp"
 #include "antwika/game/InputFold.hpp"
+#include "antwika/game/LiveGrid.hpp"
 #include "antwika/game/MainMenuScene.hpp"
 #include "antwika/game/MainMenuSink.hpp"
 #include "antwika/game/ModeGatedSink.hpp"
 #include "antwika/game/ModeGatedSystem.hpp"
+#include "antwika/game/PauseGatedSystem.hpp"
+#include "antwika/game/PauseState.hpp"
 #include "antwika/game/SaveGameFile.hpp"
 #include "antwika/game/SaveLoadScene.hpp"
 #include "antwika/game/SaveLoadSink.hpp"
@@ -40,7 +43,7 @@ using antwika::event::Event;
 using antwika::event::EventDispatcher;
 using antwika::event::TickedEventDispatcher;
 using antwika::log::Level;
-using antwika::replay::EngineLoop;
+using antwika::simulation::EngineLoop;
 
 namespace antwika::game
 {
@@ -90,16 +93,29 @@ namespace antwika::game
         ModeGatedSystem gatedBuildings(
             buildingSystem, mode, AppMode::CityMap);
 
+        // What a pause stops, and all it stops.
+        // These three are what make the city move on its own.
+        // Everything else carries on.
+        // The tick, the commit, the renderer, the bar and the camera.
+        // So a paused city can still be panned over and built on.
+        // That is the product decision here.
+        // This is a build pause rather than a freeze.
+        // The same call apps/life makes about drawing on a paused board.
+        PauseState pause;
+        PauseGatedSystem pausedWalkers(gatedWalkers, pause);
+        PauseGatedSystem pausedBuildings(gatedBuildings, pause);
+        PauseGatedSystem pausedSpawns(gatedSpawns, pause);
+
         const auto walkPhase = scheduler.createPhase("walk");
-        scheduler.addSystem(walkPhase, gatedWalkers);
+        scheduler.addSystem(walkPhase, pausedWalkers);
 
         // After the walk, so a delivery sees this tick's cells.
-        scheduler.addSystem(walkPhase, gatedBuildings);
+        scheduler.addSystem(walkPhase, pausedBuildings);
 
         // After the walk, so a walker made this tick sets off next one.
         // Both stage into the same buffer, so neither sees the other.
         // Last, so a building demolished this tick is not re-let now.
-        scheduler.addSystem(walkPhase, gatedSpawns);
+        scheduler.addSystem(walkPhase, pausedSpawns);
 
         // A phase of its own.
         // A renderer then sees the generation this walk produced.
@@ -136,7 +152,7 @@ namespace antwika::game
 
         const Toolbar toolbar;
         InputFold input(config.codec);
-        UiSink uiSink(camera, ui, input, toolbar, camera);
+        UiSink uiSink(camera, ui, input, toolbar, pause, camera);
         GridSink gridSink(
             world,
             paths,
@@ -147,8 +163,17 @@ namespace antwika::game
             ui,
             cities,
             config.built);
+
+        // The four that are swapped together, named together.
+        // A city is opened by putting its contents into these.
+        const LiveGrid live{
+            .world = world,
+            .paths = paths,
+            .built = config.built,
+            .camera = camera};
+
         WorldMapSink worldSink(
-            cities, mode, paths, camera, input, config.canvas);
+            cities, mode, live, input, config.canvas);
         StopSignal stopSignal;
 
         const MainMenuScene menuScene;
@@ -264,7 +289,7 @@ namespace antwika::game
             .state = state,
             .paths = frame.paths,
             .walkers = walkerViewsOf(world),
-            .buildings = frame.buildings,
+            .buildings = buildingViewsOf(world),
             .camera = camera};
         // The excluded line is the local summary's unwind destructor.
         // Nothing between its construction and the return throws.

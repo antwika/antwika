@@ -1,21 +1,5 @@
 # game-integrate
 
-## The city grid is per city, but the things standing on it are not
-
-**Task:** step 1, wiring the world map into the running app.
-
-**Blocker:** `WorldMapState` keeps a `PathIndex` and a `Camera` per city, and those now work: leaving a city and coming back shows the roads and the view it was left with, because the live pair is swapped in and out at each transition.
-Walkers and buildings do not, because they are entities in one `ecs::World` and nothing says which city an entity belongs to.
-Build a house in city 1, press M, open city 2, and the house is still standing there.
-
-Making them per city needs a `City` component on every grid entity plus a filter in `snapshotOf()` and `WalkerSystem`, and a decision about whether a city you are not looking at keeps simulating.
-That is a bigger change than wiring, and it also collides with the save format: `SaveGame` carries one `paths` and one `walkers` list, so a per-city session is a schema bump as well.
-
-**Question for the human:** should a session be one grid that four cities take turns showing (what ships today, minus the leak), or four independent cities with four independent populations and a save format that carries all of them?
-
-**What I did instead:** the roads and the camera are per city and correct; the entities are shared and documented as such in `WorldMapState.hpp`.
-Nothing is silently wrong -- it is written down where somebody reading the class will see it.
-
 ## Loading a save inside a run reads a file inside the tick path
 
 **Task:** step 2, the save/load screen.

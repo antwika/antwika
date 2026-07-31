@@ -46,7 +46,7 @@ Requirements for the Antwika project, gathered from `README.md`, `blog/001-build
 - Image decoding must accept a byte stream rather than a path, so `antwika::gfx` opens no files and every decoder failure is provable headlessly.
 - A texture must be created through the renderer that will draw it, and both destroying that texture after its renderer's window has closed and drawing it through another renderer must be safe.
 - A blit whose source rectangle reaches outside its texture must be refused identically by every backend, since that is the one case where the underlying frameworks disagree.
-- A window's close request must reach the engine only as replayable input through `IReplaySource`, never by short-circuiting the tick loop.
+- A window's close request must reach the engine only as replayable input through `ITickSource`, never by short-circuiting the tick loop.
 - UI layout must be a pure function of the described UI and the canvas size, computed arithmetically from the built-in font's metrics without asking a graphics backend to measure anything.
 - UI layouts must nest, and a container must be able to take its size from the content of children it has not seen yet.
 - A widget must never draw outside the container it was declared in, since the graphics abstraction offers no clipping.
@@ -67,7 +67,7 @@ Requirements for the Antwika project, gathered from `README.md`, `blog/001-build
 - Input access must go through a backend-agnostic abstraction, and no file under `src/` may reference a concrete input framework such as SDL or raylib.
 - The input backend must be selected at build time, by the `ANTWIKA_INPUT_BACKEND` CMake variable and the matching `input_backend` Conan option, which default to the graphics choice so one flag drives both.
 - A headless input backend must exist, so tests, CI and replay verification can run with no display and no input framework installed.
-- Live input must reach the engine only through `IReplaySource`, so a recorded interactive session replays to the same state; no second entry point may exist.
+- Live input must reach the engine only through `ITickSource`, so a recorded interactive session replays to the same state; no second entry point may exist.
 - Input events must be persisted with symbolic key and button names, never platform scancodes, so a session recorded under one backend reproduces under another.
 - Translating an input event into application meaning (a click becoming a toggled cell) must happen downstream of the replay recorder, so a replay stores the input and regenerates what it caused.
 - A bad input payload, or a key or button name that no key or button goes by, must raise one specific, catchable error type, the same type for every backend.

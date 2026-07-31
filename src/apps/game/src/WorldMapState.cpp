@@ -24,31 +24,43 @@ namespace antwika::game
 
     std::size_t WorldMapState::city() const noexcept
     {
-        return live;
+        return liveCity;
     }
 
     void WorldMapState::openCityAt(
-        std::size_t index, PathIndex &livePaths, Camera &liveCamera)
+        std::size_t index, const LiveGrid &live)
     {
         requireCity(index);
-        closeCity(livePaths, liveCamera);
+        closeCity(live);
 
-        live = index;
+        liveCity = index;
         open = true;
-        livePaths = paths[index];
-        liveCamera = cameras[index];
+        live.paths = paths[index];
+        live.camera = cameras[index];
+
+        // After the paths, since it lays one path entity per cell.
+        // Those have to be the roads of the city being opened.
+        // Rather than the ones of the city just put away.
+        restoreCityGrid(live.world, live.built, live.paths, grids[index]);
     }
 
-    void WorldMapState::closeCity(
-        PathIndex &livePaths, Camera &liveCamera)
+    void WorldMapState::closeCity(const LiveGrid &live)
     {
         if (!open)
         {
             return;
         }
 
-        paths[live] = livePaths;
-        cameras[live] = liveCamera;
+        // What this tick has staged belongs to this city too.
+        // create() is immediate where add() is staged.
+        // So a building put up by a click a moment ago is not visible.
+        // Neither is a walker the last tick sent out.
+        // Either would be left behind, and then destroyed by the swap.
+        live.world.commit();
+
+        paths[liveCity] = live.paths;
+        cameras[liveCity] = live.camera;
+        grids[liveCity] = cityGridOf(live.world);
         open = false;
     }
 

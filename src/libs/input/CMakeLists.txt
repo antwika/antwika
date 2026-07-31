@@ -1,5 +1,6 @@
-# antwika::replay comes in for the replay bridge alone: IReplaySource is
-# the seam live input travels through, and PayloadJson is the shared
+# antwika::simulation comes in for the tick bridge alone: ITickSource
+# is the seam live input travels through.
+# antwika::replay comes in for PayloadJson, the shared
 # parse-and-validate step every structured payload already uses.
 # antwika::engine comes in for StopOnKeySource, which names engine.stop.
 # antwika::gfx is deliberately absent, and stays absent -- reading input
@@ -27,5 +28,6 @@ antwika_add_library(
         antwika::event
         antwika::log
         antwika::replay
+        antwika::simulation
         antwika::time
 )
