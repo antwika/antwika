@@ -27,6 +27,14 @@ namespace antwika::gfx
      * nothing the caller did not supply, exactly as the window
      * IGfxBackend::createWindow hands back carries nothing the caller
      * did not ask for.
+     *
+     * A gfx::Color is straight, non-premultiplied alpha throughout, and
+     * every drawing call here blends with it: an alpha below 255 leaves
+     * what was already drawn showing through, and an alpha of zero
+     * draws nothing at all. clear() is the one exception, and says so.
+     * How a backend's framework happens to behave by default is not the
+     * answer -- a backend whose framework overwrites has to ask it for
+     * blending, or two backends draw the same frame differently.
      */
     class IRenderer
     {
@@ -35,6 +43,11 @@ namespace antwika::gfx
 
         /**
          * @brief Fill the whole drawable area with one colour.
+         *
+         * The one call that replaces what is there rather than drawing
+         * over it, so the colour arrives unblended whatever its alpha.
+         * Blending here would carry every frame into the next one, and
+         * would leave a translucent clear unable to erase anything.
          * @param color The colour to fill with.
          */
         virtual void clear(Color color) = 0;

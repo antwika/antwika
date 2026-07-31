@@ -41,6 +41,24 @@ namespace antwika::gfx::sdl3
     {
     }
 
+    bool Sdl3Renderer::setDrawColor(Color color, SDL_BlendMode blend)
+    {
+        if (!SDL_SetRenderDrawBlendMode(renderer, blend))
+        {
+            warn(logger, "could not set the blend mode");
+            return false;
+        }
+
+        if (!SDL_SetRenderDrawColor(
+                renderer, color.red, color.green, color.blue, color.alpha))
+        {
+            warn(logger, "could not set the draw colour");
+            return false;
+        }
+
+        return true;
+    }
+
     void Sdl3Renderer::clear(Color color)
     {
         if (renderer == nullptr)
@@ -48,10 +66,13 @@ namespace antwika::gfx::sdl3
             return;
         }
 
-        if (!SDL_SetRenderDrawColor(
-                renderer, color.red, color.green, color.blue, color.alpha))
+        // This call replaces the drawable area rather than drawing in.
+        // So it takes the colour it was given, unmixed.
+        // Blending would mix every frame with the one before it.
+        // raylib clears through glClear, which no blend mode reaches.
+        // So this is also what makes the two backends agree.
+        if (!setDrawColor(color, SDL_BLENDMODE_NONE))
         {
-            warn(logger, "could not set the draw colour");
             return;
         }
 
@@ -68,10 +89,8 @@ namespace antwika::gfx::sdl3
             return;
         }
 
-        if (!SDL_SetRenderDrawColor(
-                renderer, color.red, color.green, color.blue, color.alpha))
+        if (!setDrawColor(color, SDL_BLENDMODE_BLEND))
         {
-            warn(logger, "could not set the draw colour");
             return;
         }
 
@@ -94,10 +113,8 @@ namespace antwika::gfx::sdl3
             return;
         }
 
-        if (!SDL_SetRenderDrawColor(
-                renderer, color.red, color.green, color.blue, color.alpha))
+        if (!setDrawColor(color, SDL_BLENDMODE_BLEND))
         {
-            warn(logger, "could not set the draw colour");
             return;
         }
 
@@ -145,10 +162,8 @@ namespace antwika::gfx::sdl3
             return;
         }
 
-        if (!SDL_SetRenderDrawColor(
-                renderer, color.red, color.green, color.blue, color.alpha))
+        if (!setDrawColor(color, SDL_BLENDMODE_BLEND))
         {
-            warn(logger, "could not set the draw colour");
             return;
         }
 
@@ -200,9 +215,9 @@ namespace antwika::gfx::sdl3
             fail("could not upload a texture");
         }
 
-        // Nothing else here sets a blend mode.
-        // A filled rectangle carries its alpha in the draw colour.
-        // A texture does not, so it has to be asked for.
+        // A texture's blend mode is its own, not the draw colour's.
+        // So setDrawColor() does not reach it.
+        // This is what makes a tint's alpha mean what it does elsewhere.
         if (!SDL_SetTextureBlendMode(texture, SDL_BLENDMODE_BLEND))
         {
             warn(logger, "could not set a texture's blend mode");

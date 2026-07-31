@@ -7,6 +7,7 @@ if(ANTWIKA_GFX_BACKEND STREQUAL "sdl3")
         ${CMAKE_CURRENT_SOURCE_DIR}/../src/Sdl3Texture.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/../src/Sdl3Window.cpp
         Sdl3BackendConformanceTest.cpp
+        Sdl3RendererTest.cpp
     )
 
     target_include_directories(antwika_gfx_backend_sdl3_tests

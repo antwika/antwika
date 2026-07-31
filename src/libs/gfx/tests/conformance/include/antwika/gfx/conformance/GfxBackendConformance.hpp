@@ -470,6 +470,40 @@ namespace antwika::gfx::conformance
         });
     }
 
+    TYPED_TEST_P(GfxBackendConformance, Renderer_AcceptsATranslucentFrame)
+    {
+        const auto window = this->backend->createWindow(this->demoDesc());
+        auto &renderer = window->renderer();
+
+        // gfx::Color is straight alpha, never premultiplied.
+        // An alpha below 255 asks for what is under it to keep showing.
+        // Whether it does cannot be asserted here.
+        // IRenderer reports no pixel back and is never going to.
+        // What a backend can be held to is accepting the request.
+        // Refusing it refuses the only way to ask for an overlay.
+        EXPECT_NO_THROW({
+            renderer.clear(Color{.red = 200});
+            renderer.drawRect(
+                Rect{
+                    .origin = {.x = 4, .y = 4},
+                    .size = {.width = 32, .height = 32}},
+                Color{.blue = 255, .alpha = 48});
+            renderer.drawLine(
+                Point{.x = 0, .y = 0},
+                Point{.x = 32, .y = 32},
+                Color{.green = 255, .alpha = 128});
+            renderer.drawText(
+                Point{.x = 2, .y = 2}, "faint", 1,
+                Color{.red = 255, .alpha = 1});
+            renderer.drawRect(
+                Rect{
+                    .origin = {.x = 8, .y = 8},
+                    .size = {.width = 8, .height = 8}},
+                Color{.red = 255, .alpha = 0});
+            renderer.present();
+        });
+    }
+
     TYPED_TEST_P(GfxBackendConformance, DrawLine_AcceptsAwkwardLines)
     {
         const auto window = this->backend->createWindow(this->demoDesc());
@@ -980,6 +1014,7 @@ namespace antwika::gfx::conformance
         Close_ClosesTheWindow,
         Close_IsIdempotent,
         Renderer_AcceptsAFrameWithoutThrowing,
+        Renderer_AcceptsATranslucentFrame,
         DrawLine_AcceptsAwkwardLines,
         DrawText_AcceptsAwkwardText,
         CreateTexture_ReportsTheBitmapSize,
