@@ -196,6 +196,8 @@ Each module (lib or app) owns its own `CMakeLists.txt`, `include/`, `src/`, and 
   The running score is drawn by `antwika::ui`, described by `td::ScoreSink` inside the tick path and painted from `td::ScoreOverlay`, so no `ui.*` event exists here either.
   `td::GridLayout.hpp` is the one place the pixel-to-cell mapping lives, shared by the scene and the placement sink so the board somebody sees and the board they can build on cannot drift.
   It reserves a strip along the top for the score bar and lays the grid out below it, which is why a click on the bar falls outside the grid and builds nothing -- no sink has to ask the UI whether it covered the pointer.
+  It starts on an empty grid and loads nothing unless `--replay` says so, so what a session contains is what somebody clicked.
+  `src/apps/tower_defence/replays/demo.json` is a sample session to pass to `--replay`.
 - `apps/sudoku` is unrelated to the tick/replay system: it's a showcase for `antwika::wfc` (Wave Function Collapse) — a standalone, dependency-free, deterministic constraint solver operating on a flat, index-addressed `std::vector` of cells with geometry expressed entirely through `IConstraint`s (no grid concept inside the library).
   `apps/sudoku` expresses the 81-cell puzzle and its row/column/box rules as `AllDifferentConstraint`s over that flat array — see [`blog/005-wave-function-collapse-that-never-guesses.md`](blog/005-wave-function-collapse-that-never-guesses.md).
 
