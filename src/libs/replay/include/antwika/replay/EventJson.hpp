@@ -44,27 +44,3 @@ namespace antwika::event
     void from_json(const nlohmann::json &j, TickEvent &event);
 
 } // namespace antwika::event
-
-namespace antwika::replay
-{
-
-    /**
-     * @brief Validate a JSON value against the timed-event schema, then
-     * deserialize it.
-     * @param j The JSON value to validate and deserialize.
-     * @return The decoded event.
-     * @throws ReplayFormatError If j does not match the schema.
-     */
-    [[nodiscard]] antwika::event::TickEvent eventFromJson(
-        const nlohmann::json &j);
-
-    /**
-     * @brief Serialize a tick event to a JSON value matching the
-     * timed-event schema.
-     * @param event The event to serialize.
-     * @return The encoded JSON value.
-     */
-    [[nodiscard]] nlohmann::json eventToJson(
-        const antwika::event::TickEvent &event);
-
-} // namespace antwika::replay
