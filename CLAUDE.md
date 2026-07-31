@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 A C++23 game/engine project built with CMake + Conan and tested with GoogleTest/CTest, developed inside VS Code Dev Containers (GNU, LLVM, MinGW) for a fully reproducible toolchain.
 Read [`README.md`](README.md) for the full picture, [`REQUIREMENTS.md`](REQUIREMENTS.md) for the MoSCoW-phrased requirements behind the design, and **[`docs/STYLE_GUIDE.md`](docs/STYLE_GUIDE.md) for the full coding style** (naming, formatting, includes, error handling, testing conventions, CMake conventions) — it is authoritative and detailed; don't restate it here, follow it.
-`docs/` holds only documents that are still normative; a plan document moves to [`docs/history/`](docs/history/) once the work it describes has shipped, and each one says at the top what superseded it, so a listing of `docs/` tells you what is current without opening anything.
+`docs/` holds only documents that are still normative, so everything a listing of it shows is current; a plan document is deleted once the work it describes has shipped, and the reasoning worth keeping moves into the code, into this file, or into a `blog/` post.
 
 ## Commands
 
@@ -190,8 +190,10 @@ Live input reaches the engine only through `IReplaySource`, via `LiveInputSource
 What a recording holds is thinned by two decorators that sit *upstream* of `TickEventRecorder`, which is the only place a reduction may happen: doing it after the recorder would make the file disagree with the run that wrote it, and doing it in a backend would hide it behind the seam.
 `CoalescingPointerSource` keeps only the last of each run of movements inside a tick; `IdleMotionSource` holds back movement that arrives while no button is held, latching the last of it and releasing it immediately ahead of the first event that could read a position -- since `input.pointer_scroll` carries none of its own and a zoom anchors on the folded one.
 Which of the two an app may attach is an app-level question: `game` takes both, `life` takes only the gate, because a drag toggles every cell it crosses and thinning a run inside a tick would skip some.
-An app attaching the gate cannot draw anything that follows a free-moving pointer, since the movements between clicks are deliberately not in the tick stream -- see [`docs/history/replay-size-plan.md`](docs/history/replay-size-plan.md).
-Because SDL drains one process-global queue for windows *and* input, `backends/sdl3` owns a reference-counted `Sdl3Pump` shared by both of its targets, which calls `SDL_PollEvent` once and routes each event into a window queue or an input queue — see [`docs/history/input-plan.md`](docs/history/input-plan.md) for why that sharing belongs in `backends/` rather than in `src/`.
+An app attaching the gate cannot draw anything that follows a free-moving pointer, since the movements between clicks are deliberately not in the tick stream.
+Both decorators exist because a window system reports pointer motion at its own rate rather than the app's -- SDL will report several hundred movements a second into a run that ticks 25 times a second -- so an unthinned `--record` file grows at the window system's rate and is mostly positions nothing ever read.
+Because SDL drains one process-global queue for windows *and* input, `backends/sdl3` owns a reference-counted `Sdl3Pump` shared by both of its targets, which calls `SDL_PollEvent` once and routes each event into a window queue or an input queue.
+That sharing belongs in `backends/` rather than in `src/` because a framework directory already owns that framework's global state: admitting the single queue in one place behind the abstraction keeps the two library seams independent, where lifting it into `src/` would make it a rule `antwika::gfx` and `antwika::input` had to cooperate on.
 The `raylib` input backend reports a pointer and no keyboard, and synthesises edges by diffing state, since raylib has no queue at all.
 
 `antwika::gfx` abstracts opening and rendering to windows (`IGfxBackend`/`IWindow`/`IRenderer`, `GfxError`), so no code under `src/` names a concrete graphics framework — SDL, raylib and friends arrive as statically linked backends under `backends/`, chosen at build time.

@@ -26,9 +26,9 @@ foreach(SELECTION ANTWIKA_GFX_BACKEND ANTWIKA_INPUT_BACKEND)
 endforeach()
 
 # Two real frameworks would compete for one process-global event queue,
-# and whichever polled second would silently lose what the other took --
-# see docs/history/input-plan.md. That failure is framework-dependent and
-# invisible at runtime, so it is worth refusing rather than trusting.
+# and whichever polled second would silently lose what the other took.
+# That failure is framework-dependent and invisible at runtime, so it is
+# worth refusing rather than trusting.
 if(NOT ANTWIKA_GFX_BACKEND STREQUAL ANTWIKA_INPUT_BACKEND
         AND NOT ANTWIKA_GFX_BACKEND STREQUAL "null"
         AND NOT ANTWIKA_INPUT_BACKEND STREQUAL "null")

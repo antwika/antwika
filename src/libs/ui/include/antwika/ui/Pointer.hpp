@@ -43,7 +43,8 @@ namespace antwika::ui
          *
          * A widget activates on the press rather than on a release
          * matched to it, so that nothing has to be remembered between
-         * frames -- see docs/history/ui-input-plan.md.
+         * frames: matching the two would be cross-frame state a replay
+         * would then have to regenerate.
          */
         bool pressed = false;
     };
