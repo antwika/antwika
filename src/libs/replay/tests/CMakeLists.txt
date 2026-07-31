@@ -11,6 +11,7 @@ add_executable(antwika_replay_tests
     ReplayOutputTest.cpp
     ReplaySourceTest.cpp
     ReplayWriterReaderTest.cpp
+    SchemaVersionTest.cpp
     TickPacerTest.cpp
     WindowInputSourceTest.cpp
 )

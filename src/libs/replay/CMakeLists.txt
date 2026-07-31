@@ -19,6 +19,7 @@ antwika_add_library(
         src/ReplayReader.cpp
         src/ReplaySource.cpp
         src/ReplayWriter.cpp
+        src/SchemaVersion.cpp
         src/TickPacer.cpp
         src/WindowInputSource.cpp
     DEPENDS

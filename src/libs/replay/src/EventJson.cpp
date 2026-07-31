@@ -1,8 +1,11 @@
 #include "antwika/replay/EventJson.hpp"
 
+#include <format>
+
 #include <nlohmann/json-schema.hpp>
 
 #include <antwika/replay/ReplayFormatError.hpp>
+#include <antwika/replay/SchemaVersion.hpp>
 
 #include "EventSchema.hpp"
 
@@ -45,6 +48,14 @@ namespace antwika::replay
             nlohmann::json schema = detail::tickEventShape();
             schema["$schema"] = "http://json-schema.org/draft-07/schema#";
             schema["title"] = "antwika replay tick event";
+
+            // The version rides in the schema's identity.
+            // One event is repeated thousands of times per document.
+            // Its revision is fixed by the document holding it.
+            // A per-event version would be that many copies of one fact.
+            schema["$id"] = std::format(
+                "https://antwika.dev/schemas/tick-event/{}",
+                kTickEventSchemaVersion);
             return schema;
         } // GCOVR_EXCL_LINE
 
