@@ -145,6 +145,44 @@ if(ANTWIKA_INPUT_BACKEND STREQUAL "sdl3")
     )
 endif()
 
+if(ANTWIKA_SOUND_BACKEND STREQUAL "sdl3")
+    add_library(antwika_sound_backend
+        src/SelectedSoundBackend.cpp
+        src/Sdl3Device.cpp
+        src/Sdl3SoundBackend.cpp
+    )
+
+    add_library(antwika::sound_backend ALIAS antwika_sound_backend)
+
+    set_target_properties(antwika_sound_backend PROPERTIES
+        WINDOWS_EXPORT_ALL_SYMBOLS ON
+    )
+
+    # The runtime rather than the pump: sound needs SDL up and needs no
+    # window queue, so this target never pulls in a display.
+    target_link_libraries(antwika_sound_backend
+        PUBLIC
+            antwika::sound
+        PRIVATE
+            antwika_sdl3_runtime
+            SDL3::SDL3
+    )
+
+    install(
+        TARGETS antwika_sound_backend
+        EXPORT antwika_sound_backendTargets
+        ARCHIVE DESTINATION lib
+        LIBRARY DESTINATION lib
+        RUNTIME DESTINATION bin
+    )
+
+    install(
+        EXPORT antwika_sound_backendTargets
+        NAMESPACE antwika::
+        DESTINATION lib/cmake/antwika
+    )
+endif()
+
 if(BUILD_TESTING AND NOT CMAKE_CROSSCOMPILING)
     add_subdirectory(tests)
 endif()

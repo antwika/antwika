@@ -46,6 +46,14 @@ if(ANTWIKA_INPUT_BACKEND STREQUAL "auto")
     set(ANTWIKA_INPUT_BACKEND "${ANTWIKA_GFX_BACKEND}")
 endif()
 
+# Deliberately not "auto", and this is the difference worth reading.
+# Input follows graphics because a window nobody can click is useless.
+# Sound is orthogonal to both, so following would mean every existing
+# build asking for sdl3 windows silently began opening an audio device
+# -- a device, a subsystem and a dependency nobody asked for.
+set(ANTWIKA_SOUND_BACKEND "null" CACHE STRING
+    "Sound backend to compile and link, named after a backends/ subdirectory")
+
 if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
     add_compile_options(
         -Wall

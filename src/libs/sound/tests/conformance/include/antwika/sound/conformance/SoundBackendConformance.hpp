@@ -238,7 +238,29 @@ namespace antwika::sound::conformance
         device->start(callback);
 
         EXPECT_EQ(device->pump(1000), 1000U);
-        EXPECT_EQ(device->framesPlayed(), 1000U);
+
+        device->stop();
+    }
+
+    // Deliberately not an equality.
+    // A device that consumes instantly has played all thousand by now.
+    // A real one has handed most of them to a queue it has not reached.
+    // Equality would make the second kind report the first's number.
+    // That is the one number pacing must not be given.
+    TYPED_TEST_P(SoundBackendConformance, FramesPlayed_NeverRunsAhead)
+    {
+        if (this->backend->capabilities().selfDriven)
+        {
+            GTEST_SKIP() << "backend renders on a thread of its own";
+        }
+
+        const auto device = this->backend->openDevice(this->usable());
+        RecordingCallback callback;
+
+        device->start(callback);
+
+        EXPECT_EQ(device->pump(1000), 1000U);
+        EXPECT_LE(device->framesPlayed(), 1000U);
 
         device->stop();
     }
@@ -371,6 +393,7 @@ namespace antwika::sound::conformance
         Stop_IsSafeTwice,
         FramesPlayed_StartsAtZero,
         FramesPlayed_NeverGoesBackwards,
+        FramesPlayed_NeverRunsAhead,
         Pump_RendersExactlyWhatWasAsked,
         Pump_RendersNothingBeforeAStart,
         Render_IsNeverReentered,

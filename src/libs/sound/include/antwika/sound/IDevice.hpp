@@ -62,7 +62,7 @@ namespace antwika::sound
         [[nodiscard]] virtual FrameCount bufferFrames() const = 0;
 
         /**
-         * @brief Get how many frames have gone by since it started.
+         * @brief Get how many frames the device has consumed.
          *
          * **Monotonic and advisory.** It is legal to read this only to
          * decide how long to sleep, and never to decide what to compute.
@@ -72,7 +72,15 @@ namespace antwika::sound
          * rather than in a design document because here is where
          * somebody about to break it is looking.
          *
-         * @return The count, which never decreases.
+         * It is what has been *consumed*, not what has been handed over,
+         * and the difference is the whole point: a device that consumes
+         * instantly reports every frame pumped, while a real one lags by
+         * whatever is still queued ahead of the hardware.  Pacing needs
+         * that lag -- a caller told it had played everything it pushed
+         * would never have a reason to wait.
+         *
+         * @return The count, which never decreases and never exceeds
+         * what has been pumped.
          */
         [[nodiscard]] virtual FrameIndex framesPlayed() const = 0;
     };
