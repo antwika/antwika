@@ -75,7 +75,8 @@ namespace antwika::poker
         }
 
         // A rectangle pulled in on every side, never past nothing.
-        [[nodiscard]] Rect deflated(Rect rect, std::uint32_t inset)
+        [[nodiscard]] Rect deflated(
+            Rect rect, std::uint32_t inset) noexcept
         {
             return Rect{
                 .origin =
@@ -89,7 +90,8 @@ namespace antwika::poker
         }
 
         // A square hung on a rectangle's top-left corner.
-        [[nodiscard]] Rect squareAt(Rect rect, std::uint32_t side)
+        [[nodiscard]] Rect squareAt(
+            Rect rect, std::uint32_t side) noexcept
         {
             return Rect{
                 .origin = rect.origin,

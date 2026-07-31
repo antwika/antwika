@@ -843,6 +843,31 @@ namespace
     }
 
     /**
+     * @brief Every card face and card back the art drew.
+     * @param art The blits describeArt() produced.
+     * @return Where each of them was blitted.
+     */
+    [[nodiscard]] std::vector<Rect> cardBlitsOf(
+        const std::vector<ArtBlit> &art)
+    {
+        const auto face =
+            antwika::poker::sourceOf(antwika::poker::kCardFaceSlot);
+        const auto back =
+            antwika::poker::sourceOf(antwika::poker::kCardBackSlot);
+
+        std::vector<Rect> drawn;
+        for (const auto &blit : art)
+        {
+            if (blit.source == face || blit.source == back)
+            {
+                drawn.push_back(blit.destination);
+            }
+        }
+
+        return drawn;
+    }
+
+    /**
      * @brief Find where a line of text was drawn.
      * @param frame The finished frame to search.
      * @param text The exact line to look for.
@@ -936,6 +961,8 @@ TEST(TableAlignmentTest, EveryCardsTextIsOnTheCardItBelongsTo)
                 const auto snapshot = dealtTable(seats, stage);
                 const auto frame = scene.describe(canvas, snapshot);
                 const auto faces = cardFacesOf(frame, snapshot);
+                const auto art =
+                    scene.describeArt(canvas, frame.rects, snapshot);
 
                 ASSERT_EQ(faces.size(), 5 + (2 * seats));
 
@@ -953,6 +980,24 @@ TEST(TableAlignmentTest, EveryCardsTextIsOnTheCardItBelongsTo)
                     ++checked;
                     EXPECT_TRUE(contains(face.rect, *text))
                         << face.text << " is not on its own card";
+
+                    // The picture, and not only the layout.
+                    // Exactly one card was drawn under this text.
+                    // And it is the one this text is the name of.
+                    std::vector<Rect> under;
+                    for (const auto &blit : cardBlitsOf(art))
+                    {
+                        if (contains(blit, *text))
+                        {
+                            under.push_back(blit);
+                        }
+                    }
+
+                    ASSERT_EQ(under.size(), 1U)
+                        << face.text << " is on " << under.size()
+                        << " drawn cards";
+                    EXPECT_EQ(under.front(), face.rect)
+                        << face.text << " is on somebody else's card";
 
                     for (const auto &other : faces)
                     {
