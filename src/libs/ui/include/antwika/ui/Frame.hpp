@@ -7,7 +7,7 @@ namespace antwika::ui
 {
 
     /**
-     * @brief One finished frame: the picture, and what the pointer did to
+     * @brief One finished frame: the picture, and what the input did to
      * it.
      *
      * Both come out of one call, because both are read off one layout.
@@ -22,7 +22,8 @@ namespace antwika::ui
         DrawList commands;
 
         /**
-         * @brief What this frame's pointer did to this frame's widgets.
+         * @brief What this frame's pointer and keyboard did to this
+         * frame's widgets.
          */
         Interactions interactions;
     };
