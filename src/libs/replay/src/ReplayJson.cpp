@@ -1,12 +1,14 @@
 #include "antwika/replay/ReplayJson.hpp"
 
 #include <cstdint>
+#include <format>
 #include <string>
 
 #include <nlohmann/json-schema.hpp>
 
 #include <antwika/replay/EventJson.hpp>
 #include <antwika/replay/ReplayFormatError.hpp>
+#include <antwika/replay/SchemaVersion.hpp>
 
 #include "EventSchema.hpp"
 #include "ReplayFormat.hpp"
@@ -37,16 +39,26 @@ namespace antwika::replay
             schema["type"] = "object";
             schema["additionalProperties"] = false;
 
+            schema["$id"] = std::format(
+                "https://antwika.dev/schemas/replay-document/{}",
+                kReplayDocumentVersion);
+
             // "canvas" is described but never required.
             // The version stays at 1 for the same reason.
             // Every recording written before the field has neither.
             // Refusing those is what this field must not do.
+            //
+            // "version" is required, and an older file still loads.
+            // ReplayReader migrates before it validates.
+            // Migrating stamps the version it arrived at.
+            // So this schema only ever sees the current version.
+            // That is the point: one schema exists, not one per bump.
             schema["required"] =
                 {"magic", "version", "events"}; // GCOVR_EXCL_LINE
             schema["properties"]["magic"]["const"] =
                 std::string(detail::kReplayMagic);
             schema["properties"]["version"]["const"] =
-                detail::kReplayFormatVersion;
+                kReplayDocumentVersion;
             schema["properties"]["events"]["type"] = "array";
             schema["properties"]["events"]["items"] =
                 detail::tickEventShape();
@@ -102,7 +114,7 @@ namespace antwika::replay
     {
         nlohmann::json encoded;
         encoded["magic"] = std::string(detail::kReplayMagic);
-        encoded["version"] = detail::kReplayFormatVersion;
+        encoded["version"] = kReplayDocumentVersion;
         encoded["events"] = events;
         if (canvas.has_value())
         {
