@@ -50,7 +50,21 @@ Input has its own selection, `-o input_backend=` and the `ANTWIKA_INPUT_BACKEND`
 So the command above gets sdl3 keyboard and mouse for free, and the default build stays `null`/`null` with no new dependency.
 Setting the two apart is legal for input with no window (`-o gfx_backend=null -o input_backend=sdl3`) or a window with no input.
 Naming two *different* real frameworks is refused, by `validate()` in [`conanfile.py`](conanfile.py) and again in [`backends/CMakeLists.txt`](backends/CMakeLists.txt): they would fight over one process-global event queue, and whichever polled second would silently lose events.
-A directory selected for one subsystem only builds that subsystem's target, which is why each `backends/<name>/CMakeLists.txt` guards its two targets separately.
+A directory selected for one subsystem only builds that subsystem's target, which is why each `backends/<name>/CMakeLists.txt` guards its targets separately.
+A selection naming a directory that implements no such subsystem is refused at configure time rather than failing much later at link.
+
+Sound has its own selection too, `-o sound_backend=` and `ANTWIKA_SOUND_BACKEND`, with values `null` and `sdl3` -- and it defaults to `null` rather than to `auto`.
+Input follows graphics because a window nobody can click is useless; sound is orthogonal, and `auto` would mean every existing `-o gfx_backend=sdl3` build silently began opening an audio device.
+`raylib` is absent from the option's values because it does not implement that seam, which is the cheapest possible enforcement: Conan refuses an unlisted value before anything is downloaded.
+A lockfile is per *framework* rather than per subsystem, so `-o sound_backend=sdl3` uses `conan-sdl3.lock` like any other sdl3 build.
+
+```sh
+conan install . -of build-sdl3 -o gfx_backend=sdl3 -o sound_backend=sdl3 \
+  -c tools.cmake.cmake_layout:build_folder_vars="['options.gfx_backend']" \
+  -pr:b=./profiles/build/${CONAN_PROFILE} \
+  -pr:h=./profiles/host/${CONAN_PROFILE} \
+  --build=missing -s build_type=Release --lockfile=conan-sdl3.lock
+```
 
 **Updating the lockfiles** after a dependency bump in `conanfile.py` (what Renovate leaves stale):
 
@@ -61,6 +75,7 @@ scripts/update_lockfiles.sh   # or: Tasks: Run Task > Update Conan lockfiles
 It re-resolves every lockfile from scratch against every profile under `profiles/host/`, since CI builds all of them against the same files.
 
 Set `SDL_VIDEODRIVER=dummy` to run the SDL build with no display, or use `xvfb-run` for any backend, which is how the conformance suite is exercised without a desktop session.
+`SDL_AUDIO_DRIVER=dummy` is the sound equivalent, and the sound suite is run **without** `xvfb-run` on purpose: a sound backend that needed a display would be one that had quietly taken a dependency on video, and running it under Xvfb is exactly what would hide that.
 `raylib` reports `maxWindows() == 1`, since it keeps its one window in global state; the conformance suite skips its multi-window tests for such a backend rather than failing them.
 
 **Run a single test binary / test case:**
@@ -82,6 +97,8 @@ build/bin/antwika_poker --record demo.replay
 build/bin/antwika_sudoku [--puzzle my-puzzle.txt]
 build/bin/antwika_gfx_demo                    # runs until the window is closed
 build/bin/antwika_gfx3d_demo                  # spinning cube, 900 frames
+build/bin/antwika_sound_demo                  # eight notes; silent under null
+build/bin/antwika_sound_demo my-sound.wav     # or play a file instead
 build/bin/antwika_tower_defence               # or --record / --replay
 ```
 

@@ -83,6 +83,24 @@ One exception type, `SoundError`, following `gfx::GfxError`, and it is thrown fr
 `WavReader` reads from a `std::istream` rather than a path, exactly as `gfx::PngReader` does, and for the same two reasons: the library opens no files, and every refusal it can produce is reachable from bytes in memory.
 Every one of them is, which is why the decoder is covered without anything on disk.
 
+## Choosing a backend
+
+`sound_backend` is a Conan option and `ANTWIKA_SOUND_BACKEND` the CMake variable behind it, exactly as graphics and input have.
+It defaults to `null` and deliberately does not offer `auto`.
+
+Input follows graphics because a window nobody can click is useless, and one flag driving both is what a caller wants.
+Sound is orthogonal to both, so following would mean every existing `-o gfx_backend=sdl3` build silently began opening an audio device -- a device, a subsystem and a dependency nobody asked for.
+
+`raylib` is absent from the option's values because it does not implement this seam.
+An unlisted value is the cheapest possible way to say so: Conan refuses it before anything is downloaded, which is a better answer than a link error much later.
+
+The SDL3 backend is a **push** model, and that is what keeps this library single-threaded.
+`SDL_OpenAudioDeviceStream` with a null callback starts no thread of ours and calls nothing of ours; the caller renders and hands buffers over with `SDL_PutAudioStreamData`.
+So `pump()` on an SDL3 device does what it does on the null one, on the thread that called it.
+
+It claims SDL's audio subsystem and nothing else, so a build selecting `sdl3` for sound alone never asks for a display.
+That is worth checking rather than assuming, and it is why the sound conformance suite runs in CI **without** `xvfb-run` while the graphics and input ones run under it: a backend that had quietly taken a dependency on video would pass under Xvfb and fail on a headless machine.
+
 ## What it does not depend on
 
 `antwika::log`, and nothing else.

@@ -359,7 +359,7 @@ jobs:
 
           exit $failed
 
-  gfx-backends:
+  backends:
     name: ${{ matrix.name }} backend
     needs: images
     runs-on: ubuntu-latest
@@ -367,17 +367,26 @@ jobs:
 
     # The default build selects the null backends, so nothing above ever
     # compiles a line of backends/sdl3 or backends/raylib. This job is
-    # what keeps them from rotting: it builds each real backend, graphics
-    # and input alike, and runs both shared conformance suites against it
-    # under Xvfb, since the runner has no display of its own.
+    # what keeps them from rotting: it builds each real backend and runs
+    # the shared conformance suite of every subsystem that backend
+    # implements.
+    #
+    # subsystems is a matrix field rather than a fixed list because
+    # raylib implements graphics and input and not sound. Naming what a
+    # backend covers is how it opts out honestly, instead of the run
+    # steps carrying a special case for one name.
     strategy:
       fail-fast: false
       matrix:
         include:
           - name: SDL3
             backend: sdl3
+            subsystems: gfx input sound
+            options: -o gfx_backend=sdl3 -o sound_backend=sdl3
           - name: raylib
             backend: raylib
+            subsystems: gfx input
+            options: -o gfx_backend=raylib
 
     container:
       image: ghcr.io/${{ github.repository_owner }}/antwika-dev-gnu:${{ inputs.version }}
@@ -440,7 +449,7 @@ jobs:
         run: |
           conan install . \
             -of "$BUILD_DIR" \
-            -o gfx_backend=${{ matrix.backend }} \
+            ${{ matrix.options }} \
             -c tools.cmake.cmake_layout:build_folder_vars="['options.gfx_backend']" \
             -pr:b=./profiles/build/${CONAN_PROFILE} \
             -pr:h=./profiles/host/${CONAN_PROFILE} \
@@ -454,16 +463,20 @@ jobs:
           cmake --preset conan-gfx_backend_${{ matrix.backend }}-release \
             -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
 
-      # Only the two conformance suites, not the whole project.
+      # Only the conformance suites, not the whole project.
       # What this job is for is the backend, and building every app and
-      # every test target to reach two binaries was a second full build
-      # of everything the app legs had already built.
+      # every test target to reach a handful of binaries was a second
+      # full build of everything the app legs had already built.
       - name: Build the conformance suites
         shell: bash
         run: |
-          cmake --build "$BUILD_DIR" -j24 \
-            --target antwika_gfx_backend_${{ matrix.backend }}_tests \
-                     antwika_input_backend_${{ matrix.backend }}_tests
+          targets=()
+
+          for subsystem in ${{ matrix.subsystems }}; do
+            targets+=("antwika_${subsystem}_backend_${{ matrix.backend }}_tests")
+          done
+
+          cmake --build "$BUILD_DIR" -j24 --target "${targets[@]}"
 
       - name: Report ccache effectiveness
         shell: bash
@@ -478,8 +491,7 @@ jobs:
           set -o pipefail
           failed=0
 
-          # One selection drives both subsystems, so both suites exist.
-          for subsystem in gfx input; do
+          for subsystem in ${{ matrix.subsystems }}; do
             binary="${BUILD_DIR}/bin/antwika_${subsystem}_backend_${{ matrix.backend }}_tests"
 
             if [ ! -f "$binary" ]; then
@@ -490,10 +502,20 @@ jobs:
 
             log="conformance-${subsystem}.log"
 
+            # Sound runs with no display at all, deliberately.
+            # A sound backend that needed Xvfb would be one that had
+            # quietly taken a dependency on video, and running it under
+            # Xvfb here is exactly what would hide that.
+            if [ "$subsystem" = sound ]; then
+              runner=(env SDL_AUDIO_DRIVER=dummy)
+            else
+              runner=(xvfb-run -a)
+            fi
+
             # A failing suite has to fail the step, which the exit
             # status of the pipeline is what reports -- hence pipefail,
             # since tee would otherwise be the one answering.
-            if ! xvfb-run -a "$binary" 2>&1 | tee "$log"; then
+            if ! "${runner[@]}" "$binary" 2>&1 | tee "$log"; then
               echo "The ${subsystem} conformance suite failed"
               failed=1
             fi

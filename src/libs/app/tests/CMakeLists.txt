@@ -9,6 +9,7 @@ add_executable(antwika_app_tests
     PointerReadingTest.cpp
     RunGuardedTest.cpp
     RunRecordedTest.cpp
+    WavFileTest.cpp
 )
 
 target_link_libraries(antwika_app_tests

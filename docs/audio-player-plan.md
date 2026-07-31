@@ -3,7 +3,8 @@
 A plan for playing sound and music from a script: instruments and tracks set up in a small language, notes described by *programmable patterns* rather than literal note lists, envelopes modulating arbitrary parameters, and a real audio device behind a build-time backend seam that no code under `src/` ever names.
 
 **Status: the PCM half has shipped as `antwika::sound`; the musical half has not started.**
-Phase 3's seam and most of Phase 4 are real code now, described by [`docs/sound.md`](sound.md) rather than by this plan, and the phase list below says which parts of each landed.
+Phase 3, most of Phase 4 and the surviving part of Phase 5 are real code now, described by [`docs/sound.md`](sound.md) rather than by this plan, and the phase list below says which parts of each landed.
+Sound is audible today, through `backends/sdl3` and `apps/sound_demo`; what it is not yet is *musical*.
 What remains unbuilt is everything this document is actually about: musical time, the pattern algebra, envelopes, the script and the plugin work.
 `antwika::audio` is therefore redefined as the **musical layer above `antwika::sound`**, depending on it as `antwika::app` depends on `antwika::gfx`, rather than as the library that also owns the device.
 
@@ -439,19 +440,19 @@ Still no sound.
 Ships as pure values.
 
 **Phase 3 — the device seam and the null backend — shipped, as `antwika::sound`.**
-`SampleBuffer`, `IRenderCallback`, `IDevice`, `ISoundBackend`, `SoundCapabilities`, `SoundError`, `makeSelectedSoundBackend()`, `NullSoundBackend` and the backend conformance suite all exist and are covered.
-Outstanding from this phase: the `ANTWIKA_SOUND_BACKEND` CMake variable, the `sound_backend` Conan option and a real backend target under `backends/`, which arrive with the SDL3 device.
+`SampleBuffer`, `IRenderCallback`, `IDevice`, `ISoundBackend`, `SoundCapabilities`, `SoundError`, `makeSelectedSoundBackend()`, `NullSoundBackend`, the `ANTWIKA_SOUND_BACKEND` CMake variable, the `sound_backend` Conan option and the backend conformance suite all exist.
+`sound_backend` defaults to `null` rather than following `gfx_backend`, which is where it parts company with `input_backend`; [`docs/sound.md`](sound.md) says why.
 
 **Phase 4 — voices, the mixer, and offline rendering — half shipped.**
 `Waveform`, `WaveformLibrary`, `PlayRequest`, the fixed voice pool of `Mixer`, `WavReader` and `OfflineDevice` are built: a session can be rendered to a waveform and asserted sample by sample with no hardware at all.
 Outstanding: every piece of DSP — a sample-time `Adsr`, a band-limited oscillator, a one-pole filter — plus a WAV *writer*, which belongs under `antwika::app` rather than in the library since the library opens no files.
 So a sampler you can hear exists; a synthesiser does not.
 
-**Phase 5 — the real-time seam — deferred rather than pending.**
+**Phase 5 — the real-time seam — the part that survives has shipped.**
 The pumped device model removed the reason for most of this phase, as the [device seam](#the-device-seam) section explains: with no thread of ours there is nothing for an SPSC ring to cross.
-What survives is the `sdl3` target beside the existing graphics and input ones, and the pacing rule.
+What survived was the `sdl3` target beside the existing graphics and input ones, and the pacing rule, and both are built: `backends/sdl3` implements the seam, and `apps/sound_demo` paces itself against `framesPlayed()` so a track takes as long to run as it takes to hear.
 What is deferred until a backend genuinely needs a callback thread is the ring itself, the lookahead sequencer, the overflow counter, the denormal guard and `scripts/check_audio_thread_purity.py`.
-Once the `sdl3` target lands it plays, live, from a tick loop.
+What is still missing before this plays *from a tick loop* is the sequencer, which needs Phase 1's musical time -- so the remaining work here is upstream of this phase rather than in it.
 
 **Phase 6 — the script front-end and a showcase app.**
 A parser for the syntax above, `ScriptParseError`, and `apps/sequencer`: a window drawing the arrangement and the active voices through `antwika::gfx`, transport controls through `antwika::ui`, key bindings through `antwika::input::ActionMap`, and the whole session recorded and replayed through `--record`/`--replay` like every other app in the tree.

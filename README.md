@@ -20,6 +20,7 @@ src/
 │   ├── gfx_demo/
 │   ├── life/
 │   ├── poker/
+│   ├── sound_demo/
 │   ├── sudoku/
 │   ├── task_worker/
 │   └── tower_defence/
@@ -111,7 +112,15 @@ Setting them apart is allowed for input with no window, or a window with no inpu
 conan install . -of build-sdl3-input -o gfx_backend=null -o input_backend=sdl3 ...
 ```
 
-Naming two different real frameworks is refused at configure time, because they would fight over one operating-system event queue and whichever polled second would silently lose events.
+Sound is chosen separately, by `sound_backend` and `ANTWIKA_SOUND_BACKEND`, and it deliberately does **not** follow the graphics choice the way input does.
+Input follows because a window nobody can click is useless; sound is orthogonal, and following would mean every existing `sdl3` build silently began opening an audio device.
+
+```sh
+conan install . -of build-sdl3 -o gfx_backend=sdl3 -o sound_backend=sdl3 ...
+```
+
+Naming two different real frameworks anywhere is refused at configure time.
+Graphics and input would fight over one operating-system event queue, and whichever polled second would silently lose events; and a second framework of any kind doubles the dependency graph of a build that only needs one.
 `build/bin/antwika_gfx_demo` opens a window and draws until you close it -- under the `null` backend there is nothing to close, so that build runs until interrupted.
 It draws three bars and blits a PNG logo twice: once whole and untinted, once left-half-only and tinted, which is what a source rectangle and a tint look like side by side.
 `build/bin/antwika_gfx3d_demo` is its counterpart for the 3D half: a cube drawn through `gfx::IRenderer3D`, turned by the tick count rather than by a clock, with a caption drawn over it through the 2D calls.
@@ -355,6 +364,16 @@ A waveform whose sample rate differs from the mixer's is refused with a message 
 
 `OfflineDevice` renders into a `Waveform` instead of at a speaker, which is what lets the whole suite assert audio sample by sample with no hardware, no display and no wall-clock time spent.
 See [`docs/sound.md`](docs/sound.md) for why the threading, the absolute frame index and the float samples are the design rather than a stage it has not reached.
+
+`apps/sound_demo` (`antwika_sound_demo`) is the showcase: eight notes placed at exact frame positions, panned across the stereo field, played through whichever backend was selected.
+
+```sh
+build/bin/antwika_sound_demo                  # a generated tone, silent under null
+build/bin/antwika_sound_demo my-sound.wav     # or play a file instead
+```
+
+Under the default `null` backend it renders every frame and plays nothing, which is what makes it safe for a CI leg to run.
+Under `sdl3` it is audible, and it takes as long to run as the track takes to hear -- because it paces itself against how much the device has actually consumed, which is the one thing `framesPlayed()` may be read for.
 
 ## Testing
 

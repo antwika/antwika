@@ -11,6 +11,7 @@ antwika_add_library(
         src/PointerReading.cpp
         src/RunGuarded.cpp
         src/RunRecorded.cpp
+        src/WavFile.cpp
     DEPENDS
         antwika::animation
         antwika::event
@@ -18,6 +19,7 @@ antwika_add_library(
         antwika::input
         antwika::log
         antwika::replay
+        antwika::sound
         antwika::time
         antwika::ui
 )
