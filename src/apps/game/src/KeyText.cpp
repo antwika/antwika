@@ -33,17 +33,22 @@ namespace antwika::game
     {
         const auto index = static_cast<std::uint8_t>(key);
 
+        // The digits are asked about first, and that is not arbitrary.
+        // Key::A is the enumeration's zero, so "at least A" is folded.
+        // Letters first would leave "at least Digit0" always true here.
+        // That is a branch no test could take.
+        // And Key.hpp says the order may be changed anyway.
+        if (key >= Key::Digit0 && key <= Key::Digit9 && !shift)
+        {
+            return static_cast<char>(
+                '0' + (index - static_cast<std::uint8_t>(Key::Digit0)));
+        }
+
         if (key >= Key::A && key <= Key::Z)
         {
             const auto offset =
                 index - static_cast<std::uint8_t>(Key::A);
             return static_cast<char>((shift ? 'A' : 'a') + offset);
-        }
-
-        if (key >= Key::Digit0 && key <= Key::Digit9 && !shift)
-        {
-            return static_cast<char>(
-                '0' + (index - static_cast<std::uint8_t>(Key::Digit0)));
         }
 
         switch (key)

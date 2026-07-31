@@ -58,7 +58,7 @@ namespace
 
         [[nodiscard]] std::size_t walkers()
         {
-            return world.view<Walker>().size();
+            return world.view<Walker, Cell>().size();
         }
 
         [[nodiscard]] std::vector<Cell> walkerCells()

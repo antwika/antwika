@@ -44,3 +44,22 @@ Adding them is a save-format version bump and a migration, which the format is a
 Flagging it so that "I saved, I loaded, my houses are gone" is not a surprise.
 
 **What I did instead:** `GameSummary` and `printSummary()` do report buildings now, so a finished run says what was built even though a save cannot yet carry it.
+
+## Three function entries in `ecs/View.hpp` will not go green, and I believe gcov is wrong
+
+**Task:** step 7, the coverage gate.
+
+**Blocker:** under CI's exact invocation the tree is at 100% lines and 100% branches, and 99.6% functions.
+The five remaining are all in `src/libs/ecs/include/antwika/ecs/View.hpp`, and three of them are the ones the coverage agent handed over: the `std::erase_if` predicate inside `View<game::Walker, game::Cell>`'s constructor, and the two instantiations of the `consider` generic lambda inside that view's `smallestEntitiesOf`.
+
+I do not think they are uncovered.
+`View.hpp` reports 100% *line* coverage, and the enclosing constructor reports 334 executions with `smallestEntitiesOf` at 90.
+`smallestEntitiesOf` ends in `(consider(storages), ...)`, which cannot run without calling `consider`, and `GridSinkTest` asserts a walker count read straight out of `view<Walker, Cell>()`, which cannot be non-zero unless the `erase_if` predicate ran.
+gcov appears to be attributing these lambda symbols to a COMDAT copy that never ran.
+I tried moving the instantiation sites around in the game's tests; it changed which copies were reported and not whether they were zero, so I put them back.
+
+I did not change `src/libs/ecs`, having been told not to.
+
+**Question for the human:** this needs somebody who owns `antwika::ecs` to decide -- either give `View`'s two lambdas names of their own (a named private static predicate is not a COMDAT lambda and would be attributed properly), or exclude them with a note, or raise the gate's function threshold to ignore lambdas.
+
+**What I did instead:** closed every branch and every line in `src/apps/game`, including the ones the coverage agent listed, and left this one written down.

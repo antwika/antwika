@@ -204,9 +204,13 @@ namespace antwika::game
         {
             saveGameFile(session.take(), saveGamePath(directory, name));
         }
-        catch (const SaveFormatError &failed)
+        // The excluded line's second branch is the catch's own.
+        // It is taken by an exception this catch does not match.
+        // Nothing under saveGameFile() throws anything else.
+        catch (const SaveFormatError &failed) // GCOVR_EXCL_LINE
         {
-            state.setMessage(std::string("Could not save: ") + failed.what());
+            state.setMessage(
+                std::string("Could not save: ") + failed.what());
             return;
         }
 
@@ -234,9 +238,11 @@ namespace antwika::game
             session.restore(
                 loadGameFile(saveGamePath(directory, name)));
         }
-        catch (const SaveFormatError &failed)
+        // Likewise, and for the same reason.
+        catch (const SaveFormatError &failed) // GCOVR_EXCL_LINE
         {
-            state.setMessage(std::string("Could not load: ") + failed.what());
+            state.setMessage(
+                std::string("Could not load: ") + failed.what());
             return;
         }
 

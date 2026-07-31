@@ -86,6 +86,9 @@ namespace
         // The extension alone names nothing, so it is not a save.
         write(".save.json");
 
+        // Longer than the extension, and still not one.
+        write("a-long-enough-replay.json");
+
         EXPECT_EQ(
             listSaveGames(path()), (std::vector<std::string>{"town"}));
     }

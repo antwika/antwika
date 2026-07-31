@@ -1,6 +1,8 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
+#include <array>
+#include <cstddef>
 #include <cstdint>
 #include <vector>
 
@@ -120,3 +122,35 @@ namespace
     }
 
 } // namespace
+
+// The function is total, which is what the header promises.
+// A value outside the enumeration only a cast can produce is water.
+TEST(WorldMapSceneTest, ColorOf_AnswersWaterForAnythingUnrecognised)
+{
+    EXPECT_EQ(
+        antwika::game::colorOf(
+            static_cast<antwika::game::Terrain>(99)),
+        antwika::game::colorOf(antwika::game::Terrain::Water));
+}
+
+// Every terrain has a colour, and no two share one.
+TEST(WorldMapSceneTest, ColorOf_NamesEveryTerrainDistinctly)
+{
+    const std::array<antwika::game::Terrain, 5> all{
+        antwika::game::Terrain::Water,
+        antwika::game::Terrain::Plains,
+        antwika::game::Terrain::Forest,
+        antwika::game::Terrain::Hills,
+        antwika::game::Terrain::Mountain};
+
+    for (std::size_t first = 0; first < all.size(); ++first)
+    {
+        for (std::size_t second = first + 1; second < all.size();
+             ++second)
+        {
+            EXPECT_NE(
+                antwika::game::colorOf(all[first]),
+                antwika::game::colorOf(all[second]));
+        }
+    }
+}

@@ -209,3 +209,17 @@ TEST_F(MainMenuSinkTest, AnEventThatIsNotInputIsIgnored)
     EXPECT_TRUE(overlay.commands().empty());
     EXPECT_EQ(mode.next(), AppMode::MainMenu);
 }
+
+// A press is the left button's, and only the left button's.
+TEST_F(MainMenuSinkTest, AMiddlePressActivatesNothing)
+{
+    const auto at = pixelOn(menuWidgets::kQuit);
+
+    send(PointerMoved{.position = at});
+    send(
+        PointerButtonPressed{
+            .button = MouseButton::Middle, .position = at});
+
+    EXPECT_FALSE(stop.stopped());
+    EXPECT_EQ(mode.next(), AppMode::MainMenu);
+}

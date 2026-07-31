@@ -4,6 +4,8 @@
 #include <antwika/ecs/World.hpp>
 #include <antwika/log/mocks/MockLogger.hpp>
 
+#include "antwika/game/BuildTool.hpp"
+#include "antwika/game/Building.hpp"
 #include "antwika/game/Camera.hpp"
 #include "antwika/game/Cell.hpp"
 #include "antwika/game/Direction.hpp"
@@ -99,9 +101,17 @@ namespace
     }
 
     // Loading is resuming a session, not merging two.
+    // A building the old city had must not still be standing.
     TEST_F(SessionStoreTest, Restore_DestroysWhatWasAlreadyOnTheGrid)
     {
         layPath(Cell{.x = 8, .y = 8});
+
+        const auto house = world.create();
+        world.add<Cell>(house, Cell{.x = 7, .y = 7});
+        world.add<antwika::game::Building>(
+            house,
+            antwika::game::Building{
+                .kind = antwika::game::BuildTool::House});
         world.commit();
 
         SaveGame save;
@@ -114,6 +124,7 @@ namespace
         EXPECT_EQ(after.paths, save.paths);
         EXPECT_FALSE(paths.has(Cell{.x = 8, .y = 8}));
         EXPECT_EQ(world.view<Path>().size(), 1U);
+        EXPECT_TRUE(after.buildings.empty());
     }
 
     TEST_F(SessionStoreTest, Restore_ThenTake_ComesBackTheSame)

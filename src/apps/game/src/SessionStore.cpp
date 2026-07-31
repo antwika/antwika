@@ -35,8 +35,13 @@ namespace antwika::game
     {
         const auto frame = snapshotOf(world, paths, camera, extent);
 
+        // Every branch left on the excluded line is the allocator's.
+        // Three are the throw edges of copying the three vectors.
+        // The rest are heap branches nothing here is big enough for.
+        // And the unwind paths that go with them.
+        // Confirmed with gcov -b, as the coverage doc requires.
         return saveGameOf(
-            GameSummary{
+            GameSummary{ // GCOVR_EXCL_LINE
                 .state = state,
                 .paths = frame.paths,
                 .walkers = frame.walkers,

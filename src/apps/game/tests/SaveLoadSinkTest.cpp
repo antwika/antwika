@@ -486,4 +486,17 @@ namespace
         EXPECT_GT(opened, overlay.commands().size());
     }
 
+    // A press is the left button's, and only the left button's.
+    TEST_F(SaveLoadSinkTest, AMiddlePressActivatesNothing)
+    {
+        const auto at = pixelOn(saveWidgets::kBack);
+
+        send(PointerMoved{.position = at});
+        send(
+            PointerButtonPressed{
+                .button = MouseButton::Middle, .position = at});
+
+        EXPECT_EQ(mode.next(), AppMode::SaveLoad);
+    }
+
 } // namespace

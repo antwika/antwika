@@ -74,6 +74,7 @@ add_executable(antwika_game_tests
     TickPacerTest.cpp
     ToolbarTest.cpp
     UiOverlayTest.cpp
+    ValueEqualityTest.cpp
     UiSinkTest.cpp
     WalkerSystemTest.cpp
     WorldMapTest.cpp
