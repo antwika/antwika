@@ -11,6 +11,7 @@
 #include <antwika/input/MouseButton.hpp>
 #include <antwika/log/mocks/MockLogger.hpp>
 
+#include "antwika/game/BuildTool.hpp"
 #include "antwika/game/BuildingIndex.hpp"
 #include "antwika/game/Camera.hpp"
 #include "antwika/game/Cell.hpp"
@@ -29,6 +30,7 @@ using antwika::ecs::World;
 using antwika::event::Event;
 using antwika::event::TickEvent;
 using antwika::game::BuildingIndex;
+using antwika::game::BuildTool;
 using antwika::game::Camera;
 using antwika::game::Cell;
 using antwika::game::cellCentre;
@@ -187,6 +189,73 @@ TEST_F(GridSinkTest, RightPress_PutsNoWalkerOnBareGround)
     clickAt(Cell{.x = 2, .y = 2}, MouseButton::Right);
 
     EXPECT_EQ(walkerCount(), 0U);
+}
+
+// One button, two meanings, and the palette decides which.
+// A building tool selected makes a right press a cancel.
+TEST_F(GridSinkTest, RightPress_LeavesBuildModeWithABuildingToolSelected)
+{
+    overlay.select(BuildTool::House);
+
+    clickAt(Cell{.x = 2, .y = 2}, MouseButton::Right);
+
+    EXPECT_EQ(overlay.tool(), BuildTool::Road);
+}
+
+// And the cancel is the whole of what that press does.
+// A walker as well would be one press doing both meanings.
+TEST_F(GridSinkTest, RightPress_PlacesNoWalkerWhileLeavingBuildMode)
+{
+    constexpr Cell target{.x = 2, .y = 2};
+    clickAt(target, MouseButton::Left);
+
+    overlay.select(BuildTool::FoodSource);
+    clickAt(target, MouseButton::Right);
+
+    EXPECT_EQ(walkerCount(), 0U);
+
+    // The next one drops one, the palette being back to normal play.
+    clickAt(target, MouseButton::Right);
+
+    EXPECT_EQ(walkerCount(), 1U);
+}
+
+// Cancelling twice is cancelling once.
+// The road tool is the state a cancel returns to, so it is not one.
+TEST_F(GridSinkTest, RightPress_IsAWalkerAgainOnceBuildModeIsLeft)
+{
+    constexpr Cell target{.x = 2, .y = 2};
+    clickAt(target, MouseButton::Left);
+
+    overlay.select(BuildTool::ArchitectPost);
+    clickAt(target, MouseButton::Right);
+    clickAt(target, MouseButton::Right);
+
+    EXPECT_EQ(overlay.tool(), BuildTool::Road);
+    EXPECT_EQ(walkerCount(), 1U);
+}
+
+// What the toolbar covers, it covers from the grid too.
+// A right press on the bar is not a press on the world behind it.
+TEST_F(GridSinkTest, RightPress_LeavesBuildModeAloneWhereTheToolbarIs)
+{
+    overlay.select(BuildTool::House);
+    overlay.set({}, true);
+
+    clickAt(Cell{.x = 2, .y = 2}, MouseButton::Right);
+
+    EXPECT_EQ(overlay.tool(), BuildTool::House);
+}
+
+// Leaving build mode is about the palette, not about a cell.
+// So it happens wherever on the grid the press landed.
+TEST_F(GridSinkTest, RightPress_LeavesBuildModeFromOutsideTheExtent)
+{
+    overlay.select(BuildTool::House);
+
+    clickAt(Cell{.x = -4, .y = -4}, MouseButton::Right);
+
+    EXPECT_EQ(overlay.tool(), BuildTool::Road);
 }
 
 TEST_F(GridSinkTest, MiddlePress_LaysNothingAndPlacesNothing)

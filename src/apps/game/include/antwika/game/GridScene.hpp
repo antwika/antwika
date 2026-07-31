@@ -44,6 +44,10 @@ namespace antwika::game
      * means is a function of the camera, and the camera is simulation
      * state -- see BuildGhost.
      *
+     * It is bordered with the four lines of footprintOutline(), traced
+     * round the box the tile itself is blitted into, so the outline
+     * shows exactly the cells the click would take.
+     *
      * Two things keep the cost proportional to what is on screen rather
      * than to how big the grid is. Only cells whose diamonds reach the
      * canvas are drawn at all, and a cell is one blit whatever it holds.

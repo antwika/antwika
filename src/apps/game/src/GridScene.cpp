@@ -1,6 +1,7 @@
 #include "antwika/game/GridScene.hpp"
 
 #include <algorithm>
+#include <cstddef>
 #include <cstdint>
 #include <vector>
 
@@ -9,6 +10,7 @@
 
 #include "antwika/game/Direction.hpp"
 #include "antwika/game/Footprint.hpp"
+#include "antwika/game/FootprintOutline.hpp"
 #include "antwika/game/IsoProjection.hpp"
 #include "antwika/game/TileAtlas.hpp"
 #include "antwika/game/WalkerMotion.hpp"
@@ -39,6 +41,16 @@ namespace antwika::game
         // A preview that vanishes leaves them guessing what blocked it.
         constexpr Color kBlocked{
             .red = 255, .green = 90, .blue = 90, .alpha = 110};
+
+        // The border round the block, at full strength.
+        // The tile inside it is faint on purpose, being a placeholder.
+        // An edge as faint would be the one thing here nobody could see.
+        constexpr Color kGhostEdge{
+            .red = 255, .green = 255, .blue = 255, .alpha = 220};
+
+        // Reddened for the same reason the tile inside it is.
+        constexpr Color kBlockedEdge{
+            .red = 255, .green = 90, .blue = 90, .alpha = 220};
 
         [[nodiscard]] bool overlaps(Rect box, Size canvas) noexcept
         {
@@ -188,6 +200,28 @@ namespace antwika::game
             toolTile(ghost.tool, linksAt(snapshot.paths, ghost.at)),
             bounds,
             ghost.valid ? kGhostly : kBlocked);
+
+        // A border round exactly the cells the click will take.
+        // A faint tile says roughly where; an edge says precisely what.
+        // Traced round the very box the tile above was blitted into.
+        // So a preview and its border cannot show two extents.
+        // Four lines rather than four fills, the edges being diagonal.
+        // drawRect() takes an upright box, so it cannot draw one.
+        // Which is why ui's focus ring is four fills and this is not.
+        // drawLine() exists to step diagonal shapes out of.
+        // Where its middle pixels land is the backend's business.
+        // Nothing reads a line back, so no replay can hear about it.
+        const auto corners =
+            footprintOutline(ghost.at, footprint, snapshot.camera);
+        const auto edge = ghost.valid ? kGhostEdge : kBlockedEdge;
+
+        for (std::size_t corner = 0; corner < corners.size(); ++corner)
+        {
+            renderer.drawLine(
+                corners[corner],
+                corners[(corner + 1) % corners.size()],
+                edge);
+        }
     }
 
     void GridScene::drawGround(

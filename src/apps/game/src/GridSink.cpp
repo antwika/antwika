@@ -30,7 +30,7 @@ namespace antwika::game
         GridExtent extent,
         SystemScheduler &scheduler,
         const InputFold &input,
-        const UiOverlay &overlay,
+        UiOverlay &overlay,
         const WorldMapState &cities,
         BuildingIndex &built)
         : world(world),
@@ -112,7 +112,7 @@ namespace antwika::game
             }
             else if (pressed->button == MouseButton::Right)
             {
-                placeWalker(cell);
+                cancelToolOrPlaceWalker(cell);
             }
 
             return;
@@ -170,6 +170,24 @@ namespace antwika::game
         world.add<Cell>(entity, cell);
         world.add<Building>(entity, Building{.kind = kind});
         (void)built.insert(cell, footprint);
+    }
+
+    void GridSink::cancelToolOrPlaceWalker(Cell cell)
+    {
+        // One button, two meanings, and one place that decides which.
+        // Splitting the decision between two sinks would take both.
+        // UiSink runs first, and would put the road tool back there.
+        // This sink would then read the press and drop a walker too.
+        // The cell is not consulted in the first arm at all.
+        // Leaving build mode is about the palette, not about a cell.
+        // See GridSink.hpp for the whole rule.
+        if (placesBuilding(overlay.tool()))
+        {
+            overlay.select(BuildTool::Road);
+            return;
+        }
+
+        placeWalker(cell);
     }
 
     void GridSink::placeWalker(Cell cell)
