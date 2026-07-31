@@ -38,7 +38,7 @@ Every PNG colour type decodes to the same 8-bit straight RGBA — greyscale, pal
 Reading the file from disk is the application's job, which is why `antwika::app::readPngFile()` exists and `antwika::gfx` has nothing like it.
 
 The decoder is stb_image, compiled in exactly one translation unit with `STB_IMAGE_STATIC`, which keeps every `stbi_` symbol internal to that file.
-That is not tidiness — raylib links its own copy of stb_image, and two copies with external linkage is a link error or, worse, whichever one the linker picked.
+That is not tidiness — raylib links its own copy of stb_image, and as the file says, two sets of those symbols do not link.
 
 ## A texture belongs to the renderer that made it
 

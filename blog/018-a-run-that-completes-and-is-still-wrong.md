@@ -93,8 +93,8 @@ The old parser skipped anything it did not recognise, so a typo in a flag name s
 An unknown flag and a flag missing its value both throw `CommandLineError` now, and there is a `--help` listing what is accepted.
 
 **Two parsers refusing each other's flags.**
-`apps/poker` takes `--tick-delay-ms`, and the shared replay parser did not know about it.
-Parsing twice — once for the replay flags, once for the app's — means each pass sees the other's flags as unknown, so making the first pass strict is what broke the second.
+`apps/poker` takes `--tick-delay-ms`, and parsed it in a pass of its own, after the shared replay parser had already been over the same `argv`.
+That worked only while the first pass ignored what it did not recognise, so making it strict is what stopped the flag working: the replay pass refused it before the app's pass ever saw it.
 The fix is that there is one pass: `replayCliFlags()` returns a table an app concatenates its own flags onto, and `runRecorded()` parses the result once.
 The comment on the field says which bug this is, in five words: *which is how `--tick-delay-ms` stopped working*.
 
