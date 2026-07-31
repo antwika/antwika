@@ -6,9 +6,8 @@
 #include <antwika/input/Key.hpp>
 
 #include "antwika/game/AppMode.hpp"
-#include "antwika/game/Camera.hpp"
 #include "antwika/game/InputFold.hpp"
-#include "antwika/game/PathIndex.hpp"
+#include "antwika/game/LiveGrid.hpp"
 #include "antwika/game/WorldMapState.hpp"
 
 namespace antwika::game
@@ -76,8 +75,8 @@ namespace antwika::game
          * @param state Which city is open, and every city's grid.
          * @param mode The app's mode; asked for the screen the switch
          * leads to. Must outlive this sink.
-         * @param paths The live path index, swapped between cities.
-         * @param camera The live camera, swapped between cities.
+         * @param live The grid the session builds on, swapped between
+         * cities; every part of it must outlive this sink.
          * @param input The folded input, holding the event being
          * handled; must be registered ahead of this sink.
          * @param canvas The area the world map is laid out in.
@@ -85,8 +84,7 @@ namespace antwika::game
         WorldMapSink(
             WorldMapState &state,
             AppModeState &mode,
-            PathIndex &paths,
-            Camera &camera,
+            const LiveGrid &live,
             const InputFold &input,
             Size canvas);
 
@@ -109,8 +107,7 @@ namespace antwika::game
 
         WorldMapState &state;
         AppModeState &mode;
-        PathIndex &paths;
-        Camera &camera;
+        LiveGrid live;
         const InputFold &input;
         Size canvas;
     };

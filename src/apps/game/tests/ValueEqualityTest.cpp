@@ -2,7 +2,10 @@
 
 #include <cstddef>
 
+#include <antwika/ecs/Entity.hpp>
+
 #include "antwika/game/BuildGhost.hpp"
+#include "antwika/game/Building.hpp"
 #include "antwika/game/BuildTool.hpp"
 #include "antwika/game/Camera.hpp"
 #include "antwika/game/Cell.hpp"
@@ -24,6 +27,7 @@ namespace
 {
 
     using antwika::game::BuildGhost;
+    using antwika::game::Building;
     using antwika::game::BuildingSprite;
     using antwika::game::BuildingView;
     using antwika::game::BuildingKind;
@@ -249,6 +253,34 @@ namespace
             base,
             [](WorldMapSnapshot &s)
             { s.cities[3] = Cell{.x = 5, .y = 5}; });
+    }
+
+    // The component itself, which no other value test reaches.
+    TEST(BuildingTest, EqualityComparesEveryField)
+    {
+        const Building base{
+            .kind = BuildingKind::FoodSource,
+            .stock = {1, 2},
+            .risk = 3,
+            .ticksUntilSpawn = 4,
+            .ticksUntilDrain = 5,
+            .ticksUntilRisk = 6,
+            .walker = antwika::ecs::Entity{7}};
+
+        expectMemberCompared(
+            base, [](Building &b) { b.kind = BuildingKind::House; });
+        expectMemberCompared(base, [](Building &b) { b.stock[0] = 99; });
+        expectMemberCompared(base, [](Building &b) { b.risk = 99; });
+        expectMemberCompared(
+            base, [](Building &b) { b.ticksUntilSpawn = 99; });
+        expectMemberCompared(
+            base, [](Building &b) { b.ticksUntilDrain = 99; });
+        expectMemberCompared(
+            base, [](Building &b) { b.ticksUntilRisk = 99; });
+        expectMemberCompared(
+            base,
+            [](Building &b)
+            { b.walker = antwika::ecs::kNullEntity; });
     }
 
 } // namespace

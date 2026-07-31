@@ -6,6 +6,7 @@ add_executable(antwika_game_tests
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/BuildGhost.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/BuildingIndex.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/BuildingSystem.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/CityGrid.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/FpsReadout.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/FrameMeter.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/Game.cpp
@@ -57,6 +58,7 @@ add_executable(antwika_game_tests
     BuildingSystemTest.cpp
     CameraTest.cpp
     CellTest.cpp
+    CityGridTest.cpp
     DirectionTest.cpp
     GameStateReducerTest.cpp
     GameStateTest.cpp

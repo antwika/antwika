@@ -21,14 +21,12 @@ namespace antwika::game
     WorldMapSink::WorldMapSink(
         WorldMapState &state,
         AppModeState &mode,
-        PathIndex &paths,
-        Camera &camera,
+        const LiveGrid &live,
         const InputFold &input,
         Size canvas)
         : state(state),
           mode(mode),
-          paths(paths),
-          camera(camera),
+          live(live),
           input(input),
           canvas(canvas)
     {
@@ -51,7 +49,7 @@ namespace antwika::game
             if (key->key == kWorldMapKey && !key->repeat
                 && mode.mode() == AppMode::CityMap)
             {
-                state.closeCity(paths, camera);
+                state.closeCity(live);
                 mode.request(AppMode::WorldMap);
             }
             return;
@@ -83,7 +81,7 @@ namespace antwika::game
             return;
         }
 
-        state.openCityAt(city, paths, camera);
+        state.openCityAt(city, live);
 
         // Staged, not applied.
         // So this very click cannot also be read by the grid it opens.

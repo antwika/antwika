@@ -84,9 +84,14 @@ namespace antwika::game
          * part-way through a tick from being half-visible to whatever
          * runs after it.
          *
-         * A save holds no buildings, because the format does not carry
-         * them yet, so a restore leaves none. See
-         * ISSUES-game-integrate.md.
+         * What it puts back is the *live* city's grid, since a save
+         * carries one grid -- the other cities of a session keep what
+         * they were put away with, exactly as they keep their own roads.
+         *
+         * Laying the entities down is restoreCityGrid()'s job rather
+         * than this method's, because opening a city does the same
+         * thing, and the create-before-add rule that makes it work is
+         * worth stating once.
          *
          * @param save The state to resume from.
          */

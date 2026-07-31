@@ -15,6 +15,7 @@
 #include "antwika/game/BuildingSystem.hpp"
 #include "antwika/game/GridSink.hpp"
 #include "antwika/game/InputFold.hpp"
+#include "antwika/game/LiveGrid.hpp"
 #include "antwika/game/MainMenuScene.hpp"
 #include "antwika/game/MainMenuSink.hpp"
 #include "antwika/game/ModeGatedSink.hpp"
@@ -162,8 +163,17 @@ namespace antwika::game
             ui,
             cities,
             config.built);
+
+        // The four that are swapped together, named together.
+        // A city is opened by putting its contents into these.
+        const LiveGrid live{
+            .world = world,
+            .paths = paths,
+            .built = config.built,
+            .camera = camera};
+
         WorldMapSink worldSink(
-            cities, mode, paths, camera, input, config.canvas);
+            cities, mode, live, input, config.canvas);
         StopSignal stopSignal;
 
         const MainMenuScene menuScene;
