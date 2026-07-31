@@ -4,7 +4,7 @@ namespace antwika::input
 {
 
     InputPipeline::InputPipeline(
-        IReplaySource &inner,
+        ITickSource &inner,
         IInputBackend &backend,
         const IInputEventCodec &codec,
         const InputPipelineOptions &options)

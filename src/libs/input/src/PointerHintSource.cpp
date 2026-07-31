@@ -43,7 +43,7 @@ namespace antwika::input
     } // namespace
 
     PointerHintSource::PointerHintSource(
-        IReplaySource &inner,
+        ITickSource &inner,
         const IInputEventCodec &codec,
         PointerHintChannel &channel)
         : inner(inner), codec(codec), channel(channel)

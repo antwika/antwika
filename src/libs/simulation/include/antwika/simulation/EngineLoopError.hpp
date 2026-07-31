@@ -2,7 +2,7 @@
 
 #include <stdexcept>
 
-namespace antwika::replay
+namespace antwika::simulation
 {
 
     /**
@@ -22,4 +22,4 @@ namespace antwika::replay
         using std::runtime_error::runtime_error;
     };
 
-} // namespace antwika::replay
+} // namespace antwika::simulation

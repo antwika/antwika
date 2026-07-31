@@ -426,9 +426,9 @@ namespace
         LiveInputSource live(fileSource, backend, codec);
         IdleMotionSource gated(live, codec);
 
-        antwika::replay::IReplaySource &source =
-            gate ? static_cast<antwika::replay::IReplaySource &>(gated)
-                 : static_cast<antwika::replay::IReplaySource &>(live);
+        antwika::simulation::ITickSource &source =
+            gate ? static_cast<antwika::simulation::ITickSource &>(gated)
+                 : static_cast<antwika::simulation::ITickSource &>(live);
 
         auto board = antwika::life::bootstrap(
             antwika::life::LifeConfig{

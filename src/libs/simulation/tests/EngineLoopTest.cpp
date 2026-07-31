@@ -6,10 +6,10 @@
 #include <antwika/engine/mocks/MockEngine.hpp>
 #include <antwika/event/TickedEventDispatcher.hpp>
 #include <antwika/event/mocks/MockEventDispatcher.hpp>
+#include <antwika/replay/ReplaySource.hpp>
 
-#include "antwika/replay/EngineLoop.hpp"
-#include "antwika/replay/EngineLoopError.hpp"
-#include "antwika/replay/ReplaySource.hpp"
+#include "antwika/simulation/EngineLoop.hpp"
+#include "antwika/simulation/EngineLoopError.hpp"
 
 using antwika::engine::StopSignal;
 using antwika::engine::mocks::MockEngine;
@@ -17,8 +17,8 @@ using antwika::event::Event;
 using antwika::event::TickedEventDispatcher;
 using antwika::event::TickEvent;
 using antwika::event::mocks::MockEventDispatcher;
-using antwika::replay::EngineLoop;
-using antwika::replay::EngineLoopError;
+using antwika::simulation::EngineLoop;
+using antwika::simulation::EngineLoopError;
 using antwika::replay::ReplaySource;
 
 TEST(EngineLoopTest, Run_DispatchesSourcedEventsThenStepsEngineUntilStop)

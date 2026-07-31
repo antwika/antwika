@@ -11,7 +11,7 @@
 #include <antwika/event/ITickEventSink.hpp>
 #include <antwika/input/IInputEventCodec.hpp>
 #include <antwika/log/ILogger.hpp>
-#include <antwika/replay/IReplaySource.hpp>
+#include <antwika/simulation/ITickSource.hpp>
 #include <antwika/time/ISleeper.hpp>
 #include <antwika/time/Tick.hpp>
 
@@ -24,7 +24,7 @@ namespace antwika::companion
     using antwika::event::ITickEventSink;
     using antwika::input::IInputEventCodec;
     using antwika::log::ILogger;
-    using antwika::replay::IReplaySource;
+    using antwika::simulation::ITickSource;
     using antwika::time::ISleeper;
 
     /**
@@ -79,7 +79,7 @@ namespace antwika::companion
         IEventSink &eventSink;
 
         /** @brief Supplies each tick's events, live or replayed. */
-        IReplaySource &inputSource;
+        ITickSource &inputSource;
 
         /** @brief Decodes antwika::input's events. */
         const IInputEventCodec &codec;

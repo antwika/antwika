@@ -118,7 +118,7 @@ namespace
         std::vector<TickEvent> recorded;
     };
 
-    [[nodiscard]] RunResult run(antwika::replay::IReplaySource &source)
+    [[nodiscard]] RunResult run(antwika::simulation::ITickSource &source)
     {
         NiceMock<MockLogger> logger;
         NiceMock<MockEventSink> eventSink;
@@ -151,7 +151,7 @@ namespace
     }
 
     [[nodiscard]] RunResult runWithToolbar(
-        antwika::replay::IReplaySource &source)
+        antwika::simulation::ITickSource &source)
     {
         NiceMock<MockLogger> logger;
         NiceMock<MockEventSink> eventSink;

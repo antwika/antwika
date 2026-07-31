@@ -6,7 +6,7 @@
 #include <antwika/event/ITickEventSink.hpp>
 #include <antwika/event/TickEvent.hpp>
 #include <antwika/log/ILogger.hpp>
-#include <antwika/replay/TickPacer.hpp>
+#include <antwika/simulation/TickPacer.hpp>
 #include <antwika/time/ISleeper.hpp>
 
 namespace antwika::companion
@@ -26,7 +26,7 @@ namespace antwika::companion
      * unpaced one would spend a whole day of companion time in a
      * fraction of a second and burn a core doing it.
      *
-     * **The waiting itself is replay::TickPacer's**, which is the one
+     * **The waiting itself is simulation::TickPacer's**, which is the one
      * pacer this project has, and this is only the ITickEventSink shape
      * around it. That class is an ecs::ISystem because the two
      * applications that reach for it keep their state in a World and
@@ -73,7 +73,7 @@ namespace antwika::companion
 
     private:
         antwika::ecs::World world;
-        antwika::replay::TickPacer pacer;
+        antwika::simulation::TickPacer pacer;
     };
 
 } // namespace antwika::companion

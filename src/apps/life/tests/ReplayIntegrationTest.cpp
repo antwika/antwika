@@ -8,7 +8,7 @@
 #include <antwika/event/mocks/MockEventSink.hpp>
 #include <antwika/event/TickEvent.hpp>
 #include <antwika/log/mocks/MockLogger.hpp>
-#include <antwika/replay/IReplaySource.hpp>
+#include <antwika/simulation/ITickSource.hpp>
 #include <antwika/replay/ReplayReader.hpp>
 #include <antwika/replay/ReplaySource.hpp>
 #include <antwika/replay/ReplayWriter.hpp>
@@ -21,7 +21,7 @@ using antwika::event::mocks::MockEventSink;
 using antwika::event::TickEvent;
 using antwika::life::Board;
 using antwika::log::mocks::MockLogger;
-using antwika::replay::IReplaySource;
+using antwika::simulation::ITickSource;
 using antwika::replay::ReplayReader;
 using antwika::replay::ReplaySource;
 using antwika::replay::ReplayWriter;
@@ -33,7 +33,7 @@ namespace
     constexpr std::uint32_t kWidth = 5;
     constexpr std::uint32_t kHeight = 5;
 
-    Board runLife(IReplaySource &source)
+    Board runLife(ITickSource &source)
     {
         NiceMock<MockLogger> logger;
         NiceMock<MockEventSink> eventSink;

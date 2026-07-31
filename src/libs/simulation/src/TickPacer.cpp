@@ -1,8 +1,8 @@
-#include "antwika/replay/TickPacer.hpp"
+#include "antwika/simulation/TickPacer.hpp"
 
 #include <chrono>
 
-namespace antwika::replay
+namespace antwika::simulation
 {
 
     TickPacer::TickPacer(ISleeper &sleeper, std::chrono::milliseconds interval)
@@ -15,4 +15,4 @@ namespace antwika::replay
         sleeper.sleep(interval);
     }
 
-} // namespace antwika::replay
+} // namespace antwika::simulation

@@ -16,7 +16,7 @@
 #include <antwika/event/TickEventRecorder.hpp>
 #include <antwika/event/TickedEventDispatcher.hpp>
 #include <antwika/log/mocks/MockLogger.hpp>
-#include <antwika/replay/EngineLoop.hpp>
+#include <antwika/simulation/EngineLoop.hpp>
 #include <antwika/replay/ReplayCli.hpp>
 #include <antwika/replay/ReplaySource.hpp>
 
@@ -53,7 +53,7 @@ using antwika::input::PointerScrolled;
 using antwika::input::Position;
 using antwika::input::fakes::FakeInputBackend;
 using antwika::log::mocks::MockLogger;
-using antwika::replay::EngineLoop;
+using antwika::simulation::EngineLoop;
 using antwika::replay::ReplaySource;
 
 namespace
@@ -242,7 +242,7 @@ namespace
     // Live and replayed differ only in that argument.
     // That is the whole claim under test.
     [[nodiscard]] RunResult run(
-        antwika::replay::IReplaySource &source,
+        antwika::simulation::ITickSource &source,
         antwika::time::Tick maxTicks)
     {
         ::testing::NiceMock<MockLogger> logger;

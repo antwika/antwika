@@ -11,7 +11,7 @@
 #include <antwika/gfx/Size.hpp>
 #include <antwika/input/IInputEventCodec.hpp>
 #include <antwika/log/ILogger.hpp>
-#include <antwika/replay/IReplaySource.hpp>
+#include <antwika/simulation/ITickSource.hpp>
 #include <antwika/time/Tick.hpp>
 
 #include "antwika/ui_demo/DemoOverlay.hpp"
@@ -26,7 +26,7 @@ namespace antwika::ui_demo
     using antwika::gfx::Size;
     using antwika::input::IInputEventCodec;
     using antwika::log::ILogger;
-    using antwika::replay::IReplaySource;
+    using antwika::simulation::ITickSource;
 
     /**
      * @brief What one run leaves behind, for a caller or a test.
@@ -72,7 +72,7 @@ namespace antwika::ui_demo
         IEventSink &eventSink;
 
         /** @brief Supplies each tick's events, live or replayed. */
-        IReplaySource &inputSource;
+        ITickSource &inputSource;
 
         /** @brief Decodes antwika::input's events. */
         const IInputEventCodec &codec;
@@ -110,7 +110,7 @@ namespace antwika::ui_demo
      *
      * @param config What the run is wired out of.
      * @return What the run ended on.
-     * @throws antwika::replay::EngineLoopError If maxTicks is reached
+     * @throws antwika::simulation::EngineLoopError If maxTicks is reached
      * without an engine.stop.
      */
     DemoSummary bootstrap(const UiDemoConfig &config);

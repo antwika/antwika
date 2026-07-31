@@ -3,7 +3,7 @@
 #include <vector>
 
 #include <antwika/event/Event.hpp>
-#include <antwika/replay/IReplaySource.hpp>
+#include <antwika/simulation/ITickSource.hpp>
 #include <antwika/time/Tick.hpp>
 
 #include "antwika/input/IInputEventCodec.hpp"
@@ -13,7 +13,7 @@ namespace antwika::input
 {
 
     using antwika::event::Event;
-    using antwika::replay::IReplaySource;
+    using antwika::simulation::ITickSource;
 
     /**
      * @brief Ends a run when a chosen key goes down, by appending
@@ -28,7 +28,7 @@ namespace antwika::input
      * Put it outside LiveInputSource, so it sees the key events that source
      * produced.
      */
-    class StopOnKeySource final : public IReplaySource
+    class StopOnKeySource final : public ITickSource
     {
     public:
         /**
@@ -39,7 +39,7 @@ namespace antwika::input
          * @param key The key that ends the run.
          */
         StopOnKeySource(
-            IReplaySource &inner, const IInputEventCodec &codec, Key key);
+            ITickSource &inner, const IInputEventCodec &codec, Key key);
 
         StopOnKeySource(const StopOnKeySource &) = delete;
         StopOnKeySource(StopOnKeySource &&) = delete;
@@ -62,7 +62,7 @@ namespace antwika::input
             antwika::time::Tick tick) override;
 
     private:
-        IReplaySource &inner;
+        ITickSource &inner;
         const IInputEventCodec &codec;
         Key key;
     };

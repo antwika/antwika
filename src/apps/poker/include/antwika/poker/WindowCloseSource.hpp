@@ -5,7 +5,7 @@
 #include <antwika/event/Event.hpp>
 #include <antwika/gfx/IGfxBackend.hpp>
 #include <antwika/gfx/IWindow.hpp>
-#include <antwika/replay/IReplaySource.hpp>
+#include <antwika/simulation/ITickSource.hpp>
 #include <antwika/time/Tick.hpp>
 
 namespace antwika::poker
@@ -14,7 +14,7 @@ namespace antwika::poker
     using antwika::event::Event;
     using antwika::gfx::IGfxBackend;
     using antwika::gfx::IWindow;
-    using antwika::replay::IReplaySource;
+    using antwika::simulation::ITickSource;
 
     /**
      * @brief Turns closing the window into an engine.stop event.
@@ -30,7 +30,7 @@ namespace antwika::poker
      * loop asks a source for a tick's events *before* stepping the
      * engine, so a close seen now stops the session on this tick.
      */
-    class WindowCloseSource final : public IReplaySource
+    class WindowCloseSource final : public ITickSource
     {
     public:
         /**
@@ -41,7 +41,7 @@ namespace antwika::poker
          * @param window The window whose close requests count.
          */
         WindowCloseSource(
-            IReplaySource &inner, IGfxBackend &backend, IWindow &window);
+            ITickSource &inner, IGfxBackend &backend, IWindow &window);
 
         WindowCloseSource(const WindowCloseSource &) = delete;
         WindowCloseSource(WindowCloseSource &&) = delete;
@@ -67,7 +67,7 @@ namespace antwika::poker
         void pumpEvents();
 
     private:
-        IReplaySource &inner;
+        ITickSource &inner;
         IGfxBackend &backend;
         IWindow &window;
     };

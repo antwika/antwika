@@ -7,7 +7,7 @@
 namespace antwika::input
 {
 
-    CoalescingPointerSource::CoalescingPointerSource(IReplaySource &inner)
+    CoalescingPointerSource::CoalescingPointerSource(ITickSource &inner)
         : inner(inner)
     {
     }

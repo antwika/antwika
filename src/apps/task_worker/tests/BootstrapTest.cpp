@@ -12,7 +12,7 @@
 #include <antwika/event/TickEvent.hpp>
 #include <antwika/log/Level.hpp>
 #include <antwika/log/mocks/MockLogger.hpp>
-#include <antwika/replay/EngineLoopError.hpp>
+#include <antwika/simulation/EngineLoopError.hpp>
 #include <antwika/replay/ReplaySource.hpp>
 
 #include <antwika/scheduler/Priority.hpp>
@@ -29,7 +29,7 @@ using antwika::event::mocks::MockEventSink;
 using antwika::event::TickEventRecorder;
 using antwika::event::TickEvent;
 using antwika::log::Level;
-using antwika::replay::EngineLoopError;
+using antwika::simulation::EngineLoopError;
 using antwika::replay::ReplaySource;
 using antwika::scheduler::kCriticalPriority;
 using antwika::scheduler::kLowPriority;

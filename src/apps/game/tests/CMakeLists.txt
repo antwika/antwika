@@ -139,6 +139,7 @@ target_link_libraries(antwika_game_tests
         antwika::pathfinding
         antwika::replay
         antwika::rng
+        antwika::simulation
         antwika::time::tests::fakes
         antwika::ui
         antwika::wfc

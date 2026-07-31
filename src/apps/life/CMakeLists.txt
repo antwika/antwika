@@ -32,6 +32,7 @@ target_link_libraries(antwika_life
         antwika::input_backend
         antwika::log
         antwika::replay
+        antwika::simulation
         antwika::time
 )
 

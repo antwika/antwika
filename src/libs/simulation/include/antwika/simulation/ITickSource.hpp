@@ -5,7 +5,7 @@
 #include <antwika/event/Event.hpp>
 #include <antwika/time/Tick.hpp>
 
-namespace antwika::replay
+namespace antwika::simulation
 {
 
     using antwika::event::Event;
@@ -21,10 +21,10 @@ namespace antwika::replay
      * it arrived on. Asking twice, or going back, is not a question any
      * of them can answer.
      */
-    class IReplaySource
+    class ITickSource
     {
     public:
-        virtual ~IReplaySource() = default;
+        virtual ~ITickSource() = default;
 
         /**
          * @brief Get the events that occurred on a given tick.
@@ -36,4 +36,4 @@ namespace antwika::replay
             antwika::time::Tick tick) = 0;
     };
 
-} // namespace antwika::replay
+} // namespace antwika::simulation
