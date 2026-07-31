@@ -156,8 +156,20 @@ An application attaching the gate cannot draw anything that follows a free-movin
 
 This is why `apps/game`'s toolbar buttons light up on the press rather than on approach, and it is worth being precise about whose decision that is.
 It is not something `antwika::ui` decides: `resolve()` hit-tests whatever pointer it is handed, every frame.
-It is this app's pipeline choice, made in `main.cpp`, and taking `thinIdleMotion` back out would buy live hover at the recording size it was added to save.
+It is this app's pipeline choice, made in `main.cpp`.
 Clicking is unaffected either way, since the gate releases the latched movement ahead of the press, and a press carries its own position.
+
+**Postscript: this cost was later removed, and the framing above was wrong.**
+For a while the trade read as a dilemma — keep the gate and lose hover, or drop it and pay the recording size the gate exists to save.
+That was never the only shape available, and `input::PointerHintChannel` is the answer we should have reached for first.
+A free-moving position is published once per tick into a plain value cell that no dispatcher carries and no recorder can see, so an application draws a hover from it while the recording stays exactly as thin as the gate made it.
+The two mechanisms turn out to be complementary rather than opposed: the gate thins what is written and publishes nothing, the channel publishes and thins nothing.
+
+The reason it looked like a dilemma is worth keeping, because it is the more general mistake.
+Everything in this post is about the event stream, so the search for an answer stayed inside the event stream, where the only lever is which events survive.
+Once the question is asked as "what may a renderer read?" rather than "which events may I drop?", the answer stops being a compromise.
+The safety condition is the whole of it: an unrecorded position may feed render-side state only, and never anything a replay has to reproduce.
+Put it in an event and that condition is a rule every sink must remember; put it in a value cell no sink is handed, and the rule is structural.
 
 **The recorded path is not the physical path.**
 Coalescing already made that true; the gate widens it.
