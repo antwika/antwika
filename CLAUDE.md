@@ -203,6 +203,14 @@ The library opens no files — an app does that, as `apps/gfx_demo` does with th
 A texture belongs to the renderer that made it: drawing it through any other draws nothing, and it may safely outlive its window, because each renderer's `detach()` frees its live textures before the framework tears the device down.
 Write-only still holds — `ITexture` is opaque, and there is no pixel read-back, render target or screenshot anywhere in the interface.
 
+**3D is a sibling interface, not more methods on `IRenderer`.**
+`gfx::IRenderer3D` (`createMesh()`, `drawMesh(mesh, model, camera, tint)`) is reached through `IRenderer::renderer3d()`, which is non-pure and returns null by default: a backend with no 3D path says so rather than accepting a draw and dropping it, and every existing implementer of `IRenderer` — backends and test doubles alike — kept compiling unchanged.
+`gfx::IMesh` mirrors `ITexture` exactly (opaque, owned by the renderer that made it, no read-back of any kind), and `clear()`/`present()` stay on `IRenderer` because there is one frame that both halves draw into.
+The maths is GLM, aliased rather than wrapped in `Math3D.hpp` (`Vec3`, `Mat4`), with `gfx::Transform` and `gfx::Camera3D` (perspective or orthographic) on top.
+**Those types are render-side only**: they are floating point, and floating point may never appear in anything a replay reproduces — which costs nothing, because rendering is already a write-only projection.
+`apps/game`'s camera is the opposite case and is *not* one of these: it is simulation state, because a click's meaning depends on it, which is exactly why it holds whole tile sizes rather than a scale factor.
+Only the `null` backend implements `IRenderer3D` so far; `sdl3` and `raylib` inherit the null default and report no 3D renderer.
+
 `antwika::ui` is an immediate-mode UI library on top of `antwika::gfx`: nestable row/column/panel layouts, labels and buttons, drawn through `IRenderer`'s rectangle and text calls and laid out arithmetically from `gfx::textSize()` alone, so it asks no backend to measure anything.
 It depends on `antwika::gfx` and nothing else — not `event`, not `replay`, not `input`.
 The caller writes immediate-mode code, but what that code builds is a flat node arena (`src/LayoutTree.hpp`, private), laid out only when `Context::finish()` is called.
