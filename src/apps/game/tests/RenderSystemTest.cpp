@@ -12,6 +12,8 @@
 #include <antwika/gfx/mocks/MockRenderer.hpp>
 #include <antwika/gfx/mocks/MockTexture.hpp>
 #include <antwika/gfx/mocks/MockWindow.hpp>
+#include <antwika/input/PointerHint.hpp>
+#include <antwika/input/PointerHintChannel.hpp>
 #include <antwika/log/mocks/MockLogger.hpp>
 
 #include "antwika/game/AppMode.hpp"
@@ -19,6 +21,7 @@
 #include "antwika/game/Cell.hpp"
 #include "antwika/game/GridExtent.hpp"
 #include "antwika/game/GridScene.hpp"
+#include "antwika/game/IsoProjection.hpp"
 #include "antwika/game/MainMenuScene.hpp"
 #include "antwika/game/PathIndex.hpp"
 #include "antwika/game/RenderSystem.hpp"
@@ -94,6 +97,7 @@ namespace
                 .camera = camera,
                 .extent = kExtent,
                 .overlay = overlay,
+                .hint = hint,
                 .menuScene = menuScene,
                 .menuOverlay = menuOverlay,
                 .saveScene = saveScene,
@@ -113,6 +117,7 @@ namespace
         UiOverlay overlay;
         UiOverlay menuOverlay{kCanvas};
         UiOverlay saveOverlay{kCanvas};
+        antwika::input::PointerHintChannel hint;
         NiceMock<MockTexture> atlas;
         NiceMock<MockRenderer> renderer;
         NiceMock<MockWindow> window;
@@ -213,6 +218,45 @@ TEST_F(RenderSystemTest, Update_DrawsTheSaveScreenAndNoGridInThatMode)
     EXPECT_CALL(renderer, drawTexture(_, _, _, _)).Times(0);
     EXPECT_CALL(renderer, clear(_));
     EXPECT_CALL(renderer, present());
+
+    system.update(world, 0);
+}
+
+// The ghost follows the pointer through the unrecorded hint channel.
+// That channel reaches a renderer and nothing else.
+TEST_F(RenderSystemTest, Update_DrawsTheGhostWhereTheHintPutIt)
+{
+    const auto middle = antwika::game::cellCentre(
+        Cell{.x = 1, .y = 1}, camera);
+
+    hint.publish(
+        antwika::input::PointerHint{
+            .position = {.x = middle.x, .y = middle.y}});
+
+    RenderSystem system(setup());
+
+    // Four ground tiles, and the ghost over one of them.
+    EXPECT_CALL(renderer, drawTexture(_, _, _, _))
+        .Times(static_cast<int>(kExtent.width * kExtent.height) + 1);
+
+    system.update(world, 0);
+}
+
+// What the bar covers, it covers from the ghost too.
+TEST_F(RenderSystemTest, Update_DrawsNoGhostUnderTheToolbar)
+{
+    const auto middle = antwika::game::cellCentre(
+        Cell{.x = 1, .y = 1}, camera);
+
+    hint.publish(
+        antwika::input::PointerHint{
+            .position = {.x = middle.x, .y = middle.y}});
+    overlay.set({}, true);
+
+    RenderSystem system(setup());
+
+    EXPECT_CALL(renderer, drawTexture(_, _, _, _))
+        .Times(static_cast<int>(kExtent.width * kExtent.height));
 
     system.update(world, 0);
 }

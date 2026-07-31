@@ -16,6 +16,7 @@
 #include <antwika/gfx/WindowDesc.hpp>
 #include <antwika/input/InputEventCodec.hpp>
 #include <antwika/input/InputPipeline.hpp>
+#include <antwika/input/PointerHintChannel.hpp>
 #include <antwika/input/Key.hpp>
 #include <antwika/input/SelectedInputBackend.hpp>
 #include <antwika/log/Level.hpp>
@@ -141,6 +142,11 @@ namespace
 
         const SaveLoadScene saveScene;
 
+        // Where the pointer is, off the event stream.
+        // The one channel a replay does not reproduce.
+        // Declared before both the renderer and the pipeline.
+        antwika::input::PointerHintChannel hint;
+
         const WorldMapScene worldScene;
         WorldMapState cities(antwika::game::generateWorldMap(kWorld));
 
@@ -154,6 +160,7 @@ namespace
             .camera = camera,
             .extent = kExtent,
             .overlay = overlay,
+            .hint = hint,
             .menuScene = menuScene,
             .menuOverlay = menuOverlay,
             .saveScene = saveScene,
@@ -186,6 +193,7 @@ namespace
             {.readsDevice = !recorded.options.replayPath.has_value(),
              .coalescePointerMotion = true,
              .thinIdleMotion = true,
+             .pointerHint = hint,
              .stopOnKey = kQuitKey});
 
         // Both ways out are input, so both record and both replay.

@@ -71,10 +71,11 @@ namespace antwika::game
         /**
          * @brief Where the selected tool would land if it were clicked.
          *
-         * A picture rather than a fact about the world, but one only the
-         * simulation can work out, since which cell a pixel means is a
-         * function of the camera -- see BuildGhost. Invisible by default,
-         * so a snapshot of a world nobody has pointed at draws none.
+         * The one member snapshotOf() does not fill in: it is a picture
+         * worked out on the render side from a channel no replay
+         * reproduces, so nothing about it may be taken from the World --
+         * see BuildGhost. Invisible by default, so a snapshot nobody has
+         * given one draws none.
          */
         BuildGhost ghost;
 
@@ -98,7 +99,8 @@ namespace antwika::game
      * @param paths Read for the path cells.
      * @param camera The camera to draw through.
      * @param extent The bounds to draw within.
-     * @return The frame's description.
+     * @return The frame's description, with no ghost; whoever draws
+     * fills that in from ghostFor().
      */
     [[nodiscard]] SceneSnapshot snapshotOf(
         const World &world,

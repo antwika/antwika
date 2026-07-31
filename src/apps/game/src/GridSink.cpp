@@ -5,7 +5,6 @@
 #include <antwika/engine/Events.hpp>
 #include <antwika/input/MouseButton.hpp>
 
-#include "antwika/game/BuildGhost.hpp"
 #include "antwika/game/BuildTool.hpp"
 #include "antwika/game/Building.hpp"
 #include "antwika/game/Cell.hpp"
@@ -66,37 +65,6 @@ namespace antwika::game
         }
 
         act(*decoded);
-
-        // After acting, not before.
-        // A pan or a zoom here moves which cell the pointer is over.
-        // And the ghost shows where the *next* click would land.
-        updateGhost();
-    }
-
-    void GridSink::updateGhost()
-    {
-        BuildGhost wanted{.at = {}, .tool = overlay.tool(), .visible = false};
-
-        // Nowhere to draw one until the pointer has been placed.
-        // And nothing to draw under the bar, which covers the grid.
-        if (input.located() && !overlay.pointerOverUi())
-        {
-            const auto cell = screenToCell(input.pointer(), camera);
-
-            if (extent.contains(cell))
-            {
-                wanted.at = cell;
-                wanted.visible = true;
-            }
-        }
-
-        if (!ghost.has_value())
-        {
-            ghost = world.create();
-        }
-
-        // add() overwrites, so this is the one staging call it needs.
-        world.add<BuildGhost>(*ghost, wanted);
     }
 
     void GridSink::act(const antwika::input::InputEvent &event)

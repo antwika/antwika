@@ -1,5 +1,6 @@
 add_executable(antwika_game
     src/AppMode.cpp
+    src/BuildGhost.cpp
     src/Game.cpp
     src/GameStateReducer.cpp
     src/GridScene.cpp

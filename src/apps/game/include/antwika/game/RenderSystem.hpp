@@ -5,6 +5,7 @@
 #include <antwika/gfx/ITexture.hpp>
 #include <antwika/gfx/IWindow.hpp>
 #include <antwika/gfx/Size.hpp>
+#include <antwika/input/PointerHintChannel.hpp>
 #include <antwika/time/Tick.hpp>
 
 #include "antwika/game/AppMode.hpp"
@@ -77,6 +78,15 @@ namespace antwika::game
         /** @brief Read for the toolbar's picture, painted last. */
         const UiOverlay &overlay;
 
+        /**
+         * @brief Where the pointer is, for the placement ghost.
+         *
+         * The one thing here a replay does not reproduce, which is why
+         * it reaches a renderer and nothing else -- see BuildGhost and
+         * input::PointerHintChannel.
+         */
+        const antwika::input::PointerHintChannel &hint;
+
         /** @brief Draws the main menu. */
         const MainMenuScene &menuScene;
 
@@ -128,6 +138,11 @@ namespace antwika::game
      * against the configured canvas instead, never the reported size, for
      * the reason the toolbar is: a click on a city is resolved against
      * that layout.
+     *
+     * It is also the only thing in this app that reads
+     * input::PointerHintChannel, and that is where the channel's whole
+     * safety condition is kept: what is read there decides what is
+     * drawn, and nothing else.
      */
     class RenderSystem final : public ISystem
     {

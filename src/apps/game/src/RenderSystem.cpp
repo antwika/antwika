@@ -3,6 +3,7 @@
 #include <antwika/gfx/Color.hpp>
 #include <antwika/ui/Painter.hpp>
 
+#include "antwika/game/BuildGhost.hpp"
 #include "antwika/game/SceneSnapshot.hpp"
 
 namespace antwika::game
@@ -63,12 +64,22 @@ namespace antwika::game
     {
         auto &renderer = setup.window.renderer();
 
+        auto snapshot =
+            snapshotOf(world, setup.paths, setup.camera, setup.extent);
+
+        // Worked out here rather than staged into the World.
+        // The hint is a value no replay reproduces.
+        // Folding it in would make the two disagree -- see BuildGhost.
+        // What the bar covers comes *from* UiOverlay, never the reverse.
+        snapshot.ghost = ghostFor(
+            setup.hint.forRenderingOnly(),
+            setup.camera,
+            setup.extent,
+            setup.overlay.tool(),
+            setup.overlay.pointerOverUi());
+
         setup.scene.draw(
-            renderer,
-            setup.window.size(),
-            snapshotOf(
-                world, setup.paths, setup.camera, setup.extent),
-            setup.atlas);
+            renderer, setup.window.size(), snapshot, setup.atlas);
 
         // Over the grid, and last, so the bar reads as being in front.
         // Laid out against the size the window was asked for.

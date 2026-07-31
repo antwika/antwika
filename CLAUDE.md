@@ -160,7 +160,9 @@ Each module (lib or app) owns its own `CMakeLists.txt`, `include/`, `src/`, and 
   What the bar covers, it covers from the grid too: `GridSink` skips a press or a scroll the overlay reports as covered, though not a movement, so a pan begun on the grid carries on across the bar.
   **A button here lights up on the press rather than on approach**, and that is `input::IdleMotionSource` in this app's chain rather than anything `antwika::ui` decides: idle pointer movement is held back until something reads it, so a hover appearance updates only when a button, a wheel or a key arrives.
   Clicking is unaffected, since the gate releases the latched movement ahead of the press and a press carries its own position.
-  Taking the gate out of `main.cpp` would buy live hover back at the recording size it was added to save, which is the trade to weigh if that ever matters more.
+  **The placement ghost is the exception, and it is not a trade any more**: `game::ghostFor()` works it out on the render side from `input::PointerHintChannel`, which carries a free-moving pointer without putting one byte in a recording, so the app keeps the gate *and* draws a hover -- what the button still does not do is light up on approach, because that is `antwika::ui` resolving against the event stream.
+  The ghost is therefore a value the renderer computes each frame and hands to `SceneSnapshot`, never a component staged into the `World`: a replay does not reproduce the channel, so folding a hint into simulation state would make a run and its replay disagree there silently.
+  No sink may read it, and "the ghost is over the toolbar" is worked out *from* `UiOverlay` rather than the other way round, since `UiOverlay` is derived from recorded input and the hint is not.
   It starts on an empty grid and loads nothing unless `--replay` says so, so what a session contains is what somebody clicked.
   It runs until Escape is pressed or the window is closed -- both of which are input, so both are recorded and both replay.
   Neither reaches the `null` backend, so that build runs until interrupted, and a `--record` there never gets to save.
