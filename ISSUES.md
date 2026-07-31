@@ -5,6 +5,12 @@ This is what is left for you to decide, and what you should know before reviewin
 
 The branch is `agents/integration`.
 
+An additional round of parallel work has since been merged to
+`integration/parallel-tasks`; its open questions are appended at the bottom of this
+file under "Round two".
+The entries in this first half are from the earlier session and are unchanged,
+except where round two closed one, which is noted in place.
+
 ---
 
 ## Still open — your call
@@ -103,3 +109,52 @@ That is 4-9 seconds per case under coverage instrumentation.
 It is correct and it is why those cases are under load long enough to have exposed the bug above.
 `ui::Frame::rects` — added this session — now makes a widget's rectangle directly askable, so that helper could become a lookup.
 Not done, because the tests belonged to another agent's lane while it was still running.
+
+---
+
+# Round two
+
+Questions from the twelve agents run against the task list of 2026-07-31.
+None of them blocked the work: each was implemented the conservative way, and the
+question is only whether that choice should stand.
+This section was written while the run was still in progress, so more entries may
+follow.
+
+## From the CLI extraction (`feat/cli-library`, merged)
+
+### R1. Are the `antwika::replay` re-export headers transitional or permanent?
+
+`antwika/replay/CommandLine.hpp`, `FlagSpec.hpp` and `CommandLineError.hpp` were
+left behind as `using antwika::cli::...;` declarations, so `game::SaveCli` and
+`poker::WatchOptions` compile untouched.
+That is what kept the extraction from colliding with the four agents editing the
+apps at the same time.
+They are commented as transitional, and the follow-up is to migrate those two
+callers and then delete the headers.
+Confirm that, or say they should stay as a permanent alias surface.
+
+### R2. Should `antwika::cli` support positional arguments?
+
+It is flags-only, which is what every existing caller needs.
+`apps/sound_demo` takes a bare filename rather than a flag, so it is the one CLI
+that cannot migrate until the library grows positionals.
+Leaving it means one app keeps parsing its own argument.
+
+## From the RNG extraction (`feat/rng-library`, merged)
+
+### R3. Should `antwika::rng` grow the positional hash `IDEAS.md` asks for?
+
+`IDEAS.md` asked for `hash(seed, x, y) -> value` alongside lifting the generator
+out.
+It was not built: no call site in the repository needs randomness as a function of
+position, since every one draws in a fixed order from a fixed seed.
+The `IDEAS.md` entry was narrowed to say the hash is still outstanding rather than
+deleted.
+Say whether you want it built now or left waiting for a first customer.
+
+### R4. `FakeRng` now lives in `antwika::rng`'s own `tests/fakes/`
+
+It moved with the interface it doubles, which means `antwika_holdem_tests` links
+another module's fakes.
+That is already the norm in this repository, but it is a judgement call worth
+confirming rather than discovering later.
