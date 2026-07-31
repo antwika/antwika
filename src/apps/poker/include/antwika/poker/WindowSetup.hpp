@@ -2,6 +2,7 @@
 
 #include <chrono>
 
+#include <antwika/gfx/Bitmap.hpp>
 #include <antwika/gfx/IGfxBackend.hpp>
 #include <antwika/gfx/Size.hpp>
 #include <antwika/time/ISleeper.hpp>
@@ -9,6 +10,7 @@
 namespace antwika::poker
 {
 
+    using antwika::gfx::Bitmap;
     using antwika::gfx::IGfxBackend;
     using antwika::gfx::Size;
     using antwika::time::ISleeper;
@@ -55,6 +57,20 @@ namespace antwika::poker
          * reports a close -- which is exactly what the headless one does.
          */
         bool holdFinalFrame{false};
+
+        /**
+         * @brief The decoded atlas the table is drawn from, if any.
+         *
+         * A pointer rather than a value, and null is an ordinary state:
+         * antwika::gfx opens no files, so somebody has to have read the
+         * PNG, and a test that only wants to know a session's chip
+         * counts should not have to.
+         * The texture is uploaded by whoever owns the renderer, since a
+         * texture belongs to the renderer that made it.
+         *
+         * Must outlive the bootstrap call when set.
+         */
+        const Bitmap *atlas = nullptr;
 
         /**
          * @brief How big the window should be.

@@ -5,6 +5,7 @@
 
 #include <antwika/event/ITickEventSink.hpp>
 #include <antwika/event/TickEvent.hpp>
+#include <antwika/gfx/ITexture.hpp>
 #include <antwika/gfx/IWindow.hpp>
 #include <antwika/holdem/Table.hpp>
 #include <antwika/time/ISleeper.hpp>
@@ -17,6 +18,7 @@ namespace antwika::poker
 
     using antwika::event::ITickEventSink;
     using antwika::event::TickEvent;
+    using antwika::gfx::ITexture;
     using antwika::gfx::IWindow;
     using antwika::holdem::Table;
     using antwika::time::ISleeper;
@@ -46,6 +48,8 @@ namespace antwika::poker
          * @param framePeriod How long to hold each frame; zero draws as
          * fast as the ticks arrive.
          * @param tableName The name the table is announced under.
+         * @param atlas The art the table is drawn from, or null to draw
+         * only what antwika::ui can; must outlive this object.
          */
         TableRenderSink(
             IWindow &window,
@@ -54,7 +58,8 @@ namespace antwika::poker
             const CashGame &game,
             ISleeper &sleeper,
             std::chrono::milliseconds framePeriod,
-            std::string tableName);
+            std::string tableName,
+            const ITexture *atlas = nullptr);
 
         TableRenderSink(const TableRenderSink &) = delete;
         TableRenderSink(TableRenderSink &&) = delete;
@@ -83,6 +88,7 @@ namespace antwika::poker
         ISleeper &sleeper;
         std::chrono::milliseconds framePeriod;
         std::string tableName;
+        const ITexture *atlas;
     };
 
 } // namespace antwika::poker

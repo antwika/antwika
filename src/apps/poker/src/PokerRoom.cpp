@@ -12,6 +12,7 @@
 #include <antwika/event/Event.hpp>
 #include <antwika/event/EventDispatcher.hpp>
 #include <antwika/event/TickedEventDispatcher.hpp>
+#include <antwika/gfx/ITexture.hpp>
 #include <antwika/gfx/IWindow.hpp>
 #include <antwika/gfx/WindowDesc.hpp>
 #include <antwika/holdem/Deck.hpp>
@@ -41,6 +42,7 @@ namespace antwika::poker
     using antwika::event::Event;
     using antwika::event::EventDispatcher;
     using antwika::event::TickedEventDispatcher;
+    using antwika::gfx::ITexture;
     using antwika::gfx::IWindow;
     using antwika::gfx::WindowDesc;
     using antwika::holdem::Deck;
@@ -128,6 +130,7 @@ namespace antwika::poker
 
         // Declared before the optionals that hold references to it.
         std::unique_ptr<IWindow> tableWindow;
+        std::unique_ptr<ITexture> atlasTexture;
         const TableScene scene;
         std::optional<TableRenderSink> renderSink;
         std::optional<WindowCloseSource> windowSource;
@@ -144,6 +147,14 @@ namespace antwika::poker
                 .size = window.size}; // GCOVR_EXCL_LINE
             tableWindow = window.backend.createWindow(desc);
 
+            // A texture belongs to the renderer that made it.
+            // This is the only place that has one.
+            if (window.atlas != nullptr)
+            {
+                atlasTexture =
+                    tableWindow->renderer().createTexture(*window.atlas);
+            }
+
             renderSink.emplace(
                 *tableWindow,
                 scene,
@@ -151,7 +162,8 @@ namespace antwika::poker
                 game,
                 window.sleeper,
                 window.framePeriod,
-                config.tableName);
+                config.tableName,
+                atlasTexture.get());
 
             // After roomSink, which is what steps the table.
             // A frame drawn before that shows the previous tick.
