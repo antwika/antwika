@@ -7,9 +7,14 @@
 #include <antwika/log/ILogger.hpp>
 
 #include "antwika/gfx/Bitmap.hpp"
+#include "antwika/gfx/Camera3D.hpp"
 #include "antwika/gfx/Color.hpp"
+#include "antwika/gfx/IMesh.hpp"
 #include "antwika/gfx/IRenderer.hpp"
+#include "antwika/gfx/IRenderer3D.hpp"
 #include "antwika/gfx/ITexture.hpp"
+#include "antwika/gfx/Math3D.hpp"
+#include "antwika/gfx/MeshData.hpp"
 #include "antwika/gfx/Point.hpp"
 #include "antwika/gfx/Rect.hpp"
 
@@ -25,7 +30,9 @@ namespace antwika::gfx::detail
      * no-op, so a headless run can still show that the render path ran
      * and in what order.
      */
-    class NullRenderer final : public IRenderer
+    class NullRenderer final
+        : public IRenderer
+        , public IRenderer3D
     {
     public:
         /**
@@ -97,6 +104,42 @@ namespace antwika::gfx::detail
             const ITexture &texture,
             Rect source,
             Rect destination,
+            Color tint) override;
+
+        /**
+         * @brief Offer this renderer's 3D half.
+         *
+         * The null backend has one, unlike a real backend that has not
+         * grown a 3D path yet: a headless run must exercise every call
+         * an application makes, and one it could not make here would go
+         * untested.
+         * @return This renderer, which is also an IRenderer3D.
+         */
+        [[nodiscard]] IRenderer3D *renderer3d() override;
+
+        /**
+         * @brief Create a mesh that holds nothing but its counts.
+         *
+         * Still checks the data, so an application that would be
+         * refused by a real backend is refused here too.
+         * @param mesh The geometry that would have been uploaded.
+         * @return A mesh reporting that geometry's counts.
+         * @throws GfxError If the data is not complete.
+         */
+        [[nodiscard]] std::unique_ptr<IMesh> createMesh(
+            const MeshData &mesh) override;
+
+        /**
+         * @brief Discard a mesh draw.
+         * @param mesh The geometry that would have been drawn.
+         * @param model Where it would have been placed.
+         * @param camera What it would have been seen through.
+         * @param tint The tint it would have been drawn through.
+         */
+        void drawMesh(
+            const IMesh &mesh,
+            const Mat4 &model,
+            const Camera3D &camera,
             Color tint) override;
 
         /**
