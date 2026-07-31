@@ -1,7 +1,6 @@
 find_package(GTest REQUIRED)
 
 add_executable(antwika_replay_tests
-    CommandLineTest.cpp
     EngineLoopTest.cpp
     EventJsonTest.cpp
     MigrationChainTest.cpp

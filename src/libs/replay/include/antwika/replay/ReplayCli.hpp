@@ -6,11 +6,11 @@
 #include <string_view>
 #include <vector>
 
+#include <antwika/cli/CommandLine.hpp>
+#include <antwika/cli/FlagSpec.hpp>
 #include <antwika/event/TickEvent.hpp>
 #include <antwika/gfx/Size.hpp>
 #include <antwika/replay/CanvasCheck.hpp>
-#include <antwika/replay/CommandLine.hpp>
-#include <antwika/replay/FlagSpec.hpp>
 #include <antwika/replay/ReplayWriter.hpp>
 
 namespace antwika::replay
@@ -54,11 +54,11 @@ namespace antwika::replay
      * extend with flags of its own.
      *
      * An app with extra flags concatenates this with its own table,
-     * calls parseCommandLine() once, and hands the result to
-     * replayCliOptionsFrom() -- rather than parsing twice, which would
-     * make one of the two passes refuse the other's flags.
+     * calls antwika::cli::parseCommandLine() once, and hands the result
+     * to replayCliOptionsFrom() -- rather than parsing twice, which
+     * would make one of the two passes refuse the other's flags.
      */
-    [[nodiscard]] std::span<const FlagSpec> replayCliFlags();
+    [[nodiscard]] std::span<const cli::FlagSpec> replayCliFlags();
 
     /**
      * @brief Pick the replay options out of an already-parsed command
@@ -68,7 +68,7 @@ namespace antwika::replay
      * @return The replay options it holds.
      */
     [[nodiscard]] ReplayCliOptions replayCliOptionsFrom(
-        const CommandLine &parsed);
+        const cli::CommandLine &parsed);
 
     /**
      * @brief Load a replay document from a file and decode its events.

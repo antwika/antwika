@@ -5,16 +5,16 @@
 #include <string>
 #include <vector>
 
-#include "antwika/replay/CommandLine.hpp"
-#include "antwika/replay/CommandLineError.hpp"
-#include "antwika/replay/FlagSpec.hpp"
+#include "antwika/cli/CommandLine.hpp"
+#include "antwika/cli/CommandLineError.hpp"
+#include "antwika/cli/FlagSpec.hpp"
 
-using antwika::replay::CommandLine;
-using antwika::replay::CommandLineError;
-using antwika::replay::FlagSpec;
-using antwika::replay::helpText;
-using antwika::replay::kHelpFlag;
-using antwika::replay::parseCommandLine;
+using antwika::cli::CommandLine;
+using antwika::cli::CommandLineError;
+using antwika::cli::FlagSpec;
+using antwika::cli::helpText;
+using antwika::cli::kHelpFlag;
+using antwika::cli::parseCommandLine;
 
 namespace
 {

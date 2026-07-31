@@ -1,4 +1,5 @@
 add_subdirectory(time)
+add_subdirectory(cli)
 add_subdirectory(i18n)
 add_subdirectory(log)
 add_subdirectory(event)

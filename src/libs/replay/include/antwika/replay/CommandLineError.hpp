@@ -1,21 +1,13 @@
 #pragma once
 
-#include <stdexcept>
+#include <antwika/cli/CommandLineError.hpp>
 
 namespace antwika::replay
 {
 
-    /**
-     * @brief Thrown when a command line names a flag no program knows,
-     * or leaves a flag that takes a value without one.
-     *
-     * Its own type rather than a bool, because the two cases read
-     * identically at a call site and neither is a replay format problem.
-     */
-    class CommandLineError final : public std::runtime_error
-    {
-    public:
-        using std::runtime_error::runtime_error;
-    };
+    // A refused command line is antwika::cli's error now.
+    // This is a re-export rather than a second type; see CommandLine.hpp.
+    // Catching either name catches the one thrown, since they are one.
+    using antwika::cli::CommandLineError;
 
 } // namespace antwika::replay

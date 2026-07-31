@@ -1,12 +1,12 @@
-#include "antwika/replay/CommandLine.hpp"
+#include "antwika/cli/CommandLine.hpp"
 
 #include <algorithm>
 #include <utility>
 #include <vector>
 
-#include "antwika/replay/CommandLineError.hpp"
+#include "antwika/cli/CommandLineError.hpp"
 
-namespace antwika::replay
+namespace antwika::cli
 {
 
     namespace
@@ -104,7 +104,7 @@ namespace antwika::replay
             if (flag == nullptr)
             {
                 throw CommandLineError(
-                    "antwika::replay: unrecognised argument: "
+                    "antwika::cli: unrecognised argument: "
                     + std::string(argument));
             }
 
@@ -117,7 +117,7 @@ namespace antwika::replay
             if (i + 1 >= argc)
             {
                 throw CommandLineError(
-                    "antwika::replay: " + std::string(argument)
+                    "antwika::cli: " + std::string(argument)
                     + " needs a value");
             }
 
@@ -144,4 +144,4 @@ namespace antwika::replay
         return text;
     } // GCOVR_EXCL_LINE
 
-} // namespace antwika::replay
+} // namespace antwika::cli

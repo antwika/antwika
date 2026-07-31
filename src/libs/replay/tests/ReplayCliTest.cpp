@@ -8,13 +8,14 @@
 #include <system_error>
 #include <vector>
 
-#include "antwika/replay/CommandLineError.hpp"
+#include <antwika/cli/CommandLineError.hpp>
+
 #include "antwika/replay/ReplayCli.hpp"
 #include "antwika/replay/ReplayFormatError.hpp"
 
+using antwika::cli::CommandLineError;
 using antwika::event::Event;
 using antwika::event::TickEvent;
-using antwika::replay::CommandLineError;
 using antwika::replay::loadReplayFile;
 using antwika::replay::ReplayFormatError;
 using antwika::replay::saveReplayFile;
@@ -73,7 +74,7 @@ namespace
     {
         auto argv = toArgv(args);
         return antwika::replay::replayCliOptionsFrom(
-            antwika::replay::parseCommandLine(
+            antwika::cli::parseCommandLine(
                 static_cast<int>(argv.size()),
                 argv.data(),
                 antwika::replay::replayCliFlags()));
