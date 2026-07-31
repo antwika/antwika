@@ -1,5 +1,9 @@
 #pragma once
 
+#include <optional>
+
+#include "antwika/ui/OptionChoice.hpp"
+#include "antwika/ui/TextEdit.hpp"
 #include "antwika/ui/WidgetId.hpp"
 
 namespace antwika::ui
@@ -43,6 +47,24 @@ namespace antwika::ui
          * transparent row is not a wall.
          */
         bool pointerOverUi = false;
+
+        /**
+         * @brief What this frame's typing did to the focused field.
+         *
+         * Absent when nothing was typed, or when no field this frame
+         * said it had focus. See TextEdit: what is here is what the
+         * characters would become, not what they are.
+         */
+        std::optional<TextEdit> edit{};
+
+        /**
+         * @brief The dropdown option a press landed on this frame.
+         *
+         * Absent unless a press landed on an option of an open list.
+         * Separate from activated because an option's index is what the
+         * caller needs, and an id alone cannot carry it.
+         */
+        std::optional<OptionChoice> chosen{};
 
         /**
          * @brief Compare what two frames' pointers did.

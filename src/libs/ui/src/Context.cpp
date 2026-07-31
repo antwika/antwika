@@ -48,10 +48,12 @@ namespace antwika::ui
         }
     } // namespace
 
-    Context::Context(Size canvas, Theme theme, Pointer pointer)
+    Context::Context(
+        Size canvas, Theme theme, Pointer pointer, TextInput keys)
         : canvasSize{canvas},
           themeValue{theme},
           pointerValue{std::move(pointer)},
+          keysValue{keys},
           tree{std::make_unique<detail::LayoutTree>(Node{ // GCOVR_EXCL_LINE
               .axis = Axis::Column,
               .width = kGrow,
@@ -165,11 +167,13 @@ namespace antwika::ui
     {
         detail::layout(*tree, canvasSize);
 
-        const auto interactions = detail::resolve(*tree, pointerValue);
+        auto interactions = detail::resolve(*tree, pointerValue);
+
+        interactions.edit = pendingEdit;
 
         return Frame{ // GCOVR_EXCL_LINE
             .commands = detail::flatten(*tree),
-            .interactions = interactions};
+            .interactions = std::move(interactions)};
     }
 
     void Context::closeContainer() noexcept

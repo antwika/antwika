@@ -123,6 +123,36 @@ namespace antwika::ui::detail
          */
         Color textColor{};
 
+        /**
+         * @brief Whether this node belongs to an overlay.
+         *
+         * True for every node of an open dropdown's list, and what
+         * flatten() and resolve() partition on: an overlay is painted
+         * after everything else, so it is on top, and hit-tested before
+         * everything else, so it is on top there too.
+         */
+        bool overlay = false;
+
+        /**
+         * @brief The node this overlay hangs beneath, if it is one.
+         *
+         * Set on an overlay's root alone, and what takes that root out
+         * of its parent's flow: an overlay occupies no room where it was
+         * declared, and is placed against this node once that node has
+         * been arranged.
+         */
+        std::size_t overlayAnchor = kNoNode;
+
+        /**
+         * @brief Which dropdown this node is an option of, if any.
+         */
+        WidgetId optionOwner = kNoWidget;
+
+        /**
+         * @brief Which of that dropdown's options this node is.
+         */
+        std::size_t optionIndex = 0;
+
         std::size_t parent = kNoNode;
         std::size_t firstChild = kNoNode;
         std::size_t lastChild = kNoNode;

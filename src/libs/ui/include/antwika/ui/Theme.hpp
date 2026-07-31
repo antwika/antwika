@@ -59,6 +59,21 @@ namespace antwika::ui
         Color buttonText{.red = 240, .green = 240, .blue = 240};
 
         /**
+         * @brief Behind a text field that has not got focus.
+         */
+        Color field{.red = 20, .green = 22, .blue = 28};
+
+        /**
+         * @brief Behind the text field the typing belongs to.
+         */
+        Color fieldFocused{.red = 14, .green = 16, .blue = 20};
+
+        /**
+         * @brief The bar drawn where a focused field's caret sits.
+         */
+        Color caret{.red = 232, .green = 236, .blue = 232};
+
+        /**
          * @brief Pixels per glyph pixel for every label.
          */
         std::uint32_t textScale = 1;

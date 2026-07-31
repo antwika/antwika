@@ -2,10 +2,12 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <optional>
 
 #include <antwika/gfx/Point.hpp>
 #include <antwika/gfx/Rect.hpp>
 
+#include "antwika/ui/OptionChoice.hpp"
 #include "antwika/ui/WidgetId.hpp"
 
 #include "Interactive.hpp"
@@ -48,13 +50,19 @@ namespace antwika::ui::detail
     {
         Interactions interactions;
 
-        if (pointer.position)
-        {
+        std::optional<OptionChoice> option;
+
+        // An overlay is painted after everything else.
+        // So it is in front, and so it is hit first.
+        // Two passes are what say that.
+        // One descending loop can only mean the arena's own order.
+        const auto scan = [&](bool overlay) {
             for (std::size_t index = tree.size(); index-- > 0;)
             {
                 const auto &node = tree.node(index);
 
-                if (!contains(node.arranged, *pointer.position))
+                if (node.overlay != overlay
+                    || !contains(node.arranged, *pointer.position))
                 {
                     continue;
                 }
@@ -69,7 +77,23 @@ namespace antwika::ui::detail
                 {
                     interactions.hovered = node.id;
                 }
+
+                // An option reports its index rather than its id.
+                // So it is tracked apart from the hovered widget.
+                // An unnamed option therefore still answers.
+                if (node.optionOwner != kNoWidget && !option)
+                {
+                    option = OptionChoice{
+                        .dropdown = node.optionOwner,
+                        .index = node.optionIndex};
+                }
             }
+        };
+
+        if (pointer.position)
+        {
+            scan(true);
+            scan(false);
         }
 
         // Nothing hovered means there is nothing to activate.
@@ -77,6 +101,7 @@ namespace antwika::ui::detail
         if (pointer.pressed)
         {
             interactions.activated = interactions.hovered;
+            interactions.chosen = option;
         }
 
         for (std::size_t index = 0; index < tree.size(); ++index)

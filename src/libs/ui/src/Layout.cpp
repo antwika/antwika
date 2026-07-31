@@ -145,6 +145,13 @@ namespace antwika::ui::detail
                 {
                     const auto &value = tree.node(child);
 
+                    // An overlay asks its parent for nothing.
+                    // It is placed against its anchor instead.
+                    if (value.overlayAnchor != kNoNode)
+                    {
+                        continue;
+                    }
+
                     along += mainDemand(value, node.axis);
                     across =
                         std::max(across, crossDemand(value, node.axis));
@@ -298,7 +305,10 @@ namespace antwika::ui::detail
                  child != kNoNode;
                  child = tree.node(child).nextSibling)
             {
-                children.push_back(child);
+                if (tree.node(child).overlayAnchor == kNoNode)
+                {
+                    children.push_back(child);
+                }
             }
 
             if (children.empty())
@@ -367,6 +377,33 @@ namespace antwika::ui::detail
 
             place(tree, children, extents, box);
         }
+
+        /**
+         * @brief Hang an overlay beneath the node it was anchored to.
+         *
+         * Its anchor's index is below its own, and an anchor is placed
+         * by its own parent, so by the time the ascending pass reaches
+         * an overlay its anchor has already been arranged.
+         *
+         * As wide as its anchor at least, so a list of short options
+         * still lines up with the box it dropped out of.
+         */
+        void placeOverlay(LayoutTree &tree, std::size_t index)
+        {
+            const auto &anchor =
+                tree.node(tree.node(index).overlayAnchor);
+            const auto below = anchor.arranged.origin.y
+                               + static_cast<std::int32_t>(
+                                   anchor.arranged.size.height);
+            auto &node = tree.node(index);
+
+            node.arranged = Rect{
+                .origin = {.x = anchor.arranged.origin.x, .y = below},
+                .size = {
+                    .width = std::max(
+                        node.measured.width, anchor.arranged.size.width),
+                    .height = node.measured.height}};
+        }
     } // namespace
 
     void layout(LayoutTree &tree, Size canvas)
@@ -378,6 +415,11 @@ namespace antwika::ui::detail
 
         for (std::size_t index = 0; index < tree.size(); ++index)
         {
+            if (tree.node(index).overlayAnchor != kNoNode)
+            {
+                placeOverlay(tree, index);
+            }
+
             arrangeChildren(tree, index);
         }
     }
