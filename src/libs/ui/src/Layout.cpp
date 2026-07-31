@@ -12,6 +12,8 @@
 #include "antwika/ui/Alignment.hpp"
 #include "antwika/ui/Axis.hpp"
 #include "antwika/ui/Sizing.hpp"
+#include "antwika/ui/WidgetId.hpp"
+#include "antwika/ui/WidgetRects.hpp"
 
 #include "LayoutTree.hpp"
 #include "Node.hpp"
@@ -404,9 +406,45 @@ namespace antwika::ui::detail
                         node.measured.width, anchor.arranged.size.width),
                     .height = node.measured.height}};
         }
+
+        /**
+         * @brief Note where one named node ended up.
+         *
+         * A repeated id overwrites the entry it already has rather than
+         * adding a second, so one widget answers with one rectangle.
+         * The pass runs upwards, so what is left is the last declaration
+         * -- the node painted over the other, and the one the hit-test
+         * calls topmost within its layer.
+         *
+         * The scan is linear because a frame names a handful of widgets
+         * and a handful is cheaper to walk than to hash.
+         *
+         * @param rects Where to note it, or null to note nothing.
+         * @param node The node, already arranged.
+         */
+        void record(WidgetRects *rects, const Node &node)
+        {
+            if (rects == nullptr || node.id == kNoWidget)
+            {
+                return;
+            }
+
+            for (auto &entry : rects->entries)
+            {
+                if (entry.id == node.id)
+                {
+                    entry.rect = node.arranged;
+
+                    return;
+                }
+            }
+
+            rects->entries.push_back(
+                WidgetRect{.id = node.id, .rect = node.arranged});
+        }
     } // namespace
 
-    void layout(LayoutTree &tree, Size canvas)
+    void layout(LayoutTree &tree, Size canvas, WidgetRects *rects)
     {
         measure(tree);
 
@@ -421,6 +459,11 @@ namespace antwika::ui::detail
             }
 
             arrangeChildren(tree, index);
+
+            // A parent sits at a lower index and is what placed this one.
+            // So its own area is settled by the time this reads it.
+            // Arranging its children writes theirs and never its own.
+            record(rects, tree.node(index));
         }
     }
 

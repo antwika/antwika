@@ -10,6 +10,7 @@
 #include "antwika/ui/Axis.hpp"
 #include "antwika/ui/ButtonState.hpp"
 #include "antwika/ui/Sizing.hpp"
+#include "antwika/ui/WidgetRects.hpp"
 
 #include "Flatten.hpp"
 #include "FocusRing.hpp"
@@ -179,7 +180,11 @@ namespace antwika::ui
 
     Frame Context::finish()
     {
-        detail::layout(*tree, canvasSize);
+        // Filled by the arranging pass rather than by a pass of its own.
+        // So a reported rectangle is one the picture was drawn from.
+        WidgetRects rects; // GCOVR_EXCL_LINE
+
+        detail::layout(*tree, canvasSize, &rects);
 
         auto interactions = detail::resolve(
             *tree, pointerValue, keyboardValue, focusValue);
@@ -190,7 +195,8 @@ namespace antwika::ui
 
         return Frame{ // GCOVR_EXCL_LINE
             .commands = detail::flatten(*tree),
-            .interactions = std::move(interactions)};
+            .interactions = std::move(interactions),
+            .rects = std::move(rects)};
     }
 
     void Context::closeContainer() noexcept
@@ -207,7 +213,8 @@ namespace antwika::ui
             .cross = spec.cross,
             .padding = spec.padding.value_or(0),
             .gap = spec.gap.value_or(themeValue.gap),
-            .background = spec.background});
+            .background = spec.background,
+            .id = spec.id});
 
         return Scope{*this};
     }

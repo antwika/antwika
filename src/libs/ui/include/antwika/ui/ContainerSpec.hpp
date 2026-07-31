@@ -7,6 +7,7 @@
 
 #include "antwika/ui/Alignment.hpp"
 #include "antwika/ui/Sizing.hpp"
+#include "antwika/ui/WidgetId.hpp"
 
 namespace antwika::ui
 {
@@ -54,6 +55,32 @@ namespace antwika::ui
          * @brief The space between children, if not the theme's.
          */
         std::optional<std::uint32_t> gap{};
+
+        /**
+         * @brief What to call this container, if it needs a name.
+         *
+         * Left unset, the container is anonymous, which is what every
+         * container was before this existed and what an ordinary row or
+         * column still is.
+         *
+         * Naming one puts its arranged area in Frame::rects, which is
+         * how an application places its own art against the layout
+         * rather than beside it.
+         *
+         * **It also makes the container something the pointer can land
+         * on**, because that is what an id means here: it is reported
+         * through Interactions::hovered and Interactions::activated like
+         * any other named widget.
+         * A named container is still not a stop in the tab order and
+         * still draws no appearance of its own -- only a widget carrying
+         * a focus ring is focusable, and only one carrying interactive
+         * colours is dressed -- so naming one changes nothing about how
+         * it looks.
+         * A child declared inside it sits at a higher index and so wins
+         * the hit-test, which is why a named panel does not swallow the
+         * buttons on it.
+         */
+        WidgetId id = kNoWidget;
     };
 
 } // namespace antwika::ui
