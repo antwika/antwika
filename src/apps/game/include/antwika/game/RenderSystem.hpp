@@ -1,5 +1,8 @@
 #pragma once
 
+#include <functional>
+#include <optional>
+
 #include <antwika/animation/Progress.hpp>
 #include <antwika/app/IFramePass.hpp>
 #include <antwika/ecs/ISystem.hpp>
@@ -13,6 +16,7 @@
 #include "antwika/game/AppMode.hpp"
 #include "antwika/game/BuildingIndex.hpp"
 #include "antwika/game/Camera.hpp"
+#include "antwika/game/FrameMeter.hpp"
 #include "antwika/game/GridExtent.hpp"
 #include "antwika/game/GridScene.hpp"
 #include "antwika/game/MainMenuScene.hpp"
@@ -110,6 +114,23 @@ namespace antwika::game
 
         /** @brief Read for the world to draw, and which city is open. */
         const WorldMapState &cities;
+
+        /**
+         * @brief Counts the frames this system draws, if anybody asked.
+         *
+         * **The second thing here a replay does not reproduce**, and the
+         * stronger case of the two: a pointer hint is a position a
+         * replay simply lacks, while this is a wall clock, which says
+         * how fast the machine is. It is written and read here and
+         * nowhere else -- see FrameMeter.
+         *
+         * Optional, and absent by default, so a run that draws no HUD
+         * needs no clock: every test whose subject is the picture is
+         * spared one, and so is any caller that has no wall clock to
+         * offer.
+         */
+        std::optional<std::reference_wrapper<FrameMeter>> fps =
+            std::nullopt;
     };
 
     /**

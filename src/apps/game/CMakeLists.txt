@@ -4,6 +4,8 @@ add_executable(antwika_game
     src/BuildGhost.cpp
     src/BuildingIndex.cpp
     src/BuildingSystem.cpp
+    src/FpsReadout.cpp
+    src/FrameMeter.cpp
     src/Game.cpp
     src/GameStateReducer.cpp
     src/GridScene.cpp
@@ -15,6 +17,8 @@ add_executable(antwika_game
     src/ModeGatedSink.cpp
     src/ModeGatedSystem.cpp
     src/PathIndex.cpp
+    src/PauseGatedSystem.cpp
+    src/PauseState.cpp
     src/Placement.cpp
     src/RenderSystem.cpp
     src/KeyText.cpp

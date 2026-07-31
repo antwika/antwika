@@ -25,7 +25,9 @@ namespace antwika::game
         Size canvas,
         Pointer pointer,
         const Camera &camera,
-        BuildTool selected) const
+        BuildTool selected,
+        bool paused,
+        antwika::time::Tick tick) const
     {
         Context ui{
             canvas, scaledTheme(Theme{}, scaleForCanvas(canvas)), pointer};
@@ -41,8 +43,21 @@ namespace antwika::game
                 ui.button("zoom in", {.id = widgets::kZoomIn});
                 ui.button("reset view", {.id = widgets::kResetView});
 
+                // Held down while paused.
+                // So what the run is doing can be seen, not just read.
+                ui.button(
+                    std::string{pauseLabel(paused)},
+                    {.id = widgets::kPauseResume,
+                     .state = paused
+                                  ? std::optional{ButtonState::Pressed}
+                                  : std::nullopt});
+
                 // Simulation state, read back out where it can be seen.
                 ui.label("zoom " + std::to_string(camera.zoomLevel()));
+
+                // Likewise: the tick is what a run is counted in.
+                // A replay is on the same one at the same point.
+                ui.label("tick " + std::to_string(tick));
             }
 
             {

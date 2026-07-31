@@ -4,6 +4,7 @@
 #include <antwika/ui/Painter.hpp>
 
 #include "antwika/game/BuildGhost.hpp"
+#include "antwika/game/FpsReadout.hpp"
 #include "antwika/game/SceneSnapshot.hpp"
 
 namespace antwika::game
@@ -34,6 +35,16 @@ namespace antwika::game
     void RenderSystem::draw(antwika::animation::Progress subTick)
     {
         auto &renderer = setup.window.renderer();
+
+        // Counted here rather than in update().
+        // This is the one thing that runs exactly once per frame.
+        // update() draws the tick's own frame by calling it.
+        // app::FramePacedSource calls it again for each frame between.
+        // The count goes nowhere but the readout below.
+        if (setup.fps.has_value())
+        {
+            setup.fps->get().record();
+        }
 
         if (setup.mode.mode() == AppMode::MainMenu)
         {
@@ -97,6 +108,18 @@ namespace antwika::game
         // That is the size UiSink described it against.
         // And the size a recorded click was resolved against.
         antwika::ui::paint(renderer, setup.overlay.commands());
+
+        // Described here rather than in a sink.
+        // Everything else painted in this app is described in one.
+        // The number is off a wall clock, which no tick may see.
+        // On the city's screen alone, since a mode owns the screen.
+        if (setup.fps.has_value())
+        {
+            antwika::ui::paint(
+                renderer,
+                describeFps(
+                    setup.canvas, setup.fps->get().perSecond()));
+        }
     }
 
 } // namespace antwika::game

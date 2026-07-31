@@ -6,6 +6,8 @@ add_executable(antwika_game_tests
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/BuildGhost.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/BuildingIndex.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/BuildingSystem.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/FpsReadout.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/FrameMeter.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/Game.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/GameStateReducer.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/GridScene.cpp
@@ -17,6 +19,8 @@ add_executable(antwika_game_tests
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/ModeGatedSink.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/ModeGatedSystem.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/PathIndex.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/PauseGatedSystem.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/PauseState.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/Placement.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/RenderSystem.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/KeyText.cpp
@@ -54,6 +58,8 @@ add_executable(antwika_game_tests
     GameStateReducerTest.cpp
     GameStateTest.cpp
     FootprintTest.cpp
+    FpsReadoutTest.cpp
+    FrameMeterTest.cpp
     GameTest.cpp
     GridExtentTest.cpp
     GridSceneTest.cpp
@@ -66,6 +72,9 @@ add_executable(antwika_game_tests
     MainMenuSinkTest.cpp
     ModeGateTest.cpp
     PathIndexTest.cpp
+    PauseDeterminismTest.cpp
+    PauseGatedSystemTest.cpp
+    PauseStateTest.cpp
     PlacementTest.cpp
     PointerReadingTest.cpp
     RenderSystemTest.cpp
