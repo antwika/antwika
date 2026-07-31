@@ -23,6 +23,7 @@ add_executable(antwika_gfx_tests
     RectTest.cpp
     SizeTest.cpp
     TextLayoutTest.cpp
+    TextRasterTest.cpp
     TransformTest.cpp
     WindowIdTest.cpp
 )

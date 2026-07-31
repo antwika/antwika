@@ -37,8 +37,14 @@ namespace antwika::ui::detail
      * A caller using the pointer alone never has focus in play, and so
      * draws exactly what it drew before any of this existed.
      *
+     * Three stages in one call: hit-test, then focus, then dressing.
+     * Only the last writes to the arena, and it writes both resolved
+     * appearances on every node rather than only on the ones that
+     * changed, so resolving one arena twice leaves it saying the same
+     * thing.
+     *
      * @param tree The arranged arena; every styled node's background and
-     * the focused node's border are written.
+     * every node's border are written.
      * @param pointer What the caller reports about the pointer.
      * @param keyboard The key edges the caller reports, in arrival order.
      * @param focus The widget the caller had focused going in, which is

@@ -220,7 +220,8 @@ namespace antwika::ui
          * which is the price of activating on the press rather than on
          * a press-then-release match a replay would have to regenerate.
          *
-         * @return The drawing commands and what the pointer did.
+         * @return The drawing commands, and what the pointer and the
+         * keyboard did.
          */
         [[nodiscard]] Frame finish();
 

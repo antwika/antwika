@@ -13,7 +13,7 @@
 #include <antwika/gfx/Bitmap.hpp>
 #include <antwika/gfx/Blit.hpp>
 #include <antwika/gfx/GfxError.hpp>
-#include <antwika/gfx/Glyphs.hpp>
+#include <antwika/gfx/TextRaster.hpp>
 
 #include "RaylibMaterial.hpp"
 #include "RaylibMesh.hpp"
@@ -181,36 +181,22 @@ namespace antwika::gfx::raylib
             return;
         }
 
-        const auto pixel = static_cast<int>(scale);
         const auto raylibColor = toRaylib(color);
 
-        for (std::size_t cell = 0; cell < text.size(); ++cell)
-        {
-            const auto left =
-                origin.x + static_cast<int>(cell * kGlyphAdvance * scale);
-
-            for (std::uint32_t row = 0; row < kGlyphHeight; ++row)
-            {
-                const auto bits = glyphRow(text[cell], row);
-
-                for (std::uint32_t column = 0; column < kGlyphWidth;
-                     ++column)
-                {
-                    const auto shift = kGlyphWidth - 1 - column;
-                    if (((bits >> shift) & 1U) == 0)
-                    {
-                        continue;
-                    }
-
-                    DrawRectangle(
-                        left + static_cast<int>(column * scale),
-                        origin.y + static_cast<int>(row * scale),
-                        pixel,
-                        pixel,
-                        raylibColor);
-                }
-            }
-        }
+        // Where the lit pixels are is gfx's answer, not this backend's.
+        // Every backend has to draw the same glyphs in the same places.
+        forEachGlyphPixel(
+            origin,
+            text,
+            scale,
+            [raylibColor](Rect pixel) {
+                DrawRectangle(
+                    pixel.origin.x,
+                    pixel.origin.y,
+                    static_cast<int>(pixel.size.width),
+                    static_cast<int>(pixel.size.height),
+                    raylibColor);
+            });
     }
 
     std::unique_ptr<ITexture> RaylibRenderer::createTexture(

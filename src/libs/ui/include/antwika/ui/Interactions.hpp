@@ -89,10 +89,10 @@ namespace antwika::ui
         std::optional<OptionChoice> chosen{};
 
         /**
-         * @brief Compare what two frames' pointers did.
+         * @brief Compare what two frames' input did.
          * @param other The interactions to compare against.
-         * @return True when the hovered, activated and focused widgets
-         * and the cover flag all match.
+         * @return True when every field matches, the reported edit and
+         * the chosen option included.
          */
         [[nodiscard]] bool operator==(const Interactions &other) const =
             default;
