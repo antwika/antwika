@@ -51,18 +51,9 @@ namespace antwika::task_worker
          */
         void execute(antwika::time::Tick tick) override;
 
-        /**
-         * @brief Get this task's submission-script id.
-         * @return The taskId passed at construction.
-         */
-        [[nodiscard]] std::uint64_t taskId() const noexcept;
-
-        /**
-         * @brief Get this task's human-readable label.
-         * @return The label passed at construction.
-         */
-        [[nodiscard]] const std::string &label() const noexcept;
-
+        // The id and the label are not readable back out, on purpose.
+        // execute() hands both to the worker it claims.
+        // TaskRegistry keeps its own record of each.
     private:
         WorkerLookup &lookup;
         std::uint64_t id;

@@ -20,14 +20,4 @@ namespace antwika::task_worker
         lookup.claimIdle(durationTicks, id, taskLabel);
     }
 
-    std::uint64_t TaskJob::taskId() const noexcept
-    {
-        return id;
-    }
-
-    const std::string &TaskJob::label() const noexcept
-    {
-        return taskLabel;
-    }
-
 } // namespace antwika::task_worker
