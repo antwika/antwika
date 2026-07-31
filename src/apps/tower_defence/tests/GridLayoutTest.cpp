@@ -104,4 +104,35 @@ namespace
         EXPECT_EQ(layoutFor(kCanvas, 12, 8), layoutFor(kCanvas, 12, 8));
         EXPECT_NE(layoutFor(kCanvas, 12, 8), layoutFor(kCanvas, 10, 8));
     }
+
+    // A layout two scenes disagree about is two different boards.
+    // So every field has to count towards a layout being the same.
+    // A defaulted operator== stops at the first difference found.
+    // So each field is asserted on its own.
+    TEST(GridLayoutTest, EveryFieldOfALayoutCountsTowardsEquality)
+    {
+        constexpr GridLayout base{
+            .width = 12,
+            .height = 8,
+            .cell = 80,
+            .origin = {.x = 4, .y = 64}};
+
+        EXPECT_EQ(base, base);
+
+        GridLayout other = base;
+        other.width = 11;
+        EXPECT_NE(base, other);
+
+        other = base;
+        other.height = 7;
+        EXPECT_NE(base, other);
+
+        other = base;
+        other.cell = 79;
+        EXPECT_NE(base, other);
+
+        other = base;
+        other.origin = {.x = 5, .y = 64};
+        EXPECT_NE(base, other);
+    }
 } // namespace

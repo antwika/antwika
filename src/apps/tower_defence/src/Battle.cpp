@@ -97,7 +97,11 @@ namespace antwika::tower_defence
             // Mobs are kept in ascending spawn order.
             // Every mob advances exactly one cell per tick.
             // So two mobs can never share a path index.
-            // The order is total by construction, not by a rule.
+            // The vector is in strictly descending path order.
+            // The first mob in reach is therefore the furthest along.
+            // That is why this stops at it rather than comparing.
+            // A comparison would be a branch nothing could ever take.
+            // BattleTest asserts the ordering the stop relies on.
             std::size_t best = living.size();
             for (std::size_t i = 0; i < living.size(); ++i)
             {
@@ -107,12 +111,8 @@ namespace antwika::tower_defence
                 {
                     continue;
                 }
-                const bool better = best == living.size()
-                    || living[i].pathIndex > living[best].pathIndex;
-                if (better)
-                {
-                    best = i;
-                }
+                best = i;
+                break;
             }
             if (best == living.size())
             {

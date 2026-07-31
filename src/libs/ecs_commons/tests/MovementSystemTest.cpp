@@ -117,3 +117,104 @@ TEST(MovementSystemTest, VisitsEntitiesInTheSameOrderEveryRun)
 
     EXPECT_EQ(order(), order());
 }
+
+// A mover that leaves the world takes its components with it.
+TEST(MovementSystemTest, DestroyingAMoverTakesItsComponentsWithIt)
+{
+    NiceMock<MockLogger> logger;
+    World world(logger);
+    const auto leaving =
+        spawn(world, GridPosition{.x = 0, .y = 0}, Velocity{.dx = 1, .dy = 0});
+    const auto staying =
+        spawn(world, GridPosition{.x = 5, .y = 5}, Velocity{.dx = 0, .dy = 0});
+    world.commit();
+
+    world.destroy(leaving);
+    world.commit();
+
+    EXPECT_FALSE(world.alive(leaving));
+    EXPECT_FALSE(world.has<GridPosition>(leaving));
+    EXPECT_FALSE(world.has<Velocity>(leaving));
+
+    EXPECT_TRUE(world.has<GridPosition>(staying));
+    EXPECT_TRUE(world.has<Velocity>(staying));
+}
+
+// World visits every pool on a destroy, not just the ones in play.
+// So a pool the leaving entity was never in has to be left alone.
+// A scenery cell has a position and no velocity, which is that case.
+TEST(MovementSystemTest, DestroyingAnEntityLeavesPoolsItWasNeverIn)
+{
+    NiceMock<MockLogger> logger;
+    World world(logger);
+    const auto mover =
+        spawn(world, GridPosition{.x = 0, .y = 0}, Velocity{.dx = 1, .dy = 0});
+    const auto scenery = world.create();
+    world.add<GridPosition>(scenery, GridPosition{.x = 9, .y = 9});
+    world.commit();
+
+    ASSERT_FALSE(world.has<Velocity>(scenery));
+
+    world.destroy(scenery);
+    world.commit();
+
+    EXPECT_FALSE(world.alive(scenery));
+    EXPECT_FALSE(world.has<GridPosition>(scenery));
+
+    // The velocity pool it was never in still holds the mover's.
+    EXPECT_EQ(world.get<Velocity>(mover), (Velocity{.dx = 1, .dy = 0}));
+
+    MovementSystem system;
+    system.update(world, 0);
+    world.commit();
+    EXPECT_EQ(world.get<GridPosition>(mover), (GridPosition{.x = 1, .y = 0}));
+}
+
+// Taking the velocity off a mover parks it where it stands.
+// That is the cheapest way to stop something without destroying it.
+TEST(MovementSystemTest, RemovingAVelocityParksTheMoverWhereItIs)
+{
+    NiceMock<MockLogger> logger;
+    World world(logger);
+    const auto entity =
+        spawn(world, GridPosition{.x = 3, .y = 4}, Velocity{.dx = 2, .dy = 2});
+    world.commit();
+
+    world.remove<Velocity>(entity);
+    world.commit();
+
+    EXPECT_FALSE(world.has<Velocity>(entity));
+    EXPECT_TRUE(world.has<GridPosition>(entity));
+
+    MovementSystem system;
+    system.update(world, 0);
+    world.commit();
+    EXPECT_EQ(world.get<GridPosition>(entity), (GridPosition{.x = 3, .y = 4}));
+}
+
+// destroy() and add() both stage, and both run in the order staged.
+// So an add() staged after a destroy() finds the entity already gone.
+// It has to check again rather than trust its own earlier check.
+// Otherwise it leaves a component with no entity to own it.
+TEST(MovementSystemTest, AddingAfterADestroyInTheSameFrameInsertsNothing)
+{
+    NiceMock<MockLogger> logger;
+    World world(logger);
+    const auto mover =
+        spawn(world, GridPosition{.x = 0, .y = 0}, Velocity{.dx = 1, .dy = 0});
+    const auto leaving = world.create();
+    world.add<GridPosition>(leaving, GridPosition{.x = 2, .y = 2});
+    world.commit();
+
+    world.destroy(leaving);
+    world.add<Velocity>(leaving, Velocity{.dx = 4, .dy = 4});
+    world.add<GridPosition>(leaving, GridPosition{.x = 8, .y = 8});
+    world.commit();
+
+    EXPECT_FALSE(world.alive(leaving));
+    EXPECT_FALSE(world.has<GridPosition>(leaving));
+    EXPECT_FALSE(world.has<Velocity>(leaving));
+
+    // And nothing of the mover's was disturbed on the way past.
+    EXPECT_EQ(world.get<Velocity>(mover), (Velocity{.dx = 1, .dy = 0}));
+}

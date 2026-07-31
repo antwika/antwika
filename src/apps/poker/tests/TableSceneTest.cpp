@@ -571,6 +571,63 @@ TEST(TableArtTest, DescribeArt_SurvivesACanvasWithNoRoomAboveTheSeats)
     }
 }
 
+// A card is 8 pixels wide at the floor.
+// So a full board is 44 across and does not fit a canvas 40 wide.
+// The centring subtracts, and these are unsigned.
+// Without the guard the board would start at four billion.
+TEST(TableArtTest, DescribeArt_LeftAlignsABoardWiderThanTheCanvas)
+{
+    const TableScene scene;
+    auto snapshot = idleTable();
+    snapshot.board = parseCards("Ah Kd 7c 2s 9h");
+
+    const auto art =
+        scene.describeArt(Size{.width = 40, .height = 400}, snapshot);
+
+    const auto face =
+        antwika::poker::sourceOf(antwika::poker::kCardFaceSlot);
+    ASSERT_EQ(blitsOf(art, face), 5U);
+    for (const auto &blit : art)
+    {
+        if (blit.source == face)
+        {
+            EXPECT_GE(blit.destination.origin.x, 0);
+            EXPECT_LT(blit.destination.origin.x, 44);
+        }
+    }
+}
+
+// A picture two runs disagree about is two different tables.
+// So every field has to count towards a blit being the same blit.
+// A defaulted operator== stops at the first difference it finds.
+// So each field is asserted on its own.
+TEST(TableArtTest, EveryFieldOfABlitCountsTowardsEquality)
+{
+    const ArtBlit base{
+        .source = antwika::poker::sourceOf(antwika::poker::kFeltSlot),
+        .destination =
+            Rect{
+                .origin = {.x = 4, .y = 8},
+                .size = {.width = 32, .height = 32}},
+        .tint = Color{
+            .red = 255, .green = 255, .blue = 255, .alpha = 255}};
+
+    EXPECT_EQ(base, base);
+
+    ArtBlit other = base;
+    other.source =
+        antwika::poker::sourceOf(antwika::poker::kCardBackSlot);
+    EXPECT_NE(base, other);
+
+    other = base;
+    other.destination.origin.x = 5;
+    EXPECT_NE(base, other);
+
+    other = base;
+    other.tint = kRedSuit;
+    EXPECT_NE(base, other);
+}
+
 TEST(TableArtTest, DescribeArt_DrawsNothingForASeatlessTable)
 {
     const TableScene scene;

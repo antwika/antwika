@@ -168,6 +168,29 @@ namespace
         EXPECT_EQ(battle.mobs()[2].health, 9);
     }
 
+    // Battle::fire() shoots the first mob in reach.
+    // That is only right if the mobs are in descending path order.
+    // This is what pins that ordering.
+    // Spawn order is ascending and every mob walks one cell a tick.
+    // Leaks are removed in place, so nothing ever reorders.
+    TEST(BattleTest, MobsStayInStrictlyDescendingPathOrder)
+    {
+        Battle battle(
+            straightLevel(12),
+            BattleConfig{.spawnPeriodTicks = 2, .mobHealth = 100});
+        for (int i = 0; i < 20; ++i)
+        {
+            battle.step();
+            const auto &mobs = battle.mobs();
+            for (std::size_t j = 1; j < mobs.size(); ++j)
+            {
+                EXPECT_GT(mobs[j - 1].pathIndex, mobs[j].pathIndex)
+                    << "tick " << i << ", mob " << j;
+            }
+        }
+        EXPECT_GT(battle.mobs().size(), 1U);
+    }
+
     TEST(BattleTest, TheSameInputsGiveTheSameBattle)
     {
         const auto run = [](Battle &battle)

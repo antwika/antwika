@@ -164,6 +164,24 @@ namespace
         EXPECT_EQ(level.path.size(), 3U);
     }
 
+    // The End tile is pinned to the last column.
+    // So that column is never walled, whatever the spacing divides.
+    // Width 7 with the default spacing of 3 is the case that asks.
+    // Column 6 is a multiple of 3 and is also the End's column.
+    // A wall there leaves the End in a column of one open row.
+    // The walk out of Start need not be able to reach that row.
+    TEST(LevelGeneratorTest, TheEndColumnIsNeverWalled)
+    {
+        for (std::uint64_t seed = 0; seed < 8; ++seed)
+        {
+            const Level level = generateLevel(
+                {.width = 7, .height = 5, .seed = seed});
+            SCOPED_TRACE("seed " + std::to_string(seed));
+            expectSingleSimplePath(level);
+            EXPECT_EQ(level.path.back().x, 6U);
+        }
+    }
+
     TEST(LevelGeneratorTest, ATooNarrowGridIsRefused)
     {
         EXPECT_THROW(
