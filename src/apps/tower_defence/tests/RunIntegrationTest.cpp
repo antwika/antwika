@@ -74,8 +74,8 @@ namespace
                     .name = antwika::engine::events::kStop}}};
     }
 
-    // What the watcher below saw, kept outside it because bootstrap()
-    // owns the sink and destroys it before it returns.
+    // What the watcher below saw, kept outside it.
+    // bootstrap() owns the sink and destroys it before returning.
     struct WatchedTicks
     {
         std::uint64_t ticks = 0;
@@ -83,11 +83,11 @@ namespace
         std::size_t commands = 0;
     };
 
-    // Stands in for the renderer main.cpp hands bootstrap(): a sink
-    // built over the Battle and the ScoreOverlay the run owns, neither
-    // of which exists before a level has been generated.
-    // It reads the same two things RenderSink does, so what it sees is
-    // what a frame would have been drawn from.
+    // Stands in for the renderer main.cpp hands bootstrap().
+    // It is built over the Battle and ScoreOverlay the run owns.
+    // Neither exists before a level has been generated.
+    // It reads the same two things RenderSink does.
+    // So what it sees is what a frame would be drawn from.
     class FinishedTickWatcher final
         : public antwika::event::ITickEventSink
     {
@@ -169,11 +169,10 @@ TEST(RunIntegrationTest, AClickOnTheBarBuildsNothingButAClickOnGroundDoes)
     EXPECT_EQ(summary.towers, 1U);
 }
 
-// main.cpp hangs the renderer off the run with the extraSink factory,
-// since a sink drawing the battle needs state bootstrap() only has once
-// it has generated a level.
-// The sink must be registered last, so what it reads is the state the
-// tick ended with rather than the state it started from.
+// main.cpp hangs the renderer off the run with the extraSink factory.
+// A sink drawing the battle needs state bootstrap() makes itself.
+// The sink must be registered last.
+// So what it reads is the state the tick ended with.
 TEST(RunIntegrationTest, TheExtraSinkSeesEveryFinishedTick)
 {
     NiceMock<MockLogger> logger;
@@ -204,16 +203,16 @@ TEST(RunIntegrationTest, TheExtraSinkSeesEveryFinishedTick)
 
     EXPECT_EQ(seen.ticks, summary.ticks);
 
-    // The tower the ground click built, and the bar ScoreSink described
-    // before this sink ran.
+    // The tower the ground click built.
+    // And the bar ScoreSink described before this sink ran.
     EXPECT_EQ(seen.towers, summary.towers);
     EXPECT_GT(seen.commands, 0U);
 }
 
-// A caller wanting to persist a `--record` file has no pre-known
-// script, so it passes an optional replayRecorder instead.
-// bootstrap() must register it, and only the input has to come back:
-// the level, the mobs and the towers are all regenerated.
+// A caller persisting a `--record` file has no pre-known script.
+// It passes an optional replayRecorder instead.
+// bootstrap() must register it, and only the input comes back.
+// The level, the mobs and the towers are all regenerated.
 TEST(RunIntegrationTest, TheReplayRecorderReceivesEveryDispatchedEvent)
 {
     NiceMock<MockLogger> logger;
@@ -235,10 +234,10 @@ TEST(RunIntegrationTest, TheReplayRecorderReceivesEveryDispatchedEvent)
             .maxTicks = kMaxTicks,
             .replayRecorder = recorder});
 
-    // Every dispatched event reaches the recorder, engine.tick and all.
-    // What a saved file keeps is the run's *input*, so that is what is
-    // asserted here: the ticks are regenerated, and nothing about the
-    // level, the mobs or the towers was ever an event to begin with.
+    // Every dispatched event reaches the recorder, ticks and all.
+    // What a saved file keeps is the run's *input*.
+    // So that is what is asserted here, with the ticks taken out.
+    // Nothing about the level or the mobs was ever an event at all.
     std::vector<TickEvent> supplied;
     for (const TickEvent &event : recorder.getEvents())
     {

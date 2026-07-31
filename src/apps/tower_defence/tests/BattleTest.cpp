@@ -168,12 +168,11 @@ namespace
         EXPECT_EQ(battle.mobs()[2].health, 9);
     }
 
-    // Battle::fire() shoots the first mob in reach rather than
-    // comparing every mob in reach, which is only correct because the
-    // living vector is in strictly descending path order.
-    // That ordering is what this pins: spawn order is ascending, every
-    // mob walks exactly one cell a tick, and leaks are removed in
-    // place, so no reordering is possible and no two share an index.
+    // Battle::fire() shoots the first mob in reach.
+    // That is only right if the mobs are in descending path order.
+    // This is what pins that ordering.
+    // Spawn order is ascending and every mob walks one cell a tick.
+    // Leaks are removed in place, so nothing ever reorders.
     TEST(BattleTest, MobsStayInStrictlyDescendingPathOrder)
     {
         Battle battle(

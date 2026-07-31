@@ -105,10 +105,10 @@ namespace
         EXPECT_NE(layoutFor(kCanvas, 12, 8), layoutFor(kCanvas, 10, 8));
     }
 
-    // A layout two scenes disagree about is a board somebody sees and a
-    // board they can build on drifting apart, so every field has to
-    // count -- and each one is asserted on its own, since a defaulted
-    // operator== stops at the first difference it finds.
+    // A layout two scenes disagree about is two different boards.
+    // So every field has to count towards a layout being the same.
+    // A defaulted operator== stops at the first difference found.
+    // So each field is asserted on its own.
     TEST(GridLayoutTest, EveryFieldOfALayoutCountsTowardsEquality)
     {
         constexpr GridLayout base{

@@ -571,10 +571,10 @@ TEST(TableArtTest, DescribeArt_SurvivesACanvasWithNoRoomAboveTheSeats)
     }
 }
 
-// A card is 8 pixels wide at the floor, so a full board is 44 across
-// and does not fit a canvas 40 wide.
-// The centring subtracts, and these are unsigned: without the guard the
-// board would start at four billion and disappear entirely.
+// A card is 8 pixels wide at the floor.
+// So a full board is 44 across and does not fit a canvas 40 wide.
+// The centring subtracts, and these are unsigned.
+// Without the guard the board would start at four billion.
 TEST(TableArtTest, DescribeArt_LeftAlignsABoardWiderThanTheCanvas)
 {
     const TableScene scene;
@@ -597,9 +597,10 @@ TEST(TableArtTest, DescribeArt_LeftAlignsABoardWiderThanTheCanvas)
     }
 }
 
-// A picture two runs disagree about is two different tables, so every
-// field has to count -- and each one is asserted on its own, since a
-// defaulted operator== stops at the first difference it finds.
+// A picture two runs disagree about is two different tables.
+// So every field has to count towards a blit being the same blit.
+// A defaulted operator== stops at the first difference it finds.
+// So each field is asserted on its own.
 TEST(TableArtTest, EveryFieldOfABlitCountsTowardsEquality)
 {
     const ArtBlit base{
