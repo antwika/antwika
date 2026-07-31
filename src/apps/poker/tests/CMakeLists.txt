@@ -17,6 +17,7 @@ add_executable(antwika_poker_tests
     BankrollLedgerTest.cpp
     BootstrapTest.cpp
     CashGameTest.cpp
+    PokerAtlasTest.cpp
     PokerRoomSinkTest.cpp
     PolicyAgentTest.cpp
     ReplayIntegrationTest.cpp

@@ -540,7 +540,10 @@ TEST(BootstrapTest, Bootstrap_HoldsTheFinalFrameUntilTheWindowIsClosed)
     FakeBackend backend;
     FakeSleeper sleeper;
     const WindowSetup window{
-        .backend = backend, .sleeper = sleeper, .framePeriod = 80ms};
+        .backend = backend,
+        .sleeper = sleeper,
+        .framePeriod = 80ms,
+        .holdFinalFrame = true};
     backend.closeAt = kStopAt + 1 + kExtraFrames;
 
     static_cast<void>(runRoom(source, out, kThreeHandedRoom, &window));
@@ -551,7 +554,6 @@ TEST(BootstrapTest, Bootstrap_HoldsTheFinalFrameUntilTheWindowIsClosed)
 
 TEST(BootstrapTest, Bootstrap_HoldsNoFinalFrameWhenNobodyAskedToWatch)
 {
-    // A zero frame period means nobody asked to watch.
     // Holding would hang under a backend that never reports a close.
     constexpr antwika::time::Tick kStopAt = 20;
     auto script = threeHandedSession(kStopAt);
@@ -560,6 +562,26 @@ TEST(BootstrapTest, Bootstrap_HoldsNoFinalFrameWhenNobodyAskedToWatch)
     FakeBackend backend;
     FakeSleeper sleeper;
     const WindowSetup window{.backend = backend, .sleeper = sleeper};
+
+    static_cast<void>(runRoom(source, out, kThreeHandedRoom, &window));
+
+    ASSERT_NE(backend.window, nullptr);
+    EXPECT_EQ(backend.window->frames(), kStopAt + 1);
+    EXPECT_FALSE(backend.window->isOpen());
+}
+
+// Pacing and holding the end are two separate answers.
+// A paced terminal run is ordinary, and it has to be able to end.
+TEST(BootstrapTest, Bootstrap_HoldsNoFinalFrameWhenOnlyPaced)
+{
+    constexpr antwika::time::Tick kStopAt = 20;
+    auto script = threeHandedSession(kStopAt);
+    ReplaySource source(script);
+    std::ostringstream out;
+    FakeBackend backend;
+    FakeSleeper sleeper;
+    const WindowSetup window{
+        .backend = backend, .sleeper = sleeper, .framePeriod = 80ms};
 
     static_cast<void>(runRoom(source, out, kThreeHandedRoom, &window));
 
@@ -599,7 +621,10 @@ TEST(BootstrapTest, Bootstrap_ReachesTheSameResultWithAndWithoutAWindow)
     FakeBackend backend;
     FakeSleeper sleeper;
     const WindowSetup window{
-        .backend = backend, .sleeper = sleeper, .framePeriod = 80ms};
+        .backend = backend,
+        .sleeper = sleeper,
+        .framePeriod = 80ms,
+        .holdFinalFrame = true};
     // Watched all the way through, then closed by hand.
     // So this run takes the paced and held-open path.
     backend.closeAt = kStopAt + 3;

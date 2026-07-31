@@ -38,12 +38,23 @@ namespace antwika::poker
         /**
          * @brief How long to hold each tick's frame.
          *
-         * Zero means nobody asked to watch: frames are drawn as fast as
-         * the ticks arrive and the last one is not held open afterwards.
-         * Holding it would hang under a backend that never reports a
-         * close, which is exactly what the headless one does.
+         * Zero draws frames as fast as the ticks arrive.
+         * Waiting changes only how long a run takes, never what it
+         * computes, so any value here reaches the same chip counts.
          */
         std::chrono::milliseconds framePeriod{};
+
+        /**
+         * @brief Whether the last frame is kept up until the window goes.
+         *
+         * A window that vanished on the last tick would hide the end, so
+         * a spectator wants it held.
+         * It is its own answer rather than "framePeriod is non-zero",
+         * because a paced *terminal* run is an ordinary thing to ask for
+         * and holding there would hang under a backend that never
+         * reports a close -- which is exactly what the headless one does.
+         */
+        bool holdFinalFrame{false};
 
         /**
          * @brief How big the window should be.

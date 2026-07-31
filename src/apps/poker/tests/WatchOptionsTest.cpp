@@ -40,9 +40,29 @@ namespace
     }
 } // namespace
 
-TEST(WatchOptionsTest, WatchOptionsFrom_DefaultsToNoDelay)
+TEST(WatchOptionsTest, WatchOptionsFrom_DefaultsToASecondPerAction)
 {
-    EXPECT_EQ(parse({"antwika_poker"}).tickDelay, 0ms);
+    // One tick is one poker action, so this is the pace of the game.
+    EXPECT_EQ(parse({"antwika_poker"}).tickDelay, 1000ms);
+}
+
+TEST(WatchOptionsTest, WatchOptionsFrom_HoldsNoFinalFrameByDefault)
+{
+    // The default pacing applies to the terminal run too.
+    // Holding there would hang under a backend reporting no close.
+    EXPECT_FALSE(parse({"antwika_poker"}).holdFinalFrame);
+}
+
+TEST(WatchOptionsTest, WatchOptionsFrom_HoldsTheFinalFrameWhenAsked)
+{
+    EXPECT_TRUE(
+        parse({"antwika_poker", "--tick-delay-ms", "150"}).holdFinalFrame);
+}
+
+TEST(WatchOptionsTest, WatchOptionsFrom_HoldsNoFinalFrameForAnExplicitZero)
+{
+    EXPECT_FALSE(
+        parse({"antwika_poker", "--tick-delay-ms", "0"}).holdFinalFrame);
 }
 
 TEST(WatchOptionsTest, WatchOptionsFrom_ReadsTheDelay)
@@ -69,25 +89,28 @@ TEST(WatchOptionsTest, WatchOptionsFrom_RefusesTheFlagWithNoValue)
 TEST(WatchOptionsTest, WatchOptionsFrom_IgnoresAValueThatIsNotANumber)
 {
     EXPECT_EQ(
-        parse({"antwika_poker", "--tick-delay-ms", "soon"}).tickDelay, 0ms);
+        parse({"antwika_poker", "--tick-delay-ms", "soon"}).tickDelay,
+        1000ms);
 }
 
 TEST(WatchOptionsTest, WatchOptionsFrom_IgnoresATrailingNonNumber)
 {
     EXPECT_EQ(
-        parse({"antwika_poker", "--tick-delay-ms", "150x"}).tickDelay, 0ms);
+        parse({"antwika_poker", "--tick-delay-ms", "150x"}).tickDelay,
+        1000ms);
 }
 
 TEST(WatchOptionsTest, WatchOptionsFrom_IgnoresANegativeDelay)
 {
     EXPECT_EQ(
-        parse({"antwika_poker", "--tick-delay-ms", "-5"}).tickDelay, 0ms);
+        parse({"antwika_poker", "--tick-delay-ms", "-5"}).tickDelay, 1000ms);
 }
 
 TEST(WatchOptionsTest, WatchOptionsFrom_LeavesTheReplayFlagsAlone)
 {
     EXPECT_EQ(
-        parse({"antwika_poker", "--replay", "demo.json"}).tickDelay, 0ms);
+        parse({"antwika_poker", "--replay", "demo.json"}).tickDelay,
+        1000ms);
 }
 
 TEST(WatchOptionsTest, WatchOptionsFrom_ReadsTheDelayAmongOtherFlags)

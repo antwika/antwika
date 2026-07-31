@@ -1,7 +1,6 @@
 #include "antwika/poker/PokerRoom.hpp"
 
 #include <array>
-#include <chrono>
 #include <cstddef>
 #include <functional>
 #include <memory>
@@ -178,8 +177,7 @@ namespace antwika::poker
 
         if (tableWindow)
         {
-            if (setup.window->get().framePeriod
-                > std::chrono::milliseconds{0})
+            if (setup.window->get().holdFinalFrame)
             {
                 holdFinalFrame(*windowSource, *renderSink, *tableWindow);
             }
