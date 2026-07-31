@@ -1,7 +1,9 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
+#include <cstddef>
 #include <cstdint>
+#include <optional>
 #include <string>
 #include <string_view>
 #include <variant>
@@ -10,17 +12,21 @@
 #include <antwika/gfx/Color.hpp>
 #include <antwika/gfx/Rect.hpp>
 #include <antwika/gfx/Size.hpp>
+#include <antwika/gfx/TextLayout.hpp>
 #include <antwika/gfx/mocks/MockRenderer.hpp>
 #include <antwika/gfx/mocks/MockTexture.hpp>
 #include <antwika/holdem/CardText.hpp>
 #include <antwika/holdem/Stage.hpp>
 #include <antwika/ui/DrawCommand.hpp>
+#include <antwika/ui/Frame.hpp>
 #include <antwika/ui/Interactions.hpp>
+#include <antwika/ui/WidgetRects.hpp>
 
 #include "antwika/poker/PokerAtlas.hpp"
 #include "antwika/poker/SeatSnapshot.hpp"
 #include "antwika/poker/TableScene.hpp"
 #include "antwika/poker/TableSnapshot.hpp"
+#include "antwika/poker/TableWidgets.hpp"
 
 using antwika::gfx::Color;
 using antwika::gfx::Rect;
@@ -378,6 +384,17 @@ namespace
 {
     using antwika::poker::ArtBlit;
 
+    // The art is placed from the layout.
+    // So a test asking for it describes the frame first.
+    // Which is what draw() does.
+    [[nodiscard]] std::vector<ArtBlit> artOf(
+        const TableScene &scene, Size canvas,
+        const TableSnapshot &snapshot)
+    {
+        return scene.describeArt(
+            canvas, scene.describe(canvas, snapshot).rects, snapshot);
+    }
+
     [[nodiscard]] std::size_t blitsOf(
         const std::vector<ArtBlit> &art, Rect source)
     {
@@ -408,7 +425,7 @@ namespace
 TEST(TableArtTest, DescribeArt_TilesTheFeltAcrossTheWholeCanvas)
 {
     const TableScene scene;
-    const auto art = scene.describeArt(kCanvas, idleTable());
+    const auto art = artOf(scene, kCanvas, idleTable());
 
     const auto felt = antwika::poker::sourceOf(antwika::poker::kFeltSlot);
     const auto across = kCanvas.width / antwika::poker::kAtlasSlotSize.width;
@@ -434,7 +451,7 @@ TEST(TableArtTest, DescribeArt_GivesEverySeatAPlate)
 {
     const TableScene scene;
     auto snapshot = idleTable();
-    const auto art = scene.describeArt(kCanvas, snapshot);
+    const auto art = artOf(scene, kCanvas, snapshot);
 
     EXPECT_EQ(
         blitsOf(art, antwika::poker::sourceOf(antwika::poker::kPlateSlot)),
@@ -455,7 +472,7 @@ TEST(TableArtTest, DescribeArt_PlatesTheRowsTheUiBoxesAtTheSamePitch)
         antwika::poker::sourceOf(antwika::poker::kPlateSlot);
 
     std::vector<std::int32_t> plateTops;
-    for (const auto &blit : scene.describeArt(kCanvas, snapshot))
+    for (const auto &blit : artOf(scene, kCanvas, snapshot))
     {
         if (blit.source == plate)
         {
@@ -492,7 +509,7 @@ TEST(TableArtTest, DescribeArt_SeatsOnlyTheOccupied)
     auto snapshot = liveTable();
     snapshot.seats.push_back(SeatSnapshot{});
 
-    const auto art = scene.describeArt(kCanvas, snapshot);
+    const auto art = artOf(scene, kCanvas, snapshot);
 
     // A chair each for those taken, a plate each for all of them.
     EXPECT_EQ(
@@ -509,7 +526,7 @@ TEST(TableArtTest, DescribeArt_DrawsTheBoardFaceUpAsThreeBlitsACard)
     auto snapshot = idleTable();
     snapshot.board = parseCards("Ah Kd 7c");
 
-    const auto art = scene.describeArt(kCanvas, snapshot);
+    const auto art = artOf(scene, kCanvas, snapshot);
 
     EXPECT_EQ(
         blitsOf(art, antwika::poker::sourceOf(antwika::poker::kCardFaceSlot)),
@@ -536,7 +553,7 @@ TEST(TableArtTest, DescribeArt_KeepsHoleCardsFaceDownBeforeShowdown)
     snapshot.board.clear();
     snapshot.stage = Stage::Flop;
 
-    const auto art = scene.describeArt(kCanvas, snapshot);
+    const auto art = artOf(scene, kCanvas, snapshot);
 
     // Two seats in the hand, two cards each, none of them anybody's.
     EXPECT_EQ(
@@ -554,7 +571,7 @@ TEST(TableArtTest, DescribeArt_TurnsHoleCardsOverAtShowdown)
     snapshot.board.clear();
     snapshot.stage = Stage::Showdown;
 
-    const auto art = scene.describeArt(kCanvas, snapshot);
+    const auto art = artOf(scene, kCanvas, snapshot);
 
     EXPECT_EQ(
         blitsOf(art, antwika::poker::sourceOf(antwika::poker::kCardBackSlot)),
@@ -569,7 +586,7 @@ TEST(TableArtTest, DescribeArt_MarksTheButtonTheBetAndWhoseTurnItIs)
     const TableScene scene;
     const auto snapshot = liveTable();
 
-    const auto art = scene.describeArt(kCanvas, snapshot);
+    const auto art = artOf(scene, kCanvas, snapshot);
 
     EXPECT_EQ(
         blitsOf(
@@ -590,7 +607,7 @@ TEST(TableArtTest, DescribeArt_HidesTheButtonBeforeTheFirstDeal)
     auto snapshot = liveTable();
     snapshot.handsPlayed = 0;
 
-    const auto art = scene.describeArt(kCanvas, snapshot);
+    const auto art = artOf(scene, kCanvas, snapshot);
 
     EXPECT_EQ(
         blitsOf(
@@ -606,7 +623,7 @@ TEST(TableArtTest, DescribeArt_SurvivesACanvasWithNoRoomAboveTheSeats)
 
     // Too short for the seat rows, let alone a board above them.
     const auto art =
-        scene.describeArt(Size{.width = 40, .height = 24}, snapshot);
+        artOf(scene, Size{.width = 40, .height = 24}, snapshot);
 
     EXPECT_FALSE(art.empty());
     for (const auto &blit : art)
@@ -627,7 +644,7 @@ TEST(TableArtTest, DescribeArt_LeftAlignsABoardWiderThanTheCanvas)
     snapshot.board = parseCards("Ah Kd 7c 2s 9h");
 
     const auto art =
-        scene.describeArt(Size{.width = 40, .height = 400}, snapshot);
+        artOf(scene, Size{.width = 40, .height = 400}, snapshot);
 
     const auto face =
         antwika::poker::sourceOf(antwika::poker::kCardFaceSlot);
@@ -678,7 +695,7 @@ TEST(TableArtTest, DescribeArt_DrawsNothingForASeatlessTable)
     const TableScene scene;
     TableSnapshot snapshot;
 
-    const auto art = scene.describeArt(kCanvas, snapshot);
+    const auto art = artOf(scene, kCanvas, snapshot);
 
     EXPECT_EQ(
         blitsOf(art, antwika::poker::sourceOf(antwika::poker::kPlateSlot)),
@@ -696,7 +713,7 @@ TEST(TableArtTest, Draw_PaintsTheArtBeforeTheText)
     EXPECT_CALL(renderer, drawRect(_, _)).Times(AnyNumber());
     EXPECT_CALL(renderer, drawText(_, _, _, _)).Times(AnyNumber());
     EXPECT_CALL(renderer, drawTexture(_, _, _, _))
-        .Times(static_cast<int>(scene.describeArt(kCanvas, snapshot).size()));
+        .Times(static_cast<int>(artOf(scene, kCanvas, snapshot).size()));
 
     scene.draw(renderer, kCanvas, snapshot, &atlas);
 }
@@ -713,3 +730,403 @@ TEST(TableArtTest, Draw_DrawsNoTextureWithoutAnAtlas)
 
     scene.draw(renderer, kCanvas, idleTable());
 }
+
+// --- One layout, and the art placed from it -------------------------
+
+namespace
+{
+    using antwika::gfx::Point;
+    using antwika::ui::DrawText;
+    using antwika::ui::Frame;
+    using antwika::ui::WidgetRect;
+    using antwika::ui::WidgetRects;
+    namespace widgets = antwika::poker::widgets;
+
+    // Awkward on purpose.
+    // One ordinary window.
+    // One far wider than it is tall, and one far taller than wide.
+    // One too small for nine rows, which is where shrinking starts.
+    const std::vector<Size> kCanvases{
+        Size{.width = 1024, .height = 640},
+        Size{.width = 1920, .height = 360},
+        Size{.width = 480, .height = 1200},
+        Size{.width = 320, .height = 200},
+        Size{.width = 800, .height = 600}};
+
+    [[nodiscard]] std::int32_t rightOf(Rect rect) noexcept
+    {
+        return rect.origin.x
+               + static_cast<std::int32_t>(rect.size.width);
+    }
+
+    [[nodiscard]] std::int32_t bottomOf(Rect rect) noexcept
+    {
+        return rect.origin.y
+               + static_cast<std::int32_t>(rect.size.height);
+    }
+
+    [[nodiscard]] bool overlaps(Rect one, Rect other) noexcept
+    {
+        return one.origin.x < rightOf(other)
+               && other.origin.x < rightOf(one)
+               && one.origin.y < bottomOf(other)
+               && other.origin.y < bottomOf(one);
+    }
+
+    [[nodiscard]] bool contains(Rect outer, Rect inner) noexcept
+    {
+        return inner.origin.x >= outer.origin.x
+               && inner.origin.y >= outer.origin.y
+               && rightOf(inner) <= rightOf(outer)
+               && bottomOf(inner) <= bottomOf(outer);
+    }
+
+    /**
+     * @brief One card, and where the layout put it.
+     */
+    struct CardFace
+    {
+        std::string text;
+        Rect rect;
+    };
+
+    /**
+     * @brief Every card the frame declared, by the text on it.
+     * @param frame The finished frame.
+     * @param snapshot The table it was described from.
+     * @return One entry per card the layout laid out.
+     */
+    [[nodiscard]] std::vector<CardFace> cardFacesOf(
+        const Frame &frame, const TableSnapshot &snapshot)
+    {
+        std::vector<CardFace> faces;
+
+        for (std::size_t index = 0; index < snapshot.board.size();
+             ++index)
+        {
+            const auto rect = frame.rects.find(widgets::boardCard(index));
+
+            if (rect.has_value())
+            {
+                faces.push_back(CardFace{
+                    .text = antwika::holdem::toString(
+                        snapshot.board[index]),
+                    .rect = *rect});
+            }
+        }
+
+        for (std::size_t seat = 0; seat < snapshot.seats.size(); ++seat)
+        {
+            if (!snapshot.seats[seat].inHand)
+            {
+                continue;
+            }
+
+            const auto first = widgets::firstHoleCard(seat);
+            const auto &cards = snapshot.seats[seat].holeCards;
+
+            for (std::size_t card = 0; card < cards.size(); ++card)
+            {
+                const auto rect =
+                    frame.rects.find(widgets::after(first, card));
+
+                if (rect.has_value())
+                {
+                    faces.push_back(CardFace{
+                        .text = antwika::holdem::toString(cards[card]),
+                        .rect = *rect});
+                }
+            }
+        }
+
+        return faces;
+    }
+
+    /**
+     * @brief Find where a line of text was drawn.
+     * @param frame The finished frame to search.
+     * @param text The exact line to look for.
+     * @return The area its glyphs cover, or nothing when this frame had
+     * no room to draw it at all.
+     */
+    [[nodiscard]] std::optional<Rect> textDrawn(
+        const Frame &frame, const std::string &text)
+    {
+        for (const auto &command : frame.commands)
+        {
+            const auto *drawn = std::get_if<DrawText>(&command);
+
+            if (drawn != nullptr && drawn->text == text)
+            {
+                return Rect{
+                    .origin = drawn->origin,
+                    .size = antwika::gfx::textSize(
+                        drawn->text, drawn->scale)};
+            }
+        }
+
+        return {};
+    }
+
+    /**
+     * @brief A table mid-hand, every card of it different.
+     *
+     * Distinct so that a card's text names exactly one card, which is
+     * what lets a test say which card a line of text belongs to.
+     *
+     * @param seats How many seats to sit down.
+     * @param stage Which street the hand is on.
+     * @return The snapshot.
+     */
+    [[nodiscard]] TableSnapshot dealtTable(
+        std::size_t seats, Stage stage)
+    {
+        const auto board = parseCards("Ah Kh Qh Jh Th");
+        const auto deck = parseCards(
+            "As Ks Qs Js Ts 9s 8s 7s 6s 5s 4s 3s 2s Ac Kc Qc Jc Tc");
+
+        TableSnapshot snapshot{
+            .tableName = "Antwika",
+            .board = board,
+            .pot = 240,
+            .blinds = {.small = 5, .big = 10},
+            .stage = stage,
+            .handsPlayed = 12,
+            .handInProgress = true,
+        };
+
+        for (std::size_t index = 0; index < seats; ++index)
+        {
+            auto seat = player("p" + std::to_string(index), 100 + index);
+            seat.inHand = true;
+            seat.holeCards = {deck[2 * index], deck[(2 * index) + 1]};
+            seat.isButton = index == 0;
+            seat.isToAct = index == 1;
+            seat.roundCommitted = index == 1 ? 40 : 0;
+            snapshot.seats.push_back(seat);
+        }
+
+        return snapshot;
+    }
+} // namespace
+
+// The whole point of the exercise.
+// A rank and a suit belong to one card.
+// A picture drawing them anywhere else is of a different hand.
+// That held for neither the board nor a seat before this.
+// The art and the ui each worked out where a card went.
+// The seats came out a row apart.
+// The board's text straddled the gap between two cards.
+TEST(TableAlignmentTest, EveryCardsTextIsOnTheCardItBelongsTo)
+{
+    const TableScene scene;
+    std::size_t checked = 0;
+
+    for (const auto canvas : kCanvases)
+    {
+        for (const std::size_t seats : {2U, 3U, 6U, 9U})
+        {
+            for (const auto stage : {Stage::Flop, Stage::Showdown})
+            {
+                SCOPED_TRACE(
+                    std::to_string(canvas.width) + "x"
+                    + std::to_string(canvas.height) + ", "
+                    + std::to_string(seats) + " seats");
+
+                const auto snapshot = dealtTable(seats, stage);
+                const auto frame = scene.describe(canvas, snapshot);
+                const auto faces = cardFacesOf(frame, snapshot);
+
+                ASSERT_EQ(faces.size(), 5 + (2 * seats));
+
+                for (const auto &face : faces)
+                {
+                    const auto text = textDrawn(frame, face.text);
+
+                    // A row too cramped draws none of the text.
+                    // So there is nothing to be in the wrong place.
+                    if (!text.has_value())
+                    {
+                        continue;
+                    }
+
+                    ++checked;
+                    EXPECT_TRUE(contains(face.rect, *text))
+                        << face.text << " is not on its own card";
+
+                    for (const auto &other : faces)
+                    {
+                        if (other.text == face.text)
+                        {
+                            continue;
+                        }
+
+                        EXPECT_FALSE(overlaps(other.rect, *text))
+                            << face.text << " is on " << other.text;
+                    }
+                }
+            }
+        }
+    }
+
+    // Skipping every card would pass the loop above vacuously.
+    EXPECT_GT(checked, 0U);
+}
+
+// The same statement from the art's side.
+// The blit is not merely near the rectangle the layout gave the card:
+// it is that rectangle, because it was read out of the layout.
+TEST(TableAlignmentTest, EveryCardIsBlittedIntoTheRectangleItWasGiven)
+{
+    const TableScene scene;
+
+    const auto face = antwika::poker::sourceOf(
+        antwika::poker::kCardFaceSlot);
+    const auto back = antwika::poker::sourceOf(
+        antwika::poker::kCardBackSlot);
+
+    for (const auto canvas : kCanvases)
+    {
+        for (const auto stage : {Stage::Flop, Stage::Showdown})
+        {
+            SCOPED_TRACE(
+                std::to_string(canvas.width) + "x"
+                + std::to_string(canvas.height));
+
+            const auto snapshot = dealtTable(3, stage);
+            const auto frame = scene.describe(canvas, snapshot);
+            const auto art =
+                scene.describeArt(canvas, frame.rects, snapshot);
+
+            for (const auto &card : cardFacesOf(frame, snapshot))
+            {
+                bool found = false;
+                for (const auto &blit : art)
+                {
+                    const auto isCard =
+                        blit.source == face || blit.source == back;
+                    found = found
+                            || (isCard
+                                && blit.destination == card.rect);
+                }
+
+                EXPECT_TRUE(found)
+                    << "no card was blitted where " << card.text
+                    << " was laid out";
+            }
+        }
+    }
+}
+
+// The plate is the seat row, so it cannot be a row out of step with it.
+TEST(TableAlignmentTest, EverySeatsPlateStaysInsideTheRowItPlates)
+{
+    const TableScene scene;
+    const auto plate =
+        antwika::poker::sourceOf(antwika::poker::kPlateSlot);
+
+    for (const auto canvas : kCanvases)
+    {
+        SCOPED_TRACE(
+            std::to_string(canvas.width) + "x"
+            + std::to_string(canvas.height));
+
+        const auto snapshot = dealtTable(6, Stage::Flop);
+        const auto frame = scene.describe(canvas, snapshot);
+        const auto art =
+            scene.describeArt(canvas, frame.rects, snapshot);
+
+        std::vector<Rect> plates;
+        for (const auto &blit : art)
+        {
+            if (blit.source == plate)
+            {
+                plates.push_back(blit.destination);
+            }
+        }
+
+        ASSERT_EQ(plates.size(), snapshot.seats.size());
+
+        for (std::size_t index = 0; index < plates.size(); ++index)
+        {
+            const auto row = frame.rects.find(widgets::seat(index));
+
+            ASSERT_TRUE(row.has_value());
+            EXPECT_TRUE(contains(*row, plates[index]));
+        }
+    }
+}
+
+// An id this frame did not declare draws nothing at all.
+// A rectangle of its own would be the second layout again.
+// So there is no fallback.
+TEST(TableArtTest, DescribeArt_DrawsOnlyFeltForAFrameThatNamedNothing)
+{
+    const TableScene scene;
+    const auto snapshot = dealtTable(3, Stage::Showdown);
+
+    const auto art = scene.describeArt(kCanvas, WidgetRects{}, snapshot);
+
+    const auto felt = antwika::poker::sourceOf(antwika::poker::kFeltSlot);
+    EXPECT_EQ(blitsOf(art, felt), art.size());
+}
+
+// A seat can be declared without its cards being.
+// A hand that is over declares no hole cards.
+// The plate is still the seat's.
+TEST(TableArtTest, DescribeArt_PlatesASeatWhoseCardsWereNotDeclared)
+{
+    const TableScene scene;
+    const auto snapshot = dealtTable(2, Stage::Showdown);
+
+    WidgetRects rects;
+    for (std::size_t index = 0; index < snapshot.seats.size(); ++index)
+    {
+        rects.entries.push_back(WidgetRect{
+            .id = widgets::seat(index),
+            .rect =
+                Rect{
+                    .origin =
+                        {.x = 0,
+                         .y = static_cast<std::int32_t>(index * 80)},
+                    .size = {.width = 400, .height = 80}}});
+    }
+
+    const auto art = scene.describeArt(kCanvas, rects, snapshot);
+
+    EXPECT_EQ(
+        blitsOf(art, antwika::poker::sourceOf(antwika::poker::kPlateSlot)),
+        snapshot.seats.size());
+    EXPECT_EQ(
+        blitsOf(
+            art, antwika::poker::sourceOf(antwika::poker::kCardFaceSlot)),
+        0U);
+    EXPECT_EQ(
+        blitsOf(
+            art, antwika::poker::sourceOf(antwika::poker::kChipSlot)),
+        0U);
+}
+
+// A row narrower than the inset it is pulled in by has no plate left.
+// These are unsigned, so the alternative is a plate four billion wide.
+TEST(TableArtTest, DescribeArt_PlatesNothingIntoARowWithNoRoomLeft)
+{
+    const TableScene scene;
+    const auto snapshot = dealtTable(1, Stage::Flop);
+
+    const WidgetRects rects{
+        .entries = {antwika::ui::WidgetRect{
+            .id = widgets::seat(0),
+            .rect =
+                Rect{
+                    .origin = {.x = 0, .y = 0},
+                    .size = {.width = 4, .height = 40}}}}};
+
+    const auto art = scene.describeArt(kCanvas, rects, snapshot);
+
+    for (const auto &blit : art)
+    {
+        EXPECT_LE(blit.destination.size.width, kCanvas.width);
+    }
+}
+
