@@ -6,6 +6,7 @@
 
 #include "antwika/gfx/Bitmap.hpp"
 #include "antwika/gfx/Color.hpp"
+#include "antwika/gfx/IRenderer3D.hpp"
 #include "antwika/gfx/ITexture.hpp"
 #include "antwika/gfx/Point.hpp"
 #include "antwika/gfx/Rect.hpp"
@@ -129,6 +130,27 @@ namespace antwika::gfx
             Rect source,
             Rect destination,
             Color tint) = 0;
+
+        /**
+         * @brief Get the 3D drawing calls this renderer also offers.
+         *
+         * Not pure, and deliberately: a backend with no 3D path says so
+         * by leaving this alone, rather than by writing no-ops for
+         * calls it can never honour.
+         * A caller that needs triangles can therefore ask, and refuse
+         * to start, instead of drawing into a void.
+         *
+         * The returned renderer draws into the same drawable area as
+         * this one and is owned by it, so it lives exactly as long and
+         * must not be deleted.
+         * clear() and present() stay here: there is one frame, and both
+         * halves draw into it.
+         * @return The 3D renderer, or null when this backend has none.
+         */
+        [[nodiscard]] virtual IRenderer3D *renderer3d()
+        {
+            return nullptr;
+        }
 
         /**
          * @brief Make everything drawn since the last present visible.

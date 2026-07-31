@@ -6,6 +6,7 @@
 
 #include "antwika/gfx/GfxError.hpp"
 
+#include "NullMesh.hpp"
 #include "NullTexture.hpp"
 
 namespace antwika::gfx::detail
@@ -57,6 +58,32 @@ namespace antwika::gfx::detail
         const ITexture &, Rect, Rect, Color)
     {
         logger.log(Level::Trace, "gfx.null: draw texture");
+    }
+
+    IRenderer3D *NullRenderer::renderer3d()
+    {
+        return this;
+    }
+
+    std::unique_ptr<IMesh> NullRenderer::createMesh(
+        const MeshData &mesh)
+    {
+        if (!mesh.isComplete())
+        {
+            throw GfxError(
+                "gfx.null: mesh does not index the vertices it claims");
+        }
+
+        logger.log(Level::Trace, "gfx.null: create mesh");
+
+        return std::make_unique<NullMesh>(
+            mesh.vertices.size(), mesh.triangleCount());
+    }
+
+    void NullRenderer::drawMesh(
+        const IMesh &, const Mat4 &, const Camera3D &, Color)
+    {
+        logger.log(Level::Trace, "gfx.null: draw mesh");
     }
 
     void NullRenderer::present()

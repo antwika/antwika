@@ -6,10 +6,15 @@ add_subdirectory(mocks)
 add_executable(antwika_gfx_tests
     BitmapTest.cpp
     BlitTest.cpp
+    Camera3DTest.cpp
     ColorTest.cpp
     GlyphsTest.cpp
+    IRendererTest.cpp
+    Math3DTest.cpp
+    MeshDataTest.cpp
     NullBackendConformanceTest.cpp
     NullBackendTest.cpp
+    NullRenderer3DTest.cpp
     NullRendererTest.cpp
     NullTextureTest.cpp
     NullWindowTest.cpp
@@ -18,6 +23,7 @@ add_executable(antwika_gfx_tests
     RectTest.cpp
     SizeTest.cpp
     TextLayoutTest.cpp
+    TransformTest.cpp
     WindowIdTest.cpp
 )
 
