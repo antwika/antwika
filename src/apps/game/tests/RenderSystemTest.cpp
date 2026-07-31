@@ -167,3 +167,43 @@ TEST(RenderSystemTest, Update_DrawsThePathsItIsGiven)
 
     system.update(world, 0);
 }
+
+// A mode owns the whole screen.
+// So in the menu no tile is blitted at all, whatever the grid holds.
+TEST(RenderSystemTest, Update_DrawsTheMenuAndNoGridInTheMainMenuMode)
+{
+    NiceMock<MockLogger> logger;
+    World world(logger);
+    PathIndex paths;
+    paths.insert(Cell{.x = 0, .y = 0});
+    Camera camera;
+    const GridScene scene;
+    UiOverlay overlay;
+    NiceMock<MockWindow> window;
+    NiceMock<MockRenderer> renderer;
+    NiceMock<MockTexture> atlas;
+
+    ON_CALL(window, renderer()).WillByDefault(ReturnRef(renderer));
+    ON_CALL(window, size()).WillByDefault(Return(kCanvas));
+
+    AppModeState mode;
+    const MainMenuScene menuScene;
+    UiOverlay menuOverlay{kCanvas};
+    RenderSystem system(
+        window,
+        scene,
+        atlas,
+        paths,
+        camera,
+        kExtent,
+        overlay,
+        mode,
+        menuScene,
+        menuOverlay);
+
+    EXPECT_CALL(renderer, drawTexture(_, _, _, _)).Times(0);
+    EXPECT_CALL(renderer, clear(_));
+    EXPECT_CALL(renderer, present());
+
+    system.update(world, 0);
+}
