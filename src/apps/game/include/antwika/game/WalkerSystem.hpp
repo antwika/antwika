@@ -4,7 +4,12 @@
 #include <antwika/ecs/World.hpp>
 #include <antwika/time/Tick.hpp>
 
+#include <antwika/ecs/Entity.hpp>
+
+#include "antwika/game/Cell.hpp"
+#include "antwika/game/GridExtent.hpp"
 #include "antwika/game/PathIndex.hpp"
+#include "antwika/game/Walker.hpp"
 
 namespace antwika::game
 {
@@ -41,11 +46,13 @@ namespace antwika::game
     {
     public:
         /**
-         * @brief Construct the system over the paths it walks.
-         * @param paths Consulted for each walker's neighbours; must
-         * outlive this system.
+         * @brief Construct the system over the roads and the bounds.
+         * @param paths Consulted for each walker's neighbours, and
+         * searched for a route home; must outlive this system.
+         * @param extent The bounds a route home is numbered over; see
+         * stepTowards() for why it is stated rather than derived.
          */
-        explicit WalkerSystem(const PathIndex &paths);
+        WalkerSystem(const PathIndex &paths, GridExtent extent);
 
         WalkerSystem(const WalkerSystem &) = delete;
         WalkerSystem(WalkerSystem &&) = delete;
@@ -64,6 +71,15 @@ namespace antwika::game
          * spent, so it looks for a way on every tick rather than every
          * other one.
          *
+         * **Once a walker's roaming budget is spent it either walks home
+         * or it is gone**, and that one rule is what bounds the
+         * population. Every awkward case collapses into its last arm: a
+         * walker nobody sent, one whose building has since burned down,
+         * one whose home has been walled off, one standing on a road
+         * that was demolished under it. All four are answered by
+         * destroying the walker rather than by four separate rules, and
+         * none of them is an error.
+         *
          * @param world The world to read walkers from and stage moves
          * into.
          * @param tick The tick being processed; unused.
@@ -71,7 +87,22 @@ namespace antwika::game
         void update(World &world, antwika::time::Tick tick) override;
 
     private:
+        // Roaming and heading home are two whole rules.
+        // Rather than two arms of one, so they are two functions.
+        void roam(
+            World &world,
+            antwika::ecs::Entity entity,
+            const Walker &walker,
+            Cell at);
+
+        void headHome(
+            World &world,
+            antwika::ecs::Entity entity,
+            const Walker &walker,
+            Cell at);
+
         const PathIndex &paths;
+        GridExtent extent;
     };
 
 } // namespace antwika::game

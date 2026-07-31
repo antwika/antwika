@@ -8,6 +8,7 @@
 
 #include "antwika/game/Camera.hpp"
 #include "antwika/game/Cell.hpp"
+#include "antwika/game/Footprint.hpp"
 
 namespace antwika::game
 {
@@ -153,6 +154,47 @@ namespace antwika::game
                  .y = top.y},
             .size = tileSize(camera)};
     }
+
+    /**
+     * @brief Get the bounding box a whole footprint's block occupies.
+     *
+     * A W-by-H block of cells is (W + H) half-tiles across and the same
+     * number of half-tiles down, so its box is that many half-widths by
+     * that many half-heights -- and because halfHeight is halfWidth / 2,
+     * every such box is 2:1 whatever the footprint.
+     * That is what lets a square block be drawn from one ordinary tile
+     * scaled up rather than from art of its own.
+     *
+     * Anchored at the origin cell's top corner, shifted left by the
+     * block's *height* in half-widths, since the westmost point of the
+     * block is the bottom-left cell rather than the origin.
+     *
+     * @param origin The minimum-x, minimum-y cell of the block.
+     * @param footprint How many cells across and down it covers.
+     * @param camera Supplies the zoom and the pan.
+     * @return The box enclosing the whole block.
+     */
+    [[nodiscard]] constexpr Rect footprintBounds(
+        Cell origin, Footprint footprint, const Camera &camera) noexcept
+    {
+        const auto top = cellToScreen(origin, camera);
+        const auto half = static_cast<std::int32_t>(camera.halfWidth());
+        const auto cells = footprint.width + footprint.height;
+
+        return Rect{
+            .origin = {.x = top.x - footprint.height * half, .y = top.y},
+            .size = {
+                .width = static_cast<std::uint32_t>(cells)
+                    * camera.halfWidth(),
+                .height = static_cast<std::uint32_t>(cells)
+                    * camera.halfHeight()}};
+    }
+
+    // One cell is a footprint of one, so the two answers must agree.
+    // Stating it here is what stops them drifting apart.
+    static_assert(
+        footprintBounds(Cell{.x = 3, .y = 4}, Footprint{1, 1}, Camera())
+        == cellBounds(Cell{.x = 3, .y = 4}, Camera()));
 
     /**
      * @brief Zoom a camera by whole levels, keeping one pixel's cell put.

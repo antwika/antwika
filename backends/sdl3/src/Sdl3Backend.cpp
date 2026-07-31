@@ -35,7 +35,7 @@ namespace antwika::gfx::sdl3
         {
             pump = antwika::sdl3::Sdl3Pump::acquire(logger);
         }
-        catch (const antwika::sdl3::Sdl3PumpError &error)
+        catch (const antwika::sdl3::Sdl3Error &error)
         {
             throw GfxError(std::string("gfx.") + error.what());
         }

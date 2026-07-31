@@ -35,6 +35,7 @@
 #include "antwika/game/BuildGhost.hpp"
 #include "antwika/game/BuildTool.hpp"
 #include "antwika/game/Building.hpp"
+#include "antwika/game/BuildingIndex.hpp"
 #include "antwika/game/Camera.hpp"
 #include "antwika/game/Cell.hpp"
 #include "antwika/game/GridExtent.hpp"
@@ -60,13 +61,17 @@ using antwika::game::BuildGhost;
 using antwika::game::ghostFor;
 using antwika::game::Building;
 using antwika::game::BuildingView;
-using antwika::game::buildingIndex;
+using antwika::game::buildingKindIndex;
 using antwika::game::buildingTile;
+using antwika::game::BuildingKind;
 using antwika::game::BuildTool;
 using antwika::game::buildToolIndex;
+using antwika::game::BuildingIndex;
 using antwika::game::Camera;
 using antwika::game::Cell;
 using antwika::game::cellBounds;
+using antwika::game::footprintBounds;
+using antwika::game::footprintOf;
 using antwika::game::cellCentre;
 using antwika::game::GridExtent;
 using antwika::game::GridScene;
@@ -116,17 +121,21 @@ namespace
         .red = 255, .green = 255, .blue = 255, .alpha = 110};
 
     // Every tool but the first, which is the road.
-    constexpr std::array<BuildTool, 3> kBuildings{
-        BuildTool::House, BuildTool::Shop, BuildTool::Tower};
+    constexpr std::array<BuildTool, kBuildToolCount - 1> kBuildings{
+        BuildTool::House,
+        BuildTool::FoodSource,
+        BuildTool::WaterSource,
+        BuildTool::FireStation,
+        BuildTool::ArchitectPost};
 } // namespace
 
 TEST(BuildToolTest, EveryToolHasItsOwnIndex)
 {
-    EXPECT_EQ(kBuildToolCount, 4U);
+    EXPECT_EQ(kBuildToolCount, 6U);
     EXPECT_EQ(buildToolIndex(BuildTool::Road), 0U);
     EXPECT_EQ(buildToolIndex(BuildTool::House), 1U);
-    EXPECT_EQ(buildToolIndex(BuildTool::Shop), 2U);
-    EXPECT_EQ(buildToolIndex(BuildTool::Tower), 3U);
+    EXPECT_EQ(buildToolIndex(BuildTool::FoodSource), 2U);
+    EXPECT_EQ(buildToolIndex(BuildTool::WaterSource), 3U);
 }
 
 TEST(BuildToolTest, EveryToolButTheRoadPlacesABuilding)
@@ -139,14 +148,17 @@ TEST(BuildToolTest, EveryToolButTheRoadPlacesABuilding)
     }
 }
 
-TEST(BuildToolTest, TheBuildingsAreNumberedFromZeroAfterTheRoad)
+TEST(BuildToolTest, EveryToolButTheRoadNamesABuildingKind)
 {
-    EXPECT_EQ(buildingIndex(BuildTool::House), 0U);
-    EXPECT_EQ(buildingIndex(BuildTool::Shop), 1U);
-    EXPECT_EQ(buildingIndex(BuildTool::Tower), 2U);
+    EXPECT_EQ(buildingKindOf(BuildTool::House), BuildingKind::House);
+    EXPECT_EQ(
+        buildingKindOf(BuildTool::FoodSource), BuildingKind::FoodSource);
+    EXPECT_EQ(
+        buildingKindOf(BuildTool::ArchitectPost),
+        BuildingKind::ArchitectPost);
 
-    // The road places none, and gets an index anyway.
-    EXPECT_EQ(buildingIndex(BuildTool::Road), 0U);
+    // The road places none, and says so rather than naming a kind.
+    EXPECT_FALSE(buildingKindOf(BuildTool::Road).has_value());
 }
 
 TEST(BuildPaletteAtlasTest, EveryBuildingHasATileOfItsOwn)
@@ -155,12 +167,16 @@ TEST(BuildPaletteAtlasTest, EveryBuildingHasATileOfItsOwn)
 
     for (const auto tool : kBuildings)
     {
-        tiles.push_back(buildingTile(tool));
+        tiles.push_back(buildingTile(*buildingKindOf(tool)));
     }
 
-    EXPECT_NE(tiles[0], tiles[1]);
-    EXPECT_NE(tiles[1], tiles[2]);
-    EXPECT_NE(tiles[0], tiles[2]);
+    for (std::size_t i = 0; i < tiles.size(); ++i)
+    {
+        for (std::size_t j = i + 1; j < tiles.size(); ++j)
+        {
+            EXPECT_NE(tiles[i], tiles[j]) << i << " vs " << j;
+        }
+    }
 }
 
 TEST(BuildPaletteAtlasTest, ToolTileIsTheRoadForARoadAndTheBuildingElse)
@@ -171,7 +187,8 @@ TEST(BuildPaletteAtlasTest, ToolTileIsTheRoadForARoadAndTheBuildingElse)
 
     for (const auto tool : kBuildings)
     {
-        EXPECT_EQ(toolTile(tool, links), buildingTile(tool));
+        EXPECT_EQ(
+            toolTile(tool, links), buildingTile(*buildingKindOf(tool)));
     }
 }
 
@@ -179,13 +196,15 @@ TEST(BuildPaletteWidgetTest, EveryToolIsNamedAndHasItsOwnButton)
 {
     EXPECT_EQ(toolLabel(BuildTool::Road), "road");
     EXPECT_EQ(toolLabel(BuildTool::House), "house");
-    EXPECT_EQ(toolLabel(BuildTool::Shop), "shop");
-    EXPECT_EQ(toolLabel(BuildTool::Tower), "tower");
+    EXPECT_EQ(toolLabel(BuildTool::FoodSource), "food");
+    EXPECT_EQ(toolLabel(BuildTool::WaterSource), "water");
+    EXPECT_EQ(toolLabel(BuildTool::FireStation), "fire");
+    EXPECT_EQ(toolLabel(BuildTool::ArchitectPost), "arch");
 
     EXPECT_NE(widgets::toolWidget(BuildTool::Road), widgets::kZoomIn);
     EXPECT_NE(
         widgets::toolWidget(BuildTool::Road),
-        widgets::toolWidget(BuildTool::Tower));
+        widgets::toolWidget(BuildTool::WaterSource));
 }
 
 TEST(UiOverlayToolTest, TheRoadIsSelectedUntilSomethingSaysOtherwise)
@@ -194,9 +213,9 @@ TEST(UiOverlayToolTest, TheRoadIsSelectedUntilSomethingSaysOtherwise)
 
     EXPECT_EQ(overlay.tool(), BuildTool::Road);
 
-    overlay.select(BuildTool::Shop);
+    overlay.select(BuildTool::FoodSource);
 
-    EXPECT_EQ(overlay.tool(), BuildTool::Shop);
+    EXPECT_EQ(overlay.tool(), BuildTool::FoodSource);
 }
 
 TEST(ToolbarPaletteTest, TheSelectedButtonIsDrawnDifferently)
@@ -207,7 +226,7 @@ TEST(ToolbarPaletteTest, TheSelectedButtonIsDrawnDifferently)
     const auto road =
         toolbar.describe(kCanvas, Pointer{}, camera, BuildTool::Road);
     const auto tower =
-        toolbar.describe(kCanvas, Pointer{}, camera, BuildTool::Tower);
+        toolbar.describe(kCanvas, Pointer{}, camera, BuildTool::WaterSource);
 
     // The same layout, so only the appearances can have moved.
     EXPECT_EQ(road.commands.size(), tower.commands.size());
@@ -289,6 +308,7 @@ namespace
         NiceMock<MockLogger> logger;
         World world{logger};
         PathIndex paths;
+        BuildingIndex built;
 
         // Panned well clear of the bar, which sits top-left.
         Camera camera{Point{.x = 700, .y = 300}};
@@ -307,7 +327,8 @@ namespace
             scheduler,
             input,
             overlay,
-            cities};
+            cities,
+            built};
     };
 } // namespace
 
@@ -315,8 +336,8 @@ TEST_F(PaletteSinkTest, PressingAPaletteButtonSelectsThatTool)
 {
     for (const auto tool : {
              BuildTool::House,
-             BuildTool::Shop,
-             BuildTool::Tower,
+             BuildTool::FoodSource,
+             BuildTool::WaterSource,
              BuildTool::Road,
          })
     {
@@ -328,7 +349,7 @@ TEST_F(PaletteSinkTest, PressingAPaletteButtonSelectsThatTool)
 
 TEST_F(PaletteSinkTest, PressingSomethingElseLeavesTheToolAlone)
 {
-    pressOn(widgets::toolWidget(BuildTool::Shop));
+    pressOn(widgets::toolWidget(BuildTool::FoodSource));
 
     // The bar is under this one, so it selects nothing.
     pressOn(widgets::kZoomIn);
@@ -336,7 +357,7 @@ TEST_F(PaletteSinkTest, PressingSomethingElseLeavesTheToolAlone)
     // And this one is on the grid, so it activates no widget at all.
     clickAt(Cell{.x = 4, .y = 4}, MouseButton::Left);
 
-    EXPECT_EQ(overlay.tool(), BuildTool::Shop);
+    EXPECT_EQ(overlay.tool(), BuildTool::FoodSource);
 }
 
 TEST_F(PaletteSinkTest, AClickOnTheBarPlacesNothingOnTheGrid)
@@ -351,14 +372,14 @@ TEST_F(PaletteSinkTest, TheSelectedToolIsWhatALeftClickPlaces)
 {
     constexpr Cell target{.x = 3, .y = 4};
 
-    pressOn(widgets::toolWidget(BuildTool::Tower));
+    pressOn(widgets::toolWidget(BuildTool::WaterSource));
     clickAt(target, MouseButton::Left);
 
     const auto placed = buildings();
 
     ASSERT_EQ(placed.size(), 1U);
     EXPECT_EQ(placed[0].at, target);
-    EXPECT_EQ(placed[0].kind, BuildTool::Tower);
+    EXPECT_EQ(placed[0].kind, BuildingKind::WaterSource);
     EXPECT_EQ(paths.size(), 0U);
 }
 
@@ -370,6 +391,40 @@ TEST_F(PaletteSinkTest, TheRoadStaysWhatALeftClickPlacesByDefault)
 
     EXPECT_TRUE(paths.has(target));
     EXPECT_TRUE(buildings().empty());
+}
+
+// A block holds every cell, not only the one clicked.
+// Asserted through the real sink rather than through the index.
+TEST_F(PaletteSinkTest, ABlockHoldsEveryCellItCovers)
+{
+    constexpr Cell target{.x = 2, .y = 6};
+
+    pressOn(widgets::toolWidget(BuildTool::FoodSource));
+    clickAt(target, MouseButton::Left);
+
+    ASSERT_EQ(buildings().size(), 1U);
+
+    // A road on the block's far corner is refused all the same.
+    pressOn(widgets::toolWidget(BuildTool::Road));
+    clickAt(Cell{.x = 3, .y = 7}, MouseButton::Left);
+
+    EXPECT_EQ(paths.size(), 0U);
+
+    // And one just past it is not.
+    clickAt(Cell{.x = 4, .y = 7}, MouseButton::Left);
+
+    EXPECT_EQ(paths.size(), 1U);
+}
+
+TEST_F(PaletteSinkTest, ABlockRefusesToOverlapAnother)
+{
+    pressOn(widgets::toolWidget(BuildTool::FoodSource));
+    clickAt(Cell{.x = 2, .y = 6}, MouseButton::Left);
+
+    // Overlapping at one corner only, which is still overlapping.
+    clickAt(Cell{.x = 3, .y = 7}, MouseButton::Left);
+
+    EXPECT_EQ(buildings().size(), 1U);
 }
 
 TEST_F(PaletteSinkTest, ACellTakesOneThingOnly)
@@ -394,7 +449,7 @@ TEST_F(PaletteSinkTest, ABuildingRefusesACellAlreadyPaved)
 
     clickAt(target, MouseButton::Left);
 
-    pressOn(widgets::toolWidget(BuildTool::Shop));
+    pressOn(widgets::toolWidget(BuildTool::FoodSource));
     clickAt(target, MouseButton::Left);
 
     EXPECT_TRUE(paths.has(target));
@@ -403,7 +458,7 @@ TEST_F(PaletteSinkTest, ABuildingRefusesACellAlreadyPaved)
 
 TEST_F(PaletteSinkTest, ABuildingGoesNowhereOutsideTheExtent)
 {
-    pressOn(widgets::toolWidget(BuildTool::Shop));
+    pressOn(widgets::toolWidget(BuildTool::FoodSource));
 
     for (const auto outside : {
              Cell{.x = -1, .y = 0},
@@ -420,6 +475,11 @@ TEST_F(PaletteSinkTest, ABuildingGoesNowhereOutsideTheExtent)
 // So it is a pure function rather than anything a sink stages.
 namespace
 {
+    // Nothing laid and nothing built.
+    // So these tests are about where a ghost goes.
+    const PathIndex kNoPaths;
+    const BuildingIndex kNothingBuilt;
+
     [[nodiscard]] antwika::input::PointerHint hintOn(
         Cell cell, const Camera &camera)
     {
@@ -438,18 +498,26 @@ TEST(BuildGhostTest, GhostFor_FollowsThePointerAndTheSelectedTool)
         hintOn(target, camera),
         camera,
         kExtent,
-        BuildTool::Tower,
-        false);
+        BuildTool::WaterSource,
+        false,
+        kNoPaths,
+        kNothingBuilt);
 
     EXPECT_TRUE(shown.visible);
     EXPECT_EQ(shown.at, target);
-    EXPECT_EQ(shown.tool, BuildTool::Tower);
+    EXPECT_EQ(shown.tool, BuildTool::WaterSource);
 }
 
 TEST(BuildGhostTest, GhostFor_IsInvisibleUntilSomethingLocatesThePointer)
 {
     const auto shown = ghostFor(
-        std::nullopt, Camera(), kExtent, BuildTool::Road, false);
+        std::nullopt,
+        Camera(),
+        kExtent,
+        BuildTool::Road,
+        false,
+        kNoPaths,
+        kNothingBuilt);
 
     EXPECT_FALSE(shown.visible);
     EXPECT_EQ(shown.tool, BuildTool::Road);
@@ -465,7 +533,9 @@ TEST(BuildGhostTest, GhostFor_IsInvisibleOffTheGrid)
             camera,
             kExtent,
             BuildTool::Road,
-            false)
+            false,
+            kNoPaths,
+            kNothingBuilt)
             .visible);
 }
 
@@ -481,7 +551,9 @@ TEST(BuildGhostTest, GhostFor_IsInvisibleUnderTheToolbar)
             camera,
             kExtent,
             BuildTool::Road,
-            true)
+            true,
+            kNoPaths,
+            kNothingBuilt)
             .visible);
 }
 
@@ -496,7 +568,9 @@ TEST(BuildGhostTest, GhostFor_ResolvesThroughTheCameraItIsGiven)
         panned,
         kExtent,
         BuildTool::House,
-        false);
+        false,
+        kNoPaths,
+        kNothingBuilt);
 
     EXPECT_TRUE(shown.visible);
     EXPECT_EQ(shown.at, (Cell{.x = 2, .y = 2}));
@@ -522,7 +596,7 @@ TEST(SceneSnapshotBuildTest, SnapshotOf_TakesTheBuildingsAndNoGhost)
 
     const auto shop = world.create();
     world.add<Cell>(shop, Cell{.x = 2, .y = 3});
-    world.add<Building>(shop, Building{.kind = BuildTool::Shop});
+    world.add<Building>(shop, Building{.kind = BuildingKind::FoodSource});
 
     world.commit();
 
@@ -530,7 +604,7 @@ TEST(SceneSnapshotBuildTest, SnapshotOf_TakesTheBuildingsAndNoGhost)
 
     ASSERT_EQ(snapshot.buildings.size(), 1U);
     EXPECT_EQ(snapshot.buildings[0].at, (Cell{.x = 2, .y = 3}));
-    EXPECT_EQ(snapshot.buildings[0].kind, BuildTool::Shop);
+    EXPECT_EQ(snapshot.buildings[0].kind, BuildingKind::FoodSource);
 
     // Whoever draws fills this in, from a channel no replay holds.
     EXPECT_FALSE(snapshot.ghost.visible);
@@ -582,15 +656,21 @@ TEST(GridSceneBuildTest, ABuildingIsOneBlitOfItsOwnTile)
 {
     auto snapshot = emptySnapshot();
     snapshot.buildings.push_back(
-        BuildingView{.at = Cell{.x = 0, .y = 0}, .kind = BuildTool::Shop});
+        BuildingView{
+            .at = Cell{.x = 0, .y = 0},
+            .kind = BuildingKind::FoodSource});
 
     const auto blits = blitsOf(snapshot);
 
     ASSERT_EQ(blits.size(), 1U);
-    EXPECT_EQ(blits[0].source, buildingTile(BuildTool::Shop));
+    EXPECT_EQ(
+        blits[0].source, buildingTile(BuildingKind::FoodSource));
     EXPECT_EQ(
         blits[0].destination,
-        cellBounds(Cell{.x = 0, .y = 0}, snapshot.camera));
+        footprintBounds(
+            Cell{.x = 0, .y = 0},
+            footprintOf(BuildingKind::FoodSource),
+            snapshot.camera));
 }
 
 TEST(GridSceneBuildTest, ABuildingOffTheCanvasIsNotDrawn)
@@ -598,7 +678,7 @@ TEST(GridSceneBuildTest, ABuildingOffTheCanvasIsNotDrawn)
     auto snapshot = emptySnapshot();
     snapshot.buildings.push_back(
         BuildingView{
-            .at = Cell{.x = 900, .y = -900}, .kind = BuildTool::House});
+            .at = Cell{.x = 900, .y = -900}, .kind = BuildingKind::House});
 
     EXPECT_TRUE(blitsOf(snapshot).empty());
 }
@@ -607,16 +687,18 @@ TEST(GridSceneBuildTest, TheGhostIsDrawnLastAndSeeThrough)
 {
     auto snapshot = emptySnapshot();
     snapshot.buildings.push_back(
-        BuildingView{.at = Cell{.x = 0, .y = 0}, .kind = BuildTool::House});
+        BuildingView{.at = Cell{.x = 0, .y = 0}, .kind = BuildingKind::House});
     snapshot.ghost = BuildGhost{
         .at = Cell{.x = 0, .y = 0},
-        .tool = BuildTool::Tower,
-        .visible = true};
+        .tool = BuildTool::WaterSource,
+        .visible = true,
+        .valid = true};
 
     const auto blits = blitsOf(snapshot);
 
     ASSERT_EQ(blits.size(), 2U);
-    EXPECT_EQ(blits[1].source, buildingTile(BuildTool::Tower));
+    EXPECT_EQ(
+        blits[1].source, buildingTile(BuildingKind::WaterSource));
     EXPECT_EQ(blits[1].tint, kGhostly);
 }
 
@@ -627,7 +709,8 @@ TEST(GridSceneBuildTest, ARoadGhostShowsTheJunctionItWouldBecome)
     snapshot.ghost = BuildGhost{
         .at = Cell{.x = 0, .y = 0},
         .tool = BuildTool::Road,
-        .visible = true};
+        .visible = true,
+        .valid = true};
 
     const auto blits = blitsOf(snapshot);
 
@@ -657,4 +740,104 @@ TEST(GridSceneBuildTest, AnInvisibleOrOffscreenGhostIsNotDrawn)
         .visible = true};
 
     EXPECT_TRUE(blitsOf(away).empty());
+}
+
+TEST(BuildGhostTest, GhostFor_SaysAClearBlockWouldLand)
+{
+    constexpr Cell target{.x = 6, .y = 3};
+    const Camera camera;
+
+    const auto shown = ghostFor(
+        hintOn(target, camera),
+        camera,
+        kExtent,
+        BuildTool::FoodSource,
+        false,
+        kNoPaths,
+        kNothingBuilt);
+
+    EXPECT_TRUE(shown.visible);
+    EXPECT_TRUE(shown.valid);
+}
+
+// Shown rather than hidden.
+// So a refusal is something to act on rather than a disappearance.
+TEST(BuildGhostTest, GhostFor_ShowsABlockedBlockAndSaysItWouldNot)
+{
+    constexpr Cell target{.x = 6, .y = 3};
+    const Camera camera;
+
+    PathIndex paths;
+    paths.insert(Cell{.x = 7, .y = 4});
+
+    const auto shown = ghostFor(
+        hintOn(target, camera),
+        camera,
+        kExtent,
+        BuildTool::FoodSource,
+        false,
+        paths,
+        kNothingBuilt);
+
+    EXPECT_TRUE(shown.visible);
+    EXPECT_FALSE(shown.valid);
+}
+
+TEST(BuildGhostTest, GhostFor_HidesABlockHangingOffTheGrid)
+{
+    const Camera camera;
+    const Cell corner{.x = kExtent.width - 1, .y = kExtent.height - 1};
+
+    const auto shown = ghostFor(
+        hintOn(corner, camera),
+        camera,
+        kExtent,
+        BuildTool::ArchitectPost,
+        false,
+        kNoPaths,
+        kNothingBuilt);
+
+    EXPECT_FALSE(shown.visible);
+}
+
+TEST(BuildGhostTest, GhostEqualityComparesEveryField)
+{
+    constexpr BuildGhost base{
+        .at = Cell{.x = 1, .y = 2},
+        .tool = BuildTool::House,
+        .visible = true,
+        .valid = true};
+
+    EXPECT_EQ(base, base);
+
+    auto moved = base;
+    moved.at = Cell{.x = 9, .y = 9};
+    EXPECT_NE(base, moved);
+
+    auto other = base;
+    other.tool = BuildTool::Road;
+    EXPECT_NE(base, other);
+
+    auto hidden = base;
+    hidden.visible = false;
+    EXPECT_NE(base, hidden);
+
+    auto blocked = base;
+    blocked.valid = false;
+    EXPECT_NE(base, blocked);
+}
+
+TEST(GridSceneBuildTest, ABlockedGhostIsDrawnInADifferentTint)
+{
+    auto snapshot = emptySnapshot();
+    snapshot.ghost = BuildGhost{
+        .at = Cell{.x = 0, .y = 0},
+        .tool = BuildTool::House,
+        .visible = true,
+        .valid = false};
+
+    const auto blits = blitsOf(snapshot);
+
+    ASSERT_EQ(blits.size(), 1U);
+    EXPECT_NE(blits[0].tint, kGhostly);
 }

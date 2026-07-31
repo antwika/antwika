@@ -1,5 +1,7 @@
 #pragma once
 
+#include <antwika/animation/Progress.hpp>
+#include <antwika/app/IFramePass.hpp>
 #include <antwika/ecs/ISystem.hpp>
 #include <antwika/ecs/World.hpp>
 #include <antwika/gfx/ITexture.hpp>
@@ -9,6 +11,7 @@
 #include <antwika/time/Tick.hpp>
 
 #include "antwika/game/AppMode.hpp"
+#include "antwika/game/BuildingIndex.hpp"
 #include "antwika/game/Camera.hpp"
 #include "antwika/game/GridExtent.hpp"
 #include "antwika/game/GridScene.hpp"
@@ -68,6 +71,9 @@ namespace antwika::game
 
         /** @brief Read for the live city's path cells. */
         const PathIndex &paths;
+
+        /** @brief Which cells hold a building, for the ghost. */
+        const BuildingIndex &built;
 
         /** @brief Read for where the live city is drawn from. */
         const Camera &camera;
@@ -143,8 +149,22 @@ namespace antwika::game
      * input::PointerHintChannel, and that is where the channel's whole
      * safety condition is kept: what is read there decides what is
      * drawn, and nothing else.
+     *
+     * **It draws more often than the tick advances**, which is what lets
+     * a walker slide between two cells rather than jump. update() takes
+     * the snapshot and draws the tick's own frame; draw() redraws that
+     * same snapshot part of the way through the tick, and is called by
+     * app::FramePacedSource in the gap before the next tick's events are
+     * read.
+     *
+     * The snapshot is kept between the two, and it is the only render-side
+     * mutable state in this app. That is safe for one structural reason
+     * rather than by promise: draw() has no World parameter, so a frame
+     * between two ticks has nothing it could read a moving world from and
+     * nothing it could write one to. Giving it one would quietly remove
+     * the guarantee.
      */
-    class RenderSystem final : public ISystem
+    class RenderSystem final : public ISystem, public antwika::app::IFramePass
     {
     public:
         /**
@@ -160,16 +180,31 @@ namespace antwika::game
         RenderSystem &operator=(RenderSystem &&) = delete;
 
         /**
-         * @brief Draw the world's current state and present the frame.
+         * @brief Take a snapshot of the world and draw the tick's frame.
          * @param world World read from; never written to.
          * @param tick The tick this frame is for; unused.
          */
         void update(World &world, antwika::time::Tick tick) override;
 
+        /**
+         * @brief Redraw the last snapshot part way through the tick.
+         *
+         * Called between two ticks, so it reads the snapshot update()
+         * took and never the world, which may be part way through being
+         * changed by the time this runs.
+         *
+         * @param subTick How far through the tick this frame falls.
+         */
+        void draw(antwika::animation::Progress subTick) override;
+
     private:
-        void drawGrid(const World &world);
+        void drawGrid(antwika::animation::Progress subTick);
 
         RenderSetup setup;
+
+        // What the last update() saw, redrawn by every frame after it.
+        // Written in update() and nowhere else.
+        SceneSnapshot latest;
     };
 
 } // namespace antwika::game

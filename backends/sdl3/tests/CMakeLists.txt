@@ -27,6 +27,32 @@ if(ANTWIKA_GFX_BACKEND STREQUAL "sdl3")
     gtest_discover_tests(antwika_gfx_backend_sdl3_tests)
 endif()
 
+if(ANTWIKA_SOUND_BACKEND STREQUAL "sdl3")
+    add_executable(antwika_sound_backend_sdl3_tests
+        ${CMAKE_CURRENT_SOURCE_DIR}/../src/Sdl3Device.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/../src/Sdl3SoundBackend.cpp
+        Sdl3SoundBackendConformanceTest.cpp
+    )
+
+    target_include_directories(antwika_sound_backend_sdl3_tests
+        PRIVATE
+            ${CMAKE_CURRENT_SOURCE_DIR}/../src
+    )
+
+    target_link_libraries(antwika_sound_backend_sdl3_tests
+        PRIVATE
+            antwika::sound
+            antwika::sound::tests::conformance
+            antwika::log::tests::mocks
+            antwika_sdl3_runtime
+            gtest::gtest
+            SDL3::SDL3
+    )
+
+    include(GoogleTest)
+    gtest_discover_tests(antwika_sound_backend_sdl3_tests)
+endif()
+
 if(ANTWIKA_INPUT_BACKEND STREQUAL "sdl3")
     add_executable(antwika_input_backend_sdl3_tests
         ${CMAKE_CURRENT_SOURCE_DIR}/../src/Sdl3InputBackend.cpp

@@ -25,6 +25,7 @@
 #include "WidgetPixel.hpp"
 
 #include "antwika/game/AppMode.hpp"
+#include "antwika/game/BuildingIndex.hpp"
 #include "antwika/game/Camera.hpp"
 #include "antwika/game/Events.hpp"
 #include "antwika/game/Game.hpp"
@@ -76,6 +77,7 @@ namespace
         InputEventCodec codec;
         Camera camera;
         PathIndex paths;
+        antwika::game::BuildingIndex built;
 
         // The subject of these tests is the grid.
         // So a run starts there rather than clicking past the menu.
@@ -94,6 +96,7 @@ namespace
                 .extent = kExtent,
                 .camera = camera,
                 .paths = paths,
+                .built = built,
                 .mode = mode,
                 .maxTicks = maxTicks};
             if (recorder != nullptr)
@@ -300,6 +303,7 @@ TEST(BootstrapTest, Bootstrap_RunsEveryObserverOncePerTick)
             .extent = kExtent,
             .camera = harness.camera,
             .paths = harness.paths,
+            .built = harness.built,
             .mode = harness.mode,
             .observers = {first, second},
             .maxTicks = 10});
@@ -378,6 +382,7 @@ namespace
         InputEventCodec codec;
         Camera camera;
         PathIndex paths;
+        antwika::game::BuildingIndex built;
         AppModeState mode;
         antwika::game::UiOverlay menuOverlay{antwika::game::kUiCanvas};
 
@@ -392,6 +397,7 @@ namespace
                     .extent = kExtent,
                     .camera = camera,
                     .paths = paths,
+                    .built = built,
                     .mode = mode,
                     .maxTicks = 10,
                     .menuOverlay = menuOverlay});
@@ -539,6 +545,7 @@ namespace
         InputEventCodec codec;
         Camera camera;
         PathIndex paths;
+        antwika::game::BuildingIndex built;
         AppModeState mode;
         antwika::game::UiOverlay menuOverlay{antwika::game::kUiCanvas};
         antwika::game::WorldMapState cities{
@@ -555,6 +562,7 @@ namespace
                     .extent = kExtent,
                     .camera = camera,
                     .paths = paths,
+                    .built = built,
                     .mode = mode,
                     .maxTicks = 20,
                     .menuOverlay = menuOverlay,
@@ -660,6 +668,7 @@ namespace
         InputEventCodec codec;
         Camera camera;
         PathIndex paths;
+        antwika::game::BuildingIndex built;
         AppModeState mode;
         antwika::game::UiOverlay menuOverlay{antwika::game::kUiCanvas};
         antwika::game::UiOverlay saveOverlay{antwika::game::kUiCanvas};
@@ -677,6 +686,7 @@ namespace
                     .extent = kExtent,
                     .camera = camera,
                     .paths = paths,
+                    .built = built,
                     .mode = mode,
                     .maxTicks = 20,
                     .menuOverlay = menuOverlay,
@@ -735,16 +745,16 @@ TEST(PrintSummaryTest, WritesEveryBuildingAndWhatItIs)
         .walkers = {},
         .buildings =
             {{.at = {.x = 1, .y = 2},
-              .kind = antwika::game::BuildTool::House},
+              .kind = antwika::game::BuildingKind::House},
              {.at = {.x = 3, .y = 4},
-              .kind = antwika::game::BuildTool::Tower}},
+              .kind = antwika::game::BuildingKind::WaterSource}},
         .camera = Camera(Point{.x = 0, .y = 0})};
 
     antwika::game::printSummary(out, summary);
 
     EXPECT_NE(out.str().find("Buildings: 2\n"), std::string::npos);
     EXPECT_NE(out.str().find("  house at (1, 2)\n"), std::string::npos);
-    EXPECT_NE(out.str().find("  tower at (3, 4)\n"), std::string::npos);
+    EXPECT_NE(out.str().find("  water_source at (3, 4)\n"), std::string::npos);
 }
 
 // replays/demo.json presses the House palette button at this pixel.

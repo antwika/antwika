@@ -5,6 +5,7 @@
 #include <antwika/gfx/Rect.hpp>
 #include <antwika/gfx/Size.hpp>
 
+#include "antwika/game/BuildingKind.hpp"
 #include "antwika/game/BuildTool.hpp"
 #include "antwika/game/Direction.hpp"
 
@@ -31,7 +32,7 @@ namespace antwika::game
     /**
      * @brief How many rows of tiles the atlas holds.
      */
-    inline constexpr std::uint32_t kAtlasRows = 3;
+    inline constexpr std::uint32_t kAtlasRows = 4;
 
     /**
      * @brief The size the atlas image must be, in pixels.
@@ -70,12 +71,10 @@ namespace antwika::game
     /**
      * @brief How many building tiles there are, one per building tool.
      *
-     * A literal rather than kBuildToolCount - 1, because
-     * scripts/generate_game_atlas.py reads this number out of this
-     * header to know how many buildings to draw, and it reads literals.
-     * The static_assert below is what stops the two disagreeing.
+     * The static_assert below is what keeps this and kBuildingKindCount
+     * from disagreeing.
      */
-    inline constexpr std::uint32_t kBuildingSlotCount = 3;
+    inline constexpr std::uint32_t kBuildingSlotCount = 5;
 
     /**
      * @brief Get which bit of a link mask stands for one direction.
@@ -102,7 +101,6 @@ namespace antwika::game
 
     // Every number above is constexpr, so a wrong layout can fail here.
     // On screen is the only other place it could fail.
-    // check_layout() in scripts/generate_game_atlas.py asks the same.
 
     // atlasSlot() wraps a slot round rather than rejecting it.
     // That is safe only while every derived slot is one the atlas has.
@@ -115,7 +113,7 @@ namespace antwika::game
     // One building tile per tool that places one.
     // Adding a tool without drawing it would show somebody else's art.
     static_assert(
-        kBuildingSlotCount == kBuildToolCount - 1,
+        kBuildingSlotCount == kBuildingKindCount,
         "there must be a building tile for every building tool");
 
     // kLinkMask is built from the four directions this file names.
@@ -130,13 +128,13 @@ namespace antwika::game
         kRoadSlotCount == 1U << kDirectionCount,
         "there must be a road tile for every link mask");
 
-    // The generator draws kAtlasColumns by kAtlasRows tiles.
+    // The art is kAtlasColumns by kAtlasRows tiles.
     // kAtlasSize is written that way above.
     // Saying it again is what makes a hand-typed size a build error.
     static_assert(
         kAtlasSize.width == kAtlasColumns * kAtlasTileSize.width
             && kAtlasSize.height == kAtlasRows * kAtlasTileSize.height,
-        "kAtlasSize must be the grid of tiles the generator draws");
+        "kAtlasSize must be the grid of tiles the art is drawn on");
 
     /**
      * @brief Get where a slot's tile is in the atlas.
@@ -144,22 +142,18 @@ namespace antwika::game
      * Arithmetic over a slot number rather than a table of rectangles, so
      * there is no list here that could disagree with the picture.
      *
-     * The picture is drawn by scripts/generate_game_atlas.py, which
-     * parses the constants above out of this header rather than restating
-     * them -- so these really are the same numbers, and moving one moves
-     * the art with it. It matches them by name and by shape, so renaming
-     * or rewriting one of the declarations above fails the generator
-     * loudly instead of drifting the picture quietly.
-     *
-     * A road's bit ordering travels the same way: the generator reads the
-     * Direction enumerators in declaration order, since that is what
-     * linkBit() shifts by.
+     * **This header is the address map, and the PNG beside it is the
+     * art.** The picture is drawn and curated rather than generated, so
+     * repainting a tile is free and nothing has to be re-run; what is
+     * *not* free is moving one, because these numbers are what decide
+     * which pixels a slot means. See docs/game-texture-atlas.md.
      *
      * The slots run the ground, then the sixteen roads in link-mask
      * order, then the four walkers in Direction order, then the
-     * buildings in BuildTool order. A road's mask indexing its own slot
+     * buildings in BuildingKind order. A road's mask indexing its slot
      * is what makes a junction's art a lookup rather than four
-     * decisions.
+     * decisions, and the mask's bits are the Direction enumerators' own
+     * indices, handed out by linkBit().
      *
      * @param slot The slot to place; one past the last wraps round rather
      * than being rejected, since every caller here derives its own.
@@ -212,17 +206,16 @@ namespace antwika::game
     }
 
     /**
-     * @brief Get the tile a building this tool placed is drawn from.
-     * @param tool The tool that placed it; Road places no building and
-     * gives the first building's tile, so ask placesBuilding() first.
+     * @brief Get the tile a building of this kind is drawn from.
+     * @param kind The building's kind.
      * @return The building tile's rectangle, in atlas pixels.
      */
-    [[nodiscard]] constexpr Rect buildingTile(BuildTool tool) noexcept
+    [[nodiscard]] constexpr Rect buildingTile(BuildingKind kind) noexcept
     {
         return atlasSlot(
             kFirstBuildingSlot
             + static_cast<std::uint32_t>(
-                buildingIndex(tool) % kBuildingSlotCount));
+                buildingKindIndex(kind) % kBuildingSlotCount));
     }
 
     /**
@@ -239,7 +232,9 @@ namespace antwika::game
     [[nodiscard]] constexpr Rect toolTile(
         BuildTool tool, std::uint8_t links) noexcept
     {
-        return placesBuilding(tool) ? buildingTile(tool) : roadTile(links);
+        const auto kind = buildingKindOf(tool);
+
+        return kind.has_value() ? buildingTile(*kind) : roadTile(links);
     }
 
 } // namespace antwika::game

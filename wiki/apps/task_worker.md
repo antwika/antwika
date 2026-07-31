@@ -10,9 +10,9 @@ It has no window and no input, so it is the smallest complete illustration of th
 ## Running it
 
 ```sh
-build/bin/antwika_task_worker
-build/bin/antwika_task_worker --record demo.replay
-build/bin/antwika_task_worker --replay src/apps/task_worker/replays/demo.json
+build/bin/antwika_task_worker/antwika_task_worker
+build/bin/antwika_task_worker/antwika_task_worker --record demo.replay
+build/bin/antwika_task_worker/antwika_task_worker --replay src/apps/task_worker/replays/demo.json
 ```
 
 It prints worker status per tick and ends when the scripted or replayed input runs out.

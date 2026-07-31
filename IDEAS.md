@@ -154,7 +154,7 @@ Proves the repo's central claim mechanically instead of by argument, and turns "
 ### Atlas editor
 
 Open `atlas.png`, show the slot grid `TileAtlas.hpp` addresses it with, and let a slot be picked and previewed under the isometric projection.
-It closes the loop with `scripts/generate_game_atlas.py`, which currently has no visual counterpart.
+Now that the art is hand-drawn rather than generated, it is the only thing that would show an artist their tile in the projection it is blitted through, which is where a nearly-right diamond stops being nearly right.
 Proves `gfx::PngReader`, texture sub-rect blitting and `ui` together in a tool rather than a demo.
 **Difficulty: small.**
 
@@ -215,9 +215,12 @@ Proves the replay architecture is also a netcode architecture, which is the stro
 
 ### `antwika::audio`
 
-A programmable music and sound player: patterns as pure functions of musical time, envelopes modulating arbitrary parameters, a device behind a build-time backend seam.
-See [`docs/audio-player-plan.md`](docs/audio-player-plan.md) for the full design.
-Proves the write-only-projection rule holds for a projection that runs on another thread at another rate, which is the hardest case the rule has faced.
+A programmable music player: patterns as pure functions of musical time, and envelopes modulating arbitrary parameters.
+The PCM half of the original idea has shipped as `antwika::sound`, which decodes, mixes and plays through a build-time backend seam, so what is left here is the musical layer above it.
+See [`docs/audio-player-plan.md`](docs/audio-player-plan.md) for the full design and for which phases landed.
+
+The projection argument this was going to prove has been settled a different way, and it is worth saying so rather than leaving the claim standing.
+Nothing runs on another thread: an `antwika::sound` device is pumped by the caller, so the hardest case the write-only rule was going to face has not arrived, and it arrives only if a backend that cannot be pumped ever does.
 **Difficulty: large.**
 
 ### `antwika::pathfind`

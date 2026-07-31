@@ -12,18 +12,21 @@
 
 #include "antwika/game/Events.hpp"
 #include "antwika/game/GameStateReducer.hpp"
+#include "antwika/game/BuildingSystem.hpp"
 #include "antwika/game/GridSink.hpp"
 #include "antwika/game/InputFold.hpp"
 #include "antwika/game/MainMenuScene.hpp"
 #include "antwika/game/MainMenuSink.hpp"
 #include "antwika/game/ModeGatedSink.hpp"
 #include "antwika/game/ModeGatedSystem.hpp"
+#include "antwika/game/SaveGameFile.hpp"
 #include "antwika/game/SaveLoadScene.hpp"
 #include "antwika/game/SaveLoadSink.hpp"
 #include "antwika/game/SaveLoadState.hpp"
 #include "antwika/game/SceneSnapshot.hpp"
 #include "antwika/game/SessionStore.hpp"
 #include "antwika/game/SpawnSystem.hpp"
+#include "antwika/game/BuildingKind.hpp"
 #include "antwika/game/Toolbar.hpp"
 #include "antwika/game/UiSink.hpp"
 #include "antwika/game/WalkerSystem.hpp"
@@ -66,8 +69,9 @@ namespace antwika::game
         AppModeState &mode = config.mode;
 
         SystemScheduler scheduler;
-        WalkerSystem walkerSystem(paths);
+        WalkerSystem walkerSystem(paths, config.extent);
         SpawnSystem spawnSystem(paths);
+        BuildingSystem buildingSystem(config.built);
 
         // The walkers stop with the grid they walk on.
         // Only that one system stops.
@@ -80,11 +84,21 @@ namespace antwika::game
         // A city nobody is in must not fill up while they are away.
         ModeGatedSystem gatedSpawns(
             spawnSystem, mode, AppMode::CityMap);
+
+        // And so does the economy.
+        // A city nobody is looking at must not burn down unwatched.
+        ModeGatedSystem gatedBuildings(
+            buildingSystem, mode, AppMode::CityMap);
+
         const auto walkPhase = scheduler.createPhase("walk");
         scheduler.addSystem(walkPhase, gatedWalkers);
 
+        // After the walk, so a delivery sees this tick's cells.
+        scheduler.addSystem(walkPhase, gatedBuildings);
+
         // After the walk, so a walker made this tick sets off next one.
         // Both stage into the same buffer, so neither sees the other.
+        // Last, so a building demolished this tick is not re-let now.
         scheduler.addSystem(walkPhase, gatedSpawns);
 
         // A phase of its own.
@@ -131,7 +145,8 @@ namespace antwika::game
             scheduler,
             input,
             ui,
-            cities);
+            cities,
+            config.built);
         WorldMapSink worldSink(
             cities, mode, paths, camera, input, config.canvas);
         StopSignal stopSignal;
@@ -148,7 +163,13 @@ namespace antwika::game
                                 : noSaveScreen;
 
         SessionStore session(
-            world, paths, camera, state, config.extent, config.seed);
+            world,
+            paths,
+            config.built,
+            camera,
+            state,
+            config.extent,
+            config.seed);
 
         // Restored before the first tick.
         // Through the very store the Load button uses.
@@ -228,6 +249,11 @@ namespace antwika::game
         EngineLoop loop(engine, tickedDispatcher, config.inputSource);
         loop.run(stopSignal, config.maxTicks);
 
+        // Taken while the World is still here.
+        // A save is read out of it rather than out of the summary.
+        antwika::game::saveGameFileIfNamed(
+            session.take(), config.savePath);
+
         const auto frame =
             snapshotOf(world, paths, camera, config.extent);
 
@@ -237,7 +263,7 @@ namespace antwika::game
         return GameSummary{ // GCOVR_EXCL_LINE
             .state = state,
             .paths = frame.paths,
-            .walkers = frame.walkers,
+            .walkers = walkerViewsOf(world),
             .buildings = frame.buildings,
             .camera = camera};
         // The excluded line is the local summary's unwind destructor.
@@ -262,7 +288,7 @@ namespace antwika::game
 
         for (const auto &building : summary.buildings)
         {
-            out << "  " << toolLabel(building.kind) << " at ("
+            out << "  " << buildingKindName(building.kind) << " at ("
                 << building.at.x << ", " << building.at.y << ")\n";
         }
 

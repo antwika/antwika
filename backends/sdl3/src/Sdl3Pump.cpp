@@ -1,14 +1,9 @@
 #include "Sdl3Pump.hpp"
 
 #include <cstdint>
-#include <string>
-
-#include <antwika/log/Level.hpp>
 
 namespace antwika::sdl3
 {
-
-    using antwika::log::Level;
 
     namespace
     {
@@ -52,29 +47,12 @@ namespace antwika::sdl3
 
     // The logger is used here and not kept.
     // Nothing after construction has anything to say.
+    //
+    // Starting SDL and claiming video belong to Sdl3Subsystem now.
+    // So the sound backend claims audio without this pump existing.
     Sdl3Pump::Sdl3Pump(ILogger &logger)
+        : video(logger, SDL_INIT_VIDEO, "video")
     {
-        // SDL otherwise turns SIGINT and SIGTERM into an SDL_EVENT_QUIT.
-        // Neither seam above here consumes that event.
-        // Ctrl+C could then not stop a run with no window to close.
-        // A run under SDL_VIDEODRIVER=dummy is exactly that.
-        // Closing a window still arrives as a window event, unaffected.
-        SDL_SetHint(SDL_HINT_NO_SIGNAL_HANDLERS, "1");
-
-        if (!SDL_Init(SDL_INIT_VIDEO))
-        {
-            throw Sdl3PumpError(
-                std::string("sdl3: could not initialise the video "
-                            "subsystem: ")
-                + SDL_GetError());
-        }
-
-        logger.log(Level::Info, "sdl3: video subsystem started");
-    }
-
-    Sdl3Pump::~Sdl3Pump()
-    {
-        SDL_Quit();
     }
 
     std::optional<SDL_Event> Sdl3Pump::nextWindowEvent()

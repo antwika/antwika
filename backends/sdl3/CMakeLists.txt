@@ -1,7 +1,44 @@
 find_package(SDL3 REQUIRED)
 
-# One archive, so a build selecting sdl3 for both subsystems links one
-# copy of the pump, and therefore one SDL_Init and one pair of queues.
+# One archive, so however many seams select sdl3 there is one SDL_Init
+# and one SDL_Quit around all of them.  Compiling Sdl3Runtime.cpp into
+# each backend would give each its own function-local static, and the
+# first one to go out of scope would call SDL_Quit under the others.
+#
+# It is separate from the pump because sound needs SDL up and needs no
+# window queue at all: a build selecting sdl3 for sound alone links this
+# and not the pump, and so never asks for a display.
+add_library(antwika_sdl3_runtime
+    src/Sdl3Runtime.cpp
+)
+
+target_include_directories(antwika_sdl3_runtime
+    PUBLIC
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src>
+)
+
+target_link_libraries(antwika_sdl3_runtime
+    PUBLIC
+        antwika::log
+        SDL3::SDL3
+)
+
+install(
+    TARGETS antwika_sdl3_runtime
+    EXPORT antwika_sdl3_runtimeTargets
+    ARCHIVE DESTINATION lib
+    LIBRARY DESTINATION lib
+    RUNTIME DESTINATION bin
+)
+
+install(
+    EXPORT antwika_sdl3_runtimeTargets
+    NAMESPACE antwika::
+    DESTINATION lib/cmake/antwika
+)
+
+# One archive again, so a build selecting sdl3 for both graphics and
+# input links one copy of the pump, and therefore one pair of queues.
 # Compiling Sdl3Pump.cpp into both backends would give each its own
 # function-local static, which is the very starvation the pump exists to
 # prevent.
@@ -17,6 +54,7 @@ target_include_directories(antwika_sdl3_pump
 target_link_libraries(antwika_sdl3_pump
     PUBLIC
         antwika::log
+        antwika_sdl3_runtime
         SDL3::SDL3
 )
 
@@ -107,16 +145,54 @@ if(ANTWIKA_INPUT_BACKEND STREQUAL "sdl3")
     )
 endif()
 
+if(ANTWIKA_SOUND_BACKEND STREQUAL "sdl3")
+    add_library(antwika_sound_backend
+        src/SelectedSoundBackend.cpp
+        src/Sdl3Device.cpp
+        src/Sdl3SoundBackend.cpp
+    )
+
+    add_library(antwika::sound_backend ALIAS antwika_sound_backend)
+
+    set_target_properties(antwika_sound_backend PROPERTIES
+        WINDOWS_EXPORT_ALL_SYMBOLS ON
+    )
+
+    # The runtime rather than the pump: sound needs SDL up and needs no
+    # window queue, so this target never pulls in a display.
+    target_link_libraries(antwika_sound_backend
+        PUBLIC
+            antwika::sound
+        PRIVATE
+            antwika_sdl3_runtime
+            SDL3::SDL3
+    )
+
+    install(
+        TARGETS antwika_sound_backend
+        EXPORT antwika_sound_backendTargets
+        ARCHIVE DESTINATION lib
+        LIBRARY DESTINATION lib
+        RUNTIME DESTINATION bin
+    )
+
+    install(
+        EXPORT antwika_sound_backendTargets
+        NAMESPACE antwika::
+        DESTINATION lib/cmake/antwika
+    )
+endif()
+
 if(BUILD_TESTING AND NOT CMAKE_CROSSCOMPILING)
     add_subdirectory(tests)
 endif()
 
-# SDL ships its own runtime DLL, which is this backend's business rather
-# than any app's.
-if(MINGW)
-    add_custom_command(TARGET antwika_sdl3_pump POST_BUILD
-        COMMAND ${CMAKE_COMMAND} -E copy_if_different
-            $<TARGET_FILE:SDL3::SDL3>
-            ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}
-    )
-endif()
+# Nothing copies an SDL runtime DLL beside the apps, because there is
+# not one: Conan builds sdl static by default, so SDL3::SDL3 is a
+# libSDL3.a that lands inside every executable that links it.
+# The block that used to be here copied $<TARGET_FILE:SDL3::SDL3>, which
+# could never have worked whichever way sdl was built -- CMakeDeps
+# declares a component as an INTERFACE IMPORTED target, and an interface
+# target has no file for that expression to name.
+# It failed at configure time rather than quietly, and only on MinGW,
+# which is the one leg CI never builds a backend on.

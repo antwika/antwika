@@ -31,27 +31,29 @@ using antwika::replay::SchemaVersionError;
 
 namespace
 {
-    // A throwaway version 1 -> 2 step.
-    // It stands in for the first real one this format ever needs.
+    // A throwaway step off whatever version this build writes.
+    // It stands in for the next real one this format ever needs.
     // Renaming a member is the usual breaking change.
     // It deliberately does not touch the version.
     // Stamping that is the chain's job.
+    // Stated relative to kSaveFormatVersion rather than as a number.
+    // So a real bump does not turn this proof into a failure.
     class RenameSeedToWorldSeed final : public IMigration
     {
     public:
         [[nodiscard]] std::uint32_t fromVersion() const noexcept override
         {
-            return 1;
+            return kSaveFormatVersion;
         }
 
         [[nodiscard]] std::uint32_t toVersion() const noexcept override
         {
-            return 2;
+            return kSaveFormatVersion + 1;
         }
 
         [[nodiscard]] std::string_view name() const noexcept override
         {
-            return "save-v1-to-v2-rename-seed";
+            return "save-rename-seed";
         }
 
         void apply(nlohmann::json &document) const override
@@ -61,11 +63,12 @@ namespace
         }
     };
 
-    MigrationChain chainToVersionTwo()
+    MigrationChain chainToTheNextVersion()
     {
         MigrationList migrations;
         migrations.push_back(std::make_shared<RenameSeedToWorldSeed>());
-        return MigrationChain(std::move(migrations), 2);
+        return MigrationChain(
+            std::move(migrations), kSaveFormatVersion + 1);
     }
 
     SaveGame populated()
@@ -80,38 +83,50 @@ namespace
 // The proof that the seam is a seam.
 // A document this build writes today is carried forward.
 // The chain doing it knows one more version than this build does.
-TEST(SaveMigrationTest, CarriesAVersionOneDocumentUpToVersionTwo)
+TEST(SaveMigrationTest, CarriesADocumentUpToTheNextVersion)
 {
     auto document = saveGameToJson(populated());
-    ASSERT_EQ(document.at(std::string(kSchemaVersionKey)).get<int>(), 1);
+    ASSERT_EQ(
+        document.at(std::string(kSchemaVersionKey)).get<std::uint32_t>(),
+        kSaveFormatVersion);
 
-    chainToVersionTwo().migrate(document);
+    chainToTheNextVersion().migrate(document);
 
     EXPECT_FALSE(document.contains("seed"));
     EXPECT_EQ(document.at("worldSeed").get<std::uint64_t>(), 4242U);
-    EXPECT_EQ(document.at(std::string(kSchemaVersionKey)).get<int>(), 2);
+    EXPECT_EQ(
+        document.at(std::string(kSchemaVersionKey)).get<std::uint32_t>(),
+        kSaveFormatVersion + 1);
 }
 
 // A document written before the version member existed is version 1.
 // So the same step applies to it.
 // And it comes out stating where it got to.
-TEST(SaveMigrationTest, CarriesAnUnversionedDocumentUpToVersionTwo)
+// A document with no version member is version 1.
+// Which is what every file written before the member says.
+// The standard chain is what carries one forward now.
+TEST(SaveMigrationTest, CarriesAnUnversionedDocumentUpToTheCurrentVersion)
 {
     auto document = saveGameToJson(populated());
     document.erase(std::string(kSchemaVersionKey));
+    document.erase("buildings");
 
-    chainToVersionTwo().migrate(document);
+    standardSaveMigrations().migrate(document);
 
-    EXPECT_EQ(document.at("worldSeed").get<std::uint64_t>(), 4242U);
-    EXPECT_EQ(document.at(std::string(kSchemaVersionKey)).get<int>(), 2);
+    EXPECT_TRUE(document.at("buildings").is_array());
+    EXPECT_TRUE(document.at("buildings").empty());
+    EXPECT_EQ(
+        document.at(std::string(kSchemaVersionKey)).get<std::uint32_t>(),
+        kSaveFormatVersion);
 }
 
 TEST(SaveMigrationTest, RefusesADocumentNewerThanTheChain)
 {
     auto document = saveGameToJson(populated());
-    document[std::string(kSchemaVersionKey)] = 3;
+    document[std::string(kSchemaVersionKey)] = kSaveFormatVersion + 2;
 
-    EXPECT_THROW(chainToVersionTwo().migrate(document), SchemaVersionError);
+    EXPECT_THROW(
+        chainToTheNextVersion().migrate(document), SchemaVersionError);
 }
 
 TEST(SaveMigrationTest, TheStandardChainIsAtTheCurrentSaveVersion)

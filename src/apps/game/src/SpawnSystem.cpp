@@ -1,10 +1,12 @@
 #include "antwika/game/SpawnSystem.hpp"
 
-#include <array>
+#include <cstddef>
 #include <cstdint>
 
 #include "antwika/game/Building.hpp"
+#include "antwika/game/BuildingKind.hpp"
 #include "antwika/game/Direction.hpp"
+#include "antwika/game/Footprint.hpp"
 #include "antwika/game/Walker.hpp"
 
 namespace antwika::game
@@ -14,25 +16,39 @@ namespace antwika::game
     {
     }
 
-    std::optional<Cell> spawnCellFor(Cell at, const PathIndex &paths)
+    std::optional<Cell> spawnCellFor(
+        Cell origin, Footprint footprint, const PathIndex &paths)
     {
         std::optional<Cell> best;
 
-        for (std::size_t index = 0; index < kDirectionCount; ++index)
+        // Every cell of the block, and every road beside one.
+        // A block's own cells are skipped by paths.has().
+        // Nothing can be both a road and a building.
+        for (std::int32_t dy = 0; dy < footprint.height; ++dy)
         {
-            const Cell beside =
-                step(at, static_cast<Direction>(index));
-
-            if (!paths.has(beside))
+            for (std::int32_t dx = 0; dx < footprint.width; ++dx)
             {
-                continue;
-            }
+                const Cell on{.x = origin.x + dx, .y = origin.y + dy};
 
-            // The lowest neighbour, in Cell's own ordering.
-            // Two roads beside one house must pick the same one always.
-            if (!best.has_value() || beside < *best)
-            {
-                best = beside;
+                for (std::size_t index = 0; index < kDirectionCount;
+                     ++index)
+                {
+                    const Cell beside =
+                        step(on, static_cast<Direction>(index));
+
+                    if (!paths.has(beside))
+                    {
+                        continue;
+                    }
+
+                    // The lowest, in Cell's own ordering.
+                    // Two roads beside one building pick the same one.
+                    // Whichever order the walk happened to find them.
+                    if (!best.has_value() || beside < *best)
+                    {
+                        best = beside;
+                    }
+                }
             }
         }
 
@@ -48,44 +64,64 @@ namespace antwika::game
         for (const auto entity : world.view<Building, Cell>())
         {
             const auto building = world.get<Building>(entity);
+            const auto sends = walkerSentBy(building.kind);
 
-            if (!spawnsWalkers(building.kind))
+            if (!sends.has_value())
+            {
+                continue;
+            }
+
+            // One walker out at a time, and this is the whole rule.
+            // alive() rather than has<Walker>().
+            // create() is immediate where add<Walker>() is staged.
+            // So on the tick one is made, only alive() is true.
+            //
+            // A walker destroyed this tick reads alive until commit.
+            // So its building is free from the next tick, not this one.
+            // Which is why the two never overlap.
+            if (world.alive(building.walker))
             {
                 continue;
             }
 
             if (building.ticksUntilSpawn > 0)
             {
-                world.set<Building>(
-                    entity,
-                    Building{
-                        .kind = building.kind,
-                        .ticksUntilSpawn = static_cast<std::uint8_t>(
-                            building.ticksUntilSpawn - 1)});
+                // Copied and adjusted rather than rebuilt.
+                // So a member added later is carried across.
+                auto waiting = building;
+                waiting.ticksUntilSpawn = building.ticksUntilSpawn - 1;
+                world.set<Building>(entity, waiting);
                 continue;
             }
 
             // Held at zero, not reset.
             // A house with no road is ready and waiting rather than owed.
-            const auto onto =
-                spawnCellFor(world.get<Cell>(entity), paths);
+            const auto onto = spawnCellFor(
+                world.get<Cell>(entity),
+                footprintOf(building.kind),
+                paths);
 
             if (!onto.has_value() || out >= kWalkerLimit)
             {
                 continue;
             }
 
+            const auto carries = carriedResource(*sends).has_value();
+
             const auto walker = world.create();
             world.add<Cell>(walker, *onto);
-            world.add<Walker>(walker, Walker{});
+            world.add<Walker>(
+                walker,
+                Walker{
+                    .kind = *sends,
+                    .carried = carries ? kWalkerLoad : 0,
+                    .home = entity});
             ++out;
 
-            world.set<Building>(
-                entity,
-                Building{
-                    .kind = building.kind,
-                    .ticksUntilSpawn = static_cast<std::uint8_t>(
-                        kTicksPerSpawn - 1)});
+            auto sent = building;
+            sent.ticksUntilSpawn = kSpawnPeriodTicks - 1;
+            sent.walker = walker;
+            world.set<Building>(entity, sent);
         }
     }
 

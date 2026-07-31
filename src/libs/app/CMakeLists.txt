@@ -5,17 +5,22 @@
 antwika_add_library(
     NAME app
     SOURCES
+        src/AssetPath.cpp
         src/ConsoleLogging.cpp
+        src/FramePacedSource.cpp
         src/PngFile.cpp
         src/PointerReading.cpp
         src/RunGuarded.cpp
         src/RunRecorded.cpp
+        src/WavFile.cpp
     DEPENDS
+        antwika::animation
         antwika::event
         antwika::gfx
         antwika::input
         antwika::log
         antwika::replay
+        antwika::sound
         antwika::time
         antwika::ui
 )

@@ -9,6 +9,7 @@
 #include <antwika/input/InputEvent.hpp>
 
 #include "antwika/game/BuildTool.hpp"
+#include "antwika/game/BuildingIndex.hpp"
 #include "antwika/game/Camera.hpp"
 #include "antwika/game/Cell.hpp"
 #include "antwika/game/GridExtent.hpp"
@@ -102,7 +103,8 @@ namespace antwika::game
             SystemScheduler &scheduler,
             const InputFold &input,
             const UiOverlay &overlay,
-            const WorldMapState &cities);
+            const WorldMapState &cities,
+            BuildingIndex &built);
 
         GridSink(const GridSink &) = delete;
         GridSink(GridSink &&) = delete;
@@ -121,7 +123,7 @@ namespace antwika::game
     private:
         void place(Cell cell, BuildTool tool);
         void placePath(Cell cell);
-        void placeBuilding(Cell cell, BuildTool tool);
+        void placeBuilding(Cell cell, BuildingKind kind);
         void placeWalker(Cell cell);
         void act(const antwika::input::InputEvent &event);
 
@@ -136,8 +138,10 @@ namespace antwika::game
 
         // Which cells already hold a building.
         // PathIndex is the same note for roads.
-        // This one is private: nothing outside asks for it.
-        std::set<Cell> built;
+        // Shared, now that a building can be demolished.
+        // BuildingSystem is what clears a cell.
+        // A note kept private here would never hear about it.
+        BuildingIndex &built;
     };
 
 } // namespace antwika::game

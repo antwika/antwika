@@ -1,13 +1,16 @@
 #include "antwika/game/Game.hpp"
 
 #include <chrono>
+#include <cstdint>
 #include <functional>
 #include <iostream>
 #include <string>
 #include <string_view>
 #include <vector>
 
+#include <antwika/app/AssetPath.hpp>
 #include <antwika/app/ConsoleLogging.hpp>
+#include <antwika/app/FramePacedSource.hpp>
 #include <antwika/app/PngFile.hpp>
 #include <antwika/app/RunRecorded.hpp>
 #include <antwika/ecs/ISystem.hpp>
@@ -24,6 +27,8 @@
 #include <antwika/time/SystemSleeper.hpp>
 
 #include "antwika/game/AppMode.hpp"
+#include "antwika/game/AtlasImage.hpp"
+#include "antwika/game/BuildingIndex.hpp"
 #include "antwika/game/Camera.hpp"
 #include "antwika/game/GridExtent.hpp"
 #include "antwika/game/GridScene.hpp"
@@ -34,7 +39,6 @@
 #include "antwika/game/SaveDirectory.hpp"
 #include "antwika/game/SaveGameFile.hpp"
 #include "antwika/game/SaveLoadScene.hpp"
-#include "antwika/game/TickPacer.hpp"
 #include "antwika/game/UiCanvas.hpp"
 #include "antwika/game/UiOverlay.hpp"
 #include "antwika/game/WindowInputSource.hpp"
@@ -53,7 +57,6 @@ using antwika::game::MainMenuScene;
 using antwika::game::PathIndex;
 using antwika::game::RenderSystem;
 using antwika::game::SaveLoadScene;
-using antwika::game::TickPacer;
 using antwika::game::UiOverlay;
 using antwika::game::WindowInputSource;
 using antwika::game::WorldMapConfig;
@@ -78,6 +81,14 @@ namespace
     constexpr Point kInitialPan{.x = 512, .y = 48};
 
     constexpr std::chrono::milliseconds kTickInterval{40};
+
+    // How many frames one tick is shown as.
+    // Four over a 40 ms tick is 100 a second against 25 ticks a second.
+    // So a walker crosses a cell in eight frames, not in two jumps.
+    // Raising it costs draw calls and nothing else.
+    // The tick still lasts exactly kTickInterval.
+    // And no frame can reach the simulation.
+    constexpr std::uint32_t kFramesPerTick = 4;
 
     // Escape ends a live run, and so does closing the window.
     // Neither is available under the headless backend.
@@ -115,7 +126,12 @@ namespace
             .size = antwika::game::kUiCanvas});
 
         const auto atlasBitmap = antwika::app::readPngFile(
-            ANTWIKA_GAME_ATLAS_PATH, "antwika_game");
+            antwika::app::assetPath("atlas.png"), "antwika_game");
+
+        // Nothing regenerates the art now.
+        // So a wrong-sized export is an ordinary mistake.
+        // Refused here, since a blit past the edge draws nothing.
+        antwika::game::requireAtlasSize(atlasBitmap);
 
         // After the window, since a backend may have no device yet.
         // Declared after it too, so it is destroyed first.
@@ -123,6 +139,7 @@ namespace
 
         Camera camera(kInitialPan);
         PathIndex paths;
+        antwika::game::BuildingIndex built;
         const GridScene scene;
         const MainMenuScene menuScene;
 
@@ -157,6 +174,7 @@ namespace
             .scene = scene,
             .atlas = *atlas,
             .paths = paths,
+            .built = built,
             .camera = camera,
             .extent = kExtent,
             .overlay = overlay,
@@ -168,13 +186,11 @@ namespace
             .worldScene = worldScene,
             .cities = cities});
         SystemSleeper sleeper;
-        TickPacer pacer(sleeper, kTickInterval);
 
-        // Paced even under the backend that draws nothing.
-        // That build used to stop after its scripted run.
-        // An unbounded one would spin a core flat out instead.
+        // The pacing lives in the source now, not in an observer.
+        // So this is only what draws the tick's own frame.
         std::vector<std::reference_wrapper<ISystem>> observers{
-            renderSystem, pacer};
+            renderSystem};
 
         // Nothing is scripted unless a replay was asked for.
         // A plain run starts empty and builds only what gets clicked.
@@ -201,6 +217,18 @@ namespace
         // StopSignal ends the run on whichever arrives first.
         WindowInputSource source(input, *backend, window->id());
 
+        // Paced even under the backend that draws nothing.
+        // An unbounded run would otherwise spin a core flat out.
+        // The extra frames go in the gap before a tick's events arrive.
+        // So a walker slides across a cell instead of jumping it.
+        // A tick still takes exactly kTickInterval either way.
+        antwika::app::FramePacedSource paced(
+            source,
+            renderSystem,
+            sleeper,
+            {.tickInterval = kTickInterval,
+             .framesPerTick = kFramesPerTick});
+
         const auto saveOptions =
             antwika::game::saveCliOptionsFrom(recorded.commandLine);
 
@@ -208,11 +236,12 @@ namespace
             antwika::game::bootstrap(antwika::game::GameConfig{
                 .logger = logger,
                 .eventSink = recorded.eventSink,
-                .inputSource = source,
+                .inputSource = paced,
                 .codec = codec,
                 .extent = kExtent,
                 .camera = camera,
                 .paths = paths,
+                .built = built,
                 .mode = mode,
                 .observers = observers,
                 .replayRecorder = recorded.replayRecorder,
@@ -224,12 +253,9 @@ namespace
                 .saveDirectory = std::string(kSaveDirectory),
                 .start = antwika::game::loadGameFileIfNamed(
                     saveOptions.loadPath),
+                .savePath = saveOptions.savePath,
                 .seed = kWorld.seed,
                 .canvas = antwika::game::kUiCanvas});
-
-        antwika::game::saveGameFileIfNamed(
-            antwika::game::saveGameOf(summary, kExtent, kWorld.seed),
-            saveOptions.savePath);
 
         antwika::game::printSummary(std::cout, summary);
     }

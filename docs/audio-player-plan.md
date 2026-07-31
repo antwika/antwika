@@ -2,7 +2,12 @@
 
 A plan for playing sound and music from a script: instruments and tracks set up in a small language, notes described by *programmable patterns* rather than literal note lists, envelopes modulating arbitrary parameters, and a real audio device behind a build-time backend seam that no code under `src/` ever names.
 
-**Status: not started.**
+**Status: the PCM half has shipped as `antwika::sound`; the musical half has not started.**
+Phase 3, most of Phase 4 and the surviving part of Phase 5 are real code now, described by [`docs/sound.md`](sound.md) rather than by this plan, and the phase list below says which parts of each landed.
+Sound is audible today, through `backends/sdl3` and `apps/sound_demo`; what it is not yet is *musical*.
+What remains unbuilt is everything this document is actually about: musical time, the pattern algebra, envelopes, the script and the plugin work.
+`antwika::audio` is therefore redefined as the **musical layer above `antwika::sound`**, depending on it as `antwika::app` depends on `antwika::gfx`, rather than as the library that also owns the device.
+
 This document is a design, not a record.
 It is opinionated on purpose — where there is a choice, it makes one and says why, so that a reader disagreeing knows exactly what to argue with.
 
@@ -221,58 +226,29 @@ Pattern density is not special: a `DensityGated` pattern reads its threshold fro
 
 ### The device seam
 
-```
-namespace antwika::audio
-{
-    struct DeviceDesc { SampleRate rate; ChannelCount channels;
-                        FrameCount preferredBuffer; };
+**This section has been built, and the real headers are the authority.**
+It lives in `antwika::sound` rather than `antwika::audio`, under `src/libs/sound/include/antwika/sound/`: `IRenderCallback`, `IDevice`, `ISoundBackend`, `SoundCapabilities`, `SoundError`, `DeviceDesc`, `SampleBuffer` and `makeSelectedSoundBackend()`.
+Read [`docs/sound.md`](sound.md) for why it is shaped the way it is; what follows is only where the built seam departs from what this plan first sketched, and why.
 
-    // The only interface called on the audio thread. noexcept is the
-    // contract, not a hint.
-    class IAudioCallback
-    {
-    public:
-        virtual ~IAudioCallback() = default;
-        virtual void render(AudioBuffer out,
-                            SampleIndex firstFrame) noexcept = 0;
-    };
+**A device is *pumped* rather than driven, and this is the biggest departure.**
+`IDevice::pump(frames)` renders exactly that many frames on the calling thread, so there is no audio thread, no lock and no ring buffer anywhere in the library.
+The plan below assumed a framework-owned callback thread and designed an SPSC ring to feed it; that turned out to be avoidable, because SDL3's `SDL_OpenAudioDeviceStream` offers a push model where the caller renders and hands buffers over.
+`SoundCapabilities::selfDriven` is how a backend that genuinely cannot be pumped says so, which keeps the callback model reachable without committing to it.
+Phase 5's ring, lookahead sequencer and thread-purity checker are therefore **deferred rather than pending**, and the "is a second thread acceptable" open question below is not yet live.
 
-    class IAudioDevice
-    {
-    public:
-        virtual ~IAudioDevice() = default;
-        virtual void start(IAudioCallback &callback) = 0;
-        virtual void stop() = 0;
-        [[nodiscard]] virtual SampleRate sampleRate() const = 0;
-        [[nodiscard]] virtual FrameCount bufferFrames() const = 0;
-        // Monotonic, relaxed, advisory. Legal to read only for pacing.
-        [[nodiscard]] virtual SampleIndex framesPlayed() const = 0;
-    };
+**A callback is handed an absolute frame index**, exactly as this plan wanted, and that is the one part worth restating rather than relaxing.
+`framesPlayed()` kept its monotonic-and-advisory contract verbatim, stated in its own doc block where it cannot be forgotten.
 
-    class IAudioBackend
-    {
-    public:
-        virtual ~IAudioBackend() = default;
-        [[nodiscard]] virtual std::string_view name() const = 0;
-        [[nodiscard]] virtual AudioCapabilities capabilities() const = 0;
-        [[nodiscard]] virtual std::unique_ptr<IAudioDevice>
-            openDevice(const DeviceDesc &desc) = 0;
-    };
-
-    // Declared here, defined under backends/<ANTWIKA_AUDIO_BACKEND>/.
-    [[nodiscard]] std::unique_ptr<IAudioBackend>
-        makeSelectedAudioBackend(ILogger &logger);
-}
-```
-
-`AudioBuffer` is a non-owning, planar, channel-major view — a `std::span<std::span<float>>` in effect — so nothing in the callback path can allocate even by accident.
-Planar rather than interleaved because every voice writes one channel at a time and the interleave, if a framework wants one, is the backend's business.
+Three names changed and one type did.
+`IAudioCallback` is `IRenderCallback`, `AudioBuffer` is `SampleBuffer`, and `IAudioDevice::sampleRate()` is `IDevice::format()` returning a `WaveFormat`, since a rate without a channel count describes nothing a buffer could be written to.
+`SampleBuffer` is planar and non-owning as designed, so nothing on the render path allocates.
 
 Floating-point samples are used for the *buffer* because every framework wants them and because the sample values are projection state, where bit-exactness is not promised anyway.
 Every value that is simulation state — pitch, velocity, parameter value, time — stays integer or fixed point.
 That line is the whole determinism story in one sentence.
 
 **The `null` backend** reports one device at any requested rate, never starts a thread, and discards every sample.
+It lives *in* the library rather than under `backends/`, following `NullInputBackend`, which is what puts it inside the coverage gate.
 Critically, it does not advance its own clock: it exposes `pump(FrameCount)`, and a headless run advances it from the tick loop.
 So a `null` audio run is instantaneous, reproducible, and produces exactly the same note stream as a real one — the same standing `gfx::NullBackend` has today.
 
@@ -463,17 +439,20 @@ Ships as a library with a complete unit test suite and the algebraic laws assert
 Still no sound.
 Ships as pure values.
 
-**Phase 3 — the device seam and the null backend.**
-`AudioBuffer`, `IAudioCallback`, `IAudioDevice`, `IAudioBackend`, `AudioCapabilities`, `AudioError`, `makeSelectedAudioBackend()`, the `ANTWIKA_AUDIO_BACKEND` CMake variable and the `audio_backend` Conan option, `backends/null/`, and the backend conformance suite.
-Renders provable silence, which is a real deliverable: it proves the seam without any DSP in it.
+**Phase 3 — the device seam and the null backend — shipped, as `antwika::sound`.**
+`SampleBuffer`, `IRenderCallback`, `IDevice`, `ISoundBackend`, `SoundCapabilities`, `SoundError`, `makeSelectedSoundBackend()`, `NullSoundBackend`, the `ANTWIKA_SOUND_BACKEND` CMake variable, the `sound_backend` Conan option and the backend conformance suite all exist.
+`sound_backend` defaults to `null` rather than following `gfx_backend`, which is where it parts company with `input_backend`; [`docs/sound.md`](sound.md) says why.
 
-**Phase 4 — voices, the mixer, and offline rendering.**
-A fixed voice pool, a sample-time `Adsr`, one band-limited oscillator, a one-pole filter, a sampler, the mixer, `OfflineDevice`, and a WAV writer under `antwika::app` rather than in the library, since the library opens no files.
-This is the phase where you can hear it — without owning a sound card, because the output is a file.
+**Phase 4 — voices, the mixer, and offline rendering — half shipped.**
+`Waveform`, `WaveformLibrary`, `PlayRequest`, the fixed voice pool of `Mixer`, `WavReader` and `OfflineDevice` are built: a session can be rendered to a waveform and asserted sample by sample with no hardware at all.
+Outstanding: every piece of DSP — a sample-time `Adsr`, a band-limited oscillator, a one-pole filter — plus a WAV *writer*, which belongs under `antwika::app` rather than in the library since the library opens no files.
+So a sampler you can hear exists; a synthesiser does not.
 
-**Phase 5 — the real-time seam.**
-`AudioCommand`, the SPSC ring, the lookahead sequencer as an `ITickEventSink` in the tick path, the overflow counter, the pacing rule, the denormal guard, `scripts/check_audio_thread_purity.py`, and an `sdl3` audio backend target beside the existing graphics and input ones.
-Now it plays, live, from a tick loop.
+**Phase 5 — the real-time seam — the part that survives has shipped.**
+The pumped device model removed the reason for most of this phase, as the [device seam](#the-device-seam) section explains: with no thread of ours there is nothing for an SPSC ring to cross.
+What survived was the `sdl3` target beside the existing graphics and input ones, and the pacing rule, and both are built: `backends/sdl3` implements the seam, and `apps/sound_demo` paces itself against `framesPlayed()` so a track takes as long to run as it takes to hear.
+What is deferred until a backend genuinely needs a callback thread is the ring itself, the lookahead sequencer, the overflow counter, the denormal guard and `scripts/check_audio_thread_purity.py`.
+What is still missing before this plays *from a tick loop* is the sequencer, which needs Phase 1's musical time -- so the remaining work here is upstream of this phase rather than in it.
 
 **Phase 6 — the script front-end and a showcase app.**
 A parser for the syntax above, `ScriptParseError`, and `apps/sequencer`: a window drawing the arrangement and the active voices through `antwika::gfx`, transport controls through `antwika::ui`, key bindings through `antwika::input::ActionMap`, and the whole session recorded and replayed through `--record`/`--replay` like every other app in the tree.
@@ -493,6 +472,11 @@ This is a product rather than a demo, and it should not be started until Phases 
 - **How is a live MIDI keyboard recorded?** The position taken here is that MIDI input is *input* and belongs behind an `antwika::input`-shaped seam so that it arrives as edges in the tick stream, but that means a MIDI note is quantised to a tick, which a performer will notice at 60 Hz.
 - **What is the right tick rate for music?** 60 Hz gives about 17 ms of scheduling granularity, which is fine for scheduling ahead and coarse for live input; running the audio app at a higher tick rate is legal but makes its replays incomparable with other apps'.
 - **Does a ring overflow drop the command or stall the sequencer?** Dropping is the only audio-safe answer and it means a lost note, so the ring must simply be sized so that it cannot happen, and the counter exists to prove it did not.
-- **Where do sample assets live, and who decodes them?** `gfx` sets the precedent that the library opens no files and the app does; a `WavReader` beside `PngReader` follows it, but sample streaming from disk for long files does not fit that shape at all.
+  Not live while devices are pumped, since there is no ring.
+- ~~**Where do sample assets live, and who decodes them?**~~ **Answered.**
+  `sound::WavReader` decodes, from a `std::istream` rather than a path, exactly as `gfx::PngReader` does, so the library opens no files and an application supplies the bytes.
+  Streaming a long file from disk still does not fit that shape and is still unanswered, but nothing yet needs it: a `Waveform` is decoded whole.
 - **Should the score be serialisable independently of the script?** Phase 8 needs it for plugin state, and a JSON score would also let the replay format carry a score inline rather than by path.
-- **Is a second thread acceptable at all in a repository built on single-threaded determinism?** This plan argues yes, because the second thread is strictly downstream of the simulation and nothing it computes ever returns — but it is the first one, and that is worth a deliberate decision rather than an assumption.
+- ~~**Is a second thread acceptable at all in a repository built on single-threaded determinism?**~~ **Not yet asked.**
+  The pumped device model means the question has not had to be answered: `antwika::sound` renders on the thread that pumps it, and the whole test suite runs with no thread, no device and no wall-clock time.
+  It becomes live again only if a backend arrives that cannot be pumped, which is what `SoundCapabilities::selfDriven` exists to let one say.

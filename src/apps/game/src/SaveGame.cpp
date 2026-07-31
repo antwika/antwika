@@ -3,6 +3,8 @@
 #include <array>
 #include <cstddef>
 #include <limits>
+#include <map>
+#include <optional>
 #include <string>
 #include <string_view>
 
@@ -10,8 +12,12 @@
 
 #include <antwika/replay/SchemaVersion.hpp>
 
+#include "antwika/game/Building.hpp"
+#include "antwika/game/BuildingKind.hpp"
 #include "antwika/game/Direction.hpp"
+#include "antwika/game/Resource.hpp"
 #include "antwika/game/SaveFormatError.hpp"
+#include "antwika/game/Walker.hpp"
 #include "SaveMigration.hpp"
 
 namespace antwika::game
@@ -68,14 +74,74 @@ namespace antwika::game
             return shape;
         }
 
+        // An index into the other array, or absent for "nobody".
+        // A negative one is refused by the schema rather than by hand.
+        nlohmann::json linkShape()
+        {
+            nlohmann::json shape;
+            shape["type"] = "integer";
+            shape["minimum"] = 0;
+            return shape;
+        } // GCOVR_EXCL_LINE
+
+        nlohmann::json signedCountShape()
+        {
+            nlohmann::json shape;
+            shape["type"] = "integer";
+            shape["minimum"] = 0;
+            shape["maximum"] = std::numeric_limits<std::int32_t>::max();
+            return shape;
+        } // GCOVR_EXCL_LINE
+
         // "facing" is a string here rather than a schema enum.
         // An unknown name is refused by directionFromName() instead.
         // That way the message holds the name it did not know.
         nlohmann::json walkerShape()
         {
             nlohmann::json shape = cellShape();
-            shape["required"] = {"x", "y", "facing"}; // GCOVR_EXCL_LINE
+            // GCOVR_EXCL_START
+            shape["required"] = {
+                "x",
+                "y",
+                "facing",
+                "kind",
+                "carried",
+                "stepsUntilHome",
+                "ticksUntilStep"};
+            // GCOVR_EXCL_STOP
             shape["properties"]["facing"]["type"] = "string";
+            shape["properties"]["kind"]["type"] = "string";
+            shape["properties"]["carried"] = signedCountShape();
+            shape["properties"]["stepsUntilHome"] = signedCountShape();
+            shape["properties"]["ticksUntilStep"] = signedCountShape();
+            shape["properties"]["home"] = linkShape();
+            return shape;
+        }
+
+        nlohmann::json buildingShape()
+        {
+            nlohmann::json shape = cellShape();
+            // GCOVR_EXCL_START
+            shape["required"] = {
+                "x",
+                "y",
+                "kind",
+                "stock",
+                "risk",
+                "ticksUntilSpawn",
+                "ticksUntilDrain",
+                "ticksUntilRisk"};
+            // GCOVR_EXCL_STOP
+            shape["properties"]["kind"]["type"] = "string";
+            shape["properties"]["stock"]["type"] = "array";
+            shape["properties"]["stock"]["items"] = signedCountShape();
+            shape["properties"]["stock"]["minItems"] = kResourceCount;
+            shape["properties"]["stock"]["maxItems"] = kResourceCount;
+            shape["properties"]["risk"] = signedCountShape();
+            shape["properties"]["ticksUntilSpawn"] = signedCountShape();
+            shape["properties"]["ticksUntilDrain"] = signedCountShape();
+            shape["properties"]["ticksUntilRisk"] = signedCountShape();
+            shape["properties"]["walker"] = linkShape();
             return shape;
         }
 
@@ -151,6 +217,7 @@ namespace antwika::game
                 "camera",
                 "paths",
                 "walkers",
+                "buildings",
                 "seed"};
             // GCOVR_EXCL_STOP
             schema["properties"]["magic"]["const"] =
@@ -162,6 +229,7 @@ namespace antwika::game
             schema["properties"]["camera"] = cameraShape();
             schema["properties"]["paths"] = arrayOf(cellShape());
             schema["properties"]["walkers"] = arrayOf(walkerShape());
+            schema["properties"]["buildings"] = arrayOf(buildingShape());
             schema["properties"]["seed"] = countShape();
             return schema;
         }
@@ -171,6 +239,117 @@ namespace antwika::game
             static const nlohmann::json_schema::json_validator validator(
                 saveSchema()); // GCOVR_EXCL_LINE
             return validator;
+        }
+
+
+        // Symbolic for the same reason a direction is.
+        // A name survives the enumeration being reordered.
+        constexpr std::array<std::string_view, kWalkerKindCount>
+            kWalkerKindNames{"food", "water", "fireman", "architect"};
+
+        std::string_view walkerKindName(WalkerKind kind)
+        {
+            return kWalkerKindNames[walkerKindIndex(kind)];
+        }
+
+        WalkerKind walkerKindFromJson(const std::string &name)
+        {
+            for (std::size_t index = 0; index < kWalkerKindNames.size();
+                 ++index)
+            {
+                if (kWalkerKindNames[index] == name)
+                {
+                    return static_cast<WalkerKind>(index);
+                }
+            }
+
+            throw SaveFormatError(
+                "antwika::game: a save names a walker kind that is not "
+                "one of the four: " + name);
+        }
+
+        BuildingKind buildingKindFromJson(const std::string &name)
+        {
+            const auto kind = buildingKindFromName(name);
+
+            if (!kind.has_value())
+            {
+                throw SaveFormatError(
+                    "antwika::game: a save names a building kind this "
+                    "build does not have: " + name);
+            }
+
+            return *kind;
+        }
+
+        std::array<std::int32_t, kResourceCount> stockFromJson(
+            const nlohmann::json &j)
+        {
+            std::array<std::int32_t, kResourceCount> stock{};
+
+            for (std::size_t index = 0; index < kResourceCount; ++index)
+            {
+                stock[index] = j.at(index).get<std::int32_t>();
+            }
+
+            return stock;
+        }
+
+        // Absent means nobody, which is an ordinary state.
+        // Rather than a field somebody forgot to write.
+        std::optional<std::size_t> linkFromJson(
+            const nlohmann::json &j, const char *key)
+        {
+            if (!j.contains(key))
+            {
+                return std::nullopt;
+            }
+
+            return j.at(key).get<std::size_t>();
+        }
+
+        // An index past the end of the array it points into is corrupt.
+        // So is a pair that disagree about each other.
+        // This project refuses one rather than repairing it.
+        // A repaired save is a session somebody never had.
+        void requireConsistentLinks(const SaveGame &save)
+        {
+            for (std::size_t index = 0; index < save.walkers.size(); ++index)
+            {
+                const auto &home = save.walkers[index].home;
+
+                if (!home.has_value())
+                {
+                    continue;
+                }
+
+                if (*home >= save.buildings.size())
+                {
+                    throw SaveFormatError(
+                        "antwika::game: a save names a walker whose home "
+                        "is not a building in it");
+                }
+
+                const auto &back = save.buildings[*home].walker;
+
+                if (!back.has_value() || *back != index)
+                {
+                    throw SaveFormatError(
+                        "antwika::game: a save names a walker and a "
+                        "building that disagree about each other");
+                }
+            }
+
+            for (const auto &building : save.buildings)
+            {
+                if (building.walker.has_value()
+                    && *building.walker >= save.walkers.size())
+                {
+                    throw SaveFormatError(
+                        "antwika::game: a save names a building whose "
+                        "walker is not a walker in it");
+                }
+            }
         }
 
         Cell cellFromJson(const nlohmann::json &j)
@@ -214,7 +393,36 @@ namespace antwika::game
         {
             auto entry = cellToJson(walker.at);
             entry["facing"] = std::string(nameOf(walker.facing));
+            entry["kind"] = std::string(walkerKindName(walker.kind));
+            entry["carried"] = walker.carried;
+            entry["stepsUntilHome"] = walker.stepsUntilHome;
+            entry["ticksUntilStep"] = walker.ticksUntilStep;
+
+            if (walker.home.has_value())
+            {
+                entry["home"] = *walker.home;
+            }
+
             encoded["walkers"].push_back(std::move(entry));
+        }
+
+        encoded["buildings"] = nlohmann::json::array();
+        for (const auto &building : save.buildings)
+        {
+            auto entry = cellToJson(building.at);
+            entry["kind"] = std::string(buildingKindName(building.kind));
+            entry["stock"] = building.stock;
+            entry["risk"] = building.risk;
+            entry["ticksUntilSpawn"] = building.ticksUntilSpawn;
+            entry["ticksUntilDrain"] = building.ticksUntilDrain;
+            entry["ticksUntilRisk"] = building.ticksUntilRisk;
+
+            if (building.walker.has_value())
+            {
+                entry["walker"] = *building.walker;
+            }
+
+            encoded["buildings"].push_back(std::move(entry));
         }
 
         encoded["seed"] = save.seed;
@@ -267,27 +475,114 @@ namespace antwika::game
 
         for (const auto &walker : document.at("walkers"))
         {
-            save.walkers.push_back(WalkerView{
+            save.walkers.push_back(SavedWalker{
                 .at = cellFromJson(walker),
                 .facing = directionFromName(
                     walker.at("facing").get<std::string>()),
+                .kind = walkerKindFromJson(
+                    walker.at("kind").get<std::string>()),
+                .carried = walker.at("carried").get<std::int32_t>(),
+                .stepsUntilHome =
+                    walker.at("stepsUntilHome").get<std::int32_t>(),
+                .ticksUntilStep =
+                    walker.at("ticksUntilStep").get<std::uint8_t>(),
+                .home = linkFromJson(walker, "home"),
+            });
+        }
+
+        for (const auto &building : document.at("buildings"))
+        {
+            save.buildings.push_back(SavedBuilding{
+                .at = cellFromJson(building),
+                .kind = buildingKindFromJson(
+                    building.at("kind").get<std::string>()),
+                .stock = stockFromJson(building.at("stock")),
+                .risk = building.at("risk").get<std::int32_t>(),
+                .ticksUntilSpawn =
+                    building.at("ticksUntilSpawn").get<std::int32_t>(),
+                .ticksUntilDrain =
+                    building.at("ticksUntilDrain").get<std::int32_t>(),
+                .ticksUntilRisk =
+                    building.at("ticksUntilRisk").get<std::int32_t>(),
+                .walker = linkFromJson(building, "walker"),
             });
         }
 
         save.seed = document.at("seed").get<std::uint64_t>();
+
+        requireConsistentLinks(save);
+
         return save;
     } // GCOVR_EXCL_LINE
 
     SaveGame saveGameOf(
-        const GameSummary &summary, GridExtent extent, std::uint64_t seed)
+        const antwika::ecs::World &world,
+        const PathIndex &paths,
+        const Camera &camera,
+        const GameState &state,
+        GridExtent extent,
+        std::uint64_t seed)
     {
         SaveGame save;
-        save.state = summary.state;
+        save.state = state;
         save.extent = extent;
-        save.camera = summary.camera;
-        save.paths = summary.paths;
-        save.walkers = summary.walkers;
+        save.camera = camera;
+        save.paths.assign(paths.cells().begin(), paths.cells().end());
         save.seed = seed;
+
+        // Walked once each, keeping where every entity landed.
+        // So the second pass turns a handle into a record's index.
+        std::map<antwika::ecs::Entity, std::size_t> walkerAt;
+        std::map<antwika::ecs::Entity, std::size_t> buildingAt;
+
+        for (const auto entity : world.view<Walker, Cell>())
+        {
+            walkerAt.emplace(entity, save.walkers.size());
+            const auto walker = world.get<Walker>(entity);
+
+            save.walkers.push_back(SavedWalker{
+                .at = world.get<Cell>(entity),
+                .facing = walker.facing,
+                .kind = walker.kind,
+                .carried = walker.carried,
+                .stepsUntilHome = walker.stepsUntilHome,
+                .ticksUntilStep = walker.ticksUntilStep,
+                .home = std::nullopt});
+        }
+
+        for (const auto entity : world.view<Building, Cell>())
+        {
+            buildingAt.emplace(entity, save.buildings.size());
+            const auto building = world.get<Building>(entity);
+
+            save.buildings.push_back(SavedBuilding{
+                .at = world.get<Cell>(entity),
+                .kind = building.kind,
+                .stock = building.stock,
+                .risk = building.risk,
+                .ticksUntilSpawn = building.ticksUntilSpawn,
+                .ticksUntilDrain = building.ticksUntilDrain,
+                .ticksUntilRisk = building.ticksUntilRisk,
+                .walker = std::nullopt});
+        }
+
+        // The link, written only where both ends were recorded.
+        // A building whose walker is not in the file has nobody out.
+        // Which is exactly what it will be on the way back.
+        for (const auto entity : world.view<Building, Cell>())
+        {
+            const auto walker = world.get<Building>(entity).walker;
+            const auto found = walkerAt.find(walker);
+
+            if (found == walkerAt.end())
+            {
+                continue;
+            }
+
+            save.buildings[buildingAt.at(entity)].walker = found->second;
+            save.walkers[found->second].home = buildingAt.at(entity);
+        }
+
         return save;
     } // GCOVR_EXCL_LINE
 

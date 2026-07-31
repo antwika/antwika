@@ -6,27 +6,15 @@
 #include <deque>
 #include <memory>
 #include <optional>
-#include <stdexcept>
 
 #include <antwika/log/ILogger.hpp>
+
+#include "Sdl3Runtime.hpp"
 
 namespace antwika::sdl3
 {
 
     using antwika::log::ILogger;
-
-    /**
-     * @brief Thrown when SDL itself failed to start.
-     *
-     * Private to this directory, and never seen above it: Sdl3Backend
-     * turns it into a GfxError and Sdl3InputBackend into an InputError, so
-     * neither library learns that SDL is what it was built against.
-     */
-    class Sdl3PumpError final : public std::runtime_error
-    {
-    public:
-        using std::runtime_error::runtime_error;
-    };
 
     /**
      * @brief The one place SDL's single event queue is admitted.
@@ -71,7 +59,7 @@ namespace antwika::sdl3
          * @brief Get the process's pump, starting SDL if it is not up.
          * @param logger Receives the pump's diagnostics.
          * @return The shared pump, never null.
-         * @throws Sdl3PumpError If SDL's video subsystem failed to start.
+         * @throws Sdl3Error If SDL's video subsystem failed to start.
          */
         [[nodiscard]] static std::shared_ptr<Sdl3Pump> acquire(
             ILogger &logger);
@@ -82,7 +70,7 @@ namespace antwika::sdl3
          * Public only because make_shared needs it; go through acquire().
          *
          * @param logger Receives the pump's diagnostics.
-         * @throws Sdl3PumpError If SDL's video subsystem failed to start.
+         * @throws Sdl3Error If SDL's video subsystem failed to start.
          */
         explicit Sdl3Pump(ILogger &logger);
 
@@ -92,10 +80,7 @@ namespace antwika::sdl3
         Sdl3Pump &operator=(const Sdl3Pump &) = delete;
         Sdl3Pump &operator=(Sdl3Pump &&) = delete;
 
-        /**
-         * @brief Shut SDL's video subsystem down.
-         */
-        ~Sdl3Pump();
+        ~Sdl3Pump() = default;
 
         /**
          * @brief Take the next window event SDL has reported.
@@ -117,6 +102,8 @@ namespace antwika::sdl3
 
         static void enqueue(
             std::deque<SDL_Event> &queue, const SDL_Event &event);
+
+        Sdl3Subsystem video;
 
         std::deque<SDL_Event> windowEvents;
         std::deque<SDL_Event> inputEvents;

@@ -77,7 +77,16 @@
         {
             "label": "Select gfx backend",
             "type": "shell",
-            "command": "./scripts/select_gfx_backend.sh ${input:gfxBackend}",
+            "command": "./scripts/select_backend.sh gfx ${input:gfxBackend}",
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "problemMatcher": []
+        },
+        {
+            "label": "Select sound backend",
+            "type": "shell",
+            "command": "./scripts/select_backend.sh sound ${input:soundBackend}",
             "options": {
                 "cwd": "${workspaceFolder}"
             },
@@ -126,6 +135,16 @@
                 "null",
                 "sdl3",
                 "raylib"
+            ],
+            "default": "null"
+        },
+        {
+            "id": "soundBackend",
+            "type": "pickString",
+            "description": "Sound backend for later builds",
+            "options": [
+                "null",
+                "sdl3"
             ],
             "default": "null"
         }

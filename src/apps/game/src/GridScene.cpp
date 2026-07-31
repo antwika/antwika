@@ -8,8 +8,10 @@
 #include <antwika/gfx/Rect.hpp>
 
 #include "antwika/game/Direction.hpp"
+#include "antwika/game/Footprint.hpp"
 #include "antwika/game/IsoProjection.hpp"
 #include "antwika/game/TileAtlas.hpp"
+#include "antwika/game/WalkerMotion.hpp"
 
 namespace antwika::game
 {
@@ -31,6 +33,12 @@ namespace antwika::game
         // drawTexture() modulates alpha, so no second tile is needed.
         constexpr Color kGhostly{
             .red = 255, .green = 255, .blue = 255, .alpha = 110};
+
+        // The same tile reddened, for a block that will not go here.
+        // A refusal shown is a refusal somebody can act on.
+        // A preview that vanishes leaves them guessing what blocked it.
+        constexpr Color kBlocked{
+            .red = 255, .green = 90, .blue = 90, .alpha = 110};
 
         [[nodiscard]] bool overlaps(Rect box, Size canvas) noexcept
         {
@@ -86,7 +94,8 @@ namespace antwika::game
         IRenderer &renderer,
         Size canvas,
         const SceneSnapshot &snapshot,
-        const ITexture &atlas) const
+        const ITexture &atlas,
+        Progress subTick) const
     {
         renderer.clear(kSky);
 
@@ -109,33 +118,38 @@ namespace antwika::game
         }
 
         // Over the road it may stand beside, under the walkers.
+        // Drawn from the whole block's box rather than one cell's.
+        // Culled on that box too.
+        // A block reaches the canvas from further off than one cell.
         for (const auto &building : snapshot.buildings)
         {
-            if (!onCanvas(building.at, canvas, snapshot))
+            const auto bounds = footprintBounds(
+                building.at, footprintOf(building.kind), snapshot.camera);
+
+            if (!overlaps(bounds, canvas))
             {
                 continue;
             }
 
             renderer.drawTexture(
-                atlas,
-                buildingTile(building.kind),
-                cellBounds(building.at, snapshot.camera),
-                kUntinted);
+                atlas, buildingTile(building.kind), bounds, kUntinted);
         }
 
         // Last, so a walker is never hidden by what it is standing on.
         for (const auto &walker : snapshot.walkers)
         {
-            if (!onCanvas(walker.at, canvas, snapshot))
+            // Culled on where it is drawn, not on the cell it is on.
+            // Between two ticks those are not the same box.
+            // And a walker halfway off the edge is still half on it.
+            const auto bounds = walkerBounds(walker, snapshot.camera, subTick);
+
+            if (!overlaps(bounds, canvas))
             {
                 continue;
             }
 
             renderer.drawTexture(
-                atlas,
-                walkerTile(walker.facing),
-                cellBounds(walker.at, snapshot.camera),
-                kUntinted);
+                atlas, walkerTile(walker.facing), bounds, kUntinted);
         }
 
         drawGhost(renderer, canvas, snapshot, atlas);
@@ -149,7 +163,19 @@ namespace antwika::game
     {
         const auto &ghost = snapshot.ghost;
 
-        if (!ghost.visible || !onCanvas(ghost.at, canvas, snapshot))
+        if (!ghost.visible)
+        {
+            return;
+        }
+
+        const auto kind = buildingKindOf(ghost.tool);
+        const auto footprint =
+            kind.has_value() ? footprintOf(*kind) : Footprint{};
+
+        const auto bounds =
+            footprintBounds(ghost.at, footprint, snapshot.camera);
+
+        if (!overlaps(bounds, canvas))
         {
             return;
         }
@@ -160,8 +186,8 @@ namespace antwika::game
         renderer.drawTexture(
             atlas,
             toolTile(ghost.tool, linksAt(snapshot.paths, ghost.at)),
-            cellBounds(ghost.at, snapshot.camera),
-            kGhostly);
+            bounds,
+            ghost.valid ? kGhostly : kBlocked);
     }
 
     void GridScene::drawGround(

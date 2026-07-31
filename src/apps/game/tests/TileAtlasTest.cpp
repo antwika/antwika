@@ -168,7 +168,7 @@ TEST(TileAtlasTest, TheTileRangesDoNotOverlap)
         1U + kRoadSlotCount + antwika::game::kDirectionCount);
 }
 
-// The atlas the generator draws has to be the atlas this addresses.
+// The atlas the art is drawn on has to be the one this addresses.
 TEST(TileAtlasTest, TheAtlasIsBigEnoughForEverySlotItNames)
 {
     EXPECT_EQ(

@@ -11,8 +11,8 @@ It reads a puzzle, builds constraints, solves, and prints.
 ## Running it
 
 ```sh
-build/bin/antwika_sudoku
-build/bin/antwika_sudoku --puzzle my-puzzle.txt
+build/bin/antwika_sudoku/antwika_sudoku
+build/bin/antwika_sudoku/antwika_sudoku --puzzle my-puzzle.txt
 ```
 
 Without `--puzzle` it solves a well-known easy demo puzzle baked into `main.cpp`.

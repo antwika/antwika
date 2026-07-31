@@ -27,6 +27,15 @@ TEST(WalkerTest, DefaultConstructedFacesEastAndIsDueToStep)
     EXPECT_EQ(walker.ticksUntilStep, 0U);
 }
 
+TEST(WalkerTest, DefaultConstructedHasNowhereItCameFrom)
+{
+    // A walker that has never stepped is drawn where it stands.
+    // Rather than sliding in from a cell it was never on.
+    constexpr Walker walker;
+
+    EXPECT_FALSE(walker.from.has_value());
+}
+
 TEST(WalkerTest, EqualityComparesTheFacingAndTheCountdown)
 {
     constexpr Walker walker{
@@ -41,6 +50,30 @@ TEST(WalkerTest, EqualityComparesTheFacingAndTheCountdown)
     EXPECT_NE(
         walker,
         (Walker{.facing = Direction::North, .ticksUntilStep = 0}));
+}
+
+TEST(WalkerTest, EqualityComparesWhereItCameFrom)
+{
+    constexpr Cell origin{.x = 3, .y = 4};
+
+    constexpr Walker walker{
+        .facing = Direction::North, .ticksUntilStep = 1, .from = origin};
+
+    EXPECT_EQ(
+        walker,
+        (Walker{
+            .facing = Direction::North,
+            .ticksUntilStep = 1,
+            .from = origin}));
+    EXPECT_NE(
+        walker,
+        (Walker{
+            .facing = Direction::North,
+            .ticksUntilStep = 1,
+            .from = Cell{.x = 3, .y = 5}}));
+    EXPECT_NE(
+        walker,
+        (Walker{.facing = Direction::North, .ticksUntilStep = 1}));
 }
 
 TEST(WalkerTest, PathTagsCompareEqualToEachOther)
@@ -182,4 +215,48 @@ TEST(WalkerTest, DestroyingSweepsPoolsTheEntityWasNeverIn)
     EXPECT_FALSE(world.has<Path>(tile));
     EXPECT_FALSE(world.has<Walker>(walker));
     EXPECT_FALSE(world.has<Cell>(walker));
+}
+
+// The defaulted comparison short-circuits.
+// So every field needs a pair that differs in it alone.
+TEST(WalkerTest, EqualityComparesEveryFieldIndependently)
+{
+    const antwika::game::Walker base{
+        .facing = antwika::game::Direction::North,
+        .kind = antwika::game::WalkerKind::Water,
+        .carried = 30,
+        .stepsUntilHome = 5,
+        .home = static_cast<antwika::ecs::Entity>(7),
+        .ticksUntilStep = 1,
+        .from = Cell{.x = 1, .y = 2}};
+
+    EXPECT_EQ(base, base);
+
+    auto turned = base;
+    turned.facing = antwika::game::Direction::South;
+    EXPECT_NE(base, turned);
+
+    auto other = base;
+    other.kind = antwika::game::WalkerKind::Fireman;
+    EXPECT_NE(base, other);
+
+    auto emptied = base;
+    emptied.carried = 0;
+    EXPECT_NE(base, emptied);
+
+    auto tired = base;
+    tired.stepsUntilHome = 0;
+    EXPECT_NE(base, tired);
+
+    auto rehomed = base;
+    rehomed.home = antwika::ecs::kNullEntity;
+    EXPECT_NE(base, rehomed);
+
+    auto later = base;
+    later.ticksUntilStep = 0;
+    EXPECT_NE(base, later);
+
+    auto elsewhere = base;
+    elsewhere.from = Cell{.x = 9, .y = 9};
+    EXPECT_NE(base, elsewhere);
 }

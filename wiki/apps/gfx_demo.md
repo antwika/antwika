@@ -9,7 +9,7 @@
 ## Running it
 
 ```sh
-build/bin/antwika_gfx_demo
+build/bin/antwika_gfx_demo/antwika_gfx_demo
 ```
 
 It opens a window titled "Antwika gfx demo" and runs until the window is closed.
@@ -23,7 +23,7 @@ Notably not [`engine`](../libraries/engine.md) or [`replay`](../libraries/replay
 ## How it is put together
 
 `DemoScene` describes the picture and `DemoLoop` runs it.
-The PNG path is baked in at configure time and read by `app::readPngFile()`, because `antwika::gfx` opens no files itself.
+The PNG is copied into the application's own directory under `bin/` at build time, found with `app::assetPath()` and read by `app::readPngFile()`, because `antwika::gfx` opens no files itself.
 The panel is painted **last**, so it reads as being in front of the bars and the logo — the renderer has no z-order, so paint order is the only ordering there is.
 Its two buttons count and reset a click counter the loop owns, which is the point: the counter lives in the application, not in `antwika::ui`, because the UI retains nothing between frames.
 

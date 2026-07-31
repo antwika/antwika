@@ -12,17 +12,28 @@ class AntwikaConan(ConanFile):
 
     # Which backends under backends/ to compile and link.
     # Only a selected one contributes a dependency, so the default build
-    # pulls in no graphics or input framework at all.
+    # pulls in no graphics, input or sound framework at all.
     # input_backend defaults to "auto", meaning "whatever gfx_backend is",
     # so asking for sdl3 windows gets sdl3 input for free.
+    #
+    # sound_backend deliberately does NOT follow, and defaults to "null".
+    # Input follows graphics because a window without input is useless.
+    # Sound is orthogonal, and "auto" would mean every existing
+    # -o gfx_backend=sdl3 build silently began opening an audio device.
+    #
+    # raylib is absent from sound_backend's values because it does not
+    # implement that seam, and an unlisted value is the cheapest possible
+    # way to say so: Conan refuses it before anything is downloaded.
     options = {
         "gfx_backend": ["null", "sdl3", "raylib"],
         "input_backend": ["auto", "null", "sdl3", "raylib"],
+        "sound_backend": ["null", "sdl3"],
     }
 
     default_options = {
         "gfx_backend": "null",
         "input_backend": "auto",
+        "sound_backend": "null",
     }
 
     @property
@@ -34,17 +45,29 @@ class AntwikaConan(ConanFile):
 
         return str(self.options.input_backend)
 
-    def validate(self):
-        # Two real frameworks would fight over one OS event queue.
-        # CMake refuses this too; catching it here keeps a build from
-        # downloading a framework it is about to be told it cannot use.
-        backends = {str(self.options.gfx_backend), self._input_backend}
+    @property
+    def _selected_frameworks(self):
+        # The distinct real frameworks this configuration would link.
+        # "null" is not one: it is how a subsystem opts out.
+        backends = {
+            str(self.options.gfx_backend),
+            self._input_backend,
+            str(self.options.sound_backend),
+        }
         backends.discard("null")
 
-        if len(backends) > 1:
+        return backends
+
+    def validate(self):
+        # Graphics and input would fight over one OS event queue, and
+        # naming a second framework anywhere links two of them into one
+        # process.  CMake refuses this too; catching it here keeps a
+        # build from downloading a framework it cannot use.
+        if len(self._selected_frameworks) > 1:
             raise ConanInvalidConfiguration(
-                "gfx_backend and input_backend name two different "
-                "frameworks, which would compete for one event queue"
+                "gfx_backend, input_backend and sound_backend name more "
+                "than one framework, which would compete for one event "
+                "queue and double the dependency graph"
             )
 
     def requirements(self):
@@ -62,8 +85,8 @@ class AntwikaConan(ConanFile):
         # Header-only, so it costs a link line nothing.
         self.requires("glm/1.0.1")
 
-        # Either option selecting a framework is enough to need it.
-        backends = {str(self.options.gfx_backend), self._input_backend}
+        # Any option selecting a framework is enough to need it.
+        backends = self._selected_frameworks
 
         if "sdl3" in backends:
             self.requires("sdl/3.2.20")
@@ -81,6 +104,9 @@ class AntwikaConan(ConanFile):
         )
         toolchain.cache_variables["ANTWIKA_INPUT_BACKEND"] = (
             self._input_backend
+        )
+        toolchain.cache_variables["ANTWIKA_SOUND_BACKEND"] = str(
+            self.options.sound_backend
         )
         toolchain.generate()
 

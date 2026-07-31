@@ -76,7 +76,7 @@ namespace antwika::game
         BuildTool tool) noexcept
     {
         constexpr std::array<std::string_view, kBuildToolCount> labels{
-            "road", "house", "shop", "tower"};
+            "road", "house", "food", "water", "fire", "arch"};
 
         return labels[buildToolIndex(tool) % kBuildToolCount];
     }
@@ -90,8 +90,10 @@ namespace antwika::game
             widgets::kResetView,
             widgets::toolWidget(BuildTool::Road),
             widgets::toolWidget(BuildTool::House),
-            widgets::toolWidget(BuildTool::Shop),
-            widgets::toolWidget(BuildTool::Tower)),
+            widgets::toolWidget(BuildTool::FoodSource),
+            widgets::toolWidget(BuildTool::WaterSource),
+            widgets::toolWidget(BuildTool::FireStation),
+            widgets::toolWidget(BuildTool::ArchitectPost)),
         "every toolbar widget needs its own id");
 
     /**

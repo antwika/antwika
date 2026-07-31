@@ -25,6 +25,7 @@ namespace
 
     using antwika::game::BuildGhost;
     using antwika::game::BuildingView;
+    using antwika::game::BuildingKind;
     using antwika::game::BuildTool;
     using antwika::game::Camera;
     using antwika::game::Cell;
@@ -35,6 +36,7 @@ namespace
     using antwika::game::SaveGame;
     using antwika::game::SceneSnapshot;
     using antwika::game::Terrain;
+    using antwika::game::WalkerSprite;
     using antwika::game::WalkerView;
     using antwika::game::WorldMap;
     using antwika::game::WorldMapSnapshot;
@@ -60,7 +62,7 @@ namespace
         expectMemberCompared(
             base, [](BuildGhost &g) { g.at = Cell{.x = 9, .y = 9}; });
         expectMemberCompared(
-            base, [](BuildGhost &g) { g.tool = BuildTool::Shop; });
+            base, [](BuildGhost &g) { g.tool = BuildTool::FoodSource; });
         expectMemberCompared(
             base, [](BuildGhost &g) { g.visible = false; });
     }
@@ -68,12 +70,12 @@ namespace
     TEST(SceneSnapshotTest, BuildingViewEqualityComparesEveryField)
     {
         const BuildingView base{
-            .at = {.x = 3, .y = 4}, .kind = BuildTool::Shop};
+            .at = {.x = 3, .y = 4}, .kind = BuildingKind::FoodSource};
 
         expectMemberCompared(
             base, [](BuildingView &b) { b.at = Cell{.x = 0, .y = 0}; });
         expectMemberCompared(
-            base, [](BuildingView &b) { b.kind = BuildTool::Tower; });
+            base, [](BuildingView &b) { b.kind = BuildingKind::WaterSource; });
     }
 
     [[nodiscard]] SceneSnapshot populatedSnapshot()
@@ -82,10 +84,10 @@ namespace
             .camera = Camera(antwika::gfx::Point{.x = 4, .y = 5}, 1),
             .extent = GridExtent{.width = 8, .height = 8},
             .paths = {Cell{.x = 1, .y = 1}},
-            .walkers = {WalkerView{.at = {.x = 2, .y = 2}}},
+            .walkers = {WalkerSprite{.at = {.x = 2, .y = 2}}},
             .buildings =
                 {BuildingView{
-                    .at = {.x = 3, .y = 3}, .kind = BuildTool::House}},
+                    .at = {.x = 3, .y = 3}, .kind = BuildingKind::House}},
             .ghost = BuildGhost{.at = {.x = 4, .y = 4}}};
     }
 
@@ -118,7 +120,7 @@ namespace
             .walkers = {WalkerView{.at = {.x = 2, .y = 2}}},
             .buildings =
                 {BuildingView{
-                    .at = {.x = 3, .y = 3}, .kind = BuildTool::House}},
+                    .at = {.x = 3, .y = 3}, .kind = BuildingKind::House}},
             .camera = Camera(antwika::gfx::Point{.x = 4, .y = 5}, 1)};
     }
 
@@ -146,7 +148,8 @@ namespace
         save.camera = Camera(antwika::gfx::Point{.x = 4, .y = 5}, 1);
         save.paths = {Cell{.x = 1, .y = 1}};
         save.walkers = {
-            WalkerView{.at = {.x = 2, .y = 2}, .facing = Direction::West}};
+            antwika::game::SavedWalker{
+                .at = {.x = 2, .y = 2}, .facing = Direction::West}};
         save.seed = 7;
         return save;
     }

@@ -16,21 +16,30 @@ It is plain markdown with relative links, so it reads on GitHub and in an editor
 src/
 ├── apps/
 │   ├── game/
+│   ├── gfx3d_demo/
 │   ├── gfx_demo/
 │   ├── life/
 │   ├── poker/
+│   ├── sound_demo/
 │   ├── sudoku/
-│   └── task_worker/
+│   ├── task_worker/
+│   └── tower_defence/
 └── libs/
+    ├── animation/
+    ├── app/
     ├── ecs/
+    ├── ecs_commons/
     ├── engine/
     ├── event/
     ├── gfx/
     ├── holdem/
+    ├── i18n/
     ├── input/
     ├── log/
+    ├── pathfinding/
     ├── replay/
     ├── scheduler/
+    ├── sound/
     ├── time/
     ├── ui/
     └── wfc/
@@ -42,7 +51,7 @@ blog/
 ```
 
 Each library and app has its own `CMakeLists.txt`, `include/`, `src/`, and `tests/` directory.
-`backends/` sits outside `src/` and holds the concrete graphics and input frameworks, one directory per framework, exactly one of which is compiled into a given build.
+`backends/` sits outside `src/` and holds the concrete graphics, input and sound frameworks, one directory per framework, exactly one of which is compiled per subsystem into a given build.
 See [`docs/STYLE_GUIDE.md`](docs/STYLE_GUIDE.md) for the project's C++/CMake/Python coding conventions.
 
 `blog/` holds write-ups about notable changes to the project — see [`blog/001-building-a-deterministic-replay-system.md`](blog/001-building-a-deterministic-replay-system.md) for the design and requirements behind the replay system below, and [`blog/003-an-entity-component-system-with-nowhere-to-hide-a-mutation.md`](blog/003-an-entity-component-system-with-nowhere-to-hide-a-mutation.md) for the `antwika::ecs` library under `libs/ecs/`.
@@ -72,10 +81,11 @@ Build and test the project using:
 Ctrl + Shift + B
 ```
 
-After the build completes, run the compiled binaries on your target machine:
+After the build completes, run the compiled binaries on your target machine.
+Each application has a directory of its own under `build/bin/`, holding the executable and everything it opens:
 
-- Linux: `build/bin/antwika_game`, `build/bin/antwika_life`, `build/bin/antwika_poker`, `build/bin/antwika_sudoku`, `build/bin/antwika_task_worker`
-- Windows: `build/bin/antwika_game.exe`, `build/bin/antwika_life.exe`, `build/bin/antwika_poker.exe`, `build/bin/antwika_sudoku.exe`, `build/bin/antwika_task_worker.exe`
+- Linux: `build/bin/antwika_game/antwika_game`, `build/bin/antwika_life/antwika_life`, `build/bin/antwika_poker/antwika_poker`, `build/bin/antwika_sudoku/antwika_sudoku`, `build/bin/antwika_task_worker/antwika_task_worker`
+- Windows: `build/bin/antwika_game/antwika_game.exe`, `build/bin/antwika_life/antwika_life.exe`, `build/bin/antwika_poker/antwika_poker.exe`, `build/bin/antwika_sudoku/antwika_sudoku.exe`, `build/bin/antwika_task_worker/antwika_task_worker.exe`
 
 ### Choosing a graphics and input backend
 
@@ -91,11 +101,12 @@ Choose `null`, `sdl3` or `raylib`.
 The same thing works from a terminal:
 
 ```sh
-scripts/select_gfx_backend.sh sdl3
+scripts/select_backend.sh gfx sdl3
 scripts/build.sh
 ```
 
-A real backend builds into `build-sdl3/` or `build-raylib/` rather than `build/`, matching what CI does, so switching backends never invalidates the previous one.
+Everything lands in `build/` whatever is selected, so there is one build folder to know about rather than one per permutation.
+That is the one place this deliberately parts company with CI, which gives each backend a folder of its own because its legs run in parallel and cache separately; the cost here is that switching backends reconfigures and largely rebuilds, since the selection is a cache variable deciding what `backends/` compiles.
 The choice drives input as well as graphics: the `input_backend` Conan option and the `ANTWIKA_INPUT_BACKEND` CMake variable both default to whatever was picked for graphics, so `sdl3` windows come with `sdl3` keyboard and mouse.
 Setting them apart is allowed for input with no window, or a window with no input:
 
@@ -103,28 +114,45 @@ Setting them apart is allowed for input with no window, or a window with no inpu
 conan install . -of build-sdl3-input -o gfx_backend=null -o input_backend=sdl3 ...
 ```
 
-Naming two different real frameworks is refused at configure time, because they would fight over one operating-system event queue and whichever polled second would silently lose events.
-`build/bin/antwika_gfx_demo` opens a window and draws until you close it -- under the `null` backend there is nothing to close, so that build runs until interrupted.
+Sound is chosen separately, by `sound_backend` and `ANTWIKA_SOUND_BACKEND`, and it deliberately does **not** follow the graphics choice the way input does.
+Input follows because a window nobody can click is useless; sound is orthogonal, and following would mean every existing `sdl3` build silently began opening an audio device.
+So it has a selection of its own, picked and remembered exactly like the graphics one:
+
+```
+Ctrl + Shift + P > Tasks: Run Task > Select sound backend
+```
+
+```sh
+scripts/select_backend.sh sound sdl3   # null or sdl3; raylib has no sound seam
+scripts/build.sh
+build/bin/antwika_sound_demo/antwika_sound_demo           # eight notes, now audible
+```
+
+The two are independent, so `sound sdl3` with `gfx null` is an ordinary selection: sound with no window.
+
+Naming two different real frameworks anywhere is refused at configure time.
+Graphics and input would fight over one operating-system event queue, and whichever polled second would silently lose events; and a second framework of any kind doubles the dependency graph of a build that only needs one.
+`build/bin/antwika_gfx_demo/antwika_gfx_demo` opens a window and draws until you close it -- under the `null` backend there is nothing to close, so that build runs until interrupted.
 It draws three bars and blits a PNG logo twice: once whole and untinted, once left-half-only and tinted, which is what a source rectangle and a tint look like side by side.
-`build/bin/antwika_gfx3d_demo` is its counterpart for the 3D half: a cube drawn through `gfx::IRenderer3D`, turned by the tick count rather than by a clock, with a caption drawn over it through the 2D calls.
+`build/bin/antwika_gfx3d_demo/antwika_gfx3d_demo` is its counterpart for the 3D half: a cube drawn through `gfx::IRenderer3D`, turned by the tick count rather than by a clock, with a caption drawn over it through the 2D calls.
 It stops after a fixed number of frames, because the `null` backend reports no close and that is the build every CI leg produces.
-The selection lives in the untracked `.vscode/gfx-backend`, which makes it yours rather than the repository's.
+Each selection lives in an untracked file, `.vscode/gfx-backend` and `.vscode/sound-backend`, which makes it yours rather than the repository's.
 
 ## Replays
 
 The engine runs on a fixed timestep and every event dispatched during a run is tick-stamped, so a run can be recorded and later reloaded to reproduce the exact same resulting state:
 
 ```sh
-build/bin/antwika_game                        # empty grid, runs until you quit
-build/bin/antwika_game --record demo.replay   # the same, saving what you did
-build/bin/antwika_game --replay demo.replay   # reload it, reproducing the run
+build/bin/antwika_game/antwika_game                        # empty grid, runs until you quit
+build/bin/antwika_game/antwika_game --record demo.replay   # the same, saving what you did
+build/bin/antwika_game/antwika_game --replay demo.replay   # reload it, reproducing the run
 ```
 
 Both modes go through the same `antwika::game::bootstrap()` entry point and the same fixed-timestep tick loop (`antwika::replay::EngineLoop`) — replay mode only differs in where each tick's events come from.
 `apps/game` itself is an isometric grid you build on with the mouse: left-click lays a path, right-click drops a walker onto it, middle-drag pans and the wheel zooms.
 Walkers advance a cell every second tick, preferring a right turn at an intersection and reversing at a dead end.
 The ground, the roads and the walkers are all blitted from one texture atlas (`src/apps/game/assets/atlas.png`), so the scene draws no shape of its own: the grid lines are painted into the ground tile's own edges, and a road's sixteen tiles are addressed by which neighbours it joins, which makes a junction a lookup rather than four stubs stepped out by hand.
-That picture is drawn by `scripts/generate_game_atlas.py` from the same slot numbers `antwika/game/TileAtlas.hpp` addresses it with, and CI fails if the committed one has drifted from the generator.
+That picture is hand-drawn art, and `antwika/game/TileAtlas.hpp` is the address map that says where each tile in it lives.
 It starts empty and loads nothing unless `--replay` asks it to, and runs until you press Escape or close the window -- both of which are input, so both end up in a recording.
 Under the `null` backend neither is available, so that build runs until interrupted; `src/apps/game/replays/demo.json` is a sample session to feed `--replay` if you want to watch one without a mouse.
 What a recording holds is the clicks, not what they caused: the app defines no event for placing a path, so a replay stores the click and regenerates the placement rather than persisting both.
@@ -133,9 +161,9 @@ Application code defines its own state (`GameState`) and events (e.g. `game.scor
 `apps/life` is a second, independent application built on the same replay system, this time with its state held in an `antwika::ecs::World` instead of a plain struct — a Conway's Game of Life board, where each cell is an entity with a `Cell` component and a single `LifeSystem` advances every cell one generation per tick using the double-buffered `World`/`SystemScheduler` machinery described in [`blog/003-an-entity-component-system-with-nowhere-to-hide-a-mutation.md`](blog/003-an-entity-component-system-with-nowhere-to-hide-a-mutation.md):
 
 ```sh
-build/bin/antwika_life                        # seeds a glider, then runs on
-build/bin/antwika_life --record demo.replay   # save the input as a replay
-build/bin/antwika_life --replay demo.replay   # reload it, reproducing the run
+build/bin/antwika_life/antwika_life                        # seeds a glider, then runs on
+build/bin/antwika_life/antwika_life --record demo.replay   # save the input as a replay
+build/bin/antwika_life/antwika_life --replay demo.replay   # reload it, reproducing the run
 ```
 
 Cells are toggled alive via a `life.toggle_cell` event (JSON payload `{"x":..,"y":..}`), tick-stamped exactly like `game.score_increment` — the same event-driven, replayable pattern applied to ECS state instead of a hand-rolled reducer.
@@ -147,8 +175,8 @@ It is also where `antwika::gfx` and `antwika::input` earn their keep.
 Built against a real backend, `antwika_life` draws the board into a window instead of printing it, one frame per tick, and lets you draw on that board with the mouse:
 
 ```sh
-scripts/select_gfx_backend.sh sdl3 && scripts/build.sh
-build-sdl3/bin/antwika_life                   # a glider crossing a 32x32 board
+scripts/select_backend.sh gfx sdl3 && scripts/build.sh
+build/bin/antwika_life/antwika_life                        # a glider crossing a 32x32 board
 ```
 
 Drag with the left button held to toggle every cell the pointer crosses, one toggle per cell per drag, and watch the next generation take it from there.
@@ -161,8 +189,8 @@ The mouse arrives the same way, as `input.pointer_down`/`input.pointer_move`/`in
 `apps/task_worker` is a third application, this time combining `antwika::ecs` with a new `antwika::scheduler` library: a fixed pool of `Worker` entities pulls tasks off a deterministic, priority-ordered, budget-bounded `antwika::scheduler::Scheduler`, submitted over time via a `task.submit` event and, optionally, chained to an earlier task with a dependency edge:
 
 ```sh
-build/bin/antwika_task_worker --record demo.replay   # submits a mixed-priority task burst
-build/bin/antwika_task_worker --replay demo.replay   # reload it, reproducing the same run
+build/bin/antwika_task_worker/antwika_task_worker --record demo.replay   # submits a mixed-priority task burst
+build/bin/antwika_task_worker/antwika_task_worker --replay demo.replay   # reload it, reproducing the same run
 ```
 
 Tasks are submitted via a `task.submit` event (JSON payload `{"id":..,"priority":..,"durationTicks":..,"label":..}`, plus an optional `"dependsOnId"`), tick-stamped exactly like `life.toggle_cell` — a `TaskSubmissionSink` schedules each parsed task onto the `Scheduler`, and a `TaskDispatchSystem` runs the scheduler each tick with that tick's idle-worker count as its budget, so no more tasks start than there are free workers.
@@ -181,9 +209,9 @@ Nothing is enumerated and no five-card subset is ever materialised, so scoring s
 `apps/poker` (`antwika_poker`) is the showcase, and it is a fourth application on the same replay system:
 
 ```sh
-build/bin/antwika_poker --record demo.replay   # a cash game, saving who bought in
-build/bin/antwika_poker --replay demo.replay   # reload it, reproducing the same session
-build-sdl3/bin/antwika_poker --tick-delay-ms 150   # or watch it, in a window
+build/bin/antwika_poker/antwika_poker --record demo.replay   # a cash game, saving who bought in
+build/bin/antwika_poker/antwika_poker --replay demo.replay   # reload it, reproducing the same session
+build/bin/antwika_poker/antwika_poker --tick-delay-ms 150     # watch it, with a gfx backend selected
 ```
 
 One engine tick is one step of the poker loop: dealing a hand, or asking a single player to act.
@@ -246,8 +274,8 @@ Geometry is entirely up to the caller, expressed as `IConstraint`s over cell ind
 `apps/sudoku` (`antwika_sudoku`) is the showcase: it expresses a Sudoku puzzle as an 81-cell wave and its row/column/3x3-box rules as 27 `AllDifferentConstraint`s over that flat array, then hands both to `antwika::wfc::Solver` — no 2D-grid code inside the library at all.
 
 ```sh
-build/bin/antwika_sudoku                          # solves a built-in demo puzzle
-build/bin/antwika_sudoku --puzzle my-puzzle.txt    # solves a puzzle loaded from a file
+build/bin/antwika_sudoku/antwika_sudoku                          # solves a built-in demo puzzle
+build/bin/antwika_sudoku/antwika_sudoku --puzzle my-puzzle.txt    # solves a puzzle loaded from a file
 ```
 
 A puzzle file is 81 characters (whitespace ignored) of digits `1`-`9` or a blank marker (`.` or `0`).
@@ -316,8 +344,47 @@ An application drives all of this from inside its tick loop, downstream of the r
 The buttons work: one counts your clicks and the other puts the count back to zero.
 
 ```sh
-build/bin/antwika_gfx_demo    # needs a display; use xvfb-run without one
+build/bin/antwika_gfx_demo/antwika_gfx_demo    # needs a display; use xvfb-run without one
 ```
+
+## Sound
+
+`libs/sound` (`antwika::sound`) decodes PCM audio, mixes it, and plays it through a backend seam of the same shape `antwika::gfx` and `antwika::input` have.
+It owns no thread, no lock and no queue: a device renders only when it is pumped, on the thread that pumped it.
+
+```cpp
+sound::WaveformLibrary library;
+const auto beep = library.add(sound::WavReader{}.read(stream));
+
+sound::Mixer mixer{library, {.format = device->format(), .maxVoices = 16}};
+
+device->start(mixer);
+
+mixer.play({.waveform = beep, .startFrame = 48000});
+
+device->pump(1024);
+```
+
+A render callback is handed the *absolute* index of the first frame it is filling, counted from when the device started, never a count since the last call.
+That is what makes `startFrame` mean something: the beep above begins at frame 48,000 and not at whichever buffer boundary happens to follow it.
+A device whose counter restarted per buffer would place every scheduled sound at the wrong moment after a single dropped one, which is what the shared conformance suite's `Render_ReceivesAscendingContiguousFrames` exists to catch.
+
+A `Waveform` holds normalised float samples whatever width the file stored, decoded once to a plain value exactly as `gfx::Bitmap` is, so nothing above the decoder carries a conversion matrix.
+`WavReader` reads from a `std::istream` rather than a path, so the library opens no files and every refusal it can produce is reachable from bytes in memory.
+A waveform whose sample rate differs from the mixer's is refused with a message saying so, since this library does not resample.
+
+`OfflineDevice` renders into a `Waveform` instead of at a speaker, which is what lets the whole suite assert audio sample by sample with no hardware, no display and no wall-clock time spent.
+See [`docs/sound.md`](docs/sound.md) for why the threading, the absolute frame index and the float samples are the design rather than a stage it has not reached.
+
+`apps/sound_demo` (`antwika_sound_demo`) is the showcase: eight notes placed at exact frame positions, panned across the stereo field, played through whichever backend was selected.
+
+```sh
+build/bin/antwika_sound_demo/antwika_sound_demo                  # a generated tone, silent under null
+build/bin/antwika_sound_demo/antwika_sound_demo my-sound.wav     # or play a file instead
+```
+
+Under the default `null` backend it renders every frame and plays nothing, which is what makes it safe for a CI leg to run.
+Under `sdl3` it is audible, and it takes as long to run as the track takes to hear -- because it paces itself against how much the device has actually consumed, which is the one thing `framesPlayed()` may be read for.
 
 ## Testing
 

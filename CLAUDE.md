@@ -23,7 +23,18 @@ cmake --build build -j24
 ctest --test-dir build --output-on-failure
 ```
 
-Or in VS Code: `Ctrl+Shift+B` runs the same sequence as the default build task (see [`.vscode/tasks.json`](.vscode/tasks.json)).
+Or in VS Code: `Ctrl+Shift+B` runs [`scripts/build.sh`](scripts/build.sh), which is that sequence plus whichever backends are selected (see [`.vscode/tasks.json`](.vscode/tasks.json)).
+
+```sh
+scripts/select_backend.sh gfx sdl3     # Tasks: Run Task > Select gfx backend
+scripts/select_backend.sh sound sdl3   # Tasks: Run Task > Select sound backend
+scripts/build.sh                       # Ctrl+Shift+B
+```
+
+A selection is a line in the untracked `.vscode/<subsystem>-backend`, read on every build, so it is made once rather than on every build and is per-developer rather than the repository's.
+Input is not selectable there, since its option is `auto` and follows graphics.
+**That path keeps one build folder**, `build/` under the `conan-release` preset, whatever is selected -- which is why it passes no `build_folder_vars` conf and needs no separate install of the default configuration.
+The by-hand commands below and CI both keep a folder per backend instead, because CI's legs run in parallel and cache separately; a developer switches one at a time, so the cost of one folder is a reconfigure and a mostly-full rebuild on a switch, and the benefit is not owning a `build-*` tree per permutation.
 
 **Choosing a graphics and input backend** (`null`, `sdl3` or `raylib`; the default `null` needs no framework, draws nothing and reports no input):
 
@@ -50,7 +61,21 @@ Input has its own selection, `-o input_backend=` and the `ANTWIKA_INPUT_BACKEND`
 So the command above gets sdl3 keyboard and mouse for free, and the default build stays `null`/`null` with no new dependency.
 Setting the two apart is legal for input with no window (`-o gfx_backend=null -o input_backend=sdl3`) or a window with no input.
 Naming two *different* real frameworks is refused, by `validate()` in [`conanfile.py`](conanfile.py) and again in [`backends/CMakeLists.txt`](backends/CMakeLists.txt): they would fight over one process-global event queue, and whichever polled second would silently lose events.
-A directory selected for one subsystem only builds that subsystem's target, which is why each `backends/<name>/CMakeLists.txt` guards its two targets separately.
+A directory selected for one subsystem only builds that subsystem's target, which is why each `backends/<name>/CMakeLists.txt` guards its targets separately.
+A selection naming a directory that implements no such subsystem is refused at configure time rather than failing much later at link.
+
+Sound has its own selection too, `-o sound_backend=` and `ANTWIKA_SOUND_BACKEND`, with values `null` and `sdl3` -- and it defaults to `null` rather than to `auto`.
+Input follows graphics because a window nobody can click is useless; sound is orthogonal, and `auto` would mean every existing `-o gfx_backend=sdl3` build silently began opening an audio device.
+`raylib` is absent from the option's values because it does not implement that seam, which is the cheapest possible enforcement: Conan refuses an unlisted value before anything is downloaded.
+A lockfile is per *framework* rather than per subsystem, so `-o sound_backend=sdl3` uses `conan-sdl3.lock` like any other sdl3 build.
+
+```sh
+conan install . -of build-sdl3 -o gfx_backend=sdl3 -o sound_backend=sdl3 \
+  -c tools.cmake.cmake_layout:build_folder_vars="['options.gfx_backend']" \
+  -pr:b=./profiles/build/${CONAN_PROFILE} \
+  -pr:h=./profiles/host/${CONAN_PROFILE} \
+  --build=missing -s build_type=Release --lockfile=conan-sdl3.lock
+```
 
 **Updating the lockfiles** after a dependency bump in `conanfile.py` (what Renovate leaves stale):
 
@@ -61,6 +86,7 @@ scripts/update_lockfiles.sh   # or: Tasks: Run Task > Update Conan lockfiles
 It re-resolves every lockfile from scratch against every profile under `profiles/host/`, since CI builds all of them against the same files.
 
 Set `SDL_VIDEODRIVER=dummy` to run the SDL build with no display, or use `xvfb-run` for any backend, which is how the conformance suite is exercised without a desktop session.
+`SDL_AUDIO_DRIVER=dummy` is the sound equivalent, and the sound suite is run **without** `xvfb-run` on purpose: a sound backend that needed a display would be one that had quietly taken a dependency on video, and running it under Xvfb is exactly what would hide that.
 `raylib` reports `maxWindows() == 1`, since it keeps its one window in global state; the conformance suite skips its multi-window tests for such a backend rather than failing them.
 
 **Run a single test binary / test case:**
@@ -73,17 +99,25 @@ build/bin/antwika_replay_tests --gtest_filter='ReplayReaderTest.*'
 **Run the apps:**
 
 ```sh
-build/bin/antwika_game                        # empty grid, runs until quit
-build/bin/antwika_game --record demo.replay   # or --replay demo.replay
-build/bin/antwika_life                        # runs until stopped
-build/bin/antwika_life --record demo.replay
-build/bin/antwika_task_worker --record demo.replay
-build/bin/antwika_poker --record demo.replay
-build/bin/antwika_sudoku [--puzzle my-puzzle.txt]
-build/bin/antwika_gfx_demo                    # runs until the window is closed
-build/bin/antwika_gfx3d_demo                  # spinning cube, 900 frames
-build/bin/antwika_tower_defence               # or --record / --replay
+build/bin/antwika_game/antwika_game                      # empty grid, runs until quit
+build/bin/antwika_game/antwika_game --record demo.replay # or --replay demo.replay
+build/bin/antwika_life/antwika_life                      # runs until stopped
+build/bin/antwika_life/antwika_life --record demo.replay
+build/bin/antwika_task_worker/antwika_task_worker --record demo.replay
+build/bin/antwika_poker/antwika_poker --record demo.replay
+build/bin/antwika_sudoku/antwika_sudoku [--puzzle my-puzzle.txt]
+build/bin/antwika_gfx_demo/antwika_gfx_demo              # runs until the window is closed
+build/bin/antwika_gfx3d_demo/antwika_gfx3d_demo          # spinning cube, 900 frames
+build/bin/antwika_sound_demo/antwika_sound_demo          # eight notes; silent under null
+build/bin/antwika_sound_demo/antwika_sound_demo my.wav   # or play a file instead
+build/bin/antwika_tower_defence/antwika_tower_defence    # or --record / --replay
 ```
+
+**Every application gets a directory of its own under `bin/`**, holding the executable, whatever it opens and -- on MinGW -- the runtime DLLs it needs to start, all put there by `antwika_bundle_app()` in [`cmake/AntwikaModule.cmake`](cmake/AntwikaModule.cmake).
+Two applications ship an `atlas.png` and three a `demo.json`, so one shared `bin/` was one atlas and one demo replay between them the moment either had to sit beside its binary.
+An application finds those files through `antwika::app::assetPath()`, which asks the operating system where the running executable is (`/proc/self/exe`, `GetModuleFileNameW`) rather than reading the working directory -- so starting one from anywhere still works, and `antwika::app` is the one place under `src/` that names an operating system.
+What this replaces is a path baked in at configure time, which was the *building* machine's path: right on the machine that built it, and a directory that does not exist on any other, so every cross-built executable that opened anything died on its first line.
+Test binaries stay directly in `bin/`, since they open nothing.
 
 `antwika_tower_defence` opens a window, draws the level each tick and takes mouse input.
 Like `antwika_life` it has no end of its own: it runs until the window is closed, or until a replay dispatches `engine.stop`.
@@ -156,16 +190,45 @@ Each module (lib or app) owns its own `CMakeLists.txt`, `include/`, `src/`, and 
 
 - `apps/game` is an isometric grid you build on with the mouse: left-click lays a path tile, right-click drops a walker onto one, middle-drag pans and the wheel zooms.
   Walkers advance one cell every `game::kTicksPerStep` ticks along the paths, counted down in each walker's own component rather than off the tick number, preferring a right turn at an intersection and reversing at a dead end -- both of which fall out of one preference order in `game::nextFacing()` rather than two rules.
-  Houses and shops send one out every `game::kTicksPerSpawn` ticks, onto the lowest-ordered road beside them, counted down in each building's own component for the same reason a walker's step is -- two houses placed a tick apart would otherwise spawn in lockstep for ever.
-  A building with no road beside it holds its countdown at zero rather than resetting it, so laying a road beside a long-neglected house releases one walker and not a queue of them, and `game::kWalkerLimit` caps the population so a run left going does not grow its per-tick work without bound.
-  A tower sends nobody out: it is what a road is defended from rather than a place anybody lives.
+  **A walker slides between two cells rather than jumping, and the frames that show it happening are drawn outside the tick.**
+  `antwika::app::FramePacedSource` is an `IReplaySource` decorator that draws `framesPerTick - 1` frames in the gap before each tick's events are read, then hands back what the source it wraps returned, unchanged -- so it is a pure observer of the stream in exactly `input::PointerHintSource`'s sense, and this app's own `TickPacer` is gone because one frame a tick is the same thing it did.
+  What a frame is handed is an `app::IFramePass`, whose only method takes an `animation::Progress` and **no `World`, no `Tick` and no dispatcher**: a pass between two ticks cannot change what the simulation computes because it is given nothing it could change, which is structural rather than a promise.
+  `RenderSystem` implements both interfaces, snapshotting in `update()` and redrawing that snapshot in `draw()`, and that cached `SceneSnapshot` is the app's only render-side mutable state -- safe for the one reason above, so handing `draw()` a `World` would quietly remove the guarantee.
+  Where a walker came from is `game::Walker::from`, and it is **simulation state rather than a render channel**: unlike a pointer hint, a live run and its replay have to agree on it, since both draw the same picture from it.
+  Reconstructing it as `step(at, opposite(facing))` is right mid-run and wrong exactly where there was no previous cell -- freshly placed, freshly spawned, restored from a save -- which is why it is a `std::optional<Cell>` rather than a cell that lies.
+  The picture and the state part company at `SceneSnapshot`: `WalkerSprite` carries `from` and `ticksIntoStep` for drawing, while `WalkerView` stays what `GameSummary` and `SaveGame` hold, since a render-only field would otherwise land in a persisted schema and in the value `ReplayDeterminismTest` compares -- the same rule that keeps a road's link mask out of the snapshot.
+  The interpolation itself is `game::WalkerMotion.hpp`, exact rational arithmetic through `animation::interpolate`, so the same frame of the same tick is the same pixel on every toolchain; `FrameRateDeterminismTest` is what pins that drawing more often cannot change what a run computes.
+  **The buildings are an economy rather than a timer.**
+  `game::BuildTool` is the palette and `game::BuildingKind` is the model, with `buildingKindOf()` the one crossing between them -- they used to be one enumeration, which gave every per-building table a `Road` entry that could only ever be wrong.
+  A house consumes what is delivered to it; the four sources each send one `game::WalkerKind` out; and both facts are arithmetic over the shared declaration order rather than a switch, so a sixth kind is two enumerators and a tile.
+  `game::BuildingSystem` runs deliveries, drain, risk and demolition, and the one subtlety worth stating is that **two walkers reaching one building in a tick add up rather than racing**: each would otherwise read the same committed amount and stage a write, so the last would win and quietly halve a delivery, which is why every change accumulates in a map and each building is written once.
+  Every period derives from one `game::kTicksPerSecond` rather than being a constant per rule, and each countdown lives in the building's own component so two buildings put up a tick apart never fall into lockstep.
+  **A building may have one walker out at a time**, and it holds the handle rather than counting walkers -- a lookup instead of a scan of every walker per building per tick.
+  That handle is a cache and `world.alive()` is the authority, which is safe because `ecs::EntityManager` never reuses an index, so a stale handle can only ever be *dead* rather than somebody else.
+  A building with no road beside it holds its countdown at zero rather than resetting it, so laying a road beside a long-neglected source releases one walker and not a queue of them, and `game::kWalkerLimit` stays as a backstop.
+  **Once a walker's roaming budget is spent it either walks home or it is gone**, and that single rule is what bounds the population.
+  Every awkward case collapses into its last arm -- a walker nobody sent, one whose building has burned down, one walled off from home, one whose road was demolished under it -- so all four are answered by destroying the walker rather than by four rules, and none of them is an error.
+  A right-click walker therefore expires too; nothing in the app is immortal.
+  The route home is `game::stepTowards()`, an A* over the roads through `antwika::pathfinding`, re-searched each step with only its first move used: a route cannot live in a component, and one held in a system would be state outside the `World` that a save does not cover.
+  It is replay-safe because that search orders down to ascending `NodeId`, which is exactly why the extent is passed in rather than derived from the roads -- a bounding box computed from whichever roads happen to exist would renumber every node as one was laid, and with it the tie-break.
+  `game::BuildingIndex` is `PathIndex`'s counterpart and exists for the same reason, with two writers and only two: `GridSink` records a block as it builds on one and `BuildingSystem` clears one as it demolishes.
+  **A building covers a square block of cells rather than one**, sized by `game::footprintOf()` -- a table keyed by kind rather than a field on the component, because a field could disagree with the kind that placed it and because the ghost has to know the size *before* any entity exists.
+  **Square is load-bearing rather than a simplification**: a cell's box is `2 * halfWidth` by `2 * halfHeight` and `halfHeight` is `halfWidth / 2`, so every footprint's box comes out 2:1 -- the same shape as one atlas tile.
+  A square block therefore *is* a diamond and its art is one ordinary tile scaled up with no geometric error and no atlas work at all, where a 2x3 block is a hexagon that would need a source rect of its own, a half-tile-quantised band in the sheet, and a much heavier contract with whoever draws it.
+  `game::canPlace()` is the one statement of what a block will land on, used by `GridSink` *and* by `ghostFor()`, so what a preview promises and what a click delivers cannot drift; a refused block is shown reddened rather than hidden, since a refusal somebody can see is one they can act on.
+  Two consequences fall out of blocks that one-cell buildings never had.
+  **Painter's order stopped being optional**: two one-cell buildings could never overlap, so placement order was as good as any, and a block drawn before what is behind it is simply the wrong picture -- so `snapshotOf()` sorts on `x + y` with a tie-break on `x`, which is screen depth and is total.
+  And a walker reaches a building by *any* cell of its block, which is why `spawnCellFor()` walks the whole perimeter and `stepTowards()` makes every cell of the goal passable.
+  There is deliberately no guard against one walker serving one building twice: two of a cell's four neighbours being in one rectangle would put the cell in it too, so it would be a road under a building, which nothing places.
   The plain `GameState` struct and its `GameStateReducer` are still there, folding `game.score_increment` alongside the grid.
   **The camera is simulation state, not render state**, which is the load-bearing decision: a click arrives as a pixel, and which cell it means depends entirely on the camera, so a renderer-owned camera would leave a replay resolving recorded clicks against a different view.
   That is also why zoom is an index into a table of whole tile sizes rather than a scale factor, why `game::floorDiv()` exists instead of `operator/`, and why the projection is anchored to the camera's pan rather than the canvas centre -- anchoring to the centre would make a window resize change which cell a pixel means.
   **The app defines no event for placing anything**: a click is the input, `game::GridSink` turns it into a placement inside the tick path, and the replay stores the click and regenerates the placement -- persisting both would lay two tiles per click.
   Every tile is one blit from one texture atlas (`src/apps/game/assets/atlas.png`), addressed through `game::TileAtlas.hpp`: `game::GridScene` draws no shape of its own, so the lattice is painted into the ground tile's own edges rather than being lines the scene places, and a junction is one of sixteen road tiles indexed by which neighbours the cell joins.
   That mask is worked out in the scene from the snapshot's paths, which arrive in ascending order, so a neighbour is a binary search rather than a second index to keep in step -- and it stays out of `SceneSnapshot` and `GameSummary`, since which tile a road shows is a picture, not state a replay has to reproduce.
-  The picture itself is generated by [`scripts/generate_game_atlas.py`](scripts/generate_game_atlas.py) from the same slot numbers `TileAtlas.hpp` addresses it with, and its art is drawn in grid space so that a road stub's shape falls out of the same projection the game blits it through; CI fails if the committed PNG has drifted from the generator.
+  **The picture is hand-drawn art and is the source of truth for how the game looks**; it used to be generated by a script CI re-ran to prove the committed PNG had not drifted, and that script is gone, so nothing rebuilds the atlas and editing it is editing the art.
+  `TileAtlas.hpp` remains the address map, and it says where a tile lives arithmetically rather than as a table of rectangles, so there is no list in the header that could disagree with the picture -- repainting a tile is therefore free, and *moving* one is not.
+  What is left to catch a mistake is the `static_assert`s in that header, `TileAtlasTest`, and a check at startup that the PNG really is `kAtlasSize`; see [`docs/game-texture-atlas.md`](docs/game-texture-atlas.md) for what an artist has to produce.
   A toolbar of zoom and reset-view buttons is drawn over the grid by `game::Toolbar`, described and resolved once per tick by `game::UiSink` -- registered *before* `GridSink`, so a press is resolved against the bar before the grid sees it -- and painted last by `RenderSystem`.
   It defines no event either, for the same reason: what a recording holds is the click.
   `game::UiOverlay` is the one fact the three share, and it owns the canvas the bar is laid out against (the size the window was *asked* for) so nothing can lay it out against one size and hit-test it against another.
@@ -179,6 +242,10 @@ Each module (lib or app) owns its own `CMakeLists.txt`, `include/`, `src/`, and 
   It runs until Escape is pressed or the window is closed -- both of which are input, so both are recorded and both replay.
   Neither reaches the `null` backend, so that build runs until interrupted, and a `--record` there never gets to save.
   `src/apps/game/replays/demo.json` is a sample session to pass to `--replay`.
+  **A save is version 2 and carries the buildings**, which version 1 did not: their kinds, stock, risk and all three countdowns, since countdowns reset on load are the lockstep they exist to avoid.
+  The building/walker link is persisted **as a pair of array indices rather than as an `ecs::Entity`**, because `EntityManager` hands ids out from a monotonic counter and a restore destroys and recreates everything, so a raw handle would name nothing on the way back in.
+  Reading refuses an index past the end of the array it points into, and refuses a pair that disagree about each other, rather than repairing either -- a repaired save is a session somebody never had.
+  Restoring creates every entity *before* adding any component, because `create()` is immediate where `add()` is staged, so a link has to be built into the component rather than written onto it afterwards.
   See [`blog/013-the-camera-is-simulation-state.md`](blog/013-the-camera-is-simulation-state.md).
 - `apps/life` (Conway's Game of Life) holds state in an `antwika::ecs::World` instead: each cell is an entity with a `Cell` component, and a single `LifeSystem` advances every cell one generation per tick via the double-buffered `World`/`SystemScheduler` — see [`blog/003-an-entity-component-system-with-nowhere-to-hide-a-mutation.md`](blog/003-an-entity-component-system-with-nowhere-to-hide-a-mutation.md).
   Cells are toggled either by a scripted `life.toggle_cell` event or by dragging over them with the mouse.
@@ -252,6 +319,20 @@ Lookup is total and never throws, since it runs while a frame is being drawn: ac
 Catalogues are compiled in rather than loaded, so the library opens no files.
 See [`docs/i18n.md`](docs/i18n.md).
 
+`antwika::sound` decodes PCM audio, mixes it, and plays it through a build-time backend seam exactly as `gfx` and `input` have (`ISoundBackend`/`IDevice`/`IRenderCallback`, `SoundError`, `makeSelectedSoundBackend()`), so no code under `src/` names a concrete audio framework.
+**It owns no thread, no lock and no queue**: a device renders only when `pump()` asks it to, on the thread that asked, which is why a headless run costs no wall-clock time and the whole suite runs with no sound card.
+The usual arrangement -- a framework's own high-priority callback thread with a lock-free queue feeding it -- would be a second concurrency model in a codebase that has none, so `SoundCapabilities::selfDriven` is how a backend that genuinely cannot be pumped says so, and the conformance suite skips those tests rather than failing an honest backend.
+**A callback is handed the *absolute* index of the first frame it fills**, counted from the start, never a count since the last call -- which is the one interface decision that would be expensive to undo and the thing real devices most often get wrong, since a per-buffer counter puts every scheduled sound on the wrong frame after a single dropped buffer.
+That is what makes `PlayRequest::startFrame` mean something: a sound placed at frame 48,000 begins there rather than at the next buffer boundary, so "play it now" is deliberately not expressible.
+`framesPlayed()` is monotonic and **advisory** -- legal to read to decide how long to sleep, never to decide what to compute, since it is the one number a real device derives from hardware and hardware does not agree with a tick count.
+A `Waveform` is always normalised float whatever width the file held, decoded once to a plain value as `gfx::Bitmap` is, so there is no sample-format enum and no conversion matrix anywhere; float is unarguable here because audio is a write-only projection in exactly rendering's sense.
+`SampleBuffer` is planar and non-owning so `Mixer::render()` allocates nothing, `Waveform` is interleaved because that is what a file holds, and `OfflineDevice` is the one place the two layouts meet.
+`NullSoundBackend`, `NullDevice` and `OfflineDevice` live *in* the library rather than under `backends/`, following the `NullInputBackend` precedent, which is what puts them inside the coverage gate.
+`WavReader::read()` is hand-rolled and takes a `std::istream` rather than a path, for `PngReader`'s two reasons: the library opens no files, and every refusal it can produce is reachable from bytes in memory.
+A waveform whose rate differs from the mixer's is refused rather than played at the wrong speed, since this library does not resample.
+It depends on `antwika::log` and nothing else -- not `time`, not `ecs`, not `replay` -- and holding no clock is what leaves room for a musical layer above it, exactly as `antwika::animation` holding none does.
+See [`docs/sound.md`](docs/sound.md).
+
 `antwika::input` abstracts reading a keyboard and a pointer (`IInputBackend`/`InputEvent`/`InputCapabilities`, `InputError`), so no code under `src/` names a concrete input framework; backends live under [`backends/`](backends/) beside the graphics ones and are chosen at build time by `ANTWIKA_INPUT_BACKEND`.
 It deliberately does **not** depend on `antwika::gfx`, and `antwika::gfx` does not depend on it — reading input does not require opening a window, which is why `input::Position` duplicates `gfx::Point` rather than reusing it, and why an input event does not say which window it arrived at.
 **That rule is about the source, not the link line**: no file under `src/libs/input` includes a `<antwika/gfx/...>` header or names a `gfx::` type, and that is what it forbids.
@@ -288,7 +369,7 @@ A window may be resizable, and the two sizes it then has are deliberately named 
 **Nothing in a simulation may be driven from the reported size** — laying out or hit-testing against it would make a window resize change what a recorded click means — so it is only ever used to place what is drawn inside the drawable area; see [`docs/resizable-windows.md`](docs/resizable-windows.md).
 
 Textures are decoded once and uploaded per backend: `gfx::PngReader::read()` turns a byte stream into a `gfx::Bitmap` of straight RGBA (stb_image, compiled `STB_IMAGE_STATIC` in one TU because raylib links its own copy), `IRenderer::createTexture()` uploads it, and `drawTexture(texture, source, destination, tint)` blits part of it with a colour and alpha modulation.
-The library opens no files — an app does that, as `apps/gfx_demo` does with the PNG path baked in at configure time.
+The library opens no files — an app does that, as `apps/gfx_demo` does with `app::assetPath()`, which finds the PNG shipped in the application's own directory under `bin/`.
 A texture belongs to the renderer that made it: drawing it through any other draws nothing, and it may safely outlive its window, because each renderer's `detach()` frees its live textures before the framework tears the device down.
 Write-only still holds — `ITexture` is opaque, and there is no pixel read-back, render target or screenshot anywhere in the interface.
 

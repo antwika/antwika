@@ -2,6 +2,9 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <optional>
+
+#include "antwika/game/BuildingKind.hpp"
 
 namespace antwika::game
 {
@@ -16,6 +19,13 @@ namespace antwika::game
      * only inside the tick path by UiSink, and no event of its own is
      * ever persisted -- see UiOverlay and Toolbar.
      *
+     * This is the *palette*, and BuildingKind is the building model.
+     * A road is not a building and a building kind is not something a
+     * road can be laid with, so the two are separate enumerations with
+     * buildingKindOf() as the one crossing between them. Folding them
+     * into one gave every per-building table a Road entry that could
+     * only ever be wrong.
+     *
      * Road is first and is the default, so a session that never touches
      * the palette behaves exactly as one did before there was one.
      *
@@ -25,8 +35,10 @@ namespace antwika::game
     {
         Road = 0,
         House,
-        Shop,
-        Tower,
+        FoodSource,
+        WaterSource,
+        FireStation,
+        ArchitectPost,
     };
 
     /**
@@ -36,7 +48,7 @@ namespace antwika::game
      * cannot drift from the enumeration it counts.
      */
     inline constexpr std::size_t kBuildToolCount =
-        static_cast<std::size_t>(BuildTool::Tower) + 1;
+        static_cast<std::size_t>(BuildTool::ArchitectPost) + 1;
 
     /**
      * @brief Get a tool's index, for addressing a per-tool table.
@@ -50,35 +62,44 @@ namespace antwika::game
     }
 
     /**
+     * @brief Get which building a tool puts up, if it puts one up.
+     *
+     * The buildings are the tools after Road, in the order they are
+     * declared, which is the order BuildingKind declares them in.
+     * So this is arithmetic rather than a switch, the way turnRight()
+     * is, and adding a kind to both enumerations is the whole change.
+     *
+     * @param tool The tool to ask about.
+     * @return The kind it places, or nullopt for Road.
+     */
+    [[nodiscard]] constexpr std::optional<BuildingKind> buildingKindOf(
+        BuildTool tool) noexcept
+    {
+        if (tool == BuildTool::Road)
+        {
+            return std::nullopt;
+        }
+
+        return static_cast<BuildingKind>(buildToolIndex(tool) - 1);
+    }
+
+    /**
      * @brief Check whether a tool puts a building on a cell.
-     *
-     * Everything that is not the road is, which is why this asks about
-     * the road rather than listing the buildings: a fifth tool is then a
-     * building without this having to be edited.
-     *
      * @param tool The tool to ask about.
      * @return True for every tool but Road.
      */
     [[nodiscard]] constexpr bool placesBuilding(BuildTool tool) noexcept
     {
-        return tool != BuildTool::Road;
+        return buildingKindOf(tool).has_value();
     }
 
-    /**
-     * @brief Get which building a tool places, counting from zero.
-     *
-     * The buildings are the tools after Road, in the order they are
-     * declared, which is the order the atlas draws them in.
-     *
-     * @param tool The tool to index; Road has no building and returns
-     * zero, which is the first building's index -- ask placesBuilding()
-     * first.
-     * @return The building's index, below kBuildToolCount - 1.
-     */
-    [[nodiscard]] constexpr std::size_t buildingIndex(
-        BuildTool tool) noexcept
-    {
-        return placesBuilding(tool) ? buildToolIndex(tool) - 1 : 0;
-    }
+    // The two enumerations have to stay in step.
+    // This is where adding to one and not the other fails.
+    static_assert(!buildingKindOf(BuildTool::Road).has_value());
+    static_assert(buildingKindOf(BuildTool::House) == BuildingKind::House);
+    static_assert(
+        buildingKindOf(BuildTool::ArchitectPost)
+        == BuildingKind::ArchitectPost);
+    static_assert(kBuildToolCount == kBuildingKindCount + 1);
 
 } // namespace antwika::game

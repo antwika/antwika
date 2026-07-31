@@ -1,16 +1,21 @@
 add_executable(antwika_game
     src/AppMode.cpp
+    src/AtlasImage.cpp
     src/BuildGhost.cpp
+    src/BuildingIndex.cpp
+    src/BuildingSystem.cpp
     src/Game.cpp
     src/GameStateReducer.cpp
     src/GridScene.cpp
     src/GridSink.cpp
+    src/Homing.cpp
     src/InputFold.cpp
     src/MainMenuScene.cpp
     src/MainMenuSink.cpp
     src/ModeGatedSink.cpp
     src/ModeGatedSystem.cpp
     src/PathIndex.cpp
+    src/Placement.cpp
     src/RenderSystem.cpp
     src/KeyText.cpp
     src/SaveCli.cpp
@@ -23,11 +28,11 @@ add_executable(antwika_game
     src/SaveMigration.cpp
     src/SessionStore.cpp
     src/SpawnSystem.cpp
-    src/TickPacer.cpp
     src/Toolbar.cpp
     src/SceneSnapshot.cpp
     src/UiOverlay.cpp
     src/UiSink.cpp
+    src/WalkerMotion.cpp
     src/WalkerSystem.cpp
     src/WorldMap.cpp
     src/WorldMapScene.cpp
@@ -37,17 +42,6 @@ add_executable(antwika_game
     src/main.cpp
 )
 
-# Baked in at configure time, as apps/gfx_demo does with its logo, so the
-# binary needs no install step and no working directory.
-# Only the app gets this: every test draws a mock texture instead.
-set(ANTWIKA_GAME_ATLAS_PATH
-    "${CMAKE_CURRENT_SOURCE_DIR}/assets/atlas.png")
-
-target_compile_definitions(antwika_game
-    PRIVATE
-        ANTWIKA_GAME_ATLAS_PATH="${ANTWIKA_GAME_ATLAS_PATH}"
-)
-
 target_include_directories(antwika_game
     PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}/include
@@ -55,6 +49,7 @@ target_include_directories(antwika_game
 
 target_link_libraries(antwika_game
     PRIVATE
+        antwika::animation
         antwika::app
         antwika::ecs
         antwika::engine
@@ -63,6 +58,7 @@ target_link_libraries(antwika_game
         antwika::input
         antwika::input_backend
         antwika::log
+        antwika::pathfinding
         antwika::replay
         antwika::time
         antwika::ui
@@ -73,39 +69,11 @@ if(BUILD_TESTING AND NOT CMAKE_CROSSCOMPILING)
     add_subdirectory(tests)
 endif()
 
-if(MINGW)
-    execute_process(
-        COMMAND ${CMAKE_CXX_COMPILER} -print-file-name=libgcc_s_seh-1.dll
-        OUTPUT_VARIABLE LIBGCC_DLL
-        OUTPUT_STRIP_TRAILING_WHITESPACE
-    )
-
-    execute_process(
-        COMMAND ${CMAKE_CXX_COMPILER} -print-file-name=libstdc++-6.dll
-        OUTPUT_VARIABLE LIBSTDCPP_DLL
-        OUTPUT_STRIP_TRAILING_WHITESPACE
-    )
-
-    execute_process(
-        COMMAND ${CMAKE_CXX_COMPILER} -print-file-name=libwinpthread-1.dll
-        OUTPUT_VARIABLE LIBWINPTHREAD_DLL
-        OUTPUT_STRIP_TRAILING_WHITESPACE
-    )
-
-    foreach(DLL
-        ${LIBGCC_DLL}
-        ${LIBSTDCPP_DLL}
-        ${LIBWINPTHREAD_DLL}
-    )
-        if(EXISTS ${DLL})
-            add_custom_command(TARGET antwika_game POST_BUILD
-                COMMAND ${CMAKE_COMMAND} -E copy_if_different
-                    ${DLL}
-                    $<TARGET_FILE_DIR:antwika_game>
-            )
-        endif()
-    endforeach()
-endif()
+antwika_bundle_app(
+    TARGET antwika_game
+    ASSETS
+        assets/atlas.png
+)
 
 install(TARGETS antwika_game
     RUNTIME DESTINATION bin

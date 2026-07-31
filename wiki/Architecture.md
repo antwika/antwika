@@ -88,6 +88,11 @@ graph TD
     app[app]
     wfc[wfc]
     holdem[holdem]
+    ecs_commons[ecs_commons]
+    pathfinding[pathfinding]
+    animation[animation]
+    i18n[i18n]
+    sound[sound]
 
     log --> time
     event --> time
@@ -110,16 +115,22 @@ graph TD
     input --> log
     input --> replay
     input --> time
+    ecs_commons --> ecs
+    ecs_commons --> time
+    animation --> time
+    sound --> log
+    app --> animation
     app --> event
     app --> gfx
     app --> input
     app --> log
     app --> replay
+    app --> sound
     app --> time
     app --> ui
 ```
 
-`wfc` and `holdem` have no `antwika` dependencies at all: both are standalone domain libraries.
+`wfc`, `holdem`, `pathfinding` and `i18n` have no `antwika` dependencies at all: all four are standalone domain libraries.
 
 Two edges deserve a note.
 `replay` links `ecs` for `TickPacer` (which is an `ecs::ISystem`) and `gfx` for `WindowInputSource` and for the `gfx::Size` a replay records its canvas as.
@@ -129,8 +140,10 @@ This was reviewed and accepted rather than overlooked, so finding `gfx` in `antw
 
 ## Errors
 
-One exception type per failure category, each deriving from `std::runtime_error` and each catchable on its own: `ReplayFormatError`, `EngineLoopError`, `CommandLineError`, `EcsError`, `SchedulerError`, `WfcError`, `GfxError`, `InputError`, and in `holdem` a family of `IllegalActionError`, `TableStateError`, `CardFormatError`, `DeckExhaustedError` and `HandEvaluationError`.
+One exception type per failure category, each deriving from `std::runtime_error` and each catchable on its own: `ReplayFormatError`, `SchemaVersionError`, `EngineLoopError`, `CommandLineError`, `EcsError`, `EcsCommonsError`, `SchedulerError`, `WfcError`, `GfxError`, `InputError`, `SoundError`, `AnimationError`, `PathfindingError`, `FramePacingError`, and in `holdem` a family of `IllegalActionError`, `TableStateError`, `CardFormatError`, `DeckExhaustedError` and `HandEvaluationError`.
 Apps add their own in the same shape.
+
+`SchemaVersionError` is the one that narrows another rather than standing beside it: it is a `ReplayFormatError` restricted to the single cause a caller may want to word differently, a document this build cannot bring to the current schema version.
 
 ## Further reading
 

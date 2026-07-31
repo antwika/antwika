@@ -17,6 +17,7 @@
 #include <antwika/time/Tick.hpp>
 
 #include "antwika/game/AppMode.hpp"
+#include "antwika/game/BuildingIndex.hpp"
 #include "antwika/game/Camera.hpp"
 #include "antwika/game/GameSummary.hpp"
 #include "antwika/game/GridExtent.hpp"
@@ -117,6 +118,16 @@ namespace antwika::game
          * Likewise read by an observer built beforehand.
          */
         PathIndex &paths;
+
+        /**
+         * @brief Which cells hold a building, as of right now.
+         *
+         * Shared rather than owned by the sink that writes it, because
+         * BuildingSystem clears a cell as it demolishes one and
+         * GridSink records a cell as it builds on one -- and a note
+         * either kept to itself would drift from the other.
+         */
+        BuildingIndex &built;
 
         /**
          * @brief Which screen the run is on, folded by the tick path.
@@ -252,6 +263,17 @@ namespace antwika::game
          * line and one resumed mid-run cannot come out differently.
          */
         std::optional<SaveGame> start = std::nullopt;
+
+        /**
+         * @brief Where to write the session as the run ends, if anywhere.
+         *
+         * Written from in here rather than by the caller, because a save
+         * is taken from the World and the World does not outlive this
+         * call.
+         * It is the mirror of `start`, which loads through the same
+         * store the Load button uses.
+         */
+        std::optional<std::string> savePath = std::nullopt;
 
         /**
          * @brief The seed every generated part of the session came from.

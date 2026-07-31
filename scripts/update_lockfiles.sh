@@ -30,6 +30,11 @@ mapfile -t backends < <(
     find backends -mindepth 1 -maxdepth 1 -type d -printf '%f\n' | sort
 )
 
+# One lockfile per framework, not per subsystem.
+# Selecting a directory for graphics, for input or for sound adds the
+# same requirement to the graph, so -o sound_backend=sdl3 resolves
+# against conan-sdl3.lock exactly as -o gfx_backend=sdl3 does.
+# Naming the framework once here is what keeps that true.
 for backend in "${backends[@]}"; do
     options=()
     lockfile=conan.lock

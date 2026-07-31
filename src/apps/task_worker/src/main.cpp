@@ -2,8 +2,8 @@
 
 #include <cstdint>
 #include <iostream>
-#include <string_view>
 
+#include <antwika/app/AssetPath.hpp>
 #include <antwika/app/ConsoleLogging.hpp>
 #include <antwika/app/RunRecorded.hpp>
 #include <antwika/log/Level.hpp>
@@ -23,16 +23,14 @@ namespace
 {
     constexpr std::uint32_t kWorkerCount = 2;
 
-    constexpr std::string_view kDemoReplayPath =
-        ANTWIKA_TASK_WORKER_DEMO_REPLAY_PATH;
-
     void run(const RecordedRun &recorded)
     {
         ConsoleLogging logging(std::cout, Level::Info);
         TaskRegistry registry;
         StatusPrintSystem printSystem(std::cout, registry);
         ReplaySource source(antwika::app::scriptedEvents(
-            recorded.options.replayPath, kDemoReplayPath));
+            recorded.options.replayPath,
+            antwika::app::assetPath("demo.json")));
 
         antwika::task_worker::bootstrap(
             antwika::task_worker::TaskWorkerConfig{

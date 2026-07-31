@@ -29,6 +29,37 @@ if(ANTWIKA_GFX_BACKEND STREQUAL "null")
     )
 endif()
 
+if(ANTWIKA_SOUND_BACKEND STREQUAL "null")
+    add_library(antwika_sound_backend
+        src/SelectedSoundBackend.cpp
+    )
+
+    add_library(antwika::sound_backend ALIAS antwika_sound_backend)
+
+    set_target_properties(antwika_sound_backend PROPERTIES
+        WINDOWS_EXPORT_ALL_SYMBOLS ON
+    )
+
+    target_link_libraries(antwika_sound_backend
+        PUBLIC
+            antwika::sound
+    )
+
+    install(
+        TARGETS antwika_sound_backend
+        EXPORT antwika_sound_backendTargets
+        ARCHIVE DESTINATION lib
+        LIBRARY DESTINATION lib
+        RUNTIME DESTINATION bin
+    )
+
+    install(
+        EXPORT antwika_sound_backendTargets
+        NAMESPACE antwika::
+        DESTINATION lib/cmake/antwika
+    )
+endif()
+
 if(ANTWIKA_INPUT_BACKEND STREQUAL "null")
     add_library(antwika_input_backend
         src/SelectedInputBackend.cpp

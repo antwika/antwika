@@ -1,6 +1,8 @@
 #pragma once
 
+#include <array>
 #include <cstdint>
+#include <optional>
 #include <string_view>
 #include <vector>
 
@@ -8,13 +10,18 @@
 
 #include <antwika/replay/MigrationChain.hpp>
 
+#include <antwika/ecs/World.hpp>
+
+#include "antwika/game/BuildingKind.hpp"
 #include "antwika/game/Camera.hpp"
 #include "antwika/game/Cell.hpp"
 #include "antwika/game/GameState.hpp"
 #include "antwika/game/GameSummary.hpp"
 #include "antwika/game/GridExtent.hpp"
 #include "antwika/game/PathIndex.hpp"
+#include "antwika/game/Resource.hpp"
 #include "antwika/game/SceneSnapshot.hpp"
+#include "antwika/game/Walker.hpp"
 
 namespace antwika::game
 {
@@ -46,7 +53,7 @@ namespace antwika::game
      * one member every persisted document in this code base carries its
      * version in, rather than a name of this format's own.
      */
-    inline constexpr std::uint32_t kSaveFormatVersion = 1;
+    inline constexpr std::uint32_t kSaveFormatVersion = 2;
 
     /**
      * @brief Build the migration chain for the save document format.
@@ -81,6 +88,63 @@ namespace antwika::game
      * the honest answer -- a half-finished drag is a fact about a hand on
      * a mouse, not about the world.
      */
+    /**
+     * @brief One walker, as a file has to remember it.
+     *
+     * Richer than the WalkerView a summary carries, because a summary
+     * describes what is on screen and a save has to bring a session back
+     * exactly as it was -- a walker halfway home with a half-empty load
+     * is not the same walker as a fresh one on the same cell.
+     */
+    struct SavedWalker
+    {
+        Cell at;
+        Direction facing = Direction::East;
+        WalkerKind kind = WalkerKind::Food;
+        std::int32_t carried = 0;
+        std::int32_t stepsUntilHome = kRoamingSteps;
+        std::uint8_t ticksUntilStep = 0;
+
+        /**
+         * @brief Which saved building sent it, by index.
+         *
+         * **An index rather than the ecs::Entity it is in memory.**
+         * EntityManager hands out ids from a monotonic counter and a
+         * restore destroys and recreates every entity, so the recreated
+         * building is a different id from the one that was saved and a
+         * raw handle would name nothing at all on the way back in.
+         */
+        std::optional<std::size_t> home = std::nullopt;
+
+        [[nodiscard]] bool operator==(const SavedWalker &other) const
+            = default;
+    };
+
+    /**
+     * @brief One building, as a file has to remember it.
+     *
+     * Every countdown is here rather than reset on load, because they
+     * exist precisely so two buildings put up a tick apart do not drain,
+     * risk and spawn in lockstep -- and starting them all from the same
+     * number is exactly the lockstep they avoid.
+     */
+    struct SavedBuilding
+    {
+        Cell at;
+        BuildingKind kind = BuildingKind::House;
+        std::array<std::int32_t, kResourceCount> stock{};
+        std::int32_t risk = 0;
+        std::int32_t ticksUntilSpawn = 0;
+        std::int32_t ticksUntilDrain = 0;
+        std::int32_t ticksUntilRisk = 0;
+
+        /** @brief Which saved walker it has out, by index. */
+        std::optional<std::size_t> walker = std::nullopt;
+
+        [[nodiscard]] bool operator==(const SavedBuilding &other) const
+            = default;
+    };
+
     struct SaveGame
     {
         /** @brief The plain app state: ticks folded so far, and score. */
@@ -100,13 +164,14 @@ namespace antwika::game
          * taken straight from a summary.
          * pathIndexOf() turns it back into the index a run needs.
          *
-         * When buildings other than paths exist, they belong beside this
-         * as their own member and their own schema property.
          */
         std::vector<Cell> paths;
 
-        /** @brief Every walker: where it is and which way it faces. */
-        std::vector<WalkerView> walkers;
+        /** @brief Every walker, in the world's own order. */
+        std::vector<SavedWalker> walkers;
+
+        /** @brief Every building, in the world's own order. */
+        std::vector<SavedBuilding> buildings;
 
         /**
          * @brief The seed every generated part of the session came from.
@@ -158,20 +223,31 @@ namespace antwika::game
     [[nodiscard]] SaveGame saveGameFromJson(const nlohmann::json &j);
 
     /**
-     * @brief Take a save from what a run amounted to.
+     * @brief Take a save from a running session.
      *
-     * The integration point: bootstrap() already returns a GameSummary
-     * holding the state, the paths, the walkers and the camera, so an app
-     * that wants to save calls this and nothing else.
+     * Read from the World rather than from a GameSummary, because a
+     * summary describes what is on screen and a save has to bring the
+     * session back exactly as it was.
+     * The loads, the countdowns and which building sent which walker are
+     * none of them a picture.
      *
-     * @param summary What the run amounted to.
-     * @param extent The bounds the run was configured with, which a
-     * summary does not carry.
+     * The building/walker link is written as a pair of indices into the
+     * two arrays this produces, so a file names nothing that depends on
+     * how one run happened to number its entities.
+     *
+     * @param world Read for the walkers and the buildings.
+     * @param paths The roads to record.
+     * @param camera Where the grid is looked at from.
+     * @param state The plain app state to record.
+     * @param extent The bounds the run was configured with.
      * @param seed The seed the run was configured with.
      * @return The state to write.
      */
     [[nodiscard]] SaveGame saveGameOf(
-        const GameSummary &summary,
+        const antwika::ecs::World &world,
+        const PathIndex &paths,
+        const Camera &camera,
+        const GameState &state,
         GridExtent extent,
         std::uint64_t seed = 0);
 

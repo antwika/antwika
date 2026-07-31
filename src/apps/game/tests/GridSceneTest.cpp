@@ -5,6 +5,7 @@
 #include <cstdint>
 #include <vector>
 
+#include <antwika/animation/Progress.hpp>
 #include <antwika/gfx/Color.hpp>
 #include <antwika/gfx/Point.hpp>
 #include <antwika/gfx/Rect.hpp>
@@ -21,6 +22,7 @@
 #include "antwika/game/SceneSnapshot.hpp"
 #include "antwika/game/TileAtlas.hpp"
 
+using antwika::animation::Progress;
 using antwika::game::Camera;
 using antwika::game::Cell;
 using antwika::game::cellBounds;
@@ -32,7 +34,7 @@ using antwika::game::linkBit;
 using antwika::game::roadTile;
 using antwika::game::SceneSnapshot;
 using antwika::game::walkerTile;
-using antwika::game::WalkerView;
+using antwika::game::WalkerSprite;
 using antwika::gfx::Color;
 using antwika::gfx::ITexture;
 using antwika::gfx::Point;
@@ -78,6 +80,8 @@ namespace
             Rect source;
             Rect destination;
             Color tint;
+
+            [[nodiscard]] bool operator==(const Blit &other) const = default;
         };
 
         [[nodiscard]] std::size_t blitsOf(Rect source) const
@@ -102,7 +106,7 @@ namespace
         Camera camera,
         GridExtent extent,
         std::vector<Cell> paths = {},
-        std::vector<WalkerView> walkers = {})
+        std::vector<WalkerSprite> walkers = {})
     {
         return SceneSnapshot{
             .camera = camera,
@@ -165,7 +169,7 @@ TEST_F(GridSceneTest, Draw_BlitsEachTileIntoItsOwnCellsBounds)
             camera,
             GridExtent{},
             {where},
-            {WalkerView{.at = where, .facing = Direction::East}}),
+            {WalkerSprite{.at = where, .facing = Direction::East}}),
         atlas);
 
     ASSERT_EQ(renderer.blits.size(), 2U);
@@ -187,7 +191,7 @@ TEST_F(GridSceneTest, Draw_BlitsTheAtlasItIsGivenAndTintsNothing)
             Camera(Point{.x = 300, .y = 40}, 2),
             GridExtent{.width = 2, .height = 2},
             {Cell{.x = 0, .y = 0}},
-            {WalkerView{.at = Cell{.x = 0, .y = 0}}}),
+            {WalkerSprite{.at = Cell{.x = 0, .y = 0}}}),
         atlas);
 
     ASSERT_FALSE(renderer.blits.empty());
@@ -278,7 +282,7 @@ TEST_F(GridSceneTest, Draw_ChoosesAWalkerTileByWhichWayItFaces)
                 Camera(Point{.x = 300, .y = 40}, 2),
                 GridExtent{},
                 {},
-                {WalkerView{.at = where, .facing = facing}}),
+                {WalkerSprite{.at = where, .facing = facing}}),
             atlas);
 
         ASSERT_EQ(each.blits.size(), 1U);
@@ -298,7 +302,7 @@ TEST_F(GridSceneTest, Draw_BlitsAWalkerAfterTheGroundAndTheRoad)
             Camera(Point{.x = 300, .y = 40}, 2),
             GridExtent{.width = 1, .height = 1},
             {where},
-            {WalkerView{.at = where, .facing = Direction::North}}),
+            {WalkerSprite{.at = where, .facing = Direction::North}}),
         atlas);
 
     ASSERT_EQ(renderer.blits.size(), 3U);
@@ -319,7 +323,7 @@ TEST_F(GridSceneTest, Draw_SkipsEverythingEntirelyOffTheCanvas)
             Camera(Point{.x = -100000, .y = -100000}, 2),
             GridExtent{.width = 4, .height = 4},
             {Cell{.x = 1, .y = 1}},
-            {WalkerView{.at = Cell{.x = 2, .y = 2}}}),
+            {WalkerSprite{.at = Cell{.x = 2, .y = 2}}}),
         atlas);
 
     EXPECT_TRUE(renderer.blits.empty());
@@ -344,7 +348,7 @@ TEST_F(GridSceneTest, Draw_SkipsCellsPastEachEdgeOfTheCanvas)
                 Camera(pan, 2),
                 GridExtent{.width = 2, .height = 2},
                 {Cell{.x = 0, .y = 0}},
-                {WalkerView{.at = Cell{.x = 1, .y = 1}}}),
+                {WalkerSprite{.at = Cell{.x = 1, .y = 1}}}),
             atlas);
 
         EXPECT_TRUE(each.blits.empty())
@@ -446,6 +450,58 @@ TEST_F(GridSceneTest, Draw_AsksNothingOfTheTextureItBlits)
             Camera(),
             GridExtent{.width = 1, .height = 1},
             {Cell{.x = 0, .y = 0}},
-            {WalkerView{}}),
+            {WalkerSprite{}}),
         atlas);
+}
+
+TEST_F(GridSceneTest, Draw_SlidesAWalkerBetweenTheCellsItIsStepping)
+{
+    const Camera camera(Point{.x = 300, .y = 40}, 2);
+    constexpr Cell from{.x = 1, .y = 1};
+    constexpr Cell to{.x = 2, .y = 1};
+
+    const auto stepping = snapshot(
+        camera,
+        GridExtent{},
+        {},
+        {WalkerSprite{
+            .at = to,
+            .facing = Direction::East,
+            .from = from,
+            .ticksIntoStep = 0}});
+
+    scene.draw(renderer, kCanvas, stepping, atlas, Progress());
+    ASSERT_EQ(renderer.blits.size(), 1U);
+    const auto start = renderer.blits[0].destination;
+
+    renderer.blits.clear();
+    scene.draw(renderer, kCanvas, stepping, atlas, Progress(1, 2));
+    ASSERT_EQ(renderer.blits.size(), 1U);
+    const auto middle = renderer.blits[0].destination;
+
+    // The first frame of a step is still on the cell it left.
+    // A later frame of the same tick has moved on.
+    // And the snapshot did not change between the two.
+    EXPECT_EQ(start, cellBounds(from, camera));
+    EXPECT_NE(middle, start);
+    EXPECT_NE(middle, cellBounds(to, camera));
+}
+
+TEST_F(GridSceneTest, Draw_LeavesEverythingButTheWalkersWhereItWas)
+{
+    const Camera camera(Point{.x = 300, .y = 40}, 2);
+    constexpr Cell where{.x = 1, .y = 1};
+
+    const auto scene_ = snapshot(camera, GridExtent{.width = 2, .height = 2},
+        {where}, {});
+
+    scene.draw(renderer, kCanvas, scene_, atlas, Progress());
+    const auto atTick = renderer.blits;
+
+    renderer.blits.clear();
+    scene.draw(renderer, kCanvas, scene_, atlas, Progress(1, 2));
+
+    // A cell does not move between two ticks.
+    // So only the walkers differ from one frame to the next.
+    EXPECT_EQ(renderer.blits, atTick);
 }

@@ -21,6 +21,8 @@ As with [`gfx`](gfx.md), the concrete frameworks live under `backends/` and no f
 | `CoalescingPointerSource.hpp` | `CoalescingPointerSource` | Keeps only the last of each run of movements inside a tick. |
 | `IdleMotionSource.hpp` | `IdleMotionSource` | Holds back movement arriving while no button is held. |
 | `StopOnKeySource.hpp` | `StopOnKeySource` | Appends `engine.stop` when a nominated key is pressed. |
+| `PointerHintChannel.hpp` | `PointerHintChannel`, `PointerHint` | One value cell holding where the pointer is, read through `forRenderingOnly()`. |
+| `PointerHintSource.hpp` | `PointerHintSource` | Publishes that hint once per tick; a pure observer of the stream. |
 | `InputPipeline.hpp` | `InputPipeline`, `InputPipelineOptions` | Assembles those decorators in the right order. |
 | `InputState.hpp`, `Keyboard.hpp`, `Mouse.hpp` | — | Folding edges into held state, for a caller that wants it. |
 | `ActionMap.hpp`, `Binding.hpp` | `ActionMap`, `Binding` | Naming a `Key` or `MouseButton` as an action. |
@@ -50,8 +52,33 @@ No `input.*` name may ever be added to an app's self-generated-event list, becau
 `CoalescingPointerSource` and `IdleMotionSource` sit before `TickEventRecorder`, so the file always holds exactly what the run consumed; doing it after the recorder would make the file disagree with the run, and doing it in a backend would hide it behind the seam.
 `IdleMotionSource` latches the last held-back movement and releases it immediately *ahead* of the first event that could read a position, because `input.pointer_scroll` carries no position of its own and a zoom must anchor on the folded one.
 Which decorator an app attaches is an app-level choice: [`game`](../apps/game.md) takes both, [`life`](../apps/life.md) takes only the gate, because a drag toggles every cell it crosses and coalescing a run inside a tick would skip some.
-An app attaching the gate cannot draw anything that follows a free-moving pointer, since the movements between clicks are deliberately not in the tick stream.
+
+Both exist because a window system reports motion at its own rate rather than the app's — SDL will report several hundred movements a second into a run that ticks 25 times a second — so an unthinned `--record` file grows at the window system's rate and is mostly positions nothing ever read.
+
+**A free-moving pointer reaches an app on a channel that is not an event and is in no recording.**
+`PointerHintChannel` holds one `PointerHint`, written once per tick by `PointerHintSource` and read through an accessor named `forRenderingOnly()`.
+An app opts in by naming a channel in `InputPipelineOptions::pointerHint`; naming none attaches nothing, so an existing app records byte for byte what it recorded before.
+
+**What is read off that channel may decide what is drawn, and nothing else.**
+That is the entire safety condition, and it is the price of the channel existing.
+A live run and its replay do not agree on the value, deliberately: a replay holds none of the motion between clicks, so replaying publishes only the positions its recorded events happen to carry.
+Fold a hint into anything a replay reproduces and the two diverge silently, with the symptom nowhere near the line that caused it.
+
+**That it is a value cell rather than a marked event is what makes that structural.**
+A "do not record" event would still travel the dispatcher, so every sink an app owns would be handed it and the rule would become something each sink had to observe.
+A value cell reaches a sink only if somebody passed that sink the channel in a `main.cpp`, in the open, next to the pipeline that publishes it.
+
+`PointerHintSource` returns its inner source's events unmodified, so a recording is a function of a stream it cannot touch — which is what makes attaching it free rather than merely cheap.
+`InputPipeline` attaches it immediately outside `LiveInputSource`, so no thinning decorator can hide a movement from it, and it is attached on a replay run too so the two branches still differ only in whether a device is read.
+
+**The gate and the channel are not alternatives.**
+The gate thins the recording and publishes nothing; the channel publishes and thins nothing; an app that draws a hover wants both.
+The consequence to hold in mind is that the channel runs *ahead* of the event stream — on the tick a gated movement arrives the channel already has it, while the stream will not carry it until the next press, wheel or key — which is the point of the channel and exactly why the two may never be mixed.
 
 **One queue, one drainer.**
 SDL drains a single process-global queue for windows *and* input, so `backends/sdl3` owns a reference-counted `Sdl3Pump` shared by both of its targets, which calls `SDL_PollEvent` once and routes each event to the right queue.
 Naming two different real frameworks for graphics and input is refused at configure time for the same reason.
+
+Starting SDL itself is separate again: `Sdl3Runtime` does `SDL_Init(0)` once for the process and each seam claims its own subsystem, so a build selecting sdl3 for [`sound`](sound.md) alone never asks for a display.
+
+The raylib input backend reports a pointer and no keyboard, and says so through its capabilities rather than claiming a device whose events never arrive.

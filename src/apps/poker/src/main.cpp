@@ -1,9 +1,8 @@
 #include "antwika/poker/PokerRoom.hpp"
 
 #include <iostream>
-#include <string>
-#include <string_view>
 
+#include <antwika/app/AssetPath.hpp>
 #include <antwika/app/ConsoleLogging.hpp>
 #include <antwika/app/PngFile.hpp>
 #include <antwika/app/RunRecorded.hpp>
@@ -27,9 +26,6 @@ using antwika::time::SystemSleeper;
 
 namespace
 {
-    constexpr std::string_view kDemoReplayPath = ANTWIKA_POKER_DEMO_REPLAY_PATH;
-    const std::string kAtlasPath = ANTWIKA_POKER_ATLAS_PATH;
-
     void run(const RecordedRun &recorded)
     {
         const auto watch =
@@ -39,7 +35,8 @@ namespace
         SystemClock clock;
         SystemSleeper sleeper;
         ReplaySource source(antwika::app::scriptedEvents(
-            recorded.options.replayPath, kDemoReplayPath));
+            recorded.options.replayPath,
+            antwika::app::assetPath("demo.json")));
 
         // The window is always opened, as in the gfx demo.
         // Under the headless backend it draws and costs nothing.
@@ -47,8 +44,8 @@ namespace
             antwika::gfx::makeSelectedBackend(logging.logger());
 
         // antwika::gfx opens no files, so the app reads the atlas.
-        const auto atlas =
-            antwika::app::readPngFile(kAtlasPath, "antwika_poker");
+        const auto atlas = antwika::app::readPngFile(
+            antwika::app::assetPath("atlas.png"), "antwika_poker");
         const WindowSetup window{
             .backend = *backend,
             .sleeper = sleeper,

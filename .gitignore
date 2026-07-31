@@ -20,5 +20,6 @@ __pycache__
 # A crash drops one of these next to whatever was running.
 core.*
 
-# Which gfx backend the VS Code build task builds.
-.vscode/gfx-backend
+# Which backends the VS Code build task builds, one file per
+# subsystem.
+/.vscode/*-backend
