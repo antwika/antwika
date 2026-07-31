@@ -5,7 +5,6 @@
 #include <antwika/gfx/Color.hpp>
 #include <antwika/ui/Alignment.hpp>
 #include <antwika/ui/ButtonSpec.hpp>
-#include <antwika/ui/ButtonState.hpp>
 #include <antwika/ui/Context.hpp>
 #include <antwika/ui/Painter.hpp>
 #include <antwika/ui/Sizing.hpp>
@@ -16,7 +15,6 @@ namespace antwika::game
 
     using antwika::gfx::Color;
     using antwika::ui::Alignment;
-    using antwika::ui::ButtonState;
     using antwika::ui::Context;
     using antwika::ui::fixedSize;
     using antwika::ui::kFit;
@@ -60,14 +58,9 @@ namespace antwika::game
                     "New Game",
                     {.id = menuWidgets::kNewGame, .width = kGrow});
 
-                // TODO(game-save-load): give this an id and a mode.
-                // That is for whatever adds a saved game to load.
-                // It is unnamed on purpose until then.
-                // A button with no WidgetId cannot be hovered.
-                // So the placeholder is inert, not merely painted so.
                 ui.button(
                     "Load Game",
-                    {.width = kGrow, .state = ButtonState::Pressed});
+                    {.id = menuWidgets::kLoadGame, .width = kGrow});
 
                 ui.button(
                     "World Map",

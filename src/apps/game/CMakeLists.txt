@@ -11,10 +11,16 @@ add_executable(antwika_game
     src/ModeGatedSystem.cpp
     src/PathIndex.cpp
     src/RenderSystem.cpp
+    src/KeyText.cpp
     src/SaveCli.cpp
     src/SaveGame.cpp
     src/SaveGameFile.cpp
+    src/SaveDirectory.cpp
+    src/SaveLoadScene.cpp
+    src/SaveLoadSink.cpp
+    src/SaveLoadState.cpp
     src/SaveMigration.cpp
+    src/SessionStore.cpp
     src/TickPacer.cpp
     src/Toolbar.cpp
     src/SceneSnapshot.cpp

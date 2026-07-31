@@ -3,6 +3,8 @@
 #include <chrono>
 #include <functional>
 #include <iostream>
+#include <string>
+#include <string_view>
 #include <vector>
 
 #include <antwika/app/ConsoleLogging.hpp>
@@ -27,6 +29,10 @@
 #include "antwika/game/MainMenuScene.hpp"
 #include "antwika/game/PathIndex.hpp"
 #include "antwika/game/RenderSystem.hpp"
+#include "antwika/game/SaveCli.hpp"
+#include "antwika/game/SaveDirectory.hpp"
+#include "antwika/game/SaveGameFile.hpp"
+#include "antwika/game/SaveLoadScene.hpp"
 #include "antwika/game/TickPacer.hpp"
 #include "antwika/game/UiCanvas.hpp"
 #include "antwika/game/UiOverlay.hpp"
@@ -45,6 +51,7 @@ using antwika::game::GridScene;
 using antwika::game::MainMenuScene;
 using antwika::game::PathIndex;
 using antwika::game::RenderSystem;
+using antwika::game::SaveLoadScene;
 using antwika::game::TickPacer;
 using antwika::game::UiOverlay;
 using antwika::game::WindowInputSource;
@@ -81,6 +88,11 @@ namespace
     // It is a constant rather than a flag.
     // A flag would let two runs of one recording be on two worlds.
     constexpr WorldMapConfig kWorld{.width = 24, .height = 16, .seed = 7};
+
+    // Relative to wherever the binary was started from.
+    // Listed once, before the loop, and never from inside a tick.
+    // A directory read per tick would not replay -- see listSaveGames().
+    constexpr std::string_view kSaveDirectory = "saves";
 
     void run(const RecordedRun &recorded)
     {
@@ -125,6 +137,9 @@ namespace
         // That is what makes a recorded click hit the same button.
         UiOverlay overlay(antwika::game::kUiCanvas);
         UiOverlay menuOverlay(antwika::game::kUiCanvas);
+        UiOverlay saveOverlay(antwika::game::kUiCanvas);
+
+        const SaveLoadScene saveScene;
 
         const WorldMapScene worldScene;
         WorldMapState cities(antwika::game::generateWorldMap(kWorld));
@@ -141,6 +156,8 @@ namespace
             .overlay = overlay,
             .menuScene = menuScene,
             .menuOverlay = menuOverlay,
+            .saveScene = saveScene,
+            .saveOverlay = saveOverlay,
             .worldScene = worldScene,
             .cities = cities});
         SystemSleeper sleeper;
@@ -176,8 +193,10 @@ namespace
         // StopSignal ends the run on whichever arrives first.
         WindowInputSource source(input, *backend, window->id());
 
-        antwika::game::printSummary(
-            std::cout,
+        const auto saveOptions =
+            antwika::game::saveCliOptionsFrom(recorded.commandLine);
+
+        const auto summary =
             antwika::game::bootstrap(antwika::game::GameConfig{
                 .logger = logger,
                 .eventSink = recorded.eventSink,
@@ -192,11 +211,24 @@ namespace
                 .overlay = overlay,
                 .menuOverlay = menuOverlay,
                 .world = cities,
-                .canvas = antwika::game::kUiCanvas}));
+                .saveOverlay = saveOverlay,
+                .saves = antwika::game::listSaveGames(kSaveDirectory),
+                .saveDirectory = std::string(kSaveDirectory),
+                .start = antwika::game::loadGameFileIfNamed(
+                    saveOptions.loadPath),
+                .seed = kWorld.seed,
+                .canvas = antwika::game::kUiCanvas});
+
+        antwika::game::saveGameFileIfNamed(
+            antwika::game::saveGameOf(summary, kExtent, kWorld.seed),
+            saveOptions.savePath);
+
+        antwika::game::printSummary(std::cout, summary);
     }
 } // namespace
 
 int main(int argc, char **argv)
 {
-    return antwika::app::runRecorded(argc, argv, "antwika_game", run);
+    return antwika::app::runRecorded(
+        argc, argv, "antwika_game", run, antwika::game::saveCliFlags());
 }

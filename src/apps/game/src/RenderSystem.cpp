@@ -34,6 +34,13 @@ namespace antwika::game
             return;
         }
 
+        if (setup.mode.mode() == AppMode::SaveLoad)
+        {
+            setup.saveScene.draw(renderer, setup.saveOverlay.commands());
+            renderer.present();
+            return;
+        }
+
         if (setup.mode.mode() == AppMode::WorldMap)
         {
             renderer.clear(kWorldBackdrop);

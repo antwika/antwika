@@ -1,6 +1,7 @@
 #pragma once
 
 #include <istream>
+#include <optional>
 #include <ostream>
 #include <string>
 
@@ -54,5 +55,33 @@ namespace antwika::game
      * differently: a file that is not there is not a malformed one.
      */
     [[nodiscard]] SaveGame loadGameFile(const std::string &path);
+
+    /**
+     * @brief Read a save only if one was named.
+     *
+     * The `--load` flag's whole behaviour, in a function a test can
+     * reach: an application's main() is excluded from the coverage
+     * report and so may hold no branch of its own, and "was a path
+     * given?" is exactly the branch that would otherwise live there.
+     *
+     * @param path What `--load` named, if anything.
+     * @return The state to start from, or nothing for a run starting on
+     * an empty grid.
+     * @throws SaveFormatError If a named file cannot be read.
+     */
+    [[nodiscard]] std::optional<SaveGame> loadGameFileIfNamed(
+        const std::optional<std::string> &path);
+
+    /**
+     * @brief Write a save only if one was asked for.
+     *
+     * The `--save` flag's half of the same rule.
+     *
+     * @param save The state to write.
+     * @param path What `--save` named, if anything.
+     * @throws SaveFormatError If a named file cannot be written.
+     */
+    void saveGameFileIfNamed(
+        const SaveGame &save, const std::optional<std::string> &path);
 
 } // namespace antwika::game

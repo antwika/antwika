@@ -13,6 +13,7 @@
 #include "antwika/game/GridScene.hpp"
 #include "antwika/game/MainMenuScene.hpp"
 #include "antwika/game/PathIndex.hpp"
+#include "antwika/game/SaveLoadScene.hpp"
 #include "antwika/game/UiOverlay.hpp"
 #include "antwika/game/WorldMapScene.hpp"
 #include "antwika/game/WorldMapState.hpp"
@@ -81,6 +82,12 @@ namespace antwika::game
 
         /** @brief Read for the menu's picture. */
         const UiOverlay &menuOverlay;
+
+        /** @brief Draws the save/load screen. */
+        const SaveLoadScene &saveScene;
+
+        /** @brief Read for the save/load screen's picture. */
+        const UiOverlay &saveOverlay;
 
         /** @brief Draws the world and its cities. */
         const WorldMapScene &worldScene;

@@ -34,6 +34,7 @@
 #include "antwika/game/UiCanvas.hpp"
 #include "antwika/game/UiOverlay.hpp"
 #include "antwika/game/PathIndex.hpp"
+#include "antwika/game/SaveGame.hpp"
 #include "antwika/game/WorldMap.hpp"
 #include "antwika/game/WorldMapLayout.hpp"
 #include "antwika/game/WorldMapSink.hpp"
@@ -652,4 +653,80 @@ TEST(BootstrapTest, Bootstrap_BuildsInTheCityItOpenedAndKeepsItOnTheWayBack)
         harness.cities.cityPaths(1).has(antwika::game::Cell{.x = 2, .y = 3}));
     EXPECT_FALSE(
         harness.cities.cityPaths(0).has(antwika::game::Cell{.x = 2, .y = 3}));
+}
+
+// Save and load, through the front door.
+namespace
+{
+    struct SaveHarness
+    {
+        NiceMock<MockLogger> logger;
+        NiceMock<MockEventSink> eventSink;
+        InputEventCodec codec;
+        Camera camera;
+        PathIndex paths;
+        AppModeState mode;
+        antwika::game::UiOverlay menuOverlay{antwika::game::kUiCanvas};
+        antwika::game::UiOverlay saveOverlay{antwika::game::kUiCanvas};
+
+        antwika::game::GameSummary run(
+            ReplaySource &source,
+            std::optional<antwika::game::SaveGame> start = std::nullopt)
+        {
+            return antwika::game::bootstrap(
+                antwika::game::GameConfig{
+                    .logger = logger,
+                    .eventSink = eventSink,
+                    .inputSource = source,
+                    .codec = codec,
+                    .extent = kExtent,
+                    .camera = camera,
+                    .paths = paths,
+                    .mode = mode,
+                    .maxTicks = 20,
+                    .menuOverlay = menuOverlay,
+                    .saveOverlay = saveOverlay,
+                    .start = std::move(start)});
+        }
+    };
+} // namespace
+
+TEST(BootstrapTest, Bootstrap_PressingLoadGameOpensTheSaveScreen)
+{
+    SaveHarness harness;
+    const InputEventCodec codec;
+
+    ReplaySource source({
+        leftPressAt(
+            codec, 0, menuPixelOn(antwika::game::menuWidgets::kLoadGame)),
+        TickEvent{
+            .tick = 2,
+            .event = Event{.name = antwika::engine::events::kStop}},
+    });
+
+    harness.run(source);
+
+    EXPECT_EQ(harness.mode.mode(), antwika::game::AppMode::SaveLoad);
+}
+
+// What `--load` does, restored through the very store the button uses.
+TEST(BootstrapTest, Bootstrap_StartsFromASaveWhenGivenOne)
+{
+    SaveHarness harness;
+    antwika::game::SaveGame start;
+    start.paths = {{.x = 5, .y = 6}, {.x = 6, .y = 6}};
+    start.state = GameState{.ticksProcessed = 0, .score = 4};
+    start.camera = Camera(Point{.x = 7, .y = 8}, 1);
+
+    ReplaySource source({
+        TickEvent{
+            .tick = 1,
+            .event = Event{.name = antwika::engine::events::kStop}},
+    });
+
+    const auto summary = harness.run(source, start);
+
+    EXPECT_EQ(summary.paths, start.paths);
+    EXPECT_EQ(summary.camera, start.camera);
+    EXPECT_EQ(summary.state.score, 4U);
 }

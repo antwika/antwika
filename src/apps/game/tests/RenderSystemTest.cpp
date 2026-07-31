@@ -22,6 +22,7 @@
 #include "antwika/game/MainMenuScene.hpp"
 #include "antwika/game/PathIndex.hpp"
 #include "antwika/game/RenderSystem.hpp"
+#include "antwika/game/SaveLoadScene.hpp"
 #include "antwika/game/TileAtlas.hpp"
 #include "antwika/game/UiOverlay.hpp"
 #include "antwika/game/WorldMap.hpp"
@@ -39,6 +40,7 @@ using antwika::game::MainMenuScene;
 using antwika::game::PathIndex;
 using antwika::game::RenderSetup;
 using antwika::game::RenderSystem;
+using antwika::game::SaveLoadScene;
 using antwika::game::roadTile;
 using antwika::game::UiOverlay;
 using antwika::game::WorldMapScene;
@@ -94,6 +96,8 @@ namespace
                 .overlay = overlay,
                 .menuScene = menuScene,
                 .menuOverlay = menuOverlay,
+                .saveScene = saveScene,
+                .saveOverlay = saveOverlay,
                 .worldScene = worldScene,
                 .cities = cities};
         }
@@ -105,8 +109,10 @@ namespace
         const GridScene scene{};
         const MainMenuScene menuScene{};
         const WorldMapScene worldScene{};
+        const SaveLoadScene saveScene{};
         UiOverlay overlay;
         UiOverlay menuOverlay{kCanvas};
+        UiOverlay saveOverlay{kCanvas};
         NiceMock<MockTexture> atlas;
         NiceMock<MockRenderer> renderer;
         NiceMock<MockWindow> window;
@@ -191,6 +197,21 @@ TEST_F(RenderSystemTest, Update_DrawsTheWorldMapAndNoGridInThatMode)
 
     // Thirty-six tiles, and a marker for each of the four cities.
     EXPECT_CALL(renderer, drawRect(_, _)).Times(6 * 6 + 4);
+    EXPECT_CALL(renderer, present());
+
+    system.update(world, 0);
+}
+
+// And for the save screen, which is a mode of its own as well.
+TEST_F(RenderSystemTest, Update_DrawsTheSaveScreenAndNoGridInThatMode)
+{
+    paths.insert(Cell{.x = 0, .y = 0});
+    putInMode(AppMode::SaveLoad);
+
+    RenderSystem system(setup());
+
+    EXPECT_CALL(renderer, drawTexture(_, _, _, _)).Times(0);
+    EXPECT_CALL(renderer, clear(_));
     EXPECT_CALL(renderer, present());
 
     system.update(world, 0);

@@ -1,8 +1,10 @@
 #pragma once
 
+#include <cstdint>
 #include <functional>
 #include <optional>
 #include <ostream>
+#include <string>
 #include <vector>
 
 #include <antwika/ecs/ISystem.hpp>
@@ -19,6 +21,7 @@
 #include "antwika/game/GameSummary.hpp"
 #include "antwika/game/GridExtent.hpp"
 #include "antwika/game/PathIndex.hpp"
+#include "antwika/game/SaveGame.hpp"
 #include "antwika/game/UiCanvas.hpp"
 #include "antwika/game/UiOverlay.hpp"
 #include "antwika/game/WorldMapState.hpp"
@@ -208,6 +211,55 @@ namespace antwika::game
          */
         std::optional<std::reference_wrapper<WorldMapState>> world =
             std::nullopt;
+
+        /**
+         * @brief The save/load screen's own picture, which turns it on.
+         *
+         * A third overlay rather than the menu's or the toolbar's, for
+         * the reason the menu has one of its own: the three belong to
+         * different modes and none may overwrite another's picture.
+         *
+         * Unset, the screen is described against a zero canvas, which no
+         * click can hit -- so a run that reaches AppMode::SaveLoad
+         * without one never leaves it. Every caller offering the menu's
+         * "Load Game" must therefore set this.
+         *
+         * Passed in rather than created here because a renderer built
+         * beforehand has to read it.
+         */
+        std::optional<std::reference_wrapper<UiOverlay>> saveOverlay =
+            std::nullopt;
+
+        /**
+         * @brief The saves that existed when the run started.
+         *
+         * Read once, before the loop, and fixed for the run -- see
+         * listSaveGames() for why a directory may not be read from
+         * inside the tick path.
+         */
+        std::vector<std::string> saves = {};
+
+        /**
+         * @brief Where the save/load screen writes and reads.
+         */
+        std::string saveDirectory = {};
+
+        /**
+         * @brief The state to resume from, if `--load` named one.
+         *
+         * Restored through the same SessionStore the Load button uses,
+         * before the first tick, so a session resumed from the command
+         * line and one resumed mid-run cannot come out differently.
+         */
+        std::optional<SaveGame> start = std::nullopt;
+
+        /**
+         * @brief The seed every generated part of the session came from.
+         *
+         * Written into a save so that a resumed session regenerates the
+         * same world -- see SaveGame::seed.
+         */
+        std::uint64_t seed = 0;
 
         /**
          * @brief The area every mode's UI is laid out against.

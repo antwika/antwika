@@ -13,10 +13,16 @@ add_executable(antwika_game_tests
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/ModeGatedSystem.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/PathIndex.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/RenderSystem.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/KeyText.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/SaveCli.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/SaveGame.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/SaveGameFile.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/SaveDirectory.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/SaveLoadScene.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/SaveLoadSink.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/SaveLoadState.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/SaveMigration.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/SessionStore.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/TickPacer.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/Toolbar.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/SceneSnapshot.cpp
@@ -41,6 +47,7 @@ add_executable(antwika_game_tests
     GridSceneTest.cpp
     GridSinkTest.cpp
     InputFoldTest.cpp
+    KeyTextTest.cpp
     IsoProjectionTest.cpp
     MainMenuSceneTest.cpp
     MainMenuSinkTest.cpp
@@ -49,10 +56,15 @@ add_executable(antwika_game_tests
     PointerReadingTest.cpp
     RenderSystemTest.cpp
     SaveCliTest.cpp
+    SaveDirectoryTest.cpp
+    SaveLoadSceneTest.cpp
+    SaveLoadSinkTest.cpp
+    SaveLoadStateTest.cpp
     SaveGameFileTest.cpp
     SaveGameTest.cpp
     SaveMigrationTest.cpp
     SceneSnapshotTest.cpp
+    SessionStoreTest.cpp
     TileAtlasTest.cpp
     ReplayDeterminismTest.cpp
     ReplayIntegrationTest.cpp

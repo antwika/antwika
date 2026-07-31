@@ -18,7 +18,11 @@
 #include "antwika/game/MainMenuSink.hpp"
 #include "antwika/game/ModeGatedSink.hpp"
 #include "antwika/game/ModeGatedSystem.hpp"
+#include "antwika/game/SaveLoadScene.hpp"
+#include "antwika/game/SaveLoadSink.hpp"
+#include "antwika/game/SaveLoadState.hpp"
 #include "antwika/game/SceneSnapshot.hpp"
+#include "antwika/game/SessionStore.hpp"
 #include "antwika/game/Toolbar.hpp"
 #include "antwika/game/UiSink.hpp"
 #include "antwika/game/WalkerSystem.hpp"
@@ -125,6 +129,35 @@ namespace antwika::game
         MainMenuSink menuSink(
             mode, menuUi, input, menuScene, stopSignal);
 
+        // The save screen's own picture, never the menu's or the bar's.
+        // Three modes, three overlays, for the reason the menu has one.
+        UiOverlay noSaveScreen;
+        UiOverlay &saveUi = config.saveOverlay.has_value()
+                                ? config.saveOverlay->get()
+                                : noSaveScreen;
+
+        SessionStore session(
+            world, paths, camera, state, config.extent, config.seed);
+
+        // Restored before the first tick.
+        // Through the very store the Load button uses.
+        // So the two cannot come out differently.
+        if (config.start.has_value())
+        {
+            session.restore(*config.start);
+        }
+
+        SaveLoadState saveState(config.saves);
+        const SaveLoadScene saveScene;
+        SaveLoadSink saveSink(
+            saveState,
+            mode,
+            saveUi,
+            input,
+            saveScene,
+            session,
+            config.saveDirectory);
+
         // Gated on the mode rather than checking one themselves.
         // What a mode changes is what a click means.
         // So engine.tick still reaches both -- see ModeGatedSink.
@@ -146,8 +179,10 @@ namespace antwika::game
         // A press is resolved against what is on screen first.
         // WorldMapSink is between the bar and the grid for the same one.
         // A press that opens a city must not also build in it.
+        // SaveLoadSink is beside MainMenuSink for the same reason.
+        // Both gate themselves, and both own a whole screen.
         std::vector<std::reference_wrapper<ITickEventSink>> timedSinks{
-            input, mode, reducer, menuSink};
+            input, mode, reducer, menuSink, saveSink};
 
         // Registered only when there is somewhere to put the picture.
         // Otherwise the bar is described against a zero canvas.

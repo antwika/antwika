@@ -101,6 +101,10 @@ namespace antwika::game
         {
             mode.request(AppMode::WorldMap);
         }
+        else if (activated == menuWidgets::kLoadGame)
+        {
+            mode.request(AppMode::SaveLoad);
+        }
         else if (activated == menuWidgets::kQuit)
         {
             // The loop's own signal rather than an event on the wire.
