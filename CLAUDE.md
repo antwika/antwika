@@ -222,6 +222,10 @@ There is no clipping (`IRenderer` has no scissor), so containment is the layout'
 **An app must describe and resolve its UI inside the tick path, downstream of the recorder** — never in a renderer — so a replay stores the click and regenerates which widget it activated; no `ui.*` event name may ever exist.
 The canvas it is laid out and hit-tested against must be the configured window size, never the size a window reports, for the reason `life::PointerToggleSink` gives about cells: a hit-test is a function of the layout, and the layout is a function of the canvas.
 `apps/game`'s `UiSink`/`UiOverlay` is the worked example.
+**A text field and a dropdown hold nothing of their own either**, which is the same rule read out loud: a field's characters and caret arrive in `ui::TextFieldSpec`, a list's open/closed and selected state in `ui::DropdownSpec`, and what happened comes back as `ui::Interactions::edit` (a `ui::TextEdit`) and `ui::Interactions::chosen` (a `ui::OptionChoice`).
+The application owns all of it, so a replay regenerates it from the recorded input rather than from anything the UI remembered.
+Typing arrives as `ui::TextInput`, a plain value argument to `Context` beside `ui::Pointer`, since the library still reads no device.
+An open dropdown's list is an *overlay*: out of its parent's flow, hung beneath the box it dropped from, painted after every other command and hit-tested before them -- which is the only way to be on top when `antwika::gfx` offers no depth but paint order.
 
 ## Notes for AI agents
 
