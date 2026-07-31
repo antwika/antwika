@@ -285,6 +285,20 @@ Lookup is total and never throws, since it runs while a frame is being drawn: ac
 Catalogues are compiled in rather than loaded, so the library opens no files.
 See [`docs/i18n.md`](docs/i18n.md).
 
+`antwika::sound` decodes PCM audio, mixes it, and plays it through a build-time backend seam exactly as `gfx` and `input` have (`ISoundBackend`/`IDevice`/`IRenderCallback`, `SoundError`, `makeSelectedSoundBackend()`), so no code under `src/` names a concrete audio framework.
+**It owns no thread, no lock and no queue**: a device renders only when `pump()` asks it to, on the thread that asked, which is why a headless run costs no wall-clock time and the whole suite runs with no sound card.
+The usual arrangement -- a framework's own high-priority callback thread with a lock-free queue feeding it -- would be a second concurrency model in a codebase that has none, so `SoundCapabilities::selfDriven` is how a backend that genuinely cannot be pumped says so, and the conformance suite skips those tests rather than failing an honest backend.
+**A callback is handed the *absolute* index of the first frame it fills**, counted from the start, never a count since the last call -- which is the one interface decision that would be expensive to undo and the thing real devices most often get wrong, since a per-buffer counter puts every scheduled sound on the wrong frame after a single dropped buffer.
+That is what makes `PlayRequest::startFrame` mean something: a sound placed at frame 48,000 begins there rather than at the next buffer boundary, so "play it now" is deliberately not expressible.
+`framesPlayed()` is monotonic and **advisory** -- legal to read to decide how long to sleep, never to decide what to compute, since it is the one number a real device derives from hardware and hardware does not agree with a tick count.
+A `Waveform` is always normalised float whatever width the file held, decoded once to a plain value as `gfx::Bitmap` is, so there is no sample-format enum and no conversion matrix anywhere; float is unarguable here because audio is a write-only projection in exactly rendering's sense.
+`SampleBuffer` is planar and non-owning so `Mixer::render()` allocates nothing, `Waveform` is interleaved because that is what a file holds, and `OfflineDevice` is the one place the two layouts meet.
+`NullSoundBackend`, `NullDevice` and `OfflineDevice` live *in* the library rather than under `backends/`, following the `NullInputBackend` precedent, which is what puts them inside the coverage gate.
+`WavReader::read()` is hand-rolled and takes a `std::istream` rather than a path, for `PngReader`'s two reasons: the library opens no files, and every refusal it can produce is reachable from bytes in memory.
+A waveform whose rate differs from the mixer's is refused rather than played at the wrong speed, since this library does not resample.
+It depends on `antwika::log` and nothing else -- not `time`, not `ecs`, not `replay` -- and holding no clock is what leaves room for a musical layer above it, exactly as `antwika::animation` holding none does.
+See [`docs/sound.md`](docs/sound.md).
+
 `antwika::input` abstracts reading a keyboard and a pointer (`IInputBackend`/`InputEvent`/`InputCapabilities`, `InputError`), so no code under `src/` names a concrete input framework; backends live under [`backends/`](backends/) beside the graphics ones and are chosen at build time by `ANTWIKA_INPUT_BACKEND`.
 It deliberately does **not** depend on `antwika::gfx`, and `antwika::gfx` does not depend on it — reading input does not require opening a window, which is why `input::Position` duplicates `gfx::Point` rather than reusing it, and why an input event does not say which window it arrived at.
 **That rule is about the source, not the link line**: no file under `src/libs/input` includes a `<antwika/gfx/...>` header or names a `gfx::` type, and that is what it forbids.

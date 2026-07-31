@@ -16,21 +16,29 @@ It is plain markdown with relative links, so it reads on GitHub and in an editor
 src/
 ├── apps/
 │   ├── game/
+│   ├── gfx3d_demo/
 │   ├── gfx_demo/
 │   ├── life/
 │   ├── poker/
 │   ├── sudoku/
-│   └── task_worker/
+│   ├── task_worker/
+│   └── tower_defence/
 └── libs/
+    ├── animation/
+    ├── app/
     ├── ecs/
+    ├── ecs_commons/
     ├── engine/
     ├── event/
     ├── gfx/
     ├── holdem/
+    ├── i18n/
     ├── input/
     ├── log/
+    ├── pathfinding/
     ├── replay/
     ├── scheduler/
+    ├── sound/
     ├── time/
     ├── ui/
     └── wfc/
@@ -42,7 +50,7 @@ blog/
 ```
 
 Each library and app has its own `CMakeLists.txt`, `include/`, `src/`, and `tests/` directory.
-`backends/` sits outside `src/` and holds the concrete graphics and input frameworks, one directory per framework, exactly one of which is compiled into a given build.
+`backends/` sits outside `src/` and holds the concrete graphics, input and sound frameworks, one directory per framework, exactly one of which is compiled per subsystem into a given build.
 See [`docs/STYLE_GUIDE.md`](docs/STYLE_GUIDE.md) for the project's C++/CMake/Python coding conventions.
 
 `blog/` holds write-ups about notable changes to the project — see [`blog/001-building-a-deterministic-replay-system.md`](blog/001-building-a-deterministic-replay-system.md) for the design and requirements behind the replay system below, and [`blog/003-an-entity-component-system-with-nowhere-to-hide-a-mutation.md`](blog/003-an-entity-component-system-with-nowhere-to-hide-a-mutation.md) for the `antwika::ecs` library under `libs/ecs/`.
@@ -318,6 +326,35 @@ The buttons work: one counts your clicks and the other puts the count back to ze
 ```sh
 build/bin/antwika_gfx_demo    # needs a display; use xvfb-run without one
 ```
+
+## Sound
+
+`libs/sound` (`antwika::sound`) decodes PCM audio, mixes it, and plays it through a backend seam of the same shape `antwika::gfx` and `antwika::input` have.
+It owns no thread, no lock and no queue: a device renders only when it is pumped, on the thread that pumped it.
+
+```cpp
+sound::WaveformLibrary library;
+const auto beep = library.add(sound::WavReader{}.read(stream));
+
+sound::Mixer mixer{library, {.format = device->format(), .maxVoices = 16}};
+
+device->start(mixer);
+
+mixer.play({.waveform = beep, .startFrame = 48000});
+
+device->pump(1024);
+```
+
+A render callback is handed the *absolute* index of the first frame it is filling, counted from when the device started, never a count since the last call.
+That is what makes `startFrame` mean something: the beep above begins at frame 48,000 and not at whichever buffer boundary happens to follow it.
+A device whose counter restarted per buffer would place every scheduled sound at the wrong moment after a single dropped one, which is what the shared conformance suite's `Render_ReceivesAscendingContiguousFrames` exists to catch.
+
+A `Waveform` holds normalised float samples whatever width the file stored, decoded once to a plain value exactly as `gfx::Bitmap` is, so nothing above the decoder carries a conversion matrix.
+`WavReader` reads from a `std::istream` rather than a path, so the library opens no files and every refusal it can produce is reachable from bytes in memory.
+A waveform whose sample rate differs from the mixer's is refused with a message saying so, since this library does not resample.
+
+`OfflineDevice` renders into a `Waveform` instead of at a speaker, which is what lets the whole suite assert audio sample by sample with no hardware, no display and no wall-clock time spent.
+See [`docs/sound.md`](docs/sound.md) for why the threading, the absolute frame index and the float samples are the design rather than a stage it has not reached.
 
 ## Testing
 

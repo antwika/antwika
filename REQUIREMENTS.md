@@ -74,6 +74,17 @@ Requirements for the Antwika project, gathered from `README.md`, `blog/001-build
 - Polling an input backend must reach an empty queue, so a caller draining it between ticks terminates; a backend reading live state rather than a queue must latch what it has already reported.
 - An input backend must declare which devices it can report at all, and must never report an event for a device it does not claim.
 - Two backends over one framework must never poll that framework's event queue independently; where a framework has a single queue, exactly one place may drain it and route what it finds.
+- Sound access must go through a backend-agnostic abstraction, and no file under `src/` may reference a concrete audio framework such as SDL or miniaudio.
+- A headless sound backend must exist, so tests, CI and replay verification can run with no sound card and no audio framework installed.
+- A sound backend that cannot honour a request, including a device asked for at a zero sample rate or with no channels, must raise one specific, catchable error type, the same type for every backend.
+- Audio must be a write-only projection of application state, in the same sense rendering is: what a run computes decides what is played, and nothing that is played may decide what a run computes.
+- A render callback must be told the absolute index of the first frame it is filling, counted from when the device started, never a count since the last call -- so a scheduled sound lands on the frame it was placed at rather than at a buffer boundary.
+- A device that does not drive itself must render only when it is pumped, so a headless run costs no wall-clock time and the mixer is stepped by the same loop that steps everything else.
+- A sound backend must declare whether it renders on a thread of its own, and a device's advertised frame count must never go backwards.
+- Decoded audio must be normalised float samples whatever width the file stored, decoded once to a plain value, so nothing downstream carries a conversion matrix.
+- Audio decoding must accept a byte stream rather than a path, so `antwika::sound` opens no files and every decoder failure is provable headlessly.
+- Mixing must allocate nothing on the render path: a voice pool is sized when the mixer is built and never resized.
+- A waveform whose sample rate differs from the device's must be refused with a message saying so, rather than played at the wrong speed.
 
 ## Should have
 
@@ -120,3 +131,10 @@ Requirements for the Antwika project, gathered from `README.md`, `blog/001-build
 - `antwika::ui` won't wrap text across lines, offer a main-axis alignment mode (a growing spacer expresses leading, trailing and centred content), weight how growing children share leftover room, or animate anything.
 - `antwika::ui` won't carry a style stack or cascade; one plain `Theme` value is passed to a frame and nothing overrides it per widget.
 - An application attaching `input::IdleMotionSource` won't draw anything that follows a free-moving pointer (a hover highlight, a rubber band, a custom cursor), since the movements between clicks are deliberately not in the tick stream.
+- Sound backends won't be loadable at runtime, for the same reasons graphics and input backends aren't.
+- `antwika::sound` won't run a thread of its own, hold a lock, or carry a lock-free queue in its current scope; a device renders when it is pumped, on the thread that pumped it.
+- `antwika::sound` won't resample, so a waveform at one rate cannot be played by a device at another; converting a file is done once, offline, rather than per buffer.
+- `antwika::sound` won't decode compressed audio (MP3, Vorbis, Opus, FLAC) in its current scope, and won't name a sample format in its interface: what a file stored is the decoder's business and everything above it sees normalised float.
+- `antwika::sound` won't read a clock or count time in any musical unit -- no tempo, bar, beat or duration -- which is what leaves room for a layer above it that does.
+- `antwika::sound` won't offer capture, recording or any read-back of what was played, since read-back is what would let audio feed the simulation.
+- `antwika::sound` won't mix in more than a stereo sense: a voice carries a gain and a pan, and there is no panner, filter, reverb or effect chain.
