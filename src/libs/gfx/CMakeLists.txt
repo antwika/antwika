@@ -22,7 +22,9 @@ add_library(antwika_gfx
     src/NullTexture.cpp
     src/NullWindow.cpp
     src/PngReader.cpp
+    src/PngWriter.cpp
     src/StbImage.cpp
+    src/StbImageWrite.cpp
     src/TextLayout.cpp
     src/Transform.cpp
 )
@@ -31,8 +33,9 @@ add_library(antwika::gfx ALIAS antwika_gfx)
 
 # -w wins over the project's -Werror whichever order they land in.
 # A warning that was never emitted cannot be promoted to an error.
-set_source_files_properties(src/StbImage.cpp PROPERTIES
-    COMPILE_OPTIONS "-w"
+set_source_files_properties(src/StbImage.cpp src/StbImageWrite.cpp
+    PROPERTIES
+        COMPILE_OPTIONS "-w"
 )
 
 set_target_properties(antwika_gfx PROPERTIES
