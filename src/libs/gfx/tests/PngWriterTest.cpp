@@ -20,10 +20,10 @@ using antwika::gfx::Size;
 
 namespace
 {
-    // Every channel value that matters is in here: fully opaque, fully
-    // clear, and a partial alpha over a colour that is not grey.
-    // A writer that premultiplied, or that dropped the alpha channel,
-    // could not round-trip the third pixel.
+    // Every channel value that matters is in here.
+    // Fully opaque, fully clear, and a partial alpha over a colour.
+    // A writer that premultiplied could not round-trip the last one.
+    // Nor could one that dropped the alpha channel.
     Bitmap twoByTwo()
     {
         return Bitmap{
@@ -62,8 +62,8 @@ TEST(PngWriterTest, Write_StartsWithThePngSignature)
 
 TEST(PngWriterTest, Write_RoundTripsEveryByteOfALargerImage)
 {
-    // Wide enough to span several filtered scanlines rather than one,
-    // and a size no power-of-two assumption would flatter.
+    // Wide enough to span several filtered scanlines rather than one.
+    // It is also a size no power-of-two assumption would flatter.
     Bitmap original{.size = {.width = 37, .height = 11}, .pixels = {}};
     original.pixels.reserve(37U * 11U * 4U);
 
