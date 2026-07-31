@@ -1,5 +1,7 @@
 #pragma once
 
+#include <cstdint>
+#include <optional>
 #include <vector>
 
 #include <antwika/ecs/World.hpp>
@@ -18,7 +20,11 @@ namespace antwika::game
     using antwika::ecs::World;
 
     /**
-     * @brief One walker, as a frame needs to know it.
+     * @brief One walker, as state that outlives a frame needs to know it.
+     *
+     * What a summary reports and a save file holds, so it carries where a
+     * walker is and nothing about how it is being shown getting there.
+     * WalkerSprite is the picture's answer to the same walker.
      */
     struct WalkerView
     {
@@ -31,6 +37,43 @@ namespace antwika::game
          * @return True when both the cell and the facing match.
          */
         [[nodiscard]] bool operator==(const WalkerView &other) const = default;
+    };
+
+    /**
+     * @brief One walker, as a frame needs to know it.
+     *
+     * Separate from WalkerView because a walker part of the way between
+     * two cells is a fact about the picture and not about the state.
+     * GameSummary and SaveGame both hold WalkerViews, so folding the two
+     * render-side fields into that type would put them in a persisted
+     * schema and in the value a replay determinism test compares -- which
+     * is the same reason which of sixteen tiles a road shows is worked
+     * out in GridScene and kept out of the snapshot entirely.
+     */
+    struct WalkerSprite
+    {
+        Cell at;
+        Direction facing = Direction::East;
+
+        /** @brief The cell being stepped out of, if there is one. */
+        std::optional<Cell> from{};
+
+        /**
+         * @brief How many whole ticks of this step have gone.
+         *
+         * Counted up rather than down, since that is the direction a
+         * fraction of the way there runs; Walker counts the same span
+         * the other way because what it needs to know is when to move.
+         */
+        std::uint8_t ticksIntoStep = 0;
+
+        /**
+         * @brief Compare two walker sprites.
+         * @param other The sprite to compare against.
+         * @return True when every field matches.
+         */
+        [[nodiscard]] bool operator==(
+            const WalkerSprite &other) const = default;
     };
 
     /**
@@ -65,7 +108,7 @@ namespace antwika::game
         Camera camera;
         GridExtent extent;
         std::vector<Cell> paths;
-        std::vector<WalkerView> walkers;
+        std::vector<WalkerSprite> walkers;
         std::vector<BuildingView> buildings;
 
         /**
@@ -107,5 +150,17 @@ namespace antwika::game
         const PathIndex &paths,
         const Camera &camera,
         GridExtent extent);
+
+    /**
+     * @brief List every walker as state rather than as a picture.
+     *
+     * What a summary and a save file want, so neither has to take a whole
+     * frame's worth of camera, paths and buildings to get at the walkers,
+     * and neither picks up the two fields that only exist to draw with.
+     *
+     * @param world Read for the walkers, as of its last commit().
+     * @return One view per walker, in the world's own order.
+     */
+    [[nodiscard]] std::vector<WalkerView> walkerViewsOf(const World &world);
 
 } // namespace antwika::game

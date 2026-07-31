@@ -23,11 +23,11 @@ add_executable(antwika_game
     src/SaveMigration.cpp
     src/SessionStore.cpp
     src/SpawnSystem.cpp
-    src/TickPacer.cpp
     src/Toolbar.cpp
     src/SceneSnapshot.cpp
     src/UiOverlay.cpp
     src/UiSink.cpp
+    src/WalkerMotion.cpp
     src/WalkerSystem.cpp
     src/WorldMap.cpp
     src/WorldMapScene.cpp
@@ -55,6 +55,7 @@ target_include_directories(antwika_game
 
 target_link_libraries(antwika_game
     PRIVATE
+        antwika::animation
         antwika::app
         antwika::ecs
         antwika::engine

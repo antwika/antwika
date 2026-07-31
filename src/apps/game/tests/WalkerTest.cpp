@@ -27,6 +27,15 @@ TEST(WalkerTest, DefaultConstructedFacesEastAndIsDueToStep)
     EXPECT_EQ(walker.ticksUntilStep, 0U);
 }
 
+TEST(WalkerTest, DefaultConstructedHasNowhereItCameFrom)
+{
+    // A walker that has never stepped is drawn where it stands.
+    // Rather than sliding in from a cell it was never on.
+    constexpr Walker walker;
+
+    EXPECT_FALSE(walker.from.has_value());
+}
+
 TEST(WalkerTest, EqualityComparesTheFacingAndTheCountdown)
 {
     constexpr Walker walker{
@@ -41,6 +50,30 @@ TEST(WalkerTest, EqualityComparesTheFacingAndTheCountdown)
     EXPECT_NE(
         walker,
         (Walker{.facing = Direction::North, .ticksUntilStep = 0}));
+}
+
+TEST(WalkerTest, EqualityComparesWhereItCameFrom)
+{
+    constexpr Cell origin{.x = 3, .y = 4};
+
+    constexpr Walker walker{
+        .facing = Direction::North, .ticksUntilStep = 1, .from = origin};
+
+    EXPECT_EQ(
+        walker,
+        (Walker{
+            .facing = Direction::North,
+            .ticksUntilStep = 1,
+            .from = origin}));
+    EXPECT_NE(
+        walker,
+        (Walker{
+            .facing = Direction::North,
+            .ticksUntilStep = 1,
+            .from = Cell{.x = 3, .y = 5}}));
+    EXPECT_NE(
+        walker,
+        (Walker{.facing = Direction::North, .ticksUntilStep = 1}));
 }
 
 TEST(WalkerTest, PathTagsCompareEqualToEachOther)

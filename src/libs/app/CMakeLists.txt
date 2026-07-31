@@ -6,11 +6,13 @@ antwika_add_library(
     NAME app
     SOURCES
         src/ConsoleLogging.cpp
+        src/FramePacedSource.cpp
         src/PngFile.cpp
         src/PointerReading.cpp
         src/RunGuarded.cpp
         src/RunRecorded.cpp
     DEPENDS
+        antwika::animation
         antwika::event
         antwika::gfx
         antwika::input

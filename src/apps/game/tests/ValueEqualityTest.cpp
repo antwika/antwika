@@ -35,6 +35,7 @@ namespace
     using antwika::game::SaveGame;
     using antwika::game::SceneSnapshot;
     using antwika::game::Terrain;
+    using antwika::game::WalkerSprite;
     using antwika::game::WalkerView;
     using antwika::game::WorldMap;
     using antwika::game::WorldMapSnapshot;
@@ -82,7 +83,7 @@ namespace
             .camera = Camera(antwika::gfx::Point{.x = 4, .y = 5}, 1),
             .extent = GridExtent{.width = 8, .height = 8},
             .paths = {Cell{.x = 1, .y = 1}},
-            .walkers = {WalkerView{.at = {.x = 2, .y = 2}}},
+            .walkers = {WalkerSprite{.at = {.x = 2, .y = 2}}},
             .buildings =
                 {BuildingView{
                     .at = {.x = 3, .y = 3}, .kind = BuildTool::House}},

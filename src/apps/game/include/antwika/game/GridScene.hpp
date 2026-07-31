@@ -1,5 +1,6 @@
 #pragma once
 
+#include <antwika/animation/Progress.hpp>
 #include <antwika/gfx/IRenderer.hpp>
 #include <antwika/gfx/ITexture.hpp>
 #include <antwika/gfx/Size.hpp>
@@ -10,6 +11,7 @@
 namespace antwika::game
 {
 
+    using antwika::animation::Progress;
     using antwika::gfx::IRenderer;
     using antwika::gfx::ITexture;
     using antwika::gfx::Size;
@@ -51,18 +53,27 @@ namespace antwika::game
     public:
         /**
          * @brief Draw one frame.
+         *
+         * The same snapshot drawn at two different sub-tick fractions
+         * differs only in where the walkers are, since they are the one
+         * thing that moves between two ticks. Everything else is on a
+         * cell, and a cell does not move.
+         *
          * @param renderer Receives the drawing calls.
          * @param canvas The size of the area being drawn into.
          * @param snapshot What to draw.
          * @param atlas The texture every tile is blitted from; it must
          * have come from this renderer, and must be the atlas
          * scripts/generate_game_atlas.py draws.
+         * @param subTick How far through the tick this frame falls; zero
+         * on the frame the tick itself draws.
          */
         void draw(
             IRenderer &renderer,
             Size canvas,
             const SceneSnapshot &snapshot,
-            const ITexture &atlas) const;
+            const ITexture &atlas,
+            Progress subTick = Progress()) const;
 
     private:
         void drawGround(

@@ -25,11 +25,11 @@ add_executable(antwika_game_tests
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/SaveMigration.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/SessionStore.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/SpawnSystem.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/../src/TickPacer.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/Toolbar.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/SceneSnapshot.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/UiOverlay.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/UiSink.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/WalkerMotion.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/WalkerSystem.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/WorldMap.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/WorldMapScene.cpp
@@ -69,13 +69,14 @@ add_executable(antwika_game_tests
     SessionStoreTest.cpp
     SpawnSystemTest.cpp
     TileAtlasTest.cpp
+    FrameRateDeterminismTest.cpp
     ReplayDeterminismTest.cpp
     ReplayIntegrationTest.cpp
-    TickPacerTest.cpp
     ToolbarTest.cpp
     UiOverlayTest.cpp
     ValueEqualityTest.cpp
     UiSinkTest.cpp
+    WalkerMotionTest.cpp
     WalkerSystemTest.cpp
     WorldMapTest.cpp
     WorldMapLayoutTest.cpp
@@ -95,6 +96,9 @@ target_include_directories(antwika_game_tests
 
 target_link_libraries(antwika_game_tests
     PRIVATE
+        antwika::animation
+        antwika::app
+        antwika::app::tests::fakes
         antwika::engine::tests::mocks
         antwika::event::tests::mocks
         antwika::ecs

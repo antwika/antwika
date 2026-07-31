@@ -10,6 +10,7 @@
 #include "antwika/game/Direction.hpp"
 #include "antwika/game/IsoProjection.hpp"
 #include "antwika/game/TileAtlas.hpp"
+#include "antwika/game/WalkerMotion.hpp"
 
 namespace antwika::game
 {
@@ -86,7 +87,8 @@ namespace antwika::game
         IRenderer &renderer,
         Size canvas,
         const SceneSnapshot &snapshot,
-        const ITexture &atlas) const
+        const ITexture &atlas,
+        Progress subTick) const
     {
         renderer.clear(kSky);
 
@@ -126,16 +128,18 @@ namespace antwika::game
         // Last, so a walker is never hidden by what it is standing on.
         for (const auto &walker : snapshot.walkers)
         {
-            if (!onCanvas(walker.at, canvas, snapshot))
+            // Culled on where it is drawn, not on the cell it is on.
+            // Between two ticks those are not the same box.
+            // And a walker halfway off the edge is still half on it.
+            const auto bounds = walkerBounds(walker, snapshot.camera, subTick);
+
+            if (!overlaps(bounds, canvas))
             {
                 continue;
             }
 
             renderer.drawTexture(
-                atlas,
-                walkerTile(walker.facing),
-                cellBounds(walker.at, snapshot.camera),
-                kUntinted);
+                atlas, walkerTile(walker.facing), bounds, kUntinted);
         }
 
         drawGhost(renderer, canvas, snapshot, atlas);

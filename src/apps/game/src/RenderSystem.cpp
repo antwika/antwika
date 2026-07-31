@@ -24,6 +24,15 @@ namespace antwika::game
 
     void RenderSystem::update(World &world, antwika::time::Tick)
     {
+        // Taken unconditionally, even in a mode that draws no grid.
+        // So there is no branch here to want a mode combination for.
+        latest = snapshotOf(world, setup.paths, setup.camera, setup.extent);
+
+        draw(antwika::animation::Progress());
+    }
+
+    void RenderSystem::draw(antwika::animation::Progress subTick)
+    {
         auto &renderer = setup.window.renderer();
 
         if (setup.mode.mode() == AppMode::MainMenu)
@@ -56,22 +65,22 @@ namespace antwika::game
             return;
         }
 
-        drawGrid(world);
+        drawGrid(subTick);
         renderer.present();
     }
 
-    void RenderSystem::drawGrid(const World &world)
+    void RenderSystem::drawGrid(antwika::animation::Progress subTick)
     {
         auto &renderer = setup.window.renderer();
-
-        auto snapshot =
-            snapshotOf(world, setup.paths, setup.camera, setup.extent);
 
         // Worked out here rather than staged into the World.
         // The hint is a value no replay reproduces.
         // Folding it in would make the two disagree -- see BuildGhost.
         // What the bar covers comes *from* UiOverlay, never the reverse.
-        snapshot.ghost = ghostFor(
+        // Re-read every frame rather than once a tick.
+        // So the ghost follows the pointer at the rate it is drawn at.
+        // That is free, since a hint is render-side by construction.
+        latest.ghost = ghostFor(
             setup.hint.forRenderingOnly(),
             setup.camera,
             setup.extent,
@@ -79,7 +88,7 @@ namespace antwika::game
             setup.overlay.pointerOverUi());
 
         setup.scene.draw(
-            renderer, setup.window.size(), snapshot, setup.atlas);
+            renderer, setup.window.size(), latest, setup.atlas, subTick);
 
         // Over the grid, and last, so the bar reads as being in front.
         // Laid out against the size the window was asked for.

@@ -44,7 +44,7 @@ namespace antwika::game
             GameSummary{ // GCOVR_EXCL_LINE
                 .state = state,
                 .paths = frame.paths,
-                .walkers = frame.walkers,
+                .walkers = walkerViewsOf(world),
                 .buildings = frame.buildings,
                 .camera = camera},
             extent,

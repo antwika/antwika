@@ -237,7 +237,7 @@ namespace antwika::game
         return GameSummary{ // GCOVR_EXCL_LINE
             .state = state,
             .paths = frame.paths,
-            .walkers = frame.walkers,
+            .walkers = walkerViewsOf(world),
             .buildings = frame.buildings,
             .camera = camera};
         // The excluded line is the local summary's unwind destructor.

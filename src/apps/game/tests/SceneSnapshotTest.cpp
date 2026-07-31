@@ -18,9 +18,12 @@ using antwika::game::Camera;
 using antwika::game::Cell;
 using antwika::game::Direction;
 using antwika::game::GridExtent;
+using antwika::game::kTicksPerStep;
 using antwika::game::PathIndex;
 using antwika::game::snapshotOf;
 using antwika::game::Walker;
+using antwika::game::walkerViewsOf;
+using antwika::game::WalkerSprite;
 using antwika::game::WalkerView;
 using antwika::log::mocks::MockLogger;
 using ::testing::NiceMock;
@@ -87,8 +90,141 @@ TEST(SceneSnapshotTest, SnapshotOf_TakesEachWalkersCellAndFacing)
 
     EXPECT_EQ(
         snapshot.walkers,
+        (std::vector<WalkerSprite>{
+            {.at = {.x = 3, .y = 4}, .facing = Direction::South}}));
+}
+
+TEST(SceneSnapshotTest, SnapshotOf_TakesWhereAWalkerSteppedOutOf)
+{
+    NiceMock<MockLogger> logger;
+    World world(logger);
+    const PathIndex paths;
+
+    const auto entity = world.create();
+    world.add<Cell>(entity, Cell{.x = 3, .y = 4});
+    world.add<Walker>(
+        entity,
+        Walker{
+            .facing = Direction::East,
+            .ticksUntilStep = 1,
+            .from = Cell{.x = 2, .y = 4}});
+    world.commit();
+
+    const auto snapshot = snapshotOf(world, paths, Camera(), kExtent);
+
+    ASSERT_EQ(snapshot.walkers.size(), 1U);
+    EXPECT_EQ(snapshot.walkers[0].from, (Cell{.x = 2, .y = 4}));
+}
+
+TEST(SceneSnapshotTest, SnapshotOf_CountsUpHowFarThroughAStepAWalkerIs)
+{
+    NiceMock<MockLogger> logger;
+    World world(logger);
+    const PathIndex paths;
+
+    // A walker counts down to its next step.
+    // So the tick it stepped on is furthest from stepping again.
+    // And is nought ticks into the step it is drawn part way through.
+    const auto stepped = world.create();
+    world.add<Cell>(stepped, Cell{.x = 1, .y = 0});
+    world.add<Walker>(
+        stepped,
+        Walker{
+            .ticksUntilStep = kTicksPerStep - 1,
+            .from = Cell{.x = 0, .y = 0}});
+
+    const auto waited = world.create();
+    world.add<Cell>(waited, Cell{.x = 5, .y = 0});
+    world.add<Walker>(
+        waited,
+        Walker{.ticksUntilStep = 0, .from = Cell{.x = 4, .y = 0}});
+
+    world.commit();
+
+    const auto snapshot = snapshotOf(world, paths, Camera(), kExtent);
+
+    ASSERT_EQ(snapshot.walkers.size(), 2U);
+    EXPECT_EQ(snapshot.walkers[0].ticksIntoStep, 0U);
+    EXPECT_EQ(
+        snapshot.walkers[1].ticksIntoStep, kTicksPerStep - 1);
+}
+
+TEST(SceneSnapshotTest, SnapshotOf_LeavesAWalkerThatNeverSteppedAtNothing)
+{
+    NiceMock<MockLogger> logger;
+    World world(logger);
+    const PathIndex paths;
+
+    // Due to step, and never having stepped: nowhere through one.
+    // Rather than as far through one as a walker that has moved.
+    const auto entity = world.create();
+    world.add<Cell>(entity, Cell{.x = 3, .y = 4});
+    world.add<Walker>(entity, Walker{.ticksUntilStep = 0});
+    world.commit();
+
+    const auto snapshot = snapshotOf(world, paths, Camera(), kExtent);
+
+    ASSERT_EQ(snapshot.walkers.size(), 1U);
+    EXPECT_FALSE(snapshot.walkers[0].from.has_value());
+    EXPECT_EQ(snapshot.walkers[0].ticksIntoStep, 0U);
+}
+
+TEST(SceneSnapshotTest, WalkerViewsOf_ReportsWhereEachWalkerIs)
+{
+    NiceMock<MockLogger> logger;
+    World world(logger);
+
+    // The state answer, so it says nothing about being part way.
+    // Even when the walker it describes is.
+    const auto entity = world.create();
+    world.add<Cell>(entity, Cell{.x = 3, .y = 4});
+    world.add<Walker>(
+        entity,
+        Walker{
+            .facing = Direction::South,
+            .ticksUntilStep = 1,
+            .from = Cell{.x = 3, .y = 3}});
+    world.commit();
+
+    EXPECT_EQ(
+        walkerViewsOf(world),
         (std::vector<WalkerView>{
             {.at = {.x = 3, .y = 4}, .facing = Direction::South}}));
+}
+
+TEST(SceneSnapshotTest, WalkerViewsOf_ReportsNothingWithNoWalkers)
+{
+    NiceMock<MockLogger> logger;
+    World world(logger);
+
+    EXPECT_TRUE(walkerViewsOf(world).empty());
+}
+
+TEST(SceneSnapshotTest, WalkerSpriteEqualityComparesEveryField)
+{
+    constexpr WalkerSprite sprite{
+        .at = {.x = 1, .y = 2},
+        .facing = Direction::North,
+        .from = Cell{.x = 1, .y = 3},
+        .ticksIntoStep = 1};
+
+    EXPECT_EQ(sprite, sprite);
+
+    auto elsewhere = sprite;
+    elsewhere.at = Cell{.x = 9, .y = 9};
+    EXPECT_NE(sprite, elsewhere);
+
+    auto turned = sprite;
+    turned.facing = Direction::South;
+    EXPECT_NE(sprite, turned);
+
+    auto unmoved = sprite;
+    unmoved.from.reset();
+    EXPECT_NE(sprite, unmoved);
+
+    auto later = sprite;
+    later.ticksIntoStep = 0;
+    EXPECT_NE(sprite, later);
 }
 
 TEST(SceneSnapshotTest, SnapshotOf_TakesEveryWalker)

@@ -200,3 +200,51 @@ TEST_F(WalkerSystemTest, Update_DoesNothingWithNoWalkersAtAll)
 
     EXPECT_NO_THROW(tick());
 }
+
+TEST_F(WalkerSystemTest, Update_RecordsTheCellAStepBeganFrom)
+{
+    layPath({{.x = 0, .y = 0}, {.x = 1, .y = 0}, {.x = 2, .y = 0}});
+    const auto walker = addWalker(Cell{.x = 0, .y = 0}, Direction::East);
+
+    tick();
+
+    EXPECT_EQ(world.get<Walker>(walker).from, (Cell{.x = 0, .y = 0}));
+}
+
+TEST_F(WalkerSystemTest, Update_KeepsTheStartCellWhileCountingDown)
+{
+    // The countdown branch rebuilds the whole walker.
+    // So this catches it dropping the field it does not name.
+    layPath({{.x = 0, .y = 0}, {.x = 1, .y = 0}, {.x = 2, .y = 0}});
+    const auto walker = addWalker(Cell{.x = 0, .y = 0}, Direction::East);
+
+    tick();
+    tick();
+
+    EXPECT_EQ(world.get<Walker>(walker).ticksUntilStep, 0U);
+    EXPECT_EQ(world.get<Walker>(walker).from, (Cell{.x = 0, .y = 0}));
+}
+
+TEST_F(WalkerSystemTest, Update_MovesTheStartCellOnEveryStep)
+{
+    layPath({{.x = 0, .y = 0}, {.x = 1, .y = 0}, {.x = 2, .y = 0}});
+    const auto walker = addWalker(Cell{.x = 0, .y = 0}, Direction::East);
+
+    tick();
+    tick();
+    tick();
+
+    EXPECT_EQ(world.get<Cell>(walker), (Cell{.x = 2, .y = 0}));
+    EXPECT_EQ(world.get<Walker>(walker).from, (Cell{.x = 1, .y = 0}));
+}
+
+TEST_F(WalkerSystemTest, Update_LeavesNoStartCellForAWalkerThatCannotMove)
+{
+    // Nothing to step onto, so it never came from anywhere.
+    layPath({{.x = 5, .y = 5}});
+    const auto walker = addWalker(Cell{.x = 5, .y = 5}, Direction::East);
+
+    tick();
+
+    EXPECT_FALSE(world.get<Walker>(walker).from.has_value());
+}

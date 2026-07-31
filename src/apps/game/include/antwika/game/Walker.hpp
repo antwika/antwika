@@ -1,7 +1,9 @@
 #pragma once
 
 #include <cstdint>
+#include <optional>
 
+#include "antwika/game/Cell.hpp"
 #include "antwika/game/Direction.hpp"
 
 namespace antwika::game
@@ -41,10 +43,35 @@ namespace antwika::game
         std::uint8_t ticksUntilStep = 0;
 
         /**
+         * @brief The cell this walker is stepping out of, if any.
+         *
+         * What a renderer needs to draw a walker part of the way between
+         * two cells rather than jumping it a whole one.
+         *
+         * It is **simulation state and not a render-side channel**, which
+         * is the distinction worth being careful about here: unlike
+         * input::PointerHintChannel, a live run and its replay have to
+         * agree on where a walker came from, because both of them draw
+         * the same picture from it.
+         *
+         * Nothing but the previous cell will do. Working it back out as
+         * step(at, opposite(facing)) is right in the middle of a
+         * straight run and wrong exactly where there was no previous
+         * cell at all -- a walker just placed, just spawned, restored
+         * from a save, or sitting on a tile with no way off it. Those
+         * are real states, and a plain Cell could only say so by naming
+         * a cell the walker was never on.
+         *
+         * Absent on a fresh walker, so its first frame is drawn where it
+         * stands rather than sliding in from somewhere it has never been.
+         */
+        std::optional<Cell> from{};
+
+        /**
          * @brief Compare two walkers.
          * @param other The walker to compare against.
-         * @return True when both face the same way and are the same far
-         * through their step.
+         * @return True when both face the same way, are the same far
+         * through their step, and came from the same place.
          */
         [[nodiscard]] bool operator==(const Walker &other) const = default;
     };
