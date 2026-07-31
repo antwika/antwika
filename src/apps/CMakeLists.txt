@@ -1,4 +1,5 @@
 add_subdirectory(game)
+add_subdirectory(gfx3d_demo)
 add_subdirectory(gfx_demo)
 add_subdirectory(life)
 add_subdirectory(poker)

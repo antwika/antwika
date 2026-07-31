@@ -80,6 +80,7 @@ build/bin/antwika_life --record demo.replay
 build/bin/antwika_task_worker --record demo.replay
 build/bin/antwika_poker --record demo.replay
 build/bin/antwika_sudoku [--puzzle my-puzzle.txt]
+build/bin/antwika_gfx3d_demo                  # spinning cube, 900 frames
 build/bin/antwika_tower_defence               # or --record / --replay
 ```
 
@@ -260,7 +261,14 @@ Write-only still holds — `ITexture` is opaque, and there is no pixel read-back
 The maths is GLM, aliased rather than wrapped in `Math3D.hpp` (`Vec3`, `Mat4`), with `gfx::Transform` and `gfx::Camera3D` (perspective or orthographic) on top.
 **Those types are render-side only**: they are floating point, and floating point may never appear in anything a replay reproduces — which costs nothing, because rendering is already a write-only projection.
 `apps/game`'s camera is the opposite case and is *not* one of these: it is simulation state, because a click's meaning depends on it, which is exactly why it holds whole tile sizes rather than a scale factor.
-Only the `null` backend implements `IRenderer3D` so far; `sdl3` and `raylib` inherit the null default and report no 3D renderer.
+`null` and `raylib` implement `IRenderer3D`; `sdl3` inherits the null default and reports no 3D renderer, which is a conforming answer rather than a gap.
+The raylib one sets the view and projection matrices through `rlgl` (`rlSetMatrixProjection`/`rlSetMatrixModelview`) rather than handing raylib a `::Camera3D` to `BeginMode3D()`.
+That struct describes a projection by a field of view and picks its own clip planes, so a `gfx::Camera3D`'s near and far planes -- and an orthographic one's extents -- would be discarded and quietly replaced; nothing would fail and the scene would simply be wrong.
+`RaylibMesh` copies `RaylibTexture`'s ownership rules exactly, and `RaylibMaterial` wraps raylib's default material, which `DrawMesh` insists on being handed and which the tint is set on.
+raylib indexes a mesh with 16-bit indices where `MeshData` says 32, so a mesh with more vertices than one of those can address is refused with a `GfxError` rather than silently wrapped around.
+The shared conformance suite covers the 3D calls too, and every one of those tests skips when a backend offers no 3D renderer.
+`apps/gfx3d_demo` (`antwika_gfx3d_demo`) is the showcase: a cube whose turn is a function of the **tick count** and never of a clock, drawn through `IRenderer3D` with the caption drawn over it through `IRenderer` -- one frame, both halves.
+It draws a fixed number of frames rather than running until closed, since the default `null` build reports no close and every CI leg produces it.
 
 `antwika::ui` is an immediate-mode UI library on top of `antwika::gfx`: nestable row/column/panel layouts, labels and buttons, drawn through `IRenderer`'s rectangle and text calls and laid out arithmetically from `gfx::textSize()` alone, so it asks no backend to measure anything.
 It depends on `antwika::gfx` and nothing else — not `event`, not `replay`, not `input`.

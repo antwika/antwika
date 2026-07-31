@@ -107,6 +107,8 @@ conan install . -of build-sdl3-input -o gfx_backend=null -o input_backend=sdl3 .
 Naming two different real frameworks is refused at configure time, because they would fight over one operating-system event queue and whichever polled second would silently lose events.
 `build/bin/antwika_gfx_demo` opens a window and draws until you close it -- under the `null` backend there is nothing to close, so that build runs until interrupted.
 It draws three bars and blits a PNG logo twice: once whole and untinted, once left-half-only and tinted, which is what a source rectangle and a tint look like side by side.
+`build/bin/antwika_gfx3d_demo` is its counterpart for the 3D half: a cube drawn through `gfx::IRenderer3D`, turned by the tick count rather than by a clock, with a caption drawn over it through the 2D calls.
+It stops after a fixed number of frames, because the `null` backend reports no close and that is the build every CI leg produces.
 The selection lives in the untracked `.vscode/gfx-backend`, which makes it yours rather than the repository's.
 
 ## Replays
