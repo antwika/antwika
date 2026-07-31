@@ -457,8 +457,7 @@ TEST(EditorSinkTest, Handle_KeepsTheSessionAliveWhenALoadFails)
         session.state.status().find("load failed"), std::string::npos);
 }
 
-// A key edge is input, and it is the one kind that says nothing about
-// where the pointer is.
+// A key edge is the one input saying nothing about the pointer.
 // Nothing on the sheet may move on it.
 TEST(EditorSinkTest, Handle_PaintsNothingOnAKeyThatSaysNoPosition)
 {

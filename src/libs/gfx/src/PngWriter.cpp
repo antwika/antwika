@@ -50,6 +50,7 @@ namespace antwika::gfx
         // A file small enough for one buffer would otherwise be lost.
         // A save that loses a sheet quietly is unrecoverable.
         out.flush();
+
         if (!out)
         {
             throw GfxError(
