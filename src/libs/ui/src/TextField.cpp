@@ -53,7 +53,7 @@ namespace antwika::ui
                 .text = std::string{spec.text}, // GCOVR_EXCL_LINE
                 .cursor = cursor,
                 .submitted = keys.submit,
-                .cancelled = keys.cancel};
+                .cancelled = keys.cancel}; // GCOVR_EXCL_LINE
 
             bool moved = false;
 

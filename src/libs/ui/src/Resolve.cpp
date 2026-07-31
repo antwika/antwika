@@ -122,6 +122,8 @@ namespace antwika::ui::detail
         }
 
         return interactions;
-    }
+        // Only an unwind destroys the reported edit at this brace.
+        // Nothing between its construction and the return throws.
+    } // GCOVR_EXCL_LINE
 
 } // namespace antwika::ui::detail

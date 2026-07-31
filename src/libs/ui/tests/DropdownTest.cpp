@@ -299,3 +299,32 @@ TEST(DropdownTest, AnOpenListWithNoOptionsDrawsJustItsPanel)
     EXPECT_EQ(2U, textsOf(commands).size());
     EXPECT_EQ(kPanel, std::get<FillRect>(commands.back()).color);
 }
+
+TEST(DropdownTest, TheFrontmostOfTwoOverlappingListsAnswers)
+{
+    auto above = pickerSpec();
+    above.open = true;
+
+    auto below = pickerSpec();
+    below.id = kBelow;
+    below.optionIdBase = WidgetId{200};
+    below.open = true;
+
+    // Inside the first list's second option and the second list's
+    // first, since neither list takes any room from the other.
+    const Pointer pointer{
+        .position = Point{.x = 2, .y = 18}, .pressed = true};
+
+    Context ui{kCanvas, plainTheme(), pointer};
+
+    ui.dropdown(above);
+    ui.dropdown(below);
+
+    const auto interactions = ui.finish().interactions;
+
+    ASSERT_TRUE(interactions.chosen.has_value());
+    EXPECT_EQ(
+        (OptionChoice{.dropdown = kBelow, .index = 0}),
+        *interactions.chosen);
+    EXPECT_EQ(WidgetId{200}, interactions.activated);
+}
