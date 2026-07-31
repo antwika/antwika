@@ -1,6 +1,7 @@
 #include "antwika/poker/TableScene.hpp"
 
 #include <algorithm>
+#include <cstddef>
 #include <cstdint>
 #include <span>
 #include <string>
@@ -120,10 +121,30 @@ namespace antwika::poker
 
         // Top padding, the name, the stack, the bar, bottom padding.
         // Any shorter and a row has nothing left to show them in.
-        [[nodiscard]] std::uint32_t seatRowHeight(
+        [[nodiscard]] std::uint32_t minimumSeatRowHeight(
             std::uint32_t scale) noexcept
         {
             return 24 * scale;
+        }
+
+        // How tall one seat row is, for the art and for the ui alike.
+        // Half the canvas, shared out, unless that is unreadably thin.
+        // A table too tall for its window is shrunk to fit by the
+        // layout.
+        // Which is the guard this file used to write by hand.
+        //
+        // Written once because the two describe the same rows.
+        // The art plates every row the ui draws a box in.
+        // A second copy is a second chance for them to disagree.
+        [[nodiscard]] std::uint32_t seatRowHeight(
+            Size canvas, std::size_t seats) noexcept
+        {
+            const auto scale = scaleForCanvas(canvas);
+            const auto rows = std::max<std::uint32_t>(
+                1, static_cast<std::uint32_t>(seats));
+
+            return std::max(
+                minimumSeatRowHeight(scale), canvas.height / 2 / rows);
         }
     } // namespace
 
@@ -155,14 +176,12 @@ namespace antwika::poker
     TableScene::ArtMetrics TableScene::artMetricsFor(
         Size canvas, const TableSnapshot &snapshot)
     {
-        const auto scale = scaleForCanvas(canvas);
         const auto rows = std::max<std::uint32_t>(
             1, static_cast<std::uint32_t>(snapshot.seats.size()));
 
-        // The same share of the canvas the ui rows take.
-        // So the art lands under the text rather than beside it.
+        // The same rows the ui lays out, from the same function.
         const auto rowHeight =
-            std::max(seatRowHeight(scale), canvas.height / 2 / rows);
+            seatRowHeight(canvas, snapshot.seats.size());
         const auto seatRoom = rowHeight * rows;
 
         // A table with more seats than canvas has no room above them.
@@ -497,15 +516,9 @@ namespace antwika::poker
         const TableSnapshot &snapshot,
         std::uint32_t scale) const
     {
-        const auto rows =
-            std::max<std::uint32_t>(
-                1, static_cast<std::uint32_t>(snapshot.seats.size()));
-
-        // Half the canvas, shared out, unless that is unreadably thin.
-        // A table too tall for the window is shrunk to fit by the layout.
-        // Which is the guard this file used to write by hand.
+        // The same rows describeArt() plates, from the same function.
         const auto rowHeight =
-            std::max(seatRowHeight(scale), canvas.height / 2 / rows);
+            seatRowHeight(canvas, snapshot.seats.size());
 
         // A bar is sized against the canvas, not the row it sits in.
         // A child cannot ask what its container was given.

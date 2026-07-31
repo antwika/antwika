@@ -441,6 +441,51 @@ TEST(TableArtTest, DescribeArt_GivesEverySeatAPlate)
         snapshot.seats.size());
 }
 
+// The art plates one row per seat and the ui boxes one row per seat.
+// They are the same rows, so they have to be the same distance apart.
+// One function answers how tall a row is, and this is why.
+TEST(TableArtTest, DescribeArt_PlatesTheRowsTheUiBoxesAtTheSamePitch)
+{
+    const TableScene scene;
+    auto snapshot = liveTable();
+    snapshot.seats.push_back(SeatSnapshot{});
+    ASSERT_GE(snapshot.seats.size(), 3U);
+
+    const auto plate =
+        antwika::poker::sourceOf(antwika::poker::kPlateSlot);
+
+    std::vector<std::int32_t> plateTops;
+    for (const auto &blit : scene.describeArt(kCanvas, snapshot))
+    {
+        if (blit.source == plate)
+        {
+            plateTops.push_back(blit.destination.origin.y);
+        }
+    }
+
+    // A seat's box is the only fill in that colour, one per seat.
+    constexpr Color kSeatBox{.red = 16, .green = 50, .blue = 36};
+    std::vector<std::int32_t> boxTops;
+    for (const auto &command : scene.describe(kCanvas, snapshot).commands)
+    {
+        const auto *fill = std::get_if<antwika::ui::FillRect>(&command);
+        if (fill != nullptr && fill->color == kSeatBox)
+        {
+            boxTops.push_back(fill->rect.origin.y);
+        }
+    }
+
+    ASSERT_EQ(plateTops.size(), snapshot.seats.size());
+    ASSERT_EQ(boxTops.size(), snapshot.seats.size());
+
+    for (std::size_t index = 1; index < plateTops.size(); ++index)
+    {
+        EXPECT_EQ(
+            plateTops[index] - plateTops[index - 1],
+            boxTops[index] - boxTops[index - 1]);
+    }
+}
+
 TEST(TableArtTest, DescribeArt_SeatsOnlyTheOccupied)
 {
     const TableScene scene;
