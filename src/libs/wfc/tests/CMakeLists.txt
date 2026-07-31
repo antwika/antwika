@@ -5,6 +5,7 @@ add_subdirectory(mocks)
 add_executable(antwika_wfc_tests
     DomainTest.cpp
     CompatibilityTableTest.cpp
+    ConstraintRefsTest.cpp
     AllDifferentConstraintTest.cpp
     AdjacencyConstraintTest.cpp
     TrailTest.cpp
