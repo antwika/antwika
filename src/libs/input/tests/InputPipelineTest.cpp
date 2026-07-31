@@ -17,6 +17,8 @@
 #include "antwika/input/InputEventCodec.hpp"
 #include "antwika/input/Key.hpp"
 #include "antwika/input/MouseButton.hpp"
+#include "antwika/input/PointerHint.hpp"
+#include "antwika/input/PointerHintChannel.hpp"
 #include "antwika/input/fakes/FakeInputBackend.hpp"
 
 using antwika::event::Event;
@@ -29,6 +31,8 @@ using antwika::input::Key;
 using antwika::input::KeyPressed;
 using antwika::input::MouseButton;
 using antwika::input::PointerButtonPressed;
+using antwika::input::PointerHint;
+using antwika::input::PointerHintChannel;
 using antwika::input::PointerButtonReleased;
 using antwika::input::PointerMoved;
 using antwika::input::fakes::FakeInputBackend;
@@ -224,4 +228,76 @@ TEST(InputPipelineTest, EventsFor_RunsAReplayThroughTheSameStackAsTheRun)
     InputPipeline replayed(recordedSource, untouched, kCodec, replaying);
 
     EXPECT_EQ(drain(replayed, 3), recorded);
+}
+
+TEST(InputPipelineTest, EventsFor_PublishesTheMotionTheGateHoldsBack)
+{
+    // The whole point of the channel, in one assertion.
+    // Nothing reaches the stream, so nothing reaches a recording.
+    // The pointer's position still reaches whatever draws.
+    ReplaySource inner({});
+    FakeInputBackend backend({moved(1, 1), moved(2, 2), moved(3, 3)});
+    PointerHintChannel channel;
+
+    InputPipelineOptions drawsAHover = kEverything;
+    drawsAHover.pointerHint = channel;
+
+    InputPipeline pipeline(inner, backend, kCodec, drawsAHover);
+
+    EXPECT_TRUE(pipeline.eventsFor(0).empty());
+    EXPECT_EQ(
+        channel.forRenderingOnly(),
+        (PointerHint{.position = {.x = 3, .y = 3}}));
+}
+
+TEST(InputPipelineTest, EventsFor_RecordsTheSameStreamWithAChannelAndWithout)
+{
+    // What "off by default" has to mean, said as an assertion.
+    // Naming a channel changes the picture and not one byte of the file.
+    const std::vector<std::vector<InputEvent>> script{
+        {moved(1, 1), moved(2, 2)},
+        {PointerButtonPressed{
+             .button = MouseButton::Left, .position = {.x = 2, .y = 2}},
+         moved(3, 3)},
+        {PointerButtonReleased{
+             .button = MouseButton::Left, .position = {.x = 3, .y = 3}},
+         moved(9, 9)}};
+
+    ReplaySource plainInner({});
+    FakeInputBackend plainBackend(script);
+    InputPipeline plain(plainInner, plainBackend, kCodec, kEverything);
+
+    ReplaySource hintedInner({});
+    FakeInputBackend hintedBackend(script);
+    PointerHintChannel channel;
+    InputPipelineOptions hinted = kEverything;
+    hinted.pointerHint = channel;
+    InputPipeline observed(hintedInner, hintedBackend, kCodec, hinted);
+
+    EXPECT_EQ(drain(observed, 3), drain(plain, 3));
+
+    // And the position the file does not hold is the one it has.
+    EXPECT_EQ(
+        channel.forRenderingOnly(),
+        (PointerHint{.position = {.x = 9, .y = 9}}));
+}
+
+TEST(InputPipelineTest, EventsFor_PublishesWithNeitherThinnerAttached)
+{
+    // The channel is independent of the two thinning decorators.
+    // An app taking no thinning at all may still draw from it.
+    ReplaySource inner({});
+    FakeInputBackend backend({moved(4, 5)});
+    PointerHintChannel channel;
+
+    InputPipeline pipeline(
+        inner,
+        backend,
+        kCodec,
+        InputPipelineOptions{.pointerHint = channel});
+
+    EXPECT_EQ(pipeline.eventsFor(0), (std::vector<Event>{move(4, 5)}));
+    EXPECT_EQ(
+        channel.forRenderingOnly(),
+        (PointerHint{.position = {.x = 4, .y = 5}}));
 }
