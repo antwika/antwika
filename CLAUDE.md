@@ -222,6 +222,11 @@ There is no clipping (`IRenderer` has no scissor), so containment is the layout'
 **An app must describe and resolve its UI inside the tick path, downstream of the recorder** — never in a renderer — so a replay stores the click and regenerates which widget it activated; no `ui.*` event name may ever exist.
 The canvas it is laid out and hit-tested against must be the configured window size, never the size a window reports, for the reason `life::PointerToggleSink` gives about cells: a hit-test is a function of the layout, and the layout is a function of the canvas.
 `apps/game`'s `UiSink`/`UiOverlay` is the worked example.
+**Tab, Shift+Tab and Enter reach the same buttons, and the library still reads no device**: key edges arrive as a `ui::Keyboard` value argument to `Context` — a list of symbolic `ui::Key` values in arrival order, defined by `antwika::ui` itself, defaulting to none so an existing caller's output is byte-identical.
+Focus is the one thing a keyboard UI needs that outlives a frame, and it is **passed through rather than kept**: last frame's focused `WidgetId` goes *in* as a `Context` argument and this frame's comes back *out* as `Frame::interactions.focused`, so the state lives in application state — where a replay regenerates it from the recorded key presses — and the library stays as stateless as the press-time activation rule requires.
+The tab order is the arena's ascending index, which is declaration order, so no second order can drift from the layout; a repeated id is one stop, an unnamed button is none, Tab from nothing takes the first widget and Shift+Tab the last, and both wrap.
+A pointer press moves focus to whatever it activated, so the ring and the keystrokes cannot end up on different widgets, and Enter reports through `Interactions::activated` exactly as a press does, so one code path handles both.
+The focused widget draws `Theme::focusRing` (yellow) `Theme::focusRingThickness` pixels thick as four `FillRect`s appended *after* every widget, since `IRenderer` has no stroke and a container declared later would otherwise paint over a ring drawn in place.
 
 ## Notes for AI agents
 
