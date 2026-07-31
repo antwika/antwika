@@ -25,6 +25,7 @@ add_executable(antwika_input_tests
     OffsetTest.cpp
     PointerHintChannelTest.cpp
     PointerHintSourceTest.cpp
+    PointerHintTest.cpp
     PositionTest.cpp
     StopOnKeySourceTest.cpp
 )
