@@ -234,7 +234,7 @@ namespace antwika::input::sdl3
         {
             pump = antwika::sdl3::Sdl3Pump::acquire(logger);
         }
-        catch (const antwika::sdl3::Sdl3PumpError &error)
+        catch (const antwika::sdl3::Sdl3Error &error)
         {
             throw InputError(std::string("input.") + error.what());
         }
