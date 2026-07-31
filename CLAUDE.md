@@ -147,6 +147,9 @@ Each module (lib or app) owns its own `CMakeLists.txt`, `include/`, `src/`, and 
 
 - `apps/game` is an isometric grid you build on with the mouse: left-click lays a path tile, right-click drops a walker onto one, middle-drag pans and the wheel zooms.
   Walkers advance one cell every `game::kTicksPerStep` ticks along the paths, counted down in each walker's own component rather than off the tick number, preferring a right turn at an intersection and reversing at a dead end -- both of which fall out of one preference order in `game::nextFacing()` rather than two rules.
+  Houses and shops send one out every `game::kTicksPerSpawn` ticks, onto the lowest-ordered road beside them, counted down in each building's own component for the same reason a walker's step is -- two houses placed a tick apart would otherwise spawn in lockstep for ever.
+  A building with no road beside it holds its countdown at zero rather than resetting it, so laying a road beside a long-neglected house releases one walker and not a queue of them, and `game::kWalkerLimit` caps the population so a run left going does not grow its per-tick work without bound.
+  A tower sends nobody out: it is what a road is defended from rather than a place anybody lives.
   The plain `GameState` struct and its `GameStateReducer` are still there, folding `game.score_increment` alongside the grid.
   **The camera is simulation state, not render state**, which is the load-bearing decision: a click arrives as a pixel, and which cell it means depends entirely on the camera, so a renderer-owned camera would leave a replay resolving recorded clicks against a different view.
   That is also why zoom is an index into a table of whole tile sizes rather than a scale factor, why `game::floorDiv()` exists instead of `operator/`, and why the projection is anchored to the camera's pan rather than the canvas centre -- anchoring to the centre would make a window resize change which cell a pixel means.

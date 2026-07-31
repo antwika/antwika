@@ -23,6 +23,7 @@
 #include "antwika/game/SaveLoadState.hpp"
 #include "antwika/game/SceneSnapshot.hpp"
 #include "antwika/game/SessionStore.hpp"
+#include "antwika/game/SpawnSystem.hpp"
 #include "antwika/game/Toolbar.hpp"
 #include "antwika/game/UiSink.hpp"
 #include "antwika/game/WalkerSystem.hpp"
@@ -66,6 +67,7 @@ namespace antwika::game
 
         SystemScheduler scheduler;
         WalkerSystem walkerSystem(paths);
+        SpawnSystem spawnSystem(paths);
 
         // The walkers stop with the grid they walk on.
         // Only that one system stops.
@@ -73,8 +75,17 @@ namespace antwika::game
         // So the menu is drawn and the run is still paced.
         ModeGatedSystem gatedWalkers(
             walkerSystem, mode, AppMode::CityMap);
+
+        // The buildings stop with them, and for the same reason.
+        // A city nobody is in must not fill up while they are away.
+        ModeGatedSystem gatedSpawns(
+            spawnSystem, mode, AppMode::CityMap);
         const auto walkPhase = scheduler.createPhase("walk");
         scheduler.addSystem(walkPhase, gatedWalkers);
+
+        // After the walk, so a walker made this tick sets off next one.
+        // Both stage into the same buffer, so neither sees the other.
+        scheduler.addSystem(walkPhase, gatedSpawns);
 
         // A phase of its own.
         // A renderer then sees the generation this walk produced.

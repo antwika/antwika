@@ -22,6 +22,7 @@ add_executable(antwika_game
     src/SaveLoadState.cpp
     src/SaveMigration.cpp
     src/SessionStore.cpp
+    src/SpawnSystem.cpp
     src/TickPacer.cpp
     src/Toolbar.cpp
     src/SceneSnapshot.cpp

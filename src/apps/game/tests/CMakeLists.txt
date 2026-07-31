@@ -24,6 +24,7 @@ add_executable(antwika_game_tests
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/SaveLoadState.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/SaveMigration.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/SessionStore.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/SpawnSystem.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/TickPacer.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/Toolbar.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/SceneSnapshot.cpp
@@ -66,6 +67,7 @@ add_executable(antwika_game_tests
     SaveMigrationTest.cpp
     SceneSnapshotTest.cpp
     SessionStoreTest.cpp
+    SpawnSystemTest.cpp
     TileAtlasTest.cpp
     ReplayDeterminismTest.cpp
     ReplayIntegrationTest.cpp
