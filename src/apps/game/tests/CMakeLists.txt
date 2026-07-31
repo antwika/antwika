@@ -16,6 +16,7 @@ add_executable(antwika_game_tests
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/WalkerSystem.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/WindowInputSource.cpp
     BootstrapTest.cpp
+    BuildPaletteTest.cpp
     CameraTest.cpp
     CellTest.cpp
     DirectionTest.cpp
