@@ -120,47 +120,158 @@ Not done, because the tests belonged to another agent's lane while it was still 
 
 # Round two
 
-Questions from the twelve agents run against the task list of 2026-07-31.
-None of them blocked the work: each was implemented the conservative way, and the
+Thirteen agents worked the task list of 2026-07-31: twelve in parallel, then one
+more for the library split once their work was merged.
+Everything asked for was built, and the questions below are the ones the agents
+declined to answer for you.
+None of them blocked any work -- each was implemented the conservative way, and the
 question is only whether that choice should stand.
-This section was written while the run was still in progress, so more entries may
-follow.
 
-## From the CLI extraction (`feat/cli-library`, merged)
+All of it is on `integration/parallel-tasks`: 39 commits, 2942 tests passing, all
+three checker scripts green, every new module reporting 100% line, function and
+branch coverage under CI's own gcovr flags.
 
-### R1. Are the `antwika::replay` re-export headers transitional or permanent?
+## Decisions the agents declined to make
 
-`antwika/replay/CommandLine.hpp`, `FlagSpec.hpp` and `CommandLineError.hpp` were
-left behind as `using antwika::cli::...;` declarations, so `game::SaveCli` and
-`poker::WatchOptions` compile untouched.
-That is what kept the extraction from colliding with the four agents editing the
-apps at the same time.
-They are commented as transitional, and the follow-up is to migrate those two
-callers and then delete the headers.
-Confirm that, or say they should stay as a permanent alias surface.
+### R1. Should a save carry the whole session, or only the live city?
 
-### R2. Should `antwika::cli` support positional arguments?
+This is the one that came out of your world-map bug, and it is the most consequential
+question in this file.
 
-It is flags-only, which is what every existing caller needs.
-`apps/sound_demo` takes a bare filename rather than a flag, so it is the one CLI
-that cannot migrate until the library grows positionals.
-Leaving it means one app keeps parsing its own argument.
+Buildings and walkers leaked across cities because `WorldMapState` swapped a
+`PathIndex` and a `Camera` per city while the entities standing on the grid lived in
+one shared `ecs::World` with nothing saying which city they belonged to.
+That is fixed: a closed city is now stored as a `CityGrid` of plain values.
 
-## From the RNG extraction (`feat/rng-library`, merged)
+The save format was **not** bumped, because a save carries one grid -- the live
+city's -- exactly as it already did for the roads and the camera.
+So every existing version-2 file still loads.
+But it does mean that saving, loading and then walking to another city finds it
+empty.
+Making a save carry all four cities is a version 3 plus a migration reading a v2
+document as the one city it was written from, and it is a decision about what a
+*save* is rather than a bug.
 
-### R3. Should `antwika::rng` grow the positional hash `IDEAS.md` asks for?
+### R2. Which of the two backends is right about texture scaling?
 
-`IDEAS.md` asked for `hash(seed, x, y) -> value` alongside lifting the generator
-out.
-It was not built: no call site in the repository needs randomness as a function of
-position, since every one draws in a fixed order from a fixed seed.
-The `IDEAS.md` entry was narrowed to say the hash is still outstanding rather than
-deleted.
-Say whether you want it built now or left waiting for a first customer.
+Found while fixing the SDL3 transparency bug, and left deliberately unfixed because
+it is an aesthetic call rather than a defect.
 
-### R4. `FakeRng` now lives in `antwika::rng`'s own `tests/fakes/`
+SDL3 defaults a texture to `SDL_SCALEMODE_LINEAR`; raylib's `rlLoadTexture` sets
+`GL_NEAREST`; nothing in this repository sets either.
+So a scaled blit is smoothed under one backend and crisp under the other -- measured
+at 667 distinct colours against 105 on the same `antwika_gfx_demo` frame.
+It matters most for `apps/game` and `apps/poker`, whose pixel-art atlases are scaled
+to whole tile sizes.
+Nearest is almost certainly what pixel art wants and would make the two backends
+agree, but linear is defensible for art that is not pixel art.
+It is a one-line addition to `createTexture()` plus a line in `IRenderer`'s contract.
 
-It moved with the interface it doubles, which means `antwika_holdem_tests` links
-another module's fakes.
-That is already the norm in this repository, but it is a judgement call worth
-confirming rather than discovering later.
+### R3. Is `ITickSource` the name you want?
+
+`antwika::replay` was split rather than renamed: `antwika::simulation` owns the loop
+(`EngineLoop`, `TickPacer`, `WindowInputSource`, and the seam) and `antwika::replay`
+owns the recording and its format, depending on it.
+The reasoning is in `wiki/libraries/simulation.md`.
+
+`IReplaySource` was renamed `ITickSource` as part of that, since seven of its
+implementers never touch a recording.
+`ITickEventSource` is more literally accurate -- it supplies a tick's *events* -- and
+was passed over for line length.
+
+### R4. Should the build-placement border draw for the road tool too?
+
+It does today, on the grounds that a road is a 1x1 footprint and that a border
+appearing for five tools and not the sixth reads as a bug.
+Your request said "when placing a new building", so if roads should be bare it is a
+one-line change in `drawGhost()`.
+
+### R5. Should cancelling build mode reach a genuine "nothing selected" state?
+
+Right-click currently leaves build mode by falling back to the road tool, because
+right-click with the road tool selected already means "drop a walker" and the
+recorded right-clicks in `src/apps/game/replays/demo.json` still have to mean that.
+A true "no tool selected" state is the classic city-builder behaviour and is what a
+future reader will probably expect, but it needs `UiOverlay::tool()` to become an
+optional and it changes what already-recorded left clicks mean.
+
+### R6. Are the `antwika::cli` transitional headers permanent?
+
+`antwika/replay/CommandLine.hpp`, `FlagSpec.hpp` and `CommandLineError.hpp` are
+`using` re-exports left behind so that `game::SaveCli` and `poker::WatchOptions`
+compiled untouched while four other agents were editing those apps.
+They are commented as transitional and still have roughly eight callers.
+Retiring them means migrating those callers and deleting the three headers.
+
+Note that the later library split deliberately left **no** such shims, on the
+grounds that it moved all 113 of its call sites in the same commit, so shims would
+have been dead on arrival.
+The two answers should probably agree.
+
+### R7. Should `antwika::cli` support positional arguments?
+
+It is flags-only, which is what every caller needs.
+`apps/sound_demo` takes a bare filename rather than a flag, so it is the one CLI that
+cannot migrate onto the library until positionals exist.
+
+### R8. Should `antwika::rng` grow the positional hash `IDEAS.md` asks for?
+
+`hash(seed, x, y) -> value` was not built: no call site needs randomness as a
+function of position, since every one draws in a fixed order from a fixed seed.
+The `IDEAS.md` entry was narrowed rather than deleted.
+
+### R9. Should over-feeding the companion annoy it?
+
+A tap while the companion is awake and not hungry currently does nothing, which is
+what stops tap-spamming being a strategy.
+Your specification named only two violations -- leaving it hungry, and tapping while
+it sleeps -- so harmlessness was the conservative reading.
+Making it a third violation is one arm of `Pet::tap()`.
+
+### R10. Smaller calls, grouped
+
+- **The companion reaches `TickPacer` through an adapter holding an empty
+  `ecs::World`**, because `TickPacer` is an `ecs::ISystem` and the app keeps no
+  world.
+  Judged better than a third copy of a class the project has already deduplicated
+  twice; moving the sleep into `RenderSink` is a two-line change if the empty world
+  reads as a smell.
+- **`FakeRng` moved into `antwika::rng`'s own `tests/fakes/`**, so
+  `antwika_holdem_tests` now links another module's fakes.
+  Already the norm here, but worth confirming.
+- **The atlas editor's palette is twelve compiled-in colours.**
+  An artist may want different ones, or a hex-entry field instead.
+- **`antwika::ttf` refuses OpenType/CFF fonts and font collections by name**, though
+  stb could read CFF; supporting it means a second outline path and a second
+  synthetic fixture.
+  Its `GlyphAtlas::Options` defaults (512-pixel maximum width, 1-pixel padding) are
+  guesses at what a first caller wants.
+- **The hover readout in `apps/game` lists only the resources its bars gauge**, so a
+  *source* building shows just its name rather than the inert stock it holds --
+  chosen so the panel and the bars never tell two stories.
+  A carrying walker shows its bar even when empty, since "this food walker is spent"
+  is worth seeing.
+
+## Known gaps, no decision needed
+
+These are simply not done, and are recorded so they are not discovered later.
+
+- **`README.md` lists the project's applications and omits all four new ones**
+  (`ui_demo`, `companion`, `atlas_editor`, and the `gfx3d_demo` line's neighbours).
+  Every agent was scoped away from that file so twelve of them would not collide in
+  it, which is exactly why nobody added their line.
+  It needs one line each.
+- **Coverage was not re-measured after the library split.**
+  Each agent measured its own module at 100% before merging, and the split moves no
+  lines and carried both halves' tests with their code, but no instrumented build was
+  run over the final merged tree.
+- **Only the `gcc-linux-x86_64` profile was built.**
+  The LLVM and MinGW legs are untested locally; CI covers them.
+- **`apps/game` does not yet use the new `antwika::ui` hover pass.**
+  Adopting it is one `applyHover()` call in `main.cpp` -- `Toolbar` and `UiSink` need
+  no change at all -- and it would retire the limitation `CLAUDE.md` still documents,
+  that a button there lights up on the press rather than on approach.
+  It was deferred only because three agents were editing that app at the time.
+- **`ISSUES-game-integrate.md`'s third section is stale.**
+  It says a save carries no buildings; the format is version 2 and has carried them
+  for a while.
