@@ -112,6 +112,7 @@ build/bin/antwika_sound_demo/antwika_sound_demo          # eight notes; silent u
 build/bin/antwika_sound_demo/antwika_sound_demo my.wav   # or play a file instead
 build/bin/antwika_tower_defence/antwika_tower_defence    # or --record / --replay
 build/bin/antwika_ui_demo/antwika_ui_demo                # every antwika::ui element, 1500 ticks
+build/bin/antwika_companion/antwika_companion            # tap to feed it
 ```
 
 **Every application gets a directory of its own under `bin/`**, holding the executable, whatever it opens and -- on MinGW -- the runtime DLLs it needs to start, all put there by `antwika_bundle_app()` in [`cmake/AntwikaModule.cmake`](cmake/AntwikaModule.cmake).
@@ -119,6 +120,11 @@ Two applications ship an `atlas.png` and three a `demo.json`, so one shared `bin
 An application finds those files through `antwika::app::assetPath()`, which asks the operating system where the running executable is (`/proc/self/exe`, `GetModuleFileNameW`) rather than reading the working directory -- so starting one from anywhere still works, and `antwika::app` is the one place under `src/` that names an operating system.
 What this replaces is a path baked in at configure time, which was the *building* machine's path: right on the machine that built it, and a directory that does not exist on any other, so every cross-built executable that opened anything died on its first line.
 Test binaries stay directly in `bin/`, since they open nothing.
+
+`antwika_companion` opens a 128x128 window holding one animal with two needs: tap the window to feed it when it is hungry, and leave it alone while it is asleep.
+Violating either costs it happiness, and happiness reaching zero is an ordinary, tested state it never leaves.
+Like `antwika_life` it has no end of its own, so a headless build runs until interrupted; `src/apps/companion/replays/demo.json` is a sample session to pass to `--replay`, and it ends on its own.
+See [`docs/companion.md`](docs/companion.md) for the rules and the numbers.
 
 `antwika_tower_defence` opens a window, draws the level each tick and takes mouse input.
 Like `antwika_life` it has no end of its own: it runs until the window is closed, or until a replay dispatches `engine.stop`.
@@ -316,6 +322,16 @@ Each module (lib or app) owns its own `CMakeLists.txt`, `include/`, `src/`, and 
   That strip is `td::scoreBarHeight(canvas)` -- the height the bar itself lays out to, derived from the same theme padding and glyph line height -- rather than a fixed pixel count, which only matched the bar at one window size and left the bar covering grid rows at any taller one.
   It starts on an empty grid and loads nothing unless `--replay` says so, so what a session contains is what somebody clicked.
   `src/apps/tower_defence/replays/demo.json` is a sample session to pass to `--replay`.
+- `apps/companion` is a tamagotchi in a 128-pixel window, and its whole design is that **when a tap lands is what decides what it means**: a meal while the companion is awake and hungry, an interruption while it is asleep, and nothing at all otherwise.
+  `companion::Pet` is the simulation -- integer throughout, no clock and no generator, so it is a pure function of how many times `step()` has been called and when `tap()` was called between them.
+  The day is `(t % (dayTicks + nightTicks)) >= dayTicks` rather than a countdown, so falling asleep cannot get out of step with the day and the sun does not stop for a companion that has perished.
+  Every period derives from one `companion::kTicksPerSecond`, `kTickInterval` included, so how fast it lives and how fast it is drawn are the same constant.
+  **The app defines no event for feeding it**: a press is the input, `companion::TapSink` turns it into a meal or a rude awakening inside the tick path, and the replay stores the press and regenerates which it was.
+  There is deliberately no layout and no hit-testing, since the window holds one animal and a press anywhere in it means the same thing -- so unlike `life::BoardLayout` there is nothing here that could let what somebody sees and what they can hit drift apart.
+  Rendering is a write-only projection in structure rather than by promise: `companion::snapshotOf()` takes an immutable `companion::PetSnapshot`, `companion::PetScene` turns that into drawing calls, and `companion::RenderSink` runs it once per `engine.tick`, after `TapSink` and `PetSink`.
+  **The animal is drawn from `IRenderer`'s rectangles rather than blitted from an atlas**, which is a choice rather than a shortcut: ten boxes at 128 pixels square are shorter written down than described, and a scene with no art in it stays assertable against a mock renderer call by call.
+  It breathes and blinks through `antwika::animation`, resolved from the tick count the snapshot carries, so no renderer holds a frame number a replay would have to reproduce.
+  `companion::PacingSink` is the `ITickEventSink` shape over `replay::TickPacer`, registered last so the order is present-then-wait; see [`docs/companion.md`](docs/companion.md) for the numbers and why the empty `ecs::World` it hands the pacer is the whole adapter.
 - `apps/sudoku` is unrelated to the tick/replay system: it's a showcase for `antwika::wfc` (Wave Function Collapse) — a standalone, dependency-free, deterministic constraint solver operating on a flat, index-addressed `std::vector` of cells with geometry expressed entirely through `IConstraint`s (no grid concept inside the library).
   `apps/sudoku` expresses the 81-cell puzzle and its row/column/box rules as `AllDifferentConstraint`s over that flat array — see [`blog/005-wave-function-collapse-that-never-guesses.md`](blog/005-wave-function-collapse-that-never-guesses.md).
 

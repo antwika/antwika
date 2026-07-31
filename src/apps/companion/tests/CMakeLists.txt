@@ -1,0 +1,41 @@
+find_package(GTest REQUIRED)
+
+add_executable(antwika_companion_tests
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/Companion.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/PacingSink.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/Pet.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/PetScene.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/PetSink.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/PetSnapshot.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/RenderSink.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/TapSink.cpp
+    CompanionTest.cpp
+    PetSceneTest.cpp
+    PetSnapshotTest.cpp
+    PetTest.cpp
+    RunIntegrationTest.cpp
+    SinksTest.cpp
+)
+
+target_include_directories(antwika_companion_tests
+    PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/../include
+)
+
+target_link_libraries(antwika_companion_tests
+    PRIVATE
+        antwika::animation
+        antwika::ecs
+        antwika::engine
+        antwika::event::tests::mocks
+        antwika::gfx
+        antwika::gfx::tests::mocks
+        antwika::input
+        antwika::log::tests::mocks
+        antwika::replay
+        antwika::time::tests::fakes
+        gtest::gtest
+)
+
+include(GoogleTest)
+gtest_discover_tests(antwika_companion_tests)
