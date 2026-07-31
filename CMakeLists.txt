@@ -153,6 +153,23 @@ foreach(target IN LISTS ANTWIKA_EXECUTABLE_TARGETS)
     if(TARGET antwika_test_pch AND target MATCHES "_tests$")
         target_precompile_headers(${target} REUSE_FROM antwika_test_pch)
 
+        # One header shared by every test target means every test target
+        # has to agree with it about the preprocessor, and a target is
+        # free to disagree for a reason of its own: SDL3::SDL3 carries
+        # -pthread, so backends/sdl3's suites define _REENTRANT and the
+        # header -- built against gtest alone -- does not.
+        # GCC then declines to use it, which is the correct answer, and
+        # -Werror turned that into a failed build.
+        # A precompiled header is a build-time optimisation and never a
+        # statement about the program, so a target that cannot take this
+        # one parses the two headers itself and is merely slower.
+        # The warning is left on, since which targets pay full price is
+        # worth being able to read off a build log.
+        if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
+            target_compile_options(${target}
+                PRIVATE -Wno-error=invalid-pch)
+        endif()
+
         # A test target compiles the application sources it covers, and
         # a precompiled header is force-included into every source of a
         # target rather than into the ones that wanted it.
