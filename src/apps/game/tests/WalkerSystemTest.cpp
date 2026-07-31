@@ -6,8 +6,10 @@
 #include <antwika/ecs/World.hpp>
 #include <antwika/log/mocks/MockLogger.hpp>
 
+#include "antwika/game/Building.hpp"
 #include "antwika/game/Cell.hpp"
 #include "antwika/game/Direction.hpp"
+#include "antwika/game/GridExtent.hpp"
 #include "antwika/game/PathIndex.hpp"
 #include "antwika/game/Walker.hpp"
 #include "antwika/game/WalkerSystem.hpp"
@@ -23,6 +25,9 @@ using antwika::log::mocks::MockLogger;
 
 namespace
 {
+    constexpr antwika::game::GridExtent kExtent{
+        .width = 16, .height = 16};
+
     class WalkerSystemTest : public ::testing::Test
     {
     protected:
@@ -53,7 +58,7 @@ namespace
         ::testing::NiceMock<MockLogger> logger;
         World world{logger};
         PathIndex paths;
-        WalkerSystem system{paths};
+        WalkerSystem system{paths, kExtent};
     };
 } // namespace
 
@@ -247,4 +252,150 @@ TEST_F(WalkerSystemTest, Update_LeavesNoStartCellForAWalkerThatCannotMove)
     tick();
 
     EXPECT_FALSE(world.get<Walker>(walker).from.has_value());
+}
+
+TEST_F(WalkerSystemTest, Update_TiresAWalkerOneStepAtATime)
+{
+    layPath({{.x = 0, .y = 0}, {.x = 1, .y = 0}, {.x = 2, .y = 0}});
+    const auto walker = addWalker(Cell{.x = 0, .y = 0}, Direction::East);
+
+    tick();
+
+    EXPECT_EQ(
+        world.get<Walker>(walker).stepsUntilHome,
+        antwika::game::kRoamingSteps - 1);
+}
+
+TEST_F(WalkerSystemTest, Update_DoesNotTireAWalkerThatCannotMove)
+{
+    // It has not walked, so it has not tired.
+    layPath({{.x = 5, .y = 5}});
+    const auto walker = addWalker(Cell{.x = 5, .y = 5}, Direction::East);
+
+    tick();
+
+    EXPECT_EQ(
+        world.get<Walker>(walker).stepsUntilHome,
+        antwika::game::kRoamingSteps);
+}
+
+TEST_F(WalkerSystemTest, Update_RemovesATiredWalkerThatNobodySent)
+{
+    layPath({{.x = 0, .y = 0}, {.x = 1, .y = 0}});
+
+    const auto walker = world.create();
+    world.add<Cell>(walker, Cell{.x = 0, .y = 0});
+    world.add<Walker>(walker, Walker{.stepsUntilHome = 0});
+    world.commit();
+
+    tick();
+
+    EXPECT_FALSE(world.alive(walker));
+}
+
+TEST_F(WalkerSystemTest, Update_WalksATiredWalkerBackTowardsItsBuilding)
+{
+    layPath({{.x = 1, .y = 0}, {.x = 2, .y = 0}, {.x = 3, .y = 0}});
+
+    const auto home = world.create();
+    world.add<Cell>(home, Cell{.x = 0, .y = 0});
+    world.add<antwika::game::Building>(home, antwika::game::Building{});
+
+    const auto walker = world.create();
+    world.add<Cell>(walker, Cell{.x = 3, .y = 0});
+    world.add<Walker>(
+        walker,
+        Walker{
+            .facing = Direction::East,
+            .stepsUntilHome = 0,
+            .home = home});
+    world.commit();
+
+    // Its home is west, so it turns round rather than carrying on.
+    tick();
+
+    EXPECT_EQ(world.get<Cell>(walker), (Cell{.x = 2, .y = 0}));
+    EXPECT_EQ(world.get<Walker>(walker).facing, Direction::West);
+}
+
+TEST_F(WalkerSystemTest, Update_RemovesAWalkerAsItReachesItsBuilding)
+{
+    layPath({{.x = 1, .y = 0}});
+
+    const auto home = world.create();
+    world.add<Cell>(home, Cell{.x = 0, .y = 0});
+    world.add<antwika::game::Building>(home, antwika::game::Building{});
+
+    const auto walker = world.create();
+    world.add<Cell>(walker, Cell{.x = 1, .y = 0});
+    world.add<Walker>(walker, Walker{.stepsUntilHome = 0, .home = home});
+    world.commit();
+
+    tick();
+
+    EXPECT_FALSE(world.alive(walker));
+}
+
+TEST_F(WalkerSystemTest, Update_RemovesATiredWalkerWhoseBuildingIsGone)
+{
+    layPath({{.x = 1, .y = 0}});
+
+    const auto home = world.create();
+    world.add<Cell>(home, Cell{.x = 0, .y = 0});
+    world.add<antwika::game::Building>(home, antwika::game::Building{});
+
+    const auto walker = world.create();
+    world.add<Cell>(walker, Cell{.x = 1, .y = 0});
+    world.add<Walker>(
+        walker, Walker{.stepsUntilHome = 0, .home = home});
+    world.commit();
+
+    world.destroy(home);
+    world.commit();
+
+    tick();
+
+    EXPECT_FALSE(world.alive(walker));
+}
+
+TEST_F(WalkerSystemTest, Update_RemovesATiredWalkerWalledOffFromItsHome)
+{
+    // No road runs between the two, so there is no route back.
+    layPath({{.x = 5, .y = 5}});
+
+    const auto home = world.create();
+    world.add<Cell>(home, Cell{.x = 0, .y = 0});
+    world.add<antwika::game::Building>(home, antwika::game::Building{});
+
+    const auto walker = world.create();
+    world.add<Cell>(walker, Cell{.x = 5, .y = 5});
+    world.add<Walker>(
+        walker, Walker{.stepsUntilHome = 0, .home = home});
+    world.commit();
+
+    tick();
+
+    EXPECT_FALSE(world.alive(walker));
+}
+
+TEST_F(WalkerSystemTest, Update_KeepsATiredWalkerCountingDownBetweenSteps)
+{
+    layPath({{.x = 1, .y = 0}, {.x = 2, .y = 0}, {.x = 3, .y = 0}});
+
+    const auto home = world.create();
+    world.add<Cell>(home, Cell{.x = 0, .y = 0});
+    world.add<antwika::game::Building>(home, antwika::game::Building{});
+
+    const auto walker = world.create();
+    world.add<Cell>(walker, Cell{.x = 3, .y = 0});
+    world.add<Walker>(
+        walker, Walker{.stepsUntilHome = 0, .home = home});
+    world.commit();
+
+    tick();
+    tick();
+
+    // One step taken, then a tick spent waiting rather than a second.
+    EXPECT_EQ(world.get<Cell>(walker), (Cell{.x = 2, .y = 0}));
+    EXPECT_TRUE(world.alive(walker));
 }

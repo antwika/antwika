@@ -20,6 +20,7 @@
 #include <antwika/time/fakes/FakeSleeper.hpp>
 
 #include "antwika/game/AppMode.hpp"
+#include "antwika/game/BuildingIndex.hpp"
 #include "antwika/game/Camera.hpp"
 #include "antwika/game/Cell.hpp"
 #include "antwika/game/Game.hpp"
@@ -113,6 +114,7 @@ namespace
         const InputEventCodec codec;
         Camera camera;
         PathIndex paths;
+        antwika::game::BuildingIndex built;
         TickEventRecorder recorder;
         AppModeState mode{AppMode::CityMap};
 
@@ -137,6 +139,7 @@ namespace
                 .extent = kExtent,
                 .camera = camera,
                 .paths = paths,
+                .built = built,
                 .mode = mode,
                 .maxTicks = kMaxTicks,
                 .replayRecorder = recorder});
@@ -188,6 +191,7 @@ TEST(FrameRateDeterminismTest, TheWholeRunTakesAsLongWhicheverRateItDrewAt)
     const InputEventCodec codec;
     Camera camera;
     PathIndex paths;
+    antwika::game::BuildingIndex built;
     TickEventRecorder recorder;
     AppModeState mode{AppMode::CityMap};
 
@@ -209,6 +213,7 @@ TEST(FrameRateDeterminismTest, TheWholeRunTakesAsLongWhicheverRateItDrewAt)
             .extent = kExtent,
             .camera = camera,
             .paths = paths,
+            .built = built,
             .mode = mode,
             .maxTicks = kMaxTicks,
             .replayRecorder = recorder});

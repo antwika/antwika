@@ -29,7 +29,8 @@ namespace antwika::game
         SystemScheduler &scheduler,
         const InputFold &input,
         const UiOverlay &overlay,
-        const WorldMapState &cities)
+        const WorldMapState &cities,
+        BuildingIndex &built)
         : world(world),
           paths(paths),
           camera(camera),
@@ -37,7 +38,8 @@ namespace antwika::game
           scheduler(scheduler),
           input(input),
           overlay(overlay),
-          cities(cities)
+          cities(cities),
+          built(built)
     {
     }
 
@@ -124,9 +126,11 @@ namespace antwika::game
     {
         // One decision, taken where the click is.
         // Rather than a button meaning one thing and the palette another.
-        if (placesBuilding(tool))
+        // The kind is worked out once here and handed on.
+        // So nothing downstream asks again and disagrees.
+        if (const auto kind = buildingKindOf(tool))
         {
-            placeBuilding(cell, tool);
+            placeBuilding(cell, *kind);
             return;
         }
 
@@ -135,7 +139,7 @@ namespace antwika::game
 
     void GridSink::placePath(Cell cell)
     {
-        if (!extent.contains(cell) || paths.has(cell) || built.contains(cell))
+        if (!extent.contains(cell) || paths.has(cell) || built.has(cell))
         {
             return;
         }
@@ -146,21 +150,21 @@ namespace antwika::game
         paths.insert(cell);
     }
 
-    void GridSink::placeBuilding(Cell cell, BuildTool tool)
+    void GridSink::placeBuilding(Cell cell, BuildingKind kind)
     {
         // A cell holds one thing, and a road is a thing.
         // The note is kept here rather than read out of the World.
         // The World hands out the last commit.
         // Two clicks in one tick would then build twice on one cell.
         // That is the trap life::PointerToggleSink describes.
-        if (!extent.contains(cell) || paths.has(cell) || built.contains(cell))
+        if (!extent.contains(cell) || paths.has(cell) || built.has(cell))
         {
             return;
         }
 
         const auto entity = world.create();
         world.add<Cell>(entity, cell);
-        world.add<Building>(entity, Building{.kind = tool});
+        world.add<Building>(entity, Building{.kind = kind});
         built.insert(cell);
     }
 

@@ -17,6 +17,7 @@
 #include <antwika/time/Tick.hpp>
 
 #include "antwika/game/AppMode.hpp"
+#include "antwika/game/BuildingIndex.hpp"
 #include "antwika/game/Camera.hpp"
 #include "antwika/game/GameSummary.hpp"
 #include "antwika/game/GridExtent.hpp"
@@ -117,6 +118,16 @@ namespace antwika::game
          * Likewise read by an observer built beforehand.
          */
         PathIndex &paths;
+
+        /**
+         * @brief Which cells hold a building, as of right now.
+         *
+         * Shared rather than owned by the sink that writes it, because
+         * BuildingSystem clears a cell as it demolishes one and
+         * GridSink records a cell as it builds on one -- and a note
+         * either kept to itself would drift from the other.
+         */
+        BuildingIndex &built;
 
         /**
          * @brief Which screen the run is on, folded by the tick path.

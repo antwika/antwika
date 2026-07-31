@@ -27,6 +27,7 @@
 
 #include "antwika/game/AppMode.hpp"
 #include "antwika/game/AtlasImage.hpp"
+#include "antwika/game/BuildingIndex.hpp"
 #include "antwika/game/Camera.hpp"
 #include "antwika/game/GridExtent.hpp"
 #include "antwika/game/GridScene.hpp"
@@ -137,6 +138,7 @@ namespace
 
         Camera camera(kInitialPan);
         PathIndex paths;
+        antwika::game::BuildingIndex built;
         const GridScene scene;
         const MainMenuScene menuScene;
 
@@ -237,6 +239,7 @@ namespace
                 .extent = kExtent,
                 .camera = camera,
                 .paths = paths,
+                .built = built,
                 .mode = mode,
                 .observers = observers,
                 .replayRecorder = recorded.replayRecorder,

@@ -111,7 +111,7 @@ namespace
         world.add<antwika::game::Building>(
             house,
             antwika::game::Building{
-                .kind = antwika::game::BuildTool::House});
+                .kind = antwika::game::BuildingKind::House});
         world.commit();
 
         SaveGame save;

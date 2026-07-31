@@ -15,6 +15,7 @@
 #include <antwika/replay/ReplayWriter.hpp>
 
 #include "antwika/game/AppMode.hpp"
+#include "antwika/game/BuildingIndex.hpp"
 #include "antwika/game/Camera.hpp"
 #include "antwika/game/Events.hpp"
 #include "antwika/game/Game.hpp"
@@ -49,6 +50,7 @@ namespace
         const InputEventCodec codec;
         Camera camera;
         PathIndex paths;
+        antwika::game::BuildingIndex built;
 
         // Both runs start in the same mode, which is the point:
         // nothing about being a replay may change what a click means.
@@ -63,6 +65,7 @@ namespace
                        .extent = GridExtent{.width = 16, .height = 16},
                        .camera = camera,
                        .paths = paths,
+                       .built = built,
                        .mode = mode,
                        .maxTicks = kMaxTicks})
             .state;

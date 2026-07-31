@@ -1,9 +1,9 @@
 #include "antwika/game/SpawnSystem.hpp"
 
-#include <array>
-#include <cstdint>
+#include <cstddef>
 
 #include "antwika/game/Building.hpp"
+#include "antwika/game/BuildingKind.hpp"
 #include "antwika/game/Direction.hpp"
 #include "antwika/game/Walker.hpp"
 
@@ -48,20 +48,33 @@ namespace antwika::game
         for (const auto entity : world.view<Building, Cell>())
         {
             const auto building = world.get<Building>(entity);
+            const auto sends = walkerSentBy(building.kind);
 
-            if (!spawnsWalkers(building.kind))
+            if (!sends.has_value())
+            {
+                continue;
+            }
+
+            // One walker out at a time, and this is the whole rule.
+            // alive() rather than has<Walker>().
+            // create() is immediate where add<Walker>() is staged.
+            // So on the tick one is made, only alive() is true.
+            //
+            // A walker destroyed this tick reads alive until commit.
+            // So its building is free from the next tick, not this one.
+            // Which is why the two never overlap.
+            if (world.alive(building.walker))
             {
                 continue;
             }
 
             if (building.ticksUntilSpawn > 0)
             {
-                world.set<Building>(
-                    entity,
-                    Building{
-                        .kind = building.kind,
-                        .ticksUntilSpawn = static_cast<std::uint8_t>(
-                            building.ticksUntilSpawn - 1)});
+                // Copied and adjusted rather than rebuilt.
+                // So a member added later is carried across.
+                auto waiting = building;
+                waiting.ticksUntilSpawn = building.ticksUntilSpawn - 1;
+                world.set<Building>(entity, waiting);
                 continue;
             }
 
@@ -75,17 +88,22 @@ namespace antwika::game
                 continue;
             }
 
+            const auto carries = carriedResource(*sends).has_value();
+
             const auto walker = world.create();
             world.add<Cell>(walker, *onto);
-            world.add<Walker>(walker, Walker{});
+            world.add<Walker>(
+                walker,
+                Walker{
+                    .kind = *sends,
+                    .carried = carries ? kWalkerLoad : 0,
+                    .home = entity});
             ++out;
 
-            world.set<Building>(
-                entity,
-                Building{
-                    .kind = building.kind,
-                    .ticksUntilSpawn = static_cast<std::uint8_t>(
-                        kTicksPerSpawn - 1)});
+            auto sent = building;
+            sent.ticksUntilSpawn = kSpawnPeriodTicks - 1;
+            sent.walker = walker;
+            world.set<Building>(entity, sent);
         }
     }
 

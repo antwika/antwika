@@ -11,6 +11,7 @@
 #include <antwika/input/MouseButton.hpp>
 #include <antwika/log/mocks/MockLogger.hpp>
 
+#include "antwika/game/BuildingIndex.hpp"
 #include "antwika/game/Camera.hpp"
 #include "antwika/game/Cell.hpp"
 #include "antwika/game/GridExtent.hpp"
@@ -27,6 +28,7 @@ using antwika::ecs::SystemScheduler;
 using antwika::ecs::World;
 using antwika::event::Event;
 using antwika::event::TickEvent;
+using antwika::game::BuildingIndex;
 using antwika::game::Camera;
 using antwika::game::Cell;
 using antwika::game::cellCentre;
@@ -107,6 +109,7 @@ namespace
         ::testing::NiceMock<MockLogger> logger;
         World world{logger};
         PathIndex paths;
+        BuildingIndex built;
         Camera camera{antwika::gfx::Point{.x = 400, .y = 40}};
         SystemScheduler scheduler;
         InputEventCodec codec;
@@ -126,7 +129,8 @@ namespace
             scheduler,
             input,
             overlay,
-            cities};
+            cities,
+            built};
     };
 } // namespace
 

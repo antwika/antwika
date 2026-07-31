@@ -5,6 +5,7 @@
 #include <antwika/gfx/Rect.hpp>
 #include <antwika/gfx/Size.hpp>
 
+#include "antwika/game/BuildingKind.hpp"
 #include "antwika/game/BuildTool.hpp"
 #include "antwika/game/Direction.hpp"
 
@@ -31,7 +32,7 @@ namespace antwika::game
     /**
      * @brief How many rows of tiles the atlas holds.
      */
-    inline constexpr std::uint32_t kAtlasRows = 3;
+    inline constexpr std::uint32_t kAtlasRows = 4;
 
     /**
      * @brief The size the atlas image must be, in pixels.
@@ -70,10 +71,10 @@ namespace antwika::game
     /**
      * @brief How many building tiles there are, one per building tool.
      *
-     * The static_assert below is what keeps this and kBuildToolCount
+     * The static_assert below is what keeps this and kBuildingKindCount
      * from disagreeing.
      */
-    inline constexpr std::uint32_t kBuildingSlotCount = 3;
+    inline constexpr std::uint32_t kBuildingSlotCount = 5;
 
     /**
      * @brief Get which bit of a link mask stands for one direction.
@@ -112,7 +113,7 @@ namespace antwika::game
     // One building tile per tool that places one.
     // Adding a tool without drawing it would show somebody else's art.
     static_assert(
-        kBuildingSlotCount == kBuildToolCount - 1,
+        kBuildingSlotCount == kBuildingKindCount,
         "there must be a building tile for every building tool");
 
     // kLinkMask is built from the four directions this file names.
@@ -149,7 +150,7 @@ namespace antwika::game
      *
      * The slots run the ground, then the sixteen roads in link-mask
      * order, then the four walkers in Direction order, then the
-     * buildings in BuildTool order. A road's mask indexing its own slot
+     * buildings in BuildingKind order. A road's mask indexing its slot
      * is what makes a junction's art a lookup rather than four
      * decisions, and the mask's bits are the Direction enumerators' own
      * indices, handed out by linkBit().
@@ -205,17 +206,16 @@ namespace antwika::game
     }
 
     /**
-     * @brief Get the tile a building this tool placed is drawn from.
-     * @param tool The tool that placed it; Road places no building and
-     * gives the first building's tile, so ask placesBuilding() first.
+     * @brief Get the tile a building of this kind is drawn from.
+     * @param kind The building's kind.
      * @return The building tile's rectangle, in atlas pixels.
      */
-    [[nodiscard]] constexpr Rect buildingTile(BuildTool tool) noexcept
+    [[nodiscard]] constexpr Rect buildingTile(BuildingKind kind) noexcept
     {
         return atlasSlot(
             kFirstBuildingSlot
             + static_cast<std::uint32_t>(
-                buildingIndex(tool) % kBuildingSlotCount));
+                buildingKindIndex(kind) % kBuildingSlotCount));
     }
 
     /**
@@ -232,7 +232,9 @@ namespace antwika::game
     [[nodiscard]] constexpr Rect toolTile(
         BuildTool tool, std::uint8_t links) noexcept
     {
-        return placesBuilding(tool) ? buildingTile(tool) : roadTile(links);
+        const auto kind = buildingKindOf(tool);
+
+        return kind.has_value() ? buildingTile(*kind) : roadTile(links);
     }
 
 } // namespace antwika::game

@@ -28,6 +28,7 @@
 #include <antwika/replay/ReplaySource.hpp>
 
 #include "antwika/game/AppMode.hpp"
+#include "antwika/game/BuildingIndex.hpp"
 #include "antwika/game/Camera.hpp"
 #include "antwika/game/BuildTool.hpp"
 #include "antwika/game/Cell.hpp"
@@ -124,6 +125,7 @@ namespace
         const InputEventCodec codec;
         Camera camera;
         PathIndex paths;
+        antwika::game::BuildingIndex built;
         TickEventRecorder recorder;
 
         // The subject here is the grid, so a run starts there.
@@ -138,6 +140,7 @@ namespace
                 .extent = kExtent,
                 .camera = camera,
                 .paths = paths,
+                .built = built,
                 .mode = mode,
                 .maxTicks = kMaxTicks,
                 .replayRecorder = recorder});
@@ -155,6 +158,7 @@ namespace
         const InputEventCodec codec;
         Camera camera;
         PathIndex paths;
+        antwika::game::BuildingIndex built;
         TickEventRecorder recorder;
 
         // The subject here is the grid, so a run starts there.
@@ -170,6 +174,7 @@ namespace
                 .extent = kExtent,
                 .camera = camera,
                 .paths = paths,
+                .built = built,
                 .mode = mode,
                 .maxTicks = kMaxTicks,
                 .replayRecorder = recorder,
@@ -600,9 +605,12 @@ namespace
     [[nodiscard]] std::vector<TickEvent> buildingSession()
     {
         const InputEventCodec codec;
+        // A source rather than a house.
+        // A house consumes what is brought and sends nobody out.
+        // So it would prove nothing about a regenerated spawn.
         const auto palette =
             pixelOn(antwika::game::widgets::toolWidget(
-                antwika::game::BuildTool::House));
+                antwika::game::BuildTool::FoodSource));
 
         std::vector<TickEvent> events{
             TickEvent{
@@ -616,8 +624,8 @@ namespace
                         .button = MouseButton::Left,
                         .position = palette})}};
 
-        // A road beside where the houses go, laid with the road tool.
-        // The palette is on House now, so the road comes first.
+        // A road beside where the sources go, laid with the road tool.
+        // The palette is on a building now, so the road comes first.
         events.insert(
             events.begin(),
             TickEvent{
@@ -629,7 +637,7 @@ namespace
                 .tick = 0,
                 .event = pressAt(Cell{.x = 5, .y = 3}, MouseButton::Left)});
 
-        // Two houses, placed a tick apart, so their cadences differ.
+        // Two sources, placed a tick apart, so their cadences differ.
         events.push_back(
             TickEvent{
                 .tick = 1,
@@ -654,7 +662,7 @@ TEST(ReplayDeterminismTest, ABuildingsWalkersAreRegeneratedRatherThanStored)
     ReplaySource liveSource(script);
     const auto live = runWithToolbar(liveSource);
 
-    // Two houses, and both of them sent somebody out.
+    // Two sources, and both of them sent somebody out.
     ASSERT_EQ(live.summary.buildings.size(), 2U);
     EXPECT_GE(live.summary.walkers.size(), 2U);
 

@@ -7,7 +7,7 @@
 #include <antwika/ecs/World.hpp>
 
 #include "antwika/game/BuildGhost.hpp"
-#include "antwika/game/BuildTool.hpp"
+#include "antwika/game/BuildingKind.hpp"
 #include "antwika/game/Camera.hpp"
 #include "antwika/game/Cell.hpp"
 #include "antwika/game/Direction.hpp"
@@ -82,12 +82,12 @@ namespace antwika::game
     struct BuildingView
     {
         Cell at;
-        BuildTool kind = BuildTool::House;
+        BuildingKind kind = BuildingKind::House;
 
         /**
          * @brief Compare two building views.
          * @param other The view to compare against.
-         * @return True when both the cell and the tool match.
+         * @return True when both the cell and the kind match.
          */
         [[nodiscard]] bool operator==(
             const BuildingView &other) const = default;

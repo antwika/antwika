@@ -4,10 +4,13 @@ add_executable(antwika_game_tests
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/AppMode.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/AtlasImage.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/BuildGhost.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/BuildingIndex.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/BuildingSystem.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/Game.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/GameStateReducer.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/GridScene.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/GridSink.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/Homing.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/InputFold.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/MainMenuScene.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/MainMenuSink.cpp
@@ -41,6 +44,9 @@ add_executable(antwika_game_tests
     AtlasImageTest.cpp
     BootstrapTest.cpp
     BuildPaletteTest.cpp
+    BuildingIndexTest.cpp
+    BuildingKindTest.cpp
+    BuildingSystemTest.cpp
     CameraTest.cpp
     CellTest.cpp
     DirectionTest.cpp
@@ -50,6 +56,7 @@ add_executable(antwika_game_tests
     GridExtentTest.cpp
     GridSceneTest.cpp
     GridSinkTest.cpp
+    HomingTest.cpp
     InputFoldTest.cpp
     KeyTextTest.cpp
     IsoProjectionTest.cpp
@@ -108,6 +115,7 @@ target_link_libraries(antwika_game_tests
         antwika::gfx::tests::mocks
         antwika::input
         antwika::log::tests::mocks
+        antwika::pathfinding
         antwika::replay
         antwika::time::tests::fakes
         antwika::ui

@@ -2,10 +2,13 @@ add_executable(antwika_game
     src/AppMode.cpp
     src/AtlasImage.cpp
     src/BuildGhost.cpp
+    src/BuildingIndex.cpp
+    src/BuildingSystem.cpp
     src/Game.cpp
     src/GameStateReducer.cpp
     src/GridScene.cpp
     src/GridSink.cpp
+    src/Homing.cpp
     src/InputFold.cpp
     src/MainMenuScene.cpp
     src/MainMenuSink.cpp
@@ -65,6 +68,7 @@ target_link_libraries(antwika_game
         antwika::input
         antwika::input_backend
         antwika::log
+        antwika::pathfinding
         antwika::replay
         antwika::time
         antwika::ui
