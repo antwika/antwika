@@ -310,8 +310,8 @@ TEST(DropdownTest, TheFrontmostOfTwoOverlappingListsAnswers)
     below.optionIdBase = WidgetId{200};
     below.open = true;
 
-    // Inside the first list's second option and the second list's
-    // first, since neither list takes any room from the other.
+    // Inside the first list's second option.
+    // And inside the second list's first, since neither takes room.
     const Pointer pointer{
         .position = Point{.x = 2, .y = 18}, .pressed = true};
 
