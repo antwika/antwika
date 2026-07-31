@@ -47,6 +47,23 @@ namespace antwika::game
      * Two things keep the cost proportional to what is on screen rather
      * than to how big the grid is. Only cells whose diamonds reach the
      * canvas are drawn at all, and a cell is one blit whatever it holds.
+     *
+     * **The gauges and the hover panel are the one thing here drawn as
+     * rectangles rather than blitted**, since neither is art: a bar is a
+     * fraction of a capacity and a panel is a line of text, and both
+     * come out of the snapshot as plain values -- see ResourceBar.hpp
+     * and ReadoutPanel.hpp.
+     * They are drawn in passes of their own, after every sprite, so no
+     * bar is hidden by a building standing in front of the one it
+     * gauges.
+     *
+     * The panel is drawn here rather than through antwika::ui for one
+     * structural reason: this app's UI is described and resolved inside
+     * the tick path by UiSink, downstream of the recorder, and what the
+     * panel says is worked out from input::PointerHintChannel, which no
+     * replay reproduces. A hover panel taken through that path would put
+     * an unrecorded value into the tick path, which is exactly what the
+     * channel's safety condition forbids.
      */
     class GridScene final
     {
@@ -87,6 +104,17 @@ namespace antwika::game
             Size canvas,
             const SceneSnapshot &snapshot,
             const ITexture &atlas) const;
+
+        void drawBars(
+            IRenderer &renderer,
+            Size canvas,
+            const SceneSnapshot &snapshot,
+            Progress subTick) const;
+
+        void drawReadout(
+            IRenderer &renderer,
+            Size canvas,
+            const SceneSnapshot &snapshot) const;
 
         [[nodiscard]] static bool onCanvas(
             Cell cell, Size canvas, const SceneSnapshot &snapshot);

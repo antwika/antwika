@@ -60,7 +60,7 @@ using antwika::game::tests::widgetCentre;
 using antwika::game::BuildGhost;
 using antwika::game::ghostFor;
 using antwika::game::Building;
-using antwika::game::BuildingView;
+using antwika::game::BuildingSprite;
 using antwika::game::buildingKindIndex;
 using antwika::game::buildingTile;
 using antwika::game::BuildingKind;
@@ -298,7 +298,7 @@ namespace
                     .button = button, .position = pixelOf(cell)});
         }
 
-        [[nodiscard]] std::vector<BuildingView> buildings()
+        [[nodiscard]] std::vector<BuildingSprite> buildings()
         {
             world.commit();
 
@@ -629,7 +629,8 @@ namespace
             .paths = {},
             .walkers = {},
             .buildings = {},
-            .ghost = {}};
+            .ghost = {},
+            .hover = {}};
     }
 
     [[nodiscard]] std::vector<Blit> blitsOf(const SceneSnapshot &snapshot)
@@ -656,7 +657,7 @@ TEST(GridSceneBuildTest, ABuildingIsOneBlitOfItsOwnTile)
 {
     auto snapshot = emptySnapshot();
     snapshot.buildings.push_back(
-        BuildingView{
+        BuildingSprite{
             .at = Cell{.x = 0, .y = 0},
             .kind = BuildingKind::FoodSource});
 
@@ -677,8 +678,9 @@ TEST(GridSceneBuildTest, ABuildingOffTheCanvasIsNotDrawn)
 {
     auto snapshot = emptySnapshot();
     snapshot.buildings.push_back(
-        BuildingView{
-            .at = Cell{.x = 900, .y = -900}, .kind = BuildingKind::House});
+        BuildingSprite{
+            .at = Cell{.x = 900, .y = -900},
+            .kind = BuildingKind::House});
 
     EXPECT_TRUE(blitsOf(snapshot).empty());
 }
@@ -687,7 +689,8 @@ TEST(GridSceneBuildTest, TheGhostIsDrawnLastAndSeeThrough)
 {
     auto snapshot = emptySnapshot();
     snapshot.buildings.push_back(
-        BuildingView{.at = Cell{.x = 0, .y = 0}, .kind = BuildingKind::House});
+        BuildingSprite{
+            .at = Cell{.x = 0, .y = 0}, .kind = BuildingKind::House});
     snapshot.ghost = BuildGhost{
         .at = Cell{.x = 0, .y = 0},
         .tool = BuildTool::WaterSource,

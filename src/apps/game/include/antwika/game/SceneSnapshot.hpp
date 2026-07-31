@@ -1,10 +1,12 @@
 #pragma once
 
+#include <array>
 #include <cstdint>
 #include <optional>
 #include <vector>
 
 #include <antwika/ecs/World.hpp>
+#include <antwika/gfx/Point.hpp>
 
 #include "antwika/game/BuildGhost.hpp"
 #include "antwika/game/BuildingKind.hpp"
@@ -13,11 +15,14 @@
 #include "antwika/game/Direction.hpp"
 #include "antwika/game/GridExtent.hpp"
 #include "antwika/game/PathIndex.hpp"
+#include "antwika/game/Resource.hpp"
+#include "antwika/game/Walker.hpp"
 
 namespace antwika::game
 {
 
     using antwika::ecs::World;
+    using antwika::gfx::Point;
 
     /**
      * @brief One walker, as state that outlives a frame needs to know it.
@@ -68,6 +73,18 @@ namespace antwika::game
         std::uint8_t ticksIntoStep = 0;
 
         /**
+         * @brief What it hands out, or what risk it relieves.
+         *
+         * Here so a frame can draw what a walker is carrying without
+         * being told a second time which resource that is: the kind is
+         * the one fact carriedResource() answers from.
+         */
+        WalkerKind kind = WalkerKind::Food;
+
+        /** @brief How much of its resource is left to hand out. */
+        std::int32_t carried = 0;
+
+        /**
          * @brief Compare two walker sprites.
          * @param other The sprite to compare against.
          * @return True when every field matches.
@@ -77,7 +94,13 @@ namespace antwika::game
     };
 
     /**
-     * @brief One building, as a frame needs to know it.
+     * @brief One building, as state that outlives a frame needs it.
+     *
+     * WalkerView's counterpart, and it is separate from BuildingSprite
+     * for exactly WalkerView's reason: GameSummary holds these, and a
+     * run and its replay are compared on that value.
+     * What a building is holding right now belongs in the picture rather
+     * than in the comparison, so it lives on the sprite.
      */
     struct BuildingView
     {
@@ -92,6 +115,76 @@ namespace antwika::game
          */
         [[nodiscard]] bool operator==(
             const BuildingView &other) const = default;
+    };
+
+    /**
+     * @brief One building, as a frame needs to know it.
+     *
+     * Carries what BuildingView does plus the stock a bar is drawn from,
+     * which is the whole reason the two are separate types.
+     */
+    struct BuildingSprite
+    {
+        /** @brief The minimum-x, minimum-y cell of its block. */
+        Cell at;
+        BuildingKind kind = BuildingKind::House;
+
+        /**
+         * @brief How much of each resource it is holding.
+         *
+         * Indexed by resourceIndex(), exactly as Building::stock is, so
+         * the picture and the component address one table one way.
+         */
+        std::array<std::int32_t, kResourceCount> stock{};
+
+        /**
+         * @brief Compare two building sprites.
+         * @param other The sprite to compare against.
+         * @return True when every field matches.
+         */
+        [[nodiscard]] bool operator==(
+            const BuildingSprite &other) const = default;
+    };
+
+    /**
+     * @brief What the pointer is over, and what to say about it.
+     *
+     * **A picture, and nothing but a picture**, on exactly BuildGhost's
+     * terms: it is worked out from input::PointerHintChannel, which a
+     * replay does not reproduce, so nothing may be folded from it into
+     * anything a replay does reproduce and no sink may ever see one.
+     *
+     * It holds the sprite it found rather than a copy of that sprite's
+     * numbers, so the panel a reader is shown and the bars drawn over
+     * the thing itself cannot disagree -- they are one value read twice.
+     *
+     * At most one of the two is ever set, since hoverFor() answers with
+     * the first thing it finds under the pointer.
+     * Neither being set is the ordinary state of a pointer over bare
+     * ground, and draws nothing.
+     *
+     * It is defined here rather than beside hoverFor(), unlike
+     * BuildGhost, because it is made of the sprites above it and a
+     * snapshot holds one.
+     */
+    struct HoverReadout
+    {
+        /** @brief The pixel the panel is pinned to. */
+        Point anchor{};
+
+        /** @brief The building under the pointer, if one is. */
+        std::optional<BuildingSprite> building{};
+
+        /** @brief The walker under the pointer, if one is. */
+        std::optional<WalkerSprite> walker{};
+
+        /**
+         * @brief Compare two readouts.
+         * @param other The readout to compare against.
+         * @return True when every field matches.
+         */
+        [[nodiscard]] bool operator==(
+            const HoverReadout &other) const = default;
     };
 
     /**
@@ -110,7 +203,7 @@ namespace antwika::game
         GridExtent extent;
         std::vector<Cell> paths;
         std::vector<WalkerSprite> walkers;
-        std::vector<BuildingView> buildings;
+        std::vector<BuildingSprite> buildings;
 
         /**
          * @brief Where the selected tool would land if it were clicked.
@@ -122,6 +215,17 @@ namespace antwika::game
          * given one draws none.
          */
         BuildGhost ghost;
+
+        /**
+         * @brief What the pointer is over, and what to say about it.
+         *
+         * The second member snapshotOf() does not fill in, and for the
+         * ghost's reason exactly: it comes off a channel no replay
+         * reproduces, so nothing about it may be taken from the World.
+         * Empty by default, so a snapshot nobody has given one says
+         * nothing.
+         */
+        HoverReadout hover;
 
         /**
          * @brief Compare two snapshots.
@@ -163,5 +267,22 @@ namespace antwika::game
      * @return One view per walker, in the world's own order.
      */
     [[nodiscard]] std::vector<WalkerView> walkerViewsOf(const World &world);
+
+    /**
+     * @brief List every building as state rather than as a picture.
+     *
+     * walkerViewsOf()'s counterpart, and it exists for the same reason:
+     * a summary wants where each building is and what kind it is, and
+     * must not pick up the stock that only exists to draw a bar from.
+     *
+     * The world's own order, which is the order the buildings were put
+     * up in -- a summary reports a session rather than a screen, so the
+     * back-to-front order a frame needs would say nothing here.
+     *
+     * @param world Read for the buildings, as of its last commit().
+     * @return One view per building, in the world's own order.
+     */
+    [[nodiscard]] std::vector<BuildingView> buildingViewsOf(
+        const World &world);
 
 } // namespace antwika::game

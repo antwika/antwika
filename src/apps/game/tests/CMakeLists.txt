@@ -11,6 +11,7 @@ add_executable(antwika_game_tests
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/GridScene.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/GridSink.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/Homing.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/Hover.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/InputFold.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/MainMenuScene.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/MainMenuSink.cpp
@@ -18,6 +19,8 @@ add_executable(antwika_game_tests
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/ModeGatedSystem.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/PathIndex.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/Placement.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/ReadoutPanel.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/ResourceBar.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/RenderSystem.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/KeyText.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/SaveCli.cpp
@@ -59,6 +62,7 @@ add_executable(antwika_game_tests
     GridSceneTest.cpp
     GridSinkTest.cpp
     HomingTest.cpp
+    HoverTest.cpp
     InputFoldTest.cpp
     KeyTextTest.cpp
     IsoProjectionTest.cpp
@@ -68,6 +72,8 @@ add_executable(antwika_game_tests
     PathIndexTest.cpp
     PlacementTest.cpp
     PointerReadingTest.cpp
+    ReadoutPanelTest.cpp
+    ResourceBarTest.cpp
     RenderSystemTest.cpp
     SaveCliTest.cpp
     SaveDirectoryTest.cpp

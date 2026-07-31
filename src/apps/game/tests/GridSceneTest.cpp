@@ -1,8 +1,11 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
+#include <algorithm>
 #include <cstddef>
 #include <cstdint>
+#include <string>
+#include <string_view>
 #include <vector>
 
 #include <antwika/animation/Progress.hpp>
@@ -19,6 +22,8 @@
 #include "antwika/game/GridExtent.hpp"
 #include "antwika/game/GridScene.hpp"
 #include "antwika/game/IsoProjection.hpp"
+#include "antwika/game/ReadoutPanel.hpp"
+#include "antwika/game/ResourceBar.hpp"
 #include "antwika/game/SceneSnapshot.hpp"
 #include "antwika/game/TileAtlas.hpp"
 
@@ -54,6 +59,16 @@ namespace
     constexpr Color kUntinted{
         .red = 255, .green = 255, .blue = 255, .alpha = 255};
 
+    // Which kind of call happened, in the order the calls happened.
+    // Kept beside the recorded values rather than inside them.
+    // The frame-to-frame comparisons stay comparisons of pictures.
+    enum class Call
+    {
+        Blit,
+        Rect,
+        Text,
+    };
+
     // Records the blits, so the picture can be inspected as a whole.
     // Otherwise it could only be asserted call by call.
     class RecordingRenderer : public NiceMock<MockRenderer>
@@ -71,8 +86,55 @@ namespace
                     {
                         blits.push_back(
                             Blit{&texture, source, destination, tint});
+                        order.push_back(Call::Blit);
+                    });
+
+            ON_CALL(*this, drawRect(_, _))
+                .WillByDefault(
+                    [this](Rect rect, Color color)
+                    {
+                        rects.push_back(Filled{rect, color});
+                        order.push_back(Call::Rect);
+                    });
+
+            ON_CALL(*this, drawText(_, _, _, _))
+                .WillByDefault(
+                    [this](
+                        antwika::gfx::Point origin,
+                        std::string_view text,
+                        std::uint32_t scale,
+                        Color color)
+                    {
+                        texts.push_back(
+                            Written{
+                                origin, std::string(text), scale, color});
+                        order.push_back(Call::Text);
                     });
         }
+
+        struct Filled
+        {
+            Rect rect;
+            Color color;
+
+            [[nodiscard]] bool operator==(const Filled &other) const
+                = default;
+        };
+
+        struct Written
+        {
+            antwika::gfx::Point origin;
+            std::string text;
+            std::uint32_t scale = 0;
+            Color color;
+
+            [[nodiscard]] bool operator==(const Written &other) const
+                = default;
+        };
+
+        std::vector<Filled> rects;
+        std::vector<Written> texts;
+        std::vector<Call> order;
 
         struct Blit
         {
@@ -114,7 +176,8 @@ namespace
             .paths = std::move(paths),
             .walkers = std::move(walkers),
             .buildings = {},
-            .ghost = {}};
+            .ghost = {},
+            .hover = {}};
     }
 } // namespace
 
@@ -504,4 +567,236 @@ TEST_F(GridSceneTest, Draw_LeavesEverythingButTheWalkersWhereItWas)
     // A cell does not move between two ticks.
     // So only the walkers differ from one frame to the next.
     EXPECT_EQ(renderer.blits, atTick);
+}
+
+// The gauges: a small vertical bar per resource a building depends on.
+// Drawn as rectangles rather than blitted.
+// A fraction of a capacity is not art -- see ResourceBar.hpp.
+TEST_F(GridSceneTest, Draw_GaugesEachBuildingThatDependsOnSomething)
+{
+    const Camera camera(Point{.x = 300, .y = 40}, 3);
+    const antwika::game::BuildingSprite house{
+        .at = Cell{.x = 0, .y = 0},
+        .kind = antwika::game::BuildingKind::House,
+        .stock = {50, 50}};
+
+    auto scene_ = snapshot(camera, GridExtent{});
+    scene_.buildings.push_back(house);
+
+    scene.draw(renderer, kCanvas, scene_, atlas);
+
+    const auto bars = antwika::game::buildingBars(house, camera);
+
+    ASSERT_EQ(bars.size(), 2U);
+
+    // One track and one fill per bar, and each is the bar's own value.
+    ASSERT_EQ(renderer.rects.size(), 4U);
+    EXPECT_EQ(renderer.rects[0].rect, bars[0].track);
+    EXPECT_EQ(renderer.rects[0].color, antwika::game::kBarTrack);
+    EXPECT_EQ(renderer.rects[1].rect, bars[0].fill);
+    EXPECT_EQ(
+        renderer.rects[1].color,
+        antwika::game::resourceColour(bars[0].resource));
+}
+
+// A bar with nothing in it is a track and no fill at all.
+TEST_F(GridSceneTest, Draw_DrawsNoFillForAnEmptyGauge)
+{
+    auto scene_ = snapshot(Camera(Point{.x = 300, .y = 40}, 3),
+        GridExtent{});
+    scene_.buildings.push_back(
+        antwika::game::BuildingSprite{
+            .at = Cell{.x = 0, .y = 0},
+            .kind = antwika::game::BuildingKind::House,
+            .stock = {0, 0}});
+
+    scene.draw(renderer, kCanvas, scene_, atlas);
+
+    EXPECT_EQ(renderer.rects.size(), 2U);
+}
+
+// A source depends on nothing, so it is gauged for nothing.
+TEST_F(GridSceneTest, Draw_GaugesNeitherASourceNorABuildingOffTheCanvas)
+{
+    auto scene_ = snapshot(Camera(Point{.x = 300, .y = 40}, 3),
+        GridExtent{});
+    scene_.buildings.push_back(
+        antwika::game::BuildingSprite{
+            .at = Cell{.x = 0, .y = 0},
+            .kind = antwika::game::BuildingKind::FoodSource,
+            .stock = {50, 50}});
+    scene_.buildings.push_back(
+        antwika::game::BuildingSprite{
+            .at = Cell{.x = 900, .y = -900},
+            .kind = antwika::game::BuildingKind::House,
+            .stock = {50, 50}});
+
+    scene.draw(renderer, kCanvas, scene_, atlas);
+
+    EXPECT_TRUE(renderer.rects.empty());
+}
+
+TEST_F(GridSceneTest, Draw_GaugesAWalkerWithWhatItIsCarrying)
+{
+    const Camera camera(Point{.x = 300, .y = 40}, 3);
+    const WalkerSprite walker{
+        .at = Cell{.x = 1, .y = 1},
+        .kind = antwika::game::WalkerKind::Food,
+        .carried = antwika::game::kWalkerLoad};
+
+    scene.draw(
+        renderer,
+        kCanvas,
+        snapshot(camera, GridExtent{}, {}, {walker}),
+        atlas);
+
+    const auto bars =
+        antwika::game::walkerBars(walker, camera, Progress());
+
+    ASSERT_EQ(bars.size(), 1U);
+    ASSERT_EQ(renderer.rects.size(), 2U);
+    EXPECT_EQ(renderer.rects[0].rect, bars[0].track);
+    EXPECT_EQ(renderer.rects[1].rect, bars[0].fill);
+}
+
+TEST_F(GridSceneTest, Draw_GaugesNoWalkerThatIsOffTheCanvasOrCarriesNone)
+{
+    const Camera camera(Point{.x = -100000, .y = -100000}, 3);
+
+    scene.draw(
+        renderer,
+        kCanvas,
+        snapshot(
+            camera,
+            GridExtent{},
+            {},
+            {WalkerSprite{
+                .at = Cell{.x = 1, .y = 1},
+                .kind = antwika::game::WalkerKind::Food,
+                .carried = 50}}),
+        atlas);
+
+    EXPECT_TRUE(renderer.rects.empty());
+
+    RecordingRenderer nearby;
+    scene.draw(
+        nearby,
+        kCanvas,
+        snapshot(
+            Camera(Point{.x = 300, .y = 40}, 3),
+            GridExtent{},
+            {},
+            {WalkerSprite{
+                .at = Cell{.x = 1, .y = 1},
+                .kind = antwika::game::WalkerKind::Fireman}}),
+        atlas);
+
+    EXPECT_TRUE(nearby.rects.empty());
+}
+
+// A gauge is drawn after every sprite.
+// So nothing standing in front of what it gauges can hide it.
+TEST_F(GridSceneTest, Draw_DrawsEveryGaugeAfterEverySprite)
+{
+    auto scene_ = snapshot(
+        Camera(Point{.x = 300, .y = 40}, 3),
+        GridExtent{.width = 2, .height = 2},
+        {Cell{.x = 0, .y = 1}},
+        {WalkerSprite{
+            .at = Cell{.x = 0, .y = 1},
+            .kind = antwika::game::WalkerKind::Water,
+            .carried = 40}});
+    scene_.buildings.push_back(
+        antwika::game::BuildingSprite{
+            .at = Cell{.x = 1, .y = 1},
+            .kind = antwika::game::BuildingKind::House,
+            .stock = {50, 50}});
+
+    scene.draw(renderer, kCanvas, scene_, atlas);
+
+    ASSERT_FALSE(renderer.order.empty());
+
+    const auto firstRect =
+        std::find(renderer.order.begin(), renderer.order.end(), Call::Rect);
+    const auto lastBlit = std::find(
+        renderer.order.rbegin(), renderer.order.rend(), Call::Blit);
+
+    ASSERT_NE(firstRect, renderer.order.end());
+    ASSERT_NE(lastBlit, renderer.order.rend());
+    EXPECT_GT(
+        static_cast<std::size_t>(firstRect - renderer.order.begin()),
+        renderer.order.size() - 1
+            - static_cast<std::size_t>(
+                lastBlit - renderer.order.rbegin()));
+}
+
+// The hover readout: drawn from the same snapshot, last of everything.
+TEST_F(GridSceneTest, Draw_SaysNothingWithNothingUnderThePointer)
+{
+    scene.draw(
+        renderer,
+        kCanvas,
+        snapshot(Camera(Point{.x = 300, .y = 40}, 3), GridExtent{}),
+        atlas);
+
+    EXPECT_TRUE(renderer.texts.empty());
+}
+
+TEST_F(GridSceneTest, Draw_WritesTheHoverPanelLastAndWhereItWasLaidOut)
+{
+    auto scene_ = snapshot(
+        Camera(Point{.x = 300, .y = 40}, 3),
+        GridExtent{.width = 2, .height = 2});
+    scene_.hover = antwika::game::HoverReadout{
+        .anchor = Point{.x = 40, .y = 50},
+        .building = antwika::game::BuildingSprite{
+            .at = Cell{.x = 0, .y = 0},
+            .kind = antwika::game::BuildingKind::House,
+            .stock = {30, 70}}};
+
+    scene.draw(renderer, kCanvas, scene_, atlas);
+
+    const auto panel = antwika::game::readoutPanel(scene_.hover, kCanvas);
+
+    ASSERT_EQ(panel.lines.size(), 3U);
+    ASSERT_EQ(renderer.texts.size(), 3U);
+
+    for (std::size_t line = 0; line < panel.lines.size(); ++line)
+    {
+        EXPECT_EQ(renderer.texts[line].origin, panel.lines[line].origin);
+        EXPECT_EQ(renderer.texts[line].text, panel.lines[line].text);
+        EXPECT_EQ(renderer.texts[line].color, panel.lines[line].colour);
+        EXPECT_EQ(
+            renderer.texts[line].scale,
+            antwika::game::kReadoutTextScale);
+    }
+
+    // Its backdrop is the last rectangle, over the gauges and the grid.
+    ASSERT_FALSE(renderer.rects.empty());
+    EXPECT_EQ(renderer.rects.back().rect, panel.box);
+    EXPECT_EQ(renderer.rects.back().color, antwika::game::kReadoutBackdrop);
+    EXPECT_EQ(renderer.order.back(), Call::Text);
+}
+
+// The panel is about the picture and never about the state.
+// So the same snapshot without a hover draws the same grid.
+TEST_F(GridSceneTest, Draw_LeavesTheGridAloneWhetherOrNotAnythingHovers)
+{
+    auto scene_ = snapshot(
+        Camera(Point{.x = 300, .y = 40}, 3),
+        GridExtent{.width = 2, .height = 2},
+        {Cell{.x = 0, .y = 0}});
+
+    scene.draw(renderer, kCanvas, scene_, atlas);
+    const auto blind = renderer.blits;
+
+    scene_.hover = antwika::game::HoverReadout{
+        .anchor = Point{.x = 40, .y = 50},
+        .walker = WalkerSprite{}};
+
+    RecordingRenderer watched;
+    scene.draw(watched, kCanvas, scene_, atlas);
+
+    EXPECT_EQ(watched.blits, blind);
+    EXPECT_FALSE(watched.texts.empty());
 }

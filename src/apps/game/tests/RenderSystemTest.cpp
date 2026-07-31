@@ -17,7 +17,9 @@
 #include <antwika/log/mocks/MockLogger.hpp>
 
 #include "antwika/game/AppMode.hpp"
+#include "antwika/game/Building.hpp"
 #include "antwika/game/BuildingIndex.hpp"
+#include "antwika/game/BuildingKind.hpp"
 #include "antwika/game/Camera.hpp"
 #include "antwika/game/Cell.hpp"
 #include "antwika/game/GridExtent.hpp"
@@ -260,6 +262,51 @@ TEST_F(RenderSystemTest, Update_DrawsNoGhostUnderTheToolbar)
 
     EXPECT_CALL(renderer, drawTexture(_, _, _, _))
         .Times(static_cast<int>(kExtent.width * kExtent.height));
+
+    system.update(world, 0);
+}
+
+// The readout follows the pointer through the ghost's own channel.
+// Which a replay does not reproduce, and which no sink may read.
+TEST_F(RenderSystemTest, Update_WritesAReadoutForWhatTheHintIsOver)
+{
+    const auto entity = world.create();
+    world.add<Cell>(entity, Cell{.x = 1, .y = 1});
+    world.add<antwika::game::Building>(
+        entity,
+        antwika::game::Building{
+            .kind = antwika::game::BuildingKind::House,
+            .stock = {20, 30}});
+    world.commit();
+
+    const auto middle = antwika::game::cellCentre(
+        Cell{.x = 1, .y = 1}, camera);
+
+    hint.publish(
+        antwika::input::PointerHint{
+            .position = {.x = middle.x, .y = middle.y}});
+
+    RenderSystem system(setup());
+
+    // Its name and one line per resource it depends on.
+    EXPECT_CALL(renderer, drawText(_, _, _, _)).Times(3);
+
+    system.update(world, 0);
+}
+
+TEST_F(RenderSystemTest, Update_WritesNoReadoutWithNoHintAtAll)
+{
+    const auto entity = world.create();
+    world.add<Cell>(entity, Cell{.x = 1, .y = 1});
+    world.add<antwika::game::Building>(
+        entity,
+        antwika::game::Building{
+            .kind = antwika::game::BuildingKind::House});
+    world.commit();
+
+    RenderSystem system(setup());
+
+    EXPECT_CALL(renderer, drawText(_, _, _, _)).Times(0);
 
     system.update(world, 0);
 }
