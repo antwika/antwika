@@ -120,6 +120,7 @@ target_link_libraries(antwika_game_tests
         antwika::log::tests::mocks
         antwika::pathfinding
         antwika::replay
+        antwika::rng
         antwika::time::tests::fakes
         antwika::ui
         antwika::wfc

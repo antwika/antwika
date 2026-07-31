@@ -5,6 +5,7 @@
 #include <utility>
 #include <vector>
 
+#include <antwika/rng/SplitMix64Rng.hpp>
 #include <antwika/wfc/AdjacencyConstraint.hpp>
 #include <antwika/wfc/CompatibilityTable.hpp>
 #include <antwika/wfc/Domain.hpp>
@@ -20,6 +21,7 @@ namespace antwika::tower_defence
 
     namespace
     {
+        using antwika::rng::SplitMix64Rng;
         using antwika::wfc::AdjacencyConstraint;
         using antwika::wfc::CompatibilityTable;
         using antwika::wfc::Domain;
@@ -28,20 +30,10 @@ namespace antwika::tower_defence
         using antwika::wfc::SolveResult;
         using antwika::wfc::Solver;
 
-        constexpr std::uint64_t kGoldenGamma = 0x9E3779B97F4A7C15ULL;
-
-        // splitmix64.
-        // An integer generator with no global state.
-        // No floating point anywhere in it either.
-        // So the same seed gives the same level on every platform.
-        std::uint64_t nextRandom(std::uint64_t &state)
-        {
-            state += kGoldenGamma;
-            std::uint64_t z = state;
-            z = (z ^ (z >> 30)) * 0xBF58476D1CE4E5B9ULL;
-            z = (z ^ (z >> 27)) * 0x94D049BB133111EBULL;
-            return z ^ (z >> 31);
-        }
+        // How far apart one attempt's seed is spaced from the next.
+        // It is the odd golden-ratio constant splitmix64 steps by.
+        // So consecutive attempts start far apart in the sequence.
+        constexpr std::uint64_t kAttemptStride = 0x9E3779B97F4A7C15ULL;
 
         std::size_t indexOf(
             const std::uint32_t width, const Cell &cell)
@@ -92,13 +84,11 @@ namespace antwika::tower_defence
         Layout buildLayout(
             const LevelConfig &config, const std::uint64_t seed)
         {
-            std::uint64_t state = seed;
+            SplitMix64Rng rng(seed);
             const auto startRow =
-                static_cast<std::uint32_t>(nextRandom(state)
-                    % config.height);
+                static_cast<std::uint32_t>(rng.next() % config.height);
             const auto endRow =
-                static_cast<std::uint32_t>(nextRandom(state)
-                    % config.height);
+                static_cast<std::uint32_t>(rng.next() % config.height);
 
             std::vector<std::uint32_t> gapRow(config.width, 0);
             for (std::uint32_t x = 0; x < config.width; ++x)
@@ -106,7 +96,7 @@ namespace antwika::tower_defence
                 if (isWallColumn(config, x))
                 {
                     gapRow[x] = static_cast<std::uint32_t>(
-                        nextRandom(state) % config.height);
+                        rng.next() % config.height);
                 }
             }
 
@@ -322,7 +312,7 @@ namespace antwika::tower_defence
         {
             const std::uint64_t seed =
                 config.seed
-                ^ (static_cast<std::uint64_t>(attempt) * kGoldenGamma);
+                ^ (static_cast<std::uint64_t>(attempt) * kAttemptStride);
             Layout layout = buildLayout(config, seed);
             const Solver solver(
                 std::move(layout.wave),
