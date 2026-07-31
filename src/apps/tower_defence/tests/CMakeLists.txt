@@ -42,5 +42,32 @@ target_link_libraries(antwika_tower_defence_tests
         gtest::gtest
 )
 
+# How many seeds the linearity property is soaked over.
+# Generating one level costs ~2.9s under the coverage build's -O0 and
+# ~0.14s at -O2, so the wide sweep is 116 seconds of a coverage run and
+# under six of an optimised one.
+# Eight seeds reach every line, function and branch of the generator --
+# measured, by running the suite both ways and diffing the gcovr totals
+# -- so the coverage legs prove the coverage and an optimised build
+# proves the property.
+# CI builds this one target against conan-release to do that; see the
+# "Soak the level generator" step in .github/workflows/build.yml.
+# The linearity soak is the one that walks the generator through every
+# branch it has, so the cases asserting other properties of a level get
+# a couple of seeds under instrumentation and the full sweep otherwise.
+if(ENABLE_COVERAGE)
+    set(antwika_level_seed_count 8)
+    set(antwika_level_property_seed_count 2)
+else()
+    set(antwika_level_seed_count 40)
+    set(antwika_level_property_seed_count 40)
+endif()
+
+target_compile_definitions(antwika_tower_defence_tests
+    PRIVATE
+        ANTWIKA_LEVEL_SEED_COUNT=${antwika_level_seed_count}
+        ANTWIKA_LEVEL_PROPERTY_SEED_COUNT=${antwika_level_property_seed_count}
+)
+
 include(GoogleTest)
 gtest_discover_tests(antwika_tower_defence_tests)

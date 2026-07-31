@@ -16,6 +16,8 @@
 #include <antwika/ui/Pointer.hpp>
 #include <antwika/ui/WidgetId.hpp>
 
+#include "WidgetPixel.hpp"
+
 #include "antwika/game/SaveLoadScene.hpp"
 #include "antwika/game/SaveLoadState.hpp"
 
@@ -24,6 +26,7 @@ namespace
 
     using antwika::game::SaveLoadScene;
     using antwika::game::SaveLoadState;
+    using antwika::game::tests::widgetCentre;
     using antwika::gfx::Point;
     using antwika::gfx::Size;
     using antwika::gfx::mocks::MockRenderer;
@@ -72,26 +75,10 @@ namespace
         const SaveLoadState &state,
         WidgetId id)
     {
-        for (std::int32_t y = 0;
-             y < static_cast<std::int32_t>(kCanvas.height);
-             y += 2)
-        {
-            for (std::int32_t x = 0;
-                 x < static_cast<std::int32_t>(kCanvas.width);
-                 x += 2)
-            {
-                const Pointer pointer{.position = Point{.x = x, .y = y}};
+        const auto centre = widgetCentre(
+            scene.describe(kCanvas, Pointer{}, Keyboard{}, state), id);
 
-                if (scene.describe(kCanvas, pointer, Keyboard{}, state)
-                        .interactions.hovered
-                    == id)
-                {
-                    return Point{.x = x, .y = y};
-                }
-            }
-        }
-
-        return Point{.x = -1, .y = -1};
+        return centre.value_or(Point{.x = -1, .y = -1});
     }
 
     TEST(SaveLoadSceneTest, Describe_ShowsThreeButtonsAndAPlaceholderEach)

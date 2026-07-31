@@ -15,6 +15,7 @@ RUN apt-get update \
         python3-pip \
         pipx \
         gcovr \
+        ccache \
     && rm -rf /var/lib/apt/lists/*
 
 # Graphics backends under backends/ link against real windowing and

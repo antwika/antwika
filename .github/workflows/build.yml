@@ -28,6 +28,73 @@ env:
   IMAGE_PREFIX: ${{ github.repository_owner }}/antwika-dev
 
 jobs:
+  # The checker scripts and the atlas generators are pure Python over
+  # the tracked files, so they say the same thing whichever toolchain is
+  # installed.
+  # They used to run in all three app legs, which was three identical
+  # answers paid for three times and none of them before the images had
+  # been built.
+  # Here they need no container and no image, so they start immediately
+  # and a lint failure is reported in seconds rather than in minutes.
+  checks:
+    name: Checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ inputs.ref }}
+
+      - name: Test check-unused-test-doubles script
+        shell: bash
+        run: python3 scripts/tests/test_check_unused_test_doubles.py
+
+      - name: Check for unused test doubles
+        shell: bash
+        run: python3 scripts/check_unused_test_doubles.py
+
+      - name: Test check-one-sentence-per-line script
+        shell: bash
+        run: python3 scripts/tests/test_check_one_sentence_per_line.py
+
+      - name: Check comments and docs are one sentence per line
+        shell: bash
+        run: python3 scripts/check_one_sentence_per_line.py
+
+      - name: Test check-line-length script
+        shell: bash
+        run: python3 scripts/tests/test_check_line_length.py
+
+      - name: Check line length
+        shell: bash
+        run: python3 scripts/check_line_length.py
+
+      - name: Test generate-game-atlas script
+        shell: bash
+        run: python3 scripts/tests/test_generate_game_atlas.py
+
+      - name: Check the game's texture atlas is current
+        shell: bash
+        run: python3 scripts/generate_game_atlas.py --check
+
+      - name: Test generate-poker-atlas script
+        shell: bash
+        run: python3 scripts/tests/test_generate_poker_atlas.py
+
+      - name: Check the poker table's texture atlas is current
+        shell: bash
+        run: python3 scripts/generate_poker_atlas.py --check
+
+      - name: Test coverage badge script
+        shell: bash
+        run: python3 scripts/tests/test_generate_coverage_badge.py
+
+      - name: Test check-full-coverage script
+        shell: bash
+        run: python3 scripts/tests/test_check_full_coverage.py
+
   build-base:
     name: Base image
     runs-on: ubuntu-latest
@@ -145,52 +212,22 @@ jobs:
     env:
       CONAN_PROFILE: ${{ matrix.conan_profile }}
       BUILD_DIR: ${{ matrix.build_dir }}
+      CCACHE_DIR: /tmp/ccache
+      CCACHE_MAXSIZE: 1G
+      # Test targets are compiled against a precompiled header, and
+      # ccache refuses to cache such a compilation at all unless it is
+      # told these two are safe to overlook -- which left 48% of a build
+      # uncacheable and cost more than the header saved.
+      # time_macros is what makes that safe to accept here: it says a
+      # cached object may hold a stale __DATE__/__TIME__, and no file
+      # under src/ or backends/ names either.
+      CCACHE_SLOPPINESS: pch_defines,time_macros
 
     steps:
       - name: Checkout
         uses: actions/checkout@v7
         with:
           ref: ${{ inputs.ref }}
-
-      - name: Test check-unused-test-doubles script
-        shell: bash
-        run: python3 scripts/tests/test_check_unused_test_doubles.py
-
-      - name: Check for unused test doubles
-        shell: bash
-        run: python3 scripts/check_unused_test_doubles.py
-
-      - name: Test check-one-sentence-per-line script
-        shell: bash
-        run: python3 scripts/tests/test_check_one_sentence_per_line.py
-
-      - name: Check comments and docs are one sentence per line
-        shell: bash
-        run: python3 scripts/check_one_sentence_per_line.py
-
-      - name: Test check-line-length script
-        shell: bash
-        run: python3 scripts/tests/test_check_line_length.py
-
-      - name: Check line length
-        shell: bash
-        run: python3 scripts/check_line_length.py
-
-      - name: Test generate-game-atlas script
-        shell: bash
-        run: python3 scripts/tests/test_generate_game_atlas.py
-
-      - name: Check the game's texture atlas is current
-        shell: bash
-        run: python3 scripts/generate_game_atlas.py --check
-
-      - name: Test generate-poker-atlas script
-        shell: bash
-        run: python3 scripts/tests/test_generate_poker_atlas.py
-
-      - name: Check the poker table's texture atlas is current
-        shell: bash
-        run: python3 scripts/generate_poker_atlas.py --check
 
       - name: Cache Conan packages
         uses: actions/cache@v6
@@ -199,6 +236,22 @@ jobs:
           key: conan-${{ matrix.image }}-${{ hashFiles('conanfile.py', 'conan.lock', format('profiles/build/{0}', matrix.conan_profile), format('profiles/host/{0}', matrix.conan_profile)) }}
           restore-keys: |
             conan-${{ matrix.image }}-
+
+      # A clean build of this project is ~21 CPU-minutes and most pushes
+      # change a handful of files, so what the compiler did last time is
+      # worth keeping.
+      # ccache stores the .gcno beside the object, so an instrumented
+      # build caches too -- the notes file embeds the object's absolute
+      # path, which is why nothing here moves the build directory around.
+      # The GNU leg's 100% coverage gate is what would notice if a
+      # cached object ever came back without its instrumentation.
+      - name: Cache ccache
+        uses: actions/cache@v6
+        with:
+          path: /tmp/ccache
+          key: ccache-${{ matrix.image }}-${{ github.sha }}
+          restore-keys: |
+            ccache-${{ matrix.image }}-
 
       - name: Install dependencies
         shell: bash
@@ -213,25 +266,44 @@ jobs:
 
       - name: Configure CMake
         shell: bash
-        run: cmake --preset ${{ matrix.coverage && 'conan-coverage' || 'conan-release' }}
+        run: |
+          cmake --preset ${{ matrix.coverage && 'conan-coverage' || 'conan-release' }} \
+            -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
 
       - name: Build
         shell: bash
         run: cmake --build "$BUILD_DIR" -j24
 
+      - name: Report ccache effectiveness
+        shell: bash
+        run: ccache --show-stats
+
+      # ctest runs one process per test case and there are over two
+      # thousand of them, so this was the single longest step in the
+      # pipeline while it ran them one at a time.
+      # The instrumented run contends on the .gcda writes, so it scales
+      # sublinearly rather than not at all -- and the coverage totals
+      # come out identical either way, which is the thing worth knowing.
       - name: Test
         shell: bash
-        run: ctest --test-dir "$BUILD_DIR" --output-on-failure
+        run: ctest --test-dir "$BUILD_DIR" -j"$(nproc)" --output-on-failure
 
-      - name: Test coverage badge script
-        if: matrix.coverage
+      # The linearity property is soaked over forty seeds, which costs
+      # ~116s under the coverage build's -O0 and under six at -O2.
+      # src/apps/tower_defence/tests/CMakeLists.txt is where the two
+      # seed counts are chosen; the coverage legs run the eight that
+      # reach every branch, and this builds the one target against
+      # conan-release to run the wide sweep where it is cheap.
+      # It is on the GNU leg alone because a second copy on LLVM would
+      # assert the same property about the same generator.
+      - name: Soak the level generator
+        if: matrix.image == 'gnu'
         shell: bash
-        run: python3 scripts/tests/test_generate_coverage_badge.py
-
-      - name: Test check-full-coverage script
-        if: matrix.coverage
-        shell: bash
-        run: python3 scripts/tests/test_check_full_coverage.py
+        run: |
+          cmake --preset conan-release -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
+          cmake --build build --target antwika_tower_defence_tests -j24
+          build/bin/antwika_tower_defence_tests \
+            --gtest_filter='LevelGeneratorTest.*'
 
       - name: Generate coverage report
         if: matrix.coverage
@@ -321,6 +393,16 @@ jobs:
     env:
       CONAN_PROFILE: gcc-linux-x86_64
       BUILD_DIR: build-${{ matrix.backend }}
+      CCACHE_DIR: /tmp/ccache
+      CCACHE_MAXSIZE: 1G
+      # Test targets are compiled against a precompiled header, and
+      # ccache refuses to cache such a compilation at all unless it is
+      # told these two are safe to overlook -- which left 48% of a build
+      # uncacheable and cost more than the header saved.
+      # time_macros is what makes that safe to accept here: it says a
+      # cached object may hold a stale __DATE__/__TIME__, and no file
+      # under src/ or backends/ names either.
+      CCACHE_SLOPPINESS: pch_defines,time_macros
 
     steps:
       - name: Checkout
@@ -335,6 +417,14 @@ jobs:
           key: conan-gnu-${{ matrix.backend }}-${{ hashFiles('conanfile.py', 'conan.lock', format('conan-{0}.lock', matrix.backend), 'profiles/build/gcc-linux-x86_64', 'profiles/host/gcc-linux-x86_64') }}
           restore-keys: |
             conan-gnu-${{ matrix.backend }}-
+
+      - name: Cache ccache
+        uses: actions/cache@v6
+        with:
+          path: /tmp/ccache
+          key: ccache-${{ matrix.backend }}-${{ github.sha }}
+          restore-keys: |
+            ccache-${{ matrix.backend }}-
 
       # The tracked CMakePresets.json includes build/CMakePresets.json
       # unconditionally, and its conan-coverage preset inherits the
@@ -368,19 +458,32 @@ jobs:
 
       - name: Configure CMake
         shell: bash
-        run: cmake --preset conan-gfx_backend_${{ matrix.backend }}-release
+        run: |
+          cmake --preset conan-gfx_backend_${{ matrix.backend }}-release \
+            -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
 
-      - name: Build
-        shell: bash
-        run: cmake --build "$BUILD_DIR" -j24
-
-      - name: Test
-        shell: bash
-        run: xvfb-run -a ctest --test-dir "$BUILD_DIR" --output-on-failure
-
-      - name: Verify the conformance suites actually ran
+      # Only the two conformance suites, not the whole project.
+      # What this job is for is the backend, and building every app and
+      # every test target to reach two binaries was a second full build
+      # of everything the app legs had already built.
+      - name: Build the conformance suites
         shell: bash
         run: |
+          cmake --build "$BUILD_DIR" -j24 \
+            --target antwika_gfx_backend_${{ matrix.backend }}_tests \
+                     antwika_input_backend_${{ matrix.backend }}_tests
+
+      - name: Report ccache effectiveness
+        shell: bash
+        run: ccache --show-stats
+
+      # Running the binaries is also what checks they exist and that
+      # they really asserted something, so there is no separate ctest
+      # pass over a build tree that now holds only these two targets.
+      - name: Run the conformance suites
+        shell: bash
+        run: |
+          set -o pipefail
           failed=0
 
           # One selection drives both subsystems, so both suites exist.
@@ -395,10 +498,16 @@ jobs:
 
             log="conformance-${subsystem}.log"
 
+            # A failing suite has to fail the step, which the exit
+            # status of the pipeline is what reports -- hence pipefail,
+            # since tee would otherwise be the one answering.
+            if ! xvfb-run -a "$binary" 2>&1 | tee "$log"; then
+              echo "The ${subsystem} conformance suite failed"
+              failed=1
+            fi
+
             # A suite that skipped everything would pass while proving
             # nothing, so insist it reported some passes.
-            xvfb-run -a "$binary" 2>&1 | tee "$log"
-
             if ! grep -qE '^\[  PASSED  \] [1-9][0-9]* test' "$log"; then
               echo "The ${subsystem} conformance suite passed no tests"
               failed=1

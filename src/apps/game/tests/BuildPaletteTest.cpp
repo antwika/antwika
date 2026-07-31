@@ -30,6 +30,8 @@
 
 #include <antwika/input/PointerHint.hpp>
 
+#include "WidgetPixel.hpp"
+
 #include "antwika/game/BuildGhost.hpp"
 #include "antwika/game/BuildTool.hpp"
 #include "antwika/game/Building.hpp"
@@ -53,6 +55,7 @@ using antwika::ecs::SystemScheduler;
 using antwika::ecs::World;
 using antwika::event::Event;
 using antwika::event::TickEvent;
+using antwika::game::tests::widgetCentre;
 using antwika::game::BuildGhost;
 using antwika::game::ghostFor;
 using antwika::game::Building;
@@ -217,31 +220,20 @@ namespace
     {
     protected:
         // Where a button is, is the layout's business.
-        // So a test looks for a pixel that hits the one it means.
+        // So a test asks the layout for the one it means.
         [[nodiscard]] Position pixelOn(WidgetId id) const
         {
-            for (std::int32_t y = 0;
-                 y < static_cast<std::int32_t>(kCanvas.height);
-                 y += 4)
-            {
-                for (std::int32_t x = 0;
-                     x < static_cast<std::int32_t>(kCanvas.width);
-                     x += 4)
-                {
-                    const Pointer pointer{.position = Point{.x = x, .y = y}};
+            const auto centre = widgetCentre(
+                toolbar.describe(
+                    kCanvas, Pointer{}, camera, overlay.tool()),
+                id);
 
-                    if (toolbar
-                            .describe(
-                                kCanvas, pointer, camera, overlay.tool())
-                            .interactions.hovered
-                        == id)
-                    {
-                        return Position{.x = x, .y = y};
-                    }
-                }
+            if (!centre.has_value())
+            {
+                return Position{};
             }
 
-            return Position{};
+            return Position{.x = centre->x, .y = centre->y};
         }
 
         // The fold first, then the UI, then the grid.

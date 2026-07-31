@@ -23,6 +23,7 @@
 #include <antwika/ui/WidgetId.hpp>
 
 #include "ScratchDirectory.hpp"
+#include "WidgetPixel.hpp"
 
 #include "antwika/game/AppMode.hpp"
 #include "antwika/game/Camera.hpp"
@@ -44,6 +45,7 @@ namespace
 {
 
     using antwika::game::tests::scratchDirectory;
+    using antwika::game::tests::widgetCentre;
     using antwika::ecs::World;
     using antwika::event::Event;
     using antwika::event::TickEvent;
@@ -105,30 +107,18 @@ namespace
         SaveLoadSinkTest &operator=(SaveLoadSinkTest &&) = delete;
 
         // Where a widget is, is the layout's business.
-        // So a test looks for a pixel that hits the one it means.
+        // So a test asks the layout for the one it means.
         [[nodiscard]] Position pixelOn(WidgetId id) const
         {
-            for (std::int32_t y = 0;
-                 y < static_cast<std::int32_t>(kCanvas.height);
-                 y += 2)
-            {
-                for (std::int32_t x = 0;
-                     x < static_cast<std::int32_t>(kCanvas.width);
-                     x += 2)
-                {
-                    const Pointer pointer{
-                        .position = Point{.x = x, .y = y}};
+            const auto centre = widgetCentre(
+                scene.describe(kCanvas, Pointer{}, Keyboard{}, state), id);
 
-                    if (scene.describe(kCanvas, pointer, Keyboard{}, state)
-                            .interactions.hovered
-                        == id)
-                    {
-                        return Position{.x = x, .y = y};
-                    }
-                }
+            if (!centre.has_value())
+            {
+                return Position{};
             }
 
-            return Position{};
+            return Position{.x = centre->x, .y = centre->y};
         }
 
         void dispatch(const TickEvent &event)
