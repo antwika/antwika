@@ -345,7 +345,6 @@ TEST_F(RenderSystemTest, Update_WritesNoReadoutWithNoHintAtAll)
             .kind = antwika::game::BuildingKind::House});
     world.commit();
 
->>>>>>> feat/game-resource-bars
     RenderSystem system(setup());
 
     EXPECT_CALL(renderer, drawText(_, _, _, _)).Times(0);
