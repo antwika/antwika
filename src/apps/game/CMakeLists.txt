@@ -21,6 +21,10 @@ add_executable(antwika_game
     src/UiOverlay.cpp
     src/UiSink.cpp
     src/WalkerSystem.cpp
+    src/WorldMap.cpp
+    src/WorldMapScene.cpp
+    src/WorldMapSink.cpp
+    src/WorldMapState.cpp
     src/WindowInputSource.cpp
     src/main.cpp
 )
@@ -54,6 +58,7 @@ target_link_libraries(antwika_game
         antwika::replay
         antwika::time
         antwika::ui
+        antwika::wfc
 )
 
 if(BUILD_TESTING AND NOT CMAKE_CROSSCOMPILING)
