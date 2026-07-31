@@ -33,6 +33,12 @@ namespace antwika::life
          */
         explicit LifeSystem(const Grid &grid);
 
+        LifeSystem(const LifeSystem &) = delete;
+        LifeSystem(LifeSystem &&) = delete;
+
+        LifeSystem &operator=(const LifeSystem &) = delete;
+        LifeSystem &operator=(LifeSystem &&) = delete;
+
         /**
          * @brief Advance every cell in the grid by one generation.
          * @param world World read from and staged into.

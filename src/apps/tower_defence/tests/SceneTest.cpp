@@ -1,10 +1,12 @@
 #include <cstdint>
+#include <variant>
 #include <vector>
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
 #include <antwika/gfx/mocks/MockRenderer.hpp>
+#include <antwika/ui/DrawCommand.hpp>
 
 #include "antwika/tower_defence/Battle.hpp"
 #include "antwika/tower_defence/BattleScene.hpp"
@@ -22,9 +24,12 @@ using antwika::tower_defence::BattleConfig;
 using antwika::tower_defence::BattleScene;
 using antwika::tower_defence::BattleSnapshot;
 using antwika::tower_defence::Cell;
+using antwika::tower_defence::cellAt;
 using antwika::tower_defence::describeScoreBar;
+using antwika::tower_defence::layoutFor;
 using antwika::tower_defence::Level;
 using antwika::tower_defence::rangeRadius;
+using antwika::tower_defence::scoreBarHeight;
 using antwika::tower_defence::ScoreOverlay;
 using antwika::tower_defence::snapshotOf;
 using antwika::tower_defence::Tile;
@@ -159,5 +164,85 @@ namespace
 
         // The bar is a pure function of the state it is given.
         EXPECT_EQ(busy, describeScoreBar(kCanvas, 120, 3));
+    }
+
+    // The whole reason no sink asks the UI whether it covered a click.
+    // A strip shorter than the bar leaves the bar over the grid.
+    // A press there would build a tower nobody could see.
+    TEST(ScoreBarStripTest, TheStripIsExactlyAsTallAsTheBarDrawnInIt)
+    {
+        constexpr Size canvases[] = {
+            {.width = 960, .height = 720},
+            {.width = 800, .height = 600},
+            {.width = 1920, .height = 1080},
+            {.width = 400, .height = 240},
+            {.width = 200, .height = 120}};
+
+        for (const Size canvas : canvases)
+        {
+            const auto commands = describeScoreBar(canvas, 1234, 5);
+            ASSERT_FALSE(commands.empty());
+
+            // The panel is the first thing the bar fills.
+            const auto *panel =
+                std::get_if<antwika::ui::FillRect>(&commands.front());
+            ASSERT_NE(panel, nullptr);
+            EXPECT_EQ(panel->rect.origin.y, 0);
+            EXPECT_EQ(panel->rect.size.height, scoreBarHeight(canvas));
+        }
+    }
+
+    // 1920x1080 used to reserve 48 pixels for a 64-pixel bar.
+    // The top grid row sat under it and took presses meant for it.
+    TEST(ScoreBarStripTest, NoGridRowEverStartsUnderTheBar)
+    {
+        constexpr Size canvas{.width = 1920, .height = 1080};
+
+        const auto layout = layoutFor(canvas, 12, 8);
+        ASSERT_TRUE(layout.has_value());
+        EXPECT_GE(
+            layout->origin.y,
+            static_cast<std::int32_t>(scoreBarHeight(canvas)));
+
+        const auto commands = describeScoreBar(canvas, 0, 0);
+        const auto *panel =
+            std::get_if<antwika::ui::FillRect>(&commands.front());
+        ASSERT_NE(panel, nullptr);
+        const auto barBottom = static_cast<std::int32_t>(
+            panel->rect.size.height);
+        EXPECT_FALSE(cellAt(*layout, 100, barBottom - 1).has_value());
+    }
+
+    // layoutFor() refuses a cell of zero pixels and no smaller size.
+    // So one pixel is a cell the scene has to survive drawing.
+    // An unsaturated inset turns a one-pixel width into four billion.
+    TEST(BattleSceneTest, AOnePixelCellDrawsNothingWiderThanTheCell)
+    {
+        Battle battle(straightLevel(6), BattleConfig{});
+        ASSERT_TRUE(battle.placeTower({.x = 1, .y = 2}));
+
+        // Six columns and three rows across six pixels of width.
+        constexpr Size canvas{.width = 6, .height = 20};
+        const auto layout = layoutFor(canvas, 6, 3);
+        ASSERT_TRUE(layout.has_value());
+        ASSERT_EQ(layout->cell, 1U);
+
+        NiceMock<MockRenderer> renderer;
+        std::vector<antwika::gfx::Rect> rects;
+        ON_CALL(renderer, drawRect)
+            .WillByDefault(
+                [&rects](
+                    const antwika::gfx::Rect rect, antwika::gfx::Color)
+                { rects.push_back(rect); });
+
+        const BattleScene scene;
+        scene.draw(renderer, canvas, snapshotOf(battle));
+
+        ASSERT_FALSE(rects.empty());
+        for (const auto &rect : rects)
+        {
+            EXPECT_LE(rect.size.width, canvas.width);
+            EXPECT_LE(rect.size.height, canvas.height);
+        }
     }
 } // namespace

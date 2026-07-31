@@ -212,6 +212,29 @@ namespace
         EXPECT_GT(first.score(), 0U);
     }
 
+    // BattleConfig is a plain struct, so a caller can ask for these.
+    // Neither is a state a mob can exist in.
+    TEST(BattleTest, NoMobSpawnsOnAConfigNoMobCouldWalk)
+    {
+        Battle noPeriod(
+            straightLevel(8), BattleConfig{.spawnPeriodTicks = 0});
+
+        Level pathless = straightLevel(8);
+        pathless.path.clear();
+        Battle noPath(pathless, BattleConfig{.spawnPeriodTicks = 1});
+
+        for (int step = 0; step < 10; ++step)
+        {
+            noPeriod.step();
+            noPath.step();
+        }
+
+        EXPECT_TRUE(noPeriod.mobs().empty());
+        EXPECT_TRUE(noPath.mobs().empty());
+        EXPECT_EQ(noPeriod.leaks(), 0U);
+        EXPECT_EQ(noPath.leaks(), 0U);
+    }
+
     TEST(BattleTest, TheLevelIsHandedBackForDrawing)
     {
         Battle battle(straightLevel(5), quietConfig());

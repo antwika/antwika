@@ -385,6 +385,24 @@ def rank_pixel(px: int, py: int, rank: int) -> Rgba:
     return WHITE
 
 
+def check_slots(slots: list[int]) -> None:
+    """Refuse a slot list two painters share, or one off the atlas."""
+    # A dict would have let the second painter win, silently.
+    # An out-of-range slice assignment extends a bytearray.
+    # It does not raise, and png_bytes() then ignores the tail.
+    # So the atlas would simply come out wrong, with no failure.
+    duplicated = sorted({s for s in slots if slots.count(s) > 1})
+    if duplicated:
+        raise LayoutError(f"two painters share slot(s) {duplicated}")
+
+    capacity = COLUMNS * ROWS
+    outside = sorted(s for s in slots if not 0 <= s < capacity)
+    if outside:
+        raise LayoutError(
+            f"slot(s) {outside} are outside a {COLUMNS}x{ROWS} atlas"
+        )
+
+
 def slot_origin(slot: int) -> tuple[int, int]:
     return (slot % COLUMNS) * SLOT_WIDTH, (slot // COLUMNS) * SLOT_HEIGHT
 
@@ -397,28 +415,36 @@ def build_atlas() -> tuple[int, int, bytearray]:
     height = ROWS * SLOT_HEIGHT
     pixels = bytearray(width * height * 4)
 
-    painters = {
-        CARD_FACE_SLOT: card_face_pixel,
-        CARD_BACK_SLOT: card_back_pixel,
-        FELT_SLOT: felt_pixel,
-        PLATE_SLOT: plate_pixel,
-        CHAIR_SLOT: chair_pixel,
-        CHIP_SLOT: chip_pixel,
-        DEALER_SLOT: dealer_pixel,
-        TO_ACT_SLOT: to_act_pixel,
-    }
+    painters = [
+        (CARD_FACE_SLOT, card_face_pixel),
+        (CARD_BACK_SLOT, card_back_pixel),
+        (FELT_SLOT, felt_pixel),
+        (PLATE_SLOT, plate_pixel),
+        (CHAIR_SLOT, chair_pixel),
+        (CHIP_SLOT, chip_pixel),
+        (DEALER_SLOT, dealer_pixel),
+        (TO_ACT_SLOT, to_act_pixel),
+    ]
 
     for suit in range(SUIT_COUNT):
-        painters[FIRST_SUIT_SLOT + suit] = (
-            lambda px, py, suit=suit: suit_pixel(px, py, suit)
+        painters.append(
+            (
+                FIRST_SUIT_SLOT + suit,
+                lambda px, py, suit=suit: suit_pixel(px, py, suit),
+            )
         )
 
     for rank in range(RANK_COUNT):
-        painters[FIRST_RANK_SLOT + rank] = (
-            lambda px, py, rank=rank: rank_pixel(px, py, rank)
+        painters.append(
+            (
+                FIRST_RANK_SLOT + rank,
+                lambda px, py, rank=rank: rank_pixel(px, py, rank),
+            )
         )
 
-    for slot, painter in painters.items():
+    check_slots([slot for slot, _ in painters])
+
+    for slot, painter in painters:
         left, top = slot_origin(slot)
 
         for py in range(SLOT_HEIGHT):
@@ -463,7 +489,9 @@ def render() -> bytes:
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description=__doc__)
+    parser = argparse.ArgumentParser(
+        description="Generate the poker table's atlas from PokerAtlas.hpp."
+    )
     parser.add_argument(
         "--root",
         type=Path,

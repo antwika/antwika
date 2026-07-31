@@ -36,15 +36,39 @@ def pixel_at(pixels, width, px, py):
 def it_draws_every_slot_the_game_addresses():
     width, height, _ = generate_game_atlas.build_atlas()
 
+    # The buildings used to be left out of this sum.
+    # That left three slots of slack the atlas does not have.
+    # It is exactly full, so a fourth building would overflow it.
     slots = (
         1
         + generate_game_atlas.ROAD_SLOT_COUNT
         + generate_game_atlas.WALKER_SLOT_COUNT
+        + generate_game_atlas.BUILDING_SLOT_COUNT
     )
 
     assert width == 8 * 128
     assert height == 3 * 64
-    assert slots <= generate_game_atlas.COLUMNS * generate_game_atlas.ROWS
+    assert slots == generate_game_atlas.COLUMNS * generate_game_atlas.ROWS
+
+
+def it_refuses_a_slot_two_painters_share_or_one_off_the_atlas():
+    capacity = generate_game_atlas.COLUMNS * generate_game_atlas.ROWS
+
+    try:
+        generate_game_atlas.check_slots([0, 1, 1])
+    except generate_game_atlas.LayoutError as error:
+        assert "share slot" in str(error)
+    else:
+        raise AssertionError("a shared slot was accepted")
+
+    try:
+        generate_game_atlas.check_slots([0, capacity])
+    except generate_game_atlas.LayoutError as error:
+        assert "outside" in str(error)
+    else:
+        raise AssertionError("a slot off the atlas was accepted")
+
+    generate_game_atlas.check_slots([0, capacity - 1])
 
 
 def it_leaves_the_corners_of_a_tile_transparent():
@@ -119,6 +143,7 @@ def it_keeps_the_committed_atlas_in_step_with_the_generator():
 def main():
     tests = [
         it_draws_every_slot_the_game_addresses,
+        it_refuses_a_slot_two_painters_share_or_one_off_the_atlas,
         it_leaves_the_corners_of_a_tile_transparent,
         it_paves_a_road_towards_every_link_it_has,
         it_gives_each_facing_a_colour_of_its_own,

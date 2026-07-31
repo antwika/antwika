@@ -166,7 +166,8 @@ FACING_COLORS: tuple[Rgba, ...] = (
     (168, 120, 232, 255),
 )
 
-# Which way each facing points on screen, in half-tiles.
+# Which way each facing points on screen, as a sign per axis.
+# walker_pixel() is what turns a sign into a pixel count.
 # North is -y in grid space, which the projection shears up and right.
 FACING_STEPS: tuple[tuple[int, int], ...] = (
     (1, -1),
@@ -381,6 +382,24 @@ def building_pixel(px: int, py: int, kind: int) -> Rgba:
     return TRANSPARENT
 
 
+def check_slots(slots: list[int]) -> None:
+    """Refuse a slot list two painters share, or one off the atlas."""
+    # A dict would have let the second painter win, silently.
+    # An out-of-range slice assignment extends a bytearray.
+    # It does not raise, and png_bytes() then ignores the tail.
+    # So the atlas would simply come out wrong, with no failure.
+    duplicated = sorted({s for s in slots if slots.count(s) > 1})
+    if duplicated:
+        raise LayoutError(f"two painters share slot(s) {duplicated}")
+
+    capacity = COLUMNS * ROWS
+    outside = sorted(s for s in slots if not 0 <= s < capacity)
+    if outside:
+        raise LayoutError(
+            f"slot(s) {outside} are outside a {COLUMNS}x{ROWS} atlas"
+        )
+
+
 def slot_origin(slot: int) -> tuple[int, int]:
     return (slot % COLUMNS) * TILE_WIDTH, (slot // COLUMNS) * TILE_HEIGHT
 
@@ -391,24 +410,35 @@ def build_atlas() -> tuple[int, int, bytearray]:
     height = ROWS * TILE_HEIGHT
     pixels = bytearray(width * height * 4)
 
-    painters = {GROUND_SLOT: ground_pixel}
+    painters = [(GROUND_SLOT, ground_pixel)]
 
     for links in range(ROAD_SLOT_COUNT):
-        painters[FIRST_ROAD_SLOT + links] = (
-            lambda px, py, links=links: road_pixel(px, py, links)
+        painters.append(
+            (
+                FIRST_ROAD_SLOT + links,
+                lambda px, py, links=links: road_pixel(px, py, links),
+            )
         )
 
     for facing in range(WALKER_SLOT_COUNT):
-        painters[FIRST_WALKER_SLOT + facing] = (
-            lambda px, py, facing=facing: walker_pixel(px, py, facing)
+        painters.append(
+            (
+                FIRST_WALKER_SLOT + facing,
+                lambda px, py, facing=facing: walker_pixel(px, py, facing),
+            )
         )
 
     for kind in range(BUILDING_SLOT_COUNT):
-        painters[FIRST_BUILDING_SLOT + kind] = (
-            lambda px, py, kind=kind: building_pixel(px, py, kind)
+        painters.append(
+            (
+                FIRST_BUILDING_SLOT + kind,
+                lambda px, py, kind=kind: building_pixel(px, py, kind),
+            )
         )
 
-    for slot, painter in painters.items():
+    check_slots([slot for slot, _ in painters])
+
+    for slot, painter in painters:
         left, top = slot_origin(slot)
 
         for py in range(TILE_HEIGHT):
@@ -452,7 +482,9 @@ def render() -> bytes:
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description=__doc__)
+    parser = argparse.ArgumentParser(
+        description="Generate the game's texture atlas from TileAtlas.hpp."
+    )
     parser.add_argument(
         "--root",
         type=Path,

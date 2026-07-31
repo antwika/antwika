@@ -34,7 +34,6 @@ target_link_libraries(antwika_task_worker_tests
         antwika::replay
         antwika::scheduler
         antwika::scheduler::tests::mocks
-        antwika::time::tests::fakes
         antwika::event::tests::mocks
         gtest::gtest
 )

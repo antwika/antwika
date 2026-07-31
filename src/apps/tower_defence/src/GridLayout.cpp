@@ -2,8 +2,22 @@
 
 #include <algorithm>
 
+#include <antwika/gfx/Glyphs.hpp>
+#include <antwika/ui/Theme.hpp>
+
 namespace antwika::tower_defence
 {
+
+    std::uint32_t scoreBarHeight(const Size canvas) noexcept
+    {
+        // A panel's padding above and below one line of text.
+        // Exactly what describeScoreBar() asks antwika::ui to lay out.
+        constexpr std::uint32_t kUnscaled =
+            2 * antwika::ui::Theme{}.padding
+            + antwika::gfx::kGlyphLineHeight;
+
+        return kUnscaled * antwika::ui::scaleForCanvas(canvas);
+    }
 
     std::optional<GridLayout> layoutFor(
         const Size canvas,
@@ -14,12 +28,14 @@ namespace antwika::tower_defence
         {
             return std::nullopt;
         }
-        if (canvas.height <= kScoreBarHeight)
+
+        const std::uint32_t bar = scoreBarHeight(canvas);
+        if (canvas.height <= bar)
         {
             return std::nullopt;
         }
 
-        const std::uint32_t usable = canvas.height - kScoreBarHeight;
+        const std::uint32_t usable = canvas.height - bar;
         const std::uint32_t cell =
             std::min(canvas.width / width, usable / height);
         if (cell == 0)
@@ -37,7 +53,7 @@ namespace antwika::tower_defence
                 .x = static_cast<std::int32_t>(
                     (canvas.width - drawnWidth) / 2),
                 .y = static_cast<std::int32_t>(
-                    kScoreBarHeight + ((usable - drawnHeight) / 2))}};
+                    bar + ((usable - drawnHeight) / 2))}};
     }
 
     std::optional<Cell> cellAt(

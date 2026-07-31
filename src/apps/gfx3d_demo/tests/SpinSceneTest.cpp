@@ -48,11 +48,18 @@ TEST(SpinSceneTest, ModelAt_TurnsFurtherAsTicksPass)
 
 TEST(SpinSceneTest, ModelAt_DependsOnNothingButTheTick)
 {
-    const SpinScene scene;
-
     // The point of the whole app: no clock is read anywhere.
-    // Asking twice about one tick gives the same picture.
-    EXPECT_EQ(scene.modelAt(37), scene.modelAt(37));
+    // Two scenes built apart agree about a tick neither has reached.
+    // Asking one of them twice about it agrees too.
+    const SpinScene first;
+    const SpinScene second;
+
+    EXPECT_EQ(first.modelAt(37), second.modelAt(37));
+    EXPECT_EQ(first.modelAt(37), first.modelAt(37));
+
+    // Out of order, so nothing can be answering from what came before.
+    EXPECT_EQ(first.modelAt(900), second.modelAt(900));
+    EXPECT_EQ(second.modelAt(0), first.modelAt(0));
 }
 
 TEST(SpinSceneTest, CameraFor_TakesItsProportionsFromTheCanvas)

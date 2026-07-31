@@ -50,15 +50,24 @@ namespace antwika::tower_defence
 
         // A cell's rectangle, shrunk in on every side.
         // Insetting is what leaves the ground showing between things.
+        //
+        // Saturating, because a cell can be one pixel across.
+        // layoutFor() refuses a cell of zero pixels and no smaller size.
+        // On unsigned widths a plain 1 - 2 is four billion.
         Rect inset(const Rect &rect, const std::uint32_t by)
         {
+            const std::uint32_t taken = by * 2;
             return Rect{
                 .origin = {
                     .x = rect.origin.x + static_cast<std::int32_t>(by),
                     .y = rect.origin.y + static_cast<std::int32_t>(by)},
                 .size = {
-                    .width = rect.size.width - (by * 2),
-                    .height = rect.size.height - (by * 2)}};
+                    .width = rect.size.width > taken
+                        ? rect.size.width - taken
+                        : 0,
+                    .height = rect.size.height > taken
+                        ? rect.size.height - taken
+                        : 0}};
         }
     } // namespace
 
