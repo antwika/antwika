@@ -9,6 +9,7 @@
 #include "antwika/ui/Alignment.hpp"
 #include "antwika/ui/Axis.hpp"
 #include "antwika/ui/ButtonState.hpp"
+#include "antwika/ui/HoverTargets.hpp"
 #include "antwika/ui/Sizing.hpp"
 #include "antwika/ui/WidgetRects.hpp"
 
@@ -193,10 +194,17 @@ namespace antwika::ui
         // It needs no layout, unlike everything the pointer decides.
         interactions.edit = pendingEdit;
 
+        // Filled by the flattening pass, since a target names a command.
+        // Reading them changes nothing; only applyHover() acts on them.
+        HoverTargets hoverTargets; // GCOVR_EXCL_LINE
+
+        auto commands = detail::flatten(*tree, &hoverTargets);
+
         return Frame{ // GCOVR_EXCL_LINE
-            .commands = detail::flatten(*tree),
+            .commands = std::move(commands),
             .interactions = std::move(interactions),
-            .rects = std::move(rects)};
+            .rects = std::move(rects),
+            .hoverTargets = std::move(hoverTargets)};
     }
 
     void Context::closeContainer() noexcept

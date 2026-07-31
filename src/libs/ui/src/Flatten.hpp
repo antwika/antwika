@@ -1,6 +1,7 @@
 #pragma once
 
 #include "antwika/ui/DrawList.hpp"
+#include "antwika/ui/HoverTargets.hpp"
 
 #include "LayoutTree.hpp"
 
@@ -40,9 +41,18 @@ namespace antwika::ui::detail
      * overlay must cover the ring of what it drops over, exactly as it
      * covers the widget itself.
      *
+     * Which widgets a hover pointer may recolour is collected here too,
+     * and here rather than in a pass of its own for the reason layout()
+     * collects its rectangles where it does: a target names a command by
+     * index, so the only place that index is certain is the loop that
+     * appends it.
+     *
      * @param tree The arena, already laid out.
+     * @param targets Receives one entry per named widget that works its
+     * own appearance out, in paint order, or null to collect none.
      * @return The commands, in the order they are drawn.
      */
-    [[nodiscard]] DrawList flatten(const LayoutTree &tree);
+    [[nodiscard]] DrawList flatten(
+        const LayoutTree &tree, HoverTargets *targets = nullptr);
 
 } // namespace antwika::ui::detail

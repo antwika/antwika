@@ -1,6 +1,7 @@
 find_package(GTest REQUIRED)
 
 add_executable(antwika_ui_tests
+    ContextHoverTest.cpp
     ContextInteractionTest.cpp
     ContextKeyboardTest.cpp
     ContextNestingTest.cpp
@@ -10,6 +11,7 @@ add_executable(antwika_ui_tests
     DropdownTest.cpp
     FieldValueTest.cpp
     FlattenTest.cpp
+    HoverTest.cpp
     InteractionsTest.cpp
     LayoutDegenerateTest.cpp
     LayoutTest.cpp

@@ -20,6 +20,7 @@
 #include <antwika/input/Position.hpp>
 #include <antwika/input/fakes/FakeInputBackend.hpp>
 #include <antwika/ui/Pointer.hpp>
+#include <antwika/ui/Theme.hpp>
 #include <antwika/ui/WidgetId.hpp>
 
 #include "antwika/gfx_demo/DemoLoop.hpp"
@@ -391,6 +392,64 @@ TEST(DemoLoopTest, Run_CountsNothingForAReleaseOnAButton)
 
     // A widget activates on the press, and a release is not one.
     EXPECT_EQ(0U, loop.clicks());
+}
+
+// The pointer only moves, and nothing is pressed.
+// A recording under input::IdleMotionSource would hold none of it.
+// The button lights up all the same, off the hint channel.
+TEST(DemoLoopTest, Run_LightsAButtonThePointerMerelyMovedOnto)
+{
+    DemoFixture fixture;
+    fixture.expectOneWindow(true);
+
+    ON_CALL(fixture.backend, pollEvent())
+        .WillByDefault(Return(std::nullopt));
+
+    // The scene fills bars and panels too, and none of those is meant.
+    EXPECT_CALL(fixture.renderer, drawRect(::testing::_, ::testing::_))
+        .Times(::testing::AnyNumber());
+
+    // The one assertion: the hovered fill reaches the renderer.
+    // Without the pass the gated pointer is nowhere and both are idle.
+    EXPECT_CALL(
+        fixture.renderer,
+        drawRect(::testing::_, antwika::ui::Theme{}.buttonHovered))
+        .Times(::testing::AtLeast(1));
+
+    const DemoScene scene;
+    FakeInputBackend input(std::vector<InputEvent>{
+        PointerMoved{.position = positionOn(widgets::kCount)}});
+    DemoLoop loop(fixture.backend, input, scene);
+
+    loop.run(WindowDesc{.title = "Antwika"}, DemoFixture::logo(), 1);
+
+    // And it stayed appearance: a movement activates nothing.
+    EXPECT_EQ(0U, loop.clicks());
+}
+
+TEST(DemoLoopTest, Run_DrawsNoHighlightBeforeThePointerHasBeenSeen)
+{
+    DemoFixture fixture;
+    fixture.expectOneWindow(true);
+
+    ON_CALL(fixture.backend, pollEvent())
+        .WillByDefault(Return(std::nullopt));
+
+    EXPECT_CALL(fixture.renderer, drawRect(::testing::_, ::testing::_))
+        .Times(::testing::AnyNumber());
+
+    // Nothing has said where the pointer is, so nothing is hovered.
+    // An origin would light whichever widget sits in the corner.
+    EXPECT_CALL(
+        fixture.renderer,
+        drawRect(::testing::_, antwika::ui::Theme{}.buttonHovered))
+        .Times(0);
+
+    const DemoScene scene;
+    FakeInputBackend input;
+    DemoLoop loop(fixture.backend, input, scene);
+
+    loop.run(WindowDesc{.title = "Antwika"}, DemoFixture::logo(), 1);
 }
 
 // A key says nothing about where the pointer is.

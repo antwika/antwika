@@ -133,6 +133,21 @@ namespace antwika::ui::detail
         std::optional<FocusRing> focusRing{};
 
         /**
+         * @brief Whether this node is drawing its pressed appearance.
+         *
+         * A third resolved answer beside background and focusRing, and
+         * written by resolve() for the same reason they are: only there
+         * are the pointer and the layout both known.
+         *
+         * It exists so flatten() can tell a widget the recorded pointer
+         * is holding down from one merely sitting idle, without being
+         * handed the pointer to work it out again. A hover pass leaves
+         * the held one alone, since a press is recorded input and its
+         * appearance is the simulation's answer rather than a hint's.
+         */
+        bool pressed = false;
+
+        /**
          * @brief The characters this text node draws.
          */
         std::string text{};

@@ -4,6 +4,7 @@ antwika_add_library(
         src/Context.cpp
         src/Dropdown.cpp
         src/Flatten.cpp
+        src/Hover.cpp
         src/Layout.cpp
         src/LayoutTree.cpp
         src/Painter.cpp

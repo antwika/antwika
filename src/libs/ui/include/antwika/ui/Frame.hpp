@@ -1,6 +1,7 @@
 #pragma once
 
 #include "antwika/ui/DrawList.hpp"
+#include "antwika/ui/HoverTargets.hpp"
 #include "antwika/ui/Interactions.hpp"
 #include "antwika/ui/WidgetRects.hpp"
 
@@ -42,6 +43,22 @@ namespace antwika::ui
          * See WidgetRects.
          */
         WidgetRects rects;
+
+        /**
+         * @brief Which of this frame's widgets a hover pointer may
+         * recolour, and what it would cost to recolour them.
+         *
+         * The fourth answer off the one layout, and the only one that
+         * feeds something outside the tick path. Everything above is
+         * decided from the recorded ui::Pointer and is what a replay
+         * reproduces; this is what ui::applyHover() needs to repaint the
+         * picture from a position that is deliberately not recorded.
+         *
+         * Reading it changes nothing, and a caller that never calls
+         * applyHover() draws exactly the commands above.
+         * See HoverTarget and docs/hover-is-not-simulation.md.
+         */
+        HoverTargets hoverTargets;
     };
 
 } // namespace antwika::ui

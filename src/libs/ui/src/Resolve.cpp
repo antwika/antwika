@@ -2,17 +2,14 @@
 
 #include <algorithm>
 #include <cstddef>
-#include <cstdint>
 #include <optional>
 #include <vector>
-
-#include <antwika/gfx/Point.hpp>
-#include <antwika/gfx/Rect.hpp>
 
 #include "antwika/ui/Keyboard.hpp"
 #include "antwika/ui/OptionChoice.hpp"
 #include "antwika/ui/WidgetId.hpp"
 
+#include "Contains.hpp"
 #include "FocusRing.hpp"
 #include "Interactive.hpp"
 
@@ -21,23 +18,6 @@ namespace antwika::ui::detail
 
     namespace
     {
-        using antwika::gfx::Point;
-
-        [[nodiscard]] bool contains(const Rect &rect, Point point) noexcept
-        {
-            // A right edge is an int32 origin plus a uint32 extent.
-            // That is exactly the sum that wraps, hence 64 bits.
-            const auto left = static_cast<std::int64_t>(rect.origin.x);
-            const auto top = static_cast<std::int64_t>(rect.origin.y);
-            const auto x = static_cast<std::int64_t>(point.x);
-            const auto y = static_cast<std::int64_t>(point.y);
-
-            // Half-open, so two touching rectangles cannot both be hit.
-            // A collapsed one is therefore hit by nothing.
-            return x >= left && x < left + rect.size.width && y >= top
-                   && y < top + rect.size.height;
-        }
-
         [[nodiscard]] Color fillFor(
             const Interactive &style, bool under, bool down) noexcept
         {
@@ -306,6 +286,10 @@ namespace antwika::ui::detail
                         && node.id == interactions.hovered;
 
                     node.background = fillFor(*node.style, under, down);
+
+                    // Written beside the colour it explains.
+                    // A hover pass reads it to step over a held widget.
+                    node.pressed = under && down;
                 }
 
                 // The focused id is a listed one or kNoWidget.

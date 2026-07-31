@@ -220,8 +220,16 @@ namespace antwika::ui
          * which is the price of activating on the press rather than on
          * a press-then-release match a replay would have to regenerate.
          *
-         * @return The drawing commands, and what the pointer and the
-         * keyboard did.
+         * Everything decided here is decided from the arguments this
+         * Context was built with, which is recorded input, so a replay
+         * reproduces all of it. What a free-moving pointer is over is
+         * deliberately not among them: that is applyHover()'s business,
+         * it runs after this, and it touches nothing but the picture.
+         * See Frame::hoverTargets.
+         *
+         * @return The drawing commands, what the pointer and the
+         * keyboard did, where each named widget went, and which of them
+         * a hover pass may recolour.
          */
         [[nodiscard]] Frame finish();
 
