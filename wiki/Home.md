@@ -23,7 +23,8 @@ Each page covers what the library is for, its key headers and types, what it dep
 | --- | --- |
 | [engine](libraries/engine.md) | Steps one fixed tick at a time and knows nothing about any app. |
 | [event](libraries/event.md) | The one uniform event mechanism: `Event`, `TickEvent`, dispatchers and sinks. |
-| [replay](libraries/replay.md) | The shared live/replay loop, the JSON replay format, and the CLI flags. |
+| [simulation](libraries/simulation.md) | The shared live/replay tick loop, its `ITickSource` seam, and the pacing around it. |
+| [replay](libraries/replay.md) | The JSON replay format, its migrations, and the CLI flags. |
 | [ecs](libraries/ecs.md) | Double-buffered entity/component `World` with staged mutations. |
 | [scheduler](libraries/scheduler.md) | Deterministic, priority-ordered, budget-bounded job dispatch. |
 | [wfc](libraries/wfc.md) | Wave Function Collapse over a flat cell array, with no grid concept inside. |

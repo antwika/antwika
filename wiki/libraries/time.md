@@ -27,7 +27,7 @@ Nothing.
 
 **A tick is a count, not a duration.**
 Nothing in the simulation ever sees a wall-clock delta, so nothing in it can depend on how fast the machine ran.
-Wall-clock time exists only where a human is watching: [`log`](log.md) timestamps through `IClock`, and `replay::TickPacer` paces a windowed run through `ISleeper`.
+Wall-clock time exists only where a human is watching: [`log`](log.md) timestamps through `IClock`, and `simulation::TickPacer` paces a windowed run through `ISleeper`.
 
 **`ISleeper` exists so tests still run at full speed.**
 A windowed app paces its ticks through an injected sleeper rather than calling a sleep function, so the same code under test with a `FakeSleeper` finishes instantly.
