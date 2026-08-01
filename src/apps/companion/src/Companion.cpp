@@ -10,11 +10,12 @@
 #include <antwika/log/Level.hpp>
 #include <antwika/simulation/EngineLoop.hpp>
 
+#include "antwika/companion/CompanionMemory.hpp"
 #include "antwika/companion/PacingSink.hpp"
 #include "antwika/companion/PetSink.hpp"
+#include "antwika/companion/PropSink.hpp"
 #include "antwika/companion/ReviveSink.hpp"
 #include "antwika/companion/SaveFormatError.hpp"
-#include "antwika/companion/TapSink.hpp"
 
 namespace antwika::companion
 {
@@ -28,6 +29,15 @@ namespace antwika::companion
 
     namespace
     {
+        // The companion, and the record behind it.
+        // The two have different lifetimes.
+        // A revival replaces the first and leaves the second standing.
+        struct Session
+        {
+            Pet pet;
+            Lineage lineage;
+        };
+
         // The whole of "carry on from where the last session left off".
         // A store nobody gave us is a session that keeps nothing.
         // A file that is not there is a first run, not a failure.
@@ -35,11 +45,11 @@ namespace antwika::companion
         // A companion nobody can read is a companion that is gone.
         // And refusing to start would leave the app unusable.
         // Until somebody went and deleted a file by hand.
-        Pet openPet(const CompanionConfig &config)
+        Session openSession(const CompanionConfig &config)
         {
             if (!config.store.has_value())
             {
-                return Pet(config.pet);
+                return Session{Pet(config.pet), Lineage()};
             }
 
             try
@@ -51,13 +61,15 @@ namespace antwika::companion
                     config.logger.log(
                         Level::Info,
                         "No previous companion, so this is a new one");
-                    return Pet(config.pet);
+                    return Session{Pet(config.pet), Lineage()};
                 }
 
                 config.logger.log(
                     Level::Info,
                     "Carrying on with the companion from last time");
-                return Pet(config.pet, *memory);
+                return Session{
+                    Pet(config.pet, memory->pet),
+                    Lineage(memory->lineage)};
             }
             catch (const SaveFormatError &error)
             {
@@ -66,21 +78,28 @@ namespace antwika::companion
                     std::string("The saved companion could not be read, "
                                 "so this is a new one: ")
                         + error.what());
-                return Pet(config.pet);
+                return Session{Pet(config.pet), Lineage()};
             }
         }
 
         // Once, at the end, rather than every tick.
         // A run ended with Ctrl+C therefore keeps nothing.
         // Which is what a --record run there already does.
-        void keepPet(const CompanionConfig &config, const Pet &pet)
+        // The age is offered to the record on the way out.
+        // So a companion nobody replaced still sets the mark it earned.
+        void keepSession(
+            const CompanionConfig &config,
+            const Pet &pet,
+            Lineage &lineage)
         {
             if (!config.store.has_value())
             {
                 return;
             }
 
-            config.store->get().save(pet.remember());
+            lineage.record(pet.ticks());
+            config.store->get().save(CompanionMemory{
+                .pet = pet.remember(), .lineage = lineage.remember()});
         }
     } // namespace
 
@@ -88,33 +107,35 @@ namespace antwika::companion
     {
         ILogger &logger = config.logger;
 
-        Pet pet = openPet(config);
+        Session session = openSession(config);
+        Pet &pet = session.pet;
+        Lineage &lineage = session.lineage;
 
         EventDispatcher dispatcher({config.eventSink});
 
         // The order is the whole wiring.
-        // The tap first, answered by the state the last tick ended with.
+        // The press first, answered by the state the last tick left.
         // Then the button, which one press may not also be.
-        // A press on a perished companion is a tap that means nothing.
-        // The other order would start a companion and then feed it.
+        // A press on a perished companion means nothing to PropSink.
+        // The other order would start a companion and then prod it.
         // Then the step, which is what sees the meal.
         // Then whatever draws it, so a frame is of the finished tick.
         // Then the wait, which makes the order present-then-wait.
-        TapSink tapSink(pet, config.codec);
-        ReviveSink reviveSink(pet, config.codec, config.canvas);
+        PropSink propSink(pet, config.codec, config.canvas);
+        ReviveSink reviveSink(pet, lineage, config.codec, config.canvas);
         PetSink petSink(pet);
         PacingSink pacing(logger, config.sleeper, config.tickInterval);
         StopSignal stopSignal;
 
         std::vector<std::reference_wrapper<ITickEventSink>> timedSinks{
-            tapSink, reviveSink, petSink, stopSignal};
+            propSink, reviveSink, petSink, stopSignal};
 
         // Held out here rather than inside the if.
         // The sink has to outlive the reference the dispatcher keeps.
         std::unique_ptr<ITickEventSink> extra;
         if (config.extraSink)
         {
-            extra = config.extraSink(pet);
+            extra = config.extraSink(pet, lineage);
             timedSinks.push_back(*extra);
         }
 
@@ -137,15 +158,23 @@ namespace antwika::companion
         // After the loop rather than inside it, and after nothing else.
         // A session that threw its way out of the loop keeps nothing.
         // What it would keep is whatever state the failure left.
-        keepPet(config, pet);
+        keepSession(config, pet, lineage);
 
         return CompanionSummary{
             .ticks = pet.ticks(),
+            .day = pet.day(),
             .hunger = pet.hunger(),
+            .fun = pet.fun(),
             .happiness = pet.happiness(),
+            .energy = pet.energy(),
+            .energyCeiling = pet.energyCeiling(),
             .meals = pet.meals(),
+            .plays = pet.plays(),
             .disturbances = pet.disturbances(),
             .pesters = pet.pesters(),
+            .collapses = pet.collapses(),
+            .generation = lineage.generation(),
+            .bestTicks = lineage.bestTicks(),
             .perished = pet.state() == PetState::Perished};
     }
 
@@ -176,13 +205,18 @@ namespace antwika::companion
     std::string summaryLine(const CompanionSummary &summary)
     {
         const std::string counts =
-            std::to_string(summary.ticks) + " ticks, "
+            std::to_string(summary.ticks) + " ticks over "
+            + std::to_string(summary.day) + " days, "
             + std::to_string(summary.meals) + " meals, "
-            + std::to_string(summary.disturbances)
-            + " rude awakenings, " + std::to_string(summary.pesters)
-            + " unwanted meals, happiness "
-            + std::to_string(summary.happiness) + ", hunger "
-            + std::to_string(summary.hunger);
+            + std::to_string(summary.plays) + " games, "
+            + std::to_string(summary.disturbances) + " rude awakenings, "
+            + std::to_string(summary.pesters) + " unwanted attentions, "
+            + std::to_string(summary.collapses) + " collapses, energy "
+            + std::to_string(summary.energy) + "/"
+            + std::to_string(summary.energyCeiling) + " (best so far "
+            + std::to_string(summary.bestTicks)
+            + " ticks, companion number "
+            + std::to_string(summary.generation) + ")";
 
         if (summary.perished)
         {

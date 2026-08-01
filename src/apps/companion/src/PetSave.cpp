@@ -2,10 +2,12 @@
 
 #include <array>
 #include <cstddef>
+#include <memory>
 #include <string>
 
 #include <nlohmann/json-schema.hpp>
 
+#include <antwika/replay/IMigration.hpp>
 #include <antwika/replay/SchemaVersion.hpp>
 #include <antwika/replay/SchemaVersionError.hpp>
 
@@ -32,7 +34,7 @@ namespace antwika::companion
             kStateNames.size()
             == static_cast<std::size_t>(PetState::Perished) + 1);
 
-        constexpr std::array<std::string_view, 10> kSayingNames{
+        constexpr std::array<std::string_view, 16> kSayingNames{
             "none",
             "hello",
             "bored",
@@ -42,11 +44,17 @@ namespace antwika::companion
             "yum",
             "notHungry",
             "letMeSleep",
-            "zzz"};
+            "zzz",
+            "playWithMe",
+            "wheee",
+            "tooTired",
+            "notSleepy",
+            "yawn",
+            "poked"};
 
         static_assert(
             kSayingNames.size()
-            == static_cast<std::size_t>(Saying::Zzz) + 1);
+            == static_cast<std::size_t>(Saying::Poked) + 1);
 
         [[nodiscard]] std::string_view stateName(const PetState state)
         {
@@ -90,6 +98,106 @@ namespace antwika::companion
                 "build does not have: " + name);
         }
 
+        // What a version 1 companion becomes.
+        //
+        // Version 1 described an animal that died of unhappiness.
+        // This one lives on its energy instead.
+        // So nothing honest carries a version 1 document's needs over.
+        // What that build called half-starved means nothing here.
+        // What survives is what still means the same thing.
+        // How long it lived, what was done to it, and whether it lives.
+        //
+        // The numbers below are this build's shipped defaults.
+        // A migration is handed a document and never a configuration.
+        // And those defaults are the balance the document was written on.
+        class PetV1ToV2 final : public antwika::replay::IMigration
+        {
+        public:
+            [[nodiscard]] std::uint32_t fromVersion() const noexcept
+                override
+            {
+                return 1;
+            }
+
+            [[nodiscard]] std::uint32_t toVersion() const noexcept
+                override
+            {
+                return 2;
+            }
+
+            // MigrationChain asks for this in one place only.
+            // It is the message thrown when a step is not one step.
+            // This one reads 1 and produces 2.
+            // So reaching it means editing the two functions above.
+            // Which breaks the migration rather than feeding it input.
+            // See docs/confirming-unreachable-branches.md.
+            // GCOVR_EXCL_START
+            [[nodiscard]] std::string_view name() const noexcept override
+            {
+                return "companion: happiness gives way to energy";
+            }
+            // GCOVR_EXCL_STOP
+
+            void apply(nlohmann::json &document) const override
+            {
+                // Version 1 said perished when its happiness ran out.
+                // Here that is the ceiling running out instead.
+                // And the ceiling is arithmetic over the collapses.
+                // So a perished one arrives with enough of them.
+                const bool gone = document.value("state", std::string())
+                                  == kStateNames.back();
+
+                document["fun"] = kFunStart;
+                document["energy"] = gone ? 0 : kEnergyBase;
+                document["day"] = 0;
+                document["plays"] = 0;
+                document["collapses"] = gone ? kCollapsesToPerish : 0;
+                document["woken"] = document.value("disturbed", false);
+                document.erase("disturbed");
+            }
+
+            // The most any stage allows, in collapses, rounded up.
+            // So this many is certainly nothing left.
+            // Whatever age the document says the companion reached.
+            static constexpr std::uint32_t kCollapsesToPerish =
+                (kEnergyBase + 3 * kStageEnergyBonus + kCollapsePenalty
+                 - 1)
+                / kCollapsePenalty;
+        };
+
+        // What a version 2 companion becomes.
+        // The first of its line, with no record behind it.
+        // Which is what every companion written before one truly was.
+        class PetV2ToV3 final : public antwika::replay::IMigration
+        {
+        public:
+            [[nodiscard]] std::uint32_t fromVersion() const noexcept
+                override
+            {
+                return 2;
+            }
+
+            [[nodiscard]] std::uint32_t toVersion() const noexcept
+                override
+            {
+                return 3;
+            }
+
+            // Unreachable for the reason the one above gives.
+            // GCOVR_EXCL_START
+            [[nodiscard]] std::string_view name() const noexcept override
+            {
+                return "companion: the file starts keeping a lineage";
+            }
+            // GCOVR_EXCL_STOP
+
+            void apply(nlohmann::json &document) const override
+            {
+                document["generation"] = 1;
+                document["bestTicks"] = 0;
+            }
+        };
+
         nlohmann::json countShape()
         {
             nlohmann::json shape;
@@ -128,11 +236,18 @@ namespace antwika::companion
                 "saying",
                 "sayingTicksLeft",
                 "hunger",
+                "fun",
                 "happiness",
+                "energy",
+                "day",
                 "meals",
+                "plays",
                 "disturbances",
                 "pesters",
-                "disturbed"};
+                "collapses",
+                "woken",
+                "generation",
+                "bestTicks"};
             // GCOVR_EXCL_STOP
             schema["properties"]["magic"]["const"] =
                 std::string(kSaveMagic);
@@ -143,11 +258,18 @@ namespace antwika::companion
             schema["properties"]["saying"] = wordShape();
             schema["properties"]["sayingTicksLeft"] = countShape();
             schema["properties"]["hunger"] = countShape();
+            schema["properties"]["fun"] = countShape();
             schema["properties"]["happiness"] = countShape();
+            schema["properties"]["energy"] = countShape();
+            schema["properties"]["day"] = countShape();
             schema["properties"]["meals"] = countShape();
+            schema["properties"]["plays"] = countShape();
             schema["properties"]["disturbances"] = countShape();
             schema["properties"]["pesters"] = countShape();
-            schema["properties"]["disturbed"]["type"] = "boolean";
+            schema["properties"]["collapses"] = countShape();
+            schema["properties"]["woken"]["type"] = "boolean";
+            schema["properties"]["generation"] = countShape();
+            schema["properties"]["bestTicks"] = countShape();
             return schema;
         }
 
@@ -160,7 +282,7 @@ namespace antwika::companion
 
         // Translated rather than let through.
         // A companion that will not read is this app's own category.
-        // petMemoryFromJson() promises one exception type.
+        // companionMemoryFromJson() promises one exception type.
         // The chain's message names both versions already.
         // So it is carried through rather than rewritten.
         void migratePetDocument(nlohmann::json &document)
@@ -169,41 +291,51 @@ namespace antwika::companion
             {
                 standardPetMigrations().migrate(document);
             }
-            // GCOVR_EXCL_START
-            catch (const replay::SchemaVersionError &error)
+            // The catch itself is excluded and its body is not.
+            // gcov puts a matched/unmatched edge on the handler.
+            // A document from a newer build takes the matched one.
+            // Nothing this chain can throw takes the other.
+            // See docs/confirming-unreachable-branches.md.
+            catch (const replay::SchemaVersionError &error) // GCOVR_EXCL_LINE
             {
                 throw SaveFormatError(error.what());
             }
-            // GCOVR_EXCL_STOP
         }
     } // namespace
 
     MigrationChain standardPetMigrations()
     {
         // The version key is the shared one, so none is passed.
-        // Empty because this format has never been bumped.
-        // The chain still reads the version and still stamps it.
-        // So a document from a newer build is refused rather than read.
-        return MigrationChain(
-            antwika::replay::MigrationList{}, kSaveFormatVersion);
+        antwika::replay::MigrationList migrations;
+        migrations.push_back(std::make_shared<const PetV1ToV2>());
+        migrations.push_back(std::make_shared<const PetV2ToV3>());
+
+        return MigrationChain(std::move(migrations), kSaveFormatVersion);
     }
 
-    nlohmann::json petMemoryToJson(const PetMemory &memory)
+    nlohmann::json companionMemoryToJson(const CompanionMemory &memory)
     {
         nlohmann::json encoded;
         encoded["magic"] = std::string(kSaveMagic);
         encoded[std::string(replay::kSchemaVersionKey)] =
             kSaveFormatVersion;
-        encoded["ticks"] = memory.ticks;
-        encoded["state"] = std::string(stateName(memory.state));
-        encoded["saying"] = std::string(sayingName(memory.saying));
-        encoded["sayingTicksLeft"] = memory.sayingTicksLeft;
-        encoded["hunger"] = memory.hunger;
-        encoded["happiness"] = memory.happiness;
-        encoded["meals"] = memory.meals;
-        encoded["disturbances"] = memory.disturbances;
-        encoded["pesters"] = memory.pesters;
-        encoded["disturbed"] = memory.disturbed;
+        encoded["ticks"] = memory.pet.ticks;
+        encoded["state"] = std::string(stateName(memory.pet.state));
+        encoded["saying"] = std::string(sayingName(memory.pet.saying));
+        encoded["sayingTicksLeft"] = memory.pet.sayingTicksLeft;
+        encoded["hunger"] = memory.pet.hunger;
+        encoded["fun"] = memory.pet.fun;
+        encoded["happiness"] = memory.pet.happiness;
+        encoded["energy"] = memory.pet.energy;
+        encoded["day"] = memory.pet.day;
+        encoded["meals"] = memory.pet.meals;
+        encoded["plays"] = memory.pet.plays;
+        encoded["disturbances"] = memory.pet.disturbances;
+        encoded["pesters"] = memory.pet.pesters;
+        encoded["collapses"] = memory.pet.collapses;
+        encoded["woken"] = memory.pet.woken;
+        encoded["generation"] = memory.lineage.generation;
+        encoded["bestTicks"] = memory.lineage.bestTicks;
         return encoded;
 
         // gcov puts the cleanup block on this closing brace.
@@ -211,7 +343,8 @@ namespace antwika::companion
         // No input reaches it.
     } // GCOVR_EXCL_LINE
 
-    PetMemory petMemoryFromJson(const nlohmann::json &document)
+    CompanionMemory companionMemoryFromJson(
+        const nlohmann::json &document)
     {
         auto migrated = document;
         migratePetDocument(migrated);
@@ -228,29 +361,46 @@ namespace antwika::companion
                 + error.what());
         }
 
-        return PetMemory{
-            .ticks = migrated.at("ticks").get<Tick>(),
-            .state =
-                stateFromName(migrated.at("state").get<std::string>()),
-            .saying =
-                sayingFromName(migrated.at("saying").get<std::string>()),
-            .sayingTicksLeft =
-                migrated.at("sayingTicksLeft").get<Tick>(),
-            .hunger = migrated.at("hunger").get<std::uint32_t>(),
-            .happiness = migrated.at("happiness").get<std::uint32_t>(),
-            .meals = migrated.at("meals").get<std::uint32_t>(),
-            .disturbances =
-                migrated.at("disturbances").get<std::uint32_t>(),
-            .pesters = migrated.at("pesters").get<std::uint32_t>(),
-            .disturbed = migrated.at("disturbed").get<bool>()};
+        return CompanionMemory{
+            .pet =
+                PetMemory{
+                    .ticks = migrated.at("ticks").get<Tick>(),
+                    .state = stateFromName(
+                        migrated.at("state").get<std::string>()),
+                    .saying = sayingFromName(
+                        migrated.at("saying").get<std::string>()),
+                    .sayingTicksLeft =
+                        migrated.at("sayingTicksLeft").get<Tick>(),
+                    .hunger =
+                        migrated.at("hunger").get<std::uint32_t>(),
+                    .fun = migrated.at("fun").get<std::uint32_t>(),
+                    .happiness =
+                        migrated.at("happiness").get<std::uint32_t>(),
+                    .energy =
+                        migrated.at("energy").get<std::uint32_t>(),
+                    .day = migrated.at("day").get<std::uint32_t>(),
+                    .meals = migrated.at("meals").get<std::uint32_t>(),
+                    .plays = migrated.at("plays").get<std::uint32_t>(),
+                    .disturbances =
+                        migrated.at("disturbances").get<std::uint32_t>(),
+                    .pesters =
+                        migrated.at("pesters").get<std::uint32_t>(),
+                    .collapses =
+                        migrated.at("collapses").get<std::uint32_t>(),
+                    .woken = migrated.at("woken").get<bool>()},
+            .lineage = LineageMemory{
+                .generation =
+                    migrated.at("generation").get<std::uint32_t>(),
+                .bestTicks = migrated.at("bestTicks").get<Tick>()}};
     } // GCOVR_EXCL_LINE
 
-    void writePetMemory(const PetMemory &memory, std::ostream &out)
+    void writeCompanionMemory(
+        const CompanionMemory &memory, std::ostream &out)
     {
-        out << petMemoryToJson(memory).dump(kIndent) << '\n';
+        out << companionMemoryToJson(memory).dump(kIndent) << '\n';
     }
 
-    PetMemory readPetMemory(std::istream &in)
+    CompanionMemory readCompanionMemory(std::istream &in)
     {
         nlohmann::json document;
         try
@@ -265,7 +415,7 @@ namespace antwika::companion
                 + error.what());
         }
 
-        return petMemoryFromJson(document);
+        return companionMemoryFromJson(document);
     }
 
 } // namespace antwika::companion

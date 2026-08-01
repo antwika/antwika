@@ -47,16 +47,32 @@ namespace antwika::companion
         constexpr std::size_t kReadoutLines = 3;
 
         // The one fact no gauge holds, in the words it is said in.
-        // An interrupted night is worth saying apart from a quiet one.
-        // It is the rest of that night's recovery already forfeited.
+        // A day begun with a rude awakening is worth saying apart.
         constexpr std::string_view kAwakeWord = "awake";
         constexpr std::string_view kHungryWord = "awake, hungry";
+        constexpr std::string_view kWokenWord = "awake, woken";
         constexpr std::string_view kAsleepWord = "asleep";
-        constexpr std::string_view kWokenWord = "asleep, woken";
         constexpr std::string_view kGoneWord = "gone";
 
         // What the one button says, in this file with the other words.
         constexpr std::string_view kReviveWords = "new pet";
+
+        // How grown up it is, in LifeStage's own order.
+        constexpr std::array<std::string_view, 5> kStageWords{
+            "egg", "child", "teen", "adult", "elder"};
+
+        static_assert(
+            kStageWords.size()
+            == static_cast<std::size_t>(LifeStage::Elder) + 1);
+
+        // What kind of day it is, in DayMood's own order.
+        // The ordinary day says nothing, since half of them are.
+        constexpr std::array<std::string_view, 4> kMoodWords{
+            "", "hungry", "restless", "heavy"};
+
+        static_assert(
+            kMoodWords.size()
+            == static_cast<std::size_t>(DayMood::Heavy) + 1);
 
         // Every line the companion may say, in Saying's own order.
         // One table in one place, and this is the place.
@@ -66,7 +82,7 @@ namespace antwika::companion
         // A catalogue holding one and not the other translates by halves.
         // It would also leave two places to add a line to.
         // Moving both is a change worth making on its own.
-        constexpr std::array<std::string_view, 10> kSayingWords{
+        constexpr std::array<std::string_view, 16> kSayingWords{
             "",
             "hello!",
             "bored...",
@@ -76,22 +92,28 @@ namespace antwika::companion
             "yum yum!",
             "im full!",
             "shhh!",
-            "zzz..."};
+            "zzz...",
+            "play!",
+            "wheee!",
+            "so tired",
+            "not tired",
+            "*yawn*",
+            "hey!"};
 
         static_assert(
             kSayingWords.size()
-            == static_cast<std::size_t>(Saying::Zzz) + 1);
+            == static_cast<std::size_t>(Saying::Poked) + 1);
 
         // Where the bubble sits, in the layout's own units.
-        // Left of the animal, under the gauges and over the bowl.
+        // Left of the animal, under the gauges and over the props.
         // So it covers nothing that says anything.
         // It does overlap PetLayout's kButton box, deliberately.
         // The two are never up at once, so the room is spent twice.
-        // A perished companion is silent: lose() clears the bubble.
+        // A perished companion is silent: perish() clears the bubble.
         // Pet::requireLivable() refuses a saved one that is not.
         constexpr std::int32_t kBubbleX = 1;
-        constexpr std::int32_t kBubbleY = 7;
-        constexpr std::uint32_t kBubbleUnitsWide = 10;
+        constexpr std::int32_t kBubbleY = 8;
+        constexpr std::uint32_t kBubbleUnitsWide = 11;
         constexpr std::uint32_t kBubbleUnitsHigh = 5;
         constexpr std::uint32_t kBubbleTailUnits = 2;
         constexpr std::uint32_t kBubblePadUnits = 1;
@@ -103,7 +125,11 @@ namespace antwika::companion
         // The longest lines overhang their bubble there.
         // Which is where the readout already overhangs the grid.
         // So neither is clamped, and both stay one arithmetic rule.
-        constexpr std::uint32_t kSayingChars = 8;
+        constexpr std::uint32_t kSayingChars = 9;
+
+        // Where the ground begins.
+        // The animal stands on it and the three props sit along it.
+        constexpr std::int32_t kGroundY = 22;
 
         constexpr Tick kBreatheFrameTicks = kTicksPerSecond / 2;
         constexpr Tick kEyesOpenTicks = 3 * kTicksPerSecond;
@@ -136,6 +162,16 @@ namespace antwika::companion
                 breath.progress));
         }
 
+        // What each form does to the fur it is drawn in, as a fraction.
+        // A factor rather than three more colours in every palette.
+        // So the day, the night and the grave keep one fur to shade.
+        constexpr std::array<std::uint32_t, 3> kFormNumerator{5, 1, 3};
+        constexpr std::array<std::uint32_t, 3> kFormDenominator{4, 1, 4};
+
+        static_assert(
+            kFormNumerator.size()
+            == static_cast<std::size_t>(PetForm::Scruffy) + 1);
+
         struct Palette
         {
             Color sky;
@@ -145,7 +181,9 @@ namespace antwika::companion
             Color detail;
             Color eye;
             Color gauge;
+            Color energyFill;
             Color hungerFill;
+            Color funFill;
             Color happinessFill;
             Color text;
             Color bubble;
@@ -156,11 +194,13 @@ namespace antwika::companion
             .sky = {.red = 132, .green = 190, .blue = 226},
             .ground = {.red = 78, .green = 142, .blue = 82},
             .orb = {.red = 250, .green = 226, .blue = 130},
-            .fur = {.red = 226, .green = 158, .blue = 88},
+            .fur = {.red = 200, .green = 140, .blue = 78},
             .detail = {.red = 168, .green = 106, .blue = 52},
             .eye = {.red = 34, .green = 30, .blue = 40},
             .gauge = {.red = 42, .green = 46, .blue = 58},
+            .energyFill = {.red = 238, .green = 206, .blue = 92},
             .hungerFill = {.red = 226, .green = 118, .blue = 78},
+            .funFill = {.red = 132, .green = 168, .blue = 232},
             .happinessFill = {.red = 118, .green = 210, .blue = 138},
             .text = {.red = 246, .green = 250, .blue = 244},
             .bubble = {.red = 250, .green = 248, .blue = 238},
@@ -170,11 +210,13 @@ namespace antwika::companion
             .sky = {.red = 24, .green = 30, .blue = 62},
             .ground = {.red = 32, .green = 62, .blue = 44},
             .orb = {.red = 214, .green = 220, .blue = 240},
-            .fur = {.red = 142, .green = 100, .blue = 60},
+            .fur = {.red = 130, .green = 92, .blue = 54},
             .detail = {.red = 104, .green = 68, .blue = 36},
             .eye = {.red = 24, .green = 22, .blue = 30},
             .gauge = {.red = 30, .green = 34, .blue = 44},
+            .energyFill = {.red = 156, .green = 136, .blue = 62},
             .hungerFill = {.red = 150, .green = 78, .blue = 54},
+            .funFill = {.red = 86, .green = 110, .blue = 154},
             .happinessFill = {.red = 78, .green = 140, .blue = 96},
             .text = {.red = 196, .green = 206, .blue = 226},
             .bubble = {.red = 206, .green = 212, .blue = 232},
@@ -190,11 +232,67 @@ namespace antwika::companion
             .detail = {.red = 96, .green = 96, .blue = 102},
             .eye = {.red = 40, .green = 40, .blue = 46},
             .gauge = {.red = 34, .green = 34, .blue = 40},
+            .energyFill = {.red = 96, .green = 96, .blue = 102},
             .hungerFill = {.red = 96, .green = 96, .blue = 102},
+            .funFill = {.red = 96, .green = 96, .blue = 102},
             .happinessFill = {.red = 96, .green = 96, .blue = 102},
             .text = {.red = 182, .green = 182, .blue = 188},
             .bubble = {.red = 150, .green = 150, .blue = 156},
             .bubbleText = {.red = 40, .green = 40, .blue = 46}};
+
+        [[nodiscard]] std::uint8_t channel(
+            const std::uint8_t value,
+            const std::uint32_t numerator,
+            const std::uint32_t denominator)
+        {
+            const auto raised = static_cast<std::uint32_t>(value)
+                                * numerator / denominator;
+
+            return static_cast<std::uint8_t>(raised > 255 ? 255 : raised);
+        }
+
+        // Whole-number arithmetic on each channel.
+        // So a form's fur is the same colour on every toolchain.
+        // That is the rule the rest of this application follows.
+        // Kept even though nothing a renderer makes reaches a replay.
+        [[nodiscard]] Color shade(
+            const Color color,
+            const std::uint32_t numerator,
+            const std::uint32_t denominator)
+        {
+            return Color{
+                .red = channel(color.red, numerator, denominator),
+                .green = channel(color.green, numerator, denominator),
+                .blue = channel(color.blue, numerator, denominator),
+                .alpha = color.alpha};
+        }
+
+        [[nodiscard]] Color furFor(
+            const Palette &palette, const PetForm form)
+        {
+            const auto index = static_cast<std::size_t>(form);
+
+            return shade(
+                palette.fur,
+                kFormNumerator[index],
+                kFormDenominator[index]);
+        }
+
+        // Called on a prop's box alone, which is six units by four.
+        // So a unit off each side always leaves something to draw.
+        // A guard against that would be a branch no canvas could take.
+        [[nodiscard]] Rect inset(const Rect &area, const std::uint32_t by)
+        {
+            const auto twice = 2 * by;
+
+            return Rect{
+                .origin =
+                    {.x = area.origin.x + static_cast<std::int32_t>(by),
+                     .y = area.origin.y + static_cast<std::int32_t>(by)},
+                .size = {
+                    .width = area.size.width - twice,
+                    .height = area.size.height - twice}};
+        }
 
         // Four glyph pixels to a unit, so the readout grows with it.
         // A unit too small for even that still gets the smallest text.
@@ -210,12 +308,6 @@ namespace antwika::companion
             return scale;
         }
 
-        [[nodiscard]] std::string ratio(
-            const std::uint32_t value, const std::uint32_t max)
-        {
-            return std::to_string(value) + "/" + std::to_string(max);
-        }
-
         [[nodiscard]] std::string_view stateWord(
             const PetSnapshot &snapshot)
         {
@@ -224,16 +316,40 @@ namespace antwika::companion
                 return kGoneWord;
             }
 
-            if (snapshot.state == PetState::Asleep)
+            if (snapshot.asleep)
             {
-                return snapshot.disturbed ? kWokenWord : kAsleepWord;
+                return kAsleepWord;
+            }
+
+            if (snapshot.disturbed)
+            {
+                return kWokenWord;
             }
 
             return snapshot.hungry ? kHungryWord : kAwakeWord;
         }
 
+        // How the day is going, in the words the tables above hold.
+        // An ordinary day contributes nothing at all.
+        // So its line is shorter rather than saying "nothing much".
+        [[nodiscard]] std::string dayLine(const PetSnapshot &snapshot)
+        {
+            return "d" + std::to_string(snapshot.day) + " "
+                   + std::string(kStageWords[static_cast<std::size_t>(
+                       snapshot.stage)])
+                   + " "
+                   + std::string(kMoodWords[static_cast<std::size_t>(
+                       snapshot.mood)]);
+        }
+
+        [[nodiscard]] std::string lineageLine(const PetSnapshot &snapshot)
+        {
+            return "gen " + std::to_string(snapshot.lineage.generation)
+                   + " best "
+                   + std::to_string(snapshot.lineage.bestTicks);
+        }
+
         // Anchored to the bottom of the grid rather than to a row.
-        // A unit of margin sits under the last line, and no more.
         // So three lines fit whatever a unit turned out to be worth.
         void drawReadout(
             IRenderer &renderer,
@@ -244,8 +360,8 @@ namespace antwika::companion
             const auto scale = textScale(layout);
             const auto step = static_cast<std::int32_t>(
                 antwika::gfx::kGlyphLineHeight * scale);
-            const Point floorLine = point(
-                layout, 1, static_cast<std::int32_t>(kSceneUnits) - 1);
+            const Point floorLine =
+                point(layout, 1, static_cast<std::int32_t>(kSceneUnits));
             const auto top =
                 floorLine.y
                 - static_cast<std::int32_t>(kReadoutLines) * step;
@@ -255,18 +371,17 @@ namespace antwika::companion
             // Which is a branch the coverage gate would then refuse.
             renderer.drawText(
                 Point{.x = floorLine.x, .y = top},
-                "hunger " + ratio(snapshot.hunger, snapshot.hungerMax),
+                stateWord(snapshot),
                 scale,
                 palette.text);
             renderer.drawText(
                 Point{.x = floorLine.x, .y = top + step},
-                "happy "
-                    + ratio(snapshot.happiness, snapshot.happinessMax),
+                dayLine(snapshot),
                 scale,
                 palette.text);
             renderer.drawText(
                 Point{.x = floorLine.x, .y = top + 2 * step},
-                stateWord(snapshot),
+                lineageLine(snapshot),
                 scale,
                 palette.text);
         }
@@ -312,7 +427,8 @@ namespace antwika::companion
                     kBubbleX
                         + static_cast<std::int32_t>(
                             kBubbleUnitsWide - kBubbleTailUnits),
-                    kBubbleY + static_cast<std::int32_t>(kBubbleUnitsHigh),
+                    kBubbleY
+                        + static_cast<std::int32_t>(kBubbleUnitsHigh),
                     kBubbleTailUnits,
                     1),
                 palette.bubble);
@@ -384,39 +500,39 @@ namespace antwika::companion
             IRenderer &renderer,
             const SceneLayout &layout,
             const Palette &palette,
+            const Color fur,
             const std::int32_t lift,
             const bool eyesShut)
         {
+
             renderer.drawRect(
-                raised(box(layout, 11, 22, 3, 2), lift), palette.detail);
+                raised(box(layout, 11, 20, 3, 2), lift), palette.detail);
             renderer.drawRect(
-                raised(box(layout, 18, 22, 3, 2), lift), palette.detail);
+                raised(box(layout, 18, 20, 3, 2), lift), palette.detail);
             renderer.drawRect(
-                raised(box(layout, 21, 16, 4, 2), lift), palette.detail);
+                raised(box(layout, 21, 15, 4, 2), lift), palette.detail);
+            renderer.drawRect(raised(box(layout, 10, 13, 12, 8), lift), fur);
             renderer.drawRect(
-                raised(box(layout, 10, 14, 12, 9), lift), palette.fur);
+                raised(box(layout, 11, 8, 2, 2), lift), palette.detail);
             renderer.drawRect(
-                raised(box(layout, 11, 5, 2, 2), lift), palette.detail);
+                raised(box(layout, 19, 8, 2, 2), lift), palette.detail);
+            renderer.drawRect(raised(box(layout, 11, 10, 10, 6), lift), fur);
             renderer.drawRect(
-                raised(box(layout, 19, 5, 2, 2), lift), palette.detail);
-            renderer.drawRect(
-                raised(box(layout, 11, 7, 10, 8), lift), palette.fur);
-            renderer.drawRect(
-                raised(box(layout, 15, 12, 2, 1), lift), palette.detail);
+                raised(box(layout, 15, 14, 2, 1), lift), palette.detail);
 
             if (eyesShut)
             {
                 renderer.drawRect(
-                    raised(box(layout, 13, 11, 2, 1), lift), palette.eye);
+                    raised(box(layout, 13, 13, 2, 1), lift), palette.eye);
                 renderer.drawRect(
-                    raised(box(layout, 17, 11, 2, 1), lift), palette.eye);
+                    raised(box(layout, 17, 13, 2, 1), lift), palette.eye);
                 return;
             }
 
             renderer.drawRect(
-                raised(box(layout, 13, 10, 2, 2), lift), palette.eye);
+                raised(box(layout, 13, 12, 2, 2), lift), palette.eye);
             renderer.drawRect(
-                raised(box(layout, 17, 10, 2, 2), lift), palette.eye);
+                raised(box(layout, 17, 12, 2, 2), lift), palette.eye);
         }
 
         void drawGrave(
@@ -424,9 +540,9 @@ namespace antwika::companion
             const SceneLayout &layout,
             const Palette &palette)
         {
-            renderer.drawRect(box(layout, 10, 22, 12, 2), palette.detail);
-            renderer.drawRect(box(layout, 12, 11, 8, 12), palette.fur);
-            renderer.drawRect(box(layout, 15, 13, 2, 7), palette.eye);
+            renderer.drawRect(box(layout, 10, 20, 12, 2), palette.detail);
+            renderer.drawRect(box(layout, 12, 12, 8, 9), palette.fur);
+            renderer.drawRect(box(layout, 15, 14, 2, 5), palette.eye);
             renderer.drawRect(box(layout, 13, 15, 6, 2), palette.eye);
         }
 
@@ -463,15 +579,37 @@ namespace antwika::companion
                 palette.bubbleText);
         }
 
-        // The bowl says what to do about it, where a gauge only reports.
-        // It is the one thing on screen that a tap is an answer to.
-        void drawBowl(
+        // The three things a press can mean.
+        // Drawn into the very boxes propAt() hit-tests against.
+        // So aiming at one and hitting it are the same rectangle.
+        //
+        // The one the companion would like is lit rather than present.
+        // Which is all this application offers instead of instructions.
+        // What to press next is on the screen.
+        void drawProp(
             IRenderer &renderer,
             const SceneLayout &layout,
-            const Palette &palette)
+            const Palette &palette,
+            const Prop prop,
+            const bool wanted)
         {
-            renderer.drawRect(box(layout, 3, 21, 6, 3), palette.detail);
-            renderer.drawRect(box(layout, 4, 20, 4, 1), palette.eye);
+            const Rect area = propBox(layout, prop);
+
+            renderer.drawRect(area, palette.detail);
+            renderer.drawRect(
+                inset(area, layout.unit),
+                wanted ? palette.orb : palette.eye);
+        }
+
+        [[nodiscard]] const Palette &paletteFor(
+            const PetSnapshot &snapshot)
+        {
+            if (snapshot.state == PetState::Perished)
+            {
+                return kGone;
+            }
+
+            return snapshot.asleep ? kNight : kDay;
         }
 
         void drawSleepPuffs(
@@ -484,20 +622,9 @@ namespace antwika::companion
             {
                 const auto step = static_cast<std::int32_t>(index);
                 renderer.drawRect(
-                    box(layout, 22 + step * 2, 4 - step * 2, 2, 2),
+                    box(layout, 22 + step * 2, 7 - step * 2, 2, 2),
                     palette.orb);
             }
-        }
-
-        [[nodiscard]] const Palette &paletteFor(
-            const PetSnapshot &snapshot)
-        {
-            if (snapshot.state == PetState::Perished)
-            {
-                return kGone;
-            }
-
-            return snapshot.night ? kNight : kDay;
         }
     } // namespace
 
@@ -527,14 +654,26 @@ namespace antwika::companion
             return;
         }
 
-        renderer.drawRect(box(*layout, 0, 24, kSceneUnits, 8),
-                          palette.ground);
-        renderer.drawRect(box(*layout, 25, 8, 4, 4), palette.orb);
+        renderer.drawRect(
+            box(*layout, 0, kGroundY, kSceneUnits, kSceneUnits),
+            palette.ground);
+        renderer.drawRect(box(*layout, 27, 9, 4, 4), palette.orb);
 
+        // The life meter first, since it is the one that decides.
+        // Its track is drawn to the ceiling the companion still has.
+        // So a collapse shortens the bar and not merely what is in it.
         drawGauge(
             renderer,
             *layout,
-            1,
+            0,
+            snapshot.energy,
+            snapshot.energyCeiling,
+            palette,
+            palette.energyFill);
+        drawGauge(
+            renderer,
+            *layout,
+            2,
             snapshot.hunger,
             snapshot.hungerMax,
             palette,
@@ -543,6 +682,14 @@ namespace antwika::companion
             renderer,
             *layout,
             4,
+            snapshot.fun,
+            snapshot.funMax,
+            palette,
+            palette.funFill);
+        drawGauge(
+            renderer,
+            *layout,
+            6,
             snapshot.happiness,
             snapshot.happinessMax,
             palette,
@@ -559,32 +706,38 @@ namespace antwika::companion
         }
         else
         {
+            // The props stand behind the animal.
+            // So an animal before a bowl is drawn in front of it.
+            drawProp(
+                renderer, *layout, palette, Prop::Bowl, snapshot.hungry);
+            drawProp(
+                renderer, *layout, palette, Prop::Ball, snapshot.bored);
+            drawProp(
+                renderer, *layout, palette, Prop::Nest, snapshot.tired);
+
             // Every moving part resolves from the tick count here.
             // So drawing the same tick twice draws the same pixels.
             // And a replay draws exactly what the recorded run drew.
             const auto breath = resolve(breathe, snapshot.ticks);
-            const bool asleep = snapshot.state == PetState::Asleep;
             const bool eyesShut =
-                asleep || resolve(blink, snapshot.ticks).index == 1;
+                snapshot.asleep
+                || resolve(blink, snapshot.ticks).index == 1;
 
             drawAnimal(
                 renderer,
                 *layout,
                 palette,
+                furFor(palette, snapshot.form),
                 breathLift(breath, layout->unit),
                 eyesShut);
 
-            if (asleep)
+            if (snapshot.asleep)
             {
                 drawSleepPuffs(
                     renderer,
                     *layout,
                     palette,
                     resolve(drowse, snapshot.ticks).index);
-            }
-            else if (snapshot.hungry)
-            {
-                drawBowl(renderer, *layout, palette);
             }
         }
 

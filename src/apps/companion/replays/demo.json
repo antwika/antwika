@@ -3,35 +3,49 @@
   "version": 1,
   "events": [
     {
-      "tick": 165,
+      "tick": 160,
       "event": {
         "name": "input.pointer_down",
-        "payload": "{\"alt\":false,\"button\":\"Left\",\"control\":false,\"shift\":false,\"super\":false,\"x\":64,\"y\":64}"
+        "payload": "{\"alt\":false,\"button\":\"Left\",\"control\":false,\"shift\":false,\"super\":false,\"x\":32,\"y\":192}"
       }
     },
     {
-      "tick": 330,
+      "tick": 170,
       "event": {
         "name": "input.pointer_down",
-        "payload": "{\"alt\":false,\"button\":\"Left\",\"control\":false,\"shift\":false,\"super\":false,\"x\":64,\"y\":64}"
+        "payload": "{\"alt\":false,\"button\":\"Left\",\"control\":false,\"shift\":false,\"super\":false,\"x\":128,\"y\":192}"
       }
     },
     {
-      "tick": 450,
+      "tick": 180,
       "event": {
         "name": "input.pointer_down",
-        "payload": "{\"alt\":false,\"button\":\"Left\",\"control\":false,\"shift\":false,\"super\":false,\"x\":64,\"y\":64}"
+        "payload": "{\"alt\":false,\"button\":\"Left\",\"control\":false,\"shift\":false,\"super\":false,\"x\":224,\"y\":192}"
       }
     },
     {
-      "tick": 690,
+      "tick": 400,
       "event": {
         "name": "input.pointer_down",
-        "payload": "{\"alt\":false,\"button\":\"Left\",\"control\":false,\"shift\":false,\"super\":false,\"x\":64,\"y\":64}"
+        "payload": "{\"alt\":false,\"button\":\"Left\",\"control\":false,\"shift\":false,\"super\":false,\"x\":32,\"y\":192}"
       }
     },
     {
-      "tick": 760,
+      "tick": 430,
+      "event": {
+        "name": "input.pointer_down",
+        "payload": "{\"alt\":false,\"button\":\"Left\",\"control\":false,\"shift\":false,\"super\":false,\"x\":128,\"y\":192}"
+      }
+    },
+    {
+      "tick": 520,
+      "event": {
+        "name": "input.pointer_down",
+        "payload": "{\"alt\":false,\"button\":\"Left\",\"control\":false,\"shift\":false,\"super\":false,\"x\":224,\"y\":192}"
+      }
+    },
+    {
+      "tick": 700,
       "event": {
         "name": "engine.stop",
         "payload": ""

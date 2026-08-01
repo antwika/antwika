@@ -37,22 +37,34 @@ namespace
     {
         const CompanionSummary summary{
             .ticks = 120,
+            .day = 3,
             .hunger = 3,
+            .fun = 5,
             .happiness = 7,
+            .energy = 12,
+            .energyCeiling = 30,
             .meals = 4,
+            .plays = 6,
             .disturbances = 1,
             .pesters = 2,
+            .collapses = 1,
+            .generation = 2,
+            .bestTicks = 400,
             .perished = false};
 
         const auto line = summaryLine(summary);
 
         EXPECT_THAT(line, HasSubstr("still with us"));
         EXPECT_THAT(line, HasSubstr("120 ticks"));
+        EXPECT_THAT(line, HasSubstr("3 days"));
         EXPECT_THAT(line, HasSubstr("4 meals"));
+        EXPECT_THAT(line, HasSubstr("6 games"));
         EXPECT_THAT(line, HasSubstr("1 rude awakenings"));
-        EXPECT_THAT(line, HasSubstr("2 unwanted meals"));
-        EXPECT_THAT(line, HasSubstr("happiness 7"));
-        EXPECT_THAT(line, HasSubstr("hunger 3"));
+        EXPECT_THAT(line, HasSubstr("2 unwanted attentions"));
+        EXPECT_THAT(line, HasSubstr("1 collapses"));
+        EXPECT_THAT(line, HasSubstr("energy 12/30"));
+        EXPECT_THAT(line, HasSubstr("best so far 400 ticks"));
+        EXPECT_THAT(line, HasSubstr("companion number 2"));
     }
 
     TEST(SummaryLineTest, APerishedCompanionIsSaidToHavePerished)

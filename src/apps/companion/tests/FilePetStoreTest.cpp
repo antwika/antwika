@@ -6,11 +6,14 @@
 #include <string_view>
 #include <system_error>
 
+#include "antwika/companion/CompanionMemory.hpp"
 #include "antwika/companion/FilePetStore.hpp"
 #include "antwika/companion/Pet.hpp"
 #include "antwika/companion/SaveFormatError.hpp"
 
+using antwika::companion::CompanionMemory;
 using antwika::companion::FilePetStore;
+using antwika::companion::LineageMemory;
 using antwika::companion::PetMemory;
 using antwika::companion::PetState;
 using antwika::companion::SaveFormatError;
@@ -50,19 +53,27 @@ namespace
         std::filesystem::path path;
     };
 
-    PetMemory lived()
+    CompanionMemory lived()
     {
-        return PetMemory{
-            .ticks = 240,
-            .state = PetState::Awake,
-            .saying = Saying::FeedMe,
-            .sayingTicksLeft = 40,
-            .hunger = 5,
-            .happiness = 6,
-            .meals = 2,
-            .disturbances = 0,
-            .pesters = 1,
-            .disturbed = false};
+        return CompanionMemory{
+            .pet =
+                PetMemory{
+                    .ticks = 240,
+                    .state = PetState::Awake,
+                    .saying = Saying::FeedMe,
+                    .sayingTicksLeft = 40,
+                    .hunger = 5,
+                    .fun = 4,
+                    .happiness = 6,
+                    .energy = 22,
+                    .day = 2,
+                    .meals = 2,
+                    .plays = 3,
+                    .disturbances = 0,
+                    .pesters = 1,
+                    .collapses = 0,
+                    .woken = false},
+            .lineage = LineageMemory{.generation = 2, .bestTicks = 500}};
     }
 } // namespace
 
