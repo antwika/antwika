@@ -56,11 +56,10 @@ namespace antwika::game
      * a closed city keeps its walkers and its buildings as values and
      * they are destroyed and recreated as cities are swapped. That is
      * also what makes a stale handle safe here rather than merely
-     * unlikely: a stored city holds no ecs::Entity at all, and a reused
-     * index comes back with its generation bumped, so nothing a switch
-     * leaves behind can name a *different* entity later -- only a dead
-     * one, which is the state Building::walker already treats as
-     * authority.
+     * unlikely: a stored city holds no ecs::Entity at all, and
+     * EntityManager never reuses an index, so nothing a switch leaves
+     * behind can name a *different* entity later -- only a dead one,
+     * which is the state Building::walker already treats as authority.
      */
     class WorldMapState final
     {

@@ -95,7 +95,7 @@ The preview itself rides on `SceneSnapshot::plan`, and unlike the ghost beside i
 
 **A building may have one walker out at a time, and it holds the handle.**
 Counting walkers per building would be a scan of every walker per building per tick; a handle is a lookup.
-The handle is a *cache* and `world.alive()` is the authority, which is safe because an `ecs::Entity` carries a generation beside its index: a reused index comes back with the generation bumped, so a stale handle can only ever be dead, never somebody else.
+The handle is a *cache* and `world.alive()` is the authority, which is safe because `ecs::EntityManager` never reuses an index — so a stale handle can only ever be dead, never somebody else.
 
 `SpawnSystem` needs no new scheduler phase: `destroy()` only retires at `commit()`, so on the tick a walker dies its building still reads it alive and does not spawn, and the building is free from the *next* tick.
 

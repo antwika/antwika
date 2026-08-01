@@ -133,13 +133,10 @@ namespace antwika::game
          * per building, once per tick.
          *
          * **It is a cache, and world.alive() is the authority.**
-         * That is safe because an ecs::Entity carries a generation as
-         * well as an index: a reused index comes back with the generation
-         * bumped, so a handle from before the reuse reads as dead rather
-         * than as its successor.
-         * A stale handle can therefore only ever be *dead* rather than
-         * somebody else, and the only transition this value makes behind
-         * its building's back is alive to dead.
+         * That is safe because ecs::EntityManager never reuses an index,
+         * so a stale handle can only ever be *dead* rather than somebody
+         * else, and the only transition this value makes behind its
+         * building's back is alive to dead.
          * kNullEntity needs no case of its own, since alive(kNullEntity)
          * is already false.
          */
