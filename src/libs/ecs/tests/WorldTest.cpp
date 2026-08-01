@@ -95,6 +95,38 @@ TEST(WorldTest, SettingAComponentTheEntityDoesNotHaveThrows)
         world.set<Position>(entity, Position{}), EcsError);
 }
 
+TEST(WorldTest, SettingAComponentAddedButNotYetCommittedThrows)
+{
+    // add() is deferred and set() is immediate.
+    // So the add has put nothing in any buffer for set() to find.
+    // Documented on World::set; pinned here so it cannot drift.
+    NiceMock<MockLogger> logger;
+    World world(logger);
+    const auto entity = world.create();
+    world.add<Position>(entity, Position{1, 2});
+
+    EXPECT_THROW(world.set<Position>(entity, Position{9, 9}), EcsError);
+
+    world.commit();
+
+    EXPECT_EQ(world.get<Position>(entity), (Position{1, 2}));
+}
+
+TEST(WorldTest, ADeferredRemoveBeatsAnImmediateSetInTheSamePhase)
+{
+    NiceMock<MockLogger> logger;
+    World world(logger);
+    const auto entity = world.create();
+    world.add<Position>(entity, Position{1, 2});
+    world.commit();
+
+    world.set<Position>(entity, Position{9, 9});
+    world.remove<Position>(entity);
+    world.commit();
+
+    EXPECT_FALSE(world.has<Position>(entity));
+}
+
 TEST(WorldTest, GettingAMissingComponentThrows)
 {
     NiceMock<MockLogger> logger;
