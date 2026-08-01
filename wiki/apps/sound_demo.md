@@ -57,4 +57,4 @@ The same reason [gfx3d_demo](gfx3d_demo.md) has one: the default `null` build re
 
 ## See also
 
-- [`docs/sound.md`](../../docs/sound.md) — why the threading and the absolute frame index are the design.
+- [`sound`](../libraries/sound.md) — why the threading and the absolute frame index are the design.

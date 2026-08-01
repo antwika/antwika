@@ -38,13 +38,25 @@ An argument not in the table is a `CommandLineError`, so a second pass would ref
 That is why each layer offers a *table* and a reader rather than a parser of its own: `replayCliFlags()`/`replayCliOptionsFrom()`, `game::saveCliFlags()`/`saveCliOptionsFrom()`, `poker::watchFlags()`/`watchOptionsFrom()`, appended and parsed in one place by [`app`](app.md)'s `runRecorded()`.
 
 **Refusing is the feature.**
-Both refusals used to be silent, which is how `--replya demo.json` started an empty session instead of saying it was a typo.
+Both refusals — an unknown argument, and a flag left without its value — used to be silently ignored, which is how `--replya demo.json` started an empty session instead of saying it was a typo.
 A run that ignores what it was told looks completely normal while doing none of it.
+`CommandLineError` is its own type rather than a `bool` or a `std::runtime_error`, because the two cases read identically at a call site and because a program refusing its arguments is a different thing from a program failing at its work.
 
 **A repeated flag keeps its last value.**
 A command line is usually the last line of a shell history edited one flag at a time, so the value nearest the end is the one just typed.
 
+**Flags only — there are no positional arguments.**
+A positional would have to be described somewhere the `FlagSpec` table cannot reach, so the property this library is built on — that the parse and the help text come off one list — would hold for flags and quietly not for the rest.
+[`apps/sound_demo`](../apps/sound_demo.md) is what settled it: it took a bare filename, so it was the one program in the tree parsing its own `argv`, and it paid both prices refusing is meant to prevent — `--help` did nothing, and `--flie my.wav` was taken for a filename and failed much later inside the WAV reader.
+It names `--file <path>` now, and nothing here reads its own arguments.
+
+## What is left in `antwika::replay`
+
+`ReplayCli` and nothing else of the command line.
+Naming `--record` and `--replay` really is replay's business; the machinery that reads them is not.
+Three `using` re-export headers under `antwika/replay/` carried the old spelling while callers moved, and they are gone — `antwika::cli::` is the only spelling of these types.
+
 ## See also
 
-- [`docs/cli.md`](../../docs/cli.md) — the long-form argument.
 - [`replay`](replay.md) — `ReplayCli`, which names `--record`/`--replay` and parses them with this.
+- [`app`](app.md) — `runRecorded()`, the one place the tables are concatenated and parsed.

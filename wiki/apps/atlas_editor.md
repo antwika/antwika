@@ -1,4 +1,8 @@
-# The atlas editor: painting the sheet the game blits
+# apps/atlas_editor
+
+`src/apps/atlas_editor/` — painting the sheet the game blits.
+
+## What it is
 
 `antwika_atlas_editor` is a pixel editor for the texture atlas `apps/game` draws itself from.
 It exists because that sheet is hand-drawn art and is the source of truth for how the game looks -- see [`game-texture-atlas.md`](game-texture-atlas.md), which is the contract the art has to meet and which this editor does nothing to enforce.
@@ -95,7 +99,7 @@ Reaching it asks the session to stop rather than failing, so a `--record` run st
 
 Nothing here, deliberately.
 This editor will happily paint outside the diamond, leave a road stub that meets nothing, or fill a slot the game reads as spare.
-`docs/game-texture-atlas.md` is the contract, `game::requireAtlasSize()` checks the sheet's size at startup, and a person looking at the running game is what catches the rest:
+[`game-texture-atlas.md`](game-texture-atlas.md) is the contract, `game::requireAtlasSize()` checks the sheet's size at startup, and a person looking at the running game is what catches the rest:
 
 ```sh
 build-sdl3/bin/antwika_game/antwika_game --replay src/apps/game/replays/demo.json

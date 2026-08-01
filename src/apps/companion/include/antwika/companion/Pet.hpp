@@ -117,7 +117,7 @@ namespace antwika::companion
      * night is when it wants to be left alone, and a tap costs it
      * happiness and the rest of that night's recovery. Happiness
      * reaching zero is Perished, which nothing brings it back from --
-     * see docs/companion.md for the numbers and why they are those.
+     * see wiki/apps/companion.md for the numbers and why they are those.
      *
      * A tap is deliberately the only input, since the window is 128
      * pixels square and a pointer landing anywhere in it means the same

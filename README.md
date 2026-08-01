@@ -388,7 +388,7 @@ A `Waveform` holds normalised float samples whatever width the file stored, deco
 A waveform whose sample rate differs from the mixer's is refused with a message saying so, since this library does not resample.
 
 `OfflineDevice` renders into a `Waveform` instead of at a speaker, which is what lets the whole suite assert audio sample by sample with no hardware, no display and no wall-clock time spent.
-See [`docs/sound.md`](docs/sound.md) for why the threading, the absolute frame index and the float samples are the design rather than a stage it has not reached.
+See [`wiki/libraries/sound.md`](wiki/libraries/sound.md) for why the threading, the absolute frame index and the float samples are the design rather than a stage it has not reached.
 
 `apps/sound_demo` (`antwika_sound_demo`) is the showcase: eight notes placed at exact frame positions, panned across the stereo field, played through whichever backend was selected.
 

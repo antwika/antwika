@@ -68,6 +68,14 @@ Resampling well is real signal processing and resampling badly is audible, so wh
 **The null backend lives in the library rather than under `backends/`.**
 That follows `NullInputBackend`, and it is what puts it inside the coverage gate — `backends/*` is exempt and `src/` is not.
 
+**`Mixer::render()` has no error path at all, by construction rather than by care.**
+A mixer that exists was built with a valid format and a voice pool sized once, and every voice holds a waveform the library owns, so there is nothing left for the render path to check and nothing for it to allocate.
+`WaveformLibrary` owning the waveforms is what makes that true: a mixer holds pointers into it and never a copy, so there is no way to hand it something that could go away underneath it.
+`SoundError` is thrown from constructors, from `openDevice()`, from `start()` and from the decoder — never from rendering.
+
+`WavReader` reads from a `std::istream` rather than a path, exactly as `gfx::PngReader` does, and for the same two reasons: the library opens no files, and every refusal it can produce is reachable from bytes in memory.
+Every one of them is, which is why the decoder is covered without anything on disk.
+
 ## Backend selection
 
 `sound_backend` (Conan) and `ANTWIKA_SOUND_BACKEND` (CMake), with values `null` and `sdl3`.
@@ -79,6 +87,5 @@ The SDL3 backend claims SDL's audio subsystem and nothing else, so a build selec
 
 ## See also
 
-- [`docs/sound.md`](../../docs/sound.md) — the long-form argument.
 - [`docs/audio-player-plan.md`](../../docs/audio-player-plan.md) — the musical layer this leaves room for.
 - [sound_demo](../apps/sound_demo.md) — the showcase.
