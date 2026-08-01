@@ -53,14 +53,16 @@ Inventing a rule to avoid a situation nothing requires would be inventing a requ
 
 Nothing was refactored when this library was added, because several apps were being edited concurrently.
 Two of the candidates are worth doing and two should be struck rather than scheduled.
+One of the two is now done, and a survey of the rest of the tree turned up no third: `Velocity`, `MovementSystem`, `LifetimeSystem` and `PeriodicSystem` still have no caller anywhere, because every countdown in the tree is per entity and every mover recomputes its direction rather than storing one.
 
 - **`game::Cell` → `GridPosition`, and `game::Path` → `Tag<struct PathKind>`.**
   Both are drop-ins: field-for-field identical, ordering and all, and both tags are empty structs with a defaulted `==`.
   Mechanical; only the blast radius is large, since the first touches `IsoProjection`, `PathIndex`, `GridSink`, `SceneSnapshot` and their tests.
-- **`task_worker::Worker::label` → `Name`** is a drop-in for the type and *not* for the call sites.
-  `Worker::label` is always null-terminated; `Name::text` has no terminator slot at all, and `StatusPrintSystem.cpp` streams `label.data()`, which reads until a NUL.
-  Substituting the type without changing that call site to `view(worker.name)` reads past the end of the array for a label of exactly the maximum length.
-  Migrate the call site and the type together, or not at all.
+- **`task_worker::Worker::label` → `Name`** is **done**, and [task_worker](../apps/task_worker.md) is this library's first caller.
+  It was a drop-in for the type and *not* for the call sites, which is what the migration had to be careful about.
+  The old `Worker::label` was always null-terminated; `Name::text` has no terminator slot at all, and `StatusPrintSystem.cpp` streamed `label.data()`, which reads until a NUL.
+  Substituting the type without moving that call site to `view(worker.label)` would read past the end of the array for a label of exactly the maximum length, so both moved together and `StatusPrintSystemTest.PrintsALabelThatExactlyFillsItsBuffer` pins it.
+  What went with it was `kWorkerLabelMaxLength` and `makeWorkerLabel()`, which were `kNameMaxLength` and `makeName()` written a second time, truncation and all.
 - **`task_worker`'s completion countdown must *not* become a `Lifetime`.**
   `LifetimeSystem` destroys the entity at zero, and this app's workers are a fixed pool created once — a finished worker goes Idle and waits.
   The substitution would delete one worker per completed task, and there is no "react to expiry" hook, because here expiry *is* the destruction.
