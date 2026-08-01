@@ -74,7 +74,8 @@ namespace antwika::atlas_editor
         return under;
     }
 
-    const std::string &EditorState::status() const noexcept
+    const std::optional<StatusMessage> &EditorState::status()
+        const noexcept
     {
         return message;
     }
@@ -207,7 +208,7 @@ namespace antwika::atlas_editor
         ++stepped;
     }
 
-    void EditorState::setStatus(std::string text)
+    void EditorState::setStatus(StatusMessage text)
     {
         message = std::move(text);
     }

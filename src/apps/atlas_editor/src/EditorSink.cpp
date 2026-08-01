@@ -13,6 +13,7 @@
 
 #include "antwika/atlas_editor/Canvas.hpp"
 #include "antwika/atlas_editor/EditorUi.hpp"
+#include "antwika/atlas_editor/StatusMessage.hpp"
 #include "antwika/atlas_editor/Palette.hpp"
 
 namespace antwika::atlas_editor
@@ -41,8 +42,13 @@ namespace antwika::atlas_editor
         EditorState &state,
         UiOverlay &overlay,
         IAtlasStore &store,
-        const IInputEventCodec &codec)
-        : state(state), overlay(overlay), store(store), codec(codec)
+        const IInputEventCodec &codec,
+        const Translator &translator)
+        : state(state),
+          overlay(overlay),
+          store(store),
+          codec(codec),
+          translator(translator)
     {
     }
 
@@ -112,7 +118,8 @@ namespace antwika::atlas_editor
 
     void EditorSink::refreshAndAct(const bool pressed)
     {
-        auto frame = describeEditor(state, pointerNow(pressed));
+        auto frame =
+            describeEditor(state, pointerNow(pressed), translator);
         const auto activated = frame.interactions.activated;
 
         act(activated);
@@ -123,7 +130,8 @@ namespace antwika::atlas_editor
         // See ui::Context::finish().
         if (activated != kNoWidget)
         {
-            frame = describeEditor(state, pointerNow(pressed));
+            frame = describeEditor(
+                state, pointerNow(pressed), translator);
         }
 
         overlay.set(
@@ -245,11 +253,15 @@ namespace antwika::atlas_editor
         {
             store.save(state.image().bitmap());
             state.markSaved();
-            state.setStatus("saved " + store.savePath());
+            state.setStatus(
+                {.id = MessageId::AtlasSaved,
+                 .detail = store.savePath()});
         }
         catch (const std::runtime_error &failed) // GCOVR_EXCL_LINE
         {
-            state.setStatus(std::string("save failed: ") + failed.what());
+            state.setStatus(
+                {.id = MessageId::AtlasSaveFailed,
+                 .detail = failed.what()});
         }
     }
 
@@ -261,16 +273,21 @@ namespace antwika::atlas_editor
 
             if (!loaded.has_value())
             {
-                state.setStatus("nothing to load");
+                state.setStatus(
+                    {.id = MessageId::AtlasNothingToLoad,
+                     .detail = {}});
                 return;
             }
 
             state.replace(Canvas(std::move(*loaded)));
-            state.setStatus("loaded");
+            state.setStatus(
+                {.id = MessageId::AtlasLoaded, .detail = {}});
         }
         catch (const std::runtime_error &failed) // GCOVR_EXCL_LINE
         {
-            state.setStatus(std::string("load failed: ") + failed.what());
+            state.setStatus(
+                {.id = MessageId::AtlasLoadFailed,
+                 .detail = failed.what()});
         }
     }
 

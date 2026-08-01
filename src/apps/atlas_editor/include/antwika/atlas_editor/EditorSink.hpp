@@ -7,6 +7,7 @@
 #include <antwika/gfx/Point.hpp>
 #include <antwika/input/IInputEventCodec.hpp>
 #include <antwika/input/InputEvent.hpp>
+#include <antwika/i18n/Translator.hpp>
 #include <antwika/input/InputState.hpp>
 #include <antwika/time/Tick.hpp>
 #include <antwika/ui/Pointer.hpp>
@@ -24,6 +25,7 @@ namespace antwika::atlas_editor
     using antwika::gfx::Point;
     using antwika::input::IInputEventCodec;
     using antwika::input::InputEvent;
+    using antwika::i18n::Translator;
     using antwika::input::InputState;
     using antwika::ui::Pointer;
     using antwika::ui::WidgetId;
@@ -50,6 +52,15 @@ namespace antwika::atlas_editor
      * under the whole bar, so without that every button press would also
      * leave a dot on the art.
      *
+     * **It holds a translator because the bar is measured from words,
+     * and that is what fixes this application's locale.** A press is
+     * resolved against a layout whose widths are the labels' own, so
+     * the language has to be the same on the machine that recorded a
+     * session and on the one replaying it -- which is why main() names
+     * i18n::kDefaultLocale and reads one from nowhere else. What the
+     * sink puts *into* the state is a StatusMessage rather than a
+     * sentence, so no translated string is ever kept.
+     *
      * The pointer's folded state lives here rather than in a sink of its
      * own, because this is the only thing in the run that reads input --
      * and it is folded from the events themselves rather than carried,
@@ -66,12 +77,15 @@ namespace antwika::atlas_editor
          * sink.
          * @param codec Decodes the input events off the tick stream.
          * Must outlive this sink.
+         * @param translator Words the bar this sink resolves against.
+         * Must outlive this sink.
          */
         EditorSink(
             EditorState &state,
             UiOverlay &overlay,
             IAtlasStore &store,
-            const IInputEventCodec &codec);
+            const IInputEventCodec &codec,
+            const Translator &translator);
 
         EditorSink(const EditorSink &) = delete;
         EditorSink(EditorSink &&) = delete;
@@ -107,6 +121,7 @@ namespace antwika::atlas_editor
         UiOverlay &overlay;
         IAtlasStore &store;
         const IInputEventCodec &codec;
+        const Translator &translator;
 
         InputState folded;
         std::optional<antwika::time::Tick> foldedTick;

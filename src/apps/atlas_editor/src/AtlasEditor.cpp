@@ -60,7 +60,12 @@ namespace antwika::atlas_editor
         // The editor first, so a click has been acted on.
         // Then whatever draws it.
         // A frame is then of the tick that has just finished.
-        EditorSink editor(state, overlay, config.store, config.codec);
+        EditorSink editor(
+            state,
+            overlay,
+            config.store,
+            config.codec,
+            config.translator);
         StopSignal stopSignal;
 
         std::vector<std::reference_wrapper<ITickEventSink>> timedSinks{
