@@ -38,7 +38,7 @@ namespace
     {
     protected:
         Entity build(
-            Cell at, BuildingKind kind = BuildingKind::FoodSource)
+            Cell at, BuildingKind kind = BuildingKind::Farm)
         {
             const auto entity = world.create();
             world.add<Cell>(entity, at);
@@ -145,7 +145,7 @@ namespace
 
         run(kSpawnPeriodTicks);
 
-        const auto sent = world.get<Building>(building).walker;
+        const auto sent = world.get<Building>(building).walkers[0];
 
         ASSERT_TRUE(world.alive(sent));
         EXPECT_TRUE(world.has<Walker>(sent));
@@ -158,7 +158,7 @@ namespace
 
         run(kSpawnPeriodTicks);
 
-        const auto sent = world.get<Building>(building).walker;
+        const auto sent = world.get<Building>(building).walkers[0];
 
         EXPECT_EQ(world.get<Walker>(sent).home, building);
     }
@@ -171,7 +171,7 @@ namespace
         run(kSpawnPeriodTicks);
         ASSERT_EQ(walkers(), 1U);
 
-        world.destroy(world.get<Building>(building).walker);
+        world.destroy(world.get<Building>(building).walkers[0]);
         world.commit();
 
         run(kSpawnPeriodTicks);
@@ -188,13 +188,13 @@ namespace
         pave(Cell{.x = 5, .y = 6});
 
         run(kSpawnPeriodTicks);
-        const auto sent = world.get<Building>(building).walker;
+        const auto sent = world.get<Building>(building).walkers[0];
 
         world.destroy(sent);
         system.update(world, 0);
 
         // Still the same walker: nothing new was staged this tick.
-        EXPECT_EQ(world.get<Building>(building).walker, sent);
+        EXPECT_EQ(world.get<Building>(building).walkers[0], sent);
     }
 
     // The test a tick-number modulus would fail.
@@ -254,7 +254,7 @@ namespace
 
     TEST_F(SpawnSystemTest, Update_SendsThemOutOfEveryKindOfSource)
     {
-        build(Cell{.x = 5, .y = 5}, BuildingKind::WaterSource);
+        build(Cell{.x = 5, .y = 5}, BuildingKind::Well);
         pave(Cell{.x = 5, .y = 6});
 
         run(kSpawnPeriodTicks);
@@ -325,9 +325,9 @@ namespace
         }
     }
 
-    TEST_F(SpawnSystemTest, Update_SendsAFoodWalkerOutLoaded)
+    TEST_F(SpawnSystemTest, Update_SendsASellerOutLoaded)
     {
-        build(Cell{.x = 5, .y = 5}, BuildingKind::FoodSource);
+        build(Cell{.x = 5, .y = 5}, BuildingKind::Market);
         pave(Cell{.x = 5, .y = 6});
 
         run(kSpawnPeriodTicks);
@@ -336,9 +336,29 @@ namespace
 
         for (const auto entity : world.view<Walker>())
         {
-            EXPECT_EQ(world.get<Walker>(entity).kind, WalkerKind::Food);
             EXPECT_EQ(
-                world.get<Walker>(entity).carried, antwika::game::kWalkerLoad);
+                world.get<Walker>(entity).kind, WalkerKind::MarketSeller);
+            EXPECT_EQ(
+                world.get<Walker>(entity).carried,
+                antwika::game::kWalkerLoad);
+        }
+    }
+
+    // A cart pusher hauls whatever its errand names.
+    // Rather than a load its kind decides, so it sets out empty.
+    TEST_F(SpawnSystemTest, Update_SendsACartPusherOutEmpty)
+    {
+        build(Cell{.x = 5, .y = 5}, BuildingKind::Farm);
+        pave(Cell{.x = 5, .y = 6});
+
+        run(kSpawnPeriodTicks);
+
+        ASSERT_EQ(walkers(), 1U);
+
+        for (const auto entity : world.view<Walker>())
+        {
+            EXPECT_EQ(world.get<Walker>(entity).kind, WalkerKind::CartPusher);
+            EXPECT_EQ(world.get<Walker>(entity).carried, 0);
         }
     }
 } // namespace
@@ -378,11 +398,119 @@ namespace
 
     TEST_F(SpawnSystemTest, Update_SendsOneOutOfABlockOfMoreThanOneCell)
     {
-        build(Cell{.x = 4, .y = 4}, BuildingKind::FoodSource);
+        build(Cell{.x = 4, .y = 4}, BuildingKind::Farm);
         pave(Cell{.x = 6, .y = 5});
 
         run(kSpawnPeriodTicks);
 
         EXPECT_EQ(walkers(), 1U);
     }
+    // A building holds kMaxWalkersOut handles.
+    // A slot is capacity rather than leave to send another.
+    TEST_F(SpawnSystemTest, Update_PutsItsWalkerInTheLowestFreeSlot)
+    {
+        const auto building = build(Cell{.x = 5, .y = 5});
+        pave(Cell{.x = 5, .y = 6});
+
+        run(kSpawnPeriodTicks);
+
+        const auto held = world.get<Building>(building).walkers;
+
+        EXPECT_TRUE(world.alive(held[0]));
+        EXPECT_EQ(held[1], antwika::ecs::kNullEntity);
+    }
+
+    // The rule that keeps a wider array from doubling a city.
+    // The cadence sends one of its own kind at a time.
+    TEST_F(SpawnSystemTest, Update_SendsNoSecondWalkerOfTheKindItSends)
+    {
+        build(Cell{.x = 5, .y = 5});
+        pave(Cell{.x = 5, .y = 6});
+
+        run(kSpawnPeriodTicks * 4);
+
+        EXPECT_EQ(walkers(), 1U);
+    }
+
+    // Both slots taken is a building with nothing left to send into.
+    TEST_F(SpawnSystemTest, Update_SendsNobodyWithEverySlotTaken)
+    {
+        const auto building = build(Cell{.x = 5, .y = 5});
+        pave(Cell{.x = 5, .y = 6});
+
+        // Two walkers of a kind this building does not send.
+        // So only the slots can be what stops it.
+        auto held = world.get<Building>(building);
+        for (std::size_t slot = 0; slot < antwika::game::kMaxWalkersOut;
+             ++slot)
+        {
+            const auto other = world.create();
+            world.add<Cell>(other, Cell{.x = 1, .y = 1});
+            world.add<Walker>(
+                other, Walker{.kind = WalkerKind::MarketBuyer});
+            held.walkers[slot] = other;
+        }
+        world.set<Building>(building, held);
+        world.commit();
+
+        run(kSpawnPeriodTicks * 2);
+
+        EXPECT_EQ(walkers(), antwika::game::kMaxWalkersOut);
+    }
+
+    // freeWalkerSlot() reads alive() rather than kNullEntity.
+    // So a handle whose walker has died frees its slot again.
+    TEST_F(SpawnSystemTest, FreeWalkerSlot_ReadsAliveRatherThanTheHandle)
+    {
+        const auto building = build(Cell{.x = 5, .y = 5});
+        pave(Cell{.x = 5, .y = 6});
+
+        run(kSpawnPeriodTicks);
+        auto held = world.get<Building>(building);
+
+        ASSERT_FALSE(
+            antwika::game::freeWalkerSlot(world, held) == std::size_t{0});
+
+        world.destroy(held.walkers[0]);
+        world.commit();
+
+        EXPECT_EQ(
+            antwika::game::freeWalkerSlot(world, held), std::size_t{0});
+    }
+
+    // A slot may hold a handle whose Walker is not committed yet.
+    // That is one somebody staged this very tick.
+    // create() is immediate where add() is staged.
+    // So alive() is true and has<Walker>() is not.
+    // It counts, whatever kind it turns out to be.
+    TEST_F(SpawnSystemTest, HasWalkerOfKind_CountsOneWithNoComponentYet)
+    {
+        Building held;
+        held.walkers[0] = world.create();
+
+        EXPECT_TRUE(
+            antwika::game::hasWalkerOfKind(
+                world, held, WalkerKind::CartPusher));
+        EXPECT_TRUE(
+            antwika::game::hasWalkerOfKind(
+                world, held, WalkerKind::MarketSeller));
+    }
+
+    // And a slot holding somebody else's kind is not this cadence's.
+    TEST_F(SpawnSystemTest, HasWalkerOfKind_IgnoresAWalkerOfAnotherKind)
+    {
+        Building held;
+        const auto other = world.create();
+        world.add<Walker>(other, Walker{.kind = WalkerKind::MarketBuyer});
+        world.commit();
+        held.walkers[0] = other;
+
+        EXPECT_FALSE(
+            antwika::game::hasWalkerOfKind(
+                world, held, WalkerKind::CartPusher));
+        EXPECT_TRUE(
+            antwika::game::hasWalkerOfKind(
+                world, held, WalkerKind::MarketBuyer));
+    }
+
 } // namespace

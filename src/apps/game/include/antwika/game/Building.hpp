@@ -1,6 +1,7 @@
 #pragma once
 
 #include <array>
+#include <cstddef>
 #include <cstdint>
 
 #include <antwika/ecs/Entity.hpp>
@@ -67,12 +68,27 @@ namespace antwika::game
     /**
      * @brief Ticks between a building being free and sending somebody out.
      *
-     * Only counted down once its last walker is gone, since a building
-     * may have one out at a time.
+     * Only counted down once one of its slots is free, since a building
+     * may have kMaxWalkersOut out at a time.
      * So it is the pause between one walker and the next rather than a
      * rate anything is emitted at.
      */
     inline constexpr std::int32_t kSpawnPeriodTicks = kTicksPerSecond;
+
+    /**
+     * @brief How many walkers one building may have out at once.
+     *
+     * **Two, because a market sends a buyer and a seller.** The rule
+     * used to be one, held in a single handle, and that was exact while
+     * every kind that walked sent one walker doing one job. It stops
+     * being exact the moment a building has two errands that overlap: a
+     * market fetching goods while it is also handing them out, and a
+     * workshop hauling its output away while it waits on a delivery.
+     * Two is what round one needs and no more; raising it is a change to
+     * this number and to the save schema's maxItems, and to nothing
+     * else.
+     */
+    inline constexpr std::size_t kMaxWalkersOut = 2;
 
     /**
      * @brief Something standing on a cell, and what it is doing there.
@@ -95,12 +111,17 @@ namespace antwika::game
          * @brief How much of each resource it is holding.
          *
          * Indexed by resourceIndex(), so a building holds an amount per
-         * resource without naming either of them.
-         * That is what lets a house consume two goods without two
-         * members that would have to be edited to admit a third.
+         * resource without naming any of them.
+         * That is what lets a house consume goods without one member
+         * per good that would have to be edited to admit another.
+         *
+         * A building is put up holding a little food and none of the
+         * goods somebody has to make first, which is the same reading
+         * the version 2 to 3 migration takes of a file written before
+         * clay and pottery existed.
          */
         std::array<std::int32_t, kResourceCount> stock{
-            kStockOnCompletion, kStockOnCompletion};
+            kStockOnCompletion};
 
         /**
          * @brief How close it is to being lost, out of kMaxRisk.
@@ -124,23 +145,32 @@ namespace antwika::game
         std::int32_t ticksUntilRisk = kRiskPeriodTicks;
 
         /**
-         * @brief The walker it currently has out, if it has one.
+         * @brief The walkers it currently has out, one per slot.
          *
-         * A building may have one walker out at a time, and this is how
-         * it knows.
-         * Holding the handle rather than counting walkers keeps that a
+         * A building may have kMaxWalkersOut out at a time, and this is
+         * how it knows.
+         * Holding the handles rather than counting walkers keeps that a
          * lookup rather than a scan of every walker in the world, once
          * per building, once per tick.
          *
-         * **It is a cache, and world.alive() is the authority.**
-         * That is safe because ecs::EntityManager never reuses an index,
-         * so a stale handle can only ever be *dead* rather than somebody
-         * else, and the only transition this value makes behind its
-         * building's back is alive to dead.
+         * **A fixed array rather than a vector**, because ecs::Component
+         * requires a trivially copyable, standard-layout type and the
+         * World copies a component by value on every set().
+         *
+         * **Every entry is a cache, and world.alive() is the
+         * authority.** That is safe because ecs::EntityManager never
+         * reuses an index, so a stale handle can only ever be *dead*
+         * rather than somebody else, and the only transition an entry
+         * makes behind its building's back is alive to dead.
          * kNullEntity needs no case of its own, since alive(kNullEntity)
-         * is already false.
+         * is already false, which is also what an unused slot holds.
+         *
+         * **The slots are not ordered and mean nothing individually.**
+         * A walker goes into the lowest free one, so two buildings that
+         * have sent the same walkers in the same order hold them the
+         * same way, and nothing may read a slot number as a role.
          */
-        antwika::ecs::Entity walker = antwika::ecs::kNullEntity;
+        std::array<antwika::ecs::Entity, kMaxWalkersOut> walkers{};
 
         /**
          * @brief Compare two buildings.

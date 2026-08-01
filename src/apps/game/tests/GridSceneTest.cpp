@@ -16,6 +16,7 @@
 #include <antwika/gfx/mocks/MockRenderer.hpp>
 #include <antwika/gfx/mocks/MockTexture.hpp>
 
+#include "TestTranslator.hpp"
 #include "antwika/game/Camera.hpp"
 #include "antwika/game/Cell.hpp"
 #include "antwika/game/Direction.hpp"
@@ -26,6 +27,8 @@
 #include "antwika/game/ResourceBar.hpp"
 #include "antwika/game/SceneSnapshot.hpp"
 #include "antwika/game/TileAtlas.hpp"
+
+using antwika::game::tests::kTranslator;
 
 using antwika::animation::Progress;
 using antwika::game::Camera;
@@ -187,7 +190,7 @@ class GridSceneTest : public ::testing::Test
 protected:
     RecordingRenderer renderer;
     NiceMock<MockTexture> atlas;
-    GridScene scene;
+    GridScene scene{kTranslator};
 };
 
 TEST_F(GridSceneTest, Draw_ClearsBeforeLayingAnyGround)
@@ -603,7 +606,7 @@ TEST_F(GridSceneTest, Draw_HoldsAWalkersBarsStillWhilePaused)
             .facing = Direction::East,
             .from = Cell{.x = 1, .y = 1},
             .ticksIntoStep = 1,
-            .kind = antwika::game::WalkerKind::Food,
+            .kind = antwika::game::WalkerKind::MarketSeller,
             .carried = 50}});
     held.paused = true;
 
@@ -646,7 +649,7 @@ TEST_F(GridSceneTest, Draw_GaugesEachBuildingThatDependsOnSomething)
     const antwika::game::BuildingSprite house{
         .at = Cell{.x = 0, .y = 0},
         .kind = antwika::game::BuildingKind::House,
-        .stock = {50, 50}};
+        .stock = {50, 50, 50}};
 
     auto scene_ = snapshot(camera, GridExtent{});
     scene_.buildings.push_back(house);
@@ -655,10 +658,10 @@ TEST_F(GridSceneTest, Draw_GaugesEachBuildingThatDependsOnSomething)
 
     const auto bars = antwika::game::buildingBars(house, camera);
 
-    ASSERT_EQ(bars.size(), 2U);
+    ASSERT_EQ(bars.size(), antwika::game::kResourceCount);
 
     // One track and one fill per bar, and each is the bar's own value.
-    ASSERT_EQ(renderer.rects.size(), 4U);
+    ASSERT_EQ(renderer.rects.size(), 2 * antwika::game::kResourceCount);
     EXPECT_EQ(renderer.rects[0].rect, bars[0].track);
     EXPECT_EQ(renderer.rects[0].color, antwika::game::kBarTrack);
     EXPECT_EQ(renderer.rects[1].rect, bars[0].fill);
@@ -676,11 +679,11 @@ TEST_F(GridSceneTest, Draw_DrawsNoFillForAnEmptyGauge)
         antwika::game::BuildingSprite{
             .at = Cell{.x = 0, .y = 0},
             .kind = antwika::game::BuildingKind::House,
-            .stock = {0, 0}});
+            .stock = {0, 0, 0}});
 
     scene.draw(renderer, kCanvas, scene_, atlas);
 
-    EXPECT_EQ(renderer.rects.size(), 2U);
+    EXPECT_EQ(renderer.rects.size(), antwika::game::kResourceCount);
 }
 
 // A source depends on nothing, so it is gauged for nothing.
@@ -691,7 +694,7 @@ TEST_F(GridSceneTest, Draw_GaugesNeitherASourceNorABuildingOffTheCanvas)
     scene_.buildings.push_back(
         antwika::game::BuildingSprite{
             .at = Cell{.x = 0, .y = 0},
-            .kind = antwika::game::BuildingKind::FoodSource,
+            .kind = antwika::game::BuildingKind::Farm,
             .stock = {50, 50}});
     scene_.buildings.push_back(
         antwika::game::BuildingSprite{
@@ -709,7 +712,7 @@ TEST_F(GridSceneTest, Draw_GaugesAWalkerWithWhatItIsCarrying)
     const Camera camera(Point{.x = 300, .y = 40}, 3);
     const WalkerSprite walker{
         .at = Cell{.x = 1, .y = 1},
-        .kind = antwika::game::WalkerKind::Food,
+        .kind = antwika::game::WalkerKind::MarketSeller,
         .carried = antwika::game::kWalkerLoad};
 
     scene.draw(
@@ -740,7 +743,7 @@ TEST_F(GridSceneTest, Draw_GaugesNoWalkerThatIsOffTheCanvasOrCarriesNone)
             {},
             {WalkerSprite{
                 .at = Cell{.x = 1, .y = 1},
-                .kind = antwika::game::WalkerKind::Food,
+                .kind = antwika::game::WalkerKind::MarketSeller,
                 .carried = 50}}),
         atlas);
 
@@ -772,7 +775,7 @@ TEST_F(GridSceneTest, Draw_DrawsEveryGaugeAfterEverySprite)
         {Cell{.x = 0, .y = 1}},
         {WalkerSprite{
             .at = Cell{.x = 0, .y = 1},
-            .kind = antwika::game::WalkerKind::Water,
+            .kind = antwika::game::WalkerKind::WaterCarrier,
             .carried = 40}});
     scene_.buildings.push_back(
         antwika::game::BuildingSprite{
@@ -820,14 +823,15 @@ TEST_F(GridSceneTest, Draw_WritesTheHoverPanelLastAndWhereItWasLaidOut)
         .building = antwika::game::BuildingSprite{
             .at = Cell{.x = 0, .y = 0},
             .kind = antwika::game::BuildingKind::House,
-            .stock = {30, 70}}};
+            .stock = {30, 70, 10}}};
 
     scene.draw(renderer, kCanvas, scene_, atlas);
 
-    const auto panel = antwika::game::readoutPanel(scene_.hover, kCanvas);
+    const auto panel = antwika::game::readoutPanel(
+        scene_.hover, kCanvas, kTranslator);
 
-    ASSERT_EQ(panel.lines.size(), 3U);
-    ASSERT_EQ(renderer.texts.size(), 3U);
+    ASSERT_EQ(panel.lines.size(), 1 + antwika::game::kResourceCount);
+    ASSERT_EQ(renderer.texts.size(), panel.lines.size());
 
     for (std::size_t line = 0; line < panel.lines.size(); ++line)
     {

@@ -8,6 +8,7 @@
 #include <antwika/gfx/Point.hpp>
 #include <antwika/gfx/Rect.hpp>
 #include <antwika/gfx/Size.hpp>
+#include <antwika/i18n/Translator.hpp>
 
 #include "antwika/game/SceneSnapshot.hpp"
 
@@ -18,6 +19,7 @@ namespace antwika::game
     using antwika::gfx::Point;
     using antwika::gfx::Rect;
     using antwika::gfx::Size;
+    using antwika::i18n::Translator;
 
     /**
      * @brief One line of a hover panel, and where it goes.
@@ -107,9 +109,13 @@ namespace antwika::game
      *
      * @param readout What the pointer is over.
      * @param canvas The area it must stay inside.
+     * @param translator Words every line; it is a caption a person
+     * reads, so it goes through antwika::i18n like the toolbar's.
      * @return The panel, with no lines when there is nothing to say.
      */
     [[nodiscard]] ReadoutPanel readoutPanel(
-        const HoverReadout &readout, Size canvas);
+        const HoverReadout &readout,
+        Size canvas,
+        const Translator &translator);
 
 } // namespace antwika::game

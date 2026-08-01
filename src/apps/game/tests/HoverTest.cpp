@@ -24,6 +24,7 @@
 #include <antwika/replay/ReplaySource.hpp>
 #include <antwika/time/Tick.hpp>
 
+#include "TestTranslator.hpp"
 #include "antwika/game/AppMode.hpp"
 #include "antwika/game/BuildingIndex.hpp"
 #include "antwika/game/BuildingKind.hpp"
@@ -47,6 +48,8 @@
 #include "antwika/game/WorldMap.hpp"
 #include "antwika/game/WorldMapScene.hpp"
 #include "antwika/game/WorldMapState.hpp"
+
+using antwika::game::tests::kTranslator;
 
 using antwika::event::Event;
 using antwika::event::TickEvent;
@@ -180,7 +183,7 @@ TEST(HoverTest, HoverFor_ReportsABuildingFromAnyCellOfItsBlock)
 {
     const Cell origin{.x = 2, .y = 2};
     const BuildingSprite building{
-        .at = origin, .kind = BuildingKind::ArchitectPost};
+        .at = origin, .kind = BuildingKind::Storage};
 
     const auto footprint = antwika::game::footprintOf(building.kind);
     ASSERT_EQ(footprint.width, 3);
@@ -213,7 +216,7 @@ TEST(HoverTest, HoverFor_ReportsTheWalkerUnderThePointer)
 {
     const Cell where{.x = 4, .y = 1};
     const WalkerSprite walker{
-        .at = where, .kind = WalkerKind::Food, .carried = 70};
+        .at = where, .kind = WalkerKind::MarketSeller, .carried = 70};
 
     const auto readout =
         hoverFor(pointingAt(where), kCamera, sceneOf({}, {walker}), false);
@@ -353,9 +356,9 @@ namespace
         ON_CALL(renderer, drawText(_, _, _, _))
             .WillByDefault([&texts](auto &&...) { ++texts; });
 
-        const GridScene scene;
-        const MainMenuScene menuScene;
-        const SaveLoadScene saveScene;
+        const GridScene scene{kTranslator};
+        const MainMenuScene menuScene{kTranslator};
+        const SaveLoadScene saveScene{kTranslator};
         const WorldMapScene worldScene;
         antwika::game::UiOverlay overlay{kUiCanvas};
         antwika::game::UiOverlay menuOverlay{kUiCanvas};

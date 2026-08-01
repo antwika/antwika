@@ -1,5 +1,6 @@
 #pragma once
 
+#include <array>
 #include <cstddef>
 #include <cstdint>
 #include <optional>
@@ -35,10 +36,15 @@ namespace antwika::game
     {
         Road = 0,
         House,
-        FoodSource,
-        WaterSource,
+        Farm,
+        ClayPit,
+        Workshop,
+        Storage,
+        Market,
+        Well,
+        Doctor,
         FireStation,
-        ArchitectPost,
+        EngineerPost,
     };
 
     /**
@@ -48,7 +54,7 @@ namespace antwika::game
      * cannot drift from the enumeration it counts.
      */
     inline constexpr std::size_t kBuildToolCount =
-        static_cast<std::size_t>(BuildTool::ArchitectPost) + 1;
+        static_cast<std::size_t>(BuildTool::EngineerPost) + 1;
 
     /**
      * @brief Get a tool's index, for addressing a per-tool table.
@@ -64,23 +70,37 @@ namespace antwika::game
     /**
      * @brief Get which building a tool puts up, if it puts one up.
      *
-     * The buildings are the tools after Road, in the order they are
-     * declared, which is the order BuildingKind declares them in.
-     * So this is arithmetic rather than a switch, the way turnRight()
-     * is, and adding a kind to both enumerations is the whole change.
+     * **A table rather than the arithmetic it used to be.** While every
+     * tool but the road placed a building, and in BuildingKind's own
+     * order, `BuildingKind(index - 1)` was exact and a static_assert on
+     * the two counts kept it that way. It is exact only by coincidence:
+     * the moment the palette carries a tool that places nothing -- a
+     * bulldozer, a roadblock, an overlay -- the offset is wrong for
+     * every entry after it, and wrong silently, because the result is
+     * still a valid enumerator. A table cannot be wrong that way.
      *
      * @param tool The tool to ask about.
-     * @return The kind it places, or nullopt for Road.
+     * @return The kind it places, or nullopt for a tool that places
+     * none.
      */
     [[nodiscard]] constexpr std::optional<BuildingKind> buildingKindOf(
         BuildTool tool) noexcept
     {
-        if (tool == BuildTool::Road)
-        {
-            return std::nullopt;
-        }
+        constexpr std::array<
+            std::optional<BuildingKind>, kBuildToolCount> places{
+            std::nullopt,                  // Road
+            BuildingKind::House,
+            BuildingKind::Farm,
+            BuildingKind::ClayPit,
+            BuildingKind::Workshop,
+            BuildingKind::Storage,
+            BuildingKind::Market,
+            BuildingKind::Well,
+            BuildingKind::Doctor,
+            BuildingKind::FireStation,
+            BuildingKind::EngineerPost};
 
-        return static_cast<BuildingKind>(buildToolIndex(tool) - 1);
+        return places[buildToolIndex(tool) % kBuildToolCount];
     }
 
     /**
@@ -93,13 +113,38 @@ namespace antwika::game
         return buildingKindOf(tool).has_value();
     }
 
-    // The two enumerations have to stay in step.
-    // This is where adding to one and not the other fails.
+    // Every building kind has to be placeable.
+    // Otherwise it is art nobody can put down.
+    // The table above is the only place that can go wrong.
+    // So this is where it does.
+    static_assert(
+        []
+        {
+            for (std::size_t kind = 0; kind < kBuildingKindCount; ++kind)
+            {
+                bool found = false;
+
+                for (std::size_t tool = 0; tool < kBuildToolCount; ++tool)
+                {
+                    found = found
+                        || buildingKindOf(static_cast<BuildTool>(tool))
+                               == static_cast<BuildingKind>(kind);
+                }
+
+                if (!found)
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }(),
+        "every building kind needs a tool that places it");
+
     static_assert(!buildingKindOf(BuildTool::Road).has_value());
     static_assert(buildingKindOf(BuildTool::House) == BuildingKind::House);
     static_assert(
-        buildingKindOf(BuildTool::ArchitectPost)
-        == BuildingKind::ArchitectPost);
-    static_assert(kBuildToolCount == kBuildingKindCount + 1);
+        buildingKindOf(BuildTool::EngineerPost)
+        == BuildingKind::EngineerPost);
 
 } // namespace antwika::game

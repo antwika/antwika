@@ -4,6 +4,7 @@
 #include <antwika/gfx/IRenderer.hpp>
 #include <antwika/gfx/ITexture.hpp>
 #include <antwika/gfx/Size.hpp>
+#include <antwika/i18n/Translator.hpp>
 
 #include "antwika/game/Cell.hpp"
 #include "antwika/game/SceneSnapshot.hpp"
@@ -15,6 +16,7 @@ namespace antwika::game
     using antwika::gfx::IRenderer;
     using antwika::gfx::ITexture;
     using antwika::gfx::Size;
+    using antwika::i18n::Translator;
 
     /**
      * @brief Draws a snapshot: the ground, the roads, the buildings, the
@@ -72,6 +74,19 @@ namespace antwika::game
     class GridScene final
     {
     public:
+        /**
+         * @brief Construct the scene over the language its hover panel
+         * words itself in.
+         *
+         * The panel is the one thing here made of words rather than of
+         * art, so it is the one thing that needs a translator; the
+         * atlas says everything else.
+         *
+         * @param translator Words the hover panel; must outlive this
+         * scene.
+         */
+        explicit GridScene(const Translator &translator);
+
         /**
          * @brief Draw one frame.
          *
@@ -134,6 +149,8 @@ namespace antwika::game
 
         [[nodiscard]] static bool onCanvas(
             Cell cell, Size canvas, const SceneSnapshot &snapshot);
+
+        const Translator &translator;
     };
 
 } // namespace antwika::game

@@ -235,7 +235,7 @@ TEST_F(GridSinkTest, RightPress_PlacesNoWalkerWhileLeavingBuildMode)
     constexpr Cell target{.x = 2, .y = 2};
     clickAt(target, MouseButton::Left);
 
-    overlay.select(BuildTool::FoodSource);
+    overlay.select(BuildTool::Farm);
     clickAt(target, MouseButton::Right);
 
     EXPECT_EQ(walkerCount(), 0U);
@@ -253,7 +253,7 @@ TEST_F(GridSinkTest, RightPress_IsAWalkerAgainOnceBuildModeIsLeft)
     constexpr Cell target{.x = 2, .y = 2};
     clickAt(target, MouseButton::Left);
 
-    overlay.select(BuildTool::ArchitectPost);
+    overlay.select(BuildTool::EngineerPost);
     clickAt(target, MouseButton::Right);
     clickAt(target, MouseButton::Right);
 

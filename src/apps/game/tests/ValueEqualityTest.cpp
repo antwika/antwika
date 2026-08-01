@@ -69,7 +69,7 @@ namespace
         expectMemberCompared(
             base, [](BuildGhost &g) { g.at = Cell{.x = 9, .y = 9}; });
         expectMemberCompared(
-            base, [](BuildGhost &g) { g.tool = BuildTool::FoodSource; });
+            base, [](BuildGhost &g) { g.tool = BuildTool::Farm; });
         expectMemberCompared(
             base, [](BuildGhost &g) { g.visible = false; });
     }
@@ -77,12 +77,12 @@ namespace
     TEST(SceneSnapshotTest, BuildingViewEqualityComparesEveryField)
     {
         const BuildingView base{
-            .at = {.x = 3, .y = 4}, .kind = BuildingKind::FoodSource};
+            .at = {.x = 3, .y = 4}, .kind = BuildingKind::Farm};
 
         expectMemberCompared(
             base, [](BuildingView &b) { b.at = Cell{.x = 0, .y = 0}; });
         expectMemberCompared(
-            base, [](BuildingView &b) { b.kind = BuildingKind::WaterSource; });
+            base, [](BuildingView &b) { b.kind = BuildingKind::Well; });
     }
 
     TEST(SceneSnapshotTest, BuildingSpriteEqualityComparesEveryField)
@@ -96,7 +96,7 @@ namespace
             base, [](BuildingSprite &b) { b.at = Cell{.x = 0, .y = 0}; });
         expectMemberCompared(
             base,
-            [](BuildingSprite &b) { b.kind = BuildingKind::WaterSource; });
+            [](BuildingSprite &b) { b.kind = BuildingKind::Well; });
         expectMemberCompared(
             base, [](BuildingSprite &b) { b.stock[0] = 99; });
         expectMemberCompared(
@@ -265,13 +265,14 @@ namespace
     TEST(BuildingTest, EqualityComparesEveryField)
     {
         const Building base{
-            .kind = BuildingKind::FoodSource,
-            .stock = {1, 2},
+            .kind = BuildingKind::Farm,
+            .stock = {1, 2, 3},
             .risk = 3,
             .ticksUntilSpawn = 4,
             .ticksUntilDrain = 5,
             .ticksUntilRisk = 6,
-            .walker = antwika::ecs::Entity{7}};
+            .walkers = {
+                antwika::ecs::Entity{7}, antwika::ecs::Entity{8}}};
 
         expectMemberCompared(
             base, [](Building &b) { b.kind = BuildingKind::House; });
@@ -286,7 +287,11 @@ namespace
         expectMemberCompared(
             base,
             [](Building &b)
-            { b.walker = antwika::ecs::kNullEntity; });
+            { b.walkers[0] = antwika::ecs::kNullEntity; });
+        expectMemberCompared(
+            base,
+            [](Building &b)
+            { b.walkers[1] = antwika::ecs::kNullEntity; });
     }
 
 } // namespace

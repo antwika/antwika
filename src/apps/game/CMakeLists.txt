@@ -36,6 +36,8 @@ add_executable(antwika_game
     src/SaveLoadSink.cpp
     src/SaveLoadState.cpp
     src/SaveMigration.cpp
+    src/SaveMigrationV2ToV3.cpp
+    src/SaveSections.cpp
     src/SessionGatedSystem.cpp
     src/SessionStore.cpp
     src/SpawnSystem.cpp
@@ -66,6 +68,7 @@ target_link_libraries(antwika_game
         antwika::engine
         antwika::gfx
         antwika::gfx_backend
+        antwika::i18n
         antwika::input
         antwika::input_backend
         antwika::log

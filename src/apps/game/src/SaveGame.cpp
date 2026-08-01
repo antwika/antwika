@@ -1,12 +1,11 @@
 #include "antwika/game/SaveGame.hpp"
 
-#include <array>
 #include <cstddef>
-#include <limits>
+#include <cstdint>
 #include <map>
 #include <optional>
 #include <string>
-#include <string_view>
+#include <utility>
 
 #include <nlohmann/json-schema.hpp>
 
@@ -15,139 +14,17 @@
 #include <antwika/replay/VersionedDocument.hpp>
 
 #include "antwika/game/Building.hpp"
-#include "antwika/game/BuildingKind.hpp"
-#include "antwika/game/Direction.hpp"
-#include "antwika/game/Resource.hpp"
 #include "antwika/game/SaveFormatError.hpp"
 #include "antwika/game/Walker.hpp"
+#include "SaveSections.hpp"
 
 namespace antwika::game
 {
 
     namespace
     {
-        // Symbolic rather than the enumerator's number.
-        // antwika::input writes key names rather than scancodes.
-        // A name survives the enumeration being reordered.
-        // Being hand-editable is most of why this format is JSON.
-        // Indexed by directionIndex(), so the order is the enum's.
-        constexpr std::array<std::string_view, kDirectionCount>
-            kDirectionNames{"north", "east", "south", "west"};
-
-        std::string_view nameOf(Direction direction)
-        {
-            return kDirectionNames[directionIndex(direction)];
-        }
-
-        Direction directionFromName(const std::string &name)
-        {
-            for (std::size_t index = 0; index < kDirectionNames.size();
-                 ++index)
-            {
-                if (kDirectionNames[index] == name)
-                {
-                    return static_cast<Direction>(index);
-                }
-            }
-
-            throw SaveFormatError(
-                "antwika::game: a save names a direction that is not one "
-                "of the four: " + name);
-        }
-
-        // The shapes every persisted format shares are replay's.
-        // The ones only a save has are the ones below.
         using replay::coordinateShape;
         using replay::countShape;
-
-        nlohmann::json cellShape()
-        {
-            nlohmann::json shape;
-            shape["type"] = "object";
-            shape["additionalProperties"] = false;
-            shape["required"] = {"x", "y"}; // GCOVR_EXCL_LINE
-            shape["properties"]["x"] = coordinateShape();
-            shape["properties"]["y"] = coordinateShape();
-            return shape;
-        }
-
-        // Every count of the economy decodes as a std::int32_t.
-        // So the schema caps it at exactly what one holds.
-        nlohmann::json signedCountShape()
-        {
-            return replay::boundedCountShape(
-                std::numeric_limits<std::int32_t>::max());
-        }
-
-        // Every other integer here is capped at what its C++ type holds.
-        // This one is capped tighter still, and deliberately.
-        // WalkerSystem writes kTicksPerStep - 1 and counts it to zero.
-        // So a phase at or above it is no state a run ever reaches.
-        // SceneSnapshot works out kTicksPerStep - 1 - this, which underflows.
-        // The decode is get<std::uint8_t>(), and nlohmann narrows quietly.
-        // So a cap at what an int32 holds let 256 read back as zero.
-        // Refusing is refusing a corrupt file, not merely a narrowed one.
-        nlohmann::json stepPhaseShape()
-        {
-            return replay::boundedCountShape(kTicksPerStep - 1);
-        }
-
-        // "facing" is a string here rather than a schema enum.
-        // An unknown name is refused by directionFromName() instead.
-        // That way the message holds the name it did not know.
-        nlohmann::json walkerShape()
-        {
-            nlohmann::json shape = cellShape();
-            // GCOVR_EXCL_START
-            shape["required"] = {
-                "x",
-                "y",
-                "facing",
-                "kind",
-                "carried",
-                "stepsUntilHome",
-                "ticksUntilStep"};
-            // GCOVR_EXCL_STOP
-            shape["properties"]["facing"] = replay::wordShape();
-            shape["properties"]["kind"] = replay::wordShape();
-            shape["properties"]["carried"] = signedCountShape();
-            shape["properties"]["stepsUntilHome"] = signedCountShape();
-            shape["properties"]["ticksUntilStep"] = stepPhaseShape();
-
-            // An index into the buildings array, or absent for "nobody".
-            // A negative one is refused by the schema, not by hand.
-            shape["properties"]["home"] = countShape();
-            return shape;
-        }
-
-        nlohmann::json buildingShape()
-        {
-            nlohmann::json shape = cellShape();
-            // GCOVR_EXCL_START
-            shape["required"] = {
-                "x",
-                "y",
-                "kind",
-                "stock",
-                "risk",
-                "ticksUntilSpawn",
-                "ticksUntilDrain",
-                "ticksUntilRisk"};
-            // GCOVR_EXCL_STOP
-            shape["properties"]["kind"] = replay::wordShape();
-            shape["properties"]["stock"]["type"] = "array";
-            shape["properties"]["stock"]["items"] = signedCountShape();
-            shape["properties"]["stock"]["minItems"] = kResourceCount;
-            shape["properties"]["stock"]["maxItems"] = kResourceCount;
-            shape["properties"]["risk"] = signedCountShape();
-            shape["properties"]["ticksUntilSpawn"] = signedCountShape();
-            shape["properties"]["ticksUntilDrain"] = signedCountShape();
-            shape["properties"]["ticksUntilRisk"] = signedCountShape();
-
-            // An index into the walkers array, or absent for "nobody".
-            shape["properties"]["walker"] = countShape();
-            return shape;
-        }
 
         nlohmann::json stateShape()
         {
@@ -176,7 +53,7 @@ namespace antwika::game
         // It is wrong for a file, which is why the refusal lives here.
         // A level past kZoomHalfWidths is a camera no session ever had.
         // Loading it at the closest is a session somebody never played.
-        // Which is the rule requireConsistentLinks() states below.
+        // Which is the rule requireConsistentLinks() states too.
         nlohmann::json zoomLevelShape()
         {
             return replay::boundedCountShape(
@@ -205,6 +82,9 @@ namespace antwika::game
             return shape;
         } // GCOVR_EXCL_LINE
 
+        // **The spine, and the one statement of the shape.**
+        // A section adds its own members to the shapes here.
+        // See SaveSections.hpp.
         nlohmann::json saveSchema()
         {
             nlohmann::json schema;
@@ -248,133 +128,6 @@ namespace antwika::game
                 saveSchema()); // GCOVR_EXCL_LINE
             return validator;
         }
-
-
-        // Symbolic for the same reason a direction is.
-        // A name survives the enumeration being reordered.
-        constexpr std::array<std::string_view, kWalkerKindCount>
-            kWalkerKindNames{"food", "water", "fireman", "architect"};
-
-        std::string_view walkerKindName(WalkerKind kind)
-        {
-            return kWalkerKindNames[walkerKindIndex(kind)];
-        }
-
-        WalkerKind walkerKindFromJson(const std::string &name)
-        {
-            for (std::size_t index = 0; index < kWalkerKindNames.size();
-                 ++index)
-            {
-                if (kWalkerKindNames[index] == name)
-                {
-                    return static_cast<WalkerKind>(index);
-                }
-            }
-
-            throw SaveFormatError(
-                "antwika::game: a save names a walker kind that is not "
-                "one of the four: " + name);
-        }
-
-        BuildingKind buildingKindFromJson(const std::string &name)
-        {
-            const auto kind = buildingKindFromName(name);
-
-            if (!kind.has_value())
-            {
-                throw SaveFormatError(
-                    "antwika::game: a save names a building kind this "
-                    "build does not have: " + name);
-            }
-
-            return *kind;
-        }
-
-        std::array<std::int32_t, kResourceCount> stockFromJson(
-            const nlohmann::json &j)
-        {
-            std::array<std::int32_t, kResourceCount> stock{};
-
-            for (std::size_t index = 0; index < kResourceCount; ++index)
-            {
-                stock[index] = j.at(index).get<std::int32_t>();
-            }
-
-            return stock;
-        }
-
-        // Absent means nobody, which is an ordinary state.
-        // Rather than a field somebody forgot to write.
-        std::optional<std::size_t> linkFromJson(
-            const nlohmann::json &j, const char *key)
-        {
-            if (!j.contains(key))
-            {
-                return std::nullopt;
-            }
-
-            return j.at(key).get<std::size_t>();
-        }
-
-        // An index past the end of the array it points into is corrupt.
-        // So is a pair that disagree about each other.
-        // This project refuses one rather than repairing it.
-        // A repaired save is a session somebody never had.
-        void requireConsistentLinks(const SaveGame &save)
-        {
-            for (std::size_t index = 0; index < save.walkers.size(); ++index)
-            {
-                const auto &home = save.walkers[index].home;
-
-                if (!home.has_value())
-                {
-                    continue;
-                }
-
-                if (*home >= save.buildings.size())
-                {
-                    throw SaveFormatError(
-                        "antwika::game: a save names a walker whose home "
-                        "is not a building in it");
-                }
-
-                const auto &back = save.buildings[*home].walker;
-
-                if (!back.has_value() || *back != index)
-                {
-                    throw SaveFormatError(
-                        "antwika::game: a save names a walker and a "
-                        "building that disagree about each other");
-                }
-            }
-
-            for (const auto &building : save.buildings)
-            {
-                if (building.walker.has_value()
-                    && *building.walker >= save.walkers.size())
-                {
-                    throw SaveFormatError(
-                        "antwika::game: a save names a building whose "
-                        "walker is not a walker in it");
-                }
-            }
-        }
-
-        Cell cellFromJson(const nlohmann::json &j)
-        {
-            return Cell{
-                .x = j.at("x").get<std::int32_t>(),
-                .y = j.at("y").get<std::int32_t>(),
-            };
-        }
-
-        nlohmann::json cellToJson(Cell cell)
-        {
-            nlohmann::json encoded;
-            encoded["x"] = cell.x;
-            encoded["y"] = cell.y;
-            return encoded;
-        } // GCOVR_EXCL_LINE
     } // namespace
 
     nlohmann::json saveGameToJson(const SaveGame &save)
@@ -396,42 +149,8 @@ namespace antwika::game
             encoded["paths"].push_back(cellToJson(cell));
         }
 
-        encoded["walkers"] = nlohmann::json::array();
-        for (const auto &walker : save.walkers)
-        {
-            auto entry = cellToJson(walker.at);
-            entry["facing"] = std::string(nameOf(walker.facing));
-            entry["kind"] = std::string(walkerKindName(walker.kind));
-            entry["carried"] = walker.carried;
-            entry["stepsUntilHome"] = walker.stepsUntilHome;
-            entry["ticksUntilStep"] = walker.ticksUntilStep;
-
-            if (walker.home.has_value())
-            {
-                entry["home"] = *walker.home;
-            }
-
-            encoded["walkers"].push_back(std::move(entry));
-        }
-
-        encoded["buildings"] = nlohmann::json::array();
-        for (const auto &building : save.buildings)
-        {
-            auto entry = cellToJson(building.at);
-            entry["kind"] = std::string(buildingKindName(building.kind));
-            entry["stock"] = building.stock;
-            entry["risk"] = building.risk;
-            entry["ticksUntilSpawn"] = building.ticksUntilSpawn;
-            entry["ticksUntilDrain"] = building.ticksUntilDrain;
-            entry["ticksUntilRisk"] = building.ticksUntilRisk;
-
-            if (building.walker.has_value())
-            {
-                entry["walker"] = *building.walker;
-            }
-
-            encoded["buildings"].push_back(std::move(entry));
-        }
+        walkersToJson(save, encoded);
+        buildingsToJson(save, encoded);
 
         encoded["seed"] = save.seed;
         return encoded;
@@ -473,40 +192,8 @@ namespace antwika::game
             save.paths.push_back(cellFromJson(cell));
         }
 
-        for (const auto &walker : document.at("walkers"))
-        {
-            save.walkers.push_back(SavedWalker{
-                .at = cellFromJson(walker),
-                .facing = directionFromName(
-                    walker.at("facing").get<std::string>()),
-                .kind = walkerKindFromJson(
-                    walker.at("kind").get<std::string>()),
-                .carried = walker.at("carried").get<std::int32_t>(),
-                .stepsUntilHome =
-                    walker.at("stepsUntilHome").get<std::int32_t>(),
-                .ticksUntilStep =
-                    walker.at("ticksUntilStep").get<std::uint8_t>(),
-                .home = linkFromJson(walker, "home"),
-            });
-        }
-
-        for (const auto &building : document.at("buildings"))
-        {
-            save.buildings.push_back(SavedBuilding{
-                .at = cellFromJson(building),
-                .kind = buildingKindFromJson(
-                    building.at("kind").get<std::string>()),
-                .stock = stockFromJson(building.at("stock")),
-                .risk = building.at("risk").get<std::int32_t>(),
-                .ticksUntilSpawn =
-                    building.at("ticksUntilSpawn").get<std::int32_t>(),
-                .ticksUntilDrain =
-                    building.at("ticksUntilDrain").get<std::int32_t>(),
-                .ticksUntilRisk =
-                    building.at("ticksUntilRisk").get<std::int32_t>(),
-                .walker = linkFromJson(building, "walker"),
-            });
-        }
+        walkersFromJson(document, save);
+        buildingsFromJson(document, save);
 
         save.seed = document.at("seed").get<std::uint64_t>();
 
@@ -563,24 +250,33 @@ namespace antwika::game
                 .ticksUntilSpawn = building.ticksUntilSpawn,
                 .ticksUntilDrain = building.ticksUntilDrain,
                 .ticksUntilRisk = building.ticksUntilRisk,
-                .walker = std::nullopt});
+                .walkers = {}});
         }
 
-        // The link, written only where both ends were recorded.
-        // A building whose walker is not in the file has nobody out.
+        // The links, written only where both ends were recorded.
+        // A building whose walker is not in the file has that slot free.
         // Which is exactly what it will be on the way back.
+        //
+        // Written in slot order and closed up.
+        // A slot number is not a role -- see Building::walkers.
+        // So a walker held in the second slot alone comes back first.
         for (const auto entity : world.view<Building, Cell>())
         {
-            const auto walker = world.get<Building>(entity).walker;
-            const auto found = walkerAt.find(walker);
+            const auto held = world.get<Building>(entity).walkers;
 
-            if (found == walkerAt.end())
+            for (const auto walker : held)
             {
-                continue;
-            }
+                const auto found = walkerAt.find(walker);
 
-            save.buildings[buildingAt.at(entity)].walker = found->second;
-            save.walkers[found->second].home = buildingAt.at(entity);
+                if (found == walkerAt.end())
+                {
+                    continue;
+                }
+
+                save.buildings[buildingAt.at(entity)].walkers.push_back(
+                    found->second);
+                save.walkers[found->second].home = buildingAt.at(entity);
+            }
         }
 
         return save;

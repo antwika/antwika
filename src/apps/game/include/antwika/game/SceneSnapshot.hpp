@@ -80,7 +80,7 @@ namespace antwika::game
          * being told a second time which resource that is: the kind is
          * the one fact carriedResource() answers from.
          */
-        WalkerKind kind = WalkerKind::Food;
+        WalkerKind kind = WalkerKind::WaterCarrier;
 
         /** @brief How much of its resource is left to hand out. */
         std::int32_t carried = 0;

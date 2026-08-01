@@ -133,7 +133,17 @@ TEST(SaveGameTest, TreatsAnAbsentVersionAsVersionOne)
     auto encoded = saveGameToJson(populated());
     encoded.erase(std::string(kSchemaVersionKey));
 
-    EXPECT_EQ(saveGameFromJson(encoded), populated());
+    // Read as version 1, so it comes up through both migrations.
+    // A version 1 walker carried none of the economy.
+    // So each is filled in as one that has just set out.
+    // And what version 2 called food a version 3 file sells.
+    auto expected = populated();
+    for (auto &walker : expected.walkers)
+    {
+        walker.kind = antwika::game::WalkerKind::MarketSeller;
+    }
+
+    EXPECT_EQ(saveGameFromJson(encoded), expected);
 }
 
 TEST(SaveGameTest, RejectsANewerVersion)
@@ -279,14 +289,14 @@ TEST(SaveGameTest, TakesASaveFromARunningSession)
     world.add<Building>(
         source,
         Building{
-            .kind = BuildingKind::FoodSource, .risk = 3});
+            .kind = BuildingKind::Farm, .risk = 3});
 
     const auto walker = world.create();
     world.add<Cell>(walker, Cell{.x = 1, .y = 1});
     world.add<Walker>(
         walker,
         Walker{
-            .kind = WalkerKind::Food, .carried = 12});
+            .kind = WalkerKind::MarketSeller, .carried = 12});
     world.commit();
 
     const Camera camera(antwika::gfx::Point{.x = 9, .y = 8}, 2);
@@ -306,7 +316,7 @@ TEST(SaveGameTest, TakesASaveFromARunningSession)
     ASSERT_EQ(save.buildings.size(), 1U);
     EXPECT_EQ(save.buildings[0].risk, 3);
     EXPECT_EQ(
-        save.buildings[0].kind, BuildingKind::FoodSource);
+        save.buildings[0].kind, BuildingKind::Farm);
 }
 
 // The pair is what the reader checks a file for.
@@ -325,8 +335,7 @@ TEST(SaveGameTest, WritesTheBuildingAndWalkerLinkFromBothEnds)
     world.add<Cell>(walker, Cell{.x = 1, .y = 1});
     world.add<Walker>(walker, Walker{});
 
-    world.add<Building>(
-        source, Building{.walker = walker});
+    world.add<Building>(source, Building{.walkers = {walker}});
     world.commit();
 
     const auto save = saveGameOf(
@@ -336,7 +345,8 @@ TEST(SaveGameTest, WritesTheBuildingAndWalkerLinkFromBothEnds)
     ASSERT_EQ(save.walkers.size(), 1U);
     ASSERT_EQ(save.buildings.size(), 1U);
     EXPECT_EQ(save.walkers[0].home, 0U);
-    EXPECT_EQ(save.buildings[0].walker, 0U);
+    EXPECT_EQ(
+        save.buildings[0].walkers, (std::vector<std::size_t>{0U}));
 }
 
 TEST(SaveGameTest, RebuildsThePathIndex)
@@ -369,7 +379,7 @@ TEST(SaveGameTest, RoundTripsAWalkersWholeState)
     save.walkers = {SavedWalker{
         .at = {.x = 1, .y = 2},
         .facing = Direction::South,
-        .kind = WalkerKind::Architect,
+        .kind = WalkerKind::Engineer,
         .carried = 17,
         .stepsUntilHome = 5,
         .ticksUntilStep = 1}};
@@ -382,12 +392,48 @@ TEST(SaveGameTest, RoundTripsTheLinkBetweenABuildingAndItsWalker)
     SaveGame save;
     save.walkers = {SavedWalker{.at = {.x = 1, .y = 2}, .home = 0U}};
     save.buildings = {antwika::game::SavedBuilding{
-        .at = {.x = 3, .y = 4}, .walker = 0U}};
+        .at = {.x = 3, .y = 4}, .walkers = {0U}}};
 
     const auto back = saveGameFromJson(saveGameToJson(save));
 
     EXPECT_EQ(back.walkers[0].home, 0U);
-    EXPECT_EQ(back.buildings[0].walker, 0U);
+    EXPECT_EQ(back.buildings[0].walkers, (std::vector<std::size_t>{0U}));
+}
+
+// A market has a buyer and a seller out at once.
+// Which is the whole reason the link became a list.
+TEST(SaveGameTest, RoundTripsABuildingWithTwoWalkersOut)
+{
+    SaveGame save;
+    save.walkers = {
+        SavedWalker{.at = {.x = 1, .y = 2}, .home = 0U},
+        SavedWalker{.at = {.x = 2, .y = 2}, .home = 0U}};
+    save.buildings = {antwika::game::SavedBuilding{
+        .at = {.x = 3, .y = 4}, .walkers = {0U, 1U}}};
+
+    const auto back = saveGameFromJson(saveGameToJson(save));
+
+    EXPECT_EQ(back, save);
+    EXPECT_EQ(
+        back.buildings[0].walkers, (std::vector<std::size_t>{0U, 1U}));
+}
+
+// A building may hold kMaxWalkersOut, and no more.
+// A file naming a third names a slot this build has not got.
+// Which is a file to refuse rather than one to read two of.
+TEST(SaveGameTest, RejectsABuildingWithMoreWalkersThanItHasSlots)
+{
+    SaveGame save;
+    save.walkers = {
+        SavedWalker{.at = {.x = 1, .y = 1}, .home = 0U},
+        SavedWalker{.at = {.x = 2, .y = 2}, .home = 0U},
+        SavedWalker{.at = {.x = 3, .y = 3}, .home = 0U}};
+    save.buildings = {antwika::game::SavedBuilding{
+        .at = {.x = 4, .y = 4}, .walkers = {0U, 1U, 2U}}};
+
+    const auto encoded = saveGameToJson(save);
+
+    EXPECT_THROW((void)saveGameFromJson(encoded), SaveFormatError);
 }
 
 TEST(SaveGameTest, RejectsAWalkerWhoseHomeIsNotABuildingInTheFile)
@@ -404,7 +450,7 @@ TEST(SaveGameTest, RejectsABuildingWhoseWalkerIsNotAWalkerInTheFile)
 {
     SaveGame save;
     save.buildings = {antwika::game::SavedBuilding{
-        .at = {.x = 3, .y = 4}, .walker = 7U}};
+        .at = {.x = 3, .y = 4}, .walkers = {7U}}};
 
     auto encoded = saveGameToJson(save);
 
@@ -456,7 +502,8 @@ TEST(SaveGameTest, RejectsABuildingPointingAtSomebodyElsesWalker)
         SavedWalker{.at = {.x = 1, .y = 1}, .home = 0U},
         SavedWalker{.at = {.x = 2, .y = 2}}};
     save.buildings = {
-        antwika::game::SavedBuilding{.at = {.x = 3, .y = 3}, .walker = 1U}};
+        antwika::game::SavedBuilding{
+            .at = {.x = 3, .y = 3}, .walkers = {1U}}};
 
     auto encoded = saveGameToJson(save);
 
@@ -470,7 +517,7 @@ TEST(SaveGameTest, SavedWalkerEqualityComparesEveryField)
     const SavedWalker base{
         .at = {.x = 1, .y = 2},
         .facing = Direction::North,
-        .kind = WalkerKind::Water,
+        .kind = WalkerKind::WaterCarrier,
         .carried = 3,
         .stepsUntilHome = 4,
         .ticksUntilStep = 1,
@@ -511,13 +558,13 @@ TEST(SaveGameTest, SavedBuildingEqualityComparesEveryField)
 {
     const antwika::game::SavedBuilding base{
         .at = {.x = 1, .y = 2},
-        .kind = BuildingKind::FoodSource,
-        .stock = {3, 4},
+        .kind = BuildingKind::Farm,
+        .stock = {3, 4, 5},
         .risk = 5,
         .ticksUntilSpawn = 6,
         .ticksUntilDrain = 7,
         .ticksUntilRisk = 8,
-        .walker = 9U};
+        .walkers = {9U}};
 
     EXPECT_EQ(base, base);
 
@@ -530,7 +577,7 @@ TEST(SaveGameTest, SavedBuildingEqualityComparesEveryField)
     EXPECT_NE(base, other);
 
     auto stocked = base;
-    stocked.stock = {0, 0};
+    stocked.stock = {0, 0, 0};
     EXPECT_NE(base, stocked);
 
     auto risky = base;
@@ -550,7 +597,7 @@ TEST(SaveGameTest, SavedBuildingEqualityComparesEveryField)
     EXPECT_NE(base, rising);
 
     auto alone = base;
-    alone.walker.reset();
+    alone.walkers.clear();
     EXPECT_NE(base, alone);
 }
 

@@ -56,10 +56,15 @@ namespace antwika::game
      */
     inline constexpr std::array<Footprint, kBuildingKindCount> kFootprints{{
         {.width = 1, .height = 1}, // House
-        {.width = 2, .height = 2}, // FoodSource
-        {.width = 2, .height = 2}, // WaterSource
-        {.width = 2, .height = 2}, // FireStation
-        {.width = 3, .height = 3}, // ArchitectPost
+        {.width = 2, .height = 2}, // Farm
+        {.width = 2, .height = 2}, // ClayPit
+        {.width = 2, .height = 2}, // Workshop
+        {.width = 3, .height = 3}, // Storage
+        {.width = 2, .height = 2}, // Market
+        {.width = 1, .height = 1}, // Well
+        {.width = 1, .height = 1}, // Doctor
+        {.width = 1, .height = 1}, // FireStation
+        {.width = 1, .height = 1}, // EngineerPost
     }};
 
     /**

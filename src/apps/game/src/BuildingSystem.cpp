@@ -43,6 +43,8 @@ namespace antwika::game
 
         // What ends a building: bad luck, or an empty larder.
         // A source holds stock nobody drains, so only risk takes one.
+        // And only what sustains() names is a larder.
+        // A house holding no clay is a house nobody has carted to yet.
         [[nodiscard]] bool isLost(const Building &building)
         {
             if (building.risk >= kMaxRisk)
@@ -56,8 +58,12 @@ namespace antwika::game
             }
 
             return std::ranges::any_of(
-                building.stock,
-                [](std::int32_t held) { return held <= 0; });
+                kResources,
+                [&building](Resource resource)
+                {
+                    return sustains(resource)
+                        && building.stock[resourceIndex(resource)] <= 0;
+                });
         }
 
         void deliverTo(
@@ -106,8 +112,9 @@ namespace antwika::game
 
                     if (!carries.has_value())
                     {
-                        // A fireman and an architect carry nothing.
-                        // What they do instead is take risk off.
+                        // A walker whose kind carries nothing fixed.
+                        // What it does instead is take risk off.
+                        // Which is coverage in disguise.
                         building.risk =
                             std::max(0, building.risk - kRiskRelief);
                         continue;

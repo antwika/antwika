@@ -53,7 +53,7 @@ namespace antwika::game
      * one member every persisted document in this code base carries its
      * version in, rather than a name of this format's own.
      */
-    inline constexpr std::uint32_t kSaveFormatVersion = 2;
+    inline constexpr std::uint32_t kSaveFormatVersion = 3;
 
     /**
      * @brief Build the migration chain for the save document format.
@@ -63,9 +63,10 @@ namespace antwika::game
      * The save format's answer to standardReplayMigrations(), and the
      * whole reason MigrationChain is generic over the document: this
      * names its own list, its own current version and nothing else.
-     * Empty today, because the format is still at version 1.
-     * A factory rather than a constant, so that adding the first
-     * migration changes one function and nothing else.
+     * A factory rather than a constant, so that adding a migration
+     * changes one function and nothing else.
+     * List order is not semantic -- a chain looks a step up by
+     * fromVersion() -- so appending to it is conflict-free.
      */
     [[nodiscard]] MigrationChain standardSaveMigrations();
 
@@ -100,7 +101,7 @@ namespace antwika::game
     {
         Cell at;
         Direction facing = Direction::East;
-        WalkerKind kind = WalkerKind::Food;
+        WalkerKind kind = WalkerKind::WaterCarrier;
         std::int32_t carried = 0;
         std::int32_t stepsUntilHome = kRoamingSteps;
         std::uint8_t ticksUntilStep = 0;
@@ -138,8 +139,19 @@ namespace antwika::game
         std::int32_t ticksUntilDrain = 0;
         std::int32_t ticksUntilRisk = 0;
 
-        /** @brief Which saved walker it has out, by index. */
-        std::optional<std::size_t> walker = std::nullopt;
+        /**
+         * @brief Which saved walkers it has out, by index.
+         *
+         * **A list rather than the one index it used to be**, because a
+         * building may have kMaxWalkersOut out at once -- see
+         * Building::walkers. Empty is the ordinary "nobody out", the
+         * same reading an absent member had.
+         *
+         * The order is the slot order the live building holds them in,
+         * so a session written and read back holds its walkers exactly
+         * where it held them.
+         */
+        std::vector<std::size_t> walkers = {};
 
         [[nodiscard]] bool operator==(const SavedBuilding &other) const
             = default;

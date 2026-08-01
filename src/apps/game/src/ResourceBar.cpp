@@ -38,8 +38,11 @@ namespace antwika::game
         constexpr Color kFoodFill{
             .red = 126, .green = 196, .blue = 84};
 
-        constexpr Color kWaterFill{
-            .red = 84, .green = 156, .blue = 220};
+        constexpr Color kClayFill{
+            .red = 178, .green = 122, .blue = 78};
+
+        constexpr Color kPotteryFill{
+            .red = 210, .green = 168, .blue = 96};
 
         // Derived from the camera rather than fixed.
         // A bar keeps its proportion to what it gauges at every zoom.
@@ -116,7 +119,8 @@ namespace antwika::game
     {
         constexpr std::array<Color, kResourceCount> fills{
             kFoodFill,
-            kWaterFill};
+            kClayFill,
+            kPotteryFill};
 
         return fills[resourceIndex(resource) % kResourceCount];
     }
@@ -164,7 +168,7 @@ namespace antwika::game
     {
         const auto carries = carriedResource(walker.kind);
 
-        // A fireman and an architect carry nothing and gauge nothing.
+        // A service walker carries nothing and gauges nothing.
         if (!carries.has_value())
         {
             return {};

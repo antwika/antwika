@@ -1,5 +1,9 @@
 #include "antwika/game/SessionStore.hpp"
 
+#include <array>
+#include <cstddef>
+#include <optional>
+
 #include "antwika/game/Building.hpp"
 #include "antwika/game/CityGrid.hpp"
 #include "antwika/game/Walker.hpp"
@@ -61,6 +65,19 @@ namespace antwika::game
 
         for (const auto &building : save.buildings)
         {
+            // Slot by slot rather than by copying the list.
+            // A file names as many walkers as the schema allows.
+            // This is the one place that number becomes slots.
+            std::array<std::optional<std::size_t>, kMaxWalkersOut> held{};
+
+            for (std::size_t slot = 0; slot < kMaxWalkersOut; ++slot)
+            {
+                if (slot < building.walkers.size())
+                {
+                    held[slot] = building.walkers[slot];
+                }
+            }
+
             grid.buildings.push_back(
                 StoredBuilding{
                     .at = building.at,
@@ -72,7 +89,7 @@ namespace antwika::game
                             .ticksUntilSpawn = building.ticksUntilSpawn,
                             .ticksUntilDrain = building.ticksUntilDrain,
                             .ticksUntilRisk = building.ticksUntilRisk},
-                    .walker = building.walker});
+                    .walkers = held});
         }
 
         restoreCityGrid(world, built, paths, grid);

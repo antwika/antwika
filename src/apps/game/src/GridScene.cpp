@@ -121,6 +121,11 @@ namespace antwika::game
         return overlaps(cellBounds(cell, snapshot.camera), canvas);
     }
 
+    GridScene::GridScene(const Translator &translator)
+        : translator(translator)
+    {
+    }
+
     void GridScene::draw(
         IRenderer &renderer,
         Size canvas,
@@ -247,7 +252,8 @@ namespace antwika::game
         Size canvas,
         const SceneSnapshot &snapshot) const
     {
-        const auto panel = readoutPanel(snapshot.hover, canvas);
+        const auto panel =
+            readoutPanel(snapshot.hover, canvas, translator);
 
         if (panel.lines.empty())
         {

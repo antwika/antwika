@@ -8,6 +8,7 @@
 
 #include "antwika/game/SaveGame.hpp"
 #include "antwika/game/Walker.hpp"
+#include "SaveMigrationV2ToV3.hpp"
 
 namespace antwika::game
 {
@@ -74,9 +75,14 @@ namespace antwika::game
         // the throw edge of the make_shared and of the list it goes in.
         // Nothing here is large enough to take the heap branch.
         // Confirmed with gcov -b, as the coverage doc requires.
+        // List order is not semantic.
+        // A chain looks a step up by fromVersion().
+        // So appending here is conflict-free.
         // GCOVR_EXCL_START
         return MigrationChain(
-            {std::make_shared<const AddBuildings>()}, kSaveFormatVersion);
+            {std::make_shared<const AddBuildings>(),
+             std::make_shared<const RenameToServices>()},
+            kSaveFormatVersion);
         // GCOVR_EXCL_STOP
     }
 

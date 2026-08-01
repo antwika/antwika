@@ -117,12 +117,12 @@ namespace
 
     TEST_F(CityGridTest, CityGridOf_KeepsTheLinkAsAPairOfIndices)
     {
-        const auto home = putUp(Cell{4, 4}, BuildingKind::FoodSource);
+        const auto home = putUp(Cell{4, 4}, BuildingKind::Farm);
         const auto walker = sendOut(Cell{5, 4}, home);
         world.commit();
 
         auto sent = world.get<Building>(home);
-        sent.walker = walker;
+        sent.walkers[0] = walker;
         world.set<Building>(home, sent);
         world.commit();
 
@@ -130,22 +130,25 @@ namespace
 
         ASSERT_EQ(grid.buildings.size(), 1U);
         ASSERT_EQ(grid.walkers.size(), 1U);
-        EXPECT_EQ(grid.buildings[0].walker, std::optional<std::size_t>{0});
+        EXPECT_EQ(
+            grid.buildings[0].walkers[0], std::optional<std::size_t>{0});
+        EXPECT_FALSE(grid.buildings[0].walkers[1].has_value());
         EXPECT_EQ(grid.walkers[0].home, std::optional<std::size_t>{0});
 
         // A handle put away would name an entity nothing recreates.
-        EXPECT_EQ(grid.buildings[0].building.walker, kNullEntity);
+        EXPECT_EQ(
+            grid.buildings[0].building.walkers[0], kNullEntity);
         EXPECT_EQ(grid.walkers[0].walker.home, kNullEntity);
     }
 
     TEST_F(CityGridTest, CityGridOf_DropsALinkWhoseWalkerIsGone)
     {
-        const auto home = putUp(Cell{4, 4}, BuildingKind::FoodSource);
+        const auto home = putUp(Cell{4, 4}, BuildingKind::Farm);
         const auto walker = sendOut(Cell{5, 4}, home);
         world.commit();
 
         auto sent = world.get<Building>(home);
-        sent.walker = walker;
+        sent.walkers[0] = walker;
         world.set<Building>(home, sent);
         world.destroy(walker);
         world.commit();
@@ -154,18 +157,18 @@ namespace
 
         ASSERT_EQ(grid.buildings.size(), 1U);
         EXPECT_TRUE(grid.walkers.empty());
-        EXPECT_FALSE(grid.buildings[0].walker.has_value());
+        EXPECT_FALSE(grid.buildings[0].walkers[0].has_value());
     }
 
     TEST_F(CityGridTest, RestoreCityGrid_PutsBackWhatWasTaken)
     {
         layPath(Cell{1, 1});
-        const auto home = putUp(Cell{4, 4}, BuildingKind::WaterSource);
+        const auto home = putUp(Cell{4, 4}, BuildingKind::Well);
         sendOut(Cell{1, 1}, home);
         world.commit();
 
         auto sent = world.get<Building>(home);
-        sent.walker = *world.view<Walker, Cell>().begin();
+        sent.walkers[0] = *world.view<Walker, Cell>().begin();
         world.set<Building>(home, sent);
         world.commit();
 
@@ -187,8 +190,8 @@ namespace
         grid.buildings.push_back(
             StoredBuilding{
                 .at = Cell{2, 2},
-                .building = Building{.kind = BuildingKind::FoodSource},
-                .walker = 0});
+                .building = Building{.kind = BuildingKind::Farm},
+                .walkers = {std::optional<std::size_t>{0}}});
 
         restoreCityGrid(world, built, paths, grid);
         world.commit();
@@ -197,7 +200,7 @@ namespace
         const auto building = *world.view<Building, Cell>().begin();
 
         EXPECT_EQ(world.get<Walker>(walker).home, building);
-        EXPECT_EQ(world.get<Building>(building).walker, walker);
+        EXPECT_EQ(world.get<Building>(building).walkers[0], walker);
         EXPECT_TRUE(world.alive(walker));
         EXPECT_TRUE(world.alive(building));
     }
@@ -219,7 +222,8 @@ namespace
         const auto building = *world.view<Building, Cell>().begin();
 
         EXPECT_EQ(world.get<Walker>(walker).home, kNullEntity);
-        EXPECT_EQ(world.get<Building>(building).walker, kNullEntity);
+        EXPECT_EQ(
+            world.get<Building>(building).walkers[0], kNullEntity);
     }
 
     TEST_F(CityGridTest, RestoreCityGrid_DestroysWhatWasStanding)
@@ -282,8 +286,8 @@ namespace
                 .at = {.x = 3, .y = 4},
                 .building =
                     Building{
-                        .kind = BuildingKind::FoodSource},
-                .walker = 0}};
+                        .kind = BuildingKind::Farm},
+                .walkers = {std::optional<std::size_t>{0}}}};
         return grid;
     }
 
@@ -311,7 +315,7 @@ namespace
             [](StoredBuilding &b)
             { b.building.kind = BuildingKind::House; });
         expectMemberCompared(
-            base, [](StoredBuilding &b) { b.walker = std::nullopt; });
+            base, [](StoredBuilding &b) { b.walkers = {}; });
     }
 
     TEST_F(CityGridTest, EqualityComparesEveryField)

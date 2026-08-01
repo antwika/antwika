@@ -15,8 +15,11 @@
 #include <antwika/ui/Pointer.hpp>
 #include <antwika/ui/WidgetId.hpp>
 
+#include "TestTranslator.hpp"
 #include "antwika/game/Camera.hpp"
 #include "antwika/game/Toolbar.hpp"
+
+using antwika::game::tests::kTranslator;
 
 using antwika::game::Camera;
 using antwika::game::Toolbar;
@@ -55,7 +58,7 @@ namespace
     // Stepping by four cannot miss a button several glyphs tall.
     [[nodiscard]] std::optional<Point> pointOn(WidgetId id)
     {
-        const Toolbar toolbar;
+        const Toolbar toolbar{kTranslator};
         const Camera camera;
 
         for (std::int32_t y = 0;
@@ -83,7 +86,7 @@ namespace
 
 TEST(ToolbarTest, Describe_DrawsEveryButtonAndTheZoomItIsAt)
 {
-    const Toolbar toolbar;
+    const Toolbar toolbar{kTranslator};
     const Camera camera;
 
     const auto frame = toolbar.describe(kCanvas, Pointer{}, camera);
@@ -100,7 +103,7 @@ TEST(ToolbarTest, Describe_DrawsEveryButtonAndTheZoomItIsAt)
 // Labelled with what pressing it does, so the two states read apart.
 TEST(ToolbarTest, Describe_LabelsThePauseButtonFromWhatItWouldDo)
 {
-    const Toolbar toolbar;
+    const Toolbar toolbar{kTranslator};
     const Camera camera;
 
     EXPECT_THAT(
@@ -131,7 +134,7 @@ TEST(ToolbarTest, Describe_LabelsThePauseButtonFromWhatItWouldDo)
 // The tick is simulation state, read back out where it can be seen.
 TEST(ToolbarTest, Describe_ReportsTheTickItIsGiven)
 {
-    const Toolbar toolbar;
+    const Toolbar toolbar{kTranslator};
     const Camera camera;
 
     EXPECT_THAT(
@@ -152,7 +155,7 @@ TEST(ToolbarTest, Describe_ReportsTheTickItIsGiven)
 // A frame rate would break this, which is why none is described here.
 TEST(ToolbarTest, Describe_IsAPureFunctionOfWhatItIsGiven)
 {
-    const Toolbar toolbar;
+    const Toolbar toolbar{kTranslator};
     const Camera camera;
 
     const auto once = toolbar.describe(
@@ -176,7 +179,7 @@ TEST(ToolbarTest, Describe_IsAPureFunctionOfWhatItIsGiven)
 
 TEST(ToolbarTest, Describe_ReportsTheZoomTheCameraIsActuallyAt)
 {
-    const Toolbar toolbar;
+    const Toolbar toolbar{kTranslator};
     Camera camera;
     camera.zoomOut();
 
@@ -197,7 +200,7 @@ TEST(ToolbarTest, Describe_HasAPixelForEveryButton)
 
 TEST(ToolbarTest, Describe_ReportsAPressOnTheButtonUnderThePointer)
 {
-    const Toolbar toolbar;
+    const Toolbar toolbar{kTranslator};
     const Camera camera;
     const auto at = pointOn(widgets::kZoomIn);
     ASSERT_TRUE(at.has_value());
@@ -214,7 +217,7 @@ TEST(ToolbarTest, Describe_ReportsAPressOnTheButtonUnderThePointer)
 // The grid is what the rest of the window is for.
 TEST(ToolbarTest, Describe_CoversNoneOfTheCanvasAwayFromTheBar)
 {
-    const Toolbar toolbar;
+    const Toolbar toolbar{kTranslator};
     const Camera camera;
 
     const auto frame = toolbar.describe(
@@ -234,7 +237,7 @@ TEST(ToolbarTest, Describe_CoversNoneOfTheCanvasAwayFromTheBar)
 // Nothing here can clip, so the layout has to do the containing.
 TEST(ToolbarTest, Describe_KeepsEveryWidgetInsideTheCanvas)
 {
-    const Toolbar toolbar;
+    const Toolbar toolbar{kTranslator};
     const Camera camera;
 
     const auto right = static_cast<std::int32_t>(kCanvas.width);

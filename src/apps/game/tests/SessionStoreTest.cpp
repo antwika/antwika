@@ -179,13 +179,14 @@ namespace
         world.add<antwika::game::Walker>(walker, antwika::game::Walker{});
 
         world.add<antwika::game::Building>(
-            source, antwika::game::Building{.walker = walker});
+            source, antwika::game::Building{.walkers = {walker}});
         world.commit();
 
         const auto saved = store.take();
         ASSERT_EQ(saved.buildings.size(), 1U);
         ASSERT_EQ(saved.walkers.size(), 1U);
-        ASSERT_EQ(saved.buildings[0].walker, 0U);
+        ASSERT_EQ(
+            saved.buildings[0].walkers, (std::vector<std::size_t>{0U}));
 
         store.restore(saved);
         world.commit();
@@ -197,7 +198,7 @@ namespace
         }
 
         const auto out = world.get<antwika::game::Building>(
-            restoredBuilding).walker;
+            restoredBuilding).walkers[0];
 
         ASSERT_TRUE(world.alive(out));
         EXPECT_EQ(
@@ -211,7 +212,7 @@ namespace
         world.add<antwika::game::Building>(
             source,
             antwika::game::Building{
-                .kind = antwika::game::BuildingKind::WaterSource,
+                .kind = antwika::game::BuildingKind::Well,
                 .stock = {11, 22},
                 .risk = 33,
                 .ticksUntilSpawn = 44,
@@ -228,7 +229,7 @@ namespace
             const auto building = world.get<antwika::game::Building>(entity);
 
             EXPECT_EQ(
-                building.kind, antwika::game::BuildingKind::WaterSource);
+                building.kind, antwika::game::BuildingKind::Well);
             EXPECT_EQ(building.risk, 33);
             EXPECT_EQ(building.ticksUntilSpawn, 44);
             EXPECT_EQ(building.ticksUntilDrain, 55);

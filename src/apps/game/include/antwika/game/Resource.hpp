@@ -9,16 +9,23 @@ namespace antwika::game
 {
 
     /**
-     * @brief A good a walker carries and a house consumes.
+     * @brief A good a walker carries, a store holds and a house
+     * consumes.
      *
-     * Values are contiguous from zero, so a resource can index a table --
-     * which is how a building holds one amount per resource without
-     * naming either of them.
+     * Values are contiguous from zero, so a resource can index a table
+     * -- which is how a building holds one amount per resource without
+     * naming any of them.
+     *
+     * **Water is deliberately not here.**
+     * A well confers coverage on what its carrier walks past rather than
+     * handing an amount over, so water is a Service and never a number a
+     * building holds; see Service.hpp.
      */
     enum class Resource : std::uint8_t
     {
         Food = 0,
-        Water,
+        Clay,
+        Pottery,
     };
 
     /**
@@ -28,7 +35,7 @@ namespace antwika::game
      * cannot drift from the enumeration it counts.
      */
     inline constexpr std::size_t kResourceCount =
-        static_cast<std::size_t>(Resource::Water) + 1;
+        static_cast<std::size_t>(Resource::Pottery) + 1;
 
     /**
      * @brief Get a resource's index, for addressing a per-resource table.
@@ -44,15 +51,16 @@ namespace antwika::game
     /**
      * @brief Every resource, in the enumeration's own order.
      *
-     * What anything wanting one answer per resource iterates, so a sixth
-     * good is an enumerator here and nowhere else -- the same move the
-     * per-resource stock table makes.
+     * What anything wanting one answer per resource iterates, so a
+     * fourth good is an enumerator here and nowhere else -- the same
+     * move the per-resource stock table makes.
      * The static_assert below is what keeps it from drifting from the
      * enumeration it lists.
      */
     inline constexpr std::array<Resource, kResourceCount> kResources{
         Resource::Food,
-        Resource::Water};
+        Resource::Clay,
+        Resource::Pottery};
 
     /**
      * @brief Get a resource's name.
@@ -70,9 +78,40 @@ namespace antwika::game
     {
         constexpr std::array<std::string_view, kResourceCount> names{
             "food",
-            "water"};
+            "clay",
+            "pottery"};
 
         return names[resourceIndex(resource) % kResourceCount];
+    }
+
+    /**
+     * @brief Check whether a house's life depends on this resource.
+     *
+     * **What a house runs out of is what kills it, and only food does.**
+     * Before this vocabulary every resource was a survival requirement,
+     * because both of them -- food and water -- were amounts a walker
+     * handed over. Clay is an industrial input a house never sees, and
+     * pottery decides how well a household lives rather than whether it
+     * lives at all, so a table saying which is which is what keeps "runs
+     * out and is lost" from meaning "is lost the moment it is built".
+     *
+     * A table rather than a comparison against one enumerator, for the
+     * reason consumes() is one: the fourth good will be a comfort too,
+     * and the negation of a single name is not a statement anybody can
+     * extend.
+     *
+     * @param resource The resource to ask about.
+     * @return True for a resource a house cannot go without.
+     */
+    [[nodiscard]] constexpr bool sustains(Resource resource) noexcept
+    {
+        constexpr std::array<bool, kResourceCount> sustaining{
+            true,   // Food
+            false,  // Clay
+            false,  // Pottery
+        };
+
+        return sustaining[resourceIndex(resource) % kResourceCount];
     }
 
     // Indexing kResources by a resource must hand that resource back.
@@ -93,6 +132,8 @@ namespace antwika::game
         "kResources must list every resource in its own index order");
 
     static_assert(resourceName(Resource::Food) == "food");
-    static_assert(resourceName(Resource::Water) == "water");
+    static_assert(resourceName(Resource::Pottery) == "pottery");
+    static_assert(sustains(Resource::Food));
+    static_assert(!sustains(Resource::Clay));
 
 } // namespace antwika::game

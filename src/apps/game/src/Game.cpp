@@ -7,6 +7,8 @@
 #include <antwika/event/Event.hpp>
 #include <antwika/event/EventDispatcher.hpp>
 #include <antwika/event/TickedEventDispatcher.hpp>
+#include <antwika/i18n/Locale.hpp>
+#include <antwika/i18n/Translator.hpp>
 #include <antwika/log/Level.hpp>
 #include <antwika/simulation/EngineLoop.hpp>
 
@@ -65,6 +67,13 @@ namespace antwika::game
         ILogger &logger = config.logger;
         Camera &camera = config.camera;
         PathIndex &paths = config.paths;
+
+        // Fixed in source either way -- see GameConfig::translator.
+        const antwika::i18n::Translator ownTranslator{
+            antwika::i18n::kDefaultLocale};
+        const antwika::i18n::Translator &translator =
+            config.translator.has_value() ? config.translator->get()
+                                          : ownTranslator;
 
         EventDispatcher dispatcher({config.eventSink});
 
@@ -159,8 +168,8 @@ namespace antwika::game
         RoadDrag &drag =
             config.drag.has_value() ? config.drag->get() : ownDrag;
 
-        const Toolbar toolbar;
-        const MenuModalScene menuModal;
+        const Toolbar toolbar(translator);
+        const MenuModalScene menuModal(translator);
         InputFold input(config.codec);
         UiSink uiSink(
             camera,
@@ -196,7 +205,7 @@ namespace antwika::game
             cities, mode, live, input, config.canvas);
         StopSignal stopSignal;
 
-        const MainMenuScene menuScene;
+        const MainMenuScene menuScene(translator);
         MainMenuSink menuSink(
             mode, menuUi, input, menuScene, stopSignal);
 
@@ -225,7 +234,7 @@ namespace antwika::game
         }
 
         SaveLoadState saveState(config.saves);
-        const SaveLoadScene saveScene;
+        const SaveLoadScene saveScene(translator);
         SaveLoadSink saveSink(
             saveState,
             mode,

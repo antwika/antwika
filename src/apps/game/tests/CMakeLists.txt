@@ -38,6 +38,8 @@ add_executable(antwika_game_tests
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/SaveLoadSink.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/SaveLoadState.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/SaveMigration.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/SaveMigrationV2ToV3.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/SaveSections.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/SessionGatedSystem.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/SessionStore.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/SpawnSystem.cpp
@@ -101,6 +103,7 @@ add_executable(antwika_game_tests
     SaveGameTest.cpp
     SaveMigrationTest.cpp
     SceneSnapshotTest.cpp
+    ServiceTest.cpp
     SessionStoreTest.cpp
     SpawnSystemTest.cpp
     TileAtlasTest.cpp
@@ -108,6 +111,7 @@ add_executable(antwika_game_tests
     ReplayDeterminismTest.cpp
     ReplayIntegrationTest.cpp
     ToolbarTest.cpp
+    ToolLabelTest.cpp
     UiOverlayTest.cpp
     ValueEqualityTest.cpp
     UiSinkTest.cpp
@@ -139,6 +143,7 @@ target_link_libraries(antwika_game_tests
         antwika::ecs
         antwika::gfx
         antwika::gfx::tests::mocks
+        antwika::i18n
         antwika::input
         antwika::log::tests::mocks
         antwika::pathfinding

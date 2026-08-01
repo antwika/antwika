@@ -49,8 +49,8 @@ A city stopping because somebody opened a screen was a pause nobody asked for, a
 `BuildTool` is the toolbar's palette; `BuildingKind` is the model; `buildingKindOf()` is the one crossing between them.
 They used to be one enumeration, which gave every per-building table a `Road` entry that could only ever be wrong.
 
-A house consumes what is delivered to it, and the four sources each send out one `WalkerKind`.
-Both facts are arithmetic over the shared declaration order rather than a switch, so a sixth kind is two enumerators and a tile.
+A house consumes what is delivered to it, and most other kinds send out one `WalkerKind`.
+Both facts used to be arithmetic over a shared declaration order; they are tables now, for the reason the round-one vocabulary section below gives.
 
 `BuildingSystem` runs deliveries, drain, risk and demolition.
 Every period derives from one `kTicksPerSecond` rather than a constant per rule, and each countdown lives in the building's own component so two buildings put up a tick apart never fall into lockstep.
@@ -253,8 +253,8 @@ Which of the sixteen road tiles a junction shows is worked out in `GridScene` by
 A bar is a track and a fill in `ResourceBar.hpp`, worked out from `footprintBounds()` and `walkerBounds()` — the very boxes the sprite is blitted into — so the gauges cannot become a second layout that drifts from the art.
 They are painted in a pass *after* every sprite, so nothing standing in front of what they gauge can hide one.
 
-Which bars a building shows is `consumes(kind)`: every resource for a house and none for a source, since a source keeps stock nobody drains and a gauge on one would count a number that never moves.
-A walker shows the one resource `carriedResource()` names, empty bar included, and a fireman or an architect shows none.
+Which bars a building shows is `consumes(kind)`: every resource for a house and none for anything else, since a producer keeps stock nobody drains and a gauge on one would count a number that never moves.
+A walker shows the one resource `carriedResource()` names, empty bar included, and a walker whose kind carries nothing fixed shows none.
 
 **Hovering is `hoverFor()`, and it is `ghostFor()`'s sibling in every way that matters**: it reads `input::PointerHintChannel`, it resolves the pixel through the same `screenToCell()` a click goes through, it tests a building across its whole block, and what it answers may decide what is drawn and nothing else.
 
@@ -263,6 +263,47 @@ The panel lists the resources the bars gauge rather than every number a building
 Its captions are a table of their own rather than the names a save file writes, since a persisted name may not change to suit a caption.
 
 `HoverTest` runs one recorded stream twice, with and without a pointer over the grid, and asserts the same `GameSummary` out of both — and that the watched run really did draw a readout, so the two cannot agree for the wrong reason.
+
+## The round-one vocabulary, and why every crossing is a table now
+
+**This is the change that had to land before anything else could be built on it**, and it adds no gameplay of its own: the enumerations grew, three arithmetic identities became tables, a building gained room for a second walker, the captions started going through [`i18n`](../libraries/i18n.md), and the save format took its one bump to version 3.
+
+`Resource` is `Food`, `Clay` and `Pottery`.
+**Water left, and that is the load-bearing part.** A good is an amount that moves from one building to another, and what one gains the other loses; a service is a state a walker confers on what it passes, and a well is no poorer for having watered a house.
+Water as a good needed a delivery per house per drain; as `Service::Water` it needs a walker to keep *reaching* a district, which is the thing a road network is actually for.
+`Service.hpp` names the four -- water, health, safety and structure -- and nothing in this increment reads them beyond naming them: publishing the enumeration first is what lets a coverage component and the systems over it be written against something fixed.
+
+`sustains()` is the other half of that split.
+Before, a house was lost when it ran out of *anything* it held, which was exact while both goods were things a walker handed over.
+Clay is an industrial input a house never sees, and pottery decides how well a household lives rather than whether it lives at all, so a table saying which good a house cannot go without is what keeps "runs out and is lost" from meaning "is lost the moment it is built".
+
+`BuildingKind` is ten kinds and `WalkerKind` is seven, and **three identities that used to be arithmetic are now tables**:
+
+- `consumes()` was `kind == House`, which stops being exact the moment a workshop eats clay to make pottery.
+- `sendsWalkers()` was its negation, which a storehouse breaks outright: goods are carted to it and carted away again, and it sends nobody.
+- `buildingKindOf()` and `walkerSentBy()` were offsets into a shared declaration order, exact only while every tool placed a building and every sender sent one walker.
+
+None of those was wrong before.
+Each was exact for a reason that round one removes, and the failure mode they share is the bad one: an offset past a hole still lands on a valid enumerator, so the answer is wrong and nothing says so.
+Two `static_assert`s hold the tables to each other -- every kind has exactly one tool, and `sendsWalkers()` agrees with `walkerSentBy()` on every kind.
+
+**A building holds `kMaxWalkersOut` walker handles rather than one**, because a market sends a buyer and a seller and a workshop hauls its output away while it waits on a delivery.
+It is a fixed `std::array` rather than a vector, since `ecs::Component` wants a trivially copyable, standard-layout type.
+A slot number is not a role: a walker goes into the lowest free one, so two buildings that have sent the same walkers in the same order hold them identically.
+
+**A slot is capacity rather than leave to send another.**
+`SpawnSystem`'s cadence keeps one walker *of the kind it sends* out at a time, which is what stops a wider array from doubling every building's output on the day it grew; the remaining slot is room for an errand another system sends.
+`world.alive()` is still the authority over every handle, and `ecs::EntityManager` never reusing an index is still why a stale one can only be dead.
+
+**Every caption now goes through [`i18n`](../libraries/i18n.md)**, and the locale is fixed at `kDefaultLocale` in `main()`.
+That is not a preference: an `antwika::ui` layout is a function of the strings declared into it and a hit-test is a function of that layout, so a run recorded in one language and replayed in another would resolve one recorded click to a different button.
+`toolLabel()` and `pauseLabel()` return a `MessageId` rather than words, and `Toolbar`, `GridScene`, `MainMenuScene`, `MenuModalScene` and `SaveLoadScene` take a `const Translator &` like any other injected collaborator.
+`buildingKindName()` deliberately does *not*: that is the name a save file writes, and a schema is not something a person reads.
+
+**The save format went to version 3, and `SaveMigrationV2ToV3.cpp` is the one step.**
+All three of its changes are genuinely breaking rather than additive -- the walker link became a list, `stock` changed width, and the kind names changed -- which is precisely why they were made together and why the increments after this one need no bump at all.
+A version 2 stock of `[food, water]` reads as `[food, 0, 0]`: the food is what it was, the water was never a good, and nobody has carted anything to that building yet.
+`SaveGame.cpp` is now a spine that states the document's shape once, with `src/SaveSections.hpp` declaring the pieces it is assembled from -- so a later slice of the format is a file of its own plus three lines in the spine, rather than an edit in the middle of a six-hundred-line function.
 
 ## Future work
 

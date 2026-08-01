@@ -413,7 +413,7 @@ namespace
         world.add<antwika::game::Building>(
             home,
             antwika::game::Building{
-                .kind = antwika::game::BuildingKind::FoodSource});
+                .kind = antwika::game::BuildingKind::Farm});
 
         const auto walker = world.create();
         world.add<Cell>(walker, Cell{.x = 4, .y = 1});

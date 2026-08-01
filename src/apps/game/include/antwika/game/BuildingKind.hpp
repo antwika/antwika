@@ -12,27 +12,38 @@ namespace antwika::game
     /**
      * @brief What a building is for.
      *
-     * A house is the only kind that consumes; the other four each send
-     * one kind of walker out, which is what gives a walker somewhere to
-     * come back from.
+     * A house is the only kind that consumes; most of the rest send
+     * walkers out, which is what gives a walker somewhere to come back
+     * from, and a storehouse sends nobody at all.
      *
      * Values are contiguous from zero, so a kind can index a table, and
      * the order is the order the atlas draws them in.
+     *
+     * **The order is a schema, in one direction only.** A save file
+     * writes buildingKindName() rather than the index, so appending a
+     * kind is free and reordering is not silently wrong -- but
+     * TileAtlas.hpp addresses the art by index, so moving one here moves
+     * every building tile after it.
      */
     enum class BuildingKind : std::uint8_t
     {
-        House = 0,      ///< Consumes what walkers bring it.
-        FoodSource,     ///< Sends a food walker out.
-        WaterSource,    ///< Sends a water walker out.
-        FireStation,    ///< Sends a fireman out.
-        ArchitectPost,  ///< Sends an architect out.
+        House = 0,     ///< Consumes what walkers bring it.
+        Farm,          ///< Grows food.
+        ClayPit,       ///< Digs clay.
+        Workshop,      ///< Turns clay into pottery.
+        Storage,       ///< Holds any good, and sends nobody out.
+        Market,        ///< Buys from a store and sells to houses.
+        Well,          ///< Waters what its carrier walks past.
+        Doctor,        ///< Keeps a district healthy.
+        FireStation,   ///< Keeps a district safe.
+        EngineerPost,  ///< Keeps a district standing.
     };
 
     /**
      * @brief How many building kinds there are.
      */
     inline constexpr std::size_t kBuildingKindCount =
-        static_cast<std::size_t>(BuildingKind::ArchitectPost) + 1;
+        static_cast<std::size_t>(BuildingKind::EngineerPost) + 1;
 
     /**
      * @brief Get a kind's index, for addressing a per-kind table.
@@ -48,25 +59,63 @@ namespace antwika::game
     /**
      * @brief Check whether a building consumes what is delivered to it.
      *
-     * Asked about the house rather than listing the four sources, so a
-     * sixth kind is a source without this having to be edited.
+     * **A table rather than a comparison against one enumerator.**
+     * It used to read `kind == House`, which was exact while a house was
+     * the only kind that ate anything; it stops being exact the moment a
+     * workshop consumes clay to make pottery, and a predicate written as
+     * one name is a predicate nobody can extend without rewriting every
+     * caller's assumption at the same time.
      *
      * @param kind The kind to ask about.
-     * @return True for a house and nothing else.
+     * @return True for a kind whose stock drains and whose running out
+     * loses it.
      */
     [[nodiscard]] constexpr bool consumes(BuildingKind kind) noexcept
     {
-        return kind == BuildingKind::House;
+        constexpr std::array<bool, kBuildingKindCount> consuming{
+            true,   // House
+            false,  // Farm
+            false,  // ClayPit
+            false,  // Workshop
+            false,  // Storage
+            false,  // Market
+            false,  // Well
+            false,  // Doctor
+            false,  // FireStation
+            false,  // EngineerPost
+        };
+
+        return consuming[buildingKindIndex(kind) % kBuildingKindCount];
     }
 
     /**
      * @brief Check whether a building sends walkers out.
+     *
+     * **A table rather than the negation of consumes().** The two were
+     * exact opposites while every kind either ate or walked; a
+     * storehouse does neither -- goods are carted to it and carted away
+     * again, and it never sends anybody -- so the negation would have it
+     * emitting a walker with nothing to do.
+     *
      * @param kind The kind to ask about.
-     * @return True for every kind but the house.
+     * @return True for a kind that has somebody to send.
      */
     [[nodiscard]] constexpr bool sendsWalkers(BuildingKind kind) noexcept
     {
-        return !consumes(kind);
+        constexpr std::array<bool, kBuildingKindCount> sending{
+            false,  // House
+            true,   // Farm
+            true,   // ClayPit
+            true,   // Workshop
+            false,  // Storage
+            true,   // Market
+            true,   // Well
+            true,   // Doctor
+            true,   // FireStation
+            true,   // EngineerPost
+        };
+
+        return sending[buildingKindIndex(kind) % kBuildingKindCount];
     }
 
     /**
@@ -85,10 +134,15 @@ namespace antwika::game
     {
         constexpr std::array<std::string_view, kBuildingKindCount> names{
             "house",
-            "food_source",
-            "water_source",
+            "farm",
+            "clay_pit",
+            "workshop",
+            "storage",
+            "market",
+            "well",
+            "doctor",
             "fire_station",
-            "architect_post"};
+            "engineer_post"};
 
         return names[buildingKindIndex(kind) % kBuildingKindCount];
     }
@@ -116,7 +170,13 @@ namespace antwika::game
 
     static_assert(buildingKindName(BuildingKind::House) == "house");
     static_assert(
-        buildingKindFromName("architect_post") == BuildingKind::ArchitectPost);
+        buildingKindFromName("engineer_post") == BuildingKind::EngineerPost);
+    static_assert(!buildingKindFromName("architect_post").has_value());
     static_assert(!buildingKindFromName("tower").has_value());
+
+    // A storehouse neither eats nor walks.
+    // Which is what stopped the two being each other's negation.
+    static_assert(!consumes(BuildingKind::Storage));
+    static_assert(!sendsWalkers(BuildingKind::Storage));
 
 } // namespace antwika::game

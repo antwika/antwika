@@ -18,8 +18,11 @@
 
 #include "WidgetPixel.hpp"
 
+#include "TestTranslator.hpp"
 #include "antwika/game/SaveLoadScene.hpp"
 #include "antwika/game/SaveLoadState.hpp"
+
+using antwika::game::tests::kTranslator;
 
 namespace
 {
@@ -83,7 +86,7 @@ namespace
 
     TEST(SaveLoadSceneTest, Describe_ShowsThreeButtonsAndAPlaceholderEach)
     {
-        const SaveLoadScene scene;
+        const SaveLoadScene scene{kTranslator};
         const SaveLoadState state;
 
         const auto texts =
@@ -99,7 +102,7 @@ namespace
 
     TEST(SaveLoadSceneTest, Describe_ShowsWhatIsSelectedAndWhatIsTyped)
     {
-        const SaveLoadScene scene;
+        const SaveLoadScene scene{kTranslator};
         SaveLoadState state({"alpha", "beta"});
         state.select(1);
         state.setName("town", 4);
@@ -117,7 +120,7 @@ namespace
     // It is appended after every other command rather than among them.
     TEST(SaveLoadSceneTest, Describe_DrawsTheOpenListOverWhatWasThere)
     {
-        const SaveLoadScene scene;
+        const SaveLoadScene scene{kTranslator};
         SaveLoadState closed({"alpha", "beta"});
         SaveLoadState open({"alpha", "beta"});
         open.setListOpen(true);
@@ -136,7 +139,7 @@ namespace
 
     TEST(SaveLoadSceneTest, Describe_ReachesEveryWidgetItDeclares)
     {
-        const SaveLoadScene scene;
+        const SaveLoadScene scene{kTranslator};
         SaveLoadState state({"alpha"});
 
         for (const auto id :
@@ -152,7 +155,7 @@ namespace
 
     TEST(SaveLoadSceneTest, Draw_ClearsAndThenPaints)
     {
-        const SaveLoadScene scene;
+        const SaveLoadScene scene{kTranslator};
         const SaveLoadState state;
         ::testing::NiceMock<MockRenderer> renderer;
 

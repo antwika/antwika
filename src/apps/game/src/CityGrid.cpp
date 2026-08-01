@@ -1,5 +1,6 @@
 #include "antwika/game/CityGrid.hpp"
 
+#include <cstddef>
 #include <map>
 #include <vector>
 
@@ -42,28 +43,33 @@ namespace antwika::game
             buildingAt.emplace(entity, grid.buildings.size());
 
             auto building = world.get<Building>(entity);
-            building.walker = kNullEntity;
+            building.walkers = {};
 
             grid.buildings.push_back(
                 StoredBuilding{
                     .at = world.get<Cell>(entity), .building = building});
         }
 
-        // The link, kept only where both ends were put away.
-        // A building whose walker is gone has nobody out.
+        // The links, kept only where both ends were put away.
+        // A building whose walker is gone has that slot free.
         // Which is exactly what it will be on the way back.
         for (const auto entity : world.view<Building, Cell>())
         {
-            const auto walker = world.get<Building>(entity).walker;
-            const auto found = walkerAt.find(walker);
+            const auto held = world.get<Building>(entity).walkers;
 
-            if (found == walkerAt.end())
+            for (std::size_t slot = 0; slot < kMaxWalkersOut; ++slot)
             {
-                continue;
-            }
+                const auto found = walkerAt.find(held[slot]);
 
-            grid.buildings[buildingAt.at(entity)].walker = found->second;
-            grid.walkers[found->second].home = buildingAt.at(entity);
+                if (found == walkerAt.end())
+                {
+                    continue;
+                }
+
+                grid.buildings[buildingAt.at(entity)].walkers[slot] =
+                    found->second;
+                grid.walkers[found->second].home = buildingAt.at(entity);
+            }
         }
 
         return grid;
@@ -140,9 +146,13 @@ namespace antwika::game
             const auto &stored = grid.buildings[index];
 
             auto building = stored.building;
-            building.walker = stored.walker.has_value()
-                ? walkers[*stored.walker]
-                : kNullEntity;
+
+            for (std::size_t slot = 0; slot < kMaxWalkersOut; ++slot)
+            {
+                building.walkers[slot] = stored.walkers[slot].has_value()
+                    ? walkers[*stored.walkers[slot]]
+                    : kNullEntity;
+            }
 
             world.add<Cell>(buildings[index], stored.at);
             world.add<Building>(buildings[index], building);

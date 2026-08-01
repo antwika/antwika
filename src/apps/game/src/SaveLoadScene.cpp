@@ -3,6 +3,7 @@
 #include <cstdint>
 
 #include <antwika/gfx/Color.hpp>
+#include <antwika/i18n/MessageId.hpp>
 #include <antwika/ui/Alignment.hpp>
 #include <antwika/ui/ButtonSpec.hpp>
 #include <antwika/ui/Context.hpp>
@@ -16,6 +17,7 @@ namespace antwika::game
 {
 
     using antwika::gfx::Color;
+    using antwika::i18n::MessageId;
     using antwika::ui::Alignment;
     using antwika::ui::Context;
     using antwika::ui::DropdownSpec;
@@ -36,6 +38,11 @@ namespace antwika::game
         // Wide enough for a file name and three buttons in a row.
         constexpr std::uint32_t kCardWidth = 420;
     } // namespace
+
+    SaveLoadScene::SaveLoadScene(const Translator &translator)
+        : translator(translator)
+    {
+    }
 
     Frame SaveLoadScene::describe(
         Size canvas,
@@ -62,7 +69,15 @@ namespace antwika::game
                 const auto card = ui.panel(
                     {.width = fixedSize(kCardWidth), .height = kFit});
 
-                ui.label("SAVE / LOAD");
+                ui.label(translator.text(MessageId::GameSaveTitle));
+
+                // Worded here rather than borrowed from the state.
+                // A ui::DropdownSpec borrows its placeholder.
+                // So the words outlive the call that reads them.
+                const auto empty =
+                    translator.text(MessageId::GameSaveNoSaves);
+                const auto unnamed =
+                    translator.text(MessageId::GameSaveNameNew);
 
                 ui.dropdown(DropdownSpec{
                     .id = saveWidgets::kPicker,
@@ -70,25 +85,28 @@ namespace antwika::game
                     .width = kGrow,
                     .options = state.options(),
                     .selected = state.selected(),
-                    .placeholder = "no saved games",
+                    .placeholder = empty,
                     .open = state.listOpen()});
 
                 ui.textField(TextFieldSpec{
                     .id = saveWidgets::kName,
                     .width = kGrow,
                     .text = state.name(),
-                    .placeholder = "name a new save",
+                    .placeholder = unnamed,
                     .cursor = state.caret()});
 
                 {
                     const auto row = ui.row({.width = kGrow});
 
                     ui.button(
-                        "Save", {.id = saveWidgets::kSave, .width = kGrow});
+                        translator.text(MessageId::GameSaveSave),
+                        {.id = saveWidgets::kSave, .width = kGrow});
                     ui.button(
-                        "Load", {.id = saveWidgets::kLoad, .width = kGrow});
+                        translator.text(MessageId::GameSaveLoad),
+                        {.id = saveWidgets::kLoad, .width = kGrow});
                     ui.button(
-                        "Back", {.id = saveWidgets::kBack, .width = kGrow});
+                        translator.text(MessageId::GameSaveBack),
+                        {.id = saveWidgets::kBack, .width = kGrow});
                 }
 
                 // Always declared, so the card is always one height.

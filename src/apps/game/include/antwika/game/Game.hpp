@@ -11,6 +11,7 @@
 #include <antwika/engine/IEngine.hpp>
 #include <antwika/event/IEventSink.hpp>
 #include <antwika/event/ITickEventSink.hpp>
+#include <antwika/i18n/Translator.hpp>
 #include <antwika/input/IInputEventCodec.hpp>
 #include <antwika/log/ILogger.hpp>
 #include <antwika/simulation/ITickEventSource.hpp>
@@ -310,6 +311,27 @@ namespace antwika::game
          * same world -- see SaveGame::seed.
          */
         std::uint64_t seed = 0;
+
+        /**
+         * @brief The language every caption in the run is worded in.
+         *
+         * **Injected rather than reached for, and fixed in source.** A
+         * layout is a function of the strings declared into it and a
+         * hit-test is a function of the layout, so a run recorded in one
+         * language and replayed in another would resolve one recorded
+         * click to two different widgets -- see Translator.hpp.
+         *
+         * Unset, one at kDefaultLocale is made here. That is not a
+         * default anybody may vary: it is the same fixed-in-source
+         * choice a composition root makes, written once so a test whose
+         * subject is the grid need not say it.
+         *
+         * Passed in rather than created here because a renderer built
+         * beforehand words its own scenes with it.
+         */
+        std::optional<
+            std::reference_wrapper<const antwika::i18n::Translator>>
+            translator = std::nullopt;
 
         /**
          * @brief The area every mode's UI is laid out against.

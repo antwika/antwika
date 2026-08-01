@@ -246,7 +246,7 @@ TEST(SceneSnapshotTest, WalkerSpriteEqualityComparesEveryField)
     EXPECT_NE(sprite, later);
 
     auto other = sprite;
-    other.kind = antwika::game::WalkerKind::Water;
+    other.kind = antwika::game::WalkerKind::MarketSeller;
     EXPECT_NE(sprite, other);
 
     auto spent = sprite;
@@ -422,13 +422,15 @@ TEST(SceneSnapshotTest, SnapshotOf_TakesWhatEachWalkerIsCarrying)
     world.add<Walker>(
         entity,
         Walker{
-            .kind = antwika::game::WalkerKind::Water, .carried = 42});
+            .kind = antwika::game::WalkerKind::WaterCarrier, .carried = 42});
     world.commit();
 
     const auto snapshot = snapshotOf(world, paths, Camera(), kExtent);
 
     ASSERT_EQ(snapshot.walkers.size(), 1U);
-    EXPECT_EQ(snapshot.walkers[0].kind, antwika::game::WalkerKind::Water);
+    EXPECT_EQ(
+        snapshot.walkers[0].kind,
+        antwika::game::WalkerKind::WaterCarrier);
     EXPECT_EQ(snapshot.walkers[0].carried, 42);
 }
 

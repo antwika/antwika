@@ -8,6 +8,7 @@
 
 #include <antwika/gfx/Rect.hpp>
 
+#include "antwika/game/BuildingKind.hpp"
 #include "antwika/game/Direction.hpp"
 #include "antwika/game/TileAtlas.hpp"
 
@@ -176,4 +177,79 @@ TEST(TileAtlasTest, TheAtlasIsBigEnoughForEverySlotItNames)
     EXPECT_EQ(kAtlasSize.height, kAtlasRows * kAtlasTileSize.height);
     EXPECT_LE(
         kFirstWalkerSlot + antwika::game::kDirectionCount, kSlotCount);
+}
+
+// A building tile of its own per kind, and every one inside the sheet.
+// Ten kinds is what took the atlas from four rows to five.
+TEST(TileAtlasTest, BuildingTile_GivesEachKindATileOfItsOwn)
+{
+    std::set<std::int32_t> origins;
+
+    for (std::size_t index = 0;
+         index < antwika::game::kBuildingKindCount;
+         ++index)
+    {
+        const auto tile = antwika::game::buildingTile(
+            static_cast<antwika::game::BuildingKind>(index));
+
+        origins.insert(tile.origin.y * 10000 + tile.origin.x);
+    }
+
+    EXPECT_EQ(origins.size(), antwika::game::kBuildingKindCount);
+}
+
+TEST(TileAtlasTest, BuildingTile_StartsWhereTheBuildingsStart)
+{
+    EXPECT_EQ(
+        antwika::game::buildingTile(antwika::game::BuildingKind::House),
+        atlasSlot(antwika::game::kFirstBuildingSlot));
+}
+
+// The four ranges of tiles must not share a slot.
+// An overlap would draw a road where a building should be.
+TEST(TileAtlasTest, NoTwoRangesShareASlot)
+{
+    std::set<std::int32_t> origins;
+
+    const auto keep = [&origins](const Rect &tile)
+    { origins.insert(tile.origin.y * 10000 + tile.origin.x); };
+
+    keep(groundTile());
+
+    for (std::uint8_t links = 0; links < kRoadSlotCount; ++links)
+    {
+        keep(roadTile(links));
+    }
+
+    for (const auto facing : kEveryDirection)
+    {
+        keep(walkerTile(facing));
+    }
+
+    for (std::size_t index = 0;
+         index < antwika::game::kBuildingKindCount;
+         ++index)
+    {
+        keep(
+            antwika::game::buildingTile(
+                static_cast<antwika::game::BuildingKind>(index)));
+    }
+
+    EXPECT_EQ(
+        origins.size(),
+        1U + kRoadSlotCount + antwika::game::kDirectionCount
+            + antwika::game::kBuildingKindCount);
+}
+
+// The sheet has to hold the last slot the header derives.
+// Otherwise that blit samples outside the texture.
+// And gfx::blitIsDrawable() then draws nothing at all.
+TEST(TileAtlasTest, TheAtlasHasRoomForEveryBuildingSlot)
+{
+    EXPECT_EQ(kAtlasRows, 5U);
+    EXPECT_EQ(kAtlasSize.height, 320U);
+    EXPECT_LE(
+        antwika::game::kFirstBuildingSlot
+            + antwika::game::kBuildingSlotCount,
+        kSlotCount);
 }

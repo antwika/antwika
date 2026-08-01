@@ -28,6 +28,7 @@
 #include <antwika/replay/ReplaySource.hpp>
 #include <antwika/simulation/WindowInputSource.hpp>
 
+#include "TestTranslator.hpp"
 #include "antwika/game/AppMode.hpp"
 #include "antwika/game/BuildingIndex.hpp"
 #include "antwika/game/Camera.hpp"
@@ -42,6 +43,8 @@
 #include "antwika/game/Toolbar.hpp"
 #include "antwika/game/UiCanvas.hpp"
 #include "antwika/game/UiOverlay.hpp"
+
+using antwika::game::tests::kTranslator;
 
 using antwika::event::Event;
 using antwika::event::mocks::MockEventSink;
@@ -195,7 +198,7 @@ namespace
     [[nodiscard]] antwika::input::Position pixelOn(
         antwika::ui::WidgetId id)
     {
-        const Toolbar toolbar;
+        const Toolbar toolbar{kTranslator};
         const Camera camera;
 
         for (std::int32_t y = 0;
@@ -636,7 +639,7 @@ namespace
         // So it would prove nothing about a regenerated spawn.
         const auto palette =
             pixelOn(antwika::game::widgets::toolWidget(
-                antwika::game::BuildTool::FoodSource));
+                antwika::game::BuildTool::Farm));
 
         std::vector<TickEvent> events{
             TickEvent{

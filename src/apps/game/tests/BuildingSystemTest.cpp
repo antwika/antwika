@@ -86,7 +86,7 @@ TEST_F(BuildingSystemTest, Update_HandsAWalkersLoadToTheBuildingBesideIt)
 
     sendWalker(
         Cell{.x = 0, .y = 0},
-        Walker{.kind = WalkerKind::Food, .carried = 40});
+        Walker{.kind = WalkerKind::MarketSeller, .carried = 40});
 
     run(1);
 
@@ -102,7 +102,7 @@ TEST_F(BuildingSystemTest, Update_TakesWhatItGaveOffTheWalker)
 
     const auto walker = sendWalker(
         Cell{.x = 0, .y = 0},
-        Walker{.kind = WalkerKind::Food, .carried = 40});
+        Walker{.kind = WalkerKind::MarketSeller, .carried = 40});
 
     run(1);
 
@@ -119,7 +119,7 @@ TEST_F(BuildingSystemTest, Update_DeliversOnlyWhatTheBuildingHasRoomFor)
 
     const auto walker = sendWalker(
         Cell{.x = 0, .y = 0},
-        Walker{.kind = WalkerKind::Food, .carried = kWalkerLoad});
+        Walker{.kind = WalkerKind::MarketSeller, .carried = kWalkerLoad});
 
     run(1);
 
@@ -140,10 +140,10 @@ TEST_F(BuildingSystemTest, Update_AddsUpTwoDeliveriesInOneTick)
 
     sendWalker(
         Cell{.x = 0, .y = 1},
-        Walker{.kind = WalkerKind::Food, .carried = 10});
+        Walker{.kind = WalkerKind::MarketSeller, .carried = 10});
     sendWalker(
         Cell{.x = 2, .y = 1},
-        Walker{.kind = WalkerKind::Food, .carried = 30});
+        Walker{.kind = WalkerKind::MarketSeller, .carried = 30});
 
     run(1);
 
@@ -151,22 +151,47 @@ TEST_F(BuildingSystemTest, Update_AddsUpTwoDeliveriesInOneTick)
         world.get<Building>(house).stock[resourceIndex(Resource::Food)], 50);
 }
 
-TEST_F(BuildingSystemTest, Update_DeliversWaterToTheWaterShelf)
+// A shelf already at capacity has no room for anything.
+// So nothing changes hands and the walker keeps its load.
+TEST_F(BuildingSystemTest, Update_HandsOverNothingToAShelfAlreadyFull)
 {
     const auto house = build(
         Cell{.x = 1, .y = 0},
-        Building{.kind = BuildingKind::House, .stock = {10, 10}});
+        Building{
+            .kind = BuildingKind::House,
+            .stock = {kStockCapacity, 0, 0}});
+
+    const auto seller = sendWalker(
+        Cell{.x = 0, .y = 0},
+        Walker{.kind = WalkerKind::MarketSeller, .carried = 40});
+
+    run(1);
+
+    EXPECT_EQ(
+        world.get<Building>(house).stock[resourceIndex(Resource::Food)],
+        kStockCapacity);
+    EXPECT_EQ(world.get<Walker>(seller).carried, 40);
+}
+
+// A water carrier hands nothing over: water is a service now.
+// So what it leaves behind is a shelf exactly where it was.
+TEST_F(BuildingSystemTest, Update_LeavesEveryShelfAloneForAServiceWalker)
+{
+    const auto house = build(
+        Cell{.x = 1, .y = 0},
+        Building{.kind = BuildingKind::House, .stock = {10, 20, 30}});
 
     sendWalker(
         Cell{.x = 0, .y = 0},
-        Walker{.kind = WalkerKind::Water, .carried = 20});
+        Walker{.kind = WalkerKind::WaterCarrier, .carried = 20});
 
     run(1);
 
     const auto stock = world.get<Building>(house).stock;
 
-    EXPECT_EQ(stock[resourceIndex(Resource::Water)], 30);
     EXPECT_EQ(stock[resourceIndex(Resource::Food)], 10);
+    EXPECT_EQ(stock[resourceIndex(Resource::Clay)], 20);
+    EXPECT_EQ(stock[resourceIndex(Resource::Pottery)], 30);
 }
 
 TEST_F(BuildingSystemTest, Update_LetsAFiremanTakeRiskOffInstead)
@@ -190,7 +215,7 @@ TEST_F(BuildingSystemTest, Update_NeverTakesRiskBelowNothing)
         Cell{.x = 1, .y = 0},
         Building{.kind = BuildingKind::House, .risk = 1});
 
-    sendWalker(Cell{.x = 0, .y = 0}, Walker{.kind = WalkerKind::Architect});
+    sendWalker(Cell{.x = 0, .y = 0}, Walker{.kind = WalkerKind::Engineer});
 
     run(1);
 
@@ -205,7 +230,7 @@ TEST_F(BuildingSystemTest, Update_LeavesABuildingAWalkerIsNotBesideAlone)
 
     sendWalker(
         Cell{.x = 0, .y = 0},
-        Walker{.kind = WalkerKind::Food, .carried = 40});
+        Walker{.kind = WalkerKind::MarketSeller, .carried = 40});
 
     run(1);
 
@@ -217,14 +242,28 @@ TEST_F(BuildingSystemTest, Update_DrainsAHouseOnItsOwnPeriod)
 {
     const auto house = build(
         Cell{.x = 0, .y = 0},
-        Building{.kind = BuildingKind::House, .stock = {50, 50}});
+        Building{.kind = BuildingKind::House, .stock = {50, 50, 50}});
 
     run(static_cast<std::size_t>(kDrainPeriodTicks) + 1);
 
     const auto stock = world.get<Building>(house).stock;
 
     EXPECT_EQ(stock[resourceIndex(Resource::Food)], 49);
-    EXPECT_EQ(stock[resourceIndex(Resource::Water)], 49);
+    EXPECT_EQ(stock[resourceIndex(Resource::Clay)], 49);
+    EXPECT_EQ(stock[resourceIndex(Resource::Pottery)], 49);
+}
+
+// Only what sustains() names is a larder.
+// A house with no pottery is a house nobody has sold any to yet.
+TEST_F(BuildingSystemTest, Update_KeepsAHouseThatHasRunOutOfAComfort)
+{
+    const auto house = build(
+        Cell{.x = 0, .y = 0},
+        Building{.kind = BuildingKind::House, .stock = {50, 0, 0}});
+
+    run(1);
+
+    EXPECT_TRUE(world.alive(house));
 }
 
 TEST_F(BuildingSystemTest, Update_LeavesASourcesStockWhereItIs)
@@ -232,7 +271,7 @@ TEST_F(BuildingSystemTest, Update_LeavesASourcesStockWhereItIs)
     // A source is not a place anybody eats.
     const auto well = build(
         Cell{.x = 0, .y = 0},
-        Building{.kind = BuildingKind::WaterSource, .stock = {50, 50}});
+        Building{.kind = BuildingKind::Well, .stock = {50, 50}});
 
     run(static_cast<std::size_t>(kDrainPeriodTicks) + 1);
 
@@ -293,7 +332,7 @@ TEST_F(BuildingSystemTest, Update_LeavesTheWalkerOfADemolishedBuilding)
     // WalkerSystem removes it once its own budget runs out.
     const auto walker = sendWalker(
         Cell{.x = 0, .y = 0},
-        Walker{.kind = WalkerKind::Food, .carried = kWalkerLoad});
+        Walker{.kind = WalkerKind::MarketSeller, .carried = kWalkerLoad});
 
     build(
         Cell{.x = 5, .y = 5},
@@ -316,11 +355,11 @@ TEST_F(BuildingSystemTest, Update_ReachesABuildingByAnyCellOfItsBlock)
     const auto source = build(
         Cell{.x = 4, .y = 4},
         Building{
-            .kind = BuildingKind::FoodSource, .stock = {10, 10}});
+            .kind = BuildingKind::Farm, .stock = {10, 10}});
 
     sendWalker(
         Cell{.x = 6, .y = 5},
-        Walker{.kind = WalkerKind::Food, .carried = 20});
+        Walker{.kind = WalkerKind::MarketSeller, .carried = 20});
 
     run(1);
 
@@ -333,7 +372,7 @@ TEST_F(BuildingSystemTest, Update_ClearsEveryCellOfADemolishedBlock)
 {
     build(
         Cell{.x = 4, .y = 4},
-        Building{.kind = BuildingKind::FoodSource, .risk = kMaxRisk});
+        Building{.kind = BuildingKind::Farm, .risk = kMaxRisk});
 
     ASSERT_TRUE(built.has(Cell{.x = 5, .y = 5}));
 

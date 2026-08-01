@@ -24,6 +24,7 @@
 
 #include "WidgetPixel.hpp"
 
+#include "TestTranslator.hpp"
 #include "antwika/game/AppMode.hpp"
 #include "antwika/game/BuildingIndex.hpp"
 #include "antwika/game/Camera.hpp"
@@ -46,6 +47,8 @@
 #include "antwika/game/WorldMapLayout.hpp"
 #include "antwika/game/WorldMapSink.hpp"
 #include "antwika/game/WorldMapState.hpp"
+
+using antwika::game::tests::kTranslator;
 
 using antwika::event::Event;
 using antwika::event::mocks::MockEventSink;
@@ -389,7 +392,7 @@ namespace
     [[nodiscard]] antwika::input::Position menuPixelOn(
         antwika::ui::WidgetId id)
     {
-        const antwika::game::MainMenuScene scene;
+        const antwika::game::MainMenuScene scene{kTranslator};
 
         const auto centre = antwika::game::tests::widgetCentre(
             scene.describe(antwika::game::kUiCanvas, antwika::ui::Pointer{}),
@@ -546,13 +549,62 @@ TEST(BootstrapTest, Bootstrap_PressingQuitEndsTheRun)
     EXPECT_NO_THROW(harness.run(source));
 }
 
+// The composition root builds one translator and hands it down.
+// So every scene in the run words itself from one catalogue.
+// Left unset, one at kDefaultLocale is made here instead.
+// Which is what every other test in this file relies on.
+TEST(BootstrapTest, Bootstrap_WordsItselfWithTheTranslatorItIsGiven)
+{
+    Harness harness;
+    const InputEventCodec codec;
+
+    ReplaySource source(
+        {TickEvent{
+            .tick = 1,
+            .event = Event{.name = antwika::engine::events::kStop}}});
+
+    NiceMock<MockLogger> logger;
+    NiceMock<MockEventSink> eventSink;
+    antwika::game::UiOverlay overlay{antwika::game::kUiCanvas};
+
+    const auto summary = antwika::game::bootstrap(
+        antwika::game::GameConfig{
+            .logger = logger,
+            .eventSink = eventSink,
+            .inputSource = source,
+            .codec = codec,
+            .extent = kExtent,
+            .camera = harness.camera,
+            .paths = harness.paths,
+            .built = harness.built,
+            .mode = harness.mode,
+            .pause = harness.pause,
+            .maxTicks = 4,
+            .overlay = overlay,
+            .translator = kTranslator});
+
+    EXPECT_EQ(summary.state.ticksProcessed, 2U);
+
+    // The bar it drew is the bar that translator words.
+    const antwika::game::Toolbar toolbar{kTranslator};
+    const auto expected = toolbar.describe(
+        antwika::game::kUiCanvas,
+        antwika::ui::Pointer{},
+        harness.camera,
+        antwika::game::BuildTool::Road,
+        false,
+        summary.state.ticksProcessed - 1);
+
+    EXPECT_EQ(overlay.commands(), expected.commands);
+}
+
 // replays/demo.json opens by clicking here.
 // A recording is only as good as the layout it was made against.
 // So the pixel it holds is asserted here.
 // Otherwise it is rediscovered by hand every time an item moves.
 TEST(BootstrapTest, Bootstrap_TheDemoReplaysOpeningClickHitsNewGame)
 {
-    const antwika::game::MainMenuScene scene;
+    const antwika::game::MainMenuScene scene{kTranslator};
     const antwika::ui::Pointer pointer{
         .position = antwika::gfx::Point{.x = 500, .y = 250}};
 
@@ -781,14 +833,14 @@ TEST(PrintSummaryTest, WritesEveryBuildingAndWhatItIs)
             {{.at = {.x = 1, .y = 2},
               .kind = antwika::game::BuildingKind::House},
              {.at = {.x = 3, .y = 4},
-              .kind = antwika::game::BuildingKind::WaterSource}},
+              .kind = antwika::game::BuildingKind::Well}},
         .camera = Camera(Point{.x = 0, .y = 0})};
 
     antwika::game::printSummary(out, summary);
 
     EXPECT_NE(out.str().find("Buildings: 2\n"), std::string::npos);
     EXPECT_NE(out.str().find("  house at (1, 2)\n"), std::string::npos);
-    EXPECT_NE(out.str().find("  water_source at (3, 4)\n"), std::string::npos);
+    EXPECT_NE(out.str().find("  well at (3, 4)\n"), std::string::npos);
 }
 
 // replays/demo.json presses the House palette button at this pixel.
@@ -797,7 +849,7 @@ TEST(PrintSummaryTest, WritesEveryBuildingAndWhatItIs)
 // So both pixels are pinned here rather than rediscovered by hand.
 TEST(BootstrapTest, Bootstrap_TheDemoReplaysPaletteClickHitsTheHouse)
 {
-    const antwika::game::Toolbar toolbar;
+    const antwika::game::Toolbar toolbar{kTranslator};
     const Camera camera;
     const antwika::ui::Pointer pointer{
         .position = antwika::gfx::Point{.x = 88, .y = 56}};

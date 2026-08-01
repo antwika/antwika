@@ -1,5 +1,6 @@
 #pragma once
 
+#include <array>
 #include <cstddef>
 #include <optional>
 #include <vector>
@@ -76,14 +77,20 @@ namespace antwika::game
         /**
          * @brief What it is and what it holds.
          *
-         * Its `walker` is always kNullEntity here, for the reason
-         * StoredWalker::walker gives; which walker it has out is the
-         * index below.
+         * Every entry of its `walkers` is kNullEntity here, for the
+         * reason StoredWalker::walker gives; which walkers it has out
+         * are the indices below.
          */
         Building building;
 
-        /** @brief Which stored walker it has out, by index. */
-        std::optional<std::size_t> walker = std::nullopt;
+        /**
+         * @brief Which stored walkers it has out, by index, per slot.
+         *
+         * One entry per slot rather than a list of the occupied ones,
+         * so a building put away and opened again holds each walker in
+         * the slot it was in.
+         */
+        std::array<std::optional<std::size_t>, kMaxWalkersOut> walkers{};
 
         /**
          * @brief Compare two stored buildings.
