@@ -59,10 +59,9 @@ Each page covers what the library is for, its key headers and types, what it dep
 | [sound_demo](apps/sound_demo.md) | The sound showcase: eight notes at exact frame positions. |
 | [companion](apps/companion.md) | A tamagotchi with two needs, where when a tap lands decides what it means. |
 | [atlas_editor](apps/atlas_editor.md) | A pixel editor for the sheet the game blits, with no undo by design. |
+| [ui_demo](apps/ui_demo.md) | Every `antwika::ui` element in turn, with the application owning all their state. |
 
 One further page sits beside the applications rather than describing one: [game-texture-atlas](apps/game-texture-atlas.md), which is the contract the hand-drawn sheet has to meet and which [atlas_editor](apps/atlas_editor.md) does nothing to enforce.
-
-`ui_demo` has no page yet.
 
 ## Where else to look
 
