@@ -202,11 +202,14 @@ Breaking one is the class of mistake that looks fine live and surfaces as a dive
 - [`font`](wiki/libraries/font.md) turns TrueType bytes into metrics and coverage masks, and depends on no other module of this project.
 - [`i18n`](wiki/libraries/i18n.md) is a compiled-in catalogue keyed by a symbolic `MessageId` rather than by the English string, with a total lookup that never throws; a `Translator` is injected like any other collaborator, and an application that hit-tests a layout fixes its locale in `main()` so the language cannot become simulation state.
 - [`sound`](wiki/libraries/sound.md) decodes, mixes and plays PCM behind a backend seam, and owns no thread, lock or queue: a device renders only when `pump()` asks it to, on the thread that asked.
+- [`network`](wiki/libraries/network.md) carries bytes between hosts behind a backend seam, owning no thread, lock or queue exactly as `sound` does: a host moves nothing until `pump()` asks it to, in both directions, on the thread that asked.
+  It is the transport half of multiplayer and nothing more -- it cannot name a `Tick` or an `Event`, so remote input can only ever reach a simulation as events an `ITickEventSource` supplied for a tick, which is what lets a recorded networked session replay with no socket opened.
 - [`app`](wiki/libraries/app.md) is what every `main()` shares -- `runRecorded()`, `assetPath()`, `FramePacedSource`/`IFramePass` and `pointerFrom()`/`hoverFrom()`.
 - [`cli`](wiki/libraries/cli.md) is the flag parsing, depending on nothing at all; one `FlagSpec` table is both the parser's input and the help text's, and a program parses once against one concatenated table.
 - [`log`](wiki/libraries/log.md) is composable logging with no global state.
 
 Backends live under [`backends/`](backends/), are selected at build time, and are the only place a concrete framework is named; `null` implementations that belong to the coverage gate live in the library instead.
+`backends/sockets` is the one that is not a framework: it names the operating system's own socket API, adds no package and no lockfile entry, and is therefore exempt from the rule that one build names one framework.
 
 ### Applications
 

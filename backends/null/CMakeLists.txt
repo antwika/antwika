@@ -90,3 +90,34 @@ if(ANTWIKA_INPUT_BACKEND STREQUAL "null")
         DESTINATION lib/cmake/antwika
     )
 endif()
+
+if(ANTWIKA_NETWORK_BACKEND STREQUAL "null")
+    add_library(antwika_network_backend
+        src/SelectedNetworkBackend.cpp
+    )
+
+    add_library(antwika::network_backend ALIAS antwika_network_backend)
+
+    set_target_properties(antwika_network_backend PROPERTIES
+        WINDOWS_EXPORT_ALL_SYMBOLS ON
+    )
+
+    target_link_libraries(antwika_network_backend
+        PUBLIC
+            antwika::network
+    )
+
+    install(
+        TARGETS antwika_network_backend
+        EXPORT antwika_network_backendTargets
+        ARCHIVE DESTINATION lib
+        LIBRARY DESTINATION lib
+        RUNTIME DESTINATION bin
+    )
+
+    install(
+        EXPORT antwika_network_backendTargets
+        NAMESPACE antwika::
+        DESTINATION lib/cmake/antwika
+    )
+endif()
