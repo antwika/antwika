@@ -33,6 +33,13 @@ using antwika::time::SystemSleeper;
 
 namespace
 {
+    // At namespace scope rather than local to main().
+    // A local would be odr-used by the lambda below.
+    // Passing a string_view by value binds a reference to it.
+    // A lambda with no capture-default may not capture implicitly.
+    // GCC accepts one anyway, and Clang is right to refuse it.
+    constexpr std::string_view kName = "antwika_sound_demo";
+
     constexpr WaveFormat kFormat{.rate = 48000, .channels = 2};
 
     // One second between notes, and one second each.
@@ -50,8 +57,6 @@ int main(int argc, char **argv)
 {
     ConsoleLogging logging(std::cout, Level::Info);
     auto &logger = logging.logger();
-
-    constexpr std::string_view kName = "antwika_sound_demo";
 
     return runGuarded(
         kName,
