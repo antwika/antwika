@@ -1,5 +1,6 @@
 #include "antwika/task_worker/StatusPrintSystem.hpp"
 
+#include <antwika/ecs_commons/Name.hpp>
 #include <antwika/scheduler/Priority.hpp>
 
 #include "antwika/task_worker/Worker.hpp"
@@ -64,7 +65,8 @@ namespace antwika::task_worker
             {
                 out << " | Remaining: " << worker.remainingTicks
                     << " tick(s) | Task id: " << worker.taskId
-                    << " | Task name: " << worker.label.data();
+                    << " | Task name: "
+                    << antwika::ecs_commons::view(worker.label);
             }
             out << "\n";
             ++index;

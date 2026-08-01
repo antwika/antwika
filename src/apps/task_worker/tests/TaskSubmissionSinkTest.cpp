@@ -5,6 +5,7 @@
 #include <gtest/gtest.h>
 
 #include <antwika/ecs/SystemScheduler.hpp>
+#include <antwika/ecs_commons/Name.hpp>
 #include <antwika/engine/Events.hpp>
 #include <antwika/log/mocks/MockLogger.hpp>
 #include <antwika/scheduler/Scheduler.hpp>
@@ -18,11 +19,11 @@
 
 using antwika::ecs::SystemScheduler;
 using antwika::ecs::World;
+using antwika::ecs_commons::makeName;
 using antwika::event::Event;
 using antwika::event::TickEvent;
 using antwika::log::mocks::MockLogger;
 using antwika::scheduler::Scheduler;
-using antwika::task_worker::makeWorkerLabel;
 using antwika::task_worker::TaskDependency;
 using antwika::task_worker::TaskDispatchSystem;
 using antwika::task_worker::TaskRegistry;
@@ -74,7 +75,7 @@ TEST(TaskSubmissionSinkTest, ParsesAPayloadIntoAScheduledTaskAtItsPriority)
     world.commit();
     EXPECT_EQ(
         world.get<Worker>(workerA),
-        (Worker{WorkerStatus::Busy, 3, 1, makeWorkerLabel("Alpha")}));
+        (Worker{WorkerStatus::Busy, 3, 1, makeName("Alpha")}));
 }
 
 TEST(
@@ -496,5 +497,5 @@ TEST(TaskSubmissionSinkTest, TickEventCommitsAndRunsSystemScheduler)
     EXPECT_TRUE(jobScheduler.empty());
     EXPECT_EQ(
         world.get<Worker>(worker),
-        (Worker{WorkerStatus::Busy, 3, 1, makeWorkerLabel("Alpha")}));
+        (Worker{WorkerStatus::Busy, 3, 1, makeName("Alpha")}));
 }

@@ -5,6 +5,7 @@
 #include <vector>
 
 #include <antwika/ecs/ISystem.hpp>
+#include <antwika/ecs_commons/Name.hpp>
 #include <antwika/engine/Events.hpp>
 #include <antwika/event/Event.hpp>
 #include <antwika/event/mocks/MockEventSink.hpp>
@@ -24,6 +25,7 @@
 
 using antwika::ecs::ISystem;
 using antwika::ecs::World;
+using antwika::ecs_commons::makeName;
 using antwika::event::Event;
 using antwika::event::mocks::MockEventSink;
 using antwika::event::TickEventRecorder;
@@ -34,7 +36,6 @@ using antwika::replay::ReplaySource;
 using antwika::scheduler::kCriticalPriority;
 using antwika::scheduler::kLowPriority;
 using antwika::scheduler::kNormalPriority;
-using antwika::task_worker::makeWorkerLabel;
 using antwika::task_worker::TaskDependency;
 using antwika::task_worker::TaskInfo;
 using antwika::task_worker::TaskRegistry;
@@ -132,10 +133,10 @@ TEST(BootstrapTest, Bootstrap_RunsScriptedTasksToCompletion)
     ASSERT_EQ(finalState.size(), 2U);
     EXPECT_EQ(
         finalState[0],
-        (Worker{WorkerStatus::Busy, 1, 5, makeWorkerLabel("Epsilon")}));
+        (Worker{WorkerStatus::Busy, 1, 5, makeName("Epsilon")}));
     EXPECT_EQ(
         finalState[1],
-        (Worker{WorkerStatus::Busy, 2, 3, makeWorkerLabel("Gamma")}));
+        (Worker{WorkerStatus::Busy, 2, 3, makeName("Gamma")}));
 }
 
 TEST(BootstrapTest, Bootstrap_RunsEveryObserverOncePerTick)

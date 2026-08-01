@@ -2,6 +2,8 @@
 
 #include <algorithm>
 
+#include <antwika/ecs_commons/Name.hpp>
+
 #include "antwika/task_worker/Worker.hpp"
 
 namespace antwika::task_worker
@@ -47,7 +49,7 @@ namespace antwika::task_worker
             workers[index],
             Worker{
                 WorkerStatus::Busy, durationTicks, taskId,
-                makeWorkerLabel(label)});
+                antwika::ecs_commons::makeName(label)});
         return true;
     }
 
