@@ -393,8 +393,7 @@ namespace
             overlay,
             cities,
             built,
-            drag,
-            pause};
+            drag};
     };
 } // namespace
 

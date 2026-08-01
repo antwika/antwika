@@ -17,7 +17,7 @@ TEST(RoadDragTest, Begin_MarksTheStartAndTheEndAsOneCell)
 {
     RoadDrag drag;
 
-    drag.begin(Cell{.x = 2, .y = 3}, false);
+    drag.begin(Cell{.x = 2, .y = 3});
 
     EXPECT_TRUE(drag.active());
     EXPECT_EQ(drag.start(), (Cell{.x = 2, .y = 3}));
@@ -27,7 +27,7 @@ TEST(RoadDragTest, Begin_MarksTheStartAndTheEndAsOneCell)
 TEST(RoadDragTest, DragTo_MovesTheEndAndLeavesTheStart)
 {
     RoadDrag drag;
-    drag.begin(Cell{.x = 2, .y = 3}, false);
+    drag.begin(Cell{.x = 2, .y = 3});
 
     drag.dragTo(Cell{.x = 7, .y = 1});
 
@@ -49,39 +49,9 @@ TEST(RoadDragTest, DragTo_DoesNothingWhileNoDragIsUnderWay)
 TEST(RoadDragTest, Finish_EndsTheDrag)
 {
     RoadDrag drag;
-    drag.begin(Cell{.x = 2, .y = 3}, false);
+    drag.begin(Cell{.x = 2, .y = 3});
 
     drag.finish();
 
     EXPECT_FALSE(drag.active());
-}
-
-// The pause is this drag's to release only when it was what held it.
-TEST(RoadDragTest, HeldForDrag_IsTrueWhenTheRunWasRunning)
-{
-    RoadDrag drag;
-
-    drag.begin(Cell{.x = 2, .y = 3}, false);
-
-    EXPECT_TRUE(drag.heldForDrag());
-}
-
-TEST(RoadDragTest, HeldForDrag_IsFalseWhenTheRunWasAlreadyHeld)
-{
-    RoadDrag drag;
-
-    drag.begin(Cell{.x = 2, .y = 3}, true);
-
-    EXPECT_FALSE(drag.heldForDrag());
-}
-
-// Left set, a second release would resume a run nothing held.
-TEST(RoadDragTest, HeldForDrag_IsFalseOnceTheDragHasEnded)
-{
-    RoadDrag drag;
-    drag.begin(Cell{.x = 2, .y = 3}, false);
-
-    drag.finish();
-
-    EXPECT_FALSE(drag.heldForDrag());
 }

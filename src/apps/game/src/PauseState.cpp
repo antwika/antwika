@@ -3,19 +3,9 @@
 namespace antwika::game
 {
 
-    void PauseState::toggle() noexcept
+    void PauseState::set(bool paused) noexcept
     {
-        held = !held;
-    }
-
-    void PauseState::hold() noexcept
-    {
-        held = true;
-    }
-
-    void PauseState::release() noexcept
-    {
-        held = false;
+        held = paused;
     }
 
     bool PauseState::paused() const noexcept

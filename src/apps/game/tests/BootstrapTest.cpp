@@ -867,6 +867,6 @@ TEST(BootstrapTest, Bootstrap_LaysAWholeRunOfRoadFromOneDrag)
         EXPECT_TRUE(harness.paths.has(antwika::game::Cell{.x = x, .y = 2}));
     }
 
-    // The drag held the run and let it go again at the release.
+    // The drag held nothing, so the run was never paused at all.
     EXPECT_FALSE(harness.pause.paused());
 }

@@ -36,8 +36,7 @@ namespace antwika::game
         UiOverlay &overlay,
         const WorldMapState &cities,
         BuildingIndex &built,
-        RoadDrag &drag,
-        PauseState &pause)
+        RoadDrag &drag)
         : world(world),
           paths(paths),
           camera(camera),
@@ -47,8 +46,7 @@ namespace antwika::game
           overlay(overlay),
           cities(cities),
           built(built),
-          drag(drag),
-          pause(pause)
+          drag(drag)
     {
     }
 
@@ -84,8 +82,7 @@ namespace antwika::game
         // A movement is exempt, so a pan begun on the grid can cross it.
         // So is a release, for that reason and one of its own.
         // A gesture begun on the grid has to be able to end anywhere.
-        // A drag let go over the bar would otherwise hold the pause.
-        // For the rest of the session, and lay no road at all.
+        // A drag let go over the bar would otherwise lay no road.
         const bool claimable =
             std::holds_alternative<PointerButtonPressed>(event)
             || std::holds_alternative<PointerScrolled>(event);
@@ -162,7 +159,10 @@ namespace antwika::game
         // And no release ever said it.
         // Ahead of the palette check.
         // A gesture is over whether or not this press places anything.
-        cancelRoadDrag();
+        // finish() rather than a guarded cancel of its own: it is safe
+        // on a drag that was never under way, and once a cancel stopped
+        // releasing a pause there was nothing left for one to guard.
+        drag.finish();
 
         // The palette is down, so a left press places nothing.
         // Not a road, which is what falling back to one would lay.
@@ -191,30 +191,9 @@ namespace antwika::game
 
     void GridSink::beginRoadDrag(Cell cell)
     {
-        // Whether the run was already held is remembered, not the pause.
-        // A drag that found one paused leaves it paused -- see RoadDrag.
-        drag.begin(cell, pause.paused());
-
-        // Held so the route cannot be planned against a moving city.
-        // hold() rather than toggle(), for CityEntrySink's reason.
-        pause.hold();
-    }
-
-    void GridSink::cancelRoadDrag()
-    {
-        if (!drag.active())
-        {
-            return;
-        }
-
-        const bool resume = drag.heldForDrag();
-
-        drag.finish();
-
-        if (resume)
-        {
-            pause.release();
-        }
+        // Nothing is held: a city runs on under a route being drawn.
+        // A pause is a player's to ask for -- see PauseState.
+        drag.begin(cell);
     }
 
     void GridSink::endRoadDrag(Cell cell)
@@ -227,7 +206,6 @@ namespace antwika::game
         drag.dragTo(cell);
 
         const auto plan = planRoad(drag.start(), drag.end(), extent, built);
-        const bool resume = drag.heldForDrag();
 
         drag.finish();
 
@@ -239,11 +217,6 @@ namespace antwika::game
             {
                 placePath(on);
             }
-        }
-
-        if (resume)
-        {
-            pause.release();
         }
     }
 

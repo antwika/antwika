@@ -10,15 +10,30 @@ namespace antwika::game
      * the selected tool are: what a run computes depends on it, so it is
      * regenerated from the recorded clicks rather than recorded itself.
      * No event of any kind is defined for pausing -- UiSink resolves the
-     * press against the toolbar inside the tick path and toggles this,
-     * so a replay pauses on precisely the ticks the live run did.
+     * press against the toolbar inside the tick path and sets this, so a
+     * replay pauses on precisely the ticks the live run did.
+     *
+     * **A pause is asked for, and nothing else causes one.**
+     * A city coming up, a menu opening and a road being dragged out each
+     * used to hold it too, and none of them does now: a run progresses
+     * all the time unless a player has said otherwise.
+     * That is what leaves this one writer rather than four, and it is
+     * why no bookkeeping is left about whose pause a release lets go of.
+     *
+     * **The value is absolute rather than a toggle**, which is what
+     * keeps it right once more than one player can ask for one.
+     * Two players pausing on one tick would toggle twice and leave the
+     * run going, each having watched themselves press pause; two asking
+     * for true leave it paused.
+     * So a button sends the opposite of the state it was showing, and
+     * every order two such asks can land in ends somewhere both meant.
      *
      * The one fact two collaborators have to agree on: UiSink writes it
      * from the button it resolved, and PauseGatedSystem reads it to
-     * decide whether a system runs. A small shared state object rather
-     * than one asking the other, so the systems that stop need not know
-     * what a button is -- the same shape as life::DragState, which is
-     * where this pattern comes from.
+     * decide whether a system runs.
+     * A small shared state object rather than one asking the other, so
+     * the systems that stop need not know what a button is -- the same
+     * shape as life::DragState, which is where this pattern comes from.
      *
      * Nothing here reads a device or a clock.
      */
@@ -26,36 +41,15 @@ namespace antwika::game
     {
     public:
         /**
-         * @brief Turn the pause on if it is off, and off if it is on.
-         */
-        void toggle() noexcept;
-
-        /**
-         * @brief Hold the simulation still, whether or not it already
-         * is.
+         * @brief Hold the simulation still, or let it run again.
          *
-         * What a city's screen coming up asks for -- see CityEntrySink.
-         * A toggle would be wrong there: it would let a city entered
-         * from a paused one come up running, so what a fresh city did
-         * would depend on what the last one was doing.
-         */
-        void hold() noexcept;
-
-        /**
-         * @brief Let the simulation run again, whether or not it was
-         * held.
+         * Idempotent, deliberately: asking for the state it is already
+         * in does nothing, so two players asking for the same thing
+         * agree rather than cancelling one another out.
          *
-         * hold()'s counterpart, and what the end of a road drag asks for
-         * -- see RoadDrag. A toggle would be wrong there for hold()'s
-         * reason read backwards: a drag holds the run so that what it is
-         * planned against cannot move under it, and a toggle would then
-         * pause a run that was already running.
-         *
-         * Who may call it is the caller's rule rather than this class's:
-         * RoadDrag::heldForDrag() is what keeps a drag from resuming a
-         * run somebody paused for themselves.
+         * @param paused True to hold the run still, false to let it go.
          */
-        void release() noexcept;
+        void set(bool paused) noexcept;
 
         /**
          * @brief Check whether the simulation is held still.

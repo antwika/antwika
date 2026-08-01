@@ -3,10 +3,9 @@
 namespace antwika::game
 {
 
-    void RoadDrag::begin(Cell cell, bool alreadyHeld) noexcept
+    void RoadDrag::begin(Cell cell) noexcept
     {
         dragging = true;
-        ours = !alreadyHeld;
         from = cell;
         to = cell;
     }
@@ -24,10 +23,6 @@ namespace antwika::game
     void RoadDrag::finish() noexcept
     {
         dragging = false;
-
-        // The pause is nobody's to release once the drag has ended.
-        // Left set, a second release would resume a run nothing held.
-        ours = false;
     }
 
     bool RoadDrag::active() const noexcept
@@ -43,11 +38,6 @@ namespace antwika::game
     Cell RoadDrag::end() const noexcept
     {
         return to;
-    }
-
-    bool RoadDrag::heldForDrag() const noexcept
-    {
-        return ours;
     }
 
 } // namespace antwika::game

@@ -13,36 +13,41 @@ namespace antwika::game
     using antwika::ecs::World;
 
     /**
-     * @brief Runs a system only while the app is in one mode.
+     * @brief Runs a system only while there is a session on screen to
+     * run.
      *
      * The simulation half of ModeGatedSink, and the same shape as
      * life::DragPausedSystem: what stops is the one system, while the
      * tick, the commit and every observer carry on -- so the menu is
      * still drawn and the run is still paced.
      *
-     * This is what makes "the grid is not simulating behind the menu"
-     * true by construction rather than by there happening to be nothing
-     * on the grid yet.
+     * **It gates on simulates() rather than on one named mode**, which
+     * is what lets a city go on running while whoever is playing it
+     * reads the world map.
+     * Naming AppMode::CityMap alone is what used to stop it, and a city
+     * that stopped because somebody opened a screen was a pause nobody
+     * asked for -- see PauseState.
+     *
+     * This is what makes "the grid is not simulating behind the main
+     * menu" true by construction rather than by there happening to be
+     * nothing on the grid yet.
      */
-    class ModeGatedSystem final : public ISystem
+    class SessionGatedSystem final : public ISystem
     {
     public:
         /**
          * @brief Construct the gate over the system it guards.
          * @param inner The system being guarded. Must outlive this gate.
          * @param mode The app's mode. Must outlive this gate.
-         * @param active The mode in which the inner system runs.
          */
-        ModeGatedSystem(
-            ISystem &inner,
-            const AppModeState &mode,
-            AppMode active) noexcept;
+        SessionGatedSystem(
+            ISystem &inner, const AppModeState &mode) noexcept;
 
-        ModeGatedSystem(const ModeGatedSystem &) = delete;
-        ModeGatedSystem(ModeGatedSystem &&) = delete;
+        SessionGatedSystem(const SessionGatedSystem &) = delete;
+        SessionGatedSystem(SessionGatedSystem &&) = delete;
 
-        ModeGatedSystem &operator=(const ModeGatedSystem &) = delete;
-        ModeGatedSystem &operator=(ModeGatedSystem &&) = delete;
+        SessionGatedSystem &operator=(const SessionGatedSystem &) = delete;
+        SessionGatedSystem &operator=(SessionGatedSystem &&) = delete;
 
         /**
          * @brief Run the inner system, or stage nothing at all.
@@ -54,7 +59,6 @@ namespace antwika::game
     private:
         ISystem &inner;
         const AppModeState &mode;
-        AppMode active;
     };
 
 } // namespace antwika::game

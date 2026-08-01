@@ -6,7 +6,6 @@ add_executable(antwika_game_tests
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/BuildGhost.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/BuildingIndex.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/BuildingSystem.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/../src/CityEntrySink.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/CityGrid.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/FpsReadout.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/FrameMeter.cpp
@@ -21,7 +20,6 @@ add_executable(antwika_game_tests
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/MainMenuSink.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/MenuModalScene.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/ModeGatedSink.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/../src/ModeGatedSystem.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/PathIndex.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/PauseGatedSystem.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/PauseState.cpp
@@ -40,6 +38,7 @@ add_executable(antwika_game_tests
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/SaveLoadSink.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/SaveLoadState.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/SaveMigration.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/SessionGatedSystem.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/SessionStore.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/SpawnSystem.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/Toolbar.cpp
@@ -62,7 +61,6 @@ add_executable(antwika_game_tests
     BuildingSystemTest.cpp
     CameraTest.cpp
     CellTest.cpp
-    CityEntrySinkTest.cpp
     CityGridTest.cpp
     DirectionTest.cpp
     GameStateReducerTest.cpp
@@ -83,7 +81,7 @@ add_executable(antwika_game_tests
     MainMenuSceneTest.cpp
     MainMenuSinkTest.cpp
     MenuModalSceneTest.cpp
-    ModeGateTest.cpp
+    SessionGateTest.cpp
     PathIndexTest.cpp
     PauseDeterminismTest.cpp
     PauseGatedSystemTest.cpp

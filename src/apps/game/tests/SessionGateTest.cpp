@@ -13,7 +13,7 @@
 
 #include "antwika/game/AppMode.hpp"
 #include "antwika/game/ModeGatedSink.hpp"
-#include "antwika/game/ModeGatedSystem.hpp"
+#include "antwika/game/SessionGatedSystem.hpp"
 
 using antwika::ecs::ISystem;
 using antwika::ecs::World;
@@ -23,7 +23,7 @@ using antwika::event::TickEvent;
 using antwika::game::AppMode;
 using antwika::game::AppModeState;
 using antwika::game::ModeGatedSink;
-using antwika::game::ModeGatedSystem;
+using antwika::game::SessionGatedSystem;
 using antwika::log::mocks::MockLogger;
 using ::testing::NiceMock;
 
@@ -102,26 +102,55 @@ TEST(ModeGatedSinkTest, EngineTickAlwaysReachesTheSink)
     EXPECT_EQ(inner.calls, 1U);
 }
 
-TEST(ModeGatedSystemTest, TheSystemRunsInItsOwnMode)
+TEST(SessionGatedSystemTest, TheSystemRunsWhileACityIsUp)
 {
     NiceMock<MockLogger> logger;
     World world(logger);
     CountingSystem inner;
     const AppModeState mode{AppMode::CityMap};
-    ModeGatedSystem gate(inner, mode, AppMode::CityMap);
+    SessionGatedSystem gate(inner, mode);
 
     gate.update(world, 0);
 
     EXPECT_EQ(inner.calls, 1U);
 }
 
-TEST(ModeGatedSystemTest, TheSystemStagesNothingInAnyOtherMode)
+// The whole point of gating on the session rather than one screen.
+// A city goes on running while whoever is playing it reads the map.
+TEST(SessionGatedSystemTest, TheSystemRunsWhileTheWorldMapIsUp)
+{
+    NiceMock<MockLogger> logger;
+    World world(logger);
+    CountingSystem inner;
+    const AppModeState mode{AppMode::WorldMap};
+    SessionGatedSystem gate(inner, mode);
+
+    gate.update(world, 0);
+
+    EXPECT_EQ(inner.calls, 1U);
+}
+
+// There is no session to run on either of the other two screens.
+TEST(SessionGatedSystemTest, TheSystemStagesNothingOnTheMainMenu)
 {
     NiceMock<MockLogger> logger;
     World world(logger);
     CountingSystem inner;
     const AppModeState mode{AppMode::MainMenu};
-    ModeGatedSystem gate(inner, mode, AppMode::CityMap);
+    SessionGatedSystem gate(inner, mode);
+
+    gate.update(world, 0);
+
+    EXPECT_EQ(inner.calls, 0U);
+}
+
+TEST(SessionGatedSystemTest, TheSystemStagesNothingOnTheSavePicker)
+{
+    NiceMock<MockLogger> logger;
+    World world(logger);
+    CountingSystem inner;
+    const AppModeState mode{AppMode::SaveLoad};
+    SessionGatedSystem gate(inner, mode);
 
     gate.update(world, 0);
 

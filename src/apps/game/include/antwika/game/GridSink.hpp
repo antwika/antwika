@@ -16,7 +16,6 @@
 #include "antwika/game/GridExtent.hpp"
 #include "antwika/game/InputFold.hpp"
 #include "antwika/game/PathIndex.hpp"
-#include "antwika/game/PauseState.hpp"
 #include "antwika/game/RoadDrag.hpp"
 #include "antwika/game/UiOverlay.hpp"
 #include "antwika/game/WorldMapState.hpp"
@@ -49,7 +48,7 @@ namespace antwika::game
      * | --- | --- |
      * | left press | place the selected tool's thing at the clicked cell |
      * | left drag | with the road tool, plan a run of road -- see below |
-     * | left release | lay the planned run, and let the run go again |
+     * | left release | lay the planned run of road |
      * | right press | leave build mode, or place a walker -- see below |
      * | middle drag | pan the camera |
      * | scroll | zoom, keeping the cell under the cursor put |
@@ -71,11 +70,13 @@ namespace antwika::game
      * what a rectangle of blocks means. A building is therefore still
      * placed on the press and the press alone, and no drag begins.
      *
-     * **A drag holds the run still**, so that what a route is planned
-     * against cannot move under it between the press and the release,
-     * and lets it go again at the end -- but only when the drag was what
-     * held it, so a drag never resumes a city somebody paused for
-     * themselves. See RoadDrag::heldForDrag().
+     * **A drag holds nothing still**, so a route is planned against a
+     * city that goes on moving between the press and the release. It
+     * used to pause the run for exactly that reason, and a city now runs
+     * all the time unless a player has asked for a pause -- so what a
+     * release lays is what the route came out as when it arrived, and a
+     * drag can no longer resume a city somebody paused for themselves
+     * because it never holds one.
      *
      * None of that is an event either. What a recording holds is the
      * press, the movements and the release, and a replay resolves them
@@ -158,8 +159,6 @@ namespace antwika::game
          * @param built Which cells hold a building.
          * @param drag Where a run of road starts and ends; written here
          * and read by whatever draws the preview.
-         * @param pause Held for the length of a drag, and let go again
-         * at the end of one this sink held.
          */
         GridSink(
             World &world,
@@ -171,8 +170,7 @@ namespace antwika::game
             UiOverlay &overlay,
             const WorldMapState &cities,
             BuildingIndex &built,
-            RoadDrag &drag,
-            PauseState &pause);
+            RoadDrag &drag);
 
         GridSink(const GridSink &) = delete;
         GridSink(GridSink &&) = delete;
@@ -195,7 +193,6 @@ namespace antwika::game
         void cancelToolOrPlaceWalker(Cell cell);
         void placeWalker(Cell cell);
         void beginRoadDrag(Cell cell);
-        void cancelRoadDrag();
         void endRoadDrag(Cell cell);
         void act(const antwika::input::InputEvent &event);
 
@@ -219,11 +216,6 @@ namespace antwika::game
         // Shared rather than private, since a preview is drawn from it.
         // Written here and nowhere else, inside the tick path.
         RoadDrag &drag;
-
-        // Held for the length of a drag, and let go at the end of one.
-        // UiSink's button writes the same state, which is the point:
-        // a drag and a player are talking about one pause.
-        PauseState &pause;
     };
 
 } // namespace antwika::game

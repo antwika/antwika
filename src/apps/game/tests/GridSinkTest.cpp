@@ -23,7 +23,6 @@
 #include "antwika/game/IsoProjection.hpp"
 #include "antwika/game/Path.hpp"
 #include "antwika/game/PathIndex.hpp"
-#include "antwika/game/PauseState.hpp"
 #include "antwika/game/RoadDrag.hpp"
 #include "antwika/game/UiOverlay.hpp"
 #include "antwika/game/Walker.hpp"
@@ -45,7 +44,6 @@ using antwika::game::WorldMapState;
 using antwika::game::InputFold;
 using antwika::game::Path;
 using antwika::game::PathIndex;
-using antwika::game::PauseState;
 using antwika::game::RoadDrag;
 using antwika::game::UiOverlay;
 using antwika::game::Walker;
@@ -135,7 +133,6 @@ namespace
             .camera = camera};
         WorldMapState cities{WorldMap{}};
         RoadDrag drag;
-        PauseState pause;
         GridSink sink{
             world,
             paths,
@@ -146,8 +143,7 @@ namespace
             overlay,
             cities,
             built,
-            drag,
-            pause};
+            drag};
     };
 } // namespace
 
@@ -548,33 +544,20 @@ TEST_F(GridSinkTest, LeftDrag_LaysNothingWhenNoRouteExists)
     EXPECT_TRUE(paths.has(Cell{.x = 2, .y = 3}));
 }
 
-// The run is held for the length of a drag and let go at the end.
-TEST_F(GridSinkTest, LeftDrag_HoldsTheRunAndLetsItGoAgain)
+// A drag runs from the press to the release and holds nothing still.
+// It used to pause the run for the length of one -- see PauseState.
+TEST_F(GridSinkTest, LeftDrag_IsUnderWayFromThePressToTheRelease)
 {
     clickAt(Cell{.x = 2, .y = 3}, MouseButton::Left);
 
-    EXPECT_TRUE(pause.paused());
+    EXPECT_TRUE(drag.active());
 
     send(
         PointerButtonReleased{
             .button = MouseButton::Left,
             .position = pixelOf(Cell{.x = 3, .y = 3})});
 
-    EXPECT_FALSE(pause.paused());
-}
-
-// A drag must not fight the player's own pause -- see RoadDrag.
-TEST_F(GridSinkTest, LeftDrag_LeavesAnAlreadyPausedRunPaused)
-{
-    pause.hold();
-
-    clickAt(Cell{.x = 2, .y = 3}, MouseButton::Left);
-    send(
-        PointerButtonReleased{
-            .button = MouseButton::Left,
-            .position = pixelOf(Cell{.x = 3, .y = 3})});
-
-    EXPECT_TRUE(pause.paused());
+    EXPECT_FALSE(drag.active());
 }
 
 // A building is placed on the press alone, and starts no drag.
@@ -584,7 +567,7 @@ TEST_F(GridSinkTest, LeftPress_StartsNoDragForABuildingTool)
 
     clickAt(Cell{.x = 2, .y = 3}, MouseButton::Left);
 
-    EXPECT_FALSE(pause.paused());
+    EXPECT_FALSE(drag.active());
 
     send(
         PointerButtonReleased{
@@ -604,7 +587,7 @@ TEST_F(GridSinkTest, LeftPress_CancelsTheDragBeforeIt)
     overlay.select(BuildTool::House);
     clickAt(Cell{.x = 2, .y = 8}, MouseButton::Left);
 
-    EXPECT_FALSE(pause.paused());
+    EXPECT_FALSE(drag.active());
 
     send(
         PointerButtonReleased{
@@ -624,7 +607,7 @@ TEST_F(GridSinkTest, LeftRelease_LaysNothingWithoutADrag)
             .position = pixelOf(Cell{.x = 3, .y = 3})});
 
     EXPECT_EQ(paths.size(), 0U);
-    EXPECT_FALSE(pause.paused());
+    EXPECT_FALSE(drag.active());
 }
 
 // Only the left button ends a road drag.
@@ -636,12 +619,12 @@ TEST_F(GridSinkTest, RightRelease_LeavesTheDragAlone)
             .button = MouseButton::Right,
             .position = pixelOf(Cell{.x = 5, .y = 3})});
 
-    EXPECT_TRUE(pause.paused());
+    EXPECT_TRUE(drag.active());
     EXPECT_EQ(paths.size(), 1U);
 }
 
 // A gesture begun on the grid has to be able to end anywhere.
-// Otherwise a drag let go over the bar would hold the pause for good.
+// Otherwise a drag let go over the bar would lay no road at all.
 TEST_F(GridSinkTest, LeftRelease_EndsTheDragEvenOverTheToolbar)
 {
     clickAt(Cell{.x = 2, .y = 3}, MouseButton::Left);
@@ -653,7 +636,7 @@ TEST_F(GridSinkTest, LeftRelease_EndsTheDragEvenOverTheToolbar)
             .button = MouseButton::Left,
             .position = pixelOf(Cell{.x = 4, .y = 3})});
 
-    EXPECT_FALSE(pause.paused());
+    EXPECT_FALSE(drag.active());
     EXPECT_EQ(paths.size(), 3U);
 }
 
@@ -671,17 +654,6 @@ TEST_F(GridSinkTest, PointerMoved_ExtendsNoDragThatIsNotUnderWay)
     EXPECT_EQ(paths.size(), 1U);
 }
 
-// The cancel releases nothing it did not hold, exactly as the end does.
-TEST_F(GridSinkTest, LeftPress_CancelsADragWithoutResumingAPausedRun)
-{
-    pause.hold();
-
-    clickAt(Cell{.x = 2, .y = 3}, MouseButton::Left);
-    clickAt(Cell{.x = 6, .y = 3}, MouseButton::Left);
-
-    EXPECT_TRUE(pause.paused());
-}
-
 // The grid takes the pointer and nothing else.
 // A key is somebody else's business, and reaches no placement here.
 TEST_F(GridSinkTest, KeyPress_ChangesNothingOnTheGrid)
@@ -692,5 +664,5 @@ TEST_F(GridSinkTest, KeyPress_ChangesNothingOnTheGrid)
 
     EXPECT_EQ(paths.size(), 0U);
     EXPECT_EQ(before.x, camera.pan().x);
-    EXPECT_FALSE(pause.paused());
+    EXPECT_FALSE(drag.active());
 }

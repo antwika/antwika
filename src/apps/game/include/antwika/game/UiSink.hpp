@@ -80,12 +80,13 @@ namespace antwika::game
      * gesture alive would also leave a route being planned against a
      * city nobody can see.
      *
-     * **Opening the modal holds the run**, exactly as entering a city
-     * does, and closing it does not let the run go again -- hold()
-     * rather than toggle() for CityEntrySink's reason, and no release
-     * for the same one, since the way out is the pause button it always
-     * was. That also settles the drag: the modal's hold supersedes the
-     * drag's, so a drag ended here never resumes anything.
+     * **Opening the modal holds nothing**, and neither does entering a
+     * city: a run progresses all the time unless a player has asked for
+     * a pause, so the city goes on behind the modal exactly as it goes
+     * on behind the world map. The pause button is the only thing that
+     * writes PauseState, and it writes the state it was showing the
+     * opposite of rather than flipping one -- see PauseState for why an
+     * absolute value is what more than one player asking needs.
      */
     class UiSink final : public ITickEventSink
     {
