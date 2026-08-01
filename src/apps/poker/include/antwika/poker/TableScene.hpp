@@ -143,7 +143,7 @@ namespace antwika::poker
 
     private:
         /**
-         * @brief What every seat row is laid out against.
+         * @brief What every seat box is laid out against.
          *
          * Gathered once for the whole table, since each of them is a
          * function of the canvas or of the other seats rather than of
@@ -152,15 +152,20 @@ namespace antwika::poker
         struct SeatMetrics
         {
             std::size_t index = 0;
-            std::uint32_t rowHeight = 0;
+            std::uint32_t width = 0;
+            std::uint32_t height = 0;
             std::uint32_t barRoom = 0;
             Chips largestStack = 1;
             std::uint32_t scale = 1;
             bool showButton = false;
+            bool handInProgress = false;
         };
 
         static void appendFelt(
             std::vector<ArtBlit> &art, Size canvas);
+
+        static void appendTable(
+            std::vector<ArtBlit> &art, const WidgetRects &rects);
 
         static void appendBoard(
             std::vector<ArtBlit> &art,
@@ -187,16 +192,53 @@ namespace antwika::poker
         void describeHeader(
             Context &ui, const TableSnapshot &snapshot) const;
 
-        void describeBoard(
+        void describeTable(
             Context &ui,
             const TableSnapshot &snapshot,
             std::uint32_t scale) const;
 
-        void describeSeats(
+        /**
+         * @brief Lay the table out with its seats around the edge.
+         *
+         * Three bands: the seats along the top, the middle row holding
+         * the left seats, the table and the right seats, and the seats
+         * along the bottom. Which seat lands on which side is
+         * arithmetic over the seat count alone, so a table's picture is
+         * a function of how many places it has.
+         *
+         * @param ui Receives the containers.
+         * @param snapshot What to draw.
+         * @param scale Pixels per glyph pixel.
+         */
+        void describeRing(
             Context &ui,
-            Size canvas,
             const TableSnapshot &snapshot,
             std::uint32_t scale) const;
+
+        /**
+         * @brief Lay out one side's run of seats, spread evenly.
+         *
+         * A growing spacer before each seat and one after the last, so
+         * a side of two and a side of three both spread across whatever
+         * room the band has.
+         *
+         * @param ui Receives the containers.
+         * @param snapshot What to draw.
+         * @param metrics What every seat is laid out against; its index
+         * is the one field this fills in.
+         * @param first The lowest seat index on this side.
+         * @param count How many seats this side takes.
+         * @param reversed Whether the side runs against seat order,
+         * which is what carries the ring clockwise back along the
+         * bottom and up the left.
+         */
+        void describeSeatRun(
+            Context &ui,
+            const TableSnapshot &snapshot,
+            SeatMetrics metrics,
+            std::size_t first,
+            std::size_t count,
+            bool reversed) const;
 
         void describeSeat(
             Context &ui,

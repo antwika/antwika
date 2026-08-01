@@ -47,6 +47,21 @@ The shuffle is seeded from `RoomConfig` and `PolicyAgent` is a pure function of 
 `TableSnapshot` is the spectator's answer to `holdem::TableView`: an immutable value handed to a scene that can only draw.
 `TableRenderSink` is registered *after* `PokerRoomSink`, since that is what steps the table.
 
+**The seats are placed around the table by the one layout.**
+`TableScene::describe()` lays the ring out as three bands: the seats along the top, then a row holding the left seats, the table and the right seats, and then the seats along the bottom.
+Which seat lands on which side is `ringPlan()`, arithmetic over the seat count alone -- the two short sides take a quarter each and the long ones share the rest, since a table is wider than it is tall and so is a seat.
+Every seat is the same fixed size and holds its own name, stack, status line, stack bar, badges and hole cards, so nothing about the picture depends on how many places the table has.
+A side runs against seat order along the bottom and up the left, which is what carries the ring round clockwise.
+
+**The rounded table is art rather than arithmetic.**
+`gfx::IRenderer` has no rounded-rectangle call and no clipping at all, so the felt is one slot of the atlas (`kTableSlot`) stretched into the rectangle the layout gave the middle of the table.
+It is blitted from `Frame::rects`, like every other piece of art here, so the shape somebody sees and the box the board is dealt into cannot become two rectangles.
+A stack of fills per corner would have been the alternative, and it would have been a second geometry beside the layout's.
+
+**A seat's status line is derived, not remembered.**
+"bet 40", "all in", "folded", "to act" and "waiting" all fall out of the `SeatSnapshot` in front of it, in that order of precedence.
+Nothing keeps a history of what anybody did, so a replay reaches the same words from the same state -- and no new field had to enter the snapshot to say them.
+
 **Closing the window is input.**
 `WindowCloseSource` is an `ITickEventSource` decorator that appends `engine.stop` once the window has gone, so a close lands in a `--record` file like anything else.
 

@@ -53,6 +53,34 @@ namespace
     constexpr Color kToAct{.red = 232, .green = 196, .blue = 72};
     constexpr Color kInFront{.red = 224, .green = 176, .blue = 64};
 
+    [[nodiscard]] std::int32_t rightOf(Rect rect) noexcept
+    {
+        return rect.origin.x
+               + static_cast<std::int32_t>(rect.size.width);
+    }
+
+    [[nodiscard]] std::int32_t bottomOf(Rect rect) noexcept
+    {
+        return rect.origin.y
+               + static_cast<std::int32_t>(rect.size.height);
+    }
+
+    [[nodiscard]] bool overlaps(Rect one, Rect other) noexcept
+    {
+        return one.origin.x < rightOf(other)
+               && other.origin.x < rightOf(one)
+               && one.origin.y < bottomOf(other)
+               && other.origin.y < bottomOf(one);
+    }
+
+    [[nodiscard]] bool contains(Rect outer, Rect inner) noexcept
+    {
+        return inner.origin.x >= outer.origin.x
+               && inner.origin.y >= outer.origin.y
+               && rightOf(inner) <= rightOf(outer)
+               && bottomOf(inner) <= bottomOf(outer);
+    }
+
     [[nodiscard]] SeatSnapshot player(
         std::string name, antwika::poker::Chips stack)
     {
@@ -240,6 +268,54 @@ TEST_F(TableSceneTest, Draw_ShowsNoBetForASeatThatHasNotActed)
     snapshot.seats[1].roundCommitted = 0;
 
     EXPECT_CALL(renderer, drawText(_, "bet 40", _, _)).Times(0);
+
+    scene.draw(renderer, kCanvas, snapshot);
+}
+
+// What a seat last did, in words, rather than only in chips.
+// Derived from the seat rather than remembered.
+// So a replay reaches the same line from the same state.
+TEST_F(TableSceneTest, Draw_SaysWhoTheHandIsWaitingOn)
+{
+    auto snapshot = liveTable();
+    snapshot.seats[1].roundCommitted = 0;
+
+    EXPECT_CALL(renderer, drawText(_, "to act", 2, kToAct));
+
+    scene.draw(renderer, kCanvas, snapshot);
+}
+
+TEST_F(TableSceneTest, Draw_SaysWhoHasFolded)
+{
+    auto snapshot = liveTable();
+    snapshot.seats[0].inHand = false;
+
+    EXPECT_CALL(renderer, drawText(_, "folded", 2, kDim));
+
+    scene.draw(renderer, kCanvas, snapshot);
+}
+
+TEST_F(TableSceneTest, Draw_SaysWhoIsAllIn)
+{
+    auto snapshot = liveTable();
+    snapshot.seats[0].stack = 0;
+
+    EXPECT_CALL(renderer, drawText(_, "all in", 2, kInFront));
+
+    scene.draw(renderer, kCanvas, snapshot);
+}
+
+// Between hands nobody has folded, whatever inHand says.
+TEST_F(TableSceneTest, Draw_SaysEverybodyIsWaitingBetweenHands)
+{
+    auto snapshot = liveTable();
+    snapshot.handInProgress = false;
+    snapshot.seats[0].inHand = false;
+    snapshot.seats[1].roundCommitted = 0;
+    snapshot.seats[1].isToAct = false;
+
+    EXPECT_CALL(renderer, drawText(_, "waiting", 2, kDim)).Times(2);
+    EXPECT_CALL(renderer, drawText(_, "folded", _, _)).Times(0);
 
     scene.draw(renderer, kCanvas, snapshot);
 }
@@ -458,10 +534,11 @@ TEST(TableArtTest, DescribeArt_GivesEverySeatAPlate)
         snapshot.seats.size());
 }
 
-// The art plates one row per seat and the ui boxes one row per seat.
-// They are the same rows, so they have to be the same distance apart.
-// One function answers how tall a row is, and this is why.
-TEST(TableArtTest, DescribeArt_PlatesTheRowsTheUiBoxesAtTheSamePitch)
+// The art plates one place per seat and the ui boxes one per seat.
+// They are the same places, so a plate has to land on the box it plates.
+// A ring cannot get that from a pitch.
+// Two seats on one are no fixed distance apart.
+TEST(TableArtTest, DescribeArt_PlatesTheVerySeatsTheUiBoxed)
 {
     const TableScene scene;
     auto snapshot = liveTable();
@@ -470,36 +547,44 @@ TEST(TableArtTest, DescribeArt_PlatesTheRowsTheUiBoxesAtTheSamePitch)
 
     const auto plate =
         antwika::poker::sourceOf(antwika::poker::kPlateSlot);
+    const auto frame = scene.describe(kCanvas, snapshot);
 
-    std::vector<std::int32_t> plateTops;
-    for (const auto &blit : artOf(scene, kCanvas, snapshot))
+    std::vector<Rect> plates;
+    for (const auto &blit :
+         scene.describeArt(kCanvas, frame.rects, snapshot))
     {
         if (blit.source == plate)
         {
-            plateTops.push_back(blit.destination.origin.y);
+            plates.push_back(blit.destination);
         }
     }
 
     // A seat's box is the only fill in that colour, one per seat.
     constexpr Color kSeatBox{.red = 16, .green = 50, .blue = 36};
-    std::vector<std::int32_t> boxTops;
-    for (const auto &command : scene.describe(kCanvas, snapshot).commands)
+    std::vector<Rect> boxes;
+    for (const auto &command : frame.commands)
     {
         const auto *fill = std::get_if<antwika::ui::FillRect>(&command);
         if (fill != nullptr && fill->color == kSeatBox)
         {
-            boxTops.push_back(fill->rect.origin.y);
+            boxes.push_back(fill->rect);
         }
     }
 
-    ASSERT_EQ(plateTops.size(), snapshot.seats.size());
-    ASSERT_EQ(boxTops.size(), snapshot.seats.size());
+    ASSERT_EQ(plates.size(), snapshot.seats.size());
+    ASSERT_EQ(boxes.size(), snapshot.seats.size());
 
-    for (std::size_t index = 1; index < plateTops.size(); ++index)
+    // The plates are in seat order and the boxes in ring order.
+    // So they are paired by where they are rather than by index.
+    for (const auto &drawn : plates)
     {
-        EXPECT_EQ(
-            plateTops[index] - plateTops[index - 1],
-            boxTops[index] - boxTops[index - 1]);
+        std::size_t landed = 0;
+        for (const auto &box : boxes)
+        {
+            landed += overlaps(box, drawn) ? 1U : 0U;
+        }
+
+        EXPECT_EQ(landed, 1U);
     }
 }
 
@@ -752,34 +837,6 @@ namespace
         Size{.width = 480, .height = 1200},
         Size{.width = 320, .height = 200},
         Size{.width = 800, .height = 600}};
-
-    [[nodiscard]] std::int32_t rightOf(Rect rect) noexcept
-    {
-        return rect.origin.x
-               + static_cast<std::int32_t>(rect.size.width);
-    }
-
-    [[nodiscard]] std::int32_t bottomOf(Rect rect) noexcept
-    {
-        return rect.origin.y
-               + static_cast<std::int32_t>(rect.size.height);
-    }
-
-    [[nodiscard]] bool overlaps(Rect one, Rect other) noexcept
-    {
-        return one.origin.x < rightOf(other)
-               && other.origin.x < rightOf(one)
-               && one.origin.y < bottomOf(other)
-               && other.origin.y < bottomOf(one);
-    }
-
-    [[nodiscard]] bool contains(Rect outer, Rect inner) noexcept
-    {
-        return inner.origin.x >= outer.origin.x
-               && inner.origin.y >= outer.origin.y
-               && rightOf(inner) <= rightOf(outer)
-               && bottomOf(inner) <= bottomOf(outer);
-    }
 
     /**
      * @brief One card, and where the layout put it.
@@ -1063,7 +1120,162 @@ TEST(TableAlignmentTest, EveryCardIsBlittedIntoTheRectangleItWasGiven)
     }
 }
 
-// The plate is the seat row, so it cannot be a row out of step with it.
+// A seat is a place around the table rather than a row in a list.
+// So every place has to be inside the window.
+// And no two places may be the same place.
+// A stack of rows got both for free; a ring is held to them.
+TEST(TableAlignmentTest, EverySeatIsInsideTheCanvasAndOffEveryOther)
+{
+    const TableScene scene;
+
+    for (const auto canvas : kCanvases)
+    {
+        for (const std::size_t seats : {1U, 2U, 3U, 6U, 9U})
+        {
+            SCOPED_TRACE(
+                std::to_string(canvas.width) + "x"
+                + std::to_string(canvas.height) + ", "
+                + std::to_string(seats) + " seats");
+
+            const auto snapshot = dealtTable(seats, Stage::Flop);
+            const auto frame = scene.describe(canvas, snapshot);
+            const Rect window{
+                .origin = {.x = 0, .y = 0}, .size = canvas};
+
+            std::vector<Rect> places;
+            for (std::size_t index = 0; index < seats; ++index)
+            {
+                const auto seat = frame.rects.find(widgets::seat(index));
+
+                ASSERT_TRUE(seat.has_value());
+                EXPECT_TRUE(contains(window, *seat));
+
+                for (const auto &other : places)
+                {
+                    EXPECT_FALSE(overlaps(other, *seat));
+                }
+
+                places.push_back(*seat);
+            }
+        }
+    }
+}
+
+// The felt is the middle of the ring rather than a box beside it.
+// It is blitted into the rectangle the layout gave it.
+// So the shape and the box the board is dealt into are one thing.
+TEST(TableAlignmentTest, TheTableIsBlittedIntoTheRectangleItWasGiven)
+{
+    const TableScene scene;
+    const auto felt =
+        antwika::poker::sourceOf(antwika::poker::kTableSlot);
+
+    for (const auto canvas : kCanvases)
+    {
+        for (const std::size_t seats : {2U, 6U, 9U})
+        {
+            SCOPED_TRACE(
+                std::to_string(canvas.width) + "x"
+                + std::to_string(canvas.height) + ", "
+                + std::to_string(seats) + " seats");
+
+            const auto snapshot = dealtTable(seats, Stage::Flop);
+            const auto frame = scene.describe(canvas, snapshot);
+            const auto art =
+                scene.describeArt(canvas, frame.rects, snapshot);
+            const auto table = frame.rects.find(widgets::kTable);
+
+            ASSERT_TRUE(table.has_value());
+            EXPECT_EQ(blitsOf(art, felt), 1U);
+
+            for (const auto &blit : art)
+            {
+                if (blit.source == felt)
+                {
+                    EXPECT_EQ(blit.destination, *table);
+                }
+            }
+
+            // The board is dealt onto the table rather than beside it.
+            for (std::size_t index = 0; index < snapshot.board.size();
+                 ++index)
+            {
+                const auto card =
+                    frame.rects.find(widgets::boardCard(index));
+
+                ASSERT_TRUE(card.has_value());
+                EXPECT_TRUE(contains(*table, *card));
+            }
+
+            // And no seat is standing on it.
+            for (std::size_t index = 0; index < seats; ++index)
+            {
+                const auto seat = frame.rects.find(widgets::seat(index));
+
+                ASSERT_TRUE(seat.has_value());
+                EXPECT_FALSE(overlaps(*table, *seat));
+            }
+        }
+    }
+}
+
+// A name over the wrong seat is a picture of a different table.
+TEST(TableAlignmentTest, EverySeatsNameIsOnTheSeatItBelongsTo)
+{
+    const TableScene scene;
+    std::size_t checked = 0;
+
+    for (const auto canvas : kCanvases)
+    {
+        for (const std::size_t seats : {2U, 6U, 9U})
+        {
+            SCOPED_TRACE(
+                std::to_string(canvas.width) + "x"
+                + std::to_string(canvas.height) + ", "
+                + std::to_string(seats) + " seats");
+
+            const auto snapshot = dealtTable(seats, Stage::Flop);
+            const auto frame = scene.describe(canvas, snapshot);
+
+            for (std::size_t index = 0; index < seats; ++index)
+            {
+                const auto place = frame.rects.find(widgets::seat(index));
+                const auto name =
+                    textDrawn(frame, snapshot.seats[index].name);
+
+                ASSERT_TRUE(place.has_value());
+
+                // A seat too cramped draws none of the name.
+                // So there is nothing to be in the wrong place.
+                if (!name.has_value())
+                {
+                    continue;
+                }
+
+                ++checked;
+                EXPECT_TRUE(contains(*place, *name));
+
+                for (std::size_t other = 0; other < seats; ++other)
+                {
+                    if (other == index)
+                    {
+                        continue;
+                    }
+
+                    const auto elsewhere =
+                        frame.rects.find(widgets::seat(other));
+
+                    ASSERT_TRUE(elsewhere.has_value());
+                    EXPECT_FALSE(overlaps(*elsewhere, *name));
+                }
+            }
+        }
+    }
+
+    EXPECT_GT(checked, 0U);
+}
+
+// The plate is the seat box, so it cannot be a box out of step with it.
 TEST(TableAlignmentTest, EverySeatsPlateStaysInsideTheRowItPlates)
 {
     const TableScene scene;
@@ -1174,4 +1386,3 @@ TEST(TableArtTest, DescribeArt_PlatesNothingIntoARowWithNoRoomLeft)
         EXPECT_LE(blit.destination.size.width, kCanvas.width);
     }
 }
-

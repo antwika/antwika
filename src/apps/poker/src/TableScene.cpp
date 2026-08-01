@@ -135,35 +135,124 @@ namespace antwika::poker
             return std::max<Chips>(largest, 1);
         }
 
-        // Top padding, the name, the stack, the bar, bottom padding.
-        // Any shorter and a row has nothing left to show them in.
-        [[nodiscard]] std::uint32_t minimumSeatRowHeight(
-            std::uint32_t scale) noexcept
-        {
-            return 24 * scale;
-        }
-
-        // How tall one seat row is.
-        // Half the canvas, shared out, unless that is unreadably thin.
-        // The layout shrinks a table too tall for its window.
-        // The art follows it there rather than repeating this sum.
-        [[nodiscard]] std::uint32_t seatRowHeight(
-            Size canvas, std::size_t seats) noexcept
-        {
-            const auto scale = scaleForCanvas(canvas);
-            const auto rows = std::max<std::uint32_t>(
-                1, static_cast<std::uint32_t>(seats));
-
-            return std::max(
-                minimumSeatRowHeight(scale), canvas.height / 2 / rows);
-        }
-
         // A chip, a dealer button or a turn marker is one badge tall.
         // Two lines, so it reads as a token beside a line of text.
         [[nodiscard]] std::uint32_t badgeSide(
             std::uint32_t scale) noexcept
         {
             return 2 * kGlyphLineHeight * scale;
+        }
+
+        // How tall a card comes out of describeCard().
+        // A line of text between two shoulders, padded on every side.
+        // Stated here so a seat is tall enough to hold two of them.
+        // As the same sum, rather than as a second number.
+        [[nodiscard]] std::uint32_t cardHeight(
+            std::uint32_t scale) noexcept
+        {
+            return (3 * kGlyphLineHeight * scale)
+                   + (2 * kGlyphAdvance * scale);
+        }
+
+        // What a seat's border and its box's padding take off both axes.
+        // One scaled pixel of border on each side and two of padding.
+        [[nodiscard]] std::uint32_t seatChrome(
+            std::uint32_t scale) noexcept
+        {
+            return 6 * scale;
+        }
+
+        // How many characters of a name a seat is built to show.
+        // A longer one is truncated rather than allowed to widen it.
+        // Every seat on the ring is the same size.
+        constexpr std::uint32_t kSeatNameCells = 11;
+
+        // A name with both badges beside it, and the chrome around them.
+        [[nodiscard]] std::uint32_t seatWidth(
+            std::uint32_t scale) noexcept
+        {
+            return (kSeatNameCells * kGlyphAdvance * scale)
+                   + (2 * badgeSide(scale)) + seatChrome(scale);
+        }
+
+        // Three lines and a stack bar over a pair of hole cards.
+        [[nodiscard]] std::uint32_t seatHeight(
+            std::uint32_t scale) noexcept
+        {
+            return (3 * kGlyphLineHeight * scale) + (2 * scale)
+                   + cardHeight(scale) + seatChrome(scale);
+        }
+
+        // How many seats each side of the table takes.
+        // The two long sides get whatever the short ones leave.
+        // A table is wider than it is tall, and so is a seat.
+        // So a seat reads best along the top or the bottom.
+        struct RingPlan
+        {
+            std::size_t top = 0;
+            std::size_t right = 0;
+            std::size_t bottom = 0;
+            std::size_t left = 0;
+        };
+
+        [[nodiscard]] RingPlan ringPlan(std::size_t seats) noexcept
+        {
+            const auto side = seats / 4;
+            const auto rest = seats - (2 * side);
+
+            return RingPlan{
+                .top = (rest + 1) / 2,
+                .right = side,
+                .bottom = rest / 2,
+                .left = side};
+        }
+
+        // What a seat last did, as one line of text.
+        //
+        // Derived from the seat rather than remembered.
+        // Nothing here holds a history of what anybody did.
+        // So a replay reaches the same words from the same state.
+        //
+        // Labelled here rather than answered as a value.
+        // A returned string is a temporary with a cleanup branch.
+        // No test can reach that one, and the gate then refuses it.
+        void describeStatus(
+            Context &ui, const SeatSnapshot &seat, bool handInProgress)
+        {
+            // Chips in front say more than anything else could.
+            if (seat.roundCommitted > 0)
+            {
+                ui.label(
+                    "bet " + std::to_string(seat.roundCommitted),
+                    kInFront);
+
+                return;
+            }
+
+            if (seat.inHand && seat.stack == 0)
+            {
+                ui.label("all in", kInFront);
+
+                return;
+            }
+
+            // Between hands nobody has folded.
+            // They are all waiting for the next one.
+            if (handInProgress && !seat.inHand)
+            {
+                ui.label("folded", kDim);
+
+                return;
+            }
+
+            if (seat.isToAct)
+            {
+                ui.label("to act", kToAct);
+
+                return;
+            }
+
+            ui.label("waiting", kDim);
         }
     } // namespace
 
@@ -215,6 +304,27 @@ namespace antwika::poker
                     .tint = kWhite});
             }
         }
+    }
+
+    void TableScene::appendTable(
+        std::vector<ArtBlit> &art, const WidgetRects &rects)
+    {
+        const auto table = rects.find(widgets::kTable);
+
+        // A frame that laid out no table has none to draw.
+        if (!table.has_value())
+        {
+            return;
+        }
+
+        // The rounding is the slot's own.
+        // Stretched into the rectangle the layout gave the table.
+        // antwika::gfx has no rounded-rectangle call of any kind.
+        // So the corners are art rather than a stack of fills.
+        art.push_back(ArtBlit{
+            .source = sourceOf(kTableSlot),
+            .destination = *table,
+            .tint = kWhite});
     }
 
     void TableScene::appendCard(
@@ -412,6 +522,7 @@ namespace antwika::poker
         // The felt is the one thing here the canvas still decides.
         // It covers the whole window and so belongs to no widget.
         appendFelt(art, canvas);
+        appendTable(art, rects);
         appendBoard(art, rects, snapshot);
         appendSeats(art, rects, snapshot);
 
@@ -452,8 +563,7 @@ namespace antwika::poker
                      .gap = 0});
 
                 describeHeader(ui, snapshot);
-                describeBoard(ui, snapshot, scale);
-                describeSeats(ui, canvas, snapshot, scale);
+                describeRing(ui, snapshot, scale);
             }
         }
 
@@ -471,18 +581,24 @@ namespace antwika::poker
         ui.label(blindsOf(snapshot), kDim);
     }
 
-    void TableScene::describeBoard(
+    void TableScene::describeTable(
         Context &ui,
         const TableSnapshot &snapshot,
         std::uint32_t scale) const
     {
-        // The board takes whatever the header and the seats leave.
+        // The table takes whatever the seats around it leave.
         // The two growing spacers hold its content in the middle.
+        //
+        // Named, because this is the rectangle the felt is blitted into.
+        // What the table looks like and what it holds are then one box.
+        // Rather than two that agree until either one of them moves.
         const auto board = ui.column(
             {.width = kGrow,
              .height = kGrow,
              .cross = Alignment::Center,
-             .gap = scale});
+             .padding = scale,
+             .gap = scale,
+             .id = widgets::kTable});
 
         ui.spacer(kGrow);
 
@@ -513,35 +629,99 @@ namespace antwika::poker
         ui.spacer(kGrow);
     }
 
-    void TableScene::describeSeats(
+    void TableScene::describeRing(
         Context &ui,
-        Size canvas,
         const TableSnapshot &snapshot,
         std::uint32_t scale) const
     {
-        const auto rowHeight =
-            seatRowHeight(canvas, snapshot.seats.size());
+        const auto plan = ringPlan(snapshot.seats.size());
 
-        // A bar is sized against the canvas, not the row it sits in.
+        // A bar is sized against the seat it sits in, not the canvas.
+        // A seat is the same size wherever on the ring it landed.
         // A child cannot ask what its container was given.
-        const auto barRoom = canvas.width / 3;
+        const SeatMetrics metrics{
+            .width = seatWidth(scale),
+            .height = seatHeight(scale),
+            .barRoom = seatWidth(scale) / 2,
+            .largestStack = largestStack(snapshot),
+            .scale = scale,
+            .showButton = snapshot.handsPlayed > 0,
+            .handInProgress = snapshot.handInProgress};
 
-        const auto largest = largestStack(snapshot);
-        const auto showButton = snapshot.handsPlayed > 0;
+        const auto ring =
+            ui.column({.width = kGrow, .height = kGrow, .gap = scale});
 
-        for (std::size_t index = 0; index < snapshot.seats.size();
-             ++index)
+        // Each band fits around its seats.
+        // So a side with none takes no room and needs no case.
         {
-            describeSeat(
-                ui,
-                snapshot.seats[index],
-                {.index = index,
-                 .rowHeight = rowHeight,
-                 .barRoom = barRoom,
-                 .largestStack = largest,
-                 .scale = scale,
-                 .showButton = showButton});
+            const auto top =
+                ui.row({.width = kGrow, .height = kFit, .gap = 0});
+
+            describeSeatRun(ui, snapshot, metrics, 0, plan.top, false);
         }
+
+        {
+            const auto middle = ui.row(
+                {.width = kGrow, .height = kGrow, .gap = scale});
+
+            {
+                const auto left = ui.column(
+                    {.width = kFit, .height = kGrow, .gap = 0});
+
+                describeSeatRun(
+                    ui,
+                    snapshot,
+                    metrics,
+                    plan.top + plan.right + plan.bottom,
+                    plan.left,
+                    true);
+            }
+
+            describeTable(ui, snapshot, scale);
+
+            {
+                const auto right = ui.column(
+                    {.width = kFit, .height = kGrow, .gap = 0});
+
+                describeSeatRun(
+                    ui, snapshot, metrics, plan.top, plan.right, false);
+            }
+        }
+
+        {
+            const auto bottom =
+                ui.row({.width = kGrow, .height = kFit, .gap = 0});
+
+            describeSeatRun(
+                ui,
+                snapshot,
+                metrics,
+                plan.top + plan.right,
+                plan.bottom,
+                true);
+        }
+    }
+
+    void TableScene::describeSeatRun(
+        Context &ui,
+        const TableSnapshot &snapshot,
+        SeatMetrics metrics,
+        std::size_t first,
+        std::size_t count,
+        bool reversed) const
+    {
+        for (std::size_t step = 0; step < count; ++step)
+        {
+            ui.spacer(kGrow);
+
+            const auto along = reversed ? count - 1 - step : step;
+            metrics.index = first + along;
+
+            describeSeat(ui, snapshot.seats[metrics.index], metrics);
+        }
+
+        // The one after the last is what centres a side of one.
+        ui.spacer(kGrow);
     }
 
     void TableScene::describeSeat(
@@ -556,8 +736,8 @@ namespace antwika::poker
         // The plate and the box are then one row.
         // Rather than two rows that were handed the same pitch.
         const auto border = ui.column(
-            {.width = kGrow,
-             .height = fixedSize(metrics.rowHeight),
+            {.width = fixedSize(metrics.width),
+             .height = fixedSize(metrics.height),
              .background = seat.isToAct ? kToAct : kRail,
              .padding = metrics.scale,
              .gap = 0,
@@ -572,6 +752,7 @@ namespace antwika::poker
         const auto box = ui.column(
             {.width = kGrow,
              .height = kGrow,
+             .cross = Alignment::Center,
              .background = kSeatBox,
              .padding = boxPadding,
              .gap = 0});
@@ -583,50 +764,43 @@ namespace antwika::poker
             return;
         }
 
-        const auto row = ui.row({.width = kGrow, .height = kGrow});
-
+        // Who is sitting here reads above what they are doing.
+        // The badges sit beside it and the cards under the lot.
         {
-            const auto details =
-                ui.column({.width = kGrow, .height = kGrow, .gap = 0});
-
-            // Before the first deal the button is wherever Table put it.
-            auto label = seat.name;
-            if (seat.isButton && metrics.showButton)
-            {
-                label += " (D)";
-            }
-
-            ui.label(label, seat.inHand ? kInk : kDim);
+            const auto head = ui.row(
+                {.width = kGrow, .height = kFit, .gap = metrics.scale});
 
             {
-                const auto stack =
-                    ui.row({.width = kGrow, .gap = metrics.barRoom});
+                const auto details = ui.column(
+                    {.width = kGrow, .height = kFit, .gap = 0});
 
+                // Before the first deal it is wherever Table put it.
+                auto label = seat.name;
+                if (seat.isButton && metrics.showButton)
+                {
+                    label += " (D)";
+                }
+
+                ui.label(label, seat.inHand ? kInk : kDim);
                 ui.label(std::to_string(seat.stack), kInk);
 
-                if (seat.roundCommitted > 0)
+                // What this seat last did, in words, under its stack.
+                describeStatus(ui, seat, metrics.handInProgress);
+
+                // The bar makes stacks comparable at a glance.
+                // A filled container with no children is all it is.
                 {
-                    ui.label(
-                        "bet " + std::to_string(seat.roundCommitted),
-                        kInFront);
+                    const auto bar = ui.row(
+                        {.width = fixedSize(static_cast<std::uint32_t>(
+                             seat.stack * metrics.barRoom
+                             / metrics.largestStack)),
+                         .height = fixedSize(2 * metrics.scale),
+                         .background = kStackBar});
                 }
             }
 
-            // The bar makes stacks comparable at a glance.
-            // A filled container with no children is all it is.
-            {
-                const auto bar = ui.row(
-                    {.width = fixedSize(static_cast<std::uint32_t>(
-                         seat.stack * metrics.barRoom
-                         / metrics.largestStack)),
-                     .height = fixedSize(2 * metrics.scale),
-                     .background = kStackBar});
-            }
-
-            ui.spacer(kGrow);
+            describeBadges(ui, seat, metrics);
         }
-
-        describeBadges(ui, seat, metrics);
 
         if (seat.inHand)
         {
@@ -636,6 +810,10 @@ namespace antwika::poker
                 metrics.scale,
                 widgets::firstHoleCard(metrics.index));
         }
+
+        // Whatever room is left sits under the cards.
+        // Rather than between the name and them.
+        ui.spacer(kGrow);
     }
 
     void TableScene::describeBadges(
