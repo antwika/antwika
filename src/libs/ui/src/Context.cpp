@@ -11,6 +11,7 @@
 #include "antwika/ui/ButtonState.hpp"
 #include "antwika/ui/HoverTargets.hpp"
 #include "antwika/ui/Sizing.hpp"
+#include "antwika/ui/UiError.hpp"
 #include "antwika/ui/WidgetRects.hpp"
 
 #include "Flatten.hpp"
@@ -181,6 +182,16 @@ namespace antwika::ui
 
     Frame Context::finish()
     {
+        // The root is what is open once every Scope has gone.
+        // Anything else means one is still alive around this call.
+        // What it holds open has widgets still to be put in it.
+        // So the frame this would lay out is not the one written.
+        if (tree->openIndex() != 0)
+        {
+            throw UiError{
+                "antwika::ui::Context::finish: a container is still open"};
+        }
+
         // Filled by the arranging pass rather than by a pass of its own.
         // So a reported rectangle is one the picture was drawn from.
         WidgetRects rects; // GCOVR_EXCL_LINE

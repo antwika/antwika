@@ -227,9 +227,21 @@ namespace antwika::ui
          * it runs after this, and it touches nothing but the picture.
          * See Frame::hoverTargets.
          *
+         * **Every container has to be closed first**, and this is the
+         * one thing in this library that is checked rather than made
+         * inexpressible. A Scope closes what it was opened for, so no
+         * caller can nest wrongly -- but a Scope cannot see finish()
+         * being called inside it, and what that lays out is a tree
+         * missing every widget the open container had still to be
+         * given. The result is a picture and a set of interactions that
+         * silently disagree with the frame the caller wrote, so it is
+         * refused rather than returned.
+         *
          * @return The drawing commands, what the pointer and the
          * keyboard did, where each named widget went, and which of them
          * a hover pass may recolour.
+         * @throws UiError if a container opened on this Context is still
+         * open.
          */
         [[nodiscard]] Frame finish();
 

@@ -10,8 +10,11 @@ namespace antwika::ui
      *
      * The only way to close a container, and the reason Context has no
      * end() of any kind: a mis-nested layout is not something this API
-     * can express, so there is nothing to check when a frame finishes,
-     * no error to report, and no branch that a test would have to reach.
+     * can express, so there is no ordering to check.
+     *
+     * What a scope cannot see is Context::finish() being called inside
+     * it, since the call happens while this object is very much alive.
+     * That one case is checked there rather than here.
      *
      * Only Context makes one, and only for a container it just opened.
      */

@@ -253,6 +253,7 @@ namespace antwika::ui::detail
             const ContentBox &box)
         {
             const auto available = crossOf(box.size, box.axis);
+            const auto room = mainOf(box.size, box.axis);
             std::uint32_t cursor = 0;
 
             for (std::size_t index = 0; index < children.size(); ++index)
@@ -284,15 +285,23 @@ namespace antwika::ui::detail
                     offset = available - extent;
                 }
 
+                // The main axis clamps for the cross axis's reason.
+                // It also has one all of its own.
+                // The gaps alone can exceed the room a container has.
+                // That leaves the distribution nothing left to cut.
+                // The cursor then walks out of the box a gap at a time.
+                const auto start = std::min(cursor, room);
+                const auto along =
+                    std::min(extents[index], room - start);
+
                 value.arranged = Rect{
                     .origin = pointFrom(
                         box.axis,
                         mainOf(box.origin, box.axis)
-                            + static_cast<std::int32_t>(cursor),
+                            + static_cast<std::int32_t>(start),
                         crossOf(box.origin, box.axis)
                             + static_cast<std::int32_t>(offset)),
-                    .size =
-                        sizeFrom(box.axis, extents[index], extent)};
+                    .size = sizeFrom(box.axis, along, extent)};
 
                 cursor = clampToU32(
                     std::uint64_t{cursor} + extents[index] + box.gap);
