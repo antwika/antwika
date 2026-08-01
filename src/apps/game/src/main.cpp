@@ -24,6 +24,7 @@
 #include <antwika/input/SelectedInputBackend.hpp>
 #include <antwika/log/Level.hpp>
 #include <antwika/replay/ReplaySource.hpp>
+#include <antwika/simulation/WindowInputSource.hpp>
 #include <antwika/time/SystemClock.hpp>
 #include <antwika/time/SystemSleeper.hpp>
 
@@ -45,7 +46,6 @@
 #include "antwika/game/SaveLoadScene.hpp"
 #include "antwika/game/UiCanvas.hpp"
 #include "antwika/game/UiOverlay.hpp"
-#include "antwika/game/WindowInputSource.hpp"
 #include "antwika/game/WorldMap.hpp"
 #include "antwika/game/WorldMapScene.hpp"
 #include "antwika/game/WorldMapState.hpp"
@@ -62,7 +62,6 @@ using antwika::game::PathIndex;
 using antwika::game::RenderSystem;
 using antwika::game::SaveLoadScene;
 using antwika::game::UiOverlay;
-using antwika::game::WindowInputSource;
 using antwika::game::WorldMapConfig;
 using antwika::game::WorldMapScene;
 using antwika::game::WorldMapState;
@@ -72,6 +71,7 @@ using antwika::input::InputEventCodec;
 using antwika::input::InputPipeline;
 using antwika::log::Level;
 using antwika::replay::ReplaySource;
+using antwika::simulation::WindowInputSource;
 using antwika::time::SystemSleeper;
 
 namespace

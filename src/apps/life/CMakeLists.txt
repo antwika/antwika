@@ -11,8 +11,6 @@ add_executable(antwika_life
     src/PointerToggleSink.cpp
     src/PrintSystem.cpp
     src/RenderSystem.cpp
-    src/TickPacer.cpp
-    src/WindowInputSource.cpp
     src/main.cpp
 )
 
