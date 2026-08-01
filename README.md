@@ -35,6 +35,7 @@ src/
     ├── ecs_commons/
     ├── engine/
     ├── event/
+    ├── font/
     ├── gfx/
     ├── holdem/
     ├── i18n/
@@ -47,7 +48,6 @@ src/
     ├── simulation/
     ├── sound/
     ├── time/
-    ├── ttf/
     ├── ui/
     └── wfc/
 backends/
