@@ -4,11 +4,14 @@
 #include <cstddef>
 #include <cstdint>
 #include <optional>
+#include <string>
+#include <string_view>
 
 #include <antwika/animation/KeyFrame.hpp>
 #include <antwika/animation/LoopMode.hpp>
 #include <antwika/animation/Playback.hpp>
 #include <antwika/gfx/Color.hpp>
+#include <antwika/gfx/Glyphs.hpp>
 #include <antwika/gfx/Point.hpp>
 #include <antwika/gfx/Rect.hpp>
 
@@ -26,13 +29,25 @@ namespace antwika::companion
 
     namespace
     {
-        // The picture is laid out on this many whole units a side.
-        // Whole units rather than fractions of the canvas is the point.
-        // It keeps every rectangle the same integer on every toolchain.
-        constexpr std::uint32_t kGridUnits = 32;
-
         // How wide a gauge is, leaving a unit of margin either side.
-        constexpr std::uint32_t kBarUnits = kGridUnits - 2;
+        constexpr std::uint32_t kBarUnits = kSceneUnits - 2;
+
+        // How many glyph pixels one layout unit is worth.
+        // So the readout grows with the window rather than beside it.
+        // A unit worth fewer than this still gets the smallest text.
+        constexpr std::uint32_t kGlyphPixelsPerUnit = 4;
+
+        // What the readout says, in the order it says it.
+        constexpr std::size_t kReadoutLines = 3;
+
+        // The one fact no gauge holds, in the words it is said in.
+        // An interrupted night is worth saying apart from a quiet one.
+        // It is the rest of that night's recovery already forfeited.
+        constexpr std::string_view kAwakeWord = "awake";
+        constexpr std::string_view kHungryWord = "awake, hungry";
+        constexpr std::string_view kAsleepWord = "asleep";
+        constexpr std::string_view kWokenWord = "asleep, woken";
+        constexpr std::string_view kGoneWord = "gone";
 
         constexpr Tick kBreatheFrameTicks = kTicksPerSecond / 2;
         constexpr Tick kEyesOpenTicks = 3 * kTicksPerSecond;
@@ -59,6 +74,7 @@ namespace antwika::companion
             Color gauge;
             Color hungerFill;
             Color happinessFill;
+            Color text;
         };
 
         constexpr Palette kDay{
@@ -70,7 +86,8 @@ namespace antwika::companion
             .eye = {.red = 34, .green = 30, .blue = 40},
             .gauge = {.red = 42, .green = 46, .blue = 58},
             .hungerFill = {.red = 226, .green = 118, .blue = 78},
-            .happinessFill = {.red = 118, .green = 210, .blue = 138}};
+            .happinessFill = {.red = 118, .green = 210, .blue = 138},
+            .text = {.red = 246, .green = 250, .blue = 244}};
 
         constexpr Palette kNight{
             .sky = {.red = 24, .green = 30, .blue = 62},
@@ -81,7 +98,8 @@ namespace antwika::companion
             .eye = {.red = 24, .green = 22, .blue = 30},
             .gauge = {.red = 30, .green = 34, .blue = 44},
             .hungerFill = {.red = 150, .green = 78, .blue = 54},
-            .happinessFill = {.red = 78, .green = 140, .blue = 96}};
+            .happinessFill = {.red = 78, .green = 140, .blue = 96},
+            .text = {.red = 196, .green = 206, .blue = 226}};
 
         // A perished companion keeps its own palette, not the night's.
         // So the picture still says what happened at noon the day after.
@@ -94,12 +112,13 @@ namespace antwika::companion
             .eye = {.red = 40, .green = 40, .blue = 46},
             .gauge = {.red = 34, .green = 34, .blue = 40},
             .hungerFill = {.red = 96, .green = 96, .blue = 102},
-            .happinessFill = {.red = 96, .green = 96, .blue = 102}};
+            .happinessFill = {.red = 96, .green = 96, .blue = 102},
+            .text = {.red = 182, .green = 182, .blue = 188}};
 
         [[nodiscard]] std::optional<Layout> layoutFor(const Size canvas)
         {
-            const auto byWidth = canvas.width / kGridUnits;
-            const auto byHeight = canvas.height / kGridUnits;
+            const auto byWidth = canvas.width / kSceneUnits;
+            const auto byHeight = canvas.height / kSceneUnits;
             const auto unit = byWidth < byHeight ? byWidth : byHeight;
 
             if (unit == 0)
@@ -107,7 +126,7 @@ namespace antwika::companion
                 return std::nullopt;
             }
 
-            const auto used = unit * kGridUnits;
+            const auto used = unit * kSceneUnits;
 
             return Layout{
                 .unit = unit,
@@ -118,6 +137,18 @@ namespace antwika::companion
                         (canvas.height - used) / 2)}};
         }
 
+        [[nodiscard]] Point point(
+            const Layout &layout,
+            const std::int32_t x,
+            const std::int32_t y)
+        {
+            const auto unit = static_cast<std::int32_t>(layout.unit);
+
+            return Point{
+                .x = layout.origin.x + x * unit,
+                .y = layout.origin.y + y * unit};
+        }
+
         [[nodiscard]] Rect box(
             const Layout &layout,
             const std::int32_t x,
@@ -125,15 +156,86 @@ namespace antwika::companion
             const std::uint32_t width,
             const std::uint32_t height)
         {
-            const auto unit = static_cast<std::int32_t>(layout.unit);
-
             return Rect{
-                .origin = {
-                    .x = layout.origin.x + x * unit,
-                    .y = layout.origin.y + y * unit},
+                .origin = point(layout, x, y),
                 .size = {
                     .width = width * layout.unit,
                     .height = height * layout.unit}};
+        }
+
+        // Four glyph pixels to a unit, so the readout grows with it.
+        // A unit too small for even that still gets the smallest text.
+        [[nodiscard]] std::uint32_t textScale(const Layout &layout)
+        {
+            const auto scale = layout.unit / kGlyphPixelsPerUnit;
+
+            if (scale == 0)
+            {
+                return 1;
+            }
+
+            return scale;
+        }
+
+        [[nodiscard]] std::string ratio(
+            const std::uint32_t value, const std::uint32_t max)
+        {
+            return std::to_string(value) + "/" + std::to_string(max);
+        }
+
+        [[nodiscard]] std::string_view stateWord(
+            const PetSnapshot &snapshot)
+        {
+            if (snapshot.state == PetState::Perished)
+            {
+                return kGoneWord;
+            }
+
+            if (snapshot.state == PetState::Asleep)
+            {
+                return snapshot.disturbed ? kWokenWord : kAsleepWord;
+            }
+
+            return snapshot.hungry ? kHungryWord : kAwakeWord;
+        }
+
+        // Anchored to the bottom of the grid rather than to a row.
+        // A unit of margin sits under the last line, and no more.
+        // So three lines fit whatever a unit turned out to be worth.
+        void drawReadout(
+            IRenderer &renderer,
+            const Layout &layout,
+            const Palette &palette,
+            const PetSnapshot &snapshot)
+        {
+            const auto scale = textScale(layout);
+            const auto step = static_cast<std::int32_t>(
+                antwika::gfx::kGlyphLineHeight * scale);
+            const Point floorLine = point(
+                layout, 1, static_cast<std::int32_t>(kSceneUnits) - 1);
+            const auto top =
+                floorLine.y
+                - static_cast<std::int32_t>(kReadoutLines) * step;
+
+            // A line at a time rather than a collection of them.
+            // A part-built collection has an unwinding no test reaches.
+            // Which is a branch the coverage gate would then refuse.
+            renderer.drawText(
+                Point{.x = floorLine.x, .y = top},
+                "hunger " + ratio(snapshot.hunger, snapshot.hungerMax),
+                scale,
+                palette.text);
+            renderer.drawText(
+                Point{.x = floorLine.x, .y = top + step},
+                "happy "
+                    + ratio(snapshot.happiness, snapshot.happinessMax),
+                scale,
+                palette.text);
+            renderer.drawText(
+                Point{.x = floorLine.x, .y = top + 2 * step},
+                stateWord(snapshot),
+                scale,
+                palette.text);
         }
 
         void drawGauge(
@@ -280,7 +382,7 @@ namespace antwika::companion
             return;
         }
 
-        renderer.drawRect(box(*layout, 0, 24, kGridUnits, 8),
+        renderer.drawRect(box(*layout, 0, 24, kSceneUnits, 8),
                           palette.ground);
         renderer.drawRect(box(*layout, 25, 8, 4, 4), palette.orb);
 
@@ -304,34 +406,38 @@ namespace antwika::companion
         if (snapshot.state == PetState::Perished)
         {
             drawGrave(renderer, *layout, palette);
-            return;
         }
-
-        // Every moving part resolves from the tick count carried here.
-        // So drawing the same tick twice draws the same pixels.
-        // And a replay draws exactly what the recorded run drew.
-        const auto breath = resolve(breathe, snapshot.ticks);
-        const bool asleep = snapshot.state == PetState::Asleep;
-        const bool eyesShut =
-            asleep || resolve(blink, snapshot.ticks).index == 1;
-
-        drawAnimal(
-            renderer, *layout, palette, kBob[breath.index], eyesShut);
-
-        if (asleep)
+        else
         {
-            drawSleepPuffs(
-                renderer,
-                *layout,
-                palette,
-                resolve(drowse, snapshot.ticks).index);
-            return;
+            // Every moving part resolves from the tick count here.
+            // So drawing the same tick twice draws the same pixels.
+            // And a replay draws exactly what the recorded run drew.
+            const auto breath = resolve(breathe, snapshot.ticks);
+            const bool asleep = snapshot.state == PetState::Asleep;
+            const bool eyesShut =
+                asleep || resolve(blink, snapshot.ticks).index == 1;
+
+            drawAnimal(
+                renderer, *layout, palette, kBob[breath.index], eyesShut);
+
+            if (asleep)
+            {
+                drawSleepPuffs(
+                    renderer,
+                    *layout,
+                    palette,
+                    resolve(drowse, snapshot.ticks).index);
+            }
+            else if (snapshot.hungry)
+            {
+                drawBowl(renderer, *layout, palette);
+            }
         }
 
-        if (snapshot.hungry)
-        {
-            drawBowl(renderer, *layout, palette);
-        }
+        // Last, so anything drawn over the ground stays behind it.
+        // A perished companion is reported too.
+        // Which is why the grave no longer ends this function.
+        drawReadout(renderer, *layout, palette, snapshot);
     }
 
 } // namespace antwika::companion

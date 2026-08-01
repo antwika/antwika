@@ -1,3 +1,4 @@
+#include <cstdint>
 #include <iostream>
 #include <memory>
 #include <string>
@@ -37,10 +38,13 @@ using antwika::time::SystemSleeper;
 namespace
 {
     // A companion lives in the corner of a desktop, not in front of one.
-    // Everything it draws is laid out on 32 whole units a side.
-    // 128 pixels divides into exactly four pixels each.
+    // Everything it draws is laid out on kSceneUnits whole units a side.
+    // So the size is that many units rather than a dividing pixel count.
+    constexpr std::uint32_t kPixelsPerUnit = 8;
+
     constexpr antwika::gfx::Size kWindowSize{
-        .width = 128, .height = 128};
+        .width = kPixelsPerUnit * antwika::companion::kSceneUnits,
+        .height = kPixelsPerUnit * antwika::companion::kSceneUnits};
 
     // The backend that draws nothing.
     // A build using it has nothing to watch and nothing to close.

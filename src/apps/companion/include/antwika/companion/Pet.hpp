@@ -136,7 +136,7 @@ namespace antwika::companion
      * reaching zero is Perished, which nothing brings it back from --
      * see wiki/apps/companion.md for the numbers and why they are those.
      *
-     * A tap is deliberately the only input, since the window is 128
+     * A tap is deliberately the only input, since the window is 256
      * pixels square and a pointer landing anywhere in it means the same
      * thing. There is therefore no layout to keep in step with the
      * scene, and no way for what somebody sees and what they can hit to
