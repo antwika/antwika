@@ -17,6 +17,7 @@
 #include <antwika/time/Tick.hpp>
 
 #include "antwika/companion/IPetStore.hpp"
+#include "antwika/companion/Lineage.hpp"
 #include "antwika/companion/Pet.hpp"
 
 namespace antwika::companion
@@ -47,11 +48,19 @@ namespace antwika::companion
     struct CompanionSummary
     {
         antwika::time::Tick ticks = 0;
+        std::uint32_t day = 0;
         std::uint32_t hunger = 0;
+        std::uint32_t fun = 0;
         std::uint32_t happiness = 0;
+        std::uint32_t energy = 0;
+        std::uint32_t energyCeiling = 0;
         std::uint32_t meals = 0;
+        std::uint32_t plays = 0;
         std::uint32_t disturbances = 0;
         std::uint32_t pesters = 0;
+        std::uint32_t collapses = 0;
+        std::uint32_t generation = 1;
+        antwika::time::Tick bestTicks = 0;
         bool perished = false;
     };
 
@@ -59,13 +68,13 @@ namespace antwika::companion
      * @brief Builds one more tick sink over the state bootstrap() owns.
      *
      * A factory rather than a sink, because a sink that draws the
-     * companion needs the Pet, and it does not exist before bootstrap()
-     * has made one.
+     * companion needs the Pet and the record behind it, and neither
+     * exists before bootstrap() has made them.
      * Ownership passes back, so the sink lives exactly as long as the
      * session it belongs to.
      */
-    using TickSinkFactory =
-        std::function<std::unique_ptr<ITickEventSink>(const Pet &)>;
+    using TickSinkFactory = std::function<
+        std::unique_ptr<ITickEventSink>(const Pet &, const Lineage &)>;
 
     /**
      * @brief Everything one session is wired out of.
@@ -95,15 +104,15 @@ namespace antwika::companion
         PetConfig pet = {};
 
         /**
-         * @brief The size the "new companion" button is laid out and
-         * hit-tested against.
+         * @brief The size the props and the "new companion" button are
+         * laid out and hit-tested against.
          *
          * The size the window was *asked* for, never the one it
          * reports, so a resized window cannot make a recorded press
          * land on a different answer.
          * Nothing by default, which is a session with no window: the
-         * canvas is then too small for a grid, so there is no button to
-         * draw and none to press.
+         * canvas is then too small for a grid, so there is nothing to
+         * draw and nothing to press -- and every press is a prod.
          */
         Size canvas = {};
 

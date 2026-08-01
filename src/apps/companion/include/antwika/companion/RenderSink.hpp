@@ -5,6 +5,7 @@
 #include <antwika/gfx/IWindow.hpp>
 #include <antwika/gfx/Size.hpp>
 
+#include "antwika/companion/Lineage.hpp"
 #include "antwika/companion/Pet.hpp"
 #include "antwika/companion/PetScene.hpp"
 
@@ -22,8 +23,8 @@ namespace antwika::companion
      * Rendering hangs off the tick loop without feeding back into it:
      * everything it reads arrives as an immutable PetSnapshot, and
      * nothing it does is visible to any other sink.
-     * Registered after TapSink and PetSink, so the frame is of the state
-     * the tick ended with.
+     * Registered after PropSink and PetSink, so the frame is of the
+     * state the tick ended with.
      *
      * It draws against the *configured* canvas rather than the size the
      * window reports. Nothing here is hit-tested, so that costs nothing
@@ -43,12 +44,14 @@ namespace antwika::companion
          * outlive this sink.
          * @param scene Draws the companion. Must outlive this sink.
          * @param pet Snapshotted each tick. Must outlive this sink.
+         * @param lineage The record behind it. Must outlive this sink.
          * @param canvas The size everything is laid out against.
          */
         RenderSink(
             IWindow &window,
             const PetScene &scene,
             const Pet &pet,
+            const Lineage &lineage,
             Size canvas);
 
         RenderSink(const RenderSink &) = delete;
@@ -68,6 +71,7 @@ namespace antwika::companion
         IWindow &window;
         const PetScene &scene;
         const Pet &pet;
+        const Lineage &lineage;
         Size canvas;
     };
 

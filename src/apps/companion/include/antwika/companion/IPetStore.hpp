@@ -2,7 +2,7 @@
 
 #include <optional>
 
-#include "antwika/companion/Pet.hpp"
+#include "antwika/companion/CompanionMemory.hpp"
 
 namespace antwika::companion
 {
@@ -17,10 +17,10 @@ namespace antwika::companion
      * test hands the session a store that answers from memory and the
      * session cannot tell the difference.
      *
-     * It carries a PetMemory rather than a Pet, so nothing that reads or
-     * writes a file can reach the live companion -- the same split
-     * SaveGame keeps between the value a file holds and the session it
-     * came from.
+     * It carries a CompanionMemory rather than a Pet, so nothing that
+     * reads or writes a file can reach the live companion -- the same
+     * split SaveGame keeps between the value a file holds and the
+     * session it came from.
      */
     class IPetStore
     {
@@ -28,21 +28,21 @@ namespace antwika::companion
         virtual ~IPetStore() = default;
 
         /**
-         * @brief Read the companion the last session left behind.
+         * @brief Read what the last session left behind.
          * @return What it was, or nothing when there is no previous
          * companion -- a first run, or a store given nowhere to look.
          * That is an ordinary answer and starts a new companion.
          * @throws SaveFormatError If there is something to read and it
          * is not a companion this build can read.
          */
-        [[nodiscard]] virtual std::optional<PetMemory> load() = 0;
+        [[nodiscard]] virtual std::optional<CompanionMemory> load() = 0;
 
         /**
-         * @brief Write the companion out.
-         * @param memory Everything the simulation holds.
+         * @brief Write the companion and its lineage out.
+         * @param memory Everything the session holds.
          * @throws SaveFormatError If the bytes cannot be written.
          */
-        virtual void save(const PetMemory &memory) = 0;
+        virtual void save(const CompanionMemory &memory) = 0;
     };
 
 } // namespace antwika::companion

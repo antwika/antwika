@@ -1,6 +1,9 @@
 add_executable(antwika_companion
     src/Companion.cpp
+    src/DayMood.cpp
     src/FilePetStore.cpp
+    src/LifeStage.cpp
+    src/Lineage.cpp
     src/PacingSink.cpp
     src/Pet.cpp
     src/PetLayout.cpp
@@ -8,9 +11,9 @@ add_executable(antwika_companion
     src/PetScene.cpp
     src/PetSink.cpp
     src/PetSnapshot.cpp
+    src/PropSink.cpp
     src/RenderSink.cpp
     src/ReviveSink.cpp
-    src/TapSink.cpp
     src/main.cpp
 )
 

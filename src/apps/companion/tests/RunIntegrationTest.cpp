@@ -12,6 +12,8 @@
 #include <antwika/event/mocks/MockEventSink.hpp>
 #include <antwika/event/TickEvent.hpp>
 #include <antwika/event/TickEventRecorder.hpp>
+#include <antwika/gfx/Point.hpp>
+#include <antwika/gfx/Size.hpp>
 #include <antwika/input/InputEvent.hpp>
 #include <antwika/input/InputEventCodec.hpp>
 #include <antwika/input/MouseButton.hpp>
@@ -20,16 +22,24 @@
 #include <antwika/time/fakes/FakeSleeper.hpp>
 
 #include "antwika/companion/Companion.hpp"
+#include "antwika/companion/Lineage.hpp"
 #include "antwika/companion/Pet.hpp"
+#include "antwika/companion/PetLayout.hpp"
 
 using antwika::companion::CompanionConfig;
 using antwika::companion::CompanionSummary;
+using antwika::companion::layoutFor;
+using antwika::companion::Lineage;
 using antwika::companion::Pet;
 using antwika::companion::PetConfig;
+using antwika::companion::Prop;
+using antwika::companion::propBox;
 using antwika::event::Event;
 using antwika::event::mocks::MockEventSink;
 using antwika::event::TickEvent;
 using antwika::event::TickEventRecorder;
+using antwika::gfx::Point;
+using antwika::gfx::Size;
 using antwika::input::InputEventCodec;
 using antwika::input::MouseButton;
 using antwika::input::PointerButtonPressed;
@@ -42,41 +52,68 @@ namespace
 {
     constexpr antwika::time::Tick kMaxTicks = 40;
 
-    // A day of six ticks and a night of four.
-    // So one scripted session reaches both the meal and the tap at night.
+    constexpr Size kCanvas{.width = 256, .height = 256};
+
+    // Hungry after two ticks, and nothing else moving at all.
+    // So a session ends on what the scripted presses did to it.
     constexpr PetConfig kBrisk{
-        .dayTicks = 6,
-        .nightTicks = 4,
         .hungerPeriodTicks = 1,
         .starvePeriodTicks = 1000,
+        .funDecayPeriodTicks = 1000,
+        .fretPeriodTicks = 1000,
+        .recoverPeriodTicks = 1000,
         .restPeriodTicks = 1000,
+        .drainHappyTicks = 1000,
+        .drainContentTicks = 1000,
+        .drainLowTicks = 1000,
+        .drainMiserableTicks = 1000,
         .hungerMax = 8,
         .hungerThreshold = 2,
         .feedRelief = 2,
-        .feedJoy = 1,
-        .disturbCost = 1,
+        .funMax = 8,
+        .funStart = 8,
+        .playFun = 2,
+        .playHunger = 1,
+        .playEnergy = 2,
+        .energyBase = 20,
+        .collapsePenalty = 10,
         .happinessMax = 6,
         .happinessStart = 4};
 
+    Point middleOf(const Prop prop)
+    {
+        const auto layout = layoutFor(kCanvas);
+        const auto area = propBox(*layout, prop);
+
+        return Point{
+            .x = area.origin.x
+                 + static_cast<std::int32_t>(area.size.width) / 2,
+            .y = area.origin.y
+                 + static_cast<std::int32_t>(area.size.height) / 2};
+    }
+
     TickEvent pressAt(
-        const InputEventCodec &codec, const antwika::time::Tick tick)
+        const InputEventCodec &codec,
+        const antwika::time::Tick tick,
+        const Point at)
     {
         return TickEvent{
             .tick = tick,
             .event = codec.encode(PointerButtonPressed{
                 .button = MouseButton::Left,
-                .position = {.x = 64, .y = 64}})};
+                .position = {.x = at.x, .y = at.y}})};
     }
 
-    // One tap in the daylight, onto a hungry companion.
-    // One onto a sleeping one, and a stop well before the cap.
+    // One press on the ball, and one on the bowl once it is hungry.
+    // Then one on nothing in particular, and a stop before the cap.
     std::vector<TickEvent> script()
     {
         const InputEventCodec codec;
 
         return {
-            pressAt(codec, 3),
-            pressAt(codec, 7),
+            pressAt(codec, 3, middleOf(Prop::Ball)),
+            pressAt(codec, 7, middleOf(Prop::Bowl)),
+            pressAt(codec, 9, Point{.x = 128, .y = 64}),
             TickEvent{
                 .tick = 20,
                 .event =
@@ -89,6 +126,7 @@ namespace
     {
         std::uint64_t ticks = 0;
         std::uint32_t meals = 0;
+        std::uint32_t generation = 0;
     };
 
     // Stands in for the renderer main.cpp hands bootstrap().
@@ -100,8 +138,9 @@ namespace
         : public antwika::event::ITickEventSink
     {
     public:
-        FinishedTickWatcher(const Pet &pet, WatchedTicks &seen)
-            : pet(pet), seen(seen)
+        FinishedTickWatcher(
+            const Pet &pet, const Lineage &lineage, WatchedTicks &seen)
+            : pet(pet), lineage(lineage), seen(seen)
         {
         }
 
@@ -114,10 +153,12 @@ namespace
 
             ++seen.ticks;
             seen.meals = pet.meals();
+            seen.generation = lineage.generation();
         }
 
     private:
         const Pet &pet;
+        const Lineage &lineage;
         WatchedTicks &seen;
     };
 
@@ -136,13 +177,14 @@ namespace
             .codec = codec,
             .sleeper = sleeper,
             .pet = kBrisk,
+            .canvas = kCanvas,
             .maxTicks = kMaxTicks});
     }
 } // namespace
 
 // The requirement this project exists for, for this app.
 // A session is driven entirely by what a source hands it.
-// Nothing about hunger, sleep or happiness is ever recorded.
+// Nothing about hunger, fun, energy or happiness is ever recorded.
 // So running the same input twice has to land on the same companion.
 TEST(RunIntegrationTest, TheSameInputReachesTheSameCompanionTwice)
 {
@@ -150,11 +192,17 @@ TEST(RunIntegrationTest, TheSameInputReachesTheSameCompanionTwice)
     const CompanionSummary second = runOnce();
 
     EXPECT_EQ(first.ticks, second.ticks);
+    EXPECT_EQ(first.day, second.day);
     EXPECT_EQ(first.hunger, second.hunger);
+    EXPECT_EQ(first.fun, second.fun);
     EXPECT_EQ(first.happiness, second.happiness);
+    EXPECT_EQ(first.energy, second.energy);
+    EXPECT_EQ(first.energyCeiling, second.energyCeiling);
     EXPECT_EQ(first.meals, second.meals);
+    EXPECT_EQ(first.plays, second.plays);
     EXPECT_EQ(first.disturbances, second.disturbances);
     EXPECT_EQ(first.pesters, second.pesters);
+    EXPECT_EQ(first.collapses, second.collapses);
     EXPECT_EQ(first.perished, second.perished);
 }
 
@@ -167,22 +215,20 @@ TEST(RunIntegrationTest, AStopEventEndsTheSessionBeforeTheCap)
     EXPECT_FALSE(summary.perished);
 }
 
-// One press landed in the daylight, on a hungry companion.
-// The other landed on a sleeping one.
-// The difference between them is entirely when they happened.
+// Three presses, and three different meanings.
+// The only difference between them is where they landed and when.
 // That is the whole game.
-TEST(RunIntegrationTest, WhenATapLandsIsWhatDecidesWhatItMeans)
+TEST(RunIntegrationTest, WhereAPressLandsIsWhatDecidesWhatItMeans)
 {
     const CompanionSummary summary = runOnce();
 
+    EXPECT_EQ(summary.plays, 1U);
     EXPECT_EQ(summary.meals, 1U);
-    EXPECT_EQ(summary.disturbances, 1U);
-
-    // Neither of the two landed on a companion that wanted nothing.
-    EXPECT_EQ(summary.pesters, 0U);
+    EXPECT_EQ(summary.pesters, 1U);
+    EXPECT_EQ(summary.disturbances, 0U);
 }
 
-// main.cpp hangs the renderer off the session with the extraSink factory.
+// main.cpp hangs the renderer off the session with extraSink.
 // A sink drawing the companion needs state bootstrap() makes itself.
 // It must be registered after the sinks that change that state.
 TEST(RunIntegrationTest, TheExtraSinkSeesEveryFinishedTick)
@@ -202,14 +248,18 @@ TEST(RunIntegrationTest, TheExtraSinkSeesEveryFinishedTick)
             .codec = codec,
             .sleeper = sleeper,
             .pet = kBrisk,
+            .canvas = kCanvas,
             .maxTicks = kMaxTicks,
-            .extraSink = [&seen](const Pet &pet)
+            .extraSink =
+                [&seen](const Pet &pet, const Lineage &lineage)
             {
-                return std::make_unique<FinishedTickWatcher>(pet, seen);
+                return std::make_unique<FinishedTickWatcher>(
+                    pet, lineage, seen);
             }});
 
     EXPECT_EQ(seen.ticks, summary.ticks);
     EXPECT_EQ(seen.meals, summary.meals);
+    EXPECT_EQ(seen.generation, summary.generation);
 
     // Every tick was held back, whether anything was drawn or not.
     EXPECT_EQ(sleeper.requested().size(), summary.ticks);
@@ -218,7 +268,7 @@ TEST(RunIntegrationTest, TheExtraSinkSeesEveryFinishedTick)
 // A caller persisting a `--record` file has no pre-known script.
 // It passes an optional replayRecorder instead.
 // bootstrap() must register it, and only the input comes back.
-// The hunger, the sleep and the happiness are all regenerated.
+// The hunger, the fun, the energy and the happiness are regenerated.
 TEST(RunIntegrationTest, TheReplayRecorderReceivesEveryDispatchedEvent)
 {
     NiceMock<MockLogger> logger;
@@ -236,6 +286,7 @@ TEST(RunIntegrationTest, TheReplayRecorderReceivesEveryDispatchedEvent)
             .codec = codec,
             .sleeper = sleeper,
             .pet = kBrisk,
+            .canvas = kCanvas,
             .maxTicks = kMaxTicks,
             .replayRecorder = recorder});
 
@@ -262,20 +313,19 @@ TEST(RunIntegrationTest, ASessionCanEndWithACompanionThatHasPerished)
     const InputEventCodec codec;
     FakeSleeper sleeper;
 
-    // Every tap here lands on a sleeping companion.
-    // There are more of them than it has happiness to spend.
+    // One game spends everything it has.
+    // The collapse that follows takes a ceiling one collapse wide.
     PetConfig fragile = kBrisk;
-    fragile.happinessStart = 2;
-    fragile.disturbCost = 1;
+    fragile.energyBase = 4;
+    fragile.playEnergy = 4;
+    fragile.collapsePenalty = 4;
 
-    const std::vector<TickEvent> taps{
-        pressAt(codec, 7),
-        pressAt(codec, 8),
-        pressAt(codec, 9),
+    const std::vector<TickEvent> presses{
+        pressAt(codec, 3, middleOf(Prop::Ball)),
         TickEvent{
-            .tick = 11,
+            .tick = 6,
             .event = Event{.name = antwika::engine::events::kStop}}};
-    ReplaySource source(taps);
+    ReplaySource source(presses);
 
     const CompanionSummary summary =
         antwika::companion::bootstrap(CompanionConfig{
@@ -285,9 +335,11 @@ TEST(RunIntegrationTest, ASessionCanEndWithACompanionThatHasPerished)
             .codec = codec,
             .sleeper = sleeper,
             .pet = fragile,
+            .canvas = kCanvas,
             .maxTicks = 12});
 
     EXPECT_TRUE(summary.perished);
-    EXPECT_EQ(summary.happiness, 0U);
-    EXPECT_EQ(summary.disturbances, 2U);
+    EXPECT_EQ(summary.energy, 0U);
+    EXPECT_EQ(summary.energyCeiling, 0U);
+    EXPECT_EQ(summary.collapses, 1U);
 }

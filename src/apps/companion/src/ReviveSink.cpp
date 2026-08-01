@@ -14,16 +14,19 @@ namespace antwika::companion
     using antwika::input::PointerButtonPressed;
 
     ReviveSink::ReviveSink(
-        Pet &pet, const IInputEventCodec &codec, const Size canvas)
-        : pet(pet), codec(codec), canvas(canvas)
+        Pet &pet,
+        Lineage &lineage,
+        const IInputEventCodec &codec,
+        const Size canvas)
+        : pet(pet), lineage(lineage), codec(codec), canvas(canvas)
     {
     }
 
     void ReviveSink::handle(const TickEvent &event)
     {
         // The button is only there while there is nothing else to do.
-        // A press on that part of a living companion's window is a tap.
-        // Which TapSink has already answered by the time this runs.
+        // A press on that part of a living companion's window is a prod.
+        // Which PropSink has already answered by the time this runs.
         if (pet.state() != PetState::Perished)
         {
             return;
@@ -52,6 +55,10 @@ namespace antwika::companion
             return;
         }
 
+        // Offered to the record before the companion is replaced.
+        // Afterwards there is nothing left to ask how long it lived.
+        lineage.record(pet.ticks());
+        lineage.advance();
         pet.revive();
     }
 

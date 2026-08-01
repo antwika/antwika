@@ -26,6 +26,7 @@ using antwika::app::ConsoleLogging;
 using antwika::app::RecordedRun;
 using antwika::companion::CompanionSummary;
 using antwika::companion::FilePetStore;
+using antwika::companion::Lineage;
 using antwika::companion::Pet;
 using antwika::companion::PetScene;
 using antwika::companion::RenderSink;
@@ -92,7 +93,7 @@ namespace
         // Live input is attached only when there is no replay to run.
         // A replay already holds the input it recorded.
         // Movement is coalesced and idle movement is held back.
-        // A tap is the only input this application has.
+        // A press is the only input this application has.
         // Where the pointer went between two of them is unreadable here.
         InputPipeline input(
             fileSource,
@@ -116,10 +117,10 @@ namespace
                     store, recorded.options.replayPath),
                 .replayRecorder = recorded.replayRecorder,
                 .extraSink =
-                    [&](const Pet &pet)
+                    [&](const Pet &pet, const Lineage &lineage)
                 {
                     return std::make_unique<RenderSink>(
-                        *window, scene, pet, kWindowSize);
+                        *window, scene, pet, lineage, kWindowSize);
                 }});
 
         logger.log(
