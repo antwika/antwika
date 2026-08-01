@@ -11,9 +11,11 @@ find_package(stb REQUIRED)
 find_package(glm REQUIRED)
 
 add_library(antwika_gfx
+    src/AtlasText.cpp
     src/Bitmap.cpp
     src/Blit.cpp
     src/Camera3D.cpp
+    src/GlyphAtlasBitmap.cpp
     src/Glyphs.cpp
     src/MeshData.cpp
     src/NullBackend.cpp
@@ -48,8 +50,16 @@ target_include_directories(antwika_gfx
         $<INSTALL_INTERFACE:include>
 )
 
+# antwika::font is PUBLIC because AtlasText.hpp and
+# GlyphAtlasBitmap.hpp name font::GlyphAtlas in their signatures, so
+# anything including one includes that library's headers.
+# The direction is the only one available: antwika::font names no
+# module of this project at all, and has no DEPENDS line to name one
+# with, so gfx -> font is acyclic by construction rather than by
+# agreement.
 target_link_libraries(antwika_gfx
     PUBLIC
+        antwika::font
         antwika::log
         glm::glm
     PRIVATE
