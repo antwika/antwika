@@ -13,13 +13,13 @@ The only input is a left press anywhere in the window, and what it means depends
 
 - **Feed it while it is awake and hungry.** A tap then is a meal: it takes `feedRelief` off the hunger and gives `feedJoy` happiness back.
 - **Leave it alone while it is asleep.** A tap then wakes it: it costs `disturbCost` happiness *and* forfeits the rest of that night's recovery.
-- A tap while it is awake and not hungry is neither, and nothing at all comes of it.
-  Food offered to a companion that does not want any is left uneaten, which is what keeps tapping repeatedly from being a strategy.
-- A tap after it has perished does nothing either, since nothing about a perished companion ever changes again.
+- **Do not push food at it while it is awake and full.** A tap then is the third violation and the gentlest one: it costs `pesterCost` happiness, leaves the hunger where it was, and is counted as a pestering rather than as a meal.
+  Food offered to a companion that does not want any is left uneaten, and offering it anyway is what a companion has to put up with rather than something that never happened -- which is what keeps tapping repeatedly from being a strategy.
+- A tap after it has perished is the only one that does nothing, since nothing about a perished companion ever changes again.
 
-The two violations are the mirror of each other, and both spend the same number.
-Letting it go famished costs one happiness every `starvePeriodTicks`; waking it costs `disturbCost` at once.
-Happiness reaching zero is `PetState::Perished`, and there is no way back from it.
+The three violations all spend the same currency, and what separates them is how much.
+Letting it go famished costs one happiness every `starvePeriodTicks`; waking it costs `disturbCost` at once; pestering it costs `pesterCost` at once.
+Happiness reaching zero is `PetState::Perished`, and there is no way back from it -- by any of the three.
 
 ## The day, the night, and where the clock lives
 
@@ -50,9 +50,12 @@ Every period is written as a number of seconds times `kTicksPerSecond`, rather t
 - `kStarvePeriodTicks` is 3 seconds, so a full day spent famished costs about seven happiness -- more than a companion starts with.
 - `kRestPeriodTicks` is 4 seconds, so an undisturbed night is worth two or three happiness and attention pays where neglect does not.
 - `kDisturbCost` is 2, twice what a meal is worth, because the night is the need with no warning attached to it.
+- `kPesterCost` is 1, exactly `kFeedJoy` and half of `kDisturbCost`, so an unwanted meal is the equal and opposite of a wanted one and waking it stays twice the sin.
+  From `kHappinessStart` one stray tap costs a sixth of what it has and an undisturbed night gives two or three of it back, so a mistimed tap is recoverable; six in a row are not, which is the point -- tapping at it without pause is now a way to lose rather than a free action.
 - `kHappinessMax` is 10 and `kHappinessStart` is 6, above half, so a first mistake is survivable and a second day of them is not.
 
 The balance those numbers add up to is asserted rather than described: `PetTest` runs the shipped configuration for a hundred seconds twice over, once with nobody attending it and once feeding it whenever it asks, and requires the first to perish and the second not to.
+The second only ever taps a hungry companion, so it also pins that attentive play never pesters.
 A companion left entirely alone dies in the middle of its third day.
 
 ## How it is wired
@@ -60,7 +63,7 @@ A companion left entirely alone dies in the middle of its third day.
 The shape is `apps/tower_defence`'s rather than `apps/life`'s, because a companion is one plain value rather than a grid of entities.
 
 - `TapSink` decodes `input.pointer_*` and calls `Pet::tap()`.
-  **The app defines no event for feeding or for waking it up**, deliberately: a `--record` run persists the press, and whether it landed on a hungry companion, a sleeping one or a perished one is worked out again on replay from the same press and the same tick count.
+  **The app defines no event for feeding it, for waking it up or for pestering it**, deliberately: a `--record` run persists the press, and whether it landed on a hungry companion, a full one, a sleeping one or a perished one is worked out again on replay from the same press and the same tick count.
   Persisting the meal as well would feed it twice per tap.
 - `PetSink` calls `Pet::step()` once per `engine.tick`, registered after `TapSink` so a press is answered by the state the last tick ended with and the step that follows sees the meal.
 - `RenderSink` takes a `PetSnapshot` -- an immutable value the scene cannot write -- and hands it to `PetScene`, registered after both so a frame is of the state the tick ended with.
@@ -102,5 +105,5 @@ build/bin/antwika_companion/antwika_companion \
   --replay build/bin/antwika_companion/demo.json
 ```
 
-The shipped `demo.json` is a 38-second session with three well-timed meals and one rude awakening in it, and it ends with an `engine.stop` so it finishes on its own.
+The shipped `demo.json` is a 38-second session with three well-timed meals and one rude awakening in it, and no pestering at all, so it plays out exactly as it did before that third violation existed; it ends with an `engine.stop`, so it finishes on its own.
 A headless build reports neither a window close nor any input, so `Ctrl+C` is what ends a live run there -- and a `--record` run only writes its file once the run ends.

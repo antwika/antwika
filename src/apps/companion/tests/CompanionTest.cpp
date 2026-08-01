@@ -41,6 +41,7 @@ namespace
             .happiness = 7,
             .meals = 4,
             .disturbances = 1,
+            .pesters = 2,
             .perished = false};
 
         const auto line = summaryLine(summary);
@@ -49,6 +50,7 @@ namespace
         EXPECT_THAT(line, HasSubstr("120 ticks"));
         EXPECT_THAT(line, HasSubstr("4 meals"));
         EXPECT_THAT(line, HasSubstr("1 rude awakenings"));
+        EXPECT_THAT(line, HasSubstr("2 unwanted meals"));
         EXPECT_THAT(line, HasSubstr("happiness 7"));
         EXPECT_THAT(line, HasSubstr("hunger 3"));
     }

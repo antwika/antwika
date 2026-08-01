@@ -110,11 +110,15 @@ namespace antwika::companion
         }
 
         // Food a companion does not want is left uneaten.
-        // It is neither the right action nor a violation of either need.
-        // So nothing at all comes of it.
-        // That is what keeps tapping repeatedly from being a strategy.
+        // Being offered it anyway is the third violation.
+        // It costs less than waking one does.
+        // A bowl pushed at a full animal beats a night broken in half.
+        // It costs more than nothing, which is what it used to cost.
+        // A tap nobody paid for left tapping all day a free action.
         if (!hungry())
         {
+            ++pesterCount;
+            lose(config.pesterCost);
             return;
         }
 
@@ -170,6 +174,11 @@ namespace antwika::companion
         return disturbanceCount;
     }
 
+    std::uint32_t Pet::pesters() const noexcept
+    {
+        return pesterCount;
+    }
+
     const PetConfig &Pet::settings() const noexcept
     {
         return config;
@@ -195,9 +204,9 @@ namespace antwika::companion
         happinessLevel =
             happinessLevel > amount ? happinessLevel - amount : 0;
 
-        // Perishing is where the two needs meet.
-        // Neglect and disturbance spend the same number.
-        // So either of them can be what runs it out.
+        // Perishing is where every violation meets.
+        // Neglect, disturbance and pestering spend the same number.
+        // So any of the three can be what runs it out.
         if (happinessLevel == 0)
         {
             petState = PetState::Perished;

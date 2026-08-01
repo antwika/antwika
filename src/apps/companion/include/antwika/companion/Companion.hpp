@@ -48,6 +48,7 @@ namespace antwika::companion
         std::uint32_t happiness = 0;
         std::uint32_t meals = 0;
         std::uint32_t disturbances = 0;
+        std::uint32_t pesters = 0;
         bool perished = false;
     };
 
