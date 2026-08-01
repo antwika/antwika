@@ -25,7 +25,7 @@ namespace antwika::game
         Size canvas,
         Pointer pointer,
         const Camera &camera,
-        BuildTool selected,
+        std::optional<BuildTool> selected,
         bool paused,
         antwika::time::Tick tick) const
     {

@@ -664,13 +664,18 @@ namespace
 {
     // A session that leaves build mode with a right click.
     // The house is selected, cancelled, and the same cell clicked again.
-    // So what the run ends with says which tool that last click meant.
+    // That click places nothing, the palette having been put down.
+    // The road is then picked up and a second cell clicked.
+    // So what the run ends with says which tool each click meant.
     [[nodiscard]] std::vector<TickEvent> cancelSession()
     {
         const InputEventCodec codec;
         const auto palette = pixelOn(
             antwika::game::widgets::toolWidget(
                 antwika::game::BuildTool::House));
+        const auto roadButton = pixelOn(
+            antwika::game::widgets::toolWidget(
+                antwika::game::BuildTool::Road));
 
         return {
             TickEvent{
@@ -691,7 +696,20 @@ namespace
                 .tick = 2,
                 .event = pressAt(Cell{.x = 3, .y = 5}, MouseButton::Left)},
             TickEvent{
+                .tick = 3,
+                .event = codec.encode(
+                    antwika::input::PointerMoved{.position = roadButton})},
+            TickEvent{
+                .tick = 3,
+                .event = codec.encode(
+                    PointerButtonPressed{
+                        .button = MouseButton::Left,
+                        .position = roadButton})},
+            TickEvent{
                 .tick = 4,
+                .event = pressAt(Cell{.x = 4, .y = 5}, MouseButton::Left)},
+            TickEvent{
+                .tick = 5,
                 .event = Event{.name = antwika::engine::events::kStop}}};
     }
 } // namespace
@@ -704,10 +722,12 @@ TEST(ReplayDeterminismTest, ARightClickCancelReplaysToTheSameState)
     ReplaySource liveSource(script);
     const auto live = runWithToolbar(liveSource);
 
-    // The cancel landed: the last click laid a road, not a house.
+    // The cancel landed: the click after it placed nothing at all.
+    // Not a house, and not the road a fallback would have laid.
+    // The only cell holding anything is the one the road tool clicked.
     EXPECT_TRUE(live.summary.buildings.empty());
     ASSERT_EQ(live.summary.paths.size(), 1U);
-    EXPECT_EQ(live.summary.paths[0], (Cell{.x = 3, .y = 5}));
+    EXPECT_EQ(live.summary.paths[0], (Cell{.x = 4, .y = 5}));
 
     const ScratchFile file("antwika-game-cancel.replay");
     antwika::replay::saveReplayFile(live.recorded, file.name());
@@ -731,7 +751,7 @@ TEST(ReplayDeterminismTest, ARightClickCancelReplaysToTheSameState)
 }
 
 // Two runs that both did nothing would agree for the wrong reason.
-// Without the cancel that same last click puts a house up instead.
+// Without the cancel that same click puts a house up instead.
 TEST(ReplayDeterminismTest, TheCancelIsWhatChangesWhatTheLastClickPlaces)
 {
     auto script = cancelSession();
@@ -742,8 +762,11 @@ TEST(ReplayDeterminismTest, TheCancelIsWhatChangesWhatTheLastClickPlaces)
     ReplaySource source(script);
     const auto result = runWithToolbar(source);
 
-    EXPECT_EQ(result.summary.buildings.size(), 1U);
-    EXPECT_TRUE(result.summary.paths.empty());
+    // The house the cancelled run refused, and the road either lays.
+    ASSERT_EQ(result.summary.buildings.size(), 1U);
+    EXPECT_EQ(result.summary.buildings[0].at, (Cell{.x = 3, .y = 5}));
+    ASSERT_EQ(result.summary.paths.size(), 1U);
+    EXPECT_EQ(result.summary.paths[0], (Cell{.x = 4, .y = 5}));
 }
 
 TEST(ReplayDeterminismTest, ABuildingsWalkersAreRegeneratedRatherThanStored)

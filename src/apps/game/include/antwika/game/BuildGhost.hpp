@@ -51,7 +51,8 @@ namespace antwika::game
          * @brief Whether there is anywhere to draw it at all.
          *
          * False when nothing has said where the pointer is, when it is
-         * over the toolbar, or when the cell under it is off the grid.
+         * over the toolbar, when the palette has been put down, or when
+         * the cell under it is off the grid.
          */
         bool visible = false;
 
@@ -97,7 +98,9 @@ namespace antwika::game
      * pointer has not been seen.
      * @param camera The camera the pixel is resolved through.
      * @param extent The bounds a placement may reach.
-     * @param tool What the palette has selected.
+     * @param tool What the palette has selected; nullopt is the palette
+     * put down, which draws no ghost and no border round one, since
+     * there is then nothing a click would place to preview.
      * @param coveredByUi Whether the UI is under the pointer, as
      * UiOverlay reports it; what the bar covers, it covers from the
      * ghost too.
@@ -107,7 +110,7 @@ namespace antwika::game
         const std::optional<antwika::input::PointerHint> &hint,
         const Camera &camera,
         GridExtent extent,
-        BuildTool tool,
+        std::optional<BuildTool> tool,
         bool coveredByUi,
         const PathIndex &paths,
         const BuildingIndex &built);
