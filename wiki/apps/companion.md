@@ -1,10 +1,10 @@
 # apps/companion
 
-`src/apps/companion/` — a tamagotchi in a 128-pixel window.
+`src/apps/companion/` — a tamagotchi in a 256-pixel window.
 
 ## What it is
 
-`apps/companion` is a tamagotchi in a 128-pixel window: an animal with two needs, one input, and an end it can reach.
+`apps/companion` is a tamagotchi in a 256-pixel window: an animal with two needs, one input, and an end it can reach.
 What follows is the rules and the numbers, and why they are those numbers.
 
 ## The two needs, and the one input
@@ -76,12 +76,23 @@ The scene is still laid out against the *configured* window size rather than the
 ### Why the animal is rectangles rather than an atlas
 
 The house style is a hand-drawn PNG atlas addressed arithmetically (see [`game-texture-atlas.md`](game-texture-atlas.md)), and it is right when a picture has hundreds of distinct tiles and an artist who is not the programmer.
-This window is 128 pixels square and the animal is ten boxes.
+This window is 256 pixels square and the animal is ten boxes.
 An atlas for it would be a checked-in binary, a second contract in `TileAtlas.hpp`'s shape, and a startup check that the file is the size the header says -- all to hold a picture that is shorter written down than described.
 Drawing it from `IRenderer`'s rectangles also leaves the whole scene assertable against a mock renderer call by call, which a blit of somebody's art is not, and `PetSceneTest` asserts exactly that.
 
-Everything is laid out on a grid of 32 whole units a side, centred in the canvas, which 128 pixels divides into exactly four pixels each.
+Everything is laid out on a grid of `companion::kSceneUnits` whole units a side, centred in the canvas, which 256 pixels divides into exactly eight pixels each.
 Whole units rather than fractions of the canvas is what keeps every rectangle the same integer on every toolchain.
+`main.cpp` derives its window size from that constant times a pixels-per-unit number rather than naming a pixel count that happens to divide by it, so doubling the window is one number and nothing else is left to keep in step.
+
+### The readout
+
+Three lines of text stand on the ground under the animal: `hunger 3/8`, `happy 6/10`, and one line for what the companion is doing -- `awake`, `awake, hungry`, `asleep`, `asleep, woken` or `gone`.
+The first two say in words what the two gauges say in bars, and the third says the one thing no bar can, the perished state included.
+Every character of it is read off the `PetSnapshot`, so the readout reports the run rather than adding to it: no new state, no event, no clock, and nothing a replay has to reproduce beyond what it already did.
+
+How big the glyphs are is derived rather than chosen: four glyph pixels to a layout unit, so the readout doubles when the window does, and a unit too small for even that still gets the smallest text.
+The block is anchored to the *bottom* of the grid with a unit of margin under the last line, rather than to a row of it, so three lines fit whatever a unit turned out to be worth -- which is what keeps a small canvas from printing text off the bottom of itself.
+It is drawn last, after the animal or the grave, so anything a later frame puts over the ground stays in front of what is already there.
 
 ### The idle animation
 

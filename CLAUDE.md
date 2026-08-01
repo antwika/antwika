@@ -125,7 +125,7 @@ An application finds those files through `antwika::app::assetPath()`, which asks
 What this replaces is a path baked in at configure time, which was the *building* machine's path: right on the machine that built it, and a directory that does not exist on any other, so every cross-built executable that opened anything died on its first line.
 Test binaries stay directly in `bin/`, since they open nothing.
 
-`antwika_companion` opens a 128x128 window holding one animal with two needs: tap the window to feed it when it is hungry, and leave it alone while it is asleep.
+`antwika_companion` opens a 256x256 window holding one animal with two needs: tap the window to feed it when it is hungry, and leave it alone while it is asleep.
 Violating either costs it happiness, and happiness reaching zero is an ordinary, tested state it never leaves.
 Like `antwika_life` it has no end of its own, so a headless build runs until interrupted; `src/apps/companion/replays/demo.json` is a sample session to pass to `--replay`, and it ends on its own.
 See [`wiki/apps/companion.md`](wiki/apps/companion.md) for the rules and the numbers.
@@ -367,14 +367,17 @@ That constant is the whole line rather than the two dashes alone, and the readou
   That strip is `td::scoreBarHeight(canvas)` -- the height the bar itself lays out to, derived from the same theme padding and glyph line height -- rather than a fixed pixel count, which only matched the bar at one window size and left the bar covering grid rows at any taller one.
   It starts on an empty grid and loads nothing unless `--replay` says so, so what a session contains is what somebody clicked.
   `src/apps/tower_defence/replays/demo.json` is a sample session to pass to `--replay`.
-- `apps/companion` is a tamagotchi in a 128-pixel window, and its whole design is that **when a tap lands is what decides what it means**: a meal while the companion is awake and hungry, an interruption while it is asleep, and nothing at all otherwise.
+- `apps/companion` is a tamagotchi in a 256-pixel window, and its whole design is that **when a tap lands is what decides what it means**: a meal while the companion is awake and hungry, an interruption while it is asleep, and nothing at all otherwise.
   `companion::Pet` is the simulation -- integer throughout, no clock and no generator, so it is a pure function of how many times `step()` has been called and when `tap()` was called between them.
   The day is `(t % (dayTicks + nightTicks)) >= dayTicks` rather than a countdown, so falling asleep cannot get out of step with the day and the sun does not stop for a companion that has perished.
   Every period derives from one `companion::kTicksPerSecond`, `kTickInterval` included, so how fast it lives and how fast it is drawn are the same constant.
   **The app defines no event for feeding it**: a press is the input, `companion::TapSink` turns it into a meal or a rude awakening inside the tick path, and the replay stores the press and regenerates which it was.
   There is deliberately no layout and no hit-testing, since the window holds one animal and a press anywhere in it means the same thing -- so unlike `life::BoardLayout` there is nothing here that could let what somebody sees and what they can hit drift apart.
   Rendering is a write-only projection in structure rather than by promise: `companion::snapshotOf()` takes an immutable `companion::PetSnapshot`, `companion::PetScene` turns that into drawing calls, and `companion::RenderSink` runs it once per `engine.tick`, after `TapSink` and `PetSink`.
-  **The animal is drawn from `IRenderer`'s rectangles rather than blitted from an atlas**, which is a choice rather than a shortcut: ten boxes at 128 pixels square are shorter written down than described, and a scene with no art in it stays assertable against a mock renderer call by call.
+  **The animal is drawn from `IRenderer`'s rectangles rather than blitted from an atlas**, which is a choice rather than a shortcut: ten boxes at 256 pixels square are shorter written down than described, and a scene with no art in it stays assertable against a mock renderer call by call.
+  How big the window is is `companion::kSceneUnits` times a pixels-per-unit number in `main.cpp` rather than a pixel count that happens to divide by it, so every rectangle stays a whole number of pixels and doubling the window is one constant.
+  **Three lines of text stand on the ground and report the run in words** -- `hunger 3/8`, `happy 6/10`, and one of `awake`, `awake, hungry`, `asleep`, `asleep, woken` or `gone` -- every character of them read off the `PetSnapshot`, so the readout adds no state, no event and no clock, and a perished companion is reported rather than being where the scene stops.
+  Its glyph scale is four glyph pixels to a layout unit, so it grows with the window, and the block is anchored to the bottom of the grid rather than to a row of it, so three lines fit whatever a unit turned out to be worth.
   It breathes and blinks through `antwika::animation`, resolved from the tick count the snapshot carries, so no renderer holds a frame number a replay would have to reproduce.
   `companion::PacingSink` is the `ITickEventSink` shape over `simulation::TickPacer`, registered last so the order is present-then-wait; see [`wiki/apps/companion.md`](wiki/apps/companion.md) for the numbers and why the empty `ecs::World` it hands the pacer is the whole adapter.
 - `apps/sudoku` is unrelated to the tick/replay system: it's a showcase for `antwika::wfc` (Wave Function Collapse) — a standalone, dependency-free, deterministic constraint solver operating on a flat, index-addressed `std::vector` of cells with geometry expressed entirely through `IConstraint`s (no grid concept inside the library).

@@ -50,7 +50,7 @@ using ::testing::ReturnRef;
 
 namespace
 {
-    constexpr Size kCanvas{.width = 128, .height = 128};
+    constexpr Size kCanvas{.width = 256, .height = 256};
 
     constexpr PetConfig kQuick{
         .dayTicks = 4,

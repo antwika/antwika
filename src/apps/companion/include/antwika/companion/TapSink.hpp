@@ -26,7 +26,7 @@ namespace antwika::companion
      * trap td::TowerPlacementSink describes for building a tower.
      *
      * There is deliberately no layout here and no canvas to hit-test
-     * against. The window is 128 pixels square and holds one animal, so
+     * against. The window is 256 pixels square and holds one animal, so
      * a press anywhere in it means the same thing -- which is also why
      * nothing somebody sees can drift out of step with what they can
      * hit, since there is nothing to keep in step.

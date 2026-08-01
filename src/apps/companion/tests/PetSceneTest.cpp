@@ -1,22 +1,30 @@
 #include <cstddef>
+#include <cstdint>
+#include <string>
+#include <string_view>
 #include <vector>
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
 #include <antwika/gfx/Color.hpp>
+#include <antwika/gfx/Glyphs.hpp>
 #include <antwika/gfx/mocks/MockRenderer.hpp>
+#include <antwika/gfx/Point.hpp>
 #include <antwika/gfx/Rect.hpp>
 #include <antwika/gfx/Size.hpp>
 
 #include "antwika/companion/PetScene.hpp"
 #include "antwika/companion/PetSnapshot.hpp"
 
+using antwika::companion::kSceneUnits;
 using antwika::companion::PetScene;
 using antwika::companion::PetSnapshot;
 using antwika::companion::PetState;
 using antwika::gfx::Color;
+using antwika::gfx::kGlyphLineHeight;
 using antwika::gfx::mocks::MockRenderer;
+using antwika::gfx::Point;
 using antwika::gfx::Rect;
 using antwika::gfx::Size;
 using ::testing::_;
@@ -24,19 +32,31 @@ using ::testing::NiceMock;
 
 namespace
 {
-    // 128 pixels square is what main.cpp asks for.
-    // 32 whole units a side divides into it exactly four pixels each.
-    constexpr Size kCanvas{.width = 128, .height = 128};
+    // 256 pixels square is what main.cpp asks for.
+    // 32 whole units a side divides into it exactly eight pixels each.
+    constexpr Size kCanvas{.width = 256, .height = 256};
 
     // The ground, the sun, both gauge backgrounds, one gauge fill.
     // Plus the ten boxes an animal is made of.
     constexpr std::size_t kBareAwakeRects = 15;
+
+    // Hunger, happiness, and what the companion is doing.
+    constexpr std::size_t kReadoutLines = 3;
+
+    struct Text
+    {
+        Point origin{};
+        std::string text;
+        std::uint32_t scale = 0;
+        Color color{};
+    };
 
     struct Drawn
     {
         Color cleared{};
         std::vector<Rect> rects;
         std::vector<Color> colors;
+        std::vector<Text> texts;
     };
 
     Drawn render(
@@ -57,9 +77,29 @@ namespace
                     drawn.rects.push_back(rect);
                     drawn.colors.push_back(color);
                 });
+        ON_CALL(renderer, drawText(_, _, _, _))
+            .WillByDefault(
+                [&drawn](
+                    const Point origin,
+                    const std::string_view text,
+                    const std::uint32_t scale,
+                    const Color color)
+                {
+                    drawn.texts.push_back(
+                        Text{
+                            .origin = origin,
+                            .text = std::string(text),
+                            .scale = scale,
+                            .color = color});
+                });
 
         scene.draw(renderer, canvas, snapshot);
         return drawn;
+    }
+
+    [[nodiscard]] std::string lastLine(const Drawn &drawn)
+    {
+        return drawn.texts.back().text;
     }
 
     PetSnapshot awake()
@@ -83,6 +123,7 @@ namespace
             render(scene, {.width = 8, .height = 8}, awake());
 
         EXPECT_TRUE(drawn.rects.empty());
+        EXPECT_TRUE(drawn.texts.empty());
     }
 
     TEST(PetSceneTest, TheSquarePictureIsCentredOnWhicheverSideIsLonger)
@@ -255,5 +296,135 @@ namespace
         full.happinessMax = 10;
 
         EXPECT_EQ(drawn.rects, render(scene, kCanvas, full).rects);
+    }
+
+    TEST(PetSceneTest, Draw_ReportsBothGaugesAndTheStateInWords)
+    {
+        const PetScene scene;
+
+        PetSnapshot fed = awake();
+        fed.hunger = 3;
+
+        const Drawn drawn = render(scene, kCanvas, fed);
+
+        ASSERT_EQ(drawn.texts.size(), kReadoutLines);
+        EXPECT_EQ(drawn.texts[0].text, "hunger 3/8");
+        EXPECT_EQ(drawn.texts[1].text, "happy 6/10");
+        EXPECT_EQ(drawn.texts[2].text, "awake");
+    }
+
+    TEST(PetSceneTest, Draw_SaysWhichOfItsStatesTheCompanionIsIn)
+    {
+        const PetScene scene;
+
+        PetSnapshot hungry = awake();
+        hungry.hungry = true;
+
+        PetSnapshot asleep = awake();
+        asleep.state = PetState::Asleep;
+        asleep.night = true;
+
+        PetSnapshot woken = asleep;
+        woken.disturbed = true;
+
+        PetSnapshot gone = awake();
+        gone.state = PetState::Perished;
+        gone.happiness = 0;
+
+        EXPECT_EQ(lastLine(render(scene, kCanvas, awake())), "awake");
+        EXPECT_EQ(
+            lastLine(render(scene, kCanvas, hungry)), "awake, hungry");
+        EXPECT_EQ(lastLine(render(scene, kCanvas, asleep)), "asleep");
+        EXPECT_EQ(
+            lastLine(render(scene, kCanvas, woken)), "asleep, woken");
+        EXPECT_EQ(lastLine(render(scene, kCanvas, gone)), "gone");
+    }
+
+    // A perished companion is exactly what somebody wants reported.
+    // So the readout outlived the early return the grave used to be.
+    TEST(PetSceneTest, Draw_ReportsAPerishedCompanionToo)
+    {
+        const PetScene scene;
+
+        PetSnapshot gone = awake();
+        gone.state = PetState::Perished;
+        gone.happiness = 0;
+
+        const Drawn drawn = render(scene, kCanvas, gone);
+
+        ASSERT_EQ(drawn.texts.size(), kReadoutLines);
+        EXPECT_EQ(drawn.texts[1].text, "happy 0/10");
+        EXPECT_NE(
+            drawn.texts[0].color,
+            render(scene, kCanvas, awake()).texts[0].color);
+    }
+
+    // Four glyph pixels to a unit, and a unit scales with the canvas.
+    // So the two readouts differ by exactly what the windows do.
+    TEST(PetSceneTest, Draw_ScalesTheReadoutWithTheWindow)
+    {
+        const PetScene scene;
+
+        const Drawn small =
+            render(scene, {.width = 128, .height = 128}, awake());
+        const Drawn large = render(scene, kCanvas, awake());
+
+        ASSERT_EQ(small.texts.size(), kReadoutLines);
+        ASSERT_EQ(large.texts.size(), kReadoutLines);
+        EXPECT_EQ(small.texts[0].scale, 1U);
+        EXPECT_EQ(large.texts[0].scale, 2U);
+    }
+
+    // A unit too small for a scaled glyph still gets the smallest text.
+    // And the readout still stands on the grid rather than under it.
+    // Because it is anchored to the bottom rather than to a row.
+    TEST(PetSceneTest, Draw_KeepsTheSmallestReadoutOnTheGrid)
+    {
+        const PetScene scene;
+        const Size canvas{.width = 64, .height = 64};
+
+        const Drawn drawn = render(scene, canvas, awake());
+
+        ASSERT_EQ(drawn.texts.size(), kReadoutLines);
+        EXPECT_EQ(drawn.texts[0].scale, 1U);
+
+        const auto bottom =
+            drawn.texts.back().origin.y
+            + static_cast<std::int32_t>(kGlyphLineHeight);
+        EXPECT_LE(bottom, static_cast<std::int32_t>(canvas.height));
+        EXPECT_GT(drawn.texts[0].origin.y, 0);
+    }
+
+    // Three lines, one line height apart, in declaration order.
+    TEST(PetSceneTest, Draw_StacksTheReadoutOneLineHeightApart)
+    {
+        const PetScene scene;
+        const Drawn drawn = render(scene, kCanvas, awake());
+
+        ASSERT_EQ(drawn.texts.size(), kReadoutLines);
+
+        const auto step = static_cast<std::int32_t>(
+            kGlyphLineHeight * drawn.texts[0].scale);
+
+        EXPECT_EQ(drawn.texts[0].origin.x, drawn.texts[1].origin.x);
+        EXPECT_EQ(drawn.texts[1].origin.x, drawn.texts[2].origin.x);
+        EXPECT_EQ(
+            drawn.texts[1].origin.y, drawn.texts[0].origin.y + step);
+        EXPECT_EQ(
+            drawn.texts[2].origin.y, drawn.texts[1].origin.y + step);
+    }
+
+    // The window is a whole number of pixels to the unit.
+    // Which main.cpp derives its size from rather than restates.
+    TEST(PetSceneTest, Draw_GivesEveryUnitAWholeNumberOfPixels)
+    {
+        const PetScene scene;
+        const Drawn drawn = render(scene, kCanvas, awake());
+
+        ASSERT_FALSE(drawn.rects.empty());
+
+        // The ground, which spans the whole grid.
+        EXPECT_EQ(drawn.rects[0].size.width, kCanvas.width);
+        EXPECT_EQ(kCanvas.width % kSceneUnits, 0U);
     }
 } // namespace
