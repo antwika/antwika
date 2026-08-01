@@ -1,5 +1,6 @@
 #include "antwika/ui_demo/DemoState.hpp"
 
+#include <optional>
 #include <utility>
 
 namespace antwika::ui_demo
@@ -99,12 +100,13 @@ namespace antwika::ui_demo
         clickCount = 0;
     }
 
-    const std::string &DemoState::message() const noexcept
+    const std::optional<DemoMessage> &DemoState::message()
+        const noexcept
     {
         return note;
     }
 
-    void DemoState::setMessage(std::string text)
+    void DemoState::setMessage(DemoMessage text)
     {
         note = std::move(text);
     }

@@ -9,6 +9,9 @@
 #include <antwika/gfx/Color.hpp>
 #include <antwika/gfx/Size.hpp>
 #include <antwika/ui/DrawCommand.hpp>
+#include <antwika/i18n/Locale.hpp>
+#include <antwika/i18n/MessageId.hpp>
+#include <antwika/i18n/Translator.hpp>
 #include <antwika/ui/Frame.hpp>
 #include <antwika/ui/Keyboard.hpp>
 #include <antwika/ui/Pointer.hpp>
@@ -37,6 +40,11 @@ namespace widgets = antwika::ui_demo::widgets;
 
 namespace
 {
+    // The locale is a constant of the build, so a test may name one.
+    // Every case here asserts the English showcase's own layout.
+    constexpr antwika::i18n::Translator kTranslator{
+        antwika::i18n::kDefaultLocale};
+
     constexpr Size kCanvas{.width = 960, .height = 720};
 
     // What DemoScene paints its corner lamp in, either way.
@@ -83,7 +91,7 @@ namespace
         DemoState state;
         state.select(static_cast<std::size_t>(page));
 
-        const DemoScene scene;
+        const DemoScene scene{kTranslator};
         return scene.describe(kCanvas, pointer, keyboard, state);
     }
 
@@ -137,11 +145,14 @@ namespace
         DemoState state;
         state.setPickerOpen(true);
 
-        const DemoScene scene;
+        const DemoScene scene{kTranslator};
         const auto frame = scene.describe(kCanvas, {}, {}, state);
 
-        for (const auto option : antwika::ui_demo::showcaseOptions())
+        for (std::size_t index = 0; index < kShowcaseCount; ++index)
         {
+            const std::string option = kTranslator.text(
+                showcaseNameId(static_cast<Showcase>(index)));
+
             EXPECT_TRUE(findText(frame, option).has_value())
                 << "no option named " << option;
         }
@@ -184,7 +195,7 @@ namespace
         EXPECT_EQ(unlit->color, kLampOff);
 
         DemoState state;
-        const DemoScene scene;
+        const DemoScene scene{kTranslator};
         const auto found = scene.describe(kCanvas, {}, {}, state);
         const auto over = widgetCentre(found, widgets::kCard);
         ASSERT_TRUE(over.has_value());
@@ -204,7 +215,7 @@ namespace
         DemoState state;
         state.select(static_cast<std::size_t>(Showcase::Dropdown));
 
-        const DemoScene scene;
+        const DemoScene scene{kTranslator};
 
         const auto plain = scene.describe(kCanvas, {}, {}, state);
         const auto before = findText(plain, kLine);
@@ -233,7 +244,7 @@ namespace
         state.select(static_cast<std::size_t>(Showcase::Focus));
         state.setFocus(widgets::kSecond);
 
-        const DemoScene scene;
+        const DemoScene scene{kTranslator};
         const auto frame = scene.describe(kCanvas, {}, {}, state);
 
         EXPECT_EQ(frame.interactions.focused, widgets::kSecond);
@@ -246,11 +257,88 @@ namespace
         state.setText("hi", 1);
         state.setFocus(widgets::kField);
 
-        const DemoScene scene;
+        const DemoScene scene{kTranslator};
         const auto frame = scene.describe(kCanvas, {}, {}, state);
 
         EXPECT_TRUE(findText(frame, "h").has_value());
         EXPECT_TRUE(findText(frame, "i").has_value());
         EXPECT_TRUE(findText(frame, "holding: hi").has_value());
+    }
+
+    // The message a page reports is an id in the state and words here.
+    // Its argument is a datum the tick path produced.
+    TEST(DemoSceneTest, Describe_WordsAMessageCarryingAPlainDatum)
+    {
+        DemoState state;
+        state.setMessage(
+            {.id = antwika::i18n::MessageId::UiDemoSubmitted,
+             .datum = "ok",
+             .argId = std::nullopt});
+
+        const DemoScene scene{kTranslator};
+        const auto frame = scene.describe(kCanvas, {}, {}, state);
+
+        EXPECT_TRUE(findText(frame, "submitted: ok").has_value());
+    }
+
+    // Or the argument is itself something the catalogue words.
+    // Which is the whole reason DemoMessage has two argument fields.
+    TEST(DemoSceneTest, Describe_WordsAMessageWhoseArgumentIsAnotherId)
+    {
+        DemoState state;
+        state.setMessage(
+            {.id = antwika::i18n::MessageId::UiDemoShowing,
+             .datum = {},
+             .argId = antwika::i18n::MessageId::UiDemoPageShrink});
+
+        const DemoScene scene{kTranslator};
+        const auto frame = scene.describe(kCanvas, {}, {}, state);
+
+        EXPECT_TRUE(findText(frame, "showing shrink").has_value());
+    }
+
+    // Every word the showcase declares is a lookup.
+    // The eleven ui::Theme swatch labels deliberately are not.
+    // Those are that struct's own field names.
+    // A translated one would lie about what a caller types.
+    TEST(DemoSceneTest, Describe_IsWordedByWhicheverTranslatorItHolds)
+    {
+        constexpr antwika::i18n::Translator swedish{
+            antwika::i18n::Locale::Swedish};
+
+        DemoState state;
+        state.select(static_cast<std::size_t>(Showcase::Theme));
+
+        const DemoScene scene{swedish};
+        const auto frame = scene.describe(kCanvas, {}, {}, state);
+
+        EXPECT_TRUE(
+            findText(frame, "antwika::ui-uppvisning").has_value());
+        EXPECT_TRUE(findText(frame, "focusRing").has_value());
+        EXPECT_FALSE(
+            findText(frame, "antwika::ui showcase").has_value());
+    }
+
+    // A button is as wide as its own label, so the layout moves.
+    // Which is exactly why the locale is fixed for a run.
+    TEST(DemoSceneTest, Describe_LaysOutFromTheWordsItWasGiven)
+    {
+        constexpr antwika::i18n::Translator swedish{
+            antwika::i18n::Locale::Swedish};
+
+        DemoState state;
+        state.select(static_cast<std::size_t>(Showcase::Buttons));
+
+        const auto english =
+            DemoScene{kTranslator}.describe(kCanvas, {}, {}, state);
+        const auto other =
+            DemoScene{swedish}.describe(kCanvas, {}, {}, state);
+
+        const auto here = english.rects.find(widgets::kCount);
+        const auto there = other.rects.find(widgets::kCount);
+
+        ASSERT_TRUE(here.has_value());
+        ASSERT_TRUE(there.has_value());
+        EXPECT_NE(here->size.width, there->size.width);
     }
 } // namespace

@@ -3,8 +3,8 @@
 #include <array>
 #include <cstddef>
 #include <cstdint>
-#include <span>
-#include <string_view>
+
+#include <antwika/i18n/MessageId.hpp>
 
 namespace antwika::ui_demo
 {
@@ -57,44 +57,35 @@ namespace antwika::ui_demo
         static_cast<std::size_t>(Showcase::Shrink) + 1;
 
     /**
-     * @brief What each page is called, in Showcase order.
+     * @brief Get which message names one page.
      *
-     * A static array rather than something built per frame, because
-     * ui::DropdownSpec borrows its options: a temporary vector would be
-     * gone before the Context it was handed to laid anything out.
-     */
-    inline constexpr std::array<std::string_view, kShowcaseCount>
-        kShowcaseNames{
-            "labels",
-            "buttons",
-            "layout",
-            "text field",
-            "dropdown",
-            "focus ring",
-            "theme",
-            "widget rects",
-            "shrink"};
-
-    /**
-     * @brief Get what one page is called.
+     * An id rather than the words, so the picker's options are worded
+     * by whoever holds the translator and this header holds no language
+     * at all.
+     * A second table of English names lived here and is gone: it was
+     * the picker's list and a log line's both, and two lists of the
+     * same nine names drift.
+     *
      * @param showcase The page to name.
-     * @return Its name, exactly as the picker lists it.
+     * @return Its message id.
      */
-    [[nodiscard]] constexpr std::string_view showcaseName(
-        Showcase showcase) noexcept
+    [[nodiscard]] constexpr antwika::i18n::MessageId showcaseNameId(
+        const Showcase showcase) noexcept
     {
-        return kShowcaseNames
-            [static_cast<std::size_t>(showcase) % kShowcaseCount];
-    }
+        constexpr std::array<antwika::i18n::MessageId, kShowcaseCount>
+            ids{
+                antwika::i18n::MessageId::UiDemoPageLabels,
+                antwika::i18n::MessageId::UiDemoPageButtons,
+                antwika::i18n::MessageId::UiDemoPageLayout,
+                antwika::i18n::MessageId::UiDemoPageTextField,
+                antwika::i18n::MessageId::UiDemoPageDropdown,
+                antwika::i18n::MessageId::UiDemoPageFocus,
+                antwika::i18n::MessageId::UiDemoPageTheme,
+                antwika::i18n::MessageId::UiDemoPageRects,
+                antwika::i18n::MessageId::UiDemoPageShrink};
 
-    /**
-     * @brief Get the pages the picker lists.
-     * @return A view per name, in the order they are shown.
-     */
-    [[nodiscard]] inline std::span<const std::string_view>
-    showcaseOptions() noexcept
-    {
-        return std::span<const std::string_view>{kShowcaseNames};
+        return ids
+            [static_cast<std::size_t>(showcase) % kShowcaseCount];
     }
 
 } // namespace antwika::ui_demo

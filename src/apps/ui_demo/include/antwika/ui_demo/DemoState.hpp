@@ -3,14 +3,15 @@
 #include <array>
 #include <cstddef>
 #include <cstdint>
-#include <span>
+#include <optional>
 #include <string>
-#include <string_view>
 
+#include <antwika/i18n/MessageId.hpp>
 #include <antwika/ui/DropdownSpec.hpp>
 #include <antwika/ui/TextFieldSpec.hpp>
 #include <antwika/ui/WidgetId.hpp>
 
+#include "antwika/ui_demo/DemoMessage.hpp"
 #include "antwika/ui_demo/Showcase.hpp"
 
 namespace antwika::ui_demo
@@ -19,26 +20,30 @@ namespace antwika::ui_demo
     using antwika::ui::WidgetId;
 
     /**
-     * @brief What the accent list offers, in the order it lists them.
-     *
-     * Static for ui::DropdownSpec's sake, exactly as kShowcaseNames is.
-     */
-    inline constexpr std::array<std::string_view, 3> kAccentNames{
-        "amber", "mint", "rose"};
-
-    /**
      * @brief How many accents there are.
      */
-    inline constexpr std::size_t kAccentCount = kAccentNames.size();
+    inline constexpr std::size_t kAccentCount = 3;
 
     /**
-     * @brief Get the accents the second list offers.
-     * @return A view per name, in the order they are shown.
+     * @brief Get which message names one accent.
+     *
+     * An id rather than the words, following showcaseNameId().
+     *
+     * @param index Which accent, in the order the list shows them.
+     * @return Its message id, or the first accent's for an index the
+     * list does not offer -- the same fall-back-to-the-first rule
+     * atlas_editor::toolNameId() follows, and for the same reason.
      */
-    [[nodiscard]] inline std::span<const std::string_view>
-    accentOptions() noexcept
+    [[nodiscard]] constexpr antwika::i18n::MessageId accentNameId(
+        const std::size_t index) noexcept
     {
-        return std::span<const std::string_view>{kAccentNames};
+        constexpr std::array<antwika::i18n::MessageId, kAccentCount>
+            ids{
+                antwika::i18n::MessageId::UiDemoAccentAmber,
+                antwika::i18n::MessageId::UiDemoAccentMint,
+                antwika::i18n::MessageId::UiDemoAccentRose};
+
+        return ids[index % kAccentCount];
     }
 
     /**
@@ -167,15 +172,16 @@ namespace antwika::ui_demo
 
         /**
          * @brief Get what the demo last said about what happened.
-         * @return The message, empty until something is said.
+         * @return The message, or nothing until something is said.
          */
-        [[nodiscard]] const std::string &message() const noexcept;
+        [[nodiscard]] const std::optional<DemoMessage> &message()
+            const noexcept;
 
         /**
          * @brief Say what just happened.
-         * @param text What to say.
+         * @param text Which message, and what it names.
          */
-        void setMessage(std::string text);
+        void setMessage(DemoMessage text);
 
     private:
         Showcase page = Showcase::Labels;
@@ -186,7 +192,7 @@ namespace antwika::ui_demo
         std::size_t cursor = antwika::ui::kCaretAtEnd;
         WidgetId focused = antwika::ui::kNoWidget;
         std::uint32_t clickCount = 0;
-        std::string note;
+        std::optional<DemoMessage> note;
     };
 
 } // namespace antwika::ui_demo

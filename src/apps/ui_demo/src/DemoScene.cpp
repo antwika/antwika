@@ -9,6 +9,7 @@
 
 #include <antwika/gfx/Color.hpp>
 #include <antwika/gfx/Rect.hpp>
+#include <antwika/i18n/MessageId.hpp>
 #include <antwika/ui/Alignment.hpp>
 #include <antwika/ui/ButtonSpec.hpp>
 #include <antwika/ui/ButtonState.hpp>
@@ -22,6 +23,7 @@
 #include <antwika/ui/Theme.hpp>
 #include <antwika/ui/WidgetId.hpp>
 
+#include "antwika/ui_demo/DemoMessage.hpp"
 #include "antwika/ui_demo/Widgets.hpp"
 
 namespace antwika::ui_demo
@@ -29,6 +31,7 @@ namespace antwika::ui_demo
 
     using antwika::gfx::Color;
     using antwika::gfx::Rect;
+    using antwika::i18n::MessageId;
     using antwika::ui::Alignment;
     using antwika::ui::ButtonState;
     using antwika::ui::Context;
@@ -98,62 +101,142 @@ namespace antwika::ui_demo
             return kAccentInks[index];
         }
 
-        void describeLabels(Context &ui, const DemoState & /*state*/)
+        /**
+         * @brief One list of option names, and views onto them.
+         *
+         * ui::DropdownSpec borrows what it is handed, so a translated
+         * name has to outlive the Context it is declared into -- which
+         * a vector of temporaries would not.
+         * Keeping the strings and the views in one value is what makes
+         * that one local rather than two that could part company.
+         */
+        template <std::size_t Count>
+        struct Options final
         {
-            ui.label("label() draws one line in the theme's colour");
-            ui.label("a muted line reads as an aside", ui.theme().muted);
-            ui.label("and a caller may hand it its own", kInk);
+            std::array<std::string, Count> names;
+            std::array<std::string_view, Count> views;
+        };
+
+        using OptionNames = Options<kAccentCount>;
+        using PageNames = Options<kShowcaseCount>;
+
+        [[nodiscard]] OptionNames accentNames(
+            const Translator &translator)
+        {
+            OptionNames options;
+
+            for (std::size_t index = 0; index < kAccentCount; ++index)
+            {
+                options.names[index] =
+                    translator.text(accentNameId(index));
+                options.views[index] = options.names[index];
+            }
+
+            return options;
+        }
+
+        [[nodiscard]] PageNames pageNames(const Translator &translator)
+        {
+            PageNames options;
+
+            for (std::size_t index = 0; index < kShowcaseCount; ++index)
+            {
+                options.names[index] = translator.text(
+                    showcaseNameId(static_cast<Showcase>(index)));
+                options.views[index] = options.names[index];
+            }
+
+            return options;
+        }
+
+        void describeLabels(
+            Context &ui,
+            const DemoState & /*state*/,
+            const Translator &translator)
+        {
+            ui.label(translator.text(MessageId::UiDemoLabelsLine));
+            ui.label(
+                translator.text(MessageId::UiDemoLabelsMuted),
+                ui.theme().muted);
+            ui.label(translator.text(MessageId::UiDemoLabelsOwnInk), kInk);
 
             {
                 const auto row = ui.row(
                     {.width = kGrow, .cross = Alignment::Center});
 
-                ui.label("a growing spacer");
+                ui.label(translator.text(MessageId::UiDemoSpacerLeft));
                 ui.spacer(kGrow);
-                ui.label("pushes these apart");
+                ui.label(translator.text(MessageId::UiDemoSpacerRight));
             }
         }
 
-        void describeButtons(Context &ui, const DemoState &state)
+        void describeButtons(
+            Context &ui,
+            const DemoState &state,
+            const Translator &translator)
         {
-            ui.label("a button activates on the press, not a release");
+            ui.label(translator.text(MessageId::UiDemoButtonsPress));
 
             {
                 const auto row = ui.row(
                     {.width = kGrow, .cross = Alignment::Center});
 
-                ui.button("count", {.id = widgets::kCount});
-                ui.button("reset", {.id = widgets::kReset});
-                ui.label("pressed " + std::to_string(state.clicks()));
+                ui.button(
+                    translator.text(MessageId::UiDemoButtonCount),
+                    {.id = widgets::kCount});
+                ui.button(
+                    translator.text(MessageId::UiDemoButtonReset),
+                    {.id = widgets::kReset});
+                const std::string count =
+                    std::to_string(state.clicks());
+                const std::array<std::string_view, 1> counted{count};
+
+                ui.label(translator.formatted(
+                    MessageId::UiDemoPressedCount, counted));
             }
 
-            ui.label("an appearance can be forced by the caller");
+            ui.label(translator.text(MessageId::UiDemoButtonsForced));
 
             {
                 const auto row = ui.row({.width = kGrow});
 
-                ui.button("idle", {.state = ButtonState::Idle});
-                ui.button("hovered", {.state = ButtonState::Hovered});
-                ui.button("pressed", {.state = ButtonState::Pressed});
+                ui.button(
+                    translator.text(MessageId::UiDemoButtonIdle),
+                    {.state = ButtonState::Idle});
+                ui.button(
+                    translator.text(MessageId::UiDemoButtonHovered),
+                    {.state = ButtonState::Hovered});
+                ui.button(
+                    translator.text(MessageId::UiDemoButtonPressed),
+                    {.state = ButtonState::Pressed});
 
                 // Unnamed, so nothing can hover or activate it.
-                ui.button("unnamed");
+                ui.button(translator.text(MessageId::UiDemoButtonUnnamed));
             }
 
-            ui.label("and a width is fit, fixed or grow");
+            ui.label(translator.text(MessageId::UiDemoButtonsWidths));
 
             {
                 const auto row = ui.row({.width = kGrow});
 
-                ui.button("fit", {.width = kFit});
-                ui.button("fixed", {.width = fixedSize(kFixedButton)});
-                ui.button("grow", {.width = kGrow});
+                ui.button(
+                    translator.text(MessageId::UiDemoButtonFit),
+                    {.width = kFit});
+                ui.button(
+                    translator.text(MessageId::UiDemoButtonFixed),
+                    {.width = fixedSize(kFixedButton)});
+                ui.button(
+                    translator.text(MessageId::UiDemoButtonGrow),
+                    {.width = kGrow});
             }
         }
 
-        void describeLayout(Context &ui, const DemoState & /*state*/)
+        void describeLayout(
+            Context &ui,
+            const DemoState & /*state*/,
+            const Translator &translator)
         {
-            ui.label("row, column and panel nest as deep as you like");
+            ui.label(translator.text(MessageId::UiDemoLayoutNest));
 
             {
                 const auto row =
@@ -166,8 +249,8 @@ namespace antwika::ui_demo
                          .background = kFirstFill,
                          .padding = kWideGap});
 
-                    ui.label("start");
-                    ui.label("across the axis");
+                    ui.label(translator.text(MessageId::UiDemoAlignStart));
+                    ui.label(translator.text(MessageId::UiDemoAcrossAxis));
                 }
 
                 {
@@ -177,8 +260,8 @@ namespace antwika::ui_demo
                          .background = kSecondFill,
                          .padding = kWideGap});
 
-                    ui.label("center");
-                    ui.label("across the axis");
+                    ui.label(translator.text(MessageId::UiDemoAlignCenter));
+                    ui.label(translator.text(MessageId::UiDemoAcrossAxis));
                 }
 
                 {
@@ -189,72 +272,110 @@ namespace antwika::ui_demo
                          .padding = kWideGap,
                          .gap = kWideGap});
 
-                    ui.label("end");
-                    ui.label("across the axis");
+                    ui.label(translator.text(MessageId::UiDemoAlignEnd));
+                    ui.label(translator.text(MessageId::UiDemoAcrossAxis));
                 }
             }
 
             {
                 const auto inner = ui.panel({.width = kGrow});
 
-                ui.label("a panel is a column with the theme's fill");
-                ui.label("and the theme's inset, and nothing else");
+                ui.label(translator.text(MessageId::UiDemoPanelIsColumn));
+                ui.label(translator.text(MessageId::UiDemoPanelInset));
             }
         }
 
-        void describeTextField(Context &ui, const DemoState &state)
+        void describeTextField(
+            Context &ui,
+            const DemoState &state,
+            const Translator &translator)
         {
-            ui.label("the characters belong to the application");
+            ui.label(translator.text(MessageId::UiDemoFieldOwned));
+
+            // The placeholder is borrowed by the spec.
+            // So it is a named local rather than a temporary.
+            const std::string prompt =
+                translator.text(MessageId::UiDemoFieldPlaceholder);
 
             ui.textField(TextFieldSpec{
                 .id = widgets::kField,
                 .width = kGrow,
                 .text = state.text(),
-                .placeholder = "tab here and type",
+                .placeholder = prompt,
                 .cursor = state.caret()});
 
-            ui.label("Enter submits it, Escape gives up on it");
-            ui.label("holding: " + state.text(), ui.theme().muted);
+            ui.label(translator.text(MessageId::UiDemoFieldKeys));
+            const std::array<std::string_view, 1> held{state.text()};
+
+            ui.label(
+                translator.formatted(
+                    MessageId::UiDemoFieldHolding, held),
+                ui.theme().muted);
         }
 
-        void describeDropdown(Context &ui, const DemoState &state)
+        void describeDropdown(
+            Context &ui,
+            const DemoState &state,
+            const Translator &translator)
         {
-            ui.label("whether a list is open is the caller's bit");
+            ui.label(translator.text(MessageId::UiDemoListOpenBit));
+
+            // The spec borrows its options and its placeholder.
+            // A translated name is a std::string rather than a literal.
+            // So both are named locals living past ui.finish().
+            const OptionNames names = accentNames(translator);
+            const std::string empty =
+                translator.text(MessageId::UiDemoNoneChosen);
 
             ui.dropdown(DropdownSpec{
                 .id = widgets::kPalette,
                 .optionIdBase = widgets::kFirstAccent,
                 .width = fixedSize(kPickerWidth),
-                .options = accentOptions(),
+                .options = names.views,
                 .selected = state.accent(),
-                .placeholder = "none chosen",
+                .placeholder = empty,
                 .open = state.accentOpen()});
 
             ui.label(
-                "an open list is an overlay, hit first",
+                translator.text(MessageId::UiDemoListOverlay),
                 accentInk(state.accent(), ui.theme()));
         }
 
-        void describeFocus(Context &ui, const DemoState &state)
+        void describeFocus(
+            Context &ui,
+            const DemoState &state,
+            const Translator &translator)
         {
-            ui.label("Tab, Shift+Tab and Enter walk these three");
+            ui.label(translator.text(MessageId::UiDemoFocusKeys));
 
             {
                 const auto row = ui.row({.width = kGrow});
 
-                ui.button("first", {.id = widgets::kFirst});
-                ui.button("second", {.id = widgets::kSecond});
-                ui.button("third", {.id = widgets::kThird});
+                ui.button(
+                    translator.text(MessageId::UiDemoButtonFirst),
+                    {.id = widgets::kFirst});
+                ui.button(
+                    translator.text(MessageId::UiDemoButtonSecond),
+                    {.id = widgets::kSecond});
+                ui.button(
+                    translator.text(MessageId::UiDemoButtonThird),
+                    {.id = widgets::kThird});
             }
 
-            ui.label("the ring is four fills, drawn after everything");
+            ui.label(translator.text(MessageId::UiDemoFocusRingFills));
+            const std::string id = std::to_string(
+                static_cast<std::uint64_t>(state.focus()));
+            const std::array<std::string_view, 1> focused{id};
+
             ui.label(
-                "focused id "
-                    + std::to_string(
-                        static_cast<std::uint64_t>(state.focus())),
+                translator.formatted(
+                    MessageId::UiDemoFocusedId, focused),
                 ui.theme().muted);
         }
 
+        // The swatch labels are ui::Theme's own field names.
+        // Which is why they are the one thing here left in English.
+        // A translated one would lie about what a caller types.
         void describeSwatch(
             Context &ui, const std::string_view name, const Color ink)
         {
@@ -271,11 +392,14 @@ namespace antwika::ui_demo
             ui.label(std::string{name});
         }
 
-        void describeTheme(Context &ui, const DemoState & /*state*/)
+        void describeTheme(
+            Context &ui,
+            const DemoState & /*state*/,
+            const Translator &translator)
         {
             const auto &theme = ui.theme();
 
-            ui.label("every colour a widget picks without being told");
+            ui.label(translator.text(MessageId::UiDemoThemeColours));
 
             describeSwatch(ui, "panel", theme.panel);
             describeSwatch(ui, "text", theme.text);
@@ -300,9 +424,12 @@ namespace antwika::ui_demo
                     + std::to_string(theme.focusRingThickness));
         }
 
-        void describeRects(Context &ui, const DemoState & /*state*/)
+        void describeRects(
+            Context &ui,
+            const DemoState & /*state*/,
+            const Translator &translator)
         {
-            ui.label("Frame::rects says where a named widget went");
+            ui.label(translator.text(MessageId::UiDemoRectsSays));
 
             {
                 const auto row = ui.row(
@@ -310,17 +437,20 @@ namespace antwika::ui_demo
                      .cross = Alignment::Center,
                      .id = widgets::kMarked});
 
-                ui.label("this row is named");
+                ui.label(translator.text(MessageId::UiDemoRowIsNamed));
                 ui.spacer(kGrow);
-                ui.label("the bar is placed from its rect");
+                ui.label(translator.text(MessageId::UiDemoBarFromRect));
             }
 
-            ui.label("an id no frame declared answers nothing at all");
+            ui.label(translator.text(MessageId::UiDemoUndeclaredId));
         }
 
-        void describeShrink(Context &ui, const DemoState & /*state*/)
+        void describeShrink(
+            Context &ui,
+            const DemoState & /*state*/,
+            const Translator &translator)
         {
-            ui.label("too little room shrinks children in proportion");
+            ui.label(translator.text(MessageId::UiDemoShrinkProportion));
 
             {
                 const auto strip = ui.row(
@@ -328,16 +458,19 @@ namespace antwika::ui_demo
                      .id = widgets::kSqueezed});
 
                 ui.button(
-                    "far too wide", {.width = fixedSize(kWideButton)});
+                    translator.text(MessageId::UiDemoTooWide),
+                    {.width = fixedSize(kWideButton)});
                 ui.button(
-                    "also too wide", {.width = fixedSize(kWideButton)});
+                    translator.text(MessageId::UiDemoAlsoTooWide),
+                    {.width = fixedSize(kWideButton)});
             }
 
-            ui.label("there is no clipping, so containment is the");
-            ui.label("layout's job rather than a renderer's");
+            ui.label(translator.text(MessageId::UiDemoNoClipping));
+            ui.label(translator.text(MessageId::UiDemoLayoutsJob));
         }
 
-        using Page = void (*)(Context &, const DemoState &);
+        using Page = void (*)(
+            Context &, const DemoState &, const Translator &);
 
         // One entry per Showcase, in the enumeration's own order.
         // A page added there therefore has to be written here.
@@ -351,6 +484,35 @@ namespace antwika::ui_demo
             &describeTheme,
             &describeRects,
             &describeShrink};
+
+        /**
+         * @brief Word the last thing the demo said, if it said one.
+         *
+         * The argument is a datum or a second id and never both, which
+         * is the one branch DemoMessage's two fields buy.
+         *
+         * @param state Holds the message, or none.
+         * @param translator Words it.
+         * @return The line, empty while nothing has been said.
+         */
+        [[nodiscard]] std::string lastSaid(
+            const DemoState &state, const Translator &translator)
+        {
+            const auto &said = state.message();
+
+            if (!said.has_value())
+            {
+                return {};
+            }
+
+            const std::string argument =
+                said->argId.has_value()
+                    ? translator.text(*said->argId)
+                    : said->datum;
+            const std::array<std::string_view, 1> args{argument};
+
+            return translator.formatted(said->id, args);
+        }
 
         /**
          * @brief Paint a bar across whatever a named widget occupies.
@@ -409,12 +571,22 @@ namespace antwika::ui_demo
         }
     } // namespace
 
+    DemoScene::DemoScene(const Translator &translator)
+        : translator(translator)
+    {
+    }
+
     Frame DemoScene::describe(
         const Size canvas,
         Pointer pointer,
         const Keyboard &keyboard,
         const DemoState &state) const
     {
+        // Both lists borrow their options, so both outlive the Context.
+        const PageNames pages = pageNames(translator);
+        const std::string prompt =
+            translator.text(MessageId::UiDemoPickPage);
+
         Context ui{
             canvas,
             scaledTheme(Theme{}, scaleForCanvas(canvas)),
@@ -433,7 +605,7 @@ namespace antwika::ui_demo
                     const auto row = ui.row(
                         {.width = kGrow, .cross = Alignment::Center});
 
-                    ui.label("antwika::ui showcase");
+                    ui.label(translator.text(MessageId::UiDemoTitle));
                     ui.spacer(kGrow);
 
                     // The picker is itself one of the elements shown.
@@ -442,9 +614,9 @@ namespace antwika::ui_demo
                         .id = widgets::kPicker,
                         .optionIdBase = widgets::kFirstPage,
                         .width = fixedSize(kPickerWidth),
-                        .options = showcaseOptions(),
+                        .options = pages.views,
                         .selected = state.selected(),
-                        .placeholder = "pick an element",
+                        .placeholder = prompt,
                         .open = state.pickerOpen()});
                 }
             }
@@ -456,10 +628,11 @@ namespace antwika::ui_demo
                      .height = kGrow,
                      .id = widgets::kCard});
 
-                kPages[state.selected() % kShowcaseCount](ui, state);
+                kPages[state.selected() % kShowcaseCount](
+                ui, state, translator);
             }
 
-            ui.label(state.message(), ui.theme().muted);
+            ui.label(lastSaid(state, translator), ui.theme().muted);
         }
 
         auto frame = ui.finish();
