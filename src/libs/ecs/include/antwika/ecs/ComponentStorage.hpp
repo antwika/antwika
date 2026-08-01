@@ -25,6 +25,14 @@ namespace antwika::ecs
      * Removal is a stable, order-preserving erase (an O(n) shift, not a
      * swap-and-pop), so entities()'s order never depends on unrelated
      * removal timing — a deliberate determinism-over-throughput choice.
+     *
+     * The sparse array is addressed by an entity's *index* alone, which
+     * is what keeps it as big as the live population rather than as big
+     * as every entity ever created — see Entity. A slot therefore
+     * outlives the entity that claimed it, so every lookup checks the
+     * dense entry really is the entity asked for: a handle from an
+     * earlier generation of the same index reads as absent here, just
+     * as it reads as dead from World::alive().
      */
     template <Component T>
     class ComponentStorage final
@@ -34,6 +42,12 @@ namespace antwika::ecs
          * @brief Add or overwrite an entity's component value.
          * @param entity The entity to store the value for.
          * @param value The value to store in both buffers.
+         *
+         * An entity claiming an index some earlier generation still
+         * holds a value for drops that value rather than inheriting it.
+         * A World never gets there — it purges every pool before an
+         * index is freed — so this only answers for a caller driving a
+         * storage directly.
          */
         void insert(Entity entity, T value)
         {
@@ -44,8 +58,17 @@ namespace antwika::ecs
                 return;
             }
 
+            // The slot may still hold whoever had this index before.
+            // World::retire() purges every pool before freeing one.
+            // So nothing driven by a World can reach this.
+            // A caller holding a storage directly still can.
+            if (const auto stale = slotOf(entity); stale.has_value())
+            {
+                remove(dense[*stale]);
+            }
+
             growSparseFor(entity);
-            sparse[rawValue(entity)] = dense.size();
+            sparse[entityIndex(entity)] = dense.size();
             dense.push_back(entity);
             front.push_back(value);
             back.push_back(value);
@@ -69,13 +92,13 @@ namespace antwika::ecs
                 dense[i - 1] = dense[i];
                 front[i - 1] = front[i];
                 back[i - 1] = back[i];
-                sparse[rawValue(dense[i - 1])] = i - 1;
+                sparse[entityIndex(dense[i - 1])] = i - 1;
             }
 
             dense.pop_back();
             front.pop_back();
             back.pop_back();
-            sparse[rawValue(entity)] = kNotPresent;
+            sparse[entityIndex(entity)] = kNotPresent;
         }
 
         /**
@@ -147,23 +170,41 @@ namespace antwika::ecs
 
         void growSparseFor(Entity entity)
         {
-            const auto value = rawValue(entity);
-            if (value >= sparse.size())
+            const auto index = entityIndex(entity);
+            if (index >= sparse.size())
             {
-                sparse.resize(value + 1, kNotPresent);
+                sparse.resize(index + 1, kNotPresent);
             }
         }
 
-        [[nodiscard]] std::optional<std::size_t> indexOf(
+        // The dense slot this entity's index points at, if any.
+        // Whoever occupies it -- see indexOf for the difference.
+        [[nodiscard]] std::optional<std::size_t> slotOf(
             Entity entity) const noexcept
         {
-            const auto value = rawValue(entity);
-            if (value >= sparse.size() || sparse[value] == kNotPresent)
+            const auto index = entityIndex(entity);
+            if (index >= sparse.size() || sparse[index] == kNotPresent)
             {
                 return std::nullopt;
             }
 
-            return sparse[value];
+            return sparse[index];
+        }
+
+        // The dense slot this exact entity occupies, if any.
+        // An index outlives the entity that claimed it.
+        // So a slot may belong to another generation of that index.
+        // Comparing the dense entry is what tells the two apart.
+        [[nodiscard]] std::optional<std::size_t> indexOf(
+            Entity entity) const noexcept
+        {
+            const auto slot = slotOf(entity);
+            if (!slot.has_value() || dense[*slot] != entity)
+            {
+                return std::nullopt;
+            }
+
+            return slot;
         }
 
         std::vector<Entity> dense;

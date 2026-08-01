@@ -2,7 +2,6 @@
 
 #include <cstdint>
 #include <functional>
-#include <limits>
 #include <memory>
 #include <typeindex>
 #include <unordered_map>
@@ -30,16 +29,26 @@ namespace antwika::ecs
      * @brief Owns every entity and component in a simulation.
      *
      * Reads (get, has, view) always see the state as of the last
-     * commit(). Writes (add, remove, destroy, set) never take effect
-     * immediately — they're staged and only applied inside commit(),
-     * which is also when each component type's double buffer swaps.
-     * This is what lets SystemScheduler use commit() as the boundary
-     * between phases: everything a phase's systems do is invisible to
-     * each other, and visible together to the next phase.
+     * commit(). Writes (add, remove, destroy, set) never become
+     * visible immediately — the state a read returns only changes
+     * inside commit(), which is also when each component type's double
+     * buffer swaps. This is what lets SystemScheduler use commit() as
+     * the boundary between phases: everything a phase's systems do is
+     * invisible to each other, and visible together to the next phase.
      *
-     * create() is the one exception — it hands back a usable Entity
-     * immediately, so a system can create an entity and add components
-     * to it inside the same update() call.
+     * **Two different mechanisms produce that one guarantee, and the
+     * difference is observable.** add(), remove() and destroy() are
+     * *deferred*: they append a closure to an internal list, and
+     * nothing they describe has happened until commit() runs it. set()
+     * is *immediate*: it writes the value straight into the component's
+     * back buffer, and commit() only reveals it by swapping the
+     * buffers. Both are invisible until commit(), so both read as
+     * "staged" from the outside, but only the deferred three are.
+     * See set() for the one place a caller can tell them apart.
+     *
+     * create() is the third mechanism — it hands back a usable Entity
+     * immediately and visibly, so a system can create an entity and add
+     * components to it inside the same update() call.
      */
     class World final
     {
@@ -49,13 +58,14 @@ namespace antwika::ecs
          * @param logger Forwarded to the internal EntityManager; used to
          * log a fatal message if the entity index space is exhausted.
          * Must outlive this object.
-         * @param maxEntities Highest entity value ever handed out.
-         * Defaults to the full range of the underlying type.
+         * @param maxEntities Highest entity index ever handed out, and
+         * so the most entities that may be alive at once. Defaults to
+         * every index an Entity can carry. It is not a cap on how many
+         * entities a session may create, since a destroyed entity's
+         * index is handed out again.
          */
         explicit World(
-            ILogger &logger,
-            std::uint64_t maxEntities =
-                std::numeric_limits<std::uint64_t>::max());
+            ILogger &logger, std::uint64_t maxEntities = kMaxEntityIndex);
 
         ~World();
 
@@ -78,7 +88,11 @@ namespace antwika::ecs
          * @throws EcsError if entity is not currently alive.
          *
          * Takes effect at the next commit(): every component it has is
-         * removed from its storage and its index is permanently retired.
+         * removed from its storage, and its index goes back on the free
+         * list for a later create() to hand out again. The generation
+         * that index carries is bumped on the way, so this handle — and
+         * every copy of it anyone kept — reads as dead from alive()
+         * rather than as whatever entity claims the index next.
          * Staging the same entity twice in one phase is allowed, and
          * retires it once — nothing is applied until commit(), so the
          * second call sees it alive just like the first.
@@ -186,11 +200,34 @@ namespace antwika::ecs
         }
 
         /**
-         * @brief Stage a new value for an entity's existing component.
+         * @brief Write a new value into an entity's existing component,
+         * visible after commit().
          * @param entity The entity to write.
-         * @param value The value to stage, visible after commit().
+         * @param value The value to write, visible after commit().
          * @throws EcsError if entity is dead or has no such component
          * as of the last commit().
+         *
+         * **This does not go through the staging list add(), remove()
+         * and destroy() use.** The value lands in the component's back
+         * buffer here and now; commit() only makes it visible, by
+         * swapping the buffers. Two consequences follow from that, and
+         * neither applies to the deferred three.
+         *
+         * The component has to exist *already*, as of the last
+         * commit(). So add() followed by set() in the same phase throws
+         * rather than writing: the add is still sitting on the staging
+         * list and has put nothing in any buffer for set() to find. Add
+         * the value you want, or commit() between the two.
+         *
+         * And the write is ordered by when set() was called rather than
+         * by where it sits among the staged operations, so a set() and
+         * a deferred remove() of the same component in one phase always
+         * resolve as the remove — whichever came first.
+         *
+         * Both are the price of the immediate write, and staging set()
+         * to remove them would change when every write is ordered, so
+         * it is a decision of its own rather than a fix to make in
+         * passing.
          */
         template <Component T>
         void set(Entity entity, T value)
