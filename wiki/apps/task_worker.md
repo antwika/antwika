@@ -4,7 +4,7 @@
 
 ## What it demonstrates
 
-[`ecs`](../libraries/ecs.md) and [`scheduler`](../libraries/scheduler.md) combined: a fixed pool of `Worker` entities pulling tasks off a priority-ordered, budget-bounded `Scheduler`, once per tick.
+[`ecs`](../libraries/ecs.md) and [`scheduler`](../libraries/scheduler.md) combined: a fixed pool of `Worker` entities pulling tasks off a deterministic, priority-ordered, budget-bounded `Scheduler`, once per tick.
 It has no window and no input, so it is the smallest complete illustration of the tick loop on its own.
 
 ## Running it

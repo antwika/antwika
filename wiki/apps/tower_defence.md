@@ -18,6 +18,7 @@ build/bin/antwika_tower_defence/antwika_tower_defence --replay src/apps/tower_de
 
 It opens a window, draws the level each tick and takes mouse input.
 Like [life](life.md) it has no end of its own: it runs until the window is closed or a replay dispatches `engine.stop`, and a headless build reports neither — so `Ctrl+C` ends one there, and a `--record` run only writes its file once the run ends.
+It starts on an empty grid and loads nothing unless `--replay` says so, so what a session contains is what somebody clicked.
 
 ## Libraries it composes
 
@@ -38,7 +39,9 @@ A tight per-attempt step budget with many reseeds beat one large budget by rough
 ## How it is put together
 
 `td::Battle` is the simulation — integer throughout, no clock and no global generator, so it is a pure function of the tick count and the state.
-Rendering is a projection: `td::snapshotOf()` takes an immutable `BattleSnapshot`, `BattleScene` turns that into drawing calls, and `RenderSink` runs it once per `engine.tick`, registered after the sinks that step the state so a frame shows the tick's result.
+Rendering is a write-only projection in structure rather than by promise: `td::snapshotOf()` takes an immutable `BattleSnapshot`, `BattleScene` turns that into drawing calls, and `RenderSink` runs it once per `engine.tick`, registered after `BattleSink` and `ScoreSink` so a frame is of the state the tick ended with.
+
+The running score is drawn by [`ui`](../libraries/ui.md), described by `td::ScoreSink` inside the tick path and painted from `td::ScoreOverlay`, so no `ui.*` event exists here either.
 
 `td::GridLayout.hpp` is the one place the pixel-to-cell mapping lives, shared by the scene and the placement sink so what somebody sees and what they can build on cannot drift.
 
@@ -58,6 +61,7 @@ A fixed pixel count matched the bar at exactly one window size and left it cover
 Reserving that strip is also why a click on the bar builds nothing: it falls outside the grid, so no sink has to ask the UI whether it covered the pointer.
 
 **The wide seed sweep runs in an optimised build only.**
-Generating one level costs about 2.9 s under the coverage build's `-O0` against 0.14 s at `-O2`, and forty of them was a third of the entire CI test step.
-`tests/CMakeLists.txt` sets the seed count from `ENABLE_COVERAGE`: eight under instrumentation, measured to reach every line, and forty otherwise.
+`LevelGeneratorTest` asserts the linear-path property over forty seeds, but generating one level costs about 2.9 s under the coverage build's `-O0` against 0.14 s at `-O2`, and forty of them was a third of the entire CI test step.
+`src/apps/tower_defence/tests/CMakeLists.txt` sets the seed count from `ENABLE_COVERAGE`: eight under instrumentation, measured to reach every line, function and branch of the generator, and forty otherwise.
+CI runs the wide sweep in the GNU leg's "Soak the level generator" step, which builds that one target against `conan-release`.
 So the coverage legs prove the coverage and an optimised build proves the property, and neither pays for the other.

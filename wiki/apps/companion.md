@@ -34,7 +34,7 @@ Falling asleep and waking up are therefore not countdowns that could get out of 
 Hunger grows only while it is awake, so a night is a night off from it.
 An undisturbed night gives one happiness back every `restPeriodTicks`, and a disturbed one gives none -- the note of that is cleared on the *first tick of each night* rather than at dawn, so a tap in the daylight cannot spoil the night that follows it.
 
-Nothing in `Pet` reads a clock, a locale or a generator.
+`Pet` is integer throughout, and nothing in it reads a clock, a locale or a generator.
 It is a pure function of how many times `step()` has been called and of when `tap()` was called between them, which is the whole reason a recording of the taps replays to the same animal: a replay is handed no companion to start from, and every bit of the hunger, the sleep and the happiness is regenerated.
 A *live* session does carry its companion over from the one before it -- see [The companion between sessions](#the-companion-between-sessions) -- and a replay run neither reads nor writes one, which is what keeps that true.
 
@@ -70,7 +70,8 @@ The shape is `apps/tower_defence`'s rather than `apps/life`'s, because a compani
   **The app defines no event for feeding it, for waking it up or for pestering it**, deliberately: a `--record` run persists the press, and whether it landed on a hungry companion, a full one, a sleeping one or a perished one is worked out again on replay from the same press and the same tick count.
   Persisting the meal as well would feed it twice per tap.
 - `PetSink` calls `Pet::step()` once per `engine.tick`, registered after `TapSink` so a press is answered by the state the last tick ended with and the step that follows sees the meal.
-- `RenderSink` takes a `PetSnapshot` -- an immutable value the scene cannot write -- and hands it to `PetScene`, registered after both so a frame is of the state the tick ended with.
+- `RenderSink` takes the `PetSnapshot` that `snapshotOf()` produced -- an immutable value the scene cannot write -- and hands it to `PetScene`, registered after both so a frame is of the state the tick ended with.
+  Rendering here is a write-only projection in structure rather than by promise, exactly as it is in `apps/tower_defence`.
 - `PacingSink` is last, which makes the order present-then-wait.
 
 - `ReviveSink` decodes the same presses and starts a new companion when one lands on the button a perished companion is offered, registered *after* `TapSink` so one press can never be a tap and a revival both.
@@ -187,5 +188,5 @@ build/bin/antwika_companion/antwika_companion \
   --replay build/bin/antwika_companion/demo.json
 ```
 
-The shipped `demo.json` is a 38-second session with three well-timed meals and one rude awakening in it, and no pestering at all, so it plays out exactly as it did before that third violation existed; it ends with an `engine.stop`, so it finishes on its own.
+The shipped `demo.json` -- kept in the source tree as `src/apps/companion/replays/demo.json` -- is a 38-second session with three well-timed meals and one rude awakening in it, and no pestering at all, so it plays out exactly as it did before that third violation existed; it ends with an `engine.stop`, so it finishes on its own.
 A headless build reports neither a window close nor any input, so `Ctrl+C` is what ends a live run there -- and a `--record` run only writes its file once the run ends.

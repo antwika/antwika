@@ -16,8 +16,11 @@ build/bin/antwika_game/antwika_game --record demo.replay
 build/bin/antwika_game/antwika_game --replay src/apps/game/replays/demo.json
 ```
 
-Left-click places whatever the toolbar has selected, right-click drops a walker onto a road, middle-drag pans, and the wheel zooms.
+Left-click places whatever the toolbar has selected, middle-drag pans, and the wheel zooms.
+Right-click means one of two things: with a building tool selected it puts the palette down and places nothing by that press, and otherwise it drops a walker onto the road under the pointer.
 With the road tool selected a left-drag lays a whole run of road: the press marks where it starts, the pointer says where it ends, and the release lays the route between them.
+The toolbar carries zoom, reset-view, pause and menu buttons, drawn over the grid by `Toolbar`, described and resolved once per tick by `UiSink`, and painted last by `RenderSystem`; the bar also reports the tick, and a corner of the screen reports the frame rate.
+A city is entered paused, so that pause button is how a run is started as well as how it is held.
 F10, or the toolbar's `menu` button, opens a menu modal over the city with two items: one back to the main menu, and one back to the game.
 It starts on an empty grid and loads nothing unless `--replay` says so, so a session contains exactly what somebody clicked.
 
@@ -48,7 +51,14 @@ Both facts are arithmetic over the shared declaration order rather than a switch
 `BuildingSystem` runs deliveries, drain, risk and demolition.
 Every period derives from one `kTicksPerSecond` rather than a constant per rule, and each countdown lives in the building's own component so two buildings put up a tick apart never fall into lockstep.
 
+A building with no road beside it holds its countdown at zero rather than resetting it, so laying a road beside a long-neglected source releases one walker and not a queue of them, and `kWalkerLimit` stays as a backstop.
+
+`BuildingIndex` is `PathIndex`'s counterpart and exists for the same reason, with two writers and only two: `GridSink` records a block as it builds on one, and `BuildingSystem` clears one as it demolishes.
+
 ## Non-obvious decisions
+
+**The reducer state did not go away when the ECS arrived.**
+The plain `GameState` struct and its `GameStateReducer` are still there, folding `game.score_increment` alongside the grid.
 
 **The camera is simulation state, not render state.**
 A click arrives as a pixel, and which cell it means depends entirely on the camera, so a renderer-owned camera would leave a replay resolving recorded clicks against a different view.
@@ -59,9 +69,18 @@ A click is the input; `GridSink` turns it into a placement inside the tick path,
 Persisting both would lay two tiles per click.
 The toolbar defines no event either, for the same reason.
 
+**A right press means one of two things, and the palette decides which.**
+While a building tool is selected it leaves build mode, putting the palette *down* and placing nothing by that press; otherwise it drops a walker on the path under the pointer exactly as it always did.
+So `UiOverlay::tool()` is a `std::optional<BuildTool>`, and nothing selected is a state the app can be in rather than a synonym for the road tool: no button on the bar is held down, `ghostFor()` returns an invisible ghost so neither a preview tile nor its `footprintOutline()` border is drawn, and a left press lays nothing at all.
+It used to fall back to `BuildTool::Road`, which made cancelling twice the same as cancelling once at the price of a cancel that quietly armed a different tool.
+Putting the palette down says what a cancel means, and a right press with nothing selected still drops a walker, so cancelling twice is still cancelling once.
+The whole decision is `GridSink`'s rather than split with `UiSink`: `UiSink` runs first, so a cancel resolved there would leave the selection cleared by the time the grid read that same press, and one press would then cancel *and* drop a walker.
+Leaving build mode is no more an event than laying a tile is — a recording holds the right press, and a replay resolves it against the same selection and arrives at the same one.
+
 **A road is dragged out rather than clicked one cell at a time, and that is no more an event than one click is.**
 A recording holds the press, the movements and the release; `RoadDrag` is where the gesture's start and end live, and `planRoad()` is what says how the one gets to the other.
 That plan is an A* through [`pathfinding`](../libraries/pathfinding.md) on exactly `stepTowards()`'s terms — ties break down to ascending `NodeId`, and the extent is passed in rather than derived from what happens to exist, since a bounding box taken off the roads would renumber every node as one was laid.
+The roads are therefore not consulted at all: an existing one is passable and simply not laid again, and what a route may not cross is a building, which keeps the plan a function of strictly less state than the placement it feeds.
 `RoadDrag` is therefore simulation state in the camera's sense, written by `GridSink` inside the tick path and never from `input::PointerHintChannel`.
 The pressed cell is laid at once rather than at the release, so a plain click stays the single-tile placement it always was, and a recording that holds no release lays exactly what it always laid.
 
@@ -70,6 +89,8 @@ Three decisions are worth stating outright.
 **A drag holds the run still and lets it go again**, so a route cannot be planned against a city moving under it — but only when the drag was what held it, so a drag never resumes a run somebody paused for themselves (`RoadDrag::heldForDrag()`).
 **A route that does not exist builds nothing at all**: the preview shows the two cells that were named, reddened, which is the convention `canPlace()` and the build ghost already follow, and half a route is a road to nowhere nobody asked for.
 
+A fresh press ends whatever gesture preceded it and lays none of its route, since what a drag would lay is what its release said and no release ever said it.
+
 The preview itself rides on `SceneSnapshot::plan`, and unlike the ghost beside it that member is filled in once a tick rather than once a frame — it is derived from state a replay reproduces, so there is nothing about it a frame could see that the tick did not.
 
 **A building may have one walker out at a time, and it holds the handle.**
@@ -77,6 +98,10 @@ Counting walkers per building would be a scan of every walker per building per t
 The handle is a *cache* and `world.alive()` is the authority, which is safe because `ecs::EntityManager` never reuses an index — so a stale handle can only ever be dead, never somebody else.
 
 `SpawnSystem` needs no new scheduler phase: `destroy()` only retires at `commit()`, so on the tick a walker dies its building still reads it alive and does not spawn, and the building is free from the *next* tick.
+
+**A walker's step is counted down in its own component rather than off the tick number.**
+It advances one cell every `kTicksPerStep` ticks along the paths, and counting in the component is what keeps two walkers that set off a tick apart a tick apart, exactly as a building's countdown does.
+Where it goes next is one preference order in `nextFacing()` rather than two rules: it prefers a right turn at an intersection and reverses at a dead end, and both fall out of that single order.
 
 **Once a walker's roaming budget is spent it either walks home or it is gone.**
 That single rule is what bounds the population, and every awkward case collapses into its last arm — a walker nobody sent, one whose building has burned down, one walled off from home, one whose road was demolished under it.
@@ -101,17 +126,49 @@ A 2×3 block is a hexagon that would need a source rect of its own, a half-tile-
 `canPlace()` is the one statement of what a block will land on, used by `GridSink` *and* by `ghostFor()`, so what a preview promises and what a click delivers cannot drift.
 A refused block is shown reddened rather than hidden, since a refusal somebody can see is one they can act on.
 
+**The block a click would take is outlined as well as tinted**, by `footprintOutline()` — four points traced round the very `footprintBounds()` box the ghost tile is blitted into, so a border and the preview it surrounds cannot show two different extents.
+It is four `IRenderer::drawLine()` calls rather than four filled rectangles: a square block is a diamond, its edges are diagonal, and `drawRect()` takes an upright box only — which is why `antwika::ui`'s focus ring can be four fills and this cannot.
+Nothing reads a drawn line back, so which pixels a backend lights between two endpoints cannot reach anything a replay reproduces, and the border stays exactly as render-side as the ghost it is drawn round.
+
+Two consequences fall out of blocks that one-cell buildings never had.
+
 **Painter's order stopped being optional.**
 Two one-cell buildings could never overlap, so placement order was as good as any; a block drawn before what is behind it is simply the wrong picture.
 `snapshotOf()` sorts on `x + y` with a tie-break on `x`, which is screen depth and is total.
+
+**And a walker reaches a building by *any* cell of its block.**
+That is why `spawnCellFor()` walks the whole perimeter and `stepTowards()` makes every cell of the goal passable.
+There is deliberately no guard against one walker serving one building twice: two of a cell's four neighbours being in one rectangle would put the cell in it too, so it would be a road under a building, which nothing places.
 
 **A walker slides between cells, and those frames are drawn outside the tick.**
 [`app`](../libraries/app.md)'s `FramePacedSource` draws the extra frames in the gap before a tick's events are read, then hands back what the inner source returned unchanged — so it is a pure observer, and this app's own `TickPacer` is gone because one frame a tick is the same thing it did.
 
 What a frame is handed is an `app::IFramePass`, whose only method takes an `animation::Progress` and **no `World`, no `Tick` and no dispatcher**: a pass between two ticks cannot change what the simulation computes because it is given nothing it could change.
 
-`Walker::from` is **simulation state rather than a render channel**, because a live run and its replay have to agree on it — and it is a `std::optional<Cell>` rather than a cell that lies, since a freshly placed or freshly restored walker has no previous cell.
-The picture and the state part company at `SceneSnapshot`: `WalkerSprite` carries `from` and `ticksIntoStep` for drawing, while `WalkerView` stays what `GameSummary` and `SaveGame` hold.
+`RenderSystem` implements both interfaces, snapshotting in `update()` and redrawing that snapshot in `draw()`, and that cached `SceneSnapshot` is the app's only render-side mutable state — safe for the one reason above, so handing `draw()` a `World` would quietly remove the guarantee.
+
+`Walker::from` is **simulation state rather than a render channel**, because a live run and its replay have to agree on it and both draw the same picture from it.
+Reconstructing it as `step(at, opposite(facing))` is right mid-run and wrong exactly where there was no previous cell — freshly placed, freshly spawned, restored from a save — which is why it is a `std::optional<Cell>` rather than a cell that lies.
+The picture and the state part company at `SceneSnapshot`: `WalkerSprite` carries `from` and `ticksIntoStep` for drawing, while `WalkerView` stays what `GameSummary` and `SaveGame` hold, since a render-only field would otherwise land in a persisted schema and in the value `ReplayDeterminismTest` compares — the same rule that keeps a road's link mask out of the snapshot.
+
+The interpolation itself is `WalkerMotion.hpp`, exact rational arithmetic through `animation::interpolate`, so the same frame of the same tick is the same pixel on every toolchain.
+`FrameRateDeterminismTest` is what pins that drawing more often cannot change what a run computes.
+
+**The pause is `apps/life`'s answer to the same question.**
+`PauseGatedSystem` wraps a system and stages nothing while `PauseState` says the run is held, exactly as `life::DragPausedSystem` does, and only those systems stop.
+Which ones is the product decision, and it is three: `WalkerSystem`, `BuildingSystem` and `SpawnSystem`, the three that make a city move on its own.
+The tick, the commit, every observer, the toolbar, the camera and placement all carry on, so **a paused city can still be panned over, zoomed into and built on** — this is a build pause rather than a freeze, and a pause nobody could act on would just look like a hang.
+It composes with `ModeGatedSystem` rather than replacing it, since a run is paused *and* in a mode and either gate alone answers only its own question.
+
+`PauseState` is simulation state in exactly the sense the camera and the selected tool are — owned by `main.cpp` beside those two for the reason all three are, since a renderer built before the run has to read it — and toggled by `UiSink` inside the tick path, so a replay pauses on precisely the ticks the live run paused on and nothing about a pause is ever persisted.
+
+**A city is entered paused**, so progress is something a player asks for rather than something that starts happening at them the moment a grid appears, and the way out is the same toolbar button it always was.
+`CityEntrySink` is what does it: registered immediately after `AppModeState`, which commits the mode, and ahead of `GridSink`, which runs the systems a pause stops.
+It watches the *transition* into `AppMode::CityMap` rather than the mode itself, since holding the pause every tick would make the button do nothing at all, and it calls `PauseState::hold()` rather than `toggle()`, so a city entered from a paused one does not come up running.
+Every route in is a transition — New Game from the menu, a city picked off the world map, a save loaded — so **the first city of a session is no exception** and the rule needs none.
+A test that constructs its `AppModeState` already in `AppMode::CityMap` never transitions and so is never held, which is the same latitude that constructor's initial mode already gives one.
+Nothing about this leaves the tick path: it reads the mode a replay regenerates from the recorded clicks, defines no event, reads no clock and persists nothing.
+What it changed about `src/apps/game/replays/demo.json` is that the two walkers it drops now stand where they were dropped rather than walking off and expiring, since that session never presses pause; everything a click causes there — ten roads, a house, the pan and the zoom — happens exactly as it did.
 
 **Those frames carry on while the run is paused, which is why the pause reaches the picture too.**
 `SceneSnapshot` carries it, read off `PauseState` by `snapshotOf()` exactly as the camera is, and `GridScene` then draws a held walker at its step's own phase whatever fraction of a tick a frame falls at.
@@ -128,7 +185,19 @@ No sink may read it, and "the ghost is over the toolbar" is worked out *from* `U
 **Order of registration is load-bearing.**
 `UiSink` is registered *before* `GridSink`, so a press is resolved against the toolbar before the grid sees it.
 `UiOverlay` is the one fact the two share and owns the canvas the bar is laid out against — the size the window was *asked* for — so nothing can lay it out against one size and hit-test it against another.
-What the bar covers, it covers from the grid too, though not a movement, so a pan begun on the grid carries on across the bar.
+What the bar covers, it covers from the grid too — `GridSink` skips a press or a scroll the overlay reports as covered, though not a movement, so a pan begun on the grid carries on across the bar.
+A release is exempt for the reason a movement is plus one of its own: a drag let go over the bar would otherwise hold the pause for the rest of the session.
+
+**The bar reports the tick and a corner of the screen reports the frame rate, and the two are in different places for one reason.**
+The tick is simulation state, so it is a label on the bar, described in the tick path off the `TickEvent` being handled and regenerated by a replay like everything else there.
+Frames per second is measured against a wall clock, which says how fast the machine is — so `FrameMeter` is render-side only, is handed an injected `time::IClock` rather than reading one, is counted in `RenderSystem::draw()` (the one thing that runs exactly once per frame, `FramePacedSource`'s between-tick frames included), and is drawn by `describeFps()` straight from the renderer.
+It reaches no sink, no system, no `SceneSnapshot`, no `GameSummary` and no save, which is the whole of its safety condition — the same one `input::PointerHintChannel` is held to, arrived at from the other side.
+`RenderSetup::fps` is optional and absent by default, so a run with no wall clock to offer draws no readout and every test whose subject is the picture is spared one.
+
+**What the first second of a run shows is a placeholder rather than a number.**
+`FrameMeter::perSecond()` answers nothing at all until a whole window has gone by, and `describeFps()` draws `kNoRateReadout`, which reads `fps --`, in its place.
+That constant is the whole line rather than the two dashes alone, and the readout is two `ui.label()` calls rather than one over a conditional string, because a caption joined to a placeholder is a `std::string` built on a branch — a temporary whose unwind path no test can reach, and two branches the coverage gate then refuses.
+Absent rather than zero, because zero is a rate a stalling machine is genuinely measured at, and a run that has drawn for less than a second has measured nothing; reporting both as "fps 0" would be one word for two states, and the corner would also claim the machine was drawing no frames at the exact moment it started drawing them.
 
 **The menu modal is a modal rather than a mode, and whether it is up is simulation state.**
 F10 and the toolbar's `menu` button both open it, `UiSink` owns the flag, and no `ui.*` or `game.*` event exists for any of it — a recording holds the key press and the click, and a replay works out again which widget they hit.
@@ -141,11 +210,13 @@ Three awkward cases have rules.
 That also settles the drag, since the modal's hold supersedes whatever the drag was holding and nothing here ever resumes.
 **Leaving for the main menu is a mode change like every other**, asked for on `AppModeState` so it lands at the tick boundary, and the modal is put away on the way out so a city entered later is not still wearing it.
 
+The modal's widget ids live in `modalWidgets` rather than in the bar's `widgets`, for the reason `menuWidgets` has a namespace of its own: the two are resolved against different frames and never share one.
+
 **A save is version 2 and carries the buildings.**
 Kinds, stock, risk and all three countdowns — countdowns reset on load are exactly the lockstep they exist to avoid.
 
 The building/walker link is persisted **as a pair of array indices rather than as an `ecs::Entity`**, because `EntityManager` hands ids out from a monotonic counter and a restore destroys and recreates everything, so a raw handle would name nothing on the way back in.
-Reading refuses an index past the end of the array it points into, and refuses a pair that disagree about each other, rather than repairing either.
+Reading refuses an index past the end of the array it points into, and refuses a pair that disagree about each other, rather than repairing either — a repaired save is a session somebody never had.
 
 Restoring creates every entity *before* adding any component, because `create()` is immediate where `add()` is staged — so a link has to be built into the component rather than written onto it afterwards.
 
@@ -158,6 +229,32 @@ The header says where a tile lives arithmetically rather than as a table of rect
 What is left to catch a mistake is that header's `static_assert`s, `TileAtlasTest`, and a check at startup that the PNG really is the expected size.
 
 Which of the sixteen road tiles a junction shows is worked out in `GridScene` by binary-searching the snapshot's ascending paths, and stays out of `SceneSnapshot` and `GameSummary` — it is a picture, not state a replay has to reproduce.
+
+## Resource bars and the hover readout
+
+**What a building depends on and what a walker carries are drawn as small vertical bars, and hovering either says the same thing in words.**
+
+`BuildingSprite` is `BuildingView`'s render-side twin for exactly `WalkerSprite`'s reason: it carries the stock a gauge is drawn from, and `GameSummary` keeps the plain view, so a number that exists only to be looked at stays out of the value `ReplayDeterminismTest` compares.
+`buildingViewsOf()` is what a summary is built from now, and `WalkerSprite` gained the walker's kind and load on the same terms.
+
+A bar is a track and a fill in `ResourceBar.hpp`, worked out from `footprintBounds()` and `walkerBounds()` — the very boxes the sprite is blitted into — so the gauges cannot become a second layout that drifts from the art.
+They are painted in a pass *after* every sprite, so nothing standing in front of what they gauge can hide one.
+
+Which bars a building shows is `consumes(kind)`: every resource for a house and none for a source, since a source keeps stock nobody drains and a gauge on one would count a number that never moves.
+A walker shows the one resource `carriedResource()` names, empty bar included, and a fireman or an architect shows none.
+
+**Hovering is `hoverFor()`, and it is `ghostFor()`'s sibling in every way that matters**: it reads `input::PointerHintChannel`, it resolves the pixel through the same `screenToCell()` a click goes through, it tests a building across its whole block, and what it answers may decide what is drawn and nothing else.
+
+`readoutPanel()` lays that answer out into a plain value of a box and coloured lines, painted through `IRenderer` rather than through `antwika::ui` — deliberately, because this app's UI is described and resolved inside the tick path by `UiSink`, and taking a panel driven by an unrecorded hint through that path is precisely what the channel forbids.
+The panel lists the resources the bars gauge rather than every number a building holds, so a reader is never told two stories about one building.
+Its captions are a table of their own rather than the names a save file writes, since a persisted name may not change to suit a caption.
+
+`HoverTest` runs one recorded stream twice, with and without a pointer over the grid, and asserts the same `GameSummary` out of both — and that the watched run really did draw a readout, so the two cannot agree for the wrong reason.
+
+## Future work
+
+**`UiSink`/`UiOverlay`/`Toolbar` should adopt `ui::applyHover()` next.**
+The app already owns a hint channel and already draws its placement ghost from it, so the toolbar buttons lighting up on approach is `main.cpp` handing `RenderSystem` the channel and one `applyHover()` call after the sink has resolved the press — and it is the one remaining thing `apps/game` says it does not do.
 
 ## See also
 
