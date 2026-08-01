@@ -6,6 +6,7 @@
 #include <antwika/gfx/IRenderer.hpp>
 #include <antwika/gfx/Size.hpp>
 
+#include "antwika/companion/PetLayout.hpp"
 #include "antwika/companion/PetSnapshot.hpp"
 
 namespace antwika::companion
@@ -13,22 +14,6 @@ namespace antwika::companion
 
     using antwika::gfx::IRenderer;
     using antwika::gfx::Size;
-
-    /**
-     * @brief How many whole units a side the picture is laid out on.
-     *
-     * A window whose sides are a whole multiple of this gives every
-     * rectangle a whole number of pixels, which is why main.cpp derives
-     * its window size from this constant rather than naming a pixel
-     * count that happens to divide by it.
-     * Doubling the window therefore doubles a unit and everything drawn
-     * from one, the readout's glyphs included, and leaves nothing to
-     * keep in step by hand.
-     *
-     * Whole units rather than fractions of the canvas is what keeps
-     * every rectangle the same integer on every toolchain.
-     */
-    inline constexpr std::uint32_t kSceneUnits = 32;
 
     /**
      * @brief Draws a companion: a sky, some ground, two gauges, a
@@ -66,6 +51,13 @@ namespace antwika::companion
      * and how long it stays are `Pet`'s decisions, so the bubble adds
      * no state here: a scene that counted a bubble down would be one
      * holding time a replay has to reproduce.
+     *
+     * A perished companion is drawn with a "new companion" button over
+     * it, which is the one way out of a state nothing else leaves. The
+     * scene neither owns it nor decides what pressing it does: where it
+     * is is reviveButtonRect()'s answer, shared with the ReviveSink
+     * that hit-tests a press against it, and whether to draw it at all
+     * is the one thing the snapshot already says.
      *
      * The readout says in words what the gauges say in bars, plus the
      * one thing no bar can: whether the companion is awake, asleep or

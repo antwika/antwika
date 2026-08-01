@@ -18,12 +18,14 @@
 #include <antwika/time/SystemSleeper.hpp>
 
 #include "antwika/companion/Companion.hpp"
+#include "antwika/companion/FilePetStore.hpp"
 #include "antwika/companion/PetScene.hpp"
 #include "antwika/companion/RenderSink.hpp"
 
 using antwika::app::ConsoleLogging;
 using antwika::app::RecordedRun;
 using antwika::companion::CompanionSummary;
+using antwika::companion::FilePetStore;
 using antwika::companion::Pet;
 using antwika::companion::PetScene;
 using antwika::companion::RenderSink;
@@ -50,6 +52,12 @@ namespace
     // A build using it has nothing to watch and nothing to close.
     constexpr std::string_view kHeadlessBackendName = "null";
 
+    // Where the companion waits between one session and the next.
+    // Beside the working directory rather than beside the executable.
+    // A companion is what somebody's session made, not a shipped asset.
+    // So it does not belong in the directory a build writes.
+    constexpr std::string_view kCompanionFile = "companion.json";
+
     void run(const RecordedRun &recorded)
     {
         ConsoleLogging logging(std::cout, Level::Info);
@@ -74,6 +82,7 @@ namespace
 
         const PetScene scene;
         SystemSleeper sleeper;
+        FilePetStore store{std::string(kCompanionFile)};
 
         ReplaySource fileSource(
             antwika::app::scriptedEvents(recorded.options.replayPath));
@@ -102,6 +111,9 @@ namespace
                 .inputSource = source,
                 .codec = codec,
                 .sleeper = sleeper,
+                .canvas = kWindowSize,
+                .store = antwika::companion::storeIfLive(
+                    store, recorded.options.replayPath),
                 .replayRecorder = recorded.replayRecorder,
                 .extraSink =
                     [&](const Pet &pet)

@@ -52,6 +52,9 @@ namespace antwika::companion
         constexpr std::string_view kWokenWord = "asleep, woken";
         constexpr std::string_view kGoneWord = "gone";
 
+        // What the one button says, in this file with the other words.
+        constexpr std::string_view kReviveWords = "new pet";
+
         // Every line the companion may say, in Saying's own order.
         // One table in one place, and this is the place.
         // The words are presentation, where a Saying is what is decided.
@@ -102,12 +105,6 @@ namespace antwika::companion
 
         // How far up the animal sits on each frame of a breath.
         constexpr std::array<std::int32_t, 4> kBob{0, 1, 1, 0};
-
-        struct Layout
-        {
-            std::uint32_t unit = 0;
-            Point origin{};
-        };
 
         struct Palette
         {
@@ -169,57 +166,9 @@ namespace antwika::companion
             .bubble = {.red = 150, .green = 150, .blue = 156},
             .bubbleText = {.red = 40, .green = 40, .blue = 46}};
 
-        [[nodiscard]] std::optional<Layout> layoutFor(const Size canvas)
-        {
-            const auto byWidth = canvas.width / kSceneUnits;
-            const auto byHeight = canvas.height / kSceneUnits;
-            const auto unit = byWidth < byHeight ? byWidth : byHeight;
-
-            if (unit == 0)
-            {
-                return std::nullopt;
-            }
-
-            const auto used = unit * kSceneUnits;
-
-            return Layout{
-                .unit = unit,
-                .origin = {
-                    .x = static_cast<std::int32_t>(
-                        (canvas.width - used) / 2),
-                    .y = static_cast<std::int32_t>(
-                        (canvas.height - used) / 2)}};
-        }
-
-        [[nodiscard]] Point point(
-            const Layout &layout,
-            const std::int32_t x,
-            const std::int32_t y)
-        {
-            const auto unit = static_cast<std::int32_t>(layout.unit);
-
-            return Point{
-                .x = layout.origin.x + x * unit,
-                .y = layout.origin.y + y * unit};
-        }
-
-        [[nodiscard]] Rect box(
-            const Layout &layout,
-            const std::int32_t x,
-            const std::int32_t y,
-            const std::uint32_t width,
-            const std::uint32_t height)
-        {
-            return Rect{
-                .origin = point(layout, x, y),
-                .size = {
-                    .width = width * layout.unit,
-                    .height = height * layout.unit}};
-        }
-
         // Four glyph pixels to a unit, so the readout grows with it.
         // A unit too small for even that still gets the smallest text.
-        [[nodiscard]] std::uint32_t textScale(const Layout &layout)
+        [[nodiscard]] std::uint32_t textScale(const SceneLayout &layout)
         {
             const auto scale = layout.unit / kGlyphPixelsPerUnit;
 
@@ -258,7 +207,7 @@ namespace antwika::companion
         // So three lines fit whatever a unit turned out to be worth.
         void drawReadout(
             IRenderer &renderer,
-            const Layout &layout,
+            const SceneLayout &layout,
             const Palette &palette,
             const PetSnapshot &snapshot)
         {
@@ -294,7 +243,7 @@ namespace antwika::companion
 
         // Scaled to the longest line rather than to the one being said.
         // A unit too small for even the smallest glyphs still gets them.
-        [[nodiscard]] std::uint32_t bubbleScale(const Layout &layout)
+        [[nodiscard]] std::uint32_t bubbleScale(const SceneLayout &layout)
         {
             const auto room =
                 (kBubbleUnitsWide - 2 * kBubblePadUnits) * layout.unit;
@@ -315,7 +264,7 @@ namespace antwika::companion
         // So deciding to speak and saying something are one decision.
         void drawBubble(
             IRenderer &renderer,
-            const Layout &layout,
+            const SceneLayout &layout,
             const Palette &palette,
             const Saying saying)
         {
@@ -365,7 +314,7 @@ namespace antwika::companion
 
         void drawGauge(
             IRenderer &renderer,
-            const Layout &layout,
+            const SceneLayout &layout,
             const std::int32_t y,
             const std::uint32_t value,
             const std::uint32_t max,
@@ -393,7 +342,7 @@ namespace antwika::companion
 
         void drawAnimal(
             IRenderer &renderer,
-            const Layout &layout,
+            const SceneLayout &layout,
             const Palette &palette,
             const std::int32_t bob,
             const bool eyesShut)
@@ -434,7 +383,7 @@ namespace antwika::companion
 
         void drawGrave(
             IRenderer &renderer,
-            const Layout &layout,
+            const SceneLayout &layout,
             const Palette &palette)
         {
             renderer.drawRect(box(layout, 10, 22, 12, 2), palette.detail);
@@ -443,11 +392,44 @@ namespace antwika::companion
             renderer.drawRect(box(layout, 13, 15, 6, 2), palette.eye);
         }
 
+        // The one thing on screen that is pressed rather than read.
+        // Where it is is reviveButtonBox()'s answer, not this one's.
+        // ReviveSink tests a press against that very box.
+        // So what is shown and what is hit are one rectangle.
+        // It borrows the bubble's two colours rather than adding a pair.
+        // Two of the three palettes could never draw it.
+        // And a plate with dark words on it is what a bubble is.
+        void drawReviveButton(
+            IRenderer &renderer,
+            const SceneLayout &layout,
+            const Palette &palette)
+        {
+            const Rect button = reviveButtonBox(layout);
+            renderer.drawRect(button, palette.bubble);
+
+            const auto scale = textScale(layout);
+            const auto text = antwika::gfx::textSize(kReviveWords, scale);
+
+            renderer.drawText(
+                Point{
+                    .x = button.origin.x
+                         + (static_cast<std::int32_t>(button.size.width)
+                            - static_cast<std::int32_t>(text.width))
+                               / 2,
+                    .y = button.origin.y
+                         + (static_cast<std::int32_t>(button.size.height)
+                            - static_cast<std::int32_t>(text.height))
+                               / 2},
+                kReviveWords,
+                scale,
+                palette.bubbleText);
+        }
+
         // The bowl says what to do about it, where a gauge only reports.
         // It is the one thing on screen that a tap is an answer to.
         void drawBowl(
             IRenderer &renderer,
-            const Layout &layout,
+            const SceneLayout &layout,
             const Palette &palette)
         {
             renderer.drawRect(box(layout, 3, 21, 6, 3), palette.detail);
@@ -456,7 +438,7 @@ namespace antwika::companion
 
         void drawSleepPuffs(
             IRenderer &renderer,
-            const Layout &layout,
+            const SceneLayout &layout,
             const Palette &palette,
             const std::size_t count)
         {
@@ -531,6 +513,11 @@ namespace antwika::companion
         if (snapshot.state == PetState::Perished)
         {
             drawGrave(renderer, *layout, palette);
+
+            // Drawn from the snapshot like everything else here.
+            // Whether there is a button is the state and nothing more.
+            // So no renderer holds a note of one being offered.
+            drawReviveButton(renderer, *layout, palette);
         }
         else
         {

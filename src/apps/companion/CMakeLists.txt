@@ -1,11 +1,15 @@
 add_executable(antwika_companion
     src/Companion.cpp
+    src/FilePetStore.cpp
     src/PacingSink.cpp
     src/Pet.cpp
+    src/PetLayout.cpp
+    src/PetSave.cpp
     src/PetScene.cpp
     src/PetSink.cpp
     src/PetSnapshot.cpp
     src/RenderSink.cpp
+    src/ReviveSink.cpp
     src/TapSink.cpp
     src/main.cpp
 )
