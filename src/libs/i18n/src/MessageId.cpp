@@ -135,10 +135,16 @@ namespace antwika::i18n
             return "CompanionDay";
         case MessageId::CompanionLineage:
             return "CompanionLineage";
-        case MessageId::SudokuInput:
-            return "SudokuInput";
+        case MessageId::SudokuTitle:
+            return "SudokuTitle";
+        case MessageId::SudokuSolveButton:
+            return "SudokuSolveButton";
+        case MessageId::SudokuHint:
+            return "SudokuHint";
         case MessageId::SudokuSolved:
             return "SudokuSolved";
+        case MessageId::SudokuComplete:
+            return "SudokuComplete";
         case MessageId::SudokuNoSolution:
             return "SudokuNoSolution";
         case MessageId::SudokuLimitExceeded:
@@ -157,6 +163,8 @@ namespace antwika::i18n
             return "TowerDefenceCleared";
         case MessageId::TowerDefenceOverrun:
             return "TowerDefenceOverrun";
+        case MessageId::SudokuGivenLocked:
+            return "SudokuGivenLocked";
         case MessageId::UiDemoTitle:
             return "UiDemoTitle";
         case MessageId::UiDemoPickPage:

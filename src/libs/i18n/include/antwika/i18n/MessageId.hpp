@@ -350,17 +350,32 @@ namespace antwika::i18n
         CompanionLineage,
 
         /**
-         * @brief Sudoku: the heading over the puzzle as given.
+         * @brief Sudoku: the name over the grid.
          */
-        SudokuInput,
+        SudokuTitle,
 
         /**
-         * @brief Sudoku: the heading over the finished grid.
+         * @brief Sudoku: the button that finishes the grid.
+         */
+        SudokuSolveButton,
+
+        /**
+         * @brief Sudoku: how to play, shown until something happens.
+         */
+        SudokuHint,
+
+        /**
+         * @brief Sudoku: the solver finished the grid.
          */
         SudokuSolved,
 
         /**
-         * @brief Sudoku: the puzzle has no solution at all.
+         * @brief Sudoku: every square is filled and every rule holds.
+         */
+        SudokuComplete,
+
+        /**
+         * @brief Sudoku: no solution exists from where the grid is.
          */
         SudokuNoSolution,
 
@@ -403,6 +418,9 @@ namespace antwika::i18n
          * @brief Tower defence: the lives ran out.
          */
         TowerDefenceOverrun,
+         * @brief Sudoku: that square is one of the puzzle's clues.
+         */
+        SudokuGivenLocked,
 
         /**
          * @brief UI demo: the heading over every page.
@@ -800,7 +818,7 @@ namespace antwika::i18n
     /**
      * @brief How many ids a complete catalogue carries.
      */
-    inline constexpr std::size_t kMessageCount{152};
+    inline constexpr std::size_t kMessageCount{156};
 
     /**
      * @brief Every id, in declaration order.
@@ -873,8 +891,11 @@ namespace antwika::i18n
         MessageId::CompanionMoodHeavy,
         MessageId::CompanionDay,
         MessageId::CompanionLineage,
-        MessageId::SudokuInput,
+        MessageId::SudokuTitle,
+        MessageId::SudokuSolveButton,
+        MessageId::SudokuHint,
         MessageId::SudokuSolved,
+        MessageId::SudokuComplete,
         MessageId::SudokuNoSolution,
         MessageId::SudokuLimitExceeded,
         MessageId::TowerDefenceLevel,
@@ -884,6 +905,7 @@ namespace antwika::i18n
         MessageId::TowerDefenceBest,
         MessageId::TowerDefenceCleared,
         MessageId::TowerDefenceOverrun,
+        MessageId::SudokuGivenLocked,
         MessageId::UiDemoTitle,
         MessageId::UiDemoPickPage,
         MessageId::UiDemoPageLabels,

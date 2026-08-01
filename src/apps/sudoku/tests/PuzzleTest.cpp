@@ -5,6 +5,11 @@
 
 #include <gtest/gtest.h>
 
+#include <antwika/wfc/SolveResult.hpp>
+
+#include <antwika/sudoku/PuzzleFile.hpp>
+#include <antwika/sudoku/Solve.hpp>
+
 using antwika::sudoku::Board;
 using antwika::sudoku::buildConstraints;
 using antwika::sudoku::buildInitialWave;
@@ -58,4 +63,51 @@ TEST(PuzzleTest, InitialWaveMatchesGivensAndBlanks)
 
     EXPECT_FALSE(wave[1].isSingleton());
     EXPECT_EQ(wave[1].count(), Board::kSize);
+}
+
+TEST(PuzzleTest, ObeysRules_AcceptsAGridSomebodyIsPartWayThrough)
+{
+    // Two fives, sharing no row, no column and no box.
+    Board board;
+    board.set(0, 0, 5);
+    board.set(4, 4, 5);
+
+    EXPECT_TRUE(antwika::sudoku::obeysRules(board));
+}
+
+TEST(PuzzleTest, ObeysRules_RefusesOneDigitTwiceInAGroup)
+{
+    Board row;
+    row.set(0, 0, 5);
+    row.set(0, 4, 5);
+    EXPECT_FALSE(antwika::sudoku::obeysRules(row));
+
+    Board column;
+    column.set(0, 0, 5);
+    column.set(4, 0, 5);
+    EXPECT_FALSE(antwika::sudoku::obeysRules(column));
+
+    Board box;
+    box.set(0, 0, 5);
+    box.set(1, 1, 5);
+    box.set(2, 2, 5);
+    EXPECT_FALSE(antwika::sudoku::obeysRules(box));
+}
+
+TEST(PuzzleTest, IsComplete_WantsEverySquareFilledAndEveryRuleKept)
+{
+    const auto solved = antwika::sudoku::solvePuzzle(
+        Board::parse(antwika::sudoku::kDemoPuzzle));
+    ASSERT_EQ(solved.outcome, antwika::wfc::SolveOutcome::Solved);
+
+    EXPECT_TRUE(antwika::sudoku::isComplete(solved.board));
+
+    Board oneShort = solved.board;
+    oneShort.set(4, 4, 0);
+    EXPECT_FALSE(antwika::sudoku::isComplete(oneShort));
+
+    // Full, and wrong: two of the same digit in one row.
+    Board wrong = solved.board;
+    wrong.set(0, 0, wrong.at(0, 1).value());
+    EXPECT_FALSE(antwika::sudoku::isComplete(wrong));
 }

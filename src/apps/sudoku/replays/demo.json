@@ -1,0 +1,48 @@
+{
+  "magic": "antwika-replay",
+  "version": 1,
+  "events": [
+    {
+      "tick": 0,
+      "event": {
+        "name": "sudoku.new_puzzle",
+        "payload": "{\"cells\":\"53..7....6..195....98....6.8...6...34..8.3..17...2...6.6....28....419..5....8..79\"}"
+      }
+    },
+    {
+      "tick": 20,
+      "event": {
+        "name": "sudoku.set_cell",
+        "payload": "{\"x\":2,\"y\":0,\"digit\":4}"
+      }
+    },
+    {
+      "tick": 40,
+      "event": {
+        "name": "sudoku.set_cell",
+        "payload": "{\"x\":3,\"y\":0,\"digit\":6}"
+      }
+    },
+    {
+      "tick": 60,
+      "event": {
+        "name": "sudoku.set_cell",
+        "payload": "{\"x\":3,\"y\":0,\"digit\":0}"
+      }
+    },
+    {
+      "tick": 80,
+      "event": {
+        "name": "sudoku.solve",
+        "payload": ""
+      }
+    },
+    {
+      "tick": 140,
+      "event": {
+        "name": "engine.stop",
+        "payload": ""
+      }
+    }
+  ]
+}
