@@ -102,6 +102,26 @@ namespace antwika::companion
                     "companion: a saved companion has perished with "
                     "happiness left, or has none and lives on");
             }
+
+            // A perished companion says nothing, and lose() sees to it.
+            // It empties the bubble as the happiness runs out.
+            // step() then returns before another line could start.
+            // So a grave mid-sentence is a state no live run reaches.
+            // A file is not lose(), which is why this is stated here.
+            // Refused rather than quietly emptied on the way in.
+            // A repaired save is a session somebody never had.
+            // The picture leans on the same rule as the state does.
+            // PetScene's bubble and PetLayout's button share one box.
+            // Each sits there because the other cannot be up at once.
+            // So a bubble over a grave is a bubble over the button.
+            if (memory.state == PetState::Perished
+                && (memory.saying != Saying::None
+                    || memory.sayingTicksLeft != 0))
+            {
+                throw SaveFormatError(
+                    "companion: a saved companion has perished with "
+                    "something still to say");
+            }
         }
     } // namespace
 

@@ -653,6 +653,43 @@ namespace
             (void)Pet(kLongDay, emptyButAlive), SaveFormatError);
     }
 
+    // Live, lose() takes the bubble away as the happiness runs out.
+    // A file is not lose(), so the rule is stated on the way in too.
+    // PetScene's bubble and PetLayout's button share one box.
+    // A grave still talking would draw one straight over the other.
+    TEST(PetTest, Construction_RefusesAPerishedMemoryMidSentence)
+    {
+        PetMemory withWords;
+        withWords.state = PetState::Perished;
+        withWords.saying = Saying::Zzz;
+        withWords.sayingTicksLeft = 60;
+
+        EXPECT_THROW((void)Pet(kLongDay, withWords), SaveFormatError);
+
+        PetMemory withCountdown;
+        withCountdown.state = PetState::Perished;
+        withCountdown.sayingTicksLeft = 60;
+
+        EXPECT_THROW(
+            (void)Pet(kLongDay, withCountdown), SaveFormatError);
+    }
+
+    // The other arm: a grave that is silent is an ordinary save.
+    TEST(PetTest, Construction_ResumesASilentPerishedCompanion)
+    {
+        PetMemory memory;
+        memory.state = PetState::Perished;
+        memory.ticks = 40;
+        memory.disturbances = 3;
+
+        Pet resumed(kLongDay, memory);
+
+        EXPECT_EQ(resumed.state(), PetState::Perished);
+        EXPECT_EQ(resumed.saying(), Saying::None);
+        EXPECT_EQ(resumed.sayingTicksLeft(), 0U);
+        EXPECT_EQ(resumed.remember(), memory);
+    }
+
     TEST(PetTest, Construction_ARestoreStillRefusesUnrunnableNumbers)
     {
         PetMemory memory;

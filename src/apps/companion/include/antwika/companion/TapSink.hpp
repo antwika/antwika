@@ -25,11 +25,18 @@ namespace antwika::companion
      * Persisting the meal as well would feed it twice per tap, the same
      * trap td::TowerPlacementSink describes for building a tower.
      *
-     * There is deliberately no layout here and no canvas to hit-test
-     * against. The window is 256 pixels square and holds one animal, so
-     * a press anywhere in it means the same thing -- which is also why
-     * nothing somebody sees can drift out of step with what they can
-     * hit, since there is nothing to keep in step.
+     * This sink hit-tests nothing, and it is the only one here that
+     * does not. The window holds one animal, so a press anywhere in it
+     * means a tap and every tap means the same thing -- there is no
+     * region of the window this sink has to know about.
+     *
+     * The app does have a layout, and one press whose meaning depends
+     * on where it landed: the "new companion" button a perished one is
+     * offered. That is PetLayout's box and ReviveSink's hit-test, both
+     * against the configured window size, and the two share the one
+     * reviveButtonRect() so what somebody sees and what they can hit
+     * cannot drift. ReviveSink is registered after this sink, so one
+     * press can never be a tap and a revival both.
      *
      * Registered before PetSink, so a tap is answered by the state the
      * last tick ended with and the step that follows sees the meal.

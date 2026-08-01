@@ -82,6 +82,10 @@ namespace antwika::companion
         // Where the bubble sits, in the layout's own units.
         // Left of the animal, under the gauges and over the bowl.
         // So it covers nothing that says anything.
+        // It does overlap PetLayout's kButton box, deliberately.
+        // The two are never up at once, so the room is spent twice.
+        // A perished companion is silent: lose() clears the bubble.
+        // Pet::requireLivable() refuses a saved one that is not.
         constexpr std::int32_t kBubbleX = 1;
         constexpr std::int32_t kBubbleY = 7;
         constexpr std::uint32_t kBubbleUnitsWide = 10;

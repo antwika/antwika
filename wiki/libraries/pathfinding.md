@@ -61,9 +61,10 @@ Hand an inconsistent estimate to the search and it still terminates and still re
 
 **A caller must keep its node numbering fixed.**
 `GridGraph` numbers nodes row-major over the extent it is given, so the extent has to be a constant of the world rather than a bounding box derived from whatever is currently passable.
-[game](../apps/game.md)'s `stepTowards()` passes the extent in for this reason: a box computed from the roads that happen to exist would renumber every node as one was laid, and with it the tie-break.
+[game](../apps/game.md)'s two callers both pass the extent in for this reason: a box computed from the roads that happen to exist would renumber every node as one was laid, and with it the tie-break.
+`stepTowards()` is the one that walks a walker home, re-searching every step and using only the first move; `planRoad()` is the one that turns a road drag's two ends into the run of cells laid between them, and it consults no roads at all, since an existing one is passable and simply not laid again.
 
 ## See also
 
-- [game](../apps/game.md) — walks a walker home over the roads, re-searching every step.
+- [game](../apps/game.md) — walks a walker home over the roads, re-searching every step, and plans the run of road a drag lays between its two ends.
 - [`wfc`](wfc.md) — the same bargain: the library owns an algorithm, the caller owns the geometry.

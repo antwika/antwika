@@ -113,6 +113,11 @@ What a frame is handed is an `app::IFramePass`, whose only method takes an `anim
 `Walker::from` is **simulation state rather than a render channel**, because a live run and its replay have to agree on it — and it is a `std::optional<Cell>` rather than a cell that lies, since a freshly placed or freshly restored walker has no previous cell.
 The picture and the state part company at `SceneSnapshot`: `WalkerSprite` carries `from` and `ticksIntoStep` for drawing, while `WalkerView` stays what `GameSummary` and `SaveGame` hold.
 
+**Those frames carry on while the run is paused, which is why the pause reaches the picture too.**
+`SceneSnapshot` carries it, read off `PauseState` by `snapshotOf()` exactly as the camera is, and `GridScene` then draws a held walker at its step's own phase whatever fraction of a tick a frame falls at.
+Without that a walker frozen mid-step slid forward through every tick and snapped back at the start of the next one, for as long as the run stayed held — the whole ticks of its step stop with `WalkerSystem`, and `FramePacedSource`'s frames do not stop with them.
+The decision is the scene's rather than whoever supplies the fraction, so a held snapshot is the same picture wherever it is drawn.
+
 **A button lights up on the press, and the ghost still follows the pointer.**
 `input::IdleMotionSource` holds idle movement back, which is why a button does not light up on approach.
 The ghost is the exception, and it is not a trade any more: `ghostFor()` works it out on the render side from `input::PointerHintChannel`, which carries a free-moving pointer without putting one byte in a recording.

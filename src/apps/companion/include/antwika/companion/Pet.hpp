@@ -222,11 +222,14 @@ namespace antwika::companion
      * carry and keep in step, where a hash of a number Pet already holds
      * is nothing at all.
      *
-     * A tap is deliberately the only input, since the window is 256
-     * pixels square and a pointer landing anywhere in it means the same
-     * thing. There is therefore no layout to keep in step with the
-     * scene, and no way for what somebody sees and what they can hit to
-     * drift apart.
+     * A tap is deliberately the only input this class has, since the
+     * window holds one animal and a pointer landing anywhere in it
+     * means the same thing. The one press whose meaning depends on
+     * where it landed never reaches tap() at all: it is the "new
+     * companion" button a perished one is offered, hit-tested by
+     * ReviveSink against PetLayout's reviveButtonRect() -- the one box
+     * PetScene paints it into as well, so what somebody sees and what
+     * they can hit cannot drift apart.
      */
     class Pet final
     {
