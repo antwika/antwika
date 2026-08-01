@@ -2,15 +2,20 @@
 
 #include <array>
 #include <cstddef>
-#include <string_view>
+
+#include <antwika/i18n/MessageId.hpp>
 
 namespace antwika::atlas_editor
 {
 
-    std::string_view toolName(const Tool tool) noexcept
+    using antwika::i18n::MessageId;
+
+    MessageId toolNameId(const Tool tool) noexcept
     {
-        constexpr std::array<std::string_view, kToolCount> names{
-            "PAINT", "ERASE", "PICK"};
+        constexpr std::array<MessageId, kToolCount> names{
+            MessageId::AtlasToolPaint,
+            MessageId::AtlasToolErase,
+            MessageId::AtlasToolPick};
 
         const auto index = static_cast<std::size_t>(tool);
 

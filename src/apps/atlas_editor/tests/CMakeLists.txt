@@ -43,6 +43,7 @@ target_link_libraries(antwika_atlas_editor_tests
         antwika::event::tests::mocks
         antwika::gfx
         antwika::gfx::tests::mocks
+        antwika::i18n
         antwika::input
         antwika::log::tests::mocks
         antwika::replay

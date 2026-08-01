@@ -10,6 +10,8 @@
 #include <antwika/gfx/mocks/MockRenderer.hpp>
 #include <antwika/gfx/mocks/MockWindow.hpp>
 #include <antwika/gfx/Size.hpp>
+#include <antwika/i18n/Locale.hpp>
+#include <antwika/i18n/Translator.hpp>
 #include <antwika/input/InputEvent.hpp>
 #include <antwika/input/InputEventCodec.hpp>
 #include <antwika/input/Key.hpp>
@@ -156,7 +158,9 @@ namespace
     TEST(RenderSinkTest, ATickDrawsAFrame)
     {
         const Pet pet(kQuick);
-        const PetScene scene;
+        const antwika::i18n::Translator translator{
+            antwika::i18n::kDefaultLocale};
+        const PetScene scene{translator};
         NiceMock<MockRenderer> renderer;
         NiceMock<MockWindow> window;
         ON_CALL(window, isOpen()).WillByDefault(Return(true));
@@ -171,7 +175,9 @@ namespace
     TEST(RenderSinkTest, AClosedWindowAndANonTickDrawNothing)
     {
         const Pet pet(kQuick);
-        const PetScene scene;
+        const antwika::i18n::Translator translator{
+            antwika::i18n::kDefaultLocale};
+        const PetScene scene{translator};
         NiceMock<MockWindow> window;
         ON_CALL(window, isOpen()).WillByDefault(Return(false));
 

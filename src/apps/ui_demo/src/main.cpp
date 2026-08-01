@@ -8,6 +8,9 @@
 #include <antwika/gfx/SelectedBackend.hpp>
 #include <antwika/gfx/Size.hpp>
 #include <antwika/gfx/WindowDesc.hpp>
+#include <antwika/i18n/Locale.hpp>
+#include <antwika/i18n/MessageId.hpp>
+#include <antwika/i18n/Translator.hpp>
 #include <antwika/input/InputEventCodec.hpp>
 #include <antwika/input/InputPipeline.hpp>
 #include <antwika/input/SelectedInputBackend.hpp>
@@ -39,7 +42,7 @@ using antwika::ui_demo::DemoScene;
 using antwika::ui_demo::DemoState;
 using antwika::ui_demo::DemoSummary;
 using antwika::ui_demo::RenderSink;
-using antwika::ui_demo::showcaseName;
+using antwika::ui_demo::showcaseNameId;
 using antwika::ui_demo::TickBudgetSource;
 
 namespace
@@ -76,7 +79,15 @@ namespace
             .size = kWindowSize,
             .resizable = false});
 
-        const DemoScene scene;
+        // Fixed here, and read from nowhere else.
+        // Every button is as wide as its own label.
+        // A press is then resolved against the layout those produce.
+        // So a language off the environment would move the widgets.
+        // Changing it is this line, exactly as the window size is.
+        const antwika::i18n::Translator translator{
+            antwika::i18n::kDefaultLocale};
+
+        const DemoScene scene{translator};
         SystemSleeper sleeper;
 
         ReplaySource fileSource(
@@ -104,6 +115,7 @@ namespace
             .eventSink = recorded.eventSink,
             .inputSource = source,
             .codec = codec,
+            .translator = translator,
             .canvas = kWindowSize,
             .replayRecorder = recorded.replayRecorder,
             .extraSink =
@@ -116,7 +128,8 @@ namespace
         logger.log(
             Level::Info,
             "Finished on the "
-                + std::string{showcaseName(summary.showcase)}
+                + std::string{antwika::i18n::nameOf(
+                    showcaseNameId(summary.showcase))}
                 + " page, having counted "
                 + std::to_string(summary.clicks) + " clicks");
     }

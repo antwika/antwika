@@ -2,19 +2,24 @@
 
 #include <gtest/gtest.h>
 
+#include <optional>
+#include <set>
+
+#include <antwika/i18n/Locale.hpp>
+#include <antwika/i18n/MessageId.hpp>
+#include <antwika/i18n/Translator.hpp>
 #include <antwika/ui/DropdownSpec.hpp>
 #include <antwika/ui/TextFieldSpec.hpp>
 #include <antwika/ui/WidgetId.hpp>
 
 #include "antwika/ui_demo/DemoState.hpp"
 
-using antwika::ui_demo::accentOptions;
+using antwika::ui_demo::accentNameId;
 using antwika::ui_demo::DemoState;
 using antwika::ui_demo::kAccentCount;
 using antwika::ui_demo::kShowcaseCount;
 using antwika::ui_demo::Showcase;
-using antwika::ui_demo::showcaseName;
-using antwika::ui_demo::showcaseOptions;
+using antwika::ui_demo::showcaseNameId;
 
 namespace
 {
@@ -112,21 +117,47 @@ namespace
     TEST(DemoStateTest, SetMessage_HoldsWhatWasSaid)
     {
         DemoState state;
-        EXPECT_TRUE(state.message().empty());
+        EXPECT_FALSE(state.message().has_value());
 
-        state.setMessage("something happened");
-        EXPECT_EQ(state.message(), "something happened");
+        // An id and a datum, never a sentence.
+        // A sentence here would be the locale inside the state.
+        state.setMessage(
+            {.id = antwika::i18n::MessageId::UiDemoSubmitted,
+             .datum = "ok",
+             .argId = std::nullopt});
+
+        ASSERT_TRUE(state.message().has_value());
+        EXPECT_EQ(
+            state.message()->id,
+            antwika::i18n::MessageId::UiDemoSubmitted);
+        EXPECT_EQ(state.message()->datum, "ok");
+        EXPECT_FALSE(state.message()->argId.has_value());
     }
 
-    TEST(ShowcaseTest, ShowcaseName_NamesEveryPageThePickerLists)
+    // Every page and every accent has an id, and no two share one.
+    // Which is the only thing left to check here now the words moved.
+    TEST(ShowcaseTest, ShowcaseNameId_NamesEveryPageThePickerLists)
     {
-        EXPECT_EQ(showcaseOptions().size(), kShowcaseCount);
-        EXPECT_EQ(accentOptions().size(), kAccentCount);
+        std::set<antwika::i18n::MessageId> ids;
 
         for (std::size_t index = 0; index < kShowcaseCount; ++index)
         {
-            const auto page = static_cast<Showcase>(index);
-            EXPECT_EQ(showcaseName(page), showcaseOptions()[index]);
+            ids.insert(showcaseNameId(static_cast<Showcase>(index)));
         }
+
+        EXPECT_EQ(ids.size(), kShowcaseCount);
+    }
+
+    TEST(ShowcaseTest, AccentNameId_NamesEveryAccentAndWrapsOnOneMore)
+    {
+        std::set<antwika::i18n::MessageId> ids;
+
+        for (std::size_t index = 0; index < kAccentCount; ++index)
+        {
+            ids.insert(accentNameId(index));
+        }
+
+        EXPECT_EQ(ids.size(), kAccentCount);
+        EXPECT_EQ(accentNameId(kAccentCount), accentNameId(0));
     }
 } // namespace

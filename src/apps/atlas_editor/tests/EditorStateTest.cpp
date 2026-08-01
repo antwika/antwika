@@ -6,6 +6,8 @@
 #include <antwika/gfx/Point.hpp>
 #include <antwika/gfx/Size.hpp>
 
+#include <antwika/i18n/MessageId.hpp>
+
 #include "antwika/atlas_editor/Canvas.hpp"
 #include "antwika/atlas_editor/CanvasView.hpp"
 #include "antwika/atlas_editor/EditorState.hpp"
@@ -21,7 +23,8 @@ using antwika::atlas_editor::Pixel;
 using antwika::atlas_editor::scaleOf;
 using antwika::atlas_editor::TileGrid;
 using antwika::atlas_editor::Tool;
-using antwika::atlas_editor::toolName;
+using antwika::atlas_editor::toolNameId;
+using antwika::i18n::MessageId;
 using antwika::gfx::Color;
 using antwika::gfx::Point;
 using antwika::gfx::Size;
@@ -58,7 +61,7 @@ TEST(EditorStateTest, Construct_OpensOnTheWholeSheetWithPaintSelected)
     EXPECT_EQ(state.color(), defaultPalette().front());
     EXPECT_TRUE(state.gridVisible());
     EXPECT_FALSE(state.hovered().has_value());
-    EXPECT_TRUE(state.status().empty());
+    EXPECT_FALSE(state.status().has_value());
     EXPECT_EQ(state.edits(), 0U);
     EXPECT_EQ(state.ticks(), 0U);
     EXPECT_EQ(state.saves(), 0U);
@@ -264,15 +267,19 @@ TEST(EditorStateTest, SetStatus_KeepsTheLastThingWorthSaying)
 {
     EditorState state = opened();
 
-    state.setStatus("saved out.png");
+    state.setStatus(
+        {.id = MessageId::AtlasSaved, .detail = "out.png"});
 
-    EXPECT_EQ(state.status(), std::string("saved out.png"));
+    ASSERT_TRUE(state.status().has_value());
+    EXPECT_EQ(state.status()->id, MessageId::AtlasSaved);
+    EXPECT_EQ(state.status()->detail, "out.png");
 }
 
-TEST(EditorStateTest, ToolName_NamesEveryToolAndSurvivesOneItLacks)
+TEST(EditorStateTest, ToolNameId_NamesEveryToolAndSurvivesOneItLacks)
 {
-    EXPECT_EQ(toolName(Tool::Paint), "PAINT");
-    EXPECT_EQ(toolName(Tool::Erase), "ERASE");
-    EXPECT_EQ(toolName(Tool::Pick), "PICK");
-    EXPECT_EQ(toolName(static_cast<Tool>(99)), "PAINT");
+    EXPECT_EQ(toolNameId(Tool::Paint), MessageId::AtlasToolPaint);
+    EXPECT_EQ(toolNameId(Tool::Erase), MessageId::AtlasToolErase);
+    EXPECT_EQ(toolNameId(Tool::Pick), MessageId::AtlasToolPick);
+    EXPECT_EQ(
+        toolNameId(static_cast<Tool>(99)), MessageId::AtlasToolPaint);
 }

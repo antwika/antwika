@@ -15,6 +15,8 @@
 #include <antwika/event/TickEventRecorder.hpp>
 #include <antwika/gfx/Point.hpp>
 #include <antwika/gfx/Size.hpp>
+#include <antwika/i18n/Locale.hpp>
+#include <antwika/i18n/Translator.hpp>
 #include <antwika/input/InputEvent.hpp>
 #include <antwika/input/InputEventCodec.hpp>
 #include <antwika/input/Key.hpp>
@@ -58,6 +60,10 @@ namespace widgets = antwika::ui_demo::widgets;
 
 namespace
 {
+    // The locale is a constant of the build, so a test may name one.
+    constexpr antwika::i18n::Translator kTranslator{
+        antwika::i18n::kDefaultLocale};
+
     constexpr Size kCanvas{.width = 960, .height = 720};
     constexpr antwika::time::Tick kBudget = 6;
     constexpr antwika::time::Tick kMaxTicks = 30;
@@ -65,7 +71,7 @@ namespace
     [[nodiscard]] Point centreOn(
         const DemoState &state, const antwika::ui::WidgetId id)
     {
-        const DemoScene scene;
+        const DemoScene scene{kTranslator};
         const auto found =
             widgetCentre(scene.describe(kCanvas, {}, {}, state), id);
         EXPECT_TRUE(found.has_value());
@@ -203,6 +209,7 @@ namespace
             .eventSink = events,
             .inputSource = source,
             .codec = codec,
+            .translator = kTranslator,
             .canvas = kCanvas,
             .maxTicks = kMaxTicks,
             .extraSink =
@@ -238,6 +245,7 @@ namespace
             .eventSink = events,
             .inputSource = source,
             .codec = codec,
+            .translator = kTranslator,
             .canvas = kCanvas,
             .maxTicks = kMaxTicks,
             .replayRecorder = recorder});
@@ -269,6 +277,7 @@ namespace
             .eventSink = events,
             .inputSource = source,
             .codec = codec,
+            .translator = kTranslator,
             .canvas = kCanvas,
             .maxTicks = kMaxTicks,
             .extraSink =
@@ -297,6 +306,7 @@ namespace
             .eventSink = events,
             .inputSource = source,
             .codec = codec,
+            .translator = kTranslator,
             .canvas = kCanvas,
             .maxTicks = kMaxTicks});
 

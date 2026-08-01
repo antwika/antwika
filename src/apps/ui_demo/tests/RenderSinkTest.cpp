@@ -9,6 +9,8 @@
 #include <antwika/gfx/mocks/MockRenderer.hpp>
 #include <antwika/gfx/mocks/MockWindow.hpp>
 #include <antwika/gfx/Size.hpp>
+#include <antwika/i18n/Locale.hpp>
+#include <antwika/i18n/Translator.hpp>
 #include <antwika/time/fakes/FakeSleeper.hpp>
 
 #include "antwika/ui_demo/DemoOverlay.hpp"
@@ -30,6 +32,10 @@ using ::testing::ReturnRef;
 
 namespace
 {
+    // The locale is a constant of the build, so a test may name one.
+    constexpr antwika::i18n::Translator kTranslator{
+        antwika::i18n::kDefaultLocale};
+
     constexpr Size kCanvas{.width = 960, .height = 720};
 
     TickEvent tick()
@@ -48,7 +54,7 @@ namespace
     TEST(RenderSinkTest, Handle_DrawsAFrameOnATickAndPacesIt)
     {
         DemoOverlay overlay(kCanvas);
-        const DemoScene scene;
+        const DemoScene scene{kTranslator};
         FakeSleeper sleeper;
         NiceMock<MockRenderer> renderer;
         NiceMock<MockWindow> window;
@@ -69,7 +75,7 @@ namespace
     TEST(RenderSinkTest, Handle_DrawsNothingForANonTick)
     {
         DemoOverlay overlay(kCanvas);
-        const DemoScene scene;
+        const DemoScene scene{kTranslator};
         FakeSleeper sleeper;
         NiceMock<MockWindow> window;
         ON_CALL(window, isOpen()).WillByDefault(Return(true));
@@ -87,7 +93,7 @@ namespace
     TEST(RenderSinkTest, Handle_DrawsNothingIntoAClosedWindow)
     {
         DemoOverlay overlay(kCanvas);
-        const DemoScene scene;
+        const DemoScene scene{kTranslator};
         FakeSleeper sleeper;
         NiceMock<MockWindow> window;
         ON_CALL(window, isOpen()).WillByDefault(Return(false));
@@ -108,7 +114,7 @@ namespace
         EXPECT_EQ(overlay.canvas(), kCanvas);
         EXPECT_TRUE(overlay.commands().empty());
 
-        const DemoScene scene;
+        const DemoScene scene{kTranslator};
         antwika::ui_demo::DemoState state;
         overlay.set(scene.describe(kCanvas, {}, {}, state).commands);
 
