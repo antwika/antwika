@@ -89,6 +89,9 @@ DEALER_SLOT = integer_constant(
 TO_ACT_SLOT = integer_constant(
     ATLAS_SOURCE, "kToActSlot", POKER_ATLAS_HEADER
 )
+TABLE_SLOT = integer_constant(
+    ATLAS_SOURCE, "kTableSlot", POKER_ATLAS_HEADER
+)
 FIRST_SUIT_SLOT = integer_constant(
     ATLAS_SOURCE, "kFirstSuitSlot", POKER_ATLAS_HEADER
 )
@@ -111,6 +114,8 @@ FELT: Rgba = (14, 78, 50, 255)
 PLATE: Rgba = (22, 28, 34, 235)
 PLATE_EDGE: Rgba = (86, 96, 104, 255)
 CHAIR: Rgba = (52, 34, 24, 255)
+TABLE_RAIL: Rgba = (58, 38, 26, 255)
+TABLE_FELT: Rgba = (16, 84, 54, 255)
 CHIP_BODY: Rgba = (196, 48, 48, 255)
 CHIP_EDGE: Rgba = (240, 240, 240, 255)
 BUTTON: Rgba = (246, 246, 240, 255)
@@ -244,6 +249,21 @@ def plate_pixel(px: int, py: int) -> Rgba:
         return PLATE_EDGE
 
     return PLATE
+
+
+def table_pixel(px: int, py: int) -> Rgba:
+    east = unit(px, SLOT_WIDTH)
+    south = unit(py, SLOT_HEIGHT)
+
+    # Rounded hard, since this slot is stretched across the window.
+    # A corner drawn at a tenth of the cell would be a sharp one there.
+    if not rounded(east, south, 0.01, 0.34):
+        return TRANSPARENT
+
+    if not rounded(east, south, 0.09, 0.30):
+        return TABLE_RAIL
+
+    return shade(TABLE_FELT, noise(px, py, 4))
 
 
 def chair_pixel(px: int, py: int) -> Rgba:
@@ -419,6 +439,7 @@ def build_atlas() -> tuple[int, int, bytearray]:
         (CARD_FACE_SLOT, card_face_pixel),
         (CARD_BACK_SLOT, card_back_pixel),
         (FELT_SLOT, felt_pixel),
+        (TABLE_SLOT, table_pixel),
         (PLATE_SLOT, plate_pixel),
         (CHAIR_SLOT, chair_pixel),
         (CHIP_SLOT, chip_pixel),

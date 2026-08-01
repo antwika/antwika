@@ -35,6 +35,15 @@ namespace antwika::poker::widgets
     inline constexpr WidgetId kPot{1};
 
     /**
+     * @brief The table itself: the felt the seats are arranged around.
+     *
+     * The board and the pot are laid out inside it, and the rounded
+     * shape is blitted into the very rectangle it reports, so what the
+     * table looks like and what it holds cannot be two boxes.
+     */
+    inline constexpr WidgetId kTable{2};
+
+    /**
      * @brief The first of the five community cards.
      */
     inline constexpr std::uint64_t kFirstBoardCard = 0x100;

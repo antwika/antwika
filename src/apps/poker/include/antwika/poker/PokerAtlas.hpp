@@ -89,6 +89,18 @@ namespace antwika::poker
     inline constexpr std::uint32_t kToActSlot = 7;
 
     /**
+     * @brief The slot holding the table itself.
+     *
+     * A rounded rectangle of felt inside a rail, drawn once and blitted
+     * into whatever rectangle the layout gave the middle of the table.
+     * antwika::gfx has no rounded-rectangle call and no clipping, so the
+     * rounding is art rather than arithmetic: one blit says what a
+     * stack of fills per corner would have, and it scales with the
+     * window because a slot is stretched into its destination.
+     */
+    inline constexpr std::uint32_t kTableSlot = 12;
+
+    /**
      * @brief The slot holding the first suit glyph, clubs.
      *
      * The four are in Suit order, so a suit's slot is its own value and
