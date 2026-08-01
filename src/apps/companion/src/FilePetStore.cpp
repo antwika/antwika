@@ -13,7 +13,7 @@ namespace antwika::companion
     {
     }
 
-    std::optional<PetMemory> FilePetStore::load()
+    std::optional<CompanionMemory> FilePetStore::load()
     {
         std::ifstream file(path);
 
@@ -26,10 +26,10 @@ namespace antwika::companion
             return std::nullopt;
         }
 
-        return readPetMemory(file);
+        return readCompanionMemory(file);
     }
 
-    void FilePetStore::save(const PetMemory &memory)
+    void FilePetStore::save(const CompanionMemory &memory)
     {
         std::ofstream file(path);
         if (!file.is_open())
@@ -39,7 +39,7 @@ namespace antwika::companion
                 "write: " + path);
         }
 
-        writePetMemory(memory, file);
+        writeCompanionMemory(memory, file);
 
         // Flushed here rather than by the destructor, which cannot say.
         // A full disk fails on the flush, not on the open.

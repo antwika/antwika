@@ -18,13 +18,16 @@
 #include <antwika/time/fakes/FakeSleeper.hpp>
 
 #include "antwika/companion/Companion.hpp"
+#include "antwika/companion/CompanionMemory.hpp"
 #include "antwika/companion/IPetStore.hpp"
 #include "antwika/companion/Pet.hpp"
 #include "antwika/companion/SaveFormatError.hpp"
 
 using antwika::companion::CompanionConfig;
+using antwika::companion::CompanionMemory;
 using antwika::companion::CompanionSummary;
 using antwika::companion::IPetStore;
+using antwika::companion::LineageMemory;
 using antwika::companion::PetConfig;
 using antwika::companion::PetMemory;
 using antwika::companion::PetState;
@@ -63,17 +66,27 @@ namespace
             .event = Event{.name = antwika::engine::events::kStop}}};
     }
 
+    // Nothing at all happens to a companion in eight ticks here.
+    // So a session ends on what it started from plus the ticks.
     constexpr PetConfig kBrisk{
-        .dayTicks = 6,
-        .nightTicks = 4,
-        .hungerPeriodTicks = 1,
+        .hungerPeriodTicks = 1000,
         .starvePeriodTicks = 1000,
+        .funDecayPeriodTicks = 1000,
+        .fretPeriodTicks = 1000,
+        .recoverPeriodTicks = 1000,
         .restPeriodTicks = 1000,
+        .drainHappyTicks = 1000,
+        .drainContentTicks = 1000,
+        .drainLowTicks = 1000,
+        .drainMiserableTicks = 1000,
         .hungerMax = 8,
         .hungerThreshold = 2,
         .feedRelief = 2,
-        .feedJoy = 1,
-        .disturbCost = 1,
+        .funMax = 8,
+        .funStart = 8,
+        .playEnergy = 2,
+        .energyBase = 20,
+        .collapsePenalty = 10,
         .happinessMax = 6,
         .happinessStart = 4};
 
@@ -83,15 +96,15 @@ namespace
     class FakePetStore final : public IPetStore
     {
     public:
-        std::optional<PetMemory> held = std::nullopt;
-        std::optional<PetMemory> written = std::nullopt;
+        std::optional<CompanionMemory> held = std::nullopt;
+        std::optional<CompanionMemory> written = std::nullopt;
         bool refusesToRead = false;
         bool breaksDown = false;
         bool refusesToWrite = false;
         int loads = 0;
         int saves = 0;
 
-        std::optional<PetMemory> load() override
+        std::optional<CompanionMemory> load() override
         {
             ++loads;
 
@@ -108,7 +121,7 @@ namespace
             return held;
         }
 
-        void save(const PetMemory &memory) override
+        void save(const CompanionMemory &memory) override
         {
             ++saves;
 
@@ -121,19 +134,27 @@ namespace
         }
     };
 
-    PetMemory lived()
+    CompanionMemory lived()
     {
-        return PetMemory{
-            .ticks = 100,
-            .state = PetState::Awake,
-            .saying = Saying::Hello,
-            .sayingTicksLeft = 3,
-            .hunger = 5,
-            .happiness = 6,
-            .meals = 7,
-            .disturbances = 2,
-            .pesters = 1,
-            .disturbed = false};
+        return CompanionMemory{
+            .pet =
+                PetMemory{
+                    .ticks = 100,
+                    .state = PetState::Awake,
+                    .saying = Saying::Hello,
+                    .sayingTicksLeft = 3,
+                    .hunger = 5,
+                    .fun = 4,
+                    .happiness = 6,
+                    .energy = 14,
+                    .day = 3,
+                    .meals = 7,
+                    .plays = 5,
+                    .disturbances = 2,
+                    .pesters = 1,
+                    .collapses = 0,
+                    .woken = false},
+            .lineage = LineageMemory{.generation = 2, .bestTicks = 50}};
     }
 
     // The config a bootstrap needs but a test does not care about.
@@ -193,14 +214,14 @@ namespace
 
         // The session logs its own lines, which are not the subject.
         EXPECT_CALL(logger, log(_, _)).Times(AnyNumber());
-        EXPECT_CALL(
-            logger, log(_, HasSubstr("No previous companion")));
+        EXPECT_CALL(logger, log(_, HasSubstr("No previous companion")));
 
         const CompanionSummary summary = runStored(logger, store);
 
         EXPECT_EQ(store.loads, 1);
         EXPECT_EQ(summary.ticks, kSteppedTicks);
-        EXPECT_EQ(summary.meals, 0);
+        EXPECT_EQ(summary.meals, 0U);
+        EXPECT_EQ(summary.generation, 1U);
     }
 
     TEST(SessionPersistenceTest, ASessionCarriesOnFromTheOneBefore)
@@ -216,10 +237,27 @@ namespace
         const CompanionSummary summary = runStored(logger, store);
 
         // The tick count carried over rather than starting again.
-        EXPECT_EQ(summary.ticks, lived().ticks + kSteppedTicks);
-        EXPECT_EQ(summary.meals, lived().meals);
-        EXPECT_EQ(summary.disturbances, lived().disturbances);
-        EXPECT_EQ(summary.pesters, lived().pesters);
+        EXPECT_EQ(summary.ticks, lived().pet.ticks + kSteppedTicks);
+        EXPECT_EQ(summary.meals, lived().pet.meals);
+        EXPECT_EQ(summary.plays, lived().pet.plays);
+        EXPECT_EQ(summary.disturbances, lived().pet.disturbances);
+        EXPECT_EQ(summary.pesters, lived().pet.pesters);
+    }
+
+    // The record is the file's rather than the companion's.
+    // So it survives whatever happened to the one in front of it.
+    TEST(SessionPersistenceTest, TheRecordBehindTheCompanionCarriesOnToo)
+    {
+        NiceMock<MockLogger> logger;
+        FakePetStore store;
+        store.held = lived();
+
+        const CompanionSummary summary = runStored(logger, store);
+
+        EXPECT_EQ(summary.generation, lived().lineage.generation);
+
+        // The session's own age beat what the file remembered.
+        EXPECT_EQ(summary.bestTicks, lived().pet.ticks + kSteppedTicks);
     }
 
     TEST(SessionPersistenceTest, TheCompanionIsWrittenOutWhenTheRunEnds)
@@ -233,8 +271,14 @@ namespace
         EXPECT_EQ(store.saves, 1);
         ASSERT_TRUE(store.written.has_value());
         EXPECT_EQ(
-            store.written->ticks, lived().ticks + kSteppedTicks);
-        EXPECT_EQ(store.written->meals, lived().meals);
+            store.written->pet.ticks, lived().pet.ticks + kSteppedTicks);
+        EXPECT_EQ(store.written->pet.meals, lived().pet.meals);
+        EXPECT_EQ(
+            store.written->lineage.generation,
+            lived().lineage.generation);
+        EXPECT_EQ(
+            store.written->lineage.bestTicks,
+            lived().pet.ticks + kSteppedTicks);
     }
 
     // A companion that will not read is said out loud and passed over.
@@ -254,6 +298,24 @@ namespace
 
         EXPECT_EQ(summary.ticks, kSteppedTicks);
         EXPECT_EQ(store.saves, 1);
+    }
+
+    // A lineage no build could have written is refused as a pet is.
+    // And it takes the same route out: a warning, and a new one.
+    TEST(SessionPersistenceTest, ALineageThatWillNotReadStartsANewOne)
+    {
+        NiceMock<MockLogger> logger;
+        FakePetStore store;
+        store.held = lived();
+        store.held->lineage.generation = 0;
+
+        EXPECT_CALL(logger, log(_, _)).Times(AnyNumber());
+        EXPECT_CALL(logger, log(_, HasSubstr("could not be read")));
+
+        const CompanionSummary summary = runStored(logger, store);
+
+        EXPECT_EQ(summary.ticks, kSteppedTicks);
+        EXPECT_EQ(summary.generation, 1U);
     }
 
     // The session is already over.

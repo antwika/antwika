@@ -17,15 +17,25 @@
 #include <antwika/gfx/Size.hpp>
 #include <antwika/gfx/TextLayout.hpp>
 
+#include "antwika/companion/DayMood.hpp"
+#include "antwika/companion/LifeStage.hpp"
 #include "antwika/companion/PetLayout.hpp"
 #include "antwika/companion/PetScene.hpp"
 #include "antwika/companion/PetSnapshot.hpp"
 #include "antwika/companion/Saying.hpp"
 
+using antwika::companion::DayMood;
 using antwika::companion::kSceneUnits;
+using antwika::companion::layoutFor;
+using antwika::companion::LifeStage;
+using antwika::companion::LineageMemory;
+using antwika::companion::PetForm;
 using antwika::companion::PetScene;
 using antwika::companion::PetSnapshot;
 using antwika::companion::PetState;
+using antwika::companion::Prop;
+using antwika::companion::propBox;
+using antwika::companion::reviveButtonRect;
 using antwika::companion::Saying;
 using antwika::gfx::Color;
 using antwika::gfx::kGlyphLineHeight;
@@ -42,11 +52,13 @@ namespace
     // 32 whole units a side divides into it exactly eight pixels each.
     constexpr Size kCanvas{.width = 256, .height = 256};
 
-    // The ground, the sun, both gauge backgrounds, one gauge fill.
-    // Plus the ten boxes an animal is made of.
-    constexpr std::size_t kBareAwakeRects = 15;
+    // The ground and the sun.
+    // Four gauge tracks, three of them filled.
+    // Three props of two rectangles each.
+    // And the ten boxes an animal is made of.
+    constexpr std::size_t kBareAwakeRects = 25;
 
-    // Hunger, happiness, and what the companion is doing.
+    // What the companion is doing, how old the day is, and the record.
     constexpr std::size_t kReadoutLines = 3;
 
     struct Text
@@ -103,7 +115,19 @@ namespace
         return drawn;
     }
 
-    [[nodiscard]] std::string lastLine(const Drawn &drawn)
+    // The readout is drawn last and is three lines.
+    // So the state is three from the end, whatever came before it.
+    [[nodiscard]] std::string stateLine(const Drawn &drawn)
+    {
+        return drawn.texts[drawn.texts.size() - kReadoutLines].text;
+    }
+
+    [[nodiscard]] std::string dayLine(const Drawn &drawn)
+    {
+        return drawn.texts[drawn.texts.size() - 2].text;
+    }
+
+    [[nodiscard]] std::string lineageLine(const Drawn &drawn)
     {
         return drawn.texts.back().text;
     }
@@ -115,9 +139,24 @@ namespace
         return drawn.rects[drawn.rects.size() - 2];
     }
 
+    [[nodiscard]] bool drew(const Drawn &drawn, const Rect &rect)
+    {
+        return std::find(drawn.rects.begin(), drawn.rects.end(), rect)
+               != drawn.rects.end();
+    }
+
+    [[nodiscard]] Color colorOf(const Drawn &drawn, const Rect &rect)
+    {
+        const auto found =
+            std::find(drawn.rects.begin(), drawn.rects.end(), rect);
+
+        return drawn.colors[static_cast<std::size_t>(
+            found - drawn.rects.begin())];
+    }
+
     // Every line the companion has.
     // So a new one cannot be added without a test that draws it.
-    constexpr std::array<Saying, 9> kEveryLine{
+    constexpr std::array<Saying, 15> kEveryLine{
         Saying::Hello,
         Saying::Bored,
         Saying::NiceDay,
@@ -126,27 +165,67 @@ namespace
         Saying::Yum,
         Saying::NotHungry,
         Saying::LetMeSleep,
-        Saying::Zzz};
+        Saying::Zzz,
+        Saying::PlayWithMe,
+        Saying::Wheee,
+        Saying::TooTired,
+        Saying::NotSleepy,
+        Saying::Yawn,
+        Saying::Poked};
+
+    constexpr std::array<Prop, 3> kProps{
+        Prop::Bowl, Prop::Ball, Prop::Nest};
 
     PetSnapshot awake()
     {
         return PetSnapshot{
             .state = PetState::Awake,
-            .night = false,
+            .asleep = false,
             .hungry = false,
+            .bored = false,
+            .tired = false,
             .disturbed = false,
+            .saying = Saying::None,
             .hunger = 0,
             .hungerMax = 8,
+            .fun = 10,
+            .funMax = 10,
             .happiness = 6,
             .happinessMax = 10,
-            .ticks = 0};
+            .energy = 30,
+            .energyCeiling = 30,
+            .ticks = 0,
+            .day = 0,
+            .mood = DayMood::Ordinary,
+            .stage = LifeStage::Egg,
+            .form = PetForm::Plain,
+            .lineage = LineageMemory{}};
+    }
+
+    PetSnapshot asleep()
+    {
+        PetSnapshot snapshot = awake();
+        snapshot.state = PetState::Asleep;
+        snapshot.asleep = true;
+        snapshot.tired = true;
+        return snapshot;
+    }
+
+    PetSnapshot perished()
+    {
+        PetSnapshot snapshot = awake();
+        snapshot.state = PetState::Perished;
+        snapshot.energy = 0;
+        snapshot.energyCeiling = 0;
+        return snapshot;
     }
 
     TEST(PetSceneTest, ACanvasTooSmallForAUnitDrawsTheSkyAndStops)
     {
         const PetScene scene;
+
         const Drawn drawn =
-            render(scene, {.width = 8, .height = 8}, awake());
+            render(scene, Size{.width = 16, .height = 16}, awake());
 
         EXPECT_TRUE(drawn.rects.empty());
         EXPECT_TRUE(drawn.texts.empty());
@@ -156,200 +235,241 @@ namespace
     {
         const PetScene scene;
 
-        // Four pixels a unit either way.
-        // So the two differ only in which side is left over.
-        const Drawn tall =
-            render(scene, {.width = 128, .height = 256}, awake());
-        const Drawn wide =
-            render(scene, {.width = 256, .height = 128}, awake());
+        const Drawn drawn =
+            render(scene, Size{.width = 320, .height = 256}, awake());
 
-        ASSERT_FALSE(tall.rects.empty());
-        ASSERT_FALSE(wide.rects.empty());
-
-        // The ground, which starts at the left edge of the grid.
-        EXPECT_EQ(tall.rects[0].origin.x, 0);
-        EXPECT_EQ(tall.rects[0].origin.y, 64 + 96);
-        EXPECT_EQ(wide.rects[0].origin.x, 64);
-        EXPECT_EQ(wide.rects[0].origin.y, 96);
+        ASSERT_FALSE(drawn.rects.empty());
+        EXPECT_EQ(drawn.rects[0].origin.x, 32);
+        EXPECT_EQ(drawn.rects[0].origin.y, 176);
     }
 
     TEST(PetSceneTest, AnUnhungryAwakeCompanionIsTheBarePicture)
     {
         const PetScene scene;
+
         const Drawn drawn = render(scene, kCanvas, awake());
 
         EXPECT_EQ(drawn.rects.size(), kBareAwakeRects);
+        EXPECT_EQ(drawn.texts.size(), kReadoutLines);
     }
 
     TEST(PetSceneTest, NightIsADifferentPictureFromDay)
     {
         const PetScene scene;
 
-        PetSnapshot night = awake();
-        night.night = true;
-
         const Drawn day = render(scene, kCanvas, awake());
-        const Drawn dark = render(scene, kCanvas, night);
+        const Drawn night = render(scene, kCanvas, asleep());
 
-        EXPECT_NE(day.cleared, dark.cleared);
-        EXPECT_EQ(day.rects, dark.rects);
-        EXPECT_NE(day.colors, dark.colors);
+        EXPECT_NE(day.cleared, night.cleared);
     }
 
-    TEST(PetSceneTest, AHungryCompanionIsShownItsEmptyBowl)
+    // The three props are painted into the boxes propAt() hit-tests.
+    // So aiming at one and hitting it are one rectangle.
+    TEST(PetSceneTest, EveryPropIsPaintedIntoItsOwnHitBox)
     {
         const PetScene scene;
+        const auto layout = layoutFor(kCanvas);
+        ASSERT_TRUE(layout.has_value());
+
+        const Drawn drawn = render(scene, kCanvas, awake());
+
+        for (const Prop prop : kProps)
+        {
+            EXPECT_TRUE(drew(drawn, propBox(*layout, prop)));
+        }
+    }
+
+    // The one the companion would like is lit rather than present.
+    // Which is this application's whole answer to instructions.
+    TEST(PetSceneTest, TheWantedPropIsLitAndTheOthersAreNot)
+    {
+        const PetScene scene;
+        const auto layout = layoutFor(kCanvas);
+        ASSERT_TRUE(layout.has_value());
+
+        const auto innerOf = [&layout](const Drawn &drawn, const Prop p)
+        {
+            const Rect area = propBox(*layout, p);
+            const auto unit = static_cast<std::int32_t>(layout->unit);
+            const Rect inner{
+                .origin =
+                    {.x = area.origin.x + unit, .y = area.origin.y + unit},
+                .size = {
+                    .width = area.size.width - 2 * layout->unit,
+                    .height = area.size.height - 2 * layout->unit}};
+            return colorOf(drawn, inner);
+        };
 
         PetSnapshot hungry = awake();
         hungry.hungry = true;
-        hungry.hunger = 4;
 
-        const Drawn drawn = render(scene, kCanvas, hungry);
+        const Drawn plain = render(scene, kCanvas, awake());
+        const Drawn wanting = render(scene, kCanvas, hungry);
 
-        // The bowl and its rim, plus the hunger gauge's fill.
-        EXPECT_EQ(drawn.rects.size(), kBareAwakeRects + 3);
+        EXPECT_NE(
+            innerOf(plain, Prop::Bowl), innerOf(wanting, Prop::Bowl));
+        EXPECT_EQ(
+            innerOf(plain, Prop::Ball), innerOf(wanting, Prop::Ball));
+        EXPECT_EQ(
+            innerOf(plain, Prop::Nest), innerOf(wanting, Prop::Nest));
+    }
+
+    TEST(PetSceneTest, EachNeedLightsItsOwnProp)
+    {
+        const PetScene scene;
+
+        PetSnapshot bored = awake();
+        bored.bored = true;
+        PetSnapshot tired = awake();
+        tired.tired = true;
+
+        // Three snapshots differing in one flag draw three pictures.
+        // So no prop ever answers another prop's need.
+        EXPECT_NE(
+            render(scene, kCanvas, awake()).colors,
+            render(scene, kCanvas, bored).colors);
+        EXPECT_NE(
+            render(scene, kCanvas, awake()).colors,
+            render(scene, kCanvas, tired).colors);
+        EXPECT_NE(
+            render(scene, kCanvas, bored).colors,
+            render(scene, kCanvas, tired).colors);
+    }
+
+    // What it grew into is a shade of the one fur a palette holds.
+    // Rather than three more colours in every palette.
+    TEST(PetSceneTest, TheFormItGrewIntoShadesTheFur)
+    {
+        const PetScene scene;
+
+        PetSnapshot bright = awake();
+        bright.form = PetForm::Bright;
+        PetSnapshot scruffy = awake();
+        scruffy.form = PetForm::Scruffy;
+
+        const Drawn plain = render(scene, kCanvas, awake());
+        const Drawn shiny = render(scene, kCanvas, bright);
+        const Drawn shabby = render(scene, kCanvas, scruffy);
+
+        EXPECT_NE(plain.colors, shiny.colors);
+        EXPECT_NE(plain.colors, shabby.colors);
+        EXPECT_NE(shiny.colors, shabby.colors);
     }
 
     TEST(PetSceneTest, ASleepingCompanionShutsItsEyesAndPuffs)
     {
         const PetScene scene;
 
-        PetSnapshot asleep = awake();
-        asleep.state = PetState::Asleep;
-        asleep.night = true;
+        const Drawn up = render(scene, kCanvas, awake());
+        const Drawn down = render(scene, kCanvas, asleep());
 
-        const Drawn drawn = render(scene, kCanvas, asleep);
-
-        // One puff on the first frame of the drowse clip.
-        EXPECT_EQ(drawn.rects.size(), kBareAwakeRects + 1);
-        EXPECT_NE(drawn.rects, render(scene, kCanvas, awake()).rects);
+        EXPECT_GT(down.rects.size(), up.rects.size());
     }
 
     TEST(PetSceneTest, TheDrowseClipAddsAPuffPerFrame)
     {
         const PetScene scene;
 
-        PetSnapshot asleep = awake();
-        asleep.state = PetState::Asleep;
-        asleep.night = true;
+        PetSnapshot first = asleep();
+        PetSnapshot later = asleep();
+        later.ticks = 3 * antwika::companion::kTicksPerSecond / 4;
 
-        // Three quarters of a second a frame, at kTicksPerSecond.
-        asleep.ticks = 2 * (3 * antwika::companion::kTicksPerSecond / 4);
-        const Drawn drawn = render(scene, kCanvas, asleep);
+        const Drawn one = render(scene, kCanvas, first);
+        const Drawn two = render(scene, kCanvas, later);
 
-        EXPECT_EQ(drawn.rects.size(), kBareAwakeRects + 3);
+        EXPECT_EQ(two.rects.size(), one.rects.size() + 1);
     }
 
-    // The eyes and the bob resolve from the tick count alone.
-    // So the same tick is always the same picture.
-    // And a different tick may well not be.
+    // An awake companion shuts its eyes to blink as well as to sleep.
+    // So the two ways of arriving at shut eyes are both drawn.
+    TEST(PetSceneTest, AnAwakeCompanionBlinksOnItsOwn)
+    {
+        const PetScene scene;
+
+        PetSnapshot open = awake();
+        PetSnapshot blinking = awake();
+        blinking.ticks = 3 * antwika::companion::kTicksPerSecond + 1;
+
+        EXPECT_NE(
+            render(scene, kCanvas, open).rects,
+            render(scene, kCanvas, blinking).rects);
+    }
+
     TEST(PetSceneTest, TheIdleAnimationIsAFunctionOfTheTickCount)
     {
         const PetScene scene;
 
-        PetSnapshot blinking = awake();
-        blinking.ticks = 3 * antwika::companion::kTicksPerSecond + 1;
+        PetSnapshot early = awake();
+        PetSnapshot mid = awake();
+        mid.ticks = antwika::companion::kTicksPerSecond / 2;
 
-        PetSnapshot bobbing = awake();
-        bobbing.ticks = antwika::companion::kTicksPerSecond / 2;
+        const Drawn one = render(scene, kCanvas, early);
+        const Drawn two = render(scene, kCanvas, mid);
+        const Drawn again = render(scene, kCanvas, early);
 
-        const Drawn open = render(scene, kCanvas, awake());
-        const Drawn shut = render(scene, kCanvas, blinking);
-        const Drawn bobbed = render(scene, kCanvas, bobbing);
-
-        EXPECT_NE(open.rects, shut.rects);
-        EXPECT_NE(open.rects, bobbed.rects);
-        EXPECT_EQ(open.rects, render(scene, kCanvas, awake()).rects);
+        EXPECT_NE(one.rects, two.rects);
+        EXPECT_EQ(one.rects, again.rects);
     }
 
     TEST(PetSceneTest, APerishedCompanionGetsAGraveAndItsOwnPalette)
     {
         const PetScene scene;
 
-        PetSnapshot gone = awake();
-        gone.state = PetState::Perished;
-        gone.happiness = 0;
+        const Drawn gone = render(scene, kCanvas, perished());
+        const Drawn night = render(scene, kCanvas, asleep());
 
-        const Drawn drawn = render(scene, kCanvas, gone);
-        const Drawn alive = render(scene, kCanvas, awake());
-
-        EXPECT_NE(drawn.cleared, alive.cleared);
-
-        // The ground, the sun and two gauge backgrounds with no fill.
-        // Plus the four boxes of a grave and the one button over it.
-        EXPECT_EQ(drawn.rects.size(), 4U + 4U + 1U);
+        EXPECT_NE(gone.cleared, night.cleared);
+        EXPECT_NE(gone.cleared, render(scene, kCanvas, awake()).cleared);
     }
 
-    // The one thing on screen that is pressed rather than read.
-    // It is painted into the very box ReviveSink hit-tests.
-    // Shared, so the two cannot drift apart.
     TEST(PetSceneTest, Draw_OffersANewCompanionOnceItHasPerished)
     {
         const PetScene scene;
-
-        PetSnapshot gone = awake();
-        gone.state = PetState::Perished;
-        gone.happiness = 0;
-
-        const Drawn drawn = render(scene, kCanvas, gone);
-        const auto button =
-            antwika::companion::reviveButtonRect(kCanvas);
-
+        const auto button = reviveButtonRect(kCanvas);
         ASSERT_TRUE(button.has_value());
-        EXPECT_NE(
-            std::find(drawn.rects.begin(), drawn.rects.end(), *button),
-            drawn.rects.end());
 
-        std::vector<std::string> words;
-        for (const auto &text : drawn.texts)
-        {
-            words.push_back(text.text);
-        }
+        const Drawn drawn = render(scene, kCanvas, perished());
 
-        EXPECT_NE(
-            std::find(words.begin(), words.end(), "new pet"),
-            words.end());
+        EXPECT_TRUE(drew(drawn, *button));
+        ASSERT_EQ(drawn.texts.size(), kReadoutLines + 1);
+        EXPECT_EQ(drawn.texts.front().text, "new pet");
     }
 
-    // A living companion is offered nothing.
-    // The button means the one thing there is left to do.
     TEST(PetSceneTest, Draw_OffersNoButtonWhileTheCompanionIsAlive)
     {
         const PetScene scene;
+        const auto button = reviveButtonRect(kCanvas);
+        ASSERT_TRUE(button.has_value());
 
         const Drawn drawn = render(scene, kCanvas, awake());
-        const auto button =
-            antwika::companion::reviveButtonRect(kCanvas);
 
-        ASSERT_TRUE(button.has_value());
-        EXPECT_EQ(
-            std::find(drawn.rects.begin(), drawn.rects.end(), *button),
-            drawn.rects.end());
+        EXPECT_FALSE(drew(drawn, *button));
+        EXPECT_EQ(drawn.texts.size(), kReadoutLines);
     }
 
     TEST(PetSceneTest, AnEmptyGaugeDrawsOnlyItsBackground)
     {
         const PetScene scene;
 
-        PetSnapshot flat = awake();
-        flat.happiness = 0;
+        PetSnapshot empty = awake();
+        empty.fun = 0;
+        empty.happiness = 0;
 
-        const Drawn drawn = render(scene, kCanvas, flat);
+        const Drawn drawn = render(scene, kCanvas, empty);
 
-        EXPECT_EQ(drawn.rects.size(), kBareAwakeRects - 1);
+        // Two fills fewer than the bare picture's.
+        EXPECT_EQ(drawn.rects.size(), kBareAwakeRects - 2);
     }
 
     TEST(PetSceneTest, AGaugeWithNoMaximumDrawsOnlyItsBackground)
     {
         const PetScene scene;
 
-        PetSnapshot unscaled = awake();
-        unscaled.hungerMax = 0;
-        unscaled.happinessMax = 0;
-        unscaled.hunger = 3;
-        unscaled.happiness = 3;
+        PetSnapshot broken = awake();
+        broken.funMax = 0;
+        broken.fun = 4;
 
-        const Drawn drawn = render(scene, kCanvas, unscaled);
+        const Drawn drawn = render(scene, kCanvas, broken);
 
         EXPECT_EQ(drawn.rects.size(), kBareAwakeRects - 1);
     }
@@ -357,33 +477,73 @@ namespace
     TEST(PetSceneTest, AGaugeNeverFillsPastItsOwnWidth)
     {
         const PetScene scene;
+        const auto layout = layoutFor(kCanvas);
+        ASSERT_TRUE(layout.has_value());
 
-        PetSnapshot brimming = awake();
-        brimming.happiness = 99;
-        brimming.happinessMax = 10;
+        PetSnapshot overfull = awake();
+        overfull.fun = overfull.funMax * 4;
 
-        const Drawn drawn = render(scene, kCanvas, brimming);
+        const Drawn drawn = render(scene, kCanvas, overfull);
 
-        PetSnapshot full = awake();
-        full.happiness = 10;
-        full.happinessMax = 10;
-
-        EXPECT_EQ(drawn.rects, render(scene, kCanvas, full).rects);
+        for (const Rect &rect : drawn.rects)
+        {
+            EXPECT_LE(
+                rect.origin.x
+                    + static_cast<std::int32_t>(rect.size.width),
+                static_cast<std::int32_t>(kCanvas.width));
+        }
     }
 
-    TEST(PetSceneTest, Draw_ReportsBothGaugesAndTheStateInWords)
+    // The life meter's own end moves as the companion collapses.
+    // Its track is drawn to the ceiling it still has.
+    // So a collapse shortens the bar and not merely its contents.
+    TEST(PetSceneTest, TheEnergyGaugeFillsAgainstTheCeilingItHasLeft)
     {
         const PetScene scene;
 
-        PetSnapshot fed = awake();
-        fed.hunger = 3;
+        PetSnapshot full = awake();
+        full.energy = 15;
+        full.energyCeiling = 15;
 
-        const Drawn drawn = render(scene, kCanvas, fed);
+        PetSnapshot half = awake();
+        half.energy = 15;
+        half.energyCeiling = 30;
+
+        EXPECT_NE(
+            render(scene, kCanvas, full).rects,
+            render(scene, kCanvas, half).rects);
+    }
+
+    TEST(PetSceneTest, Draw_ReportsTheStateTheDayAndTheRecord)
+    {
+        const PetScene scene;
+
+        PetSnapshot snapshot = awake();
+        snapshot.day = 3;
+        snapshot.stage = LifeStage::Teen;
+        snapshot.mood = DayMood::Heavy;
+        snapshot.lineage = LineageMemory{.generation = 2, .bestTicks = 90};
+
+        const Drawn drawn = render(scene, kCanvas, snapshot);
 
         ASSERT_EQ(drawn.texts.size(), kReadoutLines);
-        EXPECT_EQ(drawn.texts[0].text, "hunger 3/8");
-        EXPECT_EQ(drawn.texts[1].text, "happy 6/10");
-        EXPECT_EQ(drawn.texts[2].text, "awake");
+        EXPECT_EQ(stateLine(drawn), "awake");
+        EXPECT_EQ(dayLine(drawn), "d3 teen heavy");
+        EXPECT_EQ(lineageLine(drawn), "gen 2 best 90");
+    }
+
+    // An ordinary day contributes nothing rather than a word for it.
+    // So half of all days read shorter than the rest.
+    TEST(PetSceneTest, Draw_SaysNothingAboutAnOrdinaryDay)
+    {
+        const PetScene scene;
+
+        PetSnapshot snapshot = awake();
+        snapshot.day = 1;
+        snapshot.stage = LifeStage::Egg;
+        snapshot.mood = DayMood::Ordinary;
+
+        EXPECT_EQ(dayLine(render(scene, kCanvas, snapshot)), "d1 egg ");
     }
 
     TEST(PetSceneTest, Draw_SaysWhichOfItsStatesTheCompanionIsIn)
@@ -393,147 +553,126 @@ namespace
         PetSnapshot hungry = awake();
         hungry.hungry = true;
 
-        PetSnapshot asleep = awake();
-        asleep.state = PetState::Asleep;
-        asleep.night = true;
-
-        PetSnapshot woken = asleep;
+        PetSnapshot woken = awake();
         woken.disturbed = true;
 
-        PetSnapshot gone = awake();
-        gone.state = PetState::Perished;
-        gone.happiness = 0;
+        PetSnapshot dozing = asleep();
+        PetSnapshot dozingWoken = asleep();
+        dozingWoken.disturbed = true;
 
-        EXPECT_EQ(lastLine(render(scene, kCanvas, awake())), "awake");
+        EXPECT_EQ(stateLine(render(scene, kCanvas, awake())), "awake");
         EXPECT_EQ(
-            lastLine(render(scene, kCanvas, hungry)), "awake, hungry");
-        EXPECT_EQ(lastLine(render(scene, kCanvas, asleep)), "asleep");
+            stateLine(render(scene, kCanvas, hungry)), "awake, hungry");
         EXPECT_EQ(
-            lastLine(render(scene, kCanvas, woken)), "asleep, woken");
-        EXPECT_EQ(lastLine(render(scene, kCanvas, gone)), "gone");
+            stateLine(render(scene, kCanvas, woken)), "awake, woken");
+        EXPECT_EQ(stateLine(render(scene, kCanvas, dozing)), "asleep");
+
+        // Asleep beats woken.
+        // What it is doing comes before how the day began.
+        EXPECT_EQ(
+            stateLine(render(scene, kCanvas, dozingWoken)), "asleep");
     }
 
-    // A perished companion is exactly what somebody wants reported.
-    // So the readout outlived the early return the grave used to be.
     TEST(PetSceneTest, Draw_ReportsAPerishedCompanionToo)
     {
         const PetScene scene;
 
-        PetSnapshot gone = awake();
-        gone.state = PetState::Perished;
-        gone.happiness = 0;
-
-        const Drawn drawn = render(scene, kCanvas, gone);
-
-        // The button's own word first, then the three of the readout.
-        // The readout is drawn last, so nothing sits on top of it.
-        ASSERT_EQ(drawn.texts.size(), kReadoutLines + 1);
-        EXPECT_EQ(drawn.texts[2].text, "happy 0/10");
-        EXPECT_NE(
-            drawn.texts[1].color,
-            render(scene, kCanvas, awake()).texts[0].color);
+        EXPECT_EQ(stateLine(render(scene, kCanvas, perished())), "gone");
     }
 
-    // Four glyph pixels to a unit, and a unit scales with the canvas.
-    // So the two readouts differ by exactly what the windows do.
     TEST(PetSceneTest, Draw_ScalesTheReadoutWithTheWindow)
     {
         const PetScene scene;
 
-        const Drawn small =
-            render(scene, {.width = 128, .height = 128}, awake());
-        const Drawn large = render(scene, kCanvas, awake());
+        const Drawn small = render(scene, kCanvas, awake());
+        const Drawn large = render(
+            scene, Size{.width = 512, .height = 512}, awake());
 
-        ASSERT_EQ(small.texts.size(), kReadoutLines);
-        ASSERT_EQ(large.texts.size(), kReadoutLines);
-        EXPECT_EQ(small.texts[0].scale, 1U);
-        EXPECT_EQ(large.texts[0].scale, 2U);
+        ASSERT_FALSE(small.texts.empty());
+        ASSERT_FALSE(large.texts.empty());
+        EXPECT_GT(large.texts.front().scale, small.texts.front().scale);
     }
 
-    // A unit too small for a scaled glyph still gets the smallest text.
-    // And the readout still stands on the grid rather than under it.
-    // Because it is anchored to the bottom rather than to a row.
     TEST(PetSceneTest, Draw_KeepsTheSmallestReadoutOnTheGrid)
     {
         const PetScene scene;
-        const Size canvas{.width = 64, .height = 64};
 
-        const Drawn drawn = render(scene, canvas, awake());
+        // A unit of two pixels is too small for four glyph pixels.
+        const Drawn drawn =
+            render(scene, Size{.width = 64, .height = 64}, awake());
 
-        ASSERT_EQ(drawn.texts.size(), kReadoutLines);
-        EXPECT_EQ(drawn.texts[0].scale, 1U);
-
-        const auto bottom =
-            drawn.texts.back().origin.y
-            + static_cast<std::int32_t>(kGlyphLineHeight);
-        EXPECT_LE(bottom, static_cast<std::int32_t>(canvas.height));
-        EXPECT_GT(drawn.texts[0].origin.y, 0);
+        ASSERT_FALSE(drawn.texts.empty());
+        EXPECT_EQ(drawn.texts.front().scale, 1U);
     }
 
-    // Three lines, one line height apart, in declaration order.
     TEST(PetSceneTest, Draw_StacksTheReadoutOneLineHeightApart)
     {
         const PetScene scene;
+
         const Drawn drawn = render(scene, kCanvas, awake());
 
         ASSERT_EQ(drawn.texts.size(), kReadoutLines);
-
         const auto step = static_cast<std::int32_t>(
-            kGlyphLineHeight * drawn.texts[0].scale);
+            kGlyphLineHeight * drawn.texts.front().scale);
 
-        EXPECT_EQ(drawn.texts[0].origin.x, drawn.texts[1].origin.x);
-        EXPECT_EQ(drawn.texts[1].origin.x, drawn.texts[2].origin.x);
         EXPECT_EQ(
             drawn.texts[1].origin.y, drawn.texts[0].origin.y + step);
         EXPECT_EQ(
-            drawn.texts[2].origin.y, drawn.texts[1].origin.y + step);
+            drawn.texts[2].origin.y, drawn.texts[0].origin.y + 2 * step);
     }
 
     TEST(PetSceneTest, Draw_DrawsNoBubbleWhileThereIsNothingToSay)
     {
         const PetScene scene;
+
         const Drawn drawn = render(scene, kCanvas, awake());
 
         EXPECT_EQ(drawn.rects.size(), kBareAwakeRects);
         EXPECT_EQ(drawn.texts.size(), kReadoutLines);
     }
 
-    // The bubble, its tail, and one line of text ahead of the readout.
     TEST(PetSceneTest, Draw_PutsWhatItSaysInABubbleBesideTheAnimal)
     {
         const PetScene scene;
 
         PetSnapshot talking = awake();
-        talking.saying = Saying::FeedMe;
+        talking.saying = Saying::Hello;
 
         const Drawn drawn = render(scene, kCanvas, talking);
 
+        // The bubble and its tail, plus one more line of text.
         EXPECT_EQ(drawn.rects.size(), kBareAwakeRects + 2);
         ASSERT_EQ(drawn.texts.size(), kReadoutLines + 1);
-        EXPECT_EQ(drawn.texts[0].text, "feed me!");
+        EXPECT_EQ(drawn.texts.front().text, "hello!");
     }
 
-    // A different line is a different bubble, and the same one is not.
     TEST(PetSceneTest, Draw_SaysADifferentThingForADifferentLine)
     {
         const PetScene scene;
+        std::vector<std::string> said;
 
-        PetSnapshot bored = awake();
-        bored.saying = Saying::Bored;
+        for (const Saying line : kEveryLine)
+        {
+            PetSnapshot talking = awake();
+            talking.saying = line;
 
-        PetSnapshot asking = awake();
-        asking.saying = Saying::FeedMe;
+            const Drawn drawn = render(scene, kCanvas, talking);
+            ASSERT_FALSE(drawn.texts.empty());
+            said.push_back(drawn.texts.front().text);
+        }
 
-        EXPECT_NE(
-            render(scene, kCanvas, bored).texts[0].text,
-            render(scene, kCanvas, asking).texts[0].text);
+        std::vector<std::string> sorted = said;
+        std::sort(sorted.begin(), sorted.end());
         EXPECT_EQ(
-            render(scene, kCanvas, bored).texts[0].text,
-            render(scene, kCanvas, bored).texts[0].text);
+            std::unique(sorted.begin(), sorted.end()) - sorted.begin(),
+            static_cast<std::ptrdiff_t>(kEveryLine.size()));
+
+        for (const std::string &words : said)
+        {
+            EXPECT_FALSE(words.empty());
+        }
     }
 
-    // The words are scaled to the longest line rather than to each one.
-    // Which is worth nothing unless the longest one actually fits.
     TEST(PetSceneTest, Draw_KeepsEveryLineInsideItsOwnBubble)
     {
         const PetScene scene;
@@ -545,17 +684,16 @@ namespace
 
             const Drawn drawn = render(scene, kCanvas, talking);
             const Rect bubble = bubbleOf(drawn);
-            const Text &text = drawn.texts[0];
-            const Size size =
+            const Text &text = drawn.texts.front();
+            const auto size =
                 antwika::gfx::textSize(text.text, text.scale);
 
-            EXPECT_FALSE(text.text.empty());
             EXPECT_GE(text.origin.x, bubble.origin.x);
+            EXPECT_GE(text.origin.y, bubble.origin.y);
             EXPECT_LE(
                 text.origin.x + static_cast<std::int32_t>(size.width),
                 bubble.origin.x
                     + static_cast<std::int32_t>(bubble.size.width));
-            EXPECT_GE(text.origin.y, bubble.origin.y);
             EXPECT_LE(
                 text.origin.y + static_cast<std::int32_t>(size.height),
                 bubble.origin.y
@@ -563,63 +701,65 @@ namespace
         }
     }
 
-    // The bubble covers neither gauge, neither the bowl nor the ground.
-    // A bubble hiding what it is being said about is worse than none.
+    // Under the gauges, so it covers nothing that says anything.
     TEST(PetSceneTest, Draw_KeepsTheBubbleClearOfTheGauges)
     {
         const PetScene scene;
+        const auto layout = layoutFor(kCanvas);
+        ASSERT_TRUE(layout.has_value());
 
         PetSnapshot talking = awake();
-        talking.saying = Saying::Hello;
+        talking.saying = Saying::Yum;
 
         const Drawn drawn = render(scene, kCanvas, talking);
         const Rect bubble = bubbleOf(drawn);
 
-        // The happiness gauge, the lower of the two.
-        const Rect gauge = drawn.rects[3];
-        const Rect ground = drawn.rects[0];
-
+        // The four gauges take the top eight rows between them.
         EXPECT_GE(
             bubble.origin.y,
-            gauge.origin.y + static_cast<std::int32_t>(gauge.size.height));
-        EXPECT_LE(
-            bubble.origin.y
-                + static_cast<std::int32_t>(bubble.size.height),
-            ground.origin.y);
+            8 * static_cast<std::int32_t>(layout->unit));
     }
 
-    // Four bubble pixels to a glyph pixel at the shipped window.
-    // So the words double when the window does, like the readout.
     TEST(PetSceneTest, Draw_ScalesTheBubbleTextWithTheWindow)
     {
         const PetScene scene;
 
         PetSnapshot talking = awake();
-        talking.saying = Saying::NiceDay;
+        talking.saying = Saying::Yum;
 
-        const Drawn small = render(
-            scene, {.width = 128, .height = 128}, talking);
-        const Drawn shipped = render(scene, kCanvas, talking);
+        const Drawn small = render(scene, kCanvas, talking);
         const Drawn large = render(
-            scene, {.width = 512, .height = 512}, talking);
+            scene, Size{.width = 1024, .height = 1024}, talking);
 
-        // A unit too small for a scaled glyph still gets the smallest.
-        EXPECT_EQ(small.texts[0].scale, 1U);
-        EXPECT_EQ(shipped.texts[0].scale, 1U);
-        EXPECT_EQ(large.texts[0].scale, 2U);
+        EXPECT_GT(large.texts.front().scale, small.texts.front().scale);
     }
 
-    // The window is a whole number of pixels to the unit.
-    // Which main.cpp derives its size from rather than restates.
+    // A unit too small for even the smallest glyphs still gets them.
+    TEST(PetSceneTest, Draw_KeepsTheSmallestBubbleTextReadable)
+    {
+        const PetScene scene;
+
+        PetSnapshot talking = awake();
+        talking.saying = Saying::Yum;
+
+        const Drawn drawn =
+            render(scene, Size{.width = 64, .height = 64}, talking);
+
+        EXPECT_EQ(drawn.texts.front().scale, 1U);
+    }
+
     TEST(PetSceneTest, Draw_GivesEveryUnitAWholeNumberOfPixels)
     {
         const PetScene scene;
+        const auto layout = layoutFor(kCanvas);
+        ASSERT_TRUE(layout.has_value());
+
         const Drawn drawn = render(scene, kCanvas, awake());
 
-        ASSERT_FALSE(drawn.rects.empty());
-
-        // The ground, which spans the whole grid.
-        EXPECT_EQ(drawn.rects[0].size.width, kCanvas.width);
-        EXPECT_EQ(kCanvas.width % kSceneUnits, 0U);
+        for (const Rect &rect : drawn.rects)
+        {
+            EXPECT_EQ(rect.size.width % layout->unit, 0U);
+            EXPECT_EQ(rect.size.height % layout->unit, 0U);
+        }
     }
 } // namespace

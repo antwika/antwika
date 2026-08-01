@@ -11,8 +11,13 @@ namespace antwika::companion
         IWindow &window,
         const PetScene &scene,
         const Pet &pet,
+        const Lineage &lineage,
         const Size canvas)
-        : window(window), scene(scene), pet(pet), canvas(canvas)
+        : window(window),
+          scene(scene),
+          pet(pet),
+          lineage(lineage),
+          canvas(canvas)
     {
     }
 
@@ -29,7 +34,7 @@ namespace antwika::companion
         }
 
         auto &renderer = window.renderer();
-        scene.draw(renderer, canvas, snapshotOf(pet));
+        scene.draw(renderer, canvas, snapshotOf(pet, lineage));
         renderer.present();
     }
 

@@ -1,23 +1,48 @@
 #include "antwika/companion/PetLayout.hpp"
 
+#include <array>
+#include <cstddef>
+
 namespace antwika::companion
 {
 
     namespace
     {
         // Where the button sits, in the layout's own units.
-        // The grave stands from unit 12 across and unit 11 down.
-        // The gauges take the top six rows.
-        // The readout takes the last four.
+        // The four gauges take the top eight rows.
+        // The grave stands from unit 12 across and unit 12 down.
+        // The props take the ground and the readout the last six rows.
         // So this box is the room left over, and it covers none of them.
         // It does overlap PetScene's kBubble box, deliberately.
         // The two are never up at once, so the room is spent twice.
-        // A perished companion is silent: lose() clears the bubble.
+        // A perished companion is silent: perish() clears the bubble.
         // Pet::requireLivable() refuses a saved one that is not.
         constexpr std::int32_t kButtonX = 1;
-        constexpr std::int32_t kButtonY = 7;
+        constexpr std::int32_t kButtonY = 8;
         constexpr std::uint32_t kButtonUnitsWide = 12;
         constexpr std::uint32_t kButtonUnitsHigh = 4;
+
+        // Where the three props stand, in Prop's own order.
+        // All on the ground and all the same size.
+        // Spaced so that no two of them share a single unit.
+        // A press has to mean exactly one thing.
+        // The animal stands between the second and the third of them.
+        constexpr std::int32_t kPropY = 22;
+        constexpr std::uint32_t kPropUnitsWide = 6;
+        constexpr std::uint32_t kPropUnitsHigh = 4;
+        constexpr std::array<std::int32_t, 3> kPropX{1, 13, 25};
+
+        [[nodiscard]] bool within(const Rect &area, const Point at)
+        {
+            const auto right =
+                area.origin.x + static_cast<std::int32_t>(area.size.width);
+            const auto bottom =
+                area.origin.y
+                + static_cast<std::int32_t>(area.size.height);
+
+            return at.x >= area.origin.x && at.x < right
+                   && at.y >= area.origin.y && at.y < bottom;
+        }
     } // namespace
 
     std::optional<SceneLayout> layoutFor(const Size canvas)
@@ -67,6 +92,41 @@ namespace antwika::companion
                 .height = height * layout.unit}};
     }
 
+    Rect propBox(const SceneLayout &layout, const Prop prop)
+    {
+        return box(
+            layout,
+            kPropX[static_cast<std::size_t>(prop)],
+            kPropY,
+            kPropUnitsWide,
+            kPropUnitsHigh);
+    }
+
+    std::optional<Prop> propAt(const Size canvas, const Point at)
+    {
+        const auto layout = layoutFor(canvas);
+
+        if (!layout)
+        {
+            return std::nullopt;
+        }
+
+        // Every prop is asked in order rather than worked backwards.
+        // Nothing says the three of them have to stay in a row.
+        // So moving one is one number in kPropX and nothing else.
+        for (std::size_t index = 0; index < kPropX.size(); ++index)
+        {
+            const auto prop = static_cast<Prop>(index);
+
+            if (within(propBox(*layout, prop), at))
+            {
+                return prop;
+            }
+        }
+
+        return std::nullopt;
+    }
+
     Rect reviveButtonBox(const SceneLayout &layout)
     {
         return box(
@@ -95,15 +155,7 @@ namespace antwika::companion
             return false;
         }
 
-        const auto right =
-            button->origin.x
-            + static_cast<std::int32_t>(button->size.width);
-        const auto bottom =
-            button->origin.y
-            + static_cast<std::int32_t>(button->size.height);
-
-        return at.x >= button->origin.x && at.x < right
-               && at.y >= button->origin.y && at.y < bottom;
+        return within(*button, at);
     }
 
 } // namespace antwika::companion

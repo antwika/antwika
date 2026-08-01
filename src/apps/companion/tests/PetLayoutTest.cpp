@@ -1,3 +1,4 @@
+#include <array>
 #include <cstdint>
 
 #include <gtest/gtest.h>
@@ -12,6 +13,9 @@ using antwika::companion::box;
 using antwika::companion::kSceneUnits;
 using antwika::companion::layoutFor;
 using antwika::companion::point;
+using antwika::companion::Prop;
+using antwika::companion::propAt;
+using antwika::companion::propBox;
 using antwika::companion::reviveButtonBox;
 using antwika::companion::reviveButtonRect;
 using antwika::companion::withinReviveButton;
@@ -24,6 +28,36 @@ namespace
     // 256 pixels square is what main.cpp asks for.
     // 32 whole units a side divides into it exactly eight pixels each.
     constexpr Size kCanvas{.width = 256, .height = 256};
+
+    constexpr std::array<Prop, 3> kProps{
+        Prop::Bowl, Prop::Ball, Prop::Nest};
+
+    [[nodiscard]] Point middleOf(const Rect &area)
+    {
+        return Point{
+            .x = area.origin.x
+                 + static_cast<std::int32_t>(area.size.width) / 2,
+            .y = area.origin.y
+                 + static_cast<std::int32_t>(area.size.height) / 2};
+    }
+
+    [[nodiscard]] bool overlap(const Rect &one, const Rect &other)
+    {
+        const auto right = [](const Rect &area)
+        {
+            return area.origin.x
+                   + static_cast<std::int32_t>(area.size.width);
+        };
+        const auto bottom = [](const Rect &area)
+        {
+            return area.origin.y
+                   + static_cast<std::int32_t>(area.size.height);
+        };
+
+        return one.origin.x < right(other) && other.origin.x < right(one)
+               && one.origin.y < bottom(other)
+               && other.origin.y < bottom(one);
+    }
 
     TEST(PetLayoutTest, LayoutFor_GivesEveryUnitAWholeNumberOfPixels)
     {
@@ -42,6 +76,16 @@ namespace
         ASSERT_TRUE(layout.has_value());
         EXPECT_EQ(layout->unit, 8);
         EXPECT_EQ(layout->origin, (Point{.x = 32, .y = 0}));
+    }
+
+    TEST(PetLayoutTest, LayoutFor_CentresItOnATallCanvasToo)
+    {
+        const auto layout =
+            layoutFor(Size{.width = 256, .height = 320});
+
+        ASSERT_TRUE(layout.has_value());
+        EXPECT_EQ(layout->unit, 8);
+        EXPECT_EQ(layout->origin, (Point{.x = 0, .y = 32}));
     }
 
     TEST(PetLayoutTest, LayoutFor_AnswersNothingForACanvasWithNoRoom)
@@ -96,7 +140,7 @@ namespace
                      + static_cast<std::int32_t>(button->size.width) - 1,
                 .y = button->origin.y
                      + static_cast<std::int32_t>(button->size.height)
-                     - 1}));
+                       - 1}));
     }
 
     // Half-open in both axes.
@@ -117,7 +161,8 @@ namespace
             Point{
                 .x = button->origin.x,
                 .y = button->origin.y
-                     + static_cast<std::int32_t>(button->size.height)}));
+                     + static_cast<std::int32_t>(
+                         button->size.height)}));
     }
 
     TEST(PetLayoutTest, WithinReviveButton_RefusesAPressAboveAndLeftOfIt)
@@ -127,12 +172,10 @@ namespace
 
         EXPECT_FALSE(withinReviveButton(
             kCanvas,
-            Point{
-                .x = button->origin.x - 1, .y = button->origin.y}));
+            Point{.x = button->origin.x - 1, .y = button->origin.y}));
         EXPECT_FALSE(withinReviveButton(
             kCanvas,
-            Point{
-                .x = button->origin.x, .y = button->origin.y - 1}));
+            Point{.x = button->origin.x, .y = button->origin.y - 1}));
     }
 
     // A window with no room for the grid has no button to press.
@@ -142,7 +185,7 @@ namespace
             Size{.width = 16, .height = 16}, Point{.x = 8, .y = 8}));
     }
 
-    // The button covers none of the grave, the gauges or the readout.
+    // The button covers none of the grave, the gauges or the props.
     // Which is the whole reason it sits where it does.
     TEST(PetLayoutTest, ReviveButton_CoversNothingElseThePictureDraws)
     {
@@ -152,13 +195,88 @@ namespace
         const Rect button = reviveButtonBox(*layout);
         const auto unit = static_cast<std::int32_t>(layout->unit);
 
-        // Below both gauges, which end at unit row six.
-        EXPECT_GE(button.origin.y, 6 * unit);
+        // Below all four gauges, which end at unit row eight.
+        EXPECT_GE(button.origin.y, 8 * unit);
 
-        // And clear of the grave, which starts at unit row eleven.
+        // And clear of the grave, whose stone starts at unit row twelve.
         EXPECT_LE(
             button.origin.y
                 + static_cast<std::int32_t>(button.size.height),
-            11 * unit);
+            12 * unit);
+
+        for (const Prop prop : kProps)
+        {
+            EXPECT_FALSE(overlap(button, propBox(*layout, prop)));
+        }
+    }
+
+    // Every prop is asked for by the function the scene paints from.
+    // So aiming at one and hitting it are one rectangle.
+    TEST(PetLayoutTest, PropAt_FindsEachPropInTheMiddleOfItsOwnBox)
+    {
+        const auto layout = layoutFor(kCanvas);
+        ASSERT_TRUE(layout.has_value());
+
+        for (const Prop prop : kProps)
+        {
+            const auto found =
+                propAt(kCanvas, middleOf(propBox(*layout, prop)));
+
+            ASSERT_TRUE(found.has_value());
+            EXPECT_EQ(*found, prop);
+        }
+    }
+
+    // A press has to mean exactly one thing.
+    // So no two props may share so much as a single pixel.
+    TEST(PetLayoutTest, PropBox_NoTwoPropsOverlap)
+    {
+        const auto layout = layoutFor(kCanvas);
+        ASSERT_TRUE(layout.has_value());
+
+        EXPECT_FALSE(overlap(
+            propBox(*layout, Prop::Bowl), propBox(*layout, Prop::Ball)));
+        EXPECT_FALSE(overlap(
+            propBox(*layout, Prop::Ball), propBox(*layout, Prop::Nest)));
+        EXPECT_FALSE(overlap(
+            propBox(*layout, Prop::Bowl), propBox(*layout, Prop::Nest)));
+    }
+
+    TEST(PetLayoutTest, PropAt_IsHalfOpenAtEveryEdge)
+    {
+        const auto layout = layoutFor(kCanvas);
+        ASSERT_TRUE(layout.has_value());
+
+        const Rect bowl = propBox(*layout, Prop::Bowl);
+
+        EXPECT_TRUE(propAt(kCanvas, bowl.origin).has_value());
+        EXPECT_FALSE(propAt(
+                         kCanvas,
+                         Point{
+                             .x = bowl.origin.x
+                                  + static_cast<std::int32_t>(
+                                      bowl.size.width),
+                             .y = bowl.origin.y})
+                         .has_value());
+        EXPECT_FALSE(propAt(
+                         kCanvas,
+                         Point{
+                             .x = bowl.origin.x,
+                             .y = bowl.origin.y
+                                  + static_cast<std::int32_t>(
+                                      bowl.size.height)})
+                         .has_value());
+    }
+
+    TEST(PetLayoutTest, PropAt_AnswersNothingWhereNoPropIs)
+    {
+        EXPECT_FALSE(propAt(kCanvas, Point{.x = 128, .y = 64}));
+    }
+
+    // A window with no room for the grid has no props to press either.
+    TEST(PetLayoutTest, PropAt_AnswersNothingWithoutAGrid)
+    {
+        EXPECT_FALSE(propAt(
+            Size{.width = 16, .height = 16}, Point{.x = 8, .y = 8}));
     }
 } // namespace

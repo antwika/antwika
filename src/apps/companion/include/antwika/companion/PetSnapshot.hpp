@@ -4,6 +4,9 @@
 
 #include <antwika/time/Tick.hpp>
 
+#include "antwika/companion/DayMood.hpp"
+#include "antwika/companion/LifeStage.hpp"
+#include "antwika/companion/Lineage.hpp"
 #include "antwika/companion/Pet.hpp"
 #include "antwika/companion/Saying.hpp"
 
@@ -24,13 +27,25 @@ namespace antwika::companion
         /** @brief What it is doing. */
         PetState state = PetState::Awake;
 
-        /** @brief Whether the clock says it is night. */
-        bool night = false;
+        /**
+         * @brief Whether it is asleep.
+         *
+         * There is no clock here to ask what time it is: a companion is
+         * asleep because it was put to bed or because it dropped, and
+         * the picture goes dark for that reason rather than for an hour.
+         */
+        bool asleep = false;
 
         /** @brief Whether it wants feeding. */
         bool hungry = false;
 
-        /** @brief Whether tonight's rest has already been interrupted. */
+        /** @brief Whether it has run out of fun. */
+        bool bored = false;
+
+        /** @brief Whether it may be put to bed. */
+        bool tired = false;
+
+        /** @brief Whether today began with somebody waking it. */
         bool disturbed = false;
 
         /**
@@ -44,8 +59,21 @@ namespace antwika::companion
 
         std::uint32_t hunger = 0;
         std::uint32_t hungerMax = 0;
+        std::uint32_t fun = 0;
+        std::uint32_t funMax = 0;
         std::uint32_t happiness = 0;
         std::uint32_t happinessMax = 0;
+
+        /** @brief What it lives on. */
+        std::uint32_t energy = 0;
+
+        /**
+         * @brief The most it may hold, which shrinks as it collapses.
+         *
+         * A gauge whose own end moves, which is the whole of what a
+         * collapse costs said as a picture rather than as a number.
+         */
+        std::uint32_t energyCeiling = 0;
 
         /**
          * @brief How many ticks have been stepped.
@@ -54,6 +82,21 @@ namespace antwika::companion
          * picture is a function of the tick count and never of a clock.
          */
         antwika::time::Tick ticks = 0;
+
+        /** @brief Which day of its life it is on. */
+        std::uint32_t day = 0;
+
+        /** @brief What kind of day today is. */
+        DayMood mood = DayMood::Ordinary;
+
+        /** @brief How grown up it is. */
+        LifeStage stage = LifeStage::Egg;
+
+        /** @brief What it grew into. */
+        PetForm form = PetForm::Plain;
+
+        /** @brief What the file remembers across companions. */
+        LineageMemory lineage{};
 
         /**
          * @brief Compare two snapshots field by field.
@@ -67,8 +110,10 @@ namespace antwika::companion
     /**
      * @brief Take this tick's picture of a companion.
      * @param pet The companion to read.
+     * @param lineage The record the file keeps behind it.
      * @return The snapshot.
      */
-    [[nodiscard]] PetSnapshot snapshotOf(const Pet &pet);
+    [[nodiscard]] PetSnapshot snapshotOf(
+        const Pet &pet, const Lineage &lineage);
 
 } // namespace antwika::companion

@@ -32,23 +32,23 @@ namespace antwika::companion
         explicit FilePetStore(std::string path);
 
         /**
-         * @brief Read the companion the last session left behind.
+         * @brief Read what the last session left behind.
          * @return What it was, or nothing when the file is not there --
          * a first run, which is an ordinary answer rather than a
          * failure and starts a new companion.
          * @throws SaveFormatError If the file is there and is not a
          * companion this build can read.
          */
-        [[nodiscard]] std::optional<PetMemory> load() override;
+        [[nodiscard]] std::optional<CompanionMemory> load() override;
 
         /**
-         * @brief Write the companion out.
-         * @param memory Everything the simulation holds.
+         * @brief Write the companion and its lineage out.
+         * @param memory Everything the session holds.
          * @throws SaveFormatError If the file cannot be opened, or if
          * the bytes cannot be written once it is. A companion is
          * written in one go, so failing quietly here loses the session.
          */
-        void save(const PetMemory &memory) override;
+        void save(const CompanionMemory &memory) override;
 
     private:
         std::string path;

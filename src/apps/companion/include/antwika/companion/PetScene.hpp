@@ -16,8 +16,9 @@ namespace antwika::companion
     using antwika::gfx::Size;
 
     /**
-     * @brief Draws a companion: a sky, some ground, two gauges, a
-     * three-line readout and an animal built out of rectangles.
+     * @brief Draws a companion: a sky, some ground, four gauges, three
+     * props, a three-line readout and an animal built out of
+     * rectangles.
      *
      * **The animal is drawn rather than blitted, and that is a choice
      * rather than a shortcut.** The house style is a hand-drawn PNG
@@ -59,11 +60,18 @@ namespace antwika::companion
      * that hit-tests a press against it, and whether to draw it at all
      * is the one thing the snapshot already says.
      *
-     * The readout says in words what the gauges say in bars, plus the
-     * one thing no bar can: whether the companion is awake, asleep or
-     * gone. Every character of it comes off the snapshot, so it reports
-     * the run rather than adding to it, and it is anchored to the
-     * bottom of the grid so three lines fit whatever a unit is worth.
+     * The three props are painted into the very boxes `propAt()`
+     * hit-tests, so what somebody aims at and what they hit are one set
+     * of rectangles. The one the companion would like is lit rather
+     * than merely present, which is this application's whole answer to
+     * instructions: what to press next is on the screen.
+     *
+     * The readout says the things no bar can -- whether the companion
+     * is awake, asleep or gone, how old it is, what kind of day it is,
+     * and the record the file keeps behind it. Every character of it
+     * comes off the snapshot, so it reports the run rather than adding
+     * to it, and it is anchored to the bottom of the grid so three
+     * lines fit whatever a unit is worth.
      */
     class PetScene final
     {

@@ -19,6 +19,10 @@ namespace antwika::companion
      * of words by the enumerator, so a line added in the middle of this
      * list has to be added in the middle of that one, which a
      * static_assert on the table's size is there to catch.
+     * A new line is therefore appended at the end rather than filed
+     * beside its relatives, which costs nothing in the save format --
+     * that writes a name rather than a number, so appending here leaves
+     * every file already on somebody's disk readable.
      */
     enum class Saying : std::uint8_t
     {
@@ -49,8 +53,33 @@ namespace antwika::companion
         /** @brief It has just been woken up. */
         LetMeSleep,
 
-        /** @brief It is asleep and undisturbed. */
+        /** @brief It is asleep. */
         Zzz,
+
+        /** @brief It has run out of fun and wants playing with. */
+        PlayWithMe,
+
+        /** @brief It has just been played with. */
+        Wheee,
+
+        /** @brief It was asked to play with too little energy left. */
+        TooTired,
+
+        /** @brief It was sent to bed while it was still wide awake. */
+        NotSleepy,
+
+        /**
+         * @brief It has just become tired enough to be put to bed.
+         *
+         * The one line that exists to be acted on rather than enjoyed.
+         * Bedtime is refused above the tired threshold, so a player with
+         * no way of knowing when that window opened would be playing
+         * against a hidden rule rather than a hard one.
+         */
+        Yawn,
+
+        /** @brief It was prodded somewhere that means nothing. */
+        Poked,
     };
 
 } // namespace antwika::companion

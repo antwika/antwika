@@ -9,7 +9,7 @@
 
 #include <antwika/replay/MigrationChain.hpp>
 
-#include "antwika/companion/Pet.hpp"
+#include "antwika/companion/CompanionMemory.hpp"
 
 namespace antwika::companion
 {
@@ -30,22 +30,29 @@ namespace antwika::companion
     /**
      * @brief Which revision of the companion format this build writes.
      *
-     * Version 1, and it starts there rather than at zero or at nothing,
-     * because a document written without a version can only be dated by
-     * guessing. Stated in antwika::replay::kSchemaVersionKey --
-     * "version" -- the one member every persisted document in this code
-     * base carries its version in.
+     * Stated in antwika::replay::kSchemaVersionKey -- "version" -- the
+     * one member every persisted document in this code base carries its
+     * version in.
+     *
+     * Version 1 held a companion with two needs and a happiness meter it
+     * died of. Version 2 is the same file describing an animal whose
+     * *energy* is its life: it gained `fun`, `energy`, `day`, `plays`
+     * and `collapses`, and `disturbed` became `woken`. That is a
+     * reinterpretation of what the document means rather than an
+     * addition to it, which is exactly what the rule calls breaking.
+     * Version 3 added the lineage the file keeps across companions,
+     * `generation` and `bestTicks`, required rather than optional, and
+     * so bumps it again.
      *
      * **A bump means a companion written by an older build no longer
      * satisfies this build's schema, or satisfies it and means something
-     * else.** Adding an optional member is not that and needs no bump;
-     * renaming one, requiring one that was optional, narrowing what a
-     * number may be, or reinterpreting a value all are. A bump takes an
-     * IMigration from N to N+1 added to standardPetMigrations(), and a
-     * test that loads a hand-written version-N document and asserts what
-     * it becomes. See docs/schema-versioning.md for the whole rule.
+     * else.** Adding an optional member is not that and needs no bump.
+     * A bump takes an IMigration from N to N+1 added to
+     * standardPetMigrations(), and a test that loads a hand-written
+     * version-N document and asserts what it becomes. See
+     * docs/schema-versioning.md for the whole rule.
      */
-    inline constexpr std::uint32_t kSaveFormatVersion = 1;
+    inline constexpr std::uint32_t kSaveFormatVersion = 3;
 
     /**
      * @brief Build the migration chain for the companion format.
@@ -55,47 +62,46 @@ namespace antwika::companion
      * names its own list, its own current version and nothing else.
      * There is no registry, so this chain and the replay's cannot see
      * each other.
-     * Empty today, because the format is still at version 1 -- a
-     * factory rather than a constant so that adding the first migration
-     * changes one function and nothing else.
      *
-     * @return The chain.
+     * @return The chain, from version 1 to the current one.
      */
     [[nodiscard]] MigrationChain standardPetMigrations();
 
     /**
-     * @brief Encode a companion as one JSON document.
-     * @param memory What the simulation holds.
+     * @brief Encode a companion and its lineage as one JSON document.
+     * @param memory What the session holds.
      * @return The document.
      */
-    [[nodiscard]] nlohmann::json petMemoryToJson(const PetMemory &memory);
+    [[nodiscard]] nlohmann::json companionMemoryToJson(
+        const CompanionMemory &memory);
 
     /**
-     * @brief Decode a companion from one JSON document.
+     * @brief Decode a companion and its lineage from one JSON document.
      *
      * Reads it as `parse -> read version -> migrate -> validate ->
      * decode`, migrating before validating so that exactly one schema
      * exists rather than one per revision.
      *
      * @param document The parsed document.
-     * @return What the simulation holds.
+     * @return What the session holds.
      * @throws SaveFormatError If the document is not a companion this
      * build can read.
      */
-    [[nodiscard]] PetMemory petMemoryFromJson(
+    [[nodiscard]] CompanionMemory companionMemoryFromJson(
         const nlohmann::json &document);
 
     /**
      * @brief Write a companion to a stream.
      *
-     * Indented, unlike a recorded replay: a companion is a dozen lines
-     * somebody may well want to read or hand-edit, where a recording is
-     * a long machine-written log nobody opens.
+     * Indented, unlike a recorded replay: a companion is a couple of
+     * dozen lines somebody may well want to read or hand-edit, where a
+     * recording is a long machine-written log nobody opens.
      *
-     * @param memory What the simulation holds.
+     * @param memory What the session holds.
      * @param out The stream to write it to.
      */
-    void writePetMemory(const PetMemory &memory, std::ostream &out);
+    void writeCompanionMemory(
+        const CompanionMemory &memory, std::ostream &out);
 
     /**
      * @brief Read a companion from a stream.
@@ -106,10 +112,10 @@ namespace antwika::companion
      * fixture on disk.
      *
      * @param in The stream to read from.
-     * @return What the simulation holds.
+     * @return What the session holds.
      * @throws SaveFormatError If the stream is not valid JSON, or is not
      * a companion this build can read.
      */
-    [[nodiscard]] PetMemory readPetMemory(std::istream &in);
+    [[nodiscard]] CompanionMemory readCompanionMemory(std::istream &in);
 
 } // namespace antwika::companion

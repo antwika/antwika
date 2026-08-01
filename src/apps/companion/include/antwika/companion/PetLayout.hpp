@@ -31,6 +31,27 @@ namespace antwika::companion
     inline constexpr std::uint32_t kSceneUnits = 32;
 
     /**
+     * @brief The three things in the window a press can mean something
+     * on.
+     *
+     * A press anywhere else is an ordinary prod, so this is the whole of
+     * what "where it landed" decides -- and the boxes below are shared
+     * by the scene that paints them and the sink that hit-tests them,
+     * exactly as the revive button already was.
+     */
+    enum class Prop : std::uint8_t
+    {
+        /** @brief Feed it. */
+        Bowl = 0,
+
+        /** @brief Play with it. */
+        Ball,
+
+        /** @brief Send it to bed. */
+        Nest,
+    };
+
+    /**
      * @brief The grid everything is drawn on: how big a unit is, and
      * where the grid's top-left corner sits in the canvas.
      */
@@ -89,14 +110,47 @@ namespace antwika::companion
         std::uint32_t height);
 
     /**
-     * @brief Find the "new companion" button on a grid already worked
-     * out.
+     * @brief Find one prop on a grid already worked out.
      *
      * The overload whatever is drawing calls, since it has the grid in
-     * hand and asking for the button by canvas again would be a second
-     * "is this canvas big enough?" that its own answer already settled
-     * -- a branch no input could take both ways.
+     * hand and asking by canvas again would be a second "is this canvas
+     * big enough?" that its own answer already settled -- a branch no
+     * input could take both ways.
      *
+     * @param layout The grid.
+     * @param prop Which one.
+     * @return The box it is painted into and hit-tested against.
+     */
+    [[nodiscard]] Rect propBox(const SceneLayout &layout, Prop prop);
+
+    /**
+     * @brief Find which prop a press landed on, if any.
+     *
+     * **This is the one hit-test the application has**, and it shares
+     * `propBox()` with the scene that paints the props, so what somebody
+     * sees and what they can press cannot drift apart. Working the same
+     * boxes out twice is exactly the drift apps/poker's card art once
+     * had.
+     *
+     * It resolves against the *configured* canvas rather than the size a
+     * window reports, for the reason life::PointerToggleSink gives about
+     * cells: a hit-test is a function of the layout, and a layout
+     * against a resized window would resolve a recorded press to a
+     * different answer on the machine replaying it.
+     *
+     * Half-open in both axes -- the top-left pixel is inside and the
+     * bottom-right one is not -- so two boxes sharing an edge cannot
+     * both claim the pixel on it.
+     *
+     * @param canvas The size the picture is laid out against.
+     * @param at Where the press landed.
+     * @return The prop, or nothing for a press that meant none of them.
+     */
+    [[nodiscard]] std::optional<Prop> propAt(Size canvas, Point at);
+
+    /**
+     * @brief Find the "new companion" button on a grid already worked
+     * out.
      * @param layout The grid.
      * @return The button.
      */
@@ -105,22 +159,9 @@ namespace antwika::companion
     /**
      * @brief Find the "new companion" button.
      *
-     * **This is the one function shared by what is drawn and what is
-     * hit**, in life::BoardLayout's sense and for its reason: PetScene
-     * paints this rectangle and ReviveSink tests a press against this
-     * rectangle, so a button somebody can see and a button somebody can
-     * press cannot drift apart. Working the same box out twice is
-     * exactly the drift apps/poker's card art once had.
-     *
-     * It is laid out against the *configured* canvas rather than the
-     * size a window reports, for the reason life::PointerToggleSink
-     * gives about cells: a hit-test is a function of the layout, and a
-     * layout against a resized window would resolve a recorded press to
-     * a different answer on the machine replaying it.
-     *
      * Where it sits is decided here rather than by whichever of the two
-     * asked first: left of the grave, under the gauges and above the
-     * readout, so it covers nothing that says anything.
+     * callers asked first: left of the grave, under the gauges and above
+     * the props, so it covers nothing that says anything.
      *
      * @param canvas The size the picture is laid out against.
      * @return The button, or nothing when the canvas is too small for a
@@ -132,11 +173,6 @@ namespace antwika::companion
     /**
      * @brief Check whether a press landed on the "new companion"
      * button.
-     *
-     * Half-open in both axes -- the top-left pixel is inside and the
-     * bottom-right one is not -- so two boxes sharing an edge cannot
-     * both claim the pixel on it.
-     *
      * @param canvas The size the picture is laid out against.
      * @param at Where the press landed.
      * @return Whether that pixel is the button's.
