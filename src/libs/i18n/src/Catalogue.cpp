@@ -170,6 +170,17 @@ namespace antwika::i18n
             {MessageId::UiDemoSubmitted, "submitted: {0}"},
             {MessageId::UiDemoCancelled, "cancelled"},
             {MessageId::UiDemoPressedWidget, "pressed widget {0}"},
+            {MessageId::TaskWorkerTick, "tick {0}"},
+            {MessageId::TaskWorkerBudget, "budget {0}"},
+            {MessageId::TaskWorkerStarted, "started {0}"},
+            {MessageId::TaskWorkerWorkers, "workers"},
+            {MessageId::TaskWorkerWorkerIdle, "worker {0} idle"},
+            {MessageId::TaskWorkerWorkerBusy, "worker {0} {1}"},
+            {MessageId::TaskWorkerTicksLeft, "{0} of {1} ticks left"},
+            {MessageId::TaskWorkerQueue, "queue"},
+            {MessageId::TaskWorkerQueued, "{0} priority {1}"},
+            {MessageId::TaskWorkerBlocked, "{0} waits for {1}"},
+            {MessageId::TaskWorkerCompleted, "completed"},
         }};
 
         constexpr std::array<CatalogueEntry, kMessageCount> kSwedishEntries{{
@@ -321,6 +332,17 @@ namespace antwika::i18n
             {MessageId::UiDemoSubmitted, "inskickat: {0}"},
             {MessageId::UiDemoCancelled, "avbrutet"},
             {MessageId::UiDemoPressedWidget, "tryckte på widget {0}"},
+            {MessageId::TaskWorkerTick, "tick {0}"},
+            {MessageId::TaskWorkerBudget, "budget {0}"},
+            {MessageId::TaskWorkerStarted, "startade {0}"},
+            {MessageId::TaskWorkerWorkers, "arbetare"},
+            {MessageId::TaskWorkerWorkerIdle, "arbetare {0} ledig"},
+            {MessageId::TaskWorkerWorkerBusy, "arbetare {0} {1}"},
+            {MessageId::TaskWorkerTicksLeft, "{0} av {1} tick kvar"},
+            {MessageId::TaskWorkerQueue, "kö"},
+            {MessageId::TaskWorkerQueued, "{0} prioritet {1}"},
+            {MessageId::TaskWorkerBlocked, "{0} väntar på {1}"},
+            {MessageId::TaskWorkerCompleted, "klara"},
         }};
 
         constexpr Catalogue kEnglishCatalogue{

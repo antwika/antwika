@@ -689,12 +689,68 @@ namespace antwika::i18n
          *        being its id.
          */
         UiDemoPressedWidget,
+
+        /**
+         * @brief Task worker: which tick the picture is of, `{0}`.
+         */
+        TaskWorkerTick,
+
+        /**
+         * @brief Task worker: how many jobs this tick may start, `{0}`.
+         */
+        TaskWorkerBudget,
+
+        /**
+         * @brief Task worker: how many jobs this tick did start, `{0}`.
+         */
+        TaskWorkerStarted,
+
+        /**
+         * @brief Task worker: the heading over the pool.
+         */
+        TaskWorkerWorkers,
+
+        /**
+         * @brief Task worker: worker `{0}` is holding nothing.
+         */
+        TaskWorkerWorkerIdle,
+
+        /**
+         * @brief Task worker: worker `{0}` is holding task `{1}`.
+         */
+        TaskWorkerWorkerBusy,
+
+        /**
+         * @brief Task worker: `{0}` of a task's `{1}` ticks are left.
+         */
+        TaskWorkerTicksLeft,
+
+        /**
+         * @brief Task worker: the heading over the pending queue.
+         */
+        TaskWorkerQueue,
+
+        /**
+         * @brief Task worker: pending task `{0}` at priority `{1}`.
+         */
+        TaskWorkerQueued,
+
+        /**
+         * @brief Task worker: pending task `{0}` cannot run until task
+         *        `{1}` has.
+         */
+        TaskWorkerBlocked,
+
+        /**
+         * @brief Task worker: the heading over the finished tasks.
+         */
+        TaskWorkerCompleted,
     };
 
     /**
      * @brief How many ids a complete catalogue carries.
      */
-    inline constexpr std::size_t kMessageCount{131};
+    inline constexpr std::size_t kMessageCount{142};
 
     /**
      * @brief Every id, in declaration order.
@@ -835,6 +891,17 @@ namespace antwika::i18n
         MessageId::UiDemoSubmitted,
         MessageId::UiDemoCancelled,
         MessageId::UiDemoPressedWidget,
+        MessageId::TaskWorkerTick,
+        MessageId::TaskWorkerBudget,
+        MessageId::TaskWorkerStarted,
+        MessageId::TaskWorkerWorkers,
+        MessageId::TaskWorkerWorkerIdle,
+        MessageId::TaskWorkerWorkerBusy,
+        MessageId::TaskWorkerTicksLeft,
+        MessageId::TaskWorkerQueue,
+        MessageId::TaskWorkerQueued,
+        MessageId::TaskWorkerBlocked,
+        MessageId::TaskWorkerCompleted,
     };
 
     /**

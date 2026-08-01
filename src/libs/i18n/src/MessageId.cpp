@@ -271,6 +271,28 @@ namespace antwika::i18n
             return "UiDemoCancelled";
         case MessageId::UiDemoPressedWidget:
             return "UiDemoPressedWidget";
+        case MessageId::TaskWorkerTick:
+            return "TaskWorkerTick";
+        case MessageId::TaskWorkerBudget:
+            return "TaskWorkerBudget";
+        case MessageId::TaskWorkerStarted:
+            return "TaskWorkerStarted";
+        case MessageId::TaskWorkerWorkers:
+            return "TaskWorkerWorkers";
+        case MessageId::TaskWorkerWorkerIdle:
+            return "TaskWorkerWorkerIdle";
+        case MessageId::TaskWorkerWorkerBusy:
+            return "TaskWorkerWorkerBusy";
+        case MessageId::TaskWorkerTicksLeft:
+            return "TaskWorkerTicksLeft";
+        case MessageId::TaskWorkerQueue:
+            return "TaskWorkerQueue";
+        case MessageId::TaskWorkerQueued:
+            return "TaskWorkerQueued";
+        case MessageId::TaskWorkerBlocked:
+            return "TaskWorkerBlocked";
+        case MessageId::TaskWorkerCompleted:
+            return "TaskWorkerCompleted";
         }
 
         return "?";

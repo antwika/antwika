@@ -142,7 +142,7 @@ namespace
     // Written out rather than tolerated wherever it happens.
     // A forgotten Swedish entry looks exactly like one of these.
     // So the only way to be excused is to be named here.
-    constexpr std::array<MessageId, 9> kSameInBothLocales{
+    constexpr std::array<MessageId, 11> kSameInBothLocales{
         MessageId::ToolbarZoomLevel,
         MessageId::AtlasPixelUnknown,
         MessageId::AtlasPixelAt,
@@ -152,6 +152,8 @@ namespace
         MessageId::CompanionSayWheee,
         MessageId::CompanionDay,
         MessageId::UiDemoPageLayout,
+        MessageId::TaskWorkerTick,
+        MessageId::TaskWorkerBudget,
     };
 
     TEST(CatalogueTest, CatalogueFor_TranslatesTheMenuIntoSwedish)

@@ -32,7 +32,8 @@ namespace antwika::task_worker
          * @param lookup Worker lookup refreshed and used to compute
          * this tick's dispatch budget.
          * @param registry Task registry marked Running for every job
-         * this tick's run() call dispatches.
+         * this tick's run() call dispatches, and told what that call's
+         * budget was.
          */
         TaskDispatchSystem(
             Scheduler &jobScheduler,
@@ -48,7 +49,9 @@ namespace antwika::task_worker
         /**
          * @brief Refresh idle-worker state, then run the job scheduler
          * with the current idle-worker count as budget, marking each
-         * dispatched job Running in registry.
+         * dispatched job Running in registry and recording the budget
+         * itself there -- the one number about a tick's dispatch that
+         * nothing else keeps once the tick is over.
          * @param world Unused directly -- idle state comes from lookup,
          * which was built over the same World.
          * @param tick Forwarded to Scheduler::run().
