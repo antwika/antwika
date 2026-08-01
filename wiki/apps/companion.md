@@ -53,6 +53,8 @@ Every period is written as a number of seconds times `kTicksPerSecond`, rather t
 - `kPesterCost` is 1, exactly `kFeedJoy` and half of `kDisturbCost`, so an unwanted meal is the equal and opposite of a wanted one and waking it stays twice the sin.
   From `kHappinessStart` one stray tap costs a sixth of what it has and an undisturbed night gives two or three of it back, so a mistimed tap is recoverable; six in a row are not, which is the point -- tapping at it without pause is now a way to lose rather than a free action.
 - `kHappinessMax` is 10 and `kHappinessStart` is 6, above half, so a first mistake is survivable and a second day of them is not.
+- `kSayingTicks` is 3 seconds, long enough to read at a glance and short enough that two things said in a row are two bubbles rather than one.
+- `kChatterPeriodTicks` is 6 seconds, twice what a line lasts, so the bubble is empty for as long as it is full and the chatter reads as occasional rather than constant.
 
 The balance those numbers add up to is asserted rather than described: `PetTest` runs the shipped configuration for a hundred seconds twice over, once with nobody attending it and once feeding it whenever it asks, and requires the first to perish and the second not to.
 The second only ever taps a hungry companion, so it also pins that attentive play never pesters.
@@ -93,6 +95,25 @@ Every character of it is read off the `PetSnapshot`, so the readout reports the 
 How big the glyphs are is derived rather than chosen: four glyph pixels to a layout unit, so the readout doubles when the window does, and a unit too small for even that still gets the smallest text.
 The block is anchored to the *bottom* of the grid with a unit of margin under the last line, rather than to a row of it, so three lines fit whatever a unit turned out to be worth -- which is what keeps a small canvas from printing text off the bottom of itself.
 It is drawn last, after the animal or the grave, so anything a later frame puts over the ground stays in front of what is already there.
+
+### The speech bubble
+
+A bubble appears beside the animal from time to time and goes away again after `sayingTicks`.
+What it holds is one of a fixed set of lines: four of them are idle chatter (`hello!`, `bored...`, `nice day`, `la la la`) and five say something about the run -- `feed me!` while it is hungry, `yum yum!` for a meal, `im full!` for one it did not want, `shhh!` for being woken, and `zzz...` while it sleeps undisturbed.
+A tap is answered on the tick it lands, and otherwise it finds something to say every `chatterPeriodTicks`; a line already up runs its course before another may start, so the bubble never flickers between two things in consecutive ticks.
+
+**Which line comes up and when is `Pet`'s decision rather than the scene's**, for the reason everything else about a companion is: a renderer holding a countdown, or picking a line from a generator of its own, is state a replay cannot regenerate.
+The idle line is a hash of the tick it comes up on -- the murmur3 finalizer over exact-width integers, so it is the same line on every toolchain.
+That is deliberately *not* a draw from an `antwika::rng` generator: a generator here would be a seed and a stream position for a save file to carry and keep in step with the ticks, and one let out of step would say the wrong thing for the rest of the session, where a hash of a number `Pet` already holds is nothing at all to carry.
+It is deliberately not a plain `(tick / period) % count` either, which would be the same four lines in the same order forever and read as a carousel rather than as chatter.
+
+The snapshot carries the `Saying` and not the words, and not the countdown: the words are the scene's table, and a scene handed a countdown could start counting one down itself.
+That table is one table in one place, in `PetScene.cpp` beside the readout's words.
+`antwika::i18n` is deliberately not used for it -- the readout beside the bubble is English written into that same file, so a catalogue holding one and not the other would translate the window by halves and leave two places to add a line to; moving both is a change worth making on its own.
+
+The bubble sits left of the animal, under the two gauges and over the bowl, so it covers nothing that says anything, and it is drawn after the animal -- a bubble the companion stands in front of is somebody else talking.
+Its text is scaled to the longest line the table holds rather than to the line being said, so the bubble is one size and the words one height throughout.
+A window smaller than the one `main.cpp` asks for cannot give the smallest glyphs that much room and the longest lines overhang their bubble there, which is exactly where the readout already overhangs the grid; neither is clamped, so both stay one arithmetic rule.
 
 ### The idle animation
 

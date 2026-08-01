@@ -5,6 +5,7 @@
 #include <antwika/time/Tick.hpp>
 
 #include "antwika/companion/Pet.hpp"
+#include "antwika/companion/Saying.hpp"
 
 namespace antwika::companion
 {
@@ -31,6 +32,15 @@ namespace antwika::companion
 
         /** @brief Whether tonight's rest has already been interrupted. */
         bool disturbed = false;
+
+        /**
+         * @brief What it is saying, or Saying::None for nothing.
+         *
+         * The line rather than the words, and no countdown: how long a
+         * bubble has left is the simulation's business, and a scene
+         * given it could start counting down itself.
+         */
+        Saying saying = Saying::None;
 
         std::uint32_t hunger = 0;
         std::uint32_t hungerMax = 0;

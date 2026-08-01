@@ -2,11 +2,13 @@
 
 #include "antwika/companion/Pet.hpp"
 #include "antwika/companion/PetSnapshot.hpp"
+#include "antwika/companion/Saying.hpp"
 
 using antwika::companion::Pet;
 using antwika::companion::PetConfig;
 using antwika::companion::PetSnapshot;
 using antwika::companion::PetState;
+using antwika::companion::Saying;
 using antwika::companion::snapshotOf;
 
 namespace
@@ -17,6 +19,8 @@ namespace
         .hungerPeriodTicks = 1,
         .starvePeriodTicks = 1000,
         .restPeriodTicks = 1000,
+        .sayingTicks = 2,
+        .chatterPeriodTicks = 2,
         .hungerMax = 4,
         .hungerThreshold = 2,
         .feedRelief = 2,
@@ -42,6 +46,11 @@ namespace
         EXPECT_EQ(snapshot.happiness, kQuick.happinessStart);
         EXPECT_EQ(snapshot.happinessMax, kQuick.happinessMax);
         EXPECT_EQ(snapshot.ticks, 2U);
+
+        // The second tick is a chatter tick, so it has found a line.
+        // Which line is Pet's business, and the snapshot carries it.
+        EXPECT_NE(snapshot.saying, Saying::None);
+        EXPECT_EQ(snapshot.saying, pet.saying());
     }
 
     TEST(PetSnapshotTest, ASleepingCompanionCarriesItsNightIntoThePicture)
@@ -81,6 +90,7 @@ namespace
             .night = false,
             .hungry = false,
             .disturbed = false,
+            .saying = Saying::None,
             .hunger = 1,
             .hungerMax = 4,
             .happiness = 3,
@@ -101,6 +111,10 @@ namespace
 
         other = base;
         other.disturbed = true;
+        EXPECT_NE(base, other);
+
+        other = base;
+        other.saying = Saying::Hello;
         EXPECT_NE(base, other);
 
         other = base;

@@ -4,6 +4,8 @@
 
 #include <antwika/time/Tick.hpp>
 
+#include "antwika/companion/Saying.hpp"
+
 namespace antwika::companion
 {
 
@@ -38,6 +40,22 @@ namespace antwika::companion
 
     /** @brief How often an undisturbed night gives happiness back. */
     inline constexpr Tick kRestPeriodTicks = 4 * kTicksPerSecond;
+
+    /**
+     * @brief How long one line stays in the speech bubble.
+     *
+     * Long enough to read at a glance and short enough that a companion
+     * saying two things in a row is two bubbles rather than one.
+     */
+    inline constexpr Tick kSayingTicks = 3 * kTicksPerSecond;
+
+    /**
+     * @brief How often it finds something to say.
+     *
+     * Twice what a line lasts, so the bubble is empty for as long as it
+     * is full and the chatter reads as occasional rather than constant.
+     */
+    inline constexpr Tick kChatterPeriodTicks = 6 * kTicksPerSecond;
 
     /** @brief The hungriest it can get. */
     inline constexpr std::uint32_t kHungerMax = 8;
@@ -107,6 +125,8 @@ namespace antwika::companion
         Tick hungerPeriodTicks = kHungerPeriodTicks;
         Tick starvePeriodTicks = kStarvePeriodTicks;
         Tick restPeriodTicks = kRestPeriodTicks;
+        Tick sayingTicks = kSayingTicks;
+        Tick chatterPeriodTicks = kChatterPeriodTicks;
         std::uint32_t hungerMax = kHungerMax;
         std::uint32_t hungerThreshold = kHungerThreshold;
         std::uint32_t feedRelief = kFeedRelief;
@@ -135,6 +155,15 @@ namespace antwika::companion
      * with a bowl it does not want costs it happiness too. Happiness
      * reaching zero is Perished, which nothing brings it back from --
      * see wiki/apps/companion.md for the numbers and why they are those.
+     *
+     * What it is saying is decided here rather than by whatever draws
+     * it, for the reason everything else here is: a renderer holding a
+     * countdown, or picking a line from a generator of its own, is state
+     * a replay cannot regenerate. Which idle line comes up is a hash of
+     * the tick count -- not a draw from an antwika::rng generator, since
+     * that would be a seed and a stream position for a save file to
+     * carry and keep in step, where a hash of a number Pet already holds
+     * is nothing at all.
      *
      * A tap is deliberately the only input, since the window is 256
      * pixels square and a pointer landing anywhere in it means the same
@@ -225,6 +254,23 @@ namespace antwika::companion
         [[nodiscard]] Tick ticks() const noexcept;
 
         /**
+         * @brief Get what it is saying, if anything.
+         *
+         * Which line comes up and when it comes up are both functions of
+         * the tick count and of when tap() was called, so a replay says
+         * the same words on the same ticks as the run it recorded.
+         *
+         * @return The line, or Saying::None while it is saying nothing.
+         */
+        [[nodiscard]] Saying saying() const noexcept;
+
+        /**
+         * @brief Get how much longer it will go on saying it.
+         * @return The remaining ticks, or zero while it is silent.
+         */
+        [[nodiscard]] Tick sayingTicksLeft() const noexcept;
+
+        /**
          * @brief Get how many meals it has eaten.
          * @return The count.
          */
@@ -254,8 +300,13 @@ namespace antwika::companion
         void gain(std::uint32_t amount) noexcept;
         void lose(std::uint32_t amount) noexcept;
 
+        void say(Saying line) noexcept;
+        void speak() noexcept;
+
         PetConfig config;
         PetState petState = PetState::Awake;
+        Saying said = Saying::None;
+        Tick sayingLeft = 0;
         Tick elapsed = 0;
         std::uint32_t hungerLevel = 0;
         std::uint32_t happinessLevel = 0;

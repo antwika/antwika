@@ -1,5 +1,8 @@
 #include "antwika/companion/Pet.hpp"
 
+#include <array>
+#include <cstddef>
+#include <cstdint>
 #include <string>
 #include <string_view>
 
@@ -10,8 +13,35 @@ namespace antwika::companion
 
     namespace
     {
-        // One check called eight times rather than eight checks.
-        // A conjunction would be eight branches to reach both ways.
+        // What it says when nothing in particular is happening.
+        // Four of them, so a session is not one line on repeat.
+        constexpr std::array<Saying, 4> kIdleSayings{
+            Saying::Hello,
+            Saying::Bored,
+            Saying::NiceDay,
+            Saying::Silly};
+
+        // Which idle line comes up is a hash of the tick it comes up on.
+        // A generator would be a seed and a position for a save to carry.
+        // One let out of step would say wrong things for a whole session.
+        // A plain (tick / period) % count reads as a carousel instead.
+        // It is the same four lines in the same order, forever.
+        // A hash is neither: no state at all, and no order to notice.
+        // It is a pure function of the one number Pet already is one of.
+        // The arithmetic is the murmur3 finalizer over exact widths.
+        // So which line comes up is the same on every toolchain.
+        [[nodiscard]] std::size_t idleIndex(const Tick tick) noexcept
+        {
+            auto mixed = static_cast<std::uint64_t>(tick);
+            mixed ^= mixed >> 33;
+            mixed *= 0xff51afd7ed558ccdULL;
+            mixed ^= mixed >> 33;
+
+            return static_cast<std::size_t>(mixed % kIdleSayings.size());
+        }
+
+        // One check called ten times rather than ten checks.
+        // A conjunction would be ten branches to reach both ways.
         // This is one branch, reached both ways by two tests.
         void requirePositive(const Tick value, const std::string_view what)
         {
@@ -31,6 +61,9 @@ namespace antwika::companion
             requirePositive(config.hungerPeriodTicks, "hungerPeriodTicks");
             requirePositive(config.starvePeriodTicks, "starvePeriodTicks");
             requirePositive(config.restPeriodTicks, "restPeriodTicks");
+            requirePositive(config.sayingTicks, "sayingTicks");
+            requirePositive(
+                config.chatterPeriodTicks, "chatterPeriodTicks");
             requirePositive(config.hungerMax, "hungerMax");
             requirePositive(config.happinessMax, "happinessMax");
             requirePositive(config.happinessStart, "happinessStart");
@@ -69,6 +102,11 @@ namespace antwika::companion
             disturbedTonight = false;
         }
 
+        // Before the needs below rather than after them.
+        // A tick that runs the happiness out has to end silent.
+        // lose() clears the bubble, and a later line would sit on a grave.
+        speak();
+
         if (!isNight)
         {
             if (elapsed % config.hungerPeriodTicks == 0
@@ -105,6 +143,11 @@ namespace antwika::companion
         {
             disturbedTonight = true;
             ++disturbanceCount;
+
+            // Said before the cost is paid rather than after it.
+            // A tap that runs the happiness out leaves nothing to say.
+            // Which is lose()'s doing, and it takes the bubble away.
+            say(Saying::LetMeSleep);
             lose(config.disturbCost);
             return;
         }
@@ -118,6 +161,7 @@ namespace antwika::companion
         if (!hungry())
         {
             ++pesterCount;
+            say(Saying::NotHungry);
             lose(config.pesterCost);
             return;
         }
@@ -126,6 +170,7 @@ namespace antwika::companion
                           ? hungerLevel - config.feedRelief
                           : 0;
         ++mealCount;
+        say(Saying::Yum);
         gain(config.feedJoy);
     }
 
@@ -164,6 +209,16 @@ namespace antwika::companion
         return elapsed;
     }
 
+    Saying Pet::saying() const noexcept
+    {
+        return said;
+    }
+
+    Tick Pet::sayingTicksLeft() const noexcept
+    {
+        return sayingLeft;
+    }
+
     std::uint32_t Pet::meals() const noexcept
     {
         return mealCount;
@@ -189,6 +244,51 @@ namespace antwika::companion
         return config.dayTicks + config.nightTicks;
     }
 
+    void Pet::say(const Saying line) noexcept
+    {
+        said = line;
+        sayingLeft = config.sayingTicks;
+    }
+
+    void Pet::speak() noexcept
+    {
+        // A line already up runs its course before another may start.
+        // So a need cannot cut an answer off mid-word.
+        // And the bubble never flickers between two consecutive ticks.
+        if (sayingLeft > 0)
+        {
+            --sayingLeft;
+
+            if (sayingLeft == 0)
+            {
+                said = Saying::None;
+            }
+
+            return;
+        }
+
+        if (elapsed % config.chatterPeriodTicks != 0)
+        {
+            return;
+        }
+
+        if (petState == PetState::Asleep)
+        {
+            say(Saying::Zzz);
+            return;
+        }
+
+        // A need is worth saying and idle chatter is only worth having.
+        // So being hungry is what it talks about while it is hungry.
+        if (hungry())
+        {
+            say(Saying::FeedMe);
+            return;
+        }
+
+        say(kIdleSayings[idleIndex(elapsed)]);
+    }
+
     void Pet::gain(const std::uint32_t amount) noexcept
     {
         happinessLevel += amount;
@@ -210,6 +310,11 @@ namespace antwika::companion
         if (happinessLevel == 0)
         {
             petState = PetState::Perished;
+
+            // Nothing about a perished companion changes again.
+            // A bubble left over one would be the last thing it did.
+            said = Saying::None;
+            sayingLeft = 0;
         }
     }
 

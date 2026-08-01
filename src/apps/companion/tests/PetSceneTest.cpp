@@ -1,3 +1,4 @@
+#include <array>
 #include <cstddef>
 #include <cstdint>
 #include <string>
@@ -13,14 +14,17 @@
 #include <antwika/gfx/Point.hpp>
 #include <antwika/gfx/Rect.hpp>
 #include <antwika/gfx/Size.hpp>
+#include <antwika/gfx/TextLayout.hpp>
 
 #include "antwika/companion/PetScene.hpp"
 #include "antwika/companion/PetSnapshot.hpp"
+#include "antwika/companion/Saying.hpp"
 
 using antwika::companion::kSceneUnits;
 using antwika::companion::PetScene;
 using antwika::companion::PetSnapshot;
 using antwika::companion::PetState;
+using antwika::companion::Saying;
 using antwika::gfx::Color;
 using antwika::gfx::kGlyphLineHeight;
 using antwika::gfx::mocks::MockRenderer;
@@ -101,6 +105,26 @@ namespace
     {
         return drawn.texts.back().text;
     }
+
+    // The bubble and its tail are the last two rectangles drawn.
+    // They go in after the animal, so a bubble is never behind it.
+    [[nodiscard]] Rect bubbleOf(const Drawn &drawn)
+    {
+        return drawn.rects[drawn.rects.size() - 2];
+    }
+
+    // Every line the companion has.
+    // So a new one cannot be added without a test that draws it.
+    constexpr std::array<Saying, 9> kEveryLine{
+        Saying::Hello,
+        Saying::Bored,
+        Saying::NiceDay,
+        Saying::Silly,
+        Saying::FeedMe,
+        Saying::Yum,
+        Saying::NotHungry,
+        Saying::LetMeSleep,
+        Saying::Zzz};
 
     PetSnapshot awake()
     {
@@ -412,6 +436,126 @@ namespace
             drawn.texts[1].origin.y, drawn.texts[0].origin.y + step);
         EXPECT_EQ(
             drawn.texts[2].origin.y, drawn.texts[1].origin.y + step);
+    }
+
+    TEST(PetSceneTest, Draw_DrawsNoBubbleWhileThereIsNothingToSay)
+    {
+        const PetScene scene;
+        const Drawn drawn = render(scene, kCanvas, awake());
+
+        EXPECT_EQ(drawn.rects.size(), kBareAwakeRects);
+        EXPECT_EQ(drawn.texts.size(), kReadoutLines);
+    }
+
+    // The bubble, its tail, and one line of text ahead of the readout.
+    TEST(PetSceneTest, Draw_PutsWhatItSaysInABubbleBesideTheAnimal)
+    {
+        const PetScene scene;
+
+        PetSnapshot talking = awake();
+        talking.saying = Saying::FeedMe;
+
+        const Drawn drawn = render(scene, kCanvas, talking);
+
+        EXPECT_EQ(drawn.rects.size(), kBareAwakeRects + 2);
+        ASSERT_EQ(drawn.texts.size(), kReadoutLines + 1);
+        EXPECT_EQ(drawn.texts[0].text, "feed me!");
+    }
+
+    // A different line is a different bubble, and the same one is not.
+    TEST(PetSceneTest, Draw_SaysADifferentThingForADifferentLine)
+    {
+        const PetScene scene;
+
+        PetSnapshot bored = awake();
+        bored.saying = Saying::Bored;
+
+        PetSnapshot asking = awake();
+        asking.saying = Saying::FeedMe;
+
+        EXPECT_NE(
+            render(scene, kCanvas, bored).texts[0].text,
+            render(scene, kCanvas, asking).texts[0].text);
+        EXPECT_EQ(
+            render(scene, kCanvas, bored).texts[0].text,
+            render(scene, kCanvas, bored).texts[0].text);
+    }
+
+    // The words are scaled to the longest line rather than to each one.
+    // Which is worth nothing unless the longest one actually fits.
+    TEST(PetSceneTest, Draw_KeepsEveryLineInsideItsOwnBubble)
+    {
+        const PetScene scene;
+
+        for (const Saying line : kEveryLine)
+        {
+            PetSnapshot talking = awake();
+            talking.saying = line;
+
+            const Drawn drawn = render(scene, kCanvas, talking);
+            const Rect bubble = bubbleOf(drawn);
+            const Text &text = drawn.texts[0];
+            const Size size =
+                antwika::gfx::textSize(text.text, text.scale);
+
+            EXPECT_FALSE(text.text.empty());
+            EXPECT_GE(text.origin.x, bubble.origin.x);
+            EXPECT_LE(
+                text.origin.x + static_cast<std::int32_t>(size.width),
+                bubble.origin.x
+                    + static_cast<std::int32_t>(bubble.size.width));
+            EXPECT_GE(text.origin.y, bubble.origin.y);
+            EXPECT_LE(
+                text.origin.y + static_cast<std::int32_t>(size.height),
+                bubble.origin.y
+                    + static_cast<std::int32_t>(bubble.size.height));
+        }
+    }
+
+    // The bubble covers neither gauge, neither the bowl nor the ground.
+    // A bubble hiding what it is being said about is worse than none.
+    TEST(PetSceneTest, Draw_KeepsTheBubbleClearOfTheGauges)
+    {
+        const PetScene scene;
+
+        PetSnapshot talking = awake();
+        talking.saying = Saying::Hello;
+
+        const Drawn drawn = render(scene, kCanvas, talking);
+        const Rect bubble = bubbleOf(drawn);
+
+        // The happiness gauge, the lower of the two.
+        const Rect gauge = drawn.rects[3];
+        const Rect ground = drawn.rects[0];
+
+        EXPECT_GE(
+            bubble.origin.y,
+            gauge.origin.y + static_cast<std::int32_t>(gauge.size.height));
+        EXPECT_LE(
+            bubble.origin.y
+                + static_cast<std::int32_t>(bubble.size.height),
+            ground.origin.y);
+    }
+
+    // Four bubble pixels to a glyph pixel at the shipped window.
+    // So the words double when the window does, like the readout.
+    TEST(PetSceneTest, Draw_ScalesTheBubbleTextWithTheWindow)
+    {
+        const PetScene scene;
+
+        PetSnapshot talking = awake();
+        talking.saying = Saying::NiceDay;
+
+        const Drawn small = render(
+            scene, {.width = 128, .height = 128}, talking);
+        const Drawn shipped = render(scene, kCanvas, talking);
+        const Drawn large = render(
+            scene, {.width = 512, .height = 512}, talking);
+
+        // A unit too small for a scaled glyph still gets the smallest.
+        EXPECT_EQ(small.texts[0].scale, 1U);
+        EXPECT_EQ(shipped.texts[0].scale, 1U);
+        EXPECT_EQ(large.texts[0].scale, 2U);
     }
 
     // The window is a whole number of pixels to the unit.
