@@ -18,9 +18,20 @@ What this directory holds is the other thing: the art an application draws with,
 Production code loads it; no test does.
 A new test that wants a font asks `SyntheticFont` for one.
 
-## How an application picks it up
+## `antwika::gfx` compiles it in, and that is where the text you see comes from
 
-The same way it picks up an atlas, which is the only way this project ships a file beside a binary:
+This is the font `IRenderer::drawText()` draws, which makes it the font of every application in the tree.
+It gets there without being shipped anywhere: `antwika_embed_binary()` in
+[`cmake/AntwikaEmbedBinary.cmake`](../../cmake/AntwikaEmbedBinary.cmake)
+turns this file into a C++ source of bytes at configure time, and `antwika::gfx` parses that once and rasterises it onto the fixed cells `gfx::textSize()` measures.
+
+The reason it is embedded rather than bundled is layering: `antwika::gfx` cannot call `antwika::app::assetPath()`, since `app` depends on `gfx` and not the other way round, and it opens no files at all — the rule `PngReader` and `TtfReader` already follow.
+A library with no application to ask has nowhere to look, so the bytes have to arrive with the binary.
+See [`wiki/libraries/gfx.md`](../../wiki/libraries/gfx.md) for what that costs and what it buys.
+
+## How an application picks it up for itself
+
+An application wanting this font at a size the fixed cell has no answer for — or wanting a font of its own — bundles it the same way it picks up an atlas, which is the only way this project ships a file beside a binary:
 
 ```cmake
 antwika_bundle_app(TARGET antwika_my_app

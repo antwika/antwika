@@ -87,12 +87,20 @@ namespace antwika::gfx
          *
          * Every backend draws the same glyphs at the same metrics, which
          * is why gfx::textSize() can lay text out without asking anyone.
-         * There is no other font and none can be loaded.
+         * There is no other font and none can be loaded: the one there
+         * is arrives as bytes the build compiled in, and is rasterised
+         * onto the same fixed cells whatever it is drawn through.
+         *
+         * The glyphs are anti-aliased, so a pixel at the edge of one is
+         * drawn at a fraction of the colour's own alpha rather than at
+         * all or not at all.
+         * gfx::glyphPixelColor() is where that fraction is worked out,
+         * once, for every backend.
          * @param origin Top-left corner of the first glyph's cell.
          * @param text The characters to draw; one the font has no glyph
          * for draws as a blank cell of the same width.
          * @param scale Pixels per glyph pixel; zero draws nothing.
-         * @param color The colour to draw the lit pixels in.
+         * @param color The colour to draw the inked pixels in.
          */
         virtual void drawText(
             Point origin,
