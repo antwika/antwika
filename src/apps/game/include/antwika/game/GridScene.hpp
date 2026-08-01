@@ -80,6 +80,12 @@ namespace antwika::game
          * thing that moves between two ticks. Everything else is on a
          * cell, and a cell does not move.
          *
+         * **A paused snapshot is the same picture at every fraction**,
+         * since the sub-tick is ignored while SceneSnapshot::paused says
+         * the run is held. That is decided here rather than by whoever
+         * supplies the fraction, so a held walker is still wherever it
+         * is drawn from.
+         *
          * @param renderer Receives the drawing calls.
          * @param canvas The size of the area being drawn into.
          * @param snapshot What to draw.

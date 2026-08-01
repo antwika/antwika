@@ -27,6 +27,7 @@
 #include "antwika/game/GridExtent.hpp"
 #include "antwika/game/IsoProjection.hpp"
 #include "antwika/game/PathIndex.hpp"
+#include "antwika/game/PauseState.hpp"
 
 using antwika::app::FramePacedSource;
 using antwika::app::fakes::FakeFramePass;
@@ -117,6 +118,7 @@ namespace
         antwika::game::BuildingIndex built;
         TickEventRecorder recorder;
         AppModeState mode{AppMode::CityMap};
+        antwika::game::PauseState pause;
 
         auto script = scriptedSession();
         antwika::replay::ReplaySource inner(script);
@@ -141,6 +143,7 @@ namespace
                 .paths = paths,
                 .built = built,
                 .mode = mode,
+                .pause = pause,
                 .maxTicks = kMaxTicks,
                 .replayRecorder = recorder});
 
@@ -194,6 +197,7 @@ TEST(FrameRateDeterminismTest, TheWholeRunTakesAsLongWhicheverRateItDrewAt)
     antwika::game::BuildingIndex built;
     TickEventRecorder recorder;
     AppModeState mode{AppMode::CityMap};
+    antwika::game::PauseState pause;
 
     auto script = scriptedSession();
     antwika::replay::ReplaySource inner(script);
@@ -215,6 +219,7 @@ TEST(FrameRateDeterminismTest, TheWholeRunTakesAsLongWhicheverRateItDrewAt)
             .paths = paths,
             .built = built,
             .mode = mode,
+            .pause = pause,
             .maxTicks = kMaxTicks,
             .replayRecorder = recorder});
 

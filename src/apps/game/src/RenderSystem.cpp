@@ -28,7 +28,15 @@ namespace antwika::game
     {
         // Taken unconditionally, even in a mode that draws no grid.
         // So there is no branch here to want a mode combination for.
-        latest = snapshotOf(world, setup.paths, setup.camera, setup.extent);
+        // The pause is read here rather than in draw().
+        // A frame between two ticks then draws the tick's own answer.
+        // Which is the rule the whole snapshot exists to keep.
+        latest = snapshotOf(
+            world,
+            setup.paths,
+            setup.camera,
+            setup.extent,
+            setup.pause.paused());
 
         draw(antwika::animation::Progress());
     }

@@ -5,6 +5,7 @@
 #include <cstddef>
 #include <string_view>
 
+#include <antwika/animation/Progress.hpp>
 #include <antwika/ecs/World.hpp>
 #include <antwika/engine/Events.hpp>
 #include <antwika/event/Event.hpp>
@@ -25,16 +26,19 @@
 #include "antwika/game/BuildingKind.hpp"
 #include "antwika/game/Camera.hpp"
 #include "antwika/game/Cell.hpp"
+#include "antwika/game/Direction.hpp"
 #include "antwika/game/FrameMeter.hpp"
 #include "antwika/game/GridExtent.hpp"
 #include "antwika/game/GridScene.hpp"
 #include "antwika/game/IsoProjection.hpp"
 #include "antwika/game/MainMenuScene.hpp"
 #include "antwika/game/PathIndex.hpp"
+#include "antwika/game/PauseState.hpp"
 #include "antwika/game/RenderSystem.hpp"
 #include "antwika/game/SaveLoadScene.hpp"
 #include "antwika/game/TileAtlas.hpp"
 #include "antwika/game/UiOverlay.hpp"
+#include "antwika/game/Walker.hpp"
 #include "antwika/game/WorldMap.hpp"
 #include "antwika/game/WorldMapScene.hpp"
 #include "antwika/game/WorldMapState.hpp"
@@ -51,10 +55,14 @@ using antwika::game::PathIndex;
 using antwika::game::RenderSetup;
 using antwika::game::RenderSystem;
 using antwika::game::SaveLoadScene;
+using antwika::animation::Progress;
+using antwika::game::Direction;
 using antwika::game::roadTile;
+using antwika::game::walkerTile;
 using antwika::game::UiOverlay;
 using antwika::game::WorldMapScene;
 using antwika::game::WorldMapState;
+using antwika::gfx::Rect;
 using antwika::gfx::Size;
 using antwika::gfx::mocks::MockRenderer;
 using antwika::gfx::mocks::MockTexture;
@@ -67,6 +75,7 @@ using ::testing::NiceMock;
 using ::testing::Ref;
 using ::testing::Return;
 using ::testing::ReturnRef;
+using ::testing::SaveArg;
 
 namespace
 {
@@ -105,6 +114,7 @@ namespace
                 .built = built,
                 .camera = camera,
                 .extent = kExtent,
+                .pause = pause,
                 .overlay = overlay,
                 .hint = hint,
                 .menuScene = menuScene,
@@ -135,6 +145,9 @@ namespace
         // The subject of most of these is the grid.
         // So a run is put on it rather than clicking its way there.
         AppModeState mode{AppMode::CityMap};
+
+        // A run begins unpaused, so most of these leave it alone.
+        antwika::game::PauseState pause;
 
         // A small world, since only the mode branch is under test.
         WorldMapState cities{antwika::game::generateWorldMap(
@@ -367,4 +380,73 @@ TEST_F(RenderSystemTest, Update_WritesNoReadoutWithNoHintAtAll)
     EXPECT_CALL(renderer, drawText(_, _, _, _)).Times(0);
 
     system.update(world, 0);
+}
+
+// The three systems a pause stops include the one that walks.
+// So a held walker's whole ticks of its step stop with them.
+// The frames drawn between two ticks do not stop with them.
+// Drawing one from the sub-tick alone slides it and snaps it back.
+// Which is a walker that jitters for as long as the run is held.
+TEST_F(RenderSystemTest, Draw_HoldsAWalkerStillWhileTheRunIsPaused)
+{
+    const auto entity = world.create();
+    world.add<Cell>(entity, Cell{.x = 1, .y = 1});
+    world.add<antwika::game::Walker>(
+        entity,
+        antwika::game::Walker{
+            .facing = Direction::East,
+            .ticksUntilStep = 0,
+            .from = Cell{.x = 0, .y = 1}});
+    world.commit();
+
+    pause.hold();
+
+    RenderSystem system(setup());
+
+    Rect atTick{};
+    Rect between{};
+
+    EXPECT_CALL(renderer, drawTexture(_, _, _, _)).Times(AnyNumber());
+    EXPECT_CALL(
+        renderer,
+        drawTexture(Ref(atlas), walkerTile(Direction::East), _, _))
+        .WillOnce(SaveArg<2>(&atTick))
+        .WillOnce(SaveArg<2>(&between));
+
+    system.update(world, 0);
+    system.draw(Progress(1, 2));
+
+    EXPECT_EQ(between, atTick);
+}
+
+// The same walker, the same two frames, with nothing holding it.
+// So the pause is what the difference is down to.
+TEST_F(RenderSystemTest, Draw_SlidesAWalkerWhileTheRunIsNotPaused)
+{
+    const auto entity = world.create();
+    world.add<Cell>(entity, Cell{.x = 1, .y = 1});
+    world.add<antwika::game::Walker>(
+        entity,
+        antwika::game::Walker{
+            .facing = Direction::East,
+            .ticksUntilStep = 0,
+            .from = Cell{.x = 0, .y = 1}});
+    world.commit();
+
+    RenderSystem system(setup());
+
+    Rect atTick{};
+    Rect between{};
+
+    EXPECT_CALL(renderer, drawTexture(_, _, _, _)).Times(AnyNumber());
+    EXPECT_CALL(
+        renderer,
+        drawTexture(Ref(atlas), walkerTile(Direction::East), _, _))
+        .WillOnce(SaveArg<2>(&atTick))
+        .WillOnce(SaveArg<2>(&between));
+
+    system.update(world, 0);
+    system.draw(Progress(1, 2));
+
+    EXPECT_NE(between, atTick);
 }

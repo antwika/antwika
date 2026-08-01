@@ -21,6 +21,7 @@
 #include "antwika/game/Game.hpp"
 #include "antwika/game/GridExtent.hpp"
 #include "antwika/game/PathIndex.hpp"
+#include "antwika/game/PauseState.hpp"
 
 using antwika::event::Event;
 using antwika::event::mocks::MockEventSink;
@@ -55,6 +56,7 @@ namespace
         // Both runs start in the same mode, which is the point:
         // nothing about being a replay may change what a click means.
         AppModeState mode{AppMode::CityMap};
+        antwika::game::PauseState pause;
 
         return antwika::game::bootstrap(
                    antwika::game::GameConfig{
@@ -67,6 +69,7 @@ namespace
                        .paths = paths,
                        .built = built,
                        .mode = mode,
+                       .pause = pause,
                        .maxTicks = kMaxTicks})
             .state;
     }

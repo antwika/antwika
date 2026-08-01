@@ -22,6 +22,7 @@
 #include "antwika/game/GameSummary.hpp"
 #include "antwika/game/GridExtent.hpp"
 #include "antwika/game/PathIndex.hpp"
+#include "antwika/game/PauseState.hpp"
 #include "antwika/game/SaveGame.hpp"
 #include "antwika/game/UiCanvas.hpp"
 #include "antwika/game/UiOverlay.hpp"
@@ -142,6 +143,20 @@ namespace antwika::game
          * as AppMode::CityMap rather than clicking its way there.
          */
         AppModeState &mode;
+
+        /**
+         * @brief Whether the run is held still, toggled by the tick path.
+         *
+         * Passed in rather than created here for the camera's reason
+         * again: a renderer built before this call has to read it, since
+         * a walker slides between two cells over frames a pause does not
+         * stop -- see SceneSnapshot::paused.
+         *
+         * A fresh one is unpaused, and a city is entered paused whatever
+         * state this arrives in, since CityEntrySink holds it rather
+         * than toggling it.
+         */
+        PauseState &pause;
 
         /**
          * @brief Extra systems registered into an "observe" phase.

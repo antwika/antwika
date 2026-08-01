@@ -47,6 +47,24 @@ TEST(SceneSnapshotTest, SnapshotOf_CarriesTheCameraAndExtentThrough)
     EXPECT_EQ(snapshot.extent, kExtent);
 }
 
+// The pause is simulation state a picture reads, like the camera.
+// A held walker is drawn where its step got to and no further.
+// So a scene has to be told, and this is what tells it.
+TEST(SceneSnapshotTest, SnapshotOf_CarriesThePauseThrough)
+{
+    NiceMock<MockLogger> logger;
+    World world(logger);
+    const PathIndex paths;
+
+    const auto running = snapshotOf(world, paths, Camera(), kExtent);
+    const auto held = snapshotOf(world, paths, Camera(), kExtent, true);
+
+    // Defaulted to the state a run begins in.
+    EXPECT_FALSE(running.paused);
+    EXPECT_TRUE(held.paused);
+    EXPECT_NE(running, held);
+}
+
 TEST(SceneSnapshotTest, SnapshotOf_IsEmptyForAnEmptyWorld)
 {
     NiceMock<MockLogger> logger;

@@ -14,7 +14,8 @@ namespace antwika::game
         const World &world,
         const PathIndex &paths,
         const Camera &camera,
-        GridExtent extent)
+        GridExtent extent,
+        bool paused)
     {
         SceneSnapshot snapshot{
             .camera = camera,
@@ -22,6 +23,7 @@ namespace antwika::game
             .paths = {},
             .walkers = {},
             .buildings = {},
+            .paused = paused,
             .ghost = {},
             .hover = {}};
 

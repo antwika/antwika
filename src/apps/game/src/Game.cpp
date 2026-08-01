@@ -105,7 +105,9 @@ namespace antwika::game
         // A city is entered paused, whichever screen it is reached from.
         // So a grid appearing is not a city that starts running at you.
         // The way out is the bar's pause button, as it always was.
-        PauseState pause;
+        // Owned by the caller, as the camera and the mode are.
+        // A renderer built before this call has to read it too.
+        PauseState &pause = config.pause;
         CityEntrySink cityEntry(mode, pause);
         PauseGatedSystem pausedWalkers(gatedWalkers, pause);
         PauseGatedSystem pausedBuildings(gatedBuildings, pause);
