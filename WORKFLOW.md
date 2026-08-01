@@ -57,8 +57,11 @@ Each agent's brief must state, explicitly:
 - that it must read `CLAUDE.md` and `docs/STYLE_GUIDE.md` before writing code;
 - the verification command it must leave passing;
 - **a time limit**, expressed as a tool-call budget and a wall-clock instruction, with the standing rule that an agent out of budget reports what it has rather than pressing on;
-- the instruction to append what it learned to `LESSONS.md` **in its own worktree**, so the merge brings the lesson along with the change;
-- the instruction to write findings to a file as it goes rather than holding them until its final message (see the first entry in `LESSONS.md` for why).
+- the instruction to write a running report to a scratch file **outside the repository**, updated as it works rather than held until its final message (see "Running agents" in `LESSONS.md` for why), so an interrupted agent still leaves its findings behind.
+
+**No implementer may edit `LESSONS.md` itself.**
+It is a single-writer file, written by the orchestrator in phase 5 from the agents' reports.
+This is the one-file rule applied to the loop's own bookkeeping: six agents each appending a lesson would be six merge conflicts, and the rule that forbids that for source has no reason to spare documentation.
 
 An agent that cannot finish must leave its worktree building and its branch committed, and say so.
 A half-finished branch that compiles is recoverable by the next iteration; a broken one costs more than it saved.
