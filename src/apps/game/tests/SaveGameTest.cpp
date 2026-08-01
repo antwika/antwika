@@ -28,6 +28,7 @@ using antwika::game::GameState;
 using antwika::game::GameSummary;
 using antwika::game::GridExtent;
 using antwika::game::kSaveFormatVersion;
+using antwika::game::kTicksPerStep;
 using antwika::replay::kSchemaVersionKey;
 using antwika::game::PathIndex;
 using antwika::game::pathIndexOf;
@@ -218,6 +219,27 @@ TEST(SaveGameTest, RejectsACoordinateOutsideAnInt32)
 {
     auto encoded = saveGameToJson(populated());
     encoded["paths"].at(0)["x"] = 5'000'000'000LL;
+
+    EXPECT_THROW((void)saveGameFromJson(encoded), SaveFormatError);
+}
+
+// The largest phase a walker is ever in is kTicksPerStep - 1.
+// WalkerSystem writes that and counts it down to zero.
+// So a file above it names a walker no run ever produced.
+TEST(SaveGameTest, RejectsAStepPhaseNoWalkerCouldBeIn)
+{
+    auto encoded = saveGameToJson(populated());
+    encoded["walkers"].at(0)["ticksUntilStep"] = kTicksPerStep;
+
+    EXPECT_THROW((void)saveGameFromJson(encoded), SaveFormatError);
+}
+
+// The decode is get<std::uint8_t>(), and nlohmann narrows in silence.
+// So a schema capped at what an int32 holds let 256 through as 0.
+TEST(SaveGameTest, RejectsAStepPhaseThatWouldNarrowToAnotherNumber)
+{
+    auto encoded = saveGameToJson(populated());
+    encoded["walkers"].at(0)["ticksUntilStep"] = 256;
 
     EXPECT_THROW((void)saveGameFromJson(encoded), SaveFormatError);
 }

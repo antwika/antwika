@@ -93,6 +93,23 @@ namespace antwika::game
             return shape;
         } // GCOVR_EXCL_LINE
 
+        // Every other integer here is capped at what its C++ type holds.
+        // This one is capped tighter still, and deliberately.
+        // WalkerSystem writes kTicksPerStep - 1 and counts it to zero.
+        // So a phase at or above it is no state a run ever reaches.
+        // SceneSnapshot works out kTicksPerStep - 1 - this, which underflows.
+        // The decode is get<std::uint8_t>(), and nlohmann narrows quietly.
+        // So a cap at what an int32 holds let 256 read back as zero.
+        // Refusing is refusing a corrupt file, not merely a narrowed one.
+        nlohmann::json stepPhaseShape()
+        {
+            nlohmann::json shape;
+            shape["type"] = "integer";
+            shape["minimum"] = 0;
+            shape["maximum"] = kTicksPerStep - 1;
+            return shape;
+        } // GCOVR_EXCL_LINE
+
         // "facing" is a string here rather than a schema enum.
         // An unknown name is refused by directionFromName() instead.
         // That way the message holds the name it did not know.
@@ -113,7 +130,7 @@ namespace antwika::game
             shape["properties"]["kind"]["type"] = "string";
             shape["properties"]["carried"] = signedCountShape();
             shape["properties"]["stepsUntilHome"] = signedCountShape();
-            shape["properties"]["ticksUntilStep"] = signedCountShape();
+            shape["properties"]["ticksUntilStep"] = stepPhaseShape();
             shape["properties"]["home"] = linkShape();
             return shape;
         }
