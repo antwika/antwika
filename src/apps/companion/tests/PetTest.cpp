@@ -1,4 +1,5 @@
 #include <cstdint>
+#include <set>
 
 #include <gtest/gtest.h>
 
@@ -6,12 +7,14 @@
 
 #include "antwika/companion/CompanionError.hpp"
 #include "antwika/companion/Pet.hpp"
+#include "antwika/companion/Saying.hpp"
 
 using antwika::companion::CompanionError;
 using antwika::companion::kPesterCost;
 using antwika::companion::Pet;
 using antwika::companion::PetConfig;
 using antwika::companion::PetState;
+using antwika::companion::Saying;
 using antwika::time::Tick;
 
 namespace
@@ -42,6 +45,25 @@ namespace
         .hungerPeriodTicks = 1000,
         .starvePeriodTicks = 1000,
         .restPeriodTicks = 2,
+        .hungerMax = 4,
+        .hungerThreshold = 2,
+        .feedRelief = 2,
+        .feedJoy = 1,
+        .disturbCost = 2,
+        .happinessMax = 6,
+        .happinessStart = 4};
+
+    // Something to say every third tick, held for two of them.
+    // Both hunger periods are pushed out of reach, and the day is long.
+    // So idle chatter is the only thing that ever comes up here.
+    constexpr PetConfig kChatty{
+        .dayTicks = 100,
+        .nightTicks = 100,
+        .hungerPeriodTicks = 1000,
+        .starvePeriodTicks = 1000,
+        .restPeriodTicks = 1000,
+        .sayingTicks = 2,
+        .chatterPeriodTicks = 3,
         .hungerMax = 4,
         .hungerThreshold = 2,
         .feedRelief = 2,
@@ -83,6 +105,9 @@ namespace
         EXPECT_THROW(
             Pet(PetConfig{.starvePeriodTicks = 0}), CompanionError);
         EXPECT_THROW(Pet(PetConfig{.restPeriodTicks = 0}), CompanionError);
+        EXPECT_THROW(Pet(PetConfig{.sayingTicks = 0}), CompanionError);
+        EXPECT_THROW(
+            Pet(PetConfig{.chatterPeriodTicks = 0}), CompanionError);
         EXPECT_THROW(Pet(PetConfig{.hungerMax = 0}), CompanionError);
         EXPECT_THROW(Pet(PetConfig{.happinessMax = 0}), CompanionError);
         EXPECT_THROW(Pet(PetConfig{.happinessStart = 0}), CompanionError);
@@ -361,6 +386,152 @@ namespace
         EXPECT_EQ(pet.pesters(), 0U);
         EXPECT_EQ(pet.happiness(), 0U);
         EXPECT_EQ(pet.state(), PetState::Perished);
+    }
+
+    TEST(PetTest, Saying_StartsWithNothingToSay)
+    {
+        const Pet pet(kChatty);
+
+        EXPECT_EQ(pet.saying(), Saying::None);
+        EXPECT_EQ(pet.sayingTicksLeft(), 0U);
+    }
+
+    TEST(PetTest, Saying_FindsSomethingToSayEveryChatterPeriod)
+    {
+        Pet pet(kChatty);
+
+        stepTimes(pet, 2);
+        EXPECT_EQ(pet.saying(), Saying::None);
+
+        stepTimes(pet, 1);
+        EXPECT_NE(pet.saying(), Saying::None);
+        EXPECT_EQ(pet.sayingTicksLeft(), kChatty.sayingTicks);
+    }
+
+    // A bubble is shown for a while and then goes away.
+    // The tick it goes away on is the one the countdown runs out on.
+    TEST(PetTest, Saying_ForgetsWhatItSaidAfterAWhile)
+    {
+        Pet pet(kChatty);
+
+        stepTimes(pet, 4);
+        EXPECT_NE(pet.saying(), Saying::None);
+        EXPECT_EQ(pet.sayingTicksLeft(), 1U);
+
+        stepTimes(pet, 1);
+        EXPECT_EQ(pet.saying(), Saying::None);
+        EXPECT_EQ(pet.sayingTicksLeft(), 0U);
+
+        // And the next chatter period finds it something else.
+        stepTimes(pet, 1);
+        EXPECT_NE(pet.saying(), Saying::None);
+    }
+
+    // A need is worth saying, where idle chatter is only worth having.
+    TEST(PetTest, Saying_AsksForFoodWhileItIsHungry)
+    {
+        PetConfig config = kChatty;
+        config.hungerPeriodTicks = 1;
+
+        Pet pet(config);
+        stepTimes(pet, 3);
+
+        EXPECT_TRUE(pet.hungry());
+        EXPECT_EQ(pet.saying(), Saying::FeedMe);
+    }
+
+    TEST(PetTest, Saying_MurmursInItsSleepInstead)
+    {
+        PetConfig config = kChatty;
+        config.dayTicks = 2;
+
+        Pet pet(config);
+        stepTimes(pet, 3);
+
+        EXPECT_EQ(pet.state(), PetState::Asleep);
+        EXPECT_EQ(pet.saying(), Saying::Zzz);
+    }
+
+    // Each of the three things a tap can mean has an answer.
+    // Which one is said is decided where the tap is, and nowhere else.
+    TEST(PetTest, Tap_IsAnsweredByWhatTheTapMeant)
+    {
+        PetConfig config = kChatty;
+        config.hungerPeriodTicks = 1;
+
+        Pet fed(config);
+        stepTimes(fed, 2);
+        fed.tap();
+        EXPECT_EQ(fed.meals(), 1U);
+        EXPECT_EQ(fed.saying(), Saying::Yum);
+
+        Pet pestered(kChatty);
+        pestered.tap();
+        EXPECT_EQ(pestered.pesters(), 1U);
+        EXPECT_EQ(pestered.saying(), Saying::NotHungry);
+
+        PetConfig nightly = kChatty;
+        nightly.dayTicks = 2;
+
+        Pet woken(nightly);
+        stepTimes(woken, 2);
+        woken.tap();
+        EXPECT_EQ(woken.disturbances(), 1U);
+        EXPECT_EQ(woken.saying(), Saying::LetMeSleep);
+    }
+
+    // Nothing about a perished companion ever changes again.
+    // A bubble over a grave would be the last thing one did.
+    TEST(PetTest, Saying_SaysNothingOnceItHasPerished)
+    {
+        PetConfig fragile = kChatty;
+        fragile.dayTicks = 2;
+        fragile.happinessStart = 2;
+
+        Pet pet(fragile);
+        stepTimes(pet, 2);
+        pet.tap();
+
+        EXPECT_EQ(pet.state(), PetState::Perished);
+        EXPECT_EQ(pet.saying(), Saying::None);
+        EXPECT_EQ(pet.sayingTicksLeft(), 0U);
+    }
+
+    // Idle chatter is a hash of the tick rather than a carousel.
+    // So a session hears more than one line without a generator in it.
+    TEST(PetTest, Saying_DrawsItsIdleLinesFromMoreThanOne)
+    {
+        Pet pet(kChatty);
+        std::set<Saying> heard;
+
+        for (Tick step = 0; step < 60; ++step)
+        {
+            pet.step();
+
+            if (pet.saying() != Saying::None)
+            {
+                heard.insert(pet.saying());
+            }
+        }
+
+        EXPECT_GT(heard.size(), 1U);
+    }
+
+    // The whole reason the bubble is Pet's and not the renderer's.
+    // Two companions stepped the same number of times say the same thing.
+    // So a replay says it on the same tick as the run it was recorded on.
+    TEST(PetTest, Saying_IsAFunctionOfTheTickCountAlone)
+    {
+        Pet first(kChatty);
+        Pet second(kChatty);
+
+        for (Tick step = 0; step < 40; ++step)
+        {
+            first.step();
+            second.step();
+
+            ASSERT_EQ(first.saying(), second.saying());
+        }
     }
 
     // The shipped numbers, rather than the readable ones above.

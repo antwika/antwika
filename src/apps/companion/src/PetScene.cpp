@@ -14,6 +14,9 @@
 #include <antwika/gfx/Glyphs.hpp>
 #include <antwika/gfx/Point.hpp>
 #include <antwika/gfx/Rect.hpp>
+#include <antwika/gfx/TextLayout.hpp>
+
+#include "antwika/companion/Saying.hpp"
 
 namespace antwika::companion
 {
@@ -49,6 +52,49 @@ namespace antwika::companion
         constexpr std::string_view kWokenWord = "asleep, woken";
         constexpr std::string_view kGoneWord = "gone";
 
+        // Every line the companion may say, in Saying's own order.
+        // One table in one place, and this is the place.
+        // The words are presentation, where a Saying is what is decided.
+        // antwika::i18n is deliberately not used here.
+        // The readout below is English written into this same file.
+        // A catalogue holding one and not the other translates by halves.
+        // It would also leave two places to add a line to.
+        // Moving both is a change worth making on its own.
+        constexpr std::array<std::string_view, 10> kSayingWords{
+            "",
+            "hello!",
+            "bored...",
+            "nice day",
+            "la la la",
+            "feed me!",
+            "yum yum!",
+            "im full!",
+            "shhh!",
+            "zzz..."};
+
+        static_assert(
+            kSayingWords.size()
+            == static_cast<std::size_t>(Saying::Zzz) + 1);
+
+        // Where the bubble sits, in the layout's own units.
+        // Left of the animal, under the gauges and over the bowl.
+        // So it covers nothing that says anything.
+        constexpr std::int32_t kBubbleX = 1;
+        constexpr std::int32_t kBubbleY = 7;
+        constexpr std::uint32_t kBubbleUnitsWide = 10;
+        constexpr std::uint32_t kBubbleUnitsHigh = 5;
+        constexpr std::uint32_t kBubbleTailUnits = 2;
+        constexpr std::uint32_t kBubblePadUnits = 1;
+
+        // The longest line the table above holds.
+        // The text is scaled to fit this rather than to fit each line.
+        // So the bubble is one size and the words one height throughout.
+        // A window smaller than main.cpp's cannot give it that room.
+        // The longest lines overhang their bubble there.
+        // Which is where the readout already overhangs the grid.
+        // So neither is clamped, and both stay one arithmetic rule.
+        constexpr std::uint32_t kSayingChars = 8;
+
         constexpr Tick kBreatheFrameTicks = kTicksPerSecond / 2;
         constexpr Tick kEyesOpenTicks = 3 * kTicksPerSecond;
         constexpr Tick kEyesShutTicks = kTicksPerSecond / 5;
@@ -75,6 +121,8 @@ namespace antwika::companion
             Color hungerFill;
             Color happinessFill;
             Color text;
+            Color bubble;
+            Color bubbleText;
         };
 
         constexpr Palette kDay{
@@ -87,7 +135,9 @@ namespace antwika::companion
             .gauge = {.red = 42, .green = 46, .blue = 58},
             .hungerFill = {.red = 226, .green = 118, .blue = 78},
             .happinessFill = {.red = 118, .green = 210, .blue = 138},
-            .text = {.red = 246, .green = 250, .blue = 244}};
+            .text = {.red = 246, .green = 250, .blue = 244},
+            .bubble = {.red = 250, .green = 248, .blue = 238},
+            .bubbleText = {.red = 42, .green = 46, .blue = 58}};
 
         constexpr Palette kNight{
             .sky = {.red = 24, .green = 30, .blue = 62},
@@ -99,7 +149,9 @@ namespace antwika::companion
             .gauge = {.red = 30, .green = 34, .blue = 44},
             .hungerFill = {.red = 150, .green = 78, .blue = 54},
             .happinessFill = {.red = 78, .green = 140, .blue = 96},
-            .text = {.red = 196, .green = 206, .blue = 226}};
+            .text = {.red = 196, .green = 206, .blue = 226},
+            .bubble = {.red = 206, .green = 212, .blue = 232},
+            .bubbleText = {.red = 24, .green = 30, .blue = 62}};
 
         // A perished companion keeps its own palette, not the night's.
         // So the picture still says what happened at noon the day after.
@@ -113,7 +165,9 @@ namespace antwika::companion
             .gauge = {.red = 34, .green = 34, .blue = 40},
             .hungerFill = {.red = 96, .green = 96, .blue = 102},
             .happinessFill = {.red = 96, .green = 96, .blue = 102},
-            .text = {.red = 182, .green = 182, .blue = 188}};
+            .text = {.red = 182, .green = 182, .blue = 188},
+            .bubble = {.red = 150, .green = 150, .blue = 156},
+            .bubbleText = {.red = 40, .green = 40, .blue = 46}};
 
         [[nodiscard]] std::optional<Layout> layoutFor(const Size canvas)
         {
@@ -236,6 +290,77 @@ namespace antwika::companion
                 stateWord(snapshot),
                 scale,
                 palette.text);
+        }
+
+        // Scaled to the longest line rather than to the one being said.
+        // A unit too small for even the smallest glyphs still gets them.
+        [[nodiscard]] std::uint32_t bubbleScale(const Layout &layout)
+        {
+            const auto room =
+                (kBubbleUnitsWide - 2 * kBubblePadUnits) * layout.unit;
+            const auto scale =
+                room / (kSayingChars * antwika::gfx::kGlyphAdvance);
+
+            if (scale == 0)
+            {
+                return 1;
+            }
+
+            return scale;
+        }
+
+        // Two rectangles and a line: the bubble and its tail.
+        // The tail points at the animal standing to the right of it.
+        // What it says arrives as a Saying rather than as words.
+        // So deciding to speak and saying something are one decision.
+        void drawBubble(
+            IRenderer &renderer,
+            const Layout &layout,
+            const Palette &palette,
+            const Saying saying)
+        {
+            renderer.drawRect(
+                box(
+                    layout,
+                    kBubbleX,
+                    kBubbleY,
+                    kBubbleUnitsWide,
+                    kBubbleUnitsHigh),
+                palette.bubble);
+            renderer.drawRect(
+                box(
+                    layout,
+                    kBubbleX
+                        + static_cast<std::int32_t>(
+                            kBubbleUnitsWide - kBubbleTailUnits),
+                    kBubbleY + static_cast<std::int32_t>(kBubbleUnitsHigh),
+                    kBubbleTailUnits,
+                    1),
+                palette.bubble);
+
+            const std::string_view words =
+                kSayingWords[static_cast<std::size_t>(saying)];
+            const auto scale = bubbleScale(layout);
+            const auto text = antwika::gfx::textSize(words, scale);
+            const Point corner = point(layout, kBubbleX, kBubbleY);
+            const auto width = static_cast<std::int32_t>(
+                kBubbleUnitsWide * layout.unit);
+            const auto height = static_cast<std::int32_t>(
+                kBubbleUnitsHigh * layout.unit);
+
+            renderer.drawText(
+                Point{
+                    .x = corner.x
+                         + (width
+                            - static_cast<std::int32_t>(text.width))
+                               / 2,
+                    .y = corner.y
+                         + (height
+                            - static_cast<std::int32_t>(text.height))
+                               / 2},
+                words,
+                scale,
+                palette.bubbleText);
         }
 
         void drawGauge(
@@ -432,6 +557,13 @@ namespace antwika::companion
             {
                 drawBowl(renderer, *layout, palette);
             }
+        }
+
+        // Over the animal rather than under it.
+        // A bubble it stands in front of is somebody else talking.
+        if (snapshot.saying != Saying::None)
+        {
+            drawBubble(renderer, *layout, palette, snapshot.saying);
         }
 
         // Last, so anything drawn over the ground stays behind it.

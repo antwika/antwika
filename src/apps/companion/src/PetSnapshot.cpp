@@ -10,6 +10,7 @@ namespace antwika::companion
             .night = pet.night(),
             .hungry = pet.hungry(),
             .disturbed = pet.disturbed(),
+            .saying = pet.saying(),
             .hunger = pet.hunger(),
             .hungerMax = pet.settings().hungerMax,
             .happiness = pet.happiness(),

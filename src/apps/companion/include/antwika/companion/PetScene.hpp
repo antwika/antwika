@@ -60,6 +60,13 @@ namespace antwika::companion
      * leaves a margin rather than stretching anything, and a canvas too
      * small to give a unit a pixel draws the sky and stops.
      *
+     * A speech bubble appears beside the animal whenever the snapshot
+     * carries a Saying, and the words it holds are this file's table
+     * rather than anything the simulation knows. Which line comes up
+     * and how long it stays are `Pet`'s decisions, so the bubble adds
+     * no state here: a scene that counted a bubble down would be one
+     * holding time a replay has to reproduce.
+     *
      * The readout says in words what the gauges say in bars, plus the
      * one thing no bar can: whether the companion is awake, asleep or
      * gone. Every character of it comes off the snapshot, so it reports
