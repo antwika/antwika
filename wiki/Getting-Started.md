@@ -33,7 +33,8 @@ To iterate on one module, build and run only its test binary:
 ```sh
 cmake --build build --target antwika_replay_tests -j24
 ctest --test-dir build -R antwika_replay_tests --output-on-failure
-build/bin/antwika_replay_tests --gtest_filter='ReplayReaderTest.*'
+build/bin/antwika_replay/antwika_replay_tests \
+    --gtest_filter='ReplayReaderTest.*'
 ```
 
 ## Choosing a graphics and input backend

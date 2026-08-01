@@ -214,6 +214,9 @@ A new app follows the rule rather than this exception.
 - `antwika_bundle_app(TARGET <target> [ASSETS <path>...])` from the same file is an application's counterpart, and every application under `src/apps/` calls it.
   It gives the executable a directory of its own under `bin/`, copies the named assets in beside it, and on MinGW copies the runtime DLLs in too.
   An asset is found at run time with `antwika::app::assetPath()`, never by a path baked in at configure time: that path is the building machine's, and a cross build's building machine is never the one that runs the result.
+- `antwika_bundle_test(TARGET <target>)` from the same file ends every `tests/CMakeLists.txt`, in place of `include(GoogleTest)` and `gtest_discover_tests()`.
+  It puts the suite in the directory of the module that owns it -- the target's own name with the trailing `_tests` taken off -- and registers its cases with CTest, so an application's suite sits beside the executable and a library's gets a directory of the library's name.
+  A test target's name therefore has to end in `_tests`, which is what says which module owns it.
 
 ## Python (checker scripts)
 

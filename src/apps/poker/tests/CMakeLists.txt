@@ -55,5 +55,4 @@ target_link_libraries(antwika_poker_tests
         gtest::gtest
 )
 
-include(GoogleTest)
-gtest_discover_tests(antwika_poker_tests)
+antwika_bundle_test(TARGET antwika_poker_tests)

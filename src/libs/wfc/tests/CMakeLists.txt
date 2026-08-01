@@ -34,5 +34,4 @@ target_link_libraries(antwika_wfc_tests
         gtest::gtest
 )
 
-include(GoogleTest)
-gtest_discover_tests(antwika_wfc_tests)
+antwika_bundle_test(TARGET antwika_wfc_tests)

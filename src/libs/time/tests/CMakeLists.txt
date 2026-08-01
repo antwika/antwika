@@ -17,5 +17,4 @@ target_link_libraries(antwika_time_tests
         gtest::gtest
 )
 
-include(GoogleTest)
-gtest_discover_tests(antwika_time_tests)
+antwika_bundle_test(TARGET antwika_time_tests)

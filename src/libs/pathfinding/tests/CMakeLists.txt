@@ -18,5 +18,4 @@ target_link_libraries(antwika_pathfinding_tests
         gtest::gtest
 )
 
-include(GoogleTest)
-gtest_discover_tests(antwika_pathfinding_tests)
+antwika_bundle_test(TARGET antwika_pathfinding_tests)

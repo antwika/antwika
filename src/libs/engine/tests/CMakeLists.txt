@@ -16,5 +16,4 @@ target_link_libraries(antwika_engine_tests
         gtest::gtest
 )
 
-include(GoogleTest)
-gtest_discover_tests(antwika_engine_tests)
+antwika_bundle_test(TARGET antwika_engine_tests)

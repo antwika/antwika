@@ -94,7 +94,8 @@ Set `SDL_VIDEODRIVER=dummy` to run the SDL build with no display, or use `xvfb-r
 
 ```sh
 ctest --test-dir build -R antwika_replay_tests --output-on-failure
-build/bin/antwika_replay_tests --gtest_filter='ReplayReaderTest.*'
+build/bin/antwika_replay/antwika_replay_tests \
+    --gtest_filter='ReplayReaderTest.*'
 ```
 
 **Run the apps:**
@@ -123,7 +124,10 @@ build/bin/antwika_atlas_editor/antwika_atlas_editor \
 Two applications ship an `atlas.png` and three a `demo.json`, so one shared `bin/` was one atlas and one demo replay between them the moment either had to sit beside its binary.
 An application finds those files through `antwika::app::assetPath()`, which asks the operating system where the running executable is (`/proc/self/exe`, `GetModuleFileNameW`) rather than reading the working directory -- so starting one from anywhere still works, and `antwika::app` is the one place under `src/` that names an operating system.
 What this replaces is a path baked in at configure time, which was the *building* machine's path: right on the machine that built it, and a directory that does not exist on any other, so every cross-built executable that opened anything died on its first line.
-Test binaries stay directly in `bin/`, since they open nothing.
+**A test binary goes to the directory of the module that owns it**, put there by `antwika_bundle_test()` in the same file: `bin/antwika_companion/antwika_companion_tests` beside the application it covers, and `bin/antwika_replay/antwika_replay_tests` in a directory of the library's own.
+That directory is the target's own name with the trailing `_tests` taken off rather than a second argument, so the name and the directory cannot disagree, and a target not following the convention is refused at configure time rather than landing somewhere surprising.
+The same function registers the cases with CTest, because moving a binary and saying where it went are one decision, and leaving the second in every `tests/CMakeLists.txt` is exactly the drift one home for the rule prevents.
+Test binaries still open nothing, so what a directory each buys is a `bin/` a reader can navigate rather than anything a binary finds beside it.
 
 `antwika_companion` opens a 128x128 window holding one animal with two needs: tap the window to feed it when it is hungry, and leave it alone while it is asleep.
 Violating either costs it happiness, and happiness reaching zero is an ordinary, tested state it never leaves.
