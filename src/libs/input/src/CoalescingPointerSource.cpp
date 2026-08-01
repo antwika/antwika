@@ -7,7 +7,7 @@
 namespace antwika::input
 {
 
-    CoalescingPointerSource::CoalescingPointerSource(ITickSource &inner)
+    CoalescingPointerSource::CoalescingPointerSource(ITickEventSource &inner)
         : inner(inner)
     {
     }

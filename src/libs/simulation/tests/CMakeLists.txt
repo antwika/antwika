@@ -1,7 +1,7 @@
 find_package(GTest REQUIRED)
 
 # antwika::replay is linked by the tests and not by the library: a test
-# of the loop needs some ITickSource to script, and ReplaySource is the
+# of the loop needs some ITickEventSource to script, and ReplaySource is the
 # one every application already uses for that.
 # The dependency runs the same way it does everywhere else -- these
 # tests link the format, the library under test does not.

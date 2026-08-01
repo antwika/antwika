@@ -13,7 +13,7 @@
 #include <antwika/event/IEventSink.hpp>
 #include <antwika/event/ITickEventSink.hpp>
 #include <antwika/log/ILogger.hpp>
-#include <antwika/simulation/ITickSource.hpp>
+#include <antwika/simulation/ITickEventSource.hpp>
 #include <antwika/time/Tick.hpp>
 
 #include "antwika/life/Board.hpp"
@@ -30,7 +30,7 @@ namespace antwika::life
     using antwika::event::IEventSink;
     using antwika::event::ITickEventSink;
     using antwika::log::ILogger;
-    using antwika::simulation::ITickSource;
+    using antwika::simulation::ITickEventSource;
 
     /**
      * @brief Pick the systems that watch each tick of a run.
@@ -129,7 +129,7 @@ namespace antwika::life
         IEventSink &eventSink;
 
         /** @brief Supplies each tick's events, live or replayed. */
-        ITickSource &inputSource;
+        ITickEventSource &inputSource;
 
         /** @brief Number of columns in the board. */
         std::uint32_t width;

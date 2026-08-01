@@ -48,7 +48,7 @@ The shuffle is seeded from `RoomConfig` and `PolicyAgent` is a pure function of 
 `TableRenderSink` is registered *after* `PokerRoomSink`, since that is what steps the table.
 
 **Closing the window is input.**
-`WindowCloseSource` is an `ITickSource` decorator that appends `engine.stop` once the window has gone, so a close lands in a `--record` file like anything else.
+`WindowCloseSource` is an `ITickEventSource` decorator that appends `engine.stop` once the window has gone, so a close lands in a `--record` file like anything else.
 
 **The hand history derives from `StepOutcome`.**
 `TablePrinter` reads the blinds, the raise sizes and the uncalled bet off what the table reported, rather than recomputing the betting — otherwise it would be a second implementation of the rules, free to drift.

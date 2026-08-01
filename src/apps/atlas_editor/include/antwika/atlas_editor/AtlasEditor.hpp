@@ -10,7 +10,7 @@
 #include <antwika/gfx/Size.hpp>
 #include <antwika/input/IInputEventCodec.hpp>
 #include <antwika/log/ILogger.hpp>
-#include <antwika/simulation/ITickSource.hpp>
+#include <antwika/simulation/ITickEventSource.hpp>
 #include <antwika/time/Tick.hpp>
 
 #include "antwika/atlas_editor/EditorState.hpp"
@@ -26,7 +26,7 @@ namespace antwika::atlas_editor
     using antwika::gfx::Size;
     using antwika::input::IInputEventCodec;
     using antwika::log::ILogger;
-    using antwika::simulation::ITickSource;
+    using antwika::simulation::ITickEventSource;
 
     /**
      * @brief How big a sheet a session starts on when it was given no
@@ -79,7 +79,7 @@ namespace antwika::atlas_editor
         IEventSink &eventSink;
 
         /** @brief Supplies each tick's events, live or replayed. */
-        ITickSource &inputSource;
+        ITickEventSource &inputSource;
 
         /** @brief Decodes antwika::input's events. */
         const IInputEventCodec &codec;

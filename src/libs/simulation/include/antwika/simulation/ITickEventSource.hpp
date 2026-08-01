@@ -21,10 +21,10 @@ namespace antwika::simulation
      * it arrived on. Asking twice, or going back, is not a question any
      * of them can answer.
      */
-    class ITickSource
+    class ITickEventSource
     {
     public:
-        virtual ~ITickSource() = default;
+        virtual ~ITickEventSource() = default;
 
         /**
          * @brief Get the events that occurred on a given tick.

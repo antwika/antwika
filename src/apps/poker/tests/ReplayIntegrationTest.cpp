@@ -32,7 +32,7 @@
 #include <antwika/holdem/Blinds.hpp>
 #include <antwika/log/Level.hpp>
 #include <antwika/log/mocks/MockLogger.hpp>
-#include <antwika/simulation/ITickSource.hpp>
+#include <antwika/simulation/ITickEventSource.hpp>
 #include <antwika/replay/ReplayReader.hpp>
 #include <antwika/replay/ReplaySource.hpp>
 #include <antwika/replay/ReplayWriter.hpp>
@@ -63,7 +63,7 @@ using antwika::gfx::WindowEvent;
 using antwika::gfx::WindowId;
 using antwika::holdem::Blinds;
 using antwika::log::Level;
-using antwika::simulation::ITickSource;
+using antwika::simulation::ITickEventSource;
 using antwika::replay::ReplayReader;
 using antwika::replay::ReplaySource;
 using antwika::replay::ReplayWriter;
@@ -199,7 +199,7 @@ namespace
     };
 
     [[nodiscard]] Session runSession(
-        ITickSource &source, const WindowSetup *window = nullptr)
+        ITickEventSource &source, const WindowSetup *window = nullptr)
     {
         std::chrono::system_clock::time_point time{};
         FakeClock clock(time);
@@ -316,7 +316,7 @@ TEST(ReplayIntegrationTest, RecordedEventsHoldOnlyTheRoomsOwnInput)
 }
 
 // Closing the window is external input like any other.
-// It enters through the ITickSource, so it lands in the recording.
+// It enters through the ITickEventSource, so it lands in the recording.
 // Replaying that recording headlessly ends at the same point.
 // With the same chips, and no window involved at all.
 TEST(ReplayIntegrationTest, ReplayReproducesASessionEndedByClosingTheWindow)

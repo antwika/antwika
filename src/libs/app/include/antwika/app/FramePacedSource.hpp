@@ -5,7 +5,7 @@
 #include <vector>
 
 #include <antwika/event/Event.hpp>
-#include <antwika/simulation/ITickSource.hpp>
+#include <antwika/simulation/ITickEventSource.hpp>
 #include <antwika/time/ISleeper.hpp>
 #include <antwika/time/Tick.hpp>
 
@@ -15,7 +15,7 @@ namespace antwika::app
 {
 
     using antwika::event::Event;
-    using antwika::simulation::ITickSource;
+    using antwika::simulation::ITickEventSource;
     using antwika::time::ISleeper;
 
     /**
@@ -64,7 +64,7 @@ namespace antwika::app
      * in this project paces through, so a test asserts what was asked
      * for rather than spending the time.
      */
-    class FramePacedSource final : public ITickSource
+    class FramePacedSource final : public ITickEventSource
     {
     public:
         /**
@@ -79,7 +79,7 @@ namespace antwika::app
          * a tick nothing is drawn on is a pacing nobody could have meant.
          */
         FramePacedSource(
-            ITickSource &inner,
+            ITickEventSource &inner,
             IFramePass &pass,
             ISleeper &sleeper,
             FramePacing pacing);
@@ -104,7 +104,7 @@ namespace antwika::app
             antwika::time::Tick tick) override;
 
     private:
-        ITickSource &inner;
+        ITickEventSource &inner;
         IFramePass &pass;
         ISleeper &sleeper;
         FramePacing pacing;

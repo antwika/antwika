@@ -203,7 +203,7 @@ Drag with the left button held to toggle every cell the pointer crosses, one tog
 Holding the button also pauses the simulation, so the board stays still while you draw on it rather than evolving out from under the cursor; the cells you toggle still appear as you draw them, and the generations pick up again when you let go.
 Under the default `null` backend there is no window to draw into, so that build prints the board as ASCII instead, which is what keeps the app runnable in CI with no display present.
 Drawing is a write-only projection of the `World` and never feeds back into it.
-Closing the window enters the engine as an `engine.stop` event through the same `ITickSource` every other external input goes through, so a run ended by closing a window is recorded like any other input — and replaying that recording headlessly reaches the identical board.
+Closing the window enters the engine as an `engine.stop` event through the same `ITickEventSource` every other external input goes through, so a run ended by closing a window is recorded like any other input — and replaying that recording headlessly reaches the identical board.
 The mouse arrives the same way, as `input.pointer_down`/`input.pointer_move`/`input.pointer_up` events: what a `--record` run persists is the click, and which cell it toggled is derived from it again on replay.
 
 `apps/task_worker` is a third application, this time combining `antwika::ecs` with a new `antwika::scheduler` library: a fixed pool of `Worker` entities pulls tasks off a deterministic, priority-ordered, budget-bounded `antwika::scheduler::Scheduler`, submitted over time via a `task.submit` event and, optionally, chained to an earlier task with a dependency edge:
@@ -276,7 +276,7 @@ The same session also draws itself, through `antwika::gfx`: felt, the board, the
 Under the default `null` backend the window draws nothing, so the terminal run is exactly what it always was.
 A real backend needs a display — `SDL_VIDEODRIVER=dummy` or `xvfb-run` otherwise.
 
-Closing the window ends the session, and it does so as a `engine.stop` fed in through the `ITickSource` the loop already reads from, never by reaching into the loop.
+Closing the window ends the session, and it does so as a `engine.stop` fed in through the `ITickEventSource` the loop already reads from, never by reaching into the loop.
 That is what keeps drawing a write-only projection: a windowed run reaches the same chip counts as a headless one, and a session ended by closing the window replays under `null` to the same result.
 
 Money moving in and out is all a replay stores: `poker.deposit`, `poker.buy_in` and `poker.cash_out` events (JSON payloads `{"player":..,"amount":..}`).

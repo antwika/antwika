@@ -1,6 +1,6 @@
 # Running a simulation, which a replay is only one way to feed.
 # EngineLoop is the one code path a live run and a replayed one share,
-# and a live run is not a replay at all -- so the loop, the ITickSource
+# and a live run is not a replay at all -- so the loop, the ITickEventSource
 # seam it reads through and the pacing around it live here, and the file
 # format that can supply that seam lives in antwika::replay, which
 # depends on this library and never the other way round.
