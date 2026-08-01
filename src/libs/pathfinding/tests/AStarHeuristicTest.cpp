@@ -1,9 +1,11 @@
 #include <gtest/gtest.h>
 
 #include <cstdint>
+#include <limits>
 #include <vector>
 
 #include <antwika/pathfinding/AStar.hpp>
+#include <antwika/pathfinding/Cost.hpp>
 #include <antwika/pathfinding/NodeId.hpp>
 #include <antwika/pathfinding/PathfindingError.hpp>
 #include <antwika/pathfinding/SearchResult.hpp>
@@ -12,6 +14,7 @@
 namespace
 {
 
+    using antwika::pathfinding::Cost;
     using antwika::pathfinding::findPath;
     using antwika::pathfinding::nodeId;
     using antwika::pathfinding::NodeId;
@@ -94,6 +97,21 @@ TEST(AStarHeuristicTest, FindPath_ThrowsWhenANeighbourEstimateIsNegative)
     graph.addEdge(nodeId(1), nodeId(2), 1);
     graph.setHeuristic(nodeId(1), -1);
 
+    EXPECT_THROW(
+        static_cast<void>(findPath(graph, nodeId(0), nodeId(2))),
+        PathfindingError);
+}
+
+TEST(AStarHeuristicTest, FindPath_ThrowsWhenACostAndItsEstimateSumPastACost)
+{
+    constexpr Cost kMaxCost = std::numeric_limits<Cost>::max();
+
+    FakeGraph graph;
+    graph.addEdge(nodeId(0), nodeId(1), kMaxCost);
+    graph.addEdge(nodeId(1), nodeId(2), 1);
+    graph.setHeuristic(nodeId(1), 1);
+
+    // The route to node 1 fits, and its estimated total does not.
     EXPECT_THROW(
         static_cast<void>(findPath(graph, nodeId(0), nodeId(2))),
         PathfindingError);

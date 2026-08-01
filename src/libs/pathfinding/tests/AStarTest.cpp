@@ -1,8 +1,10 @@
 #include <gtest/gtest.h>
 
+#include <limits>
 #include <vector>
 
 #include <antwika/pathfinding/AStar.hpp>
+#include <antwika/pathfinding/Cost.hpp>
 #include <antwika/pathfinding/NodeId.hpp>
 #include <antwika/pathfinding/PathfindingError.hpp>
 #include <antwika/pathfinding/SearchResult.hpp>
@@ -11,6 +13,7 @@
 namespace
 {
 
+    using antwika::pathfinding::Cost;
     using antwika::pathfinding::findPath;
     using antwika::pathfinding::nodeId;
     using antwika::pathfinding::NodeId;
@@ -18,6 +21,8 @@ namespace
     using antwika::pathfinding::SearchOutcome;
     using antwika::pathfinding::SearchResult;
     using antwika::pathfinding::fakes::FakeGraph;
+
+    constexpr Cost kMaxCost = std::numeric_limits<Cost>::max();
 
     std::vector<NodeId> path(std::initializer_list<std::uint32_t> ids)
     {
@@ -135,4 +140,30 @@ TEST(AStarTest, FindPath_ThrowsOnANegativeEdgeCost)
     EXPECT_THROW(
         static_cast<void>(findPath(graph, nodeId(0), nodeId(1))),
         PathfindingError);
+}
+
+TEST(AStarTest, FindPath_ThrowsWhenTwoEdgeCostsSumPastACost)
+{
+    FakeGraph graph;
+    graph.addEdge(nodeId(0), nodeId(1), kMaxCost);
+    graph.addEdge(nodeId(1), nodeId(2), 1);
+
+    // Each edge is legal on its own, and the route through both is not.
+    EXPECT_THROW(
+        static_cast<void>(findPath(graph, nodeId(0), nodeId(2))),
+        PathfindingError);
+}
+
+TEST(AStarTest, FindPath_WalksARouteCostingExactlyTheMostACostHolds)
+{
+    FakeGraph graph;
+    graph.addEdge(nodeId(0), nodeId(1), kMaxCost - 1);
+    graph.addEdge(nodeId(1), nodeId(2), 1);
+
+    const SearchResult result = findPath(graph, nodeId(0), nodeId(2));
+
+    // The guard refuses a sum that does not fit, not one that just does.
+    EXPECT_EQ(result.outcome, SearchOutcome::PathFound);
+    EXPECT_EQ(result.nodes, path({0, 1, 2}));
+    EXPECT_EQ(result.cost, kMaxCost);
 }
