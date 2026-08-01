@@ -17,6 +17,7 @@
 #include <antwika/input/SelectedInputBackend.hpp>
 #include <antwika/log/Level.hpp>
 #include <antwika/replay/ReplaySource.hpp>
+#include <antwika/simulation/TickPacer.hpp>
 #include <antwika/simulation/WindowInputSource.hpp>
 #include <antwika/time/SystemSleeper.hpp>
 
@@ -24,7 +25,6 @@
 #include "antwika/life/PointerToggleSink.hpp"
 #include "antwika/life/PrintSystem.hpp"
 #include "antwika/life/RenderSystem.hpp"
-#include "antwika/life/TickPacer.hpp"
 
 using antwika::app::ConsoleLogging;
 using antwika::app::RecordedRun;
@@ -38,9 +38,9 @@ using antwika::life::Grid;
 using antwika::life::PointerToggleSink;
 using antwika::life::PrintSystem;
 using antwika::life::RenderSystem;
-using antwika::life::TickPacer;
 using antwika::log::Level;
 using antwika::replay::ReplaySource;
+using antwika::simulation::TickPacer;
 using antwika::simulation::WindowInputSource;
 using antwika::time::SystemSleeper;
 
