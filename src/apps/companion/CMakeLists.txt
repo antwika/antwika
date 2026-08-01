@@ -33,6 +33,7 @@ target_link_libraries(antwika_companion
         antwika::replay
         antwika::simulation
         antwika::time
+        antwika::tween
 )
 
 if(BUILD_TESTING AND NOT CMAKE_CROSSCOMPILING)

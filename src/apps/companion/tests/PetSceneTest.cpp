@@ -2,6 +2,7 @@
 #include <array>
 #include <cstddef>
 #include <cstdint>
+#include <set>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -17,6 +18,9 @@
 #include <antwika/gfx/Size.hpp>
 #include <antwika/gfx/TextLayout.hpp>
 
+#include <antwika/time/Tick.hpp>
+
+#include "antwika/companion/Pet.hpp"
 #include "antwika/companion/PetLayout.hpp"
 #include "antwika/companion/PetScene.hpp"
 #include "antwika/companion/PetSnapshot.hpp"
@@ -33,6 +37,8 @@ using antwika::gfx::mocks::MockRenderer;
 using antwika::gfx::Point;
 using antwika::gfx::Rect;
 using antwika::gfx::Size;
+    using antwika::companion::kSceneUnits;
+    using antwika::time::Tick;
 using ::testing::_;
 using ::testing::NiceMock;
 
@@ -260,6 +266,78 @@ namespace
         EXPECT_NE(open.rects, shut.rects);
         EXPECT_NE(open.rects, bobbed.rects);
         EXPECT_EQ(open.rects, render(scene, kCanvas, awake()).rects);
+    }
+
+    // Where the animal's body sits this frame.
+    // Every pose of a breath lifts the whole animal together.
+    [[nodiscard]] std::int32_t bodyTop(
+        const PetScene &scene, const Tick tick)
+    {
+        PetSnapshot at = awake();
+        at.ticks = tick;
+
+        const auto rects = render(scene, kCanvas, at).rects;
+
+        // The animal's body is the widest box drawn above the ground.
+        // Named by shape rather than by index.
+        // What is drawn before it depends on the state's own gauges.
+        std::int32_t top = 0;
+        std::uint32_t widest = 0;
+
+        for (const auto &rect : rects)
+        {
+            if (rect.size.width == 12 * (kCanvas.width / kSceneUnits)
+                && rect.size.width > widest)
+            {
+                widest = rect.size.width;
+                top = rect.origin.y;
+            }
+        }
+
+        return top;
+    }
+
+    // A breath is four poses over two seconds.
+    constexpr Tick kBreathTicks = 2 * antwika::companion::kTicksPerSecond;
+
+    // The bob is tweened rather than stepped between its four poses.
+    // A whole unit is eight pixels at this canvas, over half a second.
+    // Stepping it was a jolt; this is what says it no longer is.
+    TEST(PetSceneTest, ABreathMovesTheAnimalByMoreThanItsTwoPoses)
+    {
+        const PetScene scene;
+
+        std::set<std::int32_t> heights;
+
+        for (Tick tick = 0; tick < kBreathTicks; ++tick)
+        {
+            heights.insert(bodyTop(scene, tick));
+        }
+
+        // Two is exactly what the stepped bob used to draw.
+        EXPECT_GT(heights.size(), 2U);
+    }
+
+    // Easing must not move where a breath begins or how far it reaches.
+    // Those two are what the stepped bob already drew.
+    TEST(PetSceneTest, ABreathStillTravelsExactlyOneUnit)
+    {
+        const PetScene scene;
+
+        std::set<std::int32_t> heights;
+
+        for (Tick tick = 0; tick < kBreathTicks; ++tick)
+        {
+            heights.insert(bodyTop(scene, tick));
+        }
+
+        const auto unit =
+            kCanvas.width / antwika::companion::kSceneUnits;
+
+        EXPECT_EQ(
+            *heights.rbegin() - *heights.begin(),
+            static_cast<std::int32_t>(unit));
+        EXPECT_EQ(bodyTop(scene, 0), *heights.rbegin());
     }
 
     TEST(PetSceneTest, APerishedCompanionGetsAGraveAndItsOwnPalette)

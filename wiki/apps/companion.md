@@ -136,6 +136,12 @@ The companion breathes, blinks and puffs in its sleep, and all three come from `
 There is no animator anything advances, so drawing a frame cannot be a way for the picture to acquire state a replay would have to reproduce.
 Which is also why the tick count is in the snapshot at all: it is the one number the picture moves from.
 
+The breath is the one of the three that does not just pick a pose.
+`resolve()` reports how far into its keyframe the tick is, and `kBreatheEasing` in `PetScene.cpp` tweens the two grid rows that frame sits between, through [`tween`](../libraries/tween.md).
+It used to step: four poses a whole unit apart is eight pixels of jolt, twice a breath.
+The curve is `QuadInOut` rather than linear, which would read mechanical, and rather than a sine, which is what a breath actually wants and is not computable exactly — see that page for why an inexact curve is not on offer.
+The lift is therefore the one measurement in this scene in pixels rather than in whole grid units, which is what `raised()` exists to say.
+
 ### Why the pacer is a sink
 
 A session has no end of its own -- it runs until the window is closed, or until a replay dispatches `engine.stop` -- so an unpaced one would spend a whole day of companion time in a fraction of a second.

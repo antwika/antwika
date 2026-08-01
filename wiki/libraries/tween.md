@@ -62,7 +62,13 @@ That is [`pathfinding`](pathfinding.md)'s call about an overflowing cost, for th
 
 ## Who uses it
 
-[`apps/game`](../apps/game.md), for walker motion — `game::kWalkerEasing` in `WalkerMotion.hpp`, set to `Easing::Linear`.
+Two applications, and the honest answer is that they are the only two with anything to tween.
+
+[`apps/companion`](../apps/companion.md) breathes on `Easing::QuadInOut`, through `kBreatheEasing` in `PetScene.cpp`.
+The breath was four poses a whole grid unit apart, stepped — eight pixels of jolt, twice a breath.
+It is now tweened across the two rows each frame sits between, which is the case this library was worth building for: a linear breath reads mechanical, and a sine one is what a breath actually wants and is not exact, so `QuadInOut` is the closest curve that stays in whole numbers.
+
+[`apps/game`](../apps/game.md) draws a walker's slide through `game::kWalkerEasing` in `WalkerMotion.hpp`, set to `Easing::Linear`.
 
 **Linear is the whole point of that call site rather than a placeholder in it.**
 A walker crosses many cells in a row, so easing each cell's step would make it start and stop at every tile — a walk cycle that lurches rather than one that walks.
@@ -72,5 +78,17 @@ Linear is also the one curve that provably cannot refuse.
 Every other easing raises the denominator to its curve's power and can therefore run out of room; linear raises it to the first, so `walkerBounds()` calls it from a renderer without a guard and without a `try`.
 Any other easing there would need one, which is a second reason that call site is not the place to experiment.
 
-The natural fits for an actual curve are the render-side motions that currently move linearly or not at all: a camera pan settling, a UI panel sliding, a building appearing, a companion's idle motion.
 Easing the camera that follows a walker is the version of "ease the walker" that reads correctly.
+
+## Who does not, and why
+
+The other ten applications have nothing to tween, and that is a fact about them rather than a gap.
+
+A tween needs two things: a value that moves, and more than one picture drawn while it is moving.
+Only `game` draws more than one frame per tick, through `app::FramePacedSource`; and only `companion` runs a multi-tick animation it can resolve a position out of.
+
+`life` toggles cells, `atlas_editor` paints pixels and `sudoku` prints a solved grid — all discrete, with nothing in between two states to be part-way through.
+`poker` redraws a static table each tick, and `tower_defence` advances a mob one whole cell per tick and draws it once, so tweening it would mean giving that app sub-tick frames first — a change to how it runs, not a change to how it draws.
+`gfx_demo`, `gfx3d_demo`, `sound_demo` and `ui_demo` are showcases for other libraries; `gfx3d_demo`'s cube turns at a constant rate, which is the one motion that should *not* ease.
+
+Adding a dependency to any of them would be adoption for its own sake.
