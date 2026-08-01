@@ -130,6 +130,15 @@ namespace antwika::game
     {
         renderer.clear(kSky);
 
+        // A paused walker is drawn at its step's own phase and no more.
+        // The whole ticks of a step stop when WalkerSystem does.
+        // The frames between two ticks do not stop with them.
+        // So a frozen walker would otherwise slide and snap back.
+        // Once per tick, for as long as the run stayed held.
+        // Decided here rather than by whoever passes the sub-tick.
+        // A snapshot then draws the same picture wherever it is drawn.
+        const auto phase = snapshot.paused ? Progress() : subTick;
+
         drawGround(renderer, canvas, snapshot, atlas);
 
         // A road covers the ground tile it is laid on exactly.
@@ -172,7 +181,7 @@ namespace antwika::game
             // Culled on where it is drawn, not on the cell it is on.
             // Between two ticks those are not the same box.
             // And a walker halfway off the edge is still half on it.
-            const auto bounds = walkerBounds(walker, snapshot.camera, subTick);
+            const auto bounds = walkerBounds(walker, snapshot.camera, phase);
 
             if (!overlaps(bounds, canvas))
             {
@@ -185,7 +194,8 @@ namespace antwika::game
 
         // After every sprite.
         // A gauge is then never hidden by what stands in front of it.
-        drawBars(renderer, canvas, snapshot, subTick);
+        // Handed the same phase, so a bar cannot drift off its walker.
+        drawBars(renderer, canvas, snapshot, phase);
 
         drawGhost(renderer, canvas, snapshot, atlas);
 

@@ -37,6 +37,7 @@
 #include "antwika/game/UiCanvas.hpp"
 #include "antwika/game/UiOverlay.hpp"
 #include "antwika/game/PathIndex.hpp"
+#include "antwika/game/PauseState.hpp"
 #include "antwika/game/BuildTool.hpp"
 #include "antwika/game/SaveGame.hpp"
 #include "antwika/game/Toolbar.hpp"
@@ -82,6 +83,7 @@ namespace
         // The subject of these tests is the grid.
         // So a run starts there rather than clicking past the menu.
         AppModeState mode{AppMode::CityMap};
+        antwika::game::PauseState pause;
 
         antwika::game::GameSummary run(
             ReplaySource &source,
@@ -98,6 +100,7 @@ namespace
                 .paths = paths,
                 .built = built,
                 .mode = mode,
+                .pause = pause,
                 .maxTicks = maxTicks};
             if (recorder != nullptr)
             {
@@ -305,6 +308,7 @@ TEST(BootstrapTest, Bootstrap_RunsEveryObserverOncePerTick)
             .paths = harness.paths,
             .built = harness.built,
             .mode = harness.mode,
+            .pause = harness.pause,
             .observers = {first, second},
             .maxTicks = 10});
 
@@ -384,6 +388,7 @@ namespace
         PathIndex paths;
         antwika::game::BuildingIndex built;
         AppModeState mode;
+        antwika::game::PauseState pause;
         antwika::game::UiOverlay menuOverlay{antwika::game::kUiCanvas};
 
         antwika::game::GameSummary run(ReplaySource &source)
@@ -399,6 +404,7 @@ namespace
                     .paths = paths,
                     .built = built,
                     .mode = mode,
+                    .pause = pause,
                     .maxTicks = 10,
                     .menuOverlay = menuOverlay});
         }
@@ -547,6 +553,7 @@ namespace
         PathIndex paths;
         antwika::game::BuildingIndex built;
         AppModeState mode;
+        antwika::game::PauseState pause;
         antwika::game::UiOverlay menuOverlay{antwika::game::kUiCanvas};
         antwika::game::WorldMapState cities{
             antwika::game::generateWorldMap(kWorld)};
@@ -564,6 +571,7 @@ namespace
                     .paths = paths,
                     .built = built,
                     .mode = mode,
+                    .pause = pause,
                     .maxTicks = 20,
                     .menuOverlay = menuOverlay,
                     .world = cities});
@@ -670,6 +678,7 @@ namespace
         PathIndex paths;
         antwika::game::BuildingIndex built;
         AppModeState mode;
+        antwika::game::PauseState pause;
         antwika::game::UiOverlay menuOverlay{antwika::game::kUiCanvas};
         antwika::game::UiOverlay saveOverlay{antwika::game::kUiCanvas};
 
@@ -688,6 +697,7 @@ namespace
                     .paths = paths,
                     .built = built,
                     .mode = mode,
+                    .pause = pause,
                     .maxTicks = 20,
                     .menuOverlay = menuOverlay,
                     .saveOverlay = saveOverlay,

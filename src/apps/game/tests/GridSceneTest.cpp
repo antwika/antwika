@@ -550,6 +550,73 @@ TEST_F(GridSceneTest, Draw_SlidesAWalkerBetweenTheCellsItIsStepping)
     EXPECT_NE(middle, cellBounds(to, camera));
 }
 
+// The whole ticks of a step stop when WalkerSystem does.
+// The frames drawn between two ticks do not stop with them.
+// So a held walker drawn from the sub-tick slides and snaps back.
+// Decided here rather than by whoever supplies the fraction.
+TEST_F(GridSceneTest, Draw_HoldsAWalkerStillWhilePaused)
+{
+    const Camera camera(Point{.x = 300, .y = 40}, 2);
+    constexpr Cell from{.x = 1, .y = 1};
+    constexpr Cell to{.x = 2, .y = 1};
+
+    auto held = snapshot(
+        camera,
+        GridExtent{},
+        {},
+        {WalkerSprite{
+            .at = to,
+            .facing = Direction::East,
+            .from = from,
+            .ticksIntoStep = 1}});
+    held.paused = true;
+
+    scene.draw(renderer, kCanvas, held, atlas, Progress());
+    ASSERT_EQ(renderer.blits.size(), 1U);
+    const auto atTick = renderer.blits[0].destination;
+
+    renderer.blits.clear();
+    scene.draw(renderer, kCanvas, held, atlas, Progress(1, 2));
+    ASSERT_EQ(renderer.blits.size(), 1U);
+
+    EXPECT_EQ(renderer.blits[0].destination, atTick);
+
+    // Held where its step had got to, rather than on either cell.
+    // A pause stops a walker; it does not tidy it onto a tile.
+    EXPECT_NE(atTick, cellBounds(from, camera));
+    EXPECT_NE(atTick, cellBounds(to, camera));
+}
+
+// The gauge is drawn from the box the sprite is blitted into.
+// So a held bar has to be held with it, or the two part company.
+TEST_F(GridSceneTest, Draw_HoldsAWalkersBarsStillWhilePaused)
+{
+    const Camera camera(Point{.x = 300, .y = 40}, 3);
+
+    auto held = snapshot(
+        camera,
+        GridExtent{},
+        {},
+        {WalkerSprite{
+            .at = Cell{.x = 2, .y = 1},
+            .facing = Direction::East,
+            .from = Cell{.x = 1, .y = 1},
+            .ticksIntoStep = 1,
+            .kind = antwika::game::WalkerKind::Food,
+            .carried = 50}});
+    held.paused = true;
+
+    scene.draw(renderer, kCanvas, held, atlas, Progress());
+    const auto atTick = renderer.rects;
+
+    ASSERT_FALSE(atTick.empty());
+
+    renderer.rects.clear();
+    scene.draw(renderer, kCanvas, held, atlas, Progress(1, 2));
+
+    EXPECT_EQ(renderer.rects, atTick);
+}
+
 TEST_F(GridSceneTest, Draw_LeavesEverythingButTheWalkersWhereItWas)
 {
     const Camera camera(Point{.x = 300, .y = 40}, 2);

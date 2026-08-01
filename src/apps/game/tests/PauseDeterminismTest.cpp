@@ -32,6 +32,7 @@
 #include "antwika/game/GridExtent.hpp"
 #include "antwika/game/IsoProjection.hpp"
 #include "antwika/game/PathIndex.hpp"
+#include "antwika/game/PauseState.hpp"
 #include "antwika/game/Toolbar.hpp"
 #include "antwika/game/UiCanvas.hpp"
 #include "antwika/game/UiOverlay.hpp"
@@ -118,6 +119,7 @@ namespace
 
         // The subject here is the grid, so a run starts there.
         AppModeState mode{AppMode::CityMap};
+        antwika::game::PauseState pause;
         UiOverlay overlay(kUiCanvas);
 
         auto summary =
@@ -131,6 +133,7 @@ namespace
                 .paths = paths,
                 .built = built,
                 .mode = mode,
+                .pause = pause,
                 .maxTicks = kMaxTicks,
                 .replayRecorder = recorder,
                 .overlay = overlay});

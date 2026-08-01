@@ -37,6 +37,7 @@
 #include "antwika/game/IsoProjection.hpp"
 #include "antwika/game/MainMenuScene.hpp"
 #include "antwika/game/PathIndex.hpp"
+#include "antwika/game/PauseState.hpp"
 #include "antwika/game/RenderSystem.hpp"
 #include "antwika/game/SaveLoadScene.hpp"
 #include "antwika/game/SceneSnapshot.hpp"
@@ -324,6 +325,7 @@ namespace
         PathIndex paths;
         antwika::game::BuildingIndex built;
         AppModeState mode{AppMode::CityMap};
+        antwika::game::PauseState pause;
 
         std::size_t texts = 0;
 
@@ -364,6 +366,7 @@ namespace
                 .built = built,
                 .camera = camera,
                 .extent = kExtent,
+                .pause = pause,
                 .overlay = overlay,
                 .hint = hint,
                 .menuScene = menuScene,
@@ -384,6 +387,7 @@ namespace
                 .paths = paths,
                 .built = built,
                 .mode = mode,
+                .pause = pause,
                 .observers = {renderSystem},
                 .maxTicks = kMaxTicks});
 

@@ -21,6 +21,7 @@
 #include "antwika/game/GridScene.hpp"
 #include "antwika/game/MainMenuScene.hpp"
 #include "antwika/game/PathIndex.hpp"
+#include "antwika/game/PauseState.hpp"
 #include "antwika/game/SaveLoadScene.hpp"
 #include "antwika/game/UiOverlay.hpp"
 #include "antwika/game/WorldMapScene.hpp"
@@ -84,6 +85,15 @@ namespace antwika::game
 
         /** @brief Read for the bounds to draw within. */
         GridExtent extent;
+
+        /**
+         * @brief Read for whether the run is being held still.
+         *
+         * Only ever read, exactly as the camera and the mode are: it is
+         * simulation state a snapshot copies, and what it decides is
+         * whether a walker is drawn moving between two ticks.
+         */
+        const PauseState &pause;
 
         /** @brief Read for the toolbar's picture, painted last. */
         const UiOverlay &overlay;
@@ -177,6 +187,12 @@ namespace antwika::game
      * same snapshot part of the way through the tick, and is called by
      * app::FramePacedSource in the gap before the next tick's events are
      * read.
+     *
+     * **A held run is the exception**, and the snapshot is what carries
+     * it: PauseState stops the ticks a walker steps on but not the
+     * frames drawn between them, so the pause is read into every
+     * snapshot and GridScene draws a held walker at its step's own
+     * phase whatever fraction of a tick a frame falls at.
      *
      * The snapshot is kept between the two, and it is the only render-side
      * mutable state in this app. That is safe for one structural reason

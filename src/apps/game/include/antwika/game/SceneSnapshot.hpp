@@ -206,6 +206,26 @@ namespace antwika::game
         std::vector<BuildingSprite> buildings;
 
         /**
+         * @brief Whether the simulation was held still when this was
+         * taken.
+         *
+         * Simulation state read into the picture, exactly as the camera
+         * is: PauseState owns it, a snapshot copies it, and nothing here
+         * writes back to it.
+         *
+         * It is here because a walker part of the way between two cells
+         * is drawn from two clocks -- the whole ticks of its step, which
+         * a pause stops, and how far through the current tick a frame
+         * falls, which a pause does not. Left to itself the second one
+         * keeps running, so a frozen walker slides forward through every
+         * tick and snaps back at the start of the next one, for as long
+         * as the run is paused.
+         * A scene told the run is held draws it at its step's own phase
+         * and no further -- see GridScene::draw().
+         */
+        bool paused = false;
+
+        /**
          * @brief Where the selected tool would land if it were clicked.
          *
          * The one member snapshotOf() does not fill in: it is a picture
@@ -247,6 +267,10 @@ namespace antwika::game
      * @param paths Read for the path cells.
      * @param camera The camera to draw through.
      * @param extent The bounds to draw within.
+     * @param paused Whether the run is being held still right now, off
+     * PauseState. Defaulted to the state a run begins in, so a caller
+     * wanting the walkers rather than the picture -- a summary, a save
+     * -- need not answer a question it has no stake in.
      * @return The frame's description, with no ghost; whoever draws
      * fills that in from ghostFor().
      */
@@ -254,7 +278,8 @@ namespace antwika::game
         const World &world,
         const PathIndex &paths,
         const Camera &camera,
-        GridExtent extent);
+        GridExtent extent,
+        bool paused = false);
 
     /**
      * @brief List every walker as state rather than as a picture.

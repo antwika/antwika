@@ -36,6 +36,7 @@
 #include "antwika/game/GridScene.hpp"
 #include "antwika/game/MainMenuScene.hpp"
 #include "antwika/game/PathIndex.hpp"
+#include "antwika/game/PauseState.hpp"
 #include "antwika/game/RenderSystem.hpp"
 #include "antwika/game/SaveCli.hpp"
 #include "antwika/game/SaveDirectory.hpp"
@@ -152,6 +153,10 @@ namespace
         // So what a recorded click means cannot depend on the flags.
         AppModeState mode;
 
+        // Owned here rather than inside the run, as the mode is.
+        // The renderer below reads it to draw a held walker still.
+        antwika::game::PauseState pause;
+
         // Against the size the window was asked for.
         // Never the size one reports, which nothing records.
         // That is what makes a recorded click hit the same button.
@@ -186,6 +191,7 @@ namespace
             .built = built,
             .camera = camera,
             .extent = kExtent,
+            .pause = pause,
             .overlay = overlay,
             .hint = hint,
             .menuScene = menuScene,
@@ -253,6 +259,7 @@ namespace
                 .paths = paths,
                 .built = built,
                 .mode = mode,
+                .pause = pause,
                 .observers = observers,
                 .replayRecorder = recorded.replayRecorder,
                 .overlay = overlay,
