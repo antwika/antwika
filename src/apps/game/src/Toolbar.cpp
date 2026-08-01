@@ -58,6 +58,11 @@ namespace antwika::game
                 // Likewise: the tick is what a run is counted in.
                 // A replay is on the same one at the same point.
                 ui.label("tick " + std::to_string(tick));
+
+                // Last on the row rather than beside the zoom buttons.
+                // Every widget declared before it then keeps its place.
+                // So a session recorded before this replays untouched.
+                ui.button("menu", {.id = widgets::kMenu});
             }
 
             {

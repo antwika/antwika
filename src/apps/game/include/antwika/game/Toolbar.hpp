@@ -66,6 +66,17 @@ namespace antwika::game
         inline constexpr WidgetId kFirstTool{5};
 
         /**
+         * @brief Open the menu modal over the city.
+         *
+         * Numbered past the palette rather than before it, since the
+         * tools run from kFirstTool in their own order and a number
+         * inserted among them would rename every button after it.
+         */
+        inline constexpr WidgetId kMenu{
+            static_cast<WidgetId>(
+                static_cast<std::uint64_t>(kFirstTool) + kBuildToolCount)};
+
+        /**
          * @brief Get which button selects a tool.
          * @param tool The tool to ask about.
          * @return That tool's palette button.
@@ -105,7 +116,8 @@ namespace antwika::game
             widgets::toolWidget(BuildTool::FoodSource),
             widgets::toolWidget(BuildTool::WaterSource),
             widgets::toolWidget(BuildTool::FireStation),
-            widgets::toolWidget(BuildTool::ArchitectPost)),
+            widgets::toolWidget(BuildTool::ArchitectPost),
+            widgets::kMenu),
         "every toolbar widget needs its own id");
 
     /**

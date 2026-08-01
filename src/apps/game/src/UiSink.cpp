@@ -5,6 +5,7 @@
 #include <variant>
 
 #include <antwika/engine/Events.hpp>
+#include <antwika/input/Key.hpp>
 #include <antwika/input/MouseButton.hpp>
 #include <antwika/ui/WidgetId.hpp>
 
@@ -12,6 +13,8 @@ namespace antwika::game
 {
 
     using antwika::input::InputEvent;
+    using antwika::input::Key;
+    using antwika::input::KeyPressed;
     using antwika::input::MouseButton;
     using antwika::input::PointerButtonPressed;
     using antwika::ui::kNoWidget;
@@ -27,6 +30,19 @@ namespace antwika::game
             return pressed != nullptr
                    && pressed->button == MouseButton::Left;
         }
+
+        // The symbolic key rather than a scancode.
+        // So a recording opens the same modal under any backend.
+        // A repeat is not a fresh press.
+        // So holding F10 is not a run of openings.
+        // Which is the rule anything reacting to an edge follows.
+        [[nodiscard]] bool isMenuKey(const InputEvent &event) noexcept
+        {
+            const auto *pressed = std::get_if<KeyPressed>(&event);
+
+            return pressed != nullptr && pressed->key == Key::F10
+                   && !pressed->repeat;
+        }
     } // namespace
 
     UiSink::UiSink(
@@ -35,12 +51,18 @@ namespace antwika::game
         const InputFold &input,
         const Toolbar &toolbar,
         PauseState &pause,
+        AppModeState &mode,
+        RoadDrag &drag,
+        const MenuModalScene &modal,
         Camera home)
         : camera(camera),
           overlay(overlay),
           input(input),
           toolbar(toolbar),
           pause(pause),
+          mode(mode),
+          drag(drag),
+          modal(modal),
           home(home)
     {
     }
@@ -66,7 +88,42 @@ namespace antwika::game
             return;
         }
 
+        // Ahead of describing anything.
+        // So the modal is already up when this event is resolved.
+        // A key press hits no widget.
+        // But the picture and what it covers are this event's answer.
+        if (isMenuKey(*decoded))
+        {
+            openModal();
+        }
+
         refreshAndAct(isLeftPress(*decoded));
+    }
+
+    bool UiSink::menuOpen() const noexcept
+    {
+        return modalOpen;
+    }
+
+    void UiSink::openModal()
+    {
+        // No guard on it being open already, deliberately.
+        // Both calls below say what they want rather than flip it.
+        // So F10 twice is F10 once, and needs no branch to be.
+        modalOpen = true;
+
+        // Whatever route was being dragged out is over, and lays none.
+        // What a drag lays is what its release said.
+        // A release arriving over the modal never said it.
+        // finish() rather than GridSink's cancel, which may resume:
+        // the hold below supersedes whatever the drag was holding.
+        drag.finish();
+
+        // The modal holds the run, exactly as entering a city does.
+        // hold() rather than toggle(), for CityEntrySink's reason.
+        // Closing it does not let the run go again.
+        // The way out is the pause button, which is one a player sees.
+        pause.hold();
     }
 
     Pointer UiSink::pointerNow(bool pressed) const
@@ -83,9 +140,60 @@ namespace antwika::game
 
     void UiSink::refreshAndAct(bool pressed)
     {
+        // The bar is described whether or not the modal is up.
+        // The modal is drawn over the city rather than instead of it.
         auto frame = describeNow(pressed);
-        const auto activated = frame.interactions.activated;
 
+        // While the modal is up the bar is a picture and nothing else.
+        // A press is resolved against the modal alone, never through it.
+        if (!modalOpen)
+        {
+            const auto activated = frame.interactions.activated;
+
+            actOnBar(activated);
+
+            // The zoom the bar reports has just changed.
+            // So has the pause button's label.
+            // So it is described once more.
+            // Otherwise it would show the level it was pressed at.
+            if (activated != kNoWidget)
+            {
+                frame = describeNow(pressed);
+            }
+        }
+
+        bool covered = frame.interactions.pointerOverUi;
+
+        // Read again, since the bar's menu button may have just set it.
+        if (modalOpen)
+        {
+            auto over = modal.describe(overlay.canvas(), pointerNow(pressed));
+
+            // The scrim covers the canvas, so this is the whole answer.
+            // Which is what keeps the press off the city underneath.
+            covered = over.interactions.pointerOverUi;
+
+            const auto chosen = over.interactions.activated;
+
+            // Appended after the bar's, so paint order puts it in front.
+            // Which is how "on top" is said where gfx has no depth.
+            frame.commands.insert(
+                frame.commands.end(),
+                over.commands.begin(),
+                over.commands.end());
+
+            // Acted on after the picture is settled.
+            // So a modal closed by this press is what that press saw.
+            // The engine.tick ending this tick describes it away.
+            // Ahead of anything painting -- see UiSink.hpp.
+            actOnModal(chosen);
+        }
+
+        overlay.set(std::move(frame.commands), covered);
+    }
+
+    void UiSink::actOnBar(WidgetId activated)
+    {
         if (activated == widgets::kZoomIn)
         {
             camera.zoomIn();
@@ -102,22 +210,33 @@ namespace antwika::game
         {
             pause.toggle();
         }
+        else if (activated == widgets::kMenu)
+        {
+            openModal();
+        }
         else
         {
             selectFrom(activated);
         }
+    }
 
-        // The zoom the bar reports has just changed.
-        // So has the pause button's label.
-        // So it is described once more.
-        // Otherwise it would show the level it was pressed at.
-        if (activated != kNoWidget)
+    void UiSink::actOnModal(WidgetId activated)
+    {
+        if (activated == modalWidgets::kMainMenu)
         {
-            frame = describeNow(pressed);
-        }
+            // Staged rather than applied here, as MainMenuSink does.
+            // So the click that leaves the city is not also the grid's.
+            // See AppMode.hpp -- leaving is still a mode change.
+            mode.request(AppMode::MainMenu);
 
-        overlay.set(
-            std::move(frame.commands), frame.interactions.pointerOverUi);
+            // Put away on the way out.
+            // So a city entered later is not still wearing it.
+            modalOpen = false;
+        }
+        else if (activated == modalWidgets::kResume)
+        {
+            modalOpen = false;
+        }
     }
 
     Frame UiSink::describeNow(bool pressed) const

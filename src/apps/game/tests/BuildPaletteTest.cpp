@@ -33,6 +33,7 @@
 
 #include "WidgetPixel.hpp"
 
+#include "antwika/game/AppMode.hpp"
 #include "antwika/game/BuildGhost.hpp"
 #include "antwika/game/BuildTool.hpp"
 #include "antwika/game/Building.hpp"
@@ -47,6 +48,7 @@
 #include "antwika/game/InputFold.hpp"
 #include "antwika/game/IsoProjection.hpp"
 #include "antwika/game/Path.hpp"
+#include "antwika/game/MenuModalScene.hpp"
 #include "antwika/game/PathIndex.hpp"
 #include "antwika/game/PauseState.hpp"
 #include "antwika/game/RoadDrag.hpp"
@@ -82,6 +84,9 @@ using antwika::game::cellCentre;
 using antwika::game::GridExtent;
 using antwika::game::GridScene;
 using antwika::game::GridSink;
+using antwika::game::AppMode;
+using antwika::game::AppModeState;
+using antwika::game::MenuModalScene;
 using antwika::game::PauseState;
 using antwika::game::RoadDrag;
 using antwika::game::WorldMap;
@@ -364,9 +369,20 @@ namespace
         UiOverlay overlay{kCanvas};
         Toolbar toolbar;
         PauseState pause;
-        UiSink uiSink{camera, overlay, input, toolbar, pause, camera};
         WorldMapState cities{WorldMap{}};
         RoadDrag drag;
+        AppModeState mode{AppMode::CityMap};
+        MenuModalScene modalScene;
+        UiSink uiSink{
+            camera,
+            overlay,
+            input,
+            toolbar,
+            pause,
+            mode,
+            drag,
+            modalScene,
+            camera};
         GridSink gridSink{
             world,
             paths,

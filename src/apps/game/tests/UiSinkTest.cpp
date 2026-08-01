@@ -24,18 +24,27 @@
 
 #include "WidgetPixel.hpp"
 
+#include "antwika/game/AppMode.hpp"
 #include "antwika/game/Camera.hpp"
+#include "antwika/game/Cell.hpp"
 #include "antwika/game/InputFold.hpp"
+#include "antwika/game/MenuModalScene.hpp"
 #include "antwika/game/PauseState.hpp"
+#include "antwika/game/RoadDrag.hpp"
 #include "antwika/game/Toolbar.hpp"
 #include "antwika/game/UiOverlay.hpp"
 #include "antwika/game/UiSink.hpp"
 
 using antwika::event::Event;
 using antwika::event::TickEvent;
+using antwika::game::AppMode;
+using antwika::game::AppModeState;
 using antwika::game::Camera;
+using antwika::game::Cell;
 using antwika::game::InputFold;
+using antwika::game::MenuModalScene;
 using antwika::game::PauseState;
+using antwika::game::RoadDrag;
 using antwika::game::Toolbar;
 using antwika::game::UiOverlay;
 using antwika::game::UiSink;
@@ -55,6 +64,7 @@ using antwika::ui::DrawText;
 using antwika::ui::Pointer;
 using antwika::ui::WidgetId;
 namespace widgets = antwika::game::widgets;
+namespace modalWidgets = antwika::game::modalWidgets;
 
 namespace
 {
@@ -97,6 +107,33 @@ namespace
             return Position{.x = centre->x, .y = centre->y};
         }
 
+        // The modal is laid out against the same canvas the bar is.
+        [[nodiscard]] Position modalPixelOn(WidgetId id) const
+        {
+            const auto centre = widgetCentre(
+                modalScene.describe(kCanvas, Pointer{}), id);
+
+            if (!centre.has_value())
+            {
+                return Position{};
+            }
+
+            return Position{.x = centre->x, .y = centre->y};
+        }
+
+        void pressAt(Position at)
+        {
+            send(PointerMoved{.position = at});
+            send(
+                PointerButtonPressed{
+                    .button = MouseButton::Left, .position = at});
+        }
+
+        void openModal()
+        {
+            send(KeyPressed{.key = antwika::input::Key::F10});
+        }
+
         // Through the fold first, as bootstrap() registers it.
         // What the sink reads is what the fold was just given.
         void dispatch(const TickEvent &event)
@@ -112,12 +149,7 @@ namespace
 
         void pressOn(WidgetId id)
         {
-            const auto at = pixelOn(id);
-
-            send(PointerMoved{.position = at});
-            send(
-                PointerButtonPressed{
-                    .button = MouseButton::Left, .position = at});
+            pressAt(pixelOn(id));
         }
 
         void tick()
@@ -135,7 +167,21 @@ namespace
         InputFold input{codec};
         Toolbar toolbar;
         PauseState pause;
-        UiSink sink{camera, overlay, input, toolbar, pause, camera};
+
+        // A city is what the modal is opened over.
+        AppModeState mode{AppMode::CityMap};
+        RoadDrag drag;
+        MenuModalScene modalScene;
+        UiSink sink{
+            camera,
+            overlay,
+            input,
+            toolbar,
+            pause,
+            mode,
+            drag,
+            modalScene,
+            camera};
     };
 } // namespace
 
@@ -311,4 +357,136 @@ TEST_F(UiSinkTest, Handle_IgnoresAnEventThatIsNotInput)
 
     EXPECT_EQ(before, camera);
     EXPECT_TRUE(overlay.commands().empty());
+}
+
+// F10 is the symbolic key.
+// So a session recorded under one backend opens it under another.
+// It defines no event of its own.
+// What a replay holds is the key press.
+TEST_F(UiSinkTest, F10_OpensTheMenuModal)
+{
+    openModal();
+
+    EXPECT_TRUE(sink.menuOpen());
+    EXPECT_THAT(
+        textsOf(overlay.commands()),
+        ::testing::Contains(std::string{"Main Menu"}));
+}
+
+// Holding the key is not a run of openings.
+TEST_F(UiSinkTest, F10Repeat_OpensNothing)
+{
+    send(KeyPressed{.key = antwika::input::Key::F10, .repeat = true});
+
+    EXPECT_FALSE(sink.menuOpen());
+}
+
+// Both calls openModal() makes say what they want rather than flip it.
+TEST_F(UiSinkTest, F10Twice_LeavesTheModalOpen)
+{
+    openModal();
+    openModal();
+
+    EXPECT_TRUE(sink.menuOpen());
+}
+
+TEST_F(UiSinkTest, Press_OpensTheModalOnTheMenuButton)
+{
+    pressOn(widgets::kMenu);
+
+    EXPECT_TRUE(sink.menuOpen());
+}
+
+// The city is still there behind it, so the bar is still drawn.
+TEST_F(UiSinkTest, ModalOpen_LeavesTheBarInThePicture)
+{
+    openModal();
+
+    EXPECT_THAT(
+        textsOf(overlay.commands()),
+        ::testing::Contains(std::string{"zoom out"}));
+}
+
+// The scrim covers the canvas, which keeps a press off the city.
+// GridSink already skips a press the overlay reports covered.
+TEST_F(UiSinkTest, ModalOpen_ReportsThePointerCoveredOverTheGrid)
+{
+    openModal();
+    pressAt(kOnTheGrid);
+
+    EXPECT_TRUE(overlay.pointerOverUi());
+}
+
+// A press is resolved against the modal alone, never through it.
+TEST_F(UiSinkTest, ModalOpen_LeavesTheBarUnpressable)
+{
+    openModal();
+    const auto before = camera.zoomLevel();
+
+    pressOn(widgets::kZoomIn);
+
+    EXPECT_EQ(before, camera.zoomLevel());
+}
+
+TEST_F(UiSinkTest, Modal_ClosesOnTheBackItem)
+{
+    openModal();
+
+    pressAt(modalPixelOn(modalWidgets::kResume));
+
+    EXPECT_FALSE(sink.menuOpen());
+    EXPECT_EQ(AppMode::CityMap, mode.next());
+}
+
+// Leaving is a mode change, staged like every other one.
+TEST_F(UiSinkTest, Modal_AsksForTheMainMenuOnTheMainMenuItem)
+{
+    openModal();
+
+    pressAt(modalPixelOn(modalWidgets::kMainMenu));
+
+    EXPECT_EQ(AppMode::MainMenu, mode.next());
+    EXPECT_FALSE(sink.menuOpen());
+}
+
+// There is no dismiss-by-backdrop rule here.
+TEST_F(UiSinkTest, Modal_StaysUpOnAPressOnTheScrim)
+{
+    openModal();
+
+    pressAt(kOnTheGrid);
+
+    EXPECT_TRUE(sink.menuOpen());
+}
+
+// The modal holds the run, exactly as entering a city does.
+TEST_F(UiSinkTest, Opening_HoldsTheRun)
+{
+    openModal();
+
+    EXPECT_TRUE(pause.paused());
+}
+
+// And closing it does not let the run go again.
+// The way out is the pause button, which is one a player can see.
+TEST_F(UiSinkTest, Closing_LeavesTheRunHeld)
+{
+    openModal();
+
+    pressAt(modalPixelOn(modalWidgets::kResume));
+
+    EXPECT_TRUE(pause.paused());
+}
+
+// What a drag lays is what its release said.
+// A release arriving over the modal never said it.
+// So the gesture is over.
+TEST_F(UiSinkTest, Opening_EndsARoadDragInProgress)
+{
+    drag.begin(Cell{.x = 2, .y = 3}, false);
+
+    openModal();
+
+    EXPECT_FALSE(drag.active());
+    EXPECT_TRUE(pause.paused());
 }
