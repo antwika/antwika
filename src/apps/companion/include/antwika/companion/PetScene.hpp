@@ -80,6 +80,15 @@ namespace antwika::companion
      * than merely present, which is this application's whole answer to
      * instructions: what to press next is on the screen.
      *
+     * **Each of them is named as well as lit**, in the bottom row of
+     * its own box: `propArtBox()` is where the picture goes and
+     * `propLabelBox()` is where the word does, and the two together are
+     * the box a press is tested against. So a label cannot be pressed
+     * without pressing the prop it names, and cannot reach into a
+     * neighbour's. The words are scaled to the longest label the
+     * catalogue in use holds, exactly as the bubble's are, so all three
+     * read at one size in every language.
+     *
      * The readout says the things no bar can -- whether the companion
      * is awake, asleep or gone, how old it is, what kind of day it is,
      * and the record the file keeps behind it. Every character of it

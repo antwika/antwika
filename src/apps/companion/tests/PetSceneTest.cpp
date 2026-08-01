@@ -39,7 +39,9 @@ using antwika::companion::PetScene;
 using antwika::companion::PetSnapshot;
 using antwika::companion::PetState;
 using antwika::companion::Prop;
+using antwika::companion::propArtBox;
 using antwika::companion::propBox;
+using antwika::companion::propLabelBox;
 using antwika::companion::reviveButtonRect;
 using antwika::companion::Saying;
 using antwika::gfx::Color;
@@ -66,6 +68,9 @@ namespace
 
     // What the companion is doing, how old the day is, and the record.
     constexpr std::size_t kReadoutLines = 3;
+
+    // One word naming each prop, drawn before anything else here.
+    constexpr std::size_t kPropLabels = 3;
 
     struct Text
     {
@@ -136,6 +141,42 @@ namespace
     [[nodiscard]] std::string lineageLine(const Drawn &drawn)
     {
         return drawn.texts.back().text;
+    }
+
+    // The readout is the last three lines, whatever came before them.
+    // So it is named from the end here rather than by an index.
+    [[nodiscard]] const Text &readoutText(const Drawn &drawn)
+    {
+        return drawn.texts[drawn.texts.size() - kReadoutLines];
+    }
+
+    // And what the companion says goes in immediately before it.
+    [[nodiscard]] const Text &bubbleText(const Drawn &drawn)
+    {
+        return drawn.texts[drawn.texts.size() - kReadoutLines - 1];
+    }
+
+    // Every prop is named, in Prop's own order, before either of those.
+    [[nodiscard]] const Text &labelText(
+        const Drawn &drawn, const Prop prop)
+    {
+        return drawn.texts[static_cast<std::size_t>(prop)];
+    }
+
+    [[nodiscard]] bool within(const Rect &area, const Text &text)
+    {
+        const auto size = antwika::gfx::textSize(text.text, text.scale);
+
+        return text.origin.x >= area.origin.x
+               && text.origin.y >= area.origin.y
+               && text.origin.x
+                      + static_cast<std::int32_t>(size.width)
+                  <= area.origin.x
+                         + static_cast<std::int32_t>(area.size.width)
+               && text.origin.y
+                      + static_cast<std::int32_t>(size.height)
+                  <= area.origin.y
+                         + static_cast<std::int32_t>(area.size.height);
     }
 
     // The bubble and its tail are the last two rectangles drawn.
@@ -262,7 +303,7 @@ namespace
         const Drawn drawn = render(scene, kCanvas, awake());
 
         EXPECT_EQ(drawn.rects.size(), kBareAwakeRects);
-        EXPECT_EQ(drawn.texts.size(), kReadoutLines);
+        EXPECT_EQ(drawn.texts.size(), kReadoutLines + kPropLabels);
     }
 
     TEST(PetSceneTest, NightIsADifferentPictureFromDay)
@@ -307,7 +348,7 @@ namespace
 
         const auto innerOf = [&layout](const Drawn &drawn, const Prop p)
         {
-            const Rect area = propBox(*layout, p);
+            const Rect area = propArtBox(*layout, p);
             const auto unit = static_cast<std::int32_t>(layout->unit);
             const Rect inner{
                 .origin =
@@ -330,6 +371,97 @@ namespace
             innerOf(plain, Prop::Ball), innerOf(wanting, Prop::Ball));
         EXPECT_EQ(
             innerOf(plain, Prop::Nest), innerOf(wanting, Prop::Nest));
+    }
+
+    // Lighting one says which is wanted, never which is which.
+    // Three boxes of a single colour are otherwise three guesses.
+    // So each is named, in the bottom row of the box that presses it.
+    TEST(PetSceneTest, Draw_NamesEveryPropInTheBoxThatPressesIt)
+    {
+        const antwika::i18n::Translator translator{
+            antwika::i18n::kDefaultLocale};
+        const PetScene scene{translator};
+        const auto layout = layoutFor(kCanvas);
+        ASSERT_TRUE(layout.has_value());
+
+        const std::array<std::string, 3> named{"feed", "play", "sleep"};
+        const Drawn drawn = render(scene, kCanvas, awake());
+
+        ASSERT_EQ(drawn.texts.size(), kReadoutLines + kPropLabels);
+
+        for (const Prop prop : kProps)
+        {
+            const Text &label = labelText(drawn, prop);
+
+            EXPECT_EQ(
+                label.text, named[static_cast<std::size_t>(prop)]);
+            EXPECT_TRUE(within(propLabelBox(*layout, prop), label));
+        }
+    }
+
+    // The labels come off the injected translator like every other word.
+    // An English prop in a Swedish window is the gap the ids prevent.
+    TEST(PetSceneTest, Draw_WordsThePropLabelsInTheTranslatorsLanguage)
+    {
+        const antwika::i18n::Translator swedish{
+            antwika::i18n::Locale::Swedish};
+        const PetScene scene{swedish};
+
+        const Drawn drawn = render(scene, kCanvas, awake());
+
+        EXPECT_EQ(labelText(drawn, Prop::Bowl).text, "mata");
+        EXPECT_EQ(labelText(drawn, Prop::Ball).text, "leka");
+        EXPECT_EQ(labelText(drawn, Prop::Nest).text, "sova");
+    }
+
+    // The labels grow with the window as everything else here does.
+    // Up to what the row they are written in has room for.
+    TEST(PetSceneTest, Draw_ScalesThePropLabelsWithTheWindow)
+    {
+        const antwika::i18n::Translator translator{
+            antwika::i18n::kDefaultLocale};
+        const PetScene scene{translator};
+
+        const Drawn small = render(scene, kCanvas, awake());
+        const Drawn large = render(
+            scene, Size{.width = 512, .height = 512}, awake());
+
+        EXPECT_GT(
+            labelText(large, Prop::Bowl).scale,
+            labelText(small, Prop::Bowl).scale);
+    }
+
+    // A row too small for even the smallest glyphs still gets them.
+    // It overhangs its prop there, as a long line overhangs the bubble.
+    // Which beats leaving the prop unnamed.
+    TEST(PetSceneTest, Draw_KeepsTheSmallestPropLabelReadable)
+    {
+        const antwika::i18n::Translator translator{
+            antwika::i18n::kDefaultLocale};
+        const PetScene scene{translator};
+
+        const Drawn drawn =
+            render(scene, Size{.width = 64, .height = 64}, awake());
+
+        EXPECT_EQ(labelText(drawn, Prop::Bowl).scale, 1U);
+    }
+
+    // Every label is one size, whichever of them is the longest.
+    // Measured through the translator rather than counted here.
+    TEST(PetSceneTest, Draw_GivesTheThreeLabelsOneSizeBetweenThem)
+    {
+        const antwika::i18n::Translator translator{
+            antwika::i18n::kDefaultLocale};
+        const PetScene scene{translator};
+
+        const Drawn drawn = render(scene, kCanvas, awake());
+
+        EXPECT_EQ(
+            labelText(drawn, Prop::Bowl).scale,
+            labelText(drawn, Prop::Nest).scale);
+        EXPECT_EQ(
+            labelText(drawn, Prop::Ball).scale,
+            labelText(drawn, Prop::Nest).scale);
     }
 
     TEST(PetSceneTest, EachNeedLightsItsOwnProp)
@@ -552,7 +684,7 @@ namespace
         const Drawn drawn = render(scene, kCanvas, awake());
 
         EXPECT_FALSE(drew(drawn, *button));
-        EXPECT_EQ(drawn.texts.size(), kReadoutLines);
+        EXPECT_EQ(drawn.texts.size(), kReadoutLines + kPropLabels);
     }
 
     TEST(PetSceneTest, AnEmptyGaugeDrawsOnlyItsBackground)
@@ -644,7 +776,7 @@ namespace
 
         const Drawn drawn = render(scene, kCanvas, snapshot);
 
-        ASSERT_EQ(drawn.texts.size(), kReadoutLines);
+        ASSERT_EQ(drawn.texts.size(), kReadoutLines + kPropLabels);
         EXPECT_EQ(stateLine(drawn), "awake");
         EXPECT_EQ(dayLine(drawn), "d3 teen heavy");
         EXPECT_EQ(lineageLine(drawn), "gen 2 best 90");
@@ -716,7 +848,7 @@ namespace
 
         ASSERT_FALSE(small.texts.empty());
         ASSERT_FALSE(large.texts.empty());
-        EXPECT_GT(large.texts.front().scale, small.texts.front().scale);
+        EXPECT_GT(readoutText(large).scale, readoutText(small).scale);
     }
 
     TEST(PetSceneTest, Draw_KeepsTheSmallestReadoutOnTheGrid)
@@ -730,7 +862,7 @@ namespace
             render(scene, Size{.width = 64, .height = 64}, awake());
 
         ASSERT_FALSE(drawn.texts.empty());
-        EXPECT_EQ(drawn.texts.front().scale, 1U);
+        EXPECT_EQ(readoutText(drawn).scale, 1U);
     }
 
     TEST(PetSceneTest, Draw_StacksTheReadoutOneLineHeightApart)
@@ -741,14 +873,17 @@ namespace
 
         const Drawn drawn = render(scene, kCanvas, awake());
 
-        ASSERT_EQ(drawn.texts.size(), kReadoutLines);
+        ASSERT_EQ(drawn.texts.size(), kReadoutLines + kPropLabels);
         const auto step = static_cast<std::int32_t>(
-            kGlyphLineHeight * drawn.texts.front().scale);
+            kGlyphLineHeight * readoutText(drawn).scale);
+        const auto first = drawn.texts.size() - kReadoutLines;
 
         EXPECT_EQ(
-            drawn.texts[1].origin.y, drawn.texts[0].origin.y + step);
+            drawn.texts[first + 1].origin.y,
+            drawn.texts[first].origin.y + step);
         EXPECT_EQ(
-            drawn.texts[2].origin.y, drawn.texts[0].origin.y + 2 * step);
+            drawn.texts[first + 2].origin.y,
+            drawn.texts[first].origin.y + 2 * step);
     }
 
     TEST(PetSceneTest, Draw_DrawsNoBubbleWhileThereIsNothingToSay)
@@ -760,7 +895,7 @@ namespace
         const Drawn drawn = render(scene, kCanvas, awake());
 
         EXPECT_EQ(drawn.rects.size(), kBareAwakeRects);
-        EXPECT_EQ(drawn.texts.size(), kReadoutLines);
+        EXPECT_EQ(drawn.texts.size(), kReadoutLines + kPropLabels);
     }
 
     TEST(PetSceneTest, Draw_PutsWhatItSaysInABubbleBesideTheAnimal)
@@ -776,8 +911,9 @@ namespace
 
         // The bubble and its tail, plus one more line of text.
         EXPECT_EQ(drawn.rects.size(), kBareAwakeRects + 2);
-        ASSERT_EQ(drawn.texts.size(), kReadoutLines + 1);
-        EXPECT_EQ(drawn.texts.front().text, "hello!");
+        ASSERT_EQ(
+            drawn.texts.size(), kReadoutLines + kPropLabels + 1);
+        EXPECT_EQ(bubbleText(drawn).text, "hello!");
     }
 
     TEST(PetSceneTest, Draw_SaysADifferentThingForADifferentLine)
@@ -794,7 +930,7 @@ namespace
 
             const Drawn drawn = render(scene, kCanvas, talking);
             ASSERT_FALSE(drawn.texts.empty());
-            said.push_back(drawn.texts.front().text);
+            said.push_back(bubbleText(drawn).text);
         }
 
         std::vector<std::string> sorted = said;
@@ -821,21 +957,7 @@ namespace
             talking.saying = line;
 
             const Drawn drawn = render(scene, kCanvas, talking);
-            const Rect bubble = bubbleOf(drawn);
-            const Text &text = drawn.texts.front();
-            const auto size =
-                antwika::gfx::textSize(text.text, text.scale);
-
-            EXPECT_GE(text.origin.x, bubble.origin.x);
-            EXPECT_GE(text.origin.y, bubble.origin.y);
-            EXPECT_LE(
-                text.origin.x + static_cast<std::int32_t>(size.width),
-                bubble.origin.x
-                    + static_cast<std::int32_t>(bubble.size.width));
-            EXPECT_LE(
-                text.origin.y + static_cast<std::int32_t>(size.height),
-                bubble.origin.y
-                    + static_cast<std::int32_t>(bubble.size.height));
+            EXPECT_TRUE(within(bubbleOf(drawn), bubbleText(drawn)));
         }
     }
 
@@ -873,7 +995,7 @@ namespace
         const Drawn large = render(
             scene, Size{.width = 1024, .height = 1024}, talking);
 
-        EXPECT_GT(large.texts.front().scale, small.texts.front().scale);
+        EXPECT_GT(bubbleText(large).scale, bubbleText(small).scale);
     }
 
     // A unit too small for even the smallest glyphs still gets them.
@@ -889,7 +1011,7 @@ namespace
         const Drawn drawn =
             render(scene, Size{.width = 64, .height = 64}, talking);
 
-        EXPECT_EQ(drawn.texts.front().scale, 1U);
+        EXPECT_EQ(bubbleText(drawn).scale, 1U);
     }
 
     TEST(PetSceneTest, Draw_GivesEveryUnitAWholeNumberOfPixels)
@@ -926,11 +1048,12 @@ namespace
 
         const Drawn drawn = render(scene, kCanvas, talking);
 
-        ASSERT_EQ(drawn.texts.size(), kReadoutLines + 1);
-        EXPECT_EQ(drawn.texts[0].text, "mata mig!");
-        EXPECT_EQ(drawn.texts[1].text, "vaken, hungrig");
-        EXPECT_EQ(drawn.texts[2].text, "d0 ägg ");
-        EXPECT_EQ(drawn.texts[3].text, "gen 1 bäst 0");
+        ASSERT_EQ(
+            drawn.texts.size(), kReadoutLines + kPropLabels + 1);
+        EXPECT_EQ(bubbleText(drawn).text, "mata mig!");
+        EXPECT_EQ(stateLine(drawn), "vaken, hungrig");
+        EXPECT_EQ(dayLine(drawn), "d0 ägg ");
+        EXPECT_EQ(lineageLine(drawn), "gen 1 bäst 0");
     }
 
     // The one button a perished companion is offered says it too.
@@ -968,6 +1091,6 @@ namespace
         const Drawn other = render(
             PetScene{swedish}, {.width = 512, .height = 512}, talking);
 
-        EXPECT_GT(drawn.texts[0].scale, other.texts[0].scale);
+        EXPECT_GT(bubbleText(drawn).scale, bubbleText(other).scale);
     }
 } // namespace
