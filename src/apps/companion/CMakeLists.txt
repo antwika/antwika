@@ -27,6 +27,7 @@ target_link_libraries(antwika_companion
         antwika::engine
         antwika::gfx
         antwika::gfx_backend
+        antwika::i18n
         antwika::input
         antwika::input_backend
         antwika::log

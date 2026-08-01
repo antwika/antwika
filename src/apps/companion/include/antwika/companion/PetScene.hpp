@@ -5,6 +5,7 @@
 #include <antwika/animation/Clip.hpp>
 #include <antwika/gfx/IRenderer.hpp>
 #include <antwika/gfx/Size.hpp>
+#include <antwika/i18n/Translator.hpp>
 
 #include "antwika/companion/PetLayout.hpp"
 #include "antwika/companion/PetSnapshot.hpp"
@@ -14,6 +15,7 @@ namespace antwika::companion
 
     using antwika::gfx::IRenderer;
     using antwika::gfx::Size;
+    using antwika::i18n::Translator;
 
     /**
      * @brief Draws a companion: a sky, some ground, two gauges, a
@@ -46,11 +48,23 @@ namespace antwika::companion
      * small to give a unit a pixel draws the sky and stops.
      *
      * A speech bubble appears beside the animal whenever the snapshot
-     * carries a Saying, and the words it holds are this file's table
-     * rather than anything the simulation knows. Which line comes up
-     * and how long it stays are `Pet`'s decisions, so the bubble adds
-     * no state here: a scene that counted a bubble down would be one
-     * holding time a replay has to reproduce.
+     * carries a Saying, and which message id that stands for is this
+     * file's table rather than anything the simulation knows. Which
+     * line comes up and how long it stays are `Pet`'s decisions, so the
+     * bubble adds no state here: a scene that counted a bubble down
+     * would be one holding time a replay has to reproduce.
+     *
+     * **Every word it draws comes off an injected i18n::Translator**,
+     * and the split that keeps is exactly the one Saying already
+     * describes: `Pet` decides *that* something is said and this
+     * decides *what*, so no translator ever reaches the simulation and
+     * the active language cannot become state a replay reproduces. The
+     * bubble is scaled to the longest line the catalogue holds rather
+     * than to a character count written here, since a constant taken
+     * from the English table would silently be wrong for every other
+     * language. Nothing this scene measures is hit-tested -- where the
+     * one button is is reviveButtonBox()'s answer and owes nothing to
+     * its caption -- so the words may decide pixels and nothing else.
      *
      * A perished companion is drawn with a "new companion" button over
      * it, which is the one way out of a state nothing else leaves. The
@@ -70,8 +84,10 @@ namespace antwika::companion
     public:
         /**
          * @brief Build the scene and the idle clips it draws with.
+         * @param translator Words everything drawn here. Must outlive
+         * this scene.
          */
-        PetScene();
+        explicit PetScene(const Translator &translator);
 
         /**
          * @brief Draw one frame.
@@ -85,6 +101,7 @@ namespace antwika::companion
             const PetSnapshot &snapshot) const;
 
     private:
+        const Translator &translator;
         antwika::animation::Clip breathe;
         antwika::animation::Clip blink;
         antwika::animation::Clip drowse;
