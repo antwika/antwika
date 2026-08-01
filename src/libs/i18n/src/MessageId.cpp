@@ -137,6 +137,20 @@ namespace antwika::i18n
             return "SudokuNoSolution";
         case MessageId::SudokuLimitExceeded:
             return "SudokuLimitExceeded";
+        case MessageId::TowerDefenceLevel:
+            return "TowerDefenceLevel";
+        case MessageId::TowerDefenceWave:
+            return "TowerDefenceWave";
+        case MessageId::TowerDefenceLives:
+            return "TowerDefenceLives";
+        case MessageId::TowerDefenceScore:
+            return "TowerDefenceScore";
+        case MessageId::TowerDefenceBest:
+            return "TowerDefenceBest";
+        case MessageId::TowerDefenceCleared:
+            return "TowerDefenceCleared";
+        case MessageId::TowerDefenceOverrun:
+            return "TowerDefenceOverrun";
         case MessageId::UiDemoTitle:
             return "UiDemoTitle";
         case MessageId::UiDemoPickPage:

@@ -355,6 +355,41 @@ namespace antwika::i18n
         SudokuLimitExceeded,
 
         /**
+         * @brief Tower defence: which level of the campaign, `{0}` of `{1}`.
+         */
+        TowerDefenceLevel,
+
+        /**
+         * @brief Tower defence: which wave of the level, `{0}` of `{1}`.
+         */
+        TowerDefenceWave,
+
+        /**
+         * @brief Tower defence: leaks the player can still afford, `{0}`.
+         */
+        TowerDefenceLives,
+
+        /**
+         * @brief Tower defence: the running score, `{0}`.
+         */
+        TowerDefenceScore,
+
+        /**
+         * @brief Tower defence: the best score of any earlier run, `{0}`.
+         */
+        TowerDefenceBest,
+
+        /**
+         * @brief Tower defence: the last wave of the last level is dead.
+         */
+        TowerDefenceCleared,
+
+        /**
+         * @brief Tower defence: the lives ran out.
+         */
+        TowerDefenceOverrun,
+
+        /**
          * @brief UI demo: the heading over every page.
          */
         UiDemoTitle,
@@ -694,7 +729,7 @@ namespace antwika::i18n
     /**
      * @brief How many ids a complete catalogue carries.
      */
-    inline constexpr std::size_t kMessageCount{131};
+    inline constexpr std::size_t kMessageCount{138};
 
     /**
      * @brief Every id, in declaration order.
@@ -768,6 +803,13 @@ namespace antwika::i18n
         MessageId::SudokuSolved,
         MessageId::SudokuNoSolution,
         MessageId::SudokuLimitExceeded,
+        MessageId::TowerDefenceLevel,
+        MessageId::TowerDefenceWave,
+        MessageId::TowerDefenceLives,
+        MessageId::TowerDefenceScore,
+        MessageId::TowerDefenceBest,
+        MessageId::TowerDefenceCleared,
+        MessageId::TowerDefenceOverrun,
         MessageId::UiDemoTitle,
         MessageId::UiDemoPickPage,
         MessageId::UiDemoPageLabels,

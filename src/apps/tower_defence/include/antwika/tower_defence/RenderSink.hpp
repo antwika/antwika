@@ -8,8 +8,8 @@
 #include <antwika/gfx/Size.hpp>
 #include <antwika/time/ISleeper.hpp>
 
-#include "antwika/tower_defence/Battle.hpp"
 #include "antwika/tower_defence/BattleScene.hpp"
+#include "antwika/tower_defence/Campaign.hpp"
 #include "antwika/tower_defence/ScoreOverlay.hpp"
 
 namespace antwika::tower_defence
@@ -22,14 +22,15 @@ namespace antwika::tower_defence
     using antwika::time::ISleeper;
 
     /**
-     * @brief Draws the battle and the score bar, once per engine.tick.
+     * @brief Draws the level being fought and the score bar, once
+     * per engine.tick.
      *
      * Rendering hangs off the tick loop without feeding back into it:
      * everything it reads arrives as an immutable BattleSnapshot and a
      * DrawList somebody else described, and nothing it does is visible
      * to any other sink.
-     * Registered last, after BattleSink and ScoreSink, so the frame is
-     * of the state the tick ended with.
+     * Registered last, after CampaignSink and ScoreSink, so the frame
+     * is of the state the tick ended with.
      *
      * It draws against the *configured* canvas rather than the size the
      * window reports, which is the same size TowerPlacementSink hit-
@@ -48,7 +49,8 @@ namespace antwika::tower_defence
          * @param window Window whose renderer receives each frame. Must
          * outlive this sink.
          * @param scene Draws the battle. Must outlive this sink.
-         * @param battle Snapshotted each tick. Must outlive this sink.
+         * @param campaign Snapshotted each tick. Must outlive this
+         * sink.
          * @param overlay Holds the score bar's picture. Must outlive
          * this sink.
          * @param sleeper Paces the frames. Must outlive this sink.
@@ -58,7 +60,7 @@ namespace antwika::tower_defence
         RenderSink(
             IWindow &window,
             const BattleScene &scene,
-            const Battle &battle,
+            const Campaign &campaign,
             const ScoreOverlay &overlay,
             ISleeper &sleeper,
             std::chrono::milliseconds framePeriod,
@@ -80,7 +82,7 @@ namespace antwika::tower_defence
     private:
         IWindow &window;
         const BattleScene &scene;
-        const Battle &battle;
+        const Campaign &campaign;
         const ScoreOverlay &overlay;
         ISleeper &sleeper;
         std::chrono::milliseconds framePeriod;

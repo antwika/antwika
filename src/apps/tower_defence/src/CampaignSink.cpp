@@ -1,22 +1,22 @@
-#include "antwika/tower_defence/BattleSink.hpp"
+#include "antwika/tower_defence/CampaignSink.hpp"
 
 #include <antwika/engine/Events.hpp>
 
 namespace antwika::tower_defence
 {
 
-    BattleSink::BattleSink(Battle &battle) : battle(battle)
+    CampaignSink::CampaignSink(Campaign &campaign) : campaign(campaign)
     {
     }
 
-    void BattleSink::handle(const TickEvent &event)
+    void CampaignSink::handle(const TickEvent &event)
     {
         if (event.event.name != antwika::engine::events::kTick)
         {
             return;
         }
 
-        battle.step();
+        campaign.step();
     }
 
 } // namespace antwika::tower_defence
