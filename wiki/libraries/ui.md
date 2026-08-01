@@ -43,8 +43,9 @@ A container cannot size itself from children it has not been told about yet, so 
 Deferring solves it: because a child is always appended after its parent, measuring is one descending index loop and arranging one ascending one.
 Flat loops rather than recursion, so there is no nesting depth to exceed — and ascending order is also correct paint order for a renderer with no z-order.
 
-**Mis-nesting is not expressible.**
+**Mis-nesting is not expressible, with one case left over that is checked.**
 `row()`/`column()`/`panel()` return a `Scope` that closes the container when it dies, and `Context` has no `end()` of any kind, so there is no unbalanced call to check for.
+The exception is `finish()` called while a `Scope` is still alive, which a destructor cannot see coming: that one throws `ui::UiError` rather than laying out a half-built tree.
 
 **The picture is a value.**
 `Frame::commands` is a vector of plain `FillRect`/`DrawText` values, so a whole layout is asserted with `EXPECT_EQ` and no mock.
