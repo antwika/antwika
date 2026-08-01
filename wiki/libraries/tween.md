@@ -87,7 +87,7 @@ The other ten applications have nothing to tween, and that is a fact about them 
 A tween needs two things: a value that moves, and more than one picture drawn while it is moving.
 Only `game` draws more than one frame per tick, through `app::FramePacedSource`; and only `companion` runs a multi-tick animation it can resolve a position out of.
 
-`life` toggles cells, `atlas_editor` paints pixels and `sudoku` prints a solved grid — all discrete, with nothing in between two states to be part-way through.
+`life` toggles cells, `atlas_editor` paints pixels and `sudoku` writes a digit into a square — all discrete, with nothing in between two states to be part-way through.
 `poker` redraws a static table each tick, and `tower_defence` advances a mob one whole cell per tick and draws it once, so tweening it would mean giving that app sub-tick frames first — a change to how it runs, not a change to how it draws.
 `gfx_demo`, `gfx3d_demo`, `sound_demo` and `ui_demo` are showcases for other libraries; `gfx3d_demo`'s cube turns at a constant rate, which is the one motion that should *not* ease.
 

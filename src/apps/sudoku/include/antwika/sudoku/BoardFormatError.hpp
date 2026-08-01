@@ -14,6 +14,10 @@ namespace antwika::sudoku
      * (. or 0).
      * A row or column outside the grid.
      * A digit outside 0-9 written into a cell.
+     * A puzzle document that cannot be opened, is not the JSON it looks
+     * like, states a version this build cannot reach the current one
+     * from, or fails the puzzle schema -- all of which mean the one
+     * thing to a caller, that what it was handed is not a board.
      *
      * Deliberately a single, specific, catchable type, mirroring
      * antwika::wfc::WfcError and antwika::ecs::EcsError.
