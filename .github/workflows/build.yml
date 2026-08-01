@@ -294,7 +294,7 @@ jobs:
         run: |
           cmake --preset conan-release -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
           cmake --build build --target antwika_tower_defence_tests -j24
-          build/bin/antwika_tower_defence_tests \
+          build/bin/antwika_tower_defence/antwika_tower_defence_tests \
             --gtest_filter='LevelGeneratorTest.*'
 
       - name: Generate coverage report
@@ -492,7 +492,11 @@ jobs:
           failed=0
 
           for subsystem in ${{ matrix.subsystems }}; do
-            binary="${BUILD_DIR}/bin/antwika_${subsystem}_backend_${{ matrix.backend }}_tests"
+            # A suite lands in the directory of the module that owns it,
+            # which antwika_bundle_test() names after the target with
+            # the trailing _tests taken off.
+            module="antwika_${subsystem}_backend_${{ matrix.backend }}"
+            binary="${BUILD_DIR}/bin/${module}/${module}_tests"
 
             if [ ! -f "$binary" ]; then
               echo "Missing binary: $binary"

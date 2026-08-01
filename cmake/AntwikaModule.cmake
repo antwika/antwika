@@ -91,6 +91,53 @@ function(antwika_bundle_app)
     endforeach()
 endfunction()
 
+# A test executable lands in the directory of the module that owns it,
+# and that directory is the target's own name with the trailing _tests
+# taken off.
+# So an application's suite sits beside the executable
+# antwika_bundle_app() put there, and a library's gets a directory named
+# after the library -- one rule, applied to every suite in the tree,
+# rather than applications in directories and every test binary loose in
+# bin/ beside them.
+#
+# The directory is derived from the target rather than named as a second
+# argument, which is what keeps the two from ever disagreeing.
+#
+# Registering the cases with CTest happens here as well, because moving
+# a binary and telling CTest where to find it are one decision: leaving
+# the second in every tests/CMakeLists.txt is exactly the drift that
+# having one home for the rule prevents.
+function(antwika_bundle_test)
+    cmake_parse_arguments(PARSE_ARGV 0 ARG "" "TARGET" "")
+
+    if(NOT ARG_TARGET)
+        message(FATAL_ERROR "antwika_bundle_test: TARGET is required")
+    endif()
+
+    if(ARG_UNPARSED_ARGUMENTS)
+        message(FATAL_ERROR
+            "antwika_bundle_test(${ARG_TARGET}): unrecognised arguments "
+            "'${ARG_UNPARSED_ARGUMENTS}'")
+    endif()
+
+    # The name is what says which module owns the suite, so a target
+    # that does not follow the convention has no directory to go to and
+    # is refused now rather than landing somewhere surprising.
+    if(NOT ARG_TARGET MATCHES "^(.+)_tests$")
+        message(FATAL_ERROR
+            "antwika_bundle_test(${ARG_TARGET}): a test target's name "
+            "must end in '_tests'")
+    endif()
+
+    set_target_properties(${ARG_TARGET} PROPERTIES
+        RUNTIME_OUTPUT_DIRECTORY
+            "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/${CMAKE_MATCH_1}"
+    )
+
+    include(GoogleTest)
+    gtest_discover_tests(${ARG_TARGET})
+endfunction()
+
 # Defines antwika_<NAME>, aliased to antwika::<NAME>, from SOURCES.
 # DEPENDS is linked PUBLIC, since a module's headers are what its
 # dependants include.

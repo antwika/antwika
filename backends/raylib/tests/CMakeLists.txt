@@ -25,8 +25,7 @@ if(ANTWIKA_GFX_BACKEND STREQUAL "raylib")
             raylib
     )
 
-    include(GoogleTest)
-    gtest_discover_tests(antwika_gfx_backend_raylib_tests)
+    antwika_bundle_test(TARGET antwika_gfx_backend_raylib_tests)
 endif()
 
 if(ANTWIKA_INPUT_BACKEND STREQUAL "raylib")
@@ -48,6 +47,5 @@ if(ANTWIKA_INPUT_BACKEND STREQUAL "raylib")
             raylib
     )
 
-    include(GoogleTest)
-    gtest_discover_tests(antwika_input_backend_raylib_tests)
+    antwika_bundle_test(TARGET antwika_input_backend_raylib_tests)
 endif()

@@ -70,5 +70,4 @@ target_compile_definitions(antwika_tower_defence_tests
         ANTWIKA_LEVEL_PROPERTY_SEED_COUNT=${antwika_level_property_seed_count}
 )
 
-include(GoogleTest)
-gtest_discover_tests(antwika_tower_defence_tests)
+antwika_bundle_test(TARGET antwika_tower_defence_tests)

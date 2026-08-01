@@ -37,5 +37,4 @@ target_link_libraries(antwika_companion_tests
         gtest::gtest
 )
 
-include(GoogleTest)
-gtest_discover_tests(antwika_companion_tests)
+antwika_bundle_test(TARGET antwika_companion_tests)

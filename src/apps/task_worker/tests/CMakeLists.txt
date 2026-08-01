@@ -39,5 +39,4 @@ target_link_libraries(antwika_task_worker_tests
         gtest::gtest
 )
 
-include(GoogleTest)
-gtest_discover_tests(antwika_task_worker_tests)
+antwika_bundle_test(TARGET antwika_task_worker_tests)

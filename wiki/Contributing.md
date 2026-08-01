@@ -75,11 +75,22 @@ Then add the directory to the `src/libs/CMakeLists.txt` or `src/apps/CMakeLists.
 Tests are written with GoogleTest, registered with CTest, and live in the module's own `tests/` directory.
 Write them alongside the behaviour rather than bolting them on afterwards.
 
+A `tests/CMakeLists.txt` ends with `antwika_bundle_test()` rather than with `include(GoogleTest)` and `gtest_discover_tests()`:
+
+```cmake
+antwika_bundle_test(TARGET antwika_mylib_tests)
+```
+
+It registers the cases with CTest and puts the binary in the directory of the module that owns it, which is the target's name with the trailing `_tests` taken off.
+So a library's suite is `build/bin/antwika_mylib/antwika_mylib_tests` and an app's sits beside the executable `antwika_bundle_app()` put there.
+A test target whose name does not end in `_tests` is refused at configure time, since the name is what says which module owns the suite.
+
 While iterating, run a single binary or a filter rather than the whole suite:
 
 ```sh
 ctest --test-dir build -R antwika_replay_tests --output-on-failure
-build/bin/antwika_replay_tests --gtest_filter='ReplayReaderTest.*'
+build/bin/antwika_replay/antwika_replay_tests \
+    --gtest_filter='ReplayReaderTest.*'
 ```
 
 Run the full `ctest --test-dir build --output-on-failure` before considering a change done.

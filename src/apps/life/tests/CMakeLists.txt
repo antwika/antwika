@@ -56,5 +56,4 @@ target_link_libraries(antwika_life_tests
         gtest::gtest
 )
 
-include(GoogleTest)
-gtest_discover_tests(antwika_life_tests)
+antwika_bundle_test(TARGET antwika_life_tests)

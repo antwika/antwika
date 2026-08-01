@@ -14,5 +14,4 @@ target_link_libraries(antwika_rng_tests
         gtest::gtest
 )
 
-include(GoogleTest)
-gtest_discover_tests(antwika_rng_tests)
+antwika_bundle_test(TARGET antwika_rng_tests)

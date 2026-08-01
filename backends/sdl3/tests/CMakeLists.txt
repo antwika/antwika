@@ -24,8 +24,7 @@ if(ANTWIKA_GFX_BACKEND STREQUAL "sdl3")
             SDL3::SDL3
     )
 
-    include(GoogleTest)
-    gtest_discover_tests(antwika_gfx_backend_sdl3_tests)
+    antwika_bundle_test(TARGET antwika_gfx_backend_sdl3_tests)
 endif()
 
 if(ANTWIKA_SOUND_BACKEND STREQUAL "sdl3")
@@ -50,8 +49,7 @@ if(ANTWIKA_SOUND_BACKEND STREQUAL "sdl3")
             SDL3::SDL3
     )
 
-    include(GoogleTest)
-    gtest_discover_tests(antwika_sound_backend_sdl3_tests)
+    antwika_bundle_test(TARGET antwika_sound_backend_sdl3_tests)
 endif()
 
 if(ANTWIKA_INPUT_BACKEND STREQUAL "sdl3")
@@ -76,6 +74,5 @@ if(ANTWIKA_INPUT_BACKEND STREQUAL "sdl3")
             SDL3::SDL3
     )
 
-    include(GoogleTest)
-    gtest_discover_tests(antwika_input_backend_sdl3_tests)
+    antwika_bundle_test(TARGET antwika_input_backend_sdl3_tests)
 endif()
