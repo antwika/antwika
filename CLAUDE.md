@@ -455,7 +455,8 @@ Sine, exponential, circular and elastic need a transcendental or a square root, 
 Back and anticipate overshoot, and a `Progress` is between zero and one *by construction*, so an overshoot is unrepresentable rather than merely inexact; admitting one means widening `Progress`, which is `antwika::animation`'s decision rather than this library's.
 What is left is linear, quad, cubic, quart and quint in `In`/`Out`/`InOut`, and bounce in the same three -- every one a polynomial or four parabolas, so every one exact in whole numbers.
 Shaping raises the denominator to the curve's power and the fraction is **not** reduced, since `Progress` compares on the pair rather than the value; a denominator too large for the curve is refused as `TweenError` rather than wrapped, which is `antwika::pathfinding`'s call about an overflowing cost.
-Nothing links it yet, and `apps/game`'s walker motion is deliberately not the first caller: a walker crosses many cells in a row, so easing each step would make it lurch at every tile rather than walk.
+`apps/game` is its one caller, for walker motion, through `game::kWalkerEasing` -- and that constant is `Easing::Linear` on purpose rather than pending: a walker crosses many cells in a row, so easing each step would make it lurch at every tile rather than walk.
+What the tween buys there is a named place for the decision instead of an interpolation nobody would think to question, and linear is also the one curve that provably cannot refuse -- it raises the denominator to the first power -- which is what lets a renderer call it with no guard.
 See [`wiki/libraries/tween.md`](wiki/libraries/tween.md).
 
 `antwika::cli` is the flag parsing every `main()` shares -- `FlagSpec`, `parseCommandLine()`, `helpText()`, `CommandLine`, `CommandLineError` -- and it depends on **nothing**, which is the whole reason it is its own library.

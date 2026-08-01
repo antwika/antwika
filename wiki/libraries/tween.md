@@ -60,12 +60,17 @@ That is [`pathfinding`](pathfinding.md)'s call about an overflowing cost, for th
 **There is nothing to advance.**
 `ease()` is a pure function of its two arguments and holds nothing between calls, for exactly the reason `animation` has no `Animator`: a tween that remembered where it had got to would be simulation state hiding in whatever drew it, and it would look right on a live run and drift on a replay.
 
-## Where it is worth using
+## Who uses it
 
-Nowhere yet — nothing in the tree links it.
+[`apps/game`](../apps/game.md), for walker motion — `game::kWalkerEasing` in `WalkerMotion.hpp`, set to `Easing::Linear`.
 
-The natural fits are the render-side motions that currently move linearly or not at all: a camera pan settling, a UI panel sliding, a building appearing, a companion's idle motion.
+**Linear is the whole point of that call site rather than a placeholder in it.**
+A walker crosses many cells in a row, so easing each cell's step would make it start and stop at every tile — a walk cycle that lurches rather than one that walks.
+What the tween buys there is not a curve but a *named place for the decision*: the easing is one constant, documented, in a header, instead of a linear interpolation nobody would think to question.
 
-**`apps/game`'s walker motion is not one of them**, despite being the case that prompted the library.
-A walker crosses many cells in a row, and easing each cell's step would make it start and stop at every tile — a walk cycle that lurches rather than one that walks.
-Easing the *camera* that follows it is the version of that idea which reads correctly.
+Linear is also the one curve that provably cannot refuse.
+Every other easing raises the denominator to its curve's power and can therefore run out of room; linear raises it to the first, so `walkerBounds()` calls it from a renderer without a guard and without a `try`.
+Any other easing there would need one, which is a second reason that call site is not the place to experiment.
+
+The natural fits for an actual curve are the render-side motions that currently move linearly or not at all: a camera pan settling, a UI panel sliding, a building appearing, a companion's idle motion.
+Easing the camera that follows a walker is the version of "ease the walker" that reads correctly.

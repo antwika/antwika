@@ -4,6 +4,7 @@
 
 #include <antwika/animation/Progress.hpp>
 #include <antwika/gfx/Rect.hpp>
+#include <antwika/tween/Easing.hpp>
 
 #include "antwika/game/Camera.hpp"
 #include "antwika/game/SceneSnapshot.hpp"
@@ -13,6 +14,25 @@ namespace antwika::game
 
     using antwika::animation::Progress;
     using antwika::gfx::Rect;
+
+    /**
+     * @brief Which curve a walker crosses a cell on.
+     *
+     * Linear, and deliberately so: a walker crosses many cells in a row,
+     * so easing each cell's step would make it start and stop at every
+     * tile -- a walk cycle that lurches rather than one that walks.
+     * The curve to ease is the camera that follows it, not this.
+     *
+     * Named here rather than written into walkerBounds() so that the
+     * decision is one edit and is somewhere a reader can find it.
+     *
+     * Every other easing raises the denominator to its curve's power and
+     * can therefore refuse a span it cannot compute exactly; this one
+     * raises it to the first, so it is the one curve that provably
+     * cannot -- which is what lets a renderer call it without a guard.
+     */
+    inline constexpr antwika::tween::Easing kWalkerEasing =
+        antwika::tween::Easing::Linear;
 
     /**
      * @brief Get how far through its step a walker is, frame and all.

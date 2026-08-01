@@ -5,6 +5,7 @@
 #include <antwika/animation/Progress.hpp>
 #include <antwika/gfx/Rect.hpp>
 #include <antwika/time/Tick.hpp>
+#include <antwika/tween/Tween.hpp>
 
 #include "antwika/game/IsoProjection.hpp"
 #include "antwika/game/Walker.hpp"
@@ -31,12 +32,17 @@ namespace antwika::game
 
         const auto phase = stepPhase(walker.ticksIntoStep, subTick);
 
+        // Through the tween rather than straight to interpolate().
+        // The two are the same arithmetic while the easing is linear.
+        // So this changed no pixel, and kWalkerEasing is where it would.
         return Rect{
             .origin =
-                {.x = static_cast<std::int32_t>(antwika::animation::interpolate(
-                     from.origin.x, to.origin.x, phase)),
-                 .y = static_cast<std::int32_t>(antwika::animation::interpolate(
-                     from.origin.y, to.origin.y, phase))},
+                {.x = static_cast<std::int32_t>(
+                     antwika::tween::tweenBetween(
+                         from.origin.x, to.origin.x, kWalkerEasing, phase)),
+                 .y = static_cast<std::int32_t>(
+                     antwika::tween::tweenBetween(
+                         from.origin.y, to.origin.y, kWalkerEasing, phase))},
             .size = to.size};
     }
 

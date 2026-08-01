@@ -76,6 +76,7 @@ target_link_libraries(antwika_game
         antwika::rng
         antwika::simulation
         antwika::time
+        antwika::tween
         antwika::ui
         antwika::wfc
 )

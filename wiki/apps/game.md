@@ -113,6 +113,10 @@ What a frame is handed is an `app::IFramePass`, whose only method takes an `anim
 `Walker::from` is **simulation state rather than a render channel**, because a live run and its replay have to agree on it — and it is a `std::optional<Cell>` rather than a cell that lies, since a freshly placed or freshly restored walker has no previous cell.
 The picture and the state part company at `SceneSnapshot`: `WalkerSprite` carries `from` and `ticksIntoStep` for drawing, while `WalkerView` stays what `GameSummary` and `SaveGame` hold.
 
+The slide itself is `WalkerMotion.hpp`, through [`tween`](../libraries/tween.md) at `kWalkerEasing` — exact rational arithmetic either way, so the same frame of the same tick is the same pixel on every toolchain, which `FrameRateDeterminismTest` pins.
+That constant is `Easing::Linear` **on purpose rather than pending**: a walker crosses many cells in a row, so easing each cell's step would make it start and stop at every tile.
+Easing the camera that follows it is the version of that idea which reads correctly.
+
 **Those frames carry on while the run is paused, which is why the pause reaches the picture too.**
 `SceneSnapshot` carries it, read off `PauseState` by `snapshotOf()` exactly as the camera is, and `GridScene` then draws a held walker at its step's own phase whatever fraction of a tick a frame falls at.
 Without that a walker frozen mid-step slid forward through every tick and snapped back at the start of the next one, for as long as the run stayed held — the whole ticks of its step stop with `WalkerSystem`, and `FramePacedSource`'s frames do not stop with them.

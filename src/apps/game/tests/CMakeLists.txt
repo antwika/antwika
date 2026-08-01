@@ -150,6 +150,7 @@ target_link_libraries(antwika_game_tests
         antwika::rng
         antwika::simulation
         antwika::time::tests::fakes
+        antwika::tween
         antwika::ui
         antwika::wfc
         gtest::gtest
