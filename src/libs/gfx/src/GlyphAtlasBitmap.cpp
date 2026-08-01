@@ -38,6 +38,6 @@ namespace antwika::gfx
         }
 
         return bitmap;
-    }
+    } // GCOVR_EXCL_LINE
 
 } // namespace antwika::gfx
