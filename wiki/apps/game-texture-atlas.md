@@ -75,7 +75,7 @@ A rim specified in pixels rather than as a fraction of the cell is the usual cas
 ## The ground and the roads
 
 **The grid lattice is painted into the ground tile's own edges.**
-`GridScene` draws no lines of its own, so a ground tile that loses its rim loses the grid with it.
+`GridScene` draws no shape of its own bar the placement ghost's border, so a ground tile that loses its rim loses the grid with it.
 
 **A road tile is drawn over the ground and must be opaque across the whole diamond**, since it is blitted on top of a ground tile rather than instead of one.
 A road's stubs must run along the diamond's own axes, or a junction will not meet the road it joins.

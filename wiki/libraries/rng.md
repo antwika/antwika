@@ -5,7 +5,8 @@
 ## What it is for
 
 Producing a reproducible stream of 64-bit values from a seed.
-It is standalone and dependency-free — it links no other `antwika` library and knows nothing about ticks, events or replay — but it is what several things a replay regenerates are built on.
+It is standalone and dependency-free — it depends on nothing but the standard library, links no other `antwika` library and knows nothing about ticks, events or replay — but it is what several things a replay regenerates are built on.
+That is [`wfc`](wfc.md)'s shape and it is chosen for the same reason: a caller wanting a deterministic generator should not have to link a poker engine to get one.
 
 ## Key types
 

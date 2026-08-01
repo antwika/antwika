@@ -15,7 +15,7 @@ build/bin/antwika_life/antwika_life --replay src/apps/life/replays/demo.json
 ```
 
 It opens a window, draws the board each tick, and takes mouse input; drag over cells to toggle them.
-It has no end of its own: it runs until the window is closed, or until a replay dispatches `engine.stop`.
+The run is uncapped and it has no end of its own: only closing the window, reported through `WindowInputSource`, or a replay dispatching `engine.stop` ends it.
 A headless build reports neither, so `Ctrl+C` ends one — and since a `--record` run only writes its file once the run ends, an interrupted headless recording saves nothing.
 
 ## Libraries it composes
@@ -27,7 +27,8 @@ A headless build reports neither, so `Ctrl+C` ends one — and since a `--record
 Each cell is an entity carrying a `Cell` component.
 `LifeSystem` advances every cell one generation per tick through the double-buffered `World` and `SystemScheduler`.
 `Board`, `Grid` and `BoardSink` handle the scripted `life.toggle_cell` event; `PointerToggleSink` handles the mouse.
-`BoardScene`, `RenderSystem` and `PrintSystem` are the write-only output side, and `TickPacer` paces the uncapped run.
+`BoardScene`, `RenderSystem` and `PrintSystem` are the write-only output side.
+Both the windowed and the headless run are paced through `TickPacer`, since a run that never ends would otherwise go flat out.
 
 ## Non-obvious decisions
 

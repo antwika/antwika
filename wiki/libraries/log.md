@@ -5,6 +5,7 @@
 ## What it is for
 
 Emitting diagnostic messages, with the decisions about *whether*, *how* and *where* separated into three injected pieces.
+It is used across the applications and carries no tick or replay logic of its own, exactly as [`time`](time.md) does.
 
 ## Key types
 

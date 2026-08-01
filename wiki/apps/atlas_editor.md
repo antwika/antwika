@@ -8,8 +8,9 @@
 It exists because that sheet is hand-drawn art and is the source of truth for how the game looks -- see [`game-texture-atlas.md`](game-texture-atlas.md), which is the contract the art has to meet and which this editor does nothing to enforce.
 What it gives an artist is the one thing an outside tool cannot: the slot boundaries the game addresses by, drawn over the sheet, so the tile being painted is the tile `game::TileAtlas.hpp` will blit.
 
-It is an ordinary application of this codebase rather than a special case.
+It is an ordinary application of this codebase's tick loop rather than a tool bolted on beside one.
 One tick is one frame, a click is the only input, `--record` and `--replay` work as they do everywhere else, and every pixel it puts down is regenerated from the recorded clicks rather than persisted.
+**It defines no event of its own**: `atlas_editor::EditorSink` turns a press into a painted pixel inside the tick path, so a `--record` file holds the click and a replay works out again which pixel it landed on and what colour went there.
 
 ## Opening a sheet
 
@@ -53,6 +54,9 @@ build-sdl3/bin/antwika_atlas_editor/antwika_atlas_editor --image atlas.png --out
 The three tools are `PAINT`, which puts the selected colour down, `ERASE`, which makes a pixel fully transparent, and `PICK`, which takes the colour under the pointer as the one to paint with.
 A picked colour that no swatch offers leaves no swatch shown as chosen, rather than the nearest one lighting up and lying about it.
 
+**Where the sheet sits and how far in it is zoomed is simulation state**, and `atlas_editor::CanvasView` is `game::Camera`'s counterpart for exactly its reason: which pixel a click means depends entirely on the view, so a view a renderer owned would leave a replay resolving recorded clicks against a different one.
+That is also why zoom is an index into a table of whole scales rather than a scale factor, and why `floorDiv` does the mapping from a window pixel to a sheet pixel -- never a float.
+
 ## What the toolbar does
 
 The bar along the top holds the three tools, the palette, and the buttons `-`, `+`, `fit`, `grid`, `load` and `save`.
@@ -66,10 +70,18 @@ Under the buttons is one line saying what would happen and where: the selected t
 The slot number is counted left to right then top to bottom from zero, which is exactly how `game::TileAtlas.hpp` addresses the sheet -- so the number here is the number that header names.
 A pixel in the strip along an edge too narrow for a whole slot reads `slot -`, because it belongs to no slot the game will ever blit.
 
+## The sheet is uploaded only when it changed
+
+`atlas_editor::Canvas` owns the pixels and counts its changes, and that revision number is what `RenderSink` compares against to decide whether to upload the sheet to the renderer again.
+Painting a pixel the colour it already holds is not a change, so a stroke that crosses one pixel ten times uploads nothing.
+
 ## Saving, loading, and the undo there is not
 
 `save` writes the sheet to `--out` as straight RGBA through `gfx::PngWriter`.
 `load` reads `--image` back in, **losing every unsaved change**, and recentres the view on whatever came back.
+
+`atlas_editor::IAtlasStore` is the one seam to a filesystem in this application, and `PngAtlasStore` -- which reads and writes PNGs through `gfx::PngReader` and `gfx::PngWriter` -- is its one implementation.
+That is what lets every other class here be exercised with no file on disk at all: a test hands the session a store answering from memory and the session cannot tell the difference.
 
 Neither can end a session.
 A save to a full disk, a load of a file somebody has deleted, a save with no `--out` at all: each is reported in the status line and the session carries on with every unsaved change still in hand.
@@ -85,14 +97,16 @@ antwika_atlas_editor --image atlas.png --out mine.png --replay session.json
 ```
 
 **A recording here is large**, and knowingly so.
-Most applications in this tree thin pointer movement out of the stream before it is recorded, but a paint tool cannot: the movement between two clicks *is* the stroke, and the pixel readout follows it.
-So a `--record` file grows at the window system's rate rather than the tick rate.
+**This is the one application in the tree that thins nothing out of its recording.**
+Most applications attach one or both of `input`'s upstream decorators, but a paint tool can attach neither: `CoalescingPointerSource` would drop every pixel of a stroke but the last, and `IdleMotionSource` would freeze the pixel readout between clicks -- and that readout is simulation state, so it may not be driven off `input::PointerHintChannel` the way `apps/game`'s placement ghost is.
+The movement between two clicks *is* the stroke, so a `--record` file grows at the window system's rate rather than the tick rate, which is the price of that.
 
 ## How a session ends
 
 Closing the window ends it, and so does Escape; both are input, so both are recorded and both replay.
 The `null` backend reports neither, which is why there is also `--max-ticks <n>`, defaulting to 90000 -- an hour at the 40 ms frame period.
-Reaching it asks the session to stop rather than failing, so a `--record` run still reaches its epilogue and writes its file.
+Reaching it ends the session by *asking it to stop*, through `atlas_editor::TickLimitSource`, rather than through `EngineLoop`'s own `maxTicks`, which throws.
+Running out of the ticks somebody asked for is not a failure, and a `--record` run has to reach its epilogue to save its file at all.
 `--max-ticks 0` removes the cap, which is what somebody in front of a real window wants.
 
 ## What is left checking the art

@@ -7,8 +7,11 @@
 Running a simulation.
 This is where the project's central claim lives: a live run and a replayed one go through the same code path, differing only in what supplies each tick's events, so a replay reproduces state by construction.
 
-Recording a run and reading one back is [`replay`](replay.md)'s, which depends on this library.
+Recording a run and reading one back is [`replay`](replay.md)'s, which depends on this library and is never depended on by it.
 A live run therefore links no JSON, no schema validator and no migration chain.
+
+**Running a run and recording one used to be one library, and it was called `replay`.**
+That named the smaller half of it — a live run is not a replay at all — and it is what left the seam every live input source implements called `IReplaySource`.
 
 ## Key types
 

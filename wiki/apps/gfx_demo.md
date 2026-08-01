@@ -32,6 +32,11 @@ Its two buttons count and reset a click counter the loop owns, which is the poin
 **The pointer is an argument, not a device read.**
 `app::pointerFrom()` folds `input`'s edges into a `ui::Pointer` that is handed to the `ui::Context`, so the UI library still reads nothing.
 
+**It is the worked example for `ui::applyHover()`, and it earns that honestly.**
+The buttons light up on approach without one byte entering a recording: `DemoLoop` publishes the free-moving position to an `input::PointerHintChannel`, `app::hoverFrom()` reads it as a `ui::HoverPointer`, and one `applyHover()` call repaints the frame after it was resolved.
+Because this app has no recorder to gate the stream for it, `DemoLoop` gates the position out of its own `ui::Pointer` by hand, which is what makes the demonstration honest rather than circular — a hover drawn from a position the `Pointer` still carried would prove nothing.
+See [`docs/hover-is-not-simulation.md`](../../docs/hover-is-not-simulation.md).
+
 **Activation is on the press.**
 There is no release-to-activate and no pointer capture, because either would be cross-frame state — see [`ui`](../libraries/ui.md).
 
