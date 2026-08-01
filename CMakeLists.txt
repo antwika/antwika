@@ -54,6 +54,12 @@ endif()
 set(ANTWIKA_SOUND_BACKEND "null" CACHE STRING
     "Sound backend to compile and link, named after a backends/ subdirectory")
 
+# Not "auto" either, and for sound's reason rather than a new one: a
+# build asking for sdl3 windows has said nothing whatever about wanting
+# to open a socket.
+set(ANTWIKA_NETWORK_BACKEND "null" CACHE STRING
+    "Network backend to compile and link, named after a backends/ subdirectory")
+
 if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
     add_compile_options(
         -Wall

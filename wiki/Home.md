@@ -36,6 +36,7 @@ Each page covers what the library is for, its key headers and types, what it dep
 | [ui](libraries/ui.md) | Immediate-mode layout that produces a picture as a value. |
 | [input](libraries/input.md) | Backend-agnostic keyboard and pointer edges, delivered as replay input. |
 | [sound](libraries/sound.md) | PCM decoding, mixing and playback, on the thread that pumps it. |
+| [network](libraries/network.md) | Bytes between hosts, pumped from the tick loop and owning no thread. |
 | [animation](libraries/animation.md) | Which frame to show, as a pure function of a tick the caller already has. |
 | [i18n](libraries/i18n.md) | A message catalogue keyed by a symbolic id rather than by English. |
 | [cli](libraries/cli.md) | Flag tables, one parse, and a help text that cannot disagree with it. |

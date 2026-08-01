@@ -1,10 +1,10 @@
 # Exactly one backend is compiled per subsystem, chosen by
-# ANTWIKA_GFX_BACKEND, ANTWIKA_INPUT_BACKEND and ANTWIKA_SOUND_BACKEND.
-# Each subdirectory defines the same three target names,
-# antwika_gfx_backend, antwika_input_backend and antwika_sound_backend,
-# so apps link antwika::gfx_backend, antwika::input_backend and
-# antwika::sound_backend without knowing which framework they were built
-# against.
+# ANTWIKA_GFX_BACKEND, ANTWIKA_INPUT_BACKEND, ANTWIKA_SOUND_BACKEND and
+# ANTWIKA_NETWORK_BACKEND.
+# Each subdirectory defines the same four target names, so apps link
+# antwika::gfx_backend, antwika::input_backend, antwika::sound_backend
+# and antwika::network_backend without knowing which framework they
+# were built against.
 file(GLOB ANTWIKA_BACKEND_FILES
     RELATIVE "${CMAKE_CURRENT_SOURCE_DIR}"
     "${CMAKE_CURRENT_SOURCE_DIR}/*/CMakeLists.txt")
@@ -21,7 +21,8 @@ list(JOIN ANTWIKA_BACKENDS ", " ANTWIKA_BACKENDS_TEXT)
 foreach(SELECTION
         ANTWIKA_GFX_BACKEND
         ANTWIKA_INPUT_BACKEND
-        ANTWIKA_SOUND_BACKEND)
+        ANTWIKA_SOUND_BACKEND
+        ANTWIKA_NETWORK_BACKEND)
     if(NOT IS_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/${${SELECTION}}")
         message(FATAL_ERROR
             "Unknown ${SELECTION} '${${SELECTION}}'. "
@@ -47,7 +48,8 @@ set(ANTWIKA_REAL_BACKENDS "")
 foreach(SELECTION
         ANTWIKA_GFX_BACKEND
         ANTWIKA_INPUT_BACKEND
-        ANTWIKA_SOUND_BACKEND)
+        ANTWIKA_SOUND_BACKEND
+        ANTWIKA_NETWORK_BACKEND)
     if(NOT ${SELECTION} STREQUAL "null")
         list(APPEND ANTWIKA_REAL_BACKENDS ${${SELECTION}})
     endif()
@@ -61,8 +63,9 @@ if(ANTWIKA_REAL_BACKEND_COUNT GREATER 1)
 
     message(FATAL_ERROR
         "ANTWIKA_GFX_BACKEND '${ANTWIKA_GFX_BACKEND}', "
-        "ANTWIKA_INPUT_BACKEND '${ANTWIKA_INPUT_BACKEND}' and "
-        "ANTWIKA_SOUND_BACKEND '${ANTWIKA_SOUND_BACKEND}' name more "
+        "ANTWIKA_INPUT_BACKEND '${ANTWIKA_INPUT_BACKEND}', "
+        "ANTWIKA_SOUND_BACKEND '${ANTWIKA_SOUND_BACKEND}' and "
+        "ANTWIKA_NETWORK_BACKEND '${ANTWIKA_NETWORK_BACKEND}' name more "
         "than one framework (${ANTWIKA_REAL_BACKENDS_TEXT}). "
         "Use one framework per build, or 'null' for the subsystems "
         "that should opt out.")
@@ -73,7 +76,8 @@ endif()
 set(ANTWIKA_SELECTED_BACKENDS
     ${ANTWIKA_GFX_BACKEND}
     ${ANTWIKA_INPUT_BACKEND}
-    ${ANTWIKA_SOUND_BACKEND})
+    ${ANTWIKA_SOUND_BACKEND}
+    ${ANTWIKA_NETWORK_BACKEND})
 
 list(REMOVE_DUPLICATES ANTWIKA_SELECTED_BACKENDS)
 
@@ -85,7 +89,7 @@ endforeach()
 # configures cleanly today and fails much later, at link, with an
 # undefined makeSelected*Backend.  Saying so here names the actual
 # mistake instead.
-foreach(SUBSYSTEM gfx input sound)
+foreach(SUBSYSTEM gfx input sound network)
     string(TOUPPER ${SUBSYSTEM} SUBSYSTEM_UPPER)
 
     if(NOT TARGET antwika_${SUBSYSTEM}_backend)

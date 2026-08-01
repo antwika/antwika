@@ -28,12 +28,14 @@ class AntwikaConan(ConanFile):
         "gfx_backend": ["null", "sdl3", "raylib"],
         "input_backend": ["auto", "null", "sdl3", "raylib"],
         "sound_backend": ["null", "sdl3"],
+        "network_backend": ["null"],
     }
 
     default_options = {
         "gfx_backend": "null",
         "input_backend": "auto",
         "sound_backend": "null",
+        "network_backend": "null",
     }
 
     @property
@@ -53,6 +55,7 @@ class AntwikaConan(ConanFile):
             str(self.options.gfx_backend),
             self._input_backend,
             str(self.options.sound_backend),
+            str(self.options.network_backend),
         }
         backends.discard("null")
 
@@ -65,9 +68,10 @@ class AntwikaConan(ConanFile):
         # build from downloading a framework it cannot use.
         if len(self._selected_frameworks) > 1:
             raise ConanInvalidConfiguration(
-                "gfx_backend, input_backend and sound_backend name more "
-                "than one framework, which would compete for one event "
-                "queue and double the dependency graph"
+                "gfx_backend, input_backend, sound_backend and "
+                "network_backend name more than one framework, which "
+                "would compete for one event queue and double the "
+                "dependency graph"
             )
 
     def requirements(self):
@@ -107,6 +111,9 @@ class AntwikaConan(ConanFile):
         )
         toolchain.cache_variables["ANTWIKA_SOUND_BACKEND"] = str(
             self.options.sound_backend
+        )
+        toolchain.cache_variables["ANTWIKA_NETWORK_BACKEND"] = str(
+            self.options.network_backend
         )
         toolchain.generate()
 
