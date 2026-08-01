@@ -13,8 +13,10 @@
 
 #include "antwika/game/Building.hpp"
 #include "antwika/game/BuildingKind.hpp"
+#include "antwika/game/Coverage.hpp"
 #include "antwika/game/Resource.hpp"
 #include "antwika/game/ResourceBar.hpp"
+#include "antwika/game/Service.hpp"
 #include "antwika/game/Walker.hpp"
 
 namespace antwika::game
@@ -65,6 +67,12 @@ namespace antwika::game
             MessageId::GameResourceClay,
             MessageId::GameResourcePottery};
 
+        constexpr std::array<MessageId, kServiceCount> kServiceLabels{
+            MessageId::GameServiceWater,
+            MessageId::GameServiceHealth,
+            MessageId::GameServiceSafety,
+            MessageId::GameServiceStructure};
+
         [[nodiscard]] MessageId labelOf(BuildingKind kind) noexcept
         {
             return kBuildingLabels[
@@ -89,6 +97,22 @@ namespace antwika::game
             const std::array<std::string_view, 3> args{named, amount, most};
 
             return translator.formatted(MessageId::GameReadoutAmount, args);
+        }
+
+        // Per cent rather than the ticks the component counts.
+        // A countdown in ticks is a number about the simulation.
+        // What a reader wants is how much of the service is left.
+        [[nodiscard]] std::string coverageText(
+            const Translator &translator, Service service, std::int32_t left)
+        {
+            const auto named = translator.text(
+                kServiceLabels[serviceIndex(service) % kServiceCount]);
+            const auto share =
+                std::to_string(left * 100 / kCoverageFull);
+            const std::array<std::string_view, 2> args{named, share};
+
+            return translator.formatted(
+                MessageId::GameReadoutCoverage, args);
         }
 
         // One line's worth, before anything decides where to put it.
@@ -131,6 +155,29 @@ namespace antwika::game
                                 .colour =
                                     resourceColour(kResources[slot])});
                     }
+                }
+
+                // Every kind of building, rather than only a house.
+                // Risk is a fact about any building at all.
+                // And coverage is what holds risk off.
+                // A service that has lapsed is simply not listed.
+                // The same way a source with no larder lists no stock.
+                // Absent and zero say one thing, so one line will do.
+                for (const auto service : kServices)
+                {
+                    const auto left =
+                        building.coverage[serviceIndex(service)];
+
+                    if (left <= 0)
+                    {
+                        continue;
+                    }
+
+                    said.push_back(
+                        Said{ // GCOVR_EXCL_LINE
+                            .text = coverageText(
+                                translator, service, left),
+                            .colour = serviceColour(service)});
                 }
             }
 

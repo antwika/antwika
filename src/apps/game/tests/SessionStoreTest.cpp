@@ -7,6 +7,7 @@
 #include "antwika/game/BuildTool.hpp"
 #include "antwika/game/Building.hpp"
 #include "antwika/game/BuildingIndex.hpp"
+#include "antwika/game/BuildingKind.hpp"
 #include "antwika/game/Camera.hpp"
 #include "antwika/game/Cell.hpp"
 #include "antwika/game/Footprint.hpp"
@@ -254,5 +255,21 @@ namespace
 
         EXPECT_TRUE(built.has(Cell{.x = 4, .y = 4}));
         EXPECT_FALSE(built.has(Cell{.x = 9, .y = 9}));
+    }
+
+    // A session resumed is a session served exactly as it was.
+    TEST_F(SessionStoreTest, RestoreThenTake_BringsCoverageBack)
+    {
+        SaveGame save;
+        save.buildings = {
+            antwika::game::SavedBuilding{
+                .at = {.x = 5, .y = 5},
+                .kind = antwika::game::BuildingKind::House,
+                .coverage = {3, 0, 9, 0}}};
+
+        store.restore(save);
+        world.commit();
+
+        EXPECT_EQ(store.take().buildings, save.buildings);
     }
 } // namespace

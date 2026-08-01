@@ -328,6 +328,12 @@ namespace antwika::game
     {
         for (const auto &building : document.at("buildings"))
         {
+            // Read before the record is built rather than inside it.
+            // An aggregate holding a vector needs a landing pad.
+            // For any call made after it, to unwind the half-built one.
+            // Moving a vector in cannot throw, so none is needed.
+            auto held = linkListFromJson(building);
+
             save.buildings.push_back(SavedBuilding{
                 .at = cellFromJson(building),
                 .kind = buildingKindFromJson(
@@ -340,7 +346,7 @@ namespace antwika::game
                     building.at("ticksUntilDrain").get<std::int32_t>(),
                 .ticksUntilRisk =
                     building.at("ticksUntilRisk").get<std::int32_t>(),
-                .walkers = linkListFromJson(building),
+                .walkers = std::move(held),
             });
         }
     }

@@ -14,6 +14,7 @@
 #include <antwika/replay/VersionedDocument.hpp>
 
 #include "antwika/game/Building.hpp"
+#include "antwika/game/Coverage.hpp"
 #include "antwika/game/SaveFormatError.hpp"
 #include "antwika/game/Walker.hpp"
 #include "SaveSections.hpp"
@@ -117,7 +118,13 @@ namespace antwika::game
             schema["properties"]["camera"] = cameraShape();
             schema["properties"]["paths"] = arrayOf(cellShape());
             schema["properties"]["walkers"] = arrayOf(walkerShape());
-            schema["properties"]["buildings"] = arrayOf(buildingShape());
+
+            // Each section adds its own members to the shape here.
+            // Appending a line rather than editing one.
+            // See SaveSections.hpp.
+            auto building = buildingShape();
+            describeCoverage(building);
+            schema["properties"]["buildings"] = arrayOf(std::move(building));
             schema["properties"]["seed"] = countShape();
             return schema;
         }
@@ -151,6 +158,7 @@ namespace antwika::game
 
         walkersToJson(save, encoded);
         buildingsToJson(save, encoded);
+        coverageToJson(save, encoded);
 
         encoded["seed"] = save.seed;
         return encoded;
@@ -194,6 +202,7 @@ namespace antwika::game
 
         walkersFromJson(document, save);
         buildingsFromJson(document, save);
+        coverageFromJson(document, save);
 
         save.seed = document.at("seed").get<std::uint64_t>();
 
@@ -242,6 +251,12 @@ namespace antwika::game
             buildingAt.emplace(entity, save.buildings.size());
             const auto building = world.get<Building>(entity);
 
+            // Read before the record is built rather than inside it.
+            // An aggregate holding a vector needs a landing pad.
+            // For any call made after it, to unwind the half-built one.
+            // Which is a branch no input could ever reach.
+            const auto coverage = coverageOf(world, entity);
+
             save.buildings.push_back(SavedBuilding{
                 .at = world.get<Cell>(entity),
                 .kind = building.kind,
@@ -250,7 +265,8 @@ namespace antwika::game
                 .ticksUntilSpawn = building.ticksUntilSpawn,
                 .ticksUntilDrain = building.ticksUntilDrain,
                 .ticksUntilRisk = building.ticksUntilRisk,
-                .walkers = {}});
+                .walkers = {},
+                .coverage = coverage.ticksLeft});
         }
 
         // The links, written only where both ends were recorded.

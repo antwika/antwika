@@ -45,15 +45,14 @@ namespace antwika::game
     inline constexpr std::int32_t kMaxRisk = 100;
 
     /**
-     * @brief How much risk a passing fireman or architect takes off.
-     */
-    inline constexpr std::int32_t kRiskRelief = 25;
-
-    /**
-     * @brief Ticks between one point of risk and the next.
+     * @brief Ticks between one step of risk and the next.
      *
-     * One a second, so a building nobody tends reaches kMaxRisk after a
-     * hundred seconds and is gone.
+     * One a second, so a building in a district nobody serves reaches
+     * kMaxRisk after a hundred seconds and is gone -- and a served one
+     * works its way back down at the same rate.
+     * Which way the step goes is CoverageSystem's to decide; there is
+     * deliberately no separate amount a walker takes off, because a
+     * walker no longer takes anything off.
      */
     inline constexpr std::int32_t kRiskPeriodTicks = kTicksPerSecond;
 

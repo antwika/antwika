@@ -831,7 +831,8 @@ TEST(PrintSummaryTest, WritesEveryBuildingAndWhatItIs)
         .walkers = {},
         .buildings =
             {{.at = {.x = 1, .y = 2},
-              .kind = antwika::game::BuildingKind::House},
+              .kind = antwika::game::BuildingKind::House,
+              .coverage = {11, 0, 22, 0}},
              {.at = {.x = 3, .y = 4},
               .kind = antwika::game::BuildingKind::Well}},
         .camera = Camera(Point{.x = 0, .y = 0})};
@@ -839,8 +840,18 @@ TEST(PrintSummaryTest, WritesEveryBuildingAndWhatItIs)
     antwika::game::printSummary(out, summary);
 
     EXPECT_NE(out.str().find("Buildings: 2\n"), std::string::npos);
-    EXPECT_NE(out.str().find("  house at (1, 2)\n"), std::string::npos);
-    EXPECT_NE(out.str().find("  well at (3, 4)\n"), std::string::npos);
+
+    // Every service, including the ones nothing ever reached.
+    EXPECT_NE(
+        out.str().find(
+            "  house at (1, 2) covered water=11 health=0 safety=22 "
+            "structure=0\n"),
+        std::string::npos);
+    EXPECT_NE(
+        out.str().find(
+            "  well at (3, 4) covered water=0 health=0 safety=0 "
+            "structure=0\n"),
+        std::string::npos);
 }
 
 // replays/demo.json presses the House palette button at this pixel.

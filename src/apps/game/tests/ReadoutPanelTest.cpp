@@ -11,10 +11,12 @@
 #include "antwika/game/Building.hpp"
 #include "antwika/game/BuildingKind.hpp"
 #include "antwika/game/Cell.hpp"
+#include "antwika/game/Coverage.hpp"
 #include "antwika/game/ReadoutPanel.hpp"
 #include "antwika/game/Resource.hpp"
 #include "antwika/game/ResourceBar.hpp"
 #include "antwika/game/SceneSnapshot.hpp"
+#include "antwika/game/Service.hpp"
 #include "antwika/game/Walker.hpp"
 
 using antwika::game::tests::kTranslator;
@@ -23,6 +25,7 @@ using antwika::game::BuildingKind;
 using antwika::game::BuildingSprite;
 using antwika::game::Cell;
 using antwika::game::HoverReadout;
+using antwika::game::kCoverageFull;
 using antwika::game::kReadoutTextScale;
 using antwika::game::kReadoutTitle;
 using antwika::game::kStockCapacity;
@@ -30,6 +33,8 @@ using antwika::game::kWalkerLoad;
 using antwika::game::readoutPanel;
 using antwika::game::Resource;
 using antwika::game::resourceColour;
+using antwika::game::Service;
+using antwika::game::serviceColour;
 using antwika::game::WalkerKind;
 using antwika::game::WalkerSprite;
 using antwika::gfx::Point;
@@ -251,4 +256,55 @@ TEST(ReadoutPanelTest, EqualityComparesEveryField)
     auto recoloured = base;
     recoloured.lines[0].colour = resourceColour(Resource::Clay);
     EXPECT_NE(base, recoloured);
+}
+
+// Coverage is listed for every kind of building, not only a house.
+// Risk is a fact about any building, and coverage is what holds it off.
+TEST(ReadoutPanelTest, Panel_ListsEveryServiceThatStillReachesABuilding)
+{
+    const auto panel = readoutPanel(
+        over(
+            BuildingSprite{
+                .at = Cell{},
+                .kind = BuildingKind::Well,
+                .coverage = {kCoverageFull, 0, kCoverageFull / 2, 0}}),
+        kCanvas,
+        kTranslator);
+
+    ASSERT_EQ(panel.lines.size(), 3U);
+    EXPECT_EQ(panel.lines[0].text, "well");
+    EXPECT_EQ(panel.lines[1].text, "water 100%");
+    EXPECT_EQ(panel.lines[2].text, "safety 50%");
+}
+
+// A service that has lapsed is not listed at all.
+// An absent line and a line reading nothing say one thing.
+TEST(ReadoutPanelTest, Panel_ListsNoServiceThatHasLapsed)
+{
+    const auto panel = readoutPanel(
+        over(
+            BuildingSprite{
+                .at = Cell{},
+                .kind = BuildingKind::House,
+                .stock = {1, 2, 3}}),
+        kCanvas,
+        kTranslator);
+
+    ASSERT_EQ(panel.lines.size(), 4U);
+    EXPECT_EQ(panel.lines[0].text, "house");
+}
+
+TEST(ReadoutPanelTest, Panel_ColoursACoverageLineOutOfTheServiceTable)
+{
+    const auto panel = readoutPanel(
+        over(
+            BuildingSprite{
+                .at = Cell{},
+                .kind = BuildingKind::Doctor,
+                .coverage = {0, kCoverageFull, 0, 0}}),
+        kCanvas,
+        kTranslator);
+
+    ASSERT_EQ(panel.lines.size(), 2U);
+    EXPECT_EQ(panel.lines[1].colour, serviceColour(Service::Health));
 }

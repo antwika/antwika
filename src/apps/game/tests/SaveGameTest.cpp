@@ -1,6 +1,8 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
+#include <array>
+#include <cstddef>
 #include <cstdint>
 #include <string>
 #include <vector>
@@ -13,15 +15,19 @@
 
 #include "antwika/game/Building.hpp"
 #include "antwika/game/BuildingKind.hpp"
+#include "antwika/game/Coverage.hpp"
 #include "antwika/game/PathIndex.hpp"
 #include "antwika/game/SaveFormatError.hpp"
 #include "antwika/game/SaveGame.hpp"
+#include "antwika/game/Service.hpp"
 #include "antwika/game/Walker.hpp"
 
 using antwika::ecs::World;
 using antwika::game::Building;
 using antwika::game::BuildingKind;
 using antwika::game::Camera;
+using antwika::game::kCoverageFull;
+using antwika::game::kServiceCount;
 using antwika::game::Cell;
 using antwika::game::Direction;
 using antwika::game::GameState;
@@ -612,4 +618,127 @@ TEST(SaveGameTest, SaveEqualityComparesTheBuildings)
 
     EXPECT_EQ(base, base);
     EXPECT_NE(base, other);
+}
+
+// The additive member, and what its absence means.
+// A version-3 file written before coverage existed names none.
+// Which is the very thing a building nothing has reached holds.
+TEST(SaveGameTest, RoundTripsABuildingsCoverage)
+{
+    SaveGame save;
+    save.buildings = {antwika::game::SavedBuilding{
+        .at = {.x = 3, .y = 4},
+        .kind = BuildingKind::House,
+        .coverage = {kCoverageFull, 0, 12, 3}}};
+
+    const auto encoded = saveGameToJson(save);
+
+    ASSERT_TRUE(encoded.at("buildings").at(0).contains("coverage"));
+    EXPECT_EQ(saveGameFromJson(encoded), save);
+}
+
+TEST(SaveGameTest, WritesNoCoverageForABuildingNothingHasReached)
+{
+    SaveGame save;
+    save.buildings = {antwika::game::SavedBuilding{.at = {.x = 1, .y = 1}}};
+
+    const auto encoded = saveGameToJson(save);
+
+    EXPECT_FALSE(encoded.at("buildings").at(0).contains("coverage"));
+    EXPECT_EQ(saveGameFromJson(encoded).buildings[0].coverage,
+              (std::array<std::int32_t, kServiceCount>{}));
+}
+
+// A countdown above the full one is longer than any walker leaves.
+// So a file naming one is a session nobody ever played.
+TEST(SaveGameTest, RejectsCoverageAboveWhatAWalkerCouldEverLeave)
+{
+    SaveGame save;
+    save.buildings = {antwika::game::SavedBuilding{
+        .at = {.x = 1, .y = 1}, .coverage = {kCoverageFull + 1, 0, 0, 0}}};
+
+    const auto encoded = saveGameToJson(save);
+
+    EXPECT_THROW((void)saveGameFromJson(encoded), SaveFormatError);
+}
+
+TEST(SaveGameTest, RejectsACoverageArrayThatIsNotOnePerService)
+{
+    SaveGame save;
+    save.buildings = {antwika::game::SavedBuilding{.at = {.x = 1, .y = 1}}};
+
+    auto encoded = saveGameToJson(save);
+    encoded["buildings"][0]["coverage"] = {1, 2};
+
+    EXPECT_THROW((void)saveGameFromJson(encoded), SaveFormatError);
+}
+
+// A hand-written document of the version this build writes.
+// From before coverage was a thing anybody stored.
+// Step four of docs/schema-versioning.md, for an additive member.
+TEST(SaveGameTest, ReadsAVersionThreeDocumentWrittenBeforeCoverage)
+{
+    const auto document = nlohmann::json::parse(R"({
+        "magic": "antwika-game-save",
+        "version": 3,
+        "state": {"ticksProcessed": 9, "score": 2},
+        "extent": {"width": 8, "height": 8},
+        "camera": {"panX": 1, "panY": 2, "zoomLevel": 1},
+        "paths": [{"x": 0, "y": 0}],
+        "walkers": [],
+        "buildings": [
+            {"x": 3, "y": 4, "kind": "house", "stock": [1, 2, 3],
+             "risk": 5, "ticksUntilSpawn": 6, "ticksUntilDrain": 7,
+             "ticksUntilRisk": 8}
+        ],
+        "seed": 11
+    })");
+
+    const auto save = saveGameFromJson(document);
+
+    ASSERT_EQ(save.buildings.size(), 1U);
+    EXPECT_EQ(save.buildings[0].coverage,
+              (std::array<std::int32_t, kServiceCount>{}));
+    EXPECT_EQ(save.buildings[0].risk, 5);
+}
+
+// Coverage is read out of the World like every other piece of state.
+TEST(SaveGameTest, TakesEachBuildingsCoverageFromTheWorld)
+{
+    ::testing::NiceMock<MockLogger> logger;
+    World world{logger};
+    const PathIndex paths;
+
+    const auto house = world.create();
+    world.add<Cell>(house, Cell{.x = 2, .y = 2});
+    world.add<Building>(house, Building{.kind = BuildingKind::House});
+    antwika::game::setCoverage(
+        world, house, antwika::game::Coverage{.ticksLeft = {4, 5, 6, 7}});
+    world.commit();
+
+    const auto save = saveGameOf(
+        world, paths, Camera(), GameState{},
+        GridExtent{.width = 8, .height = 8});
+
+    ASSERT_EQ(save.buildings.size(), 1U);
+    EXPECT_EQ(save.buildings[0].coverage,
+              (std::array<std::int32_t, kServiceCount>{4, 5, 6, 7}));
+}
+
+// The member has to be in the comparison.
+// Or a round trip that dropped it would still match.
+TEST(SaveGameTest, SavedBuildingEqualityComparesTheCoverage)
+{
+    const antwika::game::SavedBuilding base{
+        .at = {.x = 1, .y = 1}, .coverage = {1, 2, 3, 4}};
+
+    EXPECT_EQ(base, base);
+
+    for (std::size_t slot = 0; slot < kServiceCount; ++slot)
+    {
+        auto changed = base;
+        changed.coverage[slot] += 1;
+
+        EXPECT_NE(base, changed);
+    }
 }

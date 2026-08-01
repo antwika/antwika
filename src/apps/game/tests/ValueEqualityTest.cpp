@@ -83,6 +83,10 @@ namespace
             base, [](BuildingView &b) { b.at = Cell{.x = 0, .y = 0}; });
         expectMemberCompared(
             base, [](BuildingView &b) { b.kind = BuildingKind::Well; });
+        expectMemberCompared(
+            base, [](BuildingView &b) { b.coverage[0] = 99; });
+        expectMemberCompared(
+            base, [](BuildingView &b) { b.coverage[3] = 99; });
     }
 
     TEST(SceneSnapshotTest, BuildingSpriteEqualityComparesEveryField)
@@ -101,6 +105,10 @@ namespace
             base, [](BuildingSprite &b) { b.stock[0] = 99; });
         expectMemberCompared(
             base, [](BuildingSprite &b) { b.stock[1] = 99; });
+        expectMemberCompared(
+            base, [](BuildingSprite &b) { b.coverage[0] = 99; });
+        expectMemberCompared(
+            base, [](BuildingSprite &b) { b.coverage[3] = 99; });
     }
 
     [[nodiscard]] SceneSnapshot populatedSnapshot()

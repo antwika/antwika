@@ -7,6 +7,10 @@ add_executable(antwika_game_tests
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/BuildingIndex.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/BuildingSystem.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/CityGrid.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/Coverage.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/CoverageSystem.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/Desirability.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/DesirabilitySystem.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/FpsReadout.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/FrameMeter.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/Game.cpp
@@ -31,6 +35,7 @@ add_executable(antwika_game_tests
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/RoadPlan.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/KeyText.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/SaveCli.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/SaveCoverage.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/SaveGame.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/SaveGameFile.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/SaveDirectory.cpp
@@ -41,6 +46,7 @@ add_executable(antwika_game_tests
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/SaveMigrationV2ToV3.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/SaveSections.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/SessionGatedSystem.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/StandingBuildings.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/SessionStore.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/SpawnSystem.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/Toolbar.cpp
@@ -63,6 +69,9 @@ add_executable(antwika_game_tests
     CameraTest.cpp
     CellTest.cpp
     CityGridTest.cpp
+    CoverageSystemTest.cpp
+    CoverageTest.cpp
+    DesirabilityTest.cpp
     DirectionTest.cpp
     GameStateReducerTest.cpp
     GameStateTest.cpp
@@ -104,7 +113,9 @@ add_executable(antwika_game_tests
     SaveMigrationTest.cpp
     SceneSnapshotTest.cpp
     ServiceTest.cpp
+    ServiceWalkTest.cpp
     SessionStoreTest.cpp
+    StandingBuildingsTest.cpp
     SpawnSystemTest.cpp
     TileAtlasTest.cpp
     FrameRateDeterminismTest.cpp

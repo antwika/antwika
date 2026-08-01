@@ -127,6 +127,27 @@ namespace antwika::game
     void buildingsFromJson(const nlohmann::json &document, SaveGame &save);
 
     /**
+     * @brief Add the coverage member to a building's shape.
+     * @param building The building shape to extend.
+     */
+    void describeCoverage(nlohmann::json &building);
+
+    /**
+     * @brief Write every building's coverage into the document.
+     * @param save The state to read.
+     * @param document The document whose buildings array to extend.
+     */
+    void coverageToJson(const SaveGame &save, nlohmann::json &document);
+
+    /**
+     * @brief Read every building's coverage out of the document.
+     * @param document The validated document to read.
+     * @param save The state whose buildings to fill in; already sized
+     * by buildingsFromJson().
+     */
+    void coverageFromJson(const nlohmann::json &document, SaveGame &save);
+
+    /**
      * @brief Refuse a document whose walker and building links disagree.
      *
      * An index past the end of the array it points into is corrupt, and

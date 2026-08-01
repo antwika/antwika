@@ -44,6 +44,22 @@ namespace antwika::game
         constexpr Color kPotteryFill{
             .red = 210, .green = 168, .blue = 96};
 
+        // Ink rather than fill: no bar is drawn in these yet.
+        // What reads them is the hover panel's coverage lines.
+        // They live beside the resource colours all the same.
+        // One table for "what colour is this thing" beats two.
+        constexpr Color kWaterInk{
+            .red = 104, .green = 174, .blue = 216};
+
+        constexpr Color kHealthInk{
+            .red = 214, .green = 120, .blue = 148};
+
+        constexpr Color kSafetyInk{
+            .red = 224, .green = 148, .blue = 78};
+
+        constexpr Color kStructureInk{
+            .red = 170, .green = 176, .blue = 188};
+
         // Derived from the camera rather than fixed.
         // A bar keeps its proportion to what it gauges at every zoom.
         [[nodiscard]] std::int32_t barWidth(const Camera &camera) noexcept
@@ -123,6 +139,17 @@ namespace antwika::game
             kPotteryFill};
 
         return fills[resourceIndex(resource) % kResourceCount];
+    }
+
+    Color serviceColour(Service service) noexcept
+    {
+        constexpr std::array<Color, kServiceCount> fills{
+            kWaterInk,
+            kHealthInk,
+            kSafetyInk,
+            kStructureInk};
+
+        return fills[serviceIndex(service) % kServiceCount];
     }
 
     std::vector<ResourceBar> buildingBars(
