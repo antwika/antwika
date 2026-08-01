@@ -199,7 +199,7 @@ Breaking one is the class of mistake that looks fine live and surfaces as a dive
 - [`ui`](wiki/libraries/ui.md) is an immediate-mode UI over `gfx` that retains nothing between frames: activation is on the press, and focus, text and dropdown state are all passed through by the caller.
 - [`input`](wiki/libraries/input.md) abstracts a keyboard and a pointer as symbolic *edges* rather than held state, and deliberately does not depend on `gfx` in source, so a session recorded under one backend replays under another.
 - [`font`](wiki/libraries/font.md) turns TrueType bytes into metrics and coverage masks, and depends on no other module of this project.
-- [`i18n`](wiki/libraries/i18n.md) is a compiled-in catalogue keyed by a symbolic `MessageId` rather than by the English string, with a total lookup that never throws.
+- [`i18n`](wiki/libraries/i18n.md) is a compiled-in catalogue keyed by a symbolic `MessageId` rather than by the English string, with a total lookup that never throws; a `Translator` is injected like any other collaborator, and an application that hit-tests a layout fixes its locale in `main()` so the language cannot become simulation state.
 - [`sound`](wiki/libraries/sound.md) decodes, mixes and plays PCM behind a backend seam, and owns no thread, lock or queue: a device renders only when `pump()` asks it to, on the thread that asked.
 - [`app`](wiki/libraries/app.md) is what every `main()` shares -- `runRecorded()`, `assetPath()`, `FramePacedSource`/`IFramePass` and `pointerFrom()`/`hoverFrom()`.
 - [`cli`](wiki/libraries/cli.md) is the flag parsing, depending on nothing at all; one `FlagSpec` table is both the parser's input and the help text's, and a program parses once against one concatenated table.
