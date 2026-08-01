@@ -36,14 +36,19 @@ namespace antwika::game
                     ui.panel({.width = kFit, .height = kFit});
 
                 // A rate, or the placeholder standing in for one.
-                // The caption is the same either way.
-                // So the corner says what it is showing.
-                const std::string rate =
-                    framesPerSecond.has_value()
-                        ? std::to_string(*framesPerSecond)
-                        : std::string{kNoRateYet};
-
-                ui.label("fps " + rate);
+                // Two calls rather than one over a conditional string.
+                // The placeholder is a view of a constant.
+                // So the path with nothing to report builds nothing.
+                // And a path that builds nothing cannot unwind.
+                // Which is the whole reason this is not a ternary.
+                if (framesPerSecond.has_value())
+                {
+                    ui.label("fps " + std::to_string(*framesPerSecond));
+                }
+                else
+                {
+                    ui.label(kNoRateReadout);
+                }
             }
         }
 
