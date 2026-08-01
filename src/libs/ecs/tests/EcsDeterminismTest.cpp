@@ -14,6 +14,7 @@
 
 using antwika::ecs::Entity;
 using antwika::ecs::ISystem;
+using antwika::ecs::rawValue;
 using antwika::ecs::SystemScheduler;
 using antwika::ecs::World;
 using antwika::log::mocks::MockLogger;
@@ -118,6 +119,30 @@ namespace
         return order;
     }
 
+    std::vector<Entity> buildReusedHandles()
+    {
+        NiceMock<MockLogger> logger;
+        World world(logger);
+
+        std::vector<Entity> handed;
+        for (int round = 0; round < 4; ++round)
+        {
+            const auto first = world.create();
+            const auto second = world.create();
+            world.add<Position>(first, Position{round, 0});
+            world.add<Position>(second, Position{round, 1});
+            world.commit();
+
+            handed.push_back(first);
+            handed.push_back(second);
+
+            world.destroy(first);
+            world.destroy(second);
+            world.commit();
+        }
+        return handed;
+    }
+
 } // namespace
 
 TEST(EcsDeterminismTest, RunningTheSameSimulationTwiceProducesIdenticalState)
@@ -132,4 +157,14 @@ TEST(EcsDeterminismTest,
      ViewIterationOrderIsIdenticalAcrossRunsWithTheSameChurn)
 {
     EXPECT_EQ(buildChurnedViewOrder(), buildChurnedViewOrder());
+}
+
+TEST(EcsDeterminismTest, IndexReuseHandsOutTheSameValuesForTheSameChurn)
+{
+    // Reuse has to be a function of the create/destroy sequence.
+    // A replay reproduces nothing else about which index was free.
+    const auto first = buildReusedHandles();
+
+    ASSERT_NE(rawValue(first.front()), rawValue(first.back()));
+    EXPECT_EQ(first, buildReusedHandles());
 }

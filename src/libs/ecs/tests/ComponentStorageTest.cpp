@@ -11,6 +11,7 @@
 using antwika::ecs::ComponentStorage;
 using antwika::ecs::EcsError;
 using antwika::ecs::Entity;
+using antwika::ecs::makeEntity;
 
 namespace
 {
@@ -86,6 +87,41 @@ TEST(ComponentStorageTest, InsertOverwritesAnExistingEntity)
     storage.insert(entity, Position{9, 9});
 
     EXPECT_EQ(storage.read(entity), (Position{9, 9}));
+}
+
+TEST(ComponentStorageTest, AnEarlierGenerationOfAReusedIndexIsNotContained)
+{
+    ComponentStorage<Position> storage;
+    const auto before = makeEntity(1, 0);
+    const auto after = makeEntity(1, 1);
+    storage.insert(before, Position{1, 2});
+
+    EXPECT_FALSE(storage.contains(after));
+    EXPECT_THROW(static_cast<void>(storage.read(after)), EcsError);
+    EXPECT_THROW(storage.write(after, Position{}), EcsError);
+    EXPECT_THROW(storage.remove(after), EcsError);
+}
+
+TEST(ComponentStorageTest, InsertingAReusedIndexReplacesThePreviousHolder)
+{
+    // World::retire() purges every pool before an index is freed.
+    // So this is only reachable by driving a storage directly.
+    ComponentStorage<Position> storage;
+    const auto other = makeEntity(2, 0);
+    const auto before = makeEntity(1, 0);
+    const auto after = makeEntity(1, 1);
+    storage.insert(before, Position{1, 2});
+    storage.insert(other, Position{3, 4});
+
+    storage.insert(after, Position{9, 9});
+
+    EXPECT_FALSE(storage.contains(before));
+    EXPECT_EQ(storage.read(after), (Position{9, 9}));
+
+    const auto entities = storage.entities();
+    const std::vector<Entity> order(entities.begin(), entities.end());
+
+    EXPECT_EQ(order, (std::vector<Entity>{other, after}));
 }
 
 TEST(ComponentStorageTest, EntitiesOrderSurvivesInterleavedInsertAndRemove)
