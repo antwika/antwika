@@ -181,21 +181,21 @@ namespace antwika::gfx::raylib
             return;
         }
 
-        const auto raylibColor = toRaylib(color);
-
-        // Where the lit pixels are is gfx's answer, not this backend's.
-        // Every backend has to draw the same glyphs in the same places.
+        // Which pixel is inked is gfx's answer, not this backend's.
+        // What colour its coverage leaves it is gfx's answer too.
+        // Every backend draws the same glyphs, in the same colours.
         forEachGlyphPixel(
             origin,
             text,
             scale,
-            [raylibColor](Rect pixel) {
+            color,
+            [](Rect pixel, Color pixelColor) {
                 DrawRectangle(
                     pixel.origin.x,
                     pixel.origin.y,
                     static_cast<int>(pixel.size.width),
                     static_cast<int>(pixel.size.height),
-                    raylibColor);
+                    toRaylib(pixelColor));
             });
     }
 

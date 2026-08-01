@@ -5,42 +5,26 @@
 namespace antwika::gfx
 {
 
-    /**
-     * @brief Lit columns in one glyph.
-     */
-    inline constexpr std::uint32_t kGlyphWidth = 5;
+    // The two numbers gfx::textSize() is arithmetic over.
+    // A character occupies exactly kGlyphAdvance by kGlyphLineHeight.
+    // So a caller multiplies rather than asking a backend to measure.
+    // And every backend draws into the same cells.
+    // **They are frozen.**
+    // Every layout in this tree is these two numbers times whole ones.
+    // Moving one moves what a recorded click resolves against.
+    // The ink inside a cell comes from a real font.
+    // antwika/gfx/GlyphCells.hpp is what rasterises it.
+    // None of that font's own metrics reaches here.
+    // antwika/gfx/AtlasText.hpp says at length why it must not.
 
     /**
-     * @brief Lit rows in one glyph.
+     * @brief Columns from one glyph's cell to the next one's.
      */
-    inline constexpr std::uint32_t kGlyphHeight = 7;
-
-    /**
-     * @brief Columns from one glyph's left edge to the next one's.
-     *
-     * One wider than the glyph, so adjacent characters do not touch.
-     */
-    inline constexpr std::uint32_t kGlyphAdvance = kGlyphWidth + 1;
+    inline constexpr std::uint32_t kGlyphAdvance = 6;
 
     /**
      * @brief Rows from one line's top edge to the next one's.
      */
-    inline constexpr std::uint32_t kGlyphLineHeight = kGlyphHeight + 1;
-
-    /**
-     * @brief Get one row of a character's glyph as a bit mask.
-     *
-     * The font is fixed-cell on purpose: every character occupies exactly
-     * kGlyphAdvance by kGlyphLineHeight, so a caller can lay text out with
-     * arithmetic instead of asking a backend to measure it, and every
-     * backend draws the same picture.
-     * @param character The character to look up.
-     * @param row The row to read, counting down from the glyph's top.
-     * @return The low kGlyphWidth bits, most significant bit leftmost;
-     * zero for a space, for a row at or past kGlyphHeight, and for any
-     * character the font has no glyph for.
-     */
-    [[nodiscard]] std::uint8_t glyphRow(
-        char character, std::uint32_t row) noexcept;
+    inline constexpr std::uint32_t kGlyphLineHeight = 8;
 
 } // namespace antwika::gfx

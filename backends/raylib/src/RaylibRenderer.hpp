@@ -95,12 +95,12 @@ namespace antwika::gfx::raylib
         /**
          * @brief Draw a line of text in the built-in fixed-cell font.
          *
-         * Painted from gfx::glyphRow() as filled rectangles rather than
-         * with raylib's own DrawText, even though raylib ships a default
-         * font that would make that a one-liner. That font is not
-         * fixed-cell, so using it would break the metrics gfx::textSize()
-         * promises and make this backend draw a different picture from
-         * every other one.
+         * Painted from gfx::forEachGlyphPixel() as filled rectangles
+         * rather than with raylib's own DrawText, even though raylib
+         * ships a default font that would make that a one-liner. That
+         * font is not fixed-cell, so using it would break the metrics
+         * gfx::textSize() promises and make this backend draw a
+         * different picture from every other one.
          * @param origin Top-left corner of the first glyph's cell.
          * @param text The characters to draw.
          * @param scale Pixels per glyph pixel.

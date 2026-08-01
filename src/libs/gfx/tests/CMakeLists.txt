@@ -11,7 +11,7 @@ add_executable(antwika_gfx_tests
     ColorTest.cpp
     GlyphAtlasBitmapTest.cpp
     GlyphBlitTest.cpp
-    GlyphsTest.cpp
+    GlyphCellsTest.cpp
     IRendererTest.cpp
     IWindowTest.cpp
     Math3DTest.cpp

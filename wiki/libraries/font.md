@@ -106,11 +106,15 @@ That is not the tightest packing there is.
 It is the one whose result depends on nothing but the arguments: the same request builds the same atlas byte for byte on every machine, and two atlases over the same characters compare equal whatever order they were asked for in.
 Entries stay sorted by codepoint, which is also what makes `find()` a binary search rather than a second index to keep in step.
 
-## What this is not wired into
+## What this is wired into
 
-`antwika::gfx` still draws text from its own built-in `Glyphs` and measures it with `gfx::textSize()`, and `antwika::ui` still lays out arithmetically from that.
-None of it goes through this library.
+**Every line of text any application draws comes through here.**
+`IRenderer::drawText()` is painted from `gfx::forEachGlyphPixel()`, which takes its ink from a `gfx::GlyphCells` — a `makeGlyphAtlas()` over printable ASCII, rasterised at the cell height `gfx::textSize()` measures and baked onto that cell grid.
+The font is `assets/fonts/RobotoMono-Regular.ttf`, compiled into `antwika::gfx` by `antwika_embed_binary()` rather than opened, since this library takes bytes and never a path and `antwika::gfx` has no application to ask where a file went.
 
-That is the natural next step and it is a much larger change than this one: it would alter what every existing `antwika::ui` layout test expects, it would give `antwika::gfx` a font to load and an atlas to upload where today it has neither, and it would have to answer where a font lives on disk for nine applications.
-Doing it here would have buried a new library inside a rewrite of two old ones.
-The seam it needs is already the right shape, though: `makeGlyphAtlas()` hands back one mask and one rectangle per character, which is precisely what `IRenderer::drawTexture()` blits from.
+**What did not happen is the half worth reading.**
+`gfx::textSize()` did not move, and neither did one `antwika::ui` layout, one hit test or one recorded click: a character still occupies exactly `kGlyphAdvance` by `kGlyphLineHeight` times its scale, and nothing this library returns is allowed anywhere near that arithmetic.
+This is the rule stated above — *nothing this library returns may enter simulation state* — being kept at the one seam where it would have been most convenient to break, and [`wiki/libraries/gfx.md`](gfx.md) sets out the reasoning from the other side.
+An application that wants a real font's *metrics*, rather than a real font's *look*, still asks this library directly, bundles its own `.ttf` with `antwika_bundle_app()`, and takes on the decision in the open.
+
+The other route in is unchanged and is what an application uses to draw text at a size the fixed cell has no answer for: `makeGlyphAtlas()` hands back one mask and one rectangle per character, `gfx::glyphAtlasBitmap()` expands the mask to straight RGBA, `IRenderer::createTexture()` uploads it once and `gfx::AtlasText.hpp` measures and blits from it.

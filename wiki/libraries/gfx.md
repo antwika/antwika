@@ -22,7 +22,8 @@ The concrete frameworks live under `backends/`, and exactly one is compiled into
 | `Transform.hpp`, `Camera3D.hpp` | `Transform`, `Camera3D` | A model transform, and a perspective or orthographic camera. |
 | `Bitmap.hpp`, `PngReader.hpp`, `Blit.hpp` | `Bitmap`, `PngReader` | Decoding a byte stream to straight RGBA, once, in the library rather than per backend. |
 | `PngWriter.hpp` | `PngWriter` | `write(bitmap, out)` — the way back out, to a stream rather than a path. |
-| `Glyphs.hpp`, `TextLayout.hpp` | `textSize()` | The one built-in fixed-cell bitmap font and its metrics. |
+| `Glyphs.hpp`, `TextLayout.hpp` | `kGlyphAdvance`, `kGlyphLineHeight`, `textSize()` | The one built-in font's fixed cell, and the arithmetic over it. |
+| `GlyphCells.hpp`, `TextRaster.hpp` | `GlyphCells`, `glyphCells()`, `forEachGlyphPixel()` | That font rasterised onto those cells, and the one walk over the result every backend paints. |
 | `Point.hpp`, `Size.hpp`, `Rect.hpp`, `Color.hpp` | — | Geometry and colour. |
 | `NullBackend.hpp` | `NullBackend` | The headless backend: opens windows that draw nothing, needs no display. |
 | `SelectedBackend.hpp` | — | Resolves the backend chosen at configure time. |
@@ -33,7 +34,10 @@ A conformance suite lives under `tests/conformance/` (`GfxBackendConformance.hpp
 
 ## Depends on
 
-[`log`](log.md), plus `glm` (PUBLIC, for the 3D maths types) and `stb` (PRIVATE, for PNG decoding).
+[`font`](font.md) and [`log`](log.md), plus `glm` (PUBLIC, for the 3D maths types) and `stb` (PRIVATE, for PNG decoding).
+
+`font` is PUBLIC because `AtlasText.hpp` and `GlyphAtlasBitmap.hpp` name `font::GlyphAtlas` in their signatures.
+The direction is the only one available: `antwika::font` names no module of this project at all and has no `DEPENDS` line to name one with, so `gfx -> font` is acyclic by construction rather than by agreement.
 
 It deliberately does **not** depend on [`input`](input.md), and `input` does not depend on it: reading input must not require opening a window.
 
@@ -50,8 +54,41 @@ What a framework does by default is not the answer: SDL's renderer starts at `SD
 That is the whole of what the shared conformance suite can say about it, since `IRenderer` reports no pixel back, so `backends/sdl3/tests/Sdl3RendererTest.cpp` is where the result itself is asserted — through SDL's own read-back, at the backend's own seam, rather than by inventing one above it.
 
 **Text is arithmetic, not measurement.**
-One built-in fixed-cell bitmap font is defined by this library and drawn identically by every backend, so a caller (notably [`ui`](ui.md)) lays text out from `textSize()` alone and never asks a backend how wide something is.
+One built-in fixed-cell font is defined by this library and drawn identically by every backend, so a caller (notably [`ui`](ui.md)) lays text out from `textSize()` alone and never asks a backend how wide something is.
 A second font would imply per-backend glyph metrics, which is exactly why loading fonts is out of scope while loading textures is not — a decoded bitmap has no metrics for a backend to disagree about.
+
+**The glyphs are Roboto Mono; the cells they are drawn into are not.**
+The ink inside a cell used to be a 5x7 table of bits written out in `Glyphs.cpp`, and is now a real typeface rasterised through [`font`](font.md): `GlyphCells` builds a `font::GlyphAtlas` at `kGlyphLineHeight * scale` pixels and bakes each character onto its own cell, and `forEachGlyphPixel()` walks the result.
+**Not one number `textSize()` reports moved, and that is the whole shape of the change.**
+The pen still steps `kGlyphAdvance * scale` per character and a line is still `kGlyphLineHeight * scale` tall, so every layout in the tree — and every click an application resolves against one — is byte for byte what it was.
+
+That is not a coincidence to be grateful for; it is the constraint the design is built around, and [`AtlasText.hpp`](../../src/libs/gfx/include/antwika/gfx/AtlasText.hpp) writes the argument out in full.
+A real font's metrics are whole pixels scaled from an outline by a `float`, and a value differing in its last bit between two toolchains costs a pixel where it is drawn and costs a divergent session where a click is resolved against it.
+So no metric of the embedded font reaches a layout: the cell is `6` by `8` times a whole scale, both frozen in `Glyphs.hpp`, and the font is only ever asked what a cell should look like.
+Ink is clipped to its cell rather than trusted to fit it, so no character can light a pixel outside the box `textSize()` reports whatever the font says about a glyph — the one property a `ui` widget's neighbour depends on.
+
+Rasterising at `kGlyphLineHeight * scale` is the font's own answer rather than a fitting rule invented here.
+At that height Roboto Mono's ascender-to-descender *is* the cell, and the printable ASCII range's ink measures exactly the 8 rows of a scale-1 cell and stays inside every larger one.
+A rule that grew the glyphs to fill the cell better was measured and rejected: it buys 16-22% at scales 2 to 4, nothing at scale 1, and costs a search whose result is one more number that could disagree with `textSize()`.
+
+**The coverage is 8 bits, and the colour a backend fills with is worked out here.**
+`forEachGlyphPixel()` takes the text colour and hands the visitor a `Rect` and the colour to fill it with, coverage already folded into the alpha by `glyphPixelColor()`.
+Thresholding to one bit was the alternative, and it keeps SDL's one batched `SDL_RenderFillRects` per line rather than one per colour — but at scale 1 an 8-pixel-tall Roboto Mono thresholded at 128 is genuinely unreadable, which would have made "text now uses a real font" a regression for every application at small canvas sizes.
+Handing the colour over rather than the coverage is deliberate: a backend that had to fold coverage into alpha itself is a backend that could fold it in differently, and this file exists so that no backend gets that latitude.
+
+**The font is compiled in, and there is nothing to find at run time.**
+`antwika::gfx` cannot ask `antwika::app` where an asset lives — `app` depends on `gfx` — and it opens no files at all, for the reason `PngReader` takes a stream.
+So `antwika_embed_binary()` in [`cmake/AntwikaEmbedBinary.cmake`](../../cmake/AntwikaEmbedBinary.cmake) turns `assets/fonts/RobotoMono-Regular.ttf` into a C++ source of bytes at configure time, and `BuiltInFont.cpp` parses it once.
+The generated source is data and nothing else — no function, no initialiser that runs — so it adds nothing for the coverage gate to measure, and it is written by CMake itself rather than by a tool the build has to run, which is what keeps a cross build to MinGW from needing a host-built generator.
+An application that wants a real font *of its own* still does what [`font`](font.md) says: bundles it with `antwika_bundle_app()`, opens it with `app::assetPath()` and draws it through `AtlasText.hpp`.
+
+**The cells are cached per scale, in a static, on purpose.**
+Text is drawn every frame and rasterising 95 glyphs is not frame work, so `glyphCells(scale)` builds one set of cells the first time a scale is drawn at and keeps it in a function-local `std::map` — a `map` rather than a `vector` because a reference handed out has to survive the arrival of every later scale.
+It is mutable global state and it is worth being exact about why that is acceptable here rather than pretending otherwise: what is kept is a memo of a pure function of the scale and of bytes the build compiled in, nothing can reach it, empty it or replace what is in it, and it can therefore change how long a call takes and nothing else.
+Drawing is a write-only projection, so nothing it hands back is ever read back into a tick.
+The numbers are why it is not an argument: building one scale's cells costs 0.23 to 0.44 ms and reaching cached ones costs about 50 ns, so an atlas per `drawText()` would be a quarter of a millisecond per line of text on a 16 ms frame.
+The other alternative — a cache each backend owns — would put the one thing every backend has to agree about in the one place they are allowed to differ.
+Walking one 57-character line costs 5 µs at scale 1, 18 µs at scale 2 and 42 µs at scale 3, which is the cost of about 2.7 times as many rectangles as the bitmap font emitted; a backend's own fill calls are on top of that and are what the batching in `Sdl3Renderer::drawText()` is for.
 
 **Images are decoded once, by the library.**
 `PngReader::read()` takes a byte stream, not a path, so `gfx` opens no files and every decoder failure is provable headlessly; the app supplies the bytes.
