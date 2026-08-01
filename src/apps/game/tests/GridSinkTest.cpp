@@ -206,7 +206,22 @@ TEST_F(GridSinkTest, RightPress_LeavesBuildModeWithABuildingToolSelected)
 
     clickAt(Cell{.x = 2, .y = 2}, MouseButton::Right);
 
-    EXPECT_EQ(overlay.tool(), BuildTool::Road);
+    EXPECT_FALSE(overlay.tool().has_value());
+}
+
+// Cancelling reaches a state of its own rather than a fallback.
+// So the press after one lays no road nobody asked for.
+TEST_F(GridSinkTest, LeftPress_LaysNothingOnceThePaletteIsPutDown)
+{
+    constexpr Cell target{.x = 3, .y = 4};
+
+    overlay.select(BuildTool::House);
+    clickAt(target, MouseButton::Right);
+    clickAt(target, MouseButton::Left);
+
+    EXPECT_EQ(paths.size(), 0U);
+    EXPECT_EQ(pathEntityCount(), 0U);
+    EXPECT_EQ(built.size(), 0U);
 }
 
 // And the cancel is the whole of what that press does.
@@ -221,14 +236,14 @@ TEST_F(GridSinkTest, RightPress_PlacesNoWalkerWhileLeavingBuildMode)
 
     EXPECT_EQ(walkerCount(), 0U);
 
-    // The next one drops one, the palette being back to normal play.
+    // The next one drops one, nothing being selected any more.
     clickAt(target, MouseButton::Right);
 
     EXPECT_EQ(walkerCount(), 1U);
 }
 
 // Cancelling twice is cancelling once.
-// The road tool is the state a cancel returns to, so it is not one.
+// Nothing selected is where a cancel leaves it, so it cancels nothing.
 TEST_F(GridSinkTest, RightPress_IsAWalkerAgainOnceBuildModeIsLeft)
 {
     constexpr Cell target{.x = 2, .y = 2};
@@ -236,6 +251,19 @@ TEST_F(GridSinkTest, RightPress_IsAWalkerAgainOnceBuildModeIsLeft)
 
     overlay.select(BuildTool::ArchitectPost);
     clickAt(target, MouseButton::Right);
+    clickAt(target, MouseButton::Right);
+
+    EXPECT_FALSE(overlay.tool().has_value());
+    EXPECT_EQ(walkerCount(), 1U);
+}
+
+// The road is a tool a cancel does not reach past.
+// It places something, so a right press with it up is a walker.
+TEST_F(GridSinkTest, RightPress_IsAWalkerWithTheRoadToolSelected)
+{
+    constexpr Cell target{.x = 2, .y = 2};
+    clickAt(target, MouseButton::Left);
+
     clickAt(target, MouseButton::Right);
 
     EXPECT_EQ(overlay.tool(), BuildTool::Road);
@@ -262,7 +290,7 @@ TEST_F(GridSinkTest, RightPress_LeavesBuildModeFromOutsideTheExtent)
 
     clickAt(Cell{.x = -4, .y = -4}, MouseButton::Right);
 
-    EXPECT_EQ(overlay.tool(), BuildTool::Road);
+    EXPECT_FALSE(overlay.tool().has_value());
 }
 
 TEST_F(GridSinkTest, MiddlePress_LaysNothingAndPlacesNothing)
