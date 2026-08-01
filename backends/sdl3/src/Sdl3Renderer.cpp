@@ -223,6 +223,16 @@ namespace antwika::gfx::sdl3
             warn(logger, "could not set a texture's blend mode");
         }
 
+        // SDL starts a texture at SDL_SCALEMODE_LINEAR.
+        // raylib's rlLoadTexture starts one at GL_NEAREST.
+        // So one backend smoothed a scaled blit and the other did not.
+        // Every atlas here is pixel art blitted at a whole tile size.
+        // Nearest is what that art wants and what makes the two agree.
+        if (!SDL_SetTextureScaleMode(texture, SDL_SCALEMODE_NEAREST))
+        {
+            warn(logger, "could not set a texture's scale mode");
+        }
+
         return std::make_unique<Sdl3Texture>(
             *this, texture, bitmap.size);
     }

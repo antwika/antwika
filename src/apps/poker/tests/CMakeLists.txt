@@ -37,6 +37,7 @@ target_include_directories(antwika_poker_tests
 
 target_link_libraries(antwika_poker_tests
     PRIVATE
+        antwika::cli
         antwika::engine
         antwika::event
         antwika::event::tests::mocks

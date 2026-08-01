@@ -1,5 +1,6 @@
 add_executable(antwika_sound_demo
     src/DemoLoop.cpp
+    src/DemoOptions.cpp
     src/DemoTrack.cpp
     src/main.cpp
 )
@@ -12,6 +13,7 @@ target_include_directories(antwika_sound_demo
 target_link_libraries(antwika_sound_demo
     PRIVATE
         antwika::app
+        antwika::cli
         antwika::log
         antwika::sound
         antwika::sound_backend

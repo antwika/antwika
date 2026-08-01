@@ -22,6 +22,7 @@ target_include_directories(antwika_poker
 target_link_libraries(antwika_poker
     PRIVATE
         antwika::app
+        antwika::cli
         antwika::engine
         antwika::event
         antwika::gfx

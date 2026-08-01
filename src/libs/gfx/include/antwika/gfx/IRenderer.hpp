@@ -111,6 +111,13 @@ namespace antwika::gfx
          * The bitmap is uploaded rather than kept, so it may be
          * destroyed as soon as this returns.
          *
+         * A texture is sampled nearest-neighbour, so drawTexture()
+         * scaling one enlarges each source texel into a block rather
+         * than blending it with its neighbours.
+         * That is what the pixel art every caller here blits wants, and
+         * it is stated rather than left to a framework's default
+         * because the two this project ships disagreed about it.
+         *
          * Creation reports failure by throwing, unlike the drawing
          * calls here, for the same reason
          * IGfxBackend::createWindow does: a caller that cannot have the

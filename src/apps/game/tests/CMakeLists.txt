@@ -129,6 +129,7 @@ target_link_libraries(antwika_game_tests
         antwika::animation
         antwika::app
         antwika::app::tests::fakes
+        antwika::cli
         antwika::engine::tests::mocks
         antwika::event::tests::mocks
         antwika::ecs

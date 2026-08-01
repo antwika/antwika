@@ -109,7 +109,7 @@ build/bin/antwika_sudoku/antwika_sudoku [--puzzle my-puzzle.txt]
 build/bin/antwika_gfx_demo/antwika_gfx_demo              # runs until the window is closed
 build/bin/antwika_gfx3d_demo/antwika_gfx3d_demo          # spinning cube, 900 frames
 build/bin/antwika_sound_demo/antwika_sound_demo          # eight notes; silent under null
-build/bin/antwika_sound_demo/antwika_sound_demo my.wav   # or play a file instead
+build/bin/antwika_sound_demo/antwika_sound_demo --file my.wav  # or play a file instead
 build/bin/antwika_tower_defence/antwika_tower_defence    # or --record / --replay
 build/bin/antwika_ui_demo/antwika_ui_demo                # every antwika::ui element, 1500 ticks
 build/bin/antwika_companion/antwika_companion            # tap to feed it
@@ -395,7 +395,7 @@ It lived in `antwika::replay` while `--record` and `--replay` were the only flag
 **One `FlagSpec` table is both the parser's input and the help text's**, so a flag that parses but is undocumented is not expressible, and `kHelpFlag` is declared by the library rather than by a caller so no program can forget `--help` or document one it does not accept.
 **A program parses once, against one concatenated table**: an unrecognised argument is a `CommandLineError` rather than something ignored -- which is what `--replya demo.json` used to be, quietly starting an empty session -- so a second pass would refuse whatever the first accepted, and that is precisely how `apps/poker`'s `--tick-delay-ms` once stopped working.
 That is why each layer offers a *table* and a reader (`replayCliFlags()`/`replayCliOptionsFrom()`, `game::saveCliFlags()`/`saveCliOptionsFrom()`, `poker::watchFlags()`/`watchOptionsFrom()`) rather than a parser, and why `app::runRecorded()` is the one place they are appended and parsed.
-`antwika/replay/CommandLine.hpp`, `FlagSpec.hpp` and `CommandLineError.hpp` remain as `using` re-exports of the `antwika::cli` names, so a caller still spelling them `antwika::replay::` compiles unchanged; they name the same types, and nothing new should be written against them.
+`antwika/replay/CommandLine.hpp`, `FlagSpec.hpp` and `CommandLineError.hpp` were `using` re-exports of the `antwika::cli` names, kept until every caller had moved; they are gone, so `antwika::cli::` is the only spelling of these types.
 See [`docs/cli.md`](docs/cli.md).
 
 `antwika::i18n` is a message catalogue keyed by a symbolic `MessageId` rather than by the English string, which is what lets a test assert that every locale covers **exactly** the same id set — a missing translation fails the build instead of leaking English into a Swedish UI.

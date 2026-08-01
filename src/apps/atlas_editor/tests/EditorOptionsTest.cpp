@@ -5,8 +5,8 @@
 #include <string>
 #include <string_view>
 
+#include <antwika/cli/CommandLine.hpp>
 #include <antwika/gfx/Size.hpp>
-#include <antwika/replay/CommandLine.hpp>
 
 #include "antwika/atlas_editor/AtlasEditor.hpp"
 #include "antwika/atlas_editor/EditorOptions.hpp"
@@ -19,8 +19,8 @@ using antwika::atlas_editor::kDefaultMaxTicks;
 using antwika::atlas_editor::kDefaultSheetSize;
 using antwika::atlas_editor::parseSize;
 using antwika::atlas_editor::TileGrid;
+using antwika::cli::CommandLine;
 using antwika::gfx::Size;
-using antwika::replay::CommandLine;
 
 namespace
 {

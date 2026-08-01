@@ -13,6 +13,41 @@ except where round two closed one, which is noted in place.
 
 ---
 
+## Answered on 2026-08-01
+
+Every question below is annotated in place with the answer; this is the
+index.
+Three were implemented in the same pass and are on `fix/texture-scale-mode`;
+the rest are decided and not yet built.
+
+| # | Answer | State |
+| --- | --- | --- |
+| R2 | Nearest-neighbour, pinned in both backends, no API change | **done** |
+| R6 | Retire the three transitional `antwika::replay` headers | **done** |
+| R7 | No positional arguments; `apps/sound_demo` names `--file` | **done** |
+| R1 | A save carries the live city, not the whole session | no change |
+| R4 | The placement border draws for the road tool too | no change |
+| R8 | No positional hash in `antwika::rng` | no change |
+| R3 | Rename `ITickSource` to `ITickEventSource` | to build |
+| R5 | Cancelling build mode reaches a real "nothing selected" | to build |
+| R9 | Over-feeding the companion annoys it | to build |
+| R9b | Tick counter keeps running; a city is entered **paused**; the FPS readout shows a placeholder for its first second | to build |
+| R10 | Rename `antwika::ttf` to `antwika::font` | to build |
+
+Still unanswered: entries 1, 3, 4 and 5 below, the load-checksum question
+in `ISSUES-game-integrate.md`, and four of R10's five sub-items.
+
+R5 and R9b are the two with a cost worth knowing before they are picked
+up.
+R5 changes what the already-recorded right clicks in
+`src/apps/game/replays/demo.json` mean, so that demo replay probably has
+to be re-recorded.
+R9b's "enter a city paused" is a new behaviour rather than a default
+being changed, and it is simulation state, so it lands in the tick path
+with the rest of `PauseState`.
+
+---
+
 ## Still open — your call
 
 ### 1. A face-down hole card now shows its rank
@@ -34,6 +69,13 @@ A city keeps its contents as a `game::CityGrid` value while it is put away, and 
 
 The decision that had been left open is therefore: **a city is a grid, and what stands on it belongs to it.**
 The four are independent, and a city nobody is looking at neither runs nor shows anywhere else.
+
+**Answered 2026-08-01: a save carries the live city, and that is what a
+save is.**
+No version 3 and no migration; every existing version-2 file keeps
+loading, and "save, load, and the three cities you were not in are
+empty" is the accepted behaviour rather than a gap.
+The original text follows.
 
 **What is left for you:** a save still carries *one* grid -- the live city's -- which is what version 2 has always meant, and it is why no bump was needed.
 It is also what a save has always done with the roads and the camera, so the file is consistent rather than newly lossy.
@@ -143,6 +185,9 @@ Buildings and walkers leaked across cities because `WorldMapState` swapped a
 one shared `ecs::World` with nothing saying which city they belonged to.
 That is fixed: a closed city is now stored as a `CityGrid` of plain values.
 
+**Answered 2026-08-01: the live city only.**
+The conservative choice stands and there is nothing to build.
+
 The save format was **not** bumped, because a save carries one grid -- the live
 city's -- exactly as it already did for the roads and the camera.
 So every existing version-2 file still loads.
@@ -153,6 +198,14 @@ document as the one city it was written from, and it is a decision about what a
 *save* is rather than a bug.
 
 ### R2. Which of the two backends is right about texture scaling?
+
+**Answered 2026-08-01: nearest, and it is done.**
+`IRenderer::createTexture()` now says a texture is sampled
+nearest-neighbour, SDL3 sets `SDL_SCALEMODE_NEAREST`, and raylib sets
+`TEXTURE_FILTER_POINT` rather than inheriting the default it already had.
+`Sdl3RendererTest.DrawTexture_ScalesWithoutSmoothing` reads the seam
+pixel back through SDL: nearest gives 255, and linear gave 135.
+The original text follows.
 
 Found while fixing the SDL3 transparency bug, and left deliberately unfixed because
 it is an aesthetic call rather than a defect.
@@ -169,6 +222,10 @@ It is a one-line addition to `createTexture()` plus a line in `IRenderer`'s cont
 
 ### R3. Is `ITickSource` the name you want?
 
+**Answered 2026-08-01: rename it to `ITickEventSource`.**
+Accuracy wins over line length.
+Not built yet; it is one rename across the seam's implementers.
+
 `antwika::replay` was split rather than renamed: `antwika::simulation` owns the loop
 (`EngineLoop`, `TickPacer`, `WindowInputSource`, and the seam) and `antwika::replay`
 owns the recording and its format, depending on it.
@@ -181,12 +238,21 @@ was passed over for line length.
 
 ### R4. Should the build-placement border draw for the road tool too?
 
+**Answered 2026-08-01: yes, it draws for the road tool too.**
+Nothing to change.
+
 It does today, on the grounds that a road is a 1x1 footprint and that a border
 appearing for five tools and not the sixth reads as a bug.
 Your request said "when placing a new building", so if roads should be bare it is a
 one-line change in `drawGhost()`.
 
 ### R5. Should cancelling build mode reach a genuine "nothing selected" state?
+
+**Answered 2026-08-01: reach a real "nothing selected" state.**
+So `UiOverlay::tool()` becomes an optional.
+Worth knowing before starting: this changes what the recorded right
+clicks in `src/apps/game/replays/demo.json` mean, so that demo replay
+probably has to be re-recorded.
 
 Right-click currently leaves build mode by falling back to the road tool, because
 right-click with the road tool selected already means "drop a walker" and the
@@ -196,6 +262,12 @@ future reader will probably expect, but it needs `UiOverlay::tool()` to become a
 optional and it changes what already-recorded left clicks mean.
 
 ### R6. Are the `antwika::cli` transitional headers permanent?
+
+**Answered 2026-08-01: retired, and it is done.**
+All eight callers across `game`, `poker` and `atlas_editor` now name
+`antwika::cli` and link it directly, and the three headers are deleted.
+The two answers agree, as this entry said they probably should.
+The original text follows.
 
 `antwika/replay/CommandLine.hpp`, `FlagSpec.hpp` and `CommandLineError.hpp` are
 `using` re-exports left behind so that `game::SaveCli` and `poker::WatchOptions`
@@ -210,17 +282,32 @@ The two answers should probably agree.
 
 ### R7. Should `antwika::cli` support positional arguments?
 
+**Answered 2026-08-01: no positionals, and it is done.**
+A positional cannot be described in the `FlagSpec` table, so the property
+the library is built on -- that the parse and the help text come off one
+list -- would hold for flags and quietly not for the rest.
+`apps/sound_demo` names `--file <path>` instead, so nothing in the tree
+reads its own `argv` any more; `docs/cli.md` records the rule.
+The original text follows.
+
 It is flags-only, which is what every caller needs.
 `apps/sound_demo` takes a bare filename rather than a flag, so it is the one CLI that
 cannot migrate onto the library until positionals exist.
 
 ### R8. Should `antwika::rng` grow the positional hash `IDEAS.md` asks for?
 
+**Answered 2026-08-01: leave it unbuilt.**
+The narrowed `IDEAS.md` entry stands.
+
 `hash(seed, x, y) -> value` was not built: no call site needs randomness as a
 function of position, since every one draws in a fixed order from a fixed seed.
 The `IDEAS.md` entry was narrowed rather than deleted.
 
 ### R9. Should over-feeding the companion annoy it?
+
+**Answered 2026-08-01: yes, over-feeding should annoy it.**
+A third violation, in the remaining arm of `Pet::tap()`.
+Not built yet.
 
 A tap while the companion is awake and not hungry currently does nothing, which is
 what stops tap-spamming being a strategy.
@@ -229,6 +316,21 @@ it sleeps -- so harmlessness was the conservative reading.
 Making it a third violation is one arm of `Pet::tap()`.
 
 ### R9b. Three choices in the pause and the counters
+
+**Answered 2026-08-01, all three:**
+
+- The tick counter **keeps running**, as it does today -- it shows the
+  engine tick, and that is the point of a `life`-style pause.
+- A city is **entered paused** from the world map, rather than a pause
+  surviving one.
+  Progress is then something somebody asks for, which is a new behaviour
+  rather than a default flipped, and it is simulation state like the
+  rest of `PauseState`.
+- The FPS readout shows a **placeholder** for its first second rather
+  than `0`.
+
+Not built yet.
+The original text follows.
 
 - **The tick counter does not freeze while paused.**
   It shows the engine tick, which by design keeps advancing -- that is the whole
@@ -258,6 +360,15 @@ placement keep working, so a paused city can still be panned over and built on.
   Already the norm here, but worth confirming.
 - **The atlas editor's palette is twelve compiled-in colours.**
   An artist may want different ones, or a hex-entry field instead.
+- **Rename `antwika::ttf` to `antwika::font`** (answered 2026-08-01), so
+  the name does not promise one format when a second outline path is a
+  plausible follow-up.
+  It touches the directory, the namespace, the CMake target, every
+  include of it, `docs/ttf.md`, `wiki/libraries/ttf.md` and `CLAUDE.md`
+  -- wide but mechanical.
+  Refusing CFF is unchanged by it; the name simply stops claiming
+  otherwise.
+  The four sub-items around it are **still unanswered**.
 - **`antwika::ttf` refuses OpenType/CFF fonts and font collections by name**, though
   stb could read CFF; supporting it means a second outline path and a second
   synthetic fixture.

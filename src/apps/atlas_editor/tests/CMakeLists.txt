@@ -38,6 +38,7 @@ target_include_directories(antwika_atlas_editor_tests
 target_link_libraries(antwika_atlas_editor_tests
     PRIVATE
         antwika::app
+        antwika::cli
         antwika::engine
         antwika::event::tests::mocks
         antwika::gfx

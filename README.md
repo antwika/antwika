@@ -394,7 +394,7 @@ See [`docs/sound.md`](docs/sound.md) for why the threading, the absolute frame i
 
 ```sh
 build/bin/antwika_sound_demo/antwika_sound_demo                  # a generated tone, silent under null
-build/bin/antwika_sound_demo/antwika_sound_demo my-sound.wav     # or play a file instead
+build/bin/antwika_sound_demo/antwika_sound_demo --file my-sound.wav   # or play a file
 ```
 
 Under the default `null` backend it renders every frame and plays nothing, which is what makes it safe for a CI leg to run.

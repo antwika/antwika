@@ -3,8 +3,8 @@
 #include <chrono>
 #include <span>
 
-#include <antwika/replay/CommandLine.hpp>
-#include <antwika/replay/FlagSpec.hpp>
+#include <antwika/cli/CommandLine.hpp>
+#include <antwika/cli/FlagSpec.hpp>
 
 namespace antwika::poker
 {
@@ -59,7 +59,7 @@ namespace antwika::poker
      * working: the other pass had already refused it.
      * @return The table, for a main() to pass on.
      */
-    [[nodiscard]] std::span<const antwika::replay::FlagSpec> watchFlags();
+    [[nodiscard]] std::span<const antwika::cli::FlagSpec> watchFlags();
 
     /**
      * @brief Read the pacing out of an already-parsed command line.
@@ -73,6 +73,6 @@ namespace antwika::poker
      * number is ignored, as it always was.
      */
     [[nodiscard]] WatchOptions watchOptionsFrom(
-        const antwika::replay::CommandLine &parsed);
+        const antwika::cli::CommandLine &parsed);
 
 } // namespace antwika::poker

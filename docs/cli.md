@@ -35,8 +35,17 @@ That is how `--replya demo.json` started an empty session instead of saying it w
 A repeated flag keeps its last value, deliberately.
 A command line is usually the last line of a shell history edited one flag at a time, and the value nearest the end is the one just typed.
 
+## Flags only, and no positional arguments
+
+There are deliberately no bare arguments: everything a program is told arrives as a named flag.
+A positional would have to be described somewhere the table cannot reach, so the one property this library is built on -- that the parse and the help text come off the same list -- would hold for flags and quietly not for the rest.
+
+`apps/sound_demo` is what settled it.
+It took a bare filename, so it was the one program in the tree that parsed its own `argv` instead of using this library, and it paid both of the prices refusing is meant to prevent: `--help` did nothing, and `--flie my.wav` was taken for a filename and failed much later inside the WAV reader rather than at the command line.
+It names `--file <path>` now, and there is no program left here that reads its own arguments.
+
 ## What is left in `antwika::replay`
 
-`antwika/replay/CommandLine.hpp`, `FlagSpec.hpp` and `CommandLineError.hpp` still exist, and hold nothing but `using` declarations re-exporting the `antwika::cli` names under the old spelling.
-They are there so that callers still writing `antwika::replay::FlagSpec` compile unchanged, and they name the same types, so an exception thrown as one is caught as the other.
-They go once every caller has moved; nothing new should be written against them.
+`ReplayCli` and nothing else of the command line.
+`antwika/replay/CommandLine.hpp`, `FlagSpec.hpp` and `CommandLineError.hpp` were `using` re-exports of the `antwika::cli` names under the old spelling, kept while callers still wrote `antwika::replay::FlagSpec`; every caller has moved, so the three headers are gone.
+`replayCliFlags()` and `replayCliOptionsFrom()` name `cli::FlagSpec` and `cli::CommandLine` directly, which is the only spelling there is.

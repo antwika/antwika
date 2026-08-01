@@ -5,9 +5,9 @@
 #include <string>
 #include <string_view>
 
+#include <antwika/cli/CommandLine.hpp>
+#include <antwika/cli/FlagSpec.hpp>
 #include <antwika/gfx/Size.hpp>
-#include <antwika/replay/CommandLine.hpp>
-#include <antwika/replay/FlagSpec.hpp>
 #include <antwika/time/Tick.hpp>
 
 #include "antwika/atlas_editor/AtlasEditor.hpp"
@@ -99,7 +99,7 @@ namespace antwika::atlas_editor
      *
      * @return The table, for a main() to pass on.
      */
-    [[nodiscard]] std::span<const antwika::replay::FlagSpec>
+    [[nodiscard]] std::span<const antwika::cli::FlagSpec>
     editorFlags();
 
     /**
@@ -115,6 +115,6 @@ namespace antwika::atlas_editor
      * @return What was asked for.
      */
     [[nodiscard]] EditorOptions editorOptionsFrom(
-        const antwika::replay::CommandLine &parsed);
+        const antwika::cli::CommandLine &parsed);
 
 } // namespace antwika::atlas_editor
