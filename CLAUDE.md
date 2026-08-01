@@ -109,7 +109,7 @@ build/bin/antwika_sudoku/antwika_sudoku [--puzzle my-puzzle.txt]
 build/bin/antwika_gfx_demo/antwika_gfx_demo              # runs until the window is closed
 build/bin/antwika_gfx3d_demo/antwika_gfx3d_demo          # spinning cube, 900 frames
 build/bin/antwika_sound_demo/antwika_sound_demo          # eight notes; silent under null
-build/bin/antwika_sound_demo/antwika_sound_demo my.wav   # or play a file instead
+build/bin/antwika_sound_demo/antwika_sound_demo --file my.wav  # or play a file instead
 build/bin/antwika_tower_defence/antwika_tower_defence    # or --record / --replay
 build/bin/antwika_ui_demo/antwika_ui_demo                # every antwika::ui element, 1500 ticks
 build/bin/antwika_companion/antwika_companion            # tap to feed it
