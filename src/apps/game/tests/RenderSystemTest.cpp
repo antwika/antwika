@@ -296,6 +296,23 @@ TEST_F(RenderSystemTest, Update_CountsAndDrawsTheFrameRateWhenAskedTo)
     system.update(world, 2);
 }
 
+// The corner is drawn from the first frame on, with a placeholder in it.
+// So the readout does not appear a second into a session.
+TEST_F(RenderSystemTest, Update_DrawsAPlaceholderBeforeTheFirstSecond)
+{
+    FakeClock clock{std::chrono::time_point<std::chrono::system_clock>{}};
+    antwika::game::FrameMeter meter{clock};
+
+    auto withMeter = setup();
+    withMeter.fps = meter;
+    RenderSystem system(withMeter);
+
+    EXPECT_CALL(
+        renderer, drawText(_, std::string_view{"fps --"}, _, _));
+
+    system.update(world, 0);
+}
+
 // A run that offers no clock draws no readout.
 // Which is what every caller whose subject is the picture asks for.
 TEST_F(RenderSystemTest, Update_DrawsNoReadoutWithoutAMeter)

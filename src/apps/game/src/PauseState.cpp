@@ -8,6 +8,11 @@ namespace antwika::game
         held = !held;
     }
 
+    void PauseState::hold() noexcept
+    {
+        held = true;
+    }
+
     bool PauseState::paused() const noexcept
     {
         return held;

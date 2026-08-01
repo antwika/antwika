@@ -2,6 +2,7 @@
 
 #include <chrono>
 #include <cstdint>
+#include <optional>
 
 #include <antwika/time/fakes/FakeClock.hpp>
 
@@ -48,10 +49,21 @@ namespace
 } // namespace
 
 // A rate needs a stretch of time to be a rate over.
-TEST_F(FrameMeterTest, PerSecond_IsZeroBeforeTheFirstWindowIsUp)
+// Nothing rather than zero, since zero is a rate of its own.
+TEST_F(FrameMeterTest, PerSecond_ReportsNothingBeforeAWindowIsUp)
 {
     meter.record();
     drawFor(24, 960);
+
+    EXPECT_EQ(std::nullopt, meter.perSecond());
+}
+
+// The stalling machine the placeholder is kept apart from.
+// Half a frame a second is a measurement, and it reads as zero.
+TEST_F(FrameMeterTest, PerSecond_ReportsAStalledMachineAsZero)
+{
+    meter.record();
+    drawFor(1, 2000);
 
     EXPECT_EQ(0U, meter.perSecond());
 }
