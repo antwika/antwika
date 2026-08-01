@@ -64,7 +64,12 @@ namespace antwika::sound
         const auto found = std::ranges::find_if(
             voices, [](const Voice &voice) { return !voice.active; });
 
-        // Every voice busy, so the oldest by the round-robin cursor goes.
+        // Every voice is busy, so one goes by a plain rotation.
+        // The cursor moves on only when a steal happens.
+        // It names the voice after the last one stolen from.
+        // That is not the oldest voice, and does not claim to be.
+        // The oldest would need a sequence number kept per voice.
+        // A rotation is already deterministic, which is what this needs.
         // Stealing is stated rather than left to chance.
         // Silently dropping the newest sound would look like a caller bug.
         auto &voice =
@@ -135,6 +140,9 @@ namespace antwika::sound
                         break;
                     }
 
+                    // The library refuses a waveform holding no frames.
+                    // Every voice is resolved through it by play().
+                    // So a restart always has a sample to read.
                     voice.cursor = 0;
                 }
 

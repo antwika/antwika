@@ -27,7 +27,7 @@ namespace antwika::sound
          * @param waveform The audio to hold.
          * @return The id it can be played by.
          * @throws SoundError If the waveform does not hold exactly the
-         * samples its format claims.
+         * samples its format claims, or holds no frames at all.
          */
         WaveformId add(Waveform waveform);
 

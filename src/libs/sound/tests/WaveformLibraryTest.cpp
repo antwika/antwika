@@ -62,6 +62,16 @@ TEST(WaveformLibraryTest, Add_RefusesAWaveformThatIsNotWholeFrames)
     EXPECT_THROW((void)library.add(ragged), SoundError);
 }
 
+// A voice that can never produce a sample is not a thing to play.
+// A looping one would restart on a frame that is not there.
+TEST(WaveformLibraryTest, Add_RefusesAWaveformWithNoFramesInIt)
+{
+    WaveformLibrary library;
+
+    EXPECT_THROW((void)library.add(mono({})), SoundError);
+    EXPECT_EQ(library.size(), 0U);
+}
+
 TEST(WaveformLibraryTest, Get_RefusesAnIdNothingWasAddedUnder)
 {
     const WaveformLibrary library;
