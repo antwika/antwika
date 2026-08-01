@@ -143,6 +143,42 @@ TEST(LayoutTest, Arrange_KeepsShrunkChildrenInsideTheContainer)
     EXPECT_EQ(50, right);
 }
 
+// The gaps come off the room before the cut.
+// The last child still ends exactly on the edge.
+// Pinned to the pixel: a containment clamp could quietly take it over.
+TEST(LayoutTest, Arrange_ShrinksChildrenSeparatedByGapsToTheEdge)
+{
+    auto root = container(Axis::Row, kGrow, kGrow);
+    root.gap = 10;
+
+    LayoutTree tree{std::move(root)};
+
+    const auto first = tree.add(
+        container(Axis::Row, fixedSize(40), kGrow));
+    const auto second = tree.add(
+        container(Axis::Row, fixedSize(40), kGrow));
+    const auto third = tree.add(
+        container(Axis::Row, fixedSize(40), kGrow));
+
+    layout(tree, Size{.width = 100, .height = 10});
+
+    EXPECT_EQ(
+        (Rect{
+            .origin = {.x = 0, .y = 0},
+            .size = {.width = 27, .height = 10}}),
+        tree.node(first).arranged);
+    EXPECT_EQ(
+        (Rect{
+            .origin = {.x = 37, .y = 0},
+            .size = {.width = 27, .height = 10}}),
+        tree.node(second).arranged);
+    EXPECT_EQ(
+        (Rect{
+            .origin = {.x = 74, .y = 0},
+            .size = {.width = 26, .height = 10}}),
+        tree.node(third).arranged);
+}
+
 TEST(LayoutTest, Arrange_StacksAColumnDownwardsAcrossItsGap)
 {
     auto root = container(Axis::Column, kGrow, kGrow);
