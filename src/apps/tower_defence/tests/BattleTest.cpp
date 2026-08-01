@@ -1,17 +1,26 @@
 #include <cstddef>
 #include <cstdint>
+#include <utility>
+#include <vector>
 
 #include <gtest/gtest.h>
 
 #include "antwika/tower_defence/Battle.hpp"
 #include "antwika/tower_defence/Level.hpp"
 #include "antwika/tower_defence/LevelTile.hpp"
+#include "antwika/tower_defence/MobKind.hpp"
+#include "antwika/tower_defence/Wave.hpp"
 
 using antwika::tower_defence::Battle;
 using antwika::tower_defence::BattleConfig;
 using antwika::tower_defence::Cell;
 using antwika::tower_defence::Level;
+using antwika::tower_defence::Mob;
+using antwika::tower_defence::MobKind;
+using antwika::tower_defence::profileOf;
+using antwika::tower_defence::StepOutcome;
 using antwika::tower_defence::Tile;
+using antwika::tower_defence::WaveRelease;
 
 namespace
 {
@@ -36,23 +45,44 @@ namespace
         return level;
     }
 
-    BattleConfig quietConfig()
+    std::vector<WaveRelease> oneWaveOf(
+        const MobKind kind,
+        const std::uint32_t count,
+        const std::uint64_t period = 1000)
     {
-        // A spawn period longer than any test runs.
-        // A test wanting exactly one mob therefore gets exactly one.
-        return BattleConfig{.spawnPeriodTicks = 1000};
+        return {WaveRelease{
+            .order = std::vector<MobKind>(count, kind),
+            .spawnPeriodTicks = period,
+            .gapTicks = 0}};
+    }
+
+    // A wave whose second mob is further off than any test runs.
+    // A case wanting exactly one walker therefore gets one.
+    std::vector<WaveRelease> nothing()
+    {
+        return oneWaveOf(MobKind::Grunt, 2, 1000);
+    }
+
+    std::uint64_t stepMany(Battle &battle, const int times)
+    {
+        std::uint64_t earned = 0;
+        for (int step = 0; step < times; ++step)
+        {
+            earned += battle.step().reward;
+        }
+        return earned;
     }
 
     TEST(BattleTest, ATowerCannotStandOnThePath)
     {
-        Battle battle(straightLevel(8), quietConfig());
+        Battle battle(straightLevel(8), BattleConfig{}, nothing());
         EXPECT_FALSE(battle.placeTower({.x = 3, .y = 0}));
         EXPECT_TRUE(battle.towers().empty());
     }
 
     TEST(BattleTest, ATowerCannotStandOutsideTheGrid)
     {
-        Battle battle(straightLevel(8), quietConfig());
+        Battle battle(straightLevel(8), BattleConfig{}, nothing());
         EXPECT_FALSE(battle.placeTower({.x = 8, .y = 0}));
         EXPECT_FALSE(battle.placeTower({.x = 0, .y = 3}));
         EXPECT_TRUE(battle.towers().empty());
@@ -60,7 +90,7 @@ namespace
 
     TEST(BattleTest, TwoTowersCannotShareACell)
     {
-        Battle battle(straightLevel(8), quietConfig());
+        Battle battle(straightLevel(8), BattleConfig{}, nothing());
         EXPECT_TRUE(battle.placeTower({.x = 3, .y = 1}));
         EXPECT_FALSE(battle.placeTower({.x = 3, .y = 1}));
         EXPECT_TRUE(battle.placeTower({.x = 4, .y = 1}));
@@ -69,126 +99,254 @@ namespace
         EXPECT_EQ(battle.towers()[1].id, 1U);
     }
 
-    TEST(BattleTest, AMobSpawnsOnTheSpawnPeriodAndWalksOneCellATick)
+    TEST(BattleTest, AWaveReleasesOneMobEverySpawnPeriod)
     {
         Battle battle(
-            straightLevel(8), BattleConfig{.spawnPeriodTicks = 4});
+            straightLevel(12),
+            BattleConfig{},
+            oneWaveOf(MobKind::Grunt, 3, 3));
+
         battle.step();
         ASSERT_EQ(battle.mobs().size(), 1U);
-        EXPECT_EQ(battle.mobs()[0].pathIndex, 0U);
+        EXPECT_EQ(battle.mobs()[0].kind, MobKind::Grunt);
+        EXPECT_EQ(
+            battle.mobs()[0].health, profileOf(MobKind::Grunt).health);
         EXPECT_EQ(battle.ticks(), 1U);
 
-        battle.step();
-        ASSERT_EQ(battle.mobs().size(), 1U);
-        EXPECT_EQ(battle.mobs()[0].pathIndex, 1U);
-
-        battle.step();
-        battle.step();
+        // Three ticks of quiet, then the next one.
+        stepMany(battle, 3);
+        EXPECT_EQ(battle.mobs().size(), 1U);
         battle.step();
         EXPECT_EQ(battle.mobs().size(), 2U);
+
+        stepMany(battle, 4);
+        EXPECT_EQ(battle.mobs().size(), 3U);
+        EXPECT_EQ(battle.wavesReleased(), 1U);
+        EXPECT_EQ(battle.waveCount(), 1U);
     }
 
-    TEST(BattleTest, AMobReachingTheEndLeaksAndCostsScore)
+    // The one axis that decides how long a mob spends inside a reach.
+    TEST(BattleTest, EachKindCrossesACellEveryTicksPerCellTicks)
+    {
+        for (const MobKind kind : antwika::tower_defence::kAllMobKinds)
+        {
+            const std::uint32_t pace = profileOf(kind).ticksPerCell;
+            Battle battle(
+                straightLevel(20), BattleConfig{}, oneWaveOf(kind, 1));
+
+            battle.step();
+            ASSERT_EQ(battle.mobs().size(), 1U);
+            EXPECT_EQ(battle.mobs()[0].pathIndex, 0U);
+
+            stepMany(battle, static_cast<int>(pace));
+            ASSERT_EQ(battle.mobs().size(), 1U);
+            EXPECT_EQ(battle.mobs()[0].pathIndex, 1U)
+                << "kind " << static_cast<int>(kind);
+
+            stepMany(battle, static_cast<int>(pace));
+            ASSERT_EQ(battle.mobs().size(), 1U);
+            EXPECT_EQ(battle.mobs()[0].pathIndex, 2U);
+        }
+    }
+
+    TEST(BattleTest, AMobReachingTheEndIsReportedAsALeak)
     {
         Battle battle(
             straightLevel(4),
-            BattleConfig{
-                .spawnPeriodTicks = 1000,
-                .killScore = 10,
-                .leakPenalty = 25});
-        for (int i = 0; i < 4; ++i)
-        {
-            battle.step();
-        }
-        EXPECT_EQ(battle.leaks(), 1U);
-        EXPECT_TRUE(battle.mobs().empty());
+            BattleConfig{},
+            oneWaveOf(MobKind::Runner, 1));
 
-        // The score floors at zero rather than wrapping.
-        EXPECT_EQ(battle.score(), 0U);
+        std::uint32_t leaks = 0;
+        for (int step = 0; step < 8; ++step)
+        {
+            leaks += battle.step().leaks;
+        }
+        EXPECT_EQ(leaks, 1U);
+        EXPECT_TRUE(battle.mobs().empty());
+        EXPECT_TRUE(battle.cleared());
     }
 
-    TEST(BattleTest, ATowerInRangeKillsAMobAndScores)
+    TEST(BattleTest, ATowerInRangeKillsAMobAndPaysItsReward)
     {
         Battle battle(
             straightLevel(8),
-            BattleConfig{
-                .spawnPeriodTicks = 1000,
-                .mobHealth = 2,
-                .towerRangeSquared = 4,
-                .towerDamage = 1,
-                .killScore = 10});
+            BattleConfig{.towerRangeSquared = 4, .towerDamage = 2},
+            oneWaveOf(MobKind::Runner, 1));
         ASSERT_TRUE(battle.placeTower({.x = 0, .y = 1}));
 
-        battle.step();
-        ASSERT_EQ(battle.mobs().size(), 1U);
-        EXPECT_EQ(battle.mobs()[0].health, 1);
-        EXPECT_EQ(battle.score(), 0U);
-
-        battle.step();
+        const std::uint64_t earned = stepMany(battle, 3);
         EXPECT_TRUE(battle.mobs().empty());
-        EXPECT_EQ(battle.score(), 10U);
+        EXPECT_EQ(earned, profileOf(MobKind::Runner).reward);
     }
 
     TEST(BattleTest, ATowerOutOfRangeNeverFires)
     {
         Battle battle(
             straightLevel(8),
-            BattleConfig{
-                .spawnPeriodTicks = 1000,
-                .mobHealth = 2,
-                .towerRangeSquared = 1});
+            BattleConfig{.towerRangeSquared = 1, .towerDamage = 9},
+            oneWaveOf(MobKind::Grunt, 1));
         ASSERT_TRUE(battle.placeTower({.x = 6, .y = 2}));
-        battle.step();
-        battle.step();
+
+        EXPECT_EQ(stepMany(battle, 3), 0U);
         ASSERT_EQ(battle.mobs().size(), 1U);
-        EXPECT_EQ(battle.mobs()[0].health, 2);
-        EXPECT_EQ(battle.score(), 0U);
+        EXPECT_EQ(
+            battle.mobs()[0].health, profileOf(MobKind::Grunt).health);
     }
 
-    TEST(BattleTest, ATowerShootsTheMobFurthestAlongTheRun)
+    // Armour is taken off every hit and the result never heals.
+    // So a gun that does not out-damage it is simply wasted.
+    TEST(BattleTest, ArmourComesOffEveryHitAndAWeakGunIsWasted)
+    {
+        const auto fight = [](const std::int32_t damage)
+        {
+            Battle battle(
+                straightLevel(8),
+                BattleConfig{
+                    .towerRangeSquared = 64, .towerDamage = damage},
+                oneWaveOf(MobKind::Shielded, 1));
+            static_cast<void>(battle.placeTower({.x = 0, .y = 1}));
+            return stepMany(battle, 10);
+        };
+
+        // One point of damage against one point of armour is nothing.
+        EXPECT_EQ(fight(1), 0U);
+        EXPECT_EQ(fight(3), profileOf(MobKind::Shielded).reward);
+    }
+
+    // Kinds walk at different paces.
+    // So two mobs can share a cell and a Runner can pass a Brute.
+    // Which is why the target is chosen by a written-out ordering.
+    TEST(BattleTest, TheFurthestAlongIsShotAndATieGoesToTheOlderMob)
     {
         Battle battle(
-            straightLevel(10),
-            BattleConfig{
+            straightLevel(14),
+            BattleConfig{.towerRangeSquared = 25, .towerDamage = 1},
+            {WaveRelease{
+                .order = {MobKind::Brute, MobKind::Runner},
                 .spawnPeriodTicks = 1,
-                .mobHealth = 9,
-                .towerRangeSquared = 9,
-                .towerDamage = 1});
+                .gapTicks = 0}});
         ASSERT_TRUE(battle.placeTower({.x = 1, .y = 1}));
-        battle.step();
-        battle.step();
-        battle.step();
 
-        // Three mobs are alive and all three are inside the reach.
-        // Only the oldest one, at the front, has been shot at all.
-        ASSERT_EQ(battle.mobs().size(), 3U);
-        EXPECT_EQ(battle.mobs()[0].pathIndex, 2U);
-        EXPECT_EQ(battle.mobs()[0].health, 6);
-        EXPECT_EQ(battle.mobs()[1].health, 9);
-        EXPECT_EQ(battle.mobs()[2].health, 9);
+        bool sawATieShootTheOlder = false;
+        bool sawAnOvertakeShootTheNewer = false;
+
+        for (int step = 0; step < 14; ++step)
+        {
+            const std::vector<Mob> before = battle.mobs();
+            battle.step();
+            const std::vector<Mob> &after = battle.mobs();
+
+            if (before.size() != 2 || after.size() != 2
+                || before[0].id != after[0].id
+                || before[1].id != after[1].id)
+            {
+                continue;
+            }
+
+            const bool olderHit = after[0].health < before[0].health;
+            const bool newerHit = after[1].health < before[1].health;
+
+            if (after[0].pathIndex == after[1].pathIndex && olderHit
+                && !newerHit)
+            {
+                sawATieShootTheOlder = true;
+            }
+            if (after[1].pathIndex > after[0].pathIndex && newerHit
+                && !olderHit)
+            {
+                sawAnOvertakeShootTheNewer = true;
+            }
+        }
+
+        EXPECT_TRUE(sawATieShootTheOlder);
+        EXPECT_TRUE(sawAnOvertakeShootTheNewer);
     }
 
-    // Battle::fire() shoots the first mob in reach.
-    // That is only right if the mobs are in descending path order.
-    // This is what pins that ordering.
-    // Spawn order is ascending and every mob walks one cell a tick.
-    // Leaks are removed in place, so nothing ever reorders.
-    TEST(BattleTest, MobsStayInStrictlyDescendingPathOrder)
+    TEST(BattleTest, TheNextWaveFollowsAfterTheGap)
     {
         Battle battle(
             straightLevel(12),
-            BattleConfig{.spawnPeriodTicks = 2, .mobHealth = 100});
-        for (int i = 0; i < 20; ++i)
-        {
-            battle.step();
-            const auto &mobs = battle.mobs();
-            for (std::size_t j = 1; j < mobs.size(); ++j)
-            {
-                EXPECT_GT(mobs[j - 1].pathIndex, mobs[j].pathIndex)
-                    << "tick " << i << ", mob " << j;
-            }
-        }
-        EXPECT_GT(battle.mobs().size(), 1U);
+            BattleConfig{},
+            {WaveRelease{
+                 .order = {MobKind::Grunt},
+                 .spawnPeriodTicks = 1,
+                 .gapTicks = 3},
+             WaveRelease{
+                 .order = {MobKind::Runner},
+                 .spawnPeriodTicks = 1,
+                 .gapTicks = 0}});
+
+        EXPECT_EQ(battle.waveCount(), 2U);
+
+        battle.step();
+        EXPECT_EQ(battle.wavesReleased(), 1U);
+        EXPECT_EQ(battle.mobs().size(), 1U);
+
+        stepMany(battle, 3);
+        EXPECT_EQ(battle.wavesReleased(), 1U);
+        EXPECT_EQ(battle.mobs().size(), 1U);
+
+        battle.step();
+        EXPECT_EQ(battle.wavesReleased(), 2U);
+        ASSERT_EQ(battle.mobs().size(), 2U);
+        EXPECT_EQ(battle.mobs()[1].kind, MobKind::Runner);
+    }
+
+    // A caller can describe a wave with nothing in it.
+    // Stepping over it is what stops one from stalling a campaign.
+    TEST(BattleTest, AnEmptyWaveIsSteppedOverRatherThanStalling)
+    {
+        Battle battle(
+            straightLevel(8),
+            BattleConfig{},
+            {WaveRelease{
+                 .order = {}, .spawnPeriodTicks = 1, .gapTicks = 0},
+             WaveRelease{
+                 .order = {MobKind::Grunt},
+                 .spawnPeriodTicks = 1,
+                 .gapTicks = 0}});
+
+        battle.step();
+        EXPECT_EQ(battle.wavesReleased(), 1U);
+        EXPECT_TRUE(battle.mobs().empty());
+
+        battle.step();
+        EXPECT_EQ(battle.wavesReleased(), 2U);
+        EXPECT_EQ(battle.mobs().size(), 1U);
+    }
+
+    // A level with no path gives a mob no cell to stand on.
+    // Its waves pass without releasing anything.
+    // So the level still clears rather than stalling a campaign.
+    TEST(BattleTest, ALevelWithNoPathReleasesNothingAndStillClears)
+    {
+        Level pathless = straightLevel(8);
+        pathless.path.clear();
+
+        Battle battle(
+            pathless, BattleConfig{}, oneWaveOf(MobKind::Grunt, 4, 1));
+
+        const StepOutcome outcome = battle.step();
+        EXPECT_EQ(outcome.leaks, 0U);
+        EXPECT_EQ(outcome.reward, 0U);
+        EXPECT_TRUE(battle.mobs().empty());
+        EXPECT_TRUE(battle.cleared());
+    }
+
+    TEST(BattleTest, ALevelIsClearedOnlyOnceNothingIsLeft)
+    {
+        Battle battle(
+            straightLevel(6),
+            BattleConfig{},
+            oneWaveOf(MobKind::Runner, 1));
+
+        EXPECT_FALSE(battle.cleared());
+        battle.step();
+        EXPECT_FALSE(battle.cleared());
+        EXPECT_EQ(battle.wavesReleased(), 1U);
+
+        stepMany(battle, 10);
+        EXPECT_TRUE(battle.cleared());
     }
 
     TEST(BattleTest, TheSameInputsGiveTheSameBattle)
@@ -197,48 +355,28 @@ namespace
         {
             static_cast<void>(battle.placeTower({.x = 2, .y = 1}));
             static_cast<void>(battle.placeTower({.x = 5, .y = 2}));
-            for (int i = 0; i < 40; ++i)
-            {
-                battle.step();
-            }
+            return stepMany(battle, 40);
         };
-        Battle first(straightLevel(9), BattleConfig{});
-        Battle second(straightLevel(9), BattleConfig{});
-        run(first);
-        run(second);
-        EXPECT_EQ(first.score(), second.score());
-        EXPECT_EQ(first.leaks(), second.leaks());
+        Battle first(
+            straightLevel(9),
+            BattleConfig{},
+            oneWaveOf(MobKind::Grunt, 6, 2));
+        Battle second(
+            straightLevel(9),
+            BattleConfig{},
+            oneWaveOf(MobKind::Grunt, 6, 2));
+
+        const std::uint64_t firstScore = run(first);
+        EXPECT_EQ(firstScore, run(second));
         EXPECT_EQ(first.mobs().size(), second.mobs().size());
-        EXPECT_GT(first.score(), 0U);
-    }
-
-    // BattleConfig is a plain struct, so a caller can ask for these.
-    // Neither is a state a mob can exist in.
-    TEST(BattleTest, NoMobSpawnsOnAConfigNoMobCouldWalk)
-    {
-        Battle noPeriod(
-            straightLevel(8), BattleConfig{.spawnPeriodTicks = 0});
-
-        Level pathless = straightLevel(8);
-        pathless.path.clear();
-        Battle noPath(pathless, BattleConfig{.spawnPeriodTicks = 1});
-
-        for (int step = 0; step < 10; ++step)
-        {
-            noPeriod.step();
-            noPath.step();
-        }
-
-        EXPECT_TRUE(noPeriod.mobs().empty());
-        EXPECT_TRUE(noPath.mobs().empty());
-        EXPECT_EQ(noPeriod.leaks(), 0U);
-        EXPECT_EQ(noPath.leaks(), 0U);
+        EXPECT_GT(firstScore, 0U);
     }
 
     TEST(BattleTest, TheLevelIsHandedBackForDrawing)
     {
-        Battle battle(straightLevel(5), quietConfig());
+        Battle battle(straightLevel(5), BattleConfig{}, nothing());
         EXPECT_EQ(battle.level().width, 5U);
         EXPECT_EQ(battle.level().path.size(), 5U);
+        EXPECT_EQ(battle.settings().towerDamage, 1);
     }
 } // namespace
