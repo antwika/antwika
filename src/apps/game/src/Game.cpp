@@ -13,7 +13,6 @@
 #include "antwika/game/Events.hpp"
 #include "antwika/game/GameStateReducer.hpp"
 #include "antwika/game/BuildingSystem.hpp"
-#include "antwika/game/CityEntrySink.hpp"
 #include "antwika/game/GridSink.hpp"
 #include "antwika/game/InputFold.hpp"
 #include "antwika/game/LiveGrid.hpp"
@@ -21,7 +20,6 @@
 #include "antwika/game/MainMenuSink.hpp"
 #include "antwika/game/MenuModalScene.hpp"
 #include "antwika/game/ModeGatedSink.hpp"
-#include "antwika/game/ModeGatedSystem.hpp"
 #include "antwika/game/PauseGatedSystem.hpp"
 #include "antwika/game/PauseState.hpp"
 #include "antwika/game/SaveGameFile.hpp"
@@ -29,6 +27,7 @@
 #include "antwika/game/SaveLoadSink.hpp"
 #include "antwika/game/SaveLoadState.hpp"
 #include "antwika/game/SceneSnapshot.hpp"
+#include "antwika/game/SessionGatedSystem.hpp"
 #include "antwika/game/SessionStore.hpp"
 #include "antwika/game/SpawnSystem.hpp"
 #include "antwika/game/BuildingKind.hpp"
@@ -78,22 +77,19 @@ namespace antwika::game
         SpawnSystem spawnSystem(paths);
         BuildingSystem buildingSystem(config.built);
 
-        // The walkers stop with the grid they walk on.
+        // The walkers stop with the session, never with the screen.
         // Only that one system stops.
         // The tick, the commit and every observer still run.
         // So the menu is drawn and the run is still paced.
-        ModeGatedSystem gatedWalkers(
-            walkerSystem, mode, AppMode::CityMap);
+        // A city goes on running while its player reads the map.
+        // What stops one is a player asking -- see PauseState.
+        SessionGatedSystem gatedWalkers(walkerSystem, mode);
 
-        // The buildings stop with them, and for the same reason.
-        // A city nobody is in must not fill up while they are away.
-        ModeGatedSystem gatedSpawns(
-            spawnSystem, mode, AppMode::CityMap);
+        // The buildings run with them, and on the same terms.
+        SessionGatedSystem gatedSpawns(spawnSystem, mode);
 
         // And so does the economy.
-        // A city nobody is looking at must not burn down unwatched.
-        ModeGatedSystem gatedBuildings(
-            buildingSystem, mode, AppMode::CityMap);
+        SessionGatedSystem gatedBuildings(buildingSystem, mode);
 
         // What a pause stops, and all it stops.
         // These three are what make the city move on its own.
@@ -103,13 +99,12 @@ namespace antwika::game
         // That is the product decision here.
         // This is a build pause rather than a freeze.
         // The same call apps/life makes about drawing on a paused board.
-        // A city is entered paused, whichever screen it is reached from.
-        // So a grid appearing is not a city that starts running at you.
-        // The way out is the bar's pause button, as it always was.
+        // A run is paused only where a player has asked for one.
+        // A city coming up runs, as it does behind a menu or a map.
+        // The way in and out is the bar's pause button, both ways.
         // Owned by the caller, as the camera and the mode are.
         // A renderer built before this call has to read it too.
         PauseState &pause = config.pause;
-        CityEntrySink cityEntry(mode, pause);
         PauseGatedSystem pausedWalkers(gatedWalkers, pause);
         PauseGatedSystem pausedBuildings(gatedBuildings, pause);
         PauseGatedSystem pausedSpawns(gatedSpawns, pause);
@@ -187,8 +182,7 @@ namespace antwika::game
             ui,
             cities,
             config.built,
-            drag,
-            pause);
+            drag);
 
         // The four that are swapped together, named together.
         // A city is opened by putting its contents into these.
@@ -264,10 +258,8 @@ namespace antwika::game
         // A press that opens a city must not also build in it.
         // SaveLoadSink is beside MainMenuSink for the same reason.
         // Both gate themselves, and both own a whole screen.
-        // CityEntrySink is straight after the mode it reads.
-        // So a city that came up this tick is held before it steps.
         std::vector<std::reference_wrapper<ITickEventSink>> timedSinks{
-            input, mode, cityEntry, reducer, menuSink, saveSink};
+            input, mode, reducer, menuSink, saveSink};
 
         // Registered only when there is somewhere to put the picture.
         // Otherwise the bar is described against a zero canvas.

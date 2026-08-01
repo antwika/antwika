@@ -20,7 +20,7 @@ Left-click places whatever the toolbar has selected, middle-drag pans, and the w
 Right-click means one of two things: with a building tool selected it puts the palette down and places nothing by that press, and otherwise it drops a walker onto the road under the pointer.
 With the road tool selected a left-drag lays a whole run of road: the press marks where it starts, the pointer says where it ends, and the release lays the route between them.
 The toolbar carries zoom, reset-view, pause and menu buttons, drawn over the grid by `Toolbar`, described and resolved once per tick by `UiSink`, and painted last by `RenderSystem`; the bar also reports the tick, and a corner of the screen reports the frame rate.
-A city is entered paused, so that pause button is how a run is started as well as how it is held.
+A city runs from the moment it comes up, so that button is how a player asks for a pause and how they let one go.
 F10, or the toolbar's `menu` button, opens a menu modal over the city with two items: one back to the main menu, and one back to the game.
 It starts on an empty grid and loads nothing unless `--replay` says so, so a session contains exactly what somebody clicked.
 
@@ -35,8 +35,12 @@ Notably **not** [`ecs_commons`](../libraries/ecs_commons.md): a walker counts st
 
 ## The three screens
 
-`AppMode` is `MainMenu`, `WorldMap` or the city itself, and `ModeGatedSink`/`ModeGatedSystem` are how a sink or a system is made to run in one mode only.
+`AppMode` is `MainMenu`, `WorldMap`, the city itself or the save picker, and `ModeGatedSink` is how a sink is made to run in one mode only.
 That is a wrapper rather than a branch inside each sink, so "which mode is this for" is stated once, where the sink is registered.
+
+A *system* is gated differently, by `SessionGatedSystem`, which asks `simulates()` rather than naming a mode: **a city runs whether or not anybody is looking at it**, so the walkers, the buildings and the spawns carry on while whoever is playing reads the world map.
+They stop only on the two screens where there is no session to run — the main menu and the save picker.
+A city stopping because somebody opened a screen was a pause nobody asked for, and asking is now the only thing that holds a run still.
 
 `WorldMapState` holds one `PathIndex` and one `BuildingIndex` **per city**, while `Building` entities stay global — a distinction worth remembering, because the two would otherwise silently disagree when switching cities.
 
@@ -86,7 +90,8 @@ The pressed cell is laid at once rather than at the release, so a plain click st
 
 Three decisions are worth stating outright.
 **Only roads are dragged**: a run of houses is not a route, so a path search says nothing about where one would go, and a building tool would need a rule of its own about what a rectangle of blocks means.
-**A drag holds the run still and lets it go again**, so a route cannot be planned against a city moving under it — but only when the drag was what held it, so a drag never resumes a run somebody paused for themselves (`RoadDrag::heldForDrag()`).
+**A drag holds nothing still**, so a route is planned against a city that goes on moving under it.
+It used to pause the run for exactly that reason, and a city now runs all the time unless a player has asked otherwise.
 **A route that does not exist builds nothing at all**: the preview shows the two cells that were named, reddened, which is the convention `canPlace()` and the build ghost already follow, and half a route is a road to nowhere nobody asked for.
 
 A fresh press ends whatever gesture preceded it and lays none of its route, since what a drag would lay is what its release said and no release ever said it.
@@ -158,17 +163,9 @@ The interpolation itself is `WalkerMotion.hpp`, exact rational arithmetic throug
 `PauseGatedSystem` wraps a system and stages nothing while `PauseState` says the run is held, exactly as `life::DragPausedSystem` does, and only those systems stop.
 Which ones is the product decision, and it is three: `WalkerSystem`, `BuildingSystem` and `SpawnSystem`, the three that make a city move on its own.
 The tick, the commit, every observer, the toolbar, the camera and placement all carry on, so **a paused city can still be panned over, zoomed into and built on** — this is a build pause rather than a freeze, and a pause nobody could act on would just look like a hang.
-It composes with `ModeGatedSystem` rather than replacing it, since a run is paused *and* in a mode and either gate alone answers only its own question.
+It composes with `SessionGatedSystem` rather than replacing it, since a run is paused *and* has a session on screen and either gate alone answers only its own question.
 
-`PauseState` is simulation state in exactly the sense the camera and the selected tool are — owned by `main.cpp` beside those two for the reason all three are, since a renderer built before the run has to read it — and toggled by `UiSink` inside the tick path, so a replay pauses on precisely the ticks the live run paused on and nothing about a pause is ever persisted.
-
-**A city is entered paused**, so progress is something a player asks for rather than something that starts happening at them the moment a grid appears, and the way out is the same toolbar button it always was.
-`CityEntrySink` is what does it: registered immediately after `AppModeState`, which commits the mode, and ahead of `GridSink`, which runs the systems a pause stops.
-It watches the *transition* into `AppMode::CityMap` rather than the mode itself, since holding the pause every tick would make the button do nothing at all, and it calls `PauseState::hold()` rather than `toggle()`, so a city entered from a paused one does not come up running.
-Every route in is a transition — New Game from the menu, a city picked off the world map, a save loaded — so **the first city of a session is no exception** and the rule needs none.
-A test that constructs its `AppModeState` already in `AppMode::CityMap` never transitions and so is never held, which is the same latitude that constructor's initial mode already gives one.
-Nothing about this leaves the tick path: it reads the mode a replay regenerates from the recorded clicks, defines no event, reads no clock and persists nothing.
-What it changed about `src/apps/game/replays/demo.json` is that the two walkers it drops now stand where they were dropped rather than walking off and expiring, since that session never presses pause; everything a click causes there — ten roads, a house, the pan and the zoom — happens exactly as it did.
+`PauseState` is simulation state in exactly the sense the camera and the selected tool are — owned by `main.cpp` beside those two for the reason all three are, since a renderer built before the run has to read it — and written by `UiSink` inside the tick path, so a replay pauses on precisely the ticks the live run paused on and nothing about a pause is ever persisted.
 
 The slide itself is `WalkerMotion.hpp`, through [`tween`](../libraries/tween.md) at `kWalkerEasing` — exact rational arithmetic either way, so the same frame of the same tick is the same pixel on every toolchain, which `FrameRateDeterminismTest` pins.
 That constant is `Easing::Linear` **on purpose rather than pending**: a walker crosses many cells in a row, so easing each cell's step would make it start and stop at every tile.
@@ -210,11 +207,23 @@ The modal's commands are appended after the bar's in the one `UiOverlay` the ren
 
 Three awkward cases have rules.
 **Opening it ends a road drag in progress, and that drag lays nothing**: what a drag lays is what its release said, and a release arriving over the modal never said it.
-**Opening it holds the run**, exactly as `CityEntrySink` holds one on entering a city — `hold()` rather than `toggle()`, for that sink's reason — and closing it does not let the run go again, so the way out is the pause button it always was.
-That also settles the drag, since the modal's hold supersedes whatever the drag was holding and nothing here ever resumes.
+**Opening it holds nothing**, and neither does entering a city: the city goes on behind the modal exactly as it goes on behind the world map.
+A run is held where a player has asked for it and nowhere else — see the pause below.
 **Leaving for the main menu is a mode change like every other**, asked for on `AppModeState` so it lands at the tick boundary, and the modal is put away on the way out so a city entered later is not still wearing it.
 
 The modal's widget ids live in `modalWidgets` rather than in the bar's `widgets`, for the reason `menuWidgets` has a namespace of its own: the two are resolved against different frames and never share one.
+
+**A pause is asked for, and nothing else causes one.**
+`PauseGatedSystem` wraps a system and stages nothing while `PauseState` says the run is held, exactly as `life::DragPausedSystem` does, and the three it wraps are `WalkerSystem`, `BuildingSystem` and `SpawnSystem` — the three that make a city move on its own.
+The tick, the commit, every observer, the toolbar, the camera and placement all carry on, so **a paused city can still be panned over, zoomed into and built on**: this is a build pause rather than a freeze, and a pause nobody could act on would just look like a hang.
+
+A city coming up, the menu modal opening and a road being dragged out each used to hold the run as well, and none of them does.
+That deleted `CityEntrySink` outright and left `PauseState` one writer rather than four, and it removed the bookkeeping about *whose* pause a release was letting go of.
+What it buys beyond the simplification is that opening a screen is no longer a pause nobody asked for — which matters most where more than one player shares a city, since one of them reading the map must not stop it for the others.
+
+**The value is absolute rather than a toggle**, which is the same decision read forward.
+`PauseState::set(bool)` is idempotent, and the button sends the opposite of the state it was showing rather than flipping one.
+Two players pausing on one tick therefore agree on a pause, where two toggles would have cancelled out and left the run going with both of them having watched themselves press pause.
 
 **A save is version 2 and carries the buildings.**
 Kinds, stock, risk and all three countdowns — countdowns reset on load are exactly the lockstep they exist to avoid.

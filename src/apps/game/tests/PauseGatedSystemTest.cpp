@@ -9,7 +9,7 @@
 #include <antwika/time/Tick.hpp>
 
 #include "antwika/game/AppMode.hpp"
-#include "antwika/game/ModeGatedSystem.hpp"
+#include "antwika/game/SessionGatedSystem.hpp"
 #include "antwika/game/PauseGatedSystem.hpp"
 #include "antwika/game/PauseState.hpp"
 
@@ -17,7 +17,7 @@ using antwika::ecs::ISystem;
 using antwika::ecs::World;
 using antwika::game::AppMode;
 using antwika::game::AppModeState;
-using antwika::game::ModeGatedSystem;
+using antwika::game::SessionGatedSystem;
 using antwika::game::PauseGatedSystem;
 using antwika::game::PauseState;
 using antwika::log::mocks::MockLogger;
@@ -60,7 +60,7 @@ TEST_F(PauseGatedSystemTest, Update_RunsTheSystemWhileNothingIsPaused)
 TEST_F(PauseGatedSystemTest, Update_StagesNothingWhilePaused)
 {
     PauseGatedSystem gate(inner, pause);
-    pause.toggle();
+    pause.set(true);
 
     gate.update(world, 0);
 
@@ -72,10 +72,10 @@ TEST_F(PauseGatedSystemTest, Update_RunsAgainOnceTheRunIsResumed)
 {
     PauseGatedSystem gate(inner, pause);
 
-    pause.toggle();
+    pause.set(true);
     gate.update(world, 0);
     gate.update(world, 1);
-    pause.toggle();
+    pause.set(false);
     gate.update(world, 2);
 
     EXPECT_EQ(inner.calls, 1U);
@@ -85,8 +85,8 @@ TEST_F(PauseGatedSystemTest, Update_RunsAgainOnceTheRunIsResumed)
 TEST_F(PauseGatedSystemTest, Update_StagesNothingWhenEitherGateSaysNo)
 {
     const AppModeState menu{AppMode::MainMenu};
-    ModeGatedSystem modeGate(inner, menu, AppMode::CityMap);
-    PauseGatedSystem gate(modeGate, pause);
+    SessionGatedSystem sessionGate(inner, menu);
+    PauseGatedSystem gate(sessionGate, pause);
 
     gate.update(world, 0);
 
@@ -96,8 +96,8 @@ TEST_F(PauseGatedSystemTest, Update_StagesNothingWhenEitherGateSaysNo)
 TEST_F(PauseGatedSystemTest, Update_RunsWhenBothGatesAgree)
 {
     const AppModeState city{AppMode::CityMap};
-    ModeGatedSystem modeGate(inner, city, AppMode::CityMap);
-    PauseGatedSystem gate(modeGate, pause);
+    SessionGatedSystem sessionGate(inner, city);
+    PauseGatedSystem gate(sessionGate, pause);
 
     gate.update(world, 0);
 

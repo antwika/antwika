@@ -115,15 +115,7 @@ namespace antwika::game
         // Whatever route was being dragged out is over, and lays none.
         // What a drag lays is what its release said.
         // A release arriving over the modal never said it.
-        // finish() rather than GridSink's cancel, which may resume:
-        // the hold below supersedes whatever the drag was holding.
         drag.finish();
-
-        // The modal holds the run, exactly as entering a city does.
-        // hold() rather than toggle(), for CityEntrySink's reason.
-        // Closing it does not let the run go again.
-        // The way out is the pause button, which is one a player sees.
-        pause.hold();
     }
 
     Pointer UiSink::pointerNow(bool pressed) const
@@ -208,7 +200,10 @@ namespace antwika::game
         }
         else if (activated == widgets::kPauseResume)
         {
-            pause.toggle();
+            // The opposite of what the button was showing, not a flip.
+            // Two players flipping on one tick would leave it running.
+            // Both asking for the same thing agree -- see PauseState.
+            pause.set(!pause.paused());
         }
         else if (activated == widgets::kMenu)
         {

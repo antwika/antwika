@@ -15,7 +15,8 @@ namespace antwika::game
     /**
      * @brief Holds another system still while the run is paused.
      *
-     * The same shape as ModeGatedSystem and life::DragPausedSystem, on a
+     * The same shape as SessionGatedSystem and life::DragPausedSystem,
+     * on a
      * different question: what stops is the one system it wraps, while
      * the tick, the commit and every observer carry on. So a paused city
      * is still drawn, the toolbar still answers, the camera still pans
@@ -27,11 +28,11 @@ namespace antwika::game
      * it, and lets the same gate be put over any other system that should
      * stand still for the same reason.
      *
-     * It composes with ModeGatedSystem rather than duplicating it: a run
-     * is paused *and* in a mode, and either gate alone answers only its
-     * own question. bootstrap() wraps the mode gate in this one, so the
-     * two orders cannot be told apart -- neither stages anything unless
-     * both agree.
+     * It composes with SessionGatedSystem rather than duplicating it: a
+     * run is paused *and* has a session on screen, and either gate alone
+     * answers only its own question. bootstrap() wraps the session gate
+     * in this one, so the two orders cannot be told apart -- neither
+     * stages anything unless both agree.
      *
      * Pausing costs the run nothing in reproducibility: which ticks were
      * paused follows from the recorded presses, so a replay pauses on

@@ -153,9 +153,9 @@ namespace antwika::game
          * a walker slides between two cells over frames a pause does not
          * stop -- see SceneSnapshot::paused.
          *
-         * A fresh one is unpaused, and a city is entered paused whatever
-         * state this arrives in, since CityEntrySink holds it rather
-         * than toggling it.
+         * A fresh one is unpaused, and nothing here ever pauses one:
+         * a run progresses all the time until a player asks the bar's
+         * button for a pause -- see PauseState.
          */
         PauseState &pause;
 

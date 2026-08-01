@@ -404,7 +404,7 @@ TEST_F(RenderSystemTest, Draw_HoldsAWalkerStillWhileTheRunIsPaused)
             .from = Cell{.x = 0, .y = 1}});
     world.commit();
 
-    pause.hold();
+    pause.set(true);
 
     RenderSystem system(setup());
 
@@ -461,7 +461,7 @@ TEST_F(RenderSystemTest, Draw_SlidesAWalkerWhileTheRunIsNotPaused)
 // See SceneSnapshot::plan.
 TEST_F(RenderSystemTest, Update_PreviewsTheRunOfRoadBeingDraggedOut)
 {
-    drag.begin(Cell{.x = 0, .y = 0}, false);
+    drag.begin(Cell{.x = 0, .y = 0});
     drag.dragTo(Cell{.x = 1, .y = 1});
 
     RenderSystem system(setup());
@@ -476,7 +476,7 @@ TEST_F(RenderSystemTest, Update_PreviewsTheRunOfRoadBeingDraggedOut)
 // A drag that has ended previews nothing, and neither does no drag.
 TEST_F(RenderSystemTest, Update_PreviewsNothingWithNoDragUnderWay)
 {
-    drag.begin(Cell{.x = 0, .y = 0}, false);
+    drag.begin(Cell{.x = 0, .y = 0});
     drag.finish();
 
     RenderSystem system(setup());

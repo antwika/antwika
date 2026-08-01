@@ -4,7 +4,6 @@ add_executable(antwika_game
     src/BuildGhost.cpp
     src/BuildingIndex.cpp
     src/BuildingSystem.cpp
-    src/CityEntrySink.cpp
     src/CityGrid.cpp
     src/FpsReadout.cpp
     src/FrameMeter.cpp
@@ -19,7 +18,6 @@ add_executable(antwika_game
     src/MainMenuSink.cpp
     src/MenuModalScene.cpp
     src/ModeGatedSink.cpp
-    src/ModeGatedSystem.cpp
     src/PathIndex.cpp
     src/PauseGatedSystem.cpp
     src/PauseState.cpp
@@ -38,6 +36,7 @@ add_executable(antwika_game
     src/SaveLoadSink.cpp
     src/SaveLoadState.cpp
     src/SaveMigration.cpp
+    src/SessionGatedSystem.cpp
     src/SessionStore.cpp
     src/SpawnSystem.cpp
     src/Toolbar.cpp

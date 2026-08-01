@@ -459,21 +459,22 @@ TEST_F(UiSinkTest, Modal_StaysUpOnAPressOnTheScrim)
     EXPECT_TRUE(sink.menuOpen());
 }
 
-// The modal holds the run, exactly as entering a city does.
-TEST_F(UiSinkTest, Opening_HoldsTheRun)
+// The modal holds nothing, and neither does entering a city.
+// A run progresses until a player asks for a pause -- see PauseState.
+TEST_F(UiSinkTest, Opening_LeavesTheRunGoing)
 {
     openModal();
 
-    EXPECT_TRUE(pause.paused());
+    EXPECT_FALSE(pause.paused());
 }
 
-// And closing it does not let the run go again.
-// The way out is the pause button, which is one a player can see.
-TEST_F(UiSinkTest, Closing_LeavesTheRunHeld)
+// And a run somebody did pause is still paused behind the modal.
+// Opening one says nothing either way about a pause.
+TEST_F(UiSinkTest, Opening_LeavesAPausedRunPaused)
 {
-    openModal();
+    pressOn(widgets::kPauseResume);
 
-    pressAt(modalPixelOn(modalWidgets::kResume));
+    openModal();
 
     EXPECT_TRUE(pause.paused());
 }
@@ -483,10 +484,9 @@ TEST_F(UiSinkTest, Closing_LeavesTheRunHeld)
 // So the gesture is over.
 TEST_F(UiSinkTest, Opening_EndsARoadDragInProgress)
 {
-    drag.begin(Cell{.x = 2, .y = 3}, false);
+    drag.begin(Cell{.x = 2, .y = 3});
 
     openModal();
 
     EXPECT_FALSE(drag.active());
-    EXPECT_TRUE(pause.paused());
 }

@@ -54,6 +54,28 @@ namespace antwika::game
     };
 
     /**
+     * @brief Whether a city simulates while this screen is up.
+     *
+     * **A city runs whether or not anybody is looking at it**, so this
+     * is true on the world map as well as on the city's own grid.
+     * A player reading the map has not asked for a pause, and asking is
+     * the only thing that holds a run still -- see PauseState.
+     *
+     * It is false on the two screens where there is no session to run.
+     * MainMenu is where one has not been started yet or has been left,
+     * and SaveLoad is where the world is about to be replaced by a
+     * file's, so simulating on either would advance a city nobody is
+     * playing.
+     *
+     * @param mode The screen in question.
+     * @return True while a session is on screen to be run.
+     */
+    [[nodiscard]] constexpr bool simulates(AppMode mode) noexcept
+    {
+        return mode == AppMode::CityMap || mode == AppMode::WorldMap;
+    }
+
+    /**
      * @brief Which mode the app is in, and which it is about to be in.
      *
      * **The mode is simulation state, not render state**, for exactly the

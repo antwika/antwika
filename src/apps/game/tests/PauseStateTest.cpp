@@ -4,49 +4,53 @@
 
 using antwika::game::PauseState;
 
-TEST(PauseStateTest, Paused_IsFalseUntilSomethingTogglesIt)
+TEST(PauseStateTest, Paused_IsFalseUntilSomebodyAsksForOne)
 {
     const PauseState pause;
 
     EXPECT_FALSE(pause.paused());
 }
 
-TEST(PauseStateTest, Toggle_HoldsTheSimulationStill)
+TEST(PauseStateTest, Set_HoldsTheSimulationStill)
 {
     PauseState pause;
 
-    pause.toggle();
+    pause.set(true);
 
     EXPECT_TRUE(pause.paused());
 }
 
-// One button, so the second press is what lets the run go again.
-TEST(PauseStateTest, Toggle_LetsItGoAgainOnTheSecondCall)
+// One button, so asking for the opposite lets the run go again.
+TEST(PauseStateTest, Set_LetsAHeldSimulationRunAgain)
 {
     PauseState pause;
+    pause.set(true);
 
-    pause.toggle();
-    pause.toggle();
+    pause.set(false);
 
     EXPECT_FALSE(pause.paused());
 }
 
-TEST(PauseStateTest, Release_LetsAHeldSimulationRunAgain)
+// The whole reason the value is absolute rather than a toggle.
+// Two players asking for a pause on one tick agree on one.
+// A toggle would leave the run going, and both of them surprised.
+TEST(PauseStateTest, Set_IsIdempotentSoTwoAsksDoNotCancelOut)
 {
     PauseState pause;
-    pause.hold();
 
-    pause.release();
+    pause.set(true);
+    pause.set(true);
 
-    EXPECT_FALSE(pause.paused());
+    EXPECT_TRUE(pause.paused());
 }
 
-// hold()'s counterpart, and unlike toggle() it says which way it goes.
-TEST(PauseStateTest, Release_LeavesARunningSimulationRunning)
+// And the same read backwards, for two players resuming at once.
+TEST(PauseStateTest, Set_LeavesARunningSimulationRunning)
 {
     PauseState pause;
 
-    pause.release();
+    pause.set(false);
+    pause.set(false);
 
     EXPECT_FALSE(pause.paused());
 }

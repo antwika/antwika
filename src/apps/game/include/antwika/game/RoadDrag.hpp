@@ -31,14 +31,16 @@ namespace antwika::game
         /**
          * @brief Start a drag on a cell.
          *
+         * **A drag holds nothing still.** It used to pause the run so
+         * that what it was planned against could not move under it, and
+         * a city now runs all the time unless a player has asked for a
+         * pause -- so a route is planned against a moving city, and the
+         * bookkeeping about whose pause this was is gone with it.
+         *
          * @param cell The cell the press landed on, which is both the
          * start and -- until the pointer moves -- the end.
-         * @param alreadyHeld Whether the run was already paused when the
-         * press arrived. Remembered so that ending the drag can leave a
-         * run somebody paused for themselves paused -- see
-         * heldForDrag().
          */
-        void begin(Cell cell, bool alreadyHeld) noexcept;
+        void begin(Cell cell) noexcept;
 
         /**
          * @brief Take the drag to another cell.
@@ -71,23 +73,8 @@ namespace antwika::game
          */
         [[nodiscard]] Cell end() const noexcept;
 
-        /**
-         * @brief Check whether the pause is this drag's to release.
-         *
-         * **A drag must not fight the player's own pause.** A drag holds
-         * the run still so that what it is planned against cannot move
-         * under it, and releasing it afterwards would resume a city
-         * somebody had deliberately paused before they touched the
-         * mouse. So the pause is released at the end of a drag only when
-         * the drag was what held it.
-         *
-         * @return True when the run was running when the drag began.
-         */
-        [[nodiscard]] bool heldForDrag() const noexcept;
-
     private:
         bool dragging = false;
-        bool ours = false;
         Cell from{};
         Cell to{};
     };
