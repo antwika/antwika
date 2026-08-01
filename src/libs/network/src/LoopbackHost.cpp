@@ -59,13 +59,6 @@ namespace antwika::network
     {
         LoopbackHost *other = net.find(remote);
 
-        if (other == nullptr)
-        {
-            throw NetworkError(
-                "antwika::network: nothing is listening at "
-                + nameOf(remote));
-        }
-
         // Refused rather than looped back to itself.
         // Its own peer would be two links to one place.
         if (other == this)
@@ -76,18 +69,27 @@ namespace antwika::network
         }
 
         if (links.size() >= kLoopbackMaxPeers
-            || other->links.size() >= kLoopbackMaxPeers)
+            || (other != nullptr
+                && other->links.size() >= kLoopbackMaxPeers))
         {
             throw NetworkError(
                 "antwika::network: a loopback host holds at most "
                 + std::to_string(kLoopbackMaxPeers) + " peers");
         }
 
-        // Both names are settled here.
-        // So neither end ever searches for what the other calls it.
         const PeerId mine{nextId};
         ++nextId;
 
+        // Nobody there is not an error -- see IHost::connect().
+        // This backend could answer at once and deliberately does not.
+        // A name is handed back that simply never becomes a peer.
+        if (other == nullptr)
+        {
+            return mine;
+        }
+
+        // Both names are settled here.
+        // So neither end ever searches for what the other calls it.
         const PeerId theirs{other->nextId};
         ++other->nextId;
 
@@ -108,11 +110,13 @@ namespace antwika::network
             return;
         }
 
-        link->host->forget(*this);
+        // Both ends forget each other.
+        // That takes the link and whatever was queued for it.
+        // Erasing this side's link alone left a queued send to make.
+        LoopbackHost *other = link->host;
 
-        std::erase_if(
-            links,
-            [peer](const Link &held) { return held.id == peer; });
+        other->forget(*this);
+        forget(*other);
     }
 
     void LoopbackHost::send(
@@ -143,6 +147,13 @@ namespace antwika::network
 
     void LoopbackHost::pump()
     {
+        for (Outgoing &one : outgoing)
+        {
+            one.host->accept(std::move(one.packet), net.delayPumps());
+        }
+
+        outgoing.clear();
+
         std::vector<Pending> waiting;
 
         for (Pending &held : pending)
@@ -204,6 +215,12 @@ namespace antwika::network
         std::erase_if(
             links,
             [&other](const Link &held) { return held.host == &other; });
+
+        // Anything still queued for that host goes with the link.
+        // So pump() never hands a packet to something that has gone.
+        std::erase_if(
+            outgoing,
+            [&other](const Outgoing &one) { return one.host == &other; });
     }
 
     void LoopbackHost::deliver(
@@ -216,11 +233,12 @@ namespace antwika::network
             return;
         }
 
-        link.host->accept(
-            Packet{
-                .from = link.theirs,
-                .payload = {payload.begin(), payload.end()}},
-            net.delayPumps());
+        outgoing.push_back(
+            Outgoing{
+                .host = link.host,
+                .packet = Packet{
+                    .from = link.theirs,
+                    .payload = {payload.begin(), payload.end()}}});
     }
 
     void LoopbackHost::accept(Packet packet, std::size_t delay)

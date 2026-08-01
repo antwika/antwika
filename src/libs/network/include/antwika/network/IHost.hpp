@@ -35,24 +35,42 @@ namespace antwika::network
         virtual ~IHost() = default;
 
         /**
-         * @brief Get where this host itself can be reached.
-         * @return The endpoint it was opened at.
+         * @brief Get where this host can actually be reached.
+         *
+         * **Not necessarily the endpoint it was asked for.**
+         * A backend handed port 0 is being asked to pick one, and what
+         * it picked is what a peer has to dial -- so this is the
+         * authority on where a host is, and the argument openHost() was
+         * given is only a request.
+         *
+         * @return The endpoint, which does not change over its lifetime.
          */
         [[nodiscard]] virtual Endpoint endpoint() const = 0;
 
         /**
          * @brief Begin talking to another host.
          *
-         * The peer is not in peers() until the link is up, which for a
-         * backend that dials out over a real network is some pumps
-         * later; a link that never comes up is one that simply never
-         * appears.
+         * **Nobody being there is not an error**, and this is the one
+         * place where saying so costs something worth paying for.
+         * A non-blocking connect over a real network cannot know
+         * whether anything is listening until several pumps later, so a
+         * backend that refused an unreachable endpoint here could only
+         * do it by blocking -- inside a tick, on the thread running the
+         * simulation.
+         * The answer arrives the same way a dropped link does instead:
+         * the peer is not in peers() until it is up, and one that never
+         * comes up simply never appears there.
+         *
+         * An in-process backend *could* answer at once, and deliberately
+         * does not, since a contract two backends keep differently is
+         * one a caller cannot rely on.
          *
          * @param remote Where the other host is.
-         * @return This host's own name for that peer.
-         * @throws NetworkError If this backend cannot connect at all,
-         * if it already holds as many peers as it may, or if the
-         * endpoint is one it cannot reach.
+         * @return This host's own name for that peer, whether or not it
+         * ever becomes one.
+         * @throws NetworkError If this backend cannot connect at all, or
+         * it already holds as many peers as it may -- both of which are
+         * a caller's mistake rather than a network's answer.
          */
         [[nodiscard]] virtual PeerId connect(const Endpoint &remote) = 0;
 
@@ -73,6 +91,14 @@ namespace antwika::network
          * dropping between reading peers() and sending is what a
          * network does, and there is no answer a caller could give that
          * would be better than the send going nowhere.
+         *
+         * **The bytes leave on this host's next pump()**, not here.
+         * A real socket takes as much as it feels like and leaves the
+         * rest, so a send that wrote its payload out here would either
+         * block or fail halfway; queueing it makes pump() the one place
+         * bytes move, in both directions, for every backend.
+         * So a caller that pumps only the far end of a link will wait
+         * for something that was never sent.
          *
          * @param peer Who to send it to.
          * @param payload What to send; copied, so the caller's bytes

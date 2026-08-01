@@ -43,6 +43,12 @@ endforeach()
 # and gives two libraries a claim on the same global initialisation.
 # One framework per build is the rule; 'null' is how a subsystem opts
 # out of it.
+#
+# 'sockets' is exempt, and it is the one exception rather than a second
+# rule.  Both reasons above are about a *framework*: a shared queue, and
+# a doubled dependency graph.  A backend naming the operating system's
+# own socket API brings neither -- no package, no lockfile entry, and
+# nothing any other subsystem could compete for.
 set(ANTWIKA_REAL_BACKENDS "")
 
 foreach(SELECTION
@@ -50,7 +56,8 @@ foreach(SELECTION
         ANTWIKA_INPUT_BACKEND
         ANTWIKA_SOUND_BACKEND
         ANTWIKA_NETWORK_BACKEND)
-    if(NOT ${SELECTION} STREQUAL "null")
+    if(NOT ${SELECTION} STREQUAL "null"
+       AND NOT ${SELECTION} STREQUAL "sockets")
         list(APPEND ANTWIKA_REAL_BACKENDS ${${SELECTION}})
     endif()
 endforeach()

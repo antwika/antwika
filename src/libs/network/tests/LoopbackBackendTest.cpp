@@ -33,6 +33,7 @@ using antwika::network::NetworkError;
 using antwika::network::Packet;
 using antwika::network::PeerId;
 using antwika::network::Port;
+using antwika::network::rawValue;
 using ::testing::NiceMock;
 
 namespace
@@ -55,11 +56,13 @@ namespace
         return out;
     }
 
-    // A send, a pump on the far side, and what turned up.
+    // A send, a pump at each end, and what turned up.
+    // Both ends, because a send leaves on the sender's own pump.
     std::vector<Packet> exchange(
         IHost &from, PeerId peer, std::string_view text, IHost &to)
     {
         from.send(peer, bytes(text));
+        from.pump();
         to.pump();
 
         return to.receive();
@@ -135,11 +138,32 @@ TEST_F(LoopbackBackendTest, Connect_LinksBothHostsToEachOther)
     EXPECT_EQ(right->peers().size(), 1U);
 }
 
-TEST_F(LoopbackBackendTest, Connect_RefusesAnEndpointNothingListensAt)
+// Nobody there is not an error -- see IHost::connect().
+// This backend could answer at once and deliberately does not.
+// A contract two backends keep differently is one nobody relies on.
+TEST_F(LoopbackBackendTest, Connect_ToNobodyNeverBecomesAPeer)
 {
     const auto host = backend.openHost(at(1));
 
-    EXPECT_THROW((void)host->connect(at(99)), NetworkError);
+    const PeerId peer = host->connect(at(99));
+
+    host->pump();
+
+    EXPECT_TRUE(host->peers().empty());
+    EXPECT_NE(rawValue(peer), 0U);
+}
+
+// And a name handed out for nothing is still nobody's but its own.
+TEST_F(LoopbackBackendTest, Connect_ToNobodySpendsAName)
+{
+    const auto host = backend.openHost(at(1));
+    const auto other = backend.openHost(at(2));
+
+    const PeerId nowhere = host->connect(at(99));
+    const PeerId real = host->connect(at(2));
+
+    EXPECT_NE(nowhere, real);
+    EXPECT_EQ(host->peers(), std::vector<PeerId>{real});
 }
 
 // A host that were its own peer would read its own sends as another's.
@@ -228,9 +252,12 @@ TEST_F(LoopbackBackendTest, Send_IsNotDeliveredUntilTheHostIsPumped)
     const PeerId peer = left->connect(at(2));
 
     left->send(peer, bytes("hello"));
+    right->pump();
 
+    // Nothing yet: the sender has not been pumped, so nothing left.
     EXPECT_TRUE(right->receive().empty());
 
+    left->pump();
     right->pump();
 
     EXPECT_EQ(right->receive().size(), 1U);
@@ -243,6 +270,7 @@ TEST_F(LoopbackBackendTest, Send_ToAPeerThatIsNotHeldDoesNothing)
     (void)left->connect(at(2));
 
     left->send(PeerId{99}, bytes("hello"));
+    left->pump();
     right->pump();
 
     EXPECT_TRUE(right->receive().empty());
@@ -269,6 +297,7 @@ TEST_F(LoopbackBackendTest, Broadcast_ReachesEveryPeerAndNobodyElse)
     (void)left->connect(at(3));
 
     left->broadcast(bytes("all"));
+    left->pump();
     first->pump();
     second->pump();
     stranger->pump();
@@ -285,6 +314,7 @@ TEST_F(LoopbackBackendTest, Broadcast_WithNoPeersDoesNothing)
 
     host->broadcast(bytes("all"));
     host->pump();
+    host->pump();
 
     EXPECT_TRUE(host->receive().empty());
 }
@@ -298,6 +328,7 @@ TEST_F(LoopbackBackendTest, Receive_HandsOverEveryPacketInFlightAtOnce)
 
     left->send(peer, bytes("first"));
     left->send(peer, bytes("second"));
+    left->pump();
     right->pump();
 
     const auto arrived = right->receive();
@@ -328,6 +359,7 @@ TEST(LoopbackScheduleTest, APacketWaitsForTheDelayTheScheduleNames)
     const PeerId peer = left->connect(at(2));
 
     left->send(peer, bytes("late"));
+    left->pump();
 
     right->pump();
     EXPECT_TRUE(right->receive().empty());
@@ -366,6 +398,40 @@ TEST_F(LoopbackBackendTest, Disconnect_TakesThePeerOffBothHosts)
     EXPECT_TRUE(right->peers().empty());
 }
 
+// A send is queued until pump(), so a peer can go in between.
+// What was queued for it goes too, rather than arriving at nobody.
+TEST_F(LoopbackBackendTest, Disconnect_DropsWhatWasStillQueuedForThatPeer)
+{
+    const auto left = backend.openHost(at(1));
+    const auto right = backend.openHost(at(2));
+    const PeerId peer = left->connect(at(2));
+
+    left->send(peer, bytes("undelivered"));
+    left->disconnect(peer);
+    left->pump();
+    right->pump();
+
+    EXPECT_TRUE(right->receive().empty());
+}
+
+// The same rule read as a lifetime guard, which is what it is for.
+// A host that has gone must never be handed a queued packet.
+TEST_F(LoopbackBackendTest, Closing_DropsWhatWasStillQueuedForThatHost)
+{
+    const auto left = backend.openHost(at(1));
+
+    {
+        const auto right = backend.openHost(at(2));
+        const PeerId peer = left->connect(at(2));
+
+        left->send(peer, bytes("undelivered"));
+    }
+
+    left->pump();
+
+    EXPECT_TRUE(left->peers().empty());
+}
+
 TEST_F(LoopbackBackendTest, Disconnect_IsSafeForAPeerThatIsNotHeld)
 {
     const auto host = backend.openHost(at(1));
@@ -402,6 +468,10 @@ TEST(LoopbackScheduleTest, APacketInFlightOutlivesTheSenderLeaving)
         const auto left = backend.openHost(at(1));
         const PeerId peer = left->connect(at(2));
         left->send(peer, bytes("parting"));
+
+        // Pumped, so the packet really is in flight.
+        // Rather than still queued at a sender about to go.
+        left->pump();
     }
 
     right->pump();

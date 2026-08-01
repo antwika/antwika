@@ -60,6 +60,8 @@ blog/
 
 Each library and app has its own `CMakeLists.txt`, `include/`, `src/`, and `tests/` directory.
 `backends/` sits outside `src/` and holds the concrete graphics, input, sound and network implementations, one directory per framework, exactly one of which is compiled per subsystem into a given build.
+
+`backends/sockets` is the exception worth knowing about: it is a network backend rather than a framework, so it adds no package and is exempt from the rule that one build names one framework.
 See [`docs/STYLE_GUIDE.md`](docs/STYLE_GUIDE.md) for the project's C++/CMake/Python coding conventions.
 
 `blog/` holds write-ups about notable changes to the project — see [`blog/001-building-a-deterministic-replay-system.md`](blog/001-building-a-deterministic-replay-system.md) for the design and requirements behind the replay system below, and [`blog/003-an-entity-component-system-with-nowhere-to-hide-a-mutation.md`](blog/003-an-entity-component-system-with-nowhere-to-hide-a-mutation.md) for the `antwika::ecs` library under `libs/ecs/`.

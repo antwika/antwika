@@ -56,6 +56,11 @@ namespace antwika::network::conformance
             return Traits::endpointFor(index);
         }
 
+        [[nodiscard]] Endpoint unreachable() const
+        {
+            return Traits::nowhere();
+        }
+
         [[nodiscard]] bool linksUp() const
         {
             const auto what = backend->capabilities();
@@ -72,13 +77,17 @@ namespace antwika::network::conformance
             }
         }
 
-        [[nodiscard]] static std::vector<Packet> awaited(IHost &host)
+        // Both ends, because a send leaves on the *sender's* pump.
+        // Pumping only the far end waits for what was never sent.
+        [[nodiscard]] static std::vector<Packet> awaited(
+            IHost &from, IHost &to)
         {
             for (int pump = 0; pump < kPatience; ++pump)
             {
-                host.pump();
+                from.pump();
+                to.pump();
 
-                auto arrived = host.receive();
+                auto arrived = to.receive();
 
                 if (!arrived.empty())
                 {
@@ -120,12 +129,15 @@ namespace antwika::network::conformance
             this->backend->capabilities(), this->backend->capabilities());
     }
 
+    // What a host reports is where it is, not what was asked for.
+    // A backend handed port 0 is being asked to pick one.
     TYPED_TEST_P(NetworkBackendConformance, OpenHost_ReturnsAHost)
     {
         const auto host = this->backend->openHost(this->at(0));
 
         ASSERT_NE(host, nullptr);
-        EXPECT_EQ(host->endpoint(), this->at(0));
+        EXPECT_EQ(host->endpoint().host, this->at(0).host);
+        EXPECT_EQ(host->endpoint(), host->endpoint());
     }
 
     TYPED_TEST_P(
@@ -183,8 +195,10 @@ namespace antwika::network::conformance
         EXPECT_THROW((void)host->connect(this->at(1)), NetworkError);
     }
 
-    TYPED_TEST_P(
-        NetworkBackendConformance, Connect_RefusesAnEndpointNobodyIsAt)
+    // Nobody there is not an error -- see IHost::connect().
+    // A non-blocking connect cannot know until pumps later.
+    // The answer arrives as the peer never turning up.
+    TYPED_TEST_P(NetworkBackendConformance, Connect_ToNobodyNeverLinks)
     {
         if (!this->backend->capabilities().connects)
         {
@@ -193,7 +207,14 @@ namespace antwika::network::conformance
 
         const auto host = this->backend->openHost(this->at(0));
 
-        EXPECT_THROW((void)host->connect(this->at(1)), NetworkError);
+        (void)host->connect(this->unreachable());
+
+        for (int pump = 0; pump < kPatience; ++pump)
+        {
+            host->pump();
+        }
+
+        EXPECT_TRUE(host->peers().empty());
     }
 
     TYPED_TEST_P(NetworkBackendConformance, Connect_IsSeenByBothHosts)
@@ -206,7 +227,7 @@ namespace antwika::network::conformance
         const auto left = this->backend->openHost(this->at(0));
         const auto right = this->backend->openHost(this->at(1));
 
-        const PeerId peer = left->connect(this->at(1));
+        const PeerId peer = left->connect(right->endpoint());
         this->settle(*left, *right);
 
         EXPECT_EQ(left->peers(), std::vector<PeerId>{peer});
@@ -222,12 +243,12 @@ namespace antwika::network::conformance
 
         const auto left = this->backend->openHost(this->at(0));
         const auto right = this->backend->openHost(this->at(1));
-        const PeerId peer = left->connect(this->at(1));
+        const PeerId peer = left->connect(right->endpoint());
         this->settle(*left, *right);
 
         left->send(peer, this->payload(8));
 
-        const auto arrived = this->awaited(*right);
+        const auto arrived = this->awaited(*left, *right);
 
         ASSERT_EQ(arrived.size(), 1U);
         EXPECT_EQ(arrived.front().payload, this->payload(8));
@@ -244,12 +265,12 @@ namespace antwika::network::conformance
 
         const auto left = this->backend->openHost(this->at(0));
         const auto right = this->backend->openHost(this->at(1));
-        const PeerId peer = left->connect(this->at(1));
+        const PeerId peer = left->connect(right->endpoint());
         this->settle(*left, *right);
 
         left->send(peer, this->payload(8));
 
-        ASSERT_EQ(this->awaited(*right).size(), 1U);
+        ASSERT_EQ(this->awaited(*left, *right).size(), 1U);
         EXPECT_TRUE(right->receive().empty());
     }
 
@@ -263,15 +284,15 @@ namespace antwika::network::conformance
         const auto left = this->backend->openHost(this->at(0));
         const auto first = this->backend->openHost(this->at(1));
         const auto second = this->backend->openHost(this->at(2));
-        (void)left->connect(this->at(1));
-        (void)left->connect(this->at(2));
+        (void)left->connect(first->endpoint());
+        (void)left->connect(second->endpoint());
         this->settle(*left, *first);
         this->settle(*left, *second);
 
         left->broadcast(this->payload(4));
 
-        EXPECT_EQ(this->awaited(*first).size(), 1U);
-        EXPECT_EQ(this->awaited(*second).size(), 1U);
+        EXPECT_EQ(this->awaited(*left, *first).size(), 1U);
+        EXPECT_EQ(this->awaited(*left, *second).size(), 1U);
     }
 
     TYPED_TEST_P(NetworkBackendConformance, Send_RefusesAnOversizedPayload)
@@ -283,7 +304,7 @@ namespace antwika::network::conformance
 
         const auto left = this->backend->openHost(this->at(0));
         const auto right = this->backend->openHost(this->at(1));
-        const PeerId peer = left->connect(this->at(1));
+        const PeerId peer = left->connect(right->endpoint());
         const auto huge =
             this->payload(this->backend->capabilities().maxPayloadBytes + 1);
 
@@ -299,7 +320,7 @@ namespace antwika::network::conformance
 
         const auto left = this->backend->openHost(this->at(0));
         const auto right = this->backend->openHost(this->at(1));
-        const PeerId peer = left->connect(this->at(1));
+        const PeerId peer = left->connect(right->endpoint());
         this->settle(*left, *right);
 
         left->disconnect(peer);
@@ -321,7 +342,7 @@ namespace antwika::network::conformance
 
         {
             const auto left = this->backend->openHost(this->at(0));
-            (void)left->connect(this->at(1));
+            (void)left->connect(right->endpoint());
             this->settle(*left, *right);
         }
 
@@ -344,7 +365,7 @@ namespace antwika::network::conformance
         Pump_OnAQuietHostChangesNothing,
         SendingIntoTheVoidIsNoError,
         Connect_MatchesWhatItClaims,
-        Connect_RefusesAnEndpointNobodyIsAt,
+        Connect_ToNobodyNeverLinks,
         Connect_IsSeenByBothHosts,
         Send_ArrivesWhereItWasAimed,
         Receive_YieldsAPacketOnce,

@@ -27,6 +27,12 @@ namespace antwika::network::conformance
                     .host = "localhost",
                     .port = Port{static_cast<std::uint16_t>(9000 + index)}};
             }
+
+            // A port no host of this run is ever opened at.
+            static Endpoint nowhere()
+            {
+                return Endpoint{.host = "localhost", .port = Port{9999}};
+            }
         };
     } // namespace
 

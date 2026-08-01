@@ -58,6 +58,20 @@ An identity a whole session agrees on is something peers reach by talking, so it
 `send()` to an id this host does not hold is a no-op, because a link dropping between reading `peers()` and sending is what a network does, and there is no better answer a caller could give.
 `NetworkError` is left for genuine refusals: an oversized payload, a host already open at an endpoint, a backend asked to connect when it says it cannot.
 
+**Nobody being there is not an error either**, and that is the one place saying so costs something worth paying for.
+A non-blocking connect over a real network cannot know whether anything is listening until several pumps later, so a backend that refused an unreachable endpoint in `connect()` could only do it by blocking — inside a tick, on the thread running the simulation.
+The answer arrives the way a dropped link does instead: the peer is not in `peers()` until it is up, and one that never comes up simply never appears there.
+`LoopbackBackend` *could* answer at once and deliberately does not, because a contract two backends keep differently is one a caller cannot rely on.
+
+**A host reports where it is, not what it was asked for.**
+A backend handed port 0 is being asked to pick one, so `IHost::endpoint()` is the authority and the argument `openHost()` took is only a request.
+That is what lets the conformance suite open every host on an ephemeral port and dial whatever each reports — which is the only workable thing for a real socket, and the same thing for the in-process backends.
+
+**`pump()` is where bytes move, in both directions.**
+`send()` queues; the bytes leave on the *sender's* next pump.
+A real socket takes as much as it feels like and leaves the rest, so a send that wrote its payload out on the spot would either block or fail halfway.
+`LoopbackBackend` defers too, rather than handing the packet straight over — deliberately, so a test that passes against it passes against a socket.
+
 ## Two backends live in the library
 
 `NullNetworkBackend` and `LoopbackBackend` are under `src/libs/network/` rather than under `backends/`, following the `NullSoundBackend` and `NullInputBackend` precedent: `backends/` is exempt from the coverage gate and `src/` is not, so an in-process implementation kept here is one the gate can hold to 100%.
@@ -101,18 +115,40 @@ Hosts find each other through state the backend owns, so the usual rule about a 
 
 ## Conformance
 
-`antwika::network::tests::conformance` is the shared suite, run against both backends.
+`antwika::network::tests::conformance` is the shared suite, run against all three backends.
 Backends under `backends/` cannot be held to the coverage gate — CI has no network to reach — and this is what replaces that: a backend is finished when it passes the suite unmodified.
 
 **A backend that cannot do something skips rather than fails**, and `NetworkCapabilities` is how it says so.
 The alternative — a backend pretending to connect so a test goes green — is exactly the dishonesty a conformance suite exists to prevent.
 
 Nothing in the suite assumes delivery is immediate.
-Every wait is a bounded run of pumps, so a transport that takes a few of them to settle passes the same tests an in-process one does.
+Every wait is a bounded run of pumps at *both* ends, so a transport that takes a few of them to settle passes the same tests an in-process one does.
+
+**Writing the second backend is what found the first one's contract gaps**, which is the argument for the suite rather than a story about it.
+Three things came out of it: `connect()` refusing an unreachable endpoint was a promise only an in-process backend could keep; `endpoint()` returning the requested port was a promise only a backend that never binds could keep; and the suite pumping one end of a link had been passing because `LoopbackBackend` delivered on `send()` where a socket cannot.
+Each was fixed in the contract rather than papered over with a capability flag, since a capability should say what a backend *can do* rather than which of two behaviours it has.
+
+## The sockets backend
+
+`backends/sockets/` is the one that leaves the process: non-blocking TCP, IPv4, chosen with `-o network_backend=sockets`.
+
+**It is the first backend in this tree that is not a framework**, and that is why it is exempt from the one-real-framework rule the other three subsystems obey.
+Both reasons that rule gives are about a framework — a process-global event queue, and a doubled dependency graph — and a backend naming the operating system's own socket API has neither.
+So `-o gfx_backend=sdl3 -o network_backend=sockets` is an ordinary configuration, it resolves against `conan-sdl3.lock` unchanged, and it adds no package at all.
+The exemption is written down in both places that enforce the rule, `conanfile.py` and `backends/CMakeLists.txt`.
+
+**TCP rather than UDP**, because the layer above is lockstep: it needs every peer's input for a tick, in order, and rebuilding reliability over datagrams would be a second transport written inside a backend.
+What TCP costs in exchange is message boundaries, so a payload travels behind a four-byte **big-endian** length — big-endian because a wire is one place a byte order has to be stated rather than inherited from whichever machine wrote it.
+
+`src/SocketApi.hpp` is the one file that names either platform's socket API.
+The two operating systems disagree about the handle type, how one is closed, how one is made non-blocking, and where the last error lives — and about nothing else this backend does, so everything above that file is one code path.
+Winsock's process-wide start-up lives there too, as a function-local static, following `backends/sdl3`'s runtime archive: a framework directory owns that framework's global state.
+
+Nothing here blocks. Every socket is non-blocking and `pump()` polls with a zero timeout, because a tick may not sleep.
 
 ## What is not here yet
 
-A socket-backed backend, and the tick-domain layer above this one — the wire codec, the per-peer input buffers and the `ITickEventSource` decorator that turns arriving bytes into a tick's events.
+The tick-domain layer above this one — the wire codec, the per-peer input buffers and the `ITickEventSource` decorator that turns arriving bytes into a tick's events.
 That layer is a separate library on purpose, so that a single-player build links this and no wire format at all.
 
 ## See also

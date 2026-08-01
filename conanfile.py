@@ -28,7 +28,7 @@ class AntwikaConan(ConanFile):
         "gfx_backend": ["null", "sdl3", "raylib"],
         "input_backend": ["auto", "null", "sdl3", "raylib"],
         "sound_backend": ["null", "sdl3"],
-        "network_backend": ["null"],
+        "network_backend": ["null", "sockets"],
     }
 
     default_options = {
@@ -51,6 +51,13 @@ class AntwikaConan(ConanFile):
     def _selected_frameworks(self):
         # The distinct real frameworks this configuration would link.
         # "null" is not one: it is how a subsystem opts out.
+        #
+        # Neither is "sockets", and that is the one exception rather
+        # than a second rule.  The two reasons this set exists are a
+        # process-global event queue and a doubled dependency graph, and
+        # a backend naming the operating system's own socket API has
+        # neither: it adds no package, no lockfile entry and no queue
+        # anything else could compete for.
         backends = {
             str(self.options.gfx_backend),
             self._input_backend,
@@ -58,6 +65,7 @@ class AntwikaConan(ConanFile):
             str(self.options.network_backend),
         }
         backends.discard("null")
+        backends.discard("sockets")
 
         return backends
 

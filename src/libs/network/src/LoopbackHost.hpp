@@ -89,6 +89,12 @@ namespace antwika::network
             std::size_t pumpsLeft = 0;
         };
 
+        struct Outgoing
+        {
+            LoopbackHost *host = nullptr;
+            Packet packet;
+        };
+
         [[nodiscard]] const Link *find(PeerId peer) const;
 
         void forget(const LoopbackHost &other);
@@ -101,6 +107,13 @@ namespace antwika::network
         Endpoint own;
         std::uint32_t nextId = 1;
         std::vector<Link> links;
+
+        // Queued by send() and handed over by pump().
+        // A send leaves on the sender's own pump -- see IHost::send().
+        // Deferring keeps this and a real socket the same shape.
+        // So a test passing against one passes against the other.
+        std::vector<Outgoing> outgoing;
+
         std::vector<Pending> pending;
         std::vector<Packet> arrived;
     };
