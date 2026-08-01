@@ -22,6 +22,7 @@ antwika_add_library(
     SOURCES
         src/EventJson.cpp
         src/EventSchema.cpp
+        src/JsonShapes.cpp
         src/MigrationChain.cpp
         src/ReplayCli.cpp
         src/ReplayJson.cpp

@@ -67,9 +67,7 @@ namespace antwika::replay
                 "JSON)");
         }
 
-        migrations.migrate(parsed);
-
-        ReplayDocument document = replayFromJson(parsed);
+        ReplayDocument document = replayFromJson(parsed, migrations);
         warnIfCanvasDiffers(check, document);
         return std::move(document.events);
     }

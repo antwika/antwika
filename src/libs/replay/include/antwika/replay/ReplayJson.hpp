@@ -7,20 +7,35 @@
 
 #include <antwika/event/TickEvent.hpp>
 #include <antwika/gfx/Size.hpp>
+#include <antwika/replay/MigrationChain.hpp>
 #include <antwika/replay/ReplayDocument.hpp>
 
 namespace antwika::replay
 {
 
     /**
-     * @brief Validate a JSON value against the replay-document schema,
-     * then deserialize it.
-     * @param j The JSON value to validate and deserialize.
+     * @brief Read a parsed replay document: its version, then a
+     * migration to the current one, then the schema, then the decode.
+     *
+     * The last four stages of `parse -> read version -> migrate ->
+     * validate -> decode`, exactly as game::saveGameFromJson() and
+     * companion::petMemoryFromJson() are; the first three are
+     * readVersionedDocument()'s.
+     * Validating after migrating is what lets one schema exist rather
+     * than one per revision of the format.
+     *
+     * @param j The JSON value to read.
+     * @param migrations The chain bringing an older document up to
+     * kReplayDocumentVersion; standardReplayMigrations() unless a
+     * caller injects another.
      * @return The decoded document, its events in the order they
      * occurred, and its canvas set only if the document carries one.
      * @throws ReplayFormatError If j does not match the schema.
+     * @throws SchemaVersionError If j states a version this build
+     * cannot bring to the current one.
      */
-    [[nodiscard]] ReplayDocument replayFromJson(const nlohmann::json &j);
+    [[nodiscard]] ReplayDocument replayFromJson(
+        const nlohmann::json &j, const MigrationChain &migrations);
 
     /**
      * @brief Serialize a sequence of tick events to a JSON value
