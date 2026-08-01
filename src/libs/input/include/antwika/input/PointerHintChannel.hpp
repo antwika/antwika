@@ -13,7 +13,7 @@ namespace antwika::input
      * draw from.
      *
      * Everything else an application reacts to arrives as an
-     * event::Event through ITickSource, is dispatched by
+     * event::Event through ITickEventSource, is dispatched by
      * TickedEventDispatcher, and is therefore seen by TickEventRecorder
      * and written into a `--record` file. That is what makes a replay
      * reach the state its run reached, and it holds without exception

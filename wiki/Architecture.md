@@ -35,12 +35,12 @@ Rendering is the mirror image of the same rule: it is a write-only projection of
 ## The tick loop
 
 `simulation::EngineLoop` is the one code path shared by live and replay runs.
-Each tick it asks an `ITickSource` for that tick's events, dispatches them through a `TickedEventDispatcher`, then steps the engine.
+Each tick it asks an `ITickEventSource` for that tick's events, dispatches them through a `TickedEventDispatcher`, then steps the engine.
 
 ```mermaid
 sequenceDiagram
     participant Loop as EngineLoop
-    participant Src as ITickSource
+    participant Src as ITickEventSource
     participant Disp as TickedEventDispatcher
     participant Sinks as ITickEventSink chain
     participant Eng as IEngine
@@ -55,7 +55,7 @@ sequenceDiagram
     Loop->>Loop: stop requested?
 ```
 
-Live and replay differ **only** in what implements `ITickSource`.
+Live and replay differ **only** in what implements `ITickEventSource`.
 A replayed run uses `ReplaySource`, fed from a file by `ReplayReader`.
 A live run uses `input::LiveInputSource` over an input backend, usually wrapped in decorators and in `WindowInputSource` so that closing a window arrives as ordinary replay input rather than short-circuiting the loop.
 This is what makes a replay reproduce state by construction rather than by convention.
@@ -148,7 +148,7 @@ graph TD
 
 Two edges deserve a note.
 `simulation` links `ecs` for `TickPacer` (which is an `ecs::ISystem`) and `gfx` for `WindowInputSource`; `replay` links `gfx` for the `gfx::Size` a replay records its canvas as, and `simulation` because `ReplaySource` implements its seam.
-`input` links `simulation` because every source it offers is an `ITickSource` — and therefore has `gfx` in its transitive link set, even though the rule that `input` does not depend on `gfx` still holds.
+`input` links `simulation` because every source it offers is an `ITickEventSource` — and therefore has `gfx` in its transitive link set, even though the rule that `input` does not depend on `gfx` still holds.
 That rule is about the source, not the link line: no file under `src/libs/input` includes a `<antwika/gfx/...>` header or names a `gfx::` type.
 This was reviewed and accepted rather than overlooked, so finding `gfx` in `antwika_input`'s transitive links is not a violation.
 

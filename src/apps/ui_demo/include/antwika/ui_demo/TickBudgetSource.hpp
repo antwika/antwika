@@ -3,14 +3,14 @@
 #include <vector>
 
 #include <antwika/event/Event.hpp>
-#include <antwika/simulation/ITickSource.hpp>
+#include <antwika/simulation/ITickEventSource.hpp>
 #include <antwika/time/Tick.hpp>
 
 namespace antwika::ui_demo
 {
 
     using antwika::event::Event;
-    using antwika::simulation::ITickSource;
+    using antwika::simulation::ITickEventSource;
 
     /**
      * @brief Adds "this run has gone on long enough" to another source's
@@ -31,7 +31,7 @@ namespace antwika::ui_demo
      * a `--record` run ends its file at the tick it stopped on and
      * replaying that file stops at the same tick.
      */
-    class TickBudgetSource final : public ITickSource
+    class TickBudgetSource final : public ITickEventSource
     {
     public:
         /**
@@ -42,7 +42,7 @@ namespace antwika::ui_demo
          * is the one carrying the stop, so a budget of zero stops on the
          * first tick.
          */
-        TickBudgetSource(ITickSource &inner, antwika::time::Tick budget);
+        TickBudgetSource(ITickEventSource &inner, antwika::time::Tick budget);
 
         TickBudgetSource(const TickBudgetSource &) = delete;
         TickBudgetSource(TickBudgetSource &&) = delete;
@@ -60,7 +60,7 @@ namespace antwika::ui_demo
             antwika::time::Tick tick) override;
 
     private:
-        ITickSource &inner;
+        ITickEventSource &inner;
         antwika::time::Tick budget;
     };
 

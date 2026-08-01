@@ -34,7 +34,7 @@ It is opinionated on purpose — where there is a choice, it makes one and says 
 Three of this repository's standing decisions constrain the design before anything else does.
 
 **The fixed tick loop with deterministic replay is the core value.**
-`simulation::EngineLoop` asks an `ITickSource` for a tick's events, dispatches them, and steps the engine; live and replayed runs differ only in what implements the source.
+`simulation::EngineLoop` asks an `ITickEventSource` for a tick's events, dispatches them, and steps the engine; live and replayed runs differ only in what implements the source.
 Any audio design that lets the sound device's clock influence what the simulation computes destroys that, and no amount of care elsewhere buys it back.
 
 **Rendering is a write-only projection of state that can never feed back into the tick loop.**
@@ -371,7 +371,7 @@ So `IPluginHost` / `IPluginInstance` live in `antwika::audio`, the CLAP implemen
 
 **A hosted plugin is projection-side only, and the document must say so loudly.**
 A third-party plugin is opaque, may hold internal randomness, may behave differently on different hardware, and may not be bit-reproducible even with itself.
-Therefore a plugin may colour the sound and may never inform the score: nothing a plugin returns crosses back into an `ITickSource`, an `IEventSink`, or any parameter the score reads.
+Therefore a plugin may colour the sound and may never inform the score: nothing a plugin returns crosses back into an `ITickEventSource`, an `IEventSink`, or any parameter the score reads.
 A replay of a session with plugins reproduces the note stream exactly and the samples only approximately, and that is a promise worth stating rather than one worth quietly breaking.
 
 ### Exposing Antwika as a plugin
@@ -380,12 +380,12 @@ This inverts the loop, and it is the interesting part.
 
 As a plugin, the *host* owns the clock: it calls `process()` with a buffer, a transport position and an event list, and the plugin must produce that buffer and return.
 `EngineLoop` cannot drive itself in that world — but its shape survives intact, because the loop is already "ask a source for a tick's events, dispatch them, step the engine".
-A plugin build supplies an `ITickSource` fed from the host's event list, derives its tick from the host transport's beat position, and steps the engine as many ticks as the incoming buffer spans.
+A plugin build supplies an `ITickEventSource` fed from the host's event list, derives its tick from the host transport's beat position, and steps the engine as many ticks as the incoming buffer spans.
 Everything downstream is unchanged, which is a strong endorsement of the existing architecture.
 
 Three things need real thought before it is attempted.
 
-- **The host may rewind, loop, or jump the transport**, and `ITickSource` documents that ticks are asked for once each in increasing order.
+- **The host may rewind, loop, or jump the transport**, and `ITickEventSource` documents that ticks are asked for once each in increasing order.
   Honouring a loop means rebuilding state from tick zero or from a checkpoint, and checkpointing is a feature the repository does not have.
 - **The host may run `process()` on any thread and may change buffer size**, so everything the tick loop currently does at leisure now happens under audio-thread rules.
 - **Plugin state save and restore** is a serialisation problem for the whole score, which the text front-end mostly solves as a side effect.

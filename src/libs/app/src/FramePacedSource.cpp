@@ -12,7 +12,7 @@ namespace antwika::app
 {
 
     FramePacedSource::FramePacedSource(
-        ITickSource &inner,
+        ITickEventSource &inner,
         IFramePass &pass,
         ISleeper &sleeper,
         FramePacing pacing)

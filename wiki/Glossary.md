@@ -16,7 +16,7 @@ There is one mechanism, with no distinction between built-in and application-def
 This is where an application turns input into meaning — a click into a placed tile, a payload into a scheduled job.
 A sink runs inside the tick path, downstream of the recorder, which is what lets a replay store the input and regenerate what it caused.
 
-**Tick source** — an `ITickSource`, asked `eventsFor(tick)` once per tick.
+**Tick source** — an `ITickEventSource`, asked `eventsFor(tick)` once per tick.
 This is the only seam between a live run and a replayed one: a replayed run is served by `ReplaySource` from a file, a live run by `input::LiveInputSource` over a backend.
 
 **Decorator (of a source)** — a source wrapping another source to add or remove events: `WindowInputSource`, `WindowCloseSource`, `StopOnKeySource`, `CoalescingPointerSource`, `IdleMotionSource`.

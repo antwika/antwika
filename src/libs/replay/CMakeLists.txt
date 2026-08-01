@@ -6,7 +6,7 @@ find_package(nlohmann_json_schema_validator REQUIRED)
 # document up to it, the --record/--replay flags that name one, and the
 # ReplaySource that feeds one back into a loop.
 # Running the loop is antwika::simulation's, which is why this library
-# depends on it: ReplaySource is a simulation::ITickSource, and a live
+# depends on it: ReplaySource is a simulation::ITickEventSource, and a live
 # run needs none of what is here.
 #
 # antwika::cli comes in for ReplayCli, which is the --record/--replay
