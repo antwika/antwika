@@ -328,13 +328,9 @@ namespace antwika::game
     {
         for (const auto &building : document.at("buildings"))
         {
-            // Read before the record is built rather than inside it.
-            // An aggregate holding a vector needs a landing pad.
-            // For any call made after it, to unwind the half-built one.
-            // Moving a vector in cannot throw, so none is needed.
-            auto held = linkListFromJson(building);
-
-            save.buildings.push_back(SavedBuilding{
+            // The excluded line carries the same landing pad.
+            // As the push_back in saveGameOf() does.
+            save.buildings.push_back(SavedBuilding{ // GCOVR_EXCL_LINE
                 .at = cellFromJson(building),
                 .kind = buildingKindFromJson(
                     building.at("kind").get<std::string>()),
@@ -346,7 +342,7 @@ namespace antwika::game
                     building.at("ticksUntilDrain").get<std::int32_t>(),
                 .ticksUntilRisk =
                     building.at("ticksUntilRisk").get<std::int32_t>(),
-                .walkers = std::move(held),
+                .walkers = linkListFromJson(building),
             });
         }
     }

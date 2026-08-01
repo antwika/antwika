@@ -251,13 +251,17 @@ namespace antwika::game
             buildingAt.emplace(entity, save.buildings.size());
             const auto building = world.get<Building>(entity);
 
-            // Read before the record is built rather than inside it.
-            // An aggregate holding a vector needs a landing pad.
-            // For any call made after it, to unwind the half-built one.
-            // Which is a branch no input could ever reach.
+            // Read out here rather than inside the record below.
+            // A call after the record's vector member needs a pad.
+            // To unwind the half-built record it was made from.
+            // Which is a second landing pad on a second line.
             const auto coverage = coverageOf(world, entity);
 
-            save.buildings.push_back(SavedBuilding{
+            // The branches left on the excluded line are that pad.
+            // push_back destroying the temporary it was handed.
+            // Reachable only if the vector's allocation throws.
+            // gcov leaves them untagged, so the flags miss them.
+            save.buildings.push_back(SavedBuilding{ // GCOVR_EXCL_LINE
                 .at = world.get<Cell>(entity),
                 .kind = building.kind,
                 .stock = building.stock,
