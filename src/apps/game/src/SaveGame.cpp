@@ -74,9 +74,7 @@ namespace antwika::game
             return shape;
         }
 
-        // An index into the other array, or absent for "nobody".
-        // A negative one is refused by the schema rather than by hand.
-        nlohmann::json linkShape()
+        nlohmann::json countShape()
         {
             nlohmann::json shape;
             shape["type"] = "integer";
@@ -131,7 +129,10 @@ namespace antwika::game
             shape["properties"]["carried"] = signedCountShape();
             shape["properties"]["stepsUntilHome"] = signedCountShape();
             shape["properties"]["ticksUntilStep"] = stepPhaseShape();
-            shape["properties"]["home"] = linkShape();
+
+            // An index into the buildings array, or absent for "nobody".
+            // A negative one is refused by the schema, not by hand.
+            shape["properties"]["home"] = countShape();
             return shape;
         }
 
@@ -158,17 +159,11 @@ namespace antwika::game
             shape["properties"]["ticksUntilSpawn"] = signedCountShape();
             shape["properties"]["ticksUntilDrain"] = signedCountShape();
             shape["properties"]["ticksUntilRisk"] = signedCountShape();
-            shape["properties"]["walker"] = linkShape();
+
+            // An index into the walkers array, or absent for "nobody".
+            shape["properties"]["walker"] = countShape();
             return shape;
         }
-
-        nlohmann::json countShape()
-        {
-            nlohmann::json shape;
-            shape["type"] = "integer";
-            shape["minimum"] = 0;
-            return shape;
-        } // GCOVR_EXCL_LINE
 
         nlohmann::json stateShape()
         {
