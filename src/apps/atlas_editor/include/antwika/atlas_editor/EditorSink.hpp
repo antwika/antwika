@@ -1,12 +1,14 @@
 #pragma once
 
 #include <optional>
+#include <string>
 
 #include <antwika/event/ITickEventSink.hpp>
 #include <antwika/event/TickEvent.hpp>
 #include <antwika/gfx/Point.hpp>
 #include <antwika/input/IInputEventCodec.hpp>
 #include <antwika/input/InputEvent.hpp>
+#include <antwika/i18n/MessageId.hpp>
 #include <antwika/i18n/Translator.hpp>
 #include <antwika/input/InputState.hpp>
 #include <antwika/time/Tick.hpp>
@@ -112,6 +114,8 @@ namespace antwika::atlas_editor
         void act(WidgetId activated);
 
         void applyToSheet(const InputEvent &event, Point at, Point moved);
+
+        void report(antwika::i18n::MessageId id, std::string detail);
 
         void save();
 

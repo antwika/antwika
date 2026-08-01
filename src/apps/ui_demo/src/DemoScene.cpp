@@ -5,6 +5,7 @@
 #include <cstdint>
 #include <optional>
 #include <string>
+#include <utility>
 #include <string_view>
 
 #include <antwika/gfx/Color.hpp>
@@ -109,45 +110,32 @@ namespace antwika::ui_demo
          * a vector of temporaries would not.
          * Keeping the strings and the views in one value is what makes
          * that one local rather than two that could part company.
+         *
+         * It is filled in place rather than returned by a function of
+         * its own: an aggregate holding strings is destroyed on that
+         * function's closing brace, which is an unwinding path no test
+         * can reach and a line the coverage gate then refuses.
          */
         template <std::size_t Count>
         struct Options final
         {
             std::array<std::string, Count> names;
             std::array<std::string_view, Count> views;
+
+            /**
+             * @brief Put one option's name in, and a view onto it.
+             * @param index Which option.
+             * @param text What it is called.
+             */
+            void set(const std::size_t index, std::string text)
+            {
+                names[index] = std::move(text);
+                views[index] = names[index];
+            }
         };
 
         using OptionNames = Options<kAccentCount>;
         using PageNames = Options<kShowcaseCount>;
-
-        [[nodiscard]] OptionNames accentNames(
-            const Translator &translator)
-        {
-            OptionNames options;
-
-            for (std::size_t index = 0; index < kAccentCount; ++index)
-            {
-                options.names[index] =
-                    translator.text(accentNameId(index));
-                options.views[index] = options.names[index];
-            }
-
-            return options;
-        }
-
-        [[nodiscard]] PageNames pageNames(const Translator &translator)
-        {
-            PageNames options;
-
-            for (std::size_t index = 0; index < kShowcaseCount; ++index)
-            {
-                options.names[index] = translator.text(
-                    showcaseNameId(static_cast<Showcase>(index)));
-                options.views[index] = options.names[index];
-            }
-
-            return options;
-        }
 
         void describeLabels(
             Context &ui,
@@ -323,7 +311,13 @@ namespace antwika::ui_demo
             // The spec borrows its options and its placeholder.
             // A translated name is a std::string rather than a literal.
             // So both are named locals living past ui.finish().
-            const OptionNames names = accentNames(translator);
+            OptionNames names;
+
+            for (std::size_t index = 0; index < kAccentCount; ++index)
+            {
+                names.set(index, translator.text(accentNameId(index)));
+            }
+
             const std::string empty =
                 translator.text(MessageId::UiDemoNoneChosen);
 
@@ -583,7 +577,16 @@ namespace antwika::ui_demo
         const DemoState &state) const
     {
         // Both lists borrow their options, so both outlive the Context.
-        const PageNames pages = pageNames(translator);
+        PageNames pages;
+
+        for (std::size_t index = 0; index < kShowcaseCount; ++index)
+        {
+            pages.set(
+                index,
+                translator.text(
+                    showcaseNameId(static_cast<Showcase>(index))));
+        }
+
         const std::string prompt =
             translator.text(MessageId::UiDemoPickPage);
 

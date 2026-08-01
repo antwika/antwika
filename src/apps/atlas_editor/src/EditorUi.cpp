@@ -65,9 +65,15 @@ namespace antwika::atlas_editor
 
             const std::string across = std::to_string(pixel->x);
             const std::string down = std::to_string(pixel->y);
-            const std::string which =
-                slot.has_value() ? std::to_string(*slot)
-                                 : std::string(kNoSlot);
+            // Two statements rather than one conditional expression.
+            // A temporary built on a branch has an unwinding path.
+            // Which is a branch no test can reach and the gate refuses.
+            std::string which{kNoSlot};
+
+            if (slot.has_value())
+            {
+                which = std::to_string(*slot);
+            }
 
             const std::array<std::string_view, 2> at{across, down};
             const std::array<std::string_view, 1> in{which};

@@ -242,6 +242,14 @@ namespace antwika::atlas_editor
         }
     }
 
+    // Both catches say the same thing about a different failure.
+    // One place rather than the aggregate written out twice.
+    // Which also keeps a caught failure's own words off a branch.
+    void EditorSink::report(const MessageId id, std::string detail)
+    {
+        state.setStatus({.id = id, .detail = std::move(detail)});
+    }
+
     void EditorSink::save()
     {
         // A failed save must not end the session.
@@ -259,9 +267,7 @@ namespace antwika::atlas_editor
         }
         catch (const std::runtime_error &failed) // GCOVR_EXCL_LINE
         {
-            state.setStatus(
-                {.id = MessageId::AtlasSaveFailed,
-                 .detail = failed.what()});
+            report(MessageId::AtlasSaveFailed, failed.what());
         }
     }
 
@@ -285,9 +291,7 @@ namespace antwika::atlas_editor
         }
         catch (const std::runtime_error &failed) // GCOVR_EXCL_LINE
         {
-            state.setStatus(
-                {.id = MessageId::AtlasLoadFailed,
-                 .detail = failed.what()});
+            report(MessageId::AtlasLoadFailed, failed.what());
         }
     }
 
