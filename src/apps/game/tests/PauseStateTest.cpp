@@ -30,3 +30,23 @@ TEST(PauseStateTest, Toggle_LetsItGoAgainOnTheSecondCall)
 
     EXPECT_FALSE(pause.paused());
 }
+
+TEST(PauseStateTest, Release_LetsAHeldSimulationRunAgain)
+{
+    PauseState pause;
+    pause.hold();
+
+    pause.release();
+
+    EXPECT_FALSE(pause.paused());
+}
+
+// hold()'s counterpart, and unlike toggle() it says which way it goes.
+TEST(PauseStateTest, Release_LeavesARunningSimulationRunning)
+{
+    PauseState pause;
+
+    pause.release();
+
+    EXPECT_FALSE(pause.paused());
+}

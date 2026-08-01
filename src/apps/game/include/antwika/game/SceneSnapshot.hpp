@@ -16,6 +16,7 @@
 #include "antwika/game/GridExtent.hpp"
 #include "antwika/game/PathIndex.hpp"
 #include "antwika/game/Resource.hpp"
+#include "antwika/game/RoadPlan.hpp"
 #include "antwika/game/Walker.hpp"
 
 namespace antwika::game
@@ -224,6 +225,19 @@ namespace antwika::game
          * and no further -- see GridScene::draw().
          */
         bool paused = false;
+
+        /**
+         * @brief The run of road a drag under way would lay.
+         *
+         * **Unlike the ghost and the readout below it, this one is
+         * simulation state**: it is worked out from RoadDrag, which
+         * GridSink writes inside the tick path from the recorded press
+         * and movements, so a replay arrives at the same route. That is
+         * why it is filled in once a tick rather than once a frame.
+         *
+         * Empty when no drag is under way, which draws nothing.
+         */
+        RoadPlan plan;
 
         /**
          * @brief Where the selected tool would land if it were clicked.

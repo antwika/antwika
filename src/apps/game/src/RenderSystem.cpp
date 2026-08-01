@@ -38,7 +38,28 @@ namespace antwika::game
             setup.extent,
             setup.pause.paused());
 
+        // Beside the snapshot rather than beside the ghost.
+        // Because it is simulation state.
+        // RoadDrag is written inside the tick path from recorded input.
+        // So a replay works the same route out.
+        // Once a tick is therefore enough.
+        // Nothing between two ticks can change what it would lay.
+        latest.plan = planFor();
+
         draw(antwika::animation::Progress());
+    }
+
+    RoadPlan RenderSystem::planFor() const
+    {
+        if (!setup.drag.has_value() || !setup.drag->get().active())
+        {
+            return RoadPlan{};
+        }
+
+        const auto &drag = setup.drag->get();
+
+        return planRoad(
+            drag.start(), drag.end(), setup.extent, setup.built);
     }
 
     void RenderSystem::draw(antwika::animation::Progress subTick)

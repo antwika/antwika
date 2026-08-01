@@ -106,6 +106,7 @@ namespace
             .paths = {},
             .walkers = std::move(walkers),
             .buildings = std::move(buildings),
+            .plan = {},
             .ghost = {},
             .hover = {}};
     }
@@ -298,6 +299,21 @@ namespace
                     .tick = 0,
                     .event = pressAt(
                         Cell{.x = x, .y = 2}, MouseButton::Left)});
+        }
+
+        // The button comes back up where it went down last.
+        // A road drag holds the run still until it does -- see RoadDrag.
+        {
+            const auto point = cellCentre(Cell{.x = 5, .y = 2}, Camera());
+
+            events.push_back(
+                TickEvent{
+                    .tick = 0,
+                    .event = codec.encode(
+                        antwika::input::PointerButtonReleased{
+                            .button = MouseButton::Left,
+                            .position = Position{
+                                .x = point.x, .y = point.y}})});
         }
 
         events.push_back(

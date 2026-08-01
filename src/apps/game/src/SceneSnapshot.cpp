@@ -17,15 +17,14 @@ namespace antwika::game
         GridExtent extent,
         bool paused)
     {
-        SceneSnapshot snapshot{
-            .camera = camera,
-            .extent = extent,
-            .paths = {},
-            .walkers = {},
-            .buildings = {},
-            .paused = paused,
-            .ghost = {},
-            .hover = {}};
+        // Built empty and filled in rather than named member by member.
+        // Whatever this function does not answer for is already default.
+        // There are four such members now.
+        // Naming each of them as {} says nothing and dates immediately.
+        SceneSnapshot snapshot;
+        snapshot.camera = camera;
+        snapshot.extent = extent;
+        snapshot.paused = paused;
 
         snapshot.paths.assign(paths.cells().begin(), paths.cells().end());
 

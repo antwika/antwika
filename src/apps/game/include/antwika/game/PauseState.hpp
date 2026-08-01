@@ -42,6 +42,22 @@ namespace antwika::game
         void hold() noexcept;
 
         /**
+         * @brief Let the simulation run again, whether or not it was
+         * held.
+         *
+         * hold()'s counterpart, and what the end of a road drag asks for
+         * -- see RoadDrag. A toggle would be wrong there for hold()'s
+         * reason read backwards: a drag holds the run so that what it is
+         * planned against cannot move under it, and a toggle would then
+         * pause a run that was already running.
+         *
+         * Who may call it is the caller's rule rather than this class's:
+         * RoadDrag::heldForDrag() is what keeps a drag from resuming a
+         * run somebody paused for themselves.
+         */
+        void release() noexcept;
+
+        /**
          * @brief Check whether the simulation is held still.
          * @return True while paused, which a run begins not being.
          */

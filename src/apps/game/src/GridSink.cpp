@@ -14,6 +14,7 @@
 #include "antwika/game/Path.hpp"
 #include "antwika/game/Placement.hpp"
 #include "antwika/game/PointerReading.hpp"
+#include "antwika/game/RoadPlan.hpp"
 #include "antwika/game/Walker.hpp"
 
 namespace antwika::game
@@ -21,6 +22,7 @@ namespace antwika::game
 
     using antwika::input::MouseButton;
     using antwika::input::PointerButtonPressed;
+    using antwika::input::PointerButtonReleased;
     using antwika::input::PointerMoved;
     using antwika::input::PointerScrolled;
 
@@ -33,7 +35,9 @@ namespace antwika::game
         const InputFold &input,
         UiOverlay &overlay,
         const WorldMapState &cities,
-        BuildingIndex &built)
+        BuildingIndex &built,
+        RoadDrag &drag,
+        PauseState &pause)
         : world(world),
           paths(paths),
           camera(camera),
@@ -42,7 +46,9 @@ namespace antwika::game
           input(input),
           overlay(overlay),
           cities(cities),
-          built(built)
+          built(built),
+          drag(drag),
+          pause(pause)
     {
     }
 
@@ -76,14 +82,26 @@ namespace antwika::game
     {
         // Whatever the toolbar covers, it covers from the grid too.
         // A movement is exempt, so a pan begun on the grid can cross it.
-        if (overlay.pointerOverUi()
-            && !std::holds_alternative<PointerMoved>(event))
+        // So is a release, for that reason and one of its own.
+        // A gesture begun on the grid has to be able to end anywhere.
+        // A drag let go over the bar would otherwise hold the pause.
+        // For the rest of the session, and lay no road at all.
+        const bool claimable =
+            std::holds_alternative<PointerButtonPressed>(event)
+            || std::holds_alternative<PointerScrolled>(event);
+
+        if (overlay.pointerOverUi() && claimable)
         {
             return;
         }
 
         if (const auto *moved = std::get_if<PointerMoved>(&event))
         {
+            // The end of a run of road follows the pointer.
+            // Simulation state written from a recorded movement.
+            // Never from the hint channel, which no replay reproduces.
+            drag.dragTo(screenToCell(asPoint(moved->position), camera));
+
             // Only while the middle button is already down.
             // A press has then already established the pointer's place.
             // Folding a movement changes no button.
@@ -119,6 +137,17 @@ namespace antwika::game
             return;
         }
 
+        if (const auto *released = std::get_if<PointerButtonReleased>(&event))
+        {
+            if (released->button == MouseButton::Left)
+            {
+                endRoadDrag(
+                    screenToCell(asPoint(released->position), camera));
+            }
+
+            return;
+        }
+
         if (const auto *scrolled = std::get_if<PointerScrolled>(&event))
         {
             camera = zoomedAt(camera, input.pointer(), scrolled->vertical);
@@ -127,6 +156,14 @@ namespace antwika::game
 
     void GridSink::place(Cell cell, std::optional<BuildTool> tool)
     {
+        // A fresh press means whatever gesture preceded it is over.
+        // One never released lays nothing.
+        // What a drag would lay is what its release said.
+        // And no release ever said it.
+        // Ahead of the palette check.
+        // A gesture is over whether or not this press places anything.
+        cancelRoadDrag();
+
         // The palette is down, so a left press places nothing.
         // Not a road, which is what falling back to one would lay.
         // Somebody who has just cancelled has chosen to place nothing.
@@ -145,7 +182,69 @@ namespace antwika::game
             return;
         }
 
+        // The pressed cell is laid at once rather than at the release.
+        // So a plain click is the placement it has always been.
+        // And a recording holding no release lays what it always laid.
         placePath(cell);
+        beginRoadDrag(cell);
+    }
+
+    void GridSink::beginRoadDrag(Cell cell)
+    {
+        // Whether the run was already held is remembered, not the pause.
+        // A drag that found one paused leaves it paused -- see RoadDrag.
+        drag.begin(cell, pause.paused());
+
+        // Held so the route cannot be planned against a moving city.
+        // hold() rather than toggle(), for CityEntrySink's reason.
+        pause.hold();
+    }
+
+    void GridSink::cancelRoadDrag()
+    {
+        if (!drag.active())
+        {
+            return;
+        }
+
+        const bool resume = drag.heldForDrag();
+
+        drag.finish();
+
+        if (resume)
+        {
+            pause.release();
+        }
+    }
+
+    void GridSink::endRoadDrag(Cell cell)
+    {
+        if (!drag.active())
+        {
+            return;
+        }
+
+        drag.dragTo(cell);
+
+        const auto plan = planRoad(drag.start(), drag.end(), extent, built);
+        const bool resume = drag.heldForDrag();
+
+        drag.finish();
+
+        // A refused plan lays nothing at all, which is the whole rule:
+        // a route that does not exist is not half-built -- see RoadPlan.
+        if (plan.valid)
+        {
+            for (const auto on : plan.cells)
+            {
+                placePath(on);
+            }
+        }
+
+        if (resume)
+        {
+            pause.release();
+        }
     }
 
     void GridSink::placePath(Cell cell)

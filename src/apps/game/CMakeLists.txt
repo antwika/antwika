@@ -26,6 +26,8 @@ add_executable(antwika_game
     src/ReadoutPanel.cpp
     src/ResourceBar.cpp
     src/RenderSystem.cpp
+    src/RoadDrag.cpp
+    src/RoadPlan.cpp
     src/KeyText.cpp
     src/SaveCli.cpp
     src/SaveGame.cpp

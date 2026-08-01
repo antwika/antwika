@@ -28,6 +28,8 @@ add_executable(antwika_game_tests
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/ReadoutPanel.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/ResourceBar.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/RenderSystem.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/RoadDrag.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/RoadPlan.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/KeyText.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/SaveCli.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/SaveGame.cpp
@@ -89,6 +91,8 @@ add_executable(antwika_game_tests
     ReadoutPanelTest.cpp
     ResourceBarTest.cpp
     RenderSystemTest.cpp
+    RoadDragTest.cpp
+    RoadPlanTest.cpp
     SaveCliTest.cpp
     SaveDirectoryTest.cpp
     SaveLoadSceneTest.cpp

@@ -173,6 +173,17 @@ namespace
                 .position = {.x = point.x, .y = point.y}});
     }
 
+    [[nodiscard]] Event releaseAt(Cell cell, MouseButton button)
+    {
+        const InputEventCodec codec;
+        const auto point = cellCentre(cell, Camera());
+
+        return codec.encode(
+            antwika::input::PointerButtonReleased{
+                .button = button,
+                .position = {.x = point.x, .y = point.y}});
+    }
+
     // A corridor, and a walker on it.
     // Optionally, the pause button pressed once it is under way.
     [[nodiscard]] std::vector<TickEvent> session(
@@ -188,6 +199,16 @@ namespace
                     .event = pressAt(
                         Cell{.x = x, .y = kRoadRow}, MouseButton::Left)});
         }
+
+        // The button comes back up where it went down last.
+        // A road drag holds the run still until it does -- see RoadDrag.
+        // So a stream of presses with no release is impossible input.
+        // And one whose walkers would never step.
+        events.push_back(
+            TickEvent{
+                .tick = 0,
+                .event = releaseAt(
+                    Cell{.x = 8, .y = kRoadRow}, MouseButton::Left)});
 
         events.push_back(
             TickEvent{

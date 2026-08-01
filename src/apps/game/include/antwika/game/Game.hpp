@@ -23,6 +23,7 @@
 #include "antwika/game/GridExtent.hpp"
 #include "antwika/game/PathIndex.hpp"
 #include "antwika/game/PauseState.hpp"
+#include "antwika/game/RoadDrag.hpp"
 #include "antwika/game/SaveGame.hpp"
 #include "antwika/game/UiCanvas.hpp"
 #include "antwika/game/UiOverlay.hpp"
@@ -157,6 +158,18 @@ namespace antwika::game
          * than toggling it.
          */
         PauseState &pause;
+
+        /**
+         * @brief Where a run of road is being dragged out, if anything
+         * draws one.
+         *
+         * Optional for the toolbar's reason rather than the pause's: a
+         * run with nobody to show a preview to still drags roads out
+         * perfectly well, and one of its own is made here when no caller
+         * offers one. A caller that draws the preview has to own it, so
+         * that the renderer it built first can read it.
+         */
+        std::optional<std::reference_wrapper<RoadDrag>> drag = std::nullopt;
 
         /**
          * @brief Extra systems registered into an "observe" phase.

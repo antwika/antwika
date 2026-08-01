@@ -22,6 +22,8 @@
 #include "antwika/game/MainMenuScene.hpp"
 #include "antwika/game/PathIndex.hpp"
 #include "antwika/game/PauseState.hpp"
+#include "antwika/game/RoadDrag.hpp"
+#include "antwika/game/RoadPlan.hpp"
 #include "antwika/game/SaveLoadScene.hpp"
 #include "antwika/game/UiOverlay.hpp"
 #include "antwika/game/WorldMapScene.hpp"
@@ -97,6 +99,21 @@ namespace antwika::game
 
         /** @brief Read for the toolbar's picture, painted last. */
         const UiOverlay &overlay;
+
+        /**
+         * @brief Read for the run of road being dragged out, if one is.
+         *
+         * Simulation state, exactly as the camera and the pause are, so
+         * reading it here is reading a value a replay reproduces. That
+         * is what makes the preview it draws unlike the ghost beside it,
+         * which comes off a channel no replay reproduces.
+         *
+         * Optional, and absent by default, so a run with no drag to draw
+         * needs no state for one -- which spares every test whose
+         * subject is some other part of the picture.
+         */
+        std::optional<std::reference_wrapper<const RoadDrag>> drag =
+            std::nullopt;
 
         /**
          * @brief Where the pointer is, for the placement ghost.
@@ -236,6 +253,8 @@ namespace antwika::game
 
     private:
         void drawGrid(antwika::animation::Progress subTick);
+
+        [[nodiscard]] RoadPlan planFor() const;
 
         RenderSetup setup;
 

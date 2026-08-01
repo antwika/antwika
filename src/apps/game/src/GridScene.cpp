@@ -197,6 +197,9 @@ namespace antwika::game
         // Handed the same phase, so a bar cannot drift off its walker.
         drawBars(renderer, canvas, snapshot, phase);
 
+        // Before the ghost, which is one cell and sits on top of it.
+        drawPlan(renderer, canvas, snapshot, atlas);
+
         drawGhost(renderer, canvas, snapshot, atlas);
 
         // Last of all, since it is what somebody is reading.
@@ -257,6 +260,38 @@ namespace antwika::game
         {
             renderer.drawText(
                 line.origin, line.text, kReadoutTextScale, line.colour);
+        }
+    }
+
+    void GridScene::drawPlan(
+        IRenderer &renderer,
+        Size canvas,
+        const SceneSnapshot &snapshot,
+        const ITexture &atlas) const
+    {
+        // A refused run is reddened rather than hidden.
+        // Exactly as a refused block is.
+        // The cells it names are the two somebody asked for.
+        // So what is shown is the gesture being turned down.
+        const auto tint = snapshot.plan.valid ? kGhostly : kBlocked;
+
+        for (const auto cell : snapshot.plan.cells)
+        {
+            const auto bounds = cellBounds(cell, snapshot.camera);
+
+            if (!overlaps(bounds, canvas))
+            {
+                continue;
+            }
+
+            // The junction each would become.
+            // Worked out the same way a laid one is.
+            // So what is previewed is what is placed.
+            renderer.drawTexture(
+                atlas,
+                roadTile(linksAt(snapshot.paths, cell)),
+                bounds,
+                tint);
         }
     }
 
