@@ -34,7 +34,7 @@ namespace antwika::atlas_editor
      *
      * The game's own atlas, since that is the sheet this editor exists
      * to serve: eight columns by four rows of 128 by 64 tiles, as
-     * docs/game-texture-atlas.md sets out.
+     * wiki/apps/game-texture-atlas.md sets out.
      */
     inline constexpr Size kDefaultSheetSize{
         .width = 1024, .height = 256};

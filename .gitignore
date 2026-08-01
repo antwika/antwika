@@ -21,9 +21,9 @@ __pycache__
 core.*
 
 # The agent loop's per-iteration run log.
-# What an iteration *learned* goes in the tracked LESSONS.md; this is
-# operational noise about runs, and tracking it would put a merge
-# conflict between every pair of parallel agents.
+# Operational noise about runs rather than a statement about the code,
+# and tracking it would put a merge conflict between every pair of
+# parallel agents.
 /STATUS.md
 
 # Which backends the VS Code build task builds, one file per

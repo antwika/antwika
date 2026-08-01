@@ -1,7 +1,11 @@
-# The companion, and the two needs it has
+# apps/companion
+
+`src/apps/companion/` — a tamagotchi in a 128-pixel window.
+
+## What it is
 
 `apps/companion` is a tamagotchi in a 128-pixel window: an animal with two needs, one input, and an end it can reach.
-This document is the rules and the numbers, and why they are those numbers.
+What follows is the rules and the numbers, and why they are those numbers.
 
 ## The two needs, and the one input
 

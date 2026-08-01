@@ -1,11 +1,15 @@
-# The TrueType library draws glyphs and nothing else
+# antwika::ttf
+
+`src/libs/ttf/` — glyph metrics and coverage masks, and nothing else.
+
+## What it is for
 
 `antwika::ttf` turns the bytes of a TrueType font into metrics and coverage masks.
 It parses a font (`Font`, `TtfReader`), answers what the font says about a line and about one glyph (`FontMetrics`, `GlyphMetrics`), draws a glyph into an 8-bit mask (`Glyph`, `Coverage`), and packs a set of characters into one mask with the map from a character to the rectangle holding it (`GlyphAtlas`, `AtlasGlyph`, `makeGlyphAtlas`).
 That is the whole of it.
 
 It does **not** shape text, break lines, lay out paragraphs, cache anything, open a file, or talk to a renderer.
-This document is about the four decisions behind that shape, because each of them is the kind that is expensive to reverse.
+The four decisions behind that shape are each the kind that is expensive to reverse, so they are set out below.
 
 ## It depends on nothing, and the output type is why
 

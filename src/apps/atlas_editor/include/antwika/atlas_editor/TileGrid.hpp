@@ -17,7 +17,7 @@ namespace antwika::atlas_editor
      *
      * The default this editor grids an atlas with, and the one
      * `src/apps/game/assets/atlas.png` is drawn to: see
-     * docs/game-texture-atlas.md, which is the contract the art has to
+     * wiki/apps/game-texture-atlas.md, the contract the art has to
      * meet.
      * It is a default rather than a constant baked into the code,
      * because a sheet for something else is grided with `--tile`.

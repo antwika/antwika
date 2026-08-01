@@ -3,7 +3,7 @@
 A plan for playing sound and music from a script: instruments and tracks set up in a small language, notes described by *programmable patterns* rather than literal note lists, envelopes modulating arbitrary parameters, and a real audio device behind a build-time backend seam that no code under `src/` ever names.
 
 **Status: the PCM half has shipped as `antwika::sound`; the musical half has not started.**
-Phase 3, most of Phase 4 and the surviving part of Phase 5 are real code now, described by [`docs/sound.md`](sound.md) rather than by this plan, and the phase list below says which parts of each landed.
+Phase 3, most of Phase 4 and the surviving part of Phase 5 are real code now, described by [`wiki/libraries/sound.md`](../wiki/libraries/sound.md) rather than by this plan, and the phase list below says which parts of each landed.
 Sound is audible today, through `backends/sdl3` and `apps/sound_demo`; what it is not yet is *musical*.
 What remains unbuilt is everything this document is actually about: musical time, the pattern algebra, envelopes, the script and the plugin work.
 `antwika::audio` is therefore redefined as the **musical layer above `antwika::sound`**, depending on it as `antwika::app` depends on `antwika::gfx`, rather than as the library that also owns the device.
@@ -228,7 +228,7 @@ Pattern density is not special: a `DensityGated` pattern reads its threshold fro
 
 **This section has been built, and the real headers are the authority.**
 It lives in `antwika::sound` rather than `antwika::audio`, under `src/libs/sound/include/antwika/sound/`: `IRenderCallback`, `IDevice`, `ISoundBackend`, `SoundCapabilities`, `SoundError`, `DeviceDesc`, `SampleBuffer` and `makeSelectedSoundBackend()`.
-Read [`docs/sound.md`](sound.md) for why it is shaped the way it is; what follows is only where the built seam departs from what this plan first sketched, and why.
+Read [`wiki/libraries/sound.md`](../wiki/libraries/sound.md) for why it is shaped the way it is; what follows is only where the built seam departs from what this plan first sketched, and why.
 
 **A device is *pumped* rather than driven, and this is the biggest departure.**
 `IDevice::pump(frames)` renders exactly that many frames on the calling thread, so there is no audio thread, no lock and no ring buffer anywhere in the library.
@@ -441,7 +441,7 @@ Ships as pure values.
 
 **Phase 3 — the device seam and the null backend — shipped, as `antwika::sound`.**
 `SampleBuffer`, `IRenderCallback`, `IDevice`, `ISoundBackend`, `SoundCapabilities`, `SoundError`, `makeSelectedSoundBackend()`, `NullSoundBackend`, the `ANTWIKA_SOUND_BACKEND` CMake variable, the `sound_backend` Conan option and the backend conformance suite all exist.
-`sound_backend` defaults to `null` rather than following `gfx_backend`, which is where it parts company with `input_backend`; [`docs/sound.md`](sound.md) says why.
+`sound_backend` defaults to `null` rather than following `gfx_backend`, which is where it parts company with `input_backend`; [`wiki/libraries/sound.md`](../wiki/libraries/sound.md) says why.
 
 **Phase 4 — voices, the mixer, and offline rendering — half shipped.**
 `Waveform`, `WaveformLibrary`, `PlayRequest`, the fixed voice pool of `Mixer`, `WavReader` and `OfflineDevice` are built: a session can be rendered to a waveform and asserted sample by sample with no hardware at all.

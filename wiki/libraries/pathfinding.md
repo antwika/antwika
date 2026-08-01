@@ -28,6 +28,15 @@ Nothing.
 
 ## Non-obvious decisions
 
+**The graph is an interface, not a data structure.**
+`IGraph` asks two questions — `neighbours()` and `heuristic()` — and there is no node table, no extent, no coordinate and no cell type anywhere in the library.
+A `NodeId` is an opaque number the caller assigns, so a flat grid index, a room number and a handle into somebody else's table all reach the same search unchanged.
+That matters because a library that grew a `Cell` type to serve [game](../apps/game.md) would have to grow a second one for the next caller.
+`GridGraph` is therefore layered *on* the search rather than built into it: one implementation of `IGraph` with no privileges the search knows about, and deleting it would leave the algorithm untouched.
+
+`neighbours()` appends to a vector the search owns and clears, rather than returning one.
+Expanding a node is the inner loop of the whole search, and it is the one place in the interface where an allocation per call would be felt.
+
 **A missing path is an ordinary answer, not an exception.**
 `SearchOutcome::NoPath` is what a walled-off goal produces, because being unable to get somewhere is a normal fact about a map rather than a failure of the search.
 That leaves `PathfindingError` for things that are genuinely a caller's mistake.
@@ -37,6 +46,18 @@ It orders on estimated total cost, then remaining estimate, then ascending `Node
 The third key is what makes it total: no two entries ever compare equivalent, so the heap never gets to choose, and an equal-cost route resolves the same way on every run and every toolchain.
 
 Without that key the answer would still be *a* shortest path, and a different one on a different standard library — which is exactly the kind of divergence a replay cannot survive.
+Two routes of equal cost are common on a grid; the trivial 2x2 case already has two.
+The second key earns its place too: preferring the entry nearer the goal among equals drives the search forwards rather than sideways.
+
+One more rule completes it: where two routes reach a node for the same cost, the first found under that order is kept and a later tie never displaces it.
+`Cost` is an exact `std::int64_t` for the same reason — every one of those tie-breaks rests on two costs comparing equal, and "equal" has to mean the same thing on all three toolchains, which a rounded floating-point sum cannot promise.
+On a `GridGraph`, ascending `NodeId` is row-major order, so a tie resolves upwards and leftwards.
+
+**The heuristic must be consistent, not merely admissible.**
+A node is closed once and never reopened, which is the usual A* trade and keeps the search linear in what it touches.
+The price is that `h(a) <= cost(a -> b) + h(b)` has to hold.
+Hand an inconsistent estimate to the search and it still terminates and still returns a path — it may just cost more than the cheapest one, and `AStarHeuristicTest` pins that behaviour down rather than leaving it folklore.
+`GridGraph`'s Manhattan distance is consistent by construction, since one step changes it by exactly one and every step costs the same; returning `0` is always consistent too, and turns the search into Dijkstra's.
 
 **A caller must keep its node numbering fixed.**
 `GridGraph` numbers nodes row-major over the extent it is given, so the extent has to be a constant of the world rather than a bounding box derived from whatever is currently passable.
@@ -44,5 +65,5 @@ Without that key the answer would still be *a* shortest path, and a different on
 
 ## See also
 
-- [`docs/pathfinding.md`](../../docs/pathfinding.md) — the long-form argument.
 - [game](../apps/game.md) — walks a walker home over the roads, re-searching every step.
+- [`wfc`](wfc.md) — the same bargain: the library owns an algorithm, the caller owns the geometry.
