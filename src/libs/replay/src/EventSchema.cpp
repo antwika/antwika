@@ -1,5 +1,7 @@
 #include "EventSchema.hpp"
 
+#include <antwika/replay/JsonShapes.hpp>
+
 namespace antwika::replay::detail
 {
 
@@ -11,15 +13,14 @@ namespace antwika::replay::detail
             eventShape["type"] = "object";
             eventShape["additionalProperties"] = false;
             eventShape["required"] = {"name", "payload"}; // GCOVR_EXCL_LINE
-            eventShape["properties"]["name"]["type"] = "string";
-            eventShape["properties"]["payload"]["type"] = "string";
+            eventShape["properties"]["name"] = wordShape();
+            eventShape["properties"]["payload"] = wordShape();
 
             nlohmann::json timedEvent;
             timedEvent["type"] = "object";
             timedEvent["additionalProperties"] = false;
             timedEvent["required"] = {"tick", "event"}; // GCOVR_EXCL_LINE
-            timedEvent["properties"]["tick"]["type"] = "integer";
-            timedEvent["properties"]["tick"]["minimum"] = 0;
+            timedEvent["properties"]["tick"] = countShape();
             timedEvent["properties"]["event"] = eventShape;
             return timedEvent;
         }

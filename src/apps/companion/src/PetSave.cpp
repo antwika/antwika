@@ -6,8 +6,9 @@
 
 #include <nlohmann/json-schema.hpp>
 
+#include <antwika/replay/JsonShapes.hpp>
 #include <antwika/replay/SchemaVersion.hpp>
-#include <antwika/replay/SchemaVersionError.hpp>
+#include <antwika/replay/VersionedDocument.hpp>
 
 #include "antwika/companion/SaveFormatError.hpp"
 
@@ -90,20 +91,10 @@ namespace antwika::companion
                 "build does not have: " + name);
         }
 
-        nlohmann::json countShape()
-        {
-            nlohmann::json shape;
-            shape["type"] = "integer";
-            shape["minimum"] = 0;
-            return shape;
-        } // GCOVR_EXCL_LINE
-
-        nlohmann::json wordShape()
-        {
-            nlohmann::json shape;
-            shape["type"] = "string";
-            return shape;
-        } // GCOVR_EXCL_LINE
+        // Both shapes are antwika::replay's.
+        // All three formats stating a version share them.
+        using replay::countShape;
+        using replay::wordShape;
 
         // "state" and "saying" are strings rather than schema enums.
         // An unknown name is refused by the two functions above instead.
@@ -157,25 +148,6 @@ namespace antwika::companion
                 petSchema()); // GCOVR_EXCL_LINE
             return validator;
         }
-
-        // Translated rather than let through.
-        // A companion that will not read is this app's own category.
-        // petMemoryFromJson() promises one exception type.
-        // The chain's message names both versions already.
-        // So it is carried through rather than rewritten.
-        void migratePetDocument(nlohmann::json &document)
-        {
-            try
-            {
-                standardPetMigrations().migrate(document);
-            }
-            // GCOVR_EXCL_START
-            catch (const replay::SchemaVersionError &error)
-            {
-                throw SaveFormatError(error.what());
-            }
-            // GCOVR_EXCL_STOP
-        }
     } // namespace
 
     MigrationChain standardPetMigrations()
@@ -213,20 +185,13 @@ namespace antwika::companion
 
     PetMemory petMemoryFromJson(const nlohmann::json &document)
     {
-        auto migrated = document;
-        migratePetDocument(migrated);
-
-        try
-        {
-            petValidator().validate(migrated);
-        }
-        catch (const std::exception &error) // GCOVR_EXCL_LINE
-        {
-            throw SaveFormatError(
-                std::string("antwika::companion: a saved companion "
-                            "failed schema validation: ")
-                + error.what());
-        }
+        const auto migrated =
+            replay::readVersionedDocument<SaveFormatError>(
+                document,
+                standardPetMigrations(),
+                petValidator(),
+                "antwika::companion: a saved companion failed schema "
+                "validation: ");
 
         return PetMemory{
             .ticks = migrated.at("ticks").get<Tick>(),

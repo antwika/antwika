@@ -7,8 +7,10 @@
 #include <nlohmann/json-schema.hpp>
 
 #include <antwika/replay/EventJson.hpp>
+#include <antwika/replay/JsonShapes.hpp>
 #include <antwika/replay/ReplayFormatError.hpp>
 #include <antwika/replay/SchemaVersion.hpp>
+#include <antwika/replay/VersionedDocument.hpp>
 
 #include "EventSchema.hpp"
 #include "ReplayFormat.hpp"
@@ -24,10 +26,8 @@ namespace antwika::replay
             shape["type"] = "object";
             shape["additionalProperties"] = false;
             shape["required"] = {"width", "height"}; // GCOVR_EXCL_LINE
-            shape["properties"]["width"]["type"] = "integer";
-            shape["properties"]["width"]["minimum"] = 0;
-            shape["properties"]["height"]["type"] = "integer";
-            shape["properties"]["height"]["minimum"] = 0;
+            shape["properties"]["width"] = countShape();
+            shape["properties"]["height"] = countShape();
             return shape;
         }
 
@@ -49,7 +49,7 @@ namespace antwika::replay
             // Refusing those is what this field must not do.
             //
             // "version" is required, and an older file still loads.
-            // ReplayReader migrates before it validates.
+            // replayFromJson migrates before it validates.
             // Migrating stamps the version it arrived at.
             // So this schema only ever sees the current version.
             // That is the point: one schema exists, not one per bump.
@@ -74,26 +74,21 @@ namespace antwika::replay
         }
     } // namespace
 
-    ReplayDocument replayFromJson(const nlohmann::json &j)
+    ReplayDocument replayFromJson(
+        const nlohmann::json &j, const MigrationChain &migrations)
     {
-        try
-        {
-            replayValidator().validate(j);
-        }
-        catch (const std::exception &error) // GCOVR_EXCL_LINE
-        {
-            throw ReplayFormatError(
-                std::string(
-                    "antwika::replay: replay JSON failed schema "
-                    "validation: ") +
-                error.what());
-        }
+        const auto migrated = readVersionedDocument<ReplayFormatError>(
+            j,
+            migrations,
+            replayValidator(),
+            "antwika::replay: replay JSON failed schema validation: ");
 
         ReplayDocument document;
-        document.events = j.at("events").get<std::vector<TickEvent>>();
+        document.events =
+            migrated.at("events").get<std::vector<TickEvent>>();
 
-        const auto canvas = j.find("canvas");
-        if (canvas != j.end())
+        const auto canvas = migrated.find("canvas");
+        if (canvas != migrated.end())
         {
             document.canvas = gfx::Size{
                 .width = canvas->at("width").get<std::uint32_t>(),

@@ -1,13 +1,11 @@
-#include "SaveMigration.hpp"
-
 #include <memory>
 #include <string_view>
 
+#include <nlohmann/json.hpp>
+
 #include <antwika/replay/IMigration.hpp>
 #include <antwika/replay/MigrationChain.hpp>
-#include <antwika/replay/SchemaVersionError.hpp>
 
-#include "antwika/game/SaveFormatError.hpp"
 #include "antwika/game/SaveGame.hpp"
 #include "antwika/game/Walker.hpp"
 
@@ -81,29 +79,5 @@ namespace antwika::game
             {std::make_shared<const AddBuildings>()}, kSaveFormatVersion);
         // GCOVR_EXCL_STOP
     }
-
-    namespace detail
-    {
-
-        void migrateSaveDocument(nlohmann::json &document)
-        {
-            try
-            {
-                standardSaveMigrations().migrate(document);
-            }
-            // GCOVR_EXCL_START
-            catch (const replay::SchemaVersionError &error)
-            {
-                // Translated rather than let through.
-                // A bad save is this app's failure category.
-                // saveGameFromJson() promises one exception type.
-                // The chain's message names both versions already.
-                // So it is carried through rather than rewritten.
-                throw SaveFormatError(error.what());
-            }
-            // GCOVR_EXCL_STOP
-        }
-
-    } // namespace detail
 
 } // namespace antwika::game

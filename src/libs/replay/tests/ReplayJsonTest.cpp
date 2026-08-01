@@ -7,6 +7,7 @@
 #include "antwika/replay/ReplayDocument.hpp"
 #include "antwika/replay/ReplayFormatError.hpp"
 #include "antwika/replay/ReplayJson.hpp"
+#include "antwika/replay/ReplayMigrations.hpp"
 
 using antwika::event::Event;
 using antwika::event::TickEvent;
@@ -15,12 +16,21 @@ using antwika::replay::replayFromJson;
 using antwika::replay::replayToJson;
 using antwika::replay::ReplayDocument;
 using antwika::replay::ReplayFormatError;
+using antwika::replay::standardReplayMigrations;
+
+namespace
+{
+    // The chain is injected rather than reached for.
+    // Which is exactly what ReplayReader does with its own.
+    ReplayDocument read(const nlohmann::json &document)
+    {
+        return replayFromJson(document, standardReplayMigrations());
+    }
+} // namespace
 
 TEST(ReplayJsonTest, RoundTripsZeroEvents)
 {
-    EXPECT_EQ(
-        replayFromJson(replayToJson({})).events,
-        std::vector<TickEvent>{});
+    EXPECT_EQ(read(replayToJson({})).events, std::vector<TickEvent>{});
 }
 
 TEST(ReplayJsonTest, RoundTripsManyEventsInOrder)
@@ -45,8 +55,7 @@ TEST(ReplayJsonTest, RoundTripsManyEventsInOrder)
         },
     };
     EXPECT_EQ(
-        replayFromJson(replayToJson(events)),
-        (ReplayDocument{.events = events}));
+        read(replayToJson(events)), (ReplayDocument{.events = events}));
 }
 
 TEST(ReplayJsonTest, ReplayToJsonProducesTheExpectedEnvelope)
@@ -60,14 +69,13 @@ TEST(ReplayJsonTest, ReplayToJsonProducesTheExpectedEnvelope)
 
 TEST(ReplayJsonTest, ReplayFromJsonThrowsWhenInputIsNotAnObject)
 {
-    EXPECT_THROW(
-        (void)replayFromJson(nlohmann::json::array()), ReplayFormatError);
+    EXPECT_THROW((void)read(nlohmann::json::array()), ReplayFormatError);
 }
 
 TEST(ReplayJsonTest, ReplayFromJsonThrowsWhenMagicFieldIsMissing)
 {
     EXPECT_THROW(
-        (void)replayFromJson(nlohmann::json{
+        (void)read(nlohmann::json{
             {"version", 1},
             {"events", nlohmann::json::array()},
         }),
@@ -77,7 +85,7 @@ TEST(ReplayJsonTest, ReplayFromJsonThrowsWhenMagicFieldIsMissing)
 TEST(ReplayJsonTest, ReplayFromJsonThrowsOnBadMagic)
 {
     EXPECT_THROW(
-        (void)replayFromJson(nlohmann::json{
+        (void)read(nlohmann::json{
             {"magic", "nope"},
             {"version", 1},
             {"events", nlohmann::json::array()},
@@ -88,7 +96,7 @@ TEST(ReplayJsonTest, ReplayFromJsonThrowsOnBadMagic)
 TEST(ReplayJsonTest, ReplayFromJsonThrowsOnUnsupportedVersion)
 {
     EXPECT_THROW(
-        (void)replayFromJson(nlohmann::json{
+        (void)read(nlohmann::json{
             {"magic", "antwika-replay"},
             {"version", 2},
             {"events", nlohmann::json::array()},
@@ -99,7 +107,7 @@ TEST(ReplayJsonTest, ReplayFromJsonThrowsOnUnsupportedVersion)
 TEST(ReplayJsonTest, ReplayFromJsonThrowsWhenEventsFieldIsNotAnArray)
 {
     EXPECT_THROW(
-        (void)replayFromJson(nlohmann::json{
+        (void)read(nlohmann::json{
             {"magic", "antwika-replay"},
             {"version", 1},
             {"events", "not an array"},
@@ -119,15 +127,14 @@ TEST(ReplayJsonTest, RoundTripsTheCanvasTheRecordingWasMadeAgainst)
     const auto encoded = replayToJson({}, canvas);
     EXPECT_EQ(encoded.at("canvas").at("width"), 1024);
     EXPECT_EQ(encoded.at("canvas").at("height"), 640);
-    EXPECT_EQ(
-        replayFromJson(encoded), (ReplayDocument{.canvas = canvas}));
+    EXPECT_EQ(read(encoded), (ReplayDocument{.canvas = canvas}));
 }
 
 // The whole point of the field being optional.
 // Every replay checked in before it existed is one of these.
 TEST(ReplayJsonTest, ReplayFromJsonAcceptsADocumentWithNoCanvas)
 {
-    const auto document = replayFromJson(nlohmann::json{
+    const auto document = read(nlohmann::json{
         {"magic", "antwika-replay"},
         {"version", 1},
         {"events", nlohmann::json::array()},
@@ -136,10 +143,23 @@ TEST(ReplayJsonTest, ReplayFromJsonAcceptsADocumentWithNoCanvas)
     EXPECT_FALSE(document.canvas.has_value());
 }
 
+// A document stating no version at all is version 1.
+// The chain stamps that on, so the one schema still sees a version.
+// Which is the whole reason migrating comes before validating.
+TEST(ReplayJsonTest, ReplayFromJsonAcceptsADocumentThatStatesNoVersion)
+{
+    const auto document = read(nlohmann::json{
+        {"magic", "antwika-replay"},
+        {"events", nlohmann::json::array()},
+    });
+
+    EXPECT_TRUE(document.events.empty());
+}
+
 TEST(ReplayJsonTest, ReplayFromJsonThrowsWhenTheCanvasIsMalformed)
 {
     EXPECT_THROW(
-        (void)replayFromJson(nlohmann::json{
+        (void)read(nlohmann::json{
             {"magic", "antwika-replay"},
             {"version", 1},
             {"events", nlohmann::json::array()},
@@ -151,10 +171,11 @@ TEST(ReplayJsonTest, ReplayFromJsonThrowsWhenTheCanvasIsMalformed)
 TEST(ReplayJsonTest, ReplayFromJsonThrowsWhenAnEventInTheArrayIsMalformed)
 {
     EXPECT_THROW(
-        (void)replayFromJson(nlohmann::json{
+        (void)read(nlohmann::json{
             {"magic", "antwika-replay"},
             {"version", 1},
-            {"events", nlohmann::json::array({nlohmann::json{{"tick", 0}}})},
+            {"events",
+             nlohmann::json::array({nlohmann::json{{"tick", 0}}})},
         }),
         ReplayFormatError);
 }

@@ -10,7 +10,9 @@
 
 #include <nlohmann/json-schema.hpp>
 
+#include <antwika/replay/JsonShapes.hpp>
 #include <antwika/replay/SchemaVersion.hpp>
+#include <antwika/replay/VersionedDocument.hpp>
 
 #include "antwika/game/Building.hpp"
 #include "antwika/game/BuildingKind.hpp"
@@ -18,7 +20,6 @@
 #include "antwika/game/Resource.hpp"
 #include "antwika/game/SaveFormatError.hpp"
 #include "antwika/game/Walker.hpp"
-#include "SaveMigration.hpp"
 
 namespace antwika::game
 {
@@ -54,14 +55,10 @@ namespace antwika::game
                 "of the four: " + name);
         }
 
-        nlohmann::json coordinateShape()
-        {
-            nlohmann::json shape;
-            shape["type"] = "integer";
-            shape["minimum"] = std::numeric_limits<std::int32_t>::min();
-            shape["maximum"] = std::numeric_limits<std::int32_t>::max();
-            return shape;
-        } // GCOVR_EXCL_LINE
+        // The shapes every persisted format shares are replay's.
+        // The ones only a save has are the ones below.
+        using replay::coordinateShape;
+        using replay::countShape;
 
         nlohmann::json cellShape()
         {
@@ -74,24 +71,26 @@ namespace antwika::game
             return shape;
         }
 
-        // An index into the other array, or absent for "nobody".
-        // A negative one is refused by the schema rather than by hand.
-        nlohmann::json linkShape()
-        {
-            nlohmann::json shape;
-            shape["type"] = "integer";
-            shape["minimum"] = 0;
-            return shape;
-        } // GCOVR_EXCL_LINE
-
+        // Every count of the economy decodes as a std::int32_t.
+        // So the schema caps it at exactly what one holds.
         nlohmann::json signedCountShape()
         {
-            nlohmann::json shape;
-            shape["type"] = "integer";
-            shape["minimum"] = 0;
-            shape["maximum"] = std::numeric_limits<std::int32_t>::max();
-            return shape;
-        } // GCOVR_EXCL_LINE
+            return replay::boundedCountShape(
+                std::numeric_limits<std::int32_t>::max());
+        }
+
+        // Every other integer here is capped at what its C++ type holds.
+        // This one is capped tighter still, and deliberately.
+        // WalkerSystem writes kTicksPerStep - 1 and counts it to zero.
+        // So a phase at or above it is no state a run ever reaches.
+        // SceneSnapshot works out kTicksPerStep - 1 - this, which underflows.
+        // The decode is get<std::uint8_t>(), and nlohmann narrows quietly.
+        // So a cap at what an int32 holds let 256 read back as zero.
+        // Refusing is refusing a corrupt file, not merely a narrowed one.
+        nlohmann::json stepPhaseShape()
+        {
+            return replay::boundedCountShape(kTicksPerStep - 1);
+        }
 
         // "facing" is a string here rather than a schema enum.
         // An unknown name is refused by directionFromName() instead.
@@ -109,12 +108,15 @@ namespace antwika::game
                 "stepsUntilHome",
                 "ticksUntilStep"};
             // GCOVR_EXCL_STOP
-            shape["properties"]["facing"]["type"] = "string";
-            shape["properties"]["kind"]["type"] = "string";
+            shape["properties"]["facing"] = replay::wordShape();
+            shape["properties"]["kind"] = replay::wordShape();
             shape["properties"]["carried"] = signedCountShape();
             shape["properties"]["stepsUntilHome"] = signedCountShape();
-            shape["properties"]["ticksUntilStep"] = signedCountShape();
-            shape["properties"]["home"] = linkShape();
+            shape["properties"]["ticksUntilStep"] = stepPhaseShape();
+
+            // An index into the buildings array, or absent for "nobody".
+            // A negative one is refused by the schema, not by hand.
+            shape["properties"]["home"] = countShape();
             return shape;
         }
 
@@ -132,7 +134,7 @@ namespace antwika::game
                 "ticksUntilDrain",
                 "ticksUntilRisk"};
             // GCOVR_EXCL_STOP
-            shape["properties"]["kind"]["type"] = "string";
+            shape["properties"]["kind"] = replay::wordShape();
             shape["properties"]["stock"]["type"] = "array";
             shape["properties"]["stock"]["items"] = signedCountShape();
             shape["properties"]["stock"]["minItems"] = kResourceCount;
@@ -141,17 +143,11 @@ namespace antwika::game
             shape["properties"]["ticksUntilSpawn"] = signedCountShape();
             shape["properties"]["ticksUntilDrain"] = signedCountShape();
             shape["properties"]["ticksUntilRisk"] = signedCountShape();
-            shape["properties"]["walker"] = linkShape();
+
+            // An index into the walkers array, or absent for "nobody".
+            shape["properties"]["walker"] = countShape();
             return shape;
         }
-
-        nlohmann::json countShape()
-        {
-            nlohmann::json shape;
-            shape["type"] = "integer";
-            shape["minimum"] = 0;
-            return shape;
-        } // GCOVR_EXCL_LINE
 
         nlohmann::json stateShape()
         {
@@ -175,6 +171,18 @@ namespace antwika::game
             return shape;
         }
 
+        // Camera clamps a level it cannot honour, and keeps doing so.
+        // That is right for zoomIn(), for zoomOut() and for a default.
+        // It is wrong for a file, which is why the refusal lives here.
+        // A level past kZoomHalfWidths is a camera no session ever had.
+        // Loading it at the closest is a session somebody never played.
+        // Which is the rule requireConsistentLinks() states below.
+        nlohmann::json zoomLevelShape()
+        {
+            return replay::boundedCountShape(
+                static_cast<std::int64_t>(kZoomHalfWidths.size() - 1));
+        }
+
         nlohmann::json cameraShape()
         {
             nlohmann::json shape;
@@ -185,7 +193,7 @@ namespace antwika::game
             // GCOVR_EXCL_STOP
             shape["properties"]["panX"] = coordinateShape();
             shape["properties"]["panY"] = coordinateShape();
-            shape["properties"]["zoomLevel"] = countShape();
+            shape["properties"]["zoomLevel"] = zoomLevelShape();
             return shape;
         }
 
@@ -435,20 +443,12 @@ namespace antwika::game
 
     SaveGame saveGameFromJson(const nlohmann::json &j)
     {
-        auto document = j;
-        detail::migrateSaveDocument(document);
-
-        try
-        {
-            saveValidator().validate(document);
-        }
-        catch (const std::exception &error) // GCOVR_EXCL_LINE
-        {
-            throw SaveFormatError(
-                std::string("antwika::game: save JSON failed schema "
-                            "validation: ")
-                + error.what());
-        }
+        const auto document =
+            replay::readVersionedDocument<SaveFormatError>(
+                j,
+                standardSaveMigrations(),
+                saveValidator(),
+                "antwika::game: save JSON failed schema validation: ");
 
         SaveGame save;
         save.state.ticksProcessed =
