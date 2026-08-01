@@ -210,6 +210,21 @@ namespace antwika::i18n
         CompanionNewPet,
 
         /**
+         * @brief Companion: the label on the prop that feeds it.
+         */
+        CompanionPropFeed,
+
+        /**
+         * @brief Companion: the label on the prop that plays with it.
+         */
+        CompanionPropPlay,
+
+        /**
+         * @brief Companion: the label on the prop that puts it to bed.
+         */
+        CompanionPropSleep,
+
+        /**
          * @brief Companion says: idle chatter.
          */
         CompanionSayHello,
@@ -694,7 +709,7 @@ namespace antwika::i18n
     /**
      * @brief How many ids a complete catalogue carries.
      */
-    inline constexpr std::size_t kMessageCount{131};
+    inline constexpr std::size_t kMessageCount{134};
 
     /**
      * @brief Every id, in declaration order.
@@ -739,6 +754,9 @@ namespace antwika::i18n
         MessageId::CompanionAsleepWoken,
         MessageId::CompanionGone,
         MessageId::CompanionNewPet,
+        MessageId::CompanionPropFeed,
+        MessageId::CompanionPropPlay,
+        MessageId::CompanionPropSleep,
         MessageId::CompanionSayHello,
         MessageId::CompanionSayBored,
         MessageId::CompanionSayNiceDay,

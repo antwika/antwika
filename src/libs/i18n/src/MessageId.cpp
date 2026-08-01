@@ -79,6 +79,12 @@ namespace antwika::i18n
             return "CompanionGone";
         case MessageId::CompanionNewPet:
             return "CompanionNewPet";
+        case MessageId::CompanionPropFeed:
+            return "CompanionPropFeed";
+        case MessageId::CompanionPropPlay:
+            return "CompanionPropPlay";
+        case MessageId::CompanionPropSleep:
+            return "CompanionPropSleep";
         case MessageId::CompanionSayHello:
             return "CompanionSayHello";
         case MessageId::CompanionSayBored:
