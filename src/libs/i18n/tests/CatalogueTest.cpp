@@ -1,5 +1,6 @@
 #include <gtest/gtest.h>
 
+#include <algorithm>
 #include <array>
 #include <optional>
 #include <set>
@@ -21,6 +22,7 @@ namespace
     using antwika::i18n::kMessageCount;
     using antwika::i18n::Locale;
     using antwika::i18n::MessageId;
+    using antwika::i18n::nameOf;
     using antwika::i18n::tagOf;
 
     std::set<MessageId> idsOf(const Catalogue &catalogue)
@@ -135,6 +137,23 @@ namespace
         EXPECT_EQ(english.find(MessageId::ToolbarZoomLevel), "zoom {0}");
     }
 
+    // The ids whose two texts genuinely read the same in both.
+    // A notation, a loanword or a noise an animal makes.
+    // Written out rather than tolerated wherever it happens.
+    // A forgotten Swedish entry looks exactly like one of these.
+    // So the only way to be excused is to be named here.
+    constexpr std::array<MessageId, 9> kSameInBothLocales{
+        MessageId::ToolbarZoomLevel,
+        MessageId::AtlasPixelUnknown,
+        MessageId::AtlasPixelAt,
+        MessageId::CompanionHunger,
+        MessageId::CompanionSayLaLaLa,
+        MessageId::CompanionSayZzz,
+        MessageId::CompanionSayWheee,
+        MessageId::CompanionDay,
+        MessageId::UiDemoPageLayout,
+    };
+
     TEST(CatalogueTest, CatalogueFor_TranslatesTheMenuIntoSwedish)
     {
         const Catalogue &swedish = catalogueFor(Locale::Swedish);
@@ -142,13 +161,17 @@ namespace
 
         for (const MessageId id : kAllMessageIds)
         {
-            if (id == MessageId::ToolbarZoomLevel)
+            const auto same = std::find(
+                kSameInBothLocales.begin(), kSameInBothLocales.end(), id);
+
+            if (same != kSameInBothLocales.end())
             {
                 continue;
             }
 
             EXPECT_NE(swedish.find(id), english.find(id))
-                << "an untranslated entry would read the same";
+                << "an untranslated entry would read the same: "
+                << nameOf(id);
         }
     }
 

@@ -9,6 +9,9 @@
 #include <antwika/event/TickEvent.hpp>
 #include <antwika/gfx/Point.hpp>
 #include <antwika/gfx/Size.hpp>
+#include <antwika/i18n/Locale.hpp>
+#include <antwika/i18n/MessageId.hpp>
+#include <antwika/i18n/Translator.hpp>
 #include <antwika/input/InputEvent.hpp>
 #include <antwika/input/InputEventCodec.hpp>
 #include <antwika/input/Key.hpp>
@@ -40,6 +43,7 @@ using antwika::ui::WidgetId;
 using antwika::ui_demo::DemoOverlay;
 using antwika::ui_demo::DemoScene;
 using antwika::ui_demo::DemoSink;
+using antwika::i18n::MessageId;
 using antwika::ui_demo::DemoState;
 using antwika::ui_demo::Showcase;
 using antwika::ui_demo::tests::optionWidget;
@@ -48,6 +52,11 @@ namespace widgets = antwika::ui_demo::widgets;
 
 namespace
 {
+    // The locale is a constant of the build, so a test may name one.
+    // Every case here asserts the English showcase's own layout.
+    constexpr antwika::i18n::Translator kTranslator{
+        antwika::i18n::kDefaultLocale};
+
     constexpr Size kCanvas{.width = 960, .height = 720};
 
     TickEvent tick(const antwika::time::Tick at = 0)
@@ -108,7 +117,7 @@ namespace
         DemoState state;
         DemoOverlay overlay{kCanvas};
         InputEventCodec codec;
-        DemoScene scene;
+        DemoScene scene{kTranslator};
         DemoSink sink{state, overlay, codec, scene};
 
         [[nodiscard]] Point centreOf(const WidgetId id)
@@ -163,7 +172,12 @@ namespace
 
         EXPECT_EQ(wiring.state.showcase(), Showcase::Shrink);
         EXPECT_FALSE(wiring.state.pickerOpen());
-        EXPECT_EQ(wiring.state.message(), "showing shrink");
+        ASSERT_TRUE(wiring.state.message().has_value());
+        EXPECT_EQ(
+            wiring.state.message()->id, MessageId::UiDemoShowing);
+        EXPECT_EQ(
+            wiring.state.message()->argId,
+            MessageId::UiDemoPageShrink);
     }
 
     TEST(DemoSinkTest, Handle_CountsAndResetsTheCountingButton)
@@ -197,7 +211,11 @@ namespace
 
         EXPECT_EQ(wiring.state.accent(), 2U);
         EXPECT_FALSE(wiring.state.accentOpen());
-        EXPECT_EQ(wiring.state.message(), "accent 2 chosen");
+        ASSERT_TRUE(wiring.state.message().has_value());
+        EXPECT_EQ(
+            wiring.state.message()->id,
+            MessageId::UiDemoAccentChosen);
+        EXPECT_EQ(wiring.state.message()->datum, "2");
     }
 
     TEST(DemoSinkTest, Handle_ReportsAPressOnAnyOtherNamedWidget)
@@ -209,7 +227,11 @@ namespace
         wiring.sink.handle(pressAt(wiring.codec, at));
 
         EXPECT_EQ(wiring.state.focus(), widgets::kField);
-        EXPECT_EQ(wiring.state.message(), "pressed widget 5");
+        ASSERT_TRUE(wiring.state.message().has_value());
+        EXPECT_EQ(
+            wiring.state.message()->id,
+            MessageId::UiDemoPressedWidget);
+        EXPECT_EQ(wiring.state.message()->datum, "5");
     }
 
     TEST(DemoSinkTest, Handle_LeavesEverythingWhereAPressHitsNothing)
@@ -231,7 +253,7 @@ namespace
                      + 1}));
 
         EXPECT_EQ(wiring.state.focus(), antwika::ui::kNoWidget);
-        EXPECT_TRUE(wiring.state.message().empty());
+        EXPECT_FALSE(wiring.state.message().has_value());
     }
 
     TEST(DemoSinkTest, Handle_OnlyALeftPressActivatesAnything)
@@ -269,7 +291,10 @@ namespace
 
         wiring.sink.handle(keyDown(wiring.codec, Key::Enter));
 
-        EXPECT_EQ(wiring.state.message(), "submitted: ok");
+        ASSERT_TRUE(wiring.state.message().has_value());
+        EXPECT_EQ(
+            wiring.state.message()->id, MessageId::UiDemoSubmitted);
+        EXPECT_EQ(wiring.state.message()->datum, "ok");
         EXPECT_EQ(wiring.state.text(), "ok");
     }
 
@@ -283,7 +308,9 @@ namespace
         wiring.sink.handle(keyDown(wiring.codec, Key::Escape));
 
         EXPECT_TRUE(wiring.state.text().empty());
-        EXPECT_EQ(wiring.state.message(), "cancelled");
+        ASSERT_TRUE(wiring.state.message().has_value());
+        EXPECT_EQ(
+            wiring.state.message()->id, MessageId::UiDemoCancelled);
     }
 
     TEST(DemoSinkTest, Handle_WalksTheFocusRingWithTabAndShiftTab)

@@ -82,6 +82,8 @@ TEST(LayoutDegenerateTest, Arrange_SaturatesPaddingWiderThanItsBox)
         tree.node(child).arranged);
 }
 
+// Gaps wider than the box leave the distribution nothing to cut.
+// The cursor must still stop at the edge rather than walk out of it.
 TEST(LayoutDegenerateTest, Arrange_LeavesNoRoomWhenGapsFillTheContainer)
 {
     auto root = container(Axis::Row, kGrow, kGrow);
@@ -96,7 +98,58 @@ TEST(LayoutDegenerateTest, Arrange_LeavesNoRoomWhenGapsFillTheContainer)
 
     EXPECT_EQ(0U, tree.node(first).arranged.size.width);
     EXPECT_EQ(0U, tree.node(second).arranged.size.width);
-    EXPECT_EQ(100, tree.node(second).arranged.origin.x);
+    EXPECT_EQ(0, tree.node(first).arranged.origin.x);
+    EXPECT_EQ(10, tree.node(second).arranged.origin.x);
+}
+
+// One gap alone already exceeds the width.
+// Every child after the first used to land a gap further out again.
+TEST(LayoutDegenerateTest, Arrange_KeepsChildrenInWhenGapsExceedTheWidth)
+{
+    auto root = container(Axis::Row, kGrow, kGrow);
+    root.gap = 40;
+
+    LayoutTree tree{std::move(root)};
+
+    for (std::uint32_t index = 0; index < 4; ++index)
+    {
+        tree.add(container(Axis::Row, fixedSize(5), kGrow));
+    }
+
+    layout(tree, Size{.width = 30, .height = 10});
+
+    for (std::size_t index = 1; index < tree.size(); ++index)
+    {
+        const auto &placed = tree.node(index).arranged;
+        const auto right =
+            placed.origin.x + static_cast<std::int32_t>(placed.size.width);
+
+        EXPECT_LE(0, placed.origin.x);
+        EXPECT_LE(right, 30);
+    }
+}
+
+// A padded container's content box is what a child is kept inside.
+// So the edge a run of gaps stops at is the padding's, not the box's.
+TEST(LayoutDegenerateTest, Arrange_StopsARunOfGapsAtTheContentBoxEdge)
+{
+    auto root = container(Axis::Column, kGrow, kGrow);
+    root.padding = 4;
+    root.gap = 50;
+
+    LayoutTree tree{std::move(root)};
+
+    tree.add(container(Axis::Column, kGrow, fixedSize(3)));
+    const auto last = tree.add(
+        container(Axis::Column, kGrow, fixedSize(3)));
+
+    layout(tree, Size{.width = 20, .height = 20});
+
+    const auto &placed = tree.node(last).arranged;
+    const auto bottom =
+        placed.origin.y + static_cast<std::int32_t>(placed.size.height);
+
+    EXPECT_EQ(16, bottom);
 }
 
 TEST(LayoutDegenerateTest, Measure_ClampsAWidthThatWouldOverflow)

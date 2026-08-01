@@ -9,6 +9,8 @@
 #include <antwika/gfx/SelectedBackend.hpp>
 #include <antwika/gfx/Size.hpp>
 #include <antwika/gfx/WindowDesc.hpp>
+#include <antwika/i18n/Locale.hpp>
+#include <antwika/i18n/Translator.hpp>
 #include <antwika/input/InputEventCodec.hpp>
 #include <antwika/input/InputPipeline.hpp>
 #include <antwika/input/SelectedInputBackend.hpp>
@@ -31,6 +33,7 @@ using antwika::companion::Pet;
 using antwika::companion::PetScene;
 using antwika::companion::RenderSink;
 using antwika::gfx::WindowDesc;
+using antwika::i18n::Translator;
 using antwika::input::InputEventCodec;
 using antwika::input::InputPipeline;
 using antwika::log::Level;
@@ -81,7 +84,14 @@ namespace
             .size = kWindowSize,
             .resizable = false});
 
-        const PetScene scene;
+        // Fixed here rather than read from anywhere.
+        // Nothing this application draws is hit-tested against text.
+        // So a locale could not change what a recorded press means.
+        // It is fixed anyway, and one rule is cheaper than two.
+        // Changing the language is this line, as the window size is.
+        const Translator translator{antwika::i18n::kDefaultLocale};
+
+        const PetScene scene{translator};
         SystemSleeper sleeper;
         FilePetStore store{std::string(kCompanionFile)};
 

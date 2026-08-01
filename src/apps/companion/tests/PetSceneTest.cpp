@@ -16,6 +16,8 @@
 #include <antwika/gfx/Rect.hpp>
 #include <antwika/gfx/Size.hpp>
 #include <antwika/gfx/TextLayout.hpp>
+#include <antwika/i18n/Locale.hpp>
+#include <antwika/i18n/Translator.hpp>
 
 #include "antwika/companion/DayMood.hpp"
 #include "antwika/companion/LifeStage.hpp"
@@ -222,7 +224,9 @@ namespace
 
     TEST(PetSceneTest, ACanvasTooSmallForAUnitDrawsTheSkyAndStops)
     {
-        const PetScene scene;
+        const antwika::i18n::Translator translator{
+            antwika::i18n::kDefaultLocale};
+        const PetScene scene{translator};
 
         const Drawn drawn =
             render(scene, Size{.width = 16, .height = 16}, awake());
@@ -233,7 +237,9 @@ namespace
 
     TEST(PetSceneTest, TheSquarePictureIsCentredOnWhicheverSideIsLonger)
     {
-        const PetScene scene;
+        const antwika::i18n::Translator translator{
+            antwika::i18n::kDefaultLocale};
+        const PetScene scene{translator};
 
         const Drawn drawn =
             render(scene, Size{.width = 320, .height = 256}, awake());
@@ -245,7 +251,9 @@ namespace
 
     TEST(PetSceneTest, AnUnhungryAwakeCompanionIsTheBarePicture)
     {
-        const PetScene scene;
+        const antwika::i18n::Translator translator{
+            antwika::i18n::kDefaultLocale};
+        const PetScene scene{translator};
 
         const Drawn drawn = render(scene, kCanvas, awake());
 
@@ -255,7 +263,9 @@ namespace
 
     TEST(PetSceneTest, NightIsADifferentPictureFromDay)
     {
-        const PetScene scene;
+        const antwika::i18n::Translator translator{
+            antwika::i18n::kDefaultLocale};
+        const PetScene scene{translator};
 
         const Drawn day = render(scene, kCanvas, awake());
         const Drawn night = render(scene, kCanvas, asleep());
@@ -267,7 +277,9 @@ namespace
     // So aiming at one and hitting it are one rectangle.
     TEST(PetSceneTest, EveryPropIsPaintedIntoItsOwnHitBox)
     {
-        const PetScene scene;
+        const antwika::i18n::Translator translator{
+            antwika::i18n::kDefaultLocale};
+        const PetScene scene{translator};
         const auto layout = layoutFor(kCanvas);
         ASSERT_TRUE(layout.has_value());
 
@@ -283,7 +295,9 @@ namespace
     // Which is this application's whole answer to instructions.
     TEST(PetSceneTest, TheWantedPropIsLitAndTheOthersAreNot)
     {
-        const PetScene scene;
+        const antwika::i18n::Translator translator{
+            antwika::i18n::kDefaultLocale};
+        const PetScene scene{translator};
         const auto layout = layoutFor(kCanvas);
         ASSERT_TRUE(layout.has_value());
 
@@ -316,7 +330,9 @@ namespace
 
     TEST(PetSceneTest, EachNeedLightsItsOwnProp)
     {
-        const PetScene scene;
+        const antwika::i18n::Translator translator{
+            antwika::i18n::kDefaultLocale};
+        const PetScene scene{translator};
 
         PetSnapshot bored = awake();
         bored.bored = true;
@@ -340,7 +356,9 @@ namespace
     // Rather than three more colours in every palette.
     TEST(PetSceneTest, TheFormItGrewIntoShadesTheFur)
     {
-        const PetScene scene;
+        const antwika::i18n::Translator translator{
+            antwika::i18n::kDefaultLocale};
+        const PetScene scene{translator};
 
         PetSnapshot bright = awake();
         bright.form = PetForm::Bright;
@@ -358,7 +376,9 @@ namespace
 
     TEST(PetSceneTest, ASleepingCompanionShutsItsEyesAndPuffs)
     {
-        const PetScene scene;
+        const antwika::i18n::Translator translator{
+            antwika::i18n::kDefaultLocale};
+        const PetScene scene{translator};
 
         const Drawn up = render(scene, kCanvas, awake());
         const Drawn down = render(scene, kCanvas, asleep());
@@ -368,7 +388,9 @@ namespace
 
     TEST(PetSceneTest, TheDrowseClipAddsAPuffPerFrame)
     {
-        const PetScene scene;
+        const antwika::i18n::Translator translator{
+            antwika::i18n::kDefaultLocale};
+        const PetScene scene{translator};
 
         PetSnapshot first = asleep();
         PetSnapshot later = asleep();
@@ -384,7 +406,9 @@ namespace
     // So the two ways of arriving at shut eyes are both drawn.
     TEST(PetSceneTest, AnAwakeCompanionBlinksOnItsOwn)
     {
-        const PetScene scene;
+        const antwika::i18n::Translator translator{
+            antwika::i18n::kDefaultLocale};
+        const PetScene scene{translator};
 
         PetSnapshot open = awake();
         PetSnapshot blinking = awake();
@@ -397,7 +421,9 @@ namespace
 
     TEST(PetSceneTest, TheIdleAnimationIsAFunctionOfTheTickCount)
     {
-        const PetScene scene;
+        const antwika::i18n::Translator translator{
+            antwika::i18n::kDefaultLocale};
+        const PetScene scene{translator};
 
         PetSnapshot early = awake();
         PetSnapshot mid = awake();
@@ -413,7 +439,9 @@ namespace
 
     TEST(PetSceneTest, APerishedCompanionGetsAGraveAndItsOwnPalette)
     {
-        const PetScene scene;
+        const antwika::i18n::Translator translator{
+            antwika::i18n::kDefaultLocale};
+        const PetScene scene{translator};
 
         const Drawn gone = render(scene, kCanvas, perished());
         const Drawn night = render(scene, kCanvas, asleep());
@@ -424,7 +452,9 @@ namespace
 
     TEST(PetSceneTest, Draw_OffersANewCompanionOnceItHasPerished)
     {
-        const PetScene scene;
+        const antwika::i18n::Translator translator{
+            antwika::i18n::kDefaultLocale};
+        const PetScene scene{translator};
         const auto button = reviveButtonRect(kCanvas);
         ASSERT_TRUE(button.has_value());
 
@@ -437,7 +467,9 @@ namespace
 
     TEST(PetSceneTest, Draw_OffersNoButtonWhileTheCompanionIsAlive)
     {
-        const PetScene scene;
+        const antwika::i18n::Translator translator{
+            antwika::i18n::kDefaultLocale};
+        const PetScene scene{translator};
         const auto button = reviveButtonRect(kCanvas);
         ASSERT_TRUE(button.has_value());
 
@@ -449,7 +481,9 @@ namespace
 
     TEST(PetSceneTest, AnEmptyGaugeDrawsOnlyItsBackground)
     {
-        const PetScene scene;
+        const antwika::i18n::Translator translator{
+            antwika::i18n::kDefaultLocale};
+        const PetScene scene{translator};
 
         PetSnapshot empty = awake();
         empty.fun = 0;
@@ -463,7 +497,9 @@ namespace
 
     TEST(PetSceneTest, AGaugeWithNoMaximumDrawsOnlyItsBackground)
     {
-        const PetScene scene;
+        const antwika::i18n::Translator translator{
+            antwika::i18n::kDefaultLocale};
+        const PetScene scene{translator};
 
         PetSnapshot broken = awake();
         broken.funMax = 0;
@@ -476,7 +512,9 @@ namespace
 
     TEST(PetSceneTest, AGaugeNeverFillsPastItsOwnWidth)
     {
-        const PetScene scene;
+        const antwika::i18n::Translator translator{
+            antwika::i18n::kDefaultLocale};
+        const PetScene scene{translator};
         const auto layout = layoutFor(kCanvas);
         ASSERT_TRUE(layout.has_value());
 
@@ -499,7 +537,9 @@ namespace
     // So a collapse shortens the bar and not merely its contents.
     TEST(PetSceneTest, TheEnergyGaugeFillsAgainstTheCeilingItHasLeft)
     {
-        const PetScene scene;
+        const antwika::i18n::Translator translator{
+            antwika::i18n::kDefaultLocale};
+        const PetScene scene{translator};
 
         PetSnapshot full = awake();
         full.energy = 15;
@@ -516,7 +556,9 @@ namespace
 
     TEST(PetSceneTest, Draw_ReportsTheStateTheDayAndTheRecord)
     {
-        const PetScene scene;
+        const antwika::i18n::Translator translator{
+            antwika::i18n::kDefaultLocale};
+        const PetScene scene{translator};
 
         PetSnapshot snapshot = awake();
         snapshot.day = 3;
@@ -536,7 +578,9 @@ namespace
     // So half of all days read shorter than the rest.
     TEST(PetSceneTest, Draw_SaysNothingAboutAnOrdinaryDay)
     {
-        const PetScene scene;
+        const antwika::i18n::Translator translator{
+            antwika::i18n::kDefaultLocale};
+        const PetScene scene{translator};
 
         PetSnapshot snapshot = awake();
         snapshot.day = 1;
@@ -548,7 +592,9 @@ namespace
 
     TEST(PetSceneTest, Draw_SaysWhichOfItsStatesTheCompanionIsIn)
     {
-        const PetScene scene;
+        const antwika::i18n::Translator translator{
+            antwika::i18n::kDefaultLocale};
+        const PetScene scene{translator};
 
         PetSnapshot hungry = awake();
         hungry.hungry = true;
@@ -575,14 +621,18 @@ namespace
 
     TEST(PetSceneTest, Draw_ReportsAPerishedCompanionToo)
     {
-        const PetScene scene;
+        const antwika::i18n::Translator translator{
+            antwika::i18n::kDefaultLocale};
+        const PetScene scene{translator};
 
         EXPECT_EQ(stateLine(render(scene, kCanvas, perished())), "gone");
     }
 
     TEST(PetSceneTest, Draw_ScalesTheReadoutWithTheWindow)
     {
-        const PetScene scene;
+        const antwika::i18n::Translator translator{
+            antwika::i18n::kDefaultLocale};
+        const PetScene scene{translator};
 
         const Drawn small = render(scene, kCanvas, awake());
         const Drawn large = render(
@@ -595,7 +645,9 @@ namespace
 
     TEST(PetSceneTest, Draw_KeepsTheSmallestReadoutOnTheGrid)
     {
-        const PetScene scene;
+        const antwika::i18n::Translator translator{
+            antwika::i18n::kDefaultLocale};
+        const PetScene scene{translator};
 
         // A unit of two pixels is too small for four glyph pixels.
         const Drawn drawn =
@@ -607,7 +659,9 @@ namespace
 
     TEST(PetSceneTest, Draw_StacksTheReadoutOneLineHeightApart)
     {
-        const PetScene scene;
+        const antwika::i18n::Translator translator{
+            antwika::i18n::kDefaultLocale};
+        const PetScene scene{translator};
 
         const Drawn drawn = render(scene, kCanvas, awake());
 
@@ -623,7 +677,9 @@ namespace
 
     TEST(PetSceneTest, Draw_DrawsNoBubbleWhileThereIsNothingToSay)
     {
-        const PetScene scene;
+        const antwika::i18n::Translator translator{
+            antwika::i18n::kDefaultLocale};
+        const PetScene scene{translator};
 
         const Drawn drawn = render(scene, kCanvas, awake());
 
@@ -633,7 +689,9 @@ namespace
 
     TEST(PetSceneTest, Draw_PutsWhatItSaysInABubbleBesideTheAnimal)
     {
-        const PetScene scene;
+        const antwika::i18n::Translator translator{
+            antwika::i18n::kDefaultLocale};
+        const PetScene scene{translator};
 
         PetSnapshot talking = awake();
         talking.saying = Saying::Hello;
@@ -648,7 +706,9 @@ namespace
 
     TEST(PetSceneTest, Draw_SaysADifferentThingForADifferentLine)
     {
-        const PetScene scene;
+        const antwika::i18n::Translator translator{
+            antwika::i18n::kDefaultLocale};
+        const PetScene scene{translator};
         std::vector<std::string> said;
 
         for (const Saying line : kEveryLine)
@@ -675,7 +735,9 @@ namespace
 
     TEST(PetSceneTest, Draw_KeepsEveryLineInsideItsOwnBubble)
     {
-        const PetScene scene;
+        const antwika::i18n::Translator translator{
+            antwika::i18n::kDefaultLocale};
+        const PetScene scene{translator};
 
         for (const Saying line : kEveryLine)
         {
@@ -704,7 +766,9 @@ namespace
     // Under the gauges, so it covers nothing that says anything.
     TEST(PetSceneTest, Draw_KeepsTheBubbleClearOfTheGauges)
     {
-        const PetScene scene;
+        const antwika::i18n::Translator translator{
+            antwika::i18n::kDefaultLocale};
+        const PetScene scene{translator};
         const auto layout = layoutFor(kCanvas);
         ASSERT_TRUE(layout.has_value());
 
@@ -722,7 +786,9 @@ namespace
 
     TEST(PetSceneTest, Draw_ScalesTheBubbleTextWithTheWindow)
     {
-        const PetScene scene;
+        const antwika::i18n::Translator translator{
+            antwika::i18n::kDefaultLocale};
+        const PetScene scene{translator};
 
         PetSnapshot talking = awake();
         talking.saying = Saying::Yum;
@@ -737,7 +803,9 @@ namespace
     // A unit too small for even the smallest glyphs still gets them.
     TEST(PetSceneTest, Draw_KeepsTheSmallestBubbleTextReadable)
     {
-        const PetScene scene;
+        const antwika::i18n::Translator translator{
+            antwika::i18n::kDefaultLocale};
+        const PetScene scene{translator};
 
         PetSnapshot talking = awake();
         talking.saying = Saying::Yum;
@@ -750,7 +818,9 @@ namespace
 
     TEST(PetSceneTest, Draw_GivesEveryUnitAWholeNumberOfPixels)
     {
-        const PetScene scene;
+        const antwika::i18n::Translator translator{
+            antwika::i18n::kDefaultLocale};
+        const PetScene scene{translator};
         const auto layout = layoutFor(kCanvas);
         ASSERT_TRUE(layout.has_value());
 
@@ -761,5 +831,67 @@ namespace
             EXPECT_EQ(rect.size.width % layout->unit, 0U);
             EXPECT_EQ(rect.size.height % layout->unit, 0U);
         }
+    }
+
+    // Every word drawn here comes off the injected translator.
+    // Which is the whole of what adopting antwika::i18n bought.
+    // The readout, the bubble and the button all change together.
+    // Nothing in the snapshot differs between the two renders.
+    // So a language cannot reach anything a replay reproduces.
+    TEST(PetSceneTest, Draw_SaysEveryWordInTheTranslatorsLanguage)
+    {
+        const antwika::i18n::Translator swedish{
+            antwika::i18n::Locale::Swedish};
+        const PetScene scene{swedish};
+
+        PetSnapshot talking = awake();
+        talking.hungry = true;
+        talking.saying = Saying::FeedMe;
+
+        const Drawn drawn = render(scene, kCanvas, talking);
+
+        ASSERT_EQ(drawn.texts.size(), kReadoutLines + 1);
+        EXPECT_EQ(drawn.texts[0].text, "mata mig!");
+        EXPECT_EQ(drawn.texts[1].text, "vaken, hungrig");
+        EXPECT_EQ(drawn.texts[2].text, "d0 ägg ");
+        EXPECT_EQ(drawn.texts[3].text, "gen 1 bäst 0");
+    }
+
+    // The one button a perished companion is offered says it too.
+    TEST(PetSceneTest, Draw_WordsTheNewCompanionButtonAsWell)
+    {
+        const antwika::i18n::Translator swedish{
+            antwika::i18n::Locale::Swedish};
+        const PetScene scene{swedish};
+
+        PetSnapshot gone = awake();
+        gone.state = PetState::Perished;
+
+        const Drawn drawn = render(scene, kCanvas, gone);
+
+        EXPECT_EQ(drawn.texts[0].text, "nytt djur");
+        EXPECT_EQ(stateLine(drawn), "borta");
+    }
+
+    // The bubble is scaled to the longest line the catalogue holds.
+    // A count written into the scene would be the English one.
+    // The longest Swedish line is half again the longest English one.
+    // So the same window gives its words a smaller scale.
+    TEST(PetSceneTest, Draw_ScalesTheBubbleToTheLongestLineInUse)
+    {
+        const antwika::i18n::Translator english{
+            antwika::i18n::Locale::English};
+        const antwika::i18n::Translator swedish{
+            antwika::i18n::Locale::Swedish};
+
+        PetSnapshot talking = awake();
+        talking.saying = Saying::Hello;
+
+        const Drawn drawn = render(
+            PetScene{english}, {.width = 512, .height = 512}, talking);
+        const Drawn other = render(
+            PetScene{swedish}, {.width = 512, .height = 512}, talking);
+
+        EXPECT_GT(drawn.texts[0].scale, other.texts[0].scale);
     }
 } // namespace

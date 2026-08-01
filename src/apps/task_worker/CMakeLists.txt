@@ -20,6 +20,7 @@ target_link_libraries(antwika_task_worker
     PRIVATE
         antwika::app
         antwika::ecs
+        antwika::ecs_commons
         antwika::engine
         antwika::event
         antwika::log

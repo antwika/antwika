@@ -50,7 +50,6 @@ add_executable(antwika_game
     src/WorldMapScene.cpp
     src/WorldMapSink.cpp
     src/WorldMapState.cpp
-    src/WindowInputSource.cpp
     src/main.cpp
 )
 

@@ -8,8 +8,9 @@
 #include <nlohmann/json-schema.hpp>
 
 #include <antwika/replay/IMigration.hpp>
+#include <antwika/replay/JsonShapes.hpp>
 #include <antwika/replay/SchemaVersion.hpp>
-#include <antwika/replay/SchemaVersionError.hpp>
+#include <antwika/replay/VersionedDocument.hpp>
 
 #include "antwika/companion/SaveFormatError.hpp"
 
@@ -198,20 +199,10 @@ namespace antwika::companion
             }
         };
 
-        nlohmann::json countShape()
-        {
-            nlohmann::json shape;
-            shape["type"] = "integer";
-            shape["minimum"] = 0;
-            return shape;
-        } // GCOVR_EXCL_LINE
-
-        nlohmann::json wordShape()
-        {
-            nlohmann::json shape;
-            shape["type"] = "string";
-            return shape;
-        } // GCOVR_EXCL_LINE
+        // Both shapes are antwika::replay's.
+        // All three formats stating a version share them.
+        using replay::countShape;
+        using replay::wordShape;
 
         // "state" and "saying" are strings rather than schema enums.
         // An unknown name is refused by the two functions above instead.
@@ -279,28 +270,6 @@ namespace antwika::companion
                 petSchema()); // GCOVR_EXCL_LINE
             return validator;
         }
-
-        // Translated rather than let through.
-        // A companion that will not read is this app's own category.
-        // companionMemoryFromJson() promises one exception type.
-        // The chain's message names both versions already.
-        // So it is carried through rather than rewritten.
-        void migratePetDocument(nlohmann::json &document)
-        {
-            try
-            {
-                standardPetMigrations().migrate(document);
-            }
-            // The catch itself is excluded and its body is not.
-            // gcov puts a matched/unmatched edge on the handler.
-            // A document from a newer build takes the matched one.
-            // Nothing this chain can throw takes the other.
-            // See docs/confirming-unreachable-branches.md.
-            catch (const replay::SchemaVersionError &error) // GCOVR_EXCL_LINE
-            {
-                throw SaveFormatError(error.what());
-            }
-        }
     } // namespace
 
     MigrationChain standardPetMigrations()
@@ -346,20 +315,13 @@ namespace antwika::companion
     CompanionMemory companionMemoryFromJson(
         const nlohmann::json &document)
     {
-        auto migrated = document;
-        migratePetDocument(migrated);
-
-        try
-        {
-            petValidator().validate(migrated);
-        }
-        catch (const std::exception &error) // GCOVR_EXCL_LINE
-        {
-            throw SaveFormatError(
-                std::string("antwika::companion: a saved companion "
-                            "failed schema validation: ")
-                + error.what());
-        }
+        const auto migrated =
+            replay::readVersionedDocument<SaveFormatError>(
+                document,
+                standardPetMigrations(),
+                petValidator(),
+                "antwika::companion: a saved companion failed schema "
+                "validation: ");
 
         return CompanionMemory{
             .pet =

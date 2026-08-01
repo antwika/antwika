@@ -187,9 +187,11 @@ TEST(ContextWidgetsTest, Panel_FillsInTheThemesBackgroundAndPadding)
 {
     Context ui{kCanvas, plainTheme(4)};
 
-    const auto panel = ui.panel({.height = fixedSize(20)});
+    {
+        const auto panel = ui.panel({.height = fixedSize(20)});
 
-    ui.label("ab");
+        ui.label("ab");
+    }
 
     const auto commands = ui.finish().commands;
 
@@ -204,12 +206,14 @@ TEST(ContextWidgetsTest, Panel_KeepsABackgroundAndPaddingAskedFor)
 {
     Context ui{kCanvas, plainTheme(4)};
 
-    const auto panel = ui.panel({
-        .height = fixedSize(20),
-        .background = kAccent,
-        .padding = 0});
+    {
+        const auto panel = ui.panel({
+            .height = fixedSize(20),
+            .background = kAccent,
+            .padding = 0});
 
-    ui.label("ab");
+        ui.label("ab");
+    }
 
     const auto commands = ui.finish().commands;
 

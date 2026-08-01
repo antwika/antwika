@@ -28,6 +28,8 @@ using antwika::game::GameState;
 using antwika::game::GameSummary;
 using antwika::game::GridExtent;
 using antwika::game::kSaveFormatVersion;
+using antwika::game::kTicksPerStep;
+using antwika::game::kZoomHalfWidths;
 using antwika::replay::kSchemaVersionKey;
 using antwika::game::PathIndex;
 using antwika::game::pathIndexOf;
@@ -222,16 +224,47 @@ TEST(SaveGameTest, RejectsACoordinateOutsideAnInt32)
     EXPECT_THROW((void)saveGameFromJson(encoded), SaveFormatError);
 }
 
-// The camera clamps a zoom level it cannot honour.
-// A save asking for a level that does not exist loads at the closest.
-// Which beats reading past the end of the table.
-TEST(SaveGameTest, ClampsAnOutOfRangeZoomLevel)
+// The largest phase a walker is ever in is kTicksPerStep - 1.
+// WalkerSystem writes that and counts it down to zero.
+// So a file above it names a walker no run ever produced.
+TEST(SaveGameTest, RejectsAStepPhaseNoWalkerCouldBeIn)
 {
     auto encoded = saveGameToJson(populated());
-    encoded["camera"]["zoomLevel"] = 99;
+    encoded["walkers"].at(0)["ticksUntilStep"] = kTicksPerStep;
+
+    EXPECT_THROW((void)saveGameFromJson(encoded), SaveFormatError);
+}
+
+// The decode is get<std::uint8_t>(), and nlohmann narrows in silence.
+// So a schema capped at what an int32 holds let 256 through as 0.
+TEST(SaveGameTest, RejectsAStepPhaseThatWouldNarrowToAnotherNumber)
+{
+    auto encoded = saveGameToJson(populated());
+    encoded["walkers"].at(0)["ticksUntilStep"] = 256;
+
+    EXPECT_THROW((void)saveGameFromJson(encoded), SaveFormatError);
+}
+
+// Camera clamps a level it cannot honour, and still does.
+// A file is the one caller that is not owed that courtesy.
+// A level past the end of the table is a camera nobody ever had.
+// Loading it at the closest would be a session somebody never played.
+TEST(SaveGameTest, RejectsAZoomLevelPastTheEndOfTheTable)
+{
+    auto encoded = saveGameToJson(populated());
+    encoded["camera"]["zoomLevel"] = kZoomHalfWidths.size();
+
+    EXPECT_THROW((void)saveGameFromJson(encoded), SaveFormatError);
+}
+
+// The boundary the refusal is drawn at, from the legal side.
+TEST(SaveGameTest, ReadsTheClosestZoomLevelTheTableHolds)
+{
+    auto encoded = saveGameToJson(populated());
+    encoded["camera"]["zoomLevel"] = kZoomHalfWidths.size() - 1;
 
     EXPECT_EQ(saveGameFromJson(encoded).camera.zoomLevel(),
-              Camera({}, 99).zoomLevel());
+              kZoomHalfWidths.size() - 1);
 }
 
 TEST(SaveGameTest, TakesASaveFromARunningSession)

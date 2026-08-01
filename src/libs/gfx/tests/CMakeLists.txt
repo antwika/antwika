@@ -4,10 +4,13 @@ add_subdirectory(conformance)
 add_subdirectory(mocks)
 
 add_executable(antwika_gfx_tests
+    AtlasTextTest.cpp
     BitmapTest.cpp
     BlitTest.cpp
     Camera3DTest.cpp
     ColorTest.cpp
+    GlyphAtlasBitmapTest.cpp
+    GlyphBlitTest.cpp
     GlyphsTest.cpp
     IRendererTest.cpp
     IWindowTest.cpp

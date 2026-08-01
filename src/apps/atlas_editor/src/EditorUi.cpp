@@ -1,9 +1,12 @@
 #include "antwika/atlas_editor/EditorUi.hpp"
 
+#include <array>
 #include <cstddef>
 #include <optional>
 #include <string>
+#include <string_view>
 
+#include <antwika/i18n/MessageId.hpp>
 #include <antwika/ui/Alignment.hpp>
 #include <antwika/ui/ButtonState.hpp>
 #include <antwika/ui/Context.hpp>
@@ -17,6 +20,7 @@
 namespace antwika::atlas_editor
 {
 
+    using antwika::i18n::MessageId;
     using antwika::ui::Alignment;
     using antwika::ui::ButtonState;
     using antwika::ui::Context;
@@ -42,46 +46,74 @@ namespace antwika::atlas_editor
                    + std::to_string(size.height);
         }
 
-        [[nodiscard]] std::string whereText(const EditorState &state)
+        // A slot nothing falls in is a dash rather than a word.
+        // Notation, like the "px" and the "x" beside it.
+        // So it stays a literal where every word is an id.
+        constexpr std::string_view kNoSlot = "-";
+
+        [[nodiscard]] std::string whereText(
+            const EditorState &state, const Translator &translator)
         {
             const auto pixel = state.hovered();
             if (!pixel.has_value())
             {
-                return "px -,-";
+                return translator.text(MessageId::AtlasPixelUnknown);
             }
 
             const auto slot =
                 slotAt(state.tiles(), state.image().size(), *pixel);
 
-            return "px " + std::to_string(pixel->x) + ","
-                   + std::to_string(pixel->y) + "  slot "
-                   + (slot.has_value()
-                          ? std::to_string(*slot)
-                          : std::string("-")); // GCOVR_EXCL_LINE
+            const std::string across = std::to_string(pixel->x);
+            const std::string down = std::to_string(pixel->y);
+            // Two statements rather than one conditional expression.
+            // A temporary built on a branch has an unwinding path.
+            // Which is a branch no test can reach and the gate refuses.
+            std::string which{kNoSlot};
+
+            if (slot.has_value())
+            {
+                which = std::to_string(*slot);
+            }
+
+            const std::array<std::string_view, 2> at{across, down};
+            const std::array<std::string_view, 1> in{which};
+
+            return translator.formatted(MessageId::AtlasPixelAt, at)
+                   + "  "
+                   + translator.formatted(MessageId::AtlasSlot, in);
         }
     } // namespace
 
-    std::string statusLine(const EditorState &state)
+    std::string statusLine(
+        const EditorState &state, const Translator &translator)
     {
-        std::string line = std::string(toolName(state.tool())) + "  "
-                           + whereText(state) + "  x"
-                           + std::to_string(scaleOf(state.view())) + "  "
-                           + sizeText(state.image().size());
+        std::string line =
+            translator.text(toolNameId(state.tool())) + "  "
+            + whereText(state, translator) + "  x"
+            + std::to_string(scaleOf(state.view())) + "  "
+            + sizeText(state.image().size());
 
         if (state.unsaved())
         {
-            line += "  UNSAVED";
+            line += "  " + translator.text(MessageId::AtlasUnsaved);
         }
 
-        if (!state.status().empty())
+        if (state.status().has_value())
         {
-            line += "  " + state.status();
+            const std::array<std::string_view, 1> detail{
+                state.status()->detail};
+
+            line += "  "
+                    + translator.formatted(state.status()->id, detail);
         }
 
         return line;
     } // GCOVR_EXCL_LINE
 
-    Frame describeEditor(const EditorState &state, const Pointer pointer)
+    Frame describeEditor(
+        const EditorState &state,
+        const Pointer pointer,
+        const Translator &translator)
     {
         const Size canvas = state.canvas();
         const Theme theme =
@@ -103,7 +135,7 @@ namespace antwika::atlas_editor
                     const auto tool = static_cast<Tool>(index);
 
                     ui.button(
-                        std::string{toolName(tool)},
+                        translator.text(toolNameId(tool)),
                         {.id = widgets::toolWidget(tool),
                          .state = tool == state.tool()
                                       ? std::optional{ButtonState::Pressed}
@@ -142,20 +174,26 @@ namespace antwika::atlas_editor
 
                 ui.button("-", {.id = widgets::kZoomOut});
                 ui.button("+", {.id = widgets::kZoomIn});
-                ui.button("fit", {.id = widgets::kResetView});
                 ui.button(
-                    "grid",
+                    translator.text(MessageId::AtlasResetView),
+                    {.id = widgets::kResetView});
+                ui.button(
+                    translator.text(MessageId::AtlasGrid),
                     {.id = widgets::kGrid,
                      .state = state.gridVisible()
                                   ? std::optional{ButtonState::Pressed}
                                   : std::nullopt});
-                ui.button("load", {.id = widgets::kLoad});
-                ui.button("save", {.id = widgets::kSave});
+                ui.button(
+                    translator.text(MessageId::AtlasLoad),
+                    {.id = widgets::kLoad});
+                ui.button(
+                    translator.text(MessageId::AtlasSave),
+                    {.id = widgets::kSave});
             }
 
             {
                 const auto row = ui.row({.width = kGrow});
-                ui.label(statusLine(state), theme.muted);
+                ui.label(statusLine(state, translator), theme.muted);
             }
         }
 

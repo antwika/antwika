@@ -19,6 +19,55 @@ namespace antwika::i18n
      * to store next to whatever owns the current language setting.
      * The fallback is always the default locale's catalogue; see lookup()
      * in Lookup.hpp for the rule it follows.
+     *
+     * ## How an application uses this
+     *
+     * **A translator is injected, never reached for.**
+     * One is constructed in `main()` and threaded down by `const
+     * Translator &` into whatever words something -- a scene, a
+     * `describe...()` function, a sink -- exactly as `log::ILogger &`
+     * and `time::IClock &` are threaded through this project.
+     * There is deliberately no `defaultTranslator()`, no thread-local
+     * and no singleton: a global would be the one piece of global state
+     * in a codebase that has none, and it would let any line anywhere
+     * quietly start depending on the current language.
+     * It outlives what it is handed to, following the ownership rule
+     * every other injected reference here follows.
+     *
+     * **Which strings go through it.**
+     * Everything a person reads on a screen or a terminal.
+     * Not a log line, not an exception message, not a JSON key, not an
+     * enumerator's name in a save file, not a replay event name and not
+     * a `ui::WidgetId` -- those are formats and diagnostics, and a
+     * persisted name that changed to suit a caption would break the file
+     * it is written into.
+     * A message that quotes one of them takes it as a `{0}` argument, so
+     * the sentence is translated and the diagnostic inside it is not.
+     *
+     * **The locale may not become simulation state.**
+     * Text that is *measured* is reproduced: an `antwika::ui` layout is
+     * a function of the strings declared into it, and a hit-test is a
+     * function of that layout, so a run recorded under one language and
+     * replayed under another would resolve the same click to a different
+     * widget.
+     * An application that lays out from translated text therefore fixes
+     * its locale at kDefaultLocale in `main()` and reads one from
+     * nowhere else -- no environment variable and no flag, since neither
+     * is carried by a recording.
+     * Changing the language is a source change there, exactly as the
+     * configured window size is.
+     * An application that neither records input nor hit-tests -- a
+     * console program like `apps/sudoku` -- may take a locale from its
+     * command line, because there is no recording for the choice to be
+     * missing from.
+     *
+     * **Text a simulation decides on is decided as an id.**
+     * `companion::Pet` picks a `companion::Saying` and the scene words
+     * it; `ui_demo::DemoState` holds a `MessageId` and the scene words
+     * that.
+     * Storing the words themselves would put the active locale inside
+     * the state a replay reproduces, which is the same mistake read from
+     * the other end.
      */
     class Translator final
     {

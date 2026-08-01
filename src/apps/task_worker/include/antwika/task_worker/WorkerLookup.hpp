@@ -70,7 +70,7 @@ namespace antwika::task_worker
          * recorded on the claimed Worker for status reporting.
          * @param label The claiming task's human-readable label,
          * recorded on the claimed Worker for status reporting;
-         * truncated to Worker::kWorkerLabelMaxLength if longer.
+         * truncated to antwika::ecs_commons::kNameMaxLength if longer.
          * @return True if a worker was claimed; false if none were
          * idle (should not happen when callers respect idleCount() as
          * a budget, but handled defensively rather than assumed away).

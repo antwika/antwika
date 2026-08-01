@@ -8,6 +8,7 @@
 #include <antwika/event/IEventSink.hpp>
 #include <antwika/event/ITickEventSink.hpp>
 #include <antwika/gfx/Size.hpp>
+#include <antwika/i18n/Translator.hpp>
 #include <antwika/input/IInputEventCodec.hpp>
 #include <antwika/log/ILogger.hpp>
 #include <antwika/simulation/ITickEventSource.hpp>
@@ -24,6 +25,7 @@ namespace antwika::atlas_editor
     using antwika::event::IEventSink;
     using antwika::event::ITickEventSink;
     using antwika::gfx::Size;
+    using antwika::i18n::Translator;
     using antwika::input::IInputEventCodec;
     using antwika::log::ILogger;
     using antwika::simulation::ITickEventSource;
@@ -86,6 +88,16 @@ namespace antwika::atlas_editor
 
         /** @brief Where the sheet is read from and written back to. */
         IAtlasStore &store;
+
+        /**
+         * @brief Words every label on the toolbar and status line.
+         *
+         * The bar is measured from what this says, and a press is
+         * resolved against that layout, so the locale has to be the
+         * same on the recording machine and the replaying one -- which
+         * is why main() fixes it and reads one from nowhere else.
+         */
+        const Translator &translator;
 
         /**
          * @brief The size everything is laid out and hit-tested against.

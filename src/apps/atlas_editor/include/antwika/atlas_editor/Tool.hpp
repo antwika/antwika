@@ -2,7 +2,8 @@
 
 #include <cstddef>
 #include <cstdint>
-#include <string_view>
+
+#include <antwika/i18n/MessageId.hpp>
 
 namespace antwika::atlas_editor
 {
@@ -32,10 +33,15 @@ namespace antwika::atlas_editor
         static_cast<std::size_t>(Tool::Pick) + 1;
 
     /**
-     * @brief Name a tool for the toolbar and the status line.
+     * @brief Get which message names a tool.
+     *
+     * An id rather than the words, so the toolbar and the status line
+     * are worded by whatever holds the translator and this file holds
+     * no language at all.
+     *
      * @param tool The tool to name.
-     * @return Its label, in capitals.
+     * @return Its message id.
      */
-    [[nodiscard]] std::string_view toolName(Tool tool) noexcept;
+    [[nodiscard]] antwika::i18n::MessageId toolNameId(Tool tool) noexcept;
 
 } // namespace antwika::atlas_editor

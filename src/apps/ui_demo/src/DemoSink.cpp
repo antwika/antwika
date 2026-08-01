@@ -1,6 +1,7 @@
 #include "antwika/ui_demo/DemoSink.hpp"
 
 #include <cstdint>
+#include <optional>
 #include <string>
 #include <utility>
 #include <variant>
@@ -8,9 +9,11 @@
 #include <antwika/app/PointerReading.hpp>
 #include <antwika/engine/Events.hpp>
 #include <antwika/gfx/Point.hpp>
+#include <antwika/i18n/MessageId.hpp>
 #include <antwika/input/InputEvent.hpp>
 #include <antwika/input/MouseButton.hpp>
 
+#include "antwika/ui_demo/DemoMessage.hpp"
 #include "antwika/ui_demo/KeyMapping.hpp"
 #include "antwika/ui_demo/Showcase.hpp"
 #include "antwika/ui_demo/Widgets.hpp"
@@ -20,6 +23,7 @@ namespace antwika::ui_demo
 
     using antwika::app::locates;
     using antwika::gfx::Point;
+    using antwika::i18n::MessageId;
     using antwika::input::InputEvent;
     using antwika::input::KeyPressed;
     using antwika::input::MouseButton;
@@ -161,14 +165,18 @@ namespace antwika::ui_demo
             state.select(choice.index);
             state.setPickerOpen(false);
             state.setMessage(
-                "showing " + std::string{showcaseName(state.showcase())});
+                {.id = MessageId::UiDemoShowing,
+                 .datum = {},
+                 .argId = showcaseNameId(state.showcase())});
             return;
         }
 
         state.selectAccent(choice.index);
         state.setAccentOpen(false);
         state.setMessage(
-            "accent " + std::to_string(choice.index) + " chosen");
+            {.id = MessageId::UiDemoAccentChosen,
+             .datum = std::to_string(choice.index),
+             .argId = std::nullopt});
     }
 
     void DemoSink::edit(const TextEdit &change)
@@ -177,7 +185,10 @@ namespace antwika::ui_demo
 
         if (change.submitted)
         {
-            state.setMessage("submitted: " + change.text);
+            state.setMessage(
+                {.id = MessageId::UiDemoSubmitted,
+                 .datum = change.text,
+                 .argId = std::nullopt});
             return;
         }
 
@@ -186,7 +197,10 @@ namespace antwika::ui_demo
             // What giving up means is this application's to decide.
             // Here it is emptying the field, which is a plain answer.
             state.setText({}, 0);
-            state.setMessage("cancelled");
+            state.setMessage(
+                {.id = MessageId::UiDemoCancelled,
+                 .datum = {},
+                 .argId = std::nullopt});
         }
     }
 
@@ -211,8 +225,10 @@ namespace antwika::ui_demo
         else if (activated != kNoWidget)
         {
             state.setMessage(
-                "pressed widget "
-                + std::to_string(static_cast<std::uint64_t>(activated)));
+                {.id = MessageId::UiDemoPressedWidget,
+                 .datum = std::to_string(
+                     static_cast<std::uint64_t>(activated)),
+                 .argId = std::nullopt});
         }
     }
 

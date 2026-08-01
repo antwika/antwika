@@ -11,6 +11,7 @@ target_include_directories(antwika_sudoku
 
 target_link_libraries(antwika_sudoku
     PRIVATE
+        antwika::i18n
         antwika::wfc
 )
 

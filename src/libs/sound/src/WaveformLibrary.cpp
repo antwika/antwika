@@ -18,6 +18,17 @@ namespace antwika::sound
                 "of frames of the format it names");
         }
 
+        // A voice that can never produce a sample is not a thing to play.
+        // Refused here rather than guarded at every read of it.
+        // A looping voice would otherwise restart on a missing frame.
+        // It would then read past the end of the samples.
+        if (waveform.frameCount() == 0)
+        {
+            throw SoundError(
+                "antwika::sound: a waveform holding no frames could never "
+                "be played");
+        }
+
         held.push_back(std::move(waveform));
 
         return static_cast<WaveformId>(held.size() - 1);

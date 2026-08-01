@@ -1,6 +1,8 @@
 #include "antwika/ecs/World.hpp"
 
+#include <functional>
 #include <utility>
+#include <vector>
 
 #include "EntityManager.hpp"
 
@@ -81,9 +83,21 @@ namespace antwika::ecs
 
     void World::commit()
     {
+        // Taken off the member before any of it runs.
+        // An op that staged another would grow this very vector.
+        // The loop below holds a reference into it.
+        // A reallocation there invalidates that reference.
+        // No op does that today, so this guards rather than fixes.
+        // Structural beats a rule every future op has to remember.
+        std::vector<std::function<void()>> running;
+        running.swap(pendingOps);
+
         // Leaving early would keep surviving ops staged for next time.
         // It would also skip every buffer swap.
         // The world would then be half-applied, and wrong much later.
+        // The swap above already emptied pendingOps.
+        // So this clears only what a running op staged onto it.
+        // Which is dropped rather than carried to the next commit.
         const ScopeGuard guard(
             [this]
             {
@@ -95,7 +109,7 @@ namespace antwika::ecs
                 }
             });
 
-        for (const auto &op : pendingOps)
+        for (const auto &op : running)
         {
             op();
         }

@@ -52,7 +52,6 @@ add_executable(antwika_game_tests
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/WorldMapScene.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/WorldMapSink.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/WorldMapState.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/../src/WindowInputSource.cpp
     AppModeTest.cpp
     AtlasImageTest.cpp
     BootstrapTest.cpp
@@ -121,7 +120,6 @@ add_executable(antwika_game_tests
     WorldMapSceneTest.cpp
     WorldMapSinkTest.cpp
     WorldMapStateTest.cpp
-    WindowInputSourceTest.cpp
     WalkerTest.cpp
     WalkingTest.cpp
 )

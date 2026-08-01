@@ -1,10 +1,12 @@
 #include "antwika/task_worker/StatusPrintSystem.hpp"
 
 #include <sstream>
+#include <string>
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
+#include <antwika/ecs_commons/Name.hpp>
 #include <antwika/log/mocks/MockLogger.hpp>
 #include <antwika/scheduler/JobId.hpp>
 #include <antwika/scheduler/Priority.hpp>
@@ -13,12 +15,13 @@
 #include "antwika/task_worker/Worker.hpp"
 
 using antwika::ecs::World;
+using antwika::ecs_commons::kNameMaxLength;
+using antwika::ecs_commons::makeName;
 using antwika::log::mocks::MockLogger;
 using antwika::scheduler::JobId;
 using antwika::scheduler::kCriticalPriority;
 using antwika::scheduler::kLowPriority;
 using antwika::scheduler::kNormalPriority;
-using antwika::task_worker::makeWorkerLabel;
 using antwika::task_worker::StatusPrintSystem;
 using antwika::task_worker::TaskDependency;
 using antwika::task_worker::TaskRegistry;
@@ -135,7 +138,7 @@ TEST(StatusPrintSystemTest, PrintsEveryWorkersCurrentState)
     const auto busy = world.create();
     world.add<Worker>(
         busy,
-        Worker{WorkerStatus::Busy, 3, 42, makeWorkerLabel("Render")});
+        Worker{WorkerStatus::Busy, 3, 42, makeName("Render")});
     world.commit();
 
     TaskRegistry registry;
@@ -154,6 +157,37 @@ TEST(StatusPrintSystemTest, PrintsEveryWorkersCurrentState)
         "Task id: 42 | Task name: Render\n");
 }
 
+// An ecs_commons::Name has no slot in its buffer for a terminator.
+// So a label filling it exactly holds no NUL anywhere at all.
+// Printing one through label.text.data() would read past the array.
+// This pins that the printer goes through view() instead.
+// It is the one call site the move off a terminated buffer had to change.
+TEST(StatusPrintSystemTest, PrintsALabelThatExactlyFillsItsBuffer)
+{
+    NiceMock<MockLogger> logger;
+    World world(logger);
+    const std::string full(kNameMaxLength, 'x');
+    const auto busy = world.create();
+    world.add<Worker>(
+        busy, Worker{WorkerStatus::Busy, 3, 42, makeName(full)});
+    world.commit();
+
+    TaskRegistry registry;
+    std::ostringstream out;
+    StatusPrintSystem system(out, registry);
+
+    system.update(world, 5);
+
+    EXPECT_EQ(
+        out.str(),
+        "After tick 5:\n"
+        "  Tasks:\n"
+        "  Workers:\n"
+        "    worker[0] - Current state: Busy | Remaining: 3 tick(s) | "
+        "Task id: 42 | Task name: " +
+            full + "\n");
+}
+
 TEST(StatusPrintSystemTest, PrintsBothTasksAndWorkersUnderOneTickHeader)
 {
     NiceMock<MockLogger> logger;
@@ -161,7 +195,7 @@ TEST(StatusPrintSystemTest, PrintsBothTasksAndWorkersUnderOneTickHeader)
     const auto worker = world.create();
     world.add<Worker>(
         worker,
-        Worker{WorkerStatus::Busy, 1, 4, makeWorkerLabel("Delta")});
+        Worker{WorkerStatus::Busy, 1, 4, makeName("Delta")});
     world.commit();
 
     TaskRegistry registry;

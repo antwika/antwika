@@ -17,6 +17,8 @@
 #include <antwika/gfx/Point.hpp>
 #include <antwika/gfx/Rect.hpp>
 #include <antwika/gfx/Size.hpp>
+#include <antwika/i18n/Locale.hpp>
+#include <antwika/i18n/Translator.hpp>
 #include <antwika/input/InputEvent.hpp>
 #include <antwika/input/InputEventCodec.hpp>
 #include <antwika/input/MouseButton.hpp>
@@ -92,6 +94,10 @@ namespace
     };
 
     // Where the save button lands, off the layout the session lays out.
+    // The locale is a constant of the build, so a test may name one.
+    constexpr antwika::i18n::Translator kTranslator{
+        antwika::i18n::kDefaultLocale};
+
     // A second guess at it would be a second layout.
     // That is exactly what ui::Frame::rects exists to avoid.
     Point saveButton()
@@ -99,7 +105,7 @@ namespace
         const EditorState state{
             Canvas::blank(kCanvas), TileGrid{}, kCanvas};
         const auto rect =
-            describeEditor(state, Pointer{})
+            describeEditor(state, Pointer{}, kTranslator)
                 .rects.find(antwika::atlas_editor::widgets::kSave);
 
         const auto found = rect.value_or(antwika::gfx::Rect{});
@@ -198,6 +204,7 @@ namespace
             .inputSource = source,
             .codec = codec,
             .store = store,
+            .translator = kTranslator,
             .canvas = kCanvas,
             .blank = kCanvas,
             .tiles = TileGrid{},
@@ -281,6 +288,7 @@ TEST(RunIntegrationTest, TheExtraSinkSeesEveryFinishedTick)
         .inputSource = source,
         .codec = codec,
         .store = store,
+        .translator = kTranslator,
         .canvas = kCanvas,
         .blank = kCanvas,
         .tiles = TileGrid{},
@@ -315,6 +323,7 @@ TEST(RunIntegrationTest, TheReplayRecorderReceivesEveryDispatchedEvent)
         .inputSource = source,
         .codec = codec,
         .store = store,
+        .translator = kTranslator,
         .canvas = kCanvas,
         .blank = kCanvas,
         .tiles = TileGrid{},

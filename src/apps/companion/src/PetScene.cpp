@@ -15,6 +15,7 @@
 #include <antwika/gfx/Point.hpp>
 #include <antwika/gfx/Rect.hpp>
 #include <antwika/gfx/TextLayout.hpp>
+#include <antwika/i18n/MessageId.hpp>
 
 #include "antwika/companion/Saying.hpp"
 
@@ -29,6 +30,7 @@ namespace antwika::companion
     using antwika::gfx::Color;
     using antwika::gfx::Point;
     using antwika::gfx::Rect;
+    using antwika::i18n::MessageId;
 
     namespace
     {
@@ -43,63 +45,70 @@ namespace antwika::companion
         // What the readout says, in the order it says it.
         constexpr std::size_t kReadoutLines = 3;
 
-        // The one fact no gauge holds, in the words it is said in.
-        // A day begun with a rude awakening is worth saying apart.
-        constexpr std::string_view kAwakeWord = "awake";
-        constexpr std::string_view kHungryWord = "awake, hungry";
-        constexpr std::string_view kWokenWord = "awake, woken";
-        constexpr std::string_view kAsleepWord = "asleep";
-        constexpr std::string_view kGoneWord = "gone";
+        // The one fact no gauge holds, as the id it is said with.
+        // An interrupted night is worth saying apart from a quiet one.
+        // It is the rest of that night's recovery already forfeited.
+        constexpr MessageId kAwakeWord = MessageId::CompanionAwake;
+        constexpr MessageId kHungryWord =
+            MessageId::CompanionAwakeHungry;
+        constexpr MessageId kAsleepWord = MessageId::CompanionAsleep;
+        constexpr MessageId kWokenWord =
+            MessageId::CompanionAsleepWoken;
+        constexpr MessageId kGoneWord = MessageId::CompanionGone;
 
-        // What the one button says, in this file with the other words.
-        constexpr std::string_view kReviveWords = "new pet";
+        // What the one button says, in this file with the other ids.
+        constexpr MessageId kReviveWords = MessageId::CompanionNewPet;
 
         // How grown up it is, in LifeStage's own order.
-        constexpr std::array<std::string_view, 5> kStageWords{
-            "egg", "child", "teen", "adult", "elder"};
 
-        static_assert(
-            kStageWords.size()
-            == static_cast<std::size_t>(LifeStage::Elder) + 1);
-
-        // What kind of day it is, in DayMood's own order.
-        // The ordinary day says nothing, since half of them are.
-        constexpr std::array<std::string_view, 4> kMoodWords{
-            "", "hungry", "restless", "heavy"};
-
-        static_assert(
-            kMoodWords.size()
-            == static_cast<std::size_t>(DayMood::Heavy) + 1);
 
         // Every line the companion may say, in Saying's own order.
         // One table in one place, and this is the place.
-        // The words are presentation, where a Saying is what is decided.
-        // antwika::i18n is deliberately not used here.
-        // The readout below is English written into this same file.
-        // A catalogue holding one and not the other translates by halves.
-        // It would also leave two places to add a line to.
-        // Moving both is a change worth making on its own.
-        constexpr std::array<std::string_view, 16> kSayingWords{
-            "",
-            "hello!",
-            "bored...",
-            "nice day",
-            "la la la",
-            "feed me!",
-            "yum yum!",
-            "im full!",
-            "shhh!",
-            "zzz...",
-            "play!",
-            "wheee!",
-            "so tired",
-            "not tired",
-            "*yawn*",
-            "hey!"};
+        // An id is presentation, where a Saying is what is decided.
+        // Nothing here is the words themselves any more.
+        // Those live in one catalogue per language, and Pet sees none.
+        // Which is what keeps the active language out of the state.
+        constexpr std::array<MessageId, 16> kSayingWords{
+            MessageId::CompanionSayHello,
+            MessageId::CompanionSayHello,
+            MessageId::CompanionSayBored,
+            MessageId::CompanionSayNiceDay,
+            MessageId::CompanionSayLaLaLa,
+            MessageId::CompanionSayFeedMe,
+            MessageId::CompanionSayYumYum,
+            MessageId::CompanionSayFull,
+            MessageId::CompanionSayShhh,
+            MessageId::CompanionSayZzz,
+            MessageId::CompanionSayPlay,
+            MessageId::CompanionSayWheee,
+            MessageId::CompanionSayTooTired,
+            MessageId::CompanionSayNotSleepy,
+            MessageId::CompanionSayYawn,
+            MessageId::CompanionSayPoked};
+
+        // Every life stage and every day mood, in their own order.
+        // An ordinary day says nothing, so it has no id of its own.
+        constexpr std::array<MessageId, 5> kStageWords{
+            MessageId::CompanionStageEgg,
+            MessageId::CompanionStageChild,
+            MessageId::CompanionStageTeen,
+            MessageId::CompanionStageAdult,
+            MessageId::CompanionStageElder};
+
+        constexpr std::array<MessageId, 3> kMoodWords{
+            MessageId::CompanionMoodHungry,
+            MessageId::CompanionMoodRestless,
+            MessageId::CompanionMoodHeavy};
 
         static_assert(
             kSayingWords.size()
             == static_cast<std::size_t>(Saying::Poked) + 1);
+
+        // Saying::None draws no bubble at all, so slot zero is unread.
+        // It repeats the next entry rather than naming an empty id.
+        // A catalogue entry that resolved to nothing would be a gap.
+        // And a gap is what the exclamation marks exist to show.
+        static_assert(kSayingWords[0] == kSayingWords[1]);
 
         // Where the bubble sits, in the layout's own units.
         // Left of the animal, under the gauges and over the props.
@@ -115,18 +124,35 @@ namespace antwika::companion
         constexpr std::uint32_t kBubbleTailUnits = 2;
         constexpr std::uint32_t kBubblePadUnits = 1;
 
-        // The longest line the table above holds.
+        // The longest line the catalogue holds for the table above.
         // The text is scaled to fit this rather than to fit each line.
         // So the bubble is one size and the words one height throughout.
+        // Measured rather than written down.
+        // A count taken off English would be wrong for every other.
         // A window smaller than main.cpp's cannot give it that room.
         // The longest lines overhang their bubble there.
         // Which is where the readout already overhangs the grid.
         // So neither is clamped, and both stay one arithmetic rule.
-        constexpr std::uint32_t kSayingChars = 9;
-
         // Where the ground begins.
         // The animal stands on it and the three props sit along it.
         constexpr std::int32_t kGroundY = 22;
+        [[nodiscard]] std::size_t longestSaying(
+            const Translator &translator)
+        {
+            std::size_t longest = 1;
+
+            for (const MessageId id : kSayingWords)
+            {
+                const auto length = translator.text(id).size();
+
+                if (length > longest)
+                {
+                    longest = length;
+                }
+            }
+
+            return longest;
+        }
 
         constexpr Tick kBreatheFrameTicks = kTicksPerSecond / 2;
         constexpr Tick kEyesOpenTicks = 3 * kTicksPerSecond;
@@ -282,8 +308,8 @@ namespace antwika::companion
             return scale;
         }
 
-        [[nodiscard]] std::string_view stateWord(
-            const PetSnapshot &snapshot)
+
+        [[nodiscard]] MessageId stateWord(const PetSnapshot &snapshot)
         {
             if (snapshot.state == PetState::Perished)
             {
@@ -303,24 +329,38 @@ namespace antwika::companion
             return snapshot.hungry ? kHungryWord : kAwakeWord;
         }
 
-        // How the day is going, in the words the tables above hold.
+        // How the day is going, in the words the tables above name.
         // An ordinary day contributes nothing at all.
-        // So its line is shorter rather than saying "nothing much".
-        [[nodiscard]] std::string dayLine(const PetSnapshot &snapshot)
+        // So its mood has no id, and the table is three rather than four.
+        [[nodiscard]] std::string dayLine(
+            const PetSnapshot &snapshot, const Translator &translator)
         {
-            return "d" + std::to_string(snapshot.day) + " "
-                   + std::string(kStageWords[static_cast<std::size_t>(
-                       snapshot.stage)])
-                   + " "
-                   + std::string(kMoodWords[static_cast<std::size_t>(
-                       snapshot.mood)]);
+            const std::string day = std::to_string(snapshot.day);
+            const std::string stage = translator.text(
+                kStageWords[static_cast<std::size_t>(snapshot.stage)]);
+            const std::string mood =
+                snapshot.mood == DayMood::Ordinary
+                    ? std::string()
+                    : translator.text(
+                          kMoodWords
+                              [static_cast<std::size_t>(snapshot.mood)
+                               - 1]);
+            const std::array<std::string_view, 3> args{day, stage, mood};
+
+            return translator.formatted(MessageId::CompanionDay, args);
         }
 
-        [[nodiscard]] std::string lineageLine(const PetSnapshot &snapshot)
+        [[nodiscard]] std::string lineageLine(
+            const PetSnapshot &snapshot, const Translator &translator)
         {
-            return "gen " + std::to_string(snapshot.lineage.generation)
-                   + " best "
-                   + std::to_string(snapshot.lineage.bestTicks);
+            const std::string generation =
+                std::to_string(snapshot.lineage.generation);
+            const std::string best =
+                std::to_string(snapshot.lineage.bestTicks);
+            const std::array<std::string_view, 2> args{generation, best};
+
+            return translator.formatted(
+                MessageId::CompanionLineage, args);
         }
 
         // Anchored to the bottom of the grid rather than to a row.
@@ -329,7 +369,8 @@ namespace antwika::companion
             IRenderer &renderer,
             const SceneLayout &layout,
             const Palette &palette,
-            const PetSnapshot &snapshot)
+            const PetSnapshot &snapshot,
+            const Translator &translator)
         {
             const auto scale = textScale(layout);
             const auto step = static_cast<std::int32_t>(
@@ -345,29 +386,32 @@ namespace antwika::companion
             // Which is a branch the coverage gate would then refuse.
             renderer.drawText(
                 Point{.x = floorLine.x, .y = top},
-                stateWord(snapshot),
+                translator.text(stateWord(snapshot)),
                 scale,
                 palette.text);
             renderer.drawText(
                 Point{.x = floorLine.x, .y = top + step},
-                dayLine(snapshot),
+                dayLine(snapshot, translator),
                 scale,
                 palette.text);
             renderer.drawText(
                 Point{.x = floorLine.x, .y = top + 2 * step},
-                lineageLine(snapshot),
+                lineageLine(snapshot, translator),
                 scale,
                 palette.text);
         }
 
         // Scaled to the longest line rather than to the one being said.
         // A unit too small for even the smallest glyphs still gets them.
-        [[nodiscard]] std::uint32_t bubbleScale(const SceneLayout &layout)
+        [[nodiscard]] std::uint32_t bubbleScale(
+            const SceneLayout &layout, const Translator &translator)
         {
             const auto room =
                 (kBubbleUnitsWide - 2 * kBubblePadUnits) * layout.unit;
+            const auto widest = static_cast<std::uint32_t>(
+                longestSaying(translator));
             const auto scale =
-                room / (kSayingChars * antwika::gfx::kGlyphAdvance);
+                room / (widest * antwika::gfx::kGlyphAdvance);
 
             if (scale == 0)
             {
@@ -385,7 +429,8 @@ namespace antwika::companion
             IRenderer &renderer,
             const SceneLayout &layout,
             const Palette &palette,
-            const Saying saying)
+            const Saying saying,
+            const Translator &translator)
         {
             renderer.drawRect(
                 box(
@@ -407,9 +452,9 @@ namespace antwika::companion
                     1),
                 palette.bubble);
 
-            const std::string_view words =
-                kSayingWords[static_cast<std::size_t>(saying)];
-            const auto scale = bubbleScale(layout);
+            const std::string words = translator.text(
+                kSayingWords[static_cast<std::size_t>(saying)]);
+            const auto scale = bubbleScale(layout, translator);
             const auto text = antwika::gfx::textSize(words, scale);
             const Point corner = point(layout, kBubbleX, kBubbleY);
             const auto width = static_cast<std::int32_t>(
@@ -521,13 +566,15 @@ namespace antwika::companion
         void drawReviveButton(
             IRenderer &renderer,
             const SceneLayout &layout,
-            const Palette &palette)
+            const Palette &palette,
+            const Translator &translator)
         {
             const Rect button = reviveButtonBox(layout);
             renderer.drawRect(button, palette.bubble);
 
             const auto scale = textScale(layout);
-            const auto text = antwika::gfx::textSize(kReviveWords, scale);
+            const std::string words = translator.text(kReviveWords);
+            const auto text = antwika::gfx::textSize(words, scale);
 
             renderer.drawText(
                 Point{
@@ -539,7 +586,7 @@ namespace antwika::companion
                          + (static_cast<std::int32_t>(button.size.height)
                             - static_cast<std::int32_t>(text.height))
                                / 2},
-                kReviveWords,
+                words,
                 scale,
                 palette.bubbleText);
         }
@@ -593,8 +640,9 @@ namespace antwika::companion
         }
     } // namespace
 
-    PetScene::PetScene()
-        : breathe(uniformClip(0, kBob.size(), kBreatheFrameTicks)),
+    PetScene::PetScene(const Translator &translator)
+        : translator(translator),
+          breathe(uniformClip(0, kBob.size(), kBreatheFrameTicks)),
           blink(Clip(
               {KeyFrame{.index = 0, .durationTicks = kEyesOpenTicks},
                KeyFrame{.index = 1, .durationTicks = kEyesShutTicks}},
@@ -667,7 +715,8 @@ namespace antwika::companion
             // Drawn from the snapshot like everything else here.
             // Whether there is a button is the state and nothing more.
             // So no renderer holds a note of one being offered.
-            drawReviveButton(renderer, *layout, palette);
+            drawReviveButton(
+                renderer, *layout, palette, translator);
         }
         else
         {
@@ -710,13 +759,15 @@ namespace antwika::companion
         // A bubble it stands in front of is somebody else talking.
         if (snapshot.saying != Saying::None)
         {
-            drawBubble(renderer, *layout, palette, snapshot.saying);
+            drawBubble(
+                renderer, *layout, palette, snapshot.saying, translator);
         }
 
         // Last, so anything drawn over the ground stays behind it.
         // A perished companion is reported too.
         // Which is why the grave no longer ends this function.
-        drawReadout(renderer, *layout, palette, snapshot);
+        drawReadout(
+            renderer, *layout, palette, snapshot, translator);
     }
 
 } // namespace antwika::companion

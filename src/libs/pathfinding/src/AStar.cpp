@@ -1,6 +1,7 @@
 #include "antwika/pathfinding/AStar.hpp"
 
 #include <algorithm>
+#include <limits>
 #include <map>
 #include <queue>
 #include <set>
@@ -68,6 +69,26 @@ namespace antwika::pathfinding
             }
 
             return remaining;
+        }
+
+        // Cost is signed, so a sum past its range is undefined.
+        // Refusing rather than saturating is the deliberate choice here.
+        // Two saturated keys compare equal, which reorders the open set.
+        // That order is the whole of this library's determinism claim.
+        // A cost that overflows is a broken precondition, not a missing path.
+        // Both arguments have already been checked non-negative.
+        // So the guard is a subtraction, which cannot itself overflow.
+        [[nodiscard]] Cost addCosts(Cost left, Cost right)
+        {
+            constexpr Cost kMaxCost = std::numeric_limits<Cost>::max();
+
+            if (left > kMaxCost - right)
+            {
+                throw PathfindingError(
+                    "pathfinding: costs sum past what a Cost can hold");
+            }
+
+            return left + right;
         }
 
         // find() rather than at() here.
@@ -149,7 +170,7 @@ namespace antwika::pathfinding
                     continue;
                 }
 
-                const Cost cost = current.cost + neighbour.cost;
+                const Cost cost = addCosts(current.cost, neighbour.cost);
                 const auto seen = visited.find(neighbour.node);
 
                 if (seen != visited.end() && seen->second.cost <= cost)
@@ -159,13 +180,14 @@ namespace antwika::pathfinding
 
                 const Cost remaining =
                     estimateFor(graph, neighbour.node, goal);
+                const Cost estimate = addCosts(cost, remaining);
 
                 visited.insert_or_assign(
                     neighbour.node,
                     Visit{.cost = cost, .parent = current.node});
 
                 open.push(OpenEntry{
-                    .estimate = cost + remaining,
+                    .estimate = estimate,
                     .remaining = remaining,
                     .node = neighbour.node,
                     .cost = cost,

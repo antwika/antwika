@@ -191,6 +191,11 @@ That is for the reason everything else about a companion is: a renderer holding 
 The idle line is a hash of the tick it comes up on -- the murmur3 finalizer over exact-width integers, so it is the same line on every toolchain.
 The snapshot carries the `Saying` and not the words, and not the countdown.
 
+**The words themselves come from [`i18n`](../libraries/i18n.md), and `Pet` never sees one.**
+`PetScene` holds a `Translator` and turns a `Saying` into a `MessageId`; the state line, the day line and the lineage line are worded the same way.
+That split is what keeps the active language out of the state a replay reproduces: `Pet` is integer throughout and reads no clock, no generator and no locale, so a session recorded in English replays identically in Swedish and only the pixels differ.
+The bubble is scaled to the longest line *the catalogue in use* holds rather than to a character count written into the scene -- the longest Swedish line is half again the longest English one, so a count baked in would have been the English one.
+
 ### The "new pet" button
 
 A perished companion is drawn with its grave, its own grey palette and one button reading `new pet`, painted into `reviveButtonRect()`'s box.

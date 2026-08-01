@@ -58,6 +58,15 @@ namespace antwika::game
          * @brief Construct a camera at the default zoom.
          * @param pan Where the cell at the origin has its top corner.
          * @param zoomLevel Index into kZoomHalfWidths; clamped to it.
+         *
+         * Clamping is right for every caller that computes a level --
+         * zoomIn(), zoomOut(), a default-constructed camera -- because
+         * the closest level that exists is what each of them meant.
+         *
+         * It is **not** how a save file's level is checked. A document
+         * naming a level past the end of the table is refused by the
+         * save schema instead, since a repaired save is a session
+         * somebody never had; see SaveGame.cpp's zoomLevelShape().
          */
         constexpr explicit Camera(
             Point pan = {}, std::size_t zoomLevel = kDefaultZoomLevel)
