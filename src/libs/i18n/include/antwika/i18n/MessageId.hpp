@@ -418,6 +418,8 @@ namespace antwika::i18n
          * @brief Tower defence: the lives ran out.
          */
         TowerDefenceOverrun,
+
+        /**
          * @brief Sudoku: that square is one of the puzzle's clues.
          */
         SudokuGivenLocked,
