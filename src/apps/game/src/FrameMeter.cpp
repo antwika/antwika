@@ -47,7 +47,7 @@ namespace antwika::game
         windowStart = now;
     }
 
-    std::uint32_t FrameMeter::perSecond() const noexcept
+    std::optional<std::uint32_t> FrameMeter::perSecond() const noexcept
     {
         return rate;
     }

@@ -54,6 +54,19 @@ namespace antwika::companion
     /** @brief How much happiness being woken up costs. */
     inline constexpr std::uint32_t kDisturbCost = 2;
 
+    /**
+     * @brief How much happiness a meal it did not want costs.
+     *
+     * Exactly kFeedJoy, so an unwanted meal is the equal and opposite of
+     * a wanted one, and half of kDisturbCost, because pestering a waking
+     * companion is a smaller sin than waking a sleeping one. From
+     * kHappinessStart a stray tap is survivable and a night gives it
+     * back, while tapping at it without pause runs it out -- which is
+     * what makes tapping repeatedly a losing strategy rather than the
+     * free action it used to be.
+     */
+    inline constexpr std::uint32_t kPesterCost = 1;
+
     /** @brief The happiest it can get. */
     inline constexpr std::uint32_t kHappinessMax = 10;
 
@@ -99,6 +112,7 @@ namespace antwika::companion
         std::uint32_t feedRelief = kFeedRelief;
         std::uint32_t feedJoy = kFeedJoy;
         std::uint32_t disturbCost = kDisturbCost;
+        std::uint32_t pesterCost = kPesterCost;
         std::uint32_t happinessMax = kHappinessMax;
         std::uint32_t happinessStart = kHappinessStart;
     };
@@ -115,9 +129,12 @@ namespace antwika::companion
      * The two needs are deliberately opposite in what they ask for. Day
      * is when it wants feeding, and going unfed costs it happiness;
      * night is when it wants to be left alone, and a tap costs it
-     * happiness and the rest of that night's recovery. Happiness
+     * happiness and the rest of that night's recovery. A meal offered to
+     * a companion that is not hungry is the third violation and the
+     * gentlest: it wants attention rather than food, and being pestered
+     * with a bowl it does not want costs it happiness too. Happiness
      * reaching zero is Perished, which nothing brings it back from --
-     * see docs/companion.md for the numbers and why they are those.
+     * see wiki/apps/companion.md for the numbers and why they are those.
      *
      * A tap is deliberately the only input, since the window is 128
      * pixels square and a pointer landing anywhere in it means the same
@@ -152,7 +169,11 @@ namespace antwika::companion
          *
          * What that means depends entirely on when it happens: a meal
          * while it is awake and hungry, an interruption while it is
-         * asleep, and nothing at all otherwise.
+         * asleep, and an annoyance while it is awake and full.
+         *
+         * Only a tap that lands on a companion which has already
+         * perished means nothing at all, since nothing about one ever
+         * changes again.
          */
         void tap();
 
@@ -216,6 +237,12 @@ namespace antwika::companion
         [[nodiscard]] std::uint32_t disturbances() const noexcept;
 
         /**
+         * @brief Get how many meals it was offered and did not want.
+         * @return The count.
+         */
+        [[nodiscard]] std::uint32_t pesters() const noexcept;
+
+        /**
          * @brief Get the numbers it was balanced with.
          * @return The configuration.
          */
@@ -234,6 +261,7 @@ namespace antwika::companion
         std::uint32_t happinessLevel = 0;
         std::uint32_t mealCount = 0;
         std::uint32_t disturbanceCount = 0;
+        std::uint32_t pesterCount = 0;
         bool disturbedTonight = false;
     };
 

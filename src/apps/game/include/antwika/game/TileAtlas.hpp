@@ -146,7 +146,7 @@ namespace antwika::game
      * art.** The picture is drawn and curated rather than generated, so
      * repainting a tile is free and nothing has to be re-run; what is
      * *not* free is moving one, because these numbers are what decide
-     * which pixels a slot means. See docs/game-texture-atlas.md.
+     * which pixels a slot means. See wiki/apps/game-texture-atlas.md.
      *
      * The slots run the ground, then the sixteen roads in link-mask
      * order, then the four walkers in Direction order, then the

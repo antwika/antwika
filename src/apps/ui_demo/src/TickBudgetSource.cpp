@@ -8,7 +8,7 @@ namespace antwika::ui_demo
     using antwika::engine::events::kStop;
 
     TickBudgetSource::TickBudgetSource(
-        ITickSource &inner, const antwika::time::Tick budget)
+        ITickEventSource &inner, const antwika::time::Tick budget)
         : inner(inner), budget(budget)
     {
     }

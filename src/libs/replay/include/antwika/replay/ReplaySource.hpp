@@ -5,18 +5,19 @@
 
 #include <antwika/event/Event.hpp>
 #include <antwika/event/TickEvent.hpp>
-#include <antwika/simulation/ITickSource.hpp>
+#include <antwika/simulation/ITickEventSource.hpp>
 
 namespace antwika::replay
 {
 
     using antwika::event::Event;
     using antwika::event::TickEvent;
-    using antwika::simulation::ITickSource;
+    using antwika::simulation::ITickEventSource;
 
     /**
-     * @brief ITickSource that feeds a recorded or hand-scripted sequence of
-     * TickEvents back out, one tick's worth at a time, in original order.
+     * @brief ITickEventSource that feeds a recorded or hand-scripted
+     * sequence of TickEvents back out, one tick's worth at a time, in
+     * original order.
      *
      * The recording is walked once, not once per tick. A cursor advances
      * through it as ticks are asked for, which is what keeps replaying a
@@ -24,7 +25,7 @@ namespace antwika::replay
      * whose input and its running time both grow with the session, the
      * difference is the whole cost of a long replay.
      *
-     * That rests on ITickSource's contract that ticks are asked for
+     * That rests on ITickEventSource's contract that ticks are asked for
      * once each and in increasing order. The constructor sorts, so a
      * hand-authored file whose ticks are not in order still replays; what
      * it cannot survive is a *caller* going backwards.
@@ -32,7 +33,7 @@ namespace antwika::replay
      * Each event is handed out rather than copied, so a payload string is
      * moved out of the recording the one time it is asked for.
      */
-    class ReplaySource final : public ITickSource
+    class ReplaySource final : public ITickEventSource
     {
     public:
         /**

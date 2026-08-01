@@ -1,10 +1,11 @@
 #include <iostream>
 #include <string>
-#include <vector>
+#include <string_view>
 
 #include <antwika/app/ConsoleLogging.hpp>
 #include <antwika/app/RunGuarded.hpp>
 #include <antwika/app/WavFile.hpp>
+#include <antwika/cli/CommandLine.hpp>
 #include <antwika/log/Level.hpp>
 #include <antwika/sound/DeviceDesc.hpp>
 #include <antwika/sound/SelectedSoundBackend.hpp>
@@ -13,6 +14,7 @@
 #include <antwika/time/SystemSleeper.hpp>
 
 #include "antwika/sound_demo/DemoLoop.hpp"
+#include "antwika/sound_demo/DemoOptions.hpp"
 #include "antwika/sound_demo/DemoTrack.hpp"
 
 using antwika::app::ConsoleLogging;
@@ -22,6 +24,8 @@ using antwika::log::Level;
 using antwika::sound::DeviceDesc;
 using antwika::sound::WaveFormat;
 using antwika::sound::WaveformLibrary;
+using antwika::sound_demo::demoFlags;
+using antwika::sound_demo::demoOptionsFrom;
 using antwika::sound_demo::demoSchedule;
 using antwika::sound_demo::DemoLoop;
 using antwika::sound_demo::demoTone;
@@ -29,6 +33,13 @@ using antwika::time::SystemSleeper;
 
 namespace
 {
+    // At namespace scope rather than local to main().
+    // A local would be odr-used by the lambda below.
+    // Passing a string_view by value binds a reference to it.
+    // A lambda with no capture-default may not capture implicitly.
+    // GCC accepts one anyway, and Clang is right to refuse it.
+    constexpr std::string_view kName = "antwika_sound_demo";
+
     constexpr WaveFormat kFormat{.rate = 48000, .channels = 2};
 
     // One second between notes, and one second each.
@@ -47,12 +58,24 @@ int main(int argc, char **argv)
     ConsoleLogging logging(std::cout, Level::Info);
     auto &logger = logging.logger();
 
-    const std::vector<std::string> args(argv + 1, argv + argc);
-
     return runGuarded(
-        "antwika_sound_demo",
-        [&logger, &args]
+        kName,
+        [&logger, argc, argv]
         {
+            // A refused flag is a failed run, not a crash.
+            // Parsed outside the guard it reaches std::terminate.
+            // That is runRecorded()'s reason, and it holds here too.
+            const auto options = demoOptionsFrom(
+                antwika::cli::parseCommandLine(argc, argv, demoFlags()));
+
+            // --help is a question, not a run.
+            // Answering it opens no device.
+            if (options.helpRequested)
+            {
+                std::cout << antwika::cli::helpText(kName, demoFlags());
+                return;
+            }
+
             const auto backend =
                 antwika::sound::makeSelectedSoundBackend(logger);
 
@@ -66,9 +89,9 @@ int main(int argc, char **argv)
             // A file if one was named, a generated tone otherwise.
             // So the demo needs no asset checked in beside it.
             // And readWavFile keeps a caller that is not a test.
-            const auto waveform = args.empty()
-                ? library.add(demoTone(kFormat, kPitch, kToneFrames))
-                : library.add(readWavFile(args.front(), "antwika_sound_demo"));
+            const auto waveform = options.filePath.has_value()
+                ? library.add(readWavFile(*options.filePath, kName))
+                : library.add(demoTone(kFormat, kPitch, kToneFrames));
 
             SystemSleeper sleeper;
             DemoLoop loop(*backend, library, sleeper);

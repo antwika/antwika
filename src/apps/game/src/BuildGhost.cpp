@@ -13,17 +13,22 @@ namespace antwika::game
         const std::optional<antwika::input::PointerHint> &hint,
         const Camera &camera,
         GridExtent extent,
-        BuildTool tool,
+        std::optional<BuildTool> tool,
         bool coveredByUi,
         const PathIndex &paths,
         const BuildingIndex &built)
     {
         BuildGhost ghost{
-            .at = {}, .tool = tool, .visible = false, .valid = false};
+            .at = {},
+            .tool = tool.value_or(BuildTool::Road),
+            .visible = false,
+            .valid = false};
 
         // Nowhere to draw one until the pointer has been seen.
         // And nothing to draw under the bar, which covers the grid.
-        if (!hint.has_value() || coveredByUi)
+        // And nothing to preview once the palette has been put down.
+        // A click would place nothing then, so a ghost would lie.
+        if (!hint.has_value() || coveredByUi || !tool.has_value())
         {
             return ghost;
         }
@@ -33,7 +38,7 @@ namespace antwika::game
                 .x = hint->position.x, .y = hint->position.y},
             camera);
 
-        const auto kind = buildingKindOf(tool);
+        const auto kind = buildingKindOf(*tool);
         const auto footprint =
             kind.has_value() ? footprintOf(*kind) : Footprint{};
 

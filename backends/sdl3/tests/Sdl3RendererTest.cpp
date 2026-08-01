@@ -9,6 +9,7 @@
 #include <memory>
 #include <optional>
 
+#include <antwika/gfx/Bitmap.hpp>
 #include <antwika/gfx/Color.hpp>
 #include <antwika/gfx/IWindow.hpp>
 #include <antwika/gfx/Point.hpp>
@@ -188,6 +189,63 @@ namespace antwika::gfx::sdl3
             // Unblended, the fill lands as a flat blue over the red.
             EXPECT_LT(pixel->blue, 255);
             EXPECT_GT(pixel->red, 0);
+        }
+
+        // How a scaled texture is sampled is the other unreportable.
+        // SDL starts one linear where raylib starts one nearest.
+        // So one backend smoothed an atlas the other kept crisp.
+        // Two texels blown up sixteen times put the seam at x = 16.
+        // Nearest keeps each half of that its own flat colour.
+        // Linear runs a gradient between the texel centres, 8 and 24.
+        // Every pixel this reads would then be a mixture of the two.
+        TEST_F(Sdl3RendererTest, DrawTexture_ScalesWithoutSmoothing)
+        {
+            constexpr Color kLeft{
+                .red = 255, .green = 0, .blue = 0, .alpha = 255};
+            constexpr Color kRight{
+                .red = 0, .green = 0, .blue = 255, .alpha = 255};
+
+            const Bitmap twoTexels{
+                .size = {.width = 2, .height = 1},
+                .pixels = {
+                    kLeft.red,
+                    kLeft.green,
+                    kLeft.blue,
+                    kLeft.alpha,
+                    kRight.red,
+                    kRight.green,
+                    kRight.blue,
+                    kRight.alpha}};
+
+            auto &renderer = window->renderer();
+
+            renderer.clear(Color{.alpha = 255});
+
+            const auto texture = renderer.createTexture(twoTexels);
+
+            renderer.drawTexture(
+                *texture,
+                Rect{
+                    .origin = {.x = 0, .y = 0},
+                    .size = {.width = 2, .height = 1}},
+                Rect{
+                    .origin = {.x = 0, .y = 0},
+                    .size = {.width = 32, .height = 8}},
+                Color{
+                    .red = 255, .green = 255, .blue = 255, .alpha = 255});
+
+            const auto nearSeam = pixelAt(Point{.x = 15, .y = 4});
+            const auto pastSeam = pixelAt(Point{.x = 16, .y = 4});
+
+            if (!nearSeam || !pastSeam)
+            {
+                GTEST_SKIP() << "this driver reports no pixels back";
+            }
+
+            EXPECT_EQ(nearSeam->red, kLeft.red);
+            EXPECT_EQ(nearSeam->blue, kLeft.blue);
+            EXPECT_EQ(pastSeam->red, kRight.red);
+            EXPECT_EQ(pastSeam->blue, kRight.blue);
         }
     } // namespace
 

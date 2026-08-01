@@ -10,7 +10,7 @@
 
 ```sh
 build/bin/antwika_sound_demo/antwika_sound_demo                  # a generated tone
-build/bin/antwika_sound_demo/antwika_sound_demo my-sound.wav     # or play a file instead
+build/bin/antwika_sound_demo/antwika_sound_demo --file my-sound.wav   # or play a file
 ```
 
 Under the default `null` backend it renders every frame and plays nothing, which is what makes it safe for a CI leg to run.
@@ -19,10 +19,14 @@ It needs no display under any backend.
 
 ## Libraries it composes
 
-[`app`](../libraries/app.md), [`log`](../libraries/log.md), [`sound`](../libraries/sound.md), [`time`](../libraries/time.md), plus the selected sound backend.
+[`app`](../libraries/app.md), [`cli`](../libraries/cli.md), [`log`](../libraries/log.md), [`sound`](../libraries/sound.md), [`time`](../libraries/time.md), plus the selected sound backend.
 Notably not [`engine`](../libraries/engine.md), [`replay`](../libraries/replay.md) or [`gfx`](../libraries/gfx.md): there is no tick loop and no window here.
 
 ## How it is put together
+
+`DemoOptions` names the one flag, so this demo parses its command line through [`cli`](../libraries/cli.md) like every other program here.
+It read its own `argv` until it did, which is why `--help` used to do nothing and a mistyped flag was taken for a filename and failed inside the WAV reader.
+The file is a flag rather than a bare argument because that library parses flags and nothing else.
 
 `DemoTrack` builds the material — `demoTone()` generates a fading sine, and `demoSchedule()` lays eight notes out at exact multiples of a spacing, panned left to right.
 `DemoLoop` opens a device, plays the whole schedule, and pumps until every frame is rendered.
@@ -53,4 +57,4 @@ The same reason [gfx3d_demo](gfx3d_demo.md) has one: the default `null` build re
 
 ## See also
 
-- [`docs/sound.md`](../../docs/sound.md) — why the threading and the absolute frame index are the design.
+- [`sound`](../libraries/sound.md) — why the threading and the absolute frame index are the design.

@@ -71,12 +71,19 @@ namespace antwika::game
 
         /**
          * @brief Get the rate the last full window came to.
-         * @return Frames per second, and zero until a whole window has
-         * gone by -- a run that has drawn for less than a second has no
-         * measurement to report, and reporting a guess would be worse
-         * than reporting nothing.
+         * @return Frames per second, and nothing at all until a whole
+         * window has gone by -- a run that has drawn for less than a
+         * second has no measurement to report, and reporting a guess
+         * would be worse than reporting nothing.
+         *
+         * Absent rather than zero, because zero is a rate a stalling
+         * machine can genuinely be measured at: a run drawing fewer than
+         * one frame a second would otherwise be reported as one that has
+         * not started measuring, and the two want different words on
+         * screen -- see describeFps().
          */
-        [[nodiscard]] std::uint32_t perSecond() const noexcept;
+        [[nodiscard]] std::optional<std::uint32_t> perSecond()
+            const noexcept;
 
     private:
         using TimePoint =
@@ -85,7 +92,7 @@ namespace antwika::game
         const IClock &clock;
         std::optional<TimePoint> windowStart{};
         std::uint32_t counted = 0;
-        std::uint32_t rate = 0;
+        std::optional<std::uint32_t> rate{};
     };
 
 } // namespace antwika::game

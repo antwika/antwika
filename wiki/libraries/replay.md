@@ -5,13 +5,13 @@
 ## What it is for
 
 Recording a run and reading one back.
-Running the loop is [`simulation`](simulation.md)'s, and this library depends on it: `ReplaySource` is a `simulation::ITickSource`, and a live run needs nothing that is here.
+Running the loop is [`simulation`](simulation.md)'s, and this library depends on it: `ReplaySource` is a `simulation::ITickEventSource`, and a live run needs nothing that is here.
 
 ## Key types
 
 | Header | Type | Role |
 | --- | --- | --- |
-| `ReplaySource.hpp` | `ReplaySource` | The `simulation::ITickSource` that serves events out of a loaded `ReplayDocument`. |
+| `ReplaySource.hpp` | `ReplaySource` | The `simulation::ITickEventSource` that serves events out of a loaded `ReplayDocument`. |
 | `ReplayDocument.hpp` | `ReplayDocument` | The in-memory form of a replay file. |
 | `ReplayReader.hpp` / `ReplayWriter.hpp` | `ReplayReader`, `ReplayWriter` | JSON in and out; `ReplayWriter::Layout` is `Compact` or `Pretty`. |
 | `EventJson.hpp`, `PayloadJson.hpp`, `ReplayJson.hpp` | — | The JSON encoding, validated with `json-schema-validator`. |

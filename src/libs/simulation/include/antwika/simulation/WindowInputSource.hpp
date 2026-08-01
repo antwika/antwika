@@ -7,7 +7,7 @@
 #include <antwika/gfx/WindowId.hpp>
 #include <antwika/time/Tick.hpp>
 
-#include "ITickSource.hpp"
+#include "ITickEventSource.hpp"
 
 namespace antwika::simulation
 {
@@ -23,7 +23,7 @@ namespace antwika::simulation
      * This is the whole reason antwika::gfx knows nothing about
      * antwika::event: turning a gfx::WindowEvent into an
      * antwika::event::Event is the application's job, so a window reaches
-     * the engine through ITickSource like any other external input. That
+     * the engine through ITickEventSource like any other external input. That
      * makes closing a window recordable, and therefore replayable -- a
      * `--record` run stops at the tick it was closed on, and replaying that
      * file stops at the same tick.
@@ -52,7 +52,7 @@ namespace antwika::simulation
      * serves all of a backend's windows. A second consumer of the same
      * backend would find its events already taken.
      */
-    class WindowInputSource final : public ITickSource
+    class WindowInputSource final : public ITickEventSource
     {
     public:
         /**
@@ -64,7 +64,7 @@ namespace antwika::simulation
          * @param window Id of the window whose close requests count.
          */
         WindowInputSource(
-            ITickSource &inner, IGfxBackend &backend, WindowId window);
+            ITickEventSource &inner, IGfxBackend &backend, WindowId window);
 
         WindowInputSource(const WindowInputSource &) = delete;
         WindowInputSource(WindowInputSource &&) = delete;
@@ -87,7 +87,7 @@ namespace antwika::simulation
             antwika::time::Tick tick) override;
 
     private:
-        ITickSource &inner;
+        ITickEventSource &inner;
         IGfxBackend &backend;
         WindowId window;
     };

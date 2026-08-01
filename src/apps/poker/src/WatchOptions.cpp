@@ -14,19 +14,19 @@ namespace antwika::poker
         constexpr std::string_view kTickDelayFlag = "--tick-delay-ms";
 
         constexpr std::array kFlags{
-            antwika::replay::FlagSpec{
+            antwika::cli::FlagSpec{
                 .name = kTickDelayFlag,
                 .valueName = "<n>",
                 .help = "Hold each tick's frame for <n> milliseconds "
                         "(default 1000; 0 runs flat out)."}};
     } // namespace
 
-    std::span<const antwika::replay::FlagSpec> watchFlags()
+    std::span<const antwika::cli::FlagSpec> watchFlags()
     {
         return kFlags;
     }
 
-    WatchOptions watchOptionsFrom(const antwika::replay::CommandLine &parsed)
+    WatchOptions watchOptionsFrom(const antwika::cli::CommandLine &parsed)
     {
         WatchOptions options;
 

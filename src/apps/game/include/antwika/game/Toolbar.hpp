@@ -2,6 +2,7 @@
 
 #include <array>
 #include <cstdint>
+#include <optional>
 #include <string_view>
 
 #include <antwika/gfx/Size.hpp>
@@ -153,7 +154,9 @@ namespace antwika::game
          * @param selected The tool whose palette button is shown as
          * chosen; the appearance is forced rather than worked out from
          * the pointer, since which tool is selected is the application's
-         * to know.
+         * to know. Nullopt is the palette put down, and then no button
+         * is held: a bar showing a tool nobody has selected would say
+         * a left click places something when it places nothing.
          * @param paused Whether the simulation is being held still,
          * which is what the pause button is labelled from.
          * @param tick The tick the bar reports, which is the tick this
@@ -168,7 +171,7 @@ namespace antwika::game
             Size canvas,
             Pointer pointer,
             const Camera &camera,
-            BuildTool selected = BuildTool::Road,
+            std::optional<BuildTool> selected = BuildTool::Road,
             bool paused = false,
             antwika::time::Tick tick = 0) const;
     };

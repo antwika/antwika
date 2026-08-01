@@ -8,6 +8,7 @@
 #include "antwika/companion/Pet.hpp"
 
 using antwika::companion::CompanionError;
+using antwika::companion::kPesterCost;
 using antwika::companion::Pet;
 using antwika::companion::PetConfig;
 using antwika::companion::PetState;
@@ -67,6 +68,7 @@ namespace
         EXPECT_EQ(pet.ticks(), 0U);
         EXPECT_EQ(pet.meals(), 0U);
         EXPECT_EQ(pet.disturbances(), 0U);
+        EXPECT_EQ(pet.pesters(), 0U);
         EXPECT_FALSE(pet.hungry());
         EXPECT_FALSE(pet.night());
         EXPECT_FALSE(pet.disturbed());
@@ -194,7 +196,7 @@ namespace
         EXPECT_EQ(pet.hunger(), 0U);
     }
 
-    TEST(PetTest, Tap_WhileAwakeAndNotHungryChangesNothingAtAll)
+    TEST(PetTest, Tap_WhileAwakeAndNotHungryAnnoysItInsteadOfFeedingIt)
     {
         Pet pet(kLongDay);
         stepTimes(pet, 2);
@@ -202,9 +204,57 @@ namespace
 
         pet.tap();
 
+        // A meal it did not want is not a meal, and leaves it no fuller.
         EXPECT_EQ(pet.meals(), 0U);
         EXPECT_EQ(pet.hunger(), 1U);
-        EXPECT_EQ(pet.happiness(), kLongDay.happinessStart);
+        EXPECT_EQ(pet.pesters(), 1U);
+        EXPECT_EQ(
+            pet.happiness(), kLongDay.happinessStart - kPesterCost);
+    }
+
+    // Two companions, the same numbers, one tap each.
+    // The night has no recovery in it here.
+    // So what is left of each is what its own violation cost.
+    TEST(PetTest, Tap_PesteringIsGentlerThanWakingItUp)
+    {
+        PetConfig restless = kShortDay;
+        restless.restPeriodTicks = 1000;
+
+        Pet full(restless);
+        stepTimes(full, 2);
+        ASSERT_EQ(full.state(), PetState::Awake);
+        ASSERT_FALSE(full.hungry());
+        full.tap();
+
+        Pet asleep(restless);
+        stepTimes(asleep, 4);
+        ASSERT_EQ(asleep.state(), PetState::Asleep);
+        asleep.tap();
+
+        EXPECT_EQ(full.happiness(), restless.happinessStart - kPesterCost);
+        EXPECT_EQ(
+            asleep.happiness(),
+            restless.happinessStart - restless.disturbCost);
+        EXPECT_GT(full.happiness(), asleep.happiness());
+    }
+
+    TEST(PetTest, Tap_PesteringItWithoutPauseCanBeWhatEndsIt)
+    {
+        Pet pet(kLongDay);
+        stepTimes(pet, 1);
+        ASSERT_FALSE(pet.hungry());
+
+        // Exactly what it started with, one unwanted meal at a time.
+        for (std::uint32_t taps = 0; taps < kLongDay.happinessStart;
+             ++taps)
+        {
+            ASSERT_NE(pet.state(), PetState::Perished);
+            pet.tap();
+        }
+
+        EXPECT_EQ(pet.happiness(), 0U);
+        EXPECT_EQ(pet.state(), PetState::Perished);
+        EXPECT_EQ(pet.pesters(), kLongDay.happinessStart);
     }
 
     TEST(PetTest, Step_FallsAsleepAtDuskAndWakesAtDawn)
@@ -308,6 +358,7 @@ namespace
 
         EXPECT_EQ(pet.meals(), 0U);
         EXPECT_EQ(pet.disturbances(), 0U);
+        EXPECT_EQ(pet.pesters(), 0U);
         EXPECT_EQ(pet.happiness(), 0U);
         EXPECT_EQ(pet.state(), PetState::Perished);
     }
@@ -346,5 +397,6 @@ namespace
         EXPECT_NE(kept.state(), PetState::Perished);
         EXPECT_GT(kept.meals(), 0U);
         EXPECT_EQ(kept.disturbances(), 0U);
+        EXPECT_EQ(kept.pesters(), 0U);
     }
 } // namespace

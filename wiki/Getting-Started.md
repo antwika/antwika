@@ -103,7 +103,7 @@ build/bin/antwika_sudoku/antwika_sudoku [--puzzle my-puzzle.txt]
 build/bin/antwika_tower_defence/antwika_tower_defence               # or --record / --replay
 build/bin/antwika_gfx_demo/antwika_gfx_demo
 build/bin/antwika_gfx3d_demo/antwika_gfx3d_demo                  # spinning cube, a fixed frame count
-build/bin/antwika_sound_demo/antwika_sound_demo [my-sound.wav]   # silent under the null backend
+build/bin/antwika_sound_demo/antwika_sound_demo [--file my-sound.wav]   # silent under null
 ```
 
 On Windows the binaries carry a `.exe` suffix.

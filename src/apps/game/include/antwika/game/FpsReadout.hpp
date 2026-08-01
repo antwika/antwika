@@ -1,6 +1,8 @@
 #pragma once
 
 #include <cstdint>
+#include <optional>
+#include <string_view>
 
 #include <antwika/gfx/Size.hpp>
 #include <antwika/ui/DrawList.hpp>
@@ -10,6 +12,25 @@ namespace antwika::game
 
     using antwika::gfx::Size;
     using antwika::ui::DrawList;
+
+    /**
+     * @brief What the readout reads while there is no rate to show yet.
+     *
+     * Two dashes rather than a number, because a run that has been
+     * drawing for less than a second has measured nothing, and "0" is a
+     * measurement -- one that says the machine is drawing no frames at
+     * all, which is the opposite of what is happening. It is the same
+     * width in this font whatever the eventual number is, so the corner
+     * does not jump when the first window closes.
+     *
+     * The whole line rather than the two dashes alone, so that the path
+     * with nothing to say builds nothing: a caption joined to a
+     * placeholder is a std::string, and a std::string on a branch is a
+     * temporary with an unwind path no test can reach. The caption is
+     * therefore written twice, which the tests pinning both spellings
+     * are what keep in step.
+     */
+    inline constexpr std::string_view kNoRateReadout{"fps --"};
 
     /**
      * @brief Describe the frame-rate readout drawn in the top corner.
@@ -29,10 +50,11 @@ namespace antwika::game
      *
      * @param canvas The area the readout is laid out into.
      * @param framesPerSecond The rate to show, straight from
-     * FrameMeter::perSecond().
+     * FrameMeter::perSecond(); nothing at all draws kNoRateReadout
+     * instead, which is what the first second of a run shows.
      * @return The drawing commands, in the order they draw.
      */
     [[nodiscard]] DrawList describeFps(
-        Size canvas, std::uint32_t framesPerSecond);
+        Size canvas, std::optional<std::uint32_t> framesPerSecond);
 
 } // namespace antwika::game

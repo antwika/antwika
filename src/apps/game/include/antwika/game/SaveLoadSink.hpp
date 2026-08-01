@@ -49,8 +49,10 @@ namespace antwika::game
      * reproduces a load exactly as long as the file it names still holds
      * what it held; if somebody overwrites it in between, the replay
      * diverges. That is inherent to a load button rather than something
-     * this design gave away, and it is written up in
-     * ISSUES-game-integrate.md.
+     * this design gave away: hashing the file into the recording would
+     * make such a replay fail loudly instead of quietly, and inlining
+     * the whole save into the recording would make every --record file
+     * carry every session anybody ever loaded.
      */
     class SaveLoadSink final : public ITickEventSink
     {

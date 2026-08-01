@@ -4,6 +4,7 @@
 #include <array>
 #include <cstddef>
 #include <cstdint>
+#include <optional>
 #include <vector>
 
 #include <antwika/ecs/SystemScheduler.hpp>
@@ -223,6 +224,22 @@ TEST(UiOverlayToolTest, TheRoadIsSelectedUntilSomethingSaysOtherwise)
     EXPECT_EQ(overlay.tool(), BuildTool::FoodSource);
 }
 
+// Putting the palette down is a state, not a tool.
+// So it is asked about with has_value() rather than compared to one.
+TEST(UiOverlayToolTest, ThePaletteCanBePutDownAndPickedBackUp)
+{
+    UiOverlay overlay;
+
+    overlay.select(BuildTool::House);
+    overlay.clearTool();
+
+    EXPECT_FALSE(overlay.tool().has_value());
+
+    overlay.select(BuildTool::House);
+
+    EXPECT_EQ(overlay.tool(), BuildTool::House);
+}
+
 TEST(ToolbarPaletteTest, TheSelectedButtonIsDrawnDifferently)
 {
     const Toolbar toolbar;
@@ -236,6 +253,28 @@ TEST(ToolbarPaletteTest, TheSelectedButtonIsDrawnDifferently)
     // The same layout, so only the appearances can have moved.
     EXPECT_EQ(road.commands.size(), tower.commands.size());
     EXPECT_NE(road.commands, tower.commands);
+}
+
+// A bar holding a tool down while nothing is selected would lie.
+// It would say a left click places something, where it places nothing.
+TEST(ToolbarPaletteTest, NoButtonIsHeldDownWithThePalettePutDown)
+{
+    const Toolbar toolbar;
+    const Camera camera;
+
+    const auto down =
+        toolbar.describe(kCanvas, Pointer{}, camera, std::nullopt);
+
+    for (std::size_t index = 0; index < kBuildToolCount; ++index)
+    {
+        const auto tool = static_cast<BuildTool>(index);
+        const auto held =
+            toolbar.describe(kCanvas, Pointer{}, camera, tool);
+
+        // Same layout throughout, so a difference is an appearance.
+        EXPECT_EQ(down.commands.size(), held.commands.size());
+        EXPECT_NE(down.commands, held.commands);
+    }
 }
 
 namespace
@@ -400,35 +439,56 @@ TEST_F(PaletteSinkTest, TheRoadStaysWhatALeftClickPlacesByDefault)
 }
 
 // The rule a right press follows, through the real bar and grid.
-// Selected with a button, cancelled with a click, back to normal play.
-TEST_F(PaletteSinkTest, ARightClickLeavesBuildModeAndTheRoadTakesOver)
+// Selected with a button, cancelled with a click, palette put down.
+TEST_F(PaletteSinkTest, ARightClickLeavesBuildModeAndSelectsNothing)
 {
     constexpr Cell target{.x = 3, .y = 4};
 
     pressOn(widgets::toolWidget(BuildTool::House));
     clickAt(target, MouseButton::Right);
 
-    EXPECT_EQ(overlay.tool(), BuildTool::Road);
+    EXPECT_FALSE(overlay.tool().has_value());
 
-    // So the next left click lays a road rather than putting a house up.
+    // So the next left click lays nothing at all, road included.
     clickAt(target, MouseButton::Left);
 
-    EXPECT_TRUE(paths.has(target));
+    EXPECT_FALSE(paths.has(target));
     EXPECT_TRUE(buildings().empty());
 }
 
+// The palette is picked back up by pressing a button, and only that.
+// Which is what makes putting it down a state rather than a dead end.
+TEST_F(PaletteSinkTest, APaletteButtonSelectsAgainAfterACancel)
+{
+    constexpr Cell target{.x = 3, .y = 4};
+
+    pressOn(widgets::toolWidget(BuildTool::House));
+    clickAt(target, MouseButton::Right);
+    pressOn(widgets::toolWidget(BuildTool::Road));
+    clickAt(target, MouseButton::Left);
+
+    EXPECT_EQ(overlay.tool(), BuildTool::Road);
+    EXPECT_TRUE(paths.has(target));
+}
+
 // The bar is described again after a cancel, so it shows the change.
-// Otherwise the road button would not look held down until the next.
+// Otherwise the house button would look held down until the next tick.
 TEST_F(PaletteSinkTest, ARightClickIsShownOnTheBarStraightAway)
 {
     pressOn(widgets::toolWidget(BuildTool::House));
     clickAt(Cell{.x = 3, .y = 4}, MouseButton::Right);
     tick();
 
+    const auto down =
+        toolbar.describe(kCanvas, Pointer{}, camera, std::nullopt);
+
+    EXPECT_EQ(overlay.commands(), down.commands);
+
+    // And that picture is not the one a selected tool draws.
     const auto road =
         toolbar.describe(kCanvas, Pointer{}, camera, BuildTool::Road);
 
-    EXPECT_EQ(overlay.commands(), road.commands);
+    EXPECT_NE(overlay.commands(), road.commands);
 }
 
 // A block holds every cell, not only the one clicked.
@@ -593,6 +653,25 @@ TEST(BuildGhostTest, GhostFor_IsInvisibleUnderTheToolbar)
             kNoPaths,
             kNothingBuilt)
             .visible);
+}
+
+// Nothing selected places nothing, so it previews nothing.
+// A ghost drawn there would promise a click this app would refuse.
+TEST(BuildGhostTest, GhostFor_IsInvisibleWithThePalettePutDown)
+{
+    const Camera camera;
+
+    const auto shown = ghostFor(
+        hintOn(Cell{.x = 1, .y = 1}, camera),
+        camera,
+        kExtent,
+        std::nullopt,
+        false,
+        kNoPaths,
+        kNothingBuilt);
+
+    EXPECT_FALSE(shown.visible);
+    EXPECT_FALSE(shown.valid);
 }
 
 // Reading simulation state in order to draw is fine.

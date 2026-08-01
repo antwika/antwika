@@ -13,6 +13,7 @@
 #include "antwika/game/Events.hpp"
 #include "antwika/game/GameStateReducer.hpp"
 #include "antwika/game/BuildingSystem.hpp"
+#include "antwika/game/CityEntrySink.hpp"
 #include "antwika/game/GridSink.hpp"
 #include "antwika/game/InputFold.hpp"
 #include "antwika/game/LiveGrid.hpp"
@@ -101,7 +102,11 @@ namespace antwika::game
         // That is the product decision here.
         // This is a build pause rather than a freeze.
         // The same call apps/life makes about drawing on a paused board.
+        // A city is entered paused, whichever screen it is reached from.
+        // So a grid appearing is not a city that starts running at you.
+        // The way out is the bar's pause button, as it always was.
         PauseState pause;
+        CityEntrySink cityEntry(mode, pause);
         PauseGatedSystem pausedWalkers(gatedWalkers, pause);
         PauseGatedSystem pausedBuildings(gatedBuildings, pause);
         PauseGatedSystem pausedSpawns(gatedSpawns, pause);
@@ -238,8 +243,10 @@ namespace antwika::game
         // A press that opens a city must not also build in it.
         // SaveLoadSink is beside MainMenuSink for the same reason.
         // Both gate themselves, and both own a whole screen.
+        // CityEntrySink is straight after the mode it reads.
+        // So a city that came up this tick is held before it steps.
         std::vector<std::reference_wrapper<ITickEventSink>> timedSinks{
-            input, mode, reducer, menuSink, saveSink};
+            input, mode, cityEntry, reducer, menuSink, saveSink};
 
         // Registered only when there is somewhere to put the picture.
         // Otherwise the bar is described against a zero canvas.

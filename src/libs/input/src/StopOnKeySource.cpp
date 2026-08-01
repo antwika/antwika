@@ -12,7 +12,7 @@ namespace antwika::input
     using antwika::engine::events::kStop;
 
     StopOnKeySource::StopOnKeySource(
-        ITickSource &inner, const IInputEventCodec &codec, Key key)
+        ITickEventSource &inner, const IInputEventCodec &codec, Key key)
         : inner(inner), codec(codec), key(key)
     {
     }

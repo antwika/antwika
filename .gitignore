@@ -20,6 +20,12 @@ __pycache__
 # A crash drops one of these next to whatever was running.
 core.*
 
+# The agent loop's per-iteration run log.
+# Operational noise about runs rather than a statement about the code,
+# and tracking it would put a merge conflict between every pair of
+# parallel agents.
+/STATUS.md
+
 # Which backends the VS Code build task builds, one file per
 # subsystem.
 /.vscode/*-backend

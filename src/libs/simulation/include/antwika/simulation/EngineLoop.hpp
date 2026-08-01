@@ -7,7 +7,7 @@
 #include <antwika/event/TickedEventDispatcher.hpp>
 #include <antwika/time/Tick.hpp>
 
-#include "ITickSource.hpp"
+#include "ITickEventSource.hpp"
 
 namespace antwika::simulation
 {
@@ -19,7 +19,7 @@ namespace antwika::simulation
     /**
      * @brief Drives an IEngine one fixed tick at a time until stopped.
      *
-     * Every tick, it asks the ITickSource for that tick's events,
+     * Every tick, it asks the ITickEventSource for that tick's events,
      * dispatches those events, then steps the engine. That sequence is
      * identical for a live run or a loaded replay, which is what guarantees
      * replay reproduces the same state — deliberately, not by coincidence.
@@ -36,7 +36,7 @@ namespace antwika::simulation
         EngineLoop(
             IEngine &engine,
             TickedEventDispatcher &dispatcher,
-            ITickSource &source);
+            ITickEventSource &source);
 
         EngineLoop(const EngineLoop &) = delete;
         EngineLoop(EngineLoop &&) = delete;
@@ -67,7 +67,7 @@ namespace antwika::simulation
     private:
         IEngine &engine;
         TickedEventDispatcher &dispatcher;
-        ITickSource &source;
+        ITickEventSource &source;
     };
 
 } // namespace antwika::simulation

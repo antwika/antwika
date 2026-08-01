@@ -10,7 +10,7 @@ namespace antwika::simulation
     EngineLoop::EngineLoop(
         IEngine &engine,
         TickedEventDispatcher &dispatcher,
-        ITickSource &source)
+        ITickEventSource &source)
         : engine(engine), dispatcher(dispatcher), source(source)
     {
     }

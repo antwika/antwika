@@ -26,6 +26,7 @@ target_include_directories(antwika_atlas_editor
 target_link_libraries(antwika_atlas_editor
     PRIVATE
         antwika::app
+        antwika::cli
         antwika::engine
         antwika::gfx
         antwika::gfx_backend

@@ -154,6 +154,7 @@ TEST(RunIntegrationTest, TheSameInputReachesTheSameCompanionTwice)
     EXPECT_EQ(first.happiness, second.happiness);
     EXPECT_EQ(first.meals, second.meals);
     EXPECT_EQ(first.disturbances, second.disturbances);
+    EXPECT_EQ(first.pesters, second.pesters);
     EXPECT_EQ(first.perished, second.perished);
 }
 
@@ -176,6 +177,9 @@ TEST(RunIntegrationTest, WhenATapLandsIsWhatDecidesWhatItMeans)
 
     EXPECT_EQ(summary.meals, 1U);
     EXPECT_EQ(summary.disturbances, 1U);
+
+    // Neither of the two landed on a companion that wanted nothing.
+    EXPECT_EQ(summary.pesters, 0U);
 }
 
 // main.cpp hangs the renderer off the session with the extraSink factory.

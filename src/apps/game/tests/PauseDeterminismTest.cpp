@@ -106,7 +106,7 @@ namespace
         std::vector<TickEvent> recorded;
     };
 
-    [[nodiscard]] RunResult run(antwika::simulation::ITickSource &source)
+    [[nodiscard]] RunResult run(antwika::simulation::ITickEventSource &source)
     {
         NiceMock<MockLogger> logger;
         NiceMock<MockEventSink> eventSink;

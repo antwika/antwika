@@ -4,16 +4,16 @@
 #include <string>
 #include <vector>
 
-#include <antwika/replay/CommandLine.hpp>
+#include <antwika/cli/CommandLine.hpp>
 #include <antwika/replay/ReplayCli.hpp>
 
 #include "antwika/game/SaveCli.hpp"
 
+using antwika::cli::CommandLine;
+using antwika::cli::FlagSpec;
+using antwika::cli::parseCommandLine;
 using antwika::game::saveCliFlags;
 using antwika::game::saveCliOptionsFrom;
-using antwika::replay::CommandLine;
-using antwika::replay::FlagSpec;
-using antwika::replay::parseCommandLine;
 using antwika::replay::replayCliFlags;
 
 namespace

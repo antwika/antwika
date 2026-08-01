@@ -4,7 +4,7 @@ namespace antwika::input
 {
 
     LiveInputSource::LiveInputSource(
-        ITickSource &inner,
+        ITickEventSource &inner,
         IInputBackend &backend,
         const IInputEventCodec &codec)
         : inner(inner), backend(backend), codec(codec)

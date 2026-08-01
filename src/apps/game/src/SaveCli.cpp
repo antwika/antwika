@@ -8,13 +8,13 @@ namespace antwika::game
     namespace
     {
         constexpr std::array kSaveFlags{
-            FlagSpec{
+            antwika::cli::FlagSpec{
                 .name = "--save",
                 .valueName = "<path>",
                 .help = "Write the session's state to <path> when it "
                         "ends.",
             },
-            FlagSpec{
+            antwika::cli::FlagSpec{
                 .name = "--load",
                 .valueName = "<path>",
                 .help = "Start the session from the state in <path>.",
@@ -22,12 +22,13 @@ namespace antwika::game
         };
     } // namespace
 
-    std::span<const FlagSpec> saveCliFlags()
+    std::span<const antwika::cli::FlagSpec> saveCliFlags()
     {
         return kSaveFlags;
     }
 
-    SaveCliOptions saveCliOptionsFrom(const CommandLine &parsed)
+    SaveCliOptions saveCliOptionsFrom(
+        const antwika::cli::CommandLine &parsed)
     {
         // Members assigned one at a time, not built as an aggregate.
         // replayCliOptionsFrom() gives the reason at length.

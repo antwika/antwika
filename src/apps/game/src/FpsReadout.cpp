@@ -1,5 +1,6 @@
 #include "antwika/game/FpsReadout.hpp"
 
+#include <optional>
 #include <string>
 
 #include <antwika/ui/Context.hpp>
@@ -16,7 +17,8 @@ namespace antwika::game
     using antwika::ui::scaleForCanvas;
     using antwika::ui::Theme;
 
-    DrawList describeFps(Size canvas, std::uint32_t framesPerSecond)
+    DrawList describeFps(
+        Size canvas, std::optional<std::uint32_t> framesPerSecond)
     {
         // No pointer, so nothing here can be hovered or activated.
         // Which is the whole of what "not clickable" means here.
@@ -33,7 +35,20 @@ namespace antwika::game
                 const auto box =
                     ui.panel({.width = kFit, .height = kFit});
 
-                ui.label("fps " + std::to_string(framesPerSecond));
+                // A rate, or the placeholder standing in for one.
+                // Two calls rather than one over a conditional string.
+                // The placeholder is a view of a constant.
+                // So the path with nothing to report builds nothing.
+                // And a path that builds nothing cannot unwind.
+                // Which is the whole reason this is not a ternary.
+                if (framesPerSecond.has_value())
+                {
+                    ui.label("fps " + std::to_string(*framesPerSecond));
+                }
+                else
+                {
+                    ui.label(kNoRateReadout);
+                }
             }
         }
 
