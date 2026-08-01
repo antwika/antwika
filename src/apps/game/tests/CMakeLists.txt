@@ -19,6 +19,7 @@ add_executable(antwika_game_tests
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/InputFold.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/MainMenuScene.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/MainMenuSink.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/MenuModalScene.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/ModeGatedSink.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/ModeGatedSystem.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/PathIndex.cpp
@@ -81,6 +82,7 @@ add_executable(antwika_game_tests
     IsoProjectionTest.cpp
     MainMenuSceneTest.cpp
     MainMenuSinkTest.cpp
+    MenuModalSceneTest.cpp
     ModeGateTest.cpp
     PathIndexTest.cpp
     PauseDeterminismTest.cpp

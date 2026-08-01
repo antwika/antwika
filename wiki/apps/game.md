@@ -18,6 +18,7 @@ build/bin/antwika_game/antwika_game --replay src/apps/game/replays/demo.json
 
 Left-click places whatever the toolbar has selected, right-click drops a walker onto a road, middle-drag pans, and the wheel zooms.
 With the road tool selected a left-drag lays a whole run of road: the press marks where it starts, the pointer says where it ends, and the release lays the route between them.
+F10, or the toolbar's `menu` button, opens a menu modal over the city with two items: one back to the main menu, and one back to the game.
 It starts on an empty grid and loads nothing unless `--replay` says so, so a session contains exactly what somebody clicked.
 
 It runs until Escape is pressed or the window is closed — both of which are input, so both are recorded and both replay.
@@ -123,6 +124,17 @@ No sink may read it, and "the ghost is over the toolbar" is worked out *from* `U
 `UiSink` is registered *before* `GridSink`, so a press is resolved against the toolbar before the grid sees it.
 `UiOverlay` is the one fact the two share and owns the canvas the bar is laid out against — the size the window was *asked* for — so nothing can lay it out against one size and hit-test it against another.
 What the bar covers, it covers from the grid too, though not a movement, so a pan begun on the grid carries on across the bar.
+
+**The menu modal is a modal rather than a mode, and whether it is up is simulation state.**
+F10 and the toolbar's `menu` button both open it, `UiSink` owns the flag, and no `ui.*` or `game.*` event exists for any of it — a recording holds the key press and the click, and a replay works out again which widget they hit.
+Its scene is `MenuModalScene`, and the scrim behind the card is load-bearing rather than decoration: it is a container the size of the whole canvas with a fill behind it, so `ui::Interactions::pointerOverUi` is true wherever the pointer is and `GridSink`'s existing "what the UI covers, it covers from the grid too" rule keeps every press off the city with no second mechanism invented for it.
+The modal's commands are appended after the bar's in the one `UiOverlay` the renderer paints last, which is how "on top" is said where `antwika::gfx` offers no depth but paint order, and a press is resolved against the modal alone so a toolbar button cannot be pressed through it.
+
+Three awkward cases have rules.
+**Opening it ends a road drag in progress, and that drag lays nothing**: what a drag lays is what its release said, and a release arriving over the modal never said it.
+**Opening it holds the run**, exactly as `CityEntrySink` holds one on entering a city — `hold()` rather than `toggle()`, for that sink's reason — and closing it does not let the run go again, so the way out is the pause button it always was.
+That also settles the drag, since the modal's hold supersedes whatever the drag was holding and nothing here ever resumes.
+**Leaving for the main menu is a mode change like every other**, asked for on `AppModeState` so it lands at the tick boundary, and the modal is put away on the way out so a city entered later is not still wearing it.
 
 **A save is version 2 and carries the buildings.**
 Kinds, stock, risk and all three countdowns — countdowns reset on load are exactly the lockstep they exist to avoid.

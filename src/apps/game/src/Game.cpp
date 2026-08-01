@@ -19,6 +19,7 @@
 #include "antwika/game/LiveGrid.hpp"
 #include "antwika/game/MainMenuScene.hpp"
 #include "antwika/game/MainMenuSink.hpp"
+#include "antwika/game/MenuModalScene.hpp"
 #include "antwika/game/ModeGatedSink.hpp"
 #include "antwika/game/ModeGatedSystem.hpp"
 #include "antwika/game/PauseGatedSystem.hpp"
@@ -164,8 +165,18 @@ namespace antwika::game
             config.drag.has_value() ? config.drag->get() : ownDrag;
 
         const Toolbar toolbar;
+        const MenuModalScene menuModal;
         InputFold input(config.codec);
-        UiSink uiSink(camera, ui, input, toolbar, pause, camera);
+        UiSink uiSink(
+            camera,
+            ui,
+            input,
+            toolbar,
+            pause,
+            mode,
+            drag,
+            menuModal,
+            camera);
         GridSink gridSink(
             world,
             paths,

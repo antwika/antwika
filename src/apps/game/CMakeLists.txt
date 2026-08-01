@@ -17,6 +17,7 @@ add_executable(antwika_game
     src/InputFold.cpp
     src/MainMenuScene.cpp
     src/MainMenuSink.cpp
+    src/MenuModalScene.cpp
     src/ModeGatedSink.cpp
     src/ModeGatedSystem.cpp
     src/PathIndex.cpp
