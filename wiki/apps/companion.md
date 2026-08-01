@@ -15,11 +15,12 @@ The only input is a left press anywhere in the window, and what it means depends
 - **Leave it alone while it is asleep.** A tap then wakes it: it costs `disturbCost` happiness *and* forfeits the rest of that night's recovery.
 - **Do not push food at it while it is awake and full.** A tap then is the third violation and the gentlest one: it costs `pesterCost` happiness, leaves the hunger where it was, and is counted as a pestering rather than as a meal.
   Food offered to a companion that does not want any is left uneaten, and offering it anyway is what a companion has to put up with rather than something that never happened -- which is what keeps tapping repeatedly from being a strategy.
-- A tap after it has perished is the only one that does nothing, since nothing about a perished companion ever changes again.
+- A tap after it has perished is the only one that does nothing, since nothing about a perished companion ever changes again -- unless it lands on the "new pet" button, which is the one press whose meaning depends on *where* it landed.
 
 The three violations all spend the same currency, and what separates them is how much.
 Letting it go famished costs one happiness every `starvePeriodTicks`; waking it costs `disturbCost` at once; pestering it costs `pesterCost` at once.
 Happiness reaching zero is `PetState::Perished`, and there is no way back from it -- by any of the three.
+A perished companion is gone, and the only thing left to do is start a new one.
 
 ## The day, the night, and where the clock lives
 
@@ -34,7 +35,8 @@ Hunger grows only while it is awake, so a night is a night off from it.
 An undisturbed night gives one happiness back every `restPeriodTicks`, and a disturbed one gives none -- the note of that is cleared on the *first tick of each night* rather than at dawn, so a tap in the daylight cannot spoil the night that follows it.
 
 Nothing in `Pet` reads a clock, a locale or a generator.
-It is a pure function of how many times `step()` has been called and of when `tap()` was called between them, which is the whole reason a recording of the taps replays to the same animal: not one byte of the hunger, the sleep or the happiness is persisted, and all of it is regenerated.
+It is a pure function of how many times `step()` has been called and of when `tap()` was called between them, which is the whole reason a recording of the taps replays to the same animal: a replay is handed no companion to start from, and every bit of the hunger, the sleep and the happiness is regenerated.
+A *live* session does carry its companion over from the one before it -- see [The companion between sessions](#the-companion-between-sessions) -- and a replay run neither reads nor writes one, which is what keeps that true.
 
 ## The numbers
 
@@ -71,9 +73,13 @@ The shape is `apps/tower_defence`'s rather than `apps/life`'s, because a compani
 - `RenderSink` takes a `PetSnapshot` -- an immutable value the scene cannot write -- and hands it to `PetScene`, registered after both so a frame is of the state the tick ended with.
 - `PacingSink` is last, which makes the order present-then-wait.
 
-There is deliberately **no layout and no hit-testing**.
-The window holds one animal and a press anywhere in it means the same thing, so unlike `life::BoardLayout` or `td::GridLayout` there is nothing that could let what somebody sees and what they can hit drift apart.
-The scene is still laid out against the *configured* window size rather than the size a window reports, which costs nothing here and keeps the rule the same in every app a reader might open next.
+- `ReviveSink` decodes the same presses and starts a new companion when one lands on the button a perished companion is offered, registered *after* `TapSink` so one press can never be a tap and a revival both.
+  **It defines no event either**: a `--record` run persists the press, and that it landed on the button -- and that there was a button to land on -- is worked out again on replay.
+
+There is **one layout and one hit-test**, and there is exactly one thing to hit.
+A press anywhere in the window is a tap, as it always was; the "new pet" button is the one press whose meaning depends on where it landed, so `companion::PetLayout.hpp` is this app's `life::BoardLayout`.
+`reviveButtonRect()` is shared by `PetScene`, which paints that rectangle, and `ReviveSink`, which hit-tests against it, so what somebody sees and what they can press are one rectangle rather than two that agree today.
+Everything is laid out and hit-tested against the *configured* window size rather than the size a window reports, for the reason `life::PointerToggleSink` gives about cells: a hit-test is a function of the layout, and a resized window would resolve a recorded press to a different answer.
 
 ### Why the animal is rectangles rather than an atlas
 
@@ -115,6 +121,15 @@ The bubble sits left of the animal, under the two gauges and over the bowl, so i
 Its text is scaled to the longest line the table holds rather than to the line being said, so the bubble is one size and the words one height throughout.
 A window smaller than the one `main.cpp` asks for cannot give the smallest glyphs that much room and the longest lines overhang their bubble there, which is exactly where the readout already overhangs the grid; neither is clamped, so both stay one arithmetic rule.
 
+### The "new pet" button
+
+A perished companion is drawn with its grave, its own grey palette and one button reading `new pet`, painted into `reviveButtonRect()`'s box -- left of the grave, under the gauges and above the readout, so it covers nothing that says anything.
+Whether it is drawn at all is the one thing the snapshot already says, so no renderer holds a note of a button being offered.
+Pressing it calls `Pet::revive()`, which is the constructor's own idea of a new companion rather than a second list of starting values: no meals, no disturbances, no pesterings, no ticks and the balance this build ships, so a new companion never wears the last one's history.
+
+`Pet::revive()` is legal at any time rather than only on a perished companion, deliberately.
+Which press means "start again" is `ReviveSink`'s decision, made against the button it hit-tests, and a rule enforced in two places is one that can be enforced differently in each.
+
 ### The idle animation
 
 The companion breathes, blinks and puffs in its sleep, and all three come from `antwika::animation`: a `Clip` is a definition and `resolve(clip, elapsedTicks)` is a pure function of the tick count the snapshot carries.
@@ -127,6 +142,41 @@ A session has no end of its own -- it runs until the window is closed, or until 
 The waiting is `simulation::TickPacer`'s, which is the one pacer this project has; `companion::PacingSink` is only the `ITickEventSink` shape around it.
 That class is an `ecs::ISystem` because the two applications that reach for it keep their state in a `World` and register it as an observer, and this one keeps its state in a plain value.
 The only thing between the two is the `World` in the signature, which `TickPacer`'s own documentation says it neither reads nor writes, so an empty one is the whole adapter -- and the alternative was a third copy of a class the project has already deduplicated twice.
+
+## The companion between sessions
+
+A live session carries on from where the last one left off.
+`companion::PetMemory` is everything the simulation holds -- the tick count, the state, the hunger, the happiness, the three counts, the disturbed note and both speech-bubble fields -- taken out with `Pet::remember()` and put back in through `Pet`'s restoring constructor, so a round trip through the two is the identity.
+It carries no configuration: which numbers a companion is balanced with is this build's decision and not a file's, since a saved one could quietly widen a day or hand a companion twice the happiness it can hold.
+
+The file is a versioned JSON document read as `parse -> read version -> migrate -> validate -> decode`, exactly as `apps/game`'s save is, and for the same reason -- see [`docs/schema-versioning.md`](../../docs/schema-versioning.md).
+
+- `kSaveMagic` is `antwika-companion`, checked first, so a replay or a game save handed to this loader is refused as the wrong kind of file rather than as a companion with every member missing.
+- `kSaveFormatVersion` is 1, stated in `antwika::replay::kSchemaVersionKey` -- `"version"`, the one member every persisted document in this code base carries its version in.
+  **A bump means a document written by an older build no longer satisfies this build's schema, or satisfies it and means something else**: renaming a member, requiring one that was optional, narrowing what a number may be, or reinterpreting a value.
+  Adding an optional member is not that and needs no bump.
+  A bump takes an `IMigration` from N to N+1 added to `standardPetMigrations()` and a test that loads a hand-written version-N document.
+- `standardPetMigrations()` is this format's own `antwika::replay::MigrationChain`, empty today, constructed and injected rather than registered anywhere -- which is the whole reason that class is generic over an `nlohmann::json` and a version key.
+- The state and the speech-bubble line are written as names (`asleep`, `zzz`) rather than as enumerator numbers, so reordering either enumeration cannot change what a file means, and the file stays hand-editable.
+
+`companion::IPetStore` is the one seam to a filesystem, in `atlas_editor::IAtlasStore`'s shape and for its reason: every other class here is exercised with no file on disk, because a test hands the session a store that answers from memory and the session cannot tell the difference.
+`FilePetStore` is the one implementation, and `PetSave.hpp` is the format -- split apart so a round trip through the format is assertable with no filesystem at all.
+
+Three rules cover the awkward cases, and each is a decision rather than an accident.
+
+- **When it is written: once, after the loop has finished.** Not every tick, which would be twenty writes a second of a file nothing reads in between, and not on a timer, which would be a clock inside a session that has none.
+  The cost is stated rather than hidden: a session killed with `Ctrl+C` never reaches the epilogue and so keeps nothing, exactly as a `--record` run there writes no file.
+  Closing the window is the way to end a session and keep it.
+  A session that threw its way out of the loop keeps nothing either, since what it would keep is whatever state the failure left.
+- **A replay neither loads nor saves.** A replay reproduces the session it recorded, and a companion loaded from whatever happens to be on the machine running it is a different starting state and so a different session -- the same file would replay to one thing here and another there, silently.
+  Saving is refused for the mirror-image reason: a replayed session would overwrite the live companion with one regenerated from a recording.
+  `storeIfLive()` is where that decision is made, so no `main()` has to remember it -- and an app's `main()` may hold no branch of its own anyway.
+- **A file that will not read does not take the session with it.** A file that is *not there* is an ordinary "no previous companion, start a new one" and is not an error at all.
+  A file that is there and will not read -- bad JSON, another format's magic, a version from a newer build, a member missing, or a set of numbers no live companion could be in -- is reported as a warning and a new companion starts, and the session goes on to write over it.
+  Keeping the unreadable file would be kinder to whoever wants to look at it and would leave the application never able to save again, which is worse.
+  A file that will not *write* is thrown as a `companion::SaveFormatError`, since the session is already over and the one thing left to say is that it was not kept.
+
+`SaveFormatError` is its own type rather than `CompanionError`, per the one-exception-type-per-failure-category rule: a companion balanced on numbers no session could run on is a mistake in this build, where a file that will not read is a mistake somewhere else entirely.
 
 ## Running it
 

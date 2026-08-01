@@ -2,18 +2,27 @@ find_package(GTest REQUIRED)
 
 add_executable(antwika_companion_tests
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/Companion.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/FilePetStore.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/PacingSink.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/Pet.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/PetLayout.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/PetSave.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/PetScene.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/PetSink.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/PetSnapshot.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/RenderSink.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/ReviveSink.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/TapSink.cpp
     CompanionTest.cpp
+    FilePetStoreTest.cpp
+    PetLayoutTest.cpp
+    PetSaveTest.cpp
     PetSceneTest.cpp
     PetSnapshotTest.cpp
     PetTest.cpp
+    ReviveSinkTest.cpp
     RunIntegrationTest.cpp
+    SessionPersistenceTest.cpp
     SinksTest.cpp
 )
 

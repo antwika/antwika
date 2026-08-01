@@ -7,6 +7,7 @@
 #include <string_view>
 
 #include "antwika/companion/CompanionError.hpp"
+#include "antwika/companion/SaveFormatError.hpp"
 
 namespace antwika::companion
 {
@@ -70,12 +71,64 @@ namespace antwika::companion
 
             return config;
         }
+
+        // What a live companion could never be, refused not repaired.
+        // A ceiling raised by a file is a gauge past its own end.
+        // And Perished is exactly "the happiness ran out", both ways.
+        // lose() alone reaches zero, and it sets the state as it does.
+        // Nothing ever gives a perished companion any back.
+        // So a file claiming one without the other is not this build's.
+        void requireLivable(
+            const PetConfig &config, const PetMemory &memory)
+        {
+            if (memory.hunger > config.hungerMax)
+            {
+                throw SaveFormatError(
+                    "companion: a saved companion is hungrier than it "
+                    "can be");
+            }
+
+            if (memory.happiness > config.happinessMax)
+            {
+                throw SaveFormatError(
+                    "companion: a saved companion is happier than it "
+                    "can be");
+            }
+
+            if ((memory.happiness == 0)
+                != (memory.state == PetState::Perished))
+            {
+                throw SaveFormatError(
+                    "companion: a saved companion has perished with "
+                    "happiness left, or has none and lives on");
+            }
+        }
     } // namespace
 
     Pet::Pet(const PetConfig config)
         : config(validated(config)),
           happinessLevel(this->config.happinessStart)
     {
+    }
+
+    // Delegating rather than a second initialiser list.
+    // The configuration is checked in exactly one place that way.
+    // And a field added to Pet cannot be forgotten by one of two.
+    Pet::Pet(const PetConfig config, const PetMemory &memory)
+        : Pet(config)
+    {
+        requireLivable(this->config, memory);
+
+        petState = memory.state;
+        said = memory.saying;
+        sayingLeft = memory.sayingTicksLeft;
+        elapsed = memory.ticks;
+        hungerLevel = memory.hunger;
+        happinessLevel = memory.happiness;
+        mealCount = memory.meals;
+        disturbanceCount = memory.disturbances;
+        pesterCount = memory.pesters;
+        disturbedTonight = memory.disturbed;
     }
 
     void Pet::step()
@@ -172,6 +225,31 @@ namespace antwika::companion
         ++mealCount;
         say(Saying::Yum);
         gain(config.feedJoy);
+    }
+
+    void Pet::revive()
+    {
+        // What a new companion is, is what the constructor already says.
+        // Written out again it would be a second list of one thing.
+        // A field in one and not the other is the last one's hunger.
+        // Nothing here holds a reference.
+        // So assignment is the whole of it.
+        *this = Pet(config);
+    }
+
+    PetMemory Pet::remember() const
+    {
+        return PetMemory{
+            .ticks = elapsed,
+            .state = petState,
+            .saying = said,
+            .sayingTicksLeft = sayingLeft,
+            .hunger = hungerLevel,
+            .happiness = happinessLevel,
+            .meals = mealCount,
+            .disturbances = disturbanceCount,
+            .pesters = pesterCount,
+            .disturbed = disturbedTonight};
     }
 
     PetState Pet::state() const noexcept

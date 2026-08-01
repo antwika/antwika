@@ -7,13 +7,16 @@
 
 #include "antwika/companion/CompanionError.hpp"
 #include "antwika/companion/Pet.hpp"
+#include "antwika/companion/SaveFormatError.hpp"
 #include "antwika/companion/Saying.hpp"
 
 using antwika::companion::CompanionError;
 using antwika::companion::kPesterCost;
 using antwika::companion::Pet;
 using antwika::companion::PetConfig;
+using antwika::companion::PetMemory;
 using antwika::companion::PetState;
+using antwika::companion::SaveFormatError;
 using antwika::companion::Saying;
 using antwika::time::Tick;
 
@@ -569,5 +572,140 @@ namespace
         EXPECT_GT(kept.meals(), 0U);
         EXPECT_EQ(kept.disturbances(), 0U);
         EXPECT_EQ(kept.pesters(), 0U);
+    }
+    // Everything the simulation holds, out and back in again.
+    // Which is what a session resumed from a file is.
+    TEST(PetTest, Remember_RoundTripsThroughTheRestoringConstructor)
+    {
+        Pet lived(kLongDay);
+        for (Tick step = 0; step < 9; ++step)
+        {
+            lived.step();
+        }
+        lived.tap();
+
+        const PetMemory memory = lived.remember();
+        const Pet resumed(kLongDay, memory);
+
+        EXPECT_EQ(resumed.remember(), memory);
+        EXPECT_EQ(resumed.ticks(), lived.ticks());
+        EXPECT_EQ(resumed.hunger(), lived.hunger());
+        EXPECT_EQ(resumed.happiness(), lived.happiness());
+        EXPECT_EQ(resumed.state(), lived.state());
+        EXPECT_EQ(resumed.saying(), lived.saying());
+        EXPECT_EQ(resumed.sayingTicksLeft(), lived.sayingTicksLeft());
+        EXPECT_EQ(resumed.meals(), lived.meals());
+        EXPECT_EQ(resumed.disturbances(), lived.disturbances());
+        EXPECT_EQ(resumed.pesters(), lived.pesters());
+        EXPECT_EQ(resumed.disturbed(), lived.disturbed());
+    }
+
+    // A resumed companion is the same companion.
+    // So the tick after it is the one the last session would have had.
+    TEST(PetTest, Construction_AResumedCompanionCarriesOnWhereItLeftOff)
+    {
+        Pet lived(kLongDay);
+        for (Tick step = 0; step < 5; ++step)
+        {
+            lived.step();
+        }
+
+        Pet resumed(kLongDay, lived.remember());
+
+        lived.step();
+        resumed.step();
+
+        EXPECT_EQ(resumed.remember(), lived.remember());
+    }
+
+    TEST(PetTest, Construction_RefusesAMemoryHungrierThanItCanBe)
+    {
+        PetMemory memory;
+        memory.happiness = 1;
+        memory.hunger = kLongDay.hungerMax + 1;
+
+        EXPECT_THROW((void)Pet(kLongDay, memory), SaveFormatError);
+    }
+
+    TEST(PetTest, Construction_RefusesAMemoryHappierThanItCanBe)
+    {
+        PetMemory memory;
+        memory.happiness = kLongDay.happinessMax + 1;
+
+        EXPECT_THROW((void)Pet(kLongDay, memory), SaveFormatError);
+    }
+
+    // Perished is exactly "the happiness ran out", both ways round.
+    TEST(PetTest, Construction_RefusesAMemoryThatContradictsItself)
+    {
+        PetMemory perishedWithHappiness;
+        perishedWithHappiness.happiness = 3;
+        perishedWithHappiness.state = PetState::Perished;
+
+        EXPECT_THROW(
+            (void)Pet(kLongDay, perishedWithHappiness), SaveFormatError);
+
+        PetMemory emptyButAlive;
+        emptyButAlive.happiness = 0;
+        emptyButAlive.state = PetState::Awake;
+
+        EXPECT_THROW(
+            (void)Pet(kLongDay, emptyButAlive), SaveFormatError);
+    }
+
+    TEST(PetTest, Construction_ARestoreStillRefusesUnrunnableNumbers)
+    {
+        PetMemory memory;
+        memory.happiness = 1;
+
+        PetConfig broken = kLongDay;
+        broken.dayTicks = 0;
+
+        EXPECT_THROW((void)Pet(broken, memory), CompanionError);
+    }
+
+    // The one way out of a state nothing else leaves.
+    TEST(PetTest, Revive_StartsACompanionWithNoHistoryOfItsOwn)
+    {
+        Pet pet(kLongDay);
+        for (Tick step = 0; step < 40; ++step)
+        {
+            pet.step();
+            pet.tap();
+        }
+        ASSERT_EQ(pet.state(), PetState::Perished);
+
+        pet.revive();
+
+        EXPECT_EQ(pet.remember(), Pet(kLongDay).remember());
+        EXPECT_EQ(pet.happiness(), kLongDay.happinessStart);
+        EXPECT_EQ(pet.meals(), 0U);
+        EXPECT_EQ(pet.pesters(), 0U);
+        EXPECT_EQ(pet.ticks(), 0U);
+    }
+
+    // Legal at any time, since the sink decides which press means it.
+    // A rule enforced twice can be enforced differently in each.
+    TEST(PetTest, Revive_IsLegalOnACompanionThatIsStillWithUs)
+    {
+        Pet pet(kLongDay);
+        pet.step();
+        pet.step();
+
+        pet.revive();
+
+        EXPECT_EQ(pet.remember(), Pet(kLongDay).remember());
+    }
+
+    // The numbers it is balanced with are this build's, not a file's.
+    // So a new companion keeps them.
+    TEST(PetTest, Revive_KeepsTheNumbersItWasBalancedWith)
+    {
+        Pet pet(kLongDay);
+
+        pet.revive();
+
+        EXPECT_EQ(pet.settings().dayTicks, kLongDay.dayTicks);
+        EXPECT_EQ(pet.settings().happinessMax, kLongDay.happinessMax);
     }
 } // namespace

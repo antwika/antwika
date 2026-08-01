@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <array>
 #include <cstddef>
 #include <cstdint>
@@ -16,6 +17,7 @@
 #include <antwika/gfx/Size.hpp>
 #include <antwika/gfx/TextLayout.hpp>
 
+#include "antwika/companion/PetLayout.hpp"
 #include "antwika/companion/PetScene.hpp"
 #include "antwika/companion/PetSnapshot.hpp"
 #include "antwika/companion/Saying.hpp"
@@ -274,8 +276,55 @@ namespace
         EXPECT_NE(drawn.cleared, alive.cleared);
 
         // The ground, the sun and two gauge backgrounds with no fill.
-        // Plus the four boxes of a grave.
-        EXPECT_EQ(drawn.rects.size(), 4U + 4U);
+        // Plus the four boxes of a grave and the one button over it.
+        EXPECT_EQ(drawn.rects.size(), 4U + 4U + 1U);
+    }
+
+    // The one thing on screen that is pressed rather than read.
+    // It is painted into the very box ReviveSink hit-tests.
+    // Shared, so the two cannot drift apart.
+    TEST(PetSceneTest, Draw_OffersANewCompanionOnceItHasPerished)
+    {
+        const PetScene scene;
+
+        PetSnapshot gone = awake();
+        gone.state = PetState::Perished;
+        gone.happiness = 0;
+
+        const Drawn drawn = render(scene, kCanvas, gone);
+        const auto button =
+            antwika::companion::reviveButtonRect(kCanvas);
+
+        ASSERT_TRUE(button.has_value());
+        EXPECT_NE(
+            std::find(drawn.rects.begin(), drawn.rects.end(), *button),
+            drawn.rects.end());
+
+        std::vector<std::string> words;
+        for (const auto &text : drawn.texts)
+        {
+            words.push_back(text.text);
+        }
+
+        EXPECT_NE(
+            std::find(words.begin(), words.end(), "new pet"),
+            words.end());
+    }
+
+    // A living companion is offered nothing.
+    // The button means the one thing there is left to do.
+    TEST(PetSceneTest, Draw_OffersNoButtonWhileTheCompanionIsAlive)
+    {
+        const PetScene scene;
+
+        const Drawn drawn = render(scene, kCanvas, awake());
+        const auto button =
+            antwika::companion::reviveButtonRect(kCanvas);
+
+        ASSERT_TRUE(button.has_value());
+        EXPECT_EQ(
+            std::find(drawn.rects.begin(), drawn.rects.end(), *button),
+            drawn.rects.end());
     }
 
     TEST(PetSceneTest, AnEmptyGaugeDrawsOnlyItsBackground)
@@ -376,10 +425,12 @@ namespace
 
         const Drawn drawn = render(scene, kCanvas, gone);
 
-        ASSERT_EQ(drawn.texts.size(), kReadoutLines);
-        EXPECT_EQ(drawn.texts[1].text, "happy 0/10");
+        // The button's own word first, then the three of the readout.
+        // The readout is drawn last, so nothing sits on top of it.
+        ASSERT_EQ(drawn.texts.size(), kReadoutLines + 1);
+        EXPECT_EQ(drawn.texts[2].text, "happy 0/10");
         EXPECT_NE(
-            drawn.texts[0].color,
+            drawn.texts[1].color,
             render(scene, kCanvas, awake()).texts[0].color);
     }
 

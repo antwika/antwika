@@ -9,12 +9,14 @@
 
 #include <antwika/event/IEventSink.hpp>
 #include <antwika/event/ITickEventSink.hpp>
+#include <antwika/gfx/Size.hpp>
 #include <antwika/input/IInputEventCodec.hpp>
 #include <antwika/log/ILogger.hpp>
 #include <antwika/simulation/ITickEventSource.hpp>
 #include <antwika/time/ISleeper.hpp>
 #include <antwika/time/Tick.hpp>
 
+#include "antwika/companion/IPetStore.hpp"
 #include "antwika/companion/Pet.hpp"
 
 namespace antwika::companion
@@ -22,6 +24,7 @@ namespace antwika::companion
 
     using antwika::event::IEventSink;
     using antwika::event::ITickEventSink;
+    using antwika::gfx::Size;
     using antwika::input::IInputEventCodec;
     using antwika::log::ILogger;
     using antwika::simulation::ITickEventSource;
@@ -91,6 +94,39 @@ namespace antwika::companion
         /** @brief The numbers the companion is balanced with. */
         PetConfig pet = {};
 
+        /**
+         * @brief The size the "new companion" button is laid out and
+         * hit-tested against.
+         *
+         * The size the window was *asked* for, never the one it
+         * reports, so a resized window cannot make a recorded press
+         * land on a different answer.
+         * Nothing by default, which is a session with no window: the
+         * canvas is then too small for a grid, so there is no button to
+         * draw and none to press.
+         */
+        Size canvas = {};
+
+        /**
+         * @brief Where the companion is kept between sessions.
+         *
+         * **Absent for a replay, and that is a rule rather than an
+         * omission.** A replay reproduces the session it recorded, and
+         * a companion loaded from whatever happens to be on the machine
+         * running it is a different starting state and so a different
+         * session -- the file would replay to one thing here and
+         * another there, silently. Writing one is refused for the
+         * mirror-image reason: a replayed session would overwrite the
+         * live companion with one regenerated from a recording.
+         * storeIfLive() is where that decision is made, so no main()
+         * has to remember it.
+         *
+         * Absent for a live run too is an ordinary state, and means a
+         * session that starts new and is not kept.
+         */
+        std::optional<std::reference_wrapper<IPetStore>> store =
+            std::nullopt;
+
         /** @brief How long to hold each tick for. */
         std::chrono::milliseconds tickInterval = kTickInterval;
 
@@ -120,12 +156,49 @@ namespace antwika::companion
      * replay reproduce the companion by construction rather than by
      * convention.
      *
+     * **When the companion is written out is once, after the loop has
+     * finished** -- not every tick, which would be twenty writes a
+     * second of a file nothing reads in between, and not on a timer,
+     * which would be a clock inside a session that has none. The cost
+     * is stated rather than hidden: a session killed with Ctrl+C never
+     * reaches the epilogue and so keeps nothing, exactly as a
+     * `--record` run there writes no file. Closing the window is the
+     * way to end one and keep it.
+     *
+     * A companion that will not load does not take the session with it:
+     * it is logged and a new companion starts, and the session goes on
+     * to write over the file that would not read. Keeping the unreadable
+     * one would be kinder to whoever wants to look at it and would leave
+     * the application never able to save again, which is worse.
+     * A companion that will not *write* is thrown, since the session is
+     * already over and the one thing left to say is that it was not
+     * kept.
+     *
      * @param config What the session is wired out of.
      * @return What the session ended on.
      * @throws CompanionError If the companion's numbers are ones no
      * session could be balanced on.
+     * @throws SaveFormatError If there is a store and the companion
+     * cannot be written to it.
      */
     CompanionSummary bootstrap(const CompanionConfig &config);
+
+    /**
+     * @brief Offer a store to a live session and none to a replay.
+     *
+     * The whole of the replay rule, in a function a test can reach: an
+     * application's main() is excluded from the coverage report and so
+     * may hold no branch of its own, and "is this a replay?" is exactly
+     * the branch that would otherwise live there.
+     *
+     * @param store Where a live session keeps its companion.
+     * @param replayPath What `--replay` named, if anything.
+     * @return The store, or nothing when a replay is being run.
+     */
+    [[nodiscard]] std::optional<std::reference_wrapper<IPetStore>>
+        storeIfLive(
+            IPetStore &store,
+            const std::optional<std::string> &replayPath);
 
     /**
      * @brief Say how to stop a session nobody can close a window on.
