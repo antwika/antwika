@@ -72,9 +72,10 @@ namespace antwika::gfx::sdl3
         /**
          * @brief Draw a line of text in the built-in fixed-cell font.
          *
-         * Painted from gfx::glyphRow() as filled rectangles rather than
-         * through SDL_ttf, so the backend needs no font file and no extra
-         * dependency, and draws the same glyphs as every other backend.
+         * Painted from gfx::forEachGlyphPixel() as filled rectangles
+         * rather than through SDL_ttf, so the backend needs no font
+         * file and no extra dependency, and draws the same glyphs, in
+         * the same places, in the same colours, as every other backend.
          * @param origin Top-left corner of the first glyph's cell.
          * @param text The characters to draw.
          * @param scale Pixels per glyph pixel.

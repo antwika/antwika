@@ -222,7 +222,7 @@ Each app owns its state and how events mutate it -- the engine has no opinion he
 - [`tower_defence`](wiki/apps/tower_defence.md) generates its level with `wfc` and walks mobs along it, arranging the tile alphabet so a linear path is a property of the alphabet rather than something checked for afterwards.
 - [`companion`](wiki/apps/companion.md) is a tamagotchi whose **energy is its life**: three props to press, happiness as the rate the energy drains at, a bed refused until it is tired enough to have earned one, and a collapse that costs ceiling for good -- so the ceiling running out is the only way one ever perishes.
 - [`atlas_editor`](wiki/apps/atlas_editor.md) is a pixel editor for the sheet `game` blits, and is an ordinary application of the tick loop with no undo -- replaying a session up to a point is the undo this design has.
-- [`sudoku`](wiki/apps/sudoku.md) is unrelated to the tick loop and is `wfc`'s showcase, expressing the 81-cell puzzle as `AllDifferentConstraint`s over a flat array.
+- [`sudoku`](wiki/apps/sudoku.md) is `wfc`'s showcase played with a mouse and a keyboard, expressing the 81-cell puzzle as `AllDifferentConstraint`s over a flat array and bounding the solve behind its Solve button, since that runs inside a tick.
 - [`gfx_demo`](wiki/apps/gfx_demo.md), [`gfx3d_demo`](wiki/apps/gfx3d_demo.md), [`sound_demo`](wiki/apps/sound_demo.md) and [`ui_demo`](wiki/apps/ui_demo.md) are the showcases for `gfx`, its 3D half, `sound` and `ui`.
 
 ## Notes for AI agents

@@ -10,13 +10,32 @@ find_package(stb REQUIRED)
 # 3D header includes glm's.
 find_package(glm REQUIRED)
 
+# The one font every backend draws text from, compiled into the library.
+# antwika::gfx opens no files and cannot ask antwika::app where one
+# lives, since app depends on gfx and not the other way round, so the
+# bytes arrive the only way that leaves nothing to find at run time.
+include(AntwikaEmbedBinary)
+
+set(ANTWIKA_GFX_FONT_SOURCE
+    ${CMAKE_CURRENT_BINARY_DIR}/generated/BuiltInFontBytes.cpp
+)
+
+antwika_embed_binary(
+    INPUT ${CMAKE_SOURCE_DIR}/assets/fonts/RobotoMono-Regular.ttf
+    OUTPUT ${ANTWIKA_GFX_FONT_SOURCE}
+    NAMESPACE antwika::gfx::detail
+    SYMBOL kBuiltInFontBytes
+)
+
 add_library(antwika_gfx
+    ${ANTWIKA_GFX_FONT_SOURCE}
     src/AtlasText.cpp
     src/Bitmap.cpp
     src/Blit.cpp
+    src/BuiltInFont.cpp
     src/Camera3D.cpp
     src/GlyphAtlasBitmap.cpp
-    src/Glyphs.cpp
+    src/GlyphCells.cpp
     src/MeshData.cpp
     src/NullBackend.cpp
     src/NullMesh.cpp

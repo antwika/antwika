@@ -10,6 +10,27 @@ namespace antwika::sudoku
 {
 
     /**
+     * @brief One square of the grid, by row and column.
+     *
+     * The board's own vocabulary for "which square", so the thing a
+     * hit-test answers with and the thing a selection remembers are one
+     * type rather than two that could be passed the wrong way round.
+     */
+    struct Square
+    {
+        std::size_t row = 0; ///< Row index, 0-8.
+        std::size_t col = 0; ///< Column index, 0-8.
+
+        /**
+         * @brief Compare two squares.
+         * @param other The square to compare against.
+         * @return True when both indices match.
+         */
+        [[nodiscard]] bool operator==(const Square &other) const
+            = default;
+    };
+
+    /**
      * @brief A 9x9 Sudoku board of givens and blanks.
      *
      * Cells hold 0 (blank) or a digit 1-9. Row/column indices are

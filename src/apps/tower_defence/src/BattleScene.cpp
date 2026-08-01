@@ -1,10 +1,14 @@
 #include "antwika/tower_defence/BattleScene.hpp"
 
+#include <array>
+#include <cstddef>
+
 #include <antwika/gfx/Color.hpp>
 #include <antwika/gfx/Rect.hpp>
 
 #include "antwika/tower_defence/GridLayout.hpp"
 #include "antwika/tower_defence/LevelTile.hpp"
+#include "antwika/tower_defence/MobKind.hpp"
 
 namespace antwika::tower_defence
 {
@@ -28,8 +32,18 @@ namespace antwika::tower_defence
             .red = 92, .green = 132, .blue = 198, .alpha = 255};
         constexpr Color kReach{
             .red = 92, .green = 132, .blue = 198, .alpha = 48};
-        constexpr Color kMob{
-            .red = 226, .green = 196, .blue = 84, .alpha = 255};
+        // One colour per kind, indexed by the enumerator's own value.
+        // Which of the four is on the road is read off the grid.
+        constexpr std::array<Color, kMobKindCount> kMobColors{
+            Color{.red = 226, .green = 196, .blue = 84, .alpha = 255},
+            Color{.red = 240, .green = 138, .blue = 64, .alpha = 255},
+            Color{.red = 168, .green = 84, .blue = 200, .alpha = 255},
+            Color{.red = 176, .green = 188, .blue = 200, .alpha = 255}};
+
+        Color colorFor(const MobKind kind)
+        {
+            return kMobColors[static_cast<std::size_t>(kind)];
+        }
 
         Color colorFor(const Tile tile)
         {
@@ -123,10 +137,11 @@ namespace antwika::tower_defence
                 inset(cellRect(*layout, tower), layout->cell / 6), kTower);
         }
 
-        for (const Cell &mob : snapshot.mobs)
+        for (const MobMarker &mob : snapshot.mobs)
         {
             renderer.drawRect(
-                inset(cellRect(*layout, mob), layout->cell / 3), kMob);
+                inset(cellRect(*layout, mob.cell), layout->cell / 3),
+                colorFor(mob.kind));
         }
     }
 

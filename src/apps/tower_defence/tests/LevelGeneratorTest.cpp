@@ -6,11 +6,13 @@
 
 #include <gtest/gtest.h>
 
+#include "antwika/tower_defence/Campaign.hpp"
 #include "antwika/tower_defence/Level.hpp"
 #include "antwika/tower_defence/LevelError.hpp"
 #include "antwika/tower_defence/LevelGenerator.hpp"
 #include "antwika/tower_defence/LevelTile.hpp"
 
+using antwika::tower_defence::campaignLevels;
 using antwika::tower_defence::Cell;
 using antwika::tower_defence::generateLevel;
 using antwika::tower_defence::isOpen;
@@ -32,6 +34,10 @@ using antwika::tower_defence::Tile;
 #define ANTWIKA_LEVEL_PROPERTY_SEED_COUNT 40
 #endif
 
+#ifndef ANTWIKA_CAMPAIGN_SEED_COUNT
+#define ANTWIKA_CAMPAIGN_SEED_COUNT 8
+#endif
+
 namespace
 {
     // How many seeds the linearity property is asserted over.
@@ -42,6 +48,12 @@ namespace
     // So these state their assertion and leave the width to it.
     constexpr std::uint64_t kPropertySeedCount =
         ANTWIKA_LEVEL_PROPERTY_SEED_COUNT;
+
+    // What each of the shipped campaign's own grids takes.
+    // There are as many generations here as there are levels.
+    // So this is the count that stays small under instrumentation.
+    constexpr std::uint64_t kCampaignSeedCount =
+        ANTWIKA_CAMPAIGN_SEED_COUNT;
 
     bool adjacent(const Cell &left, const Cell &right)
     {
@@ -195,6 +207,30 @@ namespace
             SCOPED_TRACE("seed " + std::to_string(seed));
             expectSingleSimplePath(level);
             EXPECT_EQ(level.path.back().x, 6U);
+        }
+    }
+
+    // A campaign's levels are not all the same grid.
+    // The linear path is a property of the alphabet, not of a size.
+    // So every shipped level has to hold it too.
+    // A new level added to campaignLevels() is soaked here for free.
+    TEST(LevelGeneratorTest, EveryShippedLevelIsGenerableAndLinear)
+    {
+        for (const auto &plan : campaignLevels())
+        {
+            for (std::uint64_t seed = 0; seed < kCampaignSeedCount;
+                 ++seed)
+            {
+                LevelConfig level = plan.level;
+                level.seed = seed;
+
+                SCOPED_TRACE(
+                    "a " + std::to_string(level.width) + "x"
+                    + std::to_string(level.height) + " grid walled every "
+                    + std::to_string(level.wallSpacing)
+                    + ", seed " + std::to_string(seed));
+                expectSingleSimplePath(generateLevel(level));
+            }
         }
     }
 

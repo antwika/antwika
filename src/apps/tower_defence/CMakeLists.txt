@@ -1,16 +1,21 @@
 add_executable(antwika_tower_defence
     src/Battle.cpp
     src/BattleScene.cpp
-    src/BattleSink.cpp
     src/BattleSnapshot.cpp
+    src/Campaign.cpp
+    src/CampaignSink.cpp
+    src/FileScoreStore.cpp
     src/GridLayout.cpp
+    src/HighScore.cpp
     src/LevelGenerator.cpp
     src/LevelTile.cpp
+    src/MobKind.cpp
     src/RenderSink.cpp
     src/ScoreOverlay.cpp
     src/ScoreSink.cpp
     src/TowerDefence.cpp
     src/TowerPlacementSink.cpp
+    src/Wave.cpp
     src/main.cpp
 )
 
@@ -25,6 +30,7 @@ target_link_libraries(antwika_tower_defence
         antwika::engine
         antwika::gfx
         antwika::gfx_backend
+        antwika::i18n
         antwika::input
         antwika::input_backend
         antwika::log

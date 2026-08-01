@@ -38,7 +38,42 @@
       }
     },
     {
-      "tick": 7,
+      "tick": 8,
+      "event": {
+        "name": "task.submit",
+        "payload": "{\"id\":6,\"priority\":2,\"durationTicks\":3,\"label\":\"Zeta\"}"
+      }
+    },
+    {
+      "tick": 8,
+      "event": {
+        "name": "task.submit",
+        "payload": "{\"id\":7,\"priority\":1,\"durationTicks\":4,\"label\":\"Eta\"}"
+      }
+    },
+    {
+      "tick": 8,
+      "event": {
+        "name": "task.submit",
+        "payload": "{\"id\":8,\"priority\":0,\"durationTicks\":2,\"label\":\"Theta\"}"
+      }
+    },
+    {
+      "tick": 12,
+      "event": {
+        "name": "task.submit",
+        "payload": "{\"id\":9,\"priority\":3,\"durationTicks\":2,\"label\":\"Iota\"}"
+      }
+    },
+    {
+      "tick": 12,
+      "event": {
+        "name": "task.submit",
+        "payload": "{\"id\":10,\"priority\":1,\"durationTicks\":1,\"label\":\"Kappa\",\"dependsOnId\":9}"
+      }
+    },
+    {
+      "tick": 17,
       "event": {
         "name": "engine.stop",
         "payload": ""

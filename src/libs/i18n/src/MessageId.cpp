@@ -79,6 +79,12 @@ namespace antwika::i18n
             return "CompanionGone";
         case MessageId::CompanionNewPet:
             return "CompanionNewPet";
+        case MessageId::CompanionPropFeed:
+            return "CompanionPropFeed";
+        case MessageId::CompanionPropPlay:
+            return "CompanionPropPlay";
+        case MessageId::CompanionPropSleep:
+            return "CompanionPropSleep";
         case MessageId::CompanionSayHello:
             return "CompanionSayHello";
         case MessageId::CompanionSayBored:
@@ -129,14 +135,36 @@ namespace antwika::i18n
             return "CompanionDay";
         case MessageId::CompanionLineage:
             return "CompanionLineage";
-        case MessageId::SudokuInput:
-            return "SudokuInput";
+        case MessageId::SudokuTitle:
+            return "SudokuTitle";
+        case MessageId::SudokuSolveButton:
+            return "SudokuSolveButton";
+        case MessageId::SudokuHint:
+            return "SudokuHint";
         case MessageId::SudokuSolved:
             return "SudokuSolved";
+        case MessageId::SudokuComplete:
+            return "SudokuComplete";
         case MessageId::SudokuNoSolution:
             return "SudokuNoSolution";
         case MessageId::SudokuLimitExceeded:
             return "SudokuLimitExceeded";
+        case MessageId::TowerDefenceLevel:
+            return "TowerDefenceLevel";
+        case MessageId::TowerDefenceWave:
+            return "TowerDefenceWave";
+        case MessageId::TowerDefenceLives:
+            return "TowerDefenceLives";
+        case MessageId::TowerDefenceScore:
+            return "TowerDefenceScore";
+        case MessageId::TowerDefenceBest:
+            return "TowerDefenceBest";
+        case MessageId::TowerDefenceCleared:
+            return "TowerDefenceCleared";
+        case MessageId::TowerDefenceOverrun:
+            return "TowerDefenceOverrun";
+        case MessageId::SudokuGivenLocked:
+            return "SudokuGivenLocked";
         case MessageId::UiDemoTitle:
             return "UiDemoTitle";
         case MessageId::UiDemoPickPage:
@@ -371,6 +399,28 @@ namespace antwika::i18n
             return "GameResourcePottery";
         case MessageId::GameReadoutAmount:
             return "GameReadoutAmount";
+        case MessageId::TaskWorkerTick:
+            return "TaskWorkerTick";
+        case MessageId::TaskWorkerBudget:
+            return "TaskWorkerBudget";
+        case MessageId::TaskWorkerStarted:
+            return "TaskWorkerStarted";
+        case MessageId::TaskWorkerWorkers:
+            return "TaskWorkerWorkers";
+        case MessageId::TaskWorkerWorkerIdle:
+            return "TaskWorkerWorkerIdle";
+        case MessageId::TaskWorkerWorkerBusy:
+            return "TaskWorkerWorkerBusy";
+        case MessageId::TaskWorkerTicksLeft:
+            return "TaskWorkerTicksLeft";
+        case MessageId::TaskWorkerQueue:
+            return "TaskWorkerQueue";
+        case MessageId::TaskWorkerQueued:
+            return "TaskWorkerQueued";
+        case MessageId::TaskWorkerBlocked:
+            return "TaskWorkerBlocked";
+        case MessageId::TaskWorkerCompleted:
+            return "TaskWorkerCompleted";
         }
 
         return "?";

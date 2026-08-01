@@ -210,6 +210,21 @@ namespace antwika::i18n
         CompanionNewPet,
 
         /**
+         * @brief Companion: the label on the prop that feeds it.
+         */
+        CompanionPropFeed,
+
+        /**
+         * @brief Companion: the label on the prop that plays with it.
+         */
+        CompanionPropPlay,
+
+        /**
+         * @brief Companion: the label on the prop that puts it to bed.
+         */
+        CompanionPropSleep,
+
+        /**
          * @brief Companion says: idle chatter.
          */
         CompanionSayHello,
@@ -335,17 +350,32 @@ namespace antwika::i18n
         CompanionLineage,
 
         /**
-         * @brief Sudoku: the heading over the puzzle as given.
+         * @brief Sudoku: the name over the grid.
          */
-        SudokuInput,
+        SudokuTitle,
 
         /**
-         * @brief Sudoku: the heading over the finished grid.
+         * @brief Sudoku: the button that finishes the grid.
+         */
+        SudokuSolveButton,
+
+        /**
+         * @brief Sudoku: how to play, shown until something happens.
+         */
+        SudokuHint,
+
+        /**
+         * @brief Sudoku: the solver finished the grid.
          */
         SudokuSolved,
 
         /**
-         * @brief Sudoku: the puzzle has no solution at all.
+         * @brief Sudoku: every square is filled and every rule holds.
+         */
+        SudokuComplete,
+
+        /**
+         * @brief Sudoku: no solution exists from where the grid is.
          */
         SudokuNoSolution,
 
@@ -353,6 +383,46 @@ namespace antwika::i18n
          * @brief Sudoku: the solver gave up before deciding.
          */
         SudokuLimitExceeded,
+
+        /**
+         * @brief Tower defence: which level of the campaign, `{0}` of `{1}`.
+         */
+        TowerDefenceLevel,
+
+        /**
+         * @brief Tower defence: which wave of the level, `{0}` of `{1}`.
+         */
+        TowerDefenceWave,
+
+        /**
+         * @brief Tower defence: leaks the player can still afford, `{0}`.
+         */
+        TowerDefenceLives,
+
+        /**
+         * @brief Tower defence: the running score, `{0}`.
+         */
+        TowerDefenceScore,
+
+        /**
+         * @brief Tower defence: the best score of any earlier run, `{0}`.
+         */
+        TowerDefenceBest,
+
+        /**
+         * @brief Tower defence: the last wave of the last level is dead.
+         */
+        TowerDefenceCleared,
+
+        /**
+         * @brief Tower defence: the lives ran out.
+         */
+        TowerDefenceOverrun,
+
+        /**
+         * @brief Sudoku: that square is one of the puzzle's clues.
+         */
+        SudokuGivenLocked,
 
         /**
          * @brief UI demo: the heading over every page.
@@ -940,12 +1010,68 @@ namespace antwika::i18n
          *        named, `{1}` held and `{2}` capacity.
          */
         GameReadoutAmount,
+
+        /**
+         * @brief Task worker: which tick the picture is of, `{0}`.
+         */
+        TaskWorkerTick,
+
+        /**
+         * @brief Task worker: how many jobs this tick may start, `{0}`.
+         */
+        TaskWorkerBudget,
+
+        /**
+         * @brief Task worker: how many jobs this tick did start, `{0}`.
+         */
+        TaskWorkerStarted,
+
+        /**
+         * @brief Task worker: the heading over the pool.
+         */
+        TaskWorkerWorkers,
+
+        /**
+         * @brief Task worker: worker `{0}` is holding nothing.
+         */
+        TaskWorkerWorkerIdle,
+
+        /**
+         * @brief Task worker: worker `{0}` is holding task `{1}`.
+         */
+        TaskWorkerWorkerBusy,
+
+        /**
+         * @brief Task worker: `{0}` of a task's `{1}` ticks are left.
+         */
+        TaskWorkerTicksLeft,
+
+        /**
+         * @brief Task worker: the heading over the pending queue.
+         */
+        TaskWorkerQueue,
+
+        /**
+         * @brief Task worker: pending task `{0}` at priority `{1}`.
+         */
+        TaskWorkerQueued,
+
+        /**
+         * @brief Task worker: pending task `{0}` cannot run until task
+         *        `{1}` has.
+         */
+        TaskWorkerBlocked,
+
+        /**
+         * @brief Task worker: the heading over the finished tasks.
+         */
+        TaskWorkerCompleted,
     };
 
     /**
      * @brief How many ids a complete catalogue carries.
      */
-    inline constexpr std::size_t kMessageCount{181};
+    inline constexpr std::size_t kMessageCount{206};
 
     /**
      * @brief Every id, in declaration order.
@@ -990,6 +1116,9 @@ namespace antwika::i18n
         MessageId::CompanionAsleepWoken,
         MessageId::CompanionGone,
         MessageId::CompanionNewPet,
+        MessageId::CompanionPropFeed,
+        MessageId::CompanionPropPlay,
+        MessageId::CompanionPropSleep,
         MessageId::CompanionSayHello,
         MessageId::CompanionSayBored,
         MessageId::CompanionSayNiceDay,
@@ -1015,10 +1144,21 @@ namespace antwika::i18n
         MessageId::CompanionMoodHeavy,
         MessageId::CompanionDay,
         MessageId::CompanionLineage,
-        MessageId::SudokuInput,
+        MessageId::SudokuTitle,
+        MessageId::SudokuSolveButton,
+        MessageId::SudokuHint,
         MessageId::SudokuSolved,
+        MessageId::SudokuComplete,
         MessageId::SudokuNoSolution,
         MessageId::SudokuLimitExceeded,
+        MessageId::TowerDefenceLevel,
+        MessageId::TowerDefenceWave,
+        MessageId::TowerDefenceLives,
+        MessageId::TowerDefenceScore,
+        MessageId::TowerDefenceBest,
+        MessageId::TowerDefenceCleared,
+        MessageId::TowerDefenceOverrun,
+        MessageId::SudokuGivenLocked,
         MessageId::UiDemoTitle,
         MessageId::UiDemoPickPage,
         MessageId::UiDemoPageLabels,
@@ -1136,6 +1276,17 @@ namespace antwika::i18n
         MessageId::GameResourceClay,
         MessageId::GameResourcePottery,
         MessageId::GameReadoutAmount,
+        MessageId::TaskWorkerTick,
+        MessageId::TaskWorkerBudget,
+        MessageId::TaskWorkerStarted,
+        MessageId::TaskWorkerWorkers,
+        MessageId::TaskWorkerWorkerIdle,
+        MessageId::TaskWorkerWorkerBusy,
+        MessageId::TaskWorkerTicksLeft,
+        MessageId::TaskWorkerQueue,
+        MessageId::TaskWorkerQueued,
+        MessageId::TaskWorkerBlocked,
+        MessageId::TaskWorkerCompleted,
     };
 
     /**

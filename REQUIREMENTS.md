@@ -41,7 +41,8 @@ Requirements for the Antwika project, gathered from `README.md`, `blog/001-build
 - A window event must say which window it refers to, since a backend pumps a single event queue for every window it owns.
 - A backend must declare how many windows it can hold open at once, and refuse to exceed it, rather than every backend being required to support several; raylib keeps its one window in global state and cannot.
 - Polling a graphics backend for events must reach an empty queue, so a caller draining it between frames terminates.
-- Text drawing must use one built-in fixed-cell bitmap font, defined by `antwika::gfx` and drawn identically by every backend, so a caller can lay text out arithmetically instead of asking a backend to measure it.
+- Text drawing must use one built-in fixed-cell font, defined by `antwika::gfx` and drawn identically by every backend, so a caller can lay text out arithmetically instead of asking a backend to measure it.
+- That font's glyphs must be rasterised from a real typeface compiled into the library, onto exactly those fixed cells, so what text looks like is a rendering decision and what it measures stays whole-number arithmetic no font metric reaches.
 - Image assets must be decoded to pixels once, by `antwika::gfx` itself rather than by each backend, so every backend uploads byte-identical pixels; a backend receives a decoded bitmap and never a file.
 - Image decoding must accept a byte stream rather than a path, so `antwika::gfx` opens no files and every decoder failure is provable headlessly.
 - A texture must be created through the renderer that will draw it, and both destroying that texture after its renderer's window has closed and drawing it through another renderer must be safe.

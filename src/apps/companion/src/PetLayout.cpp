@@ -32,6 +32,20 @@ namespace antwika::companion
         constexpr std::uint32_t kPropUnitsHigh = 4;
         constexpr std::array<std::int32_t, 3> kPropX{1, 13, 25};
 
+        // How much of that box the word naming the prop takes.
+        // The bottom row of the prop rather than a row under it.
+        // The props stand on the ground and the readout ends the grid.
+        // So there is no row between them a label could have had.
+        // Taking it out of the prop is what leaves the press alone.
+        constexpr std::uint32_t kPropLabelUnitsHigh = 1;
+        constexpr std::uint32_t kPropArtUnitsHigh =
+            kPropUnitsHigh - kPropLabelUnitsHigh;
+
+        [[nodiscard]] std::int32_t propColumn(const Prop prop)
+        {
+            return kPropX[static_cast<std::size_t>(prop)];
+        }
+
         [[nodiscard]] bool within(const Rect &area, const Point at)
         {
             const auto right =
@@ -96,10 +110,30 @@ namespace antwika::companion
     {
         return box(
             layout,
-            kPropX[static_cast<std::size_t>(prop)],
+            propColumn(prop),
             kPropY,
             kPropUnitsWide,
             kPropUnitsHigh);
+    }
+
+    Rect propArtBox(const SceneLayout &layout, const Prop prop)
+    {
+        return box(
+            layout,
+            propColumn(prop),
+            kPropY,
+            kPropUnitsWide,
+            kPropArtUnitsHigh);
+    }
+
+    Rect propLabelBox(const SceneLayout &layout, const Prop prop)
+    {
+        return box(
+            layout,
+            propColumn(prop),
+            kPropY + static_cast<std::int32_t>(kPropArtUnitsHigh),
+            kPropUnitsWide,
+            kPropLabelUnitsHigh);
     }
 
     std::optional<Prop> propAt(const Size canvas, const Point at)

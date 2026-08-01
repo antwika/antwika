@@ -1,196 +1,156 @@
-#include <cstddef>
-#include <fstream>
+#include <chrono>
 #include <iostream>
-#include <sstream>
+#include <memory>
 #include <string>
-#include <string_view>
-#include <vector>
 
+#include <antwika/app/ConsoleLogging.hpp>
+#include <antwika/app/RunRecorded.hpp>
+#include <antwika/gfx/SelectedBackend.hpp>
+#include <antwika/gfx/Size.hpp>
+#include <antwika/gfx/WindowDesc.hpp>
 #include <antwika/i18n/Locale.hpp>
 #include <antwika/i18n/MessageId.hpp>
 #include <antwika/i18n/Translator.hpp>
-#include <antwika/wfc/AllDifferentConstraint.hpp>
-#include <antwika/wfc/IConstraint.hpp>
-#include <antwika/wfc/SolveResult.hpp>
-#include <antwika/wfc/Solver.hpp>
+#include <antwika/input/InputEventCodec.hpp>
+#include <antwika/input/InputPipeline.hpp>
+#include <antwika/input/Key.hpp>
+#include <antwika/input/SelectedInputBackend.hpp>
+#include <antwika/log/Level.hpp>
+#include <antwika/replay/ReplaySource.hpp>
+#include <antwika/simulation/WindowInputSource.hpp>
+#include <antwika/time/SystemSleeper.hpp>
 
-#include "antwika/sudoku/Board.hpp"
-#include "antwika/sudoku/BoardFormatError.hpp"
-#include "antwika/sudoku/Puzzle.hpp"
+#include "antwika/sudoku/BoardOverlay.hpp"
+#include "antwika/sudoku/PuzzleFile.hpp"
+#include "antwika/sudoku/PuzzleSource.hpp"
+#include "antwika/sudoku/PuzzleState.hpp"
+#include "antwika/sudoku/RenderSink.hpp"
+#include "antwika/sudoku/Status.hpp"
+#include "antwika/sudoku/Sudoku.hpp"
+#include "antwika/sudoku/SudokuOptions.hpp"
+#include "antwika/sudoku/SudokuScene.hpp"
+#include "antwika/sudoku/TickLimitSource.hpp"
 
-using antwika::sudoku::Board;
-using antwika::sudoku::BoardFormatError;
-using antwika::sudoku::buildConstraints;
-using antwika::sudoku::buildInitialWave;
-using antwika::i18n::localeFromTag;
-using antwika::i18n::MessageId;
-using antwika::i18n::Translator;
-using antwika::wfc::AllDifferentConstraint;
-using antwika::wfc::IConstraint;
-using antwika::wfc::SolveOutcome;
-using antwika::wfc::Solver;
+using antwika::app::ConsoleLogging;
+using antwika::app::RecordedRun;
+using antwika::gfx::WindowDesc;
+using antwika::input::InputEventCodec;
+using antwika::input::InputPipeline;
+using antwika::log::Level;
+using antwika::replay::ReplaySource;
+using antwika::simulation::WindowInputSource;
+using antwika::sudoku::BoardOverlay;
+using antwika::sudoku::PuzzleSource;
+using antwika::sudoku::PuzzleState;
+using antwika::sudoku::RenderSink;
+using antwika::sudoku::statusNameId;
+using antwika::sudoku::SudokuScene;
+using antwika::sudoku::SudokuSummary;
+using antwika::sudoku::TickLimitSource;
+using antwika::time::SystemSleeper;
 
 namespace
 {
-    // A well-known easy demo puzzle, used when --puzzle is omitted.
-    constexpr std::string_view kDemoPuzzle =
-        "53..7...."
-        "6..195..."
-        ".98....6."
-        "8...6...3"
-        "4..8.3..1"
-        "7...2...6"
-        ".6....28."
-        "...419..5"
-        "....8..79";
+    // Square-ish, with room above the grid for the bar.
+    // Also what a click is mapped against, never a reported size.
+    // SudokuScene says why, and why this window is not resizable.
+    constexpr antwika::gfx::Size kWindowSize{
+        .width = 720, .height = 800};
 
-    Board loadBoard(std::string_view puzzlePath)
+    constexpr std::chrono::milliseconds kFramePeriod{40};
+
+    void run(const RecordedRun &recorded)
     {
-        if (puzzlePath.empty())
-        {
-            return Board::parse(kDemoPuzzle);
-        }
+        const auto options =
+            antwika::sudoku::sudokuOptionsFrom(recorded.commandLine);
 
-        std::ifstream file{std::string(puzzlePath)};
+        ConsoleLogging logging(std::cout, Level::Info);
+        auto &logger = logging.logger();
 
-        // Unchecked, a missing file read as an empty puzzle.
-        // Which Board::parse then reported as the wrong length.
-        if (!file.is_open())
-        {
-            throw BoardFormatError(
-                "antwika_sudoku: could not open a puzzle: "
-                + std::string(puzzlePath));
-        }
+        const auto backend = antwika::gfx::makeSelectedBackend(logger);
+        const auto inputBackend =
+            antwika::input::makeSelectedInputBackend(logger);
 
-        std::ostringstream contents;
-        contents << file.rdbuf();
-        return Board::parse(contents.str());
-    }
+        logger.log(
+            Level::Info,
+            "Antwika Sudoku on backend: "
+                + std::string(backend->name()) + ", input: "
+                + std::string(inputBackend->name()));
 
-    // Every line this program prints goes through the translator.
-    // Its diagnostics on stderr deliberately do not.
-    // A usage error is for whoever ran it, not for whoever plays it.
-    // That is the same line drawn everywhere else in this project.
-    void printBoard(const Board &board)
-    {
-        for (std::size_t row = 0; row < Board::kSize; ++row)
-        {
-            for (std::size_t col = 0; col < Board::kSize; ++col)
+        const auto window = backend->createWindow(WindowDesc{
+            .title = "Antwika Sudoku",
+            .size = kWindowSize,
+            .resizable = false});
+
+        // Fixed here, and read from nowhere else.
+        // The Solve button is as wide as its own label.
+        // And the grid sits under whatever height the bar comes to.
+        // So a language off the environment would move every square.
+        // Changing it is this line, exactly as the window size is.
+        const antwika::i18n::Translator translator{
+            antwika::i18n::kDefaultLocale};
+
+        const SudokuScene scene{translator};
+        SystemSleeper sleeper;
+
+        ReplaySource fileSource(
+            antwika::app::scriptedEvents(recorded.options.replayPath));
+
+        const InputEventCodec codec;
+
+        // Live input is attached only when there is no replay to run.
+        // Movement is coalesced, since a layout reads one position.
+        // Nothing here is painted by dragging.
+        InputPipeline input(
+            fileSource,
+            *inputBackend,
+            codec,
+            {.readsDevice = !recorded.options.replayPath.has_value(),
+             .coalescePointerMotion = true,
+             .stopOnKey = antwika::input::Key::Escape});
+
+        WindowInputSource windowed(input, *backend, window->id());
+
+        // The puzzle goes into the stream ahead of the recorder.
+        // So a recording carries the grid it was played on.
+        PuzzleSource puzzled(
+            windowed,
+            antwika::sudoku::startingPuzzle(
+                options.puzzlePath,
+                recorded.options.replayPath.has_value()));
+
+        TickLimitSource source(puzzled, options.maxTicks);
+
+        const SudokuSummary summary = antwika::sudoku::bootstrap({
+            .logger = logger,
+            .eventSink = recorded.eventSink,
+            .inputSource = source,
+            .codec = codec,
+            .translator = translator,
+            .canvas = kWindowSize,
+            .replayRecorder = recorded.replayRecorder,
+            .extraSink =
+                [&](const PuzzleState &, const BoardOverlay &overlay)
             {
-                const auto digit = board.at(row, col);
-                std::cout << (digit.has_value() ? std::to_string(*digit)
-                                                 : ".");
-            }
-            std::cout << '\n';
-        }
+                return std::make_unique<RenderSink>(
+                    *window, scene, overlay, sleeper, kFramePeriod);
+            }});
+
+        logger.log(
+            Level::Info,
+            "Finished with " + std::to_string(summary.filled)
+                + " of 81 squares filled, saying "
+                + std::string{antwika::i18n::nameOf(
+                    statusNameId(summary.status))});
     }
 } // namespace
 
 int main(int argc, char **argv)
 {
-    std::string_view puzzlePath;
-
-    // This application is the one that may take a locale at runtime.
-    // It records nothing and hit-tests nothing.
-    // So no layout is measured from the words it prints.
-    // Everywhere else the choice would be simulation state.
-    // See antwika/i18n/Translator.hpp for the whole rule.
-    Translator translator{antwika::i18n::kDefaultLocale};
-
-    for (int i = 1; i < argc; ++i)
-    {
-        const std::string_view arg = argv[i];
-        if (arg == "--puzzle")
-        {
-            if (i + 1 >= argc)
-            {
-                std::cerr << "Missing value for --puzzle\n";
-                return 1;
-            }
-            puzzlePath = argv[++i];
-        }
-        else if (arg == "--locale")
-        {
-            if (i + 1 >= argc)
-            {
-                std::cerr << "Missing value for --locale\n";
-                return 1;
-            }
-
-            const auto locale = localeFromTag(argv[++i]);
-            if (!locale.has_value())
-            {
-                std::cerr << "No catalogue for locale: " << argv[i]
-                          << '\n';
-                return 1;
-            }
-
-            translator.setLocale(*locale);
-        }
-        else
-        {
-            std::cerr << "Unrecognized argument: " << arg << '\n';
-            return 1;
-        }
-    }
-
-    Board board;
-    try
-    {
-        board = loadBoard(puzzlePath);
-    }
-    catch (const BoardFormatError &error)
-    {
-        std::cerr << "Invalid puzzle: " << error.what() << '\n';
-        return 1;
-    }
-
-    std::cout << translator.text(MessageId::SudokuInput) << '\n';
-    printBoard(board);
-
-    const auto wave = buildInitialWave(board);
-    const auto constraints = buildConstraints();
-    std::vector<std::reference_wrapper<const IConstraint>> constraintRefs(
-        constraints.begin(), constraints.end());
-
-    const Solver solver(wave, constraintRefs);
-    const auto result = solver.solve();
-
-    switch (result.outcome)
-    {
-        case SolveOutcome::Solved:
-        {
-            Board solved;
-            for (std::size_t row = 0; row < Board::kSize; ++row)
-            {
-                for (std::size_t col = 0; col < Board::kSize; ++col)
-                {
-                    const std::size_t index = row * Board::kSize + col;
-                    const int digit = static_cast<int>(
-                        result.assignment[index]) + 1;
-                    solved.set(row, col, digit);
-                }
-            }
-            std::cout << '\n'
-                      << translator.text(MessageId::SudokuSolved)
-                      << '\n';
-            printBoard(solved);
-            return 0;
-        }
-        case SolveOutcome::Unsatisfiable:
-            std::cout << '\n'
-                      << translator.text(MessageId::SudokuNoSolution)
-                      << '\n';
-            return 1;
-        case SolveOutcome::LimitExceeded:
-            // Cannot occur: no SolverLimits is set above.
-            // Handled explicitly anyway, so the switch stays exhaustive.
-            std::cout << '\n'
-                      << translator.text(
-                             MessageId::SudokuLimitExceeded)
-                      << '\n';
-            return 1;
-    }
-
-    return 1;
+    return antwika::app::runRecorded(
+        argc,
+        argv,
+        "antwika_sudoku",
+        run,
+        antwika::sudoku::sudokuFlags());
 }

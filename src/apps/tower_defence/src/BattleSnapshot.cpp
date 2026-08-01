@@ -3,8 +3,10 @@
 namespace antwika::tower_defence
 {
 
-    BattleSnapshot snapshotOf(const Battle &battle)
+    BattleSnapshot snapshotOf(const Campaign &campaign)
     {
+        const Battle &battle = campaign.battle();
+
         // The last initialiser carries the unwind branches.
         // They destroy the level copy and the two vectors.
         // Only an aggregate throwing part-built reaches them.
@@ -13,14 +15,15 @@ namespace antwika::tower_defence
             .level = battle.level(),
             .mobs = {},
             .towers = {},
-            .towerRangeSquared = battle.settings().towerRangeSquared,
-            .score = battle.score(),
-            .leaks = battle.leaks()}; // GCOVR_EXCL_LINE
+            .towerRangeSquared =
+                battle.settings().towerRangeSquared}; // GCOVR_EXCL_LINE
 
         snapshot.mobs.reserve(battle.mobs().size());
         for (const Mob &mob : battle.mobs())
         {
-            snapshot.mobs.push_back(battle.level().path[mob.pathIndex]);
+            snapshot.mobs.push_back(MobMarker{
+                .cell = battle.level().path[mob.pathIndex],
+                .kind = mob.kind});
         }
 
         snapshot.towers.reserve(battle.towers().size());

@@ -9,7 +9,6 @@
 #include <antwika/gfx/Bitmap.hpp>
 #include <antwika/gfx/Blit.hpp>
 #include <antwika/gfx/GfxError.hpp>
-#include <antwika/gfx/Glyphs.hpp>
 #include <antwika/gfx/TextRaster.hpp>
 #include <antwika/log/Level.hpp>
 
@@ -141,15 +140,42 @@ namespace antwika::gfx::sdl3
         }
 
         std::vector<SDL_FRect> pixels;
-        pixels.reserve(text.size() * kGlyphWidth * kGlyphHeight);
+        Color fill{};
 
-        // Where the lit pixels are is gfx's answer, not this backend's.
-        // Every backend has to draw the same glyphs in the same places.
+        // An anti-aliased glyph is a run of pixels of one colour.
+        // So the fills are batched by colour rather than issued singly.
+        // Which pixel is which colour is gfx's answer, not this one's.
+        // Every backend draws the same glyphs, in the same colours.
+        const auto flush = [this, &pixels, &fill]() {
+            if (pixels.empty())
+            {
+                return;
+            }
+
+            if (setDrawColor(fill, SDL_BLENDMODE_BLEND)
+                && !SDL_RenderFillRects(
+                    renderer,
+                    pixels.data(),
+                    static_cast<int>(pixels.size())))
+            {
+                warn(logger, "could not fill a run of glyph pixels");
+            }
+
+            pixels.clear();
+        };
+
         forEachGlyphPixel(
             origin,
             text,
             scale,
-            [&pixels](Rect pixel) {
+            color,
+            [&pixels, &fill, &flush](Rect pixel, Color pixelColor) {
+                if (!pixels.empty() && pixelColor != fill)
+                {
+                    flush();
+                }
+
+                fill = pixelColor;
                 pixels.push_back(SDL_FRect{
                     .x = static_cast<float>(pixel.origin.x),
                     .y = static_cast<float>(pixel.origin.y),
@@ -157,23 +183,7 @@ namespace antwika::gfx::sdl3
                     .h = static_cast<float>(pixel.size.height)});
             });
 
-        if (pixels.empty())
-        {
-            return;
-        }
-
-        if (!setDrawColor(color, SDL_BLENDMODE_BLEND))
-        {
-            return;
-        }
-
-        if (!SDL_RenderFillRects(
-                renderer,
-                pixels.data(),
-                static_cast<int>(pixels.size())))
-        {
-            warn(logger, "could not fill a run of glyph pixels");
-        }
+        flush();
     }
 
     std::unique_ptr<ITexture> Sdl3Renderer::createTexture(

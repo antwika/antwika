@@ -14,11 +14,13 @@ namespace antwika::task_worker
     void TaskDispatchSystem::update(World &, antwika::time::Tick tick)
     {
         lookup.refresh();
-        const auto executed = jobScheduler.run(tick, lookup.idleCount());
+        const auto budget = lookup.idleCount();
+        const auto executed = jobScheduler.run(tick, budget);
         for (const auto jobId : executed)
         {
             registry.markStarted(jobId);
         }
+        registry.noteDispatch(budget, executed.size());
     }
 
 } // namespace antwika::task_worker
