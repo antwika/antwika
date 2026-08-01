@@ -3,11 +3,12 @@
 #include <gtest/gtest.h>
 
 #include <antwika/ecs/World.hpp>
+#include <antwika/ecs_commons/Name.hpp>
 #include <antwika/log/mocks/MockLogger.hpp>
 
 using antwika::ecs::World;
+using antwika::ecs_commons::makeName;
 using antwika::log::mocks::MockLogger;
-using antwika::task_worker::makeWorkerLabel;
 using antwika::task_worker::Worker;
 using antwika::task_worker::WorkerStatus;
 using ::testing::NiceMock;
@@ -15,23 +16,23 @@ using ::testing::NiceMock;
 TEST(WorkerTest, EqualityComparesEveryFieldIndependently)
 {
     const Worker base{
-        WorkerStatus::Busy, 3, 7, makeWorkerLabel("Render")};
+        WorkerStatus::Busy, 3, 7, makeName("Render")};
 
     EXPECT_NE(
         base,
-        (Worker{WorkerStatus::Idle, 3, 7, makeWorkerLabel("Render")}));
+        (Worker{WorkerStatus::Idle, 3, 7, makeName("Render")}));
     EXPECT_NE(
         base,
-        (Worker{WorkerStatus::Busy, 4, 7, makeWorkerLabel("Render")}));
+        (Worker{WorkerStatus::Busy, 4, 7, makeName("Render")}));
     EXPECT_NE(
         base,
-        (Worker{WorkerStatus::Busy, 3, 8, makeWorkerLabel("Render")}));
+        (Worker{WorkerStatus::Busy, 3, 8, makeName("Render")}));
     EXPECT_NE(
         base,
-        (Worker{WorkerStatus::Busy, 3, 7, makeWorkerLabel("Other")}));
+        (Worker{WorkerStatus::Busy, 3, 7, makeName("Other")}));
     EXPECT_EQ(
         base,
-        (Worker{WorkerStatus::Busy, 3, 7, makeWorkerLabel("Render")}));
+        (Worker{WorkerStatus::Busy, 3, 7, makeName("Render")}));
 }
 
 TEST(WorkerTest, WorkerComponentCanBeRemovedFromAnEntity)

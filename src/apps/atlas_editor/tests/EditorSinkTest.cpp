@@ -14,6 +14,9 @@
 #include <antwika/gfx/Point.hpp>
 #include <antwika/gfx/Rect.hpp>
 #include <antwika/gfx/Size.hpp>
+#include <antwika/i18n/Locale.hpp>
+#include <antwika/i18n/MessageId.hpp>
+#include <antwika/i18n/Translator.hpp>
 #include <antwika/input/InputEvent.hpp>
 #include <antwika/input/InputEventCodec.hpp>
 #include <antwika/input/Key.hpp>
@@ -36,6 +39,7 @@
 using antwika::atlas_editor::Canvas;
 using antwika::atlas_editor::defaultPalette;
 using antwika::atlas_editor::describeEditor;
+using antwika::i18n::MessageId;
 using antwika::atlas_editor::EditorSink;
 using antwika::atlas_editor::EditorState;
 using antwika::atlas_editor::IAtlasStore;
@@ -109,6 +113,11 @@ namespace
         }
     };
 
+    // The locale is a constant of the build, so a test may name one.
+    // What every case here asserts is the English bar's own layout.
+    constexpr antwika::i18n::Translator kTranslator{
+        antwika::i18n::kDefaultLocale};
+
     struct Session
     {
         EditorState state{
@@ -145,7 +154,8 @@ namespace
     Point widgetPoint(const EditorState &state, const WidgetId widget)
     {
         const auto rect =
-            describeEditor(state, Pointer{}).rects.find(widget);
+            describeEditor(state, Pointer{}, kTranslator)
+                .rects.find(widget);
 
         return middleOf(rect.value_or(Rect{}));
     }
@@ -191,7 +201,11 @@ TEST(EditorSinkTest, Handle_PaintsWhereALeftPressLanded)
 {
     Session session;
     EditorSink sink(
-        session.state, session.overlay, session.store, session.codec);
+        session.state,
+        session.overlay,
+        session.store,
+        session.codec,
+        kTranslator);
 
     sink.handle(inputAt(
         1,
@@ -209,7 +223,11 @@ TEST(EditorSinkTest, Handle_PaintsEveryPixelADragCrosses)
 {
     Session session;
     EditorSink sink(
-        session.state, session.overlay, session.store, session.codec);
+        session.state,
+        session.overlay,
+        session.store,
+        session.codec,
+        kTranslator);
 
     sink.handle(inputAt(
         1,
@@ -244,7 +262,11 @@ TEST(EditorSinkTest, Handle_ErasesUnderTheRightButton)
 {
     Session session;
     EditorSink sink(
-        session.state, session.overlay, session.store, session.codec);
+        session.state,
+        session.overlay,
+        session.store,
+        session.codec,
+        kTranslator);
 
     sink.handle(inputAt(
         1,
@@ -270,7 +292,11 @@ TEST(EditorSinkTest, Handle_PansUnderTheMiddleButtonAndPaintsNothing)
 {
     Session session;
     EditorSink sink(
-        session.state, session.overlay, session.store, session.codec);
+        session.state,
+        session.overlay,
+        session.store,
+        session.codec,
+        kTranslator);
 
     const Point before = session.state.view().pan;
 
@@ -295,7 +321,11 @@ TEST(EditorSinkTest, Handle_ZoomsOnTheWheel)
 {
     Session session;
     EditorSink sink(
-        session.state, session.overlay, session.store, session.codec);
+        session.state,
+        session.overlay,
+        session.store,
+        session.codec,
+        kTranslator);
 
     sink.handle(inputAt(
         1,
@@ -325,7 +355,11 @@ TEST(EditorSinkTest, Handle_LeavesTheArtAloneUnderTheToolbar)
 {
     Session session;
     EditorSink sink(
-        session.state, session.overlay, session.store, session.codec);
+        session.state,
+        session.overlay,
+        session.store,
+        session.codec,
+        kTranslator);
 
     namespace widgets = antwika::atlas_editor::widgets;
     press(session, sink, widgets::kGrid);
@@ -338,7 +372,11 @@ TEST(EditorSinkTest, Handle_SelectsAToolAndAColourFromTheBar)
 {
     Session session;
     EditorSink sink(
-        session.state, session.overlay, session.store, session.codec);
+        session.state,
+        session.overlay,
+        session.store,
+        session.codec,
+        kTranslator);
 
     namespace widgets = antwika::atlas_editor::widgets;
     press(session, sink, widgets::toolWidget(Tool::Pick));
@@ -352,7 +390,11 @@ TEST(EditorSinkTest, Handle_ZoomsAndRecentresFromTheBar)
 {
     Session session;
     EditorSink sink(
-        session.state, session.overlay, session.store, session.codec);
+        session.state,
+        session.overlay,
+        session.store,
+        session.codec,
+        kTranslator);
 
     namespace widgets = antwika::atlas_editor::widgets;
     press(session, sink, widgets::kZoomIn);
@@ -370,7 +412,11 @@ TEST(EditorSinkTest, Handle_SavesTheSheetThroughTheStore)
 {
     Session session;
     EditorSink sink(
-        session.state, session.overlay, session.store, session.codec);
+        session.state,
+        session.overlay,
+        session.store,
+        session.codec,
+        kTranslator);
 
     sink.handle(inputAt(
         1,
@@ -390,9 +436,12 @@ TEST(EditorSinkTest, Handle_SavesTheSheetThroughTheStore)
     EXPECT_EQ(*session.store.written, session.state.image().bitmap());
     EXPECT_EQ(session.state.saves(), 1U);
     EXPECT_FALSE(session.state.unsaved());
-    EXPECT_NE(
-        session.state.status().find("saved memory.png"),
-        std::string::npos);
+    // The id and the path, rather than the sentence they make.
+    // What a status *is* is what the state now holds.
+    // The words are EditorUi's, and are asserted there.
+    ASSERT_TRUE(session.state.status().has_value());
+    EXPECT_EQ(session.state.status()->id, MessageId::AtlasSaved);
+    EXPECT_EQ(session.state.status()->detail, "memory.png");
 }
 
 TEST(EditorSinkTest, Handle_KeepsTheSessionAliveWhenASaveFails)
@@ -400,14 +449,19 @@ TEST(EditorSinkTest, Handle_KeepsTheSessionAliveWhenASaveFails)
     Session session;
     session.store.refuseSave = true;
     EditorSink sink(
-        session.state, session.overlay, session.store, session.codec);
+        session.state,
+        session.overlay,
+        session.store,
+        session.codec,
+        kTranslator);
 
     namespace widgets = antwika::atlas_editor::widgets;
     press(session, sink, widgets::kSave);
 
     EXPECT_EQ(session.state.saves(), 0U);
-    EXPECT_NE(
-        session.state.status().find("save failed"), std::string::npos);
+    ASSERT_TRUE(session.state.status().has_value());
+    EXPECT_EQ(session.state.status()->id, MessageId::AtlasSaveFailed);
+    EXPECT_FALSE(session.state.status()->detail.empty());
 }
 
 TEST(EditorSinkTest, Handle_LoadsASheetThroughTheStore)
@@ -415,7 +469,11 @@ TEST(EditorSinkTest, Handle_LoadsASheetThroughTheStore)
     Session session;
     session.store.available = oneRedPixel();
     EditorSink sink(
-        session.state, session.overlay, session.store, session.codec);
+        session.state,
+        session.overlay,
+        session.store,
+        session.codec,
+        kTranslator);
 
     namespace widgets = antwika::atlas_editor::widgets;
     press(session, sink, widgets::kLoad);
@@ -423,23 +481,27 @@ TEST(EditorSinkTest, Handle_LoadsASheetThroughTheStore)
     EXPECT_EQ(
         session.state.image().size(), (Size{.width = 1, .height = 1}));
     EXPECT_EQ(session.state.loads(), 1U);
-    EXPECT_NE(
-        session.state.status().find("loaded"), std::string::npos);
+    ASSERT_TRUE(session.state.status().has_value());
+    EXPECT_EQ(session.state.status()->id, MessageId::AtlasLoaded);
 }
 
 TEST(EditorSinkTest, Handle_SaysSoWhenThereIsNothingToLoad)
 {
     Session session;
     EditorSink sink(
-        session.state, session.overlay, session.store, session.codec);
+        session.state,
+        session.overlay,
+        session.store,
+        session.codec,
+        kTranslator);
 
     namespace widgets = antwika::atlas_editor::widgets;
     press(session, sink, widgets::kLoad);
 
     EXPECT_EQ(session.state.loads(), 0U);
-    EXPECT_NE(
-        session.state.status().find("nothing to load"),
-        std::string::npos);
+    ASSERT_TRUE(session.state.status().has_value());
+    EXPECT_EQ(
+        session.state.status()->id, MessageId::AtlasNothingToLoad);
 }
 
 TEST(EditorSinkTest, Handle_KeepsTheSessionAliveWhenALoadFails)
@@ -447,14 +509,19 @@ TEST(EditorSinkTest, Handle_KeepsTheSessionAliveWhenALoadFails)
     Session session;
     session.store.refuseLoad = true;
     EditorSink sink(
-        session.state, session.overlay, session.store, session.codec);
+        session.state,
+        session.overlay,
+        session.store,
+        session.codec,
+        kTranslator);
 
     namespace widgets = antwika::atlas_editor::widgets;
     press(session, sink, widgets::kLoad);
 
     EXPECT_EQ(session.state.loads(), 0U);
-    EXPECT_NE(
-        session.state.status().find("load failed"), std::string::npos);
+    ASSERT_TRUE(session.state.status().has_value());
+    EXPECT_EQ(session.state.status()->id, MessageId::AtlasLoadFailed);
+    EXPECT_FALSE(session.state.status()->detail.empty());
 }
 
 // A key edge is the one input saying nothing about the pointer.
@@ -463,7 +530,11 @@ TEST(EditorSinkTest, Handle_PaintsNothingOnAKeyThatSaysNoPosition)
 {
     Session session;
     EditorSink sink(
-        session.state, session.overlay, session.store, session.codec);
+        session.state,
+        session.overlay,
+        session.store,
+        session.codec,
+        kTranslator);
 
     sink.handle(inputAt(
         1,
@@ -483,7 +554,11 @@ TEST(EditorSinkTest, Handle_DescribesTheBarForTheRendererOnEveryTick)
 {
     Session session;
     EditorSink sink(
-        session.state, session.overlay, session.store, session.codec);
+        session.state,
+        session.overlay,
+        session.store,
+        session.codec,
+        kTranslator);
 
     EXPECT_TRUE(session.overlay.commands().empty());
 
@@ -497,7 +572,11 @@ TEST(EditorSinkTest, Handle_IgnoresAnEventThatIsNeitherATickNorInput)
 {
     Session session;
     EditorSink sink(
-        session.state, session.overlay, session.store, session.codec);
+        session.state,
+        session.overlay,
+        session.store,
+        session.codec,
+        kTranslator);
 
     sink.handle(TickEvent{
         .tick = 1, .event = Event{.name = "atlas_editor.nothing"}});

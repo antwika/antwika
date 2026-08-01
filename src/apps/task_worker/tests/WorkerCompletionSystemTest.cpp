@@ -2,6 +2,7 @@
 
 #include <gtest/gtest.h>
 
+#include <antwika/ecs_commons/Name.hpp>
 #include <antwika/log/mocks/MockLogger.hpp>
 
 #include <antwika/scheduler/JobId.hpp>
@@ -11,10 +12,10 @@
 #include "antwika/task_worker/Worker.hpp"
 
 using antwika::ecs::World;
+using antwika::ecs_commons::makeName;
 using antwika::log::mocks::MockLogger;
 using antwika::scheduler::JobId;
 using antwika::scheduler::kNormalPriority;
-using antwika::task_worker::makeWorkerLabel;
 using antwika::task_worker::TaskRegistry;
 using antwika::task_worker::TaskStatus;
 using antwika::task_worker::Worker;
@@ -79,7 +80,7 @@ TEST(
     const auto entity = world.create();
     world.add<Worker>(
         entity,
-        Worker{WorkerStatus::Busy, 1, 7, makeWorkerLabel("Render")});
+        Worker{WorkerStatus::Busy, 1, 7, makeName("Render")});
     world.commit();
 
     TaskRegistry registry;
@@ -103,7 +104,7 @@ TEST(
     const auto entity = world.create();
     world.add<Worker>(
         entity,
-        Worker{WorkerStatus::Busy, 2, 7, makeWorkerLabel("Render")});
+        Worker{WorkerStatus::Busy, 2, 7, makeName("Render")});
     world.commit();
 
     TaskRegistry registry;

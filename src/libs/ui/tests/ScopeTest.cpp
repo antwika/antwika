@@ -10,6 +10,7 @@
 #include "antwika/ui/DrawList.hpp"
 #include "antwika/ui/Sizing.hpp"
 #include "antwika/ui/Theme.hpp"
+#include "antwika/ui/UiError.hpp"
 
 using antwika::gfx::Color;
 using antwika::gfx::Size;
@@ -18,6 +19,7 @@ using antwika::ui::DrawList;
 using antwika::ui::FillRect;
 using antwika::ui::fixedSize;
 using antwika::ui::Theme;
+using antwika::ui::UiError;
 
 namespace
 {
@@ -71,10 +73,12 @@ TEST(ScopeTest, Scope_PutsWhatFollowsInsideTheOpenContainer)
 {
     Context ui{kCanvas, plainTheme(5)};
 
-    const auto outer = ui.panel({.height = fixedSize(40)});
-
     {
-        const auto inner = ui.panel({.height = fixedSize(10)});
+        const auto outer = ui.panel({.height = fixedSize(40)});
+
+        {
+            const auto inner = ui.panel({.height = fixedSize(10)});
+        }
     }
 
     EXPECT_EQ(
@@ -90,4 +94,31 @@ TEST(ScopeTest, Scope_PutsWhatFollowsInsideTheOpenContainer)
                      .size = {.width = 90, .height = 10}},
                 .color = kPanel}}),
         ui.finish().commands);
+}
+
+// A scope cannot see finish() being called inside it.
+// So this is the one thing Context checks rather than forbids.
+TEST(ScopeTest, Finish_RefusesAFrameWithAContainerStillOpen)
+{
+    Context ui{kCanvas, plainTheme()};
+
+    const auto open = ui.panel({.height = fixedSize(20)});
+
+    EXPECT_THROW((void)ui.finish(), UiError);
+}
+
+// Nesting makes the check about the container that is still open.
+// Whether one was ever opened at all is not what it asks.
+TEST(ScopeTest, Finish_RefusesAFrameWithOnlyTheInnerContainerOpen)
+{
+    Context ui{kCanvas, plainTheme()};
+
+    {
+        const auto outer = ui.panel({.height = fixedSize(20)});
+        const auto inner = ui.panel({.height = fixedSize(10)});
+
+        EXPECT_THROW((void)ui.finish(), UiError);
+    }
+
+    EXPECT_NO_THROW((void)ui.finish());
 }

@@ -2,14 +2,15 @@
 
 #include <gtest/gtest.h>
 
+#include <antwika/ecs_commons/Name.hpp>
 #include <antwika/log/mocks/MockLogger.hpp>
 
 #include "antwika/task_worker/Worker.hpp"
 #include "antwika/task_worker/WorkerLookup.hpp"
 
 using antwika::ecs::World;
+using antwika::ecs_commons::makeName;
 using antwika::log::mocks::MockLogger;
-using antwika::task_worker::makeWorkerLabel;
 using antwika::task_worker::TaskJob;
 using antwika::task_worker::Worker;
 using antwika::task_worker::WorkerLookup;
@@ -39,7 +40,7 @@ TEST(TaskJobTest, ExecuteClaimsTheLowestIndexIdleWorkerOnly)
     EXPECT_EQ(world.get<Worker>(busy), (Worker{WorkerStatus::Busy, 3}));
     EXPECT_EQ(
         world.get<Worker>(idleFirst),
-        (Worker{WorkerStatus::Busy, 5, 1, makeWorkerLabel("Task")}));
+        (Worker{WorkerStatus::Busy, 5, 1, makeName("Task")}));
     EXPECT_EQ(
         world.get<Worker>(idleSecond), (Worker{WorkerStatus::Idle, 0}));
     EXPECT_NE(

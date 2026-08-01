@@ -14,16 +14,17 @@ Running the loop is [`simulation`](simulation.md)'s, and this library depends on
 | `ReplaySource.hpp` | `ReplaySource` | The `simulation::ITickEventSource` that serves events out of a loaded `ReplayDocument`. |
 | `ReplayDocument.hpp` | `ReplayDocument` | The in-memory form of a replay file. |
 | `ReplayReader.hpp` / `ReplayWriter.hpp` | `ReplayReader`, `ReplayWriter` | JSON in and out; `ReplayWriter::Layout` is `Compact` or `Pretty`. |
-| `EventJson.hpp`, `PayloadJson.hpp`, `ReplayJson.hpp` | — | The JSON encoding, validated with `json-schema-validator`. |
+| `EventJson.hpp`, `PayloadJson.hpp`, `ReplayJson.hpp` | — | The JSON encoding; `src/EventSchema.cpp` describes the events array, and the whole is validated with `json-schema-validator`. |
 | `SchemaVersion.hpp` | `kReplayDocumentVersion`, `kTickEventSchemaVersion`, `kSchemaVersionKey` | The versions, named here rather than written at a call site. |
 | `IMigration.hpp`, `MigrationChain.hpp` | `IMigration`, `MigrationChain` | Single-step N-to-N+1 migrations, applied until a document is current. |
 | `ReplayMigrations.hpp` | `standardReplayMigrations()` | The replay document's own chain, constructed and injected. |
 | `ReplayFormatError.hpp` | `ReplayFormatError` | Bad replay input. |
 | `SchemaVersionError.hpp` | `SchemaVersionError` | Narrower: a document this build cannot bring to the current version. |
-| `ReplayCli.hpp` | `ReplayCliOptions`, `replayCliFlags()` | The `--record <path>` / `--replay <path>` flags every app shares; the parsing is [`cli`](cli.md)'s. |
-| `CommandLine.hpp`, `FlagSpec.hpp`, `CommandLineError.hpp` | — | `using` re-exports of the [`cli`](cli.md) names, kept so the old spelling still compiles. |
-| `TickEventRecorder.hpp` | `TickEventRecorder` | Records what was dispatched, minus each app's self-generated events. |
+| `ReplayCli.hpp` | `ReplayCliOptions`, `replayCliFlags()`, `replayCliOptionsFrom()` | The `--record <path>` / `--replay <path>` flags every app's `main.cpp` shares; the parsing itself is [`cli`](cli.md)'s. |
 | `CanvasCheck.hpp` | `CanvasCheck` | Guards a replay recorded against one canvas size from being replayed against another. |
+
+The recorder itself is [`event`](event.md)'s `TickEventRecorder`, not this library's.
+`antwika/replay/CommandLine.hpp`, `FlagSpec.hpp` and `CommandLineError.hpp` were `using` re-exports of the [`cli`](cli.md) names, kept while callers moved; they are gone, so `antwika::cli::` is the only spelling of those types.
 
 ## Depends on
 
@@ -33,8 +34,8 @@ Running the loop is [`simulation`](simulation.md)'s, and this library depends on
 ## Non-obvious decisions
 
 **Only externally-supplied events are persisted.**
-Anything the engine regenerates on its own — `engine.tick` above all — is never written.
-Each app names its self-generated events so the recorder can drop them, and no `input.*` name may ever appear in such a list.
+Anything the engine regenerates deterministically on its own — `engine.tick` above all — is never written into a replay.
+What lands in a recording is decided by where the recorder sits rather than by a list of names it skips: [`event`](event.md)'s `TickEventRecorder` records unconditionally, so what it sees is exactly what an `ITickEventSource` supplied for that tick, and never `engine.tick` nor anything a sink derives further down the tick path.
 
 **Layout is chosen by who reads the file.**
 `saveReplayFile()` writes `Compact`, because a `--record` run is read by `ReplayReader` rather than by a person.

@@ -29,6 +29,29 @@ namespace antwika::poker
      * The pump lives here rather than beside the drawing because the
      * loop asks a source for a tick's events *before* stepping the
      * engine, so a close seen now stops the session on this tick.
+     *
+     * This is a near-copy of simulation::WindowInputSource, and the
+     * difference is deliberate rather than an oversight.
+     * That one holds a gfx::WindowId and so cannot close anything,
+     * noting a close request in a bool local to one eventsFor() call.
+     * This one holds the IWindow itself and calls close() on it, so the
+     * window's own open/closed state is what says the session is over.
+     * That is what this app needs: --tick-delay-ms with a positive value
+     * holds the final frame up until the window is closed, and
+     * PokerRoom's epilogue goes on pumping and rendering *after* the
+     * loop has finished, long after a bool inside eventsFor() would have
+     * gone out of scope.
+     * It is also why pumpEvents() is public here and is called from
+     * outside the tick, which the library's source has no equivalent of.
+     * What blog/012 warns against -- the tick that carries the stop
+     * drawing into a window this source has already closed -- is
+     * answered here by TableRenderSink::render(), which returns early on
+     * a closed window.
+     * The library form needs no such guard, which is why that is the one
+     * that was promoted.
+     * Folding the two together, with closing the window an option the
+     * library offers, is available follow-up work rather than something
+     * this header is waiting on.
      */
     class WindowCloseSource final : public ITickEventSource
     {

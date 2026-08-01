@@ -8,6 +8,8 @@
 #include <antwika/gfx/SelectedBackend.hpp>
 #include <antwika/gfx/Size.hpp>
 #include <antwika/gfx/WindowDesc.hpp>
+#include <antwika/i18n/Locale.hpp>
+#include <antwika/i18n/Translator.hpp>
 #include <antwika/input/InputEventCodec.hpp>
 #include <antwika/input/InputPipeline.hpp>
 #include <antwika/input/Key.hpp>
@@ -76,6 +78,14 @@ namespace
         const EditorScene scene;
         SystemSleeper sleeper;
 
+        // Fixed here, and read from nowhere else.
+        // The bar is measured from these words.
+        // A press is then resolved against the layout they produce.
+        // So a language off the environment would move the buttons.
+        // Changing it is this line, exactly as the window size is.
+        const antwika::i18n::Translator translator{
+            antwika::i18n::kDefaultLocale};
+
         PngAtlasStore store(options.imagePath, options.outPath);
 
         ReplaySource fileSource(
@@ -114,6 +124,7 @@ namespace
             .inputSource = source,
             .codec = codec,
             .store = store,
+            .translator = translator,
             .canvas = kWindowSize,
             .blank = options.sheet,
             .tiles = options.tile,

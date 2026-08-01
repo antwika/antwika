@@ -2,6 +2,7 @@ find_package(GTest REQUIRED)
 
 add_executable(antwika_replay_tests
     EventJsonTest.cpp
+    JsonShapesTest.cpp
     MigrationChainTest.cpp
     ReplayCliTest.cpp
     ReplayDeterminismTest.cpp
@@ -11,6 +12,7 @@ add_executable(antwika_replay_tests
     ReplaySourceTest.cpp
     ReplayWriterReaderTest.cpp
     SchemaVersionTest.cpp
+    VersionedDocumentTest.cpp
 )
 
 target_include_directories(antwika_replay_tests

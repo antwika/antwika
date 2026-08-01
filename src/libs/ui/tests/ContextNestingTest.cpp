@@ -46,14 +46,16 @@ TEST(ContextNestingTest, Nesting_DrawsARowInsideAColumnInsideAPanel)
 {
     Context ui{Size{.width = 100, .height = 50}, plainTheme()};
 
-    const auto outer = ui.panel({.height = kGrow});
-
     {
-        const auto inner = ui.row({
-            .height = fixedSize(10),
-            .background = kAccent});
+        const auto outer = ui.panel({.height = kGrow});
 
-        ui.label("ab");
+        {
+            const auto inner = ui.row({
+                .height = fixedSize(10),
+                .background = kAccent});
+
+            ui.label("ab");
+        }
     }
 
     EXPECT_EQ(
@@ -82,9 +84,11 @@ TEST(ContextNestingTest, Nesting_LetsAFittingContainerSizeItself)
 {
     Context ui{Size{.width = 100, .height = 100}, plainTheme(3)};
 
-    const auto box = ui.panel({.width = kFit, .height = kFit});
+    {
+        const auto box = ui.panel({.width = kFit, .height = kFit});
 
-    ui.label("ab");
+        ui.label("ab");
+    }
 
     // Two glyph cells is twelve pixels, plus three of padding a side.
     EXPECT_EQ(
@@ -108,18 +112,20 @@ TEST(ContextNestingTest, Nesting_PutsSiblingColumnsSideBySide)
 {
     Context ui{Size{.width = 100, .height = 20}, plainTheme()};
 
-    const auto body = ui.row({.height = kGrow});
-
     {
-        const auto side = ui.column({.width = kFit, .height = kGrow});
+        const auto body = ui.row({.height = kGrow});
 
-        ui.label("ab");
-    }
+        {
+            const auto side = ui.column({.width = kFit, .height = kGrow});
 
-    {
-        const auto main = ui.column({.width = kGrow, .height = kGrow});
+            ui.label("ab");
+        }
 
-        ui.label("cd");
+        {
+            const auto main = ui.column({.width = kGrow, .height = kGrow});
+
+            ui.label("cd");
+        }
     }
 
     EXPECT_EQ(

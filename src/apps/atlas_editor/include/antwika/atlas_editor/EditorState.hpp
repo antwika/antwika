@@ -3,7 +3,6 @@
 #include <cstddef>
 #include <cstdint>
 #include <optional>
-#include <string>
 
 #include <antwika/gfx/Color.hpp>
 #include <antwika/gfx/Point.hpp>
@@ -12,6 +11,7 @@
 #include "antwika/atlas_editor/Canvas.hpp"
 #include "antwika/atlas_editor/CanvasView.hpp"
 #include "antwika/atlas_editor/Pixel.hpp"
+#include "antwika/atlas_editor/StatusMessage.hpp"
 #include "antwika/atlas_editor/TileGrid.hpp"
 #include "antwika/atlas_editor/Tool.hpp"
 
@@ -107,9 +107,11 @@ namespace antwika::atlas_editor
 
         /**
          * @brief Get the last thing worth telling the artist.
-         * @return The message, empty until something has happened.
+         * @return The message, or nothing until something has
+         * happened.
          */
-        [[nodiscard]] const std::string &status() const noexcept;
+        [[nodiscard]] const std::optional<StatusMessage> &status()
+            const noexcept;
 
         /**
          * @brief Get how many pixels this session has changed.
@@ -233,9 +235,9 @@ namespace antwika::atlas_editor
 
         /**
          * @brief Say what just happened, for the status line.
-         * @param message What to show.
+         * @param message Which message, and what it names.
          */
-        void setStatus(std::string message);
+        void setStatus(StatusMessage message);
 
     private:
         Canvas sheet;
@@ -248,7 +250,7 @@ namespace antwika::atlas_editor
         std::optional<std::size_t> swatch;
         bool showGrid = true;
         std::optional<Pixel> under;
-        std::string message;
+        std::optional<StatusMessage> message;
 
         std::uint64_t changes = 0;
         std::uint64_t stepped = 0;

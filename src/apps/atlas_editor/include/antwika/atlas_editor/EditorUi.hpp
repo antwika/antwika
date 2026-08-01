@@ -4,6 +4,7 @@
 #include <cstdint>
 #include <string>
 
+#include <antwika/i18n/Translator.hpp>
 #include <antwika/ui/Frame.hpp>
 #include <antwika/ui/Pointer.hpp>
 #include <antwika/ui/WidgetId.hpp>
@@ -14,6 +15,7 @@
 namespace antwika::atlas_editor
 {
 
+    using antwika::i18n::Translator;
     using antwika::ui::Frame;
     using antwika::ui::Pointer;
     using antwika::ui::WidgetId;
@@ -112,10 +114,12 @@ namespace antwika::atlas_editor
      * reading it back off a layout.
      *
      * @param state The session to describe.
+     * @param translator Words the message the state carries.
      * @return Where the pointer is, what it would do, and how the sheet
      * stands, in one line.
      */
-    [[nodiscard]] std::string statusLine(const EditorState &state);
+    [[nodiscard]] std::string statusLine(
+        const EditorState &state, const Translator &translator);
 
     /**
      * @brief Describe the toolbar for one tick.
@@ -130,11 +134,23 @@ namespace antwika::atlas_editor
      * of the canvas, so resolving a recorded click against a differently
      * sized window would resolve it to a different button.
      *
+     * **The bar is measured from translated text, which is why this
+     * application's locale is fixed in main().** A button is as wide as
+     * its own label, and a press is resolved against the layout those
+     * widths produce, so a session recorded in one language and
+     * replayed in another would resolve the same click to a different
+     * button. The locale is therefore a constant of the build here,
+     * read from no environment variable and no flag, since neither is
+     * carried by a recording -- see antwika/i18n/Translator.hpp.
+     *
      * @param state The session the bar reports and acts on.
      * @param pointer Where the pointer is and what it is doing.
+     * @param translator Words every label on the bar.
      * @return The picture, and what the pointer did to it.
      */
     [[nodiscard]] Frame describeEditor(
-        const EditorState &state, Pointer pointer);
+        const EditorState &state,
+        Pointer pointer,
+        const Translator &translator);
 
 } // namespace antwika::atlas_editor

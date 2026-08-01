@@ -2,6 +2,7 @@
 
 #include <antwika/gfx/IRenderer.hpp>
 #include <antwika/gfx/Size.hpp>
+#include <antwika/i18n/Translator.hpp>
 #include <antwika/ui/DrawList.hpp>
 #include <antwika/ui/Frame.hpp>
 #include <antwika/ui/Keyboard.hpp>
@@ -14,6 +15,7 @@ namespace antwika::ui_demo
 
     using antwika::gfx::IRenderer;
     using antwika::gfx::Size;
+    using antwika::i18n::Translator;
     using antwika::ui::DrawList;
     using antwika::ui::Frame;
     using antwika::ui::Keyboard;
@@ -40,10 +42,33 @@ namespace antwika::ui_demo
      * function of the layout, and the layout is a function of the
      * canvas, so resolving a recorded click against a differently sized
      * window would resolve it to a different widget.
+     *
+     * **Every word it declares comes off an injected i18n::Translator,
+     * and the layout is a function of those words too.** A button is as
+     * wide as its own label, so the same argument the canvas makes
+     * applies to the language: a session recorded in one and replayed
+     * in another would resolve the same click to a different widget.
+     * That is why main() fixes the locale at i18n::kDefaultLocale and
+     * reads one from nowhere else -- neither an environment variable
+     * nor a flag is carried by a recording. It is also why DemoState
+     * holds a ui_demo::DemoMessage rather than a sentence: the words
+     * belong here, and the state a replay regenerates may not have any.
+     *
+     * What is deliberately *not* worded is the eleven ui::Theme swatch
+     * labels and the metric lines beside them. Those are the names of
+     * that struct's own fields, so translating one would make the
+     * swatch lie about what a caller types.
      */
     class DemoScene final
     {
     public:
+        /**
+         * @brief Build the scene over the translator wording it.
+         * @param translator Words everything declared here. Must
+         * outlive this scene.
+         */
+        explicit DemoScene(const Translator &translator);
+
         /**
          * @brief Describe the showcase for one tick.
          * @param canvas The area the UI is laid out into.
@@ -70,6 +95,9 @@ namespace antwika::ui_demo
          * overlay DemoSink wrote them into.
          */
         void draw(IRenderer &renderer, const DrawList &picture) const;
+
+    private:
+        const Translator &translator;
     };
 
 } // namespace antwika::ui_demo

@@ -28,7 +28,10 @@ namespace antwika::pathfinding
      * @return A SearchResult that is PathFound with a start-to-goal
      * node list, or NoPath if no route exists.
      * @throws PathfindingError If the graph reports a negative edge
-     * cost or a negative heuristic estimate.
+     * cost, a negative heuristic estimate, or costs that sum past what
+     * a Cost can hold. That last one is refused rather than saturated,
+     * since two saturated keys would compare equal and quietly reorder
+     * the open set the guarantee above rests on.
      */
     [[nodiscard]] SearchResult findPath(
         const IGraph &graph, NodeId start, NodeId goal);

@@ -26,6 +26,7 @@
 #include <antwika/log/mocks/MockLogger.hpp>
 #include <antwika/replay/ReplayCli.hpp>
 #include <antwika/replay/ReplaySource.hpp>
+#include <antwika/simulation/WindowInputSource.hpp>
 
 #include "antwika/game/AppMode.hpp"
 #include "antwika/game/BuildingIndex.hpp"
@@ -41,7 +42,6 @@
 #include "antwika/game/Toolbar.hpp"
 #include "antwika/game/UiCanvas.hpp"
 #include "antwika/game/UiOverlay.hpp"
-#include "antwika/game/WindowInputSource.hpp"
 
 using antwika::event::Event;
 using antwika::event::mocks::MockEventSink;
@@ -58,8 +58,8 @@ using antwika::game::kUiCanvas;
 using antwika::game::PathIndex;
 using antwika::game::Toolbar;
 using antwika::game::UiOverlay;
-using antwika::game::WindowInputSource;
 using antwika::gfx::CloseRequested;
+using antwika::simulation::WindowInputSource;
 using antwika::gfx::NullBackend;
 using antwika::gfx::WindowEvent;
 using antwika::gfx::WindowId;

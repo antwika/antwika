@@ -9,6 +9,7 @@
 #include <antwika/event/IEventSink.hpp>
 #include <antwika/event/ITickEventSink.hpp>
 #include <antwika/gfx/Size.hpp>
+#include <antwika/i18n/Translator.hpp>
 #include <antwika/input/IInputEventCodec.hpp>
 #include <antwika/log/ILogger.hpp>
 #include <antwika/simulation/ITickEventSource.hpp>
@@ -24,6 +25,7 @@ namespace antwika::ui_demo
     using antwika::event::IEventSink;
     using antwika::event::ITickEventSink;
     using antwika::gfx::Size;
+    using antwika::i18n::Translator;
     using antwika::input::IInputEventCodec;
     using antwika::log::ILogger;
     using antwika::simulation::ITickEventSource;
@@ -76,6 +78,16 @@ namespace antwika::ui_demo
 
         /** @brief Decodes antwika::input's events. */
         const IInputEventCodec &codec;
+
+        /**
+         * @brief Words every label the showcase declares.
+         *
+         * The layout is measured from what this says and a press is
+         * resolved against that layout, so the locale has to be the
+         * same on the recording machine and the replaying one -- which
+         * is why main() fixes it and reads one from nowhere else.
+         */
+        const Translator &translator;
 
         /**
          * @brief The size everything is laid out and hit-tested against.

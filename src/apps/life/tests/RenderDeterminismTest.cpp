@@ -24,13 +24,13 @@
 #include <antwika/log/mocks/MockLogger.hpp>
 #include <antwika/replay/ReplayCli.hpp>
 #include <antwika/replay/ReplaySource.hpp>
+#include <antwika/simulation/WindowInputSource.hpp>
 
 #include "antwika/life/Board.hpp"
 #include "antwika/life/BoardScene.hpp"
 #include "antwika/life/Events.hpp"
 #include "antwika/life/Life.hpp"
 #include "antwika/life/RenderSystem.hpp"
-#include "antwika/life/WindowInputSource.hpp"
 
 #include "ScratchFile.hpp"
 
@@ -52,10 +52,10 @@ using antwika::gfx::mocks::MockWindow;
 using antwika::life::Board;
 using antwika::life::BoardScene;
 using antwika::life::RenderSystem;
-using antwika::life::WindowInputSource;
 using antwika::life::tests::ScratchFile;
 using antwika::log::mocks::MockLogger;
 using antwika::replay::ReplaySource;
+using antwika::simulation::WindowInputSource;
 using ::testing::ByMove;
 using ::testing::NiceMock;
 using ::testing::Return;

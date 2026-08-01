@@ -29,6 +29,7 @@ target_include_directories(antwika_task_worker_tests
 target_link_libraries(antwika_task_worker_tests
     PRIVATE
         antwika::ecs
+        antwika::ecs_commons
         antwika::engine
         antwika::log::tests::mocks
         antwika::replay

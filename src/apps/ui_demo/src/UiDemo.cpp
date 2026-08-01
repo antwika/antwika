@@ -28,7 +28,7 @@ namespace antwika::ui_demo
 
         DemoState state;
         DemoOverlay overlay(config.canvas);
-        const DemoScene scene;
+        const DemoScene scene{config.translator};
 
         EventDispatcher dispatcher({config.eventSink});
 

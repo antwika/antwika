@@ -4,22 +4,27 @@
 
 ## What it is for
 
-The composition-root helpers shared by the applications: parsing the shared flags, standing up logging, running a recorded or replayed session, reading an asset from disk, and folding input edges into a `ui::Pointer`.
+The composition-root helpers shared by the applications: parsing the shared flags, standing up logging, running a recorded or replayed session, finding and reading an asset shipped beside the executable, drawing the frames between two ticks, and folding input edges into a `ui::Pointer`.
 It holds no simulation logic of its own — everything here is glue that was duplicated across three or more `main.cpp` files before it was extracted.
 
 ## Key types
 
 | Header | Type | Role |
 | --- | --- | --- |
-| `RunRecorded.hpp` | `RecordedRun`, `runRecorded()`, `scriptedEvents()` | Parses `--record`/`--replay`, builds the source, runs the loop through a caller-supplied body, and writes the file when the run ends. |
+| `RunRecorded.hpp` | `RecordedRun`, `runRecorded()`, `scriptedEvents()` | Parses `--record`/`--replay` and each app's own flags in one pass, builds the source, runs the loop through a caller-supplied body, and writes the file when the run ends. |
 | `RunGuarded.hpp` | `runGuarded()` | Runs a body, reports what it threw under the program's name, and returns an exit code. |
 | `ConsoleLogging.hpp` | `ConsoleLogging` | A `Logger` over `std::ostream` at a minimum `Level`, exposed as `logger()`. |
+| `AssetPath.hpp` | `executableDirectory()`, `assetPath()` | Where the running program is, and where a file shipped beside it is. |
 | `PngFile.hpp` | `readPngFile()` | Reads a PNG path into a `gfx::Bitmap`. |
-| `PointerReading.hpp` | `asPoint()`, `locates()`, `pointerFrom()` | Turns `input` edges into a `ui::Pointer`. |
+| `WavFile.hpp` | `readWavFile()` | Reads a WAV path into a `sound::Waveform`; `readPngFile()`'s line-for-line counterpart. |
+| `FramePacedSource.hpp` | `FramePacedSource`, `FramePacing` | An `ITickEventSource` decorator that draws `framesPerTick - 1` frames in the gap before each tick's events are read, and paces the tick through an injected `time::ISleeper`. |
+| `IFramePass.hpp` | `IFramePass` | `draw(animation::Progress)` — what one of those frames is handed, and all it is handed. |
+| `FramePacingError.hpp` | `FramePacingError` | A pacing no loop could honour, such as a tick that draws no frames at all. |
+| `PointerReading.hpp` | `asPoint()`, `locates()`, `pointerFrom()`, `hoverFrom()` | Turns `input` edges into a `ui::Pointer`, and a pointer hint into a `ui::HoverPointer`. |
 
 ## Depends on
 
-[`cli`](cli.md), [`event`](event.md), [`gfx`](gfx.md), [`input`](input.md), [`log`](log.md), [`replay`](replay.md), [`time`](time.md), [`ui`](ui.md).
+[`animation`](animation.md), [`cli`](cli.md), [`event`](event.md), [`gfx`](gfx.md), [`input`](input.md), [`log`](log.md), [`replay`](replay.md), [`simulation`](simulation.md), [`sound`](sound.md), [`time`](time.md), [`ui`](ui.md).
 It is the widest library in the project, and that is the point: it is where the seams are joined, so no other library has to know about more than its own neighbours.
 
 ## Non-obvious decisions
@@ -28,10 +33,40 @@ It is the widest library in the project, and that is the point: it is where the 
 `antwika::gfx` opens no files at all — `PngReader::read()` takes a byte stream — so that every decoder failure is provable headlessly and no backend ever receives a path.
 Opening the file is an application concern, so the helper that does it sits in the application layer.
 
+**`readPngFile()`'s counterpart for audio is `readWavFile()`, and it is deliberately line for line.**
+`antwika::sound` takes the same position about files that `antwika::gfx` does — `WavReader::read()` decodes a byte stream and never goes looking for one — so the two callers should not have to be read differently to see it.
+
+**`assetPath()` asks the operating system where the program is.**
+`/proc/self/exe` on Linux, `GetModuleFileNameW` on Windows: never the working directory, and never `argv[0]`, which holds whatever the caller happened to type and holds nothing useful at all when a program was found on `PATH`.
+So starting an application from anywhere still works, and `antwika::app` is the one place under `src/` that names an operating system.
+What it replaces is a path baked in at configure time, which was the *building* machine's path — right on the machine that built it, and a directory that does not exist on any other, so every cross-built executable that opened anything died on its first line.
+
+**Every application gets a directory of its own under `bin/`.**
+`antwika_bundle_app()` in [`cmake/AntwikaModule.cmake`](../../cmake/AntwikaModule.cmake) puts the executable there, along with whatever it opens and — on MinGW — the runtime DLLs it needs to start; `assetPath()` is how the running program finds those files again.
+Two applications ship an `atlas.png` and three a `demo.json`, so one shared `bin/` was one atlas and one demo replay between all of them the moment either had to sit beside its binary.
+
+A test binary goes to the directory of the module that owns it, put there by `antwika_bundle_test()` in the same file: `bin/antwika_companion/antwika_companion_tests` beside the application it covers, and `bin/antwika_replay/antwika_replay_tests` in a directory of the library's own.
+That directory is the target's own name with the trailing `_tests` taken off rather than a second argument, so the name and the directory cannot disagree, and a target not following the convention is refused at configure time rather than landing somewhere surprising.
+The same function registers the cases with CTest, because moving a binary and saying where it went are one decision, and leaving the second in every `tests/CMakeLists.txt` is exactly the drift one home for the rule prevents.
+Test binaries still open nothing, so what a directory each buys is a `bin/` a reader can navigate rather than anything a binary finds beside it.
+
+**A frame drawn between two ticks is handed nothing it could change.**
+`FramePacedSource` decorates an `ITickEventSource` rather than changing [`simulation`](simulation.md)'s `EngineLoop`, and it is a pure observer of the stream in exactly `input::PointerHintSource`'s sense: `eventsFor()` hands back what the source it wraps returned, unchanged, so a recording is a function of a stream it cannot touch and attaching it is free rather than merely cheap.
+It also replaces a `TickPacer` for the app that takes it, since one frame a tick is the same thing that did.
+
+`IFramePass::draw()` is the other half.
+Its one argument is an `animation::Progress` — how far through the tick the frame falls, as an exact rational rather than a float, so a picture asserted call by call is the same picture on every toolchain — and it is handed **no `World`, no `Tick`, no dispatcher and no event source**.
+A pass between two ticks cannot change what the simulation computes because it is given nothing it could change, which is structural rather than a promise; an implementation therefore has to have been handed whatever it draws from before the frame began, which in practice means a snapshot taken on the tick.
+`FramePacingError` is its own type, per the one-exception-type-per-failure-category rule, because a tick that draws no frames at all is a pacing nobody could have meant.
+
 **`PointerReading` is the bridge `ui` refuses to build.**
 `antwika::ui` reads no device: a `ui::Pointer` arrives as an argument.
 `pointerFrom()` is where an application folds `input`'s edges into one, and `locates()` is the predicate for whether an event carries a position at all — which matters because `input.pointer_scroll` does not.
 `asPoint()` converts an `input::Position` to a `gfx::Point`, the one place the deliberate duplication between those two types is resolved.
+
+`hoverFrom()` is a second function beside `pointerFrom()` rather than one more field on it.
+It reads a `std::optional<input::PointerHint>` — the free-moving position `input::PointerHintChannel` carries and no recording holds — as a `ui::HoverPointer`, which is the only thing `ui::applyHover()` takes.
+The two positions come from different places and mean different things, and keeping them apart in the type system is what stops one being passed where the other belongs.
 
 **`runGuarded()` is the half of `runRecorded()` that knows nothing about replays.**
 It exists because an app's `main.cpp` may not have a `try` of its own, and `gfx_demo` and `gfx3d_demo` take no `--record`/`--replay` to call `runRecorded()` with.
@@ -39,6 +74,10 @@ It exists because an app's `main.cpp` may not have a `try` of its own, and `gfx_
 A throw that is not a `std::exception` is deliberately let through: that is a bug in the body rather than a failed run.
 
 **`runRecorded()` takes the app's body as a callback.**
-The app supplies the sinks, the systems and the self-generated event names; the helper owns the order — source, recorder, then app sinks — because that order is what the recording rule depends on and is not something each `main.cpp` should get right independently.
+The app supplies the sinks and the systems; the helper owns the order — source, recorder, then app sinks — because that order is what the recording rule depends on and is not something each `main.cpp` should get right independently.
+
+**`runRecorded()` is also the one place the flag tables are concatenated and parsed.**
+A program parses once, against one table: an argument not in it is a `cli::CommandLineError`, so a second pass would refuse whatever the first accepted — which is how `apps/poker`'s `--tick-delay-ms` once stopped working.
+That is why each layer offers a *table* and a reader rather than a parser of its own — `replayCliFlags()`/`replayCliOptionsFrom()`, `game::saveCliFlags()`/`saveCliOptionsFrom()`, `poker::watchFlags()`/`watchOptionsFrom()` — and why this helper takes an app's own flags as a `std::span<const FlagSpec>` and reads them in the same pass as `--record` and `--replay`.
 
 See [`blog/009-json-wins-tickevent-and-three-mains-that-stopped-repeating-themselves.md`](../../blog/009-json-wins-tickevent-and-three-mains-that-stopped-repeating-themselves.md).

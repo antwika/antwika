@@ -229,6 +229,54 @@ TEST(MixerTest, Render_StartsALoopingVoiceAgainRatherThanStopping)
     EXPECT_EQ(mixer.activeVoices(), 1U);
 }
 
+// A restart is where a zero-frame waveform read past its samples.
+// So a loop is asserted frame by frame across several cycles.
+TEST(MixerTest, Render_RepeatsALoopingWaveformOverSeveralCycles)
+{
+    const std::vector<float> cycle{1.0F, 0.5F, 0.25F};
+
+    WaveformLibrary library;
+    const auto id = library.add(mono(cycle));
+
+    Mixer mixer(library, MixerDesc{.format = kStereo48});
+    mixer.play(PlayRequest{.waveform = id, .looping = true});
+
+    const auto out = rendered(mixer, 9);
+
+    ASSERT_EQ(out.frameCount(), 9U);
+
+    for (std::size_t frame = 0; frame < 9; ++frame)
+    {
+        const auto expected = cycle[frame % cycle.size()];
+
+        EXPECT_FLOAT_EQ(out.samples[frame * 2], expected) << frame;
+        EXPECT_FLOAT_EQ(out.samples[frame * 2 + 1], expected) << frame;
+    }
+
+    EXPECT_EQ(mixer.activeVoices(), 1U);
+}
+
+// The shortest loop there is, restarting on every single frame.
+TEST(MixerTest, Render_RepeatsALoopingWaveformOfOneFrame)
+{
+    WaveformLibrary library;
+    const auto id = library.add(mono({0.75F}));
+
+    Mixer mixer(library, MixerDesc{.format = kStereo48});
+    mixer.play(PlayRequest{.waveform = id, .looping = true});
+
+    const auto out = rendered(mixer, 4);
+
+    ASSERT_EQ(out.frameCount(), 4U);
+
+    for (const auto sample : out.samples)
+    {
+        EXPECT_FLOAT_EQ(sample, 0.75F);
+    }
+
+    EXPECT_EQ(mixer.activeVoices(), 1U);
+}
+
 TEST(MixerTest, Render_FeedsEveryChannelFromAMonoSource)
 {
     WaveformLibrary library;

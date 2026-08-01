@@ -9,10 +9,11 @@ namespace antwika::pathfinding
      * @brief Thrown when the graph handed to the library is not one A*
      * can search at all.
      *
-     * That is a negative edge cost or a negative heuristic reported
-     * during findPath(), and a GridGraph built from a non-positive
-     * extent, a passability vector of the wrong length, or asked about
-     * a cell outside its own bounds.
+     * That is a negative edge cost, a negative heuristic, or costs that
+     * sum past what a Cost can hold, all reported during findPath();
+     * and a GridGraph built from a non-positive extent, a passability
+     * vector of the wrong length, or asked about a cell outside its own
+     * bounds.
      *
      * A missing path is emphatically not one of these: a start with no
      * route to its goal is the ordinary answer to an ordinary question,
