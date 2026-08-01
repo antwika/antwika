@@ -192,6 +192,21 @@ namespace antwika::game
             return shape;
         }
 
+        // Camera clamps a level it cannot honour, and keeps doing so.
+        // That is right for zoomIn(), for zoomOut() and for a default.
+        // It is wrong for a file, which is why the refusal lives here.
+        // A level past kZoomHalfWidths is a camera no session ever had.
+        // Loading it at the closest is a session somebody never played.
+        // Which is the rule requireConsistentLinks() states below.
+        nlohmann::json zoomLevelShape()
+        {
+            nlohmann::json shape;
+            shape["type"] = "integer";
+            shape["minimum"] = 0;
+            shape["maximum"] = kZoomHalfWidths.size() - 1;
+            return shape;
+        } // GCOVR_EXCL_LINE
+
         nlohmann::json cameraShape()
         {
             nlohmann::json shape;
@@ -202,7 +217,7 @@ namespace antwika::game
             // GCOVR_EXCL_STOP
             shape["properties"]["panX"] = coordinateShape();
             shape["properties"]["panY"] = coordinateShape();
-            shape["properties"]["zoomLevel"] = countShape();
+            shape["properties"]["zoomLevel"] = zoomLevelShape();
             return shape;
         }
 

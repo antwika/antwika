@@ -29,6 +29,7 @@ using antwika::game::GameSummary;
 using antwika::game::GridExtent;
 using antwika::game::kSaveFormatVersion;
 using antwika::game::kTicksPerStep;
+using antwika::game::kZoomHalfWidths;
 using antwika::replay::kSchemaVersionKey;
 using antwika::game::PathIndex;
 using antwika::game::pathIndexOf;
@@ -244,16 +245,26 @@ TEST(SaveGameTest, RejectsAStepPhaseThatWouldNarrowToAnotherNumber)
     EXPECT_THROW((void)saveGameFromJson(encoded), SaveFormatError);
 }
 
-// The camera clamps a zoom level it cannot honour.
-// A save asking for a level that does not exist loads at the closest.
-// Which beats reading past the end of the table.
-TEST(SaveGameTest, ClampsAnOutOfRangeZoomLevel)
+// Camera clamps a level it cannot honour, and still does.
+// A file is the one caller that is not owed that courtesy.
+// A level past the end of the table is a camera nobody ever had.
+// Loading it at the closest would be a session somebody never played.
+TEST(SaveGameTest, RejectsAZoomLevelPastTheEndOfTheTable)
 {
     auto encoded = saveGameToJson(populated());
-    encoded["camera"]["zoomLevel"] = 99;
+    encoded["camera"]["zoomLevel"] = kZoomHalfWidths.size();
+
+    EXPECT_THROW((void)saveGameFromJson(encoded), SaveFormatError);
+}
+
+// The boundary the refusal is drawn at, from the legal side.
+TEST(SaveGameTest, ReadsTheClosestZoomLevelTheTableHolds)
+{
+    auto encoded = saveGameToJson(populated());
+    encoded["camera"]["zoomLevel"] = kZoomHalfWidths.size() - 1;
 
     EXPECT_EQ(saveGameFromJson(encoded).camera.zoomLevel(),
-              Camera({}, 99).zoomLevel());
+              kZoomHalfWidths.size() - 1);
 }
 
 TEST(SaveGameTest, TakesASaveFromARunningSession)
