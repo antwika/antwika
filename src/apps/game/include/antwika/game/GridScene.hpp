@@ -109,6 +109,12 @@ namespace antwika::game
             const SceneSnapshot &snapshot,
             const ITexture &atlas) const;
 
+        void drawPlan(
+            IRenderer &renderer,
+            Size canvas,
+            const SceneSnapshot &snapshot,
+            const ITexture &atlas) const;
+
         void drawGhost(
             IRenderer &renderer,
             Size canvas,

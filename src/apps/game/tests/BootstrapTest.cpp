@@ -38,6 +38,7 @@
 #include "antwika/game/UiOverlay.hpp"
 #include "antwika/game/PathIndex.hpp"
 #include "antwika/game/PauseState.hpp"
+#include "antwika/game/RoadDrag.hpp"
 #include "antwika/game/BuildTool.hpp"
 #include "antwika/game/SaveGame.hpp"
 #include "antwika/game/Toolbar.hpp"
@@ -85,6 +86,10 @@ namespace
         AppModeState mode{AppMode::CityMap};
         antwika::game::PauseState pause;
 
+        // Owned here rather than made inside bootstrap().
+        // An application owns one so its renderer can read it.
+        antwika::game::RoadDrag drag;
+
         antwika::game::GameSummary run(
             ReplaySource &source,
             antwika::time::Tick maxTicks,
@@ -101,6 +106,7 @@ namespace
                 .built = built,
                 .mode = mode,
                 .pause = pause,
+                .drag = drag,
                 .maxTicks = maxTicks};
             if (recorder != nullptr)
             {
@@ -232,6 +238,17 @@ TEST(BootstrapTest, Bootstrap_LaysAPathDropsAWalkerAndWalksIt)
                 .position = {.x = point.x, .y = point.y}});
     };
 
+    const auto releaseAt = [&codec](antwika::game::Cell cell,
+                                    antwika::input::MouseButton button)
+    {
+        const auto point =
+            antwika::game::cellCentre(cell, antwika::game::Camera());
+        return codec.encode(
+            antwika::input::PointerButtonReleased{
+                .button = button,
+                .position = {.x = point.x, .y = point.y}});
+    };
+
     const std::vector<TickEvent> script{
         TickEvent{
             .tick = 0,
@@ -241,6 +258,13 @@ TEST(BootstrapTest, Bootstrap_LaysAPathDropsAWalkerAndWalksIt)
         TickEvent{
             .tick = 0,
             .event = pressAt(
+                antwika::game::Cell{.x = 2, .y = 1},
+                antwika::input::MouseButton::Left)},
+        // The button comes back up where it went down last.
+        // A road drag holds the run still until it does -- see RoadDrag.
+        TickEvent{
+            .tick = 0,
+            .event = releaseAt(
                 antwika::game::Cell{.x = 2, .y = 1},
                 antwika::input::MouseButton::Left)},
         TickEvent{
@@ -790,4 +814,59 @@ TEST(BootstrapTest, Bootstrap_TheDemoReplaysPaletteClickHitsTheHouse)
             antwika::gfx::Point{.x = 544, .y = 176},
             Camera(Point{.x = 512, .y = 48})),
         (antwika::game::Cell{.x = 4, .y = 3}));
+}
+
+// A drag through the front door.
+// A press, a movement, a release, and a run of road.
+// Nobody clicked it cell by cell.
+// The app defines no event for any of it.
+// The recording holds the three edges.
+// And the route is worked out again from them.
+TEST(BootstrapTest, Bootstrap_LaysAWholeRunOfRoadFromOneDrag)
+{
+    Harness harness;
+    const InputEventCodec codec;
+
+    const auto pixelOf = [](antwika::game::Cell cell)
+    {
+        const auto point =
+            antwika::game::cellCentre(cell, antwika::game::Camera());
+        return antwika::input::Position{.x = point.x, .y = point.y};
+    };
+
+    const std::vector<TickEvent> script{
+        TickEvent{
+            .tick = 0,
+            .event = codec.encode(
+                antwika::input::PointerButtonPressed{
+                    .button = antwika::input::MouseButton::Left,
+                    .position = pixelOf(antwika::game::Cell{.x = 2, .y = 2})})},
+        TickEvent{
+            .tick = 1,
+            .event = codec.encode(
+                antwika::input::PointerMoved{
+                    .position = pixelOf(antwika::game::Cell{.x = 6, .y = 2})})},
+        TickEvent{
+            .tick = 2,
+            .event = codec.encode(
+                antwika::input::PointerButtonReleased{
+                    .button = antwika::input::MouseButton::Left,
+                    .position = pixelOf(antwika::game::Cell{.x = 6, .y = 2})})},
+        TickEvent{
+            .tick = 3,
+            .event = Event{.name = antwika::engine::events::kStop}},
+    };
+    ReplaySource source(script);
+
+    const auto summary = harness.run(source, 10);
+
+    EXPECT_EQ(summary.paths.size(), 5U);
+
+    for (std::int32_t x = 2; x <= 6; ++x)
+    {
+        EXPECT_TRUE(harness.paths.has(antwika::game::Cell{.x = x, .y = 2}));
+    }
+
+    // The drag held the run and let it go again at the release.
+    EXPECT_FALSE(harness.pause.paused());
 }

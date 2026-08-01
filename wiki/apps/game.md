@@ -17,6 +17,7 @@ build/bin/antwika_game/antwika_game --replay src/apps/game/replays/demo.json
 ```
 
 Left-click places whatever the toolbar has selected, right-click drops a walker onto a road, middle-drag pans, and the wheel zooms.
+With the road tool selected a left-drag lays a whole run of road: the press marks where it starts, the pointer says where it ends, and the release lays the route between them.
 It starts on an empty grid and loads nothing unless `--replay` says so, so a session contains exactly what somebody clicked.
 
 It runs until Escape is pressed or the window is closed — both of which are input, so both are recorded and both replay.
@@ -56,6 +57,19 @@ That is also why zoom is an index into a table of whole tile sizes rather than a
 A click is the input; `GridSink` turns it into a placement inside the tick path, and the replay stores the click and regenerates the placement.
 Persisting both would lay two tiles per click.
 The toolbar defines no event either, for the same reason.
+
+**A road is dragged out rather than clicked one cell at a time, and that is no more an event than one click is.**
+A recording holds the press, the movements and the release; `RoadDrag` is where the gesture's start and end live, and `planRoad()` is what says how the one gets to the other.
+That plan is an A* through [`pathfinding`](../libraries/pathfinding.md) on exactly `stepTowards()`'s terms — ties break down to ascending `NodeId`, and the extent is passed in rather than derived from what happens to exist, since a bounding box taken off the roads would renumber every node as one was laid.
+`RoadDrag` is therefore simulation state in the camera's sense, written by `GridSink` inside the tick path and never from `input::PointerHintChannel`.
+The pressed cell is laid at once rather than at the release, so a plain click stays the single-tile placement it always was, and a recording that holds no release lays exactly what it always laid.
+
+Three decisions are worth stating outright.
+**Only roads are dragged**: a run of houses is not a route, so a path search says nothing about where one would go, and a building tool would need a rule of its own about what a rectangle of blocks means.
+**A drag holds the run still and lets it go again**, so a route cannot be planned against a city moving under it — but only when the drag was what held it, so a drag never resumes a run somebody paused for themselves (`RoadDrag::heldForDrag()`).
+**A route that does not exist builds nothing at all**: the preview shows the two cells that were named, reddened, which is the convention `canPlace()` and the build ghost already follow, and half a route is a road to nowhere nobody asked for.
+
+The preview itself rides on `SceneSnapshot::plan`, and unlike the ghost beside it that member is filled in once a tick rather than once a frame — it is derived from state a replay reproduces, so there is nothing about it a frame could see that the tick did not.
 
 **A building may have one walker out at a time, and it holds the handle.**
 Counting walkers per building would be a scan of every walker per building per tick; a handle is a lookup.

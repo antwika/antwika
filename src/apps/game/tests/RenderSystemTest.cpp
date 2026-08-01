@@ -34,6 +34,7 @@
 #include "antwika/game/MainMenuScene.hpp"
 #include "antwika/game/PathIndex.hpp"
 #include "antwika/game/PauseState.hpp"
+#include "antwika/game/RoadDrag.hpp"
 #include "antwika/game/RenderSystem.hpp"
 #include "antwika/game/SaveLoadScene.hpp"
 #include "antwika/game/TileAtlas.hpp"
@@ -116,6 +117,7 @@ namespace
                 .extent = kExtent,
                 .pause = pause,
                 .overlay = overlay,
+                .drag = drag,
                 .hint = hint,
                 .menuScene = menuScene,
                 .menuOverlay = menuOverlay,
@@ -148,6 +150,9 @@ namespace
 
         // A run begins unpaused, so most of these leave it alone.
         antwika::game::PauseState pause;
+
+        // No drag is under way, so most of these preview nothing.
+        antwika::game::RoadDrag drag;
 
         // A small world, since only the mode branch is under test.
         WorldMapState cities{antwika::game::generateWorldMap(
@@ -449,4 +454,35 @@ TEST_F(RenderSystemTest, Draw_SlidesAWalkerWhileTheRunIsNotPaused)
     system.draw(Progress(1, 2));
 
     EXPECT_NE(between, atTick);
+}
+
+// The planned run is simulation state.
+// So it is worked out beside the snapshot rather than beside the ghost.
+// See SceneSnapshot::plan.
+TEST_F(RenderSystemTest, Update_PreviewsTheRunOfRoadBeingDraggedOut)
+{
+    drag.begin(Cell{.x = 0, .y = 0}, false);
+    drag.dragTo(Cell{.x = 1, .y = 1});
+
+    RenderSystem system(setup());
+
+    // Four ground tiles, and three cells of the planned run over them.
+    EXPECT_CALL(renderer, drawTexture(_, _, _, _))
+        .Times(static_cast<int>(kExtent.width * kExtent.height) + 3);
+
+    system.update(world, 0);
+}
+
+// A drag that has ended previews nothing, and neither does no drag.
+TEST_F(RenderSystemTest, Update_PreviewsNothingWithNoDragUnderWay)
+{
+    drag.begin(Cell{.x = 0, .y = 0}, false);
+    drag.finish();
+
+    RenderSystem system(setup());
+
+    EXPECT_CALL(renderer, drawTexture(_, _, _, _))
+        .Times(static_cast<int>(kExtent.width * kExtent.height));
+
+    system.update(world, 0);
 }

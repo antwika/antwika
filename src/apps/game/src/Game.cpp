@@ -157,6 +157,12 @@ namespace antwika::game
         WorldMapState &cities =
             config.world.has_value() ? config.world->get() : oneCity;
 
+        // A run with nobody to show a preview to still drags roads out.
+        // So one is made here when no caller has offered one.
+        RoadDrag ownDrag;
+        RoadDrag &drag =
+            config.drag.has_value() ? config.drag->get() : ownDrag;
+
         const Toolbar toolbar;
         InputFold input(config.codec);
         UiSink uiSink(camera, ui, input, toolbar, pause, camera);
@@ -169,7 +175,9 @@ namespace antwika::game
             input,
             ui,
             cities,
-            config.built);
+            config.built,
+            drag,
+            pause);
 
         // The four that are swapped together, named together.
         // A city is opened by putting its contents into these.

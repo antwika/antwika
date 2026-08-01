@@ -38,6 +38,7 @@
 #include "antwika/game/PathIndex.hpp"
 #include "antwika/game/PauseState.hpp"
 #include "antwika/game/RenderSystem.hpp"
+#include "antwika/game/RoadDrag.hpp"
 #include "antwika/game/SaveCli.hpp"
 #include "antwika/game/SaveDirectory.hpp"
 #include "antwika/game/SaveGameFile.hpp"
@@ -157,6 +158,10 @@ namespace
         // The renderer below reads it to draw a held walker still.
         antwika::game::PauseState pause;
 
+        // Owned here for the pause's reason exactly.
+        // The renderer below previews the run of road it names.
+        antwika::game::RoadDrag drag;
+
         // Against the size the window was asked for.
         // Never the size one reports, which nothing records.
         // That is what makes a recorded click hit the same button.
@@ -193,6 +198,7 @@ namespace
             .extent = kExtent,
             .pause = pause,
             .overlay = overlay,
+            .drag = drag,
             .hint = hint,
             .menuScene = menuScene,
             .menuOverlay = menuOverlay,
@@ -260,6 +266,7 @@ namespace
                 .built = built,
                 .mode = mode,
                 .pause = pause,
+                .drag = drag,
                 .observers = observers,
                 .replayRecorder = recorded.replayRecorder,
                 .overlay = overlay,

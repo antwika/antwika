@@ -176,6 +176,7 @@ namespace
             .paths = std::move(paths),
             .walkers = std::move(walkers),
             .buildings = {},
+            .plan = {},
             .ghost = {},
             .hover = {}};
     }
@@ -866,4 +867,71 @@ TEST_F(GridSceneTest, Draw_LeavesTheGridAloneWhetherOrNotAnythingHovers)
 
     EXPECT_EQ(watched.blits, blind);
     EXPECT_FALSE(watched.texts.empty());
+}
+
+// A planned run of road is previewed faintly, cell by cell.
+TEST_F(GridSceneTest, Draw_PreviewsThePlannedRunOfRoad)
+{
+    auto scene_ = snapshot(
+        Camera(Point{.x = 300, .y = 40}, 3),
+        GridExtent{.width = 4, .height = 4});
+    scene_.plan = antwika::game::RoadPlan{
+        .cells =
+            {Cell{.x = 1, .y = 1},
+             Cell{.x = 2, .y = 1},
+             Cell{.x = 3, .y = 1}},
+        .valid = true};
+
+    scene.draw(renderer, kCanvas, scene_, atlas);
+
+    std::size_t previewed = 0;
+
+    for (const auto &blit : renderer.blits)
+    {
+        if (blit.tint.alpha == 110 && blit.tint.green == 255)
+        {
+            ++previewed;
+        }
+    }
+
+    EXPECT_EQ(previewed, 3U);
+}
+
+// A refused run is reddened rather than hidden, as a block is.
+TEST_F(GridSceneTest, Draw_ReddensARefusedRunOfRoad)
+{
+    auto scene_ = snapshot(
+        Camera(Point{.x = 300, .y = 40}, 3),
+        GridExtent{.width = 4, .height = 4});
+    scene_.plan = antwika::game::RoadPlan{
+        .cells = {Cell{.x = 1, .y = 1}, Cell{.x = 3, .y = 1}},
+        .valid = false};
+
+    scene.draw(renderer, kCanvas, scene_, atlas);
+
+    std::size_t refused = 0;
+
+    for (const auto &blit : renderer.blits)
+    {
+        if (blit.tint.alpha == 110 && blit.tint.green == 90)
+        {
+            ++refused;
+        }
+    }
+
+    EXPECT_EQ(refused, 2U);
+}
+
+// Culled on where it would be drawn, as everything else here is.
+TEST_F(GridSceneTest, Draw_PreviewsNoPlannedCellOffTheCanvas)
+{
+    auto scene_ = snapshot(
+        Camera(Point{.x = -100000, .y = -100000}, 3),
+        GridExtent{.width = 4, .height = 4});
+    scene_.plan = antwika::game::RoadPlan{
+        .cells = {Cell{.x = 1, .y = 1}}, .valid = true};
+
+    scene.draw(renderer, kCanvas, scene_, atlas);
+
+    EXPECT_TRUE(renderer.blits.empty());
 }

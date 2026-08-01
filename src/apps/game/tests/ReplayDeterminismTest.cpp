@@ -252,6 +252,21 @@ namespace
                 .position = {.x = point.x, .y = point.y}});
     }
 
+    // The button coming back up where it went down.
+    // A road drag holds the run still until it does -- see RoadDrag.
+    // So a stream of presses with no release is impossible input.
+    // And one whose walkers would never step.
+    [[nodiscard]] Event releaseAt(Cell cell, MouseButton button)
+    {
+        const InputEventCodec codec;
+        const auto point = cellCentre(cell, Camera());
+
+        return codec.encode(
+            antwika::input::PointerButtonReleased{
+                .button = button,
+                .position = {.x = point.x, .y = point.y}});
+    }
+
     // A session worth reproducing.
     // A corridor, a junction, a dead end, two walkers, and a zoom.
     [[nodiscard]] std::vector<TickEvent> scriptedSession()
@@ -275,6 +290,12 @@ namespace
                     .event = pressAt(
                         Cell{.x = 3, .y = y}, MouseButton::Left)});
         }
+
+        events.push_back(
+            TickEvent{
+                .tick = 0,
+                .event =
+                    releaseAt(Cell{.x = 3, .y = 4}, MouseButton::Left)});
 
         events.push_back(
             TickEvent{
@@ -644,6 +665,15 @@ namespace
                     .event =
                         pressAt(Cell{.x = x, .y = 4}, MouseButton::Left)});
         }
+
+        // Straight after the five presses inserted above.
+        // And so still ahead of the palette press it started with.
+        events.insert(
+            events.begin() + 5,
+            TickEvent{
+                .tick = 0,
+                .event =
+                    releaseAt(Cell{.x = 6, .y = 4}, MouseButton::Left)});
 
         // Two sources, placed a tick apart, so their cadences differ.
         // Two cells apart as well, so their blocks do not overlap.

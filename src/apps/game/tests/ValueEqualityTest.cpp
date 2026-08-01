@@ -39,6 +39,7 @@ namespace
     using antwika::game::GameSummary;
     using antwika::game::GridExtent;
     using antwika::game::HoverReadout;
+    using antwika::game::RoadPlan;
     using antwika::game::SaveGame;
     using antwika::game::SceneSnapshot;
     using antwika::game::Terrain;
@@ -112,6 +113,7 @@ namespace
             .buildings =
                 {BuildingSprite{
                     .at = {.x = 3, .y = 3}, .kind = BuildingKind::House}},
+            .plan = RoadPlan{.cells = {Cell{.x = 5, .y = 5}}},
             .ghost = BuildGhost{.at = {.x = 4, .y = 4}},
             .hover = HoverReadout{
                 .anchor = antwika::gfx::Point{.x = 6, .y = 7}}};
@@ -138,6 +140,10 @@ namespace
             [](SceneSnapshot &s) { s.ghost.visible = !s.ghost.visible; });
         expectMemberCompared(
             base, [](SceneSnapshot &s) { s.hover.anchor.x = 99; });
+        expectMemberCompared(
+            base, [](SceneSnapshot &s) { s.plan.cells.clear(); });
+        expectMemberCompared(
+            base, [](SceneSnapshot &s) { s.plan.valid = !s.plan.valid; });
     }
 
     [[nodiscard]] GameSummary populatedSummary()
