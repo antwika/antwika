@@ -1,4 +1,4 @@
-# antwika::simulation comes in for the tick bridge alone: ITickSource
+# antwika::simulation comes in for the tick bridge alone: ITickEventSource
 # is the seam live input travels through.
 # antwika::replay comes in for PayloadJson, the shared
 # parse-and-validate step every structured payload already uses.

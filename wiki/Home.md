@@ -23,7 +23,7 @@ Each page covers what the library is for, its key headers and types, what it dep
 | --- | --- |
 | [engine](libraries/engine.md) | Steps one fixed tick at a time and knows nothing about any app. |
 | [event](libraries/event.md) | The one uniform event mechanism: `Event`, `TickEvent`, dispatchers and sinks. |
-| [simulation](libraries/simulation.md) | The shared live/replay tick loop, its `ITickSource` seam, and the pacing around it. |
+| [simulation](libraries/simulation.md) | The shared live/replay tick loop, its `ITickEventSource` seam, and the pacing around it. |
 | [replay](libraries/replay.md) | The JSON replay format, its migrations, and the CLI flags. |
 | [ecs](libraries/ecs.md) | Double-buffered entity/component `World` with staged mutations. |
 | [scheduler](libraries/scheduler.md) | Deterministic, priority-ordered, budget-bounded job dispatch. |
@@ -39,7 +39,7 @@ Each page covers what the library is for, its key headers and types, what it dep
 | [animation](libraries/animation.md) | Which frame to show, as a pure function of a tick the caller already has. |
 | [i18n](libraries/i18n.md) | A message catalogue keyed by a symbolic id rather than by English. |
 | [cli](libraries/cli.md) | Flag tables, one parse, and a help text that cannot disagree with it. |
-| [ttf](libraries/ttf.md) | TrueType metrics and glyph coverage masks, depending on nothing here. |
+| [font](libraries/font.md) | TrueType metrics and glyph coverage masks, depending on nothing here. |
 | [time](libraries/time.md) | The `Tick` type, `IClock` and `ISleeper`. |
 | [log](libraries/log.md) | Composable logging with no global state. |
 | [app](libraries/app.md) | The wiring every app's `main.cpp` would otherwise repeat. |
@@ -59,10 +59,9 @@ Each page covers what the library is for, its key headers and types, what it dep
 | [sound_demo](apps/sound_demo.md) | The sound showcase: eight notes at exact frame positions. |
 | [companion](apps/companion.md) | A tamagotchi with two needs, where when a tap lands decides what it means. |
 | [atlas_editor](apps/atlas_editor.md) | A pixel editor for the sheet the game blits, with no undo by design. |
+| [ui_demo](apps/ui_demo.md) | Every `antwika::ui` element in turn, with the application owning all their state. |
 
 One further page sits beside the applications rather than describing one: [game-texture-atlas](apps/game-texture-atlas.md), which is the contract the hand-drawn sheet has to meet and which [atlas_editor](apps/atlas_editor.md) does nothing to enforce.
-
-`ui_demo` has no page yet.
 
 ## Where else to look
 

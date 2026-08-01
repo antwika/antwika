@@ -17,7 +17,7 @@ As with [`gfx`](gfx.md), the concrete frameworks live under `backends/` and no f
 | `Position.hpp`, `Offset.hpp` | `Position`, `Offset` | Where and how far. |
 | `Events.hpp` | `input::events::kKeyDown`, `kKeyUp`, `kPointerMove`, `kPointerDown`, `kPointerUp`, `kPointerScroll` | The event names, which are part of the replay file format. |
 | `InputEventCodec.hpp`, `IInputEventCodec.hpp` | `InputEventCodec` | Encodes an `InputEvent` as an `event::Event` with a JSON payload, and back. |
-| `LiveInputSource.hpp` | `LiveInputSource` | The `ITickSource` that puts live edges into the tick stream. |
+| `LiveInputSource.hpp` | `LiveInputSource` | The `ITickEventSource` that puts live edges into the tick stream. |
 | `CoalescingPointerSource.hpp` | `CoalescingPointerSource` | Keeps only the last of each run of movements inside a tick. |
 | `IdleMotionSource.hpp` | `IdleMotionSource` | Holds back movement arriving while no button is held. |
 | `StopOnKeySource.hpp` | `StopOnKeySource` | Appends `engine.stop` when a nominated key is pressed. |
@@ -33,7 +33,7 @@ A conformance suite lives under `tests/conformance/`; `FakeInputBackend`, `MockI
 
 ## Depends on
 
-[`engine`](engine.md) (for `StopOnKeySource`, which names `engine.stop`), [`event`](event.md), [`log`](log.md), [`replay`](replay.md) (for `PayloadJson`), [`simulation`](simulation.md) (every source it offers is an `ITickSource`), [`time`](time.md).
+[`engine`](engine.md) (for `StopOnKeySource`, which names `engine.stop`), [`event`](event.md), [`log`](log.md), [`replay`](replay.md) (for `PayloadJson`), [`simulation`](simulation.md) (every source it offers is an `ITickEventSource`), [`time`](time.md).
 It does **not** depend on [`gfx`](gfx.md) — no file here includes a `<antwika/gfx/...>` header or names a `gfx::` type — even though `gfx` is in its transitive link set via `simulation`.
 That is also why `input::Position` duplicates `gfx::Point` rather than reusing it, and why an input event does not say which window it arrived at.
 

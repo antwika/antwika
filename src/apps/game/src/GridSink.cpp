@@ -1,5 +1,6 @@
 #include "antwika/game/GridSink.hpp"
 
+#include <optional>
 #include <variant>
 
 #include <antwika/engine/Events.hpp>
@@ -124,13 +125,21 @@ namespace antwika::game
         }
     }
 
-    void GridSink::place(Cell cell, BuildTool tool)
+    void GridSink::place(Cell cell, std::optional<BuildTool> tool)
     {
+        // The palette is down, so a left press places nothing.
+        // Not a road, which is what falling back to one would lay.
+        // Somebody who has just cancelled has chosen to place nothing.
+        if (!tool.has_value())
+        {
+            return;
+        }
+
         // One decision, taken where the click is.
         // Rather than a button meaning one thing and the palette another.
         // The kind is worked out once here and handed on.
         // So nothing downstream asks again and disagrees.
-        if (const auto kind = buildingKindOf(tool))
+        if (const auto kind = buildingKindOf(*tool))
         {
             placeBuilding(cell, *kind);
             return;
@@ -176,14 +185,16 @@ namespace antwika::game
     {
         // One button, two meanings, and one place that decides which.
         // Splitting the decision between two sinks would take both.
-        // UiSink runs first, and would put the road tool back there.
+        // UiSink runs first, and would clear the palette there.
         // This sink would then read the press and drop a walker too.
         // The cell is not consulted in the first arm at all.
         // Leaving build mode is about the palette, not about a cell.
         // See GridSink.hpp for the whole rule.
-        if (placesBuilding(overlay.tool()))
+        const auto tool = overlay.tool();
+
+        if (tool.has_value() && placesBuilding(*tool))
         {
-            overlay.select(BuildTool::Road);
+            overlay.clearTool();
             return;
         }
 

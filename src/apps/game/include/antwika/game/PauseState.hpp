@@ -31,6 +31,17 @@ namespace antwika::game
         void toggle() noexcept;
 
         /**
+         * @brief Hold the simulation still, whether or not it already
+         * is.
+         *
+         * What a city's screen coming up asks for -- see CityEntrySink.
+         * A toggle would be wrong there: it would let a city entered
+         * from a paused one come up running, so what a fresh city did
+         * would depend on what the last one was doing.
+         */
+        void hold() noexcept;
+
+        /**
          * @brief Check whether the simulation is held still.
          * @return True while paused, which a run begins not being.
          */

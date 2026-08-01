@@ -2,6 +2,7 @@
 #include <gtest/gtest.h>
 
 #include <cstdint>
+#include <optional>
 #include <string>
 #include <variant>
 #include <vector>
@@ -45,6 +46,25 @@ TEST(FpsReadoutTest, DescribeFps_ShowsTheRateItIsGiven)
     EXPECT_THAT(
         textsOf(describeFps(kCanvas, 60)),
         ::testing::Contains(std::string{"fps 60"}));
+}
+
+// The first second of a run has measured nothing.
+// So it says so, rather than claiming the machine drew no frames.
+TEST(FpsReadoutTest, DescribeFps_ShowsAPlaceholderUntilThereIsARate)
+{
+    EXPECT_THAT(
+        textsOf(describeFps(kCanvas, std::nullopt)),
+        ::testing::Contains(std::string{"fps --"}));
+}
+
+// The two the placeholder exists to keep apart.
+// A stalled machine really is drawing zero frames a second.
+TEST(FpsReadoutTest, DescribeFps_TellsNoRateApartFromNoFrames)
+{
+    EXPECT_THAT(
+        textsOf(describeFps(kCanvas, 0)),
+        ::testing::Contains(std::string{"fps 0"}));
+    EXPECT_NE(describeFps(kCanvas, std::nullopt), describeFps(kCanvas, 0));
 }
 
 // The picture is a value, so the same arguments give the same picture.

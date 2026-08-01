@@ -1,5 +1,6 @@
 #pragma once
 
+#include <optional>
 #include <set>
 
 #include <antwika/ecs/SystemScheduler.hpp>
@@ -51,16 +52,20 @@ namespace antwika::game
      *
      * **A right press means one of two things, and the palette decides
      * which.** While a building tool is selected it cancels: the palette
-     * goes back to BuildTool::Road and nothing is placed by that press.
-     * Otherwise -- which is to say with the road tool selected, the tool
-     * a session starts with and the one a cancel returns to -- it drops
-     * a walker on the path under the pointer, exactly as it always did.
+     * is put down, selecting nothing at all, and nothing is placed by
+     * that press. Otherwise -- with the road tool selected, which is
+     * what a session starts with, or with nothing selected, which is
+     * where a cancel leaves it -- it drops a walker on the path under
+     * the pointer, exactly as it always did.
      *
      * That split is what reconciles two claims on one button rather than
-     * letting either silently replace the other, and Road is "normal
-     * play" because it is the state a fresh session holds and the state
-     * a cancel returns to, so cancelling twice is cancelling once and
-     * the palette is never left showing a tool no button holds down.
+     * letting either silently replace the other, and cancelling reaches
+     * a state of its own rather than falling back to Road: a fallback
+     * would leave the palette holding a tool nobody chose and the next
+     * left press laying a road for it. Nothing selected therefore places
+     * nothing, previews nothing and holds no button down -- and since
+     * that state drops walkers like the road tool does, cancelling twice
+     * is still cancelling once.
      * A right press the toolbar covers cancels nothing, since what the
      * bar covers it covers from the grid.
      *
@@ -81,7 +86,8 @@ namespace antwika::game
      * invents a threshold nothing else here justifies.
      *
      * What a left press places is whatever UiOverlay says the palette has
-     * selected -- a road or one of the buildings. That selection is
+     * selected -- a road, one of the buildings, or nothing at all when
+     * the palette has been put down. That selection is
      * simulation state for the same reason the camera is: a replay
      * carries the click and has to arrive at the same tool again, so
      * pressing a palette button is no more an event than pressing a zoom
@@ -113,8 +119,8 @@ namespace antwika::game
          * @param input The folded input, holding the event being
          * handled; must be registered ahead of this sink.
          * @param overlay Asked whether a click was the toolbar's, and
-         * which tool is selected; a right press puts the road tool back
-         * into it, which is the one thing this sink writes there.
+         * which tool is selected; a right press puts the palette down
+         * in it, which is the one thing this sink writes there.
          * @param cities Asked whether a city is open at all; nothing is
          * placed, panned or zoomed while none is.
          */
@@ -144,7 +150,7 @@ namespace antwika::game
         void handle(const TickEvent &event) override;
 
     private:
-        void place(Cell cell, BuildTool tool);
+        void place(Cell cell, std::optional<BuildTool> tool);
         void placePath(Cell cell);
         void placeBuilding(Cell cell, BuildingKind kind);
         void cancelToolOrPlaceWalker(Cell cell);

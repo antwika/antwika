@@ -94,7 +94,7 @@ namespace antwika::poker
     RoomSummary bootstrap(const RoomSetup &setup)
     {
         IClock &clock = setup.clock;
-        ITickSource &inputSource = setup.inputSource;
+        ITickEventSource &inputSource = setup.inputSource;
         const RoomConfig &config = setup.room;
 
         ILogger &logger = setup.logger;
@@ -134,7 +134,7 @@ namespace antwika::poker
         const TableScene scene;
         std::optional<TableRenderSink> renderSink;
         std::optional<WindowCloseSource> windowSource;
-        ITickSource *source = &inputSource;
+        ITickEventSource *source = &inputSource;
 
         if (setup.window.has_value())
         {

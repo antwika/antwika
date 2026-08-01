@@ -5,7 +5,7 @@
 #include <vector>
 
 #include <antwika/event/Event.hpp>
-#include <antwika/simulation/ITickSource.hpp>
+#include <antwika/simulation/ITickEventSource.hpp>
 #include <antwika/time/Tick.hpp>
 
 #include "antwika/input/CoalescingPointerSource.hpp"
@@ -22,7 +22,7 @@ namespace antwika::input
 {
 
     using antwika::event::Event;
-    using antwika::simulation::ITickSource;
+    using antwika::simulation::ITickEventSource;
 
     /**
      * @brief What an application wants of its input, rather than how to
@@ -139,7 +139,7 @@ namespace antwika::input
      * a second, unrecorded copy of a position is set beside the stream,
      * for drawing and for nothing else.
      */
-    class InputPipeline final : public ITickSource
+    class InputPipeline final : public ITickEventSource
     {
     public:
         /**
@@ -153,7 +153,7 @@ namespace antwika::input
          * @param options What the application wants of its input.
          */
         InputPipeline(
-            ITickSource &inner,
+            ITickEventSource &inner,
             IInputBackend &backend,
             const IInputEventCodec &codec,
             const InputPipelineOptions &options);
@@ -187,7 +187,7 @@ namespace antwika::input
         std::optional<StopOnKeySource> stopping;
 
         // The outermost layer engaged, which is what a tick asks.
-        ITickSource *outermost;
+        ITickEventSource *outermost;
     };
 
 } // namespace antwika::input

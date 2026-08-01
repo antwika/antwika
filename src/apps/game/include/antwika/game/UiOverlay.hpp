@@ -1,5 +1,7 @@
 #pragma once
 
+#include <optional>
+
 #include <antwika/gfx/Size.hpp>
 #include <antwika/ui/DrawList.hpp>
 
@@ -21,8 +23,9 @@ namespace antwika::game
      * the click as the world's -- and, when it is the world's, which of
      * the palette's tools that click is now for.
      *
-     * Two of them select: UiSink when a palette button is pressed, and
-     * GridSink when a right press on the grid leaves build mode.
+     * Two of them write it: UiSink selects when a palette button is
+     * pressed, and GridSink puts the palette down when a right press on
+     * the grid leaves build mode.
      * Both do it inside the tick path and neither persists an event for
      * it, which is what keeps the selection regenerated rather than
      * recorded -- see GridSink for the rule a right press follows.
@@ -92,17 +95,30 @@ namespace antwika::game
         void select(BuildTool tool) noexcept;
 
         /**
-         * @brief Get what a left click on the grid places.
-         * @return The selected tool; Road until something selects
-         * another, so a run with no toolbar lays paths as it always did.
+         * @brief Put the palette down, selecting no tool at all.
+         *
+         * A state of its own rather than a fallback to Road: a left
+         * click then places nothing, no ghost is drawn and no palette
+         * button is held down, which is what leaving build mode means
+         * everywhere else this genre is played.
+         * Putting a tool back instead would leave the palette holding
+         * one nobody chose, and the grid laying roads for it.
          */
-        [[nodiscard]] BuildTool tool() const noexcept;
+        void clearTool() noexcept;
+
+        /**
+         * @brief Get what a left click on the grid places.
+         * @return The selected tool, or nullopt once the palette has
+         * been put down; Road until something selects another, so a run
+         * with no toolbar lays paths as it always did.
+         */
+        [[nodiscard]] std::optional<BuildTool> tool() const noexcept;
 
     private:
         Size area;
         DrawList picture;
         bool covered = false;
-        BuildTool selected = BuildTool::Road;
+        std::optional<BuildTool> selected = BuildTool::Road;
     };
 
 } // namespace antwika::game

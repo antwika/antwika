@@ -314,7 +314,7 @@ namespace
     }
 
     [[nodiscard]] HintedRun runWatched(
-        antwika::simulation::ITickSource &source,
+        antwika::simulation::ITickEventSource &source,
         const std::optional<PointerHint> &pointer)
     {
         NiceMock<MockLogger> logger;

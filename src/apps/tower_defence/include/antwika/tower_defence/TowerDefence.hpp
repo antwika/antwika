@@ -11,7 +11,7 @@
 #include <antwika/gfx/Size.hpp>
 #include <antwika/input/IInputEventCodec.hpp>
 #include <antwika/log/ILogger.hpp>
-#include <antwika/simulation/ITickSource.hpp>
+#include <antwika/simulation/ITickEventSource.hpp>
 #include <antwika/time/Tick.hpp>
 
 #include "antwika/tower_defence/Battle.hpp"
@@ -26,7 +26,7 @@ namespace antwika::tower_defence
     using antwika::gfx::Size;
     using antwika::input::IInputEventCodec;
     using antwika::log::ILogger;
-    using antwika::simulation::ITickSource;
+    using antwika::simulation::ITickEventSource;
 
     /**
      * @brief What one run leaves behind, for a caller or a test.
@@ -68,7 +68,7 @@ namespace antwika::tower_defence
         IEventSink &eventSink;
 
         /** @brief Supplies each tick's events, live or replayed. */
-        ITickSource &inputSource;
+        ITickEventSource &inputSource;
 
         /** @brief Decodes antwika::input's events. */
         const IInputEventCodec &codec;

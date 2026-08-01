@@ -12,7 +12,7 @@ namespace antwika::life
     using antwika::gfx::CloseRequested;
 
     WindowInputSource::WindowInputSource(
-        ITickSource &inner, IGfxBackend &backend, WindowId window)
+        ITickEventSource &inner, IGfxBackend &backend, WindowId window)
         : inner(inner), backend(backend), window(window)
     {
     }

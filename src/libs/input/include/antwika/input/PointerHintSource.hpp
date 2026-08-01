@@ -3,7 +3,7 @@
 #include <vector>
 
 #include <antwika/event/Event.hpp>
-#include <antwika/simulation/ITickSource.hpp>
+#include <antwika/simulation/ITickEventSource.hpp>
 #include <antwika/time/Tick.hpp>
 
 #include "antwika/input/IInputEventCodec.hpp"
@@ -13,7 +13,7 @@ namespace antwika::input
 {
 
     using antwika::event::Event;
-    using antwika::simulation::ITickSource;
+    using antwika::simulation::ITickEventSource;
 
     /**
      * @brief Publishes the pointer's latest position onto a
@@ -58,7 +58,7 @@ namespace antwika::input
      * replay, by construction, and that is a thing this design accepts
      * rather than a thing it hides.
      */
-    class PointerHintSource final : public ITickSource
+    class PointerHintSource final : public ITickEventSource
     {
     public:
         /**
@@ -71,7 +71,7 @@ namespace antwika::input
          * Must outlive this object.
          */
         PointerHintSource(
-            ITickSource &inner,
+            ITickEventSource &inner,
             const IInputEventCodec &codec,
             PointerHintChannel &channel);
 
@@ -95,7 +95,7 @@ namespace antwika::input
             antwika::time::Tick tick) override;
 
     private:
-        ITickSource &inner;
+        ITickEventSource &inner;
         const IInputEventCodec &codec;
         PointerHintChannel &channel;
     };

@@ -76,6 +76,7 @@ namespace antwika::companion
             .happiness = pet.happiness(),
             .meals = pet.meals(),
             .disturbances = pet.disturbances(),
+            .pesters = pet.pesters(),
             .perished = pet.state() == PetState::Perished};
     }
 
@@ -98,7 +99,8 @@ namespace antwika::companion
             std::to_string(summary.ticks) + " ticks, "
             + std::to_string(summary.meals) + " meals, "
             + std::to_string(summary.disturbances)
-            + " rude awakenings, happiness "
+            + " rude awakenings, " + std::to_string(summary.pesters)
+            + " unwanted meals, happiness "
             + std::to_string(summary.happiness) + ", hunger "
             + std::to_string(summary.hunger);
 

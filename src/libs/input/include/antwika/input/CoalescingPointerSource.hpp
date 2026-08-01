@@ -3,14 +3,14 @@
 #include <vector>
 
 #include <antwika/event/Event.hpp>
-#include <antwika/simulation/ITickSource.hpp>
+#include <antwika/simulation/ITickEventSource.hpp>
 #include <antwika/time/Tick.hpp>
 
 namespace antwika::input
 {
 
     using antwika::event::Event;
-    using antwika::simulation::ITickSource;
+    using antwika::simulation::ITickEventSource;
 
     /**
      * @brief Keeps only the last of each run of pointer movements within a
@@ -39,7 +39,7 @@ namespace antwika::input
      * somewhere specific and dropping the movement before it would move
      * it.
      */
-    class CoalescingPointerSource final : public ITickSource
+    class CoalescingPointerSource final : public ITickEventSource
     {
     public:
         /**
@@ -47,7 +47,7 @@ namespace antwika::input
          * @param inner The source whose events pass through; must outlive
          * this object.
          */
-        explicit CoalescingPointerSource(ITickSource &inner);
+        explicit CoalescingPointerSource(ITickEventSource &inner);
 
         CoalescingPointerSource(const CoalescingPointerSource &) = delete;
         CoalescingPointerSource(CoalescingPointerSource &&) = delete;
@@ -67,7 +67,7 @@ namespace antwika::input
             antwika::time::Tick tick) override;
 
     private:
-        ITickSource &inner;
+        ITickEventSource &inner;
     };
 
 } // namespace antwika::input

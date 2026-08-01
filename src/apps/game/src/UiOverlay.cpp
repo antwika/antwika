@@ -35,7 +35,12 @@ namespace antwika::game
         selected = tool;
     }
 
-    BuildTool UiOverlay::tool() const noexcept
+    void UiOverlay::clearTool() noexcept
+    {
+        selected.reset();
+    }
+
+    std::optional<BuildTool> UiOverlay::tool() const noexcept
     {
         return selected;
     }
