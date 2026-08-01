@@ -92,7 +92,7 @@ After the build completes, run the compiled binaries on your target machine.
 Each application has a directory of its own under `build/bin/`, holding the executable and everything it opens:
 
 - `build/bin/antwika_atlas_editor/antwika_atlas_editor` — a pixel editor for the sheet the game blits, where `--image` is the PNG it opens and `--out` the one a save writes.
-- `build/bin/antwika_companion/antwika_companion` — a tamagotchi in a 128-pixel window: tap to feed it while it is hungry, and leave it alone while it sleeps.
+- `build/bin/antwika_companion/antwika_companion` — a tamagotchi in a 256-pixel window: tap to feed it while it is hungry, and leave it alone while it sleeps.
 - `build/bin/antwika_game/antwika_game` — an isometric grid you build on with the mouse, saved and reloaded with `--save` and `--load`.
 - `build/bin/antwika_gfx3d_demo/antwika_gfx3d_demo` — a cube turned by the tick count, drawn through the 3D interface and captioned through the 2D one.
 - `build/bin/antwika_gfx_demo/antwika_gfx_demo` — bars, a blitted PNG logo, and a panel of clickable buttons over them.
