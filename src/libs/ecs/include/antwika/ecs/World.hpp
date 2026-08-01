@@ -2,6 +2,7 @@
 
 #include <cstdint>
 #include <functional>
+#include <limits>
 #include <memory>
 #include <typeindex>
 #include <unordered_map>
@@ -58,14 +59,13 @@ namespace antwika::ecs
          * @param logger Forwarded to the internal EntityManager; used to
          * log a fatal message if the entity index space is exhausted.
          * Must outlive this object.
-         * @param maxEntities Highest entity index ever handed out, and
-         * so the most entities that may be alive at once. Defaults to
-         * every index an Entity can carry. It is not a cap on how many
-         * entities a session may create, since a destroyed entity's
-         * index is handed out again.
+         * @param maxEntities Highest entity value ever handed out.
+         * Defaults to the full range of the underlying type.
          */
         explicit World(
-            ILogger &logger, std::uint64_t maxEntities = kMaxEntityIndex);
+            ILogger &logger,
+            std::uint64_t maxEntities =
+                std::numeric_limits<std::uint64_t>::max());
 
         ~World();
 
@@ -88,11 +88,7 @@ namespace antwika::ecs
          * @throws EcsError if entity is not currently alive.
          *
          * Takes effect at the next commit(): every component it has is
-         * removed from its storage, and its index goes back on the free
-         * list for a later create() to hand out again. The generation
-         * that index carries is bumped on the way, so this handle — and
-         * every copy of it anyone kept — reads as dead from alive()
-         * rather than as whatever entity claims the index next.
+         * removed from its storage and its index is permanently retired.
          * Staging the same entity twice in one phase is allowed, and
          * retires it once — nothing is applied until commit(), so the
          * second call sees it alive just like the first.

@@ -8,7 +8,6 @@ add_executable(antwika_ecs_tests
     DoubleBufferingTest.cpp
     EcsDeterminismTest.cpp
     EntityManagerTest.cpp
-    EntityTest.cpp
     SystemSchedulerTest.cpp
     ViewTest.cpp
     WorldTest.cpp

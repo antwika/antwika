@@ -10,8 +10,6 @@
 
 using antwika::ecs::EcsError;
 using antwika::ecs::Entity;
-using antwika::ecs::entityIndex;
-using antwika::ecs::rawValue;
 using antwika::ecs::World;
 using antwika::log::mocks::MockLogger;
 using ::testing::NiceMock;
@@ -339,67 +337,6 @@ TEST(WorldTest, DestroyStagedBeforeAddInTheSameCommitLeavesNoOrphan)
     EXPECT_EQ(positionView.size(), 0U);
     const auto velocityView = world.view<Velocity>();
     EXPECT_EQ(velocityView.size(), 0U);
-}
-
-TEST(WorldTest, ADestroyedEntitysIndexIsHandedOutAgain)
-{
-    NiceMock<MockLogger> logger;
-    World world(logger);
-    const auto first = world.create();
-    world.destroy(first);
-    world.commit();
-
-    const auto second = world.create();
-
-    EXPECT_EQ(entityIndex(second), entityIndex(first));
-    EXPECT_NE(rawValue(second), rawValue(first));
-}
-
-TEST(WorldTest, AHandleToAReusedIndexIsDeadRatherThanItsSuccessor)
-{
-    // What apps/game's cached Building::walker handle relies on.
-    // A bare free list would have made this handle name the new one.
-    NiceMock<MockLogger> logger;
-    World world(logger);
-    const auto first = world.create();
-    world.add<Position>(first, Position{1, 2});
-    world.commit();
-
-    world.destroy(first);
-    world.commit();
-
-    const auto second = world.create();
-    world.add<Position>(second, Position{9, 9});
-    world.commit();
-
-    EXPECT_FALSE(world.alive(first));
-    EXPECT_TRUE(world.alive(second));
-    EXPECT_FALSE(world.has<Position>(first));
-    EXPECT_EQ(world.get<Position>(second), (Position{9, 9}));
-    EXPECT_THROW(
-        static_cast<void>(world.get<Position>(first)), EcsError);
-}
-
-TEST(WorldTest, SteadyChurnDoesNotGrowTheIndexSpace)
-{
-    // The whole point of reuse: memory follows the live population.
-    // maxEntities caps that, so this run only finishes if it holds.
-    NiceMock<MockLogger> logger;
-    World world(logger, /*maxEntities=*/4);
-
-    for (int round = 0; round < 500; ++round)
-    {
-        const auto entity = world.create();
-        world.add<Position>(entity, Position{round, round});
-        world.commit();
-
-        world.destroy(entity);
-        world.commit();
-    }
-
-    const auto view = world.view<Position>();
-
-    EXPECT_EQ(view.size(), 0U);
 }
 
 TEST(WorldTest, ViewOverAnUnusedComponentTypeIsEmpty)

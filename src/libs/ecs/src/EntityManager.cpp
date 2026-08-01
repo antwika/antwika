@@ -10,29 +10,14 @@ using antwika::log::Level;
 namespace antwika::ecs::detail
 {
 
-    EntityManager::EntityManager(
-        ILogger &logger,
-        std::uint64_t maxEntities,
-        std::uint64_t maxGeneration)
-        : logger(logger),
-          maxEntities(maxEntities),
-          maxGeneration(maxGeneration)
+    EntityManager::EntityManager(ILogger &logger, std::uint64_t maxEntities)
+        : logger(logger), maxEntities(maxEntities)
     {
     }
 
     Entity EntityManager::create()
     {
-        // A freed index is preferred over a fresh one.
-        // Otherwise nothing would ever bound what the vectors grow to.
-        if (!freeIndices.empty())
-        {
-            const auto index = freeIndices.back();
-            freeIndices.pop_back();
-            aliveFlags[index] = true;
-            return makeEntity(index, generations[index]);
-        }
-
-        if (nextIndex > maxEntities)
+        if (nextValue > maxEntities)
         {
             logger.log(
                 Level::Fatal,
@@ -41,11 +26,10 @@ namespace antwika::ecs::detail
                 "EntityManager: entity index space exhausted");
         }
 
-        const auto index = nextIndex;
-        ++nextIndex;
+        const auto value = nextValue;
+        ++nextValue;
         aliveFlags.push_back(true);
-        generations.push_back(0);
-        return makeEntity(index, 0);
+        return Entity{value};
     }
 
     void EntityManager::destroy(Entity entity)
@@ -55,27 +39,13 @@ namespace antwika::ecs::detail
             throw EcsError("EntityManager: entity is not alive");
         }
 
-        const auto index = entityIndex(entity);
-        aliveFlags[index] = false;
-
-        // A wrapped generation would name a live successor.
-        // Which is the aliasing the generation exists to prevent.
-        // So a slot out of generations is dropped rather than freed.
-        // It costs one slot's worth of memory and keeps the promise.
-        if (generations[index] >= maxGeneration)
-        {
-            return;
-        }
-
-        ++generations[index];
-        freeIndices.push_back(index);
+        aliveFlags[rawValue(entity)] = false;
     }
 
     bool EntityManager::alive(Entity entity) const noexcept
     {
-        const auto index = entityIndex(entity);
-        return index < aliveFlags.size() && aliveFlags[index]
-            && generations[index] == entityGeneration(entity);
+        const auto value = rawValue(entity);
+        return value < aliveFlags.size() && aliveFlags[value];
     }
 
 } // namespace antwika::ecs::detail
