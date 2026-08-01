@@ -233,6 +233,11 @@ namespace antwika::gfx::raylib
             throw GfxError("gfx.raylib: could not create a texture");
         }
 
+        // Already what rlLoadTexture leaves a new texture at.
+        // Said out loud anyway, because IRenderer now promises it.
+        // A default nobody wrote down is one a version bump may change.
+        SetTextureFilter(texture, TEXTURE_FILTER_POINT);
+
         return std::make_unique<RaylibTexture>(
             *this, texture, bitmap.size);
     }
