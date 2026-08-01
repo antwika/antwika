@@ -37,6 +37,7 @@ Each page covers what the library is for, its key headers and types, what it dep
 | [input](libraries/input.md) | Backend-agnostic keyboard and pointer edges, delivered as replay input. |
 | [sound](libraries/sound.md) | PCM decoding, mixing and playback, on the thread that pumps it. |
 | [animation](libraries/animation.md) | Which frame to show, as a pure function of a tick the caller already has. |
+| [tween](libraries/tween.md) | Easing curves that stay exact, so a shaped fraction is the same on every toolchain. |
 | [i18n](libraries/i18n.md) | A message catalogue keyed by a symbolic id rather than by English. |
 | [cli](libraries/cli.md) | Flag tables, one parse, and a help text that cannot disagree with it. |
 | [font](libraries/font.md) | TrueType metrics and glyph coverage masks, depending on nothing here. |

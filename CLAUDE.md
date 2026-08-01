@@ -448,6 +448,16 @@ There is deliberately no `Animator` you advance — that would be simulation sta
 It depends on `antwika::time` and nothing else, so it cannot name a texture or a rectangle: a `Frame` is an index the app maps to an atlas slot, and sub-tick position is an exact rational `Progress` rather than a float.
 See [`wiki/libraries/animation.md`](wiki/libraries/animation.md).
 
+`antwika::tween` is the easing half of that: `ease(easing, progress)` shapes a `Progress` by a curve, and `tweenBetween()` is that composed with `animation::interpolate()`.
+It depends on `antwika::animation` and nothing else, and it is a library rather than two more headers there because shaping a value over time is a different question from which frame is showing.
+**The curve list is short on purpose, and both omissions are load-bearing.**
+Sine, exponential, circular and elastic need a transcendental or a square root, none of which is bit-identical across GNU, LLVM and MinGW -- the argument `antwika::rng` makes about `<random>`'s distributions, arrived at from the other side.
+Back and anticipate overshoot, and a `Progress` is between zero and one *by construction*, so an overshoot is unrepresentable rather than merely inexact; admitting one means widening `Progress`, which is `antwika::animation`'s decision rather than this library's.
+What is left is linear, quad, cubic, quart and quint in `In`/`Out`/`InOut`, and bounce in the same three -- every one a polynomial or four parabolas, so every one exact in whole numbers.
+Shaping raises the denominator to the curve's power and the fraction is **not** reduced, since `Progress` compares on the pair rather than the value; a denominator too large for the curve is refused as `TweenError` rather than wrapped, which is `antwika::pathfinding`'s call about an overflowing cost.
+Nothing links it yet, and `apps/game`'s walker motion is deliberately not the first caller: a walker crosses many cells in a row, so easing each step would make it lurch at every tile rather than walk.
+See [`wiki/libraries/tween.md`](wiki/libraries/tween.md).
+
 `antwika::cli` is the flag parsing every `main()` shares -- `FlagSpec`, `parseCommandLine()`, `helpText()`, `CommandLine`, `CommandLineError` -- and it depends on **nothing**, which is the whole reason it is its own library.
 It lived in `antwika::replay` while `--record` and `--replay` were the only flags anything took, and by the time `apps/game` had `--save`/`--load` and `apps/poker` had `--tick-delay-ms`, reading two dashes and a word meant linking a JSON replay format, a schema validator and a migration chain.
 `ReplayCli` stayed in `antwika::replay`, since naming `--record` and `--replay` is that library's business where reading them is not.
