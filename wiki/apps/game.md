@@ -170,6 +170,10 @@ A test that constructs its `AppModeState` already in `AppMode::CityMap` never tr
 Nothing about this leaves the tick path: it reads the mode a replay regenerates from the recorded clicks, defines no event, reads no clock and persists nothing.
 What it changed about `src/apps/game/replays/demo.json` is that the two walkers it drops now stand where they were dropped rather than walking off and expiring, since that session never presses pause; everything a click causes there — ten roads, a house, the pan and the zoom — happens exactly as it did.
 
+The slide itself is `WalkerMotion.hpp`, through [`tween`](../libraries/tween.md) at `kWalkerEasing` — exact rational arithmetic either way, so the same frame of the same tick is the same pixel on every toolchain, which `FrameRateDeterminismTest` pins.
+That constant is `Easing::Linear` **on purpose rather than pending**: a walker crosses many cells in a row, so easing each cell's step would make it start and stop at every tile.
+Easing the camera that follows it is the version of that idea which reads correctly.
+
 **Those frames carry on while the run is paused, which is why the pause reaches the picture too.**
 `SceneSnapshot` carries it, read off `PauseState` by `snapshotOf()` exactly as the camera is, and `GridScene` then draws a held walker at its step's own phase whatever fraction of a tick a frame falls at.
 Without that a walker frozen mid-step slid forward through every tick and snapped back at the start of the next one, for as long as the run stayed held — the whole ticks of its step stop with `WalkerSystem`, and `FramePacedSource`'s frames do not stop with them.

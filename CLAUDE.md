@@ -194,6 +194,7 @@ Breaking one is the class of mistake that looks fine live and surfaces as a dive
 - [`pathfinding`](wiki/libraries/pathfinding.md) is an A* that knows nothing about grids, and its open set orders down to ascending `NodeId` so an equal-cost route resolves the same way on every run and every toolchain.
 - [`rng`](wiki/libraries/rng.md) is the one source of pseudo-random bits, and `IRng::next()`'s 64 raw bits are the whole interface -- there is deliberately no distribution, since `<random>`'s are not portable across standard libraries.
 - [`animation`](wiki/libraries/animation.md) resolves which frame to show as a pure function of a tick the caller already has; there is deliberately no `Animator` you advance, since that would be simulation state hidden in a renderer.
+- [`tween`](wiki/libraries/tween.md) shapes a `Progress` by an easing curve, keeping it exact; the curve list is short on purpose, since sine and elastic need a transcendental and back overshoots a range `Progress` cannot leave.
 - [`time`](wiki/libraries/time.md) is the fixed-tick `Tick` type and `IClock`/`SystemClock`.
 - [`gfx`](wiki/libraries/gfx.md) abstracts windows, 2D drawing, textures and -- through the sibling `IRenderer3D` rather than more methods on `IRenderer` -- meshes, so no code under `src/` names a graphics framework.
 - [`ui`](wiki/libraries/ui.md) is an immediate-mode UI over `gfx` that retains nothing between frames: activation is on the press, and focus, text and dropdown state are all passed through by the caller.

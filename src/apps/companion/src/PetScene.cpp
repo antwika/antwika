@@ -7,6 +7,7 @@
 #include <string>
 #include <string_view>
 
+#include <antwika/animation/Frame.hpp>
 #include <antwika/animation/KeyFrame.hpp>
 #include <antwika/animation/LoopMode.hpp>
 #include <antwika/animation/Playback.hpp>
@@ -15,6 +16,8 @@
 #include <antwika/gfx/Point.hpp>
 #include <antwika/gfx/Rect.hpp>
 #include <antwika/gfx/TextLayout.hpp>
+#include <antwika/tween/Easing.hpp>
+#include <antwika/tween/Tween.hpp>
 #include <antwika/i18n/MessageId.hpp>
 
 #include "antwika/companion/Saying.hpp"
@@ -161,6 +164,29 @@ namespace antwika::companion
 
         // How far up the animal sits on each frame of a breath.
         constexpr std::array<std::int32_t, 4> kBob{0, 1, 1, 0};
+
+        // A breath eases rather than stepping between those four.
+        // Linear would be the mechanical version of the same motion.
+        // Sine is what a breath really wants and is not exact.
+        // So this is the closest curve the tween library can keep exact.
+        constexpr antwika::tween::Easing kBreatheEasing =
+            antwika::tween::Easing::QuadInOut;
+
+        // Where the animal sits this frame, in pixels rather than units.
+        // A whole unit is eight pixels at the window's own size.
+        // Four frames a breath, so stepping between two of those jolts.
+        // So the two rows a breath is between are tweened across it.
+        [[nodiscard]] std::int32_t breathLift(
+            const antwika::animation::Frame &breath, std::uint32_t unit)
+        {
+            const auto next = (breath.index + 1) % kBob.size();
+
+            return static_cast<std::int32_t>(antwika::tween::tweenBetween(
+                kBob[breath.index] * static_cast<std::int32_t>(unit),
+                kBob[next] * static_cast<std::int32_t>(unit),
+                kBreatheEasing,
+                breath.progress));
+        }
 
         // What each form does to the fur it is drawn in, as a fraction.
         // A factor rather than three more colours in every palette.
@@ -505,44 +531,53 @@ namespace antwika::companion
             renderer.drawRect(box(layout, 1, y, filled, 2), fill);
         }
 
+        // The lift is in pixels rather than whole units.
+        // A breath is tweened, so it lands between two rows of the grid.
+        // Every other measurement here is still the grid's own.
+        [[nodiscard]] Rect raised(Rect rect, const std::int32_t lift)
+        {
+            rect.origin.y -= lift;
+
+            return rect;
+        }
+
         void drawAnimal(
             IRenderer &renderer,
             const SceneLayout &layout,
             const Palette &palette,
             const Color fur,
-            const std::int32_t bob,
+            const std::int32_t lift,
             const bool eyesShut)
         {
-            const std::int32_t lift = -bob;
 
             renderer.drawRect(
-                box(layout, 11, 20 + lift, 3, 2), palette.detail);
+                raised(box(layout, 11, 20, 3, 2), lift), palette.detail);
             renderer.drawRect(
-                box(layout, 18, 20 + lift, 3, 2), palette.detail);
+                raised(box(layout, 18, 20, 3, 2), lift), palette.detail);
             renderer.drawRect(
-                box(layout, 21, 15 + lift, 4, 2), palette.detail);
-            renderer.drawRect(box(layout, 10, 13 + lift, 12, 8), fur);
+                raised(box(layout, 21, 15, 4, 2), lift), palette.detail);
+            renderer.drawRect(raised(box(layout, 10, 13, 12, 8), lift), fur);
             renderer.drawRect(
-                box(layout, 11, 8 + lift, 2, 2), palette.detail);
+                raised(box(layout, 11, 8, 2, 2), lift), palette.detail);
             renderer.drawRect(
-                box(layout, 19, 8 + lift, 2, 2), palette.detail);
-            renderer.drawRect(box(layout, 11, 10 + lift, 10, 6), fur);
+                raised(box(layout, 19, 8, 2, 2), lift), palette.detail);
+            renderer.drawRect(raised(box(layout, 11, 10, 10, 6), lift), fur);
             renderer.drawRect(
-                box(layout, 15, 14 + lift, 2, 1), palette.detail);
+                raised(box(layout, 15, 14, 2, 1), lift), palette.detail);
 
             if (eyesShut)
             {
                 renderer.drawRect(
-                    box(layout, 13, 13 + lift, 2, 1), palette.eye);
+                    raised(box(layout, 13, 13, 2, 1), lift), palette.eye);
                 renderer.drawRect(
-                    box(layout, 17, 13 + lift, 2, 1), palette.eye);
+                    raised(box(layout, 17, 13, 2, 1), lift), palette.eye);
                 return;
             }
 
             renderer.drawRect(
-                box(layout, 13, 12 + lift, 2, 2), palette.eye);
+                raised(box(layout, 13, 12, 2, 2), lift), palette.eye);
             renderer.drawRect(
-                box(layout, 17, 12 + lift, 2, 2), palette.eye);
+                raised(box(layout, 17, 12, 2, 2), lift), palette.eye);
         }
 
         void drawGrave(
@@ -742,7 +777,7 @@ namespace antwika::companion
                 *layout,
                 palette,
                 furFor(palette, snapshot.form),
-                kBob[breath.index],
+                breathLift(breath, layout->unit),
                 eyesShut);
 
             if (snapshot.asleep)

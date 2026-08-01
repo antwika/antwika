@@ -164,6 +164,12 @@ Drawing it from `IRenderer`'s rectangles also leaves the whole scene assertable 
 Everything is laid out on a grid of `companion::kSceneUnits` whole units a side, centred in the canvas, which 256 pixels divides into exactly eight pixels each.
 `main.cpp` derives its window size from that constant times a pixels-per-unit number rather than naming a pixel count that happens to divide by it.
 
+**The breath is the one measurement that is not in whole units.**
+The companion breathes, blinks and puffs from `antwika::animation`, where a `Clip` is a definition and `resolve(clip, elapsedTicks)` is a pure function of the tick count the snapshot carries — so there is no animator anything advances, and drawing a frame cannot give the picture state a replay would have to reproduce.
+Blinks and puffs pick a pose; the breath moves between two, and used to step a whole grid unit at a time — eight pixels of jolt, twice a breath.
+`kBreatheEasing` in `PetScene.cpp` now tweens the two rows each frame sits between, through [`tween`](../libraries/tween.md), which is why `raised()` takes pixels where every other box here takes units.
+The curve is `QuadInOut` rather than linear, which reads mechanical, and rather than a sine, which is what a breath actually wants and cannot be computed exactly — that page says why an inexact curve is not on offer.
+
 ### The gauges, the props and the readout
 
 Four gauges take the top eight rows: energy, hunger, fun and happiness.
