@@ -19,27 +19,27 @@ namespace antwika::atlas_editor
         constexpr std::string_view kMaxTicksFlag = "--max-ticks";
 
         constexpr std::array kFlags{
-            antwika::replay::FlagSpec{
+            antwika::cli::FlagSpec{
                 .name = kImageFlag,
                 .valueName = "<path>",
                 .help = "Open this PNG; without it the session starts "
                         "on a blank sheet."},
-            antwika::replay::FlagSpec{
+            antwika::cli::FlagSpec{
                 .name = kOutFlag,
                 .valueName = "<path>",
                 .help = "Write this PNG when Save is pressed; without "
                         "it nothing can be saved."},
-            antwika::replay::FlagSpec{
+            antwika::cli::FlagSpec{
                 .name = kSheetFlag,
                 .valueName = "<w>x<h>",
                 .help = "How big a blank sheet to open (default "
                         "1024x256)."},
-            antwika::replay::FlagSpec{
+            antwika::cli::FlagSpec{
                 .name = kTileFlag,
                 .valueName = "<w>x<h>",
                 .help = "What the grid overlay's slots are (default "
                         "128x64)."},
-            antwika::replay::FlagSpec{
+            antwika::cli::FlagSpec{
                 .name = kMaxTicksFlag,
                 .valueName = "<n>",
                 .help = "Give up after <n> ticks (default 90000; 0 "
@@ -87,13 +87,13 @@ namespace antwika::atlas_editor
             .height = static_cast<std::uint32_t>(*height)};
     }
 
-    std::span<const antwika::replay::FlagSpec> editorFlags()
+    std::span<const antwika::cli::FlagSpec> editorFlags()
     {
         return kFlags;
     }
 
     EditorOptions editorOptionsFrom(
-        const antwika::replay::CommandLine &parsed)
+        const antwika::cli::CommandLine &parsed)
     {
         EditorOptions options;
 

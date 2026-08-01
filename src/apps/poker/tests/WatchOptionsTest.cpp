@@ -3,17 +3,17 @@
 #include <chrono>
 #include <vector>
 
-#include <antwika/replay/CommandLine.hpp>
-#include <antwika/replay/CommandLineError.hpp>
-#include <antwika/replay/FlagSpec.hpp>
+#include <antwika/cli/CommandLine.hpp>
+#include <antwika/cli/CommandLineError.hpp>
+#include <antwika/cli/FlagSpec.hpp>
 #include <antwika/replay/ReplayCli.hpp>
 
 #include "antwika/poker/WatchOptions.hpp"
 
+using antwika::cli::CommandLineError;
 using antwika::poker::watchFlags;
 using antwika::poker::watchOptionsFrom;
 using antwika::poker::WatchOptions;
-using antwika::replay::CommandLineError;
 using namespace std::chrono_literals;
 
 namespace
@@ -29,13 +29,13 @@ namespace
             argv.push_back(const_cast<char *>(arg));
         }
 
-        std::vector<antwika::replay::FlagSpec> table(
+        std::vector<antwika::cli::FlagSpec> table(
             antwika::replay::replayCliFlags().begin(),
             antwika::replay::replayCliFlags().end());
         table.insert(
             table.end(), watchFlags().begin(), watchFlags().end());
 
-        return watchOptionsFrom(antwika::replay::parseCommandLine(
+        return watchOptionsFrom(antwika::cli::parseCommandLine(
             static_cast<int>(argv.size()), argv.data(), table));
     }
 } // namespace

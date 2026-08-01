@@ -4,14 +4,11 @@
 #include <span>
 #include <string>
 
-#include <antwika/replay/CommandLine.hpp>
-#include <antwika/replay/FlagSpec.hpp>
+#include <antwika/cli/CommandLine.hpp>
+#include <antwika/cli/FlagSpec.hpp>
 
 namespace antwika::game
 {
-
-    using antwika::replay::CommandLine;
-    using antwika::replay::FlagSpec;
 
     /**
      * @brief The `--save`/`--load` file paths a run was invoked with.
@@ -43,7 +40,7 @@ namespace antwika::game
      * is why this is a table rather than a parser -- the same reason
      * replayCliFlags() is one.
      */
-    [[nodiscard]] std::span<const FlagSpec> saveCliFlags();
+    [[nodiscard]] std::span<const antwika::cli::FlagSpec> saveCliFlags();
 
     /**
      * @brief Pick the save options out of an already-parsed command line.
@@ -52,6 +49,6 @@ namespace antwika::game
      * @return The save options it holds.
      */
     [[nodiscard]] SaveCliOptions saveCliOptionsFrom(
-        const CommandLine &parsed);
+        const antwika::cli::CommandLine &parsed);
 
 } // namespace antwika::game

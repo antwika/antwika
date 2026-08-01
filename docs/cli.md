@@ -37,6 +37,6 @@ A command line is usually the last line of a shell history edited one flag at a 
 
 ## What is left in `antwika::replay`
 
-`antwika/replay/CommandLine.hpp`, `FlagSpec.hpp` and `CommandLineError.hpp` still exist, and hold nothing but `using` declarations re-exporting the `antwika::cli` names under the old spelling.
-They are there so that callers still writing `antwika::replay::FlagSpec` compile unchanged, and they name the same types, so an exception thrown as one is caught as the other.
-They go once every caller has moved; nothing new should be written against them.
+`ReplayCli` and nothing else of the command line.
+`antwika/replay/CommandLine.hpp`, `FlagSpec.hpp` and `CommandLineError.hpp` were `using` re-exports of the `antwika::cli` names under the old spelling, kept while callers still wrote `antwika::replay::FlagSpec`; every caller has moved, so the three headers are gone.
+`replayCliFlags()` and `replayCliOptionsFrom()` name `cli::FlagSpec` and `cli::CommandLine` directly, which is the only spelling there is.
