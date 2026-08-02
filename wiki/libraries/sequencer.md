@@ -16,7 +16,7 @@ It is the only place the two clocks meet, and it is deliberately small.
 | `FrameClock.hpp` | `FrameClock` | A tick, to the frame it begins on. |
 | `TempoMap.hpp` | `TempoMap` | A cycle to a frame and back, across tempo changes. |
 | `ISequencerSink.hpp` | `ISequencerSink` | Where what begins is handed. |
-| `Sequencer.hpp` | `Sequencer`, `SequencerDesc` | The window, the query and the onset rule. |
+| `Sequencer.hpp` | `Sequencer`, `SequencerDesc` | The window, the query, the onset rule, and `joinAt()` for a voice arriving late. |
 | `SequencerError.hpp` | `SequencerError` | This library's one failure type. |
 
 ## Depends on
@@ -26,6 +26,13 @@ It is the only place the two clocks meet, and it is deliberately small.
 **Not [`synth`](synth.md)**, which is the point of `ISequencerSink`: this library says *what* begins and *when*, and deciding that a control means a frequency is the application's business.
 
 ## Non-obvious decisions
+
+**`joinAt()` is how a voice arrives in the middle of a run.**
+A sequencer built fresh has been asked about nothing, so its first `advance()` covers every cycle from zero to now and hands on every onset in all of them at once -- which is right for a run starting at tick zero and catastrophic for a voice that a caller has just made, five thousand ticks in.
+`joinAt(tick)` declares everything through that tick's window already asked for, without querying the pattern and without sounding anything, and it cannot move the window backwards.
+[music_editor](../apps/music_editor.md) is what wanted it: a voice there is a line of a document, so voices appear and disappear as somebody types, and the past is not a new one's to play.
+
+
 
 **Three clocks, two exact maps, and no floating point in either.**
 `time::Tick` is when decisions are made, `sound::FrameIndex` is what everything is placed against, and `Cycle` is what music is written in.
