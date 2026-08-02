@@ -10,7 +10,6 @@ add_executable(antwika_poker
     src/TableScene.cpp
     src/TableSnapshot.cpp
     src/WatchOptions.cpp
-    src/WindowCloseSource.cpp
     src/main.cpp
 )
 

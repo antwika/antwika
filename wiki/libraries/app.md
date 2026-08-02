@@ -23,6 +23,7 @@ It holds no simulation logic of its own — everything here is glue that was dup
 | `PointerReading.hpp` | `asPoint()`, `locates()`, `pointerFrom()`, `hoverFrom()` | Turns `input` edges into a `ui::Pointer`, and a pointer hint into a `ui::HoverPointer`. |
 | `WindowPointerMapping.hpp` | `WindowPointerMapping` | An `input::IPointerMapping` reading a window pixel as a pixel on the fixed canvas the app lays out against. |
 | `FullscreenToggleSource.hpp` | `FullscreenToggleSource` | An `ITickEventSource` decorator making a nominated key fill the screen with the window, altering not one event. |
+| `WindowCloseSource.hpp` | `WindowCloseSource` | An `ITickEventSource` decorator that closes the window a close request names and appends `engine.stop` while it is shut, with the pump exposed for a loop drawing after the run. |
 
 ## Depends on
 
@@ -83,7 +84,15 @@ A fullscreen toggle is an action on the window, not simulation state: it changes
 A sink is downstream of the recorder and inside the tick path, where everything *is* a function of state a replay reproduces, so this sits above the loop instead — a pure observer of the stream in exactly `input::PointerHintSource`'s sense, handing back what its inner source returned, unchanged.
 The key press is ordinary recorded input, so a replay of a session in which somebody pressed it fills the screen at the same tick and reaches the same state either way, which is the property worth having rather than an accident.
 
-It holds an `IWindow &` rather than a `WindowId`, unlike `simulation::WindowInputSource`: that class holds an id precisely so it cannot close a window a renderer is still drawing into, and nothing here can close anything.
+It holds an `IWindow &` rather than a `WindowId`, unlike `simulation::WindowInputSource`: that class holds an id precisely so it cannot close a window a renderer is still drawing into, and the only calls this one makes are `isFullscreen()` and `setFullscreen()`.
+
+**`WindowCloseSource` is the variant of `simulation::WindowInputSource` that *does* close the window, and it lives here rather than there for that reason.**
+The library's form holds a `gfx::WindowId` and notes a close request in a `bool` local to one `eventsFor()` call, which is the form [`blog/012`](../../blog/012-a-window-that-cant-talk-back.md) argues for and the one to reach for by default: a source that cannot close anything cannot leave the tick carrying the stop drawing into a closed window.
+This one holds the `IWindow &` and calls `close()`, so the window's own open/closed state is what says the session is over — which is what an application needs when it goes on pumping and rendering *after* the loop has finished, long after that `bool` would have gone out of scope.
+Holding the final frame up until somebody closes the window is exactly that, and it is why `pumpEvents()` is public here and is called from outside the tick.
+
+The bill for that is one the application pays: the tick carrying the stop still runs to completion, so its render pass has to return early on a closed window, which is what `poker::TableRenderSink::render()` does.
+`apps/poker` is the one application on this source, and it was the app copy that this is — everything else is on the library's `WindowInputSource`, which needs no such guard.
 
 **`runGuarded()` is the half of `runRecorded()` that knows nothing about replays.**
 It exists because an app's `main.cpp` may not have a `try` of its own, and `gfx_demo` and `gfx3d_demo` take no `--record`/`--replay` to call `runRecorded()` with.

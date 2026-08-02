@@ -32,7 +32,7 @@ namespace antwika::poker
      * the table through a snapshot, draws, and never looks at an event
      * for anything but "was that a tick". Window input is somebody
      * else's job, which is what keeps rendering a write-only projection
-     * -- see WindowCloseSource for the other half.
+     * -- see app::WindowCloseSource for the other half.
      *
      * Register it after whatever steps the table, or every frame shows
      * the tick before.

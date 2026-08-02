@@ -1,3 +1,5 @@
+#include "antwika/app/WindowCloseSource.hpp"
+
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
@@ -14,9 +16,7 @@
 #include <antwika/gfx/mocks/MockWindow.hpp>
 #include <antwika/replay/ReplaySource.hpp>
 
-#include "antwika/poker/Events.hpp"
-#include "antwika/poker/WindowCloseSource.hpp"
-
+using antwika::app::WindowCloseSource;
 using antwika::event::Event;
 using antwika::event::TickEvent;
 using antwika::gfx::CloseRequested;
@@ -26,7 +26,6 @@ using antwika::gfx::WindowEvent;
 using antwika::gfx::WindowId;
 using antwika::gfx::mocks::MockGfxBackend;
 using antwika::gfx::mocks::MockWindow;
-using antwika::poker::WindowCloseSource;
 using antwika::replay::ReplaySource;
 using ::testing::NiceMock;
 using ::testing::Return;
@@ -36,14 +35,16 @@ namespace
     constexpr WindowId kOurWindow{1};
     constexpr WindowId kSomeoneElsesWindow{99};
 
-    [[nodiscard]] std::vector<TickEvent> oneBuyInAtTickZero()
+    // Anything an application might have put in the tick stream.
+    constexpr const char *kScripted = "app.something";
+
+    [[nodiscard]] std::vector<TickEvent> oneEventAtTickZero()
     {
         return {
             TickEvent{
                 .tick = 0,
-                .event = Event{
-                    .name = antwika::poker::events::kBuyIn,
-                    .payload = R"({"player":"alice","amount":200})"}}};
+                .event =
+                    Event{.name = kScripted, .payload = R"({"x":1})"}}};
     }
 
     [[nodiscard]] WindowEvent closeOf(WindowId id)
@@ -73,7 +74,7 @@ protected:
     bool open = true;
     NiceMock<MockGfxBackend> backend;
     NiceMock<MockWindow> window;
-    ReplaySource inner{oneBuyInAtTickZero()};
+    ReplaySource inner{oneEventAtTickZero()};
 };
 
 TEST_F(WindowCloseSourceTest, EventsFor_PassesTheWrappedEventsThrough)
@@ -85,7 +86,7 @@ TEST_F(WindowCloseSourceTest, EventsFor_PassesTheWrappedEventsThrough)
     const auto events = source.eventsFor(0);
 
     ASSERT_EQ(events.size(), 1);
-    EXPECT_EQ(events.at(0).name, antwika::poker::events::kBuyIn);
+    EXPECT_EQ(events.at(0).name, kScripted);
 }
 
 TEST_F(WindowCloseSourceTest, EventsFor_AddsNothingWhileTheWindowIsOpen)
@@ -125,7 +126,7 @@ TEST_F(WindowCloseSourceTest, EventsFor_StopsTheEngineAfterTheTicksEvents)
     const auto events = source.eventsFor(0);
 
     ASSERT_EQ(events.size(), 2);
-    EXPECT_EQ(events.at(0).name, antwika::poker::events::kBuyIn);
+    EXPECT_EQ(events.at(0).name, kScripted);
     EXPECT_EQ(events.at(1).name, antwika::engine::events::kStop);
 }
 

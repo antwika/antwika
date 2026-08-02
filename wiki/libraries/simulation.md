@@ -45,6 +45,7 @@ Its events are dispatched and the engine still steps before the loop exits, so a
 **Closing a window is input, not control flow.**
 `WindowInputSource` decorates another source and appends `engine.stop` once the window has gone, so a close lands in a `--record` file like any other input and replays at the same tick.
 It holds a `gfx::WindowId` rather than an `IWindow &`, so it cannot close anything — closing here would leave the tick that carries the stop drawing into a closed window.
+An application that genuinely needs the window closed from its source, and the pump exposed for a loop that draws after the run has finished, takes [`app`](app.md)'s `WindowCloseSource` instead and owes a render pass that returns early on a closed window; `apps/poker` is the only one.
 
 **Pacing changes how long a run takes and never what it computes.**
 `TickPacer` reads neither the `World` nor the tick it is given, and it is registered as the last observer, after whatever draws the frame, which makes the order present-then-wait.

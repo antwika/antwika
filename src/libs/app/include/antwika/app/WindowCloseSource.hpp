@@ -8,7 +8,7 @@
 #include <antwika/simulation/ITickEventSource.hpp>
 #include <antwika/time/Tick.hpp>
 
-namespace antwika::poker
+namespace antwika::app
 {
 
     using antwika::event::Event;
@@ -17,12 +17,12 @@ namespace antwika::poker
     using antwika::simulation::ITickEventSource;
 
     /**
-     * @brief Turns closing the window into an engine.stop event.
+     * @brief Turns closing the window into an engine.stop event, and
+     * closes the window itself.
      *
-     * The only route by which a window may influence the engine, and
-     * deliberately the same route a replay file takes: it decorates the
-     * source the engine loop already pulls its events from, so a close
-     * is ordinary external input. That is why antwika::gfx never has to
+     * The same route into the engine a replay file takes: it decorates
+     * the source the loop already pulls its events from, so a close is
+     * ordinary external input. That is why antwika::gfx never has to
      * know what an event::Event is, and why a recorded session keeps the
      * close that ended it.
      *
@@ -30,28 +30,25 @@ namespace antwika::poker
      * loop asks a source for a tick's events *before* stepping the
      * engine, so a close seen now stops the session on this tick.
      *
-     * This is a near-copy of simulation::WindowInputSource, and the
-     * difference is deliberate rather than an oversight.
+     * **It holds the window rather than an id**, which is the whole
+     * difference from simulation::WindowInputSource and is deliberate
+     * rather than an oversight.
      * That one holds a gfx::WindowId and so cannot close anything,
      * noting a close request in a bool local to one eventsFor() call.
-     * This one holds the IWindow itself and calls close() on it, so the
-     * window's own open/closed state is what says the session is over.
-     * That is what this app needs: --tick-delay-ms with a positive value
-     * holds the final frame up until the window is closed, and
-     * PokerRoom's epilogue goes on pumping and rendering *after* the
-     * loop has finished, long after a bool inside eventsFor() would have
-     * gone out of scope.
-     * It is also why pumpEvents() is public here and is called from
-     * outside the tick, which the library's source has no equivalent of.
-     * What blog/012 warns against -- the tick that carries the stop
-     * drawing into a window this source has already closed -- is
-     * answered here by TableRenderSink::render(), which returns early on
-     * a closed window.
-     * The library form needs no such guard, which is why that is the one
-     * that was promoted.
-     * Folding the two together, with closing the window an option the
-     * library offers, is available follow-up work rather than something
-     * this header is waiting on.
+     * This one calls IWindow::close(), so the window's own open/closed
+     * state is what says the session is over -- which is what an
+     * application needs when it goes on pumping and rendering *after*
+     * the loop has finished, long after a bool inside eventsFor() would
+     * have gone out of scope. Holding the final frame up until somebody
+     * closes the window is exactly that, and it is why pumpEvents() is
+     * public and is called from outside the tick.
+     *
+     * **So an application on this source owes blog/012 an answer of its
+     * own**: the tick carrying the stop still runs to completion, and it
+     * must not draw into a window this source has already closed. Its
+     * render pass returning early on a closed window is that answer, and
+     * simulation::WindowInputSource is the one to reach for when nothing
+     * needs the window closed from here, since it needs no such guard.
      */
     class WindowCloseSource final : public ITickEventSource
     {
@@ -60,8 +57,10 @@ namespace antwika::poker
          * @brief Construct the decorator over what it wraps.
          * @param inner The source whose events pass through; must
          * outlive this object.
-         * @param backend Polled for window events.
-         * @param window The window whose close requests count.
+         * @param backend Polled for window events; must outlive this
+         * object.
+         * @param window The window whose close requests count, and the
+         * one closed on one; must outlive this object.
          */
         WindowCloseSource(
             ITickEventSource &inner, IGfxBackend &backend, IWindow &window);
@@ -95,4 +94,4 @@ namespace antwika::poker
         IWindow &window;
     };
 
-} // namespace antwika::poker
+} // namespace antwika::app

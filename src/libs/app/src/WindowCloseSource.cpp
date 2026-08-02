@@ -1,11 +1,11 @@
-#include "antwika/poker/WindowCloseSource.hpp"
+#include "antwika/app/WindowCloseSource.hpp"
 
 #include <variant>
 
 #include <antwika/engine/Events.hpp>
 #include <antwika/gfx/WindowEvent.hpp>
 
-namespace antwika::poker
+namespace antwika::app
 {
 
     using antwika::engine::events::kStop;
@@ -52,4 +52,4 @@ namespace antwika::poker
         }
     }
 
-} // namespace antwika::poker
+} // namespace antwika::app
