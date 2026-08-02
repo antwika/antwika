@@ -48,6 +48,8 @@ add_library(antwika_gfx
     src/StbImageWrite.cpp
     src/TextLayout.cpp
     src/Transform.cpp
+    src/Viewport.cpp
+    src/ViewportRenderer.cpp
 )
 
 add_library(antwika::gfx ALIAS antwika_gfx)

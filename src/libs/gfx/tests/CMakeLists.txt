@@ -30,6 +30,8 @@ add_executable(antwika_gfx_tests
     TextLayoutTest.cpp
     TextRasterTest.cpp
     TransformTest.cpp
+    ViewportRendererTest.cpp
+    ViewportTest.cpp
     WindowIdTest.cpp
 )
 
