@@ -99,7 +99,9 @@ Two numbers rather than one: the score alone cannot tell a run that scraped thro
 **It is read as `parse -> read version -> migrate -> validate -> decode`**, through `replay::readVersionedDocument` and an injected `replay::MigrationChain`, exactly as [`docs/schema-versioning.md`](../../docs/schema-versioning.md) requires.
 `standardScoreMigrations()` hands back a chain with **no steps in it**, because this format has one revision and writing a migration for a version that never shipped would be fiction.
 The chain is still what reads every document, so the first bump is one entry in that list and nothing else — and until then it is what refuses a file from a build newer than this one.
-The `"magic"` is checked before anything else, because the replay document, the game save, the companion and this all state their version in the same `"version"` member and the magic is the only thing telling them apart.
+The `"magic"` is what tells this format from the replay document, the game save and the companion's, since all four state their version in the same `"version"` member and nothing else distinguishes them.
+It is the *schema* that checks it, though, so it is checked **after** the migration chain rather than before it — and a file of one of those other formats stating a version this build cannot reach is therefore refused as coming from a newer build rather than as not being a score file at all.
+Naming it correctly would mean reading the magic ahead of the version, which none of the four formats does today.
 
 **A missing high score is an ordinary answer, not an error.**
 `FileScoreStore::load()` returns `std::nullopt` for a file that is not there, which is a first run and worth a best of zero; an absent file never stops a game.

@@ -117,4 +117,9 @@ The font is `assets/fonts/RobotoMono-Regular.ttf`, compiled into `antwika::gfx` 
 This is the rule stated above — *nothing this library returns may enter simulation state* — being kept at the one seam where it would have been most convenient to break, and [`wiki/libraries/gfx.md`](gfx.md) sets out the reasoning from the other side.
 An application that wants a real font's *metrics*, rather than a real font's *look*, still asks this library directly, bundles its own `.ttf` with `antwika_bundle_app()`, and takes on the decision in the open.
 
-The other route in is unchanged and is what an application uses to draw text at a size the fixed cell has no answer for: `makeGlyphAtlas()` hands back one mask and one rectangle per character, `gfx::glyphAtlasBitmap()` expands the mask to straight RGBA, `IRenderer::createTexture()` uploads it once and `gfx::AtlasText.hpp` measures and blits from it.
+The other route in is unchanged and is what an application *would* use to draw text at a size the fixed cell has no answer for: `makeGlyphAtlas()` hands back one mask and one rectangle per character, `gfx::glyphAtlasBitmap()` expands the mask to straight RGBA, `IRenderer::createTexture()` uploads it once and `gfx::AtlasText.hpp` measures and blits from it.
+
+**Nothing in this tree takes that route, and nothing calls `Font::kerning()` either.**
+Both are speculative surface — tested to the same 100% as everything else here, and adopted by nobody — which is worth stating outright rather than leaving a reader to infer use from a page that describes a mechanism, following the precedent [`tween`](tween.md) sets by listing the applications that do not use it and why.
+`kerning()` in particular is waiting for a caller that lays text out proportionally: the fixed cell `gfx::textSize()` measures advances every character by the same amount, so there is nowhere in the one live text path for a pair adjustment to go.
+Neither is deleted, because both are answers this library owes anything asking it for real metrics rather than for the built-in font's look, and a `kern` table this cannot read is a font this cannot fully describe.
