@@ -246,6 +246,7 @@ The keyboard box is the one place a language appears at all, and it names a *boa
 
 **Filling the screen is not simulation state, so F10 is above the loop.**
 `app::FullscreenToggleSource` wraps the event source and toggles the window on the key, and it changes exactly one thing -- what `IWindow::size()` reports -- which no layout, no hit test and nothing this app plays may read.
+What *does* read it is the render sink alone, to place the picture and nothing else: a `gfx::ViewportRenderer` built fresh each frame scales the canvas to the window's full height at the same aspect and pillarboxes the remainder, exactly as [game](game.md) draws, and `app::WindowPointerMapping` runs the same transform backwards upstream of the recorder so a click lands on what it is over at any size.
 Every layout here is against `configuredSize()`, so a recorded session reaches the same state whether or not anybody pressed it, and a replay of one where somebody did fills the screen at the same tick and still reaches that state.
 It is the same key [game](game.md) uses, since an editor with a different one would be one to remember.
 

@@ -3,6 +3,7 @@
 #include <antwika/event/ITickEventSink.hpp>
 #include <antwika/event/TickEvent.hpp>
 #include <antwika/gfx/IWindow.hpp>
+#include <antwika/gfx/Size.hpp>
 
 #include "antwika/music_editor/EditorScene.hpp"
 #include "antwika/music_editor/EditorSink.hpp"
@@ -23,6 +24,15 @@ namespace antwika::music_editor
      * **It does no pacing of its own**, unlike ui_demo's: this run is
      * paced by how much audio the device has taken, and a sleeper here
      * would be a second opinion about how fast the run goes.
+     *
+     * **The one place in this application reading the reported size**,
+     * and it reads it to place the picture and nothing else: every
+     * command is in canvas pixels, and a gfx::ViewportRenderer built
+     * fresh each frame scales and centres them into whatever the window
+     * currently is -- which is how F10's fullscreen enlarges the editor
+     * rather than parking it in a corner.  The remainder is pillarboxed,
+     * exactly as apps/game draws, and the pointer is mapped back through
+     * the same transform upstream of the recorder in main().
      */
     class RenderSink final : public ITickEventSink
     {
@@ -33,11 +43,14 @@ namespace antwika::music_editor
          * this object.
          * @param scene Draws the picture; must outlive this object.
          * @param editor Holds the picture; must outlive this object.
+         * @param canvas The size the window was **asked** for, which is
+         * what every drawn command is expressed in.
          */
         RenderSink(
             IWindow &window,
             const EditorScene &scene,
-            const EditorSink &editor);
+            const EditorSink &editor,
+            Size canvas);
 
         RenderSink(const RenderSink &) = delete;
         RenderSink(RenderSink &&) = delete;
@@ -55,6 +68,7 @@ namespace antwika::music_editor
         IWindow &window;
         const EditorScene &scene;
         const EditorSink &editor;
+        Size canvas;
     };
 
 } // namespace antwika::music_editor

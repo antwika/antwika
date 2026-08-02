@@ -6,6 +6,7 @@
 #include <antwika/app/ConsoleLogging.hpp>
 #include <antwika/app/FullscreenToggleSource.hpp>
 #include <antwika/app/RunRecorded.hpp>
+#include <antwika/app/WindowPointerMapping.hpp>
 #include <antwika/gfx/SelectedBackend.hpp>
 #include <antwika/gfx/Size.hpp>
 #include <antwika/gfx/WindowDesc.hpp>
@@ -111,11 +112,18 @@ namespace
 
         const InputEventCodec codec;
 
+        // Where a window pixel is on the canvas, and nothing else.
+        // Attached upstream of the recorder, exactly as apps/game.
+        // So a file holds canvas positions and replays at any size.
+        const antwika::app::WindowPointerMapping mapping(
+            *window, kWindowSize);
+
         InputPipeline input(
             fileSource,
             *inputBackend,
             codec,
             {.readsDevice = !recorded.options.replayPath.has_value(),
+             .pointerMapping = mapping,
              .coalescePointerMotion = true});
 
         WindowInputSource windowed(input, *backend, window->id());
@@ -152,7 +160,7 @@ namespace
                 [&](const EditorSink &editor)
             {
                 return std::make_unique<RenderSink>(
-                    *window, scene, editor);
+                    *window, scene, editor, kWindowSize);
             }});
 
         device->stop();
