@@ -303,14 +303,24 @@ namespace antwika::music_editor
             state.menuOpen = !state.menuOpen;
             changed = true;
         }
+        else if (acted.activated == kSpeedBox)
+        {
+            state.speedOpen = !state.speedOpen;
+            changed = true;
+        }
 
-        // Two lists, told apart by the box a choice names.
+        // Three lists, told apart by the box a choice names.
         if (acted.chosen.has_value())
         {
             if (acted.chosen->dropdown == kMenuBox)
             {
                 state.menuOpen = false;
                 menuAction(acted.chosen->index);
+            }
+            else if (acted.chosen->dropdown == kSpeedBox)
+            {
+                state.speedOpen = false;
+                speedAction(acted.chosen->index);
             }
             else
             {
@@ -491,6 +501,23 @@ namespace antwika::music_editor
                 .tick = foldedTick,
                 .event = {.name = antwika::engine::events::kStop}});
         }
+    }
+
+    void EditorSink::speedAction(const std::size_t index)
+    {
+        // Reapplied only on an actual change.
+        // A tempo boundary per idle click would pile up for nothing.
+        if (index == state.speed)
+        {
+            return;
+        }
+
+        state.speed = index;
+
+        const auto &pick = kSpeeds[index];
+
+        playback.setSpeed(
+            sequencer::Rational{pick.numerator, pick.denominator});
     }
 
     void EditorSink::saveNow()

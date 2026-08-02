@@ -18,7 +18,6 @@
 #include <antwika/replay/ReplaySource.hpp>
 #include <antwika/sequencer/FrameClock.hpp>
 #include <antwika/sequencer/Rational.hpp>
-#include <antwika/sequencer/TempoMap.hpp>
 #include <antwika/sound/DeviceDesc.hpp>
 #include <antwika/sound/OfflineDevice.hpp>
 #include <antwika/sound/WaveFormat.hpp>
@@ -56,8 +55,7 @@ namespace
         return PlaybackDesc{
             .clock = antwika::sequencer::FrameClock(
                 kFormat.rate, std::chrono::milliseconds{40}),
-            .tempo = antwika::sequencer::TempoMap(
-                antwika::sequencer::Rational(kFormat.rate)),
+            .framesPerCycle = antwika::sequencer::Rational(kFormat.rate),
             .lookahead = 3,
             .lead = 2};
     }

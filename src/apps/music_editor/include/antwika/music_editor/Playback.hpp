@@ -31,7 +31,16 @@ namespace antwika::music_editor
     struct PlaybackDesc
     {
         sequencer::FrameClock clock;
-        sequencer::TempoMap tempo;
+
+        /**
+         * @brief How long one cycle lasts at normal speed.
+         *
+         * The rational rather than a ready TempoMap, because a speed
+         * change is worked out against this base -- twice as fast is
+         * half these frames a cycle -- and a map alone has forgotten
+         * what normal was.
+         */
+        sequencer::Rational framesPerCycle{};
 
         /**
          * @brief How many ticks ahead each track is decided.
@@ -186,6 +195,26 @@ namespace antwika::music_editor
          */
         [[nodiscard]] time::Tick playedTicks() const noexcept;
 
+        /**
+         * @brief Change how fast musical time runs, for every voice.
+         *
+         * Takes effect at the next whole cycle no voice has been asked
+         * past, worked out in exact rational arithmetic -- so a live
+         * run and its replay change pace at the very same note.  Notes
+         * already decided keep the frames they were given.  A second
+         * change inside one cycle lands a cycle after the first, since
+         * a tempo boundary is a cycle's to hold and each cycle holds
+         * one.
+         *
+         * @param speed The multiplier over the desc's base: 2 is twice
+         * as fast, and 1/2 half.
+         * @throws antwika::pattern::PatternError If the speed is zero
+         * or the exact arithmetic will not fit.
+         * @throws sequencer::SequencerError If the pace it works out
+         * to would give a cycle no frames at all.
+         */
+        void setSpeed(sequencer::Rational speed);
+
 
     private:
         // Turns one voice's events into that voice's sound.
@@ -248,6 +277,14 @@ namespace antwika::music_editor
         time::ISleeper &sleeper;
 
         PlaybackDesc shape;
+
+        // The one timeline every voice runs on, speed changes and all.
+        // A voice made later copies it, so a joiner keeps the pace.
+        sequencer::TempoMap tempo;
+
+        // Where the last speed change landed.
+        // The next one must land strictly after it.
+        sequencer::Rational retimed{};
 
         std::vector<Line> perVoice;
         std::size_t voicesSounding = 0;

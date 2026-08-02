@@ -106,6 +106,24 @@ namespace antwika::sequencer
         void joinAt(time::Tick tick);
 
         /**
+         * @brief Change tempo from a musical position onwards.
+         *
+         * The boundary may not fall inside anything already queried:
+         * those events were placed on the old timeline and the frames
+         * they landed on have been handed out, so moving them is not
+         * expressible -- the same argument joinAt() makes about the
+         * past.
+         *
+         * @param from Where the new tempo takes over; at or after
+         * queriedThrough().
+         * @param framesPerCycle How long one cycle lasts from there.
+         * @throws SequencerError If the boundary is inside a window
+         * already queried, not after every earlier change, or a cycle
+         * would take no frames.
+         */
+        void retime(Cycle from, Rational framesPerCycle);
+
+        /**
          * @brief Get how far the pattern has been asked about.
          * @return The first position no query has covered yet.
          */

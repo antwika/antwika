@@ -89,6 +89,20 @@ namespace antwika::sequencer
         asked = through;
     }
 
+    void Sequencer::retime(const Cycle from, const Rational framesPerCycle)
+    {
+        // Everything through asked was placed on the old timeline.
+        // Its frames are handed out and cannot move.
+        if (from < asked)
+        {
+            throw SequencerError(
+                "antwika::sequencer: retiming a window already queried "
+                "would move notes whose frames have been handed out");
+        }
+
+        tempo.addSegment(from, framesPerCycle);
+    }
+
     Cycle Sequencer::queriedThrough() const noexcept
     {
         return asked;

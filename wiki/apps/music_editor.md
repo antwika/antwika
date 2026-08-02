@@ -25,6 +25,7 @@ The two `drum.` lines above are two voices sounding together, because a preset i
 Nothing is stopping four bass lines, or a document with no preset named anywhere in it.
 
 Escape pauses and resumes, Enter is a new line, Tab indents by two, F10 fills the screen, and the two buttons pause and silence everything.
+The speed box by the layout one runs the whole score at a quarter to four times its written pace: a choice takes hold at the next whole cycle -- worked out in exact rationals, so a replay changes pace at the very same note -- and notes already decided keep the frames they were given.
 The menu at the top holds `new`, `save`, `load` and `quit`: save asks for a name in a box over the pane, load lists what the `scores/` directory held plus whatever this run saved, and Escape or its cancel button closes either box.
 Refusals are listed under the pane by line number, at most three at a time and then a count of the rest.
 

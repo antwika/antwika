@@ -1,9 +1,11 @@
 #pragma once
 
+#include <array>
 #include <cstddef>
 #include <cstdint>
 #include <optional>
 #include <string>
+#include <string_view>
 #include <vector>
 
 #include <antwika/ui/ScrollChange.hpp>
@@ -33,6 +35,9 @@ namespace antwika::music_editor
     /** @brief The id of the menu box at the top of the screen. */
     inline constexpr WidgetId kMenuBox{103};
 
+    /** @brief The id of the box naming how fast the clock runs. */
+    inline constexpr WidgetId kSpeedBox{104};
+
     /** @brief The id of the save modal's name field. */
     inline constexpr WidgetId kSaveNameField{110};
 
@@ -55,6 +60,42 @@ namespace antwika::music_editor
 
     /** @brief The id the load modal's first score carries, likewise. */
     inline constexpr WidgetId kLoadOptions{400};
+
+    /** @brief The speed box's first option's id, likewise. */
+    inline constexpr WidgetId kSpeedOptions{500};
+
+    /**
+     * @brief One speed the playback can be asked to run at.
+     */
+    struct SpeedChoice
+    {
+        /** @brief What the box shows for it. */
+        std::string_view label;
+
+        /** @brief The multiplier's top: 2 is twice as fast. */
+        std::int64_t numerator;
+
+        /** @brief The multiplier's bottom: 2 is half as fast. */
+        std::int64_t denominator;
+    };
+
+    /**
+     * @brief The speeds there are to choose, slowest first.
+     *
+     * One table for the labels the scene shows and the multipliers the
+     * sink applies, so the two can never disagree about what a choice
+     * means.  Fractions rather than floats for pattern's reason: a
+     * tempo is exact arithmetic a replay has to reproduce.
+     */
+    inline constexpr std::array<SpeedChoice, 5> kSpeeds{
+        SpeedChoice{.label = "0.25x", .numerator = 1, .denominator = 4},
+        SpeedChoice{.label = "0.5x", .numerator = 1, .denominator = 2},
+        SpeedChoice{.label = "1x", .numerator = 1, .denominator = 1},
+        SpeedChoice{.label = "2x", .numerator = 2, .denominator = 1},
+        SpeedChoice{.label = "4x", .numerator = 4, .denominator = 1}};
+
+    /** @brief Which of kSpeeds a fresh editor runs at. */
+    inline constexpr std::size_t kNormalSpeed = 2;
 
     /**
      * @brief Get the id the load box's nth score button carries.
@@ -165,6 +206,12 @@ namespace antwika::music_editor
 
         /** @brief Whether the menu's list of commands is showing. */
         bool menuOpen = false;
+
+        /** @brief Which of kSpeeds the musical clock runs at. */
+        std::size_t speed = kNormalSpeed;
+
+        /** @brief Whether that box's list of speeds is showing. */
+        bool speedOpen = false;
 
         /** @brief Which box is over the editor, taking the input. */
         Modal modal = Modal::None;

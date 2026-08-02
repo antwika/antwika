@@ -61,6 +61,20 @@ namespace antwika::music_editor
         constexpr std::array<std::string_view, 4> kMenuItems{
             "new", "save", "load", "quit"};
 
+        // The speeds, as the box's option labels.
+        // Read off the one table the sink acts on, so they agree.
+        constexpr auto kSpeedLabels = []
+        {
+            std::array<std::string_view, kSpeeds.size()> labels{};
+
+            for (std::size_t at = 0; at < kSpeeds.size(); ++at)
+            {
+                labels[at] = kSpeeds[at].label;
+            }
+
+            return labels;
+        }();
+
         // Dark and translucent, so the score reads as still there.
         // apps/game's modal makes the same argument about its city.
         constexpr Color kScrim{
@@ -145,6 +159,17 @@ namespace antwika::music_editor
                     "f10 fills the screen");
 
                 ui.spacer(kGrow);
+
+                // How fast the musical clock runs.
+                // A choice is a recorded click, so a replay keeps pace.
+                const DropdownSpec speed{
+                    .id = kSpeedBox,
+                    .optionIdBase = kSpeedOptions,
+                    .options = kSpeedLabels,
+                    .selected = state.speed,
+                    .open = state.speedOpen};
+
+                ui.dropdown(speed);
 
                 // Named rather than written into the call.
                 // A temporary of it carries a cleanup block.

@@ -20,7 +20,6 @@
 #include <antwika/replay/ReplaySource.hpp>
 #include <antwika/sequencer/FrameClock.hpp>
 #include <antwika/sequencer/Rational.hpp>
-#include <antwika/sequencer/TempoMap.hpp>
 #include <antwika/simulation/WindowInputSource.hpp>
 #include <antwika/sound/DeviceDesc.hpp>
 #include <antwika/sound/SelectedSoundBackend.hpp>
@@ -49,7 +48,6 @@ using antwika::music_editor::RenderSink;
 using antwika::replay::ReplaySource;
 using antwika::sequencer::FrameClock;
 using antwika::sequencer::Rational;
-using antwika::sequencer::TempoMap;
 using antwika::simulation::WindowInputSource;
 using antwika::time::SystemSleeper;
 
@@ -169,7 +167,7 @@ namespace
             .playback =
                 PlaybackDesc{
                     .clock = FrameClock(kFormat.rate, kTickInterval),
-                    .tempo = TempoMap(Rational(kFramesPerCycle)),
+                    .framesPerCycle = Rational(kFramesPerCycle),
                     .lookahead = 6,
                     .lead = 4},
             .canvas = kWindowSize,
