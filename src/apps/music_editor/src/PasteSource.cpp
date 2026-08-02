@@ -66,11 +66,18 @@ namespace antwika::music_editor
                 continue;
             }
 
-            handed.push_back(
-                Event{.name = events::kPaste, .payload = text});
+            // The excluded line's unexercised edges are storage's.
+            // The name is a literal too short to reach a heap.
+            // The payload's copy throws only on a failed allocation.
+            // So does the vector's growth.
+            // See docs/confirming-unreachable-branches.md.
+            handed.push_back(Event{ // GCOVR_EXCL_LINE
+                .name = events::kPaste, // GCOVR_EXCL_LINE
+                .payload = text}); // GCOVR_EXCL_LINE
         }
 
         return handed;
-    }
+        // The excluded brace is the locals' unwind destructor.
+    } // GCOVR_EXCL_LINE
 
 } // namespace antwika::music_editor

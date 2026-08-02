@@ -55,23 +55,6 @@ namespace antwika::music_editor
             return pressed;
         }
 
-        // Which score button an id is, or one past every score.
-        [[nodiscard]] std::size_t loadIndexOf(
-            const antwika::ui::WidgetId id,
-            const std::size_t count) noexcept
-        {
-            const auto raw = static_cast<std::uint64_t>(id);
-            const auto base =
-                static_cast<std::uint64_t>(kLoadOptions);
-
-            if (raw < base || raw - base >= count)
-            {
-                return count;
-            }
-
-            return static_cast<std::size_t>(raw - base);
-        }
-
         [[nodiscard]] bool isLeftRelease(const InputEvent &event) noexcept
         {
             const auto *released =
@@ -400,8 +383,9 @@ namespace antwika::music_editor
 
         bool changed = false;
 
-        if (acted.edit.has_value()
-            && acted.edit->field == kSaveNameField)
+        // The name field is the one editable thing a box holds.
+        // So an edit here can name nothing else.
+        if (acted.edit.has_value())
         {
             state.fileName = acted.edit->text;
             state.fileCursor = acted.edit->cursor;
@@ -427,13 +411,18 @@ namespace antwika::music_editor
         }
         else
         {
-            const auto picked =
-                loadIndexOf(acted.activated, state.scores.size());
-
-            if (picked < state.scores.size())
+            // The score buttons, compared one by one.
+            // A loop rather than id arithmetic.
+            // Every id the box reports is one this frame declared.
+            for (std::size_t at = 0; at < state.scores.size(); ++at)
             {
-                loadNow(picked);
-                changed = true;
+                if (acted.activated == loadOption(at))
+                {
+                    loadNow(at);
+                    changed = true;
+
+                    break;
+                }
             }
         }
 

@@ -698,3 +698,14 @@ TEST(ScoreTest, ASpanOfNothingIsDropped)
 
     EXPECT_FALSE(score.spanIn(0, 0, 0).has_value());
 }
+
+TEST(ScoreTest, ComparesSpansEndByEnd)
+{
+    using antwika::music_editor::DocumentSpan;
+
+    constexpr DocumentSpan span{.begin = 2, .end = 5};
+
+    EXPECT_EQ(span, (DocumentSpan{.begin = 2, .end = 5}));
+    EXPECT_NE(span, (DocumentSpan{.begin = 3, .end = 5}));
+    EXPECT_NE(span, (DocumentSpan{.begin = 2, .end = 6}));
+}

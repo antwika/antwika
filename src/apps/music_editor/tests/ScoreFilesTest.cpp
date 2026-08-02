@@ -39,6 +39,11 @@ TEST(ScoreFilesTest, ASafeNameIsLettersDigitsDashesAndUnderscores)
     EXPECT_EQ(safeScoreName("../etc/passwd"), "etcpasswd");
     EXPECT_EQ(safeScoreName("a b.score"), "abscore");
     EXPECT_EQ(safeScoreName("..//"), "");
+
+    // The neighbours just outside every range the filter keeps.
+    EXPECT_EQ(safeScoreName("`az{"), "az");
+    EXPECT_EQ(safeScoreName("@AZ["), "AZ");
+    EXPECT_EQ(safeScoreName("/09:"), "09");
 }
 
 TEST(ScoreFilesTest, SavesAndLoadsTheSameDocumentBack)

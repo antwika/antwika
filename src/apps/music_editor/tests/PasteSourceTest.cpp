@@ -111,18 +111,25 @@ TEST(PasteSourceTest, OnlyControlAndVAsksTheClipboardAnything)
 
     clipboard.setText("x");
 
+    const InputEventCodec encoder;
+
     ReplaySource inner(
         {pressAt(1, KeyPressed{.key = Key::V}),
          pressAt(1, KeyPressed{.key = Key::C, .modifiers = kControl}),
+         TickEvent{
+             .tick = 1,
+             .event = encoder.encode(
+                 antwika::input::PointerMoved{
+                     .position = {.x = 3, .y = 4}})},
          TickEvent{
              .tick = 1,
              .event = {.name = "music.paste", .payload = "old"}}});
 
     PasteSource source(inner, clipboard, codec, true);
 
-    // The plain V, the copy, and the replayed paste pass through.
+    // The plain V, the copy, the move and the replayed paste pass.
     // None of them earns a new paste event.
-    EXPECT_EQ(source.eventsFor(1).size(), 3U);
+    EXPECT_EQ(source.eventsFor(1).size(), 4U);
 }
 
 // A replay's pastes are in the file already.

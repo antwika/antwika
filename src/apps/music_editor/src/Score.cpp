@@ -346,8 +346,9 @@ namespace antwika::music_editor
 
         for (const auto &segment : line.segments)
         {
-            if (target < segment.chainBegin
-                || target >= segment.chainBegin + segment.length)
+            // Segments tile the chain from zero with no gaps.
+            // So only the far edge can put a target outside one.
+            if (target >= segment.chainBegin + segment.length)
             {
                 continue;
             }

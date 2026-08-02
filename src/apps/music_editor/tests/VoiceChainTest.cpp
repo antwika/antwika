@@ -338,3 +338,15 @@ TEST(VoiceChainTest, RemembersWhereTheNotationSits)
     EXPECT_EQ(chained.notationAt, 8U);
     EXPECT_EQ(chained.notation, "0(3,8)");
 }
+
+TEST(VoiceChainTest, ComparesChainsFieldByField)
+{
+    const auto chain = parseVoiceChain("drum.n(\"0\")");
+
+    EXPECT_EQ(chain, parseVoiceChain("drum.n(\"0\")"));
+
+    // A different preset, a different notation, a different offset.
+    EXPECT_NE(chain, parseVoiceChain("bass.n(\"0\")"));
+    EXPECT_NE(chain, parseVoiceChain("drum.n(\"3\")"));
+    EXPECT_NE(chain, parseVoiceChain("drum .n(\"0\")"));
+}

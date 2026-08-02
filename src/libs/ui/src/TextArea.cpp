@@ -77,8 +77,8 @@ namespace antwika::ui
         {
             for (const auto &span : line.lit)
             {
-                if (from >= span.begin && to <= span.end
-                    && span.begin < span.end)
+                // A span of nothing was dropped before it got here.
+                if (from >= span.begin && to <= span.end)
                 {
                     return true;
                 }

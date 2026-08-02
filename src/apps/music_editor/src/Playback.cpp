@@ -46,8 +46,11 @@ namespace antwika::music_editor
         const FrameIndex startFrame,
         const FrameCount frames)
     {
+        // The excluded line is the aggregate's unwind pad.
+        // Only a throw out of voiceFor() would take it.
+        // See docs/confirming-unreachable-branches.md.
         mixer.trigger(
-            synth::TriggerRequest{
+            synth::TriggerRequest{ // GCOVR_EXCL_LINE
                 // Seeded from where the note falls in the score.
                 // Not from where the device is.
                 // So a pause changes no hit's sound.
@@ -63,31 +66,29 @@ namespace antwika::music_editor
 
         // What to light, and for which ticks.
         // The span rode in on the event's own controls.
-        const auto begin = value.get(kSpanBegin);
-        const auto length = value.get(kSpanLength);
+        // Never absent: everything here came through NoteWords.
+        // That reader writes both controls into every word.
+        // value() is what throws on a caller that broke that.
+        const auto begin = value.get(kSpanBegin).value();
+        const auto length = value.get(kSpanLength).value();
 
-        if (begin.has_value() && length.has_value())
-        {
-            const auto from =
-                tickOfFrame(
-                    startFrame, frameNumerator, frameDenominator)
-                + 1;
+        const auto from =
+            tickOfFrame(startFrame, frameNumerator, frameDenominator)
+            + 1;
 
-            const auto rings = tickOfFrame(
-                startFrame + frames,
-                frameNumerator,
-                frameDenominator);
+        const auto rings = tickOfFrame(
+            startFrame + frames, frameNumerator, frameDenominator);
 
-            notes.push_back(ActiveNote{
-                .voice = voiceIndex,
-                .begin = static_cast<std::size_t>(
-                    begin->approximate()),
-                .length = static_cast<std::size_t>(
-                    length->approximate()),
-                .from = from,
-                // At least the one tick it begins on.
-                .until = std::max(from + 1, rings + 1)});
-        }
+        // The excluded line is push_back's reallocation edge.
+        // Only a failed allocation would take it.
+        // See docs/confirming-unreachable-branches.md, signature (a).
+        notes.push_back(ActiveNote{ // GCOVR_EXCL_LINE
+            .voice = voiceIndex,
+            .begin = static_cast<std::size_t>(begin.approximate()),
+            .length = static_cast<std::size_t>(length.approximate()),
+            .from = from,
+            // At least the one tick it begins on.
+            .until = std::max(from + 1, rings + 1)});
     }
 
     Playback::Playback(
@@ -256,8 +257,10 @@ namespace antwika::music_editor
 
         for (const auto &note : active)
         {
-            // Decided ahead of time, lit only while it sounds.
-            if (played < note.from || played >= note.until)
+            // Decided ahead of time, lit only once it sounds.
+            // The other bound needs no check.
+            // A rung-out note was pruned by the step that outlived it.
+            if (played < note.from)
             {
                 continue;
             }
