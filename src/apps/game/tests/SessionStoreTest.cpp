@@ -306,6 +306,27 @@ namespace
         EXPECT_EQ(store.take().buildings, save.buildings);
     }
 
+    // A workplace reopened unstaffed is a workplace that speeds up.
+    // Because an absent Workforce means fully staffed.
+    // See LabourQuery.hpp, and so both halves have to carry the count.
+    TEST_F(SessionStoreTest, RestoreThenTake_BringsAnEmployedCountBack)
+    {
+        SaveGame save;
+        save.buildings = {
+            antwika::game::SavedBuilding{
+                .at = {.x = 5, .y = 5},
+                .kind = antwika::game::BuildingKind::Farm,
+                .employed = 3},
+            antwika::game::SavedBuilding{
+                .at = {.x = 9, .y = 9},
+                .kind = antwika::game::BuildingKind::Well}};
+
+        store.restore(save);
+        world.commit();
+
+        EXPECT_EQ(store.take().buildings, save.buildings);
+    }
+
     // The one door in and out of a session.
     // So a member added to the file has to survive both halves.
     TEST_F(SessionStoreTest, Restore_PutsBackAnErrandAndACountdown)

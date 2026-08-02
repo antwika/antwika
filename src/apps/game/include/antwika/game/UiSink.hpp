@@ -8,6 +8,7 @@
 
 #include "antwika/game/AppMode.hpp"
 #include "antwika/game/Camera.hpp"
+#include "antwika/game/CityRatings.hpp"
 #include "antwika/game/InputFold.hpp"
 #include "antwika/game/MenuModalScene.hpp"
 #include "antwika/game/PauseState.hpp"
@@ -108,6 +109,12 @@ namespace antwika::game
          * and by GridSink, and by nothing else. Must outlive this sink.
          * @param modal Describes the menu modal. Must outlive this sink.
          * @param home The camera "reset view" puts back.
+         * @param ratings How the city is doing, reported by the bar's
+         * last two labels. Written by RatingsSystem in the observe
+         * phase, so the bar shows the city as the previous tick left it
+         * -- which a replay reaches identically, since every input this
+         * sink is given arrives before the scheduler runs. Must outlive
+         * this sink.
          */
         UiSink(
             Camera &camera,
@@ -118,7 +125,8 @@ namespace antwika::game
             AppModeState &mode,
             RoadDrag &drag,
             const MenuModalScene &modal,
-            Camera home);
+            Camera home,
+            const CityRatings &ratings);
 
         UiSink(const UiSink &) = delete;
         UiSink(UiSink &&) = delete;
@@ -164,6 +172,7 @@ namespace antwika::game
         RoadDrag &drag;
         const MenuModalScene &modal;
         Camera home;
+        const CityRatings &ratings;
 
         // Whether the menu modal is up, which is simulation state.
         // Written here, inside the tick path, and read nowhere else.

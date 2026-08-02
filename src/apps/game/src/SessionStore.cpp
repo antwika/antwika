@@ -11,6 +11,7 @@
 #include "antwika/game/Household.hpp"
 #include "antwika/game/Production.hpp"
 #include "antwika/game/Walker.hpp"
+#include "antwika/game/Workforce.hpp"
 
 namespace antwika::game
 {
@@ -103,6 +104,13 @@ namespace antwika::game
                     .ticksUntilOutput = *building.ticksUntilOutput};
             }
 
+            std::optional<Workforce> workforce;
+
+            if (building.employed.has_value())
+            {
+                workforce = Workforce{.employed = *building.employed};
+            }
+
             grid.buildings.push_back(
                 StoredBuilding{
                     .at = building.at,
@@ -117,7 +125,8 @@ namespace antwika::game
                     .walkers = held,
                     .coverage = Coverage{.ticksLeft = building.coverage},
                     .production = production,
-                    .household = building.household});
+                    .household = building.household,
+                    .workforce = workforce});
         }
 
         restoreCityGrid(world, built, paths, grid);

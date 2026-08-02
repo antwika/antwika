@@ -1063,6 +1063,17 @@ namespace antwika::i18n
         GameReadoutLevel,
 
         /**
+         * @brief Game toolbar: how many people live in the city, `{0}`.
+         */
+        GameToolbarPopulation,
+
+        /**
+         * @brief Game toolbar: what share of its jobs are staffed, `{0}`
+         *        per cent.
+         */
+        GameToolbarEmployment,
+
+        /**
          * @brief Task worker: which tick the picture is of, `{0}`.
          */
         TaskWorkerTick,
@@ -1122,7 +1133,7 @@ namespace antwika::i18n
     /**
      * @brief How many ids a complete catalogue carries.
      */
-    inline constexpr std::size_t kMessageCount{216};
+    inline constexpr std::size_t kMessageCount{218};
 
     /**
      * @brief Every id, in declaration order.
@@ -1337,6 +1348,8 @@ namespace antwika::i18n
         MessageId::GameHousingHovel,
         MessageId::GameHousingCottage,
         MessageId::GameReadoutLevel,
+        MessageId::GameToolbarPopulation,
+        MessageId::GameToolbarEmployment,
         MessageId::TaskWorkerTick,
         MessageId::TaskWorkerBudget,
         MessageId::TaskWorkerStarted,

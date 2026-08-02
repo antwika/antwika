@@ -5,6 +5,7 @@ add_executable(antwika_game
     src/BuildingIndex.cpp
     src/BuildingSystem.cpp
     src/CityGrid.cpp
+    src/CityRatings.cpp
     src/Coverage.cpp
     src/CoverageSystem.cpp
     src/Desirability.cpp
@@ -24,6 +25,8 @@ add_executable(antwika_game
     src/HousingSystem.cpp
     src/Hover.cpp
     src/InputFold.cpp
+    src/LabourQuery.cpp
+    src/LabourSystem.cpp
     src/MainMenuScene.cpp
     src/MainMenuSink.cpp
     src/MarketSystem.cpp
@@ -33,7 +36,9 @@ add_executable(antwika_game
     src/PauseGatedSystem.cpp
     src/PauseState.cpp
     src/Placement.cpp
+    src/PopulationSystem.cpp
     src/ProductionSystem.cpp
+    src/RatingsSystem.cpp
     src/ReadoutPanel.cpp
     src/ResourceBar.cpp
     src/RenderSystem.cpp
@@ -45,6 +50,7 @@ add_executable(antwika_game
     src/SaveGame.cpp
     src/SaveGameFile.cpp
     src/SaveHousing.cpp
+    src/SaveLabour.cpp
     src/SaveDirectory.cpp
     src/SaveLoadScene.cpp
     src/SaveLoadSink.cpp
@@ -68,6 +74,7 @@ add_executable(antwika_game
     src/WorldMapScene.cpp
     src/WorldMapSink.cpp
     src/WorldMapState.cpp
+    src/Workforce.cpp
     src/main.cpp
 )
 

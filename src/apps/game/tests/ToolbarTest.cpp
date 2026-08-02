@@ -16,12 +16,16 @@
 #include <antwika/ui/WidgetId.hpp>
 
 #include "TestTranslator.hpp"
+#include "WidgetPixel.hpp"
+#include "antwika/game/BuildTool.hpp"
 #include "antwika/game/Camera.hpp"
+#include "antwika/game/CityRatings.hpp"
 #include "antwika/game/Toolbar.hpp"
 
 using antwika::game::tests::kTranslator;
 
 using antwika::game::Camera;
+using antwika::game::CityRatings;
 using antwika::game::Toolbar;
 using antwika::gfx::Point;
 using antwika::gfx::Size;
@@ -272,5 +276,102 @@ TEST(ToolbarTest, Describe_KeepsEveryWidgetInsideTheCanvas)
         EXPECT_LE(
             text.origin.y + static_cast<std::int32_t>(extent.height),
             bottom);
+    }
+}
+
+// A rating is simulation state, read back out where it can be seen.
+// A pure function of the World, so a replay draws the same bar.
+TEST(ToolbarTest, Describe_ReportsTheRatingsItIsGiven)
+{
+    const Toolbar toolbar{kTranslator};
+    const Camera camera;
+
+    const auto frame = toolbar.describe(
+        kCanvas,
+        Pointer{},
+        camera,
+        antwika::game::BuildTool::Road,
+        false,
+        0,
+        CityRatings{.population = 42, .employment = 75});
+
+    EXPECT_THAT(
+        textsOf(frame.commands),
+        ::testing::IsSupersetOf(
+            {std::string{"pop 42"}, std::string{"jobs 75%"}}));
+}
+
+// A picture, and only a picture.
+// There is nothing here to press, so the labels declare no widget.
+// And so a rating can never become an input.
+TEST(ToolbarTest, Describe_DeclaresNoWidgetForARating)
+{
+    const Toolbar toolbar{kTranslator};
+    const Camera camera;
+
+    const auto without = toolbar.describe(kCanvas, Pointer{}, camera);
+    const auto with = toolbar.describe(
+        kCanvas,
+        Pointer{},
+        camera,
+        antwika::game::BuildTool::Road,
+        false,
+        0,
+        CityRatings{.population = 42, .employment = 75});
+
+    std::vector<WidgetId> before;
+    std::vector<WidgetId> after;
+
+    for (const auto &entry : without.rects.entries)
+    {
+        before.push_back(entry.id);
+    }
+
+    for (const auto &entry : with.rects.entries)
+    {
+        after.push_back(entry.id);
+    }
+
+    EXPECT_EQ(after, before);
+}
+
+// The whole reason they go after the menu rather than beside the zoom.
+// Every widget declared before them keeps its rectangle.
+// So a session recorded before this replays onto the same buttons.
+TEST(ToolbarTest, Describe_LeavesEveryExistingWidgetWhereItWas)
+{
+    const Toolbar toolbar{kTranslator};
+    const Camera camera;
+
+    const auto without = toolbar.describe(kCanvas, Pointer{}, camera);
+    const auto with = toolbar.describe(
+        kCanvas,
+        Pointer{},
+        camera,
+        antwika::game::BuildTool::Road,
+        false,
+        0,
+        CityRatings{
+            .population = 1234,
+            .employment = 99,
+            .averageHousingLevel = 250,
+            .serviceReach = 50});
+
+    for (const auto id : {
+             widgets::kZoomOut,
+             widgets::kZoomIn,
+             widgets::kResetView,
+             widgets::kPauseResume,
+             widgets::kMenu,
+             widgets::toolWidget(antwika::game::BuildTool::Road),
+             widgets::toolWidget(antwika::game::BuildTool::EngineerPost)})
+    {
+        const auto before =
+            antwika::game::tests::widgetCentre(without, id);
+        const auto after = antwika::game::tests::widgetCentre(with, id);
+
+        ASSERT_TRUE(before.has_value());
+        ASSERT_TRUE(after.has_value());
+        EXPECT_EQ(*after, *before);
     }
 }

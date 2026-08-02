@@ -430,6 +430,66 @@ The countdowns are persisted rather than reset, for the reason `Building`'s thre
 `BuildingView` carries the level and `GameSummary` therefore compares it, so a run and its replay disagreeing about a house growing fails `ReplayDeterminismTest` directly; `BuildingSprite` carries a copy so the hover panel can name the tier, and it names it rather than numbering it, since "level: 2" is a number a reader has to look up.
 `HousingSystemTest` is a loop over `kHousingRequirements` rather than four hand-written cities — a row added to that table is a row it already covers, which is the whole reason the requirements are a table and not a switch.
 
+## Population, labour and the first thing that judges the city
+
+**People are the resource everything else competes for, and that is the whole of this workstream.**
+A house with a road beside it, standing on ground its tier finds acceptable and with room left, takes one person in every `kSettlerPeriodTicks`; one below its tier's threshold, or holding more than its tier can, loses one on the same countdown and stops at nobody.
+The sum of everybody in the city is a workforce, every workplace says through `workersWantedBy()` how many of them it wants, and what it actually gets decides how fast it works.
+
+**A workplace nobody works at does nothing at all, and one half-staffed takes twice as long.**
+`workedPeriod()` is the one place staffing becomes a rate: it hands back the period at a full complement, the period stretched by `wanted / filled` below one, and *nothing at all* when nobody turned up.
+Nothing rather than a very large number, so a caller has to say what it does about it — `SpawnSystem` and `ProductionSystem` both hold their countdown where it was rather than resetting it, which is the rule they already followed for a building at the walker cap and a workshop out of clay.
+A building unstaffed for a thousand ticks therefore owes nobody a thousand walkers the moment somebody arrives.
+
+**Labour allocation is this increment's one genuinely contended decision, and it is walked out of a `std::map` keyed by the workplace's origin `Cell`.**
+`ecs::View` iterates whichever storage has the fewest entities, which is reproducible for a given history — so a replay of one run agrees with it — and is not an order anybody can name, and it *moves* as component counts cross each other.
+That is fine for a loop whose body is independent per entity and it is not fine for splitting a limited amount, which is exactly what this is.
+**No tie-break is needed at all**, because `BuildingIndex` refuses a second building on an occupied cell: two workplaces cannot share an origin, so the key is unique by construction rather than by a rule written beside it.
+
+**`AllocationOrderTest` is what would catch a regression there, and nothing in the tree before it would have.**
+It restores one city twice through `SessionStore`, with the buildings in two different array orders, runs both for the same number of ticks and compares what they came to.
+Restoring rather than clicking is deliberate: `restoreCityGrid()` creates entities in the order the array holds them, so the array order is exactly the variable being changed — clicking the same city together would move the tick each building was placed on as well, and every countdown with it.
+The one member it sorts before comparing is `GameSummary::buildings`, which lists what is standing in the world's own order and *is* therefore the creation order; sorting it turns the comparison into "the same things, wherever they were listed", which is the claim being made.
+
+**Immigration is per house and takes from nothing anybody else takes from**, so it reads `ecs::View` directly and no order over the houses is observable.
+There is no shared migrant pool in this round, deliberately: a pool would be a second contended allocation, and one is enough to get right.
+
+**`PopulationSystem` runs in a `"populate"` phase of its own, after `"settle"`, and this is the trap the phase list exists to avoid.**
+`HousingSystem` writes a whole `Household` back and so does this; two systems in one phase both read what the last buffer swap left, so the tier one wrote and the occupancy the other wrote could not both survive the tick they were written in — the later write would silently undo the earlier, some of the time, and a divergent replay a long way from its cause is what that looks like.
+Two positions in one phase do not make two systems sequential; a commit between two phases does.
+`LabourSystem` shares the new phase on its own terms: it writes `Workforce`, which nothing else writes, and it reads the population as the settle phase left it — so a person who arrived this tick is employable from the next one, which is a lag nothing can see.
+
+**`Workforce` stores what was allocated and never what was wanted.**
+How many workers a kind wants is `workersWantedBy()`, a table, for the reason `footprintOf()` and `kDesirabilityOf` are tables: a copy on the component could disagree with the kind standing on the cell, and a save that disagreed with itself is a session somebody never had.
+An absent `Workforce` means **fully staffed**, which is the rule this whole increment is written under — an absent component is the value the game had before the component existed — and it is what let the goods chain be built and pass before there were any people to allocate.
+A house wants nobody because nobody works where they live; a storehouse wants nobody because nothing in this round reads its staffing, so a demand there would take people off buildings that do something with them with no effect a player could see to explain where they went.
+A `static_assert` holds "wants workers" and "sends somebody out" to being the same list.
+
+**`CityRatings` is the first thing in this application that judges the city rather than simulating it.**
+Four integers — population, the share of the city's jobs that are staffed, the mean housing tier in hundredths, and the share of house-and-service pairs a service still reaches — and `ratingsOf()` is a pure function of the `World`.
+Every member is an integer because the ratings are compared in `GameSummary` and a float from a division does not have to round the same way on two toolchains.
+Nothing is persisted, because every member is a sum over what a save already holds.
+The plan for this increment also handed `ratingsOf()` the `DesirabilityField`; it does not take one, because not one of the four members is a function of it and an argument a reader has to check the body for is worse than one that is not offered.
+
+**`GameSummary` carries the ratings, and that is what makes a divergence in the city's people fail `ReplayDeterminismTest` directly.**
+A house's occupancy is not in `BuildingView` and a workplace's share of the workforce is not either, so without this a live run and its replay could disagree about both and still compare equal.
+`ReplayDeterminismTest` gained a session that is genuinely short of people — two farms wanting eight between them and one tent holding five — because a determinism test over a city that contended over nothing agrees for the wrong reason.
+
+**The two ratings labels are appended after `widgets::kMenu` on the first row**, so every widget declared before them keeps its rectangle and a session recorded before this replays onto the same buttons.
+They are labels rather than buttons, and not by omission: there is nothing to press, so they declare no `WidgetId`, and a rating can never become an input.
+`RatingsSystem` keeps the value the bar reads, in the `"observe"` phase ahead of the observers — the one place it sees the tick it is reporting on rather than the one before — and it recomputes the whole answer for `DesirabilitySystem`'s reason, since a running total would have to be told about a demolition, a city switch and a save restore, and every one it was not told about would be a rating flattering a city that no longer existed.
+
+**No new event kind, and this is the workstream where one was most tempting.**
+`game.immigrant_arrived` is a pure function of a road, a field and a tier, all of which a replay regenerates from the clicks that built them, so a recorder would write it beside those clicks and a replay would house the same person twice.
+`game.set_wage` is worse: a wage is a click on a widget resolved by a sink inside the tick path, which is exactly what "no `ui.*` event name may ever exist" means.
+
+**Nothing here bumped the save format either.**
+`SavedBuilding` gained an optional `"employed"`, and absent means nobody has been allocated there — which is both what a version-3 file written before labour says and what a workplace put up this tick holds.
+The population rides on the household object housing already wrote, which gained one further optional member, `"ticksUntilSettler"`.
+That one member is the only one of the five the validator does not require, and it is not an inconsistency: the other four arrived together and only mean anything together, while a file written between the two workstreams is one whose houses had no settler countdown to name, and refusing it would be tightening the schema rather than growing it.
+Neither the workforce total nor any rating is written, because both are sums over what the file already holds.
+`CityGrid` carries the `Workforce` across a city switch and `SessionStore` threads it through a restore, on the terms every other component is carried: an absent one means fully staffed, so a city reopened having lost one is a city that quietly speeds up for a tick.
+
 ## Future work
 
 **`UiSink`/`UiOverlay`/`Toolbar` should adopt `ui::applyHover()` next.**

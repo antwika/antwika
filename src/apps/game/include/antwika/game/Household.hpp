@@ -13,6 +13,18 @@ namespace antwika::game
     using antwika::ecs::World;
 
     /**
+     * @brief Ticks between one person arriving or leaving and the next.
+     *
+     * One a second, so a fresh tent fills over about five seconds and a
+     * district somebody has ruined empties at the same rate. Its own
+     * constant rather than a share of kEvolvePeriodTicks, because a
+     * house's occupancy and its tier are two decisions -- a city ought to
+     * be able to fill faster than it grows, or the reverse -- and this
+     * increment has no evidence for either.
+     */
+    inline constexpr std::int32_t kSettlerPeriodTicks = kTicksPerSecond;
+
+    /**
      * @brief The people in one house, and how close it is to a change.
      *
      * **A component of its own rather than four more fields on
@@ -52,13 +64,25 @@ namespace antwika::game
         /**
          * @brief How many people live here.
          *
-         * **Stored by this workstream and moved by none of it.** A
-         * level's capacity and a house's occupancy are one fact, so the
-         * number belongs beside the level; what raises and lowers it is
-         * a later workstream's rule, and until that lands this is zero
-         * on every house in every city.
+         * A level's capacity and a house's occupancy are one fact, so the
+         * number belongs beside the level. What raises and lowers it is
+         * PopulationSystem's rule, and populationCapacityOf() is the
+         * ceiling it works against.
          */
         std::int32_t population = 0;
+
+        /**
+         * @brief Ticks until the next person arrives or leaves.
+         *
+         * A third countdown beside the two above it, and it is here for
+         * their reason exactly: two houses put up a tick apart would
+         * otherwise fill and empty in lockstep for ever.
+         *
+         * It is deliberately **not** reset when a house changes tier.
+         * Growing into a bigger house is not a reason for the family
+         * moving in to turn round at the door.
+         */
+        std::int32_t ticksUntilSettler = kSettlerPeriodTicks;
 
         /**
          * @brief Compare two households.

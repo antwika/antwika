@@ -8,6 +8,7 @@
 #include "antwika/game/BuildingKind.hpp"
 #include "antwika/game/Direction.hpp"
 #include "antwika/game/Footprint.hpp"
+#include "antwika/game/LabourQuery.hpp"
 #include "antwika/game/Walker.hpp"
 
 namespace antwika::game
@@ -119,6 +120,19 @@ namespace antwika::game
                 continue;
             }
 
+            // Stretched over however few people turned up for work.
+            // Half a complement is half as often.
+            // And nobody at all is never.
+            // With the countdown held rather than reset.
+            // So a building unstaffed for a thousand ticks owes none.
+            const auto period =
+                workedPeriod(kSpawnPeriodTicks, staffingOf(world, entity));
+
+            if (!period.has_value())
+            {
+                continue;
+            }
+
             if (building.ticksUntilSpawn > 0)
             {
                 // Copied and adjusted rather than rebuilt.
@@ -156,7 +170,7 @@ namespace antwika::game
             ++out;
 
             auto sent = building;
-            sent.ticksUntilSpawn = kSpawnPeriodTicks - 1;
+            sent.ticksUntilSpawn = *period - 1;
             sent.walkers[*slot] = walker;
             world.set<Building>(entity, sent);
         }

@@ -20,6 +20,7 @@
 #include "antwika/game/Production.hpp"
 #include "antwika/game/SaveFormatError.hpp"
 #include "antwika/game/Walker.hpp"
+#include "antwika/game/Workforce.hpp"
 #include "SaveSections.hpp"
 
 namespace antwika::game
@@ -128,6 +129,7 @@ namespace antwika::game
             auto building = buildingShape();
             describeCoverage(building);
             describeHousing(building);
+            describeLabour(building);
             schema["properties"]["buildings"] = arrayOf(std::move(building));
             schema["properties"]["seed"] = countShape();
             return schema;
@@ -164,6 +166,7 @@ namespace antwika::game
         buildingsToJson(save, encoded);
         coverageToJson(save, encoded);
         housingToJson(save, encoded);
+        labourToJson(save, encoded);
         productionToJson(save, encoded);
 
         encoded["seed"] = save.seed;
@@ -210,6 +213,7 @@ namespace antwika::game
         buildingsFromJson(document, save);
         coverageFromJson(document, save);
         housingFromJson(document, save);
+        labourFromJson(document, save);
         productionFromJson(document, save);
 
         save.seed = document.at("seed").get<std::uint64_t>();
@@ -296,6 +300,16 @@ namespace antwika::game
                 household = world.get<Household>(entity);
             }
 
+            // Written only where there is one, for the same reason.
+            // An absent component is a building labour has not reached.
+            // Which is exactly what an absent member says too.
+            std::optional<std::int32_t> employed;
+
+            if (world.has<Workforce>(entity))
+            {
+                employed = world.get<Workforce>(entity).employed;
+            }
+
             // The branches left on the excluded line are that pad.
             // push_back destroying the temporary it was handed.
             // Reachable only if the vector's allocation throws.
@@ -312,7 +326,8 @@ namespace antwika::game
                 .walkers = {},
                 .coverage = coverage.ticksLeft,
                 .ticksUntilOutput = countdown,
-                .household = household});
+                .household = household,
+                .employed = employed});
         }
 
         // The errands' destinations, once every building is indexed.

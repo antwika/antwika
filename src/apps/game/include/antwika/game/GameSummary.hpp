@@ -4,6 +4,7 @@
 
 #include "antwika/game/Camera.hpp"
 #include "antwika/game/Cell.hpp"
+#include "antwika/game/CityRatings.hpp"
 #include "antwika/game/GameState.hpp"
 #include "antwika/game/SceneSnapshot.hpp"
 #include "antwika/game/Toolbar.hpp"
@@ -41,6 +42,22 @@ namespace antwika::game
         std::vector<BuildingView> buildings;
 
         Camera camera;
+
+        /**
+         * @brief How the city was doing when the run ended.
+         *
+         * **Here so that a divergence in the city's people fails the
+         * replay comparison directly.** Population and employment are
+         * sums over state no other member of this summary carries: a
+         * house's occupancy is not in BuildingView and a workplace's
+         * share of the workforce is not either, so without this a live
+         * run and its replay could disagree about both and still be
+         * equal.
+         *
+         * Not persisted, and nothing here is: every member is a sum over
+         * what a save already holds -- see CityRatings.
+         */
+        CityRatings ratings;
 
         /**
          * @brief Compare two summaries.

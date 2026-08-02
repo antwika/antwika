@@ -14,6 +14,7 @@
 
 #include "antwika/game/BuildTool.hpp"
 #include "antwika/game/Camera.hpp"
+#include "antwika/game/CityRatings.hpp"
 
 namespace antwika::game
 {
@@ -233,9 +234,13 @@ namespace antwika::game
          * which is what the pause button is labelled from.
          * @param tick The tick the bar reports, which is the tick this
          * describe() is part of.
+         * @param ratings How the city is doing, reported as two labels
+         * after the menu button. A pure function of the World, so a
+         * replay regenerates it exactly as it regenerates the zoom --
+         * see CityRatings.
          * @return The drawing commands and what the pointer did.
          *
-         * The last three are defaulted so that a caller with nothing to
+         * The last four are defaulted so that a caller with nothing to
          * say about them -- a test whose subject is the zoom, or a
          * layout assertion -- writes only what it means.
          */
@@ -245,7 +250,8 @@ namespace antwika::game
             const Camera &camera,
             std::optional<BuildTool> selected = BuildTool::Road,
             bool paused = false,
-            antwika::time::Tick tick = 0) const;
+            antwika::time::Tick tick = 0,
+            CityRatings ratings = {}) const;
 
     private:
         const Translator &translator;

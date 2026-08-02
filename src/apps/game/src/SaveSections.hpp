@@ -171,6 +171,27 @@ namespace antwika::game
     void housingFromJson(const nlohmann::json &document, SaveGame &save);
 
     /**
+     * @brief Add the employed count to a building's shape.
+     * @param building The building shape to extend.
+     */
+    void describeLabour(nlohmann::json &building);
+
+    /**
+     * @brief Write every building's employed count into the document.
+     * @param save The state to read.
+     * @param document The document whose buildings array to extend.
+     */
+    void labourToJson(const SaveGame &save, nlohmann::json &document);
+
+    /**
+     * @brief Read every building's employed count out of the document.
+     * @param document The validated document to read.
+     * @param save The state whose buildings to fill in; already sized by
+     * buildingsFromJson().
+     */
+    void labourFromJson(const nlohmann::json &document, SaveGame &save);
+
+    /**
      * @brief Add a walker's errand to a walker's shape.
      * @param walker The shape to extend.
      */

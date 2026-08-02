@@ -7,6 +7,7 @@ add_executable(antwika_game_tests
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/BuildingIndex.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/BuildingSystem.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/CityGrid.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/CityRatings.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/Coverage.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/CoverageSystem.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/Desirability.cpp
@@ -26,6 +27,8 @@ add_executable(antwika_game_tests
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/HousingSystem.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/Hover.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/InputFold.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/LabourQuery.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/LabourSystem.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/MainMenuScene.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/MainMenuSink.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/MarketSystem.cpp
@@ -35,7 +38,9 @@ add_executable(antwika_game_tests
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/PauseGatedSystem.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/PauseState.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/Placement.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/PopulationSystem.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/ProductionSystem.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/RatingsSystem.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/ReadoutPanel.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/ResourceBar.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/RenderSystem.cpp
@@ -47,6 +52,7 @@ add_executable(antwika_game_tests
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/SaveGame.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/SaveGameFile.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/SaveHousing.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/SaveLabour.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/SaveDirectory.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/SaveLoadScene.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/SaveLoadSink.cpp
@@ -70,6 +76,7 @@ add_executable(antwika_game_tests
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/WorldMapScene.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/WorldMapSink.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/WorldMapState.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/Workforce.cpp
     AppModeTest.cpp
     AtlasImageTest.cpp
     BootstrapTest.cpp
@@ -98,6 +105,12 @@ add_executable(antwika_game_tests
     HousingLevelTest.cpp
     HousingQueryTest.cpp
     HousingSystemTest.cpp
+    AllocationOrderTest.cpp
+    CityRatingsTest.cpp
+    LabourQueryTest.cpp
+    LabourSystemTest.cpp
+    PopulationSystemTest.cpp
+    RatingsSystemTest.cpp
     HoverTest.cpp
     InputFoldTest.cpp
     KeyTextTest.cpp

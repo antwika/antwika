@@ -15,6 +15,7 @@
 #include "antwika/game/Events.hpp"
 #include "antwika/game/GameStateReducer.hpp"
 #include "antwika/game/BuildingSystem.hpp"
+#include "antwika/game/CityRatings.hpp"
 #include "antwika/game/CoverageSystem.hpp"
 #include "antwika/game/Desirability.hpp"
 #include "antwika/game/DesirabilitySystem.hpp"
@@ -23,6 +24,7 @@
 #include "antwika/game/HousingLevel.hpp"
 #include "antwika/game/HousingSystem.hpp"
 #include "antwika/game/InputFold.hpp"
+#include "antwika/game/LabourSystem.hpp"
 #include "antwika/game/LiveGrid.hpp"
 #include "antwika/game/MarketSystem.hpp"
 #include "antwika/game/MainMenuScene.hpp"
@@ -31,7 +33,9 @@
 #include "antwika/game/ModeGatedSink.hpp"
 #include "antwika/game/PauseGatedSystem.hpp"
 #include "antwika/game/PauseState.hpp"
+#include "antwika/game/PopulationSystem.hpp"
 #include "antwika/game/ProductionSystem.hpp"
+#include "antwika/game/RatingsSystem.hpp"
 #include "antwika/game/SaveGameFile.hpp"
 #include "antwika/game/SaveLoadScene.hpp"
 #include "antwika/game/SaveLoadSink.hpp"
@@ -205,9 +209,50 @@ namespace antwika::game
         const auto settlePhase = scheduler.createPhase("settle");
         scheduler.addSystem(settlePhase, pausedHousing);
 
+        // A phase of its own rather than a second entry in "settle".
+        // Because a phase is where the World's buffers swap.
+        // HousingSystem writes a whole Household back.
+        // And so does PopulationSystem.
+        // Two of them in one phase both read what the last swap left.
+        // So the tier one wrote and the occupancy the other wrote.
+        // Could not both survive the tick they were written in.
+        // The later write would silently undo the earlier one.
+        // Some of the time, which is the worst kind.
+        // The commit between these two is what makes them sequential.
+        //
+        // Labour shares the phase, and that is safe on its own terms.
+        // It writes Workforce, which nothing else writes.
+        // And it reads the population as the settle phase left it.
+        // Which is one tick behind the one being counted here.
+        // A person arriving is employable from the following tick.
+        // Both gates, in the order every other system takes them.
+        PopulationSystem populationSystem(paths, desirability);
+        LabourSystem labourSystem;
+
+        SessionGatedSystem gatedPopulation(populationSystem, mode);
+        SessionGatedSystem gatedLabour(labourSystem, mode);
+        PauseGatedSystem pausedPopulation(gatedPopulation, pause);
+        PauseGatedSystem pausedLabour(gatedLabour, pause);
+
+        const auto populatePhase = scheduler.createPhase("populate");
+        scheduler.addSystem(populatePhase, pausedPopulation);
+        scheduler.addSystem(populatePhase, pausedLabour);
+
         // A phase of its own.
         // A renderer then sees the generation this walk produced.
         const auto observePhase = scheduler.createPhase("observe");
+
+        // Ahead of the observers, and in this phase rather than the last.
+        // So it rates the city this tick left rather than the one before.
+        // Everything that moves a person or a job has committed by now.
+        CityRatings ratings;
+        RatingsSystem ratingsSystem(ratings);
+
+        SessionGatedSystem gatedRatings(ratingsSystem, mode);
+        PauseGatedSystem pausedRatings(gatedRatings, pause);
+
+        scheduler.addSystem(observePhase, pausedRatings);
+
         for (auto &observer : config.observers)
         {
             scheduler.addSystem(observePhase, observer.get());
@@ -256,7 +301,8 @@ namespace antwika::game
             mode,
             drag,
             menuModal,
-            camera);
+            camera,
+            ratings);
         GridSink gridSink(
             world,
             paths,
@@ -387,6 +433,16 @@ namespace antwika::game
         const auto frame =
             snapshotOf(world, paths, camera, config.extent);
 
+        // Read out here rather than inside the record below.
+        // A call among an aggregate's vector members needs a pad.
+        // To destroy the half-built record it was made in.
+        // Which is a landing pad on a line nothing reaches.
+        //
+        // Worked out again rather than copied off the local above.
+        // That one is what the bar was last told, and is gated.
+        // This is what the city amounts to, gate or no gate.
+        const auto finalRatings = ratingsOf(world);
+
         // Every branch left on the excluded line is the allocator's.
         // Two are the throw edges of copying the two vectors.
         // The last is a heap branch nothing here is large enough to take.
@@ -395,7 +451,8 @@ namespace antwika::game
             .paths = frame.paths,
             .walkers = walkerViewsOf(world),
             .buildings = buildingViewsOf(world),
-            .camera = camera};
+            .camera = camera,
+            .ratings = finalRatings};
         // The excluded line is the local summary's unwind destructor.
         // Nothing between its construction and the return throws.
     } // GCOVR_EXCL_LINE
@@ -433,6 +490,14 @@ namespace antwika::game
 
             out << '\n';
         }
+
+        // Every rating, including the ones at zero.
+        // A summary is read to find out what a run ended up like.
+        // "Nobody ever moved in" is exactly such a fact.
+        out << "Ratings: population=" << summary.ratings.population
+            << " employment=" << summary.ratings.employment
+            << " housing=" << summary.ratings.averageHousingLevel
+            << " service=" << summary.ratings.serviceReach << '\n';
 
         out << "Camera: pan (" << summary.camera.pan().x << ", "
             << summary.camera.pan().y << ") zoom "

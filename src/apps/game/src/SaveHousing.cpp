@@ -35,6 +35,14 @@
  * Building's three are: two houses reopened with the same countdown grow
  * and shrink in lockstep from then on, which is precisely the lockstep a
  * per-building countdown exists to avoid.
+ *
+ * **The settler countdown is the one member the validator does not
+ * require, and that is not an inconsistency.** The other four arrived
+ * together and only mean anything together, so an object naming three of
+ * them is a house half-written. This one arrived afterwards, and a file
+ * written between the two is a file whose houses had no settler
+ * countdown to name -- refusing it would be tightening the schema rather
+ * than growing it, which is the one thing an additive member may not do.
  */
 namespace antwika::game
 {
@@ -71,6 +79,7 @@ namespace antwika::game
             shape["properties"]["ticksUntilEvolve"] = signedCountShape();
             shape["properties"]["ticksUntilDevolve"] = signedCountShape();
             shape["properties"]["population"] = signedCountShape();
+            shape["properties"]["ticksUntilSettler"] = signedCountShape();
             return shape;
         } // GCOVR_EXCL_LINE
 
@@ -84,6 +93,10 @@ namespace antwika::game
                 .ticksUntilDevolve =
                     j.at("ticksUntilDevolve").get<std::int32_t>(),
                 .population = j.at("population").get<std::int32_t>(),
+                .ticksUntilSettler =
+                    j.contains("ticksUntilSettler")
+                        ? j.at("ticksUntilSettler").get<std::int32_t>()
+                        : kSettlerPeriodTicks,
             };
         }
     } // namespace
@@ -110,6 +123,7 @@ namespace antwika::game
             entry["ticksUntilEvolve"] = household->ticksUntilEvolve;
             entry["ticksUntilDevolve"] = household->ticksUntilDevolve;
             entry["population"] = household->population;
+            entry["ticksUntilSettler"] = household->ticksUntilSettler;
         }
     }
 

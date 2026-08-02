@@ -633,15 +633,21 @@ TEST(ReplayDeterminismTest, TheIdleMotionGateShortensTheRecording)
 // So the walkers it produced have to come back identically.
 namespace
 {
+    // The countdown a tent takes to fill, plus the cadence and the walk.
+    const antwika::time::Tick kSpawnTicks = 200;
+
     [[nodiscard]] std::vector<TickEvent> buildingSession()
     {
         const InputEventCodec codec;
-        // A source rather than a house.
-        // A house consumes what is brought and sends nobody out.
-        // So it would prove nothing about a regenerated spawn.
+        // Two sources, and a house to staff them out of.
+        // A source sends nobody at all with nobody working there.
+        // Which is what makes the house part of the session now.
         const auto palette =
             pixelOn(antwika::game::widgets::toolWidget(
                 antwika::game::BuildTool::Farm));
+        const auto houseButton =
+            pixelOn(antwika::game::widgets::toolWidget(
+                antwika::game::BuildTool::House));
 
         std::vector<TickEvent> events{
             TickEvent{
@@ -691,9 +697,35 @@ namespace
                 .tick = 2,
                 .event = pressAt(Cell{.x = 5, .y = 5}, MouseButton::Left)});
 
+        // Two houses on the same corridor, one either side of it.
+        // Their people are the workforce both sources draw on.
+        // Two of them because two sources want eight between them.
+        // And a tent holds five.
         events.push_back(
             TickEvent{
-                .tick = 30,
+                .tick = 3,
+                .event = codec.encode(
+                    antwika::input::PointerMoved{
+                        .position = houseButton})});
+        events.push_back(
+            TickEvent{
+                .tick = 3,
+                .event = codec.encode(
+                    PointerButtonPressed{
+                        .button = MouseButton::Left,
+                        .position = houseButton})});
+        events.push_back(
+            TickEvent{
+                .tick = 4,
+                .event = pressAt(Cell{.x = 4, .y = 5}, MouseButton::Left)});
+        events.push_back(
+            TickEvent{
+                .tick = 5,
+                .event = pressAt(Cell{.x = 2, .y = 3}, MouseButton::Left)});
+
+        events.push_back(
+            TickEvent{
+                .tick = kSpawnTicks - 2,
                 .event = Event{.name = antwika::engine::events::kStop}});
 
         return events;
@@ -813,11 +845,21 @@ TEST(ReplayDeterminismTest, ABuildingsWalkersAreRegeneratedRatherThanStored)
 {
     auto script = buildingSession();
     ReplaySource liveSource(script);
-    const auto live = runWithToolbar(liveSource);
+    const auto live = runWithToolbar(liveSource, kSpawnTicks);
 
-    // Two sources, and both of them sent somebody out.
-    ASSERT_EQ(live.summary.buildings.size(), 2U);
-    EXPECT_GE(live.summary.walkers.size(), 2U);
+    // Two sources and the two houses that staff them.
+    ASSERT_EQ(live.summary.buildings.size(), 4U);
+
+    // Somebody is out.
+    // Which of them, and how many, is a question about two cadences.
+    // And about where each happened to be at the very last tick.
+    // So it is not a question worth asking.
+    // That both sources are worked at all is what the rating says.
+    EXPECT_FALSE(live.summary.walkers.empty());
+    EXPECT_GT(live.summary.ratings.population, 0);
+    EXPECT_EQ(live.summary.ratings.employment, 100)
+        << "a source nobody works at sends nobody, so this would prove "
+           "nothing about a regenerated spawn";
 
     // Nothing of the spawn is on the wire; every event is input or tick.
     for (const auto &event : live.recorded)
@@ -833,7 +875,7 @@ TEST(ReplayDeterminismTest, ABuildingsWalkersAreRegeneratedRatherThanStored)
     auto loaded = antwika::replay::loadReplayFile(file.name());
 
     ReplaySource replayedSource(std::move(loaded));
-    const auto replayed = runWithToolbar(replayedSource);
+    const auto replayed = runWithToolbar(replayedSource, kSpawnTicks);
 
     EXPECT_EQ(replayed.summary, live.summary);
 }
@@ -843,12 +885,19 @@ TEST(ReplayDeterminismTest, ABuildingsWalkersAreRegeneratedRatherThanStored)
 // So this run has to confer some and then let it decay.
 namespace
 {
+    // Long enough for a house to fill and a well to be staffed.
+    // And for the carrier that well sends to reach something.
+    const antwika::time::Tick kCoverageTicks = 160;
+
     [[nodiscard]] std::vector<TickEvent> coverageSession()
     {
         const InputEventCodec codec;
         const auto wellButton = pixelOn(
             antwika::game::widgets::toolWidget(
                 antwika::game::BuildTool::Well));
+        const auto houseButton = pixelOn(
+            antwika::game::widgets::toolWidget(
+                antwika::game::BuildTool::House));
 
         std::vector<TickEvent> events;
 
@@ -891,9 +940,30 @@ namespace
                 .tick = 3,
                 .event = pressAt(Cell{.x = 6, .y = 5}, MouseButton::Left)});
 
+        // A house between them, and it is not decoration.
+        // A well with nobody working there sends no carrier at all.
+        // So the people this house takes in are what water the city.
         events.push_back(
             TickEvent{
-                .tick = 38,
+                .tick = 4,
+                .event = codec.encode(
+                    antwika::input::PointerMoved{
+                        .position = houseButton})});
+        events.push_back(
+            TickEvent{
+                .tick = 4,
+                .event = codec.encode(
+                    PointerButtonPressed{
+                        .button = MouseButton::Left,
+                        .position = houseButton})});
+        events.push_back(
+            TickEvent{
+                .tick = 5,
+                .event = pressAt(Cell{.x = 4, .y = 5}, MouseButton::Left)});
+
+        events.push_back(
+            TickEvent{
+                .tick = kCoverageTicks - 2,
                 .event = Event{.name = antwika::engine::events::kStop}});
 
         return events;
@@ -921,18 +991,21 @@ TEST(ReplayDeterminismTest, TheCoverageRunActuallyConfersSomeService)
     auto script = coverageSession();
     ReplaySource source(script);
 
-    const auto result = runWithToolbar(source);
+    const auto result = runWithToolbar(source, kCoverageTicks);
 
-    ASSERT_EQ(result.summary.buildings.size(), 2U);
+    ASSERT_EQ(result.summary.buildings.size(), 3U);
     EXPECT_TRUE(anyCovered(result.summary))
         << "the well never reached anything, so this proves nothing";
+
+    // And somebody had to live there for the well to be worked at all.
+    EXPECT_GT(result.summary.ratings.population, 0);
 }
 
 TEST(ReplayDeterminismTest, ACoveredCityReplaysToTheSameCoverage)
 {
     auto script = coverageSession();
     ReplaySource liveSource(script);
-    const auto live = runWithToolbar(liveSource);
+    const auto live = runWithToolbar(liveSource, kCoverageTicks);
 
     const ScratchFile file("antwika-game-coverage.replay");
     antwika::replay::saveReplayFile(live.recorded, file.name());
@@ -947,7 +1020,7 @@ TEST(ReplayDeterminismTest, ACoveredCityReplaysToTheSameCoverage)
     }
 
     ReplaySource replayedSource(std::move(loaded));
-    const auto replayed = runWithToolbar(replayedSource);
+    const auto replayed = runWithToolbar(replayedSource, kCoverageTicks);
 
     EXPECT_EQ(replayed.summary, live.summary);
     EXPECT_EQ(replayed.recorded, live.recorded);
@@ -1084,6 +1157,139 @@ TEST(ReplayDeterminismTest, AGrowingCityReplaysToTheSameLevels)
 
     ReplaySource replayedSource(std::move(loaded));
     const auto replayed = runWithToolbar(replayedSource, kHousingTicks);
+
+    EXPECT_EQ(replayed.summary, live.summary);
+    EXPECT_EQ(replayed.recorded, live.recorded);
+}
+
+// A city that contended over nothing would agree for the wrong reason.
+// Labour is this increment's one genuinely contended allocation.
+// A city-wide workforce, shared among workplaces that want more of it.
+// So a recorded run has to be short of people.
+// Otherwise the comparison below is not saying anything at all.
+namespace
+{
+    // Long enough for several people to arrive and be put to work.
+    const antwika::time::Tick kLabourTicks = 100;
+
+    [[nodiscard]] std::vector<TickEvent> labourSession()
+    {
+        const InputEventCodec codec;
+        const auto farmButton = pixelOn(
+            antwika::game::widgets::toolWidget(
+                antwika::game::BuildTool::Farm));
+        const auto houseButton = pixelOn(
+            antwika::game::widgets::toolWidget(
+                antwika::game::BuildTool::House));
+
+        std::vector<TickEvent> events;
+
+        for (std::int32_t x = 2; x <= 6; ++x)
+        {
+            events.push_back(
+                TickEvent{
+                    .tick = 0,
+                    .event =
+                        pressAt(Cell{.x = x, .y = 4}, MouseButton::Left)});
+        }
+
+        events.push_back(
+            TickEvent{
+                .tick = 0,
+                .event =
+                    releaseAt(Cell{.x = 6, .y = 4}, MouseButton::Left)});
+
+        // Two sources wanting eight people between them.
+        events.push_back(
+            TickEvent{
+                .tick = 1,
+                .event = codec.encode(
+                    antwika::input::PointerMoved{.position = farmButton})});
+        events.push_back(
+            TickEvent{
+                .tick = 1,
+                .event = codec.encode(
+                    PointerButtonPressed{
+                        .button = MouseButton::Left,
+                        .position = farmButton})});
+        events.push_back(
+            TickEvent{
+                .tick = 2,
+                .event = pressAt(Cell{.x = 2, .y = 5}, MouseButton::Left)});
+        events.push_back(
+            TickEvent{
+                .tick = 3,
+                .event = pressAt(Cell{.x = 5, .y = 5}, MouseButton::Left)});
+
+        // And one house, which holds five of them at the top.
+        events.push_back(
+            TickEvent{
+                .tick = 4,
+                .event = codec.encode(
+                    antwika::input::PointerMoved{
+                        .position = houseButton})});
+        events.push_back(
+            TickEvent{
+                .tick = 4,
+                .event = codec.encode(
+                    PointerButtonPressed{
+                        .button = MouseButton::Left,
+                        .position = houseButton})});
+        events.push_back(
+            TickEvent{
+                .tick = 5,
+                .event = pressAt(Cell{.x = 4, .y = 5}, MouseButton::Left)});
+
+        events.push_back(
+            TickEvent{
+                .tick = kLabourTicks - 2,
+                .event = Event{.name = antwika::engine::events::kStop}});
+
+        return events;
+    }
+} // namespace
+
+TEST(ReplayDeterminismTest, TheLabourRunActuallyRunsShortOfPeople)
+{
+    auto script = labourSession();
+    ReplaySource source(script);
+
+    const auto result = runWithToolbar(source, kLabourTicks);
+
+    ASSERT_EQ(result.summary.buildings.size(), 3U);
+    EXPECT_GT(result.summary.ratings.population, 0);
+    EXPECT_GT(result.summary.ratings.employment, 0);
+    EXPECT_LT(result.summary.ratings.employment, 100)
+        << "every job was filled, so nothing was contended";
+}
+
+TEST(ReplayDeterminismTest, AContendedCityReplaysToTheSameAllocation)
+{
+    auto script = labourSession();
+    ReplaySource liveSource(script);
+    const auto live = runWithToolbar(liveSource, kLabourTicks);
+
+    const ScratchFile file("antwika-game-labour.replay");
+    antwika::replay::saveReplayFile(live.recorded, file.name());
+    auto loaded = antwika::replay::loadReplayFile(file.name());
+
+    // Nothing about a person or a job may be on the wire.
+    // Both follow from a road, a field and a tier.
+    // Every one of which a replay regenerates from the clicks.
+    for (const auto &event : loaded)
+    {
+        EXPECT_EQ(
+            event.event.name.rfind("game.immigrant", 0), std::string::npos)
+            << event.event.name;
+        EXPECT_EQ(
+            event.event.name.rfind("game.set_wage", 0), std::string::npos)
+            << event.event.name;
+        EXPECT_EQ(event.event.name.rfind("ui.", 0), std::string::npos)
+            << event.event.name;
+    }
+
+    ReplaySource replayedSource(std::move(loaded));
+    const auto replayed = runWithToolbar(replayedSource, kLabourTicks);
 
     EXPECT_EQ(replayed.summary, live.summary);
     EXPECT_EQ(replayed.recorded, live.recorded);

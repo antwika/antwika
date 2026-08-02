@@ -25,6 +25,7 @@
 #include "antwika/game/SaveGame.hpp"
 #include "antwika/game/Service.hpp"
 #include "antwika/game/Walker.hpp"
+#include "antwika/game/Workforce.hpp"
 
 using antwika::ecs::World;
 using antwika::game::Building;
@@ -1178,4 +1179,131 @@ TEST(SaveGameTest, SavedBuildingEqualityComparesTheHousehold)
     auto grown = base;
     grown.household->level = antwika::game::HousingLevel::Cottage;
     EXPECT_NE(base, grown);
+}
+
+// How many people worked there is state a resumed session needs.
+// How many the kind *wanted* is not.
+// workersWantedBy() answers that from the kind already named.
+// See SaveLabour.cpp.
+TEST(SaveGameTest, RoundTripsAWorkplacesEmployedCount)
+{
+    SaveGame save;
+    save.buildings = {
+        antwika::game::SavedBuilding{
+            .at = {.x = 1, .y = 1},
+            .kind = BuildingKind::Farm,
+            .employed = 3},
+        antwika::game::SavedBuilding{
+            .at = {.x = 5, .y = 5}, .kind = BuildingKind::Well}};
+
+    const auto encoded = saveGameToJson(save);
+
+    EXPECT_EQ(encoded.at("buildings").at(0).at("employed"), 3);
+    EXPECT_FALSE(encoded.at("buildings").at(1).contains("employed"));
+    EXPECT_EQ(saveGameFromJson(encoded), save);
+}
+
+// Read out of the World like every other piece of state.
+TEST(SaveGameTest, TakesEachWorkplacesWorkforceFromTheWorld)
+{
+    ::testing::NiceMock<MockLogger> logger;
+    World world{logger};
+    const PathIndex paths;
+
+    const auto farm = world.create();
+    world.add<Cell>(farm, Cell{.x = 2, .y = 2});
+    world.add<Building>(farm, Building{.kind = BuildingKind::Farm});
+    antwika::game::setWorkforce(
+        world, farm, antwika::game::Workforce{.employed = 2});
+
+    const auto well = world.create();
+    world.add<Cell>(well, Cell{.x = 6, .y = 6});
+    world.add<Building>(well, Building{.kind = BuildingKind::Well});
+    world.commit();
+
+    const auto save = saveGameOf(
+        world, paths, Camera(), GameState{},
+        GridExtent{.width = 8, .height = 8});
+
+    ASSERT_EQ(save.buildings.size(), 2U);
+    EXPECT_EQ(save.buildings[0].employed, 2);
+    EXPECT_FALSE(save.buildings[1].employed.has_value());
+}
+
+// The member has to be in the comparison.
+// Or a round trip that dropped it would still match.
+TEST(SaveGameTest, SavedBuildingEqualityComparesTheEmployedCount)
+{
+    const antwika::game::SavedBuilding base{
+        .at = {.x = 1, .y = 1}, .employed = 2};
+
+    EXPECT_EQ(base, base);
+
+    auto idle = base;
+    idle.employed.reset();
+    EXPECT_NE(base, idle);
+
+    auto busier = base;
+    busier.employed = 3;
+    EXPECT_NE(base, busier);
+}
+
+// A hand-written document of the version this build writes.
+// From before anybody was allocated to a job or counted into a house.
+// Note the household naming four members and no settler countdown.
+// That is exactly what a file written between W3 and W4 holds.
+// It has to read as a fresh countdown rather than be refused.
+// Step four of docs/schema-versioning.md, for an additive member.
+TEST(SaveGameTest, ReadsAVersionThreeDocumentWrittenBeforeLabour)
+{
+    const auto document = nlohmann::json::parse(R"({
+        "magic": "antwika-game-save",
+        "version": 3,
+        "state": {"ticksProcessed": 4, "score": 1},
+        "extent": {"width": 8, "height": 8},
+        "camera": {"panX": 0, "panY": 0, "zoomLevel": 0},
+        "paths": [],
+        "walkers": [],
+        "buildings": [
+            {"x": 2, "y": 2, "kind": "house", "stock": [9, 0, 0],
+             "risk": 0, "ticksUntilSpawn": 1, "ticksUntilDrain": 2,
+             "ticksUntilRisk": 3,
+             "household": {"level": "shack", "ticksUntilEvolve": 5,
+                           "ticksUntilDevolve": 6, "population": 2}},
+            {"x": 5, "y": 5, "kind": "farm", "stock": [0, 0, 0],
+             "risk": 0, "ticksUntilSpawn": 1, "ticksUntilDrain": 2,
+             "ticksUntilRisk": 3}
+        ],
+        "seed": 5
+    })");
+
+    const auto save = saveGameFromJson(document);
+
+    ASSERT_EQ(save.buildings.size(), 2U);
+    ASSERT_TRUE(save.buildings[0].household.has_value());
+    EXPECT_EQ(save.buildings[0].household->population, 2);
+    EXPECT_EQ(
+        save.buildings[0].household->ticksUntilSettler,
+        antwika::game::kSettlerPeriodTicks);
+    EXPECT_FALSE(save.buildings[0].employed.has_value());
+    EXPECT_FALSE(save.buildings[1].employed.has_value());
+}
+
+// The settler countdown is persisted rather than reset.
+// For the reason every other countdown here is -- see SaveHousing.cpp.
+TEST(SaveGameTest, RoundTripsTheSettlerCountdown)
+{
+    SaveGame save;
+    save.buildings = {antwika::game::SavedBuilding{
+        .at = {.x = 1, .y = 1},
+        .kind = BuildingKind::House,
+        .household = antwika::game::Household{.ticksUntilSettler = 7}}};
+
+    const auto encoded = saveGameToJson(save);
+
+    EXPECT_EQ(
+        encoded.at("buildings").at(0).at("household").at(
+            "ticksUntilSettler"),
+        7);
+    EXPECT_EQ(saveGameFromJson(encoded), save);
 }
