@@ -172,6 +172,52 @@ TEST(ReplayWriterReaderTest, ReadThrowsWhenALineIsNotAJsonValue)
     }
 }
 
+// nlohmann's parser is iterative, but copying a value and wording a
+// validation failure both recurse per nesting level.
+// A crafted line must be refused before anything recursive sees it.
+TEST(ReplayWriterReaderTest, ReadRefusesALineNestedPastTheBound)
+{
+    const std::string text =
+        R"({"magic":"antwika-replay","version":2})"
+        "\n"
+        + std::string(100000, '[') + std::string(100000, ']') + "\n";
+
+    try
+    {
+        std::ignore = readText(text);
+        FAIL() << "a line nested past the bound should have thrown";
+    }
+    catch (const ReplayFormatError &error)
+    {
+        const std::string what(error.what());
+
+        EXPECT_NE(what.find("line 2"), std::string::npos) << what;
+        EXPECT_NE(what.find("nests deeper"), std::string::npos) << what;
+    }
+}
+
+// The same refusal when the deep value is the stream's first.
+// The whole-document branch would copy it, and a copy recurses.
+TEST(ReplayWriterReaderTest, ReadRefusesAnOpeningValueNestedPastTheBound)
+{
+    const std::string text =
+        std::string(100000, '[') + std::string(100000, ']') + "\n";
+
+    try
+    {
+        std::ignore = readText(text);
+        FAIL() << "an opening value nested past the bound should have "
+                  "thrown";
+    }
+    catch (const ReplayFormatError &error)
+    {
+        EXPECT_NE(
+            std::string(error.what()).find("nests deeper"),
+            std::string::npos)
+            << error.what();
+    }
+}
+
 // The newline that ends a record says the write got there whole.
 // So a last line without one that will not parse was torn off.
 // By the kill that ended the run, and what came before it stands.

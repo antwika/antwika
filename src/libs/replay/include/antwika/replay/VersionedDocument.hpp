@@ -8,6 +8,7 @@
 #include <nlohmann/json-schema.hpp>
 #include <nlohmann/json.hpp>
 
+#include <antwika/replay/DocumentDepth.hpp>
 #include <antwika/replay/MigrationChain.hpp>
 #include <antwika/replay/SchemaVersionError.hpp>
 
@@ -65,6 +66,16 @@ namespace antwika::replay
         const nlohmann::json_schema::json_validator &validator,
         std::string_view whatFailed)
     {
+        // Before anything recursive is allowed near the document.
+        // The parser is iterative; the validator's error path is not.
+        // See DocumentDepth.hpp.
+        if (nestsTooDeep(document))
+        {
+            throw ErrorT(
+                std::string(whatFailed)
+                + "the document nests deeper than this format writes");
+        }
+
         if constexpr (std::is_base_of_v<ErrorT, SchemaVersionError>)
         {
             migrations.migrate(document);
@@ -139,6 +150,15 @@ namespace antwika::replay
         const nlohmann::json_schema::json_validator &validator,
         std::string_view whatFailed)
     {
+        // The same guard its whole-document neighbour opens with.
+        // See DocumentDepth.hpp.
+        if (nestsTooDeep(record))
+        {
+            throw ErrorT(
+                std::string(whatFailed)
+                + "the record nests deeper than this format writes");
+        }
+
         migrations.migrateFrom(record, statedVersion);
 
         try

@@ -8,6 +8,7 @@
 #include <utility>
 
 #include <antwika/log/Level.hpp>
+#include <antwika/replay/DocumentDepth.hpp>
 #include <antwika/replay/ReplayFormatError.hpp>
 #include <antwika/replay/ReplayHeader.hpp>
 #include <antwika/replay/ReplayJson.hpp>
@@ -125,6 +126,17 @@ namespace antwika::replay
                         "a JSON value",
                         at));
                 }
+
+                // Refused here, while the line number is still known.
+                // Anything recursive over a deep value eats the stack.
+                // See DocumentDepth.hpp.
+                if (nestsTooDeep(records.back()))
+                {
+                    throw ReplayFormatError(std::format(
+                        "antwika::replay: line {} of this replay nests "
+                        "deeper than the format ever writes",
+                        at));
+                }
             }
             return records;
         } // GCOVR_EXCL_LINE
@@ -133,6 +145,16 @@ namespace antwika::replay
             std::istream &in, const MigrationChain &migrations)
         {
             const nlohmann::json first = readFirstValue(in);
+
+            // Before the copy the whole-document branch would take.
+            // Copying a deep value recurses; the parse above did not.
+            // See DocumentDepth.hpp.
+            if (nestsTooDeep(first))
+            {
+                throw ReplayFormatError(
+                    "antwika::replay: the opening JSON value of this "
+                    "replay nests deeper than the format ever writes");
+            }
 
             // The key is a named local rather than a temporary.
             // A temporary std::string brings its own branches at -O0.

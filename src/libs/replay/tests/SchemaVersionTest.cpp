@@ -85,6 +85,28 @@ TEST(SchemaVersionTest, NonIntegerVersionIsRefused)
         SchemaVersionError);
 }
 
+// A container is named rather than printed.
+// dump() recurses per nesting level, and what is stated here is
+// unvalidated -- printing it is how a crafted file ate the stack.
+TEST(SchemaVersionTest, AContainerVersionIsNamedNotPrinted)
+{
+    nlohmann::json document;
+    document["version"] = nlohmann::json::array({1, 2});
+
+    try
+    {
+        std::ignore = documentVersion(document);
+        FAIL() << "a container version should have thrown";
+    }
+    catch (const SchemaVersionError &error)
+    {
+        EXPECT_NE(
+            std::string(error.what()).find("a JSON array"),
+            std::string::npos)
+            << error.what();
+    }
+}
+
 TEST(SchemaVersionTest, NegativeVersionIsRefused)
 {
     nlohmann::json document;

@@ -45,13 +45,17 @@ namespace antwika::replay
         const nlohmann::json &stated = document.at(key);
         if (!fitsAVersion(stated))
         {
+            // dump() recurses per nesting level, and what is stated
+            // here is unvalidated; a container is named, not printed.
             throw SchemaVersionError(std::format(
                 "antwika::replay: \"{}\" is not a schema version this "
                 "build can read: expected a whole number from 0 to {}, "
                 "found {}",
                 key,
                 kMaxVersion,
-                stated.dump()));
+                stated.is_primitive() ? stated.dump()
+                                      : std::string("a JSON ")
+                                            + stated.type_name()));
         }
         return stated.get<std::uint32_t>();
     }
