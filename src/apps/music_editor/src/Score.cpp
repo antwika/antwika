@@ -32,10 +32,14 @@ namespace antwika::music_editor
     {
         tracks.reserve(kTrackCount);
 
+        // The excluded line carries two (throw) edges.
+        // It also carries an unwind pad for the strings and vector.
+        // Each is taken only if an allocation actually fails.
+        // See docs/confirming-unreachable-branches.md, signature (a).
         for (std::size_t track = 0; track < kTrackCount; ++track)
         {
             tracks.push_back(
-                Track{
+                Track{ // GCOVR_EXCL_LINE
                     .source = std::string{},
                     .failure = std::string{},
                     .playing = pattern::silence()});
@@ -72,7 +76,11 @@ namespace antwika::music_editor
 
                 held.failure.clear();
             }
-            catch (const notation::NotationError &refused)
+            // The excluded line has a third direction.
+            // It is an exception neither clause below catches.
+            // parsePattern raises only those two types.
+            // So reaching it needs an allocation to fail inside one.
+            catch (const notation::NotationError &refused) // GCOVR_EXCL_LINE
             {
                 // The line keeps playing whatever it last did.
                 // Half a bracket is typed on the way to a whole one.

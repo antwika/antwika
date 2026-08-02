@@ -47,10 +47,14 @@ namespace antwika::music_editor
 
         for (std::size_t track = 0; track < kTrackCount; ++track)
         {
+            // The excluded line carries a (throw) edge.
+            // It also carries an unwind pad for the TempoMap copy.
+            // Both are taken only if an allocation actually fails.
+            // See docs/confirming-unreachable-branches.md, signature (a).
             sequencer::SequencerDesc each{
                 .clock = desc.clock,
                 .tempo = desc.tempo,
-                .lookahead = desc.lookahead};
+                .lookahead = desc.lookahead}; // GCOVR_EXCL_LINE
 
             sequencers[track] =
                 std::make_unique<sequencer::Sequencer>(std::move(each));
