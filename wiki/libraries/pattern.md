@@ -94,4 +94,3 @@ Half-open everywhere is not a stylistic preference: two windows sharing an endpo
 ## See also
 
 - [`synth`](synth.md) — what a pattern's events eventually become audible through.
-- [`docs/codified-music-plan.md`](../../docs/codified-music-plan.md) — the plan this library is stage two of.

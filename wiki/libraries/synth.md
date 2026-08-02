@@ -82,4 +82,3 @@ Audio remains a write-only projection in exactly rendering's sense: no sample, p
 ## See also
 
 - [`sound`](sound.md) — the device, the mixer this one mirrors, and the musical layer this is the first half of.
-- [`docs/codified-music-plan.md`](../../docs/codified-music-plan.md) — the plan this library is stage one of, while it is still unbuilt.

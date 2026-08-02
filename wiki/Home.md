@@ -38,6 +38,8 @@ Each page covers what the library is for, its key headers and types, what it dep
 | [sound](libraries/sound.md) | PCM decoding, mixing and playback, on the thread that pumps it. |
 | [synth](libraries/synth.md) | Sounds as values in source rather than waveform files, generated into the same buffer. |
 | [pattern](libraries/pattern.md) | A pattern algebra over exact rational cycles, knowing nothing about music. |
+| [notation](libraries/notation.md) | The Tidal mini-notation, read into that algebra and nothing more. |
+| [sequencer](libraries/sequencer.md) | Where musical time meets frame time, and the onset rule that guards it. |
 | [network](libraries/network.md) | Bytes between hosts, pumped from the tick loop and owning no thread. |
 | [animation](libraries/animation.md) | Which frame to show, as a pure function of a tick the caller already has. |
 | [tween](libraries/tween.md) | Easing curves that stay exact, so a shaped fraction is the same on every toolchain. |
