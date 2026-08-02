@@ -5,11 +5,13 @@ add_executable(antwika_music_editor_tests
     EditorSceneTest.cpp
     EditorSinkTest.cpp
     EditorStateTest.cpp
+    NoteWordsTest.cpp
+    PasteSourceTest.cpp
     PlaybackTest.cpp
     RenderSinkTest.cpp
     RunIntegrationTest.cpp
+    ScoreFilesTest.cpp
     ScoreTest.cpp
-    TickBudgetSourceTest.cpp
     TrackPresetTest.cpp
     VoiceChainTest.cpp
 )
@@ -25,11 +27,13 @@ target_sources(antwika_music_editor_tests
         ../src/EditorScene.cpp
         ../src/EditorSink.cpp
         ../src/EditorState.cpp
+        ../src/PasteSource.cpp
         ../src/Playback.cpp
         ../src/MusicEditor.cpp
+        ../src/NoteWords.cpp
         ../src/RenderSink.cpp
         ../src/Score.cpp
-        ../src/TickBudgetSource.cpp
+        ../src/ScoreFiles.cpp
         ../src/TrackPreset.cpp
         ../src/VoiceChain.cpp
 )

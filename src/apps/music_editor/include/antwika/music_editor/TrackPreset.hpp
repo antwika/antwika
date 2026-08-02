@@ -35,6 +35,18 @@ namespace antwika::music_editor
     inline constexpr ParamId kNote{1};
 
     /**
+     * @brief Where a note's word starts in its n("...") string.
+     *
+     * Carried beside the pitch by NoteWords, so a note that sounds can
+     * light the very characters it came from.  The algebra relays it
+     * untouched, exactly as it relays the pitch.
+     */
+    inline constexpr ParamId kSpanBegin{2};
+
+    /** @brief How many characters that word runs for. */
+    inline constexpr ParamId kSpanLength{3};
+
+    /**
      * @brief The sound one line makes.
      *
      * **Written down here rather than sampled from anywhere**, which is

@@ -4,10 +4,12 @@ add_executable(antwika_music_editor
     src/EditorSink.cpp
     src/EditorState.cpp
     src/MusicEditor.cpp
+    src/NoteWords.cpp
+    src/PasteSource.cpp
     src/Playback.cpp
     src/RenderSink.cpp
     src/Score.cpp
-    src/TickBudgetSource.cpp
+    src/ScoreFiles.cpp
     src/TrackPreset.cpp
     src/VoiceChain.cpp
     src/main.cpp

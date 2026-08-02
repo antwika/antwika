@@ -323,3 +323,30 @@ TEST(VoiceChainTest, ComparesFieldByField)
     EXPECT_NE(voice, parseVoiceChain("n(\"0\").gain(.9)"));
     EXPECT_EQ(VoiceChain{}, VoiceChain{});
 }
+
+// Where the notation's characters begin in the chain.
+// What maps a note's span back onto the document.
+TEST(VoiceChainTest, RemembersWhereTheNotationSits)
+{
+    const auto plain = parseVoiceChain("n(\"0 3\")");
+
+    // n(" is three characters before the content.
+    EXPECT_EQ(plain.notationAt, 3U);
+
+    const auto chained = parseVoiceChain("drum.n(\"0(3,8)\").gain(.2)");
+
+    EXPECT_EQ(chained.notationAt, 8U);
+    EXPECT_EQ(chained.notation, "0(3,8)");
+}
+
+TEST(VoiceChainTest, ComparesChainsFieldByField)
+{
+    const auto chain = parseVoiceChain("drum.n(\"0\")");
+
+    EXPECT_EQ(chain, parseVoiceChain("drum.n(\"0\")"));
+
+    // A different preset, a different notation, a different offset.
+    EXPECT_NE(chain, parseVoiceChain("bass.n(\"0\")"));
+    EXPECT_NE(chain, parseVoiceChain("drum.n(\"3\")"));
+    EXPECT_NE(chain, parseVoiceChain("drum .n(\"0\")"));
+}

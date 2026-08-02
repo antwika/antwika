@@ -1,10 +1,12 @@
 #pragma once
 
 #include <cstdint>
+#include <string>
 
 #include <antwika/event/ITickEventSink.hpp>
 #include <antwika/event/TickEvent.hpp>
 #include <antwika/gfx/Size.hpp>
+#include <antwika/input/IClipboard.hpp>
 #include <antwika/input/IInputEventCodec.hpp>
 #include <antwika/input/InputState.hpp>
 #include <antwika/time/Tick.hpp>
@@ -59,6 +61,23 @@ namespace antwika::music_editor
          * @param codec Decodes the recorded input events.
          * @param scene Describes the picture; must outlive this.
          * @param canvas The size the window was asked for.
+         * @param clipboard Where a copy is mirrored to, or null.
+         * **Null on a replay**, so replaying somebody's session does
+         * not overwrite this machine's clipboard with their copies;
+         * the mirror is an outward write read back by nothing, on the
+         * same terms a frame is drawn.  Pastes never come from here --
+         * they arrive as events::kPaste, read upstream by PasteSource.
+         * @param stop Told when the menu's quit is chosen, exactly as
+         * apps/game's main menu tells its loop: the recording holds
+         * the click, and the stop follows from it on every replay.
+         * Must outlive this object.
+         * @param scoresDirectory Where the save box writes and the
+         * load box reads, which is the one place this sink names a
+         * file.  **Loading reads a file inside the tick path**, on the
+         * terms apps/game::SaveLoadSink documents: the list is fixed
+         * for the run, but a score's *contents* can only be read when
+         * the click asking for them arrives, so a replay reproduces a
+         * load exactly as long as the file still holds what it held.
          */
         EditorSink(
             EditorState &state,
@@ -66,7 +85,10 @@ namespace antwika::music_editor
             Playback &playback,
             const IInputEventCodec &codec,
             const EditorScene &scene,
-            Size canvas);
+            Size canvas,
+            input::IClipboard *clipboard,
+            ITickEventSink &stop,
+            std::string scoresDirectory);
 
         EditorSink(const EditorSink &) = delete;
         EditorSink(EditorSink &&) = delete;
@@ -108,6 +130,17 @@ namespace antwika::music_editor
 
         void refreshAndAct(PointerEdge edge, const ui::Keyboard &keyboard);
 
+        void modalRefreshAndAct(
+            PointerEdge edge, const ui::Keyboard &keyboard);
+
+        void menuAction(std::size_t index);
+
+        void saveNow();
+
+        void loadNow(std::size_t at);
+
+        void mirrorClipboard();
+
         [[nodiscard]] ui::Frame frameFor(
             PointerEdge edge, const ui::Keyboard &keyboard) const;
 
@@ -121,6 +154,12 @@ namespace antwika::music_editor
         const IInputEventCodec &codec;
         const EditorScene &scene;
         Size canvas;
+        input::IClipboard *clipboard;
+        ITickEventSink &stop;
+        std::string scoresDirectory;
+
+        // What the mirror last wrote, so it writes on changes alone.
+        std::string mirrored;
 
         antwika::input::InputState folded;
         time::Tick foldedTick = 0;

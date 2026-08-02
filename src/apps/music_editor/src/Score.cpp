@@ -1,6 +1,7 @@
 #include "antwika/music_editor/Score.hpp"
 
 #include <cstddef>
+#include <optional>
 #include <string>
 #include <string_view>
 #include <utility>
@@ -86,9 +87,7 @@ namespace antwika::music_editor
                "    .gain(.12).pan(.5)\n";
     }
 
-    Score::Score() : words(kNote)
-    {
-    }
+    Score::Score() = default;
 
     void Score::read(const std::string &source)
     {
@@ -125,6 +124,7 @@ namespace antwika::music_editor
             readLine(
                 std::string_view{document}.substr(begin, stop - begin),
                 number,
+                begin,
                 gathering);
 
             if (end == std::string::npos)
@@ -142,22 +142,25 @@ namespace antwika::music_editor
         lines.resize(seen);
 
         sounding.clear();
+        soundingLines.clear();
 
-        for (const auto &line : lines)
+        for (std::size_t at = 0; at < lines.size(); ++at)
         {
             // A line refused before it ever read has nothing to sound.
-            if (!line.sounding)
+            if (!lines[at].sounding)
             {
                 continue;
             }
 
-            sounding.push_back(line.voice);
+            sounding.push_back(lines[at].voice);
+            soundingLines.push_back(at);
         }
     }
 
     void Score::readLine(
         const std::string_view line,
         const std::size_t number,
+        const std::size_t lineBegin,
         Gathered &gathering)
     {
         // A comment is cut off wherever it starts.
@@ -179,6 +182,15 @@ namespace antwika::music_editor
                 return;
             }
 
+            // Where this stretch of the chain sits in the document.
+            // The view is a piece of the line, so this is arithmetic.
+            gathering.segments.push_back(Segment{
+                .chainBegin = gathering.chain.size(),
+                .documentBegin = lineBegin
+                    + static_cast<std::size_t>(
+                                     text.data() - line.data()),
+                .length = text.size()});
+
             gathering.chain += text;
 
             return;
@@ -196,8 +208,22 @@ namespace antwika::music_editor
             return;
         }
 
-        gathering.chain = trimmed(text.substr(kVoiceMark.size()));
+        const auto content = trimmed(text.substr(kVoiceMark.size()));
+
+        gathering.chain = std::string(content);
+        gathering.segments.clear();
         gathering.opened = number;
+
+        // A bare $: gathers no characters and so points at nothing.
+        if (!content.empty())
+        {
+            gathering.segments.push_back(Segment{
+                .chainBegin = 0,
+                .documentBegin = lineBegin
+                    + static_cast<std::size_t>(
+                                     content.data() - line.data()),
+                .length = content.size()});
+        }
     }
 
     void Score::finish(Gathered &gathering)
@@ -207,15 +233,18 @@ namespace antwika::music_editor
             return;
         }
 
-        play(gathering.chain, gathering.opened);
+        play(gathering);
 
         gathering.chain.clear();
+        gathering.segments.clear();
         gathering.opened = 0;
     }
 
-    void Score::play(
-        const std::string_view chain, const std::size_t number)
+    void Score::play(const Gathered &gathering)
     {
+        const std::string &chain = gathering.chain;
+        const std::size_t number = gathering.opened;
+
         const auto at = seen++;
 
         if (at == lines.size())
@@ -224,6 +253,10 @@ namespace antwika::music_editor
         }
 
         auto &held = lines[at];
+
+        // Where the chain sits is refreshed on every read.
+        // An unchanged line still moves when lines above it do.
+        held.segments = gathering.segments;
 
         // Read once, however many ticks the line then sits there for.
         // A refusal is repeated, since the line is still refused.
@@ -253,6 +286,7 @@ namespace antwika::music_editor
                     notation::parsePattern(read.notation, words)};
 
             held.voice = std::move(voice);
+            held.notationAt = read.notationAt;
             held.sounding = true;
             held.failure.clear();
         }
@@ -293,6 +327,51 @@ namespace antwika::music_editor
     const std::vector<Voice> &Score::voices() const noexcept
     {
         return sounding;
+    }
+
+    std::optional<DocumentSpan> Score::spanIn(
+        const std::size_t voice,
+        const std::size_t begin,
+        const std::size_t length) const noexcept
+    {
+        // A voice that is gone has nothing left to light.
+        if (voice >= soundingLines.size())
+        {
+            return std::nullopt;
+        }
+
+        const auto &line = lines[soundingLines[voice]];
+
+        const auto target = line.notationAt + begin;
+
+        for (const auto &segment : line.segments)
+        {
+            // Segments tile the chain from zero with no gaps.
+            // So only the far edge can put a target outside one.
+            if (target >= segment.chainBegin + segment.length)
+            {
+                continue;
+            }
+
+            const auto inside = target - segment.chainBegin;
+
+            // Clamped to its own stretch of the chain.
+            // A word cut by a gathered line's edge lights what it can.
+            const auto take =
+                std::min(length, segment.length - inside);
+
+            if (take == 0)
+            {
+                return std::nullopt;
+            }
+
+            const auto docBegin = segment.documentBegin + inside;
+
+            return DocumentSpan{
+                .begin = docBegin, .end = docBegin + take};
+        }
+
+        return std::nullopt;
     }
 
     const std::vector<Problem> &Score::problems() const noexcept

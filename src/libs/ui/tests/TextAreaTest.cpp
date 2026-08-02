@@ -394,6 +394,47 @@ TEST(TextAreaTest, MoveDownFromTheLastLineDoesNothing)
     EXPECT_FALSE(frame.interactions.edit.has_value());
 }
 
+TEST(TextAreaTest, HomeLandsOnTheCaretsOwnLinesStart)
+{
+    const auto frame = typeInto(
+        "abc\ndef", 6, Keyboard{.keys = {Key::MoveLineStart}});
+
+    const auto edit = frame.interactions.edit;
+
+    ASSERT_TRUE(edit.has_value());
+    EXPECT_EQ(4U, edit->cursor);
+}
+
+TEST(TextAreaTest, EndLandsOnTheCaretsOwnLinesBreak)
+{
+    const auto frame = typeInto(
+        "abc\ndef\nghi", 5, Keyboard{.keys = {Key::MoveLineEnd}});
+
+    const auto edit = frame.interactions.edit;
+
+    ASSERT_TRUE(edit.has_value());
+    EXPECT_EQ(7U, edit->cursor);
+}
+
+TEST(TextAreaTest, HomeAtALinesStartDoesNothing)
+{
+    const auto frame = typeInto(
+        "abc\ndef", 4, Keyboard{.keys = {Key::MoveLineStart}});
+
+    EXPECT_FALSE(frame.interactions.edit.has_value());
+}
+
+TEST(TextAreaTest, EndOnTheLastLineLandsOnTheTextsEnd)
+{
+    const auto frame = typeInto(
+        "abc\ndef", 5, Keyboard{.keys = {Key::MoveLineEnd}});
+
+    const auto edit = frame.interactions.edit;
+
+    ASSERT_TRUE(edit.has_value());
+    EXPECT_EQ(7U, edit->cursor);
+}
+
 TEST(TextAreaTest, TheHorizontalKeysWalkOverALineBreak)
 {
     const auto back =

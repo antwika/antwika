@@ -28,6 +28,8 @@ namespace antwika::music_editor
         ILogger &logger = config.logger;
 
         EditorState state = openingState();
+        state.scores = config.scores;
+
         Score score;
 
         Playback playback(
@@ -43,11 +45,12 @@ namespace antwika::music_editor
         // The editor reads this tick's input.
         // It re-reads the lines that changed and advances the sound.
         // Then whatever draws, so a frame is of the finished tick.
+        StopSignal stopSignal;
+
         EditorSink editor(
             state, score, playback, config.codec, config.scene,
-            config.canvas);
-
-        StopSignal stopSignal;
+            config.canvas, config.clipboard, stopSignal,
+            config.scoresDirectory);
 
         std::vector<std::reference_wrapper<ITickEventSink>> timedSinks{
             editor, stopSignal};

@@ -91,18 +91,19 @@ Typing arrives on the same `Keyboard` the focus keys do rather than as a second 
 It reads as indirection until you type `a`, Backspace, `b` inside one frame: the characters used to go in as a lump before any key was read, so what came out was `a` rather than `b`, and a caller that folds a whole tick's typing into one frame hit that at ordinary typing speed.
 A character with no edge to take it is not typed at all, since nothing would say where in the order it belonged.
 
-**`textArea()` is `textField()` over many lines**, and the whole of the difference is what the keyboard means: Enter writes a line break rather than submitting, `Key::MoveUp` and `Key::MoveDown` walk the caret between lines keeping its column where the line beside it is long enough, and the box takes the room it is given rather than one line's worth.
+**`textArea()` is `textField()` over many lines**, and the whole of the difference is what the keyboard means: Enter writes a line break rather than submitting, `Key::MoveUp` and `Key::MoveDown` walk the caret between lines keeping its column where the line beside it is long enough, `Key::MoveLineStart` and `Key::MoveLineEnd` put it at the caret's own line's two ends, and the box takes the room it is given rather than one line's worth.
 The caret is one flat index into the document rather than a row and a column, so an application storing a `std::string` and a `std::size_t` is storing everything a replay has to regenerate -- and a line break is just a character in the text, which is what makes that true.
 A blank line is drawn as a row opened over a strut a glyph cell tall, because an empty text node measures nothing at all and the lines below it would otherwise move up.
 [music_editor](../apps/music_editor.md) is what it was written for.
 
 **A selection is a second index and nothing else.**
 `TextAreaSpec::anchor` is the far end, the characters between it and the caret are drawn on `Theme::selection`, and every key that writes -- a character, Enter, Backspace, `Key::Delete`, `Key::Cut` -- takes the whole of it first.
-`Key::SelectLeft`, `SelectRight`, `SelectUp` and `SelectDown` are separate keys rather than a shift flag beside the four moves, for the reason `FocusPrevious` is a key rather than a flag on `FocusNext`: a modifier is held state and everything crossing this seam is an edge.
+`TextAreaSpec::highlights` is the same picture with none of the consequences: caller-marked spans drawn on `Theme::highlight` -- a live-coding editor lights the notes that are sounding with it -- that move no caret, join no selection and lose to the selection's ground wherever the two overlap.
+`Key::SelectLeft`, `SelectRight`, `SelectUp`, `SelectDown`, `SelectLineStart` and `SelectLineEnd` are separate keys rather than a shift flag beside the six moves, for the reason `FocusPrevious` is a key rather than a flag on `FocusNext`: a modifier is held state and everything crossing this seam is an edge.
 The anchor is a `std::optional`, absent meaning "wherever the caret is", because every index is a place a selection can really end -- including the end of the text, which a sentinel would have taken.
 
 **A copy is reported and a paste is typed**, which is the only shape a clipboard can have here.
-`Key::Copy` and `Key::Cut` put the selected characters in `TextEdit::copied` and this library forgets them immediately, since it retains nothing; where they go is the application's, and [music_editor](../apps/music_editor.md) keeps them in its own state rather than in the window system's clipboard, so a replay pastes what the run pasted rather than whatever the replaying machine happens to hold.
+`Key::Copy` and `Key::Cut` put the selected characters in `TextEdit::copied` and this library forgets them immediately, since it retains nothing; where they go is the application's, and [music_editor](../apps/music_editor.md) keeps them in its own state and mirrors them outward to the window system's clipboard from there, while a paste reaches it as a recorded event -- so a replay pastes what the run pasted rather than whatever the replaying machine happens to hold.
 Pasting therefore needs no key at all: the application puts the characters in `Keyboard::typed` with a `Key::Character` edge each, exactly as if they had been typed.
 
 **A press inside an area puts the caret where it landed**, and that is the one answer a widget gives that needs the layout.

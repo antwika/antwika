@@ -2,6 +2,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <optional>
+#include <span>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -62,7 +63,29 @@ namespace antwika::ui
 
             /** @brief The caret, when it is on this line. */
             std::optional<std::size_t> caret{};
+
+            /** @brief The spans lit up, anywhere in the document. */
+            std::span<const TextHighlight> lit{};
         };
+
+        // Whether a whole piece sits inside some highlighted span.
+        // Pieces are cut at every span's ends, so inside is all-or-none.
+        [[nodiscard]] bool litPiece(
+            const Line &line,
+            const std::size_t from,
+            const std::size_t to) noexcept
+        {
+            for (const auto &span : line.lit)
+            {
+                // A span of nothing was dropped before it got here.
+                if (from >= span.begin && to <= span.end)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
 
         // One more than the breaks, since the last need not end in one.
         // A document with no break at all is one line.
@@ -115,6 +138,19 @@ namespace antwika::ui
             if (line.caret)
             {
                 cuts.push_back(*line.caret);
+            }
+
+            // A highlight cuts exactly as the selection does.
+            // So every piece is wholly lit or not at all.
+            for (const auto &span : line.lit)
+            {
+                if (span.begin < line.end && span.end > line.begin)
+                {
+                    cuts.push_back(
+                        std::clamp(span.begin, line.begin, line.end));
+                    cuts.push_back(
+                        std::clamp(span.end, line.begin, line.end));
+                }
             }
 
             std::ranges::sort(cuts);
@@ -172,13 +208,18 @@ namespace antwika::ui
                 const bool picked = line.low < line.high && from >= line.low
                                     && to <= line.high;
 
+                // The selection wins where the two overlap.
+                // It is what the next keystroke acts on.
+                const bool lit = !picked && litPiece(line, from, to);
+
                 tree.add(Node{ // GCOVR_EXCL_LINE
                     .kind = detail::NodeKind::Text,
                     .width = kFit,
                     .height = kFit,
                     .background = picked
                         ? std::optional{theme.selection}
-                        : std::nullopt,
+                        : (lit ? std::optional{theme.highlight}
+                               : std::nullopt),
                     .text = std::string{ // GCOVR_EXCL_LINE
                         line.text.substr(from, to - from)},
                     .textScale = theme.textScale,
@@ -293,6 +334,25 @@ namespace antwika::ui
         const auto low = focused ? std::min(cursor, anchor) : 0;
         const auto high = focused ? std::max(cursor, anchor) : 0;
 
+        // Ends past the text are brought inside, as the caret's is.
+        // A span of nothing is dropped rather than cut around.
+        std::vector<TextHighlight> clampedSpans;
+        clampedSpans.reserve(spec.highlights.size());
+
+        for (const auto &span : spec.highlights)
+        {
+            const TextHighlight inside{
+                .begin = std::min(span.begin, spec.text.size()),
+                .end = std::min(span.end, spec.text.size())};
+
+            if (inside.begin < inside.end)
+            {
+                clampedSpans.push_back(inside);
+            }
+        }
+
+        const std::span<const TextHighlight> clamped{clampedSpans};
+
         std::size_t begin = 0;
 
         for (std::size_t line = 0; line < lines; ++line)
@@ -317,7 +377,8 @@ namespace antwika::ui
                         .low = low,
                         .high = high,
                         .caret = carries ? std::optional{cursor}
-                                         : std::nullopt});
+                                         : std::nullopt,
+                        .lit = clamped});
             }
 
             begin = end + 1;

@@ -1,9 +1,11 @@
 #include "antwika/music_editor/Playback.hpp"
 
+#include <algorithm>
 #include <chrono>
 #include <cstddef>
 #include <memory>
 #include <utility>
+#include <vector>
 
 #include <antwika/pattern/Controls.hpp>
 #include <antwika/sequencer/Sequencer.hpp>
@@ -13,18 +15,42 @@ namespace antwika::music_editor
 {
 
     Playback::TrackVoices::TrackVoices(
-        synth::SynthMixer &mixer, std::uint64_t &counter)
-        : mixer(mixer), counter(counter)
+        synth::SynthMixer &mixer,
+        std::uint64_t &counter,
+        std::vector<ActiveNote> &notes,
+        const sequencer::FrameClock &clock)
+        : mixer(mixer),
+          counter(counter),
+          notes(notes),
+          frameNumerator(clock.framesPerTick().numerator()),
+          frameDenominator(clock.framesPerTick().denominator())
     {
     }
+
+    namespace
+    {
+        // Which tick's audio a score frame falls in.
+        // Integer arithmetic, so every run and toolchain agrees.
+        [[nodiscard]] time::Tick tickOfFrame(
+            const FrameIndex frame,
+            const std::int64_t numerator,
+            const std::int64_t denominator) noexcept
+        {
+            return (frame * static_cast<FrameIndex>(denominator))
+                   / static_cast<FrameIndex>(numerator);
+        }
+    } // namespace
 
     void Playback::TrackVoices::trigger(
         const pattern::Controls &value,
         const FrameIndex startFrame,
         const FrameCount frames)
     {
+        // The excluded line is the aggregate's unwind pad.
+        // Only a throw out of voiceFor() would take it.
+        // See docs/confirming-unreachable-branches.md.
         mixer.trigger(
-            synth::TriggerRequest{
+            synth::TriggerRequest{ // GCOVR_EXCL_LINE
                 // Seeded from where the note falls in the score.
                 // Not from where the device is.
                 // So a pause changes no hit's sound.
@@ -37,6 +63,32 @@ namespace antwika::music_editor
                 .startFrame = startFrame + offset});
 
         ++counter;
+
+        // What to light, and for which ticks.
+        // The span rode in on the event's own controls.
+        // Never absent: everything here came through NoteWords.
+        // That reader writes both controls into every word.
+        // value() is what throws on a caller that broke that.
+        const auto begin = value.get(kSpanBegin).value();
+        const auto length = value.get(kSpanLength).value();
+
+        const auto from =
+            tickOfFrame(startFrame, frameNumerator, frameDenominator)
+            + 1;
+
+        const auto rings = tickOfFrame(
+            startFrame + frames, frameNumerator, frameDenominator);
+
+        // The excluded line is push_back's reallocation edge.
+        // Only a failed allocation would take it.
+        // See docs/confirming-unreachable-branches.md, signature (a).
+        notes.push_back(ActiveNote{ // GCOVR_EXCL_LINE
+            .voice = voiceIndex,
+            .begin = static_cast<std::size_t>(begin.approximate()),
+            .length = static_cast<std::size_t>(length.approximate()),
+            .from = from,
+            // At least the one tick it begins on.
+            .until = std::max(from + 1, rings + 1)});
     }
 
     Playback::Playback(
@@ -82,7 +134,7 @@ namespace antwika::music_editor
                     .sequencer = std::make_unique<sequencer::Sequencer>(
                         std::move(each)),
                     .voices = std::make_unique<TrackVoices>(
-                        mixer, counter),
+                        mixer, counter, active, shape.clock),
                     // Never advanced, rather than advanced just now.
                     // On the run's first tick that reads as up to date.
                     // There is no history for it to have missed.
@@ -101,6 +153,12 @@ namespace antwika::music_editor
         {
             ++played;
 
+            // A note that has rung out lights nothing any more.
+            std::erase_if(
+                active,
+                [this](const ActiveNote &note)
+                { return note.until <= played; });
+
             grow(voices.size());
 
             for (std::size_t at = 0; at < voices.size(); ++at)
@@ -111,6 +169,7 @@ namespace antwika::music_editor
                 // That is constant while the clock is running.
                 line.voices->offset = pausedFrames;
                 line.voices->preset = voices[at].preset;
+                line.voices->voiceIndex = at;
 
                 // A sequencer that missed a tick slept through it.
                 // It joins now rather than playing what it missed.
@@ -177,6 +236,9 @@ namespace antwika::music_editor
     void Playback::silence() noexcept
     {
         mixer.stopAll();
+
+        // What is not sounding must not stay lit.
+        active.clear();
     }
 
     std::size_t Playback::voices() const noexcept
@@ -188,6 +250,33 @@ namespace antwika::music_editor
     {
         return voicesSounding;
     }
+
+    std::vector<DocumentSpan> Playback::highlights() const
+    {
+        std::vector<DocumentSpan> lit;
+
+        for (const auto &note : active)
+        {
+            // Decided ahead of time, lit only once it sounds.
+            // The other bound needs no check.
+            // A rung-out note was pruned by the step that outlived it.
+            if (played < note.from)
+            {
+                continue;
+            }
+
+            const auto span =
+                score.spanIn(note.voice, note.begin, note.length);
+
+            if (span.has_value())
+            {
+                lit.push_back(*span);
+            }
+        }
+
+        return lit;
+        // Only an unwind destroys lit at this brace.
+    } // GCOVR_EXCL_LINE
 
     std::uint64_t Playback::started() const noexcept
     {

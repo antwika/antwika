@@ -549,3 +549,36 @@ TEST(TextFieldTest, AFieldIsOneLineSoTheVerticalKeysDoNothing)
 
     EXPECT_FALSE(ui.finish().interactions.edit.has_value());
 }
+
+TEST(TextFieldTest, AFieldsOneLineIsWhatHomeAndEndMoveOver)
+{
+    Context ui{
+        kCanvas,
+        plainTheme(),
+        Pointer{},
+        Keyboard{.keys = {Key::MoveLineStart}}};
+
+    ui.textField(
+        TextFieldSpec{
+            .id = kName, .text = "abc", .cursor = 2, .focused = true});
+
+    const auto edit = ui.finish().interactions.edit;
+
+    ASSERT_TRUE(edit.has_value());
+    EXPECT_EQ(0U, edit->cursor);
+
+    Context again{
+        kCanvas,
+        plainTheme(),
+        Pointer{},
+        Keyboard{.keys = {Key::MoveLineEnd}}};
+
+    again.textField(
+        TextFieldSpec{
+            .id = kName, .text = "abc", .cursor = 1, .focused = true});
+
+    const auto end = again.finish().interactions.edit;
+
+    ASSERT_TRUE(end.has_value());
+    EXPECT_EQ(3U, end->cursor);
+}

@@ -163,6 +163,13 @@ namespace antwika::music_editor
         case Key::ArrowDown:
             return modifiers.shift ? antwika::ui::Key::SelectDown
                                    : antwika::ui::Key::MoveDown;
+        case Key::Home:
+            return modifiers.shift
+                       ? antwika::ui::Key::SelectLineStart
+                       : antwika::ui::Key::MoveLineStart;
+        case Key::End:
+            return modifiers.shift ? antwika::ui::Key::SelectLineEnd
+                                   : antwika::ui::Key::MoveLineEnd;
         default:
             break;
         }

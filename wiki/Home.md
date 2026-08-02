@@ -63,7 +63,7 @@ Each page covers what the library is for, its key headers and types, what it dep
 | [gfx_demo](apps/gfx_demo.md) | The graphics and UI showcase: bars, a texture, and clickable buttons. |
 | [gfx3d_demo](apps/gfx3d_demo.md) | The 3D showcase: a cube turned by the tick count, captioned in 2D. |
 | [sound_demo](apps/sound_demo.md) | The sound showcase: eight notes at exact frame positions. |
-| [music_editor](apps/music_editor.md) | Four lines of mini-notation you type into while they play. |
+| [music_editor](apps/music_editor.md) | A page of live-coded voice lines that sounds while you type. |
 | [companion](apps/companion.md) | A tamagotchi whose energy is its life, spent by playing and earned back by sleep. |
 | [atlas_editor](apps/atlas_editor.md) | A pixel editor for the sheet the game blits, with no undo by design. |
 | [ui_demo](apps/ui_demo.md) | Every `antwika::ui` element in turn, with the application owning all their state. |

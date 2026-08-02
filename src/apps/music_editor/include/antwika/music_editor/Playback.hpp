@@ -75,6 +75,31 @@ namespace antwika::music_editor
      * real one is paced by the hardware rather than by a second clock
      * with its own opinion.
      */
+    /**
+     * @brief One note that is sounding or about to, and what to light.
+     *
+     * Ticks rather than frames, so whether it is lit is one integer
+     * comparison against the musical clock -- which stands still while
+     * paused, exactly as the notes do.
+     */
+    struct ActiveNote
+    {
+        /** @brief Which voices() index decided it. */
+        std::size_t voice = 0;
+
+        /** @brief Where its word starts in that voice's notation. */
+        std::size_t begin = 0;
+
+        /** @brief How many characters the word runs for. */
+        std::size_t length = 0;
+
+        /** @brief The first tick it is lit on. */
+        time::Tick from = 0;
+
+        /** @brief One past the last tick it is lit on. */
+        time::Tick until = 0;
+    };
+
     class Playback final
     {
     public:
@@ -115,6 +140,24 @@ namespace antwika::music_editor
         [[nodiscard]] std::size_t sounding() const noexcept;
 
         /**
+         * @brief Get where the notes sounding right now sit in the
+         * document.
+         *
+         * **Tick-derived and deterministic**: a note's span rode in on
+         * its own event's controls (see NoteWords), its active ticks
+         * are integer arithmetic on where it falls in the score's
+         * timeline, and the mapping onto the document is
+         * Score::spanIn() against the text as it now stands -- so a
+         * live run and its replay light the same characters, and
+         * nothing here reads the device.  A span that no longer maps
+         * -- its line deleted or rewritten -- is dropped rather than
+         * guessed at.
+         *
+         * @return The spans, in the order their notes were decided.
+         */
+        [[nodiscard]] std::vector<DocumentSpan> highlights() const;
+
+        /**
          * @brief Silence everything currently sounding.
          */
         void silence() noexcept;
@@ -149,7 +192,11 @@ namespace antwika::music_editor
         class TrackVoices final : public sequencer::ISequencerSink
         {
         public:
-            TrackVoices(synth::SynthMixer &mixer, std::uint64_t &counter);
+            TrackVoices(
+                synth::SynthMixer &mixer,
+                std::uint64_t &counter,
+                std::vector<ActiveNote> &notes,
+                const sequencer::FrameClock &clock);
 
             void trigger(
                 const pattern::Controls &value,
@@ -158,6 +205,9 @@ namespace antwika::music_editor
 
             /** @brief Where the device timeline sits against the score. */
             FrameIndex offset = 0;
+
+            /** @brief Which voices() index this line sounds as. */
+            std::size_t voiceIndex = 0;
 
             /**
              * @brief The sound to make, which the line decides afresh
@@ -168,6 +218,14 @@ namespace antwika::music_editor
         private:
             synth::SynthMixer &mixer;
             std::uint64_t &counter;
+
+            // The one pool, owned by Playback, shared by every line.
+            std::vector<ActiveNote> &notes;
+
+            // Frames to ticks, as two integers.
+            // The same exact arithmetic on every run and toolchain.
+            std::int64_t frameNumerator;
+            std::int64_t frameDenominator;
         };
 
         // One sequencer, its sink, and when it last ran.
@@ -193,6 +251,9 @@ namespace antwika::music_editor
 
         std::vector<Line> perVoice;
         std::size_t voicesSounding = 0;
+
+        // Every note decided and not yet rung out, in decision order.
+        std::vector<ActiveNote> active;
 
         FrameCount lead = 0;
         FrameIndex queued = 0;

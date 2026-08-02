@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstddef>
 #include <string>
 #include <string_view>
 
@@ -18,6 +19,15 @@ namespace antwika::music_editor
 
         /** @brief The mini-notation the `n(...)` call carried. */
         std::string notation{};
+
+        /**
+         * @brief Where that notation's first character sits in the
+         * chain.
+         *
+         * What maps a span inside the notation back onto the document
+         * a highlight is drawn over; see Score::spanIn().
+         */
+        std::size_t notationAt = 0;
 
         /**
          * @brief Compare two chains.

@@ -4,10 +4,13 @@
 #include <functional>
 #include <memory>
 #include <optional>
+#include <string>
+#include <vector>
 
 #include <antwika/event/IEventSink.hpp>
 #include <antwika/event/ITickEventSink.hpp>
 #include <antwika/gfx/Size.hpp>
+#include <antwika/input/IClipboard.hpp>
 #include <antwika/input/IInputEventCodec.hpp>
 #include <antwika/log/ILogger.hpp>
 #include <antwika/simulation/ITickEventSource.hpp>
@@ -83,6 +86,27 @@ namespace antwika::music_editor
 
         /** @brief The size the window was **asked** for. */
         Size canvas;
+
+        /**
+         * @brief Where a copy is mirrored to, or null.
+         *
+         * Null on a replay, so replaying a session leaves this
+         * machine's clipboard alone; see EditorSink's constructor.
+         */
+        input::IClipboard *clipboard = nullptr;
+
+        /**
+         * @brief Where the menu's save writes and its load reads.
+         */
+        std::string scoresDirectory{"scores"};
+
+        /**
+         * @brief The scores there already are, sorted by name.
+         *
+         * Read by main() with listScores() before the loop, never
+         * inside it; see EditorState::scores for why.
+         */
+        std::vector<std::string> scores{};
 
         std::optional<std::reference_wrapper<ITickEventSink>>
             replayRecorder{};

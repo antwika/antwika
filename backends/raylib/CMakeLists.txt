@@ -41,8 +41,10 @@ endif()
 
 if(ANTWIKA_INPUT_BACKEND STREQUAL "raylib")
     add_library(antwika_input_backend
+        src/RaylibClipboard.cpp
         src/RaylibInputBackend.cpp
         src/SelectedInputBackend.cpp
+        src/SelectedClipboard.cpp
     )
 
     add_library(antwika::input_backend ALIAS antwika_input_backend)

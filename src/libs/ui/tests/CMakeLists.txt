@@ -22,6 +22,7 @@ add_executable(antwika_ui_tests
     ResolveTest.cpp
     ScopeTest.cpp
     SizingTest.cpp
+    TextAreaHighlightTest.cpp
     TextAreaScrollTest.cpp
     TextAreaSelectionTest.cpp
     TextAreaTest.cpp

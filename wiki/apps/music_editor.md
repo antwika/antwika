@@ -25,6 +25,7 @@ The two `drum.` lines above are two voices sounding together, because a preset i
 Nothing is stopping four bass lines, or a document with no preset named anywhere in it.
 
 Escape pauses and resumes, Enter is a new line, Tab indents by two, F10 fills the screen, and the two buttons pause and silence everything.
+The menu at the top holds `new`, `save`, `load` and `quit`: save asks for a name in a box over the pane, load lists what the `scores/` directory held plus whatever this run saved, and Escape or its cancel button closes either box.
 Refusals are listed under the pane by line number, at most three at a time and then a count of the rest.
 
 **It writes like a text editor**, which is to say the parts of one a score needs and no more:
@@ -34,12 +35,14 @@ Refusals are listed under the pane by line number, at most three at a time and t
 | Left click | Put the caret where you clicked; below the last line is the end of the document. |
 | Drag, or shift and click | Select from wherever the caret was to where the pointer is. |
 | Shift and an arrow | Select a character or a line at a time. |
-| Ctrl+C, Ctrl+X, Ctrl+V | Copy, cut and paste the selection through the editor's own clipboard. |
+| Home, End | Put the caret at the line's start or end; with shift, select that far. |
+| Ctrl+C, Ctrl+X, Ctrl+V | Copy and cut to the system clipboard, and paste whatever it holds -- from this editor or any other program. |
 | Backspace, Delete | Take one character, or the whole selection when there is one. |
 | The wheel, or the bar on the right | Move the pane three lines a notch, or as far as you drag it. |
 
 The pane keeps the caret in view while you type and stays where you put it while you scroll.
 It holds as many lines as it has room for and no more: the score can be longer than the window.
+And it plays along with itself: the very characters of each note are lit for as long as that note is active, so a running score reads as the rhythm it is making.
 
 ## The calls
 
@@ -163,8 +166,18 @@ cmake --build build-sdl3 -j24
 build-sdl3/bin/antwika_music_editor/antwika_music_editor
 ```
 
-It runs for a tick budget of 4800 -- about two minutes -- rather than until the window closes, for the reason [ui_demo](ui_demo.md) does: the default backend reports no close, and that is the build every CI leg produces.
+It runs until the window is closed or a replay dispatches `engine.stop`, exactly as [game](game.md) does -- an editor is sat in for as long as the writing takes, and one that walked out after two minutes would be a demo rather than a tool.
+The default `null` backend reports no close, so `Ctrl+C` is what ends one there, and a `--record` run killed that way keeps everything up to the kill.
 `--record` and `--replay` work as they do everywhere else.
+
+## Saving and loading
+
+A score is saved as plain text, exactly the pane's characters, at `scores/<name>.score` -- there is no format to version because there is no format: the document *is* the file, and the language it is written in already carries its own compatibility story, since an old score is just text the current parser reads.
+A name is typed in the save box and filtered to letters, digits, dashes and underscores, so what the load list later shows is exactly what the file is called and a separator cannot write outside the directory.
+
+Loading follows [game](game.md)'s save screen, trade-offs included.
+The list is read from the directory **once at startup** and carried as simulation state, because which button a click lands on is a function of it; a save made mid-run is added to that copy rather than the directory being read again, so a replay reaches the same list without a directory read.
+A score's *contents*, though, can only be read when the click asking for them arrives, inside the tick path -- so a replay reproduces a load exactly as long as the file still holds what it held, which is inherent to a load button rather than something this design gave away.
 
 ## What it is built from
 
@@ -173,9 +186,9 @@ It runs for a tick budget of 4800 -- about two minutes -- rather than until the 
 
 ## Non-obvious decisions
 
-**This app defines no event of its own.**
+**This app defines one event of its own, and its name says why.**
 Every bit of its state -- the document, the caret, whether it is paused -- is derived from key and pointer edges the recording already carries, so a replay retypes the session rather than replaying its text.
-That is the "only externally-supplied input is persisted" rule taken to its conclusion: there is nothing here that is not worked out again.
+The exception is `music.paste`: what the system clipboard held is externally supplied and cannot be worked out again, so it is persisted, which is the "only externally-supplied input is persisted" rule read in both directions.
 
 **A voice is a line, and a preset is only where it starts.**
 The obvious design is four instruments a line asks for by name, and it is wrong in one specific way: it makes "two drums at once" inexpressible, and two drums at once is most of what a drum part *is*.
@@ -199,9 +212,16 @@ Both tables are here, the box above the pane switches between them, and the Swed
 Every character the notation needs is reachable on both -- on the Swedish board the dollar and the brackets are on the right-hand alt key, which is where that board really keeps them.
 A key whose character [`gfx`](../libraries/gfx.md) cannot draw types nothing at all: the coverage is printable ASCII, so å, ä, ö and the dead accents are absent, and no score is written in them in any case.
 
-**The clipboard is this editor's own, and that is a determinism decision rather than laziness.**
-What a desktop clipboard holds is not in any recording, so a replay reading one would paste whatever the replaying machine happened to have and diverge from the run it exists to reproduce.
-Here it is one more `std::string` in `EditorState`, regenerated from the same key presses as the document, and a paste is the characters typed: `Ctrl+V` puts them in `ui::Keyboard::typed` with a `Key::Character` edge each, so [`ui`](../libraries/ui.md) never learns that a clipboard exists.
+**The clipboard is the system's, read and written where each direction is lawful.**
+What a desktop clipboard holds is not in any recording, so a sink reading one would paste whatever the replaying machine happened to have and diverge from the run it exists to reproduce.
+So the read happens where a key press is read: `PasteSource`, above the loop and upstream of the recorder, sees `Ctrl+V` and says what `input::IClipboard` held as a `music.paste` event -- the one event this application defines, because pasted text is the one thing here that cannot be worked out again.
+The recording carries the characters, a replay reads no clipboard at all, and the sink types the payload into `ui::Keyboard::typed` with a `Key::Character` edge each, so [`ui`](../libraries/ui.md) never learns that a clipboard exists.
+The write goes the other way on the render side's terms: a copy lands in `EditorState` as simulation state and a live run's sink mirrors it outward, an outward write no tick reads back -- and a replay is handed no clipboard to write, so replaying somebody's session leaves this machine's alone.
+`input::makeSelectedClipboard()` is the seam: SDL3's clipboard on that backend, raylib's on that one, and a string in the process under `null`, so a headless run still pastes what it copied.
+
+**A box over the pane is a second frame, not a mode.**
+While the save or load box is up, the sink describes the editor with no input at all and the box with the whole tick's, appends the two pictures, and acts on the box's interactions alone -- so nothing beneath it can be pressed, exactly as [game](game.md) scrims its city.
+Quit is the same click-shaped stop game's menu uses: the sink tells the loop's own `StopSignal` rather than putting an event on the wire, since the recording already holds the click and the stop follows from it on every replay.
 
 **Every event describes the editor, acts, and describes it again.**
 That is the remedy `ui::Context::finish()` gives for its own ordering: a press is resolved while the frame is being laid out, so the picture beside it predates whatever the press changed.
@@ -216,6 +236,7 @@ A wheel spun a hundred notches past the end settles on the last page after exact
 **Escape pauses, and Enter does not.**
 Enter is what a line break is written with, which a document of many lines cannot do without -- so the pause had to move to a key the writing does not need.
 Escape is that key, and it is deliberately *not* handed to [`ui`](../libraries/ui.md) as `Key::Cancel`: a field that gave up on what was typed would throw away the score being written.
+Over an open save or load box it closes the box instead, which is the one Cancel-shaped thing it does -- the box holds a name or a choice rather than the score, so there is nothing there worth protecting from it.
 `EditorSink` reads `input::Key::Escape` itself, before the UI is described, which is also why no `ui::Key` for it has to exist.
 Tab moved for the same reason: there is one thing to type into, so it has no focus to walk, and it indents by two spaces instead.
 
@@ -231,6 +252,11 @@ That counter is the one piece of arithmetic in the app that is easy to get wrong
 **The run is paced by how much audio the device has taken.**
 That is the one thing `IDevice::framesPlayed()` is allowed to decide, and it gives the app a property worth having: a device that consumes the moment it is pumped is never ahead, so a `null` or offline run costs no wall-clock time at all, while a real one is paced by the hardware rather than by a second clock with an opinion of its own.
 
+**A note lights the characters it came from, and the route is the controls themselves.**
+`NoteWords` reads each word of an `n("...")` as a pitch that remembers its own span -- [`notation`](../libraries/notation.md) tells every reader where a word starts, and the span rides beside the pitch as two more controls the algebra relays untouched, however `fast`, `euclid` or `<>` reorder the events.
+When a note begins, `Playback` keeps its span and its active ticks -- integer arithmetic on where it falls in the score's timeline, so a replay lights what the run lit -- and `Score::spanIn()` maps the span onto the document *as it now stands*, through the same gathering that joined the chain's lines, so a highlight follows its characters when the lines above them move.
+A span whose line is gone is dropped rather than guessed at, and the pane draws the survivors through `ui`'s `TextAreaSpec::highlights`, on their own ground exactly as a selection is.
+
 **One sequencer per voice line**, because a line's events have to become a sound through *its* preset, and [`sequencer`](../libraries/sequencer.md)'s seam deliberately hands on controls rather than sounds.
 The pool grows as lines are written and is kept when they are deleted, since a few hundred bytes is cheaper than an allocation in the middle of a bar.
 A sequencer taken up again -- because a line was written where a deleted one used to be -- calls `Sequencer::joinAt()`, which is the one thing this app needed the library to grow: a sequencer built fresh has been asked nothing, so its first `advance()` would query every cycle since the run began and sound the lot at once.
@@ -244,6 +270,7 @@ The keyboard box is the one place a language appears at all, and it names a *boa
 
 **Filling the screen is not simulation state, so F10 is above the loop.**
 `app::FullscreenToggleSource` wraps the event source and toggles the window on the key, and it changes exactly one thing -- what `IWindow::size()` reports -- which no layout, no hit test and nothing this app plays may read.
+What *does* read it is the render sink alone, to place the picture and nothing else: a `gfx::ViewportRenderer` built fresh each frame scales the canvas to the window's full height at the same aspect and pillarboxes the remainder, exactly as [game](game.md) draws, and `app::WindowPointerMapping` runs the same transform backwards upstream of the recorder so a click lands on what it is over at any size.
 Every layout here is against `configuredSize()`, so a recorded session reaches the same state whether or not anybody pressed it, and a replay of one where somebody did fills the screen at the same tick and still reaches that state.
 It is the same key [game](game.md) uses, since an editor with a different one would be one to remember.
 

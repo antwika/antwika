@@ -307,7 +307,12 @@ namespace antwika::notation
                     return inner;
                 }
 
-                return pattern::pure(words.read(parseWord()));
+                // Where the word starts is part of what it means.
+                // A reader may point its controls back at the source.
+                const auto wordAt = at;
+
+                return pattern::pure(
+                    words.read(parseWord(), wordAt));
             }
 
             // Angle brackets take one of their parts per cycle.

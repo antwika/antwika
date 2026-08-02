@@ -52,9 +52,12 @@ TEST(EditorKeysTest, TellsTheUiWhatItActsOn)
     EXPECT_EQ(uiKeyFor(Key::ArrowUp, kNone), antwika::ui::Key::MoveUp);
     EXPECT_EQ(
         uiKeyFor(Key::ArrowDown, kNone), antwika::ui::Key::MoveDown);
+    EXPECT_EQ(
+        uiKeyFor(Key::Home, kNone), antwika::ui::Key::MoveLineStart);
+    EXPECT_EQ(uiKeyFor(Key::End, kNone), antwika::ui::Key::MoveLineEnd);
 }
 
-// The arrows are the one place shift changes what the UI is told.
+// The caret moves are the one place shift changes what the UI is told.
 // Everywhere else it is read where the characters are.
 TEST(EditorKeysTest, ShiftTurnsAnArrowIntoTheSelectingOneBesideIt)
 {
@@ -67,6 +70,11 @@ TEST(EditorKeysTest, ShiftTurnsAnArrowIntoTheSelectingOneBesideIt)
         uiKeyFor(Key::ArrowUp, kShift), antwika::ui::Key::SelectUp);
     EXPECT_EQ(
         uiKeyFor(Key::ArrowDown, kShift), antwika::ui::Key::SelectDown);
+    EXPECT_EQ(
+        uiKeyFor(Key::Home, kShift),
+        antwika::ui::Key::SelectLineStart);
+    EXPECT_EQ(
+        uiKeyFor(Key::End, kShift), antwika::ui::Key::SelectLineEnd);
 
     EXPECT_EQ(uiKeyFor(Key::Enter, kShift), uiKeyFor(Key::Enter, kNone));
 }

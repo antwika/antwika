@@ -2,6 +2,7 @@
 
 #include <cstddef>
 #include <optional>
+#include <span>
 #include <string_view>
 
 #include "antwika/ui/Sizing.hpp"
@@ -10,6 +11,30 @@
 
 namespace antwika::ui
 {
+
+    /**
+     * @brief One span of a text area's characters drawn on its own
+     * ground.
+     *
+     * Half-open, as every range here is: begin is the first
+     * highlighted index and end is one past the last.
+     */
+    struct TextHighlight
+    {
+        /** @brief The first highlighted index. */
+        std::size_t begin = 0;
+
+        /** @brief One past the last highlighted index. */
+        std::size_t end = 0;
+
+        /**
+         * @brief Compare two highlights.
+         * @param other The highlight to compare against.
+         * @return True when both ends match.
+         */
+        [[nodiscard]] bool operator==(const TextHighlight &other) const
+            = default;
+    };
 
     /**
      * @brief What a text area is being asked for.
@@ -101,6 +126,20 @@ namespace antwika::ui
          * ended up.
          */
         std::size_t scroll = 0;
+
+        /**
+         * @brief Spans drawn on the theme's highlight ground.
+         *
+         * What a caller says is *sounding, matching, or otherwise
+         * alive* right now -- a live-coding editor lights the notes
+         * being played with it.  Purely a change of ground: no
+         * highlight moves the caret, joins a selection or survives
+         * the frame, and the selection wins where the two overlap.
+         *
+         * The caller owns them for as long as the Context is, and
+         * ends past the text are clamped as the caret's is.
+         */
+        std::span<const TextHighlight> highlights{};
 
         /**
          * @brief Whether to draw a bar down the right-hand edge saying

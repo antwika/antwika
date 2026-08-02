@@ -2,16 +2,19 @@
 #include <iostream>
 #include <memory>
 #include <string>
+#include <string_view>
 
 #include <antwika/app/ConsoleLogging.hpp>
 #include <antwika/app/FullscreenToggleSource.hpp>
 #include <antwika/app/RunRecorded.hpp>
+#include <antwika/app/WindowPointerMapping.hpp>
 #include <antwika/gfx/SelectedBackend.hpp>
 #include <antwika/gfx/Size.hpp>
 #include <antwika/gfx/WindowDesc.hpp>
 #include <antwika/input/InputEventCodec.hpp>
 #include <antwika/input/InputPipeline.hpp>
 #include <antwika/input/Key.hpp>
+#include <antwika/input/SelectedClipboard.hpp>
 #include <antwika/input/SelectedInputBackend.hpp>
 #include <antwika/log/Level.hpp>
 #include <antwika/replay/ReplaySource.hpp>
@@ -24,13 +27,13 @@
 #include <antwika/sound/WaveFormat.hpp>
 #include <antwika/synth/SynthMixer.hpp>
 #include <antwika/time/SystemSleeper.hpp>
-#include <antwika/time/Tick.hpp>
 
 #include "antwika/music_editor/EditorScene.hpp"
 #include "antwika/music_editor/MusicEditor.hpp"
+#include "antwika/music_editor/PasteSource.hpp"
 #include "antwika/music_editor/Playback.hpp"
 #include "antwika/music_editor/RenderSink.hpp"
-#include "antwika/music_editor/TickBudgetSource.hpp"
+#include "antwika/music_editor/ScoreFiles.hpp"
 
 using antwika::app::ConsoleLogging;
 using antwika::app::RecordedRun;
@@ -40,9 +43,9 @@ using antwika::input::InputPipeline;
 using antwika::log::Level;
 using antwika::music_editor::EditorScene;
 using antwika::music_editor::EditorSink;
+using antwika::music_editor::PasteSource;
 using antwika::music_editor::PlaybackDesc;
 using antwika::music_editor::RenderSink;
-using antwika::music_editor::TickBudgetSource;
 using antwika::replay::ReplaySource;
 using antwika::sequencer::FrameClock;
 using antwika::sequencer::Rational;
@@ -73,11 +76,9 @@ namespace
     constexpr antwika::input::Key kFullscreenKey =
         antwika::input::Key::F10;
 
-    // Capped, rather than run until the window is closed.
-    // The default null backend reports no close at all.
-    // It is also the build every CI leg produces.
-    // At the interval above this is about two minutes of editing.
-    constexpr antwika::time::Tick kTickBudget = 4800;
+    // Where the menu's save writes and its load reads.
+    // Beside the working directory, exactly as game's saves/ is.
+    constexpr std::string_view kScoreDirectory{"scores"};
 
     void run(const RecordedRun &recorded)
     {
@@ -91,6 +92,9 @@ namespace
 
         const auto soundBackend =
             antwika::sound::makeSelectedSoundBackend(logger);
+
+        const auto clipboard =
+            antwika::input::makeSelectedClipboard(logger);
 
         logger.log(
             Level::Info,
@@ -120,11 +124,18 @@ namespace
 
         const InputEventCodec codec;
 
+        // Where a window pixel is on the canvas, and nothing else.
+        // Attached upstream of the recorder, exactly as apps/game.
+        // So a file holds canvas positions and replays at any size.
+        const antwika::app::WindowPointerMapping mapping(
+            *window, kWindowSize);
+
         InputPipeline input(
             fileSource,
             *inputBackend,
             codec,
             {.readsDevice = !recorded.options.replayPath.has_value(),
+             .pointerMapping = mapping,
              .coalescePointerMotion = true});
 
         WindowInputSource windowed(input, *backend, window->id());
@@ -138,12 +149,18 @@ namespace
         antwika::app::FullscreenToggleSource fullscreen(
             windowed, *window, codec, kFullscreenKey);
 
-        TickBudgetSource source(fullscreen, kTickBudget);
+        // A paste is external input, so it is read up here.
+        // The recording carries the characters; a replay reads none.
+        const bool live = !recorded.options.replayPath.has_value();
 
+        PasteSource pasting(fullscreen, *clipboard, codec, live);
+
+        // Until the window closes or a replay says stop, like game.
+        // The null backend reports no close, so Ctrl+C ends one there.
         const auto summary = antwika::music_editor::bootstrap({
             .logger = logger,
             .eventSink = recorded.eventSink,
-            .inputSource = source,
+            .inputSource = pasting,
             .codec = codec,
             .scene = scene,
             .mixer = mixer,
@@ -156,12 +173,18 @@ namespace
                     .lookahead = 6,
                     .lead = 4},
             .canvas = kWindowSize,
+            // A replay must not write this machine's clipboard either.
+            .clipboard = live ? clipboard.get() : nullptr,
+            .scoresDirectory = std::string(kScoreDirectory),
+            // Once, before the loop; the list is the run's from here.
+            .scores = antwika::music_editor::listScores(
+                kScoreDirectory),
             .replayRecorder = recorded.replayRecorder,
             .extraSink =
                 [&](const EditorSink &editor)
             {
                 return std::make_unique<RenderSink>(
-                    *window, scene, editor);
+                    *window, scene, editor, kWindowSize);
             }});
 
         device->stop();

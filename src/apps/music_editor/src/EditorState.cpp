@@ -1,5 +1,7 @@
 #include "antwika/music_editor/EditorState.hpp"
 
+#include <algorithm>
+
 #include <antwika/ui/TextEdit.hpp>
 
 #include "antwika/music_editor/Score.hpp"
@@ -35,6 +37,17 @@ namespace antwika::music_editor
         if (!edit.copied.empty())
         {
             state.clipboard = edit.copied;
+        }
+    }
+
+    void addScore(EditorState &state, const std::string &name)
+    {
+        const auto at = std::lower_bound(
+            state.scores.begin(), state.scores.end(), name);
+
+        if (at == state.scores.end() || *at != name)
+        {
+            state.scores.insert(at, name);
         }
     }
 

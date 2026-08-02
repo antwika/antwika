@@ -9,7 +9,10 @@
 #include <antwika/ui/Frame.hpp>
 #include <antwika/ui/Keyboard.hpp>
 #include <antwika/ui/Pointer.hpp>
+#include <antwika/ui/TextAreaSpec.hpp>
 #include <antwika/ui/Theme.hpp>
+
+#include <vector>
 
 #include "antwika/music_editor/EditorState.hpp"
 #include "antwika/music_editor/Score.hpp"
@@ -55,6 +58,15 @@ namespace antwika::music_editor
 
         /** @brief How many voice lines the score is sounding. */
         std::size_t lines = 0;
+
+        /**
+         * @brief The characters of the notes sounding right now.
+         *
+         * Lit in the pane for as long as each note is active --
+         * tick-derived through Playback::highlights(), so a replay
+         * lights what the run lit.
+         */
+        std::vector<antwika::ui::TextHighlight> playing{};
     };
 
     /**
@@ -99,6 +111,28 @@ namespace antwika::music_editor
             const EditorState &state,
             const Score &score,
             const PlaybackStatus &status,
+            Size canvas,
+            Pointer pointer,
+            const Keyboard &keyboard) const;
+
+        /**
+         * @brief Describe the box floating over a paused-input editor.
+         *
+         * A second frame rather than more of describe()'s, exactly as
+         * apps/game draws its modal: the sink describes the editor
+         * with no input and this with the tick's, appends the two
+         * pictures, and acts on this one's interactions alone -- so
+         * nothing under the box can be pressed while it is up.
+         *
+         * @param state Whose modal says which box: the save box for
+         * Modal::Save, the load box otherwise.
+         * @param canvas The size the window was **asked** for.
+         * @param pointer Where the pointer is and what it is doing.
+         * @param keyboard What arrived this frame.
+         * @return The box's picture and what the input did to it.
+         */
+        [[nodiscard]] Frame describeModal(
+            const EditorState &state,
             Size canvas,
             Pointer pointer,
             const Keyboard &keyboard) const;

@@ -83,6 +83,17 @@ namespace antwika::ui
         Color selection{.red = 44, .green = 72, .blue = 116};
 
         /**
+         * @brief The ground behind a text area's highlighted spans.
+         *
+         * A caller marks spans through TextAreaSpec::highlights -- a
+         * live-coding editor lights the notes that are sounding -- and
+         * they read as the same characters on different ground, the
+         * argument selection makes.  The selection wins where the two
+         * overlap, since it is what the next keystroke acts on.
+         */
+        Color highlight{.red = 38, .green = 84, .blue = 52};
+
+        /**
          * @brief The channel a text area's scrollbar runs in.
          */
         Color scrollTrack{.red = 30, .green = 33, .blue = 42};

@@ -1,5 +1,8 @@
 #include "antwika/music_editor/EditorState.hpp"
 
+#include <string>
+#include <vector>
+
 #include <gtest/gtest.h>
 
 #include <antwika/ui/ScrollChange.hpp>
@@ -120,6 +123,45 @@ TEST(EditorStateTest, ComparesFieldByField)
     auto dragging = state;
     dragging.dragging = true;
     EXPECT_NE(state, dragging);
+
+    auto menued = state;
+    menued.menuOpen = true;
+    EXPECT_NE(state, menued);
+
+    auto boxed = state;
+    boxed.modal = antwika::music_editor::Modal::Save;
+    EXPECT_NE(state, boxed);
+
+    auto named = state;
+    named.fileName = "beat";
+    EXPECT_NE(state, named);
+
+    auto caretted = state;
+    caretted.fileCursor = 0;
+    EXPECT_NE(state, caretted);
+
+    auto noticed = state;
+    noticed.notice = "name it first";
+    EXPECT_NE(state, noticed);
+
+    auto listed = state;
+    listed.scores = {"beat"};
+    EXPECT_NE(state, listed);
+}
+
+// Sorted, once each, however the saves arrive.
+TEST(EditorStateTest, AddsAScoreInOrderAndOnlyOnce)
+{
+    auto state = openingState();
+
+    antwika::music_editor::addScore(state, "middle");
+    antwika::music_editor::addScore(state, "zed");
+    antwika::music_editor::addScore(state, "alpha");
+    antwika::music_editor::addScore(state, "middle");
+
+    const std::vector<std::string> expected{"alpha", "middle", "zed"};
+
+    EXPECT_EQ(state.scores, expected);
 }
 
 // The board this is written on, and nothing selected.

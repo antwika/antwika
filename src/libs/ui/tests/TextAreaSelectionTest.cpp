@@ -304,6 +304,40 @@ TEST(TextAreaSelectionTest, MovingUpOrDownCollapsesTheSelectionToo)
     EXPECT_EQ(edit.anchor, 2U);
 }
 
+TEST(TextAreaSelectionTest, HomeAndEndCollapseTheSelectionToo)
+{
+    const auto home = editOf(
+        TextAreaSpec{.text = "abcd\nefgh", .cursor = 7, .anchor = 2},
+        Keyboard{.keys = {Key::MoveLineStart}});
+
+    EXPECT_EQ(home.cursor, 5U);
+    EXPECT_EQ(home.anchor, 5U);
+
+    const auto end = editOf(
+        TextAreaSpec{.text = "abcd\nefgh", .cursor = 2, .anchor = 7},
+        Keyboard{.keys = {Key::MoveLineEnd}});
+
+    EXPECT_EQ(end.cursor, 4U);
+    EXPECT_EQ(end.anchor, 4U);
+}
+
+TEST(TextAreaSelectionTest, ShiftedHomeAndEndSelectToTheLinesEnds)
+{
+    const auto home = editOf(
+        TextAreaSpec{.text = "abcd\nefgh", .cursor = 7},
+        Keyboard{.keys = {Key::SelectLineStart}});
+
+    EXPECT_EQ(home.cursor, 5U);
+    EXPECT_EQ(home.anchor, 7U);
+
+    const auto end = editOf(
+        TextAreaSpec{.text = "abcd\nefgh", .cursor = 6},
+        Keyboard{.keys = {Key::SelectLineEnd}});
+
+    EXPECT_EQ(end.cursor, 9U);
+    EXPECT_EQ(end.anchor, 6U);
+}
+
 TEST(TextAreaSelectionTest, TypingOverASelectionTakesTheWholeOfIt)
 {
     const auto edit = editOf(
