@@ -7,7 +7,6 @@ add_executable(antwika_music_editor
     src/Playback.cpp
     src/RenderSink.cpp
     src/Score.cpp
-    src/TickBudgetSource.cpp
     src/TrackPreset.cpp
     src/VoiceChain.cpp
     src/main.cpp

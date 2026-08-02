@@ -9,7 +9,6 @@ add_executable(antwika_music_editor_tests
     RenderSinkTest.cpp
     RunIntegrationTest.cpp
     ScoreTest.cpp
-    TickBudgetSourceTest.cpp
     TrackPresetTest.cpp
     VoiceChainTest.cpp
 )
@@ -29,7 +28,6 @@ target_sources(antwika_music_editor_tests
         ../src/MusicEditor.cpp
         ../src/RenderSink.cpp
         ../src/Score.cpp
-        ../src/TickBudgetSource.cpp
         ../src/TrackPreset.cpp
         ../src/VoiceChain.cpp
 )

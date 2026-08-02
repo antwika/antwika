@@ -24,13 +24,11 @@
 #include <antwika/sound/WaveFormat.hpp>
 #include <antwika/synth/SynthMixer.hpp>
 #include <antwika/time/SystemSleeper.hpp>
-#include <antwika/time/Tick.hpp>
 
 #include "antwika/music_editor/EditorScene.hpp"
 #include "antwika/music_editor/MusicEditor.hpp"
 #include "antwika/music_editor/Playback.hpp"
 #include "antwika/music_editor/RenderSink.hpp"
-#include "antwika/music_editor/TickBudgetSource.hpp"
 
 using antwika::app::ConsoleLogging;
 using antwika::app::RecordedRun;
@@ -42,7 +40,6 @@ using antwika::music_editor::EditorScene;
 using antwika::music_editor::EditorSink;
 using antwika::music_editor::PlaybackDesc;
 using antwika::music_editor::RenderSink;
-using antwika::music_editor::TickBudgetSource;
 using antwika::replay::ReplaySource;
 using antwika::sequencer::FrameClock;
 using antwika::sequencer::Rational;
@@ -72,12 +69,6 @@ namespace
     // One editor with a different one would be one to remember.
     constexpr antwika::input::Key kFullscreenKey =
         antwika::input::Key::F10;
-
-    // Capped, rather than run until the window is closed.
-    // The default null backend reports no close at all.
-    // It is also the build every CI leg produces.
-    // At the interval above this is about two minutes of editing.
-    constexpr antwika::time::Tick kTickBudget = 4800;
 
     void run(const RecordedRun &recorded)
     {
@@ -138,12 +129,12 @@ namespace
         antwika::app::FullscreenToggleSource fullscreen(
             windowed, *window, codec, kFullscreenKey);
 
-        TickBudgetSource source(fullscreen, kTickBudget);
-
+        // Until the window closes or a replay says stop, like game.
+        // The null backend reports no close, so Ctrl+C ends one there.
         const auto summary = antwika::music_editor::bootstrap({
             .logger = logger,
             .eventSink = recorded.eventSink,
-            .inputSource = source,
+            .inputSource = fullscreen,
             .codec = codec,
             .scene = scene,
             .mixer = mixer,

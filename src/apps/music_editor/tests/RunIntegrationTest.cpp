@@ -5,6 +5,8 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
+#include <antwika/engine/Events.hpp>
+#include <antwika/event/Event.hpp>
 #include <antwika/event/ITickEventSink.hpp>
 #include <antwika/event/TickEvent.hpp>
 #include <antwika/event/TickEventRecorder.hpp>
@@ -27,7 +29,6 @@
 #include "antwika/music_editor/EditorScene.hpp"
 #include "antwika/music_editor/MusicEditor.hpp"
 #include "antwika/music_editor/Playback.hpp"
-#include "antwika/music_editor/TickBudgetSource.hpp"
 #include "EditorRig.hpp"
 
 using antwika::event::mocks::MockEventSink;
@@ -40,7 +41,6 @@ using antwika::music_editor::bootstrap;
 using antwika::music_editor::EditorScene;
 using antwika::music_editor::MusicEditorConfig;
 using antwika::music_editor::PlaybackDesc;
-using antwika::music_editor::TickBudgetSource;
 using antwika::music_editor::tests::kCanvas;
 using antwika::replay::ReplaySource;
 using antwika::sound::WaveFormat;
@@ -79,8 +79,19 @@ namespace
         int &counter;
     };
 
+    // The run has no budget of its own any more.
+    // So every script here says when it is over, as a recording would.
+    [[nodiscard]] TickEvent stopAt(const antwika::time::Tick tick)
+    {
+        return TickEvent{
+            .tick = tick,
+            .event = antwika::event::Event{
+                .name = antwika::engine::events::kStop}};
+    }
+
     // Types into the opening document, then pauses with Escape.
-    [[nodiscard]] std::vector<TickEvent> script()
+    [[nodiscard]] std::vector<TickEvent> script(
+        const antwika::time::Tick last)
     {
         const InputEventCodec codec;
 
@@ -98,13 +109,14 @@ namespace
                 .event = codec.encode(KeyPressed{.key = Key::Backspace})},
             TickEvent{
                 .tick = 5,
-                .event = codec.encode(KeyPressed{.key = Key::Escape})}};
+                .event = codec.encode(KeyPressed{.key = Key::Escape})},
+            stopAt(last)};
     }
 } // namespace
 
 // The whole editor, wired as main() wires it.
 // Over a device that never reaches a speaker.
-TEST(RunIntegrationTest, RunsToItsBudgetAndSoundsTheOpeningDocument)
+TEST(RunIntegrationTest, RunsToItsScriptedStopAndSoundsTheOpeningDocument)
 {
     NiceMock<MockLogger> logger;
     NiceMock<MockEventSink> events;
@@ -124,21 +136,21 @@ TEST(RunIntegrationTest, RunsToItsBudgetAndSoundsTheOpeningDocument)
     const EditorScene scene;
     const InputEventCodec codec;
 
-    ReplaySource source(script());
-    TickBudgetSource budgeted(source, kBudget);
+    ReplaySource source(script(kBudget));
 
     const auto summary = bootstrap(
         MusicEditorConfig{
             .logger = logger,
             .eventSink = events,
-            .inputSource = budgeted,
+            .inputSource = source,
             .codec = codec,
             .scene = scene,
             .mixer = mixer,
             .device = device,
             .sleeper = sleeper,
             .playback = pacing(),
-            .canvas = kCanvas});
+            .canvas = kCanvas,
+            .maxTicks = kBudget + 8});
 
     // It played without anybody starting it, and drew every tick.
     EXPECT_GT(summary.notes, 0U);
@@ -173,8 +185,7 @@ TEST(RunIntegrationTest, HandsTheEditorToWhateverElseWantsIt)
     const EditorScene scene;
     const InputEventCodec codec;
 
-    ReplaySource source({});
-    TickBudgetSource budgeted(source, 4);
+    ReplaySource source({stopAt(4)});
 
     int handed = 0;
     int ticks = 0;
@@ -183,7 +194,7 @@ TEST(RunIntegrationTest, HandsTheEditorToWhateverElseWantsIt)
         MusicEditorConfig{
             .logger = logger,
             .eventSink = events,
-            .inputSource = budgeted,
+            .inputSource = source,
             .codec = codec,
             .scene = scene,
             .mixer = mixer,
@@ -228,8 +239,7 @@ TEST(RunIntegrationTest, RecordsWhenItIsGivenSomewhereToRecord)
     const EditorScene scene;
     const InputEventCodec codec;
 
-    ReplaySource source(script());
-    TickBudgetSource budgeted(source, 8);
+    ReplaySource source(script(8));
 
     antwika::event::TickEventRecorder recorder;
 
@@ -237,7 +247,7 @@ TEST(RunIntegrationTest, RecordsWhenItIsGivenSomewhereToRecord)
         MusicEditorConfig{
             .logger = logger,
             .eventSink = events,
-            .inputSource = budgeted,
+            .inputSource = source,
             .codec = codec,
             .scene = scene,
             .mixer = mixer,

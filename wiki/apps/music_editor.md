@@ -163,7 +163,8 @@ cmake --build build-sdl3 -j24
 build-sdl3/bin/antwika_music_editor/antwika_music_editor
 ```
 
-It runs for a tick budget of 4800 -- about two minutes -- rather than until the window closes, for the reason [ui_demo](ui_demo.md) does: the default backend reports no close, and that is the build every CI leg produces.
+It runs until the window is closed or a replay dispatches `engine.stop`, exactly as [game](game.md) does -- an editor is sat in for as long as the writing takes, and one that walked out after two minutes would be a demo rather than a tool.
+The default `null` backend reports no close, so `Ctrl+C` is what ends one there, and a `--record` run killed that way keeps everything up to the kill.
 `--record` and `--replay` work as they do everywhere else.
 
 ## What it is built from
