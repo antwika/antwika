@@ -120,6 +120,14 @@ TEST(EditorStateTest, ComparesFieldByField)
     open.layoutOpen = true;
     EXPECT_NE(state, open);
 
+    auto speed = state;
+    speed.speed = 3;
+    EXPECT_NE(state, speed);
+
+    auto speedOpen = state;
+    speedOpen.speedOpen = true;
+    EXPECT_NE(state, speedOpen);
+
     auto dragging = state;
     dragging.dragging = antwika::ui::DragHome::Text;
     EXPECT_NE(state, dragging);

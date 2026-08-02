@@ -48,15 +48,24 @@ namespace antwika::replay
             // dump() recurses per nesting level.
             // What is stated here is unvalidated.
             // So a container is named rather than printed.
+            std::string found;
+
+            if (stated.is_primitive())
+            {
+                found = stated.dump();
+            }
+            else
+            {
+                found = std::string("a JSON ") + stated.type_name();
+            }
+
             throw SchemaVersionError(std::format(
                 "antwika::replay: \"{}\" is not a schema version this "
                 "build can read: expected a whole number from 0 to {}, "
                 "found {}",
                 key,
                 kMaxVersion,
-                stated.is_primitive() ? stated.dump()
-                                      : std::string("a JSON ")
-                                            + stated.type_name()));
+                found));
         }
         return stated.get<std::uint32_t>();
     }

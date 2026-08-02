@@ -147,8 +147,8 @@ namespace antwika::ui_demo
 
         // The pane hands back the line it is actually showing.
         // Stored and handed forward, so the report settles at once.
-        if (interactions.scrolled.has_value()
-            && interactions.scrolled->area == widgets::kArea)
+        // The pane is this demo's one area, so the report is its.
+        if (interactions.scrolled.has_value())
         {
             state.setAreaScroll(interactions.scrolled->line);
         }

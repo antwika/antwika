@@ -351,13 +351,13 @@ namespace antwika::music_editor
 
         // A press inside the pane is what a later move drags from.
         // Where it landed -- the text or the scrollbar -- scopes it.
+        // The pane is this page's one area, so any report is its.
+        // An id check here would have no second answer to give.
         if (edge.pressed)
         {
-            state.dragging =
-                acted.areaPress.has_value()
-                        && acted.areaPress->area == kCodeField
-                    ? acted.areaPress->home
-                    : ui::DragHome::None;
+            state.dragging = acted.areaPress.has_value()
+                                 ? acted.areaPress->home
+                                 : ui::DragHome::None;
         }
 
         if (!changed)

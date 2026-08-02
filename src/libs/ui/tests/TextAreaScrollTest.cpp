@@ -422,6 +422,45 @@ TEST(TextAreaScrollTest, ASelectionStrayingOntoTheBarMovesNoScroll)
     EXPECT_FALSE(frame.interactions.scrolled.has_value());
 }
 
+// An unnamed area never reports, even through the clamp route.
+// A report naming kNoWidget would shadow a named area's answer.
+TEST(TextAreaScrollTest, AnUnnamedAreaReportsNoScroll)
+{
+    Context ui{kCanvas, plainTheme()};
+
+    ui.textArea(TextAreaSpec{
+        .text = linesOf(20), .cursor = 0, .scroll = 500});
+
+    EXPECT_FALSE(ui.finish().interactions.scrolled.has_value());
+}
+
+// And a press in it names no AreaPress either.
+TEST(TextAreaScrollTest, AnUnnamedAreaReportsNoPress)
+{
+    const Pointer pointer{
+        .position = Point{.x = 2, .y = 2}, .down = true, .pressed = true};
+
+    Context ui{kCanvas, plainTheme(), pointer};
+
+    ui.textArea(TextAreaSpec{
+        .text = linesOf(20), .cursor = 0, .focused = true});
+
+    EXPECT_FALSE(ui.finish().interactions.areaPress.has_value());
+}
+
+// A press with no position names nothing.
+// The Pointer type permits a caller that never located its pointer.
+TEST(TextAreaScrollTest, APressWithNoPositionReportsNoPress)
+{
+    const auto frame = frameOf(
+        TextAreaSpec{
+            .text = linesOf(20), .cursor = 0, .scrollbar = true},
+        Keyboard{},
+        Pointer{.down = true, .pressed = true});
+
+    EXPECT_FALSE(frame.interactions.areaPress.has_value());
+}
+
 // A press on the bar names the track, so its drag stays there.
 TEST(TextAreaScrollTest, APressOnTheBarReportsATrackHome)
 {

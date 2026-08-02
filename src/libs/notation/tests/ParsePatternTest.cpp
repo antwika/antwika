@@ -268,6 +268,7 @@ TEST(ParsePatternTest, RefusesABareRepeatMark)
 {
     EXPECT_THROW((void)read("0! 3"), NotationError);
     EXPECT_THROW((void)read("0!"), NotationError);
+    EXPECT_THROW((void)read("0!x"), NotationError);
 }
 
 // "0!2!3" used to keep the 3 and silently drop the 2.

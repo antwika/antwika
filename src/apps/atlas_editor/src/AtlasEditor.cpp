@@ -89,11 +89,15 @@ namespace antwika::atlas_editor
 
         // Ahead of the recorder, so a recording carries its sheet.
         // A replay run passes no announcement; its recording has one.
+        std::optional<antwika::event::Event> announcement;
+
+        if (config.announceOpening)
+        {
+            announcement = openingSheetEvent(state.image());
+        }
+
         OpeningSheetSource announced(
-            config.inputSource,
-            config.announceOpening
-                ? std::optional{openingSheetEvent(state.image())}
-                : std::nullopt);
+            config.inputSource, std::move(announcement));
 
         TickedEventDispatcher tickedDispatcher(dispatcher, timedSinks);
         Engine engine(logger, tickedDispatcher);
