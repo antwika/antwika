@@ -49,7 +49,8 @@ Never a count since the last call.
 A device that restarts its counter per buffer forces every caller to keep a running total, and every caller that keeps one has somewhere to lose count — after which every scheduled sound is placed at the wrong moment.
 `Render_ReceivesAscendingContiguousFrames` in the conformance suite is what catches that, and it is the test in the suite worth the most.
 
-It is also what makes `PlayRequest::startFrame` mean something: a sound placed at frame 48,000 begins there and not at whichever buffer boundary follows. "Play it now" is deliberately not expressible.
+It is also what makes `PlayRequest::startFrame` mean something: a sound placed at frame 48,000 begins there and not at whichever buffer boundary follows.
+"Play it now" is deliberately not expressible.
 
 **`framesPlayed()` is what has been *consumed*, and it is advisory.**
 Legal to read to decide how long to sleep; never to decide what to compute.
@@ -60,7 +61,8 @@ There is no sample-format enum anywhere, which deletes an entire conversion matr
 Float is unarguable here because samples never reach simulation state — audio is a write-only projection in exactly rendering's sense.
 
 **Buffers are planar and files are interleaved.**
-A mixer wants one contiguous run per channel with no stride arithmetic; a file holds frames. `OfflineDevice` is the one place the two layouts meet.
+A mixer wants one contiguous run per channel with no stride arithmetic; a file holds frames.
+`OfflineDevice` is the one place the two layouts meet.
 
 **A mismatched rate is refused rather than resampled.**
 Resampling well is real signal processing and resampling badly is audible, so while there is no resampler the honest answer is to say so.

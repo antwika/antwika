@@ -88,8 +88,9 @@ def it_detects_a_referenced_mock_header():
             '#include "antwika/foo/mocks/MockFoo.hpp"\n',
         )
 
+        included = check_unused_test_doubles.collect_included_paths(root)
         is_included = check_unused_test_doubles.is_included_anywhere
-        assert is_included("antwika/foo/mocks/MockFoo.hpp", root) is True
+        assert is_included("antwika/foo/mocks/MockFoo.hpp", included) is True
 
 
 def it_detects_a_referenced_fake_header():
@@ -100,8 +101,9 @@ def it_detects_a_referenced_fake_header():
             '#include "antwika/foo/fakes/FakeFoo.hpp"\n',
         )
 
+        included = check_unused_test_doubles.collect_included_paths(root)
         is_included = check_unused_test_doubles.is_included_anywhere
-        assert is_included("antwika/foo/fakes/FakeFoo.hpp", root) is True
+        assert is_included("antwika/foo/fakes/FakeFoo.hpp", included) is True
 
 
 def it_detects_an_angle_bracket_include():
@@ -112,8 +114,9 @@ def it_detects_an_angle_bracket_include():
             "#include <antwika/foo/mocks/MockFoo.hpp>\n",
         )
 
+        included = check_unused_test_doubles.collect_included_paths(root)
         is_included = check_unused_test_doubles.is_included_anywhere
-        assert is_included("antwika/foo/mocks/MockFoo.hpp", root) is True
+        assert is_included("antwika/foo/mocks/MockFoo.hpp", included) is True
 
 
 def it_does_not_count_a_bare_comment_mention_as_included():
@@ -128,8 +131,9 @@ def it_does_not_count_a_bare_comment_mention_as_included():
             "// MockFoo.hpp was replaced by a fake, remove it\n",
         )
 
+        included = check_unused_test_doubles.collect_included_paths(root)
         is_included = check_unused_test_doubles.is_included_anywhere
-        assert is_included("antwika/foo/mocks/MockFoo.hpp", root) is False
+        assert is_included("antwika/foo/mocks/MockFoo.hpp", included) is False
 
 
 def it_does_not_confuse_a_same_named_mock_in_another_module():
@@ -143,9 +147,44 @@ def it_does_not_confuse_a_same_named_mock_in_another_module():
             '#include "antwika/bar/mocks/MockFoo.hpp"\n',
         )
 
+        included = check_unused_test_doubles.collect_included_paths(root)
         is_included = check_unused_test_doubles.is_included_anywhere
-        assert is_included("antwika/foo/mocks/MockFoo.hpp", root) is False
-        assert is_included("antwika/bar/mocks/MockFoo.hpp", root) is True
+        assert is_included("antwika/foo/mocks/MockFoo.hpp", included) is False
+        assert is_included("antwika/bar/mocks/MockFoo.hpp", included) is True
+
+
+def it_counts_an_include_from_a_backend_suite():
+    # backends/ lives outside src/ and its suites use src/'s mocks.
+    # A double used only there used to be reported as an orphan.
+    with tempfile.TemporaryDirectory() as tmp:
+        root = Path(tmp)
+        write(
+            root / "backends/sockets/tests/SocketsHostTest.cpp",
+            "#include <antwika/log/mocks/MockLogger.hpp>\n",
+        )
+
+        included = check_unused_test_doubles.collect_included_paths(root)
+        is_included = check_unused_test_doubles.is_included_anywhere
+        assert is_included("antwika/log/mocks/MockLogger.hpp", included)
+
+
+def it_accepts_a_double_used_only_by_a_backend_suite():
+    with tempfile.TemporaryDirectory() as tmp:
+        root = Path(tmp)
+        write(
+            root
+            / "src/libs/log/tests/mocks/include/antwika/log/mocks/"
+            "MockLogger.hpp"
+        )
+        write(
+            root / "backends/sockets/tests/SocketsHostTest.cpp",
+            "#include <antwika/log/mocks/MockLogger.hpp>\n",
+        )
+
+        exit_code, stdout, _stderr = run_main(root)
+
+        assert exit_code == 0
+        assert "(1 checked)" in stdout
 
 
 def it_fails_when_no_test_doubles_exist():
@@ -212,6 +251,8 @@ def main():
         it_detects_an_angle_bracket_include,
         it_does_not_count_a_bare_comment_mention_as_included,
         it_does_not_confuse_a_same_named_mock_in_another_module,
+        it_counts_an_include_from_a_backend_suite,
+        it_accepts_a_double_used_only_by_a_backend_suite,
         it_fails_when_no_test_doubles_exist,
         it_fails_and_lists_unreferenced_mock_headers,
         it_succeeds_when_every_test_double_is_referenced,

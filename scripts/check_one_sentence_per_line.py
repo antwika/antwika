@@ -13,12 +13,17 @@ DEFAULT_ROOT = Path(__file__).resolve().parent.parent
 # Every markdown document in the repository.
 # docs/ holds only documents that are still normative, so all of it is
 # prose somebody still edits and all of it is checked.
+# wiki/ is the project's public face and drifts silently, which is the
+# argument for holding it to the same rule rather than an exemption
+# from it.
 MARKDOWN_GLOBS = (
     "README.md",
     "CLAUDE.md",
     "REQUIREMENTS.md",
+    "WORKFLOW.md",
     "blog/*.md",
     "docs/**/*.md",
+    "wiki/**/*.md",
 )
 # Backends live outside src/ and so outside the coverage gate.
 # The style rules still apply to them.
@@ -36,6 +41,7 @@ SENTENCE_BREAK = re.compile(r'[.!?]\s+[A-Z*`"]')
 LIST_MARKER = re.compile(r"^(?:\d+\.|[-*])\s+")
 TRAILING_DECORATION = re.compile(r"""[)"'*`]+$""")
 FENCE = re.compile(r"^(```|~~~)")
+TABLE_ROW = re.compile(r"^\|")
 
 
 @dataclass
@@ -171,6 +177,14 @@ def check_markdown_file(path: Path) -> list[Violation]:
         if in_fence:
             continue
         if not stripped or stripped.startswith("#") or is_pure_markup(stripped):
+            flush_chain()
+            continue
+        if TABLE_ROW.match(stripped):
+            # A table row is cells rather than prose, and the rule is
+            # about prose: a cell is already its own line's worth of
+            # thought, and several of them share a line by construction.
+            # Nothing in a row continues the sentence above it either,
+            # which is why the chain is flushed rather than extended.
             flush_chain()
             continue
         if LIST_MARKER.match(stripped):

@@ -185,6 +185,54 @@ def it_does_not_scan_inside_fenced_code_blocks():
         assert m.check_markdown_file(path) == []
 
 
+def it_does_not_scan_markdown_table_rows():
+    # A cell is not prose, and cells share a line by construction.
+    with tempfile.TemporaryDirectory() as tmp:
+        path = Path(tmp) / "doc.md"
+        write(
+            path,
+            "| Type | What it is |\n"
+            "| --- | --- |\n"
+            "| `IHost` | One open endpoint. Bytes move on pump. |\n",
+        )
+
+        assert m.check_markdown_file(path) == []
+
+
+def it_does_not_flag_a_table_row_as_a_wrapped_sentence():
+    # A row ends in a pipe rather than a full stop.
+    # Every row but the last used to read as a wrapped sentence.
+    with tempfile.TemporaryDirectory() as tmp:
+        path = Path(tmp) / "doc.md"
+        write(
+            path,
+            "| Type | What it is |\n"
+            "| --- | --- |\n"
+            "| `IHost` | One open endpoint |\n"
+            "Prose that follows the table.\n",
+        )
+
+        assert m.check_markdown_file(path) == []
+
+
+def it_checks_the_wiki_and_the_workflow_document():
+    with tempfile.TemporaryDirectory() as tmp:
+        root = Path(tmp)
+        write(root / "WORKFLOW.md", "This wraps\nonto a second line.\n")
+        write(
+            root / "wiki/libraries/foo.md",
+            "Another wrap\nonto a second line.\n",
+        )
+
+        violations = m.find_violations(root)
+
+        assert len(violations) == 2
+        assert {v.path for v in violations} == {
+            root / "WORKFLOW.md",
+            root / "wiki/libraries/foo.md",
+        }
+
+
 def it_allows_a_multi_sentence_list_item_split_across_its_own_lines():
     with tempfile.TemporaryDirectory() as tmp:
         path = Path(tmp) / "doc.md"
@@ -293,6 +341,9 @@ def main():
         it_does_not_flag_consecutive_short_list_items,
         it_does_not_flag_a_multi_line_badge_block,
         it_does_not_scan_inside_fenced_code_blocks,
+        it_does_not_scan_markdown_table_rows,
+        it_does_not_flag_a_table_row_as_a_wrapped_sentence,
+        it_checks_the_wiki_and_the_workflow_document,
         it_allows_a_multi_sentence_list_item_split_across_its_own_lines,
         it_keeps_every_comment_at_or_under_eighty_characters,
         it_finds_violations_across_the_configured_file_globs,

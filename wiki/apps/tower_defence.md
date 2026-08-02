@@ -57,9 +57,11 @@ A cleared level is followed immediately by the next, on a fresh grid — so ever
 
 The four axes pull against each other rather than ranking:
 
-- **Ticks per cell is the axis that interacts with where a tower goes.** The damage a mob takes crossing a reach is the cells in reach times the ticks it spends in each, so a Brute at three pays a corner tower three times what a Runner at one does. A tower that is fine against brutes can be walked straight past by runners.
+- **Ticks per cell is the axis that interacts with where a tower goes.** The damage a mob takes crossing a reach is the cells in reach times the ticks it spends in each, so a Brute at three pays a corner tower three times what a Runner at one does.
+  A tower that is fine against brutes can be walked straight past by runners.
 - **Health and reward are the ordinary dials**, and they are what make a Brute worth waiting for and a Runner worth catching early.
-- **Armour is flat damage reduction, taken off every hit, and the result never heals.** A tower whose damage does not exceed a mob's armour cannot hurt it *at all*, and no number of towers changes that, since each tower fires on its own. That is a real trap rather than a hidden one: `campaignLevels()` only fields an armoured kind on a level whose guns out-damage it, and `CampaignTest.NoLevelFieldsAKindItsOwnGunsCannotHurt` asserts that of the shipped table.
+- **Armour is flat damage reduction, taken off every hit, and the result never heals.** A tower whose damage does not exceed a mob's armour cannot hurt it *at all*, and no number of towers changes that, since each tower fires on its own.
+  That is a real trap rather than a hidden one: `campaignLevels()` only fields an armoured kind on a level whose guns out-damage it, and `CampaignTest.NoLevelFieldsAKindItsOwnGunsCannotHurt` asserts that of the shipped table.
 
 Each kind is drawn in its own colour (`BattleScene.cpp`), because which of the four is on the road is the one thing a player has to read off the grid rather than off the bar.
 

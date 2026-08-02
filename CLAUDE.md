@@ -28,9 +28,10 @@ ctest --test-dir build --output-on-failure
 Or in VS Code: `Ctrl+Shift+B` runs [`scripts/build.sh`](scripts/build.sh), which is that sequence plus whichever backends are selected (see [`.vscode/tasks.json`](.vscode/tasks.json)).
 
 ```sh
-scripts/select_backend.sh gfx sdl3     # Tasks: Run Task > Select gfx backend
-scripts/select_backend.sh sound sdl3   # Tasks: Run Task > Select sound backend
-scripts/build.sh                       # Ctrl+Shift+B
+scripts/select_backend.sh gfx sdl3         # Tasks: Select gfx backend
+scripts/select_backend.sh sound sdl3       # Tasks: Select sound backend
+scripts/select_backend.sh network sockets  # Tasks: Select network backend
+scripts/build.sh                           # Ctrl+Shift+B
 ```
 
 A selection is a line in the untracked `.vscode/<subsystem>-backend`, read on every build, so it is made once rather than on every build and is per-developer rather than the repository's.
@@ -79,6 +80,24 @@ conan install . -of build-sdl3 -o gfx_backend=sdl3 -o sound_backend=sdl3 \
   --build=missing -s build_type=Release --lockfile=conan-sdl3.lock
 ```
 
+**Network has its own selection too**, `-o network_backend=` and `ANTWIKA_NETWORK_BACKEND`, with values `null` and `sockets`, defaulting to `null` for `sound_backend`'s reason: a build asking for sdl3 windows has said nothing about wanting to open a socket.
+`sockets` is not a framework -- it names the operating system's own socket API, adds no package and no lockfile entry -- so it is exempt from the one-framework rule and resolves against `conan.lock` like any other framework-free build:
+
+```sh
+conan install . -of build-sockets -o network_backend=sockets \
+  -c tools.cmake.cmake_layout:build_folder_vars="['options.network_backend']" \
+  -pr:b=./profiles/build/${CONAN_PROFILE} \
+  -pr:h=./profiles/host/${CONAN_PROFILE} \
+  --build=missing -s build_type=Release --lockfile=conan.lock
+
+cmake --preset conan-network_backend_sockets-release
+cmake --build build-sockets -j24 --target antwika_network_backend_sockets_tests
+build-sockets/bin/antwika_network_backend_sockets/antwika_network_backend_sockets_tests
+```
+
+The folder var names `network_backend` rather than `gfx_backend` here, because that selection is what this configuration differs by; a build leaving graphics at `null` would otherwise configure under the same preset name as the default one.
+That suite needs no display and is deliberately not run under `xvfb-run`, for the same reason the sound one is not: a transport that needed a display would be one that had quietly taken a dependency on video.
+
 **Updating the lockfiles** after a dependency bump in `conanfile.py` (what Renovate leaves stale):
 
 ```sh
@@ -88,7 +107,7 @@ scripts/update_lockfiles.sh   # or: Tasks: Run Task > Update Conan lockfiles
 It re-resolves every lockfile from scratch against every profile under `profiles/host/`, since CI builds all of them against the same files.
 
 Set `SDL_VIDEODRIVER=dummy` to run the SDL build with no display, or use `xvfb-run` for any backend, which is how the conformance suite is exercised without a desktop session.
-`SDL_AUDIO_DRIVER=dummy` is the sound equivalent, and the sound suite is run **without** `xvfb-run` on purpose: a sound backend that needed a display would be one that had quietly taken a dependency on video, and running it under Xvfb is exactly what would hide that.
+`SDL_AUDIO_DRIVER=dummy` is the sound equivalent, and the sound and network suites are both run **without** `xvfb-run` on purpose: a sound or network backend that needed a display would be one that had quietly taken a dependency on video, and running it under Xvfb is exactly what would hide that.
 `raylib` reports `maxWindows() == 1`, since it keeps its one window in global state; the conformance suite skips its multi-window tests for such a backend rather than failing them.
 
 **Run a single test binary / test case:**
@@ -136,8 +155,11 @@ Each application's flags, pacing and stopping conditions are on its own page und
 cmake --preset conan-coverage
 cmake --build build-coverage -j24
 ctest --test-dir build-coverage -j"$(nproc)"
-gcovr --root . --filter 'src/.*' --exclude '.*/tests/.*' --print-summary build-coverage
+scripts/coverage.sh          # or: Tasks: Run Task > Coverage
 ```
+
+[`scripts/coverage.sh`](scripts/coverage.sh) is the one copy of that `gcovr` invocation, and CI runs the same script: a hand-written `gcovr` line missing `--exclude '.*/apps/[^/]+/src/main\.cpp'`, `--exclude-throw-branches` and `--exclude-unreachable-branches` reports a branch percentage well below the enforced one and cannot predict whether CI will pass.
+It takes `--build-dir` (default `build-coverage`), `--summary <file>` for the JSON the gate reads and `--html <dir>` for a browsable report, and reads `GCOV_EXECUTABLE` for the toolchain's gcov.
 
 CI requires 100% line/function/branch coverage on the GNU leg (`scripts/check_full_coverage.py`); see [`docs/confirming-unreachable-branches.md`](docs/confirming-unreachable-branches.md) before excluding any line with `GCOVR_EXCL_LINE`.
 Instrumented tests contend on the `.gcda` writes, so `-j` scales sublinearly, but the totals it reports are identical to a serial run's.
@@ -153,6 +175,7 @@ Test targets share one precompiled header, built once and reused (`REUSE_FROM` a
 python3 scripts/check_unused_test_doubles.py     # every mock/fake is used
 python3 scripts/check_one_sentence_per_line.py   # comments/markdown prose
 python3 scripts/check_line_length.py             # 80-char limit, src/ + scripts/
+python3 scripts/check_readme_modules.py          # README lists every module
 ```
 
 Each checker script has its own test under `scripts/tests/`, run with e.g. `python3 scripts/tests/test_check_line_length.py`.
