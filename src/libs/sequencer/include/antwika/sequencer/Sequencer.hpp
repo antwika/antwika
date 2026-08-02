@@ -99,8 +99,10 @@ namespace antwika::sequencer
 
         Cycle asked;
 
-        // Reserved once and cleared each tick.
-        // So a run that never ends never allocates here either.
+        // Reserved once and cleared each tick, not built per tick.
+        // So a run that never ends does not grow this one.
+        // It is not the only allocation a query makes, though.
+        // A combinator splitting a window builds a vector of its own.
         pattern::HapBuffer found;
     };
 

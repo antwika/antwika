@@ -78,11 +78,17 @@ That is what automating a cutoff or a gain across a run is made of.
 
 **Patterns are values, not references to operands a caller keeps alive.**
 Every combinator takes patterns by value and returns one, over a `shared_ptr<const IPattern>`, so an expression owns everything inside it and nothing has a lifetime rule written in a comment.
-The allocation happens where a pattern is *built*; **`query()` allocates nothing**, walking the graph and handing each event to the caller's sink.
+The graph itself is allocated where a pattern is *built*; **`query()` returns no containers**, walking that graph and handing each event to the caller's sink instead.
+That is not the same as allocating nothing: `pure`, `slowcat` and `rev` each split their window with `Span::spanCycles()`, which builds a fresh vector per query at every level it appears at.
+A window a handful of cycles wide costs a handful of small vectors; one millions of cycles wide is why a speed factor has an upper bound in [`notation`](notation.md).
 
 **`degradeBy` hashes its position rather than drawing from a generator.**
 A generator advanced per event would make the answer depend on how many events had been asked for and in what order, which breaks replay the moment a lookahead window changes size.
 Hashing means asking about cycle four hundred directly answers exactly as playing there would, and `DegradeAnswersTheSameHoweverItIsAskedFor` is the test that says so.
+
+**`degradeBy` passes a continuous value through untouched**, for the same reason.
+A hap with no `whole` has no onset to hash, and its `part` is only ever the window the caller asked about -- so thinning one at all would make whether a steady cutoff survives depend on how a caller sliced its queries, which is exactly the property above.
+A signal has nothing to drop; `DegradeKeepsAContinuousValueHoweverItIsAskedFor` pins it.
 
 **`euclid` uses the Bresenham formulation** -- a step sounds when `(step * pulses) % steps < pulses`.
 It needs no working array and is exact integer arithmetic rather than a repeated subdivision.

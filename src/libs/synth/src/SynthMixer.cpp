@@ -101,7 +101,8 @@ namespace antwika::synth
                 throw SynthError(
                     "antwika::synth: a resonance of "
                     + std::to_string(desc.filter.resonance)
-                    + " would divide a filter by nothing");
+                    + " leaves the filter undamped, so it would ring "
+                      "on rather than decay");
             }
         }
 
@@ -172,7 +173,9 @@ namespace antwika::synth
         const auto level = envelopeAt(
             voice.desc.envelope, voice.elapsed, voice.desc.hold);
 
-        return shaped * level * voice.desc.gain;
+        // The gain is already folded into left and right.
+        // Applying it here too would sound a voice at its square.
+        return shaped * level;
     }
 
     void SynthMixer::render(

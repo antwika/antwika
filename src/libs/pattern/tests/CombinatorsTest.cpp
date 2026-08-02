@@ -262,6 +262,33 @@ TEST(CombinatorsTest, DegradeAnswersTheSameHoweverItIsAskedFor)
     EXPECT_EQ(straight, walked);
 }
 
+// A continuous value has no onset to drop.
+// Its part is only ever the window that was asked about.
+// So thinning one would make it answer differently per slice.
+TEST(CombinatorsTest, DegradeKeepsAContinuousValueHoweverItIsAskedFor)
+{
+    const auto thinned =
+        degradeBy(ParamValue(1, 2), 7, steady(named(9)));
+
+    EXPECT_EQ(thinned.queryAll(cycles(0, 4)).size(), 1U);
+
+    for (std::int64_t cycle = 0; cycle < 4; ++cycle)
+    {
+        EXPECT_EQ(thinned.queryAll(cycles(cycle, cycle + 1)).size(), 1U)
+            << cycle;
+    }
+}
+
+TEST(CombinatorsTest, DegradeByCertaintyStillKeepsAContinuousValue)
+{
+    const auto kept =
+        degradeBy(ParamValue(1), 7, steady(named(9)))
+            .queryAll(cycles(0, 1));
+
+    ASSERT_EQ(kept.size(), 1U);
+    EXPECT_FALSE(kept[0].whole.has_value());
+}
+
 TEST(CombinatorsTest, DegradeDiffersBySeed)
 {
     const auto inner = fast(Cycle(16), note(1));
@@ -292,14 +319,4 @@ TEST(CombinatorsTest, RevKeepsAContinuousValueContinuous)
 
     ASSERT_EQ(haps.size(), 1U);
     EXPECT_FALSE(haps[0].whole.has_value());
-}
-
-// With no whole to hash from, the part's start is what decides.
-TEST(CombinatorsTest, DegradeThinsAContinuousValueByItsPart)
-{
-    const auto kept =
-        degradeBy(ParamValue(1), 7, steady(named(9)))
-            .queryAll(cycles(0, 4));
-
-    EXPECT_TRUE(kept.empty());
 }
