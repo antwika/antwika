@@ -265,6 +265,7 @@ namespace antwika::i18n
             {MessageId::GameMenuItemLoadGame, "load game"},
             {MessageId::GameMenuItemMainMenu, "main menu"},
             {MessageId::GameMenuItemWorldMap, "world map"},
+            {MessageId::GameReadoutOccupancy, "people {0}/{1}"},
         }};
 
         constexpr std::array<CatalogueEntry, kMessageCount> kSwedishEntries{{
@@ -511,6 +512,7 @@ namespace antwika::i18n
             {MessageId::GameMenuItemLoadGame, "läs in spel"},
             {MessageId::GameMenuItemMainMenu, "huvudmeny"},
             {MessageId::GameMenuItemWorldMap, "världskarta"},
+            {MessageId::GameReadoutOccupancy, "folk {0}/{1}"},
         }};
 
         constexpr Catalogue kEnglishCatalogue{

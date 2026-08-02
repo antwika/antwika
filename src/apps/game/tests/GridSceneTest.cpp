@@ -830,7 +830,8 @@ TEST_F(GridSceneTest, Draw_WritesTheHoverPanelLastAndWhereItWasLaidOut)
     const auto panel = antwika::game::readoutPanel(
         scene_.hover, kCanvas, kTranslator);
 
-    ASSERT_EQ(panel.lines.size(), 2 + antwika::game::kResourceCount);
+    // Its name, its tier, how full it is, and one line per resource.
+    ASSERT_EQ(panel.lines.size(), 3 + antwika::game::kResourceCount);
     ASSERT_EQ(renderer.texts.size(), panel.lines.size());
 
     for (std::size_t line = 0; line < panel.lines.size(); ++line)

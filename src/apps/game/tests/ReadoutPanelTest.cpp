@@ -13,6 +13,7 @@
 #include "antwika/game/Cell.hpp"
 #include "antwika/game/Coverage.hpp"
 #include "antwika/game/HousingLevel.hpp"
+#include "antwika/game/HousingQuery.hpp"
 #include "antwika/game/ReadoutPanel.hpp"
 #include "antwika/game/Resource.hpp"
 #include "antwika/game/ResourceBar.hpp"
@@ -77,12 +78,13 @@ TEST(ReadoutPanelTest, Panel_NamesABuildingAndListsWhatItDependsOn)
         kCanvas,
         kTranslator);
 
-    ASSERT_EQ(panel.lines.size(), 5U);
+    ASSERT_EQ(panel.lines.size(), 6U);
     EXPECT_EQ(panel.lines[0].text, "house");
     EXPECT_EQ(panel.lines[1].text, "level: tent");
-    EXPECT_EQ(panel.lines[2].text, "food 12/100");
-    EXPECT_EQ(panel.lines[3].text, "clay 34/100");
-    EXPECT_EQ(panel.lines[4].text, "pottery 56/100");
+    EXPECT_EQ(panel.lines[2].text, "people 0/5");
+    EXPECT_EQ(panel.lines[3].text, "food 12/100");
+    EXPECT_EQ(panel.lines[4].text, "clay 34/100");
+    EXPECT_EQ(panel.lines[5].text, "pottery 56/100");
     EXPECT_EQ(kStockCapacity, 100);
 }
 
@@ -145,12 +147,13 @@ TEST(ReadoutPanelTest, Panel_ColoursALineAsTheBarThatCountsTheSameThing)
         kCanvas,
         kTranslator);
 
-    ASSERT_EQ(panel.lines.size(), 5U);
+    ASSERT_EQ(panel.lines.size(), 6U);
     EXPECT_EQ(panel.lines[0].colour, kReadoutTitle);
     EXPECT_EQ(panel.lines[1].colour, kReadoutTitle);
-    EXPECT_EQ(panel.lines[2].colour, resourceColour(Resource::Food));
-    EXPECT_EQ(panel.lines[3].colour, resourceColour(Resource::Clay));
-    EXPECT_EQ(panel.lines[4].colour, resourceColour(Resource::Pottery));
+    EXPECT_EQ(panel.lines[2].colour, kReadoutTitle);
+    EXPECT_EQ(panel.lines[3].colour, resourceColour(Resource::Food));
+    EXPECT_EQ(panel.lines[4].colour, resourceColour(Resource::Clay));
+    EXPECT_EQ(panel.lines[5].colour, resourceColour(Resource::Pottery));
 }
 
 TEST(ReadoutPanelTest, Panel_HoldsEveryLineInsideItsOwnBox)
@@ -310,8 +313,47 @@ TEST(ReadoutPanelTest, Panel_ListsNoServiceThatHasLapsed)
         kCanvas,
         kTranslator);
 
-    ASSERT_EQ(panel.lines.size(), 5U);
+    ASSERT_EQ(panel.lines.size(), 6U);
     EXPECT_EQ(panel.lines[0].text, "house");
+}
+
+// How full a house is, against what its tier has room for.
+// A bare count is a number a reader cannot do anything with.
+TEST(ReadoutPanelTest, Panel_SaysHowFullAHouseIs)
+{
+    const auto panel = readoutPanel(
+        over(
+            BuildingSprite{
+                .at = Cell{},
+                .kind = BuildingKind::House,
+                .level = antwika::game::HousingLevel::Hovel,
+                .population = 9}),
+        kCanvas,
+        kTranslator);
+
+    ASSERT_GE(panel.lines.size(), 3U);
+    EXPECT_EQ(panel.lines[2].text, "people 9/16");
+    EXPECT_EQ(
+        antwika::game::populationCapacityOf(
+            antwika::game::HousingLevel::Hovel),
+        16);
+}
+
+// Nobody lives in a well, so there is no occupancy to be had.
+// The very test the tier is listed on answers for this too.
+TEST(ReadoutPanelTest, Panel_SaysNoOccupancyForABuildingNobodyLivesIn)
+{
+    const auto panel = readoutPanel(
+        over(
+            BuildingSprite{
+                .at = Cell{},
+                .kind = BuildingKind::Well,
+                .population = 7}),
+        kCanvas,
+        kTranslator);
+
+    ASSERT_EQ(panel.lines.size(), 1U);
+    EXPECT_EQ(panel.lines[0].text, "well");
 }
 
 TEST(ReadoutPanelTest, Panel_ColoursACoverageLineOutOfTheServiceTable)

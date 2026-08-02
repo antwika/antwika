@@ -1167,12 +1167,18 @@ namespace antwika::i18n
          *        world map.
          */
         GameMenuItemWorldMap,
+
+        /**
+         * @brief Game readout: how full a house is, as `{0}` living
+         *        there and `{1}` its tier's room.
+         */
+        GameReadoutOccupancy,
     };
 
     /**
      * @brief How many ids a complete catalogue carries.
      */
-    inline constexpr std::size_t kMessageCount{225};
+    inline constexpr std::size_t kMessageCount{226};
 
     /**
      * @brief Every id, in declaration order.
@@ -1407,6 +1413,7 @@ namespace antwika::i18n
         MessageId::GameMenuItemLoadGame,
         MessageId::GameMenuItemMainMenu,
         MessageId::GameMenuItemWorldMap,
+        MessageId::GameReadoutOccupancy,
     };
 
     /**

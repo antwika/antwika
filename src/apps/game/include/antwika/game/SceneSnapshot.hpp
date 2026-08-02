@@ -144,10 +144,27 @@ namespace antwika::game
         HousingLevel level = HousingLevel::Tent;
 
         /**
+         * @brief How many people live here right now.
+         *
+         * **On the view rather than only on the sprite, for the reason
+         * the level is -- and it makes the replay comparison strictly
+         * stronger.** Before this, occupancy reached GameSummary only as
+         * CityRatings::population, a sum over the whole city, and a sum
+         * hides a swap: two houses trading one occupant total the same,
+         * so a live run and its replay could disagree about where the
+         * city's people were and still compare equal. Compared per house
+         * they cannot.
+         *
+         * Zero for a building with no household, which includes every
+         * kind nobody lives in.
+         */
+        std::int32_t population = 0;
+
+        /**
          * @brief Compare two building views.
          * @param other The view to compare against.
-         * @return True when the cell, the kind, the coverage and the
-         * level match.
+         * @return True when the cell, the kind, the coverage, the level
+         * and the occupancy match.
          */
         [[nodiscard]] bool operator==(
             const BuildingView &other) const = default;
@@ -193,6 +210,17 @@ namespace antwika::game
          * and the level shows only in the panel.
          */
         HousingLevel level = HousingLevel::Tent;
+
+        /**
+         * @brief How many people live here right now.
+         *
+         * A copy of the view's, so the hover panel can say how full a
+         * house is without reaching back into the World for it -- the
+         * same reason stock, coverage and the level are here.
+         * It is read against populationCapacityOf(level), which is why
+         * the two travel together.
+         */
+        std::int32_t population = 0;
 
         /**
          * @brief Compare two building sprites.

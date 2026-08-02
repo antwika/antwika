@@ -459,6 +459,8 @@ namespace antwika::i18n
             return "GameMenuItemMainMenu";
         case MessageId::GameMenuItemWorldMap:
             return "GameMenuItemWorldMap";
+        case MessageId::GameReadoutOccupancy:
+            return "GameReadoutOccupancy";
         }
 
         return "?";

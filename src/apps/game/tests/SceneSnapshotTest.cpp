@@ -549,3 +549,42 @@ TEST(SceneSnapshotTest, TakesEachHousesLevelOntoBothViewAndSprite)
     EXPECT_EQ(
         snapshot.buildings[1].level, antwika::game::HousingLevel::Tent);
 }
+
+// Occupancy goes onto the view as well, and that is the point of it.
+// A sum over the city hides two houses swapping one occupant.
+// Compared per house, a run and its replay cannot hide that.
+TEST(SceneSnapshotTest, TakesEachHousesPeopleOntoBothViewAndSprite)
+{
+    NiceMock<MockLogger> logger;
+    World world(logger);
+    const PathIndex paths;
+
+    const auto lived = world.create();
+    world.add<Cell>(lived, Cell{.x = 1, .y = 1});
+    world.add<antwika::game::Building>(
+        lived,
+        antwika::game::Building{
+            .kind = antwika::game::BuildingKind::House});
+    antwika::game::setHousehold(
+        world, lived, antwika::game::Household{.population = 4});
+
+    const auto empty = world.create();
+    world.add<Cell>(empty, Cell{.x = 5, .y = 5});
+    world.add<antwika::game::Building>(
+        empty,
+        antwika::game::Building{
+            .kind = antwika::game::BuildingKind::House});
+    world.commit();
+
+    const auto views = antwika::game::buildingViewsOf(world);
+
+    ASSERT_EQ(views.size(), 2U);
+    EXPECT_EQ(views[0].population, 4);
+    EXPECT_EQ(views[1].population, 0);
+
+    const auto snapshot = snapshotOf(world, paths, Camera(), kExtent);
+
+    ASSERT_EQ(snapshot.buildings.size(), 2U);
+    EXPECT_EQ(snapshot.buildings[0].population, 4);
+    EXPECT_EQ(snapshot.buildings[1].population, 0);
+}

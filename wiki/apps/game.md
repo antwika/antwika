@@ -316,6 +316,9 @@ A walker shows the one resource `carriedResource()` names, empty bar included, a
 The panel lists the resources the bars gauge rather than every number a building holds, so a reader is never told two stories about one building.
 Its captions are a table of their own rather than the names a save file writes, since a persisted name may not change to suit a caption.
 
+**A household's tier and how full its house is are listed on one `housesPeople()` test**, because both are facts about a household and a well has none — a well is on `HousingLevel::Tent` and houses nobody, and saying either about it would be saying something untrue.
+The occupancy reads `people 3/10`, against `populationCapacityOf()` rather than as a bare count: whether a house has room left is what decides whether the district still grows, and `people 3` is a number a reader can do nothing with until they know what a shack takes.
+
 `HoverTest` runs one recorded stream twice, with and without a pointer over the grid, and asserts the same `GameSummary` out of both — and that the watched run really did draw a readout, so the two cannot agree for the wrong reason.
 
 ## The round-one vocabulary, and why every crossing is a table now
@@ -482,6 +485,11 @@ The countdowns are persisted rather than reset, for the reason `Building`'s thre
 `CityGrid` carries the household across a city switch on the same terms, and through `setHousehold()` rather than `World::add` directly, exactly as it carries coverage.
 
 `BuildingView` carries the level and `GameSummary` therefore compares it, so a run and its replay disagreeing about a house growing fails `ReplayDeterminismTest` directly; `BuildingSprite` carries a copy so the hover panel can name the tier, and it names it rather than numbering it, since "level: 2" is a number a reader has to look up.
+
+**`BuildingView` carries the occupancy on the same terms, and that made the replay comparison strictly stronger.**
+Before it, a house's people reached `GameSummary` only as `CityRatings::population`, a sum over the whole city — and a sum hides a swap: two houses trading one occupant total the same, so a live run and its replay could disagree about *where* the city's people were and still compare equal.
+Per house they cannot, which is why the number went onto the view rather than only onto the sprite that draws it.
+That is the opposite call from stock, deliberately, and for the reason coverage and the level are: what a building is holding is a gauge, and who lives in it is what the whole city is arranged to raise.
 `HousingSystemTest` is a loop over `kHousingRequirements` rather than four hand-written cities — a row added to that table is a row it already covers, which is the whole reason the requirements are a table and not a switch.
 
 ## Population, labour and the first thing that judges the city

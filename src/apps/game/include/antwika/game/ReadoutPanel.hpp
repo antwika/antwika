@@ -110,6 +110,13 @@ namespace antwika::game
      * all, because an absent line and a line reading nothing say the
      * same thing.
      *
+     * **A household's tier and how full its house is are listed only
+     * where somebody lives**, on the one `housesPeople()` test, since a
+     * well is on no tier and houses nobody. The occupancy is said
+     * against `populationCapacityOf()` rather than as a bare count,
+     * because whether a house has room left is what decides whether the
+     * district still grows.
+     *
      * It is pinned near the pointer and then pushed back inside the
      * canvas, so a readout at the far edge of a window is still
      * readable rather than half off it.

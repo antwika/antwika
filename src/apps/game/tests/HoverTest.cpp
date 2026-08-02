@@ -1,9 +1,12 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
+#include <algorithm>
 #include <cstddef>
 #include <cstdint>
 #include <optional>
+#include <string>
+#include <string_view>
 #include <vector>
 
 #include <antwika/engine/Events.hpp>
@@ -38,7 +41,9 @@
 #include "antwika/game/IsoProjection.hpp"
 #include "antwika/game/MainMenuScene.hpp"
 #include "antwika/game/PathIndex.hpp"
+#include "antwika/game/HousingLevel.hpp"
 #include "antwika/game/PauseState.hpp"
+#include "antwika/game/ReadoutPanel.hpp"
 #include "antwika/game/RenderSystem.hpp"
 #include "antwika/game/SaveLoadScene.hpp"
 #include "antwika/game/SceneSnapshot.hpp"
@@ -66,6 +71,7 @@ using antwika::game::GridExtent;
 using antwika::game::GridScene;
 using antwika::game::HoverReadout;
 using antwika::game::hoverFor;
+using antwika::game::HousingLevel;
 using antwika::game::kUiCanvas;
 using antwika::game::MainMenuScene;
 using antwika::game::PathIndex;
@@ -122,6 +128,31 @@ namespace
         return PointerHint{
             .position = Position{.x = centre.x, .y = centre.y}};
     }
+
+    // What a pointer over one cell of a scene is told, in words.
+    [[nodiscard]] std::vector<std::string> saidOver(
+        Cell cell, const BuildingSprite &building)
+    {
+        const auto panel = antwika::game::readoutPanel(
+            hoverFor(
+                pointingAt(cell), kCamera, sceneOf({building}), false),
+            kUiCanvas,
+            kTranslator);
+
+        std::vector<std::string> said;
+        for (const auto &line : panel.lines)
+        {
+            said.push_back(line.text);
+        }
+
+        return said;
+    }
+
+    [[nodiscard]] bool says(
+        const std::vector<std::string> &said, std::string_view text)
+    {
+        return std::ranges::find(said, text) != said.end();
+    }
 } // namespace
 
 TEST(HoverTest, HoverFor_ReportsNothingBeforeThePointerHasBeenSeen)
@@ -175,6 +206,36 @@ TEST(HoverTest, HoverFor_ReportsTheBuildingUnderThePointer)
     // Pinned where the pointer is, so the panel follows it.
     const auto centre = cellCentre(where, kCamera);
     EXPECT_EQ(readout.anchor, centre);
+}
+
+// Hovering a house says how many live there, out of what it holds.
+TEST(HoverTest, AHoveredHouseSaysHowManyPeopleLiveInIt)
+{
+    const Cell where{.x = 2, .y = 2};
+    const auto said = saidOver(
+        where,
+        BuildingSprite{
+            .at = where,
+            .kind = BuildingKind::House,
+            .level = HousingLevel::Shack,
+            .population = 6});
+
+    EXPECT_TRUE(says(said, "house"));
+    EXPECT_TRUE(says(said, "people 6/10"));
+}
+
+// And hovering something nobody lives in says nothing of the kind.
+TEST(HoverTest, AHoveredWellSaysNothingAboutWhoLivesThere)
+{
+    const Cell where{.x = 2, .y = 2};
+    const auto said = saidOver(
+        where,
+        BuildingSprite{
+            .at = where,
+            .kind = BuildingKind::Well,
+            .population = 6});
+
+    EXPECT_EQ(said, (std::vector<std::string>{"well"}));
 }
 
 // A building covers a block of cells rather than one.
