@@ -1,3 +1,119 @@
+# [1.0.0](https://github.com/antwika/antwika/compare/v0.11.0...v1.0.0) (2026-08-02)
+
+
+* feat(replay)!: a replay is JSON Lines, appended as the run goes ([12f8700](https://github.com/antwika/antwika/commit/12f8700d3bd35e1ce933c58e27a2ac7427a49660))
+* refactor(i18n)!: give every module its own message ids and catalogues ([ad1ad74](https://github.com/antwika/antwika/commit/ad1ad742f6e7f4edfc20458c7b97cee4498b2433))
+
+
+### Bug Fixes
+
+* **apps:** six verified findings across companion, life, game and atlas_editor ([2404294](https://github.com/antwika/antwika/commit/24042945f94f443237edd916de448f15b069e4f5))
+* **backends,notation:** input edges that arrive as typed (FINDINGS-3 4, 9, 10, 31, 11) ([5133de9](https://github.com/antwika/antwika/commit/5133de9f60c33587bb651215498e56bb48d4925d))
+* **build,ci:** make the toolchain record, the asset copies and the release guard honest (FINDINGS-3 17, 18, 19) ([6e42d76](https://github.com/antwika/antwika/commit/6e42d7649f2ca3acf231bba09e055b1dd6087007))
+* **companion:** refuse a saved companion that perished mid-sentence ([8639b24](https://github.com/antwika/antwika/commit/8639b249ab7ff058b1293c6344728456ed7d12d6))
+* **ecs:** take the staged ops off World before running them ([69a0296](https://github.com/antwika/antwika/commit/69a02961ba17f92716df1b4780291ff5411bb52b))
+* **game:** hold a walker still while the run is paused ([8a1caa3](https://github.com/antwika/antwika/commit/8a1caa3d5dbd0749e0dd717dec6f787910f432a5))
+* **game:** refuse a saved zoom level past the end of the table ([3828d63](https://github.com/antwika/antwika/commit/3828d632577a7c24ab0a48aedb162fe846fe3678))
+* **game:** refuse a step phase no walker could ever be in ([de65484](https://github.com/antwika/antwika/commit/de654842e0d40727c06807c834325a3c70900abc))
+* **gfx,ui,input:** six verified review findings across the view stack ([83e2c4c](https://github.com/antwika/antwika/commit/83e2c4c1b7fa7389f0cbdc7833c27f8bf5c99342))
+* **gfx:** anchor every glyph when the viewport scale is not whole ([e1ebe93](https://github.com/antwika/antwika/commit/e1ebe932d0ced6c3534af4a94ea42278c7a903c2))
+* **gfx:** exclude the unwind landing pad glyphAtlasBitmap cannot reach ([796fc90](https://github.com/antwika/antwika/commit/796fc9003d3050e20b8fdddba0d61487745ed45c))
+* **i18n:** keep the two adopting apps' coverage at 100% ([a4e5d06](https://github.com/antwika/antwika/commit/a4e5d06150912cb2acbb431cdddbc14740b60933))
+* **i18n:** repair a doc comment split by the catalogue merge ([a149c22](https://github.com/antwika/antwika/commit/a149c221478570420cb524cb7b52011b5c33f4d7))
+* **life:** walk the whole drag segment (FINDINGS-3 13) ([adb6502](https://github.com/antwika/antwika/commit/adb6502648f70dd8944fd7f5978555e93bd016cc))
+* **music_editor,notation,wiki:** the music-stack tidy tier (FINDINGS-3 21-24) ([3354f4b](https://github.com/antwika/antwika/commit/3354f4b048bd27c112596e64c57d4bd56588eb3e))
+* **network:** keep the frames a peer sent just before it closed ([f6e28c4](https://github.com/antwika/antwika/commit/f6e28c4cd16d0272bd80ffbe5c05008e7dfd7f0c))
+* **pathfinding:** refuse costs that sum past what a Cost can hold ([18e3cf6](https://github.com/antwika/antwika/commit/18e3cf64341b66fee9aa51e2eb095a0fbac64e6a))
+* **pattern:** move a fraction's sign to its numerator (FINDINGS-3 1) ([8f8549b](https://github.com/antwika/antwika/commit/8f8549b215ef691e9fbbcf9e78fed138a2e76394))
+* **replay:** close four format holes in one pass (FINDINGS-3 14, 15, 16, 29) ([527abe1](https://github.com/antwika/antwika/commit/527abe178e93b30b29e0977c340afcd7e102dd27))
+* **replay:** refuse documents nested past a small bound (FINDINGS-3 2) ([a00b0cc](https://github.com/antwika/antwika/commit/a00b0cca273b503b542516ce8fe54f325b6b50ca))
+* **scripts,ci:** make the build tooling tell the truth about itself ([23d71e5](https://github.com/antwika/antwika/commit/23d71e5b277178ece8e008c687e75fdb2d16126e))
+* **sound:** refuse a waveform with no frames in it ([d2e18da](https://github.com/antwika/antwika/commit/d2e18da187e84462c0dac1f0e655d1d8a479e318))
+* **sudoku:** give each replay case its own scratch file ([70c8baa](https://github.com/antwika/antwika/commit/70c8baa81c2885c847c02e6137478998d516ff6f))
+* **synth,notation,pattern:** the music stack's verified review findings ([1740b0a](https://github.com/antwika/antwika/commit/1740b0a6cdcb8abe4d83e470da9c82276d45fe63))
+* **tween,pathfinding:** fit the guards to the arithmetic they guard (FINDINGS-3 5, 6) ([de780ae](https://github.com/antwika/antwika/commit/de780ae19fb1ef302134d37e0ee99bb64d25273e))
+* **ui,music_editor:** scope a drag to where its press landed (FINDINGS-3 7, 8, 30) ([2f81d1c](https://github.com/antwika/antwika/commit/2f81d1c4f6f8b2b91d6b6a40d20ef039e8d954aa))
+* **ui:** a pointer an overlay claims never reaches beneath it (FINDINGS-3 3, FINDINGS-2 11) ([e2333f6](https://github.com/antwika/antwika/commit/e2333f66ec2e09936917c372caef98a1a7d79f51))
+* **ui:** keep children inside the box and refuse a half-built frame ([66dce21](https://github.com/antwika/antwika/commit/66dce21411ab5024956ccb82c6bf767c5dd1e784))
+* **wfc,replay,ecs,pathfinding,engine:** the determinism core's edges ([95a9ea6](https://github.com/antwika/antwika/commit/95a9ea67e89de8e897db3748728840775ec8580b))
+
+
+### Features
+
+* **app:** a canvas pointer mapping, and a fullscreen toggle above the loop ([60bfc5e](https://github.com/antwika/antwika/commit/60bfc5eaa5e65d582c9b37e2f7d0841a5b210eb2))
+* **assets:** bundle Roboto Mono as a shipped font asset ([f8bdfe9](https://github.com/antwika/antwika/commit/f8bdfe91f09b3472984629e3316a631ddeb3bdc9))
+* **atlas_editor:** announce the opening sheet ahead of the recorder (FINDINGS-3 12) ([9fed779](https://github.com/antwika/antwika/commit/9fed779102ed7e19d3ad74eec5f43ef7827b187a))
+* **atlas_editor:** word the toolbar and the status line from a catalogue ([e529a1d](https://github.com/antwika/antwika/commit/e529a1dea135344d86619cd58291971fb724c7cb))
+* **companion,i18n:** name every prop in the box that presses it ([3d27e1f](https://github.com/antwika/antwika/commit/3d27e1f4186ac6d92c9492395a0258284880ccc0))
+* **companion:** a breath eases rather than stepping ([b4ea31f](https://github.com/antwika/antwika/commit/b4ea31f4fee7e699ae6fdbc8c5020ad0ebc70aa4))
+* **companion:** double the window and report the state in words ([53af213](https://github.com/antwika/antwika/commit/53af213029b69bf9aab20a1ba6f13c5bc86b23f6))
+* **companion:** give it a speech bubble it says a fixed set of lines in ([7898e83](https://github.com/antwika/antwika/commit/7898e83663d09000c9dfdee9d32626b9e4331ec9))
+* **companion:** make energy the life meter and give it three verbs ([ac95320](https://github.com/antwika/antwika/commit/ac953201dda8b040584e8b3c395e5aa1da4133fa))
+* **companion:** persist the companion and offer a new one ([c99fd18](https://github.com/antwika/antwika/commit/c99fd18725a35c24d0b92f00bdef9c4999d140b9))
+* **companion:** word the readout, the bubble and the button from a catalogue ([f07d024](https://github.com/antwika/antwika/commit/f07d0249ba3547c79ee70ace0b49cf34144ed3d3))
+* **game:** a build palette down the right, a game menu on top, the readouts below ([dc1ee40](https://github.com/antwika/antwika/commit/dc1ee406df23ed8fffbff47c9b046c3093d4514d))
+* **game:** a farm that feeds a house, through a store and a market ([af1441c](https://github.com/antwika/antwika/commit/af1441cba5defe69d105c90faebaba500534e007))
+* **game:** a house that grows on what keeps reaching it ([bffdbf1](https://github.com/antwika/antwika/commit/bffdbf1d63ad8d9a7422ca9afcfff0c5ac73d003))
+* **game:** a menu modal opened by F10 or the toolbar ([b35ea7a](https://github.com/antwika/antwika/commit/b35ea7aaa10cc2bb4458f4f2cd701ccac4d8c5b1))
+* **game:** key bindings the recording carries, and the screen to change them ([fe50306](https://github.com/antwika/antwika/commit/fe50306419e739a8678d60fddb12a69c65717d91))
+* **game:** lay a run of road by dragging the left button ([9b0bdfd](https://github.com/antwika/antwika/commit/9b0bdfd43d280c0251b97282803b42dff4b73c49))
+* **game:** pause only when a player asks, and never as a side effect ([6b715d1](https://github.com/antwika/antwika/commit/6b715d1f6abd25c2e404f1b479415617cebc4520))
+* **game:** people to house, jobs to fill and a bar that judges the city ([38adafb](https://github.com/antwika/antwika/commit/38adafb2b5f71b28810b3a010eecbacdb920c171))
+* **game:** publish the coverage seam before anything writes to it ([5a429b5](https://github.com/antwika/antwika/commit/5a429b5ec70573c83cde83f095906da7211cd98c))
+* **game:** say how full a hovered house is ([2bc97b9](https://github.com/antwika/antwika/commit/2bc97b9f2991d1dd8bd15bcaab5c95e28f38a2be))
+* **game:** serve a district rather than hand it a number ([835b066](https://github.com/antwika/antwika/commit/835b066bb8767c62bcf587eae9a6b166fd352cc2))
+* **game:** the round-one vocabulary, and every crossing as a table ([5603e1f](https://github.com/antwika/antwika/commit/5603e1f84a4039dead6f5ca18ccef9a4772caa11))
+* **game:** the view scales with the window, and F10 fills the screen ([21f51e9](https://github.com/antwika/antwika/commit/21f51e909b1fa31a9688d11d14dc748b7a1b9467))
+* **game:** three pivot-anchored texture atlases replace the one sheet ([3bdeceb](https://github.com/antwika/antwika/commit/3bdeceb8192afd3315bbee8f7bbf6fb8f34364d6))
+* **gfx:** a window that can fill the screen, on resizable's terms ([f6326ad](https://github.com/antwika/antwika/commit/f6326ad12e0c088d17d17a82fb0c2bb456e21ff1))
+* **gfx:** draw and measure text from a font::GlyphAtlas ([15ec77e](https://github.com/antwika/antwika/commit/15ec77e09b28a2b52a631743d5ee1ddb396b1443))
+* **gfx:** draw the built-in font from Roboto Mono, not a table of bits ([4c48b4a](https://github.com/antwika/antwika/commit/4c48b4a1ed3d238925e155c59c510a813cb0587f))
+* **gfx:** place a fixed canvas in a window of any size, scaled ([b347807](https://github.com/antwika/antwika/commit/b34780730a7a3ae0956472902dcd0ca2a3928d99))
+* **i18n:** say how an application reaches a translator, and add its ids ([d9db10f](https://github.com/antwika/antwika/commit/d9db10f1b1d4afe33206a852aa08ee594b65d15d))
+* **input:** a key is where it is, not what it types ([ddef8e3](https://github.com/antwika/antwika/commit/ddef8e3f386c8ff525c5f459293be9b423f993cc))
+* **input:** read a device position as a position on the app's surface ([25ec65e](https://github.com/antwika/antwika/commit/25ec65e2da122010984496a25a490c846f6df7d6))
+* **music_editor,input:** paste from the system clipboard ([02b150b](https://github.com/antwika/antwika/commit/02b150b98d8f4891ac0b4fae084b1a418f6aa6e1))
+* **music_editor,sequencer:** a speed box that retimes every voice ([49d6e08](https://github.com/antwika/antwika/commit/49d6e08ef75e24c35c640f238a29c2399a72c4d9))
+* **music_editor,ui,notation:** light the notes that are sounding ([13e6ad7](https://github.com/antwika/antwika/commit/13e6ad7802165f5a935868fd6e4aefa8ea9199c9))
+* **music_editor:** a menu -- new, save, load and quit ([7ba0388](https://github.com/antwika/antwika/commit/7ba038869a6417b89ba32521de25b1f518143693))
+* **music_editor:** a swedish board, a clipboard, a bar and chains down the page ([9046f9b](https://github.com/antwika/antwika/commit/9046f9b1d4cbd12a3ce7f25db754d7024c21e5a7))
+* **music_editor:** a voice is a line, composed by chaining calls ([c93c142](https://github.com/antwika/antwika/commit/c93c142a4e81c167b925171988401ccd7c6c8fdd))
+* **music_editor:** F10 scales the picture instead of parking it ([fa0ca18](https://github.com/antwika/antwika/commit/fa0ca18320c5713bfdef5aa19a65450b43347367))
+* **music_editor:** four lines of notation you type into while they play ([557d4a7](https://github.com/antwika/antwika/commit/557d4a74da638673d8a49231dce1b756a22db01c))
+* **music_editor:** one pane of code, at twice the glyph size ([2edf54e](https://github.com/antwika/antwika/commit/2edf54eaecfee0c8af29bb92279a93469afed497))
+* **music_editor:** run until closed rather than to a tick budget ([d959165](https://github.com/antwika/antwika/commit/d959165bc74a63611df6435f232f17e086348f54))
+* **network:** a sockets backend, and three contracts it corrected ([608ec37](https://github.com/antwika/antwika/commit/608ec37a46f6d893a96601b276ecd0a2cd3578c1))
+* **network:** a transport seam that owns no thread, and a loopback one ([e84ae78](https://github.com/antwika/antwika/commit/e84ae787b93f950c78af5cbf27d378db272f4a09))
+* **pattern:** a pattern algebra over exact rational cycles ([a88a717](https://github.com/antwika/antwika/commit/a88a717f46692b819a217b58f24c526e53300873))
+* **poker:** draw the table as a ring of seats around a rounded felt ([98cfd0b](https://github.com/antwika/antwika/commit/98cfd0bb24e4708c2a7c08b6b1c9f88a05b43d1f))
+* **sequencer,notation:** musical time meets frame time, and a notation ([73e807e](https://github.com/antwika/antwika/commit/73e807ee88b0aa05e9577c626342b44e266681f6))
+* **sudoku:** a Sudoku you play, and a solver bounded by a tick ([34dd8a3](https://github.com/antwika/antwika/commit/34dd8a3e9ad1e765617d5052b5286b1933f367a2))
+* **sudoku:** print through the catalogue, and take a locale on the line ([59b085e](https://github.com/antwika/antwika/commit/59b085e3d90d1672ec4c4e140fb256e8f5cb5f07))
+* **synth:** sounds as values in source rather than waveform files ([d6daf73](https://github.com/antwika/antwika/commit/d6daf73f1465c094334a2b6ddd51d39eae7b035f))
+* **task_worker:** a window that shows the queue being pulled in order ([d1e979e](https://github.com/antwika/antwika/commit/d1e979e07074645d140400f7c8796e9bdbc1cecd))
+* **tower_defence:** a campaign of levels, four kinds of mob, waves and a kept high score ([ffdc3a2](https://github.com/antwika/antwika/commit/ffdc3a2d7d6cb21969c427e7670b3f87b31930a7))
+* **tween:** easing curves that stay exact ([b0a497b](https://github.com/antwika/antwika/commit/b0a497bff14dbadaf697d8a4d1abca36e9d3ad6b))
+* **ui_demo:** a textArea page, so the showcase shows every element (FINDINGS-3 32) ([33d00ae](https://github.com/antwika/antwika/commit/33d00ae3d42376b4314558909c7633d3c39ea477))
+* **ui_demo:** word the whole showcase from a catalogue ([07eb045](https://github.com/antwika/antwika/commit/07eb0452f7e1b374c86a3a59517dc7c4f2c33fd7))
+* **ui,music_editor:** Home and End move the caret over its line ([664766a](https://github.com/antwika/antwika/commit/664766a143379b753701db9f56487202e42a2b17))
+* **ui:** a text area that selects, scrolls and takes a click ([768967b](https://github.com/antwika/antwika/commit/768967b866f3c2650088a753e7516163bd30bab5))
+* **ui:** a text area, and a character that keeps its place in the order ([a771636](https://github.com/antwika/antwika/commit/a77163652962b737e38fe72f42a928cfa20c22d8))
+
+
+### BREAKING CHANGES
+
+* `ReplayWriter::Layout` is gone, since a record has to
+fit on one line; `replayToJson()` is replaced by `replayHeaderToJson()`
+and `replayRecordsFromJson()`; `saveReplayFile()` takes its events by
+const reference and no layout. A build older than this refuses a JSON
+Lines replay by version rather than by shape.
+
+Co-Authored-By: Claude Opus 5 (1M context) <noreply@anthropic.com>
+* antwika::i18n::MessageId no longer carries any
+application's ids, and Catalogue, CatalogueEntry, lookup(), format()
+and Translator are now templates.  A consumer declares its own id
+enumeration and a Messages type satisfying antwika::i18n::MessageSet.
+
 # [0.11.0](https://github.com/antwika/antwika/compare/v0.10.0...v0.11.0) (2026-08-01)
 
 
