@@ -10,7 +10,9 @@ What it gives an artist is the one thing an outside tool cannot: the slot bounda
 
 It is an ordinary application of this codebase's tick loop rather than a tool bolted on beside one.
 One tick is one frame, a click is the only input, `--record` and `--replay` work as they do everywhere else, and every pixel it puts down is regenerated from the recorded clicks rather than persisted.
-**It defines no event of its own**: `atlas_editor::EditorSink` turns a press into a painted pixel inside the tick path, so a `--record` file holds the click and a replay works out again which pixel it landed on and what colour went there.
+**It defines one event of its own, and that event carries no pixels**: `atlas.opening_sheet` announces a fingerprint of the sheet a live session opened on, ahead of the recorder, on sudoku's `PuzzleSource` precedent.
+The sheet decides what every later click means -- the Pick tool lifts a colour *off it* -- so a replay run checks the recorded announcement against the sheet it actually opened and refuses a mismatch loudly, instead of repainting different pixels in silence against a `--image` that changed between runs.
+Everything else is `atlas_editor::EditorSink` turning a press into a painted pixel inside the tick path, so a `--record` file holds the click and a replay works out again which pixel it landed on and what colour went there.
 
 ## Opening a sheet
 
@@ -101,12 +103,15 @@ That is the one place this application deliberately catches rather than throwing
 
 **There is no undo, and that is a design decision rather than a gap.**
 A stack of past sheets would be application state a replay cannot regenerate unless every entry of it is regenerated too.
-Every edit already *is* recorded, as the click that made it, so replaying a session up to a point is the undo this design has:
+Every edit already *is* recorded, as the click that made it, so replaying a session up to a point is the undo this design has -- and the opening announcement above is what makes that true against a store that changed since:
 
 ```sh
 antwika_atlas_editor --image atlas.png --out mine.png --record session.json
 antwika_atlas_editor --image atlas.png --out mine.png --replay session.json
 ```
+
+The mid-session Load button re-reads the store through no event, deliberately: guarding it as the opening is guarded would be a second fingerprint for a button the capped headless runs never press.
+A session that pressed Load replays faithfully only while the file it re-read is unchanged -- the one caveat this page's undo claim carries.
 
 **A recording here is large**, and knowingly so.
 **This is the one application in the tree that thins nothing out of its recording.**

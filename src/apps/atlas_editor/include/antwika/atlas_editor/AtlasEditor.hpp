@@ -130,6 +130,17 @@ namespace antwika::atlas_editor
          */
         std::optional<antwika::time::Tick> maxTicks = std::nullopt;
 
+        /**
+         * @brief Whether to announce the opening sheet as an event.
+         *
+         * True for a live run, so the recording carries the sheet the
+         * session was drawn on; false for a replay run, whose
+         * recording already carries the announcement -- EditorSink
+         * checks it against the sheet this run actually opened and
+         * refuses a mismatch loudly.
+         */
+        bool announceOpening = false;
+
         /** @brief Sink receiving every dispatched event, tick-stamped. */
         std::optional<std::reference_wrapper<ITickEventSink>>
             replayRecorder = std::nullopt;

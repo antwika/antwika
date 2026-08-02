@@ -1,6 +1,7 @@
 add_executable(antwika_atlas_editor
     src/AtlasEditor.cpp
     src/Canvas.cpp
+    src/OpeningSheet.cpp
     src/CanvasView.cpp
     src/EditorOptions.cpp
     src/EditorScene.cpp
@@ -12,7 +13,6 @@ add_executable(antwika_atlas_editor
     src/PngAtlasStore.cpp
     src/RenderSink.cpp
     src/SceneSnapshot.cpp
-    src/TickLimitSource.cpp
     src/TileGrid.cpp
     src/Tool.cpp
     src/UiOverlay.cpp

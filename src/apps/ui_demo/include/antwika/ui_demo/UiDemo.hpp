@@ -99,7 +99,7 @@ namespace antwika::ui_demo
          * @brief Safety cap on how many ticks to run.
          *
          * Reached without engine.stop, the run throws rather than going
-         * on forever; the demo itself ends through TickBudgetSource,
+         * on forever; the demo itself ends through TickLimitSource,
          * which is an ordinary stop.
          * Tests should always set it.
          */

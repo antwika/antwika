@@ -1,5 +1,7 @@
 #include "antwika/atlas_editor/AtlasEditor.hpp"
 
+#include "antwika/atlas_editor/OpeningSheet.hpp"
+
 #include <memory>
 #include <optional>
 #include <utility>
@@ -85,6 +87,14 @@ namespace antwika::atlas_editor
             timedSinks.push_back(config.replayRecorder->get());
         }
 
+        // Ahead of the recorder, so a recording carries its sheet.
+        // A replay run passes no announcement; its recording has one.
+        OpeningSheetSource announced(
+            config.inputSource,
+            config.announceOpening
+                ? std::optional{openingSheetEvent(state.image())}
+                : std::nullopt);
+
         TickedEventDispatcher tickedDispatcher(dispatcher, timedSinks);
         Engine engine(logger, tickedDispatcher);
 
@@ -92,7 +102,7 @@ namespace antwika::atlas_editor
             antwika::log::Level::Info, "Running Antwika Atlas Editor");
         engine.start();
 
-        EngineLoop loop(engine, tickedDispatcher, config.inputSource);
+        EngineLoop loop(engine, tickedDispatcher, announced);
         loop.run(stopSignal, config.maxTicks);
 
         return EditorSummary{

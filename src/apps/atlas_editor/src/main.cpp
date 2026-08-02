@@ -128,6 +128,8 @@ namespace
             .canvas = kWindowSize,
             .blank = options.sheet,
             .tiles = options.tile,
+            .announceOpening =
+                !recorded.options.replayPath.has_value(),
             .replayRecorder = recorded.replayRecorder,
             .extraSink =
                 [&](const EditorState &state, const UiOverlay &overlay)

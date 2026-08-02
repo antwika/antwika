@@ -136,6 +136,11 @@ namespace antwika::atlas_editor
         const IInputEventCodec &codec;
         const Translator &translator;
 
+        // The opening sheet's announcement payload, as this run has it.
+        // An announcement that differs is a replay of another sheet.
+        // Refused rather than repainted in silence.
+        std::string expectedOpening;
+
         InputState folded;
         std::optional<antwika::time::Tick> foldedTick;
         std::optional<Point> previous;

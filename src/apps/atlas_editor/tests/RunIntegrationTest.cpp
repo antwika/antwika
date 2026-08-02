@@ -26,6 +26,7 @@
 #include <antwika/ui/Pointer.hpp>
 
 #include "antwika/atlas_editor/AtlasEditor.hpp"
+#include "antwika/atlas_editor/AtlasEditorError.hpp"
 #include "antwika/atlas_editor/Canvas.hpp"
 #include "antwika/atlas_editor/EditorState.hpp"
 #include "antwika/atlas_editor/EditorUi.hpp"
@@ -308,6 +309,103 @@ TEST(RunIntegrationTest, TheExtraSinkSeesEveryFinishedTick)
 // A caller persisting a `--record` file has no pre-known script.
 // It passes an optional replayRecorder instead.
 // Only the input comes back: every pixel is regenerated from it.
+// The sheet a session opens on decides what every later click means.
+// The Pick tool lifts a colour off the sheet itself.
+// A live run therefore announces it ahead of the recorder.
+// And a replay against another store's sheet is refused out loud.
+TEST(RunIntegrationTest, AReplayAgainstAnotherSheetIsRefused)
+{
+    NiceMock<MockLogger> logger;
+    NiceMock<MockEventSink> eventSink;
+    const InputEventCodec codec;
+    TickEventRecorder recorder;
+
+    {
+        ReplaySource source(script());
+        MemoryStore store;
+
+        (void)bootstrap(EditorConfig{
+            .logger = logger,
+            .eventSink = eventSink,
+            .inputSource = source,
+            .codec = codec,
+            .store = store,
+            .translator = kTranslator,
+            .canvas = kCanvas,
+            .blank = kCanvas,
+            .tiles = TileGrid{},
+            .maxTicks = kMaxTicks,
+            .announceOpening = true,
+            .replayRecorder = recorder});
+    }
+
+    // The natural iteration loop: the store changed between runs.
+    MemoryStore changed(Bitmap{
+        .size = {.width = 4, .height = 4},
+        .pixels = std::vector<std::uint8_t>(64, 9)});
+    ReplaySource replay(recorder.getEvents());
+
+    EXPECT_THROW(
+        (void)bootstrap(EditorConfig{
+            .logger = logger,
+            .eventSink = eventSink,
+            .inputSource = replay,
+            .codec = codec,
+            .store = changed,
+            .translator = kTranslator,
+            .canvas = kCanvas,
+            .blank = kCanvas,
+            .tiles = TileGrid{},
+            .maxTicks = kMaxTicks}),
+        antwika::atlas_editor::AtlasEditorError);
+}
+
+// The same recording against the same sheet plays clean through.
+TEST(RunIntegrationTest, AReplayAgainstTheSameSheetPlaysThrough)
+{
+    NiceMock<MockLogger> logger;
+    NiceMock<MockEventSink> eventSink;
+    const InputEventCodec codec;
+    TickEventRecorder recorder;
+
+    {
+        ReplaySource source(script());
+        MemoryStore store;
+
+        (void)bootstrap(EditorConfig{
+            .logger = logger,
+            .eventSink = eventSink,
+            .inputSource = source,
+            .codec = codec,
+            .store = store,
+            .translator = kTranslator,
+            .canvas = kCanvas,
+            .blank = kCanvas,
+            .tiles = TileGrid{},
+            .maxTicks = kMaxTicks,
+            .announceOpening = true,
+            .replayRecorder = recorder});
+    }
+
+    MemoryStore same;
+    ReplaySource replay(recorder.getEvents());
+
+    const EditorSummary summary = bootstrap(EditorConfig{
+        .logger = logger,
+        .eventSink = eventSink,
+        .inputSource = replay,
+        .codec = codec,
+        .store = same,
+        .translator = kTranslator,
+        .canvas = kCanvas,
+        .blank = kCanvas,
+        .tiles = TileGrid{},
+        .maxTicks = kMaxTicks});
+
+    EXPECT_EQ(summary.edits, 1U);
+    EXPECT_EQ(summary.saves, 1U);
+}
+
 TEST(RunIntegrationTest, TheReplayRecorderReceivesEveryDispatchedEvent)
 {
     NiceMock<MockLogger> logger;
