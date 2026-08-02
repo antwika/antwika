@@ -202,7 +202,11 @@ TEST(TextFieldTest, TheCaretSitsAtTheStartOfAnEmptyFocusedField)
 
 TEST(TextFieldTest, AnUnfocusedFieldReportsNoEditAtAll)
 {
-    Context ui{kCanvas, plainTheme(), Pointer{}, Keyboard{.typed = "c"}};
+    Context ui{
+        kCanvas,
+        plainTheme(),
+        Pointer{},
+        Keyboard{.keys = {Key::Character}, .typed = "c"}};
 
     ui.textField(TextFieldSpec{.id = kName, .text = "ab"});
 
@@ -221,7 +225,8 @@ TEST(TextFieldTest, AQuietFrameReportsNoEditEither)
 
 TEST(TextFieldTest, TypingIsReportedAsTheTextItWouldMake)
 {
-    Context ui{kCanvas, plainTheme(), Pointer{}, Keyboard{.typed = "cd"}};
+    Context ui{kCanvas, plainTheme(), Pointer{}, Keyboard{
+            .keys = {Key::Character, Key::Character}, .typed = "cd"}};
 
     ui.textField(
         TextFieldSpec{.id = kName, .text = "ab", .focused = true});
@@ -239,7 +244,11 @@ TEST(TextFieldTest, TypingIsReportedAsTheTextItWouldMake)
 
 TEST(TextFieldTest, TypingGoesInWhereTheCursorIs)
 {
-    Context ui{kCanvas, plainTheme(), Pointer{}, Keyboard{.typed = "X"}};
+    Context ui{
+        kCanvas,
+        plainTheme(),
+        Pointer{},
+        Keyboard{.keys = {Key::Character}, .typed = "X"}};
 
     ui.textField(TextFieldSpec{
         .id = kName, .text = "ab", .cursor = 1, .focused = true});
@@ -348,7 +357,11 @@ TEST(TextFieldTest, EnterAndEscapeAreReportedWithoutChangingTheText)
 
 TEST(TextFieldTest, ACursorPastTheEndIsTheEnd)
 {
-    Context ui{kCanvas, plainTheme(), Pointer{}, Keyboard{.typed = "c"}};
+    Context ui{
+        kCanvas,
+        plainTheme(),
+        Pointer{},
+        Keyboard{.keys = {Key::Character}, .typed = "c"}};
 
     ui.textField(TextFieldSpec{
         .id = kName, .text = "ab", .cursor = 99, .focused = true});
@@ -419,7 +432,7 @@ TEST(TextFieldTest, TabReachesAFieldAndTheNextFrameTypesIntoIt)
         kCanvas,
         plainTheme(),
         Pointer{},
-        Keyboard{.typed = "c"},
+        Keyboard{.keys = {Key::Character}, .typed = "c"},
         reached.interactions.focused};
 
     second.textField(TextFieldSpec{.id = kName, .text = "ab"});
@@ -467,5 +480,72 @@ TEST(TextFieldTest, TabbingAwayLeavesTheCaretWhereItWas)
         .id = kName, .text = "ab", .cursor = 1, .focused = true});
 
     // A focus key moves no caret, so this frame reports no edit.
+    EXPECT_FALSE(ui.finish().interactions.edit.has_value());
+}
+
+TEST(TextFieldTest, ACharacterAndABackspaceKeepTheOrderTheyArrivedIn)
+{
+    // Typing `a`, Backspace, `b` inside one frame is `b`.
+    // What makes that expressible is the Character edge.
+    // The characters used to go in before any key was read.
+    Context ui{
+        kCanvas,
+        plainTheme(),
+        Pointer{},
+        Keyboard{
+            .keys = {Key::Character, Key::Backspace, Key::Character},
+            .typed = "ab"}};
+
+    ui.textField(
+        TextFieldSpec{.id = kName, .text = "", .focused = true});
+
+    const auto edit = ui.finish().interactions.edit;
+
+    ASSERT_TRUE(edit.has_value());
+    EXPECT_EQ("b", edit->text);
+    EXPECT_EQ(1U, edit->cursor);
+}
+
+TEST(TextFieldTest, ACharacterWithNoEdgeToTakeItIsNotTyped)
+{
+    // Nothing would say where in the order it belonged.
+    Context ui{
+        kCanvas, plainTheme(), Pointer{}, Keyboard{.typed = "c"}};
+
+    ui.textField(
+        TextFieldSpec{.id = kName, .text = "ab", .focused = true});
+
+    EXPECT_FALSE(ui.finish().interactions.edit.has_value());
+}
+
+TEST(TextFieldTest, MoreCharacterEdgesThanCharactersTypeWhatThereIs)
+{
+    Context ui{
+        kCanvas,
+        plainTheme(),
+        Pointer{},
+        Keyboard{
+            .keys = {Key::Character, Key::Character}, .typed = "c"}};
+
+    ui.textField(
+        TextFieldSpec{.id = kName, .text = "ab", .focused = true});
+
+    const auto edit = ui.finish().interactions.edit;
+
+    ASSERT_TRUE(edit.has_value());
+    EXPECT_EQ("abc", edit->text);
+}
+
+TEST(TextFieldTest, AFieldIsOneLineSoTheVerticalKeysDoNothing)
+{
+    Context ui{
+        kCanvas,
+        plainTheme(),
+        Pointer{},
+        Keyboard{.keys = {Key::MoveUp, Key::MoveDown}}};
+
+    ui.textField(
+        TextFieldSpec{.id = kName, .text = "ab", .focused = true});
+
     EXPECT_FALSE(ui.finish().interactions.edit.has_value());
 }

@@ -10,6 +10,8 @@ antwika_add_library(
         src/Painter.cpp
         src/Resolve.cpp
         src/Scope.cpp
+        src/TextArea.cpp
+        src/TextEditing.cpp
         src/TextField.cpp
         src/Theme.cpp
         src/WidgetRects.cpp
