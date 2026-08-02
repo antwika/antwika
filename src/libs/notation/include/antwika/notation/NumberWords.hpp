@@ -40,6 +40,10 @@ namespace antwika::notation
          * @return One control, under this reader's id.
          * @throws NotationError If the word is not a whole number or a
          * fraction of two.
+         * @throws antwika::pattern::PatternError If the fraction's
+         * denominator is zero, its sign cannot be moved to the
+         * numerator, or the value will not fit -- "3%0" parses as a
+         * word and is refused by ParamValue's own constructor.
          */
         [[nodiscard]] Controls read(
             std::string_view word, std::size_t at) const override;

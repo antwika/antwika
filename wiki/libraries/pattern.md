@@ -10,7 +10,8 @@ A pattern is a pure function: hand it a window and it tells you what is inside.
 Combinators transform that function -- faster, slower, shifted, reversed, thinned, Euclidean -- and the set is closed, so an expression composes without special cases:
 
 ```cpp
-const auto riff = every(rev, fast(Cycle(3, 2), euclid(3, 8, pure(kKick))));
+const auto kick = pure(Controls(kNote, ParamValue(0)));
+const auto riff = rev(fast(Cycle(3, 2), euclid(3, 8, kick)));
 ```
 
 ## What it is deliberately not
