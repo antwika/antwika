@@ -58,10 +58,13 @@ TEST(ReplaySourceTest, EventsFor_WalksTheRecordingOnceAcrossASession)
     EXPECT_TRUE(source.eventsFor(4).empty());
 }
 
-TEST(ReplaySourceTest, EventsFor_ReplaysAFileWhoseTicksAreOutOfOrder)
+TEST(ReplaySourceTest, EventsFor_ReplaysAScriptedVectorThatIsOutOfOrder)
 {
-    // A hand-authored file need not be written in tick order.
+    // A scripted vector need not be built in tick order.
     // The cursor can only walk forwards, so the constructor sorts.
+    // This is the only thing that sort is for.
+    // A recorded *file* whose ticks go backwards is refused outright.
+    // ReplayJson's requireTickDoesNotGoBackwards is where.
     ReplaySource source({
         TickEvent{.tick = 2, .event = Event{.name = "b"}},
         TickEvent{.tick = 0, .event = Event{.name = "a"}},

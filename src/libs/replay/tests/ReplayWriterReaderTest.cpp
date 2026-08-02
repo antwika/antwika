@@ -190,6 +190,27 @@ TEST(ReplayWriterReaderTest, ATornFinalLineIsDroppedRatherThanRefused)
             TickEvent{.tick = 0, .event = Event{.name = "a.b"}}}));
 }
 
+// The other side of the same kill: between the write and the newline.
+// The record itself got there whole, so it is kept rather than dropped.
+// Which recordings survive a kill is worth pinning either way.
+// A reader wanting the marker first would quietly lose this one.
+// This is the test that would say so.
+TEST(ReplayWriterReaderTest, ACompleteFinalRecordWithNoNewlineIsKept)
+{
+    const std::string text =
+        R"({"magic":"antwika-replay","version":2})"
+        "\n"
+        R"({"tick":0,"event":{"name":"a.b","payload":""}})"
+        "\n"
+        R"({"tick":1,"event":{"name":"c.d","payload":""}})";
+
+    EXPECT_EQ(
+        readText(text),
+        (std::vector<TickEvent>{
+            TickEvent{.tick = 0, .event = Event{.name = "a.b"}},
+            TickEvent{.tick = 1, .event = Event{.name = "c.d"}}}));
+}
+
 TEST(ReplayWriterReaderTest, BlankLinesBetweenRecordsAreIgnored)
 {
     const std::string text =

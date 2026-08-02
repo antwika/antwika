@@ -37,10 +37,20 @@ namespace antwika::wfc
          * strictly positive.
          * @param limits Optional step budget; default is unlimited.
          * @throws WfcError if initialWave's domains don't all share the
-         * same alphabet size, a constraint references a cell index out
-         * of range for initialWave, valueWeights is non-empty and its
-         * size doesn't match the wave's alphabet size, or any weight is
-         * not strictly positive.
+         * same alphabet size, any of them is already empty, a
+         * constraint references a cell index out of range for
+         * initialWave, valueWeights is non-empty and its size doesn't
+         * match the wave's alphabet size, or any weight is not strictly
+         * positive.
+         *
+         * An empty initial domain is refused here rather than reported
+         * as SolveOutcome::Unsatisfiable: Domain is public and mutable,
+         * so it is malformed input in the same family as a mismatched
+         * alphabet size, and it belongs with the other two structural
+         * checks. It is also what keeps solve()'s promise below true,
+         * since EntropyIndex never tracks a cell with no candidates and
+         * such a wave would otherwise reach the end of a solve and be
+         * reported as an internal bug.
          */
         Solver(
             std::vector<Domain> initialWave,
@@ -56,7 +66,8 @@ namespace antwika::wfc
          * LimitExceeded if limits.maxSteps was reached first.
          * @throws WfcError if a wave about to be reported Solved still
          * holds an undetermined cell, which would be a bug here rather
-         * than anything a caller can provoke.
+         * than anything a caller can provoke -- the constructor refuses
+         * the empty initial domain that was the one way to provoke it.
          */
         [[nodiscard]] SolveResult solve() const;
 

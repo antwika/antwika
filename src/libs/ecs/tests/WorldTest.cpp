@@ -127,6 +127,67 @@ TEST(WorldTest, ADeferredRemoveBeatsAnImmediateSetInTheSamePhase)
     EXPECT_FALSE(world.has<Position>(entity));
 }
 
+TEST(WorldTest, AddingAComponentTheEntityAlreadyHasOverwritesIt)
+{
+    NiceMock<MockLogger> logger;
+    World world(logger);
+    const auto entity = world.create();
+    world.add<Position>(entity, Position{1, 2});
+    world.commit();
+
+    world.add<Position>(entity, Position{3, 4});
+    world.commit();
+
+    EXPECT_EQ(world.get<Position>(entity), (Position{3, 4}));
+}
+
+// add() lands during commit(), on top of the back buffer set() wrote.
+TEST(WorldTest, ADeferredAddBeatsAnEarlierSetInTheSamePhase)
+{
+    NiceMock<MockLogger> logger;
+    World world(logger);
+    const auto entity = world.create();
+    world.add<Position>(entity, Position{1, 2});
+    world.commit();
+
+    world.set<Position>(entity, Position{9, 9});
+    world.add<Position>(entity, Position{3, 4});
+    world.commit();
+
+    EXPECT_EQ(world.get<Position>(entity), (Position{3, 4}));
+}
+
+// And on top of one written after it, since the add is still staged.
+// So the pair is ordered by mechanism rather than by call order.
+TEST(WorldTest, ADeferredAddBeatsALaterSetInTheSamePhase)
+{
+    NiceMock<MockLogger> logger;
+    World world(logger);
+    const auto entity = world.create();
+    world.add<Position>(entity, Position{1, 2});
+    world.commit();
+
+    world.add<Position>(entity, Position{3, 4});
+    world.set<Position>(entity, Position{9, 9});
+    world.commit();
+
+    EXPECT_EQ(world.get<Position>(entity), (Position{3, 4}));
+}
+
+// The staging list runs in call order, so the later add is the one.
+TEST(WorldTest, TwoAddsOfOneComponentInOnePhaseResolveAsTheLater)
+{
+    NiceMock<MockLogger> logger;
+    World world(logger);
+    const auto entity = world.create();
+
+    world.add<Position>(entity, Position{1, 2});
+    world.add<Position>(entity, Position{3, 4});
+    world.commit();
+
+    EXPECT_EQ(world.get<Position>(entity), (Position{3, 4}));
+}
+
 TEST(WorldTest, GettingAMissingComponentThrows)
 {
     NiceMock<MockLogger> logger;

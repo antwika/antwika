@@ -206,6 +206,27 @@ TEST(MigrationChainTest, AMigrationThatIsNotASingleStepIsRefused)
     }
 }
 
+TEST(MigrationChainTest, TwoMigrationsReadingOneVersionAreRefused)
+{
+    MigrationList migrations;
+    migrations.push_back(step(1, 2, "one-to-two"));
+    migrations.push_back(step(1, 2, "one-to-two-again"));
+
+    try
+    {
+        const MigrationChain chain(std::move(migrations), 2);
+        FAIL() << "expected a SchemaVersionError";
+    }
+    catch (const SchemaVersionError &error)
+    {
+        const std::string message = error.what();
+        EXPECT_NE(message.find("one-to-two"), std::string::npos);
+        EXPECT_NE(
+            message.find("one-to-two-again"), std::string::npos);
+        EXPECT_NE(message.find("shadowed"), std::string::npos);
+    }
+}
+
 TEST(MigrationChainTest, ACallerMayNameItsOwnVersionKey)
 {
     MigrationList migrations;

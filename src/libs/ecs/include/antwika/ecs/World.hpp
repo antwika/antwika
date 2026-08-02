@@ -103,10 +103,32 @@ namespace antwika::ecs
         [[nodiscard]] bool alive(Entity entity) const noexcept;
 
         /**
-         * @brief Stage a component value for an entity.
+         * @brief Stage a component value for an entity, adding it or
+         * overwriting whatever it already had.
          * @param entity The entity to attach the component to.
          * @param value The value to store, visible after commit().
          * @throws EcsError if entity is not currently alive.
+         *
+         * **add() on a component the entity already has overwrites it**
+         * rather than throwing or being ignored: the staged operation
+         * calls ComponentStorage::insert(), which writes both buffers.
+         * So this is a second deferred write path beside set(), and the
+         * two are ordered by mechanism rather than by call order.
+         *
+         * An add() lands *during* commit(), so it beats a set() of the
+         * same component in the same phase whichever was called first:
+         * a set() called earlier wrote the back buffer that insert()
+         * then overwrites, and a set() called later wrote a back buffer
+         * the add was still on the staging list to overwrite. Either
+         * way the next phase reads the add()'s value. Two add()s in one
+         * phase resolve as the later one, since the staging list runs
+         * in call order.
+         *
+         * A caller that means "only if it is not there" has to ask
+         * has<T>() first, as game's ProductionSystem and MarketSystem
+         * do -- and note that has<T>() answers as of the last commit(),
+         * so two systems in one phase can both be told no and the
+         * second's value is the one that lands.
          */
         template <Component T>
         void add(Entity entity, T value)

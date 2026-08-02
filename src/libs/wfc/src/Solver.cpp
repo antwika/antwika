@@ -55,6 +55,22 @@ namespace antwika::wfc
                     throw WfcError(
                         "Domain alphabet size mismatch in initial wave");
                 }
+
+                // Domain is public and mutable.
+                // So a caller can hand in a cell with nothing to be.
+                // Refused here rather than reported Unsatisfiable.
+                // EntropyIndex only tracks cells with count() > 1.
+                // So an empty one never surfaces to be picked or split.
+                // A wave holding one would run to the end.
+                // Then singleValue() would throw about a singleton.
+                // Which reads as a bug in here rather than bad input.
+                // Structural checks belong with the other two here.
+                if (domain.isEmpty())
+                {
+                    throw WfcError(
+                        "Initial wave holds a cell with an empty "
+                        "domain");
+                }
             }
 
             if (!this->valueWeights.empty()
@@ -119,6 +135,12 @@ namespace antwika::wfc
         // So each call resets it up front rather than trust the past.
         std::vector<bool> queued(constraints.size(), false);
 
+        // The pre-prune snapshot, reused across every worklist pop.
+        // Assigning over an element reuses that Domain's own bits.
+        // A fresh vector per pop was an allocation in the hottest loop.
+        // AStar.cpp hoists its neighbour buffer for the same reason.
+        std::vector<Domain> before;
+
         auto propagate =
             [&](const std::vector<std::size_t> &startingWorklist) -> bool
         {
@@ -142,11 +164,20 @@ namespace antwika::wfc
                 const std::span<const std::size_t> cells =
                     constraint.cells();
 
-                std::vector<Domain> before;
-                before.reserve(cells.size());
+                // Domain has no default constructor to resize with.
+                // So the buffer grows by one pop's worth at a time.
+                std::size_t snapshot = 0;
                 for (const std::size_t cell : cells)
                 {
-                    before.push_back(wave[cell]);
+                    if (snapshot < before.size())
+                    {
+                        before[snapshot] = wave[cell];
+                    }
+                    else
+                    {
+                        before.push_back(wave[cell]);
+                    }
+                    ++snapshot;
                 }
 
                 // A failing constraint can still mutate cells first.

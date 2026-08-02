@@ -25,7 +25,7 @@ The engine is domain-agnostic: it knows about ticks and about dispatching events
 ## Non-obvious decisions
 
 **`engine.tick` is dispatched by the engine, so it is never recorded.**
-`Engine::step()` emits it at the start of every tick, before that tick's queued events are processed.
+`Engine::step()` emits it once per tick, after that tick's input events have been dispatched — [`simulation`](simulation.md)'s `EngineLoop` asks its source for the tick's events and dispatches them, and only then steps the engine.
 Because the engine regenerates it deterministically, it is exactly the kind of event a replay must *not* persist — a replay that stored ticks would produce two per tick when replayed.
 
 **`engine.stop` is genuine external input and therefore is recorded.**

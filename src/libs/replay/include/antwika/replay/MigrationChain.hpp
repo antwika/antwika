@@ -60,12 +60,17 @@ namespace antwika::replay
          * in; the shared kSchemaVersionKey unless a format says
          * otherwise.
          * @throws SchemaVersionError If any migration is not a single
-         * step, i.e. its toVersion() is not its fromVersion() + 1.
+         * step, i.e. its toVersion() is not its fromVersion() + 1, or
+         * two of them read the same fromVersion().
          *
-         * That check is in the constructor rather than in migrate()
+         * Those checks are in the constructor rather than in migrate()
          * because a chain that cannot terminate is a fact about the
          * chain, not about any one document, and finding it out while
          * loading somebody's file is too late.
+         * The duplicate check is there for the same reason: the lookup
+         * takes the first migration reading a version and never looks
+         * further, so a second one would be applied by nothing and
+         * reported by nothing either.
          */
         MigrationChain(
             MigrationList migrations,

@@ -8,8 +8,14 @@ namespace antwika::engine::events
 {
 
     /**
-     * @brief Dispatched by Engine::step() at the start of every fixed tick,
-     * before that tick's queued events are processed.
+     * @brief Dispatched by Engine::step() once per fixed tick, after
+     * that tick's input events have been dispatched.
+     *
+     * simulation::EngineLoop is what orders the two: it asks its
+     * ITickEventSource for the tick's events and dispatches them, and
+     * only then steps the engine. So a sink seeing this has already
+     * seen everything the source supplied for the same tick, which is
+     * what makes it the place to do a tick's end-of-frame work.
      *
      * Application code can react to simulation progress this way,
      * without needing to invent and dispatch its own event for it.

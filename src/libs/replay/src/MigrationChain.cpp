@@ -1,5 +1,6 @@
 #include "antwika/replay/MigrationChain.hpp"
 
+#include <cstddef>
 #include <format>
 #include <utility>
 
@@ -16,8 +17,9 @@ namespace antwika::replay
           current(currentVersion),
           versionKey(std::move(versionKey))
     {
-        for (const auto &migration : this->migrations)
+        for (std::size_t i = 0; i < this->migrations.size(); ++i)
         {
+            const auto &migration = this->migrations[i];
             if (migration->toVersion() != migration->fromVersion() + 1)
             {
                 throw SchemaVersionError(std::format(
@@ -26,6 +28,28 @@ namespace antwika::replay
                     migration->name(),
                     migration->fromVersion(),
                     migration->toVersion()));
+            }
+
+            // stepFrom() takes the first match and never looks further.
+            // So a second reader of one version is applied by nothing.
+            // And nothing anywhere says the chain lost a step.
+            // Refused here for the reason the check above is.
+            // A chain losing a step is a fact about the chain.
+            for (std::size_t j = 0; j < i; ++j)
+            {
+                const auto &earlier = this->migrations[j];
+                if (earlier->fromVersion() != migration->fromVersion())
+                {
+                    continue;
+                }
+
+                throw SchemaVersionError(std::format(
+                    "antwika::replay: migrations \"{}\" and \"{}\" both "
+                    "read version {}; one of them would be applied and "
+                    "the other silently shadowed",
+                    earlier->name(),
+                    migration->name(),
+                    migration->fromVersion()));
             }
         }
     }
