@@ -1,10 +1,13 @@
 #include <gtest/gtest.h>
 
+#include <array>
+#include <cstddef>
 #include <cstdint>
 #include <memory>
 #include <string>
 #include <string_view>
 #include <utility>
+#include <vector>
 
 #include <nlohmann/json.hpp>
 
@@ -15,14 +18,18 @@
 
 #include "antwika/game/SaveFormatError.hpp"
 #include "antwika/game/SaveGame.hpp"
+#include "SaveMigrationV2ToV3.hpp"
 
+using antwika::game::BuildingKind;
 using antwika::game::Cell;
 using antwika::game::kSaveFormatVersion;
+using antwika::game::RenameToServices;
 using antwika::game::SaveFormatError;
 using antwika::game::SaveGame;
 using antwika::game::saveGameFromJson;
 using antwika::game::saveGameToJson;
 using antwika::game::standardSaveMigrations;
+using antwika::game::WalkerKind;
 using antwika::replay::IMigration;
 using antwika::replay::kSchemaVersionKey;
 using antwika::replay::MigrationChain;
@@ -174,4 +181,223 @@ TEST(SaveMigrationTest, TheTranslatedMessageKeepsTheChainsWording)
         EXPECT_NE(std::string(error.what()).find("99"),
                   std::string::npos);
     }
+}
+
+// **A hand-written version 2 document.**
+// Which is what step 4 of docs/schema-versioning.md requires.
+// One this build produced is a version 3 file renumbered.
+// And that proves nothing about what version 2 wrote.
+namespace
+{
+    constexpr const char *kVersionTwoDocument = R"({
+        "magic": "antwika-game-save",
+        "version": 2,
+        "state": {"ticksProcessed": 12, "score": 3},
+        "extent": {"width": 16, "height": 16},
+        "camera": {"panX": 8, "panY": 4, "zoomLevel": 2},
+        "paths": [{"x": 1, "y": 1}, {"x": 1, "y": 2}],
+        "walkers": [
+            {
+                "x": 1, "y": 1,
+                "facing": "north",
+                "kind": "food",
+                "carried": 40,
+                "stepsUntilHome": 9,
+                "ticksUntilStep": 1,
+                "home": 0
+            },
+            {
+                "x": 1, "y": 2,
+                "facing": "west",
+                "kind": "water",
+                "carried": 70,
+                "stepsUntilHome": 3,
+                "ticksUntilStep": 0
+            },
+            {
+                "x": 1, "y": 2,
+                "facing": "east",
+                "kind": "architect",
+                "carried": 0,
+                "stepsUntilHome": 2,
+                "ticksUntilStep": 0
+            }
+        ],
+        "buildings": [
+            {
+                "x": 4, "y": 4,
+                "kind": "food_source",
+                "stock": [55, 66],
+                "risk": 7,
+                "ticksUntilSpawn": 6,
+                "ticksUntilDrain": 5,
+                "ticksUntilRisk": 4,
+                "walker": 0
+            },
+            {
+                "x": 7, "y": 7,
+                "kind": "water_source",
+                "stock": [10, 20],
+                "risk": 0,
+                "ticksUntilSpawn": 1,
+                "ticksUntilDrain": 2,
+                "ticksUntilRisk": 3,
+                "walker": null
+            },
+            {
+                "x": 9, "y": 9,
+                "kind": "architect_post",
+                "stock": [1, 2],
+                "risk": 0,
+                "ticksUntilSpawn": 1,
+                "ticksUntilDrain": 2,
+                "ticksUntilRisk": 3
+            }
+        ],
+        "seed": 99
+    })";
+
+    [[nodiscard]] nlohmann::json versionTwoDocument()
+    {
+        return nlohmann::json::parse(kVersionTwoDocument);
+    }
+} // namespace
+
+// A save the previous version wrote has to still load.
+// And this is what says so.
+TEST(SaveMigrationTest, LoadsAHandWrittenVersionTwoSave)
+{
+    const auto save = saveGameFromJson(versionTwoDocument());
+
+    EXPECT_EQ(save.state.ticksProcessed, 12U);
+    EXPECT_EQ(save.seed, 99U);
+    ASSERT_EQ(save.paths.size(), 2U);
+    ASSERT_EQ(save.walkers.size(), 3U);
+    ASSERT_EQ(save.buildings.size(), 3U);
+}
+
+TEST(SaveMigrationTest, RenamesEveryKindVersionTwoCalledSomethingElse)
+{
+    const auto save = saveGameFromJson(versionTwoDocument());
+
+    EXPECT_EQ(save.buildings[0].kind, BuildingKind::Farm);
+    EXPECT_EQ(save.buildings[1].kind, BuildingKind::Well);
+    EXPECT_EQ(save.buildings[2].kind, BuildingKind::EngineerPost);
+
+    EXPECT_EQ(save.walkers[0].kind, WalkerKind::MarketSeller);
+    EXPECT_EQ(save.walkers[1].kind, WalkerKind::WaterCarrier);
+    EXPECT_EQ(save.walkers[2].kind, WalkerKind::Engineer);
+}
+
+// Water was never a good.
+// So a version 2 shelf of it reads as none of what nobody had made.
+TEST(SaveMigrationTest, ReadsAVersionTwoStockAsFoodAndNoGoodsAtAll)
+{
+    const auto save = saveGameFromJson(versionTwoDocument());
+
+    EXPECT_EQ(
+        save.buildings[0].stock,
+        (std::array<std::int32_t, antwika::game::kResourceCount>{
+            55, 0, 0}));
+    EXPECT_EQ(
+        save.buildings[1].stock,
+        (std::array<std::int32_t, antwika::game::kResourceCount>{
+            10, 0, 0}));
+}
+
+// The one index version 2 wrote becomes a list of one.
+// An explicit null and an absent member both mean nobody.
+TEST(SaveMigrationTest, WrapsAVersionTwoWalkerLinkInAList)
+{
+    const auto save = saveGameFromJson(versionTwoDocument());
+
+    EXPECT_EQ(
+        save.buildings[0].walkers, (std::vector<std::size_t>{0U}));
+    EXPECT_TRUE(save.buildings[1].walkers.empty());
+    EXPECT_TRUE(save.buildings[2].walkers.empty());
+}
+
+// A version 2 document is what the chain reads.
+// So it must not need this build to have written it.
+TEST(SaveMigrationTest, CarriesAHandWrittenVersionTwoDocumentToCurrent)
+{
+    auto document = versionTwoDocument();
+
+    standardSaveMigrations().migrate(document);
+
+    EXPECT_EQ(
+        document.at(std::string(kSchemaVersionKey)).get<std::uint32_t>(),
+        kSaveFormatVersion);
+    EXPECT_FALSE(document.at("buildings").at(0).contains("walker"));
+}
+
+// The step is driven on its own here.
+// A document a decode would refuse is what a hand edit produces.
+// A migration has to leave one alone rather than throw.
+// Anything else would escape a caller catching SaveFormatError.
+TEST(SaveMigrationTest, LeavesAMalformedVersionTwoEntryUntouched)
+{
+    const RenameToServices step;
+
+    nlohmann::json document;
+    document["buildings"] = nlohmann::json::array();
+    document["buildings"].push_back(nlohmann::json::object());
+    document["buildings"].push_back({{"kind", 7}, {"stock", 3}});
+    document["buildings"].push_back(
+        {{"kind", "food_source"}, {"stock", nlohmann::json::array({1})}});
+    document["walkers"] = nlohmann::json::array();
+    document["walkers"].push_back({{"kind", "nothing_it_knows"}});
+
+    step.apply(document);
+
+    EXPECT_TRUE(document.at("buildings").at(0).empty());
+    EXPECT_EQ(document.at("buildings").at(1).at("kind").get<int>(), 7);
+    EXPECT_EQ(
+        document.at("buildings").at(2).at("stock"),
+        nlohmann::json::array({1}));
+    EXPECT_EQ(
+        document.at("buildings").at(2).at("kind").get<std::string>(),
+        "farm");
+    EXPECT_EQ(
+        document.at("walkers").at(0).at("kind").get<std::string>(),
+        "nothing_it_knows");
+}
+
+// A document holding neither array is one nothing has to be done to.
+TEST(SaveMigrationTest, LeavesADocumentWithNeitherArrayAlone)
+{
+    const RenameToServices step;
+
+    nlohmann::json document;
+    document["seed"] = 1;
+    document["buildings"] = 5;
+    document["walkers"] = "not an array";
+
+    const auto before = document;
+    step.apply(document);
+
+    EXPECT_EQ(document, before);
+}
+
+// A document holding neither member is one there is nothing to do to.
+// A hand-written file is allowed to be that empty.
+TEST(SaveMigrationTest, LeavesADocumentNamingNeitherArrayAlone)
+{
+    const RenameToServices step;
+
+    nlohmann::json document;
+    document["seed"] = 1;
+
+    const auto before = document;
+    step.apply(document);
+
+    EXPECT_EQ(document, before);
+}
+
+TEST(SaveMigrationTest, TheVersionTwoStepIsOneStepAndSaysWhichOne)
+{
+    const RenameToServices step;
+
+    EXPECT_EQ(step.fromVersion(), 2U);
+    EXPECT_EQ(step.toVersion(), 3U);
 }

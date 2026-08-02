@@ -7,27 +7,42 @@
 #include <antwika/event/Event.hpp>
 #include <antwika/event/EventDispatcher.hpp>
 #include <antwika/event/TickedEventDispatcher.hpp>
+#include <antwika/i18n/Locale.hpp>
+#include <antwika/i18n/Translator.hpp>
 #include <antwika/log/Level.hpp>
 #include <antwika/simulation/EngineLoop.hpp>
 
 #include "antwika/game/Events.hpp"
 #include "antwika/game/GameStateReducer.hpp"
 #include "antwika/game/BuildingSystem.hpp"
+#include "antwika/game/CityRatings.hpp"
+#include "antwika/game/CoverageSystem.hpp"
+#include "antwika/game/Desirability.hpp"
+#include "antwika/game/DesirabilitySystem.hpp"
 #include "antwika/game/GridSink.hpp"
+#include "antwika/game/HaulingSystem.hpp"
+#include "antwika/game/HousingLevel.hpp"
+#include "antwika/game/HousingSystem.hpp"
 #include "antwika/game/InputFold.hpp"
+#include "antwika/game/LabourSystem.hpp"
 #include "antwika/game/LiveGrid.hpp"
+#include "antwika/game/MarketSystem.hpp"
 #include "antwika/game/MainMenuScene.hpp"
 #include "antwika/game/MainMenuSink.hpp"
 #include "antwika/game/MenuModalScene.hpp"
 #include "antwika/game/ModeGatedSink.hpp"
 #include "antwika/game/PauseGatedSystem.hpp"
 #include "antwika/game/PauseState.hpp"
+#include "antwika/game/PopulationSystem.hpp"
+#include "antwika/game/ProductionSystem.hpp"
+#include "antwika/game/RatingsSystem.hpp"
 #include "antwika/game/SaveGameFile.hpp"
 #include "antwika/game/SaveLoadScene.hpp"
 #include "antwika/game/SaveLoadSink.hpp"
 #include "antwika/game/SaveLoadState.hpp"
 #include "antwika/game/SceneSnapshot.hpp"
 #include "antwika/game/SessionGatedSystem.hpp"
+#include "antwika/game/Service.hpp"
 #include "antwika/game/SessionStore.hpp"
 #include "antwika/game/SpawnSystem.hpp"
 #include "antwika/game/BuildingKind.hpp"
@@ -65,6 +80,13 @@ namespace antwika::game
         ILogger &logger = config.logger;
         Camera &camera = config.camera;
         PathIndex &paths = config.paths;
+
+        // Fixed in source either way -- see GameConfig::translator.
+        const antwika::i18n::Translator ownTranslator{
+            antwika::i18n::kDefaultLocale};
+        const antwika::i18n::Translator &translator =
+            config.translator.has_value() ? config.translator->get()
+                                          : ownTranslator;
 
         EventDispatcher dispatcher({config.eventSink});
 
@@ -120,9 +142,117 @@ namespace antwika::game
         // Last, so a building demolished this tick is not re-let now.
         scheduler.addSystem(walkPhase, pausedSpawns);
 
+        // A phase of its own, after the walk and before the observers.
+        // So it sees where this tick left every walker.
+        // And a renderer sees the coverage that produced.
+        // Both gates, in the order every other system takes them.
+        // A city serves itself while its player reads the world map.
+        // And stops only where a player asked -- see PauseState.
+        CoverageSystem coverageSystem;
+        DesirabilityField desirability;
+        DesirabilitySystem desirabilitySystem(desirability, config.extent);
+
+        SessionGatedSystem gatedCoverage(coverageSystem, mode);
+        SessionGatedSystem gatedDesirability(desirabilitySystem, mode);
+        PauseGatedSystem pausedCoverage(gatedCoverage, pause);
+        PauseGatedSystem pausedDesirability(gatedDesirability, pause);
+
+        const auto servePhase = scheduler.createPhase("serve");
+        scheduler.addSystem(servePhase, pausedCoverage);
+        scheduler.addSystem(servePhase, pausedDesirability);
+
+        // The goods chain, gated exactly as the walk is.
+        // A city runs while its player reads the world map.
+        // And it stops only where a player asked.
+        // So both gates, in that order.
+        ProductionSystem productionSystem;
+        HaulingSystem haulingSystem(paths, config.extent);
+        MarketSystem marketSystem(paths, config.extent);
+
+        SessionGatedSystem gatedProduction(productionSystem, mode);
+        SessionGatedSystem gatedHauling(haulingSystem, mode);
+        SessionGatedSystem gatedMarkets(marketSystem, mode);
+
+        PauseGatedSystem pausedProduction(gatedProduction, pause);
+        PauseGatedSystem pausedHauling(gatedHauling, pause);
+        PauseGatedSystem pausedMarkets(gatedMarkets, pause);
+
+        // Two phases rather than one, and the split is load bearing.
+        // A phase is where the World's buffers swap.
+        // So two systems in one both read what the last swap left.
+        // And both write a whole Building back.
+        // So a batch added and a cart-load taken is not arithmetic.
+        // The later write silently undoes the earlier.
+        // The commit between these two is what makes it arithmetic.
+        const auto producePhase = scheduler.createPhase("produce");
+        scheduler.addSystem(producePhase, pausedProduction);
+
+        // Hauling and the markets share one.
+        // Nothing they write overlaps.
+        // A cart is loaded out of a producer.
+        // A buyer is loaded out of a storehouse.
+        // And no building is both.
+        const auto haulPhase = scheduler.createPhase("haul");
+        scheduler.addSystem(haulPhase, pausedHauling);
+        scheduler.addSystem(haulPhase, pausedMarkets);
+
+        // After the goods have moved and before anything is drawn.
+        // So a house is judged on the shelves this tick filled.
+        // The field it judges its ground by is the serve phase's.
+        // Which is this tick's too, two phases earlier.
+        // Both gates, in the order every other system takes them.
+        HousingSystem housingSystem(desirability);
+
+        SessionGatedSystem gatedHousing(housingSystem, mode);
+        PauseGatedSystem pausedHousing(gatedHousing, pause);
+
+        const auto settlePhase = scheduler.createPhase("settle");
+        scheduler.addSystem(settlePhase, pausedHousing);
+
+        // A phase of its own rather than a second entry in "settle".
+        // Because a phase is where the World's buffers swap.
+        // HousingSystem writes a whole Household back.
+        // And so does PopulationSystem.
+        // Two of them in one phase both read what the last swap left.
+        // So the tier one wrote and the occupancy the other wrote.
+        // Could not both survive the tick they were written in.
+        // The later write would silently undo the earlier one.
+        // Some of the time, which is the worst kind.
+        // The commit between these two is what makes them sequential.
+        //
+        // Labour shares the phase, and that is safe on its own terms.
+        // It writes Workforce, which nothing else writes.
+        // And it reads the population as the settle phase left it.
+        // Which is one tick behind the one being counted here.
+        // A person arriving is employable from the following tick.
+        // Both gates, in the order every other system takes them.
+        PopulationSystem populationSystem(paths, desirability);
+        LabourSystem labourSystem;
+
+        SessionGatedSystem gatedPopulation(populationSystem, mode);
+        SessionGatedSystem gatedLabour(labourSystem, mode);
+        PauseGatedSystem pausedPopulation(gatedPopulation, pause);
+        PauseGatedSystem pausedLabour(gatedLabour, pause);
+
+        const auto populatePhase = scheduler.createPhase("populate");
+        scheduler.addSystem(populatePhase, pausedPopulation);
+        scheduler.addSystem(populatePhase, pausedLabour);
+
         // A phase of its own.
         // A renderer then sees the generation this walk produced.
         const auto observePhase = scheduler.createPhase("observe");
+
+        // Ahead of the observers, and in this phase rather than the last.
+        // So it rates the city this tick left rather than the one before.
+        // Everything that moves a person or a job has committed by now.
+        CityRatings ratings;
+        RatingsSystem ratingsSystem(ratings);
+
+        SessionGatedSystem gatedRatings(ratingsSystem, mode);
+        PauseGatedSystem pausedRatings(gatedRatings, pause);
+
+        scheduler.addSystem(observePhase, pausedRatings);
+
         for (auto &observer : config.observers)
         {
             scheduler.addSystem(observePhase, observer.get());
@@ -159,8 +289,8 @@ namespace antwika::game
         RoadDrag &drag =
             config.drag.has_value() ? config.drag->get() : ownDrag;
 
-        const Toolbar toolbar;
-        const MenuModalScene menuModal;
+        const Toolbar toolbar(translator);
+        const MenuModalScene menuModal(translator);
         InputFold input(config.codec);
         UiSink uiSink(
             camera,
@@ -171,7 +301,8 @@ namespace antwika::game
             mode,
             drag,
             menuModal,
-            camera);
+            camera,
+            ratings);
         GridSink gridSink(
             world,
             paths,
@@ -196,7 +327,7 @@ namespace antwika::game
             cities, mode, live, input, config.canvas);
         StopSignal stopSignal;
 
-        const MainMenuScene menuScene;
+        const MainMenuScene menuScene(translator);
         MainMenuSink menuSink(
             mode, menuUi, input, menuScene, stopSignal);
 
@@ -225,7 +356,7 @@ namespace antwika::game
         }
 
         SaveLoadState saveState(config.saves);
-        const SaveLoadScene saveScene;
+        const SaveLoadScene saveScene(translator);
         SaveLoadSink saveSink(
             saveState,
             mode,
@@ -302,6 +433,16 @@ namespace antwika::game
         const auto frame =
             snapshotOf(world, paths, camera, config.extent);
 
+        // Read out here rather than inside the record below.
+        // A call among an aggregate's vector members needs a pad.
+        // To destroy the half-built record it was made in.
+        // Which is a landing pad on a line nothing reaches.
+        //
+        // Worked out again rather than copied off the local above.
+        // That one is what the bar was last told, and is gated.
+        // This is what the city amounts to, gate or no gate.
+        const auto finalRatings = ratingsOf(world);
+
         // Every branch left on the excluded line is the allocator's.
         // Two are the throw edges of copying the two vectors.
         // The last is a heap branch nothing here is large enough to take.
@@ -310,7 +451,8 @@ namespace antwika::game
             .paths = frame.paths,
             .walkers = walkerViewsOf(world),
             .buildings = buildingViewsOf(world),
-            .camera = camera};
+            .camera = camera,
+            .ratings = finalRatings};
         // The excluded line is the local summary's unwind destructor.
         // Nothing between its construction and the return throws.
     } // GCOVR_EXCL_LINE
@@ -334,8 +476,28 @@ namespace antwika::game
         for (const auto &building : summary.buildings)
         {
             out << "  " << buildingKindName(building.kind) << " at ("
-                << building.at.x << ", " << building.at.y << ")\n";
+                << building.at.x << ", " << building.at.y << ") "
+                << housingLevelName(building.level) << " covered";
+
+            // Every service, including the ones at zero.
+            // A summary is read to find out what a run ended up like.
+            // "No doctor ever came" is exactly such a fact.
+            for (const auto service : kServices)
+            {
+                out << ' ' << serviceName(service) << '='
+                    << building.coverage[serviceIndex(service)];
+            }
+
+            out << '\n';
         }
+
+        // Every rating, including the ones at zero.
+        // A summary is read to find out what a run ended up like.
+        // "Nobody ever moved in" is exactly such a fact.
+        out << "Ratings: population=" << summary.ratings.population
+            << " employment=" << summary.ratings.employment
+            << " housing=" << summary.ratings.averageHousingLevel
+            << " service=" << summary.ratings.serviceReach << '\n';
 
         out << "Camera: pan (" << summary.camera.pan().x << ", "
             << summary.camera.pan().y << ") zoom "

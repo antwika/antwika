@@ -3,6 +3,7 @@
 #include <cstdint>
 
 #include <antwika/gfx/Color.hpp>
+#include <antwika/i18n/MessageId.hpp>
 #include <antwika/ui/Alignment.hpp>
 #include <antwika/ui/ButtonSpec.hpp>
 #include <antwika/ui/Context.hpp>
@@ -13,6 +14,7 @@ namespace antwika::game
 {
 
     using antwika::gfx::Color;
+    using antwika::i18n::MessageId;
     using antwika::ui::Alignment;
     using antwika::ui::Context;
     using antwika::ui::fixedSize;
@@ -37,6 +39,11 @@ namespace antwika::game
         constexpr std::uint32_t kCardWidth = 300;
     } // namespace
 
+    MenuModalScene::MenuModalScene(const Translator &translator)
+        : translator(translator)
+    {
+    }
+
     Frame MenuModalScene::describe(Size canvas, Pointer pointer) const
     {
         Context ui{
@@ -59,14 +66,14 @@ namespace antwika::game
                 const auto card = ui.panel(
                     {.width = fixedSize(kCardWidth), .height = kFit});
 
-                ui.label("MENU");
+                ui.label(translator.text(MessageId::GameModalTitle));
 
                 ui.button(
-                    "Main Menu",
+                    translator.text(MessageId::GameModalMainMenu),
                     {.id = modalWidgets::kMainMenu, .width = kGrow});
 
                 ui.button(
-                    "Back to Game",
+                    translator.text(MessageId::GameModalResume),
                     {.id = modalWidgets::kResume, .width = kGrow});
             }
 

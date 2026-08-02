@@ -17,11 +17,14 @@
 
 #include "WidgetPixel.hpp"
 
+#include "TestTranslator.hpp"
 #include "antwika/game/AppMode.hpp"
 #include "antwika/game/InputFold.hpp"
 #include "antwika/game/MainMenuScene.hpp"
 #include "antwika/game/MainMenuSink.hpp"
 #include "antwika/game/UiOverlay.hpp"
+
+using antwika::game::tests::kTranslator;
 
 using antwika::engine::StopSignal;
 using antwika::event::Event;
@@ -103,7 +106,7 @@ namespace
         AppModeState mode;
         UiOverlay overlay{kCanvas};
         InputFold input{codec};
-        MainMenuScene scene;
+        MainMenuScene scene{kTranslator};
         StopSignal stop;
         MainMenuSink sink{mode, overlay, input, scene, stop};
     };

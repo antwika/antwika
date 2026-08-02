@@ -17,6 +17,8 @@
 #include <antwika/gfx/Point.hpp>
 #include <antwika/gfx/SelectedBackend.hpp>
 #include <antwika/gfx/WindowDesc.hpp>
+#include <antwika/i18n/Locale.hpp>
+#include <antwika/i18n/Translator.hpp>
 #include <antwika/input/InputEventCodec.hpp>
 #include <antwika/input/InputPipeline.hpp>
 #include <antwika/input/PointerHintChannel.hpp>
@@ -141,11 +143,20 @@ namespace
         // Declared after it too, so it is destroyed first.
         const auto atlas = window->renderer().createTexture(atlasBitmap);
 
+        // **One translator, at kDefaultLocale, fixed in source.**
+        // Never from a flag and never from the environment.
+        // This application lays its toolbar out from that text.
+        // And it resolves a recorded click against that layout.
+        // So the language may not be a thing a recording lacks.
+        // Changing it is a source change, exactly as kUiCanvas is.
+        const antwika::i18n::Translator translator{
+            antwika::i18n::kDefaultLocale};
+
         Camera camera(kInitialPan);
         PathIndex paths;
         antwika::game::BuildingIndex built;
-        const GridScene scene;
-        const MainMenuScene menuScene;
+        const GridScene scene(translator);
+        const MainMenuScene menuScene(translator);
 
         // A run opens at the main menu.
         // That is a mode of its own, not a window over a running grid.
@@ -169,7 +180,7 @@ namespace
         UiOverlay menuOverlay(antwika::game::kUiCanvas);
         UiOverlay saveOverlay(antwika::game::kUiCanvas);
 
-        const SaveLoadScene saveScene;
+        const SaveLoadScene saveScene(translator);
 
         // Where the pointer is, off the event stream.
         // The one channel a replay does not reproduce.
@@ -279,6 +290,7 @@ namespace
                     saveOptions.loadPath),
                 .savePath = saveOptions.savePath,
                 .seed = kWorld.seed,
+                .translator = translator,
                 .canvas = antwika::game::kUiCanvas});
 
         antwika::game::printSummary(std::cout, summary);

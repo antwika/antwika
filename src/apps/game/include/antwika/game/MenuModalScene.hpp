@@ -1,6 +1,7 @@
 #pragma once
 
 #include <antwika/gfx/Size.hpp>
+#include <antwika/i18n/Translator.hpp>
 #include <antwika/ui/Frame.hpp>
 #include <antwika/ui/Pointer.hpp>
 #include <antwika/ui/WidgetId.hpp>
@@ -9,6 +10,7 @@ namespace antwika::game
 {
 
     using antwika::gfx::Size;
+    using antwika::i18n::Translator;
     using antwika::ui::Frame;
     using antwika::ui::Pointer;
     using antwika::ui::WidgetId;
@@ -75,12 +77,27 @@ namespace antwika::game
     {
     public:
         /**
+         * @brief Construct the modal over the language it words itself
+         * in.
+         *
+         * Injected and fixed at kDefaultLocale by whoever builds it, for
+         * the reason Toolbar gives.
+         *
+         * @param translator Words every caption; must outlive this
+         * scene.
+         */
+        explicit MenuModalScene(const Translator &translator);
+
+        /**
          * @brief Describe the modal for one tick.
          * @param canvas The area the modal is laid out into.
          * @param pointer Where the pointer is and what it is doing.
          * @return The drawing commands and what the pointer did.
          */
         [[nodiscard]] Frame describe(Size canvas, Pointer pointer) const;
+
+    private:
+        const Translator &translator;
     };
 
 } // namespace antwika::game

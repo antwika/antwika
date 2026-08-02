@@ -7,23 +7,40 @@ add_executable(antwika_game_tests
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/BuildingIndex.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/BuildingSystem.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/CityGrid.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/CityRatings.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/Coverage.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/CoverageSystem.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/Desirability.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/DesirabilitySystem.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/Errand.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/ErrandRouting.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/FpsReadout.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/FrameMeter.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/Game.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/GameStateReducer.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/GridScene.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/GridSink.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/HaulingSystem.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/Homing.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/Household.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/HousingQuery.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/HousingSystem.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/Hover.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/InputFold.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/LabourQuery.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/LabourSystem.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/MainMenuScene.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/MainMenuSink.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/MarketSystem.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/MenuModalScene.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/ModeGatedSink.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/PathIndex.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/PauseGatedSystem.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/PauseState.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/Placement.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/PopulationSystem.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/ProductionSystem.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/RatingsSystem.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/ReadoutPanel.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/ResourceBar.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/RenderSystem.cpp
@@ -31,16 +48,24 @@ add_executable(antwika_game_tests
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/RoadPlan.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/KeyText.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/SaveCli.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/SaveCoverage.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/SaveGame.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/SaveGameFile.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/SaveHousing.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/SaveLabour.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/SaveDirectory.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/SaveLoadScene.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/SaveLoadSink.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/SaveLoadState.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/SaveMigration.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/SaveMigrationV2ToV3.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/SaveProduction.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/SaveSections.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/SessionGatedSystem.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/StandingBuildings.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/SessionStore.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/SpawnSystem.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/Store.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/Toolbar.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/SceneSnapshot.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/UiOverlay.cpp
@@ -51,6 +76,7 @@ add_executable(antwika_game_tests
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/WorldMapScene.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/WorldMapSink.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/WorldMapState.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/Workforce.cpp
     AppModeTest.cpp
     AtlasImageTest.cpp
     BootstrapTest.cpp
@@ -61,6 +87,9 @@ add_executable(antwika_game_tests
     CameraTest.cpp
     CellTest.cpp
     CityGridTest.cpp
+    CoverageSystemTest.cpp
+    CoverageTest.cpp
+    DesirabilityTest.cpp
     DirectionTest.cpp
     GameStateReducerTest.cpp
     GameStateTest.cpp
@@ -73,6 +102,15 @@ add_executable(antwika_game_tests
     GridSceneTest.cpp
     GridSinkTest.cpp
     HomingTest.cpp
+    HousingLevelTest.cpp
+    HousingQueryTest.cpp
+    HousingSystemTest.cpp
+    AllocationOrderTest.cpp
+    CityRatingsTest.cpp
+    LabourQueryTest.cpp
+    LabourSystemTest.cpp
+    PopulationSystemTest.cpp
+    RatingsSystemTest.cpp
     HoverTest.cpp
     InputFoldTest.cpp
     KeyTextTest.cpp
@@ -101,13 +139,24 @@ add_executable(antwika_game_tests
     SaveGameTest.cpp
     SaveMigrationTest.cpp
     SceneSnapshotTest.cpp
+    ErrandRoutingTest.cpp
+    ErrandTest.cpp
+    HaulingSystemTest.cpp
+    MarketSystemTest.cpp
+    ProductionSystemTest.cpp
+    ServiceTest.cpp
+    ServiceWalkTest.cpp
+    StoreTest.cpp
+    SupplyChainTest.cpp
     SessionStoreTest.cpp
+    StandingBuildingsTest.cpp
     SpawnSystemTest.cpp
     TileAtlasTest.cpp
     FrameRateDeterminismTest.cpp
     ReplayDeterminismTest.cpp
     ReplayIntegrationTest.cpp
     ToolbarTest.cpp
+    ToolLabelTest.cpp
     UiOverlayTest.cpp
     ValueEqualityTest.cpp
     UiSinkTest.cpp
@@ -139,6 +188,7 @@ target_link_libraries(antwika_game_tests
         antwika::ecs
         antwika::gfx
         antwika::gfx::tests::mocks
+        antwika::i18n
         antwika::input
         antwika::log::tests::mocks
         antwika::pathfinding

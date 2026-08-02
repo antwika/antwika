@@ -7,19 +7,26 @@
 #include <antwika/gfx/Size.hpp>
 #include <antwika/gfx/TextLayout.hpp>
 
+#include "TestTranslator.hpp"
 #include "antwika/game/Building.hpp"
 #include "antwika/game/BuildingKind.hpp"
 #include "antwika/game/Cell.hpp"
+#include "antwika/game/Coverage.hpp"
+#include "antwika/game/HousingLevel.hpp"
 #include "antwika/game/ReadoutPanel.hpp"
 #include "antwika/game/Resource.hpp"
 #include "antwika/game/ResourceBar.hpp"
 #include "antwika/game/SceneSnapshot.hpp"
+#include "antwika/game/Service.hpp"
 #include "antwika/game/Walker.hpp"
+
+using antwika::game::tests::kTranslator;
 
 using antwika::game::BuildingKind;
 using antwika::game::BuildingSprite;
 using antwika::game::Cell;
 using antwika::game::HoverReadout;
+using antwika::game::kCoverageFull;
 using antwika::game::kReadoutTextScale;
 using antwika::game::kReadoutTitle;
 using antwika::game::kStockCapacity;
@@ -27,6 +34,8 @@ using antwika::game::kWalkerLoad;
 using antwika::game::readoutPanel;
 using antwika::game::Resource;
 using antwika::game::resourceColour;
+using antwika::game::Service;
+using antwika::game::serviceColour;
 using antwika::game::WalkerKind;
 using antwika::game::WalkerSprite;
 using antwika::gfx::Point;
@@ -51,7 +60,7 @@ namespace
 
 TEST(ReadoutPanelTest, Panel_SaysNothingWithNothingUnderThePointer)
 {
-    const auto panel = readoutPanel(HoverReadout{}, kCanvas);
+    const auto panel = readoutPanel(HoverReadout{}, kCanvas, kTranslator);
 
     EXPECT_TRUE(panel.lines.empty());
     EXPECT_EQ(panel.box.size, Size{});
@@ -64,13 +73,16 @@ TEST(ReadoutPanelTest, Panel_NamesABuildingAndListsWhatItDependsOn)
             BuildingSprite{
                 .at = Cell{.x = 1, .y = 1},
                 .kind = BuildingKind::House,
-                .stock = {12, 34}}),
-        kCanvas);
+                .stock = {12, 34, 56}}),
+        kCanvas,
+        kTranslator);
 
-    ASSERT_EQ(panel.lines.size(), 3U);
+    ASSERT_EQ(panel.lines.size(), 5U);
     EXPECT_EQ(panel.lines[0].text, "house");
-    EXPECT_EQ(panel.lines[1].text, "food 12/100");
-    EXPECT_EQ(panel.lines[2].text, "water 34/100");
+    EXPECT_EQ(panel.lines[1].text, "level: tent");
+    EXPECT_EQ(panel.lines[2].text, "food 12/100");
+    EXPECT_EQ(panel.lines[3].text, "clay 34/100");
+    EXPECT_EQ(panel.lines[4].text, "pottery 56/100");
     EXPECT_EQ(kStockCapacity, 100);
 }
 
@@ -82,12 +94,13 @@ TEST(ReadoutPanelTest, Panel_NamesASourceAndListsNoStockItNeverSpends)
         over(
             BuildingSprite{
                 .at = Cell{},
-                .kind = BuildingKind::FoodSource,
-                .stock = {90, 90}}),
-        kCanvas);
+                .kind = BuildingKind::Farm,
+                .stock = {90, 90, 90}}),
+        kCanvas,
+        kTranslator);
 
     ASSERT_EQ(panel.lines.size(), 1U);
-    EXPECT_EQ(panel.lines[0].text, "food source");
+    EXPECT_EQ(panel.lines[0].text, "farm");
 }
 
 TEST(ReadoutPanelTest, Panel_NamesAWalkerAndWhatItIsCarrying)
@@ -96,24 +109,27 @@ TEST(ReadoutPanelTest, Panel_NamesAWalkerAndWhatItIsCarrying)
         over(
             WalkerSprite{
                 .at = Cell{},
-                .kind = WalkerKind::Water,
+                .kind = WalkerKind::MarketSeller,
                 .carried = 60}),
-        kCanvas);
+        kCanvas,
+        kTranslator);
 
     ASSERT_EQ(panel.lines.size(), 2U);
-    EXPECT_EQ(panel.lines[0].text, "water walker");
-    EXPECT_EQ(panel.lines[1].text, "water 60/100");
+    EXPECT_EQ(panel.lines[0].text, "market seller");
+    EXPECT_EQ(panel.lines[1].text, "food 60/100");
     EXPECT_EQ(kWalkerLoad, 100);
 }
 
 TEST(ReadoutPanelTest, Panel_NamesAWalkerThatCarriesNothingAndStops)
 {
     const auto panel = readoutPanel(
-        over(WalkerSprite{.at = Cell{}, .kind = WalkerKind::Fireman}),
-        kCanvas);
+        over(
+            WalkerSprite{.at = Cell{}, .kind = WalkerKind::WaterCarrier}),
+        kCanvas,
+        kTranslator);
 
     ASSERT_EQ(panel.lines.size(), 1U);
-    EXPECT_EQ(panel.lines[0].text, "fireman");
+    EXPECT_EQ(panel.lines[0].text, "water carrier");
 }
 
 // A line and the bar beside it count the same thing.
@@ -125,13 +141,16 @@ TEST(ReadoutPanelTest, Panel_ColoursALineAsTheBarThatCountsTheSameThing)
             BuildingSprite{
                 .at = Cell{},
                 .kind = BuildingKind::House,
-                .stock = {1, 2}}),
-        kCanvas);
+                .stock = {1, 2, 3}}),
+        kCanvas,
+        kTranslator);
 
-    ASSERT_EQ(panel.lines.size(), 3U);
+    ASSERT_EQ(panel.lines.size(), 5U);
     EXPECT_EQ(panel.lines[0].colour, kReadoutTitle);
-    EXPECT_EQ(panel.lines[1].colour, resourceColour(Resource::Food));
-    EXPECT_EQ(panel.lines[2].colour, resourceColour(Resource::Water));
+    EXPECT_EQ(panel.lines[1].colour, kReadoutTitle);
+    EXPECT_EQ(panel.lines[2].colour, resourceColour(Resource::Food));
+    EXPECT_EQ(panel.lines[3].colour, resourceColour(Resource::Clay));
+    EXPECT_EQ(panel.lines[4].colour, resourceColour(Resource::Pottery));
 }
 
 TEST(ReadoutPanelTest, Panel_HoldsEveryLineInsideItsOwnBox)
@@ -141,8 +160,9 @@ TEST(ReadoutPanelTest, Panel_HoldsEveryLineInsideItsOwnBox)
             BuildingSprite{
                 .at = Cell{},
                 .kind = BuildingKind::House,
-                .stock = {100, 7}}),
-        kCanvas);
+                .stock = {100, 7, 0}}),
+        kCanvas,
+        kTranslator);
 
     ASSERT_FALSE(panel.lines.empty());
 
@@ -179,7 +199,7 @@ TEST(ReadoutPanelTest, Panel_IsPushedBackInsideTheCanvasAtAFarCorner)
         .x = static_cast<std::int32_t>(kCanvas.width) - 2,
         .y = static_cast<std::int32_t>(kCanvas.height) - 2};
 
-    const auto panel = readoutPanel(readout, kCanvas);
+    const auto panel = readoutPanel(readout, kCanvas, kTranslator);
 
     EXPECT_LE(
         panel.box.origin.x
@@ -199,8 +219,9 @@ TEST(ReadoutPanelTest, Panel_StaysOnACanvasSmallerThanItself)
             BuildingSprite{
                 .at = Cell{},
                 .kind = BuildingKind::House,
-                .stock = {50, 50}}),
-        Size{.width = 4, .height = 4});
+                .stock = {50, 50, 50}}),
+        Size{.width = 4, .height = 4},
+        kTranslator);
 
     EXPECT_EQ(panel.box.origin, (Point{.x = 0, .y = 0}));
     EXPECT_FALSE(panel.lines.empty());
@@ -213,8 +234,9 @@ TEST(ReadoutPanelTest, EqualityComparesEveryField)
             BuildingSprite{
                 .at = Cell{},
                 .kind = BuildingKind::House,
-                .stock = {1, 2}}),
-        kCanvas);
+                .stock = {1, 2, 3}}),
+        kCanvas,
+        kTranslator);
 
     EXPECT_EQ(base, base);
 
@@ -235,6 +257,74 @@ TEST(ReadoutPanelTest, EqualityComparesEveryField)
     EXPECT_NE(base, shifted);
 
     auto recoloured = base;
-    recoloured.lines[0].colour = resourceColour(Resource::Water);
+    recoloured.lines[0].colour = resourceColour(Resource::Clay);
     EXPECT_NE(base, recoloured);
+}
+
+// Coverage is listed for every kind of building, not only a house.
+// Risk is a fact about any building, and coverage is what holds it off.
+TEST(ReadoutPanelTest, Panel_ListsEveryServiceThatStillReachesABuilding)
+{
+    const auto panel = readoutPanel(
+        over(
+            BuildingSprite{
+                .at = Cell{},
+                .kind = BuildingKind::Well,
+                .coverage = {kCoverageFull, 0, kCoverageFull / 2, 0}}),
+        kCanvas,
+        kTranslator);
+
+    ASSERT_EQ(panel.lines.size(), 3U);
+    EXPECT_EQ(panel.lines[0].text, "well");
+    EXPECT_EQ(panel.lines[1].text, "water 100%");
+    EXPECT_EQ(panel.lines[2].text, "safety 50%");
+}
+
+// The tier is named rather than numbered.
+// "level: 2" would be a number a reader has to look up.
+TEST(ReadoutPanelTest, Panel_NamesTheTierAHouseIsOn)
+{
+    const auto panel = readoutPanel(
+        over(
+            BuildingSprite{
+                .at = Cell{},
+                .kind = BuildingKind::House,
+                .level = antwika::game::HousingLevel::Cottage}),
+        kCanvas,
+        kTranslator);
+
+    ASSERT_GE(panel.lines.size(), 2U);
+    EXPECT_EQ(panel.lines[1].text, "level: cottage");
+}
+
+// A service that has lapsed is not listed at all.
+// An absent line and a line reading nothing say one thing.
+TEST(ReadoutPanelTest, Panel_ListsNoServiceThatHasLapsed)
+{
+    const auto panel = readoutPanel(
+        over(
+            BuildingSprite{
+                .at = Cell{},
+                .kind = BuildingKind::House,
+                .stock = {1, 2, 3}}),
+        kCanvas,
+        kTranslator);
+
+    ASSERT_EQ(panel.lines.size(), 5U);
+    EXPECT_EQ(panel.lines[0].text, "house");
+}
+
+TEST(ReadoutPanelTest, Panel_ColoursACoverageLineOutOfTheServiceTable)
+{
+    const auto panel = readoutPanel(
+        over(
+            BuildingSprite{
+                .at = Cell{},
+                .kind = BuildingKind::Doctor,
+                .coverage = {0, kCoverageFull, 0, 0}}),
+        kCanvas,
+        kTranslator);
+
+    ASSERT_EQ(panel.lines.size(), 2U);
+    EXPECT_EQ(panel.lines[1].colour, serviceColour(Service::Health));
 }

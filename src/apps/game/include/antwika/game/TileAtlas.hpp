@@ -31,8 +31,14 @@ namespace antwika::game
 
     /**
      * @brief How many rows of tiles the atlas holds.
+     *
+     * Five, since ten building kinds no longer fit beside the ground,
+     * the roads and the walkers in four.
+     * Raising this is a repaint of the sheet as well as an edit here --
+     * see wiki/apps/game-texture-atlas.md, which is the contract with
+     * whoever draws it.
      */
-    inline constexpr std::uint32_t kAtlasRows = 4;
+    inline constexpr std::uint32_t kAtlasRows = 5;
 
     /**
      * @brief The size the atlas image must be, in pixels.
@@ -74,7 +80,7 @@ namespace antwika::game
      * The static_assert below is what keeps this and kBuildingKindCount
      * from disagreeing.
      */
-    inline constexpr std::uint32_t kBuildingSlotCount = 5;
+    inline constexpr std::uint32_t kBuildingSlotCount = 10;
 
     /**
      * @brief Get which bit of a link mask stands for one direction.

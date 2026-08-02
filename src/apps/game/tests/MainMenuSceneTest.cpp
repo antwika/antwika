@@ -6,7 +6,10 @@
 #include <antwika/gfx/mocks/MockRenderer.hpp>
 #include <antwika/ui/Pointer.hpp>
 
+#include "TestTranslator.hpp"
 #include "antwika/game/MainMenuScene.hpp"
+
+using antwika::game::tests::kTranslator;
 
 using antwika::game::MainMenuScene;
 using antwika::gfx::Point;
@@ -25,7 +28,7 @@ namespace
 
 TEST(MainMenuSceneTest, TheMenuDescribesItselfWithNoPointerAtAll)
 {
-    const MainMenuScene scene;
+    const MainMenuScene scene{kTranslator};
 
     const auto frame = scene.describe(kCanvas, Pointer{});
 
@@ -38,7 +41,7 @@ TEST(MainMenuSceneTest, TheMenuDescribesItselfWithNoPointerAtAll)
 // That is what lets a recorded click resolve to the same item.
 TEST(MainMenuSceneTest, TheSameArgumentsProduceTheSamePicture)
 {
-    const MainMenuScene scene;
+    const MainMenuScene scene{kTranslator};
     const Pointer pointer{.position = Point{.x = 512, .y = 320}};
 
     EXPECT_EQ(
@@ -48,7 +51,7 @@ TEST(MainMenuSceneTest, TheSameArgumentsProduceTheSamePicture)
 
 TEST(MainMenuSceneTest, APressOnAnItemActivatesIt)
 {
-    const MainMenuScene scene;
+    const MainMenuScene scene{kTranslator};
     bool foundNewGame = false;
     bool foundQuit = false;
 
@@ -75,7 +78,7 @@ TEST(MainMenuSceneTest, APressOnAnItemActivatesIt)
 // So the menu clears rather than being drawn over what was there.
 TEST(MainMenuSceneTest, DrawClearsBeforePaintingThePicture)
 {
-    const MainMenuScene scene;
+    const MainMenuScene scene{kTranslator};
     NiceMock<MockRenderer> renderer;
 
     const ::testing::InSequence order;

@@ -3,9 +3,10 @@
 #include <array>
 #include <cstdint>
 #include <optional>
-#include <string_view>
 
 #include <antwika/gfx/Size.hpp>
+#include <antwika/i18n/MessageId.hpp>
+#include <antwika/i18n/Translator.hpp>
 #include <antwika/time/Tick.hpp>
 #include <antwika/ui/Frame.hpp>
 #include <antwika/ui/Pointer.hpp>
@@ -13,11 +14,14 @@
 
 #include "antwika/game/BuildTool.hpp"
 #include "antwika/game/Camera.hpp"
+#include "antwika/game/CityRatings.hpp"
 
 namespace antwika::game
 {
 
     using antwika::gfx::Size;
+    using antwika::i18n::MessageId;
+    using antwika::i18n::Translator;
     using antwika::ui::Frame;
     using antwika::ui::Pointer;
     using antwika::ui::WidgetId;
@@ -91,14 +95,30 @@ namespace antwika::game
 
     /**
      * @brief What each tool's palette button is labelled.
+     *
+     * **A MessageId rather than the English word.** A label is read by a
+     * person, so it goes through antwika::i18n like every other caption;
+     * the id is what the palette knows and the words are the
+     * translator's. The id is never persisted, so its numbering is free
+     * -- see MessageId.hpp.
+     *
      * @param tool The tool to name.
-     * @return The label, in BuildTool order.
+     * @return The label's id, in BuildTool order.
      */
-    [[nodiscard]] constexpr std::string_view toolLabel(
-        BuildTool tool) noexcept
+    [[nodiscard]] constexpr MessageId toolLabel(BuildTool tool) noexcept
     {
-        constexpr std::array<std::string_view, kBuildToolCount> labels{
-            "road", "house", "food", "water", "fire", "arch"};
+        constexpr std::array<MessageId, kBuildToolCount> labels{
+            MessageId::GameToolRoad,
+            MessageId::GameToolHouse,
+            MessageId::GameToolFarm,
+            MessageId::GameToolClayPit,
+            MessageId::GameToolWorkshop,
+            MessageId::GameToolStorage,
+            MessageId::GameToolMarket,
+            MessageId::GameToolWell,
+            MessageId::GameToolDoctor,
+            MessageId::GameToolFireStation,
+            MessageId::GameToolEngineerPost};
 
         return labels[buildToolIndex(tool) % kBuildToolCount];
     }
@@ -113,26 +133,54 @@ namespace antwika::game
             widgets::kPauseResume,
             widgets::toolWidget(BuildTool::Road),
             widgets::toolWidget(BuildTool::House),
-            widgets::toolWidget(BuildTool::FoodSource),
-            widgets::toolWidget(BuildTool::WaterSource),
+            widgets::toolWidget(BuildTool::Farm),
+            widgets::toolWidget(BuildTool::ClayPit),
+            widgets::toolWidget(BuildTool::Workshop),
+            widgets::toolWidget(BuildTool::Storage),
+            widgets::toolWidget(BuildTool::Market),
+            widgets::toolWidget(BuildTool::Well),
+            widgets::toolWidget(BuildTool::Doctor),
             widgets::toolWidget(BuildTool::FireStation),
-            widgets::toolWidget(BuildTool::ArchitectPost),
+            widgets::toolWidget(BuildTool::EngineerPost),
             widgets::kMenu),
         "every toolbar widget needs its own id");
+
+    // Two tools sharing a caption would be two buttons reading the same.
+    // The table above is where that can happen, so it is checked here.
+    static_assert(
+        []
+        {
+            for (std::size_t left = 0; left < kBuildToolCount; ++left)
+            {
+                for (std::size_t right = left + 1; right < kBuildToolCount;
+                     ++right)
+                {
+                    if (toolLabel(static_cast<BuildTool>(left))
+                        == toolLabel(static_cast<BuildTool>(right)))
+                    {
+                        return false;
+                    }
+                }
+            }
+
+            return true;
+        }(),
+        "every tool needs a caption of its own");
 
     /**
      * @brief What the pause button says, given what it would do.
      * @param paused Whether the simulation is being held still.
-     * @return "resume" while paused, "pause" while it is running.
+     * @return The "resume" id while paused, the "pause" one while it is
+     * running.
      *
      * Labelled with what pressing it does rather than with the state it
      * is in, so it reads as an instruction rather than as a status --
      * which is what the held-down appearance beside it is for.
      */
-    [[nodiscard]] constexpr std::string_view pauseLabel(
-        bool paused) noexcept
+    [[nodiscard]] constexpr MessageId pauseLabel(bool paused) noexcept
     {
-        return paused ? "resume" : "pause";
+        return paused ? MessageId::GameToolbarResume
+                      : MessageId::GameToolbarPause;
     }
 
     /**
@@ -159,6 +207,19 @@ namespace antwika::game
     {
     public:
         /**
+         * @brief Construct the bar over the language it words itself in.
+         *
+         * **Injected, and fixed at kDefaultLocale by whoever builds
+         * it.** A layout is a function of the strings declared into it
+         * and a hit-test is a function of the layout, so a bar worded in
+         * one language and replayed in another would resolve the same
+         * recorded click to a different button -- see Translator.hpp.
+         *
+         * @param translator Words every caption; must outlive this bar.
+         */
+        explicit Toolbar(const Translator &translator);
+
+        /**
          * @brief Describe the toolbar for one tick.
          * @param canvas The area the UI is laid out into.
          * @param pointer Where the pointer is and what it is doing.
@@ -173,9 +234,13 @@ namespace antwika::game
          * which is what the pause button is labelled from.
          * @param tick The tick the bar reports, which is the tick this
          * describe() is part of.
+         * @param ratings How the city is doing, reported as two labels
+         * after the menu button. A pure function of the World, so a
+         * replay regenerates it exactly as it regenerates the zoom --
+         * see CityRatings.
          * @return The drawing commands and what the pointer did.
          *
-         * The last three are defaulted so that a caller with nothing to
+         * The last four are defaulted so that a caller with nothing to
          * say about them -- a test whose subject is the zoom, or a
          * layout assertion -- writes only what it means.
          */
@@ -185,7 +250,11 @@ namespace antwika::game
             const Camera &camera,
             std::optional<BuildTool> selected = BuildTool::Road,
             bool paused = false,
-            antwika::time::Tick tick = 0) const;
+            antwika::time::Tick tick = 0,
+            CityRatings ratings = {}) const;
+
+    private:
+        const Translator &translator;
     };
 
 } // namespace antwika::game

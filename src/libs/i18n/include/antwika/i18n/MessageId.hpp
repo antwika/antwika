@@ -761,6 +761,319 @@ namespace antwika::i18n
         UiDemoPressedWidget,
 
         /**
+         * @brief Game: the palette's road tool.
+         */
+        GameToolRoad,
+
+        /**
+         * @brief Game: the palette's house tool.
+         */
+        GameToolHouse,
+
+        /**
+         * @brief Game: the palette's farm tool.
+         */
+        GameToolFarm,
+
+        /**
+         * @brief Game: the palette's clay pit tool.
+         */
+        GameToolClayPit,
+
+        /**
+         * @brief Game: the palette's workshop tool.
+         */
+        GameToolWorkshop,
+
+        /**
+         * @brief Game: the palette's storehouse tool.
+         */
+        GameToolStorage,
+
+        /**
+         * @brief Game: the palette's market tool.
+         */
+        GameToolMarket,
+
+        /**
+         * @brief Game: the palette's well tool.
+         */
+        GameToolWell,
+
+        /**
+         * @brief Game: the palette's doctor tool.
+         */
+        GameToolDoctor,
+
+        /**
+         * @brief Game: the palette's fire station tool.
+         */
+        GameToolFireStation,
+
+        /**
+         * @brief Game: the palette's engineer post tool.
+         */
+        GameToolEngineerPost,
+
+        /**
+         * @brief Game toolbar: hold the simulation still.
+         */
+        GameToolbarPause,
+
+        /**
+         * @brief Game toolbar: let the simulation go again.
+         */
+        GameToolbarResume,
+
+        /**
+         * @brief Game toolbar: open the menu modal over the city.
+         */
+        GameToolbarMenu,
+
+        /**
+         * @brief Game toolbar: the tick the run is on, `{0}` being it.
+         */
+        GameToolbarTick,
+
+        /**
+         * @brief Game main menu: the title over the card.
+         */
+        GameMenuTitle,
+
+        /**
+         * @brief Game main menu: start a session.
+         */
+        GameMenuNewGame,
+
+        /**
+         * @brief Game main menu: open the save and load screen.
+         */
+        GameMenuLoadGame,
+
+        /**
+         * @brief Game main menu: look at the world.
+         */
+        GameMenuWorldMap,
+
+        /**
+         * @brief Game main menu: end the run.
+         */
+        GameMenuQuit,
+
+        /**
+         * @brief Game menu modal: the title over the card.
+         */
+        GameModalTitle,
+
+        /**
+         * @brief Game menu modal: leave the city for the main menu.
+         */
+        GameModalMainMenu,
+
+        /**
+         * @brief Game menu modal: put the modal away.
+         */
+        GameModalResume,
+
+        /**
+         * @brief Game save screen: the title over the card.
+         */
+        GameSaveTitle,
+
+        /**
+         * @brief Game save screen: the picker with nothing in it.
+         */
+        GameSaveNoSaves,
+
+        /**
+         * @brief Game save screen: the empty name field.
+         */
+        GameSaveNameNew,
+
+        /**
+         * @brief Game save screen: write the session out.
+         */
+        GameSaveSave,
+
+        /**
+         * @brief Game save screen: read the chosen session back.
+         */
+        GameSaveLoad,
+
+        /**
+         * @brief Game save screen: go back where this was opened from.
+         */
+        GameSaveBack,
+
+        /**
+         * @brief Game readout: a house.
+         */
+        GameBuildingHouse,
+
+        /**
+         * @brief Game readout: a farm.
+         */
+        GameBuildingFarm,
+
+        /**
+         * @brief Game readout: a clay pit.
+         */
+        GameBuildingClayPit,
+
+        /**
+         * @brief Game readout: a workshop.
+         */
+        GameBuildingWorkshop,
+
+        /**
+         * @brief Game readout: a storehouse.
+         */
+        GameBuildingStorage,
+
+        /**
+         * @brief Game readout: a market.
+         */
+        GameBuildingMarket,
+
+        /**
+         * @brief Game readout: a well.
+         */
+        GameBuildingWell,
+
+        /**
+         * @brief Game readout: a doctor's surgery.
+         */
+        GameBuildingDoctor,
+
+        /**
+         * @brief Game readout: a fire station.
+         */
+        GameBuildingFireStation,
+
+        /**
+         * @brief Game readout: an engineer's post.
+         */
+        GameBuildingEngineerPost,
+
+        /**
+         * @brief Game readout: a water carrier.
+         */
+        GameWalkerWaterCarrier,
+
+        /**
+         * @brief Game readout: a doctor on their rounds.
+         */
+        GameWalkerDoctor,
+
+        /**
+         * @brief Game readout: a fireman.
+         */
+        GameWalkerFireman,
+
+        /**
+         * @brief Game readout: an engineer.
+         */
+        GameWalkerEngineer,
+
+        /**
+         * @brief Game readout: a cart pusher.
+         */
+        GameWalkerCartPusher,
+
+        /**
+         * @brief Game readout: a market buyer.
+         */
+        GameWalkerMarketBuyer,
+
+        /**
+         * @brief Game readout: a market seller.
+         */
+        GameWalkerMarketSeller,
+
+        /**
+         * @brief Game readout: food.
+         */
+        GameResourceFood,
+
+        /**
+         * @brief Game readout: clay.
+         */
+        GameResourceClay,
+
+        /**
+         * @brief Game readout: pottery.
+         */
+        GameResourcePottery,
+
+        /**
+         * @brief Game readout: how much of a good is held, as `{0}`
+         *        named, `{1}` held and `{2}` capacity.
+         */
+        GameReadoutAmount,
+
+        /**
+         * @brief Game readout: water reaching a building.
+         */
+        GameServiceWater,
+
+        /**
+         * @brief Game readout: health reaching a building.
+         */
+        GameServiceHealth,
+
+        /**
+         * @brief Game readout: fire safety reaching a building.
+         */
+        GameServiceSafety,
+
+        /**
+         * @brief Game readout: structural upkeep reaching a building.
+         */
+        GameServiceStructure,
+
+        /**
+         * @brief Game readout: how much of a service still reaches a
+         *        building, as `{0}` named and `{1}` per cent left.
+         */
+        GameReadoutCoverage,
+
+        /**
+         * @brief Game readout: the bottom housing tier.
+         */
+        GameHousingTent,
+
+        /**
+         * @brief Game readout: the second housing tier.
+         */
+        GameHousingShack,
+
+        /**
+         * @brief Game readout: the third housing tier.
+         */
+        GameHousingHovel,
+
+        /**
+         * @brief Game readout: the top housing tier.
+         */
+        GameHousingCottage,
+
+        /**
+         * @brief Game readout: which tier a house is on, as `{0}` named.
+         */
+        GameReadoutLevel,
+
+        /**
+         * @brief Game toolbar: how many people live in the city, `{0}`.
+         */
+        GameToolbarPopulation,
+
+        /**
+         * @brief Game toolbar: what share of its jobs are staffed, `{0}`
+         *        per cent.
+         */
+        GameToolbarEmployment,
+
+        /**
          * @brief Task worker: which tick the picture is of, `{0}`.
          */
         TaskWorkerTick,
@@ -820,7 +1133,7 @@ namespace antwika::i18n
     /**
      * @brief How many ids a complete catalogue carries.
      */
-    inline constexpr std::size_t kMessageCount{156};
+    inline constexpr std::size_t kMessageCount{218};
 
     /**
      * @brief Every id, in declaration order.
@@ -975,6 +1288,68 @@ namespace antwika::i18n
         MessageId::UiDemoSubmitted,
         MessageId::UiDemoCancelled,
         MessageId::UiDemoPressedWidget,
+        MessageId::GameToolRoad,
+        MessageId::GameToolHouse,
+        MessageId::GameToolFarm,
+        MessageId::GameToolClayPit,
+        MessageId::GameToolWorkshop,
+        MessageId::GameToolStorage,
+        MessageId::GameToolMarket,
+        MessageId::GameToolWell,
+        MessageId::GameToolDoctor,
+        MessageId::GameToolFireStation,
+        MessageId::GameToolEngineerPost,
+        MessageId::GameToolbarPause,
+        MessageId::GameToolbarResume,
+        MessageId::GameToolbarMenu,
+        MessageId::GameToolbarTick,
+        MessageId::GameMenuTitle,
+        MessageId::GameMenuNewGame,
+        MessageId::GameMenuLoadGame,
+        MessageId::GameMenuWorldMap,
+        MessageId::GameMenuQuit,
+        MessageId::GameModalTitle,
+        MessageId::GameModalMainMenu,
+        MessageId::GameModalResume,
+        MessageId::GameSaveTitle,
+        MessageId::GameSaveNoSaves,
+        MessageId::GameSaveNameNew,
+        MessageId::GameSaveSave,
+        MessageId::GameSaveLoad,
+        MessageId::GameSaveBack,
+        MessageId::GameBuildingHouse,
+        MessageId::GameBuildingFarm,
+        MessageId::GameBuildingClayPit,
+        MessageId::GameBuildingWorkshop,
+        MessageId::GameBuildingStorage,
+        MessageId::GameBuildingMarket,
+        MessageId::GameBuildingWell,
+        MessageId::GameBuildingDoctor,
+        MessageId::GameBuildingFireStation,
+        MessageId::GameBuildingEngineerPost,
+        MessageId::GameWalkerWaterCarrier,
+        MessageId::GameWalkerDoctor,
+        MessageId::GameWalkerFireman,
+        MessageId::GameWalkerEngineer,
+        MessageId::GameWalkerCartPusher,
+        MessageId::GameWalkerMarketBuyer,
+        MessageId::GameWalkerMarketSeller,
+        MessageId::GameResourceFood,
+        MessageId::GameResourceClay,
+        MessageId::GameResourcePottery,
+        MessageId::GameReadoutAmount,
+        MessageId::GameServiceWater,
+        MessageId::GameServiceHealth,
+        MessageId::GameServiceSafety,
+        MessageId::GameServiceStructure,
+        MessageId::GameReadoutCoverage,
+        MessageId::GameHousingTent,
+        MessageId::GameHousingShack,
+        MessageId::GameHousingHovel,
+        MessageId::GameHousingCottage,
+        MessageId::GameReadoutLevel,
+        MessageId::GameToolbarPopulation,
+        MessageId::GameToolbarEmployment,
         MessageId::TaskWorkerTick,
         MessageId::TaskWorkerBudget,
         MessageId::TaskWorkerStarted,

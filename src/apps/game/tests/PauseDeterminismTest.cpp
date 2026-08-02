@@ -24,6 +24,7 @@
 
 #include "WidgetPixel.hpp"
 
+#include "TestTranslator.hpp"
 #include "antwika/game/AppMode.hpp"
 #include "antwika/game/BuildingIndex.hpp"
 #include "antwika/game/Camera.hpp"
@@ -36,6 +37,8 @@
 #include "antwika/game/Toolbar.hpp"
 #include "antwika/game/UiCanvas.hpp"
 #include "antwika/game/UiOverlay.hpp"
+
+using antwika::game::tests::kTranslator;
 
 using antwika::event::Event;
 using antwika::event::TickEvent;
@@ -148,7 +151,7 @@ namespace
     // Off the arguments the run describes the bar with at first.
     [[nodiscard]] Position pixelOn(antwika::ui::WidgetId id)
     {
-        const Toolbar toolbar;
+        const Toolbar toolbar{kTranslator};
         const Camera camera;
         const auto centre = widgetCentre(
             toolbar.describe(kUiCanvas, antwika::ui::Pointer{}, camera),

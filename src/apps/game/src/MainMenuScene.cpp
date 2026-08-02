@@ -3,6 +3,7 @@
 #include <cstdint>
 
 #include <antwika/gfx/Color.hpp>
+#include <antwika/i18n/MessageId.hpp>
 #include <antwika/ui/Alignment.hpp>
 #include <antwika/ui/ButtonSpec.hpp>
 #include <antwika/ui/Context.hpp>
@@ -14,6 +15,7 @@ namespace antwika::game
 {
 
     using antwika::gfx::Color;
+    using antwika::i18n::MessageId;
     using antwika::ui::Alignment;
     using antwika::ui::Context;
     using antwika::ui::fixedSize;
@@ -35,6 +37,11 @@ namespace antwika::game
         constexpr std::uint32_t kCardWidth = 260;
     } // namespace
 
+    MainMenuScene::MainMenuScene(const Translator &translator)
+        : translator(translator)
+    {
+    }
+
     Frame MainMenuScene::describe(Size canvas, Pointer pointer) const
     {
         Context ui{
@@ -52,22 +59,23 @@ namespace antwika::game
                 const auto card = ui.panel(
                     {.width = fixedSize(kCardWidth), .height = kFit});
 
-                ui.label("ANTWIKA");
+                ui.label(translator.text(MessageId::GameMenuTitle));
 
                 ui.button(
-                    "New Game",
+                    translator.text(MessageId::GameMenuNewGame),
                     {.id = menuWidgets::kNewGame, .width = kGrow});
 
                 ui.button(
-                    "Load Game",
+                    translator.text(MessageId::GameMenuLoadGame),
                     {.id = menuWidgets::kLoadGame, .width = kGrow});
 
                 ui.button(
-                    "World Map",
+                    translator.text(MessageId::GameMenuWorldMap),
                     {.id = menuWidgets::kWorldMap, .width = kGrow});
 
                 ui.button(
-                    "Quit", {.id = menuWidgets::kQuit, .width = kGrow});
+                    translator.text(MessageId::GameMenuQuit),
+                    {.id = menuWidgets::kQuit, .width = kGrow});
             }
 
             ui.spacer(kGrow);

@@ -2,6 +2,7 @@
 
 #include <antwika/gfx/IRenderer.hpp>
 #include <antwika/gfx/Size.hpp>
+#include <antwika/i18n/Translator.hpp>
 #include <antwika/ui/DrawList.hpp>
 #include <antwika/ui/Frame.hpp>
 #include <antwika/ui/Pointer.hpp>
@@ -12,6 +13,7 @@ namespace antwika::game
 
     using antwika::gfx::IRenderer;
     using antwika::gfx::Size;
+    using antwika::i18n::Translator;
     using antwika::ui::DrawList;
     using antwika::ui::Frame;
     using antwika::ui::Pointer;
@@ -72,6 +74,19 @@ namespace antwika::game
     {
     public:
         /**
+         * @brief Construct the menu over the language it words itself
+         * in.
+         *
+         * Injected and fixed at kDefaultLocale by whoever builds it, for
+         * the reason Toolbar gives: a hit-test is a function of a layout
+         * laid out from translated text.
+         *
+         * @param translator Words every caption; must outlive this
+         * scene.
+         */
+        explicit MainMenuScene(const Translator &translator);
+
+        /**
          * @brief Describe the menu for one tick.
          * @param canvas The area the menu is laid out into.
          * @param pointer Where the pointer is and what it is doing.
@@ -90,6 +105,9 @@ namespace antwika::game
          * overlay MainMenuSink wrote them into.
          */
         void draw(IRenderer &renderer, const DrawList &picture) const;
+
+    private:
+        const Translator &translator;
     };
 
 } // namespace antwika::game

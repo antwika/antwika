@@ -8,6 +8,7 @@
 #include <antwika/gfx/Point.hpp>
 #include <antwika/gfx/Rect.hpp>
 #include <antwika/gfx/Size.hpp>
+#include <antwika/i18n/Translator.hpp>
 
 #include "antwika/game/SceneSnapshot.hpp"
 
@@ -18,6 +19,7 @@ namespace antwika::game
     using antwika::gfx::Point;
     using antwika::gfx::Rect;
     using antwika::gfx::Size;
+    using antwika::i18n::Translator;
 
     /**
      * @brief One line of a hover panel, and where it goes.
@@ -101,15 +103,26 @@ namespace antwika::game
      * keeps a reader from being told two different stories about one
      * building.
      *
+     * **Coverage is listed for every kind of building, and only where
+     * it is above zero.** Risk is a fact about any building and
+     * coverage is what holds it off, so there is no kind the question
+     * does not apply to; and a service that has lapsed is not listed at
+     * all, because an absent line and a line reading nothing say the
+     * same thing.
+     *
      * It is pinned near the pointer and then pushed back inside the
      * canvas, so a readout at the far edge of a window is still
      * readable rather than half off it.
      *
      * @param readout What the pointer is over.
      * @param canvas The area it must stay inside.
+     * @param translator Words every line; it is a caption a person
+     * reads, so it goes through antwika::i18n like the toolbar's.
      * @return The panel, with no lines when there is nothing to say.
      */
     [[nodiscard]] ReadoutPanel readoutPanel(
-        const HoverReadout &readout, Size canvas);
+        const HoverReadout &readout,
+        Size canvas,
+        const Translator &translator);
 
 } // namespace antwika::game

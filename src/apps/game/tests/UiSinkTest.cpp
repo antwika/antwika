@@ -24,6 +24,7 @@
 
 #include "WidgetPixel.hpp"
 
+#include "TestTranslator.hpp"
 #include "antwika/game/AppMode.hpp"
 #include "antwika/game/Camera.hpp"
 #include "antwika/game/Cell.hpp"
@@ -34,6 +35,8 @@
 #include "antwika/game/Toolbar.hpp"
 #include "antwika/game/UiOverlay.hpp"
 #include "antwika/game/UiSink.hpp"
+
+using antwika::game::tests::kTranslator;
 
 using antwika::event::Event;
 using antwika::event::TickEvent;
@@ -165,13 +168,14 @@ namespace
         UiOverlay overlay{kCanvas};
         InputEventCodec codec;
         InputFold input{codec};
-        Toolbar toolbar;
+        Toolbar toolbar{kTranslator};
         PauseState pause;
 
         // A city is what the modal is opened over.
         AppModeState mode{AppMode::CityMap};
         RoadDrag drag;
-        MenuModalScene modalScene;
+        MenuModalScene modalScene{kTranslator};
+        antwika::game::CityRatings ratings;
         UiSink sink{
             camera,
             overlay,
@@ -181,7 +185,8 @@ namespace
             mode,
             drag,
             modalScene,
-            camera};
+            camera,
+            ratings};
     };
 } // namespace
 
