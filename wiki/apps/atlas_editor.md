@@ -117,7 +117,7 @@ The movement between two clicks *is* the stroke, so a `--record` file grows at t
 
 Closing the window ends it, and so does Escape; both are input, so both are recorded and both replay.
 The `null` backend reports neither, which is why there is also `--max-ticks <n>`, defaulting to 90000 -- an hour at the 40 ms frame period.
-Reaching it ends the session by *asking it to stop*, through `atlas_editor::TickLimitSource`, rather than through `EngineLoop`'s own `maxTicks`, which throws.
+Reaching it ends the session by *asking it to stop*, through `app::TickLimitSource`, rather than through `EngineLoop`'s own `maxTicks`, which throws.
 Running out of the ticks somebody asked for is not a failure, and a `--record` run has to reach its epilogue to save its file at all.
 `--max-ticks 0` removes the cap, which is what somebody in front of a real window wants.
 

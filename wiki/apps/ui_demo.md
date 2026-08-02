@@ -34,7 +34,7 @@ Under the default `null` backend it draws nothing and takes no input, so use an 
 - `DemoOverlay` is the one thing the tick path and the renderer share: `DemoSink` writes the picture into it once per tick and `RenderSink` paints it, so the renderer never has to know what a pointer or a widget is.
   It also owns the canvas the UI is laid out against, which is the size the window was *asked* for rather than the size a window reports, so nothing can lay the showcase out against one size and hit-test it against another.
 - `KeyMapping` turns a key edge into the `ui::Key` the library acts on.
-- `TickBudgetSource` is what ends the run.
+- `app::TickLimitSource` is what ends the run.
 
 ## Non-obvious decisions
 
@@ -58,7 +58,7 @@ A showcase of a hoverable widget cannot pay that, so this app takes the coalesci
 
 **Running out of budget is an ordinary stop, not a loop that failed.**
 The default `null` backend reports no window close, and that is the build every CI leg produces, so a run left to end on a close would never end there.
-`TickBudgetSource` appends `engine.stop` from its budget's tick onwards rather than using `EngineLoop`'s `maxTicks`, which throws.
+`app::TickLimitSource` appends `engine.stop` from its budget's tick onwards rather than using `EngineLoop`'s `maxTicks`, which throws.
 Saying so as an event also puts the ending upstream of the recorder, exactly as `poker::WindowCloseSource` puts a window close there, so a `--record` run ends its file on the tick it stopped on and replaying that file stops on the same one.
 `UiDemoConfig::maxTicks` remains as the safety cap a test sets.
 

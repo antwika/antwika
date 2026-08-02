@@ -38,7 +38,7 @@ A `--record` run keeps what it got to even so: a recording is appended a line at
 `Board` parses and prints the 81 squares; `Puzzle` expresses them for the solver and answers whether a grid still obeys the rules; `solvePuzzle()` in `Solve.hpp` is the console showcase this application used to be, kept as one function.
 `PuzzleState` is everything a session holds: the clues, the working grid, the picked square and the last thing it said.
 `BoardSink` folds this application's own `sudoku.*` events; `PlaySink` folds `antwika::input`'s and describes the picture; `SudokuScene` is the picture, `BoardOverlay` carries it to `RenderSink`.
-`PuzzleSource` and `TickLimitSource` are the two decorators on the event stream, and `bootstrap()` in `Sudoku.cpp` wires the lot.
+`PuzzleSource` and `app::TickLimitSource` are the two decorators on the event stream, and `bootstrap()` in `Sudoku.cpp` wires the lot.
 
 ## Non-obvious decisions
 
