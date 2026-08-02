@@ -46,7 +46,8 @@ namespace antwika::music_editor
     };
 
     /**
-     * @brief Keeps four lines sounding, and keeps up with them changing.
+     * @brief Keeps four voices sounding, and keeps up with the score
+     * changing under them.
      *
      * One sequencer per track, because a track's events have to be made
      * into a voice through *its* preset, and the sequencer's seam hands
@@ -127,6 +128,7 @@ namespace antwika::music_editor
          * @return The count, which stands still while paused.
          */
         [[nodiscard]] time::Tick playedTicks() const noexcept;
+
 
     private:
         // Turns one track's events into that track's sound.

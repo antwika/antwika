@@ -1,7 +1,7 @@
 #include "antwika/music_editor/Playback.hpp"
 
-#include <array>
 #include <chrono>
+#include <cstddef>
 #include <string>
 
 #include <gtest/gtest.h>
@@ -9,12 +9,13 @@
 #include <antwika/sequencer/FrameClock.hpp>
 #include <antwika/sequencer/Rational.hpp>
 #include <antwika/sequencer/TempoMap.hpp>
+#include <antwika/sequencer/SequencerError.hpp>
 #include <antwika/sound/DeviceDesc.hpp>
+#include <antwika/sound/IDevice.hpp>
 #include <antwika/sound/OfflineDevice.hpp>
 #include <antwika/sound/WaveFormat.hpp>
 #include <antwika/sound/Waveform.hpp>
 #include <antwika/synth/SynthMixer.hpp>
-#include <antwika/sound/IDevice.hpp>
 #include <antwika/time/ISleeper.hpp>
 
 #include "antwika/music_editor/Score.hpp"
@@ -24,6 +25,7 @@ using antwika::music_editor::kTrackCount;
 using antwika::music_editor::Playback;
 using antwika::music_editor::PlaybackDesc;
 using antwika::music_editor::Score;
+using antwika::music_editor::trackName;
 using antwika::sequencer::FrameClock;
 using antwika::sequencer::Rational;
 using antwika::sequencer::TempoMap;
@@ -37,7 +39,6 @@ using antwika::synth::SynthMixerDesc;
 namespace
 {
     using namespace std::chrono_literals;
-    using Lines = std::array<std::string, kTrackCount>;
 
     constexpr WaveFormat kFormat{.rate = 48000, .channels = 2};
 
@@ -118,11 +119,25 @@ namespace
             device.start(mixer);
         }
 
-        void play(const Lines &lines)
+        void play(const std::string &source)
         {
-            score.update(lines);
+            score.read(source);
         }
     };
+
+    // One voice line per track, all playing the same thing.
+    [[nodiscard]] std::string everyVoice(const std::string &notation)
+    {
+        std::string document;
+
+        for (std::size_t track = 0; track < kTrackCount; ++track)
+        {
+            document += "$: " + std::string(trackName(track)) + " "
+                + notation + "\n";
+        }
+
+        return document;
+    }
 } // namespace
 
 TEST(PlaybackTest, SoundsNothingBeforeItIsStepped)
@@ -137,13 +152,25 @@ TEST(PlaybackTest, SoundsNothingBeforeItIsStepped)
     EXPECT_EQ(playback.queuedFrames(), 0U);
 }
 
+// Looking no ticks ahead decides a note after its frames are gone.
+TEST(PlaybackTest, RefusesToLookNoTicksAhead)
+{
+    Rig rig;
+
+    auto desc = oneCycleASecond();
+    desc.lookahead = 0;
+
+    EXPECT_THROW(
+        Playback(
+            rig.score, rig.mixer, rig.device, rig.sleeper, desc),
+        antwika::sequencer::SequencerError);
+}
+
 // Playing is the resting state: nothing has to start it.
 TEST(PlaybackTest, SoundsALineAsSoonAsItIsStepped)
 {
     Rig rig;
-    Lines lines;
-    lines[0] = "0";
-    rig.play(lines);
+    rig.play("$: bass 0\n");
 
     Playback playback(
         rig.score, rig.mixer, rig.device, rig.sleeper,
@@ -156,17 +183,12 @@ TEST(PlaybackTest, SoundsALineAsSoonAsItIsStepped)
     EXPECT_GT(playback.queuedFrames(), 0U);
 }
 
-TEST(PlaybackTest, EveryLineIsSoundedThroughItsOwnTrack)
+// One sequencer per track.
+// A track's events become a voice through its own preset.
+TEST(PlaybackTest, EveryVoiceIsSoundedThroughItsOwnTrack)
 {
     Rig rig;
-    Lines lines;
-
-    for (std::size_t track = 0; track < kTrackCount; ++track)
-    {
-        lines[track] = "0";
-    }
-
-    rig.play(lines);
+    rig.play(everyVoice("0"));
 
     Playback playback(
         rig.score, rig.mixer, rig.device, rig.sleeper,
@@ -181,9 +203,7 @@ TEST(PlaybackTest, EveryLineIsSoundedThroughItsOwnTrack)
 TEST(PlaybackTest, PausingStopsTheClockAndNotTheDevice)
 {
     Rig rig;
-    Lines lines;
-    lines[0] = "0*4";
-    rig.play(lines);
+    rig.play("$: bass 0*4\n");
 
     Playback playback(
         rig.score, rig.mixer, rig.device, rig.sleeper,
@@ -209,9 +229,7 @@ TEST(PlaybackTest, PausingStopsTheClockAndNotTheDevice)
 TEST(PlaybackTest, ResumingSoundsAgainRatherThanIntoThePast)
 {
     Rig rig;
-    Lines lines;
-    lines[0] = "0*4";
-    rig.play(lines);
+    rig.play("$: bass 0*4\n");
 
     Playback playback(
         rig.score, rig.mixer, rig.device, rig.sleeper,
@@ -241,8 +259,7 @@ TEST(PlaybackTest, ResumingSoundsAgainRatherThanIntoThePast)
 TEST(PlaybackTest, ANewLineIsHeardWithoutAnythingBeingReloaded)
 {
     Rig rig;
-    Lines lines;
-    rig.play(lines);
+    rig.play("");
 
     Playback playback(
         rig.score, rig.mixer, rig.device, rig.sleeper,
@@ -255,8 +272,7 @@ TEST(PlaybackTest, ANewLineIsHeardWithoutAnythingBeingReloaded)
 
     EXPECT_EQ(playback.started(), 0U);
 
-    lines[0] = "0*8";
-    rig.play(lines);
+    rig.play("$: bass 0*8\n");
 
     for (int step = 0; step < 10; ++step)
     {
@@ -269,9 +285,7 @@ TEST(PlaybackTest, ANewLineIsHeardWithoutAnythingBeingReloaded)
 TEST(PlaybackTest, SilencingStopsEveryVoiceAtOnce)
 {
     Rig rig;
-    Lines lines;
-    lines[0] = "0";
-    rig.play(lines);
+    rig.play("$: bass 0\n");
 
     Playback playback(
         rig.score, rig.mixer, rig.device, rig.sleeper,
@@ -288,9 +302,7 @@ TEST(PlaybackTest, SilencingStopsEveryVoiceAtOnce)
 TEST(PlaybackTest, KeepsTheDeviceFedWithoutRunningAway)
 {
     Rig rig;
-    Lines lines;
-    lines[0] = "0";
-    rig.play(lines);
+    rig.play("$: bass 0\n");
 
     Playback playback(
         rig.score, rig.mixer, rig.device, rig.sleeper,
@@ -313,9 +325,7 @@ TEST(PlaybackTest, KeepsTheDeviceFedWithoutRunningAway)
 TEST(PlaybackTest, WaitsOutNothingWhenTheDeviceKeepsUp)
 {
     Rig rig;
-    Lines lines;
-    lines[0] = "0";
-    rig.play(lines);
+    rig.play("$: bass 0\n");
 
     Playback playback(
         rig.score, rig.mixer, rig.device, rig.sleeper,
@@ -338,9 +348,7 @@ TEST(PlaybackTest, WaitsOutAudioTheDeviceHasNotPlayedYet)
     SynthMixer mixer{SynthMixerDesc{.format = kFormat}};
     Score score;
 
-    Lines lines;
-    lines[0] = "0";
-    score.update(lines);
+    score.read("$: bass 0\n");
 
     Playback playback(
         score, mixer, device, sleeper, oneCycleASecond());
@@ -374,9 +382,7 @@ TEST(PlaybackTest, StopsPumpingOnceTheDeviceIsFarEnoughAhead)
 TEST(PlaybackTest, ReportsHowManyVoicesAreSounding)
 {
     Rig rig;
-    Lines lines;
-    lines[0] = "0";
-    rig.play(lines);
+    rig.play("$: bass 0\n");
 
     Playback playback(
         rig.score, rig.mixer, rig.device, rig.sleeper,
@@ -387,4 +393,25 @@ TEST(PlaybackTest, ReportsHowManyVoicesAreSounding)
     playback.step(false);
 
     EXPECT_GT(playback.voices(), 0U);
+}
+
+// A pause pumps too.
+// The frames that went by are counted rather than played into.
+TEST(PlaybackTest, PumpsWhileTheClockStandsStill)
+{
+    LaggingDevice device;
+    CountingSleeper sleeper;
+    SynthMixer mixer{SynthMixerDesc{.format = kFormat}};
+    Score score;
+
+    score.read("$: bass 0*4\n");
+
+    Playback playback(
+        score, mixer, device, sleeper, oneCycleASecond());
+
+    playback.step(true);
+
+    EXPECT_GT(playback.queuedFrames(), 0U);
+    EXPECT_EQ(playback.playedTicks(), 0U);
+    EXPECT_EQ(playback.started(), 0U);
 }

@@ -2,6 +2,8 @@
 
 #include <chrono>
 
+#include <antwika/engine/Events.hpp>
+#include <antwika/event/TickEvent.hpp>
 #include <antwika/gfx/Size.hpp>
 #include <antwika/input/InputEventCodec.hpp>
 #include <antwika/sequencer/FrameClock.hpp>
@@ -12,6 +14,7 @@
 #include <antwika/sound/WaveFormat.hpp>
 #include <antwika/sound/Waveform.hpp>
 #include <antwika/synth/SynthMixer.hpp>
+#include <antwika/time/Tick.hpp>
 #include <antwika/time/fakes/FakeSleeper.hpp>
 
 #include "antwika/music_editor/EditorScene.hpp"
@@ -23,8 +26,14 @@
 namespace antwika::music_editor::tests
 {
 
-    /** @brief The canvas every test here lays out against. */
-    inline constexpr gfx::Size kCanvas{.width = 960, .height = 420};
+    /**
+     * @brief The canvas every test here lays out against.
+     *
+     * The size main() asks its window for, since the code pane is drawn
+     * at twice the glyph scale and laying out against anything smaller
+     * would be laying out a window no run ever opens.
+     */
+    inline constexpr gfx::Size kCanvas{.width = 1120, .height = 640};
 
     /**
      * @brief A whole editor over an offline device, built in one line.
@@ -73,5 +82,17 @@ namespace antwika::music_editor::tests
             device.start(mixer);
         }
     };
+
+    /**
+     * @brief Make the tick event itself.
+     * @param when Which tick it is.
+     * @return The event a sink reads as "the tick happened".
+     */
+    [[nodiscard]] inline event::TickEvent tickAt(const time::Tick when)
+    {
+        return event::TickEvent{
+            .tick = when,
+            .event = {.name = antwika::engine::events::kTick}};
+    }
 
 } // namespace antwika::music_editor::tests

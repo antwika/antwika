@@ -3,6 +3,8 @@
 #include <array>
 #include <cstddef>
 #include <cstdint>
+#include <optional>
+#include <string_view>
 
 #include <antwika/pattern/Controls.hpp>
 #include <antwika/pattern/ParamId.hpp>
@@ -90,6 +92,26 @@ namespace antwika::music_editor
         trackPresets() noexcept;
 
     /**
+     * @brief Get what a voice is called.
+     *
+     * The name a voice line opens with, and what the picture labels a
+     * refusal by, which is why it lives beside the presets rather than
+     * in the scene: the score is read long before anything is drawn.
+     *
+     * @param track Which track.
+     * @return Its name, which outlives every caller.
+     */
+    [[nodiscard]] std::string_view trackName(std::size_t track) noexcept;
+
+    /**
+     * @brief Get which track a name asks for.
+     * @param name The word a voice line opened with.
+     * @return The track, or nothing when no voice is called that.
+     */
+    [[nodiscard]] std::optional<std::size_t> trackFor(
+        std::string_view name) noexcept;
+
+    /**
      * @brief Turn one of a pattern's events into a voice.
      *
      * **The application's half of the sequencer's seam.**
@@ -102,12 +124,16 @@ namespace antwika::music_editor
      * @param value What the event carried.
      * @param frames How long the event lasts.
      * @param rate The rate the voice will run at.
+     * @param seed What a noise voice's hiss is generated from, which
+     * the caller takes from where the note falls, so that two hits of
+     * one length are not the same hit twice.
      * @return The voice to trigger.
      */
     [[nodiscard]] VoiceDesc voiceFor(
         const TrackPreset &preset,
         const Controls &value,
         FrameCount frames,
-        SampleRate rate);
+        SampleRate rate,
+        std::uint64_t seed);
 
 } // namespace antwika::music_editor

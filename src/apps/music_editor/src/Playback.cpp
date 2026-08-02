@@ -27,8 +27,15 @@ namespace antwika::music_editor
     {
         mixer.trigger(
             synth::TriggerRequest{
+                // Seeded from where the note falls in the score.
+                // Not from where the device is.
+                // So a pause changes no hit's sound.
                 .voice = voiceFor(
-                    preset, value, frames, mixer.format().rate),
+                    preset,
+                    value,
+                    frames,
+                    mixer.format().rate,
+                    startFrame),
                 .startFrame = startFrame + offset});
 
         ++counter;
@@ -76,6 +83,9 @@ namespace antwika::music_editor
                 // That is constant while the clock is running.
                 perTrack[track]->offset = pausedFrames;
 
+                // Nothing here guards against a refused window.
+                // antwika::notation bounds every number it reads.
+                // So no line that parses can open one that wide.
                 sequencers[track]->advance(
                     played, score.playing(track), *perTrack[track]);
             }

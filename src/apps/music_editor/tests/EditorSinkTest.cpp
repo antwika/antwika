@@ -1,18 +1,18 @@
 #include "antwika/music_editor/EditorSink.hpp"
 
-#include <cstddef>
+#include <cstdint>
 #include <string>
-#include <string_view>
 
 #include <gtest/gtest.h>
 
-#include <antwika/engine/Events.hpp>
 #include <antwika/event/TickEvent.hpp>
 #include <antwika/gfx/Point.hpp>
+#include <antwika/gfx/Rect.hpp>
 #include <antwika/input/InputEvent.hpp>
 #include <antwika/input/Key.hpp>
 #include <antwika/input/KeyModifiers.hpp>
 #include <antwika/input/MouseButton.hpp>
+#include <antwika/ui/WidgetId.hpp>
 
 #include "EditorRig.hpp"
 
@@ -21,23 +21,20 @@ using antwika::input::Key;
 using antwika::input::KeyPressed;
 using antwika::input::MouseButton;
 using antwika::input::PointerButtonPressed;
-using antwika::music_editor::fieldFor;
+using antwika::music_editor::kCodeField;
 using antwika::music_editor::kPanicButton;
 using antwika::music_editor::kPlayButton;
 using antwika::music_editor::tests::EditorRig;
+using antwika::music_editor::tests::tickAt;
 
 namespace
 {
-    [[nodiscard]] TickEvent tickAt(antwika::time::Tick when)
-    {
-        return TickEvent{
-            .tick = when,
-            .event = {.name = antwika::engine::events::kTick}};
-    }
-
     // Types one key, exactly as a recording would have held it.
-    void press(EditorRig &rig, Key key, antwika::time::Tick when,
-               bool shift = false)
+    void press(
+        EditorRig &rig,
+        Key key,
+        antwika::time::Tick when,
+        bool shift = false)
     {
         rig.editor.handle(
             TickEvent{
@@ -95,7 +92,7 @@ TEST(EditorSinkTest, DrawsSomethingOnTheVeryFirstTick)
     EXPECT_FALSE(rig.editor.commands().empty());
 }
 
-// The lines are re-read from what the input just did.
+// The document is re-read from what the input just did.
 // Only then is the sound advanced.
 TEST(EditorSinkTest, KeepsPlayingWithoutAnybodyStartingIt)
 {
@@ -111,30 +108,109 @@ TEST(EditorSinkTest, KeepsPlayingWithoutAnybodyStartingIt)
 }
 
 // This app defines no event of its own.
-// A keystroke is recorded, and the line it lands in is regenerated.
-TEST(EditorSinkTest, TypingGoesIntoTheFocusedLine)
+// A keystroke is recorded, and where it landed is regenerated.
+TEST(EditorSinkTest, TypingGoesIntoTheDocumentAtTheCaret)
 {
     EditorRig rig;
-    rig.state.lines[0].clear();
+    rig.state.source.clear();
     rig.state.cursor = 0;
 
     rig.editor.handle(tickAt(0));
 
     press(rig, Key::Digit5, 1);
 
-    EXPECT_EQ(rig.state.lines[0], "5");
+    EXPECT_EQ(rig.state.source, "5");
+    EXPECT_EQ(rig.state.cursor, 1U);
+}
+
+// A caret in the middle is what typing into a written score is.
+TEST(EditorSinkTest, TypingIntoTheMiddleLeavesTheRestWhereItWas)
+{
+    EditorRig rig;
+    rig.state.source = "$: bass 0\n$: lead 3\n";
+    rig.state.cursor = 9;
+
+    rig.editor.handle(tickAt(0));
+
+    press(rig, Key::Digit7, 1);
+
+    EXPECT_EQ(rig.state.source, "$: bass 07\n$: lead 3\n");
+    EXPECT_EQ(rig.state.cursor, 10U);
+}
+
+// One tick's typing is one frame's worth of edges, in arrival order.
+TEST(EditorSinkTest, TabIndentsByTwoRatherThanMovingAnything)
+{
+    EditorRig rig;
+    rig.state.source.clear();
+    rig.state.cursor = 0;
+
+    rig.editor.handle(tickAt(0));
+
+    press(rig, Key::Tab, 1);
+
+    EXPECT_EQ(rig.state.source, "  ");
+    EXPECT_EQ(rig.state.cursor, 2U);
+}
+
+TEST(EditorSinkTest, BackspaceTakesTheCharacterBeforeTheCaret)
+{
+    EditorRig rig;
+    rig.state.source = "0 3";
+    rig.state.cursor = 3;
+
+    rig.editor.handle(tickAt(0));
+
+    press(rig, Key::Backspace, 1);
+
+    EXPECT_EQ(rig.state.source, "0 ");
+}
+
+// Enter writes a line break, which is how a second voice line begins.
+// It is deliberately not the pause any more.
+TEST(EditorSinkTest, EnterIsANewLineRatherThanAPause)
+{
+    EditorRig rig;
+    rig.state.source = "$: bass 0";
+    rig.state.cursor = 9;
+
+    rig.editor.handle(tickAt(0));
+
+    press(rig, Key::Enter, 1);
+
+    EXPECT_EQ(rig.state.source, "$: bass 0\n");
+    EXPECT_FALSE(rig.state.paused);
+}
+
+TEST(EditorSinkTest, TheArrowsWalkTheCaretBetweenLines)
+{
+    EditorRig rig;
+    rig.state.source = "abcd\nefgh\nijkl";
+    rig.state.cursor = 12;
+
+    rig.editor.handle(tickAt(0));
+
+    press(rig, Key::ArrowUp, 1);
+    EXPECT_EQ(rig.state.cursor, 7U);
+
+    press(rig, Key::ArrowUp, 2);
+    EXPECT_EQ(rig.state.cursor, 2U);
+
+    press(rig, Key::ArrowDown, 3);
+    EXPECT_EQ(rig.state.cursor, 7U);
+
+    press(rig, Key::ArrowLeft, 4);
+    EXPECT_EQ(rig.state.cursor, 6U);
+
+    press(rig, Key::ArrowRight, 5);
+    EXPECT_EQ(rig.state.cursor, 7U);
 }
 
 TEST(EditorSinkTest, TypingReachesTheSoundWithoutAnythingBeingReloaded)
 {
     EditorRig rig;
-
-    for (std::size_t track = 0; track < 4; ++track)
-    {
-        rig.state.lines[track].clear();
-    }
-
-    rig.state.cursor = 0;
+    rig.state.source = "$: bass ";
+    rig.state.cursor = rig.state.source.size();
 
     for (antwika::time::Tick tick = 0; tick < 4; ++tick)
     {
@@ -150,41 +226,26 @@ TEST(EditorSinkTest, TypingReachesTheSoundWithoutAnythingBeingReloaded)
         rig.editor.handle(tickAt(tick));
     }
 
+    EXPECT_EQ(rig.state.source, "$: bass 0");
     EXPECT_GT(rig.playback.started(), silent);
 }
 
-TEST(EditorSinkTest, TabMovesTheTypingToTheNextLine)
+// Escape is this application's alone.
+// A field told about it would give up on what was typed.
+TEST(EditorSinkTest, EscapePausesAndResumes)
 {
     EditorRig rig;
     rig.editor.handle(tickAt(0));
 
-    press(rig, Key::Tab, 1);
+    const auto written = rig.state.source;
 
-    EXPECT_EQ(rig.state.focused, 1U);
-}
-
-TEST(EditorSinkTest, ShiftTabMovesItBack)
-{
-    EditorRig rig;
-    rig.state.focused = 2;
-    rig.editor.handle(tickAt(0));
-
-    press(rig, Key::Tab, 1, true);
-
-    EXPECT_EQ(rig.state.focused, 1U);
-}
-
-// Enter is the one thing a line hears that is not more music.
-TEST(EditorSinkTest, EnterPausesAndResumes)
-{
-    EditorRig rig;
-    rig.editor.handle(tickAt(0));
-
-    press(rig, Key::Enter, 1);
+    press(rig, Key::Escape, 1);
     EXPECT_TRUE(rig.state.paused);
 
-    press(rig, Key::Enter, 2);
+    press(rig, Key::Escape, 2);
     EXPECT_FALSE(rig.state.paused);
+
+    EXPECT_EQ(rig.state.source, written);
 }
 
 TEST(EditorSinkTest, PausingStopsTheMusicalClock)
@@ -192,7 +253,7 @@ TEST(EditorSinkTest, PausingStopsTheMusicalClock)
     EditorRig rig;
     rig.editor.handle(tickAt(0));
 
-    press(rig, Key::Enter, 1);
+    press(rig, Key::Escape, 1);
     ASSERT_TRUE(rig.state.paused);
 
     const auto played = rig.playback.playedTicks();
@@ -232,14 +293,20 @@ TEST(EditorSinkTest, TheOtherButtonSilencesEveryVoice)
     EXPECT_FALSE(rig.state.paused);
 }
 
-TEST(EditorSinkTest, ClickingALineGivesItTheTyping)
+// There is one thing to type into and it always has the focus.
+// So a press on it changes nothing about where the typing goes.
+TEST(EditorSinkTest, ClickingTheCodePaneLeavesTheTypingWhereItWas)
 {
     EditorRig rig;
+    rig.state.source = "0 3";
+    rig.state.cursor = 3;
     rig.editor.handle(tickAt(0));
 
-    clickAt(rig, centreOf(rig, fieldFor(2)), 1);
+    clickAt(rig, centreOf(rig, kCodeField), 1);
 
-    EXPECT_EQ(rig.state.focused, 2U);
+    press(rig, Key::Digit5, 2);
+
+    EXPECT_EQ(rig.state.source, "0 35");
 }
 
 TEST(EditorSinkTest, AnEventItCannotDecodeChangesNothing)
@@ -260,8 +327,8 @@ TEST(EditorSinkTest, AnEventItCannotDecodeChangesNothing)
 TEST(EditorSinkTest, ARefusedLineIsReportedAndKeepsSounding)
 {
     EditorRig rig;
-    rig.state.lines[0] = "0 3";
-    rig.state.cursor = 3;
+    rig.state.source = "$: bass 0 3\n";
+    rig.state.cursor = 11;
 
     for (antwika::time::Tick tick = 0; tick < 4; ++tick)
     {
@@ -273,8 +340,8 @@ TEST(EditorSinkTest, ARefusedLineIsReportedAndKeepsSounding)
     press(rig, Key::LeftBracket, 5);
     rig.editor.handle(tickAt(6));
 
-    EXPECT_EQ(rig.state.lines[0], "0 3[");
-    EXPECT_FALSE(rig.score.error(0).empty());
+    EXPECT_EQ(rig.state.source, "$: bass 0 3[\n");
+    EXPECT_TRUE(rig.score.hasError());
 
     for (antwika::time::Tick tick = 7; tick < 40; ++tick)
     {
@@ -285,7 +352,6 @@ TEST(EditorSinkTest, ARefusedLineIsReportedAndKeepsSounding)
 }
 
 // Only a left press reaches the layout.
-// Only a pointer event says where the pointer is.
 TEST(EditorSinkTest, ARightPressPressesNothing)
 {
     EditorRig rig;
@@ -305,29 +371,59 @@ TEST(EditorSinkTest, ARightPressPressesNothing)
 }
 
 // The pointer stays located once it has been anywhere.
+// So a second press resolves without being told the position again.
 TEST(EditorSinkTest, RemembersThatThePointerHasBeenSomewhere)
 {
     EditorRig rig;
     rig.editor.handle(tickAt(0));
 
-    clickAt(rig, centreOf(rig, fieldFor(1)), 1);
-    ASSERT_EQ(rig.state.focused, 1U);
+    clickAt(rig, centreOf(rig, kPanicButton), 1);
 
-    clickAt(rig, centreOf(rig, fieldFor(3)), 2);
+    clickAt(rig, centreOf(rig, kPlayButton), 2);
 
-    EXPECT_EQ(rig.state.focused, 3U);
+    EXPECT_TRUE(rig.state.paused);
 }
 
 // A tick carries no keys and no press.
-// So nothing takes the focus and nothing is activated.
+// So nothing is activated and nothing is typed.
 TEST(EditorSinkTest, ATickOnItsOwnActivatesNothing)
 {
     EditorRig rig;
-    rig.state.focused = 2;
 
     rig.editor.handle(tickAt(0));
+    const auto before = rig.state;
+
     rig.editor.handle(tickAt(1));
 
-    EXPECT_EQ(rig.state.focused, 2U);
-    EXPECT_FALSE(rig.state.paused);
+    EXPECT_EQ(rig.state, before);
+}
+
+// A key meaning nothing and typing nothing leaves the document be.
+TEST(EditorSinkTest, AKeyThatSaysNothingChangesNothing)
+{
+    EditorRig rig;
+    rig.editor.handle(tickAt(0));
+
+    const auto before = rig.state;
+
+    press(rig, Key::F1, 1);
+
+    EXPECT_EQ(rig.state, before);
+}
+
+// Two events on one tick share that tick's folded edges.
+// The next tick is what clears them.
+TEST(EditorSinkTest, ReadsSeveralEventsWithinOneTick)
+{
+    EditorRig rig;
+    rig.state.source.clear();
+    rig.state.cursor = 0;
+
+    rig.editor.handle(tickAt(0));
+
+    press(rig, Key::Digit1, 1);
+    press(rig, Key::Digit2, 1);
+    press(rig, Key::Digit3, 2);
+
+    EXPECT_EQ(rig.state.source, "123");
 }

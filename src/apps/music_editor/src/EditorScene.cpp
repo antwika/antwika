@@ -1,9 +1,7 @@
 #include "antwika/music_editor/EditorScene.hpp"
 
-#include <array>
 #include <cstddef>
 #include <string>
-#include <string_view>
 
 #include <antwika/gfx/Color.hpp>
 #include <antwika/ui/ButtonSpec.hpp>
@@ -11,7 +9,7 @@
 #include <antwika/ui/Painter.hpp>
 #include <antwika/ui/Scope.hpp>
 #include <antwika/ui/Sizing.hpp>
-#include <antwika/ui/TextFieldSpec.hpp>
+#include <antwika/ui/TextAreaSpec.hpp>
 #include <antwika/ui/Theme.hpp>
 
 namespace antwika::music_editor
@@ -23,7 +21,7 @@ namespace antwika::music_editor
         using antwika::ui::ButtonSpec;
         using antwika::ui::Context;
         using antwika::ui::kGrow;
-        using antwika::ui::TextFieldSpec;
+        using antwika::ui::TextAreaSpec;
         using antwika::ui::Theme;
 
         constexpr Color kBackdrop{
@@ -35,8 +33,10 @@ namespace antwika::music_editor
         constexpr Color kCalm{
             .red = 130, .green = 205, .blue = 140, .alpha = 255};
 
-        constexpr std::array<std::string_view, kTrackCount> kNames{
-            "bass", "lead", "bell", "drum"};
+        // How many refusals are shown at once.
+        // A document with more says so.
+        // Every one of them would push the code off the window.
+        constexpr std::size_t kProblemsShown = 3;
 
         [[nodiscard]] std::string statusLine(
             const EditorState &state, const PlaybackStatus &status)
@@ -46,11 +46,23 @@ namespace antwika::music_editor
                 + "  voices " + std::to_string(status.voices)
                 + "  notes " + std::to_string(status.started);
         }
+
+        [[nodiscard]] std::string problemLine(const Problem &problem)
+        {
+            return "line " + std::to_string(problem.line) + ": "
+                + problem.message;
+        }
     } // namespace
 
-    std::string_view trackName(const std::size_t track) noexcept
+    antwika::ui::Theme editorTheme() noexcept
     {
-        return kNames[track];
+        Theme theme;
+
+        // The text alone, rather than scaledTheme()'s every metric.
+        // A doubled inset would spend the window on its own margins.
+        theme.textScale = kTextScale;
+
+        return theme;
     }
 
     Frame EditorScene::describe(
@@ -61,14 +73,10 @@ namespace antwika::music_editor
         const Pointer pointer,
         const Keyboard &keyboard) const
     {
-        // The focused field is named to the Context.
-        // The typing goes where the state says it does.
+        // There is one thing to type into, and it always has the focus.
+        // So no press moves it and no key has to.
         Context ui(
-            canvas,
-            Theme{},
-            pointer,
-            keyboard,
-            fieldFor(state.focused));
+            canvas, editorTheme(), pointer, keyboard, kCodeField);
 
         // Every Scope is closed before finish().
         // It refuses to lay out a half-built tree.
@@ -80,38 +88,34 @@ namespace antwika::music_editor
                 statusLine(state, status),
                 state.paused ? kTrouble : kCalm);
             ui.label(
-                "tab moves between lines, enter pauses, type to edit");
+                "esc pauses, enter is a new line, tab indents");
 
-            for (std::size_t track = 0; track < kTrackCount; ++track)
+            ui.textArea(
+                TextAreaSpec{
+                    .id = kCodeField,
+                    .width = kGrow,
+                    .height = kGrow,
+                    .text = state.source,
+                    .placeholder = "$: bass 0 ~ 0 [~ 3]",
+                    .cursor = state.cursor,
+                    .focused = true});
+
+            const auto &problems = score.problems();
+
+            for (std::size_t shown = 0;
+                 shown < problems.size() && shown < kProblemsShown;
+                 ++shown)
             {
-                const auto line = ui.row();
-
-                ui.label(trackName(track));
-
-                ui.textField(
-                    TextFieldSpec{
-                        .id = fieldFor(track),
-                        .width = kGrow,
-                        .text = state.lines[track],
-                        .placeholder = "silent",
-                        .cursor = track == state.focused
-                            ? state.cursor
-                            : ui::kCaretAtEnd,
-                        .focused = track == state.focused});
+                // Named by line so a reader knows which one is refused.
+                // Drawn in its own ink so it is not mistaken for music.
+                ui.label(problemLine(problems[shown]), kTrouble);
             }
 
-            for (std::size_t track = 0; track < kTrackCount; ++track)
+            if (problems.size() > kProblemsShown)
             {
-                if (score.error(track).empty())
-                {
-                    continue;
-                }
-
-                // Named so a reader knows which line is refused.
-                // Drawn in its own ink so it is not mistaken for music.
                 ui.label(
-                    std::string(trackName(track)) + ": "
-                        + score.error(track),
+                    std::to_string(problems.size() - kProblemsShown)
+                        + " more",
                     kTrouble);
             }
 

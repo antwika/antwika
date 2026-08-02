@@ -50,8 +50,10 @@ using antwika::time::SystemSleeper;
 
 namespace
 {
+    // Twice the glyph and a document rather than four boxes.
+    // Both want more window than a row of fields did.
     constexpr antwika::gfx::Size kWindowSize{
-        .width = 960, .height = 420};
+        .width = 1120, .height = 640};
 
     // A keystroke lands on a tick, and so does a note.
     // This is the granularity of both.

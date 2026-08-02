@@ -3,7 +3,10 @@
 #include <algorithm>
 #include <array>
 #include <cmath>
+#include <cstddef>
 #include <cstdint>
+#include <optional>
+#include <string_view>
 
 #include <antwika/pattern/Controls.hpp>
 #include <antwika/sound/Frames.hpp>
@@ -29,6 +32,9 @@ namespace antwika::music_editor
             return static_cast<FrameCount>(milliseconds)
                 * static_cast<FrameCount>(rate) / kMillisecondsPerSecond;
         }
+
+        constexpr std::array<std::string_view, kTrackCount> kNames{
+            "bass", "lead", "bell", "drum"};
 
         const std::array<TrackPreset, kTrackCount> kPresets{
             TrackPreset{
@@ -90,11 +96,31 @@ namespace antwika::music_editor
         return kPresets;
     }
 
+    std::string_view trackName(const std::size_t track) noexcept
+    {
+        return kNames[track];
+    }
+
+    std::optional<std::size_t> trackFor(
+        const std::string_view name) noexcept
+    {
+        for (std::size_t track = 0; track < kTrackCount; ++track)
+        {
+            if (kNames[track] == name)
+            {
+                return track;
+            }
+        }
+
+        return std::nullopt;
+    }
+
     VoiceDesc voiceFor(
         const TrackPreset &preset,
         const Controls &value,
         const FrameCount frames,
-        const SampleRate rate)
+        const SampleRate rate,
+        const std::uint64_t seed)
     {
         const auto note = value.get(kNote);
 
@@ -122,9 +148,10 @@ namespace antwika::music_editor
             .filter = preset.filter,
             .gain = preset.gain,
             .pan = preset.pan,
-            // Every noise hit differs from its neighbours.
-            // The same hit is the same on every run.
-            .seed = static_cast<std::uint64_t>(frames)};
+            // Where the hit falls, rather than how long it is.
+            // Two hits of one length are not one hit sounded twice.
+            // And the same hit is the same hit on every run.
+            .seed = seed};
     }
 
 } // namespace antwika::music_editor
