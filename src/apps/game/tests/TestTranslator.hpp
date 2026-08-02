@@ -1,7 +1,8 @@
 #pragma once
 
 #include <antwika/i18n/Locale.hpp>
-#include <antwika/i18n/Translator.hpp>
+
+#include "antwika/game/Messages.hpp"
 
 namespace antwika::game::tests
 {
@@ -19,7 +20,7 @@ namespace antwika::game::tests
      * Shared rather than made per fixture so that no test can quietly
      * pick a different language and still pass.
      */
-    inline constexpr antwika::i18n::Translator kTranslator{
+    inline constexpr Translator kTranslator{
         antwika::i18n::kDefaultLocale};
 
 } // namespace antwika::game::tests

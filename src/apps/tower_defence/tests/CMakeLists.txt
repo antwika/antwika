@@ -11,6 +11,7 @@ add_executable(antwika_tower_defence_tests
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/HighScore.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/LevelGenerator.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/LevelTile.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/Messages.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/MobKind.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/RenderSink.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/ScoreOverlay.cpp
@@ -24,6 +25,7 @@ add_executable(antwika_tower_defence_tests
     HighScoreTest.cpp
     LevelGeneratorTest.cpp
     LevelTileTest.cpp
+    MessagesTest.cpp
     ReplayRoundTripTest.cpp
     RunIntegrationTest.cpp
     SinksTest.cpp
@@ -43,6 +45,7 @@ target_link_libraries(antwika_tower_defence_tests
         antwika::gfx
         antwika::gfx::tests::mocks
         antwika::i18n
+        antwika::i18n::tests::conformance
         antwika::input
         antwika::log::tests::mocks
         antwika::replay

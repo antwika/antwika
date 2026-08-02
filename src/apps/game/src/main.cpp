@@ -20,7 +20,6 @@
 #include <antwika/gfx/SelectedBackend.hpp>
 #include <antwika/gfx/WindowDesc.hpp>
 #include <antwika/i18n/Locale.hpp>
-#include <antwika/i18n/Translator.hpp>
 #include <antwika/input/InputEventCodec.hpp>
 #include <antwika/input/InputPipeline.hpp>
 #include <antwika/input/PointerHintChannel.hpp>
@@ -42,6 +41,7 @@
 #include "antwika/game/GridScene.hpp"
 #include "antwika/game/KeyBindings.hpp"
 #include "antwika/game/MainMenuScene.hpp"
+#include "antwika/game/Messages.hpp"
 #include "antwika/game/OptionsFile.hpp"
 #include "antwika/game/PathIndex.hpp"
 #include "antwika/game/PauseState.hpp"
@@ -177,7 +177,7 @@ namespace
         // And it resolves a recorded click against that layout.
         // So the language may not be a thing a recording lacks.
         // Changing it is a source change, exactly as kUiCanvas is.
-        const antwika::i18n::Translator translator{
+        const antwika::game::Translator translator{
             antwika::i18n::kDefaultLocale};
 
         Camera camera(kInitialPan);

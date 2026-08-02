@@ -8,7 +8,6 @@
 #include <antwika/event/IEventSink.hpp>
 #include <antwika/event/ITickEventSink.hpp>
 #include <antwika/gfx/Size.hpp>
-#include <antwika/i18n/Translator.hpp>
 #include <antwika/input/IInputEventCodec.hpp>
 #include <antwika/log/ILogger.hpp>
 #include <antwika/simulation/ITickEventSource.hpp>
@@ -16,6 +15,7 @@
 
 #include "antwika/atlas_editor/EditorState.hpp"
 #include "antwika/atlas_editor/IAtlasStore.hpp"
+#include "antwika/atlas_editor/Messages.hpp"
 #include "antwika/atlas_editor/TileGrid.hpp"
 #include "antwika/atlas_editor/UiOverlay.hpp"
 
@@ -25,7 +25,6 @@ namespace antwika::atlas_editor
     using antwika::event::IEventSink;
     using antwika::event::ITickEventSink;
     using antwika::gfx::Size;
-    using antwika::i18n::Translator;
     using antwika::input::IInputEventCodec;
     using antwika::log::ILogger;
     using antwika::simulation::ITickEventSource;

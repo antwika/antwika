@@ -11,7 +11,6 @@
 #include <antwika/gfx/mocks/MockRenderer.hpp>
 #include <antwika/gfx/mocks/MockWindow.hpp>
 #include <antwika/i18n/Locale.hpp>
-#include <antwika/i18n/Translator.hpp>
 #include <antwika/input/InputEvent.hpp>
 #include <antwika/input/InputEventCodec.hpp>
 #include <antwika/input/MouseButton.hpp>
@@ -23,6 +22,7 @@
 #include "antwika/tower_defence/GridLayout.hpp"
 #include "antwika/tower_defence/Level.hpp"
 #include "antwika/tower_defence/LevelTile.hpp"
+#include "antwika/tower_defence/Messages.hpp"
 #include "antwika/tower_defence/MobKind.hpp"
 #include "antwika/tower_defence/RenderSink.hpp"
 #include "antwika/tower_defence/ScoreOverlay.hpp"
@@ -34,7 +34,6 @@ using antwika::event::TickEvent;
 using antwika::gfx::mocks::MockRenderer;
 using antwika::gfx::mocks::MockWindow;
 using antwika::gfx::Size;
-using antwika::i18n::Translator;
 using antwika::input::InputEventCodec;
 using antwika::input::MouseButton;
 using antwika::input::PointerButtonPressed;
@@ -55,6 +54,7 @@ using antwika::tower_defence::ScoreOverlay;
 using antwika::tower_defence::ScoreSink;
 using antwika::tower_defence::Tile;
 using antwika::tower_defence::TowerPlacementSink;
+using antwika::tower_defence::Translator;
 using antwika::tower_defence::Wave;
 using antwika::tower_defence::WaveEntry;
 using ::testing::NiceMock;

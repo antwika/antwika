@@ -1,9 +1,9 @@
 #include "antwika/game/Action.hpp"
 
+#include "antwika/game/MessageId.hpp"
+
 namespace antwika::game
 {
-
-    using antwika::i18n::MessageId;
 
     namespace
     {
@@ -15,10 +15,10 @@ namespace antwika::game
             "pause", "zoom_in", "zoom_out", "reset_view"};
 
         constexpr std::array<MessageId, kActionCount> kLabels{
-            MessageId::GameActionPause,
-            MessageId::GameActionZoomIn,
-            MessageId::GameActionZoomOut,
-            MessageId::GameActionResetView};
+            MessageId::ActionPause,
+            MessageId::ActionZoomIn,
+            MessageId::ActionZoomOut,
+            MessageId::ActionResetView};
     } // namespace
 
     std::string_view actionName(Action action) noexcept

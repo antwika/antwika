@@ -5,8 +5,8 @@
 #include <antwika/animation/Clip.hpp>
 #include <antwika/gfx/IRenderer.hpp>
 #include <antwika/gfx/Size.hpp>
-#include <antwika/i18n/Translator.hpp>
 
+#include "antwika/companion/Messages.hpp"
 #include "antwika/companion/PetLayout.hpp"
 #include "antwika/companion/PetSnapshot.hpp"
 
@@ -15,7 +15,6 @@ namespace antwika::companion
 
     using antwika::gfx::IRenderer;
     using antwika::gfx::Size;
-    using antwika::i18n::Translator;
 
     /**
      * @brief Draws a companion: a sky, some ground, four gauges, three

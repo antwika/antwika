@@ -10,13 +10,14 @@
 #include <antwika/gfx/mocks/MockWindow.hpp>
 #include <antwika/gfx/Size.hpp>
 #include <antwika/i18n/Locale.hpp>
-#include <antwika/i18n/Translator.hpp>
 #include <antwika/time/fakes/FakeSleeper.hpp>
 
 #include <antwika/sudoku/BoardOverlay.hpp>
 #include <antwika/sudoku/PuzzleState.hpp>
 #include <antwika/sudoku/RenderSink.hpp>
 #include <antwika/sudoku/SudokuScene.hpp>
+
+#include "antwika/sudoku/Messages.hpp"
 
 using antwika::event::Event;
 using antwika::event::TickEvent;
@@ -34,7 +35,7 @@ using ::testing::ReturnRef;
 
 namespace
 {
-    constexpr antwika::i18n::Translator kTranslator{
+    constexpr antwika::sudoku::Translator kTranslator{
         antwika::i18n::kDefaultLocale};
 
     constexpr Size kCanvas{.width = 720, .height = 800};

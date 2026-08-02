@@ -8,18 +8,18 @@
 #include <antwika/event/EventDispatcher.hpp>
 #include <antwika/event/TickedEventDispatcher.hpp>
 #include <antwika/i18n/Locale.hpp>
-#include <antwika/i18n/Translator.hpp>
 #include <antwika/log/Level.hpp>
 #include <antwika/simulation/EngineLoop.hpp>
 
-#include "antwika/game/Events.hpp"
-#include "antwika/game/GameStateReducer.hpp"
 #include "antwika/game/BindingSink.hpp"
+#include "antwika/game/BuildingKind.hpp"
 #include "antwika/game/BuildingSystem.hpp"
 #include "antwika/game/CityRatings.hpp"
 #include "antwika/game/CoverageSystem.hpp"
 #include "antwika/game/Desirability.hpp"
 #include "antwika/game/DesirabilitySystem.hpp"
+#include "antwika/game/Events.hpp"
+#include "antwika/game/GameStateReducer.hpp"
 #include "antwika/game/GridSink.hpp"
 #include "antwika/game/HaulingSystem.hpp"
 #include "antwika/game/HotkeySink.hpp"
@@ -28,11 +28,12 @@
 #include "antwika/game/InputFold.hpp"
 #include "antwika/game/LabourSystem.hpp"
 #include "antwika/game/LiveGrid.hpp"
-#include "antwika/game/MarketSystem.hpp"
 #include "antwika/game/MainMenuScene.hpp"
 #include "antwika/game/MainMenuSink.hpp"
+#include "antwika/game/MarketSystem.hpp"
 #include "antwika/game/MenuCommands.hpp"
 #include "antwika/game/MenuModalScene.hpp"
+#include "antwika/game/Messages.hpp"
 #include "antwika/game/ModeGatedSink.hpp"
 #include "antwika/game/OptionsFile.hpp"
 #include "antwika/game/OptionsScene.hpp"
@@ -47,11 +48,10 @@
 #include "antwika/game/SaveLoadSink.hpp"
 #include "antwika/game/SaveLoadState.hpp"
 #include "antwika/game/SceneSnapshot.hpp"
-#include "antwika/game/SessionGatedSystem.hpp"
 #include "antwika/game/Service.hpp"
+#include "antwika/game/SessionGatedSystem.hpp"
 #include "antwika/game/SessionStore.hpp"
 #include "antwika/game/SpawnSystem.hpp"
-#include "antwika/game/BuildingKind.hpp"
 #include "antwika/game/Toolbar.hpp"
 #include "antwika/game/UiSink.hpp"
 #include "antwika/game/WalkerSystem.hpp"
@@ -88,9 +88,9 @@ namespace antwika::game
         PathIndex &paths = config.paths;
 
         // Fixed in source either way -- see GameConfig::translator.
-        const antwika::i18n::Translator ownTranslator{
+        const Translator ownTranslator{
             antwika::i18n::kDefaultLocale};
-        const antwika::i18n::Translator &translator =
+        const Translator &translator =
             config.translator.has_value() ? config.translator->get()
                                           : ownTranslator;
 

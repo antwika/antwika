@@ -10,7 +10,6 @@
 #include <antwika/event/IEventSink.hpp>
 #include <antwika/event/ITickEventSink.hpp>
 #include <antwika/gfx/Size.hpp>
-#include <antwika/i18n/Translator.hpp>
 #include <antwika/input/IInputEventCodec.hpp>
 #include <antwika/log/ILogger.hpp>
 #include <antwika/simulation/ITickEventSource.hpp>
@@ -19,6 +18,7 @@
 #include "antwika/tower_defence/Campaign.hpp"
 #include "antwika/tower_defence/HighScore.hpp"
 #include "antwika/tower_defence/IScoreStore.hpp"
+#include "antwika/tower_defence/Messages.hpp"
 #include "antwika/tower_defence/ScoreOverlay.hpp"
 
 namespace antwika::tower_defence
@@ -27,7 +27,6 @@ namespace antwika::tower_defence
     using antwika::event::IEventSink;
     using antwika::event::ITickEventSink;
     using antwika::gfx::Size;
-    using antwika::i18n::Translator;
     using antwika::input::IInputEventCodec;
     using antwika::log::ILogger;
     using antwika::simulation::ITickEventSource;

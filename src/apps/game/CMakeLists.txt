@@ -37,6 +37,7 @@ add_executable(antwika_game
     src/MarketSystem.cpp
     src/MenuCommands.cpp
     src/MenuModalScene.cpp
+    src/Messages.cpp
     src/ModeGatedSink.cpp
     src/OptionsFile.cpp
     src/OptionsScene.cpp

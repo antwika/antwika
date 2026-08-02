@@ -3,9 +3,8 @@
 #include <set>
 #include <string_view>
 
-#include <antwika/i18n/MessageId.hpp>
-
 #include "antwika/game/Action.hpp"
+#include "antwika/game/MessageId.hpp"
 
 using antwika::game::Action;
 using antwika::game::actionFromName;
@@ -57,7 +56,7 @@ TEST(ActionTest, EveryActionIsListedAtItsOwnIndex)
 // A caption is an id rather than a word, and each action has its own.
 TEST(ActionTest, EveryActionHasACaptionOfItsOwn)
 {
-    std::set<antwika::i18n::MessageId> labels;
+    std::set<antwika::game::MessageId> labels;
 
     for (const auto action : kActions)
     {

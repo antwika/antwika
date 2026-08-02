@@ -19,8 +19,9 @@
 #include <antwika/gfx/TextLayout.hpp>
 #include <antwika/tween/Easing.hpp>
 #include <antwika/tween/Tween.hpp>
-#include <antwika/i18n/MessageId.hpp>
 
+#include "antwika/companion/MessageId.hpp"
+#include "antwika/companion/Messages.hpp"
 #include "antwika/companion/Saying.hpp"
 
 namespace antwika::companion
@@ -34,7 +35,6 @@ namespace antwika::companion
     using antwika::gfx::Color;
     using antwika::gfx::Point;
     using antwika::gfx::Rect;
-    using antwika::i18n::MessageId;
 
     namespace
     {
@@ -52,30 +52,29 @@ namespace antwika::companion
         // The one fact no gauge holds, as the id it is said with.
         // An interrupted night is worth saying apart from a quiet one.
         // It is the rest of that night's recovery already forfeited.
-        constexpr MessageId kAwakeWord = MessageId::CompanionAwake;
+        constexpr MessageId kAwakeWord = MessageId::Awake;
         constexpr MessageId kHungryWord =
-            MessageId::CompanionAwakeHungry;
-        constexpr MessageId kAsleepWord = MessageId::CompanionAsleep;
+            MessageId::AwakeHungry;
+        constexpr MessageId kAsleepWord = MessageId::Asleep;
         constexpr MessageId kWokenWord =
-            MessageId::CompanionAsleepWoken;
-        constexpr MessageId kGoneWord = MessageId::CompanionGone;
+            MessageId::AsleepWoken;
+        constexpr MessageId kGoneWord = MessageId::Gone;
 
         // What the one button says, in this file with the other ids.
-        constexpr MessageId kReviveWords = MessageId::CompanionNewPet;
+        constexpr MessageId kReviveWords = MessageId::NewPet;
 
         // What each prop is called, in Prop's own order.
         // A prop is lit when it is wanted and named at all times.
         // Which one is which is otherwise three boxes of one colour.
         constexpr std::array<MessageId, 3> kPropWords{
-            MessageId::CompanionPropFeed,
-            MessageId::CompanionPropPlay,
-            MessageId::CompanionPropSleep};
+            MessageId::PropFeed,
+            MessageId::PropPlay,
+            MessageId::PropSleep};
 
         static_assert(
             kPropWords.size() == static_cast<std::size_t>(Prop::Nest) + 1);
 
         // How grown up it is, in LifeStage's own order.
-
 
         // Every line the companion may say, in Saying's own order.
         // One table in one place, and this is the place.
@@ -84,36 +83,36 @@ namespace antwika::companion
         // Those live in one catalogue per language, and Pet sees none.
         // Which is what keeps the active language out of the state.
         constexpr std::array<MessageId, 16> kSayingWords{
-            MessageId::CompanionSayHello,
-            MessageId::CompanionSayHello,
-            MessageId::CompanionSayBored,
-            MessageId::CompanionSayNiceDay,
-            MessageId::CompanionSayLaLaLa,
-            MessageId::CompanionSayFeedMe,
-            MessageId::CompanionSayYumYum,
-            MessageId::CompanionSayFull,
-            MessageId::CompanionSayShhh,
-            MessageId::CompanionSayZzz,
-            MessageId::CompanionSayPlay,
-            MessageId::CompanionSayWheee,
-            MessageId::CompanionSayTooTired,
-            MessageId::CompanionSayNotSleepy,
-            MessageId::CompanionSayYawn,
-            MessageId::CompanionSayPoked};
+            MessageId::SayHello,
+            MessageId::SayHello,
+            MessageId::SayBored,
+            MessageId::SayNiceDay,
+            MessageId::SayLaLaLa,
+            MessageId::SayFeedMe,
+            MessageId::SayYumYum,
+            MessageId::SayFull,
+            MessageId::SayShhh,
+            MessageId::SayZzz,
+            MessageId::SayPlay,
+            MessageId::SayWheee,
+            MessageId::SayTooTired,
+            MessageId::SayNotSleepy,
+            MessageId::SayYawn,
+            MessageId::SayPoked};
 
         // Every life stage and every day mood, in their own order.
         // An ordinary day says nothing, so it has no id of its own.
         constexpr std::array<MessageId, 5> kStageWords{
-            MessageId::CompanionStageEgg,
-            MessageId::CompanionStageChild,
-            MessageId::CompanionStageTeen,
-            MessageId::CompanionStageAdult,
-            MessageId::CompanionStageElder};
+            MessageId::StageEgg,
+            MessageId::StageChild,
+            MessageId::StageTeen,
+            MessageId::StageAdult,
+            MessageId::StageElder};
 
         constexpr std::array<MessageId, 3> kMoodWords{
-            MessageId::CompanionMoodHungry,
-            MessageId::CompanionMoodRestless,
-            MessageId::CompanionMoodHeavy};
+            MessageId::MoodHungry,
+            MessageId::MoodRestless,
+            MessageId::MoodHeavy};
 
         static_assert(
             kSayingWords.size()
@@ -351,7 +350,6 @@ namespace antwika::companion
             return scale;
         }
 
-
         [[nodiscard]] MessageId stateWord(const PetSnapshot &snapshot)
         {
             if (snapshot.state == PetState::Perished)
@@ -390,7 +388,7 @@ namespace antwika::companion
                                - 1]);
             const std::array<std::string_view, 3> args{day, stage, mood};
 
-            return translator.formatted(MessageId::CompanionDay, args);
+            return translator.formatted(MessageId::Day, args);
         }
 
         [[nodiscard]] std::string lineageLine(
@@ -403,7 +401,7 @@ namespace antwika::companion
             const std::array<std::string_view, 2> args{generation, best};
 
             return translator.formatted(
-                MessageId::CompanionLineage, args);
+                MessageId::Lineage, args);
         }
 
         // Anchored to the bottom of the grid rather than to a row.

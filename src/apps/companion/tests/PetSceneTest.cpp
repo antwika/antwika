@@ -18,12 +18,11 @@
 #include <antwika/gfx/Size.hpp>
 #include <antwika/gfx/TextLayout.hpp>
 #include <antwika/i18n/Locale.hpp>
-#include <antwika/i18n/Translator.hpp>
+#include <antwika/time/Tick.hpp>
 
 #include "antwika/companion/DayMood.hpp"
 #include "antwika/companion/LifeStage.hpp"
-#include <antwika/time/Tick.hpp>
-
+#include "antwika/companion/Messages.hpp"
 #include "antwika/companion/PetLayout.hpp"
 #include "antwika/companion/PetScene.hpp"
 #include "antwika/companion/PetSnapshot.hpp"
@@ -269,7 +268,7 @@ namespace
 
     TEST(PetSceneTest, ACanvasTooSmallForAUnitDrawsTheSkyAndStops)
     {
-        const antwika::i18n::Translator translator{
+        const antwika::companion::Translator translator{
             antwika::i18n::kDefaultLocale};
         const PetScene scene{translator};
 
@@ -282,7 +281,7 @@ namespace
 
     TEST(PetSceneTest, TheSquarePictureIsCentredOnWhicheverSideIsLonger)
     {
-        const antwika::i18n::Translator translator{
+        const antwika::companion::Translator translator{
             antwika::i18n::kDefaultLocale};
         const PetScene scene{translator};
 
@@ -296,7 +295,7 @@ namespace
 
     TEST(PetSceneTest, AnUnhungryAwakeCompanionIsTheBarePicture)
     {
-        const antwika::i18n::Translator translator{
+        const antwika::companion::Translator translator{
             antwika::i18n::kDefaultLocale};
         const PetScene scene{translator};
 
@@ -308,7 +307,7 @@ namespace
 
     TEST(PetSceneTest, NightIsADifferentPictureFromDay)
     {
-        const antwika::i18n::Translator translator{
+        const antwika::companion::Translator translator{
             antwika::i18n::kDefaultLocale};
         const PetScene scene{translator};
 
@@ -322,7 +321,7 @@ namespace
     // So aiming at one and hitting it are one rectangle.
     TEST(PetSceneTest, EveryPropIsPaintedIntoItsOwnHitBox)
     {
-        const antwika::i18n::Translator translator{
+        const antwika::companion::Translator translator{
             antwika::i18n::kDefaultLocale};
         const PetScene scene{translator};
         const auto layout = layoutFor(kCanvas);
@@ -340,7 +339,7 @@ namespace
     // Which is this application's whole answer to instructions.
     TEST(PetSceneTest, TheWantedPropIsLitAndTheOthersAreNot)
     {
-        const antwika::i18n::Translator translator{
+        const antwika::companion::Translator translator{
             antwika::i18n::kDefaultLocale};
         const PetScene scene{translator};
         const auto layout = layoutFor(kCanvas);
@@ -378,7 +377,7 @@ namespace
     // So each is named, in the bottom row of the box that presses it.
     TEST(PetSceneTest, Draw_NamesEveryPropInTheBoxThatPressesIt)
     {
-        const antwika::i18n::Translator translator{
+        const antwika::companion::Translator translator{
             antwika::i18n::kDefaultLocale};
         const PetScene scene{translator};
         const auto layout = layoutFor(kCanvas);
@@ -403,7 +402,7 @@ namespace
     // An English prop in a Swedish window is the gap the ids prevent.
     TEST(PetSceneTest, Draw_WordsThePropLabelsInTheTranslatorsLanguage)
     {
-        const antwika::i18n::Translator swedish{
+        const antwika::companion::Translator swedish{
             antwika::i18n::Locale::Swedish};
         const PetScene scene{swedish};
 
@@ -418,7 +417,7 @@ namespace
     // Up to what the row they are written in has room for.
     TEST(PetSceneTest, Draw_ScalesThePropLabelsWithTheWindow)
     {
-        const antwika::i18n::Translator translator{
+        const antwika::companion::Translator translator{
             antwika::i18n::kDefaultLocale};
         const PetScene scene{translator};
 
@@ -436,7 +435,7 @@ namespace
     // Which beats leaving the prop unnamed.
     TEST(PetSceneTest, Draw_KeepsTheSmallestPropLabelReadable)
     {
-        const antwika::i18n::Translator translator{
+        const antwika::companion::Translator translator{
             antwika::i18n::kDefaultLocale};
         const PetScene scene{translator};
 
@@ -450,7 +449,7 @@ namespace
     // Measured through the translator rather than counted here.
     TEST(PetSceneTest, Draw_GivesTheThreeLabelsOneSizeBetweenThem)
     {
-        const antwika::i18n::Translator translator{
+        const antwika::companion::Translator translator{
             antwika::i18n::kDefaultLocale};
         const PetScene scene{translator};
 
@@ -466,7 +465,7 @@ namespace
 
     TEST(PetSceneTest, EachNeedLightsItsOwnProp)
     {
-        const antwika::i18n::Translator translator{
+        const antwika::companion::Translator translator{
             antwika::i18n::kDefaultLocale};
         const PetScene scene{translator};
 
@@ -492,7 +491,7 @@ namespace
     // Rather than three more colours in every palette.
     TEST(PetSceneTest, TheFormItGrewIntoShadesTheFur)
     {
-        const antwika::i18n::Translator translator{
+        const antwika::companion::Translator translator{
             antwika::i18n::kDefaultLocale};
         const PetScene scene{translator};
 
@@ -512,7 +511,7 @@ namespace
 
     TEST(PetSceneTest, ASleepingCompanionShutsItsEyesAndPuffs)
     {
-        const antwika::i18n::Translator translator{
+        const antwika::companion::Translator translator{
             antwika::i18n::kDefaultLocale};
         const PetScene scene{translator};
 
@@ -524,7 +523,7 @@ namespace
 
     TEST(PetSceneTest, TheDrowseClipAddsAPuffPerFrame)
     {
-        const antwika::i18n::Translator translator{
+        const antwika::companion::Translator translator{
             antwika::i18n::kDefaultLocale};
         const PetScene scene{translator};
 
@@ -542,7 +541,7 @@ namespace
     // So the two ways of arriving at shut eyes are both drawn.
     TEST(PetSceneTest, AnAwakeCompanionBlinksOnItsOwn)
     {
-        const antwika::i18n::Translator translator{
+        const antwika::companion::Translator translator{
             antwika::i18n::kDefaultLocale};
         const PetScene scene{translator};
 
@@ -557,7 +556,7 @@ namespace
 
     TEST(PetSceneTest, TheIdleAnimationIsAFunctionOfTheTickCount)
     {
-        const antwika::i18n::Translator translator{
+        const antwika::companion::Translator translator{
             antwika::i18n::kDefaultLocale};
         const PetScene scene{translator};
 
@@ -607,7 +606,7 @@ namespace
     // Stepping it was a jolt; this is what says it no longer is.
     TEST(PetSceneTest, ABreathMovesTheAnimalByMoreThanItsTwoPoses)
     {
-        const antwika::i18n::Translator translator{
+        const antwika::companion::Translator translator{
             antwika::i18n::kDefaultLocale};
         const PetScene scene{translator};
 
@@ -626,7 +625,7 @@ namespace
     // Those two are what the stepped bob already drew.
     TEST(PetSceneTest, ABreathStillTravelsExactlyOneUnit)
     {
-        const antwika::i18n::Translator translator{
+        const antwika::companion::Translator translator{
             antwika::i18n::kDefaultLocale};
         const PetScene scene{translator};
 
@@ -647,7 +646,7 @@ namespace
 
     TEST(PetSceneTest, APerishedCompanionGetsAGraveAndItsOwnPalette)
     {
-        const antwika::i18n::Translator translator{
+        const antwika::companion::Translator translator{
             antwika::i18n::kDefaultLocale};
         const PetScene scene{translator};
 
@@ -660,7 +659,7 @@ namespace
 
     TEST(PetSceneTest, Draw_OffersANewCompanionOnceItHasPerished)
     {
-        const antwika::i18n::Translator translator{
+        const antwika::companion::Translator translator{
             antwika::i18n::kDefaultLocale};
         const PetScene scene{translator};
         const auto button = reviveButtonRect(kCanvas);
@@ -675,7 +674,7 @@ namespace
 
     TEST(PetSceneTest, Draw_OffersNoButtonWhileTheCompanionIsAlive)
     {
-        const antwika::i18n::Translator translator{
+        const antwika::companion::Translator translator{
             antwika::i18n::kDefaultLocale};
         const PetScene scene{translator};
         const auto button = reviveButtonRect(kCanvas);
@@ -689,7 +688,7 @@ namespace
 
     TEST(PetSceneTest, AnEmptyGaugeDrawsOnlyItsBackground)
     {
-        const antwika::i18n::Translator translator{
+        const antwika::companion::Translator translator{
             antwika::i18n::kDefaultLocale};
         const PetScene scene{translator};
 
@@ -705,7 +704,7 @@ namespace
 
     TEST(PetSceneTest, AGaugeWithNoMaximumDrawsOnlyItsBackground)
     {
-        const antwika::i18n::Translator translator{
+        const antwika::companion::Translator translator{
             antwika::i18n::kDefaultLocale};
         const PetScene scene{translator};
 
@@ -720,7 +719,7 @@ namespace
 
     TEST(PetSceneTest, AGaugeNeverFillsPastItsOwnWidth)
     {
-        const antwika::i18n::Translator translator{
+        const antwika::companion::Translator translator{
             antwika::i18n::kDefaultLocale};
         const PetScene scene{translator};
         const auto layout = layoutFor(kCanvas);
@@ -745,7 +744,7 @@ namespace
     // So a collapse shortens the bar and not merely its contents.
     TEST(PetSceneTest, TheEnergyGaugeFillsAgainstTheCeilingItHasLeft)
     {
-        const antwika::i18n::Translator translator{
+        const antwika::companion::Translator translator{
             antwika::i18n::kDefaultLocale};
         const PetScene scene{translator};
 
@@ -764,7 +763,7 @@ namespace
 
     TEST(PetSceneTest, Draw_ReportsTheStateTheDayAndTheRecord)
     {
-        const antwika::i18n::Translator translator{
+        const antwika::companion::Translator translator{
             antwika::i18n::kDefaultLocale};
         const PetScene scene{translator};
 
@@ -786,7 +785,7 @@ namespace
     // So half of all days read shorter than the rest.
     TEST(PetSceneTest, Draw_SaysNothingAboutAnOrdinaryDay)
     {
-        const antwika::i18n::Translator translator{
+        const antwika::companion::Translator translator{
             antwika::i18n::kDefaultLocale};
         const PetScene scene{translator};
 
@@ -800,7 +799,7 @@ namespace
 
     TEST(PetSceneTest, Draw_SaysWhichOfItsStatesTheCompanionIsIn)
     {
-        const antwika::i18n::Translator translator{
+        const antwika::companion::Translator translator{
             antwika::i18n::kDefaultLocale};
         const PetScene scene{translator};
 
@@ -829,7 +828,7 @@ namespace
 
     TEST(PetSceneTest, Draw_ReportsAPerishedCompanionToo)
     {
-        const antwika::i18n::Translator translator{
+        const antwika::companion::Translator translator{
             antwika::i18n::kDefaultLocale};
         const PetScene scene{translator};
 
@@ -838,7 +837,7 @@ namespace
 
     TEST(PetSceneTest, Draw_ScalesTheReadoutWithTheWindow)
     {
-        const antwika::i18n::Translator translator{
+        const antwika::companion::Translator translator{
             antwika::i18n::kDefaultLocale};
         const PetScene scene{translator};
 
@@ -853,7 +852,7 @@ namespace
 
     TEST(PetSceneTest, Draw_KeepsTheSmallestReadoutOnTheGrid)
     {
-        const antwika::i18n::Translator translator{
+        const antwika::companion::Translator translator{
             antwika::i18n::kDefaultLocale};
         const PetScene scene{translator};
 
@@ -867,7 +866,7 @@ namespace
 
     TEST(PetSceneTest, Draw_StacksTheReadoutOneLineHeightApart)
     {
-        const antwika::i18n::Translator translator{
+        const antwika::companion::Translator translator{
             antwika::i18n::kDefaultLocale};
         const PetScene scene{translator};
 
@@ -888,7 +887,7 @@ namespace
 
     TEST(PetSceneTest, Draw_DrawsNoBubbleWhileThereIsNothingToSay)
     {
-        const antwika::i18n::Translator translator{
+        const antwika::companion::Translator translator{
             antwika::i18n::kDefaultLocale};
         const PetScene scene{translator};
 
@@ -900,7 +899,7 @@ namespace
 
     TEST(PetSceneTest, Draw_PutsWhatItSaysInABubbleBesideTheAnimal)
     {
-        const antwika::i18n::Translator translator{
+        const antwika::companion::Translator translator{
             antwika::i18n::kDefaultLocale};
         const PetScene scene{translator};
 
@@ -918,7 +917,7 @@ namespace
 
     TEST(PetSceneTest, Draw_SaysADifferentThingForADifferentLine)
     {
-        const antwika::i18n::Translator translator{
+        const antwika::companion::Translator translator{
             antwika::i18n::kDefaultLocale};
         const PetScene scene{translator};
         std::vector<std::string> said;
@@ -947,7 +946,7 @@ namespace
 
     TEST(PetSceneTest, Draw_KeepsEveryLineInsideItsOwnBubble)
     {
-        const antwika::i18n::Translator translator{
+        const antwika::companion::Translator translator{
             antwika::i18n::kDefaultLocale};
         const PetScene scene{translator};
 
@@ -964,7 +963,7 @@ namespace
     // Under the gauges, so it covers nothing that says anything.
     TEST(PetSceneTest, Draw_KeepsTheBubbleClearOfTheGauges)
     {
-        const antwika::i18n::Translator translator{
+        const antwika::companion::Translator translator{
             antwika::i18n::kDefaultLocale};
         const PetScene scene{translator};
         const auto layout = layoutFor(kCanvas);
@@ -984,7 +983,7 @@ namespace
 
     TEST(PetSceneTest, Draw_ScalesTheBubbleTextWithTheWindow)
     {
-        const antwika::i18n::Translator translator{
+        const antwika::companion::Translator translator{
             antwika::i18n::kDefaultLocale};
         const PetScene scene{translator};
 
@@ -1001,7 +1000,7 @@ namespace
     // A unit too small for even the smallest glyphs still gets them.
     TEST(PetSceneTest, Draw_KeepsTheSmallestBubbleTextReadable)
     {
-        const antwika::i18n::Translator translator{
+        const antwika::companion::Translator translator{
             antwika::i18n::kDefaultLocale};
         const PetScene scene{translator};
 
@@ -1016,7 +1015,7 @@ namespace
 
     TEST(PetSceneTest, Draw_GivesEveryUnitAWholeNumberOfPixels)
     {
-        const antwika::i18n::Translator translator{
+        const antwika::companion::Translator translator{
             antwika::i18n::kDefaultLocale};
         const PetScene scene{translator};
         const auto layout = layoutFor(kCanvas);
@@ -1038,7 +1037,7 @@ namespace
     // So a language cannot reach anything a replay reproduces.
     TEST(PetSceneTest, Draw_SaysEveryWordInTheTranslatorsLanguage)
     {
-        const antwika::i18n::Translator swedish{
+        const antwika::companion::Translator swedish{
             antwika::i18n::Locale::Swedish};
         const PetScene scene{swedish};
 
@@ -1059,7 +1058,7 @@ namespace
     // The one button a perished companion is offered says it too.
     TEST(PetSceneTest, Draw_WordsTheNewCompanionButtonAsWell)
     {
-        const antwika::i18n::Translator swedish{
+        const antwika::companion::Translator swedish{
             antwika::i18n::Locale::Swedish};
         const PetScene scene{swedish};
 
@@ -1078,9 +1077,9 @@ namespace
     // So the same window gives its words a smaller scale.
     TEST(PetSceneTest, Draw_ScalesTheBubbleToTheLongestLineInUse)
     {
-        const antwika::i18n::Translator english{
+        const antwika::companion::Translator english{
             antwika::i18n::Locale::English};
-        const antwika::i18n::Translator swedish{
+        const antwika::companion::Translator swedish{
             antwika::i18n::Locale::Swedish};
 
         PetSnapshot talking = awake();

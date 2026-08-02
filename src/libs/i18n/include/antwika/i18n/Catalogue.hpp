@@ -5,7 +5,6 @@
 #include <string_view>
 
 #include "antwika/i18n/Locale.hpp"
-#include "antwika/i18n/MessageId.hpp"
 
 namespace antwika::i18n
 {
@@ -13,12 +12,13 @@ namespace antwika::i18n
     /**
      * @brief One id and the text it stands for in one locale.
      */
+    template <typename Id>
     struct CatalogueEntry final
     {
         /**
          * @brief The id this entry answers for.
          */
-        MessageId id{MessageId::MenuPlayGame};
+        Id id{};
 
         /**
          * @brief The text, which may contain `{0}`-style placeholders.
@@ -34,7 +34,13 @@ namespace antwika::i18n
      * Keeping the entries a span rather than a container is also what lets
      * a test build a deliberately incomplete catalogue from a local array
      * and watch the fallback rule work.
+     *
+     * The id type is a template parameter because the catalogue is the
+     * library's machinery and the ids are the calling module's: see the
+     * MessageSet concept for what a module supplies and why the
+     * completeness guarantee survives the split.
      */
+    template <typename Id>
     class Catalogue final
     {
     public:
@@ -44,7 +50,8 @@ namespace antwika::i18n
          * @param entries The entries, which must outlive this object.
          */
         constexpr Catalogue(
-            Locale locale, std::span<const CatalogueEntry> entries) noexcept
+            Locale locale,
+            std::span<const CatalogueEntry<Id>> entries) noexcept
             : catalogueLocale{locale}, catalogueEntries{entries}
         {
         }
@@ -62,8 +69,8 @@ namespace antwika::i18n
          * @brief Every entry, in the order they were given.
          * @return The entries.
          */
-        [[nodiscard]] constexpr std::span<const CatalogueEntry> entries()
-            const noexcept
+        [[nodiscard]] constexpr std::span<const CatalogueEntry<Id>>
+            entries() const noexcept
         {
             return catalogueEntries;
         }
@@ -74,20 +81,23 @@ namespace antwika::i18n
          * @return The text, or no value when this catalogue is silent
          *         about that id.
          */
-        [[nodiscard]] std::optional<std::string_view> find(
-            MessageId id) const noexcept;
+        [[nodiscard]] constexpr std::optional<std::string_view> find(
+            Id id) const noexcept
+        {
+            for (const CatalogueEntry<Id> &entry : catalogueEntries)
+            {
+                if (entry.id == id)
+                {
+                    return entry.text;
+                }
+            }
+
+            return std::nullopt;
+        }
 
     private:
         Locale catalogueLocale;
-        std::span<const CatalogueEntry> catalogueEntries;
+        std::span<const CatalogueEntry<Id>> catalogueEntries;
     };
-
-    /**
-     * @brief The compiled-in catalogue for a locale.
-     * @param locale The locale wanted.
-     * @return That locale's catalogue, or the default locale's for a value
-     *         that is not one of the enumerators.
-     */
-    [[nodiscard]] const Catalogue &catalogueFor(Locale locale) noexcept;
 
 } // namespace antwika::i18n

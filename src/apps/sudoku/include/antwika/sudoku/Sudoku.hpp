@@ -10,13 +10,13 @@
 #include <antwika/event/IEventSink.hpp>
 #include <antwika/event/ITickEventSink.hpp>
 #include <antwika/gfx/Size.hpp>
-#include <antwika/i18n/Translator.hpp>
 #include <antwika/input/IInputEventCodec.hpp>
 #include <antwika/log/ILogger.hpp>
 #include <antwika/simulation/ITickEventSource.hpp>
 #include <antwika/time/Tick.hpp>
 
 #include "antwika/sudoku/BoardOverlay.hpp"
+#include "antwika/sudoku/Messages.hpp"
 #include "antwika/sudoku/PuzzleState.hpp"
 #include "antwika/sudoku/Status.hpp"
 
@@ -26,7 +26,6 @@ namespace antwika::sudoku
     using antwika::event::IEventSink;
     using antwika::event::ITickEventSink;
     using antwika::gfx::Size;
-    using antwika::i18n::Translator;
     using antwika::input::IInputEventCodec;
     using antwika::log::ILogger;
     using antwika::simulation::ITickEventSource;

@@ -7,18 +7,20 @@
 
 #include <antwika/i18n/Catalogue.hpp>
 #include <antwika/i18n/Locale.hpp>
-#include <antwika/i18n/MessageId.hpp>
+#include <antwika/i18n/MessageSet.hpp>
 
 #include "antwika/game/BuildTool.hpp"
+#include "antwika/game/MessageId.hpp"
+#include "antwika/game/Messages.hpp"
 #include "antwika/game/Toolbar.hpp"
 
 using antwika::game::BuildTool;
 using antwika::game::kBuildToolCount;
+using antwika::game::MessageId;
+using antwika::game::Messages;
 using antwika::game::pauseLabel;
 using antwika::game::toolLabel;
-using antwika::i18n::catalogueFor;
 using antwika::i18n::Locale;
-using antwika::i18n::MessageId;
 using antwika::i18n::nameOf;
 
 namespace
@@ -32,11 +34,11 @@ namespace
     {
         for (const auto locale : kEveryLocale)
         {
-            const auto text = catalogueFor(locale).find(id);
+            const auto text = Messages::catalogueFor(locale).find(id);
 
             ASSERT_TRUE(text.has_value())
-                << nameOf(id) << " is missing a translation";
-            EXPECT_FALSE(text->empty()) << nameOf(id);
+                << nameOf<Messages>(id) << " is missing a translation";
+            EXPECT_FALSE(text->empty()) << nameOf<Messages>(id);
         }
     }
 } // namespace
@@ -86,7 +88,7 @@ TEST(ToolLabelTest, EveryToolsLabelIsDistinctWithinEachLocale)
 
         for (std::size_t index = 0; index < kBuildToolCount; ++index)
         {
-            const auto text = catalogueFor(locale).find(
+            const auto text = Messages::catalogueFor(locale).find(
                 toolLabel(static_cast<BuildTool>(index)));
 
             ASSERT_TRUE(text.has_value());

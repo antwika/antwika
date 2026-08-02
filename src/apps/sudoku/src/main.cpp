@@ -9,8 +9,6 @@
 #include <antwika/gfx/Size.hpp>
 #include <antwika/gfx/WindowDesc.hpp>
 #include <antwika/i18n/Locale.hpp>
-#include <antwika/i18n/MessageId.hpp>
-#include <antwika/i18n/Translator.hpp>
 #include <antwika/input/InputEventCodec.hpp>
 #include <antwika/input/InputPipeline.hpp>
 #include <antwika/input/Key.hpp>
@@ -21,6 +19,7 @@
 #include <antwika/time/SystemSleeper.hpp>
 
 #include "antwika/sudoku/BoardOverlay.hpp"
+#include "antwika/sudoku/Messages.hpp"
 #include "antwika/sudoku/PuzzleFile.hpp"
 #include "antwika/sudoku/PuzzleSource.hpp"
 #include "antwika/sudoku/PuzzleState.hpp"
@@ -40,6 +39,7 @@ using antwika::log::Level;
 using antwika::replay::ReplaySource;
 using antwika::simulation::WindowInputSource;
 using antwika::sudoku::BoardOverlay;
+using antwika::sudoku::Messages;
 using antwika::sudoku::PuzzleSource;
 using antwika::sudoku::PuzzleState;
 using antwika::sudoku::RenderSink;
@@ -87,7 +87,7 @@ namespace
         // And the grid sits under whatever height the bar comes to.
         // So a language off the environment would move every square.
         // Changing it is this line, exactly as the window size is.
-        const antwika::i18n::Translator translator{
+        const antwika::sudoku::Translator translator{
             antwika::i18n::kDefaultLocale};
 
         const SudokuScene scene{translator};
@@ -140,7 +140,7 @@ namespace
             Level::Info,
             "Finished with " + std::to_string(summary.filled)
                 + " of 81 squares filled, saying "
-                + std::string{antwika::i18n::nameOf(
+                + std::string{antwika::i18n::nameOf<Messages>(
                     statusNameId(summary.status))});
     }
 } // namespace

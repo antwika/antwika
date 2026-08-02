@@ -8,7 +8,6 @@
 
 #include <antwika/gfx/mocks/MockRenderer.hpp>
 #include <antwika/i18n/Locale.hpp>
-#include <antwika/i18n/Translator.hpp>
 #include <antwika/ui/DrawCommand.hpp>
 
 #include "antwika/tower_defence/BattleScene.hpp"
@@ -17,13 +16,13 @@
 #include "antwika/tower_defence/GridLayout.hpp"
 #include "antwika/tower_defence/Level.hpp"
 #include "antwika/tower_defence/LevelTile.hpp"
+#include "antwika/tower_defence/Messages.hpp"
 #include "antwika/tower_defence/MobKind.hpp"
 #include "antwika/tower_defence/ScoreOverlay.hpp"
 #include "antwika/tower_defence/ScoreSink.hpp"
 
 using antwika::gfx::mocks::MockRenderer;
 using antwika::gfx::Size;
-using antwika::i18n::Translator;
 using antwika::tower_defence::BattleConfig;
 using antwika::tower_defence::BattleScene;
 using antwika::tower_defence::BattleSnapshot;
@@ -45,6 +44,7 @@ using antwika::tower_defence::scoreBarStateOf;
 using antwika::tower_defence::ScoreOverlay;
 using antwika::tower_defence::snapshotOf;
 using antwika::tower_defence::Tile;
+using antwika::tower_defence::Translator;
 using antwika::tower_defence::Wave;
 using antwika::tower_defence::WaveEntry;
 using ::testing::NiceMock;

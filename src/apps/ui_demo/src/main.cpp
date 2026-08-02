@@ -9,8 +9,6 @@
 #include <antwika/gfx/Size.hpp>
 #include <antwika/gfx/WindowDesc.hpp>
 #include <antwika/i18n/Locale.hpp>
-#include <antwika/i18n/MessageId.hpp>
-#include <antwika/i18n/Translator.hpp>
 #include <antwika/input/InputEventCodec.hpp>
 #include <antwika/input/InputPipeline.hpp>
 #include <antwika/input/SelectedInputBackend.hpp>
@@ -23,6 +21,7 @@
 #include "antwika/ui_demo/DemoOverlay.hpp"
 #include "antwika/ui_demo/DemoScene.hpp"
 #include "antwika/ui_demo/DemoState.hpp"
+#include "antwika/ui_demo/Messages.hpp"
 #include "antwika/ui_demo/RenderSink.hpp"
 #include "antwika/ui_demo/Showcase.hpp"
 #include "antwika/ui_demo/TickBudgetSource.hpp"
@@ -41,6 +40,7 @@ using antwika::ui_demo::DemoOverlay;
 using antwika::ui_demo::DemoScene;
 using antwika::ui_demo::DemoState;
 using antwika::ui_demo::DemoSummary;
+using antwika::ui_demo::Messages;
 using antwika::ui_demo::RenderSink;
 using antwika::ui_demo::showcaseNameId;
 using antwika::ui_demo::TickBudgetSource;
@@ -84,7 +84,7 @@ namespace
         // A press is then resolved against the layout those produce.
         // So a language off the environment would move the widgets.
         // Changing it is this line, exactly as the window size is.
-        const antwika::i18n::Translator translator{
+        const antwika::ui_demo::Translator translator{
             antwika::i18n::kDefaultLocale};
 
         const DemoScene scene{translator};
@@ -128,7 +128,7 @@ namespace
         logger.log(
             Level::Info,
             "Finished on the "
-                + std::string{antwika::i18n::nameOf(
+                + std::string{antwika::i18n::nameOf<Messages>(
                     showcaseNameId(summary.showcase))}
                 + " page, having counted "
                 + std::to_string(summary.clicks) + " clicks");

@@ -1,4 +1,5 @@
 add_executable(antwika_task_worker
+    src/Messages.cpp
     src/PoolScene.cpp
     src/PoolSnapshot.cpp
     src/RenderSystem.cpp

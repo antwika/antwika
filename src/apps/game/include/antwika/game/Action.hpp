@@ -6,7 +6,7 @@
 #include <optional>
 #include <string_view>
 
-#include <antwika/i18n/MessageId.hpp>
+#include "antwika/game/MessageId.hpp"
 
 namespace antwika::game
 {
@@ -108,7 +108,7 @@ namespace antwika::game
      * @param action The action to word.
      * @return The id of the caption, for a Translator to word.
      */
-    [[nodiscard]] antwika::i18n::MessageId actionLabel(
+    [[nodiscard]] MessageId actionLabel(
         Action action) noexcept;
 
 } // namespace antwika::game

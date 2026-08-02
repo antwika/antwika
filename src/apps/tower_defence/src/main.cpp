@@ -9,7 +9,6 @@
 #include <antwika/gfx/SelectedBackend.hpp>
 #include <antwika/gfx/WindowDesc.hpp>
 #include <antwika/i18n/Locale.hpp>
-#include <antwika/i18n/Translator.hpp>
 #include <antwika/input/InputEventCodec.hpp>
 #include <antwika/input/InputPipeline.hpp>
 #include <antwika/input/SelectedInputBackend.hpp>
@@ -20,13 +19,13 @@
 
 #include "antwika/tower_defence/BattleScene.hpp"
 #include "antwika/tower_defence/FileScoreStore.hpp"
+#include "antwika/tower_defence/Messages.hpp"
 #include "antwika/tower_defence/RenderSink.hpp"
 #include "antwika/tower_defence/TowerDefence.hpp"
 
 using antwika::app::ConsoleLogging;
 using antwika::app::RecordedRun;
 using antwika::gfx::WindowDesc;
-using antwika::i18n::Translator;
 using antwika::input::InputEventCodec;
 using antwika::input::InputPipeline;
 using antwika::log::Level;
@@ -39,6 +38,7 @@ using antwika::tower_defence::Campaign;
 using antwika::tower_defence::FileScoreStore;
 using antwika::tower_defence::RenderSink;
 using antwika::tower_defence::ScoreOverlay;
+using antwika::tower_defence::Translator;
 
 namespace
 {

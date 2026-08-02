@@ -16,11 +16,11 @@
 #include <antwika/gfx/Point.hpp>
 #include <antwika/gfx/Size.hpp>
 #include <antwika/i18n/Locale.hpp>
-#include <antwika/i18n/Translator.hpp>
 #include <antwika/log/mocks/MockLogger.hpp>
 #include <antwika/scheduler/JobId.hpp>
 #include <antwika/scheduler/Priority.hpp>
 
+#include "antwika/task_worker/Messages.hpp"
 #include "antwika/task_worker/PoolScene.hpp"
 #include "antwika/task_worker/TaskRegistry.hpp"
 #include "antwika/task_worker/Worker.hpp"
@@ -33,13 +33,13 @@ using antwika::gfx::mocks::MockWindow;
 using antwika::gfx::Point;
 using antwika::gfx::Size;
 using antwika::i18n::kDefaultLocale;
-using antwika::i18n::Translator;
 using antwika::log::mocks::MockLogger;
 using antwika::scheduler::JobId;
 using antwika::scheduler::kNormalPriority;
 using antwika::task_worker::PoolScene;
 using antwika::task_worker::RenderSystem;
 using antwika::task_worker::TaskRegistry;
+using antwika::task_worker::Translator;
 using antwika::task_worker::Worker;
 using antwika::task_worker::WorkerStatus;
 using ::testing::NiceMock;

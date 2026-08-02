@@ -4,8 +4,8 @@
 
 #include <antwika/gfx/IRenderer.hpp>
 #include <antwika/gfx/Size.hpp>
-#include <antwika/i18n/Translator.hpp>
 
+#include "antwika/task_worker/Messages.hpp"
 #include "antwika/task_worker/PoolSnapshot.hpp"
 
 namespace antwika::task_worker
@@ -13,7 +13,6 @@ namespace antwika::task_worker
 
     using antwika::gfx::IRenderer;
     using antwika::gfx::Size;
-    using antwika::i18n::Translator;
 
     /**
      * @brief Draws a worker pool: the tick's budget, one card per

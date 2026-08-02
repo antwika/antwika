@@ -7,7 +7,6 @@
 #include <antwika/gfx/mocks/MockRenderer.hpp>
 #include <antwika/gfx/Size.hpp>
 #include <antwika/i18n/Locale.hpp>
-#include <antwika/i18n/Translator.hpp>
 #include <antwika/ui/DrawCommand.hpp>
 #include <antwika/ui/Pointer.hpp>
 
@@ -17,6 +16,7 @@
 #include <antwika/sudoku/SudokuScene.hpp>
 #include <antwika/sudoku/Widgets.hpp>
 
+#include "antwika/sudoku/Messages.hpp"
 #include "WidgetCentre.hpp"
 
 using antwika::gfx::mocks::MockRenderer;
@@ -40,7 +40,7 @@ namespace widgets = antwika::sudoku::widgets;
 namespace
 {
     // The locale is a constant of the build, so a test may name one.
-    constexpr antwika::i18n::Translator kTranslator{
+    constexpr antwika::sudoku::Translator kTranslator{
         antwika::i18n::kDefaultLocale};
 
     constexpr Size kCanvas{.width = 720, .height = 800};

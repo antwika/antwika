@@ -12,7 +12,6 @@
 #include <antwika/gfx/Point.hpp>
 #include <antwika/gfx/Size.hpp>
 #include <antwika/i18n/Locale.hpp>
-#include <antwika/i18n/Translator.hpp>
 #include <antwika/input/InputEvent.hpp>
 #include <antwika/input/InputEventCodec.hpp>
 #include <antwika/input/Key.hpp>
@@ -21,6 +20,7 @@
 #include <antwika/time/fakes/FakeSleeper.hpp>
 
 #include "antwika/companion/Lineage.hpp"
+#include "antwika/companion/Messages.hpp"
 #include "antwika/companion/PacingSink.hpp"
 #include "antwika/companion/Pet.hpp"
 #include "antwika/companion/PetLayout.hpp"
@@ -243,7 +243,7 @@ namespace
     {
         const Pet pet(kQuick);
         const Lineage lineage;
-        const antwika::i18n::Translator translator{
+        const antwika::companion::Translator translator{
             antwika::i18n::kDefaultLocale};
         const PetScene scene{translator};
         NiceMock<MockRenderer> renderer;
@@ -261,7 +261,7 @@ namespace
     {
         const Pet pet(kQuick);
         const Lineage lineage;
-        const antwika::i18n::Translator translator{
+        const antwika::companion::Translator translator{
             antwika::i18n::kDefaultLocale};
         const PetScene scene{translator};
         NiceMock<MockWindow> window;

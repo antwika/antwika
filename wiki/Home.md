@@ -39,7 +39,7 @@ Each page covers what the library is for, its key headers and types, what it dep
 | [network](libraries/network.md) | Bytes between hosts, pumped from the tick loop and owning no thread. |
 | [animation](libraries/animation.md) | Which frame to show, as a pure function of a tick the caller already has. |
 | [tween](libraries/tween.md) | Easing curves that stay exact, so a shaped fraction is the same on every toolchain. |
-| [i18n](libraries/i18n.md) | A message catalogue keyed by a symbolic id rather than by English. |
+| [i18n](libraries/i18n.md) | The machinery a message catalogue keyed by a symbolic id is read through. |
 | [cli](libraries/cli.md) | Flag tables, one parse, and a help text that cannot disagree with it. |
 | [font](libraries/font.md) | TrueType metrics and glyph coverage masks, depending on nothing here. |
 | [time](libraries/time.md) | The `Tick` type, `IClock` and `ISleeper`. |

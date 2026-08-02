@@ -3,7 +3,6 @@
 #include <cstdint>
 
 #include <antwika/gfx/Color.hpp>
-#include <antwika/i18n/MessageId.hpp>
 #include <antwika/ui/Alignment.hpp>
 #include <antwika/ui/ButtonSpec.hpp>
 #include <antwika/ui/Context.hpp>
@@ -13,11 +12,13 @@
 #include <antwika/ui/TextFieldSpec.hpp>
 #include <antwika/ui/Theme.hpp>
 
+#include "antwika/game/MessageId.hpp"
+#include "antwika/game/Messages.hpp"
+
 namespace antwika::game
 {
 
     using antwika::gfx::Color;
-    using antwika::i18n::MessageId;
     using antwika::ui::Alignment;
     using antwika::ui::Context;
     using antwika::ui::DropdownSpec;
@@ -69,15 +70,15 @@ namespace antwika::game
                 const auto card = ui.panel(
                     {.width = fixedSize(kCardWidth), .height = kFit});
 
-                ui.label(translator.text(MessageId::GameSaveTitle));
+                ui.label(translator.text(MessageId::SaveTitle));
 
                 // Worded here rather than borrowed from the state.
                 // A ui::DropdownSpec borrows its placeholder.
                 // So the words outlive the call that reads them.
                 const auto empty =
-                    translator.text(MessageId::GameSaveNoSaves);
+                    translator.text(MessageId::SaveNoSaves);
                 const auto unnamed =
-                    translator.text(MessageId::GameSaveNameNew);
+                    translator.text(MessageId::SaveNameNew);
 
                 ui.dropdown(DropdownSpec{
                     .id = saveWidgets::kPicker,
@@ -99,13 +100,13 @@ namespace antwika::game
                     const auto row = ui.row({.width = kGrow});
 
                     ui.button(
-                        translator.text(MessageId::GameSaveSave),
+                        translator.text(MessageId::SaveSave),
                         {.id = saveWidgets::kSave, .width = kGrow});
                     ui.button(
-                        translator.text(MessageId::GameSaveLoad),
+                        translator.text(MessageId::SaveLoad),
                         {.id = saveWidgets::kLoad, .width = kGrow});
                     ui.button(
-                        translator.text(MessageId::GameSaveBack),
+                        translator.text(MessageId::SaveBack),
                         {.id = saveWidgets::kBack, .width = kGrow});
                 }
 

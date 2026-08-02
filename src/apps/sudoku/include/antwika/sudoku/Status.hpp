@@ -4,7 +4,7 @@
 #include <cstddef>
 #include <cstdint>
 
-#include <antwika/i18n/MessageId.hpp>
+#include "antwika/sudoku/MessageId.hpp"
 
 namespace antwika::sudoku
 {
@@ -62,17 +62,17 @@ namespace antwika::sudoku
      * not one of the enumerators -- the same fall-back-to-the-first rule
      * atlas_editor::toolNameId() follows.
      */
-    [[nodiscard]] constexpr antwika::i18n::MessageId statusNameId(
+    [[nodiscard]] constexpr MessageId statusNameId(
         const Status status) noexcept
     {
-        constexpr std::array<antwika::i18n::MessageId, kStatusCount>
+        constexpr std::array<MessageId, kStatusCount>
             ids{
-                antwika::i18n::MessageId::SudokuHint,
-                antwika::i18n::MessageId::SudokuSolved,
-                antwika::i18n::MessageId::SudokuComplete,
-                antwika::i18n::MessageId::SudokuNoSolution,
-                antwika::i18n::MessageId::SudokuLimitExceeded,
-                antwika::i18n::MessageId::SudokuGivenLocked};
+                MessageId::Hint,
+                MessageId::Solved,
+                MessageId::Complete,
+                MessageId::NoSolution,
+                MessageId::LimitExceeded,
+                MessageId::GivenLocked};
 
         return ids[static_cast<std::size_t>(status) % kStatusCount];
     }

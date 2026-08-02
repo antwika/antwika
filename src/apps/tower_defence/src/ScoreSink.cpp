@@ -6,17 +6,18 @@
 #include <string_view>
 
 #include <antwika/engine/Events.hpp>
-#include <antwika/i18n/MessageId.hpp>
 #include <antwika/ui/Alignment.hpp>
 #include <antwika/ui/ContainerSpec.hpp>
 #include <antwika/ui/Context.hpp>
 #include <antwika/ui/Sizing.hpp>
 #include <antwika/ui/Theme.hpp>
 
+#include "antwika/tower_defence/MessageId.hpp"
+#include "antwika/tower_defence/Messages.hpp"
+
 namespace antwika::tower_defence
 {
 
-    using antwika::i18n::MessageId;
     using antwika::ui::Alignment;
     using antwika::ui::Context;
     using antwika::ui::kFit;
@@ -58,16 +59,16 @@ namespace antwika::tower_defence
         {
             if (state.phase == CampaignPhase::Won)
             {
-                return translator.text(MessageId::TowerDefenceCleared);
+                return translator.text(MessageId::Cleared);
             }
             if (state.phase == CampaignPhase::Lost)
             {
-                return translator.text(MessageId::TowerDefenceOverrun);
+                return translator.text(MessageId::Overrun);
             }
 
             return twoNumbers(
                 translator,
-                MessageId::TowerDefenceWave,
+                MessageId::Wave,
                 state.wave,
                 state.waveCount);
         }
@@ -113,7 +114,7 @@ namespace antwika::tower_defence
 
                 ui.label(twoNumbers(
                     translator,
-                    MessageId::TowerDefenceLevel,
+                    MessageId::Level,
                     state.level,
                     state.levelCount));
                 ui.spacer(kGrow);
@@ -121,17 +122,17 @@ namespace antwika::tower_defence
                 ui.spacer(kGrow);
                 ui.label(oneNumber(
                     translator,
-                    MessageId::TowerDefenceLives,
+                    MessageId::Lives,
                     state.lives));
                 ui.spacer(kGrow);
                 ui.label(oneNumber(
                     translator,
-                    MessageId::TowerDefenceScore,
+                    MessageId::Score,
                     state.score));
                 ui.spacer(kGrow);
                 ui.label(oneNumber(
                     translator,
-                    MessageId::TowerDefenceBest,
+                    MessageId::Best,
                     state.best));
             }
         }

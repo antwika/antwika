@@ -3,7 +3,6 @@
 #include <cstdint>
 
 #include <antwika/gfx/Color.hpp>
-#include <antwika/i18n/MessageId.hpp>
 #include <antwika/ui/Alignment.hpp>
 #include <antwika/ui/ButtonSpec.hpp>
 #include <antwika/ui/Context.hpp>
@@ -11,11 +10,13 @@
 #include <antwika/ui/Sizing.hpp>
 #include <antwika/ui/Theme.hpp>
 
+#include "antwika/game/MessageId.hpp"
+#include "antwika/game/Messages.hpp"
+
 namespace antwika::game
 {
 
     using antwika::gfx::Color;
-    using antwika::i18n::MessageId;
     using antwika::ui::Alignment;
     using antwika::ui::Context;
     using antwika::ui::fixedSize;
@@ -59,18 +60,18 @@ namespace antwika::game
                 const auto card = ui.panel(
                     {.width = fixedSize(kCardWidth), .height = kFit});
 
-                ui.label(translator.text(MessageId::GameMenuTitle));
+                ui.label(translator.text(MessageId::MenuTitle));
 
                 ui.button(
-                    translator.text(MessageId::GameMenuNewGame),
+                    translator.text(MessageId::MenuNewGame),
                     {.id = menuWidgets::kNewGame, .width = kGrow});
 
                 ui.button(
-                    translator.text(MessageId::GameMenuLoadGame),
+                    translator.text(MessageId::MenuLoadGame),
                     {.id = menuWidgets::kLoadGame, .width = kGrow});
 
                 ui.button(
-                    translator.text(MessageId::GameMenuWorldMap),
+                    translator.text(MessageId::MenuWorldMap),
                     {.id = menuWidgets::kWorldMap, .width = kGrow});
 
                 // Two on one row, so the card keeps its height.
@@ -80,11 +81,11 @@ namespace antwika::game
                     const auto row = ui.row({.width = kGrow});
 
                     ui.button(
-                        translator.text(MessageId::GameMenuOptions),
+                        translator.text(MessageId::MenuOptions),
                         {.id = menuWidgets::kOptions, .width = kGrow});
 
                     ui.button(
-                        translator.text(MessageId::GameMenuQuit),
+                        translator.text(MessageId::MenuQuit),
                         {.id = menuWidgets::kQuit, .width = kGrow});
                 }
             }

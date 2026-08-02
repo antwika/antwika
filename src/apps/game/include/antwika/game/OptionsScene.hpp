@@ -3,19 +3,18 @@
 #include <cstdint>
 
 #include <antwika/gfx/Size.hpp>
-#include <antwika/i18n/Translator.hpp>
 #include <antwika/ui/Frame.hpp>
 #include <antwika/ui/Pointer.hpp>
 #include <antwika/ui/WidgetId.hpp>
 
 #include "antwika/game/Action.hpp"
+#include "antwika/game/Messages.hpp"
 #include "antwika/game/OptionsState.hpp"
 
 namespace antwika::game
 {
 
     using antwika::gfx::Size;
-    using antwika::i18n::Translator;
     using antwika::ui::Frame;
     using antwika::ui::Pointer;
     using antwika::ui::WidgetId;

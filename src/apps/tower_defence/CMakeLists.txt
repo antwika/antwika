@@ -9,6 +9,7 @@ add_executable(antwika_tower_defence
     src/HighScore.cpp
     src/LevelGenerator.cpp
     src/LevelTile.cpp
+    src/Messages.cpp
     src/MobKind.cpp
     src/RenderSink.cpp
     src/ScoreOverlay.cpp

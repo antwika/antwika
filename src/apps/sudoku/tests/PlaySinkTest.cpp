@@ -8,7 +8,6 @@
 #include <antwika/gfx/Point.hpp>
 #include <antwika/gfx/Size.hpp>
 #include <antwika/i18n/Locale.hpp>
-#include <antwika/i18n/Translator.hpp>
 #include <antwika/input/InputEvent.hpp>
 #include <antwika/input/InputEventCodec.hpp>
 #include <antwika/input/Key.hpp>
@@ -23,6 +22,7 @@
 #include <antwika/sudoku/SudokuScene.hpp>
 #include <antwika/sudoku/Widgets.hpp>
 
+#include "antwika/sudoku/Messages.hpp"
 #include "WidgetCentre.hpp"
 
 using antwika::event::Event;
@@ -48,7 +48,7 @@ namespace widgets = antwika::sudoku::widgets;
 
 namespace
 {
-    constexpr antwika::i18n::Translator kTranslator{
+    constexpr antwika::sudoku::Translator kTranslator{
         antwika::i18n::kDefaultLocale};
 
     constexpr Size kCanvas{.width = 720, .height = 800};

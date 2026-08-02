@@ -11,7 +11,6 @@
 #include <antwika/engine/IEngine.hpp>
 #include <antwika/event/IEventSink.hpp>
 #include <antwika/event/ITickEventSink.hpp>
-#include <antwika/i18n/Translator.hpp>
 #include <antwika/input/IInputEventCodec.hpp>
 #include <antwika/log/ILogger.hpp>
 #include <antwika/simulation/ITickEventSource.hpp>
@@ -22,6 +21,7 @@
 #include "antwika/game/Camera.hpp"
 #include "antwika/game/GameSummary.hpp"
 #include "antwika/game/GridExtent.hpp"
+#include "antwika/game/Messages.hpp"
 #include "antwika/game/PathIndex.hpp"
 #include "antwika/game/PauseState.hpp"
 #include "antwika/game/RoadDrag.hpp"
@@ -345,7 +345,7 @@ namespace antwika::game
          * beforehand words its own scenes with it.
          */
         std::optional<
-            std::reference_wrapper<const antwika::i18n::Translator>>
+            std::reference_wrapper<const Translator>>
             translator = std::nullopt;
 
         /**

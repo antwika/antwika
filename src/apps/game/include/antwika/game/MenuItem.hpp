@@ -4,12 +4,10 @@
 #include <cstddef>
 #include <cstdint>
 
-#include <antwika/i18n/MessageId.hpp>
+#include "antwika/game/MessageId.hpp"
 
 namespace antwika::game
 {
-
-    using antwika::i18n::MessageId;
 
     /**
      * @brief What the toolbar's game menu offers.
@@ -65,11 +63,11 @@ namespace antwika::game
     [[nodiscard]] constexpr MessageId menuItemLabel(MenuItem item) noexcept
     {
         constexpr std::array<MessageId, kMenuItemCount> labels{
-            MessageId::GameMenuItemNewGame,
-            MessageId::GameMenuItemSaveGame,
-            MessageId::GameMenuItemLoadGame,
-            MessageId::GameMenuItemMainMenu,
-            MessageId::GameMenuItemWorldMap};
+            MessageId::MenuItemNewGame,
+            MessageId::MenuItemSaveGame,
+            MessageId::MenuItemLoadGame,
+            MessageId::MenuItemMainMenu,
+            MessageId::MenuItemWorldMap};
 
         return labels[menuItemIndex(item) % kMenuItemCount];
     }

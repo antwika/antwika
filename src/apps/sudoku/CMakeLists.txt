@@ -4,6 +4,7 @@ add_executable(antwika_sudoku
     src/BoardOverlay.cpp
     src/BoardSink.cpp
     src/KeyMapping.cpp
+    src/Messages.cpp
     src/PlaySink.cpp
     src/Puzzle.cpp
     src/PuzzleFile.cpp

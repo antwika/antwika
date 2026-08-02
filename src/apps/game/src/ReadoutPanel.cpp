@@ -9,13 +9,14 @@
 #include <vector>
 
 #include <antwika/gfx/TextLayout.hpp>
-#include <antwika/i18n/MessageId.hpp>
 
 #include "antwika/game/Building.hpp"
 #include "antwika/game/BuildingKind.hpp"
 #include "antwika/game/Coverage.hpp"
 #include "antwika/game/HousingLevel.hpp"
 #include "antwika/game/HousingQuery.hpp"
+#include "antwika/game/MessageId.hpp"
+#include "antwika/game/Messages.hpp"
 #include "antwika/game/Resource.hpp"
 #include "antwika/game/ResourceBar.hpp"
 #include "antwika/game/Service.hpp"
@@ -31,8 +32,6 @@ namespace antwika::game
         // Clear of the cursor, so the panel does not sit under it.
         constexpr std::int32_t kPointerOffset = 12;
 
-        using antwika::i18n::MessageId;
-
         // **Captions, and not the names a save file writes.**
         // buildingKindName() and SaveGame's table are a schema.
         // A persisted name may not change to suit a caption.
@@ -43,44 +42,44 @@ namespace antwika::game
         // The array sizes keep either from missing a kind.
         constexpr std::array<MessageId, kBuildingKindCount>
             kBuildingLabels{
-                MessageId::GameBuildingHouse,
-                MessageId::GameBuildingFarm,
-                MessageId::GameBuildingClayPit,
-                MessageId::GameBuildingWorkshop,
-                MessageId::GameBuildingStorage,
-                MessageId::GameBuildingMarket,
-                MessageId::GameBuildingWell,
-                MessageId::GameBuildingDoctor,
-                MessageId::GameBuildingFireStation,
-                MessageId::GameBuildingEngineerPost};
+                MessageId::BuildingHouse,
+                MessageId::BuildingFarm,
+                MessageId::BuildingClayPit,
+                MessageId::BuildingWorkshop,
+                MessageId::BuildingStorage,
+                MessageId::BuildingMarket,
+                MessageId::BuildingWell,
+                MessageId::BuildingDoctor,
+                MessageId::BuildingFireStation,
+                MessageId::BuildingEngineerPost};
 
         constexpr std::array<MessageId, kWalkerKindCount>
             kWalkerLabels{
-                MessageId::GameWalkerWaterCarrier,
-                MessageId::GameWalkerDoctor,
-                MessageId::GameWalkerFireman,
-                MessageId::GameWalkerEngineer,
-                MessageId::GameWalkerCartPusher,
-                MessageId::GameWalkerMarketBuyer,
-                MessageId::GameWalkerMarketSeller};
+                MessageId::WalkerWaterCarrier,
+                MessageId::WalkerDoctor,
+                MessageId::WalkerFireman,
+                MessageId::WalkerEngineer,
+                MessageId::WalkerCartPusher,
+                MessageId::WalkerMarketBuyer,
+                MessageId::WalkerMarketSeller};
 
         constexpr std::array<MessageId, kResourceCount> kResourceLabels{
-            MessageId::GameResourceFood,
-            MessageId::GameResourceClay,
-            MessageId::GameResourcePottery};
+            MessageId::ResourceFood,
+            MessageId::ResourceClay,
+            MessageId::ResourcePottery};
 
         constexpr std::array<MessageId, kHousingLevelCount>
             kHousingLabels{
-                MessageId::GameHousingTent,
-                MessageId::GameHousingShack,
-                MessageId::GameHousingHovel,
-                MessageId::GameHousingCottage};
+                MessageId::HousingTent,
+                MessageId::HousingShack,
+                MessageId::HousingHovel,
+                MessageId::HousingCottage};
 
         constexpr std::array<MessageId, kServiceCount> kServiceLabels{
-            MessageId::GameServiceWater,
-            MessageId::GameServiceHealth,
-            MessageId::GameServiceSafety,
-            MessageId::GameServiceStructure};
+            MessageId::ServiceWater,
+            MessageId::ServiceHealth,
+            MessageId::ServiceSafety,
+            MessageId::ServiceStructure};
 
         [[nodiscard]] MessageId labelOf(BuildingKind kind) noexcept
         {
@@ -105,7 +104,7 @@ namespace antwika::game
             const auto most = std::to_string(capacity);
             const std::array<std::string_view, 3> args{named, amount, most};
 
-            return translator.formatted(MessageId::GameReadoutAmount, args);
+            return translator.formatted(MessageId::ReadoutAmount, args);
         }
 
         // Named rather than numbered, and the tier's own caption.
@@ -119,7 +118,7 @@ namespace antwika::game
             const std::array<std::string_view, 1> args{named};
 
             return translator.formatted(
-                MessageId::GameReadoutLevel, args);
+                MessageId::ReadoutLevel, args);
         }
 
         // Against the room the tier has, rather than as a bare count.
@@ -136,7 +135,7 @@ namespace antwika::game
             const std::array<std::string_view, 2> args{people, room};
 
             return translator.formatted(
-                MessageId::GameReadoutOccupancy, args);
+                MessageId::ReadoutOccupancy, args);
         }
 
         // Per cent rather than the ticks the component counts.
@@ -152,7 +151,7 @@ namespace antwika::game
             const std::array<std::string_view, 2> args{named, share};
 
             return translator.formatted(
-                MessageId::GameReadoutCoverage, args);
+                MessageId::ReadoutCoverage, args);
         }
 
         // One line's worth, before anything decides where to put it.

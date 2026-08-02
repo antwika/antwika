@@ -16,9 +16,9 @@
 #include <antwika/gfx/Rect.hpp>
 #include <antwika/gfx/Size.hpp>
 #include <antwika/i18n/Locale.hpp>
-#include <antwika/i18n/Translator.hpp>
 #include <antwika/scheduler/Priority.hpp>
 
+#include "antwika/task_worker/Messages.hpp"
 #include "antwika/task_worker/PoolSnapshot.hpp"
 #include "antwika/task_worker/Worker.hpp"
 
@@ -28,7 +28,6 @@ using antwika::gfx::Point;
 using antwika::gfx::Rect;
 using antwika::gfx::Size;
 using antwika::i18n::kDefaultLocale;
-using antwika::i18n::Translator;
 using antwika::scheduler::kLowPriority;
 using antwika::scheduler::kNormalPriority;
 using antwika::task_worker::kMinCanvasHeight;
@@ -36,6 +35,7 @@ using antwika::task_worker::kMinCanvasWidth;
 using antwika::task_worker::PoolScene;
 using antwika::task_worker::PoolSnapshot;
 using antwika::task_worker::TaskView;
+using antwika::task_worker::Translator;
 using antwika::task_worker::WorkerStatus;
 using antwika::task_worker::WorkerView;
 using ::testing::NiceMock;

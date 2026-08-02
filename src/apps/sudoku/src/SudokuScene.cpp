@@ -18,6 +18,8 @@
 #include <antwika/ui/Theme.hpp>
 
 #include "antwika/sudoku/BoardLayout.hpp"
+#include "antwika/sudoku/MessageId.hpp"
+#include "antwika/sudoku/Messages.hpp"
 #include "antwika/sudoku/Status.hpp"
 #include "antwika/sudoku/Widgets.hpp"
 
@@ -26,7 +28,6 @@ namespace antwika::sudoku
 
     using antwika::gfx::Color;
     using antwika::gfx::Rect;
-    using antwika::i18n::MessageId;
     using antwika::ui::Alignment;
     using antwika::ui::Context;
     using antwika::ui::DrawText;
@@ -314,10 +315,10 @@ namespace antwika::sudoku
                     const auto row = ui.row(
                         {.width = kGrow, .cross = Alignment::Center});
 
-                    ui.label(translator.text(MessageId::SudokuTitle));
+                    ui.label(translator.text(MessageId::Title));
                     ui.spacer(kGrow);
                     ui.button(
-                        translator.text(MessageId::SudokuSolveButton),
+                        translator.text(MessageId::SolveButton),
                         {.id = widgets::kSolve});
                 }
 

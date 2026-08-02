@@ -10,8 +10,10 @@
 #include <antwika/gfx/Glyphs.hpp>
 #include <antwika/gfx/Point.hpp>
 #include <antwika/gfx/Rect.hpp>
-#include <antwika/i18n/MessageId.hpp>
 #include <antwika/scheduler/Priority.hpp>
+
+#include "antwika/task_worker/MessageId.hpp"
+#include "antwika/task_worker/Messages.hpp"
 
 namespace antwika::task_worker
 {
@@ -19,7 +21,6 @@ namespace antwika::task_worker
     using antwika::gfx::Color;
     using antwika::gfx::Point;
     using antwika::gfx::Rect;
-    using antwika::i18n::MessageId;
 
     namespace
     {
@@ -142,7 +143,7 @@ namespace antwika::task_worker
                 Point{.x = kMargin, .y = kMargin},
                 worded(
                     translator,
-                    MessageId::TaskWorkerTick,
+                    MessageId::Tick,
                     std::to_string(snapshot.tick)),
                 kScale,
                 kInk);
@@ -150,7 +151,7 @@ namespace antwika::task_worker
                 Point{.x = kMargin + column, .y = kMargin},
                 worded(
                     translator,
-                    MessageId::TaskWorkerBudget,
+                    MessageId::Budget,
                     std::to_string(snapshot.dispatch.budget)),
                 kScale,
                 kBudgetInk);
@@ -158,7 +159,7 @@ namespace antwika::task_worker
                 Point{.x = kMargin + 2 * column, .y = kMargin},
                 worded(
                     translator,
-                    MessageId::TaskWorkerStarted,
+                    MessageId::Started,
                     std::to_string(snapshot.dispatch.dispatched)),
                 kScale,
                 kMuted);
@@ -190,7 +191,7 @@ namespace antwika::task_worker
                         .x = columns.poolX + kPad, .y = top + kPad},
                     worded(
                         translator,
-                        MessageId::TaskWorkerWorkerIdle,
+                        MessageId::WorkerIdle,
                         std::to_string(index)),
                     kScale,
                     kMuted);
@@ -201,7 +202,7 @@ namespace antwika::task_worker
                 Point{.x = columns.poolX + kPad, .y = top + kPad},
                 worded(
                     translator,
-                    MessageId::TaskWorkerWorkerBusy,
+                    MessageId::WorkerBusy,
                     std::to_string(index),
                     worker.label),
                 kScale,
@@ -212,7 +213,7 @@ namespace antwika::task_worker
                     .y = top + kPad + kLine},
                 worded(
                     translator,
-                    MessageId::TaskWorkerTicksLeft,
+                    MessageId::TicksLeft,
                     std::to_string(worker.remainingTicks),
                     std::to_string(worker.durationTicks)),
                 kScale,
@@ -248,7 +249,7 @@ namespace antwika::task_worker
         {
             renderer.drawText(
                 Point{.x = columns.poolX, .y = kBodyTop},
-                translator.text(MessageId::TaskWorkerWorkers),
+                translator.text(MessageId::Workers),
                 kScale,
                 kHeading);
 
@@ -291,7 +292,7 @@ namespace antwika::task_worker
 
             renderer.drawText(
                 Point{.x = columns.queueX + kPad, .y = kBodyTop},
-                translator.text(MessageId::TaskWorkerQueue),
+                translator.text(MessageId::Queue),
                 kScale,
                 kHeading);
 
@@ -303,12 +304,12 @@ namespace antwika::task_worker
                 const auto line =
                     blocked ? worded(
                                   translator,
-                                  MessageId::TaskWorkerBlocked,
+                                  MessageId::Blocked,
                                   task.label,
                                   task.waitingFor)
                             : worded(
                                   translator,
-                                  MessageId::TaskWorkerQueued,
+                                  MessageId::Queued,
                                   task.label,
                                   priorityText(task)); // GCOVR_EXCL_LINE
 
@@ -324,7 +325,7 @@ namespace antwika::task_worker
 
             renderer.drawText(
                 Point{.x = columns.queueX + kPad, .y = top},
-                translator.text(MessageId::TaskWorkerCompleted),
+                translator.text(MessageId::Completed),
                 kScale,
                 kHeading);
             top += kLine + kPad;

@@ -6,6 +6,7 @@ add_executable(antwika_sudoku_tests
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/BoardOverlay.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/BoardSink.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/KeyMapping.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/Messages.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/PlaySink.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/Puzzle.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/PuzzleFile.cpp
@@ -21,6 +22,7 @@ add_executable(antwika_sudoku_tests
     BoardSinkTest.cpp
     BoardTest.cpp
     KeyMappingTest.cpp
+    MessagesTest.cpp
     PlaySinkTest.cpp
     PuzzleFileTest.cpp
     PuzzleSourceTest.cpp
@@ -52,6 +54,7 @@ target_link_libraries(antwika_sudoku_tests
         antwika::gfx
         antwika::gfx::tests::mocks
         antwika::i18n
+        antwika::i18n::tests::conformance
         antwika::input
         antwika::log::tests::mocks
         antwika::replay

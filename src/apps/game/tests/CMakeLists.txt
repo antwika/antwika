@@ -39,6 +39,7 @@ add_executable(antwika_game_tests
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/MarketSystem.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/MenuCommands.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/MenuModalScene.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/Messages.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/ModeGatedSink.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/OptionsFile.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/OptionsScene.cpp
@@ -123,6 +124,7 @@ add_executable(antwika_game_tests
     CityRatingsTest.cpp
     LabourQueryTest.cpp
     LabourSystemTest.cpp
+    MessagesTest.cpp
     PopulationSystemTest.cpp
     RatingsSystemTest.cpp
     HotkeySinkTest.cpp
@@ -210,6 +212,7 @@ target_link_libraries(antwika_game_tests
         antwika::gfx
         antwika::gfx::tests::mocks
         antwika::i18n
+        antwika::i18n::tests::conformance
         antwika::input
         antwika::input::tests::fakes
         antwika::log::tests::mocks

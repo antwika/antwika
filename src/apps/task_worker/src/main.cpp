@@ -12,13 +12,13 @@
 #include <antwika/gfx/Size.hpp>
 #include <antwika/gfx/WindowDesc.hpp>
 #include <antwika/i18n/Locale.hpp>
-#include <antwika/i18n/Translator.hpp>
 #include <antwika/log/Level.hpp>
 #include <antwika/replay/ReplaySource.hpp>
 #include <antwika/simulation/TickPacer.hpp>
 #include <antwika/simulation/WindowInputSource.hpp>
 #include <antwika/time/SystemSleeper.hpp>
 
+#include "antwika/task_worker/Messages.hpp"
 #include "antwika/task_worker/PoolScene.hpp"
 #include "antwika/task_worker/RenderSystem.hpp"
 #include "antwika/task_worker/StatusPrintSystem.hpp"
@@ -27,7 +27,6 @@
 using antwika::app::ConsoleLogging;
 using antwika::app::RecordedRun;
 using antwika::gfx::WindowDesc;
-using antwika::i18n::Translator;
 using antwika::log::Level;
 using antwika::replay::ReplaySource;
 using antwika::simulation::TickPacer;
@@ -36,6 +35,7 @@ using antwika::task_worker::PoolScene;
 using antwika::task_worker::RenderSystem;
 using antwika::task_worker::StatusPrintSystem;
 using antwika::task_worker::TaskRegistry;
+using antwika::task_worker::Translator;
 using antwika::time::SystemSleeper;
 
 namespace

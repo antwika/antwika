@@ -12,6 +12,7 @@
 #include "antwika/game/Footprint.hpp"
 #include "antwika/game/FootprintOutline.hpp"
 #include "antwika/game/IsoProjection.hpp"
+#include "antwika/game/Messages.hpp"
 #include "antwika/game/ReadoutPanel.hpp"
 #include "antwika/game/ResourceBar.hpp"
 #include "antwika/game/TileAtlas.hpp"

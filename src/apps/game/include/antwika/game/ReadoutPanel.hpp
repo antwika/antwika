@@ -8,8 +8,8 @@
 #include <antwika/gfx/Point.hpp>
 #include <antwika/gfx/Rect.hpp>
 #include <antwika/gfx/Size.hpp>
-#include <antwika/i18n/Translator.hpp>
 
+#include "antwika/game/Messages.hpp"
 #include "antwika/game/SceneSnapshot.hpp"
 
 namespace antwika::game
@@ -19,7 +19,6 @@ namespace antwika::game
     using antwika::gfx::Point;
     using antwika::gfx::Rect;
     using antwika::gfx::Size;
-    using antwika::i18n::Translator;
 
     /**
      * @brief One line of a hover panel, and where it goes.

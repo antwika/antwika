@@ -6,7 +6,6 @@
 #include <string>
 #include <string_view>
 
-#include <antwika/i18n/MessageId.hpp>
 #include <antwika/input/Key.hpp>
 #include <antwika/ui/Alignment.hpp>
 #include <antwika/ui/ButtonSpec.hpp>
@@ -14,10 +13,12 @@
 #include <antwika/ui/Sizing.hpp>
 #include <antwika/ui/Theme.hpp>
 
+#include "antwika/game/MessageId.hpp"
+#include "antwika/game/Messages.hpp"
+
 namespace antwika::game
 {
 
-    using antwika::i18n::MessageId;
     using antwika::ui::Alignment;
     using antwika::ui::Context;
     using antwika::ui::fixedSize;
@@ -44,22 +45,22 @@ namespace antwika::game
             // A switch carries an arm no enumerator names.
             if (!outcome.has_value())
             {
-                return MessageId::GameOptionsHint;
+                return MessageId::OptionsHint;
             }
 
             if (*outcome == BindOutcome::Reserved)
             {
-                return MessageId::GameOptionsReserved;
+                return MessageId::OptionsReserved;
             }
 
             if (*outcome == BindOutcome::Taken)
             {
-                return MessageId::GameOptionsTaken;
+                return MessageId::OptionsTaken;
             }
 
             // Bound and Unchanged say one thing.
             // The key the player reached for is the key it is now.
-            return MessageId::GameOptionsBound;
+            return MessageId::OptionsBound;
         }
     } // namespace
 
@@ -86,7 +87,7 @@ namespace antwika::game
                 const auto card = ui.panel(
                     {.width = fixedSize(kCardWidth), .height = kFit});
 
-                ui.label(translator.text(MessageId::GameOptionsTitle));
+                ui.label(translator.text(MessageId::OptionsTitle));
 
                 for (const auto action : kActions)
                 {
@@ -100,7 +101,7 @@ namespace antwika::game
                     if (state.awaiting() == action)
                     {
                         bound = translator.text(
-                            MessageId::GameOptionsPress);
+                            MessageId::OptionsPress);
                     }
 
                     const auto name =
@@ -110,7 +111,7 @@ namespace antwika::game
 
                     ui.button(
                         translator.formatted(
-                            MessageId::GameOptionsRow, parts),
+                            MessageId::OptionsRow, parts),
                         {.id = optionsWidgets::actionWidget(action),
                          .width = kGrow});
                 }
@@ -122,7 +123,7 @@ namespace antwika::game
                     ui.theme().muted);
 
                 ui.button(
-                    translator.text(MessageId::GameOptionsBack),
+                    translator.text(MessageId::OptionsBack),
                     {.id = optionsWidgets::kBack, .width = kGrow});
             }
 

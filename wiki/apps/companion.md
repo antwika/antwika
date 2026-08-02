@@ -180,7 +180,7 @@ The three props sit along the ground, painted into the very boxes `propAt()` hit
 **The one the companion would like is lit rather than merely present.**
 That is this application's whole answer to instructions: what to press next is on the screen.
 
-**Lighting one says which is wanted, and never which is which**, so each prop is also named: `feed`, `play` and `sleep`, from `i18n`'s catalogue like every other word here.
+**Lighting one says which is wanted, and never which is which**, so each prop is also named: `feed`, `play` and `sleep`, from this application's own catalogue, read through [`i18n`](../libraries/i18n.md) like every other word here.
 Three boxes of one colour are otherwise three guesses, and the price of guessing wrong is `pesterCost` and a companion that got something it did not ask for.
 
 **The word goes in the prop's own bottom row**, which is the decision the rest of this follows from.
@@ -215,7 +215,7 @@ That is for the reason everything else about a companion is: a renderer holding 
 The idle line is a hash of the tick it comes up on -- the murmur3 finalizer over exact-width integers, so it is the same line on every toolchain.
 The snapshot carries the `Saying` and not the words, and not the countdown.
 
-**The words themselves come from [`i18n`](../libraries/i18n.md), and `Pet` never sees one.**
+**The words themselves come from this application's catalogue, read through [`i18n`](../libraries/i18n.md), and `Pet` never sees one.**
 `PetScene` holds a `Translator` and turns a `Saying` into a `MessageId`; the state line, the day line and the lineage line are worded the same way.
 That split is what keeps the active language out of the state a replay reproduces: `Pet` is integer throughout and reads no clock, no generator and no locale, so a session recorded in English replays identically in Swedish and only the pixels differ.
 The bubble is scaled to the longest line *the catalogue in use* holds rather than to a character count written into the scene -- the longest Swedish line is half again the longest English one, so a count baked in would have been the English one.

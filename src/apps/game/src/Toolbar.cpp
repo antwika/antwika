@@ -7,7 +7,6 @@
 #include <string>
 #include <string_view>
 
-#include <antwika/i18n/MessageId.hpp>
 #include <antwika/ui/Alignment.hpp>
 #include <antwika/ui/ButtonState.hpp>
 #include <antwika/ui/Context.hpp>
@@ -15,10 +14,12 @@
 #include <antwika/ui/Sizing.hpp>
 #include <antwika/ui/Theme.hpp>
 
+#include "antwika/game/MessageId.hpp"
+#include "antwika/game/Messages.hpp"
+
 namespace antwika::game
 {
 
-    using antwika::i18n::MessageId;
     using antwika::ui::Alignment;
     using antwika::ui::ButtonState;
     using antwika::ui::Context;
@@ -111,13 +112,13 @@ namespace antwika::game
                      .width = fixedSize(kMenuCells * scale),
                      .options = items,
                      .placeholder =
-                         translator.text(MessageId::GameToolbarGameMenu),
+                         translator.text(MessageId::ToolbarGameMenu),
                      .open = menuOpen});
 
                 // The one route to the menu modal, kept where it was.
                 // F10 no longer opens it -- see UiSink.
                 ui.button(
-                    translator.text(MessageId::GameToolbarMenu),
+                    translator.text(MessageId::ToolbarMenu),
                     {.id = widgets::kMenu});
 
                 ui.spacer(kGrow);
@@ -142,7 +143,7 @@ namespace antwika::game
                          .height = kGrow,
                          .id = widgets::kSidePanel});
 
-                    ui.label(translator.text(MessageId::GameToolbarBuild));
+                    ui.label(translator.text(MessageId::ToolbarBuild));
 
                     // One button per tool, in the enumeration's order.
                     // A tool added there therefore gets a button here.
@@ -232,7 +233,7 @@ namespace antwika::game
                 const std::array<std::string_view, 1> tickArgs{counted};
                 ui.label(
                     translator.formatted(
-                        MessageId::GameToolbarTick, tickArgs));
+                        MessageId::ToolbarTick, tickArgs));
 
                 // Labels rather than buttons, and not by omission.
                 // There is nothing to press here, so there is no id.
@@ -241,13 +242,13 @@ namespace antwika::game
                 const std::array<std::string_view, 1> peopleArgs{people};
                 ui.label(
                     translator.formatted(
-                        MessageId::GameToolbarPopulation, peopleArgs));
+                        MessageId::ToolbarPopulation, peopleArgs));
 
                 const auto jobs = std::to_string(ratings.employment);
                 const std::array<std::string_view, 1> jobArgs{jobs};
                 ui.label(
                     translator.formatted(
-                        MessageId::GameToolbarEmployment, jobArgs));
+                        MessageId::ToolbarEmployment, jobArgs));
             }
         }
 
