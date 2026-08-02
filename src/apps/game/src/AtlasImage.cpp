@@ -1,6 +1,7 @@
 #include "antwika/game/AtlasImage.hpp"
 
 #include <string>
+#include <string_view>
 
 #include <antwika/gfx/Bitmap.hpp>
 #include <antwika/gfx/GfxError.hpp>
@@ -19,9 +20,14 @@ namespace antwika::game
         }
     } // namespace
 
-    void requireAtlasSize(const antwika::gfx::Bitmap &bitmap)
+    void requireAtlasSize(
+        const antwika::gfx::Bitmap &bitmap,
+        AtlasKind kind,
+        std::string_view name)
     {
-        if (bitmap.size == kAtlasSize)
+        const auto expected = atlasSizeOf(kind);
+
+        if (bitmap.size == expected)
         {
             return;
         }
@@ -29,9 +35,9 @@ namespace antwika::game
         // No app name in here.
         // runGuarded() puts one in front of whatever it catches.
         throw antwika::gfx::GfxError(
-            "the texture atlas is " + describe(bitmap.size)
-            + " but TileAtlas.hpp addresses a " + describe(kAtlasSize)
-            + " one");
+            "the texture atlas " + std::string(name) + " is "
+            + describe(bitmap.size) + " but TileAtlas.hpp addresses a "
+            + describe(expected) + " one");
     }
 
 } // namespace antwika::game

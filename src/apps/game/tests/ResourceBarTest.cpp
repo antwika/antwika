@@ -12,7 +12,7 @@
 #include "antwika/game/Camera.hpp"
 #include "antwika/game/Cell.hpp"
 #include "antwika/game/Footprint.hpp"
-#include "antwika/game/IsoProjection.hpp"
+#include "antwika/game/SpriteBounds.hpp"
 #include "antwika/game/Resource.hpp"
 #include "antwika/game/ResourceBar.hpp"
 #include "antwika/game/SceneSnapshot.hpp"
@@ -25,8 +25,6 @@ using antwika::game::BuildingSprite;
 using antwika::game::buildingBars;
 using antwika::game::Camera;
 using antwika::game::Cell;
-using antwika::game::footprintBounds;
-using antwika::game::footprintOf;
 using antwika::game::kResourceCount;
 using antwika::game::kResources;
 using antwika::game::kStockCapacity;
@@ -86,12 +84,15 @@ TEST(ResourceBarTest, BuildingBars_ShowsNoneForAKindThatDependsOnNothing)
 
 // Placed from the very box the building's own art is blitted into.
 // So the gauges cannot become a second layout that drifts from it.
-TEST(ResourceBarTest, BuildingBars_SitJustAboveTheBlockTheyGauge)
+TEST(ResourceBarTest, BuildingBars_SitJustAboveTheSpriteTheyGauge)
 {
     const auto sprite = house(50, 50);
     const auto bars = buildingBars(sprite, kCamera);
+
+    // The very box the building's art is blitted into.
+    // Above the sprite is above its headroom, so no art reaches a bar.
     const auto box =
-        footprintBounds(sprite.at, footprintOf(sprite.kind), kCamera);
+        antwika::game::buildingSpriteBounds(sprite.at, sprite.kind, kCamera);
 
     ASSERT_FALSE(bars.empty());
 

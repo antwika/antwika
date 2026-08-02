@@ -123,7 +123,9 @@ endif()
 antwika_bundle_app(
     TARGET antwika_game
     ASSETS
-        assets/atlas.png
+        assets/atlas_1x1.png
+        assets/atlas_2x2.png
+        assets/atlas_3x3.png
 )
 
 install(TARGETS antwika_game

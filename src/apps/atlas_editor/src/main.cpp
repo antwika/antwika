@@ -45,7 +45,8 @@ using antwika::time::SystemSleeper;
 
 namespace
 {
-    // Wide enough for the game's 1024 by 320 sheet at zoom one.
+    // The game's sheets are taller than a sensible window now.
+    // The view zooms and pans, so the window need not fit one whole.
     // The toolbar sits above it, with room to zoom into a slot.
     constexpr antwika::gfx::Size kWindowSize{
         .width = 1280, .height = 720};

@@ -14,7 +14,7 @@ That is deliberate and load-bearing rather than an accident somebody has now tid
 See [`wiki/libraries/font.md`](../../wiki/libraries/font.md) for the argument in full.
 
 What this directory holds is the other thing: the art an application draws with, in exactly the sense
-[`src/apps/game/assets/atlas.png`](../../src/apps/game/assets/atlas.png) is.
+[`src/apps/game/assets/atlas_1x1.png`](../../src/apps/game/assets/atlas_1x1.png) is.
 Production code loads it; no test does.
 A new test that wants a font asks `SyntheticFont` for one.
 

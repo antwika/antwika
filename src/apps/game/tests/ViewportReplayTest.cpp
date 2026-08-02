@@ -242,7 +242,10 @@ namespace
                 .mode = mode,
                 .canvas = kUiCanvas,
                 .scene = scene,
-                .atlas = atlas,
+                .atlases =
+                    {.oneByOne = atlas,
+                     .twoByTwo = atlas,
+                     .threeByThree = atlas},
                 .paths = paths,
                 .built = built,
                 .camera = camera,

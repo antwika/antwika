@@ -8,13 +8,13 @@
 #include <antwika/ecs/ISystem.hpp>
 #include <antwika/ecs/World.hpp>
 #include <antwika/gfx/IRenderer.hpp>
-#include <antwika/gfx/ITexture.hpp>
 #include <antwika/gfx/IWindow.hpp>
 #include <antwika/gfx/Size.hpp>
 #include <antwika/input/PointerHintChannel.hpp>
 #include <antwika/time/Tick.hpp>
 
 #include "antwika/game/AppMode.hpp"
+#include "antwika/game/AtlasTextures.hpp"
 #include "antwika/game/BuildingIndex.hpp"
 #include "antwika/game/Camera.hpp"
 #include "antwika/game/FrameMeter.hpp"
@@ -35,7 +35,6 @@ namespace antwika::game
 
     using antwika::ecs::ISystem;
     using antwika::ecs::World;
-    using antwika::gfx::ITexture;
     using antwika::gfx::IWindow;
     using antwika::gfx::Size;
 
@@ -75,11 +74,11 @@ namespace antwika::game
         const GridScene &scene;
 
         /**
-         * @brief The texture every tile is blitted from.
+         * @brief The three sheets every sprite is blitted from.
          *
-         * It must have come from this window's renderer.
+         * Every one must have come from this window's renderer.
          */
-        const ITexture &atlas;
+        AtlasTextures atlases;
 
         /** @brief Read for the live city's path cells. */
         const PathIndex &paths;

@@ -26,32 +26,38 @@
 namespace
 {
     using antwika::atlas_editor::kDefaultSheetSize;
+    using antwika::game::AtlasKind;
+
+    // The game's 1x1 sheet, being the one a session starts blank on.
+    constexpr auto kGameSheet =
+        antwika::game::atlasSizeOf(AtlasKind::OneByOne);
 
     // A static_assert as well as a case, deliberately.
     // Both constants are compile-time, so the build can answer it.
     // And a red build is louder than a red test.
     static_assert(
-        kDefaultSheetSize.width == antwika::game::kAtlasSize.width
-        && kDefaultSheetSize.height == antwika::game::kAtlasSize.height,
-        "atlas_editor::kDefaultSheetSize must be game::kAtlasSize: a "
-        "blank sheet this editor opens is one the game has to accept");
+        kDefaultSheetSize.width == kGameSheet.width
+        && kDefaultSheetSize.height == kGameSheet.height,
+        "atlas_editor::kDefaultSheetSize must be the game's 1x1 sheet: "
+        "a blank sheet this editor opens is one the game has to accept");
 
     TEST(DefaultSheetSizeTest, TheBlankSheetIsTheSizeTheGameDemands)
     {
-        EXPECT_EQ(kDefaultSheetSize, antwika::game::kAtlasSize);
+        EXPECT_EQ(kDefaultSheetSize, kGameSheet);
     }
 
-    // Stated in tiles as well as in pixels.
+    // Stated in sprites as well as in pixels.
     // So a failure names which of the two moved rather than that one did.
     TEST(DefaultSheetSizeTest, TheBlankSheetIsAWholeNumberOfSlots)
     {
+        const auto sprite =
+            antwika::game::atlasSpec(AtlasKind::OneByOne).spriteSize;
+
         EXPECT_EQ(
             kDefaultSheetSize.width,
-            antwika::game::kAtlasColumns
-                * antwika::game::kAtlasTileSize.width);
+            antwika::game::kAtlasColumns * sprite.width);
         EXPECT_EQ(
             kDefaultSheetSize.height,
-            antwika::game::kAtlasRows
-                * antwika::game::kAtlasTileSize.height);
+            antwika::game::kAtlasRows * sprite.height);
     }
 } // namespace

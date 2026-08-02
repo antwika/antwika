@@ -12,9 +12,9 @@
 #include "antwika/game/Footprint.hpp"
 #include "antwika/game/FootprintOutline.hpp"
 #include "antwika/game/IsoProjection.hpp"
-#include "antwika/game/Messages.hpp"
 #include "antwika/game/ReadoutPanel.hpp"
 #include "antwika/game/ResourceBar.hpp"
+#include "antwika/game/SpriteBounds.hpp"
 #include "antwika/game/TileAtlas.hpp"
 #include "antwika/game/WalkerMotion.hpp"
 
@@ -35,23 +35,23 @@ namespace antwika::game
 
         // The same art, mostly transparent.
         // A placeholder then reads as the thing it stands for.
-        // drawTexture() modulates alpha, so no second tile is needed.
+        // drawTexture() modulates alpha, so no second sprite is needed.
         constexpr Color kGhostly{
             .red = 255, .green = 255, .blue = 255, .alpha = 110};
 
-        // The same tile reddened, for a block that will not go here.
+        // The same sprite reddened, for a block that will not go here.
         // A refusal shown is a refusal somebody can act on.
         // A preview that vanishes leaves them guessing what blocked it.
         constexpr Color kBlocked{
             .red = 255, .green = 90, .blue = 90, .alpha = 110};
 
         // The border round the block, at full strength.
-        // The tile inside it is faint on purpose, being a placeholder.
+        // The sprite inside it is faint on purpose, being a preview.
         // An edge as faint would be the one thing here nobody could see.
         constexpr Color kGhostEdge{
             .red = 255, .green = 255, .blue = 255, .alpha = 220};
 
-        // Reddened for the same reason the tile inside it is.
+        // Reddened for the same reason the sprite inside it is.
         constexpr Color kBlockedEdge{
             .red = 255, .green = 90, .blue = 90, .alpha = 220};
 
@@ -98,6 +98,36 @@ namespace antwika::game
             return links;
         }
 
+        // Every cell the snapshot's buildings stand on, ascending.
+        // The terrain pass skips these rather than painting under art.
+        // A building's art owns its whole footprint anyway.
+        [[nodiscard]] std::vector<Cell> coveredCells(
+            const std::vector<BuildingSprite> &buildings)
+        {
+            std::vector<Cell> covered;
+
+            for (const auto &building : buildings)
+            {
+                const auto footprint = footprintOf(building.kind);
+
+                for (std::int32_t dy = 0; dy < footprint.height; ++dy)
+                {
+                    for (std::int32_t dx = 0; dx < footprint.width; ++dx)
+                    {
+                        covered.push_back(Cell{
+                            .x = building.at.x + dx,
+                            .y = building.at.y + dy});
+                    }
+                }
+            }
+
+            std::sort(covered.begin(), covered.end());
+
+            return covered;
+            // The excluded line is the local vector's unwind destructor.
+            // Nothing between its construction and the return throws.
+        } // GCOVR_EXCL_LINE
+
         // The track always, the fill only when there is any of it.
         // A rectangle of no height is a drawing call that draws nothing.
         void paintBars(
@@ -119,7 +149,7 @@ namespace antwika::game
     bool GridScene::onCanvas(
         Cell cell, Size canvas, const SceneSnapshot &snapshot)
     {
-        return overlaps(cellBounds(cell, snapshot.camera), canvas);
+        return overlaps(tileSpriteBounds(cell, snapshot.camera), canvas);
     }
 
     GridScene::GridScene(const Translator &translator)
@@ -131,7 +161,7 @@ namespace antwika::game
         IRenderer &renderer,
         Size canvas,
         const SceneSnapshot &snapshot,
-        const ITexture &atlas,
+        const AtlasTextures &atlases,
         Progress subTick) const
     {
         renderer.clear(kSky);
@@ -145,41 +175,7 @@ namespace antwika::game
         // A snapshot then draws the same picture wherever it is drawn.
         const auto phase = snapshot.paused ? Progress() : subTick;
 
-        drawGround(renderer, canvas, snapshot, atlas);
-
-        // A road covers the ground tile it is laid on exactly.
-        // So it is drawn over one rather than instead of one.
-        for (const auto cell : snapshot.paths)
-        {
-            if (!onCanvas(cell, canvas, snapshot))
-            {
-                continue;
-            }
-
-            renderer.drawTexture(
-                atlas,
-                roadTile(linksAt(snapshot.paths, cell)),
-                cellBounds(cell, snapshot.camera),
-                kUntinted);
-        }
-
-        // Over the road it may stand beside, under the walkers.
-        // Drawn from the whole block's box rather than one cell's.
-        // Culled on that box too.
-        // A block reaches the canvas from further off than one cell.
-        for (const auto &building : snapshot.buildings)
-        {
-            const auto bounds = footprintBounds(
-                building.at, footprintOf(building.kind), snapshot.camera);
-
-            if (!overlaps(bounds, canvas))
-            {
-                continue;
-            }
-
-            renderer.drawTexture(
-                atlas, buildingTile(building.kind), bounds, kUntinted);
-        }
+        drawTerrain(renderer, canvas, snapshot, atlases);
 
         // Last, so a walker is never hidden by what it is standing on.
         for (const auto &walker : snapshot.walkers)
@@ -195,7 +191,10 @@ namespace antwika::game
             }
 
             renderer.drawTexture(
-                atlas, walkerTile(walker.facing), bounds, kUntinted);
+                atlases.oneByOne,
+                walkerTile(walker.facing),
+                bounds,
+                kUntinted);
         }
 
         // After every sprite.
@@ -204,12 +203,108 @@ namespace antwika::game
         drawBars(renderer, canvas, snapshot, phase);
 
         // Before the ghost, which is one cell and sits on top of it.
-        drawPlan(renderer, canvas, snapshot, atlas);
+        drawPlan(renderer, canvas, snapshot, atlases);
 
-        drawGhost(renderer, canvas, snapshot, atlas);
+        drawGhost(renderer, canvas, snapshot, atlases);
 
         // Last of all, since it is what somebody is reading.
         drawReadout(renderer, canvas, snapshot);
+    }
+
+    void GridScene::drawTerrain(
+        IRenderer &renderer,
+        Size canvas,
+        const SceneSnapshot &snapshot,
+        const AtlasTextures &atlases) const
+    {
+        const auto covered = coveredCells(snapshot.buildings);
+        const auto &buildings = snapshot.buildings;
+        std::size_t next = 0;
+
+        const auto drawBuilding = [&](const BuildingSprite &building)
+        {
+            const auto bounds = buildingSpriteBounds(
+                building.at, building.kind, snapshot.camera);
+
+            if (!overlaps(bounds, canvas))
+            {
+                return;
+            }
+
+            renderer.drawTexture(
+                atlases.of(buildingAtlasOf(building.kind)),
+                buildingTile(building.kind),
+                bounds,
+                kUntinted);
+        };
+
+        // One diagonal is one screen depth, walked back to front.
+        // The buildings arrive sorted on exactly this key.
+        // So each is painted with the diagonal its block starts on.
+        // What is south or east of it is then painted after it.
+        // Which is what lets its skirt sit under the cells in front.
+        const auto diagonals =
+            snapshot.extent.width + snapshot.extent.height - 1;
+
+        for (std::int32_t diagonal = 0; diagonal < diagonals; ++diagonal)
+        {
+            const auto firstX = std::max(
+                std::int32_t{0}, diagonal - snapshot.extent.height + 1);
+            const auto lastX =
+                std::min(diagonal, snapshot.extent.width - 1);
+
+            for (std::int32_t x = firstX; x <= lastX; ++x)
+            {
+                const Cell cell{.x = x, .y = diagonal - x};
+
+                // A building's art owns the whole block it stands on.
+                if (std::binary_search(
+                        covered.begin(), covered.end(), cell))
+                {
+                    continue;
+                }
+
+                if (!onCanvas(cell, canvas, snapshot))
+                {
+                    continue;
+                }
+
+                const auto bounds =
+                    tileSpriteBounds(cell, snapshot.camera);
+
+                renderer.drawTexture(
+                    atlases.oneByOne, groundTile(), bounds, kUntinted);
+
+                // A road covers the ground sprite it is laid on exactly.
+                // So it is drawn over one rather than instead of one.
+                // Its edge pixels then blend into ground, not into sky.
+                if (paved(snapshot.paths, cell))
+                {
+                    renderer.drawTexture(
+                        atlases.oneByOne,
+                        roadTile(linksAt(snapshot.paths, cell)),
+                        bounds,
+                        kUntinted);
+                }
+            }
+
+            while (next < buildings.size()
+                   && buildings[next].at.x + buildings[next].at.y
+                          <= diagonal)
+            {
+                drawBuilding(buildings[next]);
+                ++next;
+            }
+        }
+
+        // A snapshot is drawn whole even where the extent ends.
+        // Nothing places a block outside it.
+        // A scene still draws what it is handed rather than judging it.
+        while (next < buildings.size())
+        {
+            drawBuilding(buildings[next]);
+            ++next;
+        }
     }
 
     void GridScene::drawBars(
@@ -222,8 +317,8 @@ namespace antwika::game
         // A gauge is drawn exactly when what it belongs to is.
         for (const auto &building : snapshot.buildings)
         {
-            const auto bounds = footprintBounds(
-                building.at, footprintOf(building.kind), snapshot.camera);
+            const auto bounds = buildingSpriteBounds(
+                building.at, building.kind, snapshot.camera);
 
             if (!overlaps(bounds, canvas))
             {
@@ -274,7 +369,7 @@ namespace antwika::game
         IRenderer &renderer,
         Size canvas,
         const SceneSnapshot &snapshot,
-        const ITexture &atlas) const
+        const AtlasTextures &atlases) const
     {
         // A refused run is reddened rather than hidden.
         // Exactly as a refused block is.
@@ -284,9 +379,7 @@ namespace antwika::game
 
         for (const auto cell : snapshot.plan.cells)
         {
-            const auto bounds = cellBounds(cell, snapshot.camera);
-
-            if (!overlaps(bounds, canvas))
+            if (!onCanvas(cell, canvas, snapshot))
             {
                 continue;
             }
@@ -295,9 +388,9 @@ namespace antwika::game
             // Worked out the same way a laid one is.
             // So what is previewed is what is placed.
             renderer.drawTexture(
-                atlas,
+                atlases.oneByOne,
                 roadTile(linksAt(snapshot.paths, cell)),
-                bounds,
+                tileSpriteBounds(cell, snapshot.camera),
                 tint);
         }
     }
@@ -306,7 +399,7 @@ namespace antwika::game
         IRenderer &renderer,
         Size canvas,
         const SceneSnapshot &snapshot,
-        const ITexture &atlas) const
+        const AtlasTextures &atlases) const
     {
         const auto &ghost = snapshot.ghost;
 
@@ -318,9 +411,12 @@ namespace antwika::game
         const auto kind = buildingKindOf(ghost.tool);
         const auto footprint =
             kind.has_value() ? footprintOf(*kind) : Footprint{};
+        const auto sheet = toolAtlasOf(ghost.tool);
 
-        const auto bounds =
-            footprintBounds(ghost.at, footprint, snapshot.camera);
+        const auto bounds = spriteBounds(
+            sheet,
+            blockAnchor(ghost.at, footprint, snapshot.camera),
+            snapshot.camera);
 
         if (!overlaps(bounds, canvas))
         {
@@ -331,15 +427,15 @@ namespace antwika::game
         // Worked out the same way a laid one is.
         // So what is previewed is what is placed.
         renderer.drawTexture(
-            atlas,
+            atlases.of(sheet),
             toolTile(ghost.tool, linksAt(snapshot.paths, ghost.at)),
             bounds,
             ghost.valid ? kGhostly : kBlocked);
 
         // A border round exactly the cells the click will take.
-        // A faint tile says roughly where; an edge says precisely what.
-        // Traced round the very box the tile above was blitted into.
-        // So a preview and its border cannot show two extents.
+        // A faint sprite says roughly where; an edge says what.
+        // Traced round the block's own diamond box.
+        // Not the sprite's box: the claim is cells, never headroom.
         // Four lines rather than four fills, the edges being diagonal.
         // drawRect() takes an upright box, so it cannot draw one.
         // Which is why ui's focus ring is four fills and this is not.
@@ -356,32 +452,6 @@ namespace antwika::game
                 corners[corner],
                 corners[(corner + 1) % corners.size()],
                 edge);
-        }
-    }
-
-    void GridScene::drawGround(
-        IRenderer &renderer,
-        Size canvas,
-        const SceneSnapshot &snapshot,
-        const ITexture &atlas) const
-    {
-        for (std::int32_t y = 0; y < snapshot.extent.height; ++y)
-        {
-            for (std::int32_t x = 0; x < snapshot.extent.width; ++x)
-            {
-                const Cell cell{.x = x, .y = y};
-
-                if (!onCanvas(cell, canvas, snapshot))
-                {
-                    continue;
-                }
-
-                renderer.drawTexture(
-                    atlas,
-                    groundTile(),
-                    cellBounds(cell, snapshot.camera),
-                    kUntinted);
-            }
         }
     }
 

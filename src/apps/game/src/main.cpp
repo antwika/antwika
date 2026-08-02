@@ -159,17 +159,37 @@ namespace
             .size = antwika::game::kUiCanvas,
             .resizable = true});
 
-        const auto atlasBitmap = antwika::app::readPngFile(
-            antwika::app::assetPath("atlas.png"), "antwika_game");
-
+        // One sheet per footprint size -- see TileAtlas.hpp.
+        // Loaded with the sheet it must match named beside its file.
         // Nothing regenerates the art now.
         // So a wrong-sized export is an ordinary mistake.
         // Refused here, since a blit past the edge draws nothing.
-        antwika::game::requireAtlasSize(atlasBitmap);
+        const auto loadAtlas = [](antwika::game::AtlasKind kind,
+                                  std::string_view name)
+        {
+            auto bitmap = antwika::app::readPngFile(
+                antwika::app::assetPath(name), "antwika_game");
+
+            antwika::game::requireAtlasSize(bitmap, kind, name);
+
+            return bitmap;
+        };
+
+        const auto atlas1x1Bitmap =
+            loadAtlas(antwika::game::AtlasKind::OneByOne, "atlas_1x1.png");
+        const auto atlas2x2Bitmap =
+            loadAtlas(antwika::game::AtlasKind::TwoByTwo, "atlas_2x2.png");
+        const auto atlas3x3Bitmap = loadAtlas(
+            antwika::game::AtlasKind::ThreeByThree, "atlas_3x3.png");
 
         // After the window, since a backend may have no device yet.
-        // Declared after it too, so it is destroyed first.
-        const auto atlas = window->renderer().createTexture(atlasBitmap);
+        // Declared after it too, so they are destroyed first.
+        const auto atlas1x1 =
+            window->renderer().createTexture(atlas1x1Bitmap);
+        const auto atlas2x2 =
+            window->renderer().createTexture(atlas2x2Bitmap);
+        const auto atlas3x3 =
+            window->renderer().createTexture(atlas3x3Bitmap);
 
         // **One translator, at kDefaultLocale, fixed in source.**
         // Never from a flag and never from the environment.
@@ -230,7 +250,10 @@ namespace
             .mode = mode,
             .canvas = antwika::game::kUiCanvas,
             .scene = scene,
-            .atlas = *atlas,
+            .atlases =
+                {.oneByOne = *atlas1x1,
+                 .twoByTwo = *atlas2x2,
+                 .threeByThree = *atlas3x3},
             .paths = paths,
             .built = built,
             .camera = camera,

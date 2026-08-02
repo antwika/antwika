@@ -2,9 +2,9 @@
 
 #include <antwika/animation/Progress.hpp>
 #include <antwika/gfx/IRenderer.hpp>
-#include <antwika/gfx/ITexture.hpp>
 #include <antwika/gfx/Size.hpp>
 
+#include "antwika/game/AtlasTextures.hpp"
 #include "antwika/game/Cell.hpp"
 #include "antwika/game/Messages.hpp"
 #include "antwika/game/SceneSnapshot.hpp"
@@ -14,7 +14,6 @@ namespace antwika::game
 
     using antwika::animation::Progress;
     using antwika::gfx::IRenderer;
-    using antwika::gfx::ITexture;
     using antwika::gfx::Size;
 
     /**
@@ -27,18 +26,30 @@ namespace antwika::game
      * makes the picture assertable against a mock renderer instead of
      * having to be looked at.
      *
-     * Every tile is one blit from one atlas texture, addressed through
-     * TileAtlas. The scene draws no shape of its own: the lattice is
-     * painted into the ground tile's own edges, so a grid line is a
-     * property of the art rather than a line the scene has to place, and
-     * a junction is a tile rather than four stubs stepped out by hand.
+     * Every sprite is one blit from one of the three sheets, addressed
+     * through TileAtlas and placed through SpriteBounds. The scene draws
+     * no shape of its own: the lattice is painted into the ground
+     * sprite's own edges, so a grid line is a property of the art rather
+     * than a line the scene has to place, and a junction is a sprite
+     * rather than four stubs stepped out by hand.
      *
-     * Which road tile a cell shows is decided here, from the snapshot's
-     * paths, which arrive in ascending order -- so a neighbour is a
-     * binary search rather than a second index the scene would have to be
-     * handed and kept in step with.
+     * **The terrain and the buildings are painted in one pass, a
+     * diagonal of cells at a time.** A sprite overhangs its diamond now
+     * -- headroom above it and the base block's skirt below -- so what
+     * is in front has to be painted after what it stands before.  A
+     * diagonal is exactly the set of cells at one screen depth, so the
+     * pass walks x + y upward, lays each diagonal's ground and roads,
+     * and then the buildings whose blocks start on it; a cell a building
+     * stands on is skipped rather than painted under it, since a
+     * building's own art owns its whole footprint.  The walkers still
+     * come last, so a walker is never hidden by what it is standing on.
      *
-     * The ghost is drawn last and at reduced alpha, from the same tile
+     * Which road sprite a cell shows is decided here, from the
+     * snapshot's paths, which arrive in ascending order -- so a
+     * neighbour is a binary search rather than a second index the scene
+     * would have to be handed and kept in step with.
+     *
+     * The ghost is drawn last and at reduced alpha, from the same sprite
      * the real placement would use, so a placeholder cannot come to look
      * like something the palette does not place. Where it goes is in the
      * snapshot rather than read off a pointer here: which cell a pixel
@@ -46,12 +57,13 @@ namespace antwika::game
      * state -- see BuildGhost.
      *
      * It is bordered with the four lines of footprintOutline(), traced
-     * round the box the tile itself is blitted into, so the outline
-     * shows exactly the cells the click would take.
+     * round the block's own diamond box, so the outline shows exactly
+     * the cells the click would take whatever the art above them does.
      *
      * Two things keep the cost proportional to what is on screen rather
-     * than to how big the grid is. Only cells whose diamonds reach the
-     * canvas are drawn at all, and a cell is one blit whatever it holds.
+     * than to how big the grid is. Only cells whose sprites reach the
+     * canvas are drawn at all, and a cell is at most two blits whatever
+     * it holds.
      *
      * **The gauges and the hover panel are the one thing here drawn as
      * rectangles rather than blitted**, since neither is art: a bar is a
@@ -79,7 +91,7 @@ namespace antwika::game
          *
          * The panel is the one thing here made of words rather than of
          * art, so it is the one thing that needs a translator; the
-         * atlas says everything else.
+         * sheets say everything else.
          *
          * @param translator Words the hover panel; must outlive this
          * scene.
@@ -103,9 +115,9 @@ namespace antwika::game
          * @param renderer Receives the drawing calls.
          * @param canvas The size of the area being drawn into.
          * @param snapshot What to draw.
-         * @param atlas The texture every tile is blitted from; it must
-         * have come from this renderer, and must be laid out the way
-         * TileAtlas.hpp addresses it.
+         * @param atlases The three sheets every sprite is blitted from;
+         * they must have come from this renderer, and must be laid out
+         * the way TileAtlas.hpp addresses them.
          * @param subTick How far through the tick this frame falls; zero
          * on the frame the tick itself draws.
          */
@@ -113,27 +125,27 @@ namespace antwika::game
             IRenderer &renderer,
             Size canvas,
             const SceneSnapshot &snapshot,
-            const ITexture &atlas,
+            const AtlasTextures &atlases,
             Progress subTick = Progress()) const;
 
     private:
-        void drawGround(
+        void drawTerrain(
             IRenderer &renderer,
             Size canvas,
             const SceneSnapshot &snapshot,
-            const ITexture &atlas) const;
+            const AtlasTextures &atlases) const;
 
         void drawPlan(
             IRenderer &renderer,
             Size canvas,
             const SceneSnapshot &snapshot,
-            const ITexture &atlas) const;
+            const AtlasTextures &atlases) const;
 
         void drawGhost(
             IRenderer &renderer,
             Size canvas,
             const SceneSnapshot &snapshot,
-            const ITexture &atlas) const;
+            const AtlasTextures &atlases) const;
 
         void drawBars(
             IRenderer &renderer,
