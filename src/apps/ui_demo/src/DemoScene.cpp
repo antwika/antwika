@@ -19,6 +19,7 @@
 #include <antwika/ui/DropdownSpec.hpp>
 #include <antwika/ui/Painter.hpp>
 #include <antwika/ui/Sizing.hpp>
+#include <antwika/ui/TextAreaSpec.hpp>
 #include <antwika/ui/TextFieldSpec.hpp>
 #include <antwika/ui/Theme.hpp>
 #include <antwika/ui/WidgetId.hpp>
@@ -43,6 +44,7 @@ namespace antwika::ui_demo
     using antwika::ui::kGrow;
     using antwika::ui::scaledTheme;
     using antwika::ui::scaleForCanvas;
+    using antwika::ui::TextAreaSpec;
     using antwika::ui::TextFieldSpec;
     using antwika::ui::Theme;
 
@@ -463,6 +465,43 @@ namespace antwika::ui_demo
             ui.label(translator.text(MessageId::LayoutsJob));
         }
 
+        // Short of the window, so the page's other labels still fit.
+        // Tall enough that twelve lines cannot: the bar has a job.
+        constexpr std::uint32_t kPaneHeight = 120;
+
+        void describeTextArea(
+            Context &ui,
+            const DemoState &state,
+            const Translator &translator)
+        {
+            ui.label(translator.text(MessageId::AreaOwned));
+
+            // The spec borrows the prompt, so it is a named local.
+            const std::string prompt =
+                translator.text(MessageId::AreaPlaceholder);
+
+            ui.textArea(TextAreaSpec{
+                .id = widgets::kArea,
+                .width = kGrow,
+                .height = fixedSize(kPaneHeight),
+                .text = state.areaText(),
+                .placeholder = prompt,
+                .cursor = state.areaCursor(),
+                .anchor = std::optional{state.areaAnchor()},
+                .scroll = state.areaScroll(),
+                .scrollbar = true});
+
+            // The scrolled report, handed back and shown.
+            // A pane showing what was asked for reports nothing.
+            const std::string line =
+                std::to_string(state.areaScroll());
+            const std::array<std::string_view, 1> shown{line};
+
+            ui.label(
+                translator.formatted(MessageId::AreaShowing, shown),
+                ui.theme().muted);
+        }
+
         using Page = void (*)(
             Context &, const DemoState &, const Translator &);
 
@@ -477,7 +516,8 @@ namespace antwika::ui_demo
             &describeFocus,
             &describeTheme,
             &describeRects,
-            &describeShrink};
+            &describeShrink,
+            &describeTextArea};
 
         /**
          * @brief Word the last thing the demo said, if it said one.

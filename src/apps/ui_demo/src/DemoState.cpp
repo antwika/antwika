@@ -1,10 +1,40 @@
 #include "antwika/ui_demo/DemoState.hpp"
 
+#include <cstddef>
 #include <optional>
+#include <string>
 #include <utility>
 
 namespace antwika::ui_demo
 {
+
+    namespace
+    {
+        constexpr std::size_t kOpeningLines = 12;
+
+        // Enough lines that the pane scrolls from the first frame.
+        [[nodiscard]] std::string openingPane()
+        {
+            std::string text;
+
+            for (std::size_t line = 0; line < kOpeningLines; ++line)
+            {
+                text += "line " + std::to_string(line);
+
+                if (line + 1 < kOpeningLines)
+                {
+                    text += '\n';
+                }
+            }
+
+            return text;
+            // Only an unwind destroys text at this brace.
+        } // GCOVR_EXCL_LINE
+    } // namespace
+
+    DemoState::DemoState() : paneText(openingPane())
+    {
+    }
 
     Showcase DemoState::showcase() const noexcept
     {
@@ -109,6 +139,41 @@ namespace antwika::ui_demo
     void DemoState::setMessage(DemoMessage text)
     {
         note = std::move(text);
+    }
+
+    const std::string &DemoState::areaText() const noexcept
+    {
+        return paneText;
+    }
+
+    std::size_t DemoState::areaCursor() const noexcept
+    {
+        return paneCursor;
+    }
+
+    std::size_t DemoState::areaAnchor() const noexcept
+    {
+        return paneAnchor;
+    }
+
+    void DemoState::setArea(
+        std::string characters,
+        const std::size_t at,
+        const std::size_t other)
+    {
+        paneText = std::move(characters);
+        paneCursor = at;
+        paneAnchor = other;
+    }
+
+    std::size_t DemoState::areaScroll() const noexcept
+    {
+        return paneScroll;
+    }
+
+    void DemoState::setAreaScroll(const std::size_t line)
+    {
+        paneScroll = line;
     }
 
 } // namespace antwika::ui_demo

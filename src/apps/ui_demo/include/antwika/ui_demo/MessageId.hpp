@@ -78,6 +78,11 @@ namespace antwika::ui_demo
         PageShrink,
 
         /**
+         * @brief The text-area page's name.
+         */
+        PageTextArea,
+
+        /**
          * @brief What a plain label is.
          */
         LabelsLine,
@@ -221,6 +226,21 @@ namespace antwika::ui_demo
          * @brief What the field holds right now, `{0}`.
          */
         FieldHolding,
+
+        /**
+         * @brief What a text area retains between frames: nothing.
+         */
+        AreaOwned,
+
+        /**
+         * @brief The line the pane is showing at its top, `{0}`.
+         */
+        AreaShowing,
+
+        /**
+         * @brief An empty area's prompt.
+         */
+        AreaPlaceholder,
 
         /**
          * @brief Who owns a list's open flag.

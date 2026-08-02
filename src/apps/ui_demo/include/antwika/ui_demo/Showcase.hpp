@@ -45,6 +45,9 @@ namespace antwika::ui_demo
 
         /** @brief A container with less room than its children want. */
         Shrink,
+
+        /** @brief A pane of many lines that selects and scrolls. */
+        TextArea,
     };
 
     /**
@@ -54,7 +57,7 @@ namespace antwika::ui_demo
      * cannot drift from the enumeration it counts.
      */
     inline constexpr std::size_t kShowcaseCount =
-        static_cast<std::size_t>(Showcase::Shrink) + 1;
+        static_cast<std::size_t>(Showcase::TextArea) + 1;
 
     /**
      * @brief Get which message names one page.
@@ -82,7 +85,8 @@ namespace antwika::ui_demo
                 MessageId::PageFocus,
                 MessageId::PageTheme,
                 MessageId::PageRects,
-                MessageId::PageShrink};
+                MessageId::PageShrink,
+                MessageId::PageTextArea};
 
         return ids
             [static_cast<std::size_t>(showcase) % kShowcaseCount];

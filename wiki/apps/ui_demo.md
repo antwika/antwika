@@ -4,10 +4,10 @@
 
 ## What it is
 
-`apps/ui_demo` is the showcase for [`ui`](../libraries/ui.md): labels, buttons, nested layouts, a text field, dropdowns, the focus ring, the theme, where a named widget was laid out, and what a container does with less room than its children want.
+`apps/ui_demo` is the showcase for [`ui`](../libraries/ui.md): labels, buttons, nested layouts, a text field, dropdowns, the focus ring, the theme, where a named widget was laid out, what a container does with less room than its children want, and a many-line text area that selects, scrolls and hands its shown line back through `Interactions::scrolled`.
 A dropdown at the top of the window picks which of those pages is showing, and that picker is itself one of the elements being shown.
 
-The nine pages are the `ui_demo::Showcase` enumeration in `Showcase.hpp`, and the names the picker lists are one array in the same header, in the same order.
+The ten pages are the `ui_demo::Showcase` enumeration in `Showcase.hpp`, and the names the picker lists are one array in the same header, in the same order.
 How many pages there are is derived from the last enumerator rather than written down, so a page added to the enumeration gains its option without a second list that could drift from the first.
 
 Unlike [`gfx_demo`](gfx_demo.md), which draws a UI without a tick loop at all, this one is an ordinary application of the tick loop: it records, it replays, and every widget it draws is resolved inside the tick path.

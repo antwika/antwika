@@ -281,6 +281,41 @@ namespace
         EXPECT_EQ(wiring.state.caret(), 2U);
     }
 
+    // The area is the second editable widget, told apart by id.
+    TEST(DemoSinkTest, Handle_TypesIntoTheFocusedArea)
+    {
+        Wiring wiring;
+        wiring.show(Showcase::TextArea);
+        wiring.state.setFocus(widgets::kArea);
+        wiring.state.setArea("ab", 2, 2);
+
+        wiring.sink.handle(keyDown(wiring.codec, Key::C));
+
+        EXPECT_EQ(wiring.state.areaText(), "abc");
+        EXPECT_EQ(wiring.state.areaCursor(), 3U);
+        EXPECT_EQ(wiring.state.areaAnchor(), 3U);
+    }
+
+    // The Interactions::scrolled round trip, through the sink.
+    // Asking for a line past the end comes back clamped, once.
+    TEST(DemoSinkTest, Handle_TakesTheLineThePaneSaysItIsShowing)
+    {
+        Wiring wiring;
+        wiring.show(Showcase::TextArea);
+        wiring.state.setAreaScroll(500);
+
+        wiring.sink.handle(tick());
+
+        EXPECT_LT(wiring.state.areaScroll(), 500U);
+
+        // Handed back, the report settles: a second frame is quiet.
+        const auto settled = wiring.state.areaScroll();
+
+        wiring.sink.handle(tick(1));
+
+        EXPECT_EQ(wiring.state.areaScroll(), settled);
+    }
+
     TEST(DemoSinkTest, Handle_SubmitsTheFieldOnEnter)
     {
         Wiring wiring;
