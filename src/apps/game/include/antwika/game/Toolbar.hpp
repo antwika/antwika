@@ -15,6 +15,7 @@
 #include "antwika/game/BuildTool.hpp"
 #include "antwika/game/Camera.hpp"
 #include "antwika/game/CityRatings.hpp"
+#include "antwika/game/MenuItem.hpp"
 
 namespace antwika::game
 {
@@ -38,6 +39,11 @@ namespace antwika::game
     {
         /**
          * @brief Zoom one level out.
+         *
+         * The view controls and the readouts sit on the bottom bar and
+         * the palette down the right, so the numbers below say nothing
+         * about where a button is -- which is the whole point of an id
+         * being symbolic rather than positional.
          */
         inline constexpr WidgetId kZoomOut{1};
 
@@ -81,6 +87,55 @@ namespace antwika::game
                 static_cast<std::uint64_t>(kFirstTool) + kBuildToolCount)};
 
         /**
+         * @brief The closed box of the top bar's game menu.
+         *
+         * Derived from kMenu rather than written out, for the reason
+         * kMenu is derived from kFirstTool: a tool added to the palette
+         * moves every number after it, and deriving is what keeps them
+         * from colliding when it does.
+         */
+        inline constexpr WidgetId kGameMenu{
+            static_cast<WidgetId>(
+                static_cast<std::uint64_t>(kMenu) + 1)};
+
+        /**
+         * @brief The game menu's first item, one per MenuItem.
+         *
+         * antwika::ui names option `n` of a list kFirstMenuItem plus
+         * `n`, so the whole run of kMenuItemCount ids is spoken for.
+         */
+        inline constexpr WidgetId kFirstMenuItem{
+            static_cast<WidgetId>(
+                static_cast<std::uint64_t>(kMenu) + 2)};
+
+        /**
+         * @brief The strip along the top, holding the game menu.
+         *
+         * Named so its area is reported in ui::Frame::rects, which is
+         * how anything asking what the bars leave for the city asks the
+         * layout rather than working it out a second time.
+         */
+        inline constexpr WidgetId kTopBar{
+            static_cast<WidgetId>(
+                static_cast<std::uint64_t>(kFirstMenuItem)
+                + kMenuItemCount)};
+
+        /**
+         * @brief The panel down the right, holding the build palette.
+         */
+        inline constexpr WidgetId kSidePanel{
+            static_cast<WidgetId>(
+                static_cast<std::uint64_t>(kTopBar) + 1)};
+
+        /**
+         * @brief The strip along the bottom, holding the view controls
+         *        and the readouts.
+         */
+        inline constexpr WidgetId kBottomBar{
+            static_cast<WidgetId>(
+                static_cast<std::uint64_t>(kTopBar) + 2)};
+
+        /**
          * @brief Get which button selects a tool.
          * @param tool The tool to ask about.
          * @return That tool's palette button.
@@ -90,6 +145,19 @@ namespace antwika::game
             return static_cast<WidgetId>(
                 static_cast<std::uint64_t>(kFirstTool)
                 + buildToolIndex(tool));
+        }
+
+        /**
+         * @brief Get which option of the game menu an item is.
+         * @param item The item to ask about.
+         * @return That item's option in the dropped-down list.
+         */
+        [[nodiscard]] constexpr WidgetId menuItemWidget(
+            MenuItem item) noexcept
+        {
+            return static_cast<WidgetId>(
+                static_cast<std::uint64_t>(kFirstMenuItem)
+                + menuItemIndex(item));
         }
     } // namespace widgets
 
@@ -142,7 +210,16 @@ namespace antwika::game
             widgets::toolWidget(BuildTool::Doctor),
             widgets::toolWidget(BuildTool::FireStation),
             widgets::toolWidget(BuildTool::EngineerPost),
-            widgets::kMenu),
+            widgets::kMenu,
+            widgets::kGameMenu,
+            widgets::menuItemWidget(MenuItem::NewGame),
+            widgets::menuItemWidget(MenuItem::SaveGame),
+            widgets::menuItemWidget(MenuItem::LoadGame),
+            widgets::menuItemWidget(MenuItem::MainMenu),
+            widgets::menuItemWidget(MenuItem::WorldMap),
+            widgets::kTopBar,
+            widgets::kSidePanel,
+            widgets::kBottomBar),
         "every toolbar widget needs its own id");
 
     // Two tools sharing a caption would be two buttons reading the same.
@@ -184,7 +261,15 @@ namespace antwika::game
     }
 
     /**
-     * @brief The bar of buttons drawn over the grid.
+     * @brief The furniture drawn round the grid.
+     *
+     * Three pieces against one canvas: a strip along the top carrying
+     * the game menu and the way into the menu modal, a panel down the
+     * right carrying the build palette, and a strip along the bottom
+     * carrying the view controls and every readout. What is left in the
+     * middle is the city, and nothing is drawn over it -- the gap is a
+     * spacer, which fills no pixels and so covers none, which is what
+     * keeps a click there the grid's.
      *
      * A pure function of the canvas, the pointer and the simulation
      * state it reports, so the same arguments always produce the same
@@ -234,13 +319,18 @@ namespace antwika::game
          * which is what the pause button is labelled from.
          * @param tick The tick the bar reports, which is the tick this
          * describe() is part of.
-         * @param ratings How the city is doing, reported as two labels
-         * after the menu button. A pure function of the World, so a
+         * @param ratings How the city is doing, reported as the last two
+         * readouts on the bottom bar. A pure function of the World, so a
          * replay regenerates it exactly as it regenerates the zoom --
          * see CityRatings.
+         * @param menuOpen Whether the game menu's list is dropped down.
+         * **Simulation state, in the camera's sense**: it decides what a
+         * click at a pixel means, so it is passed in rather than kept
+         * here, is written inside the tick path by UiSink, and is never
+         * persisted -- antwika::ui retains nothing of the kind either.
          * @return The drawing commands and what the pointer did.
          *
-         * The last four are defaulted so that a caller with nothing to
+         * The last five are defaulted so that a caller with nothing to
          * say about them -- a test whose subject is the zoom, or a
          * layout assertion -- writes only what it means.
          */
@@ -251,7 +341,8 @@ namespace antwika::game
             std::optional<BuildTool> selected = BuildTool::Road,
             bool paused = false,
             antwika::time::Tick tick = 0,
-            CityRatings ratings = {}) const;
+            CityRatings ratings = {},
+            bool menuOpen = false) const;
 
     private:
         const Translator &translator;

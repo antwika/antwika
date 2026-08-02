@@ -147,3 +147,43 @@ TEST(NullWindowTest, Close_IsIdempotentAndOnlyLogsOnce)
 
     EXPECT_FALSE(window.isOpen());
 }
+
+// There is no screen to fill, so the request is remembered.
+// Which is how WindowDesc::resizable is honoured here too.
+TEST(NullWindowTest, IsFullscreen_IsFalseByDefault)
+{
+    NiceMock<MockLogger> logger;
+    NullWindow window(logger, kWindowId, demoDesc());
+
+    EXPECT_FALSE(window.isFullscreen());
+}
+
+TEST(NullWindowTest, IsFullscreen_IsWhatTheDescriptionAskedFor)
+{
+    NiceMock<MockLogger> logger;
+    NullWindow window(
+        logger,
+        kWindowId,
+        WindowDesc{
+            .title = "Antwika",
+            .size = {.width = 640, .height = 480},
+            .fullscreen = true});
+
+    EXPECT_TRUE(window.isFullscreen());
+}
+
+TEST(NullWindowTest, SetFullscreen_ChangesNeitherSize)
+{
+    NiceMock<MockLogger> logger;
+    NullWindow window(logger, kWindowId, demoDesc());
+
+    window.setFullscreen(true);
+
+    EXPECT_TRUE(window.isFullscreen());
+    EXPECT_EQ(window.size(), demoDesc().size);
+    EXPECT_EQ(window.configuredSize(), demoDesc().size);
+
+    window.setFullscreen(false);
+
+    EXPECT_FALSE(window.isFullscreen());
+}

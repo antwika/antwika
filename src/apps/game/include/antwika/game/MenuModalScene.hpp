@@ -40,7 +40,7 @@ namespace antwika::game
     } // namespace modalWidgets
 
     /**
-     * @brief The menu drawn over a city, opened by F10 or by the bar.
+     * @brief The menu drawn over a city, opened by the bar's menu button.
      *
      * **This is a modal rather than a mode**, which is the one thing
      * that separates it from MainMenuScene: the city is still there

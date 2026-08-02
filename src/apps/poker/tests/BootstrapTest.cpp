@@ -180,9 +180,13 @@ namespace
             return Size{.width = 1024, .height = 640};
         }
 
+        [[nodiscard]] bool isFullscreen() const override { return false; }
+
         [[nodiscard]] IRenderer &renderer() override { return drawnInto; }
 
         void setTitle(std::string_view) override {}
+
+        void setFullscreen(bool) override {}
 
         void close() override { open = false; }
 

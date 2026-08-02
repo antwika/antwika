@@ -107,6 +107,8 @@ namespace
         expectMemberCompared(
             base,
             [](BuildingView &b) { b.level = HousingLevel::Cottage; });
+        expectMemberCompared(
+            base, [](BuildingView &b) { b.population = 3; });
     }
 
     TEST(SceneSnapshotTest, BuildingSpriteEqualityComparesEveryField)
@@ -132,6 +134,8 @@ namespace
         expectMemberCompared(
             base,
             [](BuildingSprite &b) { b.level = HousingLevel::Cottage; });
+        expectMemberCompared(
+            base, [](BuildingSprite &b) { b.population = 3; });
     }
 
     [[nodiscard]] SceneSnapshot populatedSnapshot()

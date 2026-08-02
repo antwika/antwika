@@ -15,6 +15,7 @@
 #include "antwika/game/BuildingKind.hpp"
 #include "antwika/game/Coverage.hpp"
 #include "antwika/game/HousingLevel.hpp"
+#include "antwika/game/HousingQuery.hpp"
 #include "antwika/game/Resource.hpp"
 #include "antwika/game/ResourceBar.hpp"
 #include "antwika/game/Service.hpp"
@@ -121,6 +122,23 @@ namespace antwika::game
                 MessageId::GameReadoutLevel, args);
         }
 
+        // Against the room the tier has, rather than as a bare count.
+        // "people 3" is a number a reader cannot do anything with.
+        // Whether a house is full is what decides if the district grows.
+        // And the ceiling is the tier's own, which the line above names.
+        [[nodiscard]] std::string occupancyText(
+            const Translator &translator,
+            HousingLevel level,
+            std::int32_t living)
+        {
+            const auto people = std::to_string(living);
+            const auto room = std::to_string(populationCapacityOf(level));
+            const std::array<std::string_view, 2> args{people, room};
+
+            return translator.formatted(
+                MessageId::GameReadoutOccupancy, args);
+        }
+
         // Per cent rather than the ticks the component counts.
         // A countdown in ticks is a number about the simulation.
         // What a reader wants is how much of the service is left.
@@ -164,12 +182,23 @@ namespace antwika::game
                 // Only where somebody lives, since only there is a tier.
                 // A well is on HousingLevel::Tent and always will be.
                 // Saying so would be saying something untrue about it.
+                // The occupancy rides on the very same test as the tier.
+                // Both are facts about a household, and a well has none.
+                // So one condition answers for the pair of them.
                 if (housesPeople(building.kind))
                 {
                     said.push_back(
                         Said{ // GCOVR_EXCL_LINE
                             .text =
                                 levelText(translator, building.level),
+                            .colour = kReadoutTitle});
+
+                    said.push_back(
+                        Said{ // GCOVR_EXCL_LINE
+                            .text = occupancyText(
+                                translator,
+                                building.level,
+                                building.population),
                             .colour = kReadoutTitle});
                 }
 

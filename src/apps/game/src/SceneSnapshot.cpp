@@ -66,6 +66,7 @@ namespace antwika::game
             // Which is a landing pad on a line nothing reaches.
             const auto coverage = coverageOf(world, entity).ticksLeft;
             const auto level = levelOf(world, entity);
+            const auto living = populationAt(world, entity);
 
             snapshot.buildings.push_back(
                 BuildingSprite{
@@ -73,7 +74,8 @@ namespace antwika::game
                     .kind = building.kind,
                     .stock = building.stock,
                     .coverage = coverage,
-                    .level = level});
+                    .level = level,
+                    .population = living});
         }
 
         // **Painter's order, no longer optional.**
@@ -125,13 +127,15 @@ namespace antwika::game
             // Read out here for the reason snapshotOf()'s pair is.
             const auto coverage = coverageOf(world, entity).ticksLeft;
             const auto level = levelOf(world, entity);
+            const auto living = populationAt(world, entity);
 
             views.push_back(
                 BuildingView{
                     .at = world.get<Cell>(entity),
                     .kind = world.get<Building>(entity).kind,
                     .coverage = coverage,
-                    .level = level});
+                    .level = level,
+                    .population = living});
         }
 
         return views;

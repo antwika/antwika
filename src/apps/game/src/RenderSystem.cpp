@@ -1,6 +1,7 @@
 #include "antwika/game/RenderSystem.hpp"
 
 #include <antwika/gfx/Color.hpp>
+#include <antwika/gfx/ViewportRenderer.hpp>
 #include <antwika/ui/Painter.hpp>
 
 #include "antwika/game/BuildGhost.hpp"
@@ -18,6 +19,12 @@ namespace antwika::game
         // A mode owns the whole screen, so the rest is filled here.
         constexpr antwika::gfx::Color kWorldBackdrop{
             .red = 10, .green = 12, .blue = 18};
+
+        // What is left over when the window is not the canvas's shape.
+        // Painted after the picture rather than before it.
+        // So a tile reaching past the canvas's edge is covered by it.
+        constexpr antwika::gfx::Color kSurround{
+            .red = 0, .green = 0, .blue = 0};
     } // namespace
 
     RenderSystem::RenderSystem(const RenderSetup &setup) : setup(setup)
@@ -64,7 +71,13 @@ namespace antwika::game
 
     void RenderSystem::draw(antwika::animation::Progress subTick)
     {
-        auto &renderer = setup.window.renderer();
+        // **The one place in this application reading the reported size.**
+        // And it reads it to place a picture and nothing else.
+        // Every call below is in canvas pixels, exactly as before.
+        // This scales and centres them, after every decision is made.
+        // A new one each frame, so a resize needs no handling of its own.
+        antwika::gfx::ViewportRenderer view(
+            setup.window.renderer(), setup.window.size(), setup.canvas);
 
         // Counted here rather than in update().
         // This is the one thing that runs exactly once per frame.
@@ -76,19 +89,28 @@ namespace antwika::game
             setup.fps->get().record();
         }
 
+        drawMode(view, subTick);
+
+        // Last, so whatever reached past the canvas is covered.
+        // Nothing at all when the window is the canvas's own shape.
+        view.fillSurround(kSurround);
+        view.present();
+    }
+
+    void RenderSystem::drawMode(
+        IRenderer &renderer, antwika::animation::Progress subTick)
+    {
         if (setup.mode.mode() == AppMode::MainMenu)
         {
             // The whole screen, with no grid behind it.
             // The menu is a mode rather than a modal -- see AppMode.hpp.
             setup.menuScene.draw(renderer, setup.menuOverlay.commands());
-            renderer.present();
             return;
         }
 
         if (setup.mode.mode() == AppMode::SaveLoad)
         {
             setup.saveScene.draw(renderer, setup.saveOverlay.commands());
-            renderer.present();
             return;
         }
 
@@ -102,18 +124,15 @@ namespace antwika::game
                 renderer,
                 setup.canvas,
                 worldSnapshotOf(setup.cities.world()));
-            renderer.present();
             return;
         }
 
-        drawGrid(subTick);
-        renderer.present();
+        drawGrid(renderer, subTick);
     }
 
-    void RenderSystem::drawGrid(antwika::animation::Progress subTick)
+    void RenderSystem::drawGrid(
+        IRenderer &renderer, antwika::animation::Progress subTick)
     {
-        auto &renderer = setup.window.renderer();
-
         // Worked out here rather than staged into the World.
         // The hint is a value no replay reproduces.
         // Folding it in would make the two disagree -- see BuildGhost.
@@ -152,8 +171,11 @@ namespace antwika::game
             latest,
             setup.overlay.pointerOverUi());
 
+        // Against the configured canvas, never the reported size.
+        // The scene's own culling is then the same on every window.
+        // And what the viewport does to it is a scale, applied after.
         setup.scene.draw(
-            renderer, setup.window.size(), latest, setup.atlas, subTick);
+            renderer, setup.canvas, latest, setup.atlas, subTick);
 
         // Over the grid, and last, so the bar reads as being in front.
         // Laid out against the size the window was asked for.

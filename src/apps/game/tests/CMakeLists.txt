@@ -32,6 +32,7 @@ add_executable(antwika_game_tests
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/MainMenuScene.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/MainMenuSink.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/MarketSystem.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/MenuCommands.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/MenuModalScene.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/ModeGatedSink.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/PathIndex.cpp
@@ -117,6 +118,7 @@ add_executable(antwika_game_tests
     IsoProjectionTest.cpp
     MainMenuSceneTest.cpp
     MainMenuSinkTest.cpp
+    MenuCommandsTest.cpp
     MenuModalSceneTest.cpp
     SessionGateTest.cpp
     PathIndexTest.cpp
@@ -159,6 +161,7 @@ add_executable(antwika_game_tests
     ToolLabelTest.cpp
     UiOverlayTest.cpp
     ValueEqualityTest.cpp
+    ViewportReplayTest.cpp
     UiSinkTest.cpp
     WalkerMotionTest.cpp
     WalkerSystemTest.cpp
@@ -190,6 +193,7 @@ target_link_libraries(antwika_game_tests
         antwika::gfx::tests::mocks
         antwika::i18n
         antwika::input
+        antwika::input::tests::fakes
         antwika::log::tests::mocks
         antwika::pathfinding
         antwika::replay

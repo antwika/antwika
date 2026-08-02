@@ -445,6 +445,22 @@ namespace antwika::i18n
             return "TaskWorkerBlocked";
         case MessageId::TaskWorkerCompleted:
             return "TaskWorkerCompleted";
+        case MessageId::GameToolbarGameMenu:
+            return "GameToolbarGameMenu";
+        case MessageId::GameToolbarBuild:
+            return "GameToolbarBuild";
+        case MessageId::GameMenuItemNewGame:
+            return "GameMenuItemNewGame";
+        case MessageId::GameMenuItemSaveGame:
+            return "GameMenuItemSaveGame";
+        case MessageId::GameMenuItemLoadGame:
+            return "GameMenuItemLoadGame";
+        case MessageId::GameMenuItemMainMenu:
+            return "GameMenuItemMainMenu";
+        case MessageId::GameMenuItemWorldMap:
+            return "GameMenuItemWorldMap";
+        case MessageId::GameReadoutOccupancy:
+            return "GameReadoutOccupancy";
         }
 
         return "?";

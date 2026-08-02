@@ -35,6 +35,7 @@
 #include "antwika/game/GridExtent.hpp"
 #include "antwika/game/IsoProjection.hpp"
 #include "antwika/game/MainMenuScene.hpp"
+#include "antwika/game/MenuItem.hpp"
 #include "antwika/game/UiCanvas.hpp"
 #include "antwika/game/UiOverlay.hpp"
 #include "antwika/game/PathIndex.hpp"
@@ -863,12 +864,14 @@ TEST(PrintSummaryTest, WritesEveryBuildingAndWhatItIs)
 // It then places at the cell the pixel below maps to.
 // A recording is only as good as the layout it was made against.
 // So both pixels are pinned here rather than rediscovered by hand.
+// The palette is a panel down the right now.
+// Which is why this pixel moved, and why the file was recorded again.
 TEST(BootstrapTest, Bootstrap_TheDemoReplaysPaletteClickHitsTheHouse)
 {
     const antwika::game::Toolbar toolbar{kTranslator};
     const Camera camera;
     const antwika::ui::Pointer pointer{
-        .position = antwika::gfx::Point{.x = 88, .y = 56}};
+        .position = antwika::gfx::Point{.x = 968, .y = 108}};
 
     EXPECT_EQ(
         toolbar.describe(antwika::game::kUiCanvas, pointer, camera)
@@ -937,4 +940,113 @@ TEST(BootstrapTest, Bootstrap_LaysAWholeRunOfRoadFromOneDrag)
 
     // The drag held nothing, so the run was never paused at all.
     EXPECT_FALSE(harness.pause.paused());
+}
+
+// The top bar's game menu, through the front door.
+// Two clicks in the file, and no event of any kind for either.
+namespace
+{
+    [[nodiscard]] antwika::input::Position barPixelOn(
+        antwika::ui::WidgetId id, bool menuOpen)
+    {
+        const antwika::game::Toolbar toolbar{kTranslator};
+
+        const auto centre = antwika::game::tests::widgetCentre(
+            toolbar.describe(
+                antwika::game::kUiCanvas,
+                antwika::ui::Pointer{},
+                Camera(),
+                antwika::game::BuildTool::Road,
+                false,
+                0,
+                antwika::game::CityRatings{},
+                menuOpen),
+            id);
+
+        if (!centre.has_value())
+        {
+            return antwika::input::Position{};
+        }
+
+        return antwika::input::Position{.x = centre->x, .y = centre->y};
+    }
+
+    struct BarHarness
+    {
+        NiceMock<MockLogger> logger;
+        NiceMock<MockEventSink> eventSink;
+        InputEventCodec codec;
+        Camera camera;
+        PathIndex paths;
+        antwika::game::BuildingIndex built;
+        AppModeState mode{AppMode::CityMap};
+        antwika::game::PauseState pause;
+        antwika::game::UiOverlay overlay{antwika::game::kUiCanvas};
+        antwika::game::WorldMapState cities{
+            antwika::game::generateWorldMap(kWorld)};
+
+        antwika::game::GameSummary run(ReplaySource &source)
+        {
+            return antwika::game::bootstrap(
+                antwika::game::GameConfig{
+                    .logger = logger,
+                    .eventSink = eventSink,
+                    .inputSource = source,
+                    .codec = codec,
+                    .extent = kExtent,
+                    .camera = camera,
+                    .paths = paths,
+                    .built = built,
+                    .mode = mode,
+                    .pause = pause,
+                    .maxTicks = 20,
+                    .overlay = overlay,
+                    .world = cities});
+        }
+    };
+} // namespace
+
+TEST(BootstrapTest, Bootstrap_TheBarsGameMenuLeavesTheCityForTheWorld)
+{
+    BarHarness harness;
+    const InputEventCodec codec;
+
+    ReplaySource source({
+        leftPressAt(
+            codec, 0, barPixelOn(antwika::game::widgets::kGameMenu, false)),
+        leftPressAt(
+            codec,
+            1,
+            barPixelOn(
+                antwika::game::widgets::menuItemWidget(
+                    antwika::game::MenuItem::WorldMap),
+                true)),
+        TickEvent{
+            .tick = 3,
+            .event = Event{.name = antwika::engine::events::kStop}},
+    });
+
+    harness.run(source);
+
+    EXPECT_EQ(antwika::game::AppMode::WorldMap, harness.mode.mode());
+    EXPECT_FALSE(harness.cities.cityOpen());
+}
+
+// And the click that opened the list is not also the city's.
+TEST(BootstrapTest, Bootstrap_OpeningTheBarsGameMenuLaysNothing)
+{
+    BarHarness harness;
+    const InputEventCodec codec;
+
+    ReplaySource source({
+        leftPressAt(
+            codec, 0, barPixelOn(antwika::game::widgets::kGameMenu, false)),
+        TickEvent{
+            .tick = 2,
+            .event = Event{.name = antwika::engine::events::kStop}},
+    });
+
+    const auto summary = harness.run(source);
+
+    EXPECT_TRUE(summary.paths.empty());
 }
