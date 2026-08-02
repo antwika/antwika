@@ -205,7 +205,15 @@ namespace
     [[nodiscard]] std::vector<TickEvent> throughAFile(
         std::vector<TickEvent> recorded)
     {
-        const ScratchFile file{"antwika_sudoku_replay.json"};
+        // Named after the case that is running.
+        // antwika_bundle_test registers every case with CTest.
+        // So two cases calling this are two parallel processes.
+        // One fixed name is one file they would fight over.
+        const ScratchFile file{
+            std::string{"antwika_sudoku_replay_"}
+            + ::testing::UnitTest::GetInstance()->current_test_info()
+                  ->name()
+            + ".json"};
         antwika::replay::saveReplayFile(std::move(recorded), file.string());
 
         return antwika::replay::loadReplayFile(file.string());
