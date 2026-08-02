@@ -141,8 +141,12 @@ namespace antwika::pattern
         /**
          * @brief Order two positions by value.
          *
-         * Cross-multiplied in a wider integer, so ordering never throws
-         * however large the denominators have grown.
+         * Both sides are expanded as continued fractions rather than
+         * cross-multiplied, since cross-multiplying needs an integer
+         * twice as wide and `-Wpedantic` refuses the one GCC and Clang
+         * offer.
+         * Walking instead of widening is exact, cannot overflow, and so
+         * never throws however large the denominators have grown.
          *
          * @param other The position to compare against.
          * @return How this one orders against it.

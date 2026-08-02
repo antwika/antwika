@@ -56,7 +56,7 @@ TEST(RenderSystemTest, Update_DrawsTheWorldsCellsAndPresents)
     NiceMock<MockRenderer> renderer;
     NiceMock<MockWindow> window;
     ON_CALL(window, renderer()).WillByDefault(ReturnRef(renderer));
-    ON_CALL(window, size())
+    ON_CALL(window, configuredSize())
         .WillByDefault(Return(Size{.width = 20, .height = 20}));
 
     const InSequence sequence;
@@ -82,8 +82,9 @@ TEST(RenderSystemTest, Update_DrawsTheWorldsCellsAndPresents)
     system.update(world, 0);
 }
 
-// A window the user resized must not need a new render system.
-TEST(RenderSystemTest, Update_ReReadsTheWindowSizeEveryTick)
+// The size is asked for again every tick rather than kept.
+// So this system holds no copy of a number the window owns.
+TEST(RenderSystemTest, Update_ReReadsTheConfiguredSizeEveryTick)
 {
     NiceMock<MockLogger> logger;
     World world(logger);
@@ -93,9 +94,35 @@ TEST(RenderSystemTest, Update_ReReadsTheWindowSizeEveryTick)
     NiceMock<MockRenderer> renderer;
     NiceMock<MockWindow> window;
     ON_CALL(window, renderer()).WillByDefault(ReturnRef(renderer));
-    EXPECT_CALL(window, size())
-        .WillOnce(Return(Size{.width = 20, .height = 20}))
-        .WillOnce(Return(Size{.width = 40, .height = 40}));
+    EXPECT_CALL(window, configuredSize())
+        .Times(2)
+        .WillRepeatedly(Return(Size{.width = 20, .height = 20}));
+
+    const BoardScene scene;
+    RenderSystem system(window, scene, 2, 2);
+    system.update(world, 0);
+    system.update(world, 1);
+}
+
+// Where a cell is drawn and which cell a click lands in are one.
+// One function, and only while the two take one size.
+// PointerToggleSink lays out from the configured size.
+// A window manager handing back a size of its own must move nothing.
+// See docs/resizable-windows.md.
+TEST(RenderSystemTest, Update_DrawsAgainstTheConfiguredSizeNotTheReported)
+{
+    NiceMock<MockLogger> logger;
+    World world(logger);
+    Grid grid(world, 2, 2);
+    seedOneLiveCell(world, grid);
+
+    NiceMock<MockRenderer> renderer;
+    NiceMock<MockWindow> window;
+    ON_CALL(window, renderer()).WillByDefault(ReturnRef(renderer));
+    ON_CALL(window, configuredSize())
+        .WillByDefault(Return(Size{.width = 20, .height = 20}));
+    ON_CALL(window, size())
+        .WillByDefault(Return(Size{.width = 40, .height = 40}));
 
     const InSequence sequence;
     EXPECT_CALL(
@@ -112,25 +139,10 @@ TEST(RenderSystemTest, Update_ReReadsTheWindowSizeEveryTick)
                 .origin = {.x = 10, .y = 0},
                 .size = {.width = 10, .height = 10}},
             kAliveCell));
-    EXPECT_CALL(
-        renderer,
-        drawRect(
-            Rect{
-                .origin = {.x = 0, .y = 0},
-                .size = {.width = 40, .height = 40}},
-            kDeadCells));
-    EXPECT_CALL(
-        renderer,
-        drawRect(
-            Rect{
-                .origin = {.x = 20, .y = 0},
-                .size = {.width = 20, .height = 20}},
-            kAliveCell));
 
     const BoardScene scene;
     RenderSystem system(window, scene, 2, 2);
     system.update(world, 0);
-    system.update(world, 1);
 }
 
 // Rendering is a projection of state, so it must not become an input to it.
@@ -144,7 +156,7 @@ TEST(RenderSystemTest, Update_LeavesTheWorldUnchanged)
     NiceMock<MockRenderer> renderer;
     NiceMock<MockWindow> window;
     ON_CALL(window, renderer()).WillByDefault(ReturnRef(renderer));
-    ON_CALL(window, size())
+    ON_CALL(window, configuredSize())
         .WillByDefault(Return(Size{.width = 20, .height = 20}));
 
     const auto before = antwika::life::readBoard(world, grid);

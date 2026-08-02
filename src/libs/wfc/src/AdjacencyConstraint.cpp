@@ -22,9 +22,22 @@ namespace antwika::wfc
         Domain &leftDomain = wave[left];
         Domain &rightDomain = wave[right];
 
-        std::vector<std::size_t> leftToRemove;
-        for (const std::size_t leftValue : leftDomain)
+        // Removed as they are found, with no remove-list to defer it.
+        // A left value's verdict reads rightDomain and never leftDomain.
+        // So clearing a bit behind the cursor changes no later verdict.
+        // The second pass is the mirror of that.
+        // It reads only leftDomain, final by the time it starts.
+        // This is the solver's hottest loop and now allocates nothing.
+        // Scanning the alphabet, not the domain, is what allows that.
+        const std::size_t leftAlphabet = leftDomain.alphabetSize();
+        for (std::size_t leftValue = 0; leftValue < leftAlphabet;
+             ++leftValue)
         {
+            if (!leftDomain.contains(leftValue))
+            {
+                continue;
+            }
+
             bool hasCompatible = false;
             for (const std::size_t rightValue : rightDomain)
             {
@@ -36,21 +49,23 @@ namespace antwika::wfc
             }
             if (!hasCompatible)
             {
-                leftToRemove.push_back(leftValue);
+                leftDomain.remove(leftValue);
             }
-        }
-        for (const std::size_t value : leftToRemove)
-        {
-            leftDomain.remove(value);
         }
         if (leftDomain.isEmpty())
         {
             return false;
         }
 
-        std::vector<std::size_t> rightToRemove;
-        for (const std::size_t rightValue : rightDomain)
+        const std::size_t rightAlphabet = rightDomain.alphabetSize();
+        for (std::size_t rightValue = 0; rightValue < rightAlphabet;
+             ++rightValue)
         {
+            if (!rightDomain.contains(rightValue))
+            {
+                continue;
+            }
+
             bool hasCompatible = false;
             for (const std::size_t leftValue : leftDomain)
             {
@@ -62,12 +77,8 @@ namespace antwika::wfc
             }
             if (!hasCompatible)
             {
-                rightToRemove.push_back(rightValue);
+                rightDomain.remove(rightValue);
             }
-        }
-        for (const std::size_t value : rightToRemove)
-        {
-            rightDomain.remove(value);
         }
         // Unreachable in practice.
         // Any value removed here had no compatible leftValue.

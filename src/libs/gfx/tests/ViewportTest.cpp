@@ -152,6 +152,32 @@ TEST(ViewportTest, ToCanvas_AnswersOutsideTheCanvasForAPointOnABar)
     EXPECT_LT(onBar.x, 0);
 }
 
+// The one pixel of bar the picture is about to start at.
+// Truncating towards zero used to call it column 0, on the canvas.
+// WindowPointerMapping feeds the recorder.
+// So that was a click in the bar landing on whatever the edge holds.
+TEST(ViewportTest, ToCanvas_AnswersOutsideTheCanvasOnePixelIntoAPillar)
+{
+    const auto viewport =
+        viewportFor(Size{.width = 2148, .height = 1280}, kCanvas);
+
+    ASSERT_EQ(viewport.offset, (Point{50, 0}));
+
+    EXPECT_EQ(viewport.toCanvas(Point{.x = 50, .y = 0}).x, 0);
+    EXPECT_EQ(viewport.toCanvas(Point{.x = 49, .y = 0}).x, -1);
+}
+
+TEST(ViewportTest, ToCanvas_AnswersOutsideTheCanvasOnePixelIntoALetterbox)
+{
+    const auto viewport =
+        viewportFor(Size{.width = 2048, .height = 1380}, kCanvas);
+
+    ASSERT_EQ(viewport.offset, (Point{0, 50}));
+
+    EXPECT_EQ(viewport.toCanvas(Point{.x = 0, .y = 50}).y, 0);
+    EXPECT_EQ(viewport.toCanvas(Point{.x = 0, .y = 49}).y, -1);
+}
+
 TEST(ViewportTest, ToWindowScale_LeavesAScaleOfZeroAlone)
 {
     const auto viewport =

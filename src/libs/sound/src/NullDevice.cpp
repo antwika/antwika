@@ -1,13 +1,7 @@
 #include "antwika/sound/NullDevice.hpp"
 
-#include <algorithm>
-#include <array>
-#include <cstddef>
-#include <span>
-#include <vector>
-
-#include "antwika/sound/SampleBuffer.hpp"
 #include "antwika/sound/SoundError.hpp"
+#include "RenderInChunks.hpp"
 
 namespace antwika::sound
 {
@@ -43,32 +37,14 @@ namespace antwika::sound
             return 0;
         }
 
-        // One scratch buffer per call rather than one per device.
-        // Nothing here is on a real-time path.
-        // A clock would be state a test has to reason about.
-        std::vector<std::vector<float>> planes(
-            wave.channels, std::vector<float>(buffer, 0.0F));
-
-        std::vector<std::span<float>> views;
-        views.reserve(planes.size());
-
-        for (auto &plane : planes)
-        {
-            views.emplace_back(plane);
-        }
-
-        FrameCount done = 0;
-
-        while (done < frames)
-        {
-            const auto chunk = std::min<FrameCount>(buffer, frames - done);
-
-            sink->render(
-                SampleBuffer{.channels = views, .frames = chunk},
-                played + done);
-
-            done += chunk;
-        }
+        // A rendered chunk goes nowhere, which is the whole device.
+        const auto done = detail::renderInChunks(
+            *sink,
+            wave.channels,
+            buffer,
+            frames,
+            played,
+            [](const detail::Planes &, FrameCount) {});
 
         played += done;
         return done;

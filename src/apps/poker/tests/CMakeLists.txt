@@ -12,7 +12,6 @@ add_executable(antwika_poker_tests
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/TableScene.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/TableSnapshot.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/WatchOptions.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/../src/WindowCloseSource.cpp
     AgentStyleTest.cpp
     BankrollLedgerTest.cpp
     BootstrapTest.cpp
@@ -27,7 +26,6 @@ add_executable(antwika_poker_tests
     TableSceneTest.cpp
     TableSnapshotTest.cpp
     WatchOptionsTest.cpp
-    WindowCloseSourceTest.cpp
 )
 
 target_include_directories(antwika_poker_tests
@@ -37,6 +35,7 @@ target_include_directories(antwika_poker_tests
 
 target_link_libraries(antwika_poker_tests
     PRIVATE
+        antwika::app
         antwika::cli
         antwika::engine
         antwika::event

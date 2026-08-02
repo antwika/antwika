@@ -21,7 +21,8 @@ A networked session that is recorded therefore replays **single-player, with no 
 
 Three corollaries, each of which rules out a whole family of designs:
 
-- **No wall clock may decide what is computed.** Latency and arrival order may decide what is *drawn* — `game::FrameMeter`'s situation exactly — and nothing else. Timeouts are counted in ticks.
+- **No wall clock may decide what is computed.** Latency and arrival order may decide what is *drawn* — `game::FrameMeter`'s situation exactly — and nothing else.
+  Timeouts are counted in ticks.
 - **A peer dropping is a decision every peer must reach identically.** Each one timing out on its own clock is a divergence with the symptom nowhere near the cause.
 - **No thread.** This codebase has no concurrency model, and a socket thread would be the second one.
 
@@ -102,6 +103,29 @@ It is deliberately **not** selectable as `ANTWIKA_NETWORK_BACKEND`, since a buil
 
 It does **not** follow `gfx_backend` the way input does, for `sound_backend`'s reason rather than a new one: a build asking for sdl3 windows has said nothing whatever about wanting to open a socket.
 
+It is picked the same way the other two are, and remembered the same way:
+
+```sh
+scripts/select_backend.sh network sockets
+scripts/build.sh
+```
+
+By hand, the difference from the sdl3 commands is the folder var and the lockfile.
+A sockets build leaves `gfx_backend` at `null`, so the configuration is named after the option it actually differs by, and it adds no package at all, so it resolves against the default configuration's lockfile:
+
+```sh
+conan install . -of build-sockets -o network_backend=sockets \
+  -c tools.cmake.cmake_layout:build_folder_vars="['options.network_backend']" \
+  -pr:b=./profiles/build/${CONAN_PROFILE} \
+  -pr:h=./profiles/host/${CONAN_PROFILE} \
+  --build=missing -s build_type=Release --lockfile=conan.lock
+
+cmake --preset conan-network_backend_sockets-release
+cmake --build build-sockets -j24 --target antwika_network_backend_sockets_tests
+```
+
+CI's backends job has a `sockets` leg that runs exactly that and then runs the suite, which is what keeps this backend from being compiled by nobody.
+
 ## Non-obvious decisions
 
 **A link stores both of its names.**
@@ -124,6 +148,10 @@ The alternative — a backend pretending to connect so a test goes green — is 
 Nothing in the suite assumes delivery is immediate.
 Every wait is a bounded run of pumps at *both* ends, so a transport that takes a few of them to settle passes the same tests an in-process one does.
 
+**What arrived before a peer left is still owed to the caller**, which is `Send_ThenDisconnectStillArrives`.
+Send-then-disconnect is one message on a stream transport: the payload and the close land in the receiver's buffer together, so a backend that reacted to the close first dropped a frame that had already arrived whole — which is exactly what `SocketsHost` did until the suite grew a case for it.
+Stating it in the suite rather than fixing it in the one backend is the point: `LoopbackHost` is held to the same rule, so a caller can rely on it whichever transport a build selected.
+
 **Writing the second backend is what found the first one's contract gaps**, which is the argument for the suite rather than a story about it.
 Three things came out of it: `connect()` refusing an unreachable endpoint was a promise only an in-process backend could keep; `endpoint()` returning the requested port was a promise only a backend that never binds could keep; and the suite pumping one end of a link had been passing because `LoopbackBackend` delivered on `send()` where a socket cannot.
 Each was fixed in the contract rather than papered over with a capability flag, since a capability should say what a backend *can do* rather than which of two behaviours it has.
@@ -144,7 +172,8 @@ What TCP costs in exchange is message boundaries, so a payload travels behind a 
 The two operating systems disagree about the handle type, how one is closed, how one is made non-blocking, and where the last error lives — and about nothing else this backend does, so everything above that file is one code path.
 Winsock's process-wide start-up lives there too, as a function-local static, following `backends/sdl3`'s runtime archive: a framework directory owns that framework's global state.
 
-Nothing here blocks. Every socket is non-blocking and `pump()` polls with a zero timeout, because a tick may not sleep.
+Nothing here blocks.
+Every socket is non-blocking and `pump()` polls with a zero timeout, because a tick may not sleep.
 
 ## What is not here yet
 

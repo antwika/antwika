@@ -103,7 +103,9 @@ namespace
             kCanvas,
             plainTheme(),
             pointer,
-            Keyboard{.keys = {Key::Backspace}, .typed = "c"},
+            Keyboard{
+                .keys = {Key::Character, Key::Backspace},
+                .typed = "c"},
             kField};
 
         ui.textField({.id = kField, .text = kHeld, .focused = true});

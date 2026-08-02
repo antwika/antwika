@@ -82,7 +82,12 @@ Handing the colour over rather than the coverage is deliberate: a backend that h
 `antwika::gfx` cannot ask `antwika::app` where an asset lives — `app` depends on `gfx` — and it opens no files at all, for the reason `PngReader` takes a stream.
 So `antwika_embed_binary()` in [`cmake/AntwikaEmbedBinary.cmake`](../../cmake/AntwikaEmbedBinary.cmake) turns `assets/fonts/RobotoMono-Regular.ttf` into a C++ source of bytes at configure time, and `BuiltInFont.cpp` parses it once.
 The generated source is data and nothing else — no function, no initialiser that runs — so it adds nothing for the coverage gate to measure, and it is written by CMake itself rather than by a tool the build has to run, which is what keeps a cross build to MinGW from needing a host-built generator.
-An application that wants a real font *of its own* still does what [`font`](font.md) says: bundles it with `antwika_bundle_app()`, opens it with `app::assetPath()` and draws it through `AtlasText.hpp`.
+
+**`AtlasText.hpp` and `glyphAtlasBitmap()` are a route no application in this tree takes yet.**
+An application that wants a real font *of its own* does what [`font`](font.md) says: bundles it with `antwika_bundle_app()`, opens it with `app::assetPath()`, expands the atlas into a `Bitmap` with `glyphAtlasBitmap()`, uploads that once and measures and blits through `AtlasText.hpp`.
+None has wanted one, because every layout here is built on the fixed cell `textSize()` measures, and a proportional font would change what a recorded click lands on.
+Both surfaces are therefore **speculative**: fully tested, so the coverage gate says nothing about the vacancy either way, and named as unadopted here for the reason [`tween`](tween.md) names its own non-users — a page that reads as a description of live code when it is not is what costs the next reader an afternoon.
+What keeps them rather than deletes them is the argument `AtlasText.hpp` writes out about a font's metrics never reaching a layout, which is the thing worth having in the tree whether or not anything blits from it.
 
 **The cells are cached per scale, in a static, on purpose.**
 Text is drawn every frame and rasterising 95 glyphs is not frame work, so `glyphCells(scale)` builds one set of cells the first time a scale is drawn at and keeps it in a function-local `std::map` — a `map` rather than a `vector` because a reference handed out has to survive the arrival of every later scale.

@@ -51,6 +51,11 @@ A press, a release, a move, a notch — never "this button is currently down".
 That is what lets a queue-based framework (SDL) and a state-polling one (raylib, which synthesises edges by diffing) implement the same interface.
 An application that wants held state derives it from the edges, which is what `InputState` does.
 
+**A chord is a property of the press edge, not of the end of the tick.**
+Each edge carries the `KeyModifiers` that were held when it happened, so `Keyboard`/`Mouse` keep that alongside the press bit and hand it back as `pressModifiers()`, and `ActionMap::wasTriggered()` checks *those*.
+Folding to one set of modifiers per tick loses the distinction between Ctrl+S with control let go a moment later and S pressed a moment before control went down: those are the same end-of-tick state and opposite intentions, and the fold answered wrongly in both directions.
+`isActive()` still reads `modifiers()`, because "is this held" really is a question about now.
+
 **Persisted names are symbolic, never scancodes.**
 `InputEventCodec` encodes an edge as an `input.*` event and writes `"key": "Escape"`, not a platform keycode, so a session recorded under one backend replays under another.
 These are the events a replay exists to carry, so nothing downstream may quietly drop one.

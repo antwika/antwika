@@ -3,7 +3,10 @@
 #include <algorithm>
 #include <array>
 #include <cmath>
+#include <cstddef>
 #include <cstdint>
+#include <optional>
+#include <string_view>
 
 #include <antwika/pattern/Controls.hpp>
 #include <antwika/sound/Frames.hpp>
@@ -30,7 +33,10 @@ namespace antwika::music_editor
                 * static_cast<FrameCount>(rate) / kMillisecondsPerSecond;
         }
 
-        const std::array<TrackPreset, kTrackCount> kPresets{
+        constexpr std::array<std::string_view, kPresetCount> kNames{
+            "bass", "lead", "bell", "drum"};
+
+        const std::array<TrackPreset, kPresetCount> kPresets{
             TrackPreset{
                 .shape = synth::Waveshape::Saw,
                 .baseHertz = 110.0,
@@ -85,23 +91,45 @@ namespace antwika::music_editor
                 .pan = 0.0F}};
     } // namespace
 
-    const std::array<TrackPreset, kTrackCount> &trackPresets() noexcept
+    const std::array<TrackPreset, kPresetCount> &trackPresets() noexcept
     {
         return kPresets;
+    }
+
+    std::string_view trackName(const std::size_t preset) noexcept
+    {
+        return kNames[preset];
+    }
+
+    std::optional<std::size_t> trackFor(
+        const std::string_view name) noexcept
+    {
+        for (std::size_t preset = 0; preset < kPresetCount; ++preset)
+        {
+            if (kNames[preset] == name)
+            {
+                return preset;
+            }
+        }
+
+        return std::nullopt;
     }
 
     VoiceDesc voiceFor(
         const TrackPreset &preset,
         const Controls &value,
         const FrameCount frames,
-        const SampleRate rate)
+        const SampleRate rate,
+        const std::uint64_t seed)
     {
         const auto note = value.get(kNote);
 
         const auto semitones =
-            note.has_value() ? note->approximate() : 0.0;
+            (note.has_value() ? note->approximate() : 0.0)
+            + static_cast<double>(preset.transpose);
 
         // A note is a semitone above the preset's base.
+        // Whatever o() and trans() added goes in with it.
         // Noise has no pitch, and its frequency is never read.
         const auto hertz = preset.baseHertz
             * std::pow(2.0, semitones / kSemitonesPerOctave);
@@ -122,9 +150,10 @@ namespace antwika::music_editor
             .filter = preset.filter,
             .gain = preset.gain,
             .pan = preset.pan,
-            // Every noise hit differs from its neighbours.
-            // The same hit is the same on every run.
-            .seed = static_cast<std::uint64_t>(frames)};
+            // Where the hit falls, rather than how long it is.
+            // Two hits of one length are not one hit sounded twice.
+            // And the same hit is the same hit on every run.
+            .seed = seed};
     }
 
 } // namespace antwika::music_editor

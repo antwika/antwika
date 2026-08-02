@@ -21,6 +21,15 @@ namespace antwika::ecs::detail
      * is a stale handle aliasing a recycled index, which can't happen
      * if indices are never recycled. Exhausting the index space logs a
      * fatal error and throws — see create().
+     *
+     * The price of that is paid in ComponentStorage rather than here.
+     * Each pool's sparse array is indexed by raw entity value and grows
+     * with the highest one ever inserted into it, so it is O(max value
+     * ever seen) rather than O(live entities) and never shrinks; the
+     * aliveFlags vector below grows the same way. A long session that
+     * churns short-lived entities therefore keeps growing every pool
+     * they touched. ComponentStorage's class comment names the paged
+     * sparse index as the escape hatch if an app ever measures it.
      */
     class EntityManager final
     {

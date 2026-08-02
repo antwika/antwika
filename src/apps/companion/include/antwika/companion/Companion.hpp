@@ -130,6 +130,15 @@ namespace antwika::companion
          * storeIfLive() is where that decision is made, so no main()
          * has to remember it.
          *
+         * **A replay does not need one**, which is the whole point of
+         * RestoreSource: what this store held is announced as a
+         * companion.restore event ahead of the first tick, upstream of
+         * the recorder, so a `--record` run writes the companion it was
+         * played on into its own file. A session always begins on a
+         * brand new companion and is restored by RestoreSink, live run
+         * and replay alike, so the two reach the same animal by
+         * construction rather than by happening to agree.
+         *
          * Absent for a live run too is an ordinary state, and means a
          * session that starts new and is not kept.
          */

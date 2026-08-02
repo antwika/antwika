@@ -371,7 +371,7 @@ TEST(DropdownTest, AFocusedOptionsRingIsDrawnWithTheListItIsIn)
     }
 }
 
-TEST(DropdownTest, EnterChoosesNothingByItself)
+TEST(DropdownTest, EnterChoosesTheOptionItIsOn)
 {
     auto spec = pickerSpec();
     spec.open = true;
@@ -387,8 +387,33 @@ TEST(DropdownTest, EnterChoosesNothingByItself)
 
     const auto interactions = ui.finish().interactions;
 
-    // An option's index rides on the pointer's hit.
-    // So a keystroke reports the id and the caller maps it back.
+    // Both fields a press fills in, filled in the same way.
+    // An id alone cannot carry an option's index.
+    // So reporting the id alone leaves the caller reversing it.
     EXPECT_EQ(WidgetId{101}, interactions.activated);
+    ASSERT_TRUE(interactions.chosen.has_value());
+    EXPECT_EQ(
+        (OptionChoice{.dropdown = kPicker, .index = 1}),
+        *interactions.chosen);
+}
+
+TEST(DropdownTest, EnterOnTheBoxItselfChoosesNothing)
+{
+    auto spec = pickerSpec();
+    spec.open = true;
+
+    Context ui{
+        kCanvas,
+        plainTheme(),
+        Pointer{},
+        Keyboard{.keys = {Key::Activate}},
+        kPicker};
+
+    ui.dropdown(spec);
+
+    const auto interactions = ui.finish().interactions;
+
+    // The box is what opens and closes a list, not what picks from it.
+    EXPECT_EQ(kPicker, interactions.activated);
     EXPECT_FALSE(interactions.chosen.has_value());
 }

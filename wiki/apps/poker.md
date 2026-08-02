@@ -37,7 +37,7 @@ No ECS: the table *is* the state.
 - `TableWidgets.hpp` names every widget the layout declares, in `poker::widgets`; `PokerAtlas.hpp` addresses the art in `src/apps/poker/assets/atlas.png`.
 - `main.cpp` decodes that PNG and `PokerRoom` uploads it, since a texture belongs to the renderer that made it and the room is what owns the window.
   A null atlas is an ordinary state rather than a failure, which is what lets a test assert a session's chip counts with no art at all.
-- `WindowCloseSource` and `WindowSetup` handle the window.
+- `app::WindowCloseSource` and `WindowSetup` handle the window.
 
 ## Non-obvious decisions
 
@@ -84,7 +84,9 @@ A stack of fills per corner would have been the alternative, and it would have b
 Nothing keeps a history of what anybody did, so a replay reaches the same words from the same state -- and no new field had to enter the snapshot to say them.
 
 **Closing the window is input.**
-`WindowCloseSource` is an `ITickEventSource` decorator that appends `engine.stop` once the window has gone, so a close lands in a `--record` file like anything else.
+[`app::WindowCloseSource`](../libraries/app.md) is an `ITickEventSource` decorator that appends `engine.stop` once the window has gone, so a close lands in a `--record` file like anything else.
+This app is the one that closes the window from its source rather than only noting the request, since `holdFinalFrame` goes on pumping and drawing after the loop has finished and needs somewhere durable for "the window is gone" to live; `TableRenderSink::render()` returning early on a closed window is what pays for that.
+It used to be a near-copy of `simulation::WindowInputSource` living here, and it moved to [`app`](../libraries/app.md) whole.
 
 **The hand history derives from `StepOutcome`.**
 `TablePrinter` reads the blinds, the raise sizes and the uncalled bet off what the table reported, rather than recomputing the betting — otherwise it would be a second implementation of the rules, free to drift.

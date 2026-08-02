@@ -1,10 +1,12 @@
 #include <gtest/gtest.h>
 
+#include "antwika/input/KeyModifiers.hpp"
 #include "antwika/input/Mouse.hpp"
 #include "antwika/input/MouseButton.hpp"
 #include "antwika/input/Offset.hpp"
 #include "antwika/input/Position.hpp"
 
+using antwika::input::KeyModifiers;
 using antwika::input::Mouse;
 using antwika::input::MouseButton;
 using antwika::input::Offset;
@@ -214,6 +216,32 @@ TEST(MouseTest, Apply_IgnoresAButtonOutsideTheEnumeration)
     EXPECT_FALSE(mouse.isDown(kUnnamedButton));
     EXPECT_FALSE(mouse.wasPressed(kUnnamedButton));
     EXPECT_FALSE(mouse.wasReleased(kUnnamedButton));
+    EXPECT_EQ(KeyModifiers{}, mouse.pressModifiers(kUnnamedButton));
+}
+
+// The pointer's half of Keyboard::pressModifiers, on the same terms.
+TEST(MouseTest, PressModifiers_KeepsWhatOneButtonsPressEdgeCarried)
+{
+    Mouse mouse;
+
+    mouse.apply(
+        PointerButtonPressed{
+            .button = MouseButton::Left, .modifiers = {.shift = true}});
+
+    EXPECT_TRUE(mouse.pressModifiers(MouseButton::Left).shift);
+    EXPECT_EQ(KeyModifiers{}, mouse.pressModifiers(MouseButton::Right));
+}
+
+TEST(MouseTest, BeginTick_ForgetsThePressEdgesModifiers)
+{
+    Mouse mouse;
+    mouse.apply(
+        PointerButtonPressed{
+            .button = MouseButton::Left, .modifiers = {.shift = true}});
+
+    mouse.beginTick();
+
+    EXPECT_EQ(KeyModifiers{}, mouse.pressModifiers(MouseButton::Left));
 }
 
 TEST(MouseTest, Apply_StillTakesThePositionOfAnUnnamedButtonPress)

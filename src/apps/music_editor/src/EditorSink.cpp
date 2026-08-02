@@ -9,6 +9,7 @@
 #include <antwika/engine/Events.hpp>
 #include <antwika/gfx/Point.hpp>
 #include <antwika/input/InputEvent.hpp>
+#include <antwika/input/Key.hpp>
 #include <antwika/input/MouseButton.hpp>
 #include <antwika/ui/Frame.hpp>
 
@@ -64,10 +65,10 @@ namespace antwika::music_editor
 
         if (event.event.name == antwika::engine::events::kTick)
         {
-            // The lines are re-read from what the input just did.
+            // The document is re-read from what the input just did.
             // Only then is the sound advanced.
-            // A note decided now reads the line as it now stands.
-            score.update(state.lines);
+            // A note decided now reads the score as it now stands.
+            score.read(state.source);
             playback.step(state.paused);
 
             refreshAndAct(false, ui::Keyboard{});
@@ -92,6 +93,14 @@ namespace antwika::music_editor
 
         if (const auto *key = std::get_if<KeyPressed>(&*decoded))
         {
+            // Escape is this application's alone.
+            // antwika::ui is never told about it.
+            // A field that gave up would throw the score away.
+            if (key->key == antwika::input::Key::Escape)
+            {
+                state.paused = !state.paused;
+            }
+
             const auto meaning = uiKeyFor(key->key, key->modifiers.shift);
 
             if (meaning.has_value())
@@ -99,12 +108,13 @@ namespace antwika::music_editor
                 keyboard.keys.push_back(*meaning);
             }
 
-            const char typed =
-                typedCharacterFor(key->key, key->modifiers.shift);
+            characters = typedTextFor(key->key, key->modifiers.shift);
 
-            if (typed != '\0')
+            // One edge per character.
+            // That is what orders them against everything else.
+            for (std::size_t at = 0; at < characters.size(); ++at)
             {
-                characters.push_back(typed);
+                keyboard.keys.push_back(ui::Key::Character);
             }
         }
 
@@ -132,7 +142,8 @@ namespace antwika::music_editor
         const PlaybackStatus status{
             .started = playback.started(),
             .voices = playback.voices(),
-            .cycles = playback.playedTicks()};
+            .cycles = playback.playedTicks(),
+            .lines = playback.sounding()};
 
         const auto frame = scene.describe(
             state, score, status, canvas, pointerNow(pressed), keyboard);
@@ -141,11 +152,9 @@ namespace antwika::music_editor
 
         const auto &acted = frame.interactions;
 
-        // Tab moved the focus, and antwika::ui worked out where to.
-        // No guard for kNoWidget is needed here.
-        // focusWidget ignores anything that is not a field.
-        (void)focusWidget(state, acted.focused);
-
+        // The focus never moves.
+        // There is one thing to type into.
+        // The scene names it to every frame's Context.
         if (acted.activated == kPlayButton)
         {
             state.paused = !state.paused;
@@ -154,21 +163,10 @@ namespace antwika::music_editor
         {
             playback.silence();
         }
-        else
-        {
-            (void)focusWidget(state, acted.activated);
-        }
 
         if (!acted.edit.has_value())
         {
             return;
-        }
-
-        // Enter is the only key here that is not a character.
-        // It is the one thing a line hears that is not more music.
-        if (acted.edit->submitted)
-        {
-            state.paused = !state.paused;
         }
 
         applyEdit(state, *acted.edit);

@@ -15,6 +15,8 @@ add_executable(antwika_companion_tests
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/PetSink.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/PetSnapshot.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/PropSink.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/RestoreSink.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/RestoreSource.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/RenderSink.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/ReviveSink.cpp
     CompanionTest.cpp
@@ -28,6 +30,8 @@ add_executable(antwika_companion_tests
     PetSceneTest.cpp
     PetSnapshotTest.cpp
     PetTest.cpp
+    RestoreSinkTest.cpp
+    RestoreSourceTest.cpp
     ReviveSinkTest.cpp
     RunIntegrationTest.cpp
     SessionPersistenceTest.cpp

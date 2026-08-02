@@ -1,12 +1,7 @@
 #include "antwika/sound/OfflineDevice.hpp"
 
-#include <algorithm>
-#include <cstddef>
-#include <span>
-#include <vector>
-
-#include "antwika/sound/SampleBuffer.hpp"
 #include "antwika/sound/SoundError.hpp"
+#include "RenderInChunks.hpp"
 
 namespace antwika::sound
 {
@@ -44,39 +39,24 @@ namespace antwika::sound
             return 0;
         }
 
-        std::vector<std::vector<float>> planes(
-            wave.channels, std::vector<float>(buffer, 0.0F));
-
-        std::vector<std::span<float>> views;
-        views.reserve(planes.size());
-
-        for (auto &plane : planes)
-        {
-            views.emplace_back(plane);
-        }
-
-        FrameCount done = 0;
-
-        while (done < frames)
-        {
-            const auto chunk = std::min<FrameCount>(buffer, frames - done);
-
-            sink->render(
-                SampleBuffer{.channels = views, .frames = chunk},
-                played + done);
-
-            // Planar in, interleaved out.
-            // This is the one place the library crosses between them.
-            for (FrameCount frame = 0; frame < chunk; ++frame)
+        // Planar in, interleaved out.
+        // This is the one place the library crosses between them.
+        const auto done = detail::renderInChunks(
+            *sink,
+            wave.channels,
+            buffer,
+            frames,
+            played,
+            [this](const detail::Planes &planes, FrameCount chunk)
             {
-                for (const auto &plane : planes)
+                for (FrameCount frame = 0; frame < chunk; ++frame)
                 {
-                    out.samples.push_back(plane[frame]);
+                    for (const auto &plane : planes)
+                    {
+                        out.samples.push_back(plane[frame]);
+                    }
                 }
-            }
-
-            done += chunk;
-        }
+            });
 
         played += done;
         return done;

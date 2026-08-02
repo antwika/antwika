@@ -72,6 +72,22 @@ TEST(GridSearchTest, FindPath_ReportsTheStartAloneWhenItIsAlreadyTheGoal)
     EXPECT_EQ(result.cost, 0);
 }
 
+// The goal check happens on pop, before neighbours() is ever asked.
+// So the trivial route never consults passability, and cannot.
+// IGraph has no such concept: it is GridGraph's, expressed as edges.
+// Pinned because the two neighbouring cases answer NoPath.
+// Which makes the triple look inconsistent without this one.
+TEST(GridSearchTest, FindPath_ReportsTheStartAloneEvenWhenItIsImpassable)
+{
+    const GridGraph grid = gridWithWallsAt(3, 3, {4});
+
+    const SearchResult result = findPath(grid, nodeId(4), nodeId(4));
+
+    EXPECT_EQ(result.outcome, SearchOutcome::PathFound);
+    EXPECT_EQ(result.nodes, path({4}));
+    EXPECT_EQ(result.cost, 0);
+}
+
 TEST(GridSearchTest, FindPath_GoesTheLongWayRoundAWall)
 {
     const GridGraph grid = gridWithWallsAt(3, 3, {1, 4});

@@ -5,10 +5,10 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
-#include <antwika/event/mocks/MockEventSink.hpp>
-#include <antwika/event/TickEventRecorder.hpp>
 #include <antwika/event/ITickEventSink.hpp>
 #include <antwika/event/TickEvent.hpp>
+#include <antwika/event/TickEventRecorder.hpp>
+#include <antwika/event/mocks/MockEventSink.hpp>
 #include <antwika/input/InputEvent.hpp>
 #include <antwika/input/InputEventCodec.hpp>
 #include <antwika/input/Key.hpp>
@@ -79,7 +79,7 @@ namespace
         int &counter;
     };
 
-    // Types four digits into whichever line opens focused.
+    // Types into the opening document, then pauses with Escape.
     [[nodiscard]] std::vector<TickEvent> script()
     {
         const InputEventCodec codec;
@@ -87,22 +87,24 @@ namespace
         return {
             TickEvent{
                 .tick = 2,
-                .event = codec.encode(KeyPressed{.key = Key::Space})},
+                .event = codec.encode(KeyPressed{.key = Key::Enter})},
             TickEvent{
                 .tick = 3,
-                .event = codec.encode(KeyPressed{.key = Key::Digit7})},
+                .event = codec.encode(KeyPressed{.key = Key::Digit4,
+                                                 .modifiers = {
+                                                     .shift = true}})},
             TickEvent{
                 .tick = 4,
-                .event = codec.encode(KeyPressed{.key = Key::Tab})},
+                .event = codec.encode(KeyPressed{.key = Key::Backspace})},
             TickEvent{
                 .tick = 5,
-                .event = codec.encode(KeyPressed{.key = Key::Enter})}};
+                .event = codec.encode(KeyPressed{.key = Key::Escape})}};
     }
 } // namespace
 
 // The whole editor, wired as main() wires it.
 // Over a device that never reaches a speaker.
-TEST(RunIntegrationTest, RunsToItsBudgetAndSoundsTheOpeningLines)
+TEST(RunIntegrationTest, RunsToItsBudgetAndSoundsTheOpeningDocument)
 {
     NiceMock<MockLogger> logger;
     NiceMock<MockEventSink> events;
@@ -143,7 +145,7 @@ TEST(RunIntegrationTest, RunsToItsBudgetAndSoundsTheOpeningLines)
     EXPECT_GT(summary.commands, 0U);
     EXPECT_GT(summary.reparses, 0U);
 
-    // Enter arrived on tick five and paused it.
+    // Escape arrived on tick five and paused it.
     // So the musical clock stopped well short of the budget.
     EXPECT_GT(summary.played, 0U);
     EXPECT_LT(summary.played, kBudget);

@@ -57,9 +57,11 @@ A cleared level is followed immediately by the next, on a fresh grid — so ever
 
 The four axes pull against each other rather than ranking:
 
-- **Ticks per cell is the axis that interacts with where a tower goes.** The damage a mob takes crossing a reach is the cells in reach times the ticks it spends in each, so a Brute at three pays a corner tower three times what a Runner at one does. A tower that is fine against brutes can be walked straight past by runners.
+- **Ticks per cell is the axis that interacts with where a tower goes.** The damage a mob takes crossing a reach is the cells in reach times the ticks it spends in each, so a Brute at three pays a corner tower three times what a Runner at one does.
+  A tower that is fine against brutes can be walked straight past by runners.
 - **Health and reward are the ordinary dials**, and they are what make a Brute worth waiting for and a Runner worth catching early.
-- **Armour is flat damage reduction, taken off every hit, and the result never heals.** A tower whose damage does not exceed a mob's armour cannot hurt it *at all*, and no number of towers changes that, since each tower fires on its own. That is a real trap rather than a hidden one: `campaignLevels()` only fields an armoured kind on a level whose guns out-damage it, and `CampaignTest.NoLevelFieldsAKindItsOwnGunsCannotHurt` asserts that of the shipped table.
+- **Armour is flat damage reduction, taken off every hit, and the result never heals.** A tower whose damage does not exceed a mob's armour cannot hurt it *at all*, and no number of towers changes that, since each tower fires on its own.
+  That is a real trap rather than a hidden one: `campaignLevels()` only fields an armoured kind on a level whose guns out-damage it, and `CampaignTest.NoLevelFieldsAKindItsOwnGunsCannotHurt` asserts that of the shipped table.
 
 Each kind is drawn in its own colour (`BattleScene.cpp`), because which of the four is on the road is the one thing a player has to read off the grid rather than off the bar.
 
@@ -97,7 +99,9 @@ Two numbers rather than one: the score alone cannot tell a run that scraped thro
 **It is read as `parse -> read version -> migrate -> validate -> decode`**, through `replay::readVersionedDocument` and an injected `replay::MigrationChain`, exactly as [`docs/schema-versioning.md`](../../docs/schema-versioning.md) requires.
 `standardScoreMigrations()` hands back a chain with **no steps in it**, because this format has one revision and writing a migration for a version that never shipped would be fiction.
 The chain is still what reads every document, so the first bump is one entry in that list and nothing else — and until then it is what refuses a file from a build newer than this one.
-The `"magic"` is checked before anything else, because the replay document, the game save, the companion and this all state their version in the same `"version"` member and the magic is the only thing telling them apart.
+The `"magic"` is what tells this format from the replay document, the game save and the companion's, since all four state their version in the same `"version"` member and nothing else distinguishes them.
+It is the *schema* that checks it, though, so it is checked **after** the migration chain rather than before it — and a file of one of those other formats stating a version this build cannot reach is therefore refused as coming from a newer build rather than as not being a score file at all.
+Naming it correctly would mean reading the magic ahead of the version, which none of the four formats does today.
 
 **A missing high score is an ordinary answer, not an error.**
 `FileScoreStore::load()` returns `std::nullopt` for a file that is not there, which is a first run and worth a best of zero; an absent file never stops a game.

@@ -42,16 +42,17 @@ build/bin/antwika_replay/antwika_replay_tests \
 Builds default to the `null` graphics and input backends, which need no framework, draw nothing, report no input, and need no display.
 The real backends are `sdl3` and `raylib`.
 
-From VS Code, `Tasks: Run Task > Select gfx backend` makes the choice once and `Ctrl+Shift+B` honours it from then on; `Select sound backend` is its counterpart for sound.
+From VS Code, `Tasks: Run Task > Select gfx backend` makes the choice once and `Ctrl+Shift+B` honours it from then on; `Select sound backend` and `Select network backend` are its counterparts for sound and for the transport.
 From a terminal:
 
 ```sh
-scripts/select_backend.sh gfx sdl3     # and/or: select_backend.sh sound sdl3
+scripts/select_backend.sh gfx sdl3        # and/or: sound sdl3
+scripts/select_backend.sh network sockets # a real transport, no framework
 scripts/build.sh
 ```
 
 Either way the build lands in `build/`, whatever is selected.
-The selections live in the untracked `.vscode/gfx-backend` and `.vscode/sound-backend`.
+The selections live in the untracked `.vscode/gfx-backend`, `.vscode/sound-backend` and `.vscode/network-backend`.
 
 Or by hand:
 
@@ -124,7 +125,7 @@ Coverage uses a separate build directory and works on GNU and LLVM only, not Min
 cmake --preset conan-coverage
 cmake --build build-coverage -j24
 ctest --test-dir build-coverage -j"$(nproc)"
-gcovr --root . --filter 'src/.*' --exclude '.*/tests/.*' --print-summary build-coverage
+scripts/coverage.sh
 ```
 
 See [Contributing](Contributing.md) for what CI does with the result.

@@ -1,11 +1,4 @@
 #include <algorithm>
-#include <cstddef>
-#include <cstdint>
-#include <optional>
-#include <string>
-#include <string_view>
-
-#include <antwika/gfx/Glyphs.hpp>
 
 #include "antwika/ui/Alignment.hpp"
 #include "antwika/ui/Axis.hpp"
@@ -16,10 +9,11 @@
 #include "antwika/ui/TextFieldSpec.hpp"
 #include "antwika/ui/WidgetId.hpp"
 
+#include "Caret.hpp"
 #include "FocusRing.hpp"
 #include "LayoutTree.hpp"
 #include "Node.hpp"
-#include "Saturate.hpp"
+#include "TextEditing.hpp"
 
 namespace antwika::ui
 {
@@ -29,91 +23,9 @@ namespace antwika::ui
 
     namespace
     {
-        using detail::clampToU32;
+        using detail::Editable;
         using detail::FocusRing;
         using detail::Node;
-
-        /**
-         * @brief Work out what this frame's typing came to.
-         *
-         * Applied to a copy of the caller's characters, never to the
-         * caller's own: this library holds nothing between frames, so
-         * what it can offer is the answer, not the edit.
-         *
-         * The characters go in first and the keys are read after, in
-         * the order they arrived.
-         * A character is not an edge with a meaning of its own.
-         * So there is nothing for it to be interleaved with.
-         *
-         * @param spec The field being typed into.
-         * @param cursor The caret, already brought inside the text.
-         * @param keys What arrived this frame.
-         * @return The edit, or nothing when this frame left the field
-         * exactly as it was.
-         */
-        std::optional<TextEdit> editFor(
-            const TextFieldSpec &spec,
-            std::size_t cursor,
-            const Keyboard &keys)
-        {
-            TextEdit edit{
-                .field = spec.id,
-                .text = std::string{spec.text}, // GCOVR_EXCL_LINE
-                .cursor = cursor}; // GCOVR_EXCL_LINE
-
-            bool moved = false;
-
-            if (!keys.typed.empty())
-            {
-                edit.text.insert(edit.cursor, keys.typed);
-                edit.cursor += keys.typed.size();
-                moved = true;
-            }
-
-            for (const auto key : keys.keys)
-            {
-                // Backspace at the start has nothing to take.
-                if (key == Key::Backspace && edit.cursor > 0)
-                {
-                    edit.text.erase(edit.cursor - 1, 1);
-                    --edit.cursor;
-                    moved = true;
-                }
-
-                if (key == Key::MoveLeft && edit.cursor > 0)
-                {
-                    --edit.cursor;
-                    moved = true;
-                }
-
-                if (key == Key::MoveRight
-                    && edit.cursor < edit.text.size())
-                {
-                    ++edit.cursor;
-                    moved = true;
-                }
-
-                // The same edge resolve() activates the field on.
-                if (key == Key::Activate)
-                {
-                    edit.submitted = true;
-                }
-
-                if (key == Key::Cancel)
-                {
-                    edit.cancelled = true;
-                }
-
-                // A focus key is focus's alone, and moves no caret.
-            }
-
-            if (!moved && !edit.submitted && !edit.cancelled)
-            {
-                return {};
-            }
-
-            return edit;
-        }
     } // namespace
 
     void Context::textField(const TextFieldSpec &spec)
@@ -132,7 +44,10 @@ namespace antwika::ui
 
         if (focused)
         {
-            pendingEdit = editFor(spec, cursor, keyboardValue);
+            pendingEdit = detail::editFor(
+                Editable{
+                    .id = spec.id, .text = spec.text, .cursor = cursor},
+                keyboardValue);
         }
 
         const auto fill =
@@ -167,16 +82,7 @@ namespace antwika::ui
 
         if (focused)
         {
-            const auto height = clampToU32(
-                std::uint64_t{antwika::gfx::kGlyphLineHeight}
-                * themeValue.textScale);
-            const auto width =
-                themeValue.textScale > 0 ? themeValue.textScale : 1;
-
-            tree->add(Node{ // GCOVR_EXCL_LINE
-                .width = fixedSize(width),
-                .height = fixedSize(height),
-                .background = themeValue.caret});
+            tree->add(detail::caretNode(themeValue)); // GCOVR_EXCL_LINE
         }
 
         if (!tail.empty())

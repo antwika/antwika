@@ -14,6 +14,7 @@ antwika_add_library(
         src/RunGuarded.cpp
         src/RunRecorded.cpp
         src/WavFile.cpp
+        src/WindowCloseSource.cpp
         src/WindowPointerMapping.cpp
     DEPENDS
         antwika::animation

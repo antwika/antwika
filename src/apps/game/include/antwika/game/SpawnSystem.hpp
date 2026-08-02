@@ -116,6 +116,16 @@ namespace antwika::game
      * sends. So growing the array does not, on its own, change what any
      * building emits.
      *
+     * **The buildings are visited in ascending Cell rather than in
+     * ecs::View order**, out of a std::map collected first, exactly as
+     * LabourSystem and MarketSystem do. kWalkerLimit is a limited amount
+     * split between buildings, and a view iterates in an order that is
+     * a property of the world's history rather than of the city -- so at
+     * the cap the last free slots would otherwise go to whichever
+     * buildings a restore happened to create first, and one save loaded
+     * twice with its buildings in different orders could disagree about
+     * which building sent the last walker.
+     *
      * Nothing here is a persisted event, for the reason GridSink gives
      * about placing a tile: a spawn follows from the click that placed
      * the building, and writing it alongside that click would spawn twice

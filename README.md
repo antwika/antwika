@@ -21,6 +21,7 @@ src/
 │   ├── gfx3d_demo/
 │   ├── gfx_demo/
 │   ├── life/
+│   ├── music_editor/
 │   ├── poker/
 │   ├── sound_demo/
 │   ├── sudoku/
@@ -41,20 +42,26 @@ src/
     ├── i18n/
     ├── input/
     ├── log/
+    ├── network/
+    ├── notation/
     ├── pathfinding/
+    ├── pattern/
     ├── replay/
     ├── rng/
     ├── scheduler/
+    ├── sequencer/
     ├── simulation/
     ├── sound/
-    ├── network/
+    ├── synth/
     ├── time/
+    ├── tween/
     ├── ui/
     └── wfc/
 backends/
 ├── null/
 ├── raylib/
-└── sdl3/
+├── sdl3/
+└── sockets/
 blog/
 ```
 
@@ -62,6 +69,7 @@ Each library and app has its own `CMakeLists.txt`, `include/`, `src/`, and `test
 `backends/` sits outside `src/` and holds the concrete graphics, input, sound and network implementations, one directory per framework, exactly one of which is compiled per subsystem into a given build.
 
 `backends/sockets` is the exception worth knowing about: it is a network backend rather than a framework, so it adds no package and is exempt from the rule that one build names one framework.
+It is picked like the other selections -- `scripts/select_backend.sh network sockets`, or `-o network_backend=sockets` by hand -- and it resolves against `conan.lock` rather than a lockfile of its own.
 See [`docs/STYLE_GUIDE.md`](docs/STYLE_GUIDE.md) for the project's C++/CMake/Python coding conventions.
 
 `blog/` holds write-ups about notable changes to the project — see [`blog/001-building-a-deterministic-replay-system.md`](blog/001-building-a-deterministic-replay-system.md) for the design and requirements behind the replay system below, and [`blog/003-an-entity-component-system-with-nowhere-to-hide-a-mutation.md`](blog/003-an-entity-component-system-with-nowhere-to-hide-a-mutation.md) for the `antwika::ecs` library under `libs/ecs/`.
@@ -100,6 +108,7 @@ Each application has a directory of its own under `build/bin/`, holding the exec
 - `build/bin/antwika_gfx3d_demo/antwika_gfx3d_demo` — a cube turned by the tick count, drawn through the 3D interface and captioned through the 2D one.
 - `build/bin/antwika_gfx_demo/antwika_gfx_demo` — bars, a blitted PNG logo, and a panel of clickable buttons over them.
 - `build/bin/antwika_life/antwika_life` — Conway's Game of Life on a board you draw on by dragging.
+- `build/bin/antwika_music_editor/antwika_music_editor` — four lines of mini-notation you type into while they play, with every keystroke reaching the music.
 - `build/bin/antwika_poker/antwika_poker` — a no-limit hold'em cash game, watchable at `--tick-delay-ms <n>` per action.
 - `build/bin/antwika_sound_demo/antwika_sound_demo` — eight notes at exact frame positions, or a WAV of your own with `--file`.
 - `build/bin/antwika_sudoku/antwika_sudoku` — a Sudoku you play with a mouse and a keyboard, with `--puzzle` to load one from a file and a Solve button that finishes it.
@@ -159,7 +168,7 @@ Graphics and input would fight over one operating-system event queue, and whiche
 It draws three bars and blits a PNG logo twice: once whole and untinted, once left-half-only and tinted, which is what a source rectangle and a tint look like side by side.
 `build/bin/antwika_gfx3d_demo/antwika_gfx3d_demo` is its counterpart for the 3D half: a cube drawn through `gfx::IRenderer3D`, turned by the tick count rather than by a clock, with a caption drawn over it through the 2D calls.
 It stops after a fixed number of frames, because the `null` backend reports no close and that is the build every CI leg produces.
-Each selection lives in an untracked file, `.vscode/gfx-backend` and `.vscode/sound-backend`, which makes it yours rather than the repository's.
+Each selection lives in an untracked file -- `.vscode/gfx-backend`, `.vscode/sound-backend` and `.vscode/network-backend` -- which makes it yours rather than the repository's.
 
 ## Replays
 
@@ -441,6 +450,12 @@ Another checks that comments and markdown prose keep to one sentence per line --
 python3 scripts/check_one_sentence_per_line.py
 ```
 
+A third checks that the project tree and the list of binaries above still name every library, application and backend CMake builds, since that drifted by five libraries and one application before anybody noticed:
+
+```sh
+python3 scripts/check_readme_modules.py
+```
+
 ### Coverage
 
 The GNU and LLVM toolchains build with instrumentation via the `conan-coverage` CMake preset, which configures into its own `build-coverage/` directory (separate from `build/`) so switching between a regular and a coverage build never leaves stale, uninstrumented object files behind.
@@ -450,8 +465,11 @@ Report line coverage with `gcovr`:
 cmake --preset conan-coverage
 cmake --build build-coverage -j24
 ctest --test-dir build-coverage
-gcovr --root . --filter 'src/.*' --exclude '.*/tests/.*' --print-summary build-coverage
+scripts/coverage.sh
 ```
+
+[`scripts/coverage.sh`](scripts/coverage.sh) is the one copy of that `gcovr` invocation, and CI runs the same script rather than a second copy of the flags: the three exclusions the enforced 100% is computed against live there, so a local run reports the number the gate reads.
+It takes `--build-dir` (default `build-coverage`), `--summary <file>` for a JSON summary and `--html <dir>` for a browsable report, and reads `GCOV_EXECUTABLE` for the toolchain's own gcov.
 
 CI runs this on every push to `main` for the GNU and LLVM toolchains (not MinGW, which doesn't support `--coverage`) and publishes the resulting percentage as the badges above.
 

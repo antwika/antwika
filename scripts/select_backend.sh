@@ -25,14 +25,15 @@ subsystem=${1:-}
 backend=${2:-}
 
 if [ -z "$subsystem" ] || [ -z "$backend" ]; then
-    echo "Usage: scripts/select_backend.sh <gfx|sound> <backend>" >&2
+    echo "Usage: scripts/select_backend.sh <gfx|sound|network> <backend>" >&2
     exit 1
 fi
 
 case "$subsystem" in
-    gfx | sound) ;;
+    gfx | sound | network) ;;
     *)
-        echo "Unknown subsystem '$subsystem'. Available: gfx, sound" >&2
+        echo "Unknown subsystem '$subsystem'." >&2
+        echo "Available: gfx, sound, network" >&2
         exit 1
         ;;
 esac

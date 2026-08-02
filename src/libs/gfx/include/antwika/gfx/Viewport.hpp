@@ -84,6 +84,12 @@ namespace antwika::gfx
          * which is exactly what it means: the pointer is not over the
          * picture.
          *
+         * That holds right up against the picture's edge, because the
+         * division rounds down rather than towards zero. An enlarged
+         * canvas is several window pixels to the canvas pixel, so
+         * truncation would answer 0 -- a column that is on the canvas --
+         * for the whole of the last window pixel before the offset.
+         *
          * @param point Where it is in the window.
          * @return Where it is on the canvas.
          */

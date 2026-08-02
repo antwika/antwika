@@ -2,9 +2,11 @@
 #include <iostream>
 #include <optional>
 #include <string>
+#include <string_view>
 
 #include <antwika/app/ConsoleLogging.hpp>
 #include <antwika/app/RunGuarded.hpp>
+#include <antwika/cli/CommandLine.hpp>
 #include <antwika/gfx/SelectedBackend.hpp>
 #include <antwika/gfx/WindowDesc.hpp>
 #include <antwika/log/Level.hpp>
@@ -23,6 +25,10 @@ using antwika::log::Level;
 
 namespace
 {
+    // At namespace scope for the reason sound_demo's main.cpp gives.
+    // A local would be odr-used by the lambda below.
+    constexpr std::string_view kName = "antwika_gfx3d_demo";
+
     // Capped, rather than run until the window is closed.
     // That is where this parts company with gfx_demo.
     // The null backend reports no close at all.
@@ -33,15 +39,31 @@ namespace
     constexpr std::optional<std::uint32_t> kDemoFrames{900};
 } // namespace
 
-int main()
+int main(int argc, char **argv)
 {
     ConsoleLogging logging(std::cout, Level::Info);
     auto &logger = logging.logger();
 
     return runGuarded(
-        "antwika_gfx3d_demo",
-        [&logger]
+        kName,
+        [&logger, argc, argv]
         {
+            // This demo takes no flags of its own.
+            // That is a thing to say rather than a reason to read none.
+            // An empty table still answers --help and refuses a typo.
+            // A refused flag is a failed run rather than a crash.
+            // So it is parsed inside the guard, as sound_demo's is.
+            const auto command =
+                antwika::cli::parseCommandLine(argc, argv, {});
+
+            // --help is a question, not a run.
+            // Answering it opens no window.
+            if (command.has(antwika::cli::kHelpFlag))
+            {
+                std::cout << antwika::cli::helpText(kName, {});
+                return;
+            }
+
             const auto backend = antwika::gfx::makeSelectedBackend(logger);
 
             logger.log(

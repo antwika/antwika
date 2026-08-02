@@ -68,6 +68,29 @@ namespace antwika::ui
          * @brief Move a text field's caret one character on.
          */
         MoveRight,
+
+        /**
+         * @brief Move a text area's caret to the line above.
+         *
+         * To the same column, or to the end of that line when it is
+         * shorter. A text field is one line, so this does nothing to
+         * one.
+         */
+        MoveUp,
+
+        /**
+         * @brief Move a text area's caret to the line below.
+         */
+        MoveDown,
+
+        /**
+         * @brief Take the next character out of Keyboard::typed.
+         *
+         * What puts a typed character in the same ordered list as every
+         * other edge, so a field replays what actually happened rather
+         * than an approximation of it. See Keyboard::typed.
+         */
+        Character,
     };
 
     /**
@@ -92,9 +115,13 @@ namespace antwika::ui
         /**
          * @brief The characters that arrived this frame, in order.
          *
-         * Apart from the keys because a character is not an edge with a
-         * meaning of its own: only a focused text field has any use for
-         * one, and it takes them all in before it reads a single key.
+         * **Each one is taken by a Key::Character edge in the list
+         * above**, which is what fixes the order the whole frame is
+         * read in: a caller that folds a tick's typing into one frame
+         * pushes a Character edge where each character arrived, and
+         * typing `a`, Backspace, `b` comes out as `b` rather than as
+         * `a`. A character with no edge to take it is not typed at all,
+         * since nothing says where in the order it belongs.
          *
          * A view rather than a string: the caller owns the buffer and
          * must keep it alive for as long as the Context is.

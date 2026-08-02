@@ -19,7 +19,7 @@ namespace antwika::life
         const auto board = readBoardFromView(world, width, height);
 
         auto &renderer = window.renderer();
-        scene.draw(renderer, window.size(), board);
+        scene.draw(renderer, window.configuredSize(), board);
         renderer.present();
     }
 

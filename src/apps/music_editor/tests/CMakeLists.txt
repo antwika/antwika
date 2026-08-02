@@ -11,6 +11,7 @@ add_executable(antwika_music_editor_tests
     ScoreTest.cpp
     TickBudgetSourceTest.cpp
     TrackPresetTest.cpp
+    VoiceChainTest.cpp
 )
 
 target_include_directories(antwika_music_editor_tests
@@ -30,6 +31,7 @@ target_sources(antwika_music_editor_tests
         ../src/Score.cpp
         ../src/TickBudgetSource.cpp
         ../src/TrackPreset.cpp
+        ../src/VoiceChain.cpp
 )
 
 target_link_libraries(antwika_music_editor_tests

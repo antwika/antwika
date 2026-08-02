@@ -43,6 +43,23 @@ namespace antwika::input
 
             return state.mouse().wasPressed(std::get<MouseButton>(binding));
         }
+
+        // What was held at the press edge, not at the end of the tick.
+        // A tick is a window several edges arrive in.
+        // The fold keeps only the last one's modifiers.
+        // So Ctrl+S with Ctrl let go later in the tick would miss.
+        // And S pressed before Ctrl went down would trigger.
+        [[nodiscard]] KeyModifiers pressModifiers(
+            Binding binding, const InputState &state) noexcept
+        {
+            if (const auto *key = std::get_if<Key>(&binding))
+            {
+                return state.keyboard().pressModifiers(*key);
+            }
+
+            return state.mouse().pressModifiers(
+                std::get<MouseButton>(binding));
+        }
     } // namespace
 
     void ActionMap::bind(
@@ -91,7 +108,8 @@ namespace antwika::input
             {
                 return wasPressed(input.binding, state)
                        && satisfies(
-                           input.required, state.keyboard().modifiers());
+                           input.required,
+                           pressModifiers(input.binding, state));
             });
     }
 

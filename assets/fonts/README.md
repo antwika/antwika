@@ -43,3 +43,5 @@ That copies the file into the application's own directory under `bin/`, and
 `antwika::app::assetPath("RobotoMono-Regular.ttf")` is what finds it at run time -- never a path baked in at configure time, which would be the building machine's path rather than the running machine's.
 The application then opens it, hands the bytes to `font::TtfReader`, builds a `font::GlyphAtlas`, expands that into a `gfx::Bitmap` with `gfx::glyphAtlasBitmap()` and uploads it once with `IRenderer::createTexture()`.
 `gfx::AtlasText.hpp` is what draws and measures from the result.
+
+No application in this tree does any of that yet: every one of them lays text out on the fixed cell `gfx::textSize()` measures, so this section is a route that exists rather than one anything walks — see [`wiki/libraries/gfx.md`](../../wiki/libraries/gfx.md).

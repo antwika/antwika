@@ -105,8 +105,10 @@ CI requires **100% line, function and branch coverage** on the GNU leg, checked 
 cmake --preset conan-coverage
 cmake --build build-coverage -j24
 ctest --test-dir build-coverage -j"$(nproc)"
-gcovr --root . --filter 'src/.*' --exclude '.*/tests/.*' --print-summary build-coverage
+scripts/coverage.sh
 ```
+
+`scripts/coverage.sh` is the one copy of the `gcovr` invocation, and CI's leg runs the same script: the three exclusions the 100% is computed against live there rather than being retyped, so a local run and the gate report the same number.
 
 The LLVM branch percentage is informational only, because LLVM's `gcov` emulation cannot tag compiler-generated exception-unwind branches the way GCC's can.
 MinGW carries no coverage instrumentation at all.

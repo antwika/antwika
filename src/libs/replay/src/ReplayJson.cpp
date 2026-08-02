@@ -3,6 +3,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <format>
+#include <limits>
 #include <optional>
 #include <string>
 #include <utility>
@@ -26,12 +27,20 @@ namespace antwika::replay
     {
         nlohmann::json canvasShape()
         {
+            // Bounded because the decode below is get<std::uint32_t>().
+            // nlohmann takes the low bytes of anything wider in silence.
+            // An unbounded shape let "width": 4294967297 validate.
+            // And read back as 1.
+            // Which is the trap boundedCountShape exists to stop.
+            const nlohmann::json extent = boundedCountShape(
+                std::numeric_limits<std::uint32_t>::max());
+
             nlohmann::json shape;
             shape["type"] = "object";
             shape["additionalProperties"] = false;
             shape["required"] = {"width", "height"}; // GCOVR_EXCL_LINE
-            shape["properties"]["width"] = countShape();
-            shape["properties"]["height"] = countShape();
+            shape["properties"]["width"] = extent;
+            shape["properties"]["height"] = extent;
             return shape;
         }
 

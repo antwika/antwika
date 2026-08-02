@@ -1,9 +1,12 @@
 #include "antwika/notation/ParsePattern.hpp"
 
+#include <algorithm>
+#include <charconv>
 #include <cstddef>
 #include <cstdint>
 #include <string>
 #include <string_view>
+#include <system_error>
 #include <utility>
 #include <vector>
 
@@ -24,13 +27,33 @@ namespace antwika::notation
         using antwika::pattern::Cycle;
         using antwika::pattern::ParamValue;
 
+        // Every number this grammar reads is bounded.
+        // A term repeated two billion times is that many patterns.
+        // So is a Euclidean rhythm two billion steps long.
+        // The parse dies of std::bad_alloc rather than throwing.
+        // The live editor's resilience cannot survive that.
+        // A line that will not parse is meant to leave one playing.
+        // A thousand slots is finer than a cycle can articulate.
+        // So the limit refuses nothing musical.
+        inline constexpr std::int64_t kMaxNumber = 1024;
+
+        // A speed factor gets its own limit because '*' composes.
+        // Four factors of sixty-four nest into sixteen million.
+        // That is a dozen characters for a window that many cycles wide.
+        // Span::spanCycles walks such a window one element at a time.
+        // So the product along a nesting path is what is bounded.
+        inline constexpr std::int64_t kMaxSpeed = 1024;
+
+        // '%' is here for the fraction word NumberWords reads.
+        // It cannot be taken for the '%' of a ratio.
+        // A ratio is read digit by digit and never asks for a word.
         [[nodiscard]] bool isWordCharacter(char letter) noexcept
         {
             return (letter >= 'a' && letter <= 'z')
                 || (letter >= 'A' && letter <= 'Z')
                 || (letter >= '0' && letter <= '9') || letter == '_'
                 || letter == '.' || letter == '#' || letter == '+'
-                || letter == '-';
+                || letter == '-' || letter == '%';
         }
 
         // A recursive descent over the string.
@@ -106,11 +129,16 @@ namespace antwika::notation
 
                 layers.push_back(parseSequence());
 
+                auto widest = deepest;
+
                 while (nextIs(','))
                 {
                     ++at;
                     layers.push_back(parseSequence());
+                    widest = std::max(widest, deepest);
                 }
+
+                deepest = widest;
 
                 if (layers.size() == 1)
                 {
@@ -124,6 +152,7 @@ namespace antwika::notation
             [[nodiscard]] Pattern parseSequence()
             {
                 std::vector<Pattern> slots;
+                std::int64_t widest = 1;
 
                 for (;;)
                 {
@@ -139,7 +168,11 @@ namespace antwika::notation
                     {
                         slots.push_back(std::move(slot));
                     }
+
+                    widest = std::max(widest, deepest);
                 }
+
+                deepest = widest;
 
                 if (slots.empty())
                 {
@@ -161,6 +194,11 @@ namespace antwika::notation
             [[nodiscard]] std::vector<Pattern> parseTerm()
             {
                 auto result = parseFactor();
+
+                // Starts at whatever the factor already carried.
+                // A bracket's own factors count towards this one's.
+                auto speed = deepest;
+
                 std::int64_t copies = 1;
 
                 for (;;)
@@ -168,14 +206,18 @@ namespace antwika::notation
                     if (nextIs('*'))
                     {
                         ++at;
-                        result = pattern::fast(
-                            parseRatio(), std::move(result));
+                        const auto ratio = parseRatio();
+                        speed = times(speed, ratio.numerator());
+                        result =
+                            pattern::fast(ratio, std::move(result));
                     }
                     else if (nextIs('/'))
                     {
                         ++at;
-                        result = pattern::slow(
-                            parseRatio(), std::move(result));
+                        const auto ratio = parseRatio();
+                        speed = times(speed, ratio.denominator());
+                        result =
+                            pattern::slow(ratio, std::move(result));
                     }
                     else if (nextIs('!'))
                     {
@@ -209,6 +251,8 @@ namespace antwika::notation
                     }
                 }
 
+                deepest = speed;
+
                 if (copies < 1)
                 {
                     throw NotationError(
@@ -230,6 +274,10 @@ namespace antwika::notation
             [[nodiscard]] Pattern parseFactor()
             {
                 skipSpace();
+
+                // A word and a rest each carry no speed of their own.
+                // A bracket overwrites this from what is inside it.
+                deepest = 1;
 
                 // Never called at the end of the string.
                 // Both callers skip space and stop before they get here.
@@ -266,6 +314,7 @@ namespace antwika::notation
             [[nodiscard]] Pattern parseAlternation()
             {
                 std::vector<Pattern> parts;
+                std::int64_t widest = 1;
 
                 for (;;)
                 {
@@ -280,7 +329,11 @@ namespace antwika::notation
                     {
                         parts.push_back(std::move(part));
                     }
+
+                    widest = std::max(widest, deepest);
                 }
+
+                deepest = widest;
 
                 if (parts.empty())
                 {
@@ -330,15 +383,50 @@ namespace antwika::notation
                         "position " + std::to_string(at));
                 }
 
+                const auto digits = source.substr(from, at - from);
+
                 std::int64_t value = 0;
 
-                for (auto index = from; index < at; ++index)
+                const auto *const last = digits.data() + digits.size();
+                const auto read =
+                    std::from_chars(digits.data(), last, value);
+
+                // Only the out-of-range answer is reachable here.
+                // Every character from 'from' to 'at' is a digit.
+                // So there is nothing from_chars can call malformed.
+                if (read.ec != std::errc{} || value > kMaxNumber)
                 {
-                    value = value * 10
-                        + static_cast<std::int64_t>(source[index] - '0');
+                    throw NotationError(
+                        "antwika::notation: the number at position "
+                        + std::to_string(from) + " is above the limit "
+                        "of " + std::to_string(kMaxNumber));
                 }
 
                 return value;
+            }
+
+            // Folds one more speed factor into the running product.
+            // Both sides are bounded already.
+            // So the product cannot overflow on its way to a refusal.
+            [[nodiscard]] std::int64_t times(
+                std::int64_t running, std::int64_t factor)
+            {
+                // A factor of nothing is refused by the algebra next.
+                // It must not shrink the bound in the meantime.
+                const auto product =
+                    running * std::max<std::int64_t>(factor, 1);
+
+                if (product > kMaxSpeed)
+                {
+                    throw NotationError(
+                        "antwika::notation: the speed factors around "
+                        "position " + std::to_string(at)
+                        + " multiply to " + std::to_string(product)
+                        + ", above the limit of "
+                        + std::to_string(kMaxSpeed));
+                }
+
+                return product;
             }
 
             // A whole number, or two of them written with a '%'.
@@ -361,6 +449,10 @@ namespace antwika::notation
             const IWordReader &words;
             std::size_t at = 0;
             std::uint64_t degradations = 0;
+
+            // The largest speed-factor product on any path just read.
+            // An out-parameter, rather than a pair in five returns.
+            std::int64_t deepest = 1;
         };
     } // namespace
 

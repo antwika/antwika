@@ -1,6 +1,8 @@
 #include "antwika/companion/Companion.hpp"
 
 #include <memory>
+#include <optional>
+#include <utility>
 #include <vector>
 
 #include <antwika/engine/Engine.hpp>
@@ -14,6 +16,8 @@
 #include "antwika/companion/PacingSink.hpp"
 #include "antwika/companion/PetSink.hpp"
 #include "antwika/companion/PropSink.hpp"
+#include "antwika/companion/RestoreSink.hpp"
+#include "antwika/companion/RestoreSource.hpp"
 #include "antwika/companion/ReviveSink.hpp"
 #include "antwika/companion/SaveFormatError.hpp"
 
@@ -29,15 +33,6 @@ namespace antwika::companion
 
     namespace
     {
-        // The companion, and the record behind it.
-        // The two have different lifetimes.
-        // A revival replaces the first and leaves the second standing.
-        struct Session
-        {
-            Pet pet;
-            Lineage lineage;
-        };
-
         // The whole of "carry on from where the last session left off".
         // A store nobody gave us is a session that keeps nothing.
         // A file that is not there is a first run, not a failure.
@@ -45,11 +40,16 @@ namespace antwika::companion
         // A companion nobody can read is a companion that is gone.
         // And refusing to start would leave the app unusable.
         // Until somebody went and deleted a file by hand.
-        Session openSession(const CompanionConfig &config)
+        //
+        // What comes back is the memory, not a companion built from it.
+        // A session is restored through the event stream instead.
+        // Never through a constructor -- see RestoreSource.
+        std::optional<CompanionMemory> openSession(
+            const CompanionConfig &config)
         {
             if (!config.store.has_value())
             {
-                return Session{Pet(config.pet), Lineage()};
+                return std::nullopt;
             }
 
             try
@@ -61,15 +61,21 @@ namespace antwika::companion
                     config.logger.log(
                         Level::Info,
                         "No previous companion, so this is a new one");
-                    return Session{Pet(config.pet), Lineage()};
+                    return std::nullopt;
                 }
+
+                // Built and thrown away, deliberately.
+                // Pet alone says whether a memory is a possible one.
+                // Which is nobody else's question to answer.
+                // It is asked here rather than in the sink.
+                // A file that will not read must not take a tick with it.
+                (void)Pet(config.pet, memory->pet);
+                (void)Lineage(memory->lineage);
 
                 config.logger.log(
                     Level::Info,
                     "Carrying on with the companion from last time");
-                return Session{
-                    Pet(config.pet, memory->pet),
-                    Lineage(memory->lineage)};
+                return memory;
             }
             catch (const SaveFormatError &error)
             {
@@ -78,26 +84,23 @@ namespace antwika::companion
                     std::string("The saved companion could not be read, "
                                 "so this is a new one: ")
                         + error.what());
-                return Session{Pet(config.pet), Lineage()};
+                return std::nullopt;
             }
         }
 
         // Once, at the end, rather than every tick.
         // A run ended with Ctrl+C therefore keeps nothing.
         // Unlike a --record run, which appends as it goes.
-        // The age is offered to the record on the way out.
-        // So a companion nobody replaced still sets the mark it earned.
         void keepSession(
             const CompanionConfig &config,
             const Pet &pet,
-            Lineage &lineage)
+            const Lineage &lineage)
         {
             if (!config.store.has_value())
             {
                 return;
             }
 
-            lineage.record(pet.ticks());
             config.store->get().save(CompanionMemory{
                 .pet = pet.remember(), .lineage = lineage.remember()});
         }
@@ -107,20 +110,26 @@ namespace antwika::companion
     {
         ILogger &logger = config.logger;
 
-        Session session = openSession(config);
-        Pet &pet = session.pet;
-        Lineage &lineage = session.lineage;
+        std::optional<CompanionMemory> remembered = openSession(config);
+
+        // Always new, and restored through the stream if at all.
+        // A live run and the replay of it then take one road in.
+        Pet pet(config.pet);
+        Lineage lineage;
 
         EventDispatcher dispatcher({config.eventSink});
 
         // The order is the whole wiring.
-        // The press first, answered by the state the last tick left.
+        // The companion first.
+        // A press on the tick it arrives on lands on the restored one.
+        // Then the press, answered by the state the last tick left.
         // Then the button, which one press may not also be.
         // A press on a perished companion means nothing to PropSink.
         // The other order would start a companion and then prod it.
         // Then the step, which is what sees the meal.
         // Then whatever draws it, so a frame is of the finished tick.
         // Then the wait, which makes the order present-then-wait.
+        RestoreSink restoreSink(pet, lineage);
         PropSink propSink(pet, config.codec, config.canvas);
         ReviveSink reviveSink(pet, lineage, config.codec, config.canvas);
         PetSink petSink(pet);
@@ -128,7 +137,7 @@ namespace antwika::companion
         StopSignal stopSignal;
 
         std::vector<std::reference_wrapper<ITickEventSink>> timedSinks{
-            propSink, reviveSink, petSink, stopSignal};
+            restoreSink, propSink, reviveSink, petSink, stopSignal};
 
         // Held out here rather than inside the if.
         // The sink has to outlive the reference the dispatcher keeps.
@@ -152,8 +161,21 @@ namespace antwika::companion
         logger.log(Level::Info, "Running Antwika Companion");
         engine.start();
 
-        EngineLoop loop(engine, tickedDispatcher, config.inputSource);
+        // Upstream of the recorder, which is the whole arrangement.
+        // A `--record` run writes the companion it was played on.
+        // So replaying that file starts on the same animal.
+        RestoreSource restoreSource(
+            config.inputSource, std::move(remembered));
+
+        EngineLoop loop(engine, tickedDispatcher, restoreSource);
         loop.run(stopSignal, config.maxTicks);
+
+        // The age is offered to the record on the way out.
+        // So a companion nobody replaced still sets the mark it earned.
+        // Whether there is a file behind the session or not.
+        // What a session ends on may not depend on there being one.
+        // A replay has no store by design, and would report another best.
+        lineage.record(pet.ticks());
 
         // After the loop rather than inside it, and after nothing else.
         // A session that threw its way out of the loop keeps nothing.

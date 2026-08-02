@@ -193,7 +193,7 @@ The exclusion is the *reason* for the rule, so the two are always read together:
 - Anything worth covering moves behind a seam the gate *does* see — a parser, a factory, a runner, a sink — and is tested there like any other class.
 - When a `main` grows something a test would want to reach, the fix is to move that thing out, never to relax the gate.
 
-The gcovr `--exclude '.*/apps/[^/]+/src/main\.cpp'` in [`.github/workflows/build.yml`](../.github/workflows/build.yml) is where this is spelled out to CI.
+The gcovr `--exclude '.*/apps/[^/]+/src/main\.cpp'` in [`scripts/coverage.sh`](../scripts/coverage.sh) is where this is spelled out, and CI and a local run both go through that one script.
 
 `antwika::app`'s `runRecorded()` is what makes the rule reachable for a tick-loop app: it owns the argument parsing, the try/catch and the record epilogue every `main` used to repeat, leaving construction and one call.
 
@@ -239,6 +239,7 @@ CI backs the rules above that are automatable:
 - `scripts/check_line_length.py` — the 80-character limit.
 - `scripts/check_one_sentence_per_line.py` — one sentence per comment/prose line.
 - `scripts/check_unused_test_doubles.py` — no dead mocks/fakes.
+- `scripts/check_readme_modules.py` — README names every module CMake builds.
 - `ctest` across all three toolchains (GNU, LLVM, MinGW).
 - Coverage instrumentation and reporting for GNU and LLVM (see the [Coverage](../README.md#coverage) section of the README, and
   [`docs/confirming-unreachable-branches.md`](confirming-unreachable-branches.md)

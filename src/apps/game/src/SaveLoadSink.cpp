@@ -92,7 +92,10 @@ namespace antwika::game
                 typedCharacterFor(key->key, key->modifiers.shift);
             if (typed != '\0')
             {
+                // The edge is what says where in the order it lands.
+                // A character with none is never typed at all.
                 characters.push_back(typed);
+                keyboard.keys.push_back(antwika::ui::Key::Character);
             }
         }
 

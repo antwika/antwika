@@ -11,15 +11,16 @@ Everything is laid out arithmetically from `gfx::textSize()` alone, so the libra
 
 | Header | Type | Role |
 | --- | --- | --- |
-| `Context.hpp` | `Context` | The immediate-mode surface: `row()`, `column()`, `panel()`, `label()`, `button()`, `textField()`, `dropdown()`, `spacer()`, `finish()`. |
+| `Context.hpp` | `Context` | The immediate-mode surface: `row()`, `column()`, `panel()`, `label()`, `button()`, `textField()`, `textArea()`, `dropdown()`, `spacer()`, `finish()`. |
 | `Scope.hpp` | `Scope` | A `[[nodiscard]]` guard returned by every container call, closing it in its destructor. |
 | `Frame.hpp` | `Frame` | What `finish()` returns: `commands` (a `DrawList`), `interactions`, `rects` and `hoverTargets`. |
 | `DrawList.hpp`, `DrawCommand.hpp` | `DrawList`, `FillRect`, `DrawText` | The picture, as plain comparable values. |
 | `Painter.hpp` | `paint()` | The only thing in the library that touches an `IRenderer`. |
 | `Pointer.hpp` | `Pointer` | The pointer, passed in as an argument; the default is no pointer at all. |
 | `Interactions.hpp` | `Interactions` | The `hovered`, `activated` and `focused` `WidgetId`, the `edit` and `chosen` results, and whether the pointer is over anything the UI filled in. |
-| `Keyboard.hpp` | `Keyboard`, `Key` | Key edges in arrival order, plus a `typed` view of the characters; defaults to none. |
+| `Keyboard.hpp` | `Keyboard`, `Key` | Key edges in arrival order, plus a `typed` view of the characters each `Key::Character` edge takes one of; defaults to none. |
 | `TextFieldSpec.hpp` | `TextFieldSpec`, `TextEdit` | A field's characters, caret and focus going in; what happened coming out. |
+| `TextAreaSpec.hpp` | `TextAreaSpec` | The same, over many lines: a document, one flat caret index into it, and the room it is given. |
 | `DropdownSpec.hpp` | `DropdownSpec`, `OptionChoice` | A list's open/closed and selected state going in; what was chosen coming out. |
 | `WidgetRects.hpp` | `WidgetRects` | One `gfx::Rect` per distinct id the frame named, with `find(id)`. |
 | `HoverTargets.hpp`, `HoverTarget.hpp` | `HoverTargets`, `HoverTarget` | One target per named widget that works its own appearance out. |
@@ -75,7 +76,8 @@ The tab order is the arena's ascending index, which is declaration order, so no 
 A repeated id is one stop, an unnamed button is none, Tab from nothing takes the first widget and Shift+Tab the last, and both wrap.
 Once focus is in play, a pointer press moves focus to whatever it activated, so the ring and the keystrokes cannot end up on different widgets — and a caller using the pointer alone never gains a ring it did not ask for.
 
-Enter reports through `Interactions::activated` exactly as a press does, so one code path handles both.
+Enter reports through `Interactions::activated` exactly as a press does, so one code path handles both — and when the focused widget is a dropdown option it fills in `Interactions::chosen` too, from the owner and index the arena already carries beside the option's id.
+That is what makes the claim true rather than nearly true: reporting only the id would leave every caller subtracting `DropdownSpec::optionIdBase` back out of it, and an option left unnamed could never be chosen by keyboard at all.
 The focused widget draws `Theme::focusRing` (yellow), `Theme::focusRingThickness` pixels thick, as four `FillRect`s appended *after* every widget, since `IRenderer` has no stroke and a container declared later would otherwise paint over a ring drawn in place.
 
 **A text field and a dropdown hold nothing of their own either.**
@@ -83,6 +85,15 @@ A field's characters and caret arrive in `TextFieldSpec`, a list's open/closed a
 The application owns all of it, so a replay regenerates it from the recorded input rather than from anything the UI remembered.
 
 Typing arrives on the same `Keyboard` the focus keys do rather than as a second input channel, and `TextFieldSpec::focused` is an override on top of the focus the `Context` was handed, so Tab reaches a field and Enter submits the one it landed on.
+
+**A character is an edge in that list too**, taken by a `Key::Character` edge indexing into `Keyboard::typed`.
+It reads as indirection until you type `a`, Backspace, `b` inside one frame: the characters used to go in as a lump before any key was read, so what came out was `a` rather than `b`, and a caller that folds a whole tick's typing into one frame hit that at ordinary typing speed.
+A character with no edge to take it is not typed at all, since nothing would say where in the order it belonged.
+
+**`textArea()` is `textField()` over many lines**, and the whole of the difference is what the keyboard means: Enter writes a line break rather than submitting, `Key::MoveUp` and `Key::MoveDown` walk the caret between lines keeping its column where the line beside it is long enough, and the box takes the room it is given rather than one line's worth.
+The caret is one flat index into the document rather than a row and a column, so an application storing a `std::string` and a `std::size_t` is storing everything a replay has to regenerate -- and a line break is just a character in the text, which is what makes that true.
+A blank line is drawn as a row opened over a strut a glyph cell tall, because an empty text node measures nothing at all and the lines below it would otherwise move up.
+[music_editor](../apps/music_editor.md) is what it was written for.
 
 An open dropdown's list is an *overlay*: out of its parent's flow, hung beneath the box it dropped from, painted after every other command and hit-tested before them — which is the only way to be on top when `gfx` offers no depth but paint order.
 
@@ -106,6 +117,7 @@ Hover and other pointer effects are **by definition not part of the simulation**
 Activation, focus, edits and chosen options keep resolving in `detail::resolve()` from the recorded `Pointer` inside the tick path, exactly as before, and `ContextHoverTest` pins that a frame with all four in play has identical `Interactions` before and after a hover pass.
 
 `applyHover()` decides **every** target rather than only the one under the pointer, because a gated stream leaves `Interactions::hovered` naming whatever the last press passed over, and lighting one up without putting the others out would leave that widget lit for the rest of the session.
+A target sharing the frontmost one's id lights up with it, since two nodes carrying one id are one widget here as everywhere else — deciding this route on geometry alone would light half of such a widget and `resolve()`'s dressing all of it.
 A **held** target is stepped over, since a press is recorded input and its appearance is the simulation's answer rather than a hint's — `HoverTarget::held` is written by `resolve()` and is what keeps a button looking pressed while it is pressed.
 Called with no position it changes nothing, so a caller that never opts in draws byte for byte the picture `finish()` produced.
 

@@ -16,6 +16,7 @@
 #include "antwika/ui/Pointer.hpp"
 #include "antwika/ui/Scope.hpp"
 #include "antwika/ui/Sizing.hpp"
+#include "antwika/ui/TextAreaSpec.hpp"
 #include "antwika/ui/TextEdit.hpp"
 #include "antwika/ui/TextFieldSpec.hpp"
 #include "antwika/ui/Theme.hpp"
@@ -158,6 +159,21 @@ namespace antwika::ui
          * @param spec What the field is being asked for.
          */
         void textField(const TextFieldSpec &spec);
+
+        /**
+         * @brief Add a box holding many lines somebody typed.
+         *
+         * A textField() over more than one line, on the same terms: the
+         * characters are the caller's and the edit comes back through
+         * Interactions::edit. What differs is what the keyboard means
+         * -- Enter writes a line break instead of submitting, and the
+         * caret walks between lines with Key::MoveUp and Key::MoveDown
+         * -- and that the box takes the room it is given rather than
+         * one line's worth.
+         *
+         * @param spec What the area is being asked for.
+         */
+        void textArea(const TextAreaSpec &spec);
 
         /**
          * @brief Add a box naming one of a list of options.

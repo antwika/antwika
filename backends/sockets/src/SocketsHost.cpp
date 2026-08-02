@@ -430,6 +430,9 @@ namespace antwika::network::sockets
             {
                 // The far end closed.
                 // Which is how a peer leaving is reported at all.
+                // A peer that sends and closes fills one buffer.
+                // So what completed is harvested before the drop.
+                takeFrames(peer);
                 drop(peer);
 
                 return;

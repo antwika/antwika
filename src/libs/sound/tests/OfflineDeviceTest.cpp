@@ -43,6 +43,27 @@ namespace
         }
     };
 
+    // Writes the frame index plus a hundred per channel above the first.
+    // So which channel a sample came from is readable off the number.
+    class PerChannel final : public IRenderCallback
+    {
+    public:
+        void render(SampleBuffer out, FrameIndex firstFrame) noexcept
+            override
+        {
+            for (std::size_t frame = 0; frame < out.frames; ++frame)
+            {
+                std::size_t channel = 0;
+                for (const auto samples : out.channels)
+                {
+                    samples[frame] = static_cast<float>(
+                        firstFrame + frame + (100 * channel));
+                    ++channel;
+                }
+            }
+        }
+    };
+
     [[nodiscard]] DeviceDesc usable(antwika::sound::FrameCount buffer)
     {
         return DeviceDesc{
@@ -94,6 +115,26 @@ TEST(OfflineDeviceTest, Pump_ProducesTheSameAudioWhateverTheBufferSize)
     }
 
     EXPECT_EQ(small, large);
+}
+
+// Every sample of a pump that spans three chunks, written out.
+// This is the bit-exact pin on channel order and chunk boundaries.
+// A drift in either still leaves the right number of samples behind.
+TEST(OfflineDeviceTest, Pump_InterleavesEveryChannelInFrameOrder)
+{
+    Waveform out;
+    OfflineDevice device(usable(2), out);
+    PerChannel callback;
+
+    device.start(callback);
+
+    EXPECT_EQ(device.pump(5), 5U);
+
+    const std::vector<float> expected{
+        0.0F, 100.0F, 1.0F, 101.0F, 2.0F, 102.0F,
+        3.0F, 103.0F, 4.0F, 104.0F};
+
+    EXPECT_EQ(out.samples, expected);
 }
 
 TEST(OfflineDeviceTest, Pump_KeepsAppendingAcrossCalls)

@@ -37,6 +37,16 @@ It is also why `apps/life`'s `PointerToggleSink` keeps its own note of what the 
 **A dead entity is an error, not a silent no-op.**
 `add()` and `remove()` throw `EcsError` if the entity is not alive, which is what stops a zombie component from quietly reappearing after a `destroy()`.
 
+**`add()` on a component the entity already has overwrites it.**
+It is a second deferred write path beside `set()`, and the two are ordered by mechanism rather than by call order: an `add()` lands *during* `commit()`, so it beats a same-phase `set()` of the same component whichever was called first, and two `add()`s in one phase resolve as the later one.
+A caller meaning "only if it is not there" has to ask `has<T>()` itself, as [game](../apps/game.md)'s `ProductionSystem` and `MarketSystem` do — and `has<T>()` answers as of the last commit, so two systems in one phase can both be told no.
+`WorldTest` pins all four of those.
+
+**An entity index is never reused, and each pool's sparse array grows with the highest one it ever saw.**
+`EntityManager` hands out monotonically increasing values with no free list and no generation counter, because the only thing a generation counter guards against is a stale handle aliasing a recycled index, and nothing can alias what is never recycled.
+The standing cost is memory: a `ComponentStorage`'s sparse array is indexed by raw entity value and never shrinks, so a pool costs O(highest entity value ever inserted into it) rather than O(the entities it currently holds), and a long session churning short-lived entities grows every pool one of them touched.
+It is a `std::size_t` per index rather than a component, and nothing in the tree has measured it as a problem; the escape hatch when something does is a paged sparse index — fixed-size pages allocated on first use — which keeps the lookup O(1) for one extra indirection, rather than recycling indices, which is the decision already made the other way.
+
 **A system stopping does not stop the tick.**
 `apps/life`'s `DragPausedSystem` wraps `LifeSystem` and stages nothing while the pointer button is held, but the tick, the commit and every observing system still run — which is exactly why the cells being painted show up immediately.
 

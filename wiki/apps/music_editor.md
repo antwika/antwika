@@ -1,20 +1,118 @@
 # music_editor
 
-`src/apps/music_editor/` — four lines of text you type into while they play.
+`src/apps/music_editor/` — a page of code you type into while it plays.
 
 ## What it is
 
-A live-coding editor: four fields of mini-notation, always sounding, and every keystroke lands in the music without anything being reloaded, stopped or told to reload.
+A live-coding editor: one pane of code, always sounding, and every keystroke lands in the music without anything being reloaded, stopped or told to reload.
 
 ```
-bass  0 ~ 0 [~ 3]
-lead  <12 7> ~ 10 ~
-bell  ~ 19 ~ [24 19]
-drum  0(3,8)
+// type at me: every keystroke lands in the music
+$: bass.n("0 ~ 0 [~ 3]").o(-1)
+$: lead.n("<12 7> ~ 10 ~").gain(.18)
+$: drum.n("0(3,8)")
+$: drum.n("~ [0 0] ~ 0").gain(.12).pan(.5)
 ```
 
-Tab moves between lines, Enter pauses and resumes, and the two buttons do the same and silence everything.
-Each line is one track with a preset of its own -- a filtered saw, a square, a sine bell and a noise hit -- and a number in a line is a semitone above that preset's base.
+A blank line is passed over, and so is everything after a `//` -- on a line of its own or after a voice, since a comment is cut off wherever it starts.
+The one place `//` is not a comment is inside an `n("...")`, where it is the notation's to refuse.
+A voice line opens with `$:` and carries a chain of calls joined by dots, optionally opening with the name of a preset to start from.
+`n("...")` is the one call every voice needs: what is inside it is the [mini-notation](../libraries/notation.md) that voice plays, and a number in it is a semitone above the voice's base pitch.
+
+**A line is a voice, and nothing is limited to one of a kind.**
+The two `drum.` lines above are two voices sounding together, because a preset is a *starting point* that the calls after it change a copy of.
+Nothing is stopping four bass lines, or a document with no preset named anywhere in it.
+
+Escape pauses and resumes, Enter is a new line, Tab indents by two, and the two buttons pause and silence everything.
+Refusals are listed under the pane by line number, at most three at a time and then a count of the rest.
+
+## The calls
+
+Every call takes exactly one argument.
+
+| Call | What it does |
+| --- | --- |
+| `n("0 ~ [3 5]")` | What the voice plays, in mini-notation. A voice with no `n(...)` is refused. |
+| `s(saw)` | The oscillator: `sine`, `saw`, `square`, `triangle` or `noise`. |
+| `base(440)` | What a note of zero sounds at, in hertz. Never read for `noise`. |
+| `o(-1)` | Octaves up or down, which is twelve semitones a time. |
+| `trans(7)` | Semitones up or down. Adds to whatever `o()` asked for. |
+| `gain(.25)` | How loud, between -1 and 1. |
+| `pan(-.4)` | Where it sits, -1 hard left to 1 hard right. |
+| `att(4)`, `dec(120)`, `rel(90)` | The envelope's attack, decay and release, in milliseconds. |
+| `sus(.6)` | What it holds at after the decay, between -1 and 1. |
+| `hold(400)` | The longest this voice rings, however long its note is. A drum is a hit whatever slot it lands in; a bass note fills its slot. |
+| `lpf(900)`, `hpf(4000)`, `bpf(1200)` | A low, high or band pass filter at that many hertz. |
+| `res(.8)` | How much the filter emphasises its cutoff. One is flat and smaller is sharper. |
+| `slide(-40)` | How fast the pitch moves, in hertz per second. |
+
+The presets a line may open with are `bass` (a filtered saw), `lead` (a square), `bell` (a sine) and `drum` (a filtered noise hit).
+They are four points to start from rather than four instruments, and a document naming none of them is an ordinary document.
+
+## Some scores
+
+Each of these is a whole document.
+
+**A first beat.**
+
+```
+$: drum.n("0 ~ 0 ~")
+$: bass.n("0 ~ ~ 0")
+```
+
+**Three drums, out of one preset.**
+The point of the language: `drum` is where each of them starts, and the calls after it are what make them different.
+
+```
+$: drum.n("0(3,8)")
+$: drum.n("~ ~ [0 0] ~").gain(.15).pan(.6).hpf(5000).dec(20)
+$: drum.n("~ 0").gain(.1).pan(-.6).lpf(600).hold(120)
+```
+
+**A voice built from nothing at all**, naming no preset.
+
+```
+$: n("0 [3 7] 12 <10 5>").s(triangle).base(220).att(2).dec(90).sus(.2).rel(120).lpf(1800).res(.5).gain(.25)
+```
+
+A voice is one line however long the chain gets: there is no continuation, and a chain that runs past the pane is still one voice.
+
+**One pattern, two sounds.**
+The same notation twice, a fifth apart and panned either side, is a chord that neither line contains.
+
+```
+$: lead.n("<0 3 7>*2").gain(.16).pan(-.4)
+$: lead.n("<0 3 7>*2").trans(7).gain(.12).pan(.4).s(saw)
+```
+
+**A pad under a bass.**
+Long envelopes are what make a voice a pad; nothing else about it differs.
+
+```
+$: n("<0 5 7 3>").s(saw).base(110).o(1).att(400).dec(600).sus(.6).rel(900).hold(2000).lpf(1200).res(.4).gain(.12)
+$: bass.n("0 ~ <0 -5> ~").o(-1).gain(.3)
+```
+
+**Cross-rhythm**, which is [`notation`](../libraries/notation.md) doing the work rather than this app.
+
+```
+$: drum.n("0*4").gain(.2)
+$: drum.n("0(5,8)").gain(.14).pan(.4).hpf(6000).dec(15)
+$: bell.n("[0 7 12]/2").gain(.16)
+```
+
+**What a refusal reads like.**
+Every one of these lines is refused, and each names what it wanted.
+The comments are the messages the editor actually prints under the pane:
+
+```
+$: bass.n("0").wobble(3)     // wobble() is not a control: n s base o ...
+$: piano.n("0")              // piano is no preset: bass lead bell drum
+$: n("0").s(kazoo)           // s(kazoo) names no shape: sine saw square ...
+$: n("0").gain(x)            // gain(x) wants a number
+$: bass.o(1)                 // a voice needs an n("...") to play
+$: bass.n(0 3)               // n(...) wants its notation in quotes
+```
 
 ## Running it
 
@@ -42,19 +140,40 @@ It runs for a tick budget of 4800 -- about two minutes -- rather than until the 
 
 ## What it is built from
 
-[`notation`](../libraries/notation.md) reads a line, [`pattern`](../libraries/pattern.md) is what it reads into, [`sequencer`](../libraries/sequencer.md) turns that into things beginning at exact frames, [`synth`](../libraries/synth.md) makes the sound and [`sound`](../libraries/sound.md) plays it.
-[`ui`](../libraries/ui.md) draws it and [`input`](../libraries/input.md) is where the typing comes from.
+[`notation`](../libraries/notation.md) reads what is inside an `n(...)`, [`pattern`](../libraries/pattern.md) is what it reads into, [`sequencer`](../libraries/sequencer.md) turns that into things beginning at exact frames, [`synth`](../libraries/synth.md) makes the sound and [`sound`](../libraries/sound.md) plays it.
+[`ui`](../libraries/ui.md) draws it -- the pane is one `ui.textArea()`, the multi-line half of its text field -- and [`input`](../libraries/input.md) is where the typing comes from.
 
 ## Non-obvious decisions
 
 **This app defines no event of its own.**
-Every bit of its state -- the four lines, the caret, the focus, whether it is paused -- is derived from key and pointer edges the recording already carries, so a replay retypes the session rather than replaying its text.
+Every bit of its state -- the document, the caret, whether it is paused -- is derived from key and pointer edges the recording already carries, so a replay retypes the session rather than replaying its text.
 That is the "only externally-supplied input is persisted" rule taken to its conclusion: there is nothing here that is not worked out again.
+
+**A voice is a line, and a preset is only where it starts.**
+The obvious design is four instruments a line asks for by name, and it is wrong in one specific way: it makes "two drums at once" inexpressible, and two drums at once is most of what a drum part *is*.
+So a preset is a value a line takes a copy of, every call after it changes that copy alone, and how many voices there are is how many lines there are.
+It also settles what a voice is identified by, which matters while somebody types: nothing.
+A line is its own voice, deleting it takes that voice out, and writing one above another moves neither of them to a different instrument.
+
+**A call changes a copy, and the chain is read left to right.**
+`bass.o(-1).o(-1)` is two octaves down, because `o()` and `trans()` accumulate into one semitone offset rather than setting it -- that is the one call where "left to right" is visible, and it is what lets `.o(1).trans(-2)` mean what it looks like.
+Every other call sets what it names, so a chain naming `gain` twice ends on the second.
 
 **A line that will not parse keeps playing whatever it last did.**
 Half a bracket is typed on the way to a whole one, and an editor that fell silent at every intermediate keystroke would be unusable.
-The refusal is shown beside the line instead, and the new pattern takes over the moment the line reads again.
+The refusal is reported through `Score::problems()` instead, named by the line it belongs to, and the new pattern takes over the moment the line reads again.
 `Score` is where that lives, and it is the whole of why live editing feels live.
+
+**Escape pauses, and Enter does not.**
+Enter is what a line break is written with, which a document of many lines cannot do without -- so the pause had to move to a key the writing does not need.
+Escape is that key, and it is deliberately *not* handed to [`ui`](../libraries/ui.md) as `Key::Cancel`: a field that gave up on what was typed would throw away the score being written.
+`EditorSink` reads `input::Key::Escape` itself, before the UI is described, which is also why no `ui::Key` for it has to exist.
+Tab moved for the same reason: there is one thing to type into, so it has no focus to walk, and it indents by two spaces instead.
+
+**The text is drawn at twice the glyph scale.**
+What is being read here is code, and a mis-read bracket is a line that will not play -- this is also the window in the tree that is looked at for the longest at a stretch.
+`editorTheme()` doubles `Theme::textScale` and nothing else, rather than reaching for a scaled theme: doubling every inset and every padding as well would spend the window on its own margins.
+The window is 1120x640 because the doubled glyph and a document rather than a row of fields both want more room than four one-line boxes did.
 
 **Pausing stops the musical clock, not the device.**
 A held note rings out, the device never starves, and the frames that went by while paused are counted -- so resuming does not decide notes for a moment already rendered.
@@ -63,13 +182,18 @@ That counter is the one piece of arithmetic in the app that is easy to get wrong
 **The run is paced by how much audio the device has taken.**
 That is the one thing `IDevice::framesPlayed()` is allowed to decide, and it gives the app a property worth having: a device that consumes the moment it is pumped is never ahead, so a `null` or offline run costs no wall-clock time at all, while a real one is paced by the hardware rather than by a second clock with an opinion of its own.
 
-**One sequencer per track**, because a track's events have to become a voice through *its* preset, and [`sequencer`](../libraries/sequencer.md)'s seam deliberately hands on controls rather than sounds.
+**One sequencer per voice line**, because a line's events have to become a sound through *its* preset, and [`sequencer`](../libraries/sequencer.md)'s seam deliberately hands on controls rather than sounds.
+The pool grows as lines are written and is kept when they are deleted, since a few hundred bytes is cheaper than an allocation in the middle of a bar.
+A sequencer taken up again -- because a line was written where a deleted one used to be -- calls `Sequencer::joinAt()`, which is the one thing this app needed the library to grow: a sequencer built fresh has been asked nothing, so its first `advance()` would query every cycle since the run began and sound the lot at once.
+Joining says the past is not this voice's to play.
 
 **Its words are fixed English literals rather than an `i18n::Translator`.**
-A field is as wide as the label beside it, so the layout is a function of the words, and a session recorded in one language and replayed in another would resolve a click to a different widget.
+The layout is a function of the words, so a session recorded in one language and replayed in another would resolve a click to a different widget.
 [ui_demo](ui_demo.md) answers that by fixing the locale in `main()`; this app answers it by having one language, which is the same guarantee with nothing to configure -- and what is actually being written here is mini-notation, which is not English to begin with.
+The preset and control names are the same literals seen from the other side: `bass`, `gain`, `lpf` and the rest are what a document is written with, so translating them would change what a document means.
 
 ## See also
 
-- [`notation`](../libraries/notation.md) — the grammar the lines are written in.
+- [`notation`](../libraries/notation.md) — the grammar a voice line is written in.
+- [`ui`](../libraries/ui.md) — the text area the document is typed into.
 - [sound_demo](sound_demo.md) — the same device seam, with no editing over it.

@@ -1,8 +1,10 @@
 #pragma once
 
+#include <array>
 #include <bitset>
 
 #include "antwika/input/InputEvent.hpp"
+#include "antwika/input/KeyModifiers.hpp"
 #include "antwika/input/MouseButton.hpp"
 #include "antwika/input/Offset.hpp"
 #include "antwika/input/Position.hpp"
@@ -114,12 +116,27 @@ namespace antwika::input
          */
         [[nodiscard]] bool wasReleased(MouseButton button) const noexcept;
 
+        /**
+         * @brief Get the modifiers a button's own press edge carried.
+         *
+         * The pointer's half of Keyboard::pressModifiers(), for the
+         * reason given there: a chord means what was held at the press,
+         * not what was left held when the tick ended.
+         *
+         * @param button The button to ask about.
+         * @return What was held when it went down this tick, or nothing
+         * held when it did not go down this tick at all.
+         */
+        [[nodiscard]] KeyModifiers pressModifiers(
+            MouseButton button) const noexcept;
+
     private:
         void moveTo(Position position) noexcept;
 
         std::bitset<kMouseButtonCount> down;
         std::bitset<kMouseButtonCount> pressed;
         std::bitset<kMouseButtonCount> released;
+        std::array<KeyModifiers, kMouseButtonCount> pressedWith{};
 
         Position at;
         Offset moved;
