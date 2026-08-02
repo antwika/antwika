@@ -113,6 +113,8 @@ endif()
 if(ANTWIKA_INPUT_BACKEND STREQUAL "sdl3")
     add_library(antwika_input_backend
         src/SelectedInputBackend.cpp
+        src/SelectedClipboard.cpp
+        src/Sdl3Clipboard.cpp
         src/Sdl3InputBackend.cpp
     )
 

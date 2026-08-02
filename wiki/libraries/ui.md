@@ -102,7 +102,7 @@ A blank line is drawn as a row opened over a strut a glyph cell tall, because an
 The anchor is a `std::optional`, absent meaning "wherever the caret is", because every index is a place a selection can really end -- including the end of the text, which a sentinel would have taken.
 
 **A copy is reported and a paste is typed**, which is the only shape a clipboard can have here.
-`Key::Copy` and `Key::Cut` put the selected characters in `TextEdit::copied` and this library forgets them immediately, since it retains nothing; where they go is the application's, and [music_editor](../apps/music_editor.md) keeps them in its own state rather than in the window system's clipboard, so a replay pastes what the run pasted rather than whatever the replaying machine happens to hold.
+`Key::Copy` and `Key::Cut` put the selected characters in `TextEdit::copied` and this library forgets them immediately, since it retains nothing; where they go is the application's, and [music_editor](../apps/music_editor.md) keeps them in its own state and mirrors them outward to the window system's clipboard from there, while a paste reaches it as a recorded event -- so a replay pastes what the run pasted rather than whatever the replaying machine happens to hold.
 Pasting therefore needs no key at all: the application puts the characters in `Keyboard::typed` with a `Key::Character` edge each, exactly as if they had been typed.
 
 **A press inside an area puts the caret where it landed**, and that is the one answer a widget gives that needs the layout.

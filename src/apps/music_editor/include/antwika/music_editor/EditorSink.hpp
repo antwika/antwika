@@ -1,10 +1,12 @@
 #pragma once
 
 #include <cstdint>
+#include <string>
 
 #include <antwika/event/ITickEventSink.hpp>
 #include <antwika/event/TickEvent.hpp>
 #include <antwika/gfx/Size.hpp>
+#include <antwika/input/IClipboard.hpp>
 #include <antwika/input/IInputEventCodec.hpp>
 #include <antwika/input/InputState.hpp>
 #include <antwika/time/Tick.hpp>
@@ -59,6 +61,12 @@ namespace antwika::music_editor
          * @param codec Decodes the recorded input events.
          * @param scene Describes the picture; must outlive this.
          * @param canvas The size the window was asked for.
+         * @param clipboard Where a copy is mirrored to, or null.
+         * **Null on a replay**, so replaying somebody's session does
+         * not overwrite this machine's clipboard with their copies;
+         * the mirror is an outward write read back by nothing, on the
+         * same terms a frame is drawn.  Pastes never come from here --
+         * they arrive as events::kPaste, read upstream by PasteSource.
          */
         EditorSink(
             EditorState &state,
@@ -66,7 +74,8 @@ namespace antwika::music_editor
             Playback &playback,
             const IInputEventCodec &codec,
             const EditorScene &scene,
-            Size canvas);
+            Size canvas,
+            input::IClipboard *clipboard);
 
         EditorSink(const EditorSink &) = delete;
         EditorSink(EditorSink &&) = delete;
@@ -121,6 +130,10 @@ namespace antwika::music_editor
         const IInputEventCodec &codec;
         const EditorScene &scene;
         Size canvas;
+        input::IClipboard *clipboard;
+
+        // What the mirror last wrote, so it writes on changes alone.
+        std::string mirrored;
 
         antwika::input::InputState folded;
         time::Tick foldedTick = 0;

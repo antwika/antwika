@@ -83,12 +83,14 @@ namespace antwika::music_editor
         /**
          * @brief What was last cut or copied.
          *
-         * **This editor's own clipboard rather than the window
-         * system's**, and that is not a shortcut. What a desktop
-         * clipboard holds is not in any recording, so a replay would
-         * paste whatever happened to be on the machine replaying it and
-         * diverge from the run it is meant to reproduce. Here it is
-         * regenerated from the same key presses as everything else.
+         * Simulation state, regenerated from the same key presses as
+         * everything else -- and the window system's clipboard is fed
+         * *from* it, by a live run's sink, as an outward write no tick
+         * ever reads back. Reading goes the other way entirely: a
+         * paste's characters arrive as an events::kPaste the recording
+         * carries, read upstream of the recorder by PasteSource, so a
+         * replay pastes what the run pasted whatever the replaying
+         * machine's clipboard happens to hold.
          */
         std::string clipboard{};
 

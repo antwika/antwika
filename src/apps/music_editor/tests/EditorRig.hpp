@@ -6,6 +6,7 @@
 #include <antwika/event/TickEvent.hpp>
 #include <antwika/gfx/Size.hpp>
 #include <antwika/input/InputEventCodec.hpp>
+#include <antwika/input/MemoryClipboard.hpp>
 #include <antwika/sequencer/FrameClock.hpp>
 #include <antwika/sequencer/Rational.hpp>
 #include <antwika/sequencer/TempoMap.hpp>
@@ -66,6 +67,10 @@ namespace antwika::music_editor::tests
         EditorScene scene{};
         input::InputEventCodec codec{};
 
+        // What a live main() hands the sink: a place to mirror copies.
+        // It stands in for the window system's clipboard.
+        input::MemoryClipboard osClipboard{};
+
         Playback playback{
             score,
             mixer,
@@ -80,7 +85,8 @@ namespace antwika::music_editor::tests
                 .lead = 2}};
 
         EditorSink editor{
-            state, score, playback, codec, scene, kCanvas};
+            state, score, playback, codec, scene, kCanvas,
+            &osClipboard};
 
         EditorRig()
         {

@@ -45,7 +45,7 @@ namespace antwika::music_editor
         // Then whatever draws, so a frame is of the finished tick.
         EditorSink editor(
             state, score, playback, config.codec, config.scene,
-            config.canvas);
+            config.canvas, config.clipboard);
 
         StopSignal stopSignal;
 

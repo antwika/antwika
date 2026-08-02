@@ -15,6 +15,7 @@
 #include <antwika/input/MouseButton.hpp>
 #include <antwika/ui/WidgetId.hpp>
 
+#include "antwika/music_editor/Events.hpp"
 #include "EditorRig.hpp"
 
 using antwika::event::TickEvent;
@@ -75,6 +76,20 @@ namespace
                 .tick = when,
                 .event = rig.codec.encode(antwika::input::PointerMoved{
                     .position = {.x = at.x, .y = at.y}})});
+    }
+
+    // Delivers a paste, exactly as PasteSource would have said it.
+    void paste(
+        EditorRig &rig,
+        const std::string &text,
+        antwika::time::Tick when)
+    {
+        rig.editor.handle(
+            TickEvent{
+                .tick = when,
+                .event = {
+                    .name = antwika::music_editor::events::kPaste,
+                    .payload = text}});
     }
 
     void releaseAt(
@@ -618,9 +633,10 @@ TEST(EditorSinkTest, ShiftAndAnArrowSelectsWithoutMovingTheFarEnd)
     EXPECT_EQ(rig.state.source, "a5d");
 }
 
-// The clipboard is this editor's own.
-// So a replay pastes what the run pasted rather than what it holds.
-TEST(EditorSinkTest, CopiesAndPastesThroughItsOwnClipboard)
+// A copy lands in the state and is mirrored outward for other programs.
+// A paste arrives as the event PasteSource made of the clipboard.
+// So a replay pastes what the run pasted.
+TEST(EditorSinkTest, CopiesOutwardAndPastesWhatTheEventCarries)
 {
     EditorRig rig;
     rig.state.source = "abcd";
@@ -632,15 +648,80 @@ TEST(EditorSinkTest, CopiesAndPastesThroughItsOwnClipboard)
     press(rig, Key::C, 3, kControl);
 
     EXPECT_EQ(rig.state.clipboard, "ab");
+    EXPECT_EQ(rig.osClipboard.text(), "ab");
     EXPECT_EQ(rig.state.source, "abcd");
 
     press(rig, Key::ArrowRight, 4);
     press(rig, Key::ArrowRight, 5);
     press(rig, Key::ArrowRight, 6);
-    press(rig, Key::V, 7, kControl);
+    paste(rig, rig.osClipboard.text(), 7);
 
     EXPECT_EQ(rig.state.source, "abcdab");
     EXPECT_EQ(rig.state.cursor, 6U);
+}
+
+// The key edge that asked for the paste types nothing itself.
+// PasteSource answers it upstream; down here it is only a chord.
+TEST(EditorSinkTest, ControlAndVAloneTypesNothing)
+{
+    EditorRig rig;
+    rig.state.source = "abcd";
+    rig.state.cursor = 0;
+    rig.editor.handle(tickAt(0));
+
+    press(rig, Key::V, 1, kControl);
+
+    EXPECT_EQ(rig.state.source, "abcd");
+}
+
+// A paste replaces a selection, exactly as typing does.
+TEST(EditorSinkTest, PastingOverASelectionTakesTheWholeOfIt)
+{
+    EditorRig rig;
+    rig.state.source = "abcd";
+    rig.state.cursor = 1;
+    rig.editor.handle(tickAt(0));
+
+    press(rig, Key::ArrowRight, 1, kShift);
+    press(rig, Key::ArrowRight, 2, kShift);
+    paste(rig, "XY", 3);
+
+    EXPECT_EQ(rig.state.source, "aXYd");
+    EXPECT_EQ(rig.state.cursor, 3U);
+}
+
+// The mirror is somewhere a live main() may decline to hand over.
+// A replay's sink gets none, and a copy still works within the run.
+TEST(EditorSinkTest, CopiesLandNowhereWhenThereIsNoClipboard)
+{
+    EditorRig rig;
+    rig.state.source = "abcd";
+    rig.state.cursor = 0;
+
+    antwika::music_editor::EditorSink bare{
+        rig.state,
+        rig.score,
+        rig.playback,
+        rig.codec,
+        rig.scene,
+        antwika::music_editor::tests::kCanvas,
+        nullptr};
+
+    bare.handle(tickAt(0));
+
+    bare.handle(
+        TickEvent{
+            .tick = 1,
+            .event = rig.codec.encode(
+                KeyPressed{.key = Key::ArrowRight, .modifiers = kShift})});
+    bare.handle(
+        TickEvent{
+            .tick = 2,
+            .event = rig.codec.encode(
+                KeyPressed{.key = Key::C, .modifiers = kControl})});
+
+    EXPECT_EQ(rig.state.clipboard, "a");
+    EXPECT_EQ(rig.osClipboard.text(), "");
 }
 
 TEST(EditorSinkTest, CuttingTakesTheSelectionWithIt)
@@ -657,8 +738,8 @@ TEST(EditorSinkTest, CuttingTakesTheSelectionWithIt)
     EXPECT_EQ(rig.state.source, "ab");
     EXPECT_EQ(rig.state.clipboard, "cd");
 
-    press(rig, Key::V, 4, kControl);
-    press(rig, Key::V, 5, kControl);
+    paste(rig, rig.osClipboard.text(), 4);
+    paste(rig, rig.osClipboard.text(), 5);
 
     EXPECT_EQ(rig.state.source, "abcdcd");
 }

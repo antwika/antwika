@@ -15,6 +15,7 @@
 #include <antwika/ui/Frame.hpp>
 
 #include "antwika/music_editor/EditorKeys.hpp"
+#include "antwika/music_editor/Events.hpp"
 
 namespace antwika::music_editor
 {
@@ -65,13 +66,15 @@ namespace antwika::music_editor
         Playback &playback,
         const IInputEventCodec &codec,
         const EditorScene &scene,
-        const Size canvas)
+        const Size canvas,
+        input::IClipboard *clipboard)
         : state(state),
           score(score),
           playback(playback),
           codec(codec),
           scene(scene),
-          canvas(canvas)
+          canvas(canvas),
+          clipboard(clipboard)
     {
     }
 
@@ -94,6 +97,25 @@ namespace antwika::music_editor
             playback.step(state.paused);
 
             refreshAndAct(PointerEdge{}, ui::Keyboard{});
+
+            return;
+        }
+
+        // A paste is the one event of this application's own.
+        // The clipboard was read upstream; this only types the answer.
+        if (event.event.name == events::kPaste)
+        {
+            ui::Keyboard keyboard;
+
+            for (std::size_t at = 0; at < event.event.payload.size();
+                 ++at)
+            {
+                keyboard.keys.push_back(ui::Key::Character);
+            }
+
+            keyboard.typed = event.event.payload;
+
+            refreshAndAct(PointerEdge{}, keyboard);
 
             return;
         }
@@ -132,17 +154,6 @@ namespace antwika::music_editor
 
             characters =
                 typedTextFor(key->key, key->modifiers, state.layout);
-
-            // A paste is the clipboard typed.
-            // Which is all a paste can be here.
-            // antwika::ui keeps nothing between frames.
-            // So it has nowhere to have put what was cut.
-            // This editor holds it, off recorded key presses.
-            if (key->modifiers.control
-                && key->key == antwika::input::Key::V)
-            {
-                characters = state.clipboard;
-            }
 
             // One edge per character.
             // That is what orders them against everything else.
@@ -289,6 +300,14 @@ namespace antwika::music_editor
         // The picture above predates the changes just made.
         // With no keys and no press, so nothing happens twice.
         picture = frameFor(PointerEdge{}, ui::Keyboard{}).commands;
+
+        // A copy is mirrored outward, so other programs can paste it.
+        // On changes alone, or every tick would touch the clipboard.
+        if (clipboard != nullptr && state.clipboard != mirrored)
+        {
+            mirrored = state.clipboard;
+            clipboard->setText(mirrored);
+        }
     }
 
     const ui::DrawList &EditorSink::commands() const noexcept

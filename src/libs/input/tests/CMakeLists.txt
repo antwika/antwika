@@ -19,6 +19,7 @@ add_executable(antwika_input_tests
     KeyboardTest.cpp
     LiveInputSourceTest.cpp
     MappedPointerSourceTest.cpp
+    MemoryClipboardTest.cpp
     MouseButtonTest.cpp
     MouseTest.cpp
     NullInputBackendConformanceTest.cpp

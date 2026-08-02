@@ -35,7 +35,7 @@ Refusals are listed under the pane by line number, at most three at a time and t
 | Drag, or shift and click | Select from wherever the caret was to where the pointer is. |
 | Shift and an arrow | Select a character or a line at a time. |
 | Home, End | Put the caret at the line's start or end; with shift, select that far. |
-| Ctrl+C, Ctrl+X, Ctrl+V | Copy, cut and paste the selection through the editor's own clipboard. |
+| Ctrl+C, Ctrl+X, Ctrl+V | Copy and cut to the system clipboard, and paste whatever it holds -- from this editor or any other program. |
 | Backspace, Delete | Take one character, or the whole selection when there is one. |
 | The wheel, or the bar on the right | Move the pane three lines a notch, or as far as you drag it. |
 
@@ -175,9 +175,9 @@ The default `null` backend reports no close, so `Ctrl+C` is what ends one there,
 
 ## Non-obvious decisions
 
-**This app defines no event of its own.**
+**This app defines one event of its own, and its name says why.**
 Every bit of its state -- the document, the caret, whether it is paused -- is derived from key and pointer edges the recording already carries, so a replay retypes the session rather than replaying its text.
-That is the "only externally-supplied input is persisted" rule taken to its conclusion: there is nothing here that is not worked out again.
+The exception is `music.paste`: what the system clipboard held is externally supplied and cannot be worked out again, so it is persisted, which is the "only externally-supplied input is persisted" rule read in both directions.
 
 **A voice is a line, and a preset is only where it starts.**
 The obvious design is four instruments a line asks for by name, and it is wrong in one specific way: it makes "two drums at once" inexpressible, and two drums at once is most of what a drum part *is*.
@@ -201,9 +201,12 @@ Both tables are here, the box above the pane switches between them, and the Swed
 Every character the notation needs is reachable on both -- on the Swedish board the dollar and the brackets are on the right-hand alt key, which is where that board really keeps them.
 A key whose character [`gfx`](../libraries/gfx.md) cannot draw types nothing at all: the coverage is printable ASCII, so å, ä, ö and the dead accents are absent, and no score is written in them in any case.
 
-**The clipboard is this editor's own, and that is a determinism decision rather than laziness.**
-What a desktop clipboard holds is not in any recording, so a replay reading one would paste whatever the replaying machine happened to have and diverge from the run it exists to reproduce.
-Here it is one more `std::string` in `EditorState`, regenerated from the same key presses as the document, and a paste is the characters typed: `Ctrl+V` puts them in `ui::Keyboard::typed` with a `Key::Character` edge each, so [`ui`](../libraries/ui.md) never learns that a clipboard exists.
+**The clipboard is the system's, read and written where each direction is lawful.**
+What a desktop clipboard holds is not in any recording, so a sink reading one would paste whatever the replaying machine happened to have and diverge from the run it exists to reproduce.
+So the read happens where a key press is read: `PasteSource`, above the loop and upstream of the recorder, sees `Ctrl+V` and says what `input::IClipboard` held as a `music.paste` event -- the one event this application defines, because pasted text is the one thing here that cannot be worked out again.
+The recording carries the characters, a replay reads no clipboard at all, and the sink types the payload into `ui::Keyboard::typed` with a `Key::Character` edge each, so [`ui`](../libraries/ui.md) never learns that a clipboard exists.
+The write goes the other way on the render side's terms: a copy lands in `EditorState` as simulation state and a live run's sink mirrors it outward, an outward write no tick reads back -- and a replay is handed no clipboard to write, so replaying somebody's session leaves this machine's alone.
+`input::makeSelectedClipboard()` is the seam: SDL3's clipboard on that backend, raylib's on that one, and a string in the process under `null`, so a headless run still pastes what it copied.
 
 **Every event describes the editor, acts, and describes it again.**
 That is the remedy `ui::Context::finish()` gives for its own ordering: a press is resolved while the frame is being laid out, so the picture beside it predates whatever the press changed.

@@ -4,6 +4,7 @@ add_executable(antwika_music_editor
     src/EditorSink.cpp
     src/EditorState.cpp
     src/MusicEditor.cpp
+    src/PasteSource.cpp
     src/Playback.cpp
     src/RenderSink.cpp
     src/Score.cpp

@@ -5,6 +5,7 @@ add_executable(antwika_music_editor_tests
     EditorSceneTest.cpp
     EditorSinkTest.cpp
     EditorStateTest.cpp
+    PasteSourceTest.cpp
     PlaybackTest.cpp
     RenderSinkTest.cpp
     RunIntegrationTest.cpp
@@ -24,6 +25,7 @@ target_sources(antwika_music_editor_tests
         ../src/EditorScene.cpp
         ../src/EditorSink.cpp
         ../src/EditorState.cpp
+        ../src/PasteSource.cpp
         ../src/Playback.cpp
         ../src/MusicEditor.cpp
         ../src/RenderSink.cpp

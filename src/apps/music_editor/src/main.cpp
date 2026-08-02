@@ -13,6 +13,7 @@
 #include <antwika/input/InputEventCodec.hpp>
 #include <antwika/input/InputPipeline.hpp>
 #include <antwika/input/Key.hpp>
+#include <antwika/input/SelectedClipboard.hpp>
 #include <antwika/input/SelectedInputBackend.hpp>
 #include <antwika/log/Level.hpp>
 #include <antwika/replay/ReplaySource.hpp>
@@ -28,6 +29,7 @@
 
 #include "antwika/music_editor/EditorScene.hpp"
 #include "antwika/music_editor/MusicEditor.hpp"
+#include "antwika/music_editor/PasteSource.hpp"
 #include "antwika/music_editor/Playback.hpp"
 #include "antwika/music_editor/RenderSink.hpp"
 
@@ -39,6 +41,7 @@ using antwika::input::InputPipeline;
 using antwika::log::Level;
 using antwika::music_editor::EditorScene;
 using antwika::music_editor::EditorSink;
+using antwika::music_editor::PasteSource;
 using antwika::music_editor::PlaybackDesc;
 using antwika::music_editor::RenderSink;
 using antwika::replay::ReplaySource;
@@ -83,6 +86,9 @@ namespace
 
         const auto soundBackend =
             antwika::sound::makeSelectedSoundBackend(logger);
+
+        const auto clipboard =
+            antwika::input::makeSelectedClipboard(logger);
 
         logger.log(
             Level::Info,
@@ -137,12 +143,18 @@ namespace
         antwika::app::FullscreenToggleSource fullscreen(
             windowed, *window, codec, kFullscreenKey);
 
+        // A paste is external input, so it is read up here.
+        // The recording carries the characters; a replay reads none.
+        const bool live = !recorded.options.replayPath.has_value();
+
+        PasteSource pasting(fullscreen, *clipboard, codec, live);
+
         // Until the window closes or a replay says stop, like game.
         // The null backend reports no close, so Ctrl+C ends one there.
         const auto summary = antwika::music_editor::bootstrap({
             .logger = logger,
             .eventSink = recorded.eventSink,
-            .inputSource = fullscreen,
+            .inputSource = pasting,
             .codec = codec,
             .scene = scene,
             .mixer = mixer,
@@ -155,6 +167,8 @@ namespace
                     .lookahead = 6,
                     .lead = 4},
             .canvas = kWindowSize,
+            // A replay must not write this machine's clipboard either.
+            .clipboard = live ? clipboard.get() : nullptr,
             .replayRecorder = recorded.replayRecorder,
             .extraSink =
                 [&](const EditorSink &editor)
