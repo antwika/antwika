@@ -28,6 +28,24 @@ namespace antwika::music_editor
 
         state.source = edit.text;
         state.cursor = edit.cursor;
+        state.anchor = edit.anchor;
+
+        // A copy with nothing selected reports nothing.
+        // It must not empty what was copied before it.
+        if (!edit.copied.empty())
+        {
+            state.clipboard = edit.copied;
+        }
+    }
+
+    void applyScroll(EditorState &state, const ui::ScrollChange &scrolled)
+    {
+        if (scrolled.area != kCodeField)
+        {
+            return;
+        }
+
+        state.scroll = scrolled.line;
     }
 
 } // namespace antwika::music_editor

@@ -148,6 +148,23 @@ namespace antwika::ui::detail
         bool pressed = false;
 
         /**
+         * @brief Whether children past this container's edge are cut
+         * off rather than everything being squeezed to fit.
+         *
+         * False everywhere but a text area's lines, and that is the
+         * whole reason it exists: a container with more asked of it
+         * than it has room for cuts every child down in proportion,
+         * which for a document longer than its pane is a page of lines
+         * too short to draw a glyph in -- a blank pane.
+         *
+         * Set here instead, the children keep the size they asked for
+         * and the ones past the bottom edge are clamped to nothing by
+         * the placement that already keeps a child inside its parent.
+         * Which is what a scroll wants: whole lines, and no half ones.
+         */
+        bool clips = false;
+
+        /**
          * @brief The characters this text node draws.
          */
         std::string text{};

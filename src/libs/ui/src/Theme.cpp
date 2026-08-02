@@ -35,6 +35,7 @@ namespace antwika::ui
         base.gap = scaled(base.gap, scale);
         base.buttonPadding = scaled(base.buttonPadding, scale);
         base.focusRingThickness = scaled(base.focusRingThickness, scale);
+        base.scrollbarWidth = scaled(base.scrollbarWidth, scale);
 
         return base;
     }

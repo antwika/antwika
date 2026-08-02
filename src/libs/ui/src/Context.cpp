@@ -199,10 +199,12 @@ namespace antwika::ui
         detail::layout(*tree, canvasSize, &rects);
 
         auto interactions = detail::resolve(
-            *tree, pointerValue, keyboardValue, focusValue);
+            *tree, pointerValue, keyboardValue, focusValue, pendingEdit);
 
-        // The edit was worked out where the field was declared.
-        // It needs no layout, unlike everything the pointer decides.
+        // Most of the edit was worked out where the field was.
+        // A keystroke needs no layout.
+        // Where a click put the caret is the one part that does.
+        // resolve() has just amended this with that.
         interactions.edit = pendingEdit;
 
         // Filled by the flattening pass, since a target names a command.

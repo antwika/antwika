@@ -45,8 +45,13 @@ namespace antwika::ui
         if (focused)
         {
             pendingEdit = detail::editFor(
+                // Both ends together.
+                // A field draws no selection, so it is handed none.
                 Editable{
-                    .id = spec.id, .text = spec.text, .cursor = cursor},
+                    .id = spec.id,
+                    .text = spec.text,
+                    .cursor = cursor,
+                    .anchor = cursor},
                 keyboardValue);
         }
 

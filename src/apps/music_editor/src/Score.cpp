@@ -24,6 +24,12 @@ namespace antwika::music_editor
         // What the rest of a line is, once one of these opens it.
         constexpr std::string_view kCommentMark{"//"};
 
+        // What a line carrying the one above it on opens with.
+        // The join rather than something at the end of the line above.
+        // So a chain half written still reads as calls all the way down.
+        // And so no line has to be edited to add another under it.
+        constexpr std::string_view kJoinMark{"."};
+
         // Cut a line at the comment that ends it, if one does.
         // Outside quotes alone, so a notation is never cut into.
         [[nodiscard]] std::string_view uncommented(
@@ -76,7 +82,8 @@ namespace antwika::music_editor
                "$: bass.n(\"0 ~ 0 [~ 3]\").o(-1)\n"
                "$: lead.n(\"<12 7> ~ 10 ~\").gain(.18)\n"
                "$: drum.n(\"0(3,8)\")\n"
-               "$: drum.n(\"~ [0 0] ~ 0\").gain(.12).pan(.5)\n";
+               "$: drum.n(\"~ [0 0] ~ 0\")\n"
+               "    .gain(.12).pan(.5)\n";
     }
 
     Score::Score() : words(kNote)
@@ -99,6 +106,10 @@ namespace antwika::music_editor
         std::size_t number = 0;
         std::size_t begin = 0;
 
+        // A voice may be spread over several lines.
+        // So it is gathered here and played once something ends it.
+        Gathered gathering;
+
         // The break below is the only way out of this loop.
         // A condition here would be a direction nothing takes.
         // A line begins at or before the end of its document.
@@ -113,7 +124,8 @@ namespace antwika::music_editor
 
             readLine(
                 std::string_view{document}.substr(begin, stop - begin),
-                number);
+                number,
+                gathering);
 
             if (end == std::string::npos)
             {
@@ -122,6 +134,9 @@ namespace antwika::music_editor
 
             begin = end + 1;
         }
+
+        // The last voice has no line after it to end it.
+        finish(gathering);
 
         // A line that is gone takes its voice with it.
         lines.resize(seen);
@@ -141,7 +156,9 @@ namespace antwika::music_editor
     }
 
     void Score::readLine(
-        const std::string_view line, const std::size_t number)
+        const std::string_view line,
+        const std::size_t number,
+        Gathered &gathering)
     {
         // A comment is cut off wherever it starts.
         // So a line that is only a comment is a line holding nothing.
@@ -152,6 +169,26 @@ namespace antwika::music_editor
             return;
         }
 
+        // A call on a line of its own joins the chain above it.
+        if (text.starts_with(kJoinMark))
+        {
+            if (gathering.opened == 0)
+            {
+                refuse(number, "a call above no voice line");
+
+                return;
+            }
+
+            gathering.chain += text;
+
+            return;
+        }
+
+        // Whatever this line is, the voice above it is finished.
+        // So it is played before this one is refused.
+        // Which keeps the problems in the order their lines are in.
+        finish(gathering);
+
         if (!text.starts_with(kVoiceMark))
         {
             refuse(number, "a voice line opens with $:");
@@ -159,7 +196,21 @@ namespace antwika::music_editor
             return;
         }
 
-        play(trimmed(text.substr(kVoiceMark.size())), number);
+        gathering.chain = trimmed(text.substr(kVoiceMark.size()));
+        gathering.opened = number;
+    }
+
+    void Score::finish(Gathered &gathering)
+    {
+        if (gathering.opened == 0)
+        {
+            return;
+        }
+
+        play(gathering.chain, gathering.opened);
+
+        gathering.chain.clear();
+        gathering.opened = 0;
     }
 
     void Score::play(

@@ -11,7 +11,8 @@ A live-coding editor: one pane of code, always sounding, and every keystroke lan
 $: bass.n("0 ~ 0 [~ 3]").o(-1)
 $: lead.n("<12 7> ~ 10 ~").gain(.18)
 $: drum.n("0(3,8)")
-$: drum.n("~ [0 0] ~ 0").gain(.12).pan(.5)
+$: drum.n("~ [0 0] ~ 0")
+    .gain(.12).pan(.5)
 ```
 
 A blank line is passed over, and so is everything after a `//` -- on a line of its own or after a voice, since a comment is cut off wherever it starts.
@@ -23,8 +24,22 @@ A voice line opens with `$:` and carries a chain of calls joined by dots, option
 The two `drum.` lines above are two voices sounding together, because a preset is a *starting point* that the calls after it change a copy of.
 Nothing is stopping four bass lines, or a document with no preset named anywhere in it.
 
-Escape pauses and resumes, Enter is a new line, Tab indents by two, and the two buttons pause and silence everything.
+Escape pauses and resumes, Enter is a new line, Tab indents by two, F10 fills the screen, and the two buttons pause and silence everything.
 Refusals are listed under the pane by line number, at most three at a time and then a count of the rest.
+
+**It writes like a text editor**, which is to say the parts of one a score needs and no more:
+
+| | |
+| --- | --- |
+| Left click | Put the caret where you clicked; below the last line is the end of the document. |
+| Drag, or shift and click | Select from wherever the caret was to where the pointer is. |
+| Shift and an arrow | Select a character or a line at a time. |
+| Ctrl+C, Ctrl+X, Ctrl+V | Copy, cut and paste the selection through the editor's own clipboard. |
+| Backspace, Delete | Take one character, or the whole selection when there is one. |
+| The wheel, or the bar on the right | Move the pane three lines a notch, or as far as you drag it. |
+
+The pane keeps the caret in view while you type and stays where you put it while you scroll.
+It holds as many lines as it has room for and no more: the score can be longer than the window.
 
 ## The calls
 
@@ -75,7 +90,19 @@ $: drum.n("~ 0").gain(.1).pan(-.6).lpf(600).hold(120)
 $: n("0 [3 7] 12 <10 5>").s(triangle).base(220).att(2).dec(90).sus(.2).rel(120).lpf(1800).res(.5).gain(.25)
 ```
 
-A voice is one line however long the chain gets: there is no continuation, and a chain that runs past the pane is still one voice.
+**The same voice, down as many lines as it likes.**
+A line opening with a dot is the one above it carrying on, so this is the line above written out and sounds identically:
+
+```
+$: n("0 [3 7] 12 <10 5>")
+    .s(triangle).base(220)
+    .att(2).dec(90).sus(.2).rel(120)
+    .lpf(1800).res(.5)
+    .gain(.25)
+```
+
+The dot opens the continuation rather than ending the line above it, so a chain being written stays legible while it is half typed -- every line of it reads as a call -- and adding one never means editing the line before it.
+A voice spread this way is refused or sounded as one, and named by the line its `$:` is on.
 
 **One pattern, two sounds.**
 The same notation twice, a fifth apart and panned either side, is a chord that neither line contains.
@@ -112,6 +139,7 @@ $: n("0").s(kazoo)           // s(kazoo) names no shape: sine saw square ...
 $: n("0").gain(x)            // gain(x) wants a number
 $: bass.o(1)                 // a voice needs an n("...") to play
 $: bass.n(0 3)               // n(...) wants its notation in quotes
+  .gain(.2)                  // a call above no voice line
 ```
 
 ## Running it
@@ -164,6 +192,27 @@ Half a bracket is typed on the way to a whole one, and an editor that fell silen
 The refusal is reported through `Score::problems()` instead, named by the line it belongs to, and the new pattern takes over the moment the line reads again.
 `Score` is where that lives, and it is the whole of why live editing feels live.
 
+**The keyboard is a table this app keeps, and it is Swedish by default.**
+[`input`](../libraries/input.md) reports *where* a key is rather than what it types, so what a key types has to be written down somewhere, and `EditorKeys` is where.
+That is not a detail for a score: `$:` opens every voice line, and shift and the full stop is a colon on a Swedish board and a greater-than on an American one, so reading the wrong table makes the language untypeable rather than merely odd.
+Both tables are here, the box above the pane switches between them, and the Swedish one is the default because that is the board this is written on.
+Every character the notation needs is reachable on both -- on the Swedish board the dollar and the brackets are on the right-hand alt key, which is where that board really keeps them.
+A key whose character [`gfx`](../libraries/gfx.md) cannot draw types nothing at all: the coverage is printable ASCII, so å, ä, ö and the dead accents are absent, and no score is written in them in any case.
+
+**The clipboard is this editor's own, and that is a determinism decision rather than laziness.**
+What a desktop clipboard holds is not in any recording, so a replay reading one would paste whatever the replaying machine happened to have and diverge from the run it exists to reproduce.
+Here it is one more `std::string` in `EditorState`, regenerated from the same key presses as the document, and a paste is the characters typed: `Ctrl+V` puts them in `ui::Keyboard::typed` with a `Key::Character` edge each, so [`ui`](../libraries/ui.md) never learns that a clipboard exists.
+
+**Every event describes the editor, acts, and describes it again.**
+That is the remedy `ui::Context::finish()` gives for its own ordering: a press is resolved while the frame is being laid out, so the picture beside it predates whatever the press changed.
+The second description is given no keys and no press, or a keystroke would be typed twice and a button activated twice, and only the first frame's answers are read.
+It costs one more layout and no retained state, and it is what makes a click's caret, a scroll and a typed character all show up in the frame they happened in.
+
+**How far a pane can scroll is `ui`'s answer rather than this app's.**
+`EditorState::scroll` is the line at the top of the pane -- simulation state, since it decides which line a click lands on -- but how many lines fit is a function of the arranged layout, which the tick path deliberately cannot see.
+So the wheel adds notches to it without bounds, `ui` clamps and reports back through `Interactions::scrolled`, and the app stores that.
+A wheel spun a hundred notches past the end settles on the last page after exactly one frame.
+
 **Escape pauses, and Enter does not.**
 Enter is what a line break is written with, which a document of many lines cannot do without -- so the pause had to move to a key the writing does not need.
 Escape is that key, and it is deliberately *not* handed to [`ui`](../libraries/ui.md) as `Key::Cancel`: a field that gave up on what was typed would throw away the score being written.
@@ -191,6 +240,12 @@ Joining says the past is not this voice's to play.
 The layout is a function of the words, so a session recorded in one language and replayed in another would resolve a click to a different widget.
 [ui_demo](ui_demo.md) answers that by fixing the locale in `main()`; this app answers it by having one language, which is the same guarantee with nothing to configure -- and what is actually being written here is mini-notation, which is not English to begin with.
 The preset and control names are the same literals seen from the other side: `bass`, `gain`, `lpf` and the rest are what a document is written with, so translating them would change what a document means.
+The keyboard box is the one place a language appears at all, and it names a *board* rather than a tongue: `swedish` there is which key types a colon, not what the window is written in.
+
+**Filling the screen is not simulation state, so F10 is above the loop.**
+`app::FullscreenToggleSource` wraps the event source and toggles the window on the key, and it changes exactly one thing -- what `IWindow::size()` reports -- which no layout, no hit test and nothing this app plays may read.
+Every layout here is against `configuredSize()`, so a recorded session reaches the same state whether or not anybody pressed it, and a replay of one where somebody did fills the screen at the same tick and still reaches that state.
+It is the same key [game](game.md) uses, since an editor with a different one would be one to remember.
 
 ## See also
 

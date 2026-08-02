@@ -4,12 +4,14 @@
 #include <string>
 
 #include <antwika/app/ConsoleLogging.hpp>
+#include <antwika/app/FullscreenToggleSource.hpp>
 #include <antwika/app/RunRecorded.hpp>
 #include <antwika/gfx/SelectedBackend.hpp>
 #include <antwika/gfx/Size.hpp>
 #include <antwika/gfx/WindowDesc.hpp>
 #include <antwika/input/InputEventCodec.hpp>
 #include <antwika/input/InputPipeline.hpp>
+#include <antwika/input/Key.hpp>
 #include <antwika/input/SelectedInputBackend.hpp>
 #include <antwika/log/Level.hpp>
 #include <antwika/replay/ReplaySource.hpp>
@@ -66,6 +68,11 @@ namespace
     // Typing into it is heard as a change rather than as a blur.
     constexpr std::int64_t kFramesPerCycle = 2 * kFormat.rate;
 
+    // The same key apps/game fills the screen with.
+    // One editor with a different one would be one to remember.
+    constexpr antwika::input::Key kFullscreenKey =
+        antwika::input::Key::F10;
+
     // Capped, rather than run until the window is closed.
     // The default null backend reports no close at all.
     // It is also the build every CI leg produces.
@@ -121,7 +128,17 @@ namespace
              .coalescePointerMotion = true});
 
         WindowInputSource windowed(input, *backend, window->id());
-        TickBudgetSource source(windowed, kTickBudget);
+
+        // Above the loop, since filling the screen is not a tick's news.
+        // It changes what the window reports its size to be.
+        // It changes nothing this app lays out, hit-tests or plays.
+        // The key press is ordinary recorded input all the same.
+        // So a replay fills the screen where the run did.
+        // And reaches the same state either way.
+        antwika::app::FullscreenToggleSource fullscreen(
+            windowed, *window, codec, kFullscreenKey);
+
+        TickBudgetSource source(fullscreen, kTickBudget);
 
         const auto summary = antwika::music_editor::bootstrap({
             .logger = logger,

@@ -2,16 +2,26 @@
 
 #include <algorithm>
 #include <cstddef>
+#include <cstdint>
 #include <optional>
+#include <string>
+#include <string_view>
 #include <vector>
+
+#include <antwika/gfx/Rect.hpp>
 
 #include "antwika/ui/Keyboard.hpp"
 #include "antwika/ui/OptionChoice.hpp"
+#include "antwika/ui/ScrollChange.hpp"
+#include "antwika/ui/TextEdit.hpp"
 #include "antwika/ui/WidgetId.hpp"
 
+#include "Area.hpp"
 #include "Contains.hpp"
 #include "FocusRing.hpp"
 #include "Interactive.hpp"
+#include "Saturate.hpp"
+#include "TextEditing.hpp"
 
 namespace antwika::ui::detail
 {
@@ -296,6 +306,335 @@ namespace antwika::ui::detail
         } // GCOVR_EXCL_LINE
 
         /**
+         * @brief Get the index a click at one line and column lands on.
+         *
+         * Total in both arguments: a line past the last one is the end
+         * of the text, and a column past a line's end is that line's
+         * end. Clicking in the empty part of an area therefore lands
+         * somewhere real rather than nowhere.
+         *
+         * @param text The whole document.
+         * @param line Which line was clicked, counting from zero.
+         * @param column Which glyph cell across it was.
+         * @return The index into text.
+         */
+        [[nodiscard]] std::size_t indexAt(
+            const std::string_view text,
+            const std::size_t line,
+            const std::size_t column) noexcept
+        {
+            std::size_t begin = 0;
+
+            for (std::size_t at = 0; at < line; ++at)
+            {
+                const auto end = endOfLine(text, begin);
+
+                if (end == text.size())
+                {
+                    return text.size();
+                }
+
+                begin = end + 1;
+            }
+
+            return std::min(begin + column, endOfLine(text, begin));
+        }
+
+        /**
+         * @brief Get which line of a text an index is on.
+         * @param text The document to count in.
+         * @param at An index into it.
+         * @return The line, counting from zero.
+         */
+        [[nodiscard]] std::size_t lineOf(
+            const std::string_view text, const std::size_t at) noexcept
+        {
+            return static_cast<std::size_t>(
+                std::ranges::count(text.substr(0, at), '\n'));
+        }
+
+        /**
+         * @brief How far one number goes between zero and another.
+         *
+         * Done in 64 bits, since both are pixel counts and the product
+         * of two of them is not one.
+         *
+         * @param value How far along.
+         * @param range What that is a fraction of; zero answers zero.
+         * @param span What to scale it up to.
+         * @return The scaled value, never above span.
+         */
+        [[nodiscard]] std::uint32_t across(
+            std::uint64_t value,
+            std::uint64_t range,
+            std::uint64_t span) noexcept
+        {
+            if (range == 0)
+            {
+                return 0;
+            }
+
+            return clampToU32(std::min(value, range) * span / range);
+        }
+
+        /**
+         * @brief What one area's own state comes to once it is laid
+         * out.
+         *
+         * Everything below reads this rather than working the same
+         * numbers out again: how many lines are showing is what decides
+         * how far the area can scroll, where its thumb goes, and which
+         * line a click is on.
+         */
+        struct Showing
+        {
+            /** @brief How many whole lines fit, never zero. */
+            std::size_t page = 1;
+
+            /** @brief The furthest line that can usefully be at top. */
+            std::size_t furthest = 0;
+
+            /** @brief Where the lines were drawn. */
+            Rect column{};
+        };
+
+        [[nodiscard]] Showing showingOf(
+            const LayoutTree &tree, const Area &area) noexcept
+        {
+            const auto &column = tree.node(area.column).arranged;
+
+            // An area too short for a whole line still shows one.
+            // Nothing below could divide by it otherwise.
+            const auto page = std::max<std::size_t>(
+                column.size.height / area.lineHeight, 1);
+
+            return Showing{
+                .page = page,
+                .furthest = area.lines > page ? area.lines - page : 0,
+                .column = column};
+        }
+
+        /**
+         * @brief Put the scrollbar's thumb where the drawn lines say.
+         *
+         * As long a share of the track as is showing of the document,
+         * and as far down it as the top line is through the ones that
+         * could be at the top. Written straight onto the arranged node
+         * because both of those need the track's own height, which the
+         * layout has only just decided.
+         *
+         * @param tree The arranged arena; the thumb's rectangle is
+         * written.
+         * @param area The area, which must have a bar.
+         * @param showing What it came out showing.
+         */
+        void placeThumb(
+            LayoutTree &tree, const Area &area, const Showing &showing)
+        {
+            const auto track = tree.node(area.track).arranged;
+
+            const auto whole = track.size.height;
+            const auto share = across(showing.page, area.lines, whole);
+
+            // Never thinner than a line.
+            // A long document would leave nothing to take hold of.
+            const auto thumb =
+                std::clamp(share, std::min(whole, area.lineHeight), whole);
+
+            const auto slack = whole - thumb;
+
+            tree.node(area.thumb).arranged = Rect{
+                .origin =
+                    {.x = track.origin.x,
+                     .y = track.origin.y
+                          + static_cast<std::int32_t>(across(
+                              area.scroll, showing.furthest, slack))},
+                .size = {.width = track.size.width, .height = thumb}};
+        }
+
+        /**
+         * @brief Get the line a press on the scrollbar asks for.
+         * @param track Where the bar was drawn.
+         * @param at Where the pointer is, inside it.
+         * @param furthest The furthest line that can be at the top.
+         * @return The line to put at the top.
+         */
+        [[nodiscard]] std::size_t lineOnTrack(
+            const Rect &track,
+            const Point at,
+            const std::size_t furthest) noexcept
+        {
+            const auto down = static_cast<std::uint64_t>(
+                at.y - track.origin.y);
+
+            // One less than the height.
+            // So the track's last pixel is the last line.
+            return across(
+                down, std::max(track.size.height, 1U) - 1U, furthest);
+        }
+
+        /**
+         * @brief Put a focused area's caret where the pointer is.
+         *
+         * Amends whatever the keys already came to this frame rather
+         * than replacing it, so a frame that both typed and clicked
+         * reports one edit holding both -- and an area nothing was
+         * typed into reports the move on its own.
+         *
+         * @param area The area, whose text the click is measured
+         * against.
+         * @param showing Where its lines were drawn.
+         * @param at Where the pointer is, inside them.
+         * @param extends Whether to leave the selection's far end where
+         * it is rather than bringing it along.
+         * @param edit The frame's edit, which is written.
+         */
+        void layCaret(
+            const Area &area,
+            const Showing &showing,
+            const Point at,
+            const bool extends,
+            std::optional<TextEdit> &edit)
+        {
+            // contains() has already said both of these are inside.
+            // So both differences are below an extent.
+            // Sixty-four bits because an int32 minus an int32 is not one.
+            const auto down = static_cast<std::uint64_t>(
+                static_cast<std::int64_t>(at.y)
+                - showing.column.origin.y);
+
+            const auto right = static_cast<std::uint64_t>(
+                static_cast<std::int64_t>(at.x)
+                - showing.column.origin.x);
+
+            auto next = edit.has_value() && edit->field == area.id
+                ? *edit
+                : TextEdit{ // GCOVR_EXCL_LINE
+                      .field = area.id,
+                      .text = std::string{area.text}, // GCOVR_EXCL_LINE
+                      .cursor = area.cursor,
+                      .anchor = area.anchor};
+
+            next.cursor = indexAt(
+                next.text,
+                area.scroll + static_cast<std::size_t>(
+                    down / area.lineHeight),
+                static_cast<std::size_t>(right / area.advance));
+
+            if (!extends)
+            {
+                next.anchor = next.cursor;
+            }
+
+            // A click where the caret already is changed nothing.
+            // And a frame that changed nothing reports nothing.
+            // Which is the rule every keystroke here follows.
+            if (!edit.has_value() && next.cursor == area.cursor
+                && next.anchor == area.anchor)
+            {
+                return;
+            }
+
+            edit = next;
+        }
+
+        /**
+         * @brief Stage three: what a click did inside a text area, and
+         * which line each one is showing at its top.
+         *
+         * The one stage that needs the layout for something other than
+         * a hit-test: which character a click landed on is a function
+         * of where the area ended up, and so is how much of a document
+         * is showing. Both are settled here rather than where the area
+         * was declared, and both come back the way everything else
+         * does -- through the reported edit, and through
+         * Interactions::scrolled.
+         *
+         * @param tree The arranged arena; a thumb's rectangle is
+         * written.
+         * @param pointer What the caller reports about the pointer.
+         * @param interactions Receives the scroll report.
+         * @param edit The edit the areas and fields reported where they
+         * were declared, which a click on an area's text amends.
+         */
+        void resolveAreas(
+            LayoutTree &tree,
+            const Pointer &pointer,
+            Interactions &interactions,
+            std::optional<TextEdit> &edit)
+        {
+            for (const auto &area : tree.areas())
+            {
+                const auto showing = showingOf(tree, area);
+
+                auto top = std::min(area.scroll, showing.furthest);
+
+                const bool bar = area.track != kNoNode;
+
+                const bool onTrack =
+                    bar && pointer.position && pointer.down
+                    && contains(
+                        tree.node(area.track).arranged, *pointer.position);
+
+                if (onTrack)
+                {
+                    top = lineOnTrack(
+                        tree.node(area.track).arranged,
+                        *pointer.position,
+                        showing.furthest);
+                }
+
+                // A caret that has just moved is brought into view.
+                // One that has not is left exactly where it is.
+                // So a bar drag may take the text off the caret.
+                // Nothing pulls it straight back.
+                const bool moved = !onTrack && edit.has_value()
+                                   && edit->field == area.id
+                                   && area.id != kNoWidget;
+
+                if (moved)
+                {
+                    const auto line = lineOf(edit->text, edit->cursor);
+
+                    top = std::clamp(
+                        top,
+                        line + 1 > showing.page ? line + 1 - showing.page
+                                                : 0,
+                        line);
+                }
+
+                if (top != area.requested)
+                {
+                    interactions.scrolled =
+                        ScrollChange{.area = area.id, .line = top};
+                }
+
+                // On the lines as they were drawn.
+                // The click landed on what was on the screen.
+                const bool inText =
+                    area.focused && pointer.position
+                    && (pointer.pressed
+                        || (pointer.down && pointer.extends))
+                    && contains(showing.column, *pointer.position);
+
+                if (inText)
+                {
+                    layCaret(
+                        area,
+                        showing,
+                        *pointer.position,
+                        pointer.extends,
+                        edit);
+                }
+
+                if (bar)
+                {
+                    placeThumb(tree, area, showing);
+                }
+            }
+        }
+
+        /**
          * @brief Stage three: write every node's resolved appearance.
          *
          * The only stage that writes to the arena, and it reads nothing
@@ -349,17 +688,21 @@ namespace antwika::ui::detail
         LayoutTree &tree,
         const Pointer &pointer,
         const Keyboard &keyboard,
-        WidgetId focus)
+        WidgetId focus,
+        std::optional<TextEdit> &edit)
     {
-        // Three stages, and only this order works.
+        // Four stages, and only this order works.
         // A press may move focus, so the pointer is read first.
         // The ring goes on whatever focus ended up being.
         // So focus is settled before anything is dressed.
-        // Dressing is the only one that writes to the arena.
+        // The areas read the edit the keys came to and amend it.
+        // So they run before the caller reads it.
+        // Dressing is the only one that writes an appearance.
         Interactions interactions;
 
         hitTest(tree, pointer, interactions);
         resolveFocus(tree, keyboard, focus, interactions);
+        resolveAreas(tree, pointer, interactions, edit);
         dress(tree, interactions, pointer.down);
 
         return interactions;

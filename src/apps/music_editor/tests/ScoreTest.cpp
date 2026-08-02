@@ -82,6 +82,10 @@ TEST(ScoreTest, TheOpeningDocumentShowsTheShapeOfTheLanguage)
     const auto first = source.find("$: drum.");
     ASSERT_NE(first, std::string::npos);
     EXPECT_NE(source.find("$: drum.", first + 1), std::string::npos);
+
+    // And a chain carried onto a second line.
+    // A dot reads as a continuation once somebody has seen one.
+    EXPECT_NE(source.find("\n    ."), std::string::npos);
 }
 
 TEST(ScoreTest, ReadsAVoiceLineIntoAVoice)
@@ -94,6 +98,104 @@ TEST(ScoreTest, ReadsAVoiceLineIntoAVoice)
     EXPECT_EQ(eventsOn(score, 0), 3U);
     EXPECT_EQ(score.voices()[0].preset, preset("bass"));
     EXPECT_TRUE(score.problems().empty());
+}
+
+// A chain may run down as many lines as it likes.
+// A line opening with a dot is the one above it carrying on.
+TEST(ScoreTest, AChainMayRunDownSeveralLines)
+{
+    Score score;
+
+    score.read(
+        "$: bass.n(\"0 3 5\")\n"
+        "     .o(-1)\n"
+        "     .gain(.2)\n");
+
+    EXPECT_TRUE(score.problems().empty());
+    ASSERT_EQ(score.voices().size(), 1U);
+    EXPECT_EQ(eventsOn(score, 0), 3U);
+
+    // Every call took, however far down the chain it was written.
+    EXPECT_FLOAT_EQ(score.voices()[0].preset.gain, 0.2F);
+    EXPECT_EQ(
+        score.voices()[0].preset.transpose,
+        preset("bass").transpose - 12);
+}
+
+// One voice however many lines it took.
+// And the lines after it are still their own voices.
+TEST(ScoreTest, ASpreadChainIsOneVoiceAndTheNextLineIsAnother)
+{
+    Score score;
+
+    score.read(
+        "$: bass.n(\"0\")\n"
+        "  .o(-1)\n"
+        "$: lead.n(\"3 5\")\n");
+
+    EXPECT_TRUE(score.problems().empty());
+    ASSERT_EQ(score.voices().size(), 2U);
+    EXPECT_EQ(eventsOn(score, 0), 1U);
+    EXPECT_EQ(eventsOn(score, 1), 2U);
+}
+
+// The same chain, written both ways, is the same voice.
+TEST(ScoreTest, SpreadingAChainChangesNothingAboutIt)
+{
+    Score spread;
+    Score together;
+
+    spread.read(
+        "$: lead.n(\"0 3\")\n"
+        "  .o(1)\n"
+        "  .gain(.5)\n");
+
+    together.read("$: lead.n(\"0 3\").o(1).gain(.5)\n");
+
+    ASSERT_EQ(spread.voices().size(), 1U);
+    ASSERT_EQ(together.voices().size(), 1U);
+    EXPECT_EQ(spread.voices()[0].preset, together.voices()[0].preset);
+}
+
+// A refusal names the line the voice opened on.
+// That is the one a reader has to go and look at.
+TEST(ScoreTest, ASpreadChainIsRefusedAgainstTheLineItOpenedOn)
+{
+    Score score;
+
+    score.read(
+        "// a comment\n"
+        "$: bass.n(\"0\")\n"
+        "  .wobble(3)\n");
+
+    ASSERT_EQ(score.problems().size(), 1U);
+    EXPECT_EQ(score.problems()[0].line, 2U);
+    EXPECT_TRUE(score.voices().empty());
+}
+
+TEST(ScoreTest, RefusesACallWithNoVoiceLineAboveIt)
+{
+    Score score;
+
+    score.read("  .gain(.2)\n$: bass.n(\"0\")\n");
+
+    ASSERT_EQ(score.problems().size(), 1U);
+    EXPECT_EQ(score.problems()[0].line, 1U);
+    EXPECT_FALSE(score.problems()[0].message.empty());
+    ASSERT_EQ(score.voices().size(), 1U);
+}
+
+// Whatever ends a voice comes after it.
+// So the problems stay in the order their lines are in.
+TEST(ScoreTest, KeepsTheProblemsInLineOrderAcrossAVoiceThatEnds)
+{
+    Score score;
+
+    score.read("$: bass.n(\"0\").wobble(3)\nnot a voice line\n");
+
+    ASSERT_EQ(score.problems().size(), 2U);
+    EXPECT_EQ(score.problems()[0].line, 1U);
+    EXPECT_EQ(score.problems()[1].line, 2U);
 }
 
 TEST(ScoreTest, PassesOverACommentAndABlankLine)

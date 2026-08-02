@@ -48,6 +48,16 @@ namespace antwika::ui::detail
         return append(std::move(leaf));
     }
 
+    void LayoutTree::addArea(Area area)
+    {
+        areaList.push_back(area);
+    }
+
+    const std::vector<Area> &LayoutTree::areas() const noexcept
+    {
+        return areaList;
+    }
+
     std::size_t LayoutTree::append(Node value)
     {
         value.parent = openNode;

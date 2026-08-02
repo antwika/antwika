@@ -2,6 +2,8 @@
 
 #include "antwika/ui/Interactions.hpp"
 #include "antwika/ui/OptionChoice.hpp"
+#include "antwika/ui/ScrollChange.hpp"
+#include "antwika/ui/TextAreaSpec.hpp"
 #include "antwika/ui/TextEdit.hpp"
 #include "antwika/ui/TextFieldSpec.hpp"
 #include "antwika/ui/WidgetId.hpp"
@@ -9,6 +11,8 @@
 using antwika::ui::Interactions;
 using antwika::ui::kNoWidget;
 using antwika::ui::OptionChoice;
+using antwika::ui::ScrollChange;
+using antwika::ui::TextAreaSpec;
 using antwika::ui::TextEdit;
 using antwika::ui::TextFieldSpec;
 using antwika::ui::WidgetId;
@@ -65,6 +69,14 @@ TEST(FieldValueTest, TwoTextEditsMatchOnlyWhenEveryFieldDoes)
     moved.cursor = 1;
     EXPECT_NE(anEdit(), moved);
 
+    auto selected = anEdit();
+    selected.anchor = 1;
+    EXPECT_NE(anEdit(), selected);
+
+    auto copied = anEdit();
+    copied.copied = "ab";
+    EXPECT_NE(anEdit(), copied);
+
     auto submitted = anEdit();
     submitted.submitted = true;
     EXPECT_NE(anEdit(), submitted);
@@ -97,4 +109,34 @@ TEST(FieldValueTest, InteractionsCompareTheirEditAndTheirChoiceToo)
     Interactions chose;
     chose.chosen = OptionChoice{.dropdown = kField, .index = 0};
     EXPECT_NE(quiet, chose);
+
+    Interactions scrolled;
+    scrolled.scrolled = ScrollChange{.area = kField, .line = 2};
+    EXPECT_NE(quiet, scrolled);
+}
+
+TEST(FieldValueTest, TwoScrollReportsMatchOnlyWhenBothPartsDo)
+{
+    constexpr ScrollChange showing{.area = kField, .line = 3};
+
+    EXPECT_EQ(showing, (ScrollChange{.area = kField, .line = 3}));
+    EXPECT_NE(showing, (ScrollChange{.area = WidgetId{4}, .line = 3}));
+    EXPECT_NE(showing, (ScrollChange{.area = kField, .line = 4}));
+}
+
+TEST(FieldValueTest, ATextEditDefaultsToNoSelectionAndNothingCopied)
+{
+    const TextEdit edit{};
+
+    EXPECT_EQ(edit.anchor, edit.cursor);
+    EXPECT_TRUE(edit.copied.empty());
+}
+
+TEST(FieldValueTest, ATextAreaDefaultsToNoSelectionAndNoBar)
+{
+    const TextAreaSpec spec{};
+
+    EXPECT_FALSE(spec.anchor.has_value());
+    EXPECT_EQ(spec.scroll, 0U);
+    EXPECT_FALSE(spec.scrollbar);
 }

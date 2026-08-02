@@ -138,6 +138,21 @@ namespace antwika::ui::detail
                     continue;
                 }
 
+                const auto padding = doubled(node.padding);
+
+                // A container that clips asks for nothing.
+                // Which is the other half of what Node::clips means.
+                // A pane must not demand its document's height.
+                // Everything beside it would be squeezed away.
+                // To make room for lines nobody can see.
+                if (node.clips)
+                {
+                    node.measured =
+                        Size{.width = padding, .height = padding};
+
+                    continue;
+                }
+
                 std::uint64_t along = 0;
                 std::uint32_t across = 0;
                 std::uint32_t count = 0;
@@ -160,7 +175,6 @@ namespace antwika::ui::detail
                     ++count;
                 }
 
-                const auto inset = doubled(node.padding);
                 const auto gaps =
                     count > 0 ? clampToU32(
                                     std::uint64_t{node.gap} * (count - 1))
@@ -168,8 +182,8 @@ namespace antwika::ui::detail
 
                 node.measured = sizeFrom(
                     node.axis,
-                    clampToU32(along + gaps + inset),
-                    clampToU32(std::uint64_t{across} + inset));
+                    clampToU32(along + gaps + padding),
+                    clampToU32(std::uint64_t{across} + padding));
             }
         }
 
@@ -381,7 +395,7 @@ namespace antwika::ui::detail
                     static_cast<std::uint32_t>(room - demand),
                     growers);
             }
-            else if (demand > room)
+            else if (demand > room && !parent.clips)
             {
                 distributeShrink(extents, demand, room);
             }
