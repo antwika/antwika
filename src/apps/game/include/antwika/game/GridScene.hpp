@@ -6,6 +6,7 @@
 #include <antwika/gfx/Size.hpp>
 
 #include "antwika/game/Cell.hpp"
+#include "antwika/game/Messages.hpp"
 #include "antwika/game/SceneSnapshot.hpp"
 
 namespace antwika::game
@@ -73,6 +74,19 @@ namespace antwika::game
     {
     public:
         /**
+         * @brief Construct the scene over the language its hover panel
+         * words itself in.
+         *
+         * The panel is the one thing here made of words rather than of
+         * art, so it is the one thing that needs a translator; the
+         * atlas says everything else.
+         *
+         * @param translator Words the hover panel; must outlive this
+         * scene.
+         */
+        explicit GridScene(const Translator &translator);
+
+        /**
          * @brief Draw one frame.
          *
          * The same snapshot drawn at two different sub-tick fractions
@@ -134,6 +148,8 @@ namespace antwika::game
 
         [[nodiscard]] static bool onCanvas(
             Cell cell, Size canvas, const SceneSnapshot &snapshot);
+
+        const Translator &translator;
     };
 
 } // namespace antwika::game

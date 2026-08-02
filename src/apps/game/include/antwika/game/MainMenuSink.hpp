@@ -7,6 +7,8 @@
 #include "antwika/game/AppMode.hpp"
 #include "antwika/game/InputFold.hpp"
 #include "antwika/game/MainMenuScene.hpp"
+#include "antwika/game/OptionsScene.hpp"
+#include "antwika/game/OptionsState.hpp"
 #include "antwika/game/UiOverlay.hpp"
 
 namespace antwika::game
@@ -42,6 +44,19 @@ namespace antwika::game
      * Quit ends the run by signalling the loop's stop directly rather
      * than by putting an engine.stop on the wire, for the same reason:
      * the recording holds the click, and the stop follows from it.
+     *
+     * **The options screen is this sink's too**, because it is this
+     * screen with something else on it: which of the two is up is a flag
+     * in OptionsState, both are described into the one overlay, and
+     * MainMenuScene::draw() paints whichever it was handed. A mode of
+     * its own would have wanted a fourth overlay and a fourth branch in
+     * the renderer for a card that is the menu's other face; a second
+     * sink over one overlay would have had two writers of one picture.
+     *
+     * That screen is also the one place a *key press* means something
+     * here, and it means one thing: the key an action is being bound to.
+     * That is resolved in the tick path like every click, so a replay
+     * rebinds exactly what the run rebound.
      */
     class MainMenuSink final : public ITickEventSink
     {
@@ -58,13 +73,20 @@ namespace antwika::game
          * @param scene Describes the menu. Must outlive this sink.
          * @param stop Signalled by "Quit"; the same StopSignal
          * EngineLoop is watching. Must outlive this sink.
+         * @param options Whether the key bindings are showing, which
+         * action is waiting for a key, and what the bindings are. Must
+         * outlive this sink.
+         * @param optionsScene Describes the key bindings. Must outlive
+         * this sink.
          */
         MainMenuSink(
             AppModeState &mode,
             UiOverlay &overlay,
             const InputFold &input,
             const MainMenuScene &scene,
-            ITickEventSink &stop);
+            ITickEventSink &stop,
+            OptionsState &options,
+            const OptionsScene &optionsScene);
 
         MainMenuSink(const MainMenuSink &) = delete;
         MainMenuSink(MainMenuSink &&) = delete;
@@ -86,11 +108,15 @@ namespace antwika::game
 
         void refreshAndAct(const TickEvent &event, bool pressed);
 
+        void refreshOptions(bool pressed);
+
         AppModeState &mode;
         UiOverlay &overlay;
         const InputFold &input;
         const MainMenuScene &scene;
         ITickEventSink &stop;
+        OptionsState &options;
+        const OptionsScene &optionsScene;
     };
 
 } // namespace antwika::game

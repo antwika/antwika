@@ -12,6 +12,9 @@
 #include <antwika/ui/TextFieldSpec.hpp>
 #include <antwika/ui/Theme.hpp>
 
+#include "antwika/game/MessageId.hpp"
+#include "antwika/game/Messages.hpp"
+
 namespace antwika::game
 {
 
@@ -36,6 +39,11 @@ namespace antwika::game
         // Wide enough for a file name and three buttons in a row.
         constexpr std::uint32_t kCardWidth = 420;
     } // namespace
+
+    SaveLoadScene::SaveLoadScene(const Translator &translator)
+        : translator(translator)
+    {
+    }
 
     Frame SaveLoadScene::describe(
         Size canvas,
@@ -62,7 +70,15 @@ namespace antwika::game
                 const auto card = ui.panel(
                     {.width = fixedSize(kCardWidth), .height = kFit});
 
-                ui.label("SAVE / LOAD");
+                ui.label(translator.text(MessageId::SaveTitle));
+
+                // Worded here rather than borrowed from the state.
+                // A ui::DropdownSpec borrows its placeholder.
+                // So the words outlive the call that reads them.
+                const auto empty =
+                    translator.text(MessageId::SaveNoSaves);
+                const auto unnamed =
+                    translator.text(MessageId::SaveNameNew);
 
                 ui.dropdown(DropdownSpec{
                     .id = saveWidgets::kPicker,
@@ -70,25 +86,28 @@ namespace antwika::game
                     .width = kGrow,
                     .options = state.options(),
                     .selected = state.selected(),
-                    .placeholder = "no saved games",
+                    .placeholder = empty,
                     .open = state.listOpen()});
 
                 ui.textField(TextFieldSpec{
                     .id = saveWidgets::kName,
                     .width = kGrow,
                     .text = state.name(),
-                    .placeholder = "name a new save",
+                    .placeholder = unnamed,
                     .cursor = state.caret()});
 
                 {
                     const auto row = ui.row({.width = kGrow});
 
                     ui.button(
-                        "Save", {.id = saveWidgets::kSave, .width = kGrow});
+                        translator.text(MessageId::SaveSave),
+                        {.id = saveWidgets::kSave, .width = kGrow});
                     ui.button(
-                        "Load", {.id = saveWidgets::kLoad, .width = kGrow});
+                        translator.text(MessageId::SaveLoad),
+                        {.id = saveWidgets::kLoad, .width = kGrow});
                     ui.button(
-                        "Back", {.id = saveWidgets::kBack, .width = kGrow});
+                        translator.text(MessageId::SaveBack),
+                        {.id = saveWidgets::kBack, .width = kGrow});
                 }
 
                 // Always declared, so the card is always one height.

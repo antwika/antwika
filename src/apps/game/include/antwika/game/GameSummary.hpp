@@ -4,7 +4,9 @@
 
 #include "antwika/game/Camera.hpp"
 #include "antwika/game/Cell.hpp"
+#include "antwika/game/CityRatings.hpp"
 #include "antwika/game/GameState.hpp"
+#include "antwika/game/KeyBindings.hpp"
 #include "antwika/game/SceneSnapshot.hpp"
 #include "antwika/game/Toolbar.hpp"
 
@@ -41,6 +43,38 @@ namespace antwika::game
         std::vector<BuildingView> buildings;
 
         Camera camera;
+
+        /**
+         * @brief How the city was doing when the run ended.
+         *
+         * **Here so that a divergence in the city's people fails the
+         * replay comparison directly.** Population and employment are
+         * sums over state no other member of this summary carries: a
+         * house's occupancy is not in BuildingView and a workplace's
+         * share of the workforce is not either, so without this a live
+         * run and its replay could disagree about both and still be
+         * equal.
+         *
+         * Not persisted, and nothing here is: every member is a sum over
+         * what a save already holds -- see CityRatings.
+         */
+        CityRatings ratings;
+
+        /**
+         * @brief Which key asked for what, when the run ended.
+         *
+         * **Here so that a divergence in the bindings fails the replay
+         * comparison directly.** A binding decides what every later key
+         * press means, so a live run and its replay disagreeing about
+         * one is exactly the silent divergence the whole arrangement
+         * exists to prevent -- and without this the two could disagree
+         * about a key nobody happened to press afterwards and still
+         * compare equal.
+         *
+         * A run that was never told otherwise ends on kDefaultBindings,
+         * which is what every summary held before this member existed.
+         */
+        KeyBindings bindings;
 
         /**
          * @brief Compare two summaries.

@@ -1,8 +1,17 @@
 #include "antwika/game/SessionStore.hpp"
 
+#include <array>
+#include <cstddef>
+#include <optional>
+
 #include "antwika/game/Building.hpp"
 #include "antwika/game/CityGrid.hpp"
+#include "antwika/game/Coverage.hpp"
+#include "antwika/game/Errand.hpp"
+#include "antwika/game/Household.hpp"
+#include "antwika/game/Production.hpp"
 #include "antwika/game/Walker.hpp"
+#include "antwika/game/Workforce.hpp"
 
 namespace antwika::game
 {
@@ -46,6 +55,15 @@ namespace antwika::game
 
         for (const auto &walker : save.walkers)
         {
+            std::optional<Errand> errand;
+
+            if (walker.errand.has_value())
+            {
+                errand = Errand{
+                    .carrying = walker.errand->carrying,
+                    .leg = walker.errand->leg};
+            }
+
             grid.walkers.push_back(
                 StoredWalker{
                     .at = walker.at,
@@ -56,11 +74,43 @@ namespace antwika::game
                             .carried = walker.carried,
                             .stepsUntilHome = walker.stepsUntilHome,
                             .ticksUntilStep = walker.ticksUntilStep},
-                    .home = walker.home});
+                    .home = walker.home,
+                    .errand = errand,
+                    .destination = walker.errand.has_value()
+                        ? walker.errand->destination
+                        : std::nullopt});
         }
 
         for (const auto &building : save.buildings)
         {
+            // Slot by slot rather than by copying the list.
+            // A file names as many walkers as the schema allows.
+            // This is the one place that number becomes slots.
+            std::array<std::optional<std::size_t>, kMaxWalkersOut> held{};
+
+            for (std::size_t slot = 0; slot < kMaxWalkersOut; ++slot)
+            {
+                if (slot < building.walkers.size())
+                {
+                    held[slot] = building.walkers[slot];
+                }
+            }
+
+            std::optional<Production> production;
+
+            if (building.ticksUntilOutput.has_value())
+            {
+                production = Production{
+                    .ticksUntilOutput = *building.ticksUntilOutput};
+            }
+
+            std::optional<Workforce> workforce;
+
+            if (building.employed.has_value())
+            {
+                workforce = Workforce{.employed = *building.employed};
+            }
+
             grid.buildings.push_back(
                 StoredBuilding{
                     .at = building.at,
@@ -72,7 +122,11 @@ namespace antwika::game
                             .ticksUntilSpawn = building.ticksUntilSpawn,
                             .ticksUntilDrain = building.ticksUntilDrain,
                             .ticksUntilRisk = building.ticksUntilRisk},
-                    .walker = building.walker});
+                    .walkers = held,
+                    .coverage = Coverage{.ticksLeft = building.coverage},
+                    .production = production,
+                    .household = building.household,
+                    .workforce = workforce});
         }
 
         restoreCityGrid(world, built, paths, grid);

@@ -87,6 +87,13 @@ namespace antwika::gfx::sdl3
         [[nodiscard]] Size size() const override;
 
         /**
+         * @brief Whether this window is filling the screen.
+         * @return What SDL's window flags say, or the last state seen
+         * if closed.
+         */
+        [[nodiscard]] bool isFullscreen() const override;
+
+        /**
          * @brief Get the renderer that draws into this window.
          * @return The renderer, which discards everything once closed.
          */
@@ -97,6 +104,12 @@ namespace antwika::gfx::sdl3
          * @param title The new title.
          */
         void setTitle(std::string_view title) override;
+
+        /**
+         * @brief Make the window fill the screen, or stop filling it.
+         * @param fullscreen True to fill the screen, false to restore.
+         */
+        void setFullscreen(bool fullscreen) override;
 
         /**
          * @brief Destroy the window, or do nothing if already closed.
@@ -112,6 +125,7 @@ namespace antwika::gfx::sdl3
         std::string lastTitle;
         Size requestedSize;
         Size lastSize;
+        bool lastFullscreen = false;
     };
 
 } // namespace antwika::gfx::sdl3

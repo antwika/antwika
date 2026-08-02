@@ -4,7 +4,7 @@
 #include <cstddef>
 #include <cstdint>
 
-#include <antwika/i18n/MessageId.hpp>
+#include "antwika/ui_demo/MessageId.hpp"
 
 namespace antwika::ui_demo
 {
@@ -69,20 +69,20 @@ namespace antwika::ui_demo
      * @param showcase The page to name.
      * @return Its message id.
      */
-    [[nodiscard]] constexpr antwika::i18n::MessageId showcaseNameId(
+    [[nodiscard]] constexpr MessageId showcaseNameId(
         const Showcase showcase) noexcept
     {
-        constexpr std::array<antwika::i18n::MessageId, kShowcaseCount>
+        constexpr std::array<MessageId, kShowcaseCount>
             ids{
-                antwika::i18n::MessageId::UiDemoPageLabels,
-                antwika::i18n::MessageId::UiDemoPageButtons,
-                antwika::i18n::MessageId::UiDemoPageLayout,
-                antwika::i18n::MessageId::UiDemoPageTextField,
-                antwika::i18n::MessageId::UiDemoPageDropdown,
-                antwika::i18n::MessageId::UiDemoPageFocus,
-                antwika::i18n::MessageId::UiDemoPageTheme,
-                antwika::i18n::MessageId::UiDemoPageRects,
-                antwika::i18n::MessageId::UiDemoPageShrink};
+                MessageId::PageLabels,
+                MessageId::PageButtons,
+                MessageId::PageLayout,
+                MessageId::PageTextField,
+                MessageId::PageDropdown,
+                MessageId::PageFocus,
+                MessageId::PageTheme,
+                MessageId::PageRects,
+                MessageId::PageShrink};
 
         return ids
             [static_cast<std::size_t>(showcase) % kShowcaseCount];

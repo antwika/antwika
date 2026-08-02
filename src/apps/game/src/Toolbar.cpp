@@ -1,14 +1,21 @@
 #include "antwika/game/Toolbar.hpp"
 
+#include <array>
 #include <cstddef>
+#include <cstdint>
 #include <optional>
 #include <string>
+#include <string_view>
 
 #include <antwika/ui/Alignment.hpp>
 #include <antwika/ui/ButtonState.hpp>
 #include <antwika/ui/Context.hpp>
+#include <antwika/ui/DropdownSpec.hpp>
 #include <antwika/ui/Sizing.hpp>
 #include <antwika/ui/Theme.hpp>
+
+#include "antwika/game/MessageId.hpp"
+#include "antwika/game/Messages.hpp"
 
 namespace antwika::game
 {
@@ -16,10 +23,35 @@ namespace antwika::game
     using antwika::ui::Alignment;
     using antwika::ui::ButtonState;
     using antwika::ui::Context;
+    using antwika::ui::fixedSize;
     using antwika::ui::kFit;
+    using antwika::ui::kGrow;
     using antwika::ui::scaledTheme;
     using antwika::ui::scaleForCanvas;
     using antwika::ui::Theme;
+
+    namespace
+    {
+        // Two of them, so eleven tools are six rows rather than eleven.
+        // One column of eleven wants more height than there is.
+        // A container with too little room shrinks its children.
+        // Which is a button whose caption no longer fits inside it.
+        constexpr std::size_t kPaletteColumns = 2;
+
+        // A palette button's width, in theme pixels.
+        // Fixed rather than fitted, so the two columns line up.
+        // A column as wide as its own longest caption is not one.
+        constexpr std::uint32_t kToolCells = 48;
+
+        // The closed game menu's width, in theme pixels.
+        // Wide enough for the longest item it lists.
+        // So the list lines up with the box rather than overhanging it.
+        constexpr std::uint32_t kMenuCells = 70;
+    } // namespace
+
+    Toolbar::Toolbar(const Translator &translator) : translator(translator)
+    {
+    }
 
     Frame Toolbar::describe(
         Size canvas,
@@ -27,64 +59,196 @@ namespace antwika::game
         const Camera &camera,
         std::optional<BuildTool> selected,
         bool paused,
-        antwika::time::Tick tick) const
+        antwika::time::Tick tick,
+        CityRatings ratings,
+        bool menuOpen) const
     {
-        Context ui{
-            canvas, scaledTheme(Theme{}, scaleForCanvas(canvas)), pointer};
+        const auto scale = scaleForCanvas(canvas);
+
+        Context ui{canvas, scaledTheme(Theme{}, scale), pointer};
+
+        // ui::DropdownSpec borrows its options rather than owning them.
+        // So the words live here, for as long as the Context does.
+        std::array<std::string, kMenuItemCount> words{};
+        std::array<std::string_view, kMenuItemCount> items{};
+
+        for (std::size_t index = 0; index < kMenuItemCount; ++index)
+        {
+            words[index] =
+                translator.text(menuItemLabel(static_cast<MenuItem>(index)));
+            items[index] = words[index];
+        }
+
+        const std::uint32_t toolWidth = kToolCells * scale;
+        const std::uint32_t paletteWidth = kPaletteColumns * toolWidth
+                                           + ui.theme().gap
+                                           + 2 * ui.theme().padding;
 
         {
-            const auto bar = ui.panel({.width = kFit, .height = kFit});
+            // Its own container rather than the Context's root.
+            // The root spaces its children by the theme's gap.
+            // These three are meant to meet the edges and each other.
+            const auto screen = ui.column(
+                {.width = kGrow,
+                 .height = kGrow,
+                 .padding = 0,
+                 .gap = 0});
 
             {
+                const auto bar = ui.panel(
+                    {.width = kGrow,
+                     .height = kFit,
+                     .id = widgets::kTopBar});
                 const auto row =
-                    ui.row({.width = kFit, .cross = Alignment::Center});
+                    ui.row({.width = kGrow, .cross = Alignment::Center});
 
-                ui.button("zoom out", {.id = widgets::kZoomOut});
-                ui.button("zoom in", {.id = widgets::kZoomIn});
-                ui.button("reset view", {.id = widgets::kResetView});
+                // Whether the list is showing is the caller's to know.
+                // A dropdown holds nothing between frames.
+                // See ui::DropdownSpec, and here that is the point.
+                // An open list changes what a click at a pixel means.
+                ui.dropdown(
+                    {.id = widgets::kGameMenu,
+                     .optionIdBase = widgets::kFirstMenuItem,
+                     .width = fixedSize(kMenuCells * scale),
+                     .options = items,
+                     .placeholder =
+                         translator.text(MessageId::ToolbarGameMenu),
+                     .open = menuOpen});
+
+                // The one route to the menu modal, kept where it was.
+                // F10 no longer opens it -- see UiSink.
+                ui.button(
+                    translator.text(MessageId::ToolbarMenu),
+                    {.id = widgets::kMenu});
+
+                ui.spacer(kGrow);
+            }
+
+            {
+                const auto middle = ui.row(
+                    {.width = kGrow,
+                     .height = kGrow,
+                     .padding = 0,
+                     .gap = 0});
+
+                // The city.
+                // A spacer fills no pixels, so it covers none.
+                // ui::Interactions::pointerOverUi is false over it.
+                // Which is what leaves a press here to GridSink.
+                ui.spacer(kGrow);
+
+                {
+                    const auto palette = ui.panel(
+                        {.width = fixedSize(paletteWidth),
+                         .height = kGrow,
+                         .id = widgets::kSidePanel});
+
+                    ui.label(translator.text(MessageId::ToolbarBuild));
+
+                    // One button per tool, in the enumeration's order.
+                    // A tool added there therefore gets a button here.
+                    // And a row of its own once the columns are full.
+                    for (std::size_t first = 0; first < kBuildToolCount;
+                         first += kPaletteColumns)
+                    {
+                        const auto row = ui.row({.width = kGrow});
+
+                        for (std::size_t column = 0;
+                             column < kPaletteColumns;
+                             ++column)
+                        {
+                            const auto index = first + column;
+
+                            // An odd count leaves the last row short.
+                            // Padded rather than left to close up.
+                            // So a column stays a column.
+                            if (index >= kBuildToolCount)
+                            {
+                                ui.spacer(fixedSize(toolWidth));
+                                continue;
+                            }
+
+                            const auto tool =
+                                static_cast<BuildTool>(index);
+
+                            // The chosen one is held down.
+                            // Which it is is then plain at a glance.
+                            ui.button(
+                                translator.text(toolLabel(tool)),
+                                {.id = widgets::toolWidget(tool),
+                                 .width = fixedSize(toolWidth),
+                                 .state =
+                                     tool == selected
+                                         ? std::optional{
+                                               ButtonState::Pressed}
+                                         : std::nullopt});
+                        }
+                    }
+
+                    ui.spacer(kGrow);
+                }
+            }
+
+            {
+                const auto bar = ui.panel(
+                    {.width = kGrow,
+                     .height = kFit,
+                     .id = widgets::kBottomBar});
+                const auto row =
+                    ui.row({.width = kGrow, .cross = Alignment::Center});
+
+                ui.button(
+                    translator.text(MessageId::ToolbarZoomOut),
+                    {.id = widgets::kZoomOut});
+                ui.button(
+                    translator.text(MessageId::ToolbarZoomIn),
+                    {.id = widgets::kZoomIn});
+                ui.button(
+                    translator.text(MessageId::ToolbarResetView),
+                    {.id = widgets::kResetView});
 
                 // Held down while paused.
                 // So what the run is doing can be seen, not just read.
                 ui.button(
-                    std::string{pauseLabel(paused)},
+                    translator.text(pauseLabel(paused)),
                     {.id = widgets::kPauseResume,
                      .state = paused
                                   ? std::optional{ButtonState::Pressed}
                                   : std::nullopt});
 
+                // The readouts are pushed to the far end.
+                // A bar that gains a button does not move them along.
+                ui.spacer(kGrow);
+
                 // Simulation state, read back out where it can be seen.
-                ui.label("zoom " + std::to_string(camera.zoomLevel()));
+                const auto zoom = std::to_string(camera.zoomLevel());
+                const std::array<std::string_view, 1> zoomArgs{zoom};
+                ui.label(
+                    translator.formatted(
+                        MessageId::ToolbarZoomLevel, zoomArgs));
 
                 // Likewise: the tick is what a run is counted in.
                 // A replay is on the same one at the same point.
-                ui.label("tick " + std::to_string(tick));
+                const auto counted = std::to_string(tick);
+                const std::array<std::string_view, 1> tickArgs{counted};
+                ui.label(
+                    translator.formatted(
+                        MessageId::ToolbarTick, tickArgs));
 
-                // Last on the row rather than beside the zoom buttons.
-                // Every widget declared before it then keeps its place.
-                // So a session recorded before this replays untouched.
-                ui.button("menu", {.id = widgets::kMenu});
-            }
+                // Labels rather than buttons, and not by omission.
+                // There is nothing to press here, so there is no id.
+                // And so a rating can never become an input.
+                const auto people = std::to_string(ratings.population);
+                const std::array<std::string_view, 1> peopleArgs{people};
+                ui.label(
+                    translator.formatted(
+                        MessageId::ToolbarPopulation, peopleArgs));
 
-            {
-                const auto row =
-                    ui.row({.width = kFit, .cross = Alignment::Center});
-
-                // One button per tool, in the enumeration's own order.
-                // A tool added there therefore gets a button here.
-                for (std::size_t index = 0; index < kBuildToolCount;
-                     ++index)
-                {
-                    const auto tool = static_cast<BuildTool>(index);
-
-                    // The chosen one is held down.
-                    // Which it is can then be seen without hovering.
-                    ui.button(
-                        std::string{toolLabel(tool)},
-                        {.id = widgets::toolWidget(tool),
-                         .state = tool == selected
-                                      ? std::optional{ButtonState::Pressed}
-                                      : std::nullopt});
-                }
+                const auto jobs = std::to_string(ratings.employment);
+                const std::array<std::string_view, 1> jobArgs{jobs};
+                ui.label(
+                    translator.formatted(
+                        MessageId::ToolbarEmployment, jobArgs));
             }
         }
 

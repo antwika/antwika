@@ -8,8 +8,6 @@
 #include <antwika/gfx/Point.hpp>
 #include <antwika/input/IInputEventCodec.hpp>
 #include <antwika/input/InputEvent.hpp>
-#include <antwika/i18n/MessageId.hpp>
-#include <antwika/i18n/Translator.hpp>
 #include <antwika/input/InputState.hpp>
 #include <antwika/time/Tick.hpp>
 #include <antwika/ui/Pointer.hpp>
@@ -17,6 +15,8 @@
 
 #include "antwika/atlas_editor/EditorState.hpp"
 #include "antwika/atlas_editor/IAtlasStore.hpp"
+#include "antwika/atlas_editor/MessageId.hpp"
+#include "antwika/atlas_editor/Messages.hpp"
 #include "antwika/atlas_editor/UiOverlay.hpp"
 
 namespace antwika::atlas_editor
@@ -27,7 +27,6 @@ namespace antwika::atlas_editor
     using antwika::gfx::Point;
     using antwika::input::IInputEventCodec;
     using antwika::input::InputEvent;
-    using antwika::i18n::Translator;
     using antwika::input::InputState;
     using antwika::ui::Pointer;
     using antwika::ui::WidgetId;
@@ -115,7 +114,7 @@ namespace antwika::atlas_editor
 
         void applyToSheet(const InputEvent &event, Point at, Point moved);
 
-        void report(antwika::i18n::MessageId id, std::string detail);
+        void report(MessageId id, std::string detail);
 
         void save();
 

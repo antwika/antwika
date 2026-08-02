@@ -5,6 +5,8 @@
 #include <antwika/ui/Pointer.hpp>
 #include <antwika/ui/WidgetId.hpp>
 
+#include "antwika/game/Messages.hpp"
+
 namespace antwika::game
 {
 
@@ -38,7 +40,7 @@ namespace antwika::game
     } // namespace modalWidgets
 
     /**
-     * @brief The menu drawn over a city, opened by F10 or by the bar.
+     * @brief The menu drawn over a city, opened by the bar's menu button.
      *
      * **This is a modal rather than a mode**, which is the one thing
      * that separates it from MainMenuScene: the city is still there
@@ -75,12 +77,27 @@ namespace antwika::game
     {
     public:
         /**
+         * @brief Construct the modal over the language it words itself
+         * in.
+         *
+         * Injected and fixed at kDefaultLocale by whoever builds it, for
+         * the reason Toolbar gives.
+         *
+         * @param translator Words every caption; must outlive this
+         * scene.
+         */
+        explicit MenuModalScene(const Translator &translator);
+
+        /**
          * @brief Describe the modal for one tick.
          * @param canvas The area the modal is laid out into.
          * @param pointer Where the pointer is and what it is doing.
          * @return The drawing commands and what the pointer did.
          */
         [[nodiscard]] Frame describe(Size canvas, Pointer pointer) const;
+
+    private:
+        const Translator &translator;
     };
 
 } // namespace antwika::game

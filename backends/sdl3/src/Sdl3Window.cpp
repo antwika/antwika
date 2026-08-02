@@ -30,6 +30,12 @@ namespace antwika::gfx::sdl3
 
             return title == nullptr ? std::string{} : std::string(title);
         }
+
+        bool readFullscreen(SDL_Window *window)
+        {
+            return (SDL_GetWindowFlags(window) & SDL_WINDOW_FULLSCREEN)
+                   != 0;
+        }
     } // namespace
 
     Sdl3Window::Sdl3Window(
@@ -44,7 +50,8 @@ namespace antwika::gfx::sdl3
           windowId(WindowId{SDL_GetWindowID(window)}),
           lastTitle(readTitle(window)),
           requestedSize(configured),
-          lastSize(readSize(window))
+          lastSize(readSize(window)),
+          lastFullscreen(readFullscreen(window))
     {
     }
 
@@ -78,6 +85,11 @@ namespace antwika::gfx::sdl3
         return window == nullptr ? lastSize : readSize(window);
     }
 
+    bool Sdl3Window::isFullscreen() const
+    {
+        return window == nullptr ? lastFullscreen : readFullscreen(window);
+    }
+
     IRenderer &Sdl3Window::renderer()
     {
         return sdlRenderer;
@@ -101,6 +113,24 @@ namespace antwika::gfx::sdl3
         }
     }
 
+    void Sdl3Window::setFullscreen(bool fullscreen)
+    {
+        lastFullscreen = fullscreen;
+
+        if (window == nullptr)
+        {
+            return;
+        }
+
+        if (!SDL_SetWindowFullscreen(window, fullscreen))
+        {
+            logger.log(
+                Level::Warning,
+                std::string("gfx.sdl3: could not change fullscreen: ")
+                    + SDL_GetError());
+        }
+    }
+
     void Sdl3Window::close()
     {
         if (window == nullptr)
@@ -110,6 +140,7 @@ namespace antwika::gfx::sdl3
 
         lastTitle = readTitle(window);
         lastSize = readSize(window);
+        lastFullscreen = readFullscreen(window);
 
         // Before SDL_DestroyRenderer, load-bearing for textures.
         // Freeing a texture after its renderer is undefined.

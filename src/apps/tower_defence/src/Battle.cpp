@@ -1,6 +1,5 @@
 #include "antwika/tower_defence/Battle.hpp"
 
-#include <algorithm>
 #include <utility>
 
 namespace antwika::tower_defence
@@ -16,10 +15,20 @@ namespace antwika::tower_defence
                 - static_cast<std::int64_t>(right.y);
             return static_cast<std::uint32_t>((dx * dx) + (dy * dy));
         }
+
+        // Armour comes off before the hit lands, and a hit never heals.
+        std::int32_t damageTo(
+            const std::int32_t towerDamage, const std::int32_t armour)
+        {
+            return towerDamage > armour ? towerDamage - armour : 0;
+        }
     } // namespace
 
-    Battle::Battle(Level level, BattleConfig config)
-        : levelData(std::move(level)), config(config)
+    Battle::Battle(
+        Level level, BattleConfig config, std::vector<WaveRelease> waves)
+        : levelData(std::move(level)),
+          config(config),
+          waves(std::move(waves))
     {
     }
 
@@ -45,21 +54,39 @@ namespace antwika::tower_defence
         return true;
     }
 
-    void Battle::step()
+    StepOutcome Battle::step()
     {
-        walk();
-        spawn();
-        fire();
+        const std::uint32_t leaks = walk();
+        release();
+        const std::uint64_t reward = fire();
         ++tickCount;
+        return StepOutcome{.reward = reward, .leaks = leaks};
     }
 
-    void Battle::walk()
+    bool Battle::cleared() const
     {
+        return waveIndex >= waves.size() && living.empty();
+    }
+
+    std::uint32_t Battle::walk()
+    {
+        std::uint32_t leaked = 0;
         std::vector<Mob> survivors;
         survivors.reserve(living.size());
         for (Mob &mob : living)
         {
+            // A kind's pace is how many ticks one cell costs it.
+            // A Runner at one crosses every tick, as every mob used to.
+            // A Brute at three stands still for two of every three.
+            if (mob.ticksUntilStep > 0)
+            {
+                --mob.ticksUntilStep;
+                survivors.push_back(mob);
+                continue;
+            }
+
             ++mob.pathIndex;
+            mob.ticksUntilStep = profileOf(mob.kind).ticksPerCell - 1;
             if (mob.pathIndex + 1 < levelData.path.size())
             {
                 survivors.push_back(mob);
@@ -67,51 +94,76 @@ namespace antwika::tower_defence
             }
 
             // Reaching the end is the one way a mob costs the player.
-            // The score floors at zero rather than wrapping.
+            // What it costs is a life, and Campaign is what keeps those.
             ++leaked;
-            totalScore -= std::min(totalScore, config.leakPenalty);
         }
         living = std::move(survivors);
+        return leaked;
     }
 
-    void Battle::spawn()
+    void Battle::release()
     {
-        // Two things a caller can hand in that a mob cannot exist over.
-        // A period of zero is a modulo by zero.
-        // A level with no path gives a mob no cell to stand on.
-        // Both fire() and snapshotOf() read the cell it stands on.
-        // Spawning nothing is what keeps either from being reachable.
-        if (config.spawnPeriodTicks == 0 || levelData.path.empty())
+        if (waveIndex >= waves.size())
         {
+            return;
+        }
+        if (ticksUntilRelease > 0)
+        {
+            --ticksUntilRelease;
             return;
         }
 
-        if (tickCount % config.spawnPeriodTicks != 0)
+        const WaveRelease &wave = waves[waveIndex];
+
+        // A level with no path gives a mob no cell to stand on.
+        // Both fire() and snapshotOf() read the cell one stands on.
+        // Releasing nothing keeps either from being reachable.
+        // Letting the wave pass anyway is what stops such a level.
+        // Otherwise a campaign could never clear it.
+        if (spawnedInWave < wave.order.size()
+            && !levelData.path.empty())
         {
-            return;
+            const MobKind kind = wave.order[spawnedInWave];
+            Mob released;
+            released.id = nextMobId;
+            released.kind = kind;
+            released.health = profileOf(kind).health;
+            living.push_back(released);
+            ++nextMobId;
+            ++spawnedInWave;
+
+            if (spawnedInWave < wave.order.size())
+            {
+                ticksUntilRelease = wave.spawnPeriodTicks;
+                return;
+            }
         }
-        living.push_back(Mob{
-            .id = nextMobId,
-            .pathIndex = 0,
-            .health = config.mobHealth});
-        ++nextMobId;
+
+        // The wave is spent, so the gap before the next one starts.
+        ++waveIndex;
+        spawnedInWave = 0;
+        ticksUntilRelease = wave.gapTicks;
     }
 
-    void Battle::fire()
+    std::uint64_t Battle::fire()
     {
         for (const Tower &tower : guns)
         {
             // Furthest along the path wins.
             // That is the mob about to leak, so it is the one to shoot.
-            // No tie-break is needed, and none is written.
-            // Mobs are kept in ascending spawn order.
-            // Every mob advances exactly one cell per tick.
-            // So two mobs can never share a path index.
-            // The vector is in strictly descending path order.
-            // The first mob in reach is therefore the furthest along.
-            // That is why this stops at it rather than comparing.
-            // A comparison would be a branch nothing could ever take.
-            // BattleTest asserts the ordering the stop relies on.
+            //
+            // The tie-break is written out rather than relied upon.
+            // Mobs used to advance one cell a tick each.
+            // So no two could ever share a path index.
+            // And the first in reach was always the furthest along.
+            // Kinds walk at different paces now.
+            // So two mobs can stand on one cell.
+            // And a Runner can overtake a Brute.
+            // With no tie-break, vector order alone would decide.
+            // living is kept in ascending spawn order.
+            // Only a strictly greater path index replaces a candidate.
+            // So a tie resolves to the smallest id.
+            // Both of those are total orders.
             std::size_t best = living.size();
             for (std::size_t i = 0; i < living.size(); ++i)
             {
@@ -121,16 +173,22 @@ namespace antwika::tower_defence
                 {
                     continue;
                 }
-                best = i;
-                break;
+                if (best == living.size()
+                    || living[i].pathIndex > living[best].pathIndex)
+                {
+                    best = i;
+                }
             }
             if (best == living.size())
             {
                 continue;
             }
-            living[best].health -= config.towerDamage;
+
+            living[best].health -= damageTo(
+                config.towerDamage, profileOf(living[best].kind).armour);
         }
 
+        std::uint64_t earned = 0;
         std::vector<Mob> survivors;
         survivors.reserve(living.size());
         for (const Mob &mob : living)
@@ -140,9 +198,10 @@ namespace antwika::tower_defence
                 survivors.push_back(mob);
                 continue;
             }
-            totalScore += config.killScore;
+            earned += profileOf(mob.kind).reward;
         }
         living = std::move(survivors);
+        return earned;
     }
 
     const Level &Battle::level() const
@@ -165,19 +224,19 @@ namespace antwika::tower_defence
         return guns;
     }
 
-    std::uint64_t Battle::score() const
-    {
-        return totalScore;
-    }
-
     std::uint64_t Battle::ticks() const
     {
         return tickCount;
     }
 
-    std::uint32_t Battle::leaks() const
+    std::size_t Battle::waveCount() const
     {
-        return leaked;
+        return waves.size();
+    }
+
+    std::size_t Battle::wavesReleased() const
+    {
+        return waveIndex;
     }
 
 } // namespace antwika::tower_defence

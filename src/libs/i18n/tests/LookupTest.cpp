@@ -1,14 +1,14 @@
 #include <gtest/gtest.h>
 
 #include <array>
-#include <span>
 #include <string_view>
 
 #include <antwika/i18n/Catalogue.hpp>
 #include <antwika/i18n/Locale.hpp>
 #include <antwika/i18n/Lookup.hpp>
-#include <antwika/i18n/MessageId.hpp>
 #include <antwika/i18n/Translation.hpp>
+
+#include "TestMessages.hpp"
 
 namespace
 {
@@ -18,43 +18,22 @@ namespace
     using antwika::i18n::format;
     using antwika::i18n::Locale;
     using antwika::i18n::lookup;
-    using antwika::i18n::MessageId;
+    using antwika::i18n::tests::kTestEnglishCatalogue;
+    using antwika::i18n::tests::kTestSwedishCatalogue;
+    using antwika::i18n::tests::TestId;
+    using antwika::i18n::tests::TestMessages;
     using antwika::i18n::Translation;
     using antwika::i18n::TranslationOrigin;
 
-    // Deliberately incomplete, which the compiled-in catalogues are not.
-    // Only a catalogue a test builds itself can reach the fallback rule.
-    constexpr std::array<CatalogueEntry, 2> kPartialEntries{{
-        {MessageId::MenuPlayGame, "Spela"},
-        {MessageId::ToolbarZoomLevel, "zoom {0} av {1}"},
-    }};
-
-    constexpr std::array<CatalogueEntry, 3> kCompleteEntries{{
-        {MessageId::MenuPlayGame, "Play game"},
-        {MessageId::MenuLanguage, "Language"},
-        {MessageId::ToolbarZoomLevel, "zoom {0} of {1}"},
-    }};
-
-    const Catalogue &partial()
-    {
-        static const Catalogue catalogue{Locale::Swedish, kPartialEntries};
-
-        return catalogue;
-    }
-
-    const Catalogue &complete()
-    {
-        static const Catalogue catalogue{Locale::English, kCompleteEntries};
-
-        return catalogue;
-    }
-
+    // The Swedish catalogue here is deliberately incomplete.
+    // The catalogues an application ships are not.
+    // Only a silent catalogue can reach the fallback rule.
     constexpr std::array<std::string_view, 2> kArgs{"2", "4"};
 
     TEST(LookupTest, Lookup_TakesTheActiveCatalogueWhenItHasTheId)
     {
-        const Translation translation =
-            lookup(MessageId::MenuPlayGame, partial(), complete());
+        const Translation translation = lookup<TestMessages>(
+            TestId::Play, kTestSwedishCatalogue, kTestEnglishCatalogue);
 
         EXPECT_EQ(translation.text, "Spela");
         EXPECT_EQ(translation.origin, TranslationOrigin::Exact);
@@ -62,8 +41,10 @@ namespace
 
     TEST(LookupTest, Lookup_FallsBackWhenTheActiveCatalogueIsSilent)
     {
-        const Translation translation =
-            lookup(MessageId::MenuLanguage, partial(), complete());
+        const Translation translation = lookup<TestMessages>(
+            TestId::Language,
+            kTestSwedishCatalogue,
+            kTestEnglishCatalogue);
 
         EXPECT_EQ(translation.text, "Language");
         EXPECT_EQ(translation.origin, TranslationOrigin::Fallback);
@@ -71,17 +52,19 @@ namespace
 
     TEST(LookupTest, Lookup_ReportsAnIdNeitherCatalogueKnows)
     {
-        const Translation translation =
-            lookup(MessageId::MenuSaveReplay, partial(), complete());
+        const Translation translation = lookup<TestMessages>(
+            TestId::Absent, kTestSwedishCatalogue, kTestEnglishCatalogue);
 
-        EXPECT_EQ(translation.text, "!MenuSaveReplay!");
+        EXPECT_EQ(translation.text, "!Absent!");
         EXPECT_EQ(translation.origin, TranslationOrigin::Missing);
     }
 
     TEST(LookupTest, Lookup_ReportsAnIdThatIsNotAnEnumeratorAtAll)
     {
-        const Translation translation =
-            lookup(static_cast<MessageId>(9999), partial(), complete());
+        const Translation translation = lookup<TestMessages>(
+            static_cast<TestId>(9999),
+            kTestSwedishCatalogue,
+            kTestEnglishCatalogue);
 
         EXPECT_EQ(translation.text, "!?!");
         EXPECT_EQ(translation.origin, TranslationOrigin::Missing);
@@ -89,8 +72,11 @@ namespace
 
     TEST(LookupTest, Format_SubstitutesIntoTheActiveCatalogueText)
     {
-        const Translation translation = format(
-            MessageId::ToolbarZoomLevel, kArgs, partial(), complete());
+        const Translation translation = format<TestMessages>(
+            TestId::Level,
+            kArgs,
+            kTestSwedishCatalogue,
+            kTestEnglishCatalogue);
 
         EXPECT_EQ(translation.text, "zoom 2 av 4");
         EXPECT_EQ(translation.origin, TranslationOrigin::Exact);
@@ -98,11 +84,11 @@ namespace
 
     TEST(LookupTest, Format_SubstitutesIntoAFallbackTextToo)
     {
-        constexpr std::array<CatalogueEntry, 0> none{};
-        const Catalogue empty{Locale::Swedish, none};
+        constexpr std::array<CatalogueEntry<TestId>, 0> none{};
+        const Catalogue<TestId> empty{Locale::Swedish, none};
 
-        const Translation translation = format(
-            MessageId::ToolbarZoomLevel, kArgs, empty, complete());
+        const Translation translation = format<TestMessages>(
+            TestId::Level, kArgs, empty, kTestEnglishCatalogue);
 
         EXPECT_EQ(translation.text, "zoom 2 of 4");
         EXPECT_EQ(translation.origin, TranslationOrigin::Fallback);
@@ -110,10 +96,13 @@ namespace
 
     TEST(LookupTest, Format_LeavesAMissingTextAsItIs)
     {
-        const Translation translation = format(
-            MessageId::MenuSaveReplay, kArgs, partial(), complete());
+        const Translation translation = format<TestMessages>(
+            TestId::Absent,
+            kArgs,
+            kTestSwedishCatalogue,
+            kTestEnglishCatalogue);
 
-        EXPECT_EQ(translation.text, "!MenuSaveReplay!");
+        EXPECT_EQ(translation.text, "!Absent!");
         EXPECT_EQ(translation.origin, TranslationOrigin::Missing);
     }
 

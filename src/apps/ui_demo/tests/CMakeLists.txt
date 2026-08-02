@@ -6,6 +6,7 @@ add_executable(antwika_ui_demo_tests
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/DemoSink.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/DemoState.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/KeyMapping.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/Messages.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/RenderSink.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/TickBudgetSource.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/UiDemo.cpp
@@ -13,6 +14,7 @@ add_executable(antwika_ui_demo_tests
     DemoSinkTest.cpp
     DemoStateTest.cpp
     KeyMappingTest.cpp
+    MessagesTest.cpp
     RenderSinkTest.cpp
     RunIntegrationTest.cpp
     TickBudgetSourceTest.cpp
@@ -32,6 +34,7 @@ target_link_libraries(antwika_ui_demo_tests
         antwika::gfx
         antwika::gfx::tests::mocks
         antwika::i18n
+        antwika::i18n::tests::conformance
         antwika::input
         antwika::log::tests::mocks
         antwika::replay

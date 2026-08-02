@@ -5,6 +5,8 @@
 #include <vector>
 
 #include "antwika/game/Building.hpp"
+#include "antwika/game/Coverage.hpp"
+#include "antwika/game/HousingQuery.hpp"
 #include "antwika/game/Walker.hpp"
 
 namespace antwika::game
@@ -58,11 +60,22 @@ namespace antwika::game
         {
             const auto building = world.get<Building>(entity);
 
+            // Read out here rather than inside the record below.
+            // Two calls inside one aggregate need an unwind pad.
+            // To destroy the half-built record they were made in.
+            // Which is a landing pad on a line nothing reaches.
+            const auto coverage = coverageOf(world, entity).ticksLeft;
+            const auto level = levelOf(world, entity);
+            const auto living = populationAt(world, entity);
+
             snapshot.buildings.push_back(
                 BuildingSprite{
                     .at = world.get<Cell>(entity),
                     .kind = building.kind,
-                    .stock = building.stock});
+                    .stock = building.stock,
+                    .coverage = coverage,
+                    .level = level,
+                    .population = living});
         }
 
         // **Painter's order, no longer optional.**
@@ -111,10 +124,18 @@ namespace antwika::game
 
         for (const auto entity : world.view<Building, Cell>())
         {
+            // Read out here for the reason snapshotOf()'s pair is.
+            const auto coverage = coverageOf(world, entity).ticksLeft;
+            const auto level = levelOf(world, entity);
+            const auto living = populationAt(world, entity);
+
             views.push_back(
                 BuildingView{
                     .at = world.get<Cell>(entity),
-                    .kind = world.get<Building>(entity).kind});
+                    .kind = world.get<Building>(entity).kind,
+                    .coverage = coverage,
+                    .level = level,
+                    .population = living});
         }
 
         return views;

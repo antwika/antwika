@@ -11,14 +11,14 @@ namespace antwika::tower_defence
     RenderSink::RenderSink(
         IWindow &window,
         const BattleScene &scene,
-        const Battle &battle,
+        const Campaign &campaign,
         const ScoreOverlay &overlay,
         ISleeper &sleeper,
         const std::chrono::milliseconds framePeriod,
         const Size canvas)
         : window(window),
           scene(scene),
-          battle(battle),
+          campaign(campaign),
           overlay(overlay),
           sleeper(sleeper),
           framePeriod(framePeriod),
@@ -38,7 +38,7 @@ namespace antwika::tower_defence
         }
 
         auto &renderer = window.renderer();
-        scene.draw(renderer, canvas, snapshotOf(battle));
+        scene.draw(renderer, canvas, snapshotOf(campaign));
 
         // The bar goes on last, so it reads as being in front.
         antwika::ui::paint(renderer, overlay.commands());

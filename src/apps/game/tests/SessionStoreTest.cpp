@@ -7,14 +7,19 @@
 #include "antwika/game/BuildTool.hpp"
 #include "antwika/game/Building.hpp"
 #include "antwika/game/BuildingIndex.hpp"
+#include "antwika/game/BuildingKind.hpp"
 #include "antwika/game/Camera.hpp"
 #include "antwika/game/Cell.hpp"
 #include "antwika/game/Footprint.hpp"
 #include "antwika/game/Direction.hpp"
+#include "antwika/game/Errand.hpp"
 #include "antwika/game/GameState.hpp"
 #include "antwika/game/GridExtent.hpp"
 #include "antwika/game/Path.hpp"
 #include "antwika/game/PathIndex.hpp"
+#include "antwika/game/Household.hpp"
+#include "antwika/game/HousingLevel.hpp"
+#include "antwika/game/Production.hpp"
 #include "antwika/game/SaveGame.hpp"
 #include "antwika/game/SceneSnapshot.hpp"
 #include "antwika/game/SessionStore.hpp"
@@ -27,6 +32,10 @@ namespace
     using antwika::game::Camera;
     using antwika::game::Cell;
     using antwika::game::Direction;
+    using antwika::game::Errand;
+    using antwika::game::ErrandLeg;
+    using antwika::game::Production;
+    using antwika::game::Resource;
     using antwika::game::GameState;
     using antwika::game::GridExtent;
     using antwika::game::Path;
@@ -179,13 +188,14 @@ namespace
         world.add<antwika::game::Walker>(walker, antwika::game::Walker{});
 
         world.add<antwika::game::Building>(
-            source, antwika::game::Building{.walker = walker});
+            source, antwika::game::Building{.walkers = {walker}});
         world.commit();
 
         const auto saved = store.take();
         ASSERT_EQ(saved.buildings.size(), 1U);
         ASSERT_EQ(saved.walkers.size(), 1U);
-        ASSERT_EQ(saved.buildings[0].walker, 0U);
+        ASSERT_EQ(
+            saved.buildings[0].walkers, (std::vector<std::size_t>{0U}));
 
         store.restore(saved);
         world.commit();
@@ -197,7 +207,7 @@ namespace
         }
 
         const auto out = world.get<antwika::game::Building>(
-            restoredBuilding).walker;
+            restoredBuilding).walkers[0];
 
         ASSERT_TRUE(world.alive(out));
         EXPECT_EQ(
@@ -211,7 +221,7 @@ namespace
         world.add<antwika::game::Building>(
             source,
             antwika::game::Building{
-                .kind = antwika::game::BuildingKind::WaterSource,
+                .kind = antwika::game::BuildingKind::Well,
                 .stock = {11, 22},
                 .risk = 33,
                 .ticksUntilSpawn = 44,
@@ -228,7 +238,7 @@ namespace
             const auto building = world.get<antwika::game::Building>(entity);
 
             EXPECT_EQ(
-                building.kind, antwika::game::BuildingKind::WaterSource);
+                building.kind, antwika::game::BuildingKind::Well);
             EXPECT_EQ(building.risk, 33);
             EXPECT_EQ(building.ticksUntilSpawn, 44);
             EXPECT_EQ(building.ticksUntilDrain, 55);
@@ -254,4 +264,115 @@ namespace
         EXPECT_TRUE(built.has(Cell{.x = 4, .y = 4}));
         EXPECT_FALSE(built.has(Cell{.x = 9, .y = 9}));
     }
+
+    // A session resumed is a session served exactly as it was.
+    TEST_F(SessionStoreTest, RestoreThenTake_BringsCoverageBack)
+    {
+        SaveGame save;
+        save.buildings = {
+            antwika::game::SavedBuilding{
+                .at = {.x = 5, .y = 5},
+                .kind = antwika::game::BuildingKind::House,
+                .coverage = {3, 0, 9, 0}}};
+
+        store.restore(save);
+        world.commit();
+
+        EXPECT_EQ(store.take().buildings, save.buildings);
+    }
+
+    // A session resumed is a session lived in exactly as it was.
+    // The one door in and out, so both halves have to carry it.
+    TEST_F(SessionStoreTest, RestoreThenTake_BringsAHouseholdBack)
+    {
+        SaveGame save;
+        save.buildings = {
+            antwika::game::SavedBuilding{
+                .at = {.x = 5, .y = 5},
+                .kind = antwika::game::BuildingKind::House,
+                .household =
+                    antwika::game::Household{
+                        .level = antwika::game::HousingLevel::Hovel,
+                        .ticksUntilEvolve = 6,
+                        .ticksUntilDevolve = 8,
+                        .population = 2}},
+            antwika::game::SavedBuilding{
+                .at = {.x = 9, .y = 9},
+                .kind = antwika::game::BuildingKind::Well}};
+
+        store.restore(save);
+        world.commit();
+
+        EXPECT_EQ(store.take().buildings, save.buildings);
+    }
+
+    // A workplace reopened unstaffed is a workplace that speeds up.
+    // Because an absent Workforce means fully staffed.
+    // See LabourQuery.hpp, and so both halves have to carry the count.
+    TEST_F(SessionStoreTest, RestoreThenTake_BringsAnEmployedCountBack)
+    {
+        SaveGame save;
+        save.buildings = {
+            antwika::game::SavedBuilding{
+                .at = {.x = 5, .y = 5},
+                .kind = antwika::game::BuildingKind::Farm,
+                .employed = 3},
+            antwika::game::SavedBuilding{
+                .at = {.x = 9, .y = 9},
+                .kind = antwika::game::BuildingKind::Well}};
+
+        store.restore(save);
+        world.commit();
+
+        EXPECT_EQ(store.take().buildings, save.buildings);
+    }
+
+    // The one door in and out of a session.
+    // So a member added to the file has to survive both halves.
+    TEST_F(SessionStoreTest, Restore_PutsBackAnErrandAndACountdown)
+    {
+        SaveGame save;
+        save.paths = {{.x = 3, .y = 3}};
+        save.walkers = {SavedWalker{
+            .at = {.x = 3, .y = 3},
+            .kind = antwika::game::WalkerKind::CartPusher,
+            .home = 0U,
+            .errand =
+                antwika::game::SavedErrand{
+                    .destination = 1U,
+                    .carrying = Resource::Clay,
+                    .leg = ErrandLeg::Returning}}};
+        save.buildings = {
+            antwika::game::SavedBuilding{
+                .at = {.x = 5, .y = 5},
+                .kind = antwika::game::BuildingKind::ClayPit,
+                .walkers = {0U},
+                .ticksUntilOutput = 6},
+            antwika::game::SavedBuilding{
+                .at = {.x = 9, .y = 9},
+                .kind = antwika::game::BuildingKind::Storage}};
+
+        store.restore(save);
+        world.commit();
+
+        EXPECT_EQ(store.take().walkers[0].errand, save.walkers[0].errand);
+        EXPECT_EQ(
+            store.take().buildings[0].ticksUntilOutput,
+            save.buildings[0].ticksUntilOutput);
+        EXPECT_FALSE(
+            store.take().buildings[1].ticksUntilOutput.has_value());
+    }
+
+    TEST_F(SessionStoreTest, Restore_LeavesAWalkerWithNoErrandRoaming)
+    {
+        SaveGame save;
+        save.paths = {{.x = 3, .y = 3}};
+        save.walkers = {SavedWalker{.at = {.x = 3, .y = 3}}};
+
+        store.restore(save);
+        world.commit();
+
+        EXPECT_FALSE(store.take().walkers[0].errand.has_value());
+    }
+
 } // namespace

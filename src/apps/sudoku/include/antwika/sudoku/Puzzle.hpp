@@ -28,4 +28,27 @@ namespace antwika::sudoku
     [[nodiscard]] std::vector<antwika::wfc::AllDifferentConstraint>
     buildConstraints();
 
+    /**
+     * @brief Check a board against the rules, blanks and all.
+     *
+     * Asked of a board somebody is part-way through, so a blank is not
+     * a violation: what it refuses is two of the same digit inside one
+     * row, column or box.
+     *
+     * The groups come from buildConstraints() rather than from a second
+     * copy of the geometry, so the squares this checks are by
+     * construction the squares the solver constrains.
+     *
+     * @param board The board to check.
+     * @return True when no group holds one digit twice.
+     */
+    [[nodiscard]] bool obeysRules(const Board &board);
+
+    /**
+     * @brief Check whether a board is a finished Sudoku.
+     * @param board The board to check.
+     * @return True when every square holds a digit and obeysRules().
+     */
+    [[nodiscard]] bool isComplete(const Board &board);
+
 } // namespace antwika::sudoku

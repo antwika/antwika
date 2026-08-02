@@ -8,6 +8,7 @@
 #include <antwika/ui/Pointer.hpp>
 #include <antwika/ui/WidgetId.hpp>
 
+#include "antwika/game/Messages.hpp"
 #include "antwika/game/SaveLoadState.hpp"
 
 namespace antwika::game
@@ -90,6 +91,18 @@ namespace antwika::game
     {
     public:
         /**
+         * @brief Construct the screen over the language it words itself
+         * in.
+         *
+         * Injected and fixed at kDefaultLocale by whoever builds it, for
+         * the reason Toolbar gives.
+         *
+         * @param translator Words every caption; must outlive this
+         * scene.
+         */
+        explicit SaveLoadScene(const Translator &translator);
+
+        /**
          * @brief Describe the screen for one tick.
          * @param canvas The area the screen is laid out into.
          * @param pointer Where the pointer is and what it is doing.
@@ -114,6 +127,9 @@ namespace antwika::game
          * overlay SaveLoadSink wrote them into.
          */
         void draw(IRenderer &renderer, const DrawList &picture) const;
+
+    private:
+        const Translator &translator;
     };
 
 } // namespace antwika::game

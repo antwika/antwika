@@ -1,6 +1,21 @@
 add_executable(antwika_sudoku
     src/Board.cpp
+    src/BoardLayout.cpp
+    src/BoardOverlay.cpp
+    src/BoardSink.cpp
+    src/KeyMapping.cpp
+    src/Messages.cpp
+    src/PlaySink.cpp
     src/Puzzle.cpp
+    src/PuzzleFile.cpp
+    src/PuzzleSource.cpp
+    src/PuzzleState.cpp
+    src/RenderSink.cpp
+    src/Solve.cpp
+    src/Sudoku.cpp
+    src/SudokuOptions.cpp
+    src/SudokuScene.cpp
+    src/TickLimitSource.cpp
     src/main.cpp
 )
 
@@ -11,7 +26,20 @@ target_include_directories(antwika_sudoku
 
 target_link_libraries(antwika_sudoku
     PRIVATE
+        antwika::app
+        antwika::cli
+        antwika::engine
+        antwika::event
+        antwika::gfx
+        antwika::gfx_backend
         antwika::i18n
+        antwika::input
+        antwika::input_backend
+        antwika::log
+        antwika::replay
+        antwika::simulation
+        antwika::time
+        antwika::ui
         antwika::wfc
 )
 
@@ -21,6 +49,8 @@ endif()
 
 antwika_bundle_app(
     TARGET antwika_sudoku
+    ASSETS
+        replays/demo.json
 )
 
 install(TARGETS antwika_sudoku

@@ -11,9 +11,11 @@
 #include "antwika/input/CoalescingPointerSource.hpp"
 #include "antwika/input/IInputBackend.hpp"
 #include "antwika/input/IInputEventCodec.hpp"
+#include "antwika/input/IPointerMapping.hpp"
 #include "antwika/input/IdleMotionSource.hpp"
 #include "antwika/input/Key.hpp"
 #include "antwika/input/LiveInputSource.hpp"
+#include "antwika/input/MappedPointerSource.hpp"
 #include "antwika/input/PointerHintChannel.hpp"
 #include "antwika/input/PointerHintSource.hpp"
 #include "antwika/input/StopOnKeySource.hpp"
@@ -43,6 +45,23 @@ namespace antwika::input
          * event arrive twice.
          */
         bool readsDevice = true;
+
+        /**
+         * @brief What a position the device reported means on the
+         * surface the application lays itself out against, if the two
+         * are not the same thing.
+         *
+         * Off unless an application names one, so a run that names none
+         * records byte for byte what it recorded before this existed.
+         *
+         * **Attached only when a device is read**, unlike every other
+         * field here. A recording already holds mapped positions, so
+         * mapping them again on a replay would map them twice -- see
+         * MappedPointerSource, which is where that asymmetry is argued
+         * out.
+         */
+        std::optional<std::reference_wrapper<const IPointerMapping>>
+            pointerMapping = std::nullopt;
 
         /**
          * @brief Whether to keep only the last of each run of pointer
@@ -97,9 +116,9 @@ namespace antwika::input
      *
      * The stack is, innermost first:
      *
-     *     inner -> LiveInputSource -> PointerHintSource
-     *           -> CoalescingPointerSource -> IdleMotionSource
-     *           -> StopOnKeySource
+     *     inner -> LiveInputSource -> MappedPointerSource
+     *           -> PointerHintSource -> CoalescingPointerSource
+     *           -> IdleMotionSource -> StopOnKeySource
      *
      * and every step of that order carries meaning that used to live in
      * a comment in a main.cpp.
@@ -111,7 +130,13 @@ namespace antwika::input
      * sees the file. That was a real bug, fixed in 277c54b, and it is the
      * reason this class exists rather than a comment saying to be careful.
      *
-     * **PointerHintSource comes straight after it, so no thinning
+     * **MappedPointerSource comes next, so nothing downstream ever sees
+     * a device coordinate.** The hint channel, the thinning decorators,
+     * the recorder and every sink below it all read positions in the
+     * application's own coordinates, and a recording therefore holds
+     * positions that mean the same thing on any window.
+     *
+     * **PointerHintSource comes straight after that, so no thinning
      * decorator can hide a movement from the hint channel.** What it
      * publishes is what the device reported, not what survived the
      * thinning -- which is the entire reason an application can gate its
@@ -181,6 +206,7 @@ namespace antwika::input
         // Each holds a reference into the one engaged before it.
         // Neither copyable nor movable, so those references stay put.
         std::optional<LiveInputSource> live;
+        std::optional<MappedPointerSource> mapping;
         std::optional<PointerHintSource> hinting;
         std::optional<CoalescingPointerSource> coalescing;
         std::optional<IdleMotionSource> idle;

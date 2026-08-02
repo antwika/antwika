@@ -73,6 +73,15 @@ namespace antwika::gfx::detail
         [[nodiscard]] Size size() const override;
 
         /**
+         * @brief Whether this window is filling the screen.
+         * @return Whatever was last asked for, starting at
+         * WindowDesc::fullscreen. There is no screen to fill, so the
+         * request is remembered and nothing acts on it -- exactly as
+         * WindowDesc::resizable is honoured here.
+         */
+        [[nodiscard]] bool isFullscreen() const override;
+
+        /**
          * @brief Get this window's renderer.
          * @return The same discarding renderer on every call.
          */
@@ -83,6 +92,12 @@ namespace antwika::gfx::detail
          * @param title The new title.
          */
         void setTitle(std::string_view title) override;
+
+        /**
+         * @brief Remember whether the window should fill the screen.
+         * @param fullscreen What isFullscreen() will answer.
+         */
+        void setFullscreen(bool fullscreen) override;
 
         /**
          * @brief Close the window, or do nothing if already closed.
@@ -96,6 +111,7 @@ namespace antwika::gfx::detail
         std::string windowTitle;
         Size windowSize;
         bool open = true;
+        bool filling = false;
     };
 
 } // namespace antwika::gfx::detail

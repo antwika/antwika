@@ -3,19 +3,17 @@
 #include <array>
 #include <cstddef>
 
-#include <antwika/i18n/MessageId.hpp>
+#include "antwika/atlas_editor/MessageId.hpp"
 
 namespace antwika::atlas_editor
 {
 
-    using antwika::i18n::MessageId;
-
     MessageId toolNameId(const Tool tool) noexcept
     {
         constexpr std::array<MessageId, kToolCount> names{
-            MessageId::AtlasToolPaint,
-            MessageId::AtlasToolErase,
-            MessageId::AtlasToolPick};
+            MessageId::ToolPaint,
+            MessageId::ToolErase,
+            MessageId::ToolPick};
 
         const auto index = static_cast<std::size_t>(tool);
 

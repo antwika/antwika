@@ -1,0 +1,179 @@
+#include "antwika/companion/Messages.hpp"
+
+#include <array>
+#include <cstddef>
+#include <span>
+
+#include <antwika/i18n/Catalogue.hpp>
+#include <antwika/i18n/Locale.hpp>
+#include <antwika/i18n/MessageName.hpp>
+
+#include "antwika/companion/MessageId.hpp"
+
+namespace antwika::companion
+{
+
+    namespace
+    {
+
+        using i18n::Catalogue;
+        using i18n::CatalogueEntry;
+        using i18n::Locale;
+        using i18n::MessageName;
+
+        constexpr std::array<MessageName<MessageId>, 36> kNames{{
+            {MessageId::Hunger, "Hunger"},
+            {MessageId::Happy, "Happy"},
+            {MessageId::Awake, "Awake"},
+            {MessageId::AwakeHungry, "AwakeHungry"},
+            {MessageId::Asleep, "Asleep"},
+            {MessageId::AsleepWoken, "AsleepWoken"},
+            {MessageId::Gone, "Gone"},
+            {MessageId::NewPet, "NewPet"},
+            {MessageId::PropFeed, "PropFeed"},
+            {MessageId::PropPlay, "PropPlay"},
+            {MessageId::PropSleep, "PropSleep"},
+            {MessageId::SayHello, "SayHello"},
+            {MessageId::SayBored, "SayBored"},
+            {MessageId::SayNiceDay, "SayNiceDay"},
+            {MessageId::SayLaLaLa, "SayLaLaLa"},
+            {MessageId::SayFeedMe, "SayFeedMe"},
+            {MessageId::SayYumYum, "SayYumYum"},
+            {MessageId::SayFull, "SayFull"},
+            {MessageId::SayShhh, "SayShhh"},
+            {MessageId::SayZzz, "SayZzz"},
+            {MessageId::SayPlay, "SayPlay"},
+            {MessageId::SayWheee, "SayWheee"},
+            {MessageId::SayTooTired, "SayTooTired"},
+            {MessageId::SayNotSleepy, "SayNotSleepy"},
+            {MessageId::SayYawn, "SayYawn"},
+            {MessageId::SayPoked, "SayPoked"},
+            {MessageId::StageEgg, "StageEgg"},
+            {MessageId::StageChild, "StageChild"},
+            {MessageId::StageTeen, "StageTeen"},
+            {MessageId::StageAdult, "StageAdult"},
+            {MessageId::StageElder, "StageElder"},
+            {MessageId::MoodHungry, "MoodHungry"},
+            {MessageId::MoodRestless, "MoodRestless"},
+            {MessageId::MoodHeavy, "MoodHeavy"},
+            {MessageId::Day, "Day"},
+            {MessageId::Lineage, "Lineage"},
+        }};
+
+        static_assert(
+            kNames.size() == static_cast<std::size_t>(MessageId::Count),
+            "every MessageId must appear in kNames exactly once");
+
+        // Both arrays list every id, in the same order.
+        // MessagesTest asserts they cover exactly kNames.
+        // That assertion is the point of keying by id.
+        // A forgotten Swedish entry is a red build, not a wrong label.
+        constexpr std::array<CatalogueEntry<MessageId>, kNames.size()>
+            kEnglishEntries{{
+                {MessageId::Hunger, "hunger {0}"},
+                {MessageId::Happy, "happy {0}"},
+                {MessageId::Awake, "awake"},
+                {MessageId::AwakeHungry, "awake, hungry"},
+                {MessageId::Asleep, "asleep"},
+                {MessageId::AsleepWoken, "awake, woken"},
+                {MessageId::Gone, "gone"},
+                {MessageId::NewPet, "new pet"},
+                {MessageId::PropFeed, "feed"},
+                {MessageId::PropPlay, "play"},
+                {MessageId::PropSleep, "sleep"},
+                {MessageId::SayHello, "hello!"},
+                {MessageId::SayBored, "bored..."},
+                {MessageId::SayNiceDay, "nice day"},
+                {MessageId::SayLaLaLa, "la la la"},
+                {MessageId::SayFeedMe, "feed me!"},
+                {MessageId::SayYumYum, "yum yum!"},
+                {MessageId::SayFull, "im full!"},
+                {MessageId::SayShhh, "shhh!"},
+                {MessageId::SayZzz, "zzz..."},
+                {MessageId::SayPlay, "play!"},
+                {MessageId::SayWheee, "wheee!"},
+                {MessageId::SayTooTired, "so tired"},
+                {MessageId::SayNotSleepy, "not tired"},
+                {MessageId::SayYawn, "*yawn*"},
+                {MessageId::SayPoked, "hey!"},
+                {MessageId::StageEgg, "egg"},
+                {MessageId::StageChild, "child"},
+                {MessageId::StageTeen, "teen"},
+                {MessageId::StageAdult, "adult"},
+                {MessageId::StageElder, "elder"},
+                {MessageId::MoodHungry, "hungry"},
+                {MessageId::MoodRestless, "restless"},
+                {MessageId::MoodHeavy, "heavy"},
+                {MessageId::Day, "d{0} {1} {2}"},
+                {MessageId::Lineage, "gen {0} best {1}"},
+            }};
+
+        constexpr std::array<CatalogueEntry<MessageId>, kNames.size()>
+            kSwedishEntries{{
+                {MessageId::Hunger, "hunger {0}"},
+                {MessageId::Happy, "glad {0}"},
+                {MessageId::Awake, "vaken"},
+                {MessageId::AwakeHungry, "vaken, hungrig"},
+                {MessageId::Asleep, "sover"},
+                {MessageId::AsleepWoken, "vaken, väckt"},
+                {MessageId::Gone, "borta"},
+                {MessageId::NewPet, "nytt djur"},
+                {MessageId::PropFeed, "mata"},
+                {MessageId::PropPlay, "leka"},
+                {MessageId::PropSleep, "sova"},
+                {MessageId::SayHello, "hej!"},
+                {MessageId::SayBored, "trist..."},
+                {MessageId::SayNiceDay, "fin dag"},
+                {MessageId::SayLaLaLa, "la la la"},
+                {MessageId::SayFeedMe, "mata mig!"},
+                {MessageId::SayYumYum, "mums mums!"},
+                {MessageId::SayFull, "jag är mätt!"},
+                {MessageId::SayShhh, "schh!"},
+                {MessageId::SayZzz, "zzz..."},
+                {MessageId::SayPlay, "lek!"},
+                {MessageId::SayWheee, "wheee!"},
+                {MessageId::SayTooTired, "så trött"},
+                {MessageId::SayNotSleepy, "inte trött"},
+                {MessageId::SayYawn, "*gäsp*"},
+                {MessageId::SayPoked, "hallå!"},
+                {MessageId::StageEgg, "ägg"},
+                {MessageId::StageChild, "barn"},
+                {MessageId::StageTeen, "tonåring"},
+                {MessageId::StageAdult, "vuxen"},
+                {MessageId::StageElder, "åldring"},
+                {MessageId::MoodHungry, "hungrig"},
+                {MessageId::MoodRestless, "rastlös"},
+                {MessageId::MoodHeavy, "tung"},
+                {MessageId::Day, "d{0} {1} {2}"},
+                {MessageId::Lineage, "gen {0} bäst {1}"},
+            }};
+
+        constexpr Catalogue<MessageId> kEnglishCatalogue{
+            Locale::English, kEnglishEntries};
+
+        constexpr Catalogue<MessageId> kSwedishCatalogue{
+            Locale::Swedish, kSwedishEntries};
+
+    } // namespace
+
+    std::span<const i18n::MessageName<MessageId>>
+        Messages::names() noexcept
+    {
+        return kNames;
+    }
+
+    const i18n::Catalogue<MessageId> &Messages::catalogueFor(
+        i18n::Locale locale) noexcept
+    {
+        switch (locale)
+        {
+        case Locale::English:
+            return kEnglishCatalogue;
+        case Locale::Swedish:
+            return kSwedishCatalogue;
+        }
+
+        return catalogueFor(i18n::kDefaultLocale);
+    }
+
+} // namespace antwika::companion

@@ -7,6 +7,8 @@
 #include <antwika/ui/Pointer.hpp>
 #include <antwika/ui/WidgetId.hpp>
 
+#include "antwika/game/Messages.hpp"
+
 namespace antwika::game
 {
 
@@ -50,6 +52,19 @@ namespace antwika::game
          * @brief Leave the menu for the world and its cities.
          */
         inline constexpr WidgetId kWorldMap{104};
+
+        /**
+         * @brief Show the key bindings in place of this menu.
+         *
+         * **Declared beside Quit rather than under it**, on a row of
+         * two, so the card stays exactly one height and every item
+         * declared before it keeps its rectangle -- the same reason the
+         * ratings labels were appended to the toolbar's first row. The
+         * card is centred in the canvas, so a fifth row would have moved
+         * all four items that were already there and left every session
+         * recorded before this one opening something else.
+         */
+        inline constexpr WidgetId kOptions{105};
     } // namespace menuWidgets
 
     /**
@@ -72,6 +87,19 @@ namespace antwika::game
     {
     public:
         /**
+         * @brief Construct the menu over the language it words itself
+         * in.
+         *
+         * Injected and fixed at kDefaultLocale by whoever builds it, for
+         * the reason Toolbar gives: a hit-test is a function of a layout
+         * laid out from translated text.
+         *
+         * @param translator Words every caption; must outlive this
+         * scene.
+         */
+        explicit MainMenuScene(const Translator &translator);
+
+        /**
          * @brief Describe the menu for one tick.
          * @param canvas The area the menu is laid out into.
          * @param pointer Where the pointer is and what it is doing.
@@ -90,6 +118,9 @@ namespace antwika::game
          * overlay MainMenuSink wrote them into.
          */
         void draw(IRenderer &renderer, const DrawList &picture) const;
+
+    private:
+        const Translator &translator;
     };
 
 } // namespace antwika::game

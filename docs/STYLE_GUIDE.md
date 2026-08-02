@@ -197,10 +197,9 @@ The gcovr `--exclude '.*/apps/[^/]+/src/main\.cpp'` in [`.github/workflows/build
 
 `antwika::app`'s `runRecorded()` is what makes the rule reachable for a tick-loop app: it owns the argument parsing, the try/catch and the record epilogue every `main` used to repeat, leaving construction and one call.
 
-**`src/apps/sudoku/src/main.cpp` is a deliberate exception, and the only one.**
-It has no tick loop and no replay, so `runRecorded()` does not apply to it at all, and its branches are its own `--puzzle` handling and its solve-outcome reporting.
-It was reviewed and left as it stands rather than given a runner of its own, since a second runner would exist for a single caller.
-A new app follows the rule rather than this exception.
+There is no exception to this rule.
+`src/apps/sudoku/src/main.cpp` used to be one -- it had no tick loop and no replay, so `runRecorded()` did not apply to it, and its own `--puzzle` handling and solve-outcome reporting were branches in an unmeasured file.
+It became an ordinary tick-loop application, and its argument parsing moved behind `sudoku::sudokuOptionsFrom()` and its puzzle loading behind `sudoku::startingPuzzle()`, which is what "move it behind a seam the gate does see" means in practice.
 
 ## CMake
 

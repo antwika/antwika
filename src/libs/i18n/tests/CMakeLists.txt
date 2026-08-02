@@ -1,10 +1,12 @@
 find_package(GTest REQUIRED)
 
+add_subdirectory(conformance)
+
 add_executable(antwika_i18n_tests
     CatalogueTest.cpp
     LocaleTest.cpp
     LookupTest.cpp
-    MessageIdTest.cpp
+    MessagesTest.cpp
     SubstituteTest.cpp
     TranslatorTest.cpp
 )
@@ -12,6 +14,7 @@ add_executable(antwika_i18n_tests
 target_link_libraries(antwika_i18n_tests
     PRIVATE
         antwika::i18n
+        antwika::i18n::tests::conformance
         gtest::gtest
 )
 

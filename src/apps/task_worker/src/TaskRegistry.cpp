@@ -14,7 +14,13 @@ namespace antwika::task_worker
     {
         entries.push_back(TaskInfo{ // GCOVR_EXCL_LINE
             taskId, std::move(label), priority, TaskStatus::Pending,
-            durationTicks, std::move(dependsOn)});
+            durationTicks, durationTicks, std::move(dependsOn)});
+    }
+
+    void TaskRegistry::noteDispatch(
+        std::size_t budget, std::size_t dispatched)
+    {
+        dispatch = DispatchInfo{budget, dispatched};
     }
 
     void TaskRegistry::markStarted(antwika::scheduler::JobId jobId)
@@ -49,6 +55,11 @@ namespace antwika::task_worker
     const std::vector<TaskInfo> &TaskRegistry::allTasks() const noexcept
     {
         return entries;
+    }
+
+    DispatchInfo TaskRegistry::lastDispatch() const noexcept
+    {
+        return dispatch;
     }
 
     TaskInfo *TaskRegistry::findByTaskId(std::uint64_t taskId)

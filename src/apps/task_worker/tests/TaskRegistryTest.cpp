@@ -9,6 +9,7 @@
 using antwika::scheduler::JobId;
 using antwika::scheduler::kHighPriority;
 using antwika::scheduler::kNormalPriority;
+using antwika::task_worker::DispatchInfo;
 using antwika::task_worker::TaskDependency;
 using antwika::task_worker::TaskInfo;
 using antwika::task_worker::TaskRegistry;
@@ -22,7 +23,7 @@ TEST(TaskRegistryTest, SubmitRecordsAPendingTaskWithDurationAsTicksLeft)
     EXPECT_EQ(
         registry.allTasks(),
         (std::vector<TaskInfo>{TaskInfo{
-            1, "Alpha", kNormalPriority, TaskStatus::Pending, 5,
+            1, "Alpha", kNormalPriority, TaskStatus::Pending, 5, 5,
             std::nullopt}}));
 }
 
@@ -36,10 +37,10 @@ TEST(TaskRegistryTest, AllTasksReportsSubmittedTasksInOrder)
         registry.allTasks(),
         (std::vector<TaskInfo>{
             TaskInfo{
-                1, "Alpha", kNormalPriority, TaskStatus::Pending, 5,
+                1, "Alpha", kNormalPriority, TaskStatus::Pending, 5, 5,
                 std::nullopt},
             TaskInfo{
-                2, "Beta", kHighPriority, TaskStatus::Pending, 3,
+                2, "Beta", kHighPriority, TaskStatus::Pending, 3, 3,
                 std::nullopt}}));
 }
 
@@ -90,6 +91,19 @@ TEST(TaskRegistryTest, UpdateRemainingChangesTicksLeftForTheMatchingTaskId)
     EXPECT_EQ(registry.allTasks()[0].remainingTicks, 3U);
 }
 
+// The countdown is what moves; how long the task asked for does not.
+// Without both, how far through a task is cannot be worked out at all.
+TEST(TaskRegistryTest, UpdateRemainingLeavesTheSubmittedDurationAlone)
+{
+    TaskRegistry registry;
+    registry.submit(7, "Render", kNormalPriority, 5);
+    registry.markStarted(static_cast<JobId>(1));
+
+    registry.updateRemaining(7, 3);
+
+    EXPECT_EQ(registry.allTasks()[0].durationTicks, 5U);
+}
+
 TEST(TaskRegistryTest, UpdateRemainingIgnoresATaskIdNeverSubmitted)
 {
     TaskRegistry registry;
@@ -124,45 +138,77 @@ TEST(TaskRegistryTest, MarkCompletedIgnoresATaskIdNeverSubmitted)
     EXPECT_EQ(registry.allTasks()[0].status, TaskStatus::Pending);
 }
 
+TEST(TaskRegistryTest, LastDispatchIsAZeroBudgetBeforeAnyDispatch)
+{
+    const TaskRegistry registry;
+
+    EXPECT_EQ(registry.lastDispatch(), (DispatchInfo{0, 0}));
+}
+
+TEST(TaskRegistryTest, NoteDispatchKeepsTheMostRecentBudgetAndCount)
+{
+    TaskRegistry registry;
+
+    registry.noteDispatch(2, 2);
+    registry.noteDispatch(3, 1);
+
+    EXPECT_EQ(registry.lastDispatch(), (DispatchInfo{3, 1}));
+}
+
+TEST(TaskRegistryTest, DispatchInfoEqualityComparesBothFields)
+{
+    const DispatchInfo base{2, 1};
+
+    EXPECT_NE(base, (DispatchInfo{3, 1}));
+    EXPECT_NE(base, (DispatchInfo{2, 2}));
+    EXPECT_EQ(base, (DispatchInfo{2, 1}));
+}
+
 TEST(TaskRegistryTest, TaskInfoEqualityComparesEveryFieldIndependently)
 {
     const TaskInfo base{
-        1, "Alpha", kNormalPriority, TaskStatus::Pending, 5, std::nullopt};
+        1, "Alpha", kNormalPriority, TaskStatus::Pending, 5, 5,
+        std::nullopt};
 
     EXPECT_NE(
         base,
         (TaskInfo{
-            2, "Alpha", kNormalPriority, TaskStatus::Pending, 5,
+            2, "Alpha", kNormalPriority, TaskStatus::Pending, 5, 5,
             std::nullopt}));
     EXPECT_NE(
         base,
         (TaskInfo{
-            1, "Beta", kNormalPriority, TaskStatus::Pending, 5,
+            1, "Beta", kNormalPriority, TaskStatus::Pending, 5, 5,
             std::nullopt}));
     EXPECT_NE(
         base,
         (TaskInfo{
-            1, "Alpha", kHighPriority, TaskStatus::Pending, 5,
+            1, "Alpha", kHighPriority, TaskStatus::Pending, 5, 5,
             std::nullopt}));
     EXPECT_NE(
         base,
         (TaskInfo{
-            1, "Alpha", kNormalPriority, TaskStatus::Running, 5,
+            1, "Alpha", kNormalPriority, TaskStatus::Running, 5, 5,
             std::nullopt}));
     EXPECT_NE(
         base,
         (TaskInfo{
-            1, "Alpha", kNormalPriority, TaskStatus::Pending, 6,
+            1, "Alpha", kNormalPriority, TaskStatus::Pending, 6, 5,
             std::nullopt}));
     EXPECT_NE(
         base,
         (TaskInfo{
-            1, "Alpha", kNormalPriority, TaskStatus::Pending, 5,
+            1, "Alpha", kNormalPriority, TaskStatus::Pending, 5, 6,
+            std::nullopt}));
+    EXPECT_NE(
+        base,
+        (TaskInfo{
+            1, "Alpha", kNormalPriority, TaskStatus::Pending, 5, 5,
             TaskDependency{4, "Delta"}}));
     EXPECT_EQ(
         base,
         (TaskInfo{
-            1, "Alpha", kNormalPriority, TaskStatus::Pending, 5,
+            1, "Alpha", kNormalPriority, TaskStatus::Pending, 5, 5,
             std::nullopt}));
 }
 

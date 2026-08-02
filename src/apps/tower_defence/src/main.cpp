@@ -2,11 +2,13 @@
 #include <iostream>
 #include <memory>
 #include <string>
+#include <string_view>
 
 #include <antwika/app/ConsoleLogging.hpp>
 #include <antwika/app/RunRecorded.hpp>
 #include <antwika/gfx/SelectedBackend.hpp>
 #include <antwika/gfx/WindowDesc.hpp>
+#include <antwika/i18n/Locale.hpp>
 #include <antwika/input/InputEventCodec.hpp>
 #include <antwika/input/InputPipeline.hpp>
 #include <antwika/input/SelectedInputBackend.hpp>
@@ -16,6 +18,8 @@
 #include <antwika/time/SystemSleeper.hpp>
 
 #include "antwika/tower_defence/BattleScene.hpp"
+#include "antwika/tower_defence/FileScoreStore.hpp"
+#include "antwika/tower_defence/Messages.hpp"
 #include "antwika/tower_defence/RenderSink.hpp"
 #include "antwika/tower_defence/TowerDefence.hpp"
 
@@ -28,11 +32,13 @@ using antwika::log::Level;
 using antwika::replay::ReplaySource;
 using antwika::simulation::WindowInputSource;
 using antwika::time::SystemSleeper;
-using antwika::tower_defence::Battle;
 using antwika::tower_defence::BattleScene;
 using antwika::tower_defence::BattleSummary;
+using antwika::tower_defence::Campaign;
+using antwika::tower_defence::FileScoreStore;
 using antwika::tower_defence::RenderSink;
 using antwika::tower_defence::ScoreOverlay;
+using antwika::tower_defence::Translator;
 
 namespace
 {
@@ -42,6 +48,13 @@ namespace
         .width = 960, .height = 720};
 
     constexpr std::chrono::milliseconds kFramePeriod{80};
+
+    // Where the record waits between one run and the next.
+    // Beside the working directory rather than beside the executable.
+    // A high score is what somebody's run made, not a shipped asset.
+    // So it does not belong in the directory a build writes.
+    constexpr std::string_view kScoreFile =
+        "tower_defence_highscore.json";
 
     void run(const RecordedRun &recorded)
     {
@@ -63,8 +76,15 @@ namespace
             .size = kWindowSize,
             .resizable = false});
 
+        // Fixed here rather than read from anywhere.
+        // The score bar is laid out from translated text.
+        // A locale from an environment or a flag is not recorded.
+        // Changing the language is this line, as the window size is.
+        const Translator translator{antwika::i18n::kDefaultLocale};
+
         const BattleScene scene;
         SystemSleeper sleeper;
+        FileScoreStore store{std::string(kScoreFile)};
 
         ReplaySource fileSource(
             antwika::app::scriptedEvents(recorded.options.replayPath));
@@ -92,15 +112,19 @@ namespace
                 .eventSink = recorded.eventSink,
                 .inputSource = source,
                 .codec = codec,
+                .translator = translator,
                 .canvas = kWindowSize,
+                .scoreStore = antwika::tower_defence::storeIfLive(
+                    store, recorded.options.replayPath),
                 .replayRecorder = recorded.replayRecorder,
                 .extraSink =
-                    [&](const Battle &battle, const ScoreOverlay &overlay)
+                    [&](const Campaign &campaign,
+                        const ScoreOverlay &overlay)
                 {
                     return std::make_unique<RenderSink>(
                         *window,
                         scene,
-                        battle,
+                        campaign,
                         overlay,
                         sleeper,
                         kFramePeriod,
@@ -108,10 +132,7 @@ namespace
                 }});
 
         logger.log(
-            Level::Info,
-            "Final score " + std::to_string(summary.score) + " over "
-                + std::to_string(summary.ticks) + " ticks, "
-                + std::to_string(summary.leaks) + " leaked");
+            Level::Info, antwika::tower_defence::summaryLine(summary));
     }
 } // namespace
 

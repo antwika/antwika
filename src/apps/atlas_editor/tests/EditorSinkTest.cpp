@@ -15,8 +15,6 @@
 #include <antwika/gfx/Rect.hpp>
 #include <antwika/gfx/Size.hpp>
 #include <antwika/i18n/Locale.hpp>
-#include <antwika/i18n/MessageId.hpp>
-#include <antwika/i18n/Translator.hpp>
 #include <antwika/input/InputEvent.hpp>
 #include <antwika/input/InputEventCodec.hpp>
 #include <antwika/input/Key.hpp>
@@ -30,6 +28,8 @@
 #include "antwika/atlas_editor/EditorState.hpp"
 #include "antwika/atlas_editor/EditorUi.hpp"
 #include "antwika/atlas_editor/IAtlasStore.hpp"
+#include "antwika/atlas_editor/MessageId.hpp"
+#include "antwika/atlas_editor/Messages.hpp"
 #include "antwika/atlas_editor/Palette.hpp"
 #include "antwika/atlas_editor/Pixel.hpp"
 #include "antwika/atlas_editor/TileGrid.hpp"
@@ -39,10 +39,10 @@
 using antwika::atlas_editor::Canvas;
 using antwika::atlas_editor::defaultPalette;
 using antwika::atlas_editor::describeEditor;
-using antwika::i18n::MessageId;
 using antwika::atlas_editor::EditorSink;
 using antwika::atlas_editor::EditorState;
 using antwika::atlas_editor::IAtlasStore;
+using antwika::atlas_editor::MessageId;
 using antwika::atlas_editor::Pixel;
 using antwika::atlas_editor::scaleOf;
 using antwika::atlas_editor::TileGrid;
@@ -115,7 +115,7 @@ namespace
 
     // The locale is a constant of the build, so a test may name one.
     // What every case here asserts is the English bar's own layout.
-    constexpr antwika::i18n::Translator kTranslator{
+    constexpr antwika::atlas_editor::Translator kTranslator{
         antwika::i18n::kDefaultLocale};
 
     struct Session
@@ -440,7 +440,7 @@ TEST(EditorSinkTest, Handle_SavesTheSheetThroughTheStore)
     // What a status *is* is what the state now holds.
     // The words are EditorUi's, and are asserted there.
     ASSERT_TRUE(session.state.status().has_value());
-    EXPECT_EQ(session.state.status()->id, MessageId::AtlasSaved);
+    EXPECT_EQ(session.state.status()->id, MessageId::Saved);
     EXPECT_EQ(session.state.status()->detail, "memory.png");
 }
 
@@ -460,7 +460,7 @@ TEST(EditorSinkTest, Handle_KeepsTheSessionAliveWhenASaveFails)
 
     EXPECT_EQ(session.state.saves(), 0U);
     ASSERT_TRUE(session.state.status().has_value());
-    EXPECT_EQ(session.state.status()->id, MessageId::AtlasSaveFailed);
+    EXPECT_EQ(session.state.status()->id, MessageId::SaveFailed);
     EXPECT_FALSE(session.state.status()->detail.empty());
 }
 
@@ -482,7 +482,7 @@ TEST(EditorSinkTest, Handle_LoadsASheetThroughTheStore)
         session.state.image().size(), (Size{.width = 1, .height = 1}));
     EXPECT_EQ(session.state.loads(), 1U);
     ASSERT_TRUE(session.state.status().has_value());
-    EXPECT_EQ(session.state.status()->id, MessageId::AtlasLoaded);
+    EXPECT_EQ(session.state.status()->id, MessageId::Loaded);
 }
 
 TEST(EditorSinkTest, Handle_SaysSoWhenThereIsNothingToLoad)
@@ -501,7 +501,7 @@ TEST(EditorSinkTest, Handle_SaysSoWhenThereIsNothingToLoad)
     EXPECT_EQ(session.state.loads(), 0U);
     ASSERT_TRUE(session.state.status().has_value());
     EXPECT_EQ(
-        session.state.status()->id, MessageId::AtlasNothingToLoad);
+        session.state.status()->id, MessageId::NothingToLoad);
 }
 
 TEST(EditorSinkTest, Handle_KeepsTheSessionAliveWhenALoadFails)
@@ -520,7 +520,7 @@ TEST(EditorSinkTest, Handle_KeepsTheSessionAliveWhenALoadFails)
 
     EXPECT_EQ(session.state.loads(), 0U);
     ASSERT_TRUE(session.state.status().has_value());
-    EXPECT_EQ(session.state.status()->id, MessageId::AtlasLoadFailed);
+    EXPECT_EQ(session.state.status()->id, MessageId::LoadFailed);
     EXPECT_FALSE(session.state.status()->detail.empty());
 }
 

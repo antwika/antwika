@@ -9,7 +9,6 @@
 #include <antwika/gfx/Size.hpp>
 #include <antwika/gfx/WindowDesc.hpp>
 #include <antwika/i18n/Locale.hpp>
-#include <antwika/i18n/Translator.hpp>
 #include <antwika/input/InputEventCodec.hpp>
 #include <antwika/input/InputPipeline.hpp>
 #include <antwika/input/Key.hpp>
@@ -22,6 +21,7 @@
 #include "antwika/atlas_editor/AtlasEditor.hpp"
 #include "antwika/atlas_editor/EditorOptions.hpp"
 #include "antwika/atlas_editor/EditorScene.hpp"
+#include "antwika/atlas_editor/Messages.hpp"
 #include "antwika/atlas_editor/PngAtlasStore.hpp"
 #include "antwika/atlas_editor/RenderSink.hpp"
 #include "antwika/atlas_editor/TickLimitSource.hpp"
@@ -83,7 +83,7 @@ namespace
         // A press is then resolved against the layout they produce.
         // So a language off the environment would move the buttons.
         // Changing it is this line, exactly as the window size is.
-        const antwika::i18n::Translator translator{
+        const antwika::atlas_editor::Translator translator{
             antwika::i18n::kDefaultLocale};
 
         PngAtlasStore store(options.imagePath, options.outPath);

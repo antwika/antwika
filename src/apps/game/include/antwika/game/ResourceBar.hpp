@@ -9,6 +9,7 @@
 #include "antwika/game/Camera.hpp"
 #include "antwika/game/Resource.hpp"
 #include "antwika/game/SceneSnapshot.hpp"
+#include "antwika/game/Service.hpp"
 
 namespace antwika::game
 {
@@ -74,6 +75,19 @@ namespace antwika::game
      * @return Its colour, opaque.
      */
     [[nodiscard]] Color resourceColour(Resource resource) noexcept;
+
+    /**
+     * @brief Get the colour a service is written in.
+     *
+     * resourceColour()'s counterpart, here for its reason: the one
+     * crossing between a service and a colour, so a coverage line and
+     * whatever else ever gauges the same service cannot come out in two
+     * different blues.
+     *
+     * @param service The service to colour.
+     * @return Its colour, opaque.
+     */
+    [[nodiscard]] Color serviceColour(Service service) noexcept;
 
     /**
      * @brief Get the bars to draw over one building.

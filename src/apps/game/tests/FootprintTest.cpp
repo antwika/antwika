@@ -80,3 +80,20 @@ TEST(FootprintTest, EqualityComparesBothExtents)
     EXPECT_NE(block, (Footprint{.width = 3, .height = 3}));
     EXPECT_NE(block, (Footprint{.width = 2, .height = 2}));
 }
+
+// The footprints are the contract with whoever draws the art.
+// So the table is asserted outright rather than read off.
+TEST(FootprintTest, EveryKindIsTheSizeTheAtlasContractSays)
+{
+    EXPECT_EQ(footprintOf(BuildingKind::House), (Footprint{1, 1}));
+    EXPECT_EQ(footprintOf(BuildingKind::Farm), (Footprint{2, 2}));
+    EXPECT_EQ(footprintOf(BuildingKind::ClayPit), (Footprint{2, 2}));
+    EXPECT_EQ(footprintOf(BuildingKind::Workshop), (Footprint{2, 2}));
+    EXPECT_EQ(footprintOf(BuildingKind::Storage), (Footprint{3, 3}));
+    EXPECT_EQ(footprintOf(BuildingKind::Market), (Footprint{2, 2}));
+    EXPECT_EQ(footprintOf(BuildingKind::Well), (Footprint{1, 1}));
+    EXPECT_EQ(footprintOf(BuildingKind::Doctor), (Footprint{1, 1}));
+    EXPECT_EQ(footprintOf(BuildingKind::FireStation), (Footprint{1, 1}));
+    EXPECT_EQ(
+        footprintOf(BuildingKind::EngineerPost), (Footprint{1, 1}));
+}

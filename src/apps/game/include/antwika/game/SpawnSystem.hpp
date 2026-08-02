@@ -7,9 +7,11 @@
 #include <antwika/ecs/World.hpp>
 #include <antwika/time/Tick.hpp>
 
+#include "antwika/game/Building.hpp"
 #include "antwika/game/Cell.hpp"
 #include "antwika/game/Footprint.hpp"
 #include "antwika/game/PathIndex.hpp"
+#include "antwika/game/Walker.hpp"
 
 namespace antwika::game
 {
@@ -50,6 +52,49 @@ namespace antwika::game
         Cell origin, Footprint footprint, const PathIndex &paths);
 
     /**
+     * @brief Find a slot in a building with nobody live in it.
+     *
+     * **The lowest free one, so two buildings that have sent the same
+     * walkers in the same order hold them identically.** Nothing may
+     * read a slot number as a role: they are places to put a handle and
+     * nothing more.
+     *
+     * world.alive() is the authority rather than the handle being
+     * kNullEntity, for the reason Building::walkers gives: an entry is a
+     * cache, and ecs::EntityManager never reuses an index, so a stale
+     * handle can only ever be dead.
+     *
+     * @param world Asked whether each handle is still alive.
+     * @param building The building whose slots to look through.
+     * @return The lowest free slot, or nothing when every slot holds a
+     * live walker.
+     */
+    [[nodiscard]] std::optional<std::size_t> freeWalkerSlot(
+        const World &world, const Building &building);
+
+    /**
+     * @brief Check whether a building already has this kind out.
+     *
+     * **The cadence sends one of its own kind at a time, and this is
+     * that rule.** A slot is capacity rather than permission: a market
+     * has two of them so that a buyer fetched by an errand and a seller
+     * sent by the cadence can be out together, and reading a free slot
+     * as leave to send another seller would double every building's
+     * output the day the array grew.
+     *
+     * A handle that is alive but whose Walker component has not been
+     * committed yet is one this building staged earlier in this very
+     * tick, and counts: create() is immediate where add() is staged.
+     *
+     * @param world Asked about each handle.
+     * @param building The building whose slots to look through.
+     * @param kind The kind the cadence would send.
+     * @return True when one of that kind is already out.
+     */
+    [[nodiscard]] bool hasWalkerOfKind(
+        const World &world, const Building &building, WalkerKind kind);
+
+    /**
      * @brief Sends a walker out of every building, on its own cadence.
      *
      * The counterpart to WalkerSystem, and the same shape: the interval
@@ -63,6 +108,13 @@ namespace antwika::game
      * walkers to whoever finally builds one: a countdown that cannot go
      * below zero cannot accumulate a debt, so laying a road beside a long
      * neglected house releases one walker rather than twenty.
+     *
+     * **A building holds kMaxWalkersOut handles, and this system uses
+     * one of them.** The rule it follows is hasWalkerOfKind(): the
+     * cadence keeps one walker of the kind it sends out at a time, and
+     * the remaining slots are room for the errands another system
+     * sends. So growing the array does not, on its own, change what any
+     * building emits.
      *
      * Nothing here is a persisted event, for the reason GridSink gives
      * about placing a tile: a spawn follows from the click that placed

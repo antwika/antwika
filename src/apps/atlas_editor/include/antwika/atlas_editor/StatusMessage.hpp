@@ -2,12 +2,10 @@
 
 #include <string>
 
-#include <antwika/i18n/MessageId.hpp>
+#include "antwika/atlas_editor/MessageId.hpp"
 
 namespace antwika::atlas_editor
 {
-
-    using antwika::i18n::MessageId;
 
     /**
      * @brief The last thing worth telling the artist, before words.
@@ -31,7 +29,7 @@ namespace antwika::atlas_editor
         /**
          * @brief Which message this is.
          */
-        MessageId id{MessageId::AtlasLoaded};
+        MessageId id{MessageId::Loaded};
 
         /**
          * @brief What it names, if it names anything.

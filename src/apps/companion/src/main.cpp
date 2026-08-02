@@ -10,7 +10,6 @@
 #include <antwika/gfx/Size.hpp>
 #include <antwika/gfx/WindowDesc.hpp>
 #include <antwika/i18n/Locale.hpp>
-#include <antwika/i18n/Translator.hpp>
 #include <antwika/input/InputEventCodec.hpp>
 #include <antwika/input/InputPipeline.hpp>
 #include <antwika/input/SelectedInputBackend.hpp>
@@ -21,6 +20,7 @@
 
 #include "antwika/companion/Companion.hpp"
 #include "antwika/companion/FilePetStore.hpp"
+#include "antwika/companion/Messages.hpp"
 #include "antwika/companion/PetScene.hpp"
 #include "antwika/companion/RenderSink.hpp"
 
@@ -32,8 +32,8 @@ using antwika::companion::Lineage;
 using antwika::companion::Pet;
 using antwika::companion::PetScene;
 using antwika::companion::RenderSink;
+using antwika::companion::Translator;
 using antwika::gfx::WindowDesc;
-using antwika::i18n::Translator;
 using antwika::input::InputEventCodec;
 using antwika::input::InputPipeline;
 using antwika::log::Level;

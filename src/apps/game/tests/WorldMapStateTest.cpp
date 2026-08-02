@@ -152,7 +152,7 @@ namespace
     {
         layPath(Cell{2, 2});
         putUp(Cell{4, 4}, BuildingKind::House);
-        putUp(Cell{6, 6}, BuildingKind::FoodSource);
+        putUp(Cell{6, 6}, BuildingKind::Farm);
         dropWalker(Cell{2, 2});
         world.commit();
 
@@ -188,12 +188,12 @@ namespace
 
     TEST_F(WorldMapStateTest, ABuildingKeepsTheWalkerItHasOut)
     {
-        const auto home = putUp(Cell{4, 4}, BuildingKind::FoodSource);
+        const auto home = putUp(Cell{4, 4}, BuildingKind::Farm);
         dropWalker(Cell{5, 4});
         world.commit();
 
         auto sent = world.get<Building>(home);
-        sent.walker = *world.view<Walker, Cell>().begin();
+        sent.walkers[0] = *world.view<Walker, Cell>().begin();
         world.set<Building>(home, sent);
         world.commit();
 
@@ -205,7 +205,7 @@ namespace
         const auto walker = *world.view<Walker, Cell>().begin();
 
         // Every entity was recreated, so a stored handle would be stale.
-        EXPECT_EQ(world.get<Building>(building).walker, walker);
+        EXPECT_EQ(world.get<Building>(building).walkers[0], walker);
         EXPECT_EQ(world.get<Walker>(walker).home, building);
     }
 

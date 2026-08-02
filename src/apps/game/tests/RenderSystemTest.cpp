@@ -20,6 +20,7 @@
 #include <antwika/log/mocks/MockLogger.hpp>
 #include <antwika/time/fakes/FakeClock.hpp>
 
+#include "TestTranslator.hpp"
 #include "antwika/game/AppMode.hpp"
 #include "antwika/game/Building.hpp"
 #include "antwika/game/BuildingIndex.hpp"
@@ -43,6 +44,8 @@
 #include "antwika/game/WorldMap.hpp"
 #include "antwika/game/WorldMapScene.hpp"
 #include "antwika/game/WorldMapState.hpp"
+
+using antwika::game::tests::kTranslator;
 
 using antwika::ecs::World;
 using antwika::game::AppMode;
@@ -132,10 +135,10 @@ namespace
         PathIndex paths;
         antwika::game::BuildingIndex built;
         Camera camera;
-        const GridScene scene{};
-        const MainMenuScene menuScene{};
+        const GridScene scene{kTranslator};
+        const MainMenuScene menuScene{kTranslator};
         const WorldMapScene worldScene{};
-        const SaveLoadScene saveScene{};
+        const SaveLoadScene saveScene{kTranslator};
         UiOverlay overlay;
         UiOverlay menuOverlay{kCanvas};
         UiOverlay saveOverlay{kCanvas};
@@ -352,7 +355,7 @@ TEST_F(RenderSystemTest, Update_WritesAReadoutForWhatTheHintIsOver)
         entity,
         antwika::game::Building{
             .kind = antwika::game::BuildingKind::House,
-            .stock = {20, 30}});
+            .stock = {20, 30, 40}});
     world.commit();
 
     const auto middle = antwika::game::cellCentre(
@@ -364,8 +367,9 @@ TEST_F(RenderSystemTest, Update_WritesAReadoutForWhatTheHintIsOver)
 
     RenderSystem system(setup());
 
-    // Its name and one line per resource it depends on.
-    EXPECT_CALL(renderer, drawText(_, _, _, _)).Times(3);
+    // Its name, its tier, how full it is, and one per resource it holds.
+    EXPECT_CALL(renderer, drawText(_, _, _, _))
+        .Times(3 + static_cast<int>(antwika::game::kResourceCount));
 
     system.update(world, 0);
 }

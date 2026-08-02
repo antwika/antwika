@@ -6,12 +6,12 @@
 #include <optional>
 #include <string>
 
-#include <antwika/i18n/MessageId.hpp>
 #include <antwika/ui/DropdownSpec.hpp>
 #include <antwika/ui/TextFieldSpec.hpp>
 #include <antwika/ui/WidgetId.hpp>
 
 #include "antwika/ui_demo/DemoMessage.hpp"
+#include "antwika/ui_demo/MessageId.hpp"
 #include "antwika/ui_demo/Showcase.hpp"
 
 namespace antwika::ui_demo
@@ -34,14 +34,14 @@ namespace antwika::ui_demo
      * list does not offer -- the same fall-back-to-the-first rule
      * atlas_editor::toolNameId() follows, and for the same reason.
      */
-    [[nodiscard]] constexpr antwika::i18n::MessageId accentNameId(
+    [[nodiscard]] constexpr MessageId accentNameId(
         const std::size_t index) noexcept
     {
-        constexpr std::array<antwika::i18n::MessageId, kAccentCount>
+        constexpr std::array<MessageId, kAccentCount>
             ids{
-                antwika::i18n::MessageId::UiDemoAccentAmber,
-                antwika::i18n::MessageId::UiDemoAccentMint,
-                antwika::i18n::MessageId::UiDemoAccentRose};
+                MessageId::AccentAmber,
+                MessageId::AccentMint,
+                MessageId::AccentRose};
 
         return ids[index % kAccentCount];
     }

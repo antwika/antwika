@@ -16,7 +16,6 @@
 #include <antwika/gfx/Point.hpp>
 #include <antwika/gfx/Size.hpp>
 #include <antwika/i18n/Locale.hpp>
-#include <antwika/i18n/Translator.hpp>
 #include <antwika/input/InputEvent.hpp>
 #include <antwika/input/InputEventCodec.hpp>
 #include <antwika/input/Key.hpp>
@@ -27,11 +26,11 @@
 #include "antwika/ui_demo/DemoOverlay.hpp"
 #include "antwika/ui_demo/DemoScene.hpp"
 #include "antwika/ui_demo/DemoState.hpp"
+#include "antwika/ui_demo/Messages.hpp"
 #include "antwika/ui_demo/Showcase.hpp"
 #include "antwika/ui_demo/TickBudgetSource.hpp"
 #include "antwika/ui_demo/UiDemo.hpp"
 #include "antwika/ui_demo/Widgets.hpp"
-
 #include "WidgetCentre.hpp"
 
 using antwika::event::Event;
@@ -61,7 +60,7 @@ namespace widgets = antwika::ui_demo::widgets;
 namespace
 {
     // The locale is a constant of the build, so a test may name one.
-    constexpr antwika::i18n::Translator kTranslator{
+    constexpr antwika::ui_demo::Translator kTranslator{
         antwika::i18n::kDefaultLocale};
 
     constexpr Size kCanvas{.width = 960, .height = 720};

@@ -5,20 +5,26 @@
 #include <string_view>
 
 #include "antwika/i18n/Locale.hpp"
-#include "antwika/i18n/MessageId.hpp"
+#include "antwika/i18n/Lookup.hpp"
+#include "antwika/i18n/MessageSet.hpp"
 #include "antwika/i18n/Translation.hpp"
 
 namespace antwika::i18n
 {
 
     /**
-     * @brief One locale's worth of lookups, as a plain value.
+     * @brief One locale's worth of lookups over one module's ids.
      *
      * It holds a Locale and nothing else -- the catalogues it reads are
      * compiled in and static, so a translator is copyable, cheap and safe
      * to store next to whatever owns the current language setting.
      * The fallback is always the default locale's catalogue; see lookup()
      * in Lookup.hpp for the rule it follows.
+     *
+     * The template parameter is the calling module's message set, which
+     * is what keeps this library from naming any application: a module
+     * declares its own ids and its own catalogues and writes
+     * `using Translator = i18n::Translator<Messages>;` beside them.
      *
      * ## How an application uses this
      *
@@ -56,22 +62,24 @@ namespace antwika::i18n
      * is carried by a recording.
      * Changing the language is a source change there, exactly as the
      * configured window size is.
-     * An application that neither records input nor hit-tests -- a
-     * console program like `apps/sudoku` -- may take a locale from its
-     * command line, because there is no recording for the choice to be
-     * missing from.
      *
      * **Text a simulation decides on is decided as an id.**
      * `companion::Pet` picks a `companion::Saying` and the scene words
-     * it; `ui_demo::DemoState` holds a `MessageId` and the scene words
-     * that.
+     * it; `ui_demo::DemoState` holds a `ui_demo::MessageId` and the
+     * scene words that.
      * Storing the words themselves would put the active locale inside
      * the state a replay reproduces, which is the same mistake read from
      * the other end.
      */
+    template <MessageSet Messages>
     class Translator final
     {
     public:
+        /**
+         * @brief The ids this translator answers for.
+         */
+        using Id = typename Messages::Id;
+
         /**
          * @brief Make a translator for one locale.
          * @param locale The language to translate into.
@@ -104,14 +112,23 @@ namespace antwika::i18n
          * @param id The id to resolve.
          * @return The text and its origin.
          */
-        [[nodiscard]] Translation lookup(MessageId id) const;
+        [[nodiscard]] Translation lookup(Id id) const
+        {
+            return i18n::lookup<Messages>(
+                id,
+                Messages::catalogueFor(activeLocale),
+                Messages::catalogueFor(kDefaultLocale));
+        }
 
         /**
          * @brief Resolve one id, keeping only the text.
          * @param id The id to resolve.
          * @return The text, which is never empty.
          */
-        [[nodiscard]] std::string text(MessageId id) const;
+        [[nodiscard]] std::string text(Id id) const
+        {
+            return lookup(id).text;
+        }
 
         /**
          * @brief Resolve one id and substitute arguments into it.
@@ -120,7 +137,14 @@ namespace antwika::i18n
          * @return The substituted text and the pattern's origin.
          */
         [[nodiscard]] Translation format(
-            MessageId id, std::span<const std::string_view> args) const;
+            Id id, std::span<const std::string_view> args) const
+        {
+            return i18n::format<Messages>(
+                id,
+                args,
+                Messages::catalogueFor(activeLocale),
+                Messages::catalogueFor(kDefaultLocale));
+        }
 
         /**
          * @brief Resolve and substitute, keeping only the text.
@@ -129,7 +153,10 @@ namespace antwika::i18n
          * @return The substituted text, which is never empty.
          */
         [[nodiscard]] std::string formatted(
-            MessageId id, std::span<const std::string_view> args) const;
+            Id id, std::span<const std::string_view> args) const
+        {
+            return format(id, args).text;
+        }
 
     private:
         Locale activeLocale;

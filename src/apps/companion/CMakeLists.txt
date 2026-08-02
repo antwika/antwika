@@ -4,6 +4,7 @@ add_executable(antwika_companion
     src/FilePetStore.cpp
     src/LifeStage.cpp
     src/Lineage.cpp
+    src/Messages.cpp
     src/PacingSink.cpp
     src/Pet.cpp
     src/PetLayout.cpp

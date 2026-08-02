@@ -124,6 +124,36 @@ namespace antwika::companion
     [[nodiscard]] Rect propBox(const SceneLayout &layout, Prop prop);
 
     /**
+     * @brief Find the part of a prop its picture is painted into.
+     *
+     * The top of `propBox()`, with the bottom rows left for the word
+     * naming it. The two together are the whole of the box a press is
+     * tested against, so a companion's picture never grows into the
+     * room its own label is written in.
+     *
+     * @param layout The grid.
+     * @param prop Which one.
+     * @return The box its picture is drawn in.
+     */
+    [[nodiscard]] Rect propArtBox(const SceneLayout &layout, Prop prop);
+
+    /**
+     * @brief Find the part of a prop its name is written across.
+     *
+     * **The label is inside the box its press means**, which is the
+     * whole reason it is a layout question rather than a scene one.
+     * A word written beside a prop would be a word that looks pressable
+     * and answers a prod, and one written under the row of them would
+     * have to be kept clear of the readout by hand; carving the room
+     * out of the prop itself is what makes both impossible.
+     *
+     * @param layout The grid.
+     * @param prop Which one.
+     * @return The box its name is drawn in.
+     */
+    [[nodiscard]] Rect propLabelBox(const SceneLayout &layout, Prop prop);
+
+    /**
      * @brief Find which prop a press landed on, if any.
      *
      * **This is the one hit-test the application has**, and it shares

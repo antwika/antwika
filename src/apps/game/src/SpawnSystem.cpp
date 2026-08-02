@@ -2,11 +2,13 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <optional>
 
 #include "antwika/game/Building.hpp"
 #include "antwika/game/BuildingKind.hpp"
 #include "antwika/game/Direction.hpp"
 #include "antwika/game/Footprint.hpp"
+#include "antwika/game/LabourQuery.hpp"
 #include "antwika/game/Walker.hpp"
 
 namespace antwika::game
@@ -55,6 +57,42 @@ namespace antwika::game
         return best;
     }
 
+    std::optional<std::size_t> freeWalkerSlot(
+        const World &world, const Building &building)
+    {
+        for (std::size_t slot = 0; slot < kMaxWalkersOut; ++slot)
+        {
+            if (!world.alive(building.walkers[slot]))
+            {
+                return slot;
+            }
+        }
+
+        return std::nullopt;
+    }
+
+    bool hasWalkerOfKind(
+        const World &world, const Building &building, WalkerKind kind)
+    {
+        for (const auto walker : building.walkers)
+        {
+            if (!world.alive(walker))
+            {
+                continue;
+            }
+
+            // A handle staged this tick has no component yet.
+            // It is still one this building has out.
+            if (!world.has<Walker>(walker)
+                || world.get<Walker>(walker).kind == kind)
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     void SpawnSystem::update(World &world, antwika::time::Tick)
     {
         // Counted once rather than per building.
@@ -71,15 +109,26 @@ namespace antwika::game
                 continue;
             }
 
-            // One walker out at a time, and this is the whole rule.
-            // alive() rather than has<Walker>().
-            // create() is immediate where add<Walker>() is staged.
-            // So on the tick one is made, only alive() is true.
+            // One of this cadence's own kind out at a time.
+            // A free slot is room for an errand, not leave to send two.
             //
             // A walker destroyed this tick reads alive until commit.
             // So its building is free from the next tick, not this one.
             // Which is why the two never overlap.
-            if (world.alive(building.walker))
+            if (hasWalkerOfKind(world, building, *sends))
+            {
+                continue;
+            }
+
+            // Stretched over however few people turned up for work.
+            // Half a complement is half as often.
+            // And nobody at all is never.
+            // With the countdown held rather than reset.
+            // So a building unstaffed for a thousand ticks owes none.
+            const auto period =
+                workedPeriod(kSpawnPeriodTicks, staffingOf(world, entity));
+
+            if (!period.has_value())
             {
                 continue;
             }
@@ -100,8 +149,10 @@ namespace antwika::game
                 world.get<Cell>(entity),
                 footprintOf(building.kind),
                 paths);
+            const auto slot = freeWalkerSlot(world, building);
 
-            if (!onto.has_value() || out >= kWalkerLimit)
+            if (!onto.has_value() || !slot.has_value()
+                || out >= kWalkerLimit)
             {
                 continue;
             }
@@ -119,8 +170,8 @@ namespace antwika::game
             ++out;
 
             auto sent = building;
-            sent.ticksUntilSpawn = kSpawnPeriodTicks - 1;
-            sent.walker = walker;
+            sent.ticksUntilSpawn = *period - 1;
+            sent.walkers[*slot] = walker;
             world.set<Building>(entity, sent);
         }
     }

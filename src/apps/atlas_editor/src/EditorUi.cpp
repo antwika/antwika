@@ -6,7 +6,6 @@
 #include <string>
 #include <string_view>
 
-#include <antwika/i18n/MessageId.hpp>
 #include <antwika/ui/Alignment.hpp>
 #include <antwika/ui/ButtonState.hpp>
 #include <antwika/ui/Context.hpp>
@@ -14,13 +13,14 @@
 #include <antwika/ui/Theme.hpp>
 
 #include "antwika/atlas_editor/CanvasView.hpp"
+#include "antwika/atlas_editor/MessageId.hpp"
+#include "antwika/atlas_editor/Messages.hpp"
 #include "antwika/atlas_editor/Palette.hpp"
 #include "antwika/atlas_editor/TileGrid.hpp"
 
 namespace antwika::atlas_editor
 {
 
-    using antwika::i18n::MessageId;
     using antwika::ui::Alignment;
     using antwika::ui::ButtonState;
     using antwika::ui::Context;
@@ -57,7 +57,7 @@ namespace antwika::atlas_editor
             const auto pixel = state.hovered();
             if (!pixel.has_value())
             {
-                return translator.text(MessageId::AtlasPixelUnknown);
+                return translator.text(MessageId::PixelUnknown);
             }
 
             const auto slot =
@@ -78,9 +78,9 @@ namespace antwika::atlas_editor
             const std::array<std::string_view, 2> at{across, down};
             const std::array<std::string_view, 1> in{which};
 
-            return translator.formatted(MessageId::AtlasPixelAt, at)
+            return translator.formatted(MessageId::PixelAt, at)
                    + "  "
-                   + translator.formatted(MessageId::AtlasSlot, in);
+                   + translator.formatted(MessageId::Slot, in);
         }
     } // namespace
 
@@ -95,7 +95,7 @@ namespace antwika::atlas_editor
 
         if (state.unsaved())
         {
-            line += "  " + translator.text(MessageId::AtlasUnsaved);
+            line += "  " + translator.text(MessageId::Unsaved);
         }
 
         if (state.status().has_value())
@@ -175,19 +175,19 @@ namespace antwika::atlas_editor
                 ui.button("-", {.id = widgets::kZoomOut});
                 ui.button("+", {.id = widgets::kZoomIn});
                 ui.button(
-                    translator.text(MessageId::AtlasResetView),
+                    translator.text(MessageId::ResetView),
                     {.id = widgets::kResetView});
                 ui.button(
-                    translator.text(MessageId::AtlasGrid),
+                    translator.text(MessageId::Grid),
                     {.id = widgets::kGrid,
                      .state = state.gridVisible()
                                   ? std::optional{ButtonState::Pressed}
                                   : std::nullopt});
                 ui.button(
-                    translator.text(MessageId::AtlasLoad),
+                    translator.text(MessageId::Load),
                     {.id = widgets::kLoad});
                 ui.button(
-                    translator.text(MessageId::AtlasSave),
+                    translator.text(MessageId::Save),
                     {.id = widgets::kSave});
             }
 

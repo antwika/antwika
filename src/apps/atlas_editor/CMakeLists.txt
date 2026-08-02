@@ -7,6 +7,7 @@ add_executable(antwika_atlas_editor
     src/EditorSink.cpp
     src/EditorState.cpp
     src/EditorUi.cpp
+    src/Messages.cpp
     src/Palette.cpp
     src/PngAtlasStore.cpp
     src/RenderSink.cpp

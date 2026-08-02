@@ -2,20 +2,19 @@
 
 #include <antwika/gfx/IRenderer.hpp>
 #include <antwika/gfx/Size.hpp>
-#include <antwika/i18n/Translator.hpp>
 #include <antwika/ui/DrawList.hpp>
 #include <antwika/ui/Frame.hpp>
 #include <antwika/ui/Keyboard.hpp>
 #include <antwika/ui/Pointer.hpp>
 
 #include "antwika/ui_demo/DemoState.hpp"
+#include "antwika/ui_demo/Messages.hpp"
 
 namespace antwika::ui_demo
 {
 
     using antwika::gfx::IRenderer;
     using antwika::gfx::Size;
-    using antwika::i18n::Translator;
     using antwika::ui::DrawList;
     using antwika::ui::Frame;
     using antwika::ui::Keyboard;

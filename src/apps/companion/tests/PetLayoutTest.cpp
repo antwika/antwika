@@ -14,8 +14,10 @@ using antwika::companion::kSceneUnits;
 using antwika::companion::layoutFor;
 using antwika::companion::point;
 using antwika::companion::Prop;
+using antwika::companion::propArtBox;
 using antwika::companion::propAt;
 using antwika::companion::propBox;
+using antwika::companion::propLabelBox;
 using antwika::companion::reviveButtonBox;
 using antwika::companion::reviveButtonRect;
 using antwika::companion::withinReviveButton;
@@ -240,6 +242,72 @@ namespace
             propBox(*layout, Prop::Ball), propBox(*layout, Prop::Nest)));
         EXPECT_FALSE(overlap(
             propBox(*layout, Prop::Bowl), propBox(*layout, Prop::Nest)));
+    }
+
+    // The picture and the word share the box a press is tested against.
+    // Which is what lets a prop be named without moving where it is.
+    TEST(PetLayoutTest, PropArtAndLabel_DivideThePropBetweenThem)
+    {
+        const auto layout = layoutFor(kCanvas);
+        ASSERT_TRUE(layout.has_value());
+
+        for (const Prop prop : kProps)
+        {
+            const Rect whole = propBox(*layout, prop);
+            const Rect art = propArtBox(*layout, prop);
+            const Rect label = propLabelBox(*layout, prop);
+
+            EXPECT_FALSE(overlap(art, label));
+            EXPECT_EQ(art.origin, whole.origin);
+            EXPECT_EQ(art.size.width, whole.size.width);
+            EXPECT_EQ(label.size.width, whole.size.width);
+            EXPECT_EQ(label.origin.x, whole.origin.x);
+            EXPECT_EQ(
+                label.origin.y,
+                art.origin.y
+                    + static_cast<std::int32_t>(art.size.height));
+            EXPECT_EQ(
+                art.size.height + label.size.height, whole.size.height);
+        }
+    }
+
+    // A word that looks pressable and answers a prod is worse than none.
+    TEST(PetLayoutTest, PropAt_FindsThePropFromTheWordNamingIt)
+    {
+        const auto layout = layoutFor(kCanvas);
+        ASSERT_TRUE(layout.has_value());
+
+        for (const Prop prop : kProps)
+        {
+            const Rect label = propLabelBox(*layout, prop);
+            const auto found = propAt(kCanvas, middleOf(label));
+
+            ASSERT_TRUE(found.has_value());
+            EXPECT_EQ(*found, prop);
+        }
+    }
+
+    // No label reaches into another prop's box either.
+    // Which follows from it being inside its own and none overlapping.
+    TEST(PetLayoutTest, PropLabelBox_CoversNoOtherProp)
+    {
+        const auto layout = layoutFor(kCanvas);
+        ASSERT_TRUE(layout.has_value());
+
+        for (const Prop named : kProps)
+        {
+            const Rect label = propLabelBox(*layout, named);
+
+            for (const Prop other : kProps)
+            {
+                if (other == named)
+                {
+                    continue;
+                }
+
+                EXPECT_FALSE(overlap(label, propBox(*layout, other)));
+            }
+        }
     }
 
     TEST(PetLayoutTest, PropAt_IsHalfOpenAtEveryEdge)

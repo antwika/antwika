@@ -10,17 +10,16 @@
 #include <antwika/gfx/Size.hpp>
 #include <antwika/ui/DrawCommand.hpp>
 #include <antwika/i18n/Locale.hpp>
-#include <antwika/i18n/MessageId.hpp>
-#include <antwika/i18n/Translator.hpp>
 #include <antwika/ui/Frame.hpp>
 #include <antwika/ui/Keyboard.hpp>
 #include <antwika/ui/Pointer.hpp>
 
 #include "antwika/ui_demo/DemoScene.hpp"
 #include "antwika/ui_demo/DemoState.hpp"
+#include "antwika/ui_demo/MessageId.hpp"
+#include "antwika/ui_demo/Messages.hpp"
 #include "antwika/ui_demo/Showcase.hpp"
 #include "antwika/ui_demo/Widgets.hpp"
-
 #include "WidgetCentre.hpp"
 
 using antwika::gfx::Color;
@@ -42,7 +41,7 @@ namespace
 {
     // The locale is a constant of the build, so a test may name one.
     // Every case here asserts the English showcase's own layout.
-    constexpr antwika::i18n::Translator kTranslator{
+    constexpr antwika::ui_demo::Translator kTranslator{
         antwika::i18n::kDefaultLocale};
 
     constexpr Size kCanvas{.width = 960, .height = 720};
@@ -271,7 +270,7 @@ namespace
     {
         DemoState state;
         state.setMessage(
-            {.id = antwika::i18n::MessageId::UiDemoSubmitted,
+            {.id = antwika::ui_demo::MessageId::Submitted,
              .datum = "ok",
              .argId = std::nullopt});
 
@@ -287,9 +286,9 @@ namespace
     {
         DemoState state;
         state.setMessage(
-            {.id = antwika::i18n::MessageId::UiDemoShowing,
+            {.id = antwika::ui_demo::MessageId::Showing,
              .datum = {},
-             .argId = antwika::i18n::MessageId::UiDemoPageShrink});
+             .argId = antwika::ui_demo::MessageId::PageShrink});
 
         const DemoScene scene{kTranslator};
         const auto frame = scene.describe(kCanvas, {}, {}, state);
@@ -303,7 +302,7 @@ namespace
     // A translated one would lie about what a caller types.
     TEST(DemoSceneTest, Describe_IsWordedByWhicheverTranslatorItHolds)
     {
-        constexpr antwika::i18n::Translator swedish{
+        constexpr antwika::ui_demo::Translator swedish{
             antwika::i18n::Locale::Swedish};
 
         DemoState state;
@@ -323,7 +322,7 @@ namespace
     // Which is exactly why the locale is fixed for a run.
     TEST(DemoSceneTest, Describe_LaysOutFromTheWordsItWasGiven)
     {
-        constexpr antwika::i18n::Translator swedish{
+        constexpr antwika::ui_demo::Translator swedish{
             antwika::i18n::Locale::Swedish};
 
         DemoState state;

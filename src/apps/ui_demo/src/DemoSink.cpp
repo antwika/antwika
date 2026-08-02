@@ -9,12 +9,12 @@
 #include <antwika/app/PointerReading.hpp>
 #include <antwika/engine/Events.hpp>
 #include <antwika/gfx/Point.hpp>
-#include <antwika/i18n/MessageId.hpp>
 #include <antwika/input/InputEvent.hpp>
 #include <antwika/input/MouseButton.hpp>
 
 #include "antwika/ui_demo/DemoMessage.hpp"
 #include "antwika/ui_demo/KeyMapping.hpp"
+#include "antwika/ui_demo/MessageId.hpp"
 #include "antwika/ui_demo/Showcase.hpp"
 #include "antwika/ui_demo/Widgets.hpp"
 
@@ -23,7 +23,6 @@ namespace antwika::ui_demo
 
     using antwika::app::locates;
     using antwika::gfx::Point;
-    using antwika::i18n::MessageId;
     using antwika::input::InputEvent;
     using antwika::input::KeyPressed;
     using antwika::input::MouseButton;
@@ -165,7 +164,7 @@ namespace antwika::ui_demo
             state.select(choice.index);
             state.setPickerOpen(false);
             state.setMessage(
-                {.id = MessageId::UiDemoShowing,
+                {.id = MessageId::Showing,
                  .datum = {},
                  .argId = showcaseNameId(state.showcase())});
             return;
@@ -174,7 +173,7 @@ namespace antwika::ui_demo
         state.selectAccent(choice.index);
         state.setAccentOpen(false);
         state.setMessage(
-            {.id = MessageId::UiDemoAccentChosen,
+            {.id = MessageId::AccentChosen,
              .datum = std::to_string(choice.index),
              .argId = std::nullopt});
     }
@@ -186,7 +185,7 @@ namespace antwika::ui_demo
         if (change.submitted)
         {
             state.setMessage(
-                {.id = MessageId::UiDemoSubmitted,
+                {.id = MessageId::Submitted,
                  .datum = change.text,
                  .argId = std::nullopt});
             return;
@@ -198,7 +197,7 @@ namespace antwika::ui_demo
             // Here it is emptying the field, which is a plain answer.
             state.setText({}, 0);
             state.setMessage(
-                {.id = MessageId::UiDemoCancelled,
+                {.id = MessageId::Cancelled,
                  .datum = {},
                  .argId = std::nullopt});
         }
@@ -225,7 +224,7 @@ namespace antwika::ui_demo
         else if (activated != kNoWidget)
         {
             state.setMessage(
-                {.id = MessageId::UiDemoPressedWidget,
+                {.id = MessageId::PressedWidget,
                  .datum = std::to_string(
                      static_cast<std::uint64_t>(activated)),
                  .argId = std::nullopt});

@@ -26,9 +26,18 @@ namespace antwika::game
      * would make one system need both views.
      *
      * A walker hands stock to every building orthogonally beside the
-     * road it is on, in Direction order, until it runs out. A fireman
-     * or an architect carries nothing and takes kRiskRelief off each
-     * instead.
+     * road it is on, in Direction order, until it runs out.
+     *
+     * **A walker that carries nothing is nothing to do with this
+     * system.** It used to take a fixed amount of risk off whatever it
+     * walked past, which was service coverage said as a subtraction.
+     * CoverageSystem says it as a state with a lifetime instead, and
+     * age() below asks coverageOf() which way a building's risk steps:
+     * up where Service::Safety or Service::Structure has lapsed, and
+     * back down where a walker is still keeping both of them alive.
+     * So the fire station and the engineer's post stop being cases in
+     * the delivery code and become districts a city does or does not
+     * have.
      *
      * **Two walkers delivering to one building in one tick is well
      * defined and it is not "both".** Both read the same committed
@@ -55,7 +64,8 @@ namespace antwika::game
         BuildingSystem &operator=(BuildingSystem &&) = delete;
 
         /**
-         * @brief Deliver, drain, raise risk, and demolish what is lost.
+         * @brief Deliver, drain, step risk, and demolish what is
+         * lost.
          *
          * A building at kMaxRisk, or a house that has run out of any
          * resource, is destroyed. Its walker is *not* destroyed with

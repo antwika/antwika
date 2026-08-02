@@ -69,6 +69,54 @@ namespace antwika::game
 
             return passable;
         }
+
+        // The one search both answers below are read off.
+        // Stated once so the graph is built one way.
+        // Which is what keeps the tie-break the same for both.
+        // Cells rather than nodes.
+        // A NodeId means nothing without the graph it came from.
+        [[nodiscard]] std::vector<Cell> routeOver(
+            Cell from,
+            Cell goal,
+            Footprint footprint,
+            const PathIndex &paths,
+            GridExtent extent)
+        {
+            std::vector<Cell> route;
+
+            // A degenerate extent holds nothing, so nothing is reachable.
+            // Asked before GridGraph, which refuses a non-positive one.
+            if (!extent.contains(from) || !extent.contains(goal))
+            {
+                return route;
+            }
+
+            const GridGraph graph(
+                extent.width,
+                extent.height,
+                passableOver(paths, extent, goal, footprint));
+
+            const auto result = antwika::pathfinding::findPath(
+                graph, graph.nodeAt(asGridCell(from)),
+                graph.nodeAt(asGridCell(goal)));
+
+            if (result.outcome != SearchOutcome::PathFound)
+            {
+                return route;
+            }
+
+            route.reserve(result.nodes.size());
+
+            for (const auto node : result.nodes)
+            {
+                const auto cell = graph.cellOf(node);
+                route.push_back(Cell{.x = cell.x, .y = cell.y});
+            }
+
+            return route;
+            // The excluded line is the local route's unwind destructor.
+            // Nothing between its construction and the return throws.
+        } // GCOVR_EXCL_LINE
     } // namespace
 
     std::optional<Direction> stepTowards(
@@ -78,30 +126,16 @@ namespace antwika::game
         const PathIndex &paths,
         GridExtent extent)
     {
-        // A degenerate extent holds nothing, so nothing is reachable.
-        // Asked before GridGraph, which refuses a non-positive extent.
-        if (!extent.contains(from) || !extent.contains(goal))
-        {
-            return std::nullopt;
-        }
-
-        const GridGraph graph(
-            extent.width,
-            extent.height,
-            passableOver(paths, extent, goal, footprint));
-
-        const auto result = antwika::pathfinding::findPath(
-            graph, graph.nodeAt(asGridCell(from)),
-            graph.nodeAt(asGridCell(goal)));
+        const auto route =
+            routeOver(from, goal, footprint, paths, extent);
 
         // Already there, so there is no first step to report.
-        if (result.outcome != SearchOutcome::PathFound
-            || result.nodes.size() < 2)
+        if (route.size() < 2)
         {
             return std::nullopt;
         }
 
-        const auto next = graph.cellOf(result.nodes[1]);
+        const auto next = route[1];
 
         // Read off the delta rather than searched for among the four.
         // A GridGraph neighbour is orthogonal by construction.
@@ -123,6 +157,26 @@ namespace antwika::game
         }
 
         return Direction::North;
+    }
+
+    std::optional<std::int64_t> routeCost(
+        Cell from,
+        Cell goal,
+        Footprint footprint,
+        const PathIndex &paths,
+        GridExtent extent)
+    {
+        const auto route =
+            routeOver(from, goal, footprint, paths, extent);
+
+        // An empty route is no route; a one-cell one is standing on it.
+        // Which costs nothing to reach and is not the same answer.
+        if (route.empty())
+        {
+            return std::nullopt;
+        }
+
+        return static_cast<std::int64_t>(route.size() - 1);
     }
 
 } // namespace antwika::game

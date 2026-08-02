@@ -92,6 +92,12 @@ namespace antwika::gfx::raylib
         [[nodiscard]] Size size() const override;
 
         /**
+         * @brief Whether this window is filling the screen.
+         * @return What raylib reports, or the last state seen if closed.
+         */
+        [[nodiscard]] bool isFullscreen() const override;
+
+        /**
          * @brief Get the renderer that draws into this window.
          * @return The renderer, which discards drawing once closed.
          */
@@ -102,6 +108,18 @@ namespace antwika::gfx::raylib
          * @param title The new title.
          */
         void setTitle(std::string_view title) override;
+
+        /**
+         * @brief Make the window fill the screen, or stop filling it.
+         *
+         * raylib offers a toggle rather than a setter, so this compares
+         * before it acts: asking for the state the window is already in
+         * has to do nothing, or a caller that says so twice would end up
+         * with the opposite of what it asked for.
+         *
+         * @param fullscreen True to fill the screen, false to restore.
+         */
+        void setFullscreen(bool fullscreen) override;
 
         /**
          * @brief Close the window, or do nothing if already closed.
@@ -140,6 +158,7 @@ namespace antwika::gfx::raylib
         Size lastSize;
         bool open = true;
         bool closeReported = false;
+        bool lastFullscreen = false;
     };
 
 } // namespace antwika::gfx::raylib

@@ -4,6 +4,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <optional>
+#include <span>
 #include <string>
 #include <string_view>
 
@@ -18,8 +19,9 @@
 #include <antwika/gfx/TextLayout.hpp>
 #include <antwika/tween/Easing.hpp>
 #include <antwika/tween/Tween.hpp>
-#include <antwika/i18n/MessageId.hpp>
 
+#include "antwika/companion/MessageId.hpp"
+#include "antwika/companion/Messages.hpp"
 #include "antwika/companion/Saying.hpp"
 
 namespace antwika::companion
@@ -33,7 +35,6 @@ namespace antwika::companion
     using antwika::gfx::Color;
     using antwika::gfx::Point;
     using antwika::gfx::Rect;
-    using antwika::i18n::MessageId;
 
     namespace
     {
@@ -51,19 +52,29 @@ namespace antwika::companion
         // The one fact no gauge holds, as the id it is said with.
         // An interrupted night is worth saying apart from a quiet one.
         // It is the rest of that night's recovery already forfeited.
-        constexpr MessageId kAwakeWord = MessageId::CompanionAwake;
+        constexpr MessageId kAwakeWord = MessageId::Awake;
         constexpr MessageId kHungryWord =
-            MessageId::CompanionAwakeHungry;
-        constexpr MessageId kAsleepWord = MessageId::CompanionAsleep;
+            MessageId::AwakeHungry;
+        constexpr MessageId kAsleepWord = MessageId::Asleep;
         constexpr MessageId kWokenWord =
-            MessageId::CompanionAsleepWoken;
-        constexpr MessageId kGoneWord = MessageId::CompanionGone;
+            MessageId::AsleepWoken;
+        constexpr MessageId kGoneWord = MessageId::Gone;
 
         // What the one button says, in this file with the other ids.
-        constexpr MessageId kReviveWords = MessageId::CompanionNewPet;
+        constexpr MessageId kReviveWords = MessageId::NewPet;
+
+        // What each prop is called, in Prop's own order.
+        // A prop is lit when it is wanted and named at all times.
+        // Which one is which is otherwise three boxes of one colour.
+        constexpr std::array<MessageId, 3> kPropWords{
+            MessageId::PropFeed,
+            MessageId::PropPlay,
+            MessageId::PropSleep};
+
+        static_assert(
+            kPropWords.size() == static_cast<std::size_t>(Prop::Nest) + 1);
 
         // How grown up it is, in LifeStage's own order.
-
 
         // Every line the companion may say, in Saying's own order.
         // One table in one place, and this is the place.
@@ -72,36 +83,36 @@ namespace antwika::companion
         // Those live in one catalogue per language, and Pet sees none.
         // Which is what keeps the active language out of the state.
         constexpr std::array<MessageId, 16> kSayingWords{
-            MessageId::CompanionSayHello,
-            MessageId::CompanionSayHello,
-            MessageId::CompanionSayBored,
-            MessageId::CompanionSayNiceDay,
-            MessageId::CompanionSayLaLaLa,
-            MessageId::CompanionSayFeedMe,
-            MessageId::CompanionSayYumYum,
-            MessageId::CompanionSayFull,
-            MessageId::CompanionSayShhh,
-            MessageId::CompanionSayZzz,
-            MessageId::CompanionSayPlay,
-            MessageId::CompanionSayWheee,
-            MessageId::CompanionSayTooTired,
-            MessageId::CompanionSayNotSleepy,
-            MessageId::CompanionSayYawn,
-            MessageId::CompanionSayPoked};
+            MessageId::SayHello,
+            MessageId::SayHello,
+            MessageId::SayBored,
+            MessageId::SayNiceDay,
+            MessageId::SayLaLaLa,
+            MessageId::SayFeedMe,
+            MessageId::SayYumYum,
+            MessageId::SayFull,
+            MessageId::SayShhh,
+            MessageId::SayZzz,
+            MessageId::SayPlay,
+            MessageId::SayWheee,
+            MessageId::SayTooTired,
+            MessageId::SayNotSleepy,
+            MessageId::SayYawn,
+            MessageId::SayPoked};
 
         // Every life stage and every day mood, in their own order.
         // An ordinary day says nothing, so it has no id of its own.
         constexpr std::array<MessageId, 5> kStageWords{
-            MessageId::CompanionStageEgg,
-            MessageId::CompanionStageChild,
-            MessageId::CompanionStageTeen,
-            MessageId::CompanionStageAdult,
-            MessageId::CompanionStageElder};
+            MessageId::StageEgg,
+            MessageId::StageChild,
+            MessageId::StageTeen,
+            MessageId::StageAdult,
+            MessageId::StageElder};
 
         constexpr std::array<MessageId, 3> kMoodWords{
-            MessageId::CompanionMoodHungry,
-            MessageId::CompanionMoodRestless,
-            MessageId::CompanionMoodHeavy};
+            MessageId::MoodHungry,
+            MessageId::MoodRestless,
+            MessageId::MoodHeavy};
 
         static_assert(
             kSayingWords.size()
@@ -139,12 +150,17 @@ namespace antwika::companion
         // Where the ground begins.
         // The animal stands on it and the three props sit along it.
         constexpr std::int32_t kGroundY = 22;
-        [[nodiscard]] std::size_t longestSaying(
+
+        // The longest of a table, measured through the translator.
+        // Both the bubble and the prop labels are scaled to fit one.
+        // So neither has a character count of its own written down.
+        [[nodiscard]] std::size_t longestOf(
+            const std::span<const MessageId> ids,
             const Translator &translator)
         {
             std::size_t longest = 1;
 
-            for (const MessageId id : kSayingWords)
+            for (const MessageId id : ids)
             {
                 const auto length = translator.text(id).size();
 
@@ -304,7 +320,7 @@ namespace antwika::companion
                 kFormDenominator[index]);
         }
 
-        // Called on a prop's box alone, which is six units by four.
+        // Called on a prop's picture alone, six units by three.
         // So a unit off each side always leaves something to draw.
         // A guard against that would be a branch no canvas could take.
         [[nodiscard]] Rect inset(const Rect &area, const std::uint32_t by)
@@ -333,7 +349,6 @@ namespace antwika::companion
 
             return scale;
         }
-
 
         [[nodiscard]] MessageId stateWord(const PetSnapshot &snapshot)
         {
@@ -373,7 +388,7 @@ namespace antwika::companion
                                - 1]);
             const std::array<std::string_view, 3> args{day, stage, mood};
 
-            return translator.formatted(MessageId::CompanionDay, args);
+            return translator.formatted(MessageId::Day, args);
         }
 
         [[nodiscard]] std::string lineageLine(
@@ -386,7 +401,7 @@ namespace antwika::companion
             const std::array<std::string_view, 2> args{generation, best};
 
             return translator.formatted(
-                MessageId::CompanionLineage, args);
+                MessageId::Lineage, args);
         }
 
         // Anchored to the bottom of the grid rather than to a row.
@@ -435,7 +450,7 @@ namespace antwika::companion
             const auto room =
                 (kBubbleUnitsWide - 2 * kBubblePadUnits) * layout.unit;
             const auto widest = static_cast<std::uint32_t>(
-                longestSaying(translator));
+                longestOf(kSayingWords, translator));
             const auto scale =
                 room / (widest * antwika::gfx::kGlyphAdvance);
 
@@ -626,26 +641,72 @@ namespace antwika::companion
                 palette.bubbleText);
         }
 
+        // Scaled to the longest label the catalogue in use holds.
+        // So the three read at one size rather than each at its own.
+        // Whichever of the row's height and its width allows less.
+        // Measured off the very box the words are written in.
+        // Rather than off the constants that box is worked out from.
+        // A unit too small for even the smallest glyphs still gets them.
+        [[nodiscard]] std::uint32_t labelScale(
+            const Rect &label, const Translator &translator)
+        {
+            const auto widest = static_cast<std::uint32_t>(
+                longestOf(kPropWords, translator));
+            const auto byHeight =
+                label.size.height / antwika::gfx::kGlyphLineHeight;
+            const auto byWidth =
+                label.size.width / (widest * antwika::gfx::kGlyphAdvance);
+            const auto scale = byHeight < byWidth ? byHeight : byWidth;
+
+            if (scale == 0)
+            {
+                return 1;
+            }
+
+            return scale;
+        }
+
         // The three things a press can mean.
         // Drawn into the very boxes propAt() hit-tests against.
         // So aiming at one and hitting it are the same rectangle.
         //
         // The one the companion would like is lit rather than present.
-        // Which is all this application offers instead of instructions.
-        // What to press next is on the screen.
+        // But which of the three is which is a word rather than a hint.
+        // Three boxes of one colour are otherwise three guesses.
+        // The word is written across the prop's own bottom row.
+        // So pressing what it says is pressing the thing it names.
         void drawProp(
             IRenderer &renderer,
             const SceneLayout &layout,
             const Palette &palette,
             const Prop prop,
-            const bool wanted)
+            const bool wanted,
+            const Translator &translator)
         {
-            const Rect area = propBox(layout, prop);
-
-            renderer.drawRect(area, palette.detail);
+            renderer.drawRect(propBox(layout, prop), palette.detail);
             renderer.drawRect(
-                inset(area, layout.unit),
+                inset(propArtBox(layout, prop), layout.unit),
                 wanted ? palette.orb : palette.eye);
+
+            const Rect label = propLabelBox(layout, prop);
+            const std::string words = translator.text(
+                kPropWords[static_cast<std::size_t>(prop)]);
+            const auto scale = labelScale(label, translator);
+            const auto text = antwika::gfx::textSize(words, scale);
+
+            renderer.drawText(
+                Point{
+                    .x = label.origin.x
+                         + (static_cast<std::int32_t>(label.size.width)
+                            - static_cast<std::int32_t>(text.width))
+                               / 2,
+                    .y = label.origin.y
+                         + (static_cast<std::int32_t>(label.size.height)
+                            - static_cast<std::int32_t>(text.height))
+                               / 2},
+                words,
+                scale,
+                palette.text);
         }
 
         [[nodiscard]] const Palette &paletteFor(
@@ -758,11 +819,26 @@ namespace antwika::companion
             // The props stand behind the animal.
             // So an animal before a bowl is drawn in front of it.
             drawProp(
-                renderer, *layout, palette, Prop::Bowl, snapshot.hungry);
+                renderer,
+                *layout,
+                palette,
+                Prop::Bowl,
+                snapshot.hungry,
+                translator);
             drawProp(
-                renderer, *layout, palette, Prop::Ball, snapshot.bored);
+                renderer,
+                *layout,
+                palette,
+                Prop::Ball,
+                snapshot.bored,
+                translator);
             drawProp(
-                renderer, *layout, palette, Prop::Nest, snapshot.tired);
+                renderer,
+                *layout,
+                palette,
+                Prop::Nest,
+                snapshot.tired,
+                translator);
 
             // Every moving part resolves from the tick count here.
             // So drawing the same tick twice draws the same pixels.
