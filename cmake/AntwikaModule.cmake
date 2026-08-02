@@ -66,6 +66,15 @@ function(antwika_bundle_app)
 
     # An asset named here and missing is a build that fails now rather
     # than an application that starts and cannot draw.
+    #
+    # Each copy is a rule that DEPENDS on its source, gathered into a
+    # target the application depends on -- never a POST_BUILD step.
+    # POST_BUILD runs only when the executable relinks, and editing an
+    # asset touches no source: the documented repaint-the-atlas
+    # workflow rebuilt everything and ran against the previous sheet,
+    # silently, through app::assetPath().
+    set(copies "")
+
     foreach(asset IN LISTS ARG_ASSETS)
         set(source "${CMAKE_CURRENT_SOURCE_DIR}/${asset}")
 
@@ -75,12 +84,24 @@ function(antwika_bundle_app)
                 "'${source}'")
         endif()
 
-        add_custom_command(TARGET ${ARG_TARGET} POST_BUILD
+        get_filename_component(name "${asset}" NAME)
+        set(copied
+            "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/${ARG_TARGET}/${name}")
+
+        add_custom_command(OUTPUT "${copied}"
             COMMAND ${CMAKE_COMMAND} -E copy_if_different
                 "${source}"
-                "$<TARGET_FILE_DIR:${ARG_TARGET}>"
+                "${copied}"
+            DEPENDS "${source}"
         )
+
+        list(APPEND copies "${copied}")
     endforeach()
+
+    if(copies)
+        add_custom_target(${ARG_TARGET}_assets DEPENDS ${copies})
+        add_dependencies(${ARG_TARGET} ${ARG_TARGET}_assets)
+    endif()
 
     foreach(dll IN LISTS ANTWIKA_MINGW_RUNTIME_DLLS)
         add_custom_command(TARGET ${ARG_TARGET} POST_BUILD
