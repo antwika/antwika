@@ -33,10 +33,10 @@ namespace antwika::music_editor
                 * static_cast<FrameCount>(rate) / kMillisecondsPerSecond;
         }
 
-        constexpr std::array<std::string_view, kTrackCount> kNames{
+        constexpr std::array<std::string_view, kPresetCount> kNames{
             "bass", "lead", "bell", "drum"};
 
-        const std::array<TrackPreset, kTrackCount> kPresets{
+        const std::array<TrackPreset, kPresetCount> kPresets{
             TrackPreset{
                 .shape = synth::Waveshape::Saw,
                 .baseHertz = 110.0,
@@ -91,24 +91,24 @@ namespace antwika::music_editor
                 .pan = 0.0F}};
     } // namespace
 
-    const std::array<TrackPreset, kTrackCount> &trackPresets() noexcept
+    const std::array<TrackPreset, kPresetCount> &trackPresets() noexcept
     {
         return kPresets;
     }
 
-    std::string_view trackName(const std::size_t track) noexcept
+    std::string_view trackName(const std::size_t preset) noexcept
     {
-        return kNames[track];
+        return kNames[preset];
     }
 
     std::optional<std::size_t> trackFor(
         const std::string_view name) noexcept
     {
-        for (std::size_t track = 0; track < kTrackCount; ++track)
+        for (std::size_t preset = 0; preset < kPresetCount; ++preset)
         {
-            if (kNames[track] == name)
+            if (kNames[preset] == name)
             {
-                return track;
+                return preset;
             }
         }
 
@@ -125,9 +125,11 @@ namespace antwika::music_editor
         const auto note = value.get(kNote);
 
         const auto semitones =
-            note.has_value() ? note->approximate() : 0.0;
+            (note.has_value() ? note->approximate() : 0.0)
+            + static_cast<double>(preset.transpose);
 
         // A note is a semitone above the preset's base.
+        // Whatever o() and trans() added goes in with it.
         // Noise has no pitch, and its frequency is never read.
         const auto hertz = preset.baseHertz
             * std::pow(2.0, semitones / kSemitonesPerOctave);

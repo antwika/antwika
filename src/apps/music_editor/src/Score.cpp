@@ -8,7 +8,9 @@
 #include <antwika/notation/NotationError.hpp>
 #include <antwika/notation/ParsePattern.hpp>
 #include <antwika/pattern/PatternError.hpp>
-#include <antwika/pattern/Patterns.hpp>
+
+#include "antwika/music_editor/ScoreError.hpp"
+#include "antwika/music_editor/VoiceChain.hpp"
 
 namespace antwika::music_editor
 {
@@ -16,11 +18,36 @@ namespace antwika::music_editor
     namespace
     {
         // What a voice line opens with.
-        // Two characters rather than one, so no notation begins with it.
+        // Two characters rather than one, so no chain begins with it.
         constexpr std::string_view kVoiceMark{"$:"};
 
         // What the rest of a line is, once one of these opens it.
         constexpr std::string_view kCommentMark{"//"};
+
+        // Cut a line at the comment that ends it, if one does.
+        // Outside quotes alone, so a notation is never cut into.
+        [[nodiscard]] std::string_view uncommented(
+            const std::string_view line) noexcept
+        {
+            bool quoted = false;
+
+            for (std::size_t at = 0; at + 1 < line.size(); ++at)
+            {
+                if (line[at] == '"')
+                {
+                    quoted = !quoted;
+                }
+                else if (
+                    !quoted
+                    && line.substr(at, kCommentMark.size())
+                        == kCommentMark)
+                {
+                    return line.substr(0, at);
+                }
+            }
+
+            return line;
+        }
 
         constexpr std::string_view kBlanks{" \t"};
 
@@ -38,55 +65,22 @@ namespace antwika::music_editor
 
             return text.substr(first, last - first + 1);
         }
-
-        // The first word of a line, and what is left after it.
-        [[nodiscard]] std::string_view firstWord(
-            std::string_view text) noexcept
-        {
-            return text.substr(0, text.find_first_of(kBlanks));
-        }
-
-        [[nodiscard]] std::string_view afterFirstWord(
-            std::string_view text) noexcept
-        {
-            const auto space = text.find_first_of(kBlanks);
-
-            if (space == std::string_view::npos)
-            {
-                return {};
-            }
-
-            return trimmed(text.substr(space));
-        }
     } // namespace
 
     std::string openingSource()
     {
         // A score that already makes something.
-        // Written in the syntax the editor is for.
+        // And that shows the shape of the language while it does.
+        // Two drums, because one of a kind is not the rule here.
         return "// type at me: every keystroke lands in the music\n"
-               "$: bass 0 ~ 0 [~ 3]\n"
-               "$: lead <12 7> ~ 10 ~\n"
-               "$: bell ~ 19 ~ [24 19]\n"
-               "$: drum 0(3,8)\n";
+               "$: bass.n(\"0 ~ 0 [~ 3]\").o(-1)\n"
+               "$: lead.n(\"<12 7> ~ 10 ~\").gain(.18)\n"
+               "$: drum.n(\"0(3,8)\")\n"
+               "$: drum.n(\"~ [0 0] ~ 0\").gain(.12).pan(.5)\n";
     }
 
     Score::Score() : words(kNote)
     {
-        tracks.reserve(kTrackCount);
-
-        // The excluded line carries two (throw) edges.
-        // It also carries an unwind pad for the strings and vector.
-        // Each is taken only if an allocation actually fails.
-        // See docs/confirming-unreachable-branches.md, signature (a).
-        for (std::size_t track = 0; track < kTrackCount; ++track)
-        {
-            tracks.push_back(
-                Track{ // GCOVR_EXCL_LINE
-                    .source = std::string{},
-                    .failure = std::string{},
-                    .playing = pattern::silence()});
-        }
     }
 
     void Score::read(const std::string &source)
@@ -100,14 +94,14 @@ namespace antwika::music_editor
         everRead = true;
 
         refusals.clear();
-        claimed.fill(false);
+        seen = 0;
 
         std::size_t number = 0;
         std::size_t begin = 0;
 
-        // The break below is the only way out.
-        // A line always begins at or before its document's end.
-        // So a condition here would be a direction nothing can take.
+        // The break below is the only way out of this loop.
+        // A condition here would be a direction nothing takes.
+        // A line begins at or before the end of its document.
         while (true)
         {
             const auto end = document.find('\n', begin);
@@ -129,27 +123,31 @@ namespace antwika::music_editor
             begin = end + 1;
         }
 
-        // A voice no line names is a voice that was taken out.
-        // Its text is forgotten too, so writing it again is heard.
-        for (std::size_t track = 0; track < kTrackCount; ++track)
+        // A line that is gone takes its voice with it.
+        lines.resize(seen);
+
+        sounding.clear();
+
+        for (const auto &line : lines)
         {
-            if (claimed[track])
+            // A line refused before it ever read has nothing to sound.
+            if (!line.sounding)
             {
                 continue;
             }
 
-            tracks[track].playing = pattern::silence();
-            tracks[track].source.clear();
-            tracks[track].failure.clear();
+            sounding.push_back(line.voice);
         }
     }
 
     void Score::readLine(
         const std::string_view line, const std::size_t number)
     {
-        const auto text = trimmed(line);
+        // A comment is cut off wherever it starts.
+        // So a line that is only a comment is a line holding nothing.
+        const auto text = trimmed(uncommented(line));
 
-        if (text.empty() || text.starts_with(kCommentMark))
+        if (text.empty())
         {
             return;
         }
@@ -161,40 +159,24 @@ namespace antwika::music_editor
             return;
         }
 
-        const auto rest = trimmed(text.substr(kVoiceMark.size()));
-        const auto name = firstWord(rest);
-        const auto track = trackFor(name);
-
-        if (!track.has_value())
-        {
-            refuse(
-                number, "name a voice: bass, lead, bell or drum");
-
-            return;
-        }
-
-        if (claimed[*track])
-        {
-            refuse(number, std::string(name) + " is already sounding");
-
-            return;
-        }
-
-        claimed[*track] = true;
-
-        play(*track, afterFirstWord(rest), number);
+        play(trimmed(text.substr(kVoiceMark.size())), number);
     }
 
     void Score::play(
-        const std::size_t track,
-        const std::string_view notation,
-        const std::size_t number)
+        const std::string_view chain, const std::size_t number)
     {
-        auto &held = tracks[track];
+        const auto at = seen++;
+
+        if (at == lines.size())
+        {
+            lines.emplace_back();
+        }
+
+        auto &held = lines[at];
 
         // Read once, however many ticks the line then sits there for.
         // A refusal is repeated, since the line is still refused.
-        if (held.source == notation)
+        if (held.chain == chain)
         {
             if (!held.failure.empty())
             {
@@ -204,29 +186,31 @@ namespace antwika::music_editor
             return;
         }
 
-        held.source = notation;
+        held.chain = chain;
         ++parsed;
-
-        if (notation.empty())
-        {
-            held.playing = pattern::silence();
-            held.failure.clear();
-
-            return;
-        }
 
         try
         {
-            held.playing =
-                notation::parsePattern(held.source, words);
+            const auto read = parseVoiceChain(chain);
 
+            // Built whole and then handed over.
+            // A refused notation leaves the voice as it was.
+            Voice voice{
+                .preset = read.preset,
+                .playing =
+                    notation::parsePattern(read.notation, words)};
+
+            held.voice = std::move(voice);
+            held.sounding = true;
             held.failure.clear();
         }
-        // The excluded line has a third direction.
-        // It is an exception neither clause below catches.
-        // parsePattern raises only those two types.
-        // So reaching it needs an allocation to fail inside one.
-        catch (const notation::NotationError &refused) // GCOVR_EXCL_LINE
+        catch (const ScoreError &refused)
+        {
+            // The chain itself, rather than what it plays.
+            // A control no voice has, or a preset nothing is called.
+            held.failure = refused.what();
+        }
+        catch (const notation::NotationError &refused)
         {
             // The line keeps playing whatever it last did.
             // Half a bracket is typed on the way to a whole one.
@@ -251,9 +235,9 @@ namespace antwika::music_editor
             Problem{.line = number, .message = std::move(message)});
     }
 
-    const Pattern &Score::playing(const std::size_t track) const
+    const std::vector<Voice> &Score::voices() const noexcept
     {
-        return tracks[track].playing;
+        return sounding;
     }
 
     const std::vector<Problem> &Score::problems() const noexcept

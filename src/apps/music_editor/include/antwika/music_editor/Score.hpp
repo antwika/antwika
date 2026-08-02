@@ -1,6 +1,5 @@
 #pragma once
 
-#include <array>
 #include <cstddef>
 #include <string>
 #include <string_view>
@@ -8,8 +7,10 @@
 
 #include <antwika/notation/NumberWords.hpp>
 #include <antwika/pattern/Pattern.hpp>
+#include <antwika/pattern/Patterns.hpp>
 
 #include "antwika/music_editor/TrackPreset.hpp"
+#include "antwika/music_editor/VoiceChain.hpp"
 
 namespace antwika::music_editor
 {
@@ -47,37 +48,51 @@ namespace antwika::music_editor
     };
 
     /**
+     * @brief One voice: a sound, and what it is playing.
+     */
+    struct Voice
+    {
+        TrackPreset preset{};
+
+        // Silence rather than nothing.
+        // A pattern has no empty value to hold instead.
+        Pattern playing = pattern::silence();
+    };
+
+    /**
      * @brief What the document currently plays.
      *
      * **This is where live editing becomes live playback.**
      * Nothing tells it to reload: it is handed the whole document every
      * tick and works out for itself what changed.
      *
-     * The document is code rather than one box per voice:
+     * The document is code.
+     * A line opening with `//`, or holding nothing, is passed over; a
+     * voice line opens with `$:` and carries a chain of calls:
      *
      * @code
-     * // a comment, and a blank line, are passed over
-     * $: bass 0 ~ 0 [~ 3]
-     * $: drum 0(3,8)
+     * // two drums, sounding together, out of one preset
+     * $: drum.n("0(3,8)")
+     * $: drum.n("~ ~ [0 0] ~").gain(.2).pan(.5).hpf(4000)
+     * $: bass.n("0 ~ 0 [~ 3]").o(-1)
      * @endcode
      *
-     * A line opens with `$:` and names one of the four voices; what
-     * follows it is the mini-notation that voice plays. **A voice is
-     * named rather than counted**, so writing a line above another does
-     * not move that other one to a different instrument -- which is the
-     * one thing a positional syntax gets wrong exactly while somebody
-     * is typing into the middle of a score.
+     * **A line is a voice, and nothing is limited to one of a kind.**
+     * A preset is a starting point that the chain after it changes a
+     * copy of, so two lines opening `drum.` are two voices that sound
+     * at once and can differ in every other respect. What a voice is
+     * called is nothing: the line *is* the identity.
      *
-     * **A line that does not parse keeps playing whatever it last
+     * **A line that does not read keeps playing whatever it last
      * did.**
      * That is the decision the whole feel of the editor rests on: half
      * a bracket is typed on the way to a whole one, and an editor that
      * fell silent at every intermediate keystroke would be unusable.
-     * The refusal is reported through problems() instead, and the
-     * moment the line reads again the new pattern takes over.
+     * The refusal is reported through problems() instead, naming the
+     * line it came from, and the moment the line reads again the new
+     * voice takes over.
      *
-     * A voice no line names falls silent, since deleting a line is how
-     * an instrument is taken out.
+     * Deleting a line takes its voice out, since a voice is a line.
      */
     class Score final
     {
@@ -96,19 +111,18 @@ namespace antwika::music_editor
         /**
          * @brief Re-read the document, if it has changed.
          *
-         * Costs nothing on a tick where nothing was typed, and parses
-         * again only the voice lines whose notation actually differs.
+         * Costs nothing on a tick where nothing was typed, and reads
+         * again only the lines whose text actually differs.
          *
          * @param source What the editor now holds.
          */
         void read(const std::string &source);
 
         /**
-         * @brief Get what one voice is playing.
-         * @param track Which track.
-         * @return Its pattern, which is the last one that parsed.
+         * @brief Get every voice the document is sounding.
+         * @return The voices, in the order their lines appear.
          */
-        [[nodiscard]] const Pattern &playing(std::size_t track) const;
+        [[nodiscard]] const std::vector<Voice> &voices() const noexcept;
 
         /**
          * @brief Get every line the document was refused for.
@@ -124,7 +138,7 @@ namespace antwika::music_editor
         [[nodiscard]] bool hasError() const noexcept;
 
         /**
-         * @brief Get how many voice lines have been parsed since the
+         * @brief Get how many voice lines have been read since the
          * start.
          *
          * For a test and for the status line, so that "the edit took"
@@ -135,31 +149,38 @@ namespace antwika::music_editor
         [[nodiscard]] std::size_t reparses() const noexcept;
 
     private:
-        struct Track
+        // What one voice line came to, kept for two reasons.
+        // The next read tells an unchanged line from an edited one.
+        // And a line that stops reading keeps its last voice.
+        struct Line
         {
-            std::string source;
+            std::string chain;
             std::string failure;
-            Pattern playing;
+            bool sounding = false;
+            Voice voice;
         };
 
         void readLine(std::string_view line, std::size_t number);
 
-        void play(
-            std::size_t track,
-            std::string_view notation,
-            std::size_t number);
+        void play(std::string_view chain, std::size_t number);
 
         void refuse(std::size_t number, std::string message);
 
         notation::NumberWords words;
-        std::vector<Track> tracks;
+
+        std::vector<Line> lines;
+        std::vector<Voice> sounding;
         std::vector<Problem> refusals;
 
         std::string document;
-        std::array<bool, kTrackCount> claimed{};
+
+        // How many voice lines this read has taken.
+        // Which is also where the next one is kept.
+        std::size_t seen = 0;
+
+        std::size_t parsed = 0;
 
         bool everRead = false;
-        std::size_t parsed = 0;
     };
 
 } // namespace antwika::music_editor

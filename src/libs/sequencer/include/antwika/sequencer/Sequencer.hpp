@@ -87,6 +87,25 @@ namespace antwika::sequencer
             time::Tick tick, const Pattern &pattern, ISequencerSink &out);
 
         /**
+         * @brief Take up a run that is already in progress.
+         *
+         * Declares everything through that tick's window already asked
+         * for, without querying anything and without sounding a note.
+         *
+         * **What it is for is a voice that was not there a moment
+         * ago.** A sequencer built fresh has been asked nothing, so its
+         * first advance() would query every cycle since the run began
+         * and sound the lot at once; a caller adding a voice partway
+         * through says here that the past is not its to play.
+         *
+         * Moving backwards is not expressible: a position already
+         * passed leaves the window where it is.
+         *
+         * @param tick The tick to take the run up at.
+         */
+        void joinAt(time::Tick tick);
+
+        /**
          * @brief Get how far the pattern has been asked about.
          * @return The first position no query has covered yet.
          */

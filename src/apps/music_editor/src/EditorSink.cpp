@@ -142,7 +142,8 @@ namespace antwika::music_editor
         const PlaybackStatus status{
             .started = playback.started(),
             .voices = playback.voices(),
-            .cycles = playback.playedTicks()};
+            .cycles = playback.playedTicks(),
+            .lines = playback.sounding()};
 
         const auto frame = scene.describe(
             state, score, status, canvas, pointerNow(pressed), keyboard);

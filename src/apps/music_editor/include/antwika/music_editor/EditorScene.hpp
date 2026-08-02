@@ -52,6 +52,9 @@ namespace antwika::music_editor
         std::uint64_t started = 0;
         std::size_t voices = 0;
         std::uint64_t cycles = 0;
+
+        /** @brief How many voice lines the score is sounding. */
+        std::size_t lines = 0;
     };
 
     /**

@@ -43,6 +43,7 @@ namespace antwika::music_editor
         {
             return std::string(state.paused ? "paused" : "playing")
                 + "  cycle " + std::to_string(status.cycles)
+                + "  lines " + std::to_string(status.lines)
                 + "  voices " + std::to_string(status.voices)
                 + "  notes " + std::to_string(status.started);
         }
@@ -96,7 +97,7 @@ namespace antwika::music_editor
                     .width = kGrow,
                     .height = kGrow,
                     .text = state.source,
-                    .placeholder = "$: bass 0 ~ 0 [~ 3]",
+                    .placeholder = "$: bass.n(\"0 ~ 0 [~ 3]\")",
                     .cursor = state.cursor,
                     .focused = true});
 

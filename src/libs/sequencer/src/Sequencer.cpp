@@ -74,6 +74,21 @@ namespace antwika::sequencer
         asked = through;
     }
 
+    void Sequencer::joinAt(const time::Tick tick)
+    {
+        const auto through =
+            tempo.cycleAt(clock.frameAtTick(tick + lookahead));
+
+        // The window only ever moves forward.
+        // A position already passed is left where it is.
+        if (through <= asked)
+        {
+            return;
+        }
+
+        asked = through;
+    }
+
     Cycle Sequencer::queriedThrough() const noexcept
     {
         return asked;

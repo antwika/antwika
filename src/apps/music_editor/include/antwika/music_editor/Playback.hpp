@@ -1,9 +1,9 @@
 #pragma once
 
-#include <array>
 #include <cstddef>
 #include <cstdint>
 #include <memory>
+#include <vector>
 
 #include <antwika/sequencer/FrameClock.hpp>
 #include <antwika/sequencer/ISequencerSink.hpp>
@@ -46,12 +46,20 @@ namespace antwika::music_editor
     };
 
     /**
-     * @brief Keeps four voices sounding, and keeps up with the score
+     * @brief Keeps every voice sounding, and keeps up with the score
      * changing under them.
      *
-     * One sequencer per track, because a track's events have to be made
-     * into a voice through *its* preset, and the sequencer's seam hands
-     * on controls rather than sounds.
+     * One sequencer per voice line, because a line's events have to be
+     * made into a sound through *its* preset, and the sequencer's seam
+     * hands on controls rather than sounds.
+     *
+     * **The count is the document's, not this class's.**
+     * Sequencers are made as lines are written and kept when lines are
+     * deleted, since a pool that only ever grows costs a few hundred
+     * bytes and spares the run an allocation in the middle of a bar.
+     * One taken up again -- because a line was written where a deleted
+     * one used to be -- joins at the current tick rather than playing
+     * the history it slept through.
      *
      * **Playing is the resting state.** Nothing starts it, and pausing
      * stops the musical clock rather than the device -- so a held note
@@ -101,6 +109,12 @@ namespace antwika::music_editor
         void step(bool paused);
 
         /**
+         * @brief Get how many voices the last step sounded.
+         * @return The count, which is the score's voice count.
+         */
+        [[nodiscard]] std::size_t sounding() const noexcept;
+
+        /**
          * @brief Silence everything currently sounding.
          */
         void silence() noexcept;
@@ -131,14 +145,11 @@ namespace antwika::music_editor
 
 
     private:
-        // Turns one track's events into that track's sound.
+        // Turns one voice's events into that voice's sound.
         class TrackVoices final : public sequencer::ISequencerSink
         {
         public:
-            TrackVoices(
-                const TrackPreset &preset,
-                synth::SynthMixer &mixer,
-                std::uint64_t &counter);
+            TrackVoices(synth::SynthMixer &mixer, std::uint64_t &counter);
 
             void trigger(
                 const pattern::Controls &value,
@@ -148,11 +159,26 @@ namespace antwika::music_editor
             /** @brief Where the device timeline sits against the score. */
             FrameIndex offset = 0;
 
+            /**
+             * @brief The sound to make, which the line decides afresh
+             * on every keystroke.
+             */
+            TrackPreset preset{};
+
         private:
-            const TrackPreset &preset;
             synth::SynthMixer &mixer;
             std::uint64_t &counter;
         };
+
+        // One sequencer, its sink, and when it last ran.
+        struct Line
+        {
+            std::unique_ptr<sequencer::Sequencer> sequencer;
+            std::unique_ptr<TrackVoices> voices;
+            time::Tick advanced = 0;
+        };
+
+        void grow(std::size_t count);
 
         void pump(bool paused);
 
@@ -163,12 +189,10 @@ namespace antwika::music_editor
         sound::IDevice &device;
         time::ISleeper &sleeper;
 
-        // Arrays rather than vectors.
-        // The track count is a constant, so there is no growth path.
-        std::array<std::unique_ptr<sequencer::Sequencer>, kTrackCount>
-            sequencers;
+        PlaybackDesc shape;
 
-        std::array<std::unique_ptr<TrackVoices>, kTrackCount> perTrack;
+        std::vector<Line> perVoice;
+        std::size_t voicesSounding = 0;
 
         FrameCount lead = 0;
         FrameIndex queued = 0;

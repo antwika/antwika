@@ -13,10 +13,8 @@ namespace antwika::music_editor
 {
 
     Playback::TrackVoices::TrackVoices(
-        const TrackPreset &preset,
-        synth::SynthMixer &mixer,
-        std::uint64_t &counter)
-        : preset(preset), mixer(mixer), counter(counter)
+        synth::SynthMixer &mixer, std::uint64_t &counter)
+        : mixer(mixer), counter(counter)
     {
     }
 
@@ -47,47 +45,77 @@ namespace antwika::music_editor
         sound::IDevice &device,
         time::ISleeper &sleeper,
         PlaybackDesc desc)
-        : score(score), mixer(mixer), device(device), sleeper(sleeper)
+        : score(score),
+          mixer(mixer),
+          device(device),
+          sleeper(sleeper),
+          // Held rather than read once.
+          // A voice written later is made against the same shape.
+          shape(std::move(desc))
     {
         lead = static_cast<FrameCount>(
-            desc.clock.frameAtTick(desc.lead));
+            shape.clock.frameAtTick(shape.lead));
 
-        for (std::size_t track = 0; track < kTrackCount; ++track)
+        // One, so a lookahead of no ticks is refused here.
+        // Rather than on whichever keystroke first writes a voice.
+        grow(1);
+    }
+
+    void Playback::grow(const std::size_t count)
+    {
+        while (perVoice.size() < count)
         {
             // The excluded line carries a (throw) edge.
             // It also carries an unwind pad for the TempoMap copy.
             // Both are taken only if an allocation actually fails.
             // See docs/confirming-unreachable-branches.md, signature (a).
             sequencer::SequencerDesc each{
-                .clock = desc.clock,
-                .tempo = desc.tempo,
-                .lookahead = desc.lookahead}; // GCOVR_EXCL_LINE
+                .clock = shape.clock,
+                .tempo = shape.tempo,
+                .lookahead = shape.lookahead}; // GCOVR_EXCL_LINE
 
-            sequencers[track] =
-                std::make_unique<sequencer::Sequencer>(std::move(each));
-
-            perTrack[track] = std::make_unique<TrackVoices>(
-                trackPresets()[track], mixer, counter);
+            perVoice.push_back(
+                Line{
+                    .sequencer = std::make_unique<sequencer::Sequencer>(
+                        std::move(each)),
+                    .voices = std::make_unique<TrackVoices>(
+                        mixer, counter),
+                    .advanced = played});
         }
     }
 
     void Playback::step(const bool paused)
     {
+        const auto &voices = score.voices();
+
+        voicesSounding = voices.size();
+
         if (!paused)
         {
             ++played;
 
-            for (std::size_t track = 0; track < kTrackCount; ++track)
+            grow(voices.size());
+
+            for (std::size_t at = 0; at < voices.size(); ++at)
             {
+                auto &line = perVoice[at];
+
                 // Every note lands at the offset the pause left.
                 // That is constant while the clock is running.
-                perTrack[track]->offset = pausedFrames;
+                line.voices->offset = pausedFrames;
+                line.voices->preset = voices[at].preset;
 
-                // Nothing here guards against a refused window.
-                // antwika::notation bounds every number it reads.
-                // So no line that parses can open one that wide.
-                sequencers[track]->advance(
-                    played, score.playing(track), *perTrack[track]);
+                // A sequencer that missed a tick slept through it.
+                // It joins now rather than playing what it missed.
+                if (line.advanced + 1 != played)
+                {
+                    line.sequencer->joinAt(played - 1);
+                }
+
+                line.sequencer->advance(
+                    played, voices[at].playing, *line.voices);
+
+                line.advanced = played;
             }
         }
 
@@ -147,6 +175,11 @@ namespace antwika::music_editor
     std::size_t Playback::voices() const noexcept
     {
         return mixer.activeVoices();
+    }
+
+    std::size_t Playback::sounding() const noexcept
+    {
+        return voicesSounding;
     }
 
     std::uint64_t Playback::started() const noexcept
