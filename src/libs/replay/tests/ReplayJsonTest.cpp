@@ -138,20 +138,23 @@ TEST(ReplayJsonTest, HeaderReadsACanvasExtentAtTheUint32Maximum)
         header.canvas->width, std::numeric_limits<std::uint32_t>::max());
 }
 
-// A header holds the version and whatever else a run has to say.
-// It never holds a record, which is what a line of its own is for.
-TEST(ReplayJsonTest, HeaderThrowsWhenItCarriesAMemberNobodyKnows)
+// docs/schema-versioning.md: the header only grows additively.
+// A member this build has never heard of is a younger release's
+// optional addition, so it is passed over rather than refused --
+// refusing unknown members is what once broke pre-canvas builds
+// the moment "canvas" arrived.
+TEST(ReplayJsonTest, HeaderPassesOverAMemberItDoesNotKnow)
 {
-    EXPECT_THROW(
-        std::ignore = readHeader(
-            nlohmann::json{{"magic", "antwika-replay"}, {"tick", 4}}),
-        ReplayFormatError);
+    const auto header = readHeader(
+        nlohmann::json{{"magic", "antwika-replay"}, {"novel", 4}});
+
+    EXPECT_EQ(header.version, 1U);
 }
 
 TEST(ReplayJsonTest, RecordsRoundTripInOrder)
 {
     const std::vector<TickEvent> events{
-        TickEvent{.tick = 0, .event = Event{.name = "engine.tick"}},
+        TickEvent{.tick = 0, .event = Event{.name = "life.step"}},
         TickEvent{
             .tick = 0,
             .event = Event{
@@ -159,7 +162,7 @@ TEST(ReplayJsonTest, RecordsRoundTripInOrder)
                 .payload = R"({"amount":1})",
             },
         },
-        TickEvent{.tick = 2, .event = Event{.name = "engine.tick"}},
+        TickEvent{.tick = 2, .event = Event{.name = "life.step"}},
     };
 
     EXPECT_EQ(readRecords(nlohmann::json(events)), events);

@@ -1,5 +1,6 @@
 #include "antwika/replay/MigrationChain.hpp"
 
+#include <algorithm>
 #include <cstddef>
 #include <format>
 #include <utility>
@@ -82,6 +83,29 @@ namespace antwika::replay
                 "{}, and this build reads up to version {}; it was "
                 "written by a newer release",
                 statedVersion,
+                current));
+        }
+
+        // The other end, refused up front and blaming the document.
+        // Left to the migration walk, a sub-oldest version either
+        // loaded silently (nothing to migrate in an empty file) or
+        // surfaced as a "gap" message blaming this build's chain for
+        // a document no release of this software ever wrote.
+        auto oldest = current;
+
+        for (const auto &migration : migrations)
+        {
+            oldest = std::min(oldest, migration->fromVersion());
+        }
+
+        if (statedVersion < oldest)
+        {
+            throw SchemaVersionError(std::format(
+                "antwika::replay: this document states schema version "
+                "{}, and this build reads versions {} through {}; no "
+                "release ever wrote that version",
+                statedVersion,
+                oldest,
                 current));
         }
     }

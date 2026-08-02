@@ -147,7 +147,7 @@ TEST(ReplayCliTest, LoadReplayFileDecodesAPreviouslySavedDocument)
     {
         std::ofstream out(file.string());
         out << R"({"magic":"antwika-replay","version":1,"events":)"
-            << R"([{"tick":0,"event":{"name":"engine.tick","payload":""}}])"
+            << R"([{"tick":0,"event":{"name":"life.step","payload":""}}])"
             << "}";
     }
 
@@ -156,7 +156,7 @@ TEST(ReplayCliTest, LoadReplayFileDecodesAPreviouslySavedDocument)
     EXPECT_EQ(
         events,
         (std::vector<TickEvent>{
-            TickEvent{.tick = 0, .event = Event{.name = "engine.tick"}},
+            TickEvent{.tick = 0, .event = Event{.name = "life.step"}},
         }));
 }
 

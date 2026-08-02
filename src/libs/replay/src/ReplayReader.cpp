@@ -141,6 +141,36 @@ namespace antwika::replay
             return records;
         } // GCOVR_EXCL_LINE
 
+        // A version 1 document holds the run entire, so anything after
+        // it is a second recording; returning after the first value
+        // replayed two concatenated sessions as the first alone,
+        // silently, where the line-oriented path refuses them loudly.
+        void requireNothingAfter(std::istream &in)
+        {
+            std::string text;
+
+            while (std::getline(in, text))
+            {
+                if (isBlank(text))
+                {
+                    continue;
+                }
+
+                if (text.find(std::string(detail::kMagicKey))
+                    != std::string::npos)
+                {
+                    throw ReplayFormatError(
+                        "antwika::replay: a second header follows this "
+                        "whole-document replay; a file holds one run");
+                }
+
+                throw ReplayFormatError(
+                    "antwika::replay: content follows this "
+                    "whole-document replay, and a version 1 document "
+                    "holds the run entire");
+            }
+        }
+
         [[nodiscard]] ReplayDocument readStream(
             std::istream &in, const MigrationChain &migrations)
         {
@@ -161,6 +191,8 @@ namespace antwika::replay
             const std::string events(detail::kLegacyEventsKey);
             if (first.is_object() && first.contains(events))
             {
+                requireNothingAfter(in);
+
                 return replayFromJson(first, migrations);
             }
 

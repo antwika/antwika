@@ -80,7 +80,7 @@ TEST(ReplayWriterReaderTest, RoundTripsZeroEvents)
 TEST(ReplayWriterReaderTest, RoundTripsOneEvent)
 {
     const std::vector<TickEvent> events{
-        TickEvent{.tick = 0, .event = Event{.name = "engine.tick"}},
+        TickEvent{.tick = 0, .event = Event{.name = "life.step"}},
     };
     EXPECT_EQ(roundTrip(events), events);
 }
@@ -88,7 +88,7 @@ TEST(ReplayWriterReaderTest, RoundTripsOneEvent)
 TEST(ReplayWriterReaderTest, RoundTripsManyEventsInOrder)
 {
     const std::vector<TickEvent> events{
-        TickEvent{.tick = 0, .event = Event{.name = "engine.tick"}},
+        TickEvent{.tick = 0, .event = Event{.name = "life.step"}},
         TickEvent{
             .tick = 0,
             .event = Event{
@@ -96,8 +96,8 @@ TEST(ReplayWriterReaderTest, RoundTripsManyEventsInOrder)
                 .payload = R"({"amount":1})",
             },
         },
-        TickEvent{.tick = 1, .event = Event{.name = "engine.tick"}},
-        TickEvent{.tick = 2, .event = Event{.name = "engine.tick"}},
+        TickEvent{.tick = 1, .event = Event{.name = "life.step"}},
+        TickEvent{.tick = 2, .event = Event{.name = "life.step"}},
         TickEvent{
             .tick = 2,
             .event = Event{
@@ -309,6 +309,97 @@ TEST(ReplayWriterReaderTest, ReadsAWholeDocumentWrittenByAnOlderBuild)
             TickEvent{
                 .tick = 4,
                 .event = Event{.name = "c.d", .payload = "2"}}}));
+}
+
+// A version 1 document holds the run entire.
+// Two concatenated recordings used to replay as the first alone.
+TEST(ReplayWriterReaderTest, RefusesContentAfterAWholeDocument)
+{
+    const std::string document =
+        R"({"magic":"antwika-replay","version":1,"events":[)"
+        R"({"tick":0,"event":{"name":"a.b","payload":""}}]})";
+
+    try
+    {
+        std::ignore = readText(document + "\n" + document + "\n");
+        FAIL() << "a second recording should have thrown";
+    }
+    catch (const ReplayFormatError &error)
+    {
+        EXPECT_NE(
+            std::string(error.what()).find("second header"),
+            std::string::npos)
+            << error.what();
+    }
+
+    EXPECT_THROW(
+        std::ignore = readText(document + "\ntrailing\n"),
+        ReplayFormatError);
+}
+
+// docs/schema-versioning.md: the header only grows additively.
+// A member this build has never heard of is a younger release's,
+// not an error; refusing it once broke pre-canvas builds.
+TEST(ReplayWriterReaderTest, AHeaderWithAnUnknownMemberStillLoads)
+{
+    const std::string text =
+        R"({"magic":"antwika-replay","version":2,"novel":true})"
+        "\n"
+        R"({"tick":0,"event":{"name":"a.b","payload":""}})"
+        "\n";
+
+    EXPECT_EQ(readText(text).size(), 1U);
+}
+
+// The recorder filters engine.tick on the way out, so a record named
+// it can only be a hand edit -- and dispatching it would double-step
+// every per-tick sink, since the engine regenerates the real one.
+TEST(ReplayWriterReaderTest, RefusesAHandCraftedEngineTickRecord)
+{
+    const std::string text =
+        R"({"magic":"antwika-replay","version":2})"
+        "\n"
+        R"({"tick":0,"event":{"name":"engine.tick","payload":""}})"
+        "\n";
+
+    try
+    {
+        std::ignore = readText(text);
+        FAIL() << "an engine.tick record should have thrown";
+    }
+    catch (const ReplayFormatError &error)
+    {
+        EXPECT_NE(
+            std::string(error.what()).find("engine.tick"),
+            std::string::npos)
+            << error.what();
+    }
+}
+
+// Both are courtesies of the JSON library, worth pinning: a recording
+// that crossed a Windows checkout gains CRLF endings, and some
+// editors prepend a byte-order mark on save.
+TEST(ReplayWriterReaderTest, ReadsCarriageReturnLineEndings)
+{
+    const std::string text =
+        R"({"magic":"antwika-replay","version":2})"
+        "\r\n"
+        R"({"tick":0,"event":{"name":"a.b","payload":""}})"
+        "\r\n";
+
+    EXPECT_EQ(readText(text).size(), 1U);
+}
+
+TEST(ReplayWriterReaderTest, ReadsALeadingByteOrderMark)
+{
+    const std::string text =
+        "\xEF\xBB\xBF"
+        R"({"magic":"antwika-replay","version":2})"
+        "\n"
+        R"({"tick":0,"event":{"name":"a.b","payload":""}})"
+        "\n";
+
+    EXPECT_EQ(readText(text).size(), 1U);
 }
 
 // Including the indented one every checked-in demo replay used to be.
