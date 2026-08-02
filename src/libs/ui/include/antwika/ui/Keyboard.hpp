@@ -84,6 +84,19 @@ namespace antwika::ui
         MoveDown,
 
         /**
+         * @brief Move the caret to the start of its line: Home.
+         *
+         * In a text field, whose one line is the whole text, that is
+         * the start of the text.
+         */
+        MoveLineStart,
+
+        /**
+         * @brief Move the caret to the end of its line: End.
+         */
+        MoveLineEnd,
+
+        /**
          * @brief Move the caret one character back, selecting as it
          * goes: Shift+Left.
          *
@@ -111,6 +124,18 @@ namespace antwika::ui
          * @brief Move the caret to the line below, selecting: Shift+Down.
          */
         SelectDown,
+
+        /**
+         * @brief Move the caret to the start of its line, selecting:
+         * Shift+Home.
+         */
+        SelectLineStart,
+
+        /**
+         * @brief Move the caret to the end of its line, selecting:
+         * Shift+End.
+         */
+        SelectLineEnd,
 
         /**
          * @brief Take the character the caret sits before, or the

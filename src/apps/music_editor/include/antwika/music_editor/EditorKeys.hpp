@@ -52,8 +52,9 @@ namespace antwika::music_editor
      * It indents, which is what Tab in a code editor is for, and that
      * makes it characters rather than a key with a meaning.
      *
-     * Held shift turns each arrow into the selecting one beside it, and
-     * held control turns C and X into a copy and a cut. **Control and V
+     * Held shift turns each arrow into the selecting one beside it --
+     * Home and End the same, for their line's two ends -- and held
+     * control turns C and X into a copy and a cut. **Control and V
      * is not here**: a paste is the characters of a clipboard this
      * library knows nothing about, so the sink types them instead.
      *

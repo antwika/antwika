@@ -205,6 +205,18 @@ namespace antwika::ui::detail
                 putCaret(edit, lineBelow(edit));
             }
 
+            // Home and End land on the caret's own line's ends.
+            // Off a selection too: the caret is the end that moves.
+            if (key == Key::MoveLineStart)
+            {
+                putCaret(edit, beginOfLine(edit.text, edit.cursor));
+            }
+
+            if (key == Key::MoveLineEnd)
+            {
+                putCaret(edit, endOfLine(edit.text, edit.cursor));
+            }
+
             // Each of these leaves the anchor exactly where it was.
             // That is the whole of what makes them select.
             if (key == Key::SelectLeft && edit.cursor > 0)
@@ -225,6 +237,16 @@ namespace antwika::ui::detail
             if (key == Key::SelectDown)
             {
                 edit.cursor = lineBelow(edit);
+            }
+
+            if (key == Key::SelectLineStart)
+            {
+                edit.cursor = beginOfLine(edit.text, edit.cursor);
+            }
+
+            if (key == Key::SelectLineEnd)
+            {
+                edit.cursor = endOfLine(edit.text, edit.cursor);
             }
 
             // Reported and never kept, since nothing here outlives the frame.

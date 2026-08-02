@@ -34,6 +34,7 @@ Refusals are listed under the pane by line number, at most three at a time and t
 | Left click | Put the caret where you clicked; below the last line is the end of the document. |
 | Drag, or shift and click | Select from wherever the caret was to where the pointer is. |
 | Shift and an arrow | Select a character or a line at a time. |
+| Home, End | Put the caret at the line's start or end; with shift, select that far. |
 | Ctrl+C, Ctrl+X, Ctrl+V | Copy, cut and paste the selection through the editor's own clipboard. |
 | Backspace, Delete | Take one character, or the whole selection when there is one. |
 | The wheel, or the bar on the right | Move the pane three lines a notch, or as far as you drag it. |
