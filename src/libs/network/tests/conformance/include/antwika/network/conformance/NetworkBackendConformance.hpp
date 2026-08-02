@@ -354,6 +354,44 @@ namespace antwika::network::conformance
         EXPECT_TRUE(right->peers().empty());
     }
 
+    // A payload that crossed before the far end went is still owed.
+    // Send-then-disconnect is one message on a stream transport.
+    // The bytes and the close land in the same buffer.
+    // So a backend reacting to the close first loses a whole frame.
+    TYPED_TEST_P(
+        NetworkBackendConformance, Send_ThenDisconnectStillArrives)
+    {
+        if (!this->linksUp())
+        {
+            GTEST_SKIP() << "this backend does not link two hosts";
+        }
+
+        const auto left = this->backend->openHost(this->at(0));
+        const auto right = this->backend->openHost(this->at(1));
+        const PeerId peer = left->connect(right->endpoint());
+        this->settle(*left, *right);
+
+        left->send(peer, this->payload(8));
+        left->pump();
+        left->disconnect(peer);
+
+        std::vector<Packet> arrived;
+
+        for (int pump = 0; pump < kPatience; ++pump)
+        {
+            left->pump();
+            right->pump();
+
+            auto some = right->receive();
+
+            arrived.insert(arrived.end(), some.begin(), some.end());
+        }
+
+        ASSERT_EQ(arrived.size(), 1U);
+        EXPECT_EQ(arrived.front().payload, this->payload(8));
+        EXPECT_TRUE(right->peers().empty());
+    }
+
     REGISTER_TYPED_TEST_SUITE_P(
         NetworkBackendConformance,
         Name_IsNotEmpty,
@@ -372,6 +410,7 @@ namespace antwika::network::conformance
         Broadcast_ReachesEveryPeer,
         Send_RefusesAnOversizedPayload,
         Disconnect_IsSeenByBothHosts,
+        Send_ThenDisconnectStillArrives,
         ClosingAHostFreesItsPeers);
 
 } // namespace antwika::network::conformance

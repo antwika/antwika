@@ -58,7 +58,7 @@ namespace antwika::app
         IEventSink &eventSink;
 
         /**
-         * @brief The sink whose events are saved when the run ends.
+         * @brief The sink that writes each event to the recording.
          *
          * Set only for a `--record` run, so a run with no end does not
          * accumulate every event it ever dispatched. Pass it straight
@@ -69,21 +69,24 @@ namespace antwika::app
     };
 
     /**
-     * @brief Parse `--record`/`--replay`, run a session, and save the
-     * recording.
+     * @brief Parse `--record`/`--replay` and run a session, appending
+     * the recording as it goes.
      *
      * This is the shape every replay-driven main() had a copy of. It
      * exists so that a main() can be a single call with no branch in it:
-     * the argument parsing, the sink for unread events, the recorder,
-     * the catch and the save epilogue are all things worth testing, and
-     * an application's main.cpp is deliberately excluded from the
-     * coverage report.
+     * the argument parsing, the sink for unread events, the recorder and
+     * the catch are all things worth testing, and an application's
+     * main.cpp is deliberately excluded from the coverage report.
      *
-     * Catching is runGuarded()'s job, and this calls it twice: once
-     * around the parse and the body, once around the save. Two guards
-     * rather than one is what lets a failed `--record` run still save
-     * what it got to, and lets an unwritable path be reported rather
-     * than thrown out of a main() that has no catch of its own.
+     * Catching is runGuarded()'s job, and one guard around the parse and
+     * the body is the whole of it, because there is no epilogue left to
+     * guard: a ReplayRecorder appends and flushes a line per event as
+     * the run goes, so a run that failed -- or that somebody killed
+     * part-way -- has already kept everything it got to. The record file
+     * is opened before the session starts rather than after it ends,
+     * which is what turns an unwritable path into a refusal reported by
+     * that same guard instead of a run whose output is discovered to be
+     * unsaveable once it is over.
      *
      * `--help` is answered here rather than run: the table this parsed
      * against is rendered to `help` and the body is never called, which

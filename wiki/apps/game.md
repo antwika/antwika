@@ -286,8 +286,9 @@ That deleted `CityEntrySink` outright and left `PauseState` one writer rather th
 What it buys beyond the simplification is that opening a screen is no longer a pause nobody asked for — which matters most where more than one player shares a city, since one of them reading the map must not stop it for the others.
 
 **The value is absolute rather than a toggle**, which is the same decision read forward.
-`PauseState::set(bool)` is idempotent, and the button sends the opposite of the state it was showing rather than flipping one.
-Two players pausing on one tick therefore agree on a pause, where two toggles would have cancelled out and left the run going with both of them having watched themselves press pause.
+`PauseState::set(bool)` is idempotent, so a value arriving twice — a replay redelivering a press, or a press against a bar that is already showing what it asks for — settles on one answer instead of undoing itself.
+What the button sends is still worked out from the state it read, though, and `UiSink` re-describes the bar between the events of one tick, so two pause presses landing inside the same tick *do* cancel: the second one reads what the first one set and asks for the opposite.
+Making them agree would mean carrying the intended value on distinct pause and resume widget ids, and a city one player builds has not needed it.
 
 **A save is version 2 and carries the buildings.**
 Kinds, stock, risk and all three countdowns — countdowns reset on load are exactly the lockstep they exist to avoid.

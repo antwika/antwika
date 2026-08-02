@@ -124,6 +124,10 @@ The alternative — a backend pretending to connect so a test goes green — is 
 Nothing in the suite assumes delivery is immediate.
 Every wait is a bounded run of pumps at *both* ends, so a transport that takes a few of them to settle passes the same tests an in-process one does.
 
+**What arrived before a peer left is still owed to the caller**, which is `Send_ThenDisconnectStillArrives`.
+Send-then-disconnect is one message on a stream transport: the payload and the close land in the receiver's buffer together, so a backend that reacted to the close first dropped a frame that had already arrived whole — which is exactly what `SocketsHost` did until the suite grew a case for it.
+Stating it in the suite rather than fixing it in the one backend is the point: `LoopbackHost` is held to the same rule, so a caller can rely on it whichever transport a build selected.
+
 **Writing the second backend is what found the first one's contract gaps**, which is the argument for the suite rather than a story about it.
 Three things came out of it: `connect()` refusing an unreachable endpoint was a promise only an in-process backend could keep; `endpoint()` returning the requested port was a promise only a backend that never binds could keep; and the suite pumping one end of a link had been passing because `LoopbackBackend` delivered on `send()` where a socket cannot.
 Each was fixed in the contract rather than papered over with a capability flag, since a capability should say what a backend *can do* rather than which of two behaviours it has.
