@@ -61,7 +61,7 @@ An app calls `antwika_bundle_app()` as well, which gives it a directory of its o
 antwika_bundle_app(
     TARGET antwika_myapp
     ASSETS
-        assets/atlas.png
+        assets/atlas_1x1.png
 )
 ```
 

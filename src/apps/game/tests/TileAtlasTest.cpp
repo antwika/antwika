@@ -4,33 +4,48 @@
 #include <cstddef>
 #include <cstdint>
 #include <set>
+#include <utility>
 #include <vector>
 
 #include <antwika/gfx/Rect.hpp>
 
+#include "antwika/game/BuildTool.hpp"
 #include "antwika/game/BuildingKind.hpp"
 #include "antwika/game/Direction.hpp"
+#include "antwika/game/Footprint.hpp"
 #include "antwika/game/TileAtlas.hpp"
 
-using antwika::game::atlasSlot;
+using antwika::game::AtlasKind;
+using antwika::game::atlasSizeOf;
+using antwika::game::atlasSpec;
+using antwika::game::buildingAtlasOf;
+using antwika::game::BuildingKind;
+using antwika::game::buildingTile;
+using antwika::game::BuildTool;
 using antwika::game::Direction;
 using antwika::game::groundTile;
 using antwika::game::kAtlasColumns;
+using antwika::game::kAtlasKindCount;
 using antwika::game::kAtlasRows;
-using antwika::game::kAtlasSize;
-using antwika::game::kAtlasTileSize;
-using antwika::game::kFirstRoadSlot;
-using antwika::game::kFirstWalkerSlot;
+using antwika::game::kFirstWalkerRow;
 using antwika::game::kLinkMask;
-using antwika::game::kRoadSlotCount;
+using antwika::game::kRoadSpriteCount;
 using antwika::game::linkBit;
 using antwika::game::roadTile;
+using antwika::game::spriteRect;
+using antwika::game::toolAtlasOf;
 using antwika::game::walkerTile;
 using antwika::gfx::Rect;
 
 namespace
 {
-    constexpr std::uint32_t kSlotCount = kAtlasColumns * kAtlasRows;
+    constexpr std::uint32_t kSpriteCount = kAtlasColumns * kAtlasRows;
+
+    // Every sheet, so a table-driven test cannot forget one.
+    constexpr std::array<AtlasKind, kAtlasKindCount> kEverySheet{
+        AtlasKind::OneByOne,
+        AtlasKind::TwoByTwo,
+        AtlasKind::ThreeByThree};
 
     // Every direction, so a table-driven test cannot forget one.
     constexpr std::array<Direction, antwika::game::kDirectionCount>
@@ -39,44 +54,106 @@ namespace
             Direction::East,
             Direction::South,
             Direction::West};
+
+    // A sprite is named by its sheet and its corner.
+    // Two sheets may reuse a corner, so neither alone is a name.
+    [[nodiscard]] std::pair<int, std::int64_t> spriteKey(
+        AtlasKind kind, const Rect &sprite)
+    {
+        return {
+            static_cast<int>(kind),
+            static_cast<std::int64_t>(sprite.origin.y) * 10000
+                + sprite.origin.x};
+    }
 } // namespace
 
-TEST(TileAtlasTest, AtlasSlot_LaysSlotsOutLeftToRightThenDown)
+TEST(TileAtlasTest, SpriteRect_LaysSpritesOutLeftToRightThenDown)
 {
-    EXPECT_EQ(
-        atlasSlot(0),
-        (Rect{.origin = {.x = 0, .y = 0}, .size = kAtlasTileSize}));
-    EXPECT_EQ(
-        atlasSlot(1),
-        (Rect{.origin = {.x = 128, .y = 0}, .size = kAtlasTileSize}));
-    EXPECT_EQ(
-        atlasSlot(kAtlasColumns),
-        (Rect{.origin = {.x = 0, .y = 64}, .size = kAtlasTileSize}));
-}
-
-// Nothing here may sample outside the picture.
-// gfx::blitIsDrawable() refuses a source reaching outside its texture.
-// So a slot past the edge would draw nothing at all.
-TEST(TileAtlasTest, AtlasSlot_KeepsEverySlotInsideTheAtlas)
-{
-    for (std::uint32_t slot = 0; slot < kSlotCount; ++slot)
+    for (const auto kind : kEverySheet)
     {
-        const auto tile = atlasSlot(slot);
+        const auto sprite = atlasSpec(kind).spriteSize;
 
-        EXPECT_GE(tile.origin.x, 0);
-        EXPECT_GE(tile.origin.y, 0);
-        EXPECT_LE(
-            tile.origin.x + static_cast<std::int32_t>(tile.size.width),
-            static_cast<std::int32_t>(kAtlasSize.width));
-        EXPECT_LE(
-            tile.origin.y + static_cast<std::int32_t>(tile.size.height),
-            static_cast<std::int32_t>(kAtlasSize.height));
+        EXPECT_EQ(
+            spriteRect(kind, 0),
+            (Rect{.origin = {.x = 0, .y = 0}, .size = sprite}));
+        EXPECT_EQ(
+            spriteRect(kind, 1),
+            (Rect{
+                .origin =
+                    {.x = static_cast<std::int32_t>(sprite.width), .y = 0},
+                .size = sprite}));
+        EXPECT_EQ(
+            spriteRect(kind, kAtlasColumns),
+            (Rect{
+                .origin =
+                    {.x = 0,
+                     .y = static_cast<std::int32_t>(sprite.height)},
+                .size = sprite}));
     }
 }
 
-TEST(TileAtlasTest, AtlasSlot_WrapsRatherThanLeavingTheAtlas)
+// Nothing here may sample outside a picture.
+// gfx::blitIsDrawable() refuses a source reaching outside its texture.
+// So a sprite past the edge would draw nothing at all.
+TEST(TileAtlasTest, SpriteRect_KeepsEverySpriteInsideItsSheet)
 {
-    EXPECT_EQ(atlasSlot(kSlotCount), atlasSlot(0));
+    for (const auto kind : kEverySheet)
+    {
+        const auto sheet = atlasSizeOf(kind);
+
+        for (std::uint32_t index = 0; index < kSpriteCount; ++index)
+        {
+            const auto sprite = spriteRect(kind, index);
+
+            EXPECT_GE(sprite.origin.x, 0);
+            EXPECT_GE(sprite.origin.y, 0);
+            EXPECT_LE(
+                sprite.origin.x
+                    + static_cast<std::int32_t>(sprite.size.width),
+                static_cast<std::int32_t>(sheet.width));
+            EXPECT_LE(
+                sprite.origin.y
+                    + static_cast<std::int32_t>(sprite.size.height),
+                static_cast<std::int32_t>(sheet.height));
+        }
+    }
+}
+
+TEST(TileAtlasTest, SpriteRect_WrapsRatherThanLeavingTheSheet)
+{
+    EXPECT_EQ(
+        spriteRect(AtlasKind::OneByOne, kSpriteCount),
+        spriteRect(AtlasKind::OneByOne, 0));
+}
+
+// The PNGs beside the header are exported at exactly these sizes.
+// Pinned as numbers, so the geometry cannot drift under the art.
+TEST(TileAtlasTest, AtlasSizeOf_MatchesTheExportedSheets)
+{
+    EXPECT_EQ(atlasSizeOf(AtlasKind::OneByOne).width, 512U);
+    EXPECT_EQ(atlasSizeOf(AtlasKind::OneByOne).height, 768U);
+    EXPECT_EQ(atlasSizeOf(AtlasKind::TwoByTwo).width, 768U);
+    EXPECT_EQ(atlasSizeOf(AtlasKind::TwoByTwo).height, 896U);
+    EXPECT_EQ(atlasSizeOf(AtlasKind::ThreeByThree).width, 1024U);
+    EXPECT_EQ(atlasSizeOf(AtlasKind::ThreeByThree).height, 1024U);
+}
+
+// Every pivot sits inside its sprite, on its vertical centre line.
+// The margin below it is the base block's skirt and its padding.
+TEST(TileAtlasTest, AtlasSpec_PutsEveryPivotOnTheSpritesCentreLine)
+{
+    for (const auto kind : kEverySheet)
+    {
+        const auto spec = atlasSpec(kind);
+
+        EXPECT_EQ(
+            spec.pivot.x,
+            static_cast<std::int32_t>(spec.spriteSize.width) / 2);
+        EXPECT_GT(spec.pivot.y, 0);
+        EXPECT_LT(
+            spec.pivot.y,
+            static_cast<std::int32_t>(spec.spriteSize.height));
+    }
 }
 
 TEST(TileAtlasTest, LinkBit_GivesEachDirectionABitOfItsOwn)
@@ -95,18 +172,18 @@ TEST(TileAtlasTest, LinkBit_GivesEachDirectionABitOfItsOwn)
         kLinkMask);
 }
 
-TEST(TileAtlasTest, RoadTile_GivesEveryLinkMaskATileOfItsOwn)
+TEST(TileAtlasTest, RoadTile_GivesEveryLinkMaskASpriteOfItsOwn)
 {
     std::set<std::int32_t> origins;
 
-    for (std::uint8_t links = 0; links < kRoadSlotCount; ++links)
+    for (std::uint8_t links = 0; links < kRoadSpriteCount; ++links)
     {
-        const auto tile = roadTile(links);
+        const auto sprite = roadTile(links);
 
-        origins.insert(tile.origin.y * 10000 + tile.origin.x);
+        origins.insert(sprite.origin.y * 10000 + sprite.origin.x);
     }
 
-    EXPECT_EQ(origins.size(), kRoadSlotCount);
+    EXPECT_EQ(origins.size(), kRoadSpriteCount);
 }
 
 TEST(TileAtlasTest, RoadTile_IgnoresBitsThatNameNoDirection)
@@ -116,140 +193,183 @@ TEST(TileAtlasTest, RoadTile_IgnoresBitsThatNameNoDirection)
     EXPECT_EQ(roadTile(0xF3), roadTile(0x03));
 }
 
-TEST(TileAtlasTest, RoadTile_StartsWhereTheRoadsStart)
+// The contract's own examples, one per shape of junction.
+// A road's arms are named on screen and its mask in grid space.
+// This is where a swapped shear would be caught.
+TEST(TileAtlasTest, RoadTile_MatchesTheSheetsJunctionOrder)
 {
-    EXPECT_EQ(roadTile(0), atlasSlot(kFirstRoadSlot));
+    const auto sprite = [](std::uint32_t index)
+    { return spriteRect(AtlasKind::OneByOne, index); };
+
+    // No links at all is the sheet's lone-road sprite.
+    EXPECT_EQ(roadTile(0), sprite(1));
+
+    // One arm each, in the sheet's NE, SE, SW, NW order.
+    EXPECT_EQ(roadTile(linkBit(Direction::North)), sprite(2));
+    EXPECT_EQ(roadTile(linkBit(Direction::East)), sprite(3));
+    EXPECT_EQ(roadTile(linkBit(Direction::South)), sprite(4));
+    EXPECT_EQ(roadTile(linkBit(Direction::West)), sprite(5));
+
+    // The two straights.
     EXPECT_EQ(
-        roadTile(kLinkMask), atlasSlot(kFirstRoadSlot + kLinkMask));
+        roadTile(linkBit(Direction::North) | linkBit(Direction::South)),
+        sprite(15));
+    EXPECT_EQ(
+        roadTile(linkBit(Direction::East) | linkBit(Direction::West)),
+        sprite(14));
+
+    // A corner, a tee and the crossing.
+    EXPECT_EQ(
+        roadTile(linkBit(Direction::North) | linkBit(Direction::East)),
+        sprite(6));
+    EXPECT_EQ(
+        roadTile(
+            linkBit(Direction::North) | linkBit(Direction::East)
+            | linkBit(Direction::South)),
+        sprite(10));
+    EXPECT_EQ(roadTile(kLinkMask), sprite(16));
 }
 
-TEST(TileAtlasTest, WalkerTile_GivesEachFacingATileOfItsOwn)
+TEST(TileAtlasTest, WalkerTile_GivesEachFacingASpriteOfItsOwn)
 {
-    std::vector<Rect> tiles;
+    std::vector<Rect> sprites;
 
     for (const auto facing : kEveryDirection)
     {
-        tiles.push_back(walkerTile(facing));
+        sprites.push_back(walkerTile(facing));
     }
 
-    for (std::size_t i = 0; i < tiles.size(); ++i)
+    for (std::size_t i = 0; i < sprites.size(); ++i)
     {
-        for (std::size_t j = i + 1; j < tiles.size(); ++j)
+        for (std::size_t j = i + 1; j < sprites.size(); ++j)
         {
-            EXPECT_NE(tiles[i], tiles[j]) << i << " vs " << j;
+            EXPECT_NE(sprites[i], sprites[j]) << i << " vs " << j;
         }
     }
-
-    EXPECT_EQ(tiles.front(), atlasSlot(kFirstWalkerSlot));
 }
 
-// The ground, the roads and the walkers must not share a slot.
-// Overlapping ranges would draw a road where a walker should be.
-TEST(TileAtlasTest, TheTileRangesDoNotOverlap)
+// A row per facing, with today's sprite in its first column.
+// The rest of each row is reserved for the walk cycle's frames.
+TEST(TileAtlasTest, WalkerTile_StartsEachFacingsRow)
 {
-    std::set<std::int32_t> origins;
-
-    origins.insert(
-        groundTile().origin.y * 10000 + groundTile().origin.x);
-
-    for (std::uint8_t links = 0; links < kRoadSlotCount; ++links)
+    for (const auto facing : kEveryDirection)
     {
-        const auto tile = roadTile(links);
-        origins.insert(tile.origin.y * 10000 + tile.origin.x);
+        const auto row = kFirstWalkerRow
+            + static_cast<std::uint32_t>(
+                antwika::game::directionIndex(facing));
+
+        EXPECT_EQ(
+            walkerTile(facing),
+            spriteRect(AtlasKind::OneByOne, row * kAtlasColumns));
+    }
+}
+
+// A building's sheet is its footprint's, by construction.
+TEST(TileAtlasTest, BuildingAtlasOf_FollowsTheFootprint)
+{
+    for (std::size_t index = 0; index < antwika::game::kBuildingKindCount;
+         ++index)
+    {
+        const auto kind = static_cast<BuildingKind>(index);
+
+        EXPECT_EQ(
+            static_cast<std::int32_t>(
+                antwika::game::atlasKindIndex(buildingAtlasOf(kind)))
+                + 1,
+            antwika::game::footprintOf(kind).width)
+            << "kind " << index;
+    }
+}
+
+// A building sprite of its own per kind, in its own sheet.
+// Two kinds may share a corner across sheets and not within one.
+TEST(TileAtlasTest, BuildingTile_GivesEachKindASpriteOfItsOwn)
+{
+    std::set<std::pair<int, std::int64_t>> sprites;
+
+    for (std::size_t index = 0; index < antwika::game::kBuildingKindCount;
+         ++index)
+    {
+        const auto kind = static_cast<BuildingKind>(index);
+
+        sprites.insert(
+            spriteKey(buildingAtlasOf(kind), buildingTile(kind)));
+    }
+
+    EXPECT_EQ(sprites.size(), antwika::game::kBuildingKindCount);
+}
+
+// The contract's own examples, at least one per sheet.
+TEST(TileAtlasTest, BuildingTile_MatchesTheSheetsSlotTable)
+{
+    EXPECT_EQ(
+        buildingTile(BuildingKind::House),
+        spriteRect(AtlasKind::OneByOne, 17));
+    EXPECT_EQ(
+        buildingTile(BuildingKind::EngineerPost),
+        spriteRect(AtlasKind::OneByOne, 21));
+    EXPECT_EQ(
+        buildingTile(BuildingKind::Farm),
+        spriteRect(AtlasKind::TwoByTwo, 0));
+    EXPECT_EQ(
+        buildingTile(BuildingKind::Market),
+        spriteRect(AtlasKind::TwoByTwo, 3));
+    EXPECT_EQ(
+        buildingTile(BuildingKind::Storage),
+        spriteRect(AtlasKind::ThreeByThree, 0));
+}
+
+// No two of the ranges may share a sprite of one sheet.
+// An overlap would draw a road where a walker should be.
+TEST(TileAtlasTest, NoTwoRangesShareASprite)
+{
+    std::set<std::pair<int, std::int64_t>> sprites;
+    std::size_t named = 0;
+
+    const auto keep = [&](AtlasKind kind, const Rect &sprite)
+    {
+        sprites.insert(spriteKey(kind, sprite));
+        ++named;
+    };
+
+    keep(AtlasKind::OneByOne, groundTile());
+
+    for (std::uint8_t links = 0; links < kRoadSpriteCount; ++links)
+    {
+        keep(AtlasKind::OneByOne, roadTile(links));
     }
 
     for (const auto facing : kEveryDirection)
     {
-        const auto tile = walkerTile(facing);
-        origins.insert(tile.origin.y * 10000 + tile.origin.x);
+        keep(AtlasKind::OneByOne, walkerTile(facing));
     }
 
-    EXPECT_EQ(
-        origins.size(),
-        1U + kRoadSlotCount + antwika::game::kDirectionCount);
-}
-
-// The atlas the art is drawn on has to be the one this addresses.
-TEST(TileAtlasTest, TheAtlasIsBigEnoughForEverySlotItNames)
-{
-    EXPECT_EQ(
-        kAtlasSize.width, kAtlasColumns * kAtlasTileSize.width);
-    EXPECT_EQ(kAtlasSize.height, kAtlasRows * kAtlasTileSize.height);
-    EXPECT_LE(
-        kFirstWalkerSlot + antwika::game::kDirectionCount, kSlotCount);
-}
-
-// A building tile of its own per kind, and every one inside the sheet.
-// Ten kinds is what took the atlas from four rows to five.
-TEST(TileAtlasTest, BuildingTile_GivesEachKindATileOfItsOwn)
-{
-    std::set<std::int32_t> origins;
-
-    for (std::size_t index = 0;
-         index < antwika::game::kBuildingKindCount;
+    for (std::size_t index = 0; index < antwika::game::kBuildingKindCount;
          ++index)
     {
-        const auto tile = antwika::game::buildingTile(
-            static_cast<antwika::game::BuildingKind>(index));
+        const auto kind = static_cast<BuildingKind>(index);
 
-        origins.insert(tile.origin.y * 10000 + tile.origin.x);
+        keep(buildingAtlasOf(kind), buildingTile(kind));
     }
 
-    EXPECT_EQ(origins.size(), antwika::game::kBuildingKindCount);
+    EXPECT_EQ(sprites.size(), named);
 }
 
-TEST(TileAtlasTest, BuildingTile_StartsWhereTheBuildingsStart)
+// The two halves of the palette's one decision agree on every tool.
+TEST(TileAtlasTest, ToolAtlasOf_IsTheRoadsSheetOrTheBuildingsOwn)
 {
-    EXPECT_EQ(
-        antwika::game::buildingTile(antwika::game::BuildingKind::House),
-        atlasSlot(antwika::game::kFirstBuildingSlot));
-}
+    EXPECT_EQ(toolAtlasOf(BuildTool::Road), AtlasKind::OneByOne);
 
-// The four ranges of tiles must not share a slot.
-// An overlap would draw a road where a building should be.
-TEST(TileAtlasTest, NoTwoRangesShareASlot)
-{
-    std::set<std::int32_t> origins;
-
-    const auto keep = [&origins](const Rect &tile)
-    { origins.insert(tile.origin.y * 10000 + tile.origin.x); };
-
-    keep(groundTile());
-
-    for (std::uint8_t links = 0; links < kRoadSlotCount; ++links)
-    {
-        keep(roadTile(links));
-    }
-
-    for (const auto facing : kEveryDirection)
-    {
-        keep(walkerTile(facing));
-    }
-
-    for (std::size_t index = 0;
-         index < antwika::game::kBuildingKindCount;
+    for (std::size_t index = 0; index < antwika::game::kBuildToolCount;
          ++index)
     {
-        keep(
-            antwika::game::buildingTile(
-                static_cast<antwika::game::BuildingKind>(index)));
+        const auto tool = static_cast<BuildTool>(index);
+        const auto kind = antwika::game::buildingKindOf(tool);
+
+        EXPECT_EQ(
+            toolAtlasOf(tool),
+            kind.has_value() ? buildingAtlasOf(*kind)
+                             : AtlasKind::OneByOne)
+            << "tool " << index;
     }
-
-    EXPECT_EQ(
-        origins.size(),
-        1U + kRoadSlotCount + antwika::game::kDirectionCount
-            + antwika::game::kBuildingKindCount);
-}
-
-// The sheet has to hold the last slot the header derives.
-// Otherwise that blit samples outside the texture.
-// And gfx::blitIsDrawable() then draws nothing at all.
-TEST(TileAtlasTest, TheAtlasHasRoomForEveryBuildingSlot)
-{
-    EXPECT_EQ(kAtlasRows, 5U);
-    EXPECT_EQ(kAtlasSize.height, 320U);
-    EXPECT_LE(
-        antwika::game::kFirstBuildingSlot
-            + antwika::game::kBuildingSlotCount,
-        kSlotCount);
 }

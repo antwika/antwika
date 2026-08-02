@@ -161,6 +161,7 @@ add_executable(antwika_game_tests
     SaveGameTest.cpp
     SaveMigrationTest.cpp
     SceneSnapshotTest.cpp
+    SpriteBoundsTest.cpp
     ErrandRoutingTest.cpp
     ErrandTest.cpp
     HaulingSystemTest.cpp

@@ -33,18 +33,22 @@ namespace antwika::atlas_editor
      * @brief How big a sheet a session starts on when it was given no
      * image to open.
      *
-     * The game's own atlas, since that is the sheet this editor exists
-     * to serve: eight columns by five rows of 128 by 64 tiles, as
-     * wiki/apps/game-texture-atlas.md sets out.
+     * The game's own 1x1 atlas, since that is the busiest of the three
+     * sheets this editor exists to serve: eight columns by eight rows
+     * of 64 by 96 sprites, as wiki/apps/game-texture-atlas.md sets out.
+     * The 2x2 and 3x3 sheets are opened with `--image` instead of
+     * started blank, being the two an artist repaints far more rarely
+     * than they grow.
      *
      * **This number is the game's contract rather than a taste**:
      * game::requireAtlasSize() refuses any other size at startup, so a
      * sheet started blank here and saved has to be exactly this or the
-     * game will not open it. A row added to game::kAtlasRows is a change
-     * here too, and DefaultSheetSizeTest is what says so out loud.
+     * game will not open it. A row added to game::kAtlasRows is a
+     * change here too, and DefaultSheetSizeTest is what says so out
+     * loud.
      */
     inline constexpr Size kDefaultSheetSize{
-        .width = 1024, .height = 320};
+        .width = 512, .height = 768};
 
     /**
      * @brief What one session leaves behind, for a caller or a test.

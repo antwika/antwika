@@ -97,11 +97,12 @@ namespace antwika::game
      * consumes() is the one statement of that, and a source that keeps
      * stock nobody drains has nothing a gauge could say.
      *
-     * Placed from footprintBounds(), the very box the building's own art
-     * is blitted into, so the bars cannot become a second layout that
-     * drifts from the first; they sit immediately above the block's box,
-     * centred on it, which is clear of the art at every footprint and
-     * every zoom.
+     * Placed from buildingSpriteBounds(), the very box the building's
+     * own art is blitted into, so the bars cannot become a second
+     * layout that drifts from the first; they sit immediately above the
+     * sprite's box, centred on it, which is clear of the art at every
+     * footprint and every zoom -- headroom included, since the box is
+     * the whole sprite rather than the block's diamond.
      *
      * @param building The building to gauge.
      * @param camera Supplies the zoom and the pan.

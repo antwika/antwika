@@ -175,7 +175,7 @@ namespace antwika::game
         // The scene's own culling is then the same on every window.
         // And what the viewport does to it is a scale, applied after.
         setup.scene.draw(
-            renderer, setup.canvas, latest, setup.atlas, subTick);
+            renderer, setup.canvas, latest, setup.atlases, subTick);
 
         // Over the grid, and last, so the bar reads as being in front.
         // Laid out against the size the window was asked for.

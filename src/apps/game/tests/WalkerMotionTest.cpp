@@ -7,13 +7,13 @@
 #include "antwika/game/Camera.hpp"
 #include "antwika/game/Cell.hpp"
 #include "antwika/game/Direction.hpp"
-#include "antwika/game/IsoProjection.hpp"
+#include "antwika/game/SpriteBounds.hpp"
 #include "antwika/game/SceneSnapshot.hpp"
 #include "antwika/game/Walker.hpp"
 
 using antwika::animation::Progress;
 using antwika::game::Camera;
-using antwika::game::cellBounds;
+using antwika::game::tileSpriteBounds;
 using antwika::game::Cell;
 using antwika::game::Direction;
 using antwika::game::kTicksPerStep;
@@ -74,15 +74,15 @@ TEST(WalkerMotionTest, WalkerBounds_PutsAWalkerAtItsStartWhenNoneHasGone)
 
     EXPECT_EQ(
         walkerBounds(stepping(0), camera, Progress()),
-        cellBounds(kOrigin, camera));
+        tileSpriteBounds(kOrigin, camera));
 }
 
 TEST(WalkerMotionTest, WalkerBounds_PutsAWalkerHalfwayHalfwayThrough)
 {
     const Camera camera;
 
-    const auto from = cellBounds(kOrigin, camera);
-    const auto to = cellBounds(kDestination, camera);
+    const auto from = tileSpriteBounds(kOrigin, camera);
+    const auto to = tileSpriteBounds(kDestination, camera);
 
     // One whole tick of a two-tick step is exactly half the span.
     const auto bounds = walkerBounds(stepping(1), camera, Progress());
@@ -91,13 +91,13 @@ TEST(WalkerMotionTest, WalkerBounds_PutsAWalkerHalfwayHalfwayThrough)
     EXPECT_EQ(bounds.origin.y, (from.origin.y + to.origin.y) / 2);
 }
 
-TEST(WalkerMotionTest, WalkerBounds_KeepsTheTileSizeAcrossTheStep)
+TEST(WalkerMotionTest, WalkerBounds_KeepsTheSpriteSizeAcrossTheStep)
 {
     const Camera camera;
 
     EXPECT_EQ(
         walkerBounds(stepping(1), camera, Progress(1, 2)).size,
-        cellBounds(kDestination, camera).size);
+        tileSpriteBounds(kDestination, camera).size);
 }
 
 TEST(WalkerMotionTest, WalkerBounds_MovesTheWalkerOnAsTheFramesGo)
@@ -120,7 +120,7 @@ TEST(WalkerMotionTest, WalkerBounds_DrawsAWalkerWithNoStartOnItsOwnCell)
 
     EXPECT_EQ(
         walkerBounds(fresh, camera, Progress(1, 2)),
-        cellBounds(kDestination, camera));
+        tileSpriteBounds(kDestination, camera));
 }
 
 TEST(WalkerMotionTest, WalkerBounds_FollowsTheCameraLikeAnyOtherTile)
@@ -129,5 +129,5 @@ TEST(WalkerMotionTest, WalkerBounds_FollowsTheCameraLikeAnyOtherTile)
 
     EXPECT_EQ(
         walkerBounds(stepping(0), zoomed, Progress()),
-        cellBounds(kOrigin, zoomed));
+        tileSpriteBounds(kOrigin, zoomed));
 }

@@ -55,6 +55,7 @@
 #include "antwika/game/PauseState.hpp"
 #include "antwika/game/RoadDrag.hpp"
 #include "antwika/game/SceneSnapshot.hpp"
+#include "antwika/game/SpriteBounds.hpp"
 #include "antwika/game/TileAtlas.hpp"
 #include "antwika/game/Toolbar.hpp"
 #include "antwika/game/UiOverlay.hpp"
@@ -789,6 +790,8 @@ namespace
         std::vector<Blit> blits;
         NiceMock<MockRenderer> renderer;
         const NiceMock<MockTexture> atlas;
+        const antwika::game::AtlasTextures atlases{
+            .oneByOne = atlas, .twoByTwo = atlas, .threeByThree = atlas};
 
         ON_CALL(renderer, drawTexture(_, _, _, _))
             .WillByDefault(
@@ -798,7 +801,7 @@ namespace
                 { blits.push_back(Blit{source, destination, tint}); });
 
         const GridScene scene{kTranslator};
-        scene.draw(renderer, kCanvas, snapshot, atlas);
+        scene.draw(renderer, kCanvas, snapshot, atlases);
 
         return blits;
     }
@@ -819,10 +822,8 @@ TEST(GridSceneBuildTest, ABuildingIsOneBlitOfItsOwnTile)
         blits[0].source, buildingTile(BuildingKind::Farm));
     EXPECT_EQ(
         blits[0].destination,
-        footprintBounds(
-            Cell{.x = 0, .y = 0},
-            footprintOf(BuildingKind::Farm),
-            snapshot.camera));
+        antwika::game::buildingSpriteBounds(
+            Cell{.x = 0, .y = 0}, BuildingKind::Farm, snapshot.camera));
 }
 
 TEST(GridSceneBuildTest, ABuildingOffTheCanvasIsNotDrawn)
@@ -859,6 +860,7 @@ TEST(GridSceneBuildTest, TheGhostIsDrawnLastAndSeeThrough)
 TEST(GridSceneBuildTest, ARoadGhostShowsTheJunctionItWouldBecome)
 {
     auto snapshot = emptySnapshot();
+    snapshot.extent = GridExtent{.width = 1, .height = 2};
     snapshot.paths.push_back(Cell{.x = 0, .y = 1});
     snapshot.ghost = BuildGhost{
         .at = Cell{.x = 0, .y = 0},
@@ -868,12 +870,13 @@ TEST(GridSceneBuildTest, ARoadGhostShowsTheJunctionItWouldBecome)
 
     const auto blits = blitsOf(snapshot);
 
-    // The road already there, then the ghost joining it southward.
-    ASSERT_EQ(blits.size(), 2U);
+    // Two cells of ground, then the laid road, then the ghost.
+    // The ghost joins the laid road southward.
+    ASSERT_EQ(blits.size(), 4U);
     EXPECT_EQ(
-        blits[1].source,
+        blits.back().source,
         roadTile(antwika::game::linkBit(antwika::game::Direction::South)));
-    EXPECT_EQ(blits[1].tint, kGhostly);
+    EXPECT_EQ(blits.back().tint, kGhostly);
 }
 
 TEST(GridSceneBuildTest, AnInvisibleOrOffscreenGhostIsNotDrawn)
@@ -1014,6 +1017,8 @@ namespace
         std::vector<Line> lines;
         NiceMock<MockRenderer> renderer;
         const NiceMock<MockTexture> atlas;
+        const antwika::game::AtlasTextures atlases{
+            .oneByOne = atlas, .twoByTwo = atlas, .threeByThree = atlas};
 
         ON_CALL(renderer, drawLine(_, _, _))
             .WillByDefault(
@@ -1021,7 +1026,7 @@ namespace
                 { lines.push_back(Line{from, to, color}); });
 
         const GridScene scene{kTranslator};
-        scene.draw(renderer, kCanvas, snapshot, atlas);
+        scene.draw(renderer, kCanvas, snapshot, atlases);
 
         return lines;
     }

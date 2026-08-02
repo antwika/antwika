@@ -136,9 +136,9 @@ build/bin/antwika_music_editor/antwika_music_editor      # type at it while it p
 build/bin/antwika_tower_defence/antwika_tower_defence    # or --record / --replay
 build/bin/antwika_ui_demo/antwika_ui_demo                # every antwika::ui element, 1500 ticks
 build/bin/antwika_companion/antwika_companion            # feed, play, sleep
-build/bin/antwika_atlas_editor/antwika_atlas_editor      # blank 1024x320 sheet
+build/bin/antwika_atlas_editor/antwika_atlas_editor      # blank 512x768 sheet
 build/bin/antwika_atlas_editor/antwika_atlas_editor \
-    --image src/apps/game/assets/atlas.png --out mine.png
+    --image src/apps/game/assets/atlas_1x1.png --out mine.png
 ```
 
 **Every application gets a directory of its own under `bin/`**, holding the executable, whatever it opens and -- on MinGW -- the runtime DLLs it needs to start, all put there by `antwika_bundle_app()` in [`cmake/AntwikaModule.cmake`](cmake/AntwikaModule.cmake).
@@ -244,13 +244,13 @@ Backends live under [`backends/`](backends/), are selected at build time, and ar
 
 Each app owns its state and how events mutate it -- the engine has no opinion here.
 
-- [`game`](wiki/apps/game.md) is an isometric city built with the mouse and the most complete composition in the tree: a reducer, an ECS, an economy, A* inside the tick, a texture atlas ([`game-texture-atlas.md`](wiki/apps/game-texture-atlas.md)), a UI toolbar, versioned saves and frames drawn between ticks.
+- [`game`](wiki/apps/game.md) is an isometric city built with the mouse and the most complete composition in the tree: a reducer, an ECS, an economy, A* inside the tick, three texture atlases ([`game-texture-atlas.md`](wiki/apps/game-texture-atlas.md)), a UI toolbar, versioned saves and frames drawn between ticks.
 - [`life`](wiki/apps/life.md) is Conway's Game of Life in an `ecs::World`, where dragging over cells toggles them and holding the button pauses the generations.
 - [`task_worker`](wiki/apps/task_worker.md) is a worker pool pulling from `scheduler` with each tick's idle-worker count as its budget.
 - [`poker`](wiki/apps/poker.md) is a no-limit hold'em cash game on `holdem`, drawing its table from one layout that the art is placed *from* -- see [`blog/011-writing-a-hand-history-the-rest-of-the-world-can-read.md`](blog/011-writing-a-hand-history-the-rest-of-the-world-can-read.md).
 - [`tower_defence`](wiki/apps/tower_defence.md) generates its level with `wfc` and walks mobs along it, arranging the tile alphabet so a linear path is a property of the alphabet rather than something checked for afterwards.
 - [`companion`](wiki/apps/companion.md) is a tamagotchi whose **energy is its life**: three props to press, happiness as the rate the energy drains at, a bed refused until it is tired enough to have earned one, and a collapse that costs ceiling for good -- so the ceiling running out is the only way one ever perishes.
-- [`atlas_editor`](wiki/apps/atlas_editor.md) is a pixel editor for the sheet `game` blits, and is an ordinary application of the tick loop with no undo -- replaying a session up to a point is the undo this design has.
+- [`atlas_editor`](wiki/apps/atlas_editor.md) is a pixel editor for the sheets `game` blits, and is an ordinary application of the tick loop with no undo -- replaying a session up to a point is the undo this design has.
 - [`music_editor`](wiki/apps/music_editor.md) is a live-coding editor: one pane of code, always sounding, where every keystroke reaches the music with nothing reloaded -- a voice line is `$: drum.n("0(3,8)").gain(.2)`, a chain of calls over a preset it takes a copy of that may run down as many lines as it likes, so a line *is* a voice and two lines may sound the same preset differently; a line that will not read keeps playing whatever it last did, and pausing stops the musical clock rather than the device.
   It selects, cuts, copies, pastes and scrolls like an editor should, and it keeps its own keyboard layout table -- Swedish by default -- because [`input`](wiki/libraries/input.md) reports where a key is rather than what it types.
 - [`sudoku`](wiki/apps/sudoku.md) is `wfc`'s showcase played with a mouse and a keyboard, expressing the 81-cell puzzle as `AllDifferentConstraint`s over a flat array and bounding the solve behind its Solve button, since that runs inside a tick.

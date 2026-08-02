@@ -10,8 +10,7 @@
 
 #include "antwika/game/Building.hpp"
 #include "antwika/game/BuildingKind.hpp"
-#include "antwika/game/Footprint.hpp"
-#include "antwika/game/IsoProjection.hpp"
+#include "antwika/game/SpriteBounds.hpp"
 #include "antwika/game/Walker.hpp"
 #include "antwika/game/WalkerMotion.hpp"
 
@@ -164,8 +163,8 @@ namespace antwika::game
         }
 
         const Row row{
-            .box = footprintBounds(
-                building.at, footprintOf(building.kind), camera),
+            .box = buildingSpriteBounds(
+                building.at, building.kind, camera),
             .count = static_cast<std::int32_t>(kResourceCount),
             .camera = camera};
 

@@ -26,6 +26,7 @@
 #include "antwika/game/ReadoutPanel.hpp"
 #include "antwika/game/ResourceBar.hpp"
 #include "antwika/game/SceneSnapshot.hpp"
+#include "antwika/game/SpriteBounds.hpp"
 #include "antwika/game/TileAtlas.hpp"
 
 using antwika::game::tests::kTranslator;
@@ -189,7 +190,16 @@ class GridSceneTest : public ::testing::Test
 {
 protected:
     RecordingRenderer renderer;
+
+    // Three sheets, distinct, so a blit from the wrong one is caught.
     NiceMock<MockTexture> atlas;
+    NiceMock<MockTexture> atlas2x2;
+    NiceMock<MockTexture> atlas3x3;
+    antwika::game::AtlasTextures atlases{
+        .oneByOne = atlas,
+        .twoByTwo = atlas2x2,
+        .threeByThree = atlas3x3};
+
     GridScene scene{kTranslator};
 };
 
@@ -207,7 +217,7 @@ TEST_F(GridSceneTest, Draw_ClearsBeforeLayingAnyGround)
         snapshot(
             Camera(Point{.x = 300, .y = 40}, 2),
             GridExtent{.width = 2, .height = 2}),
-        atlas);
+        atlases);
 }
 
 TEST_F(GridSceneTest, Draw_LaysOneGroundTilePerVisibleCell)
@@ -218,13 +228,13 @@ TEST_F(GridSceneTest, Draw_LaysOneGroundTilePerVisibleCell)
         renderer,
         kCanvas,
         snapshot(Camera(Point{.x = 300, .y = 40}, 2), extent),
-        atlas);
+        atlases);
 
     EXPECT_EQ(renderer.blitsOf(groundTile()), 3U * 3U);
     EXPECT_EQ(renderer.blits.size(), 3U * 3U);
 }
 
-TEST_F(GridSceneTest, Draw_BlitsEachTileIntoItsOwnCellsBounds)
+TEST_F(GridSceneTest, Draw_BlitsEachSpriteIntoItsOwnCellsBox)
 {
     const Camera camera(Point{.x = 300, .y = 40}, 2);
     constexpr Cell where{.x = 1, .y = 1};
@@ -234,17 +244,27 @@ TEST_F(GridSceneTest, Draw_BlitsEachTileIntoItsOwnCellsBounds)
         kCanvas,
         snapshot(
             camera,
-            GridExtent{},
+            GridExtent{.width = 2, .height = 2},
             {where},
             {WalkerSprite{.at = where, .facing = Direction::East}}),
-        atlas);
+        atlases);
 
-    ASSERT_EQ(renderer.blits.size(), 2U);
+    // Four ground sprites, the road over its cell, and the walker.
+    ASSERT_EQ(renderer.blits.size(), 6U);
 
-    for (const auto &blit : renderer.blits)
-    {
-        EXPECT_EQ(blit.destination, cellBounds(where, camera));
-    }
+    // The road and the still walker share the cell's own sprite box.
+    // The box hangs off the diamond's bottom corner -- SpriteBounds.
+    EXPECT_EQ(
+        renderer.blits[4].source,
+        roadTile(0));
+    EXPECT_EQ(
+        renderer.blits[4].destination,
+        antwika::game::tileSpriteBounds(where, camera));
+    EXPECT_EQ(
+        renderer.blits[5].source, walkerTile(Direction::East));
+    EXPECT_EQ(
+        renderer.blits[5].destination,
+        antwika::game::tileSpriteBounds(where, camera));
 }
 
 // The art carries every colour the grid has.
@@ -259,7 +279,7 @@ TEST_F(GridSceneTest, Draw_BlitsTheAtlasItIsGivenAndTintsNothing)
             GridExtent{.width = 2, .height = 2},
             {Cell{.x = 0, .y = 0}},
             {WalkerSprite{.at = Cell{.x = 0, .y = 0}}}),
-        atlas);
+        atlases);
 
     ASSERT_FALSE(renderer.blits.empty());
 
@@ -277,9 +297,9 @@ TEST_F(GridSceneTest, Draw_DrawsAnIsolatedRoadWithNoLinksAtAll)
         kCanvas,
         snapshot(
             Camera(Point{.x = 300, .y = 40}, 2),
-            GridExtent{},
+            GridExtent{.width = 3, .height = 3},
             {Cell{.x = 1, .y = 1}}),
-        atlas);
+        atlases);
 
     EXPECT_EQ(renderer.blitsOf(roadTile(0)), 1U);
 }
@@ -292,11 +312,11 @@ TEST_F(GridSceneTest, Draw_ChoosesARoadTileFromTheNeighboursItHas)
         kCanvas,
         snapshot(
             Camera(Point{.x = 300, .y = 40}, 2),
-            GridExtent{},
+            GridExtent{.width = 4, .height = 4},
             {Cell{.x = 0, .y = 1},
              Cell{.x = 1, .y = 1},
              Cell{.x = 2, .y = 1}}),
-        atlas);
+        atlases);
 
     EXPECT_EQ(
         renderer.blitsOf(
@@ -316,14 +336,14 @@ TEST_F(GridSceneTest, Draw_ChoosesTheJunctionTileWhereFourRoadsMeet)
         kCanvas,
         snapshot(
             Camera(Point{.x = 300, .y = 40}, 2),
-            GridExtent{},
+            GridExtent{.width = 4, .height = 4},
             // Ascending, as PathIndex's set hands them over.
             {Cell{.x = 0, .y = 1},
              Cell{.x = 1, .y = 0},
              Cell{.x = 1, .y = 1},
              Cell{.x = 1, .y = 2},
              Cell{.x = 2, .y = 1}}),
-        atlas);
+        atlases);
 
     EXPECT_EQ(
         renderer.blitsOf(roadTile(antwika::game::kLinkMask)), 1U);
@@ -350,7 +370,7 @@ TEST_F(GridSceneTest, Draw_ChoosesAWalkerTileByWhichWayItFaces)
                 GridExtent{},
                 {},
                 {WalkerSprite{.at = where, .facing = facing}}),
-            atlas);
+            atlases);
 
         ASSERT_EQ(each.blits.size(), 1U);
         EXPECT_EQ(each.blits.front().source, walkerTile(facing));
@@ -370,7 +390,7 @@ TEST_F(GridSceneTest, Draw_BlitsAWalkerAfterTheGroundAndTheRoad)
             GridExtent{.width = 1, .height = 1},
             {where},
             {WalkerSprite{.at = where, .facing = Direction::North}}),
-        atlas);
+        atlases);
 
     ASSERT_EQ(renderer.blits.size(), 3U);
     EXPECT_EQ(renderer.blits[0].source, groundTile());
@@ -391,7 +411,7 @@ TEST_F(GridSceneTest, Draw_SkipsEverythingEntirelyOffTheCanvas)
             GridExtent{.width = 4, .height = 4},
             {Cell{.x = 1, .y = 1}},
             {WalkerSprite{.at = Cell{.x = 2, .y = 2}}}),
-        atlas);
+        atlases);
 
     EXPECT_TRUE(renderer.blits.empty());
 }
@@ -416,7 +436,7 @@ TEST_F(GridSceneTest, Draw_SkipsCellsPastEachEdgeOfTheCanvas)
                 GridExtent{.width = 2, .height = 2},
                 {Cell{.x = 0, .y = 0}},
                 {WalkerSprite{.at = Cell{.x = 1, .y = 1}}}),
-            atlas);
+            atlases);
 
         EXPECT_TRUE(each.blits.empty())
             << "pan " << pan.x << "," << pan.y;
@@ -436,12 +456,12 @@ TEST_F(GridSceneTest, Draw_StillClearsWhenEverythingIsCulled)
         snapshot(
             Camera(Point{.x = -100000, .y = -100000}, 2),
             GridExtent{.width = 4, .height = 4}),
-        atlas);
+        atlases);
 }
 
 TEST_F(GridSceneTest, Draw_HandlesAnExtentWithNoCells)
 {
-    scene.draw(renderer, kCanvas, snapshot(Camera(), GridExtent{}), atlas);
+    scene.draw(renderer, kCanvas, snapshot(Camera(), GridExtent{}), atlases);
 
     EXPECT_TRUE(renderer.blits.empty());
 }
@@ -456,7 +476,7 @@ TEST_F(GridSceneTest, Draw_SurvivesACanvasSmallerThanOneTile)
             Camera(Point{}, 4),
             GridExtent{.width = 2, .height = 2},
             {Cell{.x = 0, .y = 0}}),
-        atlas);
+        atlases);
 
     // Nothing ran off into a four-billion-pixel destination.
     for (const auto &blit : renderer.blits)
@@ -479,13 +499,13 @@ TEST_F(GridSceneTest, Draw_SamplesTheSameSourceAtEveryZoom)
             each,
             kCanvas,
             snapshot(camera, GridExtent{.width = 1, .height = 1}),
-            atlas);
+            atlases);
 
         ASSERT_EQ(each.blits.size(), 1U);
         EXPECT_EQ(each.blits.front().source, groundTile());
         EXPECT_EQ(
             each.blits.front().destination,
-            cellBounds(Cell{.x = 0, .y = 0}, camera));
+            antwika::game::tileSpriteBounds(Cell{.x = 0, .y = 0}, camera));
     }
 }
 
@@ -502,7 +522,7 @@ TEST_F(GridSceneTest, Draw_PresentsNothingItself)
         strict,
         kCanvas,
         snapshot(Camera(), GridExtent{.width = 1, .height = 1}),
-        atlas);
+        atlases);
 }
 
 TEST_F(GridSceneTest, Draw_AsksNothingOfTheTextureItBlits)
@@ -518,7 +538,7 @@ TEST_F(GridSceneTest, Draw_AsksNothingOfTheTextureItBlits)
             GridExtent{.width = 1, .height = 1},
             {Cell{.x = 0, .y = 0}},
             {WalkerSprite{}}),
-        atlas);
+        atlases);
 }
 
 TEST_F(GridSceneTest, Draw_SlidesAWalkerBetweenTheCellsItIsStepping)
@@ -537,21 +557,21 @@ TEST_F(GridSceneTest, Draw_SlidesAWalkerBetweenTheCellsItIsStepping)
             .from = from,
             .ticksIntoStep = 0}});
 
-    scene.draw(renderer, kCanvas, stepping, atlas, Progress());
+    scene.draw(renderer, kCanvas, stepping, atlases, Progress());
     ASSERT_EQ(renderer.blits.size(), 1U);
     const auto start = renderer.blits[0].destination;
 
     renderer.blits.clear();
-    scene.draw(renderer, kCanvas, stepping, atlas, Progress(1, 2));
+    scene.draw(renderer, kCanvas, stepping, atlases, Progress(1, 2));
     ASSERT_EQ(renderer.blits.size(), 1U);
     const auto middle = renderer.blits[0].destination;
 
     // The first frame of a step is still on the cell it left.
     // A later frame of the same tick has moved on.
     // And the snapshot did not change between the two.
-    EXPECT_EQ(start, cellBounds(from, camera));
+    EXPECT_EQ(start, antwika::game::tileSpriteBounds(from, camera));
     EXPECT_NE(middle, start);
-    EXPECT_NE(middle, cellBounds(to, camera));
+    EXPECT_NE(middle, antwika::game::tileSpriteBounds(to, camera));
 }
 
 // The whole ticks of a step stop when WalkerSystem does.
@@ -575,20 +595,20 @@ TEST_F(GridSceneTest, Draw_HoldsAWalkerStillWhilePaused)
             .ticksIntoStep = 1}});
     held.paused = true;
 
-    scene.draw(renderer, kCanvas, held, atlas, Progress());
+    scene.draw(renderer, kCanvas, held, atlases, Progress());
     ASSERT_EQ(renderer.blits.size(), 1U);
     const auto atTick = renderer.blits[0].destination;
 
     renderer.blits.clear();
-    scene.draw(renderer, kCanvas, held, atlas, Progress(1, 2));
+    scene.draw(renderer, kCanvas, held, atlases, Progress(1, 2));
     ASSERT_EQ(renderer.blits.size(), 1U);
 
     EXPECT_EQ(renderer.blits[0].destination, atTick);
 
     // Held where its step had got to, rather than on either cell.
     // A pause stops a walker; it does not tidy it onto a tile.
-    EXPECT_NE(atTick, cellBounds(from, camera));
-    EXPECT_NE(atTick, cellBounds(to, camera));
+    EXPECT_NE(atTick, antwika::game::tileSpriteBounds(from, camera));
+    EXPECT_NE(atTick, antwika::game::tileSpriteBounds(to, camera));
 }
 
 // The gauge is drawn from the box the sprite is blitted into.
@@ -610,13 +630,13 @@ TEST_F(GridSceneTest, Draw_HoldsAWalkersBarsStillWhilePaused)
             .carried = 50}});
     held.paused = true;
 
-    scene.draw(renderer, kCanvas, held, atlas, Progress());
+    scene.draw(renderer, kCanvas, held, atlases, Progress());
     const auto atTick = renderer.rects;
 
     ASSERT_FALSE(atTick.empty());
 
     renderer.rects.clear();
-    scene.draw(renderer, kCanvas, held, atlas, Progress(1, 2));
+    scene.draw(renderer, kCanvas, held, atlases, Progress(1, 2));
 
     EXPECT_EQ(renderer.rects, atTick);
 }
@@ -629,11 +649,11 @@ TEST_F(GridSceneTest, Draw_LeavesEverythingButTheWalkersWhereItWas)
     const auto scene_ = snapshot(camera, GridExtent{.width = 2, .height = 2},
         {where}, {});
 
-    scene.draw(renderer, kCanvas, scene_, atlas, Progress());
+    scene.draw(renderer, kCanvas, scene_, atlases, Progress());
     const auto atTick = renderer.blits;
 
     renderer.blits.clear();
-    scene.draw(renderer, kCanvas, scene_, atlas, Progress(1, 2));
+    scene.draw(renderer, kCanvas, scene_, atlases, Progress(1, 2));
 
     // A cell does not move between two ticks.
     // So only the walkers differ from one frame to the next.
@@ -654,7 +674,7 @@ TEST_F(GridSceneTest, Draw_GaugesEachBuildingThatDependsOnSomething)
     auto scene_ = snapshot(camera, GridExtent{});
     scene_.buildings.push_back(house);
 
-    scene.draw(renderer, kCanvas, scene_, atlas);
+    scene.draw(renderer, kCanvas, scene_, atlases);
 
     const auto bars = antwika::game::buildingBars(house, camera);
 
@@ -681,7 +701,7 @@ TEST_F(GridSceneTest, Draw_DrawsNoFillForAnEmptyGauge)
             .kind = antwika::game::BuildingKind::House,
             .stock = {0, 0, 0}});
 
-    scene.draw(renderer, kCanvas, scene_, atlas);
+    scene.draw(renderer, kCanvas, scene_, atlases);
 
     EXPECT_EQ(renderer.rects.size(), antwika::game::kResourceCount);
 }
@@ -702,7 +722,7 @@ TEST_F(GridSceneTest, Draw_GaugesNeitherASourceNorABuildingOffTheCanvas)
             .kind = antwika::game::BuildingKind::House,
             .stock = {50, 50}});
 
-    scene.draw(renderer, kCanvas, scene_, atlas);
+    scene.draw(renderer, kCanvas, scene_, atlases);
 
     EXPECT_TRUE(renderer.rects.empty());
 }
@@ -719,7 +739,7 @@ TEST_F(GridSceneTest, Draw_GaugesAWalkerWithWhatItIsCarrying)
         renderer,
         kCanvas,
         snapshot(camera, GridExtent{}, {}, {walker}),
-        atlas);
+        atlases);
 
     const auto bars =
         antwika::game::walkerBars(walker, camera, Progress());
@@ -745,7 +765,7 @@ TEST_F(GridSceneTest, Draw_GaugesNoWalkerThatIsOffTheCanvasOrCarriesNone)
                 .at = Cell{.x = 1, .y = 1},
                 .kind = antwika::game::WalkerKind::MarketSeller,
                 .carried = 50}}),
-        atlas);
+        atlases);
 
     EXPECT_TRUE(renderer.rects.empty());
 
@@ -760,7 +780,7 @@ TEST_F(GridSceneTest, Draw_GaugesNoWalkerThatIsOffTheCanvasOrCarriesNone)
             {WalkerSprite{
                 .at = Cell{.x = 1, .y = 1},
                 .kind = antwika::game::WalkerKind::Fireman}}),
-        atlas);
+        atlases);
 
     EXPECT_TRUE(nearby.rects.empty());
 }
@@ -783,7 +803,7 @@ TEST_F(GridSceneTest, Draw_DrawsEveryGaugeAfterEverySprite)
             .kind = antwika::game::BuildingKind::House,
             .stock = {50, 50}});
 
-    scene.draw(renderer, kCanvas, scene_, atlas);
+    scene.draw(renderer, kCanvas, scene_, atlases);
 
     ASSERT_FALSE(renderer.order.empty());
 
@@ -808,7 +828,7 @@ TEST_F(GridSceneTest, Draw_SaysNothingWithNothingUnderThePointer)
         renderer,
         kCanvas,
         snapshot(Camera(Point{.x = 300, .y = 40}, 3), GridExtent{}),
-        atlas);
+        atlases);
 
     EXPECT_TRUE(renderer.texts.empty());
 }
@@ -825,7 +845,7 @@ TEST_F(GridSceneTest, Draw_WritesTheHoverPanelLastAndWhereItWasLaidOut)
             .kind = antwika::game::BuildingKind::House,
             .stock = {30, 70, 10}}};
 
-    scene.draw(renderer, kCanvas, scene_, atlas);
+    scene.draw(renderer, kCanvas, scene_, atlases);
 
     const auto panel = antwika::game::readoutPanel(
         scene_.hover, kCanvas, kTranslator);
@@ -860,7 +880,7 @@ TEST_F(GridSceneTest, Draw_LeavesTheGridAloneWhetherOrNotAnythingHovers)
         GridExtent{.width = 2, .height = 2},
         {Cell{.x = 0, .y = 0}});
 
-    scene.draw(renderer, kCanvas, scene_, atlas);
+    scene.draw(renderer, kCanvas, scene_, atlases);
     const auto blind = renderer.blits;
 
     scene_.hover = antwika::game::HoverReadout{
@@ -868,7 +888,7 @@ TEST_F(GridSceneTest, Draw_LeavesTheGridAloneWhetherOrNotAnythingHovers)
         .walker = WalkerSprite{}};
 
     RecordingRenderer watched;
-    scene.draw(watched, kCanvas, scene_, atlas);
+    scene.draw(watched, kCanvas, scene_, atlases);
 
     EXPECT_EQ(watched.blits, blind);
     EXPECT_FALSE(watched.texts.empty());
@@ -887,7 +907,7 @@ TEST_F(GridSceneTest, Draw_PreviewsThePlannedRunOfRoad)
              Cell{.x = 3, .y = 1}},
         .valid = true};
 
-    scene.draw(renderer, kCanvas, scene_, atlas);
+    scene.draw(renderer, kCanvas, scene_, atlases);
 
     std::size_t previewed = 0;
 
@@ -912,7 +932,7 @@ TEST_F(GridSceneTest, Draw_ReddensARefusedRunOfRoad)
         .cells = {Cell{.x = 1, .y = 1}, Cell{.x = 3, .y = 1}},
         .valid = false};
 
-    scene.draw(renderer, kCanvas, scene_, atlas);
+    scene.draw(renderer, kCanvas, scene_, atlases);
 
     std::size_t refused = 0;
 
@@ -936,7 +956,102 @@ TEST_F(GridSceneTest, Draw_PreviewsNoPlannedCellOffTheCanvas)
     scene_.plan = antwika::game::RoadPlan{
         .cells = {Cell{.x = 1, .y = 1}}, .valid = true};
 
-    scene.draw(renderer, kCanvas, scene_, atlas);
+    scene.draw(renderer, kCanvas, scene_, atlases);
 
     EXPECT_TRUE(renderer.blits.empty());
+}
+
+// A building blits from the sheet its footprint names.
+// The wrong sheet would draw a farm out of the storehouse's pixels.
+TEST_F(GridSceneTest, Draw_BlitsABuildingFromItsFootprintsOwnSheet)
+{
+    const Camera camera(Point{.x = 300, .y = 40}, 2);
+
+    const struct
+    {
+        antwika::game::BuildingKind kind;
+        const ITexture *sheet;
+    } cases[] = {
+        {antwika::game::BuildingKind::House, &atlas},
+        {antwika::game::BuildingKind::Farm, &atlas2x2},
+        {antwika::game::BuildingKind::Storage, &atlas3x3},
+    };
+
+    for (const auto &expected : cases)
+    {
+        RecordingRenderer each;
+        auto scene_ = snapshot(camera, GridExtent{});
+        scene_.buildings.push_back(
+            antwika::game::BuildingSprite{
+                .at = Cell{.x = 0, .y = 0}, .kind = expected.kind});
+
+        scene.draw(each, kCanvas, scene_, atlases);
+
+        ASSERT_EQ(each.blits.size(), 1U);
+        EXPECT_EQ(each.blits.front().texture, expected.sheet);
+        EXPECT_EQ(
+            each.blits.front().source,
+            antwika::game::buildingTile(expected.kind));
+        EXPECT_EQ(
+            each.blits.front().destination,
+            antwika::game::buildingSpriteBounds(
+                Cell{.x = 0, .y = 0}, expected.kind, camera));
+    }
+}
+
+// A building's art owns its whole block, so no ground goes under it.
+// Painting some would cost a blit nobody sees.
+TEST_F(GridSceneTest, Draw_LaysNoGroundUnderABuildingsBlock)
+{
+    auto scene_ = snapshot(
+        Camera(Point{.x = 300, .y = 40}, 2),
+        GridExtent{.width = 2, .height = 2});
+    scene_.buildings.push_back(
+        antwika::game::BuildingSprite{
+            .at = Cell{.x = 0, .y = 0},
+            .kind = antwika::game::BuildingKind::Farm});
+
+    scene.draw(renderer, kCanvas, scene_, atlases);
+
+    // The farm covers the whole extent, so it is the one blit there is.
+    ASSERT_EQ(renderer.blits.size(), 1U);
+    EXPECT_EQ(
+        renderer.blits.front().source,
+        antwika::game::buildingTile(antwika::game::BuildingKind::Farm));
+}
+
+// A sprite overhangs its diamond, so paint order is screen depth.
+// A building goes down with the diagonal its block starts on.
+// That is after the ground behind it and before the ground in front.
+// Which is what tucks its skirt under the cells south and east of it.
+TEST_F(GridSceneTest, Draw_PaintsABuildingBetweenItsNeighbouringDiagonals)
+{
+    auto scene_ = snapshot(
+        Camera(Point{.x = 300, .y = 40}, 2),
+        GridExtent{.width = 3, .height = 3});
+    scene_.buildings.push_back(
+        antwika::game::BuildingSprite{
+            .at = Cell{.x = 1, .y = 1},
+            .kind = antwika::game::BuildingKind::House});
+
+    scene.draw(renderer, kCanvas, scene_, atlases);
+
+    // Eight ground cells round the house, and the house itself.
+    ASSERT_EQ(renderer.blits.size(), 9U);
+
+    const auto house =
+        antwika::game::buildingTile(antwika::game::BuildingKind::House);
+
+    // Five cells lie on the diagonals up to the house's own.
+    // Three lie beyond it, and they are painted after it.
+    EXPECT_EQ(renderer.blits[5].source, house);
+
+    for (std::size_t blit = 0; blit < renderer.blits.size(); ++blit)
+    {
+        if (blit != 5)
+        {
+            EXPECT_EQ(renderer.blits[blit].source, groundTile())
+                << "blit " << blit;
+        }
+    }
 }

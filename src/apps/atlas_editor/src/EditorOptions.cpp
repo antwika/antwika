@@ -35,12 +35,12 @@ namespace antwika::atlas_editor
                 .name = kSheetFlag,
                 .valueName = "<w>x<h>",
                 .help = "How big a blank sheet to open (default "
-                        "1024x320)."},
+                        "512x768)."},
             antwika::cli::FlagSpec{
                 .name = kTileFlag,
                 .valueName = "<w>x<h>",
                 .help = "What the grid overlay's slots are (default "
-                        "128x64)."},
+                        "64x96)."},
             antwika::cli::FlagSpec{
                 .name = antwika::app::kMaxTicksFlag,
                 .valueName = "<n>",

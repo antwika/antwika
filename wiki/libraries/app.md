@@ -47,7 +47,7 @@ What it replaces is a path baked in at configure time, which was the *building* 
 
 **Every application gets a directory of its own under `bin/`.**
 `antwika_bundle_app()` in [`cmake/AntwikaModule.cmake`](../../cmake/AntwikaModule.cmake) puts the executable there, along with whatever it opens and — on MinGW — the runtime DLLs it needs to start; `assetPath()` is how the running program finds those files again.
-Two applications ship an `atlas.png` and three a `demo.jsonl`, so one shared `bin/` was one atlas and one demo replay between all of them the moment either had to sit beside its binary.
+Two applications ship texture atlases and three a `demo.jsonl`, so one shared `bin/` was one set of atlases and one demo replay between all of them the moment either had to sit beside its binary.
 
 A test binary goes to the directory of the module that owns it, put there by `antwika_bundle_test()` in the same file: `bin/antwika_companion/antwika_companion_tests` beside the application it covers, and `bin/antwika_replay/antwika_replay_tests` in a directory of the library's own.
 That directory is the target's own name with the trailing `_tests` taken off rather than a second argument, so the name and the directory cannot disagree, and a target not following the convention is refused at configure time rather than landing somewhere surprising.

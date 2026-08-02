@@ -18,7 +18,7 @@ Everything else is `atlas_editor::EditorSink` turning a press into a painted pix
 
 ```sh
 build/bin/antwika_atlas_editor/antwika_atlas_editor \
-    --image src/apps/game/assets/atlas.png \
+    --image src/apps/game/assets/atlas_1x1.png \
     --out my-atlas.png
 ```
 
@@ -27,12 +27,12 @@ build/bin/antwika_atlas_editor/antwika_atlas_editor \
 The sheet somebody is most likely to open first is the game's own, and one stray click on `save` should not be able to replace the art with a half-finished experiment.
 Naming `--out` is how an artist says which file is theirs; without it the `save` button reports that there is nowhere to write to and changes nothing.
 
-Given no `--image`, the session starts on a blank, fully transparent sheet of `--sheet <w>x<h>`, which defaults to the game's own 1024x320.
+Given no `--image`, the session starts on a blank, fully transparent sheet of `--sheet <w>x<h>`, which defaults to the game's own 1x1 sheet at 512x768; the game's 2x2 and 3x3 sheets are opened with `--image` instead of started blank.
 **That default is the game's contract rather than a taste**: `game::requireAtlasSize()` refuses any other size at startup, so a sheet started blank here and saved is one the game will only open if the two numbers agree.
-`atlas_editor::kDefaultSheetSize` is therefore pinned to `game::kAtlasSize` by `DefaultSheetSizeTest`, with a `static_assert` as well as a case, so a row added to the atlas is a red build here rather than a refusal somebody meets much later holding an afternoon's art.
+`atlas_editor::kDefaultSheetSize` is therefore pinned to `game::atlasSizeOf(AtlasKind::OneByOne)` by `DefaultSheetSizeTest`, with a `static_assert` as well as a case, so a row added to that sheet is a red build here rather than a refusal somebody meets much later holding an afternoon's art.
 That test is the only thing under `src/apps/atlas_editor/` that names `apps/game`, and the include reaching it belongs to the test target alone -- the editor itself builds knowing nothing about the game.
 
-`--tile <w>x<h>` is what the grid overlay divides the sheet into, defaulting to the game's 128x64.
+`--tile <w>x<h>` is what the grid overlay divides the sheet into, defaulting to the 1x1 sheet's 64x96 sprites; gridding the game's other two sheets is `--tile 96x112` and `--tile 128x128`.
 It is a drawing aid and nothing else: no tool, no click and no saved byte depends on it, so a wrong `--tile` shows a misleading picture and cannot damage a sheet.
 
 The default `null` graphics backend opens no window and draws nothing, so **an editing session needs a real backend**:

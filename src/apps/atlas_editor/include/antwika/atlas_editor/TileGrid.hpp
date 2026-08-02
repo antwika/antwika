@@ -13,21 +13,22 @@ namespace antwika::atlas_editor
     using antwika::gfx::Size;
 
     /**
-     * @brief How wide one tile of the game's sheet is, in pixels.
+     * @brief How wide one sprite of the game's 1x1 sheet is, in pixels.
      *
      * The default this editor grids an atlas with, and the one
-     * `src/apps/game/assets/atlas.png` is drawn to: see
+     * `src/apps/game/assets/atlas_1x1.png` is drawn to: see
      * wiki/apps/game-texture-atlas.md, the contract the art has to
      * meet.
      * It is a default rather than a constant baked into the code,
-     * because a sheet for something else is grided with `--tile`.
+     * because a sheet for something else -- the game's own 2x2 and 3x3
+     * sheets included -- is grided with `--tile`.
      */
-    inline constexpr std::uint32_t kDefaultTileWidth = 128;
+    inline constexpr std::uint32_t kDefaultTileWidth = 64;
 
     /**
-     * @brief How tall one tile of the game's sheet is, in pixels.
+     * @brief How tall one sprite of the game's 1x1 sheet is, in pixels.
      */
-    inline constexpr std::uint32_t kDefaultTileHeight = 64;
+    inline constexpr std::uint32_t kDefaultTileHeight = 96;
 
     /**
      * @brief How an image is divided into the slots an artist paints.
