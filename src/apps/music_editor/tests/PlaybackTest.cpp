@@ -537,3 +537,112 @@ TEST(PlaybackTest, EveryLineSoundsTheRunsOpeningDownbeat)
 
     EXPECT_EQ(playback.started(), kPresetCount);
 }
+
+// What is sounding is lit, at the very characters it came from.
+TEST(PlaybackTest, LightsTheCharactersOfTheNotesThatSound)
+{
+    Rig rig;
+    Playback playback(
+        rig.score, rig.mixer, rig.device, rig.sleeper,
+        oneCycleASecond());
+
+    rig.play("$: bell.n(\"0\")\n");
+
+    step(playback, 2, false);
+
+    const auto lit = playback.highlights();
+
+    ASSERT_EQ(lit.size(), 1U);
+
+    // The 0 sits at document index eleven.
+    EXPECT_EQ(lit[0].begin, 11U);
+    EXPECT_EQ(lit[0].end, 12U);
+}
+
+// A note decided ahead of its time is not lit until it sounds.
+// And one that has rung out is not lit any more.
+TEST(PlaybackTest, LightsEachNoteForItsOwnTicksAlone)
+{
+    Rig rig;
+    Playback playback(
+        rig.score, rig.mixer, rig.device, rig.sleeper,
+        oneCycleASecond());
+
+    // One word a cycle, so the two cycles light two spans.
+    rig.play("$: bell.n(\"<0 12>\")\n");
+
+    // Nine of the first cycle's ten ticks.
+    // The next cycle's note is already decided, and not yet lit.
+    step(playback, 9, false);
+
+    auto lit = playback.highlights();
+
+    ASSERT_EQ(lit.size(), 1U);
+    EXPECT_EQ(lit[0].begin, 12U);
+    EXPECT_EQ(lit[0].end, 13U);
+
+    // Into the second cycle: the 0 has rung out, the 12 sounds.
+    step(playback, 3, false);
+
+    lit = playback.highlights();
+
+    ASSERT_EQ(lit.size(), 1U);
+    EXPECT_EQ(lit[0].begin, 14U);
+    EXPECT_EQ(lit[0].end, 16U);
+}
+
+TEST(PlaybackTest, SilencingUnlightsEverything)
+{
+    Rig rig;
+    Playback playback(
+        rig.score, rig.mixer, rig.device, rig.sleeper,
+        oneCycleASecond());
+
+    rig.play("$: bell.n(\"0\")\n");
+
+    step(playback, 2, false);
+
+    ASSERT_FALSE(playback.highlights().empty());
+
+    playback.silence();
+
+    EXPECT_TRUE(playback.highlights().empty());
+}
+
+// A span that no longer maps anywhere honest is dropped.
+TEST(PlaybackTest, ADeletedLineLightsNothing)
+{
+    Rig rig;
+    Playback playback(
+        rig.score, rig.mixer, rig.device, rig.sleeper,
+        oneCycleASecond());
+
+    rig.play("$: bell.n(\"0\")\n");
+
+    step(playback, 2, false);
+
+    ASSERT_FALSE(playback.highlights().empty());
+
+    rig.play("// gone\n");
+
+    EXPECT_TRUE(playback.highlights().empty());
+}
+
+// The musical clock stands still, and so does what is lit.
+TEST(PlaybackTest, PausingFreezesWhatIsLit)
+{
+    Rig rig;
+    Playback playback(
+        rig.score, rig.mixer, rig.device, rig.sleeper,
+        oneCycleASecond());
+
+    rig.play("$: bell.n(\"0\")\n");
+
+    step(playback, 2, false);
+
+    const auto before = playback.highlights();
+
+    step(playback, 5, true);
+
+    EXPECT_EQ(playback.highlights(), before);
+}

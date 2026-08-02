@@ -42,6 +42,7 @@ Refusals are listed under the pane by line number, at most three at a time and t
 
 The pane keeps the caret in view while you type and stays where you put it while you scroll.
 It holds as many lines as it has room for and no more: the score can be longer than the window.
+And it plays along with itself: the very characters of each note are lit for as long as that note is active, so a running score reads as the rhythm it is making.
 
 ## The calls
 
@@ -250,6 +251,11 @@ That counter is the one piece of arithmetic in the app that is easy to get wrong
 
 **The run is paced by how much audio the device has taken.**
 That is the one thing `IDevice::framesPlayed()` is allowed to decide, and it gives the app a property worth having: a device that consumes the moment it is pumped is never ahead, so a `null` or offline run costs no wall-clock time at all, while a real one is paced by the hardware rather than by a second clock with an opinion of its own.
+
+**A note lights the characters it came from, and the route is the controls themselves.**
+`NoteWords` reads each word of an `n("...")` as a pitch that remembers its own span -- [`notation`](../libraries/notation.md) tells every reader where a word starts, and the span rides beside the pitch as two more controls the algebra relays untouched, however `fast`, `euclid` or `<>` reorder the events.
+When a note begins, `Playback` keeps its span and its active ticks -- integer arithmetic on where it falls in the score's timeline, so a replay lights what the run lit -- and `Score::spanIn()` maps the span onto the document *as it now stands*, through the same gathering that joined the chain's lines, so a highlight follows its characters when the lines above them move.
+A span whose line is gone is dropped rather than guessed at, and the pane draws the survivors through `ui`'s `TextAreaSpec::highlights`, on their own ground exactly as a selection is.
 
 **One sequencer per voice line**, because a line's events have to become a sound through *its* preset, and [`sequencer`](../libraries/sequencer.md)'s seam deliberately hands on controls rather than sounds.
 The pool grows as lines are written and is kept when they are deleted, since a few hundred bytes is cheaper than an allocation in the middle of a bar.

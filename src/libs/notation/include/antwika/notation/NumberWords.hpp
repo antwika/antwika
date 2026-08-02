@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstddef>
 #include <string_view>
 
 #include <antwika/pattern/Controls.hpp>
@@ -35,11 +36,13 @@ namespace antwika::notation
         /**
          * @brief Read one word as a number.
          * @param word The word.
+         * @param at Where it starts; this reader has no use for it.
          * @return One control, under this reader's id.
          * @throws NotationError If the word is not a whole number or a
          * fraction of two.
          */
-        [[nodiscard]] Controls read(std::string_view word) const override;
+        [[nodiscard]] Controls read(
+            std::string_view word, std::size_t at) const override;
 
     private:
         ParamId named;

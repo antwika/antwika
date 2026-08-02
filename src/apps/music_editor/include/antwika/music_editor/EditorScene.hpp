@@ -9,7 +9,10 @@
 #include <antwika/ui/Frame.hpp>
 #include <antwika/ui/Keyboard.hpp>
 #include <antwika/ui/Pointer.hpp>
+#include <antwika/ui/TextAreaSpec.hpp>
 #include <antwika/ui/Theme.hpp>
+
+#include <vector>
 
 #include "antwika/music_editor/EditorState.hpp"
 #include "antwika/music_editor/Score.hpp"
@@ -55,6 +58,15 @@ namespace antwika::music_editor
 
         /** @brief How many voice lines the score is sounding. */
         std::size_t lines = 0;
+
+        /**
+         * @brief The characters of the notes sounding right now.
+         *
+         * Lit in the pane for as long as each note is active --
+         * tick-derived through Playback::highlights(), so a replay
+         * lights what the run lit.
+         */
+        std::vector<antwika::ui::TextHighlight> playing{};
     };
 
     /**

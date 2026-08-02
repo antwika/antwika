@@ -4,6 +4,7 @@
 #include <filesystem>
 #include <fstream>
 #include <string>
+#include <variant>
 
 #include <gtest/gtest.h>
 
@@ -15,6 +16,7 @@
 #include <antwika/input/Key.hpp>
 #include <antwika/input/KeyModifiers.hpp>
 #include <antwika/input/MouseButton.hpp>
+#include <antwika/ui/DrawCommand.hpp>
 #include <antwika/ui/WidgetId.hpp>
 
 #include "antwika/music_editor/Events.hpp"
@@ -1166,4 +1168,32 @@ TEST(EditorSinkTest, ChoosingAnOptionMovesNoCaret)
     EXPECT_EQ(
         rig.state.layout, antwika::music_editor::KeyLayout::English);
     EXPECT_EQ(rig.state.cursor, 3U);
+}
+
+// The notes that sound are lit in the pane, end to end.
+TEST(EditorSinkTest, ThePaneLightsTheNotesThatAreSounding)
+{
+    EditorRig rig;
+    rig.state.source = "$: bell.n(\"0\")\n";
+
+    // Two ticks: the first decides the note, the second sounds it.
+    tickThrough(rig, 0, 3);
+
+    const auto ground =
+        antwika::music_editor::editorTheme().highlight;
+
+    bool lit = false;
+
+    for (const auto &command : rig.editor.commands())
+    {
+        const auto *fill =
+            std::get_if<antwika::ui::FillRect>(&command);
+
+        if (fill != nullptr && fill->color == ground)
+        {
+            lit = true;
+        }
+    }
+
+    EXPECT_TRUE(lit);
 }

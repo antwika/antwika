@@ -211,13 +211,22 @@ namespace antwika::music_editor
         void applyCall(
             VoiceChain &voice,
             const std::string_view name,
-            const std::string_view argument)
+            const std::string_view argument,
+            const std::string_view whole)
         {
             auto &preset = voice.preset;
 
             if (name == "n")
             {
                 voice.notation = quotedIn(argument);
+
+                // Where the notation's characters begin in the chain.
+                // One past the argument's opening quote.
+                // The argument is a view into the chain.
+                // So this is arithmetic rather than a search.
+                voice.notationAt = static_cast<std::size_t>(
+                                       argument.data() - whole.data())
+                                   + 1;
             }
             else if (name == "s")
             {
@@ -296,7 +305,10 @@ namespace antwika::music_editor
         }
 
         // A call is a name, a bracket, an argument and a bracket.
-        void readCall(VoiceChain &voice, const std::string_view segment)
+        void readCall(
+            VoiceChain &voice,
+            const std::string_view segment,
+            const std::string_view whole)
         {
             const auto open = segment.find('(');
 
@@ -318,7 +330,7 @@ namespace antwika::music_editor
                 throw ScoreError("a call needs a name before its (");
             }
 
-            applyCall(voice, name, argument);
+            applyCall(voice, name, argument, whole);
         }
     } // namespace
 
@@ -331,7 +343,11 @@ namespace antwika::music_editor
     {
         VoiceChain voice;
 
-        const auto segments = segmentsOf(trimmed(chain));
+        // Offsets below are into this exact view.
+        // Score::spanIn maps them on into the document.
+        const auto whole = trimmed(chain);
+
+        const auto segments = segmentsOf(whole);
 
         for (std::size_t at = 0; at < segments.size(); ++at)
         {
@@ -360,7 +376,7 @@ namespace antwika::music_editor
                 continue;
             }
 
-            readCall(voice, segment);
+            readCall(voice, segment, whole);
         }
 
         if (voice.notation.empty())

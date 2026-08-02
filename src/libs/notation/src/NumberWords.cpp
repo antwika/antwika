@@ -1,6 +1,7 @@
 #include "antwika/notation/NumberWords.hpp"
 
 #include <charconv>
+#include <cstddef>
 #include <cstdint>
 #include <string>
 #include <string_view>
@@ -40,7 +41,8 @@ namespace antwika::notation
     {
     }
 
-    Controls NumberWords::read(std::string_view word) const
+    Controls NumberWords::read(
+        const std::string_view word, const std::size_t) const
     {
         const auto divide = word.find('%');
 

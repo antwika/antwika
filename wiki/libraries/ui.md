@@ -98,6 +98,7 @@ A blank line is drawn as a row opened over a strut a glyph cell tall, because an
 
 **A selection is a second index and nothing else.**
 `TextAreaSpec::anchor` is the far end, the characters between it and the caret are drawn on `Theme::selection`, and every key that writes -- a character, Enter, Backspace, `Key::Delete`, `Key::Cut` -- takes the whole of it first.
+`TextAreaSpec::highlights` is the same picture with none of the consequences: caller-marked spans drawn on `Theme::highlight` -- a live-coding editor lights the notes that are sounding with it -- that move no caret, join no selection and lose to the selection's ground wherever the two overlap.
 `Key::SelectLeft`, `SelectRight`, `SelectUp`, `SelectDown`, `SelectLineStart` and `SelectLineEnd` are separate keys rather than a shift flag beside the six moves, for the reason `FocusPrevious` is a key rather than a flag on `FocusNext`: a modifier is held state and everything crossing this seam is an edge.
 The anchor is a `std::optional`, absent meaning "wherever the caret is", because every index is a place a selection can really end -- including the end of the text, which a sentinel would have taken.
 

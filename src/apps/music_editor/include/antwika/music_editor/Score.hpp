@@ -1,14 +1,15 @@
 #pragma once
 
 #include <cstddef>
+#include <optional>
 #include <string>
 #include <string_view>
 #include <vector>
 
-#include <antwika/notation/NumberWords.hpp>
 #include <antwika/pattern/Pattern.hpp>
 #include <antwika/pattern/Patterns.hpp>
 
+#include "antwika/music_editor/NoteWords.hpp"
 #include "antwika/music_editor/TrackPreset.hpp"
 #include "antwika/music_editor/VoiceChain.hpp"
 
@@ -57,6 +58,28 @@ namespace antwika::music_editor
         // Silence rather than nothing.
         // A pattern has no empty value to hold instead.
         Pattern playing = pattern::silence();
+    };
+
+    /**
+     * @brief A run of document characters, for a highlight to sit on.
+     *
+     * Half-open, exactly as ui::TextHighlight is.
+     */
+    struct DocumentSpan
+    {
+        /** @brief The first character's index into the document. */
+        std::size_t begin = 0;
+
+        /** @brief One past the last character's index. */
+        std::size_t end = 0;
+
+        /**
+         * @brief Compare two spans.
+         * @param other The span to compare against.
+         * @return True when both ends match.
+         */
+        [[nodiscard]] bool operator==(const DocumentSpan &other) const
+            = default;
     };
 
     /**
@@ -152,6 +175,33 @@ namespace antwika::music_editor
         [[nodiscard]] bool hasError() const noexcept;
 
         /**
+         * @brief Map a note's span back onto the document.
+         *
+         * The other end of what NoteWords wrote into every event: a
+         * note carries where its word sat in its n("...") string, and
+         * this walks that offset back through the chain the line was
+         * gathered from and onto the characters as the document now
+         * holds them -- so a highlight lands on what is on screen,
+         * however the lines above it have moved since the note was
+         * decided.
+         *
+         * Nothing when the voice is gone, the offset runs past what
+         * the line now reads, or the word straddles a gathered line's
+         * edge it no longer has; a highlight that cannot land anywhere
+         * honest is dropped rather than guessed at.
+         *
+         * @param voice An index into voices().
+         * @param begin Where the word starts in the voice's notation.
+         * @param length How many characters it runs for.
+         * @return Where that word sits in the document, if it still
+         * does.
+         */
+        [[nodiscard]] std::optional<DocumentSpan> spanIn(
+            std::size_t voice,
+            std::size_t begin,
+            std::size_t length) const noexcept;
+
+        /**
          * @brief Get how many voice lines have been read since the
          * start.
          *
@@ -163,6 +213,15 @@ namespace antwika::music_editor
         [[nodiscard]] std::size_t reparses() const noexcept;
 
     private:
+        // One stretch of a gathered chain, and where it came from.
+        // A chain is lines joined end to end; this is one line's part.
+        struct Segment
+        {
+            std::size_t chainBegin = 0;
+            std::size_t documentBegin = 0;
+            std::size_t length = 0;
+        };
+
         // What one voice line came to, kept for two reasons.
         // The next read tells an unchanged line from an edited one.
         // And a line that stops reading keeps its last voice.
@@ -170,6 +229,14 @@ namespace antwika::music_editor
         {
             std::string chain;
             std::string failure;
+
+            // Where each stretch of the chain sits in the document.
+            // Refreshed on every read, since lines above it move it.
+            std::vector<Segment> segments;
+
+            // Where the notation's characters begin in the chain.
+            // Set when the chain parses, like the voice beside it.
+            std::size_t notationAt = 0;
 
             // Whether this line has ever been read at all.
             // A line kept but never read holds an empty chain.
@@ -187,6 +254,9 @@ namespace antwika::music_editor
         {
             std::string chain;
 
+            // Where each appended stretch sits in the document.
+            std::vector<Segment> segments;
+
             // The line the $: was on, counting from one.
             // Zero for a voice that has not been opened.
             std::size_t opened = 0;
@@ -195,18 +265,24 @@ namespace antwika::music_editor
         void readLine(
             std::string_view line,
             std::size_t number,
+            std::size_t lineBegin,
             Gathered &gathering);
 
         void finish(Gathered &gathering);
 
-        void play(std::string_view chain, std::size_t number);
+        void play(const Gathered &gathering);
 
         void refuse(std::size_t number, std::string message);
 
-        notation::NumberWords words;
+        NoteWords words;
 
         std::vector<Line> lines;
         std::vector<Voice> sounding;
+
+        // Which line each sounding voice came from.
+        // What spanIn() follows back from a voices() index.
+        std::vector<std::size_t> soundingLines;
+
         std::vector<Problem> refusals;
 
         std::string document;

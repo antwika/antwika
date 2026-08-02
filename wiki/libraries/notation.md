@@ -47,6 +47,7 @@ That is the whole reason the value model was built first: a grammar written befo
 **The grammar knows what a word *is*; only an `IWordReader` knows what one *means*.**
 `"0 3 5"` is three words, and whether they are scale degrees, sample numbers or filter cutoffs is the application's decision.
 So this library stays as ignorant of music as [`pattern`](pattern.md) is, and `NumberWords` is a convenience rather than a commitment.
+A reader is also told *where* each word starts in the parsed string, so it may hand back controls that point at the source -- [music_editor](../apps/music_editor.md) lights the very characters a sounding note came from with it -- and a reader with no use for the offset, which is most of them, simply ignores it.
 
 **Syntax errors are `NotationError`; everything else is `PatternError`.**
 `"3(9,8)"` parses perfectly well and asks for nine onsets across eight steps, so the algebra refuses it rather than the grammar.

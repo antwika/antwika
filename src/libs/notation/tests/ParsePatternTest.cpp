@@ -1,5 +1,7 @@
 #include "antwika/notation/ParsePattern.hpp"
 
+#include <algorithm>
+#include <cstddef>
 #include <cstdint>
 #include <string_view>
 #include <vector>
@@ -52,7 +54,8 @@ namespace
     class AnyWord final : public antwika::notation::IWordReader
     {
     public:
-        [[nodiscard]] Controls read(std::string_view) const override
+        [[nodiscard]] Controls read(
+            std::string_view, std::size_t) const override
         {
             return Controls(kName, ParamValue(1));
         }
@@ -337,4 +340,42 @@ TEST(ParsePatternTest, TreatsATabAsSpace)
 TEST(ParsePatternTest, RefusesTheWrongBracketClosingAGroup)
 {
     EXPECT_THROW((void)read("[0 3>"), NotationError);
+}
+
+// The reader is told where each word starts.
+// A live editor points controls back at the source with it.
+TEST(ParsePatternTest, HandsTheReaderEachWordsOffset)
+{
+    // Encodes the offset it was given as the control's value.
+    class OffsetWord final : public antwika::notation::IWordReader
+    {
+    public:
+        [[nodiscard]] Controls read(
+            std::string_view, std::size_t at) const override
+        {
+            return Controls(
+                kName,
+                ParamValue(static_cast<std::int64_t>(at)));
+        }
+    };
+
+    const OffsetWord reader;
+
+    const auto haps = parsePattern("0 [3 5] <7 9>", reader)
+                          .queryAll(cycles(0, 2));
+
+    std::vector<std::int64_t> offsets;
+    offsets.reserve(haps.size());
+
+    for (const auto &hap : haps)
+    {
+        offsets.push_back(valueOf(hap));
+    }
+
+    std::ranges::sort(offsets);
+
+    // "0" at 0, "3" at 3, "5" at 5 twice, "7" at 9, "9" at 11.
+    const std::vector<std::int64_t> expected{0, 0, 3, 3, 5, 5, 9, 11};
+
+    EXPECT_EQ(offsets, expected);
 }

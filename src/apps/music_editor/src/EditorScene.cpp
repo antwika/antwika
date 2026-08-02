@@ -169,6 +169,8 @@ namespace antwika::music_editor
                     .cursor = state.cursor,
                     .anchor = state.anchor,
                     .scroll = state.scroll,
+                    // The notes sounding right now, on their own ground.
+                    .highlights = status.playing,
                     .scrollbar = true,
                     .focused = true});
 

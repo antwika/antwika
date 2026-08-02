@@ -21,7 +21,7 @@ TEST(NumberWordsTest, ReadsAWholeNumberUnderItsOwnName)
 {
     const NumberWords words(kName);
 
-    const auto read = words.read("42");
+    const auto read = words.read("42", 0);
 
     EXPECT_EQ(read.size(), 1U);
     EXPECT_EQ(read.get(kName), ParamValue(42));
@@ -31,7 +31,7 @@ TEST(NumberWordsTest, ReadsANegativeNumber)
 {
     const NumberWords words(kName);
 
-    EXPECT_EQ(words.read("-3").get(kName), ParamValue(-3));
+    EXPECT_EQ(words.read("-3", 0).get(kName), ParamValue(-3));
 }
 
 // A control that is not a whole number, without leaving exactness.
@@ -39,22 +39,22 @@ TEST(NumberWordsTest, ReadsAFraction)
 {
     const NumberWords words(kName);
 
-    EXPECT_EQ(words.read("3%2").get(kName), ParamValue(3, 2));
+    EXPECT_EQ(words.read("3%2", 0).get(kName), ParamValue(3, 2));
 }
 
 TEST(NumberWordsTest, RefusesAWordThatIsNotANumber)
 {
     const NumberWords words(kName);
 
-    EXPECT_THROW((void)words.read("bd"), NotationError);
-    EXPECT_THROW((void)words.read("1x"), NotationError);
-    EXPECT_THROW((void)words.read("1%x"), NotationError);
+    EXPECT_THROW((void)words.read("bd", 0), NotationError);
+    EXPECT_THROW((void)words.read("1x", 0), NotationError);
+    EXPECT_THROW((void)words.read("1%x", 0), NotationError);
 }
 
 TEST(NumberWordsTest, RefusesAHalfWrittenFraction)
 {
     const NumberWords words(kName);
 
-    EXPECT_THROW((void)words.read("3%"), NotationError);
-    EXPECT_THROW((void)words.read("%2"), NotationError);
+    EXPECT_THROW((void)words.read("3%", 0), NotationError);
+    EXPECT_THROW((void)words.read("%2", 0), NotationError);
 }

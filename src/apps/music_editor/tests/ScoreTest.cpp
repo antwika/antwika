@@ -604,3 +604,97 @@ TEST(ScoreTest, RefusesABareVoiceMarkOnALineNeverReadBefore)
     EXPECT_TRUE(score.voices().empty());
     EXPECT_EQ(score.reparses(), 1U);
 }
+
+// A note's span maps back onto the very characters in the document.
+TEST(ScoreTest, MapsANoteSpanOntoTheDocument)
+{
+    Score score;
+
+    const std::string source = "// intro\n$: drum.n(\"0 ~ 3\")\n";
+
+    score.read(source);
+
+    // The 3 sits four characters into the notation.
+    const auto span = score.spanIn(0, 4, 1);
+
+    ASSERT_TRUE(span.has_value());
+    EXPECT_EQ(source.substr(span->begin, span->end - span->begin), "3");
+}
+
+// A chain spread over lines maps each stretch to its own line.
+TEST(ScoreTest, MapsASpanThroughAContinuationLine)
+{
+    Score score;
+
+    const std::string source = "$: drum\n    .n(\"0 5\")\n";
+
+    score.read(source);
+
+    const auto span = score.spanIn(0, 2, 1);
+
+    ASSERT_TRUE(span.has_value());
+    EXPECT_EQ(source.substr(span->begin, span->end - span->begin), "5");
+}
+
+// Writing a line above moves every span with the text it lights.
+TEST(ScoreTest, SpansFollowTheDocumentAsLinesMoveIt)
+{
+    Score score;
+
+    score.read("$: drum.n(\"7\")\n");
+
+    const std::string moved = "// a comment above\n$: drum.n(\"7\")\n";
+
+    score.read(moved);
+
+    const auto span = score.spanIn(0, 0, 1);
+
+    ASSERT_TRUE(span.has_value());
+    EXPECT_EQ(moved.substr(span->begin, span->end - span->begin), "7");
+}
+
+TEST(ScoreTest, AVoiceThatIsGoneHasNoSpanToGive)
+{
+    Score score;
+
+    score.read("$: drum.n(\"0\")\n");
+
+    EXPECT_FALSE(score.spanIn(3, 0, 1).has_value());
+}
+
+// An offset past what the line reads points at nothing honest.
+TEST(ScoreTest, ASpanPastTheChainIsDropped)
+{
+    Score score;
+
+    score.read("$: drum.n(\"0\")\n");
+
+    EXPECT_FALSE(score.spanIn(0, 9999, 1).has_value());
+}
+
+// A length past the stretch's edge lights what it can.
+TEST(ScoreTest, ASpanIsClampedToItsOwnStretch)
+{
+    Score score;
+
+    const std::string source = "$: drum.n(\"0 5\")\n";
+
+    score.read(source);
+
+    const auto span = score.spanIn(0, 2, 999);
+
+    ASSERT_TRUE(span.has_value());
+
+    // From the 5 to the stretch's end, and no further.
+    EXPECT_EQ(
+        source.substr(span->begin, span->end - span->begin), "5\")");
+}
+
+TEST(ScoreTest, ASpanOfNothingIsDropped)
+{
+    Score score;
+
+    score.read("$: drum.n(\"0\")\n");
+
+    EXPECT_FALSE(score.spanIn(0, 0, 0).has_value());
+}

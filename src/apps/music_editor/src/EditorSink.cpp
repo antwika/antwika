@@ -4,7 +4,9 @@
 #include <cstdint>
 #include <optional>
 #include <string>
+#include <utility>
 #include <variant>
+#include <vector>
 
 #include <antwika/app/PointerReading.hpp>
 #include <antwika/engine/Events.hpp>
@@ -244,11 +246,21 @@ namespace antwika::music_editor
     ui::Frame EditorSink::frameFor(
         const PointerEdge edge, const ui::Keyboard &keyboard) const
     {
+        // The sounding notes' spans, as the pane's own highlights.
+        std::vector<ui::TextHighlight> playing;
+
+        for (const auto &span : playback.highlights())
+        {
+            playing.push_back(
+                ui::TextHighlight{.begin = span.begin, .end = span.end});
+        }
+
         const PlaybackStatus status{
             .started = playback.started(),
             .voices = playback.voices(),
             .cycles = playback.playedTicks(),
-            .lines = playback.sounding()};
+            .lines = playback.sounding(),
+            .playing = std::move(playing)};
 
         return scene.describe(
             state, score, status, canvas, pointerNow(edge), keyboard);
