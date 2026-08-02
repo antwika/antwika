@@ -10,16 +10,29 @@ namespace antwika::gfx
     {
         // Widened before multiplying, never after.
         // A coordinate times a window height overflows 32 bits early.
+        //
+        // Rounded down rather than towards zero, unlike C++'s division.
+        // toCanvas() divides a distance from the offset.
+        // That distance is negative all along the left and top bars.
+        // Truncation maps the last scale - 1 pixels of it onto 0.
+        // Which is a coordinate on the canvas.
+        // WindowPointerMapping feeds the recorder.
+        // So that is a click in the bar recorded on the first column.
+        // It can activate whatever widget the layout put at the edge.
         [[nodiscard]] std::int32_t scaleBy(
             std::int32_t value,
             std::uint32_t numerator,
             std::uint32_t denominator) noexcept
         {
             const auto scaled = static_cast<std::int64_t>(value)
-                                * static_cast<std::int64_t>(numerator)
-                                / static_cast<std::int64_t>(denominator);
+                                * static_cast<std::int64_t>(numerator);
+            const auto by = static_cast<std::int64_t>(denominator);
 
-            return static_cast<std::int32_t>(scaled);
+            const auto quotient = scaled / by;
+            const auto remainder = scaled % by;
+
+            return static_cast<std::int32_t>(
+                remainder < 0 ? quotient - 1 : quotient);
         }
     } // namespace
 

@@ -17,6 +17,7 @@ namespace antwika::input
     {
         pressed.reset();
         released.reset();
+        pressedWith.fill(KeyModifiers{});
     }
 
     void Keyboard::apply(const KeyPressed &event) noexcept
@@ -34,6 +35,7 @@ namespace antwika::input
         if (!event.repeat)
         {
             pressed.set(index);
+            pressedWith[index] = event.modifiers;
         }
     }
 
@@ -77,6 +79,12 @@ namespace antwika::input
     KeyModifiers Keyboard::modifiers() const noexcept
     {
         return held;
+    }
+
+    KeyModifiers Keyboard::pressModifiers(Key key) const noexcept
+    {
+        const auto index = keyIndex(key);
+        return named(index) ? pressedWith[index] : KeyModifiers{};
     }
 
 } // namespace antwika::input

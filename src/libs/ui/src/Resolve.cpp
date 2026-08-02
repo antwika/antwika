@@ -183,6 +183,37 @@ namespace antwika::ui::detail
         }
 
         /**
+         * @brief Find the option a focusable widget is, if it is one.
+         *
+         * An option carries its owner and its index as well as its id,
+         * so this is a lookup rather than arithmetic: a caller must
+         * never have to subtract DropdownSpec::optionIdBase from an id
+         * to work out which option was meant.
+         *
+         * @param tree The arena, already laid out.
+         * @param id The focused widget's id, never kNoWidget.
+         * @return What a press on that widget would have chosen, or
+         * nothing when it is not an option.
+         */
+        [[nodiscard]] std::optional<OptionChoice> optionFor(
+            const LayoutTree &tree, WidgetId id)
+        {
+            for (std::size_t index = 0; index < tree.size(); ++index)
+            {
+                const auto &node = tree.node(index);
+
+                if (node.id == id && node.optionOwner != kNoWidget)
+                {
+                    return OptionChoice{
+                        .dropdown = node.optionOwner,
+                        .index = node.optionIndex};
+                }
+            }
+
+            return std::nullopt;
+        }
+
+        /**
          * @brief Stage two: where focus ends up, and what Enter did.
          *
          * Runs after the hit-test because a press may take focus with
@@ -191,11 +222,13 @@ namespace antwika::ui::detail
          * activated, which the hit-test may already have written, so
          * this stage adds to that answer rather than replacing it.
          *
-         * @param tree The arena, for the tab order it declares.
+         * @param tree The arena, for the tab order it declares and for
+         * what a focused option says it is.
          * @param keyboard The key edges, in arrival order.
          * @param focus The widget focused going in.
-         * @param interactions Receives the focused widget, and the
-         * activated one when Enter arrived.
+         * @param interactions Receives the focused widget, and -- when
+         * Enter arrived -- the activated one and, if that widget is a
+         * dropdown option, the chosen one.
          */
         void resolveFocus(
             const LayoutTree &tree,
@@ -234,6 +267,14 @@ namespace antwika::ui::detail
                     if (focus != kNoWidget)
                     {
                         interactions.activated = focus;
+
+                        // And through the second field a press uses.
+                        // An id alone cannot carry an option's index.
+                        // Reporting one leaves the caller reversing it.
+                        if (auto option = optionFor(tree, focus))
+                        {
+                            interactions.chosen = option;
+                        }
                     }
 
                     continue;

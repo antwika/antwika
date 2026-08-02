@@ -41,6 +41,12 @@ namespace antwika::ui
      * rest of the run, which is the very thing an application attaches a
      * hint channel to fix.
      *
+     * A target sharing the frontmost one's id is painted hovered too,
+     * because two nodes carrying one id are one widget -- the rule the
+     * tab order and Context::finish()'s own dressing both keep. A
+     * widget declared as two boxes would otherwise light up half of
+     * itself here and all of itself there.
+     *
      * A held target is stepped over either way. A press is recorded
      * input and its appearance was resolved from it, so a button being
      * pressed goes on looking pressed.

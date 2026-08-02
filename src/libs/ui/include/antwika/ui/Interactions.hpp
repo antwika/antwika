@@ -80,11 +80,17 @@ namespace antwika::ui
         std::optional<TextEdit> edit{};
 
         /**
-         * @brief The dropdown option a press landed on this frame.
+         * @brief The dropdown option a press or Enter landed on this
+         * frame.
          *
-         * Absent unless a press landed on an option of an open list.
-         * Separate from activated because an option's index is what the
-         * caller needs, and an id alone cannot carry it.
+         * Absent unless one of them landed on an option of an open
+         * list. Separate from activated because an option's index is
+         * what the caller needs, and an id alone cannot carry it.
+         *
+         * Enter fills this in alongside activated, exactly as a press
+         * does, so one code path really does handle both. An option
+         * left unnamed is still choosable only with the pointer: it is
+         * in no tab order, so Enter can never be on it.
          */
         std::optional<OptionChoice> chosen{};
 

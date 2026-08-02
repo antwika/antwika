@@ -5,6 +5,7 @@
 #include <antwika/gfx/Rect.hpp>
 
 #include "antwika/ui/Keyboard.hpp"
+#include "antwika/ui/OptionChoice.hpp"
 #include "antwika/ui/Pointer.hpp"
 #include "antwika/ui/WidgetId.hpp"
 
@@ -20,6 +21,7 @@ using antwika::gfx::Rect;
 using antwika::ui::Key;
 using antwika::ui::Keyboard;
 using antwika::ui::kNoWidget;
+using antwika::ui::OptionChoice;
 using antwika::ui::Pointer;
 using antwika::ui::WidgetId;
 using antwika::ui::detail::FocusRing;
@@ -318,4 +320,40 @@ TEST(ResolveFocusTest, Resolve_DressesAFocusedWidgetTheHoverWayToo)
 
     EXPECT_TRUE(tree.node(index).background.has_value());
     EXPECT_TRUE(tree.node(index).focusRing.has_value());
+}
+
+// An option's owner and index are already in the arena beside its id.
+// So Enter reports both, exactly as a press over the option does.
+// Without that a caller has to subtract optionIdBase from an id.
+TEST(ResolveFocusTest, Resolve_ChoosesTheOptionEnterLandsOn)
+{
+    LayoutTree tree{Node{}};
+    tree.add(focusable(kFirst));
+
+    Node option = focusable(kSecond);
+    option.optionOwner = kFirst;
+    option.optionIndex = 3;
+
+    tree.add(std::move(option));
+
+    const auto interactions = resolve(
+        tree, Pointer{}, Keyboard{.keys = {Key::Activate}}, kSecond);
+
+    EXPECT_EQ(kSecond, interactions.activated);
+    ASSERT_TRUE(interactions.chosen.has_value());
+    EXPECT_EQ(
+        (OptionChoice{.dropdown = kFirst, .index = 3}),
+        *interactions.chosen);
+}
+
+TEST(ResolveFocusTest, Resolve_ChoosesNothingWhenEnterIsOnAPlainWidget)
+{
+    LayoutTree tree{Node{}};
+    tree.add(focusable(kFirst));
+
+    const auto interactions = resolve(
+        tree, Pointer{}, Keyboard{.keys = {Key::Activate}}, kFirst);
+
+    EXPECT_EQ(kFirst, interactions.activated);
+    EXPECT_FALSE(interactions.chosen.has_value());
 }

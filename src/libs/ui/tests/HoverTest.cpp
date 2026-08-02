@@ -29,6 +29,7 @@ using antwika::ui::FillRect;
 using antwika::ui::HoverPointer;
 using antwika::ui::HoverTarget;
 using antwika::ui::HoverTargets;
+using antwika::ui::kNoWidget;
 using antwika::ui::WidgetId;
 
 namespace
@@ -141,6 +142,40 @@ TEST(HoverTest, ApplyHover_TakesTheFrontmostOfTwoOverlappingTargets)
             .hovered = kHovered}};
 
     applyHover(commands, targets, over(5, 5));
+
+    EXPECT_EQ(kIdle, colorAt(commands, 0));
+    EXPECT_EQ(kHovered, colorAt(commands, 1));
+}
+
+// Two nodes sharing an id are one widget.
+// resolve()'s dressing pass says so by comparing ids, not geometry.
+// Lighting half of one here and all of it there is one hover.
+// Resolved two ways, through two routes, over one arena.
+TEST(HoverTest, ApplyHover_LightsEveryTargetSharingTheFrontmostsId)
+{
+    auto commands = twoBoxes();
+
+    auto targets = twoTargets();
+    targets.at(0).id = kFirst;
+    targets.at(1).id = kFirst;
+
+    applyHover(commands, targets, over(25, 5));
+
+    EXPECT_EQ(kHovered, colorAt(commands, 0));
+    EXPECT_EQ(kHovered, colorAt(commands, 1));
+}
+
+// An unnamed target is nobody's twin.
+// Comparing two kNoWidgets would call every unnamed widget one widget.
+TEST(HoverTest, ApplyHover_NeverPairsTwoUnnamedTargets)
+{
+    auto commands = twoBoxes();
+
+    auto targets = twoTargets();
+    targets.at(0).id = kNoWidget;
+    targets.at(1).id = kNoWidget;
+
+    applyHover(commands, targets, over(25, 5));
 
     EXPECT_EQ(kIdle, colorAt(commands, 0));
     EXPECT_EQ(kHovered, colorAt(commands, 1));

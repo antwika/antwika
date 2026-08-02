@@ -61,7 +61,8 @@ A value cell reaches a sink only if somebody passed that sink the channel in a `
 ## What `applyHover()` actually does, and why
 
 It decides the appearance of **every** target rather than only the one under the pointer.
-The frontmost target the position falls inside is painted hovered; every other is painted idle.
+The frontmost target the position falls inside is painted hovered, and so is every other target carrying that target's id; every remaining one is painted idle.
+The id comparison is there because two nodes sharing an id are one widget, which is the rule `resolve()`'s own dressing pass follows -- deciding this route on geometry alone would light up half of a widget declared as two boxes and all of it through the other route.
 
 Lighting one up without putting the others out would be wrong in a way that only shows up in a gated run.
 The recorded stream carries a position where a press needed one, so `Interactions::hovered` names whichever widget the last press passed over -- and that widget would stay lit for the rest of the session.
@@ -94,7 +95,7 @@ The UI's own hit-test therefore knows where the pointer is only while a button i
 
 ## What is asserted, and where
 
-- `src/libs/ui/tests/HoverTest.cpp` -- `applyHover()` alone: the frontmost target wins, every other goes idle, a held one is untouched, a mismatched target changes nothing, and no position changes nothing.
+- `src/libs/ui/tests/HoverTest.cpp` -- `applyHover()` alone: the frontmost target wins, a target sharing its id wins with it, two unnamed targets are never paired, every other goes idle, a held one is untouched, a mismatched target changes nothing, and no position changes nothing.
 - `src/libs/ui/tests/ContextHoverTest.cpp` -- a real frame's targets, and the load-bearing one: a frame with an activation, a focus, an edit and a chosen option in play has identical `Interactions` before and after a hover pass, at every position tried.
 - `src/libs/app/tests/HoverRecordingTest.cpp` -- the end-to-end claim: the same session driven through `InputPipeline` twice, once with a hint channel and a hover pass and once with neither, records exactly the same events on exactly the same ticks, while only the second one's pictures follow the pointer.
 

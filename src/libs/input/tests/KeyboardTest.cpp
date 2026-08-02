@@ -153,6 +153,54 @@ TEST(KeyboardTest, Apply_IgnoresAKeyOutsideTheEnumeration)
     EXPECT_FALSE(keyboard.isDown(kUnnamedKey));
     EXPECT_FALSE(keyboard.wasPressed(kUnnamedKey));
     EXPECT_FALSE(keyboard.wasReleased(kUnnamedKey));
+    EXPECT_EQ(KeyModifiers{}, keyboard.pressModifiers(kUnnamedKey));
+}
+
+// The edge's own modifiers, kept beside the edge.
+// modifiers() is the tick's last word and answers a different question.
+TEST(KeyboardTest, PressModifiers_KeepsWhatOneKeysPressEdgeCarried)
+{
+    Keyboard keyboard;
+
+    keyboard.apply(
+        KeyPressed{.key = Key::S, .modifiers = {.control = true}});
+    keyboard.apply(KeyReleased{.key = Key::LeftControl, .modifiers = {}});
+
+    EXPECT_TRUE(keyboard.pressModifiers(Key::S).control);
+    EXPECT_FALSE(keyboard.modifiers().control);
+}
+
+TEST(KeyboardTest, PressModifiers_ReportsNoneForAKeyThatDidNotGoDown)
+{
+    Keyboard keyboard;
+
+    keyboard.apply(
+        KeyPressed{.key = Key::W, .modifiers = {.shift = true}});
+
+    EXPECT_EQ(KeyModifiers{}, keyboard.pressModifiers(Key::S));
+}
+
+// A repeat is not a press, so it may not restate a press's modifiers.
+TEST(KeyboardTest, PressModifiers_IgnoresARepeat)
+{
+    Keyboard keyboard;
+
+    keyboard.apply(
+        KeyPressed{
+            .key = Key::W, .modifiers = {.shift = true}, .repeat = true});
+
+    EXPECT_EQ(KeyModifiers{}, keyboard.pressModifiers(Key::W));
+}
+
+TEST(KeyboardTest, BeginTick_ForgetsThePressEdgesModifiers)
+{
+    Keyboard keyboard;
+    keyboard.apply(
+        KeyPressed{.key = Key::S, .modifiers = {.control = true}});
+
+    keyboard.beginTick();
+
+    EXPECT_EQ(KeyModifiers{}, keyboard.pressModifiers(Key::S));
 }
 
 TEST(KeyboardTest, Apply_StillRecordsTheModifiersOfAnUnnamedKey)

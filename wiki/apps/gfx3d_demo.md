@@ -19,9 +19,12 @@ That is deliberate: the default `null` backend reports no close and is the build
 `sdl3` inherits the null 3D default and reports no 3D renderer, so this app raises a `GfxError` under it.
 `raylib` implements the seam.
 
+It takes no flags of its own, and it parses its command line all the same, against an empty [`cli`](../libraries/cli.md) table: `--help` prints and returns without opening a window, and anything else is a `CommandLineError` rather than a silently ignored argument.
+[`gfx_demo`](gfx_demo.md) says why at slightly more length.
+
 ## Libraries it composes
 
-[`app`](../libraries/app.md), [`gfx`](../libraries/gfx.md), [`log`](../libraries/log.md), plus the selected graphics backend.
+[`app`](../libraries/app.md), [`cli`](../libraries/cli.md), [`gfx`](../libraries/gfx.md), [`log`](../libraries/log.md), plus the selected graphics backend.
 
 ## How it is put together
 
