@@ -21,6 +21,7 @@
 #include "antwika/game/PathIndex.hpp"
 #include "antwika/game/Resource.hpp"
 #include "antwika/game/SceneSnapshot.hpp"
+#include "antwika/game/Service.hpp"
 #include "antwika/game/Walker.hpp"
 
 namespace antwika::game
@@ -152,6 +153,19 @@ namespace antwika::game
          * where it held them.
          */
         std::vector<std::size_t> walkers = {};
+
+        /**
+         * @brief How much longer each service still reaches it.
+         *
+         * **Additive, and all-zero is what an older file means.** A
+         * version-3 document written before coverage existed names no
+         * coverage at all, and a building nothing has ever reached has
+         * none either -- the two read the same, which is precisely why
+         * this member needed no version bump and no migration.
+         * See docs/schema-versioning.md, and Coverage.hpp for why an
+         * absent component is uncovered rather than unknown.
+         */
+        std::array<std::int32_t, kServiceCount> coverage{};
 
         [[nodiscard]] bool operator==(const SavedBuilding &other) const
             = default;

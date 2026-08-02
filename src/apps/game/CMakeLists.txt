@@ -5,6 +5,10 @@ add_executable(antwika_game
     src/BuildingIndex.cpp
     src/BuildingSystem.cpp
     src/CityGrid.cpp
+    src/Coverage.cpp
+    src/CoverageSystem.cpp
+    src/Desirability.cpp
+    src/DesirabilitySystem.cpp
     src/FpsReadout.cpp
     src/FrameMeter.cpp
     src/Game.cpp
@@ -29,6 +33,7 @@ add_executable(antwika_game
     src/RoadPlan.cpp
     src/KeyText.cpp
     src/SaveCli.cpp
+    src/SaveCoverage.cpp
     src/SaveGame.cpp
     src/SaveGameFile.cpp
     src/SaveDirectory.cpp
@@ -39,6 +44,7 @@ add_executable(antwika_game
     src/SaveMigrationV2ToV3.cpp
     src/SaveSections.cpp
     src/SessionGatedSystem.cpp
+    src/StandingBuildings.cpp
     src/SessionStore.cpp
     src/SpawnSystem.cpp
     src/Toolbar.cpp

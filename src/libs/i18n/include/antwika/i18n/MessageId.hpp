@@ -1012,6 +1012,32 @@ namespace antwika::i18n
         GameReadoutAmount,
 
         /**
+         * @brief Game readout: water reaching a building.
+         */
+        GameServiceWater,
+
+        /**
+         * @brief Game readout: health reaching a building.
+         */
+        GameServiceHealth,
+
+        /**
+         * @brief Game readout: fire safety reaching a building.
+         */
+        GameServiceSafety,
+
+        /**
+         * @brief Game readout: structural upkeep reaching a building.
+         */
+        GameServiceStructure,
+
+        /**
+         * @brief Game readout: how much of a service still reaches a
+         *        building, as `{0}` named and `{1}` per cent left.
+         */
+        GameReadoutCoverage,
+
+        /**
          * @brief Task worker: which tick the picture is of, `{0}`.
          */
         TaskWorkerTick,
@@ -1071,7 +1097,7 @@ namespace antwika::i18n
     /**
      * @brief How many ids a complete catalogue carries.
      */
-    inline constexpr std::size_t kMessageCount{206};
+    inline constexpr std::size_t kMessageCount{211};
 
     /**
      * @brief Every id, in declaration order.
@@ -1276,6 +1302,11 @@ namespace antwika::i18n
         MessageId::GameResourceClay,
         MessageId::GameResourcePottery,
         MessageId::GameReadoutAmount,
+        MessageId::GameServiceWater,
+        MessageId::GameServiceHealth,
+        MessageId::GameServiceSafety,
+        MessageId::GameServiceStructure,
+        MessageId::GameReadoutCoverage,
         MessageId::TaskWorkerTick,
         MessageId::TaskWorkerBudget,
         MessageId::TaskWorkerStarted,

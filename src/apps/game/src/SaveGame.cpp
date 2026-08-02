@@ -14,6 +14,7 @@
 #include <antwika/replay/VersionedDocument.hpp>
 
 #include "antwika/game/Building.hpp"
+#include "antwika/game/Coverage.hpp"
 #include "antwika/game/SaveFormatError.hpp"
 #include "antwika/game/Walker.hpp"
 #include "SaveSections.hpp"
@@ -117,7 +118,13 @@ namespace antwika::game
             schema["properties"]["camera"] = cameraShape();
             schema["properties"]["paths"] = arrayOf(cellShape());
             schema["properties"]["walkers"] = arrayOf(walkerShape());
-            schema["properties"]["buildings"] = arrayOf(buildingShape());
+
+            // Each section adds its own members to the shape here.
+            // Appending a line rather than editing one.
+            // See SaveSections.hpp.
+            auto building = buildingShape();
+            describeCoverage(building);
+            schema["properties"]["buildings"] = arrayOf(std::move(building));
             schema["properties"]["seed"] = countShape();
             return schema;
         }
@@ -151,6 +158,7 @@ namespace antwika::game
 
         walkersToJson(save, encoded);
         buildingsToJson(save, encoded);
+        coverageToJson(save, encoded);
 
         encoded["seed"] = save.seed;
         return encoded;
@@ -194,6 +202,7 @@ namespace antwika::game
 
         walkersFromJson(document, save);
         buildingsFromJson(document, save);
+        coverageFromJson(document, save);
 
         save.seed = document.at("seed").get<std::uint64_t>();
 
@@ -242,7 +251,17 @@ namespace antwika::game
             buildingAt.emplace(entity, save.buildings.size());
             const auto building = world.get<Building>(entity);
 
-            save.buildings.push_back(SavedBuilding{
+            // Read out here rather than inside the record below.
+            // A call after the record's vector member needs a pad.
+            // To unwind the half-built record it was made from.
+            // Which is a second landing pad on a second line.
+            const auto coverage = coverageOf(world, entity);
+
+            // The branches left on the excluded line are that pad.
+            // push_back destroying the temporary it was handed.
+            // Reachable only if the vector's allocation throws.
+            // gcov leaves them untagged, so the flags miss them.
+            save.buildings.push_back(SavedBuilding{ // GCOVR_EXCL_LINE
                 .at = world.get<Cell>(entity),
                 .kind = building.kind,
                 .stock = building.stock,
@@ -250,7 +269,8 @@ namespace antwika::game
                 .ticksUntilSpawn = building.ticksUntilSpawn,
                 .ticksUntilDrain = building.ticksUntilDrain,
                 .ticksUntilRisk = building.ticksUntilRisk,
-                .walkers = {}});
+                .walkers = {},
+                .coverage = coverage.ticksLeft});
         }
 
         // The links, written only where both ends were recorded.

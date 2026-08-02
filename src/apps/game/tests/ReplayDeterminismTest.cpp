@@ -835,3 +835,118 @@ TEST(ReplayDeterminismTest, ABuildingsWalkersAreRegeneratedRatherThanStored)
 
     EXPECT_EQ(replayed.summary, live.summary);
 }
+
+// A city that did nothing would agree for the wrong reason.
+// And coverage is the newest thing that could quietly differ.
+// So this run has to confer some and then let it decay.
+namespace
+{
+    [[nodiscard]] std::vector<TickEvent> coverageSession()
+    {
+        const InputEventCodec codec;
+        const auto wellButton = pixelOn(
+            antwika::game::widgets::toolWidget(
+                antwika::game::BuildTool::Well));
+
+        std::vector<TickEvent> events;
+
+        // A corridor of road, laid with the tool a run starts on.
+        for (std::int32_t x = 2; x <= 6; ++x)
+        {
+            events.push_back(
+                TickEvent{
+                    .tick = 0,
+                    .event =
+                        pressAt(Cell{.x = x, .y = 4}, MouseButton::Left)});
+        }
+
+        events.push_back(
+            TickEvent{
+                .tick = 0,
+                .event =
+                    releaseAt(Cell{.x = 6, .y = 4}, MouseButton::Left)});
+
+        events.push_back(
+            TickEvent{
+                .tick = 1,
+                .event = codec.encode(
+                    antwika::input::PointerMoved{.position = wellButton})});
+        events.push_back(
+            TickEvent{
+                .tick = 1,
+                .event = codec.encode(
+                    PointerButtonPressed{
+                        .button = MouseButton::Left,
+                        .position = wellButton})});
+
+        // Two wells, a tick apart, so their cadences differ.
+        events.push_back(
+            TickEvent{
+                .tick = 2,
+                .event = pressAt(Cell{.x = 2, .y = 5}, MouseButton::Left)});
+        events.push_back(
+            TickEvent{
+                .tick = 3,
+                .event = pressAt(Cell{.x = 6, .y = 5}, MouseButton::Left)});
+
+        events.push_back(
+            TickEvent{
+                .tick = 38,
+                .event = Event{.name = antwika::engine::events::kStop}});
+
+        return events;
+    }
+
+    [[nodiscard]] bool anyCovered(const GameSummary &summary)
+    {
+        for (const auto &building : summary.buildings)
+        {
+            for (const auto left : building.coverage)
+            {
+                if (left > 0)
+                {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+} // namespace
+
+TEST(ReplayDeterminismTest, TheCoverageRunActuallyConfersSomeService)
+{
+    auto script = coverageSession();
+    ReplaySource source(script);
+
+    const auto result = runWithToolbar(source);
+
+    ASSERT_EQ(result.summary.buildings.size(), 2U);
+    EXPECT_TRUE(anyCovered(result.summary))
+        << "the well never reached anything, so this proves nothing";
+}
+
+TEST(ReplayDeterminismTest, ACoveredCityReplaysToTheSameCoverage)
+{
+    auto script = coverageSession();
+    ReplaySource liveSource(script);
+    const auto live = runWithToolbar(liveSource);
+
+    const ScratchFile file("antwika-game-coverage.replay");
+    antwika::replay::saveReplayFile(live.recorded, file.name());
+    auto loaded = antwika::replay::loadReplayFile(file.name());
+
+    // Nothing about coverage may be on the wire; it is regenerated.
+    for (const auto &event : loaded)
+    {
+        EXPECT_EQ(
+            event.event.name.rfind("game.coverage", 0), std::string::npos)
+            << event.event.name;
+    }
+
+    ReplaySource replayedSource(std::move(loaded));
+    const auto replayed = runWithToolbar(replayedSource);
+
+    EXPECT_EQ(replayed.summary, live.summary);
+    EXPECT_EQ(replayed.recorded, live.recorded);
+}

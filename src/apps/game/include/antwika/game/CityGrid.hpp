@@ -10,6 +10,7 @@
 #include "antwika/game/Building.hpp"
 #include "antwika/game/BuildingIndex.hpp"
 #include "antwika/game/Cell.hpp"
+#include "antwika/game/Coverage.hpp"
 #include "antwika/game/PathIndex.hpp"
 #include "antwika/game/Walker.hpp"
 
@@ -91,6 +92,18 @@ namespace antwika::game
          * the slot it was in.
          */
         std::array<std::optional<std::size_t>, kMaxWalkersOut> walkers{};
+
+        /**
+         * @brief How much longer each service still reaches it.
+         *
+         * A plain value rather than an optional one, because an absent
+         * Coverage component and an all-zero one mean the same thing --
+         * see Coverage.hpp. restoreCityGrid() therefore puts a
+         * component back only where there is something in it, which is
+         * what keeps a city that nobody has ever served from acquiring
+         * one on being reopened.
+         */
+        Coverage coverage{};
 
         /**
          * @brief Compare two stored buildings.

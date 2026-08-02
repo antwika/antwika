@@ -5,6 +5,7 @@
 #include <vector>
 
 #include "antwika/game/Building.hpp"
+#include "antwika/game/Coverage.hpp"
 #include "antwika/game/Walker.hpp"
 
 namespace antwika::game
@@ -62,7 +63,8 @@ namespace antwika::game
                 BuildingSprite{
                     .at = world.get<Cell>(entity),
                     .kind = building.kind,
-                    .stock = building.stock});
+                    .stock = building.stock,
+                    .coverage = coverageOf(world, entity).ticksLeft});
         }
 
         // **Painter's order, no longer optional.**
@@ -114,7 +116,8 @@ namespace antwika::game
             views.push_back(
                 BuildingView{
                     .at = world.get<Cell>(entity),
-                    .kind = world.get<Building>(entity).kind});
+                    .kind = world.get<Building>(entity).kind,
+                    .coverage = coverageOf(world, entity).ticksLeft});
         }
 
         return views;

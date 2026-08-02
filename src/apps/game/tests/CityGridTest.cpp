@@ -13,6 +13,7 @@
 #include "antwika/game/BuildingKind.hpp"
 #include "antwika/game/Cell.hpp"
 #include "antwika/game/CityGrid.hpp"
+#include "antwika/game/Coverage.hpp"
 #include "antwika/game/Direction.hpp"
 #include "antwika/game/Footprint.hpp"
 #include "antwika/game/Path.hpp"
@@ -31,6 +32,8 @@ namespace
     using antwika::game::Cell;
     using antwika::game::CityGrid;
     using antwika::game::cityGridOf;
+    using antwika::game::Coverage;
+    using antwika::game::coverageOf;
     using antwika::game::Direction;
     using antwika::game::Path;
     using antwika::game::PathIndex;
@@ -316,6 +319,52 @@ namespace
             { b.building.kind = BuildingKind::House; });
         expectMemberCompared(
             base, [](StoredBuilding &b) { b.walkers = {}; });
+        expectMemberCompared(
+            base,
+            [](StoredBuilding &b) { b.coverage.ticksLeft[0] = 99; });
+    }
+
+    // A city put away and opened again is served exactly as it was.
+    TEST_F(CityGridTest, CityGrid_CarriesCoverageAcrossACitySwitch)
+    {
+        const auto well = putUp(Cell{.x = 2, .y = 2}, BuildingKind::Well);
+        world.commit();
+        antwika::game::setCoverage(
+            world, well, Coverage{.ticksLeft = {5, 6, 7, 8}});
+        world.commit();
+
+        const auto stored = cityGridOf(world);
+
+        ASSERT_EQ(stored.buildings.size(), 1U);
+        EXPECT_EQ(
+            stored.buildings[0].coverage,
+            (Coverage{.ticksLeft = {5, 6, 7, 8}}));
+
+        restoreCityGrid(world, built, paths, stored);
+        world.commit();
+
+        const auto entities = world.view<Building, Cell>();
+        ASSERT_EQ(entities.size(), 1U);
+        EXPECT_EQ(
+            coverageOf(world, *entities.begin()),
+            (Coverage{.ticksLeft = {5, 6, 7, 8}}));
+    }
+
+    // An absent component already means uncovered.
+    // So a city nobody served comes back with none at all.
+    TEST_F(CityGridTest, CityGrid_PutsBackNoCoverageWhereThereWasNone)
+    {
+        (void)putUp(Cell{.x = 2, .y = 2}, BuildingKind::Well);
+        world.commit();
+
+        const auto stored = cityGridOf(world);
+
+        restoreCityGrid(world, built, paths, stored);
+        world.commit();
+
+        const auto entities = world.view<Building, Cell>();
+        ASSERT_EQ(entities.size(), 1U);
+        EXPECT_FALSE(world.has<Coverage>(*entities.begin()));
     }
 
     TEST_F(CityGridTest, EqualityComparesEveryField)

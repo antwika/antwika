@@ -47,7 +47,10 @@ namespace antwika::game
 
             grid.buildings.push_back(
                 StoredBuilding{
-                    .at = world.get<Cell>(entity), .building = building});
+                    .at = world.get<Cell>(entity),
+                    .building = building,
+                    .walkers = {},
+                    .coverage = coverageOf(world, entity)});
         }
 
         // The links, kept only where both ends were put away.
@@ -156,6 +159,14 @@ namespace antwika::game
 
             world.add<Cell>(buildings[index], stored.at);
             world.add<Building>(buildings[index], building);
+
+            // Only where there is something in it.
+            // An absent component already means uncovered.
+            // So a city nobody served comes back with none.
+            if (stored.coverage != Coverage{})
+            {
+                setCoverage(world, buildings[index], stored.coverage);
+            }
 
             (void)built.insert(stored.at, footprintOf(building.kind));
         }

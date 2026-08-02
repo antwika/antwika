@@ -17,6 +17,7 @@
 #include "antwika/game/PathIndex.hpp"
 #include "antwika/game/Resource.hpp"
 #include "antwika/game/RoadPlan.hpp"
+#include "antwika/game/Service.hpp"
 #include "antwika/game/Walker.hpp"
 
 namespace antwika::game
@@ -110,9 +111,26 @@ namespace antwika::game
         BuildingKind kind = BuildingKind::House;
 
         /**
+         * @brief How much longer each service still reaches it.
+         *
+         * **On the view rather than only on the sprite, which is the
+         * opposite call from stock, and deliberately.** What a building
+         * is holding is a number a bar is drawn from; what is still
+         * reaching it decides whether it gains risk, whether it may
+         * grow, and how the city is rated -- so a run and its replay
+         * disagreeing about it is a divergence, and GameSummary is
+         * where a divergence is caught.
+         *
+         * Indexed by serviceIndex(), exactly as Coverage::ticksLeft is.
+         * All zero for a building nothing has ever reached, which is
+         * what an absent Coverage component means.
+         */
+        std::array<std::int32_t, kServiceCount> coverage{};
+
+        /**
          * @brief Compare two building views.
          * @param other The view to compare against.
-         * @return True when both the cell and the kind match.
+         * @return True when the cell, the kind and the coverage match.
          */
         [[nodiscard]] bool operator==(
             const BuildingView &other) const = default;
@@ -137,6 +155,15 @@ namespace antwika::game
          * the picture and the component address one table one way.
          */
         std::array<std::int32_t, kResourceCount> stock{};
+
+        /**
+         * @brief How much longer each service still reaches it.
+         *
+         * A copy of the view's, so the hover panel can say which
+         * services are keeping a building standing without reaching
+         * back into the World for it -- the same reason stock is here.
+         */
+        std::array<std::int32_t, kServiceCount> coverage{};
 
         /**
          * @brief Compare two building sprites.

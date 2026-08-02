@@ -15,6 +15,9 @@
 #include "antwika/game/Events.hpp"
 #include "antwika/game/GameStateReducer.hpp"
 #include "antwika/game/BuildingSystem.hpp"
+#include "antwika/game/CoverageSystem.hpp"
+#include "antwika/game/Desirability.hpp"
+#include "antwika/game/DesirabilitySystem.hpp"
 #include "antwika/game/GridSink.hpp"
 #include "antwika/game/InputFold.hpp"
 #include "antwika/game/LiveGrid.hpp"
@@ -30,6 +33,7 @@
 #include "antwika/game/SaveLoadState.hpp"
 #include "antwika/game/SceneSnapshot.hpp"
 #include "antwika/game/SessionGatedSystem.hpp"
+#include "antwika/game/Service.hpp"
 #include "antwika/game/SessionStore.hpp"
 #include "antwika/game/SpawnSystem.hpp"
 #include "antwika/game/BuildingKind.hpp"
@@ -128,6 +132,25 @@ namespace antwika::game
         // Both stage into the same buffer, so neither sees the other.
         // Last, so a building demolished this tick is not re-let now.
         scheduler.addSystem(walkPhase, pausedSpawns);
+
+        // A phase of its own, after the walk and before the observers.
+        // So it sees where this tick left every walker.
+        // And a renderer sees the coverage that produced.
+        // Both gates, in the order every other system takes them.
+        // A city serves itself while its player reads the world map.
+        // And stops only where a player asked -- see PauseState.
+        CoverageSystem coverageSystem;
+        DesirabilityField desirability;
+        DesirabilitySystem desirabilitySystem(desirability, config.extent);
+
+        SessionGatedSystem gatedCoverage(coverageSystem, mode);
+        SessionGatedSystem gatedDesirability(desirabilitySystem, mode);
+        PauseGatedSystem pausedCoverage(gatedCoverage, pause);
+        PauseGatedSystem pausedDesirability(gatedDesirability, pause);
+
+        const auto servePhase = scheduler.createPhase("serve");
+        scheduler.addSystem(servePhase, pausedCoverage);
+        scheduler.addSystem(servePhase, pausedDesirability);
 
         // A phase of its own.
         // A renderer then sees the generation this walk produced.
@@ -343,7 +366,18 @@ namespace antwika::game
         for (const auto &building : summary.buildings)
         {
             out << "  " << buildingKindName(building.kind) << " at ("
-                << building.at.x << ", " << building.at.y << ")\n";
+                << building.at.x << ", " << building.at.y << ") covered";
+
+            // Every service, including the ones at zero.
+            // A summary is read to find out what a run ended up like.
+            // "No doctor ever came" is exactly such a fact.
+            for (const auto service : kServices)
+            {
+                out << ' ' << serviceName(service) << '='
+                    << building.coverage[serviceIndex(service)];
+            }
+
+            out << '\n';
         }
 
         out << "Camera: pan (" << summary.camera.pan().x << ", "

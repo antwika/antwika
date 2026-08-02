@@ -399,6 +399,16 @@ namespace antwika::i18n
             return "GameResourcePottery";
         case MessageId::GameReadoutAmount:
             return "GameReadoutAmount";
+        case MessageId::GameServiceWater:
+            return "GameServiceWater";
+        case MessageId::GameServiceHealth:
+            return "GameServiceHealth";
+        case MessageId::GameServiceSafety:
+            return "GameServiceSafety";
+        case MessageId::GameServiceStructure:
+            return "GameServiceStructure";
+        case MessageId::GameReadoutCoverage:
+            return "GameReadoutCoverage";
         case MessageId::TaskWorkerTick:
             return "TaskWorkerTick";
         case MessageId::TaskWorkerBudget:

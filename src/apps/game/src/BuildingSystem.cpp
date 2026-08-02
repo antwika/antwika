@@ -1,8 +1,8 @@
 #include "antwika/game/BuildingSystem.hpp"
 
 #include <algorithm>
+#include <array>
 #include <cstddef>
-#include <cstdint>
 #include <map>
 
 #include <antwika/ecs/Entity.hpp>
@@ -10,9 +10,12 @@
 #include "antwika/game/Building.hpp"
 #include "antwika/game/BuildingKind.hpp"
 #include "antwika/game/Cell.hpp"
+#include "antwika/game/Coverage.hpp"
 #include "antwika/game/Direction.hpp"
 #include "antwika/game/Footprint.hpp"
 #include "antwika/game/Resource.hpp"
+#include "antwika/game/Service.hpp"
+#include "antwika/game/StandingBuildings.hpp"
 #include "antwika/game/Walker.hpp"
 
 namespace antwika::game
@@ -22,7 +25,6 @@ namespace antwika::game
     {
         using antwika::ecs::Entity;
 
-        using Standing = std::map<Cell, Entity>;
         using Pending = std::map<Entity, Building>;
 
         // Seeded from the last commit the first time it is touched.
@@ -88,12 +90,26 @@ namespace antwika::game
         // An opposite pair spans the cell in one axis.
         // A perpendicular pair spans it in both.
         // So it would be a road under a building, which nothing places.
-        void deliver(World &world, const Standing &standing, Pending &pending)
+        void deliver(
+            World &world,
+            const StandingBuildings &standing,
+            Pending &pending)
         {
             for (const auto entity : world.view<Walker, Cell>())
             {
                 auto walker = world.get<Walker>(entity);
                 const auto carries = carriedResource(walker.kind);
+
+                // A walker carrying nothing fixed hands nothing over.
+                // It used to take risk off instead.
+                // Which was coverage said as a subtraction.
+                // It refreshes coverage now, in CoverageSystem.
+                // So a delivery has nothing to do with one at all.
+                if (!carries.has_value())
+                {
+                    continue;
+                }
+
                 const auto at = world.get<Cell>(entity);
                 const auto before = walker.carried;
 
@@ -108,19 +124,10 @@ namespace antwika::game
                         continue;
                     }
 
-                    auto &building = touch(world, pending, found->second);
-
-                    if (!carries.has_value())
-                    {
-                        // A walker whose kind carries nothing fixed.
-                        // What it does instead is take risk off.
-                        // Which is coverage in disguise.
-                        building.risk =
-                            std::max(0, building.risk - kRiskRelief);
-                        continue;
-                    }
-
-                    deliverTo(building, walker, *carries);
+                    deliverTo(
+                        touch(world, pending, found->second),
+                        walker,
+                        *carries);
                 }
 
                 if (walker.carried != before)
@@ -128,6 +135,26 @@ namespace antwika::game
                     world.set<Walker>(entity, walker);
                 }
             }
+        }
+
+        // What holds a building's risk off, and the reason those two.
+        // Safety is the fireman's and Structure is the engineer's.
+        // Both used to relieve risk by walking past a building.
+        // So the two services are exactly the old special cases.
+        // Water and Health reach a house for what a house does with them.
+        // Neither has anything to say about the building falling down.
+        constexpr std::array<Service, 2> kRiskHeldOffBy{
+            Service::Safety, Service::Structure};
+
+        // Read as of the last commit.
+        // Which is what the "serve" phase left at the previous tick.
+        // One tick out of five hundred on a "came recently" countdown.
+        [[nodiscard]] bool unserved(const World &world, Entity entity)
+        {
+            return std::ranges::any_of(
+                kRiskHeldOffBy,
+                [&world, entity](Service service)
+                { return coverageOf(world, entity, service) <= 0; });
         }
 
         void age(World &world, Pending &pending)
@@ -160,8 +187,17 @@ namespace antwika::game
                     continue;
                 }
 
+                // **The one thing that changed about risk.**
+                // It used to rise here whatever was standing nearby.
+                // And a passing fireman subtracted a lump from it.
+                // Now it rises where the district is unserved.
+                // And falls back where a walker keeps reaching it.
+                // So a fire station is a thing a district has.
+                // Rather than a thing that visits it.
                 building.ticksUntilRisk = kRiskPeriodTicks;
-                building.risk = std::min(kMaxRisk, building.risk + 1);
+                building.risk = unserved(world, entity)
+                    ? std::min(kMaxRisk, building.risk + 1)
+                    : std::max(0, building.risk - 1);
             }
         }
     } // namespace
@@ -174,26 +210,7 @@ namespace antwika::game
     {
         // Where each building is, so a neighbour is a lookup.
         // Rather than a scan of every building for every walker.
-        Standing standing;
-
-        for (const auto entity : world.view<Building, Cell>())
-        {
-            const auto origin = world.get<Cell>(entity);
-            const auto footprint =
-                footprintOf(world.get<Building>(entity).kind);
-
-            // Keyed by every cell the block stands on.
-            // So a walker beside its far corner finds it.
-            for (std::int32_t dy = 0; dy < footprint.height; ++dy)
-            {
-                for (std::int32_t dx = 0; dx < footprint.width; ++dx)
-                {
-                    standing.emplace(
-                        Cell{.x = origin.x + dx, .y = origin.y + dy},
-                        entity);
-                }
-            }
-        }
+        const auto standing = standingBuildings(world);
 
         Pending pending;
 

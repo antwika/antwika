@@ -328,7 +328,9 @@ namespace antwika::game
     {
         for (const auto &building : document.at("buildings"))
         {
-            save.buildings.push_back(SavedBuilding{
+            // The excluded line carries the same landing pad.
+            // As the push_back in saveGameOf() does.
+            save.buildings.push_back(SavedBuilding{ // GCOVR_EXCL_LINE
                 .at = cellFromJson(building),
                 .kind = buildingKindFromJson(
                     building.at("kind").get<std::string>()),

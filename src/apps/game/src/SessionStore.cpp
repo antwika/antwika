@@ -6,6 +6,7 @@
 
 #include "antwika/game/Building.hpp"
 #include "antwika/game/CityGrid.hpp"
+#include "antwika/game/Coverage.hpp"
 #include "antwika/game/Walker.hpp"
 
 namespace antwika::game
@@ -89,7 +90,8 @@ namespace antwika::game
                             .ticksUntilSpawn = building.ticksUntilSpawn,
                             .ticksUntilDrain = building.ticksUntilDrain,
                             .ticksUntilRisk = building.ticksUntilRisk},
-                    .walkers = held});
+                    .walkers = held,
+                    .coverage = Coverage{.ticksLeft = building.coverage}});
         }
 
         restoreCityGrid(world, built, paths, grid);

@@ -1,6 +1,8 @@
 #include "antwika/game/BuildingSystem.hpp"
 
+#include <array>
 #include <cstddef>
+#include <cstdint>
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
@@ -13,8 +15,10 @@
 #include "antwika/game/BuildingIndex.hpp"
 #include "antwika/game/BuildingKind.hpp"
 #include "antwika/game/Cell.hpp"
+#include "antwika/game/Coverage.hpp"
 #include "antwika/game/Footprint.hpp"
 #include "antwika/game/Resource.hpp"
+#include "antwika/game/Service.hpp"
 #include "antwika/game/Walker.hpp"
 
 using antwika::ecs::Entity;
@@ -26,11 +30,14 @@ using antwika::game::BuildingSystem;
 using antwika::game::Cell;
 using antwika::game::Footprint;
 using antwika::game::footprintOf;
+using antwika::game::Coverage;
+using antwika::game::kCoverageFull;
 using antwika::game::kDrainPeriodTicks;
 using antwika::game::kMaxRisk;
 using antwika::game::kRiskPeriodTicks;
-using antwika::game::kRiskRelief;
+using antwika::game::kServiceCount;
 using antwika::game::kStockCapacity;
+using antwika::game::setCoverage;
 using antwika::game::kWalkerLoad;
 using antwika::game::Resource;
 using antwika::game::resourceIndex;
@@ -51,6 +58,14 @@ namespace
             world.commit();
             built.insert(at, footprintOf(building.kind));
             return entity;
+        }
+
+        void cover(
+            Entity entity,
+            std::array<std::int32_t, kServiceCount> ticksLeft)
+        {
+            setCoverage(world, entity, Coverage{.ticksLeft = ticksLeft});
+            world.commit();
         }
 
         Entity sendWalker(Cell at, Walker walker)
@@ -194,7 +209,10 @@ TEST_F(BuildingSystemTest, Update_LeavesEveryShelfAloneForAServiceWalker)
     EXPECT_EQ(stock[resourceIndex(Resource::Pottery)], 30);
 }
 
-TEST_F(BuildingSystemTest, Update_LetsAFiremanTakeRiskOffInstead)
+// A fireman used to take a fixed amount of risk off here.
+// He now refreshes coverage instead -- see CoverageSystem.
+// So a delivery has nothing whatever to do with one.
+TEST_F(BuildingSystemTest, Update_LeavesRiskAloneForAPassingFireman)
 {
     const auto house = build(
         Cell{.x = 1, .y = 0},
@@ -205,21 +223,8 @@ TEST_F(BuildingSystemTest, Update_LetsAFiremanTakeRiskOffInstead)
 
     run(1);
 
-    EXPECT_EQ(world.get<Building>(house).risk, 60 - kRiskRelief);
+    EXPECT_EQ(world.get<Building>(house).risk, 60);
     EXPECT_EQ(world.get<Walker>(fireman).carried, 0);
-}
-
-TEST_F(BuildingSystemTest, Update_NeverTakesRiskBelowNothing)
-{
-    const auto house = build(
-        Cell{.x = 1, .y = 0},
-        Building{.kind = BuildingKind::House, .risk = 1});
-
-    sendWalker(Cell{.x = 0, .y = 0}, Walker{.kind = WalkerKind::Engineer});
-
-    run(1);
-
-    EXPECT_EQ(world.get<Building>(house).risk, 0);
 }
 
 TEST_F(BuildingSystemTest, Update_LeavesABuildingAWalkerIsNotBesideAlone)
@@ -279,7 +284,8 @@ TEST_F(BuildingSystemTest, Update_LeavesASourcesStockWhereItIs)
         world.get<Building>(well).stock[resourceIndex(Resource::Food)], 50);
 }
 
-TEST_F(BuildingSystemTest, Update_RaisesRiskOnItsOwnPeriod)
+// A district nobody serves is a district that falls down.
+TEST_F(BuildingSystemTest, Update_RaisesRiskWithNoSafetyCoverageAtAll)
 {
     const auto house = build(
         Cell{.x = 0, .y = 0}, Building{.kind = BuildingKind::House});
@@ -289,13 +295,75 @@ TEST_F(BuildingSystemTest, Update_RaisesRiskOnItsOwnPeriod)
     EXPECT_EQ(world.get<Building>(house).risk, 1);
 }
 
+// And one that both a fireman and an engineer reach works it back off.
+TEST_F(BuildingSystemTest, Update_TakesRiskBackOffWhereBothServicesReach)
+{
+    const auto house = build(
+        Cell{.x = 0, .y = 0},
+        Building{.kind = BuildingKind::House, .risk = 40});
+    cover(house, {0, 0, kCoverageFull, kCoverageFull});
+
+    run(static_cast<std::size_t>(kRiskPeriodTicks) + 1);
+
+    EXPECT_EQ(world.get<Building>(house).risk, 39);
+}
+
+// Safety alone is not enough: a building has to stay standing too.
+TEST_F(BuildingSystemTest, Update_StillRaisesRiskWithOnlyOneOfTheTwo)
+{
+    const auto house = build(
+        Cell{.x = 0, .y = 0}, Building{.kind = BuildingKind::House});
+    cover(house, {0, 0, kCoverageFull, 0});
+
+    run(static_cast<std::size_t>(kRiskPeriodTicks) + 1);
+
+    EXPECT_EQ(world.get<Building>(house).risk, 1);
+}
+
+TEST_F(BuildingSystemTest, Update_NeverTakesRiskBelowNothing)
+{
+    const auto house = build(
+        Cell{.x = 0, .y = 0}, Building{.kind = BuildingKind::House});
+    cover(house, {0, 0, kCoverageFull, kCoverageFull});
+
+    run(3 * static_cast<std::size_t>(kRiskPeriodTicks));
+
+    EXPECT_EQ(world.get<Building>(house).risk, 0);
+}
+
+TEST_F(BuildingSystemTest, Update_NeverTakesRiskAboveTheMost)
+{
+    // A source, so an empty larder is not what ends it.
+    const auto well = build(
+        Cell{.x = 0, .y = 0},
+        Building{.kind = BuildingKind::Well, .risk = kMaxRisk - 1});
+
+    run(2 * static_cast<std::size_t>(kRiskPeriodTicks));
+
+    EXPECT_FALSE(world.alive(well));
+}
+
+// A countdown that has not run out is a countdown and nothing else.
+TEST_F(BuildingSystemTest, Update_LeavesRiskAloneBeforeItsPeriodIsUp)
+{
+    const auto house = build(
+        Cell{.x = 0, .y = 0},
+        Building{.kind = BuildingKind::House, .risk = 5});
+
+    run(static_cast<std::size_t>(kRiskPeriodTicks) - 1);
+
+    EXPECT_EQ(world.get<Building>(house).risk, 5);
+    EXPECT_EQ(world.get<Building>(house).ticksUntilRisk, 1);
+}
+
+// What is still this system's is what a building at the most is for.
 TEST_F(BuildingSystemTest, Update_DemolishesABuildingThatRanOutOfLuck)
 {
     const auto house = build(
         Cell{.x = 0, .y = 0},
-        Building{.kind = BuildingKind::House, .risk = kMaxRisk - 1});
+        Building{.kind = BuildingKind::House, .risk = kMaxRisk});
 
-    run(static_cast<std::size_t>(kRiskPeriodTicks) + 1);
+    run(1);
 
     EXPECT_FALSE(world.alive(house));
 }

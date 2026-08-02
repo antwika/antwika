@@ -305,6 +305,45 @@ All three of its changes are genuinely breaking rather than additive -- the walk
 A version 2 stock of `[food, water]` reads as `[food, 0, 0]`: the food is what it was, the water was never a good, and nobody has carted anything to that building yet.
 `SaveGame.cpp` is now a spine that states the document's shape once, with `src/SaveSections.hpp` declaring the pieces it is assembled from -- so a later slice of the format is a file of its own plus three lines in the spine, rather than an edit in the middle of a six-hundred-line function.
 
+## Service coverage, desirability, and why risk stopped being a subtraction
+
+**A service is a state with a lifetime, and a good is an amount.**
+That distinction is the whole of this section.
+A market seller hands food over and is a hundred units poorer for it; a water carrier walking past a house makes that house watered and the well is no poorer at all.
+Modelling water as a good meant a delivery per house per drain; modelling it as coverage means a walker has to keep *reaching* the district, which is the thing the road network is actually for.
+
+`Coverage` is one countdown per `Service`, in ticks, on a component of its own.
+`CoverageSystem` decays every countdown by one each tick and then tops up to `kCoverageFull` for every service a walker standing beside a building confers.
+The decay runs first so a walker leaves a full countdown rather than one tick short of one.
+
+**Counting in ticks left rather than in a percentage is what removes the second countdown.**
+Every other period in this application carries a per-building countdown precisely so two buildings put up a tick apart do not fall into lockstep for ever.
+A coverage that decayed on its own period would have needed one too; a coverage that *is* a countdown decays by subtracting one and needs nothing.
+
+**The component is optional, and an absent one means uncovered rather than unknown.**
+`coverageOf()` answers zero for a building that has none, which is what lets a housing rule, a rating or a hover panel be written against this before any well exists -- and it is exactly what a version-3 save written before coverage existed says, so the format grew one optional `"coverage"` array and no migration.
+`setCoverage()` is the one writer, because "add a component or set an existing one" is a decision rather than a detail: `World::add()` is staged and `World::set()` refuses an entity that has none yet, and asking once is what keeps a building from acquiring an all-zero component just to simplify a call site.
+A building is given one the first time somebody reaches it and never before.
+
+**Risk moved onto coverage but stayed in `BuildingSystem`.**
+A fireman used to subtract `kRiskRelief` from whatever he walked past, which was coverage said as a subtraction: it made "somebody came recently" the only thing that mattered but expressed it as an amount.
+`BuildingSystem::age()` now asks `coverageOf()` which way a building's risk steps -- up where `Service::Safety` or `Service::Structure` has lapsed, down where a walker is keeping both alive -- and the fire station and the engineer's post stop being arms in the delivery code.
+Putting the *step* in `CoverageSystem` was tried and rejected: `risk` is a field of `Building`, `age()` is the one place a building's countdowns advance and the one place `isLost()` reads the amounts this tick produced, and splitting it would have meant two systems in two phases writing one component with a tick between the risk that finished a building and the pass that noticed.
+The coverage `age()` reads is therefore the previous tick's, which is one tick out of five hundred on a countdown whose only job is to say whether somebody came recently.
+
+**Desirability is a sum, and that is its whole determinism argument.**
+`DesirabilityField` is rebuilt every tick from the buildings by `DesirabilitySystem`, as a linear integer falloff over Chebyshev distance from each block.
+Integer addition is commutative and associative, so the field is a pure function of the *set* of buildings rather than of the order `ecs::View` happened to walk them in -- which is what lets it read a view whose order is "whichever storage has the fewest entities" and nobody's to name.
+`DesirabilityTest` builds the same city twice in opposite orders and asserts an identical field, and that assertion is the point of the type.
+It is rebuilt rather than edited because a field kept up to date by adding a contribution when a building goes up would have to be told about a demolition by risk, a demolition by starvation, a city switch and a save restore, and every one it was not told about would be a district that stayed pleasant because something that burned down was still counted.
+
+**No `game.coverage_lapsed` event, and this is the tempting one.**
+A notification would let a panel react without polling.
+It is rejected for the reason [`Events.hpp`](../../src/apps/game/include/antwika/game/Events.hpp) gives at length: coverage is a function of walkers, which are a function of buildings, which are a function of clicks, so it is regenerable at every step -- and a notification is a picture rather than an input.
+
+`BuildingView` carries the coverage and `GameSummary` therefore compares it, because whether a district is served decides whether it gains risk and, later, whether it grows; a run and its replay disagreeing about that is a divergence, and the summary is where a divergence is caught.
+`BuildingSprite` carries a copy so the hover panel can list it, and the panel lists a service only where it is above zero -- risk is a fact about any building, so the question applies to every kind, and an absent line and a line reading nothing say the same thing.
+
 ## Future work
 
 **`UiSink`/`UiOverlay`/`Toolbar` should adopt `ui::applyHover()` next.**
