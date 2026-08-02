@@ -113,6 +113,7 @@ build/bin/antwika_gfx_demo/antwika_gfx_demo              # runs until the window
 build/bin/antwika_gfx3d_demo/antwika_gfx3d_demo          # spinning cube, 900 frames
 build/bin/antwika_sound_demo/antwika_sound_demo          # eight notes; silent under null
 build/bin/antwika_sound_demo/antwika_sound_demo --file my.wav  # or play a file instead
+build/bin/antwika_music_editor/antwika_music_editor      # type at it while it plays
 build/bin/antwika_tower_defence/antwika_tower_defence    # or --record / --replay
 build/bin/antwika_ui_demo/antwika_ui_demo                # every antwika::ui element, 1500 ticks
 build/bin/antwika_companion/antwika_companion            # feed, play, sleep
@@ -227,6 +228,7 @@ Each app owns its state and how events mutate it -- the engine has no opinion he
 - [`tower_defence`](wiki/apps/tower_defence.md) generates its level with `wfc` and walks mobs along it, arranging the tile alphabet so a linear path is a property of the alphabet rather than something checked for afterwards.
 - [`companion`](wiki/apps/companion.md) is a tamagotchi whose **energy is its life**: three props to press, happiness as the rate the energy drains at, a bed refused until it is tired enough to have earned one, and a collapse that costs ceiling for good -- so the ceiling running out is the only way one ever perishes.
 - [`atlas_editor`](wiki/apps/atlas_editor.md) is a pixel editor for the sheet `game` blits, and is an ordinary application of the tick loop with no undo -- replaying a session up to a point is the undo this design has.
+- [`music_editor`](wiki/apps/music_editor.md) is a live-coding editor: four lines of mini-notation, always sounding, where every keystroke reaches the music with nothing reloaded -- a line that will not parse keeps playing whatever it last did, and pausing stops the musical clock rather than the device.
 - [`sudoku`](wiki/apps/sudoku.md) is `wfc`'s showcase played with a mouse and a keyboard, expressing the 81-cell puzzle as `AllDifferentConstraint`s over a flat array and bounding the solve behind its Solve button, since that runs inside a tick.
 - [`gfx_demo`](wiki/apps/gfx_demo.md), [`gfx3d_demo`](wiki/apps/gfx3d_demo.md), [`sound_demo`](wiki/apps/sound_demo.md) and [`ui_demo`](wiki/apps/ui_demo.md) are the showcases for `gfx`, its 3D half, `sound` and `ui`.
 
