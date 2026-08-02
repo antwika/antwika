@@ -62,11 +62,11 @@ namespace antwika::replay
             schema["title"] = "antwika replay header";
             schema["type"] = "object";
             // No additionalProperties: false here, deliberately.
-            // docs/schema-versioning.md says the header only grows
-            // additively -- a new optional member, no version bump --
-            // and refusing unknown members is exactly what would make
-            // every already-shipped build refuse the grown file.
-            // "canvas" arriving did that to pre-canvas builds once.
+            // docs/schema-versioning.md says the header only grows additively.
+            // That is a new optional member and no version bump.
+            // Refusing unknown members breaks every shipped build.
+            // Each would refuse the grown file outright.
+            // "canvas" arriving did exactly that to pre-canvas builds once.
             schema["$id"] = "https://antwika.dev/schemas/replay-header";
             schema["required"] = {"magic"}; // GCOVR_EXCL_LINE
             schema["properties"][std::string(detail::kMagicKey)]
@@ -227,10 +227,10 @@ namespace antwika::replay
             auto decoded = migrated.get<event::TickEvent>();
 
             // The reader polices hand edits the writer cannot make.
-            // The recorder filters engine.tick on the way out, so a
-            // record named it can only be a hand-crafted one -- and
-            // dispatching it would double-step every per-tick sink,
-            // since the engine regenerates the real one.
+            // The recorder filters engine.tick out on the way to disk.
+            // So a record named it can only be a hand-crafted one.
+            // The engine regenerates the real one every tick.
+            // Dispatching the fake would double-step every per-tick sink.
             if (decoded.event.name == antwika::engine::events::kTick)
             {
                 throw ReplayFormatError(std::format(

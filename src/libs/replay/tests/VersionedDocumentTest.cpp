@@ -135,8 +135,8 @@ TEST(VersionedDocumentTest, ReturnsADocumentAtTheCurrentVersion)
 }
 
 // The guard runs before the migrate, the validate and every dump.
-// A validator's failure message serialises the offending instance,
-// and that serialisation recurses per nesting level.
+// A validator's failure message serialises the offending instance.
+// That serialisation recurses per nesting level.
 TEST(VersionedDocumentTest, RefusesADocumentNestedPastTheBound)
 {
     try

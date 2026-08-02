@@ -190,8 +190,8 @@ namespace antwika::ui::detail
             if (pointer.position)
             {
                 // A pointer an overlay claims never reaches beneath it.
-                // The point is in front of whatever the base layer put
-                // there, named or not, so the base layer stays unread.
+                // The overlay is in front of the base layer, named or not.
+                // So the base layer stays unread.
                 underOverlay = scan(true);
 
                 if (!underOverlay)

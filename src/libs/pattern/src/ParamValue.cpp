@@ -50,8 +50,7 @@ namespace antwika::pattern
         if (denominator < 0)
         {
             // The sign belongs to the numerator, as Cycle holds it.
-            // Dividing a scaled minimum by minus one is the one
-            // division the hardware traps on rather than throws.
+            // A scaled minimum over minus one is a hardware trap, not a throw.
             // Negating the most negative integer is what cannot be done.
             if (numerator == std::numeric_limits<std::int64_t>::min()
                 || denominator

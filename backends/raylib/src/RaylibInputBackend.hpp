@@ -99,8 +99,8 @@ namespace antwika::input::raylib
         std::array<bool, kMouseButtonCount> held{};
 
         // Which presented frame the wheel was last read on.
-        // Everything before the first present is frame zero, and the
-        // sentinel is what lets that first frame still be read once.
+        // Everything before the first present is frame zero.
+        // The sentinel is what lets that first frame still be read once.
         std::uint64_t wheelFrame = ~std::uint64_t{0};
 
         // The fractions of a notch not yet reported.

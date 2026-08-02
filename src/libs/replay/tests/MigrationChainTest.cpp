@@ -172,8 +172,8 @@ TEST(MigrationChainTest, ADocumentNewerThanCurrentIsRefused)
 }
 
 // Version 0 predates every migration this chain carries.
-// It used to load silently when there was nothing to migrate, and
-// to be blamed on the build's own chain when there was.
+// It used to load silently when there was nothing to migrate.
+// And to be blamed on the build's own chain when there was.
 TEST(MigrationChainTest, AVersionOlderThanEveryMigrationIsRefused)
 {
     nlohmann::json document;

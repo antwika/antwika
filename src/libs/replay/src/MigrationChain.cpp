@@ -87,10 +87,10 @@ namespace antwika::replay
         }
 
         // The other end, refused up front and blaming the document.
-        // Left to the migration walk, a sub-oldest version either
-        // loaded silently (nothing to migrate in an empty file) or
-        // surfaced as a "gap" message blaming this build's chain for
-        // a document no release of this software ever wrote.
+        // Left to the migration walk, a sub-oldest version went two ways.
+        // With nothing to migrate it loaded silently.
+        // With records it surfaced as a "gap" blaming this build's own chain.
+        // Neither is right for a document no release ever wrote.
         auto oldest = current;
 
         for (const auto &migration : migrations)

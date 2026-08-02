@@ -45,8 +45,9 @@ namespace antwika::replay
         const nlohmann::json &stated = document.at(key);
         if (!fitsAVersion(stated))
         {
-            // dump() recurses per nesting level, and what is stated
-            // here is unvalidated; a container is named, not printed.
+            // dump() recurses per nesting level.
+            // What is stated here is unvalidated.
+            // So a container is named rather than printed.
             throw SchemaVersionError(std::format(
                 "antwika::replay: \"{}\" is not a schema version this "
                 "build can read: expected a whole number from 0 to {}, "

@@ -172,8 +172,8 @@ TEST(ReplayWriterReaderTest, ReadThrowsWhenALineIsNotAJsonValue)
     }
 }
 
-// nlohmann's parser is iterative, but copying a value and wording a
-// validation failure both recurse per nesting level.
+// nlohmann's parser is iterative.
+// Copying a value and wording a validation failure both recurse.
 // A crafted line must be refused before anything recursive sees it.
 TEST(ReplayWriterReaderTest, ReadRefusesALineNestedPastTheBound)
 {
@@ -338,8 +338,8 @@ TEST(ReplayWriterReaderTest, RefusesContentAfterAWholeDocument)
 }
 
 // docs/schema-versioning.md: the header only grows additively.
-// A member this build has never heard of is a younger release's,
-// not an error; refusing it once broke pre-canvas builds.
+// A member this build never heard of is a younger release's, not an error.
+// Refusing it once broke pre-canvas builds.
 TEST(ReplayWriterReaderTest, AHeaderWithAnUnknownMemberStillLoads)
 {
     const std::string text =
@@ -351,9 +351,9 @@ TEST(ReplayWriterReaderTest, AHeaderWithAnUnknownMemberStillLoads)
     EXPECT_EQ(readText(text).size(), 1U);
 }
 
-// The recorder filters engine.tick on the way out, so a record named
-// it can only be a hand edit -- and dispatching it would double-step
-// every per-tick sink, since the engine regenerates the real one.
+// The recorder filters engine.tick out, so this record is a hand edit.
+// The engine regenerates the real one.
+// Dispatching the fake would double-step every per-tick sink.
 TEST(ReplayWriterReaderTest, RefusesAHandCraftedEngineTickRecord)
 {
     const std::string text =
@@ -376,9 +376,9 @@ TEST(ReplayWriterReaderTest, RefusesAHandCraftedEngineTickRecord)
     }
 }
 
-// Both are courtesies of the JSON library, worth pinning: a recording
-// that crossed a Windows checkout gains CRLF endings, and some
-// editors prepend a byte-order mark on save.
+// Both are courtesies of the JSON library, worth pinning.
+// A recording that crossed a Windows checkout gains CRLF endings.
+// And some editors prepend a byte-order mark on save.
 TEST(ReplayWriterReaderTest, ReadsCarriageReturnLineEndings)
 {
     const std::string text =

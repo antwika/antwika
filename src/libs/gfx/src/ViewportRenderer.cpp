@@ -63,8 +63,7 @@ namespace antwika::gfx
 
         // Anchor every glyph on its own transformed cell instead.
         // A run drawn whole drifts off the grid a pixel a glyph.
-        // Everything beside the text -- a caret, a highlight's ground,
-        // a piece cut at either -- is placed by that grid exactly.
+        // A caret, a highlight's ground and every cut piece sit on it.
         // So the drift reads as text sliding against its own marks.
         for (std::size_t at = 0; at < text.size(); ++at)
         {

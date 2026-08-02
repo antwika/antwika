@@ -8,8 +8,8 @@ namespace antwika::raylib
     namespace detail
     {
         // Inline, because the gfx and input backends are two targets.
-        // A definition in each would be two counters at the final link;
-        // an inline variable is one, however many targets include it.
+        // A definition in each would be two counters at the final link.
+        // An inline variable is one, however many targets include it.
         inline std::uint64_t presented = 0;
     } // namespace detail
 

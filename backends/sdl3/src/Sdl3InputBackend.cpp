@@ -119,11 +119,11 @@ namespace antwika::input::sdl3
             {SDL_SCANCODE_RGUI, Key::RightSuper},
         });
 
-        // A row left out value-initialises a {SDL_SCANCODE_UNKNOWN,
-        // Key{0}} one instead, and size alone cannot see that: a
-        // duplicated Key beside a missing one still counts kKeyCount.
-        // The same claim src/libs/input/src/Key.cpp checks of its own
-        // name table, checked of this one.
+        // A row left out value-initialises an unknown-scancode row.
+        // Size alone cannot see that.
+        // A duplicated Key beside a missing one still counts kKeyCount.
+        // src/libs/input/src/Key.cpp checks this of its name table.
+        // The same claim is checked of this one.
         [[nodiscard]] consteval bool mapsEveryKeyExactlyOnce()
         {
             for (std::size_t index = 0; index < kKeyCount; ++index)
@@ -147,8 +147,8 @@ namespace antwika::input::sdl3
             return true;
         }
 
-        // A repeated scancode would make keyOf() answer for the first
-        // row alone, and the second key could never arrive.
+        // keyOf() answers for a repeated scancode's first row alone.
+        // The second key could then never arrive.
         [[nodiscard]] consteval bool mapsEveryScancodeDistinctly()
         {
             const auto count = kKeys.size();
@@ -210,10 +210,10 @@ namespace antwika::input::sdl3
 
         [[nodiscard]] KeyModifiers modifiersOf(SDL_Keymod mod)
         {
-            // SDL_KMOD_MODE is AltGr on X11 and Wayland, where the
-            // system layout maps the right Alt to ISO_Level3_Shift.
-            // Without it the Swedish table's whole third column --
-            // $ { } [ ] \ @ | ~ -- typed its plain sibling instead.
+            // SDL_KMOD_MODE is AltGr, arriving as ISO_Level3_Shift.
+            // X11 and Wayland report it so under non-US layouts.
+            // Without it the Swedish third column typed its sibling.
+            // AltGr and 4 typed 4, never the dollar the layout says.
             return KeyModifiers{
                 .shift = (mod & SDL_KMOD_SHIFT) != 0,
                 .control = (mod & SDL_KMOD_CTRL) != 0,
@@ -293,12 +293,11 @@ namespace antwika::input::sdl3
                 const bool flipped =
                     event.wheel.direction == SDL_MOUSEWHEEL_FLIPPED;
 
-                // Floats, because a touchpad scrolls in fractions of a
-                // notch, and truncating every event would leave such
-                // scrolling at zero forever.  The fraction is carried
-                // to the next event instead -- backend-local and
-                // upstream of the recorder, so a recording holds whole
-                // notches and never a scroll of nothing.
+                // Floats: a touchpad scrolls in fractions of a notch.
+                // Truncating every event leaves that at zero forever.
+                // So the fraction is carried to the next event instead.
+                // Backend-local and upstream of the recorder.
+                // A recording holds whole notches and no zero scrolls.
                 remainderX += flipped ? -event.wheel.x : event.wheel.x;
                 remainderY += flipped ? -event.wheel.y : event.wheel.y;
 

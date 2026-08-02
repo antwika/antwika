@@ -139,10 +139,9 @@ TEST(ReplayJsonTest, HeaderReadsACanvasExtentAtTheUint32Maximum)
 }
 
 // docs/schema-versioning.md: the header only grows additively.
-// A member this build has never heard of is a younger release's
-// optional addition, so it is passed over rather than refused --
-// refusing unknown members is what once broke pre-canvas builds
-// the moment "canvas" arrived.
+// A member this build never heard of is a younger release's addition.
+// So it is passed over rather than refused.
+// Refusing unknown members broke pre-canvas builds when "canvas" arrived.
 TEST(ReplayJsonTest, HeaderPassesOverAMemberItDoesNotKnow)
 {
     const auto header = readHeader(

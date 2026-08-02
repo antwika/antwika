@@ -117,10 +117,10 @@ namespace antwika::input::raylib
             }
         }
 
-        // The wheel is read once per presented frame, not once per value.
-        // raylib holds the same reading for a whole frame, and two honest
-        // one-notch frames are indistinguishable from one frame sampled
-        // twice; the frame counter is what tells those apart.
+        // The wheel is read once per presented frame, never per value.
+        // raylib holds the same reading for a whole frame.
+        // By value, two one-notch frames look like one frame read twice.
+        // The frame counter is what tells those apart.
         const auto frame = antwika::raylib::frameCount();
 
         if (frame == wheelFrame)
@@ -133,10 +133,10 @@ namespace antwika::input::raylib
         const Vector2 wheel = GetMouseWheelMoveV();
 
         // Floats, because a touchpad scrolls in fractions of a notch.
-        // Truncating each frame would leave such scrolling at zero
-        // forever, so the fraction is carried to the next frame instead.
-        // Backend-local and upstream of the recorder: a recording holds
-        // whole notches either way, and a replay is unaffected.
+        // Truncating each frame would leave such scrolling at zero.
+        // So the fraction is carried to the next frame instead.
+        // Backend-local and upstream of the recorder.
+        // A recording holds whole notches, and a replay is unaffected.
         remainderX += wheel.x;
         remainderY += wheel.y;
 

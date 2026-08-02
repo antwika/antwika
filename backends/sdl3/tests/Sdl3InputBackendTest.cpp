@@ -216,8 +216,8 @@ namespace antwika::input::sdl3
                 PointerScrolled{.horizontal = 0, .vertical = -2}}));
     }
 
-    // AltGr arrives as SDL_KMOD_MODE (ISO_Level3_Shift) on X11 and
-    // Wayland, and the Swedish table's third column rides on it.
+    // AltGr arrives as SDL_KMOD_MODE, which is ISO_Level3_Shift.
+    // The Swedish table's whole third column rides on it.
     TEST_F(Sdl3InputBackendTest, PollEvent_ReadsAltGrAsAlt)
     {
         SDL_Event event{};

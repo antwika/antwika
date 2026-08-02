@@ -104,8 +104,8 @@ TEST(ViewportRendererTest, DrawText_ScalesTheOriginAndTheGlyphScale)
 }
 
 // A window one and a half times the canvas: the scale is 3/2.
-// One glyph scale cannot honour that, so each glyph is anchored
-// on its own transformed cell instead of drifting off the grid.
+// One whole glyph scale cannot honour that.
+// So each glyph is anchored on its own transformed cell instead of drifting.
 TEST(ViewportRendererTest, DrawText_AnchorsEachGlyphOnANonWholeScale)
 {
     MockRenderer inner;

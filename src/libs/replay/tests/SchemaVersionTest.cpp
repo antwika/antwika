@@ -86,8 +86,8 @@ TEST(SchemaVersionTest, NonIntegerVersionIsRefused)
 }
 
 // A container is named rather than printed.
-// dump() recurses per nesting level, and what is stated here is
-// unvalidated -- printing it is how a crafted file ate the stack.
+// dump() recurses per nesting level over unvalidated input.
+// Printing it is how a crafted file ate the stack.
 TEST(SchemaVersionTest, AContainerVersionIsNamedNotPrinted)
 {
     nlohmann::json document;

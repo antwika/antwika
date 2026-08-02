@@ -68,8 +68,9 @@ TEST(TweenTest, IsExactlyInterpolateOverEase)
 }
 
 // The guard is the signed 64 the downstream arithmetic runs in.
-// 6208 to the fifth fits it exactly; 6209 through 7131 fit only the
-// unsigned Tick, and used to come back as silent garbage or UB.
+// 6208 to the fifth fits it exactly.
+// 6209 through 7131 fit only the unsigned Tick.
+// Those used to come back as silent garbage or UB.
 TEST(TweenTest, RefusesADenominatorOnlyAnUnsignedTickCouldHold)
 {
     EXPECT_THROW(

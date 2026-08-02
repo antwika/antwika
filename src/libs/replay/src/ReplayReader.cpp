@@ -141,10 +141,10 @@ namespace antwika::replay
             return records;
         } // GCOVR_EXCL_LINE
 
-        // A version 1 document holds the run entire, so anything after
-        // it is a second recording; returning after the first value
-        // replayed two concatenated sessions as the first alone,
-        // silently, where the line-oriented path refuses them loudly.
+        // A version 1 document holds the run entire.
+        // So anything after it is a second recording.
+        // Returning early replayed two joined sessions as the first.
+        // The line-oriented path refuses the same input loudly.
         void requireNothingAfter(std::istream &in)
         {
             std::string text;

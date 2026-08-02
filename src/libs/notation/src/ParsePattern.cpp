@@ -223,8 +223,9 @@ namespace antwika::notation
                     {
                         ++at;
 
-                        // One count per term, refused rather than
-                        // silently overwritten: "0!2!3" dropped its 2.
+                        // One count per term.
+                        // Refused, never overwritten in silence.
+                        // "0!2!3" used to drop its 2.
                         if (copies != 1)
                         {
                             throw NotationError(
@@ -233,10 +234,9 @@ namespace antwika::notation
                         }
 
                         // The count sits against its '!': "0!3 5".
-                        // In Tidal a spaced "0! 3" repeats the 0 and
-                        // then plays the 3; eating the 3 as a count
-                        // would silently sound the wrong notes for any
-                        // line brought over, so a bare '!' is refused.
+                        // Tidal reads a spaced "0! 3" as 0 0 3.
+                        // Eating the 3 as a count plays wrong notes.
+                        // So a bare '!' is refused rather than misread.
                         if (atEnd() || peek() < '0' || peek() > '9')
                         {
                             throw NotationError(

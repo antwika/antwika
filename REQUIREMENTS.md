@@ -25,7 +25,7 @@ Requirements for the Antwika project, gathered from `README.md`, `blog/001-build
 - Every mock/fake header under a `tests/{mocks,fakes}/include` directory must be `#include`d by at least one `.cpp` file.
 - CI must enforce coverage instrumentation and reporting for the GNU and LLVM toolchains.
 - Lines excluded from coverage via `GCOVR_EXCL_LINE` must carry a comment explaining why, and only after real, testable gaps have been covered by actual tests, following the procedure in `docs/confirming-unreachable-branches.md`.
-- Source lines (`src/**/*.cpp`, `src/**/*.hpp`) and script lines (`scripts/*.py`, `scripts/tests/*.py`) must not exceed 80 characters.
+- Source lines (`src/**/*.cpp`, `src/**/*.hpp`, `backends/**/*.cpp`, `backends/**/*.hpp`) and script lines (`scripts/*.py`, `scripts/tests/*.py`) must not exceed 80 characters.
 - Comments and markdown prose must hold exactly one sentence per line, with no sentence wrapped across multiple lines.
 - CI must run on every push to any branch (except `badges`) and on `v*` tags, building and testing all three toolchains.
 - CI must verify that the expected binaries exist after the build for each toolchain.

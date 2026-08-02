@@ -262,8 +262,8 @@ TEST(ParsePatternTest, RefusesNoSlotsAtAll)
 }
 
 // In Tidal a spaced "0! 3" repeats the 0 and then plays the 3.
-// Eating the 3 as a count silently sounded the wrong notes for any
-// line brought over, so a '!' with no count against it is refused.
+// Eating the 3 as a count played wrong notes for a line brought over.
+// So a '!' with no count against it is refused.
 TEST(ParsePatternTest, RefusesABareRepeatMark)
 {
     EXPECT_THROW((void)read("0! 3"), NotationError);
