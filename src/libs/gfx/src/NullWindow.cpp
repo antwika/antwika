@@ -12,7 +12,8 @@ namespace antwika::gfx::detail
           nullRenderer(logger),
           windowId(id),
           windowTitle(desc.title),
-          windowSize(desc.size)
+          windowSize(desc.size),
+          filling(desc.fullscreen)
     {
     }
 
@@ -41,6 +42,11 @@ namespace antwika::gfx::detail
         return windowSize;
     }
 
+    bool NullWindow::isFullscreen() const
+    {
+        return filling;
+    }
+
     IRenderer &NullWindow::renderer()
     {
         return nullRenderer;
@@ -49,6 +55,11 @@ namespace antwika::gfx::detail
     void NullWindow::setTitle(std::string_view title)
     {
         windowTitle = title;
+    }
+
+    void NullWindow::setFullscreen(bool fullscreen)
+    {
+        filling = fullscreen;
     }
 
     void NullWindow::close()

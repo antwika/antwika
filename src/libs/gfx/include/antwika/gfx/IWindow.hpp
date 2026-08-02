@@ -96,6 +96,20 @@ namespace antwika::gfx
         [[nodiscard]] virtual Size size() const = 0;
 
         /**
+         * @brief Whether this window is currently filling the screen.
+         *
+         * A window property like the title, not a piece of simulation
+         * state: it changes what size() may report and changes nothing
+         * else, which is what makes going fullscreen safe for a session
+         * being recorded. Nothing a replay reproduces may be a function
+         * of it, for the reason size() gives.
+         *
+         * @return True when the window is fullscreen; false otherwise,
+         * and false on a backend with no window system to fill.
+         */
+        [[nodiscard]] virtual bool isFullscreen() const = 0;
+
+        /**
          * @brief Get the renderer that draws into this window.
          * @return The renderer, valid for as long as this window is.
          */
@@ -106,6 +120,19 @@ namespace antwika::gfx
          * @param title The new title.
          */
         virtual void setTitle(std::string_view title) = 0;
+
+        /**
+         * @brief Make the window fill the screen, or stop filling it.
+         *
+         * Asking for the state it is already in is not an error, and a
+         * backend with no window system honours the request by
+         * remembering it and having nothing act on it -- the same
+         * headless answer WindowDesc::resizable gets. Doing this to a
+         * closed window does nothing.
+         *
+         * @param fullscreen True to fill the screen, false to restore.
+         */
+        virtual void setFullscreen(bool fullscreen) = 0;
 
         /**
          * @brief Close the window.

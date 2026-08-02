@@ -63,11 +63,15 @@ namespace antwika::gfx::sdl3
                            "width and height");
         }
 
+        const SDL_WindowFlags flags =
+            (desc.resizable ? SDL_WINDOW_RESIZABLE : 0)
+            | (desc.fullscreen ? SDL_WINDOW_FULLSCREEN : 0);
+
         SDL_Window *window = SDL_CreateWindow(
             desc.title.c_str(),
             static_cast<int>(desc.size.width),
             static_cast<int>(desc.size.height),
-            desc.resizable ? SDL_WINDOW_RESIZABLE : 0);
+            flags);
 
         if (window == nullptr)
         {

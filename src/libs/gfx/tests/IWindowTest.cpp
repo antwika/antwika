@@ -51,12 +51,21 @@ namespace
             return reported;
         }
 
+        [[nodiscard]] bool isFullscreen() const override
+        {
+            return false;
+        }
+
         [[nodiscard]] IRenderer &renderer() override
         {
             std::abort();
         }
 
         void setTitle(std::string_view /*title*/) override
+        {
+        }
+
+        void setFullscreen(bool /*fullscreen*/) override
         {
         }
 

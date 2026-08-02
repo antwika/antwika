@@ -61,6 +61,9 @@ namespace antwika::gfx::raylib
             ClearWindowState(FLAG_WINDOW_RESIZABLE);
         }
 
+        // Set both ways round, for the reason above exactly.
+        setFullscreen(desc.fullscreen);
+
         lastSize = currentSize();
 
         logger.log(Level::Debug, "gfx.raylib: created window");
@@ -96,6 +99,11 @@ namespace antwika::gfx::raylib
         return open ? currentSize() : lastSize;
     }
 
+    bool RaylibWindow::isFullscreen() const
+    {
+        return open ? IsWindowFullscreen() : lastFullscreen;
+    }
+
     IRenderer &RaylibWindow::renderer()
     {
         return raylibRenderer;
@@ -113,6 +121,21 @@ namespace antwika::gfx::raylib
         SetWindowTitle(windowTitle.c_str());
     }
 
+    void RaylibWindow::setFullscreen(bool fullscreen)
+    {
+        lastFullscreen = fullscreen;
+
+        if (!open)
+        {
+            return;
+        }
+
+        if (IsWindowFullscreen() != fullscreen)
+        {
+            ToggleFullscreen();
+        }
+    }
+
     void RaylibWindow::close()
     {
         if (!open)
@@ -120,6 +143,7 @@ namespace antwika::gfx::raylib
             return;
         }
 
+        lastFullscreen = IsWindowFullscreen();
         lastSize = currentSize();
 
         // Before CloseWindow, and load-bearing for textures.
