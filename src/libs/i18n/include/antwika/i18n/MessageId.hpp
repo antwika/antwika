@@ -1128,12 +1128,51 @@ namespace antwika::i18n
          * @brief Task worker: the heading over the finished tasks.
          */
         TaskWorkerCompleted,
+
+        /**
+         * @brief Game: the closed box of the toolbar's game menu.
+         */
+        GameToolbarGameMenu,
+
+        /**
+         * @brief Game: the heading over the build palette.
+         */
+        GameToolbarBuild,
+
+        /**
+         * @brief Game: the menu item that empties the city.
+         */
+        GameMenuItemNewGame,
+
+        /**
+         * @brief Game: the menu item that opens the save picker to
+         *        write a session out.
+         */
+        GameMenuItemSaveGame,
+
+        /**
+         * @brief Game: the menu item that opens the save picker to read
+         *        a session back.
+         */
+        GameMenuItemLoadGame,
+
+        /**
+         * @brief Game: the menu item that leaves the city for the main
+         *        menu.
+         */
+        GameMenuItemMainMenu,
+
+        /**
+         * @brief Game: the menu item that puts the city away for the
+         *        world map.
+         */
+        GameMenuItemWorldMap,
     };
 
     /**
      * @brief How many ids a complete catalogue carries.
      */
-    inline constexpr std::size_t kMessageCount{218};
+    inline constexpr std::size_t kMessageCount{225};
 
     /**
      * @brief Every id, in declaration order.
@@ -1361,6 +1400,13 @@ namespace antwika::i18n
         MessageId::TaskWorkerQueued,
         MessageId::TaskWorkerBlocked,
         MessageId::TaskWorkerCompleted,
+        MessageId::GameToolbarGameMenu,
+        MessageId::GameToolbarBuild,
+        MessageId::GameMenuItemNewGame,
+        MessageId::GameMenuItemSaveGame,
+        MessageId::GameMenuItemLoadGame,
+        MessageId::GameMenuItemMainMenu,
+        MessageId::GameMenuItemWorldMap,
     };
 
     /**

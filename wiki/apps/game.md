@@ -16,12 +16,13 @@ build/bin/antwika_game/antwika_game --record demo.replay
 build/bin/antwika_game/antwika_game --replay src/apps/game/replays/demo.json
 ```
 
-Left-click places whatever the toolbar has selected, middle-drag pans, and the wheel zooms.
+Left-click places whatever the palette has selected, middle-drag pans, and the wheel zooms.
 Right-click means one of two things: with a building tool selected it puts the palette down and places nothing by that press, and otherwise it drops a walker onto the road under the pointer.
 With the road tool selected a left-drag lays a whole run of road: the press marks where it starts, the pointer says where it ends, and the release lays the route between them.
-The toolbar carries zoom, reset-view, pause and menu buttons, drawn over the grid by `Toolbar`, described and resolved once per tick by `UiSink`, and painted last by `RenderSystem`; the bar also reports the tick, and a corner of the screen reports the frame rate.
-A city runs from the moment it comes up, so that button is how a player asks for a pause and how they let one go.
-The toolbar's `menu` button opens a menu modal over the city with two items: one back to the main menu, and one back to the game.
+`Toolbar` draws three pieces round the grid, all described and resolved once per tick by `UiSink` and painted last by `RenderSystem`: a strip along the top, a build palette down the right, and a strip along the bottom carrying the view controls and the readouts.
+The bottom strip is zoom in, zoom out, reset view and pause, and then the zoom level, the tick, the population and the share of jobs that are staffed; a corner of the screen reports the frame rate separately, because that is a wall clock's answer rather than the simulation's.
+A city runs from the moment it comes up, so the pause button is how a player asks for a pause and how they let one go.
+The top strip carries a `game` menu — new game, save game, load game, main menu, world map — and the `menu` button that opens the menu modal over the city, with one item back to the main menu and one back to the game.
 F10 fills the screen with the window and puts it back, which is the one key here that reaches no sink at all.
 It starts on an empty grid and loads nothing unless `--replay` says so, so a session contains exactly what somebody clicked.
 
@@ -218,6 +219,40 @@ It reaches no sink, no system, no `SceneSnapshot`, no `GameSummary` and no save,
 `FrameMeter::perSecond()` answers nothing at all until a whole window has gone by, and `describeFps()` draws `kNoRateReadout`, which reads `fps --`, in its place.
 That constant is the whole line rather than the two dashes alone, and the readout is two `ui.label()` calls rather than one over a conditional string, because a caption joined to a placeholder is a `std::string` built on a branch — a temporary whose unwind path no test can reach, and two branches the coverage gate then refuses.
 Absent rather than zero, because zero is a rate a stalling machine is genuinely measured at, and a run that has drawn for less than a second has measured nothing; reporting both as "fps 0" would be one word for two states, and the corner would also claim the machine was drawing no frames at the exact moment it started drawing them.
+
+## The three pieces round the grid
+
+**The furniture is laid out against the fixed `kUiCanvas` and nothing else**, so where a widget is is a function of the canvas, the strings and the simulation state — never of the window, which is what keeps a recorded click hitting the same button at any size.
+`Toolbar::describe()` is one function producing all three pieces plus the city-sized gap between them, because a hit-test is a function of the layout and three layouts computed apart would agree only until one of them changed.
+
+At the shipped 1024x640 canvas that comes out as a 1024x56 strip along the top, a 216x528 panel down the right at x=808, a 1024x56 strip along the bottom at y=584, and 808x528 of city in the middle.
+Everything scales off `ui::scaleForCanvas()`, so the numbers are the canvas's rather than constants written twice.
+
+**The gap in the middle is a `spacer`, and that is the whole mechanism.**
+A spacer fills no pixels, so `ui::Interactions::pointerOverUi` is false over it, so `GridSink`'s existing "what the UI covers, it covers from the grid too" rule leaves a press there to the city with nothing invented for it.
+`ToolbarTest` asserts it off `ui::Frame::rects` rather than by sweeping the canvas: every palette button's rectangle is inside the side panel's, and the corners of what is left report no widget at all.
+
+**The palette is two columns rather than one**, and that is arithmetic rather than taste: eleven buttons in a column want more height than the middle band has, and `antwika::ui` answers a container with too little room by shrinking its children in proportion — which is a button whose caption no longer fits inside it.
+Each button is a fixed width for the same kind of reason, since a column as wide as its own longest caption is not a column.
+
+**The top strip's `game` menu is a `ui::dropdown`, and whether it is open is simulation state** in exactly the sense the camera and the selected tool are: an open list sits over the city, so whether it is open decides whether a click at a pixel chooses "load game" or lays a road.
+`antwika::ui` deliberately keeps no such flag — a `DropdownSpec` carries it in and `Interactions::chosen` carries the answer out — so it lives in `UiSink`, is written inside the tick path, and is regenerated by a replay from the click that dropped it.
+No `game.*` or `ui.*` event exists for opening it, closing it or choosing from it, exactly as none exists for the modal.
+
+**A press anywhere but the list puts it away, and that press does nothing else at all.**
+It is reported through `UiOverlay` as the UI's even though it landed on no widget, so `GridSink` skips it: one click that both dismissed a menu and laid a tile under it would be two things nobody asked for, which is the same trap `Events.hpp` describes about persisting a click and what it caused.
+Pressing the closed box again is the one exception, since that is what deliberately closing it looks like.
+Only a *press* may dismiss it — nothing else activates a widget, so without that guard the `engine.tick` ending every tick would put the list away before anybody could read it.
+
+**What an item does is `IMenuCommands`', not `UiSink`'s.**
+Every one of the five is a transition another route already reaches: leaving for the main menu is the modal's own item, showing the picker is the main menu's Load Game, and putting the city away is the world-map key.
+Writing them once behind that seam is what keeps the menu from being a second set of rules about the same transitions — the modal's main-menu item goes through the very same verb — and it lets what an item *does* be asserted against a real session while what a click *hits* is asserted against a layout, without either test dragging the other's collaborators in.
+Save and load share one verb because they share one screen: the picker is where a session is both written out and read back, and two verbs asking for it would be one thing said twice.
+`new game` restores an empty `SaveGame` through `SessionStore`, which is the one route into the live grid a load already goes through, so "empty the city" is not a second way of doing it; the other cities of a world keep what was built on them, since a session holds one live grid.
+
+**Moving a widget changes what every recorded click means**, so `replays/demo.json` was recorded again against this layout — by driving the application with `--replay` over the re-aimed session and `--record` writing what it actually dispatched, rather than by editing the file.
+It reaches the identical city either way: ten road tiles, one house at (4,3) at `tent` with water coverage 474, population 3, service reach 25, camera at pan (512,48) and zoom 3 after 92 ticks.
+`BootstrapTest` pins the two pixels that file depends on — the main menu's New Game and the palette's House — so a layout change fails a test rather than being rediscovered by hand.
 
 **The menu modal is a modal rather than a mode, and whether it is up is simulation state.**
 The toolbar's `menu` button opens it, `UiSink` owns the flag, and no `ui.*` or `game.*` event exists for any of it — a recording holds the click, and a replay works out again which widget it hit.
@@ -494,7 +529,7 @@ The plan for this increment also handed `ratingsOf()` the `DesirabilityField`; i
 A house's occupancy is not in `BuildingView` and a workplace's share of the workforce is not either, so without this a live run and its replay could disagree about both and still compare equal.
 `ReplayDeterminismTest` gained a session that is genuinely short of people — two farms wanting eight between them and one tent holding five — because a determinism test over a city that contended over nothing agrees for the wrong reason.
 
-**The two ratings labels are appended after `widgets::kMenu` on the first row**, so every widget declared before them keeps its rectangle and a session recorded before this replays onto the same buttons.
+**The two ratings labels sit at the far end of the bottom strip**, after a growing spacer, so a strip that gains a button does not move them along.
 They are labels rather than buttons, and not by omission: there is nothing to press, so they declare no `WidgetId`, and a rating can never become an input.
 `RatingsSystem` keeps the value the bar reads, in the `"observe"` phase ahead of the observers — the one place it sees the tick it is reporting on rather than the one before — and it recomputes the whole answer for `DesirabilitySystem`'s reason, since a running total would have to be told about a demolition, a city switch and a save restore, and every one it was not told about would be a rating flattering a city that no longer existed.
 

@@ -1,6 +1,7 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
+#include <cstddef>
 #include <cstdint>
 #include <optional>
 #include <string>
@@ -24,11 +25,13 @@
 
 #include "WidgetPixel.hpp"
 
+#include "FakeMenuCommands.hpp"
 #include "TestTranslator.hpp"
-#include "antwika/game/AppMode.hpp"
 #include "antwika/game/Camera.hpp"
 #include "antwika/game/Cell.hpp"
+#include "antwika/game/IMenuCommands.hpp"
 #include "antwika/game/InputFold.hpp"
+#include "antwika/game/MenuItem.hpp"
 #include "antwika/game/MenuModalScene.hpp"
 #include "antwika/game/PauseState.hpp"
 #include "antwika/game/RoadDrag.hpp"
@@ -40,11 +43,10 @@ using antwika::game::tests::kTranslator;
 
 using antwika::event::Event;
 using antwika::event::TickEvent;
-using antwika::game::AppMode;
-using antwika::game::AppModeState;
 using antwika::game::Camera;
 using antwika::game::Cell;
 using antwika::game::InputFold;
+using antwika::game::MenuItem;
 using antwika::game::MenuModalScene;
 using antwika::game::PauseState;
 using antwika::game::RoadDrag;
@@ -74,8 +76,11 @@ namespace
     constexpr Size kCanvas{.width = 1024, .height = 640};
     constexpr Point kHome{.x = 512, .y = 48};
 
-    // Away from the bar, which sits in the top-left corner.
-    constexpr Position kOnTheGrid{.x = 1000, .y = 600};
+    // Between the two strips and left of the palette, so the city.
+    // ToolbarTest is where that is asserted off the layout.
+    // Left of the modal's card as well.
+    // So a press here is on the scrim rather than on an item.
+    constexpr Position kOnTheGrid{.x = 200, .y = 300};
 
     [[nodiscard]] std::vector<std::string> textsOf(const DrawList &commands)
     {
@@ -108,6 +113,41 @@ namespace
             }
 
             return Position{.x = centre->x, .y = centre->y};
+        }
+
+        // The list exists only while it is dropped down.
+        // So the bar is asked for one that is.
+        [[nodiscard]] Position itemPixelOn(WidgetId id) const
+        {
+            const auto centre = widgetCentre(
+                toolbar.describe(
+                    kCanvas,
+                    Pointer{},
+                    camera,
+                    antwika::game::BuildTool::Road,
+                    false,
+                    0,
+                    antwika::game::CityRatings{},
+                    true),
+                id);
+
+            if (!centre.has_value())
+            {
+                return Position{};
+            }
+
+            return Position{.x = centre->x, .y = centre->y};
+        }
+
+        void openGameMenu()
+        {
+            pressOn(widgets::kGameMenu);
+        }
+
+        void chooseItem(MenuItem item)
+        {
+            openGameMenu();
+            pressAt(itemPixelOn(widgets::menuItemWidget(item)));
         }
 
         // The modal is laid out against the same canvas the bar is.
@@ -173,8 +213,7 @@ namespace
         Toolbar toolbar{kTranslator};
         PauseState pause;
 
-        // A city is what the modal is opened over.
-        AppModeState mode{AppMode::CityMap};
+        antwika::game::tests::FakeMenuCommands commands;
         RoadDrag drag;
         MenuModalScene modalScene{kTranslator};
         antwika::game::CityRatings ratings;
@@ -184,7 +223,7 @@ namespace
             input,
             toolbar,
             pause,
-            mode,
+            commands,
             drag,
             modalScene,
             camera,
@@ -426,7 +465,7 @@ TEST_F(UiSinkTest, Modal_ClosesOnTheBackItem)
     pressAt(modalPixelOn(modalWidgets::kResume));
 
     EXPECT_FALSE(sink.menuOpen());
-    EXPECT_EQ(AppMode::CityMap, mode.next());
+    EXPECT_EQ(0U, commands.mainMenus);
 }
 
 // Leaving is a mode change, staged like every other one.
@@ -436,7 +475,7 @@ TEST_F(UiSinkTest, Modal_AsksForTheMainMenuOnTheMainMenuItem)
 
     pressAt(modalPixelOn(modalWidgets::kMainMenu));
 
-    EXPECT_EQ(AppMode::MainMenu, mode.next());
+    EXPECT_EQ(1U, commands.mainMenus);
     EXPECT_FALSE(sink.menuOpen());
 }
 
@@ -480,4 +519,145 @@ TEST_F(UiSinkTest, Opening_EndsARoadDragInProgress)
     openModal();
 
     EXPECT_FALSE(drag.active());
+}
+
+// The list is simulation state: it decides what a click means.
+// It defines no event of its own, exactly as the modal does.
+TEST_F(UiSinkTest, Press_DropsTheGameMenuDownOnItsBox)
+{
+    openGameMenu();
+
+    EXPECT_TRUE(sink.gameMenuOpen());
+    EXPECT_THAT(
+        textsOf(overlay.commands()),
+        ::testing::Contains(std::string{"world map"}));
+}
+
+// Said as the opposite of what is showing rather than as a flip.
+TEST_F(UiSinkTest, Press_PutsTheGameMenuAwayOnASecondPressOnItsBox)
+{
+    openGameMenu();
+
+    pressOn(widgets::kGameMenu);
+
+    EXPECT_FALSE(sink.gameMenuOpen());
+}
+
+// A closed list is a box and nothing else.
+// So nothing behind it is listed, and no item can be pressed.
+TEST_F(UiSinkTest, Closed_ListsNoItemAtAll)
+{
+    tick();
+
+    EXPECT_THAT(
+        textsOf(overlay.commands()),
+        ::testing::Not(::testing::Contains(std::string{"world map"})));
+}
+
+TEST_F(UiSinkTest, Choose_StartsANewGameOnTheNewGameItem)
+{
+    chooseItem(MenuItem::NewGame);
+
+    EXPECT_EQ(1U, commands.newGames);
+}
+
+// One screen, and both items lead to it -- see IMenuCommands.
+TEST_F(UiSinkTest, Choose_OpensThePickerOnTheSaveGameItem)
+{
+    chooseItem(MenuItem::SaveGame);
+
+    EXPECT_EQ(1U, commands.saves);
+}
+
+TEST_F(UiSinkTest, Choose_OpensThePickerOnTheLoadGameItem)
+{
+    chooseItem(MenuItem::LoadGame);
+
+    EXPECT_EQ(1U, commands.saves);
+}
+
+TEST_F(UiSinkTest, Choose_LeavesForTheMainMenuOnTheMainMenuItem)
+{
+    chooseItem(MenuItem::MainMenu);
+
+    EXPECT_EQ(1U, commands.mainMenus);
+}
+
+TEST_F(UiSinkTest, Choose_LeavesForTheWorldMapOnTheWorldMapItem)
+{
+    chooseItem(MenuItem::WorldMap);
+
+    EXPECT_EQ(1U, commands.worldMaps);
+}
+
+// One item, one command.
+// Two of them for one click is the trap Events.hpp describes.
+TEST_F(UiSinkTest, Choose_RunsNothingElseTheListOffers)
+{
+    chooseItem(MenuItem::WorldMap);
+
+    EXPECT_EQ(0U, commands.newGames);
+    EXPECT_EQ(0U, commands.saves);
+    EXPECT_EQ(0U, commands.mainMenus);
+}
+
+TEST_F(UiSinkTest, Choose_PutsTheListAway)
+{
+    chooseItem(MenuItem::NewGame);
+
+    EXPECT_FALSE(sink.gameMenuOpen());
+}
+
+// Nothing but a press closes it.
+// Otherwise every tick would put it away before it was read.
+TEST_F(UiSinkTest, Tick_LeavesAnOpenListOpen)
+{
+    openGameMenu();
+
+    tick();
+
+    EXPECT_TRUE(sink.gameMenuOpen());
+}
+
+TEST_F(UiSinkTest, PressAwayFromAnOpenList_PutsItAway)
+{
+    openGameMenu();
+
+    pressAt(kOnTheGrid);
+
+    EXPECT_FALSE(sink.gameMenuOpen());
+}
+
+// And that press does nothing else at all.
+// GridSink skips a press the overlay reports covered.
+// So reporting it covered is what keeps that press off the city.
+// One click dismissing a menu and laying a road is two things.
+TEST_F(UiSinkTest, PressAwayFromAnOpenList_IsTheListsAndNotTheCitys)
+{
+    openGameMenu();
+
+    pressAt(kOnTheGrid);
+
+    EXPECT_TRUE(overlay.pointerOverUi());
+}
+
+TEST_F(UiSinkTest, PressOnTheBarWithAnOpenList_OnlyPutsItAway)
+{
+    openGameMenu();
+    const auto before = camera.zoomLevel();
+
+    pressOn(widgets::kZoomIn);
+
+    EXPECT_EQ(before, camera.zoomLevel());
+    EXPECT_FALSE(sink.gameMenuOpen());
+}
+
+// The modal takes precedence over the bar entirely, the menu included.
+TEST_F(UiSinkTest, ModalOpen_LeavesTheGameMenuUnpressable)
+{
+    openModal();
+
+    pressOn(widgets::kGameMenu);
+
+    EXPECT_FALSE(sink.gameMenuOpen());
 }

@@ -8,6 +8,8 @@
 #include <antwika/input/MouseButton.hpp>
 #include <antwika/ui/WidgetId.hpp>
 
+#include "antwika/game/MenuItem.hpp"
+
 namespace antwika::game
 {
 
@@ -35,7 +37,7 @@ namespace antwika::game
         const InputFold &input,
         const Toolbar &toolbar,
         PauseState &pause,
-        AppModeState &mode,
+        IMenuCommands &commands,
         RoadDrag &drag,
         const MenuModalScene &modal,
         Camera home,
@@ -45,7 +47,7 @@ namespace antwika::game
           input(input),
           toolbar(toolbar),
           pause(pause),
-          mode(mode),
+          commands(commands),
           drag(drag),
           modal(modal),
           home(home),
@@ -82,6 +84,11 @@ namespace antwika::game
         return modalOpen;
     }
 
+    bool UiSink::gameMenuOpen() const noexcept
+    {
+        return listOpen;
+    }
+
     void UiSink::openModal()
     {
         // No guard on it being open already, deliberately.
@@ -113,25 +120,29 @@ namespace antwika::game
         // The modal is drawn over the city rather than instead of it.
         auto frame = describeNow(pressed);
 
+        // A press that did nothing but put the game menu away.
+        // It landed on no widget, and it is still the UI's press.
+        bool dismissed = false;
+
         // While the modal is up the bar is a picture and nothing else.
         // A press is resolved against the modal alone, never through it.
         if (!modalOpen)
         {
-            const auto activated = frame.interactions.activated;
-
-            actOnBar(activated);
+            dismissed = actOnUi(frame.interactions, pressed);
 
             // The zoom the bar reports has just changed.
-            // So has the pause button's label.
+            // So has the pause button's label, and the menu's list.
             // So it is described once more.
             // Otherwise it would show the level it was pressed at.
-            if (activated != kNoWidget)
+            if (dismissed || frame.interactions.activated != kNoWidget)
             {
                 frame = describeNow(pressed);
             }
         }
 
-        bool covered = frame.interactions.pointerOverUi;
+        // The dismissed press is over nothing the second picture drew.
+        // Reporting it covered anyway is what keeps it off the city.
+        bool covered = frame.interactions.pointerOverUi || dismissed;
 
         // Read again, since the bar's menu button may have just set it.
         if (modalOpen)
@@ -161,6 +172,68 @@ namespace antwika::game
         overlay.set(std::move(frame.commands), covered);
     }
 
+    bool UiSink::actOnUi(const Interactions &interactions, bool pressed)
+    {
+        const auto activated = interactions.activated;
+
+        // Only a press may put the list away.
+        // Nothing else activates a widget at all.
+        // So without this, every tick would close the list again.
+        if (listOpen && pressed)
+        {
+            if (interactions.chosen.has_value())
+            {
+                chooseFrom(interactions.chosen->index);
+
+                return false;
+            }
+
+            // Anything but the box the list dropped from dismisses it.
+            // The box itself falls through to the toggle below.
+            // Otherwise pressing it again would dismiss and reopen.
+            if (activated != widgets::kGameMenu)
+            {
+                listOpen = false;
+
+                return true;
+            }
+        }
+
+        actOnBar(activated);
+
+        return false;
+    }
+
+    void UiSink::chooseFrom(std::size_t index)
+    {
+        listOpen = false;
+
+        // The index came off the very list this frame declared.
+        // So it names an item by construction.
+        // Which is why the last arm needs no test of its own.
+        const auto item = static_cast<MenuItem>(index);
+
+        if (item == MenuItem::NewGame)
+        {
+            commands.newGame();
+        }
+        else if (item == MenuItem::SaveGame || item == MenuItem::LoadGame)
+        {
+            // One screen, and both items lead to it.
+            // The picker is where a session is written and read back.
+            // See IMenuCommands.
+            commands.openSaves();
+        }
+        else if (item == MenuItem::MainMenu)
+        {
+            commands.mainMenu();
+        }
+        else
+        {
+            commands.worldMap();
+        }
+    }
+
     void UiSink::actOnBar(WidgetId activated)
     {
         if (activated == widgets::kZoomIn)
@@ -186,6 +259,12 @@ namespace antwika::game
         {
             openModal();
         }
+        else if (activated == widgets::kGameMenu)
+        {
+            // The opposite of what is showing, rather than a flip.
+            // PauseState's reason: two presses in one tick agree.
+            listOpen = !listOpen;
+        }
         else
         {
             selectFrom(activated);
@@ -196,10 +275,10 @@ namespace antwika::game
     {
         if (activated == modalWidgets::kMainMenu)
         {
-            // Staged rather than applied here, as MainMenuSink does.
-            // So the click that leaves the city is not also the grid's.
-            // See AppMode.hpp -- leaving is still a mode change.
-            mode.request(AppMode::MainMenu);
+            // Through the same verb the game menu's own item uses.
+            // Leaving for the main menu is one transition.
+            // So it is one piece of code, however it was asked for.
+            commands.mainMenu();
 
             // Put away on the way out.
             // So a city entered later is not still wearing it.
@@ -220,7 +299,8 @@ namespace antwika::game
             overlay.tool(),
             pause.paused(),
             tick,
-            ratings);
+            ratings,
+            listOpen);
     }
 
     void UiSink::selectFrom(WidgetId activated)

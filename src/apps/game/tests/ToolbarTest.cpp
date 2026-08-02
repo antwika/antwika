@@ -8,8 +8,10 @@
 #include <vector>
 
 #include <antwika/gfx/Point.hpp>
+#include <antwika/gfx/Rect.hpp>
 #include <antwika/gfx/Size.hpp>
 #include <antwika/gfx/TextLayout.hpp>
+#include <antwika/ui/Frame.hpp>
 #include <antwika/ui/DrawCommand.hpp>
 #include <antwika/ui/DrawList.hpp>
 #include <antwika/ui/Pointer.hpp>
@@ -20,6 +22,7 @@
 #include "antwika/game/BuildTool.hpp"
 #include "antwika/game/Camera.hpp"
 #include "antwika/game/CityRatings.hpp"
+#include "antwika/game/MenuItem.hpp"
 #include "antwika/game/Toolbar.hpp"
 
 using antwika::game::tests::kTranslator;
@@ -28,6 +31,7 @@ using antwika::game::Camera;
 using antwika::game::CityRatings;
 using antwika::game::Toolbar;
 using antwika::gfx::Point;
+using antwika::gfx::Rect;
 using antwika::gfx::Size;
 using antwika::gfx::textSize;
 using antwika::ui::DrawList;
@@ -58,33 +62,59 @@ namespace
     }
 
     // Where a button sits is the layout's business.
-    // So a test looks for a pixel that hits the one it means.
-    // Stepping by four cannot miss a button several glyphs tall.
+    // So a test asks the layout rather than sweeping the canvas for it.
     [[nodiscard]] std::optional<Point> pointOn(WidgetId id)
     {
         const Toolbar toolbar{kTranslator};
         const Camera camera;
 
-        for (std::int32_t y = 0;
-             y < static_cast<std::int32_t>(kCanvas.height);
-             y += 4)
+        return antwika::game::tests::widgetCentre(
+            toolbar.describe(kCanvas, Pointer{}, camera), id);
+    }
+
+    [[nodiscard]] Rect rectOf(const antwika::ui::Frame &frame, WidgetId id)
+    {
+        const auto found = frame.rects.find(id);
+
+        return found.value_or(Rect{});
+    }
+
+    [[nodiscard]] bool encloses(Rect outer, Rect inner) noexcept
+    {
+        const auto right = [](Rect box)
         {
-            for (std::int32_t x = 0;
-                 x < static_cast<std::int32_t>(kCanvas.width);
-                 x += 4)
-            {
-                const Pointer pointer{.position = Point{.x = x, .y = y}};
-                const auto frame =
-                    toolbar.describe(kCanvas, pointer, camera);
+            return box.origin.x
+                   + static_cast<std::int32_t>(box.size.width);
+        };
+        const auto bottom = [](Rect box)
+        {
+            return box.origin.y
+                   + static_cast<std::int32_t>(box.size.height);
+        };
 
-                if (frame.interactions.hovered == id)
-                {
-                    return Point{.x = x, .y = y};
-                }
-            }
-        }
+        return inner.origin.x >= outer.origin.x
+               && inner.origin.y >= outer.origin.y
+               && right(inner) <= right(outer)
+               && bottom(inner) <= bottom(outer);
+    }
 
-        return std::nullopt;
+    // What the three pieces leave in the middle.
+    // Off the layout, rather than from constants beside it.
+    [[nodiscard]] Rect gameViewOf(const antwika::ui::Frame &frame)
+    {
+        const auto top = rectOf(frame, widgets::kTopBar);
+        const auto side = rectOf(frame, widgets::kSidePanel);
+        const auto bottom = rectOf(frame, widgets::kBottomBar);
+
+        const auto y =
+            top.origin.y + static_cast<std::int32_t>(top.size.height);
+
+        return Rect{
+            .origin = {.x = 0, .y = y},
+            .size = {
+                .width = static_cast<std::uint32_t>(side.origin.x),
+                .height =
+                    static_cast<std::uint32_t>(bottom.origin.y - y)}};
     }
 } // namespace
 
@@ -219,23 +249,31 @@ TEST(ToolbarTest, Describe_ReportsAPressOnTheButtonUnderThePointer)
 }
 
 // The grid is what the rest of the window is for.
-TEST(ToolbarTest, Describe_CoversNoneOfTheCanvasAwayFromTheBar)
+TEST(ToolbarTest, Describe_CoversNoneOfTheGameView)
 {
     const Toolbar toolbar{kTranslator};
     const Camera camera;
+    const auto view =
+        gameViewOf(toolbar.describe(kCanvas, Pointer{}, camera));
 
-    const auto frame = toolbar.describe(
-        kCanvas,
-        Pointer{
-            .position = Point{
-                .x = static_cast<std::int32_t>(kCanvas.width) - 1,
-                .y = static_cast<std::int32_t>(kCanvas.height) - 1},
-            .down = true,
-            .pressed = true},
-        camera);
+    // The far corner of the middle band.
+    // Which is the pixel nearest to all three pieces at once.
+    const Point corner{
+        .x = view.origin.x
+             + static_cast<std::int32_t>(view.size.width) - 1,
+        .y = view.origin.y
+             + static_cast<std::int32_t>(view.size.height) - 1};
 
-    EXPECT_FALSE(frame.interactions.pointerOverUi);
-    EXPECT_EQ(kNoWidget, frame.interactions.activated);
+    for (const auto at : {view.origin, corner})
+    {
+        const auto frame = toolbar.describe(
+            kCanvas,
+            Pointer{.position = at, .down = true, .pressed = true},
+            camera);
+
+        EXPECT_FALSE(frame.interactions.pointerOverUi);
+        EXPECT_EQ(kNoWidget, frame.interactions.activated);
+    }
 }
 
 // Nothing here can clip, so the layout has to do the containing.
@@ -373,5 +411,143 @@ TEST(ToolbarTest, Describe_LeavesEveryExistingWidgetWhereItWas)
         ASSERT_TRUE(before.has_value());
         ASSERT_TRUE(after.has_value());
         EXPECT_EQ(*after, *before);
+    }
+}
+
+// Every palette button is on the panel down the right.
+// So none of them is over the city.
+// Which is what keeps a press meant for a button off a cell.
+TEST(ToolbarTest, Describe_KeepsEveryPaletteButtonOnTheSidePanel)
+{
+    const Toolbar toolbar{kTranslator};
+    const Camera camera;
+    const auto frame = toolbar.describe(kCanvas, Pointer{}, camera);
+    const auto panel = rectOf(frame, widgets::kSidePanel);
+    const auto view = gameViewOf(frame);
+
+    for (std::size_t index = 0; index < antwika::game::kBuildToolCount;
+         ++index)
+    {
+        const auto id = widgets::toolWidget(
+            static_cast<antwika::game::BuildTool>(index));
+        const auto button = frame.rects.find(id);
+
+        ASSERT_TRUE(button.has_value());
+        EXPECT_TRUE(encloses(panel, *button));
+        EXPECT_GE(button->origin.x, view.origin.x
+                                        + static_cast<std::int32_t>(
+                                            view.size.width));
+    }
+}
+
+// The view controls and the readouts are along the bottom now.
+// The game menu is along the top.
+TEST(ToolbarTest, Describe_PutsEveryWidgetOnThePieceItBelongsTo)
+{
+    const Toolbar toolbar{kTranslator};
+    const Camera camera;
+    const auto frame = toolbar.describe(kCanvas, Pointer{}, camera);
+
+    for (const auto id : {widgets::kGameMenu, widgets::kMenu})
+    {
+        const auto found = frame.rects.find(id);
+
+        ASSERT_TRUE(found.has_value());
+        EXPECT_TRUE(encloses(rectOf(frame, widgets::kTopBar), *found));
+    }
+
+    for (const auto id : {
+             widgets::kZoomOut,
+             widgets::kZoomIn,
+             widgets::kResetView,
+             widgets::kPauseResume})
+    {
+        const auto found = frame.rects.find(id);
+
+        ASSERT_TRUE(found.has_value());
+        EXPECT_TRUE(encloses(rectOf(frame, widgets::kBottomBar), *found));
+    }
+}
+
+// A city nobody can see is not worth building one in.
+TEST(ToolbarTest, Describe_LeavesMostOfTheCanvasToTheCity)
+{
+    const Toolbar toolbar{kTranslator};
+    const Camera camera;
+    const auto view =
+        gameViewOf(toolbar.describe(kCanvas, Pointer{}, camera));
+
+    EXPECT_GE(view.size.width, 3 * kCanvas.width / 4);
+    EXPECT_GE(view.size.height, 3 * kCanvas.height / 4);
+}
+
+// A list is drawn only where the caller says it is showing.
+// antwika::ui remembers nothing about one -- see ui::DropdownSpec.
+TEST(ToolbarTest, Describe_ListsTheGameMenusItemsOnlyWhileItIsOpen)
+{
+    const Toolbar toolbar{kTranslator};
+    const Camera camera;
+
+    const auto closed = toolbar.describe(kCanvas, Pointer{}, camera);
+    const auto open = toolbar.describe(
+        kCanvas,
+        Pointer{},
+        camera,
+        antwika::game::BuildTool::Road,
+        false,
+        0,
+        CityRatings{},
+        true);
+
+    EXPECT_THAT(
+        textsOf(closed.commands),
+        ::testing::Not(::testing::Contains(std::string{"load game"})));
+    EXPECT_THAT(
+        textsOf(open.commands),
+        ::testing::IsSupersetOf(
+            {std::string{"new game"},
+             std::string{"save game"},
+             std::string{"load game"},
+             std::string{"main menu"},
+             std::string{"world map"}}));
+}
+
+// The list is an overlay hung under the box it dropped from.
+// So every item has a pixel of its own, shared with nothing.
+TEST(ToolbarTest, Describe_HasAPixelForEveryMenuItem)
+{
+    const Toolbar toolbar{kTranslator};
+    const Camera camera;
+    const auto frame = toolbar.describe(
+        kCanvas,
+        Pointer{},
+        camera,
+        antwika::game::BuildTool::Road,
+        false,
+        0,
+        CityRatings{},
+        true);
+
+    for (std::size_t index = 0; index < antwika::game::kMenuItemCount;
+         ++index)
+    {
+        const auto id = widgets::menuItemWidget(
+            static_cast<antwika::game::MenuItem>(index));
+        const auto centre =
+            antwika::game::tests::widgetCentre(frame, id);
+
+        ASSERT_TRUE(centre.has_value());
+
+        const auto hit = toolbar.describe(
+            kCanvas,
+            Pointer{.position = centre},
+            camera,
+            antwika::game::BuildTool::Road,
+            false,
+            0,
+            CityRatings{},
+            true);
+
+        EXPECT_EQ(id, hit.interactions.hovered);
     }
 }

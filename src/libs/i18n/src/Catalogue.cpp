@@ -258,6 +258,13 @@ namespace antwika::i18n
             {MessageId::TaskWorkerQueued, "{0} priority {1}"},
             {MessageId::TaskWorkerBlocked, "{0} waits for {1}"},
             {MessageId::TaskWorkerCompleted, "completed"},
+            {MessageId::GameToolbarGameMenu, "game"},
+            {MessageId::GameToolbarBuild, "build"},
+            {MessageId::GameMenuItemNewGame, "new game"},
+            {MessageId::GameMenuItemSaveGame, "save game"},
+            {MessageId::GameMenuItemLoadGame, "load game"},
+            {MessageId::GameMenuItemMainMenu, "main menu"},
+            {MessageId::GameMenuItemWorldMap, "world map"},
         }};
 
         constexpr std::array<CatalogueEntry, kMessageCount> kSwedishEntries{{
@@ -497,6 +504,13 @@ namespace antwika::i18n
             {MessageId::TaskWorkerQueued, "{0} prioritet {1}"},
             {MessageId::TaskWorkerBlocked, "{0} väntar på {1}"},
             {MessageId::TaskWorkerCompleted, "klara"},
+            {MessageId::GameToolbarGameMenu, "spel"},
+            {MessageId::GameToolbarBuild, "bygg"},
+            {MessageId::GameMenuItemNewGame, "nytt spel"},
+            {MessageId::GameMenuItemSaveGame, "spara spel"},
+            {MessageId::GameMenuItemLoadGame, "läs in spel"},
+            {MessageId::GameMenuItemMainMenu, "huvudmeny"},
+            {MessageId::GameMenuItemWorldMap, "världskarta"},
         }};
 
         constexpr Catalogue kEnglishCatalogue{

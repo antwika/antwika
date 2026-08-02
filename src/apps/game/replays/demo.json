@@ -97,7 +97,7 @@
       "tick": 3,
       "event": {
         "name": "input.pointer_down",
-        "payload": "{\"button\":\"Left\",\"x\":88,\"y\":56,\"shift\":false,\"control\":false,\"alt\":false,\"super\":false}"
+        "payload": "{\"button\":\"Left\",\"x\":968,\"y\":108,\"shift\":false,\"control\":false,\"alt\":false,\"super\":false}"
       }
     },
     {

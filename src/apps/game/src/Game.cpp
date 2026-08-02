@@ -29,6 +29,7 @@
 #include "antwika/game/MarketSystem.hpp"
 #include "antwika/game/MainMenuScene.hpp"
 #include "antwika/game/MainMenuSink.hpp"
+#include "antwika/game/MenuCommands.hpp"
 #include "antwika/game/MenuModalScene.hpp"
 #include "antwika/game/ModeGatedSink.hpp"
 #include "antwika/game/PauseGatedSystem.hpp"
@@ -289,6 +290,30 @@ namespace antwika::game
         RoadDrag &drag =
             config.drag.has_value() ? config.drag->get() : ownDrag;
 
+        // The four that are swapped together, named together.
+        // A city is opened by putting its contents into these.
+        // Declared here rather than beside the world-map sink.
+        // The game menu puts a city away through the same four.
+        const LiveGrid live{
+            .world = world,
+            .paths = paths,
+            .built = config.built,
+            .camera = camera};
+
+        SessionStore session(
+            world,
+            paths,
+            config.built,
+            camera,
+            state,
+            config.extent,
+            config.seed);
+
+        // What the top bar's game menu does, written once.
+        // The menu modal's own way out goes through it too.
+        // So leaving for the main menu is one transition, not two.
+        MenuCommands commands(mode, session, cities, live, camera);
+
         const Toolbar toolbar(translator);
         const MenuModalScene menuModal(translator);
         InputFold input(config.codec);
@@ -298,7 +323,7 @@ namespace antwika::game
             input,
             toolbar,
             pause,
-            mode,
+            commands,
             drag,
             menuModal,
             camera,
@@ -315,14 +340,6 @@ namespace antwika::game
             config.built,
             drag);
 
-        // The four that are swapped together, named together.
-        // A city is opened by putting its contents into these.
-        const LiveGrid live{
-            .world = world,
-            .paths = paths,
-            .built = config.built,
-            .camera = camera};
-
         WorldMapSink worldSink(
             cities, mode, live, input, config.canvas);
         StopSignal stopSignal;
@@ -337,15 +354,6 @@ namespace antwika::game
         UiOverlay &saveUi = config.saveOverlay.has_value()
                                 ? config.saveOverlay->get()
                                 : noSaveScreen;
-
-        SessionStore session(
-            world,
-            paths,
-            config.built,
-            camera,
-            state,
-            config.extent,
-            config.seed);
 
         // Restored before the first tick.
         // Through the very store the Load button uses.

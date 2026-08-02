@@ -34,8 +34,8 @@
 
 #include "WidgetPixel.hpp"
 
+#include "FakeMenuCommands.hpp"
 #include "TestTranslator.hpp"
-#include "antwika/game/AppMode.hpp"
 #include "antwika/game/BuildGhost.hpp"
 #include "antwika/game/BuildTool.hpp"
 #include "antwika/game/Building.hpp"
@@ -88,8 +88,6 @@ using antwika::game::cellCentre;
 using antwika::game::GridExtent;
 using antwika::game::GridScene;
 using antwika::game::GridSink;
-using antwika::game::AppMode;
-using antwika::game::AppModeState;
 using antwika::game::MenuModalScene;
 using antwika::game::PauseState;
 using antwika::game::RoadDrag;
@@ -373,8 +371,9 @@ namespace
         PathIndex paths;
         BuildingIndex built;
 
-        // Panned well clear of the bar, which sits top-left.
-        Camera camera{Point{.x = 700, .y = 300}};
+        // Panned so the cells these tests click sit in the middle.
+        // Clear of the two strips, and clear of the palette panel.
+        Camera camera{Point{.x = 400, .y = 200}};
         SystemScheduler scheduler;
         InputEventCodec codec;
         InputFold input{codec};
@@ -383,7 +382,7 @@ namespace
         PauseState pause;
         WorldMapState cities{WorldMap{}};
         RoadDrag drag;
-        AppModeState mode{AppMode::CityMap};
+        antwika::game::tests::FakeMenuCommands commands;
         MenuModalScene modalScene{kTranslator};
         antwika::game::CityRatings ratings;
         UiSink uiSink{
@@ -392,7 +391,7 @@ namespace
             input,
             toolbar,
             pause,
-            mode,
+            commands,
             drag,
             modalScene,
             camera,
@@ -1141,4 +1140,22 @@ TEST(GridSceneBuildTest, NothingIsBorderedWithNoGhostToBorder)
     away.ghost.at = Cell{.x = 900, .y = -900};
 
     EXPECT_TRUE(linesOf(away).empty());
+}
+
+// Through the real bar and the real grid, which is where it matters.
+// A press that puts the game menu away lays nothing under it.
+TEST_F(PaletteSinkTest, APressThatPutsTheGameMenuAwayBuildsNothing)
+{
+    constexpr Cell target{.x = 4, .y = 4};
+
+    pressOn(widgets::kGameMenu);
+    clickAt(target, MouseButton::Left);
+
+    EXPECT_FALSE(paths.has(target));
+    EXPECT_TRUE(buildings().empty());
+
+    // And the next press is an ordinary one again.
+    clickAt(target, MouseButton::Left);
+
+    EXPECT_TRUE(paths.has(target));
 }
