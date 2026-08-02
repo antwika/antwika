@@ -1,5 +1,7 @@
 #include "antwika/life/PointerToggleSink.hpp"
 
+#include <cstdint>
+#include <cstdlib>
 #include <variant>
 
 #include <antwika/engine/Events.hpp>
@@ -28,6 +30,7 @@ namespace antwika::life
           grid(grid),
           codec(codec),
           drag(drag),
+          canvas(canvas),
           layout(layoutFor(canvas, grid.width(), grid.height()))
     {
     }
@@ -59,6 +62,7 @@ namespace antwika::life
                 // Cleared on the press, not on the release.
                 // That also copes with a press nothing preceded.
                 visited.clear();
+                lastDrag = pressed->position;
                 toggleAt(pressed->position);
             }
 
@@ -71,6 +75,7 @@ namespace antwika::life
             if (released->button == MouseButton::Left)
             {
                 drag.end();
+                lastDrag.reset();
             }
 
             return;
@@ -80,7 +85,74 @@ namespace antwika::life
         {
             if (drag.inProgress())
             {
-                toggleAt(moved->position);
+                // The window system samples a drag discretely.
+                // A fast one jumps several cells between two events.
+                // So the whole segment is walked, never just its end.
+                toggleAlong(
+                    lastDrag.value_or(moved->position),
+                    moved->position);
+
+                lastDrag = moved->position;
+            }
+        }
+    }
+
+    // The integer Bresenham atlas_editor already strokes with.
+    // The visited set keeps once-per-drag intact along the way.
+    // Integer throughout: which cell a drag means is simulation state.
+    void PointerToggleSink::toggleAlong(
+        const Position from, const Position to)
+    {
+        // A recording is hand-editable, and this walk is per pixel.
+        // A crafted jump wider than the canvas toggles its end alone.
+        // The board is inside the canvas, so no cell is missable.
+        const std::int64_t bound =
+            std::int64_t{canvas.width} + std::int64_t{canvas.height};
+
+        const auto tall = std::abs(
+            std::int64_t{to.y} - std::int64_t{from.y});
+        const auto wide = std::abs(
+            std::int64_t{to.x} - std::int64_t{from.x});
+
+        if (wide + tall > bound)
+        {
+            toggleAt(to);
+
+            return;
+        }
+
+        const std::int32_t stepX = to.x < from.x ? -1 : 1;
+        const std::int32_t stepY = to.y < from.y ? -1 : 1;
+
+        // Distances as magnitudes, the vertical one negated.
+        // That is the form the two comparisons below are written for.
+        const std::int32_t spanX = (to.x - from.x) * stepX;
+        const std::int32_t spanY = (from.y - to.y) * stepY;
+
+        std::int32_t error = spanX + spanY;
+        Position walked = from;
+
+        for (;;)
+        {
+            toggleAt(walked);
+
+            if (walked.x == to.x && walked.y == to.y)
+            {
+                return;
+            }
+
+            const std::int32_t doubled = 2 * error;
+
+            if (doubled >= spanY)
+            {
+                error += spanY;
+                walked.x += stepX;
+            }
+
+            if (doubled <= spanX)
+            {
+                error += spanX;
+                walked.y += stepY;
             }
         }
     }
@@ -103,9 +175,9 @@ namespace antwika::life
         // How the grid addresses a cell stays the grid's business.
         const auto entity = grid.entityAt(cell->x, cell->y);
 
-        // A drag reports a position per pixel.
-        // So the same cell arrives many times over.
-        // Toggling on each would tie the result to how fast it was drawn.
+        // The walked segment lands on one cell many pixels over.
+        // And a drag may cross a cell it toggled earlier.
+        // Toggling on each would tie the result to how it was drawn.
         if (!visited.insert(entity).second)
         {
             return;

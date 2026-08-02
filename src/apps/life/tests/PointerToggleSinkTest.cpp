@@ -181,8 +181,38 @@ TEST_F(PointerToggleSinkTest, Handle_TogglesEveryCellADragCrosses)
     EXPECT_EQ(aliveCount(), 3u);
 }
 
-// A drag reports a position per pixel.
-// What it draws must not depend on how many landed in one cell.
+// The window system samples a drag discretely.
+// A fast one jumps several cells between two motion events.
+// The segment is walked, so the cells in between still toggle.
+TEST_F(PointerToggleSinkTest, Handle_TogglesTheCellsAFastDragJumped)
+{
+    press(5, 5);
+    moveTo(35, 5);
+
+    // Ten pixels a cell: the one jump crossed cells 0 through 3.
+    for (std::uint32_t x = 0; x < kWidth; ++x)
+    {
+        EXPECT_TRUE(aliveAt(x, 0)) << "cell " << x;
+    }
+
+    EXPECT_EQ(aliveCount(), 4u);
+}
+
+// A recording is hand-editable, and the walk above is per pixel.
+// A crafted jump wider than the canvas toggles its end alone.
+TEST_F(PointerToggleSinkTest, Handle_DoesNotWalkAJumpWiderThanTheCanvas)
+{
+    press(5, 5);
+    moveTo(2000000000, 5);
+    moveTo(25, 5);
+
+    EXPECT_TRUE(aliveAt(0, 0));
+    EXPECT_TRUE(aliveAt(2, 0));
+    EXPECT_EQ(aliveCount(), 2u);
+}
+
+// However many samples landed in one cell, it toggles once.
+// What a drag draws must not depend on how fast it was drawn.
 TEST_F(PointerToggleSinkTest, Handle_TogglesACellOnlyOncePerDrag)
 {
     press(5, 5);

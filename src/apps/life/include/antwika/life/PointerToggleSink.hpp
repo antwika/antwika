@@ -108,13 +108,20 @@ namespace antwika::life
     private:
         void toggleAt(Position position);
 
+        void toggleAlong(Position from, Position to);
+
         World &world;
         const Grid &grid;
         const IInputEventCodec &codec;
         DragState &drag;
+        Size canvas;
         std::optional<BoardLayout> layout;
         std::set<Entity> visited;
         std::map<Entity, bool> staged;
+
+        // Where the drag last was, folded from the same events.
+        // A move toggles the whole segment from here, not its end.
+        std::optional<Position> lastDrag;
     };
 
 } // namespace antwika::life
