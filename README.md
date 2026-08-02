@@ -108,7 +108,7 @@ Each application has a directory of its own under `build/bin/`, holding the exec
 - `build/bin/antwika_gfx3d_demo/antwika_gfx3d_demo` — a cube turned by the tick count, drawn through the 3D interface and captioned through the 2D one.
 - `build/bin/antwika_gfx_demo/antwika_gfx_demo` — bars, a blitted PNG logo, and a panel of clickable buttons over them.
 - `build/bin/antwika_life/antwika_life` — Conway's Game of Life on a board you draw on by dragging.
-- `build/bin/antwika_music_editor/antwika_music_editor` — four lines of mini-notation you type into while they play, with every keystroke reaching the music.
+- `build/bin/antwika_music_editor/antwika_music_editor` — a page of live-coded voice lines that sounds while you type, lights the notes it is playing, and saves and loads scores from its menu.
 - `build/bin/antwika_poker/antwika_poker` — a no-limit hold'em cash game, watchable at `--tick-delay-ms <n>` per action.
 - `build/bin/antwika_sound_demo/antwika_sound_demo` — eight notes at exact frame positions, or a WAV of your own with `--file`.
 - `build/bin/antwika_sudoku/antwika_sudoku` — a Sudoku you play with a mouse and a keyboard, with `--puzzle` to load one from a file and a Solve button that finishes it.
