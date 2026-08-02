@@ -13,7 +13,9 @@
 
 #include "antwika/game/Building.hpp"
 #include "antwika/game/BuildingKind.hpp"
+#include "antwika/game/Errand.hpp"
 #include "antwika/game/PathIndex.hpp"
+#include "antwika/game/Production.hpp"
 #include "antwika/game/SaveFormatError.hpp"
 #include "antwika/game/SaveGame.hpp"
 #include "antwika/game/Walker.hpp"
@@ -24,6 +26,8 @@ using antwika::game::BuildingKind;
 using antwika::game::Camera;
 using antwika::game::Cell;
 using antwika::game::Direction;
+using antwika::game::Errand;
+using antwika::game::ErrandLeg;
 using antwika::game::GameState;
 using antwika::game::GameSummary;
 using antwika::game::GridExtent;
@@ -39,6 +43,9 @@ using antwika::game::SaveGame;
 using antwika::game::saveGameFromJson;
 using antwika::game::saveGameOf;
 using antwika::game::saveGameToJson;
+using antwika::game::Production;
+using antwika::game::Resource;
+using antwika::game::SavedErrand;
 using antwika::game::SavedWalker;
 using antwika::game::Walker;
 using antwika::game::WalkerKind;
@@ -612,4 +619,267 @@ TEST(SaveGameTest, SaveEqualityComparesTheBuildings)
 
     EXPECT_EQ(base, base);
     EXPECT_NE(base, other);
+}
+
+TEST(SaveGameTest, RoundTripsAWalkerMidErrand)
+{
+    SaveGame save;
+    save.walkers = {SavedWalker{
+        .at = {.x = 1, .y = 2},
+        .kind = WalkerKind::CartPusher,
+        .carried = 30,
+        .home = 0U,
+        .errand =
+            SavedErrand{
+                .destination = 1U,
+                .carrying = Resource::Pottery,
+                .leg = ErrandLeg::Returning}}};
+    save.buildings = {
+        antwika::game::SavedBuilding{
+            .at = {.x = 4, .y = 4},
+            .kind = BuildingKind::Workshop,
+            .walkers = {0U}},
+        antwika::game::SavedBuilding{
+            .at = {.x = 8, .y = 8}, .kind = BuildingKind::Storage}};
+
+    const auto loaded = saveGameFromJson(saveGameToJson(save));
+
+    EXPECT_EQ(loaded.walkers, save.walkers);
+}
+
+// An errand naming nowhere is an ordinary state, not a missing field.
+TEST(SaveGameTest, RoundTripsAnErrandBoundNowhere)
+{
+    SaveGame save;
+    save.walkers = {SavedWalker{
+        .at = {.x = 1, .y = 2},
+        .kind = WalkerKind::MarketSeller,
+        .errand = SavedErrand{.carrying = Resource::Food}}};
+
+    const auto loaded = saveGameFromJson(saveGameToJson(save));
+
+    ASSERT_EQ(loaded.walkers.size(), 1U);
+    ASSERT_TRUE(loaded.walkers[0].errand.has_value());
+    EXPECT_FALSE(loaded.walkers[0].errand->destination.has_value());
+}
+
+TEST(SaveGameTest, RoundTripsAProducersCountdown)
+{
+    SaveGame save;
+    save.buildings = {antwika::game::SavedBuilding{
+        .at = {.x = 4, .y = 4},
+        .kind = BuildingKind::Farm,
+        .ticksUntilOutput = 11}};
+
+    const auto loaded = saveGameFromJson(saveGameToJson(save));
+
+    EXPECT_EQ(loaded.buildings, save.buildings);
+}
+
+TEST(SaveGameTest, LeavesABuildingThatNeverProducedWithoutACountdown)
+{
+    SaveGame save;
+    save.buildings = {antwika::game::SavedBuilding{
+        .at = {.x = 4, .y = 4}, .kind = BuildingKind::House}};
+
+    const auto encoded = saveGameToJson(save);
+
+    EXPECT_FALSE(encoded.at("buildings").at(0).contains("ticksUntilOutput"));
+    EXPECT_FALSE(
+        saveGameFromJson(encoded).buildings[0].ticksUntilOutput.has_value());
+}
+
+// Refused rather than repaired, exactly as a walker's home is.
+// A repaired save is a session somebody never had.
+TEST(SaveGameTest, RejectsAnErrandWhoseDestinationIsNotABuildingInIt)
+{
+    SaveGame save;
+    save.walkers = {SavedWalker{
+        .at = {.x = 1, .y = 2},
+        .errand = SavedErrand{.destination = 7U}}};
+
+    const auto encoded = saveGameToJson(save);
+
+    EXPECT_THROW((void)saveGameFromJson(encoded), SaveFormatError);
+}
+
+TEST(SaveGameTest, RejectsAnErrandNamingAResourceThisBuildDoesNotHave)
+{
+    SaveGame save;
+    save.walkers = {
+        SavedWalker{.at = {.x = 1, .y = 2}, .errand = SavedErrand{}}};
+
+    auto encoded = saveGameToJson(save);
+    encoded["walkers"][0]["errand"]["carrying"] = "amphorae";
+
+    EXPECT_THROW((void)saveGameFromJson(encoded), SaveFormatError);
+}
+
+TEST(SaveGameTest, RejectsAnErrandNamingALegThisBuildDoesNotHave)
+{
+    SaveGame save;
+    save.walkers = {
+        SavedWalker{.at = {.x = 1, .y = 2}, .errand = SavedErrand{}}};
+
+    auto encoded = saveGameToJson(save);
+    encoded["walkers"][0]["errand"]["leg"] = "sideways";
+
+    EXPECT_THROW((void)saveGameFromJson(encoded), SaveFormatError);
+}
+
+TEST(SaveGameTest, TakesAnErrandAndACountdownFromARunningSession)
+{
+    ::testing::NiceMock<MockLogger> logger;
+    World world(logger);
+    const PathIndex paths;
+
+    const auto farm = world.create();
+    world.add<Cell>(farm, Cell{.x = 4, .y = 4});
+    world.add<Building>(farm, Building{.kind = BuildingKind::Farm});
+    world.add<Production>(farm, Production{.ticksUntilOutput = 13});
+
+    const auto store = world.create();
+    world.add<Cell>(store, Cell{.x = 8, .y = 8});
+    world.add<Building>(store, Building{.kind = BuildingKind::Storage});
+
+    const auto cart = world.create();
+    world.add<Cell>(cart, Cell{.x = 1, .y = 1});
+    world.add<Walker>(cart, Walker{.kind = WalkerKind::CartPusher});
+    world.add<Errand>(
+        cart,
+        Errand{.destination = store, .carrying = Resource::Food});
+    world.commit();
+
+    const auto save = saveGameOf(
+        world,
+        paths,
+        Camera{},
+        GameState{},
+        GridExtent{.width = 16, .height = 16});
+
+    ASSERT_EQ(save.buildings.size(), 2U);
+    EXPECT_EQ(save.buildings[0].ticksUntilOutput, 13);
+    EXPECT_FALSE(save.buildings[1].ticksUntilOutput.has_value());
+
+    ASSERT_EQ(save.walkers.size(), 1U);
+    ASSERT_TRUE(save.walkers[0].errand.has_value());
+    EXPECT_EQ(save.walkers[0].errand->destination, 1U);
+}
+
+// A destination whose building never reached the file is nowhere.
+// Which is the same state a cart with no store to go to already has.
+TEST(SaveGameTest, WritesAnErrandNamingNobodyWhenItsStoreIsGone)
+{
+    ::testing::NiceMock<MockLogger> logger;
+    World world(logger);
+    const PathIndex paths;
+
+    const auto cart = world.create();
+    world.add<Cell>(cart, Cell{.x = 1, .y = 1});
+    world.add<Walker>(cart, Walker{.kind = WalkerKind::CartPusher});
+    world.add<Errand>(
+        cart, Errand{.destination = static_cast<antwika::ecs::Entity>(99)});
+    world.commit();
+
+    const auto save = saveGameOf(
+        world,
+        paths,
+        Camera{},
+        GameState{},
+        GridExtent{.width = 16, .height = 16});
+
+    ASSERT_EQ(save.walkers.size(), 1U);
+    ASSERT_TRUE(save.walkers[0].errand.has_value());
+    EXPECT_FALSE(save.walkers[0].errand->destination.has_value());
+}
+
+TEST(SaveGameTest, SavedErrandEqualityComparesEveryField)
+{
+    const SavedErrand base{
+        .destination = 1U,
+        .carrying = Resource::Clay,
+        .leg = ErrandLeg::Returning};
+
+    EXPECT_EQ(base, base);
+
+    auto lost = base;
+    lost.destination.reset();
+    EXPECT_NE(base, lost);
+
+    auto other = base;
+    other.carrying = Resource::Food;
+    EXPECT_NE(base, other);
+
+    auto turned = base;
+    turned.leg = ErrandLeg::Outbound;
+    EXPECT_NE(base, turned);
+}
+
+TEST(SaveGameTest, SavedWalkerEqualityComparesItsErrand)
+{
+    SavedWalker base{.at = {.x = 1, .y = 2}};
+    base.errand = SavedErrand{};
+
+    auto roaming = base;
+    roaming.errand.reset();
+
+    EXPECT_EQ(base, base);
+    EXPECT_NE(base, roaming);
+}
+
+TEST(SaveGameTest, SavedBuildingEqualityComparesItsCountdown)
+{
+    antwika::game::SavedBuilding base{.at = {.x = 1, .y = 2}};
+    base.ticksUntilOutput = 4;
+
+    auto idle = base;
+    idle.ticksUntilOutput.reset();
+
+    EXPECT_EQ(base, base);
+    EXPECT_NE(base, idle);
+}
+
+// A city holds more buildings than the smallest case a decoder sees.
+// And the arrays that hold them grow as one is read.
+TEST(SaveGameTest, RoundTripsACityOfSeveralBuildings)
+{
+    SaveGame save;
+
+    for (std::int32_t index = 0; index < 5; ++index)
+    {
+        save.buildings.push_back(
+            antwika::game::SavedBuilding{
+                .at = {.x = index, .y = index},
+                .kind = BuildingKind::Farm,
+                .ticksUntilOutput = index});
+    }
+
+    const auto loaded = saveGameFromJson(saveGameToJson(save));
+
+    EXPECT_EQ(loaded.buildings, save.buildings);
+}
+
+TEST(SaveGameTest, TakesACityOfSeveralBuildingsFromARunningSession)
+{
+    ::testing::NiceMock<MockLogger> logger;
+    World world(logger);
+    const PathIndex paths;
+
+    for (std::int32_t index = 0; index < 5; ++index)
+    {
+        const auto entity = world.create();
+        world.add<Cell>(entity, Cell{.x = index, .y = index});
+        world.add<Building>(entity, Building{.kind = BuildingKind::Farm});
+    }
+
+    world.commit();
+
+    const auto save = saveGameOf(
+        world,
+        paths,
+        Camera{},
+        GameState{},
+        GridExtent{.width = 16, .height = 16});
+
+    EXPECT_EQ(save.buildings.size(), 5U);
 }

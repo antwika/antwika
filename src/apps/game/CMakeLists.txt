@@ -5,23 +5,28 @@ add_executable(antwika_game
     src/BuildingIndex.cpp
     src/BuildingSystem.cpp
     src/CityGrid.cpp
+    src/Errand.cpp
+    src/ErrandRouting.cpp
     src/FpsReadout.cpp
     src/FrameMeter.cpp
     src/Game.cpp
     src/GameStateReducer.cpp
     src/GridScene.cpp
     src/GridSink.cpp
+    src/HaulingSystem.cpp
     src/Homing.cpp
     src/Hover.cpp
     src/InputFold.cpp
     src/MainMenuScene.cpp
     src/MainMenuSink.cpp
+    src/MarketSystem.cpp
     src/MenuModalScene.cpp
     src/ModeGatedSink.cpp
     src/PathIndex.cpp
     src/PauseGatedSystem.cpp
     src/PauseState.cpp
     src/Placement.cpp
+    src/ProductionSystem.cpp
     src/ReadoutPanel.cpp
     src/ResourceBar.cpp
     src/RenderSystem.cpp
@@ -37,10 +42,12 @@ add_executable(antwika_game
     src/SaveLoadState.cpp
     src/SaveMigration.cpp
     src/SaveMigrationV2ToV3.cpp
+    src/SaveProduction.cpp
     src/SaveSections.cpp
     src/SessionGatedSystem.cpp
     src/SessionStore.cpp
     src/SpawnSystem.cpp
+    src/Store.cpp
     src/Toolbar.cpp
     src/SceneSnapshot.cpp
     src/UiOverlay.cpp

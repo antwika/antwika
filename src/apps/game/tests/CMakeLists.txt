@@ -7,23 +7,28 @@ add_executable(antwika_game_tests
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/BuildingIndex.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/BuildingSystem.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/CityGrid.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/Errand.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/ErrandRouting.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/FpsReadout.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/FrameMeter.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/Game.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/GameStateReducer.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/GridScene.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/GridSink.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/HaulingSystem.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/Homing.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/Hover.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/InputFold.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/MainMenuScene.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/MainMenuSink.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/MarketSystem.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/MenuModalScene.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/ModeGatedSink.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/PathIndex.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/PauseGatedSystem.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/PauseState.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/Placement.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/ProductionSystem.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/ReadoutPanel.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/ResourceBar.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/RenderSystem.cpp
@@ -39,10 +44,12 @@ add_executable(antwika_game_tests
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/SaveLoadState.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/SaveMigration.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/SaveMigrationV2ToV3.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/SaveProduction.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/SaveSections.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/SessionGatedSystem.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/SessionStore.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/SpawnSystem.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/Store.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/Toolbar.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/SceneSnapshot.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/UiOverlay.cpp
@@ -103,7 +110,14 @@ add_executable(antwika_game_tests
     SaveGameTest.cpp
     SaveMigrationTest.cpp
     SceneSnapshotTest.cpp
+    ErrandRoutingTest.cpp
+    ErrandTest.cpp
+    HaulingSystemTest.cpp
+    MarketSystemTest.cpp
+    ProductionSystemTest.cpp
     ServiceTest.cpp
+    StoreTest.cpp
+    SupplyChainTest.cpp
     SessionStoreTest.cpp
     SpawnSystemTest.cpp
     TileAtlasTest.cpp

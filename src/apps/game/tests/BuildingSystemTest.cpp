@@ -13,6 +13,7 @@
 #include "antwika/game/BuildingIndex.hpp"
 #include "antwika/game/BuildingKind.hpp"
 #include "antwika/game/Cell.hpp"
+#include "antwika/game/Errand.hpp"
 #include "antwika/game/Footprint.hpp"
 #include "antwika/game/Resource.hpp"
 #include "antwika/game/Walker.hpp"
@@ -24,6 +25,8 @@ using antwika::game::BuildingIndex;
 using antwika::game::BuildingKind;
 using antwika::game::BuildingSystem;
 using antwika::game::Cell;
+using antwika::game::Errand;
+using antwika::game::ErrandLeg;
 using antwika::game::Footprint;
 using antwika::game::footprintOf;
 using antwika::game::kDrainPeriodTicks;
@@ -352,20 +355,61 @@ TEST_F(BuildingSystemTest, Update_ReachesABuildingByAnyCellOfItsBlock)
 {
     // Beside the block's far corner rather than its origin.
     // One cell's neighbours would never have matched it.
+    //
+    // Asked with a fireman rather than with a load.
+    // A load bound nowhere only ever reaches somebody who eats it.
+    // And every kind that eats stands on one cell.
     const auto source = build(
         Cell{.x = 4, .y = 4},
-        Building{
-            .kind = BuildingKind::Farm, .stock = {10, 10}});
+        Building{.kind = BuildingKind::Farm, .risk = 60});
 
     sendWalker(
-        Cell{.x = 6, .y = 5},
-        Walker{.kind = WalkerKind::MarketSeller, .carried = 20});
+        Cell{.x = 6, .y = 5}, Walker{.kind = WalkerKind::Fireman});
+
+    run(1);
+
+    EXPECT_EQ(world.get<Building>(source).risk, 60 - kRiskRelief);
+}
+
+// A seller filling the storehouse it passed would undo the buyer.
+// So a load bound nowhere goes to whoever eats it and nobody else.
+TEST_F(BuildingSystemTest, Update_LeavesAStoreASellerWalksPastAlone)
+{
+    const auto store = build(
+        Cell{.x = 1, .y = 0},
+        Building{.kind = BuildingKind::Storage, .stock = {0, 0, 0}});
+
+    const auto seller = sendWalker(
+        Cell{.x = 0, .y = 0},
+        Walker{.kind = WalkerKind::MarketSeller, .carried = 40});
 
     run(1);
 
     EXPECT_EQ(
-        world.get<Building>(source).stock[resourceIndex(Resource::Food)],
-        30);
+        world.get<Building>(store).stock[resourceIndex(Resource::Food)],
+        0);
+    EXPECT_EQ(world.get<Walker>(seller).carried, 40);
+}
+
+// Handing a basket back to the building that filled it moves nothing.
+TEST_F(BuildingSystemTest, Update_LeavesTheMarketThatSentASellerAlone)
+{
+    const auto market = build(
+        Cell{.x = 1, .y = 0},
+        Building{.kind = BuildingKind::Market, .stock = {0, 0, 0}});
+
+    sendWalker(
+        Cell{.x = 0, .y = 0},
+        Walker{
+            .kind = WalkerKind::MarketSeller,
+            .carried = 40,
+            .home = market});
+
+    run(1);
+
+    EXPECT_EQ(
+        world.get<Building>(market).stock[resourceIndex(Resource::Food)],
+        0);
 }
 
 TEST_F(BuildingSystemTest, Update_ClearsEveryCellOfADemolishedBlock)
@@ -380,4 +424,33 @@ TEST_F(BuildingSystemTest, Update_ClearsEveryCellOfADemolishedBlock)
 
     EXPECT_FALSE(built.has(Cell{.x = 4, .y = 4}));
     EXPECT_FALSE(built.has(Cell{.x = 5, .y = 5}));
+}
+
+// A load that never changed hands belongs to whoever sent the walker.
+// Not to this system -- see acceptsAt().
+TEST_F(BuildingSystemTest, Update_LeavesAWalkerOnItsWayBackToItsSender)
+{
+    const auto market = build(
+        Cell{.x = 1, .y = 0},
+        Building{.kind = BuildingKind::Market, .stock = {0, 0, 0}});
+
+    const auto buyer = sendWalker(
+        Cell{.x = 0, .y = 0},
+        Walker{
+            .kind = WalkerKind::MarketBuyer,
+            .carried = 40,
+            .home = market});
+
+    world.add<Errand>(
+        buyer,
+        Errand{
+            .carrying = Resource::Food, .leg = ErrandLeg::Returning});
+    world.commit();
+
+    run(1);
+
+    EXPECT_EQ(
+        world.get<Building>(market).stock[resourceIndex(Resource::Food)],
+        0);
+    EXPECT_EQ(world.get<Walker>(buyer).carried, 40);
 }

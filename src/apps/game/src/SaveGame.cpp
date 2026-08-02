@@ -14,6 +14,8 @@
 #include <antwika/replay/VersionedDocument.hpp>
 
 #include "antwika/game/Building.hpp"
+#include "antwika/game/Errand.hpp"
+#include "antwika/game/Production.hpp"
 #include "antwika/game/SaveFormatError.hpp"
 #include "antwika/game/Walker.hpp"
 #include "SaveSections.hpp"
@@ -151,6 +153,7 @@ namespace antwika::game
 
         walkersToJson(save, encoded);
         buildingsToJson(save, encoded);
+        productionToJson(save, encoded);
 
         encoded["seed"] = save.seed;
         return encoded;
@@ -194,10 +197,12 @@ namespace antwika::game
 
         walkersFromJson(document, save);
         buildingsFromJson(document, save);
+        productionFromJson(document, save);
 
         save.seed = document.at("seed").get<std::uint64_t>();
 
         requireConsistentLinks(save);
+        requireConsistentErrands(save);
 
         return save;
     } // GCOVR_EXCL_LINE
@@ -227,6 +232,19 @@ namespace antwika::game
             walkerAt.emplace(entity, save.walkers.size());
             const auto walker = world.get<Walker>(entity);
 
+            // The destination is filled in with the links below.
+            // A handle means nothing in a file -- see SavedErrand.
+            std::optional<SavedErrand> errand;
+
+            if (world.has<Errand>(entity))
+            {
+                const auto held = world.get<Errand>(entity);
+                errand = SavedErrand{
+                    .destination = std::nullopt,
+                    .carrying = held.carrying,
+                    .leg = held.leg};
+            }
+
             save.walkers.push_back(SavedWalker{
                 .at = world.get<Cell>(entity),
                 .facing = walker.facing,
@@ -234,7 +252,8 @@ namespace antwika::game
                 .carried = walker.carried,
                 .stepsUntilHome = walker.stepsUntilHome,
                 .ticksUntilStep = walker.ticksUntilStep,
-                .home = std::nullopt});
+                .home = std::nullopt,
+                .errand = errand});
         }
 
         for (const auto entity : world.view<Building, Cell>())
@@ -242,7 +261,20 @@ namespace antwika::game
             buildingAt.emplace(entity, save.buildings.size());
             const auto building = world.get<Building>(entity);
 
-            save.buildings.push_back(SavedBuilding{
+            std::optional<std::int32_t> countdown;
+
+            if (world.has<Production>(entity))
+            {
+                countdown = world.get<Production>(entity).ticksUntilOutput;
+            }
+
+            // The excluded line's one dead branch is an unwind edge.
+            // The temporary holds a vector.
+            // So a push_back that threw would have to destroy it.
+            // That landing pad is what the branch guards.
+            // gcov leaves it untagged, so the throw filter keeps it.
+            // See docs/confirming-unreachable-branches.md, (a).
+            save.buildings.push_back(SavedBuilding{ // GCOVR_EXCL_LINE
                 .at = world.get<Cell>(entity),
                 .kind = building.kind,
                 .stock = building.stock,
@@ -250,7 +282,30 @@ namespace antwika::game
                 .ticksUntilSpawn = building.ticksUntilSpawn,
                 .ticksUntilDrain = building.ticksUntilDrain,
                 .ticksUntilRisk = building.ticksUntilRisk,
-                .walkers = {}});
+                .walkers = {},
+                .ticksUntilOutput = countdown});
+        }
+
+        // The errands' destinations, once every building is indexed.
+        // A destination not in the file is nowhere.
+        // Which is the state a cart with no store already has.
+        for (const auto entity : world.view<Walker, Cell>())
+        {
+            if (!world.has<Errand>(entity))
+            {
+                continue;
+            }
+
+            const auto found =
+                buildingAt.find(world.get<Errand>(entity).destination);
+
+            if (found == buildingAt.end())
+            {
+                continue;
+            }
+
+            save.walkers[walkerAt.at(entity)].errand->destination =
+                found->second;
         }
 
         // The links, written only where both ends were recorded.

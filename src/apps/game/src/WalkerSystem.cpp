@@ -4,6 +4,7 @@
 
 #include "antwika/game/Building.hpp"
 #include "antwika/game/Cell.hpp"
+#include "antwika/game/Errand.hpp"
 #include "antwika/game/Footprint.hpp"
 #include "antwika/game/Homing.hpp"
 #include "antwika/game/Walker.hpp"
@@ -36,6 +37,17 @@ namespace antwika::game
             }
 
             const auto at = world.get<Cell>(entity);
+            const auto bound = errandTargetOf(world, entity);
+
+            // An errand is the one thing that overrides roaming.
+            // A walker without one keeps every rule it had before.
+            // Which is why the two arms below are untouched.
+            // An errand naming nowhere is a load on the rounds.
+            if (bound != antwika::ecs::kNullEntity)
+            {
+                runErrand(world, entity, walker, at, bound);
+                continue;
+            }
 
             if (walker.stepsUntilHome > 0)
             {
@@ -45,6 +57,64 @@ namespace antwika::game
 
             headHome(world, entity, walker, at);
         }
+    }
+
+    void WalkerSystem::runErrand(
+        World &world,
+        antwika::ecs::Entity entity,
+        const Walker &walker,
+        Cell at,
+        antwika::ecs::Entity bound)
+    {
+        // A dead target has no Cell, so this is one lookup.
+        // It is the same arm headHome() uses, and for its reason.
+        // A destination demolished, a road pulled out, no building.
+        // All three are answered by the walker being gone.
+        // And none of them is an error.
+        if (!world.has<Cell>(bound))
+        {
+            world.destroy(entity);
+            return;
+        }
+
+        const auto door = world.get<Cell>(bound);
+        const auto footprint =
+            footprintOf(world.get<Building>(bound).kind);
+        const auto heading =
+            stepTowards(at, door, footprint, paths, extent);
+
+        if (!heading.has_value())
+        {
+            world.destroy(entity);
+            return;
+        }
+
+        const auto onto = step(at, *heading);
+
+        if (covers(door, footprint, onto))
+        {
+            // Arriving is the one place the two legs differ.
+            // On the way back there is nothing left to do.
+            // So the walker is gone, as one that walked home is.
+            // On the way out it stands where it is.
+            // Whoever gave the errand decides what happens next.
+            // And that system runs in a later phase.
+            // So stepping on here would destroy it too soon.
+            if (world.get<Errand>(entity).leg == ErrandLeg::Returning)
+            {
+                world.destroy(entity);
+            }
+
+            return;
+        }
+
+        auto moved = walker;
+        moved.facing = *heading;
+        moved.ticksUntilStep = kTicksPerStep - 1;
+        moved.from = at;
+
+        world.set<Walker>(entity, moved);
+        world.set<Cell>(entity, onto);
     }
 
     void WalkerSystem::roam(

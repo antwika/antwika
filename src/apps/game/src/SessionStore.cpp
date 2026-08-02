@@ -6,6 +6,8 @@
 
 #include "antwika/game/Building.hpp"
 #include "antwika/game/CityGrid.hpp"
+#include "antwika/game/Errand.hpp"
+#include "antwika/game/Production.hpp"
 #include "antwika/game/Walker.hpp"
 
 namespace antwika::game
@@ -50,6 +52,15 @@ namespace antwika::game
 
         for (const auto &walker : save.walkers)
         {
+            std::optional<Errand> errand;
+
+            if (walker.errand.has_value())
+            {
+                errand = Errand{
+                    .carrying = walker.errand->carrying,
+                    .leg = walker.errand->leg};
+            }
+
             grid.walkers.push_back(
                 StoredWalker{
                     .at = walker.at,
@@ -60,7 +71,11 @@ namespace antwika::game
                             .carried = walker.carried,
                             .stepsUntilHome = walker.stepsUntilHome,
                             .ticksUntilStep = walker.ticksUntilStep},
-                    .home = walker.home});
+                    .home = walker.home,
+                    .errand = errand,
+                    .destination = walker.errand.has_value()
+                        ? walker.errand->destination
+                        : std::nullopt});
         }
 
         for (const auto &building : save.buildings)
@@ -78,6 +93,14 @@ namespace antwika::game
                 }
             }
 
+            std::optional<Production> production;
+
+            if (building.ticksUntilOutput.has_value())
+            {
+                production = Production{
+                    .ticksUntilOutput = *building.ticksUntilOutput};
+            }
+
             grid.buildings.push_back(
                 StoredBuilding{
                     .at = building.at,
@@ -89,7 +112,8 @@ namespace antwika::game
                             .ticksUntilSpawn = building.ticksUntilSpawn,
                             .ticksUntilDrain = building.ticksUntilDrain,
                             .ticksUntilRisk = building.ticksUntilRisk},
-                    .walkers = held});
+                    .walkers = held,
+                    .production = production});
         }
 
         restoreCityGrid(world, built, paths, grid);

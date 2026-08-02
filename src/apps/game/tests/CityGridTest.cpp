@@ -14,9 +14,11 @@
 #include "antwika/game/Cell.hpp"
 #include "antwika/game/CityGrid.hpp"
 #include "antwika/game/Direction.hpp"
+#include "antwika/game/Errand.hpp"
 #include "antwika/game/Footprint.hpp"
 #include "antwika/game/Path.hpp"
 #include "antwika/game/PathIndex.hpp"
+#include "antwika/game/Production.hpp"
 #include "antwika/game/Walker.hpp"
 
 namespace
@@ -32,6 +34,10 @@ namespace
     using antwika::game::CityGrid;
     using antwika::game::cityGridOf;
     using antwika::game::Direction;
+    using antwika::game::Errand;
+    using antwika::game::ErrandLeg;
+    using antwika::game::Production;
+    using antwika::game::Resource;
     using antwika::game::Path;
     using antwika::game::PathIndex;
     using antwika::game::restoreCityGrid;
@@ -326,6 +332,170 @@ namespace
             base, [](CityGrid &g) { g.walkers.clear(); });
         expectMemberCompared(
             base, [](CityGrid &g) { g.buildings.clear(); });
+    }
+
+
+    // A city put away and opened again is the same city.
+    // Every countdown comes along for the reason Building's three do.
+    TEST_F(CityGridTest, CityGridOf_TakesTheErrandsAndTheCountdowns)
+    {
+        layPath(Cell{1, 1});
+        const auto farm = putUp(Cell{2, 2}, BuildingKind::Farm);
+        const auto store = putUp(Cell{6, 6}, BuildingKind::Storage);
+        const auto cart = sendOut(Cell{1, 1}, farm);
+        world.add<Production>(farm, Production{.ticksUntilOutput = 9});
+        world.add<Errand>(
+            cart,
+            Errand{
+                .destination = store,
+                .carrying = Resource::Clay,
+                .leg = ErrandLeg::Returning});
+        world.commit();
+
+        const auto grid = cityGridOf(world);
+
+        ASSERT_EQ(grid.walkers.size(), 1U);
+        ASSERT_TRUE(grid.walkers[0].errand.has_value());
+        EXPECT_EQ(grid.walkers[0].errand->carrying, Resource::Clay);
+        EXPECT_EQ(grid.walkers[0].errand->leg, ErrandLeg::Returning);
+        EXPECT_EQ(grid.walkers[0].errand->destination, kNullEntity);
+        EXPECT_EQ(grid.walkers[0].destination, 1U);
+
+        ASSERT_EQ(grid.buildings.size(), 2U);
+        ASSERT_TRUE(grid.buildings[0].production.has_value());
+        EXPECT_EQ(grid.buildings[0].production->ticksUntilOutput, 9);
+        EXPECT_FALSE(grid.buildings[1].production.has_value());
+    }
+
+    TEST_F(CityGridTest, CityGridOf_ForgetsAnErrandNamingNobodyItKept)
+    {
+        layPath(Cell{1, 1});
+        const auto cart = sendOut(Cell{1, 1}, kNullEntity);
+        world.add<Errand>(
+            cart,
+            Errand{
+                .destination = static_cast<Entity>(99),
+                .carrying = Resource::Food});
+        world.commit();
+
+        const auto grid = cityGridOf(world);
+
+        ASSERT_EQ(grid.walkers.size(), 1U);
+        EXPECT_FALSE(grid.walkers[0].destination.has_value());
+    }
+
+    TEST_F(CityGridTest, RestoreCityGrid_PutsTheErrandsAndCountdownsBack)
+    {
+        paths.insert(Cell{1, 1});
+
+        CityGrid grid;
+        grid.walkers = {
+            StoredWalker{
+                .at = Cell{1, 1},
+                .walker = Walker{},
+                .errand =
+                    Errand{
+                        .carrying = Resource::Pottery,
+                        .leg = ErrandLeg::Returning},
+                .destination = 1U},
+            StoredWalker{.at = Cell{1, 1}, .walker = Walker{}}};
+        grid.buildings = {
+            StoredBuilding{
+                .at = Cell{2, 2},
+                .building = Building{.kind = BuildingKind::Farm},
+                .production = Production{.ticksUntilOutput = 4}},
+            StoredBuilding{
+                .at = Cell{6, 6},
+                .building = Building{.kind = BuildingKind::Storage}}};
+
+        restoreCityGrid(world, built, paths, grid);
+        world.commit();
+
+        const auto taken = cityGridOf(world);
+
+        ASSERT_EQ(taken.walkers.size(), 2U);
+        ASSERT_TRUE(taken.walkers[0].errand.has_value());
+        EXPECT_EQ(taken.walkers[0].errand->carrying, Resource::Pottery);
+        EXPECT_EQ(taken.walkers[0].destination, 1U);
+        EXPECT_FALSE(taken.walkers[1].errand.has_value());
+
+        ASSERT_EQ(taken.buildings.size(), 2U);
+        EXPECT_EQ(taken.buildings[0].production, grid.buildings[0].production);
+        EXPECT_FALSE(taken.buildings[1].production.has_value());
+    }
+
+    TEST_F(CityGridTest, StoredWalkerEqualityComparesItsErrand)
+    {
+        StoredWalker base{.at = Cell{1, 1}, .walker = Walker{}};
+        base.errand = Errand{};
+        base.destination = 2U;
+
+        expectMemberCompared(
+            base, [](StoredWalker &w) { w.errand.reset(); });
+        expectMemberCompared(
+            base, [](StoredWalker &w) { w.destination.reset(); });
+    }
+
+    TEST_F(CityGridTest, StoredBuildingEqualityComparesItsCountdown)
+    {
+        StoredBuilding base{.at = Cell{1, 1}, .building = Building{}};
+        base.production = Production{};
+
+        expectMemberCompared(
+            base, [](StoredBuilding &b) { b.production.reset(); });
+    }
+
+
+    TEST_F(CityGridTest, RestoreCityGrid_PutsBackAnErrandBoundNowhere)
+    {
+        paths.insert(Cell{1, 1});
+
+        CityGrid grid;
+        grid.walkers = {StoredWalker{
+            .at = Cell{1, 1},
+            .walker = Walker{},
+            .errand = Errand{.carrying = Resource::Clay}}};
+
+        restoreCityGrid(world, built, paths, grid);
+        world.commit();
+
+        const auto taken = cityGridOf(world);
+
+        ASSERT_TRUE(taken.walkers[0].errand.has_value());
+        EXPECT_EQ(taken.walkers[0].errand->destination, kNullEntity);
+        EXPECT_FALSE(taken.walkers[0].destination.has_value());
+    }
+
+
+    // Opening a city is showing that city, not merging two.
+    // So the errands and countdowns of the one it replaces go with it.
+    TEST_F(CityGridTest, RestoreCityGrid_TakesTheLastCitysErrandsWithIt)
+    {
+        paths.insert(Cell{1, 1});
+
+        CityGrid first;
+        first.walkers = {
+            StoredWalker{
+                .at = Cell{1, 1},
+                .walker = Walker{},
+                .errand = Errand{.carrying = Resource::Clay}},
+            StoredWalker{.at = Cell{1, 1}, .walker = Walker{}}};
+        first.buildings = {
+            StoredBuilding{
+                .at = Cell{2, 2},
+                .building = Building{.kind = BuildingKind::Farm},
+                .production = Production{.ticksUntilOutput = 3}},
+            StoredBuilding{
+                .at = Cell{6, 6},
+                .building = Building{.kind = BuildingKind::Storage}}};
+
+        restoreCityGrid(world, built, paths, first);
+        world.commit();
+
+        restoreCityGrid(world, built, paths, CityGrid{});
+        world.commit();
+
+        EXPECT_EQ(cityGridOf(world), CityGrid{});
     }
 
 } // namespace

@@ -101,6 +101,15 @@ namespace antwika::game
             const Walker &walker,
             Cell at);
 
+        // And so is walking to somewhere in particular.
+        // Which is the one arm that reads a walker's Errand.
+        void runErrand(
+            World &world,
+            antwika::ecs::Entity entity,
+            const Walker &walker,
+            Cell at,
+            antwika::ecs::Entity bound);
+
         const PathIndex &paths;
         GridExtent extent;
     };
