@@ -14,6 +14,16 @@ namespace antwika::input
         {
             live.emplace(*outermost, backend, codec);
             outermost = &*live;
+
+            // Nested rather than beside it, which is the whole rule.
+            // What a device says is in the device's own coordinates.
+            // What a file holds has already been through this.
+            if (options.pointerMapping)
+            {
+                mapping.emplace(
+                    *outermost, codec, options.pointerMapping->get());
+                outermost = &*mapping;
+            }
         }
 
         if (options.pointerHint)

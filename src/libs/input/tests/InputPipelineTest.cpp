@@ -14,12 +14,14 @@
 #include <antwika/time/Tick.hpp>
 
 #include "antwika/input/Events.hpp"
+#include "antwika/input/IPointerMapping.hpp"
 #include "antwika/input/InputEvent.hpp"
 #include "antwika/input/InputEventCodec.hpp"
 #include "antwika/input/Key.hpp"
 #include "antwika/input/MouseButton.hpp"
 #include "antwika/input/PointerHint.hpp"
 #include "antwika/input/PointerHintChannel.hpp"
+#include "antwika/input/Position.hpp"
 #include "antwika/input/fakes/FakeInputBackend.hpp"
 
 using antwika::event::Event;
@@ -350,4 +352,75 @@ TEST(InputPipelineTest, EventsFor_PublishesWithNeitherThinnerAttached)
     EXPECT_EQ(
         channel.forRenderingOnly(),
         (PointerHint{.position = {.x = 4, .y = 5}}));
+}
+
+namespace
+{
+    // Halves both axes, standing in for a window twice the canvas.
+    class Halving final : public antwika::input::IPointerMapping
+    {
+    public:
+        [[nodiscard]] antwika::input::Position toSurface(
+            antwika::input::Position position) const override
+        {
+            return antwika::input::Position{
+                .x = position.x / 2, .y = position.y / 2};
+        }
+    };
+} // namespace
+
+TEST(InputPipelineTest, EventsFor_MapsWhatTheDeviceReported)
+{
+    ReplaySource inner({});
+    FakeInputBackend backend({moved(40, 20)});
+    const Halving mapping;
+
+    InputPipeline pipeline(
+        inner,
+        backend,
+        kCodec,
+        InputPipelineOptions{.pointerMapping = mapping});
+
+    EXPECT_EQ(pipeline.eventsFor(0), (std::vector<Event>{move(20, 10)}));
+}
+
+// The mapping runs inside the hint source, so both agree.
+// A ghost and the click placing it are in one coordinate system.
+TEST(InputPipelineTest, EventsFor_PublishesTheMappedPositionToTheHint)
+{
+    ReplaySource inner({});
+    FakeInputBackend backend({moved(40, 20)});
+    PointerHintChannel channel;
+    const Halving mapping;
+
+    InputPipeline pipeline(
+        inner,
+        backend,
+        kCodec,
+        InputPipelineOptions{
+            .pointerMapping = mapping, .pointerHint = channel});
+
+    EXPECT_EQ(pipeline.eventsFor(0), (std::vector<Event>{move(20, 10)}));
+    EXPECT_EQ(
+        channel.forRenderingOnly(),
+        (PointerHint{.position = {.x = 20, .y = 10}}));
+}
+
+// The one asymmetry in this stack, and the reason for it.
+// A recording already holds mapped positions.
+// Mapping them again would map them twice.
+TEST(InputPipelineTest, EventsFor_LeavesAReplayedPositionUnmapped)
+{
+    ReplaySource inner({at(0, move(40, 20))});
+    FakeInputBackend backend;
+    const Halving mapping;
+
+    InputPipeline pipeline(
+        inner,
+        backend,
+        kCodec,
+        InputPipelineOptions{
+            .readsDevice = false, .pointerMapping = mapping});
+
+    EXPECT_EQ(pipeline.eventsFor(0), (std::vector<Event>{move(40, 20)}));
 }
