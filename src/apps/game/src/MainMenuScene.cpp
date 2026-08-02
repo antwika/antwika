@@ -73,9 +73,20 @@ namespace antwika::game
                     translator.text(MessageId::GameMenuWorldMap),
                     {.id = menuWidgets::kWorldMap, .width = kGrow});
 
-                ui.button(
-                    translator.text(MessageId::GameMenuQuit),
-                    {.id = menuWidgets::kQuit, .width = kGrow});
+                // Two on one row, so the card keeps its height.
+                // Every item above therefore keeps its rectangle.
+                // A session recorded before this opens the same thing.
+                {
+                    const auto row = ui.row({.width = kGrow});
+
+                    ui.button(
+                        translator.text(MessageId::GameMenuOptions),
+                        {.id = menuWidgets::kOptions, .width = kGrow});
+
+                    ui.button(
+                        translator.text(MessageId::GameMenuQuit),
+                        {.id = menuWidgets::kQuit, .width = kGrow});
+                }
             }
 
             ui.spacer(kGrow);

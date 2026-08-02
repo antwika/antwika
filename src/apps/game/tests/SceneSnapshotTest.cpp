@@ -361,7 +361,8 @@ TEST(SceneSnapshotTest, GameSummaryEqualityComparesEveryField)
         .walkers = {WalkerView{.at = {.x = 2, .y = 2}}},
         .buildings = {},
         .camera = Camera(),
-        .ratings = {}};
+        .ratings = {},
+        .bindings = {}};
 
     EXPECT_EQ(base, base);
 

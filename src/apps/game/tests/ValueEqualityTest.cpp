@@ -3,7 +3,9 @@
 #include <cstddef>
 
 #include <antwika/ecs/Entity.hpp>
+#include <antwika/input/Key.hpp>
 
+#include "antwika/game/Action.hpp"
 #include "antwika/game/BuildGhost.hpp"
 #include "antwika/game/Building.hpp"
 #include "antwika/game/BuildTool.hpp"
@@ -17,6 +19,7 @@
 #include "antwika/game/Household.hpp"
 #include "antwika/game/LabourQuery.hpp"
 #include "antwika/game/HousingLevel.hpp"
+#include "antwika/game/KeyBindings.hpp"
 #include "antwika/game/Production.hpp"
 #include "antwika/game/Workforce.hpp"
 #include "antwika/game/SaveGame.hpp"
@@ -181,6 +184,16 @@ namespace
             base, [](SceneSnapshot &s) { s.plan.valid = !s.plan.valid; });
     }
 
+    [[nodiscard]] antwika::game::KeyBindings reboundLayout()
+    {
+        antwika::game::KeyBindings bindings;
+        EXPECT_EQ(
+            bindings.bind(
+                antwika::game::Action::Pause, antwika::input::Key::J),
+            antwika::game::BindOutcome::Bound);
+        return bindings;
+    }
+
     [[nodiscard]] GameSummary populatedSummary()
     {
         return GameSummary{
@@ -195,7 +208,8 @@ namespace
                 .population = 6,
                 .employment = 50,
                 .averageHousingLevel = 100,
-                .serviceReach = 25}};
+                .serviceReach = 25},
+            .bindings = reboundLayout()};
     }
 
     TEST(GameSummaryTest, EqualityComparesEveryField)
@@ -214,6 +228,10 @@ namespace
             base, [](GameSummary &s) { s.camera = Camera(); });
         expectMemberCompared(
             base, [](GameSummary &s) { s.ratings.population = 0; });
+        expectMemberCompared(
+            base,
+            [](GameSummary &s)
+            { s.bindings = antwika::game::KeyBindings{}; });
     }
 
     TEST(CityRatingsValueTest, EqualityComparesEveryField)

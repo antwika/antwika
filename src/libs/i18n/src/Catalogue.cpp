@@ -266,6 +266,19 @@ namespace antwika::i18n
             {MessageId::GameMenuItemMainMenu, "main menu"},
             {MessageId::GameMenuItemWorldMap, "world map"},
             {MessageId::GameReadoutOccupancy, "people {0}/{1}"},
+            {MessageId::GameMenuOptions, "Options"},
+            {MessageId::GameOptionsTitle, "Key Bindings"},
+            {MessageId::GameOptionsRow, "{0}: {1}"},
+            {MessageId::GameOptionsPress, "press a key"},
+            {MessageId::GameOptionsHint, "pick an action, then press a key"},
+            {MessageId::GameOptionsBound, "bound"},
+            {MessageId::GameOptionsTaken, "that key is already bound"},
+            {MessageId::GameOptionsReserved, "that key cannot be bound"},
+            {MessageId::GameOptionsBack, "Back"},
+            {MessageId::GameActionPause, "pause"},
+            {MessageId::GameActionZoomIn, "zoom in"},
+            {MessageId::GameActionZoomOut, "zoom out"},
+            {MessageId::GameActionResetView, "reset view"},
         }};
 
         constexpr std::array<CatalogueEntry, kMessageCount> kSwedishEntries{{
@@ -513,6 +526,20 @@ namespace antwika::i18n
             {MessageId::GameMenuItemMainMenu, "huvudmeny"},
             {MessageId::GameMenuItemWorldMap, "världskarta"},
             {MessageId::GameReadoutOccupancy, "folk {0}/{1}"},
+            {MessageId::GameMenuOptions, "Alternativ"},
+            {MessageId::GameOptionsTitle, "Tangentbindningar"},
+            {MessageId::GameOptionsRow, "{0} = {1}"},
+            {MessageId::GameOptionsPress, "tryck en tangent"},
+            {MessageId::GameOptionsHint,
+             "välj en handling och tryck en tangent"},
+            {MessageId::GameOptionsBound, "bunden"},
+            {MessageId::GameOptionsTaken, "tangenten är redan bunden"},
+            {MessageId::GameOptionsReserved, "tangenten kan inte bindas"},
+            {MessageId::GameOptionsBack, "Tillbaka"},
+            {MessageId::GameActionPause, "pausa"},
+            {MessageId::GameActionZoomIn, "zooma in"},
+            {MessageId::GameActionZoomOut, "zooma ut"},
+            {MessageId::GameActionResetView, "återställ vyn"},
         }};
 
         constexpr Catalogue kEnglishCatalogue{

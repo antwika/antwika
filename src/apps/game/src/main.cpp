@@ -34,12 +34,15 @@
 
 #include "antwika/game/AppMode.hpp"
 #include "antwika/game/AtlasImage.hpp"
+#include "antwika/game/BindingSource.hpp"
 #include "antwika/game/BuildingIndex.hpp"
 #include "antwika/game/Camera.hpp"
 #include "antwika/game/FrameMeter.hpp"
 #include "antwika/game/GridExtent.hpp"
 #include "antwika/game/GridScene.hpp"
+#include "antwika/game/KeyBindings.hpp"
 #include "antwika/game/MainMenuScene.hpp"
+#include "antwika/game/OptionsFile.hpp"
 #include "antwika/game/PathIndex.hpp"
 #include "antwika/game/PauseState.hpp"
 #include "antwika/game/RenderSystem.hpp"
@@ -101,14 +104,19 @@ namespace
     // Escape ends a live run, and so does closing the window.
     // Neither is available under the headless backend.
     // That build therefore runs until it is interrupted.
-    constexpr antwika::input::Key kQuitKey = antwika::input::Key::Escape;
+    //
+    // Named in KeyBindings.hpp rather than here.
+    // Along with the fullscreen key below.
+    // Because the options screen has to refuse both.
+    // A binding on either would fire and do this as well.
+    constexpr antwika::input::Key kQuitKey = antwika::game::kQuitKey;
 
     // Fills the screen, and puts the window back.
     // An action on the window rather than anything a tick can see.
     // Which is why it is acted on above the loop and not in a sink.
     // A run reaches the same state whether or not it was ever pressed.
     constexpr antwika::input::Key kFullscreenKey =
-        antwika::input::Key::F10;
+        antwika::game::kFullscreenKey;
 
     // The world is a pure function of this.
     // So a replay carries the number and the map comes back identical.
@@ -120,6 +128,13 @@ namespace
     // Listed once, before the loop, and never from inside a tick.
     // A directory read per tick would not replay -- see listSaveGames().
     constexpr std::string_view kSaveDirectory = "saves";
+
+    // Where this machine keeps which key asks for what.
+    // Read once, before the loop, and never from inside a tick.
+    // What it held is announced onto the wire and so is recorded.
+    // Which is what replays a session on a machine bound otherwise.
+    // See BindingSource.hpp.
+    constexpr std::string_view kOptionsFile = "options.json";
 
     void run(const RecordedRun &recorded)
     {
@@ -288,6 +303,17 @@ namespace
             {.tickInterval = kTickInterval,
              .framesPerTick = kFramesPerTick});
 
+        // A replay gets neither the layout nor the path.
+        // So it resolves recorded key presses against the recording.
+        // And it leaves this machine's own bindings alone.
+        const auto machine = antwika::game::machineOptionsFor(
+            recorded.options.replayPath.has_value(),
+            std::string(kOptionsFile));
+
+        // Outermost, so what it announces is ahead of everything.
+        // Upstream of the recorder, so a --record file carries it.
+        antwika::game::BindingSource bound(paced, machine.bindings);
+
         const auto saveOptions =
             antwika::game::saveCliOptionsFrom(recorded.commandLine);
 
@@ -295,7 +321,7 @@ namespace
             antwika::game::bootstrap(antwika::game::GameConfig{
                 .logger = logger,
                 .eventSink = recorded.eventSink,
-                .inputSource = paced,
+                .inputSource = bound,
                 .codec = codec,
                 .extent = kExtent,
                 .camera = camera,
@@ -315,6 +341,7 @@ namespace
                 .start = antwika::game::loadGameFileIfNamed(
                     saveOptions.loadPath),
                 .savePath = saveOptions.savePath,
+                .optionsPath = machine.path,
                 .seed = kWorld.seed,
                 .translator = translator,
                 .canvas = antwika::game::kUiCanvas});

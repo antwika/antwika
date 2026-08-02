@@ -7,9 +7,11 @@
 #include <antwika/ui/Pointer.hpp>
 
 #include "TestTranslator.hpp"
+#include "WidgetPixel.hpp"
 #include "antwika/game/MainMenuScene.hpp"
 
 using antwika::game::tests::kTranslator;
+using antwika::game::tests::widgetCentre;
 
 using antwika::game::MainMenuScene;
 using antwika::gfx::Point;
@@ -49,29 +51,33 @@ TEST(MainMenuSceneTest, TheSameArgumentsProduceTheSamePicture)
         scene.describe(kCanvas, pointer).commands);
 }
 
+// Where an item is, is the layout's business.
+// So the layout is asked rather than swept for.
+// See WidgetPixel.hpp.
+// Every item, because Options and Quit share a row.
+// A sweep down one column would miss whichever it fell beside.
 TEST(MainMenuSceneTest, APressOnAnItemActivatesIt)
 {
     const MainMenuScene scene{kTranslator};
-    bool foundNewGame = false;
-    bool foundQuit = false;
+    const auto frame = scene.describe(kCanvas, Pointer{});
 
-    for (std::int32_t y = 0;
-         y < static_cast<std::int32_t>(kCanvas.height);
-         y += 4)
+    for (const auto id :
+         {menuWidgets::kNewGame,
+          menuWidgets::kLoadGame,
+          menuWidgets::kWorldMap,
+          menuWidgets::kOptions,
+          menuWidgets::kQuit})
     {
+        const auto centre = widgetCentre(frame, id);
+
+        ASSERT_TRUE(centre.has_value());
+
         const Pointer pointer{
-            .position = Point{.x = 512, .y = y},
-            .down = true,
-            .pressed = true};
-        const auto activated =
-            scene.describe(kCanvas, pointer).interactions.activated;
+            .position = *centre, .down = true, .pressed = true};
 
-        foundNewGame = foundNewGame || activated == menuWidgets::kNewGame;
-        foundQuit = foundQuit || activated == menuWidgets::kQuit;
+        EXPECT_EQ(
+            scene.describe(kCanvas, pointer).interactions.activated, id);
     }
-
-    EXPECT_TRUE(foundNewGame);
-    EXPECT_TRUE(foundQuit);
 }
 
 // A mode owns the whole screen.

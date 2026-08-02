@@ -24,6 +24,11 @@ The bottom strip is zoom in, zoom out, reset view and pause, and then the zoom l
 A city runs from the moment it comes up, so the pause button is how a player asks for a pause and how they let one go.
 The top strip carries a `game` menu — new game, save game, load game, main menu, world map — and the `menu` button that opens the menu modal over the city, with one item back to the main menu and one back to the game.
 F10 fills the screen with the window and puts it back, which is the one key here that reaches no sink at all.
+The toolbar carries zoom, reset-view, pause and menu buttons, drawn over the grid by `Toolbar`, described and resolved once per tick by `UiSink`, and painted last by `RenderSystem`; the bar also reports the tick, and a corner of the screen reports the frame rate.
+A city runs from the moment it comes up, so that button is how a player asks for a pause and how they let one go.
+The toolbar's `menu` button opens a menu modal over the city with two items: one back to the main menu, and one back to the game.
+The main menu's `Options` button opens the key bindings screen, where an action is picked and the next key pressed is bound to it; Space pauses, `=` and `-` zoom and Home puts the view back, until somebody says otherwise.
+F10 fills the screen with the window and puts it back, which — with Escape — is one of the two keys here that reach no sink at all, and therefore the two that may not be bound to anything.
 It starts on an empty grid and loads nothing unless `--replay` says so, so a session contains exactly what somebody clicked.
 
 It runs until Escape is pressed or the window is closed — both of which are input, so both are recorded and both replay.
@@ -45,6 +50,11 @@ They stop only on the two screens where there is no session to run — the main 
 A city stopping because somebody opened a screen was a pause nobody asked for, and asking is now the only thing that holds a run still.
 
 `WorldMapState` holds one `PathIndex` and one `BuildingIndex` **per city**, while `Building` entities stay global — a distinction worth remembering, because the two would otherwise silently disagree when switching cities.
+
+**The options screen is a fourth screen without being a fourth mode.**
+It is the main menu with something else on it: `OptionsState::open()` says which of the two is up, `MainMenuSink` describes whichever it is into the one `menuOverlay`, and `MainMenuScene::draw()` paints what it is handed either way.
+A mode of its own would have wanted a fourth overlay, a fourth arm in `RenderSystem` and a second backdrop constant to keep in step with the first, for a card that is the menu's other face.
+Which of the two is showing is still simulation state on exactly the terms the mode is, because it decides what a click at a pixel means.
 
 ## The economy
 
@@ -551,6 +561,55 @@ The population rides on the household object housing already wrote, which gained
 That one member is the only one of the five the validator does not require, and it is not an inconsistency: the other four arrived together and only mean anything together, while a file written between the two workstreams is one whose houses had no settler countdown to name, and refusing it would be tightening the schema rather than growing it.
 Neither the workforce total nor any rating is written, because both are sums over what the file already holds.
 `CityGrid` carries the `Workforce` across a city switch and `SessionStore` threads it through a restore, on the terms every other component is carried: an absent one means fully staffed, so a city reopened having lost one is a city that quietly speeds up for a tick.
+
+## Key bindings, and why the layout travels in the recording
+
+**A rebindable key is the first thing this application has that a run needs and cannot work out for itself, and that is the whole of the design.**
+
+`antwika::sudoku`'s `KeyMapping.hpp` states the position everything else here follows: which key does what is *a layout written down rather than asked of a window system*, so what a recording holds is the symbolic key and the meaning comes back identically under any backend on any keyboard.
+A player-configurable binding breaks that outright.
+A session recorded where `K` zooms and replayed where `K` pauses resolves one recorded press to two different actions and diverges — silently, and a long way from its cause, which is the failure class the cross-module rules exist to prevent.
+
+There were three ways out, and this is the one taken.
+
+**The binding is part of the session, and it is persisted because it is externally-supplied input.**
+The rule is "only externally-supplied input is persisted, and anything a sink or a system derives from it is regenerated".
+A binding read off the player's own `options.json` is supplied from outside the run and is derivable from nothing inside it — no amount of replaying the clicks recovers it — so that rule says outright that it has to be recorded, exactly as `SaveGame::seed` is the thing a resumed session cannot regenerate for itself.
+So it enters a run the way every other externally-supplied input enters one: through an `ITickEventSource`, upstream of `event::TickEventRecorder`, as `game.bind_key`.
+`BindingSource` announces it once, ahead of the first tick's own events, and its "announce or not" is the same seam `input::InputPipelineOptions::readsDevice` already is — **a live run reads the device and the file, and a replay reads neither**.
+`BindingReplayTest` is where that is asserted end to end: one session, recorded on a machine binding zoom to `K` and pause to `J`, replayed on one binding them to `M` and `L`, reaching the same city; and the same file with the announcements stripped out reaching a *different* one, so the first cannot pass for the wrong reason.
+
+The two rejected alternatives are worth stating.
+**Recording the action rather than the key** — putting the recorder downstream of the mapping — is cheaper and argues that an action is externally-supplied input, which it is not: an action is what a *layout* makes of a key, and a layout is state the run holds.
+It would also have put the first derived value into a recording, which is the thing `Events.hpp` refuses at length.
+**Binding only actions no recording can contain** is airtight and is not the feature: every action worth a key here changes what the run computes.
+
+Three consequences follow, and each is load-bearing.
+
+**Only a binding that differs from `kDefaultBindings` is announced**, so a run on a machine nobody has rebound records exactly what it recorded before any of this existed, and every replay written before it still means what it meant.
+
+**A replay writes nothing back**, because `machineOptionsFor()` hands it neither the layout nor the path.
+Replaying somebody else's session would otherwise leave the machine carrying that session's bindings, which is a side effect nobody asked for; a live run does leave its final layout in the file, where the next one finds it.
+
+**A rebinding made on the options screen is not an event**, and must not become one.
+That one is a key press resolved against the layout inside the tick path, downstream of the recorder, and a replay works it out again exactly as it works out which tile a click laid — recording both would apply it twice.
+So the same state has two writers on purpose: `BindingSink` for what came from outside the run, and `MainMenuSink` for what the player did inside it.
+
+**`KeyBindings` is a plain value with exactly one key per action**, and it is in `GameSummary` — so a live run and its replay disagreeing about a binding fails `ReplayDeterminismTest` directly, rather than only showing up on the next key nobody happened to press.
+It is deliberately not `input::ActionMap`: that one holds many bindings per action and only ever gains them, so an action cannot be *re*bound, which is the whole of what an options screen does, and it is keyed by a string and is not comparable, so it could be neither a constant fixed in source nor a member of a summary.
+
+**Binding is a total function that answers rather than throwing**, since it runs while a frame is being described.
+A key another action holds is **refused** rather than stolen — stealing would leave that action with no key, which would make every action's key a `std::optional` for the sake of one gesture; two rebindings say the same thing in the order the player chose.
+Escape and F10 are **reserved**, because this application spends both above the tick loop and a binding on either would fire *and* quit or fill the screen.
+A refusal leaves the row still waiting, so the next key answers the same question, and the line under the rows says which of the four things happened.
+
+**The options file states its version and is read `parse -> read version -> migrate -> validate -> decode`**, through an injected `replay::MigrationChain` like every other persisted document here.
+The chain is empty — there has only ever been one revision — and it is present anyway, because it is what refuses a file from a newer build instead of decoding it on the strength of happening to satisfy today's schema.
+**A missing file is an ordinary first run**, not an error: a player who has never opened the screen is playing what the build ships.
+Anything else wrong with it is refused rather than repaired, on `SaveGame`'s terms — including a document binding two actions to one key or binding a reserved one, since a layout nobody could have chosen is not one to guess the intent of.
+
+**The `Options` button was declared beside `Quit` rather than under it**, on a row of two.
+The menu's card is centred in the canvas, so a fifth row would have moved all four items already there and left every session recorded before this one opening something else — the same reason the ratings labels were appended to the toolbar's first row rather than inserted among the buttons.
 
 ## Future work
 

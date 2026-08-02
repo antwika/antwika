@@ -354,7 +354,8 @@ TEST(PrintSummaryTest, WritesTheStateTheCountsAndTheCamera)
         .walkers = {},
         .buildings = {},
         .camera = Camera(Point{.x = 512, .y = 48}),
-        .ratings = {}};
+        .ratings = {},
+        .bindings = {}};
 
     antwika::game::printSummary(out, summary);
 
@@ -379,7 +380,8 @@ TEST(PrintSummaryTest, WritesEveryWalkerWhereItStandsAndWhereItFaces)
               .facing = antwika::game::Direction::South}},
         .buildings = {},
         .camera = Camera(Point{.x = 0, .y = 0}),
-        .ratings = {}};
+        .ratings = {},
+        .bindings = {}};
 
     antwika::game::printSummary(out, summary);
 
@@ -841,7 +843,8 @@ TEST(PrintSummaryTest, WritesEveryBuildingAndWhatItIs)
              {.at = {.x = 3, .y = 4},
               .kind = antwika::game::BuildingKind::Well}},
         .camera = Camera(Point{.x = 0, .y = 0}),
-        .ratings = {}};
+        .ratings = {},
+        .bindings = {}};
 
     antwika::game::printSummary(out, summary);
 
