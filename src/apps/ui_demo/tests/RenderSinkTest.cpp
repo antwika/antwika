@@ -10,11 +10,11 @@
 #include <antwika/gfx/mocks/MockWindow.hpp>
 #include <antwika/gfx/Size.hpp>
 #include <antwika/i18n/Locale.hpp>
-#include <antwika/i18n/Translator.hpp>
 #include <antwika/time/fakes/FakeSleeper.hpp>
 
 #include "antwika/ui_demo/DemoOverlay.hpp"
 #include "antwika/ui_demo/DemoScene.hpp"
+#include "antwika/ui_demo/Messages.hpp"
 #include "antwika/ui_demo/RenderSink.hpp"
 
 using antwika::event::Event;
@@ -33,7 +33,7 @@ using ::testing::ReturnRef;
 namespace
 {
     // The locale is a constant of the build, so a test may name one.
-    constexpr antwika::i18n::Translator kTranslator{
+    constexpr antwika::ui_demo::Translator kTranslator{
         antwika::i18n::kDefaultLocale};
 
     constexpr Size kCanvas{.width = 960, .height = 720};

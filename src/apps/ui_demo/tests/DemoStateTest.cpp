@@ -6,13 +6,12 @@
 #include <set>
 
 #include <antwika/i18n/Locale.hpp>
-#include <antwika/i18n/MessageId.hpp>
-#include <antwika/i18n/Translator.hpp>
 #include <antwika/ui/DropdownSpec.hpp>
 #include <antwika/ui/TextFieldSpec.hpp>
 #include <antwika/ui/WidgetId.hpp>
 
 #include "antwika/ui_demo/DemoState.hpp"
+#include "antwika/ui_demo/MessageId.hpp"
 
 using antwika::ui_demo::accentNameId;
 using antwika::ui_demo::DemoState;
@@ -122,14 +121,14 @@ namespace
         // An id and a datum, never a sentence.
         // A sentence here would be the locale inside the state.
         state.setMessage(
-            {.id = antwika::i18n::MessageId::UiDemoSubmitted,
+            {.id = antwika::ui_demo::MessageId::Submitted,
              .datum = "ok",
              .argId = std::nullopt});
 
         ASSERT_TRUE(state.message().has_value());
         EXPECT_EQ(
             state.message()->id,
-            antwika::i18n::MessageId::UiDemoSubmitted);
+            antwika::ui_demo::MessageId::Submitted);
         EXPECT_EQ(state.message()->datum, "ok");
         EXPECT_FALSE(state.message()->argId.has_value());
     }
@@ -138,7 +137,7 @@ namespace
     // Which is the only thing left to check here now the words moved.
     TEST(ShowcaseTest, ShowcaseNameId_NamesEveryPageThePickerLists)
     {
-        std::set<antwika::i18n::MessageId> ids;
+        std::set<antwika::ui_demo::MessageId> ids;
 
         for (std::size_t index = 0; index < kShowcaseCount; ++index)
         {
@@ -150,7 +149,7 @@ namespace
 
     TEST(ShowcaseTest, AccentNameId_NamesEveryAccentAndWrapsOnOneMore)
     {
-        std::set<antwika::i18n::MessageId> ids;
+        std::set<antwika::ui_demo::MessageId> ids;
 
         for (std::size_t index = 0; index < kAccentCount; ++index)
         {

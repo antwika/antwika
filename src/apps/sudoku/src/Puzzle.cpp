@@ -1,5 +1,8 @@
 #include "antwika/sudoku/Puzzle.hpp"
 
+#include <array>
+#include <cstddef>
+
 namespace antwika::sudoku
 {
 
@@ -78,5 +81,53 @@ namespace antwika::sudoku
 
         return constraints;
     } // GCOVR_EXCL_LINE
+
+    bool obeysRules(const Board &board)
+    {
+        for (const auto &group : buildConstraints())
+        {
+            std::array<bool, Board::kSize> seen{};
+
+            for (const std::size_t index : group.cells())
+            {
+                const auto digit = board.at(
+                    index / Board::kSize, index % Board::kSize);
+
+                if (!digit.has_value())
+                {
+                    continue;
+                }
+
+                // The digit's own slot, since digits run 1-9.
+                bool &already = seen[static_cast<std::size_t>(
+                    *digit - 1)];
+
+                if (already)
+                {
+                    return false;
+                }
+
+                already = true;
+            }
+        }
+
+        return true;
+    }
+
+    bool isComplete(const Board &board)
+    {
+        for (std::size_t row = 0; row < Board::kSize; ++row)
+        {
+            for (std::size_t col = 0; col < Board::kSize; ++col)
+            {
+                if (!board.at(row, col).has_value())
+                {
+                    return false;
+                }
+            }
+        }
+
+        return obeysRules(board);
+    }
 
 } // namespace antwika::sudoku

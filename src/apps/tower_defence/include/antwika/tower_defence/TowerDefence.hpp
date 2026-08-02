@@ -5,6 +5,7 @@
 #include <functional>
 #include <memory>
 #include <optional>
+#include <string>
 
 #include <antwika/event/IEventSink.hpp>
 #include <antwika/event/ITickEventSink.hpp>
@@ -14,8 +15,10 @@
 #include <antwika/simulation/ITickEventSource.hpp>
 #include <antwika/time/Tick.hpp>
 
-#include "antwika/tower_defence/Battle.hpp"
-#include "antwika/tower_defence/LevelGenerator.hpp"
+#include "antwika/tower_defence/Campaign.hpp"
+#include "antwika/tower_defence/HighScore.hpp"
+#include "antwika/tower_defence/IScoreStore.hpp"
+#include "antwika/tower_defence/Messages.hpp"
 #include "antwika/tower_defence/ScoreOverlay.hpp"
 
 namespace antwika::tower_defence
@@ -34,23 +37,39 @@ namespace antwika::tower_defence
     struct BattleSummary
     {
         std::uint64_t score = 0;
-        std::uint32_t leaks = 0;
+        std::uint32_t lives = 0;
         std::uint64_t ticks = 0;
         std::size_t towers = 0;
         std::size_t pathLength = 0;
+
+        /** @brief The level being fought when the run ended, from one. */
+        std::size_t level = 0;
+
+        /** @brief How many waves of it had been released. */
+        std::size_t wavesReleased = 0;
+
+        /** @brief How far the campaign got. */
+        CampaignPhase phase = CampaignPhase::Fighting;
+
+        /** @brief The best any earlier run reached. */
+        HighScore previousBest;
+
+        /** @brief The record kept once this run was folded in. */
+        HighScore best;
     };
 
     /**
      * @brief Builds one more tick sink over the state bootstrap() owns.
      *
-     * A factory rather than a sink, because a sink that draws the battle
-     * needs the Battle and the ScoreOverlay, and neither exists before
-     * bootstrap() has generated a level.
+     * A factory rather than a sink, because a sink that draws the
+     * campaign needs the Campaign and the ScoreOverlay, and neither
+     * exists before bootstrap() has generated the first level.
      * Ownership passes back, so the sink lives exactly as long as the
      * run it belongs to.
      */
     using TickSinkFactory = std::function<
-        std::unique_ptr<ITickEventSink>(const Battle &, const ScoreOverlay &)>;
+        std::unique_ptr<ITickEventSink>(
+            const Campaign &, const ScoreOverlay &)>;
 
     /**
      * @brief Everything one run is wired out of.
@@ -73,6 +92,9 @@ namespace antwika::tower_defence
         /** @brief Decodes antwika::input's events. */
         const IInputEventCodec &codec;
 
+        /** @brief Words every label on the score bar. */
+        const Translator &translator;
+
         /**
          * @brief The size everything is laid out and hit-tested against.
          *
@@ -80,11 +102,25 @@ namespace antwika::tower_defence
          */
         Size canvas;
 
-        /** @brief Which level to generate; the seed lives here. */
-        LevelConfig level = {};
+        /** @brief Which campaign to play; the seed lives here. */
+        CampaignConfig campaign = {};
 
-        /** @brief The numbers the battle is balanced with. */
-        BattleConfig battle = {};
+        /**
+         * @brief Where the best score is kept between runs.
+         *
+         * **Absent for a replay, and that is a rule rather than an
+         * omission.** A record loaded from whatever happens to be on the
+         * machine running a recording would put a number on the bar that
+         * the recording never saw, and writing one back would let a
+         * replayed run overwrite a record it did not earn.
+         * storeIfLive() is where that decision is made, so no main() has
+         * to remember it.
+         *
+         * Absent for a live run too is an ordinary state, and means a
+         * run that starts from a best of zero and is not kept.
+         */
+        std::optional<std::reference_wrapper<IScoreStore>> scoreStore =
+            std::nullopt;
 
         /**
          * @brief Safety cap on how many ticks to run.
@@ -104,15 +140,59 @@ namespace antwika::tower_defence
     };
 
     /**
-     * @brief Generate the level, wire the sinks up and run the loop.
+     * @brief Generate the first level, wire the sinks up and run the
+     * loop.
      *
      * A live run and a replayed one are the same call: they differ only
      * in what inputSource was built from.
      *
+     * **The record is read once, before the loop, and written once
+     * after it** -- never from inside the tick path, where a file's
+     * answer could differ between a live run and a replay of it. The
+     * cost is stated rather than hidden: a run ended with Ctrl+C never
+     * reaches the epilogue and so keeps nothing. A `--record` run does
+     * keep what it got to, because a recording is a log appended as the
+     * run goes rather than a snapshot written after it; a high score is
+     * a snapshot, and one written every tick would be twenty writes a
+     * second of a file nothing reads in between.
+     *
+     * A record that will not load does not take the run with it: it is
+     * logged, the run starts from a best of zero and goes on to write
+     * over the file that would not read. A record that will not *write*
+     * is thrown, since the run is already over and the one thing left to
+     * say is that it was not kept.
+     *
      * @param config What the run is wired out of.
      * @return What the run ended on.
      * @throws LevelError If no level could be generated.
+     * @throws ScoreFormatError If there is a store and the record cannot
+     * be written to it.
      */
     BattleSummary bootstrap(const TowerDefenceConfig &config);
+
+    /**
+     * @brief Offer a store to a live run and none to a replay.
+     *
+     * The whole of the replay rule, in a function a test can reach: an
+     * application's main() is excluded from the coverage report and so
+     * may hold no branch of its own, and "is this a replay?" is exactly
+     * the branch that would otherwise live there.
+     *
+     * @param store The store a live run would use.
+     * @param replayPath What `--replay` named, if anything.
+     * @return The store, or nothing when a recording is being replayed.
+     */
+    [[nodiscard]] std::optional<std::reference_wrapper<IScoreStore>>
+    storeIfLive(
+        IScoreStore &store,
+        const std::optional<std::string> &replayPath);
+
+    /**
+     * @brief Word what a run came to, for the log.
+     * @param summary What the run ended on.
+     * @return One line, in English: a log line is a diagnostic and is
+     * never translated.
+     */
+    [[nodiscard]] std::string summaryLine(const BattleSummary &summary);
 
 } // namespace antwika::tower_defence

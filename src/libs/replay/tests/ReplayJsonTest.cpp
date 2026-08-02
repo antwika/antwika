@@ -1,21 +1,30 @@
 #include <gtest/gtest.h>
 
+#include <string>
+#include <tuple>
 #include <vector>
 
 #include <antwika/gfx/Size.hpp>
 
+#include "antwika/replay/EventJson.hpp"
 #include "antwika/replay/ReplayDocument.hpp"
 #include "antwika/replay/ReplayFormatError.hpp"
+#include "antwika/replay/ReplayHeader.hpp"
 #include "antwika/replay/ReplayJson.hpp"
 #include "antwika/replay/ReplayMigrations.hpp"
+#include "antwika/replay/SchemaVersion.hpp"
 
 using antwika::event::Event;
 using antwika::event::TickEvent;
 using antwika::gfx::Size;
+using antwika::replay::kReplayDocumentVersion;
 using antwika::replay::replayFromJson;
-using antwika::replay::replayToJson;
+using antwika::replay::replayHeaderFromJson;
+using antwika::replay::replayHeaderToJson;
+using antwika::replay::replayRecordsFromJson;
 using antwika::replay::ReplayDocument;
 using antwika::replay::ReplayFormatError;
+using antwika::replay::ReplayHeader;
 using antwika::replay::standardReplayMigrations;
 
 namespace
@@ -26,16 +35,91 @@ namespace
     {
         return replayFromJson(document, standardReplayMigrations());
     }
+
+    ReplayHeader readHeader(const nlohmann::json &header)
+    {
+        return replayHeaderFromJson(header, standardReplayMigrations());
+    }
+
+    std::vector<TickEvent> readRecords(const nlohmann::json &records)
+    {
+        return replayRecordsFromJson(
+            records, kReplayDocumentVersion, standardReplayMigrations());
+    }
+
+    nlohmann::json aRecord(const int tick, const std::string &name)
+    {
+        return nlohmann::json{
+            {"tick", tick},
+            {"event", nlohmann::json{{"name", name}, {"payload", ""}}}};
+    }
 } // namespace
 
-TEST(ReplayJsonTest, RoundTripsZeroEvents)
+TEST(ReplayJsonTest, HeaderRoundTripsThroughItsOwnEncoding)
 {
-    EXPECT_EQ(read(replayToJson({})).events, std::vector<TickEvent>{});
+    const ReplayHeader header{
+        .version = kReplayDocumentVersion,
+        .canvas = Size{.width = 1024, .height = 640}};
+
+    EXPECT_EQ(readHeader(replayHeaderToJson(header)), header);
 }
 
-TEST(ReplayJsonTest, RoundTripsManyEventsInOrder)
+TEST(ReplayJsonTest, HeaderSaysWhichFormatAndWhichVersionItIs)
 {
-    std::vector<TickEvent> events{
+    const auto encoded = replayHeaderToJson(ReplayHeader{});
+
+    EXPECT_EQ(encoded.at("magic"), "antwika-replay");
+    EXPECT_EQ(encoded.at("version"), kReplayDocumentVersion);
+}
+
+TEST(ReplayJsonTest, HeaderWritesNoCanvasWhenTheRunClaimedNone)
+{
+    EXPECT_FALSE(replayHeaderToJson(ReplayHeader{}).contains("canvas"));
+}
+
+TEST(ReplayJsonTest, HeaderIsOneLineWhenDumped)
+{
+    const auto text = replayHeaderToJson(ReplayHeader{}).dump();
+
+    EXPECT_EQ(text.find('\n'), std::string::npos) << text;
+}
+
+TEST(ReplayJsonTest, HeaderThrowsOnBadMagic)
+{
+    EXPECT_THROW(
+        std::ignore = readHeader(nlohmann::json{{"magic", "nope"}}),
+        ReplayFormatError);
+}
+
+TEST(ReplayJsonTest, HeaderThrowsWhenMagicIsMissing)
+{
+    EXPECT_THROW(
+        std::ignore = readHeader(nlohmann::json{{"version", 2}}),
+        ReplayFormatError);
+}
+
+TEST(ReplayJsonTest, HeaderThrowsWhenTheCanvasIsMalformed)
+{
+    EXPECT_THROW(
+        std::ignore = readHeader(nlohmann::json{
+            {"magic", "antwika-replay"},
+            {"canvas", nlohmann::json{{"width", 1024}}}}),
+        ReplayFormatError);
+}
+
+// A header holds the version and whatever else a run has to say.
+// It never holds a record, which is what a line of its own is for.
+TEST(ReplayJsonTest, HeaderThrowsWhenItCarriesAMemberNobodyKnows)
+{
+    EXPECT_THROW(
+        std::ignore = readHeader(
+            nlohmann::json{{"magic", "antwika-replay"}, {"tick", 4}}),
+        ReplayFormatError);
+}
+
+TEST(ReplayJsonTest, RecordsRoundTripInOrder)
+{
+    const std::vector<TickEvent> events{
         TickEvent{.tick = 0, .event = Event{.name = "engine.tick"}},
         TickEvent{
             .tick = 0,
@@ -44,70 +128,134 @@ TEST(ReplayJsonTest, RoundTripsManyEventsInOrder)
                 .payload = R"({"amount":1})",
             },
         },
-        TickEvent{.tick = 1, .event = Event{.name = "engine.tick"}},
         TickEvent{.tick = 2, .event = Event{.name = "engine.tick"}},
-        TickEvent{
-            .tick = 2,
-            .event = Event{
-                .name = "game.score_increment",
-                .payload = R"({"amount":4})",
-            },
-        },
     };
-    EXPECT_EQ(
-        read(replayToJson(events)), (ReplayDocument{.events = events}));
+
+    EXPECT_EQ(readRecords(nlohmann::json(events)), events);
 }
 
-TEST(ReplayJsonTest, ReplayToJsonProducesTheExpectedEnvelope)
-{
-    const auto document = replayToJson({});
-    EXPECT_EQ(document.at("magic"), "antwika-replay");
-    EXPECT_EQ(document.at("version"), 1);
-    EXPECT_TRUE(document.at("events").is_array());
-    EXPECT_TRUE(document.at("events").empty());
-}
-
-TEST(ReplayJsonTest, ReplayFromJsonThrowsWhenInputIsNotAnObject)
-{
-    EXPECT_THROW((void)read(nlohmann::json::array()), ReplayFormatError);
-}
-
-TEST(ReplayJsonTest, ReplayFromJsonThrowsWhenMagicFieldIsMissing)
+TEST(ReplayJsonTest, RecordsThrowWhenTheyAreNotASequence)
 {
     EXPECT_THROW(
-        (void)read(nlohmann::json{
+        std::ignore = readRecords(nlohmann::json::object()),
+        ReplayFormatError);
+}
+
+TEST(ReplayJsonTest, RecordsThrowWhenOneIsMalformed)
+{
+    EXPECT_THROW(
+        std::ignore = readRecords(
+            nlohmann::json::array({nlohmann::json{{"tick", 0}}})),
+        ReplayFormatError);
+}
+
+TEST(ReplayJsonTest, RecordsThrowWhenOneIsNotAnObjectAtAll)
+{
+    EXPECT_THROW(
+        std::ignore = readRecords(nlohmann::json::array({42})),
+        ReplayFormatError);
+}
+
+// The first of the two rules a whole document stated by being one.
+// Neither has anywhere to live in a per-line schema.
+TEST(ReplayJsonTest, RecordsThrowWhenATickGoesBackwards)
+{
+    const auto records =
+        nlohmann::json::array({aRecord(4, "a.b"), aRecord(1, "a.b")});
+
+    try
+    {
+        std::ignore = readRecords(records);
+        FAIL() << "a tick going backwards should have been refused";
+    }
+    catch (const ReplayFormatError &error)
+    {
+        const std::string message = error.what();
+        EXPECT_NE(message.find("record 2"), std::string::npos) << message;
+        EXPECT_NE(message.find("tick 1"), std::string::npos) << message;
+        EXPECT_NE(message.find("tick 4"), std::string::npos) << message;
+    }
+}
+
+TEST(ReplayJsonTest, RecordsAcceptSeveralOnOneTick)
+{
+    const auto records = nlohmann::json::array(
+        {aRecord(4, "a.b"), aRecord(4, "c.d"), aRecord(5, "e.f")});
+
+    EXPECT_EQ(readRecords(records).size(), 3U);
+}
+
+// The second of them.
+// Two recordings in one file would replay as a single session.
+// With the second one's ticks starting over.
+TEST(ReplayJsonTest, RecordsThrowOnASecondHeaderPartWayThrough)
+{
+    const auto records = nlohmann::json::array(
+        {aRecord(0, "a.b"), replayHeaderToJson(ReplayHeader{})});
+
+    try
+    {
+        std::ignore = readRecords(records);
+        FAIL() << "a second header should have been refused";
+    }
+    catch (const ReplayFormatError &error)
+    {
+        const std::string message = error.what();
+        EXPECT_NE(message.find("record 2"), std::string::npos) << message;
+        EXPECT_NE(message.find("second header"), std::string::npos)
+            << message;
+    }
+}
+
+TEST(ReplayJsonTest, WholeDocumentReadsAsAHeaderAndItsRecords)
+{
+    const std::vector<TickEvent> events{
+        TickEvent{
+            .tick = 1,
+            .event = Event{.name = "life.toggle_cell", .payload = "{}"}},
+    };
+
+    const auto document = read(nlohmann::json{
+        {"magic", "antwika-replay"},
+        {"version", 1},
+        {"events", nlohmann::json(events)},
+    });
+
+    EXPECT_EQ(document, (ReplayDocument{.events = events}));
+}
+
+TEST(ReplayJsonTest, WholeDocumentKeepsTheCanvasItWasRecordedAgainst)
+{
+    const auto document = read(nlohmann::json{
+        {"magic", "antwika-replay"},
+        {"version", 1},
+        {"events", nlohmann::json::array()},
+        {"canvas", nlohmann::json{{"width", 1024}, {"height", 640}}},
+    });
+
+    EXPECT_EQ(document.canvas, (Size{.width = 1024, .height = 640}));
+}
+
+TEST(ReplayJsonTest, WholeDocumentThrowsWhenInputIsNotAnObject)
+{
+    EXPECT_THROW(
+        std::ignore = read(nlohmann::json::array()), ReplayFormatError);
+}
+
+TEST(ReplayJsonTest, WholeDocumentThrowsWhenMagicFieldIsMissing)
+{
+    EXPECT_THROW(
+        std::ignore = read(nlohmann::json{
             {"version", 1},
             {"events", nlohmann::json::array()},
         }),
         ReplayFormatError);
 }
 
-TEST(ReplayJsonTest, ReplayFromJsonThrowsOnBadMagic)
+TEST(ReplayJsonTest, WholeDocumentThrowsWhenEventsFieldIsNotAnArray)
 {
     EXPECT_THROW(
-        (void)read(nlohmann::json{
-            {"magic", "nope"},
-            {"version", 1},
-            {"events", nlohmann::json::array()},
-        }),
-        ReplayFormatError);
-}
-
-TEST(ReplayJsonTest, ReplayFromJsonThrowsOnUnsupportedVersion)
-{
-    EXPECT_THROW(
-        (void)read(nlohmann::json{
-            {"magic", "antwika-replay"},
-            {"version", 2},
-            {"events", nlohmann::json::array()},
-        }),
-        ReplayFormatError);
-}
-
-TEST(ReplayJsonTest, ReplayFromJsonThrowsWhenEventsFieldIsNotAnArray)
-{
-    EXPECT_THROW(
-        (void)read(nlohmann::json{
+        std::ignore = read(nlohmann::json{
             {"magic", "antwika-replay"},
             {"version", 1},
             {"events", "not an array"},
@@ -115,24 +263,9 @@ TEST(ReplayJsonTest, ReplayFromJsonThrowsWhenEventsFieldIsNotAnArray)
         ReplayFormatError);
 }
 
-TEST(ReplayJsonTest, ReplayToJsonWritesNoCanvasWhenTheDocumentHasNone)
-{
-    EXPECT_FALSE(replayToJson({}).contains("canvas"));
-}
-
-TEST(ReplayJsonTest, RoundTripsTheCanvasTheRecordingWasMadeAgainst)
-{
-    const auto canvas = Size{.width = 1024, .height = 640};
-
-    const auto encoded = replayToJson({}, canvas);
-    EXPECT_EQ(encoded.at("canvas").at("width"), 1024);
-    EXPECT_EQ(encoded.at("canvas").at("height"), 640);
-    EXPECT_EQ(read(encoded), (ReplayDocument{.canvas = canvas}));
-}
-
 // The whole point of the field being optional.
 // Every replay checked in before it existed is one of these.
-TEST(ReplayJsonTest, ReplayFromJsonAcceptsADocumentWithNoCanvas)
+TEST(ReplayJsonTest, WholeDocumentAcceptsOneWithNoCanvas)
 {
     const auto document = read(nlohmann::json{
         {"magic", "antwika-replay"},
@@ -144,22 +277,20 @@ TEST(ReplayJsonTest, ReplayFromJsonAcceptsADocumentWithNoCanvas)
 }
 
 // A document stating no version at all is version 1.
-// The chain stamps that on, so the one schema still sees a version.
-// Which is the whole reason migrating comes before validating.
-TEST(ReplayJsonTest, ReplayFromJsonAcceptsADocumentThatStatesNoVersion)
+TEST(ReplayJsonTest, WholeDocumentAcceptsOneThatStatesNoVersion)
 {
     const auto document = read(nlohmann::json{
         {"magic", "antwika-replay"},
-        {"events", nlohmann::json::array()},
+        {"events", nlohmann::json::array({aRecord(0, "a.b")})},
     });
 
-    EXPECT_TRUE(document.events.empty());
+    EXPECT_EQ(document.events.size(), 1U);
 }
 
-TEST(ReplayJsonTest, ReplayFromJsonThrowsWhenTheCanvasIsMalformed)
+TEST(ReplayJsonTest, WholeDocumentThrowsWhenTheCanvasIsMalformed)
 {
     EXPECT_THROW(
-        (void)read(nlohmann::json{
+        std::ignore = read(nlohmann::json{
             {"magic", "antwika-replay"},
             {"version", 1},
             {"events", nlohmann::json::array()},
@@ -168,10 +299,10 @@ TEST(ReplayJsonTest, ReplayFromJsonThrowsWhenTheCanvasIsMalformed)
         ReplayFormatError);
 }
 
-TEST(ReplayJsonTest, ReplayFromJsonThrowsWhenAnEventInTheArrayIsMalformed)
+TEST(ReplayJsonTest, WholeDocumentThrowsWhenAnEventInTheArrayIsMalformed)
 {
     EXPECT_THROW(
-        (void)read(nlohmann::json{
+        std::ignore = read(nlohmann::json{
             {"magic", "antwika-replay"},
             {"version", 1},
             {"events",

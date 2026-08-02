@@ -1,7 +1,9 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
+#include <cstddef>
 #include <optional>
+#include <string>
 #include <vector>
 
 #include <antwika/ecs/ISystem.hpp>
@@ -19,6 +21,7 @@
 #include <antwika/scheduler/Priority.hpp>
 
 #include "antwika/task_worker/Events.hpp"
+#include "antwika/task_worker/PoolSnapshot.hpp"
 #include "antwika/task_worker/TaskRegistry.hpp"
 #include "antwika/task_worker/TaskWorker.hpp"
 #include "antwika/task_worker/Worker.hpp"
@@ -52,7 +55,7 @@ namespace
     constexpr antwika::time::Tick kMaxTicks = 10;
     constexpr std::uint32_t kWorkerCount = 2;
 
-    // Same scenario as replays/demo.json.
+    // Same scenario as replays/demo.jsonl.
     // Gamma (Low) waits ticks 0-4: multi-tick distribution.
     // Delta (Critical, submitted tick 4) jumps ahead of Gamma.
     // Epsilon depends on Delta but can't run in Delta's run() call.
@@ -109,6 +112,53 @@ namespace
 
         int calls = 0;
     };
+
+    // Takes the picture the window would draw, every tick.
+    // Through the same snapshotOf() the RenderSystem draws from.
+    // Registered as an observer, so it sees what a frame sees.
+    class SnapshotRecordingSystem final : public ISystem
+    {
+    public:
+        explicit SnapshotRecordingSystem(const TaskRegistry &registry)
+            : registry(registry)
+        {
+        }
+
+        SnapshotRecordingSystem(const SnapshotRecordingSystem &) = delete;
+        SnapshotRecordingSystem(SnapshotRecordingSystem &&) = delete;
+
+        SnapshotRecordingSystem &operator=(
+            const SnapshotRecordingSystem &) = delete;
+        SnapshotRecordingSystem &operator=(
+            SnapshotRecordingSystem &&) = delete;
+
+        void update(World &world, antwika::time::Tick tick) override
+        {
+            snapshots.push_back(
+                antwika::task_worker::snapshotOf(world, registry, tick));
+        }
+
+        std::vector<antwika::task_worker::PoolSnapshot> snapshots;
+
+    private:
+        const TaskRegistry &registry;
+    };
+
+    [[nodiscard]] std::vector<std::string> queueLabelsOf(
+        const antwika::task_worker::PoolSnapshot &snapshot)
+    {
+        std::vector<std::string> labels;
+
+        for (const auto &task : snapshot.queue)
+        {
+            labels.push_back(
+                task.blocked ? task.label + " waits for "
+                                   + task.waitingFor
+                             : task.label);
+        }
+
+        return labels;
+    }
 } // namespace
 
 TEST(BootstrapTest, Bootstrap_RunsScriptedTasksToCompletion)
@@ -186,20 +236,82 @@ TEST(BootstrapTest, Bootstrap_KeepsACallerSuppliedRegistryInSync)
         registry.allTasks(),
         (std::vector<TaskInfo>{
             TaskInfo{
-                1, "Alpha", kNormalPriority, TaskStatus::Completed, 0,
+                1, "Alpha", kNormalPriority, TaskStatus::Completed, 4, 0,
                 std::nullopt},
             TaskInfo{
-                2, "Beta", kNormalPriority, TaskStatus::Completed, 0,
+                2, "Beta", kNormalPriority, TaskStatus::Completed, 5, 0,
                 std::nullopt},
             TaskInfo{
-                3, "Gamma", kLowPriority, TaskStatus::Running, 2,
+                3, "Gamma", kLowPriority, TaskStatus::Running, 2, 2,
                 std::nullopt},
             TaskInfo{
-                4, "Delta", kCriticalPriority, TaskStatus::Completed, 0,
+                4, "Delta", kCriticalPriority, TaskStatus::Completed, 1, 0,
                 std::nullopt},
             TaskInfo{
-                5, "Epsilon", kNormalPriority, TaskStatus::Running, 1,
+                5, "Epsilon", kNormalPriority, TaskStatus::Running, 1, 1,
                 TaskDependency{4, "Delta"}}}));
+}
+
+// What the window draws is a projection of the run, not a second one.
+// This is where the two are held against each other.
+// The queue is drawn in the order the scheduler pulls from.
+// The budget drawn each tick is the one it was actually run with.
+//
+// Gamma is low priority and waits from tick 0 to tick 5, on screen.
+// Delta arrives at tick 4 and takes the only free worker.
+// So the budget that tick is 1, and Gamma stays where it is.
+// Epsilon arrives with it and is drawn as waiting for Delta.
+// A blocked task is not a candidate for a worker at all.
+// Which is why it can jump Gamma at tick 5, on priority.
+TEST(BootstrapTest, Bootstrap_DrawsTheQueueTheSchedulerWillActuallyPull)
+{
+    NiceMock<MockLogger> logger;
+    NiceMock<MockEventSink> eventSink;
+
+    auto script = demoScript();
+    ReplaySource inputSource(script);
+    TaskRegistry registry;
+    SnapshotRecordingSystem frames(registry);
+
+    antwika::task_worker::bootstrap(
+        antwika::task_worker::TaskWorkerConfig{
+            .logger = logger,
+            .eventSink = eventSink,
+            .inputSource = inputSource,
+            .workerCount = kWorkerCount,
+            .observers = {frames},
+            .registry = registry,
+            .maxTicks = kMaxTicks});
+
+    ASSERT_EQ(frames.snapshots.size(), static_cast<std::size_t>(6));
+
+    EXPECT_EQ(
+        queueLabelsOf(frames.snapshots[0]),
+        (std::vector<std::string>{"Gamma"}));
+    EXPECT_EQ(
+        queueLabelsOf(frames.snapshots[3]),
+        (std::vector<std::string>{"Gamma"}));
+    EXPECT_EQ(
+        queueLabelsOf(frames.snapshots[4]),
+        (std::vector<std::string>{"Gamma", "Epsilon waits for Delta"}));
+    EXPECT_TRUE(frames.snapshots[5].queue.empty());
+
+    EXPECT_EQ(
+        frames.snapshots[0].dispatch,
+        (antwika::task_worker::DispatchInfo{2, 2}));
+    EXPECT_EQ(
+        frames.snapshots[3].dispatch,
+        (antwika::task_worker::DispatchInfo{0, 0}));
+    EXPECT_EQ(
+        frames.snapshots[4].dispatch,
+        (antwika::task_worker::DispatchInfo{1, 1}));
+    EXPECT_EQ(
+        frames.snapshots[5].dispatch,
+        (antwika::task_worker::DispatchInfo{2, 2}));
+
+    EXPECT_EQ(
+        frames.snapshots[5].workers[0].label, std::string{"Epsilon"});
+    EXPECT_EQ(frames.snapshots[5].workers[1].label, std::string{"Gamma"});
 }
 
 TEST(BootstrapTest, Bootstrap_WithNoScriptedInputAllWorkersStayIdle)

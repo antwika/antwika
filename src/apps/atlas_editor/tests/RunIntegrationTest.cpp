@@ -18,7 +18,6 @@
 #include <antwika/gfx/Rect.hpp>
 #include <antwika/gfx/Size.hpp>
 #include <antwika/i18n/Locale.hpp>
-#include <antwika/i18n/Translator.hpp>
 #include <antwika/input/InputEvent.hpp>
 #include <antwika/input/InputEventCodec.hpp>
 #include <antwika/input/MouseButton.hpp>
@@ -31,6 +30,7 @@
 #include "antwika/atlas_editor/EditorState.hpp"
 #include "antwika/atlas_editor/EditorUi.hpp"
 #include "antwika/atlas_editor/IAtlasStore.hpp"
+#include "antwika/atlas_editor/Messages.hpp"
 #include "antwika/atlas_editor/Pixel.hpp"
 #include "antwika/atlas_editor/TileGrid.hpp"
 #include "antwika/atlas_editor/UiOverlay.hpp"
@@ -95,7 +95,7 @@ namespace
 
     // Where the save button lands, off the layout the session lays out.
     // The locale is a constant of the build, so a test may name one.
-    constexpr antwika::i18n::Translator kTranslator{
+    constexpr antwika::atlas_editor::Translator kTranslator{
         antwika::i18n::kDefaultLocale};
 
     // A second guess at it would be a second layout.

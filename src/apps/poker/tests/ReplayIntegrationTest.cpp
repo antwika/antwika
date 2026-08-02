@@ -156,7 +156,12 @@ namespace
             {
                 return drawnInto;
             }
+            [[nodiscard]] bool isFullscreen() const override
+            {
+                return false;
+            }
             void setTitle(std::string_view) override {}
+            void setFullscreen(bool) override {}
             void close() override { open = false; }
             void shut() { open = false; }
 

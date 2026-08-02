@@ -22,6 +22,8 @@ Live input reaches the engine only through `ITickEventSource`, via `LiveInputSou
 | `CoalescingPointerSource.hpp` | `CoalescingPointerSource` | Keeps only the last of each run of movements inside a tick. |
 | `IdleMotionSource.hpp` | `IdleMotionSource` | Holds back movement arriving while no button is held. |
 | `StopOnKeySource.hpp` | `StopOnKeySource` | Appends `engine.stop` when a nominated key is pressed. |
+| `IPointerMapping.hpp` | `IPointerMapping` | What a position a device reported means on the surface an application lays itself out against. |
+| `MappedPointerSource.hpp` | `MappedPointerSource` | Rewrites every positional edge through one of those, and changes nothing else. |
 | `PointerHintChannel.hpp` | `PointerHintChannel`, `PointerHint` | One value cell holding where the pointer is, read through `forRenderingOnly()`. |
 | `PointerHintSource.hpp` | `PointerHintSource` | Publishes that hint once per tick; a pure observer of the stream. |
 | `InputPipeline.hpp` | `InputPipeline`, `InputPipelineOptions` | Assembles those decorators in the right order. |
@@ -64,6 +66,14 @@ An app used to carry a `kSelfGeneratedEventNames` list for that and no longer do
 Which decorator an app attaches is an app-level choice: [`game`](../apps/game.md) takes both, [`life`](../apps/life.md) takes only the gate, because a drag toggles every cell it crosses and coalescing a run inside a tick would skip some.
 
 Both exist because a window system reports motion at its own rate rather than the app's — SDL will report several hundred movements a second into a run that ticks 25 times a second — so an unthinned `--record` file grows at the window system's rate and is mostly positions nothing ever read.
+
+**One decorator changes what an event says, and it is the only one allowed to.**
+`MappedPointerSource` rewrites the position of every positional edge through an injected `IPointerMapping`, and it sits upstream of the recorder for the reason everything else does: what lands in a recording is then already the application's own coordinate.
+A file holding a device coordinate would only mean anything on a window of the size it was recorded at, which is the failure [`docs/resizable-windows.md`](../../docs/resizable-windows.md) exists to prevent, arriving by a different road.
+The mapping itself is expressed with no `gfx` type at all, so this library goes on naming no window and no size; `app::WindowPointerMapping` is the implementation, where a window and a canvas may be named in one sentence.
+
+`InputPipeline` attaches it immediately outside `LiveInputSource` and inside `PointerHintSource`, so the hint channel and the tick stream carry positions in the same coordinates — otherwise a placement ghost and the click that places it would disagree.
+**It is attached only when a device is read**, which is the one place this stack's symmetry is deliberately broken: the thinning decorators are attached either way because a hand-authored file must replay the way a live run would have run, and this is not a thinning but a change of coordinate system applied to what a device said, which a file already holds the result of.
 
 That rule governs the event stream, which is everything a replay has to reproduce, and there is exactly one thing deliberately outside it: the channel below.
 

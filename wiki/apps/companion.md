@@ -49,11 +49,11 @@ Three props stand on the ground, and a press means whichever one it landed on.
 `companion::PetLayout.hpp` names their boxes, `propAt()` hit-tests them, and `PetScene` paints into the very same rectangles.
 So what somebody aims at and what they hit cannot drift apart.
 
-| prop | press | when it is right | when it is a slight |
-|---|---|---|---|
-| **bowl** | feed | hunger has reached the threshold | it is not hungry |
-| **ball** | play | it has the energy to spend | it has less than `playEnergy` left |
-| **nest** | bedtime | energy is at or under the tired mark | it is still wide awake |
+| prop | label | press | when it is right | when it is a slight |
+|---|---|---|---|---|
+| **bowl** | `feed` | feed | hunger has reached the threshold | it is not hungry |
+| **ball** | `play` | play | it has the energy to spend | it has less than `playEnergy` left |
+| **nest** | `sleep` | bedtime | energy is at or under the tired mark | it is still wide awake |
 
 - **A press on none of them is a prod**, and costs `pesterCost` like any other refusal.
   Sloppy aim has a price, which is what leaves the props worth aiming at.
@@ -180,6 +180,24 @@ The three props sit along the ground, painted into the very boxes `propAt()` hit
 **The one the companion would like is lit rather than merely present.**
 That is this application's whole answer to instructions: what to press next is on the screen.
 
+**Lighting one says which is wanted, and never which is which**, so each prop is also named: `feed`, `play` and `sleep`, from this application's own catalogue, read through [`i18n`](../libraries/i18n.md) like every other word here.
+Three boxes of one colour are otherwise three guesses, and the price of guessing wrong is `pesterCost` and a companion that got something it did not ask for.
+
+**The word goes in the prop's own bottom row**, which is the decision the rest of this follows from.
+`propBox()` -- the rectangle `propAt()` tests a press against -- is unchanged, and it is now divided into `propArtBox()`, the top three of its four rows, and `propLabelBox()`, the fourth.
+So the picture shrank to make room for the word rather than the box growing, and three things come out of that at once.
+A press on the word is a press on the prop it names, since the word is inside the box that means it -- a label that merely sat beside a prop would look pressable and answer a prod.
+No label can reach into a neighbour's hit region, because it cannot leave its own prop's.
+And every press recorded before the labels existed still means exactly what it meant, `demo.jsonl` included, because no boundary a recording is resolved against moved.
+
+There was also nowhere else to put them.
+The four gauges take the top eight rows, the animal stands from row eight to the ground at row 22, the props take rows 22 to 26, and the readout's three lines are anchored to the bottom of the grid -- which at the configured 256 pixels is exactly rows 26 to 32.
+A label above the middle prop would land on the animal's feet, and one below any of them would land in the readout.
+
+The words are scaled rather than sized: `gfx::textSize()` measures the longest label *the catalogue in use* holds, and the scale is whichever of the row's height and its width allows less, floored at the smallest legible one.
+So all three read at one size, Swedish (`mata`, `leka`, `sova`) fits where English does, and a bigger window gets bigger words with nothing to keep in step by hand.
+That is the bubble's rule applied to a second piece of text, overhang included: a window smaller than `main.cpp`'s leaves a label wider than its prop, exactly as it leaves the longest lines overhanging their bubble.
+
 Three lines of text stand under them.
 The first says what it is doing -- `awake`, `awake, hungry`, `awake, woken`, `asleep` or `gone`.
 The second says how old the day is, how grown up it is, and what kind of day it is: `d3 teen heavy`.
@@ -197,7 +215,7 @@ That is for the reason everything else about a companion is: a renderer holding 
 The idle line is a hash of the tick it comes up on -- the murmur3 finalizer over exact-width integers, so it is the same line on every toolchain.
 The snapshot carries the `Saying` and not the words, and not the countdown.
 
-**The words themselves come from [`i18n`](../libraries/i18n.md), and `Pet` never sees one.**
+**The words themselves come from this application's catalogue, read through [`i18n`](../libraries/i18n.md), and `Pet` never sees one.**
 `PetScene` holds a `Translator` and turns a `Saying` into a `MessageId`; the state line, the day line and the lineage line are worded the same way.
 That split is what keeps the active language out of the state a replay reproduces: `Pet` is integer throughout and reads no clock, no generator and no locale, so a session recorded in English replays identically in Swedish and only the pixels differ.
 The bubble is scaled to the longest line *the catalogue in use* holds rather than to a character count written into the scene -- the longest Swedish line is half again the longest English one, so a count baked in would have been the English one.
@@ -252,7 +270,7 @@ Three rules cover the awkward cases, and each is a decision rather than an accid
 
 - **When it is written: once, after the loop has finished.**
   Not every tick, and not on a timer, which would be a clock inside a session that has none.
-  A session killed with `Ctrl+C` therefore keeps nothing, exactly as a `--record` run there writes no file.
+  A session killed with `Ctrl+C` therefore keeps no companion; a `--record` run killed the same way does keep its recording, since that is a log appended as the run goes rather than a snapshot written after it.
 - **A replay neither loads nor saves.**
   A companion loaded from whatever happens to be on the machine running it is a different starting state and so a different session.
   `storeIfLive()` is where that decision is made, so no `main()` has to remember it.
@@ -267,10 +285,10 @@ Three rules cover the awkward cases, and each is a decision rather than an accid
 build/bin/antwika_companion/antwika_companion
 build/bin/antwika_companion/antwika_companion --record demo.replay
 build/bin/antwika_companion/antwika_companion \
-  --replay build/bin/antwika_companion/demo.json
+  --replay build/bin/antwika_companion/demo.jsonl
 ```
 
-The shipped `demo.json` is a 35-second session of two well-played days: two meals, two games, two nights, and no collapse, no prod and no rude awakening between them.
+The shipped `demo.jsonl` is a 35-second session of two well-played days: two meals, two games, two nights, and no collapse, no prod and no rude awakening between them.
 It ends with an `engine.stop`, so it finishes on its own.
 **It replaced the version 1 demo outright rather than being amended**, because a press now means whichever prop it landed on, and every recording written before this one lands somewhere else.
-A headless build reports neither a window close nor any input, so `Ctrl+C` is what ends a live run there -- and a `--record` run only writes its file once the run ends.
+A headless build reports neither a window close nor any input, so `Ctrl+C` is what ends a live run there -- and a `--record` run killed that way keeps every event up to the kill.

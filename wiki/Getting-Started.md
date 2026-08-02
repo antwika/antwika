@@ -100,7 +100,7 @@ build/bin/antwika_life/antwika_life
 build/bin/antwika_life/antwika_life --record demo.replay
 build/bin/antwika_task_worker/antwika_task_worker --record demo.replay
 build/bin/antwika_poker/antwika_poker --record demo.replay
-build/bin/antwika_sudoku/antwika_sudoku [--puzzle my-puzzle.txt]
+build/bin/antwika_sudoku/antwika_sudoku [--puzzle my-puzzle.txt]    # or --record / --replay
 build/bin/antwika_tower_defence/antwika_tower_defence               # or --record / --replay
 build/bin/antwika_gfx_demo/antwika_gfx_demo
 build/bin/antwika_gfx3d_demo/antwika_gfx3d_demo                  # spinning cube, a fixed frame count
@@ -110,8 +110,8 @@ build/bin/antwika_sound_demo/antwika_sound_demo [--file my-sound.wav]   # silent
 On Windows the binaries carry a `.exe` suffix.
 
 Every tick-loop app takes `--record <path>` and `--replay <path>`, parsed by `antwika::replay`'s `ReplayCli`.
-`antwika_poker` additionally takes `--tick-delay-ms <n>`, and `antwika_sudoku` takes `--puzzle <path>`.
-A `--record` run only writes its file once the run ends, so a run you interrupt with `Ctrl+C` saves nothing.
+`antwika_poker` additionally takes `--tick-delay-ms <n>`, and `antwika_sudoku` takes `--puzzle <path>` and `--max-ticks <n>`.
+A `--record` run appends a line per event as it goes, so a run you interrupt with `Ctrl+C` keeps everything up to the interrupt and the file it leaves replays.
 Sample sessions to pass to `--replay` are checked in under `src/apps/*/replays/`.
 
 See each app's page for what it does and which libraries it composes: [game](apps/game.md), [life](apps/life.md), [task_worker](apps/task_worker.md), [poker](apps/poker.md), [tower_defence](apps/tower_defence.md), [sudoku](apps/sudoku.md), [gfx_demo](apps/gfx_demo.md), [gfx3d_demo](apps/gfx3d_demo.md), [sound_demo](apps/sound_demo.md).

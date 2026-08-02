@@ -25,6 +25,7 @@
 #include "ScratchDirectory.hpp"
 #include "WidgetPixel.hpp"
 
+#include "TestTranslator.hpp"
 #include "antwika/game/AppMode.hpp"
 #include "antwika/game/BuildingIndex.hpp"
 #include "antwika/game/Camera.hpp"
@@ -41,6 +42,8 @@
 #include "antwika/game/SaveLoadState.hpp"
 #include "antwika/game/SessionStore.hpp"
 #include "antwika/game/UiOverlay.hpp"
+
+using antwika::game::tests::kTranslator;
 
 namespace
 {
@@ -198,7 +201,7 @@ namespace
         AppModeState mode{AppMode::SaveLoad};
         UiOverlay overlay{kCanvas};
         InputFold input{codec};
-        SaveLoadScene scene;
+        SaveLoadScene scene{kTranslator};
         SaveLoadState state;
         SaveLoadSink sink{
             state,

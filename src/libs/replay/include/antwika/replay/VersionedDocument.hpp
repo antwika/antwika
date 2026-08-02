@@ -97,4 +97,60 @@ namespace antwika::replay
         return document;
     }
 
+    /**
+     * @brief Bring one record of a line-oriented file to the current
+     * version of its schema and check it against that one schema.
+     *
+     * The same five stages as readVersionedDocument(), applied to a
+     * record instead of to a whole document: `parse -> read version ->
+     * migrate -> validate -> decode`, with parsing and decoding the
+     * caller's as before.
+     *
+     * **What differs is only where the version comes from.** A record
+     * carries none: its file states one, once, in the header line that
+     * opens it. So a file whose records are appended one at a time never
+     * repeats a number that could disagree with itself, and a reader
+     * still knows which revision it is looking at before it looks.
+     *
+     * There is no error translation here, unlike its whole-document
+     * neighbour: a record's version was answered when the header was
+     * read, so the only failure left to report is the schema's.
+     *
+     * @tparam ErrorT The exception type this format reports a bad record
+     * as; must be constructible from a `const char *`.
+     * @param record The parsed record, taken by value because it is
+     * migrated in place and a caller's copy may not be.
+     * @param statedVersion The version the file's header stated.
+     * @param migrations The chain that brings a record to the current
+     * version, constructed and injected by the format that owns it.
+     * @param validator The one schema for that current version.
+     * @param whatFailed What to say ahead of the validator's own
+     * message; the format's name and which record it was reading.
+     * @return The migrated record, ready to decode.
+     * @throws ErrorT If the record fails the schema.
+     * @throws SchemaVersionError If the stated version is one this build
+     * cannot reach the current one from.
+     */
+    template <typename ErrorT>
+    [[nodiscard]] nlohmann::json readVersionedRecord(
+        nlohmann::json record,
+        std::uint32_t statedVersion,
+        const MigrationChain &migrations,
+        const nlohmann::json_schema::json_validator &validator,
+        std::string_view whatFailed)
+    {
+        migrations.migrateFrom(record, statedVersion);
+
+        try
+        {
+            validator.validate(record);
+        }
+        catch (const std::exception &error) // GCOVR_EXCL_LINE
+        {
+            throw ErrorT(std::string(whatFailed) + error.what());
+        }
+
+        return record;
+    }
+
 } // namespace antwika::replay

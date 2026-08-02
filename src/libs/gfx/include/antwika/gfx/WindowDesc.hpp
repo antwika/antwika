@@ -43,6 +43,22 @@ namespace antwika::gfx
          * the drawable area -- see docs/resizable-windows.md.
          */
         bool resizable = false;
+
+        /**
+         * @brief Whether the window should start filling the screen.
+         *
+         * Off by default, for resizable's reason exactly. It is the
+         * initial state of something IWindow::setFullscreen() can change
+         * at any time afterwards, and it changes what IWindow::size()
+         * may report and nothing else -- in particular it never changes
+         * configuredSize(), which is why going fullscreen enlarges the
+         * picture and moves no hit target.
+         *
+         * A window that fills the screen is one nobody can drag the edge
+         * of, so this is independent of resizable rather than an
+         * extreme of it.
+         */
+        bool fullscreen = false;
     };
 
 } // namespace antwika::gfx

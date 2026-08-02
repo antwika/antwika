@@ -15,12 +15,15 @@
 #include "antwika/game/BuildingKind.hpp"
 #include "antwika/game/Camera.hpp"
 #include "antwika/game/Cell.hpp"
+#include "antwika/game/Errand.hpp"
 #include "antwika/game/GameState.hpp"
 #include "antwika/game/GameSummary.hpp"
 #include "antwika/game/GridExtent.hpp"
+#include "antwika/game/Household.hpp"
 #include "antwika/game/PathIndex.hpp"
 #include "antwika/game/Resource.hpp"
 #include "antwika/game/SceneSnapshot.hpp"
+#include "antwika/game/Service.hpp"
 #include "antwika/game/Walker.hpp"
 
 namespace antwika::game
@@ -53,7 +56,7 @@ namespace antwika::game
      * one member every persisted document in this code base carries its
      * version in, rather than a name of this format's own.
      */
-    inline constexpr std::uint32_t kSaveFormatVersion = 2;
+    inline constexpr std::uint32_t kSaveFormatVersion = 3;
 
     /**
      * @brief Build the migration chain for the save document format.
@@ -63,9 +66,10 @@ namespace antwika::game
      * The save format's answer to standardReplayMigrations(), and the
      * whole reason MigrationChain is generic over the document: this
      * names its own list, its own current version and nothing else.
-     * Empty today, because the format is still at version 1.
-     * A factory rather than a constant, so that adding the first
-     * migration changes one function and nothing else.
+     * A factory rather than a constant, so that adding a migration
+     * changes one function and nothing else.
+     * List order is not semantic -- a chain looks a step up by
+     * fromVersion() -- so appending to it is conflict-free.
      */
     [[nodiscard]] MigrationChain standardSaveMigrations();
 
@@ -96,11 +100,40 @@ namespace antwika::game
      * exactly as it was -- a walker halfway home with a half-empty load
      * is not the same walker as a fresh one on the same cell.
      */
+    /**
+     * @brief One walker's errand, as a file has to remember it.
+     *
+     * Separate from Errand because that component names its destination
+     * by ecs::Entity, and a restore destroys and recreates every entity
+     * -- so a file names it by index into the buildings array, exactly
+     * as SavedWalker::home does and for the same reason.
+     *
+     * **The index is optional and absent means nowhere**, which is not
+     * the same as there being no errand at all: a cart loaded in a city
+     * with no storehouse is bound for nowhere and takes its load round
+     * with it, and a market seller is always bound for nowhere. A
+     * walker with no errand has no member here at all.
+     */
+    struct SavedErrand
+    {
+        /** @brief Which saved building it is bound for, by index. */
+        std::optional<std::size_t> destination = std::nullopt;
+
+        /** @brief What is in the cart. */
+        Resource carrying = Resource::Food;
+
+        /** @brief Which half of the round trip it is on. */
+        ErrandLeg leg = ErrandLeg::Outbound;
+
+        [[nodiscard]] bool operator==(const SavedErrand &other) const
+            = default;
+    };
+
     struct SavedWalker
     {
         Cell at;
         Direction facing = Direction::East;
-        WalkerKind kind = WalkerKind::Food;
+        WalkerKind kind = WalkerKind::WaterCarrier;
         std::int32_t carried = 0;
         std::int32_t stepsUntilHome = kRoamingSteps;
         std::uint8_t ticksUntilStep = 0;
@@ -115,6 +148,14 @@ namespace antwika::game
          * raw handle would name nothing at all on the way back in.
          */
         std::optional<std::size_t> home = std::nullopt;
+
+        /**
+         * @brief Where it is taking a load, if it is taking one.
+         *
+         * Optional, and absent means it roams -- which is what every
+         * walker in a file written before errands existed did.
+         */
+        std::optional<SavedErrand> errand = std::nullopt;
 
         [[nodiscard]] bool operator==(const SavedWalker &other) const
             = default;
@@ -138,8 +179,74 @@ namespace antwika::game
         std::int32_t ticksUntilDrain = 0;
         std::int32_t ticksUntilRisk = 0;
 
-        /** @brief Which saved walker it has out, by index. */
-        std::optional<std::size_t> walker = std::nullopt;
+        /**
+         * @brief Which saved walkers it has out, by index.
+         *
+         * **A list rather than the one index it used to be**, because a
+         * building may have kMaxWalkersOut out at once -- see
+         * Building::walkers. Empty is the ordinary "nobody out", the
+         * same reading an absent member had.
+         *
+         * The order is the slot order the live building holds them in,
+         * so a session written and read back holds its walkers exactly
+         * where it held them.
+         */
+        std::vector<std::size_t> walkers = {};
+
+        /**
+         * @brief How much longer each service still reaches it.
+         *
+         * **Additive, and all-zero is what an older file means.** A
+         * version-3 document written before coverage existed names no
+         * coverage at all, and a building nothing has ever reached has
+         * none either -- the two read the same, which is precisely why
+         * this member needed no version bump and no migration.
+         * See docs/schema-versioning.md, and Coverage.hpp for why an
+         * absent component is uncovered rather than unknown.
+         */
+        std::array<std::int32_t, kServiceCount> coverage{};
+
+        /**
+         * @brief How far it is through the batch it is making.
+         *
+         * Optional, and absent means it is not part-way through one --
+         * which is both what a producer in a file written before
+         * production existed was, and what a producer put up this tick
+         * is, so ProductionSystem needs no case of its own for either.
+         */
+        std::optional<std::int32_t> ticksUntilOutput = std::nullopt;
+
+        /**
+         * @brief Who lives there and how close it is to a change.
+         *
+         * Optional, and absent means the bottom level, a fresh countdown
+         * each way and nobody living there -- which is both what a house
+         * that has never grown holds and what a version-3 file written
+         * before housing existed says.
+         *
+         * **The component itself rather than a record of its fields**,
+         * unlike SavedWalker and SavedErrand beside it, and the
+         * difference is that those two hold a *link*: an ecs::Entity
+         * means nothing in a file, so a saved one has to name a building
+         * by index instead. A Household names nothing outside itself, so
+         * there is no second reading of it for a saved form to be. The
+         * fields are still written out one by one in SaveHousing.cpp,
+         * which is where the format is stated.
+         */
+        std::optional<Household> household = std::nullopt;
+
+        /**
+         * @brief How many of the city's people were working there.
+         *
+         * Optional, and absent means nobody has been allocated to it --
+         * which is both what a version-3 file written before labour
+         * existed says and what a workplace put up this tick holds.
+         *
+         * How many workers it *wanted* is deliberately not here:
+         * workersWantedBy() answers that from the kind this record
+         * already names, and a second copy could disagree with it.
+         */
+        std::optional<std::int32_t> employed = std::nullopt;
 
         [[nodiscard]] bool operator==(const SavedBuilding &other) const
             = default;
@@ -195,7 +302,7 @@ namespace antwika::game
      * @brief Encode a save as JSON matching the save-document schema.
      *
      * Pure: no filesystem, no clock, no ordering surprises. Split from
-     * saveGameFile() exactly as replayToJson() is split from
+     * saveGameFile() exactly as replayHeaderToJson() is split from
      * saveReplayFile(), so a round trip can be asserted without a file.
      *
      * @param save The state to encode.

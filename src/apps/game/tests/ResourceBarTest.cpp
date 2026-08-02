@@ -2,6 +2,7 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <set>
 
 #include <antwika/animation/Progress.hpp>
 #include <antwika/gfx/Point.hpp>
@@ -42,12 +43,13 @@ namespace
 {
     const Camera kCamera{antwika::gfx::Point{.x = 300, .y = 40}, 3};
 
-    [[nodiscard]] BuildingSprite house(std::int32_t food, std::int32_t water)
+    [[nodiscard]] BuildingSprite house(
+        std::int32_t food, std::int32_t clay)
     {
         return BuildingSprite{
             .at = Cell{.x = 2, .y = 3},
             .kind = BuildingKind::House,
-            .stock = {food, water}};
+            .stock = {food, clay, 0}};
     }
 } // namespace
 
@@ -68,10 +70,10 @@ TEST(ResourceBarTest, BuildingBars_ShowsOneBarPerResourceForAHouse)
 TEST(ResourceBarTest, BuildingBars_ShowsNoneForAKindThatDependsOnNothing)
 {
     for (const auto kind : {
-             BuildingKind::FoodSource,
-             BuildingKind::WaterSource,
+             BuildingKind::Farm,
+             BuildingKind::Well,
              BuildingKind::FireStation,
-             BuildingKind::ArchitectPost,
+             BuildingKind::EngineerPost,
          })
     {
         auto sprite = house(50, 50);
@@ -115,7 +117,7 @@ TEST(ResourceBarTest, BuildingBars_FillsEachBarToItsShareOfCapacity)
 {
     const auto bars = buildingBars(house(kStockCapacity, 0), kCamera);
 
-    ASSERT_EQ(bars.size(), 2U);
+    ASSERT_EQ(bars.size(), kResourceCount);
 
     // Full fills the track exactly, empty fills none of it.
     EXPECT_EQ(bars[0].fill, bars[0].track);
@@ -143,7 +145,7 @@ TEST(ResourceBarTest, BuildingBars_ClampAStockOutsideItsCapacity)
     const auto over = buildingBars(
         house(kStockCapacity * 3, -kStockCapacity), kCamera);
 
-    ASSERT_EQ(over.size(), 2U);
+    ASSERT_EQ(over.size(), kResourceCount);
     EXPECT_EQ(over[0].fill, over[0].track);
     EXPECT_EQ(over[1].fill.size.height, 0U);
 }
@@ -157,7 +159,7 @@ TEST(ResourceBarTest, BuildingBars_StayLegibleAtEveryZoom)
         const Camera camera{antwika::gfx::Point{.x = 300, .y = 40}, zoom};
         const auto bars = buildingBars(house(30, 70), camera);
 
-        ASSERT_EQ(bars.size(), 2U);
+        ASSERT_EQ(bars.size(), kResourceCount);
 
         for (const auto &bar : bars)
         {
@@ -174,7 +176,7 @@ TEST(ResourceBarTest, BuildingBars_StayLegibleAtEveryZoom)
 
 TEST(ResourceBarTest, WalkerBars_ShowOneBarForWhatTheKindCarries)
 {
-    for (const auto kind : {WalkerKind::Food, WalkerKind::Water})
+    for (const auto kind : {WalkerKind::MarketSeller})
     {
         const WalkerSprite walker{
             .at = Cell{.x = 1, .y = 1},
@@ -189,10 +191,17 @@ TEST(ResourceBarTest, WalkerBars_ShowOneBarForWhatTheKindCarries)
     }
 }
 
-// A fireman and an architect carry nothing and gauge nothing.
+// A service walker carries nothing and gauges nothing.
 TEST(ResourceBarTest, WalkerBars_ShowNoneForAWalkerThatCarriesNothing)
 {
-    for (const auto kind : {WalkerKind::Fireman, WalkerKind::Architect})
+    for (const auto kind : {
+             WalkerKind::WaterCarrier,
+             WalkerKind::Doctor,
+             WalkerKind::Fireman,
+             WalkerKind::Engineer,
+             WalkerKind::CartPusher,
+             WalkerKind::MarketBuyer,
+         })
     {
         const WalkerSprite walker{.at = Cell{}, .kind = kind};
 
@@ -209,7 +218,7 @@ TEST(ResourceBarTest, WalkerBars_FollowTheWalkerAcrossItsStep)
         .at = Cell{.x = 2, .y = 1},
         .from = Cell{.x = 1, .y = 1},
         .ticksIntoStep = 0,
-        .kind = WalkerKind::Food,
+        .kind = WalkerKind::MarketSeller,
         .carried = kWalkerLoad / 2};
 
     const auto atTick = walkerBars(walker, kCamera, Progress());
@@ -228,19 +237,29 @@ TEST(ResourceBarTest, WalkerBars_FollowTheWalkerAcrossItsStep)
 
 TEST(ResourceBarTest, ResourceColour_GivesEachResourceOneOfItsOwn)
 {
-    EXPECT_NE(
-        resourceColour(Resource::Food), resourceColour(Resource::Water));
+    std::set<std::uint32_t> packed;
 
-    // Opaque, so a fill reads as full rather than as half full.
-    EXPECT_EQ(resourceColour(Resource::Food).alpha, 255);
-    EXPECT_EQ(resourceColour(Resource::Water).alpha, 255);
+    for (const auto resource : antwika::game::kResources)
+    {
+        const auto colour = resourceColour(resource);
+
+        packed.insert(
+            (static_cast<std::uint32_t>(colour.red) << 16)
+            | (static_cast<std::uint32_t>(colour.green) << 8)
+            | static_cast<std::uint32_t>(colour.blue));
+
+        // Opaque, so a fill reads as full rather than as half full.
+        EXPECT_EQ(colour.alpha, 255);
+    }
+
+    EXPECT_EQ(packed.size(), kResourceCount);
 }
 
 TEST(ResourceBarTest, EqualityComparesEveryField)
 {
     const auto bars = buildingBars(house(10, 20), kCamera);
 
-    ASSERT_EQ(bars.size(), 2U);
+    ASSERT_EQ(bars.size(), kResourceCount);
     EXPECT_EQ(bars[0], bars[0]);
     EXPECT_NE(bars[0], bars[1]);
 
@@ -253,6 +272,6 @@ TEST(ResourceBarTest, EqualityComparesEveryField)
     EXPECT_NE(bars[0], fuller);
 
     auto other = bars[0];
-    other.resource = Resource::Water;
+    other.resource = Resource::Clay;
     EXPECT_NE(bars[0], other);
 }

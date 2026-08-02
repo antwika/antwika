@@ -4,18 +4,17 @@
 #include <cstdint>
 #include <string>
 
-#include <antwika/i18n/Translator.hpp>
 #include <antwika/ui/Frame.hpp>
 #include <antwika/ui/Pointer.hpp>
 #include <antwika/ui/WidgetId.hpp>
 
 #include "antwika/atlas_editor/EditorState.hpp"
+#include "antwika/atlas_editor/Messages.hpp"
 #include "antwika/atlas_editor/Tool.hpp"
 
 namespace antwika::atlas_editor
 {
 
-    using antwika::i18n::Translator;
     using antwika::ui::Frame;
     using antwika::ui::Pointer;
     using antwika::ui::WidgetId;

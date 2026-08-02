@@ -1,5 +1,6 @@
 #pragma once
 
+#include <array>
 #include <cstddef>
 #include <optional>
 #include <vector>
@@ -9,8 +10,13 @@
 #include "antwika/game/Building.hpp"
 #include "antwika/game/BuildingIndex.hpp"
 #include "antwika/game/Cell.hpp"
+#include "antwika/game/Coverage.hpp"
+#include "antwika/game/Errand.hpp"
+#include "antwika/game/Household.hpp"
 #include "antwika/game/PathIndex.hpp"
+#include "antwika/game/Production.hpp"
 #include "antwika/game/Walker.hpp"
+#include "antwika/game/Workforce.hpp"
 
 namespace antwika::game
 {
@@ -53,6 +59,25 @@ namespace antwika::game
         std::optional<std::size_t> home = std::nullopt;
 
         /**
+         * @brief Where it is taking a load, if it is taking one.
+         *
+         * Its `destination` is always kNullEntity here, for `walker`'s
+         * reason; which building it is bound for is the index below.
+         * Absent means it roams, which is what a walker with no Errand
+         * component does.
+         */
+        std::optional<Errand> errand = std::nullopt;
+
+        /**
+         * @brief Which stored building its errand names, by index.
+         *
+         * Absent for an errand bound nowhere, which is an ordinary
+         * state -- see Errand -- as well as for a walker with no errand
+         * at all.
+         */
+        std::optional<std::size_t> destination = std::nullopt;
+
+        /**
          * @brief Compare two stored walkers.
          * @param other The walker to compare against.
          * @return True when every field matches.
@@ -76,14 +101,74 @@ namespace antwika::game
         /**
          * @brief What it is and what it holds.
          *
-         * Its `walker` is always kNullEntity here, for the reason
-         * StoredWalker::walker gives; which walker it has out is the
-         * index below.
+         * Every entry of its `walkers` is kNullEntity here, for the
+         * reason StoredWalker::walker gives; which walkers it has out
+         * are the indices below.
          */
         Building building;
 
-        /** @brief Which stored walker it has out, by index. */
-        std::optional<std::size_t> walker = std::nullopt;
+        /**
+         * @brief Which stored walkers it has out, by index, per slot.
+         *
+         * One entry per slot rather than a list of the occupied ones,
+         * so a building put away and opened again holds each walker in
+         * the slot it was in.
+         */
+        std::array<std::optional<std::size_t>, kMaxWalkersOut> walkers{};
+
+        /**
+         * @brief How much longer each service still reaches it.
+         *
+         * A plain value rather than an optional one, because an absent
+         * Coverage component and an all-zero one mean the same thing --
+         * see Coverage.hpp. restoreCityGrid() therefore puts a
+         * component back only where there is something in it, which is
+         * what keeps a city that nobody has ever served from acquiring
+         * one on being reopened.
+         */
+        Coverage coverage{};
+
+        /**
+         * @brief How far it is through the batch it is making.
+         *
+         * Carried across for the reason every countdown here is:
+         * a city reopened with all of them reset is a city whose
+         * producers finish in lockstep from then on.
+         */
+        std::optional<Production> production = std::nullopt;
+
+        /**
+         * @brief Who lives there and how close it is to a change.
+         *
+         * Carried across for the reason every countdown here is: a city
+         * reopened with its housing countdowns reset is a city whose
+         * houses grow and shrink in lockstep from then on -- and one
+         * reopened with its *levels* reset is a district somebody spent
+         * a run building up and lost by looking at the world map.
+         *
+         * Optional rather than a plain value, unlike the coverage above
+         * it: an absent Household and a default one do mean the same
+         * thing, but a house on the bottom level with fresh countdowns
+         * is a state HousingSystem writes back, so keeping the optional
+         * is what makes a reopened city hold exactly the components the
+         * closed one held.
+         */
+        std::optional<Household> household = std::nullopt;
+
+        /**
+         * @brief How many of the city's people were working there.
+         *
+         * Carried across for the household's reason: a city reopened
+         * with its workplaces unstaffed is a city whose walkers all stop
+         * for a tick, and a run that switched cities would then differ
+         * from one that did not.
+         *
+         * Optional rather than a plain value, exactly as the household
+         * above it is: an absent Workforce means fully staffed rather
+         * than empty -- see LabourQuery.hpp -- so putting one back where
+         * there was none would change what a reopened city does.
+         */
+        std::optional<Workforce> workforce = std::nullopt;
 
         /**
          * @brief Compare two stored buildings.

@@ -3,7 +3,7 @@
 #include <cstddef>
 #include <cstdint>
 
-#include <antwika/i18n/MessageId.hpp>
+#include "antwika/atlas_editor/MessageId.hpp"
 
 namespace antwika::atlas_editor
 {
@@ -42,6 +42,6 @@ namespace antwika::atlas_editor
      * @param tool The tool to name.
      * @return Its message id.
      */
-    [[nodiscard]] antwika::i18n::MessageId toolNameId(Tool tool) noexcept;
+    [[nodiscard]] MessageId toolNameId(Tool tool) noexcept;
 
 } // namespace antwika::atlas_editor

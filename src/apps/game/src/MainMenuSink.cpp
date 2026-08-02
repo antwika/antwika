@@ -10,11 +10,14 @@
 #include <antwika/input/MouseButton.hpp>
 #include <antwika/ui/WidgetId.hpp>
 
+#include "antwika/game/Action.hpp"
+
 namespace antwika::game
 {
 
     using antwika::event::Event;
     using antwika::input::InputEvent;
+    using antwika::input::KeyPressed;
     using antwika::input::MouseButton;
     using antwika::input::PointerButtonPressed;
 
@@ -35,12 +38,16 @@ namespace antwika::game
         UiOverlay &overlay,
         const InputFold &input,
         const MainMenuScene &scene,
-        ITickEventSink &stop)
+        ITickEventSink &stop,
+        OptionsState &options,
+        const OptionsScene &optionsScene)
         : mode(mode),
           overlay(overlay),
           input(input),
           scene(scene),
-          stop(stop)
+          stop(stop),
+          options(options),
+          optionsScene(optionsScene)
     {
     }
 
@@ -68,6 +75,18 @@ namespace antwika::game
             return;
         }
 
+        // A key press means exactly one thing on this screen.
+        // The key an action is being bound to.
+        // Offered before the screen is described.
+        // So the row it lands on is drawn holding it in this tick.
+        // Nothing is ever waiting for one anywhere else.
+        // So this answers nothing at all on the menu itself.
+        const auto *typed = std::get_if<KeyPressed>(&*decoded);
+        if (typed != nullptr && !typed->repeat)
+        {
+            options.press(typed->key);
+        }
+
         refreshAndAct(event, isLeftPress(*decoded));
     }
 
@@ -83,14 +102,49 @@ namespace antwika::game
             .pressed = pressed};
     }
 
+    void MainMenuSink::refreshOptions(bool pressed)
+    {
+        auto frame = optionsScene.describe(
+            overlay.canvas(), pointerNow(pressed), options);
+        const auto activated = frame.interactions.activated;
+
+        if (activated == optionsWidgets::kBack)
+        {
+            options.setOpen(false);
+        }
+
+        for (const auto action : kActions)
+        {
+            if (activated == optionsWidgets::actionWidget(action))
+            {
+                options.await(action);
+            }
+        }
+
+        overlay.set(
+            std::move(frame.commands), frame.interactions.pointerOverUi);
+    }
+
     void MainMenuSink::refreshAndAct(
         const TickEvent &event, bool pressed)
     {
+        // The same screen with something else on it.
+        // So the same overlay, and no mode of its own.
+        if (options.open())
+        {
+            refreshOptions(pressed);
+            return;
+        }
+
         auto frame =
             scene.describe(overlay.canvas(), pointerNow(pressed));
         const auto activated = frame.interactions.activated;
 
-        if (activated == menuWidgets::kNewGame)
+        if (activated == menuWidgets::kOptions)
+        {
+            options.setOpen(true);
+        }
+        else if (activated == menuWidgets::kNewGame)
         {
             // Staged rather than applied here.
             // So the click that leaves the menu is not also the grid's.

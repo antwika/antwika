@@ -9,6 +9,8 @@
 #include "antwika/game/Cell.hpp"
 #include "antwika/game/Direction.hpp"
 #include "antwika/game/GridExtent.hpp"
+#include "antwika/game/Household.hpp"
+#include "antwika/game/HousingLevel.hpp"
 #include "antwika/game/PathIndex.hpp"
 #include "antwika/game/GameSummary.hpp"
 #include "antwika/game/SceneSnapshot.hpp"
@@ -246,7 +248,7 @@ TEST(SceneSnapshotTest, WalkerSpriteEqualityComparesEveryField)
     EXPECT_NE(sprite, later);
 
     auto other = sprite;
-    other.kind = antwika::game::WalkerKind::Water;
+    other.kind = antwika::game::WalkerKind::MarketSeller;
     EXPECT_NE(sprite, other);
 
     auto spent = sprite;
@@ -358,7 +360,9 @@ TEST(SceneSnapshotTest, GameSummaryEqualityComparesEveryField)
         .paths = {Cell{.x = 1, .y = 1}},
         .walkers = {WalkerView{.at = {.x = 2, .y = 2}}},
         .buildings = {},
-        .camera = Camera()};
+        .camera = Camera(),
+        .ratings = {},
+        .bindings = {}};
 
     EXPECT_EQ(base, base);
 
@@ -377,6 +381,10 @@ TEST(SceneSnapshotTest, GameSummaryEqualityComparesEveryField)
     auto moved = base;
     moved.camera.panBy(1, 0);
     EXPECT_NE(base, moved);
+
+    auto rated = base;
+    rated.ratings.population = 7;
+    EXPECT_NE(base, rated);
 }
 
 // With one-cell buildings two could never overlap.
@@ -422,13 +430,15 @@ TEST(SceneSnapshotTest, SnapshotOf_TakesWhatEachWalkerIsCarrying)
     world.add<Walker>(
         entity,
         Walker{
-            .kind = antwika::game::WalkerKind::Water, .carried = 42});
+            .kind = antwika::game::WalkerKind::WaterCarrier, .carried = 42});
     world.commit();
 
     const auto snapshot = snapshotOf(world, paths, Camera(), kExtent);
 
     ASSERT_EQ(snapshot.walkers.size(), 1U);
-    EXPECT_EQ(snapshot.walkers[0].kind, antwika::game::WalkerKind::Water);
+    EXPECT_EQ(
+        snapshot.walkers[0].kind,
+        antwika::game::WalkerKind::WaterCarrier);
     EXPECT_EQ(snapshot.walkers[0].carried, 42);
 }
 
@@ -495,4 +505,87 @@ TEST(SceneSnapshotTest, BuildingViewsOf_ReportsNothingWithNoBuildings)
     World world(logger);
 
     EXPECT_TRUE(antwika::game::buildingViewsOf(world).empty());
+}
+
+// The level is state a summary compares rather than a picture.
+// So it goes onto the view as well as onto the sprite.
+TEST(SceneSnapshotTest, TakesEachHousesLevelOntoBothViewAndSprite)
+{
+    NiceMock<MockLogger> logger;
+    World world(logger);
+    const PathIndex paths;
+
+    const auto grown = world.create();
+    world.add<Cell>(grown, Cell{.x = 1, .y = 1});
+    world.add<antwika::game::Building>(
+        grown,
+        antwika::game::Building{
+            .kind = antwika::game::BuildingKind::House});
+    antwika::game::setHousehold(
+        world,
+        grown,
+        antwika::game::Household{
+            .level = antwika::game::HousingLevel::Hovel});
+
+    const auto fresh = world.create();
+    world.add<Cell>(fresh, Cell{.x = 5, .y = 5});
+    world.add<antwika::game::Building>(
+        fresh,
+        antwika::game::Building{
+            .kind = antwika::game::BuildingKind::House});
+    world.commit();
+
+    const auto views = antwika::game::buildingViewsOf(world);
+
+    ASSERT_EQ(views.size(), 2U);
+    EXPECT_EQ(views[0].level, antwika::game::HousingLevel::Hovel);
+    EXPECT_EQ(views[1].level, antwika::game::HousingLevel::Tent);
+
+    const auto snapshot =
+        snapshotOf(world, paths, Camera(), kExtent);
+
+    ASSERT_EQ(snapshot.buildings.size(), 2U);
+    EXPECT_EQ(
+        snapshot.buildings[0].level, antwika::game::HousingLevel::Hovel);
+    EXPECT_EQ(
+        snapshot.buildings[1].level, antwika::game::HousingLevel::Tent);
+}
+
+// Occupancy goes onto the view as well, and that is the point of it.
+// A sum over the city hides two houses swapping one occupant.
+// Compared per house, a run and its replay cannot hide that.
+TEST(SceneSnapshotTest, TakesEachHousesPeopleOntoBothViewAndSprite)
+{
+    NiceMock<MockLogger> logger;
+    World world(logger);
+    const PathIndex paths;
+
+    const auto lived = world.create();
+    world.add<Cell>(lived, Cell{.x = 1, .y = 1});
+    world.add<antwika::game::Building>(
+        lived,
+        antwika::game::Building{
+            .kind = antwika::game::BuildingKind::House});
+    antwika::game::setHousehold(
+        world, lived, antwika::game::Household{.population = 4});
+
+    const auto empty = world.create();
+    world.add<Cell>(empty, Cell{.x = 5, .y = 5});
+    world.add<antwika::game::Building>(
+        empty,
+        antwika::game::Building{
+            .kind = antwika::game::BuildingKind::House});
+    world.commit();
+
+    const auto views = antwika::game::buildingViewsOf(world);
+
+    ASSERT_EQ(views.size(), 2U);
+    EXPECT_EQ(views[0].population, 4);
+    EXPECT_EQ(views[1].population, 0);
+
+    const auto snapshot = snapshotOf(world, paths, Camera(), kExtent);
+
+    ASSERT_EQ(snapshot.buildings.size(), 2U);
+    EXPECT_EQ(snapshot.buildings[0].population, 4);
+    EXPECT_EQ(snapshot.buildings[1].population, 0);
 }

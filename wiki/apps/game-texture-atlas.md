@@ -14,13 +14,13 @@ Everything in it is a way for a correct-looking tile to be wrong once the game b
 
 ## The sheet
 
-A **1024 by 256 pixel PNG**, RGBA, at `src/apps/game/assets/atlas.png`.
+A **1024 by 320 pixel PNG**, RGBA, at `src/apps/game/assets/atlas.png`.
 
-It is a grid of **8 columns by 4 rows** of **128 by 64 pixel** tiles.
+It is a grid of **8 columns by 5 rows** of **128 by 64 pixel** tiles.
 Slot *n* has its top-left corner at `((n % 8) * 128, (n / 8) * 64)`, counting left to right then top to bottom from slot 0.
 
 Any PNG the decoder accepts will do — indexed, greyscale, 16-bit and interlaced all decode to the same 8-bit RGBA — so export whatever your tool is happiest with.
-The size, however, is checked: an atlas that is not exactly 1024 by 256 is refused at startup with a message naming both sizes.
+The size, however, is checked: an atlas that is not exactly 1024 by 320 is refused at startup with a message naming both sizes.
 That check exists because `gfx::blitIsDrawable()` refuses an out-of-range source rectangle **silently**, so a sheet exported one row short would draw a blank grid without failing, logging or crashing.
 
 ## The slot table
@@ -32,10 +32,10 @@ slot   count  what
 0      1      ground
 1-16   16     roads, indexed by link mask
 17-20  4      walkers, in Direction order: north, east, south, west
-21-25  5      buildings, in BuildingKind order:
-                house, food source, water source,
-                fire station, architect post
-26-31  6      spare -- leave fully transparent
+21-30  10     buildings, in BuildingKind order:
+                house, farm, clay pit, workshop, storehouse,
+                market, well, doctor, fire station, engineer post
+31-39  9      spare -- leave fully transparent
 ```
 
 **A road's slot is its link mask**, which is what makes a junction a lookup rather than sixteen decisions.
@@ -89,29 +89,35 @@ Four tiles, one per facing, in `Direction` order.
 **Facing is in grid space, not screen space**, and the projection shears it.
 North is up-and-*right* on screen; east is down-and-right; south is down-and-left; west is up-and-left.
 
-**A walker tile is tinted at blit time, once per walker kind.**
-There are four kinds — food, water, fireman, architect — and four facings, and the art is four tiles rather than sixteen because the kind is applied as a colour multiply over the facing's tile.
+**A walker tile is meant to be tinted at blit time, once per walker kind.**
+There are seven kinds — water carrier, doctor, fireman, engineer, cart pusher, market buyer and market seller — and four facings, and the art is four tiles rather than twenty-eight because the kind is meant to be applied as a colour multiply over the facing's tile.
 So **draw the walkers in a neutral, fairly light value**: a tile that is already strongly coloured cannot be tinted convincingly, and a tile that is already dark goes black.
+`GridScene` does not apply that multiply yet and blits every walker untinted, so telling one kind from another on screen is a standing debt rather than a thing the art can fix.
 
 ## The buildings
 
-Five tiles, one per kind, in `BuildingKind` order.
+Ten tiles, one per kind, in `BuildingKind` order.
 
 **A building may cover a square block of cells — one, four or nine — and it is still one tile.**
 A square block of cells is itself a diamond, so the same 128 by 64 art is simply blitted into a larger box: a 2×2 block into a 256×128 box, a 3×3 into 384×192.
 There is no per-footprint art and no larger source rectangle.
 
-What that does mean is that a big building's art is **magnified**: the architect's post covers 3×3 and is drawn three times the size of a house.
+What that does mean is that a big building's art is **magnified**: the storehouse covers 3×3 and is drawn three times the size of a house.
 It needs enough detail to carry that, while still reading at the smallest zoom.
 
 Today's footprints, from `Footprint.hpp`:
 
 ```
 house           1x1
-food source     2x2
-water source    2x2
-fire station    2x2
-architect post  3x3
+farm            2x2
+clay pit        2x2
+workshop        2x2
+storehouse      3x3
+market          2x2
+well            1x1
+doctor          1x1
+fire station    1x1
+engineer post   1x1
 ```
 
 **Tell one building from another by silhouette rather than by hue.**
@@ -121,15 +127,44 @@ Colour is already spoken for: the walkers' hue carries their kind, and a buildin
 The preview is the same tile drawn at alpha 110 out of 255, and when a block will not fit it is drawn at that alpha *and* tinted red (255, 90, 90).
 A silhouette that only works opaque will not survive either.
 
+## The art debt this sheet is carrying
+
+**Five of the ten building tiles are flat placeholder diamonds and want drawing properly.**
+The round-one vocabulary took the buildings from five kinds to ten, and the sheet was grown from four rows to five programmatically rather than repainted: every tile that already existed was carried across to the slot that still means the same thing, and the five kinds that never had art got a flat, single-hue diamond each.
+
+Kept, and still the art somebody drew:
+
+```
+house           slot 21
+farm            slot 22   (drawn as the old food source)
+well            slot 27   (drawn as the old water source)
+fire station    slot 29
+engineer post   slot 30   (drawn as the old architect's post)
+```
+
+Placeholders, and the work outstanding:
+
+```
+clay pit        slot 23
+workshop        slot 24
+storehouse      slot 25
+market          slot 26
+doctor          slot 28
+```
+
+A placeholder is a flat fill of the whole diamond with a slightly darker two-pixel rim, so it respects the diamond contract and the transparent corners and tessellates correctly — and nothing else.
+It tells one kind from another **by hue**, which is exactly what the silhouette rule above says not to do; that is the debt, and drawing these five is what pays it.
+Every one of them is a producer or a store, so a silhouette that reads as a working yard rather than as a dwelling is what to aim for.
+
 ## What is left checking the art
 
 Almost nothing, and that is the deliberate trade for hand-drawing it.
 
 - The `static_assert`s in `TileAtlas.hpp` catch a slot layout that does not fit the sheet.
 - `TileAtlasTest` pins the slot arithmetic, the ranges and their non-overlap.
-- `game::requireAtlasSize()` refuses a sheet that is not 1024 by 256, at startup, naming both sizes.
+- `game::requireAtlasSize()` refuses a sheet that is not 1024 by 320, at startup, naming both sizes.
 
 None of those looks at a single pixel.
 Whether a diamond is the right diamond, whether a road stub meets its neighbour, and whether a walker faces the way the game says it does are all things only a person looking at the running game will catch.
 
-`build/bin/antwika_game --replay src/apps/game/replays/demo.json` under an `sdl3` build is the quickest way to look at one.
+`build/bin/antwika_game --replay src/apps/game/replays/demo.jsonl` under an `sdl3` build is the quickest way to look at one.

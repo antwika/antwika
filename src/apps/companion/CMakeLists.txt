@@ -4,6 +4,7 @@ add_executable(antwika_companion
     src/FilePetStore.cpp
     src/LifeStage.cpp
     src/Lineage.cpp
+    src/Messages.cpp
     src/PacingSink.cpp
     src/Pet.cpp
     src/PetLayout.cpp
@@ -47,7 +48,7 @@ endif()
 antwika_bundle_app(
     TARGET antwika_companion
     ASSETS
-        replays/demo.json
+        replays/demo.jsonl
 )
 
 install(TARGETS antwika_companion

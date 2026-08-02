@@ -10,7 +10,10 @@
 
 #include "WidgetPixel.hpp"
 
+#include "TestTranslator.hpp"
 #include "antwika/game/MenuModalScene.hpp"
+
+using antwika::game::tests::kTranslator;
 
 using antwika::game::MenuModalScene;
 using antwika::game::tests::widgetCentre;
@@ -27,7 +30,7 @@ namespace
 
     [[nodiscard]] WidgetId activatedAt(Point at)
     {
-        const MenuModalScene scene;
+        const MenuModalScene scene{kTranslator};
 
         return scene
             .describe(
@@ -39,7 +42,7 @@ namespace
 
 TEST(MenuModalSceneTest, TheModalDescribesItselfWithNoPointerAtAll)
 {
-    const MenuModalScene scene;
+    const MenuModalScene scene{kTranslator};
 
     const auto frame = scene.describe(kCanvas, Pointer{});
 
@@ -52,7 +55,7 @@ TEST(MenuModalSceneTest, TheModalDescribesItselfWithNoPointerAtAll)
 // That is what lets a recorded click resolve to the same item.
 TEST(MenuModalSceneTest, TheSameArgumentsProduceTheSamePicture)
 {
-    const MenuModalScene scene;
+    const MenuModalScene scene{kTranslator};
     const Pointer pointer{.position = Point{.x = 512, .y = 320}};
 
     EXPECT_EQ(
@@ -64,7 +67,7 @@ TEST(MenuModalSceneTest, TheSameArgumentsProduceTheSamePicture)
 // So it has to be reported wherever in the canvas the pointer is.
 TEST(MenuModalSceneTest, TheScrimCoversEveryCornerOfTheCanvas)
 {
-    const MenuModalScene scene;
+    const MenuModalScene scene{kTranslator};
     const auto last = Point{
         .x = static_cast<std::int32_t>(kCanvas.width) - 1,
         .y = static_cast<std::int32_t>(kCanvas.height) - 1};
@@ -84,7 +87,7 @@ TEST(MenuModalSceneTest, TheScrimCoversEveryCornerOfTheCanvas)
 
 TEST(MenuModalSceneTest, APressOnTheMainMenuItemActivatesIt)
 {
-    const MenuModalScene scene;
+    const MenuModalScene scene{kTranslator};
     const auto centre = widgetCentre(
         scene.describe(kCanvas, Pointer{}), modalWidgets::kMainMenu);
 
@@ -94,7 +97,7 @@ TEST(MenuModalSceneTest, APressOnTheMainMenuItemActivatesIt)
 
 TEST(MenuModalSceneTest, APressOnTheBackItemActivatesIt)
 {
-    const MenuModalScene scene;
+    const MenuModalScene scene{kTranslator};
     const auto centre = widgetCentre(
         scene.describe(kCanvas, Pointer{}), modalWidgets::kResume);
 

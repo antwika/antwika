@@ -223,7 +223,7 @@ TEST(WalkerTest, EqualityComparesEveryFieldIndependently)
 {
     const antwika::game::Walker base{
         .facing = antwika::game::Direction::North,
-        .kind = antwika::game::WalkerKind::Water,
+        .kind = antwika::game::WalkerKind::WaterCarrier,
         .carried = 30,
         .stepsUntilHome = 5,
         .home = static_cast<antwika::ecs::Entity>(7),

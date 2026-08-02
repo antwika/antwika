@@ -44,7 +44,7 @@ TEST(SchemaVersionTest, ConstantsAreTheOnesThisBuildSupports)
 {
     EXPECT_EQ(kSchemaVersionKey, "version");
     EXPECT_EQ(kUnversionedDocumentVersion, 1U);
-    EXPECT_EQ(kReplayDocumentVersion, 1U);
+    EXPECT_EQ(kReplayDocumentVersion, 2U);
     EXPECT_EQ(kTickEventSchemaVersion, 1U);
 }
 
@@ -126,10 +126,13 @@ TEST(SchemaVersionTest, WriterAndReaderRoundTripAtTheCurrentVersion)
     std::ostringstream out;
     ReplayWriter().write(oneEvent(), out);
 
-    const nlohmann::json written = nlohmann::json::parse(out.str());
-    EXPECT_EQ(documentVersion(written), kReplayDocumentVersion);
+    // The header is the first line, and the only line that states one.
+    const std::string text = out.str();
+    const nlohmann::json header =
+        nlohmann::json::parse(text.substr(0, text.find('\n')));
+    EXPECT_EQ(documentVersion(header), kReplayDocumentVersion);
 
-    std::istringstream in(out.str());
+    std::istringstream in(text);
     EXPECT_EQ(ReplayReader().read(in), oneEvent());
 }
 
@@ -141,7 +144,7 @@ TEST(SchemaVersionTest, ADocumentWithNoVersionReadsAsVersionOne)
 
 TEST(SchemaVersionTest, ANewerVersionIsRefusedAndNamed)
 {
-    std::istringstream in(replayText(R"("version":2,)"));
+    std::istringstream in(replayText(R"("version":3,)"));
     try
     {
         std::ignore = ReplayReader().read(in);
@@ -150,10 +153,22 @@ TEST(SchemaVersionTest, ANewerVersionIsRefusedAndNamed)
     catch (const SchemaVersionError &error)
     {
         const std::string message = error.what();
-        EXPECT_NE(message.find("version 2"), std::string::npos);
-        EXPECT_NE(
-            message.find("up to version 1"), std::string::npos);
+        EXPECT_NE(message.find("version 3"), std::string::npos);
+        EXPECT_NE(message.find("up to version 2"), std::string::npos);
     }
+}
+
+// The message an older build gives somebody a JSON Lines replay.
+// It parses the header and finds a version it does not know.
+// And says so, rather than calling a file it cannot frame corrupt.
+TEST(SchemaVersionTest, ANewerVersionIsRefusedFromAHeaderAlone)
+{
+    std::istringstream in(
+        R"({"magic":"antwika-replay","version":9})"
+        "\n");
+
+    EXPECT_THROW(
+        { std::ignore = ReplayReader().read(in); }, SchemaVersionError);
 }
 
 TEST(SchemaVersionTest, AVersionNoMigrationReachesCurrentFromIsRefused)

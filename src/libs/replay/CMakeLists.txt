@@ -27,8 +27,8 @@ antwika_add_library(
         src/ReplayCli.cpp
         src/ReplayJson.cpp
         src/ReplayMigrations.cpp
-        src/ReplayOutput.cpp
         src/ReplayReader.cpp
+        src/ReplayRecorder.cpp
         src/ReplaySource.cpp
         src/ReplayWriter.cpp
         src/SchemaVersion.cpp

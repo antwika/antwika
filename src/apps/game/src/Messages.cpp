@@ -1,0 +1,333 @@
+#include "antwika/game/Messages.hpp"
+
+#include <array>
+#include <cstddef>
+#include <span>
+
+#include <antwika/i18n/Catalogue.hpp>
+#include <antwika/i18n/Locale.hpp>
+#include <antwika/i18n/MessageName.hpp>
+
+#include "antwika/game/MessageId.hpp"
+
+namespace antwika::game
+{
+
+    namespace
+    {
+
+        using i18n::Catalogue;
+        using i18n::CatalogueEntry;
+        using i18n::Locale;
+        using i18n::MessageName;
+
+        constexpr std::array<MessageName<MessageId>, 87> kNames{{
+            {MessageId::ToolbarZoomIn, "ToolbarZoomIn"},
+            {MessageId::ToolbarZoomOut, "ToolbarZoomOut"},
+            {MessageId::ToolbarResetView, "ToolbarResetView"},
+            {MessageId::ToolbarZoomLevel, "ToolbarZoomLevel"},
+            {MessageId::ToolRoad, "ToolRoad"},
+            {MessageId::ToolHouse, "ToolHouse"},
+            {MessageId::ToolFarm, "ToolFarm"},
+            {MessageId::ToolClayPit, "ToolClayPit"},
+            {MessageId::ToolWorkshop, "ToolWorkshop"},
+            {MessageId::ToolStorage, "ToolStorage"},
+            {MessageId::ToolMarket, "ToolMarket"},
+            {MessageId::ToolWell, "ToolWell"},
+            {MessageId::ToolDoctor, "ToolDoctor"},
+            {MessageId::ToolFireStation, "ToolFireStation"},
+            {MessageId::ToolEngineerPost, "ToolEngineerPost"},
+            {MessageId::ToolbarPause, "ToolbarPause"},
+            {MessageId::ToolbarResume, "ToolbarResume"},
+            {MessageId::ToolbarMenu, "ToolbarMenu"},
+            {MessageId::ToolbarTick, "ToolbarTick"},
+            {MessageId::MenuTitle, "MenuTitle"},
+            {MessageId::MenuNewGame, "MenuNewGame"},
+            {MessageId::MenuLoadGame, "MenuLoadGame"},
+            {MessageId::MenuWorldMap, "MenuWorldMap"},
+            {MessageId::MenuQuit, "MenuQuit"},
+            {MessageId::ModalTitle, "ModalTitle"},
+            {MessageId::ModalMainMenu, "ModalMainMenu"},
+            {MessageId::ModalResume, "ModalResume"},
+            {MessageId::SaveTitle, "SaveTitle"},
+            {MessageId::SaveNoSaves, "SaveNoSaves"},
+            {MessageId::SaveNameNew, "SaveNameNew"},
+            {MessageId::SaveSave, "SaveSave"},
+            {MessageId::SaveLoad, "SaveLoad"},
+            {MessageId::SaveBack, "SaveBack"},
+            {MessageId::BuildingHouse, "BuildingHouse"},
+            {MessageId::BuildingFarm, "BuildingFarm"},
+            {MessageId::BuildingClayPit, "BuildingClayPit"},
+            {MessageId::BuildingWorkshop, "BuildingWorkshop"},
+            {MessageId::BuildingStorage, "BuildingStorage"},
+            {MessageId::BuildingMarket, "BuildingMarket"},
+            {MessageId::BuildingWell, "BuildingWell"},
+            {MessageId::BuildingDoctor, "BuildingDoctor"},
+            {MessageId::BuildingFireStation, "BuildingFireStation"},
+            {MessageId::BuildingEngineerPost, "BuildingEngineerPost"},
+            {MessageId::WalkerWaterCarrier, "WalkerWaterCarrier"},
+            {MessageId::WalkerDoctor, "WalkerDoctor"},
+            {MessageId::WalkerFireman, "WalkerFireman"},
+            {MessageId::WalkerEngineer, "WalkerEngineer"},
+            {MessageId::WalkerCartPusher, "WalkerCartPusher"},
+            {MessageId::WalkerMarketBuyer, "WalkerMarketBuyer"},
+            {MessageId::WalkerMarketSeller, "WalkerMarketSeller"},
+            {MessageId::ResourceFood, "ResourceFood"},
+            {MessageId::ResourceClay, "ResourceClay"},
+            {MessageId::ResourcePottery, "ResourcePottery"},
+            {MessageId::ReadoutAmount, "ReadoutAmount"},
+            {MessageId::ServiceWater, "ServiceWater"},
+            {MessageId::ServiceHealth, "ServiceHealth"},
+            {MessageId::ServiceSafety, "ServiceSafety"},
+            {MessageId::ServiceStructure, "ServiceStructure"},
+            {MessageId::ReadoutCoverage, "ReadoutCoverage"},
+            {MessageId::HousingTent, "HousingTent"},
+            {MessageId::HousingShack, "HousingShack"},
+            {MessageId::HousingHovel, "HousingHovel"},
+            {MessageId::HousingCottage, "HousingCottage"},
+            {MessageId::ReadoutLevel, "ReadoutLevel"},
+            {MessageId::ToolbarPopulation, "ToolbarPopulation"},
+            {MessageId::ToolbarEmployment, "ToolbarEmployment"},
+            {MessageId::ToolbarGameMenu, "ToolbarGameMenu"},
+            {MessageId::ToolbarBuild, "ToolbarBuild"},
+            {MessageId::MenuItemNewGame, "MenuItemNewGame"},
+            {MessageId::MenuItemSaveGame, "MenuItemSaveGame"},
+            {MessageId::MenuItemLoadGame, "MenuItemLoadGame"},
+            {MessageId::MenuItemMainMenu, "MenuItemMainMenu"},
+            {MessageId::MenuItemWorldMap, "MenuItemWorldMap"},
+            {MessageId::ReadoutOccupancy, "ReadoutOccupancy"},
+            {MessageId::MenuOptions, "MenuOptions"},
+            {MessageId::OptionsTitle, "OptionsTitle"},
+            {MessageId::OptionsRow, "OptionsRow"},
+            {MessageId::OptionsPress, "OptionsPress"},
+            {MessageId::OptionsHint, "OptionsHint"},
+            {MessageId::OptionsBound, "OptionsBound"},
+            {MessageId::OptionsTaken, "OptionsTaken"},
+            {MessageId::OptionsReserved, "OptionsReserved"},
+            {MessageId::OptionsBack, "OptionsBack"},
+            {MessageId::ActionPause, "ActionPause"},
+            {MessageId::ActionZoomIn, "ActionZoomIn"},
+            {MessageId::ActionZoomOut, "ActionZoomOut"},
+            {MessageId::ActionResetView, "ActionResetView"},
+        }};
+
+        static_assert(
+            kNames.size() == static_cast<std::size_t>(MessageId::Count),
+            "every MessageId must appear in kNames exactly once");
+
+        // Both arrays list every id, in the same order.
+        // MessagesTest asserts they cover exactly kNames.
+        // That assertion is the point of keying by id.
+        // A forgotten Swedish entry is a red build, not a wrong label.
+        constexpr std::array<CatalogueEntry<MessageId>, kNames.size()>
+            kEnglishEntries{{
+                {MessageId::ToolbarZoomIn, "zoom in"},
+                {MessageId::ToolbarZoomOut, "zoom out"},
+                {MessageId::ToolbarResetView, "reset view"},
+                {MessageId::ToolbarZoomLevel, "zoom {0}"},
+                {MessageId::ToolRoad, "road"},
+                {MessageId::ToolHouse, "house"},
+                {MessageId::ToolFarm, "farm"},
+                {MessageId::ToolClayPit, "clay"},
+                {MessageId::ToolWorkshop, "shop"},
+                {MessageId::ToolStorage, "store"},
+                {MessageId::ToolMarket, "market"},
+                {MessageId::ToolWell, "well"},
+                {MessageId::ToolDoctor, "doctor"},
+                {MessageId::ToolFireStation, "fire"},
+                {MessageId::ToolEngineerPost, "eng"},
+                {MessageId::ToolbarPause, "pause"},
+                {MessageId::ToolbarResume, "resume"},
+                {MessageId::ToolbarMenu, "menu"},
+                {MessageId::ToolbarTick, "tick {0}"},
+                {MessageId::MenuTitle, "ANTWIKA"},
+                {MessageId::MenuNewGame, "New Game"},
+                {MessageId::MenuLoadGame, "Load Game"},
+                {MessageId::MenuWorldMap, "World Map"},
+                {MessageId::MenuQuit, "Quit"},
+                {MessageId::ModalTitle, "MENU"},
+                {MessageId::ModalMainMenu, "Main Menu"},
+                {MessageId::ModalResume, "Back to Game"},
+                {MessageId::SaveTitle, "SAVE / LOAD"},
+                {MessageId::SaveNoSaves, "no saved games"},
+                {MessageId::SaveNameNew, "name a new save"},
+                {MessageId::SaveSave, "Save"},
+                {MessageId::SaveLoad, "Load"},
+                {MessageId::SaveBack, "Back"},
+                {MessageId::BuildingHouse, "house"},
+                {MessageId::BuildingFarm, "farm"},
+                {MessageId::BuildingClayPit, "clay pit"},
+                {MessageId::BuildingWorkshop, "workshop"},
+                {MessageId::BuildingStorage, "storehouse"},
+                {MessageId::BuildingMarket, "market"},
+                {MessageId::BuildingWell, "well"},
+                {MessageId::BuildingDoctor, "doctor"},
+                {MessageId::BuildingFireStation, "fire station"},
+                {MessageId::BuildingEngineerPost, "engineer post"},
+                {MessageId::WalkerWaterCarrier, "water carrier"},
+                {MessageId::WalkerDoctor, "doctor"},
+                {MessageId::WalkerFireman, "fireman"},
+                {MessageId::WalkerEngineer, "engineer"},
+                {MessageId::WalkerCartPusher, "cart pusher"},
+                {MessageId::WalkerMarketBuyer, "market buyer"},
+                {MessageId::WalkerMarketSeller, "market seller"},
+                {MessageId::ResourceFood, "food"},
+                {MessageId::ResourceClay, "clay"},
+                {MessageId::ResourcePottery, "pottery"},
+                {MessageId::ReadoutAmount, "{0} {1}/{2}"},
+                {MessageId::ServiceWater, "water"},
+                {MessageId::ServiceHealth, "health"},
+                {MessageId::ServiceSafety, "safety"},
+                {MessageId::ServiceStructure, "structure"},
+                {MessageId::ReadoutCoverage, "{0} {1}%"},
+                {MessageId::HousingTent, "tent"},
+                {MessageId::HousingShack, "shack"},
+                {MessageId::HousingHovel, "hovel"},
+                {MessageId::HousingCottage, "cottage"},
+                {MessageId::ReadoutLevel, "level: {0}"},
+                {MessageId::ToolbarPopulation, "pop {0}"},
+                {MessageId::ToolbarEmployment, "jobs {0}%"},
+                {MessageId::ToolbarGameMenu, "game"},
+                {MessageId::ToolbarBuild, "build"},
+                {MessageId::MenuItemNewGame, "new game"},
+                {MessageId::MenuItemSaveGame, "save game"},
+                {MessageId::MenuItemLoadGame, "load game"},
+                {MessageId::MenuItemMainMenu, "main menu"},
+                {MessageId::MenuItemWorldMap, "world map"},
+                {MessageId::ReadoutOccupancy, "people {0}/{1}"},
+                {MessageId::MenuOptions, "Options"},
+                {MessageId::OptionsTitle, "Key Bindings"},
+                {MessageId::OptionsRow, "{0}: {1}"},
+                {MessageId::OptionsPress, "press a key"},
+                {MessageId::OptionsHint, "pick an action, then press a key"},
+                {MessageId::OptionsBound, "bound"},
+                {MessageId::OptionsTaken, "that key is already bound"},
+                {MessageId::OptionsReserved, "that key cannot be bound"},
+                {MessageId::OptionsBack, "Back"},
+                {MessageId::ActionPause, "pause"},
+                {MessageId::ActionZoomIn, "zoom in"},
+                {MessageId::ActionZoomOut, "zoom out"},
+                {MessageId::ActionResetView, "reset view"},
+            }};
+
+        constexpr std::array<CatalogueEntry<MessageId>, kNames.size()>
+            kSwedishEntries{{
+                {MessageId::ToolbarZoomIn, "zooma in"},
+                {MessageId::ToolbarZoomOut, "zooma ut"},
+                {MessageId::ToolbarResetView, "återställ vy"},
+                {MessageId::ToolbarZoomLevel, "zoom {0}"},
+                {MessageId::ToolRoad, "väg"},
+                {MessageId::ToolHouse, "hus"},
+                {MessageId::ToolFarm, "gård"},
+                {MessageId::ToolClayPit, "lera"},
+                {MessageId::ToolWorkshop, "verkst"},
+                {MessageId::ToolStorage, "lager"},
+                {MessageId::ToolMarket, "torg"},
+                {MessageId::ToolWell, "brunn"},
+                {MessageId::ToolDoctor, "läkare"},
+                {MessageId::ToolFireStation, "brand"},
+                {MessageId::ToolEngineerPost, "ing"},
+                {MessageId::ToolbarPause, "pausa"},
+                {MessageId::ToolbarResume, "fortsätt"},
+                {MessageId::ToolbarMenu, "meny"},
+                {MessageId::ToolbarTick, "tick {0}"},
+                {MessageId::MenuTitle, "ANTWIKA"},
+                {MessageId::MenuNewGame, "Nytt spel"},
+                {MessageId::MenuLoadGame, "Läs in spel"},
+                {MessageId::MenuWorldMap, "Världskarta"},
+                {MessageId::MenuQuit, "Avsluta"},
+                {MessageId::ModalTitle, "MENY"},
+                {MessageId::ModalMainMenu, "Huvudmeny"},
+                {MessageId::ModalResume, "Tillbaka till spelet"},
+                {MessageId::SaveTitle, "SPARA / LÄS IN"},
+                {MessageId::SaveNoSaves, "inga sparade spel"},
+                {MessageId::SaveNameNew, "namnge ett nytt spar"},
+                {MessageId::SaveSave, "Spara"},
+                {MessageId::SaveLoad, "Läs in"},
+                {MessageId::SaveBack, "Tillbaka"},
+                {MessageId::BuildingHouse, "hus"},
+                {MessageId::BuildingFarm, "gård"},
+                {MessageId::BuildingClayPit, "lergrop"},
+                {MessageId::BuildingWorkshop, "verkstad"},
+                {MessageId::BuildingStorage, "lagerhus"},
+                {MessageId::BuildingMarket, "torg"},
+                {MessageId::BuildingWell, "brunn"},
+                {MessageId::BuildingDoctor, "läkare"},
+                {MessageId::BuildingFireStation, "brandstation"},
+                {MessageId::BuildingEngineerPost, "ingenjörspost"},
+                {MessageId::WalkerWaterCarrier, "vattenbärare"},
+                {MessageId::WalkerDoctor, "läkare"},
+                {MessageId::WalkerFireman, "brandman"},
+                {MessageId::WalkerEngineer, "ingenjör"},
+                {MessageId::WalkerCartPusher, "kärrdragare"},
+                {MessageId::WalkerMarketBuyer, "torginköpare"},
+                {MessageId::WalkerMarketSeller, "torgförsäljare"},
+                {MessageId::ResourceFood, "mat"},
+                {MessageId::ResourceClay, "lera"},
+                {MessageId::ResourcePottery, "keramik"},
+                {MessageId::ReadoutAmount, "{0} {1}/{2}"},
+                {MessageId::ServiceWater, "vatten"},
+                {MessageId::ServiceHealth, "hälsa"},
+                {MessageId::ServiceSafety, "brandskydd"},
+                {MessageId::ServiceStructure, "underhåll"},
+                {MessageId::ReadoutCoverage, "{0} {1} %"},
+                {MessageId::HousingTent, "tält"},
+                {MessageId::HousingShack, "skjul"},
+                {MessageId::HousingHovel, "koja"},
+                {MessageId::HousingCottage, "stuga"},
+                {MessageId::ReadoutLevel, "nivå: {0}"},
+                {MessageId::ToolbarPopulation, "folk {0}"},
+                {MessageId::ToolbarEmployment, "jobb {0}%"},
+                {MessageId::ToolbarGameMenu, "spel"},
+                {MessageId::ToolbarBuild, "bygg"},
+                {MessageId::MenuItemNewGame, "nytt spel"},
+                {MessageId::MenuItemSaveGame, "spara spel"},
+                {MessageId::MenuItemLoadGame, "läs in spel"},
+                {MessageId::MenuItemMainMenu, "huvudmeny"},
+                {MessageId::MenuItemWorldMap, "världskarta"},
+                {MessageId::ReadoutOccupancy, "folk {0}/{1}"},
+                {MessageId::MenuOptions, "Alternativ"},
+                {MessageId::OptionsTitle, "Tangentbindningar"},
+                {MessageId::OptionsRow, "{0} = {1}"},
+                {MessageId::OptionsPress, "tryck en tangent"},
+                {MessageId::OptionsHint,
+                 "välj en handling och tryck en tangent"},
+                {MessageId::OptionsBound, "bunden"},
+                {MessageId::OptionsTaken, "tangenten är redan bunden"},
+                {MessageId::OptionsReserved, "tangenten kan inte bindas"},
+                {MessageId::OptionsBack, "Tillbaka"},
+                {MessageId::ActionPause, "pausa"},
+                {MessageId::ActionZoomIn, "zooma in"},
+                {MessageId::ActionZoomOut, "zooma ut"},
+                {MessageId::ActionResetView, "återställ vyn"},
+            }};
+
+        constexpr Catalogue<MessageId> kEnglishCatalogue{
+            Locale::English, kEnglishEntries};
+
+        constexpr Catalogue<MessageId> kSwedishCatalogue{
+            Locale::Swedish, kSwedishEntries};
+
+    } // namespace
+
+    std::span<const i18n::MessageName<MessageId>>
+        Messages::names() noexcept
+    {
+        return kNames;
+    }
+
+    const i18n::Catalogue<MessageId> &Messages::catalogueFor(
+        i18n::Locale locale) noexcept
+    {
+        switch (locale)
+        {
+        case Locale::English:
+            return kEnglishCatalogue;
+        case Locale::Swedish:
+            return kSwedishCatalogue;
+        }
+
+        return catalogueFor(i18n::kDefaultLocale);
+    }
+
+} // namespace antwika::game

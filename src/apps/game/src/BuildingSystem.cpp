@@ -1,18 +1,26 @@
 #include "antwika/game/BuildingSystem.hpp"
 
 #include <algorithm>
+#include <array>
 #include <cstddef>
-#include <cstdint>
 #include <map>
+#include <optional>
+#include <set>
+#include <utility>
 
 #include <antwika/ecs/Entity.hpp>
 
 #include "antwika/game/Building.hpp"
 #include "antwika/game/BuildingKind.hpp"
 #include "antwika/game/Cell.hpp"
+#include "antwika/game/Coverage.hpp"
 #include "antwika/game/Direction.hpp"
+#include "antwika/game/Errand.hpp"
 #include "antwika/game/Footprint.hpp"
 #include "antwika/game/Resource.hpp"
+#include "antwika/game/Service.hpp"
+#include "antwika/game/StandingBuildings.hpp"
+#include "antwika/game/Store.hpp"
 #include "antwika/game/Walker.hpp"
 
 namespace antwika::game
@@ -21,8 +29,8 @@ namespace antwika::game
     namespace
     {
         using antwika::ecs::Entity;
+        using antwika::ecs::kNullEntity;
 
-        using Standing = std::map<Cell, Entity>;
         using Pending = std::map<Entity, Building>;
 
         // Seeded from the last commit the first time it is touched.
@@ -43,6 +51,8 @@ namespace antwika::game
 
         // What ends a building: bad luck, or an empty larder.
         // A source holds stock nobody drains, so only risk takes one.
+        // And only what sustains() names is a larder.
+        // A house holding no clay is a house nobody has carted to yet.
         [[nodiscard]] bool isLost(const Building &building)
         {
             if (building.risk >= kMaxRisk)
@@ -56,15 +66,19 @@ namespace antwika::game
             }
 
             return std::ranges::any_of(
-                building.stock,
-                [](std::int32_t held) { return held <= 0; });
+                kResources,
+                [&building](Resource resource)
+                {
+                    return sustains(resource)
+                        && building.stock[resourceIndex(resource)] <= 0;
+                });
         }
 
         void deliverTo(
             Building &building, Walker &walker, Resource resource)
         {
             auto &held = building.stock[resourceIndex(resource)];
-            const auto room = kStockCapacity - held;
+            const auto room = capacityOf(building.kind) - held;
             const auto given = std::min(walker.carried, room);
 
             if (given <= 0)
@@ -76,40 +90,106 @@ namespace antwika::game
             walker.carried -= given;
         }
 
+        // Every building beside a cell, in ascending Cell order.
+        // The four neighbours are a fixed set, so this is total.
+        // Direction order is total too.
+        // It is not an order over anything a reader can name.
+        //
         // No guard against serving one building twice.
         // A rectangle cannot be touched twice from one outside cell.
         // Two of a cell's neighbours in it would put the cell in it.
         // An opposite pair spans the cell in one axis.
         // A perpendicular pair spans it in both.
         // So it would be a road under a building, which nothing places.
-        void deliver(World &world, const Standing &standing, Pending &pending)
+        [[nodiscard]] StandingBuildings neighboursOf(
+            const StandingBuildings &standing, Cell at)
         {
+            StandingBuildings beside;
+
+            for (std::size_t index = 0; index < kDirectionCount; ++index)
+            {
+                const auto cell = step(at, static_cast<Direction>(index));
+                const auto found = standing.find(cell);
+
+                if (found != standing.end())
+                {
+                    beside.emplace(cell, found->second);
+                }
+            }
+
+            return beside;
+        } // GCOVR_EXCL_LINE
+
+        void deliver(
+            World &world,
+            const StandingBuildings &standing,
+            Pending &pending)
+        {
+            // Ascending (Cell, Entity), out of a set not a view.
+            // Two walkers filling one shelf split what room it has.
+            // deliverTo() clamps, so the first of them gets the last.
+            // The entity is in the key since walkers may share a cell.
+            std::set<std::pair<Cell, Entity>> movers;
+
             for (const auto entity : world.view<Walker, Cell>())
             {
+                movers.emplace(world.get<Cell>(entity), entity);
+            }
+
+            for (const auto &[at, entity] : movers)
+            {
                 auto walker = world.get<Walker>(entity);
-                const auto carries = carriedResource(walker.kind);
-                const auto at = world.get<Cell>(entity);
+                const auto errand = world.has<Errand>(entity)
+                    ? std::optional<Errand>(world.get<Errand>(entity))
+                    : std::nullopt;
+
+                // A walker on its way back hands nothing over here.
+                // A load that never changed hands is its sender's.
+                // That system credits its own building in a later phase.
+                // Which is the one place the cadence cannot undo it.
+                // See acceptsAt() for what undoes it here.
+                if (errand.has_value()
+                    && errand->leg == ErrandLeg::Returning)
+                {
+                    continue;
+                }
+
+                // An errand names what it carries; a kind otherwise does.
+                const auto carries = errand.has_value()
+                    ? std::optional<Resource>(errand->carrying)
+                    : carriedResource(walker.kind);
+
+                // A walker carrying nothing fixed hands nothing over.
+                // It used to take risk off instead.
+                // Which was coverage said as a subtraction.
+                // It refreshes coverage now, in CoverageSystem.
+                // So a delivery has nothing to do with one at all.
+                if (!carries.has_value())
+                {
+                    continue;
+                }
+
+                const auto bound = errand.has_value() ? errand->destination
+                                                      : kNullEntity;
                 const auto before = walker.carried;
 
-                for (std::size_t index = 0; index < kDirectionCount; ++index)
+                for (const auto &[cell, standingHere] :
+                     neighboursOf(standing, at))
                 {
-                    const auto beside =
-                        step(at, static_cast<Direction>(index));
-                    const auto found = standing.find(beside);
-
-                    if (found == standing.end())
+                    // An errand is bound to one building.
+                    // A cart must not shed its load along the way.
+                    if (bound != kNullEntity && standingHere != bound)
                     {
                         continue;
                     }
 
-                    auto &building = touch(world, pending, found->second);
+                    auto &building = touch(world, pending, standingHere);
 
-                    if (!carries.has_value())
+                    // A load bound nowhere goes to whoever eats it.
+                    // A seller filling a storehouse undoes a buyer.
+                    // And one filling its own market moves nothing.
+                    if (bound == kNullEntity && !consumes(building.kind))
                     {
-                        // A fireman and an architect carry nothing.
-                        // What they do instead is take risk off.
-                        building.risk =
-                            std::max(0, building.risk - kRiskRelief);
                         continue;
                     }
 
@@ -121,6 +201,26 @@ namespace antwika::game
                     world.set<Walker>(entity, walker);
                 }
             }
+        }
+
+        // What holds a building's risk off, and the reason those two.
+        // Safety is the fireman's and Structure is the engineer's.
+        // Both used to relieve risk by walking past a building.
+        // So the two services are exactly the old special cases.
+        // Water and Health reach a house for what a house does with them.
+        // Neither has anything to say about the building falling down.
+        constexpr std::array<Service, 2> kRiskHeldOffBy{
+            Service::Safety, Service::Structure};
+
+        // Read as of the last commit.
+        // Which is what the "serve" phase left at the previous tick.
+        // One tick out of five hundred on a "came recently" countdown.
+        [[nodiscard]] bool unserved(const World &world, Entity entity)
+        {
+            return std::ranges::any_of(
+                kRiskHeldOffBy,
+                [&world, entity](Service service)
+                { return coverageOf(world, entity, service) <= 0; });
         }
 
         void age(World &world, Pending &pending)
@@ -153,8 +253,17 @@ namespace antwika::game
                     continue;
                 }
 
+                // **The one thing that changed about risk.**
+                // It used to rise here whatever was standing nearby.
+                // And a passing fireman subtracted a lump from it.
+                // Now it rises where the district is unserved.
+                // And falls back where a walker keeps reaching it.
+                // So a fire station is a thing a district has.
+                // Rather than a thing that visits it.
                 building.ticksUntilRisk = kRiskPeriodTicks;
-                building.risk = std::min(kMaxRisk, building.risk + 1);
+                building.risk = unserved(world, entity)
+                    ? std::min(kMaxRisk, building.risk + 1)
+                    : std::max(0, building.risk - 1);
             }
         }
     } // namespace
@@ -167,26 +276,7 @@ namespace antwika::game
     {
         // Where each building is, so a neighbour is a lookup.
         // Rather than a scan of every building for every walker.
-        Standing standing;
-
-        for (const auto entity : world.view<Building, Cell>())
-        {
-            const auto origin = world.get<Cell>(entity);
-            const auto footprint =
-                footprintOf(world.get<Building>(entity).kind);
-
-            // Keyed by every cell the block stands on.
-            // So a walker beside its far corner finds it.
-            for (std::int32_t dy = 0; dy < footprint.height; ++dy)
-            {
-                for (std::int32_t dx = 0; dx < footprint.width; ++dx)
-                {
-                    standing.emplace(
-                        Cell{.x = origin.x + dx, .y = origin.y + dy},
-                        entity);
-                }
-            }
-        }
+        const auto standing = standingBuildings(world);
 
         Pending pending;
 

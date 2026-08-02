@@ -10,6 +10,9 @@
 #include <antwika/ui/Sizing.hpp>
 #include <antwika/ui/Theme.hpp>
 
+#include "antwika/game/MessageId.hpp"
+#include "antwika/game/Messages.hpp"
+
 namespace antwika::game
 {
 
@@ -35,6 +38,11 @@ namespace antwika::game
         constexpr std::uint32_t kCardWidth = 260;
     } // namespace
 
+    MainMenuScene::MainMenuScene(const Translator &translator)
+        : translator(translator)
+    {
+    }
+
     Frame MainMenuScene::describe(Size canvas, Pointer pointer) const
     {
         Context ui{
@@ -52,22 +60,34 @@ namespace antwika::game
                 const auto card = ui.panel(
                     {.width = fixedSize(kCardWidth), .height = kFit});
 
-                ui.label("ANTWIKA");
+                ui.label(translator.text(MessageId::MenuTitle));
 
                 ui.button(
-                    "New Game",
+                    translator.text(MessageId::MenuNewGame),
                     {.id = menuWidgets::kNewGame, .width = kGrow});
 
                 ui.button(
-                    "Load Game",
+                    translator.text(MessageId::MenuLoadGame),
                     {.id = menuWidgets::kLoadGame, .width = kGrow});
 
                 ui.button(
-                    "World Map",
+                    translator.text(MessageId::MenuWorldMap),
                     {.id = menuWidgets::kWorldMap, .width = kGrow});
 
-                ui.button(
-                    "Quit", {.id = menuWidgets::kQuit, .width = kGrow});
+                // Two on one row, so the card keeps its height.
+                // Every item above therefore keeps its rectangle.
+                // A session recorded before this opens the same thing.
+                {
+                    const auto row = ui.row({.width = kGrow});
+
+                    ui.button(
+                        translator.text(MessageId::MenuOptions),
+                        {.id = menuWidgets::kOptions, .width = kGrow});
+
+                    ui.button(
+                        translator.text(MessageId::MenuQuit),
+                        {.id = menuWidgets::kQuit, .width = kGrow});
+                }
             }
 
             ui.spacer(kGrow);

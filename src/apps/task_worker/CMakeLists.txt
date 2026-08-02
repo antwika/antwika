@@ -1,4 +1,8 @@
 add_executable(antwika_task_worker
+    src/Messages.cpp
+    src/PoolScene.cpp
+    src/PoolSnapshot.cpp
+    src/RenderSystem.cpp
     src/StatusPrintSystem.cpp
     src/TaskDispatchSystem.cpp
     src/TaskJob.cpp
@@ -23,6 +27,9 @@ target_link_libraries(antwika_task_worker
         antwika::ecs_commons
         antwika::engine
         antwika::event
+        antwika::gfx
+        antwika::gfx_backend
+        antwika::i18n
         antwika::log
         antwika::replay
         antwika::scheduler
@@ -37,7 +44,7 @@ endif()
 antwika_bundle_app(
     TARGET antwika_task_worker
     ASSETS
-        replays/demo.json
+        replays/demo.jsonl
 )
 
 install(TARGETS antwika_task_worker

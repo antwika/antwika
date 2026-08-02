@@ -1,14 +1,11 @@
 #pragma once
 
-#include <optional>
-
 #include <antwika/event/ITickEventSink.hpp>
 #include <antwika/event/TickEvent.hpp>
 #include <antwika/gfx/Size.hpp>
 #include <antwika/input/IInputEventCodec.hpp>
 
-#include "antwika/tower_defence/Battle.hpp"
-#include "antwika/tower_defence/GridLayout.hpp"
+#include "antwika/tower_defence/Campaign.hpp"
 
 namespace antwika::tower_defence
 {
@@ -32,25 +29,31 @@ namespace antwika::tower_defence
      * The canvas it maps against is the size the window was *asked* for,
      * never the size a window reports, so which cell a recorded click
      * fell in depends only on the recording and a compile-time constant.
+     * The layout is worked out per press rather than once, because the
+     * levels of a campaign are not all the same size and the grid a
+     * click lands on is whichever one is being fought -- which is state
+     * a replay regenerates, so the mapping is regenerated with it.
      * The grid sits below the score bar (see GridLayout), so a click on
      * the bar falls outside the grid and builds nothing -- no sink has
      * to ask the UI whether it covered the pointer.
      *
      * A refused placement is silent.
-     * Clicking the road, or a cell that already has a tower, is ordinary
-     * input rather than an error.
+     * Clicking the road, a cell that already has a tower, or anywhere at
+     * all once the campaign is over, is ordinary input rather than an
+     * error.
      */
     class TowerPlacementSink final : public ITickEventSink
     {
     public:
         /**
          * @brief Construct the sink over its collaborators.
-         * @param battle Receives the placements. Must outlive this sink.
+         * @param campaign Receives the placements. Must outlive this
+         * sink.
          * @param codec Decodes each event. Must outlive this sink.
          * @param canvas Size the grid is laid out against, in pixels.
          */
         TowerPlacementSink(
-            Battle &battle,
+            Campaign &campaign,
             const IInputEventCodec &codec,
             Size canvas);
 
@@ -70,9 +73,9 @@ namespace antwika::tower_defence
         void handle(const TickEvent &event) override;
 
     private:
-        Battle &battle;
+        Campaign &campaign;
         const IInputEventCodec &codec;
-        std::optional<GridLayout> layout;
+        Size canvas;
     };
 
 } // namespace antwika::tower_defence

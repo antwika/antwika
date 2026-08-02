@@ -123,6 +123,14 @@ namespace antwika::gfx::conformance
      * honours the flag by having nothing ever act on it. What a backend
      * is held to is that it accepts the request and keeps its promises
      * about both sizes afterwards.
+     *
+     * Fullscreen is held to exactly that much and no more. Nothing here
+     * asserts a window really covers a screen, since there is no screen;
+     * what is asserted is that setFullscreen() is accepted, that it
+     * never touches configuredSize(), and that a window goes on
+     * answering afterwards. What isFullscreen() reports is deliberately
+     * not asserted either, because a window manager may refuse the
+     * request and an honest backend has to be free to say so.
      */
     template <typename BackendTraits>
     class GfxBackendConformance : public ::testing::Test
@@ -148,6 +156,20 @@ namespace antwika::gfx::conformance
                 .title = "Antwika conformance, resizable",
                 .size = {.width = 320, .height = 240},
                 .resizable = true};
+        }
+
+        /**
+         * @brief demoDesc(), but asking to fill the screen.
+         *
+         * Its own size again, so a backend keeping the request in a
+         * global cannot pass by accident.
+         */
+        [[nodiscard]] static WindowDesc fullscreenDesc()
+        {
+            return WindowDesc{
+                .title = "Antwika conformance, fullscreen",
+                .size = {.width = 480, .height = 360},
+                .fullscreen = true};
         }
 
         /**
@@ -367,6 +389,51 @@ namespace antwika::gfx::conformance
         EXPECT_EQ(window->configuredSize(), this->resizableDesc().size);
         EXPECT_GT(window->size().width, 0u);
         EXPECT_GT(window->size().height, 0u);
+    }
+
+    TYPED_TEST_P(GfxBackendConformance, CreateWindow_AcceptsAFullscreenWindow)
+    {
+        const auto window =
+            this->backend->createWindow(this->fullscreenDesc());
+
+        ASSERT_NE(window, nullptr);
+        EXPECT_TRUE(window->isOpen());
+
+        // There is no screen to cover, so nothing here checks one is.
+        // What every backend must do is take the request.
+        // And go on reporting the size the caller chose afterwards.
+        EXPECT_EQ(window->configuredSize(), this->fullscreenDesc().size);
+        EXPECT_GT(window->size().width, 0u);
+        EXPECT_GT(window->size().height, 0u);
+    }
+
+    TYPED_TEST_P(GfxBackendConformance, SetFullscreen_LeavesTheWindowUsable)
+    {
+        const auto window =
+            this->backend->createWindow(this->resizableDesc());
+
+        window->setFullscreen(true);
+        window->setFullscreen(true);
+        window->setFullscreen(false);
+
+        // The property this whole seam exists for.
+        // A window that changed how much screen it covers.
+        // And that still lays out against the number it was given.
+        EXPECT_EQ(window->configuredSize(), this->resizableDesc().size);
+        EXPECT_GT(window->size().width, 0u);
+        EXPECT_GT(window->size().height, 0u);
+        EXPECT_TRUE(window->isOpen());
+    }
+
+    TYPED_TEST_P(GfxBackendConformance, SetFullscreen_IsHarmlessOnceClosed)
+    {
+        const auto window = this->backend->createWindow(this->demoDesc());
+
+        window->close();
+
+        EXPECT_NO_THROW(window->setFullscreen(true));
+        EXPECT_EQ(window->configuredSize(), this->demoDesc().size);
+        EXPECT_GT(window->size().width, 0u);
     }
 
     TYPED_TEST_P(GfxBackendConformance, Size_StaysNonZeroAfterClosing)
@@ -1006,6 +1073,9 @@ namespace antwika::gfx::conformance
         ConfiguredSize_IsUnchangedByClosingTheWindow,
         ConfiguredSize_IsPerWindow,
         CreateWindow_AcceptsAResizableWindow,
+        CreateWindow_AcceptsAFullscreenWindow,
+        SetFullscreen_LeavesTheWindowUsable,
+        SetFullscreen_IsHarmlessOnceClosed,
         Size_StaysNonZeroAfterClosing,
         CreateWindow_ThrowsWhenWidthIsZero,
         CreateWindow_ThrowsWhenHeightIsZero,

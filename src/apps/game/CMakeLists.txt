@@ -1,27 +1,54 @@
 add_executable(antwika_game
+    src/Action.cpp
     src/AppMode.cpp
     src/AtlasImage.cpp
+    src/BindingEvent.cpp
+    src/BindingSink.cpp
+    src/BindingSource.cpp
     src/BuildGhost.cpp
     src/BuildingIndex.cpp
     src/BuildingSystem.cpp
     src/CityGrid.cpp
+    src/CityRatings.cpp
+    src/Coverage.cpp
+    src/CoverageSystem.cpp
+    src/Desirability.cpp
+    src/DesirabilitySystem.cpp
+    src/Errand.cpp
+    src/ErrandRouting.cpp
     src/FpsReadout.cpp
     src/FrameMeter.cpp
     src/Game.cpp
     src/GameStateReducer.cpp
     src/GridScene.cpp
     src/GridSink.cpp
+    src/HaulingSystem.cpp
     src/Homing.cpp
+    src/HotkeySink.cpp
+    src/Household.cpp
+    src/HousingQuery.cpp
+    src/HousingSystem.cpp
     src/Hover.cpp
     src/InputFold.cpp
+    src/LabourQuery.cpp
+    src/LabourSystem.cpp
     src/MainMenuScene.cpp
     src/MainMenuSink.cpp
+    src/MarketSystem.cpp
+    src/MenuCommands.cpp
     src/MenuModalScene.cpp
+    src/Messages.cpp
     src/ModeGatedSink.cpp
+    src/OptionsFile.cpp
+    src/OptionsScene.cpp
+    src/OptionsState.cpp
     src/PathIndex.cpp
     src/PauseGatedSystem.cpp
     src/PauseState.cpp
     src/Placement.cpp
+    src/PopulationSystem.cpp
+    src/ProductionSystem.cpp
+    src/RatingsSystem.cpp
     src/ReadoutPanel.cpp
     src/ResourceBar.cpp
     src/RenderSystem.cpp
@@ -29,16 +56,24 @@ add_executable(antwika_game
     src/RoadPlan.cpp
     src/KeyText.cpp
     src/SaveCli.cpp
+    src/SaveCoverage.cpp
     src/SaveGame.cpp
     src/SaveGameFile.cpp
+    src/SaveHousing.cpp
+    src/SaveLabour.cpp
     src/SaveDirectory.cpp
     src/SaveLoadScene.cpp
     src/SaveLoadSink.cpp
     src/SaveLoadState.cpp
     src/SaveMigration.cpp
+    src/SaveMigrationV2ToV3.cpp
+    src/SaveProduction.cpp
+    src/SaveSections.cpp
     src/SessionGatedSystem.cpp
+    src/StandingBuildings.cpp
     src/SessionStore.cpp
     src/SpawnSystem.cpp
+    src/Store.cpp
     src/Toolbar.cpp
     src/SceneSnapshot.cpp
     src/UiOverlay.cpp
@@ -49,6 +84,7 @@ add_executable(antwika_game
     src/WorldMapScene.cpp
     src/WorldMapSink.cpp
     src/WorldMapState.cpp
+    src/Workforce.cpp
     src/main.cpp
 )
 
@@ -66,6 +102,7 @@ target_link_libraries(antwika_game
         antwika::engine
         antwika::gfx
         antwika::gfx_backend
+        antwika::i18n
         antwika::input
         antwika::input_backend
         antwika::log

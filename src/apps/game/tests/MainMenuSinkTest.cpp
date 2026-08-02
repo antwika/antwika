@@ -17,11 +17,18 @@
 
 #include "WidgetPixel.hpp"
 
+#include "TestTranslator.hpp"
 #include "antwika/game/AppMode.hpp"
 #include "antwika/game/InputFold.hpp"
 #include "antwika/game/MainMenuScene.hpp"
 #include "antwika/game/MainMenuSink.hpp"
+#include "antwika/game/Action.hpp"
+#include "antwika/game/KeyBindings.hpp"
+#include "antwika/game/OptionsScene.hpp"
+#include "antwika/game/OptionsState.hpp"
 #include "antwika/game/UiOverlay.hpp"
+
+using antwika::game::tests::kTranslator;
 
 using antwika::engine::StopSignal;
 using antwika::event::Event;
@@ -31,6 +38,9 @@ using antwika::game::AppModeState;
 using antwika::game::InputFold;
 using antwika::game::MainMenuScene;
 using antwika::game::MainMenuSink;
+using antwika::game::Action;
+using antwika::game::OptionsScene;
+using antwika::game::OptionsState;
 using antwika::game::UiOverlay;
 using antwika::game::tests::widgetCentre;
 using antwika::gfx::Point;
@@ -38,12 +48,15 @@ using antwika::gfx::Size;
 using antwika::input::InputEvent;
 using antwika::input::InputEventCodec;
 using antwika::input::MouseButton;
+using antwika::input::Key;
+using antwika::input::KeyPressed;
 using antwika::input::PointerButtonPressed;
 using antwika::input::PointerMoved;
 using antwika::input::Position;
 using antwika::ui::Pointer;
 using antwika::ui::WidgetId;
 namespace menuWidgets = antwika::game::menuWidgets;
+namespace optionsWidgets = antwika::game::optionsWidgets;
 
 namespace
 {
@@ -61,6 +74,19 @@ namespace
         {
             const auto centre =
                 widgetCentre(scene.describe(kCanvas, Pointer{}), id);
+
+            if (!centre.has_value())
+            {
+                return Position{};
+            }
+
+            return Position{.x = centre->x, .y = centre->y};
+        }
+
+        [[nodiscard]] Position pixelOnOptions(WidgetId id) const
+        {
+            const auto centre = widgetCentre(
+                optionsScene.describe(kCanvas, Pointer{}, options), id);
 
             if (!centre.has_value())
             {
@@ -103,9 +129,18 @@ namespace
         AppModeState mode;
         UiOverlay overlay{kCanvas};
         InputFold input{codec};
-        MainMenuScene scene;
+        MainMenuScene scene{kTranslator};
         StopSignal stop;
-        MainMenuSink sink{mode, overlay, input, scene, stop};
+        OptionsState options;
+        OptionsScene optionsScene{kTranslator};
+        MainMenuSink sink{
+            mode,
+            overlay,
+            input,
+            scene,
+            stop,
+            options,
+            optionsScene};
     };
 } // namespace
 
@@ -214,4 +249,80 @@ TEST_F(MainMenuSinkTest, AMiddlePressActivatesNothing)
 
     EXPECT_FALSE(stop.stopped());
     EXPECT_EQ(mode.next(), AppMode::MainMenu);
+}
+
+// The options screen is this screen with something else on it.
+// So one overlay, one scene to paint it, and a flag saying which.
+TEST_F(MainMenuSinkTest, PressingOptionsShowsTheKeyBindings)
+{
+    pressAt(pixelOn(menuWidgets::kOptions));
+
+    EXPECT_TRUE(options.open());
+
+    // And it stays on this screen rather than becoming a mode.
+    EXPECT_EQ(mode.next(), AppMode::MainMenu);
+
+    tick();
+    EXPECT_EQ(
+        overlay.commands(),
+        optionsScene.describe(kCanvas, Pointer{}, options).commands);
+}
+
+TEST_F(MainMenuSinkTest, TheOptionsScreenIsLeavable)
+{
+    pressAt(pixelOn(menuWidgets::kOptions));
+    tick();
+
+    pressAt(pixelOnOptions(optionsWidgets::kBack));
+
+    EXPECT_FALSE(options.open());
+
+    tick();
+    EXPECT_EQ(
+        overlay.commands(), scene.describe(kCanvas, Pointer{}).commands);
+}
+
+// Pick an action, press a key, and that is what the key means.
+// None of it is an event of its own.
+// The recording holds the click and the press.
+// And a replay works the binding out again.
+TEST_F(MainMenuSinkTest, AnActionTakesTheNextKeyPressed)
+{
+    pressAt(pixelOn(menuWidgets::kOptions));
+    tick();
+
+    pressAt(pixelOnOptions(optionsWidgets::actionWidget(Action::Pause)));
+    EXPECT_EQ(options.awaiting(), Action::Pause);
+
+    send(KeyPressed{.key = Key::J});
+
+    EXPECT_EQ(options.bindings().keyFor(Action::Pause), Key::J);
+    EXPECT_FALSE(options.awaiting().has_value());
+}
+
+// A repeat is not a fresh press.
+// So holding a key down offers it once and no more.
+TEST_F(MainMenuSinkTest, AHeldKeyIsNotOfferedTwice)
+{
+    pressAt(pixelOn(menuWidgets::kOptions));
+    tick();
+
+    pressAt(pixelOnOptions(optionsWidgets::actionWidget(Action::Pause)));
+
+    send(KeyPressed{.key = Key::J, .repeat = true});
+
+    EXPECT_EQ(options.bindings(), antwika::game::kDefaultBindings);
+    EXPECT_EQ(options.awaiting(), Action::Pause);
+}
+
+// A press on the screen's own card that lands on no row at all.
+TEST_F(MainMenuSinkTest, APressOnNoRowAsksForNothing)
+{
+    pressAt(pixelOn(menuWidgets::kOptions));
+    tick();
+
+    pressAt(kOffEveryItem);
+
+    EXPECT_TRUE(options.open());
+    EXPECT_FALSE(options.awaiting().has_value());
 }

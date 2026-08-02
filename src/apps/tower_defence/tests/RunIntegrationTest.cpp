@@ -1,6 +1,8 @@
 #include <cstddef>
 #include <cstdint>
 #include <memory>
+#include <optional>
+#include <string>
 #include <vector>
 
 #include <gmock/gmock.h>
@@ -12,13 +14,20 @@
 #include <antwika/event/mocks/MockEventSink.hpp>
 #include <antwika/event/TickEvent.hpp>
 #include <antwika/event/TickEventRecorder.hpp>
+#include <antwika/i18n/Locale.hpp>
 #include <antwika/input/InputEvent.hpp>
 #include <antwika/input/InputEventCodec.hpp>
 #include <antwika/input/MouseButton.hpp>
 #include <antwika/log/mocks/MockLogger.hpp>
 #include <antwika/replay/ReplaySource.hpp>
 
+#include "antwika/tower_defence/Campaign.hpp"
 #include "antwika/tower_defence/GridLayout.hpp"
+#include "antwika/tower_defence/IScoreStore.hpp"
+#include "antwika/tower_defence/LevelTile.hpp"
+#include "antwika/tower_defence/Messages.hpp"
+#include "antwika/tower_defence/MobKind.hpp"
+#include "antwika/tower_defence/ScoreFormatError.hpp"
 #include "antwika/tower_defence/TowerDefence.hpp"
 
 using antwika::event::Event;
@@ -33,27 +42,114 @@ using antwika::log::mocks::MockLogger;
 using antwika::replay::ReplaySource;
 using antwika::tower_defence::BattleConfig;
 using antwika::tower_defence::BattleSummary;
+using antwika::tower_defence::Campaign;
+using antwika::tower_defence::CampaignConfig;
+using antwika::tower_defence::CampaignPhase;
+using antwika::tower_defence::Cell;
 using antwika::tower_defence::cellRect;
+using antwika::tower_defence::HighScore;
+using antwika::tower_defence::IScoreStore;
 using antwika::tower_defence::layoutFor;
-using antwika::tower_defence::LevelConfig;
+using antwika::tower_defence::LevelPlan;
+using antwika::tower_defence::MobKind;
+using antwika::tower_defence::ScoreFormatError;
+using antwika::tower_defence::storeIfLive;
+using antwika::tower_defence::summaryLine;
 using antwika::tower_defence::TowerDefenceConfig;
+using antwika::tower_defence::Translator;
+using antwika::tower_defence::Wave;
+using antwika::tower_defence::WaveEntry;
 using ::testing::NiceMock;
 
 namespace
 {
     constexpr Size kCanvas{.width = 960, .height = 720};
-    constexpr std::uint32_t kWidth = 12;
-    constexpr std::uint32_t kHeight = 8;
-    constexpr antwika::time::Tick kMaxTicks = 30;
+    constexpr std::uint32_t kWidth = 7;
+    constexpr std::uint32_t kHeight = 5;
+    constexpr antwika::time::Tick kMaxTicks = 60;
 
-    // The level is one simple path, so most of the grid is open ground.
-    // The middle is a fair bet for a cell with no road on it.
+    // One small level whose wave outlasts the run's stop event.
+    // So the towers a click built are still standing at the end.
+    // And so the solver is not what these cases cost.
+    // A reach of nothing is a gun that can never fire.
+    CampaignConfig campaignConfig(
+        const std::uint32_t lives = 12, const std::uint32_t reach = 9)
+    {
+        const Wave wave{
+            .entries = {WaveEntry{MobKind::Grunt, 6}},
+            .spawnPeriodTicks = 6,
+            .gapTicks = 0};
+        const LevelPlan plan{
+            .level =
+                {.width = kWidth, .height = kHeight, .wallSpacing = 3},
+            .battle =
+                BattleConfig{
+                    .towerRangeSquared = reach, .towerDamage = 3},
+            .waves = {wave}};
+
+        return CampaignConfig{
+            .seed = 3, .lives = lives, .levels = {plan}};
+    }
+
+    // Answers from memory, so nothing here opens a file.
+    class FakeScoreStore final : public IScoreStore
+    {
+    public:
+        std::optional<HighScore> kept;
+        std::optional<HighScore> written;
+        bool refuseToRead = false;
+
+        std::optional<HighScore> load() override
+        {
+            if (refuseToRead)
+            {
+                throw ScoreFormatError("nothing readable here");
+            }
+            return kept;
+        }
+
+        void save(const HighScore &score) override
+        {
+            written = score;
+        }
+    };
+
+    // The generated level decides where the road runs.
+    // So the cell built on is read off a probe of the same config.
+    // It is one beside the road, the only kind worth building on.
+    Cell aBuildableCell()
+    {
+        const Campaign probe(campaignConfig());
+        const auto &level = probe.battle().level();
+
+        for (const Cell &on : level.path)
+        {
+            const Cell around[] = {
+                {.x = on.x, .y = on.y + 1},
+                {.x = on.x + 1, .y = on.y},
+                {.x = on.x, .y = on.y - 1},
+                {.x = on.x - 1, .y = on.y}};
+
+            for (const Cell &cell : around)
+            {
+                if (cell.x < level.width && cell.y < level.height
+                    && level.at(cell)
+                        == antwika::tower_defence::Tile::Empty)
+                {
+                    return cell;
+                }
+            }
+        }
+        return Cell{};
+    }
+
+    // One press on open ground and one on the score bar.
     // The test asserts what happened rather than assuming it built.
     std::vector<TickEvent> script()
     {
         const InputEventCodec codec;
         const auto layout = layoutFor(kCanvas, kWidth, kHeight);
-        const auto rect = cellRect(*layout, {.x = 6, .y = 4});
+        const auto rect = cellRect(*layout, aBuildableCell());
 
         return {
             TickEvent{
@@ -69,7 +165,7 @@ namespace
                     .button = MouseButton::Left,
                     .position = {.x = 20, .y = 8}})},
             TickEvent{
-                .tick = 20,
+                .tick = 40,
                 .event = Event{
                     .name = antwika::engine::events::kStop}}};
     }
@@ -84,7 +180,7 @@ namespace
     };
 
     // Stands in for the renderer main.cpp hands bootstrap().
-    // It is built over the Battle and ScoreOverlay the run owns.
+    // It is built over the Campaign and ScoreOverlay the run owns.
     // Neither exists before a level has been generated.
     // It reads the same two things RenderSink does.
     // So what it sees is what a frame would be drawn from.
@@ -93,10 +189,10 @@ namespace
     {
     public:
         FinishedTickWatcher(
-            const antwika::tower_defence::Battle &battle,
+            const Campaign &campaign,
             const antwika::tower_defence::ScoreOverlay &overlay,
             WatchedTicks &seen)
-            : battle(battle), overlay(overlay), seen(seen)
+            : campaign(campaign), overlay(overlay), seen(seen)
         {
         }
 
@@ -107,39 +203,49 @@ namespace
                 return;
             }
             ++seen.ticks;
-            seen.towers = battle.towers().size();
+            seen.towers = campaign.battle().towers().size();
             seen.commands = overlay.commands().size();
         }
 
     private:
-        const antwika::tower_defence::Battle &battle;
+        const Campaign &campaign;
         const antwika::tower_defence::ScoreOverlay &overlay;
         WatchedTicks &seen;
     };
 
-    BattleSummary runOnce()
+    BattleSummary runOnce(
+        IScoreStore *store = nullptr,
+        const std::uint32_t lives = 12,
+        const std::uint32_t reach = 9)
     {
         NiceMock<MockLogger> logger;
         NiceMock<MockEventSink> eventSink;
         const InputEventCodec codec;
+        const Translator translator{antwika::i18n::kDefaultLocale};
         ReplaySource source(script());
 
-        return antwika::tower_defence::bootstrap(TowerDefenceConfig{
+        TowerDefenceConfig config{
             .logger = logger,
             .eventSink = eventSink,
             .inputSource = source,
             .codec = codec,
+            .translator = translator,
             .canvas = kCanvas,
-            .level = LevelConfig{
-                .width = kWidth, .height = kHeight, .seed = 3},
-            .battle = BattleConfig{.spawnPeriodTicks = 3},
-            .maxTicks = kMaxTicks});
+            .campaign = campaignConfig(lives, reach),
+            .maxTicks = kMaxTicks};
+
+        if (store != nullptr)
+        {
+            config.scoreStore = *store;
+        }
+
+        return antwika::tower_defence::bootstrap(config);
     }
 } // namespace
 
 // The requirement this project exists for, for this app.
 // A run is driven entirely by what a source hands it.
-// Nothing about the level, the mobs or the towers is recorded.
+// Nothing about the level, the waves or the mobs is recorded.
 // So running the same input twice has to land on the same state.
 TEST(RunIntegrationTest, TheSameInputReachesTheSameStateTwice)
 {
@@ -147,10 +253,13 @@ TEST(RunIntegrationTest, TheSameInputReachesTheSameStateTwice)
     const BattleSummary second = runOnce();
 
     EXPECT_EQ(first.score, second.score);
-    EXPECT_EQ(first.leaks, second.leaks);
+    EXPECT_EQ(first.lives, second.lives);
     EXPECT_EQ(first.ticks, second.ticks);
     EXPECT_EQ(first.towers, second.towers);
     EXPECT_EQ(first.pathLength, second.pathLength);
+    EXPECT_EQ(first.level, second.level);
+    EXPECT_EQ(first.wavesReleased, second.wavesReleased);
+    EXPECT_EQ(first.phase, second.phase);
 }
 
 TEST(RunIntegrationTest, AStopEventEndsTheRunBeforeTheCap)
@@ -170,7 +279,7 @@ TEST(RunIntegrationTest, AClickOnTheBarBuildsNothingButAClickOnGroundDoes)
 }
 
 // main.cpp hangs the renderer off the run with the extraSink factory.
-// A sink drawing the battle needs state bootstrap() makes itself.
+// A sink drawing the campaign needs state bootstrap() makes itself.
 // The sink must be registered last.
 // So what it reads is the state the tick ended with.
 TEST(RunIntegrationTest, TheExtraSinkSeesEveryFinishedTick)
@@ -178,6 +287,7 @@ TEST(RunIntegrationTest, TheExtraSinkSeesEveryFinishedTick)
     NiceMock<MockLogger> logger;
     NiceMock<MockEventSink> eventSink;
     const InputEventCodec codec;
+    const Translator translator{antwika::i18n::kDefaultLocale};
     ReplaySource source(script());
 
     WatchedTicks seen;
@@ -187,18 +297,17 @@ TEST(RunIntegrationTest, TheExtraSinkSeesEveryFinishedTick)
             .eventSink = eventSink,
             .inputSource = source,
             .codec = codec,
+            .translator = translator,
             .canvas = kCanvas,
-            .level = LevelConfig{
-                .width = kWidth, .height = kHeight, .seed = 3},
-            .battle = BattleConfig{.spawnPeriodTicks = 3},
+            .campaign = campaignConfig(),
             .maxTicks = kMaxTicks,
             .extraSink =
                 [&seen](
-                    const antwika::tower_defence::Battle &battle,
+                    const Campaign &campaign,
                     const antwika::tower_defence::ScoreOverlay &overlay)
             {
                 return std::make_unique<FinishedTickWatcher>(
-                    battle, overlay, seen);
+                    campaign, overlay, seen);
             }});
 
     EXPECT_EQ(seen.ticks, summary.ticks);
@@ -212,12 +321,13 @@ TEST(RunIntegrationTest, TheExtraSinkSeesEveryFinishedTick)
 // A caller persisting a `--record` file has no pre-known script.
 // It passes an optional replayRecorder instead.
 // bootstrap() must register it, and only the input comes back.
-// The level, the mobs and the towers are all regenerated.
+// The level, the waves and the towers are all regenerated.
 TEST(RunIntegrationTest, TheReplayRecorderReceivesEveryDispatchedEvent)
 {
     NiceMock<MockLogger> logger;
     NiceMock<MockEventSink> eventSink;
     const InputEventCodec codec;
+    const Translator translator{antwika::i18n::kDefaultLocale};
     ReplaySource source(script());
     TickEventRecorder recorder;
 
@@ -227,10 +337,9 @@ TEST(RunIntegrationTest, TheReplayRecorderReceivesEveryDispatchedEvent)
             .eventSink = eventSink,
             .inputSource = source,
             .codec = codec,
+            .translator = translator,
             .canvas = kCanvas,
-            .level = LevelConfig{
-                .width = kWidth, .height = kHeight, .seed = 3},
-            .battle = BattleConfig{.spawnPeriodTicks = 3},
+            .campaign = campaignConfig(),
             .maxTicks = kMaxTicks,
             .replayRecorder = recorder});
 
@@ -250,4 +359,85 @@ TEST(RunIntegrationTest, TheReplayRecorderReceivesEveryDispatchedEvent)
     EXPECT_EQ(supplied, script());
     EXPECT_EQ(
         recorder.getEvents().size(), supplied.size() + summary.ticks);
+}
+
+// A run with no store shows a best of nothing and keeps nothing.
+TEST(RunIntegrationTest, ARunWithNoStoreStartsFromNothingAndKeepsIt)
+{
+    const BattleSummary summary = runOnce();
+    EXPECT_EQ(summary.previousBest, HighScore{});
+    EXPECT_GT(summary.score, 0U);
+    EXPECT_EQ(summary.best.bestScore, summary.score);
+    EXPECT_EQ(summary.best.bestLevel, summary.level);
+}
+
+TEST(RunIntegrationTest, AFirstRunSetsTheRecordItFinishesOn)
+{
+    FakeScoreStore store;
+    const BattleSummary summary = runOnce(&store);
+
+    EXPECT_EQ(summary.previousBest, HighScore{});
+    ASSERT_TRUE(store.written.has_value());
+    EXPECT_EQ(store.written->bestScore, summary.score);
+    EXPECT_EQ(store.written->bestLevel, summary.level);
+}
+
+TEST(RunIntegrationTest, ARunThatFallsShortLeavesTheRecordStanding)
+{
+    FakeScoreStore store;
+    store.kept = HighScore{.bestScore = 100000, .bestLevel = 9};
+
+    const BattleSummary summary = runOnce(&store);
+    EXPECT_EQ(summary.previousBest.bestScore, 100000U);
+    ASSERT_TRUE(store.written.has_value());
+    EXPECT_EQ(*store.written, *store.kept);
+}
+
+// A record nobody can read does not take the run with it.
+// The run starts from nothing and goes on to write over the file.
+TEST(RunIntegrationTest, ARecordThatWillNotReadStartsTheRunFromNothing)
+{
+    FakeScoreStore store;
+    store.refuseToRead = true;
+
+    const BattleSummary summary = runOnce(&store);
+    EXPECT_EQ(summary.previousBest, HighScore{});
+    ASSERT_TRUE(store.written.has_value());
+    EXPECT_EQ(store.written->bestScore, summary.score);
+}
+
+// A replay reproduces the run it recorded.
+// So it may not read a record that run never saw.
+// Nor overwrite one it did not earn.
+TEST(RunIntegrationTest, AReplayIsHandedNoStoreAtAll)
+{
+    FakeScoreStore store;
+    EXPECT_TRUE(storeIfLive(store, std::nullopt).has_value());
+    EXPECT_FALSE(
+        storeIfLive(store, std::optional<std::string>{"demo.json"})
+            .has_value());
+}
+
+TEST(RunIntegrationTest, TheSummaryLineSaysHowTheCampaignEnded)
+{
+    const BattleSummary unfinished{
+        .phase = CampaignPhase::Fighting,
+        .previousBest = {},
+        .best = {}};
+    const BattleSummary won{
+        .phase = CampaignPhase::Won, .previousBest = {}, .best = {}};
+    const BattleSummary lost{
+        .phase = CampaignPhase::Lost, .previousBest = {}, .best = {}};
+
+    EXPECT_THAT(summaryLine(unfinished), ::testing::HasSubstr("left"));
+    EXPECT_THAT(summaryLine(won), ::testing::HasSubstr("cleared"));
+    EXPECT_THAT(summaryLine(lost), ::testing::HasSubstr("overrun"));
+}
+
+// Lives are what a leak costs, and running out ends the campaign.
+TEST(RunIntegrationTest, ACampaignCanBeOverrunInsideOneRun)
+{
+    const BattleSummary summary = runOnce(nullptr, 1, 0);
+    EXPECT_EQ(summary.phase, CampaignPhase::Lost);
+    EXPECT_EQ(summary.lives, 0U);
 }

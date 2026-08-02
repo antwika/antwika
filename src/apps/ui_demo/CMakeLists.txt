@@ -4,6 +4,7 @@ add_executable(antwika_ui_demo
     src/DemoSink.cpp
     src/DemoState.cpp
     src/KeyMapping.cpp
+    src/Messages.cpp
     src/RenderSink.cpp
     src/TickBudgetSource.cpp
     src/UiDemo.cpp

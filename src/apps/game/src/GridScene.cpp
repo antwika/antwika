@@ -12,6 +12,7 @@
 #include "antwika/game/Footprint.hpp"
 #include "antwika/game/FootprintOutline.hpp"
 #include "antwika/game/IsoProjection.hpp"
+#include "antwika/game/Messages.hpp"
 #include "antwika/game/ReadoutPanel.hpp"
 #include "antwika/game/ResourceBar.hpp"
 #include "antwika/game/TileAtlas.hpp"
@@ -119,6 +120,11 @@ namespace antwika::game
         Cell cell, Size canvas, const SceneSnapshot &snapshot)
     {
         return overlaps(cellBounds(cell, snapshot.camera), canvas);
+    }
+
+    GridScene::GridScene(const Translator &translator)
+        : translator(translator)
+    {
     }
 
     void GridScene::draw(
@@ -247,7 +253,8 @@ namespace antwika::game
         Size canvas,
         const SceneSnapshot &snapshot) const
     {
-        const auto panel = readoutPanel(snapshot.hover, canvas);
+        const auto panel =
+            readoutPanel(snapshot.hover, canvas, translator);
 
         if (panel.lines.empty())
         {

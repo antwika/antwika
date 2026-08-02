@@ -21,6 +21,7 @@
 #include "antwika/game/Camera.hpp"
 #include "antwika/game/GameSummary.hpp"
 #include "antwika/game/GridExtent.hpp"
+#include "antwika/game/Messages.hpp"
 #include "antwika/game/PathIndex.hpp"
 #include "antwika/game/PauseState.hpp"
 #include "antwika/game/RoadDrag.hpp"
@@ -304,12 +305,48 @@ namespace antwika::game
         std::optional<std::string> savePath = std::nullopt;
 
         /**
+         * @brief Where this run should leave the key bindings it ends
+         * with, if anywhere.
+         *
+         * The mirror of savePath, and written from in here for the same
+         * reason: the bindings are taken off state this call owns, and
+         * that state does not outlive it.
+         *
+         * Unset writes nowhere, which is what every test wants and what
+         * a --replay run gets: a run that was not allowed to read the
+         * machine's layout may not overwrite it either -- see
+         * machineOptionsFor().
+         */
+        std::optional<std::string> optionsPath = std::nullopt;
+
+        /**
          * @brief The seed every generated part of the session came from.
          *
          * Written into a save so that a resumed session regenerates the
          * same world -- see SaveGame::seed.
          */
         std::uint64_t seed = 0;
+
+        /**
+         * @brief The language every caption in the run is worded in.
+         *
+         * **Injected rather than reached for, and fixed in source.** A
+         * layout is a function of the strings declared into it and a
+         * hit-test is a function of the layout, so a run recorded in one
+         * language and replayed in another would resolve one recorded
+         * click to two different widgets -- see Translator.hpp.
+         *
+         * Unset, one at kDefaultLocale is made here. That is not a
+         * default anybody may vary: it is the same fixed-in-source
+         * choice a composition root makes, written once so a test whose
+         * subject is the grid need not say it.
+         *
+         * Passed in rather than created here because a renderer built
+         * beforehand words its own scenes with it.
+         */
+        std::optional<
+            std::reference_wrapper<const Translator>>
+            translator = std::nullopt;
 
         /**
          * @brief The area every mode's UI is laid out against.

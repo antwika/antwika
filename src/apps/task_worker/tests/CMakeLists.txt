@@ -1,6 +1,10 @@
 find_package(GTest REQUIRED)
 
 add_executable(antwika_task_worker_tests
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/Messages.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/PoolScene.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/PoolSnapshot.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/RenderSystem.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/StatusPrintSystem.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/TaskDispatchSystem.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/TaskJob.cpp
@@ -11,6 +15,10 @@ add_executable(antwika_task_worker_tests
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/WorkerCompletionSystem.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/WorkerLookup.cpp
     BootstrapTest.cpp
+    MessagesTest.cpp
+    PoolSceneTest.cpp
+    PoolSnapshotTest.cpp
+    RenderSystemTest.cpp
     ReplayIntegrationTest.cpp
     StatusPrintSystemTest.cpp
     TaskDispatchSystemTest.cpp
@@ -31,6 +39,10 @@ target_link_libraries(antwika_task_worker_tests
         antwika::ecs
         antwika::ecs_commons
         antwika::engine
+        antwika::gfx
+        antwika::gfx::tests::mocks
+        antwika::i18n
+        antwika::i18n::tests::conformance
         antwika::log::tests::mocks
         antwika::replay
         antwika::scheduler

@@ -6,6 +6,7 @@ add_executable(antwika_companion_tests
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/FilePetStore.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/LifeStage.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/Lineage.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/Messages.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/PacingSink.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/Pet.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/PetLayout.cpp
@@ -21,6 +22,7 @@ add_executable(antwika_companion_tests
     FilePetStoreTest.cpp
     LifeStageTest.cpp
     LineageTest.cpp
+    MessagesTest.cpp
     PetLayoutTest.cpp
     PetSaveTest.cpp
     PetSceneTest.cpp
@@ -46,6 +48,7 @@ target_link_libraries(antwika_companion_tests
         antwika::gfx
         antwika::gfx::tests::mocks
         antwika::i18n
+        antwika::i18n::tests::conformance
         antwika::input
         antwika::log::tests::mocks
         antwika::replay

@@ -17,6 +17,7 @@ antwika_add_library(
         src/Key.cpp
         src/Keyboard.cpp
         src/LiveInputSource.cpp
+        src/MappedPointerSource.cpp
         src/Mouse.cpp
         src/MouseButton.cpp
         src/NullInputBackend.cpp

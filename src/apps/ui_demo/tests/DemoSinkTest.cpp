@@ -10,8 +10,6 @@
 #include <antwika/gfx/Point.hpp>
 #include <antwika/gfx/Size.hpp>
 #include <antwika/i18n/Locale.hpp>
-#include <antwika/i18n/MessageId.hpp>
-#include <antwika/i18n/Translator.hpp>
 #include <antwika/input/InputEvent.hpp>
 #include <antwika/input/InputEventCodec.hpp>
 #include <antwika/input/Key.hpp>
@@ -20,14 +18,15 @@
 #include <antwika/ui/Frame.hpp>
 #include <antwika/ui/WidgetId.hpp>
 
+#include "WidgetCentre.hpp"
 #include "antwika/ui_demo/DemoOverlay.hpp"
 #include "antwika/ui_demo/DemoScene.hpp"
 #include "antwika/ui_demo/DemoSink.hpp"
 #include "antwika/ui_demo/DemoState.hpp"
+#include "antwika/ui_demo/MessageId.hpp"
+#include "antwika/ui_demo/Messages.hpp"
 #include "antwika/ui_demo/Showcase.hpp"
 #include "antwika/ui_demo/Widgets.hpp"
-
-#include "WidgetCentre.hpp"
 
 using antwika::event::Event;
 using antwika::event::TickEvent;
@@ -43,8 +42,8 @@ using antwika::ui::WidgetId;
 using antwika::ui_demo::DemoOverlay;
 using antwika::ui_demo::DemoScene;
 using antwika::ui_demo::DemoSink;
-using antwika::i18n::MessageId;
 using antwika::ui_demo::DemoState;
+using antwika::ui_demo::MessageId;
 using antwika::ui_demo::Showcase;
 using antwika::ui_demo::tests::optionWidget;
 using antwika::ui_demo::tests::widgetCentre;
@@ -54,7 +53,7 @@ namespace
 {
     // The locale is a constant of the build, so a test may name one.
     // Every case here asserts the English showcase's own layout.
-    constexpr antwika::i18n::Translator kTranslator{
+    constexpr antwika::ui_demo::Translator kTranslator{
         antwika::i18n::kDefaultLocale};
 
     constexpr Size kCanvas{.width = 960, .height = 720};
@@ -174,10 +173,10 @@ namespace
         EXPECT_FALSE(wiring.state.pickerOpen());
         ASSERT_TRUE(wiring.state.message().has_value());
         EXPECT_EQ(
-            wiring.state.message()->id, MessageId::UiDemoShowing);
+            wiring.state.message()->id, MessageId::Showing);
         EXPECT_EQ(
             wiring.state.message()->argId,
-            MessageId::UiDemoPageShrink);
+            MessageId::PageShrink);
     }
 
     TEST(DemoSinkTest, Handle_CountsAndResetsTheCountingButton)
@@ -214,7 +213,7 @@ namespace
         ASSERT_TRUE(wiring.state.message().has_value());
         EXPECT_EQ(
             wiring.state.message()->id,
-            MessageId::UiDemoAccentChosen);
+            MessageId::AccentChosen);
         EXPECT_EQ(wiring.state.message()->datum, "2");
     }
 
@@ -230,7 +229,7 @@ namespace
         ASSERT_TRUE(wiring.state.message().has_value());
         EXPECT_EQ(
             wiring.state.message()->id,
-            MessageId::UiDemoPressedWidget);
+            MessageId::PressedWidget);
         EXPECT_EQ(wiring.state.message()->datum, "5");
     }
 
@@ -293,7 +292,7 @@ namespace
 
         ASSERT_TRUE(wiring.state.message().has_value());
         EXPECT_EQ(
-            wiring.state.message()->id, MessageId::UiDemoSubmitted);
+            wiring.state.message()->id, MessageId::Submitted);
         EXPECT_EQ(wiring.state.message()->datum, "ok");
         EXPECT_EQ(wiring.state.text(), "ok");
     }
@@ -310,7 +309,7 @@ namespace
         EXPECT_TRUE(wiring.state.text().empty());
         ASSERT_TRUE(wiring.state.message().has_value());
         EXPECT_EQ(
-            wiring.state.message()->id, MessageId::UiDemoCancelled);
+            wiring.state.message()->id, MessageId::Cancelled);
     }
 
     TEST(DemoSinkTest, Handle_WalksTheFocusRingWithTabAndShiftTab)

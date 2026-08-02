@@ -117,7 +117,14 @@ namespace antwika::ecs
             }
 
             pendingOps.push_back(
-                [this, entity, value]
+                // The marker is for the function record, not a branch.
+                // gcov emits one such record per instantiation.
+                // std::function reaches it through an inline chain.
+                // So the out-of-line copy is never the one called.
+                // It therefore reports zero.
+                // Every line inside it is covered all the same.
+                // See docs/confirming-unreachable-branches.md, (d).
+                [this, entity, value] // GCOVR_EXCL_LINE
                 {
                     // A destroy() staged earlier may have run first.
                     // Inserting now would orphan a component forever.
@@ -285,7 +292,16 @@ namespace antwika::ecs
             removeFromAllPools.push_back(
                 [rawPtr](Entity entity)
                 {
-                    if (rawPtr->contains(entity))
+                    // The marker is for one instantiation's record.
+                    // gcov emits this pair per component type.
+                    // A discarded copy reports zero both ways.
+                    // Rather than being left out of the report.
+                    // So the surviving pair is not the one that ran.
+                    // And which type that is moves as one is added.
+                    // WalkerTest asserts the rule itself by name.
+                    // Over a pool holding it and one that never did.
+                    // See docs/confirming-unreachable-branches.md.
+                    if (rawPtr->contains(entity)) // GCOVR_EXCL_LINE
                     {
                         rawPtr->remove(entity);
                     }

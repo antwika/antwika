@@ -48,6 +48,20 @@ namespace antwika::replay
         return nullptr;
     }
 
+    void MigrationChain::requireReadable(
+        const std::uint32_t statedVersion) const
+    {
+        if (statedVersion > current)
+        {
+            throw SchemaVersionError(std::format(
+                "antwika::replay: this document states schema version "
+                "{}, and this build reads up to version {}; it was "
+                "written by a newer release",
+                statedVersion,
+                current));
+        }
+    }
+
     void MigrationChain::migrate(nlohmann::json &document) const
     {
         if (!document.is_object())
@@ -55,21 +69,28 @@ namespace antwika::replay
             return; // The caller's schema refuses it, and says why.
         }
 
-        const auto stated = documentVersion(document, versionKey);
-        if (stated > current)
+        migrateFrom(document, documentVersion(document, versionKey));
+
+        // Stamping the version is the chain's job, never a migration's.
+        // It is also what gives a document that stated none one.
+        document[versionKey] = current;
+    }
+
+    void MigrationChain::migrateFrom(
+        nlohmann::json &record, const std::uint32_t statedVersion) const
+    {
+        requireReadable(statedVersion);
+
+        if (!record.is_object())
         {
-            throw SchemaVersionError(std::format(
-                "antwika::replay: this document states schema version "
-                "{}, and this build reads up to version {}; it was "
-                "written by a newer release",
-                stated,
-                current));
+            return; // The caller's schema refuses it, and says why.
         }
 
-        // Read once, up here, rather than again in the gap message.
-        // Re-reading holds only while every migration obeys the rule.
+        // The gap message names the stated version, held here.
+        // Re-reading it would rest on every migration obeying the rule.
         // That rule is IMigration's, and this chain does not enforce it.
-        auto version = stated;
+        // A record carries no version to re-read in any case.
+        auto version = statedVersion;
         while (version < current)
         {
             const IMigration *const step = stepFrom(version);
@@ -80,18 +101,14 @@ namespace antwika::replay
                     "version {}, and no migration reads version {} on "
                     "the way to version {}; the migration chain has a "
                     "gap",
-                    stated,
+                    statedVersion,
                     version,
                     current));
             }
 
-            step->apply(document);
+            step->apply(record);
             version = step->toVersion();
         }
-
-        // Stamping the version is the chain's job, never a migration's.
-        // It is also what gives a document that stated none one.
-        document[versionKey] = version;
     }
 
 } // namespace antwika::replay

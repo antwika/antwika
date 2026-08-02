@@ -9,6 +9,8 @@
 #include "antwika/game/Building.hpp"
 #include "antwika/game/Cell.hpp"
 #include "antwika/game/Direction.hpp"
+#include "antwika/game/Errand.hpp"
+#include "antwika/game/Footprint.hpp"
 #include "antwika/game/GridExtent.hpp"
 #include "antwika/game/PathIndex.hpp"
 #include "antwika/game/Walker.hpp"
@@ -16,8 +18,12 @@
 
 using antwika::ecs::Entity;
 using antwika::ecs::World;
+using antwika::game::Building;
+using antwika::game::BuildingKind;
 using antwika::game::Cell;
 using antwika::game::Direction;
+using antwika::game::Errand;
+using antwika::game::ErrandLeg;
 using antwika::game::PathIndex;
 using antwika::game::Walker;
 using antwika::game::WalkerSystem;
@@ -413,7 +419,7 @@ namespace
         world.add<antwika::game::Building>(
             home,
             antwika::game::Building{
-                .kind = antwika::game::BuildingKind::FoodSource});
+                .kind = antwika::game::BuildingKind::Farm});
 
         const auto walker = world.create();
         world.add<Cell>(walker, Cell{.x = 4, .y = 1});
@@ -427,3 +433,158 @@ namespace
         EXPECT_FALSE(world.alive(walker));
     }
 } // namespace
+
+namespace
+{
+    // A block to walk to, and a walker pointed at it.
+    // The two together are the whole of what an errand adds.
+    struct Bound
+    {
+        Entity building;
+        Entity walker;
+    };
+} // namespace
+
+namespace
+{
+    Bound sendOnErrand(
+        World &world,
+        Cell from,
+        Cell to,
+        BuildingKind kind,
+        ErrandLeg leg)
+    {
+        const auto building = world.create();
+        world.add<Cell>(building, to);
+        world.add<Building>(building, Building{.kind = kind});
+
+        const auto walker = world.create();
+        world.add<Cell>(walker, from);
+        world.add<Walker>(
+            walker,
+            Walker{
+                .kind = antwika::game::WalkerKind::CartPusher,
+                .home = building});
+        world.add<Errand>(
+            walker,
+            Errand{
+                .destination =
+                    leg == ErrandLeg::Outbound ? building
+                                               : antwika::ecs::kNullEntity,
+                .leg = leg});
+        world.commit();
+        return Bound{.building = building, .walker = walker};
+    }
+} // namespace
+
+// The one arm an errand adds: a route rather than a preference order.
+// nextFacing() would have turned right into the dead end at (0, 1).
+TEST_F(WalkerSystemTest, Update_StepsAnErrandWalkerTowardsItsDestination)
+{
+    layPath(
+        {{.x = 0, .y = 0},
+         {.x = 1, .y = 0},
+         {.x = 2, .y = 0},
+         {.x = 0, .y = 1}});
+
+    const auto errand = sendOnErrand(
+        world,
+        Cell{.x = 0, .y = 0},
+        Cell{.x = 3, .y = 0},
+        BuildingKind::Storage,
+        ErrandLeg::Outbound);
+
+    tick();
+
+    EXPECT_EQ(world.get<Cell>(errand.walker), (Cell{.x = 1, .y = 0}));
+}
+
+// Standing at the door is the one place the two legs differ.
+// Whoever gave the errand decides what happens next.
+TEST_F(WalkerSystemTest, Update_HoldsAnOutboundWalkerAtItsDestination)
+{
+    layPath({{.x = 0, .y = 0}, {.x = 1, .y = 0}});
+
+    const auto errand = sendOnErrand(
+        world,
+        Cell{.x = 1, .y = 0},
+        Cell{.x = 2, .y = 0},
+        BuildingKind::Storage,
+        ErrandLeg::Outbound);
+
+    tick();
+
+    EXPECT_TRUE(world.alive(errand.walker));
+    EXPECT_EQ(world.get<Cell>(errand.walker), (Cell{.x = 1, .y = 0}));
+}
+
+TEST_F(WalkerSystemTest, Update_RemovesAReturningWalkerThatGotHome)
+{
+    layPath({{.x = 0, .y = 0}, {.x = 1, .y = 0}});
+
+    const auto errand = sendOnErrand(
+        world,
+        Cell{.x = 1, .y = 0},
+        Cell{.x = 2, .y = 0},
+        BuildingKind::Farm,
+        ErrandLeg::Returning);
+
+    tick();
+
+    EXPECT_FALSE(world.alive(errand.walker));
+}
+
+// The awkward cases all collapse into one arm, and none is an error.
+TEST_F(WalkerSystemTest, Update_RemovesAnErrandWalkerWhoseStoreIsGone)
+{
+    layPath({{.x = 0, .y = 0}, {.x = 1, .y = 0}, {.x = 2, .y = 0}});
+
+    const auto errand = sendOnErrand(
+        world,
+        Cell{.x = 0, .y = 0},
+        Cell{.x = 3, .y = 0},
+        BuildingKind::Storage,
+        ErrandLeg::Outbound);
+
+    world.destroy(errand.building);
+    world.commit();
+
+    EXPECT_NO_THROW(tick());
+    EXPECT_FALSE(world.alive(errand.walker));
+}
+
+TEST_F(WalkerSystemTest, Update_RemovesAnErrandWalkerWithNoRouteLeft)
+{
+    layPath({{.x = 0, .y = 0}});
+
+    const auto errand = sendOnErrand(
+        world,
+        Cell{.x = 0, .y = 0},
+        Cell{.x = 5, .y = 5},
+        BuildingKind::Storage,
+        ErrandLeg::Outbound);
+
+    tick();
+
+    EXPECT_FALSE(world.alive(errand.walker));
+}
+
+// An errand naming nowhere is a load being carried on the rounds.
+// So the walker keeps every rule it had before errands existed.
+TEST_F(WalkerSystemTest, Update_RoamsAWalkerWhoseErrandNamesNowhere)
+{
+    layPath({{.x = 0, .y = 0}, {.x = 1, .y = 0}, {.x = 2, .y = 0}});
+
+    const auto walker = world.create();
+    world.add<Cell>(walker, Cell{.x = 0, .y = 0});
+    world.add<Walker>(walker, Walker{.facing = Direction::East});
+    world.add<Errand>(walker, Errand{});
+    world.commit();
+
+    tick();
+
+    EXPECT_EQ(world.get<Cell>(walker), (Cell{.x = 1, .y = 0}));
+    EXPECT_EQ(
+        world.get<Walker>(walker).stepsUntilHome,
+        antwika::game::kRoamingSteps - 1);
+}

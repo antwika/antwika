@@ -5,6 +5,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <optional>
+#include <set>
 #include <vector>
 
 #include <antwika/ecs/SystemScheduler.hpp>
@@ -33,7 +34,8 @@
 
 #include "WidgetPixel.hpp"
 
-#include "antwika/game/AppMode.hpp"
+#include "FakeMenuCommands.hpp"
+#include "TestTranslator.hpp"
 #include "antwika/game/BuildGhost.hpp"
 #include "antwika/game/BuildTool.hpp"
 #include "antwika/game/Building.hpp"
@@ -57,6 +59,8 @@
 #include "antwika/game/Toolbar.hpp"
 #include "antwika/game/UiOverlay.hpp"
 #include "antwika/game/UiSink.hpp"
+
+using antwika::game::tests::kTranslator;
 
 using antwika::ecs::SystemScheduler;
 using antwika::ecs::World;
@@ -84,8 +88,6 @@ using antwika::game::cellCentre;
 using antwika::game::GridExtent;
 using antwika::game::GridScene;
 using antwika::game::GridSink;
-using antwika::game::AppMode;
-using antwika::game::AppModeState;
 using antwika::game::MenuModalScene;
 using antwika::game::PauseState;
 using antwika::game::RoadDrag;
@@ -100,7 +102,6 @@ using antwika::game::roadTile;
 using antwika::game::SceneSnapshot;
 using antwika::game::snapshotOf;
 using antwika::game::Toolbar;
-using antwika::game::toolLabel;
 using antwika::game::toolTile;
 using antwika::game::UiOverlay;
 using antwika::game::UiSink;
@@ -136,19 +137,24 @@ namespace
     // Every tool but the first, which is the road.
     constexpr std::array<BuildTool, kBuildToolCount - 1> kBuildings{
         BuildTool::House,
-        BuildTool::FoodSource,
-        BuildTool::WaterSource,
+        BuildTool::Farm,
+        BuildTool::ClayPit,
+        BuildTool::Workshop,
+        BuildTool::Storage,
+        BuildTool::Market,
+        BuildTool::Well,
+        BuildTool::Doctor,
         BuildTool::FireStation,
-        BuildTool::ArchitectPost};
+        BuildTool::EngineerPost};
 } // namespace
 
 TEST(BuildToolTest, EveryToolHasItsOwnIndex)
 {
-    EXPECT_EQ(kBuildToolCount, 6U);
+    EXPECT_EQ(kBuildToolCount, 11U);
     EXPECT_EQ(buildToolIndex(BuildTool::Road), 0U);
     EXPECT_EQ(buildToolIndex(BuildTool::House), 1U);
-    EXPECT_EQ(buildToolIndex(BuildTool::FoodSource), 2U);
-    EXPECT_EQ(buildToolIndex(BuildTool::WaterSource), 3U);
+    EXPECT_EQ(buildToolIndex(BuildTool::Farm), 2U);
+    EXPECT_EQ(buildToolIndex(BuildTool::EngineerPost), 10U);
 }
 
 TEST(BuildToolTest, EveryToolButTheRoadPlacesABuilding)
@@ -165,10 +171,10 @@ TEST(BuildToolTest, EveryToolButTheRoadNamesABuildingKind)
 {
     EXPECT_EQ(buildingKindOf(BuildTool::House), BuildingKind::House);
     EXPECT_EQ(
-        buildingKindOf(BuildTool::FoodSource), BuildingKind::FoodSource);
+        buildingKindOf(BuildTool::Farm), BuildingKind::Farm);
     EXPECT_EQ(
-        buildingKindOf(BuildTool::ArchitectPost),
-        BuildingKind::ArchitectPost);
+        buildingKindOf(BuildTool::EngineerPost),
+        BuildingKind::EngineerPost);
 
     // The road places none, and says so rather than naming a kind.
     EXPECT_FALSE(buildingKindOf(BuildTool::Road).has_value());
@@ -205,19 +211,23 @@ TEST(BuildPaletteAtlasTest, ToolTileIsTheRoadForARoadAndTheBuildingElse)
     }
 }
 
-TEST(BuildPaletteWidgetTest, EveryToolIsNamedAndHasItsOwnButton)
+// What each tool is *called* is ToolLabelTest's subject.
+// This one is about a tool having a button nothing else shares.
+TEST(BuildPaletteWidgetTest, EveryToolHasAButtonOfItsOwn)
 {
-    EXPECT_EQ(toolLabel(BuildTool::Road), "road");
-    EXPECT_EQ(toolLabel(BuildTool::House), "house");
-    EXPECT_EQ(toolLabel(BuildTool::FoodSource), "food");
-    EXPECT_EQ(toolLabel(BuildTool::WaterSource), "water");
-    EXPECT_EQ(toolLabel(BuildTool::FireStation), "fire");
-    EXPECT_EQ(toolLabel(BuildTool::ArchitectPost), "arch");
+    std::set<antwika::ui::WidgetId> ids{
+        widgets::kZoomIn,
+        widgets::kZoomOut,
+        widgets::kResetView,
+        widgets::kPauseResume,
+        widgets::kMenu};
 
-    EXPECT_NE(widgets::toolWidget(BuildTool::Road), widgets::kZoomIn);
-    EXPECT_NE(
-        widgets::toolWidget(BuildTool::Road),
-        widgets::toolWidget(BuildTool::WaterSource));
+    for (std::size_t index = 0; index < kBuildToolCount; ++index)
+    {
+        ids.insert(widgets::toolWidget(static_cast<BuildTool>(index)));
+    }
+
+    EXPECT_EQ(ids.size(), kBuildToolCount + 5U);
 }
 
 TEST(UiOverlayToolTest, TheRoadIsSelectedUntilSomethingSaysOtherwise)
@@ -226,9 +236,9 @@ TEST(UiOverlayToolTest, TheRoadIsSelectedUntilSomethingSaysOtherwise)
 
     EXPECT_EQ(overlay.tool(), BuildTool::Road);
 
-    overlay.select(BuildTool::FoodSource);
+    overlay.select(BuildTool::Farm);
 
-    EXPECT_EQ(overlay.tool(), BuildTool::FoodSource);
+    EXPECT_EQ(overlay.tool(), BuildTool::Farm);
 }
 
 // Putting the palette down is a state, not a tool.
@@ -249,13 +259,13 @@ TEST(UiOverlayToolTest, ThePaletteCanBePutDownAndPickedBackUp)
 
 TEST(ToolbarPaletteTest, TheSelectedButtonIsDrawnDifferently)
 {
-    const Toolbar toolbar;
+    const Toolbar toolbar{kTranslator};
     const Camera camera;
 
     const auto road =
         toolbar.describe(kCanvas, Pointer{}, camera, BuildTool::Road);
     const auto tower =
-        toolbar.describe(kCanvas, Pointer{}, camera, BuildTool::WaterSource);
+        toolbar.describe(kCanvas, Pointer{}, camera, BuildTool::Well);
 
     // The same layout, so only the appearances can have moved.
     EXPECT_EQ(road.commands.size(), tower.commands.size());
@@ -266,7 +276,7 @@ TEST(ToolbarPaletteTest, TheSelectedButtonIsDrawnDifferently)
 // It would say a left click places something, where it places nothing.
 TEST(ToolbarPaletteTest, NoButtonIsHeldDownWithThePalettePutDown)
 {
-    const Toolbar toolbar;
+    const Toolbar toolbar{kTranslator};
     const Camera camera;
 
     const auto down =
@@ -361,28 +371,31 @@ namespace
         PathIndex paths;
         BuildingIndex built;
 
-        // Panned well clear of the bar, which sits top-left.
-        Camera camera{Point{.x = 700, .y = 300}};
+        // Panned so the cells these tests click sit in the middle.
+        // Clear of the two strips, and clear of the palette panel.
+        Camera camera{Point{.x = 400, .y = 200}};
         SystemScheduler scheduler;
         InputEventCodec codec;
         InputFold input{codec};
         UiOverlay overlay{kCanvas};
-        Toolbar toolbar;
+        Toolbar toolbar{kTranslator};
         PauseState pause;
         WorldMapState cities{WorldMap{}};
         RoadDrag drag;
-        AppModeState mode{AppMode::CityMap};
-        MenuModalScene modalScene;
+        antwika::game::tests::FakeMenuCommands commands;
+        MenuModalScene modalScene{kTranslator};
+        antwika::game::CityRatings ratings;
         UiSink uiSink{
             camera,
             overlay,
             input,
             toolbar,
             pause,
-            mode,
+            commands,
             drag,
             modalScene,
-            camera};
+            camera,
+            ratings};
         GridSink gridSink{
             world,
             paths,
@@ -401,8 +414,8 @@ TEST_F(PaletteSinkTest, PressingAPaletteButtonSelectsThatTool)
 {
     for (const auto tool : {
              BuildTool::House,
-             BuildTool::FoodSource,
-             BuildTool::WaterSource,
+             BuildTool::Farm,
+             BuildTool::Well,
              BuildTool::Road,
          })
     {
@@ -414,7 +427,7 @@ TEST_F(PaletteSinkTest, PressingAPaletteButtonSelectsThatTool)
 
 TEST_F(PaletteSinkTest, PressingSomethingElseLeavesTheToolAlone)
 {
-    pressOn(widgets::toolWidget(BuildTool::FoodSource));
+    pressOn(widgets::toolWidget(BuildTool::Farm));
 
     // The bar is under this one, so it selects nothing.
     pressOn(widgets::kZoomIn);
@@ -422,7 +435,7 @@ TEST_F(PaletteSinkTest, PressingSomethingElseLeavesTheToolAlone)
     // And this one is on the grid, so it activates no widget at all.
     clickAt(Cell{.x = 4, .y = 4}, MouseButton::Left);
 
-    EXPECT_EQ(overlay.tool(), BuildTool::FoodSource);
+    EXPECT_EQ(overlay.tool(), BuildTool::Farm);
 }
 
 TEST_F(PaletteSinkTest, AClickOnTheBarPlacesNothingOnTheGrid)
@@ -437,14 +450,14 @@ TEST_F(PaletteSinkTest, TheSelectedToolIsWhatALeftClickPlaces)
 {
     constexpr Cell target{.x = 3, .y = 4};
 
-    pressOn(widgets::toolWidget(BuildTool::WaterSource));
+    pressOn(widgets::toolWidget(BuildTool::Well));
     clickAt(target, MouseButton::Left);
 
     const auto placed = buildings();
 
     ASSERT_EQ(placed.size(), 1U);
     EXPECT_EQ(placed[0].at, target);
-    EXPECT_EQ(placed[0].kind, BuildingKind::WaterSource);
+    EXPECT_EQ(placed[0].kind, BuildingKind::Well);
     EXPECT_EQ(paths.size(), 0U);
 }
 
@@ -517,7 +530,7 @@ TEST_F(PaletteSinkTest, ABlockHoldsEveryCellItCovers)
 {
     constexpr Cell target{.x = 2, .y = 6};
 
-    pressOn(widgets::toolWidget(BuildTool::FoodSource));
+    pressOn(widgets::toolWidget(BuildTool::Farm));
     clickAt(target, MouseButton::Left);
 
     ASSERT_EQ(buildings().size(), 1U);
@@ -536,7 +549,7 @@ TEST_F(PaletteSinkTest, ABlockHoldsEveryCellItCovers)
 
 TEST_F(PaletteSinkTest, ABlockRefusesToOverlapAnother)
 {
-    pressOn(widgets::toolWidget(BuildTool::FoodSource));
+    pressOn(widgets::toolWidget(BuildTool::Farm));
     clickAt(Cell{.x = 2, .y = 6}, MouseButton::Left);
 
     // Overlapping at one corner only, which is still overlapping.
@@ -567,7 +580,7 @@ TEST_F(PaletteSinkTest, ABuildingRefusesACellAlreadyPaved)
 
     clickAt(target, MouseButton::Left);
 
-    pressOn(widgets::toolWidget(BuildTool::FoodSource));
+    pressOn(widgets::toolWidget(BuildTool::Farm));
     clickAt(target, MouseButton::Left);
 
     EXPECT_TRUE(paths.has(target));
@@ -576,7 +589,7 @@ TEST_F(PaletteSinkTest, ABuildingRefusesACellAlreadyPaved)
 
 TEST_F(PaletteSinkTest, ABuildingGoesNowhereOutsideTheExtent)
 {
-    pressOn(widgets::toolWidget(BuildTool::FoodSource));
+    pressOn(widgets::toolWidget(BuildTool::Farm));
 
     for (const auto outside : {
              Cell{.x = -1, .y = 0},
@@ -616,14 +629,14 @@ TEST(BuildGhostTest, GhostFor_FollowsThePointerAndTheSelectedTool)
         hintOn(target, camera),
         camera,
         kExtent,
-        BuildTool::WaterSource,
+        BuildTool::Well,
         false,
         kNoPaths,
         kNothingBuilt);
 
     EXPECT_TRUE(shown.visible);
     EXPECT_EQ(shown.at, target);
-    EXPECT_EQ(shown.tool, BuildTool::WaterSource);
+    EXPECT_EQ(shown.tool, BuildTool::Well);
 }
 
 TEST(BuildGhostTest, GhostFor_IsInvisibleUntilSomethingLocatesThePointer)
@@ -733,7 +746,7 @@ TEST(SceneSnapshotBuildTest, SnapshotOf_TakesTheBuildingsAndNoGhost)
 
     const auto shop = world.create();
     world.add<Cell>(shop, Cell{.x = 2, .y = 3});
-    world.add<Building>(shop, Building{.kind = BuildingKind::FoodSource});
+    world.add<Building>(shop, Building{.kind = BuildingKind::Farm});
 
     world.commit();
 
@@ -741,7 +754,7 @@ TEST(SceneSnapshotBuildTest, SnapshotOf_TakesTheBuildingsAndNoGhost)
 
     ASSERT_EQ(snapshot.buildings.size(), 1U);
     EXPECT_EQ(snapshot.buildings[0].at, (Cell{.x = 2, .y = 3}));
-    EXPECT_EQ(snapshot.buildings[0].kind, BuildingKind::FoodSource);
+    EXPECT_EQ(snapshot.buildings[0].kind, BuildingKind::Farm);
 
     // Whoever draws fills this in, from a channel no replay holds.
     EXPECT_FALSE(snapshot.ghost.visible);
@@ -784,7 +797,7 @@ namespace
                     Color tint)
                 { blits.push_back(Blit{source, destination, tint}); });
 
-        const GridScene scene;
+        const GridScene scene{kTranslator};
         scene.draw(renderer, kCanvas, snapshot, atlas);
 
         return blits;
@@ -797,18 +810,18 @@ TEST(GridSceneBuildTest, ABuildingIsOneBlitOfItsOwnTile)
     snapshot.buildings.push_back(
         BuildingSprite{
             .at = Cell{.x = 0, .y = 0},
-            .kind = BuildingKind::FoodSource});
+            .kind = BuildingKind::Farm});
 
     const auto blits = blitsOf(snapshot);
 
     ASSERT_EQ(blits.size(), 1U);
     EXPECT_EQ(
-        blits[0].source, buildingTile(BuildingKind::FoodSource));
+        blits[0].source, buildingTile(BuildingKind::Farm));
     EXPECT_EQ(
         blits[0].destination,
         footprintBounds(
             Cell{.x = 0, .y = 0},
-            footprintOf(BuildingKind::FoodSource),
+            footprintOf(BuildingKind::Farm),
             snapshot.camera));
 }
 
@@ -831,7 +844,7 @@ TEST(GridSceneBuildTest, TheGhostIsDrawnLastAndSeeThrough)
             .at = Cell{.x = 0, .y = 0}, .kind = BuildingKind::House});
     snapshot.ghost = BuildGhost{
         .at = Cell{.x = 0, .y = 0},
-        .tool = BuildTool::WaterSource,
+        .tool = BuildTool::Well,
         .visible = true,
         .valid = true};
 
@@ -839,7 +852,7 @@ TEST(GridSceneBuildTest, TheGhostIsDrawnLastAndSeeThrough)
 
     ASSERT_EQ(blits.size(), 2U);
     EXPECT_EQ(
-        blits[1].source, buildingTile(BuildingKind::WaterSource));
+        blits[1].source, buildingTile(BuildingKind::Well));
     EXPECT_EQ(blits[1].tint, kGhostly);
 }
 
@@ -892,7 +905,7 @@ TEST(BuildGhostTest, GhostFor_SaysAClearBlockWouldLand)
         hintOn(target, camera),
         camera,
         kExtent,
-        BuildTool::FoodSource,
+        BuildTool::Farm,
         false,
         kNoPaths,
         kNothingBuilt);
@@ -915,7 +928,7 @@ TEST(BuildGhostTest, GhostFor_ShowsABlockedBlockAndSaysItWouldNot)
         hintOn(target, camera),
         camera,
         kExtent,
-        BuildTool::FoodSource,
+        BuildTool::Farm,
         false,
         paths,
         kNothingBuilt);
@@ -933,7 +946,7 @@ TEST(BuildGhostTest, GhostFor_HidesABlockHangingOffTheGrid)
         hintOn(corner, camera),
         camera,
         kExtent,
-        BuildTool::ArchitectPost,
+        BuildTool::Storage,
         false,
         kNoPaths,
         kNothingBuilt);
@@ -1007,7 +1020,7 @@ namespace
                 [&lines](Point from, Point to, Color color)
                 { lines.push_back(Line{from, to, color}); });
 
-        const GridScene scene;
+        const GridScene scene{kTranslator};
         scene.draw(renderer, kCanvas, snapshot, atlas);
 
         return lines;
@@ -1046,7 +1059,7 @@ namespace
 
 TEST(GridSceneBuildTest, TheGhostIsBorderedRoundItsWholeBlock)
 {
-    const auto snapshot = ghostSnapshot(BuildTool::FoodSource, true);
+    const auto snapshot = ghostSnapshot(BuildTool::Farm, true);
     const auto lines = linesOf(snapshot);
 
     ASSERT_EQ(lines.size(), kOutlineCorners);
@@ -1055,7 +1068,7 @@ TEST(GridSceneBuildTest, TheGhostIsBorderedRoundItsWholeBlock)
         loopOf(
             footprintOutline(
                 snapshot.ghost.at,
-                footprintOf(BuildingKind::FoodSource),
+                footprintOf(BuildingKind::Farm),
                 snapshot.camera),
             lines.front().color));
 }
@@ -1080,7 +1093,7 @@ TEST(GridSceneBuildTest, ARoadGhostIsBorderedRoundTheOneCell)
 // Two ways of working that box out is exactly what this rules out.
 TEST(GridSceneBuildTest, TheBorderTracesTheBoxTheGhostIsBlittedInto)
 {
-    const auto snapshot = ghostSnapshot(BuildTool::ArchitectPost, true);
+    const auto snapshot = ghostSnapshot(BuildTool::EngineerPost, true);
     const auto lines = linesOf(snapshot);
     const auto blits = blitsOf(snapshot);
 
@@ -1127,4 +1140,22 @@ TEST(GridSceneBuildTest, NothingIsBorderedWithNoGhostToBorder)
     away.ghost.at = Cell{.x = 900, .y = -900};
 
     EXPECT_TRUE(linesOf(away).empty());
+}
+
+// Through the real bar and the real grid, which is where it matters.
+// A press that puts the game menu away lays nothing under it.
+TEST_F(PaletteSinkTest, APressThatPutsTheGameMenuAwayBuildsNothing)
+{
+    constexpr Cell target{.x = 4, .y = 4};
+
+    pressOn(widgets::kGameMenu);
+    clickAt(target, MouseButton::Left);
+
+    EXPECT_FALSE(paths.has(target));
+    EXPECT_TRUE(buildings().empty());
+
+    // And the next press is an ordinary one again.
+    clickAt(target, MouseButton::Left);
+
+    EXPECT_TRUE(paths.has(target));
 }

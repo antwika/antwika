@@ -3,12 +3,10 @@
 #include <optional>
 #include <string>
 
-#include <antwika/i18n/MessageId.hpp>
+#include "antwika/ui_demo/MessageId.hpp"
 
 namespace antwika::ui_demo
 {
-
-    using antwika::i18n::MessageId;
 
     /**
      * @brief What the demo last said about what happened, before words.
@@ -33,7 +31,7 @@ namespace antwika::ui_demo
         /**
          * @brief Which message this is.
          */
-        MessageId id{MessageId::UiDemoCancelled};
+        MessageId id{MessageId::Cancelled};
 
         /**
          * @brief The `{0}` argument as a plain datum, if it is one.

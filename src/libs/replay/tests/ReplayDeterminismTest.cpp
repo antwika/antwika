@@ -200,6 +200,55 @@ TEST(
     EXPECT_EQ(firstSerialization.str(), secondSerialization.str());
 }
 
+// A file written by an older build reproduces the same run.
+// The two shapes are one recording written two ways.
+// A whole document is read as a header and its records.
+// Exactly as a JSON Lines file is.
+// So a replay of either reaches the state the live run reached.
+TEST(
+    ReplayDeterminismTest,
+    AWholeDocumentReplayReproducesWhatJsonLinesDoes)
+{
+    constexpr antwika::time::Tick maxTicks = 10;
+    const std::vector<TickEvent> scriptedLiveEvents{
+        TickEvent{
+            .tick = 1,
+            .event = Event{
+                .name = "game.score_increment",
+                .payload = "amount=5",
+            },
+        },
+        TickEvent{
+            .tick = 2,
+            .event = Event{.name = antwika::engine::events::kStop},
+        },
+    };
+
+    TickEventRecorder liveRecording;
+    const auto liveStateHash =
+        runScriptedTicks(scriptedLiveEvents, liveRecording, maxTicks);
+
+    // Written out by hand rather than by this build.
+    // Which has no way to produce the shape any more.
+    // A migration is all that stands between a build and a saved file.
+    std::stringstream wholeDocument(
+        R"({"magic":"antwika-replay","version":1,"events":[)"
+        R"({"tick":1,"event":{"name":"game.score_increment",)"
+        R"("payload":"amount=5"}},)"
+        R"({"tick":2,"event":{"name":"engine.stop","payload":""}}]})");
+
+    const ReplayReader reader;
+    const auto loaded = reader.read(wholeDocument);
+    EXPECT_EQ(loaded, scriptedLiveEvents);
+
+    TickEventRecorder replayedRecording;
+    const auto replayedStateHash =
+        runScriptedTicks(loaded, replayedRecording, maxTicks);
+
+    EXPECT_EQ(replayedStateHash, liveStateHash);
+    EXPECT_EQ(replayedRecording.getEvents(), liveRecording.getEvents());
+}
+
 // A genuinely live run has no pre-known input script.
 // Unlike this suite's stand-ins, it has nothing to hand `--record`.
 // The recorder's full history is all there is to build replay input from.

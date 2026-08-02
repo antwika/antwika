@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstddef>
 #include <cstdint>
 #include <optional>
 #include <string>
@@ -37,10 +38,10 @@ namespace antwika::task_worker
 
     /**
      * @brief A task's full status for human-readable reporting: its
-     * identity, priority, lifecycle stage, however many ticks are left
-     * (its full requested duration while Pending, the live countdown
-     * while Running, zero once Completed), and the task it depends on,
-     * if any.
+     * identity, priority, lifecycle stage, the duration it was submitted
+     * with, however many ticks are left (its full requested duration
+     * while Pending, the live countdown while Running, zero once
+     * Completed), and the task it depends on, if any.
      */
     struct TaskInfo
     {
@@ -48,10 +49,31 @@ namespace antwika::task_worker
         std::string label;
         antwika::scheduler::Priority priority;
         TaskStatus status;
+
+        // Kept beside the countdown rather than derived from it.
+        // Running, remainingTicks is all that is left of the number.
+        // How far through a task is needs both to be worked out.
+        antwika::time::Tick durationTicks;
         antwika::time::Tick remainingTicks;
         std::optional<TaskDependency> dependsOn;
 
         bool operator==(const TaskInfo &other) const = default;
+    };
+
+    /**
+     * @brief What the last dispatch was allowed to start, and did.
+     *
+     * The budget is the idle-worker count antwika::scheduler::Scheduler
+     * was run with, which is the one number that decides how many jobs
+     * move at all -- and the one thing about a tick's dispatch that no
+     * task carries afterwards.
+     */
+    struct DispatchInfo
+    {
+        std::size_t budget{0};
+        std::size_t dispatched{0};
+
+        bool operator==(const DispatchInfo &other) const = default;
     };
 
     /**
@@ -118,16 +140,36 @@ namespace antwika::task_worker
         void markCompleted(std::uint64_t taskId);
 
         /**
+         * @brief Record what one tick's dispatch was allowed to start.
+         * @param budget The idle-worker count the job scheduler was run
+         * with.
+         * @param dispatched How many jobs that call actually started.
+         *
+         * Observed here rather than worked out from the task list,
+         * which cannot say how much of a budget went unspent: a tick
+         * with two idle workers and one ready job looks exactly like a
+         * tick with one of each once it is over.
+         */
+        void noteDispatch(std::size_t budget, std::size_t dispatched);
+
+        /**
          * @brief Get every submitted task's current status.
          * @return Tasks in submission (ascending JobId) order.
          */
         [[nodiscard]] const std::vector<TaskInfo> &allTasks() const noexcept;
+
+        /**
+         * @brief Get the last dispatch this registry was told about.
+         * @return That dispatch, or a zero budget before the first one.
+         */
+        [[nodiscard]] DispatchInfo lastDispatch() const noexcept;
 
     private:
         [[nodiscard]] TaskInfo *findByTaskId(std::uint64_t taskId);
 
         // Indexed by rawValue(jobId) - 1.
         std::vector<TaskInfo> entries;
+        DispatchInfo dispatch;
     };
 
 } // namespace antwika::task_worker

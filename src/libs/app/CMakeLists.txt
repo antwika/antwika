@@ -8,11 +8,13 @@ antwika_add_library(
         src/AssetPath.cpp
         src/ConsoleLogging.cpp
         src/FramePacedSource.cpp
+        src/FullscreenToggleSource.cpp
         src/PngFile.cpp
         src/PointerReading.cpp
         src/RunGuarded.cpp
         src/RunRecorded.cpp
         src/WavFile.cpp
+        src/WindowPointerMapping.cpp
     DEPENDS
         antwika::animation
         antwika::cli

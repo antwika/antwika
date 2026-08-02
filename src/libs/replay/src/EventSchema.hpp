@@ -4,9 +4,13 @@
 
 /**
  * @file
- * @brief The JSON Schema fragment describing a single tick event's
- * shape, nested as the "items" of the whole-replay document schema
- * (ReplayJson.cpp).
+ * @brief The JSON Schema describing a single tick event's shape, which
+ * is one record of a replay (ReplayJson.cpp).
+ *
+ * It was the "items" of the whole-replay document schema before, and it
+ * is a schema in its own right now that a record is a line in its own
+ * right. The shape is the same one either way, which is exactly what
+ * lets a version 1 document's array elements be read as records.
  */
 namespace antwika::replay::detail
 {
@@ -14,8 +18,8 @@ namespace antwika::replay::detail
     /**
      * @brief Get the {type, required, properties} shape of an encoded
      * TickEvent, without a top-level "$schema"/"title".
-     * @return A JSON Schema fragment, for nesting inside a larger
-     * schema's "items"/"properties".
+     * @return A JSON Schema, usable on its own or nested inside a
+     * larger schema's "items"/"properties".
      *
      * "tick" carries a "minimum": 0 constraint, but no matching
      * maximum -- json-schema-validator itself mishandles "minimum" for

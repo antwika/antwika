@@ -8,21 +8,21 @@
 #include <antwika/gfx/Rect.hpp>
 #include <antwika/gfx/Size.hpp>
 #include <antwika/i18n/Locale.hpp>
-#include <antwika/i18n/MessageId.hpp>
-#include <antwika/i18n/Translator.hpp>
 #include <antwika/ui/Pointer.hpp>
 
 #include "antwika/atlas_editor/Canvas.hpp"
 #include "antwika/atlas_editor/EditorState.hpp"
 #include "antwika/atlas_editor/EditorUi.hpp"
+#include "antwika/atlas_editor/MessageId.hpp"
+#include "antwika/atlas_editor/Messages.hpp"
 #include "antwika/atlas_editor/TileGrid.hpp"
 #include "antwika/atlas_editor/Tool.hpp"
 
 using antwika::atlas_editor::Canvas;
 using antwika::atlas_editor::describeEditor;
 using antwika::atlas_editor::EditorState;
+using antwika::atlas_editor::MessageId;
 using antwika::atlas_editor::statusLine;
-using antwika::i18n::MessageId;
 using antwika::atlas_editor::TileGrid;
 using antwika::atlas_editor::Tool;
 using antwika::gfx::Point;
@@ -56,7 +56,7 @@ namespace
 
     // The locale is a constant of the build, so a test may name one.
     // Every case here asserts the English bar's own layout.
-    constexpr antwika::i18n::Translator kTranslator{
+    constexpr antwika::atlas_editor::Translator kTranslator{
         antwika::i18n::kDefaultLocale};
 
     // Press the middle of the widget's own rectangle.
@@ -205,7 +205,7 @@ TEST(StatusLineTest, StatusLine_SaysWhenThereIsSomethingToSave)
     state.applyAt(Point{
         .x = state.view().pan.x + 1, .y = state.view().pan.y + 1});
     state.setStatus(
-        {.id = MessageId::AtlasSaveFailed,
+        {.id = MessageId::SaveFailed,
          .detail = "nowhere to write"});
 
     const std::string line = statusLine(state, kTranslator);
@@ -220,12 +220,12 @@ TEST(StatusLineTest, StatusLine_SaysWhenThereIsSomethingToSave)
 // It is a path or a failure's own words, which is a diagnostic.
 TEST(StatusLineTest, StatusLine_IsWordedByWhicheverTranslatorItIsGiven)
 {
-    constexpr antwika::i18n::Translator swedish{
+    constexpr antwika::atlas_editor::Translator swedish{
         antwika::i18n::Locale::Swedish};
 
     EditorState state = opened();
     state.setStatus(
-        {.id = MessageId::AtlasSaveFailed,
+        {.id = MessageId::SaveFailed,
          .detail = "nowhere to write"});
 
     const std::string line = statusLine(state, swedish);
@@ -241,7 +241,7 @@ TEST(StatusLineTest, StatusLine_IsWordedByWhicheverTranslatorItIsGiven)
 // This is what would go wrong if it were not.
 TEST(EditorUiTest, DescribeEditor_LaysTheBarOutFromTheWordsItIsGiven)
 {
-    constexpr antwika::i18n::Translator swedish{
+    constexpr antwika::atlas_editor::Translator swedish{
         antwika::i18n::Locale::Swedish};
 
     const EditorState state = opened();
