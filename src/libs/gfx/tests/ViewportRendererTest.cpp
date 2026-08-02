@@ -103,6 +103,23 @@ TEST(ViewportRendererTest, DrawText_ScalesTheOriginAndTheGlyphScale)
     view.drawText(Point{.x = 10, .y = 10}, "hi", 2, kInk);
 }
 
+// A window one and a half times the canvas: the scale is 3/2.
+// One glyph scale cannot honour that, so each glyph is anchored
+// on its own transformed cell instead of drifting off the grid.
+TEST(ViewportRendererTest, DrawText_AnchorsEachGlyphOnANonWholeScale)
+{
+    MockRenderer inner;
+    ViewportRenderer view(
+        inner, Size{.width = 150, .height = 75}, kCanvas);
+
+    EXPECT_CALL(
+        inner, drawText(Point{.x = 15, .y = 15}, "h", std::uint32_t{1}, kInk));
+    EXPECT_CALL(
+        inner, drawText(Point{.x = 24, .y = 15}, "i", std::uint32_t{1}, kInk));
+
+    view.drawText(Point{.x = 10, .y = 10}, "hi", 1, kInk);
+}
+
 TEST(ViewportRendererTest, DrawTexture_ScalesTheDestinationAndNotTheSource)
 {
     MockRenderer inner;
