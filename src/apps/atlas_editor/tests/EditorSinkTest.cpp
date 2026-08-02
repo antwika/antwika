@@ -258,6 +258,126 @@ TEST(EditorSinkTest, Handle_PaintsEveryPixelADragCrosses)
     EXPECT_EQ(session.state.edits(), 3U);
 }
 
+// A window system reports a fast stroke as a few long jumps.
+// A dot per event would leave every pixel between them bare.
+// So the whole segment is walked, and this is the case that says so.
+TEST(EditorSinkTest, Handle_PaintsTheWholeSegmentOfAJumpedDrag)
+{
+    Session session;
+    EditorSink sink(
+        session.state,
+        session.overlay,
+        session.store,
+        session.codec,
+        kTranslator);
+
+    sink.handle(inputAt(
+        1,
+        PointerButtonPressed{
+            .button = MouseButton::Left, .position = {.x = 100, .y = 300}},
+        session.codec));
+
+    // Six pixels away in one event, which is one report of a fast hand.
+    sink.handle(inputAt(
+        1,
+        PointerMoved{.position = {.x = 106, .y = 300}},
+        session.codec));
+
+    for (std::int32_t x = 100; x <= 106; ++x)
+    {
+        EXPECT_EQ(
+            session.state.image().at(Pixel{.x = x, .y = 300}),
+            defaultPalette().front())
+            << "the gap at x = " << x << " was left unpainted";
+    }
+
+    EXPECT_EQ(session.state.edits(), 7U);
+}
+
+// Down and to the left, so the walk runs backwards on both axes.
+// A stroke is a line rather than a straight run along one of them.
+TEST(EditorSinkTest, Handle_PaintsADiagonalJumpAsAConnectedLine)
+{
+    Session session;
+    EditorSink sink(
+        session.state,
+        session.overlay,
+        session.store,
+        session.codec,
+        kTranslator);
+
+    sink.handle(inputAt(
+        1,
+        PointerButtonPressed{
+            .button = MouseButton::Left, .position = {.x = 210, .y = 210}},
+        session.codec));
+    sink.handle(inputAt(
+        1,
+        PointerMoved{.position = {.x = 206, .y = 206}},
+        session.codec));
+
+    for (std::int32_t step = 0; step <= 4; ++step)
+    {
+        EXPECT_EQ(
+            session.state.image().at(
+                Pixel{.x = 210 - step, .y = 210 - step}),
+            defaultPalette().front());
+    }
+
+    EXPECT_EQ(session.state.edits(), 5U);
+}
+
+// The right button erases along the same walk as the left paints.
+// One loop drives both, which is what keeps them from drifting.
+TEST(EditorSinkTest, Handle_ErasesTheWholeSegmentOfAJumpedDrag)
+{
+    Session session;
+    EditorSink sink(
+        session.state,
+        session.overlay,
+        session.store,
+        session.codec,
+        kTranslator);
+
+    // Painted first, since erasing transparent pixels is no change.
+    sink.handle(inputAt(
+        1,
+        PointerButtonPressed{
+            .button = MouseButton::Left, .position = {.x = 400, .y = 200}},
+        session.codec));
+    sink.handle(inputAt(
+        1,
+        PointerMoved{.position = {.x = 400, .y = 205}},
+        session.codec));
+    sink.handle(inputAt(
+        2,
+        PointerButtonReleased{
+            .button = MouseButton::Left, .position = {.x = 400, .y = 205}},
+        session.codec));
+
+    ASSERT_EQ(session.state.edits(), 6U);
+
+    sink.handle(inputAt(
+        3,
+        PointerButtonPressed{
+            .button = MouseButton::Right,
+            .position = {.x = 400, .y = 205}},
+        session.codec));
+    sink.handle(inputAt(
+        3,
+        PointerMoved{.position = {.x = 400, .y = 200}},
+        session.codec));
+
+    for (std::int32_t y = 200; y <= 205; ++y)
+    {
+        EXPECT_EQ(
+            session.state.image().at(Pixel{.x = 400, .y = y}), kClear)
+            << "the gap at y = " << y << " was left painted";
+    }
+
+    EXPECT_EQ(session.state.edits(), 12U);
+}
+
 TEST(EditorSinkTest, Handle_ErasesUnderTheRightButton)
 {
     Session session;

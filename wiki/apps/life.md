@@ -38,6 +38,7 @@ Both the windowed and the headless run are paced through `TickPacer`, since a ru
 **Where a cell is drawn and which cell a click lands in are one function.**
 `layoutFor()` and `cellAt()` in `BoardLayout.hpp` are shared by `BoardScene` and `PointerToggleSink`, so the two cannot drift.
 That mapping is against the *configured* window size rather than the size a window reports, and the window is not resizable, which is what keeps a recorded session landing on the same cells under a different backend.
+`RenderSystem` reads the same `configuredSize()` as `PointerToggleSink` does, since one function taking two different sizes is two functions: a window manager that hands back a size of its own choosing -- which a tiling one routinely does -- would otherwise draw the board at one scale and hit-test it at another, and every click would land on the wrong cell.
 
 **The sink keeps its own note of what the current tick staged.**
 `PointerToggleSink` toggles a cell at most once per drag, and the `World` hands out the *committed* board, which would otherwise let two drags over one cell in a tick collapse into a single toggle.

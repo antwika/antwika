@@ -26,16 +26,24 @@ namespace antwika::atlas_editor
 
     void RenderSink::uploadIfChanged()
     {
-        // An optional rather than a count starting at zero.
-        // A canvas nobody has edited is at revision zero too.
+        // The loads are half the key, and not decoration.
+        // replace() installs a new canvas, which begins at revision 0.
+        // A load with nothing painted yet moves the revision 0 to 0.
+        // The picture would then go on showing the sheet that is gone.
+        const UploadKey key{
+            .revision = state.image().revision(),
+            .loads = state.loads()};
+
+        // An optional rather than a key starting at zero.
+        // A canvas nobody has edited or loaded is that key too.
         // A run would then draw its first frame with no sheet in it.
-        if (uploaded == state.image().revision())
+        if (uploaded == key)
         {
             return;
         }
 
         sheet = window.renderer().createTexture(state.image().bitmap());
-        uploaded = state.image().revision();
+        uploaded = key;
     }
 
     void RenderSink::handle(const TickEvent &event)

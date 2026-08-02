@@ -36,11 +36,21 @@ namespace antwika::atlas_editor
      *
      * **The uploaded texture is the one piece of render-side state
      * here**, and it is safe for one reason: it is a copy of the canvas
-     * taken when the canvas's revision changed, so it can only ever be
-     * the sheet or a slightly older sheet, and nothing reads it back.
+     * taken when the canvas last changed, so it can only ever be the
+     * sheet or a slightly older sheet, and nothing reads it back.
      * A pixel is not re-uploaded per edit either -- a stroke that paints
      * one pixel ten times leaves the revision alone, since Canvas::set
      * calls writing the colour already there no change at all.
+     *
+     * **What "changed" means is the revision *and* the count of loads**,
+     * and the second half is not decoration. EditorState::replace()
+     * installs a whole new Canvas, which begins at revision zero -- so a
+     * load on a session that has painted nothing moves the revision from
+     * zero to zero, and a key made of the revision alone would skip the
+     * upload and go on drawing the sheet that is no longer open.
+     * Picking up a file something else changed is most of why anybody
+     * presses load with nothing unsaved, which is exactly the case that
+     * would have lied.
      */
     class RenderSink final : public ITickEventSink
     {
@@ -82,6 +92,17 @@ namespace antwika::atlas_editor
         void handle(const TickEvent &event) override;
 
     private:
+        // Which sheet the texture in hand was made from.
+        // Two numbers rather than one, for the reason above.
+        struct UploadKey final
+        {
+            std::uint64_t revision = 0;
+            std::uint32_t loads = 0;
+
+            [[nodiscard]] bool operator==(const UploadKey &other) const
+                = default;
+        };
+
         void uploadIfChanged();
 
         IWindow &window;
@@ -92,7 +113,7 @@ namespace antwika::atlas_editor
         std::chrono::milliseconds framePeriod;
 
         std::unique_ptr<ITexture> sheet;
-        std::optional<std::uint64_t> uploaded;
+        std::optional<UploadKey> uploaded;
     };
 
 } // namespace antwika::atlas_editor

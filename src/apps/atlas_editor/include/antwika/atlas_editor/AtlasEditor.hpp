@@ -34,11 +34,17 @@ namespace antwika::atlas_editor
      * image to open.
      *
      * The game's own atlas, since that is the sheet this editor exists
-     * to serve: eight columns by four rows of 128 by 64 tiles, as
+     * to serve: eight columns by five rows of 128 by 64 tiles, as
      * wiki/apps/game-texture-atlas.md sets out.
+     *
+     * **This number is the game's contract rather than a taste**:
+     * game::requireAtlasSize() refuses any other size at startup, so a
+     * sheet started blank here and saved has to be exactly this or the
+     * game will not open it. A row added to game::kAtlasRows is a change
+     * here too, and DefaultSheetSizeTest is what says so out loud.
      */
     inline constexpr Size kDefaultSheetSize{
-        .width = 1024, .height = 256};
+        .width = 1024, .height = 320};
 
     /**
      * @brief What one session leaves behind, for a caller or a test.

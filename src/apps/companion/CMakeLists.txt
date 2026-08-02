@@ -13,6 +13,8 @@ add_executable(antwika_companion
     src/PetSink.cpp
     src/PetSnapshot.cpp
     src/PropSink.cpp
+    src/RestoreSink.cpp
+    src/RestoreSource.cpp
     src/RenderSink.cpp
     src/ReviveSink.cpp
     src/main.cpp

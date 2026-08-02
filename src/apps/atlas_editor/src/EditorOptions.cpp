@@ -33,7 +33,7 @@ namespace antwika::atlas_editor
                 .name = kSheetFlag,
                 .valueName = "<w>x<h>",
                 .help = "How big a blank sheet to open (default "
-                        "1024x256)."},
+                        "1024x320)."},
             antwika::cli::FlagSpec{
                 .name = kTileFlag,
                 .valueName = "<w>x<h>",

@@ -518,10 +518,17 @@ A building unstaffed for a thousand ticks therefore owes nobody a thousand walke
 That is fine for a loop whose body is independent per entity and it is not fine for splitting a limited amount, which is exactly what this is.
 **No tie-break is needed at all**, because `BuildingIndex` refuses a second building on an occupied cell: two workplaces cannot share an origin, so the key is unique by construction rather than by a rule written beside it.
 
+**`kWalkerLimit` is the third limited amount, and `SpawnSystem` splits it the same way.**
+Sixty-four walkers between however many buildings want to send one is exactly the shape labour has, and the system used to hand the last free slots to whichever buildings a view happened to visit first.
+A live run and its own replay still agreed -- a view's order is reproducible for a given history -- so only *restore-order invariance* broke, and only at the cap: one save loaded twice with its buildings in two different array orders could disagree about which building sent the last walker.
+It now collects its senders into a `std::map<Cell, Entity>` and walks that, with no tie-break needed for `BuildingIndex`'s reason, exactly as labour and the markets do.
+
 **`AllocationOrderTest` is what would catch a regression there, and nothing in the tree before it would have.**
 It restores one city twice through `SessionStore`, with the buildings in two different array orders, runs both for the same number of ticks and compares what they came to.
 Restoring rather than clicking is deliberate: `restoreCityGrid()` creates entities in the order the array holds them, so the array order is exactly the variable being changed — clicking the same city together would move the tick each building was placed on as well, and every countdown with it.
 The one member it sorts before comparing is `GameSummary::buildings`, which lists what is standing in the world's own order and *is* therefore the creation order; sorting it turns the comparison into "the same things, wherever they were listed", which is the claim being made.
+It runs a second city for the walker cap: ninety-six wells, each one cell with a road beside it and a saved `ticksUntilSpawn` of nothing, so every one of them asks on the very first tick and a third of them have to be turned down.
+The city is asserted to be genuinely at the cap first, for the reason the first one is asserted to be genuinely short of people: two runs that both sent everybody would agree for the wrong reason.
 
 **Immigration is per house and takes from nothing anybody else takes from**, so it reads `ecs::View` directly and no order over the houses is observable.
 There is no shared migrant pool in this round, deliberately: a pool would be a second contended allocation, and one is enough to get right.
