@@ -19,6 +19,8 @@
 #include "antwika/game/Footprint.hpp"
 #include "antwika/game/Path.hpp"
 #include "antwika/game/PathIndex.hpp"
+#include "antwika/game/Household.hpp"
+#include "antwika/game/HousingLevel.hpp"
 #include "antwika/game/Production.hpp"
 #include "antwika/game/Walker.hpp"
 
@@ -39,6 +41,8 @@ namespace
     using antwika::game::Direction;
     using antwika::game::Errand;
     using antwika::game::ErrandLeg;
+    using antwika::game::Household;
+    using antwika::game::HousingLevel;
     using antwika::game::Production;
     using antwika::game::Resource;
     using antwika::game::Path;
@@ -492,6 +496,56 @@ namespace
 
         expectMemberCompared(
             base, [](StoredBuilding &b) { b.production.reset(); });
+    }
+
+    TEST_F(CityGridTest, StoredBuildingEqualityComparesItsHousehold)
+    {
+        StoredBuilding base{.at = Cell{1, 1}, .building = Building{}};
+        base.household = Household{.level = HousingLevel::Hovel};
+
+        expectMemberCompared(
+            base, [](StoredBuilding &b) { b.household.reset(); });
+        expectMemberCompared(
+            base,
+            [](StoredBuilding &b)
+            { b.household->level = HousingLevel::Tent; });
+    }
+
+    // A district built up over a run is not lost to the world map.
+    // And the countdowns come along for every other one's reason.
+    TEST_F(CityGridTest, CityGrid_CarriesAHouseholdAcrossACitySwitch)
+    {
+        const auto house = putUp(Cell{2, 2}, BuildingKind::House);
+        const auto well = putUp(Cell{6, 6}, BuildingKind::Well);
+        antwika::game::setHousehold(
+            world,
+            house,
+            Household{
+                .level = HousingLevel::Hovel,
+                .ticksUntilEvolve = 12,
+                .ticksUntilDevolve = 34,
+                .population = 7});
+        world.commit();
+        EXPECT_TRUE(world.alive(well));
+
+        const auto grid = cityGridOf(world);
+
+        ASSERT_EQ(grid.buildings.size(), 2U);
+        ASSERT_TRUE(grid.buildings[0].household.has_value());
+        EXPECT_EQ(grid.buildings[0].household->level, HousingLevel::Hovel);
+        EXPECT_EQ(grid.buildings[0].household->ticksUntilEvolve, 12);
+        EXPECT_EQ(grid.buildings[0].household->ticksUntilDevolve, 34);
+        EXPECT_EQ(grid.buildings[0].household->population, 7);
+        EXPECT_FALSE(grid.buildings[1].household.has_value());
+
+        restoreCityGrid(world, built, paths, grid);
+        world.commit();
+
+        const auto taken = cityGridOf(world);
+
+        ASSERT_EQ(taken.buildings.size(), 2U);
+        EXPECT_EQ(taken.buildings[0].household, grid.buildings[0].household);
+        EXPECT_FALSE(taken.buildings[1].household.has_value());
     }
 
 

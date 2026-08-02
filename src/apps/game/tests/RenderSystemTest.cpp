@@ -367,9 +367,9 @@ TEST_F(RenderSystemTest, Update_WritesAReadoutForWhatTheHintIsOver)
 
     RenderSystem system(setup());
 
-    // Its name and one line per resource it may hold.
+    // Its name, its housing tier, and one line per resource it holds.
     EXPECT_CALL(renderer, drawText(_, _, _, _))
-        .Times(1 + static_cast<int>(antwika::game::kResourceCount));
+        .Times(2 + static_cast<int>(antwika::game::kResourceCount));
 
     system.update(world, 0);
 }

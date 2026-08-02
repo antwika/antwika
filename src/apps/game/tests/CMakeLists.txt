@@ -21,6 +21,9 @@ add_executable(antwika_game_tests
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/GridSink.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/HaulingSystem.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/Homing.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/Household.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/HousingQuery.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/HousingSystem.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/Hover.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/InputFold.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/MainMenuScene.cpp
@@ -43,6 +46,7 @@ add_executable(antwika_game_tests
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/SaveCoverage.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/SaveGame.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/SaveGameFile.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/SaveHousing.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/SaveDirectory.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/SaveLoadScene.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/SaveLoadSink.cpp
@@ -91,6 +95,9 @@ add_executable(antwika_game_tests
     GridSceneTest.cpp
     GridSinkTest.cpp
     HomingTest.cpp
+    HousingLevelTest.cpp
+    HousingQueryTest.cpp
+    HousingSystemTest.cpp
     HoverTest.cpp
     InputFoldTest.cpp
     KeyTextTest.cpp

@@ -12,6 +12,7 @@
 #include "antwika/game/Cell.hpp"
 #include "antwika/game/Coverage.hpp"
 #include "antwika/game/Errand.hpp"
+#include "antwika/game/Household.hpp"
 #include "antwika/game/PathIndex.hpp"
 #include "antwika/game/Production.hpp"
 #include "antwika/game/Walker.hpp"
@@ -134,6 +135,24 @@ namespace antwika::game
          * producers finish in lockstep from then on.
          */
         std::optional<Production> production = std::nullopt;
+
+        /**
+         * @brief Who lives there and how close it is to a change.
+         *
+         * Carried across for the reason every countdown here is: a city
+         * reopened with its housing countdowns reset is a city whose
+         * houses grow and shrink in lockstep from then on -- and one
+         * reopened with its *levels* reset is a district somebody spent
+         * a run building up and lost by looking at the world map.
+         *
+         * Optional rather than a plain value, unlike the coverage above
+         * it: an absent Household and a default one do mean the same
+         * thing, but a house on the bottom level with fresh countdowns
+         * is a state HousingSystem writes back, so keeping the optional
+         * is what makes a reopened city hold exactly the components the
+         * closed one held.
+         */
+        std::optional<Household> household = std::nullopt;
 
         /**
          * @brief Compare two stored buildings.

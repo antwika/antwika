@@ -14,6 +14,7 @@
 #include "antwika/game/Cell.hpp"
 #include "antwika/game/Direction.hpp"
 #include "antwika/game/GridExtent.hpp"
+#include "antwika/game/HousingLevel.hpp"
 #include "antwika/game/PathIndex.hpp"
 #include "antwika/game/Resource.hpp"
 #include "antwika/game/RoadPlan.hpp"
@@ -128,9 +129,25 @@ namespace antwika::game
         std::array<std::int32_t, kServiceCount> coverage{};
 
         /**
+         * @brief How well the household living here lives.
+         *
+         * **On the view rather than only on the sprite, for the reason
+         * coverage is.** A level is what the whole city is arranged to
+         * raise, and it is a pure function of coverage, stock and
+         * desirability -- all of which a replay regenerates -- so a run
+         * and its replay disagreeing about it is a divergence, and
+         * GameSummary is where a divergence is caught.
+         *
+         * HousingLevel::Tent for a building with no household, which
+         * includes every kind nobody lives in.
+         */
+        HousingLevel level = HousingLevel::Tent;
+
+        /**
          * @brief Compare two building views.
          * @param other The view to compare against.
-         * @return True when the cell, the kind and the coverage match.
+         * @return True when the cell, the kind, the coverage and the
+         * level match.
          */
         [[nodiscard]] bool operator==(
             const BuildingView &other) const = default;
@@ -164,6 +181,18 @@ namespace antwika::game
          * back into the World for it -- the same reason stock is here.
          */
         std::array<std::int32_t, kServiceCount> coverage{};
+
+        /**
+         * @brief How well the household living here lives.
+         *
+         * A copy of the view's, so the hover panel can name the tier
+         * without reaching back into the World for it -- the same reason
+         * stock and coverage are here.
+         * Once there is art per tier this is also what GridScene picks a
+         * slot by; until then a house of any level draws the house slot,
+         * and the level shows only in the panel.
+         */
+        HousingLevel level = HousingLevel::Tent;
 
         /**
          * @brief Compare two building sprites.

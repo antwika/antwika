@@ -409,6 +409,16 @@ namespace antwika::i18n
             return "GameServiceStructure";
         case MessageId::GameReadoutCoverage:
             return "GameReadoutCoverage";
+        case MessageId::GameHousingTent:
+            return "GameHousingTent";
+        case MessageId::GameHousingShack:
+            return "GameHousingShack";
+        case MessageId::GameHousingHovel:
+            return "GameHousingHovel";
+        case MessageId::GameHousingCottage:
+            return "GameHousingCottage";
+        case MessageId::GameReadoutLevel:
+            return "GameReadoutLevel";
         case MessageId::TaskWorkerTick:
             return "TaskWorkerTick";
         case MessageId::TaskWorkerBudget:

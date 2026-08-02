@@ -148,6 +148,29 @@ namespace antwika::game
     void coverageFromJson(const nlohmann::json &document, SaveGame &save);
 
     /**
+     * @brief Add the household member to a building's shape.
+     * @param building The building shape to extend.
+     */
+    void describeHousing(nlohmann::json &building);
+
+    /**
+     * @brief Write every building's household into the document.
+     * @param save The state to read.
+     * @param document The document whose buildings array to extend.
+     */
+    void housingToJson(const SaveGame &save, nlohmann::json &document);
+
+    /**
+     * @brief Read every building's household out of the document.
+     * @param document The validated document to read.
+     * @param save The state whose buildings to fill in; already sized by
+     * buildingsFromJson().
+     * @throws SaveFormatError If a household names a level this build
+     * does not have.
+     */
+    void housingFromJson(const nlohmann::json &document, SaveGame &save);
+
+    /**
      * @brief Add a walker's errand to a walker's shape.
      * @param walker The shape to extend.
      */

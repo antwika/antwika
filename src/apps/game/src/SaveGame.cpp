@@ -16,6 +16,7 @@
 #include "antwika/game/Building.hpp"
 #include "antwika/game/Coverage.hpp"
 #include "antwika/game/Errand.hpp"
+#include "antwika/game/Household.hpp"
 #include "antwika/game/Production.hpp"
 #include "antwika/game/SaveFormatError.hpp"
 #include "antwika/game/Walker.hpp"
@@ -126,6 +127,7 @@ namespace antwika::game
             // See SaveSections.hpp.
             auto building = buildingShape();
             describeCoverage(building);
+            describeHousing(building);
             schema["properties"]["buildings"] = arrayOf(std::move(building));
             schema["properties"]["seed"] = countShape();
             return schema;
@@ -161,6 +163,7 @@ namespace antwika::game
         walkersToJson(save, encoded);
         buildingsToJson(save, encoded);
         coverageToJson(save, encoded);
+        housingToJson(save, encoded);
         productionToJson(save, encoded);
 
         encoded["seed"] = save.seed;
@@ -206,6 +209,7 @@ namespace antwika::game
         walkersFromJson(document, save);
         buildingsFromJson(document, save);
         coverageFromJson(document, save);
+        housingFromJson(document, save);
         productionFromJson(document, save);
 
         save.seed = document.at("seed").get<std::uint64_t>();
@@ -283,6 +287,15 @@ namespace antwika::game
                 countdown = world.get<Production>(entity).ticksUntilOutput;
             }
 
+            // Written only where there is one, for coverage's reason.
+            // An absent component and a default one say one thing.
+            std::optional<Household> household;
+
+            if (world.has<Household>(entity))
+            {
+                household = world.get<Household>(entity);
+            }
+
             // The branches left on the excluded line are that pad.
             // push_back destroying the temporary it was handed.
             // Reachable only if the vector's allocation throws.
@@ -298,7 +311,8 @@ namespace antwika::game
                 .ticksUntilRisk = building.ticksUntilRisk,
                 .walkers = {},
                 .coverage = coverage.ticksLeft,
-                .ticksUntilOutput = countdown});
+                .ticksUntilOutput = countdown,
+                .household = household});
         }
 
         // The errands' destinations, once every building is indexed.

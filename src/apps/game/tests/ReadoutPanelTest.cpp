@@ -12,6 +12,7 @@
 #include "antwika/game/BuildingKind.hpp"
 #include "antwika/game/Cell.hpp"
 #include "antwika/game/Coverage.hpp"
+#include "antwika/game/HousingLevel.hpp"
 #include "antwika/game/ReadoutPanel.hpp"
 #include "antwika/game/Resource.hpp"
 #include "antwika/game/ResourceBar.hpp"
@@ -76,11 +77,12 @@ TEST(ReadoutPanelTest, Panel_NamesABuildingAndListsWhatItDependsOn)
         kCanvas,
         kTranslator);
 
-    ASSERT_EQ(panel.lines.size(), 4U);
+    ASSERT_EQ(panel.lines.size(), 5U);
     EXPECT_EQ(panel.lines[0].text, "house");
-    EXPECT_EQ(panel.lines[1].text, "food 12/100");
-    EXPECT_EQ(panel.lines[2].text, "clay 34/100");
-    EXPECT_EQ(panel.lines[3].text, "pottery 56/100");
+    EXPECT_EQ(panel.lines[1].text, "level: tent");
+    EXPECT_EQ(panel.lines[2].text, "food 12/100");
+    EXPECT_EQ(panel.lines[3].text, "clay 34/100");
+    EXPECT_EQ(panel.lines[4].text, "pottery 56/100");
     EXPECT_EQ(kStockCapacity, 100);
 }
 
@@ -143,11 +145,12 @@ TEST(ReadoutPanelTest, Panel_ColoursALineAsTheBarThatCountsTheSameThing)
         kCanvas,
         kTranslator);
 
-    ASSERT_EQ(panel.lines.size(), 4U);
+    ASSERT_EQ(panel.lines.size(), 5U);
     EXPECT_EQ(panel.lines[0].colour, kReadoutTitle);
-    EXPECT_EQ(panel.lines[1].colour, resourceColour(Resource::Food));
-    EXPECT_EQ(panel.lines[2].colour, resourceColour(Resource::Clay));
-    EXPECT_EQ(panel.lines[3].colour, resourceColour(Resource::Pottery));
+    EXPECT_EQ(panel.lines[1].colour, kReadoutTitle);
+    EXPECT_EQ(panel.lines[2].colour, resourceColour(Resource::Food));
+    EXPECT_EQ(panel.lines[3].colour, resourceColour(Resource::Clay));
+    EXPECT_EQ(panel.lines[4].colour, resourceColour(Resource::Pottery));
 }
 
 TEST(ReadoutPanelTest, Panel_HoldsEveryLineInsideItsOwnBox)
@@ -277,6 +280,23 @@ TEST(ReadoutPanelTest, Panel_ListsEveryServiceThatStillReachesABuilding)
     EXPECT_EQ(panel.lines[2].text, "safety 50%");
 }
 
+// The tier is named rather than numbered.
+// "level: 2" would be a number a reader has to look up.
+TEST(ReadoutPanelTest, Panel_NamesTheTierAHouseIsOn)
+{
+    const auto panel = readoutPanel(
+        over(
+            BuildingSprite{
+                .at = Cell{},
+                .kind = BuildingKind::House,
+                .level = antwika::game::HousingLevel::Cottage}),
+        kCanvas,
+        kTranslator);
+
+    ASSERT_GE(panel.lines.size(), 2U);
+    EXPECT_EQ(panel.lines[1].text, "level: cottage");
+}
+
 // A service that has lapsed is not listed at all.
 // An absent line and a line reading nothing say one thing.
 TEST(ReadoutPanelTest, Panel_ListsNoServiceThatHasLapsed)
@@ -290,7 +310,7 @@ TEST(ReadoutPanelTest, Panel_ListsNoServiceThatHasLapsed)
         kCanvas,
         kTranslator);
 
-    ASSERT_EQ(panel.lines.size(), 4U);
+    ASSERT_EQ(panel.lines.size(), 5U);
     EXPECT_EQ(panel.lines[0].text, "house");
 }
 

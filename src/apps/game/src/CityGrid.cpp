@@ -63,13 +63,21 @@ namespace antwika::game
                 production = world.get<Production>(entity);
             }
 
+            std::optional<Household> household;
+
+            if (world.has<Household>(entity))
+            {
+                household = world.get<Household>(entity);
+            }
+
             grid.buildings.push_back(
                 StoredBuilding{
                     .at = world.get<Cell>(entity),
                     .building = building,
                     .walkers = {},
                     .coverage = coverageOf(world, entity),
-                    .production = production});
+                    .production = production,
+                    .household = household});
         }
 
         // The links, kept only where both ends were put away.
@@ -222,6 +230,14 @@ namespace antwika::game
             {
                 world.add<Production>(
                     buildings[index], *stored.production);
+            }
+
+            // Through the one writer, exactly as the coverage is.
+            // So World::add<Household> lives in one translation unit.
+            if (stored.household.has_value())
+            {
+                setHousehold(
+                    world, buildings[index], *stored.household);
             }
 
             (void)built.insert(stored.at, footprintOf(building.kind));

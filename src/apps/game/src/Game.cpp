@@ -20,6 +20,8 @@
 #include "antwika/game/DesirabilitySystem.hpp"
 #include "antwika/game/GridSink.hpp"
 #include "antwika/game/HaulingSystem.hpp"
+#include "antwika/game/HousingLevel.hpp"
+#include "antwika/game/HousingSystem.hpp"
 #include "antwika/game/InputFold.hpp"
 #include "antwika/game/LiveGrid.hpp"
 #include "antwika/game/MarketSystem.hpp"
@@ -189,6 +191,19 @@ namespace antwika::game
         const auto haulPhase = scheduler.createPhase("haul");
         scheduler.addSystem(haulPhase, pausedHauling);
         scheduler.addSystem(haulPhase, pausedMarkets);
+
+        // After the goods have moved and before anything is drawn.
+        // So a house is judged on the shelves this tick filled.
+        // The field it judges its ground by is the serve phase's.
+        // Which is this tick's too, two phases earlier.
+        // Both gates, in the order every other system takes them.
+        HousingSystem housingSystem(desirability);
+
+        SessionGatedSystem gatedHousing(housingSystem, mode);
+        PauseGatedSystem pausedHousing(gatedHousing, pause);
+
+        const auto settlePhase = scheduler.createPhase("settle");
+        scheduler.addSystem(settlePhase, pausedHousing);
 
         // A phase of its own.
         // A renderer then sees the generation this walk produced.
@@ -404,7 +419,8 @@ namespace antwika::game
         for (const auto &building : summary.buildings)
         {
             out << "  " << buildingKindName(building.kind) << " at ("
-                << building.at.x << ", " << building.at.y << ") covered";
+                << building.at.x << ", " << building.at.y << ") "
+                << housingLevelName(building.level) << " covered";
 
             // Every service, including the ones at zero.
             // A summary is read to find out what a run ended up like.
