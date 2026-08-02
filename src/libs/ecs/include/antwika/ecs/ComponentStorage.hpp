@@ -25,6 +25,25 @@ namespace antwika::ecs
      * Removal is a stable, order-preserving erase (an O(n) shift, not a
      * swap-and-pop), so entities()'s order never depends on unrelated
      * removal timing — a deliberate determinism-over-throughput choice.
+     *
+     * **The sparse array is indexed by raw entity value and never
+     * shrinks.** EntityManager hands out monotonically increasing
+     * values and reuses none, so this pool's memory is O(highest entity
+     * value ever inserted into it) rather than O(entities it currently
+     * holds): a long session churning short-lived entities grows every
+     * pool one of them touched, permanently, however few are live at
+     * any moment. That is the standing cost of never recycling an index
+     * — see EntityManager for why that is worth paying — and it is a
+     * `std::size_t` per index rather than a T, so it is the cheap half
+     * of the storage.
+     *
+     * Nothing in the tree has measured it as a problem, so nothing has
+     * been done about it. The escape hatch when something does is a
+     * paged sparse index — fixed-size pages allocated on first use,
+     * with an unused page left unallocated — which keeps indexOf() O(1)
+     * and costs one extra indirection. Reusing indices is not the
+     * escape hatch, because that is the decision EntityManager has
+     * already made the other way.
      */
     template <Component T>
     class ComponentStorage final

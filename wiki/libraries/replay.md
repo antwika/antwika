@@ -72,6 +72,14 @@ The newline that ends a record is its commit marker, so a final line without one
 
 `MigrationChain` applies single-step migrations so the number of them stays linear in bumps rather than quadratic, and it is generic over an `nlohmann::json` and a version key — so a save file uses the same mechanism with its own list and its own current version.
 Chains are constructed and injected, never registered globally.
+A chain that cannot say what it does is refused when it is built rather than when somebody's file is being loaded: a migration that is not a single step, and two migrations reading the same version, both throw `SchemaVersionError` from the constructor — the lookup takes the first reader of a version and never looks further, so a second one would be applied by nothing and reported by nothing either.
+
+**A schema fragment states the bound its decode has.**
+`canvas.width` and `canvas.height` are described with `boundedCountShape(uint32 max)` rather than the unbounded `countShape()`, because they are decoded with `get<std::uint32_t>()` and nlohmann takes the low bytes of anything wider without a word — an unbounded shape let a hand-edited `4294967297` validate and read back as `1`.
+Tightening a constraint is normally a breaking change, but this one refuses only documents that never decoded to what they said in the first place, and the header schema is the one that cannot be bumped anyway — see [`docs/schema-versioning.md`](../../docs/schema-versioning.md).
+
+**`ReplaySource`'s constructor sort is for scripted event vectors, never for files.**
+A recording whose ticks go backwards is refused outright by `replayRecordsFromJson()`, since that is two runs interleaved or a hand edit that moved a line; the sort exists so a test or an app can hand `ReplaySource` a vector it built in whatever order it liked.
 
 See [`docs/schema-versioning.md`](../../docs/schema-versioning.md) for what counts as a breaking change.
 

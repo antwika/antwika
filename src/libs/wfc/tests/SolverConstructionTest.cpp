@@ -1,5 +1,7 @@
 #include <antwika/wfc/Solver.hpp>
 
+#include <string>
+#include <utility>
 #include <vector>
 
 #include <gtest/gtest.h>
@@ -40,6 +42,32 @@ TEST(SolverConstructionTest, OutOfRangeConstraintCellIndexThrows)
 
     EXPECT_THROW(
         { Solver solver(wave, {std::cref(outOfRange)}); }, WfcError);
+}
+
+// Domain is public and mutable, so a caller really can build this.
+// It used to reach the end of a solve and throw about a singleton.
+// Which read as an internal bug rather than as the input it is.
+TEST(SolverConstructionTest, AnEmptyInitialDomainThrows)
+{
+    Domain empty(3);
+    empty.remove(0);
+    empty.remove(1);
+    empty.remove(2);
+    ASSERT_TRUE(empty.isEmpty());
+
+    std::vector<Domain> wave{Domain(3), std::move(empty)};
+
+    try
+    {
+        Solver solver(wave, {});
+        FAIL() << "expected a WfcError";
+    }
+    catch (const WfcError &error)
+    {
+        const std::string message = error.what();
+        EXPECT_NE(message.find("empty"), std::string::npos);
+        EXPECT_EQ(message.find("singleton"), std::string::npos);
+    }
 }
 
 TEST(SolverConstructionTest, MismatchedValueWeightsSizeThrows)

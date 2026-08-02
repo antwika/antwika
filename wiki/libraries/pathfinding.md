@@ -41,6 +41,12 @@ Expanding a node is the inner loop of the whole search, and it is the one place 
 `SearchOutcome::NoPath` is what a walled-off goal produces, because being unable to get somewhere is a normal fact about a map rather than a failure of the search.
 That leaves `PathfindingError` for things that are genuinely a caller's mistake.
 
+**`findPath(start, start)` reports the start alone even where the start is impassable.**
+The goal check happens when a node is popped, before `neighbours()` is ever asked, so the trivial route consults passability at no point — and cannot, since `IGraph` has no such concept and a `GridGraph`'s walls reach the search only as edges that are not offered.
+Searching *out of* an impassable start or *into* an impassable goal is `NoPath`, which makes the three look inconsistent taken together; the standing answer is that the search is being asked "how do I get from here to here", and "you are already there" is true whatever the cell is.
+A caller for which it is not — one asking whether a cell may be stood on — is asking `GridGraph` a passability question rather than the search a routing one.
+`GridSearchTest` pins all three.
+
 **The open set's ordering is total, and that is the only reason a replay may depend on a path.**
 It orders on estimated total cost, then remaining estimate, then ascending `NodeId`.
 The third key is what makes it total: no two entries ever compare equivalent, so the heap never gets to choose, and an equal-cost route resolves the same way on every run and every toolchain.

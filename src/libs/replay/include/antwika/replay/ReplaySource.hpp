@@ -27,8 +27,14 @@ namespace antwika::replay
      *
      * That rests on ITickEventSource's contract that ticks are asked for
      * once each and in increasing order. The constructor sorts, so a
-     * hand-authored file whose ticks are not in order still replays; what
+     * scripted vector of events built out of order still replays; what
      * it cannot survive is a *caller* going backwards.
+     *
+     * The sort serves those hand-constructed vectors alone, never a
+     * file: ReplayReader refuses a recording whose ticks go backwards
+     * outright, since that is two runs interleaved or a hand edit that
+     * moved a line, and sorting it back into shape would replay a
+     * session nobody ever had.
      *
      * Each event is handed out rather than copied, so a payload string is
      * moved out of the recording the one time it is asked for.

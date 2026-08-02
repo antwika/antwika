@@ -1,5 +1,7 @@
 #include <gtest/gtest.h>
 
+#include <cstdint>
+#include <limits>
 #include <string>
 #include <tuple>
 #include <vector>
@@ -105,6 +107,35 @@ TEST(ReplayJsonTest, HeaderThrowsWhenTheCanvasIsMalformed)
             {"magic", "antwika-replay"},
             {"canvas", nlohmann::json{{"width", 1024}}}}),
         ReplayFormatError);
+}
+
+// The decode is get<std::uint32_t>(), which narrows in silence.
+// So 4294967297 used to validate and read back as 1.
+// The schema states the bound instead of the decode checking after.
+TEST(ReplayJsonTest, HeaderThrowsWhenACanvasExtentIsWiderThanUint32)
+{
+    EXPECT_THROW(
+        std::ignore = readHeader(nlohmann::json{
+            {"magic", "antwika-replay"},
+            {"canvas",
+             nlohmann::json{
+                 {"width", std::int64_t{4294967297}}, {"height", 640}}}}),
+        ReplayFormatError);
+}
+
+// The largest a canvas may state is still read, unchanged.
+TEST(ReplayJsonTest, HeaderReadsACanvasExtentAtTheUint32Maximum)
+{
+    const ReplayHeader header = readHeader(nlohmann::json{
+        {"magic", "antwika-replay"},
+        {"canvas",
+         nlohmann::json{
+             {"width", std::numeric_limits<std::uint32_t>::max()},
+             {"height", 640}}}});
+
+    ASSERT_TRUE(header.canvas.has_value());
+    EXPECT_EQ(
+        header.canvas->width, std::numeric_limits<std::uint32_t>::max());
 }
 
 // A header holds the version and whatever else a run has to say.
