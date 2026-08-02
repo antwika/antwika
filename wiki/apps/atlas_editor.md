@@ -25,7 +25,10 @@ build/bin/antwika_atlas_editor/antwika_atlas_editor \
 The sheet somebody is most likely to open first is the game's own, and one stray click on `save` should not be able to replace the art with a half-finished experiment.
 Naming `--out` is how an artist says which file is theirs; without it the `save` button reports that there is nowhere to write to and changes nothing.
 
-Given no `--image`, the session starts on a blank, fully transparent sheet of `--sheet <w>x<h>`, which defaults to the game's own 1024x256.
+Given no `--image`, the session starts on a blank, fully transparent sheet of `--sheet <w>x<h>`, which defaults to the game's own 1024x320.
+**That default is the game's contract rather than a taste**: `game::requireAtlasSize()` refuses any other size at startup, so a sheet started blank here and saved is one the game will only open if the two numbers agree.
+`atlas_editor::kDefaultSheetSize` is therefore pinned to `game::kAtlasSize` by `DefaultSheetSizeTest`, with a `static_assert` as well as a case, so a row added to the atlas is a red build here rather than a refusal somebody meets much later holding an afternoon's art.
+That test is the only thing under `src/apps/atlas_editor/` that names `apps/game`, and the include reaching it belongs to the test target alone -- the editor itself builds knowing nothing about the game.
 
 `--tile <w>x<h>` is what the grid overlay divides the sheet into, defaulting to the game's 128x64.
 It is a drawing aid and nothing else: no tool, no click and no saved byte depends on it, so a wrong `--tile` shows a misleading picture and cannot damage a sheet.
@@ -51,6 +54,11 @@ build-sdl3/bin/antwika_atlas_editor/antwika_atlas_editor --image atlas.png --out
 - **Middle button, dragged**: pans the sheet across the window.
 - **Wheel**: zooms in and out, keeping the pixel under the pointer under the pointer.
 
+**"Every pixel a drag crosses" is the whole segment rather than one dot per event**, and that is what the held-button arms actually walk.
+A window system reports a fast stroke as a handful of long jumps, so painting only where each event landed left a dotted line with the gaps in between bare -- which is exactly what a fast hand produces and a slow one never does.
+The walk is integer Bresenham from where the pointer was to where it is, for the no-floating-point reason below: which pixel a press means is simulation state, and a float's last bit is not the same on every toolchain.
+Repainting the pixel the last event already put down costs nothing, since a write of the colour already there is no change at all.
+
 The three tools are `PAINT`, which puts the selected colour down, `ERASE`, which makes a pixel fully transparent, and `PICK`, which takes the colour under the pointer as the one to paint with.
 A picked colour that no swatch offers leaves no swatch shown as chosen, rather than the nearest one lighting up and lying about it.
 
@@ -72,8 +80,12 @@ A pixel in the strip along an edge too narrow for a whole slot reads `slot -`, b
 
 ## The sheet is uploaded only when it changed
 
-`atlas_editor::Canvas` owns the pixels and counts its changes, and that revision number is what `RenderSink` compares against to decide whether to upload the sheet to the renderer again.
+`atlas_editor::Canvas` owns the pixels and counts its changes, and that revision number is half of what `RenderSink` compares against to decide whether to upload the sheet to the renderer again.
 Painting a pixel the colour it already holds is not a change, so a stroke that crosses one pixel ten times uploads nothing.
+
+**The other half is the count of loads, and it is not decoration.**
+`EditorState::replace()` installs a whole new `Canvas`, which begins at revision zero -- so pressing `load` on a session that has painted nothing moves the revision from zero to zero, and a key made of the revision alone would skip the upload and go on drawing the sheet that is no longer open.
+Picking up a file something else changed is most of why anybody presses `load` with nothing unsaved, which is exactly the case that would have lied.
 
 ## Saving, loading, and the undo there is not
 

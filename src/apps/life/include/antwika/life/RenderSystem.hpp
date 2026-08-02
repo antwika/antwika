@@ -31,9 +31,14 @@ namespace antwika::life
      * created it, which keeps it open for the whole run (see main.cpp),
      * and a backend never closes a window on its own.
      *
-     * The window's size is read afresh every tick, so a resize needs no
-     * handling of its own. That size reaches nothing but IRenderer calls,
-     * which is what keeps a resize from perturbing the simulation.
+     * **The board is drawn against the size the window was asked for,
+     * never the size it reports.** PointerToggleSink lays the same board
+     * out from the configured size to work out which cell a press
+     * landed in, and the two have to be one function or a window manager
+     * handing back a size of its own choosing would put a cell somewhere
+     * other than where it is clicked -- see docs/resizable-windows.md.
+     * It is read afresh every tick rather than kept, so this system
+     * holds no copy of a number the window already owns.
      */
     class RenderSystem final : public ISystem
     {

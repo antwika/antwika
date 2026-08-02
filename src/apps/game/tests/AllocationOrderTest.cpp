@@ -26,6 +26,7 @@
 #include "antwika/game/PathIndex.hpp"
 #include "antwika/game/PauseState.hpp"
 #include "antwika/game/SaveGame.hpp"
+#include "antwika/game/SpawnSystem.hpp"
 
 /**
  * @file
@@ -71,6 +72,11 @@ namespace
     constexpr GridExtent kExtent{.width = 16, .height = 16};
     constexpr antwika::time::Tick kTicks = 200;
 
+    // Long enough for a walker to be out, too short for one to go home.
+    // kRoamingSteps is 32 and a step is two ticks.
+    // So nobody the cap let through has left yet.
+    constexpr antwika::time::Tick kCappedTicks = 20;
+
     // One house of people, and three farms wanting more than there are.
     // Which farm goes short is the answer this test is about.
     // And it must not depend on which of them was built first.
@@ -110,7 +116,8 @@ namespace
         return save;
     }
 
-    [[nodiscard]] GameSummary runCity(const SaveGame &start)
+    [[nodiscard]] GameSummary runCity(
+        const SaveGame &start, const antwika::time::Tick ticks = kTicks)
     {
         NiceMock<MockLogger> logger;
         NiceMock<MockEventSink> eventSink;
@@ -123,7 +130,7 @@ namespace
 
         std::vector<TickEvent> script{
             TickEvent{
-                .tick = kTicks - 2,
+                .tick = ticks - 2,
                 .event = Event{.name = antwika::engine::events::kStop}}};
         ReplaySource source(script);
 
@@ -133,14 +140,120 @@ namespace
                 .eventSink = eventSink,
                 .inputSource = source,
                 .codec = codec,
-                .extent = kExtent,
+                .extent = start.extent,
                 .camera = camera,
                 .paths = paths,
                 .built = built,
                 .mode = mode,
                 .pause = pause,
-                .maxTicks = kTicks,
+                .maxTicks = ticks,
                 .start = start});
+    }
+
+    // The second city, and the second limited amount.
+    // Labour is split between workplaces; kWalkerLimit is split too.
+    // A city sending more than the cap allows is that contention.
+    //
+    // Every one of these is a well.
+    // One cell, one road beside it, and a saved ticksUntilSpawn of none.
+    // So all of them ask on the very first tick.
+    // And the cap has to turn some of them down.
+    constexpr GridExtent kWideExtent{.width = 32, .height = 32};
+    constexpr std::int32_t kWellRows = 3;
+    constexpr std::int32_t kWellsPerRow = 32;
+
+    // Past kWalkerLimit on purpose.
+    // And by enough that one walking home cannot end the contention.
+    static_assert(
+        static_cast<std::size_t>(kWellRows * kWellsPerRow)
+        > antwika::game::kWalkerLimit + 8);
+
+    [[nodiscard]] std::vector<SavedBuilding> cappedCityBuildings()
+    {
+        std::vector<SavedBuilding> buildings;
+
+        for (std::int32_t row = 0; row < kWellRows; ++row)
+        {
+            for (std::int32_t x = 0; x < kWellsPerRow; ++x)
+            {
+                buildings.push_back(SavedBuilding{
+                    .at = Cell{.x = x, .y = 2 * row + 1},
+                    .kind = BuildingKind::Well});
+            }
+        }
+
+        // People enough for every well.
+        // So the labour split turns nobody down and only the cap does.
+        buildings.push_back(SavedBuilding{
+            .at = Cell{.x = 0, .y = 9},
+            .kind = BuildingKind::House,
+            .stock = {antwika::game::kStockOnCompletion, 0, 0},
+            .household = Household{
+                .population = kWellRows * kWellsPerRow}});
+
+        return buildings;
+    }
+
+    // The same city, with the buildings handed over in a given order.
+    // reversed() and shuffled() below are the whole experiment.
+    [[nodiscard]] SaveGame cappedCityIn(
+        const std::vector<std::size_t> &order)
+    {
+        SaveGame save;
+        save.extent = kWideExtent;
+
+        for (std::int32_t row = 0; row <= kWellRows; ++row)
+        {
+            for (std::int32_t x = 0; x < kWellsPerRow; ++x)
+            {
+                save.paths.push_back(Cell{.x = x, .y = 2 * row});
+            }
+        }
+
+        const auto buildings = cappedCityBuildings();
+
+        for (const auto index : order)
+        {
+            save.buildings.push_back(buildings[index]);
+        }
+
+        return save;
+    }
+
+    [[nodiscard]] std::vector<std::size_t> inOrder()
+    {
+        std::vector<std::size_t> order(cappedCityBuildings().size());
+        std::ranges::generate(
+            order, [next = std::size_t{0}]() mutable { return next++; });
+
+        return order;
+    }
+
+    [[nodiscard]] std::vector<std::size_t> reversed()
+    {
+        auto order = inOrder();
+        std::ranges::reverse(order);
+
+        return order;
+    }
+
+    // Every third one first, then the rest.
+    // A shuffle written down rather than drawn.
+    // So it is the same city on every run, and a failure reproduces.
+    [[nodiscard]] std::vector<std::size_t> shuffled()
+    {
+        std::vector<std::size_t> order;
+        const auto count = cappedCityBuildings().size();
+
+        for (std::size_t start = 0; start < 3; ++start)
+        {
+            for (std::size_t index = start; index < count; index += 3)
+            {
+                order.push_back(index);
+            }
+        }
+
+        return order;
     }
 
     // The summary lists what stands in the world's own order.
@@ -204,4 +317,35 @@ TEST(AllocationOrderTest, TheRatingsAreIdenticalUnderEveryCreationOrder)
 
     EXPECT_EQ(runCity(cityIn({3, 2, 1, 0})).ratings, forwards.ratings);
     EXPECT_EQ(runCity(cityIn({1, 3, 0, 2})).ratings, forwards.ratings);
+}
+
+// The same argument, over the other limited amount there is.
+// Two runs that both sent everybody would agree for the wrong reason.
+// So this one has to be genuinely short of slots first.
+TEST(AllocationOrderTest, TheCityActuallyRunsIntoTheWalkerCap)
+{
+    const auto summary = runCity(cappedCityIn(inOrder()), kCappedTicks);
+
+    EXPECT_EQ(summary.walkers.size(), antwika::game::kWalkerLimit)
+        << "every building that asked got a walker, so nothing was "
+           "contended";
+}
+
+TEST(AllocationOrderTest, TheSameCappedCityBackwardsSendsTheSameWalkers)
+{
+    const auto forwards =
+        runCity(cappedCityIn(inOrder()), kCappedTicks);
+    const auto backwards =
+        runCity(cappedCityIn(reversed()), kCappedTicks);
+
+    EXPECT_EQ(sorted(backwards).walkers, sorted(forwards).walkers);
+}
+
+TEST(AllocationOrderTest, TheSameCappedCityShuffledSendsTheSameWalkers)
+{
+    const auto forwards =
+        runCity(cappedCityIn(inOrder()), kCappedTicks);
+    const auto mixed = runCity(cappedCityIn(shuffled()), kCappedTicks);
+
+    EXPECT_EQ(sorted(mixed).walkers, sorted(forwards).walkers);
 }

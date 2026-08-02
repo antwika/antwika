@@ -139,6 +139,8 @@ That last one is what makes playing a risk rather than a free good.
 
 The shape is `apps/tower_defence`'s rather than `apps/life`'s, because a companion is one plain value rather than a grid of entities.
 
+- `RestoreSink` is registered first, and puts the companion a `companion.restore` event carries in place of the one the session started on.
+  It is the only road back in from a file, and a live run takes it too -- see [the companion between sessions](#the-companion-between-sessions).
 - `PropSink` decodes `input.pointer_*`, asks `propAt()` which prop the press landed on, and calls the verb it names.
   **The app defines no event for feeding, playing, putting to bed or prodding it**, deliberately.
   A `--record` run persists the press, and which prop it hit and whether the companion was in a state to answer are worked out again on replay from the same press against the same canvas and the same tick count.
@@ -274,10 +276,33 @@ Three rules cover the awkward cases, and each is a decision rather than an accid
 - **A replay neither loads nor saves.**
   A companion loaded from whatever happens to be on the machine running it is a different starting state and so a different session.
   `storeIfLive()` is where that decision is made, so no `main()` has to remember it.
+  A replay does not need to load, because the recording carries its companion -- which is what the next section is about.
 - **A file that will not read does not take the session with it.**
   A file that is not there is an ordinary first run.
   A file that is there and will not read -- bad JSON, another format's magic, a version from a newer build, a companion no session could be in, or a lineage on its zeroth companion -- is reported as a warning and a new companion starts.
   A file that will not *write* is thrown as a `companion::SaveFormatError`.
+
+### The companion travels as an event, and that is the only way in
+
+**`companion.restore` is this application's one event, and it exists because a recording that did not carry the companion was not a recording of the session.**
+A live `--record` run began on whatever `companion.json` was holding while its file held only the presses, so replaying that file started from a brand new animal -- and what a press *means* depends entirely on the state it lands on: a bowl offered to a companion that is not hungry is a prod, a bed is refused above the tired mark, and the "new pet" button only exists once one has perished.
+The two runs diverged from the first press, silently, which is a direct break of "a replay reproduces a run by construction".
+
+The fix is `apps/sudoku`'s, and it is the same shape for the same reason: the puzzle a `--puzzle` file supplied travels as `sudoku.new_puzzle` because it came from outside the program, and a companion a file was holding came from outside the program too.
+`RestoreSource` is `PuzzleSource`'s counterpart -- a source decorator that announces it once, ahead of the first tick and so *upstream of the recorder* -- and `RestoreSink` is what puts it in place.
+
+Three consequences are worth stating, because each is a decision rather than a detail.
+
+- **A session always begins on a brand new companion**, live run and replay alike, and is restored by the sink or not at all.
+  Restoring live through the constructor and on replay through the sink would be two roads to one place, and two roads can diverge; one road cannot.
+- **The payload is the saved document itself**, magic and version and all, read back with `readCompanionMemory()` -- the very function `FilePetStore` uses.
+  So a companion written by an older build is migrated on its way into a replay exactly as it is on its way in from disk, and the file format and the event cannot describe one companion differently.
+- **The withheld-store option was considered and refused.**
+  Starting every `--record` run fresh would have fixed the divergence in five lines, and it would have taken the application's whole premise with it: a session that neither carries on nor is kept is not the thing this app is.
+
+The alternative to all of it would have been persisting what each press *did* -- a meal, a game, a bedtime -- and that is refused for the reason it is refused everywhere here: it would feed the companion twice per press.
+
+`Lineage::record()` is offered the ending companion's age whether there is a store behind the session or not, for the same equivalence: a replay has no store by design, and a best that depended on there being a file would be one number the two runs disagreed on.
 
 ## Running it
 

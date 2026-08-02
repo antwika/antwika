@@ -1,7 +1,12 @@
+#include <cstddef>
 #include <cstdint>
+#include <filesystem>
 #include <optional>
 #include <stdexcept>
 #include <string>
+#include <string_view>
+#include <system_error>
+#include <utility>
 #include <vector>
 
 #include <gmock/gmock.h>
@@ -11,19 +16,24 @@
 #include <antwika/event/Event.hpp>
 #include <antwika/event/mocks/MockEventSink.hpp>
 #include <antwika/event/TickEvent.hpp>
+#include <antwika/event/TickEventRecorder.hpp>
 #include <antwika/gfx/Size.hpp>
 #include <antwika/input/InputEventCodec.hpp>
 #include <antwika/log/mocks/MockLogger.hpp>
+#include <antwika/replay/ReplayCli.hpp>
 #include <antwika/replay/ReplaySource.hpp>
 #include <antwika/time/fakes/FakeSleeper.hpp>
 
 #include "antwika/companion/Companion.hpp"
+#include "antwika/companion/CompanionError.hpp"
 #include "antwika/companion/CompanionMemory.hpp"
+#include "antwika/companion/Events.hpp"
 #include "antwika/companion/IPetStore.hpp"
 #include "antwika/companion/Pet.hpp"
 #include "antwika/companion/SaveFormatError.hpp"
 
 using antwika::companion::CompanionConfig;
+using antwika::companion::CompanionError;
 using antwika::companion::CompanionMemory;
 using antwika::companion::CompanionSummary;
 using antwika::companion::IPetStore;
@@ -37,6 +47,7 @@ using antwika::companion::storeIfLive;
 using antwika::event::Event;
 using antwika::event::mocks::MockEventSink;
 using antwika::event::TickEvent;
+using antwika::event::TickEventRecorder;
 using antwika::input::InputEventCodec;
 using antwika::log::mocks::MockLogger;
 using antwika::replay::ReplaySource;
@@ -89,6 +100,38 @@ namespace
         .collapsePenalty = 10,
         .happinessMax = 6,
         .happinessStart = 4};
+
+    // Removes its backing file on scope exit.
+    // That way a failing assertion leaves no stray temp files behind.
+    class ScratchFile
+    {
+    public:
+        explicit ScratchFile(std::string_view name)
+            : path(std::filesystem::temp_directory_path() / name)
+        {
+        }
+
+        ~ScratchFile()
+        {
+            // The error_code overload, not the throwing one.
+            // A destructor is implicitly noexcept.
+            std::error_code ignored;
+            std::filesystem::remove(path, ignored);
+        }
+
+        ScratchFile(const ScratchFile &) = delete;
+        ScratchFile(ScratchFile &&) = delete;
+        ScratchFile &operator=(const ScratchFile &) = delete;
+        ScratchFile &operator=(ScratchFile &&) = delete;
+
+        [[nodiscard]] std::string string() const
+        {
+            return path.string();
+        }
+
+    private:
+        std::filesystem::path path;
+    };
 
     // A store with no filesystem behind it.
     // Which is the whole reason IPetStore exists.
@@ -300,6 +343,25 @@ namespace
         EXPECT_EQ(store.saves, 1);
     }
 
+    // A companion no session could be in is refused where it is read.
+    // Rather than in RestoreSink, a tick into the run.
+    // Which is why openSession() builds one and throws it away.
+    TEST(SessionPersistenceTest, ACompanionNoSessionCouldBeInIsRefused)
+    {
+        NiceMock<MockLogger> logger;
+        FakePetStore store;
+        store.held = lived();
+        store.held->pet.hunger = kBrisk.hungerMax + 1;
+
+        EXPECT_CALL(logger, log(_, _)).Times(AnyNumber());
+        EXPECT_CALL(logger, log(_, HasSubstr("could not be read")));
+
+        const CompanionSummary summary = runStored(logger, store);
+
+        EXPECT_EQ(summary.ticks, kSteppedTicks);
+        EXPECT_EQ(summary.generation, 1U);
+    }
+
     // A lineage no build could have written is refused as a pet is.
     // And it takes the same route out: a warning, and a new one.
     TEST(SessionPersistenceTest, ALineageThatWillNotReadStartsANewOne)
@@ -327,6 +389,36 @@ namespace
         store.refusesToWrite = true;
 
         EXPECT_THROW(runStored(logger, store), SaveFormatError);
+    }
+
+    // A balance no session could run on is this build's mistake.
+    // Not a fact about somebody's file, which is the other type.
+    // So it goes past the catch above rather than into it.
+    // And the read of a perfectly good companion ends the run.
+    TEST(SessionPersistenceTest, ABalanceNoSessionCouldRunOnEndsTheRun)
+    {
+        NiceMock<MockLogger> logger;
+        NiceMock<MockEventSink> events;
+        FakeSleeper sleeper;
+        ReplaySource source(stopsOnItsOwn());
+        const InputEventCodec codec;
+        FakePetStore store;
+        store.held = lived();
+
+        PetConfig unbalanced = kBrisk;
+        unbalanced.hungerPeriodTicks = 0;
+
+        EXPECT_THROW(
+            antwika::companion::bootstrap(CompanionConfig{
+                .logger = logger,
+                .eventSink = events,
+                .inputSource = source,
+                .codec = codec,
+                .sleeper = sleeper,
+                .pet = unbalanced,
+                .store = store,
+                .maxTicks = kMaxTicks}),
+            CompanionError);
     }
 
     // Only a companion that will not read is stepped over.
@@ -360,5 +452,153 @@ namespace
         EXPECT_FALSE(
             storeIfLive(store, std::optional<std::string>("demo.json"))
                 .has_value());
+    }
+
+    // What a `--record` run writes out, as a `--replay` reads it.
+    // Through the real pair rather than straight off the recorder.
+    // The filtering those do -- engine.tick above all -- is the point.
+    // A round trip skipping it would prove something no run ever does.
+    std::vector<TickEvent> throughAFile(std::vector<TickEvent> recorded)
+    {
+        const ScratchFile file{"antwika_companion_replay.json"};
+        antwika::replay::saveReplayFile(
+            std::move(recorded), file.string());
+
+        return antwika::replay::loadReplayFile(file.string());
+    }
+
+    CompanionSummary replaySession(std::vector<TickEvent> events)
+    {
+        NiceMock<MockLogger> logger;
+        NiceMock<MockEventSink> sink;
+        FakeSleeper sleeper;
+        ReplaySource source(std::move(events));
+        const InputEventCodec codec;
+
+        // No store at all, which is exactly what a `--replay` gets.
+        // storeIfLive() withholds it.
+        // So nothing here can reach the companion on this machine.
+        return antwika::companion::bootstrap(CompanionConfig{
+            .logger = logger,
+            .eventSink = sink,
+            .inputSource = source,
+            .codec = codec,
+            .sleeper = sleeper,
+            .pet = kBrisk,
+            .maxTicks = kMaxTicks});
+    }
+
+    // The requirement this project exists for, at the seam that broke it.
+    // A `--record` run began on the companion a file was holding.
+    // Its recording carried only the presses.
+    // So replaying it started from a brand new animal.
+    // And every press then meant something else.
+    // The companion now travels as an event ahead of the first tick.
+    TEST(SessionPersistenceTest, ARecordedSessionReplaysToTheSameAnimal)
+    {
+        NiceMock<MockLogger> logger;
+        FakePetStore store;
+        store.held = lived();
+
+        NiceMock<MockEventSink> events;
+        FakeSleeper sleeper;
+        ReplaySource source(stopsOnItsOwn());
+        const InputEventCodec codec;
+        TickEventRecorder recorder;
+
+        auto config =
+            configFor(logger, store, source, events, sleeper, codec);
+        config.replayRecorder = recorder;
+
+        const CompanionSummary live =
+            antwika::companion::bootstrap(config);
+
+        ASSERT_EQ(live.ticks, lived().pet.ticks + kSteppedTicks)
+            << "the live run did not carry on from the file at all";
+
+        const CompanionSummary replayed =
+            replaySession(throughAFile(recorder.getEvents()));
+
+        EXPECT_EQ(replayed.ticks, live.ticks);
+        EXPECT_EQ(replayed.day, live.day);
+        EXPECT_EQ(replayed.hunger, live.hunger);
+        EXPECT_EQ(replayed.fun, live.fun);
+        EXPECT_EQ(replayed.happiness, live.happiness);
+        EXPECT_EQ(replayed.energy, live.energy);
+        EXPECT_EQ(replayed.energyCeiling, live.energyCeiling);
+        EXPECT_EQ(replayed.meals, live.meals);
+        EXPECT_EQ(replayed.plays, live.plays);
+        EXPECT_EQ(replayed.disturbances, live.disturbances);
+        EXPECT_EQ(replayed.pesters, live.pesters);
+        EXPECT_EQ(replayed.collapses, live.collapses);
+        EXPECT_EQ(replayed.generation, live.generation);
+        EXPECT_EQ(replayed.bestTicks, live.bestTicks);
+        EXPECT_EQ(replayed.perished, live.perished);
+    }
+
+    // Only what came from outside the program.
+    // Which here is the file's companion and the source's events.
+    TEST(SessionPersistenceTest, ARecordingCarriesTheCompanionJustOnce)
+    {
+        NiceMock<MockLogger> logger;
+        FakePetStore store;
+        store.held = lived();
+
+        NiceMock<MockEventSink> events;
+        FakeSleeper sleeper;
+        ReplaySource source(stopsOnItsOwn());
+        const InputEventCodec codec;
+        TickEventRecorder recorder;
+
+        auto config =
+            configFor(logger, store, source, events, sleeper, codec);
+        config.replayRecorder = recorder;
+
+        antwika::companion::bootstrap(config);
+
+        const auto saved = throughAFile(recorder.getEvents());
+        std::size_t announcements = 0;
+
+        for (const auto &event : saved)
+        {
+            EXPECT_NE(
+                event.event.name, antwika::engine::events::kTick);
+
+            if (event.event.name
+                == antwika::companion::events::kRestore)
+            {
+                ++announcements;
+                EXPECT_EQ(event.tick, 0U);
+            }
+        }
+
+        EXPECT_EQ(announcements, 1U);
+    }
+
+    // A session with nothing to carry on from records no companion.
+    // The recording then starts a new one, exactly as the run did.
+    TEST(SessionPersistenceTest, ANewCompanionIsNotAnnouncedAtAll)
+    {
+        NiceMock<MockLogger> logger;
+        FakePetStore store;
+
+        NiceMock<MockEventSink> events;
+        FakeSleeper sleeper;
+        ReplaySource source(stopsOnItsOwn());
+        const InputEventCodec codec;
+        TickEventRecorder recorder;
+
+        auto config =
+            configFor(logger, store, source, events, sleeper, codec);
+        config.replayRecorder = recorder;
+
+        antwika::companion::bootstrap(config);
+
+        for (const auto &event : recorder.getEvents())
+        {
+            EXPECT_NE(
+                event.event.name,
+                antwika::companion::events::kRestore);
+        }
     }
 } // namespace

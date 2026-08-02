@@ -112,7 +112,17 @@ namespace antwika::atlas_editor
 
         void act(WidgetId activated);
 
-        void applyToSheet(const InputEvent &event, Point at, Point moved);
+        /**
+         * @brief What one held button does to one pixel.
+         *
+         * A member pointer rather than a flag, so the segment below is
+         * walked by one loop and the two brushes cannot drift apart.
+         */
+        using Brush = void (EditorState::*)(Point) noexcept;
+
+        void applyToSheet(const InputEvent &event, Point was, Point at);
+
+        void strokeAlong(Point from, Point to, Brush brush);
 
         void report(MessageId id, std::string detail);
 

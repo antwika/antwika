@@ -208,6 +208,44 @@ TEST(RenderSinkTest, Handle_UploadsTheSheetOnceAndAgainWhenItChanges)
     EXPECT_EQ(sleeper.requested().size(), 3U);
 }
 
+// A load with nothing painted is the case a revision cannot see.
+// replace() installs a whole new canvas, which starts at revision 0.
+// A session that has painted nothing was at revision 0 already.
+// So the key has to hold the loads as well.
+// Otherwise the frame after a load shows the sheet that is gone.
+TEST(RenderSinkTest, Handle_UploadsAgainWhenAnUneditedSheetIsReplaced)
+{
+    NiceMock<MockWindow> window;
+    NiceMock<MockRenderer> renderer;
+    FakeSleeper sleeper;
+    const EditorScene scene;
+    EditorState state = opened();
+    const UiOverlay overlay;
+
+    ON_CALL(window, isOpen()).WillByDefault(Return(true));
+    ON_CALL(window, renderer()).WillByDefault(ReturnRef(renderer));
+    ON_CALL(renderer, createTexture(_))
+        .WillByDefault(
+            [](const Bitmap &)
+            { return std::make_unique<NiceMock<MockTexture>>(); });
+
+    EXPECT_CALL(renderer, createTexture(_)).Times(2);
+
+    RenderSink sink(
+        window, scene, state, overlay, sleeper, kFramePeriod);
+
+    sink.handle(tickAt(1));
+
+    ASSERT_EQ(state.image().revision(), 0U)
+        << "the case is only the case while nothing has been painted";
+
+    state.replace(Canvas::blank(Size{.width = 4, .height = 4}));
+    sink.handle(tickAt(2));
+
+    // And the sheet in hand is now the one that was loaded.
+    EXPECT_EQ(state.image().size(), (Size{.width = 4, .height = 4}));
+}
+
 TEST(RenderSinkTest, Handle_DrawsNothingOnceTheWindowHasGone)
 {
     NiceMock<MockWindow> window;

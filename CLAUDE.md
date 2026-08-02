@@ -136,7 +136,7 @@ build/bin/antwika_music_editor/antwika_music_editor      # type at it while it p
 build/bin/antwika_tower_defence/antwika_tower_defence    # or --record / --replay
 build/bin/antwika_ui_demo/antwika_ui_demo                # every antwika::ui element, 1500 ticks
 build/bin/antwika_companion/antwika_companion            # feed, play, sleep
-build/bin/antwika_atlas_editor/antwika_atlas_editor      # blank 1024x256 sheet
+build/bin/antwika_atlas_editor/antwika_atlas_editor      # blank 1024x320 sheet
 build/bin/antwika_atlas_editor/antwika_atlas_editor \
     --image src/apps/game/assets/atlas.png --out mine.png
 ```

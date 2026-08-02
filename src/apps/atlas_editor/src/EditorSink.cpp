@@ -1,6 +1,7 @@
 #include "antwika/atlas_editor/EditorSink.hpp"
 
 #include <cstddef>
+#include <cstdint>
 #include <optional>
 #include <stdexcept>
 #include <string>
@@ -103,10 +104,7 @@ namespace antwika::atlas_editor
         // A press on it is already known to be the bar's.
         if (!overlay.pointerOverUi())
         {
-            applyToSheet(
-                *decoded,
-                at,
-                Point{.x = at.x - was.x, .y = at.y - was.y});
+            applyToSheet(*decoded, was, at);
         }
     }
 
@@ -200,8 +198,55 @@ namespace antwika::atlas_editor
         }
     }
 
+    // Bresenham over the whole segment, both ends included.
+    // Integer throughout, which is a rule rather than a preference.
+    // Which pixel a press means is simulation state.
+    // A float's last bit is not the same on every toolchain.
+    // Painting `from` again costs nothing.
+    // The last event already put it down.
+    // And a write of the colour already there is no change at all.
+    // So an edit is never counted twice.
+    void EditorSink::strokeAlong(
+        const Point from, const Point to, const Brush brush)
+    {
+        const std::int32_t stepX = to.x < from.x ? -1 : 1;
+        const std::int32_t stepY = to.y < from.y ? -1 : 1;
+
+        // Distances as magnitudes, the vertical one negated.
+        // That is the form the two comparisons below are written for.
+        const std::int32_t spanX = (to.x - from.x) * stepX;
+        const std::int32_t spanY = (from.y - to.y) * stepY;
+
+        std::int32_t error = spanX + spanY;
+        Point walked = from;
+
+        for (;;)
+        {
+            (state.*brush)(walked);
+
+            if (walked.x == to.x && walked.y == to.y)
+            {
+                return;
+            }
+
+            const std::int32_t doubled = 2 * error;
+
+            if (doubled >= spanY)
+            {
+                error += spanY;
+                walked.x += stepX;
+            }
+
+            if (doubled <= spanX)
+            {
+                error += spanX;
+                walked.y += stepY;
+            }
+        }
+    }
+
     void EditorSink::applyToSheet(
-        const InputEvent &event, const Point at, const Point moved)
+        const InputEvent &event, const Point was, const Point at)
     {
         if (const auto *scrolled =
                 std::get_if<PointerScrolled>(&event);
@@ -230,17 +275,20 @@ namespace antwika::atlas_editor
 
         // Held rather than pressed.
         // A drag then paints every pixel it crosses.
+        // Which is the segment from where the pointer was, not one dot.
+        // A window system reports a fast stroke as a few long jumps.
+        // A dot per event would leave the gaps between them bare.
         if (folded.mouse().isDown(MouseButton::Middle))
         {
-            state.panBy(moved);
+            state.panBy(Point{.x = at.x - was.x, .y = at.y - was.y});
         }
         else if (folded.mouse().isDown(MouseButton::Left))
         {
-            state.applyAt(at);
+            strokeAlong(was, at, &EditorState::applyAt);
         }
         else if (folded.mouse().isDown(MouseButton::Right))
         {
-            state.eraseAt(at);
+            strokeAlong(was, at, &EditorState::eraseAt);
         }
     }
 

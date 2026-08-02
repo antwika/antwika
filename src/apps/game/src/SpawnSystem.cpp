@@ -2,7 +2,10 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <map>
 #include <optional>
+
+#include <antwika/ecs/Entity.hpp>
 
 #include "antwika/game/Building.hpp"
 #include "antwika/game/BuildingKind.hpp"
@@ -95,19 +98,36 @@ namespace antwika::game
 
     void SpawnSystem::update(World &world, antwika::time::Tick)
     {
+        using antwika::ecs::Entity;
+
         // Counted once rather than per building.
         // Every walker staged this tick is one the cap has to see.
         std::size_t out = world.view<Walker>().size();
 
+        // Ascending Cell, out of a map rather than a view.
+        // kWalkerLimit is a limited amount split between buildings.
+        // And a view's order is nobody's to name.
+        // At the cap the last slots would go to whichever were built first.
+        // LabourSystem and MarketSystem collect for that reason too.
+        // Cell alone is the key, with no tie-break at all.
+        // Two buildings cannot share an origin -- see BuildingIndex.
+        std::map<Cell, Entity> senders;
+
         for (const auto entity : world.view<Building, Cell>())
         {
-            const auto building = world.get<Building>(entity);
-            const auto sends = walkerSentBy(building.kind);
-
-            if (!sends.has_value())
+            if (!walkerSentBy(world.get<Building>(entity).kind)
+                     .has_value())
             {
                 continue;
             }
+
+            senders.emplace(world.get<Cell>(entity), entity);
+        }
+
+        for (const auto &[at, entity] : senders)
+        {
+            const auto building = world.get<Building>(entity);
+            const auto sends = *walkerSentBy(building.kind);
 
             // One of this cadence's own kind out at a time.
             // A free slot is room for an errand, not leave to send two.
@@ -115,7 +135,7 @@ namespace antwika::game
             // A walker destroyed this tick reads alive until commit.
             // So its building is free from the next tick, not this one.
             // Which is why the two never overlap.
-            if (hasWalkerOfKind(world, building, *sends))
+            if (hasWalkerOfKind(world, building, sends))
             {
                 continue;
             }
@@ -145,10 +165,8 @@ namespace antwika::game
 
             // Held at zero, not reset.
             // A house with no road is ready and waiting rather than owed.
-            const auto onto = spawnCellFor(
-                world.get<Cell>(entity),
-                footprintOf(building.kind),
-                paths);
+            const auto onto =
+                spawnCellFor(at, footprintOf(building.kind), paths);
             const auto slot = freeWalkerSlot(world, building);
 
             if (!onto.has_value() || !slot.has_value()
@@ -157,14 +175,14 @@ namespace antwika::game
                 continue;
             }
 
-            const auto carries = carriedResource(*sends).has_value();
+            const auto carries = carriedResource(sends).has_value();
 
             const auto walker = world.create();
             world.add<Cell>(walker, *onto);
             world.add<Walker>(
                 walker,
                 Walker{
-                    .kind = *sends,
+                    .kind = sends,
                     .carried = carries ? kWalkerLoad : 0,
                     .home = entity});
             ++out;
