@@ -222,6 +222,30 @@ namespace antwika::notation
                     else if (nextIs('!'))
                     {
                         ++at;
+
+                        // One count per term, refused rather than
+                        // silently overwritten: "0!2!3" dropped its 2.
+                        if (copies != 1)
+                        {
+                            throw NotationError(
+                                "antwika::notation: a term takes one "
+                                "'!' count; \"0!2!3\" says two");
+                        }
+
+                        // The count sits against its '!': "0!3 5".
+                        // In Tidal a spaced "0! 3" repeats the 0 and
+                        // then plays the 3; eating the 3 as a count
+                        // would silently sound the wrong notes for any
+                        // line brought over, so a bare '!' is refused.
+                        if (atEnd() || peek() < '0' || peek() > '9')
+                        {
+                            throw NotationError(
+                                "antwika::notation: '!' wants its count "
+                                "against it, as in \"0!3\"; the bare "
+                                "'!' Tidal repeats the previous term "
+                                "with is not in this grammar");
+                        }
+
                         copies = parseWholeNumber();
                     }
                     else if (nextIs('?'))

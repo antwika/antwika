@@ -3,6 +3,7 @@
 #include <SDL3/SDL.h>
 
 #include <array>
+#include <cstddef>
 #include <cstdint>
 #include <string>
 #include <utility>
@@ -118,8 +119,62 @@ namespace antwika::input::sdl3
             {SDL_SCANCODE_RGUI, Key::RightSuper},
         });
 
-        // Every Key has an SDL scancode, or some key could never arrive.
-        static_assert(kKeys.size() == kKeyCount);
+        // A row left out value-initialises a {SDL_SCANCODE_UNKNOWN,
+        // Key{0}} one instead, and size alone cannot see that: a
+        // duplicated Key beside a missing one still counts kKeyCount.
+        // The same claim src/libs/input/src/Key.cpp checks of its own
+        // name table, checked of this one.
+        [[nodiscard]] consteval bool mapsEveryKeyExactlyOnce()
+        {
+            for (std::size_t index = 0; index < kKeyCount; ++index)
+            {
+                std::size_t rows = 0;
+
+                for (const auto &[scancode, key] : kKeys)
+                {
+                    if (keyIndex(key) == index)
+                    {
+                        ++rows;
+                    }
+                }
+
+                if (rows != 1)
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        // A repeated scancode would make keyOf() answer for the first
+        // row alone, and the second key could never arrive.
+        [[nodiscard]] consteval bool mapsEveryScancodeDistinctly()
+        {
+            const auto count = kKeys.size();
+
+            for (std::size_t left = 0; left < count; ++left)
+            {
+                for (std::size_t right = left + 1; right < count;
+                     ++right)
+                {
+                    if (kKeys[left].first == kKeys[right].first)
+                    {
+                        return false;
+                    }
+                }
+            }
+
+            return true;
+        }
+
+        // The claim the table makes about itself, now checked.
+        static_assert(
+            mapsEveryKeyExactlyOnce(),
+            "kKeys must map every Key exactly once");
+        static_assert(
+            mapsEveryScancodeDistinctly(),
+            "kKeys must not map one scancode to two keys");
 
         [[nodiscard]] std::optional<Key> keyOf(SDL_Scancode scancode)
         {
@@ -155,10 +210,14 @@ namespace antwika::input::sdl3
 
         [[nodiscard]] KeyModifiers modifiersOf(SDL_Keymod mod)
         {
+            // SDL_KMOD_MODE is AltGr on X11 and Wayland, where the
+            // system layout maps the right Alt to ISO_Level3_Shift.
+            // Without it the Swedish table's whole third column --
+            // $ { } [ ] \ @ | ~ -- typed its plain sibling instead.
             return KeyModifiers{
                 .shift = (mod & SDL_KMOD_SHIFT) != 0,
                 .control = (mod & SDL_KMOD_CTRL) != 0,
-                .alt = (mod & SDL_KMOD_ALT) != 0,
+                .alt = (mod & (SDL_KMOD_ALT | SDL_KMOD_MODE)) != 0,
                 .super = (mod & SDL_KMOD_GUI) != 0};
         }
 
@@ -191,7 +250,9 @@ namespace antwika::input::sdl3
         }
 
         [[nodiscard]] std::optional<InputEvent> translate(
-            const SDL_Event &event)
+            const SDL_Event &event,
+            float &remainderX,
+            float &remainderY)
         {
             switch (event.type)
             {
@@ -225,11 +286,37 @@ namespace antwika::input::sdl3
             case SDL_EVENT_MOUSE_BUTTON_UP:
                 return buttonEdge<PointerButtonReleased>(event.button);
             default:
+            {
                 // The pump routes nothing else here.
                 // A wheel event is the one case left.
+                // A flipped direction arrives with its values negated.
+                const bool flipped =
+                    event.wheel.direction == SDL_MOUSEWHEEL_FLIPPED;
+
+                // Floats, because a touchpad scrolls in fractions of a
+                // notch, and truncating every event would leave such
+                // scrolling at zero forever.  The fraction is carried
+                // to the next event instead -- backend-local and
+                // upstream of the recorder, so a recording holds whole
+                // notches and never a scroll of nothing.
+                remainderX += flipped ? -event.wheel.x : event.wheel.x;
+                remainderY += flipped ? -event.wheel.y : event.wheel.y;
+
+                const auto horizontal =
+                    static_cast<std::int32_t>(remainderX);
+                const auto vertical = static_cast<std::int32_t>(remainderY);
+
+                if (horizontal == 0 && vertical == 0)
+                {
+                    return std::nullopt;
+                }
+
+                remainderX -= static_cast<float>(horizontal);
+                remainderY -= static_cast<float>(vertical);
+
                 return PointerScrolled{
-                    .horizontal = static_cast<std::int32_t>(event.wheel.x),
-                    .vertical = static_cast<std::int32_t>(event.wheel.y)};
+                    .horizontal = horizontal, .vertical = vertical};
+            }
             }
         }
     } // namespace
@@ -264,7 +351,8 @@ namespace antwika::input::sdl3
     {
         while (const auto pending = pump->nextInputEvent())
         {
-            if (const auto edge = translate(*pending))
+            if (const auto edge =
+                    translate(*pending, remainderX, remainderY))
             {
                 return edge;
             }

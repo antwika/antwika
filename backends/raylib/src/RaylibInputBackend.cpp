@@ -6,6 +6,8 @@
 
 #include <antwika/log/Level.hpp>
 
+#include "RaylibFrame.hpp"
+
 namespace antwika::input::raylib
 {
 
@@ -115,25 +117,42 @@ namespace antwika::input::raylib
             }
         }
 
-        const Vector2 wheel = GetMouseWheelMoveV();
-        const PointerScrolled scroll{
-            .horizontal = static_cast<std::int32_t>(wheel.x),
-            .vertical = static_cast<std::int32_t>(wheel.y)};
+        // The wheel is read once per presented frame, not once per value.
+        // raylib holds the same reading for a whole frame, and two honest
+        // one-notch frames are indistinguishable from one frame sampled
+        // twice; the frame counter is what tells those apart.
+        const auto frame = antwika::raylib::frameCount();
 
-        // Compared against what was last reported, not reported outright.
-        // raylib holds this value for a whole frame.
-        // A caller draining to empty therefore reads it more than once.
-        if (scroll == lastScroll)
+        if (frame == wheelFrame)
         {
             return;
         }
 
-        lastScroll = scroll;
+        wheelFrame = frame;
 
-        if (scroll.horizontal != 0 || scroll.vertical != 0)
+        const Vector2 wheel = GetMouseWheelMoveV();
+
+        // Floats, because a touchpad scrolls in fractions of a notch.
+        // Truncating each frame would leave such scrolling at zero
+        // forever, so the fraction is carried to the next frame instead.
+        // Backend-local and upstream of the recorder: a recording holds
+        // whole notches either way, and a replay is unaffected.
+        remainderX += wheel.x;
+        remainderY += wheel.y;
+
+        const auto horizontal = static_cast<std::int32_t>(remainderX);
+        const auto vertical = static_cast<std::int32_t>(remainderY);
+
+        if (horizontal == 0 && vertical == 0)
         {
-            pending.push_back(scroll);
+            return;
         }
+
+        remainderX -= static_cast<float>(horizontal);
+        remainderY -= static_cast<float>(vertical);
+
+        pending.push_back(PointerScrolled{
+            .horizontal = horizontal, .vertical = vertical});
     }
 
 } // namespace antwika::input::raylib

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <array>
+#include <cstdint>
 #include <deque>
 #include <optional>
 #include <string_view>
@@ -45,9 +46,12 @@ namespace antwika::input::raylib
      * Its state only advances inside EndDrawing, which
      * RaylibRenderer::present() is the only caller of. So events arrive
      * only for an application that presents frames, at most one sample's
-     * worth per frame. A wheel held at the same notch across consecutive
-     * frames therefore reports once: raylib gives no way to tell that
-     * apart from the same notch being read twice within one frame.
+     * worth per frame. The wheel is read once per *presented* frame, by
+     * the frame counter the renderer bumps at EndDrawing -- by value it
+     * cannot be deduplicated, since two honest one-notch frames and one
+     * frame sampled twice read exactly the same. Fractions of a notch,
+     * which is how a touchpad scrolls, are carried between frames and
+     * reported once they add up to a whole one.
      */
     class RaylibInputBackend final : public IInputBackend
     {
@@ -93,7 +97,15 @@ namespace antwika::input::raylib
         std::deque<InputEvent> pending;
         std::optional<Position> lastPosition;
         std::array<bool, kMouseButtonCount> held{};
-        PointerScrolled lastScroll{};
+
+        // Which presented frame the wheel was last read on.
+        // Everything before the first present is frame zero, and the
+        // sentinel is what lets that first frame still be read once.
+        std::uint64_t wheelFrame = ~std::uint64_t{0};
+
+        // The fractions of a notch not yet reported.
+        float remainderX = 0.0F;
+        float remainderY = 0.0F;
     };
 
 } // namespace antwika::input::raylib
