@@ -29,7 +29,6 @@ add_executable(antwika_atlas_editor_tests
     PngAtlasStoreTest.cpp
     RunIntegrationTest.cpp
     SceneTest.cpp
-    TickLimitSourceTest.cpp
     TileGridTest.cpp
 )
 

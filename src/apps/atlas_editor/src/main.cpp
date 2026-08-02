@@ -24,7 +24,7 @@
 #include "antwika/atlas_editor/Messages.hpp"
 #include "antwika/atlas_editor/PngAtlasStore.hpp"
 #include "antwika/atlas_editor/RenderSink.hpp"
-#include "antwika/atlas_editor/TickLimitSource.hpp"
+#include <antwika/app/TickLimitSource.hpp>
 
 using antwika::app::ConsoleLogging;
 using antwika::app::RecordedRun;
@@ -33,7 +33,7 @@ using antwika::atlas_editor::EditorState;
 using antwika::atlas_editor::EditorSummary;
 using antwika::atlas_editor::PngAtlasStore;
 using antwika::atlas_editor::RenderSink;
-using antwika::atlas_editor::TickLimitSource;
+using antwika::app::TickLimitSource;
 using antwika::atlas_editor::UiOverlay;
 using antwika::gfx::WindowDesc;
 using antwika::input::InputEventCodec;

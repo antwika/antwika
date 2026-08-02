@@ -4,13 +4,62 @@
 #include <antwika/event/mocks/MockEventDispatcher.hpp>
 #include <antwika/event/mocks/MockTickEventSink.hpp>
 
+#include "antwika/event/EventError.hpp"
 #include "antwika/event/TickedEventDispatcher.hpp"
+
+#include <stdexcept>
 
 using antwika::event::Event;
 using antwika::event::TickedEventDispatcher;
 using antwika::event::TickEvent;
 using antwika::event::mocks::MockEventDispatcher;
 using antwika::event::mocks::MockTickEventSink;
+
+// Re-entry would record a derived event against its cause's middle.
+// A stream no live run can produce is one no replay can reproduce.
+TEST(TickedEventDispatcherTest, Dispatch_RefusesReentryFromASink)
+{
+    MockEventDispatcher mockDispatcher;
+    MockTickEventSink reentrant;
+    TickedEventDispatcher tickedEventDispatcher(
+        mockDispatcher, {reentrant});
+
+    EXPECT_CALL(mockDispatcher, dispatch(::testing::_)).Times(1);
+    EXPECT_CALL(reentrant, handle(::testing::_))
+        .WillOnce(
+            [&tickedEventDispatcher](const TickEvent &)
+            {
+                tickedEventDispatcher.dispatch(
+                    Event{.name = "derived"});
+            });
+
+    EXPECT_THROW(
+        tickedEventDispatcher.dispatch(Event{.name = "cause"}),
+        antwika::event::EventError);
+}
+
+// A sink that throws must not leave the dispatcher refusing forever.
+TEST(TickedEventDispatcherTest, Dispatch_RecoversFromAThrowingSink)
+{
+    MockEventDispatcher mockDispatcher;
+    MockTickEventSink throwing;
+    TickedEventDispatcher tickedEventDispatcher(
+        mockDispatcher, {throwing});
+
+    EXPECT_CALL(mockDispatcher, dispatch(::testing::_)).Times(2);
+    EXPECT_CALL(throwing, handle(::testing::_))
+        .WillOnce(
+            [](const TickEvent &)
+            { throw std::runtime_error("a sink's own failure"); })
+        .WillOnce([](const TickEvent &) {});
+
+    EXPECT_THROW(
+        tickedEventDispatcher.dispatch(Event{.name = "first"}),
+        std::runtime_error);
+
+    // The flag was reset on the unwind, so this dispatch runs.
+    tickedEventDispatcher.dispatch(Event{.name = "second"});
+}
 
 TEST(
     TickedEventDispatcherTest,

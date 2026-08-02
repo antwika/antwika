@@ -8,10 +8,12 @@ add_executable(antwika_app_tests
     FramePacedSourceTest.cpp
     FullscreenToggleSourceTest.cpp
     HoverRecordingTest.cpp
+    MaxTicksTest.cpp
     PngFileTest.cpp
     PointerReadingTest.cpp
     RunGuardedTest.cpp
     RunRecordedTest.cpp
+    TickLimitSourceTest.cpp
     WavFileTest.cpp
     WindowCloseSourceTest.cpp
     WindowPointerMappingTest.cpp

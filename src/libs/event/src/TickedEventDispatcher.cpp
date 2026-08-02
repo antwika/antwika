@@ -2,6 +2,7 @@
 
 #include <utility>
 
+#include "antwika/event/EventError.hpp"
 #include "antwika/event/TickEvent.hpp"
 
 namespace antwika::event
@@ -21,14 +22,39 @@ namespace antwika::event
 
     void TickedEventDispatcher::dispatch(Event event)
     {
-        dispatcher.dispatch(event);
-
-        TickEvent timedEvent{.tick = currentTick, .event = std::move(event)};
-
-        for (auto &sink : timedSinks)
+        // Re-entry from a sink is refused loudly, on purpose.
+        // A derived event dispatched mid-dispatch is recorded early.
+        // It lands against the middle of its cause.
+        // That order looks fine live and diverges on replay.
+        if (dispatching)
         {
-            sink.get().handle(timedEvent);
+            throw EventError(
+                "antwika::event: dispatch() re-entered from inside a "
+                "sink; a derived event would be recorded against the "
+                "middle of its cause");
         }
+
+        dispatching = true;
+
+        try
+        {
+            dispatcher.dispatch(event);
+
+            TickEvent timedEvent{
+                .tick = currentTick, .event = std::move(event)};
+
+            for (auto &sink : timedSinks)
+            {
+                sink.get().handle(timedEvent);
+            }
+        }
+        catch (...)
+        {
+            dispatching = false;
+            throw;
+        }
+
+        dispatching = false;
     }
 
 } // namespace antwika::event

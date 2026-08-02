@@ -24,7 +24,7 @@
 #include "antwika/ui_demo/Messages.hpp"
 #include "antwika/ui_demo/RenderSink.hpp"
 #include "antwika/ui_demo/Showcase.hpp"
-#include "antwika/ui_demo/TickBudgetSource.hpp"
+#include <antwika/app/TickLimitSource.hpp>
 #include "antwika/ui_demo/UiDemo.hpp"
 
 using antwika::app::ConsoleLogging;
@@ -43,7 +43,7 @@ using antwika::ui_demo::DemoSummary;
 using antwika::ui_demo::Messages;
 using antwika::ui_demo::RenderSink;
 using antwika::ui_demo::showcaseNameId;
-using antwika::ui_demo::TickBudgetSource;
+using antwika::app::TickLimitSource;
 
 namespace
 {
@@ -108,7 +108,7 @@ namespace
              .coalescePointerMotion = true});
 
         WindowInputSource windowed(input, *backend, window->id());
-        TickBudgetSource source(windowed, kTickBudget);
+        TickLimitSource source(windowed, std::optional{kTickBudget});
 
         const DemoSummary summary = antwika::ui_demo::bootstrap({
             .logger = logger,

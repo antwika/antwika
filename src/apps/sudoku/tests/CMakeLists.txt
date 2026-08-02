@@ -35,7 +35,6 @@ add_executable(antwika_sudoku_tests
     SudokuOptionsTest.cpp
     SudokuSceneTest.cpp
     SudokuSolverIntegrationTest.cpp
-    TickLimitSourceTest.cpp
     UnsolvablePuzzleTest.cpp
 )
 

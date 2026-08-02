@@ -17,7 +17,6 @@ add_executable(antwika_ui_demo_tests
     MessagesTest.cpp
     RenderSinkTest.cpp
     RunIntegrationTest.cpp
-    TickBudgetSourceTest.cpp
 )
 
 target_include_directories(antwika_ui_demo_tests

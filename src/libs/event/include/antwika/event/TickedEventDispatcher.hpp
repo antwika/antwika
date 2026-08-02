@@ -52,6 +52,10 @@ namespace antwika::event
         IEventDispatcher &dispatcher;
         std::vector<std::reference_wrapper<ITickEventSink>> timedSinks;
         antwika::time::Tick currentTick{};
+
+        // Whether a dispatch is on the stack right now.
+        // What refuses a sink dispatching from inside handle().
+        bool dispatching = false;
     };
 
 } // namespace antwika::event
