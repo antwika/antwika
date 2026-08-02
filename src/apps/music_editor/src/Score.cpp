@@ -176,7 +176,7 @@ namespace antwika::music_editor
 
         // Read once, however many ticks the line then sits there for.
         // A refusal is repeated, since the line is still refused.
-        if (held.chain == chain)
+        if (held.ever && held.chain == chain)
         {
             if (!held.failure.empty())
             {
@@ -187,6 +187,7 @@ namespace antwika::music_editor
         }
 
         held.chain = chain;
+        held.ever = true;
         ++parsed;
 
         try
@@ -204,7 +205,10 @@ namespace antwika::music_editor
             held.sounding = true;
             held.failure.clear();
         }
-        catch (const ScoreError &refused)
+        // The excluded line is the catch chain's dispatch.
+        // Its one unexercised edge is a fourth kind of exception.
+        // Nothing this reads can raise one.
+        catch (const ScoreError &refused) // GCOVR_EXCL_LINE
         {
             // The chain itself, rather than what it plays.
             // A control no voice has, or a preset nothing is called.

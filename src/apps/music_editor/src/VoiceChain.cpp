@@ -86,7 +86,10 @@ namespace antwika::music_editor
             segments.push_back(chain.substr(begin));
 
             return segments;
-        }
+
+            // The excluded line is the vector's unwind destructor.
+            // Nothing between its construction and the return throws.
+        } // GCOVR_EXCL_LINE
 
         [[nodiscard]] double numberIn(
             std::string_view name, std::string_view argument)

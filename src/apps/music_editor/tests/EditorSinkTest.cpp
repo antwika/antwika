@@ -26,6 +26,7 @@ using antwika::music_editor::kPanicButton;
 using antwika::music_editor::kPlayButton;
 using antwika::music_editor::tests::EditorRig;
 using antwika::music_editor::tests::tickAt;
+using antwika::music_editor::tests::tickThrough;
 
 namespace
 {
@@ -98,10 +99,7 @@ TEST(EditorSinkTest, KeepsPlayingWithoutAnybodyStartingIt)
 {
     EditorRig rig;
 
-    for (antwika::time::Tick tick = 0; tick < 20; ++tick)
-    {
-        rig.editor.handle(tickAt(tick));
-    }
+    tickThrough(rig, 0, 20);
 
     EXPECT_GT(rig.playback.started(), 0U);
     EXPECT_EQ(rig.playback.playedTicks(), 20U);
@@ -127,15 +125,16 @@ TEST(EditorSinkTest, TypingGoesIntoTheDocumentAtTheCaret)
 TEST(EditorSinkTest, TypingIntoTheMiddleLeavesTheRestWhereItWas)
 {
     EditorRig rig;
-    rig.state.source = "$: bass 0\n$: lead 3\n";
-    rig.state.cursor = 9;
+    rig.state.source = "$: bass.n(\"0\")\n$: lead.n(\"3\")\n";
+    rig.state.cursor = 12;
 
     rig.editor.handle(tickAt(0));
 
     press(rig, Key::Digit7, 1);
 
-    EXPECT_EQ(rig.state.source, "$: bass 07\n$: lead 3\n");
-    EXPECT_EQ(rig.state.cursor, 10U);
+    EXPECT_EQ(
+        rig.state.source, "$: bass.n(\"07\")\n$: lead.n(\"3\")\n");
+    EXPECT_EQ(rig.state.cursor, 13U);
 }
 
 // One tick's typing is one frame's worth of edges, in arrival order.
@@ -171,14 +170,14 @@ TEST(EditorSinkTest, BackspaceTakesTheCharacterBeforeTheCaret)
 TEST(EditorSinkTest, EnterIsANewLineRatherThanAPause)
 {
     EditorRig rig;
-    rig.state.source = "$: bass 0";
-    rig.state.cursor = 9;
+    rig.state.source = "$: bass.n(\"0\")";
+    rig.state.cursor = 14;
 
     rig.editor.handle(tickAt(0));
 
     press(rig, Key::Enter, 1);
 
-    EXPECT_EQ(rig.state.source, "$: bass 0\n");
+    EXPECT_EQ(rig.state.source, "$: bass.n(\"0\")\n");
     EXPECT_FALSE(rig.state.paused);
 }
 
@@ -206,28 +205,26 @@ TEST(EditorSinkTest, TheArrowsWalkTheCaretBetweenLines)
     EXPECT_EQ(rig.state.cursor, 7U);
 }
 
+// Uncommenting a line is all it takes for that line to sound.
 TEST(EditorSinkTest, TypingReachesTheSoundWithoutAnythingBeingReloaded)
 {
     EditorRig rig;
-    rig.state.source = "$: bass ";
-    rig.state.cursor = rig.state.source.size();
+    rig.state.source = "// $: bass.n(\"0*4\")\n";
+    rig.state.cursor = 2;
 
-    for (antwika::time::Tick tick = 0; tick < 4; ++tick)
-    {
-        rig.editor.handle(tickAt(tick));
-    }
+    tickThrough(rig, 0, 4);
 
-    const auto silent = rig.playback.started();
+    ASSERT_EQ(rig.playback.started(), 0U);
+    ASSERT_EQ(rig.playback.sounding(), 0U);
 
-    press(rig, Key::Digit0, 5);
+    press(rig, Key::Backspace, 5);
+    press(rig, Key::Backspace, 5);
 
-    for (antwika::time::Tick tick = 6; tick < 30; ++tick)
-    {
-        rig.editor.handle(tickAt(tick));
-    }
+    tickThrough(rig, 6, 30);
 
-    EXPECT_EQ(rig.state.source, "$: bass 0");
-    EXPECT_GT(rig.playback.started(), silent);
+    EXPECT_EQ(rig.state.source, " $: bass.n(\"0*4\")\n");
+    EXPECT_EQ(rig.playback.sounding(), 1U);
+    EXPECT_GT(rig.playback.started(), 0U);
 }
 
 // Escape is this application's alone.
@@ -258,10 +255,7 @@ TEST(EditorSinkTest, PausingStopsTheMusicalClock)
 
     const auto played = rig.playback.playedTicks();
 
-    for (antwika::time::Tick tick = 2; tick < 10; ++tick)
-    {
-        rig.editor.handle(tickAt(tick));
-    }
+    tickThrough(rig, 2, 10);
 
     EXPECT_EQ(rig.playback.playedTicks(), played);
 }
@@ -279,11 +273,9 @@ TEST(EditorSinkTest, TheButtonPausesToo)
 TEST(EditorSinkTest, TheOtherButtonSilencesEveryVoice)
 {
     EditorRig rig;
+    rig.state.source = "$: bell.n(\"0*8\")\n";
 
-    for (antwika::time::Tick tick = 0; tick < 6; ++tick)
-    {
-        rig.editor.handle(tickAt(tick));
-    }
+    tickThrough(rig, 0, 6);
 
     ASSERT_GT(rig.mixer.activeVoices(), 0U);
 
@@ -327,26 +319,20 @@ TEST(EditorSinkTest, AnEventItCannotDecodeChangesNothing)
 TEST(EditorSinkTest, ARefusedLineIsReportedAndKeepsSounding)
 {
     EditorRig rig;
-    rig.state.source = "$: bass 0 3\n";
-    rig.state.cursor = 11;
+    rig.state.source = "$: bass.n(\"0 3\")\n";
+    rig.state.cursor = 14;
 
-    for (antwika::time::Tick tick = 0; tick < 4; ++tick)
-    {
-        rig.editor.handle(tickAt(tick));
-    }
+    tickThrough(rig, 0, 4);
 
     const auto sounded = rig.playback.started();
 
     press(rig, Key::LeftBracket, 5);
     rig.editor.handle(tickAt(6));
 
-    EXPECT_EQ(rig.state.source, "$: bass 0 3[\n");
+    EXPECT_EQ(rig.state.source, "$: bass.n(\"0 3[\")\n");
     EXPECT_TRUE(rig.score.hasError());
 
-    for (antwika::time::Tick tick = 7; tick < 40; ++tick)
-    {
-        rig.editor.handle(tickAt(tick));
-    }
+    tickThrough(rig, 7, 40);
 
     EXPECT_GT(rig.playback.started(), sounded);
 }

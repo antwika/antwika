@@ -40,6 +40,11 @@ namespace antwika::music_editor::tests
      *
      * Everything a sink needs and nothing that reaches hardware, so a
      * test drives the real classes with no window and no speaker.
+     *
+     * The document it opens with is openingState()'s, which is four
+     * voice lines; a test wanting its own writes over `state.source`
+     * before the first tick, since the score is re-read from there on
+     * every one of them.
      */
     struct EditorRig
     {
@@ -93,6 +98,21 @@ namespace antwika::music_editor::tests
         return event::TickEvent{
             .tick = when,
             .event = {.name = antwika::engine::events::kTick}};
+    }
+
+    /**
+     * @brief Run a stretch of ticks through an editor.
+     * @param rig What to tick.
+     * @param first The first tick to hand it.
+     * @param last One past the last.
+     */
+    inline void tickThrough(
+        EditorRig &rig, const time::Tick first, const time::Tick last)
+    {
+        for (time::Tick when = first; when < last; ++when)
+        {
+            rig.editor.handle(tickAt(when));
+        }
     }
 
 } // namespace antwika::music_editor::tests

@@ -128,16 +128,18 @@ TEST(EditorSceneTest, DrawsOneCodePaneAndBothButtons)
 TEST(EditorSceneTest, DrawsEveryLineOfTheDocument)
 {
     EditorState state;
-    state.source = "$: bass 0\n$: lead 3\n";
+    state.source = "$: bass.n(\"0\")\n$: lead.n(\"3\")\n";
 
     const Score score;
     const auto said = words(describe(state, score).commands);
 
     EXPECT_NE(
-        std::find(said.begin(), said.end(), "$: bass 0"), said.end());
+        std::find(said.begin(), said.end(), "$: bass.n(\"0\")"),
+        said.end());
 
     EXPECT_NE(
-        std::find(said.begin(), said.end(), "$: lead 3"), said.end());
+        std::find(said.begin(), said.end(), "$: lead.n(\"3\")"),
+        said.end());
 }
 
 // The same state always describes the same picture.
@@ -184,7 +186,7 @@ TEST(EditorSceneTest, SaysNothingAboutLinesWhenNothingIsRefused)
 TEST(EditorSceneTest, NamesTheLineThatWasRefused)
 {
     EditorState state;
-    state.source = "$: bass 0\nnot a voice line\n";
+    state.source = "$: bass.n(\"0\")\nnot a voice line\n";
 
     Score score;
     score.read(state.source);
@@ -231,10 +233,12 @@ TEST(EditorSceneTest, WhatIsPlayingIsSaidRatherThanReachedFor)
     const auto busy = describe(
         state,
         score,
-        PlaybackStatus{.started = 12, .voices = 3, .cycles = 4});
+        PlaybackStatus{
+            .started = 12, .voices = 3, .cycles = 4, .lines = 2});
 
     EXPECT_NE(quiet, busy.commands);
     EXPECT_TRUE(says(busy.commands, "cycle 4"));
+    EXPECT_TRUE(says(busy.commands, "lines 2"));
     EXPECT_TRUE(says(busy.commands, "voices 3"));
     EXPECT_TRUE(says(busy.commands, "notes 12"));
 }

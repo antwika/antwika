@@ -75,12 +75,19 @@ namespace antwika::music_editor
                 .lookahead = shape.lookahead}; // GCOVR_EXCL_LINE
 
             perVoice.push_back(
-                Line{
+                // The excluded line is the aggregate's unwind pad.
+                // Only a failed allocation would take it.
+                // See docs/confirming-unreachable-branches.md.
+                Line{ // GCOVR_EXCL_LINE
                     .sequencer = std::make_unique<sequencer::Sequencer>(
                         std::move(each)),
                     .voices = std::make_unique<TrackVoices>(
                         mixer, counter),
-                    .advanced = played});
+                    // Never advanced, rather than advanced just now.
+                    // On the run's first tick that reads as up to date.
+                    // There is no history for it to have missed.
+                    // Any later and it is a voice that joins.
+                    .advanced = 0});
         }
     }
 

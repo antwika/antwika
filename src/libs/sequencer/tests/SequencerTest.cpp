@@ -202,6 +202,83 @@ TEST(SequencerTest, GoingBackwardsSoundsNothing)
     EXPECT_EQ(sequencer.queriedThrough(), reached);
 }
 
+// A voice that was not there a moment ago has no past to play.
+// Joining says so, and says it without querying anything.
+TEST(SequencerTest, JoiningSoundsNothingItself)
+{
+    Sequencer sequencer(oneCycleASecond());
+    RecordingSink sink;
+
+    sequencer.joinAt(20);
+
+    EXPECT_TRUE(sink.triggers.empty());
+
+    // Ten ticks to a cycle, and it looks one tick further.
+    EXPECT_EQ(sequencer.queriedThrough(), Cycle(21, 10));
+}
+
+// A sequencer built fresh sounds every cycle since the run began.
+// One that joined sounds that tick's window and nothing else.
+TEST(SequencerTest, JoiningLeavesThePastToWhoeverWasThereForIt)
+{
+    RecordingSink catchingUp;
+    Sequencer fresh(oneCycleASecond());
+
+    fresh.advance(21, note(1), catchingUp);
+
+    RecordingSink joinedSink;
+    Sequencer joined(oneCycleASecond());
+
+    joined.joinAt(20);
+    joined.advance(21, note(1), joinedSink);
+
+    // Two whole cycles of history, sounded all at once.
+    EXPECT_EQ(catchingUp.triggers.size(), 3U);
+
+    // A tenth of a cycle, holding no onset at all.
+    EXPECT_TRUE(joinedSink.triggers.empty());
+    EXPECT_EQ(joined.queriedThrough(), fresh.queriedThrough());
+}
+
+TEST(SequencerTest, AJoinedSequencerSoundsWhatItIsAdvancedOver)
+{
+    Sequencer sequencer(oneCycleASecond());
+    RecordingSink sink;
+
+    sequencer.joinAt(20);
+
+    for (antwika::time::Tick tick = 21; tick < 31; ++tick)
+    {
+        sequencer.advance(tick, note(1), sink);
+    }
+
+    // One cycle of window, and pure() begins once a cycle.
+    ASSERT_EQ(sink.triggers.size(), 1U);
+    EXPECT_EQ(sink.triggers[0].startFrame, 144000U);
+}
+
+// Moving backwards is not expressible.
+TEST(SequencerTest, JoiningBackwardsLeavesTheWindowWhereItIs)
+{
+    Sequencer sequencer(oneCycleASecond());
+    RecordingSink sink;
+
+    sequencer.advance(20, note(1), sink);
+    const auto reached = sequencer.queriedThrough();
+
+    sequencer.joinAt(1);
+    EXPECT_EQ(sequencer.queriedThrough(), reached);
+
+    // And joining where it already stands moves nothing either.
+    sequencer.joinAt(20);
+    EXPECT_EQ(sequencer.queriedThrough(), reached);
+
+    sink.triggers.clear();
+    sequencer.advance(20, note(1), sink);
+
+    EXPECT_TRUE(sink.triggers.empty());
+}
+
 // A continuous value never begins, so it is never sounded.
 TEST(SequencerTest, NeverSoundsAContinuousValue)
 {

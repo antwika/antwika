@@ -8,8 +8,8 @@
 
 #include <antwika/sequencer/FrameClock.hpp>
 #include <antwika/sequencer/Rational.hpp>
-#include <antwika/sequencer/TempoMap.hpp>
 #include <antwika/sequencer/SequencerError.hpp>
+#include <antwika/sequencer/TempoMap.hpp>
 #include <antwika/sound/DeviceDesc.hpp>
 #include <antwika/sound/IDevice.hpp>
 #include <antwika/sound/OfflineDevice.hpp>
@@ -21,11 +21,10 @@
 #include "antwika/music_editor/Score.hpp"
 #include "antwika/music_editor/TrackPreset.hpp"
 
-using antwika::music_editor::kTrackCount;
+using antwika::music_editor::kPresetCount;
 using antwika::music_editor::Playback;
 using antwika::music_editor::PlaybackDesc;
 using antwika::music_editor::Score;
-using antwika::music_editor::trackName;
 using antwika::sequencer::FrameClock;
 using antwika::sequencer::Rational;
 using antwika::sequencer::TempoMap;
@@ -42,7 +41,7 @@ namespace
 
     constexpr WaveFormat kFormat{.rate = 48000, .channels = 2};
 
-    // One cycle a second, a tick every tenth of one.
+    // A cycle a second, a tick every tenth of one: ten ticks a cycle.
     [[nodiscard]] PlaybackDesc oneCycleASecond()
     {
         return PlaybackDesc{
@@ -125,18 +124,12 @@ namespace
         }
     };
 
-    // One voice line per track, all playing the same thing.
-    [[nodiscard]] std::string everyVoice(const std::string &notation)
+    void step(Playback &playback, const int times, const bool paused)
     {
-        std::string document;
-
-        for (std::size_t track = 0; track < kTrackCount; ++track)
+        for (int at = 0; at < times; ++at)
         {
-            document += "$: " + std::string(trackName(track)) + " "
-                + notation + "\n";
+            playback.step(paused);
         }
-
-        return document;
     }
 } // namespace
 
@@ -150,9 +143,11 @@ TEST(PlaybackTest, SoundsNothingBeforeItIsStepped)
     EXPECT_EQ(playback.started(), 0U);
     EXPECT_EQ(playback.playedTicks(), 0U);
     EXPECT_EQ(playback.queuedFrames(), 0U);
+    EXPECT_EQ(playback.sounding(), 0U);
 }
 
 // Looking no ticks ahead decides a note after its frames are gone.
+// One sequencer exists from the start so that is refused here.
 TEST(PlaybackTest, RefusesToLookNoTicksAhead)
 {
     Rig rig;
@@ -161,8 +156,7 @@ TEST(PlaybackTest, RefusesToLookNoTicksAhead)
     desc.lookahead = 0;
 
     EXPECT_THROW(
-        Playback(
-            rig.score, rig.mixer, rig.device, rig.sleeper, desc),
+        Playback(rig.score, rig.mixer, rig.device, rig.sleeper, desc),
         antwika::sequencer::SequencerError);
 }
 
@@ -170,7 +164,7 @@ TEST(PlaybackTest, RefusesToLookNoTicksAhead)
 TEST(PlaybackTest, SoundsALineAsSoonAsItIsStepped)
 {
     Rig rig;
-    rig.play("$: bass 0\n");
+    rig.play("$: bass.n(\"0\")\n");
 
     Playback playback(
         rig.score, rig.mixer, rig.device, rig.sleeper,
@@ -183,27 +177,129 @@ TEST(PlaybackTest, SoundsALineAsSoonAsItIsStepped)
     EXPECT_GT(playback.queuedFrames(), 0U);
 }
 
-// One sequencer per track.
-// A track's events become a voice through its own preset.
-TEST(PlaybackTest, EveryVoiceIsSoundedThroughItsOwnTrack)
+// One sequencer per voice line.
+// Ten ticks is exactly one cycle.
+// So a settled run sounds each line's onsets and no other line's.
+TEST(PlaybackTest, SoundsEveryVoiceLineThroughASequencerOfItsOwn)
 {
     Rig rig;
-    rig.play(everyVoice("0"));
+    rig.play(
+        "$: bass.n(\"0\")\n"
+        "$: lead.n(\"0*2\")\n"
+        "$: bell.n(\"0*4\")\n"
+        "$: drum.n(\"0*8\")\n");
+
+    Playback playback(
+        rig.score, rig.mixer, rig.device, rig.sleeper,
+        oneCycleASecond());
+
+    step(playback, 30, false);
+    const auto settled = playback.started();
+
+    step(playback, 10, false);
+
+    EXPECT_EQ(playback.sounding(), kPresetCount);
+    EXPECT_EQ(playback.started() - settled, 15U);
+}
+
+// Nothing is limited to one of a kind: a line is a voice.
+TEST(PlaybackTest, TwoLinesOutOfOnePresetAreTwoVoices)
+{
+    Rig rig;
+    rig.play(
+        "$: drum.n(\"0\")\n"
+        "$: drum.n(\"0*2\").pan(.5)\n");
+
+    Playback playback(
+        rig.score, rig.mixer, rig.device, rig.sleeper,
+        oneCycleASecond());
+
+    step(playback, 30, false);
+    const auto settled = playback.started();
+
+    step(playback, 10, false);
+
+    EXPECT_EQ(playback.sounding(), 2U);
+    EXPECT_EQ(playback.started() - settled, 3U);
+}
+
+TEST(PlaybackTest, ReportsHowManyLinesTheScoreIsSounding)
+{
+    Rig rig;
+    rig.play("$: bass.n(\"0\")\n$: lead.n(\"0\")\n");
 
     Playback playback(
         rig.score, rig.mixer, rig.device, rig.sleeper,
         oneCycleASecond());
 
     playback.step(false);
+    EXPECT_EQ(playback.sounding(), 2U);
 
-    EXPECT_EQ(playback.started(), kTrackCount);
+    rig.play("$: bass.n(\"0\")\n");
+    playback.step(false);
+
+    EXPECT_EQ(playback.sounding(), 1U);
+}
+
+// A sequencer that missed a tick is one this voice did not exist for.
+// It joins now rather than sounding every cycle it slept through.
+TEST(PlaybackTest, AVoiceWrittenPartwayThroughJoinsRatherThanCatchesUp)
+{
+    Rig rig;
+    rig.play("$: bass.n(\"0\")\n");
+
+    Playback playback(
+        rig.score, rig.mixer, rig.device, rig.sleeper,
+        oneCycleASecond());
+
+    // Three cycles of one voice, so there is a past to replay.
+    step(playback, 30, false);
+
+    const auto before = playback.started();
+    ASSERT_GT(before, 2U);
+
+    rig.play("$: bass.n(\"0\")\n$: lead.n(\"0\")\n");
+    playback.step(false);
+
+    // A tenth of a cycle of new window, rather than three cycles.
+    EXPECT_LE(playback.started() - before, 1U);
+    EXPECT_EQ(playback.sounding(), 2U);
+
+    // And it does go on to sound, once its window reaches an onset.
+    step(playback, 20, false);
+    EXPECT_GT(playback.started(), before + 1);
+}
+
+// A pool only ever grows.
+// So a line written where a deleted one was wakes a sequencer up.
+TEST(PlaybackTest, ALineWrittenWhereADeletedOneWasJoinsToo)
+{
+    Rig rig;
+    rig.play("$: bass.n(\"0\")\n$: lead.n(\"0\")\n");
+
+    Playback playback(
+        rig.score, rig.mixer, rig.device, rig.sleeper,
+        oneCycleASecond());
+
+    step(playback, 5, false);
+
+    rig.play("$: bass.n(\"0\")\n");
+    step(playback, 25, false);
+
+    const auto before = playback.started();
+
+    rig.play("$: bass.n(\"0\")\n$: bell.n(\"0\")\n");
+    playback.step(false);
+
+    EXPECT_LE(playback.started() - before, 1U);
+    EXPECT_EQ(playback.sounding(), 2U);
 }
 
 // Pausing stops the musical clock rather than the device.
 TEST(PlaybackTest, PausingStopsTheClockAndNotTheDevice)
 {
     Rig rig;
-    rig.play("$: bass 0*4\n");
+    rig.play("$: bass.n(\"0*4\")\n");
 
     Playback playback(
         rig.score, rig.mixer, rig.device, rig.sleeper,
@@ -214,10 +310,7 @@ TEST(PlaybackTest, PausingStopsTheClockAndNotTheDevice)
     const auto sounded = playback.started();
     const auto queued = playback.queuedFrames();
 
-    for (int step = 0; step < 8; ++step)
-    {
-        playback.step(true);
-    }
+    step(playback, 8, true);
 
     EXPECT_EQ(playback.started(), sounded);
     EXPECT_EQ(playback.playedTicks(), 1U);
@@ -229,30 +322,20 @@ TEST(PlaybackTest, PausingStopsTheClockAndNotTheDevice)
 TEST(PlaybackTest, ResumingSoundsAgainRatherThanIntoThePast)
 {
     Rig rig;
-    rig.play("$: bass 0*4\n");
+    rig.play("$: bass.n(\"0*4\")\n");
 
     Playback playback(
         rig.score, rig.mixer, rig.device, rig.sleeper,
         oneCycleASecond());
 
     playback.step(false);
-
-    for (int step = 0; step < 20; ++step)
-    {
-        playback.step(true);
-    }
+    step(playback, 20, true);
 
     const auto beforeResume = playback.started();
 
-    for (int step = 0; step < 20; ++step)
-    {
-        playback.step(false);
-    }
+    step(playback, 20, false);
 
     EXPECT_GT(playback.started(), beforeResume);
-
-    // Every note landed at or after the frames already handed over.
-    // That is what the offset is for.
     EXPECT_GT(playback.queuedFrames(), 0U);
 }
 
@@ -265,19 +348,13 @@ TEST(PlaybackTest, ANewLineIsHeardWithoutAnythingBeingReloaded)
         rig.score, rig.mixer, rig.device, rig.sleeper,
         oneCycleASecond());
 
-    for (int step = 0; step < 10; ++step)
-    {
-        playback.step(false);
-    }
+    step(playback, 10, false);
 
     EXPECT_EQ(playback.started(), 0U);
 
-    rig.play("$: bass 0*8\n");
+    rig.play("$: bass.n(\"0*8\")\n");
 
-    for (int step = 0; step < 10; ++step)
-    {
-        playback.step(false);
-    }
+    step(playback, 10, false);
 
     EXPECT_GT(playback.started(), 0U);
 }
@@ -285,7 +362,7 @@ TEST(PlaybackTest, ANewLineIsHeardWithoutAnythingBeingReloaded)
 TEST(PlaybackTest, SilencingStopsEveryVoiceAtOnce)
 {
     Rig rig;
-    rig.play("$: bass 0\n");
+    rig.play("$: bass.n(\"0\")\n");
 
     Playback playback(
         rig.score, rig.mixer, rig.device, rig.sleeper,
@@ -302,16 +379,13 @@ TEST(PlaybackTest, SilencingStopsEveryVoiceAtOnce)
 TEST(PlaybackTest, KeepsTheDeviceFedWithoutRunningAway)
 {
     Rig rig;
-    rig.play("$: bass 0\n");
+    rig.play("$: bass.n(\"0\")\n");
 
     Playback playback(
         rig.score, rig.mixer, rig.device, rig.sleeper,
         oneCycleASecond());
 
-    for (int step = 0; step < 30; ++step)
-    {
-        playback.step(false);
-    }
+    step(playback, 30, false);
 
     // An offline device consumes everything the moment it is pumped.
     // So the queue never runs ahead by more than one lead.
@@ -321,20 +395,16 @@ TEST(PlaybackTest, KeepsTheDeviceFedWithoutRunningAway)
 
 // A device that consumes when pumped is never ahead of itself.
 // So an offline run costs no wall-clock time at all.
-// A real one is paced by the hardware instead.
 TEST(PlaybackTest, WaitsOutNothingWhenTheDeviceKeepsUp)
 {
     Rig rig;
-    rig.play("$: bass 0\n");
+    rig.play("$: bass.n(\"0\")\n");
 
     Playback playback(
         rig.score, rig.mixer, rig.device, rig.sleeper,
         oneCycleASecond());
 
-    for (int step = 0; step < 20; ++step)
-    {
-        playback.step(false);
-    }
+    step(playback, 20, false);
 
     EXPECT_EQ(rig.sleeper.calls, 0);
 }
@@ -348,7 +418,7 @@ TEST(PlaybackTest, WaitsOutAudioTheDeviceHasNotPlayedYet)
     SynthMixer mixer{SynthMixerDesc{.format = kFormat}};
     Score score;
 
-    score.read("$: bass 0\n");
+    score.read("$: bass.n(\"0\")\n");
 
     Playback playback(
         score, mixer, device, sleeper, oneCycleASecond());
@@ -382,7 +452,7 @@ TEST(PlaybackTest, StopsPumpingOnceTheDeviceIsFarEnoughAhead)
 TEST(PlaybackTest, ReportsHowManyVoicesAreSounding)
 {
     Rig rig;
-    rig.play("$: bass 0\n");
+    rig.play("$: bass.n(\"0\")\n");
 
     Playback playback(
         rig.score, rig.mixer, rig.device, rig.sleeper,
@@ -404,7 +474,7 @@ TEST(PlaybackTest, PumpsWhileTheClockStandsStill)
     SynthMixer mixer{SynthMixerDesc{.format = kFormat}};
     Score score;
 
-    score.read("$: bass 0*4\n");
+    score.read("$: bass.n(\"0*4\")\n");
 
     Playback playback(
         score, mixer, device, sleeper, oneCycleASecond());
@@ -414,4 +484,56 @@ TEST(PlaybackTest, PumpsWhileTheClockStandsStill)
     EXPECT_GT(playback.queuedFrames(), 0U);
     EXPECT_EQ(playback.playedTicks(), 0U);
     EXPECT_EQ(playback.started(), 0U);
+
+    // What the score holds is counted whether it is sounding or not.
+    EXPECT_EQ(playback.sounding(), 1U);
+}
+
+// What the chain said reaches the sound, rather than the preset alone.
+TEST(PlaybackTest, EachLinesOwnPresetIsWhatItsNotesAreMadeThrough)
+{
+    Rig loud;
+    loud.play("$: bell.n(\"0\").gain(1)\n");
+
+    Playback loudly(
+        loud.score, loud.mixer, loud.device, loud.sleeper,
+        oneCycleASecond());
+
+    loudly.step(false);
+
+    Rig quiet;
+    quiet.play("$: bell.n(\"0\").gain(.05)\n");
+
+    Playback quietly(
+        quiet.score, quiet.mixer, quiet.device, quiet.sleeper,
+        oneCycleASecond());
+
+    quietly.step(false);
+
+    ASSERT_EQ(loudly.started(), 1U);
+    ASSERT_EQ(quietly.started(), 1U);
+    ASSERT_EQ(loud.rendered.frameCount(), quiet.rendered.frameCount());
+
+    EXPECT_NE(loud.rendered, quiet.rendered);
+}
+
+// Every line is there from the first tick, so none of them joins.
+// A voice made during its own first step has missed nothing.
+// It used to skip the downbeat looking for history anyway.
+TEST(PlaybackTest, EveryLineSoundsTheRunsOpeningDownbeat)
+{
+    Rig rig;
+    rig.play(
+        "$: bass.n(\"0\")\n"
+        "$: lead.n(\"0\")\n"
+        "$: bell.n(\"0\")\n"
+        "$: drum.n(\"0\")\n");
+
+    Playback playback(
+        rig.score, rig.mixer, rig.device, rig.sleeper,
+        oneCycleASecond());
+
+    playback.step(false);
+
+    EXPECT_EQ(playback.started(), kPresetCount);
 }

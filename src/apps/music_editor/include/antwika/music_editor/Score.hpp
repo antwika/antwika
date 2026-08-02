@@ -156,6 +156,13 @@ namespace antwika::music_editor
         {
             std::string chain;
             std::string failure;
+
+            // Whether this line has ever been read at all.
+            // A line kept but never read holds an empty chain.
+            // Which is exactly what a bare `$:` yields.
+            // Without this the one would be taken for the other.
+            bool ever = false;
+
             bool sounding = false;
             Voice voice;
         };
