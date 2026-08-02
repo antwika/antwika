@@ -178,11 +178,20 @@ namespace antwika::pattern
 
                 void accept(const Hap &hap) override
                 {
+                    // A continuous value has no onset to drop.
+                    // Its part is only the window that was asked for.
+                    // Hashing it would tie a signal to that slicing.
+                    // Independence of it is why any of this hashes.
+                    if (!hap.whole.has_value())
+                    {
+                        out.accept(hap);
+
+                        return;
+                    }
+
                     // Hashed from where the event begins, not generated.
                     // Cycle four hundred answers as playing there would.
-                    const auto &at =
-                        hap.whole.has_value() ? hap.whole->begin()
-                                              : hap.part.begin();
+                    const auto &at = hap.whole->begin();
 
                     constexpr std::uint64_t kSpreadTop
                         = 0x9E3779B97F4A7C15ULL;

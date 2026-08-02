@@ -258,6 +258,57 @@ TEST(ParsePatternTest, RefusesNoSlotsAtAll)
     EXPECT_THROW((void)read("3!0"), NotationError);
 }
 
+// The fraction NumberWords promises, reachable through the grammar.
+// '%' is a word character for exactly this.
+TEST(ParsePatternTest, ReadsAWordHoldingAFraction)
+{
+    const auto haps = read("3%2");
+
+    ASSERT_EQ(haps.size(), 1U);
+    EXPECT_EQ(*haps[0].value.get(kName), ParamValue(3, 2));
+}
+
+// A count this big is a vector no machine can hold.
+// So it has to fail loudly here rather than as a bad_alloc later.
+TEST(ParsePatternTest, RefusesACountAboveItsLimit)
+{
+    EXPECT_THROW((void)read("0!2000000000"), NotationError);
+    EXPECT_THROW((void)read("0(3,2000000000)"), NotationError);
+    EXPECT_THROW((void)read("0*999999999"), NotationError);
+}
+
+// Too long to be an integer at all, rather than merely too large.
+// The old accumulation overflowed here, which is undefined.
+TEST(ParsePatternTest, RefusesANumberTooLongToHold)
+{
+    EXPECT_THROW(
+        (void)read("0!99999999999999999999999"), NotationError);
+}
+
+TEST(ParsePatternTest, AcceptsACountAtItsLimit)
+{
+    EXPECT_EQ(read("0!1024").size(), 1024U);
+    EXPECT_EQ(read("0*1024").size(), 1024U);
+}
+
+// A single factor within the limit still composes past it.
+// So it is the product along a nesting path that is bounded.
+TEST(ParsePatternTest, RefusesSpeedFactorsThatMultiplyPastTheLimit)
+{
+    EXPECT_THROW((void)read("0*64*64*64"), NotationError);
+    EXPECT_THROW((void)read("[0*64]*64"), NotationError);
+    EXPECT_THROW((void)read("<0*64>*64"), NotationError);
+    EXPECT_THROW((void)read("[~, 0*64]*64"), NotationError);
+
+    // A slash by a fraction below one is a speed-up too.
+    EXPECT_THROW((void)read("0/1%1024/1%2"), NotationError);
+}
+
+TEST(ParsePatternTest, LetsSeparateTermsEachHaveTheirOwnSpeed)
+{
+    EXPECT_EQ(read("0*64 3*64 5*64").size(), 192U);
+}
+
 // It parses cleanly and asks for something no pattern could be.
 // So the algebra refuses it rather than the grammar.
 TEST(ParsePatternTest, LetsTheAlgebraRefuseWhatItParsedCleanly)

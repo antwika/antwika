@@ -284,6 +284,24 @@ TEST(SynthMixerTest, Render_PansAVoiceAcrossTheChannels)
     EXPECT_EQ(out.samples[8 * 2 + 1], 1.0F);
 }
 
+// The gain is folded into the per-channel levels at trigger time.
+// Applying it again per sample sounded a voice at its square.
+// Every case using a gain of one hid that.
+TEST(SynthMixerTest, Render_AppliesGain)
+{
+    SynthMixer mixer(SynthMixerDesc{.format = kStereo48});
+
+    auto quiet = kFlatBlip;
+    quiet.gain = 0.5F;
+
+    mixer.trigger(TriggerRequest{.voice = quiet});
+
+    const auto out = rendered(mixer, 4);
+
+    EXPECT_FLOAT_EQ(out.samples[0], 0.5F);
+    EXPECT_FLOAT_EQ(out.samples[1], 0.5F);
+}
+
 TEST(SynthMixerTest, Render_SumsVoicesThatOverlap)
 {
     SynthMixer mixer(SynthMixerDesc{.format = kStereo48});
