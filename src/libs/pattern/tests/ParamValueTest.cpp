@@ -42,6 +42,25 @@ TEST(ParamValueTest, RefusesADenominatorOfZero)
     EXPECT_THROW(ParamValue(1, 0), PatternError);
 }
 
+// The sign lives on the numerator, so a negative denominator reads
+// the same as its mirrored fraction.
+TEST(ParamValueTest, MovesTheSignToTheNumerator)
+{
+    EXPECT_EQ(ParamValue(1, -2), ParamValue(-1, 2));
+    EXPECT_EQ(ParamValue(-1, -2), ParamValue(1, 2));
+}
+
+// The scaled minimum over minus one is the one division the hardware
+// traps on rather than throws; every route to it must refuse first.
+TEST(ParamValueTest, RefusesAFractionWhoseSignCannotMove)
+{
+    constexpr auto kLeast = std::numeric_limits<std::int64_t>::min();
+
+    EXPECT_THROW((ParamValue{kLeast, -1}), PatternError);
+    EXPECT_THROW((ParamValue{1, kLeast}), PatternError);
+    EXPECT_THROW((ParamValue{-2147483648LL, -1}), PatternError);
+}
+
 TEST(ParamValueTest, RefusesAWholeNumberThatWillNotFit)
 {
     EXPECT_THROW(ParamValue{kMost}, PatternError);

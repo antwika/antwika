@@ -47,11 +47,17 @@ namespace antwika::pattern
         explicit ParamValue(std::int64_t whole);
 
         /**
-         * @brief Build an exact fraction, rounded to what fits below the
-         * point.
+         * @brief Build an exact fraction, truncated to what fits below
+         * the point.
+         *
+         * The sign is moved to the numerator first, as Cycle holds it,
+         * so no division here can ever be the minimum over minus one --
+         * the one division that traps instead of throwing.
+         *
          * @param numerator The fraction's top.
          * @param denominator The fraction's bottom.
-         * @throws PatternError If the denominator is zero, or the result
+         * @throws PatternError If the denominator is zero, the sign
+         * cannot be moved without leaving the range, or the result
          * will not fit.
          */
         ParamValue(std::int64_t numerator, std::int64_t denominator);
