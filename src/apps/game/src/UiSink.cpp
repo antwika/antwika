@@ -54,7 +54,8 @@ namespace antwika::game
         AppModeState &mode,
         RoadDrag &drag,
         const MenuModalScene &modal,
-        Camera home)
+        Camera home,
+        const CityRatings &ratings)
         : camera(camera),
           overlay(overlay),
           input(input),
@@ -63,7 +64,8 @@ namespace antwika::game
           mode(mode),
           drag(drag),
           modal(modal),
-          home(home)
+          home(home),
+          ratings(ratings)
     {
     }
 
@@ -242,7 +244,8 @@ namespace antwika::game
             camera,
             overlay.tool(),
             pause.paused(),
-            tick);
+            tick,
+            ratings);
     }
 
     void UiSink::selectFrom(WidgetId activated)

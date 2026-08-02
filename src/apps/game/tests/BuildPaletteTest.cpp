@@ -385,6 +385,7 @@ namespace
         RoadDrag drag;
         AppModeState mode{AppMode::CityMap};
         MenuModalScene modalScene{kTranslator};
+        antwika::game::CityRatings ratings;
         UiSink uiSink{
             camera,
             overlay,
@@ -394,7 +395,8 @@ namespace
             mode,
             drag,
             modalScene,
-            camera};
+            camera,
+            ratings};
         GridSink gridSink{
             world,
             paths,

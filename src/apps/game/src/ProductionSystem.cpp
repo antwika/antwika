@@ -4,6 +4,7 @@
 
 #include "antwika/game/Building.hpp"
 #include "antwika/game/Cell.hpp"
+#include "antwika/game/LabourQuery.hpp"
 #include "antwika/game/Production.hpp"
 #include "antwika/game/Resource.hpp"
 #include "antwika/game/Store.hpp"
@@ -53,6 +54,18 @@ namespace antwika::game
                 continue;
             }
 
+            // Stretched over however few people turned up for work.
+            // Nobody at all makes nothing, with the countdown held.
+            // Which is the rule a workshop out of clay already follows.
+            // Read out here for a second reason.
+            const auto period = workedPeriod(
+                kProductionPeriodTicks, staffingOf(world, entity));
+
+            if (!period.has_value())
+            {
+                continue;
+            }
+
             const auto production = world.get<Production>(entity);
 
             if (production.ticksUntilOutput > 0)
@@ -88,8 +101,7 @@ namespace antwika::game
 
             world.set<Building>(entity, worked);
             world.set<Production>(
-                entity,
-                Production{.ticksUntilOutput = kProductionPeriodTicks});
+                entity, Production{.ticksUntilOutput = *period});
         }
     }
 

@@ -360,7 +360,8 @@ TEST(SceneSnapshotTest, GameSummaryEqualityComparesEveryField)
         .paths = {Cell{.x = 1, .y = 1}},
         .walkers = {WalkerView{.at = {.x = 2, .y = 2}}},
         .buildings = {},
-        .camera = Camera()};
+        .camera = Camera(),
+        .ratings = {}};
 
     EXPECT_EQ(base, base);
 
@@ -379,6 +380,10 @@ TEST(SceneSnapshotTest, GameSummaryEqualityComparesEveryField)
     auto moved = base;
     moved.camera.panBy(1, 0);
     EXPECT_NE(base, moved);
+
+    auto rated = base;
+    rated.ratings.population = 7;
+    EXPECT_NE(base, rated);
 }
 
 // With one-cell buildings two could never overlap.

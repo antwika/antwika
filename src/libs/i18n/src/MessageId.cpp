@@ -419,6 +419,10 @@ namespace antwika::i18n
             return "GameHousingCottage";
         case MessageId::GameReadoutLevel:
             return "GameReadoutLevel";
+        case MessageId::GameToolbarPopulation:
+            return "GameToolbarPopulation";
+        case MessageId::GameToolbarEmployment:
+            return "GameToolbarEmployment";
         case MessageId::TaskWorkerTick:
             return "TaskWorkerTick";
         case MessageId::TaskWorkerBudget:

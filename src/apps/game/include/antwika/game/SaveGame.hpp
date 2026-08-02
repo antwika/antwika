@@ -235,6 +235,19 @@ namespace antwika::game
          */
         std::optional<Household> household = std::nullopt;
 
+        /**
+         * @brief How many of the city's people were working there.
+         *
+         * Optional, and absent means nobody has been allocated to it --
+         * which is both what a version-3 file written before labour
+         * existed says and what a workplace put up this tick holds.
+         *
+         * How many workers it *wanted* is deliberately not here:
+         * workersWantedBy() answers that from the kind this record
+         * already names, and a second copy could disagree with it.
+         */
+        std::optional<std::int32_t> employed = std::nullopt;
+
         [[nodiscard]] bool operator==(const SavedBuilding &other) const
             = default;
     };

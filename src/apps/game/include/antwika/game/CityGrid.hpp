@@ -16,6 +16,7 @@
 #include "antwika/game/PathIndex.hpp"
 #include "antwika/game/Production.hpp"
 #include "antwika/game/Walker.hpp"
+#include "antwika/game/Workforce.hpp"
 
 namespace antwika::game
 {
@@ -153,6 +154,21 @@ namespace antwika::game
          * closed one held.
          */
         std::optional<Household> household = std::nullopt;
+
+        /**
+         * @brief How many of the city's people were working there.
+         *
+         * Carried across for the household's reason: a city reopened
+         * with its workplaces unstaffed is a city whose walkers all stop
+         * for a tick, and a run that switched cities would then differ
+         * from one that did not.
+         *
+         * Optional rather than a plain value, exactly as the household
+         * above it is: an absent Workforce means fully staffed rather
+         * than empty -- see LabourQuery.hpp -- so putting one back where
+         * there was none would change what a reopened city does.
+         */
+        std::optional<Workforce> workforce = std::nullopt;
 
         /**
          * @brief Compare two stored buildings.

@@ -13,9 +13,12 @@
 #include "antwika/game/Errand.hpp"
 #include "antwika/game/GameSummary.hpp"
 #include "antwika/game/GridExtent.hpp"
+#include "antwika/game/CityRatings.hpp"
 #include "antwika/game/Household.hpp"
+#include "antwika/game/LabourQuery.hpp"
 #include "antwika/game/HousingLevel.hpp"
 #include "antwika/game/Production.hpp"
+#include "antwika/game/Workforce.hpp"
 #include "antwika/game/SaveGame.hpp"
 #include "antwika/game/SceneSnapshot.hpp"
 #include "antwika/game/Terrain.hpp"
@@ -47,7 +50,10 @@ namespace
     using antwika::game::GameSummary;
     using antwika::game::GridExtent;
     using antwika::game::HoverReadout;
+    using antwika::game::CityRatings;
     using antwika::game::Household;
+    using antwika::game::Staffing;
+    using antwika::game::Workforce;
     using antwika::game::HousingLevel;
     using antwika::game::HousingRequirement;
     using antwika::game::RoadPlan;
@@ -180,7 +186,12 @@ namespace
             .buildings =
                 {BuildingView{
                     .at = {.x = 3, .y = 3}, .kind = BuildingKind::House}},
-            .camera = Camera(antwika::gfx::Point{.x = 4, .y = 5}, 1)};
+            .camera = Camera(antwika::gfx::Point{.x = 4, .y = 5}, 1),
+            .ratings = CityRatings{
+                .population = 6,
+                .employment = 50,
+                .averageHousingLevel = 100,
+                .serviceReach = 25}};
     }
 
     TEST(GameSummaryTest, EqualityComparesEveryField)
@@ -197,6 +208,42 @@ namespace
             base, [](GameSummary &s) { s.buildings.clear(); });
         expectMemberCompared(
             base, [](GameSummary &s) { s.camera = Camera(); });
+        expectMemberCompared(
+            base, [](GameSummary &s) { s.ratings.population = 0; });
+    }
+
+    TEST(CityRatingsValueTest, EqualityComparesEveryField)
+    {
+        const CityRatings base{
+            .population = 6,
+            .employment = 50,
+            .averageHousingLevel = 100,
+            .serviceReach = 25};
+
+        expectMemberCompared(
+            base, [](CityRatings &r) { r.population = 0; });
+        expectMemberCompared(
+            base, [](CityRatings &r) { r.employment = 0; });
+        expectMemberCompared(
+            base, [](CityRatings &r) { r.averageHousingLevel = 0; });
+        expectMemberCompared(
+            base, [](CityRatings &r) { r.serviceReach = 0; });
+    }
+
+    TEST(WorkforceComponentTest, EqualityComparesItsOneCount)
+    {
+        const Workforce base{.employed = 3};
+
+        expectMemberCompared(
+            base, [](Workforce &w) { w.employed = 0; });
+    }
+
+    TEST(StaffingTest, EqualityComparesEveryField)
+    {
+        const Staffing base{.filled = 1, .wanted = 4};
+
+        expectMemberCompared(base, [](Staffing &s) { s.filled = 0; });
+        expectMemberCompared(base, [](Staffing &s) { s.wanted = 0; });
     }
 
     [[nodiscard]] SaveGame populatedSave()
@@ -373,7 +420,8 @@ namespace
             .level = HousingLevel::Hovel,
             .ticksUntilEvolve = 7,
             .ticksUntilDevolve = 9,
-            .population = 11};
+            .population = 11,
+            .ticksUntilSettler = 13};
 
         expectMemberCompared(
             base, [](Household &h) { h.level = HousingLevel::Tent; });
@@ -383,6 +431,8 @@ namespace
             base, [](Household &h) { h.ticksUntilDevolve = 0; });
         expectMemberCompared(
             base, [](Household &h) { h.population = 0; });
+        expectMemberCompared(
+            base, [](Household &h) { h.ticksUntilSettler = 0; });
     }
 
 } // namespace

@@ -20,6 +20,7 @@
 #include "antwika/game/Path.hpp"
 #include "antwika/game/PathIndex.hpp"
 #include "antwika/game/Household.hpp"
+#include "antwika/game/Workforce.hpp"
 #include "antwika/game/HousingLevel.hpp"
 #include "antwika/game/Production.hpp"
 #include "antwika/game/Walker.hpp"
@@ -42,6 +43,7 @@ namespace
     using antwika::game::Errand;
     using antwika::game::ErrandLeg;
     using antwika::game::Household;
+    using antwika::game::Workforce;
     using antwika::game::HousingLevel;
     using antwika::game::Production;
     using antwika::game::Resource;
@@ -548,6 +550,45 @@ namespace
         EXPECT_FALSE(taken.buildings[1].household.has_value());
     }
 
+
+    TEST_F(CityGridTest, StoredBuildingEqualityComparesItsWorkforce)
+    {
+        StoredBuilding base{.at = Cell{1, 1}, .building = Building{}};
+        base.workforce = Workforce{.employed = 3};
+
+        expectMemberCompared(
+            base, [](StoredBuilding &b) { b.workforce.reset(); });
+        expectMemberCompared(
+            base, [](StoredBuilding &b) { b.workforce->employed = 0; });
+    }
+
+    // An absent Workforce means fully staffed rather than empty.
+    // So a city reopened having lost one is a city that speeds up.
+    TEST_F(CityGridTest, CityGrid_CarriesAWorkforceAcrossACitySwitch)
+    {
+        const auto farm = putUp(Cell{2, 2}, BuildingKind::Farm);
+        putUp(Cell{6, 6}, BuildingKind::Well);
+        antwika::game::setWorkforce(
+            world, farm, Workforce{.employed = 2});
+        world.commit();
+
+        const auto grid = cityGridOf(world);
+
+        ASSERT_EQ(grid.buildings.size(), 2U);
+        ASSERT_TRUE(grid.buildings[0].workforce.has_value());
+        EXPECT_EQ(grid.buildings[0].workforce->employed, 2);
+        EXPECT_FALSE(grid.buildings[1].workforce.has_value());
+
+        restoreCityGrid(world, built, paths, grid);
+        world.commit();
+
+        const auto taken = cityGridOf(world);
+
+        ASSERT_EQ(taken.buildings.size(), 2U);
+        EXPECT_EQ(
+            taken.buildings[0].workforce, grid.buildings[0].workforce);
+        EXPECT_FALSE(taken.buildings[1].workforce.has_value());
+    }
 
     TEST_F(CityGridTest, RestoreCityGrid_PutsBackAnErrandBoundNowhere)
     {

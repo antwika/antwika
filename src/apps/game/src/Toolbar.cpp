@@ -35,7 +35,8 @@ namespace antwika::game
         const Camera &camera,
         std::optional<BuildTool> selected,
         bool paused,
-        antwika::time::Tick tick) const
+        antwika::time::Tick tick,
+        CityRatings ratings) const
     {
         Context ui{
             canvas, scaledTheme(Theme{}, scaleForCanvas(canvas)), pointer};
@@ -87,6 +88,25 @@ namespace antwika::game
                 ui.button(
                     translator.text(MessageId::GameToolbarMenu),
                     {.id = widgets::kMenu});
+
+                // Appended after the menu button, never before it.
+                // Every widget declared ahead of these keeps its place.
+                // So a session recorded before them replays untouched.
+                //
+                // Labels rather than buttons, and not by omission.
+                // There is nothing to press here, so there is no id.
+                // And so a rating can never become an input.
+                const auto people = std::to_string(ratings.population);
+                const std::array<std::string_view, 1> peopleArgs{people};
+                ui.label(
+                    translator.formatted(
+                        MessageId::GameToolbarPopulation, peopleArgs));
+
+                const auto jobs = std::to_string(ratings.employment);
+                const std::array<std::string_view, 1> jobArgs{jobs};
+                ui.label(
+                    translator.formatted(
+                        MessageId::GameToolbarEmployment, jobArgs));
             }
 
             {

@@ -70,6 +70,13 @@ namespace antwika::game
                 household = world.get<Household>(entity);
             }
 
+            std::optional<Workforce> workforce;
+
+            if (world.has<Workforce>(entity))
+            {
+                workforce = world.get<Workforce>(entity);
+            }
+
             grid.buildings.push_back(
                 StoredBuilding{
                     .at = world.get<Cell>(entity),
@@ -77,7 +84,8 @@ namespace antwika::game
                     .walkers = {},
                     .coverage = coverageOf(world, entity),
                     .production = production,
-                    .household = household});
+                    .household = household,
+                    .workforce = workforce});
         }
 
         // The links, kept only where both ends were put away.
@@ -238,6 +246,13 @@ namespace antwika::game
             {
                 setHousehold(
                     world, buildings[index], *stored.household);
+            }
+
+            // And the workforce, through its own one writer.
+            if (stored.workforce.has_value())
+            {
+                setWorkforce(
+                    world, buildings[index], *stored.workforce);
             }
 
             (void)built.insert(stored.at, footprintOf(building.kind));
