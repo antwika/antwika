@@ -12,10 +12,12 @@
 #include "antwika/game/Cell.hpp"
 #include "antwika/game/Footprint.hpp"
 #include "antwika/game/Direction.hpp"
+#include "antwika/game/Errand.hpp"
 #include "antwika/game/GameState.hpp"
 #include "antwika/game/GridExtent.hpp"
 #include "antwika/game/Path.hpp"
 #include "antwika/game/PathIndex.hpp"
+#include "antwika/game/Production.hpp"
 #include "antwika/game/SaveGame.hpp"
 #include "antwika/game/SceneSnapshot.hpp"
 #include "antwika/game/SessionStore.hpp"
@@ -28,6 +30,10 @@ namespace
     using antwika::game::Camera;
     using antwika::game::Cell;
     using antwika::game::Direction;
+    using antwika::game::Errand;
+    using antwika::game::ErrandLeg;
+    using antwika::game::Production;
+    using antwika::game::Resource;
     using antwika::game::GameState;
     using antwika::game::GridExtent;
     using antwika::game::Path;
@@ -272,4 +278,53 @@ namespace
 
         EXPECT_EQ(store.take().buildings, save.buildings);
     }
+
+    // The one door in and out of a session.
+    // So a member added to the file has to survive both halves.
+    TEST_F(SessionStoreTest, Restore_PutsBackAnErrandAndACountdown)
+    {
+        SaveGame save;
+        save.paths = {{.x = 3, .y = 3}};
+        save.walkers = {SavedWalker{
+            .at = {.x = 3, .y = 3},
+            .kind = antwika::game::WalkerKind::CartPusher,
+            .home = 0U,
+            .errand =
+                antwika::game::SavedErrand{
+                    .destination = 1U,
+                    .carrying = Resource::Clay,
+                    .leg = ErrandLeg::Returning}}};
+        save.buildings = {
+            antwika::game::SavedBuilding{
+                .at = {.x = 5, .y = 5},
+                .kind = antwika::game::BuildingKind::ClayPit,
+                .walkers = {0U},
+                .ticksUntilOutput = 6},
+            antwika::game::SavedBuilding{
+                .at = {.x = 9, .y = 9},
+                .kind = antwika::game::BuildingKind::Storage}};
+
+        store.restore(save);
+        world.commit();
+
+        EXPECT_EQ(store.take().walkers[0].errand, save.walkers[0].errand);
+        EXPECT_EQ(
+            store.take().buildings[0].ticksUntilOutput,
+            save.buildings[0].ticksUntilOutput);
+        EXPECT_FALSE(
+            store.take().buildings[1].ticksUntilOutput.has_value());
+    }
+
+    TEST_F(SessionStoreTest, Restore_LeavesAWalkerWithNoErrandRoaming)
+    {
+        SaveGame save;
+        save.paths = {{.x = 3, .y = 3}};
+        save.walkers = {SavedWalker{.at = {.x = 3, .y = 3}}};
+
+        store.restore(save);
+        world.commit();
+
+        EXPECT_FALSE(store.take().walkers[0].errand.has_value());
+    }
+
 } // namespace

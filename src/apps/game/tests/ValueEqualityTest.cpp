@@ -10,8 +10,10 @@
 #include "antwika/game/Camera.hpp"
 #include "antwika/game/Cell.hpp"
 #include "antwika/game/Direction.hpp"
+#include "antwika/game/Errand.hpp"
 #include "antwika/game/GameSummary.hpp"
 #include "antwika/game/GridExtent.hpp"
+#include "antwika/game/Production.hpp"
 #include "antwika/game/SaveGame.hpp"
 #include "antwika/game/SceneSnapshot.hpp"
 #include "antwika/game/Terrain.hpp"
@@ -35,6 +37,10 @@ namespace
     using antwika::game::Camera;
     using antwika::game::Cell;
     using antwika::game::Direction;
+    using antwika::game::Errand;
+    using antwika::game::ErrandLeg;
+    using antwika::game::Production;
+    using antwika::game::Resource;
     using antwika::game::GameState;
     using antwika::game::GameSummary;
     using antwika::game::GridExtent;
@@ -300,6 +306,32 @@ namespace
             base,
             [](Building &b)
             { b.walkers[1] = antwika::ecs::kNullEntity; });
+    }
+
+
+    TEST(ErrandComponentTest, EqualityComparesEveryField)
+    {
+        const Errand base{
+            .destination = static_cast<antwika::ecs::Entity>(3),
+            .carrying = Resource::Clay,
+            .leg = ErrandLeg::Returning};
+
+        expectMemberCompared(
+            base,
+            [](Errand &e)
+            { e.destination = antwika::ecs::kNullEntity; });
+        expectMemberCompared(
+            base, [](Errand &e) { e.carrying = Resource::Food; });
+        expectMemberCompared(
+            base, [](Errand &e) { e.leg = ErrandLeg::Outbound; });
+    }
+
+    TEST(ProductionComponentTest, EqualityComparesItsCountdown)
+    {
+        const Production base{.ticksUntilOutput = 5};
+
+        expectMemberCompared(
+            base, [](Production &p) { p.ticksUntilOutput = 0; });
     }
 
 } // namespace

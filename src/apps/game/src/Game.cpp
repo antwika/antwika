@@ -19,14 +19,17 @@
 #include "antwika/game/Desirability.hpp"
 #include "antwika/game/DesirabilitySystem.hpp"
 #include "antwika/game/GridSink.hpp"
+#include "antwika/game/HaulingSystem.hpp"
 #include "antwika/game/InputFold.hpp"
 #include "antwika/game/LiveGrid.hpp"
+#include "antwika/game/MarketSystem.hpp"
 #include "antwika/game/MainMenuScene.hpp"
 #include "antwika/game/MainMenuSink.hpp"
 #include "antwika/game/MenuModalScene.hpp"
 #include "antwika/game/ModeGatedSink.hpp"
 #include "antwika/game/PauseGatedSystem.hpp"
 #include "antwika/game/PauseState.hpp"
+#include "antwika/game/ProductionSystem.hpp"
 #include "antwika/game/SaveGameFile.hpp"
 #include "antwika/game/SaveLoadScene.hpp"
 #include "antwika/game/SaveLoadSink.hpp"
@@ -151,6 +154,41 @@ namespace antwika::game
         const auto servePhase = scheduler.createPhase("serve");
         scheduler.addSystem(servePhase, pausedCoverage);
         scheduler.addSystem(servePhase, pausedDesirability);
+
+        // The goods chain, gated exactly as the walk is.
+        // A city runs while its player reads the world map.
+        // And it stops only where a player asked.
+        // So both gates, in that order.
+        ProductionSystem productionSystem;
+        HaulingSystem haulingSystem(paths, config.extent);
+        MarketSystem marketSystem(paths, config.extent);
+
+        SessionGatedSystem gatedProduction(productionSystem, mode);
+        SessionGatedSystem gatedHauling(haulingSystem, mode);
+        SessionGatedSystem gatedMarkets(marketSystem, mode);
+
+        PauseGatedSystem pausedProduction(gatedProduction, pause);
+        PauseGatedSystem pausedHauling(gatedHauling, pause);
+        PauseGatedSystem pausedMarkets(gatedMarkets, pause);
+
+        // Two phases rather than one, and the split is load bearing.
+        // A phase is where the World's buffers swap.
+        // So two systems in one both read what the last swap left.
+        // And both write a whole Building back.
+        // So a batch added and a cart-load taken is not arithmetic.
+        // The later write silently undoes the earlier.
+        // The commit between these two is what makes it arithmetic.
+        const auto producePhase = scheduler.createPhase("produce");
+        scheduler.addSystem(producePhase, pausedProduction);
+
+        // Hauling and the markets share one.
+        // Nothing they write overlaps.
+        // A cart is loaded out of a producer.
+        // A buyer is loaded out of a storehouse.
+        // And no building is both.
+        const auto haulPhase = scheduler.createPhase("haul");
+        scheduler.addSystem(haulPhase, pausedHauling);
+        scheduler.addSystem(haulPhase, pausedMarkets);
 
         // A phase of its own.
         // A renderer then sees the generation this walk produced.

@@ -4,6 +4,9 @@
 #include <array>
 #include <cstddef>
 #include <map>
+#include <optional>
+#include <set>
+#include <utility>
 
 #include <antwika/ecs/Entity.hpp>
 
@@ -12,10 +15,12 @@
 #include "antwika/game/Cell.hpp"
 #include "antwika/game/Coverage.hpp"
 #include "antwika/game/Direction.hpp"
+#include "antwika/game/Errand.hpp"
 #include "antwika/game/Footprint.hpp"
 #include "antwika/game/Resource.hpp"
 #include "antwika/game/Service.hpp"
 #include "antwika/game/StandingBuildings.hpp"
+#include "antwika/game/Store.hpp"
 #include "antwika/game/Walker.hpp"
 
 namespace antwika::game
@@ -24,6 +29,7 @@ namespace antwika::game
     namespace
     {
         using antwika::ecs::Entity;
+        using antwika::ecs::kNullEntity;
 
         using Pending = std::map<Entity, Building>;
 
@@ -72,7 +78,7 @@ namespace antwika::game
             Building &building, Walker &walker, Resource resource)
         {
             auto &held = building.stock[resourceIndex(resource)];
-            const auto room = kStockCapacity - held;
+            const auto room = capacityOf(building.kind) - held;
             const auto given = std::min(walker.carried, room);
 
             if (given <= 0)
@@ -84,21 +90,74 @@ namespace antwika::game
             walker.carried -= given;
         }
 
+        // Every building beside a cell, in ascending Cell order.
+        // The four neighbours are a fixed set, so this is total.
+        // Direction order is total too.
+        // It is not an order over anything a reader can name.
+        //
         // No guard against serving one building twice.
         // A rectangle cannot be touched twice from one outside cell.
         // Two of a cell's neighbours in it would put the cell in it.
         // An opposite pair spans the cell in one axis.
         // A perpendicular pair spans it in both.
         // So it would be a road under a building, which nothing places.
+        [[nodiscard]] StandingBuildings neighboursOf(
+            const StandingBuildings &standing, Cell at)
+        {
+            StandingBuildings beside;
+
+            for (std::size_t index = 0; index < kDirectionCount; ++index)
+            {
+                const auto cell = step(at, static_cast<Direction>(index));
+                const auto found = standing.find(cell);
+
+                if (found != standing.end())
+                {
+                    beside.emplace(cell, found->second);
+                }
+            }
+
+            return beside;
+        } // GCOVR_EXCL_LINE
+
         void deliver(
             World &world,
             const StandingBuildings &standing,
             Pending &pending)
         {
+            // Ascending (Cell, Entity), out of a set not a view.
+            // Two walkers filling one shelf split what room it has.
+            // deliverTo() clamps, so the first of them gets the last.
+            // The entity is in the key since walkers may share a cell.
+            std::set<std::pair<Cell, Entity>> movers;
+
             for (const auto entity : world.view<Walker, Cell>())
             {
+                movers.emplace(world.get<Cell>(entity), entity);
+            }
+
+            for (const auto &[at, entity] : movers)
+            {
                 auto walker = world.get<Walker>(entity);
-                const auto carries = carriedResource(walker.kind);
+                const auto errand = world.has<Errand>(entity)
+                    ? std::optional<Errand>(world.get<Errand>(entity))
+                    : std::nullopt;
+
+                // A walker on its way back hands nothing over here.
+                // A load that never changed hands is its sender's.
+                // That system credits its own building in a later phase.
+                // Which is the one place the cadence cannot undo it.
+                // See acceptsAt() for what undoes it here.
+                if (errand.has_value()
+                    && errand->leg == ErrandLeg::Returning)
+                {
+                    continue;
+                }
+
+                // An errand names what it carries; a kind otherwise does.
+                const auto carries = errand.has_value()
+                    ? std::optional<Resource>(errand->carrying)
+                    : carriedResource(walker.kind);
 
                 // A walker carrying nothing fixed hands nothing over.
                 // It used to take risk off instead.
@@ -110,24 +169,31 @@ namespace antwika::game
                     continue;
                 }
 
-                const auto at = world.get<Cell>(entity);
+                const auto bound = errand.has_value() ? errand->destination
+                                                      : kNullEntity;
                 const auto before = walker.carried;
 
-                for (std::size_t index = 0; index < kDirectionCount; ++index)
+                for (const auto &[cell, standingHere] :
+                     neighboursOf(standing, at))
                 {
-                    const auto beside =
-                        step(at, static_cast<Direction>(index));
-                    const auto found = standing.find(beside);
-
-                    if (found == standing.end())
+                    // An errand is bound to one building.
+                    // A cart must not shed its load along the way.
+                    if (bound != kNullEntity && standingHere != bound)
                     {
                         continue;
                     }
 
-                    deliverTo(
-                        touch(world, pending, found->second),
-                        walker,
-                        *carries);
+                    auto &building = touch(world, pending, standingHere);
+
+                    // A load bound nowhere goes to whoever eats it.
+                    // A seller filling a storehouse undoes a buyer.
+                    // And one filling its own market moves nothing.
+                    if (bound == kNullEntity && !consumes(building.kind))
+                    {
+                        continue;
+                    }
+
+                    deliverTo(building, walker, *carries);
                 }
 
                 if (walker.carried != before)

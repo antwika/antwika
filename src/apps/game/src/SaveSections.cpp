@@ -220,6 +220,9 @@ namespace antwika::game
         // An index into the buildings array, or absent for "nobody".
         // A negative one is refused by the schema, not by hand.
         shape["properties"]["home"] = countShape();
+
+        // One line per section, and each in a file of its own.
+        describeErrand(shape);
         return shape;
     }
 
@@ -253,6 +256,9 @@ namespace antwika::game
         shape["properties"]["walkers"]["type"] = "array";
         shape["properties"]["walkers"]["items"] = countShape();
         shape["properties"]["walkers"]["maxItems"] = kMaxWalkersOut;
+
+        // One line per section, and each in a file of its own.
+        describeProduction(shape);
         return shape;
     }
 
@@ -329,7 +335,7 @@ namespace antwika::game
         for (const auto &building : document.at("buildings"))
         {
             // The excluded line carries the same landing pad.
-            // As the push_back in saveGameOf() does.
+            // As the push_back in saveGameOf() does, at length.
             save.buildings.push_back(SavedBuilding{ // GCOVR_EXCL_LINE
                 .at = cellFromJson(building),
                 .kind = buildingKindFromJson(

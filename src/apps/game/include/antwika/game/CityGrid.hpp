@@ -11,7 +11,9 @@
 #include "antwika/game/BuildingIndex.hpp"
 #include "antwika/game/Cell.hpp"
 #include "antwika/game/Coverage.hpp"
+#include "antwika/game/Errand.hpp"
 #include "antwika/game/PathIndex.hpp"
+#include "antwika/game/Production.hpp"
 #include "antwika/game/Walker.hpp"
 
 namespace antwika::game
@@ -53,6 +55,25 @@ namespace antwika::game
          * different id from the one that was put away.
          */
         std::optional<std::size_t> home = std::nullopt;
+
+        /**
+         * @brief Where it is taking a load, if it is taking one.
+         *
+         * Its `destination` is always kNullEntity here, for `walker`'s
+         * reason; which building it is bound for is the index below.
+         * Absent means it roams, which is what a walker with no Errand
+         * component does.
+         */
+        std::optional<Errand> errand = std::nullopt;
+
+        /**
+         * @brief Which stored building its errand names, by index.
+         *
+         * Absent for an errand bound nowhere, which is an ordinary
+         * state -- see Errand -- as well as for a walker with no errand
+         * at all.
+         */
+        std::optional<std::size_t> destination = std::nullopt;
 
         /**
          * @brief Compare two stored walkers.
@@ -104,6 +125,15 @@ namespace antwika::game
          * one on being reopened.
          */
         Coverage coverage{};
+
+        /**
+         * @brief How far it is through the batch it is making.
+         *
+         * Carried across for the reason every countdown here is:
+         * a city reopened with all of them reset is a city whose
+         * producers finish in lockstep from then on.
+         */
+        std::optional<Production> production = std::nullopt;
 
         /**
          * @brief Compare two stored buildings.

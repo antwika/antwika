@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstdint>
 #include <optional>
 
 #include "antwika/game/Cell.hpp"
@@ -53,6 +54,37 @@ namespace antwika::game
      * a degenerate extent, rather than an error in any of those cases.
      */
     [[nodiscard]] std::optional<Direction> stepTowards(
+        Cell from,
+        Cell goal,
+        Footprint footprint,
+        const PathIndex &paths,
+        GridExtent extent);
+
+    /**
+     * @brief Get how far it is to a goal along the roads.
+     *
+     * stepTowards()'s other half, and the same search: that one answers
+     * which way to go and this one answers how far, so nothing outside
+     * this file has to build a graph of its own. Whoever chooses between
+     * two destinations needs the distance and never the direction, and
+     * whoever walks needs the direction and never the distance.
+     *
+     * **The extent is passed in for the reason stepTowards() gives**,
+     * and it matters more here: a caller comparing two routes breaks a
+     * tie on the goal, so a NodeId numbered over a bounding box of
+     * whichever roads happen to exist would move the answer every time a
+     * road was laid somewhere else entirely.
+     *
+     * @param from Where the walker is; must be a road to get anywhere.
+     * @param goal The minimum-x, minimum-y cell of where it is heading.
+     * @param footprint How many cells across and down the goal covers.
+     * @param paths The roads a route may run along.
+     * @param extent The bounds the search is numbered over.
+     * @return How many steps the route takes, or nullopt when there is
+     * none -- the same ordinary answer stepTowards() gives, covering a
+     * walled-off goal, a demolished road and a cell outside the extent.
+     */
+    [[nodiscard]] std::optional<std::int64_t> routeCost(
         Cell from,
         Cell goal,
         Footprint footprint,

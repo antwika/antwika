@@ -15,6 +15,7 @@
 #include "antwika/game/BuildingKind.hpp"
 #include "antwika/game/Camera.hpp"
 #include "antwika/game/Cell.hpp"
+#include "antwika/game/Errand.hpp"
 #include "antwika/game/GameState.hpp"
 #include "antwika/game/GameSummary.hpp"
 #include "antwika/game/GridExtent.hpp"
@@ -98,6 +99,35 @@ namespace antwika::game
      * exactly as it was -- a walker halfway home with a half-empty load
      * is not the same walker as a fresh one on the same cell.
      */
+    /**
+     * @brief One walker's errand, as a file has to remember it.
+     *
+     * Separate from Errand because that component names its destination
+     * by ecs::Entity, and a restore destroys and recreates every entity
+     * -- so a file names it by index into the buildings array, exactly
+     * as SavedWalker::home does and for the same reason.
+     *
+     * **The index is optional and absent means nowhere**, which is not
+     * the same as there being no errand at all: a cart loaded in a city
+     * with no storehouse is bound for nowhere and takes its load round
+     * with it, and a market seller is always bound for nowhere. A
+     * walker with no errand has no member here at all.
+     */
+    struct SavedErrand
+    {
+        /** @brief Which saved building it is bound for, by index. */
+        std::optional<std::size_t> destination = std::nullopt;
+
+        /** @brief What is in the cart. */
+        Resource carrying = Resource::Food;
+
+        /** @brief Which half of the round trip it is on. */
+        ErrandLeg leg = ErrandLeg::Outbound;
+
+        [[nodiscard]] bool operator==(const SavedErrand &other) const
+            = default;
+    };
+
     struct SavedWalker
     {
         Cell at;
@@ -117,6 +147,14 @@ namespace antwika::game
          * raw handle would name nothing at all on the way back in.
          */
         std::optional<std::size_t> home = std::nullopt;
+
+        /**
+         * @brief Where it is taking a load, if it is taking one.
+         *
+         * Optional, and absent means it roams -- which is what every
+         * walker in a file written before errands existed did.
+         */
+        std::optional<SavedErrand> errand = std::nullopt;
 
         [[nodiscard]] bool operator==(const SavedWalker &other) const
             = default;
@@ -166,6 +204,16 @@ namespace antwika::game
          * absent component is uncovered rather than unknown.
          */
         std::array<std::int32_t, kServiceCount> coverage{};
+
+        /**
+         * @brief How far it is through the batch it is making.
+         *
+         * Optional, and absent means it is not part-way through one --
+         * which is both what a producer in a file written before
+         * production existed was, and what a producer put up this tick
+         * is, so ProductionSystem needs no case of its own for either.
+         */
+        std::optional<std::int32_t> ticksUntilOutput = std::nullopt;
 
         [[nodiscard]] bool operator==(const SavedBuilding &other) const
             = default;

@@ -2,6 +2,7 @@
 
 #include <cstddef>
 #include <map>
+#include <optional>
 #include <vector>
 
 #include <antwika/ecs/Entity.hpp>
@@ -33,9 +34,19 @@ namespace antwika::game
             auto walker = world.get<Walker>(entity);
             walker.home = kNullEntity;
 
+            std::optional<Errand> errand;
+
+            if (world.has<Errand>(entity))
+            {
+                errand = world.get<Errand>(entity);
+                errand->destination = kNullEntity;
+            }
+
             grid.walkers.push_back(
                 StoredWalker{
-                    .at = world.get<Cell>(entity), .walker = walker});
+                    .at = world.get<Cell>(entity),
+                    .walker = walker,
+                    .errand = errand});
         }
 
         for (const auto entity : world.view<Building, Cell>())
@@ -45,12 +56,20 @@ namespace antwika::game
             auto building = world.get<Building>(entity);
             building.walkers = {};
 
+            std::optional<Production> production;
+
+            if (world.has<Production>(entity))
+            {
+                production = world.get<Production>(entity);
+            }
+
             grid.buildings.push_back(
                 StoredBuilding{
                     .at = world.get<Cell>(entity),
                     .building = building,
                     .walkers = {},
-                    .coverage = coverageOf(world, entity)});
+                    .coverage = coverageOf(world, entity),
+                    .production = production});
         }
 
         // The links, kept only where both ends were put away.
@@ -73,6 +92,25 @@ namespace antwika::game
                     found->second;
                 grid.walkers[found->second].home = buildingAt.at(entity);
             }
+        }
+
+        // And the errands', on exactly those terms.
+        for (const auto entity : world.view<Walker, Cell>())
+        {
+            if (!world.has<Errand>(entity))
+            {
+                continue;
+            }
+
+            const auto found =
+                buildingAt.find(world.get<Errand>(entity).destination);
+
+            if (found == buildingAt.end())
+            {
+                continue;
+            }
+
+            grid.walkers[walkerAt.at(entity)].destination = found->second;
         }
 
         return grid;
@@ -142,6 +180,18 @@ namespace antwika::game
 
             world.add<Cell>(walkers[index], stored.at);
             world.add<Walker>(walkers[index], walker);
+
+            if (!stored.errand.has_value())
+            {
+                continue;
+            }
+
+            auto errand = *stored.errand;
+            errand.destination = stored.destination.has_value()
+                ? buildings[*stored.destination]
+                : kNullEntity;
+
+            world.add<Errand>(walkers[index], errand);
         }
 
         for (std::size_t index = 0; index < grid.buildings.size(); ++index)
@@ -166,6 +216,12 @@ namespace antwika::game
             if (stored.coverage != Coverage{})
             {
                 setCoverage(world, buildings[index], stored.coverage);
+            }
+
+            if (stored.production.has_value())
+            {
+                world.add<Production>(
+                    buildings[index], *stored.production);
             }
 
             (void)built.insert(stored.at, footprintOf(building.kind));

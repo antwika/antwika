@@ -344,6 +344,42 @@ It is rejected for the reason [`Events.hpp`](../../src/apps/game/include/antwika
 `BuildingView` carries the coverage and `GameSummary` therefore compares it, because whether a district is served decides whether it gains risk and, later, whether it grows; a run and its replay disagreeing about that is a divergence, and the summary is where a divergence is caught.
 `BuildingSprite` carries a copy so the hover panel can list it, and the panel lists a service only where it is above zero -- risk is a fact about any building, so the question applies to every kind, and an absent line and a line reading nothing say the same thing.
 
+## The goods chain, and why a market has a buyer of its own
+
+A farm grows food, a cart pusher hauls a load of it to a storehouse, a market sends a buyer to fetch from that storehouse and a seller to hand it to the houses it walks past.
+That is raw material -> store -> market -> consumption, end to end, and it is the first time a walker in this application has a *destination* rather than a preference order.
+
+**`Errand` is what makes a walker routed, and it is one component rather than two.**
+A walker carrying one is steered by `stepTowards()`; a walker without one roams by `nextFacing()` exactly as every walker did before the component existed, which is why `WalkerSystem` gained one arm and changed nothing else.
+Its destination may be `kNullEntity`, and that is an ordinary state rather than a missing one: a cart loaded in a city with nowhere to unload takes the load round with it and hands it to the houses it passes, which is precisely what the food walker of the version-2 vocabulary did.
+That is not a fallback bolted on afterwards -- it is what keeps a city migrated from a version-2 save fed while it has no storehouse in it yet, and `SupplyChainTest` asserts both cities: the full chain, and a farm standing alone.
+
+**A cart may only unload into a kind that sends nobody, and the reason is the walk phase rather than the fiction.**
+A load changes hands in `BuildingSystem`, which shares the `"walk"` phase with `SpawnSystem`.
+Both read a building as of the last commit and both write the whole component back, and the cadence's write is the later of the two -- so a delivery into any kind that sends walkers is undone in the same tick it was made, silently, whenever that building happens to have nobody out.
+A storehouse is the one kind that sends nobody, which is what makes it the one kind `acceptsAt()` names.
+Everything else that receives goods is credited by the system that owns it, in a later phase where nothing else writes it: that is why a market has a buyer of its own instead of being carted to, and why nothing yet carries clay into a workshop -- that would want a walker kind this round's vocabulary has not got, and `Walker.hpp` is not this workstream's to change.
+
+**The chain runs in two phases, `"produce"` then `"haul"`, rather than the one the plan sketched.**
+A phase is where the World's buffers swap, so two systems in one phase both read what the last swap left and both write a whole `Building` back.
+Adding a batch to a farm and taking a cart-load off it is therefore not arithmetic while they share a phase -- the later write silently undoes the earlier -- and the commit between them is what makes it arithmetic.
+`HaulingSystem` and `MarketSystem` do share a phase, because nothing they write overlaps: a cart is loaded out of a producer and a buyer is loaded out of a storehouse, and no building is both.
+
+**Every new decision that splits a limited amount is walked out of a `std::map` rather than a view.**
+`ecs::View` iterates whichever storage has the fewest entities, which is reproducible for a given history and is not an order anybody can name.
+Producers are walked in ascending `Cell` because a producer's stock is split among the carts it has out; markets are walked in ascending `Cell` because two of them buying from one storehouse split what it holds; and `BuildingSystem`'s walkers are walked in ascending `(Cell, Entity)` because two of them filling one shelf split what room it has and `deliverTo()` clamps.
+`BuildingIndex` keeps two buildings off one origin cell, so a cell alone is already total for the first two; the entity is in the third key because walkers may share a cell.
+`nearestAccepting()` orders by path length and then by ascending `Cell` of the store, and its `GridGraph` is built over the configured `GridExtent` for the reason `Homing.cpp` gives -- a bounding box of the roads would renumber every node as one was laid, and the tie-break with it.
+
+**No new event kind, and the tempting one was `game.goods_delivered`.**
+It is derived from a walker's position, which is derived from a route, which is derived from a click, so a recorder would write it beside the click and a replay would deliver twice.
+`Events.hpp` already states that rule about placing a tile and this is the same rule.
+
+**Nothing here bumped the save format.**
+`SavedBuilding` gained an optional `"ticksUntilOutput"` and `SavedWalker` an optional `"errand"`, and absent means what a version-3 file held: no batch under way and no errand.
+The errand's destination is an index into the buildings array rather than the `ecs::Entity` it is in memory, because a restore destroys and recreates every entity -- and it is refused when it points past the end of that array rather than repaired, exactly as `home` is.
+`CityGrid` carries both across a city switch for the reason it carries every countdown: a city reopened with them reset is a city whose producers finish in lockstep from then on, and a loaded cart that lost its errand would be a cart holding goods nobody can name.
+
 ## Future work
 
 **`UiSink`/`UiOverlay`/`Toolbar` should adopt `ui::applyHover()` next.**

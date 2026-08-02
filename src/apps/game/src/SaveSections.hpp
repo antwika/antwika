@@ -148,6 +148,51 @@ namespace antwika::game
     void coverageFromJson(const nlohmann::json &document, SaveGame &save);
 
     /**
+     * @brief Add a walker's errand to a walker's shape.
+     * @param walker The shape to extend.
+     */
+    void describeErrand(nlohmann::json &walker);
+
+    /**
+     * @brief Add a producer's countdown to a building's shape.
+     * @param building The shape to extend.
+     */
+    void describeProduction(nlohmann::json &building);
+
+    /**
+     * @brief Write every errand and production countdown into the
+     * document.
+     * @param save The state to read.
+     * @param document The document, with its arrays already filled.
+     */
+    void productionToJson(const SaveGame &save, nlohmann::json &document);
+
+    /**
+     * @brief Read every errand and production countdown back out.
+     * @param document The validated document to read.
+     * @param save The state, with its arrays already sized.
+     * @throws SaveFormatError If an errand names a resource or a leg
+     * this build does not have.
+     */
+    void productionFromJson(
+        const nlohmann::json &document, SaveGame &save);
+
+    /**
+     * @brief Refuse a document whose errand names no such building.
+     *
+     * requireConsistentLinks()'s counterpart for the one link a section
+     * added, and refused on the same terms: an index past the end of
+     * the array it points into is corrupt, and a repaired save is a
+     * session somebody never had.
+     * There is no back-link to disagree with, because a building does
+     * not know which errands name it.
+     *
+     * @param save The decoded state to check.
+     * @throws SaveFormatError If any destination is out of range.
+     */
+    void requireConsistentErrands(const SaveGame &save);
+
+    /**
      * @brief Refuse a document whose walker and building links disagree.
      *
      * An index past the end of the array it points into is corrupt, and
