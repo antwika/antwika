@@ -4,6 +4,7 @@
 #include <cstdint>
 #include <string_view>
 
+#include "antwika/ui/TextAreaSpec.hpp"
 #include "antwika/ui/WidgetId.hpp"
 
 namespace antwika::ui::detail
@@ -61,6 +62,9 @@ namespace antwika::ui::detail
 
         /** @brief The selection's other end, brought inside it. */
         std::size_t anchor = 0;
+
+        /** @brief Where the drag in progress began, as the spec said. */
+        DragHome dragging = DragHome::None;
 
         /** @brief Pixels from one line's top edge to the next one's. */
         std::uint32_t lineHeight = 1;

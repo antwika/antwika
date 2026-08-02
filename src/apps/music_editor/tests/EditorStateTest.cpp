@@ -121,7 +121,7 @@ TEST(EditorStateTest, ComparesFieldByField)
     EXPECT_NE(state, open);
 
     auto dragging = state;
-    dragging.dragging = true;
+    dragging.dragging = antwika::ui::DragHome::Text;
     EXPECT_NE(state, dragging);
 
     auto menued = state;
@@ -174,7 +174,7 @@ TEST(EditorStateTest, OpensOnTheSwedishBoardWithNothingSelected)
     EXPECT_FALSE(state.anchor.has_value());
     EXPECT_EQ(state.scroll, 0U);
     EXPECT_TRUE(state.clipboard.empty());
-    EXPECT_FALSE(state.dragging);
+    EXPECT_EQ(state.dragging, antwika::ui::DragHome::None);
 }
 
 // A copy carries what was selected.

@@ -188,7 +188,7 @@ namespace antwika::music_editor
 
         if (isLeftRelease(*decoded))
         {
-            state.dragging = false;
+            state.dragging = ui::DragHome::None;
         }
 
         keyboard.typed = characters;
@@ -205,10 +205,13 @@ namespace antwika::music_editor
                 // Shift makes a press carry a selection on.
                 // A move under a held press is what drags one out.
                 // Nothing else does.
+                // And only a press that landed in the text does.
+                // The scrollbar's drags never select.
                 // So typing with a button held moves no caret.
                 .extends = press != nullptr
                     ? press->modifiers.shift
-                    : moved && state.dragging},
+                    : moved
+                          && state.dragging == ui::DragHome::Text},
             keyboard);
     }
 
@@ -347,9 +350,14 @@ namespace antwika::music_editor
         }
 
         // A press inside the pane is what a later move drags from.
+        // Where it landed -- the text or the scrollbar -- scopes it.
         if (edge.pressed)
         {
-            state.dragging = acted.hovered == kCodeField;
+            state.dragging =
+                acted.areaPress.has_value()
+                        && acted.areaPress->area == kCodeField
+                    ? acted.areaPress->home
+                    : ui::DragHome::None;
         }
 
         if (!changed)
@@ -439,7 +447,7 @@ namespace antwika::music_editor
         // A press outside the pane leaves a drag disarmed.
         if (edge.pressed)
         {
-            state.dragging = false;
+            state.dragging = ui::DragHome::None;
         }
 
         if (!changed)

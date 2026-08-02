@@ -164,6 +164,30 @@ namespace
     }
 } // namespace
 
+// A line wider than the pane is cut at its edge, never compressed.
+// Shrunk, the glyph at one column was a character far along.
+// A click there landed the caret somewhere else entirely.
+TEST(TextAreaTest, CutsAWideLineAtThePaneInsteadOfShrinkingIt)
+{
+    // Sixty characters against a 200-pixel pane: 33 whole columns.
+    const std::string line(60, 'x');
+
+    Context ui{kCanvas, plainTheme()};
+
+    ui.textArea(TextAreaSpec{
+        .id = kCode,
+        .width = antwika::ui::kGrow,
+        .height = antwika::ui::kGrow,
+        .text = line,
+        .cursor = 40,
+        .focused = true});
+
+    const auto texts = textsOf(ui.finish().commands);
+
+    ASSERT_EQ(texts.size(), 1U);
+    EXPECT_EQ(texts[0], std::string(33, 'x'));
+}
+
 TEST(TextAreaTest, DrawsOneLinePerLineBreak)
 {
     Context ui{kCanvas, plainTheme()};

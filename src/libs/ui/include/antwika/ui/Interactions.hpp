@@ -4,11 +4,37 @@
 
 #include "antwika/ui/OptionChoice.hpp"
 #include "antwika/ui/ScrollChange.hpp"
+#include "antwika/ui/TextAreaSpec.hpp"
 #include "antwika/ui/TextEdit.hpp"
 #include "antwika/ui/WidgetId.hpp"
 
 namespace antwika::ui
 {
+
+    /**
+     * @brief Where a press landed inside a text area.
+     *
+     * The track and the text are one widget to the hover and press
+     * channels, so this is the one place the two are told apart.
+     * A caller stores it and hands it back as TextAreaSpec::dragging,
+     * which is what scopes the drag that follows to where it began.
+     */
+    struct AreaPress
+    {
+        /** @brief The area the press landed in. */
+        WidgetId area = kNoWidget;
+
+        /** @brief Which part of it the press landed on. */
+        DragHome home = DragHome::None;
+
+        /**
+         * @brief Compare two presses.
+         * @param other The press to compare against.
+         * @return True when both fields match.
+         */
+        [[nodiscard]] bool operator==(const AreaPress &other) const =
+            default;
+    };
 
     /**
      * @brief What this frame's pointer and keyboard did to this frame's
@@ -105,10 +131,21 @@ namespace antwika::ui
          * out. See ScrollChange and TextAreaSpec::scroll.
          *
          * One area rather than a list, for the reason activated is one
-         * widget: a frame has one pointer and one focused area, so a
-         * second answer is not expressible.
+         * widget: a frame has one pointer and one focused area.  When
+         * several named areas clamp in one frame regardless, the last
+         * declared wins; an unnamed area never reports at all.
          */
         std::optional<ScrollChange> scrolled{};
+
+        /**
+         * @brief Where this frame's press landed inside a text area.
+         *
+         * Absent unless a press landed in one.  See AreaPress: a
+         * caller stores it and hands it back through
+         * TextAreaSpec::dragging, so the drag that follows stays
+         * scoped to the track or the text it began on.
+         */
+        std::optional<AreaPress> areaPress{};
 
         /**
          * @brief Compare what two frames' input did.

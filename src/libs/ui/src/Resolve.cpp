@@ -594,9 +594,14 @@ namespace antwika::ui::detail
 
                 const bool bar = area.track != kNoNode;
 
+                // A held drag is scoped to where its press landed.
+                // The spec's dragging is the caller handing that back.
+                // A fresh press needs no scoping; it lands where it is.
                 const bool onTrack =
                     !underOverlay && bar && pointer.position
                     && pointer.down
+                    && (pointer.pressed
+                        || area.dragging == DragHome::Track)
                     && contains(
                         tree.node(area.track).arranged, *pointer.position);
 
@@ -627,7 +632,10 @@ namespace antwika::ui::detail
                         line);
                 }
 
-                if (top != area.requested)
+                // Never for an unnamed area.
+                // A report naming kNoWidget says nothing usable.
+                // And it would shadow a named area's real answer.
+                if (top != area.requested && area.id != kNoWidget)
                 {
                     interactions.scrolled =
                         ScrollChange{.area = area.id, .line = top};
@@ -636,10 +644,12 @@ namespace antwika::ui::detail
                 // On the lines as they were drawn.
                 // The click landed on what was on the screen.
                 // Unless an overlay was over it: then it landed there.
+                // A held drag reaches the text only if it began there.
                 const bool inText =
                     !underOverlay && area.focused && pointer.position
                     && (pointer.pressed
-                        || (pointer.down && pointer.extends))
+                        || (pointer.down && pointer.extends
+                            && area.dragging == DragHome::Text))
                     && contains(showing.column, *pointer.position);
 
                 if (inText)
@@ -650,6 +660,24 @@ namespace antwika::ui::detail
                         *pointer.position,
                         pointer.extends,
                         edit);
+                }
+
+                // Which part of this area the press landed on.
+                // Telling the caller scopes the drag that follows.
+                if (!underOverlay && pointer.pressed && pointer.position
+                    && area.id != kNoWidget)
+                {
+                    if (onTrack)
+                    {
+                        interactions.areaPress = AreaPress{
+                            .area = area.id, .home = DragHome::Track};
+                    }
+                    else if (contains(
+                                 showing.column, *pointer.position))
+                    {
+                        interactions.areaPress = AreaPress{
+                            .area = area.id, .home = DragHome::Text};
+                    }
                 }
 
                 if (bar)

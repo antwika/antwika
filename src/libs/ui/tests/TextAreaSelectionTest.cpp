@@ -496,16 +496,52 @@ TEST(TextAreaSelectionTest, AnExtendingPressLeavesTheFarEndWhereItIs)
 
 // Read while a button is down as well as on the press itself.
 // So a caller reporting a drag gets a selection following the pointer.
+// The caller says the drag began in the text, as areaPress told it.
 TEST(TextAreaSelectionTest, ADragWithNoPressOfItsOwnStillSelects)
 {
     const auto edit = editOf(
-        TextAreaSpec{.text = "abcdef", .cursor = 1, .anchor = 1},
+        TextAreaSpec{
+            .text = "abcdef",
+            .cursor = 1,
+            .anchor = 1,
+            .dragging = antwika::ui::DragHome::Text},
         Keyboard{},
         Pointer{
             .position = cellAt(0, 5), .down = true, .extends = true});
 
     EXPECT_EQ(edit.cursor, 5U);
     EXPECT_EQ(edit.anchor, 1U);
+}
+
+// A drag that began on the track never selects.
+// Wobbling into the text used to select from a stale anchor.
+TEST(TextAreaSelectionTest, ABarDragWobblingIntoTheTextSelectsNothing)
+{
+    const auto frame = frameOf(
+        TextAreaSpec{
+            .text = "abcdef",
+            .cursor = 1,
+            .dragging = antwika::ui::DragHome::Track},
+        Keyboard{},
+        Pointer{
+            .position = cellAt(0, 5), .down = true, .extends = true});
+
+    EXPECT_FALSE(frame.interactions.edit.has_value());
+}
+
+// A press in the text names the text, so its drag stays there.
+TEST(TextAreaSelectionTest, APressInTheTextReportsATextHome)
+{
+    const auto frame = frameOf(
+        TextAreaSpec{.text = "abcdef", .cursor = 1},
+        Keyboard{},
+        Pointer{
+            .position = cellAt(0, 3), .down = true, .pressed = true});
+
+    ASSERT_TRUE(frame.interactions.areaPress.has_value());
+    EXPECT_EQ(
+        frame.interactions.areaPress->home,
+        antwika::ui::DragHome::Text);
 }
 
 TEST(TextAreaSelectionTest, AHeldButtonThatIsNotDraggingMovesNothing)

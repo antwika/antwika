@@ -9,6 +9,7 @@
 #include <vector>
 
 #include <antwika/ui/ScrollChange.hpp>
+#include <antwika/ui/TextAreaSpec.hpp>
 #include <antwika/ui/TextEdit.hpp>
 #include <antwika/ui/TextFieldSpec.hpp>
 #include <antwika/ui/WidgetId.hpp>
@@ -191,15 +192,17 @@ namespace antwika::music_editor
         bool layoutOpen = false;
 
         /**
-         * @brief Whether a press that landed in the pane is still held.
+         * @brief Where a still-held press landed in the pane, if one.
          *
-         * What makes dragging select rather than merely move the caret:
-         * a move with this set carries the selection's far end along.
-         * A press outside the pane leaves it clear, so a drag that
-         * began on a button does not start selecting when it wanders
+         * What makes dragging select rather than merely move the caret,
+         * and what keeps the pane's two halves apart: a drag that
+         * began in the text never reaches the scrollbar, and one that
+         * began on the scrollbar never selects.  Armed from
+         * Interactions::areaPress and cleared on the release, so a
+         * drag that began on a button selects nothing when it wanders
          * over the text.
          */
-        bool dragging = false;
+        ui::DragHome dragging = ui::DragHome::None;
 
         /** @brief Whether the sequencer's clock is standing still. */
         bool paused = false;

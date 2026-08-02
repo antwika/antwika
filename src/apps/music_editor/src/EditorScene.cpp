@@ -197,7 +197,8 @@ namespace antwika::music_editor
                     // The notes sounding right now, on their own ground.
                     .highlights = status.playing,
                     .scrollbar = true,
-                    .focused = true});
+                    .focused = true,
+                    .dragging = state.dragging});
 
             const auto &problems = score.problems();
 

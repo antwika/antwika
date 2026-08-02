@@ -593,7 +593,7 @@ TEST(EditorSinkTest, ARightReleaseEndsNoDrag)
     rig.editor.handle(tickAt(0));
 
     clickAt(rig, cellOf(rig, 0, 0), 1);
-    ASSERT_TRUE(rig.state.dragging);
+    ASSERT_EQ(rig.state.dragging, antwika::ui::DragHome::Text);
 
     rig.editor.handle(
         TickEvent{
@@ -603,7 +603,7 @@ TEST(EditorSinkTest, ARightReleaseEndsNoDrag)
                     .button = MouseButton::Right,
                     .position = {.x = 0, .y = 0}})});
 
-    EXPECT_TRUE(rig.state.dragging);
+    EXPECT_EQ(rig.state.dragging, antwika::ui::DragHome::Text);
 }
 
 // Only a left press reaches the layout.
