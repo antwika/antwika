@@ -11,7 +11,7 @@ A whole domain library ([`holdem`](../libraries/holdem.md)) driven by the tick l
 ```sh
 build/bin/antwika_poker/antwika_poker
 build/bin/antwika_poker/antwika_poker --record demo.replay
-build/bin/antwika_poker/antwika_poker --replay src/apps/poker/replays/demo.json
+build/bin/antwika_poker/antwika_poker --replay src/apps/poker/replays/demo.jsonl
 build/bin/antwika_poker/antwika_poker --tick-delay-ms 250
 ```
 

@@ -15,7 +15,7 @@ build/bin/antwika_sudoku/antwika_sudoku
 build/bin/antwika_sudoku/antwika_sudoku --puzzle my-puzzle.txt
 build/bin/antwika_sudoku/antwika_sudoku --max-ticks 0
 build/bin/antwika_sudoku/antwika_sudoku --record demo.replay
-build/bin/antwika_sudoku/antwika_sudoku --replay src/apps/sudoku/replays/demo.json
+build/bin/antwika_sudoku/antwika_sudoku --replay src/apps/sudoku/replays/demo.jsonl
 ```
 
 Click a square to pick it, type `1`-`9` to write a digit, and press backspace or delete to empty it again.
@@ -27,7 +27,7 @@ A missing or unreadable file is reported rather than read as an empty puzzle, an
 
 **A puzzle has no end of its own**, so a session runs until the window is closed, Escape is pressed, a replay dispatches `engine.stop`, or `--max-ticks` runs out — 90000 ticks by default, which is an hour at the 40 ms frame period.
 The default `null` backend reports neither a close nor a key, and every CI leg builds that one, so the cap is what makes a headless run finish at all; `--max-ticks 0` removes it, for somebody in front of a real window with a hard puzzle.
-Since a `--record` run only writes its file once the run has ended, a run killed with `Ctrl+C` saves nothing.
+A `--record` run keeps what it got to even so: a recording is appended a line at a time, so a run killed with `Ctrl+C` leaves a file that replays.
 
 ## Libraries it composes
 

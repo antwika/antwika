@@ -84,7 +84,7 @@ namespace antwika::companion
 
         // Once, at the end, rather than every tick.
         // A run ended with Ctrl+C therefore keeps nothing.
-        // Which is what a --record run there already does.
+        // Unlike a --record run, which appends as it goes.
         // The age is offered to the record on the way out.
         // So a companion nobody replaced still sets the mark it earned.
         void keepSession(

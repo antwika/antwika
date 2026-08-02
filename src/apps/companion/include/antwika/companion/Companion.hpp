@@ -170,9 +170,10 @@ namespace antwika::companion
      * second of a file nothing reads in between, and not on a timer,
      * which would be a clock inside a session that has none. The cost
      * is stated rather than hidden: a session killed with Ctrl+C never
-     * reaches the epilogue and so keeps nothing, exactly as a
-     * `--record` run there writes no file. Closing the window is the
-     * way to end one and keep it.
+     * reaches the epilogue and so keeps nothing. A `--record` run does
+     * keep what it got to, because a recording is a log appended as the
+     * run goes rather than a snapshot written after it. Closing the
+     * window is the way to end one and keep the companion.
      *
      * A companion that will not load does not take the session with it:
      * it is logged and a new companion starts, and the session goes on

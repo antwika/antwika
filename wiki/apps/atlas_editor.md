@@ -116,5 +116,5 @@ This editor will happily paint outside the diamond, leave a road stub that meets
 [`game-texture-atlas.md`](game-texture-atlas.md) is the contract, `game::requireAtlasSize()` checks the sheet's size at startup, and a person looking at the running game is what catches the rest:
 
 ```sh
-build-sdl3/bin/antwika_game/antwika_game --replay src/apps/game/replays/demo.json
+build-sdl3/bin/antwika_game/antwika_game --replay src/apps/game/replays/demo.jsonl
 ```

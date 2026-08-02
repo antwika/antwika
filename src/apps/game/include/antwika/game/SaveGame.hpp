@@ -302,7 +302,7 @@ namespace antwika::game
      * @brief Encode a save as JSON matching the save-document schema.
      *
      * Pure: no filesystem, no clock, no ordering surprises. Split from
-     * saveGameFile() exactly as replayToJson() is split from
+     * saveGameFile() exactly as replayHeaderToJson() is split from
      * saveReplayFile(), so a round trip can be asserted without a file.
      *
      * @param save The state to encode.

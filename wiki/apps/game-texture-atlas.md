@@ -167,4 +167,4 @@ Almost nothing, and that is the deliberate trade for hand-drawing it.
 None of those looks at a single pixel.
 Whether a diamond is the right diamond, whether a road stub meets its neighbour, and whether a walker faces the way the game says it does are all things only a person looking at the running game will catch.
 
-`build/bin/antwika_game --replay src/apps/game/replays/demo.json` under an `sdl3` build is the quickest way to look at one.
+`build/bin/antwika_game --replay src/apps/game/replays/demo.jsonl` under an `sdl3` build is the quickest way to look at one.

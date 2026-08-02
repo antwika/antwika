@@ -71,7 +71,7 @@ namespace antwika::tower_defence
 
         // Once, at the end, rather than every tick.
         // A run ended with Ctrl+C therefore keeps nothing.
-        // Which is what a --record run there already does.
+        // Unlike a --record run, which appends as it goes.
         void keepRecord(
             const TowerDefenceConfig &config, const HighScore &best)
         {

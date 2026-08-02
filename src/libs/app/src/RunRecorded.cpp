@@ -1,9 +1,9 @@
 #include "antwika/app/RunRecorded.hpp"
 
-#include <cstdlib>
+#include <fstream>
 
 #include <antwika/event/Event.hpp>
-#include <antwika/event/TickEventRecorder.hpp>
+#include <antwika/replay/ReplayRecorder.hpp>
 
 #include "antwika/app/RunGuarded.hpp"
 
@@ -11,7 +11,7 @@ namespace antwika::app
 {
 
     using antwika::event::Event;
-    using antwika::event::TickEventRecorder;
+    using antwika::replay::ReplayRecorder;
 
     namespace
     {
@@ -37,13 +37,8 @@ namespace antwika::app
         std::ostream &help)
     {
         DiscardedEvents eventSink;
-        TickEventRecorder replayRecorder;
 
-        // Held out here because the epilogue below still needs it.
-        // Parsing itself is inside the try, deliberately.
-        std::optional<std::string> recordPath;
-
-        int exitCode = runGuarded(
+        return runGuarded(
             name,
             [&]
             {
@@ -67,54 +62,41 @@ namespace antwika::app
                 // --help is a question, not a run.
                 // Answering it starts no session.
                 // It writes no recording either.
-                // recordPath is left unset, so the epilogue skips.
+                // So the file below is opened after this, not before.
                 if (options.helpRequested)
                 {
                     help << antwika::cli::helpText(name, table);
                     return;
                 }
 
-                recordPath = options.recordPath;
+                // A recording is appended as the run goes.
+                // So there is no epilogue here that writes one.
+                // A run that failed has kept every event it got to.
+                // So has a run somebody killed part-way.
+                // Which is why the path is opened here.
+                // Ahead of the session, not found unwritable after it.
+                std::optional<std::ofstream> recordFile;
+                std::optional<ReplayRecorder> recorder;
+                if (options.recordPath)
+                {
+                    recordFile = antwika::replay::openReplayFile(
+                        *options.recordPath);
+                    recorder.emplace(*recordFile, *options.recordPath);
+                }
 
                 RecordedRun run{
                     .options = options,
                     .commandLine = parsed,
                     .eventSink = eventSink,
                     .replayRecorder = std::nullopt};
-                if (options.recordPath)
+                if (recorder)
                 {
-                    run.replayRecorder = replayRecorder;
+                    run.replayRecorder = *recorder;
                 }
 
                 body(run);
             },
             errors);
-
-        // After the guard, so a run that failed still saves what it got.
-        // A run refused at the command line has nothing to save.
-        //
-        // Saving throws on its own account too.
-        // An unwritable path, or a full disk.
-        // Unguarded, that throw leaves runRecorded() entirely.
-        // A main() has no catch of its own, by design.
-        // So the process terminated rather than saying which path.
-        if (recordPath)
-        {
-            const int saveCode = runGuarded(
-                name,
-                [&]
-                {
-                    antwika::replay::saveReplayFile(
-                        replayRecorder.getEvents(), *recordPath);
-                },
-                errors);
-            if (saveCode != EXIT_SUCCESS)
-            {
-                exitCode = saveCode;
-            }
-        }
-
-        return exitCode;
     }
 
     std::vector<TickEvent> scriptedEvents(

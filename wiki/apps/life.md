@@ -11,12 +11,12 @@ Application state held in an [`ecs`](../libraries/ecs.md) `World` rather than a 
 ```sh
 build/bin/antwika_life/antwika_life
 build/bin/antwika_life/antwika_life --record demo.replay
-build/bin/antwika_life/antwika_life --replay src/apps/life/replays/demo.json
+build/bin/antwika_life/antwika_life --replay src/apps/life/replays/demo.jsonl
 ```
 
 It opens a window, draws the board each tick, and takes mouse input; drag over cells to toggle them.
 The run is uncapped and it has no end of its own: only closing the window, reported through `WindowInputSource`, or a replay dispatching `engine.stop` ends it.
-A headless build reports neither, so `Ctrl+C` ends one — and since a `--record` run only writes its file once the run ends, an interrupted headless recording saves nothing.
+A headless build reports neither, so `Ctrl+C` ends one — and a `--record` run keeps what it got to, since a recording is appended a line at a time rather than written after the run.
 
 ## Libraries it composes
 

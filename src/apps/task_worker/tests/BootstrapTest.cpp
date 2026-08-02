@@ -55,7 +55,7 @@ namespace
     constexpr antwika::time::Tick kMaxTicks = 10;
     constexpr std::uint32_t kWorkerCount = 2;
 
-    // Same scenario as replays/demo.json.
+    // Same scenario as replays/demo.jsonl.
     // Gamma (Low) waits ticks 0-4: multi-tick distribution.
     // Delta (Critical, submitted tick 4) jumps ahead of Gamma.
     // Epsilon depends on Delta but can't run in Delta's run() call.

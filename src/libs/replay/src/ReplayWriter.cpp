@@ -1,32 +1,40 @@
 #include "antwika/replay/ReplayWriter.hpp"
 
+#include <nlohmann/json.hpp>
+
+#include <antwika/replay/EventJson.hpp>
+#include <antwika/replay/ReplayHeader.hpp>
 #include <antwika/replay/ReplayJson.hpp>
 
 namespace antwika::replay
 {
 
-    namespace
-    {
-        // What nlohmann's dump() takes for a width.
-        // A negative one is no indentation, and no newlines with it.
-        constexpr int kNoIndent = -1;
-        constexpr int kTwoSpaces = 2;
-    } // namespace
-
     ReplayWriter::ReplayWriter(
-        ReplayWriter::Layout layout,
         std::optional<gfx::Size> canvas) noexcept
-        : layout(layout), canvas(canvas)
+        : canvas(canvas)
     {
+    }
+
+    void ReplayWriter::writeHeader(std::ostream &out) const
+    {
+        out << replayHeaderToJson(ReplayHeader{.canvas = canvas}).dump()
+            << '\n';
+    }
+
+    void ReplayWriter::writeRecord(
+        const TickEvent &event, std::ostream &out) const
+    {
+        out << nlohmann::json(event).dump() << '\n';
     }
 
     void ReplayWriter::write(
         const std::vector<TickEvent> &events, std::ostream &out) const
     {
-        const auto indent =
-            layout == Layout::Pretty ? kTwoSpaces : kNoIndent;
-
-        out << replayToJson(events, canvas).dump(indent) << '\n';
+        writeHeader(out);
+        for (const TickEvent &event : events)
+        {
+            writeRecord(event, out);
+        }
     }
 
 } // namespace antwika::replay

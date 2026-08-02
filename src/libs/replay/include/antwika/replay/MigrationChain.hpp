@@ -93,6 +93,38 @@ namespace antwika::replay
          */
         void migrate(nlohmann::json &document) const;
 
+        /**
+         * @brief Bring one record of a line-oriented file up to the
+         * current version, in place.
+         * @param record The parsed record; left untouched if it is not a
+         * JSON object, exactly as migrate() leaves a document.
+         * @param statedVersion The version its file's header stated.
+         * @throws SchemaVersionError If that version is newer than
+         * currentVersion(), or reaches a version no migration reads.
+         *
+         * The same five stages as migrate(), with the version read from
+         * the file's header instead of from the record.
+         * A record states no version of its own and comes out stating
+         * none: one number per file, not one per line, because a record
+         * repeats thousands of times and cannot disagree with the header
+         * that opens the file it is in.
+         */
+        void migrateFrom(
+            nlohmann::json &record, std::uint32_t statedVersion) const;
+
+        /**
+         * @brief Refuse a version this build cannot reach the current
+         * one from.
+         * @param statedVersion The version a file or a document states.
+         * @throws SchemaVersionError If it is newer than
+         * currentVersion().
+         *
+         * Public because a line-oriented file states its version once,
+         * in its header, and wants that answered before it reads a
+         * single record -- including when it holds none at all.
+         */
+        void requireReadable(std::uint32_t statedVersion) const;
+
     private:
         [[nodiscard]] const IMigration *stepFrom(
             std::uint32_t version) const noexcept;

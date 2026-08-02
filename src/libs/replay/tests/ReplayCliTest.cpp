@@ -6,6 +6,7 @@
 #include <string>
 #include <string_view>
 #include <system_error>
+#include <tuple>
 #include <vector>
 
 #include <antwika/cli/CommandLineError.hpp>
@@ -17,6 +18,7 @@ using antwika::cli::CommandLineError;
 using antwika::event::Event;
 using antwika::event::TickEvent;
 using antwika::replay::loadReplayFile;
+using antwika::replay::openReplayFile;
 using antwika::replay::ReplayFormatError;
 using antwika::replay::saveReplayFile;
 
@@ -92,12 +94,12 @@ TEST(ReplayCliTest, ParseReturnsNoPathsWhenNoFlagsAreGiven)
 TEST(ReplayCliTest, ParseReadsBothRecordAndReplayPaths)
 {
     const auto options = optionsFrom(
-        {"antwika_app", "--record", "out.json", "--replay", "in.json"});
+        {"antwika_app", "--record", "out.jsonl", "--replay", "in.jsonl"});
 
     ASSERT_TRUE(options.recordPath.has_value());
-    EXPECT_EQ(*options.recordPath, "out.json");
+    EXPECT_EQ(*options.recordPath, "out.jsonl");
     ASSERT_TRUE(options.replayPath.has_value());
-    EXPECT_EQ(*options.replayPath, "in.json");
+    EXPECT_EQ(*options.replayPath, "in.jsonl");
 }
 
 TEST(ReplayCliTest, ParseRefusesATrailingReplayFlagMissingItsValue)
@@ -141,7 +143,7 @@ TEST(ReplayCliTest, ReplayCliFlagsAreTheTwoEveryAppTakes)
 
 TEST(ReplayCliTest, LoadReplayFileDecodesAPreviouslySavedDocument)
 {
-    ScratchFile file("antwika_replay_cli_load_test.json");
+    ScratchFile file("antwika_replay_cli_load_test.jsonl");
     {
         std::ofstream out(file.string());
         out << R"({"magic":"antwika-replay","version":1,"events":)"
@@ -160,7 +162,7 @@ TEST(ReplayCliTest, LoadReplayFileDecodesAPreviouslySavedDocument)
 
 TEST(ReplayCliTest, LoadReplayFileThrowsWhenFileCannotBeParsed)
 {
-    ScratchFile file("antwika_replay_cli_load_malformed_test.json");
+    ScratchFile file("antwika_replay_cli_load_malformed_test.jsonl");
     {
         std::ofstream out(file.string());
         out << "not a replay document";
@@ -171,7 +173,7 @@ TEST(ReplayCliTest, LoadReplayFileThrowsWhenFileCannotBeParsed)
 
 TEST(ReplayCliTest, SaveReplayFileFiltersOutBuiltInTicks)
 {
-    ScratchFile file("antwika_replay_cli_save_test.json");
+    ScratchFile file("antwika_replay_cli_save_test.jsonl");
     std::vector<TickEvent> events{
         TickEvent{.tick = 0, .event = Event{.name = "engine.tick"}},
         TickEvent{
@@ -195,11 +197,36 @@ TEST(ReplayCliTest, SaveReplayFileFiltersOutBuiltInTicks)
         }));
 }
 
+// A recording is opened before a session, not written after one.
+// So the open is a step of its own, and a step a caller can take.
+TEST(ReplayCliTest, OpenReplayFileGivesAStreamToAppendARecordingTo)
+{
+    const ScratchFile file("antwika_replay_cli_open_test.jsonl");
+
+    {
+        std::ofstream out = openReplayFile(file.string());
+        EXPECT_TRUE(out.is_open());
+    }
+
+    EXPECT_TRUE(std::filesystem::exists(file.string()));
+}
+
+TEST(ReplayCliTest, OpenReplayFileThrowsOnAPathItCannotTake)
+{
+    const std::string path =
+        (std::filesystem::temp_directory_path() / "antwika-no-such-dir"
+         / "out.jsonl")
+            .string();
+
+    EXPECT_THROW(
+        std::ignore = openReplayFile(path), ReplayFormatError);
+}
+
 // An absent file and a malformed one are not the same failure.
 // They used to produce the same message.
 TEST(ReplayCliTest, LoadReplayFileSaysAMissingFileCouldNotBeOpened)
 {
-    const ScratchFile file("antwika_replay_cli_load_absent_test.json");
+    const ScratchFile file("antwika_replay_cli_load_absent_test.jsonl");
 
     try
     {
@@ -217,12 +244,12 @@ TEST(ReplayCliTest, LoadReplayFileSaysAMissingFileCouldNotBeOpened)
 }
 
 // The failure this whole check exists for.
-// A --record run writes once, at the end, and used to lose it in silence.
+// An unwritable --record path used to lose a whole session in silence.
 TEST(ReplayCliTest, SaveReplayFileSaysAnUnwritablePathCouldNotBeOpened)
 {
     const std::string path =
         (std::filesystem::temp_directory_path() / "antwika-no-such-dir"
-         / "out.json")
+         / "out.jsonl")
             .string();
 
     try
@@ -240,7 +267,7 @@ TEST(ReplayCliTest, SaveReplayFileSaysAnUnwritablePathCouldNotBeOpened)
 }
 
 // Opening is not writing: a full disk fails only once bytes are flushed.
-// ReplayOutputTest is what covers that throw, on any machine.
+// ReplayRecorderTest is what covers that throw, on any machine.
 // This one confirms it against a real device where there is one.
 // It may skip freely: skipping it costs no coverage any more.
 TEST(ReplayCliTest, SaveReplayFileThrowsWhenTheBytesCannotBeWritten)

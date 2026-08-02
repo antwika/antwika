@@ -89,7 +89,7 @@ namespace
 
         ReplaySource fileSource(antwika::app::scriptedEvents(
             recorded.options.replayPath,
-            antwika::app::assetPath("demo.json")));
+            antwika::app::assetPath("demo.jsonl")));
 
         const InputEventCodec codec;
 

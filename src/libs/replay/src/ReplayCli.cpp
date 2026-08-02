@@ -1,17 +1,14 @@
 #include "antwika/replay/ReplayCli.hpp"
 
-#include <algorithm>
 #include <array>
 #include <fstream>
 #include <utility>
 
 #include <antwika/cli/CommandLine.hpp>
-#include <antwika/engine/Events.hpp>
 
 #include "antwika/replay/ReplayFormatError.hpp"
 #include "antwika/replay/ReplayReader.hpp"
-#include "antwika/replay/ReplayWriter.hpp"
-#include "ReplayOutput.hpp"
+#include "antwika/replay/ReplayRecorder.hpp"
 
 namespace antwika::replay
 {
@@ -71,23 +68,12 @@ namespace antwika::replay
         return reader.read(replayFile);
     }
 
-    void saveReplayFile(
-        std::vector<TickEvent> events,
-        const std::string &path,
-        std::optional<gfx::Size> canvas,
-        ReplayWriter::Layout layout)
+    std::ofstream openReplayFile(const std::string &path)
     {
-        std::erase_if(
-            events,
-            [](const TickEvent &event)
-            {
-                return event.event.name == antwika::engine::events::kTick;
-            });
-
         std::ofstream replayFile(path);
 
-        // A --record run only writes once the run has ended.
-        // So an unwritable path used to lose a whole session in silence.
+        // A path that will not take a header will not take a session.
+        // Unchecked, a mistyped --record path used to lose one whole.
         if (!replayFile.is_open())
         {
             throw ReplayFormatError(
@@ -95,8 +81,24 @@ namespace antwika::replay
                 + path);
         }
 
-        const ReplayWriter writer(layout, canvas);
-        detail::writeReplayOrThrow(writer, events, replayFile, path);
+        return replayFile;
+    }
+
+    void saveReplayFile(
+        const std::vector<TickEvent> &events,
+        const std::string &path,
+        std::optional<gfx::Size> canvas)
+    {
+        std::ofstream replayFile = openReplayFile(path);
+
+        // Through the recorder rather than beside it.
+        // So a whole recording and an appended one cannot drift apart.
+        // The tick filter is written down once, over there.
+        ReplayRecorder recorder(replayFile, path, canvas);
+        for (const TickEvent &event : events)
+        {
+            recorder.handle(event);
+        }
     }
 
 } // namespace antwika::replay
