@@ -510,3 +510,20 @@ TEST(TextAreaTest, ACaretIsAtLeastOnePixelWideAtAZeroScale)
     ASSERT_EQ(1U, carets.size());
     EXPECT_EQ(1U, carets.at(0).rect.size.width);
 }
+
+TEST(TextAreaTest, AnEmptyAreaWithNoPlaceholderDrawsNoTextAtAll)
+{
+    Context ui{kCanvas, plainTheme()};
+
+    ui.textArea(TextAreaSpec{});
+
+    EXPECT_TRUE(textsOf(ui.finish().commands).empty());
+}
+
+TEST(TextAreaTest, MoveUpWithTheCaretAtTheVeryStartDoesNothing)
+{
+    const auto frame =
+        typeInto("abc\ndef", 0, Keyboard{.keys = {Key::MoveUp}});
+
+    EXPECT_FALSE(frame.interactions.edit.has_value());
+}

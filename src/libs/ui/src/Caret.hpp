@@ -13,6 +13,9 @@
 namespace antwika::ui::detail
 {
 
+    // Every Node carries a std::string, as Context.cpp says.
+    // That is all the GCOVR_EXCL_LINE marker below covers.
+
     /**
      * @brief Build the bar drawn where a focused caret sits.
      *
@@ -30,7 +33,7 @@ namespace antwika::ui::detail
 
         const auto width = theme.textScale > 0 ? theme.textScale : 1;
 
-        return Node{
+        return Node{ // GCOVR_EXCL_LINE
             .width = fixedSize(width),
             .height = fixedSize(height),
             .background = theme.caret};
