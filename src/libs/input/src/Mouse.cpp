@@ -17,6 +17,7 @@ namespace antwika::input
     {
         pressed.reset();
         released.reset();
+        pressedWith.fill(KeyModifiers{});
         moved = Offset{};
         scrolled = Offset{};
     }
@@ -40,6 +41,7 @@ namespace antwika::input
 
         down.set(index);
         pressed.set(index);
+        pressedWith[index] = event.modifiers;
     }
 
     void Mouse::apply(const PointerButtonReleased &event) noexcept
@@ -98,6 +100,12 @@ namespace antwika::input
     {
         const auto index = mouseButtonIndex(button);
         return named(index) && released.test(index);
+    }
+
+    KeyModifiers Mouse::pressModifiers(MouseButton button) const noexcept
+    {
+        const auto index = mouseButtonIndex(button);
+        return named(index) ? pressedWith[index] : KeyModifiers{};
     }
 
     void Mouse::moveTo(Position position) noexcept

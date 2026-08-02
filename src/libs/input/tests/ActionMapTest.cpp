@@ -13,8 +13,10 @@ using antwika::input::InputState;
 using antwika::input::Key;
 using antwika::input::KeyModifiers;
 using antwika::input::KeyPressed;
+using antwika::input::KeyReleased;
 using antwika::input::MouseButton;
 using antwika::input::PointerButtonPressed;
+using antwika::input::PointerButtonReleased;
 
 TEST(ActionMapTest, IsActive_ReportsFalseForAnActionNothingWasBoundTo)
 {
@@ -218,6 +220,77 @@ TEST(ActionMapTest, Bind_IgnoresModifiersHeldThatItDidNotAskFor)
         KeyPressed{.key = Key::S, .modifiers = {.control = true}});
 
     EXPECT_TRUE(actions.isActive("plain", state));
+}
+
+// A tick is a window several edges arrive in, and the chord was real.
+// Reading the tick's last modifiers instead would lose this one.
+TEST(ActionMapTest, WasTriggered_TakesTheModifiersThePressItselfCarried)
+{
+    ActionMap actions;
+    actions.bind("save", Key::S, KeyModifiers{.control = true});
+
+    InputState state;
+    state.apply(KeyPressed{.key = Key::LeftControl, .modifiers = {}});
+    state.apply(
+        KeyPressed{.key = Key::S, .modifiers = {.control = true}});
+    state.apply(
+        KeyReleased{.key = Key::LeftControl, .modifiers = {}});
+
+    EXPECT_TRUE(actions.wasTriggered("save", state));
+
+    // Held is a different question, and control is no longer held.
+    EXPECT_FALSE(actions.isActive("save", state));
+}
+
+// The other direction, and the one that fires when it must not.
+// S went down bare, and control arriving afterwards is not a chord.
+TEST(ActionMapTest, WasTriggered_IgnoresAModifierPressedAfterTheKey)
+{
+    ActionMap actions;
+    actions.bind("save", Key::S, KeyModifiers{.control = true});
+
+    InputState state;
+    state.apply(KeyPressed{.key = Key::S, .modifiers = {}});
+    state.apply(
+        KeyPressed{
+            .key = Key::LeftControl, .modifiers = {.control = true}});
+
+    EXPECT_FALSE(actions.wasTriggered("save", state));
+}
+
+TEST(ActionMapTest, WasTriggered_TakesAButtonsOwnPressModifiers)
+{
+    ActionMap actions;
+    actions.bind(
+        "place", MouseButton::Left, KeyModifiers{.shift = true});
+
+    InputState state;
+    state.apply(
+        PointerButtonPressed{
+            .button = MouseButton::Left, .modifiers = {.shift = true}});
+    state.apply(
+        PointerButtonReleased{
+            .button = MouseButton::Right, .modifiers = {}});
+
+    EXPECT_TRUE(actions.wasTriggered("place", state));
+}
+
+// The edges of one tick are forgotten at the start of the next.
+// So are the modifiers they carried, or a chord would outlive it.
+TEST(ActionMapTest, WasTriggered_ForgetsAPressEdgeOnTheNextTick)
+{
+    ActionMap actions;
+    actions.bind("save", Key::S, KeyModifiers{.control = true});
+
+    InputState state;
+    state.apply(
+        KeyPressed{.key = Key::S, .modifiers = {.control = true}});
+
+    ASSERT_TRUE(actions.wasTriggered("save", state));
+
+    state.beginTick();
+
+    EXPECT_FALSE(actions.wasTriggered("save", state));
 }
 
 TEST(ActionMapTest, Bind_KeepsActionsApart)

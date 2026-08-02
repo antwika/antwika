@@ -62,10 +62,17 @@ namespace antwika::input
 
         /**
          * @brief Check whether an action's input went down this tick.
+         *
+         * The modifiers checked are the ones the press edge itself
+         * carried rather than the ones left held at the end of the tick.
+         * A tick is a window several edges arrive in, so the two differ
+         * whenever a chord is completed or broken inside one -- and the
+         * end-of-tick reading answers wrongly in both directions.
+         *
          * @param action The action to ask about.
          * @param state The folded state to read.
          * @return True when any of the action's bindings was pressed this
-         * tick with its required modifiers held.
+         * tick with its required modifiers held at that press.
          */
         [[nodiscard]] bool wasTriggered(
             std::string_view action, const InputState &state) const;

@@ -77,10 +77,29 @@ Making them static also makes every entry point this library never calls an unus
 Rounding, refusals and packing all live in `Font.cpp`, `FontDirectory.cpp` and `GlyphAtlas.cpp`, which the compiler is still allowed to complain about.
 
 `FontDirectory.cpp` is the other half of the wall.
-stb trusts the offsets it is handed, which is the usual bargain with a single-header decoder and is not one this library can pass on to a caller, since a font arrives from a file somebody else wrote.
-So the offset table and every table record are checked to lie inside the blob before the rasteriser sees any of it.
-What it deliberately does not do is validate a table's *contents*: that is the rasteriser's job, it reports it by refusing to open the font, and a second weaker parser here would be one more thing to keep in step with the first.
+stb trusts the offsets it is handed, which is the usual bargain with a single-header decoder.
+So the offset table and every table record are checked to lie inside the blob before the rasteriser sees any of it, and a record claiming a table that runs past the end is a `FontError` before anything reads a byte of it.
+What it deliberately does not do is validate a table's *contents*, and the next section is what that costs.
 A font collection and an OpenType font with CFF outlines are turned away by name, since those are the two wrong files somebody is most likely to be holding.
+
+## Bundled fonts only, and this is a boundary rather than a check
+
+**`Font` must only ever be fed a font the application itself ships.**
+One bundled beside the executable with `antwika_bundle_app()`, or compiled in with `antwika_embed_binary()` as `assets/fonts/RobotoMono-Regular.ttf` is, is what this library is for.
+A font a user picked, uploaded or downloaded is not, and no refusal this library makes changes that.
+
+The reason is *where* a font is parsed, and the directory check above is only the first inch of it.
+stb_truetype's own documentation states plainly that it does no range checking of the data it reads, and the reads that matter happen long after `TtfReader::read()` has returned successfully:
+
+- a cmap subtable offset is followed when `Font::has()` or a glyph lookup asks about a codepoint,
+- and `loca`/`glyf` extents are followed when a glyph is rasterised, one per character in a `makeGlyphAtlas()` call.
+
+So a font crafted to pass the directory check reads out of bounds *mid-use* -- inside a frame being drawn, in a call whose declared failure mode is a `.notdef` box -- rather than refusing to open.
+There is no `FontError` for it and there is not going to be one.
+
+Validating those offsets here was considered and refused, on the grounds the rest of the wall is built on: it would be a second, weaker parser of the same tables kept in step with stb's by hand, and every gap between the two would read as safety while being none.
+The honest boundary is this sentence instead.
+In-tree exposure is one font, checked in, compiled into `antwika::gfx`; an application that bundles another takes that decision in the open, and it is a decision about provenance rather than about parsing.
 
 ## Integers out, and lookup that answers
 
@@ -115,7 +134,7 @@ The font is `assets/fonts/RobotoMono-Regular.ttf`, compiled into `antwika::gfx` 
 **What did not happen is the half worth reading.**
 `gfx::textSize()` did not move, and neither did one `antwika::ui` layout, one hit test or one recorded click: a character still occupies exactly `kGlyphAdvance` by `kGlyphLineHeight` times its scale, and nothing this library returns is allowed anywhere near that arithmetic.
 This is the rule stated above — *nothing this library returns may enter simulation state* — being kept at the one seam where it would have been most convenient to break, and [`wiki/libraries/gfx.md`](gfx.md) sets out the reasoning from the other side.
-An application that wants a real font's *metrics*, rather than a real font's *look*, still asks this library directly, bundles its own `.ttf` with `antwika_bundle_app()`, and takes on the decision in the open.
+An application that wants a real font's *metrics*, rather than a real font's *look*, still asks this library directly, bundles its own `.ttf` with `antwika_bundle_app()`, and takes on the decision in the open -- a font it ships, never one it was handed, for the reason set out above.
 
 The other route in is unchanged and is what an application *would* use to draw text at a size the fixed cell has no answer for: `makeGlyphAtlas()` hands back one mask and one rectangle per character, `gfx::glyphAtlasBitmap()` expands the mask to straight RGBA, `IRenderer::createTexture()` uploads it once and `gfx::AtlasText.hpp` measures and blits from it.
 

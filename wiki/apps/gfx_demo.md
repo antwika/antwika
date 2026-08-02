@@ -15,9 +15,12 @@ build/bin/antwika_gfx_demo/antwika_gfx_demo
 It opens a window titled "Antwika gfx demo" and runs until the window is closed.
 Under the default `null` backend it draws nothing and reports no close, so use an `sdl3` or `raylib` build — with `SDL_VIDEODRIVER=dummy` or `xvfb-run` if there is no display.
 
+It takes no flags of its own, and it parses its command line all the same, against an empty [`cli`](../libraries/cli.md) table: `--help` prints and returns without opening a window, and anything else is a `CommandLineError` rather than a silently ignored argument.
+That is the failure `cli`'s own page recounts fixing for [`sound_demo`](sound_demo.md) — a program that reads nothing accepts every typo, and looks completely normal while doing none of what it was told.
+
 ## Libraries it composes
 
-[`app`](../libraries/app.md), [`gfx`](../libraries/gfx.md), [`input`](../libraries/input.md), [`log`](../libraries/log.md), [`time`](../libraries/time.md), [`ui`](../libraries/ui.md), plus the selected graphics and input backends.
+[`app`](../libraries/app.md), [`cli`](../libraries/cli.md), [`gfx`](../libraries/gfx.md), [`input`](../libraries/input.md), [`log`](../libraries/log.md), [`time`](../libraries/time.md), [`ui`](../libraries/ui.md), plus the selected graphics and input backends.
 Notably not [`engine`](../libraries/engine.md) or [`replay`](../libraries/replay.md): there is nothing to record here.
 
 ## How it is put together

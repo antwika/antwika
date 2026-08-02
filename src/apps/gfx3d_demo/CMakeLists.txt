@@ -13,6 +13,7 @@ target_include_directories(antwika_gfx3d_demo
 target_link_libraries(antwika_gfx3d_demo
     PRIVATE
         antwika::app
+        antwika::cli
         antwika::gfx
         antwika::gfx_backend
         antwika::log

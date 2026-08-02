@@ -1,5 +1,6 @@
 #pragma once
 
+#include <array>
 #include <bitset>
 
 #include "antwika/input/InputEvent.hpp"
@@ -94,10 +95,29 @@ namespace antwika::input
          */
         [[nodiscard]] KeyModifiers modifiers() const noexcept;
 
+        /**
+         * @brief Get the modifiers a key's own press edge carried.
+         *
+         * modifiers() is the tick's last word on what was held, which is
+         * the wrong question to ask about a chord: a tick is a window
+         * several edges arrive in, so Ctrl+S with Ctrl let go afterwards
+         * and S pressed before Ctrl went down both fold to the same
+         * end-of-tick state and mean opposite things.
+         *
+         * Every edge carries its own modifiers, so this keeps the press
+         * edge's and hands them back beside wasPressed().
+         *
+         * @param key The key to ask about.
+         * @return What was held when it went down this tick, or nothing
+         * held when it did not go down this tick at all.
+         */
+        [[nodiscard]] KeyModifiers pressModifiers(Key key) const noexcept;
+
     private:
         std::bitset<kKeyCount> down;
         std::bitset<kKeyCount> pressed;
         std::bitset<kKeyCount> released;
+        std::array<KeyModifiers, kKeyCount> pressedWith{};
         KeyModifiers held;
     };
 

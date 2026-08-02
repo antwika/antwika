@@ -6,6 +6,7 @@
 
 #include "antwika/ui/DrawCommand.hpp"
 #include "antwika/ui/HoverTarget.hpp"
+#include "antwika/ui/WidgetId.hpp"
 
 #include "Contains.hpp"
 
@@ -46,6 +47,38 @@ namespace antwika::ui
                 fill->color = color;
             }
         }
+
+        /**
+         * @brief Decide whether one target shows its hovered colour.
+         *
+         * The frontmost target the pointer is inside shows it, and so
+         * does every other target carrying that target's id: two nodes
+         * sharing an id are one widget, which is the rule resolve()'s
+         * dressing pass already follows by comparing ids rather than
+         * geometry. Lighting only the frontmost would make the same
+         * hover resolve differently through the two routes.
+         *
+         * An unnamed target is only ever the frontmost one, since
+         * comparing two kNoWidgets would call every unnamed widget the
+         * same one.
+         *
+         * @param target The target being decided.
+         * @param under The frontmost target the pointer is inside, or
+         * null when it is inside none.
+         * @return True when it shows its hovered colour.
+         */
+        [[nodiscard]] bool lit(
+            const HoverTarget &target, const HoverTarget *under) noexcept
+        {
+            if (under == nullptr)
+            {
+                return false;
+            }
+
+            return &target == under
+                   || (target.id != kNoWidget
+                       && target.id == under->id);
+        }
     } // namespace
 
     void applyHover(
@@ -82,7 +115,7 @@ namespace antwika::ui
             recolour(
                 commands,
                 target,
-                &target == under ? target.hovered : target.idle);
+                lit(target, under) ? target.hovered : target.idle);
         }
     }
 
