@@ -132,9 +132,11 @@ namespace
                     .button = MouseButton::Left, .position = at});
         }
 
+        // The bar's menu button is the one route in.
+        // F10 is a fullscreen toggle now, and reaches no sink at all.
         void openModal()
         {
-            send(KeyPressed{.key = antwika::input::Key::F10});
+            pressOn(widgets::kMenu);
         }
 
         // Through the fold first, as bootstrap() registers it.
@@ -364,11 +366,10 @@ TEST_F(UiSinkTest, Handle_IgnoresAnEventThatIsNotInput)
     EXPECT_TRUE(overlay.commands().empty());
 }
 
-// F10 is the symbolic key.
-// So a session recorded under one backend opens it under another.
+// The bar's menu button is the whole route in.
 // It defines no event of its own.
-// What a replay holds is the key press.
-TEST_F(UiSinkTest, F10_OpensTheMenuModal)
+// What a replay holds is the click, and works the widget out again.
+TEST_F(UiSinkTest, Press_OpensTheModalOnTheMenuButton)
 {
     openModal();
 
@@ -378,26 +379,11 @@ TEST_F(UiSinkTest, F10_OpensTheMenuModal)
         ::testing::Contains(std::string{"Main Menu"}));
 }
 
-// Holding the key is not a run of openings.
-TEST_F(UiSinkTest, F10Repeat_OpensNothing)
-{
-    send(KeyPressed{.key = antwika::input::Key::F10, .repeat = true});
-
-    EXPECT_FALSE(sink.menuOpen());
-}
-
 // Both calls openModal() makes say what they want rather than flip it.
-TEST_F(UiSinkTest, F10Twice_LeavesTheModalOpen)
+TEST_F(UiSinkTest, OpeningTwice_LeavesTheModalOpen)
 {
     openModal();
     openModal();
-
-    EXPECT_TRUE(sink.menuOpen());
-}
-
-TEST_F(UiSinkTest, Press_OpensTheModalOnTheMenuButton)
-{
-    pressOn(widgets::kMenu);
 
     EXPECT_TRUE(sink.menuOpen());
 }

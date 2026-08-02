@@ -7,6 +7,7 @@
 #include <antwika/app/IFramePass.hpp>
 #include <antwika/ecs/ISystem.hpp>
 #include <antwika/ecs/World.hpp>
+#include <antwika/gfx/IRenderer.hpp>
 #include <antwika/gfx/ITexture.hpp>
 #include <antwika/gfx/IWindow.hpp>
 #include <antwika/gfx/Size.hpp>
@@ -58,11 +59,15 @@ namespace antwika::game
         const AppModeState &mode;
 
         /**
-         * @brief The area every mode is laid out against.
+         * @brief The area every mode is drawn and laid out against.
          *
          * The size the window was *asked* for, never the size one
-         * reports -- see UiCanvas.hpp. The world map is centred in it,
-         * and WorldMapSink resolves a click against the same number.
+         * reports -- see UiCanvas.hpp. Every drawing call this system
+         * makes is in these pixels, including the grid's: what the
+         * reported size decides is only how big that picture is blitted
+         * and where, through the gfx::ViewportRenderer built each
+         * frame. The world map is centred in it, and WorldMapSink
+         * resolves a click against the same number.
          */
         Size canvas;
 
@@ -184,14 +189,23 @@ namespace antwika::game
      * goes. Uploading it here would put a resource behind an observer
      * that is only supposed to read.
      *
-     * The window's size is read afresh every tick, so a resize needs no
-     * handling of its own. That size reaches nothing but the culling test
-     * and the drawing calls, which is what keeps a resize from perturbing
-     * the simulation -- and why the projection is anchored to the camera's
-     * pan rather than to the canvas centre. The *world map* is laid out
-     * against the configured canvas instead, never the reported size, for
-     * the reason the toolbar is: a click on a city is resolved against
-     * that layout.
+     * **Every picture here is drawn in canvas pixels and scaled on the
+     * way out.** Each frame builds a gfx::ViewportRenderer over the
+     * window's reported size and the configured canvas, and every scene,
+     * every UI painter and every readout draws through that. So the
+     * whole game is laid out, hit-tested and simulated against one fixed
+     * canvas -- nothing inside the tick path learns what size the window
+     * is -- and the reported size decides only how big the result is
+     * blitted and where. That is docs/resizable-windows.md's offset,
+     * generalised to an offset and a uniform scale, and it is safe for
+     * the same reason: it is applied after every decision has already
+     * been made, and it is never asked what a pixel means.
+     *
+     * The reported size is read afresh every frame, so a resize needs no
+     * handling of its own, and app::WindowPointerMapping runs the same
+     * transform backwards on a pointer position before anything records
+     * it. Going fullscreen is therefore a picture that got bigger and a
+     * hit target that did not move.
      *
      * It is also the only thing in this app that reads
      * input::PointerHintChannel, and that is where the channel's whole
@@ -252,7 +266,13 @@ namespace antwika::game
         void draw(antwika::animation::Progress subTick) override;
 
     private:
-        void drawGrid(antwika::animation::Progress subTick);
+        void drawMode(
+            antwika::gfx::IRenderer &renderer,
+            antwika::animation::Progress subTick);
+
+        void drawGrid(
+            antwika::gfx::IRenderer &renderer,
+            antwika::animation::Progress subTick);
 
         [[nodiscard]] RoadPlan planFor() const;
 

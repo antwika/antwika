@@ -11,8 +11,10 @@
 #include <antwika/app/AssetPath.hpp>
 #include <antwika/app/ConsoleLogging.hpp>
 #include <antwika/app/FramePacedSource.hpp>
+#include <antwika/app/FullscreenToggleSource.hpp>
 #include <antwika/app/PngFile.hpp>
 #include <antwika/app/RunRecorded.hpp>
+#include <antwika/app/WindowPointerMapping.hpp>
 #include <antwika/ecs/ISystem.hpp>
 #include <antwika/gfx/Point.hpp>
 #include <antwika/gfx/SelectedBackend.hpp>
@@ -101,6 +103,13 @@ namespace
     // That build therefore runs until it is interrupted.
     constexpr antwika::input::Key kQuitKey = antwika::input::Key::Escape;
 
+    // Fills the screen, and puts the window back.
+    // An action on the window rather than anything a tick can see.
+    // Which is why it is acted on above the loop and not in a sink.
+    // A run reaches the same state whether or not it was ever pressed.
+    constexpr antwika::input::Key kFullscreenKey =
+        antwika::input::Key::F10;
+
     // The world is a pure function of this.
     // So a replay carries the number and the map comes back identical.
     // It is a constant rather than a flag.
@@ -127,9 +136,13 @@ namespace
 
         // Asked for the canvas the toolbar is resolved against.
         // Stating the two separately is what lets them disagree.
+        // Resizable, and F10 fills the screen, so they will.
+        // What that changes is how big the picture is drawn and where.
+        // Never what a click means -- see RenderSystem and docs/.
         const auto window = backend->createWindow(WindowDesc{
             .title = "Antwika Game",
-            .size = antwika::game::kUiCanvas});
+            .size = antwika::game::kUiCanvas,
+            .resizable = true});
 
         const auto atlasBitmap = antwika::app::readPngFile(
             antwika::app::assetPath("atlas.png"), "antwika_game");
@@ -232,6 +245,12 @@ namespace
 
         const InputEventCodec codec;
 
+        // Where a window pixel is on the canvas, and nothing else.
+        // Attached upstream of the recorder.
+        // So a file holds canvas positions and replays under any size.
+        const antwika::app::WindowPointerMapping mapping(
+            *window, antwika::game::kUiCanvas);
+
         // A --replay run must not read a device.
         // Every input would arrive twice: from the file and the device.
         // Nothing else about the two branches differs, deliberately.
@@ -240,6 +259,7 @@ namespace
             *inputBackend,
             codec,
             {.readsDevice = !recorded.options.replayPath.has_value(),
+             .pointerMapping = mapping,
              .coalescePointerMotion = true,
              .thinIdleMotion = true,
              .pointerHint = hint,
@@ -250,13 +270,19 @@ namespace
         // StopSignal ends the run on whichever arrives first.
         WindowInputSource source(input, *backend, window->id());
 
+        // Above the loop, since filling the screen is not a tick's news.
+        // The key press is ordinary recorded input all the same.
+        // So a replay fills the screen where the run did, and agrees.
+        antwika::app::FullscreenToggleSource fullscreen(
+            source, *window, codec, kFullscreenKey);
+
         // Paced even under the backend that draws nothing.
         // An unbounded run would otherwise spin a core flat out.
         // The extra frames go in the gap before a tick's events arrive.
         // So a walker slides across a cell instead of jumping it.
         // A tick still takes exactly kTickInterval either way.
         antwika::app::FramePacedSource paced(
-            source,
+            fullscreen,
             renderSystem,
             sleeper,
             {.tickInterval = kTickInterval,

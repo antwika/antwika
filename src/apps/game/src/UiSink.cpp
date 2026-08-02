@@ -5,7 +5,6 @@
 #include <variant>
 
 #include <antwika/engine/Events.hpp>
-#include <antwika/input/Key.hpp>
 #include <antwika/input/MouseButton.hpp>
 #include <antwika/ui/WidgetId.hpp>
 
@@ -13,8 +12,6 @@ namespace antwika::game
 {
 
     using antwika::input::InputEvent;
-    using antwika::input::Key;
-    using antwika::input::KeyPressed;
     using antwika::input::MouseButton;
     using antwika::input::PointerButtonPressed;
     using antwika::ui::kNoWidget;
@@ -29,19 +26,6 @@ namespace antwika::game
 
             return pressed != nullptr
                    && pressed->button == MouseButton::Left;
-        }
-
-        // The symbolic key rather than a scancode.
-        // So a recording opens the same modal under any backend.
-        // A repeat is not a fresh press.
-        // So holding F10 is not a run of openings.
-        // Which is the rule anything reacting to an edge follows.
-        [[nodiscard]] bool isMenuKey(const InputEvent &event) noexcept
-        {
-            const auto *pressed = std::get_if<KeyPressed>(&event);
-
-            return pressed != nullptr && pressed->key == Key::F10
-                   && !pressed->repeat;
         }
     } // namespace
 
@@ -90,15 +74,6 @@ namespace antwika::game
             return;
         }
 
-        // Ahead of describing anything.
-        // So the modal is already up when this event is resolved.
-        // A key press hits no widget.
-        // But the picture and what it covers are this event's answer.
-        if (isMenuKey(*decoded))
-        {
-            openModal();
-        }
-
         refreshAndAct(isLeftPress(*decoded));
     }
 
@@ -111,7 +86,7 @@ namespace antwika::game
     {
         // No guard on it being open already, deliberately.
         // Both calls below say what they want rather than flip it.
-        // So F10 twice is F10 once, and needs no branch to be.
+        // So asking twice is asking once, with no branch to be.
         modalOpen = true;
 
         // Whatever route was being dragged out is over, and lays none.

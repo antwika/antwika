@@ -57,8 +57,8 @@ namespace antwika::game
      * **The menu modal is this sink's too, and it is simulation state**
      * in exactly the sense PauseState, the camera and the selected tool
      * are: whether it is up decides what a recorded press *means*, so it
-     * is regenerated from the recorded F10 and the recorded clicks
-     * rather than recorded itself. No `game.*` or `ui.*` event exists
+     * is regenerated from the recorded clicks that opened and
+     * closed it rather than recorded itself. No `game.*` or `ui.*` event exists
      * for opening, closing or leaving by it. It lives here rather than
      * in a shared state object because this sink is the only thing that
      * reads it: what it covers is reported through UiOverlay like
@@ -176,7 +176,7 @@ namespace antwika::game
 
         // Whether the menu modal is up, which is simulation state.
         // Written here, inside the tick path, and read nowhere else.
-        // A replay regenerates it from the F10 and the clicks it holds.
+        // A replay regenerates it from the clicks the file holds.
         bool modalOpen = false;
 
         // The tick the bar reports, off the event being handled.
