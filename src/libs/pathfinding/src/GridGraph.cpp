@@ -2,7 +2,9 @@
 
 #include <array>
 #include <cstddef>
+#include <cstdint>
 #include <cstdlib>
+#include <limits>
 #include <utility>
 
 #include "antwika/pathfinding/PathfindingError.hpp"
@@ -44,6 +46,18 @@ namespace antwika::pathfinding
         const std::size_t expected =
             static_cast<std::size_t>(gridWidth)
             * static_cast<std::size_t>(gridHeight);
+
+        // nodeAt() computes y * width + x in int32 and cellOf() casts
+        // an index back signed; a grid whose cell count leaves int32
+        // would make both of those lies, so it is refused here and the
+        // two casts become provably safe.
+        if (expected > static_cast<std::size_t>(
+                std::numeric_limits<std::int32_t>::max()))
+        {
+            throw PathfindingError(
+                "pathfinding: the grid's cell count leaves the 32-bit "
+                "indices its nodes are numbered in");
+        }
 
         if (passableCells.size() != expected)
         {

@@ -16,7 +16,12 @@ namespace antwika::tween
     {
         using antwika::time::Tick;
 
-        constexpr Tick kMaxTick = std::numeric_limits<Tick>::max();
+        // Signed 64's maximum rather than Tick's own unsigned one.
+        // animation::interpolate multiplies a span by the eased
+        // numerator in int64; a product that fits a Tick and not an
+        // int64 would pass here and be garbage or UB there instead.
+        constexpr Tick kMaxTick = static_cast<Tick>(
+            std::numeric_limits<std::int64_t>::max());
 
         [[noreturn]] void refuse()
         {
