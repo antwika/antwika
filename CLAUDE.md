@@ -113,6 +113,7 @@ build/bin/antwika_gfx_demo/antwika_gfx_demo              # runs until the window
 build/bin/antwika_gfx3d_demo/antwika_gfx3d_demo          # spinning cube, 900 frames
 build/bin/antwika_sound_demo/antwika_sound_demo          # eight notes; silent under null
 build/bin/antwika_sound_demo/antwika_sound_demo --file my.wav  # or play a file instead
+build/bin/antwika_music_editor/antwika_music_editor      # type at it while it plays
 build/bin/antwika_tower_defence/antwika_tower_defence    # or --record / --replay
 build/bin/antwika_ui_demo/antwika_ui_demo                # every antwika::ui element, 1500 ticks
 build/bin/antwika_companion/antwika_companion            # feed, play, sleep
@@ -203,6 +204,10 @@ Breaking one is the class of mistake that looks fine live and surfaces as a dive
 - [`i18n`](wiki/libraries/i18n.md) is a compiled-in catalogue keyed by a symbolic message id rather than by the English string, with a total lookup that never throws; a `Translator` is injected like any other collaborator, and an application that hit-tests a layout fixes its locale in `main()` so the language cannot become simulation state.
   It names no application: each module declares its own `MessageId`, its own catalogues and its own `Messages` satisfying the `MessageSet` concept, and instantiates the shared `MessageSetCompleteness` suite over them, which is what keeps a forgotten Swedish string a red build.
 - [`sound`](wiki/libraries/sound.md) decodes, mixes and plays PCM behind a backend seam, and owns no thread, lock or queue: a device renders only when `pump()` asks it to, on the thread that asked.
+- [`pattern`](wiki/libraries/pattern.md) is a pattern algebra over exact rational cycles in TidalCycles' and Strudel's shape, where a pattern is a pure function from a window of time to the events in it -- and it knows nothing about music, since an event carries caller-named `Controls` rather than a note, exactly as `wfc` knows nothing about grids.
+- [`notation`](wiki/libraries/notation.md) reads the Tidal mini-notation -- `"0 [3 5] <7 9>"` -- into that algebra and owns no semantics of its own, so a string that parses but asks for nine onsets across eight steps is refused by `pattern` rather than by the grammar.
+- [`sequencer`](wiki/libraries/sequencer.md) is where musical time meets frame time and the only place the two meet: it advances a half-open window in *cycle* space once per tick and triggers on onsets alone, since a held note yields a fragment in every window it spans and sounding those restarts it at every boundary.
+- [`synth`](wiki/libraries/synth.md) makes sound up instead of reading it back, so a sound effect is a `VoiceDesc` in source rather than a `.wav` in the tree -- and because an sfxr-style effect *is* one voice and a note is one too, there is no separate sound-effect subsystem, only one pool and one `trigger()`.
 - [`network`](wiki/libraries/network.md) carries bytes between hosts behind a backend seam, owning no thread, lock or queue exactly as `sound` does: a host moves nothing until `pump()` asks it to, in both directions, on the thread that asked.
   It is the transport half of multiplayer and nothing more -- it cannot name a `Tick` or an `Event`, so remote input can only ever reach a simulation as events an `ITickEventSource` supplied for a tick, which is what lets a recorded networked session replay with no socket opened.
 - [`app`](wiki/libraries/app.md) is what every `main()` shares -- `runRecorded()`, `assetPath()`, `FramePacedSource`/`IFramePass` and `pointerFrom()`/`hoverFrom()`.
@@ -223,6 +228,7 @@ Each app owns its state and how events mutate it -- the engine has no opinion he
 - [`tower_defence`](wiki/apps/tower_defence.md) generates its level with `wfc` and walks mobs along it, arranging the tile alphabet so a linear path is a property of the alphabet rather than something checked for afterwards.
 - [`companion`](wiki/apps/companion.md) is a tamagotchi whose **energy is its life**: three props to press, happiness as the rate the energy drains at, a bed refused until it is tired enough to have earned one, and a collapse that costs ceiling for good -- so the ceiling running out is the only way one ever perishes.
 - [`atlas_editor`](wiki/apps/atlas_editor.md) is a pixel editor for the sheet `game` blits, and is an ordinary application of the tick loop with no undo -- replaying a session up to a point is the undo this design has.
+- [`music_editor`](wiki/apps/music_editor.md) is a live-coding editor: four lines of mini-notation, always sounding, where every keystroke reaches the music with nothing reloaded -- a line that will not parse keeps playing whatever it last did, and pausing stops the musical clock rather than the device.
 - [`sudoku`](wiki/apps/sudoku.md) is `wfc`'s showcase played with a mouse and a keyboard, expressing the 81-cell puzzle as `AllDifferentConstraint`s over a flat array and bounding the solve behind its Solve button, since that runs inside a tick.
 - [`gfx_demo`](wiki/apps/gfx_demo.md), [`gfx3d_demo`](wiki/apps/gfx3d_demo.md), [`sound_demo`](wiki/apps/sound_demo.md) and [`ui_demo`](wiki/apps/ui_demo.md) are the showcases for `gfx`, its 3D half, `sound` and `ui`.
 

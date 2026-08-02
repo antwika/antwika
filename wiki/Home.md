@@ -36,6 +36,10 @@ Each page covers what the library is for, its key headers and types, what it dep
 | [ui](libraries/ui.md) | Immediate-mode layout that produces a picture as a value. |
 | [input](libraries/input.md) | Backend-agnostic keyboard and pointer edges, delivered as replay input. |
 | [sound](libraries/sound.md) | PCM decoding, mixing and playback, on the thread that pumps it. |
+| [synth](libraries/synth.md) | Sounds as values in source rather than waveform files, generated into the same buffer. |
+| [pattern](libraries/pattern.md) | A pattern algebra over exact rational cycles, knowing nothing about music. |
+| [notation](libraries/notation.md) | The Tidal mini-notation, read into that algebra and nothing more. |
+| [sequencer](libraries/sequencer.md) | Where musical time meets frame time, and the onset rule that guards it. |
 | [network](libraries/network.md) | Bytes between hosts, pumped from the tick loop and owning no thread. |
 | [animation](libraries/animation.md) | Which frame to show, as a pure function of a tick the caller already has. |
 | [tween](libraries/tween.md) | Easing curves that stay exact, so a shaped fraction is the same on every toolchain. |
@@ -59,6 +63,7 @@ Each page covers what the library is for, its key headers and types, what it dep
 | [gfx_demo](apps/gfx_demo.md) | The graphics and UI showcase: bars, a texture, and clickable buttons. |
 | [gfx3d_demo](apps/gfx3d_demo.md) | The 3D showcase: a cube turned by the tick count, captioned in 2D. |
 | [sound_demo](apps/sound_demo.md) | The sound showcase: eight notes at exact frame positions. |
+| [music_editor](apps/music_editor.md) | Four lines of mini-notation you type into while they play. |
 | [companion](apps/companion.md) | A tamagotchi whose energy is its life, spent by playing and earned back by sleep. |
 | [atlas_editor](apps/atlas_editor.md) | A pixel editor for the sheet the game blits, with no undo by design. |
 | [ui_demo](apps/ui_demo.md) | Every `antwika::ui` element in turn, with the application owning all their state. |

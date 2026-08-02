@@ -1,0 +1,112 @@
+#include "antwika/sequencer/TempoMap.hpp"
+
+#include <gtest/gtest.h>
+
+#include <antwika/pattern/Cycle.hpp>
+
+#include "antwika/sequencer/Rational.hpp"
+#include "antwika/sequencer/SequencerError.hpp"
+
+using antwika::pattern::Cycle;
+using antwika::sequencer::Rational;
+using antwika::sequencer::SequencerError;
+using antwika::sequencer::TempoMap;
+
+TEST(TempoMapTest, RefusesATempoThatWouldNeverAdvance)
+{
+    EXPECT_THROW(TempoMap{Rational()}, SequencerError);
+    EXPECT_THROW(TempoMap{Rational(-1)}, SequencerError);
+}
+
+TEST(TempoMapTest, PlacesCyclesAtOneTempo)
+{
+    const TempoMap tempo(Rational(48000));
+
+    EXPECT_EQ(tempo.segmentCount(), 1U);
+    EXPECT_EQ(tempo.framesAt(Cycle()), 0U);
+    EXPECT_EQ(tempo.framesAt(Cycle(1)), 48000U);
+    EXPECT_EQ(tempo.framesAt(Cycle(1, 2)), 24000U);
+    EXPECT_EQ(tempo.framesAt(Cycle(3, 4)), 36000U);
+}
+
+// Exact inverses, which is what makes a note land where the score said.
+TEST(TempoMapTest, TurnsFramesBackIntoCycles)
+{
+    const TempoMap tempo(Rational(48000));
+
+    EXPECT_EQ(tempo.cycleAt(0), Cycle());
+    EXPECT_EQ(tempo.cycleAt(48000), Cycle(1));
+    EXPECT_EQ(tempo.cycleAt(24000), Cycle(1, 2));
+    EXPECT_EQ(tempo.cycleAt(1), Cycle(1, 48000));
+}
+
+// A cycle that is not a whole number of frames is still exact here.
+// The flooring happens once, at the very end.
+TEST(TempoMapTest, HoldsATempoThatIsNotAWholeNumberOfFrames)
+{
+    const TempoMap tempo(Rational(48000, 7));
+
+    EXPECT_EQ(tempo.framesAt(Cycle(7)), 48000U);
+    EXPECT_EQ(tempo.framesAt(Cycle(1)), 6857U);
+    EXPECT_EQ(tempo.cycleAt(48000), Cycle(7));
+}
+
+TEST(TempoMapTest, ChangesTempoFromACycleOnwards)
+{
+    TempoMap tempo(Rational(48000));
+    tempo.addSegment(Cycle(2), Rational(24000));
+
+    EXPECT_EQ(tempo.segmentCount(), 2U);
+
+    // The first two cycles run at the first tempo.
+    EXPECT_EQ(tempo.framesAt(Cycle(2)), 96000U);
+
+    // The third runs at the second, so it is half as long.
+    EXPECT_EQ(tempo.framesAt(Cycle(3)), 120000U);
+    EXPECT_EQ(tempo.framesAt(Cycle(4)), 144000U);
+}
+
+TEST(TempoMapTest, TurnsFramesBackIntoCyclesAcrossASegment)
+{
+    TempoMap tempo(Rational(48000));
+    tempo.addSegment(Cycle(2), Rational(24000));
+
+    // Before the second segment starts, so the search stops early.
+    EXPECT_EQ(tempo.cycleAt(24000), Cycle(1, 2));
+
+    EXPECT_EQ(tempo.cycleAt(96000), Cycle(2));
+    EXPECT_EQ(tempo.cycleAt(120000), Cycle(3));
+    EXPECT_EQ(tempo.cycleAt(108000), Cycle(5, 2));
+}
+
+TEST(TempoMapTest, RefusesASegmentThatDoesNotComeAfterTheLast)
+{
+    TempoMap tempo(Rational(48000));
+    tempo.addSegment(Cycle(2), Rational(24000));
+
+    EXPECT_THROW(
+        tempo.addSegment(Cycle(2), Rational(12000)), SequencerError);
+
+    EXPECT_THROW(
+        tempo.addSegment(Cycle(1), Rational(12000)), SequencerError);
+
+    EXPECT_THROW(
+        tempo.addSegment(Cycle(4), Rational()), SequencerError);
+}
+
+// A pattern shifted early asks about positions before cycle zero.
+// It gets a sensible answer rather than a refusal.
+TEST(TempoMapTest, ExtrapolatesBeforeTheFirstSegment)
+{
+    const TempoMap tempo(Rational(48000));
+
+    EXPECT_EQ(tempo.cycleAt(0), Cycle());
+    EXPECT_EQ(tempo.framesAt(Cycle(-1, 4)), 0U);
+}
+
+TEST(TempoMapTest, ClampsAPositionBeforeTheVeryFirstFrame)
+{
+    const TempoMap tempo(Rational(48000));
+
+    EXPECT_EQ(tempo.framesAt(Cycle(-5)), 0U);
+}
