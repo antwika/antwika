@@ -85,7 +85,7 @@ namespace
 
         ReplaySource fileSource(antwika::app::scriptedEvents(
             recorded.options.replayPath,
-            antwika::app::assetPath("demo.json")));
+            antwika::app::assetPath("demo.jsonl")));
 
         // Closing the window ends the run, as in every windowed app.
         // It arrives as an engine.stop event through the source.

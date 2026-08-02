@@ -168,16 +168,15 @@ TEST(RunRecordedTest, SavesWhatAFailedRunGotTo)
     EXPECT_EQ(loadReplayFile(file.name()), std::vector{kScripted});
 }
 
-// Saving is the last thing a --record run does.
-// It throws when the path will not take the bytes.
-// That throw used to leave runRecorded() entirely.
-// A main() has no catch of its own, by design.
-// So a mistyped --record path terminated the process in silence.
-TEST(RunRecordedTest, ReportsARecordingItCouldNotSave)
+// A recording is appended as the run goes.
+// So the file is opened before the first tick, not written after it.
+// Which answers a mistyped --record path straight away.
+// Instead of after an hour of a session that had nowhere to go.
+TEST(RunRecordedTest, RefusesARecordingPathBeforeTheSessionStarts)
 {
     const std::string path =
         (std::filesystem::temp_directory_path() / "antwika-no-such-dir"
-         / "out.json")
+         / "out.jsonl")
             .string();
     std::array<char *, 3> argv{
         const_cast<char *>("antwika_test"),
@@ -194,12 +193,51 @@ TEST(RunRecordedTest, ReportsARecordingItCouldNotSave)
         {},
         errors);
 
-    // The run itself happened; only its recording could not be kept.
-    EXPECT_TRUE(ran);
+    EXPECT_FALSE(ran);
     EXPECT_EQ(exitCode, EXIT_FAILURE);
     EXPECT_THAT(errors.str(), testing::HasSubstr("antwika_test: "));
     EXPECT_THAT(errors.str(), testing::HasSubstr("could not open"));
     EXPECT_THAT(errors.str(), testing::HasSubstr(path));
+}
+
+// **The failure this whole format change exists to remove.**
+// Several applications have no end of their own.
+// So Ctrl+C is the ordinary way to stop one.
+// A recording written once, at the end, kept nothing from such a run.
+// A body still running stands in for the kill here.
+// What the file holds is asked from inside the session.
+TEST(RunRecordedTest, KeepsWhatAKilledRunGotToBeforeItEnded)
+{
+    const TempFile file("antwika-app-killed.jsonl");
+    const std::string path = file.name();
+    std::array<char *, 3> argv{
+        const_cast<char *>("antwika_test"),
+        const_cast<char *>("--record"),
+        const_cast<char *>(path.c_str())};
+    std::ostringstream errors;
+
+    std::vector<TickEvent> midRun;
+    static_cast<void>(runRecorded(
+        3,
+        argv.data(),
+        "antwika_test",
+        [&midRun, &path](const RecordedRun &run)
+        {
+            run.replayRecorder->get().handle(kScripted);
+            run.replayRecorder->get().handle(
+                TickEvent{
+                    .tick = antwika::time::Tick{2},
+                    .event = {.name = "test.event", .payload = "more"}});
+
+            // Still inside the session.
+            // No epilogue has run, and nothing has been closed.
+            midRun = loadReplayFile(path);
+        },
+        {},
+        errors));
+
+    ASSERT_EQ(midRun.size(), 2U);
+    EXPECT_EQ(midRun.front(), kScripted);
 }
 
 TEST(RunRecordedTest, HandsTheBodyThePathToReplay)

@@ -238,8 +238,7 @@ namespace
         EXPECT_EQ(input, script());
 
         std::ostringstream out;
-        const ReplayWriter writer(
-            ReplayWriter::Layout::Pretty, kCanvas);
+        const ReplayWriter writer(kCanvas);
         writer.write(input, out);
 
         std::istringstream in(out.str());

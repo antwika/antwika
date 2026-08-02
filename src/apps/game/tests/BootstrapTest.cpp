@@ -604,7 +604,7 @@ TEST(BootstrapTest, Bootstrap_WordsItselfWithTheTranslatorItIsGiven)
     EXPECT_EQ(overlay.commands(), expected.commands);
 }
 
-// replays/demo.json opens by clicking here.
+// replays/demo.jsonl opens by clicking here.
 // A recording is only as good as the layout it was made against.
 // So the pixel it holds is asserted here.
 // Otherwise it is rediscovered by hand every time an item moves.
@@ -863,7 +863,7 @@ TEST(PrintSummaryTest, WritesEveryBuildingAndWhatItIs)
         std::string::npos);
 }
 
-// replays/demo.json presses the House palette button at this pixel.
+// replays/demo.jsonl presses the House palette button at this pixel.
 // It then places at the cell the pixel below maps to.
 // A recording is only as good as the layout it was made against.
 // So both pixels are pinned here rather than rediscovered by hand.

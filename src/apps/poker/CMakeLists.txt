@@ -44,7 +44,7 @@ antwika_bundle_app(
     TARGET antwika_poker
     ASSETS
         assets/atlas.png
-        replays/demo.json
+        replays/demo.jsonl
 )
 
 install(TARGETS antwika_poker

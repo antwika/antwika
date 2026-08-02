@@ -126,7 +126,7 @@ A test binary goes to the directory of the module that owns it, put there by `an
 An application finds what it opens through `antwika::app::assetPath()` rather than through the working directory or a path baked in at configure time; [`wiki/libraries/app.md`](wiki/libraries/app.md) says why both of those failed.
 
 Several applications have no end of their own and run until the window is closed or a replay dispatches `engine.stop`, and the `null` backend reports neither.
-So `Ctrl+C` is what ends one on a default build -- and since a `--record` run only writes its file once the run has ended, a run killed that way saves nothing.
+So `Ctrl+C` is what ends one on a default build, and a `--record` run killed that way keeps everything it dispatched up to the kill: a replay is JSON Lines, and the recorder appends and flushes a line per event as the run goes rather than writing a document after it -- see [`wiki/libraries/replay.md`](wiki/libraries/replay.md).
 Each application's flags, pacing and stopping conditions are on its own page under [`wiki/apps/`](wiki/Home.md).
 
 **Coverage build** (separate `build-coverage/` dir, GNU/LLVM only — not MinGW):

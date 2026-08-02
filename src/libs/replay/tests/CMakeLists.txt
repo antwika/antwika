@@ -7,8 +7,9 @@ add_executable(antwika_replay_tests
     ReplayCliTest.cpp
     ReplayDeterminismTest.cpp
     ReplayDocumentTest.cpp
+    ReplayHeaderTest.cpp
     ReplayJsonTest.cpp
-    ReplayOutputTest.cpp
+    ReplayRecorderTest.cpp
     ReplaySourceTest.cpp
     ReplayWriterReaderTest.cpp
     SchemaVersionTest.cpp

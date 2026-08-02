@@ -2,12 +2,17 @@
 
 #include <nlohmann/json.hpp>
 
+#include <cstddef>
 #include <format>
+#include <string>
 #include <utility>
 
 #include <antwika/log/Level.hpp>
 #include <antwika/replay/ReplayFormatError.hpp>
+#include <antwika/replay/ReplayHeader.hpp>
 #include <antwika/replay/ReplayJson.hpp>
+
+#include "ReplayFormat.hpp"
 
 namespace antwika::replay
 {
@@ -45,6 +50,107 @@ namespace antwika::replay
                     check.canvas->width,
                     check.canvas->height));
         }
+
+        [[nodiscard]] bool isBlank(const std::string &line)
+        {
+            return line.find_first_not_of(" \t\r\n") == std::string::npos;
+        }
+
+        // The first JSON value in the stream.
+        // It is a header or a whole version 1 document.
+        // Which of the two it is is decided from what it holds.
+        //
+        // Not from the first non-space character.
+        // That is sudoku::PuzzleFile's trick, and both shapes open '{'.
+        // The member that held the whole event log tells them apart.
+        // A header carries every other member a version 1 document did.
+        // And never that one.
+        [[nodiscard]] nlohmann::json readFirstValue(std::istream &in)
+        {
+            nlohmann::json first;
+            try
+            {
+                in >> first;
+            }
+            catch (const nlohmann::json::parse_error &) // GCOVR_EXCL_LINE
+            {
+                throw ReplayFormatError(
+                    "antwika::replay: not a valid replay stream (it does "
+                    "not open with a JSON value)");
+            }
+            return first;
+        } // GCOVR_EXCL_LINE
+
+        // Every line after the header, as parsed JSON values.
+        //
+        // A record is one line ending in a newline.
+        // That newline is what says the write got there whole.
+        // So a last line without one that will not parse was torn off.
+        // By the kill that ended the run, and it is dropped.
+        // Appending as a run goes is pointless if the rest goes with it.
+        // A line that will not parse anywhere else is a malformed file.
+        // The reader says which line.
+        [[nodiscard]] nlohmann::json readRecordLines(std::istream &in)
+        {
+            auto records = nlohmann::json::array();
+
+            // The header was line 1.
+            // The first read below returns what was left on it.
+            // Which is nothing.
+            std::size_t line = 1;
+            std::string text;
+            while (std::getline(in, text))
+            {
+                const std::size_t at = line;
+                ++line;
+
+                if (isBlank(text))
+                {
+                    continue;
+                }
+
+                try
+                {
+                    records.push_back(nlohmann::json::parse(text));
+                }
+                catch (const nlohmann::json::parse_error &) // GCOVR_EXCL_LINE
+                {
+                    if (in.eof())
+                    {
+                        break;
+                    }
+
+                    throw ReplayFormatError(std::format(
+                        "antwika::replay: line {} of this replay is not "
+                        "a JSON value",
+                        at));
+                }
+            }
+            return records;
+        } // GCOVR_EXCL_LINE
+
+        [[nodiscard]] ReplayDocument readStream(
+            std::istream &in, const MigrationChain &migrations)
+        {
+            const nlohmann::json first = readFirstValue(in);
+
+            // The key is a named local rather than a temporary.
+            // A temporary std::string brings its own branches at -O0.
+            const std::string events(detail::kLegacyEventsKey);
+            if (first.is_object() && first.contains(events))
+            {
+                return replayFromJson(first, migrations);
+            }
+
+            const ReplayHeader header =
+                replayHeaderFromJson(first, migrations);
+
+            ReplayDocument document;
+            document.canvas = header.canvas;
+            document.events = replayRecordsFromJson(
+                readRecordLines(in), header.version, migrations);
+            return document;
+        } // GCOVR_EXCL_LINE
     } // namespace
 
     ReplayReader::ReplayReader(
@@ -55,19 +161,7 @@ namespace antwika::replay
 
     std::vector<TickEvent> ReplayReader::read(std::istream &in) const
     {
-        nlohmann::json parsed;
-        try
-        {
-            in >> parsed;
-        }
-        catch (const nlohmann::json::parse_error &) // GCOVR_EXCL_LINE
-        {
-            throw ReplayFormatError(
-                "antwika::replay: not a valid replay stream (not valid "
-                "JSON)");
-        }
-
-        ReplayDocument document = replayFromJson(parsed, migrations);
+        ReplayDocument document = readStream(in, migrations);
         warnIfCanvasDiffers(check, document);
         return std::move(document.events);
     }

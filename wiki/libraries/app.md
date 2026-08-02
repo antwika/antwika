@@ -11,7 +11,7 @@ It holds no simulation logic of its own — everything here is glue that was dup
 
 | Header | Type | Role |
 | --- | --- | --- |
-| `RunRecorded.hpp` | `RecordedRun`, `runRecorded()`, `scriptedEvents()` | Parses `--record`/`--replay` and each app's own flags in one pass, builds the source, runs the loop through a caller-supplied body, and writes the file when the run ends. |
+| `RunRecorded.hpp` | `RecordedRun`, `runRecorded()`, `scriptedEvents()` | Parses `--record`/`--replay` and each app's own flags in one pass, opens the recording, and runs the loop through a caller-supplied body. |
 | `RunGuarded.hpp` | `runGuarded()` | Runs a body, reports what it threw under the program's name, and returns an exit code. |
 | `ConsoleLogging.hpp` | `ConsoleLogging` | A `Logger` over `std::ostream` at a minimum `Level`, exposed as `logger()`. |
 | `AssetPath.hpp` | `executableDirectory()`, `assetPath()` | Where the running program is, and where a file shipped beside it is. |
@@ -45,7 +45,7 @@ What it replaces is a path baked in at configure time, which was the *building* 
 
 **Every application gets a directory of its own under `bin/`.**
 `antwika_bundle_app()` in [`cmake/AntwikaModule.cmake`](../../cmake/AntwikaModule.cmake) puts the executable there, along with whatever it opens and — on MinGW — the runtime DLLs it needs to start; `assetPath()` is how the running program finds those files again.
-Two applications ship an `atlas.png` and three a `demo.json`, so one shared `bin/` was one atlas and one demo replay between all of them the moment either had to sit beside its binary.
+Two applications ship an `atlas.png` and three a `demo.jsonl`, so one shared `bin/` was one atlas and one demo replay between all of them the moment either had to sit beside its binary.
 
 A test binary goes to the directory of the module that owns it, put there by `antwika_bundle_test()` in the same file: `bin/antwika_companion/antwika_companion_tests` beside the application it covers, and `bin/antwika_replay/antwika_replay_tests` in a directory of the library's own.
 That directory is the target's own name with the trailing `_tests` taken off rather than a second argument, so the name and the directory cannot disagree, and a target not following the convention is refused at configure time rather than landing somewhere surprising.
@@ -87,7 +87,12 @@ It holds an `IWindow &` rather than a `WindowId`, unlike `simulation::WindowInpu
 
 **`runGuarded()` is the half of `runRecorded()` that knows nothing about replays.**
 It exists because an app's `main.cpp` may not have a `try` of its own, and `gfx_demo` and `gfx3d_demo` take no `--record`/`--replay` to call `runRecorded()` with.
-`runRecorded()` calls it twice -- once around the parse and the body, once around the save -- which is what lets a failed run still write what it recorded, and an unwritable `--record` path be reported rather than thrown out of a `main()` that cannot catch it.
+`runRecorded()` calls it once, around the parse, the recording and the body, which is what lets an unwritable `--record` path be reported rather than thrown out of a `main()` that cannot catch it.
+
+**There is no save epilogue any more.**
+It used to call `runGuarded()` a second time around a `saveReplayFile()` at the end, so that a failed run still wrote what it had recorded — and a run nobody let finish still wrote nothing.
+A `--record` run now opens the file before its first tick and dispatches into a `replay::ReplayRecorder`, which appends and flushes a line per event, so a run that failed and a run somebody killed have both already kept everything they got to.
+The cost of that is where a bad path is reported: before the session rather than after it, which is the better end to find out at.
 A throw that is not a `std::exception` is deliberately let through: that is a bug in the body rather than a failed run.
 
 **`runRecorded()` takes the app's body as a callback.**

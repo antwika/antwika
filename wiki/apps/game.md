@@ -13,7 +13,7 @@ This is the most complete composition in the project: reducer state, an ECS, an 
 ```sh
 build/bin/antwika_game/antwika_game
 build/bin/antwika_game/antwika_game --record demo.replay
-build/bin/antwika_game/antwika_game --replay src/apps/game/replays/demo.json
+build/bin/antwika_game/antwika_game --replay src/apps/game/replays/demo.jsonl
 ```
 
 Left-click places whatever the palette has selected, middle-drag pans, and the wheel zooms.
@@ -260,7 +260,7 @@ Writing them once behind that seam is what keeps the menu from being a second se
 Save and load share one verb because they share one screen: the picker is where a session is both written out and read back, and two verbs asking for it would be one thing said twice.
 `new game` restores an empty `SaveGame` through `SessionStore`, which is the one route into the live grid a load already goes through, so "empty the city" is not a second way of doing it; the other cities of a world keep what was built on them, since a session holds one live grid.
 
-**Moving a widget changes what every recorded click means**, so `replays/demo.json` was recorded again against this layout — by driving the application with `--replay` over the re-aimed session and `--record` writing what it actually dispatched, rather than by editing the file.
+**Moving a widget changes what every recorded click means**, so `replays/demo.jsonl` was recorded again against this layout — by driving the application with `--replay` over the re-aimed session and `--record` writing what it actually dispatched, rather than by editing the file.
 It reaches the identical city either way: ten road tiles, one house at (4,3) at `tent` with water coverage 474, population 3, service reach 25, camera at pan (512,48) and zoom 3 after 92 ticks.
 `BootstrapTest` pins the two pixels that file depends on — the main menu's New Game and the palette's House — so a layout change fails a test rather than being rediscovered by hand.
 

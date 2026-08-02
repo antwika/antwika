@@ -12,11 +12,11 @@ It has no input of any kind, and its window is a readout rather than a game: the
 ```sh
 build/bin/antwika_task_worker/antwika_task_worker
 build/bin/antwika_task_worker/antwika_task_worker --record demo.replay
-build/bin/antwika_task_worker/antwika_task_worker --replay src/apps/task_worker/replays/demo.json
+build/bin/antwika_task_worker/antwika_task_worker --replay src/apps/task_worker/replays/demo.jsonl
 ```
 
 It draws the pool into a window, prints the same status per tick, and ends when the scripted or replayed input runs out -- or when the window is closed, which arrives as an `engine.stop` event through `simulation::WindowInputSource` and is therefore recorded and replayed like anything else.
-The shipped `replays/demo.json` runs eighteen ticks at 400 ms each, paced by a `simulation::TickPacer` so a queue can be watched draining rather than flashing past.
+The shipped `replays/demo.jsonl` runs eighteen ticks at 400 ms each, paced by a `simulation::TickPacer` so a queue can be watched draining rather than flashing past.
 Under the default `null` backend the window draws nothing and the run is exactly the same run, printed.
 
 ## Libraries it composes

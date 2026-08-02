@@ -64,21 +64,26 @@ namespace antwika::replay
     inline constexpr std::uint32_t kUnversionedDocumentVersion = 1;
 
     /**
-     * @brief The replay-document schema version ReplayWriter writes and
-     * ReplayReader decodes.
+     * @brief The replay schema version ReplayWriter writes into a file's
+     * header line and ReplayReader decodes its records at.
+     *
+     * Version 1 was one JSON object holding an "events" array.
+     * Version 2 is JSON Lines: a header line, then one record a line.
+     * A version 1 file still loads, because the header members and the
+     * record shape are the same in both -- see ReplayReader.
      */
-    inline constexpr std::uint32_t kReplayDocumentVersion = 1;
+    inline constexpr std::uint32_t kReplayDocumentVersion = 2;
 
     /**
-     * @brief The version of the tick-event schema nested inside a replay
-     * document as the "items" of its "events".
+     * @brief The version of the tick-event schema one record of a replay
+     * is written against.
      *
-     * Stated here rather than in each event, since an event is repeated
-     * thousands of times in one document and its revision is fixed by
-     * the document that holds it.
+     * Stated here rather than in each record, since a record is repeated
+     * thousands of times in one file and its revision is fixed by the
+     * header that opens the file.
      * Nothing writes it into a file: it is a number to bump and reason
-     * about when the event shape changes, and what a reader actually
-     * dispatches on is the document version beside it.
+     * about when the record shape changes, and what a reader actually
+     * dispatches on is the header's version beside it.
      */
     inline constexpr std::uint32_t kTickEventSchemaVersion = 1;
 

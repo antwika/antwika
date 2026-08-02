@@ -188,7 +188,7 @@ Three boxes of one colour are otherwise three guesses, and the price of guessing
 So the picture shrank to make room for the word rather than the box growing, and three things come out of that at once.
 A press on the word is a press on the prop it names, since the word is inside the box that means it -- a label that merely sat beside a prop would look pressable and answer a prod.
 No label can reach into a neighbour's hit region, because it cannot leave its own prop's.
-And every press recorded before the labels existed still means exactly what it meant, `demo.json` included, because no boundary a recording is resolved against moved.
+And every press recorded before the labels existed still means exactly what it meant, `demo.jsonl` included, because no boundary a recording is resolved against moved.
 
 There was also nowhere else to put them.
 The four gauges take the top eight rows, the animal stands from row eight to the ground at row 22, the props take rows 22 to 26, and the readout's three lines are anchored to the bottom of the grid -- which at the configured 256 pixels is exactly rows 26 to 32.
@@ -270,7 +270,7 @@ Three rules cover the awkward cases, and each is a decision rather than an accid
 
 - **When it is written: once, after the loop has finished.**
   Not every tick, and not on a timer, which would be a clock inside a session that has none.
-  A session killed with `Ctrl+C` therefore keeps nothing, exactly as a `--record` run there writes no file.
+  A session killed with `Ctrl+C` therefore keeps no companion; a `--record` run killed the same way does keep its recording, since that is a log appended as the run goes rather than a snapshot written after it.
 - **A replay neither loads nor saves.**
   A companion loaded from whatever happens to be on the machine running it is a different starting state and so a different session.
   `storeIfLive()` is where that decision is made, so no `main()` has to remember it.
@@ -285,10 +285,10 @@ Three rules cover the awkward cases, and each is a decision rather than an accid
 build/bin/antwika_companion/antwika_companion
 build/bin/antwika_companion/antwika_companion --record demo.replay
 build/bin/antwika_companion/antwika_companion \
-  --replay build/bin/antwika_companion/demo.json
+  --replay build/bin/antwika_companion/demo.jsonl
 ```
 
-The shipped `demo.json` is a 35-second session of two well-played days: two meals, two games, two nights, and no collapse, no prod and no rude awakening between them.
+The shipped `demo.jsonl` is a 35-second session of two well-played days: two meals, two games, two nights, and no collapse, no prod and no rude awakening between them.
 It ends with an `engine.stop`, so it finishes on its own.
 **It replaced the version 1 demo outright rather than being amended**, because a press now means whichever prop it landed on, and every recording written before this one lands somewhere else.
-A headless build reports neither a window close nor any input, so `Ctrl+C` is what ends a live run there -- and a `--record` run only writes its file once the run ends.
+A headless build reports neither a window close nor any input, so `Ctrl+C` is what ends a live run there -- and a `--record` run killed that way keeps every event up to the kill.

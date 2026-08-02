@@ -48,7 +48,7 @@ endif()
 antwika_bundle_app(
     TARGET antwika_companion
     ASSETS
-        replays/demo.json
+        replays/demo.jsonl
 )
 
 install(TARGETS antwika_companion

@@ -36,7 +36,7 @@ namespace
         SystemSleeper sleeper;
         ReplaySource source(antwika::app::scriptedEvents(
             recorded.options.replayPath,
-            antwika::app::assetPath("demo.json")));
+            antwika::app::assetPath("demo.jsonl")));
 
         // The window is always opened, as in the gfx demo.
         // Under the headless backend it draws and costs nothing.

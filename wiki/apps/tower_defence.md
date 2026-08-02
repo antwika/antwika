@@ -13,11 +13,11 @@ The interesting part is that WFC is a constraint solver, not a path guarantee: "
 ```sh
 build/bin/antwika_tower_defence/antwika_tower_defence
 build/bin/antwika_tower_defence/antwika_tower_defence --record demo.replay
-build/bin/antwika_tower_defence/antwika_tower_defence --replay src/apps/tower_defence/replays/demo.json
+build/bin/antwika_tower_defence/antwika_tower_defence --replay src/apps/tower_defence/replays/demo.jsonl
 ```
 
 It opens a window, draws the level each tick and takes mouse input.
-Like [life](life.md) it has no end of its own: it runs until the window is closed or a replay dispatches `engine.stop`, and a headless build reports neither — so `Ctrl+C` ends one there, and a `--record` run only writes its file once the run ends.
+Like [life](life.md) it has no end of its own: it runs until the window is closed or a replay dispatches `engine.stop`, and a headless build reports neither — so `Ctrl+C` ends one there, and a `--record` run killed that way keeps every event up to the kill.
 Clearing the last wave of the last level, or running out of lives, ends the *campaign* rather than the run: the score stops moving, the bar says which of the two happened, and the window stays open.
 
 ## Libraries it composes

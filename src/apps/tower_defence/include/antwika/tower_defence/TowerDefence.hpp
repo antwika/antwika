@@ -150,8 +150,11 @@ namespace antwika::tower_defence
      * after it** -- never from inside the tick path, where a file's
      * answer could differ between a live run and a replay of it. The
      * cost is stated rather than hidden: a run ended with Ctrl+C never
-     * reaches the epilogue and so keeps nothing, exactly as a `--record`
-     * run there writes no file.
+     * reaches the epilogue and so keeps nothing. A `--record` run does
+     * keep what it got to, because a recording is a log appended as the
+     * run goes rather than a snapshot written after it; a high score is
+     * a snapshot, and one written every tick would be twenty writes a
+     * second of a file nothing reads in between.
      *
      * A record that will not load does not take the run with it: it is
      * logged, the run starts from a best of zero and goes on to write

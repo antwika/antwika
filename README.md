@@ -177,7 +177,7 @@ Walkers advance a cell every second tick, preferring a right turn at an intersec
 The ground, the roads and the walkers are all blitted from one texture atlas (`src/apps/game/assets/atlas.png`), so the scene draws no shape of its own: the grid lines are painted into the ground tile's own edges, and a road's sixteen tiles are addressed by which neighbours it joins, which makes a junction a lookup rather than four stubs stepped out by hand.
 That picture is hand-drawn art, and `antwika/game/TileAtlas.hpp` is the address map that says where each tile in it lives.
 It starts empty and loads nothing unless `--replay` asks it to, and runs until you press Escape or close the window -- both of which are input, so both end up in a recording.
-Under the `null` backend neither is available, so that build runs until interrupted; `src/apps/game/replays/demo.json` is a sample session to feed `--replay` if you want to watch one without a mouse.
+Under the `null` backend neither is available, so that build runs until interrupted; `src/apps/game/replays/demo.jsonl` is a sample session to feed `--replay` if you want to watch one without a mouse.
 What a recording holds is the clicks, not what they caused: the app defines no event for placing a path, so a replay stores the click and regenerates the placement rather than persisting both.
 Application code defines its own state (`GameState`) and events (e.g. `game.score_increment`) on top of the engine's built-in per-tick event (`engine.tick`), both reacted to through the same `ITickEventSink` mechanism — see [`blog/001-building-a-deterministic-replay-system.md`](blog/001-building-a-deterministic-replay-system.md) for the full design and how to add your own.
 
