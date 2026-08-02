@@ -3,6 +3,7 @@
 #include <cstddef>
 #include <vector>
 
+#include "Area.hpp"
 #include "Node.hpp"
 
 namespace antwika::ui::detail
@@ -79,10 +80,28 @@ namespace antwika::ui::detail
          */
         std::size_t add(Node leaf);
 
+        /**
+         * @brief Note a text area, for resolving once this is laid out.
+         *
+         * Kept beside the nodes rather than in a list of its own,
+         * because it is exactly as long-lived as they are: one frame.
+         *
+         * @param area What the pointer will have to be resolved
+         * against.
+         */
+        void addArea(Area area);
+
+        /**
+         * @brief Get this frame's text areas, in declaration order.
+         * @return The areas, empty for a frame that declared none.
+         */
+        [[nodiscard]] const std::vector<Area> &areas() const noexcept;
+
     private:
         std::size_t append(Node value);
 
         std::vector<Node> nodes;
+        std::vector<Area> areaList;
         std::size_t openNode = 0;
     };
 

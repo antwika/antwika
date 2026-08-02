@@ -84,6 +84,64 @@ namespace antwika::ui
         MoveDown,
 
         /**
+         * @brief Move the caret one character back, selecting as it
+         * goes: Shift+Left.
+         *
+         * Four separate keys rather than one modifier flag beside the
+         * four above, for the reason FocusPrevious is a key: a modifier
+         * is held state, and everything crossing this seam is an edge.
+         *
+         * What each of them does to the far end of the selection is
+         * nothing: that end is the caller's anchor, and only a move
+         * that does *not* select brings it along. See TextEdit::anchor.
+         */
+        SelectLeft,
+
+        /**
+         * @brief Move the caret one character on, selecting: Shift+Right.
+         */
+        SelectRight,
+
+        /**
+         * @brief Move the caret to the line above, selecting: Shift+Up.
+         */
+        SelectUp,
+
+        /**
+         * @brief Move the caret to the line below, selecting: Shift+Down.
+         */
+        SelectDown,
+
+        /**
+         * @brief Take the character the caret sits before, or the
+         * selection: Delete.
+         *
+         * Backspace's other half, and the one thing that makes a
+         * selection worth having on its own: what Backspace and this
+         * both do to a selection is take all of it.
+         */
+        Delete,
+
+        /**
+         * @brief Report the selected characters without changing them:
+         * Ctrl+C.
+         *
+         * **What holds them afterwards is the caller's**, exactly as
+         * the characters themselves are: a clipboard inside this
+         * library would be state a replay could not regenerate. They
+         * come back through TextEdit::copied, and pasting them is the
+         * caller putting them in Keyboard::typed like any other
+         * characters somebody produced.
+         */
+        Copy,
+
+        /**
+         * @brief Report the selected characters and take them out:
+         * Ctrl+X.
+         */
+        Cut,
+
+        /**
          * @brief Take the next character out of Keyboard::typed.
          *
          * What puts a typed character in the same ordered list as every

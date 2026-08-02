@@ -47,6 +47,25 @@ namespace antwika::ui
          * would then have to regenerate.
          */
         bool pressed = false;
+
+        /**
+         * @brief Whether this press carries on a selection rather than
+         * starting a new one.
+         *
+         * What shift-clicking in a text area means, and what dragging
+         * one out means: the caret goes where the pointer is and the
+         * far end of the selection is left where it was.
+         *
+         * A property of the press rather than a held modifier, which is
+         * why it is here and not in Keyboard: the caller decides what
+         * makes a press an extending one -- a shift key, or a button
+         * already down and moving -- and this seam is told the answer.
+         *
+         * Read while a button is down as well as on the press itself,
+         * so a caller reporting it for every frame of a drag gets a
+         * selection that follows the pointer.
+         */
+        bool extends = false;
     };
 
 } // namespace antwika::ui

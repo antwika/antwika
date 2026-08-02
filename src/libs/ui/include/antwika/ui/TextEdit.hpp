@@ -39,6 +39,29 @@ namespace antwika::ui
         std::size_t cursor = 0;
 
         /**
+         * @brief Where the selection's other end would sit.
+         *
+         * Equal to cursor when nothing is selected, which is what an
+         * ordinary move leaves it as: a selection is the characters
+         * between the two, whichever of them is the lower.
+         *
+         * Two indices rather than a start and a length, because which
+         * end the caret is on is what decides where Shift+Left goes
+         * next, and a length cannot say.
+         */
+        std::size_t anchor = 0;
+
+        /**
+         * @brief The characters Copy or Cut asked for, if either did.
+         *
+         * Empty when neither arrived, and when one did with nothing
+         * selected. **Putting them somewhere is the caller's**: this
+         * library holds nothing between frames, so it can report what
+         * was copied but never keep it. See Key::Copy.
+         */
+        std::string copied{};
+
+        /**
          * @brief Whether Enter was pressed while the field had focus.
          */
         bool submitted = false;

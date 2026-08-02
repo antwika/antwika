@@ -74,6 +74,25 @@ namespace antwika::ui
         Color caret{.red = 232, .green = 236, .blue = 232};
 
         /**
+         * @brief Behind the characters a text area has selected.
+         *
+         * Behind rather than instead of: the text keeps its own colour,
+         * so a selection reads as the same characters on a different
+         * ground rather than as different characters.
+         */
+        Color selection{.red = 44, .green = 72, .blue = 116};
+
+        /**
+         * @brief The channel a text area's scrollbar runs in.
+         */
+        Color scrollTrack{.red = 30, .green = 33, .blue = 42};
+
+        /**
+         * @brief The part of that bar standing for what is showing.
+         */
+        Color scrollThumb{.red = 78, .green = 86, .blue = 106};
+
+        /**
          * @brief The border drawn around the focused widget.
          *
          * Yellow, because focus has to read as focus against every
@@ -108,6 +127,14 @@ namespace antwika::ui
          * wants keyboard focus without a ring asks for it.
          */
         std::uint32_t focusRingThickness = 2;
+
+        /**
+         * @brief How wide a text area's scrollbar is.
+         *
+         * Taken out of the room the text has, so an area that asks for
+         * one is that many pixels narrower to write in.
+         */
+        std::uint32_t scrollbarWidth = 8;
     };
 
     /**

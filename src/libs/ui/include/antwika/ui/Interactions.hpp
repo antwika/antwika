@@ -3,6 +3,7 @@
 #include <optional>
 
 #include "antwika/ui/OptionChoice.hpp"
+#include "antwika/ui/ScrollChange.hpp"
 #include "antwika/ui/TextEdit.hpp"
 #include "antwika/ui/WidgetId.hpp"
 
@@ -93,6 +94,21 @@ namespace antwika::ui
          * in no tab order, so Enter can never be on it.
          */
         std::optional<OptionChoice> chosen{};
+
+        /**
+         * @brief The line a text area ended up showing at its top.
+         *
+         * Absent unless it differs from the one the caller asked for,
+         * so a caller that stores it and hands it back settles after
+         * one frame. Unlike everything above it this needs the layout:
+         * how much of a document is showing is how tall the area came
+         * out. See ScrollChange and TextAreaSpec::scroll.
+         *
+         * One area rather than a list, for the reason activated is one
+         * widget: a frame has one pointer and one focused area, so a
+         * second answer is not expressible.
+         */
+        std::optional<ScrollChange> scrolled{};
 
         /**
          * @brief Compare what two frames' input did.

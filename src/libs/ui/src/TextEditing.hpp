@@ -26,6 +26,15 @@ namespace antwika::ui::detail
         std::size_t cursor = 0;
 
         /**
+         * @brief The selection's other end, brought inside the text.
+         *
+         * Equal to the caret for a field with nothing selected, which
+         * is what makes "take the selection" and "take one character"
+         * one branch rather than two paths through this whole file.
+         */
+        std::size_t anchor = 0;
+
+        /**
          * @brief Whether Activate puts a line break in.
          *
          * A field has one line and submits on it; an area is where a

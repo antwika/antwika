@@ -17,10 +17,11 @@ Everything is laid out arithmetically from `gfx::textSize()` alone, so the libra
 | `DrawList.hpp`, `DrawCommand.hpp` | `DrawList`, `FillRect`, `DrawText` | The picture, as plain comparable values. |
 | `Painter.hpp` | `paint()` | The only thing in the library that touches an `IRenderer`. |
 | `Pointer.hpp` | `Pointer` | The pointer, passed in as an argument; the default is no pointer at all. |
-| `Interactions.hpp` | `Interactions` | The `hovered`, `activated` and `focused` `WidgetId`, the `edit` and `chosen` results, and whether the pointer is over anything the UI filled in. |
+| `Interactions.hpp` | `Interactions` | The `hovered`, `activated` and `focused` `WidgetId`, the `edit`, `chosen` and `scrolled` results, and whether the pointer is over anything the UI filled in. |
+| `ScrollChange.hpp` | `ScrollChange` | Which line a text area is actually showing at its top, when that is not the one asked for. |
 | `Keyboard.hpp` | `Keyboard`, `Key` | Key edges in arrival order, plus a `typed` view of the characters each `Key::Character` edge takes one of; defaults to none. |
 | `TextFieldSpec.hpp` | `TextFieldSpec`, `TextEdit` | A field's characters, caret and focus going in; what happened coming out. |
-| `TextAreaSpec.hpp` | `TextAreaSpec` | The same, over many lines: a document, one flat caret index into it, and the room it is given. |
+| `TextAreaSpec.hpp` | `TextAreaSpec` | The same, over many lines: a document, one flat caret index into it, the selection's far end, which line is at the top, and the room it is given. |
 | `DropdownSpec.hpp` | `DropdownSpec`, `OptionChoice` | A list's open/closed and selected state going in; what was chosen coming out. |
 | `WidgetRects.hpp` | `WidgetRects` | One `gfx::Rect` per distinct id the frame named, with `find(id)`. |
 | `HoverTargets.hpp`, `HoverTarget.hpp` | `HoverTargets`, `HoverTarget` | One target per named widget that works its own appearance out. |
@@ -94,6 +95,29 @@ A character with no edge to take it is not typed at all, since nothing would say
 The caret is one flat index into the document rather than a row and a column, so an application storing a `std::string` and a `std::size_t` is storing everything a replay has to regenerate -- and a line break is just a character in the text, which is what makes that true.
 A blank line is drawn as a row opened over a strut a glyph cell tall, because an empty text node measures nothing at all and the lines below it would otherwise move up.
 [music_editor](../apps/music_editor.md) is what it was written for.
+
+**A selection is a second index and nothing else.**
+`TextAreaSpec::anchor` is the far end, the characters between it and the caret are drawn on `Theme::selection`, and every key that writes -- a character, Enter, Backspace, `Key::Delete`, `Key::Cut` -- takes the whole of it first.
+`Key::SelectLeft`, `SelectRight`, `SelectUp` and `SelectDown` are separate keys rather than a shift flag beside the four moves, for the reason `FocusPrevious` is a key rather than a flag on `FocusNext`: a modifier is held state and everything crossing this seam is an edge.
+The anchor is a `std::optional`, absent meaning "wherever the caret is", because every index is a place a selection can really end -- including the end of the text, which a sentinel would have taken.
+
+**A copy is reported and a paste is typed**, which is the only shape a clipboard can have here.
+`Key::Copy` and `Key::Cut` put the selected characters in `TextEdit::copied` and this library forgets them immediately, since it retains nothing; where they go is the application's, and [music_editor](../apps/music_editor.md) keeps them in its own state rather than in the window system's clipboard, so a replay pastes what the run pasted rather than whatever the replaying machine happens to hold.
+Pasting therefore needs no key at all: the application puts the characters in `Keyboard::typed` with a `Key::Character` edge each, exactly as if they had been typed.
+
+**A press inside an area puts the caret where it landed**, and that is the one answer a widget gives that needs the layout.
+Which character a click is on is a function of where the area was arranged, so it is worked out in `resolve()` rather than where the area was declared, and it amends whatever the frame's keys already came to rather than replacing it.
+The arithmetic is exact because `gfx::kGlyphAdvance` and `kGlyphLineHeight` are frozen: a line is a division, a column is a division, and a click below the last line is the end of the text.
+`Pointer::extends` is what makes a press carry the selection on rather than start a new one -- a shift-click, or a drag -- and it is on the pointer rather than in the keyboard because it is a property of that press edge.
+
+**An area scrolls in whole lines, and says which one it is showing.**
+`TextAreaSpec::scroll` is the line at the top and `Interactions::scrolled` is the line actually drawn there, reported only when the two differ, so a caller that stores the answer and hands it back settles after one frame.
+Three things move it: a press or drag on the bar `TextAreaSpec::scrollbar` asks for, a caret that has walked out of view -- followed only on a frame that reported an edit, so a bar drag is not pulled straight back to it -- and a requested line so far down there is nothing left to show.
+It is whole lines rather than pixels for the reason the zoom in [game](../apps/game.md) is an index into a table of whole sizes: what a recorded click resolves against has to be something a replay reaches exactly.
+
+That needed one thing of the layout: `Node::clips`, set on the column holding an area's lines and nowhere else.
+A container with more asked of it than it has room for cuts every child down in proportion, which for a document longer than its pane is a page of lines too short to draw a glyph in -- a blank pane.
+A clipping container keeps its children's own sizes and lets the placement that already keeps a child inside its parent clamp the ones past the bottom edge to nothing, and it asks its own parent for nothing on their behalf, so a pane is as tall as it was given rather than as tall as what it holds.
 
 An open dropdown's list is an *overlay*: out of its parent's flow, hung beneath the box it dropped from, painted after every other command and hit-tested before them — which is the only way to be on top when `gfx` offers no depth but paint order.
 

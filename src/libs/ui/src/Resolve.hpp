@@ -1,8 +1,11 @@
 #pragma once
 
+#include <optional>
+
 #include "antwika/ui/Interactions.hpp"
 #include "antwika/ui/Keyboard.hpp"
 #include "antwika/ui/Pointer.hpp"
+#include "antwika/ui/TextEdit.hpp"
 #include "antwika/ui/WidgetId.hpp"
 
 #include "LayoutTree.hpp"
@@ -50,12 +53,41 @@ namespace antwika::ui::detail
      * @param focus The widget the caller had focused going in, which is
      * last frame's Interactions::focused. Nothing is remembered here, so
      * this is the only way a frame knows where Tab starts from.
+     * @param edit What this frame's typing already came to, which a
+     * click inside a text area amends -- a caret goes where the pointer
+     * is, and that needs a layout while a keystroke does not.
      * @return What the pointer and the keyboard did to the widgets.
      */
     Interactions resolve(
         LayoutTree &tree,
         const Pointer &pointer,
+        const Keyboard &keyboard,
+        WidgetId focus,
+        std::optional<TextEdit> &edit);
+
+    /**
+     * @brief Resolve a frame with no edit of its own to amend.
+     *
+     * What a caller declaring no text area wants, and what every test
+     * of the other three stages uses. The edit is a reference above
+     * rather than a pointer because Context always has one, and a null
+     * to test for would be a branch nothing could take.
+     *
+     * @param tree The arranged arena.
+     * @param pointer What the caller reports about the pointer.
+     * @param keyboard The key edges, in arrival order.
+     * @param focus The widget focused going in.
+     * @return What the pointer and the keyboard did to the widgets.
+     */
+    inline Interactions resolve(
+        LayoutTree &tree,
+        const Pointer &pointer,
         const Keyboard &keyboard = {},
-        WidgetId focus = kNoWidget);
+        WidgetId focus = kNoWidget)
+    {
+        std::optional<TextEdit> edit;
+
+        return resolve(tree, pointer, keyboard, focus, edit);
+    }
 
 } // namespace antwika::ui::detail
