@@ -1128,12 +1128,81 @@ namespace antwika::i18n
          * @brief Task worker: the heading over the finished tasks.
          */
         TaskWorkerCompleted,
+
+        /**
+         * @brief Game: the main menu item that opens the key
+         *        bindings screen.
+         */
+        GameMenuOptions,
+
+        /**
+         * @brief Game: the heading over the key bindings screen.
+         */
+        GameOptionsTitle,
+
+        /**
+         * @brief Game: one binding, as `{0}` the action and `{1}` the
+         *        key.
+         */
+        GameOptionsRow,
+
+        /**
+         * @brief Game: what a row shows while it is waiting to be told
+         *        a key.
+         */
+        GameOptionsPress,
+
+        /**
+         * @brief Game: how the key bindings screen is used.
+         */
+        GameOptionsHint,
+
+        /**
+         * @brief Game: the key went to the action that asked for it.
+         */
+        GameOptionsBound,
+
+        /**
+         * @brief Game: another action already answers to that key.
+         */
+        GameOptionsTaken,
+
+        /**
+         * @brief Game: the key is one the application spends above the
+         *        tick loop.
+         */
+        GameOptionsReserved,
+
+        /**
+         * @brief Game: leave the key bindings screen.
+         */
+        GameOptionsBack,
+
+        /**
+         * @brief Game: the action that holds the city still.
+         */
+        GameActionPause,
+
+        /**
+         * @brief Game: the action that takes the camera closer.
+         */
+        GameActionZoomIn,
+
+        /**
+         * @brief Game: the action that takes the camera further away.
+         */
+        GameActionZoomOut,
+
+        /**
+         * @brief Game: the action that puts the camera back.
+         */
+        GameActionResetView,
     };
 
     /**
      * @brief How many ids a complete catalogue carries.
      */
-    inline constexpr std::size_t kMessageCount{218};
+    inline constexpr std::size_t kMessageCount{231};
 
     /**
      * @brief Every id, in declaration order.
@@ -1361,6 +1430,19 @@ namespace antwika::i18n
         MessageId::TaskWorkerQueued,
         MessageId::TaskWorkerBlocked,
         MessageId::TaskWorkerCompleted,
+        MessageId::GameMenuOptions,
+        MessageId::GameOptionsTitle,
+        MessageId::GameOptionsRow,
+        MessageId::GameOptionsPress,
+        MessageId::GameOptionsHint,
+        MessageId::GameOptionsBound,
+        MessageId::GameOptionsTaken,
+        MessageId::GameOptionsReserved,
+        MessageId::GameOptionsBack,
+        MessageId::GameActionPause,
+        MessageId::GameActionZoomIn,
+        MessageId::GameActionZoomOut,
+        MessageId::GameActionResetView,
     };
 
     /**

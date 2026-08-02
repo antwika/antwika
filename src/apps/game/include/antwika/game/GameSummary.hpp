@@ -6,6 +6,7 @@
 #include "antwika/game/Cell.hpp"
 #include "antwika/game/CityRatings.hpp"
 #include "antwika/game/GameState.hpp"
+#include "antwika/game/KeyBindings.hpp"
 #include "antwika/game/SceneSnapshot.hpp"
 #include "antwika/game/Toolbar.hpp"
 
@@ -58,6 +59,22 @@ namespace antwika::game
          * what a save already holds -- see CityRatings.
          */
         CityRatings ratings;
+
+        /**
+         * @brief Which key asked for what, when the run ended.
+         *
+         * **Here so that a divergence in the bindings fails the replay
+         * comparison directly.** A binding decides what every later key
+         * press means, so a live run and its replay disagreeing about
+         * one is exactly the silent divergence the whole arrangement
+         * exists to prevent -- and without this the two could disagree
+         * about a key nobody happened to press afterwards and still
+         * compare equal.
+         *
+         * A run that was never told otherwise ends on kDefaultBindings,
+         * which is what every summary held before this member existed.
+         */
+        KeyBindings bindings;
 
         /**
          * @brief Compare two summaries.

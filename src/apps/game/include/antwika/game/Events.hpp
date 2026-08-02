@@ -19,6 +19,36 @@ namespace antwika::game::events
     inline constexpr const char *kScoreIncrement = "game.score_increment";
 
     /**
+     * @brief One action, and the key the machine this run started on
+     * has bound to it.
+     *
+     * **The one thing in this application that is externally supplied
+     * and cannot be worked out again**, which is exactly why it is an
+     * event and everything else here is not. A click can be resolved
+     * against the layout it landed on; a key binding read off the
+     * player's own options file is a fact about the machine, and no
+     * amount of replaying the clicks recovers it.
+     *
+     * So it enters a run the way every other externally-supplied input
+     * does -- through an ITickEventSource, upstream of the recorder --
+     * and a --record file carries it. A replay then takes the layout
+     * from the recording rather than from the machine it is being
+     * replayed on, which is the whole property BindingReplayTest
+     * asserts: the same session, on a machine bound differently, is the
+     * same city.
+     *
+     * The payload is a JSON object of two strings, "action" and "key",
+     * both persisted names -- see BindingEvent.hpp.
+     *
+     * **A rebinding made on the options screen is not this event.**
+     * That one is a key press resolved against a layout inside the tick
+     * path, downstream of the recorder, and a replay works it out again
+     * exactly as it works out which tile a click laid. Recording both
+     * would apply it twice.
+     */
+    inline constexpr const char *kBindKey = "game.bind_key";
+
+    /**
      * @brief There is deliberately no event here for placing a path or a
      * walker.
      *

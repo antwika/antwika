@@ -1,6 +1,10 @@
 add_executable(antwika_game
+    src/Action.cpp
     src/AppMode.cpp
     src/AtlasImage.cpp
+    src/BindingEvent.cpp
+    src/BindingSink.cpp
+    src/BindingSource.cpp
     src/BuildGhost.cpp
     src/BuildingIndex.cpp
     src/BuildingSystem.cpp
@@ -20,6 +24,7 @@ add_executable(antwika_game
     src/GridSink.cpp
     src/HaulingSystem.cpp
     src/Homing.cpp
+    src/HotkeySink.cpp
     src/Household.cpp
     src/HousingQuery.cpp
     src/HousingSystem.cpp
@@ -32,6 +37,9 @@ add_executable(antwika_game
     src/MarketSystem.cpp
     src/MenuModalScene.cpp
     src/ModeGatedSink.cpp
+    src/OptionsFile.cpp
+    src/OptionsScene.cpp
+    src/OptionsState.cpp
     src/PathIndex.cpp
     src/PauseGatedSystem.cpp
     src/PauseState.cpp

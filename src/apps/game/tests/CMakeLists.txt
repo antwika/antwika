@@ -1,8 +1,12 @@
 find_package(GTest REQUIRED)
 
 add_executable(antwika_game_tests
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/Action.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/AppMode.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/AtlasImage.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/BindingEvent.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/BindingSink.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/BindingSource.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/BuildGhost.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/BuildingIndex.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/BuildingSystem.cpp
@@ -22,6 +26,7 @@ add_executable(antwika_game_tests
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/GridSink.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/HaulingSystem.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/Homing.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/HotkeySink.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/Household.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/HousingQuery.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/HousingSystem.cpp
@@ -34,6 +39,9 @@ add_executable(antwika_game_tests
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/MarketSystem.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/MenuModalScene.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/ModeGatedSink.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/OptionsFile.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/OptionsScene.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/OptionsState.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/PathIndex.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/PauseGatedSystem.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/PauseState.cpp
@@ -77,8 +85,13 @@ add_executable(antwika_game_tests
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/WorldMapSink.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/WorldMapState.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/Workforce.cpp
+    ActionTest.cpp
     AppModeTest.cpp
     AtlasImageTest.cpp
+    BindingEventTest.cpp
+    BindingReplayTest.cpp
+    BindingSinkTest.cpp
+    BindingSourceTest.cpp
     BootstrapTest.cpp
     BuildPaletteTest.cpp
     BuildingIndexTest.cpp
@@ -111,6 +124,7 @@ add_executable(antwika_game_tests
     LabourSystemTest.cpp
     PopulationSystemTest.cpp
     RatingsSystemTest.cpp
+    HotkeySinkTest.cpp
     HoverTest.cpp
     InputFoldTest.cpp
     KeyTextTest.cpp
@@ -118,6 +132,10 @@ add_executable(antwika_game_tests
     MainMenuSceneTest.cpp
     MainMenuSinkTest.cpp
     MenuModalSceneTest.cpp
+    KeyBindingsTest.cpp
+    OptionsFileTest.cpp
+    OptionsSceneTest.cpp
+    OptionsStateTest.cpp
     SessionGateTest.cpp
     PathIndexTest.cpp
     PauseDeterminismTest.cpp

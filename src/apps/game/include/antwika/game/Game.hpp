@@ -305,6 +305,21 @@ namespace antwika::game
         std::optional<std::string> savePath = std::nullopt;
 
         /**
+         * @brief Where this run should leave the key bindings it ends
+         * with, if anywhere.
+         *
+         * The mirror of savePath, and written from in here for the same
+         * reason: the bindings are taken off state this call owns, and
+         * that state does not outlive it.
+         *
+         * Unset writes nowhere, which is what every test wants and what
+         * a --replay run gets: a run that was not allowed to read the
+         * machine's layout may not overwrite it either -- see
+         * machineOptionsFor().
+         */
+        std::optional<std::string> optionsPath = std::nullopt;
+
+        /**
          * @brief The seed every generated part of the session came from.
          *
          * Written into a save so that a resumed session regenerates the

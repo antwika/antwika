@@ -445,6 +445,32 @@ namespace antwika::i18n
             return "TaskWorkerBlocked";
         case MessageId::TaskWorkerCompleted:
             return "TaskWorkerCompleted";
+        case MessageId::GameMenuOptions:
+            return "GameMenuOptions";
+        case MessageId::GameOptionsTitle:
+            return "GameOptionsTitle";
+        case MessageId::GameOptionsRow:
+            return "GameOptionsRow";
+        case MessageId::GameOptionsPress:
+            return "GameOptionsPress";
+        case MessageId::GameOptionsHint:
+            return "GameOptionsHint";
+        case MessageId::GameOptionsBound:
+            return "GameOptionsBound";
+        case MessageId::GameOptionsTaken:
+            return "GameOptionsTaken";
+        case MessageId::GameOptionsReserved:
+            return "GameOptionsReserved";
+        case MessageId::GameOptionsBack:
+            return "GameOptionsBack";
+        case MessageId::GameActionPause:
+            return "GameActionPause";
+        case MessageId::GameActionZoomIn:
+            return "GameActionZoomIn";
+        case MessageId::GameActionZoomOut:
+            return "GameActionZoomOut";
+        case MessageId::GameActionResetView:
+            return "GameActionResetView";
         }
 
         return "?";

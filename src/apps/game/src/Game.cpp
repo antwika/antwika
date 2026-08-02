@@ -14,6 +14,7 @@
 
 #include "antwika/game/Events.hpp"
 #include "antwika/game/GameStateReducer.hpp"
+#include "antwika/game/BindingSink.hpp"
 #include "antwika/game/BuildingSystem.hpp"
 #include "antwika/game/CityRatings.hpp"
 #include "antwika/game/CoverageSystem.hpp"
@@ -21,6 +22,7 @@
 #include "antwika/game/DesirabilitySystem.hpp"
 #include "antwika/game/GridSink.hpp"
 #include "antwika/game/HaulingSystem.hpp"
+#include "antwika/game/HotkeySink.hpp"
 #include "antwika/game/HousingLevel.hpp"
 #include "antwika/game/HousingSystem.hpp"
 #include "antwika/game/InputFold.hpp"
@@ -31,6 +33,9 @@
 #include "antwika/game/MainMenuSink.hpp"
 #include "antwika/game/MenuModalScene.hpp"
 #include "antwika/game/ModeGatedSink.hpp"
+#include "antwika/game/OptionsFile.hpp"
+#include "antwika/game/OptionsScene.hpp"
+#include "antwika/game/OptionsState.hpp"
 #include "antwika/game/PauseGatedSystem.hpp"
 #include "antwika/game/PauseState.hpp"
 #include "antwika/game/PopulationSystem.hpp"
@@ -327,9 +332,29 @@ namespace antwika::game
             cities, mode, live, input, config.canvas);
         StopSignal stopSignal;
 
+        // Owned here rather than by the caller.
+        // Unlike the camera and the mode, nothing outside reads it.
+        // The options screen is drawn off the menu's own overlay.
+        // By the menu's own scene.
+        // So a renderer never has to know that it exists.
+        OptionsState options;
+        BindingSink bindingSink(options);
+
         const MainMenuScene menuScene(translator);
+        const OptionsScene optionsScene(translator);
         MainMenuSink menuSink(
-            mode, menuUi, input, menuScene, stopSignal);
+            mode,
+            menuUi,
+            input,
+            menuScene,
+            stopSignal,
+            options,
+            optionsScene);
+
+        // The camera it puts back is the one this run opened with.
+        // Copied here exactly as the bar's reset button copies it.
+        // So the key and the button agree about where back is.
+        HotkeySink hotkeySink(options, input, camera, camera, pause);
 
         // The save screen's own picture, never the menu's or the bar's.
         // Three modes, three overlays, for the reason the menu has one.
@@ -372,6 +397,11 @@ namespace antwika::game
         ModeGatedSink playingUi(uiSink, mode, AppMode::CityMap);
         ModeGatedSink playingGrid(gridSink, mode, AppMode::CityMap);
 
+        // A hotkey acts on the city, so it is gated like the bar is.
+        // The screen the keys are bound on is the main menu's.
+        // So choosing a key cannot also fire what it is bound to.
+        ModeGatedSink playingHotkeys(hotkeySink, mode, AppMode::CityMap);
+
         // The fold is first.
         // What it holds is the event the sinks after it are given now.
         // It is also the only thing that clears an edge.
@@ -389,8 +419,15 @@ namespace antwika::game
         // A press that opens a city must not also build in it.
         // SaveLoadSink is beside MainMenuSink for the same reason.
         // Both gate themselves, and both own a whole screen.
+        // BindingSink is immediately after the mode.
+        // Ahead of every sink that reads a key.
+        // The machine's layout is announced on the first tick.
+        // Before that tick's own input.
+        // A sink reading a binding this one has not folded yet.
+        // Would be reading a layout nobody was playing.
         std::vector<std::reference_wrapper<ITickEventSink>> timedSinks{
-            input, mode, reducer, menuSink, saveSink};
+            input, mode, bindingSink, reducer, menuSink, saveSink,
+            playingHotkeys};
 
         // Registered only when there is somewhere to put the picture.
         // Otherwise the bar is described against a zero canvas.
@@ -430,6 +467,13 @@ namespace antwika::game
         antwika::game::saveGameFileIfNamed(
             session.take(), config.savePath);
 
+        // The layout this session ended on.
+        // Left where the next live run will find it.
+        // A replay names nowhere.
+        // So replaying somebody else's session rebinds nothing here.
+        antwika::game::saveOptionsFileIfNamed(
+            options.bindings(), config.optionsPath);
+
         const auto frame =
             snapshotOf(world, paths, camera, config.extent);
 
@@ -452,7 +496,8 @@ namespace antwika::game
             .walkers = walkerViewsOf(world),
             .buildings = buildingViewsOf(world),
             .camera = camera,
-            .ratings = finalRatings};
+            .ratings = finalRatings,
+            .bindings = options.bindings()};
         // The excluded line is the local summary's unwind destructor.
         // Nothing between its construction and the return throws.
     } // GCOVR_EXCL_LINE
