@@ -69,7 +69,7 @@
         {
             "label": "Gcovr coverage report",
             "type": "shell",
-            "command": "rm -Rf build-coverage/coverage && mkdir -p build-coverage/coverage && gcovr -r . --filter 'src/.*' --gcov-executable \"${env:GCOV_EXECUTABLE}\" --exclude-throw-branches --exclude-unreachable-branches --exclude '.*/tests/.*' --exclude '.*/mocks/.*' --exclude '.*/fakes/.*' --exclude '.*/apps/[^/]+/src/main\\.cpp' --html --html-details -o build-coverage/coverage/index.html --print-summary build-coverage",
+            "command": "./scripts/coverage.sh --html build-coverage/coverage",
             "options": {
                 "cwd": "${workspaceFolder}"
             }
@@ -87,6 +87,15 @@
             "label": "Select sound backend",
             "type": "shell",
             "command": "./scripts/select_backend.sh sound ${input:soundBackend}",
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "problemMatcher": []
+        },
+        {
+            "label": "Select network backend",
+            "type": "shell",
+            "command": "./scripts/select_backend.sh network ${input:networkBackend}",
             "options": {
                 "cwd": "${workspaceFolder}"
             },
@@ -145,6 +154,16 @@
             "options": [
                 "null",
                 "sdl3"
+            ],
+            "default": "null"
+        },
+        {
+            "id": "networkBackend",
+            "type": "pickString",
+            "description": "Network backend for later builds",
+            "options": [
+                "null",
+                "sockets"
             ],
             "default": "null"
         }

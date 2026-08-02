@@ -71,6 +71,14 @@ jobs:
         shell: bash
         run: python3 scripts/check_line_length.py
 
+      - name: Test check-readme-modules script
+        shell: bash
+        run: python3 scripts/tests/test_check_readme_modules.py
+
+      - name: Check README lists every module
+        shell: bash
+        run: python3 scripts/check_readme_modules.py
+
       - name: Test generate-poker-atlas script
         shell: bash
         run: python3 scripts/tests/test_generate_poker_atlas.py
@@ -297,22 +305,17 @@ jobs:
           build/bin/antwika_tower_defence/antwika_tower_defence_tests \
             --gtest_filter='LevelGeneratorTest.*'
 
+      # scripts/coverage.sh holds the flags, so the command a developer
+      # is told to run locally is the one the gate is computed from.
       - name: Generate coverage report
         if: matrix.coverage
         shell: bash
+        env:
+          GCOV_EXECUTABLE: ${{ matrix.gcov_executable }}
         run: |
-          gcovr \
-            --root . \
-            --filter 'src/.*' \
-            --exclude '.*/tests/.*' \
-            --exclude '.*/apps/[^/]+/src/main\.cpp' \
-            --exclude-throw-branches \
-            --exclude-unreachable-branches \
-            --gcov-executable '${{ matrix.gcov_executable }}' \
-            --print-summary \
-            --json-summary --json-summary-pretty \
-            -o coverage-summary.json \
-            "$BUILD_DIR"
+          scripts/coverage.sh \
+            --build-dir "$BUILD_DIR" \
+            --summary coverage-summary.json
 
           python3 scripts/generate_coverage_badge.py \
             --summary coverage-summary.json \
@@ -366,15 +369,21 @@ jobs:
     timeout-minutes: 30
 
     # The default build selects the null backends, so nothing above ever
-    # compiles a line of backends/sdl3 or backends/raylib. This job is
-    # what keeps them from rotting: it builds each real backend and runs
-    # the shared conformance suite of every subsystem that backend
-    # implements.
+    # compiles a line of backends/sdl3, backends/raylib or
+    # backends/sockets. This job is what keeps them from rotting: it
+    # builds each real backend and runs the shared conformance suite of
+    # every subsystem that backend implements.
     #
     # subsystems is a matrix field rather than a fixed list because
     # raylib implements graphics and input and not sound. Naming what a
     # backend covers is how it opts out honestly, instead of the run
     # steps carrying a special case for one name.
+    #
+    # folder_vars, preset and lockfile are matrix fields for the same
+    # reason: sockets leaves gfx_backend at null, so the folder and
+    # preset names it configures under are its own option's rather than
+    # graphics', and it adds no package so it resolves against the
+    # default configuration's lockfile.
     strategy:
       fail-fast: false
       matrix:
@@ -383,10 +392,23 @@ jobs:
             backend: sdl3
             subsystems: gfx input sound
             options: -o gfx_backend=sdl3 -o sound_backend=sdl3
+            folder_vars: "['options.gfx_backend']"
+            preset: conan-gfx_backend_sdl3-release
+            lockfile: conan-sdl3.lock
           - name: raylib
             backend: raylib
             subsystems: gfx input
             options: -o gfx_backend=raylib
+            folder_vars: "['options.gfx_backend']"
+            preset: conan-gfx_backend_raylib-release
+            lockfile: conan-raylib.lock
+          - name: sockets
+            backend: sockets
+            subsystems: network
+            options: -o network_backend=sockets
+            folder_vars: "['options.network_backend']"
+            preset: conan-network_backend_sockets-release
+            lockfile: conan.lock
 
     container:
       image: ghcr.io/${{ github.repository_owner }}/antwika-dev-gnu:${{ inputs.version }}
@@ -415,7 +437,7 @@ jobs:
         uses: actions/cache@v6
         with:
           path: ~/.conan2
-          key: conan-gnu-${{ matrix.backend }}-${{ hashFiles('conanfile.py', 'conan.lock', format('conan-{0}.lock', matrix.backend), 'profiles/build/gcc-linux-x86_64', 'profiles/host/gcc-linux-x86_64') }}
+          key: conan-gnu-${{ matrix.backend }}-${{ hashFiles('conanfile.py', 'conan.lock', matrix.lockfile, 'profiles/build/gcc-linux-x86_64', 'profiles/host/gcc-linux-x86_64') }}
           restore-keys: |
             conan-gnu-${{ matrix.backend }}-
 
@@ -450,17 +472,17 @@ jobs:
           conan install . \
             -of "$BUILD_DIR" \
             ${{ matrix.options }} \
-            -c tools.cmake.cmake_layout:build_folder_vars="['options.gfx_backend']" \
+            -c tools.cmake.cmake_layout:build_folder_vars="${{ matrix.folder_vars }}" \
             -pr:b=./profiles/build/${CONAN_PROFILE} \
             -pr:h=./profiles/host/${CONAN_PROFILE} \
             --build=missing \
             -s build_type=Release \
-            --lockfile=conan-${{ matrix.backend }}.lock
+            --lockfile=${{ matrix.lockfile }}
 
       - name: Configure CMake
         shell: bash
         run: |
-          cmake --preset conan-gfx_backend_${{ matrix.backend }}-release \
+          cmake --preset ${{ matrix.preset }} \
             -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
 
       # Only the conformance suites, not the whole project.
@@ -506,15 +528,16 @@ jobs:
 
             log="conformance-${subsystem}.log"
 
-            # Sound runs with no display at all, deliberately.
-            # A sound backend that needed Xvfb would be one that had
-            # quietly taken a dependency on video, and running it under
-            # Xvfb here is exactly what would hide that.
-            if [ "$subsystem" = sound ]; then
-              runner=(env SDL_AUDIO_DRIVER=dummy)
-            else
-              runner=(xvfb-run -a)
-            fi
+            # Sound and network run with no display at all,
+            # deliberately.
+            # A backend of either kind that needed Xvfb would be one
+            # that had quietly taken a dependency on video, and running
+            # it under Xvfb here is exactly what would hide that.
+            case "$subsystem" in
+              sound) runner=(env SDL_AUDIO_DRIVER=dummy) ;;
+              network) runner=(env) ;;
+              *) runner=(xvfb-run -a) ;;
+            esac
 
             # A failing suite has to fail the step, which the exit
             # status of the pipeline is what reports -- hence pipefail,

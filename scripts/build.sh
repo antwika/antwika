@@ -2,9 +2,9 @@
 #
 # Configures, builds and tests the selected backends.
 #
-# The selections are whichever backends .vscode/gfx-backend and
-# .vscode/sound-backend name, so each choice is made once and every
-# later build honours it.
+# The selections are whichever backends .vscode/gfx-backend,
+# .vscode/sound-backend and .vscode/network-backend name, so each
+# choice is made once and every later build honours it.
 # A missing file means null, which is what a checkout builds before
 # anybody has chosen anything.
 #
@@ -51,19 +51,25 @@ read_selection() {
 
 gfx_backend=$(read_selection gfx)
 sound_backend=$(read_selection sound)
+network_backend=$(read_selection network)
 
 # A lockfile is per framework rather than per subsystem, and one build
 # may name at most one framework -- a rule conanfile.py's validate() and
 # backends/CMakeLists.txt both enforce.
 # Refusing it here too is what keeps that refusal from arriving as a
 # lockfile that does not hold what the graph went on to ask for.
+#
+# 'sockets' is exempt for the reason both of those give: it names the
+# operating system's own socket API rather than a framework, so it adds
+# no package, no lockfile entry and no event queue to compete for.
 framework=null
 
-for backend in "$gfx_backend" "$sound_backend"; do
-    if [ "$backend" != "null" ]; then
+for backend in "$gfx_backend" "$sound_backend" "$network_backend"; do
+    if [ "$backend" != "null" ] && [ "$backend" != "sockets" ]; then
         if [ "$framework" != "null" ] && [ "$framework" != "$backend" ]; then
-            echo "gfx backend '$gfx_backend' and sound backend" >&2
-            echo "'$sound_backend' name two different frameworks." >&2
+            echo "gfx backend '$gfx_backend', sound backend" >&2
+            echo "'$sound_backend' and network backend" >&2
+            echo "'$network_backend' name two different frameworks." >&2
             echo "Use one framework per build, or 'null' to opt out." >&2
             exit 1
         fi
@@ -84,12 +90,14 @@ if [ -z "${CONAN_PROFILE:-}" ]; then
     exit 1
 fi
 
-echo "==> gfx backend '$gfx_backend', sound backend '$sound_backend'"
+echo "==> gfx backend '$gfx_backend', sound backend '$sound_backend',"
+echo "==> network backend '$network_backend'"
 
 conan install . \
     -of build \
     -o "gfx_backend=$gfx_backend" \
     -o "sound_backend=$sound_backend" \
+    -o "network_backend=$network_backend" \
     "-pr:b=./profiles/build/${CONAN_PROFILE}" \
     "-pr:h=./profiles/host/${CONAN_PROFILE}" \
     --build=missing \
@@ -119,27 +127,40 @@ if [ "$host_os" != "$build_os" ]; then
     exit 0
 fi
 
-# A dev container has neither a display nor a sound card, so a real
-# backend's conformance suite needs a headless runner.
+# A dev container has neither a display, a sound card nor anything to
+# talk to, so a real backend's conformance suite needs a headless
+# runner.
 # The suite is split in two rather than run under one, which is the
-# same split the gfx-backends CI job makes and for the same reason:
-# sound runs with no display at all, deliberately, since a sound
-# backend that needed Xvfb would be one that had quietly taken a
+# same split the backends CI job makes and for the same reason: sound
+# and network run with no display at all, deliberately, since a backend
+# of either kind that needed Xvfb would be one that had quietly taken a
 # dependency on video, and running it under Xvfb is exactly what would
 # hide that.
 # Splitting unconditionally is what keeps that from being a rule only
-# some selections obey -- the null suites cost under a second, and
-# either half is free to be empty.
-sound_suite=SoundBackendConformance
+# some selections obey -- the null suites cost under a second.
+headless_suites='SoundBackendConformance|NetworkBackendConformance'
 
-echo "==> Sound suites, with no display"
+# --no-tests=error on both halves, because a -R or -E that matches
+# nothing is otherwise a pass.
+# A suite renamed out from under this script would leave the half that
+# names it running zero tests and exiting 0 for good, and a build
+# script silently testing nothing is the one failure it cannot report
+# on its own behalf.
+# Neither half is ever legitimately empty, whatever is selected: the
+# null sound and network backends ship conformance suites of their own
+# under src/libs/, so a match of zero means the name here is wrong
+# rather than that nothing was selected.
+echo "==> Sound and network suites, with no display"
 SDL_AUDIO_DRIVER=dummy \
-    ctest --test-dir build --output-on-failure -R "$sound_suite"
+    ctest --test-dir build --output-on-failure --no-tests=error \
+    -R "$headless_suites"
 
 echo "==> Everything else"
 
 if [ "$gfx_backend" = "null" ]; then
-    ctest --test-dir build --output-on-failure -E "$sound_suite"
+    ctest --test-dir build --output-on-failure --no-tests=error \
+        -E "$headless_suites"
 else
-    xvfb-run -a ctest --test-dir build --output-on-failure -E "$sound_suite"
+    xvfb-run -a ctest --test-dir build --output-on-failure \
+        --no-tests=error -E "$headless_suites"
 fi

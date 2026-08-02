@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 # Checks headers under src/**/tests/{mocks,fakes}/include.
 # Fails if any of them is never #included by a .cpp file.
+# A .cpp under src/ or under backends/ counts, since both hold suites.
 # That means it's dead test-double code.
 import argparse
 import re
@@ -32,21 +33,26 @@ def include_path_for(header: Path) -> str:
 
 
 def collect_included_paths(root: Path) -> set[str]:
-    # Every path any .cpp under src/ includes, read in one pass.
+    # Every path any .cpp under src/ or backends/ includes, in one pass.
     # Asking per test double re-read the whole tree once per double.
+    # backends/ counts because its conformance suites are real consumers.
+    # A double used only there was reported as an orphan while it did not.
     included: set[str] = set()
 
-    for cpp_file in (root / "src").rglob("*.cpp"):
-        text = cpp_file.read_text(errors="ignore")
-        included.update(
-            match.group(1) for match in INCLUDE_PATTERN.finditer(text)
-        )
+    for directory in ("src", "backends"):
+        for cpp_file in (root / directory).rglob("*.cpp"):
+            text = cpp_file.read_text(errors="ignore")
+            included.update(
+                match.group(1) for match in INCLUDE_PATTERN.finditer(text)
+            )
 
     return included
 
 
-def is_included_anywhere(include_path: str, root: Path) -> bool:
-    return include_path in collect_included_paths(root)
+def is_included_anywhere(include_path: str, included: set[str]) -> bool:
+    # Takes the collected set rather than a root to re-scan per double.
+    # That is what lets main() call this instead of inlining a copy.
+    return include_path in included
 
 
 def main() -> int:
@@ -74,7 +80,7 @@ def main() -> int:
     orphans = [
         header
         for header in doubles
-        if include_path_for(header) not in included
+        if not is_included_anywhere(include_path_for(header), included)
     ]
 
     if orphans:
