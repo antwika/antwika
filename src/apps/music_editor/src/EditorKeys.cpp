@@ -1,22 +1,91 @@
 #include "antwika/music_editor/EditorKeys.hpp"
 
+#include <array>
 #include <cstddef>
 #include <cstdint>
+#include <span>
 #include <string_view>
 
 namespace antwika::music_editor
 {
 
     using antwika::input::Key;
+    using antwika::input::KeyModifiers;
 
     namespace
     {
-        // What each digit key types with shift held.
-        // The layout is this application's, not a window system's.
-        // Five of the ten are mini-notation, which is why.
-        constexpr std::string_view kShiftedDigits{")!@#$%^&*("};
+        /**
+         * @brief What one key types, in one layout.
+         *
+         * Three columns because the Swedish board really does keep the
+         * brackets, the braces and the dollar on its right-hand alt
+         * key, and a table with two could not say so.
+         */
+        struct Chord
+        {
+            Key key;
+            std::string_view plain;
+            std::string_view shifted;
+            std::string_view alted;
+        };
 
-        constexpr std::string_view kDigits{"0123456789"};
+        // The American board.
+        // What the score language was written on, and what this was.
+        constexpr auto kEnglish = std::to_array<Chord>({
+            {Key::Digit0, "0", ")", ""},
+            {Key::Digit1, "1", "!", ""},
+            {Key::Digit2, "2", "@", ""},
+            {Key::Digit3, "3", "#", ""},
+            {Key::Digit4, "4", "$", ""},
+            {Key::Digit5, "5", "%", ""},
+            {Key::Digit6, "6", "^", ""},
+            {Key::Digit7, "7", "&", ""},
+            {Key::Digit8, "8", "*", ""},
+            {Key::Digit9, "9", "(", ""},
+            {Key::Minus, "-", "_", ""},
+            {Key::Equal, "=", "+", ""},
+            {Key::LeftBracket, "[", "{", ""},
+            {Key::RightBracket, "]", "}", ""},
+            {Key::Backslash, "\\", "|", ""},
+            {Key::Semicolon, ";", ":", ""},
+            {Key::Apostrophe, "'", "\"", ""},
+            {Key::Grave, "`", "~", ""},
+            {Key::Comma, ",", "<", ""},
+            {Key::Period, ".", ">", ""},
+            {Key::Slash, "/", "?", ""},
+            {Key::IntlBackslash, "\\", "|", ""},
+        });
+
+        // The Swedish board, key by key, as its keys are printed.
+        // The empty cells are the ones this window cannot draw.
+        // They are its own letters and its dead accents.
+        // No score is written in those.
+        // Everything the grammar needs is here.
+        // Four of them are on alt, the dollar and the brackets among them.
+        constexpr auto kSwedish = std::to_array<Chord>({
+            {Key::Digit0, "0", "=", "}"},
+            {Key::Digit1, "1", "!", ""},
+            {Key::Digit2, "2", "\"", "@"},
+            {Key::Digit3, "3", "#", ""},
+            {Key::Digit4, "4", "", "$"},
+            {Key::Digit5, "5", "%", ""},
+            {Key::Digit6, "6", "&", ""},
+            {Key::Digit7, "7", "/", "{"},
+            {Key::Digit8, "8", "(", "["},
+            {Key::Digit9, "9", ")", "]"},
+            {Key::Minus, "+", "?", "\\"},
+            {Key::Equal, "", "", ""},
+            {Key::LeftBracket, "", "", ""},
+            {Key::RightBracket, "", "^", "~"},
+            {Key::Backslash, "'", "*", ""},
+            {Key::Semicolon, "", "", ""},
+            {Key::Apostrophe, "", "", ""},
+            {Key::Grave, "", "", ""},
+            {Key::Comma, ",", ";", ""},
+            {Key::Period, ".", ":", ""},
+            {Key::Slash, "-", "_", ""},
+            {Key::IntlBackslash, "<", ">", "|"},
+        });
 
         constexpr std::string_view kLowercase{
             "abcdefghijklmnopqrstuvwxyz"};
@@ -31,14 +100,48 @@ namespace antwika::music_editor
         {
             return table.substr(at, 1);
         }
+
+        [[nodiscard]] std::span<const Chord> chordsOf(
+            const KeyLayout layout) noexcept
+        {
+            return layout == KeyLayout::Swedish
+                       ? std::span<const Chord>{kSwedish}
+                       : std::span<const Chord>{kEnglish};
+        }
+
+        // Alt first, and only where the layout puts something there.
+        // Alt on a key with a bare third level types what it types.
+        // Which is what a board with no third level does anyway.
+        [[nodiscard]] std::string_view pick(
+            const Chord &chord, const KeyModifiers modifiers) noexcept
+        {
+            if (modifiers.alt && !chord.alted.empty())
+            {
+                return chord.alted;
+            }
+
+            return modifiers.shift ? chord.shifted : chord.plain;
+        }
     } // namespace
 
     std::optional<antwika::ui::Key> uiKeyFor(
-        const Key key, const bool shift) noexcept
+        const Key key, const KeyModifiers modifiers) noexcept
     {
-        // Shift changes no meaning here.
-        // It is read where the characters are.
-        (void)shift;
+        // Control is a keyboard of its own, so it is read first.
+        // Its V is deliberately absent.
+        // A paste is characters, out of a clipboard the sink holds.
+        if (modifiers.control)
+        {
+            switch (key)
+            {
+            case Key::C:
+                return antwika::ui::Key::Copy;
+            case Key::X:
+                return antwika::ui::Key::Cut;
+            default:
+                return std::nullopt;
+            }
+        }
 
         switch (key)
         {
@@ -46,14 +149,20 @@ namespace antwika::music_editor
             return antwika::ui::Key::Activate;
         case Key::Backspace:
             return antwika::ui::Key::Backspace;
+        case Key::Delete:
+            return antwika::ui::Key::Delete;
         case Key::ArrowLeft:
-            return antwika::ui::Key::MoveLeft;
+            return modifiers.shift ? antwika::ui::Key::SelectLeft
+                                   : antwika::ui::Key::MoveLeft;
         case Key::ArrowRight:
-            return antwika::ui::Key::MoveRight;
+            return modifiers.shift ? antwika::ui::Key::SelectRight
+                                   : antwika::ui::Key::MoveRight;
         case Key::ArrowUp:
-            return antwika::ui::Key::MoveUp;
+            return modifiers.shift ? antwika::ui::Key::SelectUp
+                                   : antwika::ui::Key::MoveUp;
         case Key::ArrowDown:
-            return antwika::ui::Key::MoveDown;
+            return modifiers.shift ? antwika::ui::Key::SelectDown
+                                   : antwika::ui::Key::MoveDown;
         default:
             break;
         }
@@ -62,61 +171,52 @@ namespace antwika::music_editor
     }
 
     std::string_view typedTextFor(
-        const Key key, const bool shift) noexcept
+        const Key key,
+        const KeyModifiers modifiers,
+        const KeyLayout layout) noexcept
     {
-        const auto index = static_cast<std::uint8_t>(key);
-
-        // The digits are asked about first, and that is not arbitrary.
-        // Key::A is the enumeration's zero, so "at least A" is folded.
-        // Letters first would leave "at least Digit0" always true here.
-        if (key >= Key::Digit0 && key <= Key::Digit9)
+        // A copy that also typed a c would be no use to anybody.
+        if (modifiers.control)
         {
-            const auto offset = static_cast<std::size_t>(
-                index - static_cast<std::uint8_t>(Key::Digit0));
-
-            return oneOf(shift ? kShiftedDigits : kDigits, offset);
+            return {};
         }
 
+        // The letters are the one run both boards agree about.
         if (key >= Key::A && key <= Key::Z)
         {
             const auto offset = static_cast<std::size_t>(
-                index - static_cast<std::uint8_t>(Key::A));
+                static_cast<std::uint8_t>(key)
+                - static_cast<std::uint8_t>(Key::A));
 
-            return oneOf(shift ? kUppercase : kLowercase, offset);
+            return oneOf(
+                modifiers.shift ? kUppercase : kLowercase, offset);
         }
 
-        switch (key)
+        if (key == Key::Space)
         {
-        case Key::Space:
             return " ";
-        case Key::Tab:
+        }
+
+        if (key == Key::Tab)
+        {
             // Two, because one space does not read as an indent.
             return "  ";
-        case Key::Minus:
-            return shift ? "_" : "-";
-        case Key::Period:
-            return shift ? ">" : ".";
-        case Key::Comma:
-            return shift ? "<" : ",";
-        case Key::Slash:
-            return shift ? "?" : "/";
-        case Key::LeftBracket:
-            return shift ? "{" : "[";
-        case Key::RightBracket:
-            return shift ? "}" : "]";
-        case Key::Semicolon:
-            return shift ? ":" : ";";
-        case Key::Apostrophe:
-            return shift ? "\"" : "'";
-        case Key::Grave:
-            return shift ? "~" : "`";
-        case Key::Equal:
-            return shift ? "+" : "=";
-        default:
-            break;
+        }
+
+        for (const auto &chord : chordsOf(layout))
+        {
+            if (chord.key == key)
+            {
+                return pick(chord, modifiers);
+            }
         }
 
         return {};
+    }
+
+    std::string_view nameOf(const KeyLayout layout) noexcept
+    {
+        return layout == KeyLayout::Swedish ? "swedish" : "english";
     }
 
 } // namespace antwika::music_editor

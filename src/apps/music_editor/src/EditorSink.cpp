@@ -1,6 +1,7 @@
 #include "antwika/music_editor/EditorSink.hpp"
 
 #include <cstddef>
+#include <cstdint>
 #include <optional>
 #include <string>
 #include <variant>
@@ -24,16 +25,37 @@ namespace antwika::music_editor
     using antwika::input::KeyPressed;
     using antwika::input::MouseButton;
     using antwika::input::PointerButtonPressed;
+    using antwika::input::PointerButtonReleased;
+    using antwika::input::PointerScrolled;
 
     namespace
     {
-        [[nodiscard]] bool isLeftPress(const InputEvent &event) noexcept
+        // How far one notch of the wheel moves the pane.
+        // Three lines, which is what everything else moves.
+        constexpr std::size_t kLinesPerNotch = 3;
+
+        [[nodiscard]] const PointerButtonPressed *leftPress(
+            const InputEvent &event) noexcept
         {
             const auto *pressed =
                 std::get_if<PointerButtonPressed>(&event);
 
-            return pressed != nullptr
-                   && pressed->button == MouseButton::Left;
+            if (pressed == nullptr
+                || pressed->button != MouseButton::Left)
+            {
+                return nullptr;
+            }
+
+            return pressed;
+        }
+
+        [[nodiscard]] bool isLeftRelease(const InputEvent &event) noexcept
+        {
+            const auto *released =
+                std::get_if<PointerButtonReleased>(&event);
+
+            return released != nullptr
+                   && released->button == MouseButton::Left;
         }
     } // namespace
 
@@ -71,7 +93,7 @@ namespace antwika::music_editor
             score.read(state.source);
             playback.step(state.paused);
 
-            refreshAndAct(false, ui::Keyboard{});
+            refreshAndAct(PointerEdge{}, ui::Keyboard{});
 
             return;
         }
@@ -101,14 +123,26 @@ namespace antwika::music_editor
                 state.paused = !state.paused;
             }
 
-            const auto meaning = uiKeyFor(key->key, key->modifiers.shift);
+            const auto meaning = uiKeyFor(key->key, key->modifiers);
 
             if (meaning.has_value())
             {
                 keyboard.keys.push_back(*meaning);
             }
 
-            characters = typedTextFor(key->key, key->modifiers.shift);
+            characters =
+                typedTextFor(key->key, key->modifiers, state.layout);
+
+            // A paste is the clipboard typed.
+            // Which is all a paste can be here.
+            // antwika::ui keeps nothing between frames.
+            // So it has nowhere to have put what was cut.
+            // This editor holds it, off recorded key presses.
+            if (key->modifiers.control
+                && key->key == antwika::input::Key::V)
+            {
+                characters = state.clipboard;
+            }
 
             // One edge per character.
             // That is what orders them against everything else.
@@ -118,12 +152,38 @@ namespace antwika::music_editor
             }
         }
 
+        if (const auto *wheel = std::get_if<PointerScrolled>(&*decoded))
+        {
+            scrollBy(wheel->vertical);
+        }
+
+        if (isLeftRelease(*decoded))
+        {
+            state.dragging = false;
+        }
+
         keyboard.typed = characters;
 
-        refreshAndAct(isLeftPress(*decoded), keyboard);
+        const auto *press = leftPress(*decoded);
+
+        const bool moved =
+            std::holds_alternative<antwika::input::PointerMoved>(
+                *decoded);
+
+        refreshAndAct(
+            PointerEdge{
+                .pressed = press != nullptr,
+                // Shift makes a press carry a selection on.
+                // A move under a held press is what drags one out.
+                // Nothing else does.
+                // So typing with a button held moves no caret.
+                .extends = press != nullptr
+                    ? press->modifiers.shift
+                    : moved && state.dragging},
+            keyboard);
     }
 
-    ui::Pointer EditorSink::pointerNow(const bool pressed) const
+    ui::Pointer EditorSink::pointerNow(const PointerEdge edge) const
     {
         const auto &mouse = folded.mouse();
 
@@ -133,11 +193,12 @@ namespace antwika::music_editor
                       mouse.position())}
                 : std::nullopt,
             .down = mouse.isDown(MouseButton::Left),
-            .pressed = pressed};
+            .pressed = edge.pressed,
+            .extends = edge.extends};
     }
 
-    void EditorSink::refreshAndAct(
-        const bool pressed, const ui::Keyboard &keyboard)
+    ui::Frame EditorSink::frameFor(
+        const PointerEdge edge, const ui::Keyboard &keyboard) const
     {
         const PlaybackStatus status{
             .started = playback.started(),
@@ -145,31 +206,89 @@ namespace antwika::music_editor
             .cycles = playback.playedTicks(),
             .lines = playback.sounding()};
 
-        const auto frame = scene.describe(
-            state, score, status, canvas, pointerNow(pressed), keyboard);
+        return scene.describe(
+            state, score, status, canvas, pointerNow(edge), keyboard);
+    }
 
-        picture = frame.commands;
+    void EditorSink::scrollBy(const std::int32_t notches)
+    {
+        // Away from the user is up the document.
+        // How far down it can usefully go is antwika::ui's answer.
+        // One too far comes back clamped on the very next frame.
+        const auto from = static_cast<std::int64_t>(state.scroll);
+        const auto moved =
+            from
+            - static_cast<std::int64_t>(notches)
+                  * static_cast<std::int64_t>(kLinesPerNotch);
 
-        const auto &acted = frame.interactions;
+        state.scroll =
+            moved > 0 ? static_cast<std::size_t>(moved) : std::size_t{0};
+    }
+
+    void EditorSink::refreshAndAct(
+        const PointerEdge edge, const ui::Keyboard &keyboard)
+    {
+        const auto frame = frameFor(edge, keyboard);
 
         // The focus never moves.
         // There is one thing to type into.
         // The scene names it to every frame's Context.
+        const auto &acted = frame.interactions;
+
+        bool changed = false;
+
         if (acted.activated == kPlayButton)
         {
             state.paused = !state.paused;
+            changed = true;
         }
         else if (acted.activated == kPanicButton)
         {
             playback.silence();
         }
-
-        if (!acted.edit.has_value())
+        else if (acted.activated == kLayoutBox)
         {
+            state.layoutOpen = !state.layoutOpen;
+            changed = true;
+        }
+
+        // This scene declares one list, so a choice is that list's.
+        if (acted.chosen.has_value())
+        {
+            state.layout = static_cast<KeyLayout>(acted.chosen->index);
+            state.layoutOpen = false;
+            changed = true;
+        }
+
+        if (acted.scrolled.has_value())
+        {
+            applyScroll(state, *acted.scrolled);
+            changed = true;
+        }
+
+        if (acted.edit.has_value())
+        {
+            applyEdit(state, *acted.edit);
+            changed = true;
+        }
+
+        // A press inside the pane is what a later move drags from.
+        if (edge.pressed)
+        {
+            state.dragging = acted.hovered == kCodeField;
+        }
+
+        if (!changed)
+        {
+            picture = frame.commands;
+
             return;
         }
 
-        applyEdit(state, *acted.edit);
+        // Described again.
+        // The picture above predates the changes just made.
+        // With no keys and no press, so nothing happens twice.
+        picture = frameFor(PointerEdge{}, ui::Keyboard{}).commands;
     }
 
     const ui::DrawList &EditorSink::commands() const noexcept

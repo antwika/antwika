@@ -1,11 +1,15 @@
 #include "antwika/music_editor/EditorScene.hpp"
 
+#include <array>
 #include <cstddef>
 #include <string>
+#include <string_view>
 
 #include <antwika/gfx/Color.hpp>
 #include <antwika/ui/ButtonSpec.hpp>
+#include <antwika/ui/ContainerSpec.hpp>
 #include <antwika/ui/Context.hpp>
+#include <antwika/ui/DropdownSpec.hpp>
 #include <antwika/ui/Painter.hpp>
 #include <antwika/ui/Scope.hpp>
 #include <antwika/ui/Sizing.hpp>
@@ -19,7 +23,9 @@ namespace antwika::music_editor
     {
         using antwika::gfx::Color;
         using antwika::ui::ButtonSpec;
+        using antwika::ui::ContainerSpec;
         using antwika::ui::Context;
+        using antwika::ui::DropdownSpec;
         using antwika::ui::kGrow;
         using antwika::ui::TextAreaSpec;
         using antwika::ui::Theme;
@@ -37,6 +43,12 @@ namespace antwika::music_editor
         // A document with more says so.
         // Every one of them would push the code off the window.
         constexpr std::size_t kProblemsShown = 3;
+
+        // In the order KeyLayout names them.
+        // Which one is selected is that enumeration's own number.
+        // The Context borrows these, so they outlive every frame.
+        constexpr std::array<std::string_view, 2> kLayouts{
+            "swedish", "english"};
 
         [[nodiscard]] std::string statusLine(
             const EditorState &state, const PlaybackStatus &status)
@@ -82,14 +94,40 @@ namespace antwika::music_editor
         // Every Scope is closed before finish().
         // It refuses to lay out a half-built tree.
         {
-            const auto page = ui.panel();
+            // The whole window rather than what the score fills.
+            // The pane inside it is what scrolls.
+            // One growing with the document would never need to.
+            const auto page =
+                ui.panel(ContainerSpec{.width = kGrow, .height = kGrow});
 
             ui.label("antwika music editor");
             ui.label(
                 statusLine(state, status),
                 state.paused ? kTrouble : kCalm);
-            ui.label(
-                "esc pauses, enter is a new line, tab indents");
+
+            {
+                // The one thing here that is a setting.
+                // Which board the characters are read off.
+                const auto hints = ui.row();
+
+                ui.label(
+                    "esc pauses, enter is a new line, tab indents, "
+                    "f10 fills the screen");
+
+                ui.spacer(kGrow);
+
+                // Named rather than written into the call.
+                // A temporary of it carries a cleanup block.
+                // Nothing ever enters that, and the gate counts it.
+                const DropdownSpec box{
+                    .id = kLayoutBox,
+                    .optionIdBase = kLayoutOptions,
+                    .options = kLayouts,
+                    .selected = static_cast<std::size_t>(state.layout),
+                    .open = state.layoutOpen};
+
+                ui.dropdown(box);
+            }
 
             ui.textArea(
                 TextAreaSpec{
@@ -99,6 +137,9 @@ namespace antwika::music_editor
                     .text = state.source,
                     .placeholder = "$: bass.n(\"0 ~ 0 [~ 3]\")",
                     .cursor = state.cursor,
+                    .anchor = state.anchor,
+                    .scroll = state.scroll,
+                    .scrollbar = true,
                     .focused = true});
 
             const auto &problems = score.problems();

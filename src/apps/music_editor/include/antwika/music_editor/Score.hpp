@@ -77,6 +77,20 @@ namespace antwika::music_editor
      * $: bass.n("0 ~ 0 [~ 3]").o(-1)
      * @endcode
      *
+     * **A chain may run down as many lines as it likes**, and a line
+     * opening with a dot is the one below carrying on:
+     *
+     * @code
+     * $: bass.n("0 ~ 0 [~ 3]")
+     *      .o(-1)
+     *      .lpf(900).res(.6)
+     * @endcode
+     *
+     * That is one voice, refused or sounded as one, and named by the
+     * line its `$:` is on. The dot is the join rather than something at
+     * the end of the line above it, so a chain being written stays
+     * legible while it is half typed: every line of it reads as a call.
+     *
      * **A line is a voice, and nothing is limited to one of a kind.**
      * A preset is a starting point that the chain after it changes a
      * copy of, so two lines opening `drum.` are two voices that sound
@@ -167,7 +181,23 @@ namespace antwika::music_editor
             Voice voice;
         };
 
-        void readLine(std::string_view line, std::size_t number);
+        // One voice being gathered, which may take several lines.
+        // Empty text with no line means nothing is being gathered.
+        struct Gathered
+        {
+            std::string chain;
+
+            // The line the $: was on, counting from one.
+            // Zero for a voice that has not been opened.
+            std::size_t opened = 0;
+        };
+
+        void readLine(
+            std::string_view line,
+            std::size_t number,
+            Gathered &gathering);
+
+        void finish(Gathered &gathering);
 
         void play(std::string_view chain, std::size_t number);
 

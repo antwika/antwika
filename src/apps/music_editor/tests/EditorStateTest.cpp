@@ -2,6 +2,7 @@
 
 #include <gtest/gtest.h>
 
+#include <antwika/ui/ScrollChange.hpp>
 #include <antwika/ui/TextEdit.hpp>
 #include <antwika/ui/TextFieldSpec.hpp>
 #include <antwika/ui/WidgetId.hpp>
@@ -9,14 +10,17 @@
 #include "antwika/music_editor/Score.hpp"
 
 using antwika::music_editor::applyEdit;
+using antwika::music_editor::applyScroll;
 using antwika::music_editor::EditorState;
 using antwika::music_editor::kCodeField;
+using antwika::music_editor::KeyLayout;
 using antwika::music_editor::kPanicButton;
 using antwika::music_editor::kPlayButton;
 using antwika::music_editor::openingSource;
 using antwika::music_editor::openingState;
 using antwika::ui::kCaretAtEnd;
 using antwika::ui::kNoWidget;
+using antwika::ui::ScrollChange;
 using antwika::ui::TextEdit;
 
 // An editor that opened silent would give a newcomer nothing to change.
@@ -92,4 +96,88 @@ TEST(EditorStateTest, ComparesFieldByField)
     auto held = state;
     held.paused = true;
     EXPECT_NE(state, held);
+
+    auto selected = state;
+    selected.anchor = 0;
+    EXPECT_NE(state, selected);
+
+    auto scrolled = state;
+    scrolled.scroll = 3;
+    EXPECT_NE(state, scrolled);
+
+    auto copied = state;
+    copied.clipboard = "0 3";
+    EXPECT_NE(state, copied);
+
+    auto other = state;
+    other.layout = KeyLayout::English;
+    EXPECT_NE(state, other);
+
+    auto open = state;
+    open.layoutOpen = true;
+    EXPECT_NE(state, open);
+
+    auto dragging = state;
+    dragging.dragging = true;
+    EXPECT_NE(state, dragging);
+}
+
+// The board this is written on, and nothing selected.
+TEST(EditorStateTest, OpensOnTheSwedishBoardWithNothingSelected)
+{
+    const auto state = openingState();
+
+    EXPECT_EQ(state.layout, KeyLayout::Swedish);
+    EXPECT_FALSE(state.layoutOpen);
+    EXPECT_FALSE(state.anchor.has_value());
+    EXPECT_EQ(state.scroll, 0U);
+    EXPECT_TRUE(state.clipboard.empty());
+    EXPECT_FALSE(state.dragging);
+}
+
+// A copy carries what was selected.
+// And both ends of the selection come back with it.
+TEST(EditorStateTest, AnEditCarriesTheSelectionAndWhatWasCopied)
+{
+    EditorState state;
+
+    applyEdit(
+        state,
+        TextEdit{
+            .field = kCodeField,
+            .text = "0 3",
+            .cursor = 1,
+            .anchor = 3,
+            .copied = "0 3"});
+
+    EXPECT_EQ(state.cursor, 1U);
+    EXPECT_EQ(state.anchor, 3U);
+    EXPECT_EQ(state.clipboard, "0 3");
+
+    // And a later edit copying nothing leaves the clipboard alone.
+    applyEdit(
+        state,
+        TextEdit{.field = kCodeField, .text = "0 3", .cursor = 2});
+
+    EXPECT_EQ(state.clipboard, "0 3");
+}
+
+TEST(EditorStateTest, AScrollReportMovesThePane)
+{
+    EditorState state;
+
+    applyScroll(state, ScrollChange{.area = kCodeField, .line = 4});
+
+    EXPECT_EQ(state.scroll, 4U);
+}
+
+// Which is what makes it safe to hand every frame's report straight in.
+TEST(EditorStateTest, AScrollReportNamingAnythingElseIsIgnored)
+{
+    auto state = openingState();
+    const auto before = state;
+
+    applyScroll(state, ScrollChange{.area = kPlayButton, .line = 4});
+
+    EXPECT_EQ(state, before);
 }

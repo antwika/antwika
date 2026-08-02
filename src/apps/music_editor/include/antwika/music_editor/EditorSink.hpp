@@ -1,5 +1,7 @@
 #pragma once
 
+#include <cstdint>
+
 #include <antwika/event/ITickEventSink.hpp>
 #include <antwika/event/TickEvent.hpp>
 #include <antwika/gfx/Size.hpp>
@@ -7,6 +9,7 @@
 #include <antwika/input/InputState.hpp>
 #include <antwika/time/Tick.hpp>
 #include <antwika/ui/DrawList.hpp>
+#include <antwika/ui/Frame.hpp>
 #include <antwika/ui/Keyboard.hpp>
 #include <antwika/ui/Pointer.hpp>
 
@@ -36,6 +39,14 @@ namespace antwika::music_editor
      * re-read from what the input just did to them, and only then is
      * the sound advanced -- so a note decided this tick is decided from
      * the line as it now reads rather than as it read last tick.
+     *
+     * **Every event describes the editor, acts on what came back, and
+     * describes it again**, which is the remedy antwika::ui's own
+     * Context::finish() gives: a press is resolved while the frame is
+     * being laid out, so the picture beside it predates whatever the
+     * press changed. Two descriptions cost one more layout and no
+     * retained state, and only the first one's answers are read -- or
+     * a press would activate twice.
      */
     class EditorSink final : public ITickEventSink
     {
@@ -76,9 +87,33 @@ namespace antwika::music_editor
         [[nodiscard]] const ui::DrawList &commands() const noexcept;
 
     private:
-        void refreshAndAct(bool pressed, const ui::Keyboard &keyboard);
+        /**
+         * @brief What one event's pointer did, beyond where it is.
+         *
+         * Two edges rather than a folded state, because both are
+         * properties of the event being handled and neither survives
+         * it. See ui::Pointer::extends.
+         */
+        struct PointerEdge
+        {
+            /** @brief Whether a button went down for this event. */
+            bool pressed = false;
 
-        [[nodiscard]] ui::Pointer pointerNow(bool pressed) const;
+            /**
+             * @brief Whether this carries a selection on rather than
+             * starting one: shift held, or a drag under way.
+             */
+            bool extends = false;
+        };
+
+        void refreshAndAct(PointerEdge edge, const ui::Keyboard &keyboard);
+
+        [[nodiscard]] ui::Frame frameFor(
+            PointerEdge edge, const ui::Keyboard &keyboard) const;
+
+        [[nodiscard]] ui::Pointer pointerNow(PointerEdge edge) const;
+
+        void scrollBy(std::int32_t notches);
 
         EditorState &state;
         Score &score;
