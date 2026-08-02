@@ -1,8 +1,10 @@
 #pragma once
 
 #include <cstddef>
+#include <cstdint>
 #include <optional>
 #include <string>
+#include <vector>
 
 #include <antwika/ui/ScrollChange.hpp>
 #include <antwika/ui/TextEdit.hpp>
@@ -28,6 +30,18 @@ namespace antwika::music_editor
     /** @brief The id of the box naming which keyboard is being read. */
     inline constexpr WidgetId kLayoutBox{102};
 
+    /** @brief The id of the menu box at the top of the screen. */
+    inline constexpr WidgetId kMenuBox{103};
+
+    /** @brief The id of the save modal's name field. */
+    inline constexpr WidgetId kSaveNameField{110};
+
+    /** @brief The id of the save modal's confirming button. */
+    inline constexpr WidgetId kSaveConfirm{111};
+
+    /** @brief The id of the button that closes either modal unsaved. */
+    inline constexpr WidgetId kModalCancel{112};
+
     /**
      * @brief The id the first of that box's options carries.
      *
@@ -36,13 +50,48 @@ namespace antwika::music_editor
      */
     inline constexpr WidgetId kLayoutOptions{200};
 
+    /** @brief The menu's first option's id, on kLayoutOptions' terms. */
+    inline constexpr WidgetId kMenuOptions{300};
+
+    /** @brief The id the load modal's first score carries, likewise. */
+    inline constexpr WidgetId kLoadOptions{400};
+
+    /**
+     * @brief Get the id the load box's nth score button carries.
+     * @param at Which score, as an index into EditorState::scores.
+     * @return Its id, kLoadOptions plus the index.
+     */
+    [[nodiscard]] constexpr WidgetId loadOption(
+        const std::size_t at) noexcept
+    {
+        return WidgetId{
+            static_cast<std::uint64_t>(kLoadOptions) + at};
+    }
+
+    /**
+     * @brief Which box over the editor has the input, if any.
+     */
+    enum class Modal : std::uint8_t
+    {
+        /** @brief None: the editor itself is what is typed into. */
+        None = 0,
+
+        /** @brief The save box, asking what to call the score. */
+        Save,
+
+        /** @brief The load box, listing what there is to open. */
+        Load,
+    };
+
     /**
      * @brief Everything the editor holds between ticks.
      *
-     * **All of it is simulation state**, and every bit of it is derived
-     * from key and pointer edges the recording already carries -- so
-     * this app defines no event of its own, and a replay retypes the
-     * session rather than replaying its text.
+     * **All of it is simulation state**, and nearly every bit of it is
+     * derived from key and pointer edges the recording already carries
+     * -- so a replay retypes the session rather than replaying its
+     * text.  The exceptions carry their own reasons: a paste's
+     * characters arrive as events::kPaste (see clipboard below), and
+     * the score list is read once at startup (see scores below).
      *
      * What is deliberately *not* here is what the document parses into,
      * the sequencer's position, and anything a voice is made of.
@@ -114,6 +163,37 @@ namespace antwika::music_editor
         /** @brief Whether the sequencer's clock is standing still. */
         bool paused = false;
 
+        /** @brief Whether the menu's list of commands is showing. */
+        bool menuOpen = false;
+
+        /** @brief Which box is over the editor, taking the input. */
+        Modal modal = Modal::None;
+
+        /** @brief What the save box's name field holds. */
+        std::string fileName{};
+
+        /** @brief Where that field's caret sits. */
+        std::size_t fileCursor = ui::kCaretAtEnd;
+
+        /**
+         * @brief What a modal has to say about the last save or load.
+         *
+         * A refusal mostly -- a name of nothing, a disk that would not
+         * take it -- shown inside the box and cleared when one closes.
+         */
+        std::string notice{};
+
+        /**
+         * @brief The scores there are to load, sorted by name.
+         *
+         * **Simulation state on the same terms apps/game's save list
+         * is**: which button a click lands on is a function of it, so
+         * it is read from the directory once at startup, upstream of
+         * the loop, and a save made here is added to this copy rather
+         * than the directory being read again.  See listScores().
+         */
+        std::vector<std::string> scores{};
+
         /**
          * @brief Compare two states.
          * @param other The state to compare against.
@@ -139,6 +219,18 @@ namespace antwika::music_editor
      * @param edit What antwika::ui reported.
      */
     void applyEdit(EditorState &state, const ui::TextEdit &edit);
+
+    /**
+     * @brief Put a saved score's name into the list, in order.
+     *
+     * A sorted insert rather than a re-listing, because a directory
+     * read inside the tick path would not replay; saving over a name
+     * the list already has changes nothing here.
+     *
+     * @param state Whose list to grow.
+     * @param name What the score was saved as.
+     */
+    void addScore(EditorState &state, const std::string &name);
 
     /**
      * @brief Take the line the pane says it is showing.

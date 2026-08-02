@@ -16,6 +16,9 @@
 
 #include "antwika/music_editor/EditorKeys.hpp"
 #include "antwika/music_editor/Events.hpp"
+#include "antwika/music_editor/ScoreFiles.hpp"
+
+#include <antwika/engine/Events.hpp>
 
 namespace antwika::music_editor
 {
@@ -50,6 +53,23 @@ namespace antwika::music_editor
             return pressed;
         }
 
+        // Which score button an id is, or one past every score.
+        [[nodiscard]] std::size_t loadIndexOf(
+            const antwika::ui::WidgetId id,
+            const std::size_t count) noexcept
+        {
+            const auto raw = static_cast<std::uint64_t>(id);
+            const auto base =
+                static_cast<std::uint64_t>(kLoadOptions);
+
+            if (raw < base || raw - base >= count)
+            {
+                return count;
+            }
+
+            return static_cast<std::size_t>(raw - base);
+        }
+
         [[nodiscard]] bool isLeftRelease(const InputEvent &event) noexcept
         {
             const auto *released =
@@ -67,14 +87,18 @@ namespace antwika::music_editor
         const IInputEventCodec &codec,
         const EditorScene &scene,
         const Size canvas,
-        input::IClipboard *clipboard)
+        input::IClipboard *clipboard,
+        ITickEventSink &stop,
+        std::string scoresDirectory)
         : state(state),
           score(score),
           playback(playback),
           codec(codec),
           scene(scene),
           canvas(canvas),
-          clipboard(clipboard)
+          clipboard(clipboard),
+          stop(stop),
+          scoresDirectory(std::move(scoresDirectory))
     {
     }
 
@@ -140,9 +164,18 @@ namespace antwika::music_editor
             // Escape is this application's alone.
             // antwika::ui is never told about it.
             // A field that gave up would throw the score away.
+            // Over a modal it is the modal's way out instead.
             if (key->key == antwika::input::Key::Escape)
             {
-                state.paused = !state.paused;
+                if (state.modal != Modal::None)
+                {
+                    state.modal = Modal::None;
+                    state.notice.clear();
+                }
+                else
+                {
+                    state.paused = !state.paused;
+                }
             }
 
             const auto meaning = uiKeyFor(key->key, key->modifiers);
@@ -239,6 +272,14 @@ namespace antwika::music_editor
     void EditorSink::refreshAndAct(
         const PointerEdge edge, const ui::Keyboard &keyboard)
     {
+        // A box over the editor takes the whole tick's input.
+        if (state.modal != Modal::None)
+        {
+            modalRefreshAndAct(edge, keyboard);
+
+            return;
+        }
+
         const auto frame = frameFor(edge, keyboard);
 
         // The focus never moves.
@@ -262,22 +303,39 @@ namespace antwika::music_editor
             state.layoutOpen = !state.layoutOpen;
             changed = true;
         }
-
-        // This scene declares one list, so a choice is that list's.
-        if (acted.chosen.has_value())
+        else if (acted.activated == kMenuBox)
         {
-            state.layout = static_cast<KeyLayout>(acted.chosen->index);
-            state.layoutOpen = false;
+            state.menuOpen = !state.menuOpen;
             changed = true;
         }
 
-        if (acted.scrolled.has_value())
+        // Two lists, told apart by the box a choice names.
+        if (acted.chosen.has_value())
+        {
+            if (acted.chosen->dropdown == kMenuBox)
+            {
+                state.menuOpen = false;
+                menuAction(acted.chosen->index);
+            }
+            else
+            {
+                state.layout =
+                    static_cast<KeyLayout>(acted.chosen->index);
+                state.layoutOpen = false;
+            }
+
+            changed = true;
+        }
+
+        // An option's press is the option's alone.
+        // What fell through its overlay onto the pane is not applied.
+        if (!acted.chosen.has_value() && acted.scrolled.has_value())
         {
             applyScroll(state, *acted.scrolled);
             changed = true;
         }
 
-        if (acted.edit.has_value())
+        if (!acted.chosen.has_value() && acted.edit.has_value())
         {
             applyEdit(state, *acted.edit);
             changed = true;
@@ -301,8 +359,201 @@ namespace antwika::music_editor
         // With no keys and no press, so nothing happens twice.
         picture = frameFor(PointerEdge{}, ui::Keyboard{}).commands;
 
-        // A copy is mirrored outward, so other programs can paste it.
-        // On changes alone, or every tick would touch the clipboard.
+        // A menu choice may have raised a box over the fresh page.
+        if (state.modal != Modal::None)
+        {
+            const auto box = scene.describeModal(
+                state, canvas, ui::Pointer{}, ui::Keyboard{});
+
+            picture.insert(
+                picture.end(),
+                box.commands.begin(),
+                box.commands.end());
+        }
+
+        mirrorClipboard();
+    }
+
+    void EditorSink::modalRefreshAndAct(
+        const PointerEdge edge, const ui::Keyboard &keyboard)
+    {
+        // The editor below is described with no input at all.
+        // So nothing under the box is typed into or pressed.
+        const auto page = frameFor(PointerEdge{}, ui::Keyboard{});
+
+        const auto frame = scene.describeModal(
+            state, canvas, pointerNow(edge), keyboard);
+
+        const auto &acted = frame.interactions;
+
+        bool changed = false;
+
+        if (acted.edit.has_value()
+            && acted.edit->field == kSaveNameField)
+        {
+            state.fileName = acted.edit->text;
+            state.fileCursor = acted.edit->cursor;
+            changed = true;
+
+            // Enter in the field is its submit, so it saves.
+            if (acted.edit->submitted)
+            {
+                saveNow();
+            }
+        }
+
+        if (acted.activated == kSaveConfirm)
+        {
+            saveNow();
+            changed = true;
+        }
+        else if (acted.activated == kModalCancel)
+        {
+            state.modal = Modal::None;
+            state.notice.clear();
+            changed = true;
+        }
+        else
+        {
+            const auto picked =
+                loadIndexOf(acted.activated, state.scores.size());
+
+            if (picked < state.scores.size())
+            {
+                loadNow(picked);
+                changed = true;
+            }
+        }
+
+        // A press outside the pane leaves a drag disarmed.
+        if (edge.pressed)
+        {
+            state.dragging = false;
+        }
+
+        if (!changed)
+        {
+            picture = page.commands;
+            picture.insert(
+                picture.end(),
+                frame.commands.begin(),
+                frame.commands.end());
+
+            return;
+        }
+
+        // Described again, page and box both.
+        // A load rewrote the page, and a save may have closed the box.
+        picture = frameFor(PointerEdge{}, ui::Keyboard{}).commands;
+
+        if (state.modal != Modal::None)
+        {
+            const auto box = scene.describeModal(
+                state, canvas, ui::Pointer{}, ui::Keyboard{});
+
+            picture.insert(
+                picture.end(),
+                box.commands.begin(),
+                box.commands.end());
+        }
+    }
+
+    void EditorSink::menuAction(const std::size_t index)
+    {
+        if (index == 0)
+        {
+            // New: an empty page, still playing nothing until typed.
+            state.source.clear();
+            state.cursor = 0;
+            state.anchor.reset();
+            state.scroll = 0;
+        }
+        else if (index == 1)
+        {
+            state.modal = Modal::Save;
+            state.notice.clear();
+        }
+        else if (index == 2)
+        {
+            state.modal = Modal::Load;
+            state.notice.clear();
+        }
+        else
+        {
+            // The loop's own signal rather than an event on the wire.
+            // The recording holds the click, and the stop follows.
+            // apps/game's main menu quits the very same way.
+            // The excluded line's remaining branches are allocator's.
+            // The event's name is a literal too short to reach a heap.
+            // The rest are the unwind edges beside that.
+            stop.handle(TickEvent{ // GCOVR_EXCL_LINE
+                .tick = foldedTick,
+                .event = {.name = antwika::engine::events::kStop}});
+        }
+    }
+
+    void EditorSink::saveNow()
+    {
+        const auto name = safeScoreName(state.fileName);
+
+        if (name.empty())
+        {
+            state.notice = "name it first";
+
+            return;
+        }
+
+        try
+        {
+            saveScore(scorePath(scoresDirectory, name), state.source);
+        }
+        // The excluded line is the catch chain's dispatch.
+        // Its one unexercised edge is a second kind of exception.
+        // Nothing under saveScore() throws anything else.
+        catch (const ScoreFileError &failed) // GCOVR_EXCL_LINE
+        {
+            state.notice = failed.what();
+
+            return;
+        }
+
+        // Added rather than re-listed.
+        // A directory read inside the tick path would not replay.
+        addScore(state, name);
+
+        state.modal = Modal::None;
+        state.notice.clear();
+    }
+
+    void EditorSink::loadNow(const std::size_t at)
+    {
+        std::string text;
+
+        try
+        {
+            text = loadScore(
+                scorePath(scoresDirectory, state.scores[at]));
+        }
+        // Likewise, and for the same reason.
+        catch (const ScoreFileError &failed) // GCOVR_EXCL_LINE
+        {
+            state.notice = failed.what();
+
+            return;
+        }
+
+        state.source = std::move(text);
+        state.cursor = 0;
+        state.anchor.reset();
+        state.scroll = 0;
+        state.modal = Modal::None;
+        state.notice.clear();
+    }
+
+    // A copy is mirrored outward, so other programs can paste it.
+    // On changes alone, or every tick would touch the clipboard.
+    void EditorSink::mirrorClipboard()
+    {
         if (clipboard != nullptr && state.clipboard != mirrored)
         {
             mirrored = state.clipboard;

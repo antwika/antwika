@@ -6,6 +6,7 @@
 #include <string_view>
 
 #include <antwika/gfx/Color.hpp>
+#include <antwika/ui/Alignment.hpp>
 #include <antwika/ui/ButtonSpec.hpp>
 #include <antwika/ui/ContainerSpec.hpp>
 #include <antwika/ui/Context.hpp>
@@ -14,6 +15,7 @@
 #include <antwika/ui/Scope.hpp>
 #include <antwika/ui/Sizing.hpp>
 #include <antwika/ui/TextAreaSpec.hpp>
+#include <antwika/ui/TextFieldSpec.hpp>
 #include <antwika/ui/Theme.hpp>
 
 namespace antwika::music_editor
@@ -22,12 +24,16 @@ namespace antwika::music_editor
     namespace
     {
         using antwika::gfx::Color;
+        using antwika::ui::Alignment;
         using antwika::ui::ButtonSpec;
         using antwika::ui::ContainerSpec;
         using antwika::ui::Context;
         using antwika::ui::DropdownSpec;
+        using antwika::ui::fixedSize;
+        using antwika::ui::kFit;
         using antwika::ui::kGrow;
         using antwika::ui::TextAreaSpec;
+        using antwika::ui::TextFieldSpec;
         using antwika::ui::Theme;
 
         constexpr Color kBackdrop{
@@ -49,6 +55,19 @@ namespace antwika::music_editor
         // The Context borrows these, so they outlive every frame.
         constexpr std::array<std::string_view, 2> kLayouts{
             "swedish", "english"};
+
+        // In the order EditorSink acts on them, by index.
+        // The Context borrows these too.
+        constexpr std::array<std::string_view, 4> kMenuItems{
+            "new", "save", "load", "quit"};
+
+        // Dark and translucent, so the score reads as still there.
+        // apps/game's modal makes the same argument about its city.
+        constexpr Color kScrim{
+            .red = 6, .green = 8, .blue = 12, .alpha = 190};
+
+        // Wide enough for a name worth typing and a list worth reading.
+        constexpr std::uint32_t kCardWidth = 500;
 
         [[nodiscard]] std::string statusLine(
             const EditorState &state, const PlaybackStatus &status)
@@ -110,6 +129,17 @@ namespace antwika::music_editor
                 // Which board the characters are read off.
                 const auto hints = ui.row();
 
+                // The commands, left of everything.
+                // Nothing is ever selected: the box always says menu.
+                const DropdownSpec menu{
+                    .id = kMenuBox,
+                    .optionIdBase = kMenuOptions,
+                    .options = kMenuItems,
+                    .placeholder = "menu",
+                    .open = state.menuOpen};
+
+                ui.dropdown(menu);
+
                 ui.label(
                     "esc pauses, enter is a new line, tab indents, "
                     "f10 fills the screen");
@@ -168,6 +198,90 @@ namespace antwika::music_editor
                 ButtonSpec{.id = kPlayButton});
 
             ui.button("silence", ButtonSpec{.id = kPanicButton});
+        }
+
+        return ui.finish();
+    }
+
+    Frame EditorScene::describeModal(
+        const EditorState &state,
+        const Size canvas,
+        const Pointer pointer,
+        const Keyboard &keyboard) const
+    {
+        // The save box types into its field, so that has the focus.
+        // The load box is buttons alone and asks for none.
+        Context ui(
+            canvas,
+            editorTheme(),
+            pointer,
+            keyboard,
+            state.modal == Modal::Save ? kSaveNameField
+                                       : antwika::ui::kNoWidget);
+
+        {
+            // The scrim is the whole canvas, and it is filled.
+            // That fill is what keeps a press off the pane beneath.
+            const auto screen = ui.panel(ContainerSpec{
+                .width = kGrow,
+                .height = kGrow,
+                .cross = Alignment::Center,
+                .background = kScrim});
+
+            ui.spacer(kGrow);
+
+            {
+                const auto card = ui.panel(ContainerSpec{
+                    .width = fixedSize(kCardWidth), .height = kFit});
+
+                if (state.modal == Modal::Save)
+                {
+                    ui.label("save the score as");
+
+                    ui.textField(TextFieldSpec{
+                        .id = kSaveNameField,
+                        .width = kGrow,
+                        .text = state.fileName,
+                        .placeholder = "score-name",
+                        .cursor = state.fileCursor,
+                        .focused = true});
+                }
+                else
+                {
+                    ui.label("load a score");
+
+                    for (std::size_t at = 0; at < state.scores.size();
+                         ++at)
+                    {
+                        ui.button(
+                            state.scores[at],
+                            ButtonSpec{
+                                .id = loadOption(at), .width = kGrow});
+                    }
+
+                    if (state.scores.empty())
+                    {
+                        ui.label("nothing saved yet");
+                    }
+                }
+
+                if (!state.notice.empty())
+                {
+                    // Its own ink, so it is not mistaken for a label.
+                    ui.label(state.notice, kTrouble);
+                }
+
+                const auto controls = ui.row();
+
+                if (state.modal == Modal::Save)
+                {
+                    ui.button("save", ButtonSpec{.id = kSaveConfirm});
+                }
+
+                ui.button("cancel", ButtonSpec{.id = kModalCancel});
+            }
+
+            ui.spacer(kGrow);
         }
 
         return ui.finish();

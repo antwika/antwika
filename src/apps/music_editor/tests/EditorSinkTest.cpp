@@ -1,6 +1,8 @@
 #include "antwika/music_editor/EditorSink.hpp"
 
 #include <cstdint>
+#include <filesystem>
+#include <fstream>
 #include <string>
 
 #include <gtest/gtest.h>
@@ -16,6 +18,7 @@
 #include <antwika/ui/WidgetId.hpp>
 
 #include "antwika/music_editor/Events.hpp"
+#include "antwika/music_editor/ScoreFiles.hpp"
 #include "EditorRig.hpp"
 
 using antwika::event::TickEvent;
@@ -180,6 +183,45 @@ namespace
                 + static_cast<std::int32_t>(rect.size.width) / 2,
             .y = rect.origin.y
                 + static_cast<std::int32_t>(rect.size.height) / 2};
+    }
+
+    // The centre of a widget the modal's frame names.
+    [[nodiscard]] antwika::gfx::Point modalCentreOf(
+        EditorRig &rig, antwika::ui::WidgetId id)
+    {
+        const auto frame = rig.scene.describeModal(
+            rig.state, antwika::music_editor::tests::kCanvas, {}, {});
+
+        const auto found = frame.rects.find(id);
+        EXPECT_TRUE(found.has_value());
+
+        const auto rect = found.value_or(antwika::gfx::Rect{});
+
+        return antwika::gfx::Point{
+            .x = rect.origin.x
+                + static_cast<std::int32_t>(rect.size.width) / 2,
+            .y = rect.origin.y
+                + static_cast<std::int32_t>(rect.size.height) / 2};
+    }
+
+    [[nodiscard]] antwika::ui::WidgetId menuOption(std::size_t at)
+    {
+        return antwika::ui::WidgetId{
+            static_cast<std::uint64_t>(
+                antwika::music_editor::kMenuOptions)
+            + at};
+    }
+
+    // A directory of this test's own, empty at the start of a case.
+    [[nodiscard]] std::string freshDirectory(const std::string &name)
+    {
+        const auto path =
+            std::filesystem::temp_directory_path() / "antwika-editor"
+            / name;
+
+        std::filesystem::remove_all(path);
+
+        return path.string();
     }
 } // namespace
 
@@ -705,7 +747,9 @@ TEST(EditorSinkTest, CopiesLandNowhereWhenThereIsNoClipboard)
         rig.codec,
         rig.scene,
         antwika::music_editor::tests::kCanvas,
-        nullptr};
+        nullptr,
+        rig.stopSignal,
+        rig.scoresDirectory};
 
     bare.handle(tickAt(0));
 
@@ -878,4 +922,248 @@ TEST(EditorSinkTest, ReadsSeveralEventsWithinOneTick)
     press(rig, Key::Digit3, 2);
 
     EXPECT_EQ(rig.state.source, "123");
+}
+
+// The menu is a dropdown like the layout box, one press to open.
+TEST(EditorSinkTest, TheMenuOpensOnAPressAndQuitTellsTheLoop)
+{
+    EditorRig rig;
+    rig.editor.handle(tickAt(0));
+
+    clickAt(rig, centreOf(rig, antwika::music_editor::kMenuBox), 1);
+
+    EXPECT_TRUE(rig.state.menuOpen);
+    EXPECT_FALSE(rig.stopSignal.stopped());
+
+    // The recording holds this click; the stop follows from it.
+    clickAt(rig, centreOf(rig, menuOption(3)), 2);
+
+    EXPECT_FALSE(rig.state.menuOpen);
+    EXPECT_TRUE(rig.stopSignal.stopped());
+}
+
+TEST(EditorSinkTest, NewEmptiesThePage)
+{
+    EditorRig rig;
+    rig.editor.handle(tickAt(0));
+
+    clickAt(rig, centreOf(rig, antwika::music_editor::kMenuBox), 1);
+    clickAt(rig, centreOf(rig, menuOption(0)), 2);
+
+    EXPECT_EQ(rig.state.source, "");
+    EXPECT_EQ(rig.state.cursor, 0U);
+    EXPECT_EQ(rig.state.scroll, 0U);
+    EXPECT_EQ(
+        rig.state.modal, antwika::music_editor::Modal::None);
+}
+
+// Save asks for a name, takes the typing, and writes on the press.
+TEST(EditorSinkTest, SavingWritesTheScoreAndAddsItToTheList)
+{
+    EditorRig rig(freshDirectory("saving"));
+    rig.state.source = "$: drum.n(\"0\")\n";
+    rig.editor.handle(tickAt(0));
+
+    clickAt(rig, centreOf(rig, antwika::music_editor::kMenuBox), 1);
+    clickAt(rig, centreOf(rig, menuOption(1)), 2);
+
+    ASSERT_EQ(rig.state.modal, antwika::music_editor::Modal::Save);
+
+    press(rig, Key::A, 3);
+    press(rig, Key::B, 4);
+
+    EXPECT_EQ(rig.state.fileName, "ab");
+
+    clickAt(
+        rig,
+        modalCentreOf(rig, antwika::music_editor::kSaveConfirm),
+        5);
+
+    EXPECT_EQ(rig.state.modal, antwika::music_editor::Modal::None);
+    ASSERT_EQ(rig.state.scores.size(), 1U);
+    EXPECT_EQ(rig.state.scores[0], "ab");
+
+    EXPECT_EQ(
+        antwika::music_editor::loadScore(
+            antwika::music_editor::scorePath(
+                rig.scoresDirectory, "ab")),
+        "$: drum.n(\"0\")\n");
+}
+
+// Enter in the field is its submit, so it saves too.
+TEST(EditorSinkTest, EnterInTheNameFieldSaves)
+{
+    EditorRig rig(freshDirectory("submitting"));
+    rig.state.modal = antwika::music_editor::Modal::Save;
+    rig.state.fileName = "beat";
+    rig.editor.handle(tickAt(0));
+
+    press(rig, Key::Enter, 1);
+
+    EXPECT_EQ(rig.state.modal, antwika::music_editor::Modal::None);
+    ASSERT_EQ(rig.state.scores.size(), 1U);
+    EXPECT_EQ(rig.state.scores[0], "beat");
+}
+
+TEST(EditorSinkTest, ANameOfNothingIsRefusedWithANotice)
+{
+    EditorRig rig(freshDirectory("nameless"));
+    rig.state.modal = antwika::music_editor::Modal::Save;
+    rig.state.fileName = "..//";
+    rig.editor.handle(tickAt(0));
+
+    clickAt(
+        rig,
+        modalCentreOf(rig, antwika::music_editor::kSaveConfirm),
+        1);
+
+    EXPECT_EQ(rig.state.modal, antwika::music_editor::Modal::Save);
+    EXPECT_EQ(rig.state.notice, "name it first");
+    EXPECT_TRUE(rig.state.scores.empty());
+}
+
+TEST(EditorSinkTest, ADiskThatWillNotTakeTheScoreShowsItsNotice)
+{
+    const auto blocked = freshDirectory("blocked");
+
+    // The directory's place is taken by an ordinary file.
+    std::filesystem::create_directories(
+        std::filesystem::path(blocked).parent_path());
+    std::ofstream(blocked) << "in the way";
+
+    EditorRig rig(blocked);
+    rig.state.modal = antwika::music_editor::Modal::Save;
+    rig.state.fileName = "beat";
+    rig.editor.handle(tickAt(0));
+
+    clickAt(
+        rig,
+        modalCentreOf(rig, antwika::music_editor::kSaveConfirm),
+        1);
+
+    EXPECT_EQ(rig.state.modal, antwika::music_editor::Modal::Save);
+    EXPECT_FALSE(rig.state.notice.empty());
+    EXPECT_TRUE(rig.state.scores.empty());
+}
+
+// The load box lists what startup found plus what this run saved.
+TEST(EditorSinkTest, LoadingReplacesThePage)
+{
+    const auto directory = freshDirectory("loading");
+
+    antwika::music_editor::saveScore(
+        antwika::music_editor::scorePath(directory, "beat"),
+        "$: bell.n(\"7\")\n");
+
+    EditorRig rig(directory);
+    rig.state.scores = {"beat"};
+    rig.state.cursor = 3;
+    rig.editor.handle(tickAt(0));
+
+    clickAt(rig, centreOf(rig, antwika::music_editor::kMenuBox), 1);
+    clickAt(rig, centreOf(rig, menuOption(2)), 2);
+
+    ASSERT_EQ(rig.state.modal, antwika::music_editor::Modal::Load);
+
+    clickAt(
+        rig,
+        modalCentreOf(rig, antwika::music_editor::loadOption(0)),
+        3);
+
+    EXPECT_EQ(rig.state.source, "$: bell.n(\"7\")\n");
+    EXPECT_EQ(rig.state.cursor, 0U);
+    EXPECT_EQ(rig.state.scroll, 0U);
+    EXPECT_EQ(rig.state.modal, antwika::music_editor::Modal::None);
+}
+
+TEST(EditorSinkTest, AScoreThatWillNotReadBackShowsItsNotice)
+{
+    EditorRig rig(freshDirectory("ghostly"));
+    rig.state.scores = {"ghost"};
+    rig.state.modal = antwika::music_editor::Modal::Load;
+    rig.editor.handle(tickAt(0));
+
+    clickAt(
+        rig,
+        modalCentreOf(rig, antwika::music_editor::loadOption(0)),
+        1);
+
+    EXPECT_EQ(rig.state.modal, antwika::music_editor::Modal::Load);
+    EXPECT_FALSE(rig.state.notice.empty());
+}
+
+TEST(EditorSinkTest, CancelClosesABoxAndKeepsThePage)
+{
+    EditorRig rig;
+    rig.state.modal = antwika::music_editor::Modal::Save;
+    rig.state.notice = "stale";
+    rig.editor.handle(tickAt(0));
+
+    const auto before = rig.state.source;
+
+    clickAt(
+        rig,
+        modalCentreOf(rig, antwika::music_editor::kModalCancel),
+        1);
+
+    EXPECT_EQ(rig.state.modal, antwika::music_editor::Modal::None);
+    EXPECT_EQ(rig.state.notice, "");
+    EXPECT_EQ(rig.state.source, before);
+}
+
+// Escape is the modal's way out, and pauses nothing while one is up.
+TEST(EditorSinkTest, EscapeClosesABoxRatherThanPausing)
+{
+    EditorRig rig;
+    rig.state.modal = antwika::music_editor::Modal::Load;
+    rig.editor.handle(tickAt(0));
+
+    press(rig, Key::Escape, 1);
+
+    EXPECT_EQ(rig.state.modal, antwika::music_editor::Modal::None);
+    EXPECT_FALSE(rig.state.paused);
+
+    press(rig, Key::Escape, 2);
+
+    EXPECT_TRUE(rig.state.paused);
+}
+
+// While a box is up, the page beneath it is described with no input.
+TEST(EditorSinkTest, TypingWhileABoxIsUpGoesToItsFieldAlone)
+{
+    EditorRig rig;
+    rig.state.source = "abcd";
+    rig.state.cursor = 0;
+    rig.state.modal = antwika::music_editor::Modal::Save;
+    rig.state.fileName.clear();
+    rig.state.fileCursor = 0;
+    rig.editor.handle(tickAt(0));
+
+    press(rig, Key::A, 1);
+
+    EXPECT_EQ(rig.state.fileName, "a");
+    EXPECT_EQ(rig.state.source, "abcd");
+    EXPECT_EQ(rig.state.cursor, 0U);
+}
+
+// A choice is the option's alone.
+// The press that made it must not also land in the pane beneath.
+TEST(EditorSinkTest, ChoosingAnOptionMovesNoCaret)
+{
+    EditorRig rig;
+    rig.state.cursor = 3;
+    rig.editor.handle(tickAt(0));
+
+    clickAt(rig, centreOf(rig, antwika::music_editor::kLayoutBox), 1);
+
+    const auto option = antwika::ui::WidgetId{
+        static_cast<std::uint64_t>(
+            antwika::music_editor::kLayoutOptions)
+        + 1};
+
+    clickAt(rig, centreOf(rig, option), 2);
+
+    EXPECT_EQ(
+        rig.state.layout, antwika::music_editor::KeyLayout::English);
+    EXPECT_EQ(rig.state.cursor, 3U);
 }

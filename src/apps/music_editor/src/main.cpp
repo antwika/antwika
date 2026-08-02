@@ -2,6 +2,7 @@
 #include <iostream>
 #include <memory>
 #include <string>
+#include <string_view>
 
 #include <antwika/app/ConsoleLogging.hpp>
 #include <antwika/app/FullscreenToggleSource.hpp>
@@ -32,6 +33,7 @@
 #include "antwika/music_editor/PasteSource.hpp"
 #include "antwika/music_editor/Playback.hpp"
 #include "antwika/music_editor/RenderSink.hpp"
+#include "antwika/music_editor/ScoreFiles.hpp"
 
 using antwika::app::ConsoleLogging;
 using antwika::app::RecordedRun;
@@ -73,6 +75,10 @@ namespace
     // One editor with a different one would be one to remember.
     constexpr antwika::input::Key kFullscreenKey =
         antwika::input::Key::F10;
+
+    // Where the menu's save writes and its load reads.
+    // Beside the working directory, exactly as game's saves/ is.
+    constexpr std::string_view kScoreDirectory{"scores"};
 
     void run(const RecordedRun &recorded)
     {
@@ -169,6 +175,10 @@ namespace
             .canvas = kWindowSize,
             // A replay must not write this machine's clipboard either.
             .clipboard = live ? clipboard.get() : nullptr,
+            .scoresDirectory = std::string(kScoreDirectory),
+            // Once, before the loop; the list is the run's from here.
+            .scores = antwika::music_editor::listScores(
+                kScoreDirectory),
             .replayRecorder = recorded.replayRecorder,
             .extraSink =
                 [&](const EditorSink &editor)

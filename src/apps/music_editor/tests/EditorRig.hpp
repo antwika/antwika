@@ -1,8 +1,11 @@
 #pragma once
 
 #include <chrono>
+#include <string>
+#include <utility>
 
 #include <antwika/engine/Events.hpp>
+#include <antwika/engine/StopSignal.hpp>
 #include <antwika/event/TickEvent.hpp>
 #include <antwika/gfx/Size.hpp>
 #include <antwika/input/InputEventCodec.hpp>
@@ -71,6 +74,12 @@ namespace antwika::music_editor::tests
         // It stands in for the window system's clipboard.
         input::MemoryClipboard osClipboard{};
 
+        // What the menu's quit tells, and a test then asks.
+        engine::StopSignal stopSignal{};
+
+        // Where the save box writes; a test that saves passes its own.
+        std::string scoresDirectory;
+
         Playback playback{
             score,
             mixer,
@@ -84,11 +93,24 @@ namespace antwika::music_editor::tests
                 .lookahead = 3,
                 .lead = 2}};
 
-        EditorSink editor{
-            state, score, playback, codec, scene, kCanvas,
-            &osClipboard};
+        EditorSink editor;
 
-        EditorRig()
+        EditorRig() : EditorRig("scores")
+        {
+        }
+
+        explicit EditorRig(std::string directory)
+            : scoresDirectory(std::move(directory)),
+              editor{
+                  state,
+                  score,
+                  playback,
+                  codec,
+                  scene,
+                  kCanvas,
+                  &osClipboard,
+                  stopSignal,
+                  scoresDirectory}
         {
             device.start(mixer);
         }

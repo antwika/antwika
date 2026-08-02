@@ -263,3 +263,105 @@ TEST(EditorSceneTest, MovingTheCaretChangesThePicture)
 
     EXPECT_NE(describe(state, score).commands, atEnd);
 }
+
+TEST(EditorSceneTest, TheMenuIsAtTheTopAndClosedByDefault)
+{
+    const EditorState state = openingState();
+    Score score;
+    score.read(state.source);
+
+    const auto frame = describe(state, score);
+
+    EXPECT_TRUE(
+        frame.rects.find(antwika::music_editor::kMenuBox).has_value());
+    EXPECT_TRUE(says(frame.commands, "menu"));
+    EXPECT_FALSE(says(frame.commands, "quit"));
+}
+
+TEST(EditorSceneTest, AnOpenMenuListsItsFourCommands)
+{
+    EditorState state = openingState();
+    state.menuOpen = true;
+
+    Score score;
+    score.read(state.source);
+
+    const auto frame = describe(state, score);
+
+    EXPECT_TRUE(says(frame.commands, "new"));
+    EXPECT_TRUE(says(frame.commands, "save"));
+    EXPECT_TRUE(says(frame.commands, "load"));
+    EXPECT_TRUE(says(frame.commands, "quit"));
+}
+
+TEST(EditorSceneTest, TheSaveBoxAsksForANameAndOffersBothButtons)
+{
+    const EditorScene scene;
+
+    EditorState state = openingState();
+    state.modal = antwika::music_editor::Modal::Save;
+    state.fileName = "beat";
+
+    const auto frame = scene.describeModal(
+        state, kCanvas, Pointer{}, Keyboard{});
+
+    EXPECT_TRUE(says(frame.commands, "save the score as"));
+    EXPECT_TRUE(says(frame.commands, "beat"));
+    EXPECT_TRUE(
+        frame.rects.find(antwika::music_editor::kSaveConfirm)
+            .has_value());
+    EXPECT_TRUE(
+        frame.rects.find(antwika::music_editor::kModalCancel)
+            .has_value());
+}
+
+TEST(EditorSceneTest, TheLoadBoxListsEveryScoreAsAButton)
+{
+    const EditorScene scene;
+
+    EditorState state = openingState();
+    state.modal = antwika::music_editor::Modal::Load;
+    state.scores = {"alpha", "zed"};
+
+    const auto frame = scene.describeModal(
+        state, kCanvas, Pointer{}, Keyboard{});
+
+    EXPECT_TRUE(says(frame.commands, "load a score"));
+    EXPECT_TRUE(says(frame.commands, "alpha"));
+    EXPECT_TRUE(says(frame.commands, "zed"));
+    EXPECT_TRUE(
+        frame.rects.find(antwika::music_editor::loadOption(1))
+            .has_value());
+
+    // No save button in a box that only opens things.
+    EXPECT_FALSE(
+        frame.rects.find(antwika::music_editor::kSaveConfirm)
+            .has_value());
+}
+
+TEST(EditorSceneTest, TheLoadBoxSaysWhenThereIsNothingToLoad)
+{
+    const EditorScene scene;
+
+    EditorState state = openingState();
+    state.modal = antwika::music_editor::Modal::Load;
+
+    const auto frame = scene.describeModal(
+        state, kCanvas, Pointer{}, Keyboard{});
+
+    EXPECT_TRUE(says(frame.commands, "nothing saved yet"));
+}
+
+TEST(EditorSceneTest, ABoxShowsItsNoticeInItsOwnInk)
+{
+    const EditorScene scene;
+
+    EditorState state = openingState();
+    state.modal = antwika::music_editor::Modal::Save;
+    state.notice = "name it first";
+
+    const auto frame = scene.describeModal(
+        state, kCanvas, Pointer{}, Keyboard{});
+
+    EXPECT_TRUE(says(frame.commands, "name it first"));
+}

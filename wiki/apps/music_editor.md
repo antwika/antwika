@@ -25,6 +25,7 @@ The two `drum.` lines above are two voices sounding together, because a preset i
 Nothing is stopping four bass lines, or a document with no preset named anywhere in it.
 
 Escape pauses and resumes, Enter is a new line, Tab indents by two, F10 fills the screen, and the two buttons pause and silence everything.
+The menu at the top holds `new`, `save`, `load` and `quit`: save asks for a name in a box over the pane, load lists what the `scores/` directory held plus whatever this run saved, and Escape or its cancel button closes either box.
 Refusals are listed under the pane by line number, at most three at a time and then a count of the rest.
 
 **It writes like a text editor**, which is to say the parts of one a score needs and no more:
@@ -168,6 +169,15 @@ It runs until the window is closed or a replay dispatches `engine.stop`, exactly
 The default `null` backend reports no close, so `Ctrl+C` is what ends one there, and a `--record` run killed that way keeps everything up to the kill.
 `--record` and `--replay` work as they do everywhere else.
 
+## Saving and loading
+
+A score is saved as plain text, exactly the pane's characters, at `scores/<name>.score` -- there is no format to version because there is no format: the document *is* the file, and the language it is written in already carries its own compatibility story, since an old score is just text the current parser reads.
+A name is typed in the save box and filtered to letters, digits, dashes and underscores, so what the load list later shows is exactly what the file is called and a separator cannot write outside the directory.
+
+Loading follows [game](game.md)'s save screen, trade-offs included.
+The list is read from the directory **once at startup** and carried as simulation state, because which button a click lands on is a function of it; a save made mid-run is added to that copy rather than the directory being read again, so a replay reaches the same list without a directory read.
+A score's *contents*, though, can only be read when the click asking for them arrives, inside the tick path -- so a replay reproduces a load exactly as long as the file still holds what it held, which is inherent to a load button rather than something this design gave away.
+
 ## What it is built from
 
 [`notation`](../libraries/notation.md) reads what is inside an `n(...)`, [`pattern`](../libraries/pattern.md) is what it reads into, [`sequencer`](../libraries/sequencer.md) turns that into things beginning at exact frames, [`synth`](../libraries/synth.md) makes the sound and [`sound`](../libraries/sound.md) plays it.
@@ -208,6 +218,10 @@ The recording carries the characters, a replay reads no clipboard at all, and th
 The write goes the other way on the render side's terms: a copy lands in `EditorState` as simulation state and a live run's sink mirrors it outward, an outward write no tick reads back -- and a replay is handed no clipboard to write, so replaying somebody's session leaves this machine's alone.
 `input::makeSelectedClipboard()` is the seam: SDL3's clipboard on that backend, raylib's on that one, and a string in the process under `null`, so a headless run still pastes what it copied.
 
+**A box over the pane is a second frame, not a mode.**
+While the save or load box is up, the sink describes the editor with no input at all and the box with the whole tick's, appends the two pictures, and acts on the box's interactions alone -- so nothing beneath it can be pressed, exactly as [game](game.md) scrims its city.
+Quit is the same click-shaped stop game's menu uses: the sink tells the loop's own `StopSignal` rather than putting an event on the wire, since the recording already holds the click and the stop follows from it on every replay.
+
 **Every event describes the editor, acts, and describes it again.**
 That is the remedy `ui::Context::finish()` gives for its own ordering: a press is resolved while the frame is being laid out, so the picture beside it predates whatever the press changed.
 The second description is given no keys and no press, or a keystroke would be typed twice and a button activated twice, and only the first frame's answers are read.
@@ -221,6 +235,7 @@ A wheel spun a hundred notches past the end settles on the last page after exact
 **Escape pauses, and Enter does not.**
 Enter is what a line break is written with, which a document of many lines cannot do without -- so the pause had to move to a key the writing does not need.
 Escape is that key, and it is deliberately *not* handed to [`ui`](../libraries/ui.md) as `Key::Cancel`: a field that gave up on what was typed would throw away the score being written.
+Over an open save or load box it closes the box instead, which is the one Cancel-shaped thing it does -- the box holds a name or a choice rather than the score, so there is nothing there worth protecting from it.
 `EditorSink` reads `input::Key::Escape` itself, before the UI is described, which is also why no `ui::Key` for it has to exist.
 Tab moved for the same reason: there is one thing to type into, so it has no focus to walk, and it indents by two spaces instead.
 

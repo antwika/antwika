@@ -104,6 +104,28 @@ namespace antwika::music_editor
             const Keyboard &keyboard) const;
 
         /**
+         * @brief Describe the box floating over a paused-input editor.
+         *
+         * A second frame rather than more of describe()'s, exactly as
+         * apps/game draws its modal: the sink describes the editor
+         * with no input and this with the tick's, appends the two
+         * pictures, and acts on this one's interactions alone -- so
+         * nothing under the box can be pressed while it is up.
+         *
+         * @param state Whose modal says which box: the save box for
+         * Modal::Save, the load box otherwise.
+         * @param canvas The size the window was **asked** for.
+         * @param pointer Where the pointer is and what it is doing.
+         * @param keyboard What arrived this frame.
+         * @return The box's picture and what the input did to it.
+         */
+        [[nodiscard]] Frame describeModal(
+            const EditorState &state,
+            Size canvas,
+            Pointer pointer,
+            const Keyboard &keyboard) const;
+
+        /**
          * @brief Draw a described picture.
          * @param renderer Where to draw.
          * @param picture What describe() produced.
