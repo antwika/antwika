@@ -37,6 +37,7 @@
 #include "antwika/game/Events.hpp"
 #include "antwika/game/Game.hpp"
 #include "antwika/game/GridExtent.hpp"
+#include "antwika/game/HousingLevel.hpp"
 #include "antwika/game/IsoProjection.hpp"
 #include "antwika/game/PathIndex.hpp"
 #include "antwika/game/PauseState.hpp"
@@ -157,7 +158,8 @@ namespace
     }
 
     [[nodiscard]] RunResult runWithToolbar(
-        antwika::simulation::ITickEventSource &source)
+        antwika::simulation::ITickEventSource &source,
+        antwika::time::Tick ticks = kMaxTicks)
     {
         NiceMock<MockLogger> logger;
         NiceMock<MockEventSink> eventSink;
@@ -184,7 +186,7 @@ namespace
                 .built = built,
                 .mode = mode,
                 .pause = pause,
-                .maxTicks = kMaxTicks,
+                .maxTicks = ticks,
                 .replayRecorder = recorder,
                 .overlay = overlay});
 
@@ -946,6 +948,142 @@ TEST(ReplayDeterminismTest, ACoveredCityReplaysToTheSameCoverage)
 
     ReplaySource replayedSource(std::move(loaded));
     const auto replayed = runWithToolbar(replayedSource);
+
+    EXPECT_EQ(replayed.summary, live.summary);
+    EXPECT_EQ(replayed.recorded, live.recorded);
+}
+
+// A city that did nothing would agree for the wrong reason.
+// A housing level is the newest thing that could quietly differ.
+// It is also the slowest, since a tier is held for a countdown.
+// So this run lays a corridor and sinks a well on it.
+// Puts a house beside it, and runs until the water promotes it.
+namespace
+{
+    // The countdown, plus room for the well's cadence and the walk.
+    const antwika::time::Tick kHousingTicks =
+        static_cast<antwika::time::Tick>(
+            antwika::game::kEvolvePeriodTicks) + 120;
+
+    [[nodiscard]] std::vector<TickEvent> housingSession()
+    {
+        const InputEventCodec codec;
+        const auto wellButton = pixelOn(
+            antwika::game::widgets::toolWidget(
+                antwika::game::BuildTool::Well));
+        const auto houseButton = pixelOn(
+            antwika::game::widgets::toolWidget(
+                antwika::game::BuildTool::House));
+
+        std::vector<TickEvent> events;
+
+        // A corridor of road, laid with the tool a run starts on.
+        for (std::int32_t x = 2; x <= 6; ++x)
+        {
+            events.push_back(
+                TickEvent{
+                    .tick = 0,
+                    .event =
+                        pressAt(Cell{.x = x, .y = 4}, MouseButton::Left)});
+        }
+
+        events.push_back(
+            TickEvent{
+                .tick = 0,
+                .event =
+                    releaseAt(Cell{.x = 6, .y = 4}, MouseButton::Left)});
+
+        events.push_back(
+            TickEvent{
+                .tick = 1,
+                .event = codec.encode(
+                    antwika::input::PointerMoved{.position = wellButton})});
+        events.push_back(
+            TickEvent{
+                .tick = 1,
+                .event = codec.encode(
+                    PointerButtonPressed{
+                        .button = MouseButton::Left,
+                        .position = wellButton})});
+        events.push_back(
+            TickEvent{
+                .tick = 2,
+                .event = pressAt(Cell{.x = 2, .y = 5}, MouseButton::Left)});
+
+        events.push_back(
+            TickEvent{
+                .tick = 3,
+                .event = codec.encode(
+                    antwika::input::PointerMoved{
+                        .position = houseButton})});
+        events.push_back(
+            TickEvent{
+                .tick = 3,
+                .event = codec.encode(
+                    PointerButtonPressed{
+                        .button = MouseButton::Left,
+                        .position = houseButton})});
+        events.push_back(
+            TickEvent{
+                .tick = 4,
+                .event = pressAt(Cell{.x = 5, .y = 5}, MouseButton::Left)});
+
+        events.push_back(
+            TickEvent{
+                .tick = kHousingTicks - 2,
+                .event = Event{.name = antwika::engine::events::kStop}});
+
+        return events;
+    }
+
+    [[nodiscard]] bool anyGrown(const GameSummary &summary)
+    {
+        for (const auto &building : summary.buildings)
+        {
+            if (building.level != antwika::game::HousingLevel::Tent)
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+} // namespace
+
+TEST(ReplayDeterminismTest, TheHousingRunActuallyGrowsAHouse)
+{
+    auto script = housingSession();
+    ReplaySource source(script);
+
+    const auto result = runWithToolbar(source, kHousingTicks);
+
+    ASSERT_EQ(result.summary.buildings.size(), 2U);
+    EXPECT_TRUE(anyGrown(result.summary))
+        << "nothing ever grew, so this proves nothing";
+}
+
+TEST(ReplayDeterminismTest, AGrowingCityReplaysToTheSameLevels)
+{
+    auto script = housingSession();
+    ReplaySource liveSource(script);
+    const auto live = runWithToolbar(liveSource, kHousingTicks);
+
+    const ScratchFile file("antwika-game-housing.replay");
+    antwika::replay::saveReplayFile(live.recorded, file.name());
+    auto loaded = antwika::replay::loadReplayFile(file.name());
+
+    // Nothing about a house growing may be on the wire.
+    // It is a function of coverage, stock and desirability.
+    // Every one of which a replay regenerates from the clicks.
+    for (const auto &event : loaded)
+    {
+        EXPECT_EQ(
+            event.event.name.rfind("game.house", 0), std::string::npos)
+            << event.event.name;
+    }
+
+    ReplaySource replayedSource(std::move(loaded));
+    const auto replayed = runWithToolbar(replayedSource, kHousingTicks);
 
     EXPECT_EQ(replayed.summary, live.summary);
     EXPECT_EQ(replayed.recorded, live.recorded);

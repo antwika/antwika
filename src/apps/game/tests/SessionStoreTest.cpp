@@ -17,6 +17,8 @@
 #include "antwika/game/GridExtent.hpp"
 #include "antwika/game/Path.hpp"
 #include "antwika/game/PathIndex.hpp"
+#include "antwika/game/Household.hpp"
+#include "antwika/game/HousingLevel.hpp"
 #include "antwika/game/Production.hpp"
 #include "antwika/game/SaveGame.hpp"
 #include "antwika/game/SceneSnapshot.hpp"
@@ -272,6 +274,31 @@ namespace
                 .at = {.x = 5, .y = 5},
                 .kind = antwika::game::BuildingKind::House,
                 .coverage = {3, 0, 9, 0}}};
+
+        store.restore(save);
+        world.commit();
+
+        EXPECT_EQ(store.take().buildings, save.buildings);
+    }
+
+    // A session resumed is a session lived in exactly as it was.
+    // The one door in and out, so both halves have to carry it.
+    TEST_F(SessionStoreTest, RestoreThenTake_BringsAHouseholdBack)
+    {
+        SaveGame save;
+        save.buildings = {
+            antwika::game::SavedBuilding{
+                .at = {.x = 5, .y = 5},
+                .kind = antwika::game::BuildingKind::House,
+                .household =
+                    antwika::game::Household{
+                        .level = antwika::game::HousingLevel::Hovel,
+                        .ticksUntilEvolve = 6,
+                        .ticksUntilDevolve = 8,
+                        .population = 2}},
+            antwika::game::SavedBuilding{
+                .at = {.x = 9, .y = 9},
+                .kind = antwika::game::BuildingKind::Well}};
 
         store.restore(save);
         world.commit();

@@ -14,6 +14,7 @@
 #include "antwika/game/Building.hpp"
 #include "antwika/game/BuildingKind.hpp"
 #include "antwika/game/Coverage.hpp"
+#include "antwika/game/HousingLevel.hpp"
 #include "antwika/game/Resource.hpp"
 #include "antwika/game/ResourceBar.hpp"
 #include "antwika/game/Service.hpp"
@@ -67,6 +68,13 @@ namespace antwika::game
             MessageId::GameResourceClay,
             MessageId::GameResourcePottery};
 
+        constexpr std::array<MessageId, kHousingLevelCount>
+            kHousingLabels{
+                MessageId::GameHousingTent,
+                MessageId::GameHousingShack,
+                MessageId::GameHousingHovel,
+                MessageId::GameHousingCottage};
+
         constexpr std::array<MessageId, kServiceCount> kServiceLabels{
             MessageId::GameServiceWater,
             MessageId::GameServiceHealth,
@@ -97,6 +105,20 @@ namespace antwika::game
             const std::array<std::string_view, 3> args{named, amount, most};
 
             return translator.formatted(MessageId::GameReadoutAmount, args);
+        }
+
+        // Named rather than numbered, and the tier's own caption.
+        // "level: 2" would be a number a reader has to look up.
+        [[nodiscard]] std::string levelText(
+            const Translator &translator, HousingLevel level)
+        {
+            const auto named = translator.text(
+                kHousingLabels[
+                    housingLevelIndex(level) % kHousingLevelCount]);
+            const std::array<std::string_view, 1> args{named};
+
+            return translator.formatted(
+                MessageId::GameReadoutLevel, args);
         }
 
         // Per cent rather than the ticks the component counts.
@@ -138,6 +160,18 @@ namespace antwika::game
                     Said{ // GCOVR_EXCL_LINE
                         .text = translator.text(labelOf(building.kind)),
                         .colour = kReadoutTitle});
+
+                // Only where somebody lives, since only there is a tier.
+                // A well is on HousingLevel::Tent and always will be.
+                // Saying so would be saying something untrue about it.
+                if (housesPeople(building.kind))
+                {
+                    said.push_back(
+                        Said{ // GCOVR_EXCL_LINE
+                            .text =
+                                levelText(translator, building.level),
+                            .colour = kReadoutTitle});
+                }
 
                 // The very rule the bars follow -- see buildingBars().
                 if (consumes(building.kind))

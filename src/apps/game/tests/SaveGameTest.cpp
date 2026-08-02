@@ -18,6 +18,8 @@
 #include "antwika/game/Coverage.hpp"
 #include "antwika/game/Errand.hpp"
 #include "antwika/game/PathIndex.hpp"
+#include "antwika/game/Household.hpp"
+#include "antwika/game/HousingLevel.hpp"
 #include "antwika/game/Production.hpp"
 #include "antwika/game/SaveFormatError.hpp"
 #include "antwika/game/SaveGame.hpp"
@@ -1011,4 +1013,169 @@ TEST(SaveGameTest, TakesACityOfSeveralBuildingsFromARunningSession)
         GridExtent{.width = 16, .height = 16});
 
     EXPECT_EQ(save.buildings.size(), 5U);
+}
+
+// A house part-way to its next level, countdowns and all.
+// They are persisted rather than reset for Building's three's reason.
+// Two houses reopened with one number grow in lockstep from then on.
+TEST(SaveGameTest, RoundTripsAHouseMidEvolution)
+{
+    SaveGame save;
+    save.buildings = {antwika::game::SavedBuilding{
+        .at = {.x = 4, .y = 4},
+        .kind = BuildingKind::House,
+        .household =
+            antwika::game::Household{
+                .level = antwika::game::HousingLevel::Hovel,
+                .ticksUntilEvolve = 17,
+                .ticksUntilDevolve = 23,
+                .population = 4}}};
+
+    const auto loaded = saveGameFromJson(saveGameToJson(save));
+
+    EXPECT_EQ(loaded.buildings, save.buildings);
+}
+
+TEST(SaveGameTest, WritesTheHousingLevelByName)
+{
+    SaveGame save;
+    save.buildings = {antwika::game::SavedBuilding{
+        .at = {.x = 4, .y = 4},
+        .kind = BuildingKind::House,
+        .household =
+            antwika::game::Household{
+                .level = antwika::game::HousingLevel::Cottage}}};
+
+    const auto encoded = saveGameToJson(save);
+
+    EXPECT_EQ(
+        encoded.at("buildings").at(0).at("household").at("level"),
+        "cottage");
+}
+
+TEST(SaveGameTest, LeavesAHouseThatNeverGrewWithoutAHousehold)
+{
+    SaveGame save;
+    save.buildings = {antwika::game::SavedBuilding{
+        .at = {.x = 4, .y = 4}, .kind = BuildingKind::House}};
+
+    const auto encoded = saveGameToJson(save);
+
+    EXPECT_FALSE(encoded.at("buildings").at(0).contains("household"));
+    EXPECT_FALSE(
+        saveGameFromJson(encoded).buildings[0].household.has_value());
+}
+
+TEST(SaveGameTest, RejectsAHousingLevelThisBuildDoesNotHave)
+{
+    SaveGame save;
+    save.buildings = {antwika::game::SavedBuilding{
+        .at = {.x = 1, .y = 1},
+        .kind = BuildingKind::House,
+        .household = antwika::game::Household{}}};
+
+    auto encoded = saveGameToJson(save);
+    encoded["buildings"][0]["household"]["level"] = "palace";
+
+    EXPECT_THROW((void)saveGameFromJson(encoded), SaveFormatError);
+}
+
+// All four members or none, so a half-written household is refused.
+// They only ever mean anything together -- see SaveHousing.cpp.
+TEST(SaveGameTest, RejectsAHouseholdMissingOneOfItsMembers)
+{
+    SaveGame save;
+    save.buildings = {antwika::game::SavedBuilding{
+        .at = {.x = 1, .y = 1},
+        .kind = BuildingKind::House,
+        .household = antwika::game::Household{}}};
+
+    auto encoded = saveGameToJson(save);
+    encoded["buildings"][0]["household"].erase("population");
+
+    EXPECT_THROW((void)saveGameFromJson(encoded), SaveFormatError);
+}
+
+// A hand-written document of the version this build writes.
+// From before housing was a thing anybody stored.
+// Step four of docs/schema-versioning.md, for an additive member.
+TEST(SaveGameTest, ReadsAVersionThreeDocumentWrittenBeforeHousing)
+{
+    const auto document = nlohmann::json::parse(R"({
+        "magic": "antwika-game-save",
+        "version": 3,
+        "state": {"ticksProcessed": 4, "score": 1},
+        "extent": {"width": 8, "height": 8},
+        "camera": {"panX": 0, "panY": 0, "zoomLevel": 0},
+        "paths": [],
+        "walkers": [],
+        "buildings": [
+            {"x": 2, "y": 2, "kind": "house", "stock": [9, 0, 0],
+             "risk": 0, "ticksUntilSpawn": 1, "ticksUntilDrain": 2,
+             "ticksUntilRisk": 3}
+        ],
+        "seed": 5
+    })");
+
+    const auto save = saveGameFromJson(document);
+
+    ASSERT_EQ(save.buildings.size(), 1U);
+    EXPECT_FALSE(save.buildings[0].household.has_value());
+}
+
+// Read out of the World like every other piece of state.
+TEST(SaveGameTest, TakesEachHousesHouseholdFromTheWorld)
+{
+    ::testing::NiceMock<MockLogger> logger;
+    World world{logger};
+    const PathIndex paths;
+
+    const auto house = world.create();
+    world.add<Cell>(house, Cell{.x = 2, .y = 2});
+    world.add<Building>(house, Building{.kind = BuildingKind::House});
+    antwika::game::setHousehold(
+        world,
+        house,
+        antwika::game::Household{
+            .level = antwika::game::HousingLevel::Shack,
+            .ticksUntilEvolve = 3,
+            .ticksUntilDevolve = 4,
+            .population = 5});
+
+    const auto well = world.create();
+    world.add<Cell>(well, Cell{.x = 6, .y = 6});
+    world.add<Building>(well, Building{.kind = BuildingKind::Well});
+    world.commit();
+
+    const auto save = saveGameOf(
+        world, paths, Camera(), GameState{},
+        GridExtent{.width = 8, .height = 8});
+
+    ASSERT_EQ(save.buildings.size(), 2U);
+    ASSERT_TRUE(save.buildings[0].household.has_value());
+    EXPECT_EQ(
+        save.buildings[0].household->level,
+        antwika::game::HousingLevel::Shack);
+    EXPECT_EQ(save.buildings[0].household->population, 5);
+    EXPECT_FALSE(save.buildings[1].household.has_value());
+}
+
+// The member has to be in the comparison.
+// Or a round trip that dropped it would still match.
+TEST(SaveGameTest, SavedBuildingEqualityComparesTheHousehold)
+{
+    const antwika::game::SavedBuilding base{
+        .at = {.x = 1, .y = 1},
+        .household = antwika::game::Household{
+            .level = antwika::game::HousingLevel::Hovel}};
+
+    EXPECT_EQ(base, base);
+
+    auto homeless = base;
+    homeless.household.reset();
+    EXPECT_NE(base, homeless);
+
+    auto grown = base;
+    grown.household->level = antwika::game::HousingLevel::Cottage;
+    EXPECT_NE(base, grown);
 }

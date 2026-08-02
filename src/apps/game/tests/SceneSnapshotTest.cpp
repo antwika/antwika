@@ -9,6 +9,8 @@
 #include "antwika/game/Cell.hpp"
 #include "antwika/game/Direction.hpp"
 #include "antwika/game/GridExtent.hpp"
+#include "antwika/game/Household.hpp"
+#include "antwika/game/HousingLevel.hpp"
 #include "antwika/game/PathIndex.hpp"
 #include "antwika/game/GameSummary.hpp"
 #include "antwika/game/SceneSnapshot.hpp"
@@ -497,4 +499,48 @@ TEST(SceneSnapshotTest, BuildingViewsOf_ReportsNothingWithNoBuildings)
     World world(logger);
 
     EXPECT_TRUE(antwika::game::buildingViewsOf(world).empty());
+}
+
+// The level is state a summary compares rather than a picture.
+// So it goes onto the view as well as onto the sprite.
+TEST(SceneSnapshotTest, TakesEachHousesLevelOntoBothViewAndSprite)
+{
+    NiceMock<MockLogger> logger;
+    World world(logger);
+    const PathIndex paths;
+
+    const auto grown = world.create();
+    world.add<Cell>(grown, Cell{.x = 1, .y = 1});
+    world.add<antwika::game::Building>(
+        grown,
+        antwika::game::Building{
+            .kind = antwika::game::BuildingKind::House});
+    antwika::game::setHousehold(
+        world,
+        grown,
+        antwika::game::Household{
+            .level = antwika::game::HousingLevel::Hovel});
+
+    const auto fresh = world.create();
+    world.add<Cell>(fresh, Cell{.x = 5, .y = 5});
+    world.add<antwika::game::Building>(
+        fresh,
+        antwika::game::Building{
+            .kind = antwika::game::BuildingKind::House});
+    world.commit();
+
+    const auto views = antwika::game::buildingViewsOf(world);
+
+    ASSERT_EQ(views.size(), 2U);
+    EXPECT_EQ(views[0].level, antwika::game::HousingLevel::Hovel);
+    EXPECT_EQ(views[1].level, antwika::game::HousingLevel::Tent);
+
+    const auto snapshot =
+        snapshotOf(world, paths, Camera(), kExtent);
+
+    ASSERT_EQ(snapshot.buildings.size(), 2U);
+    EXPECT_EQ(
+        snapshot.buildings[0].level, antwika::game::HousingLevel::Hovel);
+    EXPECT_EQ(
+        snapshot.buildings[1].level, antwika::game::HousingLevel::Tent);
 }

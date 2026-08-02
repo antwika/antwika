@@ -1038,6 +1038,31 @@ namespace antwika::i18n
         GameReadoutCoverage,
 
         /**
+         * @brief Game readout: the bottom housing tier.
+         */
+        GameHousingTent,
+
+        /**
+         * @brief Game readout: the second housing tier.
+         */
+        GameHousingShack,
+
+        /**
+         * @brief Game readout: the third housing tier.
+         */
+        GameHousingHovel,
+
+        /**
+         * @brief Game readout: the top housing tier.
+         */
+        GameHousingCottage,
+
+        /**
+         * @brief Game readout: which tier a house is on, as `{0}` named.
+         */
+        GameReadoutLevel,
+
+        /**
          * @brief Task worker: which tick the picture is of, `{0}`.
          */
         TaskWorkerTick,
@@ -1097,7 +1122,7 @@ namespace antwika::i18n
     /**
      * @brief How many ids a complete catalogue carries.
      */
-    inline constexpr std::size_t kMessageCount{211};
+    inline constexpr std::size_t kMessageCount{216};
 
     /**
      * @brief Every id, in declaration order.
@@ -1307,6 +1332,11 @@ namespace antwika::i18n
         MessageId::GameServiceSafety,
         MessageId::GameServiceStructure,
         MessageId::GameReadoutCoverage,
+        MessageId::GameHousingTent,
+        MessageId::GameHousingShack,
+        MessageId::GameHousingHovel,
+        MessageId::GameHousingCottage,
+        MessageId::GameReadoutLevel,
         MessageId::TaskWorkerTick,
         MessageId::TaskWorkerBudget,
         MessageId::TaskWorkerStarted,

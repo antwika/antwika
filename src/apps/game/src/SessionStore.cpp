@@ -8,6 +8,7 @@
 #include "antwika/game/CityGrid.hpp"
 #include "antwika/game/Coverage.hpp"
 #include "antwika/game/Errand.hpp"
+#include "antwika/game/Household.hpp"
 #include "antwika/game/Production.hpp"
 #include "antwika/game/Walker.hpp"
 
@@ -115,7 +116,8 @@ namespace antwika::game
                             .ticksUntilRisk = building.ticksUntilRisk},
                     .walkers = held,
                     .coverage = Coverage{.ticksLeft = building.coverage},
-                    .production = production});
+                    .production = production,
+                    .household = building.household});
         }
 
         restoreCityGrid(world, built, paths, grid);

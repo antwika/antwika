@@ -19,6 +19,7 @@
 #include "antwika/game/GameState.hpp"
 #include "antwika/game/GameSummary.hpp"
 #include "antwika/game/GridExtent.hpp"
+#include "antwika/game/Household.hpp"
 #include "antwika/game/PathIndex.hpp"
 #include "antwika/game/Resource.hpp"
 #include "antwika/game/SceneSnapshot.hpp"
@@ -214,6 +215,25 @@ namespace antwika::game
          * is, so ProductionSystem needs no case of its own for either.
          */
         std::optional<std::int32_t> ticksUntilOutput = std::nullopt;
+
+        /**
+         * @brief Who lives there and how close it is to a change.
+         *
+         * Optional, and absent means the bottom level, a fresh countdown
+         * each way and nobody living there -- which is both what a house
+         * that has never grown holds and what a version-3 file written
+         * before housing existed says.
+         *
+         * **The component itself rather than a record of its fields**,
+         * unlike SavedWalker and SavedErrand beside it, and the
+         * difference is that those two hold a *link*: an ecs::Entity
+         * means nothing in a file, so a saved one has to name a building
+         * by index instead. A Household names nothing outside itself, so
+         * there is no second reading of it for a saved form to be. The
+         * fields are still written out one by one in SaveHousing.cpp,
+         * which is where the format is stated.
+         */
+        std::optional<Household> household = std::nullopt;
 
         [[nodiscard]] bool operator==(const SavedBuilding &other) const
             = default;

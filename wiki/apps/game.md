@@ -380,6 +380,56 @@ It is derived from a walker's position, which is derived from a route, which is 
 The errand's destination is an index into the buildings array rather than the `ecs::Entity` it is in memory, because a restore destroys and recreates every entity -- and it is refused when it points past the end of that array rather than repaired, exactly as `home` is.
 `CityGrid` carries both across a city switch for the reason it carries every countdown: a city reopened with them reset is a city whose producers finish in lockstep from then on, and a loaded cart that lost its errand would be a cart holding goods nobody can name.
 
+## Housing evolution, and the ladder that can only demand what a seller carries
+
+**A house has a tier, and the tier is what the rest of the city is arranged to raise.**
+`HousingLevel` is `Tent`, `Shack`, `Hovel` and `Cottage` — four, which is the fewest that makes both "grows" and "shrinks" ordinary rather than each being the edge of the ladder.
+`kHousingRequirements` says what each tier demands: a desirability at the house's own cell, a flag per `Service` that must still be reaching it, an amount per `Resource` on its shelves, and the population it houses when full.
+`HousingSystem` counts a house that holds the *next* tier's row toward `kEvolvePeriodTicks`, and one that has stopped holding *its own* row toward `kDevolvePeriodTicks`.
+
+**The bottom row demands nothing, and that is load-bearing rather than decorative.**
+A house on bare ground meets `Tent` by construction, so there is no rule anywhere saying it cannot devolve below the bottom — it simply never fails the row it is standing on.
+The top tier is handled by the ladder running out rather than by a check of its own, for the same reason.
+
+**Every demand rises with the level, and a `static_assert` holds the table to it.**
+That is what makes the two arms mutually exclusive: meeting the next row implies meeting this one, so a house is never owed a promotion and a demotion in the same tick, and `HousingSystem` depends on that rather than checking for it.
+
+**The ladder may only demand food, and the `static_assert` saying so is the most useful line in the header.**
+A market seller is the one walker that ever hands goods to a house, and `carriedResource()` says it sets out with exactly one resource.
+Clay only ever reaches a storehouse, and pottery is not made in a running city at all, because nothing yet carts clay into a workshop — `Store.hpp` explains why that would need a walker kind this round has not got.
+A tier demanding either would have been a rung no city could ever stand on, and nothing would have said so; the assertion turns that into a build failure the day somebody adds a cart that changes the answer.
+The desirability figures are read off `kDesirabilityOf` and its integer falloff rather than guessed: a well truncates to nothing one cell away, so a threshold of 1 means a market or a doctor within two cells and 2 means both.
+
+**Coverage is asked whether it reaches at all, never how much of it is left.**
+A coverage countdown's whole job is to say whether somebody came recently, and a threshold on it would be a second, unstated period sitting on top of `kCoverageFull`.
+
+**Evolving is per house, out of that house's own state, so no order over entities exists to get wrong.**
+Nothing here splits a limited amount and nothing one house does changes what another is owed, which is what lets `HousingSystem` read `ecs::View` directly.
+**There is deliberately no merging of 1x1 houses into blocks**: it is the one housing rule that would need a total order over *neighbours* rather than over one entity's own fields, and it would have doubled the work for a picture.
+
+`Household` is an optional component holding the level, the two countdowns and the occupancy, and an absent one means the bottom tier, a fresh countdown each way and nobody living there.
+A house is given one the first time it has something to say and never before, exactly as a building is given a `Coverage` the first time somebody reaches it — a default component and no component are one thing, and writing one anyway would put a member in every save file for every house that has never done anything.
+**The occupancy is stored here and moved by nothing in this increment**: a tier's capacity and a house's occupancy are one fact, so the number belongs beside the tier, and the rules that raise and lower it are a later workstream's.
+`HousingQuery.hpp` is the read-only face of all of it, and every answer is total — `levelOf()` on a well, on a road, or on a handle whose entity is long dead is `Tent` rather than a throw.
+It says `populationCapacityOf()` rather than the `capacityOf()` the plan sketched, because `Store.hpp` already answers `capacityOf(BuildingKind)` about how much of a *good* a building holds, and two overloads of one name meaning two different capacities is an ambiguity a reader would have to resolve by looking at the argument's type.
+
+**`"settle"` is a phase of its own, after `"haul"` and before `"observe"`.**
+A phase is where the World's buffers swap, so a house is judged on the shelves this tick's sellers filled rather than the previous tick's, and on the desirability field the `"serve"` phase rebuilt two phases earlier.
+`HousingSystem` writes `Household` and nothing else — it never touches `Building` at all — which is what lets a later workstream put its own systems beside it in that phase.
+
+**No `game.house_evolved` event, and this is the tempting one.**
+It reads like a notification worth recording.
+It is a pure function of coverage, stock and desirability, every one of which a replay regenerates from the clicks that built the district, so a recorder would write it beside those clicks and a replay would grow the house twice.
+
+**Nothing here bumped the save format either.**
+`SavedBuilding` gained one optional `"household"` object, and absent means the bottom tier, a fresh countdown each way and nobody living there — which is exactly what a version-3 file written before housing said.
+It is one object with all four members required rather than four optional members side by side, because the four only ever mean anything together: a record naming a tier with no countdown beside it is a house half-written, and the validator refuses one rather than reading three fields and guessing the fourth.
+The countdowns are persisted rather than reset, for the reason `Building`'s three are — two houses reopened with the same number grow and shrink in lockstep from then on, which is precisely the lockstep a per-building countdown exists to avoid.
+`CityGrid` carries the household across a city switch on the same terms, and through `setHousehold()` rather than `World::add` directly, exactly as it carries coverage.
+
+`BuildingView` carries the level and `GameSummary` therefore compares it, so a run and its replay disagreeing about a house growing fails `ReplayDeterminismTest` directly; `BuildingSprite` carries a copy so the hover panel can name the tier, and it names it rather than numbering it, since "level: 2" is a number a reader has to look up.
+`HousingSystemTest` is a loop over `kHousingRequirements` rather than four hand-written cities — a row added to that table is a row it already covers, which is the whole reason the requirements are a table and not a switch.
+
 ## Future work
 
 **`UiSink`/`UiOverlay`/`Toolbar` should adopt `ui::applyHover()` next.**

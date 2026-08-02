@@ -13,6 +13,8 @@
 #include "antwika/game/Errand.hpp"
 #include "antwika/game/GameSummary.hpp"
 #include "antwika/game/GridExtent.hpp"
+#include "antwika/game/Household.hpp"
+#include "antwika/game/HousingLevel.hpp"
 #include "antwika/game/Production.hpp"
 #include "antwika/game/SaveGame.hpp"
 #include "antwika/game/SceneSnapshot.hpp"
@@ -45,6 +47,9 @@ namespace
     using antwika::game::GameSummary;
     using antwika::game::GridExtent;
     using antwika::game::HoverReadout;
+    using antwika::game::Household;
+    using antwika::game::HousingLevel;
+    using antwika::game::HousingRequirement;
     using antwika::game::RoadPlan;
     using antwika::game::SaveGame;
     using antwika::game::SceneSnapshot;
@@ -93,6 +98,9 @@ namespace
             base, [](BuildingView &b) { b.coverage[0] = 99; });
         expectMemberCompared(
             base, [](BuildingView &b) { b.coverage[3] = 99; });
+        expectMemberCompared(
+            base,
+            [](BuildingView &b) { b.level = HousingLevel::Cottage; });
     }
 
     TEST(SceneSnapshotTest, BuildingSpriteEqualityComparesEveryField)
@@ -115,6 +123,9 @@ namespace
             base, [](BuildingSprite &b) { b.coverage[0] = 99; });
         expectMemberCompared(
             base, [](BuildingSprite &b) { b.coverage[3] = 99; });
+        expectMemberCompared(
+            base,
+            [](BuildingSprite &b) { b.level = HousingLevel::Cottage; });
     }
 
     [[nodiscard]] SceneSnapshot populatedSnapshot()
@@ -332,6 +343,46 @@ namespace
 
         expectMemberCompared(
             base, [](Production &p) { p.ticksUntilOutput = 0; });
+    }
+
+    TEST(HousingRequirementTest, EqualityComparesEveryField)
+    {
+        const HousingRequirement base{
+            .desirability = 2,
+            .services = {true, false, true, false},
+            .goods = {10, 0, 0},
+            .populationCapacity = 8};
+
+        expectMemberCompared(
+            base, [](HousingRequirement &r) { r.desirability = 0; });
+        expectMemberCompared(
+            base,
+            [](HousingRequirement &r) { r.services[0] = false; });
+        expectMemberCompared(
+            base, [](HousingRequirement &r) { r.services[2] = false; });
+        expectMemberCompared(
+            base, [](HousingRequirement &r) { r.goods[0] = 0; });
+        expectMemberCompared(
+            base,
+            [](HousingRequirement &r) { r.populationCapacity = 0; });
+    }
+
+    TEST(HouseholdComponentTest, EqualityComparesEveryField)
+    {
+        const Household base{
+            .level = HousingLevel::Hovel,
+            .ticksUntilEvolve = 7,
+            .ticksUntilDevolve = 9,
+            .population = 11};
+
+        expectMemberCompared(
+            base, [](Household &h) { h.level = HousingLevel::Tent; });
+        expectMemberCompared(
+            base, [](Household &h) { h.ticksUntilEvolve = 0; });
+        expectMemberCompared(
+            base, [](Household &h) { h.ticksUntilDevolve = 0; });
+        expectMemberCompared(
+            base, [](Household &h) { h.population = 0; });
     }
 
 } // namespace
