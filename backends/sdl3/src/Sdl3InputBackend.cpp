@@ -21,103 +21,111 @@ namespace antwika::input::sdl3
 
     namespace
     {
-        // SDL's virtual keycodes, not its scancodes.
-        // A replay stores the name of the key the user pressed.
-        // That is the layout-aware one.
-        constexpr auto kKeys = std::to_array<std::pair<SDL_Keycode, Key>>({
-            {SDLK_A, Key::A},
-            {SDLK_B, Key::B},
-            {SDLK_C, Key::C},
-            {SDLK_D, Key::D},
-            {SDLK_E, Key::E},
-            {SDLK_F, Key::F},
-            {SDLK_G, Key::G},
-            {SDLK_H, Key::H},
-            {SDLK_I, Key::I},
-            {SDLK_J, Key::J},
-            {SDLK_K, Key::K},
-            {SDLK_L, Key::L},
-            {SDLK_M, Key::M},
-            {SDLK_N, Key::N},
-            {SDLK_O, Key::O},
-            {SDLK_P, Key::P},
-            {SDLK_Q, Key::Q},
-            {SDLK_R, Key::R},
-            {SDLK_S, Key::S},
-            {SDLK_T, Key::T},
-            {SDLK_U, Key::U},
-            {SDLK_V, Key::V},
-            {SDLK_W, Key::W},
-            {SDLK_X, Key::X},
-            {SDLK_Y, Key::Y},
-            {SDLK_Z, Key::Z},
-            {SDLK_0, Key::Digit0},
-            {SDLK_1, Key::Digit1},
-            {SDLK_2, Key::Digit2},
-            {SDLK_3, Key::Digit3},
-            {SDLK_4, Key::Digit4},
-            {SDLK_5, Key::Digit5},
-            {SDLK_6, Key::Digit6},
-            {SDLK_7, Key::Digit7},
-            {SDLK_8, Key::Digit8},
-            {SDLK_9, Key::Digit9},
-            {SDLK_F1, Key::F1},
-            {SDLK_F2, Key::F2},
-            {SDLK_F3, Key::F3},
-            {SDLK_F4, Key::F4},
-            {SDLK_F5, Key::F5},
-            {SDLK_F6, Key::F6},
-            {SDLK_F7, Key::F7},
-            {SDLK_F8, Key::F8},
-            {SDLK_F9, Key::F9},
-            {SDLK_F10, Key::F10},
-            {SDLK_F11, Key::F11},
-            {SDLK_F12, Key::F12},
-            {SDLK_LEFT, Key::ArrowLeft},
-            {SDLK_RIGHT, Key::ArrowRight},
-            {SDLK_UP, Key::ArrowUp},
-            {SDLK_DOWN, Key::ArrowDown},
-            {SDLK_ESCAPE, Key::Escape},
-            {SDLK_RETURN, Key::Enter},
-            {SDLK_SPACE, Key::Space},
-            {SDLK_TAB, Key::Tab},
-            {SDLK_BACKSPACE, Key::Backspace},
-            {SDLK_DELETE, Key::Delete},
-            {SDLK_INSERT, Key::Insert},
-            {SDLK_HOME, Key::Home},
-            {SDLK_END, Key::End},
-            {SDLK_PAGEUP, Key::PageUp},
-            {SDLK_PAGEDOWN, Key::PageDown},
-            {SDLK_MINUS, Key::Minus},
-            {SDLK_EQUALS, Key::Equal},
-            {SDLK_LEFTBRACKET, Key::LeftBracket},
-            {SDLK_RIGHTBRACKET, Key::RightBracket},
-            {SDLK_BACKSLASH, Key::Backslash},
-            {SDLK_SEMICOLON, Key::Semicolon},
-            {SDLK_APOSTROPHE, Key::Apostrophe},
-            {SDLK_GRAVE, Key::Grave},
-            {SDLK_COMMA, Key::Comma},
-            {SDLK_PERIOD, Key::Period},
-            {SDLK_SLASH, Key::Slash},
-            {SDLK_CAPSLOCK, Key::CapsLock},
-            {SDLK_LSHIFT, Key::LeftShift},
-            {SDLK_RSHIFT, Key::RightShift},
-            {SDLK_LCTRL, Key::LeftControl},
-            {SDLK_RCTRL, Key::RightControl},
-            {SDLK_LALT, Key::LeftAlt},
-            {SDLK_RALT, Key::RightAlt},
-            {SDLK_LGUI, Key::LeftSuper},
-            {SDLK_RGUI, Key::RightSuper},
+        // SDL's scancodes, not its virtual keycodes.
+        // A Key names where a key is, and a scancode is that number.
+        // A keycode is the layout's answer instead.
+        // Reading one loses every key a non-US layout moves.
+        // The key at [ on a Swedish board reports SDLK_ARING.
+        // No row below names that, so it would arrive as nothing.
+        // What a key types is the application's own table to keep.
+        // apps/music_editor's EditorKeys is that table.
+        // A recording holds the position rather than the character.
+        // So a session replays the same whatever layout is set.
+        constexpr auto kKeys = std::to_array<std::pair<SDL_Scancode, Key>>({
+            {SDL_SCANCODE_A, Key::A},
+            {SDL_SCANCODE_B, Key::B},
+            {SDL_SCANCODE_C, Key::C},
+            {SDL_SCANCODE_D, Key::D},
+            {SDL_SCANCODE_E, Key::E},
+            {SDL_SCANCODE_F, Key::F},
+            {SDL_SCANCODE_G, Key::G},
+            {SDL_SCANCODE_H, Key::H},
+            {SDL_SCANCODE_I, Key::I},
+            {SDL_SCANCODE_J, Key::J},
+            {SDL_SCANCODE_K, Key::K},
+            {SDL_SCANCODE_L, Key::L},
+            {SDL_SCANCODE_M, Key::M},
+            {SDL_SCANCODE_N, Key::N},
+            {SDL_SCANCODE_O, Key::O},
+            {SDL_SCANCODE_P, Key::P},
+            {SDL_SCANCODE_Q, Key::Q},
+            {SDL_SCANCODE_R, Key::R},
+            {SDL_SCANCODE_S, Key::S},
+            {SDL_SCANCODE_T, Key::T},
+            {SDL_SCANCODE_U, Key::U},
+            {SDL_SCANCODE_V, Key::V},
+            {SDL_SCANCODE_W, Key::W},
+            {SDL_SCANCODE_X, Key::X},
+            {SDL_SCANCODE_Y, Key::Y},
+            {SDL_SCANCODE_Z, Key::Z},
+            {SDL_SCANCODE_0, Key::Digit0},
+            {SDL_SCANCODE_1, Key::Digit1},
+            {SDL_SCANCODE_2, Key::Digit2},
+            {SDL_SCANCODE_3, Key::Digit3},
+            {SDL_SCANCODE_4, Key::Digit4},
+            {SDL_SCANCODE_5, Key::Digit5},
+            {SDL_SCANCODE_6, Key::Digit6},
+            {SDL_SCANCODE_7, Key::Digit7},
+            {SDL_SCANCODE_8, Key::Digit8},
+            {SDL_SCANCODE_9, Key::Digit9},
+            {SDL_SCANCODE_F1, Key::F1},
+            {SDL_SCANCODE_F2, Key::F2},
+            {SDL_SCANCODE_F3, Key::F3},
+            {SDL_SCANCODE_F4, Key::F4},
+            {SDL_SCANCODE_F5, Key::F5},
+            {SDL_SCANCODE_F6, Key::F6},
+            {SDL_SCANCODE_F7, Key::F7},
+            {SDL_SCANCODE_F8, Key::F8},
+            {SDL_SCANCODE_F9, Key::F9},
+            {SDL_SCANCODE_F10, Key::F10},
+            {SDL_SCANCODE_F11, Key::F11},
+            {SDL_SCANCODE_F12, Key::F12},
+            {SDL_SCANCODE_LEFT, Key::ArrowLeft},
+            {SDL_SCANCODE_RIGHT, Key::ArrowRight},
+            {SDL_SCANCODE_UP, Key::ArrowUp},
+            {SDL_SCANCODE_DOWN, Key::ArrowDown},
+            {SDL_SCANCODE_ESCAPE, Key::Escape},
+            {SDL_SCANCODE_RETURN, Key::Enter},
+            {SDL_SCANCODE_SPACE, Key::Space},
+            {SDL_SCANCODE_TAB, Key::Tab},
+            {SDL_SCANCODE_BACKSPACE, Key::Backspace},
+            {SDL_SCANCODE_DELETE, Key::Delete},
+            {SDL_SCANCODE_INSERT, Key::Insert},
+            {SDL_SCANCODE_HOME, Key::Home},
+            {SDL_SCANCODE_END, Key::End},
+            {SDL_SCANCODE_PAGEUP, Key::PageUp},
+            {SDL_SCANCODE_PAGEDOWN, Key::PageDown},
+            {SDL_SCANCODE_MINUS, Key::Minus},
+            {SDL_SCANCODE_EQUALS, Key::Equal},
+            {SDL_SCANCODE_LEFTBRACKET, Key::LeftBracket},
+            {SDL_SCANCODE_RIGHTBRACKET, Key::RightBracket},
+            {SDL_SCANCODE_BACKSLASH, Key::Backslash},
+            {SDL_SCANCODE_SEMICOLON, Key::Semicolon},
+            {SDL_SCANCODE_APOSTROPHE, Key::Apostrophe},
+            {SDL_SCANCODE_GRAVE, Key::Grave},
+            {SDL_SCANCODE_COMMA, Key::Comma},
+            {SDL_SCANCODE_PERIOD, Key::Period},
+            {SDL_SCANCODE_SLASH, Key::Slash},
+            {SDL_SCANCODE_NONUSBACKSLASH, Key::IntlBackslash},
+            {SDL_SCANCODE_CAPSLOCK, Key::CapsLock},
+            {SDL_SCANCODE_LSHIFT, Key::LeftShift},
+            {SDL_SCANCODE_RSHIFT, Key::RightShift},
+            {SDL_SCANCODE_LCTRL, Key::LeftControl},
+            {SDL_SCANCODE_RCTRL, Key::RightControl},
+            {SDL_SCANCODE_LALT, Key::LeftAlt},
+            {SDL_SCANCODE_RALT, Key::RightAlt},
+            {SDL_SCANCODE_LGUI, Key::LeftSuper},
+            {SDL_SCANCODE_RGUI, Key::RightSuper},
         });
 
-        // Every Key has an SDL keycode, or some key could never arrive.
+        // Every Key has an SDL scancode, or some key could never arrive.
         static_assert(kKeys.size() == kKeyCount);
 
-        [[nodiscard]] std::optional<Key> keyOf(SDL_Keycode keycode)
+        [[nodiscard]] std::optional<Key> keyOf(SDL_Scancode scancode)
         {
             for (const auto &[sdlKey, key] : kKeys)
             {
-                if (sdlKey == keycode)
+                if (sdlKey == scancode)
                 {
                     return key;
                 }
@@ -189,7 +197,7 @@ namespace antwika::input::sdl3
             {
             case SDL_EVENT_KEY_DOWN:
             {
-                const auto key = keyOf(event.key.key);
+                const auto key = keyOf(event.key.scancode);
                 if (!key)
                 {
                     return std::nullopt;
@@ -201,7 +209,7 @@ namespace antwika::input::sdl3
             }
             case SDL_EVENT_KEY_UP:
             {
-                const auto key = keyOf(event.key.key);
+                const auto key = keyOf(event.key.scancode);
                 if (!key)
                 {
                     return std::nullopt;

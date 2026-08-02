@@ -96,6 +96,7 @@ namespace antwika::input
             {Key::Comma, "Comma"},
             {Key::Period, "Period"},
             {Key::Slash, "Slash"},
+            {Key::IntlBackslash, "IntlBackslash"},
             {Key::CapsLock, "CapsLock"},
             {Key::LeftShift, "LeftShift"},
             {Key::RightShift, "RightShift"},

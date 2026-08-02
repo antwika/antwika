@@ -60,6 +60,12 @@ Folding to one set of modifiers per tick loses the distinction between Ctrl+S wi
 `InputEventCodec` encodes an edge as an `input.*` event and writes `"key": "Escape"`, not a platform keycode, so a session recorded under one backend replays under another.
 These are the events a replay exists to carry, so nothing downstream may quietly drop one.
 
+**A `Key` is where a key *is*, so the sdl3 backend reads SDL's scancode rather than its keycode.**
+That is what the enumeration has always said -- "named after what the key is rather than the character it produces" -- and the two only differ once somebody's window system is set to a layout other than the American one.
+Then a keycode is the layout's answer: the key at `[` on a Swedish board reports `SDLK_ARING`, which the table cannot name, so that key would arrive as nothing at all and the score it was meant to type would be untypeable.
+`Key::IntlBackslash` is here for the same reason -- the extra key an ISO board has between the left shift and Z, which is where a Swedish layout keeps its angle brackets.
+What a key *types* is an application's own table to keep, which is what [music_editor](../apps/music_editor.md)'s `EditorKeys` is, and a recording holds the position rather than the character, so a session records and replays the same whatever either machine is set to.
+
 **What lands in a recording is decided by where the recorder sits rather than by a list of names it skips.**
 `event::TickEventRecorder` is an ordinary `ITickEventSink` an app registers on its `TickedEventDispatcher`, and it records unconditionally, so what it sees is exactly what an `ITickEventSource` supplied for that tick.
 Never `engine.tick`, which `Engine::step()` dispatches for itself after `EngineLoop` has drained the source, and never anything a sink derives further down the tick path, like the tile [`game`](../apps/game.md)'s `GridSink` lays from a click.

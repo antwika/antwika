@@ -103,6 +103,14 @@ namespace antwika::input
         Period,
         Slash,
 
+        // The extra key an ISO keyboard has and an ANSI one does not.
+        // It sits between the left shift and Z.
+        // A layout puts its own characters there.
+        // On a Swedish board they are the angle brackets.
+        // So a vocabulary of positions has to name it.
+        // Without it every board with one loses a key it prints.
+        IntlBackslash,
+
         CapsLock,
         LeftShift,
         RightShift,
