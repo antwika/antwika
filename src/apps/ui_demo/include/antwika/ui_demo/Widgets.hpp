@@ -51,6 +51,9 @@ namespace antwika::ui_demo
         /** @brief The row whose children have less room than they ask. */
         inline constexpr WidgetId kSqueezed{11};
 
+        /** @brief The many-line pane the text-area page shows. */
+        inline constexpr WidgetId kArea{13};
+
         /**
          * @brief An id no frame ever declares.
          *
@@ -87,6 +90,7 @@ namespace antwika::ui_demo
             widgets::kMarked,
             widgets::kSqueezed,
             widgets::kNeverDeclared,
+            widgets::kArea,
             widgets::kFirstPage,
             widgets::kFirstAccent),
         "every widget in this demo needs its own id");

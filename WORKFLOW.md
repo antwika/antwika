@@ -22,7 +22,7 @@ In rough order of how much a candidate is worth:
   When the documentation and the tree disagree, the tree is what runs, but the *intent* in `CLAUDE.md` is still the thing to preserve: the fix is usually to re-word the rule against the mechanism that replaced it rather than to drop the rule.
   `docs/` holds only documents that are still normative, so a plan document whose work has shipped should already have been deleted.
   `wiki/` is the public face and drifts silently, so it is checked against the tree every iteration rather than when somebody remembers.
-- **What the gates say.** The three checker scripts, the coverage gate, and CI.
+- **What the gates say.** The four checker scripts, the coverage gate, and CI.
 - **An audit of one area.** A read-only agent over one subsystem, reporting what it found, is how an otherwise empty iteration finds work -- and its findings are used *in that iteration* rather than written down for a later one.
 
 ## One iteration
@@ -80,17 +80,18 @@ For each branch, in the order the agents finished:
 
 1. `git merge --no-ff <task>` into `main`.
 2. Build and run the affected tests.
-3. Only once every branch is merged, run the three checker scripts and then the full suite:
+3. Only once every branch is merged, run the four checker scripts and then the full suite:
 
 ```sh
 python3 scripts/check_unused_test_doubles.py
 python3 scripts/check_one_sentence_per_line.py
 python3 scripts/check_line_length.py
+python3 scripts/check_readme_modules.py
 cmake --build build -j24
 SDL_VIDEODRIVER=dummy SDL_AUDIO_DRIVER=dummy ctest --test-dir build --output-on-failure
 ```
 
-The checkers come first because they are the first thing CI runs, they are the most common failure -- an 80-character line, or a comment holding two sentences -- and all three finish in under a second.
+The checkers come first because they are the first thing CI runs, they are the most common failure -- an 80-character line, a comment holding two sentences, or a module README does not list -- and all four finish in under a second.
 Catching a style violation in one second beats catching it after a twenty-minute matrix.
 
 **Those two environment variables are not optional.**
@@ -98,9 +99,9 @@ A bare `ctest --test-dir build` reports dozens of failures on a completely healt
 It is the single most expensive trap here for an autonomous agent, because it looks exactly like a regression the agent just caused.
 `xvfb-run -a` works too and is what CI uses for the gfx and input legs, but the sound leg runs under `SDL_AUDIO_DRIVER=dummy` with no display *on purpose*: a sound backend that needed a display would have quietly taken a dependency on video, and Xvfb is exactly what would hide that.
 
-Note also that `build/` is not the configuration `CLAUDE.md`'s default commands describe.
-Its cache holds the sdl3 backends, because the untracked `.vscode/gfx-backend` and `.vscode/sound-backend` files select them and `scripts/build.sh` reads those on every build.
-An agent assuming a `null` build will misread which targets exist.
+Note also that `build/` need not be the configuration `CLAUDE.md`'s default commands describe.
+Which backends its cache holds is whatever the untracked `.vscode/<subsystem>-backend` files select, because `scripts/build.sh` reads those on every build -- and a missing file means `null`.
+An agent assuming either configuration will misread which targets exist; `build/CMakeCache.txt`'s `ANTWIKA_*_BACKEND` entries are the machine's actual answer.
 
 A merge that breaks the build is reverted rather than repaired in place, and what went wrong is recorded in `STATUS.md` against the task.
 

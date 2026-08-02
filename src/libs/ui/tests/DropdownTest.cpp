@@ -17,6 +17,8 @@
 #include "antwika/ui/DropdownSpec.hpp"
 #include "antwika/ui/Keyboard.hpp"
 #include "antwika/ui/Pointer.hpp"
+#include "antwika/ui/Sizing.hpp"
+#include "antwika/ui/TextAreaSpec.hpp"
 #include "antwika/ui/Theme.hpp"
 #include "antwika/ui/WidgetId.hpp"
 
@@ -34,6 +36,7 @@ using antwika::ui::kNoOption;
 using antwika::ui::kNoWidget;
 using antwika::ui::OptionChoice;
 using antwika::ui::Pointer;
+using antwika::ui::TextAreaSpec;
 using antwika::ui::Theme;
 using antwika::ui::WidgetId;
 
@@ -287,6 +290,60 @@ TEST(DropdownTest, TheOpenListIsHitBeforeWhateverItCovers)
     ASSERT_TRUE(interactions.chosen.has_value());
     EXPECT_EQ(0U, interactions.chosen->index);
     EXPECT_EQ(WidgetId{100}, interactions.activated);
+}
+
+// The list is in front even where its options carry no name.
+// A press there chooses; it must never also press what is beneath.
+TEST(DropdownTest, AnUnnamedOptionOverAButtonPressesNoButton)
+{
+    auto spec = pickerSpec();
+    spec.optionIdBase = kNoWidget;
+    spec.open = true;
+
+    const Pointer pointer{
+        .position = Point{.x = 2, .y = 10}, .pressed = true};
+
+    Context ui{kCanvas, plainTheme(), pointer};
+
+    ui.dropdown(spec);
+    ui.button("below", {.id = kBelow});
+
+    const auto interactions = ui.finish().interactions;
+
+    ASSERT_TRUE(interactions.chosen.has_value());
+    EXPECT_EQ(0U, interactions.chosen->index);
+    EXPECT_EQ(kNoWidget, interactions.activated);
+    EXPECT_EQ(kNoWidget, interactions.hovered);
+}
+
+// A press an overlay claims reaches no text beneath it either.
+// The choice is reported; the caret and the pane must not move.
+TEST(DropdownTest, AnOptionOverAFocusedAreaMovesNoCaret)
+{
+    auto spec = pickerSpec();
+    spec.open = true;
+
+    // Inside the second option, which hangs over the area's text.
+    const Pointer pointer{
+        .position = Point{.x = 2, .y = 18}, .pressed = true};
+
+    Context ui{kCanvas, plainTheme(), pointer};
+
+    ui.dropdown(spec);
+    ui.textArea(TextAreaSpec{
+        .id = kBelow,
+        .width = antwika::ui::kGrow,
+        .height = antwika::ui::kGrow,
+        .text = "abc\ndef\nghi",
+        .cursor = 0,
+        .focused = true});
+
+    const auto interactions = ui.finish().interactions;
+
+    ASSERT_TRUE(interactions.chosen.has_value());
+    EXPECT_EQ(1U, interactions.chosen->index);
+    EXPECT_FALSE(interactions.edit.has_value());
+    EXPECT_FALSE(interactions.scrolled.has_value());
 }
 
 TEST(DropdownTest, AnOpenListWithNoOptionsDrawsJustItsPanel)

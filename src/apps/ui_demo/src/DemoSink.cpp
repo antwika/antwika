@@ -145,6 +145,14 @@ namespace antwika::ui_demo
             interactions.activated == kNoWidget ? interactions.focused
                                                 : interactions.activated);
 
+        // The pane hands back the line it is actually showing.
+        // Stored and handed forward, so the report settles at once.
+        // The pane is this demo's one area, so the report is its.
+        if (interactions.scrolled.has_value())
+        {
+            state.setAreaScroll(interactions.scrolled->line);
+        }
+
         if (interactions.chosen.has_value())
         {
             choose(*interactions.chosen);
@@ -183,6 +191,13 @@ namespace antwika::ui_demo
 
     void DemoSink::edit(const TextEdit &change)
     {
+        // Two editable widgets, told apart by the id the edit names.
+        if (change.field == widgets::kArea)
+        {
+            state.setArea(change.text, change.cursor, change.anchor);
+            return;
+        }
+
         state.setText(change.text, change.cursor);
 
         if (change.submitted)

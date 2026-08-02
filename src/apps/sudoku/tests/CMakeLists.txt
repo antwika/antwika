@@ -17,7 +17,6 @@ add_executable(antwika_sudoku_tests
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/Sudoku.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/SudokuOptions.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/SudokuScene.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/../src/TickLimitSource.cpp
     BoardLayoutTest.cpp
     BoardSinkTest.cpp
     BoardTest.cpp
@@ -35,7 +34,6 @@ add_executable(antwika_sudoku_tests
     SudokuOptionsTest.cpp
     SudokuSceneTest.cpp
     SudokuSolverIntegrationTest.cpp
-    TickLimitSourceTest.cpp
     UnsolvablePuzzleTest.cpp
 )
 

@@ -1,6 +1,9 @@
 #include "antwika/gfx/ViewportRenderer.hpp"
 
+#include <cstddef>
 #include <cstdint>
+
+#include "antwika/gfx/Glyphs.hpp"
 
 namespace antwika::gfx
 {
@@ -41,11 +44,39 @@ namespace antwika::gfx
         std::uint32_t scale,
         Color color)
     {
-        inner.drawText(
-            transform.toWindow(origin),
-            text,
-            transform.toWindowScale(scale),
-            color);
+        const auto drawn = transform.toWindowScale(scale);
+
+        // Whether one call lands every glyph where the grid says.
+        // A backend steps kGlyphAdvance * drawn window pixels a glyph.
+        // The transformed grid steps that times numerator / denominator.
+        // The two agree exactly when the scaled scale divides out whole.
+        const bool exact =
+            (static_cast<std::uint64_t>(scale) * transform.numerator)
+                % transform.denominator
+            == 0;
+
+        if (exact)
+        {
+            inner.drawText(transform.toWindow(origin), text, drawn, color);
+            return;
+        }
+
+        // Anchor every glyph on its own transformed cell instead.
+        // A run drawn whole drifts off the grid a pixel a glyph.
+        // A caret, a highlight's ground and every cut piece sit on it.
+        // So the drift reads as text sliding against its own marks.
+        for (std::size_t at = 0; at < text.size(); ++at)
+        {
+            const auto step = static_cast<std::int64_t>(at)
+                              * kGlyphAdvance * scale;
+
+            const Point cell{
+                .x = static_cast<std::int32_t>(origin.x + step),
+                .y = origin.y};
+
+            inner.drawText(
+                transform.toWindow(cell), text.substr(at, 1), drawn, color);
+        }
     }
 
     std::unique_ptr<ITexture> ViewportRenderer::createTexture(

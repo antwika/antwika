@@ -1,6 +1,7 @@
 find_package(GTest REQUIRED)
 
 add_executable(antwika_replay_tests
+    DocumentDepthTest.cpp
     EventJsonTest.cpp
     JsonShapesTest.cpp
     MigrationChainTest.cpp

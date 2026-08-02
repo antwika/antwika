@@ -55,6 +55,17 @@ TEST(GridGraphTest, Constructor_ThrowsOnANonPositiveHeight)
         PathfindingError);
 }
 
+// 65536 by 65536 is one cell more than int32 can number.
+// nodeAt() and cellOf() run in int32, so such a grid must not build.
+TEST(GridGraphTest, Constructor_ThrowsWhenTheCellCountLeavesInt32)
+{
+    // The refusal comes before the passability-count comparison.
+    // So the vector stays empty rather than half a gigabyte of bools.
+    EXPECT_THROW(
+        static_cast<void>(GridGraph(65536, 65536, std::vector<bool>())),
+        PathfindingError);
+}
+
 TEST(GridGraphTest, Constructor_ThrowsWhenThePassabilityCountIsWrong)
 {
     EXPECT_THROW(

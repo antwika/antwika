@@ -72,6 +72,29 @@ TEST(InteractionsTest, Equality_DiffersOnTheFocusedWidget)
     EXPECT_NE(kBoth, other);
 }
 
+// The press report compares on both of its fields.
+TEST(InteractionsTest, Equality_DiffersOnWhereAPressLanded)
+{
+    const antwika::ui::AreaPress inText{
+        .area = WidgetId{7}, .home = antwika::ui::DragHome::Text};
+
+    antwika::ui::AreaPress same = inText;
+    EXPECT_EQ(inText, same);
+
+    antwika::ui::AreaPress elsewhere = inText;
+    elsewhere.area = WidgetId{8};
+    EXPECT_NE(inText, elsewhere);
+
+    antwika::ui::AreaPress onTrack = inText;
+    onTrack.home = antwika::ui::DragHome::Track;
+    EXPECT_NE(inText, onTrack);
+
+    Interactions left;
+    Interactions right;
+    right.areaPress = inText;
+    EXPECT_NE(left, right);
+}
+
 TEST(InteractionsTest, Equality_DiffersOnWhetherThePointerIsOverTheUi)
 {
     constexpr Interactions other{

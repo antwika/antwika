@@ -1,8 +1,11 @@
 #include "antwika/atlas_editor/EditorOptions.hpp"
 
+#include <antwika/app/MaxTicks.hpp>
+
 #include <array>
 #include <charconv>
 #include <cstdint>
+#include <limits>
 #include <optional>
 #include <string_view>
 #include <system_error>
@@ -16,7 +19,6 @@ namespace antwika::atlas_editor
         constexpr std::string_view kOutFlag = "--out";
         constexpr std::string_view kSheetFlag = "--sheet";
         constexpr std::string_view kTileFlag = "--tile";
-        constexpr std::string_view kMaxTicksFlag = "--max-ticks";
 
         constexpr std::array kFlags{
             antwika::cli::FlagSpec{
@@ -40,7 +42,7 @@ namespace antwika::atlas_editor
                 .help = "What the grid overlay's slots are (default "
                         "128x64)."},
             antwika::cli::FlagSpec{
-                .name = kMaxTicksFlag,
+                .name = antwika::app::kMaxTicksFlag,
                 .valueName = "<n>",
                 .help = "Give up after <n> ticks (default 90000; 0 "
                         "runs until the window is closed)."}};
@@ -76,8 +78,17 @@ namespace antwika::atlas_editor
         // Zero is refused rather than taken.
         // A sheet with no extent is one nothing can be painted on.
         // An ignored flag leaves a default that can be.
+        //
+        // So is anything past 32 bits, for a worse reason.
+        // The cast below used to keep the low bits in silence.
+        // "4294967297x64" silently opened a 1x64 sheet.
+        // The sheet's size is state a replay has to match exactly.
+        constexpr std::uint64_t kMostExtent =
+            std::numeric_limits<std::uint32_t>::max();
+
         if (!width.has_value() || !height.has_value() || *width == 0
-            || *height == 0)
+            || *height == 0 || *width > kMostExtent
+            || *height > kMostExtent)
         {
             return std::nullopt;
         }
@@ -116,21 +127,9 @@ namespace antwika::atlas_editor
             }
         }
 
-        if (const auto ticks = parsed.value(kMaxTicksFlag); ticks)
-        {
-            const auto given = parseNumber(*ticks);
-
-            // Zero means no cap at all.
-            // That is what somebody at a real window asks for.
-            // Anything unreadable leaves the default in place.
-            if (given.has_value())
-            {
-                options.maxTicks = *given == 0
-                                       ? std::optional<
-                                             antwika::time::Tick>{}
-                                       : std::optional{*given};
-            }
-        }
+        options.maxTicks = antwika::app::maxTicksOf(
+            parsed.value(antwika::app::kMaxTicksFlag),
+            options.maxTicks);
 
         return options;
     } // GCOVR_EXCL_LINE

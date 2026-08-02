@@ -47,4 +47,10 @@ The pre-prune snapshot `Solver::solve()` compares against is one buffer assigned
 That is safe because a left value's verdict reads only the *right* domain and vice versa, so clearing a bit behind the scanning cursor cannot change a later verdict — which is why the scans run over the alphabet rather than over the domain being narrowed.
 [`pathfinding`](pathfinding.md) hoists its neighbour buffer out of A*'s inner loop for the same reason.
 
+**`valueWeights` is speculative surface with no in-tree caller.**
+Every solve in this repository passes it empty, which takes the uniform-entropy path -- pure integer arithmetic, identical on every toolchain.
+A non-empty weight table is the one place a float enters the scoped libraries: `EntropyIndex` computes Shannon entropy with `std::log`, which is not required to be correctly rounded, so two toolchains may disagree in the last bit and pick different cells.
+The entropy is quantised before comparison to soak that up, and a residue at a quantisation boundary remains possible; a caller that wants weighted collapse *and* cross-toolchain replays should test that pairing itself.
+Kept regardless because weighted collapse is the standard WFC formulation, on the same terms [`tween`](tween.md) keeps curves nothing in-tree uses yet.
+
 See also [`blog/005-wave-function-collapse-that-never-guesses.md`](../../blog/005-wave-function-collapse-that-never-guesses.md).

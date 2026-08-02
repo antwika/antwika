@@ -173,6 +173,19 @@ TEST(ScoreTest, ASpreadChainIsRefusedAgainstTheLineItOpenedOn)
     EXPECT_TRUE(score.voices().empty());
 }
 
+// The scaled minimum over minus one used to be a hardware trap.
+// No typed line may ever end the editor; this one is refused instead.
+TEST(ScoreTest, ATrappingFractionWordIsAProblemRatherThanDeath)
+{
+    Score score;
+
+    score.read("$: bass.n(\"-2147483648%-1\")\n");
+
+    ASSERT_EQ(score.problems().size(), 1U);
+    EXPECT_EQ(score.problems()[0].line, 1U);
+    EXPECT_TRUE(score.voices().empty());
+}
+
 TEST(ScoreTest, RefusesACallWithNoVoiceLineAboveIt)
 {
     Score score;

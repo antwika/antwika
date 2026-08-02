@@ -1,6 +1,7 @@
 #include "antwika/scheduler/Scheduler.hpp"
 
 #include <algorithm>
+#include <limits>
 #include <memory>
 #include <utility>
 
@@ -101,6 +102,23 @@ namespace antwika::scheduler
         const auto newId = nextId;
         const auto newRaw = rawValue(newId);
 
+        // The row vectors first, the graph wiring last.
+        // Growing a vector can throw.
+        // A throw between the two must not leave a ghost JobId.
+        // Wired into dependents with no record behind it, that is.
+        // The count starts at never-ready rather than zero.
+        // A throw mid-wiring then parks the job forever.
+        // Better than running with half its dependencies unrecorded.
+        records.push_back(JobRecord{priority, &job, false});
+        ownedJobs.emplace_back();
+        unmetCount.push_back(std::numeric_limits<std::size_t>::max());
+        dependents.emplace_back();
+
+        // The id is spent once its row exists.
+        // Reusing it after a throw would misalign every row after.
+        nextId = static_cast<JobId>(newRaw + 1);
+        ++pendingCount;
+
         std::size_t unmet = 0;
         for (const auto dependency : dependsOn)
         {
@@ -112,12 +130,7 @@ namespace antwika::scheduler
             }
         }
 
-        nextId = static_cast<JobId>(newRaw + 1);
-        records.push_back(JobRecord{priority, &job, false});
-        ownedJobs.emplace_back();
-        unmetCount.push_back(unmet);
-        dependents.emplace_back();
-        ++pendingCount;
+        unmetCount.back() = unmet;
 
         if (unmet == 0)
         {
@@ -136,6 +149,12 @@ namespace antwika::scheduler
 
         while (executed.size() < budget)
         {
+            // The whole ready list, from its front, on every pop.
+            // Deliberate, not an oversight.
+            // A completion may ready a job behind a carried cursor.
+            // And the list is priority-ordered from the front.
+            // O(budget x ready), small for every in-tree budget.
+            // A cursor would trade correctness for that cost.
             const auto it = std::find_if(
                 ready.begin(),
                 ready.end(),

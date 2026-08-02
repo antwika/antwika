@@ -86,7 +86,10 @@ namespace antwika::animation
      * @return The point that far along, exactly `from` at 0/n and
      * exactly `to` at n/n.
      * @note The span times the numerator must fit in a signed 64-bit
-     * integer, which every offset a screen can hold does.
+     * integer.  It is the numerator that carries the magnitude, not
+     * the span: an eased progress arrives scaled to a far larger
+     * denominator, so whatever produced the fraction is what keeps
+     * this product in range.
      */
     [[nodiscard]] std::int64_t interpolate(
         std::int64_t from, std::int64_t to, Progress progress) noexcept;

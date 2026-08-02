@@ -12,7 +12,6 @@
 #include <antwika/input/MemoryClipboard.hpp>
 #include <antwika/sequencer/FrameClock.hpp>
 #include <antwika/sequencer/Rational.hpp>
-#include <antwika/sequencer/TempoMap.hpp>
 #include <antwika/sound/DeviceDesc.hpp>
 #include <antwika/sound/OfflineDevice.hpp>
 #include <antwika/sound/WaveFormat.hpp>
@@ -88,8 +87,7 @@ namespace antwika::music_editor::tests
             PlaybackDesc{
                 .clock = sequencer::FrameClock(
                     format.rate, std::chrono::milliseconds{40}),
-                .tempo = sequencer::TempoMap(
-                    sequencer::Rational(format.rate)),
+                .framesPerCycle = sequencer::Rational(format.rate),
                 .lookahead = 3,
                 .lead = 2}};
 

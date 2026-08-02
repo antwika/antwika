@@ -23,6 +23,7 @@ It holds no simulation logic of its own — everything here is glue that was dup
 | `PointerReading.hpp` | `asPoint()`, `locates()`, `pointerFrom()`, `hoverFrom()` | Turns `input` edges into a `ui::Pointer`, and a pointer hint into a `ui::HoverPointer`. |
 | `WindowPointerMapping.hpp` | `WindowPointerMapping` | An `input::IPointerMapping` reading a window pixel as a pixel on the fixed canvas the app lays out against. |
 | `FullscreenToggleSource.hpp` | `FullscreenToggleSource` | An `ITickEventSource` decorator making a nominated key fill the screen with the window, altering not one event. |
+| `TickLimitSource.hpp` | `TickLimitSource` | An `ITickEventSource` decorator that appends `engine.stop` from a chosen tick onwards, so a capped session ends as recorded input rather than a thrown `maxTicks`; `MaxTicks.hpp` is the `--max-ticks` flag name and its zero-means-no-cap parse. |
 | `WindowCloseSource.hpp` | `WindowCloseSource` | An `ITickEventSource` decorator that closes the window a close request names and appends `engine.stop` while it is shut, with the pump exposed for a loop drawing after the run. |
 
 ## Depends on

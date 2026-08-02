@@ -28,7 +28,7 @@
 #include "antwika/ui_demo/DemoState.hpp"
 #include "antwika/ui_demo/Messages.hpp"
 #include "antwika/ui_demo/Showcase.hpp"
-#include "antwika/ui_demo/TickBudgetSource.hpp"
+#include <antwika/app/TickLimitSource.hpp>
 #include "antwika/ui_demo/UiDemo.hpp"
 #include "antwika/ui_demo/Widgets.hpp"
 #include "WidgetCentre.hpp"
@@ -50,7 +50,7 @@ using antwika::ui_demo::DemoScene;
 using antwika::ui_demo::DemoState;
 using antwika::ui_demo::DemoSummary;
 using antwika::ui_demo::Showcase;
-using antwika::ui_demo::TickBudgetSource;
+using antwika::app::TickLimitSource;
 using antwika::ui_demo::UiDemoConfig;
 using antwika::ui_demo::tests::optionWidget;
 using antwika::ui_demo::tests::widgetCentre;
@@ -199,7 +199,7 @@ namespace
         const InputEventCodec codec;
 
         ReplaySource file(script());
-        TickBudgetSource source(file, kBudget);
+        TickLimitSource source(file, kBudget);
 
         WatchedTicks seen;
 
@@ -236,7 +236,7 @@ namespace
         const InputEventCodec codec;
 
         ReplaySource file(script());
-        TickBudgetSource source(file, kBudget);
+        TickLimitSource source(file, kBudget);
         TickEventRecorder recorder;
 
         const DemoSummary summary = antwika::ui_demo::bootstrap({
@@ -267,7 +267,7 @@ namespace
         const InputEventCodec codec;
 
         ReplaySource file(typingScript());
-        TickBudgetSource source(file, kTypingBudget);
+        TickLimitSource source(file, kTypingBudget);
 
         WatchedTicks seen;
 
@@ -298,7 +298,7 @@ namespace
         const InputEventCodec codec;
 
         ReplaySource file({});
-        TickBudgetSource source(file, 0);
+        TickLimitSource source(file, 0);
 
         const DemoSummary summary = antwika::ui_demo::bootstrap({
             .logger = logger,

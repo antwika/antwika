@@ -14,6 +14,8 @@
 
 #include "antwika/music_editor/ScoreError.hpp"
 
+#include "ScoreText.hpp"
+
 namespace antwika::music_editor
 {
 
@@ -29,23 +31,8 @@ namespace antwika::music_editor
         constexpr std::array<std::string_view, 5> kShapes{
             "sine", "saw", "square", "triangle", "noise"};
 
-        // Twelve semitones to the octave.
-        // The only music theory the language contains.
-        constexpr std::int32_t kSemitonesPerOctave = 12;
-
-        [[nodiscard]] std::string_view trimmed(
-            std::string_view text) noexcept
-        {
-            const auto first = text.find_first_not_of(" \t");
-
-            if (first == std::string_view::npos)
-            {
-                return {};
-            }
-
-            return text.substr(
-                first, text.find_last_not_of(" \t") - first + 1);
-        }
+        using detail::kSemitonesPerOctave;
+        using detail::trimmed;
 
         // Split at the dots that join calls, and at no others.
         // A dot inside parentheses is a decimal point or notation.

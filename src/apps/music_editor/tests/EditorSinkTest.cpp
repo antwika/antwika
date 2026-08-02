@@ -214,6 +214,14 @@ namespace
             + at};
     }
 
+    [[nodiscard]] antwika::ui::WidgetId speedOption(std::size_t at)
+    {
+        return antwika::ui::WidgetId{
+            static_cast<std::uint64_t>(
+                antwika::music_editor::kSpeedOptions)
+            + at};
+    }
+
     // A directory of this test's own, empty at the start of a case.
     [[nodiscard]] std::string freshDirectory(const std::string &name)
     {
@@ -585,7 +593,7 @@ TEST(EditorSinkTest, ARightReleaseEndsNoDrag)
     rig.editor.handle(tickAt(0));
 
     clickAt(rig, cellOf(rig, 0, 0), 1);
-    ASSERT_TRUE(rig.state.dragging);
+    ASSERT_EQ(rig.state.dragging, antwika::ui::DragHome::Text);
 
     rig.editor.handle(
         TickEvent{
@@ -595,7 +603,7 @@ TEST(EditorSinkTest, ARightReleaseEndsNoDrag)
                     .button = MouseButton::Right,
                     .position = {.x = 0, .y = 0}})});
 
-    EXPECT_TRUE(rig.state.dragging);
+    EXPECT_EQ(rig.state.dragging, antwika::ui::DragHome::Text);
 }
 
 // Only a left press reaches the layout.
@@ -867,6 +875,59 @@ TEST(EditorSinkTest, TypingBelowThePaneScrollsItIntoView)
 
 // The one setting this editor has.
 // And the one thing in the window that is not a score.
+// The speed box is a dropdown like the layout one, one press to open.
+// A choice is a recorded click, so a replay keeps the very same pace.
+TEST(EditorSinkTest, TheBoxChoosesHowFastTheClockRuns)
+{
+    using antwika::music_editor::kSpeedBox;
+
+    EditorRig rig;
+    rig.editor.handle(tickAt(0));
+
+    ASSERT_EQ(rig.state.speed, antwika::music_editor::kNormalSpeed);
+
+    clickAt(rig, centreOf(rig, kSpeedBox), 1);
+
+    EXPECT_TRUE(rig.state.speedOpen);
+
+    // The fourth option, which is twice as fast.
+    // Option n carries the base plus n, by DropdownSpec's rule.
+    const auto option = rectOf(rig, speedOption(3));
+
+    clickAt(
+        rig,
+        antwika::gfx::Point{
+            .x = option.origin.x + 1, .y = option.origin.y + 1},
+        2);
+
+    EXPECT_EQ(rig.state.speed, 3U);
+    EXPECT_FALSE(rig.state.speedOpen);
+}
+
+// Choosing the pace already running changes nothing downstream.
+// A tempo boundary per idle click would pile up for nothing.
+TEST(EditorSinkTest, ChoosingTheRunningSpeedAgainOnlyClosesTheBox)
+{
+    using antwika::music_editor::kNormalSpeed;
+    using antwika::music_editor::kSpeedBox;
+
+    EditorRig rig;
+    rig.editor.handle(tickAt(0));
+
+    clickAt(rig, centreOf(rig, kSpeedBox), 1);
+
+    const auto option = rectOf(rig, speedOption(kNormalSpeed));
+
+    clickAt(
+        rig,
+        antwika::gfx::Point{
+            .x = option.origin.x + 1, .y = option.origin.y + 1},
+        2);
+
+    EXPECT_EQ(rig.state.speed, kNormalSpeed);
+    EXPECT_FALSE(rig.state.speedOpen);
+}
+
 TEST(EditorSinkTest, TheBoxChoosesWhichKeyboardIsBeingRead)
 {
     using antwika::music_editor::KeyLayout;

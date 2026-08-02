@@ -94,6 +94,16 @@ namespace antwika::gfx
 
         /**
          * @brief Draw text on the canvas, at a scaled glyph scale.
+         *
+         * One call to the wrapped renderer when the scaled scale is a
+         * whole number of pixels, and one per glyph otherwise, each
+         * anchored on its own transformed cell.  A run drawn whole at a
+         * rounded scale walks off the transformed grid a pixel a glyph,
+         * while every caret, highlight and selection rectangle is
+         * placed by that grid exactly -- so a long line's text slid
+         * against its own marks, and a piece cut at a caret or a
+         * highlight snapped back, moving what was already drawn.
+         *
          * @param origin Top-left of the first cell, in canvas pixels.
          * @param text The characters to draw.
          * @param scale Pixels per glyph pixel, before scaling.

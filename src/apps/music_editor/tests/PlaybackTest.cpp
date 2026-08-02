@@ -9,7 +9,6 @@
 #include <antwika/sequencer/FrameClock.hpp>
 #include <antwika/sequencer/Rational.hpp>
 #include <antwika/sequencer/SequencerError.hpp>
-#include <antwika/sequencer/TempoMap.hpp>
 #include <antwika/sound/DeviceDesc.hpp>
 #include <antwika/sound/IDevice.hpp>
 #include <antwika/sound/OfflineDevice.hpp>
@@ -27,7 +26,6 @@ using antwika::music_editor::PlaybackDesc;
 using antwika::music_editor::Score;
 using antwika::sequencer::FrameClock;
 using antwika::sequencer::Rational;
-using antwika::sequencer::TempoMap;
 using antwika::sound::DeviceDesc;
 using antwika::sound::OfflineDevice;
 using antwika::sound::WaveFormat;
@@ -46,7 +44,7 @@ namespace
     {
         return PlaybackDesc{
             .clock = FrameClock(kFormat.rate, 100ms),
-            .tempo = TempoMap(Rational(kFormat.rate)),
+            .framesPerCycle = Rational(kFormat.rate),
             .lookahead = 3,
             .lead = 2};
     }
@@ -296,6 +294,78 @@ TEST(PlaybackTest, ALineWrittenWhereADeletedOneWasJoinsToo)
 }
 
 // Pausing stops the musical clock rather than the device.
+// Twice as fast from the next whole cycle, never inside one.
+// Ten ticks a cycle before the change, five a cycle after it.
+TEST(PlaybackTest, ASpeedChangeTakesHoldAtTheNextWholeCycle)
+{
+    Rig rig;
+    rig.play("$: bass.n(\"0\")\n");
+
+    Playback playback(
+        rig.score, rig.mixer, rig.device, rig.sleeper,
+        oneCycleASecond());
+
+    // Two cycles and a bit: onsets for cycles zero, one and two.
+    step(playback, 20, false);
+
+    const auto before = playback.started();
+
+    ASSERT_EQ(before, 3U);
+
+    playback.setSpeed(Rational(2));
+
+    // Ten more ticks reach cycle three, then five ticks a cycle.
+    // Forty ticks on, the window has read through cycle 9.6.
+    step(playback, 40, false);
+
+    EXPECT_EQ(playback.started() - before, 7U);
+}
+
+// A change asked for before the first tick starts at cycle one.
+// Cycle zero already holds the opening tempo's boundary.
+TEST(PlaybackTest, ASpeedChangeBeforeTheFirstTickLandsAtCycleOne)
+{
+    Rig rig;
+    rig.play("$: bass.n(\"0\")\n");
+
+    Playback playback(
+        rig.score, rig.mixer, rig.device, rig.sleeper,
+        oneCycleASecond());
+
+    playback.setSpeed(Rational(1, 2));
+
+    // One cycle at pace, then twenty ticks each.
+    // Forty ticks on, the window has read through cycle 2.65.
+    step(playback, 40, false);
+
+    EXPECT_EQ(playback.started(), 3U);
+}
+
+// A second change inside one cycle lands a cycle after the first.
+// Each cycle holds one boundary, so neither change is lost.
+TEST(PlaybackTest, TwoSpeedChangesInsideOneCycleLandACycleApart)
+{
+    Rig rig;
+    rig.play("$: bass.n(\"0\")\n");
+
+    Playback playback(
+        rig.score, rig.mixer, rig.device, rig.sleeper,
+        oneCycleASecond());
+
+    step(playback, 20, false);
+
+    const auto before = playback.started();
+
+    playback.setSpeed(Rational(2));
+    playback.setSpeed(Rational(4));
+
+    // Cycle three at double pace, cycle four onwards at quadruple.
+    // Forty ticks on, the window has read through cycle 15.2.
+    step(playback, 40, false);
+
+    EXPECT_EQ(playback.started() - before, 13U);
+}
+
 TEST(PlaybackTest, PausingStopsTheClockAndNotTheDevice)
 {
     Rig rig;

@@ -4,10 +4,10 @@
 
 ## What it is
 
-`apps/ui_demo` is the showcase for [`ui`](../libraries/ui.md): labels, buttons, nested layouts, a text field, dropdowns, the focus ring, the theme, where a named widget was laid out, and what a container does with less room than its children want.
+`apps/ui_demo` is the showcase for [`ui`](../libraries/ui.md): labels, buttons, nested layouts, a text field, dropdowns, the focus ring, the theme, where a named widget was laid out, what a container does with less room than its children want, and a many-line text area that selects, scrolls and hands its shown line back through `Interactions::scrolled`.
 A dropdown at the top of the window picks which of those pages is showing, and that picker is itself one of the elements being shown.
 
-The nine pages are the `ui_demo::Showcase` enumeration in `Showcase.hpp`, and the names the picker lists are one array in the same header, in the same order.
+The ten pages are the `ui_demo::Showcase` enumeration in `Showcase.hpp`, and the names the picker lists are one array in the same header, in the same order.
 How many pages there are is derived from the last enumerator rather than written down, so a page added to the enumeration gains its option without a second list that could drift from the first.
 
 Unlike [`gfx_demo`](gfx_demo.md), which draws a UI without a tick loop at all, this one is an ordinary application of the tick loop: it records, it replays, and every widget it draws is resolved inside the tick path.
@@ -34,7 +34,7 @@ Under the default `null` backend it draws nothing and takes no input, so use an 
 - `DemoOverlay` is the one thing the tick path and the renderer share: `DemoSink` writes the picture into it once per tick and `RenderSink` paints it, so the renderer never has to know what a pointer or a widget is.
   It also owns the canvas the UI is laid out against, which is the size the window was *asked* for rather than the size a window reports, so nothing can lay the showcase out against one size and hit-test it against another.
 - `KeyMapping` turns a key edge into the `ui::Key` the library acts on.
-- `TickBudgetSource` is what ends the run.
+- `app::TickLimitSource` is what ends the run.
 
 ## Non-obvious decisions
 
@@ -58,7 +58,7 @@ A showcase of a hoverable widget cannot pay that, so this app takes the coalesci
 
 **Running out of budget is an ordinary stop, not a loop that failed.**
 The default `null` backend reports no window close, and that is the build every CI leg produces, so a run left to end on a close would never end there.
-`TickBudgetSource` appends `engine.stop` from its budget's tick onwards rather than using `EngineLoop`'s `maxTicks`, which throws.
+`app::TickLimitSource` appends `engine.stop` from its budget's tick onwards rather than using `EngineLoop`'s `maxTicks`, which throws.
 Saying so as an event also puts the ending upstream of the recorder, exactly as `poker::WindowCloseSource` puts a window close there, so a `--record` run ends its file on the tick it stopped on and replaying that file stops on the same one.
 `UiDemoConfig::maxTicks` remains as the safety cap a test sets.
 

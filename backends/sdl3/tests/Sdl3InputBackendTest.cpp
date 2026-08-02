@@ -182,11 +182,64 @@ namespace antwika::input::sdl3
                 PointerScrolled{.horizontal = -1, .vertical = 3}}));
     }
 
-    TEST_F(Sdl3InputBackendTest, PollEvent_TranslatesAKeyPress)
+    // A touchpad scrolls in fractions of a notch.
+    // Two halves make a whole on the second event, not zero on each.
+    TEST_F(Sdl3InputBackendTest, PollEvent_CarriesFractionalWheelNotches)
+    {
+        SDL_Event event{};
+        event.type = SDL_EVENT_MOUSE_WHEEL;
+        event.wheel.y = 0.5F;
+
+        push(event);
+        EXPECT_FALSE(nextEdge().has_value());
+
+        push(event);
+        EXPECT_EQ(
+            nextEdge(),
+            (InputEvent{
+                PointerScrolled{.horizontal = 0, .vertical = 1}}));
+    }
+
+    // A flipped wheel arrives with its values negated.
+    TEST_F(Sdl3InputBackendTest, PollEvent_HonoursAFlippedWheel)
+    {
+        SDL_Event event{};
+        event.type = SDL_EVENT_MOUSE_WHEEL;
+        event.wheel.y = 2.0F;
+        event.wheel.direction = SDL_MOUSEWHEEL_FLIPPED;
+
+        push(event);
+
+        EXPECT_EQ(
+            nextEdge(),
+            (InputEvent{
+                PointerScrolled{.horizontal = 0, .vertical = -2}}));
+    }
+
+    // AltGr arrives as SDL_KMOD_MODE, which is ISO_Level3_Shift.
+    // The Swedish table's whole third column rides on it.
+    TEST_F(Sdl3InputBackendTest, PollEvent_ReadsAltGrAsAlt)
     {
         SDL_Event event{};
         event.type = SDL_EVENT_KEY_DOWN;
-        event.key.key = SDLK_ESCAPE;
+        event.key.scancode = SDL_SCANCODE_4;
+        event.key.mod = SDL_KMOD_MODE;
+
+        push(event);
+
+        EXPECT_EQ(
+            nextEdge(),
+            (InputEvent{KeyPressed{
+                .key = Key::Digit4, .modifiers = {.alt = true}}}));
+    }
+
+    TEST_F(Sdl3InputBackendTest, PollEvent_TranslatesAKeyPress)
+    {
+        // The scancode, which is the field the backend translates.
+        // The keycode is the layout's answer and is deliberately unread.
+        SDL_Event event{};
+        event.type = SDL_EVENT_KEY_DOWN;
+        event.key.scancode = SDL_SCANCODE_ESCAPE;
         event.key.mod = SDL_KMOD_LSHIFT;
         event.key.repeat = true;
 
@@ -204,7 +257,7 @@ namespace antwika::input::sdl3
     {
         SDL_Event event{};
         event.type = SDL_EVENT_KEY_UP;
-        event.key.key = SDLK_A;
+        event.key.scancode = SDL_SCANCODE_A;
         event.key.mod = SDL_KMOD_LCTRL | SDL_KMOD_RALT;
 
         push(event);
@@ -222,11 +275,11 @@ namespace antwika::input::sdl3
     {
         SDL_Event unnamed{};
         unnamed.type = SDL_EVENT_KEY_DOWN;
-        unnamed.key.key = SDLK_F24;
+        unnamed.key.scancode = SDL_SCANCODE_F24;
 
         SDL_Event named{};
         named.type = SDL_EVENT_KEY_DOWN;
-        named.key.key = SDLK_SPACE;
+        named.key.scancode = SDL_SCANCODE_SPACE;
 
         push(unnamed);
         push(named);

@@ -36,7 +36,9 @@ namespace antwika::tween
      * @throws TweenError If the easing's arithmetic would leave a
      * antwika::time::Tick -- see ease().
      * @note The span times the eased numerator must fit in a signed
-     * 64-bit integer, which every offset a screen can hold does.
+     * 64-bit integer.  ease() refuses any denominator whose curve
+     * could scale a numerator past that on its own, so the span is
+     * all that is left to a caller.
      */
     [[nodiscard]] std::int64_t tweenBetween(
         std::int64_t from,

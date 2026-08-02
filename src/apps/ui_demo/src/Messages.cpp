@@ -21,7 +21,7 @@ namespace antwika::ui_demo
         using i18n::Locale;
         using i18n::MessageName;
 
-        constexpr std::array<MessageName<MessageId>, 67> kNames{{
+        constexpr std::array<MessageName<MessageId>, 71> kNames{{
             {MessageId::Title, "Title"},
             {MessageId::PickPage, "PickPage"},
             {MessageId::PageLabels, "PageLabels"},
@@ -33,6 +33,10 @@ namespace antwika::ui_demo
             {MessageId::PageTheme, "PageTheme"},
             {MessageId::PageRects, "PageRects"},
             {MessageId::PageShrink, "PageShrink"},
+            {MessageId::PageTextArea, "PageTextArea"},
+            {MessageId::AreaOwned, "AreaOwned"},
+            {MessageId::AreaShowing, "AreaShowing"},
+            {MessageId::AreaPlaceholder, "AreaPlaceholder"},
             {MessageId::LabelsLine, "LabelsLine"},
             {MessageId::LabelsMuted, "LabelsMuted"},
             {MessageId::LabelsOwnInk, "LabelsOwnInk"},
@@ -112,6 +116,7 @@ namespace antwika::ui_demo
                 {MessageId::PageTheme, "theme"},
                 {MessageId::PageRects, "widget rects"},
                 {MessageId::PageShrink, "shrink"},
+                {MessageId::PageTextArea, "text area"},
                 {MessageId::LabelsLine,
                  "label() draws one line in the theme's colour"},
                 {MessageId::LabelsMuted, "a muted line reads as an aside"},
@@ -149,6 +154,11 @@ namespace antwika::ui_demo
                 {MessageId::FieldKeys,
                  "Enter submits it, Escape gives up on it"},
                 {MessageId::FieldHolding, "holding: {0}"},
+                {MessageId::AreaOwned,
+                 "an area retains nothing: caret, selection and "
+                 "scroll all pass through the caller"},
+                {MessageId::AreaShowing, "showing from line {0}"},
+                {MessageId::AreaPlaceholder, "click here and type"},
                 {MessageId::ListOpenBit,
                  "whether a list is open is the caller's bit"},
                 {MessageId::NoneChosen, "none chosen"},
@@ -201,6 +211,7 @@ namespace antwika::ui_demo
                 {MessageId::PageTheme, "tema"},
                 {MessageId::PageRects, "widgetrutor"},
                 {MessageId::PageShrink, "krympning"},
+                {MessageId::PageTextArea, "textyta"},
                 {MessageId::LabelsLine, "label() ritar en rad i temats färg"},
                 {MessageId::LabelsMuted, "en dämpad rad läses som en parentes"},
                 {MessageId::LabelsOwnInk, "och anroparen får ge den en egen"},
@@ -235,6 +246,11 @@ namespace antwika::ui_demo
                 {MessageId::FieldPlaceholder, "tabba hit och skriv"},
                 {MessageId::FieldKeys, "Enter skickar in, Escape ger upp"},
                 {MessageId::FieldHolding, "innehåller: {0}"},
+                {MessageId::AreaOwned,
+                 "en yta minns inget: markör, markering och "
+                 "rullning går genom anroparen"},
+                {MessageId::AreaShowing, "visar från rad {0}"},
+                {MessageId::AreaPlaceholder, "klicka här och skriv"},
                 {MessageId::ListOpenBit,
                  "om en lista är öppen är anroparens bit"},
                 {MessageId::NoneChosen, "inget valt"},

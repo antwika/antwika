@@ -1,5 +1,6 @@
 #include <gtest/gtest.h>
 
+#include <cstddef>
 #include <cstdint>
 #include <stdexcept>
 #include <string>
@@ -19,7 +20,9 @@ using antwika::replay::IMigration;
 using antwika::replay::kSchemaVersionKey;
 using antwika::replay::MigrationChain;
 using antwika::replay::MigrationList;
+using antwika::replay::kMaxDocumentDepth;
 using antwika::replay::readVersionedDocument;
+using antwika::replay::readVersionedRecord;
 using antwika::replay::ReplayFormatError;
 using antwika::replay::SchemaVersionError;
 
@@ -105,6 +108,22 @@ namespace
         return nlohmann::json{
             {std::string(kSchemaVersionKey), kToyVersion}, {"count", 4}};
     }
+
+    // A number under one more level of arrays than the bound allows.
+    nlohmann::json pastTheBound()
+    {
+        nlohmann::json value = 7;
+
+        for (std::size_t level = 0; level <= kMaxDocumentDepth;
+             ++level)
+        {
+            nlohmann::json wrapped = nlohmann::json::array();
+            wrapped.push_back(std::move(value));
+            value = std::move(wrapped);
+        }
+
+        return value;
+    }
 } // namespace
 
 TEST(VersionedDocumentTest, ReturnsADocumentAtTheCurrentVersion)
@@ -113,6 +132,38 @@ TEST(VersionedDocumentTest, ReturnsADocumentAtTheCurrentVersion)
 
     EXPECT_EQ(document.at("count"), 4);
     EXPECT_EQ(document.at(std::string(kSchemaVersionKey)), kToyVersion);
+}
+
+// The guard runs before the migrate, the validate and every dump.
+// A validator's failure message serialises the offending instance.
+// That serialisation recurses per nesting level.
+TEST(VersionedDocumentTest, RefusesADocumentNestedPastTheBound)
+{
+    try
+    {
+        (void)read<ToyFormatError>(pastTheBound());
+        FAIL() << "a document nested past the bound should have thrown";
+    }
+    catch (const ToyFormatError &error)
+    {
+        EXPECT_NE(
+            std::string(error.what()).find("nests deeper"),
+            std::string::npos)
+            << error.what();
+    }
+}
+
+// The record route opens with the very same guard.
+TEST(VersionedDocumentTest, RefusesARecordNestedPastTheBound)
+{
+    EXPECT_THROW(
+        (void)readVersionedRecord<ToyFormatError>(
+            pastTheBound(),
+            kToyVersion,
+            toyMigrations(),
+            toyValidator(),
+            "antwika::replay: a toy record is not one: "),
+        ToyFormatError);
 }
 
 // The order the whole mechanism rests on.

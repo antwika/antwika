@@ -1,5 +1,7 @@
 #include "antwika/music_editor/TrackPreset.hpp"
 
+#include "ScoreText.hpp"
+
 #include <algorithm>
 #include <array>
 #include <cmath>
@@ -22,9 +24,8 @@ namespace antwika::music_editor
     {
         constexpr std::uint32_t kMillisecondsPerSecond = 1000;
 
-        // Twelve semitones to the octave.
-        // That is the only music theory this application contains.
-        constexpr double kSemitonesPerOctave = 12.0;
+        constexpr double kSemitones =
+            static_cast<double>(detail::kSemitonesPerOctave);
 
         [[nodiscard]] FrameCount framesForMs(
             std::uint32_t milliseconds, SampleRate rate) noexcept
@@ -132,7 +133,7 @@ namespace antwika::music_editor
         // Whatever o() and trans() added goes in with it.
         // Noise has no pitch, and its frequency is never read.
         const auto hertz = preset.baseHertz
-            * std::pow(2.0, semitones / kSemitonesPerOctave);
+            * std::pow(2.0, semitones / kSemitones);
 
         const auto hold = std::min(
             frames, framesForMs(preset.maxHoldMs, rate));

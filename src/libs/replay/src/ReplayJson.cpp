@@ -10,6 +10,7 @@
 
 #include <nlohmann/json-schema.hpp>
 
+#include <antwika/engine/Events.hpp>
 #include <antwika/replay/EventJson.hpp>
 #include <antwika/replay/JsonShapes.hpp>
 #include <antwika/replay/ReplayFormatError.hpp>
@@ -60,7 +61,12 @@ namespace antwika::replay
             schema["$schema"] = "http://json-schema.org/draft-07/schema#";
             schema["title"] = "antwika replay header";
             schema["type"] = "object";
-            schema["additionalProperties"] = false;
+            // No additionalProperties: false here, deliberately.
+            // docs/schema-versioning.md says the header only grows additively.
+            // That is a new optional member and no version bump.
+            // Refusing unknown members breaks every shipped build.
+            // Each would refuse the grown file outright.
+            // "canvas" arriving did exactly that to pre-canvas builds once.
             schema["$id"] = "https://antwika.dev/schemas/replay-header";
             schema["required"] = {"magic"}; // GCOVR_EXCL_LINE
             schema["properties"][std::string(detail::kMagicKey)]
@@ -219,6 +225,22 @@ namespace antwika::replay
                     ordinal));
 
             auto decoded = migrated.get<event::TickEvent>();
+
+            // The reader polices hand edits the writer cannot make.
+            // The recorder filters engine.tick out on the way to disk.
+            // So a record named it can only be a hand-crafted one.
+            // The engine regenerates the real one every tick.
+            // Dispatching the fake would double-step every per-tick sink.
+            if (decoded.event.name == antwika::engine::events::kTick)
+            {
+                throw ReplayFormatError(std::format(
+                    "antwika::replay: record {} is named \"{}\"; the "
+                    "engine regenerates that event, and a regenerated "
+                    "event is never replay input",
+                    ordinal,
+                    antwika::engine::events::kTick));
+            }
+
             requireTickDoesNotGoBackwards(
                 previous, decoded.tick, ordinal);
             previous = decoded.tick;

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstddef>
+#include <cstdint>
 #include <optional>
 #include <span>
 #include <string_view>
@@ -34,6 +35,32 @@ namespace antwika::ui
          */
         [[nodiscard]] bool operator==(const TextHighlight &other) const
             = default;
+    };
+
+    /**
+     * @brief Where a drag over a text area began, as its caller knows.
+     *
+     * The track and the text are one widget to every other channel,
+     * and this library retains nothing between frames -- so which of
+     * the two a drag began on is the caller's to hold, exactly as
+     * focus is.  Interactions::areaPress is where a press says which
+     * it landed on; a caller stores that and hands it back here.
+     *
+     * Without it the two contaminated each other: a drag-selection
+     * that strayed onto the track jumped the scroll, and a bar drag
+     * that wobbled into the text started selecting from a stale
+     * anchor.
+     */
+    enum class DragHome : std::uint8_t
+    {
+        /** @brief No drag is in progress over this area. */
+        None = 0,
+
+        /** @brief The press landed in the text. */
+        Text,
+
+        /** @brief The press landed on the scrollbar's track. */
+        Track,
     };
 
     /**
@@ -159,6 +186,17 @@ namespace antwika::ui
          * area reports an edit.
          */
         bool focused = false;
+
+        /**
+         * @brief Where the drag in progress began, if one is.
+         *
+         * Handed back by the caller from Interactions::areaPress, and
+         * what scopes a held drag: a drag that began in the text never
+         * reaches the track, and one that began on the track never
+         * selects.  A fresh press needs no scoping; it lands where it
+         * lands.
+         */
+        DragHome dragging = DragHome::None;
     };
 
 } // namespace antwika::ui

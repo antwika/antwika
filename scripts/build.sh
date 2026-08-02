@@ -90,6 +90,41 @@ if [ -z "${CONAN_PROFILE:-}" ]; then
     exit 1
 fi
 
+# The host profile is the tracked record of this machine's compiler,
+# and Conan trusts it without looking.
+# A container image bump that outruns the profile would label every
+# cached dependency with a version nothing actually ran, and the CI
+# cache key -- which hashes only conanfile, locks and profiles --
+# would never notice; failing here is what makes the next bump loud.
+# The binary asked is the profile's own: the conf's named executable
+# when the profile carries one (MinGW does), and otherwise whatever
+# the compiler= line says, which is a command in every container.
+host_profile=profiles/host/${CONAN_PROFILE}
+
+profile_compiler() {
+    local named
+    named=$(sed -n 's/.*"c" *: *"\([^"]*\)".*/\1/p' "$host_profile")
+
+    if [ -n "$named" ]; then
+        printf '%s' "$named"
+    else
+        sed -n 's/^compiler=//p' "$host_profile"
+    fi
+}
+
+expected_version=$(sed -n 's/^compiler.version=//p' "$host_profile")
+compiler=$(profile_compiler)
+actual_version=$("$compiler" -dumpversion | cut -d. -f1)
+
+if [ "$expected_version" != "$actual_version" ]; then
+    echo "$host_profile says compiler.version=$expected_version," >&2
+    echo "and $compiler reports $actual_version." >&2
+    echo "Update the profile (and re-run" >&2
+    echo "scripts/update_lockfiles.sh) so the record matches the" >&2
+    echo "toolchain." >&2
+    exit 1
+fi
+
 echo "==> gfx backend '$gfx_backend', sound backend '$sound_backend',"
 echo "==> network backend '$network_backend'"
 

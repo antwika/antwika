@@ -135,6 +135,8 @@ namespace antwika::music_editor
 
         void menuAction(std::size_t index);
 
+        void speedAction(std::size_t index);
+
         void saveNow();
 
         void loadNow(std::size_t at);

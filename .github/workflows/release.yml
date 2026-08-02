@@ -31,6 +31,18 @@ jobs:
         uses: actions/setup-node@v7
         with:
           node-version: "lts/*"
+      # The tag before semantic-release runs, so "did it release" is a
+      # comparison rather than a guess: git describe succeeds whenever
+      # any release tag exists, and a no-op dispatch -- a re-run, or
+      # only chore: commits -- used to republish the previous version's
+      # images and latest under that reading.
+      - name: Note the latest tag before releasing
+        id: before
+        run: |
+          git fetch --tags
+          TAG=$(git describe --tags --abbrev=0 --match "v*" \
+            2>/dev/null || echo "none")
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
       - name: Release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -47,6 +59,11 @@ jobs:
         run: |
           if ! VERSION=$(git describe --tags --abbrev=0 --match "v*"); then
             echo "No release created"
+            exit 1
+          fi
+          if [ "$VERSION" = "${{ steps.before.outputs.tag }}" ]; then
+            echo "semantic-release created no new release; refusing to"
+            echo "republish $VERSION"
             exit 1
           fi
           VERSION=${VERSION#v}

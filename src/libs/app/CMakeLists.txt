@@ -9,10 +9,12 @@ antwika_add_library(
         src/ConsoleLogging.cpp
         src/FramePacedSource.cpp
         src/FullscreenToggleSource.cpp
+        src/MaxTicks.cpp
         src/PngFile.cpp
         src/PointerReading.cpp
         src/RunGuarded.cpp
         src/RunRecorded.cpp
+        src/TickLimitSource.cpp
         src/WavFile.cpp
         src/WindowCloseSource.cpp
         src/WindowPointerMapping.cpp

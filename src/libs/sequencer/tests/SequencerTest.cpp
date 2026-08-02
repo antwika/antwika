@@ -151,6 +151,51 @@ TEST(SequencerTest, NeverSoundsAHeldNoteTwice)
     EXPECT_EQ(sink.triggers[0].startFrame, 0U);
 }
 
+// Twice as fast from cycle one: its notes take half the frames.
+// Notes before the boundary keep the frames they were given.
+TEST(SequencerTest, RetimingMovesEveryNoteAfterItsBoundary)
+{
+    Sequencer sequencer(oneCycleASecond());
+    RecordingSink sink;
+
+    for (antwika::time::Tick tick = 0; tick < 5; ++tick)
+    {
+        sequencer.advance(tick, note(1), sink);
+    }
+
+    sequencer.retime(Cycle(1), Rational(24000));
+
+    for (antwika::time::Tick tick = 5; tick <= 30; ++tick)
+    {
+        sequencer.advance(tick, note(1), sink);
+    }
+
+    // One onset in cycle zero, then five on the faster timeline.
+    ASSERT_EQ(sink.triggers.size(), 6U);
+
+    EXPECT_EQ(sink.triggers[0].startFrame, 0U);
+    EXPECT_EQ(sink.triggers[0].frames, 48000U);
+
+    EXPECT_EQ(sink.triggers[1].startFrame, 48000U);
+    EXPECT_EQ(sink.triggers[1].frames, 24000U);
+
+    EXPECT_EQ(sink.triggers[2].startFrame, 72000U);
+}
+
+// Everything through the queried window is on the old timeline.
+// Its frames were handed out, so moving them is not expressible.
+TEST(SequencerTest, RefusesToRetimeInsideAQueriedWindow)
+{
+    Sequencer sequencer(oneCycleASecond());
+    RecordingSink sink;
+
+    sequencer.advance(0, note(1), sink);
+
+    EXPECT_THROW(
+        sequencer.retime(Cycle(1, 20), Rational(24000)),
+        SequencerError);
+}
+
 TEST(SequencerTest, SoundsEachEventOfASequenceOnceAsItArrives)
 {
     Sequencer sequencer(oneCycleASecond());

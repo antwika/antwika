@@ -1,6 +1,7 @@
 #include "antwika/pattern/ParamValue.hpp"
 
 #include <cstdint>
+#include <limits>
 #include <string>
 
 #include "antwika/pattern/PatternError.hpp"
@@ -46,8 +47,27 @@ namespace antwika::pattern
                 "zero is not a value");
         }
 
+        if (denominator < 0)
+        {
+            // The sign belongs to the numerator, as Cycle holds it.
+            // A scaled minimum over minus one is a hardware trap, not a throw.
+            // Negating the most negative integer is what cannot be done.
+            if (numerator == std::numeric_limits<std::int64_t>::min()
+                || denominator
+                       == std::numeric_limits<std::int64_t>::min())
+            {
+                throw PatternError(
+                    "antwika::pattern: a parameter's sign cannot be "
+                    "moved to its numerator without leaving the range "
+                    "it is held in");
+            }
+
+            numerator = -numerator;
+            denominator = -denominator;
+        }
+
         // Scaling before dividing is what keeps the fraction's precision.
-        // Dividing first would throw away everything below the point.
+        // What is left below the scaled point is truncated towards zero.
         bits = scaled(numerator) / denominator;
     }
 

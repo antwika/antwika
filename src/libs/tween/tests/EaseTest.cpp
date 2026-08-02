@@ -230,6 +230,18 @@ TEST(EaseTest, RefusesADenominatorTooLargeForTheCurve)
 
 // The bounce puts its answer over 64 d^2 and then doubles it.
 // So it runs out one squaring earlier than the polynomials do.
+// The lift's addition is where a bounce sums two near-max terms.
+// The signed bound is what that sum must not leave.
+TEST(EaseTest, RefusesABounceWhoseLiftWouldNotFit)
+{
+    constexpr Tick kWide = 300000000;
+
+    EXPECT_THROW(
+        static_cast<void>(ease(
+            Easing::BounceInOut, Progress(kWide - 1, kWide))),
+        TweenError);
+}
+
 TEST(EaseTest, RefusesABounceWhoseHalvingWouldNotFit)
 {
     constexpr Tick kWide = 500000000;

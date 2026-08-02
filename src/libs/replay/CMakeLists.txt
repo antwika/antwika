@@ -20,6 +20,7 @@ find_package(nlohmann_json_schema_validator REQUIRED)
 antwika_add_library(
     NAME replay
     SOURCES
+        src/DocumentDepth.cpp
         src/EventJson.cpp
         src/EventSchema.cpp
         src/JsonShapes.cpp

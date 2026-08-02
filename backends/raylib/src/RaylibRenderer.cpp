@@ -15,6 +15,7 @@
 #include <antwika/gfx/GfxError.hpp>
 #include <antwika/gfx/TextRaster.hpp>
 
+#include "RaylibFrame.hpp"
 #include "RaylibMaterial.hpp"
 #include "RaylibMesh.hpp"
 #include "RaylibTexture.hpp"
@@ -450,6 +451,10 @@ namespace antwika::gfx::raylib
 
         EndDrawing();
         drawing = false;
+
+        // The one place raylib's input state moves.
+        // The input backend reads this to tell frames apart.
+        antwika::raylib::advanceFrame();
     }
 
     void RaylibRenderer::detach()

@@ -179,18 +179,19 @@ namespace antwika::ui
         {
             const auto height = lineHeightOf(theme);
 
+            // Clipping, so a row too full never shrinks its pieces.
+            // Shrunk, the glyph at one column was a character far along.
+            // The picture then lied against the grid a click is read on.
+            // Clipped, a wide line is cut at the pane's edge instead.
+            // The height is fixed to the glyph row rather than fit.
+            // A clipping container measures nothing at all.
+            // A fixed height is what keeps a blank line still a line.
             tree.open(Node{ // GCOVR_EXCL_LINE
                 .axis = Axis::Row,
                 .width = kGrow,
-                .height = kFit,
-                .gap = 0});
-
-            // A blank line is still a line.
-            // An empty text node measures nothing at all.
-            // So every row is opened over a strut one glyph cell tall.
-            tree.add(Node{ // GCOVR_EXCL_LINE
-                .width = fixedSize(0),
-                .height = fixedSize(height)});
+                .height = fixedSize(height),
+                .gap = 0,
+                .clips = true});
 
             const auto cuts = cutsIn(line);
 
@@ -433,6 +434,7 @@ namespace antwika::ui
             .lines = lines,
             .cursor = cursor,
             .anchor = anchor,
+            .dragging = spec.dragging,
             // Never zero, so the arithmetic reading them divides by something.
             // A theme may ask for no scale at all.
             .lineHeight = std::max(1U, lineHeightOf(themeValue)),

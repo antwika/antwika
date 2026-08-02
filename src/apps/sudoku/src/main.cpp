@@ -28,7 +28,7 @@
 #include "antwika/sudoku/Sudoku.hpp"
 #include "antwika/sudoku/SudokuOptions.hpp"
 #include "antwika/sudoku/SudokuScene.hpp"
-#include "antwika/sudoku/TickLimitSource.hpp"
+#include <antwika/app/TickLimitSource.hpp>
 
 using antwika::app::ConsoleLogging;
 using antwika::app::RecordedRun;
@@ -46,7 +46,7 @@ using antwika::sudoku::RenderSink;
 using antwika::sudoku::statusNameId;
 using antwika::sudoku::SudokuScene;
 using antwika::sudoku::SudokuSummary;
-using antwika::sudoku::TickLimitSource;
+using antwika::app::TickLimitSource;
 using antwika::time::SystemSleeper;
 
 namespace

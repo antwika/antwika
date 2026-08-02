@@ -8,7 +8,6 @@ add_executable(antwika_ui_demo_tests
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/KeyMapping.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/Messages.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/RenderSink.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/../src/TickBudgetSource.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/UiDemo.cpp
     DemoSceneTest.cpp
     DemoSinkTest.cpp
@@ -17,7 +16,6 @@ add_executable(antwika_ui_demo_tests
     MessagesTest.cpp
     RenderSinkTest.cpp
     RunIntegrationTest.cpp
-    TickBudgetSourceTest.cpp
 )
 
 target_include_directories(antwika_ui_demo_tests

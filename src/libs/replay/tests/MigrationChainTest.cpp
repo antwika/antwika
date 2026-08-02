@@ -171,6 +171,30 @@ TEST(MigrationChainTest, ADocumentNewerThanCurrentIsRefused)
     }
 }
 
+// Version 0 predates every migration this chain carries.
+// It used to load silently when there was nothing to migrate.
+// And to be blamed on the build's own chain when there was.
+TEST(MigrationChainTest, AVersionOlderThanEveryMigrationIsRefused)
+{
+    nlohmann::json document;
+    document["version"] = 0;
+
+    try
+    {
+        chainToThree().migrate(document);
+        FAIL() << "expected a SchemaVersionError";
+    }
+    catch (const SchemaVersionError &error)
+    {
+        const std::string message = error.what();
+        EXPECT_NE(message.find("version 0"), std::string::npos);
+        EXPECT_NE(
+            message.find("versions 1 through 3"), std::string::npos);
+        EXPECT_NE(
+            message.find("no release ever wrote"), std::string::npos);
+    }
+}
+
 TEST(MigrationChainTest, AnUnreadableVersionIsRefused)
 {
     nlohmann::json document;

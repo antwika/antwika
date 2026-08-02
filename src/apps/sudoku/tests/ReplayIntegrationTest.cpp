@@ -31,7 +31,7 @@
 #include <antwika/sudoku/Status.hpp>
 #include <antwika/sudoku/Sudoku.hpp>
 #include <antwika/sudoku/SudokuScene.hpp>
-#include <antwika/sudoku/TickLimitSource.hpp>
+#include <antwika/app/TickLimitSource.hpp>
 #include <antwika/sudoku/Widgets.hpp>
 
 #include "antwika/sudoku/Messages.hpp"
@@ -61,7 +61,7 @@ using antwika::sudoku::Square;
 using antwika::sudoku::Status;
 using antwika::sudoku::SudokuScene;
 using antwika::sudoku::SudokuSummary;
-using antwika::sudoku::TickLimitSource;
+using antwika::app::TickLimitSource;
 using antwika::sudoku::tests::ScratchFile;
 using antwika::sudoku::tests::squareCentre;
 using antwika::sudoku::tests::widgetCentre;

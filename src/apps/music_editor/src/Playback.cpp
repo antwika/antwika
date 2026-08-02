@@ -103,7 +103,8 @@ namespace antwika::music_editor
           sleeper(sleeper),
           // Held rather than read once.
           // A voice written later is made against the same shape.
-          shape(std::move(desc))
+          shape(std::move(desc)),
+          tempo(shape.framesPerCycle)
     {
         lead = static_cast<FrameCount>(
             shape.clock.frameAtTick(shape.lead));
@@ -123,7 +124,7 @@ namespace antwika::music_editor
             // See docs/confirming-unreachable-branches.md, signature (a).
             sequencer::SequencerDesc each{
                 .clock = shape.clock,
-                .tempo = shape.tempo,
+                .tempo = tempo,
                 .lookahead = shape.lookahead}; // GCOVR_EXCL_LINE
 
             perVoice.push_back(
@@ -291,6 +292,40 @@ namespace antwika::music_editor
     time::Tick Playback::playedTicks() const noexcept
     {
         return played;
+    }
+
+    void Playback::setSpeed(const sequencer::Rational speed)
+    {
+        // Twice as fast is half the frames to a cycle.
+        const auto pace = shape.framesPerCycle / speed;
+
+        // The next whole cycle no voice has been asked past.
+        // Never inside a queried window: those notes' frames are out.
+        // perVoice is never empty; the constructor grew the first line.
+        auto asked = perVoice.front().sequencer->queriedThrough();
+
+        for (const auto &line : perVoice)
+        {
+            asked = std::max(asked, line.sequencer->queriedThrough());
+        }
+
+        auto from = asked.sam() == asked ? asked : asked.nextSam();
+
+        // Strictly after the last change, whose first is cycle zero.
+        // So a second change inside one cycle lands a cycle later.
+        if (from <= retimed)
+        {
+            from = retimed + sequencer::Rational{1};
+        }
+
+        tempo.addSegment(from, pace);
+
+        for (const auto &line : perVoice)
+        {
+            line.sequencer->retime(from, pace);
+        }
+
+        retimed = from;
     }
 
 } // namespace antwika::music_editor

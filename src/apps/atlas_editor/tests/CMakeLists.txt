@@ -3,6 +3,7 @@ find_package(GTest REQUIRED)
 add_executable(antwika_atlas_editor_tests
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/AtlasEditor.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/Canvas.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/OpeningSheet.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/CanvasView.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/EditorOptions.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/EditorScene.cpp
@@ -14,7 +15,6 @@ add_executable(antwika_atlas_editor_tests
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/PngAtlasStore.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/RenderSink.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/SceneSnapshot.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/../src/TickLimitSource.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/TileGrid.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/Tool.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/UiOverlay.cpp
@@ -29,7 +29,6 @@ add_executable(antwika_atlas_editor_tests
     PngAtlasStoreTest.cpp
     RunIntegrationTest.cpp
     SceneTest.cpp
-    TickLimitSourceTest.cpp
     TileGridTest.cpp
 )
 

@@ -15,7 +15,6 @@ add_executable(antwika_sudoku
     src/Sudoku.cpp
     src/SudokuOptions.cpp
     src/SudokuScene.cpp
-    src/TickLimitSource.cpp
     src/main.cpp
 )
 

@@ -1,5 +1,8 @@
 #include "antwika/atlas_editor/EditorSink.hpp"
 
+#include "antwika/atlas_editor/AtlasEditorError.hpp"
+#include "antwika/atlas_editor/OpeningSheet.hpp"
+
 #include <cstddef>
 #include <cstdint>
 #include <optional>
@@ -51,12 +54,33 @@ namespace antwika::atlas_editor
           overlay(overlay),
           store(store),
           codec(codec),
-          translator(translator)
+          translator(translator),
+          // The sheet as this run opened it, before any edit lands.
+          // What a recorded announcement is checked against.
+          expectedOpening(openingSheetEvent(state.image()).payload)
     {
     }
 
     void EditorSink::handle(const TickEvent &event)
     {
+        // The sheet the recording was drawn on, checked out loud.
+        // Every Pick lifts a colour off the sheet.
+        // A replay against a changed --image diverged in silence.
+        if (event.event.name == events::kOpeningSheet)
+        {
+            if (event.event.payload != expectedOpening)
+            {
+                throw AtlasEditorError(
+                    "atlas_editor: this replay was recorded against "
+                    "another opening sheet (" + event.event.payload
+                    + ", and this run opened " + expectedOpening
+                    + "); replaying it here would repaint different "
+                      "pixels in silence");
+            }
+
+            return;
+        }
+
         if (event.event.name == antwika::engine::events::kTick)
         {
             state.noteTick();

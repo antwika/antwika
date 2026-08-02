@@ -261,6 +261,23 @@ TEST(ParsePatternTest, RefusesNoSlotsAtAll)
     EXPECT_THROW((void)read("3!0"), NotationError);
 }
 
+// In Tidal a spaced "0! 3" repeats the 0 and then plays the 3.
+// Eating the 3 as a count played wrong notes for a line brought over.
+// So a '!' with no count against it is refused.
+TEST(ParsePatternTest, RefusesABareRepeatMark)
+{
+    EXPECT_THROW((void)read("0! 3"), NotationError);
+    EXPECT_THROW((void)read("0!"), NotationError);
+    EXPECT_THROW((void)read("0!x"), NotationError);
+}
+
+// "0!2!3" used to keep the 3 and silently drop the 2.
+// Neither multiplied nor kept: refused, as ambiguity is here.
+TEST(ParsePatternTest, RefusesASecondRepeatCountOnOneTerm)
+{
+    EXPECT_THROW((void)read("0!2!3"), NotationError);
+}
+
 // The fraction NumberWords promises, reachable through the grammar.
 // '%' is a word character for exactly this.
 TEST(ParsePatternTest, ReadsAWordHoldingAFraction)

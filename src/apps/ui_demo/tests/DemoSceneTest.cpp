@@ -64,7 +64,8 @@ namespace
         "first",
         "focusRing",
         "this row is named",
-        "too little room shrinks children in proportion"};
+        "too little room shrinks children in proportion",
+        "line 0"};
 
     [[nodiscard]] std::optional<DrawText> findText(
         const Frame &frame, const std::string_view text)

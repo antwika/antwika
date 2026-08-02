@@ -67,6 +67,14 @@ namespace antwika::ui_demo
     {
     public:
         /**
+         * @brief Construct the state a fresh demo opens with.
+         *
+         * The pane opens on a few numbered lines rather than empty,
+         * so its scrollbar has something to say from the first frame.
+         */
+        DemoState();
+
+        /**
          * @brief Get which page is being shown.
          * @return The page; the first one until something chooses.
          */
@@ -183,6 +191,45 @@ namespace antwika::ui_demo
          */
         void setMessage(DemoMessage text);
 
+        /**
+         * @brief Get the many-line pane's whole document.
+         * @return The characters, a few numbered lines to start.
+         */
+        [[nodiscard]] const std::string &areaText() const noexcept;
+
+        /**
+         * @brief Get where the pane's caret sits.
+         * @return An index into areaText().
+         */
+        [[nodiscard]] std::size_t areaCursor() const noexcept;
+
+        /**
+         * @brief Get where the pane's selection ends, if one does.
+         * @return The other end's index; the caret's when none.
+         */
+        [[nodiscard]] std::size_t areaAnchor() const noexcept;
+
+        /**
+         * @brief Take an edit the pane reported.
+         * @param characters What the document became.
+         * @param at Where the caret ended up.
+         * @param other Where the selection's far end ended up.
+         */
+        void setArea(
+            std::string characters, std::size_t at, std::size_t other);
+
+        /**
+         * @brief Get which line the pane shows at its top.
+         * @return The line, handed back from the last frame's report.
+         */
+        [[nodiscard]] std::size_t areaScroll() const noexcept;
+
+        /**
+         * @brief Take the line the pane says it is showing.
+         * @param line What Interactions::scrolled reported.
+         */
+        void setAreaScroll(std::size_t line);
+
     private:
         Showcase page = Showcase::Labels;
         bool pickerShowing = false;
@@ -193,6 +240,11 @@ namespace antwika::ui_demo
         WidgetId focused = antwika::ui::kNoWidget;
         std::uint32_t clickCount = 0;
         std::optional<DemoMessage> note;
+
+        std::string paneText;
+        std::size_t paneCursor = 0;
+        std::size_t paneAnchor = 0;
+        std::size_t paneScroll = 0;
     };
 
 } // namespace antwika::ui_demo

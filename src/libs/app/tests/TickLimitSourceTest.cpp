@@ -8,9 +8,9 @@
 #include <antwika/event/TickEvent.hpp>
 #include <antwika/replay/ReplaySource.hpp>
 
-#include "antwika/atlas_editor/TickLimitSource.hpp"
+#include "antwika/app/TickLimitSource.hpp"
 
-using antwika::atlas_editor::TickLimitSource;
+using antwika::app::TickLimitSource;
 using antwika::event::Event;
 using antwika::event::TickEvent;
 using antwika::replay::ReplaySource;
@@ -20,7 +20,7 @@ namespace
     std::vector<TickEvent> oneEventOnTickTwo()
     {
         return {TickEvent{
-            .tick = 2, .event = Event{.name = "atlas_editor.something"}}};
+            .tick = 2, .event = Event{.name = "app.something"}}};
     }
 
     bool holdsStop(const std::vector<Event> &events)
@@ -45,7 +45,7 @@ TEST(TickLimitSourceTest, EventsFor_PassesEveryTickBeforeTheCapThrough)
     const auto events = source.eventsFor(2);
 
     ASSERT_EQ(events.size(), 1U);
-    EXPECT_EQ(events.front().name, "atlas_editor.something");
+    EXPECT_EQ(events.front().name, "app.something");
 }
 
 TEST(TickLimitSourceTest, EventsFor_AsksToStopOnceTheCapIsReached)
@@ -57,7 +57,7 @@ TEST(TickLimitSourceTest, EventsFor_AsksToStopOnceTheCapIsReached)
     const auto events = source.eventsFor(2);
 
     ASSERT_EQ(events.size(), 2U);
-    EXPECT_EQ(events.front().name, "atlas_editor.something");
+    EXPECT_EQ(events.front().name, "app.something");
     EXPECT_EQ(events.back().name, antwika::engine::events::kStop);
     EXPECT_TRUE(holdsStop(source.eventsFor(3)));
 }

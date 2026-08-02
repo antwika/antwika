@@ -67,6 +67,25 @@ TEST(TweenTest, IsExactlyInterpolateOverEase)
     }
 }
 
+// The guard is the signed 64 the downstream arithmetic runs in.
+// 6208 to the fifth fits it exactly.
+// 6209 through 7131 fit only the unsigned Tick.
+// Those used to come back as silent garbage or UB.
+TEST(TweenTest, RefusesADenominatorOnlyAnUnsignedTickCouldHold)
+{
+    EXPECT_THROW(
+        static_cast<void>(tweenBetween(
+            0, 2, Easing::QuintInOut, Progress(3000, 7000))),
+        TweenError);
+}
+
+TEST(TweenTest, TheLargestSignedFifthPowerStillEases)
+{
+    // The in-out midpoint of any curve is exactly half the span.
+    EXPECT_EQ(
+        tweenBetween(0, 2, Easing::QuintInOut, Progress(3104, 6208)), 1);
+}
+
 TEST(TweenTest, CarriesTheEasingsRefusalThrough)
 {
     EXPECT_THROW(

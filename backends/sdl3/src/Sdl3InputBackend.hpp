@@ -71,6 +71,13 @@ namespace antwika::input::sdl3
 
     private:
         std::shared_ptr<antwika::sdl3::Sdl3Pump> pump;
+
+        // The fractions of a wheel notch not yet reported.
+        // SDL reports wheels in floats.
+        // A touchpad's two-finger scroll arrives in fractions.
+        // Truncating every event would leave it at zero forever.
+        float remainderX = 0.0F;
+        float remainderY = 0.0F;
     };
 
 } // namespace antwika::input::sdl3

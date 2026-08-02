@@ -384,6 +384,7 @@ TEST(TextAreaScrollTest, PressingTheTopOfTheBarScrollsBackToTheStart)
 
 // A drag on the bar takes the text away from the caret.
 // Nothing pulls it back: only a caret that just moved is followed.
+// The caller says the drag began on the track, as areaPress told it.
 TEST(TextAreaScrollTest, ADragOnTheBarBeatsTheCaretItLeavesBehind)
 {
     const auto frame = frameOf(
@@ -391,7 +392,8 @@ TEST(TextAreaScrollTest, ADragOnTheBarBeatsTheCaretItLeavesBehind)
             .text = linesOf(40),
             .cursor = 0,
             .scroll = 0,
-            .scrollbar = true},
+            .scrollbar = true,
+            .dragging = antwika::ui::DragHome::Track},
         Keyboard{.keys = {Key::MoveRight}},
         Pointer{
             .position =
@@ -400,6 +402,82 @@ TEST(TextAreaScrollTest, ADragOnTheBarBeatsTheCaretItLeavesBehind)
 
     ASSERT_TRUE(frame.interactions.scrolled.has_value());
     EXPECT_EQ(frame.interactions.scrolled->line, 40 - kPage);
+}
+
+// A drag that began in the text never reaches the track.
+// Straying onto the bar mid-selection used to jump the scroll.
+TEST(TextAreaScrollTest, ASelectionStrayingOntoTheBarMovesNoScroll)
+{
+    const auto frame = frameOf(
+        TextAreaSpec{
+            .text = linesOf(40),
+            .cursor = 5,
+            .scroll = 0,
+            .scrollbar = true,
+            .dragging = antwika::ui::DragHome::Text},
+        Keyboard{},
+        Pointer{
+            .position = onTheBar(60), .down = true, .extends = true});
+
+    EXPECT_FALSE(frame.interactions.scrolled.has_value());
+}
+
+// An unnamed area never reports, even through the clamp route.
+// A report naming kNoWidget would shadow a named area's answer.
+TEST(TextAreaScrollTest, AnUnnamedAreaReportsNoScroll)
+{
+    Context ui{kCanvas, plainTheme()};
+
+    ui.textArea(TextAreaSpec{
+        .text = linesOf(20), .cursor = 0, .scroll = 500});
+
+    EXPECT_FALSE(ui.finish().interactions.scrolled.has_value());
+}
+
+// And a press in it names no AreaPress either.
+TEST(TextAreaScrollTest, AnUnnamedAreaReportsNoPress)
+{
+    const Pointer pointer{
+        .position = Point{.x = 2, .y = 2}, .down = true, .pressed = true};
+
+    Context ui{kCanvas, plainTheme(), pointer};
+
+    ui.textArea(TextAreaSpec{
+        .text = linesOf(20), .cursor = 0, .focused = true});
+
+    EXPECT_FALSE(ui.finish().interactions.areaPress.has_value());
+}
+
+// A press with no position names nothing.
+// The Pointer type permits a caller that never located its pointer.
+TEST(TextAreaScrollTest, APressWithNoPositionReportsNoPress)
+{
+    const auto frame = frameOf(
+        TextAreaSpec{
+            .text = linesOf(20), .cursor = 0, .scrollbar = true},
+        Keyboard{},
+        Pointer{.down = true, .pressed = true});
+
+    EXPECT_FALSE(frame.interactions.areaPress.has_value());
+}
+
+// A press on the bar names the track, so its drag stays there.
+TEST(TextAreaScrollTest, APressOnTheBarReportsATrackHome)
+{
+    const auto frame = frameOf(
+        TextAreaSpec{
+            .text = linesOf(40),
+            .cursor = 0,
+            .scrollbar = true},
+        Keyboard{},
+        Pointer{
+            .position = onTheBar(12), .down = true, .pressed = true});
+
+    ASSERT_TRUE(frame.interactions.areaPress.has_value());
+    EXPECT_EQ(frame.interactions.areaPress->area, kCode);
+    EXPECT_EQ(
+        frame.interactions.areaPress->home,
+        antwika::ui::DragHome::Track);
 }
 
 // The bar takes its width out of the room the text has.

@@ -48,6 +48,11 @@ TEST(ParseSizeTest, ParseSize_ReadsTwoNumbersWithACrossBetweenThem)
 TEST(ParseSizeTest, ParseSize_RefusesAnythingElse)
 {
     EXPECT_FALSE(parseSize("1024").has_value());
+
+    // 4294967297 is one past 32 bits with its low bits reading 1.
+    // The old cast silently opened a 1x64 sheet for that typo.
+    EXPECT_FALSE(parseSize("4294967297x64").has_value());
+    EXPECT_FALSE(parseSize("64x4294967297").has_value());
     EXPECT_FALSE(parseSize("axb").has_value());
     EXPECT_FALSE(parseSize("12xb").has_value());
     EXPECT_FALSE(parseSize("12x").has_value());

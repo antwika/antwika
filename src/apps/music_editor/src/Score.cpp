@@ -13,6 +13,8 @@
 #include "antwika/music_editor/ScoreError.hpp"
 #include "antwika/music_editor/VoiceChain.hpp"
 
+#include "ScoreText.hpp"
+
 namespace antwika::music_editor
 {
 
@@ -56,22 +58,7 @@ namespace antwika::music_editor
             return line;
         }
 
-        constexpr std::string_view kBlanks{" \t"};
-
-        [[nodiscard]] std::string_view trimmed(
-            std::string_view text) noexcept
-        {
-            const auto first = text.find_first_not_of(kBlanks);
-
-            if (first == std::string_view::npos)
-            {
-                return {};
-            }
-
-            const auto last = text.find_last_not_of(kBlanks);
-
-            return text.substr(first, last - first + 1);
-        }
+        using detail::trimmed;
     } // namespace
 
     std::string openingSource()

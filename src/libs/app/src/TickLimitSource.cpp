@@ -1,15 +1,14 @@
-#include "antwika/sudoku/TickLimitSource.hpp"
+#include "antwika/app/TickLimitSource.hpp"
 
 #include <antwika/engine/Events.hpp>
 
-namespace antwika::sudoku
+namespace antwika::app
 {
 
     using antwika::engine::events::kStop;
 
     TickLimitSource::TickLimitSource(
-        ITickEventSource &inner,
-        std::optional<antwika::time::Tick> limit)
+        ITickEventSource &inner, std::optional<antwika::time::Tick> limit)
         : inner(inner), limit(limit)
     {
     }
@@ -21,7 +20,7 @@ namespace antwika::sudoku
 
         // Appended rather than replacing what the tick carried.
         // The last thing somebody did still happens on the way out.
-        // Every branch on the excluded line is the allocator's.
+        // Every branch left on the excluded line is the allocator's.
         // Those are push_back's throw edge and its growth path.
         // Plus the heap branch of a name far too short to need one.
         if (limit.has_value() && tick >= *limit)
@@ -32,4 +31,4 @@ namespace antwika::sudoku
         return events;
     } // GCOVR_EXCL_LINE
 
-} // namespace antwika::sudoku
+} // namespace antwika::app

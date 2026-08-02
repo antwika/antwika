@@ -188,7 +188,7 @@ namespace antwika::music_editor
 
         if (isLeftRelease(*decoded))
         {
-            state.dragging = false;
+            state.dragging = ui::DragHome::None;
         }
 
         keyboard.typed = characters;
@@ -205,10 +205,13 @@ namespace antwika::music_editor
                 // Shift makes a press carry a selection on.
                 // A move under a held press is what drags one out.
                 // Nothing else does.
+                // And only a press that landed in the text does.
+                // The scrollbar's drags never select.
                 // So typing with a button held moves no caret.
                 .extends = press != nullptr
                     ? press->modifiers.shift
-                    : moved && state.dragging},
+                    : moved
+                          && state.dragging == ui::DragHome::Text},
             keyboard);
     }
 
@@ -303,14 +306,24 @@ namespace antwika::music_editor
             state.menuOpen = !state.menuOpen;
             changed = true;
         }
+        else if (acted.activated == kSpeedBox)
+        {
+            state.speedOpen = !state.speedOpen;
+            changed = true;
+        }
 
-        // Two lists, told apart by the box a choice names.
+        // Three lists, told apart by the box a choice names.
         if (acted.chosen.has_value())
         {
             if (acted.chosen->dropdown == kMenuBox)
             {
                 state.menuOpen = false;
                 menuAction(acted.chosen->index);
+            }
+            else if (acted.chosen->dropdown == kSpeedBox)
+            {
+                state.speedOpen = false;
+                speedAction(acted.chosen->index);
             }
             else
             {
@@ -337,9 +350,14 @@ namespace antwika::music_editor
         }
 
         // A press inside the pane is what a later move drags from.
+        // Where it landed -- the text or the scrollbar -- scopes it.
+        // The pane is this page's one area, so any report is its.
+        // An id check here would have no second answer to give.
         if (edge.pressed)
         {
-            state.dragging = acted.hovered == kCodeField;
+            state.dragging = acted.areaPress.has_value()
+                                 ? acted.areaPress->home
+                                 : ui::DragHome::None;
         }
 
         if (!changed)
@@ -429,7 +447,7 @@ namespace antwika::music_editor
         // A press outside the pane leaves a drag disarmed.
         if (edge.pressed)
         {
-            state.dragging = false;
+            state.dragging = ui::DragHome::None;
         }
 
         if (!changed)
@@ -491,6 +509,23 @@ namespace antwika::music_editor
                 .tick = foldedTick,
                 .event = {.name = antwika::engine::events::kStop}});
         }
+    }
+
+    void EditorSink::speedAction(const std::size_t index)
+    {
+        // Reapplied only on an actual change.
+        // A tempo boundary per idle click would pile up for nothing.
+        if (index == state.speed)
+        {
+            return;
+        }
+
+        state.speed = index;
+
+        const auto &pick = kSpeeds[index];
+
+        playback.setSpeed(
+            sequencer::Rational{pick.numerator, pick.denominator});
     }
 
     void EditorSink::saveNow()

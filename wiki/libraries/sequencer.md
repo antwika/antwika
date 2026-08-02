@@ -58,6 +58,10 @@ The sink borrows them for the call and copies only if it wants to keep one.
 **A position before the first tempo segment is extrapolated rather than refused.**
 A pattern shifted early legitimately asks about cycles before zero, and the only thing below frame zero is frame zero.
 
+**`retime()` is how tempo changes mid-run, and it cannot reach the past.**
+It adds a `TempoMap` segment from a position at or after `queriedThrough()` and refuses anything earlier, because the notes a queried window handed on already carry the frames the old timeline gave them, and moving those frames would be an edit to something the mixer may already be sounding.
+[music_editor](../apps/music_editor.md)'s speed box is the caller: one boundary per change, at the next whole cycle no voice has been asked past.
+
 ## What a replay sees of all this
 
 **Nothing musical is ever recorded, and nothing needs to be.**
