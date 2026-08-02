@@ -4,11 +4,14 @@
 #include <gtest/gtest.h>
 
 #include "antwika/sound/DeviceDesc.hpp"
+#include "antwika/sound/Frames.hpp"
+#include "antwika/sound/SampleBuffer.hpp"
 #include "antwika/sound/SoundError.hpp"
 #include "antwika/sound/WaveFormat.hpp"
 #include "antwika/sound/mocks/MockRenderCallback.hpp"
 
 using antwika::sound::DeviceDesc;
+using antwika::sound::FrameCount;
 using antwika::sound::NullDevice;
 using antwika::sound::SoundError;
 using antwika::sound::WaveFormat;
@@ -18,6 +21,12 @@ using ::testing::NiceMock;
 
 namespace
 {
+    // A buffer of exactly that many frames, complete in every channel.
+    MATCHER_P(HasFrames, frames, "")
+    {
+        return arg.frames == frames && arg.isComplete();
+    }
+
     [[nodiscard]] DeviceDesc usable()
     {
         return DeviceDesc{
@@ -86,6 +95,25 @@ TEST(NullDeviceTest, Pump_RendersExactlyWhatWasAsked)
 
     EXPECT_EQ(device.pump(192), 192U);
     EXPECT_EQ(device.framesPlayed(), 192U);
+}
+
+// The last chunk is clamped to what is left rather than overrun.
+// NullDevice discards its frames, so its own tests see the clamp here.
+TEST(NullDeviceTest, Pump_ClampsTheFinalChunkToWhatIsLeft)
+{
+    NullDevice device(usable());
+    NiceMock<MockRenderCallback> callback;
+
+    {
+        ::testing::InSequence order;
+        EXPECT_CALL(callback, render(HasFrames(FrameCount{64}), 0U));
+        EXPECT_CALL(callback, render(HasFrames(FrameCount{6}), 64U));
+    }
+
+    device.start(callback);
+
+    EXPECT_EQ(device.pump(70), 70U);
+    EXPECT_EQ(device.framesPlayed(), 70U);
 }
 
 // Nothing advances on its own.

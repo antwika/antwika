@@ -7,6 +7,7 @@
 #include <optional>
 #include <vector>
 
+#include <antwika/app/WindowCloseSource.hpp>
 #include <antwika/engine/Engine.hpp>
 #include <antwika/engine/StopSignal.hpp>
 #include <antwika/event/Event.hpp>
@@ -32,11 +33,11 @@
 #include "antwika/poker/TablePrinter.hpp"
 #include "antwika/poker/TableRenderSink.hpp"
 #include "antwika/poker/TableScene.hpp"
-#include "antwika/poker/WindowCloseSource.hpp"
 
 namespace antwika::poker
 {
 
+    using antwika::app::WindowCloseSource;
     using antwika::engine::Engine;
     using antwika::engine::StopSignal;
     using antwika::event::Event;

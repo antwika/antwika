@@ -64,6 +64,11 @@ Float is unarguable here because samples never reach simulation state — audio 
 A mixer wants one contiguous run per channel with no stride arithmetic; a file holds frames.
 `OfflineDevice` is the one place the two layouts meet.
 
+**Every pumped device renders through one loop, `src/RenderInChunks.hpp`.**
+The scratch planes, the spans a `SampleBuffer` is made of and the clamp on the last chunk were written out twice, in `NullDevice::pump()` and `OfflineDevice::pump()`, which meant a change to the clamp was visible to one device's tests and invisible to the other's.
+They now differ only in the callback they hand that loop: nothing at all for the one that discards, and the planar-to-interleaved copy for the one that keeps.
+It is a private header rather than public API, because what a device does with a chunk is the interesting half and this is the half that is not.
+
 **A mismatched rate is refused rather than resampled.**
 Resampling well is real signal processing and resampling badly is audible, so while there is no resampler the honest answer is to say so.
 

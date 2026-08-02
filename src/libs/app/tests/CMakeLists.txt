@@ -13,6 +13,7 @@ add_executable(antwika_app_tests
     RunGuardedTest.cpp
     RunRecordedTest.cpp
     WavFileTest.cpp
+    WindowCloseSourceTest.cpp
     WindowPointerMappingTest.cpp
 )
 
