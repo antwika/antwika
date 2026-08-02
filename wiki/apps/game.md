@@ -21,7 +21,8 @@ Right-click means one of two things: with a building tool selected it puts the p
 With the road tool selected a left-drag lays a whole run of road: the press marks where it starts, the pointer says where it ends, and the release lays the route between them.
 The toolbar carries zoom, reset-view, pause and menu buttons, drawn over the grid by `Toolbar`, described and resolved once per tick by `UiSink`, and painted last by `RenderSystem`; the bar also reports the tick, and a corner of the screen reports the frame rate.
 A city runs from the moment it comes up, so that button is how a player asks for a pause and how they let one go.
-F10, or the toolbar's `menu` button, opens a menu modal over the city with two items: one back to the main menu, and one back to the game.
+The toolbar's `menu` button opens a menu modal over the city with two items: one back to the main menu, and one back to the game.
+F10 fills the screen with the window and puts it back, which is the one key here that reaches no sink at all.
 It starts on an empty grid and loads nothing unless `--replay` says so, so a session contains exactly what somebody clicked.
 
 It runs until Escape is pressed or the window is closed — both of which are input, so both are recorded and both replay.
@@ -67,6 +68,24 @@ The plain `GameState` struct and its `GameStateReducer` are still there, folding
 **The camera is simulation state, not render state.**
 A click arrives as a pixel, and which cell it means depends entirely on the camera, so a renderer-owned camera would leave a replay resolving recorded clicks against a different view.
 That is also why zoom is an index into a table of whole tile sizes rather than a scale factor, why `floorDiv()` exists instead of `operator/`, and why the projection is anchored to the camera's pan rather than the canvas centre — anchoring to the centre would make a window resize change which cell a pixel means.
+
+**The window is resizable, and the picture scales with it — by the height.**
+Everything here is laid out, hit-tested and simulated against the one fixed `kUiCanvas`, and **nothing inside the tick path learns what size the window is.**
+`RenderSystem` builds a `gfx::ViewportRenderer` over the window's reported size and the canvas once per frame and draws every scene, every UI painter and every readout through it, so the reported size decides how big the result is blitted and where, and decides nothing else.
+That is [`docs/resizable-windows.md`](../../docs/resizable-windows.md)'s sanctioned offset generalised to an offset and a uniform scale, and it is safe for the same reason: applied after every decision, applied identically to everything, never asked what a pixel means.
+
+The height drives the scale, so a wide monitor and a narrow one of the same height draw the city equally tall and differ only in how much bar is left over; the aspect ratio is fixed and the remainder is pillarboxed or letterboxed, which is what keeps a toolbar anchored to an edge anchored to the *canvas's* edge.
+Widening the canvas with the window so that a wide monitor showed more world was refused rather than overlooked — that would make a layout a function of the reported size, which is the escape that document already rejects.
+`RenderSystem` paints the bars last rather than first, so a tile reaching past the canvas's edge is covered by one instead of showing in it.
+
+**The pointer is mapped back into canvas pixels upstream of the recorder**, by `app::WindowPointerMapping` through `input::InputPipelineOptions::pointerMapping`, so what a `--record` file holds is already a canvas coordinate.
+A session therefore replays identically at any window size, on any machine, with no window geometry in the file — which is the property the whole arrangement exists for, and `ViewportReplayTest` is where it is asserted end to end.
+
+**F10 fills the screen, and it is not this app's simulation state.**
+Fullscreen changes what `IWindow::size()` reports and nothing else, so with the scaling above in place it enlarges the picture and moves no hit target.
+It could not live in a sink — a sink is downstream of the recorder, inside the tick path — so `main` wraps the source in an `app::FullscreenToggleSource`, a pure observer that reads the key press and calls `setFullscreen()`.
+The press itself is ordinary recorded input, so a replay fills the screen where the run did and reaches the same city either way.
+That is why F10 no longer opens the menu modal: the bar's `menu` button is the whole route in now, and `UiSink` reads no key at all.
 
 **There is no event for placing anything.**
 A click is the input; `GridSink` turns it into a placement inside the tick path, and the replay stores the click and regenerates the placement.
@@ -201,7 +220,7 @@ That constant is the whole line rather than the two dashes alone, and the readou
 Absent rather than zero, because zero is a rate a stalling machine is genuinely measured at, and a run that has drawn for less than a second has measured nothing; reporting both as "fps 0" would be one word for two states, and the corner would also claim the machine was drawing no frames at the exact moment it started drawing them.
 
 **The menu modal is a modal rather than a mode, and whether it is up is simulation state.**
-F10 and the toolbar's `menu` button both open it, `UiSink` owns the flag, and no `ui.*` or `game.*` event exists for any of it — a recording holds the key press and the click, and a replay works out again which widget they hit.
+The toolbar's `menu` button opens it, `UiSink` owns the flag, and no `ui.*` or `game.*` event exists for any of it — a recording holds the click, and a replay works out again which widget it hit.
 Its scene is `MenuModalScene`, and the scrim behind the card is load-bearing rather than decoration: it is a container the size of the whole canvas with a fill behind it, so `ui::Interactions::pointerOverUi` is true wherever the pointer is and `GridSink`'s existing "what the UI covers, it covers from the grid too" rule keeps every press off the city with no second mechanism invented for it.
 The modal's commands are appended after the bar's in the one `UiOverlay` the renderer paints last, which is how "on top" is said where `antwika::gfx` offers no depth but paint order, and a press is resolved against the modal alone so a toolbar button cannot be pressed through it.
 

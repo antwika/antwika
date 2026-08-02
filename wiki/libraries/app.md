@@ -21,6 +21,8 @@ It holds no simulation logic of its own — everything here is glue that was dup
 | `IFramePass.hpp` | `IFramePass` | `draw(animation::Progress)` — what one of those frames is handed, and all it is handed. |
 | `FramePacingError.hpp` | `FramePacingError` | A pacing no loop could honour, such as a tick that draws no frames at all. |
 | `PointerReading.hpp` | `asPoint()`, `locates()`, `pointerFrom()`, `hoverFrom()` | Turns `input` edges into a `ui::Pointer`, and a pointer hint into a `ui::HoverPointer`. |
+| `WindowPointerMapping.hpp` | `WindowPointerMapping` | An `input::IPointerMapping` reading a window pixel as a pixel on the fixed canvas the app lays out against. |
+| `FullscreenToggleSource.hpp` | `FullscreenToggleSource` | An `ITickEventSource` decorator making a nominated key fill the screen with the window, altering not one event. |
 
 ## Depends on
 
@@ -67,6 +69,21 @@ A pass between two ticks cannot change what the simulation computes because it i
 `hoverFrom()` is a second function beside `pointerFrom()` rather than one more field on it.
 It reads a `std::optional<input::PointerHint>` — the free-moving position `input::PointerHintChannel` carries and no recording holds — as a `ui::HoverPointer`, which is the only thing `ui::applyHover()` takes.
 The two positions come from different places and mean different things, and keeping them apart in the type system is what stops one being passed where the other belongs.
+
+**`WindowPointerMapping` is the other end of `gfx::ViewportRenderer`, and it lives here for `PointerReading`'s reason.**
+The renderer places a fixed-size canvas inside a window through `gfx::viewportFor()`; this runs the very same transform backwards on a pointer position, so a click lands on whatever the pointer is over whatever size the window is.
+[`input`](input.md) does not depend on [`gfx`](gfx.md) and cannot name a window, `gfx` does not depend on `input` and cannot name a pointer, so the sentence saying the two describe one thing has to be said above both.
+
+**What it hands back is what a recording will hold**, because `input::InputPipeline` attaches it upstream of the recorder.
+That is the whole design rather than a detail: a session recorded on a window of one size replays on a window of any other, with no window geometry in the file — see [`docs/resizable-windows.md`](../../docs/resizable-windows.md).
+It reads the reported size afresh on every call rather than capturing it, so dragging an edge mid-session is handled by the next click being mapped through the new size, and by nothing else.
+
+**`FullscreenToggleSource` is where "fill the screen" belongs, and the reason is structural.**
+A fullscreen toggle is an action on the window, not simulation state: it changes what `gfx::IWindow::size()` reports and changes nothing else, and nothing a replay reproduces may read that number.
+A sink is downstream of the recorder and inside the tick path, where everything *is* a function of state a replay reproduces, so this sits above the loop instead — a pure observer of the stream in exactly `input::PointerHintSource`'s sense, handing back what its inner source returned, unchanged.
+The key press is ordinary recorded input, so a replay of a session in which somebody pressed it fills the screen at the same tick and reaches the same state either way, which is the property worth having rather than an accident.
+
+It holds an `IWindow &` rather than a `WindowId`, unlike `simulation::WindowInputSource`: that class holds an id precisely so it cannot close a window a renderer is still drawing into, and nothing here can close anything.
 
 **`runGuarded()` is the half of `runRecorded()` that knows nothing about replays.**
 It exists because an app's `main.cpp` may not have a `try` of its own, and `gfx_demo` and `gfx3d_demo` take no `--record`/`--replay` to call `runRecorded()` with.

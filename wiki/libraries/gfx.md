@@ -25,6 +25,8 @@ The concrete frameworks live under `backends/`, and exactly one is compiled into
 | `Glyphs.hpp`, `TextLayout.hpp` | `kGlyphAdvance`, `kGlyphLineHeight`, `textSize()` | The one built-in font's fixed cell, and the arithmetic over it. |
 | `GlyphCells.hpp`, `TextRaster.hpp` | `GlyphCells`, `glyphCells()`, `forEachGlyphPixel()` | That font rasterised onto those cells, and the one walk over the result every backend paints. |
 | `Point.hpp`, `Size.hpp`, `Rect.hpp`, `Color.hpp` | — | Geometry and colour. |
+| `Viewport.hpp` | `Viewport`, `viewportFor()` | Where a fixed-size canvas goes inside a window, and how much it is enlarged getting there. |
+| `ViewportRenderer.hpp` | `ViewportRenderer` | An `IRenderer` decorator putting every call through one of those, plus `fillSurround()` for the bars. |
 | `NullBackend.hpp` | `NullBackend` | The headless backend: opens windows that draw nothing, needs no display. |
 | `SelectedBackend.hpp` | — | Resolves the backend chosen at configure time. |
 | `GfxError.hpp` | `GfxError` | One error type, raised identically by every backend. |
@@ -127,6 +129,21 @@ That costs nothing, because rendering is already a write-only projection — and
 **A resizable window has two sizes, and they are named apart.**
 `IWindow::configuredSize()` is the size the app asked for and is the same number on the recording machine and the replaying one; `IWindow::size()` is what the window currently reports.
 **Nothing in a simulation may be driven from the reported size** — laying out or hit-testing against it would make a window resize change what a recorded click means — so it is only ever used to place what is drawn inside the drawable area.
+
+**Placing it may scale it, and that is a decorator rather than a mode.**
+`ViewportRenderer` wraps an `IRenderer` and puts every call through a `Viewport`, so a caller goes on emitting canvas coordinates and no backend learns the transform exists.
+That is safe for exactly the reason a centring offset is: it is applied uniformly, after every decision has been made, and it is never asked what a pixel means.
+`clear()` is deliberately not transformed — a frame starts from the whole drawable area — and `fillSurround()` paints the leftover bars *after* the picture, so a sprite reaching past the canvas's edge is covered rather than showing in one.
+`renderer3d()` hands the wrapped renderer's own back untouched, since a 3D draw is aimed by a projection matrix and there is nothing here to apply to it.
+
+**The scale is a ratio of two integers, in lowest terms.**
+`viewportFor(reported, canvas)` takes the scale from the *height*, so a wide monitor and a narrow one of the same height draw the picture equally tall, and lets the width cap it only when honouring the height would push the canvas past the window's edges.
+Two equal sizes give the identity exactly, which is what makes the whole mechanism cost a headless run nothing.
+Integer rather than a float because `Viewport::toCanvas()` runs the transform *backwards* on a pointer position, and that position is recorded input: a value differing in its last bit between two toolchains would cost a divergent session rather than a misplaced pixel.
+
+**Fullscreen is `resizable`'s counterpart, and changes only what `size()` reports.**
+`WindowDesc::fullscreen` is the initial state and `IWindow::setFullscreen()`/`isFullscreen()` are the seam; `configuredSize()` is untouched, so going fullscreen enlarges the picture and moves no hit target.
+`null` honours it by remembering the request and having nothing act on it, exactly as it honours `resizable`; `sdl3` sets `SDL_WINDOW_FULLSCREEN`; `raylib` compares before it toggles, because it offers a toggle rather than a setter.
 
 See [`blog/012-a-window-that-cant-talk-back.md`](../../blog/012-a-window-that-cant-talk-back.md) and [`docs/resizable-windows.md`](../../docs/resizable-windows.md).
 [`apps/gfx_demo`](../apps/gfx_demo.md) is the 2D showcase and [`apps/gfx3d_demo`](../apps/gfx3d_demo.md) the 3D one.
