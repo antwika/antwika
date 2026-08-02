@@ -131,8 +131,10 @@ namespace antwika::ui::detail
          * @param tree The arranged arena.
          * @param pointer What the caller reports about the pointer.
          * @param interactions Receives this stage's answers.
+         * @return Whether an overlay claimed the pointer; the stage
+         * reading clicks against areas suppresses itself on it.
          */
-        void hitTest(
+        [[nodiscard]] bool hitTest(
             const LayoutTree &tree,
             const Pointer &pointer,
             Interactions &interactions)
@@ -144,6 +146,8 @@ namespace antwika::ui::detail
             // Two passes are what say that.
             // One descending loop can only mean the arena's own order.
             const auto scan = [&](bool overlay) {
+                bool contained = false;
+
                 for (std::size_t index = tree.size(); index-- > 0;)
                 {
                     const auto &node = tree.node(index);
@@ -153,6 +157,8 @@ namespace antwika::ui::detail
                     {
                         continue;
                     }
+
+                    contained = true;
 
                     if (node.background)
                     {
@@ -175,12 +181,23 @@ namespace antwika::ui::detail
                             .index = node.optionIndex};
                     }
                 }
+
+                return contained;
             };
+
+            bool underOverlay = false;
 
             if (pointer.position)
             {
-                scan(true);
-                scan(false);
+                // A pointer an overlay claims never reaches beneath it.
+                // The point is in front of whatever the base layer put
+                // there, named or not, so the base layer stays unread.
+                underOverlay = scan(true);
+
+                if (!underOverlay)
+                {
+                    scan(false);
+                }
             }
 
             // Nothing hovered means there is nothing to activate.
@@ -190,6 +207,8 @@ namespace antwika::ui::detail
                 interactions.activated = interactions.hovered;
                 interactions.chosen = option;
             }
+
+            return underOverlay;
         }
 
         /**
@@ -553,6 +572,9 @@ namespace antwika::ui::detail
          * @param tree The arranged arena; a thumb's rectangle is
          * written.
          * @param pointer What the caller reports about the pointer.
+         * @param underOverlay Whether an overlay claimed the pointer;
+         * a claimed pointer reaches no track and no text, since what
+         * it is over is the overlay and not the area beneath.
          * @param interactions Receives the scroll report.
          * @param edit The edit the areas and fields reported where they
          * were declared, which a click on an area's text amends.
@@ -560,6 +582,7 @@ namespace antwika::ui::detail
         void resolveAreas(
             LayoutTree &tree,
             const Pointer &pointer,
+            const bool underOverlay,
             Interactions &interactions,
             std::optional<TextEdit> &edit)
         {
@@ -572,7 +595,8 @@ namespace antwika::ui::detail
                 const bool bar = area.track != kNoNode;
 
                 const bool onTrack =
-                    bar && pointer.position && pointer.down
+                    !underOverlay && bar && pointer.position
+                    && pointer.down
                     && contains(
                         tree.node(area.track).arranged, *pointer.position);
 
@@ -611,8 +635,9 @@ namespace antwika::ui::detail
 
                 // On the lines as they were drawn.
                 // The click landed on what was on the screen.
+                // Unless an overlay was over it: then it landed there.
                 const bool inText =
-                    area.focused && pointer.position
+                    !underOverlay && area.focused && pointer.position
                     && (pointer.pressed
                         || (pointer.down && pointer.extends))
                     && contains(showing.column, *pointer.position);
@@ -700,9 +725,10 @@ namespace antwika::ui::detail
         // Dressing is the only one that writes an appearance.
         Interactions interactions;
 
-        hitTest(tree, pointer, interactions);
+        const bool underOverlay = hitTest(tree, pointer, interactions);
+
         resolveFocus(tree, keyboard, focus, interactions);
-        resolveAreas(tree, pointer, interactions, edit);
+        resolveAreas(tree, pointer, underOverlay, interactions, edit);
         dress(tree, interactions, pointer.down);
 
         return interactions;

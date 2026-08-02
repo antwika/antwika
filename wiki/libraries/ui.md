@@ -121,6 +121,7 @@ A container with more asked of it than it has room for cuts every child down in 
 A clipping container keeps its children's own sizes and lets the placement that already keeps a child inside its parent clamp the ones past the bottom edge to nothing, and it asks its own parent for nothing on their behalf, so a pane is as tall as it was given rather than as tall as what it holds.
 
 An open dropdown's list is an *overlay*: out of its parent's flow, hung beneath the box it dropped from, painted after every other command and hit-tested before them — which is the only way to be on top when `gfx` offers no depth but paint order.
+A pointer any overlay node contains is the overlay's alone: the base layer is not scanned for a hover or a press, and the stage that reads clicks against a text area's lines and scrollbar suppresses itself the same way — so a press on an option hanging over a focused pane chooses, and never also moves the caret beneath it.
 
 **Where a widget ended up is a third answer off the same layout.**
 `Frame::rects` reports one rectangle per distinct id the frame named, and `find(id)` answers nothing for an id this frame did not declare.
