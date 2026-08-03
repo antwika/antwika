@@ -855,7 +855,7 @@ TEST(PrintSummaryTest, WritesEveryBuildingAndWhatItIs)
         .buildings =
             {{.at = {.x = 1, .y = 2},
               .kind = antwika::game::BuildingKind::House,
-              .coverage = {11, 0, 22, 0},
+              .coverage = {11, 22},
               .level = antwika::game::HousingLevel::Hovel},
              {.at = {.x = 3, .y = 4},
               .kind = antwika::game::BuildingKind::Well}},
@@ -871,13 +871,11 @@ TEST(PrintSummaryTest, WritesEveryBuildingAndWhatItIs)
     // Every service, including the ones nothing ever reached.
     EXPECT_NE(
         out.str().find(
-            "  house at (1, 2) hovel covered water=11 health=0 "
-            "safety=22 structure=0\n"),
+            "  house at (1, 2) hovel covered water=11 health=22\n"),
         std::string::npos);
     EXPECT_NE(
         out.str().find(
-            "  well at (3, 4) tent covered water=0 health=0 safety=0 "
-            "structure=0\n"),
+            "  well at (3, 4) tent covered water=0 health=0\n"),
         std::string::npos);
 }
 

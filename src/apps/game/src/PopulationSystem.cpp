@@ -10,11 +10,14 @@
 
 #include "antwika/game/Building.hpp"
 #include "antwika/game/Cell.hpp"
+#include "antwika/game/Coverage.hpp"
 #include "antwika/game/Footprint.hpp"
 #include "antwika/game/Household.hpp"
 #include "antwika/game/HousingLevel.hpp"
 #include "antwika/game/HousingQuery.hpp"
 #include "antwika/game/Journey.hpp"
+#include "antwika/game/Resource.hpp"
+#include "antwika/game/Service.hpp"
 #include "antwika/game/SpawnSystem.hpp"
 #include "antwika/game/Walker.hpp"
 
@@ -25,6 +28,25 @@ namespace antwika::game
     {
         using antwika::ecs::Entity;
         using antwika::ecs::kNullEntity;
+
+        // A house whose larder or water has run out is not lost.
+        // It empties instead, one person per settler period.
+        // Only what sustains() names is a larder.
+        // This replaces BuildingSystem's old starvation ending.
+        // What finally takes a neglected building is its own risk.
+        [[nodiscard]] bool starved(const Building &building)
+        {
+            for (const auto resource : kResources)
+            {
+                if (sustains(resource)
+                    && building.stock[resourceIndex(resource)] <= 0)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
     } // namespace
 
     PopulationSystem::PopulationSystem(
@@ -102,9 +124,18 @@ namespace antwika::game
         const auto door =
             spawnCellFor(at, footprintOf(building.kind), paths);
 
+        // Dry as the water carrier confers it: none left means none.
+        // The same "reaches at all" question every housing rule asks.
+        const bool dry =
+            coverageOf(world, entity, Service::Water) <= 0;
+
         // A house that has just devolved is over its ceiling.
         // Which is the one way to be crowded here.
-        if (!pleasant || household.population > capacity)
+        // A starved or dry house sheds its people the same way.
+        // Nobody moves into one either.
+        // This arm returns before send(), so it only ever empties.
+        if (!pleasant || household.population > capacity
+            || starved(building) || dry)
         {
             if (household.population <= 0)
             {

@@ -65,26 +65,6 @@ namespace antwika::game
             return building.collapseRisk >= kMaxRisk;
         }
 
-        // What ends a building outright: an empty larder.
-        // Only what sustains() names is a larder.
-        // A house holding no clay is a house nobody has carted to yet.
-        // A source holds stock nobody drains, so it never starves.
-        [[nodiscard]] bool starves(const Building &building)
-        {
-            if (!consumes(building.kind))
-            {
-                return false;
-            }
-
-            return std::ranges::any_of(
-                kResources,
-                [&building](Resource resource)
-                {
-                    return sustains(resource)
-                        && building.stock[resourceIndex(resource)] <= 0;
-                });
-        }
-
         void deliverTo(
             Building &building, Walker &walker, Resource resource)
         {
@@ -214,20 +194,56 @@ namespace antwika::game
             }
         }
 
-        // One risk's step, against the one service that holds it off.
-        // Safety is the fireman's and Structure is the engineer's.
-        // The two used to share one value climbing when either lapsed.
-        // So no readout could say which danger the number counted.
+        // A fireman zeroes fire risk, an engineer collapse risk.
+        // Beside the building, exactly where a delivery lands.
+        // Zeroing is idempotent, so no order over walkers matters.
+        // Which is what lets this walk a view whose order nobody names.
+        // Risk used to fall while a coverage countdown held instead.
+        // A visit now puts the danger back rather than a clock.
+        void relieve(
+            World &world,
+            const StandingBuildings &standing,
+            Pending &pending)
+        {
+            for (const auto entity : world.view<Walker, Cell>())
+            {
+                const auto kind = world.get<Walker>(entity).kind;
+
+                if (kind != WalkerKind::Fireman
+                    && kind != WalkerKind::Engineer)
+                {
+                    continue;
+                }
+
+                const auto at = world.get<Cell>(entity);
+
+                for (const auto &[cell, standingHere] :
+                     neighboursOf(standing, at))
+                {
+                    auto &building = touch(world, pending, standingHere);
+
+                    if (kind == WalkerKind::Fireman)
+                    {
+                        building.fireRisk = 0;
+                    }
+                    else
+                    {
+                        building.collapseRisk = 0;
+                    }
+                }
+            }
+        }
+
+        // The disease risk's step, against the medicine.
+        // It is the one risk that still answers to a service.
+        // No medicine and it climbs; any medicine and it falls.
         // The coverage is read as of the last commit.
         // Which is what the "serve" phase left at the previous tick.
         // One tick out of five hundred on a "came recently" countdown.
-        [[nodiscard]] std::int32_t stepped(
-            const World &world,
-            Entity entity,
-            Service service,
-            std::int32_t risk)
+        [[nodiscard]] std::int32_t steppedDisease(
+            const World &world, Entity entity, std::int32_t risk)
         {
-            return coverageOf(world, entity, service) <= 0
+            return coverageOf(world, entity, Service::Health) <= 0
                 ? std::min(kMaxRisk, risk + 1)
                 : std::max(0, risk - 1);
         }
@@ -262,17 +278,16 @@ namespace antwika::game
                     continue;
                 }
 
-                // Each risk against its own service, on one period.
-                // A fire station is a thing a district has.
-                // Rather than a thing that visits it.
+                // Fire and collapse only ever climb here.
+                // The relief pass is what puts either back to zero.
+                // Disease still answers to a service -- the medicine.
                 building.ticksUntilRisk = kRiskPeriodTicks;
-                building.fireRisk = stepped(
-                    world, entity, Service::Safety, building.fireRisk);
-                building.collapseRisk = stepped(
-                    world,
-                    entity,
-                    Service::Structure,
-                    building.collapseRisk);
+                building.fireRisk =
+                    std::min(kMaxRisk, building.fireRisk + 1);
+                building.collapseRisk =
+                    std::min(kMaxRisk, building.collapseRisk + 1);
+                building.diseaseRisk = steppedDisease(
+                    world, entity, building.diseaseRisk);
             }
         }
     } // namespace
@@ -293,6 +308,11 @@ namespace antwika::game
         deliver(world, standing, pending);
         age(world, pending);
 
+        // After age(), so a visit outlasts the step it shares.
+        // A saviour beside a maxing building saves it that tick.
+        // Before age(), the step would land after him and burn it.
+        relieve(world, standing, pending);
+
         // Ascending Cell rather than the pending map's Entity order.
         // Every ending turns people out, and people are contended.
         // The walker limit and a vacancy's beds are split amounts.
@@ -300,17 +320,20 @@ namespace antwika::game
         // See AllocationOrderTest.
         // A cell is unique per building, so no tie-break is needed.
         //
-        // One map for every ending rather than one map each.
+        // One map for both endings rather than one map each.
         // So a fire and a collapse resolve in one Cell order too.
         // Fire is asked first and collapse second.
         // A building meeting two endings in one tick takes the first.
-        // One answer, stated by the order of the three tests.
+        // One answer, stated by the order of the two tests.
         // Rather than by a tie rule written beside them.
+        //
+        // An empty larder is no ending at all any more.
+        // A house out of food or water empties instead.
+        // See PopulationSystem, which walks its people out.
         enum class Ending : std::uint8_t
         {
             Burns,
             Falls,
-            Starves,
         };
 
         std::map<Cell, std::pair<Entity, Ending>> lost;
@@ -333,33 +356,21 @@ namespace antwika::game
                 continue;
             }
 
-            if (starves(building))
-            {
-                lost.emplace(
-                    world.get<Cell>(entity),
-                    std::make_pair(entity, Ending::Starves));
-                continue;
-            }
-
             world.set<Building>(entity, building);
         }
 
         // An if-chain rather than a switch.
         // The last arm is then unconditional.
-        // So no impossible fourth branch exists to be uncoverable.
+        // So no impossible third branch exists to be uncoverable.
         for (const auto &[at, ending] : lost)
         {
             if (ending.second == Ending::Burns)
             {
                 ignite(world, built, ending.first, extent);
             }
-            else if (ending.second == Ending::Falls)
-            {
-                collapse(world, built, ending.first, extent);
-            }
             else
             {
-                demolish(world, built, ending.first, extent);
+                collapse(world, built, ending.first, extent);
             }
         }
     }

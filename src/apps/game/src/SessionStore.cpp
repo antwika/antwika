@@ -141,6 +141,7 @@ namespace antwika::game
                             .stock = building.stock,
                             .fireRisk = building.risk,
                             .collapseRisk = building.collapseRisk,
+                            .diseaseRisk = building.diseaseRisk,
                             .ticksUntilSpawn = building.ticksUntilSpawn,
                             .ticksUntilDrain = building.ticksUntilDrain,
                             .ticksUntilRisk = building.ticksUntilRisk},

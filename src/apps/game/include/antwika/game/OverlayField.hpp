@@ -40,9 +40,15 @@ namespace antwika::game
      * MapView.hpp say.** Desirability is genuinely per cell and is read
      * straight off the field the serve phase rebuilt. Everything else is
      * a fact about a *building* -- how much food is on its shelves, how
-     * much longer a service still reaches it -- and is painted over
-     * every cell of that building's block, because a block is the
-     * smallest thing any of those numbers is true of.
+     * much longer a service still reaches it, how close it is to being
+     * lost -- and is painted over every cell of that building's block,
+     * because a block is the smallest thing any of those numbers is
+     * true of.
+     *
+     * **The fire and damage views paint a building's own risk**, out of
+     * kMaxRisk, since the risks stopped answering to coverage: a
+     * strongly painted block is one close to its ending, which is what
+     * somebody opens either view to find.
      *
      * The normal view paints nothing at all, which is why it is the one
      * that comes out empty rather than the one with a branch of its own.
@@ -63,10 +69,12 @@ namespace antwika::game
     /**
      * @brief Get the colour a view paints in, at full strength.
      *
-     * One per view, and the four service views take serviceColour()'s
-     * answer rather than a second one of their own -- so a coverage
+     * One per view, and the two service views take serviceColour()'s
+     * answer rather than a second one of their own -- so an amount
      * line in the hover panel and the map painted from the same
      * coverage cannot come out in two different blues.
+     * The fire and damage views take the risk inks beside it, for the
+     * same reason: a risk line and a map of that risk agree.
      *
      * @param view The view to colour; Normal answers a colour nothing
      * ever paints with, since its field is empty.

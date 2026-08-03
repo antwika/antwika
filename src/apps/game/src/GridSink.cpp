@@ -10,7 +10,10 @@
 #include "antwika/game/Building.hpp"
 #include "antwika/game/Cell.hpp"
 #include "antwika/game/Cost.hpp"
+#include "antwika/game/Coverage.hpp"
 #include "antwika/game/Demolition.hpp"
+#include "antwika/game/HousingLevel.hpp"
+#include "antwika/game/Service.hpp"
 #include "antwika/game/IsoProjection.hpp"
 #include "antwika/game/Footprint.hpp"
 #include "antwika/game/Path.hpp"
@@ -269,6 +272,19 @@ namespace antwika::game
         const auto entity = world.create();
         world.add<Cell>(entity, cell);
         world.add<Building>(entity, Building{.kind = kind});
+
+        // A house is put up watered, as it is put up with food.
+        // A dry house takes nobody in -- see PopulationSystem.
+        // So no district could start before its well's first round.
+        // Only a house, since only a household drinks the water.
+        if (housesPeople(kind))
+        {
+            Coverage watered;
+            watered.ticksLeft[serviceIndex(Service::Water)] =
+                kCoverageFull;
+            setCoverage(world, entity, watered);
+        }
+
         (void)built.insert(cell, footprint);
 
         // After the refusals, so a refused block costs nothing.

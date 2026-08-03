@@ -355,7 +355,7 @@ namespace
         const auto well = putUp(Cell{.x = 2, .y = 2}, BuildingKind::Well);
         world.commit();
         antwika::game::setCoverage(
-            world, well, Coverage{.ticksLeft = {5, 6, 7, 8}});
+            world, well, Coverage{.ticksLeft = {5, 6}});
         world.commit();
 
         const auto stored = cityGridOf(world);
@@ -363,7 +363,7 @@ namespace
         ASSERT_EQ(stored.buildings.size(), 1U);
         EXPECT_EQ(
             stored.buildings[0].coverage,
-            (Coverage{.ticksLeft = {5, 6, 7, 8}}));
+            (Coverage{.ticksLeft = {5, 6}}));
 
         restoreCityGrid(world, built, paths, stored);
         world.commit();
@@ -372,7 +372,7 @@ namespace
         ASSERT_EQ(entities.size(), 1U);
         EXPECT_EQ(
             coverageOf(world, *entities.begin()),
-            (Coverage{.ticksLeft = {5, 6, 7, 8}}));
+            (Coverage{.ticksLeft = {5, 6}}));
     }
 
     // An absent component already means uncovered.

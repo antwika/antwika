@@ -33,9 +33,7 @@ namespace antwika::game
     enum class Service : std::uint8_t
     {
         Water = 0,   ///< Conferred by a well's water carrier.
-        Health,      ///< Conferred by a doctor.
-        Safety,      ///< Conferred by a fireman.
-        Structure,   ///< Conferred by an engineer.
+        Health,      ///< Conferred by a doctor: the medicine readout.
     };
 
     /**
@@ -43,9 +41,15 @@ namespace antwika::game
      *
      * Derived from the last enumerator rather than written out, so it
      * cannot drift from the enumeration it counts.
+     *
+     * **Two now rather than four.** Safety and Structure left when the
+     * risks stopped answering to coverage: a fire risk and a collapse
+     * risk climb on every building all the time, and a fireman or an
+     * engineer standing beside one knocks its risk back down instead of
+     * refreshing a countdown -- see BuildingSystem.
      */
     inline constexpr std::size_t kServiceCount =
-        static_cast<std::size_t>(Service::Structure) + 1;
+        static_cast<std::size_t>(Service::Health) + 1;
 
     /**
      * @brief Get a service's index, for addressing a per-service table.
@@ -68,9 +72,7 @@ namespace antwika::game
      */
     inline constexpr std::array<Service, kServiceCount> kServices{
         Service::Water,
-        Service::Health,
-        Service::Safety,
-        Service::Structure};
+        Service::Health};
 
     /**
      * @brief Get a service's name.
@@ -87,9 +89,7 @@ namespace antwika::game
     {
         constexpr std::array<std::string_view, kServiceCount> names{
             "water",
-            "health",
-            "safety",
-            "structure"};
+            "health"};
 
         return names[serviceIndex(service) % kServiceCount];
     }
@@ -113,6 +113,6 @@ namespace antwika::game
         "kServices must list every service in its own index order");
 
     static_assert(serviceName(Service::Water) == "water");
-    static_assert(serviceName(Service::Structure) == "structure");
+    static_assert(serviceName(Service::Health) == "health");
 
 } // namespace antwika::game

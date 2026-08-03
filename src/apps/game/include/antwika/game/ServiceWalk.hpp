@@ -26,6 +26,11 @@ namespace antwika::game
      * A migrant is going somewhere too, and is carrying nothing but
      * themselves -- see Journey.
      *
+     * **A fireman and an engineer confer nothing here on purpose.**
+     * The risks stopped answering to coverage: each climbs all the
+     * time, and those two knock a building's risk straight back down
+     * as they pass instead -- see BuildingSystem's relief pass.
+     *
      * @param kind The kind of walker.
      * @return The service its kind confers, or nullopt for one that
      * confers none.
@@ -37,8 +42,8 @@ namespace antwika::game
             std::optional<Service>, kWalkerKindCount> confers{
             Service::Water,       // WaterCarrier
             Service::Health,      // Doctor
-            Service::Safety,      // Fireman
-            Service::Structure,   // Engineer
+            std::nullopt,         // Fireman
+            std::nullopt,         // Engineer
             std::nullopt,         // CartPusher
             std::nullopt,         // MarketBuyer
             std::nullopt,         // MarketSeller
@@ -97,7 +102,9 @@ namespace antwika::game
         "every service must have a walker kind that confers it");
 
     static_assert(
-        serviceConferredBy(WalkerKind::Fireman) == Service::Safety);
+        serviceConferredBy(WalkerKind::Doctor) == Service::Health);
+    static_assert(
+        !serviceConferredBy(WalkerKind::Fireman).has_value());
     static_assert(
         !serviceConferredBy(WalkerKind::CartPusher).has_value());
 

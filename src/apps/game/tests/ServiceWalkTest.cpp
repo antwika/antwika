@@ -20,9 +20,11 @@ TEST(ServiceWalkTest, ServiceConferredBy_NamesTheServiceOfEveryWalker)
     EXPECT_EQ(
         serviceConferredBy(WalkerKind::WaterCarrier), Service::Water);
     EXPECT_EQ(serviceConferredBy(WalkerKind::Doctor), Service::Health);
-    EXPECT_EQ(serviceConferredBy(WalkerKind::Fireman), Service::Safety);
-    EXPECT_EQ(
-        serviceConferredBy(WalkerKind::Engineer), Service::Structure);
+
+    // A fireman and an engineer relieve a risk directly instead.
+    // See BuildingSystem's relief pass.
+    EXPECT_EQ(serviceConferredBy(WalkerKind::Fireman), std::nullopt);
+    EXPECT_EQ(serviceConferredBy(WalkerKind::Engineer), std::nullopt);
     EXPECT_EQ(
         serviceConferredBy(WalkerKind::CartPusher), std::nullopt);
     EXPECT_EQ(

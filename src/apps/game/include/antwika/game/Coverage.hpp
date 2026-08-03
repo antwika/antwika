@@ -98,6 +98,12 @@ namespace antwika::game
      * keeps a building from acquiring an all-zero component just to
      * make one call site simpler.
      *
+     * A building is given one the first time somebody reaches it --
+     * with one exception: a house is *placed* holding a full water
+     * countdown, as it is placed holding a little food, since a dry
+     * house takes nobody in and no district could otherwise start
+     * before its well's first carrier came round. See GridSink.
+     *
      * @param world Staged into; the write lands at the next commit().
      * @param entity The building to write; must be alive.
      * @param coverage What it is to hold.

@@ -79,7 +79,7 @@ TEST(ReadoutPanelTest, Panel_NamesABuildingAndListsWhatItDependsOn)
         kCanvas,
         kTranslator);
 
-    ASSERT_EQ(panel.lines.size(), 11U);
+    ASSERT_EQ(panel.lines.size(), 14U);
     EXPECT_EQ(panel.lines[0].text, "house");
     EXPECT_EQ(panel.lines[1].text, "level: tent");
     EXPECT_EQ(panel.lines[2].text, "people 0/5");
@@ -88,9 +88,12 @@ TEST(ReadoutPanelTest, Panel_NamesABuildingAndListsWhatItDependsOn)
     EXPECT_EQ(panel.lines[5].text, "  food 12/100");
     EXPECT_EQ(panel.lines[6].text, "  clay 34/100");
     EXPECT_EQ(panel.lines[7].text, "  pottery 56/100");
-    EXPECT_EQ(panel.lines[8].text, "risk");
-    EXPECT_EQ(panel.lines[9].text, "  fire 0%");
-    EXPECT_EQ(panel.lines[10].text, "  collapse 0%");
+    EXPECT_EQ(panel.lines[8].text, "  water 0/100");
+    EXPECT_EQ(panel.lines[9].text, "  medicine 0/100");
+    EXPECT_EQ(panel.lines[10].text, "risk");
+    EXPECT_EQ(panel.lines[11].text, "  fire 0%");
+    EXPECT_EQ(panel.lines[12].text, "  collapse 0%");
+    EXPECT_EQ(panel.lines[13].text, "  disease 0%");
     EXPECT_EQ(kStockCapacity, 100);
 }
 
@@ -107,15 +110,22 @@ TEST(ReadoutPanelTest, Panel_NamesASourceAndListsNoStockItNeverSpends)
         kCanvas,
         kTranslator);
 
-    ASSERT_EQ(panel.lines.size(), 5U);
+    ASSERT_EQ(panel.lines.size(), 9U);
     EXPECT_EQ(panel.lines[0].text, "farm");
     EXPECT_EQ(panel.lines[1].text, "staff 0/4");
 
+    // Water and medicine are on every building, even at nothing.
+    // The stock a source keeps and nobody drains stays unlisted.
+    EXPECT_EQ(panel.lines[2].text, "resources");
+    EXPECT_EQ(panel.lines[3].text, "  water 0/100");
+    EXPECT_EQ(panel.lines[4].text, "  medicine 0/100");
+
     // The risk section is on every building, even at nothing.
     // A watched district's danger is a fact somebody wants at zero.
-    EXPECT_EQ(panel.lines[2].text, "risk");
-    EXPECT_EQ(panel.lines[3].text, "  fire 0%");
-    EXPECT_EQ(panel.lines[4].text, "  collapse 0%");
+    EXPECT_EQ(panel.lines[5].text, "risk");
+    EXPECT_EQ(panel.lines[6].text, "  fire 0%");
+    EXPECT_EQ(panel.lines[7].text, "  collapse 0%");
+    EXPECT_EQ(panel.lines[8].text, "  disease 0%");
 }
 
 TEST(ReadoutPanelTest, Panel_NamesAWalkerAndWhatItIsCarrying)
@@ -160,7 +170,7 @@ TEST(ReadoutPanelTest, Panel_ColoursALineAsTheBarThatCountsTheSameThing)
         kCanvas,
         kTranslator);
 
-    ASSERT_EQ(panel.lines.size(), 11U);
+    ASSERT_EQ(panel.lines.size(), 14U);
     EXPECT_EQ(panel.lines[0].colour, kReadoutTitle);
     EXPECT_EQ(panel.lines[1].colour, kReadoutTitle);
     EXPECT_EQ(panel.lines[2].colour, kReadoutTitle);
@@ -170,13 +180,16 @@ TEST(ReadoutPanelTest, Panel_ColoursALineAsTheBarThatCountsTheSameThing)
     EXPECT_EQ(panel.lines[6].colour, resourceColour(Resource::Clay));
     EXPECT_EQ(
         panel.lines[7].colour, resourceColour(Resource::Pottery));
+    EXPECT_EQ(panel.lines[8].colour, serviceColour(Service::Water));
+    EXPECT_EQ(panel.lines[9].colour, serviceColour(Service::Health));
 
-    // A risk line wears the colour of the service that holds it off.
-    EXPECT_EQ(panel.lines[8].colour, kReadoutTitle);
+    // A risk line wears its own ink, named once beside the table.
+    EXPECT_EQ(panel.lines[10].colour, kReadoutTitle);
+    EXPECT_EQ(panel.lines[11].colour, antwika::game::kFireRiskInk);
     EXPECT_EQ(
-        panel.lines[9].colour, serviceColour(Service::Safety));
+        panel.lines[12].colour, antwika::game::kCollapseRiskInk);
     EXPECT_EQ(
-        panel.lines[10].colour, serviceColour(Service::Structure));
+        panel.lines[13].colour, antwika::game::kDiseaseRiskInk);
 }
 
 TEST(ReadoutPanelTest, Panel_HoldsEveryLineInsideItsOwnBox)
@@ -287,27 +300,26 @@ TEST(ReadoutPanelTest, EqualityComparesEveryField)
     EXPECT_NE(base, recoloured);
 }
 
-// Coverage is listed for every kind of building, not only a house.
-// Risk is a fact about any building, and coverage is what holds it off.
-TEST(ReadoutPanelTest, Panel_ListsEveryServiceThatStillReachesABuilding)
+// Water and medicine are listed for every kind of building.
+// Both are amounts on the stock lines' own scale and format.
+TEST(ReadoutPanelTest, Panel_ListsWaterAndMedicineOnAnyBuilding)
 {
     const auto panel = readoutPanel(
         over(
             BuildingSprite{
                 .at = Cell{},
                 .kind = BuildingKind::Well,
-                .coverage = {kCoverageFull, 0, kCoverageFull / 2, 0}}),
+                .coverage = {kCoverageFull, kCoverageFull / 2}}),
         kCanvas,
         kTranslator);
 
-    ASSERT_EQ(panel.lines.size(), 7U);
+    ASSERT_EQ(panel.lines.size(), 9U);
     EXPECT_EQ(panel.lines[0].text, "well");
     EXPECT_EQ(panel.lines[1].text, "staff 0/1");
-    EXPECT_EQ(panel.lines[2].text, "risk");
-    EXPECT_EQ(panel.lines[3].text, "  fire 0%");
-    EXPECT_EQ(panel.lines[4].text, "  collapse 0%");
-    EXPECT_EQ(panel.lines[5].text, "water 100%");
-    EXPECT_EQ(panel.lines[6].text, "safety 50%");
+    EXPECT_EQ(panel.lines[2].text, "resources");
+    EXPECT_EQ(panel.lines[3].text, "  water 100/100");
+    EXPECT_EQ(panel.lines[4].text, "  medicine 50/100");
+    EXPECT_EQ(panel.lines[5].text, "risk");
 }
 
 // The tier is named rather than numbered.
@@ -327,9 +339,9 @@ TEST(ReadoutPanelTest, Panel_NamesTheTierAHouseIsOn)
     EXPECT_EQ(panel.lines[1].text, "level: cottage");
 }
 
-// A service that has lapsed is not listed at all.
-// An absent line and a line reading nothing say one thing.
-TEST(ReadoutPanelTest, Panel_ListsNoServiceThatHasLapsed)
+// Water and medicine are said even at nothing.
+// Zero is exactly the state a watcher wants warned of.
+TEST(ReadoutPanelTest, Panel_SaysWaterAndMedicineEvenAtNothing)
 {
     const auto panel = readoutPanel(
         over(
@@ -340,8 +352,10 @@ TEST(ReadoutPanelTest, Panel_ListsNoServiceThatHasLapsed)
         kCanvas,
         kTranslator);
 
-    ASSERT_EQ(panel.lines.size(), 11U);
+    ASSERT_EQ(panel.lines.size(), 14U);
     EXPECT_EQ(panel.lines[0].text, "house");
+    EXPECT_EQ(panel.lines[8].text, "  water 0/100");
+    EXPECT_EQ(panel.lines[9].text, "  medicine 0/100");
 }
 
 // How full a house is, against what its tier has room for.
@@ -379,26 +393,27 @@ TEST(ReadoutPanelTest, Panel_SaysNoOccupancyForABuildingNobodyLivesIn)
         kCanvas,
         kTranslator);
 
-    ASSERT_EQ(panel.lines.size(), 5U);
+    ASSERT_EQ(panel.lines.size(), 9U);
     EXPECT_EQ(panel.lines[0].text, "well");
     EXPECT_EQ(panel.lines[1].text, "staff 0/1");
-    EXPECT_EQ(panel.lines[2].text, "risk");
+    EXPECT_EQ(panel.lines[2].text, "resources");
+    EXPECT_EQ(panel.lines[5].text, "risk");
 }
 
-TEST(ReadoutPanelTest, Panel_ColoursACoverageLineOutOfTheServiceTable)
+TEST(ReadoutPanelTest, Panel_ColoursTheMedicineLineOutOfTheServiceTable)
 {
     const auto panel = readoutPanel(
         over(
             BuildingSprite{
                 .at = Cell{},
                 .kind = BuildingKind::Doctor,
-                .coverage = {0, kCoverageFull, 0, 0}}),
+                .coverage = {0, kCoverageFull}}),
         kCanvas,
         kTranslator);
 
-    ASSERT_EQ(panel.lines.size(), 6U);
-    EXPECT_EQ(panel.lines[5].colour, serviceColour(Service::Health));
-    EXPECT_EQ(panel.lines[5].text, "health 100%");
+    ASSERT_EQ(panel.lines.size(), 9U);
+    EXPECT_EQ(panel.lines[4].colour, serviceColour(Service::Health));
+    EXPECT_EQ(panel.lines[4].text, "  medicine 100/100");
 }
 
 // A ruin says its state and stops.

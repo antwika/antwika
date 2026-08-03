@@ -261,6 +261,9 @@ namespace antwika::game
         /** @brief How close it is to falling down, on the same terms. */
         std::int32_t collapseRisk = 0;
 
+        /** @brief How close its people are to sickness, likewise. */
+        std::int32_t diseaseRisk = 0;
+
         /**
          * @brief Compare two building sprites.
          * @param other The sprite to compare against.

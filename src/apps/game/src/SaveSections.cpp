@@ -255,6 +255,10 @@ namespace antwika::game
         // Which is what a file written before the split says.
         // Its combined "risk" reads as the fire risk alone.
         shape["properties"]["collapseRisk"] = signedCountShape();
+
+        // Optional on the same terms, for the disease risk.
+        // Absent is what a file written before it existed says.
+        shape["properties"]["diseaseRisk"] = signedCountShape();
         shape["properties"]["ticksUntilSpawn"] = signedCountShape();
         shape["properties"]["ticksUntilDrain"] = signedCountShape();
         shape["properties"]["ticksUntilRisk"] = signedCountShape();
@@ -311,6 +315,11 @@ namespace antwika::game
                 entry["collapseRisk"] = building.collapseRisk;
             }
 
+            if (building.diseaseRisk != 0)
+            {
+                entry["diseaseRisk"] = building.diseaseRisk;
+            }
+
             entry["ticksUntilSpawn"] = building.ticksUntilSpawn;
             entry["ticksUntilDrain"] = building.ticksUntilDrain;
             entry["ticksUntilRisk"] = building.ticksUntilRisk;
@@ -361,6 +370,9 @@ namespace antwika::game
                 .risk = building.at("risk").get<std::int32_t>(),
                 .collapseRisk = building.contains("collapseRisk")
                     ? building.at("collapseRisk").get<std::int32_t>()
+                    : 0,
+                .diseaseRisk = building.contains("diseaseRisk")
+                    ? building.at("diseaseRisk").get<std::int32_t>()
                     : 0,
                 .ticksUntilSpawn =
                     building.at("ticksUntilSpawn").get<std::int32_t>(),

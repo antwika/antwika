@@ -74,6 +74,7 @@ add_executable(antwika_game
     src/SaveMigrants.cpp
     src/SaveMigration.cpp
     src/SaveMigrationV2ToV3.cpp
+    src/SaveMigrationV3ToV4.cpp
     src/SaveProduction.cpp
     src/SaveRuins.cpp
     src/SaveSections.cpp

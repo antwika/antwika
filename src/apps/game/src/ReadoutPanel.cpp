@@ -80,12 +80,6 @@ namespace antwika::game
                 MessageId::HousingHovel,
                 MessageId::HousingCottage};
 
-        constexpr std::array<MessageId, kServiceCount> kServiceLabels{
-            MessageId::ServiceWater,
-            MessageId::ServiceHealth,
-            MessageId::ServiceSafety,
-            MessageId::ServiceStructure};
-
         [[nodiscard]] MessageId labelOf(BuildingKind kind) noexcept
         {
             return kBuildingLabels[
@@ -108,6 +102,25 @@ namespace antwika::game
             const auto amount = std::to_string(held);
             const auto most = std::to_string(capacity);
             const std::array<std::string_view, 3> args{named, amount, most};
+
+            return translator.formatted(MessageId::ReadoutAmount, args);
+        }
+
+        // A service, said on the stock lines' own scale and format.
+        // Ticks of coverage are a number about the simulation.
+        // Water and medicine read as amounts a house is holding.
+        // Which is the range every other resource line uses.
+        [[nodiscard]] std::string servedText(
+            const Translator &translator,
+            MessageId named,
+            std::int32_t left)
+        {
+            const auto name = translator.text(named);
+            const auto amount =
+                std::to_string(left * kStockCapacity / kCoverageFull);
+            const auto most = std::to_string(kStockCapacity);
+            const std::array<std::string_view, 3> args{
+                name, amount, most};
 
             return translator.formatted(MessageId::ReadoutAmount, args);
         }
@@ -194,22 +207,6 @@ namespace antwika::game
             return translator.formatted(caption, args);
         }
 
-        // Per cent rather than the ticks the component counts.
-        // A countdown in ticks is a number about the simulation.
-        // What a reader wants is how much of the service is left.
-        [[nodiscard]] std::string coverageText(
-            const Translator &translator, Service service, std::int32_t left)
-        {
-            const auto named = translator.text(
-                kServiceLabels[serviceIndex(service) % kServiceCount]);
-            const auto share =
-                std::to_string(left * 100 / kCoverageFull);
-            const std::array<std::string_view, 2> args{named, share};
-
-            return translator.formatted(
-                MessageId::ReadoutCoverage, args);
-        }
-
         // One line's worth, before anything decides where to put it.
         struct Said
         {
@@ -278,17 +275,19 @@ namespace antwika::game
                             .colour = kReadoutTitle});
                 }
 
+                // On every kind of building, even at zero.
+                // The stock lines still follow the bars' rule.
+                // Water and medicine are facts about any building.
+                // And zero is exactly what a watcher wants warned of.
+                said.push_back(
+                    Said{ // GCOVR_EXCL_LINE
+                        .text = translator.text(
+                            MessageId::ReadoutResourcesTitle),
+                        .colour = kReadoutTitle});
+
                 // The very rule the bars follow -- see buildingBars().
-                // Under a heading of their own.
-                // So the amounts read as one section, not loose lines.
                 if (consumes(building.kind))
                 {
-                    said.push_back(
-                        Said{ // GCOVR_EXCL_LINE
-                            .text = translator.text(
-                                MessageId::ReadoutResourcesTitle),
-                            .colour = kReadoutTitle});
-
                     for (std::size_t slot = 0; slot < kResourceCount;
                          ++slot)
                     {
@@ -304,8 +303,28 @@ namespace antwika::game
                     }
                 }
 
-                // The two risks, on every building and even at zero.
-                // A lapsed service is omitted; a risk of nothing is not.
+                // What a carrier and a doctor left behind, as amounts.
+                // On the stock lines' own scale and format.
+                // A dry house empties, so the water line is always said.
+                // And the medicine is what holds the disease off.
+                said.push_back(
+                    Said{ // GCOVR_EXCL_LINE
+                        .text = grouped(servedText(
+                            translator,
+                            MessageId::ServiceWater,
+                            building.coverage[
+                                serviceIndex(Service::Water)])),
+                        .colour = serviceColour(Service::Water)});
+                said.push_back(
+                    Said{ // GCOVR_EXCL_LINE
+                        .text = grouped(servedText(
+                            translator,
+                            MessageId::ServiceMedicine,
+                            building.coverage[
+                                serviceIndex(Service::Health)])),
+                        .colour = serviceColour(Service::Health)});
+
+                // The three risks, on every building and even at zero.
                 // Nothing is a measured fact a watcher wants to read.
                 // An unheralded fire is why the section exists.
                 said.push_back(
@@ -319,37 +338,21 @@ namespace antwika::game
                             translator,
                             MessageId::ReadoutFireRisk,
                             building.fireRisk)),
-                        .colour = serviceColour(Service::Safety)});
+                        .colour = kFireRiskInk});
                 said.push_back(
                     Said{ // GCOVR_EXCL_LINE
                         .text = grouped(riskText(
                             translator,
                             MessageId::ReadoutCollapseRisk,
                             building.collapseRisk)),
-                        .colour = serviceColour(Service::Structure)});
-
-                // Every kind of building, rather than only a house.
-                // Risk is a fact about any building at all.
-                // And coverage is what holds risk off.
-                // A service that has lapsed is simply not listed.
-                // The same way a source with no larder lists no stock.
-                // Absent and zero say one thing, so one line will do.
-                for (const auto service : kServices)
-                {
-                    const auto left =
-                        building.coverage[serviceIndex(service)];
-
-                    if (left <= 0)
-                    {
-                        continue;
-                    }
-
-                    said.push_back(
-                        Said{ // GCOVR_EXCL_LINE
-                            .text = coverageText(
-                                translator, service, left),
-                            .colour = serviceColour(service)});
-                }
+                        .colour = kCollapseRiskInk});
+                said.push_back(
+                    Said{ // GCOVR_EXCL_LINE
+                        .text = grouped(riskText(
+                            translator,
+                            MessageId::ReadoutDiseaseRisk,
+                            building.diseaseRisk)),
+                        .colour = kDiseaseRiskInk});
             }
 
             if (readout.ruin.has_value())

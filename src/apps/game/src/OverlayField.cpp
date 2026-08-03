@@ -37,6 +37,7 @@ namespace antwika::game
         static_assert(kStockCapacity > 0);
         static_assert(kStoreCapacity > 0);
         static_assert(kPleasantEnough > 0);
+        static_assert(kMaxRisk > 0);
 
         [[nodiscard]] std::int32_t asShare(
             std::int32_t held, std::int32_t full) noexcept
@@ -103,6 +104,35 @@ namespace antwika::game
             return field;
         }
 
+        // The two risk views, off the building's own risks.
+        // Out of kMaxRisk, so a strong tint is a building near its end.
+        // The risks answer to no service any more -- see Building.
+        if (view == MapView::Fire || view == MapView::Damage)
+        {
+            for (const auto entity : world.view<Building, Cell>())
+            {
+                const auto building = world.get<Building>(entity);
+                const auto share = asShare(
+                    view == MapView::Fire ? building.fireRisk
+                                          : building.collapseRisk,
+                    kMaxRisk);
+
+                if (share <= 0)
+                {
+                    continue;
+                }
+
+                paintBlock(
+                    field,
+                    world.get<Cell>(entity),
+                    footprintOf(building.kind),
+                    extent,
+                    share);
+            }
+
+            return field;
+        }
+
         const auto service = mapViewService(view);
         const auto resource = mapViewResource(view);
 
@@ -138,10 +168,22 @@ namespace antwika::game
 
     Color overlayColour(MapView view) noexcept
     {
+        // The risk inks, named once beside serviceColour().
+        // So a risk line and a map of that risk agree.
+        if (view == MapView::Fire)
+        {
+            return kFireRiskInk;
+        }
+
+        if (view == MapView::Damage)
+        {
+            return kCollapseRiskInk;
+        }
+
         const auto service = mapViewService(view);
 
         // Read off serviceColour() rather than named a second time.
-        // So a coverage line and a map of that coverage agree.
+        // So an amount line and a map of that coverage agree.
         if (service.has_value())
         {
             return serviceColour(*service);

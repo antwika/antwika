@@ -19,8 +19,10 @@
 #include "antwika/game/Building.hpp"
 #include "antwika/game/BuildingKind.hpp"
 #include "antwika/game/Cell.hpp"
+#include "antwika/game/Coverage.hpp"
 #include "antwika/game/Desirability.hpp"
 #include "antwika/game/Household.hpp"
+#include "antwika/game/Service.hpp"
 #include "antwika/game/HousingLevel.hpp"
 #include "antwika/game/HousingQuery.hpp"
 #include "antwika/game/GridExtent.hpp"
@@ -65,6 +67,20 @@ using antwika::log::mocks::MockLogger;
             house = world.create();
             world.add<Cell>(house, kAt);
             world.add<Building>(house, Building{.kind = kind});
+            world.commit();
+
+            // Watered, as a placed house is -- see GridSink.
+            // A dry house takes nobody in and empties.
+            // Which the dryness cases below arrange for themselves.
+            water();
+        }
+
+        void water(std::int32_t left = antwika::game::kCoverageFull)
+        {
+            antwika::game::Coverage coverage;
+            coverage.ticksLeft[antwika::game::serviceIndex(
+                antwika::game::Service::Water)] = left;
+            antwika::game::setCoverage(world, house, coverage);
             world.commit();
         }
 
@@ -612,4 +628,56 @@ TEST(PopulationSystemTest, Update_AsksAgainForNobodyWhileOneIsWalking)
     // One arrived and at most one more is on the road.
     // Never two of them, which is what a missing guard would send.
     EXPECT_LE(scene.walking(), 1);
+}
+
+// A house whose water has run out is not lost -- it empties.
+// One person walks out per period, and nobody new is sent for.
+TEST(PopulationSystemTest, Update_WalksPeopleOutOfAHouseGoneDry)
+{
+    Scene scene;
+    scene.pave();
+    scene.settle(Household{.population = 2});
+    scene.water(0);
+
+    scene.run(kSettlerPeriodTicks);
+
+    EXPECT_EQ(scene.people(), 1);
+    EXPECT_EQ(scene.walking(), 1);
+
+    scene.run(kSettlerPeriodTicks);
+
+    EXPECT_EQ(scene.people(), 0);
+}
+
+// And an empty larder empties the house the very same way.
+// The demolition it used to be is BuildingSystem's old rule.
+TEST(PopulationSystemTest, Update_WalksPeopleOutOfAStarvedHouse)
+{
+    Scene scene;
+    scene.pave();
+    scene.settle(Household{.population = 2});
+
+    auto building = scene.world.get<Building>(scene.house);
+    building.stock = {};
+    scene.world.set<Building>(scene.house, building);
+    scene.world.commit();
+
+    scene.run(kSettlerPeriodTicks);
+
+    EXPECT_EQ(scene.people(), 1);
+    EXPECT_EQ(scene.walking(), 1);
+}
+
+// Nobody moves into a house that cannot keep them.
+// The same arm that empties one is what turns a migrant ask down.
+TEST(PopulationSystemTest, Update_SendsForNobodyWhileTheHouseIsDry)
+{
+    Scene scene;
+    scene.pave();
+    scene.water(0);
+
+    scene.run(4 * kSettlerPeriodTicks);
+
+    EXPECT_EQ(scene.people(), 0);
+    EXPECT_EQ(scene.walking(), 0);
 }

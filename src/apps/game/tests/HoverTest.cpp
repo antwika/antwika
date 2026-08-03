@@ -241,8 +241,9 @@ TEST(HoverTest, AHoveredWellSaysNothingAboutWhoLivesThere)
     EXPECT_EQ(
         said,
         (std::vector<std::string>{
-            "well", "staff 0/1", "risk", "  fire 0%",
-            "  collapse 0%"}));
+            "well", "staff 0/1", "resources", "  water 0/100",
+            "  medicine 0/100", "risk", "  fire 0%", "  collapse 0%",
+            "  disease 0%"}));
 }
 
 // A building covers a block of cells rather than one.

@@ -217,22 +217,81 @@ TEST_F(BuildingSystemTest, Update_LeavesEveryShelfAloneForAServiceWalker)
     EXPECT_EQ(stock[resourceIndex(Resource::Pottery)], 30);
 }
 
-// A fireman used to take a fixed amount of risk off here.
-// He now refreshes coverage instead -- see CoverageSystem.
-// So a delivery has nothing whatever to do with one.
-TEST_F(BuildingSystemTest, Update_LeavesRiskAloneForAPassingFireman)
+// A visit is what puts a risk back now, and it puts it back whole.
+// A fireman standing beside a building zeroes its fire risk.
+// And says nothing about the roof falling in.
+TEST_F(BuildingSystemTest, Update_ZeroesFireRiskForAPassingFireman)
 {
     const auto house = build(
         Cell{.x = 1, .y = 0},
-        Building{.kind = BuildingKind::House, .fireRisk = 60});
+        Building{
+            .kind = BuildingKind::House,
+            .fireRisk = 60,
+            .collapseRisk = 40});
 
     const auto fireman = sendWalker(
         Cell{.x = 0, .y = 0}, Walker{.kind = WalkerKind::Fireman});
 
     run(1);
 
-    EXPECT_EQ(world.get<Building>(house).fireRisk, 60);
+    EXPECT_EQ(world.get<Building>(house).fireRisk, 0);
+    EXPECT_EQ(world.get<Building>(house).collapseRisk, 40);
     EXPECT_EQ(world.get<Walker>(fireman).carried, 0);
+}
+
+// The engineer is the fireman's mirror, against the other risk.
+TEST_F(BuildingSystemTest, Update_ZeroesCollapseRiskForAPassingEngineer)
+{
+    const auto house = build(
+        Cell{.x = 1, .y = 0},
+        Building{
+            .kind = BuildingKind::House,
+            .fireRisk = 60,
+            .collapseRisk = 40});
+
+    sendWalker(Cell{.x = 0, .y = 0}, Walker{.kind = WalkerKind::Engineer});
+
+    run(1);
+
+    EXPECT_EQ(world.get<Building>(house).fireRisk, 60);
+    EXPECT_EQ(world.get<Building>(house).collapseRisk, 0);
+}
+
+// Relief runs after the risks step.
+// So a saviour on the very tick a risk maxes still saves the building.
+TEST_F(BuildingSystemTest, Update_SavesABuildingWhoseRiskMaxesMidVisit)
+{
+    const auto house = build(
+        Cell{.x = 1, .y = 0},
+        Building{
+            .kind = BuildingKind::House,
+            .fireRisk = kMaxRisk,
+            .ticksUntilRisk = 0});
+
+    sendWalker(Cell{.x = 0, .y = 0}, Walker{.kind = WalkerKind::Fireman});
+
+    run(1);
+
+    EXPECT_TRUE(world.alive(house));
+    EXPECT_EQ(world.get<Building>(house).fireRisk, 0);
+}
+
+// And the engineer's side of the same tick, off the same clamp.
+TEST_F(BuildingSystemTest, Update_SavesABuildingFallingMidVisit)
+{
+    const auto house = build(
+        Cell{.x = 1, .y = 0},
+        Building{
+            .kind = BuildingKind::House,
+            .collapseRisk = kMaxRisk,
+            .ticksUntilRisk = 0});
+
+    sendWalker(Cell{.x = 0, .y = 0}, Walker{.kind = WalkerKind::Engineer});
+
+    run(1);
+
+    EXPECT_TRUE(world.alive(house));
+    EXPECT_EQ(world.get<Building>(house).collapseRisk, 0);
 }
 
 TEST_F(BuildingSystemTest, Update_LeavesABuildingAWalkerIsNotBesideAlone)
@@ -292,8 +351,9 @@ TEST_F(BuildingSystemTest, Update_LeavesASourcesStockWhereItIs)
         world.get<Building>(well).stock[resourceIndex(Resource::Food)], 50);
 }
 
-// A district nobody serves is a district in both kinds of danger.
-TEST_F(BuildingSystemTest, Update_RaisesBothRisksWithNoCoverageAtAll)
+// A district nobody visits is a district in every kind of danger.
+// Fire and collapse climb on their own, and no medicine adds disease.
+TEST_F(BuildingSystemTest, Update_RaisesEveryRiskWhereNobodyComes)
 {
     const auto house = build(
         Cell{.x = 0, .y = 0}, Building{.kind = BuildingKind::House});
@@ -302,50 +362,64 @@ TEST_F(BuildingSystemTest, Update_RaisesBothRisksWithNoCoverageAtAll)
 
     EXPECT_EQ(world.get<Building>(house).fireRisk, 1);
     EXPECT_EQ(world.get<Building>(house).collapseRisk, 1);
+    EXPECT_EQ(world.get<Building>(house).diseaseRisk, 1);
 }
 
-// And one that both a fireman and an engineer reach works both off.
-TEST_F(BuildingSystemTest, Update_TakesRiskBackOffWhereBothServicesReach)
+// The one risk that still answers to a service.
+// Any medicine at all works the disease back down.
+TEST_F(BuildingSystemTest, Update_TakesDiseaseBackOffWhereMedicineIs)
+{
+    const auto house = build(
+        Cell{.x = 0, .y = 0},
+        Building{.kind = BuildingKind::House, .diseaseRisk = 40});
+    cover(house, {0, kCoverageFull});
+
+    run(static_cast<std::size_t>(kRiskPeriodTicks) + 1);
+
+    EXPECT_EQ(world.get<Building>(house).diseaseRisk, 39);
+}
+
+// Water says nothing about sickness -- only the medicine does.
+// And the medicine says nothing about fire or the roof.
+TEST_F(BuildingSystemTest, Update_StepsDiseaseAgainstTheMedicineAlone)
+{
+    const auto house = build(
+        Cell{.x = 0, .y = 0}, Building{.kind = BuildingKind::House});
+    cover(house, {kCoverageFull, kCoverageFull});
+
+    run(static_cast<std::size_t>(kRiskPeriodTicks) + 1);
+
+    EXPECT_EQ(world.get<Building>(house).fireRisk, 1);
+    EXPECT_EQ(world.get<Building>(house).collapseRisk, 1);
+    EXPECT_EQ(world.get<Building>(house).diseaseRisk, 0);
+}
+
+TEST_F(BuildingSystemTest, Update_NeverTakesDiseaseBelowNothing)
+{
+    const auto house = build(
+        Cell{.x = 0, .y = 0}, Building{.kind = BuildingKind::House});
+    cover(house, {0, kCoverageFull});
+
+    run(3 * static_cast<std::size_t>(kRiskPeriodTicks));
+
+    EXPECT_EQ(world.get<Building>(house).diseaseRisk, 0);
+}
+
+// Nothing ends a building over sickness -- it is a warning to read.
+// So the disease is the risk that has to stop at the ceiling.
+TEST_F(BuildingSystemTest, Update_NeverTakesDiseaseAboveTheMost)
 {
     const auto house = build(
         Cell{.x = 0, .y = 0},
         Building{
             .kind = BuildingKind::House,
-            .fireRisk = 40,
-            .collapseRisk = 30});
-    cover(house, {0, 0, kCoverageFull, kCoverageFull});
+            .diseaseRisk = kMaxRisk,
+            .ticksUntilRisk = 0});
 
-    run(static_cast<std::size_t>(kRiskPeriodTicks) + 1);
+    run(1);
 
-    EXPECT_EQ(world.get<Building>(house).fireRisk, 39);
-    EXPECT_EQ(world.get<Building>(house).collapseRisk, 29);
-}
-
-// The split's whole point: each risk answers to its own service.
-// A fireman's rounds say nothing about the roof falling in.
-TEST_F(BuildingSystemTest, Update_StepsEachRiskAgainstItsOwnService)
-{
-    const auto house = build(
-        Cell{.x = 0, .y = 0},
-        Building{.kind = BuildingKind::House, .fireRisk = 40});
-    cover(house, {0, 0, kCoverageFull, 0});
-
-    run(static_cast<std::size_t>(kRiskPeriodTicks) + 1);
-
-    EXPECT_EQ(world.get<Building>(house).fireRisk, 39);
-    EXPECT_EQ(world.get<Building>(house).collapseRisk, 1);
-}
-
-TEST_F(BuildingSystemTest, Update_NeverTakesARiskBelowNothing)
-{
-    const auto house = build(
-        Cell{.x = 0, .y = 0}, Building{.kind = BuildingKind::House});
-    cover(house, {0, 0, kCoverageFull, kCoverageFull});
-
-    run(3 * static_cast<std::size_t>(kRiskPeriodTicks));
-
-    EXPECT_EQ(world.get<Building>(house).fireRisk, 0);
-    EXPECT_EQ(world.get<Building>(house).collapseRisk, 0);
+    EXPECT_TRUE(world.alive(house));
+    EXPECT_EQ(world.get<Building>(house).diseaseRisk, kMaxRisk);
 }
 
 TEST_F(BuildingSystemTest, Update_NeverTakesARiskAboveTheMost)
@@ -390,7 +464,10 @@ TEST_F(BuildingSystemTest, Update_DemolishesABuildingThatRanOutOfLuck)
     EXPECT_FALSE(world.alive(house));
 }
 
-TEST_F(BuildingSystemTest, Update_DemolishesAHouseThatRanOutOfFood)
+// An empty larder ends nothing here any more.
+// The house stands and empties instead -- see PopulationSystem.
+// What finally takes a neglected one is its own risk maxing.
+TEST_F(BuildingSystemTest, Update_KeepsAHouseThatHasRunOutOfFood)
 {
     const auto house = build(
         Cell{.x = 0, .y = 0},
@@ -398,7 +475,10 @@ TEST_F(BuildingSystemTest, Update_DemolishesAHouseThatRanOutOfFood)
 
     run(static_cast<std::size_t>(kDrainPeriodTicks) + 1);
 
-    EXPECT_FALSE(world.alive(house));
+    EXPECT_TRUE(world.alive(house));
+    EXPECT_EQ(
+        world.get<Building>(house).stock[resourceIndex(Resource::Food)],
+        0);
 }
 
 // Fire is not bare ground: the block stays claimed.
@@ -428,9 +508,9 @@ TEST_F(BuildingSystemTest, Update_KeepsTheGroundOfWhatCatchesFire)
         world.get<Cell>(*ruins.begin()), (Cell{.x = 4, .y = 4}));
 }
 
-// Starving is still the ending that frees the ground.
-// A house lost to hunger fell down rather than burnt.
-TEST_F(BuildingSystemTest, Update_ClearsTheCellOfWhatItStarves)
+// A house holding nothing at all still stands and keeps its ground.
+// Hunger stopped being an ending -- its people leave instead.
+TEST_F(BuildingSystemTest, Update_KeepsTheGroundOfAHouseHoldingNothing)
 {
     build(
         Cell{.x = 4, .y = 4},
@@ -440,7 +520,7 @@ TEST_F(BuildingSystemTest, Update_ClearsTheCellOfWhatItStarves)
 
     run(1);
 
-    EXPECT_FALSE(built.has(Cell{.x = 4, .y = 4}));
+    EXPECT_TRUE(built.has(Cell{.x = 4, .y = 4}));
     EXPECT_EQ((world.view<antwika::game::Ruin, Cell>().size()), 0U);
 }
 
@@ -674,4 +754,19 @@ TEST_F(BuildingSystemTest, Update_TurnsTheOccupantsOutOfWhatCollapses)
     EXPECT_FALSE(world.alive(house));
     EXPECT_EQ(
         (world.view<Walker, antwika::game::Journey>().size()), 2U);
+}
+
+// A fireman standing beside nothing relieves nothing.
+// The relief is conferred on neighbours, exactly as a delivery is.
+TEST_F(BuildingSystemTest, Update_RelievesNothingAcrossOpenGround)
+{
+    const auto house = build(
+        Cell{.x = 5, .y = 5},
+        Building{.kind = BuildingKind::House, .fireRisk = 60});
+
+    sendWalker(Cell{.x = 0, .y = 0}, Walker{.kind = WalkerKind::Fireman});
+
+    run(1);
+
+    EXPECT_EQ(world.get<Building>(house).fireRisk, 60);
 }

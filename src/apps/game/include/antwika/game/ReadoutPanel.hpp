@@ -87,27 +87,32 @@ namespace antwika::game
      * Public because whoever paints a panel has to draw at the very
      * scale it was laid out against: measuring at one and drawing at
      * another is the second layout this whole value exists to delete.
-     * One, which is the toolbar's, so the two read as one application.
+     * Twice the toolbar's, because a hover panel is read at a glance
+     * over the pointer rather than studied along a bar.
      */
-    inline constexpr std::uint32_t kReadoutTextScale = 1;
+    inline constexpr std::uint32_t kReadoutTextScale = 2;
 
     /**
      * @brief Lay a hover readout out into a panel.
      *
      * **The panel says in words what the bars say as gauges, and it says
-     * it about the same resources.** A building is listed for every
-     * resource it depends on, which is every one for a house and none
-     * for a source that keeps stock nobody drains, and a walker for the
-     * one resource its kind carries. One rule rather than two is what
-     * keeps a reader from being told two different stories about one
-     * building.
+     * it about the same resources.** A building's stock is listed for
+     * every resource it depends on, which is every one for a house and
+     * none for a source that keeps stock nobody drains, and a walker
+     * for the one resource its kind carries. One rule rather than two
+     * is what keeps a reader from being told two different stories
+     * about one building.
      *
-     * **Coverage is listed for every kind of building, and only where
-     * it is above zero.** Risk is a fact about any building and
-     * coverage is what holds it off, so there is no kind the question
-     * does not apply to; and a service that has lapsed is not listed at
-     * all, because an absent line and a line reading nothing say the
-     * same thing.
+     * **Water and medicine sit under the same resources heading, on
+     * the stock lines' own scale, and are said even at zero.** Both
+     * are facts about any kind of building -- a dry house empties and
+     * medicine is what holds the disease risk off -- and zero is
+     * exactly the state a watcher wants warned of, so neither line is
+     * ever omitted.
+     *
+     * **The three risks are said on every building, even at nothing.**
+     * A risk of nothing is a measured fact, and an unheralded fire is
+     * why the section exists.
      *
      * **A household's tier and how full its house is are listed only
      * where somebody lives**, on the one `housesPeople()` test, since a

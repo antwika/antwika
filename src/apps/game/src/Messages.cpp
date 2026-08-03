@@ -21,7 +21,7 @@ namespace antwika::game
         using i18n::Locale;
         using i18n::MessageName;
 
-        constexpr std::array<MessageName<MessageId>, 107> kNames{{
+        constexpr std::array<MessageName<MessageId>, 105> kNames{{
             {MessageId::ToolbarZoomIn, "ToolbarZoomIn"},
             {MessageId::ToolbarZoomOut, "ToolbarZoomOut"},
             {MessageId::ToolbarResetView, "ToolbarResetView"},
@@ -78,10 +78,7 @@ namespace antwika::game
             {MessageId::ResourcePottery, "ResourcePottery"},
             {MessageId::ReadoutAmount, "ReadoutAmount"},
             {MessageId::ServiceWater, "ServiceWater"},
-            {MessageId::ServiceHealth, "ServiceHealth"},
-            {MessageId::ServiceSafety, "ServiceSafety"},
-            {MessageId::ServiceStructure, "ServiceStructure"},
-            {MessageId::ReadoutCoverage, "ReadoutCoverage"},
+            {MessageId::ServiceMedicine, "ServiceMedicine"},
             {MessageId::HousingTent, "HousingTent"},
             {MessageId::HousingShack, "HousingShack"},
             {MessageId::HousingHovel, "HousingHovel"},
@@ -95,7 +92,7 @@ namespace antwika::game
             {MessageId::ViewDesirability, "ViewDesirability"},
             {MessageId::ViewFood, "ViewFood"},
             {MessageId::ViewWater, "ViewWater"},
-            {MessageId::ViewHealth, "ViewHealth"},
+            {MessageId::ViewMedicine, "ViewMedicine"},
             {MessageId::ViewFire, "ViewFire"},
             {MessageId::ViewDamage, "ViewDamage"},
             {MessageId::ToolbarBuild, "ToolbarBuild"},
@@ -128,6 +125,7 @@ namespace antwika::game
             {MessageId::ReadoutRiskTitle, "ReadoutRiskTitle"},
             {MessageId::ReadoutFireRisk, "ReadoutFireRisk"},
             {MessageId::ReadoutCollapseRisk, "ReadoutCollapseRisk"},
+            {MessageId::ReadoutDiseaseRisk, "ReadoutDiseaseRisk"},
             {MessageId::ReadoutResourcesTitle, "ReadoutResourcesTitle"},
         }};
 
@@ -197,10 +195,7 @@ namespace antwika::game
                 {MessageId::ResourcePottery, "pottery"},
                 {MessageId::ReadoutAmount, "{0} {1}/{2}"},
                 {MessageId::ServiceWater, "water"},
-                {MessageId::ServiceHealth, "health"},
-                {MessageId::ServiceSafety, "safety"},
-                {MessageId::ServiceStructure, "structure"},
-                {MessageId::ReadoutCoverage, "{0} {1}%"},
+                {MessageId::ServiceMedicine, "medicine"},
                 {MessageId::HousingTent, "tent"},
                 {MessageId::HousingShack, "shack"},
                 {MessageId::HousingHovel, "hovel"},
@@ -214,7 +209,7 @@ namespace antwika::game
                 {MessageId::ViewDesirability, "desirability"},
                 {MessageId::ViewFood, "food"},
                 {MessageId::ViewWater, "water"},
-                {MessageId::ViewHealth, "health"},
+                {MessageId::ViewMedicine, "medicine"},
                 {MessageId::ViewFire, "fire"},
                 {MessageId::ViewDamage, "damage"},
                 {MessageId::ToolbarBuild, "build"},
@@ -247,6 +242,7 @@ namespace antwika::game
                 {MessageId::ReadoutRiskTitle, "risk"},
                 {MessageId::ReadoutFireRisk, "fire {0}%"},
                 {MessageId::ReadoutCollapseRisk, "collapse {0}%"},
+                {MessageId::ReadoutDiseaseRisk, "disease {0}%"},
                 {MessageId::ReadoutResourcesTitle, "resources"},
             }};
 
@@ -308,10 +304,7 @@ namespace antwika::game
                 {MessageId::ResourcePottery, "keramik"},
                 {MessageId::ReadoutAmount, "{0} {1}/{2}"},
                 {MessageId::ServiceWater, "vatten"},
-                {MessageId::ServiceHealth, "hälsa"},
-                {MessageId::ServiceSafety, "brandskydd"},
-                {MessageId::ServiceStructure, "underhåll"},
-                {MessageId::ReadoutCoverage, "{0} {1} %"},
+                {MessageId::ServiceMedicine, "medicin"},
                 {MessageId::HousingTent, "tält"},
                 {MessageId::HousingShack, "skjul"},
                 {MessageId::HousingHovel, "koja"},
@@ -325,7 +318,7 @@ namespace antwika::game
                 {MessageId::ViewDesirability, "trivsel"},
                 {MessageId::ViewFood, "mat"},
                 {MessageId::ViewWater, "vatten"},
-                {MessageId::ViewHealth, "hälsa"},
+                {MessageId::ViewMedicine, "medicin"},
                 {MessageId::ViewFire, "brand"},
                 {MessageId::ViewDamage, "skador"},
                 {MessageId::ToolbarBuild, "bygg"},
@@ -359,6 +352,7 @@ namespace antwika::game
                 {MessageId::ReadoutRiskTitle, "fara"},
                 {MessageId::ReadoutFireRisk, "brand {0}%"},
                 {MessageId::ReadoutCollapseRisk, "ras {0}%"},
+                {MessageId::ReadoutDiseaseRisk, "sjukdom {0}%"},
                 {MessageId::ReadoutResourcesTitle, "resurser"},
             }};
 

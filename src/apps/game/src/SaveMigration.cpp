@@ -9,6 +9,7 @@
 #include "antwika/game/SaveGame.hpp"
 #include "antwika/game/Walker.hpp"
 #include "SaveMigrationV2ToV3.hpp"
+#include "SaveMigrationV3ToV4.hpp"
 
 namespace antwika::game
 {
@@ -81,7 +82,8 @@ namespace antwika::game
         // GCOVR_EXCL_START
         return MigrationChain(
             {std::make_shared<const AddBuildings>(),
-             std::make_shared<const RenameToServices>()},
+             std::make_shared<const RenameToServices>(),
+             std::make_shared<const DropRiskServices>()},
             kSaveFormatVersion);
         // GCOVR_EXCL_STOP
     }
