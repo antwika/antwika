@@ -27,17 +27,33 @@ namespace antwika::ui_demo
     using antwika::input::KeyPressed;
     using antwika::input::MouseButton;
     using antwika::input::PointerButtonPressed;
+    using antwika::input::PointerButtonReleased;
+    using antwika::input::PointerMoved;
+    using antwika::ui::DragHome;
     using antwika::ui::kNoWidget;
 
     namespace
     {
-        [[nodiscard]] bool isLeftPress(const InputEvent &event) noexcept
+        [[nodiscard]] const PointerButtonPressed *leftPress(
+            const InputEvent &event) noexcept
         {
             const auto *pressed =
                 std::get_if<PointerButtonPressed>(&event);
 
             return pressed != nullptr
-                   && pressed->button == MouseButton::Left;
+                           && pressed->button == MouseButton::Left
+                       ? pressed
+                       : nullptr;
+        }
+
+        [[nodiscard]] bool isLeftRelease(
+            const InputEvent &event) noexcept
+        {
+            const auto *released =
+                std::get_if<PointerButtonReleased>(&event);
+
+            return released != nullptr
+                   && released->button == MouseButton::Left;
         }
     } // namespace
 
@@ -63,7 +79,7 @@ namespace antwika::ui_demo
         if (event.event.name == antwika::engine::events::kTick)
         {
             // Described again here, for the renderer about to paint.
-            refreshAndAct(false, Keyboard{});
+            refreshAndAct(false, false, Keyboard{});
             return;
         }
 
@@ -75,6 +91,12 @@ namespace antwika::ui_demo
 
         located = located || locates(*decoded);
         folded.apply(*decoded);
+
+        // A released button ends whatever drag was under way.
+        if (isLeftRelease(*decoded))
+        {
+            state.setAreaDragging(DragHome::None);
+        }
 
         // The characters live here for as long as the Context does.
         // ui::Keyboard borrows them rather than owning them.
@@ -102,10 +124,26 @@ namespace antwika::ui_demo
 
         keyboard.typed = characters;
 
-        refreshAndAct(isLeftPress(*decoded), keyboard);
+        const auto *press = leftPress(*decoded);
+
+        const bool moved =
+            std::holds_alternative<PointerMoved>(*decoded);
+
+        // Shift makes a press carry a selection on.
+        // A move under a held press drags one out.
+        // And only a press that landed in the text does.
+        // The scrollbar's drags never select.
+        refreshAndAct(
+            press != nullptr,
+            press != nullptr
+                ? press->modifiers.shift
+                : moved
+                      && state.areaDragging() == DragHome::Text,
+            keyboard);
     }
 
-    Pointer DemoSink::pointerNow(const bool pressed) const
+    Pointer DemoSink::pointerNow(
+        const bool pressed, const bool extends) const
     {
         const auto &mouse = folded.mouse();
 
@@ -115,22 +153,38 @@ namespace antwika::ui_demo
                               mouse.position())}
                         : std::nullopt,
             .down = mouse.isDown(MouseButton::Left),
-            .pressed = pressed};
+            .pressed = pressed,
+            .extends = extends};
     }
 
     void DemoSink::refreshAndAct(
-        const bool pressed, const Keyboard &keyboard)
+        const bool pressed,
+        const bool extends,
+        const Keyboard &keyboard)
     {
         auto frame = scene.describe(
-            overlay.canvas(), pointerNow(pressed), keyboard, state);
+            overlay.canvas(), pointerNow(pressed, extends), keyboard,
+            state);
 
         act(frame.interactions);
+
+        // A press inside the pane is what a later move drags from.
+        // Where it landed -- the text or the scrollbar -- scopes it.
+        // The pane is this demo's one area, so any report is its.
+        if (pressed)
+        {
+            state.setAreaDragging(
+                frame.interactions.areaPress.has_value()
+                    ? frame.interactions.areaPress->home
+                    : DragHome::None);
+        }
 
         // What was just typed, chosen or pressed is not in that picture.
         // So it is described once more, and the second one is drawn.
         // The same remedy ui::Context::finish() spells out.
         frame = scene.describe(
-            overlay.canvas(), pointerNow(pressed), Keyboard{}, state);
+            overlay.canvas(), pointerNow(pressed, extends), Keyboard{},
+            state);
 
         overlay.set(std::move(frame.commands));
     }

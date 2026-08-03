@@ -489,7 +489,12 @@ namespace antwika::ui_demo
                 .cursor = state.areaCursor(),
                 .anchor = std::optional{state.areaAnchor()},
                 .scroll = state.areaScroll(),
-                .scrollbar = true});
+                .scrollbar = true,
+                // The demo has a focus ring; the pane joins it.
+                // A click lays the caret only in a focused pane.
+                .focused = state.focus() == widgets::kArea,
+                // Handed back, so a held drag stays where it began.
+                .dragging = state.areaDragging()});
 
             // The scrolled report, handed back and shown.
             // A pane showing what was asked for reports nothing.
