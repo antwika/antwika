@@ -1,12 +1,14 @@
 #include <gtest/gtest.h>
 
 #include <cstddef>
+#include <cstdint>
 #include <string>
 #include <string_view>
 #include <variant>
 #include <vector>
 
 #include <antwika/gfx/Color.hpp>
+#include <antwika/gfx/Glyphs.hpp>
 #include <antwika/gfx/Point.hpp>
 #include <antwika/gfx/Size.hpp>
 
@@ -591,4 +593,85 @@ TEST(TextAreaTest, MoveUpWithTheCaretAtTheVeryStartDoesNothing)
         typeInto("abc\ndef", 0, Keyboard{.keys = {Key::MoveUp}});
 
     EXPECT_FALSE(frame.interactions.edit.has_value());
+}
+
+// A caret that occupied room pushed the rest of its line sideways.
+// It overdraws its neighbour's first pixels instead.
+TEST(TextAreaTest, TheCaretShiftsNoCharacterOfItsLine)
+{
+    Context still{kCanvas, plainTheme()};
+
+    still.textArea(TextAreaSpec{.text = "one\ntwo", .cursor = 0});
+
+    Context carrying{kCanvas, plainTheme()};
+
+    carrying.textArea(
+        TextAreaSpec{.text = "one\ntwo", .cursor = 1, .focused = true});
+
+    // The same characters land on the same pixels either way.
+    const auto without = still.finish();
+    const auto with = carrying.finish();
+
+    std::vector<DrawText> quiet;
+    std::vector<DrawText> focused;
+
+    for (const auto &command : without.commands)
+    {
+        if (const auto *text = std::get_if<DrawText>(&command))
+        {
+            quiet.push_back(*text);
+        }
+    }
+
+    for (const auto &command : with.commands)
+    {
+        if (const auto *text = std::get_if<DrawText>(&command))
+        {
+            focused.push_back(*text);
+        }
+    }
+
+    // The caret cuts "one" into "o" and "ne"; the pixels agree.
+    ASSERT_EQ(quiet.size(), 2U);
+    ASSERT_EQ(focused.size(), 3U);
+    EXPECT_EQ(focused.at(0).origin, quiet.at(0).origin);
+    EXPECT_EQ(
+        focused.at(1).origin.x,
+        quiet.at(0).origin.x
+            + static_cast<std::int32_t>(
+                antwika::gfx::kGlyphAdvance
+                * plainTheme().textScale));
+    EXPECT_EQ(focused.at(2).origin, quiet.at(1).origin);
+}
+
+// The bar still reads as a bar, at the theme's own width.
+// Its room in the layout is nothing; the width is overdrawn.
+TEST(TextAreaTest, TheCaretIsDrawnItsThemeWidthAllTheSame)
+{
+    Context ui{kCanvas, plainTheme()};
+
+    ui.textArea(
+        TextAreaSpec{.text = "ab", .cursor = 1, .focused = true});
+
+    const auto carets = caretsOf(ui.finish().commands);
+
+    ASSERT_EQ(1U, carets.size());
+    EXPECT_EQ(carets.at(0).rect.size.width, plainTheme().textScale);
+}
+
+// A caret at the clipped edge of a wide line has no room to overdraw.
+// It is cut to nothing rather than poking out of the pane.
+TEST(TextAreaTest, ACaretAtTheClippedEdgeIsCutToNothing)
+{
+    Context ui{
+        Size{.width = 20, .height = 100}, plainTheme()};
+
+    ui.textArea(TextAreaSpec{
+        .text = "a long line of characters",
+        .focused = true});
+
+    const auto carets = caretsOf(ui.finish().commands);
+
+    ASSERT_EQ(1U, carets.size());
+    EXPECT_EQ(carets.at(0).rect.size.width, 0U);
 }

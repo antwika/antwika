@@ -488,6 +488,32 @@ namespace antwika::ui::detail
             // Arranging its children writes theirs and never its own.
             record(rects, tree.node(index));
         }
+
+        // What overdraws is widened last, so the flow never saw it.
+        // A caret covers its neighbour's first pixels instead.
+        // Pushing its whole line sideways is what that replaces.
+        // Clamped inside the parent, as a placed child is.
+        for (std::size_t index = 0; index < tree.size(); ++index)
+        {
+            auto &node = tree.node(index);
+
+            if (node.overhang == 0)
+            {
+                continue;
+            }
+
+            const auto parent = tree.node(node.parent).arranged;
+
+            const auto right =
+                static_cast<std::int64_t>(parent.origin.x)
+                + parent.size.width;
+
+            const auto room = std::max<std::int64_t>(
+                0, right - node.arranged.origin.x);
+
+            node.arranged.size.width = static_cast<std::uint32_t>(
+                std::min<std::int64_t>(node.overhang, room));
+        }
     }
 
 } // namespace antwika::ui::detail

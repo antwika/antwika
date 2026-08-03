@@ -180,6 +180,21 @@ namespace antwika::ui::detail
         Color textColor{};
 
         /**
+         * @brief Pixels of width drawn past what the layout gave it.
+         *
+         * For the caret alone: a caret that occupied room in its row
+         * pushed the rest of its line sideways, so the line a caret
+         * sat on shifted as it moved.  A node carrying this asks the
+         * layout for nothing and is widened after everything else is
+         * placed, clamped inside its parent -- so it overdraws its
+         * neighbour rather than moving it.
+         *
+         * Meaningful only on a node with a parent, which a caret
+         * always has.
+         */
+        std::uint32_t overhang = 0;
+
+        /**
          * @brief Whether this node belongs to an overlay.
          *
          * True for every node of an open dropdown's list, and what
