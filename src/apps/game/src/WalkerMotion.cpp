@@ -8,6 +8,7 @@
 #include <antwika/tween/Tween.hpp>
 
 #include "antwika/game/SpriteBounds.hpp"
+#include "antwika/game/TileAtlas.hpp"
 #include "antwika/game/Walker.hpp"
 
 namespace antwika::game
@@ -21,6 +22,22 @@ namespace antwika::game
             static_cast<antwika::time::Tick>(ticksIntoStep) * frames
                 + subTick.numerator(),
             static_cast<antwika::time::Tick>(kTicksPerStep) * frames);
+    }
+
+    std::uint32_t walkerFrame(
+        const WalkerSprite &walker, Progress subTick)
+    {
+        if (!walker.from.has_value())
+        {
+            return 0;
+        }
+
+        const auto phase = stepPhase(walker.ticksIntoStep, subTick);
+
+        // stepPhase() never reaches one.
+        // So the quotient is always below kWalkCycleFrames.
+        return static_cast<std::uint32_t>(
+            phase.numerator() * kWalkCycleFrames / phase.denominator());
     }
 
     Rect walkerBounds(

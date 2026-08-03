@@ -291,9 +291,11 @@ namespace antwika::game
                 continue;
             }
 
+            // The frame reads the slide's own pause-adjusted fraction.
+            // So a held walker's legs freeze with it.
             renderer.drawTexture(
                 atlases.oneByOne,
-                walkerTile(walker.facing),
+                walkerTile(walker.facing, walkerFrame(walker, phase)),
                 bounds,
                 kUntinted);
         }

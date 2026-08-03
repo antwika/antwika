@@ -209,6 +209,9 @@ The slide itself is `WalkerMotion.hpp`, through [`tween`](../libraries/tween.md)
 That constant is `Easing::Linear` **on purpose rather than pending**: a walker crosses many cells in a row, so easing each cell's step would make it start and stop at every tile.
 Easing the camera that follows it is the version of that idea which reads correctly.
 
+The legs read the same clock: `walkerFrame()` beside the slide resolves which of a facing's four walk-cycle frames shows, one whole cycle per cell, by truncating the same exact step fraction — so the legs cannot drift against the ground, a paused run freezes both together, and an idle walker holds the cycle's standing first frame.
+The frame-to-sprite crossing stays in `TileAtlas.hpp`'s `walkerTile()`, which is where every other index becomes pixels; see [`game-texture-atlas`](game-texture-atlas.md) for what the art must supply.
+
 **Those frames carry on while the run is paused, which is why the pause reaches the picture too.**
 `SceneSnapshot` carries it, read off `PauseState` by `snapshotOf()` exactly as the camera is, and `GridScene` then draws a held walker at its step's own phase whatever fraction of a tick a frame falls at.
 Without that a walker frozen mid-step slid forward through every tick and snapped back at the start of the next one, for as long as the run stayed held — the whole ticks of its step stop with `WalkerSystem`, and `FramePacedSource`'s frames do not stop with them.

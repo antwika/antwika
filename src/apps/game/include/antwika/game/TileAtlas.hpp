@@ -240,10 +240,20 @@ namespace antwika::game
      * @brief The first of the four walker rows in the 1x1 sheet.
      *
      * A whole row per facing rather than a sprite, in Direction order,
-     * with today's art in column 0 and the rest of each row reserved
-     * for the walk cycle's frames.
+     * with the walk cycle's frames in the first kWalkCycleFrames
+     * columns and the rest of each row still reserved.
      */
     inline constexpr std::uint32_t kFirstWalkerRow = 3;
+
+    /**
+     * @brief How many frames each facing's walk cycle has.
+     *
+     * The first kWalkCycleFrames columns of a facing's row, cycled
+     * left to right; column 0 doubles as the standing frame, so an
+     * idle walker is the cycle held at its start rather than a fifth
+     * sprite.
+     */
+    inline constexpr std::uint32_t kWalkCycleFrames = 4;
 
     /**
      * @brief Which sprite draws each building kind, in its own sheet.
@@ -325,6 +335,11 @@ namespace antwika::game
     static_assert(
         kFirstWalkerRow + kDirectionCount <= kAtlasRows,
         "the 1x1 sheet has no row for every walker facing");
+
+    // A cycle wider than a row would walk into the next facing's art.
+    static_assert(
+        kWalkCycleFrames <= kAtlasColumns,
+        "a facing's walk cycle must fit in its own row");
 
     // A footprint's edge is what picks a sheet, so it must pick one.
     static_assert(
@@ -412,16 +427,27 @@ namespace antwika::game
 
     /**
      * @brief Get the sprite a walker facing this way is drawn from.
+     *
+     * Which frame to ask for is WalkerMotion's walkerFrame(); this
+     * only turns the pair into pixels, so the sheet's layout stays in
+     * this one header.
+     *
      * @param facing The direction the walker is facing.
+     * @param frame Which frame of the facing's walk cycle to show;
+     * one past the last wraps round, as spriteRect()'s index does,
+     * and the default is the standing frame.
      * @return The walker sprite's rectangle, in the 1x1 sheet's pixels.
      */
-    [[nodiscard]] constexpr Rect walkerTile(Direction facing) noexcept
+    [[nodiscard]] constexpr Rect walkerTile(
+        Direction facing, std::uint32_t frame = 0) noexcept
     {
         const auto row = kFirstWalkerRow
             + static_cast<std::uint32_t>(
                 directionIndex(facing) % kDirectionCount);
 
-        return spriteRect(AtlasKind::OneByOne, row * kAtlasColumns);
+        return spriteRect(
+            AtlasKind::OneByOne,
+            row * kAtlasColumns + frame % kWalkCycleFrames);
     }
 
     /**

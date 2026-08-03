@@ -504,10 +504,12 @@ TEST_F(RenderSystemTest, Draw_HoldsAWalkerStillWhileTheRunIsPaused)
     Rect atTick{};
     Rect between{};
 
+    // Held legs freeze too: both frames show the walk cycle's frame 2.
+    // One whole tick of a two-tick step, and none of the frame.
     EXPECT_CALL(renderer, drawTexture(_, _, _, _)).Times(AnyNumber());
     EXPECT_CALL(
         renderer,
-        drawTexture(Ref(atlas), walkerTile(Direction::East), _, _))
+        drawTexture(Ref(atlas), walkerTile(Direction::East, 2), _, _))
         .WillOnce(SaveArg<2>(&atTick))
         .WillOnce(SaveArg<2>(&between));
 
@@ -536,11 +538,16 @@ TEST_F(RenderSystemTest, Draw_SlidesAWalkerWhileTheRunIsNotPaused)
     Rect atTick{};
     Rect between{};
 
+    // A live walker's legs advance with its slide.
+    // Frame 2 of the cycle at the tick, frame 3 half a tick later.
     EXPECT_CALL(renderer, drawTexture(_, _, _, _)).Times(AnyNumber());
     EXPECT_CALL(
         renderer,
-        drawTexture(Ref(atlas), walkerTile(Direction::East), _, _))
-        .WillOnce(SaveArg<2>(&atTick))
+        drawTexture(Ref(atlas), walkerTile(Direction::East, 2), _, _))
+        .WillOnce(SaveArg<2>(&atTick));
+    EXPECT_CALL(
+        renderer,
+        drawTexture(Ref(atlas), walkerTile(Direction::East, 3), _, _))
         .WillOnce(SaveArg<2>(&between));
 
     system.update(world, 0);

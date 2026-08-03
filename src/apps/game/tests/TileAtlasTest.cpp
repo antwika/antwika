@@ -30,6 +30,7 @@ using antwika::game::kAtlasRows;
 using antwika::game::kFirstWalkerRow;
 using antwika::game::kLinkMask;
 using antwika::game::kRoadSpriteCount;
+using antwika::game::kWalkCycleFrames;
 using antwika::game::linkBit;
 using antwika::game::roadTile;
 using antwika::game::spriteRect;
@@ -248,8 +249,8 @@ TEST(TileAtlasTest, WalkerTile_GivesEachFacingASpriteOfItsOwn)
     }
 }
 
-// A row per facing, with today's sprite in its first column.
-// The rest of each row is reserved for the walk cycle's frames.
+// A row per facing, with the standing frame in its first column.
+// The columns past the cycle are still reserved.
 TEST(TileAtlasTest, WalkerTile_StartsEachFacingsRow)
 {
     for (const auto facing : kEveryDirection)
@@ -262,6 +263,33 @@ TEST(TileAtlasTest, WalkerTile_StartsEachFacingsRow)
             walkerTile(facing),
             spriteRect(AtlasKind::OneByOne, row * kAtlasColumns));
     }
+}
+
+// The walk cycle runs left to right along the facing's own row.
+// Its first frame is the standing sprite, so no fifth is needed.
+TEST(TileAtlasTest, WalkerTile_WalksEachFacingsRowLeftToRight)
+{
+    for (const auto facing : kEveryDirection)
+    {
+        const auto row = kFirstWalkerRow
+            + static_cast<std::uint32_t>(
+                antwika::game::directionIndex(facing));
+
+        for (std::uint32_t frame = 0; frame < kWalkCycleFrames; ++frame)
+        {
+            EXPECT_EQ(
+                walkerTile(facing, frame),
+                spriteRect(
+                    AtlasKind::OneByOne, row * kAtlasColumns + frame));
+        }
+    }
+}
+
+TEST(TileAtlasTest, WalkerTile_WrapsAFramePastTheCycleRound)
+{
+    EXPECT_EQ(
+        walkerTile(Direction::North, kWalkCycleFrames),
+        walkerTile(Direction::North, 0));
 }
 
 // A building's sheet is its footprint's, by construction.
@@ -341,7 +369,10 @@ TEST(TileAtlasTest, NoTwoRangesShareASprite)
 
     for (const auto facing : kEveryDirection)
     {
-        keep(AtlasKind::OneByOne, walkerTile(facing));
+        for (std::uint32_t frame = 0; frame < kWalkCycleFrames; ++frame)
+        {
+            keep(AtlasKind::OneByOne, walkerTile(facing, frame));
+        }
     }
 
     for (std::size_t index = 0; index < antwika::game::kBuildingKindCount;
