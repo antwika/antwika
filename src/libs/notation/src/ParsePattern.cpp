@@ -109,6 +109,19 @@ namespace antwika::notation
                 return !atEnd() && peek() == letter;
             }
 
+            // A tie is an underscore standing alone.
+            // '_' is a word character, so "a_b" is still one word.
+            [[nodiscard]] bool nextIsTie() noexcept
+            {
+                if (!nextIs('_'))
+                {
+                    return false;
+                }
+
+                return at + 1 >= source.size()
+                    || !isWordCharacter(source[at + 1]);
+            }
+
             void expect(char letter)
             {
                 if (!nextIs(letter))
@@ -152,6 +165,7 @@ namespace antwika::notation
             [[nodiscard]] Pattern parseSequence()
             {
                 std::vector<Pattern> slots;
+                std::vector<std::int64_t> weights;
                 std::int64_t widest = 1;
 
                 for (;;)
@@ -164,9 +178,28 @@ namespace antwika::notation
                         break;
                     }
 
+                    // A tie holds the slot before it one slot longer.
+                    // Tidal writes it the same way: "0 _ 3".
+                    if (nextIsTie())
+                    {
+                        if (slots.empty())
+                        {
+                            throw NotationError(
+                                "antwika::notation: the tie at "
+                                "position " + std::to_string(at)
+                                + " has no slot before it to hold");
+                        }
+
+                        ++at;
+                        ++weights.back();
+
+                        continue;
+                    }
+
                     for (auto &slot : parseTerm())
                     {
                         slots.push_back(std::move(slot));
+                        weights.push_back(1);
                     }
 
                     widest = std::max(widest, deepest);
@@ -180,19 +213,44 @@ namespace antwika::notation
                 }
 
                 // A sequence of n slots plays each n times as fast.
+                // A tie's slot counts: it thins everything around it.
                 // So n multiplies every slot's nesting-path product.
                 // Siblings alone still meet as a maximum above.
                 // "0*64 3*64" is two paths of 128, never one of 4096.
                 // Nested "[0!64]!64" brackets multiply, and refuse.
-                deepest = times(
-                    widest, static_cast<std::int64_t>(slots.size()));
+                std::int64_t total = 0;
+
+                for (const auto weight : weights)
+                {
+                    total += weight;
+                }
+
+                deepest = times(widest, total);
 
                 if (slots.size() == 1)
                 {
                     return slots.front();
                 }
 
-                return pattern::fastcat(std::move(slots));
+                // Every weight one is a fastcat saying the same thing.
+                // A tie anywhere makes it the timecat only it can say.
+                if (total == static_cast<std::int64_t>(slots.size()))
+                {
+                    return pattern::fastcat(std::move(slots));
+                }
+
+                std::vector<pattern::Slice> slices;
+                slices.reserve(slots.size());
+
+                for (std::size_t slot = 0; slot < slots.size(); ++slot)
+                {
+                    slices.push_back(
+                        pattern::Slice{
+                            .weight = Cycle(weights[slot]),
+                            .part = std::move(slots[slot])});
+                }
+
+                return pattern::timecat(std::move(slices));
             }
 
             // A term is one factor and every modifier after it.
@@ -363,6 +421,17 @@ namespace antwika::notation
                     if (atEnd() || peek() == '>')
                     {
                         break;
+                    }
+
+                    // A turn is a cycle, and a tie cannot stretch one.
+                    // A note held across cycles is written "0/2".
+                    if (nextIsTie())
+                    {
+                        throw NotationError(
+                            "antwika::notation: the tie at position "
+                            + std::to_string(at) + " cannot hold an "
+                            "alternation's turn; write 0/2 to hold a "
+                            "note across cycles");
                     }
 
                     for (auto &part : parseTerm())
