@@ -261,5 +261,10 @@ Each app owns its state and how events mutate it -- the engine has no opinion he
 - **Always work in a separate git worktree, never directly in the primary checkout.** Before making any change, create/enter a dedicated worktree for the task (`git worktree add .worktrees/<task> -b <task>`), do all editing, building, and testing there, and only merge back when the work is done.
   This keeps `main` clean and lets several tasks build in parallel without clobbering each other's `build/` directory.
   `.worktrees/` is the agreed home for them and `.gitignore` covers it, so a worktree and its build output never show up as untracked state in the primary checkout; `.claude/` and `core.*` are ignored for the same reason.
+- **Never write to a bundled asset** — the images under `src/apps/*/assets/`, the font under [`assets/fonts/`](assets/fonts/), and any sound or other binary an application ships with.
+  They are hand-authored work, and unlike everything else here they cannot be reconstructed from this tree: nothing generates the game's atlases, and [`blog/019-the-generated-atlas-was-the-wrong-kind-of-correct.md`](blog/019-the-generated-atlas-was-the-wrong-kind-of-correct.md) is why that stopped.
+  An agent may read one, measure it, and write code and tests against it, and may never create, edit, convert, resize, regenerate, move or delete one — not to fix a failing size check, not to add a missing sprite, not to make a test pass.
+  Changing the art is a person's job, and [`antwika_atlas_editor`](wiki/apps/atlas_editor.md) is the tool this repository has for the game's sheets.
+  If an asset genuinely looks wrong, say so and leave the file alone.
 - Read the wiki page for a module before changing it, and the blog posts under `blog/` before changing a library's core abstraction — they are design write-ups for *why* a piece was built the way it was, written after the fact, and usually explain a constraint that isn't obvious from the code alone.
 - Prefer running a single test binary (or `--gtest_filter`) over the full `ctest` suite while iterating; run the full suite before considering a change done.
