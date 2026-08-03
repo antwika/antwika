@@ -36,7 +36,9 @@ read_selection() {
         backend=$(tr -d '[:space:]' < "$file")
     fi
 
-    if [ ! -d "backends/$backend" ]; then
+    # An empty selection would test backends/ itself, which exists,
+    # and the run would die much later asking for 'conan-.lock'.
+    if [ -z "$backend" ] || [ ! -d "backends/$backend" ]; then
         local available
         available=$(find backends -mindepth 1 -maxdepth 1 -type d \
             -printf '%f\n' | sort | tr '\n' ' ')

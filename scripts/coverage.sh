@@ -30,18 +30,32 @@ usage() {
     echo "  --html <dir>       Also write an HTML report there" >&2
 }
 
+# 'shift 2' with one argument left fails, and under 'set -e' that
+# ends the script with no message at all.
+# So an option missing its value is refused with the usage instead.
+require_value() {
+    if [ "$#" -lt 2 ]; then
+        echo "Option '$1' needs a value." >&2
+        usage
+        exit 1
+    fi
+}
+
 while [ "$#" -gt 0 ]; do
     case "$1" in
         --build-dir)
-            build_dir=${2:-}
+            require_value "$@"
+            build_dir=$2
             shift 2
             ;;
         --summary)
-            summary=${2:-}
+            require_value "$@"
+            summary=$2
             shift 2
             ;;
         --html)
-            html_dir=${2:-}
+            require_value "$@"
+            html_dir=$2
             shift 2
             ;;
         -h | --help)
