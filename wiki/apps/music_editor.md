@@ -71,7 +71,7 @@ Every call takes exactly one argument, except the two picture calls at the botto
 | `delay(300)` | One echo that many milliseconds behind every note. Nothing feeds back. |
 | `delaymix(.3)` | How loud the echo is against the note, between 0 and 1. |
 | `harm(7)` | A second voice that many semitones up, sounding with every note. |
-| `pianoroll()` | A rolling pianoroll beneath the line: the cycle ahead of the playhead, a lane per semitone, each note's cell as wide as it actually sounds. |
+| `pianoroll()` | A rolling pianoroll beneath the line: a quarter cycle behind the playhead's line and the rest ahead, a lane per semitone, each note's cell as wide as it actually sounds and lit while it sounds. |
 | `waveform()` | The voice's actual audio drawn beneath the line: one cycle rendered through the synth, envelope, filter, echo and harmony included. |
 
 The envelope the modulation list asks after is already here: `att()`, `dec()`, `sus()` and `rel()` are the four corners of it, and `hold()` is where the release begins.
@@ -275,7 +275,9 @@ The envelope needed nothing: `att()`, `dec()`, `sus()` and `rel()` were already 
 `pianoroll()` and `waveform()` change nothing about what a line plays; each hangs a band of extra rows under the line -- the last line of a spread chain, so the picture comes after the whole voice -- through [`ui`](../libraries/ui.md)'s `TextAreaSpec::bands`, and the scene paints into the rectangle the layout reports back.
 The rows are whole rows of the pane, so a click below a picture still lands on the line that was under it on screen, on the same recorded-click arithmetic as everything else.
 What a roll shows is the *line's own* pattern rather than the form-scheduled one, since a `part:` voice's scheduled cycle nought is silence whenever the form opens elsewhere -- the thing being written is what is worth seeing.
-**The roll rolls**: its window is the cycle ahead of the playhead, read off `Playback::position()` -- the played ticks through the run's own TempoMap, exact, still while paused -- so notes flow leftward as the clock advances, a note still ringing reaches in from the left edge, and a window crossing a cycle boundary already shows the next turn of every `<>` alternation.
+**The roll rolls**: its window is a quarter cycle behind the playhead and the rest ahead, read off `Playback::position()` -- the played ticks through the run's own TempoMap, exact, still while paused -- so notes flow leftward, cross the playhead's line as they begin, and a window crossing a cycle boundary already shows the next turn of every `<>` alternation.
+A note the line stands in is lit in its own brighter ink, a note that began before the window reaches in from the left edge, and the query looks one extra cycle behind so a long release still ringing under the line is drawn rather than forgotten.
+The roll is capped at `kPianorollWidth` rather than spanning the pane, since a cycle stretched over the whole window reads slower than it sounds.
 The waveform stays a picture of cycle nought, since rolling it would mean rendering audio every tick.
 Both pictures survive an edit that will not read, exactly as the voice does, and follow their chain when the lines above it move; a picture cut short by the pane's bottom edge draws nothing, because the pane shows whole rows and no half ones.
 **A roll's cell spans the time its note sounds, not the slot it landed in**: the hold caps the note's length and the release rings past it, both in wall time measured against the run's pace -- so a drum is a short cell whatever slot it hit, a long release reaches past its slot, and the same score at double speed draws wider cells because each cycle is shorter.

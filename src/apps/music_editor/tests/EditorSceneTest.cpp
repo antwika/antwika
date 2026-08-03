@@ -421,61 +421,6 @@ namespace
     }
 } // namespace
 
-// The room is the band's, and the picture is painted over it.
-// Both come off the one layout, so neither can drift from the other.
-TEST(EditorSceneTest, APianorollLineHoldsABandOfRoomUnderItself)
-{
-    const auto frame = pianorollFrame(
-        "$: drum.n(\"0 3\").pianoroll()\n"
-        "$: bass.n(\"0\")\n");
-
-    const auto band = frame.rects.find(pianorollBand(0));
-
-    ASSERT_TRUE(band.has_value());
-    EXPECT_EQ(band->size.height, kRollHeight);
-
-    const auto backdrops = fillsIn(frame.commands, kRollBackdrop);
-
-    ASSERT_EQ(backdrops.size(), 1U);
-    EXPECT_EQ(backdrops[0].rect, *band);
-}
-
-// Time runs across the band as one cycle.
-// Each distinct semitone is a lane, lowest at the bottom.
-TEST(EditorSceneTest, PaintsTheRollsNotesOverItsBand)
-{
-    const auto frame =
-        pianorollFrame("$: drum.n(\"0 3\").pianoroll()\n");
-
-    const auto band = frame.rects.find(pianorollBand(0));
-
-    ASSERT_TRUE(band.has_value());
-
-    // Four lanes for pitches nought through three.
-    const auto lane = kRollHeight / 4;
-    const auto half = band->size.width / 2;
-
-    const auto notes = fillsIn(frame.commands, kNoteInk);
-
-    ASSERT_EQ(notes.size(), 2U);
-    EXPECT_EQ(
-        notes[0].rect,
-        (Rect{
-            .origin =
-                {.x = band->origin.x,
-                 .y = band->origin.y
-                      + static_cast<std::int32_t>(kRollHeight - lane)},
-            .size = {.width = half, .height = lane}}));
-    EXPECT_EQ(
-        notes[1].rect,
-        (Rect{
-            .origin =
-                {.x = band->origin.x + static_cast<std::int32_t>(half),
-                 .y = band->origin.y},
-            .size =
-                {.width = band->size.width - half, .height = lane}}));
-}
-
 TEST(EditorSceneTest, ARollOfRestsIsItsBackdropAlone)
 {
     const auto frame =
@@ -495,19 +440,6 @@ TEST(EditorSceneTest, ARollWhosePatternRefusesItsWindowIsEmpty)
 
     EXPECT_EQ(fillsIn(frame.commands, kRollBackdrop).size(), 1U);
     EXPECT_TRUE(fillsIn(frame.commands, kNoteInk).empty());
-}
-
-// A range of fifty-one semitones gets one-pixel lanes.
-// The lanes past the band's top are not drawn rather than drawn wrong.
-TEST(EditorSceneTest, ALanePastTheBandsTopIsNotDrawn)
-{
-    const auto frame =
-        pianorollFrame("$: drum.n(\"0 50\").pianoroll()\n");
-
-    const auto notes = fillsIn(frame.commands, kNoteInk);
-
-    ASSERT_EQ(notes.size(), 1U);
-    EXPECT_EQ(notes[0].rect.size.height, 1U);
 }
 
 TEST(EditorSceneTest, ARollScrolledOffTheTopPaintsNothing)
@@ -782,76 +714,6 @@ namespace
     }
 } // namespace
 
-// A drum is a hit whatever slot it lands in.
-// This hit sounds for an eighth of its second-long cycle.
-// So its cell is an eighth of the band, not the half-cycle slot.
-TEST(EditorSceneTest, ARollsCellIsOnlyAsWideAsItsNoteSounds)
-{
-    const auto frame = pacedFrame(
-        "$: drum.n(\"0 3\").hold(100).rel(25).pianoroll()\n");
-
-    const auto band = frame.rects.find(pianorollBand(0));
-
-    ASSERT_TRUE(band.has_value());
-
-    const auto cells = fillsIn(frame.commands, kNoteInk);
-
-    ASSERT_EQ(cells.size(), 2U);
-
-    const auto width = static_cast<std::int64_t>(band->size.width);
-    const auto sounding =
-        static_cast<std::uint32_t>(6000 * width / 48000);
-
-    EXPECT_EQ(cells[0].rect.size.width, sounding);
-    EXPECT_EQ(cells[1].rect.size.width, sounding);
-    EXPECT_LT(cells[0].rect.size.width, band->size.width / 2);
-    EXPECT_EQ(
-        cells[1].rect.origin.x,
-        band->origin.x + static_cast<std::int32_t>(width / 2));
-}
-
-// A long release reaches past the slot it rang out of.
-// Clipped at the band, since the cycle ends there.
-TEST(EditorSceneTest, AReleaseRingsPastTheSlotAndTheRollSaysSo)
-{
-    const auto frame = pacedFrame(
-        "$: n(\"0 ~\").hold(2000).rel(1000).pianoroll()\n");
-
-    const auto band = frame.rects.find(pianorollBand(0));
-
-    ASSERT_TRUE(band.has_value());
-
-    const auto cells = fillsIn(frame.commands, kNoteInk);
-
-    ASSERT_EQ(cells.size(), 1U);
-    EXPECT_EQ(cells[0].rect.size.width, band->size.width);
-}
-
-// Half a pace measures nothing: both numbers or the slot.
-TEST(EditorSceneTest, ARateWithoutACycleLengthFillsTheSlot)
-{
-    EditorState state;
-    state.source =
-        "$: drum.n(\"0 ~\").hold(100).rel(25).pianoroll()\n";
-
-    Score score;
-    score.read(state.source);
-
-    const auto frame = describe(
-        state,
-        score,
-        PlaybackStatus{.rate = 48000, .cycleFrames = 0});
-
-    const auto band = frame.rects.find(pianorollBand(0));
-
-    ASSERT_TRUE(band.has_value());
-
-    const auto cells = fillsIn(frame.commands, kNoteInk);
-
-    ASSERT_EQ(cells.size(), 1U);
-    EXPECT_EQ(cells[0].rect.size.width, band->size.width / 2);
-}
-
 namespace
 {
     using antwika::sequencer::Rational;
@@ -875,8 +737,222 @@ namespace
     }
 } // namespace
 
-// The window is the cycle ahead of the playhead.
-// Half way through, the second slot leads and the next cycle follows.
+namespace
+{
+    // The scene's remaining roll inks, matched constant for constant.
+    constexpr Color kPlayingInk{
+        .red = 235, .green = 245, .blue = 160, .alpha = 255};
+
+    constexpr Color kNowInk{
+        .red = 225, .green = 230, .blue = 235, .alpha = 255};
+
+    // The roll is capped below the band's width.
+    [[nodiscard]] std::uint32_t rollWidthOf(
+        const antwika::gfx::Rect &band)
+    {
+        return std::min(
+            band.size.width, antwika::music_editor::kPianorollWidth);
+    }
+} // namespace
+
+// The roll is narrower than the band when the band has the room.
+// Its backdrop covers the roll alone, not the whole band.
+TEST(EditorSceneTest, APianorollLineHoldsABandOfRoomUnderItself)
+{
+    const auto frame = pianorollFrame(
+        "$: drum.n(\"0 3\").pianoroll()\n"
+        "$: bass.n(\"0\")\n");
+
+    const auto band = frame.rects.find(pianorollBand(0));
+
+    ASSERT_TRUE(band.has_value());
+    EXPECT_EQ(band->size.height, kRollHeight);
+    EXPECT_LT(rollWidthOf(*band), band->size.width);
+
+    const auto backdrops = fillsIn(frame.commands, kRollBackdrop);
+
+    ASSERT_EQ(backdrops.size(), 1U);
+    EXPECT_EQ(
+        backdrops[0].rect,
+        (Rect{
+            .origin = band->origin,
+            .size = {
+                .width = rollWidthOf(*band),
+                .height = kRollHeight}}));
+}
+
+// A quarter of the roll is the played past, the rest what is coming.
+// The playhead's line stands between the two.
+TEST(EditorSceneTest, TheRollDrawsItsPlayheadLine)
+{
+    const auto frame =
+        pianorollFrame("$: drum.n(\"0 3\").pianoroll()\n");
+
+    const auto band = frame.rects.find(pianorollBand(0));
+
+    ASSERT_TRUE(band.has_value());
+
+    const auto lines = fillsIn(frame.commands, kNowInk);
+
+    ASSERT_EQ(lines.size(), 1U);
+    EXPECT_EQ(
+        lines[0].rect,
+        (Rect{
+            .origin =
+                {.x = band->origin.x
+                      + static_cast<std::int32_t>(
+                          rollWidthOf(*band) / 4),
+                 .y = band->origin.y},
+            .size = {.width = 2, .height = kRollHeight}}));
+}
+
+// Time runs across the roll, the playhead a quarter in.
+// The note the line stands in is lit in its own ink.
+TEST(EditorSceneTest, PaintsTheRollsNotesOverItsBand)
+{
+    const auto frame =
+        pianorollFrame("$: drum.n(\"0 3\").pianoroll()\n");
+
+    const auto band = frame.rects.find(pianorollBand(0));
+
+    ASSERT_TRUE(band.has_value());
+
+    const auto width = static_cast<std::int64_t>(rollWidthOf(*band));
+    const auto lane = kRollHeight / 4;
+
+    // The 0 under the playhead, on the playing ink.
+    const auto playing = fillsIn(frame.commands, kPlayingInk);
+
+    ASSERT_EQ(playing.size(), 1U);
+    EXPECT_EQ(
+        playing[0].rect,
+        (Rect{
+            .origin =
+                {.x = band->origin.x
+                      + static_cast<std::int32_t>(width / 4),
+                 .y = band->origin.y
+                      + static_cast<std::int32_t>(kRollHeight - lane)},
+            .size =
+                {.width = static_cast<std::uint32_t>(width / 2),
+                 .height = lane}}));
+
+    // The played quarter's 3 and the coming 3, on the plain ink.
+    const auto cells = fillsIn(frame.commands, kNoteInk);
+
+    ASSERT_EQ(cells.size(), 2U);
+    EXPECT_EQ(cells[0].rect.origin.x, band->origin.x);
+    EXPECT_EQ(cells[0].rect.origin.y, band->origin.y);
+    EXPECT_EQ(
+        cells[0].rect.size.width,
+        static_cast<std::uint32_t>(width / 4));
+    EXPECT_EQ(
+        cells[1].rect.origin.x,
+        band->origin.x + static_cast<std::int32_t>(3 * width / 4));
+}
+
+// A range of fifty-one semitones gets one-pixel lanes.
+// The lanes past the band's top are not drawn rather than drawn wrong.
+TEST(EditorSceneTest, ALanePastTheBandsTopIsNotDrawn)
+{
+    const auto frame =
+        pianorollFrame("$: drum.n(\"0 50\").pianoroll()\n");
+
+    const auto playing = fillsIn(frame.commands, kPlayingInk);
+    const auto cells = fillsIn(frame.commands, kNoteInk);
+
+    ASSERT_EQ(playing.size(), 1U);
+    EXPECT_TRUE(cells.empty());
+    EXPECT_EQ(playing[0].rect.size.height, 1U);
+}
+
+// A drum is a hit whatever slot it lands in.
+// This hit sounds for an eighth of its second-long cycle.
+// So its cell is an eighth of the roll, not the half-cycle slot.
+TEST(EditorSceneTest, ARollsCellIsOnlyAsWideAsItsNoteSounds)
+{
+    const auto frame = pacedFrame(
+        "$: drum.n(\"0 3\").hold(100).rel(25).pianoroll()\n");
+
+    const auto band = frame.rects.find(pianorollBand(0));
+
+    ASSERT_TRUE(band.has_value());
+
+    const auto width = static_cast<std::int64_t>(rollWidthOf(*band));
+    const auto sounding =
+        static_cast<std::uint32_t>(6000 * width / 48000);
+
+    const auto playing = fillsIn(frame.commands, kPlayingInk);
+    const auto cells = fillsIn(frame.commands, kNoteInk);
+
+    ASSERT_EQ(playing.size(), 1U);
+    ASSERT_EQ(cells.size(), 1U);
+
+    EXPECT_EQ(playing[0].rect.size.width, sounding);
+    EXPECT_EQ(cells[0].rect.size.width, sounding);
+    EXPECT_EQ(
+        cells[0].rect.origin.x,
+        band->origin.x + static_cast<std::int32_t>(3 * width / 4));
+}
+
+// A long release reaches past the slot it rang from.
+// The previous cycle's note is still ringing under the playhead too.
+TEST(EditorSceneTest, AReleaseRingsPastTheSlotAndTheRollSaysSo)
+{
+    const auto frame = pacedFrame(
+        "$: n(\"0 ~\").hold(2000).rel(1000).pianoroll()\n");
+
+    const auto band = frame.rects.find(pianorollBand(0));
+
+    ASSERT_TRUE(band.has_value());
+
+    const auto width = static_cast<std::int64_t>(rollWidthOf(*band));
+
+    const auto playing = fillsIn(frame.commands, kPlayingInk);
+
+    ASSERT_EQ(playing.size(), 2U);
+
+    // The previous cycle's tail, and the current note to the edge.
+    EXPECT_EQ(playing[0].rect.origin.x, band->origin.x);
+    EXPECT_EQ(
+        playing[0].rect.size.width,
+        static_cast<std::uint32_t>(3 * width / 4));
+    EXPECT_EQ(
+        playing[1].rect.origin.x,
+        band->origin.x + static_cast<std::int32_t>(width / 4));
+    EXPECT_EQ(
+        playing[1].rect.size.width,
+        static_cast<std::uint32_t>(width - width / 4));
+}
+
+// Half a pace measures nothing: both numbers or the whole extent.
+TEST(EditorSceneTest, ARateWithoutACycleLengthFillsTheSlot)
+{
+    EditorState state;
+    state.source =
+        "$: drum.n(\"0 ~\").hold(100).rel(25).pianoroll()\n";
+
+    Score score;
+    score.read(state.source);
+
+    const auto frame = describe(
+        state,
+        score,
+        PlaybackStatus{.rate = 48000, .cycleFrames = 0});
+
+    const auto band = frame.rects.find(pianorollBand(0));
+
+    ASSERT_TRUE(band.has_value());
+
+    const auto playing = fillsIn(frame.commands, kPlayingInk);
+
+    ASSERT_EQ(playing.size(), 1U);
+    EXPECT_EQ(
+        playing[0].rect.size.width, rollWidthOf(*band) / 2);
+    EXPECT_TRUE(fillsIn(frame.commands, kNoteInk).empty());
+}
+
+// The window is the quarter behind the playhead and the rest ahead.
+// Half way through, the second slot stands at the line.
 TEST(EditorSceneTest, TheRollScrollsWithThePlayhead)
 {
     const auto frame = rolledFrame(
@@ -886,25 +962,25 @@ TEST(EditorSceneTest, TheRollScrollsWithThePlayhead)
 
     ASSERT_TRUE(band.has_value());
 
+    const auto width = static_cast<std::int64_t>(rollWidthOf(*band));
+
+    const auto playing = fillsIn(frame.commands, kPlayingInk);
     const auto cells = fillsIn(frame.commands, kNoteInk);
 
+    ASSERT_EQ(playing.size(), 1U);
     ASSERT_EQ(cells.size(), 2U);
 
-    const auto width = band->size.width;
+    // The 3 stands at the playhead.
+    EXPECT_EQ(
+        playing[0].rect.origin.x,
+        band->origin.x + static_cast<std::int32_t>(width / 4));
+    EXPECT_EQ(playing[0].rect.origin.y, band->origin.y);
 
-    // The 3, already sounding order, at the left edge.
+    // The played 0 leaves at the left; the next 0 is coming.
     EXPECT_EQ(cells[0].rect.origin.x, band->origin.x);
-    EXPECT_EQ(cells[0].rect.size.width, width / 2);
-
-    // The next cycle's 0, entering from the half.
     EXPECT_EQ(
         cells[1].rect.origin.x,
-        band->origin.x + static_cast<std::int32_t>(width / 2));
-    EXPECT_EQ(
-        cells[1].rect.origin.y,
-        band->origin.y
-            + static_cast<std::int32_t>(
-                band->size.height - band->size.height / 4));
+        band->origin.x + static_cast<std::int32_t>(3 * width / 4));
 }
 
 // What an alternation turns to next is already in the window.
@@ -917,41 +993,38 @@ TEST(EditorSceneTest, AnUpcomingAlternationTurnIsAlreadyInTheRoll)
 
     ASSERT_TRUE(band.has_value());
 
+    const auto playing = fillsIn(frame.commands, kPlayingInk);
     const auto cells = fillsIn(frame.commands, kNoteInk);
 
+    ASSERT_EQ(playing.size(), 1U);
     ASSERT_EQ(cells.size(), 2U);
 
-    // Six lanes, nought through five: the five sits at the top.
-    const auto lane = band->size.height / 6;
-
-    EXPECT_EQ(cells[0].rect.origin.y, band->origin.y);
-    EXPECT_EQ(
-        cells[1].rect.origin.y,
-        band->origin.y
-            + static_cast<std::int32_t>(band->size.height - lane));
+    // Six lanes, nought through five: the sounding five at the top.
+    EXPECT_EQ(playing[0].rect.origin.y, band->origin.y);
 }
 
 // A note that began before the window still reaches into it.
 TEST(EditorSceneTest, ANoteStillRingingReachesInFromTheLeft)
 {
     const auto frame = rolledFrame(
-        "$: drum.n(\"0 _ 3\").pianoroll()\n", Rational{1, 4});
+        "$: drum.n(\"0 _ 3\").pianoroll()\n", Rational{1, 2});
 
     const auto band = frame.rects.find(pianorollBand(0));
 
     ASSERT_TRUE(band.has_value());
 
-    const auto cells = fillsIn(frame.commands, kNoteInk);
+    const auto width = static_cast<std::int64_t>(rollWidthOf(*band));
 
-    ASSERT_EQ(cells.size(), 3U);
+    // The held 0 is clipped at the left edge and stands at the line.
+    const auto playing = fillsIn(frame.commands, kPlayingInk);
 
-    // Clipped at the left edge, its remaining extent shown.
-    const auto width = static_cast<std::int64_t>(band->size.width);
-
-    EXPECT_EQ(cells[0].rect.origin.x, band->origin.x);
+    ASSERT_EQ(playing.size(), 1U);
+    EXPECT_EQ(playing[0].rect.origin.x, band->origin.x);
     EXPECT_EQ(
-        cells[0].rect.size.width,
+        playing[0].rect.size.width,
         static_cast<std::uint32_t>(5 * width / 12));
+
+    EXPECT_EQ(fillsIn(frame.commands, kNoteInk).size(), 2U);
 }
 
 // A tail that rang out before the window earns no cell at all.
@@ -959,7 +1032,7 @@ TEST(EditorSceneTest, ATailThatRangOutBeforeTheWindowIsNoCell)
 {
     const auto frame = rolledFrame(
         "$: drum.n(\"0 ~\").hold(100).rel(25).pianoroll()\n",
-        Rational{1, 4},
+        Rational{1, 2},
         PlaybackStatus{.rate = 48000, .cycleFrames = 48000});
 
     const auto band = frame.rects.find(pianorollBand(0));
@@ -969,9 +1042,33 @@ TEST(EditorSceneTest, ATailThatRangOutBeforeTheWindowIsNoCell)
     const auto cells = fillsIn(frame.commands, kNoteInk);
 
     // The window's own note is gone; the next cycle's is coming.
+    EXPECT_TRUE(fillsIn(frame.commands, kPlayingInk).empty());
     ASSERT_EQ(cells.size(), 1U);
     EXPECT_EQ(
         cells[0].rect.origin.x,
         band->origin.x
-            + static_cast<std::int32_t>(3 * band->size.width / 4));
+            + static_cast<std::int32_t>(
+                3 * rollWidthOf(*band) / 4));
+}
+
+// A note cut by the query's own cycle seams is still one note.
+// Its fragments carry no onset, and only the onset earns a cell.
+TEST(EditorSceneTest, ARollDrawsOneCellPerOnset)
+{
+    const auto frame =
+        pianorollFrame("$: drum.n(\"0/2\").pianoroll()\n");
+
+    const auto band = frame.rects.find(pianorollBand(0));
+
+    ASSERT_TRUE(band.has_value());
+
+    const auto width = static_cast<std::int64_t>(rollWidthOf(*band));
+
+    const auto playing = fillsIn(frame.commands, kPlayingInk);
+
+    ASSERT_EQ(playing.size(), 1U);
+    EXPECT_TRUE(fillsIn(frame.commands, kNoteInk).empty());
+    EXPECT_EQ(
+        playing[0].rect.origin.x,
+        band->origin.x + static_cast<std::int32_t>(width / 4));
 }

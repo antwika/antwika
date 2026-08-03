@@ -120,6 +120,14 @@ namespace antwika::music_editor
         constexpr Color kRollBackdrop{
             .red = 12, .green = 13, .blue = 18, .alpha = 255};
 
+        // A note the playhead stands in, brighter than its neighbours.
+        constexpr Color kRollPlaying{
+            .red = 235, .green = 245, .blue = 160, .alpha = 255};
+
+        // The playhead's own line.
+        constexpr Color kRollNow{
+            .red = 225, .green = 230, .blue = 235, .alpha = 255};
+
         /**
          * @brief One note of a roll, before any pixel is known.
          *
@@ -147,9 +155,19 @@ namespace antwika::music_editor
 
             try
             {
+                // One cycle behind the window and the window itself.
+                // The extra cycle is for a tail still ringing in:
+                // its event ended, and its hold and release did not.
                 for (const auto &hap : playing.queryAll(
-                         Span{from, from + Cycle(1)}))
+                         Span{from - Cycle(1), from + Cycle(1)}))
                 {
+                    // One cell per onset, however the cycles cut it.
+                    // A fragment is the same note seen again.
+                    if (!hap.hasOnset())
+                    {
+                        continue;
+                    }
+
                     // Whole semitones, floored, as the lanes draw.
                     // The stored form is fixed point: a shift floors.
                     const auto note =
@@ -218,117 +236,148 @@ namespace antwika::music_editor
             const Pianoroll &roll,
             const PlaybackStatus &status)
         {
+            // Narrower than the band when the band has the room.
+            // A cycle over the whole pane reads slower than it is.
+            const auto width =
+                std::min(band.size.width, kPianorollWidth);
+
             commands.push_back(antwika::ui::FillRect{
-                .rect = band, .color = kRollBackdrop});
+                .rect = Rect{
+                    .origin = band.origin,
+                    .size = {
+                        .width = width,
+                        .height = band.size.height}},
+                .color = kRollBackdrop});
 
-            // The cycle ahead of the playhead, so the picture rolls.
-            // Notes flow leftward, upcoming ones enter at the right.
+            // A quarter cycle behind the playhead, and the rest ahead.
+            // Notes flow leftward and cross the line as they begin.
             // A boundary in the window shows each alternation's turn.
-            const auto notes =
-                rollNotesOf(roll.playing, status.position);
+            const Cycle lookback{1, 4};
 
-            if (notes.empty())
+            const auto from = status.position - lookback;
+
+            // Where the playhead's line stands, a quarter across.
+            const auto now = acrossRoll(lookback, width);
+
+            const auto notes = rollNotesOf(roll.playing, from);
+
+            if (!notes.empty())
             {
-                return;
-            }
+                auto lowest = notes.front().pitch;
+                auto highest = notes.front().pitch;
 
-            auto lowest = notes.front().pitch;
-            auto highest = notes.front().pitch;
-
-            for (const auto &note : notes)
-            {
-                lowest = std::min(lowest, note.pitch);
-                highest = std::max(highest, note.pitch);
-            }
-
-            // Never zero, and never wider than the band is tall.
-            // A range of a thousand semitones gets one-pixel lanes.
-            const auto lanes = static_cast<std::uint64_t>(
-                highest - lowest + 1);
-
-            const auto laneHeight = std::max<std::uint32_t>(
-                1,
-                static_cast<std::uint32_t>(
-                    std::uint64_t{band.size.height} / lanes));
-
-            for (const auto &note : notes)
-            {
-                const auto lane = static_cast<std::uint32_t>(
-                    note.pitch - lowest);
-
-                // Lanes past the band's top are not drawn.
-                // A one-pixel lane cannot hold a thousand of them.
-                const auto below = std::uint64_t{lane + 1} * laneHeight;
-
-                if (below > band.size.height)
+                for (const auto &note : notes)
                 {
-                    continue;
+                    lowest = std::min(lowest, note.pitch);
+                    highest = std::max(highest, note.pitch);
                 }
 
-                // Anchored at the whole note's own beginning.
-                // Negative for one still ringing into the window.
-                const auto begun = acrossRoll(
-                    note.begin - status.position, band.size.width);
+                // Never zero, and never wider than the band is tall.
+                // A range of a thousand semitones gets pixel lanes.
+                const auto lanes = static_cast<std::uint64_t>(
+                    highest - lowest + 1);
 
-                auto over = acrossRoll(
-                    note.begin + note.length - status.position,
-                    band.size.width);
+                const auto laneHeight = std::max<std::uint32_t>(
+                    1,
+                    static_cast<std::uint32_t>(
+                        std::uint64_t{band.size.height} / lanes));
 
-                // As wide as the note sounds, when the pace is known.
-                // The hold caps the note's length in wall time.
-                // The release rings past it, in wall time too.
-                // A drum is a short cell whatever slot it landed in.
-                // A long release reaches past the slot it rang from.
-                // With no pace, its milliseconds measure nothing.
-                // A note then fills its whole extent instead.
-                if (status.rate > 0 && status.cycleFrames > 0)
+                for (const auto &note : notes)
                 {
-                    const auto length = note.length.numerator()
-                        * status.cycleFrames
-                        / note.length.denominator();
+                    const auto lane = static_cast<std::uint32_t>(
+                        note.pitch - lowest);
 
-                    const auto held = std::min<std::int64_t>(
-                        length,
-                        static_cast<std::int64_t>(
-                            roll.preset.maxHoldMs)
-                            * status.rate / 1000);
+                    // Lanes past the band's top are not drawn.
+                    // A pixel lane cannot hold a thousand of them.
+                    const auto below =
+                        std::uint64_t{lane + 1} * laneHeight;
 
-                    const auto rings = held
-                        + static_cast<std::int64_t>(
-                              roll.preset.releaseMs)
-                            * status.rate / 1000;
+                    if (below > band.size.height)
+                    {
+                        continue;
+                    }
 
-                    over = begun
-                        + rings * band.size.width
-                            / status.cycleFrames;
+                    // Anchored at the whole note's own beginning.
+                    // Negative for one begun before the window.
+                    const auto begun =
+                        acrossRoll(note.begin - from, width);
+
+                    auto over = acrossRoll(
+                        note.begin + note.length - from, width);
+
+                    // As wide as the note sounds, at a known pace.
+                    // The hold caps the note's length in wall time.
+                    // The release rings past it, in wall time too.
+                    // A drum is a short cell whatever slot it hit.
+                    // A long release reaches past the slot it left.
+                    // With no pace, milliseconds measure nothing.
+                    // A note then fills its whole extent instead.
+                    if (status.rate > 0 && status.cycleFrames > 0)
+                    {
+                        const auto length = note.length.numerator()
+                            * status.cycleFrames
+                            / note.length.denominator();
+
+                        const auto held = std::min<std::int64_t>(
+                            length,
+                            static_cast<std::int64_t>(
+                                roll.preset.maxHoldMs)
+                                * status.rate / 1000);
+
+                        const auto rings = held
+                            + static_cast<std::int64_t>(
+                                  roll.preset.releaseMs)
+                                * status.rate / 1000;
+
+                        over = begun
+                            + rings * width / status.cycleFrames;
+                    }
+
+                    // A tail rung out before the window is no cell.
+                    if (over <= 0)
+                    {
+                        continue;
+                    }
+
+                    // A note is playing while the line is inside it.
+                    // Lit in its own ink, so the roll plays along.
+                    const bool playing = begun <= now && now < over;
+
+                    // Clipped: the window ends at the roll's edges.
+                    const auto left =
+                        std::max<std::int64_t>(begun, 0);
+                    const auto right =
+                        std::min<std::int64_t>(over, width);
+
+                    commands.push_back(antwika::ui::FillRect{
+                        .rect = Rect{
+                            .origin =
+                                {.x = band.origin.x
+                                      + static_cast<std::int32_t>(
+                                          left),
+                                 .y = band.origin.y
+                                      + static_cast<std::int32_t>(
+                                          band.size.height - below)},
+                            .size =
+                                {.width = static_cast<std::uint32_t>(
+                                     std::max<std::int64_t>(
+                                         1, right - left)),
+                                 .height = laneHeight}},
+                        .color = playing ? kRollPlaying : kCalm});
                 }
-
-                // A tail that rang out before the window is no cell.
-                if (over <= 0)
-                {
-                    continue;
-                }
-
-                // Clipped to the band: the window ends at its edges.
-                const auto left = std::max<std::int64_t>(begun, 0);
-                const auto right = std::min<std::int64_t>(
-                    over, band.size.width);
-
-                commands.push_back(antwika::ui::FillRect{
-                    .rect = Rect{
-                        .origin =
-                            {.x = band.origin.x
-                                  + static_cast<std::int32_t>(left),
-                             .y = band.origin.y
-                                  + static_cast<std::int32_t>(
-                                      band.size.height - below)},
-                        .size =
-                            {.width = static_cast<std::uint32_t>(
-                                 std::max<std::int64_t>(
-                                     1, right - left)),
-                             .height = laneHeight}},
-                    .color = kCalm});
             }
+
+            // The playhead's line, over whatever it stands in.
+            commands.push_back(antwika::ui::FillRect{
+                .rect = Rect{
+                    .origin =
+                        {.x = band.origin.x
+                              + static_cast<std::int32_t>(now),
+                         .y = band.origin.y},
+                    .size = {
+                        .width = 2,
+                        .height = band.size.height}},
+                .color = kRollNow});
         }
 
         // What a wave is drawn in, apart from the notes' own ink.
