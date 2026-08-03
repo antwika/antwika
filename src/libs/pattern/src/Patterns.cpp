@@ -187,6 +187,127 @@ namespace antwika::pattern
 
             std::vector<Pattern> sequence;
         };
+
+        /**
+         * @brief One cycle shared by weight, fragments included.
+         *
+         * Each slice holds a run of the cycle as wide as its weight
+         * says, and one cycle of its pattern is squeezed into it.
+         * A window that sees only part of a slice gets the fragment
+         * a query is owed -- the part it saw, inside the whole the
+         * event covers -- which is what a stack of shifted silences
+         * could not have said.
+         */
+        class TimecatPattern final : public IPattern
+        {
+        public:
+            /**
+             * @brief One slice, placed: its run of the cycle as
+             * fractions, and the two scales between the cycle's time
+             * and its own.
+             */
+            struct Placed
+            {
+                Cycle from;
+                Cycle to;
+                Cycle stretch;
+                Cycle squeeze;
+                Pattern part;
+            };
+
+            explicit TimecatPattern(std::vector<Placed> placed)
+                : sequence(std::move(placed))
+            {
+            }
+
+            void query(const Span &window, IHapSink &out) const override
+            {
+                for (const auto &piece : window.spanCycles())
+                {
+                    const Cycle base(piece.begin().floorCycle());
+
+                    for (const auto &slice : sequence)
+                    {
+                        const Span held(
+                            base + slice.from, base + slice.to);
+
+                        const auto overlap = piece.intersect(held);
+
+                        if (!overlap.has_value())
+                        {
+                            continue;
+                        }
+
+                        // Outer time into the slice's own cycle.
+                        // The cycle number rides along unchanged.
+                        // An alternation inside still turns per cycle.
+                        const Span asked(
+                            base
+                                + (overlap->begin() - held.begin())
+                                    * slice.stretch,
+                            base
+                                + (overlap->end() - held.begin())
+                                    * slice.stretch);
+
+                        MappedSink mapped(
+                            out, base, held.begin(), slice.squeeze);
+
+                        slice.part.query(asked, mapped);
+                    }
+                }
+            }
+
+        private:
+            // The inverse of the query's mapping, on every hap.
+            class MappedSink final : public IHapSink
+            {
+            public:
+                MappedSink(
+                    IHapSink &wrapped,
+                    Cycle base,
+                    Cycle from,
+                    Cycle squeeze)
+                    : out(wrapped),
+                      base(base),
+                      from(from),
+                      squeeze(squeeze)
+                {
+                }
+
+                void accept(const Hap &hap) override
+                {
+                    std::optional<Span> whole;
+
+                    if (hap.whole.has_value())
+                    {
+                        whole = Span(
+                            placed(hap.whole->begin()),
+                            placed(hap.whole->end()));
+                    }
+
+                    out.accept(
+                        Hap{
+                            .whole = whole,
+                            .part = Span(
+                                placed(hap.part.begin()),
+                                placed(hap.part.end())),
+                            .value = hap.value});
+                }
+
+            private:
+                [[nodiscard]] Cycle placed(const Cycle &inner) const
+                {
+                    return from + (inner - base) * squeeze;
+                }
+
+                IHapSink &out;
+                Cycle base;
+                Cycle from;
+                Cycle squeeze;
+            };
+
+            std::vector<Placed> sequence;
+        };
     } // namespace
 
     Pattern silence()
@@ -232,6 +353,53 @@ namespace antwika::pattern
         // Empty is refused by slowcat.
         // So the factor below is never zero by the time it is used.
         return fast(Cycle(count), slowcat(std::move(parts)));
+    }
+
+    Pattern timecat(std::vector<Slice> parts)
+    {
+        if (parts.empty())
+        {
+            throw PatternError(
+                "antwika::pattern: a sequence of no slices has no "
+                "cycle to share between them");
+        }
+
+        Cycle total(0);
+
+        for (const auto &slice : parts)
+        {
+            if (!(slice.weight > Cycle(0)))
+            {
+                throw PatternError(
+                    "antwika::pattern: a slice of no width at all "
+                    "cannot hold a pattern");
+            }
+
+            total = total + slice.weight;
+        }
+
+        std::vector<TimecatPattern::Placed> placed;
+        placed.reserve(parts.size());
+
+        Cycle start(0);
+
+        for (auto &slice : parts)
+        {
+            const auto from = start / total;
+
+            start = start + slice.weight;
+
+            placed.push_back(
+                TimecatPattern::Placed{
+                    .from = from,
+                    .to = start / total,
+                    .stretch = total / slice.weight,
+                    .squeeze = slice.weight / total,
+                    .part = std::move(slice.part)});
+        }
+
+        return Pattern(
+            std::make_shared<const TimecatPattern>(std::move(placed)));
     }
 
 } // namespace antwika::pattern

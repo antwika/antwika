@@ -228,3 +228,122 @@ TEST(PatternsTest, SteadyStaysWholeLessThroughASequence)
     EXPECT_EQ(haps[0].part, cycles(0, 1));
     EXPECT_TRUE(haps[1].hasOnset());
 }
+
+namespace
+{
+    using antwika::pattern::Slice;
+    using antwika::pattern::timecat;
+
+    [[nodiscard]] std::vector<Slice> twoOne()
+    {
+        std::vector<Slice> slices;
+        slices.push_back(Slice{.weight = Cycle(2), .part = note(1)});
+        slices.push_back(Slice{.weight = Cycle(1), .part = note(2)});
+
+        return slices;
+    }
+} // namespace
+
+// The weights share the cycle: two thirds, then one.
+TEST(PatternsTest, TimecatSharesTheCycleByWeight)
+{
+    const auto haps = timecat(twoOne()).queryAll(cycles(0, 1));
+
+    ASSERT_EQ(haps.size(), 2U);
+    EXPECT_EQ(haps[0].whole, Span(Cycle(0), Cycle(2, 3)));
+    EXPECT_EQ(haps[0].part, *haps[0].whole);
+    EXPECT_EQ(haps[1].whole, Span(Cycle(2, 3), Cycle(1)));
+}
+
+TEST(PatternsTest, TimecatRepeatsEveryCycle)
+{
+    const auto haps = timecat(twoOne()).queryAll(cycles(2, 3));
+
+    ASSERT_EQ(haps.size(), 2U);
+    EXPECT_EQ(haps[0].whole, Span(Cycle(2), Cycle(2) + Cycle(2, 3)));
+    EXPECT_TRUE(haps[0].hasOnset());
+}
+
+TEST(PatternsTest, TimecatKeepsGoingBeforeCycleZero)
+{
+    const auto haps = timecat(twoOne()).queryAll(cycles(-1, 0));
+
+    ASSERT_EQ(haps.size(), 2U);
+    EXPECT_EQ(
+        haps[0].whole, Span(Cycle(-1), Cycle(-1) + Cycle(2, 3)));
+}
+
+// A window that sees only part of a slice is owed the fragment.
+TEST(PatternsTest, TimecatFragmentsWhatAWindowCuts)
+{
+    const auto haps = timecat(twoOne())
+                          .queryAll(Span(Cycle(1, 3), Cycle(1, 2)));
+
+    ASSERT_EQ(haps.size(), 1U);
+    EXPECT_EQ(haps[0].part, Span(Cycle(1, 3), Cycle(1, 2)));
+    EXPECT_EQ(haps[0].whole, Span(Cycle(0), Cycle(2, 3)));
+    EXPECT_FALSE(haps[0].hasOnset());
+}
+
+// With every weight equal it says exactly what fastcat says.
+TEST(PatternsTest, TimecatWithEqualWeightsIsFastcat)
+{
+    std::vector<Slice> slices;
+    slices.push_back(Slice{.weight = Cycle(1), .part = note(1)});
+    slices.push_back(Slice{.weight = Cycle(1), .part = note(2)});
+
+    EXPECT_EQ(
+        timecat(std::move(slices)).queryAll(cycles(0, 2)),
+        fastcat({note(1), note(2)}).queryAll(cycles(0, 2)));
+}
+
+// The cycle asked of a slice advances with the outer one.
+TEST(PatternsTest, TimecatTurnsAnInnerAlternationPerCycle)
+{
+    std::vector<Slice> slices;
+    slices.push_back(
+        Slice{
+            .weight = Cycle(2),
+            .part = slowcat({note(1), note(2)})});
+    slices.push_back(Slice{.weight = Cycle(1), .part = note(3)});
+
+    const auto pattern = timecat(std::move(slices));
+
+    const auto first = pattern.queryAll(cycles(0, 1));
+    const auto second = pattern.queryAll(cycles(1, 2));
+
+    ASSERT_EQ(first.size(), 2U);
+    ASSERT_EQ(second.size(), 2U);
+    EXPECT_EQ(first[0].value, named(1));
+    EXPECT_EQ(second[0].value, named(2));
+}
+
+// A signal has no whole, and squeezing it must not invent one.
+TEST(PatternsTest, TimecatCarriesAWholelessSignalThrough)
+{
+    std::vector<Slice> slices;
+    slices.push_back(
+        Slice{.weight = Cycle(1), .part = steady(named(9))});
+    slices.push_back(Slice{.weight = Cycle(2), .part = note(1)});
+
+    const auto haps =
+        timecat(std::move(slices)).queryAll(cycles(0, 1));
+
+    ASSERT_EQ(haps.size(), 2U);
+    EXPECT_FALSE(haps[0].whole.has_value());
+    EXPECT_EQ(haps[0].part, Span(Cycle(0), Cycle(1, 3)));
+}
+
+TEST(PatternsTest, TimecatOfNothingIsRefused)
+{
+    EXPECT_THROW((void)timecat({}), PatternError);
+}
+
+TEST(PatternsTest, TimecatRefusesASliceOfNoWidth)
+{
+    std::vector<Slice> slices;
+    slices.push_back(Slice{.weight = Cycle(0), .part = note(1)});
+
+    EXPECT_THROW(
+        (void)timecat(std::move(slices)), PatternError);
+}
