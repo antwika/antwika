@@ -21,7 +21,7 @@ namespace antwika::game
         using i18n::Locale;
         using i18n::MessageName;
 
-        constexpr std::array<MessageName<MessageId>, 103> kNames{{
+        constexpr std::array<MessageName<MessageId>, 107> kNames{{
             {MessageId::ToolbarZoomIn, "ToolbarZoomIn"},
             {MessageId::ToolbarZoomOut, "ToolbarZoomOut"},
             {MessageId::ToolbarResetView, "ToolbarResetView"},
@@ -125,6 +125,10 @@ namespace antwika::game
             {MessageId::ReadoutStaff, "ReadoutStaff"},
             {MessageId::RuinOnFire, "RuinOnFire"},
             {MessageId::RuinDebris, "RuinDebris"},
+            {MessageId::ReadoutRiskTitle, "ReadoutRiskTitle"},
+            {MessageId::ReadoutFireRisk, "ReadoutFireRisk"},
+            {MessageId::ReadoutCollapseRisk, "ReadoutCollapseRisk"},
+            {MessageId::ReadoutResourcesTitle, "ReadoutResourcesTitle"},
         }};
 
         static_assert(
@@ -240,6 +244,10 @@ namespace antwika::game
                 {MessageId::ReadoutStaff, "staff {0}/{1}"},
                 {MessageId::RuinOnFire, "on fire"},
                 {MessageId::RuinDebris, "debris"},
+                {MessageId::ReadoutRiskTitle, "risk"},
+                {MessageId::ReadoutFireRisk, "fire {0}%"},
+                {MessageId::ReadoutCollapseRisk, "collapse {0}%"},
+                {MessageId::ReadoutResourcesTitle, "resources"},
             }};
 
         constexpr std::array<CatalogueEntry<MessageId>, kNames.size()>
@@ -348,6 +356,10 @@ namespace antwika::game
                 {MessageId::ReadoutStaff, "personal {0}/{1}"},
                 {MessageId::RuinOnFire, "brinner"},
                 {MessageId::RuinDebris, "spillror"},
+                {MessageId::ReadoutRiskTitle, "fara"},
+                {MessageId::ReadoutFireRisk, "brand {0}%"},
+                {MessageId::ReadoutCollapseRisk, "ras {0}%"},
+                {MessageId::ReadoutResourcesTitle, "resurser"},
             }};
 
         constexpr Catalogue<MessageId> kEnglishCatalogue{

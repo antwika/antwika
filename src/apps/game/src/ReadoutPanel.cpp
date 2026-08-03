@@ -173,6 +173,27 @@ namespace antwika::game
             return translator.formatted(MessageId::ReadoutStaff, args);
         }
 
+        // A grouped line sits two spaces in under its heading.
+        // Presentation rather than translation.
+        // So it is said once here, not inside every catalogue string.
+        [[nodiscard]] std::string grouped(std::string text)
+        {
+            return "  " + text;
+        } // GCOVR_EXCL_LINE
+
+        // Out of kMaxRisk, which the two risks deliberately share.
+        // So one scale serves both lines -- see Building.
+        [[nodiscard]] std::string riskText(
+            const Translator &translator,
+            MessageId caption,
+            std::int32_t risk)
+        {
+            const auto share = std::to_string(risk * 100 / kMaxRisk);
+            const std::array<std::string_view, 1> args{share};
+
+            return translator.formatted(caption, args);
+        }
+
         // Per cent rather than the ticks the component counts.
         // A countdown in ticks is a number about the simulation.
         // What a reader wants is how much of the service is left.
@@ -258,22 +279,54 @@ namespace antwika::game
                 }
 
                 // The very rule the bars follow -- see buildingBars().
+                // Under a heading of their own.
+                // So the amounts read as one section, not loose lines.
                 if (consumes(building.kind))
                 {
+                    said.push_back(
+                        Said{ // GCOVR_EXCL_LINE
+                            .text = translator.text(
+                                MessageId::ReadoutResourcesTitle),
+                            .colour = kReadoutTitle});
+
                     for (std::size_t slot = 0; slot < kResourceCount;
                          ++slot)
                     {
                         said.push_back(
                             Said{ // GCOVR_EXCL_LINE
-                                .text = amountText(
+                                .text = grouped(amountText(
                                     translator,
                                     kResources[slot],
                                     building.stock[slot],
-                                    kStockCapacity),
+                                    kStockCapacity)),
                                 .colour =
                                     resourceColour(kResources[slot])});
                     }
                 }
+
+                // The two risks, on every building and even at zero.
+                // A lapsed service is omitted; a risk of nothing is not.
+                // Nothing is a measured fact a watcher wants to read.
+                // An unheralded fire is why the section exists.
+                said.push_back(
+                    Said{ // GCOVR_EXCL_LINE
+                        .text = translator.text(
+                            MessageId::ReadoutRiskTitle),
+                        .colour = kReadoutTitle});
+                said.push_back(
+                    Said{ // GCOVR_EXCL_LINE
+                        .text = grouped(riskText(
+                            translator,
+                            MessageId::ReadoutFireRisk,
+                            building.fireRisk)),
+                        .colour = serviceColour(Service::Safety)});
+                said.push_back(
+                    Said{ // GCOVR_EXCL_LINE
+                        .text = grouped(riskText(
+                            translator,
+                            MessageId::ReadoutCollapseRisk,
+                            building.collapseRisk)),
+                        .colour = serviceColour(Service::Structure)});
 
                 // Every kind of building, rather than only a house.
                 // Risk is a fact about any building at all.

@@ -248,6 +248,20 @@ namespace antwika::game
         std::int32_t employed = 0;
 
         /**
+         * @brief How close it is to catching fire, out of kMaxRisk.
+         *
+         * **On the sprite and not the view, which is stock's call and
+         * for stock's reason**: the hover panel's risk section is
+         * drawn from it, and a divergence in a risk surfaces as a
+         * divergence in what burnt within a tick of mattering -- the
+         * same argument that keeps every countdown out of the view.
+         */
+        std::int32_t fireRisk = 0;
+
+        /** @brief How close it is to falling down, on the same terms. */
+        std::int32_t collapseRisk = 0;
+
+        /**
          * @brief Compare two building sprites.
          * @param other The sprite to compare against.
          * @return True when every field matches.

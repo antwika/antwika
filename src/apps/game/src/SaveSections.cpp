@@ -250,6 +250,11 @@ namespace antwika::game
         shape["properties"]["stock"]["minItems"] = kResourceCount;
         shape["properties"]["stock"]["maxItems"] = kResourceCount;
         shape["properties"]["risk"] = signedCountShape();
+
+        // Optional, and absent means no collapse risk at all.
+        // Which is what a file written before the split says.
+        // Its combined "risk" reads as the fire risk alone.
+        shape["properties"]["collapseRisk"] = signedCountShape();
         shape["properties"]["ticksUntilSpawn"] = signedCountShape();
         shape["properties"]["ticksUntilDrain"] = signedCountShape();
         shape["properties"]["ticksUntilRisk"] = signedCountShape();
@@ -298,6 +303,14 @@ namespace antwika::game
             entry["kind"] = std::string(buildingKindName(building.kind));
             entry["stock"] = building.stock;
             entry["risk"] = building.risk;
+
+            // Written only when there is any, as the walkers are.
+            // Absent and zero read the same.
+            if (building.collapseRisk != 0)
+            {
+                entry["collapseRisk"] = building.collapseRisk;
+            }
+
             entry["ticksUntilSpawn"] = building.ticksUntilSpawn;
             entry["ticksUntilDrain"] = building.ticksUntilDrain;
             entry["ticksUntilRisk"] = building.ticksUntilRisk;
@@ -346,6 +359,9 @@ namespace antwika::game
                     building.at("kind").get<std::string>()),
                 .stock = stockFromJson(building.at("stock")),
                 .risk = building.at("risk").get<std::int32_t>(),
+                .collapseRisk = building.contains("collapseRisk")
+                    ? building.at("collapseRisk").get<std::int32_t>()
+                    : 0,
                 .ticksUntilSpawn =
                     building.at("ticksUntilSpawn").get<std::int32_t>(),
                 .ticksUntilDrain =

@@ -324,7 +324,9 @@ TEST(SaveGameTest, TakesASaveFromARunningSession)
     world.add<Building>(
         source,
         Building{
-            .kind = BuildingKind::Farm, .risk = 3});
+            .kind = BuildingKind::Farm,
+            .fireRisk = 3,
+            .collapseRisk = 4});
 
     const auto walker = world.create();
     world.add<Cell>(walker, Cell{.x = 1, .y = 1});
@@ -350,6 +352,7 @@ TEST(SaveGameTest, TakesASaveFromARunningSession)
 
     ASSERT_EQ(save.buildings.size(), 1U);
     EXPECT_EQ(save.buildings[0].risk, 3);
+    EXPECT_EQ(save.buildings[0].collapseRisk, 4);
     EXPECT_EQ(
         save.buildings[0].kind, BuildingKind::Farm);
 }
@@ -628,6 +631,10 @@ TEST(SaveGameTest, SavedBuildingEqualityComparesEveryField)
     auto risky = base;
     risky.risk = 0;
     EXPECT_NE(base, risky);
+
+    auto cracking = base;
+    cracking.collapseRisk = 9;
+    EXPECT_NE(base, cracking);
 
     auto spawning = base;
     spawning.ticksUntilSpawn = 0;
@@ -1802,4 +1809,31 @@ TEST(SaveGameTest, SaveEqualityComparesTheRuins)
     auto burnt = base;
     burnt.ruins.push_back(antwika::game::SavedRuin{});
     EXPECT_NE(base, burnt);
+}
+
+TEST(SaveGameTest, RoundTripsACrackedBuildingsCollapseRisk)
+{
+    SaveGame save;
+    save.buildings = {antwika::game::SavedBuilding{
+        .at = {.x = 4, .y = 4},
+        .kind = BuildingKind::House,
+        .collapseRisk = 17}};
+
+    const auto loaded = saveGameFromJson(saveGameToJson(save));
+
+    EXPECT_EQ(loaded.buildings, save.buildings);
+}
+
+// Absent and zero read the same, so the smaller file is written.
+// Which is also what every file written before the split holds.
+TEST(SaveGameTest, WritesNoCollapseRiskMemberAtNothing)
+{
+    SaveGame save;
+    save.buildings = {antwika::game::SavedBuilding{
+        .at = {.x = 4, .y = 4}, .kind = BuildingKind::House}};
+
+    const auto encoded = saveGameToJson(save);
+
+    EXPECT_FALSE(encoded.at("buildings").at(0).contains("collapseRisk"));
+    EXPECT_EQ(saveGameFromJson(encoded).buildings[0].collapseRisk, 0);
 }

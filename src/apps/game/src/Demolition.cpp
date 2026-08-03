@@ -187,37 +187,76 @@ namespace antwika::game
         world.destroy(entity);
     }
 
+    namespace
+    {
+        // The ending ignite() and collapse() share, whole.
+        // The block stays in the index: a ruin is not bare ground.
+        // So the leavers step out at the perimeter instead.
+        // A building walled in turns its people out to nowhere.
+        // Which is the walled-in house's own rule.
+        // What differs between the two callers is only what stands up.
+        void fall(
+            World &world,
+            BuildingIndex &built,
+            antwika::ecs::Entity entity,
+            GridExtent extent,
+            RuinState state,
+            std::int32_t ticksUntilOut)
+        {
+            const auto at = world.get<Cell>(entity);
+            const auto building = world.get<Building>(entity);
+            const auto people = occupantsOf(world, entity, building);
+
+            const auto escape = people > 0
+                ? escapeCellFor(
+                      at, footprintOf(building.kind), built, extent)
+                : std::nullopt;
+
+            if (escape.has_value())
+            {
+                turnOut(world, built, entity, *escape, people, extent);
+            }
+
+            // The ruin stands up where the building stood.
+            // A fresh entity rather than a reused one.
+            // So every system holding a handle reads the building dead.
+            const auto ruin = world.create();
+            world.add<Cell>(ruin, at);
+            world.add<Ruin>(
+                ruin,
+                Ruin{
+                    .kind = building.kind,
+                    .state = state,
+                    .ticksUntilOut = ticksUntilOut});
+
+            world.destroy(entity);
+        }
+    } // namespace
+
     void ignite(
         World &world,
         BuildingIndex &built,
         antwika::ecs::Entity entity,
         GridExtent extent)
     {
-        const auto at = world.get<Cell>(entity);
-        const auto building = world.get<Building>(entity);
-        const auto people = occupantsOf(world, entity, building);
+        fall(
+            world,
+            built,
+            entity,
+            extent,
+            RuinState::Burning,
+            kBurnDurationTicks);
+    }
 
-        // The block stays in the index: fire is not bare ground.
-        // So the leavers step out at the perimeter instead.
-        // A building walled in turns its people out to nowhere.
-        // Which is the walled-in house's own rule.
-        const auto escape = people > 0
-            ? escapeCellFor(at, footprintOf(building.kind), built, extent)
-            : std::nullopt;
-
-        if (escape.has_value())
-        {
-            turnOut(world, built, entity, *escape, people, extent);
-        }
-
-        // The ruin stands up where the building stood.
-        // A fresh entity rather than a reused one.
-        // So every system holding a handle to the building reads it dead.
-        const auto ruin = world.create();
-        world.add<Cell>(ruin, at);
-        world.add<Ruin>(ruin, Ruin{.kind = building.kind});
-
-        world.destroy(entity);
+    void collapse(
+        World &world,
+        BuildingIndex &built,
+        antwika::ecs::Entity entity,
+        GridExtent extent)
+    {
+        // Straight to debris: there is no fire to put out.
+        // So no fireman is ever called to a collapse.
+        fall(world, built, entity, extent, RuinState::Debris, 0);
     }
 
 } // namespace antwika::game

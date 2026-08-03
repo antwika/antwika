@@ -79,14 +79,18 @@ TEST(ReadoutPanelTest, Panel_NamesABuildingAndListsWhatItDependsOn)
         kCanvas,
         kTranslator);
 
-    ASSERT_EQ(panel.lines.size(), 7U);
+    ASSERT_EQ(panel.lines.size(), 11U);
     EXPECT_EQ(panel.lines[0].text, "house");
     EXPECT_EQ(panel.lines[1].text, "level: tent");
     EXPECT_EQ(panel.lines[2].text, "people 0/5");
     EXPECT_EQ(panel.lines[3].text, "unemployed 0/0");
-    EXPECT_EQ(panel.lines[4].text, "food 12/100");
-    EXPECT_EQ(panel.lines[5].text, "clay 34/100");
-    EXPECT_EQ(panel.lines[6].text, "pottery 56/100");
+    EXPECT_EQ(panel.lines[4].text, "resources");
+    EXPECT_EQ(panel.lines[5].text, "  food 12/100");
+    EXPECT_EQ(panel.lines[6].text, "  clay 34/100");
+    EXPECT_EQ(panel.lines[7].text, "  pottery 56/100");
+    EXPECT_EQ(panel.lines[8].text, "risk");
+    EXPECT_EQ(panel.lines[9].text, "  fire 0%");
+    EXPECT_EQ(panel.lines[10].text, "  collapse 0%");
     EXPECT_EQ(kStockCapacity, 100);
 }
 
@@ -103,9 +107,15 @@ TEST(ReadoutPanelTest, Panel_NamesASourceAndListsNoStockItNeverSpends)
         kCanvas,
         kTranslator);
 
-    ASSERT_EQ(panel.lines.size(), 2U);
+    ASSERT_EQ(panel.lines.size(), 5U);
     EXPECT_EQ(panel.lines[0].text, "farm");
     EXPECT_EQ(panel.lines[1].text, "staff 0/4");
+
+    // The risk section is on every building, even at nothing.
+    // A watched district's danger is a fact somebody wants at zero.
+    EXPECT_EQ(panel.lines[2].text, "risk");
+    EXPECT_EQ(panel.lines[3].text, "  fire 0%");
+    EXPECT_EQ(panel.lines[4].text, "  collapse 0%");
 }
 
 TEST(ReadoutPanelTest, Panel_NamesAWalkerAndWhatItIsCarrying)
@@ -150,14 +160,23 @@ TEST(ReadoutPanelTest, Panel_ColoursALineAsTheBarThatCountsTheSameThing)
         kCanvas,
         kTranslator);
 
-    ASSERT_EQ(panel.lines.size(), 7U);
+    ASSERT_EQ(panel.lines.size(), 11U);
     EXPECT_EQ(panel.lines[0].colour, kReadoutTitle);
     EXPECT_EQ(panel.lines[1].colour, kReadoutTitle);
     EXPECT_EQ(panel.lines[2].colour, kReadoutTitle);
     EXPECT_EQ(panel.lines[3].colour, kReadoutTitle);
-    EXPECT_EQ(panel.lines[4].colour, resourceColour(Resource::Food));
-    EXPECT_EQ(panel.lines[5].colour, resourceColour(Resource::Clay));
-    EXPECT_EQ(panel.lines[6].colour, resourceColour(Resource::Pottery));
+    EXPECT_EQ(panel.lines[4].colour, kReadoutTitle);
+    EXPECT_EQ(panel.lines[5].colour, resourceColour(Resource::Food));
+    EXPECT_EQ(panel.lines[6].colour, resourceColour(Resource::Clay));
+    EXPECT_EQ(
+        panel.lines[7].colour, resourceColour(Resource::Pottery));
+
+    // A risk line wears the colour of the service that holds it off.
+    EXPECT_EQ(panel.lines[8].colour, kReadoutTitle);
+    EXPECT_EQ(
+        panel.lines[9].colour, serviceColour(Service::Safety));
+    EXPECT_EQ(
+        panel.lines[10].colour, serviceColour(Service::Structure));
 }
 
 TEST(ReadoutPanelTest, Panel_HoldsEveryLineInsideItsOwnBox)
@@ -281,11 +300,14 @@ TEST(ReadoutPanelTest, Panel_ListsEveryServiceThatStillReachesABuilding)
         kCanvas,
         kTranslator);
 
-    ASSERT_EQ(panel.lines.size(), 4U);
+    ASSERT_EQ(panel.lines.size(), 7U);
     EXPECT_EQ(panel.lines[0].text, "well");
     EXPECT_EQ(panel.lines[1].text, "staff 0/1");
-    EXPECT_EQ(panel.lines[2].text, "water 100%");
-    EXPECT_EQ(panel.lines[3].text, "safety 50%");
+    EXPECT_EQ(panel.lines[2].text, "risk");
+    EXPECT_EQ(panel.lines[3].text, "  fire 0%");
+    EXPECT_EQ(panel.lines[4].text, "  collapse 0%");
+    EXPECT_EQ(panel.lines[5].text, "water 100%");
+    EXPECT_EQ(panel.lines[6].text, "safety 50%");
 }
 
 // The tier is named rather than numbered.
@@ -318,7 +340,7 @@ TEST(ReadoutPanelTest, Panel_ListsNoServiceThatHasLapsed)
         kCanvas,
         kTranslator);
 
-    ASSERT_EQ(panel.lines.size(), 7U);
+    ASSERT_EQ(panel.lines.size(), 11U);
     EXPECT_EQ(panel.lines[0].text, "house");
 }
 
@@ -357,9 +379,10 @@ TEST(ReadoutPanelTest, Panel_SaysNoOccupancyForABuildingNobodyLivesIn)
         kCanvas,
         kTranslator);
 
-    ASSERT_EQ(panel.lines.size(), 2U);
+    ASSERT_EQ(panel.lines.size(), 5U);
     EXPECT_EQ(panel.lines[0].text, "well");
     EXPECT_EQ(panel.lines[1].text, "staff 0/1");
+    EXPECT_EQ(panel.lines[2].text, "risk");
 }
 
 TEST(ReadoutPanelTest, Panel_ColoursACoverageLineOutOfTheServiceTable)
@@ -373,8 +396,9 @@ TEST(ReadoutPanelTest, Panel_ColoursACoverageLineOutOfTheServiceTable)
         kCanvas,
         kTranslator);
 
-    ASSERT_EQ(panel.lines.size(), 3U);
-    EXPECT_EQ(panel.lines[2].colour, serviceColour(Service::Health));
+    ASSERT_EQ(panel.lines.size(), 6U);
+    EXPECT_EQ(panel.lines[5].colour, serviceColour(Service::Health));
+    EXPECT_EQ(panel.lines[5].text, "health 100%");
 }
 
 // A ruin says its state and stops.
