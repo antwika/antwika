@@ -14,6 +14,7 @@
 #include <antwika/ui/Sizing.hpp>
 #include <antwika/ui/Theme.hpp>
 
+#include "antwika/game/MapView.hpp"
 #include "antwika/game/MessageId.hpp"
 #include "antwika/game/Messages.hpp"
 
@@ -47,6 +48,10 @@ namespace antwika::game
         // Wide enough for the longest item it lists.
         // So the list lines up with the box rather than overhanging it.
         constexpr std::uint32_t kMenuCells = 70;
+
+        // And the overlay menu's, on the same terms.
+        // Wider, since its longest item is longer than that one's.
+        constexpr std::uint32_t kViewCells = 90;
     } // namespace
 
     Toolbar::Toolbar(const Translator &translator) : translator(translator)
@@ -61,7 +66,9 @@ namespace antwika::game
         bool paused,
         antwika::time::Tick tick,
         CityRatings ratings,
-        bool menuOpen) const
+        bool menuOpen,
+        MapView view,
+        bool viewOpen) const
     {
         const auto scale = scaleForCanvas(canvas);
 
@@ -77,6 +84,16 @@ namespace antwika::game
             words[index] =
                 translator.text(menuItemLabel(static_cast<MenuItem>(index)));
             items[index] = words[index];
+        }
+
+        std::array<std::string, kMapViewCount> viewWords{};
+        std::array<std::string_view, kMapViewCount> viewItems{};
+
+        for (std::size_t index = 0; index < kMapViewCount; ++index)
+        {
+            viewWords[index] =
+                translator.text(mapViewLabel(static_cast<MapView>(index)));
+            viewItems[index] = viewWords[index];
         }
 
         const std::uint32_t toolWidth = kToolCells * scale;
@@ -120,6 +137,18 @@ namespace antwika::game
                 ui.button(
                     translator.text(MessageId::ToolbarMenu),
                     {.id = widgets::kMenu});
+
+                // Which picture of the city is showing.
+                // The closed box names it rather than saying "view".
+                // So what is being looked at is readable at a glance.
+                // Which is the one thing a placeholder cannot say.
+                ui.dropdown(
+                    {.id = widgets::kViewMenu,
+                     .optionIdBase = widgets::kFirstViewItem,
+                     .width = fixedSize(kViewCells * scale),
+                     .options = viewItems,
+                     .placeholder = translator.text(mapViewLabel(view)),
+                     .open = viewOpen});
 
                 ui.spacer(kGrow);
             }

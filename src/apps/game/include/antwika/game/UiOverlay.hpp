@@ -2,6 +2,7 @@
 
 #include <optional>
 
+#include <antwika/gfx/Point.hpp>
 #include <antwika/gfx/Size.hpp>
 #include <antwika/ui/DrawList.hpp>
 
@@ -84,9 +85,53 @@ namespace antwika::game
 
         /**
          * @brief Check whether the UI is under the pointer.
-         * @return True when the pointer is over something the UI drew.
+         *
+         * **The recorded pointer's answer**, resolved inside the tick
+         * path against the frame UiSink described, and therefore the one
+         * a sink asks: it is a function of recorded input alone, so a
+         * replay arrives at it again.
+         *
+         * It is deliberately *not* the answer to ask on the render side.
+         * Idle motion is thinned out of the recorded stream -- see
+         * input::IdleMotionSource -- so this holds where the pointer was
+         * at the last press, release or dragged movement, which may be
+         * many frames ago. Use coversPoint() with the hint for anything
+         * that follows a free-moving pointer.
+         *
+         * @return True when the recorded pointer is over something the
+         * UI drew.
          */
         [[nodiscard]] bool pointerOverUi() const noexcept;
+
+        /**
+         * @brief Check whether the UI covers one point of the canvas.
+         *
+         * **pointerOverUi()'s render-side counterpart, and the whole of
+         * why it is a separate question.** A caller drawing something
+         * that follows the free-moving pointer -- the build ghost, the
+         * hover readout -- has a position no recorded event carries, and
+         * asking pointerOverUi() about it gets the answer for a position
+         * from some earlier tick. That is what left the ghost hidden
+         * from the moment a palette button was pressed until the next
+         * press landed somewhere else.
+         *
+         * This asks the *layout* instead, which is the direction the
+         * dependency is allowed to run: the picture is described from
+         * recorded input inside the tick path, and a point is measured
+         * against it out here. Nothing is written and nothing about the
+         * layout is a function of where the free pointer is, so a hint
+         * still decides only what is drawn.
+         *
+         * A filled rectangle is exactly what makes the UI cover a pixel,
+         * which is the same test ui::Interactions::pointerOverUi is
+         * resolved by -- so the two agree wherever they are handed the
+         * same position.
+         *
+         * @param at The canvas pixel to ask about.
+         * @return True when any fill of this tick's picture contains it.
+         */
+        [[nodiscard]] bool coversPoint(
+            antwika::gfx::Point at) const noexcept;
 
         /**
          * @brief Choose what a left click on the grid now places.

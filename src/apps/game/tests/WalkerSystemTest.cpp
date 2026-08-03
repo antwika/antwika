@@ -12,6 +12,7 @@
 #include "antwika/game/Errand.hpp"
 #include "antwika/game/Footprint.hpp"
 #include "antwika/game/GridExtent.hpp"
+#include "antwika/game/Journey.hpp"
 #include "antwika/game/PathIndex.hpp"
 #include "antwika/game/Walker.hpp"
 #include "antwika/game/WalkerSystem.hpp"
@@ -24,6 +25,7 @@ using antwika::game::Cell;
 using antwika::game::Direction;
 using antwika::game::Errand;
 using antwika::game::ErrandLeg;
+using antwika::game::Journey;
 using antwika::game::PathIndex;
 using antwika::game::Walker;
 using antwika::game::WalkerSystem;
@@ -587,4 +589,128 @@ TEST_F(WalkerSystemTest, Update_RoamsAWalkerWhoseErrandNamesNowhere)
     EXPECT_EQ(
         world.get<Walker>(walker).stepsUntilHome,
         antwika::game::kRoamingSteps - 1);
+}
+
+// The travel arm: a person walking themselves somewhere.
+// Which is Errand's counterpart and takes precedence over roaming.
+TEST_F(WalkerSystemTest, Update_WalksAMigrantTowardsTheHouseItNames)
+{
+    layPath({{.x = 0, .y = 0}, {.x = 1, .y = 0}, {.x = 2, .y = 0}});
+
+    const auto house = world.create();
+    world.add<Cell>(house, Cell{.x = 2, .y = 1});
+    world.add<Building>(house, Building{.kind = BuildingKind::House});
+    world.commit();
+
+    const auto mover = addWalker(Cell{.x = 0, .y = 0}, Direction::East);
+    world.add<Journey>(
+        mover, Journey{.towards = Cell{.x = 2, .y = 1}, .house = house});
+    world.commit();
+
+    tick();
+
+    EXPECT_EQ(world.get<Cell>(mover), (Cell{.x = 1, .y = 0}));
+}
+
+// Arriving is standing at the door and waiting to be let in.
+// PopulationSystem runs in a later phase and is what lets them in.
+// So stepping on here would destroy them on the doorstep.
+TEST_F(WalkerSystemTest, Update_StandsAMigrantAtTheDoorItReached)
+{
+    layPath({{.x = 1, .y = 0}, {.x = 2, .y = 0}});
+
+    const auto house = world.create();
+    world.add<Cell>(house, Cell{.x = 2, .y = 1});
+    world.add<Building>(house, Building{.kind = BuildingKind::House});
+    world.commit();
+
+    const auto mover = addWalker(Cell{.x = 2, .y = 0}, Direction::East);
+    world.add<Journey>(
+        mover, Journey{.towards = Cell{.x = 2, .y = 1}, .house = house});
+    world.commit();
+
+    tick();
+
+    EXPECT_TRUE(world.alive(mover));
+    EXPECT_EQ(world.get<Cell>(mover), (Cell{.x = 2, .y = 0}));
+}
+
+// Somebody leaving has left, and that is the whole of it.
+TEST_F(WalkerSystemTest, Update_RetiresAMigrantThatReachedTheWayOut)
+{
+    layPath({{.x = 0, .y = 0}, {.x = 1, .y = 0}});
+
+    const auto leaver = addWalker(Cell{.x = 1, .y = 0}, Direction::West);
+    world.add<Journey>(leaver, Journey{.towards = Cell{.x = 0, .y = 0}});
+    world.commit();
+
+    tick();
+
+    EXPECT_FALSE(world.alive(leaver));
+}
+
+// A house demolished while somebody was walking to it.
+// Answered by the world rather than by the stale cell.
+TEST_F(WalkerSystemTest, Update_RetiresAMigrantWhoseHouseHasGone)
+{
+    layPath({{.x = 0, .y = 0}, {.x = 1, .y = 0}});
+
+    const auto mover = addWalker(Cell{.x = 0, .y = 0}, Direction::East);
+    world.add<Journey>(
+        mover,
+        Journey{
+            .towards = Cell{.x = 2, .y = 1},
+            .house = static_cast<Entity>(99)});
+    world.commit();
+
+    tick();
+
+    EXPECT_FALSE(world.alive(mover));
+}
+
+// Walled off, or the road under it has gone.
+// A person who cannot get where they were going is gone too.
+TEST_F(WalkerSystemTest, Update_RetiresAMigrantWithNoRouteLeft)
+{
+    layPath({{.x = 0, .y = 0}});
+
+    const auto leaver = addWalker(Cell{.x = 0, .y = 0}, Direction::East);
+    world.add<Journey>(leaver, Journey{.towards = Cell{.x = 9, .y = 9}});
+    world.commit();
+
+    tick();
+
+    EXPECT_FALSE(world.alive(leaver));
+}
+
+TEST_F(WalkerSystemTest, JourneyEqualityComparesEveryField)
+{
+    const Journey base{
+        .towards = Cell{.x = 1, .y = 2},
+        .house = static_cast<Entity>(3)};
+
+    EXPECT_EQ(base, base);
+
+    auto elsewhere = base;
+    elsewhere.towards = Cell{.x = 2, .y = 1};
+    EXPECT_NE(base, elsewhere);
+
+    auto leaving = base;
+    leaving.house = antwika::ecs::kNullEntity;
+    EXPECT_NE(base, leaving);
+}
+
+// A destroy() staged earlier in the tick wins over a later add().
+// Otherwise the component would outlive the entity that carried it.
+// One case per component type, since World::add() is a template.
+TEST_F(WalkerSystemTest, Update_KeepsNoJourneyOnAWalkerAlreadyRetired)
+{
+    const auto leaver = addWalker(Cell{.x = 0, .y = 0}, Direction::East);
+
+    world.destroy(leaver);
+    world.add<Journey>(leaver, Journey{.towards = Cell{.x = 1, .y = 1}});
+    world.commit();
+
+    EXPECT_FALSE(world.alive(leaver));
+    EXPECT_FALSE(world.has<Journey>(leaver));
 }

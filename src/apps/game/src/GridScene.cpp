@@ -13,8 +13,8 @@
 #include "antwika/game/Footprint.hpp"
 #include "antwika/game/FootprintOutline.hpp"
 #include "antwika/game/IsoProjection.hpp"
+#include "antwika/game/OverlayField.hpp"
 #include "antwika/game/ReadoutPanel.hpp"
-#include "antwika/game/ResourceBar.hpp"
 #include "antwika/game/SpriteBounds.hpp"
 #include "antwika/game/TileAtlas.hpp"
 #include "antwika/game/WalkerMotion.hpp"
@@ -98,6 +98,46 @@ namespace antwika::game
 
             return links;
         }
+
+        // The junctions a run of road would come out as, in its order.
+        // Worked out against the roads and the rest of the run.
+        // Which is the whole of why it is not four calls to linksAt().
+        // A planned cell's neighbours are mostly other planned cells.
+        // The roads already there answer "no arms" for every one.
+        // So a connected route came out as a string of loose stubs.
+        // Which is nothing like what its release lays.
+        // The run is short and unsorted, so membership is a scan.
+        // Over at most four candidates a cell, rather than a search.
+        [[nodiscard]] std::vector<std::uint8_t> planLinks(
+            const std::vector<Cell> &paths, const std::vector<Cell> &plan)
+        {
+            std::vector<std::uint8_t> links(plan.size(), 0);
+
+            for (std::size_t index = 0; index < plan.size(); ++index)
+            {
+                for (const auto direction : {
+                         Direction::North,
+                         Direction::East,
+                         Direction::South,
+                         Direction::West,
+                     })
+                {
+                    const auto beside = step(plan[index], direction);
+
+                    if (paved(paths, beside)
+                        || std::find(plan.begin(), plan.end(), beside)
+                               != plan.end())
+                    {
+                        links[index] = static_cast<std::uint8_t>(
+                            links[index] | linkBit(direction));
+                    }
+                }
+            }
+
+            return links;
+            // The excluded line is the local vector's unwind destructor.
+            // Nothing between its construction and the return throws.
+        } // GCOVR_EXCL_LINE
 
         // Every cell the snapshot's buildings stand on, ascending.
         // The terrain pass skips these rather than painting under art.
@@ -200,23 +240,6 @@ namespace antwika::game
             // The excluded line is the locals' unwind destructor.
             // Nothing between their construction and the return throws.
         } // GCOVR_EXCL_LINE
-
-        // The track always, the fill only when there is any of it.
-        // A rectangle of no height is a drawing call that draws nothing.
-        void paintBars(
-            IRenderer &renderer, const std::vector<ResourceBar> &bars)
-        {
-            for (const auto &bar : bars)
-            {
-                renderer.drawRect(bar.track, kBarTrack);
-
-                if (bar.fill.size.height > 0)
-                {
-                    renderer.drawRect(
-                        bar.fill, resourceColour(bar.resource));
-                }
-            }
-        }
     } // namespace
 
     bool GridScene::onCanvas(
@@ -250,6 +273,11 @@ namespace antwika::game
 
         drawTerrain(renderer, canvas, snapshot, atlases);
 
+        // Over the ground and the blocks, under the walkers.
+        // A walker is a thing in the city rather than a fact about it.
+        // So an overlay reads as painted on rather than over the top.
+        drawOverlay(renderer, canvas, snapshot, atlases);
+
         // Last, so a walker is never hidden by what it is standing on.
         for (const auto &walker : snapshot.walkers)
         {
@@ -269,11 +297,6 @@ namespace antwika::game
                 bounds,
                 kUntinted);
         }
-
-        // After every sprite.
-        // A gauge is then never hidden by what stands in front of it.
-        // Handed the same phase, so a bar cannot drift off its walker.
-        drawBars(renderer, canvas, snapshot, phase);
 
         // Before the ghost, which is one cell and sits on top of it.
         drawPlan(renderer, canvas, snapshot, atlases);
@@ -409,39 +432,69 @@ namespace antwika::game
         }
     }
 
-    void GridScene::drawBars(
+    void GridScene::drawOverlay(
         IRenderer &renderer,
         Size canvas,
         const SceneSnapshot &snapshot,
-        Progress subTick) const
+        const AtlasTextures &atlases) const
     {
-        // Culled on the sprite's own box rather than the bar's.
-        // A gauge is drawn exactly when what it belongs to is.
-        for (const auto &building : snapshot.buildings)
+        // The city itself, with nothing painted over it.
+        // Asked of the view rather than of the field being empty.
+        // A city nothing has reached yet has an empty field too.
+        // And an all-dark map is exactly what it should look like.
+        if (snapshot.view == MapView::Normal)
         {
-            const auto bounds = buildingSpriteBounds(
-                building.at, building.kind, snapshot.camera);
-
-            if (!overlaps(bounds, canvas))
-            {
-                continue;
-            }
-
-            paintBars(renderer, buildingBars(building, snapshot.camera));
+            return;
         }
 
-        for (const auto &walker : snapshot.walkers)
+        const auto ink = overlayColour(snapshot.view);
+
+        // The whole grid rather than only the cells with a value.
+        // A district nothing reaches is what somebody looks for here.
+        // So it has to be visibly darker rather than simply unpainted.
+        for (std::int32_t y = 0; y < snapshot.extent.height; ++y)
         {
-            const auto bounds =
-                walkerBounds(walker, snapshot.camera, subTick);
-
-            if (!overlaps(bounds, canvas))
+            for (std::int32_t x = 0; x < snapshot.extent.width; ++x)
             {
-                continue;
-            }
+                const Cell cell{.x = x, .y = y};
 
-            paintBars(
-                renderer, walkerBars(walker, snapshot.camera, subTick));
+                if (!onCanvas(cell, canvas, snapshot))
+                {
+                    continue;
+                }
+
+                const auto bounds =
+                    tileSpriteBounds(cell, snapshot.camera);
+
+                // The ground sprite, tinted, rather than a rectangle.
+                // A cell is a diamond and drawRect() takes a box.
+                // Which is the same reason the ghost's edge is lines.
+                renderer.drawTexture(
+                    atlases.oneByOne, groundTile(), bounds, kOverlayScrim);
+
+                const auto found = snapshot.overlay.find(cell);
+
+                if (found == snapshot.overlay.end())
+                {
+                    continue;
+                }
+
+                // Faintest at the bottom of the scale, never invisible.
+                // Or the bottom of it would read as nothing at all.
+                const auto strength = kOverlayFaintest
+                    + (255 - kOverlayFaintest) * found->second / 100;
+
+                renderer.drawTexture(
+                    atlases.oneByOne,
+                    groundTile(),
+                    bounds,
+                    Color{
+                        .red = ink.red,
+                        .green = ink.green,
+                        .blue = ink.blue,
+                        .alpha =
+                            static_cast<std::uint8_t>(strength)});
+            }
         }
     }
 
@@ -479,19 +532,24 @@ namespace antwika::game
         // So what is shown is the gesture being turned down.
         const auto tint = snapshot.plan.valid ? kGhostly : kBlocked;
 
-        for (const auto cell : snapshot.plan.cells)
+        // The junction each cell becomes once the whole run is laid.
+        // Rather than the one it would become on its own.
+        // A route's own cells are what most of its cells join onto.
+        const auto links = planLinks(snapshot.paths, snapshot.plan.cells);
+
+        for (std::size_t index = 0; index < snapshot.plan.cells.size();
+             ++index)
         {
+            const auto cell = snapshot.plan.cells[index];
+
             if (!onCanvas(cell, canvas, snapshot))
             {
                 continue;
             }
 
-            // The junction each would become.
-            // Worked out the same way a laid one is.
-            // So what is previewed is what is placed.
             renderer.drawTexture(
                 atlases.oneByOne,
-                roadTile(linksAt(snapshot.paths, cell)),
+                roadTile(links[index]),
                 tileSpriteBounds(cell, snapshot.camera),
                 tint);
         }

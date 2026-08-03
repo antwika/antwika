@@ -10,6 +10,7 @@
 #include <antwika/engine/Events.hpp>
 #include <antwika/event/Event.hpp>
 #include <antwika/event/TickEvent.hpp>
+#include <antwika/gfx/Point.hpp>
 #include <antwika/gfx/Rect.hpp>
 #include <antwika/gfx/Size.hpp>
 #include <antwika/gfx/mocks/MockRenderer.hpp>
@@ -18,6 +19,7 @@
 #include <antwika/input/PointerHint.hpp>
 #include <antwika/input/PointerHintChannel.hpp>
 #include <antwika/log/mocks/MockLogger.hpp>
+#include <antwika/ui/DrawCommand.hpp>
 #include <antwika/time/fakes/FakeClock.hpp>
 
 #include "TestTranslator.hpp"
@@ -28,7 +30,9 @@
 #include "antwika/game/Camera.hpp"
 #include "antwika/game/Cell.hpp"
 #include "antwika/game/Direction.hpp"
+#include "antwika/game/Desirability.hpp"
 #include "antwika/game/FrameMeter.hpp"
+#include "antwika/game/MapView.hpp"
 #include "antwika/game/GridExtent.hpp"
 #include "antwika/game/GridScene.hpp"
 #include "antwika/game/IsoProjection.hpp"
@@ -285,12 +289,94 @@ TEST_F(RenderSystemTest, Update_DrawsNoGhostUnderTheToolbar)
     hint.publish(
         antwika::input::PointerHint{
             .position = {.x = middle.x, .y = middle.y}});
-    overlay.set({}, true);
+
+    // A fill over the whole canvas, which is what the bar is made of.
+    // Asked of the layout at the pointer, rather than of the flag.
+    overlay.set(
+        {antwika::ui::FillRect{
+            .rect = Rect{
+                .origin = antwika::gfx::Point{.x = 0, .y = 0},
+                .size = kCanvas}}},
+        false);
 
     RenderSystem system(setup());
 
     EXPECT_CALL(renderer, drawTexture(_, _, _, _))
         .Times(static_cast<int>(kExtent.width * kExtent.height));
+
+    system.update(world, 0);
+}
+
+// The bug this replaced.
+// Idle motion is thinned out of the recorded stream.
+// So the flag a press left behind stays true until the next one.
+// And the ghost was hidden for all of it.
+// The pointer is over bare grid here and the flag says otherwise.
+TEST_F(RenderSystemTest, Update_DrawsAGhostTheStalePressFlagWouldHide)
+{
+    const auto middle = antwika::game::cellCentre(
+        Cell{.x = 1, .y = 1}, camera);
+
+    hint.publish(
+        antwika::input::PointerHint{
+            .position = {.x = middle.x, .y = middle.y}});
+
+    // A bar down the right-hand edge, nowhere near the pointer.
+    // And a covered flag left over from the press that chose the tool.
+    overlay.set(
+        {antwika::ui::FillRect{
+            .rect = Rect{
+                .origin = antwika::gfx::Point{.x = 300, .y = 0},
+                .size = Size{.width = 20, .height = 240}}}},
+        true);
+
+    RenderSystem system(setup());
+
+    // One blit per cell, and one more for the ghost on top.
+    EXPECT_CALL(renderer, drawTexture(_, _, _, _))
+        .Times(static_cast<int>(kExtent.width * kExtent.height) + 1);
+    EXPECT_CALL(renderer, drawLine(_, _, _)).Times(AnyNumber());
+
+    system.update(world, 0);
+}
+
+// The overlay views: read off the setup rather than the snapshot.
+// Absent leaves the city itself, which every other case here has.
+TEST_F(RenderSystemTest, Update_PaintsTheViewTheSetupNames)
+{
+    antwika::game::MapViewState mapView;
+    mapView.set(antwika::game::MapView::Desirability);
+
+    antwika::game::DesirabilityField field;
+    field[Cell{.x = 1, .y = 1}] = 6;
+
+    auto withView = setup();
+    withView.view = mapView;
+    withView.desirability = field;
+    RenderSystem system(withView);
+
+    // One blit per cell, plus a scrim over each, plus the one value.
+    EXPECT_CALL(renderer, drawTexture(_, _, _, _))
+        .Times(
+            static_cast<int>(kExtent.width * kExtent.height) * 2 + 1);
+
+    system.update(world, 0);
+}
+
+// A view with no field to paint from is an all-dark map.
+// Which is exactly what a city nothing has reached looks like.
+TEST_F(RenderSystemTest, Update_PaintsNoDesirabilityWithNoFieldToRead)
+{
+    antwika::game::MapViewState mapView;
+    mapView.set(antwika::game::MapView::Desirability);
+
+    auto withView = setup();
+    withView.view = mapView;
+    RenderSystem system(withView);
+
+    // The ground and a scrim over it, and no value anywhere.
+    EXPECT_CALL(renderer, drawTexture(_, _, _, _))
+        .Times(static_cast<int>(kExtent.width * kExtent.height) * 2);
 
     system.update(world, 0);
 }

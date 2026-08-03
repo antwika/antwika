@@ -667,20 +667,22 @@ namespace
         // It would swallow a road laid under its own footprint.
         // Kept well down the grid.
         // The toolbar covers the top, and a press it covers is dropped.
-        for (std::int32_t x = 2; x <= 6; ++x)
+        // From the west edge of the grid, which is where people come in.
+        // A city no road reaches out of takes nobody at all.
+        for (std::int32_t x = 0; x <= 6; ++x)
         {
             events.insert(
-                events.begin() + (x - 2),
+                events.begin() + x,
                 TickEvent{
                     .tick = 0,
                     .event =
                         pressAt(Cell{.x = x, .y = 4}, MouseButton::Left)});
         }
 
-        // Straight after the five presses inserted above.
+        // Straight after the seven presses inserted above.
         // And so still ahead of the palette press it started with.
         events.insert(
-            events.begin() + 5,
+            events.begin() + 7,
             TickEvent{
                 .tick = 0,
                 .event =
@@ -902,7 +904,9 @@ namespace
         std::vector<TickEvent> events;
 
         // A corridor of road, laid with the tool a run starts on.
-        for (std::int32_t x = 2; x <= 6; ++x)
+        // From the west edge of the grid, which is where people come in.
+        // A city no road reaches out of takes nobody at all.
+        for (std::int32_t x = 0; x <= 6; ++x)
         {
             events.push_back(
                 TickEvent{
@@ -1051,7 +1055,9 @@ namespace
         std::vector<TickEvent> events;
 
         // A corridor of road, laid with the tool a run starts on.
-        for (std::int32_t x = 2; x <= 6; ++x)
+        // From the west edge of the grid, which is where people come in.
+        // A city no road reaches out of takes nobody at all.
+        for (std::int32_t x = 0; x <= 6; ++x)
         {
             events.push_back(
                 TickEvent{
@@ -1184,7 +1190,9 @@ namespace
 
         std::vector<TickEvent> events;
 
-        for (std::int32_t x = 2; x <= 6; ++x)
+        // From the west edge of the grid, which is where people come in.
+        // A city no road reaches out of takes nobody at all.
+        for (std::int32_t x = 0; x <= 6; ++x)
         {
             events.push_back(
                 TickEvent{

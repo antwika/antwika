@@ -67,7 +67,8 @@ namespace antwika::game
                 "engineer",
                 "cart_pusher",
                 "market_buyer",
-                "market_seller"};
+                "market_seller",
+                "migrant"};
 
         std::string_view walkerKindName(WalkerKind kind)
         {
@@ -223,6 +224,7 @@ namespace antwika::game
 
         // One line per section, and each in a file of its own.
         describeErrand(shape);
+        describeJourney(shape);
         return shape;
     }
 

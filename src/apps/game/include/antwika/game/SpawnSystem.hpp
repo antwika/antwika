@@ -118,7 +118,7 @@ namespace antwika::game
      *
      * **The buildings are visited in ascending Cell rather than in
      * ecs::View order**, out of a std::map collected first, exactly as
-     * LabourSystem and MarketSystem do. kWalkerLimit is a limited amount
+     * LabourSystem and SupplySystem do. kWalkerLimit is a limited amount
      * split between buildings, and a view iterates in an order that is
      * a property of the world's history rather than of the city -- so at
      * the cap the last free slots would otherwise go to whichever

@@ -40,7 +40,9 @@
 #include "antwika/game/GridExtent.hpp"
 #include "antwika/game/GridScene.hpp"
 #include "antwika/game/KeyBindings.hpp"
+#include "antwika/game/Desirability.hpp"
 #include "antwika/game/MainMenuScene.hpp"
+#include "antwika/game/MapView.hpp"
 #include "antwika/game/Messages.hpp"
 #include "antwika/game/OptionsFile.hpp"
 #include "antwika/game/PathIndex.hpp"
@@ -93,13 +95,23 @@ namespace
 
     constexpr std::chrono::milliseconds kTickInterval{40};
 
-    // How many frames one tick is shown as.
-    // Four over a 40 ms tick is 100 a second against 25 ticks a second.
-    // So a walker crosses a cell in eight frames, not in two jumps.
-    // Raising it costs draw calls and nothing else.
-    // The tick still lasts exactly kTickInterval.
-    // And no frame can reach the simulation.
-    constexpr std::uint32_t kFramesPerTick = 4;
+    // How many frames one tick is shown as, at most.
+    // Forty over a 40 ms tick is a thousand a second at 25 ticks.
+    // So a walker crosses a cell in eighty frames, not in two jumps.
+    //
+    // **A ceiling rather than a quota, which is what makes it safe.**
+    // Each frame is due at a fixed offset from the top of the tick.
+    // One whose moment has gone by is dropped rather than drawn late.
+    // So a machine that cannot draw this often draws less often.
+    // The tick still lasts exactly kTickInterval either way.
+    // See FramePacedSource.
+    //
+    // It was four, while the pacer slept a whole slice per frame.
+    // A frame then cost a slice plus the sleeper's own overshoot.
+    // Which is why a run asking for a hundred a second measured ninety.
+    // And why raising it made the ticks slower rather than the picture.
+    // Nothing about a frame can reach the simulation either way.
+    constexpr std::uint32_t kFramesPerTick = 40;
 
     // Escape ends a live run, and so does closing the window.
     // Neither is available under the headless backend.
@@ -221,6 +233,14 @@ namespace
         // The renderer below previews the run of road it names.
         antwika::game::RoadDrag drag;
 
+        // And which picture of the city is showing, on those terms.
+        // The renderer below paints whatever it names over the ground.
+        antwika::game::MapViewState mapView;
+
+        // Rebuilt every tick by DesirabilitySystem inside the run.
+        // Owned here so the renderer can paint the view that reads it.
+        antwika::game::DesirabilityField desirability;
+
         // Against the size the window was asked for.
         // Never the size one reports, which nothing records.
         // That is what makes a recorded click hit the same button.
@@ -239,9 +259,9 @@ namespace
         WorldMapState cities(antwika::game::generateWorldMap(kWorld));
 
         // The one wall clock in this application.
-        // It reaches the renderer and nothing else.
-        // What it measures is how often a frame is drawn.
-        // No replay reproduces that, so nothing simulated may read it.
+        // It reaches the frame meter and the pacer and nothing else.
+        // One measures how often a frame is drawn, the other decides it.
+        // No replay reproduces either, so nothing simulated may read it.
         const antwika::time::SystemClock clock;
         antwika::game::FrameMeter frameMeter(clock);
 
@@ -260,6 +280,8 @@ namespace
             .extent = kExtent,
             .pause = pause,
             .overlay = overlay,
+            .view = mapView,
+            .desirability = desirability,
             .drag = drag,
             .hint = hint,
             .menuScene = menuScene,
@@ -323,6 +345,7 @@ namespace
             fullscreen,
             renderSystem,
             sleeper,
+            clock,
             {.tickInterval = kTickInterval,
              .framesPerTick = kFramesPerTick});
 
@@ -358,6 +381,8 @@ namespace
                 .built = built,
                 .mode = mode,
                 .pause = pause,
+                .view = mapView,
+                .desirability = desirability,
                 .drag = drag,
                 .observers = observers,
                 .replayRecorder = recorded.replayRecorder,

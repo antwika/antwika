@@ -108,7 +108,7 @@ namespace antwika::game
         // kWalkerLimit is a limited amount split between buildings.
         // And a view's order is nobody's to name.
         // At the cap the last slots would go to whichever were built first.
-        // LabourSystem and MarketSystem collect for that reason too.
+        // LabourSystem and SupplySystem collect for that reason too.
         // Cell alone is the key, with no tie-break at all.
         // Two buildings cannot share an origin -- see BuildingIndex.
         std::map<Cell, Entity> senders;

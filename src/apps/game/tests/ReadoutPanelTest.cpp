@@ -16,7 +16,7 @@
 #include "antwika/game/HousingQuery.hpp"
 #include "antwika/game/ReadoutPanel.hpp"
 #include "antwika/game/Resource.hpp"
-#include "antwika/game/ResourceBar.hpp"
+#include "antwika/game/ResourceColour.hpp"
 #include "antwika/game/SceneSnapshot.hpp"
 #include "antwika/game/Service.hpp"
 #include "antwika/game/Walker.hpp"

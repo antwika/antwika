@@ -117,7 +117,8 @@ namespace
             .buildings = std::move(buildings),
             .plan = {},
             .ghost = {},
-            .hover = {}};
+            .hover = {},
+            .overlay = {}};
     }
 
     [[nodiscard]] PointerHint pointingAt(

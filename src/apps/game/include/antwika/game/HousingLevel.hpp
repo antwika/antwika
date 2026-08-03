@@ -217,9 +217,9 @@ namespace antwika::game
      *
      * **Only food is ever demanded, and the static_assert below is what
      * says why.** A market seller carries exactly one resource, so food
-     * is the only good that ever reaches a house at all; clay only ever
-     * gets as far as a storehouse, and pottery is not made in a running
-     * city yet because nothing carts clay into a workshop. A tier that
+     * is the only good that ever reaches a house at all; clay and
+     * pottery both move between a storehouse and a workshop and neither
+     * is ever handed to anybody who lives anywhere. A tier that
      * demanded either would be a tier no city could reach, which is a
      * worse bug than a short ladder because nothing would say so.
      *

@@ -65,14 +65,19 @@ namespace antwika::game
      * canvas are drawn at all, and a cell is at most two blits whatever
      * it holds.
      *
-     * **The gauges and the hover panel are the one thing here drawn as
-     * rectangles rather than blitted**, since neither is art: a bar is a
-     * fraction of a capacity and a panel is a line of text, and both
-     * come out of the snapshot as plain values -- see ResourceBar.hpp
-     * and ReadoutPanel.hpp.
-     * They are drawn in passes of their own, after every sprite, so no
-     * bar is hidden by a building standing in front of the one it
-     * gauges.
+     * **The hover panel is the one thing here drawn as rectangles and
+     * text rather than blitted**, since it is not art: it is a box and a
+     * few lines that come out of the snapshot as a plain value -- see
+     * ReadoutPanel.hpp.
+     * It is drawn in a pass of its own, last of all, since it is what
+     * somebody is reading.
+     *
+     * **What a building holds and what a walker carries are read off
+     * that panel and nowhere else.** They used to be gauged by small
+     * vertical bars floating over every sprite, which put a row of
+     * rectangles on top of the art at all times and made a busy district
+     * unreadable; asking for a number by pointing at the thing that
+     * holds it says the same thing and only when somebody wants it.
      *
      * The panel is drawn here rather than through antwika::ui for one
      * structural reason: this app's UI is described and resolved inside
@@ -147,11 +152,11 @@ namespace antwika::game
             const SceneSnapshot &snapshot,
             const AtlasTextures &atlases) const;
 
-        void drawBars(
+        void drawOverlay(
             IRenderer &renderer,
             Size canvas,
             const SceneSnapshot &snapshot,
-            Progress subTick) const;
+            const AtlasTextures &atlases) const;
 
         void drawReadout(
             IRenderer &renderer,

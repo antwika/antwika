@@ -8,6 +8,7 @@
 #include "antwika/game/CityGrid.hpp"
 #include "antwika/game/Coverage.hpp"
 #include "antwika/game/Errand.hpp"
+#include "antwika/game/Journey.hpp"
 #include "antwika/game/Household.hpp"
 #include "antwika/game/Production.hpp"
 #include "antwika/game/Walker.hpp"
@@ -64,6 +65,13 @@ namespace antwika::game
                     .leg = walker.errand->leg};
             }
 
+            std::optional<Journey> journey;
+
+            if (walker.journey.has_value())
+            {
+                journey = Journey{.towards = walker.journey->towards};
+            }
+
             grid.walkers.push_back(
                 StoredWalker{
                     .at = walker.at,
@@ -78,6 +86,10 @@ namespace antwika::game
                     .errand = errand,
                     .destination = walker.errand.has_value()
                         ? walker.errand->destination
+                        : std::nullopt,
+                    .journey = journey,
+                    .joining = walker.journey.has_value()
+                        ? walker.journey->house
                         : std::nullopt});
         }
 

@@ -17,6 +17,7 @@
 #include <antwika/input/MouseButton.hpp>
 #include <antwika/log/mocks/MockLogger.hpp>
 #include <antwika/replay/ReplaySource.hpp>
+#include <antwika/time/fakes/FakeClock.hpp>
 #include <antwika/time/fakes/FakeSleeper.hpp>
 
 #include "antwika/game/AppMode.hpp"
@@ -124,12 +125,21 @@ namespace
         antwika::replay::ReplaySource inner(script);
 
         FakeFramePass pass;
-        FakeSleeper sleeper;
+
+        // The sleeper moves the clock, since that is what waiting does.
+        // Drawing costs nothing here, so every frame is on time.
+        // And so none of them is dropped.
+        // Which is what lets this pin the one claim it makes.
+        // That the *count* of frames changes nothing a run computes.
+        antwika::time::fakes::FakeClock clock{
+            std::chrono::time_point<std::chrono::system_clock>{}};
+        FakeSleeper sleeper(clock);
 
         FramePacedSource paced(
             inner,
             pass,
             sleeper,
+            clock,
             {.tickInterval = kInterval, .framesPerTick = framesPerTick});
 
         auto summary = antwika::game::bootstrap(
@@ -203,10 +213,16 @@ TEST(FrameRateDeterminismTest, TheWholeRunTakesAsLongWhicheverRateItDrewAt)
     antwika::replay::ReplaySource inner(script);
 
     FakeFramePass pass;
-    FakeSleeper sleeper;
+    antwika::time::fakes::FakeClock clock{
+        std::chrono::time_point<std::chrono::system_clock>{}};
+    FakeSleeper sleeper(clock);
 
     FramePacedSource paced(
-        inner, pass, sleeper, {.tickInterval = kInterval, .framesPerTick = 7});
+        inner,
+        pass,
+        sleeper,
+        clock,
+        {.tickInterval = kInterval, .framesPerTick = 7});
 
     const auto summary = antwika::game::bootstrap(
         antwika::game::GameConfig{

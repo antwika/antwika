@@ -26,7 +26,14 @@ namespace antwika::game
      * on different ticks do not march in lockstep.
      *
      * The rule itself is nextFacing(), which is a pure function this only
-     * feeds. Three properties come free from antwika::ecs and none needs
+     * feeds -- including the bits it chooses an arm with, which come
+     * from wanderRoll() off the tick, the cell and the walker's facing
+     * rather than from a generator this would have to own.
+     * A generator advanced once per decision would be state outside the
+     * World that a save does not cover, which is exactly what keeps a
+     * route out of a component too.
+     *
+     * Three properties come free from antwika::ecs and none needs
      * code here:
      *
      * Walkers cannot see each other's moves within a tick, because World
@@ -89,11 +96,18 @@ namespace antwika::game
     private:
         // Roaming and heading home are two whole rules.
         // Rather than two arms of one, so they are two functions.
-        void roam(
+        void travel(
             World &world,
             antwika::ecs::Entity entity,
             const Walker &walker,
             Cell at);
+
+        void roam(
+            World &world,
+            antwika::ecs::Entity entity,
+            const Walker &walker,
+            Cell at,
+            antwika::time::Tick tick);
 
         void headHome(
             World &world,

@@ -43,15 +43,16 @@ namespace antwika::game
         Fireman,           ///< Confers Service::Safety.
         Engineer,          ///< Confers Service::Structure.
         CartPusher,        ///< Hauls a load to a named store.
-        MarketBuyer,       ///< Fetches goods from a store.
+        MarketBuyer,       ///< Fetches an input from a store.
         MarketSeller,      ///< Hands goods out to houses.
+        Migrant,           ///< Moving into a house, or leaving town.
     };
 
     /**
      * @brief How many walker kinds there are.
      */
     inline constexpr std::size_t kWalkerKindCount =
-        static_cast<std::size_t>(WalkerKind::MarketSeller) + 1;
+        static_cast<std::size_t>(WalkerKind::Migrant) + 1;
 
     /**
      * @brief Get a kind's index, for addressing a per-kind table.
@@ -103,7 +104,8 @@ namespace antwika::game
             std::nullopt,     // Engineer
             std::nullopt,     // CartPusher
             std::nullopt,     // MarketBuyer
-            Resource::Food};  // MarketSeller
+            Resource::Food,   // MarketSeller
+            std::nullopt};    // Migrant
 
         return carries[walkerKindIndex(kind) % kWalkerKindCount];
     }

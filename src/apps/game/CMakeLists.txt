@@ -24,6 +24,7 @@ add_executable(antwika_game
     src/GridSink.cpp
     src/HaulingSystem.cpp
     src/Homing.cpp
+    src/Journey.cpp
     src/HotkeySink.cpp
     src/Household.cpp
     src/HousingQuery.cpp
@@ -32,13 +33,15 @@ add_executable(antwika_game
     src/InputFold.cpp
     src/LabourQuery.cpp
     src/LabourSystem.cpp
+    src/MapView.cpp
     src/MainMenuScene.cpp
     src/MainMenuSink.cpp
-    src/MarketSystem.cpp
+    src/SupplySystem.cpp
     src/MenuCommands.cpp
     src/MenuModalScene.cpp
     src/Messages.cpp
     src/ModeGatedSink.cpp
+    src/OverlayField.cpp
     src/OptionsFile.cpp
     src/OptionsScene.cpp
     src/OptionsState.cpp
@@ -50,7 +53,7 @@ add_executable(antwika_game
     src/ProductionSystem.cpp
     src/RatingsSystem.cpp
     src/ReadoutPanel.cpp
-    src/ResourceBar.cpp
+    src/ResourceColour.cpp
     src/RenderSystem.cpp
     src/RoadDrag.cpp
     src/RoadPlan.cpp
@@ -65,6 +68,7 @@ add_executable(antwika_game
     src/SaveLoadScene.cpp
     src/SaveLoadSink.cpp
     src/SaveLoadState.cpp
+    src/SaveMigrants.cpp
     src/SaveMigration.cpp
     src/SaveMigrationV2ToV3.cpp
     src/SaveProduction.cpp

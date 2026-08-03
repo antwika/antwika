@@ -26,6 +26,7 @@ add_executable(antwika_game_tests
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/GridSink.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/HaulingSystem.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/Homing.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/Journey.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/HotkeySink.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/Household.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/HousingQuery.cpp
@@ -34,13 +35,15 @@ add_executable(antwika_game_tests
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/InputFold.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/LabourQuery.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/LabourSystem.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/MapView.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/MainMenuScene.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/MainMenuSink.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/../src/MarketSystem.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/SupplySystem.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/MenuCommands.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/MenuModalScene.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/Messages.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/ModeGatedSink.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/OverlayField.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/OptionsFile.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/OptionsScene.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/OptionsState.cpp
@@ -52,7 +55,7 @@ add_executable(antwika_game_tests
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/ProductionSystem.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/RatingsSystem.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/ReadoutPanel.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/../src/ResourceBar.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/ResourceColour.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/RenderSystem.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/RoadDrag.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/RoadPlan.cpp
@@ -67,6 +70,7 @@ add_executable(antwika_game_tests
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/SaveLoadScene.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/SaveLoadSink.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/SaveLoadState.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/SaveMigrants.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/SaveMigration.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/SaveMigrationV2ToV3.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/SaveProduction.cpp
@@ -129,6 +133,7 @@ add_executable(antwika_game_tests
     RatingsSystemTest.cpp
     HotkeySinkTest.cpp
     HoverTest.cpp
+    JourneyTest.cpp
     InputFoldTest.cpp
     KeyTextTest.cpp
     IsoProjectionTest.cpp
@@ -138,6 +143,7 @@ add_executable(antwika_game_tests
     MenuModalSceneTest.cpp
     KeyBindingsTest.cpp
     OptionsFileTest.cpp
+    OverlayFieldTest.cpp
     OptionsSceneTest.cpp
     OptionsStateTest.cpp
     SessionGateTest.cpp
@@ -148,7 +154,7 @@ add_executable(antwika_game_tests
     PlacementTest.cpp
     PointerReadingTest.cpp
     ReadoutPanelTest.cpp
-    ResourceBarTest.cpp
+    ResourceColourTest.cpp
     RenderSystemTest.cpp
     RoadDragTest.cpp
     RoadPlanTest.cpp
@@ -165,7 +171,7 @@ add_executable(antwika_game_tests
     ErrandRoutingTest.cpp
     ErrandTest.cpp
     HaulingSystemTest.cpp
-    MarketSystemTest.cpp
+    SupplySystemTest.cpp
     ProductionSystemTest.cpp
     ServiceTest.cpp
     ServiceWalkTest.cpp

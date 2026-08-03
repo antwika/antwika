@@ -23,6 +23,7 @@
 #include "antwika/game/Production.hpp"
 #include "antwika/game/Workforce.hpp"
 #include "antwika/game/SaveGame.hpp"
+#include "antwika/game/MapView.hpp"
 #include "antwika/game/SceneSnapshot.hpp"
 #include "antwika/game/Terrain.hpp"
 #include "antwika/game/WorldMap.hpp"
@@ -154,7 +155,9 @@ namespace
             .plan = RoadPlan{.cells = {Cell{.x = 5, .y = 5}}},
             .ghost = BuildGhost{.at = {.x = 4, .y = 4}},
             .hover = HoverReadout{
-                .anchor = antwika::gfx::Point{.x = 6, .y = 7}}};
+                .anchor = antwika::gfx::Point{.x = 6, .y = 7}},
+            .view = antwika::game::MapView::Desirability,
+            .overlay = {{Cell{.x = 1, .y = 1}, 50}}};
     }
 
     TEST(SceneSnapshotTest, EqualityComparesEveryField)
@@ -173,6 +176,12 @@ namespace
             base, [](SceneSnapshot &s) { s.walkers.clear(); });
         expectMemberCompared(
             base, [](SceneSnapshot &s) { s.buildings.clear(); });
+        expectMemberCompared(
+            base,
+            [](SceneSnapshot &s)
+            { s.view = antwika::game::MapView::Normal; });
+        expectMemberCompared(
+            base, [](SceneSnapshot &s) { s.overlay.clear(); });
         expectMemberCompared(
             base,
             [](SceneSnapshot &s) { s.ghost.visible = !s.ghost.visible; });

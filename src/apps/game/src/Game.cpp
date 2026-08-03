@@ -30,7 +30,7 @@
 #include "antwika/game/LiveGrid.hpp"
 #include "antwika/game/MainMenuScene.hpp"
 #include "antwika/game/MainMenuSink.hpp"
-#include "antwika/game/MarketSystem.hpp"
+#include "antwika/game/SupplySystem.hpp"
 #include "antwika/game/MenuCommands.hpp"
 #include "antwika/game/MenuModalScene.hpp"
 #include "antwika/game/Messages.hpp"
@@ -155,7 +155,14 @@ namespace antwika::game
         // A city serves itself while its player reads the world map.
         // And stops only where a player asked -- see PauseState.
         CoverageSystem coverageSystem;
-        DesirabilityField desirability;
+
+        // The caller's where there is one, for the drag's reason.
+        // A renderer built before this call paints the view off it.
+        DesirabilityField ownDesirability;
+        DesirabilityField &desirability = config.desirability.has_value()
+            ? config.desirability->get()
+            : ownDesirability;
+
         DesirabilitySystem desirabilitySystem(desirability, config.extent);
 
         SessionGatedSystem gatedCoverage(coverageSystem, mode);
@@ -173,15 +180,15 @@ namespace antwika::game
         // So both gates, in that order.
         ProductionSystem productionSystem;
         HaulingSystem haulingSystem(paths, config.extent);
-        MarketSystem marketSystem(paths, config.extent);
+        SupplySystem supplySystem(paths, config.extent);
 
         SessionGatedSystem gatedProduction(productionSystem, mode);
         SessionGatedSystem gatedHauling(haulingSystem, mode);
-        SessionGatedSystem gatedMarkets(marketSystem, mode);
+        SessionGatedSystem gatedSupply(supplySystem, mode);
 
         PauseGatedSystem pausedProduction(gatedProduction, pause);
         PauseGatedSystem pausedHauling(gatedHauling, pause);
-        PauseGatedSystem pausedMarkets(gatedMarkets, pause);
+        PauseGatedSystem pausedSupply(gatedSupply, pause);
 
         // Two phases rather than one, and the split is load bearing.
         // A phase is where the World's buffers swap.
@@ -193,14 +200,22 @@ namespace antwika::game
         const auto producePhase = scheduler.createPhase("produce");
         scheduler.addSystem(producePhase, pausedProduction);
 
-        // Hauling and the markets share one.
-        // Nothing they write overlaps.
-        // A cart is loaded out of a producer.
-        // A buyer is loaded out of a storehouse.
-        // And no building is both.
+        // Hauling has one to itself.
+        // It writes every producer, loading a cart out of each.
         const auto haulPhase = scheduler.createPhase("haul");
         scheduler.addSystem(haulPhase, pausedHauling);
-        scheduler.addSystem(haulPhase, pausedMarkets);
+
+        // And the supply of what a building cannot make has another.
+        // These two used to share the haul phase.
+        // Which was safe while no building was both ends of it.
+        // A cart is loaded out of a producer.
+        // A buyer is loaded out of a storehouse.
+        // A workshop is both: pottery out, clay in.
+        // So the two would write one Building in one phase.
+        // And the later write would silently undo the earlier.
+        // The commit between them is what makes it arithmetic.
+        const auto supplyPhase = scheduler.createPhase("supply");
+        scheduler.addSystem(supplyPhase, pausedSupply);
 
         // After the goods have moved and before anything is drawn.
         // So a house is judged on the shelves this tick filled.
@@ -232,7 +247,8 @@ namespace antwika::game
         // Which is one tick behind the one being counted here.
         // A person arriving is employable from the following tick.
         // Both gates, in the order every other system takes them.
-        PopulationSystem populationSystem(paths, desirability);
+        PopulationSystem populationSystem(
+            paths, desirability, config.extent);
         LabourSystem labourSystem;
 
         SessionGatedSystem gatedPopulation(populationSystem, mode);
@@ -295,6 +311,12 @@ namespace antwika::game
         RoadDrag &drag =
             config.drag.has_value() ? config.drag->get() : ownDrag;
 
+        // And one with nobody to paint an overlay for still runs.
+        // So one of those is made here on exactly those terms.
+        MapViewState ownView;
+        MapViewState &view =
+            config.view.has_value() ? config.view->get() : ownView;
+
         // The four that are swapped together, named together.
         // A city is opened by putting its contents into these.
         // Declared here rather than beside the world-map sink.
@@ -328,6 +350,7 @@ namespace antwika::game
             input,
             toolbar,
             pause,
+            view,
             commands,
             drag,
             menuModal,

@@ -23,8 +23,10 @@
 #include "antwika/game/GridExtent.hpp"
 #include "antwika/game/GridScene.hpp"
 #include "antwika/game/IsoProjection.hpp"
+#include "antwika/game/MapView.hpp"
+#include "antwika/game/OverlayField.hpp"
 #include "antwika/game/ReadoutPanel.hpp"
-#include "antwika/game/ResourceBar.hpp"
+#include "antwika/game/ResourceColour.hpp"
 #include "antwika/game/SceneSnapshot.hpp"
 #include "antwika/game/SpriteBounds.hpp"
 #include "antwika/game/TileAtlas.hpp"
@@ -182,7 +184,8 @@ namespace
             .buildings = {},
             .plan = {},
             .ghost = {},
-            .hover = {}};
+            .hover = {},
+            .overlay = {}};
     }
 } // namespace
 
@@ -613,34 +616,6 @@ TEST_F(GridSceneTest, Draw_HoldsAWalkerStillWhilePaused)
 
 // The gauge is drawn from the box the sprite is blitted into.
 // So a held bar has to be held with it, or the two part company.
-TEST_F(GridSceneTest, Draw_HoldsAWalkersBarsStillWhilePaused)
-{
-    const Camera camera(Point{.x = 300, .y = 40}, 3);
-
-    auto held = snapshot(
-        camera,
-        GridExtent{},
-        {},
-        {WalkerSprite{
-            .at = Cell{.x = 2, .y = 1},
-            .facing = Direction::East,
-            .from = Cell{.x = 1, .y = 1},
-            .ticksIntoStep = 1,
-            .kind = antwika::game::WalkerKind::MarketSeller,
-            .carried = 50}});
-    held.paused = true;
-
-    scene.draw(renderer, kCanvas, held, atlases, Progress());
-    const auto atTick = renderer.rects;
-
-    ASSERT_FALSE(atTick.empty());
-
-    renderer.rects.clear();
-    scene.draw(renderer, kCanvas, held, atlases, Progress(1, 2));
-
-    EXPECT_EQ(renderer.rects, atTick);
-}
-
 TEST_F(GridSceneTest, Draw_LeavesEverythingButTheWalkersWhereItWas)
 {
     const Camera camera(Point{.x = 300, .y = 40}, 2);
@@ -660,134 +635,11 @@ TEST_F(GridSceneTest, Draw_LeavesEverythingButTheWalkersWhereItWas)
     EXPECT_EQ(renderer.blits, atTick);
 }
 
-// The gauges: a small vertical bar per resource a building depends on.
-// Drawn as rectangles rather than blitted.
-// A fraction of a capacity is not art -- see ResourceBar.hpp.
-TEST_F(GridSceneTest, Draw_GaugesEachBuildingThatDependsOnSomething)
-{
-    const Camera camera(Point{.x = 300, .y = 40}, 3);
-    const antwika::game::BuildingSprite house{
-        .at = Cell{.x = 0, .y = 0},
-        .kind = antwika::game::BuildingKind::House,
-        .stock = {50, 50, 50}};
-
-    auto scene_ = snapshot(camera, GridExtent{});
-    scene_.buildings.push_back(house);
-
-    scene.draw(renderer, kCanvas, scene_, atlases);
-
-    const auto bars = antwika::game::buildingBars(house, camera);
-
-    ASSERT_EQ(bars.size(), antwika::game::kResourceCount);
-
-    // One track and one fill per bar, and each is the bar's own value.
-    ASSERT_EQ(renderer.rects.size(), 2 * antwika::game::kResourceCount);
-    EXPECT_EQ(renderer.rects[0].rect, bars[0].track);
-    EXPECT_EQ(renderer.rects[0].color, antwika::game::kBarTrack);
-    EXPECT_EQ(renderer.rects[1].rect, bars[0].fill);
-    EXPECT_EQ(
-        renderer.rects[1].color,
-        antwika::game::resourceColour(bars[0].resource));
-}
-
-// A bar with nothing in it is a track and no fill at all.
-TEST_F(GridSceneTest, Draw_DrawsNoFillForAnEmptyGauge)
-{
-    auto scene_ = snapshot(Camera(Point{.x = 300, .y = 40}, 3),
-        GridExtent{});
-    scene_.buildings.push_back(
-        antwika::game::BuildingSprite{
-            .at = Cell{.x = 0, .y = 0},
-            .kind = antwika::game::BuildingKind::House,
-            .stock = {0, 0, 0}});
-
-    scene.draw(renderer, kCanvas, scene_, atlases);
-
-    EXPECT_EQ(renderer.rects.size(), antwika::game::kResourceCount);
-}
-
-// A source depends on nothing, so it is gauged for nothing.
-TEST_F(GridSceneTest, Draw_GaugesNeitherASourceNorABuildingOffTheCanvas)
-{
-    auto scene_ = snapshot(Camera(Point{.x = 300, .y = 40}, 3),
-        GridExtent{});
-    scene_.buildings.push_back(
-        antwika::game::BuildingSprite{
-            .at = Cell{.x = 0, .y = 0},
-            .kind = antwika::game::BuildingKind::Farm,
-            .stock = {50, 50}});
-    scene_.buildings.push_back(
-        antwika::game::BuildingSprite{
-            .at = Cell{.x = 900, .y = -900},
-            .kind = antwika::game::BuildingKind::House,
-            .stock = {50, 50}});
-
-    scene.draw(renderer, kCanvas, scene_, atlases);
-
-    EXPECT_TRUE(renderer.rects.empty());
-}
-
-TEST_F(GridSceneTest, Draw_GaugesAWalkerWithWhatItIsCarrying)
-{
-    const Camera camera(Point{.x = 300, .y = 40}, 3);
-    const WalkerSprite walker{
-        .at = Cell{.x = 1, .y = 1},
-        .kind = antwika::game::WalkerKind::MarketSeller,
-        .carried = antwika::game::kWalkerLoad};
-
-    scene.draw(
-        renderer,
-        kCanvas,
-        snapshot(camera, GridExtent{}, {}, {walker}),
-        atlases);
-
-    const auto bars =
-        antwika::game::walkerBars(walker, camera, Progress());
-
-    ASSERT_EQ(bars.size(), 1U);
-    ASSERT_EQ(renderer.rects.size(), 2U);
-    EXPECT_EQ(renderer.rects[0].rect, bars[0].track);
-    EXPECT_EQ(renderer.rects[1].rect, bars[0].fill);
-}
-
-TEST_F(GridSceneTest, Draw_GaugesNoWalkerThatIsOffTheCanvasOrCarriesNone)
-{
-    const Camera camera(Point{.x = -100000, .y = -100000}, 3);
-
-    scene.draw(
-        renderer,
-        kCanvas,
-        snapshot(
-            camera,
-            GridExtent{},
-            {},
-            {WalkerSprite{
-                .at = Cell{.x = 1, .y = 1},
-                .kind = antwika::game::WalkerKind::MarketSeller,
-                .carried = 50}}),
-        atlases);
-
-    EXPECT_TRUE(renderer.rects.empty());
-
-    RecordingRenderer nearby;
-    scene.draw(
-        nearby,
-        kCanvas,
-        snapshot(
-            Camera(Point{.x = 300, .y = 40}, 3),
-            GridExtent{},
-            {},
-            {WalkerSprite{
-                .at = Cell{.x = 1, .y = 1},
-                .kind = antwika::game::WalkerKind::Fireman}}),
-        atlases);
-
-    EXPECT_TRUE(nearby.rects.empty());
-}
-
-// A gauge is drawn after every sprite.
-// So nothing standing in front of what it gauges can hide it.
-TEST_F(GridSceneTest, Draw_DrawsEveryGaugeAfterEverySprite)
+// Nothing is gauged over the art any more.
+// What a building holds is read off the hover panel instead.
+// A row of bars over every sprite made a district unreadable.
+// So the only rectangles a grid draws are that panel's own.
+TEST_F(GridSceneTest, Draw_PaintsNoGaugeOverABuildingOrAWalker)
 {
     auto scene_ = snapshot(
         Camera(Point{.x = 300, .y = 40}, 3),
@@ -795,30 +647,115 @@ TEST_F(GridSceneTest, Draw_DrawsEveryGaugeAfterEverySprite)
         {Cell{.x = 0, .y = 1}},
         {WalkerSprite{
             .at = Cell{.x = 0, .y = 1},
-            .kind = antwika::game::WalkerKind::WaterCarrier,
-            .carried = 40}});
+            .kind = antwika::game::WalkerKind::MarketSeller,
+            .carried = antwika::game::kWalkerLoad}});
     scene_.buildings.push_back(
         antwika::game::BuildingSprite{
             .at = Cell{.x = 1, .y = 1},
             .kind = antwika::game::BuildingKind::House,
-            .stock = {50, 50}});
+            .stock = {50, 50, 50}});
 
     scene.draw(renderer, kCanvas, scene_, atlases);
 
-    ASSERT_FALSE(renderer.order.empty());
+    EXPECT_TRUE(renderer.rects.empty());
+}
 
-    const auto firstRect =
-        std::find(renderer.order.begin(), renderer.order.end(), Call::Rect);
-    const auto lastBlit = std::find(
-        renderer.order.rbegin(), renderer.order.rend(), Call::Blit);
+// An overlay is the ground sprite tinted, cell by cell.
+// A cell is a diamond and drawRect() takes an upright box.
+// Which is the same reason the ghost's edge is four lines.
+TEST_F(GridSceneTest, Draw_PaintsNoOverlayForTheCityItself)
+{
+    const auto scene_ = snapshot(
+        Camera(Point{.x = 300, .y = 40}, 3),
+        GridExtent{.width = 2, .height = 2});
 
-    ASSERT_NE(firstRect, renderer.order.end());
-    ASSERT_NE(lastBlit, renderer.order.rend());
-    EXPECT_GT(
-        static_cast<std::size_t>(firstRect - renderer.order.begin()),
-        renderer.order.size() - 1
-            - static_cast<std::size_t>(
-                lastBlit - renderer.order.rbegin()));
+    scene.draw(renderer, kCanvas, scene_, atlases);
+
+    // Four ground sprites, and no second pass over any of them.
+    EXPECT_EQ(renderer.blitsOf(groundTile()), 4U);
+}
+
+TEST_F(GridSceneTest, Draw_ScrimsEveryCellAndTintsTheOnesWithAValue)
+{
+    auto scene_ = snapshot(
+        Camera(Point{.x = 300, .y = 40}, 3),
+        GridExtent{.width = 2, .height = 2});
+    scene_.view = antwika::game::MapView::Desirability;
+    scene_.overlay = {{Cell{.x = 1, .y = 1}, 100}};
+
+    scene.draw(renderer, kCanvas, scene_, atlases);
+
+    std::size_t scrimmed = 0;
+    std::size_t tinted = 0;
+
+    for (const auto &blit : renderer.blits)
+    {
+        if (blit.tint == antwika::game::kOverlayScrim)
+        {
+            ++scrimmed;
+        }
+
+        if (blit.tint
+            == antwika::game::overlayColour(
+                antwika::game::MapView::Desirability))
+        {
+            ++tinted;
+        }
+    }
+
+    // The scrim over all four, and the value over the one cell.
+    // A district nothing reaches is what somebody looks for here.
+    // So it has to be visibly darker rather than simply unpainted.
+    EXPECT_EQ(scrimmed, 4U);
+    EXPECT_EQ(tinted, 1U);
+}
+
+// Under the walkers.
+// A walker is a thing in the city rather than a fact about it.
+TEST_F(GridSceneTest, Draw_PaintsTheOverlayBeforeTheWalkers)
+{
+    auto scene_ = snapshot(
+        Camera(Point{.x = 300, .y = 40}, 3),
+        GridExtent{.width = 2, .height = 2},
+        {},
+        {WalkerSprite{.at = Cell{.x = 1, .y = 1}}});
+    scene_.view = antwika::game::MapView::Water;
+    scene_.overlay = {{Cell{.x = 1, .y = 1}, 100}};
+
+    scene.draw(renderer, kCanvas, scene_, atlases);
+
+    std::size_t lastScrim = 0;
+    std::size_t walker = 0;
+
+    for (std::size_t index = 0; index < renderer.blits.size(); ++index)
+    {
+        if (renderer.blits[index].tint == antwika::game::kOverlayScrim)
+        {
+            lastScrim = index;
+        }
+
+        if (renderer.blits[index].source
+            == walkerTile(Direction::East))
+        {
+            walker = index;
+        }
+    }
+
+    EXPECT_GT(walker, lastScrim);
+}
+
+// Culled on where it would be drawn, as everything else here is.
+TEST_F(GridSceneTest, Draw_PaintsNoOverlayCellOffTheCanvas)
+{
+    auto scene_ = snapshot(
+        Camera(Point{.x = -100000, .y = -100000}, 3),
+        GridExtent{.width = 2, .height = 2});
+    scene_.view = antwika::game::MapView::Food;
+    scene_.overlay = {{Cell{.x = 1, .y = 1}, 100}};
+
+    scene.draw(renderer, kCanvas, scene_, atlases);
+
+    EXPECT_TRUE(renderer.blits.empty());
 }
 
 // The hover readout: drawn from the same snapshot, last of everything.
@@ -920,6 +857,69 @@ TEST_F(GridSceneTest, Draw_PreviewsThePlannedRunOfRoad)
     }
 
     EXPECT_EQ(previewed, 3U);
+}
+
+// A previewed run shows the junctions the *whole run* would make.
+// Worked out against the roads and the rest of the plan together.
+// Asked of the roads alone, a route over bare ground has no arms.
+// So the preview came out as a string of loose stubs.
+// Which is not what its release lays.
+TEST_F(GridSceneTest, Draw_PreviewsAPlannedRunAsOneConnectedRoad)
+{
+    auto scene_ = snapshot(
+        Camera(Point{.x = 300, .y = 40}, 3),
+        GridExtent{.width = 4, .height = 4});
+    scene_.plan = antwika::game::RoadPlan{
+        .cells =
+            {Cell{.x = 1, .y = 1},
+             Cell{.x = 2, .y = 1},
+             Cell{.x = 3, .y = 1}},
+        .valid = true};
+
+    scene.draw(renderer, kCanvas, scene_, atlases);
+
+    std::vector<Rect> previewed;
+
+    for (const auto &blit : renderer.blits)
+    {
+        if (blit.tint.alpha == 110 && blit.tint.green == 255)
+        {
+            previewed.push_back(blit.source);
+        }
+    }
+
+    // West end, straight through, east end -- a road, not three stubs.
+    const std::vector<Rect> wanted{
+        roadTile(antwika::game::linkBit(Direction::East)),
+        roadTile(
+            antwika::game::linkBit(Direction::East)
+            | antwika::game::linkBit(Direction::West)),
+        roadTile(antwika::game::linkBit(Direction::West))};
+
+    EXPECT_EQ(previewed, wanted);
+}
+
+// And a run laid up against a road already there joins onto it.
+TEST_F(GridSceneTest, Draw_JoinsAPlannedRunOntoTheRoadsAlreadyThere)
+{
+    auto scene_ = snapshot(
+        Camera(Point{.x = 300, .y = 40}, 3),
+        GridExtent{.width = 4, .height = 4},
+        {Cell{.x = 1, .y = 1}});
+    scene_.plan = antwika::game::RoadPlan{
+        .cells = {Cell{.x = 2, .y = 1}}, .valid = true};
+
+    scene.draw(renderer, kCanvas, scene_, atlases);
+
+    for (const auto &blit : renderer.blits)
+    {
+        if (blit.tint.alpha == 110 && blit.tint.green == 255)
+        {
+            EXPECT_EQ(
+                blit.source,
+                roadTile(antwika::game::linkBit(Direction::West)));
+        }
+    }
 }
 
 // A refused run is reddened rather than hidden, as a block is.

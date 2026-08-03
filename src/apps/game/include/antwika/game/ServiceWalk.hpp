@@ -23,6 +23,8 @@ namespace antwika::game
      * A cart pusher, a market buyer and a market seller are the errand
      * walkers, and an errand is a fact about where somebody is going
      * rather than about what walking past them does.
+     * A migrant is going somewhere too, and is carrying nothing but
+     * themselves -- see Journey.
      *
      * @param kind The kind of walker.
      * @return The service its kind confers, or nullopt for one that
@@ -39,7 +41,8 @@ namespace antwika::game
             Service::Structure,   // Engineer
             std::nullopt,         // CartPusher
             std::nullopt,         // MarketBuyer
-            std::nullopt};        // MarketSeller
+            std::nullopt,         // MarketSeller
+            std::nullopt};        // Migrant
 
         return confers[walkerKindIndex(kind) % kWalkerKindCount];
     }

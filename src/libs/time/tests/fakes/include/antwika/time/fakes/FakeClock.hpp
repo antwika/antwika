@@ -36,11 +36,16 @@ namespace antwika::time::fakes
 
         /**
          * @brief Move the clock forward by a duration.
-         * @param s The number of seconds to add to the current time.
+         *
+         * Milliseconds rather than seconds, so a test pacing something
+         * inside one tick can say what it means; a whole number of
+         * seconds still converts implicitly and reads the same.
+         *
+         * @param by How much to add to the current time.
          */
-        void advance(std::chrono::seconds s)
+        void advance(std::chrono::milliseconds by)
         {
-            current += s;
+            current += by;
         }
 
         /**

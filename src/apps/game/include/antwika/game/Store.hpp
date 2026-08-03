@@ -3,12 +3,14 @@
 #include <array>
 #include <cstddef>
 #include <cstdint>
+#include <optional>
 
 #include <antwika/ecs/Entity.hpp>
 #include <antwika/ecs/World.hpp>
 
 #include "antwika/game/Building.hpp"
 #include "antwika/game/BuildingKind.hpp"
+#include "antwika/game/Production.hpp"
 #include "antwika/game/Resource.hpp"
 
 namespace antwika::game
@@ -73,10 +75,10 @@ namespace antwika::game
      * is what makes it the one kind a cart can safely fill.
      *
      * That is not a workaround dressed up as a rule: it is why a market
-     * is supplied by a buyer of its own, credited in a later phase
-     * where nothing else writes it, rather than by a cart -- and it is
-     * why nothing yet carts clay into a workshop, which would need a
-     * walker kind this round's vocabulary has not got.
+     * and a workshop are both supplied by a buyer of their own,
+     * credited in a phase of its own where nothing else writes them,
+     * rather than by a cart.
+     * See fetchedFromStores() and SupplySystem.
      *
      * @param kind The kind that would be unloaded into.
      * @param resource The resource in the cart.
@@ -154,6 +156,97 @@ namespace antwika::game
 
         return supplies[buildingKindIndex(kind) % kBuildingKindCount];
     }
+
+    /**
+     * @brief Get what a kind of building sends a buyer out to fetch.
+     *
+     * **The other way goods leave a storehouse, and the only way one
+     * reaches a building that sends walkers of its own.**
+     * acceptsAt() names where a cart may unload and is a storehouse
+     * alone, for the walk-phase reason it gives at length; this names
+     * the kinds that go and get what they need instead, and they are
+     * exactly the kinds that need something they cannot make.
+     *
+     * A market fetches the food its seller hands out.
+     * A workshop fetches the clay it fires into pottery, which is what
+     * makes pottery a thing a running city produces rather than a
+     * resource with no way into the building that would use it.
+     *
+     * A table rather than consumedToProduce() with a market bolted on:
+     * a market produces nothing at all, so there is no rule about
+     * production that could answer for it, and a static_assert below
+     * holds the two to each other everywhere both have an answer.
+     *
+     * @param kind The kind to ask about.
+     * @return What it sends a buyer for, or nullopt for a kind that
+     * sends none.
+     */
+    [[nodiscard]] constexpr std::optional<Resource> fetchedFromStores(
+        BuildingKind kind) noexcept
+    {
+        constexpr std::array<
+            std::optional<Resource>, kBuildingKindCount> fetches{
+            std::nullopt,     // House
+            std::nullopt,     // Farm
+            std::nullopt,     // ClayPit
+            Resource::Clay,   // Workshop
+            std::nullopt,     // Storage
+            Resource::Food,   // Market
+            std::nullopt,     // Well
+            std::nullopt,     // Doctor
+            std::nullopt,     // FireStation
+            std::nullopt,     // EngineerPost
+        };
+
+        return fetches[buildingKindIndex(kind) % kBuildingKindCount];
+    }
+
+    // A kind that eats something to work has to go and get it.
+    // Otherwise its input reaches it by no route at all.
+    // And it stands there for ever with an empty hopper.
+    static_assert(
+        []
+        {
+            for (std::size_t index = 0; index < kBuildingKindCount; ++index)
+            {
+                const auto kind = static_cast<BuildingKind>(index);
+
+                if (consumedToProduce(kind).has_value()
+                    && fetchedFromStores(kind) != consumedToProduce(kind))
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }(),
+        "a kind that consumes to produce must fetch what it consumes");
+
+    // And what it fetches has to be something a store will hold.
+    static_assert(
+        []
+        {
+            for (std::size_t index = 0; index < kBuildingKindCount; ++index)
+            {
+                const auto kind = static_cast<BuildingKind>(index);
+                const auto wanted = fetchedFromStores(kind);
+
+                if (wanted.has_value()
+                    && !acceptsAt(BuildingKind::Storage, *wanted))
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }(),
+        "a fetched resource must be one a store may be filled with");
+
+    static_assert(
+        fetchedFromStores(BuildingKind::Workshop) == Resource::Clay);
+    static_assert(
+        fetchedFromStores(BuildingKind::Market) == Resource::Food);
+    static_assert(!fetchedFromStores(BuildingKind::Farm).has_value());
 
     /**
      * @brief Get how much of one resource an entity is holding.
