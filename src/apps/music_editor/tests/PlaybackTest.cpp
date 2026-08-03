@@ -503,9 +503,11 @@ TEST(PlaybackTest, KeepsTheDeviceFedWithoutRunningAway)
     EXPECT_EQ(rig.rendered.frameCount(), playback.queuedFrames());
 }
 
-// A device that consumes when pumped is never ahead of itself.
-// So an offline run costs no wall-clock time at all.
-TEST(PlaybackTest, WaitsOutNothingWhenTheDeviceKeepsUp)
+// A device that consumes when pumped paces nothing by itself.
+// Unpaced, an unbounded run over it would spin a core flat out.
+// So it is paced to the clock: one tick's interval per step.
+// The sleeper is injected, which keeps this free in a test.
+TEST(PlaybackTest, PacesADeviceThatKeepsUpToTheClock)
 {
     Rig rig;
     rig.play("$: bass.n(\"0\")\n");
@@ -516,7 +518,9 @@ TEST(PlaybackTest, WaitsOutNothingWhenTheDeviceKeepsUp)
 
     step(playback, 20, false);
 
-    EXPECT_EQ(rig.sleeper.calls, 0);
+    // Ten ticks to the second, so a tick is a hundred milliseconds.
+    EXPECT_EQ(rig.sleeper.calls, 20);
+    EXPECT_EQ(rig.sleeper.waited, std::chrono::milliseconds{2000});
 }
 
 // A device that lags is what a real one does.
@@ -667,6 +671,28 @@ TEST(PlaybackTest, LightsTheCharactersOfTheNotesThatSound)
     // The 0 sits at document index eleven.
     EXPECT_EQ(lit[0].begin, 11U);
     EXPECT_EQ(lit[0].end, 12U);
+}
+
+// A note is lit under the line that sounded it, never an index.
+// An edit above moves every line down one.
+// The light drops rather than landing on the index's new line.
+TEST(PlaybackTest, AnEditAboveDropsALitNoteRatherThanMovingIt)
+{
+    Rig rig;
+    rig.play("$: bass.n(\"0\")\n");
+
+    Playback playback(
+        rig.score, rig.mixer, rig.device, rig.sleeper,
+        oneCycleASecond());
+
+    step(playback, 2, false);
+
+    ASSERT_FALSE(playback.highlights().empty());
+
+    // A new line above shifts the bass line's index by one.
+    rig.play("$: drum.n(\"0\")\n$: bass.n(\"0\")\n");
+
+    EXPECT_TRUE(playback.highlights().empty());
 }
 
 // A note decided ahead of its time is not lit until it sounds.

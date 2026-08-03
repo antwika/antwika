@@ -361,6 +361,17 @@ namespace antwika::music_editor
         return std::nullopt;
     }
 
+    std::string_view Score::chainOf(
+        const std::size_t voice) const noexcept
+    {
+        if (voice >= soundingLines.size())
+        {
+            return {};
+        }
+
+        return lines[soundingLines[voice]].chain;
+    }
+
     const std::vector<Problem> &Score::problems() const noexcept
     {
         return refusals;

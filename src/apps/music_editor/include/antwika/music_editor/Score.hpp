@@ -202,6 +202,24 @@ namespace antwika::music_editor
             std::size_t length) const noexcept;
 
         /**
+         * @brief Get the chain text a sounding voice was read from.
+         *
+         * The one identity a voice keeps across edits: an index into
+         * voices() outlives an insertion above it, and then names a
+         * different line.
+         * A note lit under one chain is dropped rather than guessed
+         * at when the text at its index changes -- though two lines
+         * holding identical chains are indistinguishable here, and
+         * light alike.
+         *
+         * @param voice An index into voices().
+         * @return Its chain's text, empty for an index that is out of
+         * range.  Borrowed until the next read().
+         */
+        [[nodiscard]] std::string_view chainOf(
+            std::size_t voice) const noexcept;
+
+        /**
          * @brief Get how many voice lines have been read since the
          * start.
          *

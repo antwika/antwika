@@ -97,6 +97,7 @@ namespace antwika::music_editor
         // See docs/confirming-unreachable-branches.md, signature (a).
         notes.push_back(ActiveNote{ // GCOVR_EXCL_LINE
             .voice = voiceIndex,
+            .chain = std::string(chain), // GCOVR_EXCL_LINE
             .begin = static_cast<std::size_t>(begin.approximate()),
             .length = static_cast<std::size_t>(length.approximate()),
             .from = from,
@@ -121,6 +122,11 @@ namespace antwika::music_editor
     {
         lead = static_cast<FrameCount>(
             shape.clock.frameAtTick(shape.lead));
+
+        // One tick's worth of wall time, for pace()'s wait.
+        interval = std::chrono::milliseconds{
+            shape.clock.frameAtTick(1) * 1000
+            / static_cast<std::int64_t>(mixer.format().rate)};
 
         // One, so a lookahead of no ticks is refused here.
         // Rather than on whichever keystroke first writes a voice.
@@ -184,6 +190,7 @@ namespace antwika::music_editor
                 line.voices->offset = pausedFrames;
                 line.voices->preset = voices[at].preset;
                 line.voices->voiceIndex = at;
+                line.voices->chain = score.chainOf(at);
 
                 // A sequencer that missed a tick slept through it.
                 // It joins now rather than playing what it missed.
@@ -239,13 +246,22 @@ namespace antwika::music_editor
 
     // The one thing framesPlayed() is allowed to decide.
     // How long to wait, and never what to compute.
-    // A device that consumes when pumped is never ahead of itself.
-    // So an offline or null run never sleeps at all.
-    // A real one is paced by the hardware rather than by a clock.
+    // A real device paces the loop by lagging behind the queue.
+    // One that consumes when pumped -- null, offline -- never lags.
+    // Unpaced, an unbounded run over it spins a core flat out.
+    // So a device that kept up exactly is paced to the clock instead.
     void Playback::pace()
     {
-        const auto target = lead / 2;
         const auto ahead = queued - device.framesPlayed();
+
+        if (ahead == 0)
+        {
+            sleeper.sleep(interval);
+
+            return;
+        }
+
+        const auto target = lead / 2;
 
         if (ahead <= target)
         {
@@ -288,6 +304,14 @@ namespace antwika::music_editor
             // The other bound needs no check.
             // A rung-out note was pruned by the step that outlived it.
             if (played < note.from)
+            {
+                continue;
+            }
+
+            // Its index outlives an edit above it; its chain does not.
+            // A line rewritten or moved drops its notes' lights.
+            // Dropped rather than guessed at, per the spanIn() rule.
+            if (score.chainOf(note.voice) != note.chain)
             {
                 continue;
             }
