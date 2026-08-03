@@ -1085,3 +1085,146 @@ TEST(ScoreTest, ReadsEveryDocumentedModulationExample)
         ".n(\"0 ~ 3 ~\").gain(.2)\n");
     EXPECT_EQ(score.voices().size(), 1U);
 }
+
+// The roll shows what the line says rather than what a form allows.
+// And it hangs under the line, counted from nought as the pane counts.
+TEST(ScoreTest, APianorollHangsUnderTheLineThatAsksForIt)
+{
+    Score score;
+
+    score.read(
+        "$: drum.n(\"0 3\").pianoroll()\n"
+        "$: bass.n(\"0\")\n");
+
+    ASSERT_EQ(score.pianorolls().size(), 1U);
+    EXPECT_EQ(score.pianorolls()[0].line, 0U);
+    EXPECT_EQ(
+        score.pianorolls()[0].playing.queryAll(kFirstCycle).size(), 2U);
+}
+
+TEST(ScoreTest, ALineWithoutTheCallHangsNoRoll)
+{
+    Score score;
+
+    score.read("$: drum.n(\"0 3\")\n");
+
+    EXPECT_TRUE(score.pianorolls().empty());
+}
+
+// A voice spread over several lines is one voice.
+// Its roll comes after the whole of it rather than into its middle.
+TEST(ScoreTest, ASpreadChainHangsItsRollUnderItsLastLine)
+{
+    Score score;
+
+    score.read(
+        "// a comment above\n"
+        "$: drum.n(\"0\")\n"
+        "    .pianoroll()\n");
+
+    ASSERT_EQ(score.pianorolls().size(), 1U);
+    EXPECT_EQ(score.pianorolls()[0].line, 2U);
+}
+
+// A part the form never plays is how a section is soloed.
+// The line is still being written, so its roll still shows.
+TEST(ScoreTest, APartsVoiceStillHangsItsOwnRoll)
+{
+    Score score;
+
+    score.read(
+        "form: a\n"
+        "bars: 1\n"
+        "part: a\n"
+        "part: b\n"
+        "$: drum.n(\"0\").pianoroll()\n");
+
+    ASSERT_EQ(score.pianorolls().size(), 1U);
+    EXPECT_EQ(score.pianorolls()[0].line, 4U);
+
+    // The line's own pattern, which the form would have silenced.
+    EXPECT_EQ(
+        score.pianorolls()[0].playing.queryAll(kFirstCycle).size(), 1U);
+}
+
+// A line that stops reading keeps its voice, and its roll with it.
+// The roll follows the chain to wherever the document now holds it.
+TEST(ScoreTest, ARollOutlivesAnEditThatWillNotRead)
+{
+    Score score;
+
+    score.read("$: drum.n(\"0\").pianoroll()\n");
+
+    score.read(
+        "// pushed down a line\n"
+        "$: drum.n(\"0\").pianoroll().wobble(\n");
+
+    ASSERT_EQ(score.pianorolls().size(), 1U);
+    EXPECT_EQ(score.pianorolls()[0].line, 1U);
+    EXPECT_TRUE(score.hasError());
+}
+
+TEST(ScoreTest, RemovingTheCallTakesTheRollWithIt)
+{
+    Score score;
+
+    score.read("$: drum.n(\"0\").pianoroll()\n");
+    ASSERT_EQ(score.pianorolls().size(), 1U);
+
+    score.read("$: drum.n(\"0\")\n");
+    EXPECT_TRUE(score.pianorolls().empty());
+}
+
+// A bare $: gathers no characters and so points at nothing.
+// The voice it had keeps sounding; the roll has nowhere to hang.
+TEST(ScoreTest, AnEmptiedChainDropsItsRoll)
+{
+    Score score;
+
+    score.read("$: drum.n(\"0\").pianoroll()\n");
+    ASSERT_EQ(score.pianorolls().size(), 1U);
+
+    score.read("$:\n");
+    EXPECT_TRUE(score.pianorolls().empty());
+}
+
+// A waveform is a pianoroll's twin, and carries the sound besides.
+// The shape and the gain are the preset's, which events cannot say.
+TEST(ScoreTest, AWaveformHangsUnderTheLineThatAsksForIt)
+{
+    Score score;
+
+    score.read(
+        "$: bass.n(\"0\")\n"
+        "$: lead.n(\"0 3\").waveform()\n");
+
+    ASSERT_EQ(score.waveforms().size(), 1U);
+    EXPECT_EQ(score.waveforms()[0].line, 1U);
+    EXPECT_EQ(score.waveforms()[0].preset, preset("lead"));
+    EXPECT_EQ(
+        score.waveforms()[0].playing.queryAll(kFirstCycle).size(), 2U);
+    EXPECT_TRUE(score.pianorolls().empty());
+}
+
+TEST(ScoreTest, ALineMayAskForBothPicturesAtOnce)
+{
+    Score score;
+
+    score.read("$: drum.n(\"0\").pianoroll().waveform()\n");
+
+    ASSERT_EQ(score.pianorolls().size(), 1U);
+    ASSERT_EQ(score.waveforms().size(), 1U);
+    EXPECT_EQ(score.pianorolls()[0].line, 0U);
+    EXPECT_EQ(score.waveforms()[0].line, 0U);
+}
+
+TEST(ScoreTest, AnEmptiedChainDropsItsWaveToo)
+{
+    Score score;
+
+    score.read("$: drum.n(\"0\").waveform()\n");
+    ASSERT_EQ(score.waveforms().size(), 1U);
+
+    score.read("$:\n");
+    EXPECT_TRUE(score.waveforms().empty());
+}

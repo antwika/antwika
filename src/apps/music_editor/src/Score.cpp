@@ -220,6 +220,45 @@ namespace antwika::music_editor
 
         sounding.clear();
         soundingLines.clear();
+        rolls.clear();
+        waves.clear();
+
+        for (std::size_t at = 0; at < lines.size(); ++at)
+        {
+            const auto &held = lines[at];
+
+            // A picture hangs under the last line of its chain.
+            // Whether or not any form is scheduling the voice.
+            // An emptied chain has nowhere left to hang one.
+            if ((!held.pianoroll && !held.waveform)
+                || held.segments.empty())
+            {
+                continue;
+            }
+
+            const std::string_view before{
+                document.data(), held.segments.back().documentBegin};
+
+            const auto newlines = std::ranges::count(before, '\n');
+            const auto below = static_cast<std::size_t>(newlines);
+
+            // The excluded lines carry the unwind edges alone.
+            // A push may reallocate, and only that throw takes them.
+            if (held.pianoroll)
+            {
+                rolls.push_back(Pianoroll{ // GCOVR_EXCL_LINE
+                    .playing = held.voice.playing,
+                    .line = below});
+            }
+
+            if (held.waveform)
+            {
+                waves.push_back(Waveform{ // GCOVR_EXCL_LINE
+                    .playing = held.voice.playing,
+                    .preset = held.voice.preset,
+                    .line = below});
+            }
+        }
 
         for (std::size_t at = 0; at < lines.size(); ++at)
         {
@@ -518,6 +557,8 @@ namespace antwika::music_editor
 
             held.voice = std::move(voice);
             held.notationAt = read.notationAt;
+            held.pianoroll = read.pianoroll;
+            held.waveform = read.waveform;
             held.sounding = true;
             held.failure.clear();
         }
@@ -614,6 +655,16 @@ namespace antwika::music_editor
         }
 
         return lines[soundingLines[voice]].chain;
+    }
+
+    const std::vector<Pianoroll> &Score::pianorolls() const noexcept
+    {
+        return rolls;
+    }
+
+    const std::vector<Waveform> &Score::waveforms() const noexcept
+    {
+        return waves;
     }
 
     const std::vector<Problem> &Score::problems() const noexcept

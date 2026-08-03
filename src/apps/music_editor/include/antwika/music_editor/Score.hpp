@@ -63,6 +63,49 @@ namespace antwika::music_editor
     };
 
     /**
+     * @brief One pianoroll a voice line asked to have drawn under it.
+     *
+     * **The line's own pattern rather than the scheduled one**: a
+     * voice inside a part: block plays only in its sections, and a
+     * roll of that would be empty whenever the form is elsewhere.
+     * What the roll shows is what the line *says*, cycle nought of
+     * it, which is the thing being written and worth seeing.
+     */
+    struct Pianoroll
+    {
+        /** @brief What the line plays, before any form schedules it. */
+        Pattern playing = pattern::silence();
+
+        /**
+         * @brief The document line the chain ends on, from nought.
+         *
+         * The last line of a gathered chain rather than its first, so
+         * a voice spread over several lines hangs its roll after the
+         * whole of itself.
+         */
+        std::size_t line = 0;
+    };
+
+    /**
+     * @brief One waveform a voice line asked to have drawn under it.
+     *
+     * On Pianoroll's terms exactly, and carrying the preset besides:
+     * what a wave looks like is the oscillator's shape and the gain,
+     * which the pattern's events alone cannot say.
+     */
+    struct Waveform
+    {
+        /** @brief What the line plays, before any form schedules it. */
+        Pattern playing = pattern::silence();
+
+        /** @brief The sound the line makes, for its shape and gain. */
+        TrackPreset preset{};
+
+        /** @brief The document line the chain ends on, from nought. */
+        std::size_t line = 0;
+    };
+
+    /**
      * @brief A run of document characters, for a highlight to sit on.
      *
      * Half-open, exactly as ui::TextHighlight is.
@@ -190,6 +233,30 @@ namespace antwika::music_editor
         [[nodiscard]] const std::vector<Voice> &voices() const noexcept;
 
         /**
+         * @brief Get every pianoroll the document asked for.
+         *
+         * One per line whose chain carries a pianoroll() call, in the
+         * order their lines appear.  A line that stops reading keeps
+         * its roll as it keeps its voice -- though a line whose chain
+         * has emptied has nowhere left to hang one, and drops it.
+         *
+         * @return The rolls, refreshed on every read.
+         */
+        [[nodiscard]] const std::vector<Pianoroll> &
+            pianorolls() const noexcept;
+
+        /**
+         * @brief Get every waveform the document asked for.
+         *
+         * One per line whose chain carries a waveform() call, on
+         * pianorolls()' terms in every other respect.
+         *
+         * @return The waves, refreshed on every read.
+         */
+        [[nodiscard]] const std::vector<Waveform> &
+            waveforms() const noexcept;
+
+        /**
          * @brief Get every line the document was refused for.
          * @return The problems, in ascending line order.
          */
@@ -290,6 +357,13 @@ namespace antwika::music_editor
             // Set when the chain parses, like the voice beside it.
             std::size_t notationAt = 0;
 
+            // Whether the chain asked for a pianoroll beneath it.
+            // Kept on a failed re-read, like the voice beside it.
+            bool pianoroll = false;
+
+            // Whether it asked for a waveform, on the same terms.
+            bool waveform = false;
+
             // Whether this line has ever been read at all.
             // A line kept but never read holds an empty chain.
             // Which is exactly what a bare `$:` yields.
@@ -341,6 +415,12 @@ namespace antwika::music_editor
 
         std::vector<Line> lines;
         std::vector<Voice> sounding;
+
+        // The rolls the lines asked for, rebuilt on every read.
+        std::vector<Pianoroll> rolls;
+
+        // The waves, on the same terms.
+        std::vector<Waveform> waves;
 
         // Which line each sounding voice came from.
         // What spanIn() follows back from a voices() index.

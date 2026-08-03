@@ -48,7 +48,7 @@ And it plays along with itself: the very characters of each note are lit for as 
 
 ## The calls
 
-Every call takes exactly one argument.
+Every call takes exactly one argument, except the two picture calls at the bottom of the table, which take none.
 
 | Call | What it does |
 | --- | --- |
@@ -71,6 +71,8 @@ Every call takes exactly one argument.
 | `delay(300)` | One echo that many milliseconds behind every note. Nothing feeds back. |
 | `delaymix(.3)` | How loud the echo is against the note, between 0 and 1. |
 | `harm(7)` | A second voice that many semitones up, sounding with every note. |
+| `pianoroll()` | A pianoroll drawn beneath the line: one cycle across, a lane per semitone, lowest at the bottom. |
+| `waveform()` | A waveform drawn beneath the line: the oscillator's shape per note, scaled by the gain, denser per octave up. |
 
 The envelope the modulation list asks after is already here: `att()`, `dec()`, `sus()` and `rel()` are the four corners of it, and `hold()` is where the release begins.
 
@@ -268,6 +270,13 @@ Vibrato and the arpeggio bend a single voice's pitch over time, so they ride on 
 The delay and the harmony are more voices rather than changed ones, so `Playback` sounds them as ordinary extra triggers -- one echo a fixed way behind at a lower gain, one voice a fixed interval up, the harmony echoing too since the echo is of what sounded -- and nothing loops or feeds back.
 The envelope needed nothing: `att()`, `dec()`, `sus()` and `rel()` were already the four corners of it.
 
+
+**A picture call is a display request, not a sound.**
+`pianoroll()` and `waveform()` change nothing about what a line plays; each hangs a band of extra rows under the line -- the last line of a spread chain, so the picture comes after the whole voice -- through [`ui`](../libraries/ui.md)'s `TextAreaSpec::bands`, and the scene paints into the rectangle the layout reports back.
+The rows are whole rows of the pane, so a click below a picture still lands on the line that was under it on screen, on the same recorded-click arithmetic as everything else.
+What a roll shows is the *line's own* pattern rather than the form-scheduled one, since a `part:` voice's scheduled cycle nought is silence whenever the form opens elsewhere -- the thing being written is what is worth seeing.
+Both pictures survive an edit that will not read, exactly as the voice does, and follow their chain when the lines above it move; a picture cut short by the pane's bottom edge draws nothing, because the pane shows whole rows and no half ones.
+The waveform stays in integer arithmetic per column -- the sine is a parabolic arc per half period, and the noise a hash of the column -- so the picture is the same on every toolchain, and a pattern that parses but refuses its window comes out as the bare backdrop, exactly as it falls silent.
 
 **This app defines one event of its own, and its name says why.**
 Every bit of its state -- the document, the caret, whether it is paused -- is derived from key and pointer edges the recording already carries, so a replay retypes the session rather than replaying its text.

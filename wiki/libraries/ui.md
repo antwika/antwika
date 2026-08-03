@@ -96,6 +96,15 @@ The caret is one flat index into the document rather than a row and a column, so
 A blank line is drawn as a row opened over a strut a glyph cell tall, because an empty text node measures nothing at all and the lines below it would otherwise move up.
 [music_editor](../apps/music_editor.md) is what it was written for.
 
+**A line may carry a band of extra room beneath it**, declared through `TextAreaSpec::bands` as a `LineBand` naming a line, a count of whole rows and an id.
+The area draws nothing in that room: the band's rectangle comes back through `Frame::rects` under the id it was named with, and the caller paints whatever it likes there -- music_editor hangs a pianoroll and a waveform under a voice line this way.
+The rows are whole rows rather than pixels on purpose, so every mapping from a click to a line stays the whole-line arithmetic a recorded click is replayed against: the lines beneath a band move down by its rows, a click inside a band belongs to the line it hangs under, and scrolling, the caret-into-view clamp and the scrollbar's thumb all count a band's rows as content.
+A band whose line is scrolled off the top is off with it and absent from `Frame::rects`, exactly as a collapsed widget is, and one cut short by the pane's bottom edge reports the cut rectangle -- so a caller that wants whole pictures or none checks the height it got.
+
+**The caret asks the layout for no width at all.**
+It used to be a node as wide as the theme's caret, and that width pushed the rest of its line sideways -- the line the caret sat on was shifted a pixel or two right of every other, and moving the caret moved text that had not changed.
+Now the caret node is zero-wide in the flow and carries `Node::overhang`, and the layout widens its arranged rectangle after everything else is placed, clamped inside its parent -- so the bar overdraws its neighbour's first pixels instead of moving them, and a caret at the clipped edge of a wide line is cut to nothing rather than poking out of the pane.
+
 **A selection is a second index and nothing else.**
 `TextAreaSpec::anchor` is the far end, the characters between it and the caret are drawn on `Theme::selection`, and every key that writes -- a character, Enter, Backspace, `Key::Delete`, `Key::Cut` -- takes the whole of it first.
 `TextAreaSpec::highlights` is the same picture with none of the consequences: caller-marked spans drawn on `Theme::highlight` -- a live-coding editor lights the notes that are sounding with it -- that move no caret, join no selection and lose to the selection's ground wherever the two overlap.

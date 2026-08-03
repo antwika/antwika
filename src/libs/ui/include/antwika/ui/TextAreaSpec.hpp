@@ -38,6 +38,46 @@ namespace antwika::ui
     };
 
     /**
+     * @brief Extra rows of room held open beneath one line.
+     *
+     * What an application hangs a picture of its own under a line
+     * with -- a live-coding editor draws a pianoroll beneath the
+     * voice the band names.  The area itself draws nothing there:
+     * the band is named, so where it ended up comes back through
+     * Frame::rects, and the caller paints into that.
+     *
+     * **Whole rows rather than pixels**, so every mapping from a
+     * click to a line stays the whole-line arithmetic a recorded
+     * click is replayed against.  The lines beneath a band move
+     * down by its rows, and scrolling, the caret and the thumb all
+     * count it as part of the line it hangs under.
+     */
+    struct LineBand
+    {
+        /** @brief Which line the band hangs beneath, from zero. */
+        std::size_t line = 0;
+
+        /** @brief How many rows of room it holds open. */
+        std::uint32_t rows = 0;
+
+        /**
+         * @brief What to call the band's area in Frame::rects.
+         *
+         * An unnamed band still holds its room; there is simply no
+         * way to ask where it went.
+         */
+        WidgetId id = kNoWidget;
+
+        /**
+         * @brief Compare two bands.
+         * @param other The band to compare against.
+         * @return True when every field matches.
+         */
+        [[nodiscard]] bool operator==(const LineBand &other) const
+            = default;
+    };
+
+    /**
      * @brief Where a drag over a text area began, as its caller knows.
      *
      * The track and the text are one widget to every other channel,
@@ -167,6 +207,18 @@ namespace antwika::ui
          * ends past the text are clamped as the caret's is.
          */
         std::span<const TextHighlight> highlights{};
+
+        /**
+         * @brief The bands of extra room held open beneath lines.
+         *
+         * The caller owns them for as long as the Context is, as it
+         * owns the text.  A band naming a line the text does not have
+         * holds nothing, one of no rows holds nothing, and two bands
+         * naming one line stack in declaration order.  A band whose
+         * line is scrolled off the top is off with it, and is then
+         * absent from Frame::rects exactly as a collapsed widget is.
+         */
+        std::span<const LineBand> bands{};
 
         /**
          * @brief Whether to draw a bar down the right-hand edge saying

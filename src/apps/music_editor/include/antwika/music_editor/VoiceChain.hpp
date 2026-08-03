@@ -30,6 +30,22 @@ namespace antwika::music_editor
         std::size_t notationAt = 0;
 
         /**
+         * @brief Whether the line asked for a pianoroll beneath it.
+         *
+         * A display request rather than a sound: the preset is not
+         * touched, and Score::pianorolls() is where it comes out.
+         */
+        bool pianoroll = false;
+
+        /**
+         * @brief Whether the line asked for a waveform beneath it.
+         *
+         * A display request on pianoroll's terms, coming out through
+         * Score::waveforms().
+         */
+        bool waveform = false;
+
+        /**
          * @brief Compare two chains.
          * @param other The chain to compare against.
          * @return True when both fields match.
@@ -57,7 +73,9 @@ namespace antwika::music_editor
      * quotes, so a number like `.25` and a notation like `"0 . 3"` are
      * not mistaken for separators.
      *
-     * Every call takes exactly one argument.
+     * Every call takes exactly one argument, except `pianoroll` and
+     * `waveform`, which take none: each asks for a picture rather
+     * than a sound, and there is nothing about a picture to say.
      * `n` takes a quoted string; every other takes a number, except
      * `s`, which takes a shape's name.
      *

@@ -2,6 +2,7 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <span>
 #include <string_view>
 
 #include "antwika/ui/TextAreaSpec.hpp"
@@ -65,6 +66,16 @@ namespace antwika::ui::detail
 
         /** @brief Where the drag in progress began, as the spec said. */
         DragHome dragging = DragHome::None;
+
+        /**
+         * @brief The bands of extra room beneath lines, as declared.
+         *
+         * On the terms text is: the caller owns them for as long as
+         * the Context lives.  Everything mapping a row to a line
+         * reads these, so a click lands on the line that was under
+         * it however much room the bands above it held open.
+         */
+        std::span<const LineBand> bands{};
 
         /** @brief Pixels from one line's top edge to the next one's. */
         std::uint32_t lineHeight = 1;

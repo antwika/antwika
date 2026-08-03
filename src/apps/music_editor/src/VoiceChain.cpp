@@ -28,7 +28,8 @@ namespace antwika::music_editor
 
         constexpr std::string_view kControls{
             "n s base o trans gain pan att dec sus rel hold lpf hpf "
-            "bpf res slide vib vibdepth arp delay delaymix harm"};
+            "bpf res slide vib vibdepth arp delay delaymix harm "
+            "pianoroll waveform"};
 
         constexpr std::array<std::string_view, 5> kShapes{
             "sine", "saw", "square", "triangle", "noise"};
@@ -377,6 +378,26 @@ namespace antwika::music_editor
             {
                 preset.harmonySemitones = static_cast<std::int32_t>(
                     wholeIn(name, argument));
+            }
+            else if (name == "pianoroll" || name == "waveform")
+            {
+                // The two calls that take nothing.
+                // Each asks for a picture, and a picture has no number.
+                if (!argument.empty())
+                {
+                    throw ScoreError(
+                        std::string(name)
+                        + "() takes nothing in its brackets");
+                }
+
+                if (name == "pianoroll")
+                {
+                    voice.pianoroll = true;
+                }
+                else
+                {
+                    voice.waveform = true;
+                }
             }
             else
             {
