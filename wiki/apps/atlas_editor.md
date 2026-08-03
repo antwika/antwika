@@ -34,6 +34,7 @@ That test is the only thing under `src/apps/atlas_editor/` that names `apps/game
 
 `--tile <w>x<h>` is what the grid overlay divides the sheet into, defaulting to the 1x1 sheet's 64x96 sprites; gridding the game's other two sheets is `--tile 96x112` and `--tile 128x128`.
 It is a drawing aid and nothing else: no tool, no click and no saved byte depends on it, so a wrong `--tile` shows a misleading picture and cannot damage a sheet.
+It is also what the sprite guides below are worked out from, so naming the right one is what puts the footprint diamonds where that sheet's sprites actually keep them.
 
 The default `null` graphics backend opens no window and draws nothing, so **an editing session needs a real backend**:
 
@@ -61,15 +62,20 @@ A window system reports a fast stroke as a handful of long jumps, so painting on
 The walk is integer Bresenham from where the pointer was to where it is, for the no-floating-point reason below: which pixel a press means is simulation state, and a float's last bit is not the same on every toolchain.
 Repainting the pixel the last event already put down costs nothing, since a write of the colour already there is no change at all.
 
-The three tools are `PAINT`, which puts the selected colour down, `ERASE`, which makes a pixel fully transparent, and `PICK`, which takes the colour under the pointer as the one to paint with.
+The four tools are `PAINT`, which puts the selected colour down, `ERASE`, which makes a pixel fully transparent, `FILL`, which spreads the selected colour over every pixel joined to the one clicked that holds the colour that one does, and `PICK`, which takes the colour under the pointer as the one to paint with.
 A picked colour that no swatch offers leaves no swatch shown as chosen, rather than the nearest one lighting up and lying about it.
+
+**`FILL` is a tool here and not a command, and nothing about it is persisted.**
+It is four-connected, bounded by the sheet, and walked from an explicit stack rather than by recursion -- a fill over the game's own 1x1 sheet is a quarter of a million pixels, which is a quarter of a million stack frames the other way.
+The region it reaches is a pure function of the sheet and the pixel pressed, so a replay works the whole of it out again from the click exactly as it works a single painted pixel out; asked to fill with the colour already there it spreads nothing, which is what keeps the walk from looking forever for pixels it has just stopped changing.
+Held and dragged it fills from every pixel the drag crosses, and the second fill onward costs nothing wherever the first already reached.
 
 **Where the sheet sits and how far in it is zoomed is simulation state**, and `atlas_editor::CanvasView` is `game::Camera`'s counterpart for exactly its reason: which pixel a click means depends entirely on the view, so a view a renderer owned would leave a replay resolving recorded clicks against a different one.
 That is also why zoom is an index into a table of whole scales rather than a scale factor, and why `floorDiv` does the mapping from a window pixel to a sheet pixel -- never a float.
 
 ## What the toolbar does
 
-The bar along the top holds the three tools, the palette, and the buttons `-`, `+`, `fit`, `grid`, `load` and `save`.
+The bar along the top holds the four tools, the palette, and the buttons `-`, `+`, `fit`, `grid`, `guides`, `load` and `save`.
 The palette is compiled in rather than loaded, exactly as `antwika::i18n`'s catalogues are: this application opens the one file it was asked to edit and no others.
 Every swatch is fully opaque, because a transparent pixel is what `ERASE` leaves and a clear swatch would be a second way of saying one thing.
 
@@ -79,6 +85,23 @@ A press the bar covers therefore never reaches the art -- otherwise every button
 Under the buttons is one line saying what would happen and where: the selected tool, the pixel under the pointer, **which slot that pixel is in**, the zoom, the sheet's size, whether there is anything unsaved, and what the last save or load came to.
 The slot number is counted left to right then top to bottom from zero, which is exactly how `game::TileAtlas.hpp` addresses the sheet -- so the number here is the number that header names.
 A pixel in the strip along an edge too narrow for a whole slot reads `slot -`, because it belongs to no slot the game will ever blit.
+
+## The sprite guides, and the one thing a slot grid cannot say
+
+`--tile` divides the sheet into slots, and the slot grid drawn from it says which *sprite* a pixel is in.
+It cannot say where inside that sprite the cell it lands on is -- and that is the whole of what [`game-texture-atlas.md`](game-texture-atlas.md) is about.
+A sprite is bigger than its diamond: the footprint diamond sits 48 pixels down from the slot's top, with 16 pixels of margin either side and 32 below the pivot for the base block's skirt and its padding.
+Painted against the slot boundary alone, a diamond a few pixels out looks fine in the editor and reads as a seam once the game blits it, at one zoom level and not another.
+
+So the `guides` button draws that geometry over every whole slot: the footprint diamond, and a cross on the pivot the blit is anchored by.
+`atlas_editor::guidesForTile()` is where a slot size becomes that shape, arithmetically and in one place, exactly as `game::TileAtlas.hpp` is arithmetic rather than a table of rectangles -- so the game's three sheets need no three entries here, only their three `--tile` sizes.
+
+**It refuses rather than approximates, which is why it answers an optional.**
+The margins leave a diamond of one width and the two bands leave one of another height, and only an isometric diamond -- twice as wide as it is tall -- makes those two numbers one shape.
+A slot size where they disagree, or one with no room for the margins at all, gets no guides drawn rather than a diamond in roughly the right place: nothing here checks the art, so a guide drawn wrong is one an artist paints to, and art painted to it is wrong everywhere the game blits it.
+
+Like the grid, they are a drawing aid and nothing else -- no tool, no click and no saved byte depends on them.
+`SpriteGuidesTest` is the second file under `src/apps/atlas_editor/` that names `apps/game`, on `DefaultSheetSizeTest`'s terms and for its reason: it pins every pivot against `game::atlasSpec()`, so a sprite size moved there is a red build here rather than a diamond quietly drawn where no cell is.
 
 ## The sheet is uploaded only when it changed
 
@@ -128,7 +151,7 @@ Running out of the ticks somebody asked for is not a failure, and a `--record` r
 
 ## What is left checking the art
 
-Nothing here, deliberately.
+Nothing here, deliberately -- the guides above *show* the geometry and check nothing against it.
 This editor will happily paint outside the diamond, leave a road stub that meets nothing, or fill a slot the game reads as spare.
 [`game-texture-atlas.md`](game-texture-atlas.md) is the contract, `game::requireAtlasSize()` checks the sheet's size at startup, and a person looking at the running game is what catches the rest:
 

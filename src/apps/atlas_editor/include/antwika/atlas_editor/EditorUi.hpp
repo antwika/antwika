@@ -48,6 +48,9 @@ namespace antwika::atlas_editor
         /** @brief Read the sheet back in, losing every unsaved change. */
         inline constexpr WidgetId kLoad{6};
 
+        /** @brief Show or hide the footprint diamonds and pivots. */
+        inline constexpr WidgetId kGuides{7};
+
         /**
          * @brief The first tool button, one per Tool.
          *
@@ -100,8 +103,10 @@ namespace antwika::atlas_editor
             widgets::kGrid,
             widgets::kSave,
             widgets::kLoad,
+            widgets::kGuides,
             widgets::toolWidget(Tool::Paint),
             widgets::toolWidget(Tool::Erase),
+            widgets::toolWidget(Tool::Fill),
             widgets::toolWidget(Tool::Pick),
             widgets::swatchWidget(0)),
         "every toolbar widget needs its own id");

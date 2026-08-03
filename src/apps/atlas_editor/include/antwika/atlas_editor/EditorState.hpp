@@ -11,6 +11,7 @@
 #include "antwika/atlas_editor/Canvas.hpp"
 #include "antwika/atlas_editor/CanvasView.hpp"
 #include "antwika/atlas_editor/Pixel.hpp"
+#include "antwika/atlas_editor/SpriteGuides.hpp"
 #include "antwika/atlas_editor/StatusMessage.hpp"
 #include "antwika/atlas_editor/TileGrid.hpp"
 #include "antwika/atlas_editor/Tool.hpp"
@@ -98,6 +99,25 @@ namespace antwika::atlas_editor
         [[nodiscard]] bool gridVisible() const noexcept;
 
         /**
+         * @brief Check whether the sprite guides are being drawn.
+         * @return True while they are, whether or not this session's
+         * slot size has any to draw.
+         */
+        [[nodiscard]] bool guidesVisible() const noexcept;
+
+        /**
+         * @brief Get where a slot puts its footprint diamond.
+         *
+         * Derived once from the slot size this session was opened with,
+         * since nothing changes that: a load replaces the sheet and
+         * never the grid over it.
+         *
+         * @return The guides, or nothing when the slot size is not one
+         * an isometric sprite's shape comes out of.
+         */
+        [[nodiscard]] std::optional<SpriteGuides> guides() const noexcept;
+
+        /**
          * @brief Get which image pixel the pointer was last over.
          * @return The pixel, or nothing until an event has said where
          * the pointer is -- the folded default is the canvas's corner,
@@ -165,6 +185,11 @@ namespace antwika::atlas_editor
         void toggleGrid() noexcept;
 
         /**
+         * @brief Show or hide the sprite guides.
+         */
+        void toggleGuides() noexcept;
+
+        /**
          * @brief Zoom in one step, keeping the pixel under a point put.
          * @param anchor The canvas position to keep still.
          */
@@ -195,11 +220,17 @@ namespace antwika::atlas_editor
 
         /**
          * @brief Do what the selected tool does, at a canvas position.
+         *
+         * Not noexcept, because Fill walks a region of unknown size and
+         * needs somewhere to keep the pixels it has still to look at.
+         * The alternative was recursion, which on the game's own 1x1
+         * sheet is a quarter of a million stack frames.
+         *
          * @param point Where the pointer was; one outside the image
          * changes nothing, since a drag off the edge of the sheet is
          * ordinary input rather than an error.
          */
-        void applyAt(Point point) noexcept;
+        void applyAt(Point point);
 
         /**
          * @brief Make the pixel under a canvas position transparent.
@@ -209,7 +240,7 @@ namespace antwika::atlas_editor
          *
          * @param point Where the pointer was.
          */
-        void eraseAt(Point point) noexcept;
+        void eraseAt(Point point);
 
         /**
          * @brief Take an image somebody loaded, in place of this one.
@@ -240,15 +271,24 @@ namespace antwika::atlas_editor
         void setStatus(StatusMessage message);
 
     private:
+        /**
+         * @brief Spread the selected colour out from one pixel.
+         * @param start Where the fill was asked for; one outside the
+         * sheet fills nothing.
+         */
+        void fillFrom(Pixel start);
+
         Canvas sheet;
         TileGrid grid;
         Size area;
         CanvasView where;
+        std::optional<SpriteGuides> outlines;
 
         Tool selected = Tool::Paint;
         Color paint;
         std::optional<std::size_t> swatch;
         bool showGrid = true;
+        bool showGuides = true;
         std::optional<Pixel> under;
         std::optional<StatusMessage> message;
 

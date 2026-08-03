@@ -24,6 +24,7 @@
 #include "antwika/atlas_editor/Pixel.hpp"
 #include "antwika/atlas_editor/RenderSink.hpp"
 #include "antwika/atlas_editor/SceneSnapshot.hpp"
+#include "antwika/atlas_editor/SpriteGuides.hpp"
 #include "antwika/atlas_editor/TileGrid.hpp"
 #include "antwika/atlas_editor/UiOverlay.hpp"
 
@@ -37,6 +38,7 @@ using antwika::atlas_editor::pixelRect;
 using antwika::atlas_editor::RenderSink;
 using antwika::atlas_editor::SceneSnapshot;
 using antwika::atlas_editor::snapshotOf;
+using antwika::atlas_editor::SpriteGuides;
 using antwika::atlas_editor::TileGrid;
 using antwika::atlas_editor::UiOverlay;
 using antwika::event::Event;
@@ -45,6 +47,7 @@ using antwika::gfx::Bitmap;
 using antwika::gfx::mocks::MockRenderer;
 using antwika::gfx::mocks::MockTexture;
 using antwika::gfx::mocks::MockWindow;
+using antwika::gfx::Point;
 using antwika::gfx::Rect;
 using antwika::gfx::Size;
 using antwika::time::fakes::FakeSleeper;
@@ -80,6 +83,27 @@ namespace
     EditorState opened()
     {
         return EditorState{Canvas::blank(kSheet), TileGrid{}, kCanvas};
+    }
+
+    // A sheet of two of the game's 1x1 slots.
+    // Drawn one to one from the canvas's own corner.
+    // So a guide's canvas position is its position in the sheet.
+    // Which leaves the arithmetic below as the contract's own numbers.
+    constexpr Size kGuidedSheet{.width = 128, .height = 96};
+    constexpr TileGrid kGameSlots{.width = 64, .height = 96};
+    constexpr SpriteGuides kGameSlotGuides{
+        .pivot = {.x = 32, .y = 64},
+        .footprint = {.width = 32, .height = 16}};
+
+    SceneSnapshot guided(const std::optional<SpriteGuides> guides)
+    {
+        return SceneSnapshot{
+            .image = kGuidedSheet,
+            .view = CanvasView{.pan = {}, .zoom = 0},
+            .tiles = kGameSlots,
+            .gridVisible = false,
+            .guides = guides,
+            .hovered = std::nullopt};
     }
 } // namespace
 
@@ -141,6 +165,87 @@ TEST(EditorSceneTest, Draw_DrawsOneLinePerSlotBoundaryOnBothAxes)
     scene.draw(renderer, shown, nullptr);
 }
 
+TEST(EditorSceneTest, Draw_DrawsNoDiamondsWhileTheGuidesAreOff)
+{
+    NiceMock<MockRenderer> renderer;
+    const EditorScene scene;
+
+    // The grid is hidden too, so a line drawn is a guide's.
+    EXPECT_CALL(renderer, drawLine(_, _, _)).Times(0);
+
+    scene.draw(renderer, guided(std::nullopt), nullptr);
+}
+
+TEST(EditorSceneTest, Draw_DrawsADiamondAndAPivotInEveryWholeSlot)
+{
+    NiceMock<MockRenderer> renderer;
+    const EditorScene scene;
+
+    // Two slots, four diamond sides and a two-armed cross each.
+    EXPECT_CALL(renderer, drawLine(_, _, _)).Times(12);
+
+    scene.draw(renderer, guided(kGameSlotGuides), nullptr);
+}
+
+// The corners, said out loud rather than counted.
+// Where a diamond is drawn is the whole of what these guides are for.
+// A count would pass just as happily with them all in one place.
+TEST(EditorSceneTest, Draw_PutsADiamondsCornersRoundItsSlotsPivot)
+{
+    NiceMock<MockRenderer> renderer;
+    const EditorScene scene;
+
+    constexpr Point kTop{.x = 32, .y = 48};
+    constexpr Point kRight{.x = 48, .y = 56};
+    constexpr Point kBottom{.x = 32, .y = 64};
+    constexpr Point kLeft{.x = 16, .y = 56};
+
+    EXPECT_CALL(renderer, drawLine(_, _, _)).Times(AnyNumber());
+    EXPECT_CALL(renderer, drawLine(kTop, kRight, _)).Times(1);
+    EXPECT_CALL(renderer, drawLine(kRight, kBottom, _)).Times(1);
+    EXPECT_CALL(renderer, drawLine(kBottom, kLeft, _)).Times(1);
+    EXPECT_CALL(renderer, drawLine(kLeft, kTop, _)).Times(1);
+
+    // The cross is centred on the pivot, which is the bottom corner.
+    EXPECT_CALL(
+        renderer,
+        drawLine(Point{.x = 30, .y = 64}, Point{.x = 34, .y = 64}, _))
+        .Times(1);
+    EXPECT_CALL(
+        renderer,
+        drawLine(Point{.x = 32, .y = 62}, Point{.x = 32, .y = 66}, _))
+        .Times(1);
+
+    scene.draw(renderer, guided(kGameSlotGuides), nullptr);
+}
+
+// Every guide is drawn through the view, exactly as the sheet is.
+// A guide ignoring the zoom would sit over the art at one level only.
+// Which is the one bug an overlay like this must not have.
+TEST(EditorSceneTest, Draw_ScalesAndPansTheDiamondsWithTheSheet)
+{
+    NiceMock<MockRenderer> renderer;
+    const EditorScene scene;
+
+    auto shown = guided(kGameSlotGuides);
+    shown.view = CanvasView{.pan = {.x = 5, .y = 7}, .zoom = 1};
+
+    // Twice the size, from a corner five across and seven down.
+    // The diamond's left corner is at (16, 56) in the sheet.
+    // Its top corner is at (32, 48).
+    // So the side joining the two runs between these.
+    EXPECT_CALL(renderer, drawLine(_, _, _)).Times(AnyNumber());
+    EXPECT_CALL(
+        renderer,
+        drawLine(
+            Point{.x = (16 * 2) + 5, .y = (56 * 2) + 7},
+            Point{.x = (32 * 2) + 5, .y = (48 * 2) + 7},
+            _))
+        .Times(1);
+
+    scene.draw(renderer, shown, nullptr);
+}
+
 TEST(EditorSceneTest, Draw_OutlinesThePixelUnderThePointer)
 {
     NiceMock<MockRenderer> renderer;
@@ -173,6 +278,31 @@ TEST(SnapshotOfTest, SnapshotOf_TakesTheDrawingHalfOfTheState)
     EXPECT_EQ(shown.tiles, state.tiles());
     EXPECT_FALSE(shown.gridVisible);
     EXPECT_EQ(shown.hovered, (Pixel{.x = 0, .y = 0}));
+    EXPECT_EQ(shown.guides, state.guides());
+}
+
+// Hidden and having none come to the same picture.
+// So they come to the same snapshot.
+// Which leaves the scene one thing to ask rather than two.
+TEST(SnapshotOfTest, SnapshotOf_CarriesNoGuidesWhileTheyAreHidden)
+{
+    EditorState state = opened();
+    ASSERT_TRUE(state.guides().has_value());
+
+    state.toggleGuides();
+
+    EXPECT_FALSE(snapshotOf(state).guides.has_value());
+}
+
+TEST(SnapshotOfTest, SnapshotOf_CarriesNoGuidesForASlotWithNone)
+{
+    const EditorState state{
+        Canvas::blank(kSheet),
+        TileGrid{.width = 8, .height = 4},
+        kCanvas};
+
+    EXPECT_TRUE(state.guidesVisible());
+    EXPECT_FALSE(snapshotOf(state).guides.has_value());
 }
 
 TEST(RenderSinkTest, Handle_UploadsTheSheetOnceAndAgainWhenItChanges)

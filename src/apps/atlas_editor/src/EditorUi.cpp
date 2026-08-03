@@ -184,6 +184,12 @@ namespace antwika::atlas_editor
                                   ? std::optional{ButtonState::Pressed}
                                   : std::nullopt});
                 ui.button(
+                    translator.text(MessageId::Guides),
+                    {.id = widgets::kGuides,
+                     .state = state.guidesVisible()
+                                  ? std::optional{ButtonState::Pressed}
+                                  : std::nullopt});
+                ui.button(
                     translator.text(MessageId::Load),
                     {.id = widgets::kLoad});
                 ui.button(

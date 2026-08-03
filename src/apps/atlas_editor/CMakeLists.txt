@@ -13,6 +13,7 @@ add_executable(antwika_atlas_editor
     src/PngAtlasStore.cpp
     src/RenderSink.cpp
     src/SceneSnapshot.cpp
+    src/SpriteGuides.cpp
     src/TileGrid.cpp
     src/Tool.cpp
     src/UiOverlay.cpp

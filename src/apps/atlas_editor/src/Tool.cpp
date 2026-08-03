@@ -13,6 +13,7 @@ namespace antwika::atlas_editor
         constexpr std::array<MessageId, kToolCount> names{
             MessageId::ToolPaint,
             MessageId::ToolErase,
+            MessageId::ToolFill,
             MessageId::ToolPick};
 
         const auto index = static_cast<std::size_t>(tool);
