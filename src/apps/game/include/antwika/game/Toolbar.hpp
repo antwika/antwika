@@ -13,6 +13,7 @@
 #include "antwika/game/BuildTool.hpp"
 #include "antwika/game/Camera.hpp"
 #include "antwika/game/CityRatings.hpp"
+#include "antwika/game/GameState.hpp"
 #include "antwika/game/MapView.hpp"
 #include "antwika/game/MenuItem.hpp"
 #include "antwika/game/MessageId.hpp"
@@ -361,9 +362,12 @@ namespace antwika::game
          * click at a pixel means, so it is passed in rather than kept
          * here, is written inside the tick path by UiSink, and is never
          * persisted -- antwika::ui retains nothing of the kind either.
+         * @param funds What is left in the bank, reported beside the
+         * ratings. Spent inside the tick path from recorded clicks, so
+         * a replay draws the same number -- see GameState::money.
          * @return The drawing commands and what the pointer did.
          *
-         * The last seven are defaulted so that a caller with nothing to
+         * The last eight are defaulted so that a caller with nothing to
          * say about them -- a test whose subject is the zoom, or a
          * layout assertion -- writes only what it means.
          */
@@ -377,7 +381,8 @@ namespace antwika::game
             CityRatings ratings = {},
             bool menuOpen = false,
             MapView view = MapView::Normal,
-            bool viewOpen = false) const;
+            bool viewOpen = false,
+            std::int64_t funds = kStartingMoney) const;
 
     private:
         const Translator &translator;

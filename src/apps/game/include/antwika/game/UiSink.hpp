@@ -11,6 +11,7 @@
 
 #include "antwika/game/Camera.hpp"
 #include "antwika/game/CityRatings.hpp"
+#include "antwika/game/GameState.hpp"
 #include "antwika/game/IMenuCommands.hpp"
 #include "antwika/game/MapView.hpp"
 #include "antwika/game/InputFold.hpp"
@@ -144,6 +145,10 @@ namespace antwika::game
          * -- which a replay reaches identically, since every input this
          * sink is given arrives before the scheduler runs. Must outlive
          * this sink.
+         * @param state The plain app state whose bank the bar reports,
+         * beside the ratings. Spent by GridSink from the clicks a
+         * recording holds, so a replay draws the same number. Must
+         * outlive this sink.
          */
         UiSink(
             Camera &camera,
@@ -156,7 +161,8 @@ namespace antwika::game
             RoadDrag &drag,
             const MenuModalScene &modal,
             Camera home,
-            const CityRatings &ratings);
+            const CityRatings &ratings,
+            const GameState &state);
 
         UiSink(const UiSink &) = delete;
         UiSink(UiSink &&) = delete;
@@ -226,6 +232,7 @@ namespace antwika::game
         const MenuModalScene &modal;
         Camera home;
         const CityRatings &ratings;
+        const GameState &state;
 
         // Whether the menu modal is up, which is simulation state.
         // Written here, inside the tick path, and read nowhere else.

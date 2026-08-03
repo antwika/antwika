@@ -355,7 +355,8 @@ namespace antwika::game
             drag,
             menuModal,
             camera,
-            ratings);
+            ratings,
+            state);
         GridSink gridSink(
             world,
             paths,
@@ -366,7 +367,8 @@ namespace antwika::game
             ui,
             cities,
             config.built,
-            drag);
+            drag,
+            state);
 
         WorldMapSink worldSink(
             cities, mode, live, input, config.canvas);
@@ -537,7 +539,8 @@ namespace antwika::game
     {
         out << "Final state: ticksProcessed="
             << summary.state.ticksProcessed
-            << " score=" << summary.state.score << '\n';
+            << " score=" << summary.state.score
+            << " money=" << summary.state.money << '\n';
         out << "Paths laid: " << summary.paths.size() << '\n';
         out << "Walkers: " << summary.walkers.size() << '\n';
 

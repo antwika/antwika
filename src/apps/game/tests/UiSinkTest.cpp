@@ -244,6 +244,7 @@ namespace
         RoadDrag drag;
         MenuModalScene modalScene{kTranslator};
         antwika::game::CityRatings ratings;
+        antwika::game::GameState state;
         UiSink sink{
             camera,
             overlay,
@@ -255,7 +256,8 @@ namespace
             drag,
             modalScene,
             camera,
-            ratings};
+            ratings,
+            state};
     };
 } // namespace
 

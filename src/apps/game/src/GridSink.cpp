@@ -9,6 +9,7 @@
 #include "antwika/game/BuildTool.hpp"
 #include "antwika/game/Building.hpp"
 #include "antwika/game/Cell.hpp"
+#include "antwika/game/Cost.hpp"
 #include "antwika/game/IsoProjection.hpp"
 #include "antwika/game/Footprint.hpp"
 #include "antwika/game/Path.hpp"
@@ -36,7 +37,8 @@ namespace antwika::game
         UiOverlay &overlay,
         const WorldMapState &cities,
         BuildingIndex &built,
-        RoadDrag &drag)
+        RoadDrag &drag,
+        GameState &state)
         : world(world),
           paths(paths),
           camera(camera),
@@ -46,7 +48,8 @@ namespace antwika::game
           overlay(overlay),
           cities(cities),
           built(built),
-          drag(drag)
+          drag(drag),
+          state(state)
     {
     }
 
@@ -231,6 +234,12 @@ namespace antwika::game
         world.add<Cell>(entity, cell);
         world.add<Path>(entity, Path{});
         paths.insert(cell);
+
+        // Paid here rather than where the click was resolved.
+        // A dragged route runs through this once per cell it lays.
+        // And a cell already paved was refused above, and costs nothing.
+        // So a drag's price is the tiles it put down, by construction.
+        state.money -= kRoadCost;
     }
 
     void GridSink::placeBuilding(Cell cell, BuildingKind kind)
@@ -251,6 +260,10 @@ namespace antwika::game
         world.add<Cell>(entity, cell);
         world.add<Building>(entity, Building{.kind = kind});
         (void)built.insert(cell, footprint);
+
+        // After the refusals, so a refused block costs nothing.
+        // Never refused for want of money -- see GameState::money.
+        state.money -= costOf(kind);
     }
 
     void GridSink::cancelToolOrPlaceWalker(Cell cell)

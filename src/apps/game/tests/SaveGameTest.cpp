@@ -69,7 +69,8 @@ namespace
     SaveGame populated()
     {
         SaveGame save;
-        save.state = GameState{.ticksProcessed = 42, .score = 7};
+        save.state =
+            GameState{.ticksProcessed = 42, .score = 7, .money = -125};
         save.extent = GridExtent{.width = 32, .height = 24};
         save.camera = Camera(Point{.x = -13, .y = 96}, 1);
         save.paths = {
@@ -106,6 +107,20 @@ TEST(SaveGameTest, RoundTripsAnEmptySession)
     const SaveGame original;
 
     EXPECT_EQ(saveGameFromJson(saveGameToJson(original)), original);
+}
+
+// A file written before money existed names none.
+// Absent means the starting bank.
+// So the member is additive and the format needed no version bump.
+// See docs/schema-versioning.md.
+TEST(SaveGameTest, ReadsAnAbsentMoneyAsTheStartingBank)
+{
+    auto encoded = saveGameToJson(populated());
+    encoded.at("state").erase("money");
+
+    const auto loaded = saveGameFromJson(encoded);
+
+    EXPECT_EQ(loaded.state.money, antwika::game::kStartingMoney);
 }
 
 TEST(SaveGameTest, RoundTripsEveryDirection)

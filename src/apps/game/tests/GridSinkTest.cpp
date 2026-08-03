@@ -13,6 +13,8 @@
 
 #include "antwika/game/BuildTool.hpp"
 #include "antwika/game/BuildingIndex.hpp"
+#include "antwika/game/Cost.hpp"
+#include "antwika/game/GameState.hpp"
 #include "antwika/game/LiveGrid.hpp"
 #include "antwika/game/Camera.hpp"
 #include "antwika/game/Cell.hpp"
@@ -37,8 +39,12 @@ using antwika::game::LiveGrid;
 using antwika::game::Camera;
 using antwika::game::Cell;
 using antwika::game::cellCentre;
+using antwika::game::costOf;
+using antwika::game::GameState;
 using antwika::game::GridExtent;
 using antwika::game::GridSink;
+using antwika::game::kRoadCost;
+using antwika::game::kStartingMoney;
 using antwika::game::WorldMap;
 using antwika::game::WorldMapState;
 using antwika::game::InputFold;
@@ -133,6 +139,7 @@ namespace
             .camera = camera};
         WorldMapState cities{WorldMap{}};
         RoadDrag drag;
+        GameState state;
         GridSink sink{
             world,
             paths,
@@ -143,7 +150,8 @@ namespace
             overlay,
             cities,
             built,
-            drag};
+            drag,
+            state};
     };
 } // namespace
 
@@ -665,4 +673,100 @@ TEST_F(GridSinkTest, KeyPress_ChangesNothingOnTheGrid)
     EXPECT_EQ(paths.size(), 0U);
     EXPECT_EQ(before.x, camera.pan().x);
     EXPECT_FALSE(drag.active());
+}
+
+// A placement is paid for out of the bank -- see GameState::money.
+TEST_F(GridSinkTest, LeftPress_PaysForTheRoadTileItLays)
+{
+    clickAt(Cell{.x = 3, .y = 4}, MouseButton::Left);
+
+    EXPECT_EQ(state.money, kStartingMoney - kRoadCost);
+}
+
+// A refused placement went up as nothing, so it costs nothing.
+TEST_F(GridSinkTest, LeftPress_PaysNothingForARefusedTile)
+{
+    clickAt(Cell{.x = 3, .y = 4}, MouseButton::Left);
+    clickAt(Cell{.x = 3, .y = 4}, MouseButton::Left);
+
+    EXPECT_EQ(state.money, kStartingMoney - kRoadCost);
+}
+
+TEST_F(GridSinkTest, LeftPress_PaysForTheBuildingItPlaces)
+{
+    overlay.select(BuildTool::House);
+
+    clickAt(Cell{.x = 3, .y = 4}, MouseButton::Left);
+
+    EXPECT_EQ(
+        state.money,
+        kStartingMoney - costOf(antwika::game::BuildingKind::House));
+}
+
+TEST_F(GridSinkTest, LeftPress_PaysNothingForARefusedBuilding)
+{
+    overlay.select(BuildTool::House);
+
+    clickAt(Cell{.x = 3, .y = 4}, MouseButton::Left);
+    clickAt(Cell{.x = 3, .y = 4}, MouseButton::Left);
+
+    EXPECT_EQ(
+        state.money,
+        kStartingMoney - costOf(antwika::game::BuildingKind::House));
+}
+
+// A dragged run's price is the road's times the tiles it put down.
+TEST_F(GridSinkTest, LeftDrag_PaysForEveryTileTheRunLays)
+{
+    clickAt(Cell{.x = 2, .y = 3}, MouseButton::Left);
+    send(PointerMoved{.position = pixelOf(Cell{.x = 5, .y = 3})});
+    send(
+        PointerButtonReleased{
+            .button = MouseButton::Left,
+            .position = pixelOf(Cell{.x = 5, .y = 3})});
+
+    EXPECT_EQ(paths.size(), 4U);
+    EXPECT_EQ(state.money, kStartingMoney - 4 * kRoadCost);
+}
+
+// A route through road already laid pays only for what it lays.
+// The run below names four cells and one of them is already paved.
+TEST_F(GridSinkTest, LeftDrag_PaysNothingForRoadAlreadyLaid)
+{
+    clickAt(Cell{.x = 3, .y = 3}, MouseButton::Left);
+
+    clickAt(Cell{.x = 2, .y = 3}, MouseButton::Left);
+    send(PointerMoved{.position = pixelOf(Cell{.x = 5, .y = 3})});
+    send(
+        PointerButtonReleased{
+            .button = MouseButton::Left,
+            .position = pixelOf(Cell{.x = 5, .y = 3})});
+
+    EXPECT_EQ(paths.size(), 4U);
+    EXPECT_EQ(state.money, kStartingMoney - 4 * kRoadCost);
+}
+
+// Only a placement spends; a walker is not one.
+TEST_F(GridSinkTest, RightPress_PlacesAWalkerForNothing)
+{
+    constexpr Cell target{.x = 2, .y = 2};
+    clickAt(target, MouseButton::Left);
+
+    clickAt(target, MouseButton::Right);
+
+    EXPECT_EQ(walkerCount(), 1U);
+    EXPECT_EQ(state.money, kStartingMoney - kRoadCost);
+}
+
+// Nothing pays money in yet, so spending is never refused.
+// A bank refused at zero would end a session for good.
+// See GameState::money.
+TEST_F(GridSinkTest, LeftPress_StillPlacesWithTheBankBelowZero)
+{
+    state.money = 0;
+
+    clickAt(Cell{.x = 3, .y = 4}, MouseButton::Left);
+
+    EXPECT_TRUE(paths.has(Cell{.x = 3, .y = 4}));
+    EXPECT_EQ(state.money, -kRoadCost);
 }
