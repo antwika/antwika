@@ -1,5 +1,6 @@
 #include "antwika/music_editor/EditorSink.hpp"
 
+#include <algorithm>
 #include <cstddef>
 #include <cstdint>
 #include <optional>
@@ -87,6 +88,7 @@ namespace antwika::music_editor
           stop(stop),
           scoresDirectory(std::move(scoresDirectory)),
           writesScores(writesScores),
+          waveRender(waveRender),
           waveImages(std::move(waveRender))
     {
     }
@@ -245,12 +247,22 @@ namespace antwika::music_editor
                 ui::TextHighlight{.begin = span.begin, .end = span.end});
         }
 
+        // The pace the run is at, for the pictures that measure time.
+        // The same arithmetic the render cache runs for its images.
+        const auto &pick =
+            kSpeeds[std::min(state.speed, kSpeeds.size() - 1)];
+
+        const auto pace = waveRender.framesPerCycle
+            / sequencer::Rational{pick.numerator, pick.denominator};
+
         const PlaybackStatus status{
             .started = playback.started(),
             .voices = playback.voices(),
             .cycles = playback.playedTicks(),
             .lines = playback.sounding(),
             .playing = std::move(playing),
+            .rate = waveRender.rate,
+            .cycleFrames = pace.numerator() / pace.denominator(),
             // The waveform lines' rendered cycles, from the cache.
             // Rendered afresh only when a chain or the speed changed.
             // The excluded line carries the unwind edges alone.

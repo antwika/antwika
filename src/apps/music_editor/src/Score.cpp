@@ -248,6 +248,7 @@ namespace antwika::music_editor
             {
                 rolls.push_back(Pianoroll{ // GCOVR_EXCL_LINE
                     .playing = held.voice.playing,
+                    .preset = held.voice.preset,
                     .line = below});
             }
 

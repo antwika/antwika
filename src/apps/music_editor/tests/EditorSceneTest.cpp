@@ -761,3 +761,93 @@ TEST(EditorSceneTest, AWaveCutShortByThePanesBottomPaintsNothing)
     ASSERT_TRUE(band.has_value());
     EXPECT_TRUE(fillsIn(frame.commands, kRollBackdrop).empty());
 }
+
+namespace
+{
+    // One second to a cycle at the rig's own rate.
+    // What lets a hold's milliseconds be turned into pixels.
+    [[nodiscard]] antwika::ui::Frame pacedFrame(
+        const std::string &source)
+    {
+        EditorState state;
+        state.source = source;
+
+        Score score;
+        score.read(state.source);
+
+        return describe(
+            state,
+            score,
+            PlaybackStatus{.rate = 48000, .cycleFrames = 48000});
+    }
+} // namespace
+
+// A drum is a hit whatever slot it lands in.
+// This hit sounds for an eighth of its second-long cycle.
+// So its cell is an eighth of the band, not the half-cycle slot.
+TEST(EditorSceneTest, ARollsCellIsOnlyAsWideAsItsNoteSounds)
+{
+    const auto frame = pacedFrame(
+        "$: drum.n(\"0 3\").hold(100).rel(25).pianoroll()\n");
+
+    const auto band = frame.rects.find(pianorollBand(0));
+
+    ASSERT_TRUE(band.has_value());
+
+    const auto cells = fillsIn(frame.commands, kNoteInk);
+
+    ASSERT_EQ(cells.size(), 2U);
+
+    const auto width = static_cast<std::int64_t>(band->size.width);
+    const auto sounding =
+        static_cast<std::uint32_t>(6000 * width / 48000);
+
+    EXPECT_EQ(cells[0].rect.size.width, sounding);
+    EXPECT_EQ(cells[1].rect.size.width, sounding);
+    EXPECT_LT(cells[0].rect.size.width, band->size.width / 2);
+    EXPECT_EQ(
+        cells[1].rect.origin.x,
+        band->origin.x + static_cast<std::int32_t>(width / 2));
+}
+
+// A long release reaches past the slot it rang out of.
+// Clipped at the band, since the cycle ends there.
+TEST(EditorSceneTest, AReleaseRingsPastTheSlotAndTheRollSaysSo)
+{
+    const auto frame = pacedFrame(
+        "$: n(\"0 ~\").hold(2000).rel(1000).pianoroll()\n");
+
+    const auto band = frame.rects.find(pianorollBand(0));
+
+    ASSERT_TRUE(band.has_value());
+
+    const auto cells = fillsIn(frame.commands, kNoteInk);
+
+    ASSERT_EQ(cells.size(), 1U);
+    EXPECT_EQ(cells[0].rect.size.width, band->size.width);
+}
+
+// Half a pace measures nothing: both numbers or the slot.
+TEST(EditorSceneTest, ARateWithoutACycleLengthFillsTheSlot)
+{
+    EditorState state;
+    state.source =
+        "$: drum.n(\"0 ~\").hold(100).rel(25).pianoroll()\n";
+
+    Score score;
+    score.read(state.source);
+
+    const auto frame = describe(
+        state,
+        score,
+        PlaybackStatus{.rate = 48000, .cycleFrames = 0});
+
+    const auto band = frame.rects.find(pianorollBand(0));
+
+    ASSERT_TRUE(band.has_value());
+
+    const auto cells = fillsIn(frame.commands, kNoteInk);
+
+    ASSERT_EQ(cells.size(), 1U);
+    EXPECT_EQ(cells[0].rect.size.width, band->size.width / 2);
+}

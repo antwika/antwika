@@ -1098,6 +1098,7 @@ TEST(ScoreTest, APianorollHangsUnderTheLineThatAsksForIt)
 
     ASSERT_EQ(score.pianorolls().size(), 1U);
     EXPECT_EQ(score.pianorolls()[0].line, 0U);
+    EXPECT_EQ(score.pianorolls()[0].preset, preset("drum"));
     EXPECT_EQ(
         score.pianorolls()[0].playing.queryAll(kFirstCycle).size(), 2U);
 }

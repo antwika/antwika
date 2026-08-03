@@ -87,6 +87,20 @@ namespace antwika::music_editor
         std::vector<antwika::ui::TextHighlight> playing{};
 
         /**
+         * @brief The rate the run's audio is generated at.
+         *
+         * With cycleFrames below, what turns a hold's milliseconds
+         * into a share of a band: the pianoroll draws a note's cell
+         * as wide as the note actually sounds, and how long that is
+         * on screen is the pace's to say.  Nought means no pace is
+         * known, and a note then fills the slot it landed in.
+         */
+        SampleRate rate = 0;
+
+        /** @brief How many frames one cycle currently lasts. */
+        std::int64_t cycleFrames = 0;
+
+        /**
          * @brief One rendered cycle per waveform the score asks for.
          *
          * Parallel to Score::waveforms(), handed in on playing's

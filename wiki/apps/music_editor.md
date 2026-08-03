@@ -71,7 +71,7 @@ Every call takes exactly one argument, except the two picture calls at the botto
 | `delay(300)` | One echo that many milliseconds behind every note. Nothing feeds back. |
 | `delaymix(.3)` | How loud the echo is against the note, between 0 and 1. |
 | `harm(7)` | A second voice that many semitones up, sounding with every note. |
-| `pianoroll()` | A pianoroll drawn beneath the line: one cycle across, a lane per semitone, lowest at the bottom. |
+| `pianoroll()` | A pianoroll drawn beneath the line: one cycle across, a lane per semitone, and each note's cell as wide as it actually sounds. |
 | `waveform()` | The voice's actual audio drawn beneath the line: one cycle rendered through the synth, envelope, filter, echo and harmony included. |
 
 The envelope the modulation list asks after is already here: `att()`, `dec()`, `sus()` and `rel()` are the four corners of it, and `hold()` is where the release begins.
@@ -276,6 +276,7 @@ The envelope needed nothing: `att()`, `dec()`, `sus()` and `rel()` were already 
 The rows are whole rows of the pane, so a click below a picture still lands on the line that was under it on screen, on the same recorded-click arithmetic as everything else.
 What a roll shows is the *line's own* pattern rather than the form-scheduled one, since a `part:` voice's scheduled cycle nought is silence whenever the form opens elsewhere -- the thing being written is what is worth seeing.
 Both pictures survive an edit that will not read, exactly as the voice does, and follow their chain when the lines above it move; a picture cut short by the pane's bottom edge draws nothing, because the pane shows whole rows and no half ones.
+**A roll's cell spans the time its note sounds, not the slot it landed in**: the hold caps the note's length and the release rings past it, both in wall time measured against the run's pace -- so a drum is a short cell whatever slot it hit, a long release reaches past its slot, and the same score at double speed draws wider cells because each cycle is shorter.
 **The waveform is the voice's real output, not a sketch of it.**
 Every note the line puts in cycle nought is sounded through the very `soundNote()` the live playback triggers with -- harmony and echo included -- into a private synth mixer, rendered offline at the run's own rate and pace, and folded to per-column extremes the pane draws as one vertical bar per pixel.
 So the envelope's shape, the filter's dulling, a `gain(.1)`'s quietness and a `delay()`'s echo are all visibly *there*, silence draws as the flat midline it is, and a pattern that parses but refuses its window comes out as the bare backdrop, exactly as it falls silent.
