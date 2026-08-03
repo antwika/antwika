@@ -33,7 +33,8 @@ add_executable(antwika_game
     src/Hover.cpp
     src/InputFold.cpp
     src/LabourQuery.cpp
-    src/LabourSystem.cpp
+    src/StaffingSystem.cpp
+    src/LabourDispatchSystem.cpp
     src/MapView.cpp
     src/MainMenuScene.cpp
     src/MainMenuSink.cpp
@@ -89,7 +90,8 @@ add_executable(antwika_game
     src/WorldMapScene.cpp
     src/WorldMapSink.cpp
     src/WorldMapState.cpp
-    src/Workforce.cpp
+    src/Staff.cpp
+    src/Employment.cpp
     src/main.cpp
 )
 

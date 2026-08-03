@@ -10,6 +10,7 @@
 #include "antwika/game/Building.hpp"
 #include "antwika/game/BuildingKind.hpp"
 #include "antwika/game/Cell.hpp"
+#include "antwika/game/Staff.hpp"
 #include "antwika/game/Workforce.hpp"
 
 namespace
@@ -19,12 +20,13 @@ namespace
     using antwika::game::Building;
     using antwika::game::BuildingKind;
     using antwika::game::Cell;
-    using antwika::game::setWorkforce;
+    using antwika::game::setStaff;
+using antwika::game::Staff;
+using antwika::game::StaffEntry;
     using antwika::game::Staffing;
     using antwika::game::staffingOf;
     using antwika::game::workedPeriod;
-    using antwika::game::Workforce;
-    using antwika::game::workersAt;
+        using antwika::game::workersAt;
     using antwika::game::workersWantedBy;
     using antwika::log::mocks::MockLogger;
 
@@ -64,7 +66,9 @@ TEST(LabourQueryTest, StaffingOf_ReadsTheComponentWhereThereIsOne)
     Scene scene;
     const auto farm = scene.put(BuildingKind::Farm);
 
-    setWorkforce(scene.world, farm, Workforce{.employed = 1});
+    Staff one;
+    one.sources[0] = StaffEntry{.house = farm, .count = 1};
+    setStaff(scene.world, farm, one);
     scene.world.commit();
 
     EXPECT_EQ(
@@ -103,23 +107,27 @@ TEST(LabourQueryTest, WorkersAt_IsTheStaffingsNumerator)
     Scene scene;
     const auto market = scene.put(BuildingKind::Market);
 
-    setWorkforce(scene.world, market, Workforce{.employed = 2});
+    Staff two;
+    two.sources[0] = StaffEntry{.house = market, .count = 2};
+    setStaff(scene.world, market, two);
     scene.world.commit();
 
     EXPECT_EQ(workersAt(scene.world, market), 2);
 }
 
-// setWorkforce() is the one writer, and it has to do both halves.
-TEST(LabourQueryTest, SetWorkforce_AddsThenSetsTheSameComponent)
+// setStaff() is the one writer, and it has to do both halves.
+TEST(LabourQueryTest, SetStaff_AddsThenSetsTheSameComponent)
 {
     Scene scene;
     const auto well = scene.put(BuildingKind::Well);
 
-    setWorkforce(scene.world, well, Workforce{.employed = 1});
+    Staff one;
+    one.sources[0] = StaffEntry{.house = well, .count = 1};
+    setStaff(scene.world, well, one);
     scene.world.commit();
     EXPECT_EQ(workersAt(scene.world, well), 1);
 
-    setWorkforce(scene.world, well, Workforce{.employed = 0});
+    setStaff(scene.world, well, Staff{});
     scene.world.commit();
     EXPECT_EQ(workersAt(scene.world, well), 0);
 }

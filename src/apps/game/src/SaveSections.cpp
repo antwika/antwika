@@ -68,7 +68,8 @@ namespace antwika::game
                 "cart_pusher",
                 "market_buyer",
                 "market_seller",
-                "migrant"};
+                "migrant",
+                "labourer"};
 
         std::string_view walkerKindName(WalkerKind kind)
         {

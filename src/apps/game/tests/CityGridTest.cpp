@@ -21,7 +21,8 @@
 #include "antwika/game/Journey.hpp"
 #include "antwika/game/PathIndex.hpp"
 #include "antwika/game/Household.hpp"
-#include "antwika/game/Workforce.hpp"
+#include "antwika/game/Employment.hpp"
+#include "antwika/game/Staff.hpp"
 #include "antwika/game/HousingLevel.hpp"
 #include "antwika/game/Production.hpp"
 #include "antwika/game/Walker.hpp"
@@ -44,14 +45,21 @@ namespace
     using antwika::game::Errand;
     using antwika::game::ErrandLeg;
     using antwika::game::Household;
-    using antwika::game::Workforce;
     using antwika::game::HousingLevel;
     using antwika::game::Production;
     using antwika::game::Resource;
     using antwika::game::Path;
     using antwika::game::PathIndex;
     using antwika::game::restoreCityGrid;
+    using antwika::game::Employment;
+    using antwika::game::JobHolding;
+    using antwika::game::Staff;
+    using antwika::game::StaffEntry;
     using antwika::game::StoredBuilding;
+    using antwika::game::StoredEmployment;
+    using antwika::game::StoredJob;
+    using antwika::game::StoredStaff;
+    using antwika::game::StoredStaffEntry;
     using antwika::game::StoredWalker;
     using antwika::game::Walker;
     using antwika::log::mocks::MockLogger;
@@ -643,33 +651,56 @@ namespace
     }
 
 
-    TEST_F(CityGridTest, StoredBuildingEqualityComparesItsWorkforce)
+    TEST_F(CityGridTest, StoredBuildingEqualityComparesItsLedgers)
     {
         StoredBuilding base{.at = Cell{1, 1}, .building = Building{}};
-        base.workforce = Workforce{.employed = 3};
+        base.staff = StoredStaff{
+            .entries = {StoredStaffEntry{.house = 1, .count = 3}},
+            .ticksUntilDecay = 5};
+        base.employment = StoredEmployment{
+            .jobs = {StoredJob{.workplace = 0, .count = 3}},
+            .ticksUntilDispatch = 7};
 
         expectMemberCompared(
-            base, [](StoredBuilding &b) { b.workforce.reset(); });
+            base, [](StoredBuilding &b) { b.staff.reset(); });
         expectMemberCompared(
-            base, [](StoredBuilding &b) { b.workforce->employed = 0; });
+            base,
+            [](StoredBuilding &b) { b.staff->entries[0].count = 0; });
+        expectMemberCompared(
+            base, [](StoredBuilding &b) { b.employment.reset(); });
+        expectMemberCompared(
+            base,
+            [](StoredBuilding &b) { b.employment->jobs[0].count = 0; });
     }
 
-    // An absent Workforce means fully staffed rather than empty.
-    // So a city reopened having lost one is a city that speeds up.
-    TEST_F(CityGridTest, CityGrid_CarriesAWorkforceAcrossACitySwitch)
+    // The two ledgers cross the switch with their links intact.
+    // A city reopened unstaffed is a city whose walkers all stop.
+    TEST_F(CityGridTest, CityGrid_CarriesTheLedgersAcrossACitySwitch)
     {
         const auto farm = putUp(Cell{2, 2}, BuildingKind::Farm);
-        putUp(Cell{6, 6}, BuildingKind::Well);
-        antwika::game::setWorkforce(
-            world, farm, Workforce{.employed = 2});
+        const auto home = putUp(Cell{6, 6}, BuildingKind::House);
+
+        Staff staff;
+        staff.sources[0] = StaffEntry{.house = home, .count = 2};
+        staff.ticksUntilDecay = 9;
+        antwika::game::setStaff(world, farm, staff);
+
+        Employment employment;
+        employment.jobs[0] = JobHolding{.workplace = farm, .count = 2};
+        employment.ticksUntilDispatch = 11;
+        antwika::game::setEmployment(world, home, employment);
         world.commit();
 
         const auto grid = cityGridOf(world);
 
         ASSERT_EQ(grid.buildings.size(), 2U);
-        ASSERT_TRUE(grid.buildings[0].workforce.has_value());
-        EXPECT_EQ(grid.buildings[0].workforce->employed, 2);
-        EXPECT_FALSE(grid.buildings[1].workforce.has_value());
+        ASSERT_TRUE(grid.buildings[0].staff.has_value());
+        ASSERT_EQ(grid.buildings[0].staff->entries.size(), 1U);
+        EXPECT_EQ(grid.buildings[0].staff->entries[0].house, 1U);
+        EXPECT_EQ(grid.buildings[0].staff->entries[0].count, 2);
+        ASSERT_TRUE(grid.buildings[1].employment.has_value());
+        ASSERT_EQ(grid.buildings[1].employment->jobs.size(), 1U);
+        EXPECT_EQ(grid.buildings[1].employment->jobs[0].workplace, 0U);
 
         restoreCityGrid(world, built, paths, grid);
         world.commit();
@@ -677,9 +708,10 @@ namespace
         const auto taken = cityGridOf(world);
 
         ASSERT_EQ(taken.buildings.size(), 2U);
+        EXPECT_EQ(taken.buildings[0].staff, grid.buildings[0].staff);
         EXPECT_EQ(
-            taken.buildings[0].workforce, grid.buildings[0].workforce);
-        EXPECT_FALSE(taken.buildings[1].workforce.has_value());
+            taken.buildings[1].employment,
+            grid.buildings[1].employment);
     }
 
     TEST_F(CityGridTest, RestoreCityGrid_PutsBackAnErrandBoundNowhere)
@@ -735,3 +767,88 @@ namespace
     }
 
 } // namespace
+
+    // An empty entry, and one naming something that is no building.
+    // Both are dropped on the way out rather than carried as noise.
+    TEST_F(CityGridTest, CityGrid_DropsLedgerEntriesNamingNothing)
+    {
+        const auto farm = putUp(Cell{2, 2}, BuildingKind::Farm);
+        const auto home = putUp(Cell{6, 6}, BuildingKind::House);
+
+        const auto stray = world.create();
+        world.add<Cell>(stray, Cell{1, 1});
+        world.commit();
+
+        Staff staff;
+        staff.sources[0] = StaffEntry{.house = home, .count = 0};
+        staff.sources[1] = StaffEntry{.house = stray, .count = 2};
+        antwika::game::setStaff(world, farm, staff);
+
+        Employment employment;
+        employment.jobs[0] = JobHolding{.workplace = farm, .count = 0};
+        employment.jobs[1] = JobHolding{.workplace = stray, .count = 2};
+        antwika::game::setEmployment(world, home, employment);
+        world.commit();
+
+        const auto grid = cityGridOf(world);
+
+        ASSERT_TRUE(grid.buildings[0].staff.has_value());
+        EXPECT_TRUE(grid.buildings[0].staff->entries.empty());
+        ASSERT_TRUE(grid.buildings[1].employment.has_value());
+        EXPECT_TRUE(grid.buildings[1].employment->jobs.empty());
+    }
+
+    // A stored ledger longer than the live component has slots.
+    // What fits is restored and the tail is dropped, deterministically.
+    TEST_F(CityGridTest, RestoreCityGrid_ClampsALedgerToItsSlots)
+    {
+        CityGrid grid;
+        grid.buildings.push_back(
+            StoredBuilding{
+                .at = Cell{2, 2},
+                .building =
+                    Building{.kind = BuildingKind::Farm}});
+        grid.buildings.push_back(
+            StoredBuilding{
+                .at = Cell{6, 6},
+                .building =
+                    Building{.kind = BuildingKind::House}});
+
+        StoredStaff staff;
+
+        for (std::size_t extra = 0;
+             extra < antwika::game::kMaxStaffSources + 2;
+             ++extra)
+        {
+            staff.entries.push_back(
+                StoredStaffEntry{.house = 1, .count = 1});
+        }
+
+        grid.buildings[0].staff = staff;
+
+        StoredEmployment employment;
+
+        for (std::size_t extra = 0;
+             extra < antwika::game::kMaxJobs + 2;
+             ++extra)
+        {
+            employment.jobs.push_back(
+                StoredJob{.workplace = 0, .count = 1});
+        }
+
+        grid.buildings[1].employment = employment;
+
+        restoreCityGrid(world, built, paths, grid);
+        world.commit();
+
+        const auto taken = cityGridOf(world);
+
+        ASSERT_TRUE(taken.buildings[0].staff.has_value());
+        EXPECT_EQ(
+            taken.buildings[0].staff->entries.size(),
+            antwika::game::kMaxStaffSources);
+        ASSERT_TRUE(taken.buildings[1].employment.has_value());
+        EXPECT_EQ(
+            taken.buildings[1].employment->jobs.size(),
+            antwika::game::kMaxJobs);
+    }

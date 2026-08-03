@@ -19,7 +19,9 @@
 #include "antwika/game/GameState.hpp"
 #include "antwika/game/GameSummary.hpp"
 #include "antwika/game/GridExtent.hpp"
+#include "antwika/game/Employment.hpp"
 #include "antwika/game/Household.hpp"
+#include "antwika/game/Staff.hpp"
 #include "antwika/game/PathIndex.hpp"
 #include "antwika/game/Resource.hpp"
 #include "antwika/game/SceneSnapshot.hpp"
@@ -271,17 +273,23 @@ namespace antwika::game
         std::optional<Household> household = std::nullopt;
 
         /**
-         * @brief How many of the city's people were working there.
+         * @brief Who worked there and where they lived, by index.
          *
-         * Optional, and absent means nobody has been allocated to it --
-         * which is both what a version-3 file written before labour
-         * existed says and what a workplace put up this tick holds.
-         *
-         * How many workers it *wanted* is deliberately not here:
-         * workersWantedBy() answers that from the kind this record
-         * already names, and a second copy could disagree with it.
+         * Optional, and absent means nobody has been staffed here --
+         * which is what a file written before labour walked says, and
+         * what its houses' absent employment agrees with. The legacy
+         * "employed" member such files carry is still accepted by the
+         * schema and deliberately ignored: a bare count without the
+         * houses it came from is a ledger nobody can decay honestly.
          */
-        std::optional<std::int32_t> employed = std::nullopt;
+        std::optional<StoredStaff> staff = std::nullopt;
+
+        /**
+         * @brief Where this house's people worked, by index.
+         *
+         * The staff ledger's mirror, absent on the same terms.
+         */
+        std::optional<StoredEmployment> employment = std::nullopt;
 
         [[nodiscard]] bool operator==(const SavedBuilding &other) const
             = default;

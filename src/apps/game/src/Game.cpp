@@ -26,7 +26,8 @@
 #include "antwika/game/HousingLevel.hpp"
 #include "antwika/game/HousingSystem.hpp"
 #include "antwika/game/InputFold.hpp"
-#include "antwika/game/LabourSystem.hpp"
+#include "antwika/game/LabourDispatchSystem.hpp"
+#include "antwika/game/StaffingSystem.hpp"
 #include "antwika/game/LiveGrid.hpp"
 #include "antwika/game/MainMenuScene.hpp"
 #include "antwika/game/MainMenuSink.hpp"
@@ -249,16 +250,34 @@ namespace antwika::game
         // Both gates, in the order every other system takes them.
         PopulationSystem populationSystem(
             paths, config.built, desirability, config.extent);
-        LabourSystem labourSystem;
 
         SessionGatedSystem gatedPopulation(populationSystem, mode);
-        SessionGatedSystem gatedLabour(labourSystem, mode);
         PauseGatedSystem pausedPopulation(gatedPopulation, pause);
-        PauseGatedSystem pausedLabour(gatedLabour, pause);
 
         const auto populatePhase = scheduler.createPhase("populate");
         scheduler.addSystem(populatePhase, pausedPopulation);
-        scheduler.addSystem(populatePhase, pausedLabour);
+
+        // Labour walks now, and its two systems have a phase each.
+        // Staffing writes Staff, Employment and the labourers.
+        // In a phase of its own after the walk.
+        // So it moves people off where this tick left every labourer.
+        // Dispatch writes Employment and Building too.
+        // Two writers of one component in one phase is the trap.
+        // The phase list exists to avoid it, so this runs after.
+        // A person who arrived this tick is employable next one.
+        StaffingSystem staffingSystem;
+        LabourDispatchSystem dispatchSystem(paths);
+
+        SessionGatedSystem gatedStaffing(staffingSystem, mode);
+        SessionGatedSystem gatedDispatch(dispatchSystem, mode);
+        PauseGatedSystem pausedStaffing(gatedStaffing, pause);
+        PauseGatedSystem pausedDispatch(gatedDispatch, pause);
+
+        const auto staffPhase = scheduler.createPhase("staff");
+        scheduler.addSystem(staffPhase, pausedStaffing);
+
+        const auto hirePhase = scheduler.createPhase("hire");
+        scheduler.addSystem(hirePhase, pausedDispatch);
 
         // A phase of its own.
         // A renderer then sees the generation this walk produced.

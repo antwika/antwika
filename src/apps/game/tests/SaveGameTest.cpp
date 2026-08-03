@@ -605,6 +605,16 @@ TEST(SaveGameTest, SavedBuildingEqualityComparesEveryField)
     moved.at = Cell{.x = 9, .y = 9};
     EXPECT_NE(base, moved);
 
+    auto staffed = base;
+    staffed.staff = antwika::game::StoredStaff{
+        .entries = {}, .ticksUntilDecay = 1};
+    EXPECT_NE(base, staffed);
+
+    auto employing = base;
+    employing.employment = antwika::game::StoredEmployment{
+        .jobs = {}, .ticksUntilDispatch = 1};
+    EXPECT_NE(base, employing);
+
     auto other = base;
     other.kind = BuildingKind::House;
     EXPECT_NE(base, other);
@@ -1354,26 +1364,87 @@ TEST(SaveGameTest, SavedBuildingEqualityComparesTheHousehold)
 // How many the kind *wanted* is not.
 // workersWantedBy() answers that from the kind already named.
 // See SaveLabour.cpp.
-TEST(SaveGameTest, RoundTripsAWorkplacesEmployedCount)
+TEST(SaveGameTest, RoundTripsTheTwoLabourLedgers)
 {
     SaveGame save;
     save.buildings = {
         antwika::game::SavedBuilding{
             .at = {.x = 1, .y = 1},
             .kind = BuildingKind::Farm,
-            .employed = 3},
+            .staff = antwika::game::StoredStaff{
+                .entries = {antwika::game::StoredStaffEntry{
+                    .house = 1, .count = 3}},
+                .ticksUntilDecay = 5}},
         antwika::game::SavedBuilding{
-            .at = {.x = 5, .y = 5}, .kind = BuildingKind::Well}};
+            .at = {.x = 5, .y = 5},
+            .kind = BuildingKind::House,
+            .employment = antwika::game::StoredEmployment{
+                .jobs = {antwika::game::StoredJob{
+                    .workplace = 0, .count = 3}},
+                .ticksUntilDispatch = 7}}};
 
     const auto encoded = saveGameToJson(save);
 
-    EXPECT_EQ(encoded.at("buildings").at(0).at("employed"), 3);
-    EXPECT_FALSE(encoded.at("buildings").at(1).contains("employed"));
+    EXPECT_TRUE(encoded.at("buildings").at(0).contains("staff"));
+    EXPECT_FALSE(encoded.at("buildings").at(0).contains("employment"));
+    EXPECT_TRUE(encoded.at("buildings").at(1).contains("employment"));
     EXPECT_EQ(saveGameFromJson(encoded), save);
 }
 
+// A file written by the count-only build stays a valid file.
+// The count alone is a ledger nobody can decay honestly.
+// So it is accepted and deliberately ignored -- see SaveLabour.cpp.
+TEST(SaveGameTest, AcceptsAndIgnoresTheLegacyEmployedCount)
+{
+    SaveGame save;
+    save.buildings = {
+        antwika::game::SavedBuilding{
+            .at = {.x = 1, .y = 1}, .kind = BuildingKind::Farm}};
+
+    auto encoded = saveGameToJson(save);
+    encoded.at("buildings").at(0)["employed"] = 3;
+
+    const auto loaded = saveGameFromJson(encoded);
+
+    EXPECT_FALSE(loaded.buildings[0].staff.has_value());
+}
+
+// An index past the end of the array it points into is corrupt.
+// Refused rather than repaired, exactly as a walker link is.
+TEST(SaveGameTest, RejectsAStaffEntryNamingNoSuchBuilding)
+{
+    SaveGame save;
+    save.buildings = {
+        antwika::game::SavedBuilding{
+            .at = {.x = 1, .y = 1},
+            .kind = BuildingKind::Farm,
+            .staff = antwika::game::StoredStaff{
+                .entries = {antwika::game::StoredStaffEntry{
+                    .house = 9, .count = 1}}}}};
+
+    EXPECT_THROW(
+        (void)saveGameFromJson(saveGameToJson(save)),
+        antwika::game::SaveFormatError);
+}
+
+TEST(SaveGameTest, RejectsAJobHoldingNamingNoSuchBuilding)
+{
+    SaveGame save;
+    save.buildings = {
+        antwika::game::SavedBuilding{
+            .at = {.x = 1, .y = 1},
+            .kind = BuildingKind::House,
+            .employment = antwika::game::StoredEmployment{
+                .jobs = {antwika::game::StoredJob{
+                    .workplace = 9, .count = 1}}}}};
+
+    EXPECT_THROW(
+        (void)saveGameFromJson(saveGameToJson(save)),
+        antwika::game::SaveFormatError);
+}
+
 // Read out of the World like every other piece of state.
-TEST(SaveGameTest, TakesEachWorkplacesWorkforceFromTheWorld)
+TEST(SaveGameTest, TakesEachWorkplacesLedgerFromTheWorld)
 {
     ::testing::NiceMock<MockLogger> logger;
     World world{logger};
@@ -1382,12 +1453,16 @@ TEST(SaveGameTest, TakesEachWorkplacesWorkforceFromTheWorld)
     const auto farm = world.create();
     world.add<Cell>(farm, Cell{.x = 2, .y = 2});
     world.add<Building>(farm, Building{.kind = BuildingKind::Farm});
-    antwika::game::setWorkforce(
-        world, farm, antwika::game::Workforce{.employed = 2});
 
-    const auto well = world.create();
-    world.add<Cell>(well, Cell{.x = 6, .y = 6});
-    world.add<Building>(well, Building{.kind = BuildingKind::Well});
+    const auto house = world.create();
+    world.add<Cell>(house, Cell{.x = 6, .y = 6});
+    world.add<Building>(house, Building{.kind = BuildingKind::House});
+    world.commit();
+
+    antwika::game::Staff staff;
+    staff.sources[0] =
+        antwika::game::StaffEntry{.house = house, .count = 2};
+    antwika::game::setStaff(world, farm, staff);
     world.commit();
 
     const auto save = saveGameOf(
@@ -1395,26 +1470,11 @@ TEST(SaveGameTest, TakesEachWorkplacesWorkforceFromTheWorld)
         GridExtent{.width = 8, .height = 8});
 
     ASSERT_EQ(save.buildings.size(), 2U);
-    EXPECT_EQ(save.buildings[0].employed, 2);
-    EXPECT_FALSE(save.buildings[1].employed.has_value());
-}
-
-// The member has to be in the comparison.
-// Or a round trip that dropped it would still match.
-TEST(SaveGameTest, SavedBuildingEqualityComparesTheEmployedCount)
-{
-    const antwika::game::SavedBuilding base{
-        .at = {.x = 1, .y = 1}, .employed = 2};
-
-    EXPECT_EQ(base, base);
-
-    auto idle = base;
-    idle.employed.reset();
-    EXPECT_NE(base, idle);
-
-    auto busier = base;
-    busier.employed = 3;
-    EXPECT_NE(base, busier);
+    ASSERT_TRUE(save.buildings[0].staff.has_value());
+    ASSERT_EQ(save.buildings[0].staff->entries.size(), 1U);
+    EXPECT_EQ(save.buildings[0].staff->entries[0].house, 1U);
+    EXPECT_EQ(save.buildings[0].staff->entries[0].count, 2);
+    EXPECT_FALSE(save.buildings[1].staff.has_value());
 }
 
 // A hand-written document of the version this build writes.
@@ -1454,8 +1514,8 @@ TEST(SaveGameTest, ReadsAVersionThreeDocumentWrittenBeforeLabour)
     EXPECT_EQ(
         save.buildings[0].household->ticksUntilSettler,
         antwika::game::kSettlerPeriodTicks);
-    EXPECT_FALSE(save.buildings[0].employed.has_value());
-    EXPECT_FALSE(save.buildings[1].employed.has_value());
+    EXPECT_FALSE(save.buildings[0].staff.has_value());
+    EXPECT_FALSE(save.buildings[1].staff.has_value());
 }
 
 // The settler countdown is persisted rather than reset.
@@ -1475,4 +1535,65 @@ TEST(SaveGameTest, RoundTripsTheSettlerCountdown)
             "ticksUntilSettler"),
         7);
     EXPECT_EQ(saveGameFromJson(encoded), save);
+}
+
+// An empty entry, and one naming something that is no building.
+// Both dropped on the way out, exactly as a city switch drops them.
+TEST(SaveGameTest, DropsLedgerEntriesNamingNothingFromASave)
+{
+    ::testing::NiceMock<MockLogger> logger;
+    World world{logger};
+    const PathIndex paths;
+
+    const auto farm = world.create();
+    world.add<Cell>(farm, Cell{.x = 2, .y = 2});
+    world.add<Building>(farm, Building{.kind = BuildingKind::Farm});
+
+    const auto house = world.create();
+    world.add<Cell>(house, Cell{.x = 6, .y = 6});
+    world.add<Building>(house, Building{.kind = BuildingKind::House});
+
+    const auto stray = world.create();
+    world.add<Cell>(stray, Cell{.x = 1, .y = 1});
+    world.commit();
+
+    antwika::game::Staff staff;
+    staff.sources[0] =
+        antwika::game::StaffEntry{.house = house, .count = 0};
+    staff.sources[1] =
+        antwika::game::StaffEntry{.house = stray, .count = 2};
+    antwika::game::setStaff(world, farm, staff);
+
+    antwika::game::Employment employment;
+    employment.jobs[0] =
+        antwika::game::JobHolding{.workplace = farm, .count = 0};
+    employment.jobs[1] =
+        antwika::game::JobHolding{.workplace = stray, .count = 2};
+    antwika::game::setEmployment(world, house, employment);
+    world.commit();
+
+    const auto save = saveGameOf(
+        world, paths, Camera(), GameState{},
+        GridExtent{.width = 8, .height = 8});
+
+    ASSERT_TRUE(save.buildings[0].staff.has_value());
+    EXPECT_TRUE(save.buildings[0].staff->entries.empty());
+    ASSERT_TRUE(save.buildings[1].employment.has_value());
+    EXPECT_TRUE(save.buildings[1].employment->jobs.empty());
+}
+
+// A ledger with nothing in it round-trips as exactly that.
+TEST(SaveGameTest, RoundTripsAnEmptyLedger)
+{
+    SaveGame save;
+    save.buildings = {
+        antwika::game::SavedBuilding{
+            .at = {.x = 1, .y = 1},
+            .kind = BuildingKind::Farm,
+            .staff = antwika::game::StoredStaff{
+                .entries = {}, .ticksUntilDecay = 3},
+            .employment = antwika::game::StoredEmployment{
+                .jobs = {}, .ticksUntilDispatch = 4}}};
+
+    EXPECT_EQ(saveGameFromJson(saveGameToJson(save)), save);
 }

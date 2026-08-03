@@ -4,15 +4,10 @@
 #include <cstddef>
 #include <cstdint>
 
-#include <antwika/ecs/Entity.hpp>
-#include <antwika/ecs/World.hpp>
-
 #include "antwika/game/BuildingKind.hpp"
 
 namespace antwika::game
 {
-
-    using antwika::ecs::World;
 
     /**
      * @brief How many of the city's people one kind of building needs to
@@ -50,51 +45,6 @@ namespace antwika::game
 
         return wanted[buildingKindIndex(kind) % kBuildingKindCount];
     }
-
-    /**
-     * @brief How many of the city's people work at one building.
-     *
-     * **A component of its own rather than a field on Building**, for
-     * Coverage's and Household's reason: every new component in this
-     * increment is optional, and its absence is the value the game had
-     * before the component existed -- which here is "fully staffed", so a
-     * city whose labour has never been allocated behaves exactly as it
-     * did before there were any people to allocate. See staffingOf().
-     *
-     * **Only what was allocated is stored, never what was wanted.** How
-     * many workers a kind wants is workersWantedBy(), a table, and a copy
-     * of it on the component would be a second truth that could disagree
-     * with the kind standing on the cell -- the same argument
-     * footprintOf() and kDesirabilityOf are tables for.
-     */
-    struct Workforce
-    {
-        /** @brief How many people the city has put to work here. */
-        std::int32_t employed = 0;
-
-        /**
-         * @brief Compare two workforces.
-         * @param other The workforce to compare against.
-         * @return True when the same number of people work at both.
-         */
-        [[nodiscard]] bool operator==(const Workforce &other) const
-            = default;
-    };
-
-    /**
-     * @brief Write a building's workforce, whether or not it had one.
-     *
-     * setCoverage()'s and setHousehold()'s counterpart, and it exists for
-     * their reason: World::add() is staged and World::set() refuses an
-     * entity that has no such component yet, so "add or set" is a
-     * decision every writer would otherwise have to make for itself.
-     *
-     * @param world Staged into; the write lands at the next commit().
-     * @param entity The building to write; must be alive.
-     * @param workforce Who works there.
-     */
-    void setWorkforce(
-        World &world, antwika::ecs::Entity entity, Workforce workforce);
 
     // A kind wants workers exactly when staffing it changes something.
     // In round one that is the walker it sends and the batch it makes.

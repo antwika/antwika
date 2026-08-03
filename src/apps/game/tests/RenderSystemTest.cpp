@@ -456,9 +456,9 @@ TEST_F(RenderSystemTest, Update_WritesAReadoutForWhatTheHintIsOver)
 
     RenderSystem system(setup());
 
-    // Its name, its tier, how full it is, and one per resource it holds.
+    // Name, tier, occupancy, idle hands, one per resource it holds.
     EXPECT_CALL(renderer, drawText(_, _, _, _))
-        .Times(3 + static_cast<int>(antwika::game::kResourceCount));
+        .Times(4 + static_cast<int>(antwika::game::kResourceCount));
 
     system.update(world, 0);
 }

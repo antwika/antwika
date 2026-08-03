@@ -268,6 +268,18 @@ namespace antwika::game
     void requireConsistentJourneys(const SaveGame &save);
 
     /**
+     * @brief Refuse a document whose ledgers name no such building.
+     *
+     * requireConsistentErrands()' counterpart for the two links the
+     * labour section added, refused on exactly the same terms.
+     *
+     * @param save The decoded state to check.
+     * @throws SaveFormatError If any staff entry or job holding is out
+     * of range.
+     */
+    void requireConsistentStaffing(const SaveGame &save);
+
+    /**
      * @brief Refuse a document whose walker and building links disagree.
      *
      * An index past the end of the array it points into is corrupt, and

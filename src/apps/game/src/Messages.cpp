@@ -21,7 +21,7 @@ namespace antwika::game
         using i18n::Locale;
         using i18n::MessageName;
 
-        constexpr std::array<MessageName<MessageId>, 98> kNames{{
+        constexpr std::array<MessageName<MessageId>, 101> kNames{{
             {MessageId::ToolbarZoomIn, "ToolbarZoomIn"},
             {MessageId::ToolbarZoomOut, "ToolbarZoomOut"},
             {MessageId::ToolbarResetView, "ToolbarResetView"},
@@ -120,6 +120,9 @@ namespace antwika::game
             {MessageId::ActionResetView, "ActionResetView"},
             {MessageId::ToolbarMoney, "ToolbarMoney"},
             {MessageId::ToolRaze, "ToolRaze"},
+            {MessageId::WalkerLabourer, "WalkerLabourer"},
+            {MessageId::ReadoutUnemployed, "ReadoutUnemployed"},
+            {MessageId::ReadoutStaff, "ReadoutStaff"},
         }};
 
         static_assert(
@@ -230,6 +233,9 @@ namespace antwika::game
                 {MessageId::ActionResetView, "reset view"},
                 {MessageId::ToolbarMoney, "money {0}"},
                 {MessageId::ToolRaze, "raze"},
+                {MessageId::WalkerLabourer, "labourer"},
+                {MessageId::ReadoutUnemployed, "unemployed {0}/{1}"},
+                {MessageId::ReadoutStaff, "staff {0}/{1}"},
             }};
 
         constexpr std::array<CatalogueEntry<MessageId>, kNames.size()>
@@ -333,6 +339,9 @@ namespace antwika::game
                 {MessageId::ActionResetView, "återställ vyn"},
                 {MessageId::ToolbarMoney, "pengar {0}"},
                 {MessageId::ToolRaze, "riv"},
+                {MessageId::WalkerLabourer, "arbetare"},
+                {MessageId::ReadoutUnemployed, "arbetslösa {0}/{1}"},
+                {MessageId::ReadoutStaff, "personal {0}/{1}"},
             }};
 
         constexpr Catalogue<MessageId> kEnglishCatalogue{

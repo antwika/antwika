@@ -17,7 +17,8 @@
 #include "antwika/game/PathIndex.hpp"
 #include "antwika/game/Production.hpp"
 #include "antwika/game/Walker.hpp"
-#include "antwika/game/Workforce.hpp"
+#include "antwika/game/Employment.hpp"
+#include "antwika/game/Staff.hpp"
 
 namespace antwika::game
 {
@@ -175,19 +176,25 @@ namespace antwika::game
         std::optional<Household> household = std::nullopt;
 
         /**
-         * @brief How many of the city's people were working there.
+         * @brief Who worked there and where they lived, by index.
          *
          * Carried across for the household's reason: a city reopened
-         * with its workplaces unstaffed is a city whose walkers all stop
-         * for a tick, and a run that switched cities would then differ
-         * from one that did not.
+         * with its workplaces unstaffed is a city whose walkers all
+         * stop, and a run that switched cities would then differ from
+         * one that did not.
          *
-         * Optional rather than a plain value, exactly as the household
-         * above it is: an absent Workforce means fully staffed rather
-         * than empty -- see LabourQuery.hpp -- so putting one back where
-         * there was none would change what a reopened city does.
+         * The houses are named by index into the buildings array
+         * rather than by ecs::Entity, for SavedWalker::home's reason
+         * exactly: a restore destroys and recreates every entity.
          */
-        std::optional<Workforce> workforce = std::nullopt;
+        std::optional<StoredStaff> staff = std::nullopt;
+
+        /**
+         * @brief Where this house's people worked, by index.
+         *
+         * The staff ledger's mirror, carried on the same terms.
+         */
+        std::optional<StoredEmployment> employment = std::nullopt;
 
         /**
          * @brief Compare two stored buildings.

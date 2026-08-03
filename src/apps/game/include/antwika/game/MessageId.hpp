@@ -518,6 +518,23 @@ namespace antwika::game
         ToolRaze,
 
         /**
+         * @brief Readout: a labourer carrying workforce to jobs.
+         */
+        WalkerLabourer,
+
+        /**
+         * @brief Readout: how many of a house's people lack a job, as
+         *        `{0}` idle out of `{1}` living there.
+         */
+        ReadoutUnemployed,
+
+        /**
+         * @brief Readout: how staffed a workplace is, as `{0}` working
+         *        out of `{1}` wanted.
+         */
+        ReadoutStaff,
+
+        /**
          * @brief How many ids there are; not an id itself.
          *
          * Messages.cpp static_asserts its name table against this,

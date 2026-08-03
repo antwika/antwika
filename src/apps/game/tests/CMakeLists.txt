@@ -35,7 +35,8 @@ add_executable(antwika_game_tests
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/Hover.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/InputFold.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/LabourQuery.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/../src/LabourSystem.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/StaffingSystem.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/LabourDispatchSystem.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/MapView.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/MainMenuScene.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/MainMenuSink.cpp
@@ -91,7 +92,8 @@ add_executable(antwika_game_tests
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/WorldMapScene.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/WorldMapSink.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/WorldMapState.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/../src/Workforce.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/Staff.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/Employment.cpp
     ActionTest.cpp
     AppModeTest.cpp
     AtlasImageTest.cpp
@@ -129,7 +131,8 @@ add_executable(antwika_game_tests
     AllocationOrderTest.cpp
     CityRatingsTest.cpp
     LabourQueryTest.cpp
-    LabourSystemTest.cpp
+    StaffingSystemTest.cpp
+    LabourDispatchSystemTest.cpp
     MessagesTest.cpp
     PopulationSystemTest.cpp
     RatingsSystemTest.cpp

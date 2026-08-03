@@ -78,13 +78,14 @@ TEST(ReadoutPanelTest, Panel_NamesABuildingAndListsWhatItDependsOn)
         kCanvas,
         kTranslator);
 
-    ASSERT_EQ(panel.lines.size(), 6U);
+    ASSERT_EQ(panel.lines.size(), 7U);
     EXPECT_EQ(panel.lines[0].text, "house");
     EXPECT_EQ(panel.lines[1].text, "level: tent");
     EXPECT_EQ(panel.lines[2].text, "people 0/5");
-    EXPECT_EQ(panel.lines[3].text, "food 12/100");
-    EXPECT_EQ(panel.lines[4].text, "clay 34/100");
-    EXPECT_EQ(panel.lines[5].text, "pottery 56/100");
+    EXPECT_EQ(panel.lines[3].text, "unemployed 0/0");
+    EXPECT_EQ(panel.lines[4].text, "food 12/100");
+    EXPECT_EQ(panel.lines[5].text, "clay 34/100");
+    EXPECT_EQ(panel.lines[6].text, "pottery 56/100");
     EXPECT_EQ(kStockCapacity, 100);
 }
 
@@ -101,8 +102,9 @@ TEST(ReadoutPanelTest, Panel_NamesASourceAndListsNoStockItNeverSpends)
         kCanvas,
         kTranslator);
 
-    ASSERT_EQ(panel.lines.size(), 1U);
+    ASSERT_EQ(panel.lines.size(), 2U);
     EXPECT_EQ(panel.lines[0].text, "farm");
+    EXPECT_EQ(panel.lines[1].text, "staff 0/4");
 }
 
 TEST(ReadoutPanelTest, Panel_NamesAWalkerAndWhatItIsCarrying)
@@ -147,13 +149,14 @@ TEST(ReadoutPanelTest, Panel_ColoursALineAsTheBarThatCountsTheSameThing)
         kCanvas,
         kTranslator);
 
-    ASSERT_EQ(panel.lines.size(), 6U);
+    ASSERT_EQ(panel.lines.size(), 7U);
     EXPECT_EQ(panel.lines[0].colour, kReadoutTitle);
     EXPECT_EQ(panel.lines[1].colour, kReadoutTitle);
     EXPECT_EQ(panel.lines[2].colour, kReadoutTitle);
-    EXPECT_EQ(panel.lines[3].colour, resourceColour(Resource::Food));
-    EXPECT_EQ(panel.lines[4].colour, resourceColour(Resource::Clay));
-    EXPECT_EQ(panel.lines[5].colour, resourceColour(Resource::Pottery));
+    EXPECT_EQ(panel.lines[3].colour, kReadoutTitle);
+    EXPECT_EQ(panel.lines[4].colour, resourceColour(Resource::Food));
+    EXPECT_EQ(panel.lines[5].colour, resourceColour(Resource::Clay));
+    EXPECT_EQ(panel.lines[6].colour, resourceColour(Resource::Pottery));
 }
 
 TEST(ReadoutPanelTest, Panel_HoldsEveryLineInsideItsOwnBox)
@@ -277,10 +280,11 @@ TEST(ReadoutPanelTest, Panel_ListsEveryServiceThatStillReachesABuilding)
         kCanvas,
         kTranslator);
 
-    ASSERT_EQ(panel.lines.size(), 3U);
+    ASSERT_EQ(panel.lines.size(), 4U);
     EXPECT_EQ(panel.lines[0].text, "well");
-    EXPECT_EQ(panel.lines[1].text, "water 100%");
-    EXPECT_EQ(panel.lines[2].text, "safety 50%");
+    EXPECT_EQ(panel.lines[1].text, "staff 0/1");
+    EXPECT_EQ(panel.lines[2].text, "water 100%");
+    EXPECT_EQ(panel.lines[3].text, "safety 50%");
 }
 
 // The tier is named rather than numbered.
@@ -313,7 +317,7 @@ TEST(ReadoutPanelTest, Panel_ListsNoServiceThatHasLapsed)
         kCanvas,
         kTranslator);
 
-    ASSERT_EQ(panel.lines.size(), 6U);
+    ASSERT_EQ(panel.lines.size(), 7U);
     EXPECT_EQ(panel.lines[0].text, "house");
 }
 
@@ -352,8 +356,9 @@ TEST(ReadoutPanelTest, Panel_SaysNoOccupancyForABuildingNobodyLivesIn)
         kCanvas,
         kTranslator);
 
-    ASSERT_EQ(panel.lines.size(), 1U);
+    ASSERT_EQ(panel.lines.size(), 2U);
     EXPECT_EQ(panel.lines[0].text, "well");
+    EXPECT_EQ(panel.lines[1].text, "staff 0/1");
 }
 
 TEST(ReadoutPanelTest, Panel_ColoursACoverageLineOutOfTheServiceTable)
@@ -367,6 +372,6 @@ TEST(ReadoutPanelTest, Panel_ColoursACoverageLineOutOfTheServiceTable)
         kCanvas,
         kTranslator);
 
-    ASSERT_EQ(panel.lines.size(), 2U);
-    EXPECT_EQ(panel.lines[1].colour, serviceColour(Service::Health));
+    ASSERT_EQ(panel.lines.size(), 3U);
+    EXPECT_EQ(panel.lines[2].colour, serviceColour(Service::Health));
 }

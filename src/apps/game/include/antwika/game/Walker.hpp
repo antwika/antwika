@@ -46,13 +46,14 @@ namespace antwika::game
         MarketBuyer,       ///< Fetches an input from a store.
         MarketSeller,      ///< Hands goods out to houses.
         Migrant,           ///< Moving into a house, or leaving town.
+        Labourer,          ///< Carries a house's workforce to jobs.
     };
 
     /**
      * @brief How many walker kinds there are.
      */
     inline constexpr std::size_t kWalkerKindCount =
-        static_cast<std::size_t>(WalkerKind::Migrant) + 1;
+        static_cast<std::size_t>(WalkerKind::Labourer) + 1;
 
     /**
      * @brief Get a kind's index, for addressing a per-kind table.
@@ -105,7 +106,8 @@ namespace antwika::game
             std::nullopt,     // CartPusher
             std::nullopt,     // MarketBuyer
             Resource::Food,   // MarketSeller
-            std::nullopt};    // Migrant
+            std::nullopt,     // Migrant
+            std::nullopt};    // Labourer
 
         return carries[walkerKindIndex(kind) % kWalkerKindCount];
     }

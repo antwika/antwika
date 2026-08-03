@@ -310,9 +310,15 @@ namespace antwika::ecs
             auto *rawPtr = storage.get();
             pools.emplace(key, std::move(storage));
 
-            commitCallbacks.push_back([rawPtr] { rawPtr->commit(); });
+            // Both markers are for one instantiation's records.
+            // The discarded-copy rule the comment below states.
+            // Which type's copy survives moves as a TU is added.
+            // See docs/confirming-unreachable-branches.md, (d).
+            commitCallbacks.push_back(
+                [rawPtr] // GCOVR_EXCL_LINE
+                { rawPtr->commit(); });
             removeFromAllPools.push_back(
-                [rawPtr](Entity entity)
+                [rawPtr](Entity entity) // GCOVR_EXCL_LINE
                 {
                     // The marker is for one instantiation's record.
                     // gcov emits this pair per component type.

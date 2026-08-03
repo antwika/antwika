@@ -22,7 +22,8 @@
 #include "antwika/game/Production.hpp"
 #include "antwika/game/SaveFormatError.hpp"
 #include "antwika/game/Walker.hpp"
-#include "antwika/game/Workforce.hpp"
+#include "antwika/game/Staff.hpp"
+#include "antwika/game/Employment.hpp"
 #include "SaveSections.hpp"
 
 namespace antwika::game
@@ -257,6 +258,7 @@ namespace antwika::game
         requireConsistentLinks(save);
         requireConsistentErrands(save);
         requireConsistentJourneys(save);
+        requireConsistentStaffing(save);
 
         return save;
     } // GCOVR_EXCL_LINE
@@ -348,16 +350,6 @@ namespace antwika::game
                 household = world.get<Household>(entity);
             }
 
-            // Written only where there is one, for the same reason.
-            // An absent component is a building labour has not reached.
-            // Which is exactly what an absent member says too.
-            std::optional<std::int32_t> employed;
-
-            if (world.has<Workforce>(entity))
-            {
-                employed = world.get<Workforce>(entity).employed;
-            }
-
             // The branches left on the excluded line are that pad.
             // push_back destroying the temporary it was handed.
             // Reachable only if the vector's allocation throws.
@@ -374,8 +366,69 @@ namespace antwika::game
                 .walkers = {},
                 .coverage = coverage.ticksLeft,
                 .ticksUntilOutput = countdown,
-                .household = household,
-                .employed = employed});
+                .household = household});
+        }
+
+        // The two labour ledgers, once every building is indexed.
+        // An entry naming a building not in the file names nothing.
+        for (const auto entity : world.view<Building, Cell>())
+        {
+            if (world.has<Staff>(entity))
+            {
+                const auto &staff = world.get<Staff>(entity);
+                // The unwind pad of a record with a vector member.
+                // See docs/confirming-unreachable-branches.md, (a).
+                // GCOVR_EXCL_START
+                StoredStaff stored{
+                    .entries = {},
+                    .ticksUntilDecay = staff.ticksUntilDecay};
+                // GCOVR_EXCL_STOP
+
+                for (const auto &entry : staff.sources)
+                {
+                    const auto found = buildingAt.find(entry.house);
+
+                    if (entry.count > 0 && found != buildingAt.end())
+                    {
+                        stored.entries.push_back(
+                            StoredStaffEntry{
+                                .house = found->second,
+                                .count = entry.count});
+                    }
+                }
+
+                save.buildings[buildingAt.at(entity)].staff = stored;
+            }
+
+            if (world.has<Employment>(entity))
+            {
+                const auto &employment = world.get<Employment>(entity);
+                // The unwind pad of a record with a vector member.
+                // See docs/confirming-unreachable-branches.md, (a).
+                // GCOVR_EXCL_START
+                StoredEmployment stored{
+                    .jobs = {},
+                    .ticksUntilDispatch =
+                        employment.ticksUntilDispatch};
+                // GCOVR_EXCL_STOP
+
+                for (const auto &holding : employment.jobs)
+                {
+                    const auto found =
+                        buildingAt.find(holding.workplace);
+
+                    if (holding.count > 0 && found != buildingAt.end())
+                    {
+                        stored.jobs.push_back(
+                            StoredJob{
+                                .workplace = found->second,
+                                .count = holding.count});
+                    }
+                }
+
+                save.buildings[buildingAt.at(entity)].employment =
+                    stored;
+            }
         }
 
         // The errands' destinations, once every building is indexed.

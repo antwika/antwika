@@ -1,5 +1,7 @@
 #include "antwika/game/ReadoutPanel.hpp"
 
+#include "antwika/game/Workforce.hpp"
+
 #include <algorithm>
 #include <array>
 #include <cstddef>
@@ -62,7 +64,8 @@ namespace antwika::game
                 MessageId::WalkerCartPusher,
                 MessageId::WalkerMarketBuyer,
                 MessageId::WalkerMarketSeller,
-                MessageId::WalkerMigrant};
+                MessageId::WalkerMigrant,
+                MessageId::WalkerLabourer};
 
         constexpr std::array<MessageId, kResourceCount> kResourceLabels{
             MessageId::ResourceFood,
@@ -139,6 +142,36 @@ namespace antwika::game
                 MessageId::ReadoutOccupancy, args);
         }
 
+        // Idle hands out of everybody living there.
+        // What decides whether the house still sends its labourer.
+        [[nodiscard]] std::string unemployedText(
+            const Translator &translator,
+            std::int32_t living,
+            std::int32_t employed)
+        {
+            const auto idle = std::to_string(
+                std::max(living - employed, 0));
+            const auto everybody = std::to_string(living);
+            const std::array<std::string_view, 2> args{idle, everybody};
+
+            return translator.formatted(
+                MessageId::ReadoutUnemployed, args);
+        }
+
+        // Who turned up, out of who the kind wants.
+        // workedPeriod() is where this same pair becomes a rate.
+        [[nodiscard]] std::string staffText(
+            const Translator &translator,
+            std::int32_t working,
+            std::int32_t wanted)
+        {
+            const auto filled = std::to_string(working);
+            const auto asked = std::to_string(wanted);
+            const std::array<std::string_view, 2> args{filled, asked};
+
+            return translator.formatted(MessageId::ReadoutStaff, args);
+        }
+
         // Per cent rather than the ticks the component counts.
         // A countdown in ticks is a number about the simulation.
         // What a reader wants is how much of the service is left.
@@ -199,6 +232,27 @@ namespace antwika::game
                                 translator,
                                 building.level,
                                 building.population),
+                            .colour = kReadoutTitle});
+
+                    said.push_back(
+                        Said{ // GCOVR_EXCL_LINE
+                            .text = unemployedText(
+                                translator,
+                                building.population,
+                                building.employed),
+                            .colour = kReadoutTitle});
+                }
+
+                // Staffing is a fact about a workplace alone.
+                // The kind's own table says whether it is one.
+                if (workersWantedBy(building.kind) > 0)
+                {
+                    said.push_back(
+                        Said{ // GCOVR_EXCL_LINE
+                            .text = staffText(
+                                translator,
+                                building.employed,
+                                workersWantedBy(building.kind)),
                             .colour = kReadoutTitle});
                 }
 

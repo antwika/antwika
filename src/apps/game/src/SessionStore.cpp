@@ -12,7 +12,6 @@
 #include "antwika/game/Household.hpp"
 #include "antwika/game/Production.hpp"
 #include "antwika/game/Walker.hpp"
-#include "antwika/game/Workforce.hpp"
 
 namespace antwika::game
 {
@@ -116,13 +115,9 @@ namespace antwika::game
                     .ticksUntilOutput = *building.ticksUntilOutput};
             }
 
-            std::optional<Workforce> workforce;
-
-            if (building.employed.has_value())
-            {
-                workforce = Workforce{.employed = *building.employed};
-            }
-
+            // The unwind pad of a record with a vector member.
+            // See docs/confirming-unreachable-branches.md, (a).
+            // GCOVR_EXCL_START
             grid.buildings.push_back(
                 StoredBuilding{
                     .at = building.at,
@@ -138,7 +133,9 @@ namespace antwika::game
                     .coverage = Coverage{.ticksLeft = building.coverage},
                     .production = production,
                     .household = building.household,
-                    .workforce = workforce});
+                    .staff = building.staff,
+                    .employment = building.employment});
+            // GCOVR_EXCL_STOP
         }
 
         restoreCityGrid(world, built, paths, grid);
