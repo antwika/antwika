@@ -51,4 +51,21 @@ namespace antwika::game
     [[nodiscard]] SaveCliOptions saveCliOptionsFrom(
         const antwika::cli::CommandLine &parsed);
 
+    /**
+     * @brief Refuse `--record` beside `--load`.
+     * @param options The save options the run was invoked with.
+     * @param recording Whether `--record` was given too.
+     * @throws antwika::cli::CommandLineError for the pair.
+     *
+     * A recording keeps only input, and a loaded city is not input:
+     * it reaches the session directly, through no event.
+     * So a `--record` run started from a save would replay against an
+     * empty grid, and every recorded click would resolve against a
+     * different city -- silent divergence from the first tick.
+     * Until the loaded city is announced as an event upstream of the
+     * recorder, the pair is refused rather than recorded wrongly.
+     */
+    void requireRecordableStart(
+        const SaveCliOptions &options, bool recording);
+
 } // namespace antwika::game
