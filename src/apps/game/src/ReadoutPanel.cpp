@@ -18,7 +18,7 @@
 #include "antwika/game/MessageId.hpp"
 #include "antwika/game/Messages.hpp"
 #include "antwika/game/Resource.hpp"
-#include "antwika/game/ResourceBar.hpp"
+#include "antwika/game/ResourceColour.hpp"
 #include "antwika/game/Service.hpp"
 #include "antwika/game/Walker.hpp"
 

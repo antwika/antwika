@@ -50,7 +50,7 @@ add_executable(antwika_game
     src/ProductionSystem.cpp
     src/RatingsSystem.cpp
     src/ReadoutPanel.cpp
-    src/ResourceBar.cpp
+    src/ResourceColour.cpp
     src/RenderSystem.cpp
     src/RoadDrag.cpp
     src/RoadPlan.cpp

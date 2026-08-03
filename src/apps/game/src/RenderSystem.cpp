@@ -1,6 +1,7 @@
 #include "antwika/game/RenderSystem.hpp"
 
 #include <antwika/gfx/Color.hpp>
+#include <antwika/gfx/Point.hpp>
 #include <antwika/gfx/ViewportRenderer.hpp>
 #include <antwika/ui/Painter.hpp>
 
@@ -133,19 +134,34 @@ namespace antwika::game
     void RenderSystem::drawGrid(
         IRenderer &renderer, antwika::animation::Progress subTick)
     {
+        const auto pointer = setup.hint.forRenderingOnly();
+
+        // Asked of the layout, at the position the ghost is drawn from.
+        // Rather than of the flag the last recorded press settled.
+        // The two differ while the pointer moves with nothing held.
+        // Which is exactly when a ghost is worth drawing.
+        // Idle motion is thinned out of the recorded stream.
+        // So the flag stays true from the click that chose a tool.
+        // Until the next press, and the ghost was hidden for all of it.
+        // What the bar covers still comes *from* UiOverlay.
+        // Which is the direction the rule allows.
+        // The hint decides this and nothing else.
+        const auto covered = pointer.has_value()
+            && setup.overlay.coversPoint(antwika::gfx::Point{
+                .x = pointer->position.x, .y = pointer->position.y});
+
         // Worked out here rather than staged into the World.
         // The hint is a value no replay reproduces.
         // Folding it in would make the two disagree -- see BuildGhost.
-        // What the bar covers comes *from* UiOverlay, never the reverse.
         // Re-read every frame rather than once a tick.
         // So the ghost follows the pointer at the rate it is drawn at.
         // That is free, since a hint is render-side by construction.
         latest.ghost = ghostFor(
-            setup.hint.forRenderingOnly(),
+            pointer,
             setup.camera,
             setup.extent,
             setup.overlay.tool(),
-            setup.overlay.pointerOverUi(),
+            covered,
             setup.paths,
             setup.built);
 
@@ -155,21 +171,7 @@ namespace antwika::game
         // Worked out here rather than in a sink, for the ghost's reason.
         // No replay reproduces a hint.
         // So nothing folded from one may reach what a replay does.
-        // See docs/confirming-unreachable-branches.md, signature (b).
-        // The marker below is the unwind landing pad of hoverFor().
-        // gcov -b reports it as "call 0 never executed".
-        // Every other line of this statement runs once per drawGrid().
-        // Nothing branches between them, so no test can part them.
-        // The real forRenderingOnly() call is attributed to "latest,".
-        // Which is an argument line holding no call at all.
-        // ghostFor() above has the very same landing pad.
-        // There it shares a line with a call that did run.
-        // So it costs a line here and none there.
-        latest.hover = hoverFor(
-            setup.hint.forRenderingOnly(), // GCOVR_EXCL_LINE
-            setup.camera,
-            latest,
-            setup.overlay.pointerOverUi());
+        latest.hover = hoverFor(pointer, setup.camera, latest, covered);
 
         // Against the configured canvas, never the reported size.
         // The scene's own culling is then the same on every window.

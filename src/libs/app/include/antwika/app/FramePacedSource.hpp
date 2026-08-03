@@ -6,6 +6,7 @@
 
 #include <antwika/event/Event.hpp>
 #include <antwika/simulation/ITickEventSource.hpp>
+#include <antwika/time/IClock.hpp>
 #include <antwika/time/ISleeper.hpp>
 #include <antwika/time/Tick.hpp>
 
@@ -31,6 +32,14 @@ namespace antwika::app
          *
          * One means the tick's own frame and nothing else, which is what
          * a plain frame limiter does.
+         *
+         * **A ceiling rather than a quota.** Each frame has a due time
+         * measured from the top of the tick, and one whose time has
+         * already gone by when it comes up is dropped rather than drawn
+         * late -- so a machine that cannot manage this many draws inside
+         * a tick shows fewer of them and the tick still lasts exactly
+         * tickInterval. Raising it therefore costs nothing on a machine
+         * that cannot use it, which is what makes a high value safe.
          */
         std::uint32_t framesPerTick = 1;
     };
@@ -63,6 +72,20 @@ namespace antwika::app
      * The waiting is antwika::time::ISleeper's, which is what everything
      * in this project paces through, so a test asserts what was asked
      * for rather than spending the time.
+     *
+     * **Every wait is measured from the top of the tick rather than
+     * from the last one, and that is what decides the frame rate.** A
+     * pacer that slept one whole slice per frame added the sleeper's
+     * own overshoot to every slice: a millisecond of scheduler
+     * granularity per frame turns four frames over a forty-millisecond
+     * tick into ten a tick's worth of *time*, and the run either draws
+     * fewer frames a second than it asked for or -- worse -- takes
+     * longer than a tick to tick. Both showed up as a frame counter
+     * short of the rate the pacing named. Each frame is due at a fixed
+     * offset instead, so an overshoot is absorbed by the next wait
+     * rather than accumulated, the tick lands on tickInterval to
+     * whatever the sleeper's resolution allows, and framesPerTick may
+     * be raised until the machine rather than the pacing is the limit.
      */
     class FramePacedSource final : public ITickEventSource
     {
@@ -74,6 +97,9 @@ namespace antwika::app
          * @param pass Draws the frames between ticks; must outlive this
          * object.
          * @param sleeper Does the waiting; must outlive this object.
+         * @param clock Says how much of the tick has actually gone, so a
+         * wait can be measured from the top of it; must outlive this
+         * object.
          * @param pacing How long a tick lasts and how many frames show it.
          * @throws FramePacingError If pacing.framesPerTick is zero, since
          * a tick nothing is drawn on is a pacing nobody could have meant.
@@ -82,6 +108,7 @@ namespace antwika::app
             ITickEventSource &inner,
             IFramePass &pass,
             ISleeper &sleeper,
+            const antwika::time::IClock &clock,
             FramePacing pacing);
 
         FramePacedSource(const FramePacedSource &) = delete;
@@ -93,8 +120,8 @@ namespace antwika::app
         /**
          * @brief Draw this tick's share of frames, then get its events.
          *
-         * The total waited is the whole tick interval however many
-         * frames it was split into, so changing the frame rate changes
+         * The tick ends one whole interval after it began however many
+         * frames were fitted into it, so changing the frame rate changes
          * how smooth a run looks and never how fast it goes.
          *
          * @param tick The tick to fetch events for.
@@ -104,9 +131,21 @@ namespace antwika::app
             antwika::time::Tick tick) override;
 
     private:
+        /**
+         * @brief Wait until a point measured from the top of the tick.
+         * @param started When the tick began.
+         * @param elapsed How far into it to wait for.
+         * @return Whether that point was still ahead when asked; false
+         * means the moment has gone and the caller draws nothing for it.
+         */
+        [[nodiscard]] bool waitUntil(
+            std::chrono::time_point<std::chrono::system_clock> started,
+            std::chrono::milliseconds elapsed);
+
         ITickEventSource &inner;
         IFramePass &pass;
         ISleeper &sleeper;
+        const antwika::time::IClock &clock;
         FramePacing pacing;
     };
 

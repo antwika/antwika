@@ -52,7 +52,7 @@ add_executable(antwika_game_tests
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/ProductionSystem.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/RatingsSystem.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/ReadoutPanel.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/../src/ResourceBar.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/ResourceColour.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/RenderSystem.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/RoadDrag.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/RoadPlan.cpp
@@ -148,7 +148,7 @@ add_executable(antwika_game_tests
     PlacementTest.cpp
     PointerReadingTest.cpp
     ReadoutPanelTest.cpp
-    ResourceBarTest.cpp
+    ResourceColourTest.cpp
     RenderSystemTest.cpp
     RoadDragTest.cpp
     RoadPlanTest.cpp
