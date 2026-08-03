@@ -27,6 +27,17 @@ namespace antwika::network::sockets
         /** @brief How many bytes one recv() asks for at a time. */
         constexpr std::size_t kReadChunk = 4096;
 
+        // A send to a peer that reset raises SIGPIPE on POSIX.
+        // Its default action ends the whole process.
+        // That pre-empts the EPIPE the error path would handle.
+        // The flag asks for the errno alone.
+        // Windows has no SIGPIPE, and no such flag to ask with.
+#ifdef _WIN32
+        constexpr int kSendFlags = 0;
+#else
+        constexpr int kSendFlags = MSG_NOSIGNAL;
+#endif
+
         std::string nameOf(const Endpoint &endpoint)
         {
             return endpoint.host + ":"
@@ -396,7 +407,7 @@ namespace antwika::network::sockets
                 peer.handle,
                 reinterpret_cast<const char *>(peer.outbound.data()),
                 static_cast<int>(peer.outbound.size()),
-                0);
+                kSendFlags);
 
             if (written <= 0)
             {
@@ -442,6 +453,9 @@ namespace antwika::network::sockets
             {
                 if (!lastWouldBlock())
                 {
+                    // A reset can race in behind a complete frame.
+                    // What arrived whole is kept, as on a close.
+                    takeFrames(peer);
                     drop(peer);
 
                     return;
