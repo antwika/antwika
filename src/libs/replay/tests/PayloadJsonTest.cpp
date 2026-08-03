@@ -1,3 +1,4 @@
+#include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
 #include <cstddef>
@@ -42,10 +43,10 @@ namespace
         return validator;
     }
 
-    // Arrays nested one level past what the depth bound allows.
+    // A number under one more level of arrays than the bound allows.
     std::string pastTheBound()
     {
-        std::string text;
+        std::string text = "7";
 
         for (std::size_t level = 0; level <= kMaxDocumentDepth;
              ++level)
@@ -84,10 +85,16 @@ TEST(PayloadJsonTest, RefusesAPayloadTheSchemaRejects)
 // A record is depth two, but its payload is a free string.
 // The validator's refusal path serializes what it refuses.
 // That recursion is what the guard keeps off the stack.
+// The schema would also refuse this payload.
+// Asserting the message proves the depth guard got there first.
 TEST(PayloadJsonTest, RefusesAPayloadNestedPastTheDepthBound)
 {
-    EXPECT_THROW(
-        (void)parseAndValidatePayload<ToyPayloadError>(
-            pastTheBound(), toyValidator(), "toy payload"),
-        ToyPayloadError);
+    EXPECT_THAT(
+        []
+        {
+            (void)parseAndValidatePayload<ToyPayloadError>(
+                pastTheBound(), toyValidator(), "toy payload");
+        },
+        testing::ThrowsMessage<ToyPayloadError>(
+            testing::HasSubstr("nests deeper")));
 }

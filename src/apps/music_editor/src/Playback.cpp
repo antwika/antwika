@@ -67,7 +67,10 @@ namespace antwika::music_editor
                         startFrame),
                     .startFrame = startFrame + offset});
         }
-        catch (const synth::SynthError &)
+        // The excluded line is the no-match edge of the handler.
+        // Only an exception that is not a SynthError would take it.
+        // See docs/confirming-unreachable-branches.md.
+        catch (const synth::SynthError &) // GCOVR_EXCL_LINE
         {
             return;
         }
@@ -198,7 +201,10 @@ namespace antwika::music_editor
                     line.sequencer->advance(
                         played, voices[at].playing, *line.voices);
                 }
-                catch (const pattern::PatternError &)
+                // The excluded line is the handler's no-match edge.
+                // Only some other exception type would take it.
+                // See docs/confirming-unreachable-branches.md.
+                catch (const pattern::PatternError &) // GCOVR_EXCL_LINE
                 {
                 }
 
