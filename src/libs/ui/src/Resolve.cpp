@@ -397,17 +397,64 @@ namespace antwika::ui::detail
         }
 
         /**
+         * @brief Get how many rows one line of an area stands on.
+         *
+         * Its own row, and every row its bands hold open under it.
+         * Everything mapping rows to lines counts through this, so a
+         * band moves what is under it in the layout and in the
+         * arithmetic alike.
+         *
+         * @param area The area whose bands to count.
+         * @param line The line, counting from zero.
+         * @return The rows, at least one.
+         */
+        [[nodiscard]] std::size_t rowsOf(
+            const Area &area, const std::size_t line) noexcept
+        {
+            std::size_t rows = 1;
+
+            for (const auto &band : area.bands)
+            {
+                if (band.line == line)
+                {
+                    rows += band.rows;
+                }
+            }
+
+            return rows;
+        }
+
+        /**
+         * @brief Get how many rows the lines above one line stand on.
+         * @param area The area whose bands to count.
+         * @param line The first line not counted.
+         * @return The rows, bands included.
+         */
+        [[nodiscard]] std::size_t rowsBefore(
+            const Area &area, const std::size_t line) noexcept
+        {
+            std::size_t rows = 0;
+
+            for (std::size_t at = 0; at < line; ++at)
+            {
+                rows += rowsOf(area, at);
+            }
+
+            return rows;
+        }
+
+        /**
          * @brief What one area's own state comes to once it is laid
          * out.
          *
          * Everything below reads this rather than working the same
-         * numbers out again: how many lines are showing is what decides
+         * numbers out again: how many rows are showing is what decides
          * how far the area can scroll, where its thumb goes, and which
          * line a click is on.
          */
         struct Showing
         {
-            /** @brief How many whole lines fit, never zero. */
+            /** @brief How many whole rows fit, never zero. */
             std::size_t page = 1;
 
             /** @brief The furthest line that can usefully be at top. */
@@ -422,14 +469,31 @@ namespace antwika::ui::detail
         {
             const auto &column = tree.node(area.column).arranged;
 
-            // An area too short for a whole line still shows one.
+            // An area too short for a whole row still shows one.
             // Nothing below could divide by it otherwise.
             const auto page = std::max<std::size_t>(
                 column.size.height / area.lineHeight, 1);
 
+            // Walked in rows from the end rather than subtracted.
+            // A line with a band under it stands on more rows than one.
+            // So the last page holds however many lines fit.
+            std::size_t furthest = area.lines;
+            std::size_t rows = 0;
+
+            while (furthest > 0
+                   && rows + rowsOf(area, furthest - 1) <= page)
+            {
+                rows += rowsOf(area, furthest - 1);
+                --furthest;
+            }
+
+            // A last line whose band outgrows the page walks nowhere.
+            // The top line it can be is still a real line.
+            furthest = std::min(furthest, area.lines - 1);
+
             return Showing{
                 .page = page,
-                .furthest = area.lines > page ? area.lines - page : 0,
+                .furthest = furthest,
                 .column = column};
         }
 
@@ -453,7 +517,10 @@ namespace antwika::ui::detail
             const auto track = tree.node(area.track).arranged;
 
             const auto whole = track.size.height;
-            const auto share = across(showing.page, area.lines, whole);
+
+            // In rows rather than lines, so a band counts as content.
+            const auto share = across(
+                showing.page, rowsBefore(area, area.lines), whole);
 
             // Never thinner than a line.
             // A long document would leave nothing to take hold of.
@@ -467,7 +534,9 @@ namespace antwika::ui::detail
                     {.x = track.origin.x,
                      .y = track.origin.y
                           + static_cast<std::int32_t>(across(
-                              area.scroll, showing.furthest, slack))},
+                              rowsBefore(area, area.scroll),
+                              rowsBefore(area, showing.furthest),
+                              slack))},
                 .size = {.width = track.size.width, .height = thumb}};
         }
 
@@ -534,10 +603,23 @@ namespace antwika::ui::detail
                       .cursor = area.cursor,
                       .anchor = area.anchor};
 
+            // Which line the clicked row was drawn on, bands counted.
+            // A row inside a line's band belongs to that line.
+            // One past every line walks out, onto the text's end.
+            auto remaining =
+                static_cast<std::size_t>(down / area.lineHeight);
+            auto line = area.scroll;
+
+            while (line < area.lines
+                   && remaining >= rowsOf(area, line))
+            {
+                remaining -= rowsOf(area, line);
+                ++line;
+            }
+
             next.cursor = indexAt(
                 next.text,
-                area.scroll + static_cast<std::size_t>(
-                    down / area.lineHeight),
+                line,
                 static_cast<std::size_t>(right / area.advance));
 
             if (!extends)
@@ -625,11 +707,21 @@ namespace antwika::ui::detail
                 {
                     const auto line = lineOf(edit->text, edit->cursor);
 
-                    top = std::clamp(
-                        top,
-                        line + 1 > showing.page ? line + 1 - showing.page
-                                                : 0,
-                        line);
+                    // The nearest top that still shows the line.
+                    // Walked in rows, so the bands above it count.
+                    // The line's own band may hang past the page.
+                    std::size_t least = line;
+                    std::size_t rows = 1;
+
+                    while (least > 0
+                           && rows + rowsOf(area, least - 1)
+                                  <= showing.page)
+                    {
+                        rows += rowsOf(area, least - 1);
+                        --least;
+                    }
+
+                    top = std::clamp(top, least, line);
                 }
 
                 // Never for an unnamed area.

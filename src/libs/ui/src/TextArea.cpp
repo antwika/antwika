@@ -380,6 +380,24 @@ namespace antwika::ui
                         .caret = carries ? std::optional{cursor}
                                          : std::nullopt,
                         .lit = clamped});
+
+                // A band's room, held open under the line it names.
+                // Named, so Frame::rects says where it ended up.
+                // The lines under it move down by what it holds.
+                for (const auto &band : spec.bands)
+                {
+                    if (band.line != line || band.rows == 0)
+                    {
+                        continue;
+                    }
+
+                    tree->add(Node{ // GCOVR_EXCL_LINE
+                        .width = kGrow,
+                        .height = fixedSize(clampToU32(
+                            std::uint64_t{band.rows}
+                            * lineHeightOf(themeValue))),
+                        .id = band.id});
+                }
             }
 
             begin = end + 1;
@@ -435,6 +453,7 @@ namespace antwika::ui
             .cursor = cursor,
             .anchor = anchor,
             .dragging = spec.dragging,
+            .bands = spec.bands,
             // Never zero, so the arithmetic reading them divides by something.
             // A theme may ask for no scale at all.
             .lineHeight = std::max(1U, lineHeightOf(themeValue)),
