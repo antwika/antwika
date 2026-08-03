@@ -741,6 +741,25 @@ The block leaves the `BuildingIndex` *before* anybody routes anywhere, because t
 The index is the note kept current within the tick, so a block razed a moment ago already reads as gone and one press cannot tear one building down twice; a block *placed* earlier in the same tick is the opposite case -- in the index and not yet in the committed World -- and cannot be found to tear down until the next tick, which is the same "the World hands out the last commit" answer double placement already has.
 `BuildingSystem` demolishes what it loses in ascending `Cell` order rather than the pending map's entity order, because a demolition now spawns contended walkers and an entity order is one a restore may renumber -- see `AllocationOrderTest`.
 
+## Labour walks to work, and both ends keep the ledger
+
+**Allocation stopped being a spreadsheet and became a walker.**
+`LabourSystem` used to hand the city's whole population to workplaces out of a map, once a tick, from nowhere; a house now sends one road-bound `WalkerKind::Labourer` at a time, carrying exactly its idle people in `Walker::carried`, and `StaffingSystem` empties it into the understaffed workplaces it passes.
+A labourer that runs out of people turns for home by having its roaming budget zeroed -- WalkerSystem already knows what a spent budget means -- and one whose budget runs out first walks home like every other walker, its unspent load simply at home again, since the idle pool is counted from the ledgers and never stored.
+
+**One fact, two ledgers, one writer.**
+`Staff` on a workplace and `Employment` on a house say "these people work there" from either end, and `StaffingSystem` is the only writer of both, which is what keeps them agreeing; `LabourDispatchSystem` writes only the dispatch countdown and the walker.
+The building half is what "staff 6/8" is read from and what `workedPeriod()` turns into a rate; the house half is what "unemployed 4/16" is read from, and it is why a fully employed house sends nobody at all.
+Staffing decays on each workplace's own countdown -- one person per `kStaffDecayPeriodTicks` drifts back to the house the ledger names, from the lowest occupied slot, so a district labour stops reaching runs down to nobody and its own walkers slow and stop with it.
+Every entry naming a demolished building is dropped in the same system's tend pass, so a demolition needs no labour bookkeeping of its own.
+
+**"Absent means fully staffed" ends the moment StaffingSystem runs.**
+The default that let the goods chain be written before people existed is still what a fixture without the staffing systems reads, but the tend pass gives every workplace an empty ledger on its first tick -- so under the real composition a fresh building starts unstaffed and works only once somebody walks to it.
+The save format grew two optional ledgers on the same terms as every section before them, with the houses named by index exactly as a walker's home is, and refused on the same out-of-range terms.
+The legacy `"employed"` count older files carry is still accepted by the schema and deliberately ignored: a bare count without the houses it came from is a ledger nobody can decay honestly, so such a city loads unstaffed and staffs itself again within a few hundred ticks.
+
+**`BuildingView` carries the employed count**, so a live run and its replay disagreeing about who works where fails `ReplayDeterminismTest` directly, and the hover readout says both numbers in words -- `unemployed {0}/{1}` on anything that houses people, `staff {0}/{1}` on anything that wants workers.
+
 ## Future work
 
 **`UiSink`/`UiOverlay`/`Toolbar` should adopt `ui::applyHover()` next.**

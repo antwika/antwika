@@ -6,11 +6,33 @@
 
 #include "antwika/game/Building.hpp"
 #include "antwika/game/Coverage.hpp"
+#include "antwika/game/Employment.hpp"
+#include "antwika/game/Staff.hpp"
 #include "antwika/game/HousingQuery.hpp"
 #include "antwika/game/Walker.hpp"
 
 namespace antwika::game
 {
+    namespace
+    {
+        // One number for both readings -- see BuildingView::employed.
+        [[nodiscard]] std::int32_t employedOf(
+            const World &world, antwika::ecs::Entity entity)
+        {
+            if (world.has<Employment>(entity))
+            {
+                return employedCount(world.get<Employment>(entity));
+            }
+
+            if (world.has<Staff>(entity))
+            {
+                return staffCount(world.get<Staff>(entity));
+            }
+
+            return 0;
+        }
+    } // namespace
+
 
     SceneSnapshot snapshotOf(
         const World &world,
@@ -75,7 +97,8 @@ namespace antwika::game
                     .stock = building.stock,
                     .coverage = coverage,
                     .level = level,
-                    .population = living});
+                    .population = living,
+                    .employed = employedOf(world, entity)});
         }
 
         // **Painter's order, no longer optional.**
@@ -118,6 +141,7 @@ namespace antwika::game
         // Nothing between its construction and the return throws.
     } // GCOVR_EXCL_LINE
 
+
     std::vector<BuildingView> buildingViewsOf(const World &world)
     {
         std::vector<BuildingView> views;
@@ -135,7 +159,8 @@ namespace antwika::game
                     .kind = world.get<Building>(entity).kind,
                     .coverage = coverage,
                     .level = level,
-                    .population = living});
+                    .population = living,
+                    .employed = employedOf(world, entity)});
         }
 
         return views;

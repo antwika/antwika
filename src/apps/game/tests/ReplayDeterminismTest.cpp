@@ -634,7 +634,9 @@ TEST(ReplayDeterminismTest, TheIdleMotionGateShortensTheRecording)
 namespace
 {
     // The countdown a tent takes to fill, plus the cadence and the walk.
-    const antwika::time::Tick kSpawnTicks = 200;
+    // Long enough for people to move in and labourers to walk.
+    // And then for the staffed sources to send somebody of their own.
+    const antwika::time::Tick kSpawnTicks = 700;
 
     [[nodiscard]] std::vector<TickEvent> buildingSession()
     {

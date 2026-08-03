@@ -5,6 +5,7 @@
 #include <antwika/ecs/Entity.hpp>
 
 #include "antwika/game/Building.hpp"
+#include "antwika/game/Staff.hpp"
 #include "antwika/game/Workforce.hpp"
 
 namespace antwika::game
@@ -17,15 +18,15 @@ namespace antwika::game
             : 0;
 
         // Fully staffed rather than empty -- see the header.
-        // A workplace the allocation has not reached behaves as before.
+        // A workplace the staffing has not reached behaves as before.
         // Which is to say as it did when nobody lived here at all.
-        if (!world.has<Workforce>(entity))
+        if (!world.has<Staff>(entity))
         {
             return Staffing{.filled = wanted, .wanted = wanted};
         }
 
         return Staffing{
-            .filled = world.get<Workforce>(entity).employed,
+            .filled = staffCount(world.get<Staff>(entity)),
             .wanted = wanted};
     }
 

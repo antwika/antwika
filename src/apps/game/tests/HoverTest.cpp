@@ -236,7 +236,7 @@ TEST(HoverTest, AHoveredWellSaysNothingAboutWhoLivesThere)
             .kind = BuildingKind::Well,
             .population = 6});
 
-    EXPECT_EQ(said, (std::vector<std::string>{"well"}));
+    EXPECT_EQ(said, (std::vector<std::string>{"well", "staff 0/1"}));
 }
 
 // A building covers a block of cells rather than one.

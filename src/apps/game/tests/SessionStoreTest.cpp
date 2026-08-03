@@ -307,19 +307,28 @@ namespace
     }
 
     // A workplace reopened unstaffed is a workplace that speeds up.
-    // Because an absent Workforce means fully staffed.
-    // See LabourQuery.hpp, and so both halves have to carry the count.
-    TEST_F(SessionStoreTest, RestoreThenTake_BringsAnEmployedCountBack)
+    // Because an absent Staff means fully staffed.
+    // See LabourQuery.hpp, and so both halves have to carry the ledger.
+    TEST_F(SessionStoreTest, RestoreThenTake_BringsTheLedgersBack)
     {
         SaveGame save;
         save.buildings = {
             antwika::game::SavedBuilding{
                 .at = {.x = 5, .y = 5},
                 .kind = antwika::game::BuildingKind::Farm,
-                .employed = 3},
+                .staff = antwika::game::StoredStaff{
+                    .entries = {antwika::game::StoredStaffEntry{
+                        .house = 1, .count = 3}},
+                    .ticksUntilDecay = 5},
+                .employment = antwika::game::StoredEmployment{
+                    .jobs = {}, .ticksUntilDispatch = 2}},
             antwika::game::SavedBuilding{
                 .at = {.x = 9, .y = 9},
-                .kind = antwika::game::BuildingKind::Well}};
+                .kind = antwika::game::BuildingKind::House,
+                .employment = antwika::game::StoredEmployment{
+                    .jobs = {antwika::game::StoredJob{
+                        .workplace = 0, .count = 3}},
+                    .ticksUntilDispatch = 7}}};
 
         store.restore(save);
         world.commit();

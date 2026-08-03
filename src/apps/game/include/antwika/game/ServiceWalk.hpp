@@ -42,7 +42,8 @@ namespace antwika::game
             std::nullopt,         // CartPusher
             std::nullopt,         // MarketBuyer
             std::nullopt,         // MarketSeller
-            std::nullopt};        // Migrant
+            std::nullopt,         // Migrant
+            std::nullopt};        // Labourer
 
         return confers[walkerKindIndex(kind) % kWalkerKindCount];
     }

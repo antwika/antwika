@@ -163,6 +163,17 @@ namespace antwika::game
         std::int32_t population = 0;
 
         /**
+         * @brief How many of its people hold a job.
+         *
+         * One field for both readings, since a building is only
+         * ever one of the two: a house counts its people with
+         * jobs, off its Employment ledger, and a workplace
+         * counts the people working there, off its Staff -- so
+         * "Unemployed 4/16" and "Staff 6/8" both hang off it.
+         */
+        std::int32_t employed = 0;
+
+        /**
          * @brief Compare two building views.
          * @param other The view to compare against.
          * @return True when the cell, the kind, the coverage, the level
@@ -223,6 +234,17 @@ namespace antwika::game
          * the two travel together.
          */
         std::int32_t population = 0;
+
+        /**
+         * @brief How many of its people hold a job.
+         *
+         * One field for both readings, since a building is only
+         * ever one of the two: a house counts its people with
+         * jobs, off its Employment ledger, and a workplace
+         * counts the people working there, off its Staff -- so
+         * "Unemployed 4/16" and "Staff 6/8" both hang off it.
+         */
+        std::int32_t employed = 0;
 
         /**
          * @brief Compare two building sprites.

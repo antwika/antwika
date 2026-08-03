@@ -17,6 +17,7 @@
 #include "antwika/game/Household.hpp"
 #include "antwika/game/HousingLevel.hpp"
 #include "antwika/game/Service.hpp"
+#include "antwika/game/Staff.hpp"
 #include "antwika/game/Workforce.hpp"
 
 namespace
@@ -34,8 +35,9 @@ namespace
     using antwika::game::ratingsOf;
     using antwika::game::setCoverage;
     using antwika::game::setHousehold;
-    using antwika::game::setWorkforce;
-    using antwika::game::Workforce;
+    using antwika::game::setStaff;
+    using antwika::game::Staff;
+    using antwika::game::StaffEntry;
     using antwika::game::workersWantedBy;
     using antwika::log::mocks::MockLogger;
 
@@ -61,7 +63,10 @@ namespace
 
         void employ(Entity entity, std::int32_t people)
         {
-            setWorkforce(world, entity, Workforce{.employed = people});
+            Staff staff;
+            staff.sources[0] = StaffEntry{
+                .house = entity, .count = people};
+            setStaff(world, entity, staff);
             world.commit();
         }
 

@@ -21,7 +21,8 @@
 #include "antwika/game/HousingLevel.hpp"
 #include "antwika/game/KeyBindings.hpp"
 #include "antwika/game/Production.hpp"
-#include "antwika/game/Workforce.hpp"
+#include "antwika/game/Employment.hpp"
+#include "antwika/game/Staff.hpp"
 #include "antwika/game/SaveGame.hpp"
 #include "antwika/game/MapView.hpp"
 #include "antwika/game/SceneSnapshot.hpp"
@@ -57,7 +58,11 @@ namespace
     using antwika::game::CityRatings;
     using antwika::game::Household;
     using antwika::game::Staffing;
-    using antwika::game::Workforce;
+    using antwika::ecs::Entity;
+    using antwika::game::Employment;
+    using antwika::game::JobHolding;
+    using antwika::game::Staff;
+    using antwika::game::StaffEntry;
     using antwika::game::HousingLevel;
     using antwika::game::HousingRequirement;
     using antwika::game::RoadPlan;
@@ -113,6 +118,8 @@ namespace
             [](BuildingView &b) { b.level = HousingLevel::Cottage; });
         expectMemberCompared(
             base, [](BuildingView &b) { b.population = 3; });
+        expectMemberCompared(
+            base, [](BuildingView &b) { b.employed = 3; });
     }
 
     TEST(SceneSnapshotTest, BuildingSpriteEqualityComparesEveryField)
@@ -133,6 +140,8 @@ namespace
             base, [](BuildingSprite &b) { b.stock[1] = 99; });
         expectMemberCompared(
             base, [](BuildingSprite &b) { b.coverage[0] = 99; });
+        expectMemberCompared(
+            base, [](BuildingSprite &b) { b.employed = 3; });
         expectMemberCompared(
             base, [](BuildingSprite &b) { b.coverage[3] = 99; });
         expectMemberCompared(
@@ -261,12 +270,67 @@ namespace
             base, [](CityRatings &r) { r.serviceReach = 0; });
     }
 
-    TEST(WorkforceComponentTest, EqualityComparesItsOneCount)
+    TEST(StaffComponentTest, EqualityComparesTheLedger)
     {
-        const Workforce base{.employed = 3};
+        Staff base;
+        base.sources[0] = StaffEntry{.count = 3};
+        base.ticksUntilDecay = 5;
 
         expectMemberCompared(
-            base, [](Workforce &w) { w.employed = 0; });
+            base, [](Staff &s) { s.sources[0].count = 0; });
+        expectMemberCompared(
+            base, [](Staff &s) { s.sources[0].house = Entity{9}; });
+        expectMemberCompared(
+            base, [](Staff &s) { s.ticksUntilDecay = 0; });
+    }
+
+    TEST(StoredStaffTest, EqualityComparesEveryField)
+    {
+        using antwika::game::StoredStaff;
+        using antwika::game::StoredStaffEntry;
+
+        const StoredStaff base{
+            .entries = {StoredStaffEntry{.house = 1, .count = 2}},
+            .ticksUntilDecay = 5};
+
+        expectMemberCompared(
+            base, [](StoredStaff &s) { s.entries[0].house = 0; });
+        expectMemberCompared(
+            base, [](StoredStaff &s) { s.entries[0].count = 0; });
+        expectMemberCompared(
+            base, [](StoredStaff &s) { s.ticksUntilDecay = 0; });
+    }
+
+    TEST(StoredEmploymentTest, EqualityComparesEveryField)
+    {
+        using antwika::game::StoredEmployment;
+        using antwika::game::StoredJob;
+
+        const StoredEmployment base{
+            .jobs = {StoredJob{.workplace = 1, .count = 2}},
+            .ticksUntilDispatch = 5};
+
+        expectMemberCompared(
+            base, [](StoredEmployment &e) { e.jobs[0].workplace = 0; });
+        expectMemberCompared(
+            base, [](StoredEmployment &e) { e.jobs[0].count = 0; });
+        expectMemberCompared(
+            base, [](StoredEmployment &e) { e.ticksUntilDispatch = 0; });
+    }
+
+    TEST(EmploymentComponentTest, EqualityComparesTheLedger)
+    {
+        Employment base;
+        base.jobs[0] = JobHolding{.count = 3};
+        base.ticksUntilDispatch = 5;
+
+        expectMemberCompared(
+            base, [](Employment &e) { e.jobs[0].count = 0; });
+        expectMemberCompared(
+            base,
+            [](Employment &e) { e.jobs[0].workplace = Entity{9}; });
+        expectMemberCompared(
+            base, [](Employment &e) { e.ticksUntilDispatch = 0; });
     }
 
     TEST(StaffingTest, EqualityComparesEveryField)

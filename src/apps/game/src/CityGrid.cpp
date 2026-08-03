@@ -79,13 +79,9 @@ namespace antwika::game
                 household = world.get<Household>(entity);
             }
 
-            std::optional<Workforce> workforce;
-
-            if (world.has<Workforce>(entity))
-            {
-                workforce = world.get<Workforce>(entity);
-            }
-
+            // The unwind pad of a record with a vector member.
+            // See docs/confirming-unreachable-branches.md, (a).
+            // GCOVR_EXCL_START
             grid.buildings.push_back(
                 StoredBuilding{
                     .at = world.get<Cell>(entity),
@@ -93,8 +89,8 @@ namespace antwika::game
                     .walkers = {},
                     .coverage = coverageOf(world, entity),
                     .production = production,
-                    .household = household,
-                    .workforce = workforce});
+                    .household = household});
+            // GCOVR_EXCL_STOP
         }
 
         // The links, kept only where both ends were put away.
@@ -116,6 +112,69 @@ namespace antwika::game
                 grid.buildings[buildingAt.at(entity)].walkers[slot] =
                     found->second;
                 grid.walkers[found->second].home = buildingAt.at(entity);
+            }
+        }
+
+        // The two labour ledgers, resolved exactly as the homes are.
+        // An entry naming a house that was not put away is dropped.
+        // Which is an entry naming nothing a reopened city can hold.
+        for (const auto entity : world.view<Building, Cell>())
+        {
+            if (world.has<Staff>(entity))
+            {
+                const auto &staff = world.get<Staff>(entity);
+                // The unwind pad of a record with a vector member.
+                // See docs/confirming-unreachable-branches.md, (a).
+                // GCOVR_EXCL_START
+                StoredStaff stored{
+                    .entries = {},
+                    .ticksUntilDecay = staff.ticksUntilDecay};
+                // GCOVR_EXCL_STOP
+
+                for (const auto &entry : staff.sources)
+                {
+                    const auto found = buildingAt.find(entry.house);
+
+                    if (entry.count > 0 && found != buildingAt.end())
+                    {
+                        stored.entries.push_back(
+                            StoredStaffEntry{
+                                .house = found->second,
+                                .count = entry.count});
+                    }
+                }
+
+                grid.buildings[buildingAt.at(entity)].staff = stored;
+            }
+
+            if (world.has<Employment>(entity))
+            {
+                const auto &employment = world.get<Employment>(entity);
+                // The unwind pad of a record with a vector member.
+                // See docs/confirming-unreachable-branches.md, (a).
+                // GCOVR_EXCL_START
+                StoredEmployment stored{
+                    .jobs = {},
+                    .ticksUntilDispatch =
+                        employment.ticksUntilDispatch};
+                // GCOVR_EXCL_STOP
+
+                for (const auto &holding : employment.jobs)
+                {
+                    const auto found =
+                        buildingAt.find(holding.workplace);
+
+                    if (holding.count > 0 && found != buildingAt.end())
+                    {
+                        stored.jobs.push_back(
+                            StoredJob{
+                                .workplace = found->second,
+                                .count = holding.count});
+                    }
+                }
+
+                grid.buildings[buildingAt.at(entity)].employment =
+                    stored;
             }
         }
 
@@ -286,11 +345,45 @@ namespace antwika::game
                     world, buildings[index], *stored.household);
             }
 
-            // And the workforce, through its own one writer.
-            if (stored.workforce.has_value())
+            // And the two labour ledgers, through their one writers.
+            if (stored.staff.has_value())
             {
-                setWorkforce(
-                    world, buildings[index], *stored.workforce);
+                Staff staff;
+                staff.ticksUntilDecay = stored.staff->ticksUntilDecay;
+
+                for (std::size_t slot = 0;
+                     slot < stored.staff->entries.size()
+                     && slot < kMaxStaffSources;
+                     ++slot)
+                {
+                    staff.sources[slot] = StaffEntry{
+                        .house =
+                            buildings[stored.staff->entries[slot].house],
+                        .count = stored.staff->entries[slot].count};
+                }
+
+                setStaff(world, buildings[index], staff);
+            }
+
+            if (stored.employment.has_value())
+            {
+                Employment employment;
+                employment.ticksUntilDispatch =
+                    stored.employment->ticksUntilDispatch;
+
+                for (std::size_t slot = 0;
+                     slot < stored.employment->jobs.size()
+                     && slot < kMaxJobs;
+                     ++slot)
+                {
+                    employment.jobs[slot] = JobHolding{
+                        .workplace = buildings
+                            [stored.employment->jobs[slot].workplace],
+                        .count =
+                            stored.employment->jobs[slot].count};
+                }
+
+                setEmployment(world, buildings[index], employment);
             }
 
             (void)built.insert(stored.at, footprintOf(building.kind));
