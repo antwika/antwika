@@ -7,6 +7,7 @@
 #include <antwika/gfx/Rect.hpp>
 
 #include "antwika/atlas_editor/CanvasView.hpp"
+#include "antwika/atlas_editor/Selection.hpp"
 #include "antwika/atlas_editor/SpriteGuides.hpp"
 #include "antwika/atlas_editor/TileGrid.hpp"
 
@@ -50,6 +51,11 @@ namespace antwika::atlas_editor
         // A fixed mark would swamp the diamond at the widest zoom.
         // And vanish into it at the closest.
         constexpr std::int32_t kPivotArm = 2;
+
+        // A third hue again, since all three can be on at once.
+        // The grid is yellow and the guides are blue.
+        constexpr Color kSelectionLine{
+            .red = 255, .green = 96, .blue = 200, .alpha = 235};
 
         constexpr Color kHover{
             .red = 255, .green = 255, .blue = 255, .alpha = 110};
@@ -160,6 +166,37 @@ namespace antwika::atlas_editor
                 kPivotMark);
         }
 
+        // Round the outside of the marked pixels rather than through.
+        // So a corner pixel is as visible as any other one.
+        // And a selection of one pixel is still a rectangle.
+        void drawSelection(
+            IRenderer &renderer,
+            const SceneSnapshot &snapshot,
+            const Rect &area)
+        {
+            const std::uint32_t scale = scaleOf(snapshot.view);
+            const Selection &marked = *snapshot.selection;
+
+            const Point corner = onCanvas(
+                area, scale, marked.origin.x, marked.origin.y);
+            const Point far = onCanvas(
+                area,
+                scale,
+                marked.origin.x
+                    + static_cast<std::int32_t>(marked.size.width),
+                marked.origin.y
+                    + static_cast<std::int32_t>(marked.size.height));
+
+            renderer.drawLine(
+                corner, Point{.x = far.x, .y = corner.y}, kSelectionLine);
+            renderer.drawLine(
+                Point{.x = far.x, .y = corner.y}, far, kSelectionLine);
+            renderer.drawLine(
+                far, Point{.x = corner.x, .y = far.y}, kSelectionLine);
+            renderer.drawLine(
+                Point{.x = corner.x, .y = far.y}, corner, kSelectionLine);
+        }
+
         void drawSpriteGuides(
             IRenderer &renderer,
             const SceneSnapshot &snapshot,
@@ -223,6 +260,12 @@ namespace antwika::atlas_editor
         if (snapshot.guides.has_value())
         {
             drawSpriteGuides(renderer, snapshot, area);
+        }
+
+        // Over both overlays, being the one an artist is acting on.
+        if (snapshot.selection.has_value())
+        {
+            drawSelection(renderer, snapshot, area);
         }
 
         if (snapshot.hovered.has_value())

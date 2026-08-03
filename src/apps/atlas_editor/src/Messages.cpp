@@ -21,11 +21,12 @@ namespace antwika::atlas_editor
         using i18n::Locale;
         using i18n::MessageName;
 
-        constexpr std::array<MessageName<MessageId>, 18> kNames{{
+        constexpr std::array<MessageName<MessageId>, 20> kNames{{
             {MessageId::ToolPaint, "ToolPaint"},
             {MessageId::ToolErase, "ToolErase"},
             {MessageId::ToolFill, "ToolFill"},
             {MessageId::ToolPick, "ToolPick"},
+            {MessageId::ToolSelect, "ToolSelect"},
             {MessageId::ResetView, "ResetView"},
             {MessageId::Grid, "Grid"},
             {MessageId::Guides, "Guides"},
@@ -34,6 +35,7 @@ namespace antwika::atlas_editor
             {MessageId::PixelUnknown, "PixelUnknown"},
             {MessageId::PixelAt, "PixelAt"},
             {MessageId::Slot, "Slot"},
+            {MessageId::SelectionSize, "SelectionSize"},
             {MessageId::Unsaved, "Unsaved"},
             {MessageId::Saved, "Saved"},
             {MessageId::SaveFailed, "SaveFailed"},
@@ -56,6 +58,7 @@ namespace antwika::atlas_editor
                 {MessageId::ToolErase, "ERASE"},
                 {MessageId::ToolFill, "FILL"},
                 {MessageId::ToolPick, "PICK"},
+                {MessageId::ToolSelect, "SELECT"},
                 {MessageId::ResetView, "fit"},
                 {MessageId::Grid, "grid"},
                 {MessageId::Guides, "guides"},
@@ -64,6 +67,7 @@ namespace antwika::atlas_editor
                 {MessageId::PixelUnknown, "px -,-"},
                 {MessageId::PixelAt, "px {0},{1}"},
                 {MessageId::Slot, "slot {0}"},
+                {MessageId::SelectionSize, "sel {0}x{1}"},
                 {MessageId::Unsaved, "UNSAVED"},
                 {MessageId::Saved, "saved {0}"},
                 {MessageId::SaveFailed, "save failed: {0}"},
@@ -78,6 +82,7 @@ namespace antwika::atlas_editor
                 {MessageId::ToolErase, "SUDDA"},
                 {MessageId::ToolFill, "FYLL"},
                 {MessageId::ToolPick, "PLOCKA"},
+                {MessageId::ToolSelect, "MARKERA"},
                 {MessageId::ResetView, "anpassa"},
                 {MessageId::Grid, "rutnät"},
                 {MessageId::Guides, "stödlinjer"},
@@ -86,6 +91,7 @@ namespace antwika::atlas_editor
                 {MessageId::PixelUnknown, "px -,-"},
                 {MessageId::PixelAt, "px {0},{1}"},
                 {MessageId::Slot, "ruta {0}"},
+                {MessageId::SelectionSize, "mark {0}x{1}"},
                 {MessageId::Unsaved, "OSPARAT"},
                 {MessageId::Saved, "sparade {0}"},
                 {MessageId::SaveFailed, "kunde inte spara: {0}"},

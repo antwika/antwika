@@ -11,6 +11,7 @@
 #include "antwika/atlas_editor/Canvas.hpp"
 #include "antwika/atlas_editor/CanvasView.hpp"
 #include "antwika/atlas_editor/Pixel.hpp"
+#include "antwika/atlas_editor/Selection.hpp"
 #include "antwika/atlas_editor/SpriteGuides.hpp"
 #include "antwika/atlas_editor/StatusMessage.hpp"
 #include "antwika/atlas_editor/TileGrid.hpp"
@@ -124,6 +125,36 @@ namespace antwika::atlas_editor
          * which is a pixel of the sheet and would read as a real hover.
          */
         [[nodiscard]] std::optional<Pixel> hovered() const noexcept;
+
+        /**
+         * @brief Get the rectangle that has been marked out, if any.
+         *
+         * What cut and copy act on, and what a drag from inside moves.
+         * It is what the *last finished* gesture left, so it does not
+         * change under a drag in progress -- see shownSelection().
+         *
+         * @return The selection, or nothing when none is marked.
+         */
+        [[nodiscard]] std::optional<Selection> selection() const noexcept;
+
+        /**
+         * @brief Get the rectangle to draw an outline round.
+         *
+         * The one a drag in progress is heading for, when there is one,
+         * and the marked one otherwise -- so the outline follows the
+         * pointer while a rectangle is being drawn or carried, and the
+         * sheet itself changes only when the button comes up.
+         *
+         * @return What to outline, or nothing when there is nothing to.
+         */
+        [[nodiscard]] std::optional<Selection>
+        shownSelection() const noexcept;
+
+        /**
+         * @brief Check whether anything has been cut or copied.
+         * @return True once there is something a paste would put down.
+         */
+        [[nodiscard]] bool hasClipboard() const noexcept;
 
         /**
          * @brief Get the last thing worth telling the artist.
@@ -243,6 +274,69 @@ namespace antwika::atlas_editor
         void eraseAt(Point point);
 
         /**
+         * @brief Begin a selection gesture at a canvas position.
+         *
+         * Which gesture it is falls out of where the press landed: one
+         * inside the marked rectangle carries it, and one anywhere else
+         * starts drawing a new rectangle from that corner.
+         *
+         * @param point Where the button went down.
+         */
+        void beginSelecting(Point point) noexcept;
+
+        /**
+         * @brief Carry a selection gesture to a canvas position.
+         *
+         * Changes no pixel: what a drag moves is the outline, and the
+         * sheet is only ever written when the button comes up.
+         *
+         * @param point Where the pointer is now; a call with no gesture
+         * in progress does nothing.
+         */
+        void dragSelectionTo(Point point) noexcept;
+
+        /**
+         * @brief Finish a selection gesture at a canvas position.
+         *
+         * A drawn rectangle becomes the marked one; a carried one takes
+         * its pixels with it, clearing where they came from.
+         *
+         * @param point Where the button came up.
+         */
+        void finishSelecting(Point point);
+
+        /**
+         * @brief Drop the marked rectangle and any gesture on it.
+         */
+        void clearSelection() noexcept;
+
+        /**
+         * @brief Take a copy of the marked rectangle's pixels.
+         *
+         * Nothing marked is nothing to copy, and the clipboard is left
+         * holding whatever it already had rather than emptied: a copy
+         * that missed should not also lose what was in hand.
+         */
+        void copySelection();
+
+        /**
+         * @brief Take the marked rectangle's pixels, clearing them.
+         */
+        void cutSelection();
+
+        /**
+         * @brief Put the clipboard down with its corner under the
+         * pointer, and mark out where it landed.
+         *
+         * At the pointer rather than where it was taken from, because
+         * the whole of what this is for is carrying art from one slot to
+         * another -- and the pixel under the pointer is state a replay
+         * regenerates, this being the one application that records every
+         * movement rather than thinning them out.
+         */
+        void pasteClipboard();
+
+        /**
          * @brief Take an image somebody loaded, in place of this one.
          *
          * The view is recentred rather than kept: a sheet of another
@@ -272,11 +366,56 @@ namespace antwika::atlas_editor
 
     private:
         /**
+         * @brief What a left drag is doing to the selection.
+         *
+         * One value rather than a flag and two loose corners, so a
+         * gesture cannot be half in progress: there is either one of
+         * these or there is no gesture.
+         */
+        struct Gesture
+        {
+            /** @brief Whether the drag draws a rectangle or carries one. */
+            bool carrying = false;
+
+            /** @brief The pixel the button went down on. */
+            Pixel from{};
+
+            /** @brief The pixel the pointer has reached. */
+            Pixel to{};
+        };
+
+        /**
          * @brief Spread the selected colour out from one pixel.
          * @param start Where the fill was asked for; one outside the
          * sheet fills nothing.
          */
         void fillFrom(Pixel start);
+
+        /**
+         * @brief Take a rectangle of the sheet as an image of its own.
+         * @param area The rectangle to lift, which must be inside.
+         * @return Its pixels.
+         */
+        [[nodiscard]] Canvas lift(const Selection &area) const;
+
+        /**
+         * @brief Write an image over the sheet at a pixel.
+         *
+         * Straight over, transparency included, rather than composited:
+         * putting one slot's art into another means replacing what was
+         * there, and a paste that let the old art show through the new
+         * one's gaps could not do that at all.
+         *
+         * @param clip The pixels to put down.
+         * @param at Where its top-left corner goes.
+         */
+        void stamp(const Canvas &clip, Pixel at);
+
+        /**
+         * @brief Make every pixel of a rectangle transparent.
+         * @param area The rectangle to clear, which must be inside.
+         */
+        void clearRegion(const Selection &area);
 
         Canvas sheet;
         TileGrid grid;
@@ -290,6 +429,12 @@ namespace antwika::atlas_editor
         bool showGrid = true;
         bool showGuides = true;
         std::optional<Pixel> under;
+        // Only ever set through clampedTo().
+        // So it is inside the sheet whenever it holds anything at all.
+        // Which is what lets copy, cut and carry index it directly.
+        std::optional<Selection> marked;
+        std::optional<Gesture> gesture;
+        std::optional<Canvas> clipboard;
         std::optional<StatusMessage> message;
 
         std::uint64_t changes = 0;

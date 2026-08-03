@@ -15,6 +15,7 @@ add_executable(antwika_atlas_editor_tests
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/PngAtlasStore.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/RenderSink.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/SceneSnapshot.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/Selection.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/SpriteGuides.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/TileGrid.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/Tool.cpp
@@ -30,6 +31,7 @@ add_executable(antwika_atlas_editor_tests
     PngAtlasStoreTest.cpp
     RunIntegrationTest.cpp
     SceneTest.cpp
+    SelectionTest.cpp
     SpriteGuidesTest.cpp
     TileGridTest.cpp
 )

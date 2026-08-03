@@ -13,6 +13,7 @@
 
 #include <antwika/app/PointerReading.hpp>
 #include <antwika/engine/Events.hpp>
+#include <antwika/input/Key.hpp>
 #include <antwika/input/MouseButton.hpp>
 
 #include "antwika/atlas_editor/Canvas.hpp"
@@ -27,20 +28,56 @@ namespace antwika::atlas_editor
 
     using antwika::app::asPoint;
     using antwika::app::locates;
+    using antwika::input::Key;
+    using antwika::input::KeyPressed;
     using antwika::input::MouseButton;
     using antwika::input::PointerButtonPressed;
+    using antwika::input::PointerButtonReleased;
     using antwika::input::PointerScrolled;
     using antwika::ui::kNoWidget;
 
     namespace
     {
-        [[nodiscard]] bool isLeftPress(const InputEvent &event) noexcept
+        // Read off the event itself rather than off the folded state.
+        // Mouse::wasPressed() answers for the whole tick.
+        // Several events of one tick would each read as the press.
+        [[nodiscard]] bool isPressOf(
+            const InputEvent &event, const MouseButton button) noexcept
         {
             const auto *pressed =
                 std::get_if<PointerButtonPressed>(&event);
 
-            return pressed != nullptr
-                   && pressed->button == MouseButton::Left;
+            return pressed != nullptr && pressed->button == button;
+        }
+
+        [[nodiscard]] bool isLeftPress(const InputEvent &event) noexcept
+        {
+            return isPressOf(event, MouseButton::Left);
+        }
+
+        [[nodiscard]] bool isLeftRelease(const InputEvent &event) noexcept
+        {
+            const auto *released =
+                std::get_if<PointerButtonReleased>(&event);
+
+            return released != nullptr
+                   && released->button == MouseButton::Left;
+        }
+
+        // A repeat is the window system saying a key is still held.
+        // Cut, copy and paste are things one does once per press.
+        // So a held Ctrl+V pastes once rather than once a frame.
+        [[nodiscard]] const KeyPressed *freshPress(
+            const InputEvent &event) noexcept
+        {
+            const auto *pressed = std::get_if<KeyPressed>(&event);
+
+            if (pressed == nullptr || pressed->repeat)
+            {
+                return nullptr;
+            }
+
+            return pressed;
         }
     } // namespace
 
@@ -124,11 +161,38 @@ namespace antwika::atlas_editor
 
         refreshAndAct(isLeftPress(*decoded));
 
+        // A key reaches the sheet wherever the pointer happens to be.
+        // There is no text field here for one to have gone into instead.
+        applyToKeyboard(*decoded);
+
         // The bar is resolved first.
         // A press on it is already known to be the bar's.
         if (!overlay.pointerOverUi())
         {
             applyToSheet(*decoded, was, at);
+        }
+    }
+
+    void EditorSink::applyToKeyboard(const InputEvent &event)
+    {
+        const KeyPressed *pressed = freshPress(event);
+
+        if (pressed == nullptr || !pressed->modifiers.control)
+        {
+            return;
+        }
+
+        if (pressed->key == Key::C)
+        {
+            state.copySelection();
+        }
+        else if (pressed->key == Key::X)
+        {
+            state.cutSelection();
+        }
+        else if (pressed->key == Key::V)
+        {
+            state.pasteClipboard();
         }
     }
 
@@ -301,22 +365,61 @@ namespace antwika::atlas_editor
 
         state.moveTo(at);
 
+        // The right button's first job is dropping the rectangle.
+        // Whichever tool is in hand.
+        // A rectangle marked with Select outlives a trip to the palette.
+        if (isPressOf(event, MouseButton::Right))
+        {
+            state.clearSelection();
+        }
+
+        // Panning is the middle button's whatever else is going on.
+        if (folded.mouse().isDown(MouseButton::Middle))
+        {
+            state.panBy(Point{.x = at.x - was.x, .y = at.y - was.y});
+            return;
+        }
+
+        // Select's buttons are a gesture rather than a brush.
+        // So it takes the pointer and leaves before the strokes below.
+        // Which is what keeps its right button to clearing alone.
+        if (state.tool() == Tool::Select)
+        {
+            applySelection(event, at);
+            return;
+        }
+
         // Held rather than pressed.
         // A drag then paints every pixel it crosses.
         // Which is the segment from where the pointer was, not one dot.
         // A window system reports a fast stroke as a few long jumps.
         // A dot per event would leave the gaps between them bare.
-        if (folded.mouse().isDown(MouseButton::Middle))
-        {
-            state.panBy(Point{.x = at.x - was.x, .y = at.y - was.y});
-        }
-        else if (folded.mouse().isDown(MouseButton::Left))
+        if (folded.mouse().isDown(MouseButton::Left))
         {
             strokeAlong(was, at, &EditorState::applyAt);
         }
         else if (folded.mouse().isDown(MouseButton::Right))
         {
             strokeAlong(was, at, &EditorState::eraseAt);
+        }
+    }
+
+    // Down, along and up, in that order and from the events themselves.
+    // A release is not a held button, so it cannot be read off the fold.
+    void EditorSink::applySelection(
+        const InputEvent &event, const Point at)
+    {
+        if (isLeftPress(event))
+        {
+            state.beginSelecting(at);
+        }
+        else if (isLeftRelease(event))
+        {
+            state.finishSelecting(at);
+        }
+        else if (folded.mouse().isDown(MouseButton::Left))
+        {
+            state.dragSelectionTo(at);
         }
     }
 
