@@ -114,9 +114,16 @@ profile_compiler() {
     fi
 }
 
+# Everything from the first non-digit on is dropped rather than
+# everything from the first dot, because -dumpversion does not always
+# answer with a dotted version at all: Debian's MinGW cross compiler
+# says "13-win32", naming the thread model it was built with, and
+# cutting that on '.' leaves it whole and unequal to every profile.
+# Conan's compiler.version is the major number alone, which is exactly
+# the leading digits of every form of that answer.
 expected_version=$(sed -n 's/^compiler.version=//p' "$host_profile")
 compiler=$(profile_compiler)
-actual_version=$("$compiler" -dumpversion | cut -d. -f1)
+actual_version=$("$compiler" -dumpversion | sed 's/[^0-9].*//')
 
 if [ "$expected_version" != "$actual_version" ]; then
     echo "$host_profile says compiler.version=$expected_version," >&2
