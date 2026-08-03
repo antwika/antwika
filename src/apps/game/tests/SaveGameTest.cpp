@@ -18,7 +18,9 @@
 #include "antwika/game/Coverage.hpp"
 #include "antwika/game/Errand.hpp"
 #include "antwika/game/Journey.hpp"
+#include "antwika/game/FireCall.hpp"
 #include "antwika/game/PathIndex.hpp"
+#include "antwika/game/Ruin.hpp"
 #include "antwika/game/Household.hpp"
 #include "antwika/game/HousingLevel.hpp"
 #include "antwika/game/Production.hpp"
@@ -1596,4 +1598,208 @@ TEST(SaveGameTest, RoundTripsAnEmptyLedger)
                 .jobs = {}, .ticksUntilDispatch = 4}}};
 
     EXPECT_EQ(saveGameFromJson(saveGameToJson(save)), save);
+}
+
+TEST(SaveGameTest, RoundTripsARuinAndAFiremansCall)
+{
+    SaveGame save;
+    save.ruins = {
+        antwika::game::SavedRuin{
+            .at = {.x = 4, .y = 4},
+            .kind = BuildingKind::Farm,
+            .state = antwika::game::RuinState::Burning,
+            .ticksUntilOut = 123},
+        antwika::game::SavedRuin{
+            .at = {.x = 8, .y = 8},
+            .kind = BuildingKind::House,
+            .state = antwika::game::RuinState::Debris,
+            .ticksUntilOut = 0}};
+    save.walkers = {SavedWalker{
+        .at = {.x = 1, .y = 2},
+        .kind = WalkerKind::Fireman,
+        .fireCall = 0U}};
+
+    const auto loaded = saveGameFromJson(saveGameToJson(save));
+
+    EXPECT_EQ(loaded.ruins, save.ruins);
+    EXPECT_EQ(loaded.walkers, save.walkers);
+}
+
+// An empty ruins array and an absent member read the same.
+// So the smaller file is the one written.
+TEST(SaveGameTest, WritesNoRuinsMemberWhenNothingHasBurnt)
+{
+    const SaveGame nothingBurnt;
+    const auto encoded = saveGameToJson(nothingBurnt);
+
+    EXPECT_FALSE(encoded.contains("ruins"));
+    EXPECT_TRUE(saveGameFromJson(encoded).ruins.empty());
+}
+
+TEST(SaveGameTest, RejectsARuinKindThisBuildDoesNotHave)
+{
+    SaveGame save;
+    save.ruins = {antwika::game::SavedRuin{
+        .at = {.x = 4, .y = 4}, .kind = BuildingKind::House}};
+
+    auto encoded = saveGameToJson(save);
+    encoded["ruins"][0]["kind"] = "castle";
+
+    EXPECT_THROW((void)saveGameFromJson(encoded), SaveFormatError);
+}
+
+TEST(SaveGameTest, RejectsARuinStateThisBuildDoesNotHave)
+{
+    SaveGame save;
+    save.ruins = {antwika::game::SavedRuin{
+        .at = {.x = 4, .y = 4}, .kind = BuildingKind::House}};
+
+    auto encoded = saveGameToJson(save);
+    encoded["ruins"][0]["state"] = "ashes";
+
+    EXPECT_THROW((void)saveGameFromJson(encoded), SaveFormatError);
+}
+
+// Refused rather than repaired, exactly as an errand's target is.
+TEST(SaveGameTest, RejectsAFireCallWhoseRuinIsNotARuinInIt)
+{
+    SaveGame save;
+    save.walkers = {SavedWalker{
+        .at = {.x = 1, .y = 2},
+        .kind = WalkerKind::Fireman,
+        .fireCall = 7U}};
+
+    const auto encoded = saveGameToJson(save);
+
+    EXPECT_THROW((void)saveGameFromJson(encoded), SaveFormatError);
+}
+
+// A call to a fire already out is a state a live run passes through.
+// The fire may burn out a tick before its fireman reads the world.
+TEST(SaveGameTest, KeepsAFireCallToARuinAlreadyOut)
+{
+    SaveGame save;
+    save.ruins = {antwika::game::SavedRuin{
+        .at = {.x = 4, .y = 4},
+        .kind = BuildingKind::House,
+        .state = antwika::game::RuinState::Debris,
+        .ticksUntilOut = 0}};
+    save.walkers = {SavedWalker{
+        .at = {.x = 1, .y = 2},
+        .kind = WalkerKind::Fireman,
+        .fireCall = 0U}};
+
+    const auto loaded = saveGameFromJson(saveGameToJson(save));
+
+    EXPECT_EQ(loaded.walkers[0].fireCall, 0U);
+}
+
+TEST(SaveGameTest, TakesTheRuinsAndTheCallsFromARunningSession)
+{
+    ::testing::NiceMock<MockLogger> logger;
+    antwika::ecs::World world(logger);
+    const PathIndex paths;
+
+    const auto fire = world.create();
+    world.add<Cell>(fire, Cell{.x = 5, .y = 5});
+    world.add<antwika::game::Ruin>(
+        fire,
+        antwika::game::Ruin{
+            .kind = BuildingKind::Market, .ticksUntilOut = 77});
+
+    const auto fireman = world.create();
+    world.add<Cell>(fireman, Cell{.x = 1, .y = 1});
+    world.add<Walker>(fireman, Walker{.kind = WalkerKind::Fireman});
+    world.add<antwika::game::FireCall>(
+        fireman, antwika::game::FireCall{.target = fire});
+    world.commit();
+
+    const auto save = saveGameOf(
+        world, paths, Camera(), GameState{}, GridExtent{});
+
+    ASSERT_EQ(save.ruins.size(), 1U);
+    EXPECT_EQ(save.ruins[0].at, (Cell{.x = 5, .y = 5}));
+    EXPECT_EQ(save.ruins[0].kind, BuildingKind::Market);
+    EXPECT_EQ(
+        save.ruins[0].state, antwika::game::RuinState::Burning);
+    EXPECT_EQ(save.ruins[0].ticksUntilOut, 77);
+
+    ASSERT_EQ(save.walkers.size(), 1U);
+    EXPECT_EQ(save.walkers[0].fireCall, 0U);
+}
+
+// A call whose ruin died the same tick names nothing in the file.
+// The walker then roams on the way back in.
+// And the dispatcher corrects that within a tick.
+TEST(SaveGameTest, DropsAFireCallWhoseRuinIsAlreadyGone)
+{
+    ::testing::NiceMock<MockLogger> logger;
+    antwika::ecs::World world(logger);
+    const PathIndex paths;
+
+    const auto fire = world.create();
+    world.add<Cell>(fire, Cell{.x = 5, .y = 5});
+    world.add<antwika::game::Ruin>(
+        fire, antwika::game::Ruin{.kind = BuildingKind::House});
+
+    const auto fireman = world.create();
+    world.add<Cell>(fireman, Cell{.x = 1, .y = 1});
+    world.add<Walker>(fireman, Walker{.kind = WalkerKind::Fireman});
+    world.add<antwika::game::FireCall>(
+        fireman, antwika::game::FireCall{.target = fire});
+    world.destroy(fire);
+    world.commit();
+
+    const auto save = saveGameOf(
+        world, paths, Camera(), GameState{}, GridExtent{});
+
+    EXPECT_TRUE(save.ruins.empty());
+    ASSERT_EQ(save.walkers.size(), 1U);
+    EXPECT_FALSE(save.walkers[0].fireCall.has_value());
+}
+
+TEST(SaveGameTest, SavedRuinEqualityComparesEveryField)
+{
+    const antwika::game::SavedRuin base{
+        .at = {.x = 4, .y = 4},
+        .kind = BuildingKind::Farm,
+        .state = antwika::game::RuinState::Burning,
+        .ticksUntilOut = 9};
+
+    EXPECT_EQ(base, base);
+
+    auto moved = base;
+    moved.at = Cell{.x = 5, .y = 5};
+    EXPECT_NE(base, moved);
+
+    auto rekinded = base;
+    rekinded.kind = BuildingKind::House;
+    EXPECT_NE(base, rekinded);
+
+    auto out = base;
+    out.state = antwika::game::RuinState::Debris;
+    EXPECT_NE(base, out);
+
+    auto later = base;
+    later.ticksUntilOut = 8;
+    EXPECT_NE(base, later);
+}
+
+TEST(SaveGameTest, SavedWalkerEqualityComparesTheFireCall)
+{
+    const SavedWalker base{
+        .at = {.x = 1, .y = 2}, .kind = WalkerKind::Fireman};
+
+    auto called = base;
+    called.fireCall = 0U;
+    EXPECT_NE(base, called);
+}
+
+TEST(SaveGameTest, SaveEqualityComparesTheRuins)
+{
+    const auto base = populated();
+
+    auto burnt = base;
+    burnt.ruins.push_back(antwika::game::SavedRuin{});
+    EXPECT_NE(base, burnt);
 }

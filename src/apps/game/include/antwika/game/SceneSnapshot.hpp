@@ -20,6 +20,7 @@
 #include "antwika/game/PathIndex.hpp"
 #include "antwika/game/Resource.hpp"
 #include "antwika/game/RoadPlan.hpp"
+#include "antwika/game/Ruin.hpp"
 #include "antwika/game/Service.hpp"
 #include "antwika/game/Walker.hpp"
 
@@ -256,6 +257,42 @@ namespace antwika::game
     };
 
     /**
+     * @brief One ruin, as the state and the picture both need it.
+     *
+     * **One type where a building has two**, and deliberately: the
+     * view/sprite split exists so numbers that only exist to be drawn
+     * -- stock, a gauge -- stay out of what GameSummary compares, and
+     * a ruin has no such numbers. Where it is, what stood there and
+     * whether it still burns are all facts a live run and its replay
+     * must agree on, so the one type serves the snapshot, the summary
+     * and the hover readout alike.
+     *
+     * The burn countdown is deliberately absent, as every Building
+     * countdown is absent from BuildingView: a divergence there
+     * surfaces as a divergence in the state within a tick of
+     * mattering.
+     */
+    struct RuinView
+    {
+        /** @brief The minimum-x, minimum-y cell of its block. */
+        Cell at;
+
+        /** @brief What stood there; names the block and the sheet. */
+        BuildingKind kind = BuildingKind::House;
+
+        /** @brief Whether it is still alight. */
+        RuinState state = RuinState::Burning;
+
+        /**
+         * @brief Compare two ruin views.
+         * @param other The view to compare against.
+         * @return True when every field matches.
+         */
+        [[nodiscard]] bool operator==(const RuinView &other) const
+            = default;
+    };
+
+    /**
      * @brief What the pointer is over, and what to say about it.
      *
      * **A picture, and nothing but a picture**, on exactly BuildGhost's
@@ -287,6 +324,9 @@ namespace antwika::game
         /** @brief The walker under the pointer, if one is. */
         std::optional<WalkerSprite> walker{};
 
+        /** @brief The fire or debris under the pointer, if one is. */
+        std::optional<RuinView> ruin{};
+
         /**
          * @brief Compare two readouts.
          * @param other The readout to compare against.
@@ -313,6 +353,16 @@ namespace antwika::game
         std::vector<Cell> paths;
         std::vector<WalkerSprite> walkers;
         std::vector<BuildingSprite> buildings;
+
+        /**
+         * @brief Every fire and every heap of debris, in painter's
+         * order.
+         *
+         * Sorted on the very key the buildings are, since a ruin is a
+         * block exactly as a building is and GridScene paints the two
+         * lists through one merge -- see drawTerrain().
+         */
+        std::vector<RuinView> ruins;
 
         /**
          * @brief Whether the simulation was held still when this was
@@ -456,5 +506,19 @@ namespace antwika::game
      */
     [[nodiscard]] std::vector<BuildingView> buildingViewsOf(
         const World &world);
+
+    /**
+     * @brief List every ruin, in the world's own order.
+     *
+     * buildingViewsOf()'s counterpart for what has burnt down: a
+     * summary and a save both want the fires and the debris, since a
+     * run and its replay disagreeing about either is a divergence.
+     * The world's own order for the reason buildingViewsOf() keeps
+     * it; snapshotOf() is what sorts a copy into painter's order.
+     *
+     * @param world Read for the ruins, as of its last commit().
+     * @return One view per ruin, in the world's own order.
+     */
+    [[nodiscard]] std::vector<RuinView> ruinViewsOf(const World &world);
 
 } // namespace antwika::game

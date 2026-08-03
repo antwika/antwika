@@ -404,3 +404,45 @@ TEST(TileAtlasTest, ToolAtlasOf_IsTheRoadsSheetOrTheBuildingsOwn)
             << "tool " << index;
     }
 }
+
+// The ruin sprites live where the slot tables say, per sheet.
+TEST(TileAtlasTest, RuinTile_MatchesTheSheetsSlotTable)
+{
+    using antwika::game::kDebrisSprites;
+    using antwika::game::kFireSprites;
+    using antwika::game::ruinTile;
+    using antwika::game::RuinState;
+
+    EXPECT_EQ(
+        ruinTile(RuinState::Burning, BuildingKind::House),
+        spriteRect(AtlasKind::OneByOne, kFireSprites[0]));
+    EXPECT_EQ(
+        ruinTile(RuinState::Debris, BuildingKind::House),
+        spriteRect(AtlasKind::OneByOne, kDebrisSprites[0]));
+    EXPECT_EQ(
+        ruinTile(RuinState::Burning, BuildingKind::Farm),
+        spriteRect(AtlasKind::TwoByTwo, kFireSprites[1]));
+    EXPECT_EQ(
+        ruinTile(RuinState::Debris, BuildingKind::Storage),
+        spriteRect(AtlasKind::ThreeByThree, kDebrisSprites[2]));
+}
+
+// The sheet is the kind's own, so a burnt farm's fire is farm-sized.
+TEST(TileAtlasTest, RuinTile_DrawsFromTheKindsOwnSheet)
+{
+    using antwika::game::ruinTile;
+    using antwika::game::RuinState;
+
+    for (std::size_t index = 0;
+         index < antwika::game::kBuildingKindCount;
+         ++index)
+    {
+        const auto kind = static_cast<BuildingKind>(index);
+        const auto spec = atlasSpec(buildingAtlasOf(kind));
+
+        EXPECT_EQ(
+            ruinTile(RuinState::Burning, kind).size, spec.spriteSize);
+        EXPECT_EQ(
+            ruinTile(RuinState::Debris, kind).size, spec.spriteSize);
+    }
+}

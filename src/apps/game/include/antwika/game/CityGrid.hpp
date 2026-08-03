@@ -16,6 +16,7 @@
 #include "antwika/game/Journey.hpp"
 #include "antwika/game/PathIndex.hpp"
 #include "antwika/game/Production.hpp"
+#include "antwika/game/Ruin.hpp"
 #include "antwika/game/Walker.hpp"
 #include "antwika/game/Employment.hpp"
 #include "antwika/game/Staff.hpp"
@@ -96,6 +97,17 @@ namespace antwika::game
          * walker with no journey at all.
          */
         std::optional<std::size_t> joining = std::nullopt;
+
+        /**
+         * @brief Which stored ruin its fire call names, by index.
+         *
+         * Into the ruins array rather than the buildings one, since a
+         * fire is a Ruin; absent for every walker not answering one.
+         * A city reopened without this would quietly stand its
+         * firemen down, and a run that switched cities would then
+         * differ from one that did not.
+         */
+        std::optional<std::size_t> attending = std::nullopt;
 
         /**
          * @brief Compare two stored walkers.
@@ -206,6 +218,30 @@ namespace antwika::game
     };
 
     /**
+     * @brief One ruin, as a city keeps it while it is put away.
+     *
+     * The component itself, for StoredWalker::walker's reason: this
+     * value never leaves the process that wrote it, and a Ruin names
+     * nothing outside itself, so there is no link to translate.
+     */
+    struct StoredRuin
+    {
+        /** @brief Where it stands, at the minimum corner of its block. */
+        Cell at;
+
+        /** @brief What burnt, whether it still does, and for how long. */
+        Ruin ruin;
+
+        /**
+         * @brief Compare two stored ruins.
+         * @param other The ruin to compare against.
+         * @return True when every field matches.
+         */
+        [[nodiscard]] bool operator==(const StoredRuin &other) const
+            = default;
+    };
+
+    /**
      * @brief Everything standing on one city's grid, as a value.
      *
      * A city that is not the live one has no entities of its own, since
@@ -226,6 +262,9 @@ namespace antwika::game
 
         /** @brief Every building, in the world's own order. */
         std::vector<StoredBuilding> buildings;
+
+        /** @brief Every fire and heap of debris, in the world's order. */
+        std::vector<StoredRuin> ruins;
 
         /**
          * @brief Compare two city grids.

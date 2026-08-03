@@ -21,6 +21,7 @@
 #include "antwika/game/Messages.hpp"
 #include "antwika/game/Resource.hpp"
 #include "antwika/game/ResourceColour.hpp"
+#include "antwika/game/Ruin.hpp"
 #include "antwika/game/Service.hpp"
 #include "antwika/game/Walker.hpp"
 
@@ -296,6 +297,20 @@ namespace antwika::game
                                 translator, service, left),
                             .colour = serviceColour(service)});
                 }
+            }
+
+            if (readout.ruin.has_value())
+            {
+                // One line, and the state rather than what stood there.
+                // What a reader can act on is the fire or the debris.
+                // The building it was is gone whatever they do.
+                said.push_back(
+                    Said{ // GCOVR_EXCL_LINE
+                        .text = translator.text(
+                            readout.ruin->state == RuinState::Burning
+                                ? MessageId::RuinOnFire
+                                : MessageId::RuinDebris),
+                        .colour = kReadoutTitle});
             }
 
             if (readout.walker.has_value())

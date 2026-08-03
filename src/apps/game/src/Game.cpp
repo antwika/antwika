@@ -44,6 +44,8 @@
 #include "antwika/game/PopulationSystem.hpp"
 #include "antwika/game/ProductionSystem.hpp"
 #include "antwika/game/RatingsSystem.hpp"
+#include "antwika/game/Ruin.hpp"
+#include "antwika/game/RuinSystem.hpp"
 #include "antwika/game/SaveGameFile.hpp"
 #include "antwika/game/SaveLoadScene.hpp"
 #include "antwika/game/SaveLoadSink.hpp"
@@ -148,6 +150,21 @@ namespace antwika::game
         // Both stage into the same buffer, so neither sees the other.
         // Last, so a building demolished this tick is not re-let now.
         scheduler.addSystem(walkPhase, pausedSpawns);
+
+        // A phase of its own, after the walk, for the fires.
+        // WalkerSystem writes Ruin when a fireman arrives.
+        // This writes Ruin burning one down and tasking the idle.
+        // Two writers of one component in one phase is the trap.
+        // The phase list exists to avoid, so the commit sits between.
+        // Gated as the walk is: a fire burns behind the world map.
+        // And holds still only where a player asked.
+        RuinSystem ruinSystem;
+
+        SessionGatedSystem gatedRuins(ruinSystem, mode);
+        PauseGatedSystem pausedRuins(gatedRuins, pause);
+
+        const auto burnPhase = scheduler.createPhase("burn");
+        scheduler.addSystem(burnPhase, pausedRuins);
 
         // A phase of its own, after the walk and before the observers.
         // So it sees where this tick left every walker.
@@ -547,6 +564,7 @@ namespace antwika::game
             .paths = frame.paths,
             .walkers = walkerViewsOf(world),
             .buildings = buildingViewsOf(world),
+            .ruins = ruinViewsOf(world),
             .camera = camera,
             .ratings = finalRatings,
             .bindings = options.bindings()};
@@ -587,6 +605,15 @@ namespace antwika::game
             }
 
             out << '\n';
+        }
+
+        out << "Ruins: " << summary.ruins.size() << '\n';
+
+        for (const auto &ruin : summary.ruins)
+        {
+            out << "  " << buildingKindName(ruin.kind) << " at ("
+                << ruin.at.x << ", " << ruin.at.y << ") "
+                << ruinStateName(ruin.state) << '\n';
         }
 
         // Every rating, including the ones at zero.

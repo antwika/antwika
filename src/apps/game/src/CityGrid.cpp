@@ -7,6 +7,7 @@
 
 #include <antwika/ecs/Entity.hpp>
 
+#include "antwika/game/FireCall.hpp"
 #include "antwika/game/Footprint.hpp"
 #include "antwika/game/Path.hpp"
 
@@ -24,6 +25,7 @@ namespace antwika::game
         // So the second pass turns a handle into a record's index.
         std::map<Entity, std::size_t> walkerAt;
         std::map<Entity, std::size_t> buildingAt;
+        std::map<Entity, std::size_t> ruinAt;
 
         for (const auto entity : world.view<Walker, Cell>())
         {
@@ -91,6 +93,16 @@ namespace antwika::game
                     .production = production,
                     .household = household});
             // GCOVR_EXCL_STOP
+        }
+
+        for (const auto entity : world.view<Ruin, Cell>())
+        {
+            ruinAt.emplace(entity, grid.ruins.size());
+
+            grid.ruins.push_back(
+                StoredRuin{
+                    .at = world.get<Cell>(entity),
+                    .ruin = world.get<Ruin>(entity)});
         }
 
         // The links, kept only where both ends were put away.
@@ -216,6 +228,25 @@ namespace antwika::game
             grid.walkers[walkerAt.at(entity)].joining = found->second;
         }
 
+        // And the fire calls', against the ruins put away above.
+        for (const auto entity : world.view<Walker, Cell>())
+        {
+            if (!world.has<FireCall>(entity))
+            {
+                continue;
+            }
+
+            const auto found =
+                ruinAt.find(world.get<FireCall>(entity).target);
+
+            if (found == ruinAt.end())
+            {
+                continue;
+            }
+
+            grid.walkers[walkerAt.at(entity)].attending = found->second;
+        }
+
         return grid;
         // The excluded line is the local grid's unwind destructor.
         // Nothing between its construction and the return throws.
@@ -258,9 +289,11 @@ namespace antwika::game
         // Reading one back would ask for what has not been given yet.
         std::vector<Entity> walkers;
         std::vector<Entity> buildings;
+        std::vector<Entity> ruins;
 
         walkers.reserve(grid.walkers.size());
         buildings.reserve(grid.buildings.size());
+        ruins.reserve(grid.ruins.size());
 
         for (std::size_t index = 0; index < grid.walkers.size(); ++index)
         {
@@ -270,6 +303,11 @@ namespace antwika::game
         for (std::size_t index = 0; index < grid.buildings.size(); ++index)
         {
             buildings.push_back(world.create());
+        }
+
+        for (std::size_t index = 0; index < grid.ruins.size(); ++index)
+        {
+            ruins.push_back(world.create());
         }
 
         for (std::size_t index = 0; index < grid.walkers.size(); ++index)
@@ -294,6 +332,13 @@ namespace antwika::game
                 world.add<Journey>(walkers[index], journey);
             }
 
+            if (stored.attending.has_value())
+            {
+                world.add<FireCall>(
+                    walkers[index],
+                    FireCall{.target = ruins[*stored.attending]});
+            }
+
             if (!stored.errand.has_value())
             {
                 continue;
@@ -305,6 +350,20 @@ namespace antwika::game
                 : kNullEntity;
 
             world.add<Errand>(walkers[index], errand);
+        }
+
+        // The ruins keep their block claimed exactly as buildings do.
+        // A reloaded index then refuses a placement on debris.
+        // Exactly as it refused one before the reload.
+        for (std::size_t index = 0; index < grid.ruins.size(); ++index)
+        {
+            const auto &stored = grid.ruins[index];
+
+            world.add<Cell>(ruins[index], stored.at);
+            world.add<Ruin>(ruins[index], stored.ruin);
+
+            (void)built.insert(
+                stored.at, footprintOf(stored.ruin.kind));
         }
 
         for (std::size_t index = 0; index < grid.buildings.size(); ++index)

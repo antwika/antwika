@@ -24,6 +24,7 @@
 #include "antwika/game/Staff.hpp"
 #include "antwika/game/PathIndex.hpp"
 #include "antwika/game/Resource.hpp"
+#include "antwika/game/Ruin.hpp"
 #include "antwika/game/SceneSnapshot.hpp"
 #include "antwika/game/Service.hpp"
 #include "antwika/game/Walker.hpp"
@@ -194,6 +195,16 @@ namespace antwika::game
          */
         std::optional<SavedJourney> journey = std::nullopt;
 
+        /**
+         * @brief Which saved ruin it is answering, by index.
+         *
+         * Into the ruins array rather than the buildings one, since a
+         * fire is a Ruin. Optional, and absent means it is not
+         * answering one -- which is what every walker in a file
+         * written before anything burnt was.
+         */
+        std::optional<std::size_t> fireCall = std::nullopt;
+
         [[nodiscard]] bool operator==(const SavedWalker &other) const
             = default;
     };
@@ -295,6 +306,28 @@ namespace antwika::game
             = default;
     };
 
+    /**
+     * @brief One ruin, as a file has to remember it.
+     *
+     * The fields written out one by one rather than the component,
+     * for SavedWalker's reason: a reader of the file may be a
+     * different build, so the format names what it holds -- and the
+     * kind and the state are written as their names rather than as
+     * indices, exactly as a building's kind is.
+     */
+    struct SavedRuin
+    {
+        Cell at;
+        BuildingKind kind = BuildingKind::House;
+        RuinState state = RuinState::Burning;
+
+        /** @brief Ticks left of the fire; zero once it is debris. */
+        std::int32_t ticksUntilOut = 0;
+
+        [[nodiscard]] bool operator==(const SavedRuin &other) const
+            = default;
+    };
+
     struct SaveGame
     {
         /** @brief The plain app state: ticks folded so far, and score. */
@@ -322,6 +355,15 @@ namespace antwika::game
 
         /** @brief Every building, in the world's own order. */
         std::vector<SavedBuilding> buildings;
+
+        /**
+         * @brief Every fire and heap of debris, in the world's order.
+         *
+         * Additive, and absent from a document means none -- which is
+         * what a file written before anything burnt says, so this
+         * member needed no version bump and no migration.
+         */
+        std::vector<SavedRuin> ruins;
 
         /**
          * @brief The seed every generated part of the session came from.

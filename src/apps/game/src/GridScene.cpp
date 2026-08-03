@@ -139,25 +139,96 @@ namespace antwika::game
             // Nothing between its construction and the return throws.
         } // GCOVR_EXCL_LINE
 
-        // Every cell the snapshot's buildings stand on, ascending.
+        /** @brief One block to paint: a building or a ruin. */
+        struct BlockArt
+        {
+            /** @brief The minimum-x, minimum-y cell of its block. */
+            Cell at;
+
+            /** @brief What names its footprint and its sheet. */
+            BuildingKind kind = BuildingKind::House;
+
+            /** @brief The sprite to blit, in that sheet's pixels. */
+            Rect tile;
+        };
+
+        // The buildings and the ruins as one back-to-front stream.
+        // A ruin is a block exactly as a building is.
+        // So the terrain pass paints the two through one merge.
+        // A second loop would restate the paint-order rule.
+        // Both inputs arrive sorted on the flush key.
+        // So this is a merge rather than a sort.
+        [[nodiscard]] std::vector<BlockArt> blocksOf(
+            const SceneSnapshot &snapshot)
+        {
+            std::vector<BlockArt> blocks;
+            blocks.reserve(
+                snapshot.buildings.size() + snapshot.ruins.size());
+
+            const auto deeper = [](Cell left, Cell right)
+            {
+                const auto depth = left.x + left.y;
+                const auto other = right.x + right.y;
+
+                return depth != other ? depth < other : left.x < right.x;
+            };
+
+            std::size_t building = 0;
+            std::size_t ruin = 0;
+
+            while (building < snapshot.buildings.size()
+                   || ruin < snapshot.ruins.size())
+            {
+                const auto takeBuilding = ruin >= snapshot.ruins.size()
+                    || (building < snapshot.buildings.size()
+                        && deeper(
+                            snapshot.buildings[building].at,
+                            snapshot.ruins[ruin].at));
+
+                if (takeBuilding)
+                {
+                    const auto &sprite = snapshot.buildings[building];
+                    blocks.push_back(BlockArt{
+                        .at = sprite.at,
+                        .kind = sprite.kind,
+                        .tile = buildingTile(sprite.kind)});
+                    ++building;
+                }
+                else
+                {
+                    const auto &sprite = snapshot.ruins[ruin];
+                    blocks.push_back(BlockArt{
+                        .at = sprite.at,
+                        .kind = sprite.kind,
+                        .tile = ruinTile(sprite.state, sprite.kind)});
+                    ++ruin;
+                }
+            }
+
+            return blocks;
+            // The excluded line is the local vector's unwind destructor.
+            // Nothing between its construction and the return throws.
+        } // GCOVR_EXCL_LINE
+
+        // Every cell the snapshot's blocks stand on, ascending.
         // The terrain pass skips these rather than painting under art.
-        // A building's art owns its whole footprint anyway.
+        // A block's art owns its whole footprint anyway.
         [[nodiscard]] std::vector<Cell> coveredCells(
-            const std::vector<BuildingSprite> &buildings)
+            const std::vector<BlockArt> &blocks)
         {
             std::vector<Cell> covered;
 
-            for (const auto &building : buildings)
+            for (const auto &block : blocks)
             {
-                const auto footprint = footprintOf(building.kind);
+                const auto footprint = footprintOf(block.kind);
 
                 for (std::int32_t dy = 0; dy < footprint.height; ++dy)
                 {
                     for (std::int32_t dx = 0; dx < footprint.width; ++dx)
                     {
                         covered.push_back(Cell{
-                            .x = building.at.x + dx,
-                            .y = building.at.y + dy});
+                            .x = block.at.x + dx,
+                            .y = block.at.y + dy});
                     }
                 }
             }
@@ -184,12 +255,12 @@ namespace antwika::game
         // A wide block's corner ones land a diagonal past it.
         // Painted there, after the flush, they stamp over the art.
         [[nodiscard]] PulledFlanks pulledFlanks(
-            const std::vector<BuildingSprite> &buildings,
+            const std::vector<BlockArt> &blocks,
             const std::vector<Cell> &covered)
         {
             PulledFlanks pulls;
 
-            for (const auto &building : buildings)
+            for (const auto &building : blocks)
             {
                 const auto footprint = footprintOf(building.kind);
                 const auto origin = building.at.x + building.at.y;
@@ -315,23 +386,25 @@ namespace antwika::game
         const SceneSnapshot &snapshot,
         const AtlasTextures &atlases) const
     {
-        const auto covered = coveredCells(snapshot.buildings);
-        const auto &buildings = snapshot.buildings;
+        const auto blocks = blocksOf(snapshot);
+        const auto covered = coveredCells(blocks);
         std::size_t next = 0;
 
-        const auto drawBuilding = [&](const BuildingSprite &building)
+        const auto drawBlock = [&](const BlockArt &block)
         {
             const auto bounds = buildingSpriteBounds(
-                building.at, building.kind, snapshot.camera);
+                block.at, block.kind, snapshot.camera);
 
             if (!overlaps(bounds, canvas))
             {
                 return;
             }
 
+            // The tile came along with the block.
+            // So a ruin's art takes the very call a building's takes.
             renderer.drawTexture(
-                atlases.of(buildingAtlasOf(building.kind)),
-                buildingTile(building.kind),
+                atlases.of(buildingAtlasOf(block.kind)),
+                block.tile,
                 bounds,
                 kUntinted);
         };
@@ -367,7 +440,7 @@ namespace antwika::game
         // Painted on their own diagonal, they stamp over the art.
         // So each is pulled into its block's own terrain phase.
         // A 2x2 has no such cell: its flanks share the origin's.
-        const auto pulls = pulledFlanks(buildings, covered);
+        const auto pulls = pulledFlanks(blocks, covered);
         std::size_t drawn = 0;
 
         // One diagonal is one screen depth, walked back to front.
@@ -415,11 +488,10 @@ namespace antwika::game
                 ++drawn;
             }
 
-            while (next < buildings.size()
-                   && buildings[next].at.x + buildings[next].at.y
-                          <= diagonal)
+            while (next < blocks.size()
+                   && blocks[next].at.x + blocks[next].at.y <= diagonal)
             {
-                drawBuilding(buildings[next]);
+                drawBlock(blocks[next]);
                 ++next;
             }
         }
@@ -427,9 +499,9 @@ namespace antwika::game
         // A snapshot is drawn whole even where the extent ends.
         // Nothing places a block outside it.
         // A scene still draws what it is handed rather than judging it.
-        while (next < buildings.size())
+        while (next < blocks.size())
         {
-            drawBuilding(buildings[next]);
+            drawBlock(blocks[next]);
             ++next;
         }
     }

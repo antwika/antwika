@@ -55,6 +55,7 @@ add_executable(antwika_game
     src/ProductionSystem.cpp
     src/RatingsSystem.cpp
     src/ReadoutPanel.cpp
+    src/RuinSystem.cpp
     src/ResourceColour.cpp
     src/RenderSystem.cpp
     src/RoadDrag.cpp
@@ -74,6 +75,7 @@ add_executable(antwika_game
     src/SaveMigration.cpp
     src/SaveMigrationV2ToV3.cpp
     src/SaveProduction.cpp
+    src/SaveRuins.cpp
     src/SaveSections.cpp
     src/SessionGatedSystem.cpp
     src/StandingBuildings.cpp

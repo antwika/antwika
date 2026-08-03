@@ -15,6 +15,7 @@
 #include "antwika/game/Building.hpp"
 #include "antwika/game/BuildingIndex.hpp"
 #include "antwika/game/Cost.hpp"
+#include "antwika/game/Ruin.hpp"
 #include "antwika/game/GameState.hpp"
 #include "antwika/game/LiveGrid.hpp"
 #include "antwika/game/Camera.hpp"
@@ -849,8 +850,8 @@ TEST_F(GridSinkTest, Raze_LeavesABlockPlacedInTheSameTickStanding)
         (world.view<antwika::game::Building, Cell>().size()), 1U);
 }
 
-// Tearing down is free; only placing spends -- see Cost.hpp.
-TEST_F(GridSinkTest, Raze_CostsNothing)
+// Tearing down costs too, per thing removed -- see Cost.hpp.
+TEST_F(GridSinkTest, Raze_ChargesPerBuildingRemoved)
 {
     overlay.select(BuildTool::House);
     clickAt(Cell{.x = 3, .y = 4}, MouseButton::Left);
@@ -860,6 +861,32 @@ TEST_F(GridSinkTest, Raze_CostsNothing)
 
     overlay.select(BuildTool::Raze);
     clickAt(Cell{.x = 3, .y = 4}, MouseButton::Left);
+    tick();
+
+    EXPECT_EQ(state.money, before - antwika::game::kRazeCost);
+}
+
+TEST_F(GridSinkTest, Raze_ChargesPerRoadTileTakenUp)
+{
+    clickAt(Cell{.x = 3, .y = 4}, MouseButton::Left);
+    tick();
+
+    const auto before = state.money;
+
+    overlay.select(BuildTool::Raze);
+    clickAt(Cell{.x = 3, .y = 4}, MouseButton::Left);
+    tick();
+
+    EXPECT_EQ(state.money, before - antwika::game::kRazeCost);
+}
+
+// A miss is charged as nothing, as a refused placement is.
+TEST_F(GridSinkTest, Raze_ChargesNothingOnBareGround)
+{
+    const auto before = state.money;
+
+    overlay.select(BuildTool::Raze);
+    clickAt(Cell{.x = 9, .y = 9}, MouseButton::Left);
     tick();
 
     EXPECT_EQ(state.money, before);
@@ -911,4 +938,120 @@ TEST_F(GridSinkTest, Raze_LeavesARoadLaidInTheSameTickDown)
 
     EXPECT_TRUE(paths.has(Cell{.x = 3, .y = 4}));
     EXPECT_EQ(pathEntityCount(), 1U);
+}
+
+// Debris holds its block, and the raze tool is what frees it.
+TEST_F(GridSinkTest, Raze_ClearsDebrisAndFreesItsBlock)
+{
+    const auto debris = world.create();
+    world.add<Cell>(debris, Cell{.x = 3, .y = 4});
+    world.add<antwika::game::Ruin>(
+        debris,
+        antwika::game::Ruin{
+            .kind = antwika::game::BuildingKind::Farm,
+            .state = antwika::game::RuinState::Debris,
+            .ticksUntilOut = 0});
+    world.commit();
+    (void)built.insert(
+        Cell{.x = 3, .y = 4},
+        antwika::game::footprintOf(antwika::game::BuildingKind::Farm));
+
+    const auto before = state.money;
+
+    // Any cell of the block, exactly as a building is razed.
+    overlay.select(BuildTool::Raze);
+    clickAt(Cell{.x = 4, .y = 5}, MouseButton::Left);
+    tick();
+
+    EXPECT_FALSE(world.alive(debris));
+    EXPECT_FALSE(built.has(Cell{.x = 3, .y = 4}));
+    EXPECT_FALSE(built.has(Cell{.x = 4, .y = 5}));
+    EXPECT_EQ(state.money, before - antwika::game::kRazeCost);
+}
+
+// A burning ruin may be razed too: the fire ends with the ground.
+TEST_F(GridSinkTest, Raze_ClearsAFireStillBurning)
+{
+    const auto fire = world.create();
+    world.add<Cell>(fire, Cell{.x = 3, .y = 4});
+    world.add<antwika::game::Ruin>(
+        fire, antwika::game::Ruin{.kind = antwika::game::BuildingKind::House});
+    world.commit();
+    (void)built.insert(
+        Cell{.x = 3, .y = 4},
+        antwika::game::footprintOf(antwika::game::BuildingKind::House));
+
+    overlay.select(BuildTool::Raze);
+    clickAt(Cell{.x = 3, .y = 4}, MouseButton::Left);
+    tick();
+
+    EXPECT_FALSE(world.alive(fire));
+    EXPECT_FALSE(built.has(Cell{.x = 3, .y = 4}));
+}
+
+// The loop walks past a ruin the click is not on.
+TEST_F(GridSinkTest, Raze_LeavesARuinStandingElsewhereAlone)
+{
+    const auto debris = world.create();
+    world.add<Cell>(debris, Cell{.x = 6, .y = 6});
+    world.add<antwika::game::Ruin>(
+        debris,
+        antwika::game::Ruin{
+            .kind = antwika::game::BuildingKind::House,
+            .state = antwika::game::RuinState::Debris,
+            .ticksUntilOut = 0});
+    world.commit();
+    (void)built.insert(
+        Cell{.x = 6, .y = 6},
+        antwika::game::footprintOf(antwika::game::BuildingKind::House));
+
+    const auto standing = world.create();
+    world.add<Cell>(standing, Cell{.x = 1, .y = 1});
+    world.add<antwika::game::Ruin>(
+        standing,
+        antwika::game::Ruin{
+            .kind = antwika::game::BuildingKind::House,
+            .state = antwika::game::RuinState::Debris,
+            .ticksUntilOut = 0});
+    world.commit();
+    (void)built.insert(
+        Cell{.x = 1, .y = 1},
+        antwika::game::footprintOf(antwika::game::BuildingKind::House));
+
+    // The click lands on the later ruin.
+    // So the loop walks past the first one without touching it.
+    overlay.select(BuildTool::Raze);
+    clickAt(Cell{.x = 1, .y = 1}, MouseButton::Left);
+    tick();
+
+    EXPECT_FALSE(world.alive(standing));
+    EXPECT_TRUE(world.alive(debris));
+    EXPECT_TRUE(built.has(Cell{.x = 6, .y = 6}));
+}
+
+// Nothing may be built on debris; the ghost's canPlace() refuses it.
+// The index is what refuses, so the sink refuses with it.
+TEST_F(GridSinkTest, Place_RefusesABuildingOnDebris)
+{
+    const auto debris = world.create();
+    world.add<Cell>(debris, Cell{.x = 3, .y = 4});
+    world.add<antwika::game::Ruin>(
+        debris,
+        antwika::game::Ruin{
+            .kind = antwika::game::BuildingKind::House,
+            .state = antwika::game::RuinState::Debris,
+            .ticksUntilOut = 0});
+    world.commit();
+    (void)built.insert(
+        Cell{.x = 3, .y = 4},
+        antwika::game::footprintOf(antwika::game::BuildingKind::House));
+
+    const auto before = state.money;
+
+    overlay.select(BuildTool::House);
+    clickAt(Cell{.x = 3, .y = 4}, MouseButton::Left);
+    tick();
+
+    EXPECT_EQ((world.view<antwika::game::Building, Cell>().size()), 0U);
+    EXPECT_EQ(state.money, before);
 }

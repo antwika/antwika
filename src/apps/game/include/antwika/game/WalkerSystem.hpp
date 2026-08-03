@@ -131,6 +131,16 @@ namespace antwika::game
             Cell at,
             antwika::ecs::Entity bound);
 
+        // And so is answering a fire.
+        // The one arm that reads a walker's FireCall.
+        // Across open ground, since a fire does not wait for paving.
+        // Arriving puts the fire out and the walker with it.
+        void respond(
+            World &world,
+            antwika::ecs::Entity entity,
+            const Walker &walker,
+            Cell at);
+
         const PathIndex &paths;
         const BuildingIndex &built;
         GridExtent extent;

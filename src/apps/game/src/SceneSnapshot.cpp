@@ -9,6 +9,7 @@
 #include "antwika/game/Employment.hpp"
 #include "antwika/game/Staff.hpp"
 #include "antwika/game/HousingQuery.hpp"
+#include "antwika/game/Ruin.hpp"
 #include "antwika/game/Walker.hpp"
 
 namespace antwika::game
@@ -101,6 +102,17 @@ namespace antwika::game
                     .employed = employedOf(world, entity)});
         }
 
+        for (const auto entity : world.view<Ruin, Cell>())
+        {
+            const auto ruin = world.get<Ruin>(entity);
+
+            snapshot.ruins.push_back(
+                RuinView{
+                    .at = world.get<Cell>(entity),
+                    .kind = ruin.kind,
+                    .state = ruin.state});
+        }
+
         // **Painter's order, no longer optional.**
         // One-cell buildings could never overlap.
         // So placement order was as good as any.
@@ -111,6 +123,18 @@ namespace antwika::game
         std::ranges::sort(
             snapshot.buildings,
             [](const BuildingSprite &left, const BuildingSprite &right)
+            {
+                const auto depth = left.at.x + left.at.y;
+                const auto other = right.at.x + right.at.y;
+
+                return depth != other ? depth < other
+                                      : left.at.x < right.at.x;
+            });
+
+        // The ruins on the same key, since the scene merges the two.
+        std::ranges::sort(
+            snapshot.ruins,
+            [](const RuinView &left, const RuinView &right)
             {
                 const auto depth = left.at.x + left.at.y;
                 const auto other = right.at.x + right.at.y;
@@ -161,6 +185,26 @@ namespace antwika::game
                     .level = level,
                     .population = living,
                     .employed = employedOf(world, entity)});
+        }
+
+        return views;
+        // The excluded line is the local vector's unwind destructor.
+        // Nothing between its construction and the return throws.
+    } // GCOVR_EXCL_LINE
+
+    std::vector<RuinView> ruinViewsOf(const World &world)
+    {
+        std::vector<RuinView> views;
+
+        for (const auto entity : world.view<Ruin, Cell>())
+        {
+            const auto ruin = world.get<Ruin>(entity);
+
+            views.push_back(
+                RuinView{
+                    .at = world.get<Cell>(entity),
+                    .kind = ruin.kind,
+                    .state = ruin.state});
         }
 
         return views;

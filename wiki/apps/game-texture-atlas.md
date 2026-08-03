@@ -63,6 +63,8 @@ sprite  count  what
 1-16    16     roads, ordered by which arms they join (below)
 17-21   5      the 1x1 buildings: house, well, doctor,
                  fire station, engineer post
+22      1      debris, what is left once a 1x1 building's fire is out
+23      1      fire, a 1x1 building alight
 24-27   4      walker facing NE on screen (grid north), row 3
 32-35   4      walker facing SE on screen (grid east), row 4
 40-43   4      walker facing SW on screen (grid south), row 5
@@ -113,11 +115,17 @@ A building's sheet is decided by its footprint — `buildingAtlasOf()` derives i
 ```
 1x1 sheet          2x2 sheet        3x3 sheet
 17  house          0  farm          0  storehouse
-18  well           1  clay pit
-19  doctor         2  workshop
+18  well           1  clay pit      8  debris
+19  doctor         2  workshop      9  fire
 20  fire station   3  market
-21  engineer post
+21  engineer post  8  debris
+22  debris         9  fire
+23  fire
 ```
+
+**Every sheet carries a debris and a fire sprite**, at the slots `kDebrisSprites` and `kFireSprites` name, because a burnt building is drawn from its own footprint's sheet -- `ruinTile()` derives the sheet from the kind the ruin remembers, exactly as `buildingAtlasOf()` does for the building that stood there.
+Both must cover the whole footprint diamond, skirt included, on a standing building's own terms: the scene lays no grass under a ruin either.
+Debris reads as a low rubble mound and fire as flames over a charred block, and the pair sit side by side in every sheet so they read as one story.
 
 **A building's art owns its whole footprint**: the scene lays no grass under a standing building, so the sprite must cover its whole footprint diamond (skirt included), or the sky shows through.
 Outside the diamond, the headroom and margins are the building's to use and must stay transparent where unused.

@@ -1040,9 +1040,11 @@ TEST(ReplayDeterminismTest, ACoveredCityReplaysToTheSameCoverage)
 namespace
 {
     // The countdown, plus room for the well's cadence and the walk.
+    // The walk's share is generous: a step is kTicksPerStep ticks.
+    // So the first water reaches the house a few hundred ticks in.
     const antwika::time::Tick kHousingTicks =
         static_cast<antwika::time::Tick>(
-            antwika::game::kEvolvePeriodTicks) + 120;
+            antwika::game::kEvolvePeriodTicks) + 480;
 
     [[nodiscard]] std::vector<TickEvent> housingSession()
     {

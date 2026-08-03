@@ -21,7 +21,7 @@ namespace antwika::game
         using i18n::Locale;
         using i18n::MessageName;
 
-        constexpr std::array<MessageName<MessageId>, 101> kNames{{
+        constexpr std::array<MessageName<MessageId>, 103> kNames{{
             {MessageId::ToolbarZoomIn, "ToolbarZoomIn"},
             {MessageId::ToolbarZoomOut, "ToolbarZoomOut"},
             {MessageId::ToolbarResetView, "ToolbarResetView"},
@@ -123,6 +123,8 @@ namespace antwika::game
             {MessageId::WalkerLabourer, "WalkerLabourer"},
             {MessageId::ReadoutUnemployed, "ReadoutUnemployed"},
             {MessageId::ReadoutStaff, "ReadoutStaff"},
+            {MessageId::RuinOnFire, "RuinOnFire"},
+            {MessageId::RuinDebris, "RuinDebris"},
         }};
 
         static_assert(
@@ -236,6 +238,8 @@ namespace antwika::game
                 {MessageId::WalkerLabourer, "labourer"},
                 {MessageId::ReadoutUnemployed, "unemployed {0}/{1}"},
                 {MessageId::ReadoutStaff, "staff {0}/{1}"},
+                {MessageId::RuinOnFire, "on fire"},
+                {MessageId::RuinDebris, "debris"},
             }};
 
         constexpr std::array<CatalogueEntry<MessageId>, kNames.size()>
@@ -342,6 +346,8 @@ namespace antwika::game
                 {MessageId::WalkerLabourer, "arbetare"},
                 {MessageId::ReadoutUnemployed, "arbetslösa {0}/{1}"},
                 {MessageId::ReadoutStaff, "personal {0}/{1}"},
+                {MessageId::RuinOnFire, "brinner"},
+                {MessageId::RuinDebris, "spillror"},
             }};
 
         constexpr Catalogue<MessageId> kEnglishCatalogue{

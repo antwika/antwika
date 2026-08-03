@@ -42,6 +42,17 @@ namespace antwika::game
          */
         std::vector<BuildingView> buildings;
 
+        /**
+         * @brief Every fire and heap of debris, in the world's order.
+         *
+         * Here so a divergence in what burnt fails the comparison
+         * directly: a building that catches fire leaves the buildings
+         * list, so without this a live run and its replay could
+         * disagree about a whole district having burned and compare
+         * equal on everything but the walkers it displaced.
+         */
+        std::vector<RuinView> ruins;
+
         Camera camera;
 
         /**

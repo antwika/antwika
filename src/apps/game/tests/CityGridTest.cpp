@@ -16,6 +16,7 @@
 #include "antwika/game/Coverage.hpp"
 #include "antwika/game/Direction.hpp"
 #include "antwika/game/Errand.hpp"
+#include "antwika/game/FireCall.hpp"
 #include "antwika/game/Footprint.hpp"
 #include "antwika/game/Path.hpp"
 #include "antwika/game/Journey.hpp"
@@ -25,6 +26,7 @@
 #include "antwika/game/Staff.hpp"
 #include "antwika/game/HousingLevel.hpp"
 #include "antwika/game/Production.hpp"
+#include "antwika/game/Ruin.hpp"
 #include "antwika/game/Walker.hpp"
 
 namespace
@@ -326,6 +328,8 @@ namespace
             [](StoredWalker &w) { w.walker.facing = Direction::North; });
         expectMemberCompared(
             base, [](StoredWalker &w) { w.home = std::nullopt; });
+        expectMemberCompared(
+            base, [](StoredWalker &w) { w.attending = 3U; });
     }
 
     TEST_F(CityGridTest, StoredBuildingEqualityComparesEveryField)
@@ -396,6 +400,12 @@ namespace
             base, [](CityGrid &g) { g.walkers.clear(); });
         expectMemberCompared(
             base, [](CityGrid &g) { g.buildings.clear(); });
+        expectMemberCompared(
+            base,
+            [](CityGrid &g)
+            {
+                g.ruins.push_back(antwika::game::StoredRuin{});
+            });
     }
 
 
@@ -851,4 +861,116 @@ namespace
         EXPECT_EQ(
             taken.buildings[1].employment->jobs.size(),
             antwika::game::kMaxJobs);
+    }
+
+    // A ruin is put away and put back exactly as a building is.
+    // Its block goes back into the index.
+    // So a reopened city still refuses a placement on debris.
+    TEST_F(CityGridTest, CityGrid_CarriesTheRuinsAcrossACitySwitch)
+    {
+        const auto fire = world.create();
+        world.add<Cell>(fire, Cell{.x = 4, .y = 4});
+        world.add<antwika::game::Ruin>(
+            fire,
+            antwika::game::Ruin{
+                .kind = BuildingKind::Farm, .ticksUntilOut = 55});
+        world.commit();
+
+        const auto taken = cityGridOf(world);
+
+        ASSERT_EQ(taken.ruins.size(), 1U);
+        EXPECT_EQ(taken.ruins[0].at, (Cell{.x = 4, .y = 4}));
+        EXPECT_EQ(taken.ruins[0].ruin.kind, BuildingKind::Farm);
+        EXPECT_EQ(taken.ruins[0].ruin.ticksUntilOut, 55);
+
+        restoreCityGrid(world, built, paths, taken);
+        world.commit();
+
+        EXPECT_EQ(cityGridOf(world), taken);
+        EXPECT_TRUE(built.has(Cell{.x = 4, .y = 4}));
+        EXPECT_TRUE(built.has(Cell{.x = 5, .y = 5}));
+    }
+
+    // The call crosses the switch as an index, exactly as a home does.
+    TEST_F(CityGridTest, CityGrid_CarriesAFiremansCallAcrossACitySwitch)
+    {
+        const auto fire = world.create();
+        world.add<Cell>(fire, Cell{.x = 4, .y = 4});
+        world.add<antwika::game::Ruin>(
+            fire, antwika::game::Ruin{.kind = BuildingKind::House});
+
+        const auto fireman = world.create();
+        world.add<Cell>(fireman, Cell{.x = 1, .y = 1});
+        world.add<Walker>(
+            fireman,
+            Walker{.kind = antwika::game::WalkerKind::Fireman});
+        world.add<antwika::game::FireCall>(
+            fireman, antwika::game::FireCall{.target = fire});
+        world.commit();
+
+        const auto taken = cityGridOf(world);
+
+        ASSERT_EQ(taken.walkers.size(), 1U);
+        EXPECT_EQ(taken.walkers[0].attending, 0U);
+
+        restoreCityGrid(world, built, paths, taken);
+        world.commit();
+
+        // The relinked call names the live ruin, whatever its id now.
+        const auto walkers =
+            world.view<Walker, antwika::game::FireCall>();
+        ASSERT_EQ(walkers.size(), 1U);
+
+        const auto target = world
+            .get<antwika::game::FireCall>(*walkers.begin())
+            .target;
+        EXPECT_TRUE(world.has<antwika::game::Ruin>(target));
+    }
+
+    // A call whose ruin died the same tick is dropped on the way out.
+    TEST_F(CityGridTest, CityGridOf_ForgetsACallNamingNoRuinItKept)
+    {
+        const auto fire = world.create();
+        world.add<Cell>(fire, Cell{.x = 4, .y = 4});
+        world.add<antwika::game::Ruin>(
+            fire, antwika::game::Ruin{.kind = BuildingKind::House});
+
+        const auto fireman = world.create();
+        world.add<Cell>(fireman, Cell{.x = 1, .y = 1});
+        world.add<Walker>(
+            fireman,
+            Walker{.kind = antwika::game::WalkerKind::Fireman});
+        world.add<antwika::game::FireCall>(
+            fireman, antwika::game::FireCall{.target = fire});
+        world.destroy(fire);
+        world.commit();
+
+        const auto taken = cityGridOf(world);
+
+        ASSERT_EQ(taken.walkers.size(), 1U);
+        EXPECT_FALSE(taken.walkers[0].attending.has_value());
+    }
+
+    TEST_F(CityGridTest, StoredRuinEqualityComparesEveryField)
+    {
+        const antwika::game::StoredRuin base{
+            .at = Cell{.x = 4, .y = 4},
+            .ruin = antwika::game::Ruin{.kind = BuildingKind::Farm}};
+
+        expectMemberCompared(
+            base,
+            [](antwika::game::StoredRuin &r)
+            { r.at = Cell{.x = 5, .y = 5}; });
+        expectMemberCompared(
+            base,
+            [](antwika::game::StoredRuin &r)
+            { r.ruin.state = antwika::game::RuinState::Debris; });
+        expectMemberCompared(
+            base,
+            [](antwika::game::StoredRuin &r)
+            { r.ruin.kind = BuildingKind::House; });
+        expectMemberCompared(
+            base,
+            [](antwika::game::StoredRuin &r)
+            { r.ruin.ticksUntilOut = 1; });
     }

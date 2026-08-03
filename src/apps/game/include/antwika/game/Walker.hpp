@@ -18,10 +18,13 @@ namespace antwika::game
     /**
      * @brief How many ticks one cell of walking takes.
      *
-     * Two, so a walker covers a cell every other tick rather than every
-     * one.
+     * Eight, which is a quarter of the pace the walkers first shipped
+     * at: a cell every other tick read as scurrying once the frames
+     * between ticks slid a walker smoothly, and every period in the
+     * economy -- coverage, drains, spawns -- was tuned generously
+     * enough that the slower streets still keep a district served.
      */
-    inline constexpr std::uint8_t kTicksPerStep = 2;
+    inline constexpr std::uint8_t kTicksPerStep = 8;
 
     /**
      * @brief What a walker is carrying, and for whom.

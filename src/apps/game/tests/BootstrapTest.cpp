@@ -39,6 +39,7 @@
 #include "antwika/game/UiCanvas.hpp"
 #include "antwika/game/UiOverlay.hpp"
 #include "antwika/game/PathIndex.hpp"
+#include "antwika/game/Ruin.hpp"
 #include "antwika/game/Desirability.hpp"
 #include "antwika/game/MapView.hpp"
 #include "antwika/game/PauseState.hpp"
@@ -362,6 +363,10 @@ TEST(PrintSummaryTest, WritesTheStateTheCountsAndTheCamera)
         .paths = {{.x = 1, .y = 1}, {.x = 1, .y = 2}},
         .walkers = {},
         .buildings = {},
+        .ruins =
+            {{.at = {.x = 2, .y = 3},
+              .kind = antwika::game::BuildingKind::Farm,
+              .state = antwika::game::RuinState::Debris}},
         .camera = Camera(Point{.x = 512, .y = 48}),
         .ratings = {},
         .bindings = {}};
@@ -374,6 +379,8 @@ TEST(PrintSummaryTest, WritesTheStateTheCountsAndTheCamera)
         "Paths laid: 2\n"
         "Walkers: 0\n"
         "Buildings: 0\n"
+        "Ruins: 1\n"
+        "  farm at (2, 3) debris\n"
         "Ratings: population=0 employment=0 housing=0 service=0\n"
         "Camera: pan (512, 48) zoom 3\n");
 }
@@ -388,6 +395,7 @@ TEST(PrintSummaryTest, WritesEveryWalkerWhereItStandsAndWhereItFaces)
             {{.at = {.x = 3, .y = 4},
               .facing = antwika::game::Direction::South}},
         .buildings = {},
+        .ruins = {},
         .camera = Camera(Point{.x = 0, .y = 0}),
         .ratings = {},
         .bindings = {}};
@@ -851,6 +859,7 @@ TEST(PrintSummaryTest, WritesEveryBuildingAndWhatItIs)
               .level = antwika::game::HousingLevel::Hovel},
              {.at = {.x = 3, .y = 4},
               .kind = antwika::game::BuildingKind::Well}},
+        .ruins = {},
         .camera = Camera(Point{.x = 0, .y = 0}),
         .ratings = {},
         .bindings = {}};

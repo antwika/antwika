@@ -11,6 +11,7 @@
 #include "antwika/game/Journey.hpp"
 #include "antwika/game/Household.hpp"
 #include "antwika/game/Production.hpp"
+#include "antwika/game/Ruin.hpp"
 #include "antwika/game/Walker.hpp"
 
 namespace antwika::game
@@ -52,6 +53,7 @@ namespace antwika::game
         CityGrid grid;
         grid.walkers.reserve(save.walkers.size());
         grid.buildings.reserve(save.buildings.size());
+        grid.ruins.reserve(save.ruins.size());
 
         for (const auto &walker : save.walkers)
         {
@@ -89,7 +91,19 @@ namespace antwika::game
                     .journey = journey,
                     .joining = walker.journey.has_value()
                         ? walker.journey->house
-                        : std::nullopt});
+                        : std::nullopt,
+                    .attending = walker.fireCall});
+        }
+
+        for (const auto &ruin : save.ruins)
+        {
+            grid.ruins.push_back(
+                StoredRuin{
+                    .at = ruin.at,
+                    .ruin = Ruin{
+                        .kind = ruin.kind,
+                        .state = ruin.state,
+                        .ticksUntilOut = ruin.ticksUntilOut}});
         }
 
         for (const auto &building : save.buildings)

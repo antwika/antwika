@@ -50,17 +50,19 @@ namespace antwika::game
                 .first->second;
         }
 
-        // What ends a building: bad luck, or an empty larder.
-        // A source holds stock nobody drains, so only risk takes one.
-        // And only what sustains() names is a larder.
-        // A house holding no clay is a house nobody has carted to yet.
-        [[nodiscard]] bool isLost(const Building &building)
+        // What sets a building alight: risk run all the way up.
+        // Which is what a district nobody serves comes to.
+        [[nodiscard]] bool catchesFire(const Building &building)
         {
-            if (building.risk >= kMaxRisk)
-            {
-                return true;
-            }
+            return building.risk >= kMaxRisk;
+        }
 
+        // What ends a building outright: an empty larder.
+        // Only what sustains() names is a larder.
+        // A house holding no clay is a house nobody has carted to yet.
+        // A source holds stock nobody drains, so it never starves.
+        [[nodiscard]] bool starves(const Building &building)
+        {
             if (!consumes(building.kind))
             {
                 return false;
@@ -286,27 +288,51 @@ namespace antwika::game
         age(world, pending);
 
         // Ascending Cell rather than the pending map's Entity order.
-        // A demolition turns people out, and people are contended.
+        // Both endings turn people out, and people are contended.
         // The walker limit and a vacancy's beds are split amounts.
         // An entity order is one a restore may renumber.
         // See AllocationOrderTest.
         // A cell is unique per building, so no tie-break is needed.
-        std::map<Cell, Entity> lost;
+        //
+        // One map for both endings rather than one map each.
+        // So a fire and a starvation resolve in one Cell order too.
+        // Fire is asked first.
+        // A building starving the tick its risk maxes therefore burns.
+        // One answer, stated by the order of the two tests.
+        // Rather than by a tie rule written beside them.
+        std::map<Cell, std::pair<Entity, bool>> lost;
 
         for (const auto &[entity, building] : pending)
         {
-            if (isLost(building))
+            if (catchesFire(building))
             {
-                lost.emplace(world.get<Cell>(entity), entity);
+                lost.emplace(
+                    world.get<Cell>(entity),
+                    std::make_pair(entity, true));
+                continue;
+            }
+
+            if (starves(building))
+            {
+                lost.emplace(
+                    world.get<Cell>(entity),
+                    std::make_pair(entity, false));
                 continue;
             }
 
             world.set<Building>(entity, building);
         }
 
-        for (const auto &[at, entity] : lost)
+        for (const auto &[at, ending] : lost)
         {
-            demolish(world, built, entity, extent);
+            if (ending.second)
+            {
+                ignite(world, built, ending.first, extent);
+            }
+            else
+            {
+                demolish(world, built, ending.first, extent);
+            }
         }
     }
 

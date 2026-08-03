@@ -14,10 +14,11 @@ namespace antwika::game
      * @brief Tear one building down and turn its occupants out.
      *
      * **The one statement of what a demolition is**, whoever asked for
-     * it: BuildingSystem calls this for a building lost to fire or
-     * hunger, and GridSink calls it for one the raze tool was clicked
-     * on, so what happens to the people inside cannot depend on why the
-     * roof came down.
+     * it: BuildingSystem calls this for a building lost to hunger, and
+     * GridSink calls it for one the raze tool was clicked on, so what
+     * happens to the people inside cannot depend on why the roof came
+     * down. A building lost to *fire* takes ignite() below instead,
+     * which shares the people rule and differs about the ground.
      *
      * The occupants are spawned in the building's place -- at its
      * origin cell, on the ground the block is about to stop covering --
@@ -47,6 +48,38 @@ namespace antwika::game
      * @param extent The bounds the vacancy and gate searches run over.
      */
     void demolish(
+        World &world,
+        BuildingIndex &built,
+        antwika::ecs::Entity entity,
+        GridExtent extent);
+
+    /**
+     * @brief Set one building alight and turn its occupants out.
+     *
+     * demolish()'s other ending, and the two share their people rule:
+     * the occupants leave as ordinary migrants, a counted few to the
+     * nearest vacancy and the rest to the nearest gate, on exactly the
+     * terms the header above states.
+     *
+     * **What differs is the ground.** The Building entity dies here
+     * and a Ruin entity stands up in its place, burning, and the block
+     * stays in the index -- so nothing can be built where the fire is,
+     * a route walks round it, and only the raze tool ever frees the
+     * cells. Because the block still stands, the leavers cannot spawn
+     * on it: they step out at the lowest free cell round the block's
+     * own perimeter, and a building walled in on every side turns its
+     * people out to nowhere -- the rule a walled-in house already
+     * lives under.
+     *
+     * @param world Read for the household; the leavers and the ruin
+     * are created here and the building's destruction is staged here.
+     * @param built Consulted for the escape cell and left holding the
+     * block.
+     * @param entity The building to set alight; must be alive and
+     * carry a Building and a Cell.
+     * @param extent The bounds the vacancy and gate searches run over.
+     */
+    void ignite(
         World &world,
         BuildingIndex &built,
         antwika::ecs::Entity entity,
