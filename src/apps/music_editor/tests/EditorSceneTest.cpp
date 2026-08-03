@@ -851,3 +851,127 @@ TEST(EditorSceneTest, ARateWithoutACycleLengthFillsTheSlot)
     ASSERT_EQ(cells.size(), 1U);
     EXPECT_EQ(cells[0].rect.size.width, band->size.width / 2);
 }
+
+namespace
+{
+    using antwika::sequencer::Rational;
+
+    // A roll described at a playhead position, with no pace.
+    [[nodiscard]] antwika::ui::Frame rolledFrame(
+        const std::string &source,
+        const Rational position,
+        const PlaybackStatus &extra = PlaybackStatus{})
+    {
+        EditorState state;
+        state.source = source;
+
+        Score score;
+        score.read(state.source);
+
+        auto status = extra;
+        status.position = position;
+
+        return describe(state, score, status);
+    }
+} // namespace
+
+// The window is the cycle ahead of the playhead.
+// Half way through, the second slot leads and the next cycle follows.
+TEST(EditorSceneTest, TheRollScrollsWithThePlayhead)
+{
+    const auto frame = rolledFrame(
+        "$: drum.n(\"0 3\").pianoroll()\n", Rational{1, 2});
+
+    const auto band = frame.rects.find(pianorollBand(0));
+
+    ASSERT_TRUE(band.has_value());
+
+    const auto cells = fillsIn(frame.commands, kNoteInk);
+
+    ASSERT_EQ(cells.size(), 2U);
+
+    const auto width = band->size.width;
+
+    // The 3, already sounding order, at the left edge.
+    EXPECT_EQ(cells[0].rect.origin.x, band->origin.x);
+    EXPECT_EQ(cells[0].rect.size.width, width / 2);
+
+    // The next cycle's 0, entering from the half.
+    EXPECT_EQ(
+        cells[1].rect.origin.x,
+        band->origin.x + static_cast<std::int32_t>(width / 2));
+    EXPECT_EQ(
+        cells[1].rect.origin.y,
+        band->origin.y
+            + static_cast<std::int32_t>(
+                band->size.height - band->size.height / 4));
+}
+
+// What an alternation turns to next is already in the window.
+TEST(EditorSceneTest, AnUpcomingAlternationTurnIsAlreadyInTheRoll)
+{
+    const auto frame = rolledFrame(
+        "$: n(\"0 <3 5>\").pianoroll()\n", Rational{3, 2});
+
+    const auto band = frame.rects.find(pianorollBand(0));
+
+    ASSERT_TRUE(band.has_value());
+
+    const auto cells = fillsIn(frame.commands, kNoteInk);
+
+    ASSERT_EQ(cells.size(), 2U);
+
+    // Six lanes, nought through five: the five sits at the top.
+    const auto lane = band->size.height / 6;
+
+    EXPECT_EQ(cells[0].rect.origin.y, band->origin.y);
+    EXPECT_EQ(
+        cells[1].rect.origin.y,
+        band->origin.y
+            + static_cast<std::int32_t>(band->size.height - lane));
+}
+
+// A note that began before the window still reaches into it.
+TEST(EditorSceneTest, ANoteStillRingingReachesInFromTheLeft)
+{
+    const auto frame = rolledFrame(
+        "$: drum.n(\"0 _ 3\").pianoroll()\n", Rational{1, 4});
+
+    const auto band = frame.rects.find(pianorollBand(0));
+
+    ASSERT_TRUE(band.has_value());
+
+    const auto cells = fillsIn(frame.commands, kNoteInk);
+
+    ASSERT_EQ(cells.size(), 3U);
+
+    // Clipped at the left edge, its remaining extent shown.
+    const auto width = static_cast<std::int64_t>(band->size.width);
+
+    EXPECT_EQ(cells[0].rect.origin.x, band->origin.x);
+    EXPECT_EQ(
+        cells[0].rect.size.width,
+        static_cast<std::uint32_t>(5 * width / 12));
+}
+
+// A tail that rang out before the window earns no cell at all.
+TEST(EditorSceneTest, ATailThatRangOutBeforeTheWindowIsNoCell)
+{
+    const auto frame = rolledFrame(
+        "$: drum.n(\"0 ~\").hold(100).rel(25).pianoroll()\n",
+        Rational{1, 4},
+        PlaybackStatus{.rate = 48000, .cycleFrames = 48000});
+
+    const auto band = frame.rects.find(pianorollBand(0));
+
+    ASSERT_TRUE(band.has_value());
+
+    const auto cells = fillsIn(frame.commands, kNoteInk);
+
+    // The window's own note is gone; the next cycle's is coming.
+    ASSERT_EQ(cells.size(), 1U);
+    EXPECT_EQ(
+        cells[0].rect.origin.x,
+        band->origin.x
+            + static_cast<std::int32_t>(3 * band->size.width / 4));
+}

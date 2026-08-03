@@ -210,6 +210,18 @@ namespace antwika::music_editor
         [[nodiscard]] time::Tick playedTicks() const noexcept;
 
         /**
+         * @brief Get where the musical clock stands, in cycles.
+         *
+         * The played ticks read through the same TempoMap every voice
+         * runs on, so a speed change bends this exactly where it bends
+         * the notes -- an exact rational, still while paused, that a
+         * scrolling picture may anchor to and a replay reproduces.
+         *
+         * @return The position, in cycles from the run's start.
+         */
+        [[nodiscard]] sequencer::Rational position() const;
+
+        /**
          * @brief Change how fast musical time runs, for every voice.
          *
          * Takes effect at the next whole cycle no voice has been asked
