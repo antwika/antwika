@@ -256,3 +256,84 @@ TEST(TrackPresetTest, ComparesFieldByField)
     other.pan = 0.5F;
     EXPECT_NE(plain, other);
 }
+
+// A rate with no depth said gets a gentle default -- see voiceFor().
+TEST(TrackPresetTest, AVibratoRidesOntoTheVoice)
+{
+    TrackPreset preset;
+    preset.vibratoHertz = 6.0;
+
+    const auto voice = voiceFor(preset, Controls{}, 48000, 48000, 0);
+
+    EXPECT_DOUBLE_EQ(voice.vibratoHertz, 6.0);
+    EXPECT_GT(voice.vibratoDepth, 0.0);
+
+    preset.vibratoDepth = 0.02F;
+    const auto deeper = voiceFor(preset, Controls{}, 48000, 48000, 0);
+
+    EXPECT_DOUBLE_EQ(deeper.vibratoDepth, 0.02F);
+}
+
+TEST(TrackPresetTest, NoVibratoAsksForNone)
+{
+    const TrackPreset preset;
+    const auto voice = voiceFor(preset, Controls{}, 48000, 48000, 0);
+
+    EXPECT_DOUBLE_EQ(voice.vibratoHertz, 0.0);
+    EXPECT_DOUBLE_EQ(voice.vibratoDepth, 0.0);
+}
+
+// Semitones become a ratio where floats are at home.
+// The render path multiplies and never takes a power.
+TEST(TrackPresetTest, TwelveArpeggioSemitonesDoubleThePitch)
+{
+    TrackPreset preset;
+    preset.arpSemitones = 12;
+
+    const auto voice = voiceFor(preset, Controls{}, 48000, 48000, 0);
+
+    EXPECT_DOUBLE_EQ(voice.arpeggioRatio, 2.0);
+
+    // Forty milliseconds of frames at this rate.
+    EXPECT_EQ(voice.arpeggioPeriod, 1920U);
+}
+
+TEST(TrackPresetTest, NoArpeggioLeavesThePitchAlone)
+{
+    const TrackPreset preset;
+    const auto voice = voiceFor(preset, Controls{}, 48000, 48000, 0);
+
+    EXPECT_DOUBLE_EQ(voice.arpeggioRatio, 1.0);
+    EXPECT_EQ(voice.arpeggioPeriod, 0U);
+}
+
+// The six modulation fields are in the comparison.
+// Or a chain that set one would read as the chain that did not.
+TEST(TrackPresetTest, EqualityComparesEveryModulationField)
+{
+    const TrackPreset base;
+
+    auto other = base;
+    other.vibratoHertz = 6.0;
+    EXPECT_NE(base, other);
+
+    other = base;
+    other.vibratoDepth = 0.02F;
+    EXPECT_NE(base, other);
+
+    other = base;
+    other.arpSemitones = 12;
+    EXPECT_NE(base, other);
+
+    other = base;
+    other.delayMs = 300;
+    EXPECT_NE(base, other);
+
+    other = base;
+    other.delayMix = 0.1F;
+    EXPECT_NE(base, other);
+
+    other = base;
+    other.harmonySemitones = 7;
+    EXPECT_NE(base, other);
+}

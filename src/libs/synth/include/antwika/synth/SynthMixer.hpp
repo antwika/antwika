@@ -116,6 +116,7 @@ namespace antwika::synth
             FrameIndex startFrame = 0;
             FrameCount elapsed = 0;
             double phase = 0.0;
+            double vibratoPhase = 0.0;
             float left = 1.0F;
             float right = 1.0F;
             bool active = false;

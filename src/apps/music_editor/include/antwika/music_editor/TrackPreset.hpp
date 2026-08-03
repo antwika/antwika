@@ -92,6 +92,29 @@ namespace antwika::music_editor
 
         synth::FilterDesc filter{};
 
+        /** @brief How fast the pitch wobbles, in hertz; zero is off. */
+        double vibratoHertz = 0.0;
+
+        /**
+         * @brief How far it wobbles, as a fraction of the pitch.
+         *
+         * Zero with a rate set gets a gentle default in voiceFor(),
+         * so `vib(6)` alone is audible without a second call.
+         */
+        float vibratoDepth = 0.0F;
+
+        /** @brief The chiptune alternation, in semitones; zero is off. */
+        std::int32_t arpSemitones = 0;
+
+        /** @brief One echo this long after every note; zero is off. */
+        std::uint32_t delayMs = 0;
+
+        /** @brief How loud the echo is, against the note itself. */
+        float delayMix = 0.5F;
+
+        /** @brief A second voice this far up, with every note. */
+        std::int32_t harmonySemitones = 0;
+
         float gain = 0.4F;
         float pan = 0.0F;
 

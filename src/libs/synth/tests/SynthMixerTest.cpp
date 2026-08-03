@@ -372,3 +372,125 @@ TEST(SynthMixerTest, Render_SurvivesASlidePastSilence)
         EXPECT_LE(sample, 1.0F);
     }
 }
+
+// The three modulation refusals, on the filter cutoff's terms.
+TEST(SynthMixerTest, Trigger_RefusesAVibratoItCannotTrace)
+{
+    SynthMixer mixer{SynthMixerDesc{.format = kStereo48}};
+
+    auto tooFast = kFlatBlip;
+    tooFast.vibratoHertz = static_cast<double>(kStereo48.rate);
+    EXPECT_THROW(
+        mixer.trigger({.voice = tooFast, .startFrame = 0}),
+        antwika::synth::SynthError);
+
+    auto backwards = kFlatBlip;
+    backwards.vibratoHertz = -1.0;
+    EXPECT_THROW(
+        mixer.trigger({.voice = backwards, .startFrame = 0}),
+        antwika::synth::SynthError);
+}
+
+TEST(SynthMixerTest, Trigger_RefusesAVibratoDepthOutsideItsRange)
+{
+    SynthMixer mixer{SynthMixerDesc{.format = kStereo48}};
+
+    auto tooDeep = kFlatBlip;
+    tooDeep.vibratoDepth = 1.0;
+    EXPECT_THROW(
+        mixer.trigger({.voice = tooDeep, .startFrame = 0}),
+        antwika::synth::SynthError);
+}
+
+TEST(SynthMixerTest, Trigger_RefusesAnArpeggioRatioThatIsNoRatio)
+{
+    SynthMixer mixer{SynthMixerDesc{.format = kStereo48}};
+
+    auto zero = kFlatBlip;
+    zero.arpeggioRatio = 0.0;
+    EXPECT_THROW(
+        mixer.trigger({.voice = zero, .startFrame = 0}),
+        antwika::synth::SynthError);
+}
+
+// The wobble reaches the phase, so the run of samples changes.
+// Shape rather than exact values, per the precision policy.
+TEST(SynthMixerTest, Render_AVibratoBendsTheWaveform)
+{
+    auto steady = kFlatBlip;
+    steady.frequency = 100.0;
+    steady.hold = 4800;
+
+    SynthMixer plain{SynthMixerDesc{.format = kStereo48}};
+    plain.trigger({.voice = steady, .startFrame = 0});
+
+    auto bent = steady;
+    bent.vibratoHertz = 50.0;
+    bent.vibratoDepth = 0.9;
+
+    SynthMixer wobbling{SynthMixerDesc{.format = kStereo48}};
+    wobbling.trigger({.voice = bent, .startFrame = 0});
+
+    EXPECT_NE(
+        rendered(plain, 4800).samples,
+        rendered(wobbling, 4800).samples);
+}
+
+TEST(SynthMixerTest, Render_AnArpeggioAlternatesThePitch)
+{
+    auto steady = kFlatBlip;
+    steady.frequency = 100.0;
+    steady.hold = 4800;
+
+    SynthMixer plain{SynthMixerDesc{.format = kStereo48}};
+    plain.trigger({.voice = steady, .startFrame = 0});
+
+    auto jumped = steady;
+    jumped.arpeggioRatio = 2.0;
+    jumped.arpeggioPeriod = 100;
+
+    SynthMixer stepping{SynthMixerDesc{.format = kStereo48}};
+    stepping.trigger({.voice = jumped, .startFrame = 0});
+
+    EXPECT_NE(
+        rendered(plain, 4800).samples,
+        rendered(stepping, 4800).samples);
+}
+
+// Finiteness is asked for by name -- see the frequency's refusal.
+TEST(SynthMixerTest, Trigger_RefusesModulationThatIsNotANumber)
+{
+    SynthMixer mixer{SynthMixerDesc{.format = kStereo48}};
+    const auto nan = std::numeric_limits<double>::quiet_NaN();
+
+    auto wobble = kFlatBlip;
+    wobble.vibratoHertz = nan;
+    EXPECT_THROW(
+        mixer.trigger({.voice = wobble, .startFrame = 0}),
+        antwika::synth::SynthError);
+
+    auto depth = kFlatBlip;
+    depth.vibratoDepth = -0.1;
+    EXPECT_THROW(
+        mixer.trigger({.voice = depth, .startFrame = 0}),
+        antwika::synth::SynthError);
+
+    auto shallow = kFlatBlip;
+    shallow.vibratoDepth = nan;
+    EXPECT_THROW(
+        mixer.trigger({.voice = shallow, .startFrame = 0}),
+        antwika::synth::SynthError);
+
+    auto ratio = kFlatBlip;
+    ratio.arpeggioRatio = nan;
+    EXPECT_THROW(
+        mixer.trigger({.voice = ratio, .startFrame = 0}),
+        antwika::synth::SynthError);
+
+    // Past the short circuit: above zero and still no ratio.
+    auto endless = kFlatBlip;
+    endless.arpeggioRatio = std::numeric_limits<double>::infinity();
+    EXPECT_THROW(
+        mixer.trigger({.voice = endless, .startFrame = 0}),
+        antwika::synth::SynthError);
+}

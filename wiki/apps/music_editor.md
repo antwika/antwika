@@ -65,6 +65,14 @@ Every call takes exactly one argument.
 | `lpf(900)`, `hpf(4000)`, `bpf(1200)` | A low, high or band pass filter at that many hertz. |
 | `res(.8)` | How much the filter emphasises its cutoff. One is flat and smaller is sharper. |
 | `slide(-40)` | How fast the pitch moves, in hertz per second. |
+| `vib(6)` | A pitch wobble at that many hertz. Gentle by itself; `vibdepth()` says how far. |
+| `vibdepth(.02)` | How far the wobble reaches, as a fraction of the pitch, from 0 up to 1. |
+| `arp(12)` | The chiptune alternation: the pitch spends alternate steps that many semitones up, twenty-five steps a second. |
+| `delay(300)` | One echo that many milliseconds behind every note. Nothing feeds back. |
+| `delaymix(.3)` | How loud the echo is against the note, between 0 and 1. |
+| `harm(7)` | A second voice that many semitones up, sounding with every note. |
+
+The envelope the modulation list asks after is already here: `att()`, `dec()`, `sus()` and `rel()` are the four corners of it, and `hold()` is where the release begins.
 
 The presets a line may open with are `bass` (a filtered saw), `lead` (a square), `bell` (a sine) and `drum` (a filtered noise hit).
 They are four points to start from rather than four instruments, and a document naming none of them is an ordinary document.
@@ -113,6 +121,38 @@ Each of these is a whole document.
 ```
 $: drum.n("0 ~ 0 ~")
 $: bass.n("0 ~ ~ 0")
+```
+
+**A drum kit: kick, snare, hihat, crash.**
+A kick is a sine dropping fast; everything else is noise said four ways.
+
+```
+$: drum.s(sine).base(150).slide(-600).hold(90).rel(80).n("0 ~ 0 ~")
+$: drum.bpf(2000).dec(60).hold(70).gain(.25).n("~ 0 ~ 0")
+$: drum.hpf(8000).hold(25).rel(30).gain(.15).n("0 0 0 0")
+$: drum.hpf(5000).hold(60).rel(900).gain(.2).n("0 ~ ~ ~")
+```
+
+**Piano, bass and guitar, said as chains.**
+Not samples of the instruments -- the shapes of them: a piano decays and never swells, a bass is a filtered saw an octave down, a plucked string is bright for a moment and then is not.
+
+```
+$: lead.s(triangle).att(2).dec(250).sus(.3).rel(200).n("0 4 7 12")
+$: bass.o(-1).n("0 ~ 0 3")
+$: lead.s(saw).lpf(1800).dec(180).sus(.2).rel(120).harm(12).n("0 7")
+```
+
+**Three-note chords in a minor key.**
+A comma inside brackets sounds its notes together, so a chord is ordinary mini-notation; these four spell i, VI, III and VII of the minor scale.
+
+```
+$: bell.n("[0,3,7] [8,12,15] [3,7,10] [10,14,17]").gain(.25)
+```
+
+**A voice that moves: vibrato, echo, harmony.**
+
+```
+$: lead.vib(6).delay(250).delaymix(.3).harm(7).n("0 ~ 3 ~").gain(.2)
 ```
 
 **Three drums, out of one preset.**
@@ -222,6 +262,12 @@ A score's *contents*, though, can only be read when the click asking for them ar
 [`ui`](../libraries/ui.md) draws it -- the pane is one `ui.textArea()`, the multi-line half of its text field -- and [`input`](../libraries/input.md) is where the typing comes from.
 
 ## Non-obvious decisions
+
+**The five modulations split across the seam by what they modulate.**
+Vibrato and the arpeggio bend a single voice's pitch over time, so they ride on `VoiceDesc` and are applied inside the synth's per-sample loop -- as a triangle and an integer step-count respectively, because the render path stays free of transcendentals, and the semitones-to-ratio power is taken once in `voiceFor()` where floats are at home.
+The delay and the harmony are more voices rather than changed ones, so `Playback` sounds them as ordinary extra triggers -- one echo a fixed way behind at a lower gain, one voice a fixed interval up, the harmony echoing too since the echo is of what sounded -- and nothing loops or feeds back.
+The envelope needed nothing: `att()`, `dec()`, `sus()` and `rel()` were already the four corners of it.
+
 
 **This app defines one event of its own, and its name says why.**
 Every bit of its state -- the document, the caret, whether it is paused -- is derived from key and pointer edges the recording already carries, so a replay retypes the session rather than replaying its text.

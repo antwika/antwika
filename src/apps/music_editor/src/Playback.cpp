@@ -75,6 +75,37 @@ namespace antwika::music_editor
             return;
         }
 
+        // A second voice a fixed interval up, with every note.
+        // An ordinary voice on the note's own terms, not an effect.
+        // Worked out once, since the echo below sounds it again.
+        const bool harmonised = preset.harmonySemitones != 0;
+        auto above = preset;
+        above.transpose = std::clamp(
+            preset.transpose + preset.harmonySemitones, -120, 120);
+
+        if (harmonised)
+        {
+            sound(above, value, frames, startFrame, 1.0F);
+        }
+
+        // One echo, quieter, a fixed way behind; nothing feeds back.
+        // The harmony echoes too, since the echo is of what sounded.
+        if (preset.delayMs > 0 && preset.delayMix > 0.0F)
+        {
+            const auto rate =
+                static_cast<FrameIndex>(mixer.format().rate);
+            const auto behind = startFrame
+                + (static_cast<FrameIndex>(preset.delayMs) * rate)
+                    / 1000;
+
+            sound(preset, value, frames, behind, preset.delayMix);
+
+            if (harmonised)
+            {
+                sound(above, value, frames, behind, preset.delayMix);
+            }
+        }
+
         ++counter;
 
         // What to light, and for which ticks.
@@ -107,6 +138,36 @@ namespace antwika::music_editor
             .length = static_cast<std::size_t>(length.approximate()),
             .from = from,
             .until = until}); // GCOVR_EXCL_LINE
+    }
+
+    void Playback::TrackVoices::sound(
+        const TrackPreset &sounded,
+        const pattern::Controls &value,
+        const FrameCount frames,
+        const FrameIndex startFrame,
+        const float gainScale)
+    {
+        auto voice = voiceFor(
+            sounded, value, frames, mixer.format().rate, startFrame);
+        voice.gain *= gainScale;
+
+        // Demoted alone, so a refused extra spares the note itself.
+        try
+        {
+            mixer.trigger(
+                synth::TriggerRequest{
+                    .voice = voice,
+                    .startFrame = startFrame + offset});
+        }
+        // The no-match edge, for the handler above's reason.
+        // An extra differs from its note only in pitch and gain.
+        // So a refusal here needs a note the synth already took.
+        // See docs/confirming-unreachable-branches.md.
+        // GCOVR_EXCL_START
+        catch (const synth::SynthError &)
+        {
+        }
+        // GCOVR_EXCL_STOP
     }
 
     Playback::Playback(

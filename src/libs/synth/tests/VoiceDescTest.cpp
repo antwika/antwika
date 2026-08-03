@@ -91,6 +91,22 @@ TEST(VoiceDescTest, ComparesFieldByField)
     EXPECT_NE(kick, other);
 
     other = kick;
+    other.vibratoHertz = 6.0;
+    EXPECT_NE(kick, other);
+
+    other = kick;
+    other.vibratoDepth = 0.01;
+    EXPECT_NE(kick, other);
+
+    other = kick;
+    other.arpeggioRatio = 2.0;
+    EXPECT_NE(kick, other);
+
+    other = kick;
+    other.arpeggioPeriod = 100;
+    EXPECT_NE(kick, other);
+
+    other = kick;
     other.seed = 1;
     EXPECT_NE(kick, other);
 }

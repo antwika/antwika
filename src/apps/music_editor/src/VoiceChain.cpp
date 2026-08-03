@@ -28,7 +28,7 @@ namespace antwika::music_editor
 
         constexpr std::string_view kControls{
             "n s base o trans gain pan att dec sus rel hold lpf hpf "
-            "bpf res slide"};
+            "bpf res slide vib vibdepth arp delay delaymix harm"};
 
         constexpr std::array<std::string_view, 5> kShapes{
             "sine", "saw", "square", "triangle", "noise"};
@@ -351,6 +351,32 @@ namespace antwika::music_editor
             else if (name == "slide")
             {
                 preset.slide = numberIn(name, argument);
+            }
+            else if (name == "vib")
+            {
+                preset.vibratoHertz = positiveIn(name, argument);
+            }
+            else if (name == "vibdepth")
+            {
+                preset.vibratoDepth = zeroToOne(name, argument);
+            }
+            else if (name == "arp")
+            {
+                preset.arpSemitones = static_cast<std::int32_t>(
+                    wholeIn(name, argument));
+            }
+            else if (name == "delay")
+            {
+                preset.delayMs = millisecondsIn(name, argument);
+            }
+            else if (name == "delaymix")
+            {
+                preset.delayMix = zeroToOne(name, argument);
+            }
+            else if (name == "harm")
+            {
+                preset.harmonySemitones = static_cast<std::int32_t>(
+                    wholeIn(name, argument));
             }
             else
             {

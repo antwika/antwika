@@ -858,3 +858,97 @@ TEST(PlaybackTest, PausingFreezesWhatIsLit)
 
     EXPECT_EQ(playback.highlights(), before);
 }
+
+// A harmony is a second voice with every note.
+// So the same score with one sounds differently at once.
+TEST(PlaybackTest, AHarmonySoundsASecondVoiceWithEveryNote)
+{
+    Rig plain;
+    plain.play("$: bell.n(\"0\")\n");
+    Playback one(
+        plain.score, plain.mixer, plain.device, plain.sleeper,
+        oneCycleASecond());
+
+    Rig harmonised;
+    harmonised.play("$: bell.n(\"0\").harm(7)\n");
+    Playback two(
+        harmonised.score, harmonised.mixer, harmonised.device,
+        harmonised.sleeper, oneCycleASecond());
+
+    step(one, 5, false);
+    step(two, 5, false);
+
+    // One note either way; the harmony is not a second note.
+    EXPECT_EQ(one.started(), two.started());
+
+    ASSERT_EQ(plain.rendered.samples.size(),
+              harmonised.rendered.samples.size());
+    EXPECT_NE(plain.rendered.samples, harmonised.rendered.samples);
+}
+
+// One echo, a fixed way behind, and nothing feeds back.
+TEST(PlaybackTest, ADelayEchoesTheNoteBehindItself)
+{
+    Rig plain;
+    plain.play("$: drum.n(\"0\")\n");
+    Playback one(
+        plain.score, plain.mixer, plain.device, plain.sleeper,
+        oneCycleASecond());
+
+    Rig echoed;
+    echoed.play("$: drum.n(\"0\").delay(300)\n");
+    Playback two(
+        echoed.score, echoed.mixer, echoed.device, echoed.sleeper,
+        oneCycleASecond());
+
+    step(one, 8, false);
+    step(two, 8, false);
+
+    EXPECT_EQ(one.started(), two.started());
+
+    ASSERT_EQ(plain.rendered.samples.size(),
+              echoed.rendered.samples.size());
+    EXPECT_NE(plain.rendered.samples, echoed.rendered.samples);
+}
+
+// The harmony echoes too, since the echo is of what sounded.
+TEST(PlaybackTest, ADelayedHarmonyEchoesBothVoices)
+{
+    Rig delayed;
+    delayed.play("$: bell.n(\"0\").delay(300)\n");
+    Playback one(
+        delayed.score, delayed.mixer, delayed.device, delayed.sleeper,
+        oneCycleASecond());
+
+    Rig both;
+    both.play("$: bell.n(\"0\").delay(300).harm(7)\n");
+    Playback two(
+        both.score, both.mixer, both.device, both.sleeper,
+        oneCycleASecond());
+
+    step(one, 8, false);
+    step(two, 8, false);
+
+    EXPECT_NE(delayed.rendered.samples, both.rendered.samples);
+}
+
+// A mix of nothing is no echo at all.
+TEST(PlaybackTest, AMixOfZeroSilencesTheEcho)
+{
+    Rig plain;
+    plain.play("$: drum.n(\"0\")\n");
+    Playback one(
+        plain.score, plain.mixer, plain.device, plain.sleeper,
+        oneCycleASecond());
+
+    Rig muted;
+    muted.play("$: drum.n(\"0\").delay(300).delaymix(0)\n");
+    Playback two(
+        muted.score, muted.mixer, muted.device, muted.sleeper,
+        oneCycleASecond());
+
+    step(one, 8, false);
+    step(two, 8, false);
+
+    EXPECT_EQ(plain.rendered.samples, muted.rendered.samples);
+}
