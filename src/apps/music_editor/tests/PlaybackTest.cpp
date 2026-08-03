@@ -100,6 +100,48 @@ namespace
         }
     };
 
+    // Consumes almost everything, so the queue stays barely ahead.
+    // What a healthy real device looks like between two pumps.
+    class TrailingDevice final : public antwika::sound::IDevice
+    {
+    public:
+        void start(antwika::sound::IRenderCallback &) override
+        {
+        }
+
+        void stop() override
+        {
+        }
+
+        antwika::sound::FrameCount pump(
+            antwika::sound::FrameCount frames) override
+        {
+            total += frames;
+
+            return frames;
+        }
+
+        [[nodiscard]] WaveFormat format() const override
+        {
+            return kFormat;
+        }
+
+        [[nodiscard]] antwika::sound::FrameCount bufferFrames()
+            const override
+        {
+            return 256;
+        }
+
+        [[nodiscard]] antwika::sound::FrameIndex framesPlayed()
+            const override
+        {
+            return total > 100 ? total - 100 : 0;
+        }
+
+    private:
+        antwika::sound::FrameIndex total = 0;
+    };
+
     // Everything a playback needs, so a test builds one in a line.
     struct Rig
     {
@@ -503,6 +545,21 @@ TEST(PlaybackTest, KeepsTheDeviceFedWithoutRunningAway)
     EXPECT_EQ(rig.rendered.frameCount(), playback.queuedFrames());
 }
 
+// A note shorter than a tick still rings for the tick it begins on.
+TEST(PlaybackTest, AVeryShortNoteRingsForItsOpeningTick)
+{
+    Rig rig;
+    rig.play("$: drum.n(\"0*32\")\n");
+
+    Playback playback(
+        rig.score, rig.mixer, rig.device, rig.sleeper,
+        oneCycleASecond());
+
+    playback.step(false);
+
+    EXPECT_FALSE(playback.highlights().empty());
+}
+
 // A device that consumes when pumped paces nothing by itself.
 // Unpaced, an unbounded run over it would spin a core flat out.
 // So it is paced to the clock: one tick's interval per step.
@@ -521,6 +578,25 @@ TEST(PlaybackTest, PacesADeviceThatKeepsUpToTheClock)
     // Ten ticks to the second, so a tick is a hundred milliseconds.
     EXPECT_EQ(rig.sleeper.calls, 20);
     EXPECT_EQ(rig.sleeper.waited, std::chrono::milliseconds{2000});
+}
+
+// A device that trails by less than the target is doing fine.
+// Neither the keeping-up wait nor the spare-audio wait applies.
+TEST(PlaybackTest, WaitsOutNothingWhileTheDeviceIsBarelyBehind)
+{
+    TrailingDevice device;
+    CountingSleeper sleeper;
+    SynthMixer mixer{SynthMixerDesc{.format = kFormat}};
+    Score score;
+
+    score.read("$: bass.n(\"0\")\n");
+
+    Playback playback(
+        score, mixer, device, sleeper, oneCycleASecond());
+
+    step(playback, 5, false);
+
+    EXPECT_EQ(sleeper.calls, 0);
 }
 
 // A device that lags is what a real one does.

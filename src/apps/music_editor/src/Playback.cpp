@@ -92,8 +92,13 @@ namespace antwika::music_editor
         const auto rings = tickOfFrame(
             startFrame + frames, frameNumerator, frameDenominator);
 
-        // The excluded line is push_back's reallocation edge.
-        // Only a failed allocation would take it.
+        // At least the one tick it begins on.
+        const auto until = std::max(from + 1, rings + 1);
+
+        // The excluded lines carry the statement's unwind edges.
+        // One is push_back's reallocation, one the string's copy.
+        // The last is the note temporary's own unwind pad.
+        // Only a failed allocation would take any of them.
         // See docs/confirming-unreachable-branches.md, signature (a).
         notes.push_back(ActiveNote{ // GCOVR_EXCL_LINE
             .voice = voiceIndex,
@@ -101,8 +106,7 @@ namespace antwika::music_editor
             .begin = static_cast<std::size_t>(begin.approximate()),
             .length = static_cast<std::size_t>(length.approximate()),
             .from = from,
-            // At least the one tick it begins on.
-            .until = std::max(from + 1, rings + 1)});
+            .until = until}); // GCOVR_EXCL_LINE
     }
 
     Playback::Playback(
@@ -123,10 +127,12 @@ namespace antwika::music_editor
         lead = static_cast<FrameCount>(
             shape.clock.frameAtTick(shape.lead));
 
+        const auto tickFrames = shape.clock.frameAtTick(1);
+        const auto rate =
+            static_cast<std::int64_t>(mixer.format().rate);
+
         // One tick's worth of wall time, for pace()'s wait.
-        interval = std::chrono::milliseconds{
-            shape.clock.frameAtTick(1) * 1000
-            / static_cast<std::int64_t>(mixer.format().rate)};
+        interval = std::chrono::milliseconds{tickFrames * 1000 / rate};
 
         // One, so a lookahead of no ticks is refused here.
         // Rather than on whichever keystroke first writes a voice.
@@ -319,7 +325,12 @@ namespace antwika::music_editor
             const auto span =
                 score.spanIn(note.voice, note.begin, note.length);
 
-            if (span.has_value())
+            // With the chain equal, every word still maps.
+            // A word lives inside one physical line's segment.
+            // The excluded refusal is spanIn's contract, not ours.
+            // It serves a caller that skipped the chain check above.
+            // See docs/confirming-unreachable-branches.md.
+            if (span.has_value()) // GCOVR_EXCL_LINE
             {
                 lit.push_back(*span);
             }

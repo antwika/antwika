@@ -95,6 +95,20 @@ namespace
                 PointerMoved{.position = {.x = at.x, .y = at.y}})};
     }
 
+    TickEvent releaseAt(
+        const InputEventCodec &codec,
+        const Point at,
+        const MouseButton button = MouseButton::Left,
+        const antwika::time::Tick when = 0)
+    {
+        return TickEvent{
+            .tick = when,
+            .event = codec.encode(
+                antwika::input::PointerButtonReleased{
+                    .button = button,
+                    .position = {.x = at.x, .y = at.y}})};
+    }
+
     TickEvent keyDown(
         const InputEventCodec &codec,
         const Key key,
@@ -375,6 +389,61 @@ namespace
 
         EXPECT_LT(wiring.state.areaScroll(), jumped);
         EXPECT_GT(wiring.state.areaScroll(), 0U);
+    }
+
+    // Letting the button go is what ends a drag.
+    // A release of some other button ends nothing.
+    TEST(DemoSinkTest, Handle_ReleasingEndsTheDrag)
+    {
+        Wiring wiring;
+        wiring.show(Showcase::TextArea);
+
+        std::string lines;
+
+        for (int line = 0; line < 40; ++line)
+        {
+            lines += "line\n";
+        }
+
+        wiring.state.setArea(lines, 0, 0);
+
+        const auto rect = wiring.rectOf(widgets::kArea);
+
+        const auto trackX = rect.origin.x
+                            + static_cast<std::int32_t>(rect.size.width)
+                            - 22;
+
+        wiring.sink.handle(pressAt(
+            wiring.codec,
+            Point{.x = trackX, .y = rect.origin.y + 95}));
+
+        // The wrong button's release leaves the drag under way.
+        wiring.sink.handle(releaseAt(
+            wiring.codec,
+            Point{.x = trackX, .y = rect.origin.y + 95},
+            MouseButton::Right,
+            1));
+
+        wiring.sink.handle(moveTo(
+            wiring.codec,
+            Point{.x = trackX, .y = rect.origin.y + 65},
+            1));
+
+        const auto dragged = wiring.state.areaScroll();
+
+        // The left release ends it; motion after moves nothing.
+        wiring.sink.handle(releaseAt(
+            wiring.codec,
+            Point{.x = trackX, .y = rect.origin.y + 65},
+            MouseButton::Left,
+            2));
+
+        wiring.sink.handle(moveTo(
+            wiring.codec,
+            Point{.x = trackX, .y = rect.origin.y + 35},
+            2));
+
+        EXPECT_EQ(wiring.state.areaScroll(), dragged);
     }
 
     // The Interactions::scrolled round trip, through the sink.
