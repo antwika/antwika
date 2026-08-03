@@ -329,6 +329,22 @@ TEST(ParsePatternTest, LetsSeparateTermsEachHaveTheirOwnSpeed)
     EXPECT_EQ(read("0*64 3*64 5*64").size(), 192U);
 }
 
+// A Euclidean rhythm is a fastcat, steps wide.
+// So chained euclids compose density exactly as '*' does.
+TEST(ParsePatternTest, RefusesEuclidStepsThatMultiplyPastTheLimit)
+{
+    EXPECT_THROW((void)read("0(3,64)(3,64)"), NotationError);
+    EXPECT_THROW((void)read("0(3,64)*64"), NotationError);
+}
+
+// A sequence of n slots plays each n times as fast.
+// Nested brackets multiply that, though siblings alone never do.
+TEST(ParsePatternTest, RefusesNestedSequencesThatMultiplyPastTheLimit)
+{
+    EXPECT_THROW((void)read("[[0!64]!64]"), NotationError);
+    EXPECT_THROW((void)read("[[[0!16]!16]!16]"), NotationError);
+}
+
 // It parses cleanly and asks for something no pattern could be.
 // So the algebra refuses it rather than the grammar.
 TEST(ParsePatternTest, LetsTheAlgebraRefuseWhatItParsedCleanly)

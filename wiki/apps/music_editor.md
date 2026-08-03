@@ -60,7 +60,7 @@ Every call takes exactly one argument.
 | `gain(.25)` | How loud, between -1 and 1. |
 | `pan(-.4)` | Where it sits, -1 hard left to 1 hard right. |
 | `att(4)`, `dec(120)`, `rel(90)` | The envelope's attack, decay and release, in milliseconds. |
-| `sus(.6)` | What it holds at after the decay, between -1 and 1. |
+| `sus(.6)` | What it holds at after the decay, between 0 and 1. |
 | `hold(400)` | The longest this voice rings, however long its note is. A drum is a hit whatever slot it lands in; a bass note fills its slot. |
 | `lpf(900)`, `hpf(4000)`, `bpf(1200)` | A low, high or band pass filter at that many hertz. |
 | `res(.8)` | How much the filter emphasises its cutoff. One is flat and smaller is sharper. |

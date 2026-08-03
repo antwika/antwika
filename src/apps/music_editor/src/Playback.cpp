@@ -8,7 +8,9 @@
 #include <vector>
 
 #include <antwika/pattern/Controls.hpp>
+#include <antwika/pattern/PatternError.hpp>
 #include <antwika/sequencer/Sequencer.hpp>
+#include <antwika/synth/SynthError.hpp>
 #include <antwika/synth/TriggerRequest.hpp>
 
 namespace antwika::music_editor
@@ -46,21 +48,29 @@ namespace antwika::music_editor
         const FrameIndex startFrame,
         const FrameCount frames)
     {
-        // The excluded line is the aggregate's unwind pad.
-        // Only a throw out of voiceFor() would take it.
-        // See docs/confirming-unreachable-branches.md.
-        mixer.trigger(
-            synth::TriggerRequest{ // GCOVR_EXCL_LINE
-                // Seeded from where the note falls in the score.
-                // Not from where the device is.
-                // So a pause changes no hit's sound.
-                .voice = voiceFor(
-                    preset,
-                    value,
-                    frames,
-                    mixer.format().rate,
-                    startFrame),
-                .startFrame = startFrame + offset});
+        // A chain can promise what only the synth can refuse.
+        // A cutoff past the device's Nyquist is the shipped example.
+        // The chain never learns the rate, so it cannot ask first.
+        // The note is demoted to silence rather than the run ended.
+        try
+        {
+            mixer.trigger(
+                synth::TriggerRequest{
+                    // Seeded from where the note falls in the score.
+                    // Not from where the device is.
+                    // So a pause changes no hit's sound.
+                    .voice = voiceFor(
+                        preset,
+                        value,
+                        frames,
+                        mixer.format().rate,
+                        startFrame),
+                    .startFrame = startFrame + offset});
+        }
+        catch (const synth::SynthError &)
+        {
+            return;
+        }
 
         ++counter;
 
@@ -179,8 +189,18 @@ namespace antwika::music_editor
                     line.sequencer->joinAt(played - 1);
                 }
 
-                line.sequencer->advance(
-                    played, voices[at].playing, *line.voices);
+                // A pattern can parse and still refuse a window.
+                // Slow factors whose product overflows a Cycle do.
+                // The line falls silent rather than the run ending.
+                // It is advanced regardless: the window went by.
+                try
+                {
+                    line.sequencer->advance(
+                        played, voices[at].playing, *line.voices);
+                }
+                catch (const pattern::PatternError &)
+                {
+                }
 
                 line.advanced = played;
             }

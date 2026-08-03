@@ -175,6 +175,46 @@ TEST(PlaybackTest, SoundsALineAsSoonAsItIsStepped)
     EXPECT_GT(playback.queuedFrames(), 0U);
 }
 
+// A chain can promise what only the synth can refuse.
+// The device's rate is not the chain's to know.
+// The note is demoted to silence rather than the run ended.
+TEST(PlaybackTest, DemotesANoteTheSynthRefusesInsteadOfEnding)
+{
+    Rig rig;
+    rig.play("$: bass.n(\"0\").lpf(24000)\n");
+
+    Playback playback(
+        rig.score, rig.mixer, rig.device, rig.sleeper,
+        oneCycleASecond());
+
+    EXPECT_NO_THROW(step(playback, 12, false));
+
+    // The line read cleanly and is a voice; its notes never start.
+    EXPECT_EQ(playback.sounding(), 1U);
+    EXPECT_EQ(playback.started(), 0U);
+    EXPECT_EQ(playback.voices(), 0U);
+}
+
+// A line can parse cleanly and still refuse a window when queried.
+// Seven slow factors overflow a Cycle's denominator at query time.
+// The line falls silent rather than the run ending.
+TEST(PlaybackTest, SilencesALineWhosePatternRefusesItsWindow)
+{
+    Rig rig;
+    rig.play(
+        "$: bass.n(\"0/1000/1000/1000/1000/1000/1000/1000\")\n");
+
+    Playback playback(
+        rig.score, rig.mixer, rig.device, rig.sleeper,
+        oneCycleASecond());
+
+    EXPECT_NO_THROW(step(playback, 3, false));
+
+    // The line read cleanly and is a voice; its window refuses.
+    EXPECT_EQ(playback.sounding(), 1U);
+    EXPECT_EQ(playback.started(), 0U);
+}
+
 // One sequencer per voice line.
 // Ten ticks is exactly one cycle.
 // So a settled run sounds each line's onsets and no other line's.

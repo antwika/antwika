@@ -1,6 +1,7 @@
 #include "antwika/synth/SynthMixer.hpp"
 
 #include <cstddef>
+#include <limits>
 
 #include <gtest/gtest.h>
 
@@ -109,6 +110,21 @@ TEST(SynthMixerTest, Trigger_RefusesAPeriodicShapeWithNoFrequency)
             .shape = Waveshape::Saw, .frequency = 0.0, .hold = 4}};
 
     EXPECT_THROW(mixer.trigger(pitchless), SynthError);
+}
+
+// Infinity passes an above-zero comparison and NaN fails every one.
+// Either would ride the phase for the voice's whole life.
+TEST(SynthMixerTest, Trigger_RefusesAFrequencyThatIsNotFinite)
+{
+    SynthMixer mixer(SynthMixerDesc{.format = kStereo48});
+
+    const TriggerRequest endless{
+        .voice = VoiceDesc{
+            .shape = Waveshape::Saw,
+            .frequency = std::numeric_limits<double>::infinity(),
+            .hold = 4}};
+
+    EXPECT_THROW(mixer.trigger(endless), SynthError);
 }
 
 // Noise has no cycle, so a frequency means nothing for it.

@@ -62,7 +62,7 @@ That is also why `VoiceDesc::totalFrames()` is `hold + release` and is not lengt
 
 **A cutoff is refused against the Nyquist frequency and clamped against the arithmetic, and those are two different checks.**
 `trigger()` refuses a cutoff at or above half the rate, which is a statement about what a caller meant.
-`filterCoefficientsFor()` clamps the ratio at a sixth, which is a statement about what a Chamberlin filter can survive: its coefficient is `2 sin(pi r)` and it runs away past one.
+`filterCoefficientsFor()` clamps the ratio at a sixth and the damping just inside `(4 - f^2) / 2f`, which is a statement about what a Chamberlin filter can survive: stability asks `f^2 + 2fq < 4` of the frequency coefficient `f = 2 sin(pi r)` and the damping `q` together, and past the bound the recurrence grows without limit.
 
 **A slide steep enough to take the pitch below zero holds at zero.**
 Running the phase backwards would sound like the effect reversing part way through, which is never what a falling sweep meant.
