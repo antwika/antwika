@@ -488,6 +488,24 @@ TEST(EditorSinkTest, Handle_LeavesTheArtAloneUnderTheToolbar)
     EXPECT_EQ(session.state.edits(), 0U);
 }
 
+TEST(EditorSinkTest, Handle_TurnsTheSpriteGuidesOffFromTheBar)
+{
+    Session session;
+    EditorSink sink(
+        session.state,
+        session.overlay,
+        session.store,
+        session.codec,
+        kTranslator);
+
+    namespace widgets = antwika::atlas_editor::widgets;
+    press(session, sink, widgets::kGuides);
+
+    EXPECT_FALSE(session.state.guidesVisible());
+    EXPECT_TRUE(session.state.gridVisible());
+    EXPECT_EQ(session.state.edits(), 0U);
+}
+
 TEST(EditorSinkTest, Handle_SelectsAToolAndAColourFromTheBar)
 {
     Session session;

@@ -33,6 +33,11 @@ namespace antwika::atlas_editor
         ToolErase,
 
         /**
+         * @brief The tool that spreads a colour over a joined region.
+         */
+        ToolFill,
+
+        /**
          * @brief The tool that takes a colour.
          */
         ToolPick,
@@ -46,6 +51,11 @@ namespace antwika::atlas_editor
          * @brief Show or hide the slot grid.
          */
         Grid,
+
+        /**
+         * @brief Show or hide the footprint diamonds and their pivots.
+         */
+        Guides,
 
         /**
          * @brief Read a sheet back in.

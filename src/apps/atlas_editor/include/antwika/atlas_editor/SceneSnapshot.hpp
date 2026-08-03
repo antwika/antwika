@@ -7,6 +7,7 @@
 #include "antwika/atlas_editor/CanvasView.hpp"
 #include "antwika/atlas_editor/EditorState.hpp"
 #include "antwika/atlas_editor/Pixel.hpp"
+#include "antwika/atlas_editor/SpriteGuides.hpp"
 #include "antwika/atlas_editor/TileGrid.hpp"
 
 namespace antwika::atlas_editor
@@ -41,6 +42,17 @@ namespace antwika::atlas_editor
 
         /** @brief Whether to draw the slot boundaries. */
         bool gridVisible = false;
+
+        /**
+         * @brief Where each slot's footprint diamond is, when they are
+         * being drawn at all.
+         *
+         * Nothing both when the artist has turned them off and when the
+         * slot size has none, so the scene has one thing to ask rather
+         * than two: whether to draw them is settled before it is handed
+         * this.
+         */
+        std::optional<SpriteGuides> guides{};
 
         /** @brief Which pixel to outline, if the pointer is on one. */
         std::optional<Pixel> hovered{};

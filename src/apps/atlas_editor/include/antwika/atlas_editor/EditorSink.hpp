@@ -118,7 +118,7 @@ namespace antwika::atlas_editor
          * A member pointer rather than a flag, so the segment below is
          * walked by one loop and the two brushes cannot drift apart.
          */
-        using Brush = void (EditorState::*)(Point) noexcept;
+        using Brush = void (EditorState::*)(Point);
 
         void applyToSheet(const InputEvent &event, Point was, Point at);
 

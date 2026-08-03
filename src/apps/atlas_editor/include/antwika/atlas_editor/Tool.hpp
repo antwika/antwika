@@ -19,6 +19,17 @@ namespace antwika::atlas_editor
         /** @brief Make the pixel fully transparent. */
         Erase,
 
+        /**
+         * @brief Spread the selected colour over every pixel joined to
+         * this one that holds the colour this one does.
+         *
+         * Four-connected and bounded by the sheet, so the same click
+         * fills the same pixels on every run -- which is what lets it be
+         * a tool at all here, since nothing about a fill is persisted
+         * and a replay works the whole region out again from the press.
+         */
+        Fill,
+
         /** @brief Take the pixel's colour as the selected one. */
         Pick,
     };

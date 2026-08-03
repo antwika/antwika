@@ -187,6 +187,10 @@ namespace antwika::atlas_editor
         {
             state.toggleGrid();
         }
+        else if (activated == widgets::kGuides)
+        {
+            state.toggleGuides();
+        }
         else if (activated == widgets::kSave)
         {
             save();

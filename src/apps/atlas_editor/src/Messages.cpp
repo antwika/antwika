@@ -21,12 +21,14 @@ namespace antwika::atlas_editor
         using i18n::Locale;
         using i18n::MessageName;
 
-        constexpr std::array<MessageName<MessageId>, 16> kNames{{
+        constexpr std::array<MessageName<MessageId>, 18> kNames{{
             {MessageId::ToolPaint, "ToolPaint"},
             {MessageId::ToolErase, "ToolErase"},
+            {MessageId::ToolFill, "ToolFill"},
             {MessageId::ToolPick, "ToolPick"},
             {MessageId::ResetView, "ResetView"},
             {MessageId::Grid, "Grid"},
+            {MessageId::Guides, "Guides"},
             {MessageId::Load, "Load"},
             {MessageId::Save, "Save"},
             {MessageId::PixelUnknown, "PixelUnknown"},
@@ -52,9 +54,11 @@ namespace antwika::atlas_editor
             kEnglishEntries{{
                 {MessageId::ToolPaint, "PAINT"},
                 {MessageId::ToolErase, "ERASE"},
+                {MessageId::ToolFill, "FILL"},
                 {MessageId::ToolPick, "PICK"},
                 {MessageId::ResetView, "fit"},
                 {MessageId::Grid, "grid"},
+                {MessageId::Guides, "guides"},
                 {MessageId::Load, "load"},
                 {MessageId::Save, "save"},
                 {MessageId::PixelUnknown, "px -,-"},
@@ -72,9 +76,11 @@ namespace antwika::atlas_editor
             kSwedishEntries{{
                 {MessageId::ToolPaint, "MÅLA"},
                 {MessageId::ToolErase, "SUDDA"},
+                {MessageId::ToolFill, "FYLL"},
                 {MessageId::ToolPick, "PLOCKA"},
                 {MessageId::ResetView, "anpassa"},
                 {MessageId::Grid, "rutnät"},
+                {MessageId::Guides, "stödlinjer"},
                 {MessageId::Load, "läs in"},
                 {MessageId::Save, "spara"},
                 {MessageId::PixelUnknown, "px -,-"},

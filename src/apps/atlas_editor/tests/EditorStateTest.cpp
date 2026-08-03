@@ -146,6 +146,69 @@ TEST(EditorStateTest, ApplyAt_PicksNothingFromOutsideTheSheet)
     EXPECT_EQ(state.colorIndex(), 2U);
 }
 
+TEST(EditorStateTest, ApplyAt_FillsEveryPixelJoinedToTheOneClicked)
+{
+    EditorState state = opened();
+    state.selectTool(Tool::Fill);
+
+    state.applyAt(at(4, 4));
+
+    // A blank sheet is one region, so the whole of it goes down.
+    EXPECT_EQ(state.edits(), kSheet.width * kSheet.height);
+    EXPECT_EQ(
+        state.image().at(Pixel{.x = 0, .y = 0}), defaultPalette()[0]);
+    EXPECT_EQ(
+        state.image().at(Pixel{.x = 9, .y = 9}), defaultPalette()[0]);
+}
+
+TEST(EditorStateTest, ApplyAt_FillStopsAtAPixelOfAnotherColour)
+{
+    EditorState state = opened();
+
+    // A wall down the middle, painted a colour the fill is not.
+    state.selectColor(1);
+    for (int y = 0; y < 10; ++y)
+    {
+        state.applyAt(at(5, y));
+    }
+
+    state.selectColor(2);
+    state.selectTool(Tool::Fill);
+    state.applyAt(at(0, 0));
+
+    // Everything left of the wall, and nothing right of it.
+    EXPECT_EQ(
+        state.image().at(Pixel{.x = 4, .y = 9}), defaultPalette()[2]);
+    EXPECT_EQ(
+        state.image().at(Pixel{.x = 5, .y = 9}), defaultPalette()[1]);
+    EXPECT_EQ(
+        state.image().at(Pixel{.x = 6, .y = 0}), kClear);
+}
+
+TEST(EditorStateTest, ApplyAt_FillsNothingOutsideTheSheet)
+{
+    EditorState state = opened();
+    state.selectTool(Tool::Fill);
+
+    state.applyAt(Point{.x = 0, .y = 0});
+
+    EXPECT_EQ(state.edits(), 0U);
+    EXPECT_FALSE(state.unsaved());
+}
+
+// The walk looks for pixels holding the colour it is replacing.
+// Asked to replace a colour with itself it would never run out of them.
+TEST(EditorStateTest, ApplyAt_FillsNothingWithTheColourAlreadyThere)
+{
+    EditorState state = opened();
+    state.selectTool(Tool::Fill);
+    state.applyAt(at(4, 4));
+
+    state.applyAt(at(4, 4));
+
+    EXPECT_EQ(state.edits(), kSheet.width * kSheet.height);
+}
+
 TEST(EditorStateTest, EraseAt_ClearsWhicheverToolIsSelected)
 {
     EditorState state = opened();
@@ -186,6 +249,44 @@ TEST(EditorStateTest, ToggleGrid_TurnsTheSlotBoundariesOffAndOnAgain)
 
     state.toggleGrid();
     EXPECT_TRUE(state.gridVisible());
+}
+
+TEST(EditorStateTest, ToggleGuides_TurnsTheDiamondsOffAndOnAgain)
+{
+    EditorState state = opened();
+
+    EXPECT_TRUE(state.guidesVisible());
+
+    state.toggleGuides();
+    EXPECT_FALSE(state.guidesVisible());
+
+    state.toggleGuides();
+    EXPECT_TRUE(state.guidesVisible());
+}
+
+// Turning them off does not throw the geometry away.
+// What there is to draw and whether to draw it are separate answers.
+TEST(EditorStateTest, Guides_AreTheDefaultSlotsWhicheverWayTheyAreShown)
+{
+    EditorState state = opened();
+    const auto shown = state.guides();
+
+    ASSERT_TRUE(shown.has_value());
+    EXPECT_EQ(shown->pivot, (Point{.x = 32, .y = 64}));
+
+    state.toggleGuides();
+    EXPECT_EQ(state.guides(), shown);
+}
+
+TEST(EditorStateTest, Guides_AreNoneForASlotSizeWithNoDiamondInIt)
+{
+    const EditorState state{
+        Canvas::blank(kSheet),
+        TileGrid{.width = 8, .height = 8},
+        kCanvas};
+
+    EXPECT_TRUE(state.guidesVisible());
+    EXPECT_FALSE(state.guides().has_value());
 }
 
 TEST(EditorStateTest, Zoom_ChangesHowLargeAPixelIsDrawn)
