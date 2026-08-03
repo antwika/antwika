@@ -2,7 +2,6 @@
 
 #include <algorithm>
 #include <array>
-#include <cmath>
 #include <cstddef>
 #include <cstdint>
 #include <string>
@@ -277,192 +276,85 @@ namespace antwika::music_editor
             }
         }
 
-        using antwika::synth::Waveshape;
-
         // What a wave is drawn in, apart from the notes' own ink.
         constexpr Color kWaveInk{
             .red = 110, .green = 170, .blue = 235, .alpha = 255};
 
-        // How many oscillations a note of pitch nought shows.
-        constexpr std::int64_t kWaveformPeriods = 2;
-
-        // How wide one drawn column of a wave is, in canvas pixels.
-        constexpr std::int64_t kWaveformStep = 4;
-
-        /**
-         * @brief Get how many oscillations one note's wave shows.
-         *
-         * Doubled per octave up and halved per octave down, in whole
-         * octaves, so the arithmetic stays exact and a run of notes
-         * reads as higher-is-denser.  Saturated well inside the shift
-         * width, since a notation may name any pitch it likes.
-         *
-         * @param pitch The note, in whole semitones.
-         * @return The oscillations, at least one.
-         */
-        [[nodiscard]] std::int64_t wavePeriodsOf(
-            const std::int64_t pitch) noexcept
-        {
-            if (pitch >= 0)
-            {
-                return kWaveformPeriods
-                       << std::min<std::int64_t>(pitch / 12, 6);
-            }
-
-            return std::max<std::int64_t>(
-                1,
-                kWaveformPeriods
-                    >> std::min<std::int64_t>(-pitch / 12, 6));
-        }
-
-        /**
-         * @brief Get how far off the midline one wave column sits.
-         *
-         * The phase is an exact fraction num/den of one oscillation,
-         * and every shape is drawn in integer arithmetic: the sine as
-         * a parabolic arc per half period, peaking where the sine
-         * peaks, so no transcendental is taken per column.
-         *
-         * @param shape What the oscillator traces.
-         * @param num The phase's top, below den.
-         * @param den The phase's bottom, above nought.
-         * @param half The amplitude, in pixels off the midline.
-         * @param column Which column of the band, for the noise hash.
-         * @return The offset, positive above the midline.
-         */
-        [[nodiscard]] std::int64_t waveOffset(
-            const Waveshape shape,
-            const std::int64_t num,
-            const std::int64_t den,
-            const std::int64_t half,
-            const std::int64_t column) noexcept
-        {
-            if (shape == Waveshape::Square)
-            {
-                return num * 2 < den ? half : -half;
-            }
-
-            if (shape == Waveshape::Saw)
-            {
-                return half * (2 * num - den) / den;
-            }
-
-            if (shape == Waveshape::Triangle)
-            {
-                return num * 2 < den
-                           ? half * (4 * num - den) / den
-                           : half * (3 * den - 4 * num) / den;
-            }
-
-            if (shape == Waveshape::Sine)
-            {
-                return num * 2 < den
-                           ? half * 8 * num * (den - 2 * num)
-                                 / (den * den)
-                           : -half * 8 * (2 * num - den) * (den - num)
-                                 / (den * den);
-            }
-
-            // Noise: a hash of the column, so the picture holds still.
-            const auto bits =
-                static_cast<std::uint64_t>(column) * 2654435761ULL;
-            const auto mixed = bits ^ (bits >> 13);
-
-            return static_cast<std::int64_t>(
-                       mixed
-                       % static_cast<std::uint64_t>(2 * half + 1))
-                   - half;
-        }
-
         /**
          * @brief Append one waveform's picture over its band.
          *
-         * A backdrop, and a column of ink per few pixels of each
-         * note: the column reaches from the midline to where the
-         * oscillator's shape sits at that phase, scaled by the gain,
-         * so a quiet line reads as a shallow wave and a rest as the
-         * bare backdrop.
+         * A column of ink per pixel, reaching from the highest sample
+         * the mix touched in that slice of the cycle down to the
+         * lowest -- the voice's actual audio, rendered offline
+         * through the same synth path that plays it, and handed in as
+         * a WaveImage.  A silent slice is the one-pixel midline that
+         * silence is.
          *
          * @param commands The picture to append to.
          * @param band Where the band ended up.
-         * @param wave What the line plays, and with what sound.
+         * @param image One rendered cycle of the voice.
          */
         void appendWave(
-            DrawList &commands, const Rect &band, const Waveform &wave)
+            DrawList &commands, const Rect &band, const WaveImage &image)
         {
-            commands.push_back(antwika::ui::FillRect{
-                .rect = band, .color = kRollBackdrop});
+            const auto columns = image.low.size();
 
-            const auto half = static_cast<std::int64_t>(
-                std::abs(wave.preset.gain)
-                * static_cast<float>(band.size.height / 2));
-
-            const auto mid =
-                band.origin.y
-                + static_cast<std::int32_t>(band.size.height / 2);
-
-            for (const auto &note : rollNotesOf(wave.playing))
+            // An image of no columns has no audio to say anything of.
+            if (columns == 0)
             {
-                const auto left =
-                    acrossRoll(note.begin, band.size.width);
-                const auto right =
-                    acrossRoll(note.end, band.size.width);
-                const auto total = right - left;
+                return;
+            }
 
-                // A note thinner than a pixel has no column to hold.
-                if (total <= 0)
-                {
-                    continue;
-                }
+            const auto half =
+                static_cast<std::int32_t>(band.size.height / 2);
+            const auto mid = band.origin.y + half;
 
-                const auto periods = wavePeriodsOf(note.pitch);
+            for (std::uint32_t x = 0; x < band.size.width; ++x)
+            {
+                const auto column =
+                    static_cast<std::size_t>(x) * columns
+                    / band.size.width;
 
-                for (std::int64_t x = 0; x < total;
-                     x += kWaveformStep)
-                {
-                    const auto width = std::min<std::int64_t>(
-                        kWaveformStep, total - x);
+                const auto top = mid
+                    - static_cast<std::int32_t>(
+                        image.high[column]
+                        * static_cast<float>(half));
 
-                    const auto off = waveOffset(
-                        wave.preset.shape,
-                        x * periods % total,
-                        total,
-                        half,
-                        left + x);
+                const auto bottom = mid
+                    - static_cast<std::int32_t>(
+                        image.low[column]
+                        * static_cast<float>(half));
 
-                    const auto up =
-                        std::max<std::int64_t>(off, 0);
-                    const auto down =
-                        std::max<std::int64_t>(-off, 0);
-
-                    commands.push_back(antwika::ui::FillRect{
-                        .rect = Rect{
-                            .origin =
-                                {.x = band.origin.x
-                                      + static_cast<std::int32_t>(
-                                          left + x),
-                                 .y = mid
-                                      - static_cast<std::int32_t>(up)},
-                            .size =
-                                {.width =
-                                     static_cast<std::uint32_t>(width),
-                                 .height = static_cast<std::uint32_t>(
-                                     std::max<std::int64_t>(
-                                         1, up + down))}},
-                        .color = kWaveInk});
-                }
+                commands.push_back(antwika::ui::FillRect{
+                    .rect = Rect{
+                        .origin =
+                            {.x = band.origin.x
+                                  + static_cast<std::int32_t>(x),
+                             .y = top},
+                        .size =
+                            {.width = 1,
+                             .height = static_cast<std::uint32_t>(
+                                 std::max(1, bottom - top))}},
+                    .color = kWaveInk});
             }
         }
 
         /**
          * @brief Append every waveform the score asked for.
          *
-         * On appendPianorolls' terms exactly, band for band.
+         * On appendPianorolls' terms exactly, band for band.  The
+         * audio itself arrives through the status, rendered and
+         * cached on the projection side; a band whose image is not
+         * there yet is its backdrop alone.
          *
          * @param frame The finished frame, whose commands grow.
          * @param score Whose waves to paint.
+         * @param status Carries the rendered cycles.
          */
-        void appendWaveforms(Frame &frame, const Score &score)
+        void appendWaveforms(
+            Frame &frame,
+            const Score &score,
+            const PlaybackStatus &status)
         {
             const auto height =
                 kWaveformRows * antwika::gfx::kGlyphLineHeight
@@ -478,8 +370,14 @@ namespace antwika::music_editor
                     continue;
                 }
 
-                appendWave(
-                    frame.commands, *band, score.waveforms()[at]);
+                frame.commands.push_back(antwika::ui::FillRect{
+                    .rect = *band, .color = kRollBackdrop});
+
+                if (at < status.waves.size())
+                {
+                    appendWave(
+                        frame.commands, *band, status.waves[at]);
+                }
             }
         }
 
@@ -680,7 +578,7 @@ namespace antwika::music_editor
         auto frame = ui.finish();
 
         appendPianorolls(frame, score);
-        appendWaveforms(frame, score);
+        appendWaveforms(frame, score, status);
 
         return frame;
     }

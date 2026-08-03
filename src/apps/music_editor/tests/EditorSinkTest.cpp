@@ -757,6 +757,10 @@ TEST(EditorSinkTest, CopiesLandNowhereWhenThereIsNoClipboard)
         rig.codec,
         rig.scene,
         antwika::music_editor::tests::kCanvas,
+        antwika::music_editor::WaveRenderDesc{
+            .rate = rig.format.rate,
+            .framesPerCycle =
+                antwika::sequencer::Rational(rig.format.rate)},
         nullptr,
         rig.stopSignal,
         rig.scoresDirectory,
@@ -1278,4 +1282,36 @@ TEST(EditorSinkTest, ThePaneLightsTheNotesThatAreSounding)
     }
 
     EXPECT_TRUE(lit);
+}
+
+// The whole route in one sink.
+// The score asks, the cache renders, the scene paints the cycle.
+TEST(EditorSinkTest, AWaveformLineDrawsItsRenderedAudio)
+{
+    EditorRig rig;
+    rig.state.source =
+        "$: n(\"0\").s(square).base(1).gain(.5)"
+        ".att(0).dec(0).sus(1).hold(2000).rel(50).waveform()\n";
+
+    tickThrough(rig, 0, 2);
+
+    // The wave's own ink, as EditorScene mixes it.
+    constexpr antwika::gfx::Color kWaveInk{
+        .red = 110, .green = 170, .blue = 235, .alpha = 255};
+
+    std::size_t columns = 0;
+
+    for (const auto &command : rig.editor.commands())
+    {
+        const auto *fill =
+            std::get_if<antwika::ui::FillRect>(&command);
+
+        if (fill != nullptr && fill->color == kWaveInk)
+        {
+            ++columns;
+        }
+    }
+
+    // One column of ink per pixel of the band.
+    EXPECT_GT(columns, 500U);
 }

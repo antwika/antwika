@@ -14,6 +14,8 @@
 #include <antwika/sound/Frames.hpp>
 #include <antwika/synth/Adsr.hpp>
 #include <antwika/synth/Filter.hpp>
+#include <antwika/synth/SynthError.hpp>
+#include <antwika/synth/TriggerRequest.hpp>
 #include <antwika/synth/VoiceDesc.hpp>
 #include <antwika/synth/Waveshape.hpp>
 
@@ -185,6 +187,116 @@ namespace antwika::music_editor
             // Two hits of one length are not one hit sounded twice.
             // And the same hit is the same hit on every run.
             .seed = seed};
+    }
+
+    namespace
+    {
+        // One of a note's extras, demoted alone if it is refused.
+        // An extra differs from its note only in pitch and gain.
+        // So a refusal here needs a note the synth already took.
+        void soundExtra(
+            synth::SynthMixer &mixer,
+            const TrackPreset &sounded,
+            const Controls &value,
+            const FrameCount frames,
+            const FrameIndex startFrame,
+            const FrameIndex offset,
+            const float gainScale)
+        {
+            auto voice = voiceFor(
+                sounded, value, frames, mixer.format().rate,
+                startFrame);
+            voice.gain *= gainScale;
+
+            try
+            {
+                mixer.trigger(
+                    synth::TriggerRequest{
+                        .voice = voice,
+                        .startFrame = startFrame + offset});
+            }
+            // The no-match edge, for the reason soundNote() gives.
+            // See docs/confirming-unreachable-branches.md.
+            // GCOVR_EXCL_START
+            catch (const synth::SynthError &)
+            {
+            }
+            // GCOVR_EXCL_STOP
+        }
+    } // namespace
+
+    bool soundNote(
+        synth::SynthMixer &mixer,
+        const TrackPreset &preset,
+        const Controls &value,
+        const FrameCount frames,
+        const FrameIndex startFrame,
+        const FrameIndex offset)
+    {
+        // A chain can promise what only the synth can refuse.
+        // A cutoff past the device's Nyquist is the shipped example.
+        // The chain never learns the rate, so it cannot ask first.
+        // The note is demoted to silence rather than the run ended.
+        try
+        {
+            mixer.trigger(
+                synth::TriggerRequest{
+                    // Seeded from where the note falls in the score.
+                    // Not from where the device is.
+                    // So a pause changes no hit's sound.
+                    .voice = voiceFor(
+                        preset,
+                        value,
+                        frames,
+                        mixer.format().rate,
+                        startFrame),
+                    .startFrame = startFrame + offset});
+        }
+        // The excluded line is the no-match edge of the handler.
+        // Only an exception that is not a SynthError would take it.
+        // See docs/confirming-unreachable-branches.md.
+        catch (const synth::SynthError &) // GCOVR_EXCL_LINE
+        {
+            return false;
+        }
+
+        // A second voice a fixed interval up, with every note.
+        // An ordinary voice on the note's own terms, not an effect.
+        // Worked out once, since the echo below sounds it again.
+        const bool harmonised = preset.harmonySemitones != 0;
+        auto above = preset;
+        above.transpose = std::clamp(
+            preset.transpose + preset.harmonySemitones, -120, 120);
+
+        if (harmonised)
+        {
+            soundExtra(
+                mixer, above, value, frames, startFrame, offset, 1.0F);
+        }
+
+        // One echo, quieter, a fixed way behind; nothing feeds back.
+        // The harmony echoes too, since the echo is of what sounded.
+        if (preset.delayMs > 0 && preset.delayMix > 0.0F)
+        {
+            const auto rate =
+                static_cast<FrameIndex>(mixer.format().rate);
+            const auto behind = startFrame
+                + (static_cast<FrameIndex>(preset.delayMs) * rate)
+                    / 1000;
+
+            soundExtra(
+                mixer, preset, value, frames, behind, offset,
+                preset.delayMix);
+
+            if (harmonised)
+            {
+                soundExtra(
+                    mixer, above, value, frames, behind, offset,
+                    preset.delayMix);
+            }
+        }
+
+        return true;
     }
 
 } // namespace antwika::music_editor

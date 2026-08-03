@@ -19,6 +19,7 @@
 #include "antwika/music_editor/EditorState.hpp"
 #include "antwika/music_editor/Playback.hpp"
 #include "antwika/music_editor/Score.hpp"
+#include "antwika/music_editor/WaveImageCache.hpp"
 
 namespace antwika::music_editor
 {
@@ -61,6 +62,9 @@ namespace antwika::music_editor
          * @param codec Decodes the recorded input events.
          * @param scene Describes the picture; must outlive this.
          * @param canvas The size the window was asked for.
+         * @param waveRender The rate and cycle length the waveform
+         * pictures are rendered at, which are the playback's own --
+         * so the picture is of the sound the run actually makes.
          * @param clipboard Where a copy is mirrored to, or null.
          * **Null on a replay**, so replaying somebody's session does
          * not overwrite this machine's clipboard with their copies;
@@ -94,6 +98,7 @@ namespace antwika::music_editor
             const IInputEventCodec &codec,
             const EditorScene &scene,
             Size canvas,
+            WaveRenderDesc waveRender,
             input::IClipboard *clipboard,
             ITickEventSink &stop,
             std::string scoresDirectory,
@@ -172,6 +177,11 @@ namespace antwika::music_editor
 
         // What the mirror last wrote, so it writes on changes alone.
         std::string mirrored;
+
+        // The rendered waveform cycles, re-rendered on changes alone.
+        // Projection state a frame reads, never simulation state.
+        // Mutable because a description is const and a cache is not.
+        mutable WaveImageCache waveImages;
 
         antwika::input::InputState folded;
         time::Tick foldedTick = 0;

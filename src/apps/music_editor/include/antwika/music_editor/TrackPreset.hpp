@@ -10,6 +10,7 @@
 #include <antwika/pattern/ParamId.hpp>
 #include <antwika/sound/Frames.hpp>
 #include <antwika/sound/WaveFormat.hpp>
+#include <antwika/synth/SynthMixer.hpp>
 #include <antwika/synth/VoiceDesc.hpp>
 
 namespace antwika::music_editor
@@ -18,6 +19,7 @@ namespace antwika::music_editor
     using antwika::pattern::Controls;
     using antwika::pattern::ParamId;
     using antwika::sound::FrameCount;
+    using antwika::sound::FrameIndex;
     using antwika::sound::SampleRate;
     using antwika::synth::VoiceDesc;
 
@@ -183,5 +185,34 @@ namespace antwika::music_editor
         FrameCount frames,
         SampleRate rate,
         std::uint64_t seed);
+
+    /**
+     * @brief Sound one note through a preset, extras and all.
+     *
+     * The note itself, the harmony a fixed interval up, and one echo
+     * of both a fixed way behind -- the whole of what one event makes,
+     * in one place, so the live playback and the offline waveform
+     * render cannot drift apart about what a note is.
+     *
+     * A note the synth refuses -- a cutoff past the device's Nyquist
+     * is the shipped example -- is demoted to silence rather than the
+     * run ended, and a refused extra spares the note itself.
+     *
+     * @param mixer What takes the voices.
+     * @param preset The line's sound.
+     * @param value What the event carried.
+     * @param frames How long the event lasts.
+     * @param startFrame Where it falls in the score's timeline, which
+     * is also a noise voice's seed.
+     * @param offset Where that timeline sits against the mixer's own.
+     * @return Whether the note itself was taken.
+     */
+    bool soundNote(
+        synth::SynthMixer &mixer,
+        const TrackPreset &preset,
+        const Controls &value,
+        FrameCount frames,
+        FrameIndex startFrame,
+        FrameIndex offset);
 
 } // namespace antwika::music_editor

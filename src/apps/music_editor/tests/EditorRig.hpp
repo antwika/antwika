@@ -25,6 +25,7 @@
 #include "antwika/music_editor/EditorState.hpp"
 #include "antwika/music_editor/Playback.hpp"
 #include "antwika/music_editor/Score.hpp"
+#include "antwika/music_editor/WaveImage.hpp"
 
 namespace antwika::music_editor::tests
 {
@@ -106,6 +107,10 @@ namespace antwika::music_editor::tests
                   codec,
                   scene,
                   kCanvas,
+                  WaveRenderDesc{
+                      .rate = format.rate,
+                      .framesPerCycle =
+                          sequencer::Rational(format.rate)},
                   &osClipboard,
                   stopSignal,
                   scoresDirectory,

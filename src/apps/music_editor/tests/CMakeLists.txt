@@ -16,6 +16,8 @@ add_executable(antwika_music_editor_tests
     ScoreTest.cpp
     TrackPresetTest.cpp
     VoiceChainTest.cpp
+    WaveImageCacheTest.cpp
+    WaveImageTest.cpp
 )
 
 target_include_directories(antwika_music_editor_tests
@@ -38,6 +40,8 @@ target_sources(antwika_music_editor_tests
         ../src/RenderSink.cpp
         ../src/Score.cpp
         ../src/ScoreFiles.cpp
+        ../src/WaveImage.cpp
+        ../src/WaveImageCache.cpp
         ../src/TrackPreset.cpp
         ../src/VoiceChain.cpp
 )
