@@ -952,3 +952,51 @@ TEST(PlaybackTest, AMixOfZeroSilencesTheEcho)
 
     EXPECT_EQ(plain.rendered.samples, muted.rendered.samples);
 }
+
+// The clock's cycles, read through the one TempoMap the voices run on.
+TEST(PlaybackTest, PositionAdvancesWithTheClockAndHoldsWhilePaused)
+{
+    Rig rig;
+    rig.play("$: bell.n(\"0\")\n");
+
+    Playback playback(
+        rig.score, rig.mixer, rig.device, rig.sleeper,
+        oneCycleASecond());
+
+    EXPECT_EQ(playback.position(), Rational(0));
+
+    step(playback, 3, false);
+
+    EXPECT_EQ(playback.position(), Rational(3, 10));
+
+    step(playback, 5, true);
+
+    EXPECT_EQ(playback.position(), Rational(3, 10));
+}
+
+// Lit from the very tick its audio window begins.
+// One later and the light trails what the ear already has.
+TEST(PlaybackTest, LightsANoteOnTheTickItsAudioBegins)
+{
+    Rig rig;
+    Playback playback(
+        rig.score, rig.mixer, rig.device, rig.sleeper,
+        oneCycleASecond());
+
+    rig.play("$: bell.n(\"<0 12>\")\n");
+
+    // Ten ticks is exactly one cycle.
+    // The second cycle's note begins in tick ten's audio.
+    step(playback, 10, false);
+
+    const auto lit = playback.highlights();
+
+    bool next = false;
+
+    for (const auto &span : lit)
+    {
+        next = next || (span.begin == 14U && span.end == 16U);
+    }
+
+    EXPECT_TRUE(next);
+}

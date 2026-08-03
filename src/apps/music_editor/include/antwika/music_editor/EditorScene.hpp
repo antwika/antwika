@@ -5,6 +5,7 @@
 
 #include <antwika/gfx/IRenderer.hpp>
 #include <antwika/gfx/Size.hpp>
+#include <antwika/sequencer/Rational.hpp>
 #include <antwika/ui/DrawList.hpp>
 #include <antwika/ui/Frame.hpp>
 #include <antwika/ui/Keyboard.hpp>
@@ -85,6 +86,17 @@ namespace antwika::music_editor
          * lights what the run lit.
          */
         std::vector<antwika::ui::TextHighlight> playing{};
+
+        /**
+         * @brief Where the musical clock stands, in cycles.
+         *
+         * What the pianoroll anchors its window to, so the picture
+         * rolls with the run: it shows the cycle ahead of this,
+         * upcoming notes included, and stands still while paused.
+         * Tick-derived through Playback::position(), so a replay
+         * rolls exactly as the run rolled.
+         */
+        sequencer::Rational position{};
 
         /**
          * @brief The rate the run's audio is generated at.

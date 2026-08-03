@@ -130,8 +130,10 @@ namespace antwika::music_editor
         struct RollNote
         {
             std::int64_t pitch = 0;
+
+            // Where the whole note begins, in absolute cycles.
+            // Before the window for a note still ringing into it.
             Cycle begin{};
-            Cycle end{};
 
             // The whole note's length, however the window cut it.
             // What the sounding width is measured from.
@@ -139,14 +141,14 @@ namespace antwika::music_editor
         };
 
         [[nodiscard]] std::vector<RollNote> rollNotesOf(
-            const antwika::pattern::Pattern &playing)
+            const antwika::pattern::Pattern &playing, const Cycle &from)
         {
             std::vector<RollNote> notes;
 
             try
             {
                 for (const auto &hap : playing.queryAll(
-                         Span{Cycle(0), Cycle(1)}))
+                         Span{from, from + Cycle(1)}))
                 {
                     // Whole semitones, floored, as the lanes draw.
                     // The stored form is fixed point: a shift floors.
@@ -154,15 +156,13 @@ namespace antwika::music_editor
                         hap.value.get(kNote)
                             .value_or(pattern::ParamValue{});
 
-                    // The whole says how long a note rings.
-                    // The part says where the window first saw it.
+                    // The whole says when a note began and how long.
                     const auto span = hap.whole.value_or(hap.part);
 
                     notes.push_back(RollNote{
                         .pitch =
                             note.raw() >> pattern::kFractionBits,
-                        .begin = hap.part.begin(),
-                        .end = hap.part.end(),
+                        .begin = span.begin(),
                         .length = span.length()});
                 }
             }
@@ -221,7 +221,11 @@ namespace antwika::music_editor
             commands.push_back(antwika::ui::FillRect{
                 .rect = band, .color = kRollBackdrop});
 
-            const auto notes = rollNotesOf(roll.playing);
+            // The cycle ahead of the playhead, so the picture rolls.
+            // Notes flow leftward, upcoming ones enter at the right.
+            // A boundary in the window shows each alternation's turn.
+            const auto notes =
+                rollNotesOf(roll.playing, status.position);
 
             if (notes.empty())
             {
@@ -261,10 +265,14 @@ namespace antwika::music_editor
                     continue;
                 }
 
-                const auto left =
-                    acrossRoll(note.begin, band.size.width);
+                // Anchored at the whole note's own beginning.
+                // Negative for one still ringing into the window.
+                const auto begun = acrossRoll(
+                    note.begin - status.position, band.size.width);
 
-                auto right = acrossRoll(note.end, band.size.width);
+                auto over = acrossRoll(
+                    note.begin + note.length - status.position,
+                    band.size.width);
 
                 // As wide as the note sounds, when the pace is known.
                 // The hold caps the note's length in wall time.
@@ -272,7 +280,7 @@ namespace antwika::music_editor
                 // A drum is a short cell whatever slot it landed in.
                 // A long release reaches past the slot it rang from.
                 // With no pace, its milliseconds measure nothing.
-                // A note then fills its slot instead.
+                // A note then fills its whole extent instead.
                 if (status.rate > 0 && status.cycleFrames > 0)
                 {
                     const auto length = note.length.numerator()
@@ -290,13 +298,21 @@ namespace antwika::music_editor
                               roll.preset.releaseMs)
                             * status.rate / 1000;
 
-                    // Clipped at the band: the cycle ends there.
-                    right = std::min<std::int64_t>(
-                        left
-                            + rings * band.size.width
-                                / status.cycleFrames,
-                        band.size.width);
+                    over = begun
+                        + rings * band.size.width
+                            / status.cycleFrames;
                 }
+
+                // A tail that rang out before the window is no cell.
+                if (over <= 0)
+                {
+                    continue;
+                }
+
+                // Clipped to the band: the window ends at its edges.
+                const auto left = std::max<std::int64_t>(begun, 0);
+                const auto right = std::min<std::int64_t>(
+                    over, band.size.width);
 
                 commands.push_back(antwika::ui::FillRect{
                     .rect = Rect{

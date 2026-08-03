@@ -261,6 +261,8 @@ namespace antwika::music_editor
             .cycles = playback.playedTicks(),
             .lines = playback.sounding(),
             .playing = std::move(playing),
+            // Where the clock stands, for the picture that rolls.
+            .position = playback.position(),
             .rate = waveRender.rate,
             .cycleFrames = pace.numerator() / pace.denominator(),
             // The waveform lines' rendered cycles, from the cache.

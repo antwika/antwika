@@ -67,9 +67,10 @@ namespace antwika::music_editor
         const auto begin = value.get(kSpanBegin).value();
         const auto length = value.get(kSpanLength).value();
 
+        // The tick whose audio window the note begins in.
+        // Lit from that very tick, so the light keeps up with the ear.
         const auto from =
-            tickOfFrame(startFrame, frameNumerator, frameDenominator)
-            + 1;
+            tickOfFrame(startFrame, frameNumerator, frameDenominator);
 
         const auto rings = tickOfFrame(
             startFrame + frames, frameNumerator, frameDenominator);
@@ -335,6 +336,11 @@ namespace antwika::music_editor
     time::Tick Playback::playedTicks() const noexcept
     {
         return played;
+    }
+
+    sequencer::Rational Playback::position() const
+    {
+        return tempo.cycleAt(shape.clock.frameAtTick(played));
     }
 
     void Playback::setSpeed(const sequencer::Rational speed)
