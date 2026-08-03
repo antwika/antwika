@@ -39,6 +39,16 @@ namespace antwika::game
         // Which is a button whose caption no longer fits inside it.
         constexpr std::size_t kPaletteColumns = 2;
 
+        // An odd count would leave the last row a button short.
+        // The spacer padding it out was unreachable at an even count.
+        // An unreachable branch is one the coverage gate refuses.
+        // See docs/confirming-unreachable-branches.md.
+        // So the even count is asserted instead.
+        // A thirteenth tool fails here and says to bring it back.
+        static_assert(
+            kBuildToolCount % kPaletteColumns == 0,
+            "an odd tool count needs the palette's padding spacer back");
+
         // A palette button's width, in theme pixels.
         // Fixed rather than fitted, so the two columns line up.
         // A column as wide as its own longest caption is not one.
@@ -188,16 +198,6 @@ namespace antwika::game
                              ++column)
                         {
                             const auto index = first + column;
-
-                            // An odd count leaves the last row short.
-                            // Padded rather than left to close up.
-                            // So a column stays a column.
-                            if (index >= kBuildToolCount)
-                            {
-                                ui.spacer(fixedSize(toolWidth));
-                                continue;
-                            }
-
                             const auto tool =
                                 static_cast<BuildTool>(index);
 

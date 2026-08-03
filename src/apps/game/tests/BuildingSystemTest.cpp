@@ -18,6 +18,9 @@
 #include "antwika/game/Coverage.hpp"
 #include "antwika/game/Errand.hpp"
 #include "antwika/game/Footprint.hpp"
+#include "antwika/game/Household.hpp"
+#include "antwika/game/HousingLevel.hpp"
+#include "antwika/game/Journey.hpp"
 #include "antwika/game/Resource.hpp"
 #include "antwika/game/Service.hpp"
 #include "antwika/game/Walker.hpp"
@@ -92,7 +95,8 @@ namespace
         ::testing::NiceMock<MockLogger> logger;
         World world{logger};
         BuildingIndex built;
-        BuildingSystem system{built};
+        BuildingSystem system{
+            built, antwika::game::GridExtent{.width = 16, .height = 16}};
     };
 } // namespace
 
@@ -532,4 +536,26 @@ TEST_F(BuildingSystemTest, Update_LeavesAWalkerOnItsWayBackToItsSender)
         world.get<Building>(market).stock[resourceIndex(Resource::Food)],
         0);
     EXPECT_EQ(world.get<Walker>(buyer).carried, 40);
+}
+
+// A building lost to the economy goes through the same demolish().
+// So its people walk out exactly as a razed one's do.
+TEST_F(BuildingSystemTest, Update_TurnsTheOccupantsOutOfWhatItLoses)
+{
+    const auto house = build(
+        Cell{.x = 4, .y = 4},
+        Building{.kind = BuildingKind::House, .risk = kMaxRisk});
+    antwika::game::setHousehold(
+        world,
+        house,
+        antwika::game::Household{
+            .level = antwika::game::HousingLevel::Tent,
+            .population = 2});
+    world.commit();
+
+    run(1);
+
+    EXPECT_FALSE(world.alive(house));
+    EXPECT_EQ(
+        (world.view<Walker, antwika::game::Journey>().size()), 2U);
 }

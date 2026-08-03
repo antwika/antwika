@@ -41,6 +41,18 @@ namespace antwika::game
         bool insert(Cell cell);
 
         /**
+         * @brief Record that a cell's path is gone.
+         *
+         * The raze tool is what takes one away, and whatever destroys
+         * the path entity is responsible for erasing it here too --
+         * exactly insert()'s contract read the other way round.
+         *
+         * @param cell The cell to clear.
+         * @return True if this removed a path, false if none was there.
+         */
+        bool erase(Cell cell);
+
+        /**
          * @brief Check whether a cell has a path.
          * @param cell The cell to ask about.
          * @return True when a path has been recorded there.

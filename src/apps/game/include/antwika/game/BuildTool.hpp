@@ -45,6 +45,15 @@ namespace antwika::game
         Doctor,
         FireStation,
         EngineerPost,
+
+        /**
+         * @brief Tear down what a click lands on instead of placing.
+         *
+         * The tool buildingKindOf() always said would arrive one day:
+         * it places nothing, so every crossing to BuildingKind answers
+         * nullopt for it exactly as it does for Road.
+         */
+        Raze,
     };
 
     /**
@@ -54,7 +63,7 @@ namespace antwika::game
      * cannot drift from the enumeration it counts.
      */
     inline constexpr std::size_t kBuildToolCount =
-        static_cast<std::size_t>(BuildTool::EngineerPost) + 1;
+        static_cast<std::size_t>(BuildTool::Raze) + 1;
 
     /**
      * @brief Get a tool's index, for addressing a per-tool table.
@@ -98,7 +107,8 @@ namespace antwika::game
             BuildingKind::Well,
             BuildingKind::Doctor,
             BuildingKind::FireStation,
-            BuildingKind::EngineerPost};
+            BuildingKind::EngineerPost,
+            std::nullopt}; // Raze
 
         return places[buildToolIndex(tool) % kBuildToolCount];
     }
@@ -106,11 +116,29 @@ namespace antwika::game
     /**
      * @brief Check whether a tool puts a building on a cell.
      * @param tool The tool to ask about.
-     * @return True for every tool but Road.
+     * @return True for every tool but Road and Raze.
      */
     [[nodiscard]] constexpr bool placesBuilding(BuildTool tool) noexcept
     {
         return buildingKindOf(tool).has_value();
+    }
+
+    /**
+     * @brief Check whether a right press puts this tool down.
+     *
+     * Every tool that arms a mode is left that way, the raze tool
+     * included: a destructive mode somebody cannot back out of is a
+     * click away from a building nobody meant to lose. Road is the
+     * exception because it is what a session starts with, and a right
+     * press over it has always dropped a walker instead -- see
+     * GridSink.
+     *
+     * @param tool The tool to ask about.
+     * @return True for every tool but Road.
+     */
+    [[nodiscard]] constexpr bool cancellable(BuildTool tool) noexcept
+    {
+        return tool != BuildTool::Road;
     }
 
     // Every building kind has to be placeable.
@@ -142,9 +170,13 @@ namespace antwika::game
         "every building kind needs a tool that places it");
 
     static_assert(!buildingKindOf(BuildTool::Road).has_value());
+    static_assert(!buildingKindOf(BuildTool::Raze).has_value());
     static_assert(buildingKindOf(BuildTool::House) == BuildingKind::House);
     static_assert(
         buildingKindOf(BuildTool::EngineerPost)
         == BuildingKind::EngineerPost);
+    static_assert(!cancellable(BuildTool::Road));
+    static_assert(cancellable(BuildTool::House));
+    static_assert(cancellable(BuildTool::Raze));
 
 } // namespace antwika::game

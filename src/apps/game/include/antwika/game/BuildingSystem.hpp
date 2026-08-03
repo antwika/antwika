@@ -5,6 +5,7 @@
 #include <antwika/time/Tick.hpp>
 
 #include "antwika/game/BuildingIndex.hpp"
+#include "antwika/game/GridExtent.hpp"
 
 namespace antwika::game
 {
@@ -54,8 +55,10 @@ namespace antwika::game
          * @brief Construct the system over what it reads and clears.
          * @param built Cleared as a building is demolished; must
          * outlive this system.
+         * @param extent The bounds a demolition's leavers search for a
+         * vacancy and a gate over -- see Demolition.hpp.
          */
-        explicit BuildingSystem(BuildingIndex &built);
+        BuildingSystem(BuildingIndex &built, GridExtent extent);
 
         BuildingSystem(const BuildingSystem &) = delete;
         BuildingSystem(BuildingSystem &&) = delete;
@@ -71,6 +74,8 @@ namespace antwika::game
          * resource, is destroyed. Its walker is *not* destroyed with
          * it: it carries on until its own budget is spent, at which
          * point WalkerSystem finds no home to path to and removes it.
+         * Its occupants are turned out through demolish(), exactly as
+         * a razed building's are.
          *
          * @param world The world to read from and stage changes into.
          * @param tick The tick being processed; unused.
@@ -79,6 +84,7 @@ namespace antwika::game
 
     private:
         BuildingIndex &built;
+        GridExtent extent;
     };
 
 } // namespace antwika::game

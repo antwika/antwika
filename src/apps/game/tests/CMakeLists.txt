@@ -15,6 +15,7 @@ add_executable(antwika_game_tests
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/Coverage.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/CoverageSystem.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/Desirability.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/Demolition.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/DesirabilitySystem.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/Errand.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/ErrandRouting.cpp
@@ -108,6 +109,7 @@ add_executable(antwika_game_tests
     CityGridTest.cpp
     CoverageSystemTest.cpp
     CoverageTest.cpp
+    DemolitionTest.cpp
     DesirabilityTest.cpp
     DirectionTest.cpp
     GameStateReducerTest.cpp

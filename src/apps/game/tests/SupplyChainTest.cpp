@@ -131,7 +131,7 @@ namespace
         BuildingIndex built;
         SystemScheduler scheduler;
         WalkerSystem walkers{paths, built, kExtent};
-        BuildingSystem buildings{built};
+        BuildingSystem buildings{built, kExtent};
         SpawnSystem spawns{paths};
         ProductionSystem production;
         HaulingSystem hauling{paths, kExtent};

@@ -513,6 +513,11 @@ namespace antwika::game
         ToolbarMoney,
 
         /**
+         * @brief The palette's raze tool.
+         */
+        ToolRaze,
+
+        /**
          * @brief How many ids there are; not an id itself.
          *
          * Messages.cpp static_asserts its name table against this,

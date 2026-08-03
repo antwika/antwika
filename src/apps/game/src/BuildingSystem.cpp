@@ -14,6 +14,7 @@
 #include "antwika/game/BuildingKind.hpp"
 #include "antwika/game/Cell.hpp"
 #include "antwika/game/Coverage.hpp"
+#include "antwika/game/Demolition.hpp"
 #include "antwika/game/Direction.hpp"
 #include "antwika/game/Errand.hpp"
 #include "antwika/game/Footprint.hpp"
@@ -268,7 +269,8 @@ namespace antwika::game
         }
     } // namespace
 
-    BuildingSystem::BuildingSystem(BuildingIndex &built) : built(built)
+    BuildingSystem::BuildingSystem(BuildingIndex &built, GridExtent extent)
+        : built(built), extent(extent)
     {
     }
 
@@ -283,17 +285,28 @@ namespace antwika::game
         deliver(world, standing, pending);
         age(world, pending);
 
+        // Ascending Cell rather than the pending map's Entity order.
+        // A demolition turns people out, and people are contended.
+        // The walker limit and a vacancy's beds are split amounts.
+        // An entity order is one a restore may renumber.
+        // See AllocationOrderTest.
+        // A cell is unique per building, so no tie-break is needed.
+        std::map<Cell, Entity> lost;
+
         for (const auto &[entity, building] : pending)
         {
             if (isLost(building))
             {
-                built.erase(
-                    world.get<Cell>(entity), footprintOf(building.kind));
-                world.destroy(entity);
+                lost.emplace(world.get<Cell>(entity), entity);
                 continue;
             }
 
             world.set<Building>(entity, building);
+        }
+
+        for (const auto &[at, entity] : lost)
+        {
+            demolish(world, built, entity, extent);
         }
     }
 

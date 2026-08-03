@@ -105,7 +105,7 @@ namespace
         PathIndex paths;
         BuildingIndex built;
         HaulingSystem hauling{paths, kExtent};
-        BuildingSystem buildings{built};
+        BuildingSystem buildings{built, kExtent};
     };
 } // namespace
 

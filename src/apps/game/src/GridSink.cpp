@@ -10,6 +10,7 @@
 #include "antwika/game/Building.hpp"
 #include "antwika/game/Cell.hpp"
 #include "antwika/game/Cost.hpp"
+#include "antwika/game/Demolition.hpp"
 #include "antwika/game/IsoProjection.hpp"
 #include "antwika/game/Footprint.hpp"
 #include "antwika/game/Path.hpp"
@@ -175,6 +176,14 @@ namespace antwika::game
             return;
         }
 
+        // Tearing down rather than placing, and still one decision.
+        // Ahead of the kind lookup, since raze places nothing.
+        if (*tool == BuildTool::Raze)
+        {
+            raze(cell);
+            return;
+        }
+
         // One decision, taken where the click is.
         // Rather than a button meaning one thing and the palette another.
         // The kind is worked out once here and handed on.
@@ -275,15 +284,68 @@ namespace antwika::game
         // The cell is not consulted in the first arm at all.
         // Leaving build mode is about the palette, not about a cell.
         // See GridSink.hpp for the whole rule.
+        // Raze cancels like a building tool does -- see cancellable().
         const auto tool = overlay.tool();
 
-        if (tool.has_value() && placesBuilding(*tool))
+        if (tool.has_value() && cancellable(*tool))
         {
             overlay.clearTool();
             return;
         }
 
         placeWalker(cell);
+    }
+
+    void GridSink::raze(Cell cell)
+    {
+        // The index is the note kept current within the tick.
+        // A block razed a moment ago already reads as gone here.
+        // So one press cannot tear one building down twice.
+        if (built.has(cell))
+        {
+            // Any cell of a block razes the whole building.
+            // Only one building can cover a cell, so no order matters.
+            for (const auto entity : world.view<Building, Cell>())
+            {
+                const auto origin = world.get<Cell>(entity);
+                const auto footprint =
+                    footprintOf(world.get<Building>(entity).kind);
+
+                if (covers(origin, footprint, cell))
+                {
+                    demolish(world, built, entity, extent);
+                    return;
+                }
+            }
+
+            // The index says taken and the World says nothing yet.
+            // That is a block placed earlier in this same tick.
+            // The World hands out the last commit.
+            // So it cannot be found to tear down until the next one.
+            return;
+        }
+
+        if (!paths.has(cell))
+        {
+            return;
+        }
+
+        // The entity owns the cell; the index is the lookup.
+        // Both go together, exactly as both arrived -- see PathIndex.
+        for (const auto entity : world.view<Path, Cell>())
+        {
+            if (world.get<Cell>(entity) == cell)
+            {
+                world.destroy(entity);
+                (void)paths.erase(cell);
+                return;
+            }
+        }
+
+        // The index says paved and the World says nothing yet.
+        // That is a road laid earlier in this same tick.
+        // It cannot be taken up until the next commit, as a block.
+        // Erasing the index alone would orphan the landing entity.
     }
 
     void GridSink::placeWalker(Cell cell)
