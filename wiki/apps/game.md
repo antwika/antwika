@@ -64,7 +64,7 @@ They used to be one enumeration, which gave every per-building table a `Road` en
 A house consumes what is delivered to it, and most other kinds send out one `WalkerKind`.
 Both facts used to be arithmetic over a shared declaration order; they are tables now, for the reason the round-one vocabulary section below gives.
 
-`BuildingSystem` runs deliveries, drain, risk and both of a building's endings: a risk-maxed one catches fire and a starved one falls down.
+`BuildingSystem` runs deliveries, drain, the two risks and all three of a building's endings: maxed fire risk ignites it, maxed collapse risk drops it straight to debris, and a starved house falls down and frees its ground.
 Every period derives from one `kTicksPerSecond` rather than a constant per rule, and each countdown lives in the building's own component so two buildings put up a tick apart never fall into lockstep.
 
 A building with no road beside it holds its countdown at zero rather than resetting it, so laying a road beside a long-neglected source releases one walker and not a queue of them, and `kWalkerLimit` stays as a backstop.
@@ -364,7 +364,10 @@ A walker shows the one resource `carriedResource()` names, empty bar included, a
 **Hovering is `hoverFor()`, and it is `ghostFor()`'s sibling in every way that matters**: it reads `input::PointerHintChannel`, it resolves the pixel through the same `screenToCell()` a click goes through, it tests a building across its whole block, and what it answers may decide what is drawn and nothing else.
 
 `readoutPanel()` lays that answer out into a plain value of a box and coloured lines, painted through `IRenderer` rather than through `antwika::ui` — deliberately, because this app's UI is described and resolved inside the tick path by `UiSink`, and taking a panel driven by an unrecorded hint through that path is precisely what the channel forbids.
-The panel lists the resources the bars gauge rather than every number a building holds, so a reader is never told two stories about one building.
+The panel lists the resources the bars gauge rather than every number a building holds, so a reader is never told two stories about one building — and it groups them under a `resources` heading, each line two spaces in, so the amounts read as one section rather than a run of loose lines.
+**Every building also carries a `risk` section, and it is the panel's one always-on section**: `fire N%` and `collapse N%`, each line wearing the colour of the service that holds it off, shown even at zero.
+A lapsed service is omitted because absent and zero coverage are one state; a risk of nothing is a measured fact somebody watching a district wants, and a fire the panel could never warn of is exactly how the section came to exist.
+The two lines read straight off `BuildingSprite`'s copies of the risks, which live on the sprite and not the view for stock's reason: a divergence in a risk surfaces as a divergence in what burnt within a tick of mattering.
 Its captions are a table of their own rather than the names a save file writes, since a persisted name may not change to suit a caption.
 
 **A household's tier and how full its house is are listed on one `housesPeople()` test**, because both are facts about a household and a well has none — a well is on `HousingLevel::Tent` and houses nobody, and saying either about it would be saying something untrue.
@@ -435,8 +438,10 @@ A building is given one the first time somebody reaches it and never before.
 
 **Risk moved onto coverage but stayed in `BuildingSystem`.**
 A fireman used to subtract `kRiskRelief` from whatever he walked past, which was coverage said as a subtraction: it made "somebody came recently" the only thing that mattered but expressed it as an amount.
-`BuildingSystem::age()` now asks `coverageOf()` which way a building's risk steps -- up where `Service::Safety` or `Service::Structure` has lapsed, down where a walker is keeping both alive -- and the fire station and the engineer's post stop being arms in the delivery code.
-Putting the *step* in `CoverageSystem` was tried and rejected: `risk` is a field of `Building`, `age()` is the one place a building's countdowns advance and the one place `isLost()` reads the amounts this tick produced, and splitting it would have meant two systems in two phases writing one component with a tick between the risk that finished a building and the pass that noticed.
+`BuildingSystem::age()` now asks `coverageOf()` which way each risk steps, and the fire station and the engineer's post stop being arms in the delivery code.
+**The risks are two now rather than one, and each answers to its own service**: `fireRisk` rises while `Service::Safety` has lapsed and falls while a fireman keeps reaching the district, and `collapseRisk` does the same against `Service::Structure` -- the one shared value they used to be climbed when *either* lapsed, so no readout could honestly say which danger a building was in, though the fire and damage map views already told the two apart.
+The two step on one shared period and one shared `kMaxRisk`, so the hover panel's two percentages mean the same thing; maxed fire risk ignites the building and maxed collapse risk drops it straight to debris, the fire's ending without the fire -- see the fire section below.
+Putting the *step* in `CoverageSystem` was tried and rejected: the risks are fields of `Building`, `age()` is the one place a building's countdowns advance and the one place a lost building is read off the amounts this tick produced, and splitting it would have meant two systems in two phases writing one component with a tick between the risk that finished a building and the pass that noticed.
 The coverage `age()` reads is therefore the previous tick's, which is one tick out of five hundred on a countdown whose only job is to say whether somebody came recently.
 
 **Desirability is a sum, and that is its whole determinism argument.**
@@ -744,7 +749,8 @@ The index is the note kept current within the tick, so a block razed a moment ag
 
 ## Fire, the brigade, and the debris a city keeps
 
-**A building whose risk runs all the way up catches fire now rather than vanishing**, and everything else in this section falls out of one modelling decision: what burns is a `Ruin`, a component of its own, and the `Building` entity dies at ignition.
+**A building whose fire risk runs all the way up catches fire now rather than vanishing** -- and one whose collapse risk maxes takes `collapse()`, the same ending with the fire skipped, standing its debris up at once.
+Everything else in this section falls out of one modelling decision: what burns is a `Ruin`, a component of its own, and the `Building` entity dies at ignition.
 Every system that walks buildings -- spawning, staffing, deliveries, coverage, housing -- therefore ignores a ruin by construction rather than by a filter each of them would have to remember, walkers homing to the burnt building find their home dead and expire by the arm they already had, and the staffing ledgers drop their entries in the tend pass that already drops the dead.
 A ruin remembers the `BuildingKind` that stood there, which is what names both its block -- `footprintOf()` -- and its art's sheet, so a burnt farm smoulders across the very diamond its block claims.
 

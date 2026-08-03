@@ -456,9 +456,9 @@ TEST_F(RenderSystemTest, Update_WritesAReadoutForWhatTheHintIsOver)
 
     RenderSystem system(setup());
 
-    // Name, tier, occupancy, idle hands, one per resource it holds.
+    // Every line the panel says, headings and risks included.
     EXPECT_CALL(renderer, drawText(_, _, _, _))
-        .Times(4 + static_cast<int>(antwika::game::kResourceCount));
+        .Times(8 + static_cast<int>(antwika::game::kResourceCount));
 
     system.update(world, 0);
 }

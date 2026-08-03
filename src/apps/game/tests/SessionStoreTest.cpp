@@ -223,7 +223,8 @@ namespace
             antwika::game::Building{
                 .kind = antwika::game::BuildingKind::Well,
                 .stock = {11, 22},
-                .risk = 33,
+                .fireRisk = 33,
+                .collapseRisk = 21,
                 .ticksUntilSpawn = 44,
                 .ticksUntilDrain = 55,
                 .ticksUntilRisk = 66});
@@ -239,7 +240,8 @@ namespace
 
             EXPECT_EQ(
                 building.kind, antwika::game::BuildingKind::Well);
-            EXPECT_EQ(building.risk, 33);
+            EXPECT_EQ(building.fireRisk, 33);
+            EXPECT_EQ(building.collapseRisk, 21);
             EXPECT_EQ(building.ticksUntilSpawn, 44);
             EXPECT_EQ(building.ticksUntilDrain, 55);
             EXPECT_EQ(building.ticksUntilRisk, 66);

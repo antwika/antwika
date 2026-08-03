@@ -545,6 +545,28 @@ namespace antwika::game
         RuinDebris,
 
         /**
+         * @brief Readout: the heading over the two risk lines.
+         */
+        ReadoutRiskTitle,
+
+        /**
+         * @brief Readout: how close to catching fire, as `{0}` per
+         *        cent of the way there.
+         */
+        ReadoutFireRisk,
+
+        /**
+         * @brief Readout: how close to falling down, as `{0}` per
+         *        cent of the way there.
+         */
+        ReadoutCollapseRisk,
+
+        /**
+         * @brief Readout: the heading over a house's stock lines.
+         */
+        ReadoutResourcesTitle,
+
+        /**
          * @brief How many ids there are; not an id itself.
          *
          * Messages.cpp static_asserts its name table against this,

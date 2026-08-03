@@ -149,6 +149,10 @@ namespace
             [](BuildingSprite &b) { b.level = HousingLevel::Cottage; });
         expectMemberCompared(
             base, [](BuildingSprite &b) { b.population = 3; });
+        expectMemberCompared(
+            base, [](BuildingSprite &b) { b.fireRisk = 42; });
+        expectMemberCompared(
+            base, [](BuildingSprite &b) { b.collapseRisk = 42; });
     }
 
     [[nodiscard]] SceneSnapshot populatedSnapshot()
@@ -460,7 +464,8 @@ namespace
         const Building base{
             .kind = BuildingKind::Farm,
             .stock = {1, 2, 3},
-            .risk = 3,
+            .fireRisk = 3,
+            .collapseRisk = 2,
             .ticksUntilSpawn = 4,
             .ticksUntilDrain = 5,
             .ticksUntilRisk = 6,
@@ -470,7 +475,10 @@ namespace
         expectMemberCompared(
             base, [](Building &b) { b.kind = BuildingKind::House; });
         expectMemberCompared(base, [](Building &b) { b.stock[0] = 99; });
-        expectMemberCompared(base, [](Building &b) { b.risk = 99; });
+        expectMemberCompared(
+            base, [](Building &b) { b.fireRisk = 99; });
+        expectMemberCompared(
+            base, [](Building &b) { b.collapseRisk = 99; });
         expectMemberCompared(
             base, [](Building &b) { b.ticksUntilSpawn = 99; });
         expectMemberCompared(

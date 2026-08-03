@@ -222,7 +222,26 @@ namespace antwika::game
         Cell at;
         BuildingKind kind = BuildingKind::House;
         std::array<std::int32_t, kResourceCount> stock{};
+
+        /**
+         * @brief How close it is to catching fire.
+         *
+         * **Still written as `"risk"`, because a persisted name may
+         * not change to suit a rename in the code.** A file written
+         * before the split carried one combined risk here; reading
+         * that as the fire risk alone -- with the collapse risk
+         * starting clean below -- is the additive reading, and errs
+         * a loaded building towards standing a little longer.
+         */
         std::int32_t risk = 0;
+
+        /**
+         * @brief How close it is to falling down.
+         *
+         * Additive, and absent means none -- which is what every
+         * file written before the risks were told apart says.
+         */
+        std::int32_t collapseRisk = 0;
         std::int32_t ticksUntilSpawn = 0;
         std::int32_t ticksUntilDrain = 0;
         std::int32_t ticksUntilRisk = 0;

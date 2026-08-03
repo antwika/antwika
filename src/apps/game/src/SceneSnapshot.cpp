@@ -99,7 +99,9 @@ namespace antwika::game
                     .coverage = coverage,
                     .level = level,
                     .population = living,
-                    .employed = employedOf(world, entity)});
+                    .employed = employedOf(world, entity),
+                    .fireRisk = building.fireRisk,
+                    .collapseRisk = building.collapseRisk});
         }
 
         for (const auto entity : world.view<Ruin, Cell>())

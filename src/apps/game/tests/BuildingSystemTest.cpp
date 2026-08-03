@@ -224,14 +224,14 @@ TEST_F(BuildingSystemTest, Update_LeavesRiskAloneForAPassingFireman)
 {
     const auto house = build(
         Cell{.x = 1, .y = 0},
-        Building{.kind = BuildingKind::House, .risk = 60});
+        Building{.kind = BuildingKind::House, .fireRisk = 60});
 
     const auto fireman = sendWalker(
         Cell{.x = 0, .y = 0}, Walker{.kind = WalkerKind::Fireman});
 
     run(1);
 
-    EXPECT_EQ(world.get<Building>(house).risk, 60);
+    EXPECT_EQ(world.get<Building>(house).fireRisk, 60);
     EXPECT_EQ(world.get<Walker>(fireman).carried, 0);
 }
 
@@ -292,43 +292,51 @@ TEST_F(BuildingSystemTest, Update_LeavesASourcesStockWhereItIs)
         world.get<Building>(well).stock[resourceIndex(Resource::Food)], 50);
 }
 
-// A district nobody serves is a district that falls down.
-TEST_F(BuildingSystemTest, Update_RaisesRiskWithNoSafetyCoverageAtAll)
+// A district nobody serves is a district in both kinds of danger.
+TEST_F(BuildingSystemTest, Update_RaisesBothRisksWithNoCoverageAtAll)
 {
     const auto house = build(
         Cell{.x = 0, .y = 0}, Building{.kind = BuildingKind::House});
 
     run(static_cast<std::size_t>(kRiskPeriodTicks) + 1);
 
-    EXPECT_EQ(world.get<Building>(house).risk, 1);
+    EXPECT_EQ(world.get<Building>(house).fireRisk, 1);
+    EXPECT_EQ(world.get<Building>(house).collapseRisk, 1);
 }
 
-// And one that both a fireman and an engineer reach works it back off.
+// And one that both a fireman and an engineer reach works both off.
 TEST_F(BuildingSystemTest, Update_TakesRiskBackOffWhereBothServicesReach)
 {
     const auto house = build(
         Cell{.x = 0, .y = 0},
-        Building{.kind = BuildingKind::House, .risk = 40});
+        Building{
+            .kind = BuildingKind::House,
+            .fireRisk = 40,
+            .collapseRisk = 30});
     cover(house, {0, 0, kCoverageFull, kCoverageFull});
 
     run(static_cast<std::size_t>(kRiskPeriodTicks) + 1);
 
-    EXPECT_EQ(world.get<Building>(house).risk, 39);
+    EXPECT_EQ(world.get<Building>(house).fireRisk, 39);
+    EXPECT_EQ(world.get<Building>(house).collapseRisk, 29);
 }
 
-// Safety alone is not enough: a building has to stay standing too.
-TEST_F(BuildingSystemTest, Update_StillRaisesRiskWithOnlyOneOfTheTwo)
+// The split's whole point: each risk answers to its own service.
+// A fireman's rounds say nothing about the roof falling in.
+TEST_F(BuildingSystemTest, Update_StepsEachRiskAgainstItsOwnService)
 {
     const auto house = build(
-        Cell{.x = 0, .y = 0}, Building{.kind = BuildingKind::House});
+        Cell{.x = 0, .y = 0},
+        Building{.kind = BuildingKind::House, .fireRisk = 40});
     cover(house, {0, 0, kCoverageFull, 0});
 
     run(static_cast<std::size_t>(kRiskPeriodTicks) + 1);
 
-    EXPECT_EQ(world.get<Building>(house).risk, 1);
+    EXPECT_EQ(world.get<Building>(house).fireRisk, 39);
+    EXPECT_EQ(world.get<Building>(house).collapseRisk, 1);
 }
 
-TEST_F(BuildingSystemTest, Update_NeverTakesRiskBelowNothing)
+TEST_F(BuildingSystemTest, Update_NeverTakesARiskBelowNothing)
 {
     const auto house = build(
         Cell{.x = 0, .y = 0}, Building{.kind = BuildingKind::House});
@@ -336,15 +344,17 @@ TEST_F(BuildingSystemTest, Update_NeverTakesRiskBelowNothing)
 
     run(3 * static_cast<std::size_t>(kRiskPeriodTicks));
 
-    EXPECT_EQ(world.get<Building>(house).risk, 0);
+    EXPECT_EQ(world.get<Building>(house).fireRisk, 0);
+    EXPECT_EQ(world.get<Building>(house).collapseRisk, 0);
 }
 
-TEST_F(BuildingSystemTest, Update_NeverTakesRiskAboveTheMost)
+TEST_F(BuildingSystemTest, Update_NeverTakesARiskAboveTheMost)
 {
     // A source, so an empty larder is not what ends it.
     const auto well = build(
         Cell{.x = 0, .y = 0},
-        Building{.kind = BuildingKind::Well, .risk = kMaxRisk - 1});
+        Building{
+            .kind = BuildingKind::Well, .fireRisk = kMaxRisk - 1});
 
     run(2 * static_cast<std::size_t>(kRiskPeriodTicks));
 
@@ -356,11 +366,15 @@ TEST_F(BuildingSystemTest, Update_LeavesRiskAloneBeforeItsPeriodIsUp)
 {
     const auto house = build(
         Cell{.x = 0, .y = 0},
-        Building{.kind = BuildingKind::House, .risk = 5});
+        Building{
+            .kind = BuildingKind::House,
+            .fireRisk = 5,
+            .collapseRisk = 7});
 
     run(static_cast<std::size_t>(kRiskPeriodTicks) - 1);
 
-    EXPECT_EQ(world.get<Building>(house).risk, 5);
+    EXPECT_EQ(world.get<Building>(house).fireRisk, 5);
+    EXPECT_EQ(world.get<Building>(house).collapseRisk, 7);
     EXPECT_EQ(world.get<Building>(house).ticksUntilRisk, 1);
 }
 
@@ -369,7 +383,7 @@ TEST_F(BuildingSystemTest, Update_DemolishesABuildingThatRanOutOfLuck)
 {
     const auto house = build(
         Cell{.x = 0, .y = 0},
-        Building{.kind = BuildingKind::House, .risk = kMaxRisk});
+        Building{.kind = BuildingKind::House, .fireRisk = kMaxRisk});
 
     run(1);
 
@@ -393,7 +407,7 @@ TEST_F(BuildingSystemTest, Update_KeepsTheGroundOfWhatCatchesFire)
 {
     build(
         Cell{.x = 4, .y = 4},
-        Building{.kind = BuildingKind::House, .risk = kMaxRisk});
+        Building{.kind = BuildingKind::House, .fireRisk = kMaxRisk});
 
     ASSERT_TRUE(built.has(Cell{.x = 4, .y = 4}));
 
@@ -440,7 +454,7 @@ TEST_F(BuildingSystemTest, Update_LeavesTheWalkerOfADemolishedBuilding)
 
     build(
         Cell{.x = 5, .y = 5},
-        Building{.kind = BuildingKind::House, .risk = kMaxRisk});
+        Building{.kind = BuildingKind::House, .fireRisk = kMaxRisk});
 
     run(1);
 
@@ -528,7 +542,7 @@ TEST_F(BuildingSystemTest, Update_KeepsEveryCellOfABurningBlock)
 {
     build(
         Cell{.x = 4, .y = 4},
-        Building{.kind = BuildingKind::Farm, .risk = kMaxRisk});
+        Building{.kind = BuildingKind::Farm, .fireRisk = kMaxRisk});
 
     ASSERT_TRUE(built.has(Cell{.x = 5, .y = 5}));
 
@@ -582,7 +596,71 @@ TEST_F(BuildingSystemTest, Update_TurnsTheOccupantsOutOfWhatItLoses)
 {
     const auto house = build(
         Cell{.x = 4, .y = 4},
-        Building{.kind = BuildingKind::House, .risk = kMaxRisk});
+        Building{.kind = BuildingKind::House, .fireRisk = kMaxRisk});
+    antwika::game::setHousehold(
+        world,
+        house,
+        antwika::game::Household{
+            .level = antwika::game::HousingLevel::Tent,
+            .population = 2});
+    world.commit();
+
+    run(1);
+
+    EXPECT_FALSE(world.alive(house));
+    EXPECT_EQ(
+        (world.view<Walker, antwika::game::Journey>().size()), 2U);
+}
+
+// The collapse ending: straight to debris, and the ground is kept.
+// The fire's ending without the fire, so nothing is left to put out.
+TEST_F(BuildingSystemTest, Update_DropsACollapsedBuildingToDebris)
+{
+    build(
+        Cell{.x = 4, .y = 4},
+        Building{
+            .kind = BuildingKind::House, .collapseRisk = kMaxRisk});
+
+    run(1);
+
+    EXPECT_TRUE(built.has(Cell{.x = 4, .y = 4}));
+
+    const auto ruins = world.view<antwika::game::Ruin, Cell>();
+    ASSERT_EQ(ruins.size(), 1U);
+
+    const auto ruin = world.get<antwika::game::Ruin>(*ruins.begin());
+    EXPECT_EQ(ruin.kind, BuildingKind::House);
+    EXPECT_EQ(ruin.state, antwika::game::RuinState::Debris);
+    EXPECT_EQ(ruin.ticksUntilOut, 0);
+}
+
+// Both risks maxed in one tick take the first ending asked.
+// Which is fire, so what stands afterwards still burns.
+TEST_F(BuildingSystemTest, Update_PrefersTheFireWhereBothRisksMax)
+{
+    build(
+        Cell{.x = 4, .y = 4},
+        Building{
+            .kind = BuildingKind::House,
+            .fireRisk = kMaxRisk,
+            .collapseRisk = kMaxRisk});
+
+    run(1);
+
+    const auto ruins = world.view<antwika::game::Ruin, Cell>();
+    ASSERT_EQ(ruins.size(), 1U);
+    EXPECT_EQ(
+        world.get<antwika::game::Ruin>(*ruins.begin()).state,
+        antwika::game::RuinState::Burning);
+}
+
+// A collapse turns its people out exactly as a fire does.
+TEST_F(BuildingSystemTest, Update_TurnsTheOccupantsOutOfWhatCollapses)
+{
+    const auto house = build(
+        Cell{.x = 4, .y = 4},
+        Building{
+            .kind = BuildingKind::House, .collapseRisk = kMaxRisk});
     antwika::game::setHousehold(
         world,
         house,

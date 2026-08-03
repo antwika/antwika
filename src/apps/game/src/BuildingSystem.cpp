@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <array>
 #include <cstddef>
+#include <cstdint>
 #include <map>
 #include <optional>
 #include <set>
@@ -50,11 +51,18 @@ namespace antwika::game
                 .first->second;
         }
 
-        // What sets a building alight: risk run all the way up.
-        // Which is what a district nobody serves comes to.
+        // What sets a building alight: fire risk run all the way up.
+        // Which is what a district no fireman reaches comes to.
         [[nodiscard]] bool catchesFire(const Building &building)
         {
-            return building.risk >= kMaxRisk;
+            return building.fireRisk >= kMaxRisk;
+        }
+
+        // What drops a building: collapse risk run all the way up.
+        // The fire's ending without the fire -- straight to debris.
+        [[nodiscard]] bool collapses(const Building &building)
+        {
+            return building.collapseRisk >= kMaxRisk;
         }
 
         // What ends a building outright: an empty larder.
@@ -206,24 +214,22 @@ namespace antwika::game
             }
         }
 
-        // What holds a building's risk off, and the reason those two.
+        // One risk's step, against the one service that holds it off.
         // Safety is the fireman's and Structure is the engineer's.
-        // Both used to relieve risk by walking past a building.
-        // So the two services are exactly the old special cases.
-        // Water and Health reach a house for what a house does with them.
-        // Neither has anything to say about the building falling down.
-        constexpr std::array<Service, 2> kRiskHeldOffBy{
-            Service::Safety, Service::Structure};
-
-        // Read as of the last commit.
+        // The two used to share one value climbing when either lapsed.
+        // So no readout could say which danger the number counted.
+        // The coverage is read as of the last commit.
         // Which is what the "serve" phase left at the previous tick.
         // One tick out of five hundred on a "came recently" countdown.
-        [[nodiscard]] bool unserved(const World &world, Entity entity)
+        [[nodiscard]] std::int32_t stepped(
+            const World &world,
+            Entity entity,
+            Service service,
+            std::int32_t risk)
         {
-            return std::ranges::any_of(
-                kRiskHeldOffBy,
-                [&world, entity](Service service)
-                { return coverageOf(world, entity, service) <= 0; });
+            return coverageOf(world, entity, service) <= 0
+                ? std::min(kMaxRisk, risk + 1)
+                : std::max(0, risk - 1);
         }
 
         void age(World &world, Pending &pending)
@@ -256,17 +262,17 @@ namespace antwika::game
                     continue;
                 }
 
-                // **The one thing that changed about risk.**
-                // It used to rise here whatever was standing nearby.
-                // And a passing fireman subtracted a lump from it.
-                // Now it rises where the district is unserved.
-                // And falls back where a walker keeps reaching it.
-                // So a fire station is a thing a district has.
+                // Each risk against its own service, on one period.
+                // A fire station is a thing a district has.
                 // Rather than a thing that visits it.
                 building.ticksUntilRisk = kRiskPeriodTicks;
-                building.risk = unserved(world, entity)
-                    ? std::min(kMaxRisk, building.risk + 1)
-                    : std::max(0, building.risk - 1);
+                building.fireRisk = stepped(
+                    world, entity, Service::Safety, building.fireRisk);
+                building.collapseRisk = stepped(
+                    world,
+                    entity,
+                    Service::Structure,
+                    building.collapseRisk);
             }
         }
     } // namespace
@@ -288,19 +294,26 @@ namespace antwika::game
         age(world, pending);
 
         // Ascending Cell rather than the pending map's Entity order.
-        // Both endings turn people out, and people are contended.
+        // Every ending turns people out, and people are contended.
         // The walker limit and a vacancy's beds are split amounts.
         // An entity order is one a restore may renumber.
         // See AllocationOrderTest.
         // A cell is unique per building, so no tie-break is needed.
         //
-        // One map for both endings rather than one map each.
-        // So a fire and a starvation resolve in one Cell order too.
-        // Fire is asked first.
-        // A building starving the tick its risk maxes therefore burns.
-        // One answer, stated by the order of the two tests.
+        // One map for every ending rather than one map each.
+        // So a fire and a collapse resolve in one Cell order too.
+        // Fire is asked first and collapse second.
+        // A building meeting two endings in one tick takes the first.
+        // One answer, stated by the order of the three tests.
         // Rather than by a tie rule written beside them.
-        std::map<Cell, std::pair<Entity, bool>> lost;
+        enum class Ending : std::uint8_t
+        {
+            Burns,
+            Falls,
+            Starves,
+        };
+
+        std::map<Cell, std::pair<Entity, Ending>> lost;
 
         for (const auto &[entity, building] : pending)
         {
@@ -308,7 +321,15 @@ namespace antwika::game
             {
                 lost.emplace(
                     world.get<Cell>(entity),
-                    std::make_pair(entity, true));
+                    std::make_pair(entity, Ending::Burns));
+                continue;
+            }
+
+            if (collapses(building))
+            {
+                lost.emplace(
+                    world.get<Cell>(entity),
+                    std::make_pair(entity, Ending::Falls));
                 continue;
             }
 
@@ -316,18 +337,25 @@ namespace antwika::game
             {
                 lost.emplace(
                     world.get<Cell>(entity),
-                    std::make_pair(entity, false));
+                    std::make_pair(entity, Ending::Starves));
                 continue;
             }
 
             world.set<Building>(entity, building);
         }
 
+        // An if-chain rather than a switch.
+        // The last arm is then unconditional.
+        // So no impossible fourth branch exists to be uncoverable.
         for (const auto &[at, ending] : lost)
         {
-            if (ending.second)
+            if (ending.second == Ending::Burns)
             {
                 ignite(world, built, ending.first, extent);
+            }
+            else if (ending.second == Ending::Falls)
+            {
+                collapse(world, built, ending.first, extent);
             }
             else
             {

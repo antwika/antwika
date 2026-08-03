@@ -40,19 +40,23 @@ namespace antwika::game
     inline constexpr std::int32_t kStockOnCompletion = kStockCapacity / 10;
 
     /**
-     * @brief The most risk a building can carry before it is gone.
+     * @brief The most risk a building can carry before it is lost.
+     *
+     * One ceiling for both risks, so the two readouts share a scale
+     * and a percentage means the same thing on either line.
      */
     inline constexpr std::int32_t kMaxRisk = 100;
 
     /**
-     * @brief Ticks between one step of risk and the next.
+     * @brief Ticks between one step of the risks and the next.
      *
      * One a second, so a building in a district nobody serves reaches
-     * kMaxRisk after a hundred seconds and is gone -- and a served one
+     * kMaxRisk after a hundred seconds and is lost -- and a served one
      * works its way back down at the same rate.
-     * Which way the step goes is CoverageSystem's to decide; there is
-     * deliberately no separate amount a walker takes off, because a
-     * walker no longer takes anything off.
+     * One period for both risks rather than one each: the point of a
+     * per-building countdown is that two *buildings* stay out of
+     * lockstep, and a building's own two risks stepping together is
+     * no lockstep at all.
      */
     inline constexpr std::int32_t kRiskPeriodTicks = kTicksPerSecond;
 
@@ -123,9 +127,30 @@ namespace antwika::game
             kStockOnCompletion};
 
         /**
-         * @brief How close it is to being lost, out of kMaxRisk.
+         * @brief How close it is to catching fire, out of kMaxRisk.
+         *
+         * **Two risks rather than one, and each answers to its own
+         * service.** The one shared value they used to be climbed
+         * whenever *either* Safety or Structure lapsed, so no readout
+         * could honestly say which danger a building was in -- the
+         * fire and damage map views already told the two apart, and
+         * the model now agrees with them.
+         * This one rises while Service::Safety has lapsed and falls
+         * while a fireman keeps reaching the district; at kMaxRisk
+         * the building catches fire -- see ignite().
          */
-        std::int32_t risk = 0;
+        std::int32_t fireRisk = 0;
+
+        /**
+         * @brief How close it is to falling down, out of kMaxRisk.
+         *
+         * The other half of the split: it rises while
+         * Service::Structure has lapsed and falls while an engineer
+         * keeps reaching the district.
+         * At kMaxRisk the building collapses straight to debris --
+         * the fire's ending without the fire, see collapse().
+         */
+        std::int32_t collapseRisk = 0;
 
         /**
          * @brief Ticks until it may send its next walker out.
@@ -140,7 +165,7 @@ namespace antwika::game
         /** @brief Ticks until it loses one of each resource it holds. */
         std::int32_t ticksUntilDrain = kDrainPeriodTicks;
 
-        /** @brief Ticks until it gains a point of risk. */
+        /** @brief Ticks until both risks take their step. */
         std::int32_t ticksUntilRisk = kRiskPeriodTicks;
 
         /**

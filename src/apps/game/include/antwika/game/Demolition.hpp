@@ -85,4 +85,28 @@ namespace antwika::game
         antwika::ecs::Entity entity,
         GridExtent extent);
 
+    /**
+     * @brief Drop one building to debris and turn its occupants out.
+     *
+     * The fire's ending without the fire: what collapse risk running
+     * out comes to.
+     * Identical to ignite() in every rule -- the people leave at the
+     * perimeter, the block stays in the index, a Ruin stands up on
+     * it -- except that the ruin starts as debris, so no fireman is
+     * called and there is nothing to put out.
+     *
+     * @param world Read for the household; the leavers and the ruin
+     * are created here and the building's destruction is staged here.
+     * @param built Consulted for the escape cell and left holding the
+     * block.
+     * @param entity The building to drop; must be alive and carry a
+     * Building and a Cell.
+     * @param extent The bounds the vacancy and gate searches run over.
+     */
+    void collapse(
+        World &world,
+        BuildingIndex &built,
+        antwika::ecs::Entity entity,
+        GridExtent extent);
+
 } // namespace antwika::game
