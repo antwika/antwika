@@ -29,16 +29,20 @@ namespace antwika::game
      * A walker hands stock to every building orthogonally beside the
      * road it is on, in Direction order, until it runs out.
      *
-     * **A walker that carries nothing is nothing to do with this
-     * system.** It used to take a fixed amount of risk off whatever it
-     * walked past, which was service coverage said as a subtraction.
-     * CoverageSystem says it as a state with a lifetime instead, and
-     * age() below asks coverageOf() which way a building's risk steps:
-     * up where Service::Safety or Service::Structure has lapsed, and
-     * back down where a walker is still keeping both of them alive.
-     * So the fire station and the engineer's post stop being cases in
-     * the delivery code and become districts a city does or does not
-     * have.
+     * **The fire and collapse risks only ever climb on their own, and
+     * a visit is what puts them back.** age() adds one to each per
+     * risk period, unconditionally; the relief pass zeroes a
+     * building's fire risk while a fireman stands beside it and its
+     * collapse risk while an engineer does. The risks used to answer
+     * to Service::Safety and Service::Structure coverage instead,
+     * which made the danger a function of a countdown nobody could
+     * see; the two services left with that mechanic.
+     *
+     * **The disease risk is the one that still answers to a
+     * service.** Medicine is a state a doctor's round confers --
+     * Service::Health -- so age() steps it up while the medicine has
+     * run out and back down while there is any. Nothing ends a
+     * building over it yet.
      *
      * **Two walkers delivering to one building in one tick is well
      * defined and it is not "both".** Both read the same committed
@@ -67,15 +71,17 @@ namespace antwika::game
         BuildingSystem &operator=(BuildingSystem &&) = delete;
 
         /**
-         * @brief Deliver, drain, step risk, and demolish what is
-         * lost.
+         * @brief Deliver, drain, step risk, and end what is lost.
          *
-         * A building at kMaxRisk, or a house that has run out of any
-         * resource, is destroyed. Its walker is *not* destroyed with
-         * it: it carries on until its own budget is spent, at which
-         * point WalkerSystem finds no home to path to and removes it.
-         * Its occupants are turned out through demolish(), exactly as
-         * a razed building's are.
+         * A building whose fire or collapse risk reaches kMaxRisk is
+         * lost. Its walker is *not* destroyed with it: it carries on
+         * until its own budget is spent, at which point WalkerSystem
+         * finds no home to path to and removes it.
+         *
+         * **An empty larder ends nothing here any more.** A house out
+         * of food or water empties instead, one person per settler
+         * period -- see PopulationSystem -- and what finally takes an
+         * unserved building is its own risk running all the way up.
          *
          * @param world The world to read from and stage changes into.
          * @param tick The tick being processed; unused.

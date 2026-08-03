@@ -39,4 +39,29 @@ namespace antwika::game
      */
     [[nodiscard]] Color serviceColour(Service service) noexcept;
 
+    /**
+     * @brief The colour the fire risk is written in.
+     *
+     * The risks stopped answering to services, so their inks stopped
+     * being serviceColour()'s -- but a risk line and a map view of the
+     * same risk still have to agree, which is why each ink is named
+     * once here rather than in whichever file paints it.
+     */
+    inline constexpr Color kFireRiskInk{
+        .red = 224, .green = 148, .blue = 78};
+
+    /** @brief The colour the collapse risk is written in. */
+    inline constexpr Color kCollapseRiskInk{
+        .red = 170, .green = 176, .blue = 188};
+
+    /**
+     * @brief The colour the disease risk is written in.
+     *
+     * The medicine's own ink, since medicine is what holds the disease
+     * off: the risk line and the amount line that answers it read as a
+     * pair.
+     */
+    inline constexpr Color kDiseaseRiskInk{
+        .red = 214, .green = 120, .blue = 148};
+
 } // namespace antwika::game

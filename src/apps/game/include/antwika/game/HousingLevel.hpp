@@ -238,19 +238,19 @@ namespace antwika::game
 
             // Shack: somebody brings the water.
             {.desirability = 0,
-             .services = {true, false, false, false},
+             .services = {true, false},
              .goods = {},
              .populationCapacity = 10},
 
             // Hovel: and the food, somewhere worth living.
             {.desirability = 1,
-             .services = {true, false, false, false},
+             .services = {true, false},
              .goods = {25, 0, 0},
              .populationCapacity = 16},
 
             // Cottage: and a doctor.
             {.desirability = 2,
-             .services = {true, true, false, false},
+             .services = {true, true},
              .goods = {50, 0, 0},
              .populationCapacity = 24},
         }};

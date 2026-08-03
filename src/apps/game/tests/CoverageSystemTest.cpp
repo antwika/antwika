@@ -86,14 +86,26 @@ TEST_F(CoverageSystemTest, Update_LeavesEveryOtherServiceAtNothing)
     const auto house = build(
         Cell{.x = 1, .y = 0}, Building{.kind = BuildingKind::House});
 
+    sendWalker(Cell{.x = 0, .y = 0}, WalkerKind::Doctor);
+
+    run(1);
+
+    EXPECT_EQ(coverageOf(world, house, Service::Health), kCoverageFull);
+    EXPECT_EQ(coverageOf(world, house, Service::Water), 0);
+}
+
+// A fireman refreshes nothing: he relieves a risk directly instead.
+// See BuildingSystem's relief pass, and ServiceWalk's table.
+TEST_F(CoverageSystemTest, Update_TakesNothingOffAFiremanPassingBy)
+{
+    const auto house = build(
+        Cell{.x = 1, .y = 0}, Building{.kind = BuildingKind::House});
+
     sendWalker(Cell{.x = 0, .y = 0}, WalkerKind::Fireman);
 
     run(1);
 
-    EXPECT_EQ(coverageOf(world, house, Service::Safety), kCoverageFull);
-    EXPECT_EQ(coverageOf(world, house, Service::Water), 0);
-    EXPECT_EQ(coverageOf(world, house, Service::Health), 0);
-    EXPECT_EQ(coverageOf(world, house, Service::Structure), 0);
+    EXPECT_EQ(coverageOf(world, house), antwika::game::Coverage{});
 }
 
 // The aggregation is std::max against one constant.

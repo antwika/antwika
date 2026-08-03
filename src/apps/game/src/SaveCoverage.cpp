@@ -19,8 +19,13 @@
  * One optional array per building, in Service order, holding the ticks
  * of each service still reaching it. Absent means every one of them is
  * zero, which is both what a building nothing has covered holds and
- * what a version-3 file written before coverage existed says -- so this
- * is additive per docs/schema-versioning.md and carries no migration.
+ * what a file written before coverage existed says.
+ *
+ * Exactly kServiceCount entries, which version 4 shrank from four to
+ * two when Safety and Structure left the service list -- the one
+ * change in this format's history that was breaking rather than
+ * additive, and SaveMigrationV3ToV4 is the truncation that reads the
+ * old width.
  *
  * Bounded by kCoverageFull rather than by what an int32 holds, unlike
  * every other count in this format. The bound is not arithmetic

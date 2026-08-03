@@ -59,7 +59,7 @@ namespace antwika::game
      * one member every persisted document in this code base carries its
      * version in, rather than a name of this format's own.
      */
-    inline constexpr std::uint32_t kSaveFormatVersion = 3;
+    inline constexpr std::uint32_t kSaveFormatVersion = 4;
 
     /**
      * @brief Build the migration chain for the save document format.
@@ -242,6 +242,15 @@ namespace antwika::game
          * file written before the risks were told apart says.
          */
         std::int32_t collapseRisk = 0;
+
+        /**
+         * @brief How close its people are to sickness.
+         *
+         * Additive on collapseRisk's terms exactly: absent means
+         * none, which is what every file written before the disease
+         * risk existed says.
+         */
+        std::int32_t diseaseRisk = 0;
         std::int32_t ticksUntilSpawn = 0;
         std::int32_t ticksUntilDrain = 0;
         std::int32_t ticksUntilRisk = 0;

@@ -636,6 +636,10 @@ TEST(SaveGameTest, SavedBuildingEqualityComparesEveryField)
     cracking.collapseRisk = 9;
     EXPECT_NE(base, cracking);
 
+    auto sickening = base;
+    sickening.diseaseRisk = 9;
+    EXPECT_NE(base, sickening);
+
     auto spawning = base;
     spawning.ticksUntilSpawn = 0;
     EXPECT_NE(base, spawning);
@@ -675,7 +679,7 @@ TEST(SaveGameTest, RoundTripsABuildingsCoverage)
     save.buildings = {antwika::game::SavedBuilding{
         .at = {.x = 3, .y = 4},
         .kind = BuildingKind::House,
-        .coverage = {kCoverageFull, 0, 12, 3}}};
+        .coverage = {kCoverageFull, 12}}};
 
     const auto encoded = saveGameToJson(save);
 
@@ -701,7 +705,7 @@ TEST(SaveGameTest, RejectsCoverageAboveWhatAWalkerCouldEverLeave)
 {
     SaveGame save;
     save.buildings = {antwika::game::SavedBuilding{
-        .at = {.x = 1, .y = 1}, .coverage = {kCoverageFull + 1, 0, 0, 0}}};
+        .at = {.x = 1, .y = 1}, .coverage = {kCoverageFull + 1, 0}}};
 
     const auto encoded = saveGameToJson(save);
 
@@ -796,7 +800,7 @@ TEST(SaveGameTest, RejectsACoverageArrayThatIsNotOnePerService)
     save.buildings = {antwika::game::SavedBuilding{.at = {.x = 1, .y = 1}}};
 
     auto encoded = saveGameToJson(save);
-    encoded["buildings"][0]["coverage"] = {1, 2};
+    encoded["buildings"][0]["coverage"] = {1, 2, 3};
 
     EXPECT_THROW((void)saveGameFromJson(encoded), SaveFormatError);
 }
@@ -853,7 +857,7 @@ TEST(SaveGameTest, TakesEachBuildingsCoverageFromTheWorld)
     world.add<Cell>(house, Cell{.x = 2, .y = 2});
     world.add<Building>(house, Building{.kind = BuildingKind::House});
     antwika::game::setCoverage(
-        world, house, antwika::game::Coverage{.ticksLeft = {4, 5, 6, 7}});
+        world, house, antwika::game::Coverage{.ticksLeft = {4, 5}});
     world.commit();
 
     const auto save = saveGameOf(
@@ -862,7 +866,7 @@ TEST(SaveGameTest, TakesEachBuildingsCoverageFromTheWorld)
 
     ASSERT_EQ(save.buildings.size(), 1U);
     EXPECT_EQ(save.buildings[0].coverage,
-              (std::array<std::int32_t, kServiceCount>{4, 5, 6, 7}));
+              (std::array<std::int32_t, kServiceCount>{4, 5}));
 }
 
 // The member has to be in the comparison.
@@ -870,7 +874,7 @@ TEST(SaveGameTest, TakesEachBuildingsCoverageFromTheWorld)
 TEST(SaveGameTest, SavedBuildingEqualityComparesTheCoverage)
 {
     const antwika::game::SavedBuilding base{
-        .at = {.x = 1, .y = 1}, .coverage = {1, 2, 3, 4}};
+        .at = {.x = 1, .y = 1}, .coverage = {1, 2}};
 
     EXPECT_EQ(base, base);
 
@@ -1836,4 +1840,31 @@ TEST(SaveGameTest, WritesNoCollapseRiskMemberAtNothing)
 
     EXPECT_FALSE(encoded.at("buildings").at(0).contains("collapseRisk"));
     EXPECT_EQ(saveGameFromJson(encoded).buildings[0].collapseRisk, 0);
+}
+
+TEST(SaveGameTest, RoundTripsASickBuildingsDiseaseRisk)
+{
+    SaveGame save;
+    save.buildings = {antwika::game::SavedBuilding{
+        .at = {.x = 4, .y = 4},
+        .kind = BuildingKind::House,
+        .diseaseRisk = 23}};
+
+    const auto loaded = saveGameFromJson(saveGameToJson(save));
+
+    EXPECT_EQ(loaded.buildings, save.buildings);
+}
+
+// Absent and zero read the same, so the smaller file is written.
+// Which is also what every file written before the risk holds.
+TEST(SaveGameTest, WritesNoDiseaseRiskMemberAtNothing)
+{
+    SaveGame save;
+    save.buildings = {antwika::game::SavedBuilding{
+        .at = {.x = 4, .y = 4}, .kind = BuildingKind::House}};
+
+    const auto encoded = saveGameToJson(save);
+
+    EXPECT_FALSE(encoded.at("buildings").at(0).contains("diseaseRisk"));
+    EXPECT_EQ(saveGameFromJson(encoded).buildings[0].diseaseRisk, 0);
 }

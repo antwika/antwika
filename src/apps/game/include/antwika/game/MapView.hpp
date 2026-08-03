@@ -30,9 +30,9 @@ namespace antwika::game
         Desirability,   ///< How nice it is to live on each cell.
         Food,           ///< How well fed each building is.
         Water,          ///< How well Service::Water still reaches.
-        Health,         ///< How well Service::Health still reaches.
-        Fire,           ///< How well Service::Safety still reaches.
-        Damage,         ///< How well Service::Structure still reaches.
+        Medicine,       ///< How well Service::Health still reaches.
+        Fire,           ///< How close each building is to catching fire.
+        Damage,         ///< How close each building is to falling down.
     };
 
     /**
@@ -59,8 +59,9 @@ namespace antwika::game
      *
      * **The one crossing between a view and a service**, so the
      * dropdown's list and what gets painted cannot name two different
-     * things. Four of the seven views are a service each; the other
-     * three are not services at all.
+     * things. Two of the seven views are a service each; the fire and
+     * damage views paint a building's own risk instead, since the
+     * risks stopped answering to coverage -- see OverlayField.
      *
      * @param view The view to ask about.
      * @return The service it paints, or nullopt.
@@ -70,13 +71,13 @@ namespace antwika::game
     {
         constexpr std::array<std::optional<Service>, kMapViewCount>
             services{
-                std::nullopt,        // Normal
-                std::nullopt,        // Desirability
-                std::nullopt,        // Food
-                Service::Water,      // Water
-                Service::Health,     // Health
-                Service::Safety,     // Fire
-                Service::Structure}; // Damage
+                std::nullopt,       // Normal
+                std::nullopt,       // Desirability
+                std::nullopt,       // Food
+                Service::Water,     // Water
+                Service::Health,    // Medicine
+                std::nullopt,       // Fire
+                std::nullopt};      // Damage
 
         return services[mapViewIndex(view) % kMapViewCount];
     }
@@ -101,7 +102,7 @@ namespace antwika::game
                 std::nullopt,     // Desirability
                 Resource::Food,   // Food
                 std::nullopt,     // Water
-                std::nullopt,     // Health
+                std::nullopt,     // Medicine
                 std::nullopt,     // Fire
                 std::nullopt};    // Damage
 
@@ -155,7 +156,8 @@ namespace antwika::game
         "every service must have a view that paints it");
 
     static_assert(!mapViewService(MapView::Normal).has_value());
-    static_assert(mapViewService(MapView::Fire) == Service::Safety);
+    static_assert(mapViewService(MapView::Medicine) == Service::Health);
+    static_assert(!mapViewService(MapView::Fire).has_value());
     static_assert(mapViewResource(MapView::Food) == Resource::Food);
 
     /**
@@ -175,7 +177,7 @@ namespace antwika::game
             MessageId::ViewDesirability,
             MessageId::ViewFood,
             MessageId::ViewWater,
-            MessageId::ViewHealth,
+            MessageId::ViewMedicine,
             MessageId::ViewFire,
             MessageId::ViewDamage};
 

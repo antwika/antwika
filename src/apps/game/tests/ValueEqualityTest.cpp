@@ -112,7 +112,7 @@ namespace
         expectMemberCompared(
             base, [](BuildingView &b) { b.coverage[0] = 99; });
         expectMemberCompared(
-            base, [](BuildingView &b) { b.coverage[3] = 99; });
+            base, [](BuildingView &b) { b.coverage[1] = 99; });
         expectMemberCompared(
             base,
             [](BuildingView &b) { b.level = HousingLevel::Cottage; });
@@ -143,7 +143,7 @@ namespace
         expectMemberCompared(
             base, [](BuildingSprite &b) { b.employed = 3; });
         expectMemberCompared(
-            base, [](BuildingSprite &b) { b.coverage[3] = 99; });
+            base, [](BuildingSprite &b) { b.coverage[1] = 99; });
         expectMemberCompared(
             base,
             [](BuildingSprite &b) { b.level = HousingLevel::Cottage; });
@@ -153,6 +153,8 @@ namespace
             base, [](BuildingSprite &b) { b.fireRisk = 42; });
         expectMemberCompared(
             base, [](BuildingSprite &b) { b.collapseRisk = 42; });
+        expectMemberCompared(
+            base, [](BuildingSprite &b) { b.diseaseRisk = 42; });
     }
 
     [[nodiscard]] SceneSnapshot populatedSnapshot()
@@ -480,6 +482,8 @@ namespace
         expectMemberCompared(
             base, [](Building &b) { b.collapseRisk = 99; });
         expectMemberCompared(
+            base, [](Building &b) { b.diseaseRisk = 99; });
+        expectMemberCompared(
             base, [](Building &b) { b.ticksUntilSpawn = 99; });
         expectMemberCompared(
             base, [](Building &b) { b.ticksUntilDrain = 99; });
@@ -525,7 +529,7 @@ namespace
     {
         const HousingRequirement base{
             .desirability = 2,
-            .services = {true, false, true, false},
+            .services = {true, true},
             .goods = {10, 0, 0},
             .populationCapacity = 8};
 
@@ -535,7 +539,7 @@ namespace
             base,
             [](HousingRequirement &r) { r.services[0] = false; });
         expectMemberCompared(
-            base, [](HousingRequirement &r) { r.services[2] = false; });
+            base, [](HousingRequirement &r) { r.services[1] = false; });
         expectMemberCompared(
             base, [](HousingRequirement &r) { r.goods[0] = 0; });
         expectMemberCompared(

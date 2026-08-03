@@ -15,7 +15,9 @@
 #include "antwika/game/Building.hpp"
 #include "antwika/game/BuildingIndex.hpp"
 #include "antwika/game/Cost.hpp"
+#include "antwika/game/Coverage.hpp"
 #include "antwika/game/Ruin.hpp"
+#include "antwika/game/Service.hpp"
 #include "antwika/game/GameState.hpp"
 #include "antwika/game/LiveGrid.hpp"
 #include "antwika/game/Camera.hpp"
@@ -1054,4 +1056,36 @@ TEST_F(GridSinkTest, Place_RefusesABuildingOnDebris)
 
     EXPECT_EQ((world.view<antwika::game::Building, Cell>().size()), 0U);
     EXPECT_EQ(state.money, before);
+}
+
+// A house is put up watered, as it is put up with a little food.
+// A dry house takes nobody in, so no district could start otherwise.
+TEST_F(GridSinkTest, LeftPress_PlacesAHouseAlreadyWatered)
+{
+    overlay.select(BuildTool::House);
+    clickAt(Cell{.x = 2, .y = 3}, MouseButton::Left);
+    world.commit();
+
+    const auto houses =
+        world.view<antwika::game::Building, Cell>();
+    ASSERT_EQ(houses.size(), 1U);
+    EXPECT_EQ(
+        antwika::game::coverageOf(
+            world, *houses.begin(), antwika::game::Service::Water),
+        antwika::game::kCoverageFull);
+}
+
+// Only a house, since only a household drinks the water.
+TEST_F(GridSinkTest, LeftPress_PlacesAFarmWithNoCoverageAtAll)
+{
+    overlay.select(BuildTool::Farm);
+    clickAt(Cell{.x = 2, .y = 3}, MouseButton::Left);
+    world.commit();
+
+    const auto farms =
+        world.view<antwika::game::Building, Cell>();
+    ASSERT_EQ(farms.size(), 1U);
+    EXPECT_EQ(
+        antwika::game::coverageOf(world, *farms.begin()),
+        antwika::game::Coverage{});
 }

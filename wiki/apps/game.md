@@ -64,7 +64,8 @@ They used to be one enumeration, which gave every per-building table a `Road` en
 A house consumes what is delivered to it, and most other kinds send out one `WalkerKind`.
 Both facts used to be arithmetic over a shared declaration order; they are tables now, for the reason the round-one vocabulary section below gives.
 
-`BuildingSystem` runs deliveries, drain, the two risks and all three of a building's endings: maxed fire risk ignites it, maxed collapse risk drops it straight to debris, and a starved house falls down and frees its ground.
+`BuildingSystem` runs deliveries, drain, the three risks and both of a building's endings: maxed fire risk ignites it and maxed collapse risk drops it straight to debris.
+A starved house is no longer an ending at all -- it stands and empties instead, one person per settler period, and what finally takes a neglected building is its own risk running all the way up (see the risk section below).
 Every period derives from one `kTicksPerSecond` rather than a constant per rule, and each countdown lives in the building's own component so two buildings put up a tick apart never fall into lockstep.
 
 A building with no road beside it holds its countdown at zero rather than resetting it, so laying a road beside a long-neglected source releases one walker and not a queue of them, and `kWalkerLimit` stays as a backstop.
@@ -261,14 +262,15 @@ Each button is a fixed width for the same kind of reason, since a column as wide
 No `game.*` or `ui.*` event exists for opening it, closing it or choosing from it, exactly as none exists for the modal.
 
 **There is a second dropdown beside it, and it chooses which picture of the city is showing.**
-`MapView` is seven values — the city itself, plus desirability, food, water, health, fire and damage — and every one but the first paints one number about the city over the ground.
-Which two of those seven a value paints is `mapViewService()` and `mapViewResource()`, two tables held apart by a `static_assert` for `serviceConferredBy()`'s reason exactly: a good is an amount and a service is a state, and a view answers one or the other and never both.
+`MapView` is seven values — the city itself, plus desirability, food, water, medicine, fire and damage — and every one but the first paints one number about the city over the ground.
+Which of those a value paints is `mapViewService()` and `mapViewResource()`, two tables held apart by a `static_assert` for `serviceConferredBy()`'s reason exactly: a good is an amount and a service is a state, and a view answers one or the other and never both.
+The fire and damage views answer *neither* now -- they paint a building's own `fireRisk` and `collapseRisk` out of `kMaxRisk`, since the risks stopped answering to coverage, so a strongly painted block is one close to its ending, which is what somebody opens either view to find.
 A second `static_assert` says every `Service` has a view of its own, so a service nobody can look at is a build failure rather than a countdown only the code can see.
 
 **What each view paints has two shapes, and which one it has falls out of those tables.**
 Desirability is genuinely per cell and is read straight off the field the `"serve"` phase rebuilt.
-Everything else is a fact about a *building* — what is on its shelves, how much longer a service still reaches it — and is painted over every cell of that building's block, because a block is the smallest thing any of those numbers is true of.
-`OverlayField` is the crossing: a percentage per cell, sparse and ordered by `Cell` exactly as `DesirabilityField` is, so turning ticks of coverage, units of food and a desirability into one scale happens in one place.
+Everything else is a fact about a *building* — what is on its shelves, how much longer a service still reaches it, how close it is to being lost — and is painted over every cell of that building's block, because a block is the smallest thing any of those numbers is true of.
+`OverlayField` is the crossing: a percentage per cell, sparse and ordered by `Cell` exactly as `DesirabilityField` is, so turning ticks of coverage, units of food, a risk and a desirability into one scale happens in one place.
 
 **It is painted as the ground sprite tinted rather than as rectangles**, for the reason the ghost's border is four lines: a cell is a diamond and `drawRect()` takes an upright box.
 The scrim goes over *every* cell and the value over the ones that have one — a district nothing reaches is exactly what somebody opens an overlay to find, so it has to be visibly dark rather than merely unpainted.
@@ -364,10 +366,13 @@ A walker shows the one resource `carriedResource()` names, empty bar included, a
 **Hovering is `hoverFor()`, and it is `ghostFor()`'s sibling in every way that matters**: it reads `input::PointerHintChannel`, it resolves the pixel through the same `screenToCell()` a click goes through, it tests a building across its whole block, and what it answers may decide what is drawn and nothing else.
 
 `readoutPanel()` lays that answer out into a plain value of a box and coloured lines, painted through `IRenderer` rather than through `antwika::ui` — deliberately, because this app's UI is described and resolved inside the tick path by `UiSink`, and taking a panel driven by an unrecorded hint through that path is precisely what the channel forbids.
+It is measured and drawn at `kReadoutTextScale`, twice the toolbar's, because a hover panel is read at a glance over the pointer rather than studied along a bar — and the one constant serves layout and paint alike, so the scale cannot become a second layout.
 The panel lists the resources the bars gauge rather than every number a building holds, so a reader is never told two stories about one building — and it groups them under a `resources` heading, each line two spaces in, so the amounts read as one section rather than a run of loose lines.
-**Every building also carries a `risk` section, and it is the panel's one always-on section**: `fire N%` and `collapse N%`, each line wearing the colour of the service that holds it off, shown even at zero.
-A lapsed service is omitted because absent and zero coverage are one state; a risk of nothing is a measured fact somebody watching a district wants, and a fire the panel could never warn of is exactly how the section came to exist.
-The two lines read straight off `BuildingSprite`'s copies of the risks, which live on the sprite and not the view for stock's reason: a divergence in a risk surfaces as a divergence in what burnt within a tick of mattering.
+**The `water` and `medicine` amounts sit in that same section, on every kind of building and said even at zero.**
+Both are the coverage countdowns scaled onto the stock lines' own `N/100` range and format rather than the percent they used to be: a dry house empties, medicine is what holds the disease off, and zero is exactly the state a watcher wants warned of — so neither line is ever omitted, where a lapsed service used to be.
+**Every building also carries a `risk` section, and it is the panel's other always-on section**: `fire N%`, `collapse N%` and `disease N%`, shown even at zero, each line wearing its own ink — named once beside `serviceColour()` so a risk line and the map view painted from the same risk agree, with the disease line in the medicine's own pink since the two read as a pair.
+A risk of nothing is a measured fact somebody watching a district wants, and a fire the panel could never warn of is exactly how the section came to exist.
+The three lines read straight off `BuildingSprite`'s copies of the risks, which live on the sprite and not the view for stock's reason: a divergence in a risk surfaces as a divergence in what burnt within a tick of mattering.
 Its captions are a table of their own rather than the names a save file writes, since a persisted name may not change to suit a caption.
 
 **A household's tier and how full its house is are listed on one `housesPeople()` test**, because both are facts about a household and a well has none — a well is on `HousingLevel::Tent` and houses nobody, and saying either about it would be saying something untrue.
@@ -382,7 +387,7 @@ The occupancy reads `people 3/10`, against `populationCapacityOf()` rather than 
 `Resource` is `Food`, `Clay` and `Pottery`.
 **Water left, and that is the load-bearing part.** A good is an amount that moves from one building to another, and what one gains the other loses; a service is a state a walker confers on what it passes, and a well is no poorer for having watered a house.
 Water as a good needed a delivery per house per drain; as `Service::Water` it needs a walker to keep *reaching* a district, which is the thing a road network is actually for.
-`Service.hpp` names the four -- water, health, safety and structure -- and nothing in this increment reads them beyond naming them: publishing the enumeration first is what lets a coverage component and the systems over it be written against something fixed.
+`Service.hpp` named four at first -- water, health, safety and structure -- and is down to two, water and health, since the fire and collapse risks stopped answering to coverage; publishing the enumeration first is what let a coverage component and the systems over it be written against something fixed.
 
 `sustains()` is the other half of that split.
 Before, a house was lost when it ran out of *anything* it held, which was exact while both goods were things a walker handed over.
@@ -416,7 +421,11 @@ All three of its changes are genuinely breaking rather than additive -- the walk
 A version 2 stock of `[food, water]` reads as `[food, 0, 0]`: the food is what it was, the water was never a good, and nobody has carted anything to that building yet.
 `SaveGame.cpp` is now a spine that states the document's shape once, with `src/SaveSections.hpp` declaring the pieces it is assembled from -- so a later slice of the format is a file of its own plus three lines in the spine, rather than an edit in the middle of a six-hundred-line function.
 
-## Service coverage, desirability, and why risk stopped being a subtraction
+**Version 4 is the risk rework's bump, and `SaveMigrationV3ToV4.cpp` is its one step.**
+Safety and Structure leaving the service list shrank every building's `"coverage"` array from four entries to two, which is breaking on exactly the terms the kind renames were; the migration truncates the array, since water and health kept the slots they had and the dropped countdowns name nothing any build still reads.
+The `"diseaseRisk"` member rode along additively -- optional, written only when there is any, absent meaning none in every file written before it existed -- exactly as `"collapseRisk"` did at the risk split.
+
+## Service coverage, desirability, and how a risk answers to a visit
 
 **A service is a state with a lifetime, and a good is an amount.**
 That distinction is the whole of this section.
@@ -434,15 +443,16 @@ A coverage that decayed on its own period would have needed one too; a coverage 
 **The component is optional, and an absent one means uncovered rather than unknown.**
 `coverageOf()` answers zero for a building that has none, which is what lets a housing rule, a rating or a hover panel be written against this before any well exists -- and it is exactly what a version-3 save written before coverage existed says, so the format grew one optional `"coverage"` array and no migration.
 `setCoverage()` is the one writer, because "add a component or set an existing one" is a decision rather than a detail: `World::add()` is staged and `World::set()` refuses an entity that has none yet, and asking once is what keeps a building from acquiring an all-zero component just to simplify a call site.
-A building is given one the first time somebody reaches it and never before.
+A building is given one the first time somebody reaches it -- with one exception: **a house is placed already holding a full water countdown**, as it is placed holding a little food, since a dry house takes nobody in (see the population section) and no district could otherwise start before its well's first carrier came round.
 
-**Risk moved onto coverage but stayed in `BuildingSystem`.**
-A fireman used to subtract `kRiskRelief` from whatever he walked past, which was coverage said as a subtraction: it made "somebody came recently" the only thing that mattered but expressed it as an amount.
-`BuildingSystem::age()` now asks `coverageOf()` which way each risk steps, and the fire station and the engineer's post stop being arms in the delivery code.
-**The risks are two now rather than one, and each answers to its own service**: `fireRisk` rises while `Service::Safety` has lapsed and falls while a fireman keeps reaching the district, and `collapseRisk` does the same against `Service::Structure` -- the one shared value they used to be climbed when *either* lapsed, so no readout could honestly say which danger a building was in, though the fire and damage map views already told the two apart.
-The two step on one shared period and one shared `kMaxRisk`, so the hover panel's two percentages mean the same thing; maxed fire risk ignites the building and maxed collapse risk drops it straight to debris, the fire's ending without the fire -- see the fire section below.
-Putting the *step* in `CoverageSystem` was tried and rejected: the risks are fields of `Building`, `age()` is the one place a building's countdowns advance and the one place a lost building is read off the amounts this tick produced, and splitting it would have meant two systems in two phases writing one component with a tick between the risk that finished a building and the pass that noticed.
-The coverage `age()` reads is therefore the previous tick's, which is one tick out of five hundred on a countdown whose only job is to say whether somebody came recently.
+**The fire and collapse risks only ever climb on their own, and a visit is what puts them back.**
+They used to answer to `Service::Safety` and `Service::Structure` coverage -- rising while a countdown had lapsed and falling while it held -- which made a building's danger a function of a clock nobody could see, and both services left with that mechanic.
+`BuildingSystem::age()` now adds one to each per risk period, unconditionally, and a relief pass in the same system zeroes a building's `fireRisk` while a fireman stands beside it and its `collapseRisk` while an engineer does; the relief runs after the step, so a saviour on the very tick a risk maxes still saves the building.
+Zeroing is idempotent, which is the whole of the relief pass's ordering argument -- two firemen beside one building leave what one leaves.
+**The disease risk is the third, and the one that still answers to a service**: medicine is a state a doctor's round confers -- `Service::Health` -- so `diseaseRisk` rises by one per period while the medicine has run out and falls by one while there is any.
+Nothing ends a building over it yet; it is a warning read off the hover panel.
+The three step on one shared period and one shared `kMaxRisk`, so the hover panel's percentages mean the same thing on every line; maxed fire risk ignites the building and maxed collapse risk drops it straight to debris, the fire's ending without the fire -- see the fire section below.
+The coverage the disease step reads is the previous tick's, which is one tick out of five hundred on a countdown whose only job is to say whether somebody came recently.
 
 **Desirability is a sum, and that is its whole determinism argument.**
 `DesirabilityField` is rebuilt every tick from the buildings by `DesirabilitySystem`, as a linear integer falloff over Chebyshev distance from each block.
@@ -454,8 +464,8 @@ It is rebuilt rather than edited because a field kept up to date by adding a con
 A notification would let a panel react without polling.
 It is rejected for the reason [`Events.hpp`](../../src/apps/game/include/antwika/game/Events.hpp) gives at length: coverage is a function of walkers, which are a function of buildings, which are a function of clicks, so it is regenerable at every step -- and a notification is a picture rather than an input.
 
-`BuildingView` carries the coverage and `GameSummary` therefore compares it, because whether a district is served decides whether it gains risk and, later, whether it grows; a run and its replay disagreeing about that is a divergence, and the summary is where a divergence is caught.
-`BuildingSprite` carries a copy so the hover panel can list it, and the panel lists a service only where it is above zero -- risk is a fact about any building, so the question applies to every kind, and an absent line and a line reading nothing say the same thing.
+`BuildingView` carries the coverage and `GameSummary` therefore compares it, because whether a district is served decides whether its people stay and whether its houses grow; a run and its replay disagreeing about that is a divergence, and the summary is where a divergence is caught.
+`BuildingSprite` carries a copy so the hover panel can list it -- as the `water` and `medicine` amounts under the resources heading, said even at zero, since zero is exactly the state a watcher wants warned of.
 
 ## The goods chain, and why a market has a buyer of its own
 
@@ -562,6 +572,8 @@ That is the opposite call from stock, deliberately, and for the reason coverage 
 
 **People are the resource everything else competes for, and that is the whole of this workstream.**
 A house with a road beside it, standing on ground its tier finds acceptable and with room left, takes one person in every `kSettlerPeriodTicks`; one below its tier's threshold, or holding more than its tier can, loses one on the same countdown and stops at nobody.
+**A house out of food or out of water sheds its people the very same way**, one per period through the same `turnOut()`, and takes nobody new in while it cannot keep them -- which replaced the demolition an empty larder used to be, so hunger costs a city its people rather than its buildings, and what finally takes a neglected house is its own risk maxing.
+Water is asked as the housing rules ask it -- does `Service::Water` still reach at all -- which is why a house is *placed* already holding a full water countdown, exactly as it is placed holding a little food: a dry house takes nobody in, and no district could otherwise start before its well's first carrier came round.
 The sum of everybody in the city is a workforce, every workplace says through `workersWantedBy()` how many of them it wants, and what it actually gets decides how fast it works.
 
 **A workplace nobody works at does nothing at all, and one half-staffed takes twice as long.**
@@ -767,7 +779,7 @@ Extinguishing does not save the building; it shortens the fire, and what it leav
 The two systems both write `Ruin` and never race, because they write from different phases and the commit sits between -- the same trap the phase list has answered twice before.
 
 **Nothing about a fire is an event, and nothing about one bumped the save format's version.**
-A fire is a pure function of risk, which is a function of coverage, which is a function of the clicks that built the district -- recording one would burn twice on replay, which is `Events.hpp`'s rule verbatim.
+A fire is a pure function of risk, which is a function of the walkers whose visits relieve it, which are a function of the clicks that built the district -- recording one would burn twice on replay, which is `Events.hpp`'s rule verbatim.
 The save document grew an optional top-level `"ruins"` array and an optional `"fireCall"` index on a walker, both absent from every file written before anything burnt; a fire call to a ruin already out is deliberately *not* refused, because a fire may burn out a tick before its fireman reads the world, so that is a state a live run passes through.
 `GameSummary` carries the ruins, since a building that burns leaves the buildings list -- without them a live run and its replay could disagree about a whole district having burned and still compare equal.
 `CityGrid` carries them across a city switch, block and index entries included, and the hover readout says `on fire` or `debris` and stops: the state is the one thing a reader can act on, and the building it was is gone either way.

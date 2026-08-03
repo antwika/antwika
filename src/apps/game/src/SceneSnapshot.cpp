@@ -101,7 +101,8 @@ namespace antwika::game
                     .population = living,
                     .employed = employedOf(world, entity),
                     .fireRisk = building.fireRisk,
-                    .collapseRisk = building.collapseRisk});
+                    .collapseRisk = building.collapseRisk,
+                    .diseaseRisk = building.diseaseRisk});
         }
 
         for (const auto entity : world.view<Ruin, Cell>())

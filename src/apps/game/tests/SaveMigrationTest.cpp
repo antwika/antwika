@@ -19,9 +19,11 @@
 #include "antwika/game/SaveFormatError.hpp"
 #include "antwika/game/SaveGame.hpp"
 #include "SaveMigrationV2ToV3.hpp"
+#include "SaveMigrationV3ToV4.hpp"
 
 using antwika::game::BuildingKind;
 using antwika::game::Cell;
+using antwika::game::DropRiskServices;
 using antwika::game::kSaveFormatVersion;
 using antwika::game::RenameToServices;
 using antwika::game::SaveFormatError;
@@ -400,4 +402,72 @@ TEST(SaveMigrationTest, TheVersionTwoStepIsOneStepAndSaysWhichOne)
 
     EXPECT_EQ(step.fromVersion(), 2U);
     EXPECT_EQ(step.toVersion(), 3U);
+}
+
+// A version 3 file counted coverage for four services.
+// Water and health kept their slots; the truncation drops the rest.
+TEST(SaveMigrationTest, TruncatesAVersionThreeCoverageToTwoServices)
+{
+    nlohmann::json document;
+    document[std::string(kSchemaVersionKey)] = 3;
+    document["buildings"] = nlohmann::json::array();
+    document["buildings"].push_back(
+        {{"coverage", nlohmann::json::array({40, 30, 20, 10})}});
+    document["buildings"].push_back(nlohmann::json::object());
+
+    standardSaveMigrations().migrate(document);
+
+    EXPECT_EQ(
+        document.at(std::string(kSchemaVersionKey)).get<std::uint32_t>(),
+        kSaveFormatVersion);
+    EXPECT_EQ(
+        document.at("buildings").at(0).at("coverage"),
+        nlohmann::json::array({40, 30}));
+    EXPECT_FALSE(document.at("buildings").at(1).contains("coverage"));
+}
+
+// The step is driven on its own here, on the version 2 step's terms.
+// A malformed document is left alone rather than thrown over.
+TEST(SaveMigrationTest, TheVersionThreeStepLeavesAMalformedEntryAlone)
+{
+    const DropRiskServices step;
+
+    nlohmann::json document;
+    document["buildings"] = nlohmann::json::array();
+    document["buildings"].push_back({{"coverage", "not an array"}});
+    document["buildings"].push_back(
+        {{"coverage", nlohmann::json::array({1, 2})}});
+
+    const auto before = document;
+    step.apply(document);
+
+    EXPECT_EQ(document, before);
+}
+
+// A document with no buildings at all is one with nothing to do.
+TEST(SaveMigrationTest, TheVersionThreeStepLeavesNoBuildingsAlone)
+{
+    const DropRiskServices step;
+
+    nlohmann::json missing;
+    missing["seed"] = 1;
+
+    nlohmann::json wrong;
+    wrong["buildings"] = "not an array";
+
+    auto beforeMissing = missing;
+    auto beforeWrong = wrong;
+    step.apply(missing);
+    step.apply(wrong);
+
+    EXPECT_EQ(missing, beforeMissing);
+    EXPECT_EQ(wrong, beforeWrong);
+}
+
+TEST(SaveMigrationTest, TheVersionThreeStepIsOneStepAndSaysWhichOne)
+{
+    const DropRiskServices step;
+
+    EXPECT_EQ(step.fromVersion(), 3U);
+    EXPECT_EQ(step.toVersion(), 4U);
 }

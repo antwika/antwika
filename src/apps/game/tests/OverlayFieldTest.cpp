@@ -32,6 +32,7 @@ namespace
     using antwika::game::GridExtent;
     using antwika::game::kCoverageFull;
     using antwika::game::kMapViewCount;
+    using antwika::game::kMaxRisk;
     using antwika::game::kStockCapacity;
     using antwika::game::MapView;
     using antwika::game::overlayColour;
@@ -136,7 +137,7 @@ TEST_F(OverlayFieldTest, AServiceViewSkipsWhatNobodyHasReached)
     build(Cell{.x = 2, .y = 2}, BuildingKind::Well);
 
     EXPECT_TRUE(
-        overlayFieldOf(world, MapView::Health, desirability, kExtent)
+        overlayFieldOf(world, MapView::Medicine, desirability, kExtent)
             .empty());
 }
 
@@ -192,29 +193,53 @@ TEST_F(OverlayFieldTest, EveryViewIsPaintedInAColourOfItsOwn)
     EXPECT_EQ(seen.size(), kMapViewCount);
 }
 
-// Read off serviceColour() rather than named a second time.
-// So a coverage line and the map painted from it agree.
+// Read off serviceColour() and the risk inks, never a second time.
+// So an amount or a risk line and the map painted from it agree.
 TEST_F(OverlayFieldTest, AServiceViewTakesThatServicesOwnColour)
 {
     EXPECT_EQ(
-        overlayColour(MapView::Fire),
-        antwika::game::serviceColour(Service::Safety));
+        overlayColour(MapView::Water),
+        antwika::game::serviceColour(Service::Water));
+    EXPECT_EQ(overlayColour(MapView::Fire), antwika::game::kFireRiskInk);
+    EXPECT_EQ(
+        overlayColour(MapView::Damage),
+        antwika::game::kCollapseRiskInk);
     EXPECT_EQ(
         overlayColour(MapView::Food),
         antwika::game::resourceColour(antwika::game::Resource::Food));
 }
 
+// The risk views paint a building's own risk, out of kMaxRisk.
+// A building in no danger says nothing rather than zero.
+// So an opened view shows the endangered blocks and only them.
+TEST_F(OverlayFieldTest, TheDamageViewPaintsTheCollapseRiskAlone)
+{
+    const auto cracking = build(Cell{.x = 1, .y = 1}, BuildingKind::House);
+    build(Cell{.x = 4, .y = 4}, BuildingKind::House);
+
+    auto building = world.get<Building>(cracking);
+    building.collapseRisk = kMaxRisk / 2;
+    building.fireRisk = kMaxRisk;
+    world.set<Building>(cracking, building);
+    world.commit();
+
+    const auto field =
+        overlayFieldOf(world, MapView::Damage, desirability, kExtent);
+
+    EXPECT_EQ(field.size(), 1U);
+    EXPECT_EQ(field.at(Cell{.x = 1, .y = 1}), 50);
+}
+
 // A block reaching past the edge is clipped rather than refused.
 // A scene draws what it is handed, and only what is on the grid.
-TEST_F(OverlayFieldTest, AServiceViewClipsABlockToTheExtent)
+TEST_F(OverlayFieldTest, ARiskViewClipsABlockToTheExtent)
 {
     const auto farm =
         build(Cell{.x = kExtent.width - 1, .y = 0}, BuildingKind::Farm);
 
-    auto coverage = antwika::game::Coverage{};
-    coverage.ticksLeft[antwika::game::serviceIndex(Service::Safety)] =
-        kCoverageFull;
-    setCoverage(world, farm, coverage);
+    auto burning = world.get<Building>(farm);
+    burning.fireRisk = kMaxRisk;
+    world.set<Building>(farm, burning);
     world.commit();
 
     const auto field =

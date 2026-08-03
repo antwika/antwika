@@ -42,21 +42,20 @@ namespace antwika::game
     /**
      * @brief The most risk a building can carry before it is lost.
      *
-     * One ceiling for both risks, so the two readouts share a scale
-     * and a percentage means the same thing on either line.
+     * One ceiling for every risk, so the readouts share a scale and a
+     * percentage means the same thing on any line.
      */
     inline constexpr std::int32_t kMaxRisk = 100;
 
     /**
      * @brief Ticks between one step of the risks and the next.
      *
-     * One a second, so a building in a district nobody serves reaches
-     * kMaxRisk after a hundred seconds and is lost -- and a served one
-     * works its way back down at the same rate.
-     * One period for both risks rather than one each: the point of a
+     * One a second, so a building nobody visits reaches kMaxRisk after
+     * a hundred seconds and is lost.
+     * One period for every risk rather than one each: the point of a
      * per-building countdown is that two *buildings* stay out of
-     * lockstep, and a building's own two risks stepping together is
-     * no lockstep at all.
+     * lockstep, and a building's own risks stepping together is no
+     * lockstep at all.
      */
     inline constexpr std::int32_t kRiskPeriodTicks = kTicksPerSecond;
 
@@ -129,28 +128,39 @@ namespace antwika::game
         /**
          * @brief How close it is to catching fire, out of kMaxRisk.
          *
-         * **Two risks rather than one, and each answers to its own
-         * service.** The one shared value they used to be climbed
-         * whenever *either* Safety or Structure lapsed, so no readout
-         * could honestly say which danger a building was in -- the
-         * fire and damage map views already told the two apart, and
-         * the model now agrees with them.
-         * This one rises while Service::Safety has lapsed and falls
-         * while a fireman keeps reaching the district; at kMaxRisk
-         * the building catches fire -- see ignite().
+         * **A risk only ever climbs on its own; a visit is what puts
+         * it back.** It used to fall while a coverage countdown said a
+         * fireman came recently, which made the danger a function of a
+         * clock nobody could see.
+         * Now every risk period adds one, unconditionally, and a
+         * fireman standing beside the building zeroes it -- so the
+         * only safe district is one somebody keeps walking through.
+         * At kMaxRisk the building catches fire -- see ignite().
          */
         std::int32_t fireRisk = 0;
 
         /**
          * @brief How close it is to falling down, out of kMaxRisk.
          *
-         * The other half of the split: it rises while
-         * Service::Structure has lapsed and falls while an engineer
-         * keeps reaching the district.
+         * The fire risk's shape exactly, with the engineer as the
+         * visitor who zeroes it.
          * At kMaxRisk the building collapses straight to debris --
          * the fire's ending without the fire, see collapse().
          */
         std::int32_t collapseRisk = 0;
+
+        /**
+         * @brief How close its people are to sickness, out of kMaxRisk.
+         *
+         * **The one risk that still answers to a service.** Medicine
+         * is a state a doctor's round confers -- Service::Health --
+         * so this rises by one per risk period while the medicine has
+         * run out and falls by one while there is any, rather than
+         * climbing unconditionally as the other two do.
+         * Nothing ends a building over it yet: it is a warning a
+         * watcher reads off the hover panel.
+         */
+        std::int32_t diseaseRisk = 0;
 
         /**
          * @brief Ticks until it may send its next walker out.

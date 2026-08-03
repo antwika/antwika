@@ -19,14 +19,10 @@ namespace antwika::game
         constexpr Color kWaterInk{
             .red = 104, .green = 174, .blue = 216};
 
-        constexpr Color kHealthInk{
-            .red = 214, .green = 120, .blue = 148};
-
-        constexpr Color kSafetyInk{
-            .red = 224, .green = 148, .blue = 78};
-
-        constexpr Color kStructureInk{
-            .red = 170, .green = 176, .blue = 188};
+        // The medicine's ink is kDiseaseRiskInk on purpose.
+        // Medicine is what holds the disease off.
+        // So the amount line and its risk line read as a pair.
+        constexpr Color kMedicineInk = kDiseaseRiskInk;
     } // namespace
 
     Color resourceColour(Resource resource) noexcept
@@ -43,9 +39,7 @@ namespace antwika::game
     {
         constexpr std::array<Color, kServiceCount> inks{
             kWaterInk,
-            kHealthInk,
-            kSafetyInk,
-            kStructureInk};
+            kMedicineInk};
 
         return inks[serviceIndex(service) % kServiceCount];
     }

@@ -83,10 +83,13 @@ namespace
     [[nodiscard]] std::vector<SavedBuilding> cityBuildings()
     {
         return {
+            // Watered for the whole run, since a dry house sheds.
+            // The city must be short of people for labour's reason.
             SavedBuilding{
                 .at = Cell{.x = 1, .y = 5},
                 .kind = BuildingKind::House,
                 .stock = {antwika::game::kStockOnCompletion, 0, 0},
+                .coverage = {antwika::game::kCoverageFull, 0},
                 .household = Household{.population = 6}},
             SavedBuilding{
                 .at = Cell{.x = 3, .y = 5}, .kind = BuildingKind::Farm},

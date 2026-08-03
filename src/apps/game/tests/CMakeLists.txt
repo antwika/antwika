@@ -76,6 +76,7 @@ add_executable(antwika_game_tests
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/SaveMigrants.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/SaveMigration.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/SaveMigrationV2ToV3.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/SaveMigrationV3ToV4.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/SaveProduction.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/SaveRuins.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/SaveSections.cpp

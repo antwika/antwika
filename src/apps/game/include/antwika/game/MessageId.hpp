@@ -304,25 +304,9 @@ namespace antwika::game
         ServiceWater,
 
         /**
-         * @brief Readout: health reaching a building.
+         * @brief Readout: the medicine a doctor's round leaves behind.
          */
-        ServiceHealth,
-
-        /**
-         * @brief Readout: fire safety reaching a building.
-         */
-        ServiceSafety,
-
-        /**
-         * @brief Readout: structural upkeep reaching a building.
-         */
-        ServiceStructure,
-
-        /**
-         * @brief Readout: how much of a service still reaches a building, as
-         *        `{0}` named and `{1}` per cent left.
-         */
-        ReadoutCoverage,
+        ServiceMedicine,
 
         /**
          * @brief Readout: the bottom housing tier.
@@ -390,9 +374,9 @@ namespace antwika::game
         ViewWater,
 
         /**
-         * @brief The overlay dropdown's health entry.
+         * @brief The overlay dropdown's medicine entry.
          */
-        ViewHealth,
+        ViewMedicine,
 
         /**
          * @brief The overlay dropdown's fire entry.
@@ -560,6 +544,12 @@ namespace antwika::game
          *        cent of the way there.
          */
         ReadoutCollapseRisk,
+
+        /**
+         * @brief Readout: how close to sickness, as `{0}` per cent of
+         *        the way there.
+         */
+        ReadoutDiseaseRisk,
 
         /**
          * @brief Readout: the heading over a house's stock lines.

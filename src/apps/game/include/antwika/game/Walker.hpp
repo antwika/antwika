@@ -43,8 +43,8 @@ namespace antwika::game
     {
         WaterCarrier = 0,  ///< Confers Service::Water.
         Doctor,            ///< Confers Service::Health.
-        Fireman,           ///< Confers Service::Safety.
-        Engineer,          ///< Confers Service::Structure.
+        Fireman,           ///< Knocks fire risk down as he passes.
+        Engineer,          ///< Knocks collapse risk down as he passes.
         CartPusher,        ///< Hauls a load to a named store.
         MarketBuyer,       ///< Fetches an input from a store.
         MarketSeller,      ///< Hands goods out to houses.

@@ -838,7 +838,7 @@ TEST_F(GridSceneTest, Draw_WritesTheHoverPanelLastAndWhereItWasLaidOut)
         scene_.hover, kCanvas, kTranslator);
 
     // Every line the panel says, headings and risks included.
-    ASSERT_EQ(panel.lines.size(), 8 + antwika::game::kResourceCount);
+    ASSERT_EQ(panel.lines.size(), 11 + antwika::game::kResourceCount);
     ASSERT_EQ(renderer.texts.size(), panel.lines.size());
 
     for (std::size_t line = 0; line < panel.lines.size(); ++line)

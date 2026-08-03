@@ -48,7 +48,7 @@ TEST_F(CoverageTest, CoverageOf_AnswersEachServiceOutOfTheComponent)
 {
     Coverage held;
     held.ticksLeft[serviceIndex(Service::Water)] = kCoverageFull;
-    held.ticksLeft[serviceIndex(Service::Safety)] = 7;
+    held.ticksLeft[serviceIndex(Service::Health)] = 7;
 
     const auto entity = world.create();
     setCoverage(world, entity, held);
@@ -56,9 +56,7 @@ TEST_F(CoverageTest, CoverageOf_AnswersEachServiceOutOfTheComponent)
 
     EXPECT_EQ(coverageOf(world, entity), held);
     EXPECT_EQ(coverageOf(world, entity, Service::Water), kCoverageFull);
-    EXPECT_EQ(coverageOf(world, entity, Service::Health), 0);
-    EXPECT_EQ(coverageOf(world, entity, Service::Safety), 7);
-    EXPECT_EQ(coverageOf(world, entity, Service::Structure), 0);
+    EXPECT_EQ(coverageOf(world, entity, Service::Health), 7);
 }
 
 // A total lookup answers about a handle that names nothing.
@@ -66,7 +64,7 @@ TEST_F(CoverageTest, CoverageOf_AnswersEachServiceOutOfTheComponent)
 TEST_F(CoverageTest, CoverageOf_AnswersZeroForAnEntityThatIsNotAlive)
 {
     const auto entity = world.create();
-    setCoverage(world, entity, Coverage{.ticksLeft = {1, 2, 3, 4}});
+    setCoverage(world, entity, Coverage{.ticksLeft = {1, 2}});
     world.commit();
 
     world.destroy(entity);
@@ -80,7 +78,7 @@ TEST_F(CoverageTest, CoverageOf_AnswersZeroForAnEntityThatIsNotAlive)
 TEST_F(CoverageTest, CoverageOf_SurvivesRetiringAnEntityThatHasNone)
 {
     const auto covered = world.create();
-    setCoverage(world, covered, Coverage{.ticksLeft = {1, 1, 1, 1}});
+    setCoverage(world, covered, Coverage{.ticksLeft = {1, 1}});
 
     const auto bare = world.create();
     world.commit();
@@ -89,13 +87,13 @@ TEST_F(CoverageTest, CoverageOf_SurvivesRetiringAnEntityThatHasNone)
     world.commit();
 
     EXPECT_EQ(
-        coverageOf(world, covered), (Coverage{.ticksLeft = {1, 1, 1, 1}}));
+        coverageOf(world, covered), (Coverage{.ticksLeft = {1, 1}}));
     EXPECT_EQ(coverageOf(world, bare), Coverage{});
 }
 
 TEST_F(CoverageTest, EqualityComparesEveryService)
 {
-    const Coverage base{.ticksLeft = {1, 2, 3, 4}};
+    const Coverage base{.ticksLeft = {1, 2}};
 
     EXPECT_EQ(base, base);
 

@@ -275,7 +275,7 @@ namespace
             antwika::game::SavedBuilding{
                 .at = {.x = 5, .y = 5},
                 .kind = antwika::game::BuildingKind::House,
-                .coverage = {3, 0, 9, 0}}};
+                .coverage = {3, 9}}};
 
         store.restore(save);
         world.commit();
