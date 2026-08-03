@@ -178,6 +178,9 @@ namespace antwika::music_editor
         // What the mirror last wrote, so it writes on changes alone.
         std::string mirrored;
 
+        // How the waveform renders run; also what paces the roll.
+        WaveRenderDesc waveRender;
+
         // The rendered waveform cycles, re-rendered on changes alone.
         // Projection state a frame reads, never simulation state.
         // Mutable because a description is const and a cache is not.

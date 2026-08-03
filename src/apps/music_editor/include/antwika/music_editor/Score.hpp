@@ -77,6 +77,15 @@ namespace antwika::music_editor
         Pattern playing = pattern::silence();
 
         /**
+         * @brief The sound the line makes, for its hold and release.
+         *
+         * What lets a note's cell span the time it actually sounds
+         * rather than the slot it landed in: a drum is a hit whatever
+         * slot it lands in, and its cell is short the same way.
+         */
+        TrackPreset preset{};
+
+        /**
          * @brief The document line the chain ends on, from nought.
          *
          * The last line of a gathered chain rather than its first, so

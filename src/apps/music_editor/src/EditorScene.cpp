@@ -132,17 +132,39 @@ namespace antwika::music_editor
             std::int64_t pitch = 0;
             Cycle begin{};
             Cycle end{};
+
+            // The whole note's length, however the window cut it.
+            // What the sounding width is measured from.
+            Cycle length{};
         };
 
         [[nodiscard]] std::vector<RollNote> rollNotesOf(
             const antwika::pattern::Pattern &playing)
         {
-            std::vector<Hap> haps;
+            std::vector<RollNote> notes;
 
             try
             {
-                haps = playing.queryAll(
-                    Span{Cycle(0), Cycle(1)});
+                for (const auto &hap : playing.queryAll(
+                         Span{Cycle(0), Cycle(1)}))
+                {
+                    // Whole semitones, floored, as the lanes draw.
+                    // The stored form is fixed point: a shift floors.
+                    const auto note =
+                        hap.value.get(kNote)
+                            .value_or(pattern::ParamValue{});
+
+                    // The whole says how long a note rings.
+                    // The part says where the window first saw it.
+                    const auto span = hap.whole.value_or(hap.part);
+
+                    notes.push_back(RollNote{
+                        .pitch =
+                            note.raw() >> pattern::kFractionBits,
+                        .begin = hap.part.begin(),
+                        .end = hap.part.end(),
+                        .length = span.length()});
+                }
             }
             // The excluded line is the handler's no-match edge.
             // Only some other exception type would take it.
@@ -151,28 +173,12 @@ namespace antwika::music_editor
             {
                 // A pattern can parse and still refuse a window.
                 // The roll comes out empty, as the sound falls silent.
-                return {};
-            }
-
-            std::vector<RollNote> notes;
-            notes.reserve(haps.size());
-
-            for (const auto &hap : haps)
-            {
-                // Whole semitones, floored, as the lanes are drawn.
-                // The stored form is fixed point, so this is a shift.
-                const auto note = hap.value.get(kNote)
-                                      .value_or(pattern::ParamValue{});
-
-                notes.push_back(RollNote{
-                    .pitch = note.raw() >> pattern::kFractionBits,
-                    .begin = hap.part.begin(),
-                    .end = hap.part.end()});
+                notes.clear();
             }
 
             return notes;
             // Only an unwind destroys notes at this brace.
-            // Nothing between its construction and the return throws.
+            // Nothing between the last append and the return throws.
         } // GCOVR_EXCL_LINE
 
         /**
@@ -209,12 +215,13 @@ namespace antwika::music_editor
         void appendRoll(
             DrawList &commands,
             const Rect &band,
-            const antwika::pattern::Pattern &playing)
+            const Pianoroll &roll,
+            const PlaybackStatus &status)
         {
             commands.push_back(antwika::ui::FillRect{
                 .rect = band, .color = kRollBackdrop});
 
-            const auto notes = rollNotesOf(playing);
+            const auto notes = rollNotesOf(roll.playing);
 
             if (notes.empty())
             {
@@ -256,8 +263,40 @@ namespace antwika::music_editor
 
                 const auto left =
                     acrossRoll(note.begin, band.size.width);
-                const auto right =
-                    acrossRoll(note.end, band.size.width);
+
+                auto right = acrossRoll(note.end, band.size.width);
+
+                // As wide as the note sounds, when the pace is known.
+                // The hold caps the note's length in wall time.
+                // The release rings past it, in wall time too.
+                // A drum is a short cell whatever slot it landed in.
+                // A long release reaches past the slot it rang from.
+                // With no pace, its milliseconds measure nothing.
+                // A note then fills its slot instead.
+                if (status.rate > 0 && status.cycleFrames > 0)
+                {
+                    const auto length = note.length.numerator()
+                        * status.cycleFrames
+                        / note.length.denominator();
+
+                    const auto held = std::min<std::int64_t>(
+                        length,
+                        static_cast<std::int64_t>(
+                            roll.preset.maxHoldMs)
+                            * status.rate / 1000);
+
+                    const auto rings = held
+                        + static_cast<std::int64_t>(
+                              roll.preset.releaseMs)
+                            * status.rate / 1000;
+
+                    // Clipped at the band: the cycle ends there.
+                    right = std::min<std::int64_t>(
+                        left
+                            + rings * band.size.width
+                                / status.cycleFrames,
+                        band.size.width);
+                }
 
                 commands.push_back(antwika::ui::FillRect{
                     .rect = Rect{
@@ -392,8 +431,13 @@ namespace antwika::music_editor
          *
          * @param frame The finished frame, whose commands grow.
          * @param score Whose rolls to paint.
+         * @param status Carries the pace a note's width is measured
+         * against.
          */
-        void appendPianorolls(Frame &frame, const Score &score)
+        void appendPianorolls(
+            Frame &frame,
+            const Score &score,
+            const PlaybackStatus &status)
         {
             const auto height =
                 kPianorollRows * antwika::gfx::kGlyphLineHeight
@@ -412,7 +456,8 @@ namespace antwika::music_editor
                 appendRoll(
                     frame.commands,
                     *band,
-                    score.pianorolls()[at].playing);
+                    score.pianorolls()[at],
+                    status);
             }
         }
     } // namespace
@@ -577,7 +622,7 @@ namespace antwika::music_editor
         // So the picture cannot drift from where a click is read.
         auto frame = ui.finish();
 
-        appendPianorolls(frame, score);
+        appendPianorolls(frame, score, status);
         appendWaveforms(frame, score, status);
 
         return frame;
