@@ -1,6 +1,7 @@
 #include "antwika/music_editor/Score.hpp"
 
 #include <cstddef>
+#include <cstdint>
 #include <string>
 
 #include <gtest/gtest.h>
@@ -721,4 +722,333 @@ TEST(ScoreTest, ComparesSpansEndByEnd)
     EXPECT_EQ(span, (DocumentSpan{.begin = 2, .end = 5}));
     EXPECT_NE(span, (DocumentSpan{.begin = 3, .end = 5}));
     EXPECT_NE(span, (DocumentSpan{.begin = 2, .end = 6}));
+}
+
+namespace
+{
+    // A document arranged into sections, small enough to read whole.
+    // Two bars of intro, two of verse, one more verse bar, two out.
+    [[nodiscard]] std::string arrangedSource()
+    {
+        return "form: intro verse verse/1 outro\n"
+               "bars: 2\n"
+               "$: drum.n(\"0\")\n"
+               "part: verse\n"
+               "$: bass.n(\"3\")\n"
+               "part: intro outro\n"
+               "$: bell.n(\"12\")\n";
+    }
+
+    // How many onsets a voice puts in one whole cycle.
+    [[nodiscard]] std::size_t onsetsAt(
+        const Score &score,
+        const std::size_t voice,
+        const std::int64_t cycle)
+    {
+        std::size_t onsets = 0;
+
+        for (const auto &hap : score.voices()[voice].playing.queryAll(
+                 Span(Cycle(cycle), Cycle(cycle + 1))))
+        {
+            if (hap.hasOnset())
+            {
+                ++onsets;
+            }
+        }
+
+        return onsets;
+    }
+} // namespace
+
+TEST(ScoreTest, AFormSchedulesAPartBlocksVoices)
+{
+    Score score;
+
+    score.read(arrangedSource());
+
+    EXPECT_TRUE(score.problems().empty());
+    ASSERT_EQ(score.voices().size(), 3U);
+
+    // The always-on drum, every cycle of the seven-cycle form.
+    // The bass through the verses, the bell through the bookends.
+    for (std::int64_t cycle = 0; cycle < 7; ++cycle)
+    {
+        EXPECT_EQ(onsetsAt(score, 0, cycle), 1U);
+
+        const bool verse = cycle >= 2 && cycle < 5;
+
+        EXPECT_EQ(onsetsAt(score, 1, cycle), verse ? 1U : 0U);
+        EXPECT_EQ(onsetsAt(score, 2, cycle), verse ? 0U : 1U);
+    }
+
+    // And the whole form comes round again.
+    EXPECT_EQ(onsetsAt(score, 2, 7), 1U);
+    EXPECT_EQ(onsetsAt(score, 1, 9), 1U);
+}
+
+TEST(ScoreTest, PartVoicesAreSilentUntilAFormSchedulesThem)
+{
+    Score score;
+
+    score.read(
+        "$: drum.n(\"0\")\n"
+        "part: verse\n"
+        "$: bass.n(\"3\")\n");
+
+    // The block's voice is out, and the header says what is missing.
+    ASSERT_EQ(score.voices().size(), 1U);
+    ASSERT_EQ(score.problems().size(), 1U);
+    EXPECT_EQ(score.problems()[0].line, 2U);
+    EXPECT_EQ(
+        score.problems()[0].message,
+        "no form: says when these parts play");
+}
+
+TEST(ScoreTest, APartTheFormNeverPlaysIsSilentWithoutComplaint)
+{
+    Score score;
+
+    // The solo workflow: the form names one section to write in.
+    score.read(
+        "form: verse\n"
+        "bars: 2\n"
+        "part: verse\n"
+        "$: bass.n(\"3\")\n"
+        "part: chorus\n"
+        "$: lead.n(\"7\")\n");
+
+    EXPECT_TRUE(score.problems().empty());
+    ASSERT_EQ(score.voices().size(), 1U);
+    EXPECT_EQ(onsetsAt(score, 0, 0), 1U);
+}
+
+TEST(ScoreTest, AFormNameWithNoPartBlockIsAProblemOnce)
+{
+    Score score;
+
+    score.read(
+        "form: verse verse\n"
+        "bars: 2\n");
+
+    ASSERT_EQ(score.problems().size(), 1U);
+    EXPECT_EQ(score.problems()[0].line, 1U);
+    EXPECT_EQ(score.problems()[0].message, "no part: holds verse");
+}
+
+TEST(ScoreTest, AnEmptyPartBlockIsLegalSilence)
+{
+    Score score;
+
+    // A breakdown is written as exactly that: a block with nothing.
+    score.read(
+        "form: verse breakdown\n"
+        "bars: 2\n"
+        "part: verse\n"
+        "$: bass.n(\"3\")\n"
+        "part: breakdown\n");
+
+    EXPECT_TRUE(score.problems().empty());
+    EXPECT_EQ(score.voices().size(), 1U);
+}
+
+TEST(ScoreTest, ASecondFormOrBarsLineIsRefused)
+{
+    Score score;
+
+    score.read(
+        "form: a\n"
+        "bars: 2\n"
+        "form: b\n"
+        "bars: 4\n"
+        "part: a\n"
+        "$: bass.n(\"3\")\n");
+
+    ASSERT_EQ(score.problems().size(), 2U);
+    EXPECT_EQ(score.problems()[0].message, "one form: per score");
+    EXPECT_EQ(score.problems()[1].message, "one bars: per score");
+
+    // The first of each stands, so the voice still plays.
+    EXPECT_EQ(score.voices().size(), 1U);
+    EXPECT_EQ(onsetsAt(score, 0, 0), 1U);
+    EXPECT_EQ(onsetsAt(score, 0, 2), 1U);
+}
+
+TEST(ScoreTest, ARewrittenFormThatRefusesKeepsTheLastOneArranging)
+{
+    Score score;
+
+    score.read(arrangedSource());
+    ASSERT_EQ(score.voices().size(), 3U);
+
+    // The form line half retyped: a refusal, and nothing moves.
+    auto broken = arrangedSource();
+    broken.replace(0, 5, "form: !!");
+
+    score.read(broken);
+
+    EXPECT_EQ(score.problems().size(), 1U);
+    ASSERT_EQ(score.voices().size(), 3U);
+    EXPECT_EQ(onsetsAt(score, 1, 2), 1U);
+    EXPECT_EQ(onsetsAt(score, 1, 0), 0U);
+}
+
+TEST(ScoreTest, DeletingTheFormSilencesThePartBlocks)
+{
+    Score score;
+
+    score.read(arrangedSource());
+    ASSERT_EQ(score.voices().size(), 3U);
+
+    // The form line cut whole: an intended cut, not a half-typed one.
+    const auto source = arrangedSource();
+    score.read(source.substr(source.find('\n') + 1));
+
+    ASSERT_EQ(score.voices().size(), 1U);
+    ASSERT_EQ(score.problems().size(), 1U);
+    EXPECT_EQ(
+        score.problems()[0].message,
+        "no form: says when these parts play");
+}
+
+TEST(ScoreTest, AMalformedPartHeaderSilencesItsBlock)
+{
+    Score score;
+
+    // The header will not read, so its voices are silent.
+    // Merged into the block above they would sound in its sections.
+    score.read(
+        "form: verse\n"
+        "bars: 2\n"
+        "part: verse\n"
+        "$: bass.n(\"3\")\n"
+        "part: !\n"
+        "$: lead.n(\"7\")\n");
+
+    ASSERT_EQ(score.problems().size(), 1U);
+    EXPECT_EQ(score.problems()[0].line, 5U);
+    EXPECT_EQ(score.voices().size(), 1U);
+}
+
+TEST(ScoreTest, AnUnmarkedNameWithNoBarsLineIsAProblem)
+{
+    Score score;
+
+    score.read(
+        "form: verse\n"
+        "part: verse\n"
+        "$: bass.n(\"3\")\n");
+
+    ASSERT_EQ(score.problems().size(), 1U);
+    EXPECT_EQ(score.problems()[0].line, 1U);
+    EXPECT_EQ(
+        score.problems()[0].message,
+        "verse has no length: give a bars: line or verse/<n>");
+    EXPECT_TRUE(score.voices().empty());
+}
+
+TEST(ScoreTest, AFormOfMarkedNamesNeedsNoBarsLine)
+{
+    Score score;
+
+    score.read(
+        "form: verse/2\n"
+        "part: verse\n"
+        "$: bass.n(\"3\")\n");
+
+    EXPECT_TRUE(score.problems().empty());
+    ASSERT_EQ(score.voices().size(), 1U);
+    EXPECT_EQ(onsetsAt(score, 0, 0), 1U);
+}
+
+TEST(ScoreTest, AHeaderTakesACommentLikeAnyOtherLine)
+{
+    Score score;
+
+    score.read(
+        "form: verse // the whole song, for now\n"
+        "bars: 2 // two cycles each\n"
+        "part: verse // the one block\n"
+        "$: bass.n(\"3\")\n");
+
+    EXPECT_TRUE(score.problems().empty());
+    EXPECT_EQ(score.voices().size(), 1U);
+}
+
+TEST(ScoreTest, AHeaderEndsTheChainAboveIt)
+{
+    Score score;
+
+    // The continuation lands under the header, above no voice line.
+    score.read(
+        "$: bass.n(\"3\")\n"
+        "part: verse\n"
+        "    .gain(.2)\n");
+
+    ASSERT_EQ(score.problems().size(), 2U);
+    EXPECT_EQ(score.problems()[0].line, 2U);
+    EXPECT_EQ(
+        score.problems()[0].message,
+        "no form: says when these parts play");
+    EXPECT_EQ(score.problems()[1].line, 3U);
+    EXPECT_EQ(
+        score.problems()[1].message, "a call above no voice line");
+}
+
+TEST(ScoreTest, ChangingTheFormAloneReparsesNoChain)
+{
+    Score score;
+
+    score.read(arrangedSource());
+
+    const auto parsed = score.reparses();
+
+    auto retimed = arrangedSource();
+    retimed.replace(retimed.find("verse/1"), 7, "verse/2");
+
+    score.read(retimed);
+
+    // The live feel: an arrangement edit re-reads no voice line.
+    EXPECT_EQ(score.reparses(), parsed);
+    EXPECT_TRUE(score.problems().empty());
+    EXPECT_EQ(onsetsAt(score, 1, 5), 1U);
+}
+
+TEST(ScoreTest, TwoBlocksMayHoldTheSameSection)
+{
+    Score score;
+
+    // Two part: blocks naming verse are both verse material.
+    score.read(
+        "form: verse\n"
+        "bars: 2\n"
+        "part: verse\n"
+        "$: bass.n(\"3\")\n"
+        "part: verse\n"
+        "$: lead.n(\"7\")\n");
+
+    EXPECT_TRUE(score.problems().empty());
+    ASSERT_EQ(score.voices().size(), 2U);
+    EXPECT_EQ(onsetsAt(score, 0, 0), 1U);
+    EXPECT_EQ(onsetsAt(score, 1, 0), 1U);
+}
+
+TEST(ScoreTest, ARewrittenBarsLineThatRefusesKeepsTheLastOne)
+{
+    Score score;
+
+    score.read(arrangedSource());
+    ASSERT_EQ(score.voices().size(), 3U);
+
+    auto broken = arrangedSource();
+    broken.replace(broken.find("bars: 2"), 7, "bars: two");
+
+    score.read(broken);
+
+    ASSERT_EQ(score.problems().size(), 1U);
+    EXPECT_EQ(score.problems()[0].line, 2U);
+
+    // The last bars that read keeps the sections their length.
+    ASSERT_EQ(score.voices().size(), 3U);
+    EXPECT_EQ(onsetsAt(score, 1, 2), 1U);
+    EXPECT_EQ(onsetsAt(score, 1, 0), 0U);
 }

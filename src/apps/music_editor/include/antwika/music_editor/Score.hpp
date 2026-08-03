@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstddef>
+#include <cstdint>
 #include <optional>
 #include <string>
 #include <string_view>
@@ -9,6 +10,7 @@
 #include <antwika/pattern/Pattern.hpp>
 #include <antwika/pattern/Patterns.hpp>
 
+#include "antwika/music_editor/FormUse.hpp"
 #include "antwika/music_editor/NoteWords.hpp"
 #include "antwika/music_editor/TrackPreset.hpp"
 #include "antwika/music_editor/VoiceChain.hpp"
@@ -113,6 +115,32 @@ namespace antwika::music_editor
      * line its `$:` is on. The dot is the join rather than something at
      * the end of the line above it, so a chain being written stays
      * legible while it is half typed: every line of it reads as a call.
+     *
+     * **A document may arrange itself into sections**, with three
+     * headers: `form:` says which sections play and in what order,
+     * `bars:` says how long an unmarked one lasts, and `part:` opens
+     * a block whose voices play only in the sections it names:
+     *
+     * @code
+     * form: intro verse verse/4 outro
+     * bars: 8
+     *
+     * $: drum.n("0*2")        // above any part: always on
+     *
+     * part: verse
+     * $: bass.n("<0*2 8*2>")  // an alternation, per bar again
+     * @endcode
+     *
+     * Each occurrence of a section replays its material from its own
+     * first bar, so every verse sounds the same and `<a b>` advances
+     * per bar inside one; an occurrence may carry its own length,
+     * `verse/4`, and the form repeats when it runs out.
+     * A section the form names with no part: block is silence -- a
+     * breakdown is written as exactly that -- and a part: block the
+     * form never names plays nothing, which is what makes
+     * `form: verse` the way to solo a section while writing it.
+     * A document with no headers at all is one always-on block,
+     * which is every document written before the form existed.
      *
      * **A line is a voice, and nothing is limited to one of a kind.**
      * A preset is a starting point that the chain after it changes a
@@ -252,6 +280,12 @@ namespace antwika::music_editor
             // Refreshed on every read, since lines above it move it.
             std::vector<Segment> segments;
 
+            // The section names of the part: block holding this line.
+            // Nothing for an always-on line above every header.
+            // An empty list for one under a header that refused.
+            // Refreshed on every read, like the segments above.
+            std::optional<std::vector<std::string>> parts;
+
             // Where the notation's characters begin in the chain.
             // Set when the chain parses, like the voice beside it.
             std::size_t notationAt = 0;
@@ -275,6 +309,9 @@ namespace antwika::music_editor
             // Where each appended stretch sits in the document.
             std::vector<Segment> segments;
 
+            // The block the $: line sat under when it opened.
+            std::optional<std::vector<std::string>> parts;
+
             // The line the $: was on, counting from one.
             // Zero for a voice that has not been opened.
             std::size_t opened = 0;
@@ -290,6 +327,14 @@ namespace antwika::music_editor
 
         void play(const Gathered &gathering);
 
+        void readForm(std::string_view text, std::size_t number);
+
+        void readBars(std::string_view text, std::size_t number);
+
+        void readPart(std::string_view text, std::size_t number);
+
+        void assemble();
+
         void refuse(std::size_t number, std::string message);
 
         NoteWords words;
@@ -302,6 +347,28 @@ namespace antwika::music_editor
         std::vector<std::size_t> soundingLines;
 
         std::vector<Problem> refusals;
+
+        // The form and bars headers, held as a line's voice is.
+        // A rewrite that refuses keeps the last one that read.
+        // Deleting the header takes what it held with it.
+        std::vector<FormUse> formHeld;
+        std::size_t formLine = 0;
+        bool formEver = false;
+        bool formPresent = false;
+
+        std::int64_t barsHeld = 0;
+        bool barsEver = false;
+        bool barsPresent = false;
+
+        // The block the next voice line belongs to.
+        // Nothing before the first part: header.
+        std::optional<std::vector<std::string>> activeParts;
+
+        // Every name any part: header held, in first-seen order.
+        // What tells a form name with no material from a typo.
+        std::vector<std::string> partNames;
+
+        std::size_t firstPartLine = 0;
 
         std::string document;
 
