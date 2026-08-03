@@ -136,7 +136,15 @@ The handle is a *cache* and `world.alive()` is the authority, which is safe beca
 
 **A walker's step is counted down in its own component rather than off the tick number.**
 It advances one cell every `kTicksPerStep` ticks along the paths, and counting in the component is what keeps two walkers that set off a tick apart a tick apart, exactly as a building's countdown does.
-Where it goes next is one preference order in `nextFacing()` rather than two rules: it prefers a right turn at an intersection and reverses at a dead end, and both fall out of that single order.
+
+**Where it goes next is anything but back the way it came, chosen at random among what is left — and back the way it came only when nothing is.**
+That is still one rule rather than two: reversing is what remains when the set of everything else is empty, which is what a dead end *is*, so no branch in `nextFacing()` tests for one.
+It used to prefer a right turn, then straight on, then left, which is deterministic, cheap and reads as a bug — every walker leaving a junction the same way makes a district's traffic run in visible circles and files a whole city's walkers round one block.
+
+**The randomness is stateless, and that is the whole of its determinism argument.**
+`wanderRoll()` seeds one `rng::SplitMix64Rng` per decision from the tick, the cell being left and the direction the walker arrived facing — three things a replay and a reloaded save both reach again — and reads one word out of it.
+A generator advanced once per decision would be state living in a system rather than in the `World`, so a save would not cover it and a city reopened would roam differently from the one that was saved; that is exactly why `stepTowards()` keeps no route in a component either.
+The tick is in the seed as well as the cell so that a walker coming round to the same junction facing the same way can still make a different choice of it, and two walkers meeting on one cell facing one way on one tick turn together — which is not a collision anybody has to resolve, since walkers do not collide.
 
 **Once a walker's roaming budget is spent it either walks home or it is gone.**
 That single rule is what bounds the population, and every awkward case collapses into its last arm — a walker nobody sent, one whose building has burned down, one walled off from home, one whose road was demolished under it.

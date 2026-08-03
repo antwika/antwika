@@ -18,7 +18,7 @@ namespace antwika::game
     {
     }
 
-    void WalkerSystem::update(World &world, antwika::time::Tick)
+    void WalkerSystem::update(World &world, antwika::time::Tick tick)
     {
         for (const auto entity : world.view<Walker, Cell>())
         {
@@ -51,7 +51,7 @@ namespace antwika::game
 
             if (walker.stepsUntilHome > 0)
             {
-                roam(world, entity, walker, at);
+                roam(world, entity, walker, at, tick);
                 continue;
             }
 
@@ -121,10 +121,17 @@ namespace antwika::game
         World &world,
         antwika::ecs::Entity entity,
         const Walker &walker,
-        Cell at)
+        Cell at,
+        antwika::time::Tick tick)
     {
-        const auto heading =
-            nextFacing(walker.facing, paths.neighboursOf(at));
+        // Anything but back the way it came, chosen among the arms.
+        // The bits are a function of the tick, the cell and the facing.
+        // So a replay and a reloaded save both make the same choice.
+        // And no generator's state has to live outside the World.
+        const auto heading = nextFacing(
+            walker.facing,
+            paths.neighboursOf(at),
+            wanderRoll(tick, at, walker.facing));
 
         if (!heading.has_value())
         {
