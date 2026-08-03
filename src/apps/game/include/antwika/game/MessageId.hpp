@@ -365,6 +365,46 @@ namespace antwika::game
         ToolbarGameMenu,
 
         /**
+         * @brief The overlay dropdown's view entry.
+         */
+        ViewMenu,
+
+        /**
+         * @brief The overlay dropdown's normal entry.
+         */
+        ViewNormal,
+
+        /**
+         * @brief The overlay dropdown's desirability entry.
+         */
+        ViewDesirability,
+
+        /**
+         * @brief The overlay dropdown's food entry.
+         */
+        ViewFood,
+
+        /**
+         * @brief The overlay dropdown's water entry.
+         */
+        ViewWater,
+
+        /**
+         * @brief The overlay dropdown's health entry.
+         */
+        ViewHealth,
+
+        /**
+         * @brief The overlay dropdown's fire entry.
+         */
+        ViewFire,
+
+        /**
+         * @brief The overlay dropdown's damage entry.
+         */
+        ViewDamage,
+
+        /**
          * @brief The heading over the build palette.
          */
         ToolbarBuild,

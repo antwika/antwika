@@ -19,9 +19,11 @@
 #include "antwika/game/Camera.hpp"
 #include "antwika/game/FrameMeter.hpp"
 #include "antwika/game/GridExtent.hpp"
+#include "antwika/game/Desirability.hpp"
 #include "antwika/game/GridScene.hpp"
 #include "antwika/game/MainMenuScene.hpp"
 #include "antwika/game/PathIndex.hpp"
+#include "antwika/game/MapView.hpp"
 #include "antwika/game/PauseState.hpp"
 #include "antwika/game/RoadDrag.hpp"
 #include "antwika/game/RoadPlan.hpp"
@@ -103,6 +105,32 @@ namespace antwika::game
 
         /** @brief Read for the toolbar's picture, painted last. */
         const UiOverlay &overlay;
+
+        /**
+         * @brief Read for which picture of the city is showing.
+         *
+         * Only ever read, exactly as the pause is, and simulation state
+         * on the same terms -- see MapView.
+         *
+         * Optional, and absent means the city itself with nothing
+         * painted over it, which spares every test whose subject is
+         * some other part of the picture.
+         */
+        std::optional<std::reference_wrapper<const MapViewState>> view =
+            std::nullopt;
+
+        /**
+         * @brief Read for what the desirability view paints.
+         *
+         * The one overlay that is genuinely per cell rather than per
+         * building, so it is the one that needs the field the serve
+         * phase rebuilt rather than only the world.
+         *
+         * Optional on the view's terms exactly: absent leaves that one
+         * view painting nothing, and every other view unaffected.
+         */
+        std::optional<std::reference_wrapper<const DesirabilityField>>
+            desirability = std::nullopt;
 
         /**
          * @brief Read for the run of road being dragged out, if one is.

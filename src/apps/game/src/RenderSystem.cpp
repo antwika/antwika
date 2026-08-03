@@ -8,6 +8,7 @@
 #include "antwika/game/BuildGhost.hpp"
 #include "antwika/game/FpsReadout.hpp"
 #include "antwika/game/Hover.hpp"
+#include "antwika/game/OverlayField.hpp"
 #include "antwika/game/SceneSnapshot.hpp"
 
 namespace antwika::game
@@ -53,6 +54,25 @@ namespace antwika::game
         // Once a tick is therefore enough.
         // Nothing between two ticks can change what it would lay.
         latest.plan = planFor();
+
+        // Beside the plan, and once a tick for its reason exactly.
+        // Which view is showing is written inside the tick path.
+        // And what it paints is derived from what the world holds.
+        // So no frame can see anything here the tick did not.
+        latest.view = setup.view.has_value()
+            ? setup.view->get().view()
+            : MapView::Normal;
+
+        // A field to paint from where there is one to paint.
+        // Absent leaves the desirability view painting nothing.
+        // Which is the same shape every optional member here has.
+        static const DesirabilityField kNoField;
+        latest.overlay = overlayFieldOf(
+            world,
+            latest.view,
+            setup.desirability.has_value() ? setup.desirability->get()
+                                           : kNoField,
+            setup.extent);
 
         draw(antwika::animation::Progress());
     }

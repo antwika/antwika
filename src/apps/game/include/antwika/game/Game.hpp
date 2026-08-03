@@ -20,7 +20,9 @@
 #include "antwika/game/BuildingIndex.hpp"
 #include "antwika/game/Camera.hpp"
 #include "antwika/game/GameSummary.hpp"
+#include "antwika/game/Desirability.hpp"
 #include "antwika/game/GridExtent.hpp"
+#include "antwika/game/MapView.hpp"
 #include "antwika/game/Messages.hpp"
 #include "antwika/game/PathIndex.hpp"
 #include "antwika/game/PauseState.hpp"
@@ -159,6 +161,30 @@ namespace antwika::game
          * button for a pause -- see PauseState.
          */
         PauseState &pause;
+
+        /**
+         * @brief Which picture of the city is showing, chosen by the bar.
+         *
+         * Optional for the drag's reason rather than the pause's: a run
+         * with nobody to paint an overlay for still runs perfectly well,
+         * and one of its own is made here when no caller offers one.
+         * A caller that paints one has to own it, so that the renderer
+         * it built first can read it -- see MapView.
+         */
+        std::optional<std::reference_wrapper<MapViewState>> view =
+            std::nullopt;
+
+        /**
+         * @brief The desirability field the run rebuilds every tick.
+         *
+         * Offered here for the view's reason: the one overlay that is
+         * genuinely per cell paints from it, and the renderer that
+         * paints is built before this call.
+         * One of its own is used when no caller offers one, so a run
+         * with nobody looking at it needs no state for a picture.
+         */
+        std::optional<std::reference_wrapper<DesirabilityField>>
+            desirability = std::nullopt;
 
         /**
          * @brief Where a run of road is being dragged out, if anything

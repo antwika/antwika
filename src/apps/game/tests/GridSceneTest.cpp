@@ -23,6 +23,8 @@
 #include "antwika/game/GridExtent.hpp"
 #include "antwika/game/GridScene.hpp"
 #include "antwika/game/IsoProjection.hpp"
+#include "antwika/game/MapView.hpp"
+#include "antwika/game/OverlayField.hpp"
 #include "antwika/game/ReadoutPanel.hpp"
 #include "antwika/game/ResourceColour.hpp"
 #include "antwika/game/SceneSnapshot.hpp"
@@ -182,7 +184,8 @@ namespace
             .buildings = {},
             .plan = {},
             .ghost = {},
-            .hover = {}};
+            .hover = {},
+            .overlay = {}};
     }
 } // namespace
 
@@ -655,6 +658,90 @@ TEST_F(GridSceneTest, Draw_PaintsNoGaugeOverABuildingOrAWalker)
     scene.draw(renderer, kCanvas, scene_, atlases);
 
     EXPECT_TRUE(renderer.rects.empty());
+}
+
+// An overlay is the ground sprite tinted, cell by cell.
+// A cell is a diamond and drawRect() takes an upright box.
+// Which is the same reason the ghost's edge is four lines.
+TEST_F(GridSceneTest, Draw_PaintsNoOverlayForTheCityItself)
+{
+    const auto scene_ = snapshot(
+        Camera(Point{.x = 300, .y = 40}, 3),
+        GridExtent{.width = 2, .height = 2});
+
+    scene.draw(renderer, kCanvas, scene_, atlases);
+
+    // Four ground sprites, and no second pass over any of them.
+    EXPECT_EQ(renderer.blitsOf(groundTile()), 4U);
+}
+
+TEST_F(GridSceneTest, Draw_ScrimsEveryCellAndTintsTheOnesWithAValue)
+{
+    auto scene_ = snapshot(
+        Camera(Point{.x = 300, .y = 40}, 3),
+        GridExtent{.width = 2, .height = 2});
+    scene_.view = antwika::game::MapView::Desirability;
+    scene_.overlay = {{Cell{.x = 1, .y = 1}, 100}};
+
+    scene.draw(renderer, kCanvas, scene_, atlases);
+
+    std::size_t scrimmed = 0;
+    std::size_t tinted = 0;
+
+    for (const auto &blit : renderer.blits)
+    {
+        if (blit.tint == antwika::game::kOverlayScrim)
+        {
+            ++scrimmed;
+        }
+
+        if (blit.tint
+            == antwika::game::overlayColour(
+                antwika::game::MapView::Desirability))
+        {
+            ++tinted;
+        }
+    }
+
+    // The scrim over all four, and the value over the one cell.
+    // A district nothing reaches is what somebody looks for here.
+    // So it has to be visibly darker rather than simply unpainted.
+    EXPECT_EQ(scrimmed, 4U);
+    EXPECT_EQ(tinted, 1U);
+}
+
+// Under the walkers.
+// A walker is a thing in the city rather than a fact about it.
+TEST_F(GridSceneTest, Draw_PaintsTheOverlayBeforeTheWalkers)
+{
+    auto scene_ = snapshot(
+        Camera(Point{.x = 300, .y = 40}, 3),
+        GridExtent{.width = 2, .height = 2},
+        {},
+        {WalkerSprite{.at = Cell{.x = 1, .y = 1}}});
+    scene_.view = antwika::game::MapView::Water;
+    scene_.overlay = {{Cell{.x = 1, .y = 1}, 100}};
+
+    scene.draw(renderer, kCanvas, scene_, atlases);
+
+    std::size_t lastScrim = 0;
+    std::size_t walker = 0;
+
+    for (std::size_t index = 0; index < renderer.blits.size(); ++index)
+    {
+        if (renderer.blits[index].tint == antwika::game::kOverlayScrim)
+        {
+            lastScrim = index;
+        }
+
+        if (renderer.blits[index].source
+            == walkerTile(Direction::East))
+        {
+            walker = index;
+        }
+    }
+
+    EXPECT_GT(walker, lastScrim);
 }
 
 // The hover readout: drawn from the same snapshot, last of everything.

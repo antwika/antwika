@@ -15,6 +15,8 @@
 #include "antwika/game/Direction.hpp"
 #include "antwika/game/GridExtent.hpp"
 #include "antwika/game/HousingLevel.hpp"
+#include "antwika/game/MapView.hpp"
+#include "antwika/game/OverlayField.hpp"
 #include "antwika/game/PathIndex.hpp"
 #include "antwika/game/Resource.hpp"
 #include "antwika/game/RoadPlan.hpp"
@@ -310,6 +312,7 @@ namespace antwika::game
          */
         bool paused = false;
 
+
         /**
          * @brief The run of road a drag under way would lay.
          *
@@ -344,6 +347,30 @@ namespace antwika::game
          * nothing.
          */
         HoverReadout hover;
+        /**
+         * @brief Which picture of the city this is.
+         *
+         * Normal is the city itself and every other value is one number
+         * about it painted over the ground -- see MapView.
+         * Carried on the snapshot rather than read off MapViewState by
+         * whoever draws, for the reason the pause is: a snapshot draws
+         * the same picture wherever it is drawn, and the frames between
+         * two ticks must not see a view the tick did not.
+         */
+        MapView view = MapView::Normal;
+
+        /**
+         * @brief How strongly that view paints each cell.
+         *
+         * Empty for the normal view, which is what makes it the one
+         * with nothing painted over it rather than the one with a
+         * branch of its own.
+         * Filled once a tick rather than once a frame, like the plan
+         * beside it: it is derived from state a replay reproduces, so
+         * there is nothing about it a frame could see that the tick did
+         * not.
+         */
+        OverlayField overlay;
 
         /**
          * @brief Compare two snapshots.

@@ -155,7 +155,14 @@ namespace antwika::game
         // A city serves itself while its player reads the world map.
         // And stops only where a player asked -- see PauseState.
         CoverageSystem coverageSystem;
-        DesirabilityField desirability;
+
+        // The caller's where there is one, for the drag's reason.
+        // A renderer built before this call paints the view off it.
+        DesirabilityField ownDesirability;
+        DesirabilityField &desirability = config.desirability.has_value()
+            ? config.desirability->get()
+            : ownDesirability;
+
         DesirabilitySystem desirabilitySystem(desirability, config.extent);
 
         SessionGatedSystem gatedCoverage(coverageSystem, mode);
@@ -304,6 +311,12 @@ namespace antwika::game
         RoadDrag &drag =
             config.drag.has_value() ? config.drag->get() : ownDrag;
 
+        // And one with nobody to paint an overlay for still runs.
+        // So one of those is made here on exactly those terms.
+        MapViewState ownView;
+        MapViewState &view =
+            config.view.has_value() ? config.view->get() : ownView;
+
         // The four that are swapped together, named together.
         // A city is opened by putting its contents into these.
         // Declared here rather than beside the world-map sink.
@@ -337,6 +350,7 @@ namespace antwika::game
             input,
             toolbar,
             pause,
+            view,
             commands,
             drag,
             menuModal,

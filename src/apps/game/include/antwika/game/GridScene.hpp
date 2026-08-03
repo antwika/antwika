@@ -152,6 +152,12 @@ namespace antwika::game
             const SceneSnapshot &snapshot,
             const AtlasTextures &atlases) const;
 
+        void drawOverlay(
+            IRenderer &renderer,
+            Size canvas,
+            const SceneSnapshot &snapshot,
+            const AtlasTextures &atlases) const;
+
         void drawReadout(
             IRenderer &renderer,
             Size canvas,

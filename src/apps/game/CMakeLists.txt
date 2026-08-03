@@ -33,6 +33,7 @@ add_executable(antwika_game
     src/InputFold.cpp
     src/LabourQuery.cpp
     src/LabourSystem.cpp
+    src/MapView.cpp
     src/MainMenuScene.cpp
     src/MainMenuSink.cpp
     src/SupplySystem.cpp
@@ -40,6 +41,7 @@ add_executable(antwika_game
     src/MenuModalScene.cpp
     src/Messages.cpp
     src/ModeGatedSink.cpp
+    src/OverlayField.cpp
     src/OptionsFile.cpp
     src/OptionsScene.cpp
     src/OptionsState.cpp

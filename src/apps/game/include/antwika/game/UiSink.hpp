@@ -12,6 +12,7 @@
 #include "antwika/game/Camera.hpp"
 #include "antwika/game/CityRatings.hpp"
 #include "antwika/game/IMenuCommands.hpp"
+#include "antwika/game/MapView.hpp"
 #include "antwika/game/InputFold.hpp"
 #include "antwika/game/MenuModalScene.hpp"
 #include "antwika/game/PauseState.hpp"
@@ -127,6 +128,10 @@ namespace antwika::game
          * @param toolbar Describes the bar. Must outlive this sink.
          * @param pause Toggled by the pause button, held by the modal
          * opening, and read to label the button. Must outlive this sink.
+         * @param view Which picture of the city the overlay dropdown
+         * has chosen. Written here and by nothing else, inside the tick
+         * path, so a replay chooses the same one. Must outlive this
+         * sink.
          * @param commands What the game menu's items and the modal's
          * main-menu item ask for. Must outlive this sink.
          * @param drag The road drag opening the modal ends. Written here
@@ -146,6 +151,7 @@ namespace antwika::game
             const InputFold &input,
             const Toolbar &toolbar,
             PauseState &pause,
+            MapViewState &view,
             IMenuCommands &commands,
             RoadDrag &drag,
             const MenuModalScene &modal,
@@ -179,6 +185,14 @@ namespace antwika::game
          */
         [[nodiscard]] bool gameMenuOpen() const noexcept;
 
+        /**
+         * @brief Check whether the top bar's overlay menu is dropped
+         *        down.
+         * @return True between the press that opened it and the one that
+         * put it away.
+         */
+        [[nodiscard]] bool viewMenuOpen() const noexcept;
+
     private:
         [[nodiscard]] Pointer pointerNow(bool pressed) const;
 
@@ -195,6 +209,8 @@ namespace antwika::game
 
         void chooseFrom(std::size_t index);
 
+        void chooseView(std::size_t index);
+
         void openModal();
 
         void selectFrom(WidgetId activated);
@@ -204,6 +220,7 @@ namespace antwika::game
         const InputFold &input;
         const Toolbar &toolbar;
         PauseState &pause;
+        MapViewState &view;
         IMenuCommands &commands;
         RoadDrag &drag;
         const MenuModalScene &modal;
@@ -219,6 +236,12 @@ namespace antwika::game
         // antwika::ui holds no such flag, deliberately.
         // See ui::DropdownSpec: this is the one place it lives.
         bool listOpen = false;
+
+        // And whether the overlay menu's is, on those terms again.
+        // Two lists, so two flags rather than one.
+        // One may be open while the other is not.
+        // A shared flag would open both at once.
+        bool viewOpen = false;
 
         // The tick the bar reports, off the event being handled.
         // Every tick event carries the tick it belongs to.

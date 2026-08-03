@@ -37,6 +37,7 @@ namespace antwika::game
         const InputFold &input,
         const Toolbar &toolbar,
         PauseState &pause,
+        MapViewState &view,
         IMenuCommands &commands,
         RoadDrag &drag,
         const MenuModalScene &modal,
@@ -47,6 +48,7 @@ namespace antwika::game
           input(input),
           toolbar(toolbar),
           pause(pause),
+          view(view),
           commands(commands),
           drag(drag),
           modal(modal),
@@ -87,6 +89,11 @@ namespace antwika::game
     bool UiSink::gameMenuOpen() const noexcept
     {
         return listOpen;
+    }
+
+    bool UiSink::viewMenuOpen() const noexcept
+    {
+        return viewOpen;
     }
 
     void UiSink::openModal()
@@ -176,7 +183,7 @@ namespace antwika::game
     {
         const auto activated = interactions.activated;
 
-        // Only a press may put the list away.
+        // Only a press may put a list away.
         // Nothing else activates a widget at all.
         // So without this, every tick would close the list again.
         if (listOpen && pressed)
@@ -194,6 +201,25 @@ namespace antwika::game
             if (activated != widgets::kGameMenu)
             {
                 listOpen = false;
+
+                return true;
+            }
+        }
+
+        // The overlay menu, on exactly the terms above it.
+        // Two lists rather than one, so each is put away on its own.
+        if (viewOpen && pressed)
+        {
+            if (interactions.chosen.has_value())
+            {
+                chooseView(interactions.chosen->index);
+
+                return false;
+            }
+
+            if (activated != widgets::kViewMenu)
+            {
+                viewOpen = false;
 
                 return true;
             }
@@ -234,6 +260,15 @@ namespace antwika::game
         }
     }
 
+    void UiSink::chooseView(std::size_t index)
+    {
+        viewOpen = false;
+
+        // The index came off the very list this frame declared.
+        // So it names a view by construction.
+        view.set(static_cast<MapView>(index));
+    }
+
     void UiSink::actOnBar(WidgetId activated)
     {
         if (activated == widgets::kZoomIn)
@@ -263,7 +298,16 @@ namespace antwika::game
         {
             // The opposite of what is showing, rather than a flip.
             // PauseState's reason: two presses in one tick agree.
+            //
+            // The other list is put away on the way.
+            // Two open lists over one bar is a picture nobody meant.
+            viewOpen = false;
             listOpen = !listOpen;
+        }
+        else if (activated == widgets::kViewMenu)
+        {
+            listOpen = false;
+            viewOpen = !viewOpen;
         }
         else
         {
@@ -300,7 +344,9 @@ namespace antwika::game
             pause.paused(),
             tick,
             ratings,
-            listOpen);
+            listOpen,
+            view.view(),
+            viewOpen);
     }
 
     void UiSink::selectFrom(WidgetId activated)

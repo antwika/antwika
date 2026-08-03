@@ -40,7 +40,9 @@
 #include "antwika/game/GridExtent.hpp"
 #include "antwika/game/GridScene.hpp"
 #include "antwika/game/KeyBindings.hpp"
+#include "antwika/game/Desirability.hpp"
 #include "antwika/game/MainMenuScene.hpp"
+#include "antwika/game/MapView.hpp"
 #include "antwika/game/Messages.hpp"
 #include "antwika/game/OptionsFile.hpp"
 #include "antwika/game/PathIndex.hpp"
@@ -231,6 +233,14 @@ namespace
         // The renderer below previews the run of road it names.
         antwika::game::RoadDrag drag;
 
+        // And which picture of the city is showing, on those terms.
+        // The renderer below paints whatever it names over the ground.
+        antwika::game::MapViewState mapView;
+
+        // Rebuilt every tick by DesirabilitySystem inside the run.
+        // Owned here so the renderer can paint the view that reads it.
+        antwika::game::DesirabilityField desirability;
+
         // Against the size the window was asked for.
         // Never the size one reports, which nothing records.
         // That is what makes a recorded click hit the same button.
@@ -270,6 +280,8 @@ namespace
             .extent = kExtent,
             .pause = pause,
             .overlay = overlay,
+            .view = mapView,
+            .desirability = desirability,
             .drag = drag,
             .hint = hint,
             .menuScene = menuScene,
@@ -369,6 +381,8 @@ namespace
                 .built = built,
                 .mode = mode,
                 .pause = pause,
+                .view = mapView,
+                .desirability = desirability,
                 .drag = drag,
                 .observers = observers,
                 .replayRecorder = recorded.replayRecorder,

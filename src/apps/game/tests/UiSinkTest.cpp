@@ -33,6 +33,7 @@
 #include "antwika/game/InputFold.hpp"
 #include "antwika/game/MenuItem.hpp"
 #include "antwika/game/MenuModalScene.hpp"
+#include "antwika/game/MapView.hpp"
 #include "antwika/game/PauseState.hpp"
 #include "antwika/game/RoadDrag.hpp"
 #include "antwika/game/Toolbar.hpp"
@@ -139,6 +140,31 @@ namespace
             return Position{.x = centre->x, .y = centre->y};
         }
 
+        // The overlay list's items, which want *that* list open.
+        [[nodiscard]] Position viewItemPixelOn(WidgetId id) const
+        {
+            const auto centre = widgetCentre(
+                toolbar.describe(
+                    kCanvas,
+                    Pointer{},
+                    camera,
+                    antwika::game::BuildTool::Road,
+                    false,
+                    0,
+                    antwika::game::CityRatings{},
+                    false,
+                    mapView.view(),
+                    true),
+                id);
+
+            if (!centre.has_value())
+            {
+                return Position{};
+            }
+
+            return Position{.x = centre->x, .y = centre->y};
+        }
+
         void openGameMenu()
         {
             pressOn(widgets::kGameMenu);
@@ -212,6 +238,7 @@ namespace
         InputFold input{codec};
         Toolbar toolbar{kTranslator};
         PauseState pause;
+        antwika::game::MapViewState mapView;
 
         antwika::game::tests::FakeMenuCommands commands;
         RoadDrag drag;
@@ -223,6 +250,7 @@ namespace
             input,
             toolbar,
             pause,
+            mapView,
             commands,
             drag,
             modalScene,
@@ -541,6 +569,75 @@ TEST_F(UiSinkTest, Press_PutsTheGameMenuAwayOnASecondPressOnItsBox)
     pressOn(widgets::kGameMenu);
 
     EXPECT_FALSE(sink.gameMenuOpen());
+}
+
+// The overlay menu, on exactly the game menu's terms.
+// Which picture is showing decides nothing a run computes.
+// Whether the list is open decides what a click at a pixel means.
+TEST_F(UiSinkTest, Press_DropsTheOverlayMenuDownOnItsBox)
+{
+    pressOn(widgets::kViewMenu);
+
+    EXPECT_TRUE(sink.viewMenuOpen());
+    EXPECT_THAT(
+        textsOf(overlay.commands()),
+        ::testing::Contains(std::string{"desirability"}));
+}
+
+TEST_F(UiSinkTest, Press_ChoosesTheViewTheListWasPressedOn)
+{
+    pressOn(widgets::kViewMenu);
+    pressAt(
+        viewItemPixelOn(
+            widgets::viewWidget(antwika::game::MapView::Desirability)));
+
+    EXPECT_EQ(mapView.view(), antwika::game::MapView::Desirability);
+    EXPECT_FALSE(sink.viewMenuOpen());
+}
+
+// The closed box names what is showing rather than saying "view".
+// So which picture is up is readable without opening anything.
+TEST_F(UiSinkTest, Closed_NamesTheViewThatIsShowing)
+{
+    mapView.set(antwika::game::MapView::Fire);
+    tick();
+
+    EXPECT_THAT(
+        textsOf(overlay.commands()),
+        ::testing::Contains(std::string{"fire"}));
+}
+
+// Two lists over one bar is a picture nobody meant.
+// So opening either puts the other away.
+//
+// It takes two presses from an open list.
+// Which is the rule an open list already follows.
+// A press anywhere but the list puts it away and does nothing else.
+TEST_F(UiSinkTest, Press_PutsTheOtherListAwayWhenOneIsOpened)
+{
+    openGameMenu();
+    ASSERT_TRUE(sink.gameMenuOpen());
+
+    // The first press only dismisses.
+    pressOn(widgets::kViewMenu);
+
+    EXPECT_FALSE(sink.gameMenuOpen());
+    EXPECT_FALSE(sink.viewMenuOpen());
+
+    pressOn(widgets::kViewMenu);
+
+    EXPECT_TRUE(sink.viewMenuOpen());
+    EXPECT_FALSE(sink.gameMenuOpen());
+}
+
+// A press anywhere but the list puts it away, and does nothing else.
+TEST_F(UiSinkTest, Press_PutsTheOverlayMenuAwayOnAPressOffIt)
+{
+    pressOn(widgets::kViewMenu);
+    pressOn(widgets::kZoomIn);
+
+    EXPECT_FALSE(sink.viewMenuOpen());
+    EXPECT_EQ(mapView.view(), antwika::game::MapView::Normal);
 }
 
 // A closed list is a box and nothing else.

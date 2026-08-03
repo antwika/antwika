@@ -52,6 +52,7 @@
 #include "antwika/game/Path.hpp"
 #include "antwika/game/MenuModalScene.hpp"
 #include "antwika/game/PathIndex.hpp"
+#include "antwika/game/MapView.hpp"
 #include "antwika/game/PauseState.hpp"
 #include "antwika/game/RoadDrag.hpp"
 #include "antwika/game/SceneSnapshot.hpp"
@@ -381,6 +382,7 @@ namespace
         UiOverlay overlay{kCanvas};
         Toolbar toolbar{kTranslator};
         PauseState pause;
+        antwika::game::MapViewState mapView;
         WorldMapState cities{WorldMap{}};
         RoadDrag drag;
         antwika::game::tests::FakeMenuCommands commands;
@@ -392,6 +394,7 @@ namespace
             input,
             toolbar,
             pause,
+            mapView,
             commands,
             drag,
             modalScene,
@@ -782,7 +785,8 @@ namespace
             .buildings = {},
             .plan = {},
             .ghost = {},
-            .hover = {}};
+            .hover = {},
+            .overlay = {}};
     }
 
     [[nodiscard]] std::vector<Blit> blitsOf(const SceneSnapshot &snapshot)

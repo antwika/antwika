@@ -35,6 +35,7 @@ add_executable(antwika_game_tests
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/InputFold.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/LabourQuery.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/LabourSystem.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/MapView.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/MainMenuScene.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/MainMenuSink.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/SupplySystem.cpp
@@ -42,6 +43,7 @@ add_executable(antwika_game_tests
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/MenuModalScene.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/Messages.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/ModeGatedSink.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/OverlayField.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/OptionsFile.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/OptionsScene.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/OptionsState.cpp
@@ -141,6 +143,7 @@ add_executable(antwika_game_tests
     MenuModalSceneTest.cpp
     KeyBindingsTest.cpp
     OptionsFileTest.cpp
+    OverlayFieldTest.cpp
     OptionsSceneTest.cpp
     OptionsStateTest.cpp
     SessionGateTest.cpp

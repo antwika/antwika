@@ -13,6 +13,7 @@
 #include "antwika/game/BuildTool.hpp"
 #include "antwika/game/Camera.hpp"
 #include "antwika/game/CityRatings.hpp"
+#include "antwika/game/MapView.hpp"
 #include "antwika/game/MenuItem.hpp"
 #include "antwika/game/MessageId.hpp"
 #include "antwika/game/Messages.hpp"
@@ -132,6 +133,40 @@ namespace antwika::game
         inline constexpr WidgetId kBottomBar{
             static_cast<WidgetId>(
                 static_cast<std::uint64_t>(kTopBar) + 2)};
+
+        /**
+         * @brief The closed box of the top bar's overlay menu.
+         *
+         * Numbered after the bars rather than beside the game menu,
+         * for kGameMenu's own reason: deriving from the end of the run
+         * that is already spoken for is what keeps a list added here
+         * from renumbering one already there.
+         */
+        inline constexpr WidgetId kViewMenu{
+            static_cast<WidgetId>(
+                static_cast<std::uint64_t>(kBottomBar) + 1)};
+
+        /**
+         * @brief The overlay menu's first item, one per MapView.
+         *
+         * antwika::ui names option `n` of a list kFirstViewItem plus
+         * `n`, so the whole run of kMapViewCount ids is spoken for.
+         */
+        inline constexpr WidgetId kFirstViewItem{
+            static_cast<WidgetId>(
+                static_cast<std::uint64_t>(kViewMenu) + 1)};
+
+        /**
+         * @brief Get which option of the overlay menu a view is.
+         * @param view The view to ask about.
+         * @return That view's option in the dropped-down list.
+         */
+        [[nodiscard]] constexpr WidgetId viewWidget(MapView view) noexcept
+        {
+            return static_cast<WidgetId>(
+                static_cast<std::uint64_t>(kFirstViewItem)
+                + mapViewIndex(view));
+        }
 
         /**
          * @brief Get which button selects a tool.
@@ -328,7 +363,7 @@ namespace antwika::game
          * persisted -- antwika::ui retains nothing of the kind either.
          * @return The drawing commands and what the pointer did.
          *
-         * The last five are defaulted so that a caller with nothing to
+         * The last seven are defaulted so that a caller with nothing to
          * say about them -- a test whose subject is the zoom, or a
          * layout assertion -- writes only what it means.
          */
@@ -340,7 +375,9 @@ namespace antwika::game
             bool paused = false,
             antwika::time::Tick tick = 0,
             CityRatings ratings = {},
-            bool menuOpen = false) const;
+            bool menuOpen = false,
+            MapView view = MapView::Normal,
+            bool viewOpen = false) const;
 
     private:
         const Translator &translator;

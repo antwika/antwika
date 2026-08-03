@@ -13,6 +13,7 @@
 #include "antwika/game/Footprint.hpp"
 #include "antwika/game/FootprintOutline.hpp"
 #include "antwika/game/IsoProjection.hpp"
+#include "antwika/game/OverlayField.hpp"
 #include "antwika/game/ReadoutPanel.hpp"
 #include "antwika/game/SpriteBounds.hpp"
 #include "antwika/game/TileAtlas.hpp"
@@ -272,6 +273,11 @@ namespace antwika::game
 
         drawTerrain(renderer, canvas, snapshot, atlases);
 
+        // Over the ground and the blocks, under the walkers.
+        // A walker is a thing in the city rather than a fact about it.
+        // So an overlay reads as painted on rather than over the top.
+        drawOverlay(renderer, canvas, snapshot, atlases);
+
         // Last, so a walker is never hidden by what it is standing on.
         for (const auto &walker : snapshot.walkers)
         {
@@ -423,6 +429,70 @@ namespace antwika::game
         {
             drawBuilding(buildings[next]);
             ++next;
+        }
+    }
+
+    void GridScene::drawOverlay(
+        IRenderer &renderer,
+        Size canvas,
+        const SceneSnapshot &snapshot,
+        const AtlasTextures &atlases) const
+    {
+        // The city itself, with nothing painted over it.
+        // An empty field is what says so -- see OverlayField.
+        if (snapshot.overlay.empty())
+        {
+            return;
+        }
+
+        const auto ink = overlayColour(snapshot.view);
+
+        // The whole grid rather than only the cells with a value.
+        // A district nothing reaches is what somebody looks for here.
+        // So it has to be visibly darker rather than simply unpainted.
+        for (std::int32_t y = 0; y < snapshot.extent.height; ++y)
+        {
+            for (std::int32_t x = 0; x < snapshot.extent.width; ++x)
+            {
+                const Cell cell{.x = x, .y = y};
+
+                if (!onCanvas(cell, canvas, snapshot))
+                {
+                    continue;
+                }
+
+                const auto bounds =
+                    tileSpriteBounds(cell, snapshot.camera);
+
+                // The ground sprite, tinted, rather than a rectangle.
+                // A cell is a diamond and drawRect() takes a box.
+                // Which is the same reason the ghost's edge is lines.
+                renderer.drawTexture(
+                    atlases.oneByOne, groundTile(), bounds, kOverlayScrim);
+
+                const auto found = snapshot.overlay.find(cell);
+
+                if (found == snapshot.overlay.end())
+                {
+                    continue;
+                }
+
+                // Faintest at the bottom of the scale, never invisible.
+                // Or the bottom of it would read as nothing at all.
+                const auto strength = kOverlayFaintest
+                    + (255 - kOverlayFaintest) * found->second / 100;
+
+                renderer.drawTexture(
+                    atlases.oneByOne,
+                    groundTile(),
+                    bounds,
+                    Color{
+                        .red = ink.red,
+                        .green = ink.green,
+                        .blue = ink.blue,
+                        .alpha =
+                            static_cast<std::uint8_t>(strength)});
+            }
         }
     }
 
