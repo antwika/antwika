@@ -630,6 +630,17 @@ TEST_F(UiSinkTest, Press_PutsTheOtherListAwayWhenOneIsOpened)
     EXPECT_FALSE(sink.gameMenuOpen());
 }
 
+// Pressing the closed box again is what deliberately closing it is.
+// Which is why the box itself falls through to the toggle.
+TEST_F(UiSinkTest, Press_PutsTheOverlayMenuAwayOnASecondPressOnItsBox)
+{
+    pressOn(widgets::kViewMenu);
+    pressOn(widgets::kViewMenu);
+
+    EXPECT_FALSE(sink.viewMenuOpen());
+    EXPECT_EQ(mapView.view(), antwika::game::MapView::Normal);
+}
+
 // A press anywhere but the list puts it away, and does nothing else.
 TEST_F(UiSinkTest, Press_PutsTheOverlayMenuAwayOnAPressOffIt)
 {

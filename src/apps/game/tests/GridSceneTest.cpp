@@ -744,6 +744,20 @@ TEST_F(GridSceneTest, Draw_PaintsTheOverlayBeforeTheWalkers)
     EXPECT_GT(walker, lastScrim);
 }
 
+// Culled on where it would be drawn, as everything else here is.
+TEST_F(GridSceneTest, Draw_PaintsNoOverlayCellOffTheCanvas)
+{
+    auto scene_ = snapshot(
+        Camera(Point{.x = -100000, .y = -100000}, 3),
+        GridExtent{.width = 2, .height = 2});
+    scene_.view = antwika::game::MapView::Food;
+    scene_.overlay = {{Cell{.x = 1, .y = 1}, 100}};
+
+    scene.draw(renderer, kCanvas, scene_, atlases);
+
+    EXPECT_TRUE(renderer.blits.empty());
+}
+
 // The hover readout: drawn from the same snapshot, last of everything.
 TEST_F(GridSceneTest, Draw_SaysNothingWithNothingUnderThePointer)
 {

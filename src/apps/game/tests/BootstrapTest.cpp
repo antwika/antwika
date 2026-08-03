@@ -39,6 +39,8 @@
 #include "antwika/game/UiCanvas.hpp"
 #include "antwika/game/UiOverlay.hpp"
 #include "antwika/game/PathIndex.hpp"
+#include "antwika/game/Desirability.hpp"
+#include "antwika/game/MapView.hpp"
 #include "antwika/game/PauseState.hpp"
 #include "antwika/game/RoadDrag.hpp"
 #include "antwika/game/BuildTool.hpp"
@@ -94,6 +96,11 @@ namespace
         // An application owns one so its renderer can read it.
         antwika::game::RoadDrag drag;
 
+        // And these two, on exactly those terms.
+        // A renderer paints the view off the field the run rebuilds.
+        antwika::game::MapViewState mapView;
+        antwika::game::DesirabilityField desirability;
+
         antwika::game::GameSummary run(
             ReplaySource &source,
             antwika::time::Tick maxTicks,
@@ -110,6 +117,8 @@ namespace
                 .built = built,
                 .mode = mode,
                 .pause = pause,
+                .view = mapView,
+                .desirability = desirability,
                 .drag = drag,
                 .maxTicks = maxTicks};
             if (recorder != nullptr)

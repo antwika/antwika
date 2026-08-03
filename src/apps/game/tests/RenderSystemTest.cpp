@@ -30,7 +30,9 @@
 #include "antwika/game/Camera.hpp"
 #include "antwika/game/Cell.hpp"
 #include "antwika/game/Direction.hpp"
+#include "antwika/game/Desirability.hpp"
 #include "antwika/game/FrameMeter.hpp"
+#include "antwika/game/MapView.hpp"
 #include "antwika/game/GridExtent.hpp"
 #include "antwika/game/GridScene.hpp"
 #include "antwika/game/IsoProjection.hpp"
@@ -334,6 +336,47 @@ TEST_F(RenderSystemTest, Update_DrawsAGhostTheStalePressFlagWouldHide)
     EXPECT_CALL(renderer, drawTexture(_, _, _, _))
         .Times(static_cast<int>(kExtent.width * kExtent.height) + 1);
     EXPECT_CALL(renderer, drawLine(_, _, _)).Times(AnyNumber());
+
+    system.update(world, 0);
+}
+
+// The overlay views: read off the setup rather than the snapshot.
+// Absent leaves the city itself, which every other case here has.
+TEST_F(RenderSystemTest, Update_PaintsTheViewTheSetupNames)
+{
+    antwika::game::MapViewState mapView;
+    mapView.set(antwika::game::MapView::Desirability);
+
+    antwika::game::DesirabilityField field;
+    field[Cell{.x = 1, .y = 1}] = 6;
+
+    auto withView = setup();
+    withView.view = mapView;
+    withView.desirability = field;
+    RenderSystem system(withView);
+
+    // One blit per cell, plus a scrim over each, plus the one value.
+    EXPECT_CALL(renderer, drawTexture(_, _, _, _))
+        .Times(
+            static_cast<int>(kExtent.width * kExtent.height) * 2 + 1);
+
+    system.update(world, 0);
+}
+
+// A view with no field to paint from is an all-dark map.
+// Which is exactly what a city nothing has reached looks like.
+TEST_F(RenderSystemTest, Update_PaintsNoDesirabilityWithNoFieldToRead)
+{
+    antwika::game::MapViewState mapView;
+    mapView.set(antwika::game::MapView::Desirability);
+
+    auto withView = setup();
+    withView.view = mapView;
+    RenderSystem system(withView);
+
+    // The ground and a scrim over it, and no value anywhere.
+    EXPECT_CALL(renderer, drawTexture(_, _, _, _))
+        .Times(static_cast<int>(kExtent.width * kExtent.height) * 2);
 
     system.update(world, 0);
 }

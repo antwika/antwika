@@ -363,6 +363,48 @@ namespace
             store.take().buildings[1].ticksUntilOutput.has_value());
     }
 
+    // The journeys, through the same one door.
+    TEST_F(SessionStoreTest, Restore_PutsBackAJourneyEitherWayItGoes)
+    {
+        SaveGame save;
+        save.paths = {{.x = 3, .y = 3}};
+        save.walkers = {
+            SavedWalker{
+                .at = {.x = 3, .y = 3},
+                .kind = antwika::game::WalkerKind::Migrant,
+                .journey =
+                    antwika::game::SavedJourney{
+                        .towards = {.x = 5, .y = 5}, .house = 0U}},
+            SavedWalker{
+                .at = {.x = 3, .y = 3},
+                .kind = antwika::game::WalkerKind::Migrant,
+                .journey = antwika::game::SavedJourney{
+                    .towards = {.x = 0, .y = 3}}}};
+        save.buildings = {antwika::game::SavedBuilding{
+            .at = {.x = 5, .y = 5},
+            .kind = antwika::game::BuildingKind::House}};
+
+        store.restore(save);
+        world.commit();
+
+        const auto taken = store.take();
+
+        EXPECT_EQ(taken.walkers[0].journey, save.walkers[0].journey);
+        EXPECT_EQ(taken.walkers[1].journey, save.walkers[1].journey);
+    }
+
+    TEST_F(SessionStoreTest, Restore_LeavesAWalkerWithNoJourneyWhereItIs)
+    {
+        SaveGame save;
+        save.paths = {{.x = 3, .y = 3}};
+        save.walkers = {SavedWalker{.at = {.x = 3, .y = 3}}};
+
+        store.restore(save);
+        world.commit();
+
+        EXPECT_FALSE(store.take().walkers[0].journey.has_value());
+    }
+
     TEST_F(SessionStoreTest, Restore_LeavesAWalkerWithNoErrandRoaming)
     {
         SaveGame save;

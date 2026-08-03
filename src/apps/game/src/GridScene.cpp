@@ -439,8 +439,10 @@ namespace antwika::game
         const AtlasTextures &atlases) const
     {
         // The city itself, with nothing painted over it.
-        // An empty field is what says so -- see OverlayField.
-        if (snapshot.overlay.empty())
+        // Asked of the view rather than of the field being empty.
+        // A city nothing has reached yet has an empty field too.
+        // And an all-dark map is exactly what it should look like.
+        if (snapshot.view == MapView::Normal)
         {
             return;
         }

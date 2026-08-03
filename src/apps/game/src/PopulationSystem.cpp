@@ -130,11 +130,11 @@ namespace antwika::game
     {
         const auto slot = freeWalkerSlot(world, building);
         const auto gate = nearestGate(door, paths, extent);
+        const auto out = world.view<Walker>().size();
 
         // A city walled off from the outside takes nobody in.
         // Which is an ordinary answer rather than an error.
-        if (!slot.has_value() || !gate.has_value()
-            || world.view<Walker>().size() >= kWalkerLimit)
+        if (!slot.has_value() || !gate.has_value() || out >= kWalkerLimit)
         {
             return;
         }
@@ -157,10 +157,11 @@ namespace antwika::game
     void PopulationSystem::turnOut(
         World &world, Entity entity, std::optional<Cell> door)
     {
+        const auto out = world.view<Walker>().size();
+
         // Nowhere to walk from, so there is nobody to draw walking.
         // The person has left either way; only the picture differs.
-        if (!door.has_value()
-            || world.view<Walker>().size() >= kWalkerLimit)
+        if (!door.has_value() || out >= kWalkerLimit)
         {
             return;
         }

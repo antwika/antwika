@@ -17,6 +17,7 @@
 #include "antwika/game/BuildingKind.hpp"
 #include "antwika/game/Coverage.hpp"
 #include "antwika/game/Errand.hpp"
+#include "antwika/game/Journey.hpp"
 #include "antwika/game/PathIndex.hpp"
 #include "antwika/game/Household.hpp"
 #include "antwika/game/HousingLevel.hpp"
@@ -55,6 +56,7 @@ using antwika::game::saveGameToJson;
 using antwika::game::Production;
 using antwika::game::Resource;
 using antwika::game::SavedErrand;
+using antwika::game::SavedJourney;
 using antwika::game::SavedWalker;
 using antwika::game::Walker;
 using antwika::game::WalkerKind;
@@ -923,6 +925,158 @@ TEST(SaveGameTest, WritesAnErrandNamingNobodyWhenItsStoreIsGone)
     ASSERT_EQ(save.walkers.size(), 1U);
     ASSERT_TRUE(save.walkers[0].errand.has_value());
     EXPECT_FALSE(save.walkers[0].errand->destination.has_value());
+}
+
+// A person walking to a house, and one walking off the map.
+// The two halves of a journey -- see Journey.
+TEST(SaveGameTest, RoundTripsAWalkerMidJourney)
+{
+    SaveGame save;
+    save.walkers = {
+        SavedWalker{
+            .at = {.x = 1, .y = 2},
+            .kind = WalkerKind::Migrant,
+            .journey =
+                SavedJourney{.towards = {.x = 4, .y = 4}, .house = 0U}},
+        SavedWalker{
+            .at = {.x = 3, .y = 2},
+            .kind = WalkerKind::Migrant,
+            .journey = SavedJourney{.towards = {.x = 0, .y = 2}}}};
+    save.buildings = {
+        antwika::game::SavedBuilding{
+            .at = {.x = 4, .y = 4}, .kind = BuildingKind::House}};
+
+    const auto loaded = saveGameFromJson(saveGameToJson(save));
+
+    EXPECT_EQ(loaded.walkers, save.walkers);
+    ASSERT_TRUE(loaded.walkers[1].journey.has_value());
+    EXPECT_FALSE(loaded.walkers[1].journey->house.has_value());
+}
+
+TEST(SaveGameTest, LeavesAWalkerGoingNowhereWithoutAJourney)
+{
+    SaveGame save;
+    save.walkers = {SavedWalker{.at = {.x = 1, .y = 2}}};
+
+    const auto encoded = saveGameToJson(save);
+
+    EXPECT_FALSE(encoded.at("walkers").at(0).contains("journey"));
+    EXPECT_FALSE(
+        saveGameFromJson(encoded).walkers[0].journey.has_value());
+}
+
+// Refused rather than repaired, exactly as an errand's is.
+TEST(SaveGameTest, RejectsAJourneyWhoseHouseIsNotABuildingInIt)
+{
+    SaveGame save;
+    save.walkers = {SavedWalker{
+        .at = {.x = 1, .y = 2},
+        .journey = SavedJourney{.towards = {.x = 3, .y = 3}, .house = 7U}}};
+
+    const auto encoded = saveGameToJson(save);
+
+    EXPECT_THROW((void)saveGameFromJson(encoded), SaveFormatError);
+}
+
+// The world's own journeys, indexed on the way out.
+TEST(SaveGameTest, WritesAJourneyAgainstTheHouseItNames)
+{
+    ::testing::NiceMock<MockLogger> logger;
+    World world(logger);
+    const PathIndex paths;
+
+    const auto house = world.create();
+    world.add<Cell>(house, Cell{.x = 4, .y = 4});
+    world.add<Building>(house, Building{.kind = BuildingKind::House});
+    world.commit();
+
+    const auto mover = world.create();
+    world.add<Cell>(mover, Cell{.x = 1, .y = 1});
+    world.add<Walker>(mover, Walker{.kind = WalkerKind::Migrant});
+    world.add<antwika::game::Journey>(
+        mover,
+        antwika::game::Journey{
+            .towards = Cell{.x = 4, .y = 4}, .house = house});
+
+    // And one walking out of town, bound for no building at all.
+    const auto leaver = world.create();
+    world.add<Cell>(leaver, Cell{.x = 2, .y = 1});
+    world.add<Walker>(leaver, Walker{.kind = WalkerKind::Migrant});
+    world.add<antwika::game::Journey>(
+        leaver,
+        antwika::game::Journey{.towards = Cell{.x = 0, .y = 1}});
+    world.commit();
+
+    const auto save = saveGameOf(
+        world,
+        paths,
+        Camera{},
+        GameState{},
+        GridExtent{.width = 16, .height = 16});
+
+    ASSERT_EQ(save.walkers.size(), 2U);
+    ASSERT_TRUE(save.walkers[0].journey.has_value());
+    EXPECT_EQ(save.walkers[0].journey->house, 0U);
+    EXPECT_EQ(save.walkers[0].journey->towards, (Cell{.x = 4, .y = 4}));
+    ASSERT_TRUE(save.walkers[1].journey.has_value());
+    EXPECT_FALSE(save.walkers[1].journey->house.has_value());
+}
+
+// A house whose building never reached the file is nobody.
+// Which is the same state somebody leaving town already has.
+TEST(SaveGameTest, WritesAJourneyNamingNobodyWhenItsHouseIsGone)
+{
+    ::testing::NiceMock<MockLogger> logger;
+    World world(logger);
+    const PathIndex paths;
+
+    const auto mover = world.create();
+    world.add<Cell>(mover, Cell{.x = 1, .y = 1});
+    world.add<Walker>(mover, Walker{.kind = WalkerKind::Migrant});
+    world.add<antwika::game::Journey>(
+        mover,
+        antwika::game::Journey{
+            .towards = Cell{.x = 4, .y = 4},
+            .house = static_cast<antwika::ecs::Entity>(99)});
+    world.commit();
+
+    const auto save = saveGameOf(
+        world,
+        paths,
+        Camera{},
+        GameState{},
+        GridExtent{.width = 16, .height = 16});
+
+    ASSERT_EQ(save.walkers.size(), 1U);
+    ASSERT_TRUE(save.walkers[0].journey.has_value());
+    EXPECT_FALSE(save.walkers[0].journey->house.has_value());
+}
+
+TEST(SaveGameTest, SavedJourneyEqualityComparesEveryField)
+{
+    const SavedJourney base{.towards = {.x = 1, .y = 2}, .house = 3U};
+
+    EXPECT_EQ(base, base);
+
+    auto elsewhere = base;
+    elsewhere.towards = Cell{.x = 2, .y = 1};
+    EXPECT_NE(base, elsewhere);
+
+    auto leaving = base;
+    leaving.house.reset();
+    EXPECT_NE(base, leaving);
+}
+
+TEST(SaveGameTest, SavedWalkerEqualityComparesItsJourney)
+{
+    SavedWalker base{.at = {.x = 1, .y = 2}};
+    base.journey = SavedJourney{};
+
+    auto staying = base;
+    staying.journey.reset();
+
+    EXPECT_EQ(base, base);
+    EXPECT_NE(base, staying);
 }
 
 TEST(SaveGameTest, SavedErrandEqualityComparesEveryField)

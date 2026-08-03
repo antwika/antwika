@@ -29,10 +29,19 @@ namespace antwika::game
         constexpr Color kDesirableInk{
             .red = 132, .green = 214, .blue = 160};
 
+        // Nothing divides by a full of zero, and these are why.
+        // Both are the only ceilings asShare() is ever handed.
+        // Stated here rather than guarded for.
+        // A guard on a constant is a branch no test could take.
+        static_assert(kCoverageFull > 0);
+        static_assert(kStockCapacity > 0);
+        static_assert(kStoreCapacity > 0);
+        static_assert(kPleasantEnough > 0);
+
         [[nodiscard]] std::int32_t asShare(
             std::int32_t held, std::int32_t full) noexcept
         {
-            if (held <= 0 || full <= 0)
+            if (held <= 0)
             {
                 return 0;
             }

@@ -290,7 +290,11 @@ Save and load share one verb because they share one screen: the picker is where 
 `new game` restores an empty `SaveGame` through `SessionStore`, which is the one route into the live grid a load already goes through, so "empty the city" is not a second way of doing it; the other cities of a world keep what was built on them, since a session holds one live grid.
 
 **Moving a widget changes what every recorded click means**, so `replays/demo.jsonl` was recorded again against this layout — by driving the application with `--replay` over the re-aimed session and `--record` writing what it actually dispatched, rather than by editing the file.
-It reaches the identical city either way: ten road tiles, one house at (4,3) at `tent` with water coverage 474, population 3, service reach 25, camera at pan (512,48) and zoom 3 after 92 ticks.
+It reaches the identical city either way: ten road tiles, one house at (4,3) at `tent` with water coverage 474, service reach 25, camera at pan (512,48) and zoom 3 after 92 ticks.
+
+**It houses nobody, and that is the immigration rule showing rather than a regression.**
+Its ten road tiles are laid in the middle of the grid and none of them reaches an edge, so there is no gate for anybody to walk in through — see the population section below.
+The file is still what pins the layout and the determinism, which is what it is for; a session that wanted people in it would have to lay road out to the edge first.
 `BootstrapTest` pins the two pixels that file depends on — the main menu's New Game and the palette's House — so a layout change fails a test rather than being rediscovered by hand.
 
 **The menu modal is a modal rather than a mode, and whether it is up is simulation state.**

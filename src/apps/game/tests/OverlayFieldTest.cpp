@@ -203,3 +203,25 @@ TEST_F(OverlayFieldTest, AServiceViewTakesThatServicesOwnColour)
         overlayColour(MapView::Food),
         antwika::game::resourceColour(antwika::game::Resource::Food));
 }
+
+// A block reaching past the edge is clipped rather than refused.
+// A scene draws what it is handed, and only what is on the grid.
+TEST_F(OverlayFieldTest, AServiceViewClipsABlockToTheExtent)
+{
+    const auto farm =
+        build(Cell{.x = kExtent.width - 1, .y = 0}, BuildingKind::Farm);
+
+    auto coverage = antwika::game::Coverage{};
+    coverage.ticksLeft[antwika::game::serviceIndex(Service::Safety)] =
+        kCoverageFull;
+    setCoverage(world, farm, coverage);
+    world.commit();
+
+    const auto field =
+        overlayFieldOf(world, MapView::Fire, desirability, kExtent);
+
+    // Two cells square with the east half of it off the grid.
+    EXPECT_EQ(field.size(), 2U);
+    EXPECT_EQ(field.at(Cell{.x = kExtent.width - 1, .y = 0}), 100);
+    EXPECT_EQ(field.at(Cell{.x = kExtent.width - 1, .y = 1}), 100);
+}

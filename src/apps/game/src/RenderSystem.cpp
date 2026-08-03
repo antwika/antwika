@@ -27,6 +27,12 @@ namespace antwika::game
         // So a tile reaching past the canvas's edge is covered by it.
         constexpr antwika::gfx::Color kSurround{
             .red = 0, .green = 0, .blue = 0};
+
+        // What the desirability view reads where no field was offered.
+        // Out here rather than a static local inside update().
+        // A function-local static carries a thread-safe init guard.
+        // Which is a branch that is taken once and never again.
+        const DesirabilityField kNoField;
     } // namespace
 
     RenderSystem::RenderSystem(const RenderSetup &setup) : setup(setup)
@@ -66,7 +72,6 @@ namespace antwika::game
         // A field to paint from where there is one to paint.
         // Absent leaves the desirability view painting nothing.
         // Which is the same shape every optional member here has.
-        static const DesirabilityField kNoField;
         latest.overlay = overlayFieldOf(
             world,
             latest.view,

@@ -1,4 +1,6 @@
 #include "antwika/game/PopulationSystem.hpp"
+#include "antwika/game/Journey.hpp"
+#include "antwika/game/SpawnSystem.hpp"
 #include "antwika/game/Walker.hpp"
 #include "antwika/game/WalkerSystem.hpp"
 
@@ -318,4 +320,218 @@ TEST(PopulationSystemTest, Update_LeavesTheOtherTwoCountdownsAlone)
     EXPECT_EQ(
         household.ticksUntilDevolve, Household{}.ticksUntilDevolve);
     EXPECT_EQ(household.ticksUntilSettler, kSettlerPeriodTicks);
+}
+
+// A city already at the walker cap sends for nobody.
+// Which is the same backstop SpawnSystem and the markets keep.
+TEST(PopulationSystemTest, Update_SendsForNobodyAtTheWalkerCap)
+{
+    Scene scene;
+    scene.pave();
+
+    for (std::size_t index = 0; index < antwika::game::kWalkerLimit;
+         ++index)
+    {
+        const auto filler = scene.world.create();
+        scene.world.add<Cell>(filler, Cell{.x = 0, .y = kAt.y - 1});
+        scene.world.add<Walker>(filler, Walker{});
+    }
+
+    scene.world.commit();
+    scene.run(kSettlerPeriodTicks * 2);
+
+    EXPECT_EQ(scene.people(), 0);
+}
+
+// And a crowded one turns nobody out onto a full road either.
+TEST(PopulationSystemTest, Update_WalksNobodyOutAtTheWalkerCap)
+{
+    Scene scene;
+    scene.pave();
+
+    const auto over = populationCapacityOf(HousingLevel::Tent) + 3;
+    scene.settle(Household{.population = over});
+
+    for (std::size_t index = 0; index < antwika::game::kWalkerLimit;
+         ++index)
+    {
+        const auto filler = scene.world.create();
+        scene.world.add<Cell>(filler, Cell{.x = 0, .y = kAt.y - 1});
+        scene.world.add<Walker>(filler, Walker{});
+    }
+
+    scene.world.commit();
+    scene.run(kSettlerPeriodTicks);
+
+    // The person still leaves; only the walk is not drawn.
+    EXPECT_EQ(scene.people(), over - 1);
+    EXPECT_EQ(scene.walking(), 0);
+}
+
+// A block nothing reaches turns its overflow out with no walk at all.
+TEST(PopulationSystemTest, Update_ThinsACrowdedHouseWithNoRoadBeside)
+{
+    Scene scene;
+
+    const auto over = populationCapacityOf(HousingLevel::Tent) + 3;
+    scene.settle(Household{.population = over});
+
+    scene.run(kSettlerPeriodTicks);
+
+    EXPECT_EQ(scene.people(), over - 1);
+    EXPECT_EQ(scene.walking(), 0);
+}
+
+// A house shedding somebody with a neighbour that has room.
+// They walk there rather than to the road out of town.
+TEST(PopulationSystemTest, Update_WalksAnOverflowToAHouseWithRoom)
+{
+    Scene scene;
+    scene.pave();
+
+    const auto over = populationCapacityOf(HousingLevel::Tent) + 1;
+    scene.settle(Household{.population = over});
+
+    const auto spare = scene.world.create();
+    scene.world.add<Cell>(spare, Cell{.x = 1, .y = kAt.y});
+    scene.world.add<Building>(
+        spare, Building{.kind = BuildingKind::House});
+    scene.world.commit();
+
+    scene.run(kSettlerPeriodTicks);
+
+    // The one turned out is bound for the spare bed.
+    // Rather than the road out of town, which turnOut() decides after.
+    bool bound = false;
+
+    for (const auto entity :
+         scene.world.view<Walker, antwika::game::Journey>())
+    {
+        bound = bound
+            || scene.world.get<antwika::game::Journey>(entity).house
+                == spare;
+    }
+
+    EXPECT_TRUE(bound);
+}
+
+// A migrant whose house was demolished mid-walk reaches nobody.
+// Which is the arm WalkerSystem answers by retiring them.
+TEST(PopulationSystemTest, Update_AdmitsNobodyForAJourneyBoundNowhere)
+{
+    Scene scene;
+    scene.pave();
+
+    const auto stray = scene.world.create();
+    scene.world.add<Cell>(stray, Cell{.x = kAt.x, .y = kAt.y - 1});
+    scene.world.add<Walker>(
+        stray,
+        Walker{.kind = antwika::game::WalkerKind::Migrant});
+    scene.world.add<antwika::game::Journey>(
+        stray, antwika::game::Journey{.towards = Cell{.x = 0, .y = 0}});
+    scene.world.commit();
+
+    scene.run(1);
+
+    EXPECT_EQ(scene.people(), 0);
+}
+
+// A house with both slots taken sends for nobody, however due it is.
+// A slot is the whole of the "somebody is already coming" bookkeeping.
+TEST(PopulationSystemTest, Update_SendsForNobodyWithBothSlotsTaken)
+{
+    Scene scene;
+    scene.pave();
+
+    auto building = scene.world.get<Building>(scene.house);
+
+    for (std::size_t slot = 0; slot < antwika::game::kMaxWalkersOut;
+         ++slot)
+    {
+        const auto held = scene.world.create();
+        scene.world.add<Cell>(held, Cell{.x = 0, .y = kAt.y - 1});
+        scene.world.add<Walker>(held, Walker{});
+        building.walkers[slot] = held;
+    }
+
+    scene.world.set<Building>(scene.house, building);
+    scene.world.commit();
+
+    scene.run(kSettlerPeriodTicks * 2);
+
+    EXPECT_EQ(scene.people(), 0);
+}
+
+// A migrant already on the road is what turns a second ask down.
+// A slot holding one of some other kind is a different refusal.
+TEST(PopulationSystemTest, Update_SendsForNobodyWithOneAlreadyWalking)
+{
+    Scene scene;
+    scene.pave();
+
+    const auto coming = scene.world.create();
+    scene.world.add<Cell>(coming, Cell{.x = 0, .y = kAt.y - 1});
+    scene.world.add<Walker>(
+        coming,
+        Walker{.kind = antwika::game::WalkerKind::Migrant});
+    scene.world.add<antwika::game::Journey>(
+        coming,
+        antwika::game::Journey{.towards = kAt, .house = scene.house});
+    scene.world.commit();
+
+    auto building = scene.world.get<Building>(scene.house);
+    building.walkers[0] = coming;
+    scene.world.set<Building>(scene.house, building);
+    scene.world.commit();
+
+    // Due on the very next tick, while that one is still at the gate.
+    scene.settle(Household{.ticksUntilSettler = 1});
+    scene.run(1);
+
+    // Still the one, rather than a second sent for on top of it.
+    EXPECT_EQ(scene.walking(), 1);
+    EXPECT_EQ(scene.people(), 0);
+}
+
+// A journey naming a house that has since been demolished.
+// Answered by the world rather than by the stale cell it holds.
+TEST(PopulationSystemTest, Update_AdmitsNobodyForAJourneyWhoseHouseWent)
+{
+    Scene scene;
+    scene.pave();
+
+    const auto stray = scene.world.create();
+    scene.world.add<Cell>(stray, Cell{.x = kAt.x, .y = kAt.y - 1});
+    scene.world.add<Walker>(
+        stray,
+        Walker{.kind = antwika::game::WalkerKind::Migrant});
+    scene.world.add<antwika::game::Journey>(
+        stray,
+        antwika::game::Journey{
+            .towards = kAt,
+            .house = static_cast<antwika::ecs::Entity>(99)});
+    scene.world.commit();
+
+    // This system alone, since WalkerSystem would retire them first.
+    // The two answer the same question and this is the one under test.
+    scene.system.update(scene.world, 0);
+    scene.world.commit();
+
+    EXPECT_EQ(scene.people(), 0);
+    EXPECT_TRUE(scene.world.alive(stray));
+}
+
+// A walk longer than the countdown that started it.
+// The house asks again while its migrant is still on the road.
+// The handle in its own slot is what turns the second ask down.
+TEST(PopulationSystemTest, Update_AsksAgainForNobodyWhileOneIsWalking)
+{
+    Scene scene;
+    scene.pave();
+
+    scene.run(kSettlerPeriodTicks * 2 + 1);
+
+    // One arrived and at most one more is on the road.
+    // Never two of them, which is what a missing guard would send.
+    EXPECT_LE(scene.walking(), 1);
 }

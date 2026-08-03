@@ -18,6 +18,7 @@
 #include "antwika/game/Errand.hpp"
 #include "antwika/game/Footprint.hpp"
 #include "antwika/game/Path.hpp"
+#include "antwika/game/Journey.hpp"
 #include "antwika/game/PathIndex.hpp"
 #include "antwika/game/Household.hpp"
 #include "antwika/game/Workforce.hpp"
@@ -477,6 +478,97 @@ namespace
         ASSERT_EQ(taken.buildings.size(), 2U);
         EXPECT_EQ(taken.buildings[0].production, grid.buildings[0].production);
         EXPECT_FALSE(taken.buildings[1].production.has_value());
+    }
+
+    // The journeys, on exactly the errands' terms.
+    TEST_F(CityGridTest, CityGridOf_TakesTheJourneys)
+    {
+        layPath(Cell{1, 1});
+        const auto house = putUp(Cell{2, 2}, BuildingKind::House);
+        const auto mover = sendOut(Cell{1, 1}, kNullEntity);
+        const auto leaver = sendOut(Cell{1, 1}, kNullEntity);
+        world.add<antwika::game::Journey>(
+            mover,
+            antwika::game::Journey{
+                .towards = Cell{2, 2}, .house = house});
+        world.add<antwika::game::Journey>(
+            leaver, antwika::game::Journey{.towards = Cell{0, 1}});
+        world.commit();
+
+        const auto grid = cityGridOf(world);
+
+        ASSERT_EQ(grid.walkers.size(), 2U);
+        ASSERT_TRUE(grid.walkers[0].journey.has_value());
+        EXPECT_EQ(grid.walkers[0].journey->towards, (Cell{2, 2}));
+        EXPECT_EQ(grid.walkers[0].journey->house, kNullEntity);
+        EXPECT_EQ(grid.walkers[0].joining, 0U);
+
+        ASSERT_TRUE(grid.walkers[1].journey.has_value());
+        EXPECT_FALSE(grid.walkers[1].joining.has_value());
+    }
+
+    TEST_F(CityGridTest, CityGridOf_ForgetsAJourneyNamingNobodyItKept)
+    {
+        layPath(Cell{1, 1});
+        const auto mover = sendOut(Cell{1, 1}, kNullEntity);
+        world.add<antwika::game::Journey>(
+            mover,
+            antwika::game::Journey{
+                .towards = Cell{2, 2},
+                .house = static_cast<Entity>(99)});
+        world.commit();
+
+        const auto grid = cityGridOf(world);
+
+        ASSERT_EQ(grid.walkers.size(), 1U);
+        EXPECT_FALSE(grid.walkers[0].joining.has_value());
+    }
+
+    TEST_F(CityGridTest, RestoreCityGrid_PutsTheJourneysBack)
+    {
+        paths.insert(Cell{1, 1});
+
+        CityGrid grid;
+        grid.walkers = {
+            StoredWalker{
+                .at = Cell{1, 1},
+                .walker = Walker{},
+                .journey =
+                    antwika::game::Journey{.towards = Cell{2, 2}},
+                .joining = 0U},
+            StoredWalker{
+                .at = Cell{1, 1},
+                .walker = Walker{},
+                .journey =
+                    antwika::game::Journey{.towards = Cell{0, 1}}}};
+        grid.buildings = {
+            StoredBuilding{
+                .at = Cell{2, 2},
+                .building = Building{.kind = BuildingKind::House}}};
+
+        restoreCityGrid(world, built, paths, grid);
+        world.commit();
+
+        const auto taken = cityGridOf(world);
+
+        ASSERT_EQ(taken.walkers.size(), 2U);
+        ASSERT_TRUE(taken.walkers[0].journey.has_value());
+        EXPECT_EQ(taken.walkers[0].journey->towards, (Cell{2, 2}));
+        EXPECT_EQ(taken.walkers[0].joining, 0U);
+        ASSERT_TRUE(taken.walkers[1].journey.has_value());
+        EXPECT_FALSE(taken.walkers[1].joining.has_value());
+    }
+
+    TEST_F(CityGridTest, StoredWalkerEqualityComparesItsJourney)
+    {
+        StoredWalker base{.at = Cell{1, 1}, .walker = Walker{}};
+        base.journey = antwika::game::Journey{};
+        base.joining = 2U;
+
+        expectMemberCompared(
+            base, [](StoredWalker &w) { w.journey.reset(); });
+        expectMemberCompared(
+            base, [](StoredWalker &w) { w.joining.reset(); });
     }
 
     TEST_F(CityGridTest, StoredWalkerEqualityComparesItsErrand)
