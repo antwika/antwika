@@ -102,12 +102,15 @@ namespace antwika::game
      * and arrives at the same route.
      *
      * **A right press means one of two things, and the palette decides
-     * which.** While a building tool is selected it cancels: the palette
-     * is put down, selecting nothing at all, and nothing is placed by
-     * that press. Otherwise -- with the road tool selected, which is
-     * what a session starts with, or with nothing selected, which is
-     * where a cancel leaves it -- it drops a walker on the path under
-     * the pointer, exactly as it always did.
+     * which.** While any tool is selected -- the road brush now
+     * included -- it cancels: the palette is put down, selecting
+     * nothing at all, and nothing is placed by that press. With
+     * nothing selected, which is where a cancel leaves it, it drops a
+     * walker on the path under the pointer.
+     *
+     * The road brush used to be the exception, dropping a walker
+     * instead, which made the one armed mode a player could never
+     * back out of the very one a session starts in.
      *
      * That split is what reconciles two claims on one button rather than
      * letting either silently replace the other, and cancelling reaches
@@ -115,8 +118,8 @@ namespace antwika::game
      * would leave the palette holding a tool nobody chose and the next
      * left press laying a road for it. Nothing selected therefore places
      * nothing, previews nothing and holds no button down -- and since
-     * that state drops walkers like the road tool does, cancelling twice
-     * is still cancelling once.
+     * that state drops walkers, cancelling twice is still cancelling
+     * once.
      * A right press the toolbar covers cancels nothing, since what the
      * bar covers it covers from the grid.
      *

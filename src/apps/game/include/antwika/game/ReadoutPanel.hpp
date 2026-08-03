@@ -104,11 +104,14 @@ namespace antwika::game
      * about one building.
      *
      * **Water and medicine sit under the same resources heading, on
-     * the stock lines' own scale, and are said even at zero.** Both
-     * are facts about any kind of building -- a dry house empties and
-     * medicine is what holds the disease risk off -- and zero is
-     * exactly the state a watcher wants warned of, so neither line is
-     * ever omitted.
+     * the stock lines' own scale, and are said even at zero** -- the
+     * water on a house alone, since only a household drinks it, and
+     * the medicine on every kind of building, since disease is a fact
+     * about any of them. A dry house empties and medicine is what
+     * holds the disease risk off, and zero is exactly the state a
+     * watcher wants warned of, so where a line applies it is never
+     * omitted. A house's stock lines read against its own level's
+     * shelf -- see stockCapacityOf().
      *
      * **The three risks are said on every building, even at nothing.**
      * A risk of nothing is a measured fact, and an unheralded fire is

@@ -268,6 +268,32 @@ namespace antwika::game
     }
 
     /**
+     * @brief Get how much of each good a house on one level can hold.
+     *
+     * **A better house keeps a bigger larder.** One more house's worth
+     * of shelf per tier, so a tent holds what every other small
+     * building holds and a cottage holds four times that -- and a
+     * house that devolves mid-hoard simply reads as full until the
+     * drain works the surplus off, since nothing here clamps.
+     *
+     * Named beside populationCapacityOf() and not capacityOf(), for
+     * exactly that function's reason: Store.hpp already answers
+     * capacityOf(BuildingKind), and a third capacity under the same
+     * name would be one a reader resolves by argument type.
+     *
+     * @param level The level to ask about.
+     * @return How much of one good its shelves hold, per resource.
+     */
+    [[nodiscard]] constexpr std::int32_t stockCapacityOf(
+        HousingLevel level) noexcept
+    {
+        return kStockCapacity
+            * (static_cast<std::int32_t>(
+                   housingLevelIndex(level) % kHousingLevelCount)
+               + 1);
+    }
+
+    /**
      * @brief Ticks a house must go on qualifying before it grows.
      *
      * Four seconds, which is one drain period: long enough that a single
@@ -385,18 +411,22 @@ namespace antwika::game
         }(),
         "a level may only demand a good a market seller carries");
 
-    // And only as much of it as a house can hold at once.
+    // And only as much of it as a house on that level can hold.
     // A demand above capacity is a tier nothing ever reaches either.
-    // Store.hpp already pins a house's capacity to this constant.
     static_assert(
         []
         {
-            for (const auto &requirement : kHousingRequirements)
+            for (std::size_t index = 0; index < kHousingLevelCount;
+                 ++index)
             {
+                const auto &requirement = kHousingRequirements[index];
+                const auto held =
+                    stockCapacityOf(static_cast<HousingLevel>(index));
+
                 for (const auto resource : kResources)
                 {
                     if (requirement.goods[resourceIndex(resource)]
-                        > kStockCapacity)
+                        > held)
                     {
                         return false;
                     }
@@ -405,7 +435,30 @@ namespace antwika::game
 
             return true;
         }(),
-        "a level may only demand what a house can hold");
+        "a level may only demand what a house on it can hold");
+
+    // A bigger household keeps a bigger larder, never a smaller one.
+    // The drain rises with the people, so the shelf must too.
+    static_assert(
+        []
+        {
+            for (std::size_t index = 1; index < kHousingLevelCount;
+                 ++index)
+            {
+                if (stockCapacityOf(static_cast<HousingLevel>(index))
+                    <= stockCapacityOf(
+                        static_cast<HousingLevel>(index - 1)))
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }(),
+        "stock capacity must rise with the level");
+
+    static_assert(
+        stockCapacityOf(HousingLevel::Tent) == kStockCapacity);
 
     static_assert(housingLevelName(HousingLevel::Tent) == "tent");
     static_assert(

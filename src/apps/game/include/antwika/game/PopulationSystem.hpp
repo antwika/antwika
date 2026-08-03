@@ -143,10 +143,17 @@ namespace antwika::game
             const Building &building,
             Cell door);
 
+        // A leaver either looks for another bed or leaves for good.
+        // A starved or dry house turns emigrants out.
+        // They head for a gate and never for another house.
+        // A city that cannot feed or water them is one they quit.
+        // A crowd or poor ground sheds movers instead.
+        // Those ask for a vacancy first, as a demolition's leavers do.
         void turnOut(
             World &world,
             antwika::ecs::Entity entity,
-            std::optional<Cell> door);
+            std::optional<Cell> door,
+            bool emigrates);
 
         const PathIndex &paths;
         const BuildingIndex &built;

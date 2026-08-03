@@ -17,7 +17,7 @@ build/bin/antwika_game/antwika_game --replay src/apps/game/replays/demo.jsonl
 ```
 
 Left-click places whatever the palette has selected, middle-drag pans, and the wheel zooms.
-Right-click means one of two things: with a building tool selected it puts the palette down and places nothing by that press, and otherwise it drops a walker onto the road under the pointer.
+Right-click means one of two things: with any tool selected — the road brush included — it puts the palette down and places nothing by that press, and with nothing selected it drops a walker onto the road under the pointer.
 With the road tool selected a left-drag lays a whole run of road: the press marks where it starts, the pointer says where it ends, and the release lays the route between them.
 `Toolbar` draws three pieces round the grid, all described and resolved once per tick by `UiSink` and painted last by `RenderSystem`: a strip along the top, a build palette down the right, and a strip along the bottom carrying the view controls and the readouts.
 The bottom strip is zoom in, zoom out, reset view and pause, and then the zoom level, the tick, the population and the share of jobs that are staffed; a corner of the screen reports the frame rate separately, because that is a wall clock's answer rather than the simulation's.
@@ -62,6 +62,8 @@ Which of the two is showing is still simulation state on exactly the terms the m
 They used to be one enumeration, which gave every per-building table a `Road` entry that could only ever be wrong.
 
 A house consumes what is delivered to it, and most other kinds send out one `WalkerKind`.
+**Only a household eats, and it eats by its own headcount**: each started `kMouthsPerServing` of occupants costs one unit of every resource the house holds per drain period, an empty house eats nothing at all, and no other kind drains -- a workshop's clay goes into pottery rather than away, so food and water are a house's needs and nobody else's.
+**A better house also keeps a bigger larder**: `stockCapacityOf()` grants one house's worth of shelf per tier, `stockCapacityAt()` is the one crossing between that answer and `capacityOf(kind)`'s, and the hover panel and the food map view both read the building's own shelf rather than the flat constant.
 Both facts used to be arithmetic over a shared declaration order; they are tables now, for the reason the round-one vocabulary section below gives.
 
 `BuildingSystem` runs deliveries, drain, the three risks and both of a building's endings: maxed fire risk ignites it and maxed collapse risk drops it straight to debris.
@@ -105,7 +107,8 @@ Persisting both would lay two tiles per click.
 The toolbar defines no event either, for the same reason.
 
 **A right press means one of two things, and the palette decides which.**
-While a building tool is selected it leaves build mode, putting the palette *down* and placing nothing by that press; otherwise it drops a walker on the path under the pointer exactly as it always did.
+While any tool is selected — the road brush now included — it leaves build mode, putting the palette *down* and placing nothing by that press; with nothing selected it drops a walker on the path under the pointer.
+The road brush used to be the exception, dropping a walker instead, which made the one armed mode a player could never back out of the very one a session starts in.
 So `UiOverlay::tool()` is a `std::optional<BuildTool>`, and nothing selected is a state the app can be in rather than a synonym for the road tool: no button on the bar is held down, `ghostFor()` returns an invisible ghost so neither a preview tile nor its `footprintOutline()` border is drawn, and a left press lays nothing at all.
 It used to fall back to `BuildTool::Road`, which made cancelling twice the same as cancelling once at the price of a cancel that quietly armed a different tool.
 Putting the palette down says what a cancel means, and a right press with nothing selected still drops a walker, so cancelling twice is still cancelling once.
@@ -345,7 +348,11 @@ What is left to catch a mistake is that header's `static_assert`s, `TileAtlasTes
 **A sprite is taller than the diamond it stands on, and `SpriteBounds.hpp` is where that is resolved.**
 Each sheet states a pivot — the bottom corner of the sprite's footprint diamond — and blitting anchors that point to the block's own bottom corner on screen, so headroom rises above the cell and the base block's skirt hangs below it.
 The consequence the scene owns is paint order: a skirt must sit under the cells south and east of it, so `GridScene` paints terrain and buildings in one pass, a diagonal of cells at a time, laying each building with the diagonal its block starts on and no grass at all under a standing building.
-The walkers still come last, so a walker is never hidden by what it is standing on.
+
+**The walkers ride in that same pass now, each at the deeper of its two cells' screen depths.**
+They used to be painted last, which read as a bug the moment a district grew tall: a walker on the road *behind* a block floated over its headroom, since nothing painted after it could ever hide it.
+Painted in depth order, a block in front of a walker covers it and one behind it does not; a walker mid-step keys on the deeper of the cell it is leaving and the one it is entering, which is the first diagonal that can stand in front of it, and ties fall back to the snapshot's own order so one frame is one picture.
+The one exception is an open map view: its scrim is painted over the blocks, and the walkers go back to painting last there, over the scrim — a walker is a thing in the city rather than a fact about it, and whoever opened the view is reading the city's numbers with its people still on top.
 
 Which of the sixteen road sprites a junction shows is worked out in `GridScene` by binary-searching the snapshot's ascending paths, and stays out of `SceneSnapshot` and `GameSummary` — it is a picture, not state a replay has to reproduce.
 The sheet orders its junctions by arm count rather than by link mask, so `kRoadSpriteByLinks` in `TileAtlas.hpp` is the one crossing between the two orders.
@@ -368,8 +375,10 @@ A walker shows the one resource `carriedResource()` names, empty bar included, a
 `readoutPanel()` lays that answer out into a plain value of a box and coloured lines, painted through `IRenderer` rather than through `antwika::ui` — deliberately, because this app's UI is described and resolved inside the tick path by `UiSink`, and taking a panel driven by an unrecorded hint through that path is precisely what the channel forbids.
 It is measured and drawn at `kReadoutTextScale`, twice the toolbar's, because a hover panel is read at a glance over the pointer rather than studied along a bar — and the one constant serves layout and paint alike, so the scale cannot become a second layout.
 The panel lists the resources the bars gauge rather than every number a building holds, so a reader is never told two stories about one building — and it groups them under a `resources` heading, each line two spaces in, so the amounts read as one section rather than a run of loose lines.
-**The `water` and `medicine` amounts sit in that same section, on every kind of building and said even at zero.**
-Both are the coverage countdowns scaled onto the stock lines' own `N/100` range and format rather than the percent they used to be: a dry house empties, medicine is what holds the disease off, and zero is exactly the state a watcher wants warned of — so neither line is ever omitted, where a lapsed service used to be.
+**The `water` and `medicine` amounts sit in that same section, said even at zero — the water on a house alone, the medicine on every kind of building.**
+Both are the coverage countdowns scaled onto the stock lines' own `N/100` range and format rather than the percent they used to be: a dry house empties, medicine is what holds the disease off, and zero is exactly the state a watcher wants warned of — so where a line applies it is never omitted, the way a lapsed service used to be.
+Only a household drinks the water, which is why a well or a farm says nothing about it; disease is a fact about any building, so the medicine stays on all of them.
+A house's stock lines read against `stockCapacityOf(level)` rather than the flat constant, so a cottage's `food 150/400` says how full its own larder is.
 **Every building also carries a `risk` section, and it is the panel's other always-on section**: `fire N%`, `collapse N%` and `disease N%`, shown even at zero, each line wearing its own ink — named once beside `serviceColour()` so a risk line and the map view painted from the same risk agree, with the disease line in the medicine's own pink since the two read as a pair.
 A risk of nothing is a measured fact somebody watching a district wants, and a fire the panel could never warn of is exactly how the section came to exist.
 The three lines read straight off `BuildingSprite`'s copies of the risks, which live on the sprite and not the view for stock's reason: a divergence in a risk surfaces as a divergence in what burnt within a tick of mattering.
@@ -573,6 +582,7 @@ That is the opposite call from stock, deliberately, and for the reason coverage 
 **People are the resource everything else competes for, and that is the whole of this workstream.**
 A house with a road beside it, standing on ground its tier finds acceptable and with room left, takes one person in every `kSettlerPeriodTicks`; one below its tier's threshold, or holding more than its tier can, loses one on the same countdown and stops at nobody.
 **A house out of food or out of water sheds its people the very same way**, one per period through the same `turnOut()`, and takes nobody new in while it cannot keep them -- which replaced the demolition an empty larder used to be, so hunger costs a city its people rather than its buildings, and what finally takes a neglected house is its own risk maxing.
+**Its leavers emigrate rather than move**: a starved or dry house's people head for the nearest gate and never for another house's spare bed, since a city that cannot feed or water its people is one they give up on -- where a mover shed for room or poor ground still asks `nearestVacancy()` first, exactly as a demolition's leavers do.
 Water is asked as the housing rules ask it -- does `Service::Water` still reach at all -- which is why a house is *placed* already holding a full water countdown, exactly as it is placed holding a little food: a dry house takes nobody in, and no district could otherwise start before its well's first carrier came round.
 The sum of everybody in the city is a workforce, every workplace says through `workersWantedBy()` how many of them it wants, and what it actually gets decides how fast it works.
 

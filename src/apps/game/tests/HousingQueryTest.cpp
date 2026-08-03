@@ -12,6 +12,7 @@
 #include "antwika/game/Cell.hpp"
 #include "antwika/game/Household.hpp"
 #include "antwika/game/HousingLevel.hpp"
+#include "antwika/game/Store.hpp"
 
 namespace
 {
@@ -28,6 +29,7 @@ namespace
     using antwika::game::populationCapacityOf;
     using antwika::game::requirementOf;
     using antwika::game::setHousehold;
+    using antwika::game::stockCapacityAt;
     using antwika::log::mocks::MockLogger;
 
     class HousingQueryTest : public ::testing::Test
@@ -108,4 +110,42 @@ TEST(HousingCapacityTest, PopulationCapacityOf_ReadsTheLevelsOwnRow)
             populationCapacityOf(level),
             requirementOf(level).populationCapacity);
     }
+}
+
+// The one crossing between a kind's capacity and a tier's.
+// A house's shelf grows with its level.
+// Everything else keeps Store.hpp's answer.
+TEST_F(HousingQueryTest, StockCapacityAt_GrowsWithAHousesLevel)
+{
+    const auto house = world.create();
+    world.add<Cell>(house, Cell{.x = 1, .y = 1});
+    world.add<Building>(house, Building{.kind = BuildingKind::House});
+    world.commit();
+
+    EXPECT_EQ(
+        stockCapacityAt(world, house, BuildingKind::House),
+        antwika::game::kStockCapacity);
+
+    setHousehold(
+        world,
+        house,
+        Household{.level = HousingLevel::Cottage});
+    world.commit();
+
+    EXPECT_EQ(
+        stockCapacityAt(world, house, BuildingKind::House),
+        antwika::game::stockCapacityOf(HousingLevel::Cottage));
+}
+
+TEST_F(HousingQueryTest, StockCapacityAt_KeepsTheKindsAnswerElsewhere)
+{
+    const auto storehouse = world.create();
+    world.add<Cell>(storehouse, Cell{.x = 1, .y = 1});
+    world.add<Building>(
+        storehouse, Building{.kind = BuildingKind::Storage});
+    world.commit();
+
+    EXPECT_EQ(
+        stockCapacityAt(world, storehouse, BuildingKind::Storage),
+        antwika::game::capacityOf(BuildingKind::Storage));
 }

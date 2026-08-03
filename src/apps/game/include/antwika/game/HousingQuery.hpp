@@ -75,6 +75,29 @@ namespace antwika::game
     [[nodiscard]] std::int32_t populationAt(
         const World &world, antwika::ecs::Entity entity);
 
+    /**
+     * @brief Get how much of one good a standing building can hold.
+     *
+     * **The one crossing between a kind's capacity and a tier's.** A
+     * house's shelf grows with its level -- stockCapacityOf() -- and
+     * everything else holds what Store.hpp's capacityOf() says, so a
+     * caller with an entity in hand asks here and never chooses
+     * between the two tables itself.
+     *
+     * Total on levelOf()'s terms: a building with no household is on
+     * the bottom tier, which for every kind nobody lives in answers
+     * capacityOf(kind) exactly as before.
+     *
+     * @param world Read as of its last commit().
+     * @param entity The building to ask about; it need not be alive.
+     * @param kind Its kind, which the caller already has.
+     * @return How much of one good its shelves hold, per resource.
+     */
+    [[nodiscard]] std::int32_t stockCapacityAt(
+        const World &world,
+        antwika::ecs::Entity entity,
+        BuildingKind kind);
+
     static_assert(
         populationCapacityOf(HousingLevel::Tent)
         < populationCapacityOf(HousingLevel::Cottage));

@@ -129,13 +129,16 @@ namespace antwika::game
         const bool dry =
             coverageOf(world, entity, Service::Water) <= 0;
 
+        // A starved or dry house is one its people give up on.
+        // They leave the map rather than move to another house.
+        const bool unlivable = starved(building) || dry;
+
         // A house that has just devolved is over its ceiling.
         // Which is the one way to be crowded here.
         // A starved or dry house sheds its people the same way.
         // Nobody moves into one either.
         // This arm returns before send(), so it only ever empties.
-        if (!pleasant || household.population > capacity
-            || starved(building) || dry)
+        if (!pleasant || household.population > capacity || unlivable)
         {
             if (household.population <= 0)
             {
@@ -143,7 +146,7 @@ namespace antwika::game
             }
 
             --household.population;
-            turnOut(world, entity, door);
+            turnOut(world, entity, door, unlivable);
             return;
         }
 
@@ -190,7 +193,10 @@ namespace antwika::game
     }
 
     void PopulationSystem::turnOut(
-        World &world, Entity entity, std::optional<Cell> door)
+        World &world,
+        Entity entity,
+        std::optional<Cell> door,
+        bool emigrates)
     {
         const auto out = world.view<Walker>().size();
 
@@ -202,8 +208,11 @@ namespace antwika::game
         }
 
         // A spare bed in town before the road out of it.
-        const auto vacancy =
-            nearestVacancy(world, *door, entity, built, extent);
+        // Unless they are giving up on the city altogether.
+        // An emigrant heads for the gate and never for a vacancy.
+        const auto vacancy = emigrates
+            ? kNullEntity
+            : nearestVacancy(world, *door, entity, built, extent);
 
         const auto towards = vacancy != kNullEntity
             ? std::optional<Cell>(world.get<Cell>(vacancy))

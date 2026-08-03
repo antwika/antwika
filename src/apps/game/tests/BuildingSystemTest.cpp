@@ -315,6 +315,11 @@ TEST_F(BuildingSystemTest, Update_DrainsAHouseOnItsOwnPeriod)
     const auto house = build(
         Cell{.x = 0, .y = 0},
         Building{.kind = BuildingKind::House, .stock = {50, 50, 50}});
+    antwika::game::setHousehold(
+        world,
+        house,
+        antwika::game::Household{.population = 1});
+    world.commit();
 
     run(static_cast<std::size_t>(kDrainPeriodTicks) + 1);
 
@@ -323,6 +328,58 @@ TEST_F(BuildingSystemTest, Update_DrainsAHouseOnItsOwnPeriod)
     EXPECT_EQ(stock[resourceIndex(Resource::Food)], 49);
     EXPECT_EQ(stock[resourceIndex(Resource::Clay)], 49);
     EXPECT_EQ(stock[resourceIndex(Resource::Pottery)], 49);
+}
+
+// A fuller house eats faster: one unit per started serving of people.
+// A full tent's five are two servings, so two units a period.
+TEST_F(BuildingSystemTest, Update_DrainsAHouseByItsOwnHeadcount)
+{
+    const auto house = build(
+        Cell{.x = 0, .y = 0},
+        Building{.kind = BuildingKind::House, .stock = {50, 50, 50}});
+    antwika::game::setHousehold(
+        world,
+        house,
+        antwika::game::Household{
+            .population = antwika::game::kMouthsPerServing + 1});
+    world.commit();
+
+    run(static_cast<std::size_t>(kDrainPeriodTicks) + 1);
+
+    EXPECT_EQ(
+        world.get<Building>(house).stock[resourceIndex(Resource::Food)],
+        48);
+}
+
+// An empty house eats nothing at all.
+// Nobody home is nobody at the table.
+TEST_F(BuildingSystemTest, Update_DrainsNothingFromAnEmptyHouse)
+{
+    const auto house = build(
+        Cell{.x = 0, .y = 0},
+        Building{.kind = BuildingKind::House, .stock = {50, 50, 50}});
+
+    run(static_cast<std::size_t>(kDrainPeriodTicks) + 1);
+
+    EXPECT_EQ(
+        world.get<Building>(house).stock[resourceIndex(Resource::Food)],
+        50);
+}
+
+// A workshop's clay goes into pottery, never simply away.
+// Only a household eats; every other building keeps what it holds.
+TEST_F(BuildingSystemTest, Update_DrainsNothingFromAWorkshop)
+{
+    const auto workshop = build(
+        Cell{.x = 0, .y = 0},
+        Building{.kind = BuildingKind::Workshop, .stock = {0, 50, 0}});
+
+    run(static_cast<std::size_t>(kDrainPeriodTicks) + 1);
+
+    EXPECT_EQ(
+        world.get<Building>(workshop)
+            .stock[resourceIndex(Resource::Clay)],
+        50);
 }
 
 // Only what sustains() names is a larder.
@@ -472,6 +529,11 @@ TEST_F(BuildingSystemTest, Update_KeepsAHouseThatHasRunOutOfFood)
     const auto house = build(
         Cell{.x = 0, .y = 0},
         Building{.kind = BuildingKind::House, .stock = {1, 50}});
+    antwika::game::setHousehold(
+        world,
+        house,
+        antwika::game::Household{.population = 1});
+    world.commit();
 
     run(static_cast<std::size_t>(kDrainPeriodTicks) + 1);
 
@@ -479,6 +541,34 @@ TEST_F(BuildingSystemTest, Update_KeepsAHouseThatHasRunOutOfFood)
     EXPECT_EQ(
         world.get<Building>(house).stock[resourceIndex(Resource::Food)],
         0);
+}
+
+// A better house keeps a bigger larder -- see stockCapacityOf().
+// A seller filling a cottage gets past the tent-sized shelf.
+TEST_F(BuildingSystemTest, Update_FillsAGrownHousePastTheBottomShelf)
+{
+    const auto house = build(
+        Cell{.x = 1, .y = 0},
+        Building{
+            .kind = BuildingKind::House,
+            .stock = {kStockCapacity - 5, 0, 0}});
+    antwika::game::setHousehold(
+        world,
+        house,
+        antwika::game::Household{
+            .level = antwika::game::HousingLevel::Cottage});
+    world.commit();
+
+    const auto seller = sendWalker(
+        Cell{.x = 0, .y = 0},
+        Walker{.kind = WalkerKind::MarketSeller, .carried = kWalkerLoad});
+
+    run(1);
+
+    EXPECT_EQ(
+        world.get<Building>(house).stock[resourceIndex(Resource::Food)],
+        kStockCapacity - 5 + kWalkerLoad);
+    EXPECT_EQ(world.get<Walker>(seller).carried, 0);
 }
 
 // Fire is not bare ground: the block stays claimed.

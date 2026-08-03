@@ -213,11 +213,34 @@ namespace
                 .event = releaseAt(
                     Cell{.x = 8, .y = kRoadRow}, MouseButton::Left)});
 
+        // The first right press puts the default road brush down.
+        // A walker is what the second means, nothing being selected.
         events.push_back(
             TickEvent{
                 .tick = 1,
                 .event = pressAt(
                     Cell{.x = 2, .y = kRoadRow}, MouseButton::Right)});
+        events.push_back(
+            TickEvent{
+                .tick = 1,
+                .event = pressAt(
+                    Cell{.x = 2, .y = kRoadRow}, MouseButton::Right)});
+
+        // The brush picked back up off its own palette button.
+        // So a later press can still lay a road while paused.
+        {
+            const InputEventCodec codec;
+
+            events.push_back(
+                TickEvent{
+                    .tick = 2,
+                    .event = codec.encode(
+                        PointerButtonPressed{
+                            .button = MouseButton::Left,
+                            .position = pixelOn(
+                                antwika::game::widgets::toolWidget(
+                                    antwika::game::BuildTool::Road))})});
+        }
 
         if (pausing)
         {

@@ -134,11 +134,27 @@ namespace antwika::game
             Progress subTick = Progress()) const;
 
     private:
+        // withWalkers rides the walkers along in the terrain pass.
+        // Each paints at the deeper of its two cells' screen depths.
+        // A building in front of one then hides it; one behind cannot.
+        // An open overlay keeps them out and paints them last instead.
+        // A walker is a thing in the city, not a fact about it.
+        // So over the scrim, where somebody is reading the numbers.
         void drawTerrain(
             IRenderer &renderer,
             Size canvas,
             const SceneSnapshot &snapshot,
-            const AtlasTextures &atlases) const;
+            const AtlasTextures &atlases,
+            Progress phase,
+            bool withWalkers) const;
+
+        void drawWalker(
+            IRenderer &renderer,
+            Size canvas,
+            const WalkerSprite &walker,
+            const SceneSnapshot &snapshot,
+            const AtlasTextures &atlases,
+            Progress phase) const;
 
         void drawPlan(
             IRenderer &renderer,

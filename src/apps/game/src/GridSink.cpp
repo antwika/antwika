@@ -301,10 +301,13 @@ namespace antwika::game
         // The cell is not consulted in the first arm at all.
         // Leaving build mode is about the palette, not about a cell.
         // See GridSink.hpp for the whole rule.
-        // Raze cancels like a building tool does -- see cancellable().
+        // Every tool cancels, the road brush now included.
+        // Road used to drop a walker instead, being the default.
+        // Which made the one armed mode nobody could back out of.
+        // The mode a session starts in, of all of them.
         const auto tool = overlay.tool();
 
-        if (tool.has_value() && cancellable(*tool))
+        if (tool.has_value())
         {
             overlay.clearTool();
             return;

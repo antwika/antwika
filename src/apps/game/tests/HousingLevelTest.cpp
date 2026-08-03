@@ -148,3 +148,18 @@ TEST(HousingLevelTest, HousesPeople_NamesOnlyTheHouse)
         EXPECT_EQ(housesPeople(kind), kind == BuildingKind::House);
     }
 }
+
+// A better house keeps a bigger larder, one house's worth per tier.
+TEST(HousingLevelTest, StockCapacityOf_GrowsOneShelfPerLevel)
+{
+    using antwika::game::kStockCapacity;
+    using antwika::game::stockCapacityOf;
+
+    EXPECT_EQ(stockCapacityOf(HousingLevel::Tent), kStockCapacity);
+    EXPECT_EQ(
+        stockCapacityOf(HousingLevel::Shack), 2 * kStockCapacity);
+    EXPECT_EQ(
+        stockCapacityOf(HousingLevel::Hovel), 3 * kStockCapacity);
+    EXPECT_EQ(
+        stockCapacityOf(HousingLevel::Cottage), 4 * kStockCapacity);
+}
