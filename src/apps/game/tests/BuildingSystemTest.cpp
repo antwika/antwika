@@ -22,6 +22,7 @@
 #include "antwika/game/HousingLevel.hpp"
 #include "antwika/game/Journey.hpp"
 #include "antwika/game/Resource.hpp"
+#include "antwika/game/Ruin.hpp"
 #include "antwika/game/Service.hpp"
 #include "antwika/game/Walker.hpp"
 
@@ -386,9 +387,9 @@ TEST_F(BuildingSystemTest, Update_DemolishesAHouseThatRanOutOfFood)
     EXPECT_FALSE(world.alive(house));
 }
 
-// The cell has to become buildable again.
-// Otherwise a burned-down house holds its ground for ever.
-TEST_F(BuildingSystemTest, Update_ClearsTheCellOfWhatItDemolishes)
+// Fire is not bare ground: the block stays claimed.
+// Only the raze tool ever frees what a fire took.
+TEST_F(BuildingSystemTest, Update_KeepsTheGroundOfWhatCatchesFire)
 {
     build(
         Cell{.x = 4, .y = 4},
@@ -398,7 +399,35 @@ TEST_F(BuildingSystemTest, Update_ClearsTheCellOfWhatItDemolishes)
 
     run(1);
 
+    EXPECT_TRUE(built.has(Cell{.x = 4, .y = 4}));
+
+    const auto ruins = world.view<antwika::game::Ruin, Cell>();
+    ASSERT_EQ(ruins.size(), 1U);
+
+    const auto ruin =
+        world.get<antwika::game::Ruin>(*ruins.begin());
+    EXPECT_EQ(ruin.kind, BuildingKind::House);
+    EXPECT_EQ(ruin.state, antwika::game::RuinState::Burning);
+    EXPECT_EQ(
+        ruin.ticksUntilOut, antwika::game::kBurnDurationTicks);
+    EXPECT_EQ(
+        world.get<Cell>(*ruins.begin()), (Cell{.x = 4, .y = 4}));
+}
+
+// Starving is still the ending that frees the ground.
+// A house lost to hunger fell down rather than burnt.
+TEST_F(BuildingSystemTest, Update_ClearsTheCellOfWhatItStarves)
+{
+    build(
+        Cell{.x = 4, .y = 4},
+        Building{.kind = BuildingKind::House, .stock = {0, 0, 0}});
+
+    ASSERT_TRUE(built.has(Cell{.x = 4, .y = 4}));
+
+    run(1);
+
     EXPECT_FALSE(built.has(Cell{.x = 4, .y = 4}));
+    EXPECT_EQ((world.view<antwika::game::Ruin, Cell>().size()), 0U);
 }
 
 TEST_F(BuildingSystemTest, Update_LeavesTheWalkerOfADemolishedBuilding)
@@ -495,7 +524,7 @@ TEST_F(BuildingSystemTest, Update_LeavesTheMarketThatSentASellerAlone)
         0);
 }
 
-TEST_F(BuildingSystemTest, Update_ClearsEveryCellOfADemolishedBlock)
+TEST_F(BuildingSystemTest, Update_KeepsEveryCellOfABurningBlock)
 {
     build(
         Cell{.x = 4, .y = 4},
@@ -505,8 +534,17 @@ TEST_F(BuildingSystemTest, Update_ClearsEveryCellOfADemolishedBlock)
 
     run(1);
 
-    EXPECT_FALSE(built.has(Cell{.x = 4, .y = 4}));
-    EXPECT_FALSE(built.has(Cell{.x = 5, .y = 5}));
+    // The whole block is still claimed.
+    // And the ruin remembers the kind.
+    // Which is what names the block's size from now on.
+    EXPECT_TRUE(built.has(Cell{.x = 4, .y = 4}));
+    EXPECT_TRUE(built.has(Cell{.x = 5, .y = 5}));
+
+    const auto ruins = world.view<antwika::game::Ruin, Cell>();
+    ASSERT_EQ(ruins.size(), 1U);
+    EXPECT_EQ(
+        world.get<antwika::game::Ruin>(*ruins.begin()).kind,
+        BuildingKind::Farm);
 }
 
 // A load that never changed hands belongs to whoever sent the walker.

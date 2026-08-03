@@ -17,6 +17,8 @@
 #include "antwika/game/Building.hpp"
 #include "antwika/game/Coverage.hpp"
 #include "antwika/game/Errand.hpp"
+#include "antwika/game/FireCall.hpp"
+#include "antwika/game/Ruin.hpp"
 #include "antwika/game/Journey.hpp"
 #include "antwika/game/Household.hpp"
 #include "antwika/game/Production.hpp"
@@ -157,6 +159,7 @@ namespace antwika::game
             describeHousing(building);
             describeLabour(building);
             schema["properties"]["buildings"] = arrayOf(std::move(building));
+            describeRuins(schema);
             schema["properties"]["seed"] = countShape();
             return schema;
         }
@@ -196,6 +199,7 @@ namespace antwika::game
         labourToJson(save, encoded);
         productionToJson(save, encoded);
         migrantsToJson(save, encoded);
+        ruinsToJson(save, encoded);
 
         encoded["seed"] = save.seed;
         return encoded;
@@ -252,6 +256,7 @@ namespace antwika::game
         labourFromJson(document, save);
         productionFromJson(document, save);
         migrantsFromJson(document, save);
+        ruinsFromJson(document, save);
 
         save.seed = document.at("seed").get<std::uint64_t>();
 
@@ -259,6 +264,7 @@ namespace antwika::game
         requireConsistentErrands(save);
         requireConsistentJourneys(save);
         requireConsistentStaffing(save);
+        requireConsistentFireCalls(save);
 
         return save;
     } // GCOVR_EXCL_LINE
@@ -472,6 +478,42 @@ namespace antwika::game
 
             save.walkers[walkerAt.at(entity)].journey->house =
                 found->second;
+        }
+
+        // The ruins, and then the fire calls against where they land.
+        std::map<antwika::ecs::Entity, std::size_t> ruinAt;
+
+        for (const auto entity : world.view<Ruin, Cell>())
+        {
+            ruinAt.emplace(entity, save.ruins.size());
+            const auto ruin = world.get<Ruin>(entity);
+
+            save.ruins.push_back(SavedRuin{
+                .at = world.get<Cell>(entity),
+                .kind = ruin.kind,
+                .state = ruin.state,
+                .ticksUntilOut = ruin.ticksUntilOut});
+        }
+
+        // A call whose ruin is not in the file names nothing.
+        // The walker then roams on the way back in.
+        // Which is what the dispatcher corrects within a tick.
+        for (const auto entity : world.view<Walker, Cell>())
+        {
+            if (!world.has<FireCall>(entity))
+            {
+                continue;
+            }
+
+            const auto found =
+                ruinAt.find(world.get<FireCall>(entity).target);
+
+            if (found == ruinAt.end())
+            {
+                continue;
+            }
+
+            save.walkers[walkerAt.at(entity)].fireCall = found->second;
         }
 
         // The links, written only where both ends were recorded.

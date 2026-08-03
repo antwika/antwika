@@ -27,6 +27,7 @@
 #include "antwika/game/OverlayField.hpp"
 #include "antwika/game/ReadoutPanel.hpp"
 #include "antwika/game/ResourceColour.hpp"
+#include "antwika/game/Ruin.hpp"
 #include "antwika/game/SceneSnapshot.hpp"
 #include "antwika/game/SpriteBounds.hpp"
 #include "antwika/game/TileAtlas.hpp"
@@ -41,6 +42,7 @@ using antwika::game::Direction;
 using antwika::game::GridExtent;
 using antwika::game::GridScene;
 using antwika::game::groundTile;
+using antwika::game::kTicksPerStep;
 using antwika::game::linkBit;
 using antwika::game::roadTile;
 using antwika::game::SceneSnapshot;
@@ -182,6 +184,7 @@ namespace
             .paths = std::move(paths),
             .walkers = std::move(walkers),
             .buildings = {},
+            .ruins = {},
             .plan = {},
             .ghost = {},
             .hover = {},
@@ -381,7 +384,7 @@ TEST_F(GridSceneTest, Draw_ChoosesAWalkerTileByWhichWayItFaces)
 }
 
 // The legs read the same clock as the slide.
-// A tick and a half into a two-tick step is frame 3 of 4.
+// Six and a half ticks of an eight-tick step is frame 3 of 4.
 TEST_F(GridSceneTest, Draw_CyclesAWalkersLegsAsItCrossesACell)
 {
     scene.draw(
@@ -395,7 +398,7 @@ TEST_F(GridSceneTest, Draw_CyclesAWalkersLegsAsItCrossesACell)
                 .at = Cell{.x = 1, .y = 1},
                 .facing = Direction::East,
                 .from = Cell{.x = 0, .y = 1},
-                .ticksIntoStep = 1}}),
+                .ticksIntoStep = 3 * kTicksPerStep / 4}}),
         atlases,
         Progress(1, 2));
 
@@ -416,12 +419,12 @@ TEST_F(GridSceneTest, Draw_HoldsAPausedWalkersLegsStill)
             .at = Cell{.x = 1, .y = 1},
             .facing = Direction::East,
             .from = Cell{.x = 0, .y = 1},
-            .ticksIntoStep = 1}});
+            .ticksIntoStep = kTicksPerStep / 2}});
     scene_.paused = true;
 
     scene.draw(renderer, kCanvas, scene_, atlases, Progress(1, 2));
 
-    // One whole tick of the step and none of the frame is frame 2.
+    // Half the step's ticks and none of the frame is frame 2.
     ASSERT_EQ(renderer.blits.size(), 1U);
     EXPECT_EQ(
         renderer.blits.front().source, walkerTile(Direction::East, 2));
@@ -1222,4 +1225,205 @@ TEST_F(GridSceneTest, Draw_PaintsABuildingBetweenItsNeighbouringDiagonals)
                 << "blit " << blit;
         }
     }
+}
+
+// A ruin blits from its kind's own sheet, fire and debris alike.
+// And no grass is laid under it: its art owns the whole footprint.
+TEST_F(GridSceneTest, Draw_BlitsARuinFromItsKindsOwnSheet)
+{
+    auto scene_ = snapshot(
+        Camera(Point{.x = 300, .y = 40}, 2),
+        GridExtent{.width = 3, .height = 3});
+    scene_.ruins = {
+        antwika::game::RuinView{
+            .at = Cell{.x = 0, .y = 0},
+            .kind = antwika::game::BuildingKind::Farm,
+            .state = antwika::game::RuinState::Burning}};
+
+    scene.draw(renderer, kCanvas, scene_, atlases);
+
+    // Nine cells, four of them the farm's block: five ground tiles.
+    EXPECT_EQ(renderer.blitsOf(groundTile()), 5U);
+
+    const auto fireTile = antwika::game::ruinTile(
+        antwika::game::RuinState::Burning,
+        antwika::game::BuildingKind::Farm);
+
+    ASSERT_EQ(renderer.blitsOf(fireTile), 1U);
+
+    for (const auto &blit : renderer.blits)
+    {
+        if (blit.source == fireTile)
+        {
+            EXPECT_EQ(blit.texture, &atlas2x2);
+        }
+    }
+}
+
+TEST_F(GridSceneTest, Draw_BlitsDebrisWhereTheFireHasGoneOut)
+{
+    auto scene_ = snapshot(
+        Camera(Point{.x = 300, .y = 40}, 2),
+        GridExtent{.width = 2, .height = 2});
+    scene_.ruins = {
+        antwika::game::RuinView{
+            .at = Cell{.x = 1, .y = 1},
+            .kind = antwika::game::BuildingKind::House,
+            .state = antwika::game::RuinState::Debris}};
+
+    scene.draw(renderer, kCanvas, scene_, atlases);
+
+    const auto debrisTile = antwika::game::ruinTile(
+        antwika::game::RuinState::Debris,
+        antwika::game::BuildingKind::House);
+
+    ASSERT_EQ(renderer.blitsOf(debrisTile), 1U);
+
+    for (const auto &blit : renderer.blits)
+    {
+        if (blit.source == debrisTile)
+        {
+            EXPECT_EQ(blit.texture, &atlas);
+        }
+    }
+}
+
+// A ruin is painted with its own diagonal, exactly as a block is.
+// The building behind it must land before it, whatever list order.
+TEST_F(GridSceneTest, Draw_PaintsRuinsAndBuildingsBackToFront)
+{
+    auto scene_ = snapshot(
+        Camera(Point{.x = 300, .y = 40}, 2),
+        GridExtent{.width = 4, .height = 4});
+    scene_.buildings = {
+        antwika::game::BuildingSprite{
+            .at = Cell{.x = 2, .y = 2},
+            .kind = antwika::game::BuildingKind::House}};
+    scene_.ruins = {
+        antwika::game::RuinView{
+            .at = Cell{.x = 1, .y = 1},
+            .kind = antwika::game::BuildingKind::House,
+            .state = antwika::game::RuinState::Debris}};
+
+    scene.draw(renderer, kCanvas, scene_, atlases);
+
+    const auto debrisTile = antwika::game::ruinTile(
+        antwika::game::RuinState::Debris,
+        antwika::game::BuildingKind::House);
+    const auto houseTile = antwika::game::buildingTile(
+        antwika::game::BuildingKind::House);
+
+    std::size_t debrisAt = 0;
+    std::size_t houseAt = 0;
+
+    for (std::size_t index = 0; index < renderer.blits.size(); ++index)
+    {
+        if (renderer.blits[index].source == debrisTile)
+        {
+            debrisAt = index;
+        }
+
+        if (renderer.blits[index].source == houseTile)
+        {
+            houseAt = index;
+        }
+    }
+
+    // The ruin is the shallower block, so it is painted first.
+    EXPECT_LT(debrisAt, houseAt);
+}
+
+// Two blocks on one diagonal: the lower x is the deeper merge key.
+// One pair each way round, so both arms of the tie are taken.
+TEST_F(GridSceneTest, Draw_MergesATiedDiagonalByAscendingX)
+{
+    auto scene_ = snapshot(
+        Camera(Point{.x = 300, .y = 40}, 2),
+        GridExtent{.width = 4, .height = 4});
+    scene_.buildings = {
+        antwika::game::BuildingSprite{
+            .at = Cell{.x = 0, .y = 2},
+            .kind = antwika::game::BuildingKind::House}};
+    scene_.ruins = {
+        antwika::game::RuinView{
+            .at = Cell{.x = 2, .y = 0},
+            .kind = antwika::game::BuildingKind::House,
+            .state = antwika::game::RuinState::Debris},
+        antwika::game::RuinView{
+            .at = Cell{.x = 1, .y = 3},
+            .kind = antwika::game::BuildingKind::House,
+            .state = antwika::game::RuinState::Debris}};
+
+    scene.draw(renderer, kCanvas, scene_, atlases);
+
+    // The building shares the ruins' first diagonal and wins its tie.
+    // The buildings then run out while a ruin is still owed.
+    const auto houseTile = antwika::game::buildingTile(
+        antwika::game::BuildingKind::House);
+    const auto debrisTile = antwika::game::ruinTile(
+        antwika::game::RuinState::Debris,
+        antwika::game::BuildingKind::House);
+
+    std::size_t houseAt = 0;
+    std::size_t firstDebris = renderer.blits.size();
+
+    for (std::size_t index = 0; index < renderer.blits.size(); ++index)
+    {
+        if (renderer.blits[index].source == houseTile)
+        {
+            houseAt = index;
+        }
+
+        if (renderer.blits[index].source == debrisTile
+            && index < firstDebris)
+        {
+            firstDebris = index;
+        }
+    }
+
+    EXPECT_LT(houseAt, firstDebris);
+    EXPECT_EQ(renderer.blitsOf(debrisTile), 2U);
+}
+
+// And the same tie the other way round: the ruin holds the lower x.
+TEST_F(GridSceneTest, Draw_MergesATiedDiagonalRuinFirst)
+{
+    auto scene_ = snapshot(
+        Camera(Point{.x = 300, .y = 40}, 2),
+        GridExtent{.width = 4, .height = 4});
+    scene_.buildings = {
+        antwika::game::BuildingSprite{
+            .at = Cell{.x = 2, .y = 0},
+            .kind = antwika::game::BuildingKind::House}};
+    scene_.ruins = {
+        antwika::game::RuinView{
+            .at = Cell{.x = 0, .y = 2},
+            .kind = antwika::game::BuildingKind::House,
+            .state = antwika::game::RuinState::Debris}};
+
+    scene.draw(renderer, kCanvas, scene_, atlases);
+
+    const auto houseTile = antwika::game::buildingTile(
+        antwika::game::BuildingKind::House);
+    const auto debrisTile = antwika::game::ruinTile(
+        antwika::game::RuinState::Debris,
+        antwika::game::BuildingKind::House);
+
+    std::size_t houseAt = 0;
+    std::size_t debrisAt = 0;
+
+    for (std::size_t index = 0; index < renderer.blits.size(); ++index)
+    {
+        if (renderer.blits[index].source == houseTile)
+        {
+            houseAt = index;
+        }
+
+        if (renderer.blits[index].source == debrisTile)
+        {
+            debrisAt = index;
+        }
+    }
+
+    EXPECT_LT(debrisAt, houseAt);
 }

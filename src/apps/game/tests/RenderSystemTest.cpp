@@ -493,7 +493,7 @@ TEST_F(RenderSystemTest, Draw_HoldsAWalkerStillWhileTheRunIsPaused)
         entity,
         antwika::game::Walker{
             .facing = Direction::East,
-            .ticksUntilStep = 0,
+            .ticksUntilStep = antwika::game::kTicksPerStep / 2 - 1,
             .from = Cell{.x = 0, .y = 1}});
     world.commit();
 
@@ -505,7 +505,7 @@ TEST_F(RenderSystemTest, Draw_HoldsAWalkerStillWhileTheRunIsPaused)
     Rect between{};
 
     // Held legs freeze too: both frames show the walk cycle's frame 2.
-    // One whole tick of a two-tick step, and none of the frame.
+    // Half the step's ticks gone, and none of the frame.
     EXPECT_CALL(renderer, drawTexture(_, _, _, _)).Times(AnyNumber());
     EXPECT_CALL(
         renderer,
@@ -529,7 +529,7 @@ TEST_F(RenderSystemTest, Draw_SlidesAWalkerWhileTheRunIsNotPaused)
         entity,
         antwika::game::Walker{
             .facing = Direction::East,
-            .ticksUntilStep = 0,
+            .ticksUntilStep = antwika::game::kTicksPerStep / 2 - 1,
             .from = Cell{.x = 0, .y = 1}});
     world.commit();
 
@@ -538,16 +538,16 @@ TEST_F(RenderSystemTest, Draw_SlidesAWalkerWhileTheRunIsNotPaused)
     Rect atTick{};
     Rect between{};
 
-    // A live walker's legs advance with its slide.
-    // Frame 2 of the cycle at the tick, frame 3 half a tick later.
+    // A live walker slides on between the ticks.
+    // Half a tick moves a sixteenth of a cell.
+    // That is far too little to turn the legs' frame.
+    // So the same frame lands twice.
+    // And the slide is what tells the two draws apart.
     EXPECT_CALL(renderer, drawTexture(_, _, _, _)).Times(AnyNumber());
     EXPECT_CALL(
         renderer,
         drawTexture(Ref(atlas), walkerTile(Direction::East, 2), _, _))
-        .WillOnce(SaveArg<2>(&atTick));
-    EXPECT_CALL(
-        renderer,
-        drawTexture(Ref(atlas), walkerTile(Direction::East, 3), _, _))
+        .WillOnce(SaveArg<2>(&atTick))
         .WillOnce(SaveArg<2>(&between));
 
     system.update(world, 0);

@@ -1,6 +1,7 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
+#include <cstdint>
 #include <vector>
 
 #include <antwika/ecs/World.hpp>
@@ -12,7 +13,9 @@
 #include "antwika/game/Errand.hpp"
 #include "antwika/game/Footprint.hpp"
 #include "antwika/game/GridExtent.hpp"
+#include "antwika/game/FireCall.hpp"
 #include "antwika/game/Journey.hpp"
+#include "antwika/game/Ruin.hpp"
 #include "antwika/game/PathIndex.hpp"
 #include "antwika/game/Walker.hpp"
 #include "antwika/game/WalkerSystem.hpp"
@@ -63,6 +66,19 @@ namespace
             world.commit();
         }
 
+        // A stepping tick and the whole wait that follows it.
+        // Written against kTicksPerStep rather than a literal.
+        // So the tests say "one cell" and the constant says how long.
+        void stride()
+        {
+            for (std::uint8_t held = 0;
+                 held < antwika::game::kTicksPerStep;
+                 ++held)
+            {
+                tick();
+            }
+        }
+
         ::testing::NiceMock<MockLogger> logger;
         World world{logger};
         PathIndex paths;
@@ -90,18 +106,17 @@ TEST_F(WalkerSystemTest, Update_StaysPutOnTheTickAfterAStep)
     tick();
     tick();
 
-    // A step takes two ticks, so the second one only counts down.
+    // A step takes kTicksPerStep ticks, so this one counts down.
     EXPECT_EQ(world.get<Cell>(walker), (Cell{.x = 1, .y = 0}));
     EXPECT_EQ(world.get<Walker>(walker).facing, Direction::East);
 }
 
-TEST_F(WalkerSystemTest, Update_AdvancesAgainOnEveryOtherTick)
+TEST_F(WalkerSystemTest, Update_AdvancesAgainOnceItsWaitHasPassed)
 {
     layPath({{.x = 0, .y = 0}, {.x = 1, .y = 0}, {.x = 2, .y = 0}});
     const auto walker = addWalker(Cell{.x = 0, .y = 0}, Direction::East);
 
-    tick();
-    tick();
+    stride();
     tick();
 
     EXPECT_EQ(world.get<Cell>(walker), (Cell{.x = 2, .y = 0}));
@@ -120,12 +135,13 @@ TEST_F(WalkerSystemTest, Update_KeepsEachWalkersOwnCadence)
 
     tick();
 
-    // Dropped a tick after the first, so it steps on the other ticks.
+    // Dropped a tick after the first, so it steps a tick offset.
     const auto late = addWalker(Cell{.x = 3, .y = 0}, Direction::East);
 
-    tick();
-    tick();
+    stride();
 
+    // The early one has stepped twice and the late one once.
+    // Its own second step falls one tick past this window.
     EXPECT_EQ(world.get<Cell>(early), (Cell{.x = 2, .y = 0}));
     EXPECT_EQ(world.get<Cell>(late), (Cell{.x = 4, .y = 0}));
 }
@@ -235,7 +251,9 @@ TEST_F(WalkerSystemTest, Update_KeepsTheStartCellWhileCountingDown)
     tick();
     tick();
 
-    EXPECT_EQ(world.get<Walker>(walker).ticksUntilStep, 0U);
+    EXPECT_EQ(
+        world.get<Walker>(walker).ticksUntilStep,
+        antwika::game::kTicksPerStep - 2U);
     EXPECT_EQ(world.get<Walker>(walker).from, (Cell{.x = 0, .y = 0}));
 }
 
@@ -244,8 +262,7 @@ TEST_F(WalkerSystemTest, Update_MovesTheStartCellOnEveryStep)
     layPath({{.x = 0, .y = 0}, {.x = 1, .y = 0}, {.x = 2, .y = 0}});
     const auto walker = addWalker(Cell{.x = 0, .y = 0}, Direction::East);
 
-    tick();
-    tick();
+    stride();
     tick();
 
     EXPECT_EQ(world.get<Cell>(walker), (Cell{.x = 2, .y = 0}));
@@ -722,4 +739,124 @@ TEST_F(WalkerSystemTest, Update_KeepsNoJourneyOnAWalkerAlreadyRetired)
 
     EXPECT_FALSE(world.alive(leaver));
     EXPECT_FALSE(world.has<Journey>(leaver));
+}
+
+// A fireman on a call crosses open ground.
+// No path is laid anywhere here, and the step is taken all the same.
+TEST_F(WalkerSystemTest, Update_WalksAFiremanAcrossOpenGroundToAFire)
+{
+    const auto fire = world.create();
+    world.add<Cell>(fire, Cell{.x = 3, .y = 0});
+    world.add<antwika::game::Ruin>(
+        fire, antwika::game::Ruin{.kind = BuildingKind::House});
+    (void)built.insert(
+        Cell{.x = 3, .y = 0},
+        antwika::game::footprintOf(BuildingKind::House));
+
+    const auto fireman = addWalker(Cell{.x = 0, .y = 0}, Direction::West);
+    world.add<antwika::game::FireCall>(
+        fireman, antwika::game::FireCall{.target = fire});
+    world.commit();
+
+    tick();
+
+    EXPECT_EQ(world.get<Cell>(fireman), (Cell{.x = 1, .y = 0}));
+    EXPECT_EQ(world.get<Walker>(fireman).facing, Direction::East);
+    EXPECT_EQ(
+        world.get<Walker>(fireman).from, (Cell{.x = 0, .y = 0}));
+}
+
+TEST_F(WalkerSystemTest, Update_PutsTheFireOutAndTheFiremanWithIt)
+{
+    const auto fire = world.create();
+    world.add<Cell>(fire, Cell{.x = 2, .y = 0});
+    world.add<antwika::game::Ruin>(
+        fire, antwika::game::Ruin{.kind = BuildingKind::House});
+    (void)built.insert(
+        Cell{.x = 2, .y = 0},
+        antwika::game::footprintOf(BuildingKind::House));
+
+    const auto fireman = addWalker(Cell{.x = 1, .y = 0}, Direction::East);
+    world.add<antwika::game::FireCall>(
+        fireman, antwika::game::FireCall{.target = fire});
+    world.commit();
+
+    tick();
+
+    EXPECT_FALSE(world.alive(fireman));
+    EXPECT_EQ(
+        world.get<antwika::game::Ruin>(fire).state,
+        antwika::game::RuinState::Debris);
+    EXPECT_EQ(world.get<antwika::game::Ruin>(fire).ticksUntilOut, 0);
+}
+
+TEST_F(WalkerSystemTest, Update_RetiresAFiremanWhoseFireBurntOutFirst)
+{
+    const auto debris = world.create();
+    world.add<Cell>(debris, Cell{.x = 3, .y = 0});
+    world.add<antwika::game::Ruin>(
+        debris,
+        antwika::game::Ruin{
+            .kind = BuildingKind::House,
+            .state = antwika::game::RuinState::Debris,
+            .ticksUntilOut = 0});
+
+    const auto fireman = addWalker(Cell{.x = 0, .y = 0}, Direction::East);
+    world.add<antwika::game::FireCall>(
+        fireman, antwika::game::FireCall{.target = debris});
+    world.commit();
+
+    tick();
+
+    EXPECT_FALSE(world.alive(fireman));
+}
+
+TEST_F(WalkerSystemTest, Update_RetiresAFiremanWhoseFireWasRazed)
+{
+    const auto fire = world.create();
+    world.add<Cell>(fire, Cell{.x = 3, .y = 0});
+    world.add<antwika::game::Ruin>(
+        fire, antwika::game::Ruin{.kind = BuildingKind::House});
+
+    const auto fireman = addWalker(Cell{.x = 0, .y = 0}, Direction::East);
+    world.add<antwika::game::FireCall>(
+        fireman, antwika::game::FireCall{.target = fire});
+    world.destroy(fire);
+    world.commit();
+
+    tick();
+
+    EXPECT_FALSE(world.alive(fireman));
+}
+
+// Walled in by buildings, which is the only way to be cut off.
+// The same rule a migrant lives under, met on the way to a fire.
+TEST_F(WalkerSystemTest, Update_RetiresAFiremanWalledOffFromTheFire)
+{
+    const auto fire = world.create();
+    world.add<Cell>(fire, Cell{.x = 9, .y = 9});
+    world.add<antwika::game::Ruin>(
+        fire, antwika::game::Ruin{.kind = BuildingKind::House});
+    (void)built.insert(
+        Cell{.x = 9, .y = 9},
+        antwika::game::footprintOf(BuildingKind::House));
+
+    const auto fireman = addWalker(Cell{.x = 1, .y = 1}, Direction::East);
+    world.add<antwika::game::FireCall>(
+        fireman, antwika::game::FireCall{.target = fire});
+    world.commit();
+
+    for (const auto around : {
+             Cell{.x = 0, .y = 1},
+             Cell{.x = 2, .y = 1},
+             Cell{.x = 1, .y = 0},
+             Cell{.x = 1, .y = 2}})
+    {
+        (void)built.insert(
+            around, antwika::game::footprintOf(BuildingKind::Well));
+    }
+
+    tick();
+
+    EXPECT_FALSE(world.alive(fireman));
 }

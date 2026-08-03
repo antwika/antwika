@@ -808,6 +808,7 @@ namespace
             .paths = {},
             .walkers = {},
             .buildings = {},
+            .ruins = {},
             .plan = {},
             .ghost = {},
             .hover = {},

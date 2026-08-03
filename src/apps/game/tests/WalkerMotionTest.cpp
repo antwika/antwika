@@ -74,10 +74,14 @@ TEST(WalkerMotionTest, StepPhase_NeverReachesTheEndOfTheStep)
 // One whole cycle per cell, left to right, frame by frame.
 TEST(WalkerMotionTest, WalkerFrame_CyclesOncePerCellAsThePhaseGoes)
 {
+    // A quarter of the step per frame, whatever the step's length.
     EXPECT_EQ(walkerFrame(stepping(0), Progress()), 0U);
-    EXPECT_EQ(walkerFrame(stepping(0), Progress(1, 2)), 1U);
-    EXPECT_EQ(walkerFrame(stepping(1), Progress()), 2U);
-    EXPECT_EQ(walkerFrame(stepping(1), Progress(1, 2)), 3U);
+    EXPECT_EQ(
+        walkerFrame(stepping(kTicksPerStep / 4), Progress()), 1U);
+    EXPECT_EQ(
+        walkerFrame(stepping(kTicksPerStep / 2), Progress()), 2U);
+    EXPECT_EQ(
+        walkerFrame(stepping(3 * kTicksPerStep / 4), Progress()), 3U);
 }
 
 TEST(WalkerMotionTest, WalkerFrame_NeverLeavesTheCycle)
@@ -115,8 +119,9 @@ TEST(WalkerMotionTest, WalkerBounds_PutsAWalkerHalfwayHalfwayThrough)
     const auto from = tileSpriteBounds(kOrigin, camera);
     const auto to = tileSpriteBounds(kDestination, camera);
 
-    // One whole tick of a two-tick step is exactly half the span.
-    const auto bounds = walkerBounds(stepping(1), camera, Progress());
+    // Half the step's ticks gone is exactly half the span.
+    const auto bounds =
+        walkerBounds(stepping(kTicksPerStep / 2), camera, Progress());
 
     EXPECT_EQ(bounds.origin.x, (from.origin.x + to.origin.x) / 2);
     EXPECT_EQ(bounds.origin.y, (from.origin.y + to.origin.y) / 2);

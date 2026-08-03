@@ -12,6 +12,7 @@
 #include "antwika/game/BuildingKind.hpp"
 #include "antwika/game/Direction.hpp"
 #include "antwika/game/Footprint.hpp"
+#include "antwika/game/Ruin.hpp"
 
 namespace antwika::game
 {
@@ -277,6 +278,25 @@ namespace antwika::game
         };
 
     /**
+     * @brief Which sprite draws debris, per sheet.
+     *
+     * One entry per AtlasKind rather than per BuildingKind, because
+     * debris is the same picture whatever stood there -- what varies
+     * is the size, and the sheet already says that.
+     */
+    inline constexpr std::array<std::uint8_t, kAtlasKindCount>
+        kDebrisSprites{22, 8, 8};
+
+    /**
+     * @brief Which sprite draws a building on fire, per sheet.
+     *
+     * Beside its debris in every sheet, so the pair reads as one
+     * story in the art.
+     */
+    inline constexpr std::array<std::uint8_t, kAtlasKindCount>
+        kFireSprites{23, 9, 9};
+
+    /**
      * @brief Get which sheet a building kind is drawn from.
      *
      * Derived from the kind's footprint rather than tabled beside the
@@ -404,6 +424,53 @@ namespace antwika::game
         }(),
         "a building sprite index must be inside its sheet");
 
+    // The ruin sprites live by the same rules as the building ones.
+    // Inside the sheet, and distinct from each other.
+    // And in no slot a building sprite already owns.
+    static_assert(
+        []
+        {
+            for (std::size_t sheet = 0; sheet < kAtlasKindCount; ++sheet)
+            {
+                const auto debris = kDebrisSprites[sheet];
+                const auto fire = kFireSprites[sheet];
+
+                if (debris >= kAtlasColumns * kAtlasRows
+                    || fire >= kAtlasColumns * kAtlasRows
+                    || debris == fire)
+                {
+                    return false;
+                }
+
+                for (std::size_t kind = 0; kind < kBuildingKindCount;
+                     ++kind)
+                {
+                    const auto owned =
+                        buildingAtlasOf(static_cast<BuildingKind>(kind))
+                            == static_cast<AtlasKind>(sheet);
+
+                    if (owned
+                        && (kBuildingSprites[kind] == debris
+                            || kBuildingSprites[kind] == fire))
+                    {
+                        return false;
+                    }
+                }
+            }
+
+            return true;
+        }(),
+        "a ruin sprite must have a slot of its own in every sheet");
+
+    // In the 1x1 sheet the ruins also share with roads and walkers.
+    // Past the sixteen junctions, and above the first walker row.
+    static_assert(
+        kDebrisSprites[0] > kRoadSpriteCount
+            && kFireSprites[0] > kRoadSpriteCount
+            && kDebrisSprites[0] < kFirstWalkerRow * kAtlasColumns
+            && kFireSprites[0] < kFirstWalkerRow * kAtlasColumns,
+        "the 1x1 ruin sprites must dodge the roads and the walkers");
+
     /**
      * @brief Get the sprite a cell with nothing on it is drawn from.
      * @return The ground sprite's rectangle, in the 1x1 sheet's pixels.
@@ -461,6 +528,30 @@ namespace antwika::game
         return spriteRect(
             buildingAtlasOf(kind),
             kBuildingSprites[buildingKindIndex(kind) % kBuildingKindCount]);
+    }
+
+    /**
+     * @brief Get the sprite a ruin is drawn from.
+     *
+     * The sheet is the standing building's own, derived from the kind
+     * the ruin remembers, so a burnt 2x2 farm smoulders across the
+     * very diamond its block claims and its debris covers it after.
+     *
+     * @param state Whether it is still alight.
+     * @param kind What stood there before the fire.
+     * @return The sprite's rectangle, in the pixels of the sheet
+     * buildingAtlasOf() names for the kind.
+     */
+    [[nodiscard]] constexpr Rect ruinTile(
+        RuinState state, BuildingKind kind) noexcept
+    {
+        const auto sheet = buildingAtlasOf(kind);
+        const auto slot = atlasKindIndex(sheet) % kAtlasKindCount;
+
+        return spriteRect(
+            sheet,
+            state == RuinState::Burning ? kFireSprites[slot]
+                                        : kDebrisSprites[slot]);
     }
 
     /**

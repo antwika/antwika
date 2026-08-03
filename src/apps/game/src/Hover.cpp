@@ -46,6 +46,16 @@ namespace antwika::game
             }
         }
 
+        // A ruin holds its block on a building's own terms.
+        // So the same one-block rule answers here too.
+        for (const auto &ruin : snapshot.ruins)
+        {
+            if (covers(ruin.at, footprintOf(ruin.kind), cell))
+            {
+                return HoverReadout{.anchor = at, .ruin = ruin};
+            }
+        }
+
         return HoverReadout{};
     }
 

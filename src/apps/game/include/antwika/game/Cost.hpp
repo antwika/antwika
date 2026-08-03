@@ -20,6 +20,21 @@ namespace antwika::game
     inline constexpr std::int64_t kRoadCost = 4;
 
     /**
+     * @brief What one press of the raze tool takes out of the bank.
+     *
+     * Charged per thing actually torn down -- a building, a run of
+     * debris, or one road tile -- and never for a click on bare
+     * ground, which is the placement rule read backwards: a refused
+     * block costs nothing, so a raze that removes nothing does too.
+     *
+     * Cheaper than anything it can remove, since tearing down is
+     * labour rather than materials -- and never free, because a free
+     * demolition would make razing and rebuilding a way to shuffle
+     * blocks at no cost at all.
+     */
+    inline constexpr std::int64_t kRazeCost = 2;
+
+    /**
      * @brief What putting up each kind of building takes out of the
      * bank.
      *

@@ -57,6 +57,7 @@ add_executable(antwika_game_tests
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/ProductionSystem.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/RatingsSystem.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/ReadoutPanel.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/RuinSystem.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/ResourceColour.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/RenderSystem.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/RoadDrag.cpp
@@ -76,6 +77,7 @@ add_executable(antwika_game_tests
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/SaveMigration.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/SaveMigrationV2ToV3.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/SaveProduction.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/SaveRuins.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/SaveSections.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/SessionGatedSystem.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/StandingBuildings.cpp
@@ -136,6 +138,7 @@ add_executable(antwika_game_tests
     MessagesTest.cpp
     PopulationSystemTest.cpp
     RatingsSystemTest.cpp
+    RuinSystemTest.cpp
     HotkeySinkTest.cpp
     HoverTest.cpp
     JourneyTest.cpp

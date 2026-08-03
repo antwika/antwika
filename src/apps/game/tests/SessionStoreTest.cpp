@@ -427,3 +427,33 @@ namespace
     }
 
 } // namespace
+
+    // A ruin comes back standing on its block.
+    // And the block comes back into the index.
+    // So a reloaded city still refuses to build on debris.
+    TEST_F(SessionStoreTest, RestoreThenTake_BringsTheRuinsBack)
+    {
+        SaveGame save;
+        save.extent = kExtent;
+        save.ruins = {antwika::game::SavedRuin{
+            .at = Cell{.x = 4, .y = 4},
+            .kind = antwika::game::BuildingKind::Farm,
+            .state = antwika::game::RuinState::Burning,
+            .ticksUntilOut = 99}};
+        save.walkers = {SavedWalker{
+            .at = Cell{.x = 1, .y = 1},
+            .kind = antwika::game::WalkerKind::Fireman,
+            .fireCall = 0U}};
+
+        store.restore(save);
+        world.commit();
+
+        EXPECT_TRUE(built.has(Cell{.x = 4, .y = 4}));
+        EXPECT_TRUE(built.has(Cell{.x = 5, .y = 5}));
+
+        const auto taken = store.take();
+
+        EXPECT_EQ(taken.ruins, save.ruins);
+        ASSERT_EQ(taken.walkers.size(), 1U);
+        EXPECT_EQ(taken.walkers[0].fireCall, 0U);
+    }

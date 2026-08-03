@@ -20,6 +20,7 @@
 #include "antwika/game/HousingLevel.hpp"
 #include "antwika/game/HousingQuery.hpp"
 #include "antwika/game/Journey.hpp"
+#include "antwika/game/Ruin.hpp"
 #include "antwika/game/SpawnSystem.hpp"
 #include "antwika/game/Walker.hpp"
 
@@ -225,4 +226,105 @@ TEST_F(DemolitionTest, SpawnsNobodyPastTheWalkerLimit)
     demolish(world, built, home, kExtent);
 
     EXPECT_EQ(journeysOut().size(), 0U);
+}
+
+// ignite() is demolish()'s other ending.
+// The ground is the difference: the block stays claimed.
+// And a ruin stands up on it, burning.
+TEST_F(DemolitionTest, IgniteStandsARuinUpAndKeepsTheGround)
+{
+    const auto farm = stand(kAt, BuildingKind::Farm);
+
+    antwika::game::ignite(world, built, farm, kExtent);
+    world.commit();
+
+    EXPECT_FALSE(world.alive(farm));
+    EXPECT_TRUE(built.has(kAt));
+    EXPECT_TRUE(built.has(Cell{.x = kAt.x + 1, .y = kAt.y + 1}));
+
+    const auto ruins =
+        world.view<antwika::game::Ruin, Cell>();
+    ASSERT_EQ(ruins.size(), 1U);
+
+    const auto ruin = world.get<antwika::game::Ruin>(*ruins.begin());
+    EXPECT_EQ(ruin.kind, BuildingKind::Farm);
+    EXPECT_EQ(ruin.state, antwika::game::RuinState::Burning);
+    EXPECT_EQ(ruin.ticksUntilOut, antwika::game::kBurnDurationTicks);
+    EXPECT_EQ(world.get<Cell>(*ruins.begin()), kAt);
+}
+
+// The leavers cannot start on the block: it is still standing.
+// They step out at the lowest free cell round its own perimeter.
+TEST_F(DemolitionTest, IgniteTurnsTheOccupantsOutAtThePerimeter)
+{
+    const auto burning = house(kAt, 2);
+
+    antwika::game::ignite(world, built, burning, kExtent);
+    world.commit();
+
+    const auto out = journeysOut();
+    ASSERT_EQ(out.size(), 2U);
+
+    for (const auto entity : world.view<Walker, Journey>())
+    {
+        EXPECT_EQ(
+            world.get<Cell>(entity),
+            (Cell{.x = kAt.x - 1, .y = kAt.y - 1}));
+    }
+}
+
+// Walled in on every side, so nobody has anywhere to step out to.
+// The rule a walled-in house already lives under, met by a fire.
+TEST_F(DemolitionTest, IgniteTurnsNobodyOutOfAWalledInBuilding)
+{
+    const auto burning = house(kAt, 2);
+
+    for (const auto around : {
+             Cell{.x = 3, .y = 3},
+             Cell{.x = 4, .y = 3},
+             Cell{.x = 5, .y = 3},
+             Cell{.x = 3, .y = 4},
+             Cell{.x = 5, .y = 4},
+             Cell{.x = 3, .y = 5},
+             Cell{.x = 4, .y = 5},
+             Cell{.x = 5, .y = 5}})
+    {
+        (void)built.insert(around, footprintOf(BuildingKind::Well));
+    }
+
+    antwika::game::ignite(world, built, burning, kExtent);
+    world.commit();
+
+    EXPECT_TRUE(journeysOut().empty());
+    EXPECT_EQ((world.view<antwika::game::Ruin, Cell>().size()), 1U);
+}
+
+// A source houses nobody, so a fire there turns nobody out.
+TEST_F(DemolitionTest, IgniteTurnsNobodyOutOfAWell)
+{
+    const auto well = stand(kAt, BuildingKind::Well);
+
+    antwika::game::ignite(world, built, well, kExtent);
+    world.commit();
+
+    EXPECT_TRUE(journeysOut().empty());
+    EXPECT_EQ((world.view<antwika::game::Ruin, Cell>().size()), 1U);
+}
+
+// The block's ring is clipped to the extent before it is searched.
+// A building in the corner of the map still turns its people out.
+TEST_F(DemolitionTest, IgniteFindsAnEscapeFromTheMapsOwnCorner)
+{
+    const auto burning = house(Cell{.x = 0, .y = 0}, 1);
+
+    antwika::game::ignite(world, built, burning, kExtent);
+    world.commit();
+
+    const auto out = journeysOut();
+    ASSERT_EQ(out.size(), 1U);
+
+    for (const auto entity : world.view<Walker, Journey>())
+    {
+        EXPECT_EQ(world.get<Cell>(entity), (Cell{.x = 0, .y = 1}));
+    }
 }

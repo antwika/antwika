@@ -280,6 +280,66 @@ namespace antwika::game
     void requireConsistentStaffing(const SaveGame &save);
 
     /**
+     * @brief The shape of one ruin.
+     *
+     * Every member required, because the four only mean anything
+     * together: debris with no kind is a block of unknowable size.
+     * The array itself is the optional part -- see describeRuins().
+     *
+     * @return The shape.
+     */
+    [[nodiscard]] nlohmann::json ruinShape();
+
+    /**
+     * @brief Add the ruins array to the document's shape.
+     *
+     * The one section that extends the document at the top level:
+     * a ruin is not a building, so it cannot ride on that array.
+     * Optional, and absent means nothing has burnt -- which is what
+     * every file written before fire existed says.
+     *
+     * @param schema The document shape to extend.
+     */
+    void describeRuins(nlohmann::json &schema);
+
+    /**
+     * @brief Add a fireman's call to a walker's shape.
+     * @param walker The shape to extend.
+     */
+    void describeFireCall(nlohmann::json &walker);
+
+    /**
+     * @brief Write every ruin and fire call into the document.
+     * @param save The state to read.
+     * @param document The document, with its walkers array already
+     * filled.
+     */
+    void ruinsToJson(const SaveGame &save, nlohmann::json &document);
+
+    /**
+     * @brief Read every ruin and fire call back out.
+     * @param document The validated document to read.
+     * @param save The state, with its walkers array already sized.
+     * @throws SaveFormatError If a ruin names a kind or a state this
+     * build does not have.
+     */
+    void ruinsFromJson(const nlohmann::json &document, SaveGame &save);
+
+    /**
+     * @brief Refuse a document whose fire call names no such ruin.
+     *
+     * requireConsistentErrands()' counterpart for the one link this
+     * section added, refused on exactly the same terms.
+     * A call to a ruin that is already debris is *not* refused: a
+     * fire may burn out a tick before its fireman reads the world,
+     * so that is a state a live run passes through.
+     *
+     * @param save The decoded state to check.
+     * @throws SaveFormatError If any fire call is out of range.
+     */
+    void requireConsistentFireCalls(const SaveGame &save);
+
+    /**
      * @brief Refuse a document whose walker and building links disagree.
      *
      * An index past the end of the array it points into is corrupt, and

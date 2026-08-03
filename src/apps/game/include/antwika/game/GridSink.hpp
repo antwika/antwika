@@ -57,8 +57,13 @@ namespace antwika::game
      * **The raze tool tears down instead of placing.** A left press
      * with it selected demolishes the building covering the clicked
      * cell -- any cell of the block -- through the very demolish() a
-     * building lost to fire goes through, so its occupants are turned
-     * out identically; on a road cell it takes the road up instead.
+     * building lost to hunger goes through, so its occupants are
+     * turned out identically; on a fire or on debris it clears the
+     * ruin and frees the block, which is the only way burnt ground
+     * ever comes back; on a road cell it takes the road up instead.
+     * Each removal costs kRazeCost, charged only where something
+     * actually came down, exactly as a placement is charged only
+     * where something actually went up.
      * Razing is no more an event than placing is: a recording holds
      * the click, and a replay resolves it against the same city and
      * tears the same thing down. A right press with it selected puts

@@ -16,6 +16,7 @@
 #include "antwika/game/HousingQuery.hpp"
 #include "antwika/game/ReadoutPanel.hpp"
 #include "antwika/game/Resource.hpp"
+#include "antwika/game/Ruin.hpp"
 #include "antwika/game/ResourceColour.hpp"
 #include "antwika/game/SceneSnapshot.hpp"
 #include "antwika/game/Service.hpp"
@@ -374,4 +375,38 @@ TEST(ReadoutPanelTest, Panel_ColoursACoverageLineOutOfTheServiceTable)
 
     ASSERT_EQ(panel.lines.size(), 3U);
     EXPECT_EQ(panel.lines[2].colour, serviceColour(Service::Health));
+}
+
+// A ruin says its state and stops.
+// The fire or the debris is the one thing a reader can act on.
+// The building it was is gone either way.
+TEST(ReadoutPanelTest, Panel_NamesAFireStillBurning)
+{
+    const HoverReadout readout{
+        .anchor = Point{.x = 100, .y = 90},
+        .ruin = antwika::game::RuinView{
+            .at = Cell{.x = 2, .y = 2},
+            .kind = BuildingKind::House,
+            .state = antwika::game::RuinState::Burning}};
+
+    const auto panel = readoutPanel(readout, kCanvas, kTranslator);
+
+    ASSERT_EQ(panel.lines.size(), 1U);
+    EXPECT_EQ(panel.lines[0].text, "on fire");
+    EXPECT_EQ(panel.lines[0].colour, kReadoutTitle);
+}
+
+TEST(ReadoutPanelTest, Panel_NamesTheDebrisAFireLeaves)
+{
+    const HoverReadout readout{
+        .anchor = Point{.x = 100, .y = 90},
+        .ruin = antwika::game::RuinView{
+            .at = Cell{.x = 2, .y = 2},
+            .kind = BuildingKind::Farm,
+            .state = antwika::game::RuinState::Debris}};
+
+    const auto panel = readoutPanel(readout, kCanvas, kTranslator);
+
+    ASSERT_EQ(panel.lines.size(), 1U);
+    EXPECT_EQ(panel.lines[0].text, "debris");
 }

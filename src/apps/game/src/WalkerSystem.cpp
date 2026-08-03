@@ -5,6 +5,8 @@
 #include "antwika/game/Building.hpp"
 #include "antwika/game/Cell.hpp"
 #include "antwika/game/Errand.hpp"
+#include "antwika/game/FireCall.hpp"
+#include "antwika/game/Ruin.hpp"
 #include "antwika/game/Footprint.hpp"
 #include "antwika/game/Homing.hpp"
 #include "antwika/game/Journey.hpp"
@@ -41,6 +43,15 @@ namespace antwika::game
             }
 
             const auto at = world.get<Cell>(entity);
+
+            // A fireman answering a call, ahead of everything else.
+            // A walker carries at most one of the three components.
+            // So the order of these arms is legibility, not priority.
+            if (world.has<FireCall>(entity))
+            {
+                respond(world, entity, walker, at);
+                continue;
+            }
 
             // A person walking themselves somewhere, ahead of a load.
             // The two are never both on one walker.
@@ -119,6 +130,67 @@ namespace antwika::game
                 world.destroy(entity);
             }
 
+            return;
+        }
+
+        auto moved = walker;
+        moved.facing = *heading;
+        moved.ticksUntilStep = kTicksPerStep - 1;
+        moved.from = at;
+
+        world.set<Walker>(entity, moved);
+        world.set<Cell>(entity, onto);
+    }
+
+    void WalkerSystem::respond(
+        World &world,
+        antwika::ecs::Entity entity,
+        const Walker &walker,
+        Cell at)
+    {
+        const auto target = world.get<FireCall>(entity).target;
+
+        // A fire razed from under him, or burnt out before he came.
+        // Either way there is nothing left to put out.
+        // Answered by the walker being gone, as a spent errand is.
+        if (!world.has<Ruin>(target)
+            || world.get<Ruin>(target).state != RuinState::Burning)
+        {
+            world.destroy(entity);
+            return;
+        }
+
+        const auto door = world.get<Cell>(target);
+        const auto footprint =
+            footprintOf(world.get<Ruin>(target).kind);
+
+        // Across the ground rather than along the roads.
+        // A fire does not wait for paving -- see FireCall.
+        const auto heading =
+            stepAcross(at, door, footprint, built, extent);
+
+        // Walled off from the fire entirely, so the call is spent.
+        if (!heading.has_value())
+        {
+            world.destroy(entity);
+            return;
+        }
+
+        const auto onto = step(at, *heading);
+
+        if (covers(door, footprint, onto))
+        {
+            // Arriving is the whole job: the fire is out at once.
+            // And the walker is spent putting it out.
+            // The ruin stays, as debris only the raze tool clears.
+            // RuinSystem writes Ruin from another phase.
+            // So neither write can undo the other.
+            auto ruin = world.get<Ruin>(target);
+            ruin.state = RuinState::Debris;
+            ruin.ticksUntilOut = 0;
+            world.set<Ruin>(target, ruin);
+
+            world.destroy(entity);
             return;
         }
 

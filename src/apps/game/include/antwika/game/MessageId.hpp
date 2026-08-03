@@ -535,6 +535,16 @@ namespace antwika::game
         ReadoutStaff,
 
         /**
+         * @brief Readout: a building on fire.
+         */
+        RuinOnFire,
+
+        /**
+         * @brief Readout: the debris a fire leaves behind.
+         */
+        RuinDebris,
+
+        /**
          * @brief How many ids there are; not an id itself.
          *
          * Messages.cpp static_asserts its name table against this,

@@ -46,6 +46,7 @@
 #include "antwika/game/ReadoutPanel.hpp"
 #include "antwika/game/RenderSystem.hpp"
 #include "antwika/game/SaveLoadScene.hpp"
+#include "antwika/game/Ruin.hpp"
 #include "antwika/game/SceneSnapshot.hpp"
 #include "antwika/game/UiCanvas.hpp"
 #include "antwika/game/UiOverlay.hpp"
@@ -115,6 +116,7 @@ namespace
             .paths = {},
             .walkers = std::move(walkers),
             .buildings = std::move(buildings),
+            .ruins = {},
             .plan = {},
             .ghost = {},
             .hover = {},
@@ -327,6 +329,10 @@ TEST(HoverTest, ReadoutEqualityComparesEveryField)
     auto peopled = base;
     peopled.walker = WalkerSprite{};
     EXPECT_NE(base, peopled);
+
+    auto burnt = base;
+    burnt.ruin = antwika::game::RuinView{};
+    EXPECT_NE(base, burnt);
 }
 
 // The claim the whole channel rests on, asserted rather than assumed.
@@ -485,10 +491,13 @@ TEST(HoverTest, AHoverChangesNothingAReplayReproduces)
     ReplaySource blindSource(script);
     const auto blind = runWatched(blindSource, std::nullopt);
 
+    // Where the walker stands when the run stops.
+    // Dropped on (1,2) at tick 1, it takes its first step at once.
+    // It then spends the rest of the session waiting out its step.
     auto watchedScript = hoveredSession();
     ReplaySource watchedSource(watchedScript);
     const auto watched = runWatched(
-        watchedSource, pointingAt(Cell{.x = 3, .y = 2}, Camera()));
+        watchedSource, pointingAt(Cell{.x = 2, .y = 2}, Camera()));
 
     // Neither run may have simply sat still.
     EXPECT_EQ(blind.summary.paths.size(), 5U);
@@ -498,4 +507,38 @@ TEST(HoverTest, AHoverChangesNothingAReplayReproduces)
     EXPECT_GT(watched.texts, 0U);
     EXPECT_EQ(blind.texts, 0U);
     EXPECT_EQ(watched.summary, blind.summary);
+}
+
+TEST(HoverTest, HoverFor_ReportsTheRuinUnderThePointer)
+{
+    auto scene = sceneOf({});
+    scene.ruins = {
+        antwika::game::RuinView{
+            .at = Cell{.x = 4, .y = 4},
+            .kind = BuildingKind::Farm,
+            .state = antwika::game::RuinState::Burning}};
+
+    // Any cell of the block, exactly as a building answers.
+    const auto readout = hoverFor(
+        pointingAt(Cell{.x = 5, .y = 5}), kCamera, scene, false);
+
+    ASSERT_TRUE(readout.ruin.has_value());
+    EXPECT_EQ(readout.ruin->kind, BuildingKind::Farm);
+    EXPECT_FALSE(readout.building.has_value());
+    EXPECT_FALSE(readout.walker.has_value());
+}
+
+TEST(HoverTest, HoverFor_ReportsNothingBesideARuin)
+{
+    auto scene = sceneOf({});
+    scene.ruins = {
+        antwika::game::RuinView{
+            .at = Cell{.x = 4, .y = 4},
+            .kind = BuildingKind::House,
+            .state = antwika::game::RuinState::Debris}};
+
+    const auto readout = hoverFor(
+        pointingAt(Cell{.x = 6, .y = 6}), kCamera, scene, false);
+
+    EXPECT_FALSE(readout.ruin.has_value());
 }

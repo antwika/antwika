@@ -226,6 +226,7 @@ namespace antwika::game
         // One line per section, and each in a file of its own.
         describeErrand(shape);
         describeJourney(shape);
+        describeFireCall(shape);
         return shape;
     }
 

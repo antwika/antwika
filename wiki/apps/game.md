@@ -64,7 +64,7 @@ They used to be one enumeration, which gave every per-building table a `Road` en
 A house consumes what is delivered to it, and most other kinds send out one `WalkerKind`.
 Both facts used to be arithmetic over a shared declaration order; they are tables now, for the reason the round-one vocabulary section below gives.
 
-`BuildingSystem` runs deliveries, drain, risk and demolition.
+`BuildingSystem` runs deliveries, drain, risk and both of a building's endings: a risk-maxed one catches fire and a starved one falls down.
 Every period derives from one `kTicksPerSecond` rather than a constant per rule, and each countdown lives in the building's own component so two buildings put up a tick apart never fall into lockstep.
 
 A building with no road beside it holds its countdown at zero rather than resetting it, so laying a road beside a long-neglected source releases one walker and not a queue of them, and `kWalkerLimit` stays as a backstop.
@@ -199,7 +199,7 @@ The interpolation itself is `WalkerMotion.hpp`, exact rational arithmetic throug
 
 **The pause is `apps/life`'s answer to the same question.**
 `PauseGatedSystem` wraps a system and stages nothing while `PauseState` says the run is held, exactly as `life::DragPausedSystem` does, and only those systems stop.
-Which ones is the product decision, and it is three: `WalkerSystem`, `BuildingSystem` and `SpawnSystem`, the three that make a city move on its own.
+Which ones is the product decision, and it is four: `WalkerSystem`, `BuildingSystem`, `SpawnSystem` and `RuinSystem`, the ones that make a city move -- and burn -- on its own.
 The tick, the commit, every observer, the toolbar, the camera and placement all carry on, so **a paused city can still be panned over, zoomed into and built on** — this is a build pause rather than a freeze, and a pause nobody could act on would just look like a hang.
 It composes with `SessionGatedSystem` rather than replacing it, since a run is paused *and* has a session on screen and either gate alone answers only its own question.
 
@@ -293,7 +293,7 @@ Save and load share one verb because they share one screen: the picker is where 
 `new game` restores an empty `SaveGame` through `SessionStore`, which is the one route into the live grid a load already goes through, so "empty the city" is not a second way of doing it; the other cities of a world keep what was built on them, since a session holds one live grid.
 
 **Moving a widget changes what every recorded click means**, so `replays/demo.jsonl` was recorded again against this layout — by driving the application with `--replay` over the re-aimed session and `--record` writing what it actually dispatched, rather than by editing the file.
-It reaches the identical city either way: ten road tiles, one house at (4,3) at `tent` with water coverage 474, population 3, service reach 25, camera at pan (512,48) and zoom 3 after 92 ticks.
+It reaches the identical city either way: ten road tiles, one house at (4,3) at `tent` with water coverage 490, population 3, service reach 25, camera at pan (512,48) and zoom 3 after 92 ticks.
 
 Its ten road tiles are laid in the middle of the grid and reach no edge of it, which is why walking over open ground is what keeps that population where it was: bound to the roads, the same file housed nobody at all.
 `BootstrapTest` pins the two pixels that file depends on — the main menu's New Game and the palette's House — so a layout change fails a test rather than being rediscovered by hand.
@@ -312,7 +312,7 @@ A run is held where a player has asked for it and nowhere else — see the pause
 The modal's widget ids live in `modalWidgets` rather than in the bar's `widgets`, for the reason `menuWidgets` has a namespace of its own: the two are resolved against different frames and never share one.
 
 **A pause is asked for, and nothing else causes one.**
-`PauseGatedSystem` wraps a system and stages nothing while `PauseState` says the run is held, exactly as `life::DragPausedSystem` does, and the three it wraps are `WalkerSystem`, `BuildingSystem` and `SpawnSystem` — the three that make a city move on its own.
+`PauseGatedSystem` wraps a system and stages nothing while `PauseState` says the run is held, exactly as `life::DragPausedSystem` does, and the four it wraps are `WalkerSystem`, `BuildingSystem`, `SpawnSystem` and `RuinSystem` — the ones that make a city move, and burn, on its own.
 The tick, the commit, every observer, the toolbar, the camera and placement all carry on, so **a paused city can still be panned over, zoomed into and built on**: this is a build pause rather than a freeze, and a pause nobody could act on would just look like a hang.
 
 A city coming up, the menu modal opening and a road being dragged out each used to hold the run as well, and none of them does.
@@ -727,12 +727,13 @@ The bar reports the balance as a `money {0}` label beside the ratings, appended 
 ## The raze tool, and where the people go
 
 **Raze is the palette tool `buildingKindOf()` always said would arrive**: it places nothing, so every crossing to `BuildingKind` answers nullopt for it exactly as it does for Road, and the table shape absorbed it without an offset going quietly wrong -- which is the very failure that section was written about.
-A left press with it selected demolishes the building covering the clicked cell -- any cell of the block -- and on a road cell it takes the road up instead, through `PathIndex::erase()`, which is `insert()`'s contract read the other way round.
-Razing is free, is no more an event than placing is, and previews nothing: there is no block to promise, so `ghostFor()` stays invisible and what is standing under the pointer is the hover readout's job.
+A left press with it selected demolishes the building covering the clicked cell -- any cell of the block -- clears the fire or the debris covering it, and on a road cell it takes the road up instead, through `PathIndex::erase()`, which is `insert()`'s contract read the other way round.
+Each removal costs `kRazeCost`, charged only where something actually came down -- the placement rule read backwards -- and cheaper than anything it can remove, though never free, since a free demolition would make razing and rebuilding a way to shuffle blocks at no cost.
+Razing is no more an event than placing is, and previews nothing: there is no block to promise, so `ghostFor()` stays invisible and what is standing under the pointer is the hover readout's job.
 A right press with raze selected puts the palette down exactly as a building tool's does -- `cancellable()` names the rule -- since a destructive mode somebody cannot back out of is a click away from a building nobody meant to lose.
 
 **`demolish()` is the one statement of what a demolition is, whoever asked for it.**
-`BuildingSystem` calls it for a building lost to fire or hunger and `GridSink` calls it for one the raze tool was clicked on, so what happens to the people inside cannot depend on why the roof came down.
+`BuildingSystem` calls it for a building lost to hunger and `GridSink` calls it for one the raze tool was clicked on, so what happens to the people inside cannot depend on why the roof came down; a building lost to *fire* takes `ignite()` instead, which shares the people rule and differs about the ground -- see the fire section below.
 The occupants are spawned in the building's place, as ordinary migrants on `PopulationSystem`'s own terms: the nearest vacancy is asked once and its spare beds are counted, that many head there, and the overflow makes for the nearest gate rather than crowding a doorway that would clamp them to nothing on arrival.
 Whoever exceeds the walker limit, or has neither a vacancy nor a gate to walk to, is gone -- the rule a walled-in house already lives under.
 The block leaves the `BuildingIndex` *before* anybody routes anywhere, because the leavers start on that very ground and a search still counting it as standing would find no way off it.
@@ -740,6 +741,30 @@ The block leaves the `BuildingIndex` *before* anybody routes anywhere, because t
 **Two same-tick edges have rules, and both fall out of the index-versus-World split.**
 The index is the note kept current within the tick, so a block razed a moment ago already reads as gone and one press cannot tear one building down twice; a block *placed* earlier in the same tick is the opposite case -- in the index and not yet in the committed World -- and cannot be found to tear down until the next tick, which is the same "the World hands out the last commit" answer double placement already has.
 `BuildingSystem` demolishes what it loses in ascending `Cell` order rather than the pending map's entity order, because a demolition now spawns contended walkers and an entity order is one a restore may renumber -- see `AllocationOrderTest`.
+
+## Fire, the brigade, and the debris a city keeps
+
+**A building whose risk runs all the way up catches fire now rather than vanishing**, and everything else in this section falls out of one modelling decision: what burns is a `Ruin`, a component of its own, and the `Building` entity dies at ignition.
+Every system that walks buildings -- spawning, staffing, deliveries, coverage, housing -- therefore ignores a ruin by construction rather than by a filter each of them would have to remember, walkers homing to the burnt building find their home dead and expire by the arm they already had, and the staffing ledgers drop their entries in the tend pass that already drops the dead.
+A ruin remembers the `BuildingKind` that stood there, which is what names both its block -- `footprintOf()` -- and its art's sheet, so a burnt farm smoulders across the very diamond its block claims.
+
+**Fire is not bare ground: the block stays in the `BuildingIndex`, and the raze tool is the only thing that ever frees it.**
+That one fact is what refuses a placement on debris, routes a dragged road around it, and makes clearing the ground cost a click and `kRazeCost` -- there is no separate rule for any of those.
+`ignite()` is `demolish()`'s other ending and shares its people rule verbatim: the occupants leave as ordinary migrants, a counted few to the nearest vacancy and the rest to the nearest gate.
+What differs is where they step out: the block still stands, and a route is re-searched every step, so a leaver spawned on it would find no way off -- they step out at the lowest free cell round the block's own perimeter instead, and a building walled in on every side turns its people out to nowhere, the rule a walled-in house already lives under.
+
+**A fire burns for `kBurnDurationTicks` and then it is debris, and a fireman getting there first ends on the same word.**
+`RuinSystem`, in a `"burn"` phase of its own, counts every fire down and tasks the nearest free fireman with each fire nobody is coming to -- one fireman per fire, distance as the crow flies, ties resolved by walking the candidates out of an ascending `(Cell, Entity)` set, exactly the shape every other contended decision here takes.
+`FireCall` is `Errand`'s and `Journey`'s sibling: a component naming the burning ruin by handle, so a fire razed from under its fireman is answered by the world rather than by a stale cell.
+**The responder is not bound by roads** -- `WalkerSystem`'s `respond()` arm steers him by `stepAcross()`, since a fire does not wait for paving -- and arriving is the whole job: the ruin turns to debris at once and the walker is destroyed, which frees his station's slot for the next patrol.
+Extinguishing does not save the building; it shortens the fire, and what it leaves is what the fire would have left.
+The two systems both write `Ruin` and never race, because they write from different phases and the commit sits between -- the same trap the phase list has answered twice before.
+
+**Nothing about a fire is an event, and nothing about one bumped the save format's version.**
+A fire is a pure function of risk, which is a function of coverage, which is a function of the clicks that built the district -- recording one would burn twice on replay, which is `Events.hpp`'s rule verbatim.
+The save document grew an optional top-level `"ruins"` array and an optional `"fireCall"` index on a walker, both absent from every file written before anything burnt; a fire call to a ruin already out is deliberately *not* refused, because a fire may burn out a tick before its fireman reads the world, so that is a state a live run passes through.
+`GameSummary` carries the ruins, since a building that burns leaves the buildings list -- without them a live run and its replay could disagree about a whole district having burned and still compare equal.
+`CityGrid` carries them across a city switch, block and index entries included, and the hover readout says `on fire` or `debris` and stops: the state is the one thing a reader can act on, and the building it was is gone either way.
 
 ## Labour walks to work, and both ends keep the ledger
 

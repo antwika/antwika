@@ -17,6 +17,7 @@
 #include "antwika/game/Placement.hpp"
 #include "antwika/game/PointerReading.hpp"
 #include "antwika/game/RoadPlan.hpp"
+#include "antwika/game/Ruin.hpp"
 #include "antwika/game/Walker.hpp"
 
 namespace antwika::game
@@ -314,6 +315,32 @@ namespace antwika::game
                 if (covers(origin, footprint, cell))
                 {
                     demolish(world, built, entity, extent);
+
+                    // After the removal, so a miss costs nothing.
+                    // Never refused for want of money.
+                    // Placing never is either -- see GameState::money.
+                    state.money -= kRazeCost;
+                    return;
+                }
+            }
+
+            // Fire and debris hold their block as a building does.
+            // And the raze tool is the one thing that frees it.
+            // A burning ruin may be razed too.
+            // The fire simply ends with the ground it stood on.
+            // A fireman en route reads the world and is gone.
+            // See WalkerSystem::respond().
+            for (const auto entity : world.view<Ruin, Cell>())
+            {
+                const auto origin = world.get<Cell>(entity);
+                const auto footprint =
+                    footprintOf(world.get<Ruin>(entity).kind);
+
+                if (covers(origin, footprint, cell))
+                {
+                    world.destroy(entity);
+                    (void)built.erase(origin, footprint);
+                    state.money -= kRazeCost;
                     return;
                 }
             }
@@ -338,6 +365,9 @@ namespace antwika::game
             {
                 world.destroy(entity);
                 (void)paths.erase(cell);
+
+                // A road torn up is a removal like any other.
+                state.money -= kRazeCost;
                 return;
             }
         }

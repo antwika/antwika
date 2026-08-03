@@ -12,6 +12,7 @@
 #include "antwika/game/Household.hpp"
 #include "antwika/game/HousingLevel.hpp"
 #include "antwika/game/PathIndex.hpp"
+#include "antwika/game/Ruin.hpp"
 #include "antwika/game/GameSummary.hpp"
 #include "antwika/game/SceneSnapshot.hpp"
 #include "antwika/game/Walker.hpp"
@@ -360,6 +361,7 @@ TEST(SceneSnapshotTest, GameSummaryEqualityComparesEveryField)
         .paths = {Cell{.x = 1, .y = 1}},
         .walkers = {WalkerView{.at = {.x = 2, .y = 2}}},
         .buildings = {},
+        .ruins = {},
         .camera = Camera(),
         .ratings = {},
         .bindings = {}};
@@ -588,4 +590,80 @@ TEST(SceneSnapshotTest, TakesEachHousesPeopleOntoBothViewAndSprite)
     ASSERT_EQ(snapshot.buildings.size(), 2U);
     EXPECT_EQ(snapshot.buildings[0].population, 4);
     EXPECT_EQ(snapshot.buildings[1].population, 0);
+}
+
+TEST(SceneSnapshotTest, SnapshotOf_TakesEveryRuinInPaintersOrder)
+{
+    NiceMock<MockLogger> logger;
+    World world(logger);
+    const PathIndex paths;
+
+    // The deeper one is created first, so the sort has work to do.
+    const auto deep = world.create();
+    world.add<Cell>(deep, Cell{.x = 3, .y = 3});
+    world.add<antwika::game::Ruin>(
+        deep,
+        antwika::game::Ruin{
+            .kind = antwika::game::BuildingKind::Farm,
+            .state = antwika::game::RuinState::Debris,
+            .ticksUntilOut = 0});
+
+    const auto shallow = world.create();
+    world.add<Cell>(shallow, Cell{.x = 1, .y = 1});
+    world.add<antwika::game::Ruin>(
+        shallow,
+        antwika::game::Ruin{
+            .kind = antwika::game::BuildingKind::House});
+
+    // On the deep one's own diagonal, so the tie-break has work too.
+    const auto tied = world.create();
+    world.add<Cell>(tied, Cell{.x = 2, .y = 4});
+    world.add<antwika::game::Ruin>(
+        tied,
+        antwika::game::Ruin{
+            .kind = antwika::game::BuildingKind::House});
+    world.commit();
+
+    const auto snapshot =
+        snapshotOf(world, paths, Camera(), kExtent);
+
+    ASSERT_EQ(snapshot.ruins.size(), 3U);
+    EXPECT_EQ(snapshot.ruins[0].at, (Cell{.x = 1, .y = 1}));
+    EXPECT_EQ(
+        snapshot.ruins[0].kind, antwika::game::BuildingKind::House);
+    EXPECT_EQ(
+        snapshot.ruins[0].state, antwika::game::RuinState::Burning);
+    EXPECT_EQ(snapshot.ruins[1].at, (Cell{.x = 2, .y = 4}));
+    EXPECT_EQ(snapshot.ruins[2].at, (Cell{.x = 3, .y = 3}));
+    EXPECT_EQ(
+        snapshot.ruins[2].state, antwika::game::RuinState::Debris);
+}
+
+TEST(SceneSnapshotTest, RuinViewsOf_ReportsEachRuinAsState)
+{
+    NiceMock<MockLogger> logger;
+    World world(logger);
+
+    const auto fire = world.create();
+    world.add<Cell>(fire, Cell{.x = 2, .y = 5});
+    world.add<antwika::game::Ruin>(
+        fire,
+        antwika::game::Ruin{
+            .kind = antwika::game::BuildingKind::Market});
+    world.commit();
+
+    const auto views = antwika::game::ruinViewsOf(world);
+
+    ASSERT_EQ(views.size(), 1U);
+    EXPECT_EQ(views[0].at, (Cell{.x = 2, .y = 5}));
+    EXPECT_EQ(views[0].kind, antwika::game::BuildingKind::Market);
+    EXPECT_EQ(views[0].state, antwika::game::RuinState::Burning);
+}
+
+TEST(SceneSnapshotTest, RuinViewsOf_ReportsNothingWithNoRuins)
+{
+    NiceMock<MockLogger> logger;
+    World world(logger);
+
+    EXPECT_TRUE(antwika::game::ruinViewsOf(world).empty());
 }

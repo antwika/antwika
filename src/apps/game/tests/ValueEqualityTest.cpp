@@ -161,6 +161,10 @@ namespace
             .buildings =
                 {BuildingSprite{
                     .at = {.x = 3, .y = 3}, .kind = BuildingKind::House}},
+            .ruins =
+                {antwika::game::RuinView{
+                    .at = {.x = 6, .y = 6},
+                    .kind = BuildingKind::Farm}},
             .plan = RoadPlan{.cells = {Cell{.x = 5, .y = 5}}},
             .ghost = BuildGhost{.at = {.x = 4, .y = 4}},
             .hover = HoverReadout{
@@ -185,6 +189,22 @@ namespace
             base, [](SceneSnapshot &s) { s.walkers.clear(); });
         expectMemberCompared(
             base, [](SceneSnapshot &s) { s.buildings.clear(); });
+        expectMemberCompared(
+            base, [](SceneSnapshot &s) { s.ruins.clear(); });
+        expectMemberCompared(
+            base,
+            [](SceneSnapshot &s)
+            {
+                s.ruins[0].state = antwika::game::RuinState::Debris;
+            });
+        expectMemberCompared(
+            base,
+            [](SceneSnapshot &s)
+            { s.ruins[0].at = Cell{.x = 9, .y = 9}; });
+        expectMemberCompared(
+            base,
+            [](SceneSnapshot &s)
+            { s.ruins[0].kind = BuildingKind::House; });
         expectMemberCompared(
             base,
             [](SceneSnapshot &s)
@@ -221,6 +241,10 @@ namespace
             .buildings =
                 {BuildingView{
                     .at = {.x = 3, .y = 3}, .kind = BuildingKind::House}},
+            .ruins =
+                {antwika::game::RuinView{
+                    .at = {.x = 6, .y = 6},
+                    .kind = BuildingKind::Farm}},
             .camera = Camera(antwika::gfx::Point{.x = 4, .y = 5}, 1),
             .ratings = CityRatings{
                 .population = 6,
@@ -242,6 +266,8 @@ namespace
             base, [](GameSummary &s) { s.walkers.clear(); });
         expectMemberCompared(
             base, [](GameSummary &s) { s.buildings.clear(); });
+        expectMemberCompared(
+            base, [](GameSummary &s) { s.ruins.clear(); });
         expectMemberCompared(
             base, [](GameSummary &s) { s.camera = Camera(); });
         expectMemberCompared(
