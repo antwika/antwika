@@ -6,6 +6,7 @@
 
 #include <antwika/ecs/Entity.hpp>
 
+#include "antwika/game/BuildingIndex.hpp"
 #include "antwika/game/Cell.hpp"
 #include "antwika/game/GridExtent.hpp"
 #include "antwika/game/PathIndex.hpp"
@@ -53,13 +54,19 @@ namespace antwika::game
     {
     public:
         /**
-         * @brief Construct the system over the roads and the bounds.
+         * @brief Construct the system over the roads, the blocks and
+         * the bounds.
          * @param paths Consulted for each walker's neighbours, and
          * searched for a route home; must outlive this system.
-         * @param extent The bounds a route home is numbered over; see
+         * @param built What a person crossing open ground may not walk
+         * through; must outlive this system.
+         * @param extent The bounds a route is numbered over; see
          * stepTowards() for why it is stated rather than derived.
          */
-        WalkerSystem(const PathIndex &paths, GridExtent extent);
+        WalkerSystem(
+            const PathIndex &paths,
+            const BuildingIndex &built,
+            GridExtent extent);
 
         WalkerSystem(const WalkerSystem &) = delete;
         WalkerSystem(WalkerSystem &&) = delete;
@@ -125,6 +132,7 @@ namespace antwika::game
             antwika::ecs::Entity bound);
 
         const PathIndex &paths;
+        const BuildingIndex &built;
         GridExtent extent;
     };
 

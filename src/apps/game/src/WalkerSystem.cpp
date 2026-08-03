@@ -14,8 +14,11 @@
 namespace antwika::game
 {
 
-    WalkerSystem::WalkerSystem(const PathIndex &paths, GridExtent extent)
-        : paths(paths), extent(extent)
+    WalkerSystem::WalkerSystem(
+        const PathIndex &paths,
+        const BuildingIndex &built,
+        GridExtent extent)
+        : paths(paths), built(built), extent(extent)
     {
     }
 
@@ -152,10 +155,14 @@ namespace antwika::game
             ? footprintOf(world.get<Building>(journey.house).kind)
             : Footprint{.width = 1, .height = 1};
 
+        // Across the ground rather than along the roads.
+        // A person is not a delivery -- see stepAcross().
+        // Which is what lets somebody reach an unpaved lane.
+        // And leave over a field.
         const auto heading =
-            stepTowards(at, journey.towards, footprint, paths, extent);
+            stepAcross(at, journey.towards, footprint, built, extent);
 
-        // Walled off, or the road under it has gone.
+        // Walled in by buildings, or heading off the grid entirely.
         // A person who cannot get where they were going is gone too.
         if (!heading.has_value())
         {

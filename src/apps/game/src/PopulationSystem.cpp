@@ -29,9 +29,13 @@ namespace antwika::game
 
     PopulationSystem::PopulationSystem(
         const PathIndex &paths,
+        const BuildingIndex &built,
         const DesirabilityField &desirability,
         GridExtent extent) noexcept
-        : paths(paths), desirability(desirability), extent(extent)
+        : paths(paths),
+          built(built),
+          desirability(desirability),
+          extent(extent)
     {
     }
 
@@ -129,7 +133,7 @@ namespace antwika::game
         World &world, Entity entity, const Building &building, Cell door)
     {
         const auto slot = freeWalkerSlot(world, building);
-        const auto gate = nearestGate(door, paths, extent);
+        const auto gate = nearestGate(door, built, extent);
         const auto out = world.view<Walker>().size();
 
         // A city walled off from the outside takes nobody in.
@@ -168,11 +172,11 @@ namespace antwika::game
 
         // A spare bed in town before the road out of it.
         const auto vacancy =
-            nearestVacancy(world, *door, entity, paths, extent);
+            nearestVacancy(world, *door, entity, built, extent);
 
         const auto towards = vacancy != kNullEntity
             ? std::optional<Cell>(world.get<Cell>(vacancy))
-            : nearestGate(*door, paths, extent);
+            : nearestGate(*door, built, extent);
 
         if (!towards.has_value())
         {

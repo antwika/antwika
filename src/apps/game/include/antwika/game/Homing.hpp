@@ -3,6 +3,7 @@
 #include <cstdint>
 #include <optional>
 
+#include "antwika/game/BuildingIndex.hpp"
 #include "antwika/game/Cell.hpp"
 #include "antwika/game/Direction.hpp"
 #include "antwika/game/Footprint.hpp"
@@ -89,6 +90,72 @@ namespace antwika::game
         Cell goal,
         Footprint footprint,
         const PathIndex &paths,
+        GridExtent extent);
+
+    /**
+     * @brief Get which way to step to get closer to a goal, over open
+     * ground.
+     *
+     * stepTowards()'s sibling, and it is the same search with one thing
+     * changed: what a route may run along.
+     * That one is bound to the roads, because a water carrier, a cart
+     * pusher and a market seller are all doing the city's business and
+     * the road network is what that business runs on.
+     * This one is bound only by what is standing: everything inside the
+     * extent is walkable except the cells a building covers.
+     *
+     * **A person is not a delivery, which is the whole distinction.**
+     * Somebody moving house walks where they like -- across a field,
+     * round the back of a workshop, straight at the edge of the map --
+     * and being made to follow a road nobody built yet is what kept a
+     * city with no way out of it from taking anybody in.
+     *
+     * Every cell of the goal's block is walkable by exception, exactly
+     * as it is over the roads, since a walker arrives by stepping onto
+     * what it was heading for.
+     *
+     * Replay-safe on stepTowards()' terms, and for its reasons: the
+     * open set orders down to ascending NodeId, and the extent is
+     * passed in rather than derived so that numbering cannot move when
+     * something is built somewhere else entirely.
+     *
+     * @param from Where the walker is.
+     * @param goal The minimum-x, minimum-y cell of where it is heading.
+     * @param footprint How many cells across and down the goal covers.
+     * @param built The buildings a route may not cross.
+     * @param extent The bounds the search is numbered over.
+     * @return The direction of the first step, or nullopt when there is
+     * no route -- an ordinary answer covering a goal walled in by
+     * buildings, a cell outside the extent and a degenerate extent.
+     */
+    [[nodiscard]] std::optional<Direction> stepAcross(
+        Cell from,
+        Cell goal,
+        Footprint footprint,
+        const BuildingIndex &built,
+        GridExtent extent);
+
+    /**
+     * @brief Get how far it is to a goal over open ground.
+     *
+     * stepAcross()'s other half, on exactly routeCost()'s terms: that
+     * pair answers along the roads and this pair answers across the
+     * ground, and each is one search asked two questions so that
+     * nothing outside this file builds a graph of its own.
+     *
+     * @param from Where the walker is.
+     * @param goal The minimum-x, minimum-y cell of where it is heading.
+     * @param footprint How many cells across and down the goal covers.
+     * @param built The buildings a route may not cross.
+     * @param extent The bounds the search is numbered over.
+     * @return How many steps the route takes, or nullopt when there is
+     * none.
+     */
+    [[nodiscard]] std::optional<std::int64_t> crossingCost(
+        Cell from,
+        Cell goal,
+        Footprint footprint,
+        const BuildingIndex &built,
         GridExtent extent);
 
 } // namespace antwika::game

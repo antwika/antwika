@@ -5,6 +5,7 @@
 #include <antwika/ecs/Entity.hpp>
 #include <antwika/ecs/World.hpp>
 
+#include "antwika/game/BuildingIndex.hpp"
 #include "antwika/game/Cell.hpp"
 #include "antwika/game/GridExtent.hpp"
 #include "antwika/game/PathIndex.hpp"
@@ -66,25 +67,36 @@ namespace antwika::game
     /**
      * @brief Find the way onto or off the map nearest to a cell.
      *
-     * **Where every person in this city comes from and goes to.** A road
-     * on the edge of the grid is the whole of what a city border is
-     * here: there is nothing beyond the extent, so a road that reaches
-     * it is a road that leads somewhere else.
+     * **Where every person in this city comes from and goes to.** Any
+     * cell on the outermost ring of the grid that nothing is standing
+     * on is a way out: there is nothing beyond the extent, so ground
+     * that reaches it is ground that leads somewhere else.
      *
-     * Ordered by route length and then by ascending Cell, which is
-     * nearestAccepting()'s order and is total for the same reason it
-     * needs to be: which gate a migrant uses decides which roads they
-     * walk down, and a replay has to pick the same one.
+     * It used to be an edge cell with a *road* on it, which made a city
+     * whose roads stopped short of the grid one nobody could reach --
+     * a rule nothing on screen explained. A person walks where they
+     * like; see stepAcross().
      *
-     * @param from The road cell the walk starts or ends at.
-     * @param paths The roads a route may run along.
+     * **Ordered by how far away a gate is as the crow flies, then by
+     * ascending Cell, and the first one a route reaches is the answer.**
+     * That is total, which is all a replay needs of it, and over open
+     * ground it is also exact: with nothing in the way a route is
+     * exactly that many steps, so the first candidate is the shortest.
+     * Ordering by *route* length instead would be a search per edge
+     * cell -- ninety-two of them on the shipped grid -- every time a
+     * house asked for somebody, where this is one search unless a
+     * building is genuinely in the way.
+     *
+     * @param from The cell the walk starts or ends at.
+     * @param built The buildings a route may not cross, and which
+     * cannot themselves be stood on as a gate.
      * @param extent The bounds the search is numbered over, and whose
      * edge is what counts as a way out.
-     * @return The border road to use, or nothing when none is reachable
-     * -- a city walled off from the outside takes nobody in.
+     * @return The border cell to use, or nothing when none is reachable
+     * -- a house walled in by buildings takes nobody in.
      */
     [[nodiscard]] std::optional<Cell> nearestGate(
-        Cell from, const PathIndex &paths, GridExtent extent);
+        Cell from, const BuildingIndex &built, GridExtent extent);
 
     /**
      * @brief Find the nearest house with room for one more person.
@@ -92,17 +104,25 @@ namespace antwika::game
      * The other half of where somebody turned out of a house goes: a
      * neighbour with a spare bed before the road out of town.
      *
-     * Ordered exactly as nearestGate() is, and for its reason -- two
+     * Ordered by route length and then by ascending Cell, which is
+     * nearestAccepting()'s order and is total for its reason -- two
      * houses at the same distance is a tie a replay has to break the
-     * same way.
+     * same way. The route is measured across the ground rather than
+     * along the roads, so what is chosen and what is walked agree.
+     *
+     * Every candidate is searched here, unlike nearestGate(): the
+     * houses with room are few and each one is a place somebody might
+     * actually live, where the edge of the map is ninety-two cells that
+     * all mean the same thing.
+     *
      * The house being left is excluded rather than filtered by its
      * occupancy, since a house shedding somebody has room by that very
      * fact and would otherwise take them straight back.
      *
      * @param world The world to read, as of its last commit().
-     * @param from The road cell the walk starts at.
+     * @param from The cell the walk starts at.
      * @param leaving The house being left, which is never the answer.
-     * @param paths The roads a route may run along.
+     * @param built The buildings a route may not cross.
      * @param extent The bounds the search is numbered over.
      * @return The house to head for, or kNullEntity when none with room
      * can be reached.
@@ -111,7 +131,7 @@ namespace antwika::game
         const antwika::ecs::World &world,
         Cell from,
         antwika::ecs::Entity leaving,
-        const PathIndex &paths,
+        const BuildingIndex &built,
         GridExtent extent);
 
 } // namespace antwika::game

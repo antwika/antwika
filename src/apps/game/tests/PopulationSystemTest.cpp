@@ -10,6 +10,8 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
+#include <algorithm>
+
 #include <antwika/ecs/Entity.hpp>
 #include <antwika/ecs/World.hpp>
 #include <antwika/log/mocks/MockLogger.hpp>
@@ -76,10 +78,30 @@ using antwika::log::mocks::MockLogger;
             }
         }
 
-        // A road beside the house that reaches no edge at all.
-        void paveDeadEnd()
+        // The one road tile the door is, and nothing else at all.
+        void paveDoor()
         {
             paths.insert(Cell{.x = kAt.x, .y = kAt.y - 1});
+        }
+
+        // A road beside the house, and buildings round that road.
+        // So the door reaches no edge of the map at all.
+        void wallIn()
+        {
+            paths.insert(Cell{.x = kAt.x, .y = kAt.y - 1});
+
+            (void)built.insert(
+                kAt, antwika::game::footprintOf(BuildingKind::House));
+
+            for (const auto around : {
+                     Cell{.x = kAt.x - 1, .y = kAt.y - 1},
+                     Cell{.x = kAt.x + 1, .y = kAt.y - 1},
+                     Cell{.x = kAt.x, .y = kAt.y - 2}})
+            {
+                (void)built.insert(
+                    around,
+                    antwika::game::footprintOf(BuildingKind::Well));
+            }
         }
 
         void settle(Household household)
@@ -126,8 +148,9 @@ using antwika::log::mocks::MockLogger;
         World world{logger};
         PathIndex paths;
         DesirabilityField field;
-        PopulationSystem system{paths, field, kExtent};
-        antwika::game::WalkerSystem walkers{paths, kExtent};
+        antwika::game::BuildingIndex built;
+        PopulationSystem system{paths, built, field, kExtent};
+        antwika::game::WalkerSystem walkers{paths, built, kExtent};
         Entity house{};
     };
 } // namespace
@@ -142,12 +165,13 @@ TEST(PopulationSystemTest, Update_HousesNobodyWhereNoRoadRunsBeside)
     EXPECT_EQ(scene.people(), 0);
 }
 
-// And a city walled off from the outside takes nobody in either.
-// A road beside the house that reaches no edge is not a way in.
+// And a house walled in by buildings takes nobody in either.
+// Which is the only way to be cut off from the edge of the map.
+// A person walks over open ground -- see stepAcross().
 TEST(PopulationSystemTest, Update_HousesNobodyWithNoWayIntoTheCity)
 {
     Scene scene;
-    scene.paveDeadEnd();
+    scene.wallIn();
 
     scene.run(4 * kSettlerPeriodTicks);
 
@@ -177,7 +201,39 @@ TEST(PopulationSystemTest, Update_MovesOnePersonInEachPeriod)
     EXPECT_EQ(scene.people(), 2);
 }
 
+// The acceptance test for walking over open ground, end to end.
+// One tile of road at the door and nothing else in the city.
+// Nothing paved between that tile and any edge of the map.
+// Somebody still walks in across the field and moves in.
+TEST(PopulationSystemTest, Update_HousesSomebodyOverBareGround)
+{
+    Scene scene;
+
+    // The one road the door is, and not a tile more.
+    scene.paveDoor();
+
+    scene.run(kSettlerPeriodTicks * 3);
+
+    EXPECT_GT(scene.people(), 0);
+}
+
+// And the walk out is over the same ground.
+TEST(PopulationSystemTest, Update_WalksAnOverflowOutOverBareGround)
+{
+    Scene scene;
+    scene.paveDoor();
+
+    const auto over = populationCapacityOf(HousingLevel::Tent) + 2;
+    scene.settle(Household{.population = over});
+
+    scene.run(kSettlerPeriodTicks * 12);
+
+    EXPECT_EQ(scene.people(), populationCapacityOf(HousingLevel::Tent));
+    EXPECT_EQ(scene.walking(), 0);
+}
+
 // A migrant enters at the edge of the map rather than at the door.
+// Which side is whichever is nearest, since they walk over ground.
 TEST(PopulationSystemTest, Update_LetsAMigrantInAtTheEdgeOfTheMap)
 {
     Scene scene;
@@ -189,8 +245,14 @@ TEST(PopulationSystemTest, Update_LetsAMigrantInAtTheEdgeOfTheMap)
 
     for (const auto entity : scene.world.view<Walker, Cell>())
     {
-        // The west edge, which is the only gate this scene has.
-        EXPECT_LE(scene.world.get<Cell>(entity).x, 1);
+        const auto at = scene.world.get<Cell>(entity);
+
+        // On the ring, or one step off it having set out already.
+        EXPECT_LE(
+            std::min(
+                {at.x, at.y, kExtent.width - 1 - at.x,
+                 kExtent.height - 1 - at.y}),
+            1);
     }
 }
 
@@ -364,6 +426,22 @@ TEST(PopulationSystemTest, Update_WalksNobodyOutAtTheWalkerCap)
     scene.run(kSettlerPeriodTicks);
 
     // The person still leaves; only the walk is not drawn.
+    EXPECT_EQ(scene.people(), over - 1);
+    EXPECT_EQ(scene.walking(), 0);
+}
+
+// A house walled in has nowhere to send its overflow either.
+// The person still leaves; there is simply nobody to draw walking.
+TEST(PopulationSystemTest, Update_ThinsACrowdedHouseWithNoWayOut)
+{
+    Scene scene;
+    scene.wallIn();
+
+    const auto over = populationCapacityOf(HousingLevel::Tent) + 3;
+    scene.settle(Household{.population = over});
+
+    scene.run(kSettlerPeriodTicks);
+
     EXPECT_EQ(scene.people(), over - 1);
     EXPECT_EQ(scene.walking(), 0);
 }
