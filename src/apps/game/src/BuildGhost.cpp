@@ -33,6 +33,13 @@ namespace antwika::game
             return ghost;
         }
 
+        // A razing click places nothing, so there is no block to promise.
+        // What is standing under the pointer is the hover readout's job.
+        if (*tool == BuildTool::Raze)
+        {
+            return ghost;
+        }
+
         const auto cell = screenToCell(
             antwika::gfx::Point{
                 .x = hint->position.x, .y = hint->position.y},

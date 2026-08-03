@@ -13,6 +13,7 @@ add_executable(antwika_game
     src/Coverage.cpp
     src/CoverageSystem.cpp
     src/Desirability.cpp
+    src/Demolition.cpp
     src/DesirabilitySystem.cpp
     src/Errand.cpp
     src/ErrandRouting.cpp

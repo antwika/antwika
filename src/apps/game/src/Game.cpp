@@ -103,7 +103,7 @@ namespace antwika::game
         SystemScheduler scheduler;
         WalkerSystem walkerSystem(paths, config.built, config.extent);
         SpawnSystem spawnSystem(paths);
-        BuildingSystem buildingSystem(config.built);
+        BuildingSystem buildingSystem(config.built, config.extent);
 
         // The walkers stop with the session, never with the screen.
         // Only that one system stops.

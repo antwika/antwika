@@ -12,6 +12,7 @@
 #include <antwika/log/mocks/MockLogger.hpp>
 
 #include "antwika/game/BuildTool.hpp"
+#include "antwika/game/Building.hpp"
 #include "antwika/game/BuildingIndex.hpp"
 #include "antwika/game/Cost.hpp"
 #include "antwika/game/GameState.hpp"
@@ -769,4 +770,145 @@ TEST_F(GridSinkTest, LeftPress_StillPlacesWithTheBankBelowZero)
 
     EXPECT_TRUE(paths.has(Cell{.x = 3, .y = 4}));
     EXPECT_EQ(state.money, -kRoadCost);
+}
+
+// The raze tool tears down instead of placing -- see GridSink.hpp.
+TEST_F(GridSinkTest, Raze_TearsDownTheBuildingUnderTheClick)
+{
+    overlay.select(BuildTool::House);
+    clickAt(Cell{.x = 3, .y = 4}, MouseButton::Left);
+    tick();
+
+    overlay.select(BuildTool::Raze);
+    clickAt(Cell{.x = 3, .y = 4}, MouseButton::Left);
+    tick();
+
+    EXPECT_EQ(built.size(), 0U);
+    EXPECT_EQ(
+        (world.view<antwika::game::Building, Cell>().size()), 0U);
+}
+
+// Any cell of a block razes the whole building.
+TEST_F(GridSinkTest, Raze_TearsDownABlockClickedAwayFromItsOrigin)
+{
+    overlay.select(BuildTool::Farm);
+    clickAt(Cell{.x = 3, .y = 4}, MouseButton::Left);
+    tick();
+
+    overlay.select(BuildTool::Raze);
+    clickAt(Cell{.x = 4, .y = 5}, MouseButton::Left);
+    tick();
+
+    EXPECT_EQ(built.size(), 0U);
+    EXPECT_EQ(
+        (world.view<antwika::game::Building, Cell>().size()), 0U);
+}
+
+// The razed cell is deliberately the second one laid.
+// So the lookup loop walks past the first road to find it.
+TEST_F(GridSinkTest, Raze_TakesUpTheRoadUnderTheClick)
+{
+    clickAt(Cell{.x = 3, .y = 4}, MouseButton::Left);
+    clickAt(Cell{.x = 4, .y = 4}, MouseButton::Left);
+    tick();
+
+    overlay.select(BuildTool::Raze);
+    clickAt(Cell{.x = 4, .y = 4}, MouseButton::Left);
+    tick();
+
+    EXPECT_FALSE(paths.has(Cell{.x = 4, .y = 4}));
+    EXPECT_TRUE(paths.has(Cell{.x = 3, .y = 4}));
+    EXPECT_EQ(paths.size(), 1U);
+    EXPECT_EQ(pathEntityCount(), 1U);
+}
+
+TEST_F(GridSinkTest, Raze_DoesNothingOnBareGround)
+{
+    overlay.select(BuildTool::Raze);
+    clickAt(Cell{.x = 3, .y = 4}, MouseButton::Left);
+    tick();
+
+    EXPECT_EQ(paths.size(), 0U);
+    EXPECT_EQ(built.size(), 0U);
+}
+
+// The World hands out the last commit.
+// A block placed this tick is in the index and not yet in the World.
+// So it cannot be found to tear down until the next one.
+TEST_F(GridSinkTest, Raze_LeavesABlockPlacedInTheSameTickStanding)
+{
+    overlay.select(BuildTool::House);
+    clickAt(Cell{.x = 3, .y = 4}, MouseButton::Left);
+
+    overlay.select(BuildTool::Raze);
+    clickAt(Cell{.x = 3, .y = 4}, MouseButton::Left);
+    tick();
+
+    EXPECT_EQ(built.size(), 1U);
+    EXPECT_EQ(
+        (world.view<antwika::game::Building, Cell>().size()), 1U);
+}
+
+// Tearing down is free; only placing spends -- see Cost.hpp.
+TEST_F(GridSinkTest, Raze_CostsNothing)
+{
+    overlay.select(BuildTool::House);
+    clickAt(Cell{.x = 3, .y = 4}, MouseButton::Left);
+    tick();
+
+    const auto before = state.money;
+
+    overlay.select(BuildTool::Raze);
+    clickAt(Cell{.x = 3, .y = 4}, MouseButton::Left);
+    tick();
+
+    EXPECT_EQ(state.money, before);
+}
+
+// A destructive mode is put down exactly as a building tool is.
+TEST_F(GridSinkTest, RightPress_LeavesRazeModeWithoutDroppingAWalker)
+{
+    constexpr Cell target{.x = 2, .y = 2};
+    clickAt(target, MouseButton::Left);
+    tick();
+
+    overlay.select(BuildTool::Raze);
+    clickAt(target, MouseButton::Right);
+
+    EXPECT_FALSE(overlay.tool().has_value());
+    EXPECT_EQ(walkerCount(), 0U);
+}
+
+// The loop walks past a building the click is not on.
+// The one standing elsewhere keeps standing.
+TEST_F(GridSinkTest, Raze_LeavesEveryOtherBuildingStanding)
+{
+    overlay.select(BuildTool::House);
+    clickAt(Cell{.x = 1, .y = 1}, MouseButton::Left);
+    tick();
+    clickAt(Cell{.x = 5, .y = 5}, MouseButton::Left);
+    tick();
+
+    overlay.select(BuildTool::Raze);
+    clickAt(Cell{.x = 5, .y = 5}, MouseButton::Left);
+    tick();
+
+    EXPECT_EQ(built.size(), 1U);
+    EXPECT_TRUE(built.has(Cell{.x = 1, .y = 1}));
+    EXPECT_EQ(
+        (world.view<antwika::game::Building, Cell>().size()), 1U);
+}
+
+// The same-tick rule a block already has, said for a road.
+// The index alone erased would orphan the entity the commit lands.
+TEST_F(GridSinkTest, Raze_LeavesARoadLaidInTheSameTickDown)
+{
+    clickAt(Cell{.x = 3, .y = 4}, MouseButton::Left);
+
+    overlay.select(BuildTool::Raze);
+    clickAt(Cell{.x = 3, .y = 4}, MouseButton::Left);
+    tick();
+
+    EXPECT_TRUE(paths.has(Cell{.x = 3, .y = 4}));
+    EXPECT_EQ(pathEntityCount(), 1U);
 }

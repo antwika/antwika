@@ -54,6 +54,18 @@ namespace antwika::game
      * | middle drag | pan the camera |
      * | scroll | zoom, keeping the cell under the cursor put |
      *
+     * **The raze tool tears down instead of placing.** A left press
+     * with it selected demolishes the building covering the clicked
+     * cell -- any cell of the block -- through the very demolish() a
+     * building lost to fire goes through, so its occupants are turned
+     * out identically; on a road cell it takes the road up instead.
+     * Razing is no more an event than placing is: a recording holds
+     * the click, and a replay resolves it against the same city and
+     * tears the same thing down. A right press with it selected puts
+     * the palette down exactly as a building tool's does, since a
+     * destructive mode somebody cannot back out of is a click away
+     * from a building nobody meant to lose.
+     *
      * **A road is dragged out rather than clicked one cell at a time.**
      * A left press with the road tool selected lays its own cell at once
      * and marks where a run of road starts; while the button is held the
@@ -194,6 +206,7 @@ namespace antwika::game
         void place(Cell cell, std::optional<BuildTool> tool);
         void placePath(Cell cell);
         void placeBuilding(Cell cell, BuildingKind kind);
+        void raze(Cell cell);
         void cancelToolOrPlaceWalker(Cell cell);
         void placeWalker(Cell cell);
         void beginRoadDrag(Cell cell);

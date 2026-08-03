@@ -21,7 +21,7 @@ namespace antwika::game
         using i18n::Locale;
         using i18n::MessageName;
 
-        constexpr std::array<MessageName<MessageId>, 97> kNames{{
+        constexpr std::array<MessageName<MessageId>, 98> kNames{{
             {MessageId::ToolbarZoomIn, "ToolbarZoomIn"},
             {MessageId::ToolbarZoomOut, "ToolbarZoomOut"},
             {MessageId::ToolbarResetView, "ToolbarResetView"},
@@ -119,6 +119,7 @@ namespace antwika::game
             {MessageId::ActionZoomOut, "ActionZoomOut"},
             {MessageId::ActionResetView, "ActionResetView"},
             {MessageId::ToolbarMoney, "ToolbarMoney"},
+            {MessageId::ToolRaze, "ToolRaze"},
         }};
 
         static_assert(
@@ -228,6 +229,7 @@ namespace antwika::game
                 {MessageId::ActionZoomOut, "zoom out"},
                 {MessageId::ActionResetView, "reset view"},
                 {MessageId::ToolbarMoney, "money {0}"},
+                {MessageId::ToolRaze, "raze"},
             }};
 
         constexpr std::array<CatalogueEntry<MessageId>, kNames.size()>
@@ -330,6 +332,7 @@ namespace antwika::game
                 {MessageId::ActionZoomOut, "zooma ut"},
                 {MessageId::ActionResetView, "återställ vyn"},
                 {MessageId::ToolbarMoney, "pengar {0}"},
+                {MessageId::ToolRaze, "riv"},
             }};
 
         constexpr Catalogue<MessageId> kEnglishCatalogue{

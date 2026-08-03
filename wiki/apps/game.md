@@ -721,6 +721,23 @@ Deducting without refusing also leaves `canPlace()` and the ghost's contract exa
 `"money"` on the state object is additive per [`docs/schema-versioning.md`](../../docs/schema-versioning.md): absent means the starting bank, which is what a file written before money existed says, and it is the state object's one signed member since a debt has to survive a save.
 The bar reports the balance as a `money {0}` label beside the ratings, appended after them for the reason they sit after the growing spacer -- every widget declared before it keeps its rectangle, so no recorded click resolves differently for the readout having appeared.
 
+## The raze tool, and where the people go
+
+**Raze is the palette tool `buildingKindOf()` always said would arrive**: it places nothing, so every crossing to `BuildingKind` answers nullopt for it exactly as it does for Road, and the table shape absorbed it without an offset going quietly wrong -- which is the very failure that section was written about.
+A left press with it selected demolishes the building covering the clicked cell -- any cell of the block -- and on a road cell it takes the road up instead, through `PathIndex::erase()`, which is `insert()`'s contract read the other way round.
+Razing is free, is no more an event than placing is, and previews nothing: there is no block to promise, so `ghostFor()` stays invisible and what is standing under the pointer is the hover readout's job.
+A right press with raze selected puts the palette down exactly as a building tool's does -- `cancellable()` names the rule -- since a destructive mode somebody cannot back out of is a click away from a building nobody meant to lose.
+
+**`demolish()` is the one statement of what a demolition is, whoever asked for it.**
+`BuildingSystem` calls it for a building lost to fire or hunger and `GridSink` calls it for one the raze tool was clicked on, so what happens to the people inside cannot depend on why the roof came down.
+The occupants are spawned in the building's place, as ordinary migrants on `PopulationSystem`'s own terms: the nearest vacancy is asked once and its spare beds are counted, that many head there, and the overflow makes for the nearest gate rather than crowding a doorway that would clamp them to nothing on arrival.
+Whoever exceeds the walker limit, or has neither a vacancy nor a gate to walk to, is gone -- the rule a walled-in house already lives under.
+The block leaves the `BuildingIndex` *before* anybody routes anywhere, because the leavers start on that very ground and a search still counting it as standing would find no way off it.
+
+**Two same-tick edges have rules, and both fall out of the index-versus-World split.**
+The index is the note kept current within the tick, so a block razed a moment ago already reads as gone and one press cannot tear one building down twice; a block *placed* earlier in the same tick is the opposite case -- in the index and not yet in the committed World -- and cannot be found to tear down until the next tick, which is the same "the World hands out the last commit" answer double placement already has.
+`BuildingSystem` demolishes what it loses in ascending `Cell` order rather than the pending map's entity order, because a demolition now spawns contended walkers and an entity order is one a restore may renumber -- see `AllocationOrderTest`.
+
 ## Future work
 
 **`UiSink`/`UiOverlay`/`Toolbar` should adopt `ui::applyHover()` next.**

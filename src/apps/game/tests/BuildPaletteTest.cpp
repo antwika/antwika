@@ -137,7 +137,8 @@ namespace
         .red = 255, .green = 255, .blue = 255, .alpha = 110};
 
     // Every tool but the first, which is the road.
-    constexpr std::array<BuildTool, kBuildToolCount - 1> kBuildings{
+    // Every tool that places a building: all but Road and Raze.
+    constexpr std::array<BuildTool, kBuildToolCount - 2> kBuildings{
         BuildTool::House,
         BuildTool::Farm,
         BuildTool::ClayPit,
@@ -152,16 +153,18 @@ namespace
 
 TEST(BuildToolTest, EveryToolHasItsOwnIndex)
 {
-    EXPECT_EQ(kBuildToolCount, 11U);
+    EXPECT_EQ(kBuildToolCount, 12U);
     EXPECT_EQ(buildToolIndex(BuildTool::Road), 0U);
     EXPECT_EQ(buildToolIndex(BuildTool::House), 1U);
     EXPECT_EQ(buildToolIndex(BuildTool::Farm), 2U);
     EXPECT_EQ(buildToolIndex(BuildTool::EngineerPost), 10U);
+    EXPECT_EQ(buildToolIndex(BuildTool::Raze), 11U);
 }
 
-TEST(BuildToolTest, EveryToolButTheRoadPlacesABuilding)
+TEST(BuildToolTest, EveryToolButRoadAndRazePlacesABuilding)
 {
     EXPECT_FALSE(placesBuilding(BuildTool::Road));
+    EXPECT_FALSE(placesBuilding(BuildTool::Raze));
 
     for (const auto tool : kBuildings)
     {
@@ -706,6 +709,25 @@ TEST(BuildGhostTest, GhostFor_IsInvisibleWithThePalettePutDown)
         camera,
         kExtent,
         std::nullopt,
+        false,
+        kNoPaths,
+        kNothingBuilt);
+
+    EXPECT_FALSE(shown.visible);
+    EXPECT_FALSE(shown.valid);
+}
+
+// A razing click places nothing, so there is no block to promise.
+// What is standing under the pointer is the hover readout's job.
+TEST(BuildGhostTest, GhostFor_IsInvisibleForTheRazeTool)
+{
+    const Camera camera;
+
+    const auto shown = ghostFor(
+        hintOn(Cell{.x = 1, .y = 1}, camera),
+        camera,
+        kExtent,
+        BuildTool::Raze,
         false,
         kNoPaths,
         kNothingBuilt);

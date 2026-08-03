@@ -10,6 +10,11 @@ namespace antwika::game
         return paths.insert(cell).second;
     }
 
+    bool PathIndex::erase(Cell cell)
+    {
+        return paths.erase(cell) > 0;
+    }
+
     bool PathIndex::has(Cell cell) const
     {
         return paths.contains(cell);

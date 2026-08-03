@@ -220,7 +220,8 @@ namespace antwika::game
             MessageId::ToolWell,
             MessageId::ToolDoctor,
             MessageId::ToolFireStation,
-            MessageId::ToolEngineerPost};
+            MessageId::ToolEngineerPost,
+            MessageId::ToolRaze};
 
         return labels[buildToolIndex(tool) % kBuildToolCount];
     }
@@ -244,6 +245,7 @@ namespace antwika::game
             widgets::toolWidget(BuildTool::Doctor),
             widgets::toolWidget(BuildTool::FireStation),
             widgets::toolWidget(BuildTool::EngineerPost),
+            widgets::toolWidget(BuildTool::Raze),
             widgets::kMenu,
             widgets::kGameMenu,
             widgets::menuItemWidget(MenuItem::NewGame),
