@@ -86,9 +86,11 @@ namespace antwika::ui_demo
         void handle(const TickEvent &event) override;
 
     private:
-        [[nodiscard]] Pointer pointerNow(bool pressed) const;
+        [[nodiscard]] Pointer pointerNow(
+            bool pressed, bool extends) const;
 
-        void refreshAndAct(bool pressed, const Keyboard &keyboard);
+        void refreshAndAct(
+            bool pressed, bool extends, const Keyboard &keyboard);
 
         void act(const Interactions &interactions);
 

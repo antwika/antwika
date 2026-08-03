@@ -1,8 +1,11 @@
 #pragma once
 
+#include <chrono>
 #include <cstddef>
 #include <cstdint>
 #include <memory>
+#include <string>
+#include <string_view>
 #include <vector>
 
 #include <antwika/sequencer/FrameClock.hpp>
@@ -79,10 +82,12 @@ namespace antwika::music_editor
      * **The run is paced by how much audio the device has taken**,
      * which is the one thing `IDevice::framesPlayed()` is allowed to
      * decide.
-     * A device that consumes the moment it is pumped is never ahead, so
-     * a null or offline run costs no wall-clock time at all, while a
-     * real one is paced by the hardware rather than by a second clock
-     * with its own opinion.
+     * A real device paces the loop by lagging; one that consumes the
+     * moment it is pumped -- the null backend, or an offline render --
+     * paces nothing, and an unbounded run over it would spin a core.
+     * So a device that has kept up exactly is paced to the clock
+     * instead: one tick's interval per step, through the injected
+     * sleeper, which is what makes it free in every test.
      */
     /**
      * @brief One note that is sounding or about to, and what to light.
@@ -95,6 +100,15 @@ namespace antwika::music_editor
     {
         /** @brief Which voices() index decided it. */
         std::size_t voice = 0;
+
+        /**
+         * @brief The chain text that index sounded as when it did.
+         *
+         * The index alone outlives an edit above its line, and then
+         * names whatever line moved into its place; the text is what
+         * says the line at it is still the line that sounded.
+         */
+        std::string chain{};
 
         /** @brief Where its word starts in that voice's notation. */
         std::size_t begin = 0;
@@ -239,6 +253,15 @@ namespace antwika::music_editor
             std::size_t voiceIndex = 0;
 
             /**
+             * @brief The chain text the index sounds as, this tick.
+             *
+             * Copied into every note it lights, since the index alone
+             * outlives an edit above it and then names another line;
+             * see Score::chainOf().  Borrowed until the next read().
+             */
+            std::string_view chain{};
+
+            /**
              * @brief The sound to make, which the line decides afresh
              * on every keystroke.
              */
@@ -297,6 +320,10 @@ namespace antwika::music_editor
         FrameIndex pausedFrames = 0;
         time::Tick played = 0;
         std::uint64_t counter = 0;
+
+        // One tick's worth of wall time.
+        // What a step costs over a device that never lags.
+        std::chrono::milliseconds interval{0};
     };
 
 } // namespace antwika::music_editor

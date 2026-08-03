@@ -7,6 +7,7 @@
 #include <string>
 
 #include <antwika/ui/DropdownSpec.hpp>
+#include <antwika/ui/TextAreaSpec.hpp>
 #include <antwika/ui/TextFieldSpec.hpp>
 #include <antwika/ui/WidgetId.hpp>
 
@@ -230,6 +231,20 @@ namespace antwika::ui_demo
          */
         void setAreaScroll(std::size_t line);
 
+        /**
+         * @brief Get where a held drag began, if one is under way.
+         * @return The pane's half the press landed in, or None.
+         */
+        [[nodiscard]] antwika::ui::DragHome areaDragging()
+            const noexcept;
+
+        /**
+         * @brief Note where a press landed, or that a drag ended.
+         * @param home What Interactions::areaPress reported; None
+         * disarms whatever drag was under way.
+         */
+        void setAreaDragging(antwika::ui::DragHome home) noexcept;
+
     private:
         Showcase page = Showcase::Labels;
         bool pickerShowing = false;
@@ -245,6 +260,8 @@ namespace antwika::ui_demo
         std::size_t paneCursor = 0;
         std::size_t paneAnchor = 0;
         std::size_t paneScroll = 0;
+        antwika::ui::DragHome paneDragging =
+            antwika::ui::DragHome::None;
     };
 
 } // namespace antwika::ui_demo

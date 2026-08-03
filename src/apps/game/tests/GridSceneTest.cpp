@@ -1020,6 +1020,127 @@ TEST_F(GridSceneTest, Draw_LaysNoGroundUnderABuildingsBlock)
         antwika::game::buildingTile(antwika::game::BuildingKind::Farm));
 }
 
+// A 3x3's west and north flank cells lie one diagonal past its flush.
+// Painted there, their skirts stamped over the already-drawn art.
+// So their ground and roads go down in the block's own phase instead.
+TEST_F(GridSceneTest, Draw_PaintsAWideBlocksFlankBehindItsArt)
+{
+    auto scene_ = snapshot(
+        Camera(Point{.x = 300, .y = 40}, 2),
+        GridExtent{.width = 5, .height = 5});
+    scene_.buildings.push_back(
+        antwika::game::BuildingSprite{
+            .at = Cell{.x = 1, .y = 0},
+            .kind = antwika::game::BuildingKind::Storage});
+
+    // A road on the west flank cell, one diagonal past the flush.
+    scene_.paths.push_back(Cell{.x = 0, .y = 2});
+
+    scene.draw(renderer, kCanvas, scene_, atlases);
+
+    const auto storage = antwika::game::buildingTile(
+        antwika::game::BuildingKind::Storage);
+
+    std::size_t storageAt = renderer.blits.size();
+    std::size_t roadAt = renderer.blits.size();
+
+    for (std::size_t blit = 0; blit < renderer.blits.size(); ++blit)
+    {
+        if (renderer.blits[blit].source == storage)
+        {
+            storageAt = blit;
+        }
+
+        if (renderer.blits[blit].source == roadTile(0))
+        {
+            roadAt = blit;
+        }
+    }
+
+    ASSERT_LT(storageAt, renderer.blits.size());
+    ASSERT_LT(roadAt, renderer.blits.size());
+    EXPECT_LT(roadAt, storageAt);
+
+    // Pulled forward, never painted a second time.
+    EXPECT_EQ(renderer.blitsOf(roadTile(0)), 1U);
+}
+
+// Two blocks corner to corner share one flank cell.
+// One's west flank is the other's north; it is pulled exactly once.
+TEST_F(GridSceneTest, Draw_PullsASharedFlankCellOnce)
+{
+    auto scene_ = snapshot(
+        Camera(Point{.x = 300, .y = 20}, 1),
+        GridExtent{.width = 6, .height = 6});
+    scene_.buildings.push_back(
+        antwika::game::BuildingSprite{
+            .at = Cell{.x = 3, .y = 0},
+            .kind = antwika::game::BuildingKind::Storage});
+    scene_.buildings.push_back(
+        antwika::game::BuildingSprite{
+            .at = Cell{.x = 0, .y = 3},
+            .kind = antwika::game::BuildingKind::Storage});
+
+    scene.draw(renderer, kCanvas, scene_, atlases);
+
+    const auto shared = antwika::game::tileSpriteBounds(
+        Cell{.x = 2, .y = 2}, scene_.camera);
+
+    std::size_t drawn = 0;
+    std::size_t sharedAt = 0;
+    std::size_t firstBlock = renderer.blits.size();
+
+    for (std::size_t blit = 0; blit < renderer.blits.size(); ++blit)
+    {
+        if (renderer.blits[blit].source == groundTile()
+            && renderer.blits[blit].destination == shared)
+        {
+            ++drawn;
+            sharedAt = blit;
+        }
+
+        if (renderer.blits[blit].source
+                == antwika::game::buildingTile(
+                    antwika::game::BuildingKind::Storage)
+            && blit < firstBlock)
+        {
+            firstBlock = blit;
+        }
+    }
+
+    EXPECT_EQ(drawn, 1U);
+    EXPECT_LT(sharedAt, firstBlock);
+}
+
+// A flank cell another block stands on is that block's art to paint.
+TEST_F(GridSceneTest, Draw_LeavesACoveredFlankToItsOwnBlock)
+{
+    auto scene_ = snapshot(
+        Camera(Point{.x = 300, .y = 40}, 2),
+        GridExtent{.width = 5, .height = 5});
+    scene_.buildings.push_back(
+        antwika::game::BuildingSprite{
+            .at = Cell{.x = 1, .y = 0},
+            .kind = antwika::game::BuildingKind::Storage});
+    scene_.buildings.push_back(
+        antwika::game::BuildingSprite{
+            .at = Cell{.x = 0, .y = 2},
+            .kind = antwika::game::BuildingKind::House});
+
+    scene.draw(renderer, kCanvas, scene_, atlases);
+
+    // The house owns the flank cell, so no ground is pulled there.
+    const auto flank = antwika::game::tileSpriteBounds(
+        Cell{.x = 0, .y = 2}, scene_.camera);
+
+    for (const auto &blit : renderer.blits)
+    {
+        EXPECT_FALSE(
+            blit.source == groundTile()
+            && blit.destination == flank);
+    }
+}
+
 // A sprite overhangs its diamond, so paint order is screen depth.
 // A building goes down with the diagonal its block starts on.
 // That is after the ground behind it and before the ground in front.

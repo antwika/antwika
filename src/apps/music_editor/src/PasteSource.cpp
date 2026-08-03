@@ -7,6 +7,7 @@
 #include <antwika/input/Key.hpp>
 
 #include "antwika/music_editor/Events.hpp"
+#include "antwika/music_editor/PasteText.hpp"
 
 namespace antwika::music_editor
 {
@@ -57,9 +58,12 @@ namespace antwika::music_editor
                 continue;
             }
 
-            const auto text = clipboard.text();
+            // Filtered here, upstream of the recorder.
+            // The recording holds what was typed, never raw bytes.
+            const auto text = pasteableTextOf(clipboard.text());
 
             // An empty clipboard pastes nothing.
+            // So does one holding nothing the pane could show.
             // Saying so would be an event with nothing to say.
             if (text.empty())
             {

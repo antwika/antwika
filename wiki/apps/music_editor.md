@@ -252,7 +252,8 @@ A held note rings out, the device never starves, and the frames that went by whi
 That counter is the one piece of arithmetic in the app that is easy to get wrong and impossible to hear until it is.
 
 **The run is paced by how much audio the device has taken.**
-That is the one thing `IDevice::framesPlayed()` is allowed to decide, and it gives the app a property worth having: a device that consumes the moment it is pumped is never ahead, so a `null` or offline run costs no wall-clock time at all, while a real one is paced by the hardware rather than by a second clock with an opinion of its own.
+That is the one thing `IDevice::framesPlayed()` is allowed to decide: a real device paces the run by lagging behind the queue, so the loop waits out the hardware rather than a second clock with an opinion of its own.
+A device that consumes the moment it is pumped -- the `null` backend, or an offline render -- paces nothing, and since the tick budget was removed an unpaced run over one would spin a core flat out; so a device that has kept up exactly is paced to the musical clock instead, one tick's interval per step, through the injected sleeper that makes it free in every test.
 
 **A note lights the characters it came from, and the route is the controls themselves.**
 `NoteWords` reads each word of an `n("...")` as a pitch that remembers its own span -- [`notation`](../libraries/notation.md) tells every reader where a word starts, and the span rides beside the pitch as two more controls the algebra relays untouched, however `fast`, `euclid` or `<>` reorder the events.

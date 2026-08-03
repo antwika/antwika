@@ -101,6 +101,14 @@ namespace antwika::music_editor
         std::string scoresDirectory{"scores"};
 
         /**
+         * @brief Whether a save reaches the disk.
+         *
+         * False on a replay, so replaying a session leaves this
+         * machine's scores alone; see EditorSink's constructor.
+         */
+        bool writesScores = true;
+
+        /**
          * @brief The scores there already are, sorted by name.
          *
          * Read by main() with listScores() before the loop, never

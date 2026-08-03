@@ -759,7 +759,8 @@ TEST(EditorSinkTest, CopiesLandNowhereWhenThereIsNoClipboard)
         antwika::music_editor::tests::kCanvas,
         nullptr,
         rig.stopSignal,
-        rig.scoresDirectory};
+        rig.scoresDirectory,
+        true};
 
     bare.handle(tickAt(0));
 
@@ -1066,6 +1067,26 @@ TEST(EditorSinkTest, EnterInTheNameFieldSaves)
     EXPECT_EQ(rig.state.modal, antwika::music_editor::Modal::None);
     ASSERT_EQ(rig.state.scores.size(), 1U);
     EXPECT_EQ(rig.state.scores[0], "beat");
+}
+
+// A replay reproduces the run's state, never its disk.
+// The saved name joins the list and the box closes as they did live.
+// Only the file itself is left unwritten.
+TEST(EditorSinkTest, AReplayedSaveChangesTheStateAndNotTheDisk)
+{
+    const auto directory = freshDirectory("replaying");
+    EditorRig rig(directory, false);
+    rig.state.modal = antwika::music_editor::Modal::Save;
+    rig.state.fileName = "beat";
+    rig.editor.handle(tickAt(0));
+
+    press(rig, Key::Enter, 1);
+
+    EXPECT_EQ(rig.state.modal, antwika::music_editor::Modal::None);
+    ASSERT_EQ(rig.state.scores.size(), 1U);
+    EXPECT_EQ(rig.state.scores[0], "beat");
+    EXPECT_FALSE(std::filesystem::exists(
+        antwika::music_editor::scorePath(directory, "beat")));
 }
 
 TEST(EditorSinkTest, ANameOfNothingIsRefusedWithANotice)

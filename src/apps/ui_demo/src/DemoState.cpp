@@ -176,4 +176,15 @@ namespace antwika::ui_demo
         paneScroll = line;
     }
 
+    antwika::ui::DragHome DemoState::areaDragging() const noexcept
+    {
+        return paneDragging;
+    }
+
+    void DemoState::setAreaDragging(
+        const antwika::ui::DragHome home) noexcept
+    {
+        paneDragging = home;
+    }
+
 } // namespace antwika::ui_demo

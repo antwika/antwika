@@ -174,6 +174,8 @@ namespace
             // A replay must not write this machine's clipboard either.
             .clipboard = live ? clipboard.get() : nullptr,
             .scoresDirectory = std::string(kScoreDirectory),
+            // Nor this machine's scores; the state changes still do.
+            .writesScores = live,
             // Once, before the loop; the list is the run's from here.
             .scores = antwika::music_editor::listScores(
                 kScoreDirectory),

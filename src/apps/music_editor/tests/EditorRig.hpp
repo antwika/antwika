@@ -97,7 +97,7 @@ namespace antwika::music_editor::tests
         {
         }
 
-        explicit EditorRig(std::string directory)
+        explicit EditorRig(std::string directory, bool writes = true)
             : scoresDirectory(std::move(directory)),
               editor{
                   state,
@@ -108,7 +108,8 @@ namespace antwika::music_editor::tests
                   kCanvas,
                   &osClipboard,
                   stopSignal,
-                  scoresDirectory}
+                  scoresDirectory,
+                  writes}
         {
             device.start(mixer);
         }

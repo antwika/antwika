@@ -95,6 +95,20 @@ namespace
                 PointerMoved{.position = {.x = at.x, .y = at.y}})};
     }
 
+    TickEvent releaseAt(
+        const InputEventCodec &codec,
+        const Point at,
+        const MouseButton button = MouseButton::Left,
+        const antwika::time::Tick when = 0)
+    {
+        return TickEvent{
+            .tick = when,
+            .event = codec.encode(
+                antwika::input::PointerButtonReleased{
+                    .button = button,
+                    .position = {.x = at.x, .y = at.y}})};
+    }
+
     TickEvent keyDown(
         const InputEventCodec &codec,
         const Key key,
@@ -125,6 +139,15 @@ namespace
             const auto found = widgetCentre(frame, id);
             EXPECT_TRUE(found.has_value());
             return found.value_or(Point{});
+        }
+
+        // The whole rectangle, for a test that aims off-centre.
+        [[nodiscard]] antwika::gfx::Rect rectOf(const WidgetId id)
+        {
+            const auto frame = scene.describe(kCanvas, {}, {}, state);
+            const auto found = frame.rects.find(id);
+            EXPECT_TRUE(found.has_value());
+            return found.value_or(antwika::gfx::Rect{});
         }
 
         void show(const Showcase page)
@@ -294,6 +317,133 @@ namespace
         EXPECT_EQ(wiring.state.areaText(), "abc");
         EXPECT_EQ(wiring.state.areaCursor(), 3U);
         EXPECT_EQ(wiring.state.areaAnchor(), 3U);
+    }
+
+    // A held drag that began in the text keeps selecting as it moves.
+    // The press lays the caret and the anchor together.
+    // The motion then pulls the cursor away, which is a selection.
+    TEST(DemoSinkTest, Handle_DragsASelectionAcrossTheArea)
+    {
+        Wiring wiring;
+        wiring.show(Showcase::TextArea);
+        wiring.state.setFocus(widgets::kArea);
+        wiring.state.setArea("0123456789 0123456789 0123456789", 0, 0);
+
+        // A point on the first text row, a few characters in.
+        const auto rect = wiring.rectOf(widgets::kArea);
+        const auto inText = Point{
+            .x = rect.origin.x + 45, .y = rect.origin.y + 30};
+
+        wiring.sink.handle(pressAt(wiring.codec, inText));
+
+        const auto laid = wiring.state.areaCursor();
+
+        EXPECT_EQ(laid, wiring.state.areaAnchor());
+        EXPECT_GT(laid, 0U);
+
+        wiring.sink.handle(moveTo(
+            wiring.codec,
+            Point{.x = inText.x + 60, .y = inText.y},
+            1));
+
+        EXPECT_EQ(wiring.state.areaAnchor(), laid);
+        EXPECT_GT(wiring.state.areaCursor(), laid);
+    }
+
+    // A drag that began on the track keeps scrolling as it moves.
+    // Before the drag was scoped, the thumb stuck after the press.
+    TEST(DemoSinkTest, Handle_DragsTheScrollThumbAcrossTheTrack)
+    {
+        Wiring wiring;
+        wiring.show(Showcase::TextArea);
+
+        std::string lines;
+
+        for (int line = 0; line < 40; ++line)
+        {
+            lines += "line\n";
+        }
+
+        wiring.state.setArea(lines, 0, 0);
+
+        // A point on the track, low down it.
+        const auto rect = wiring.rectOf(widgets::kArea);
+
+        const auto trackX = rect.origin.x
+                            + static_cast<std::int32_t>(rect.size.width)
+                            - 22;
+
+        wiring.sink.handle(pressAt(
+            wiring.codec,
+            Point{.x = trackX, .y = rect.origin.y + 95}));
+
+        const auto jumped = wiring.state.areaScroll();
+
+        EXPECT_GT(jumped, 0U);
+
+        // Held, back up the track: the scroll follows the motion.
+        wiring.sink.handle(moveTo(
+            wiring.codec,
+            Point{.x = trackX, .y = rect.origin.y + 35},
+            1));
+
+        EXPECT_LT(wiring.state.areaScroll(), jumped);
+        EXPECT_GT(wiring.state.areaScroll(), 0U);
+    }
+
+    // Letting the button go is what ends a drag.
+    // A release of some other button ends nothing.
+    TEST(DemoSinkTest, Handle_ReleasingEndsTheDrag)
+    {
+        Wiring wiring;
+        wiring.show(Showcase::TextArea);
+
+        std::string lines;
+
+        for (int line = 0; line < 40; ++line)
+        {
+            lines += "line\n";
+        }
+
+        wiring.state.setArea(lines, 0, 0);
+
+        const auto rect = wiring.rectOf(widgets::kArea);
+
+        const auto trackX = rect.origin.x
+                            + static_cast<std::int32_t>(rect.size.width)
+                            - 22;
+
+        wiring.sink.handle(pressAt(
+            wiring.codec,
+            Point{.x = trackX, .y = rect.origin.y + 95}));
+
+        // The wrong button's release leaves the drag under way.
+        wiring.sink.handle(releaseAt(
+            wiring.codec,
+            Point{.x = trackX, .y = rect.origin.y + 95},
+            MouseButton::Right,
+            1));
+
+        wiring.sink.handle(moveTo(
+            wiring.codec,
+            Point{.x = trackX, .y = rect.origin.y + 65},
+            1));
+
+        const auto dragged = wiring.state.areaScroll();
+
+        // The left release ends it; motion after moves nothing.
+        wiring.sink.handle(releaseAt(
+            wiring.codec,
+            Point{.x = trackX, .y = rect.origin.y + 65},
+            MouseButton::Left,
+            2));
+
+        wiring.sink.handle(moveTo(
+            wiring.codec,
+            Point{.x = trackX, .y = rect.origin.y + 35},
+            2));
+
+        EXPECT_EQ(wiring.state.areaScroll(), dragged);
     }
 
     // The Interactions::scrolled round trip, through the sink.

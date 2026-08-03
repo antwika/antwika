@@ -8,8 +8,8 @@
  * @file
  * @brief The one place this editor is held to the game's own contract.
  *
- * This application serves exactly one sheet, and `game::requireAtlasSize`
- * refuses any size but `game::kAtlasSize` at startup -- so a session
+ * This application serves one sheet at a time, and the game refuses
+ * any size but `game::atlasSizeOf(kind)` at startup -- so a session
  * started blank here, painted and saved is a file the game will not open
  * unless the two numbers agree.
  * The whole of what this file adds is that they cannot disagree quietly:

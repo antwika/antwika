@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <cstddef>
 #include <cstdint>
+#include <utility>
 #include <vector>
 
 #include <antwika/gfx/Color.hpp>
@@ -128,6 +129,78 @@ namespace antwika::game
             // Nothing between its construction and the return throws.
         } // GCOVR_EXCL_LINE
 
+        /** @brief The flank cells to paint ahead of their block. */
+        struct PulledFlanks
+        {
+            /** @brief The cells, ascending, for the skip test. */
+            std::vector<Cell> cells;
+
+            /** @brief Origin diagonal and cell, in flush order. */
+            std::vector<std::pair<std::int32_t, Cell>> byDiagonal;
+        };
+
+        // The uncovered flank neighbours deeper than their block.
+        // West and north cells mostly share the origin diagonal.
+        // A wide block's corner ones land a diagonal past it.
+        // Painted there, after the flush, they stamp over the art.
+        [[nodiscard]] PulledFlanks pulledFlanks(
+            const std::vector<BuildingSprite> &buildings,
+            const std::vector<Cell> &covered)
+        {
+            PulledFlanks pulls;
+
+            for (const auto &building : buildings)
+            {
+                const auto footprint = footprintOf(building.kind);
+                const auto origin = building.at.x + building.at.y;
+
+                const auto consider = [&](const Cell cell)
+                {
+                    // Refused four ways, each for its own reason.
+                    // Off the grid, or behind the flush anyway.
+                    // Owned by some block's art, or pulled already.
+                    // Corner-to-corner blocks share one flank cell.
+                    if (cell.x < 0 || cell.y < 0
+                        || cell.x + cell.y <= origin
+                        || std::binary_search(
+                            covered.begin(), covered.end(), cell)
+                        || std::find(
+                               pulls.cells.begin(), pulls.cells.end(),
+                               cell)
+                               != pulls.cells.end())
+                    {
+                        return;
+                    }
+
+                    pulls.cells.push_back(cell);
+                    pulls.byDiagonal.emplace_back(origin, cell);
+                };
+
+                for (std::int32_t dy = 0; dy < footprint.height; ++dy)
+                {
+                    consider(Cell{
+                        .x = building.at.x - 1,
+                        .y = building.at.y + dy});
+                }
+
+                for (std::int32_t dx = 0; dx < footprint.width; ++dx)
+                {
+                    consider(Cell{
+                        .x = building.at.x + dx,
+                        .y = building.at.y - 1});
+                }
+            }
+
+            // The buildings arrive sorted on their flush key.
+            // So byDiagonal is already in flush order.
+            // The cells sort apart, for the terrain pass's skip test.
+            std::sort(pulls.cells.begin(), pulls.cells.end());
+
+            return pulls;
+            // The excluded line is the locals' unwind destructor.
+            // Nothing between their construction and the return throws.
+        } // GCOVR_EXCL_LINE
+
         // The track always, the fill only when there is any of it.
         // A rectangle of no height is a drawing call that draws nothing.
         void paintBars(
@@ -238,6 +311,40 @@ namespace antwika::game
                 kUntinted);
         };
 
+        const auto drawGround = [&](const Cell cell)
+        {
+            if (!onCanvas(cell, canvas, snapshot))
+            {
+                return;
+            }
+
+            const auto bounds = tileSpriteBounds(cell, snapshot.camera);
+
+            renderer.drawTexture(
+                atlases.oneByOne, groundTile(), bounds, kUntinted);
+
+            // A road covers the ground sprite it is laid on exactly.
+            // So it is drawn over one rather than instead of one.
+            // Its edge pixels then blend into ground, not into sky.
+            if (paved(snapshot.paths, cell))
+            {
+                renderer.drawTexture(
+                    atlases.oneByOne,
+                    roadTile(linksAt(snapshot.paths, cell)),
+                    bounds,
+                    kUntinted);
+            }
+        };
+
+        // The flank cells a wide block's art must never be under.
+        // A block flushes with its origin diagonal's terrain.
+        // A 3x3's flank corners lie one diagonal deeper than that.
+        // Painted on their own diagonal, they stamp over the art.
+        // So each is pulled into its block's own terrain phase.
+        // A 2x2 has no such cell: its flanks share the origin's.
+        const auto pulls = pulledFlanks(buildings, covered);
+        std::size_t drawn = 0;
+
         // One diagonal is one screen depth, walked back to front.
         // The buildings arrive sorted on exactly this key.
         // So each is painted with the diagonal its block starts on.
@@ -264,28 +371,23 @@ namespace antwika::game
                     continue;
                 }
 
-                if (!onCanvas(cell, canvas, snapshot))
+                // A pulled flank cell was painted diagonals ago.
+                if (std::binary_search(
+                        pulls.cells.begin(), pulls.cells.end(), cell))
                 {
                     continue;
                 }
 
-                const auto bounds =
-                    tileSpriteBounds(cell, snapshot.camera);
+                drawGround(cell);
+            }
 
-                renderer.drawTexture(
-                    atlases.oneByOne, groundTile(), bounds, kUntinted);
-
-                // A road covers the ground sprite it is laid on exactly.
-                // So it is drawn over one rather than instead of one.
-                // Its edge pixels then blend into ground, not into sky.
-                if (paved(snapshot.paths, cell))
-                {
-                    renderer.drawTexture(
-                        atlases.oneByOne,
-                        roadTile(linksAt(snapshot.paths, cell)),
-                        bounds,
-                        kUntinted);
-                }
+            // The deeper flank cells this diagonal's blocks reach.
+            // Behind the art, so ahead of the flush just below.
+            while (drawn < pulls.byDiagonal.size()
+                   && pulls.byDiagonal[drawn].first <= diagonal)
+            {
+                drawGround(pulls.byDiagonal[drawn].second);
+                ++drawn;
             }
 
             while (next < buildings.size()
