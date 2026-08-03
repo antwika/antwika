@@ -50,6 +50,15 @@ namespace antwika::music_editor
     inline constexpr std::uint32_t kPianorollRows = 3;
 
     /**
+     * @brief How many canvas pixels across a pianoroll is at most.
+     *
+     * Narrower than the pane on purpose: a cycle stretched over the
+     * whole window reads as slower than it sounds, and the band's
+     * remaining width stays the pane's own ground.
+     */
+    inline constexpr std::uint32_t kPianorollWidth = 640;
+
+    /**
      * @brief How many rows of the pane a waveform stands on.
      *
      * On kPianorollRows' terms, and the same three of them.
