@@ -78,6 +78,14 @@ namespace antwika::music_editor
          * for the run, but a score's *contents* can only be read when
          * the click asking for them arrives, so a replay reproduces a
          * load exactly as long as the file still holds what it held.
+         * @param writesScores Whether a save reaches the disk.
+         * **False on a replay**, so replaying somebody's session does
+         * not overwrite this machine's scores with theirs -- while
+         * everything the state does on a save happens identically, or
+         * the replay would diverge from the run at that click.
+         * The one divergence left is a live save that *failed*: the
+         * disk's answer is machine state no recording carries, so a
+         * replay reproduces the save that succeeded.
          */
         EditorSink(
             EditorState &state,
@@ -88,7 +96,8 @@ namespace antwika::music_editor
             Size canvas,
             input::IClipboard *clipboard,
             ITickEventSink &stop,
-            std::string scoresDirectory);
+            std::string scoresDirectory,
+            bool writesScores);
 
         EditorSink(const EditorSink &) = delete;
         EditorSink(EditorSink &&) = delete;
@@ -159,6 +168,7 @@ namespace antwika::music_editor
         input::IClipboard *clipboard;
         ITickEventSink &stop;
         std::string scoresDirectory;
+        bool writesScores;
 
         // What the mirror last wrote, so it writes on changes alone.
         std::string mirrored;

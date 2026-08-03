@@ -74,7 +74,8 @@ namespace antwika::music_editor
         const Size canvas,
         input::IClipboard *clipboard,
         ITickEventSink &stop,
-        std::string scoresDirectory)
+        std::string scoresDirectory,
+        const bool writesScores)
         : state(state),
           score(score),
           playback(playback),
@@ -83,7 +84,8 @@ namespace antwika::music_editor
           canvas(canvas),
           clipboard(clipboard),
           stop(stop),
-          scoresDirectory(std::move(scoresDirectory))
+          scoresDirectory(std::move(scoresDirectory)),
+          writesScores(writesScores)
     {
     }
 
@@ -409,6 +411,10 @@ namespace antwika::music_editor
             state.fileCursor = acted.edit->cursor;
             changed = true;
 
+            // No copy can arrive here.
+            // A field is handed no selection, so none is copied.
+            // See ui::textField's Editable construction.
+
             // Enter in the field is its submit, so it saves.
             if (acted.edit->submitted)
             {
@@ -539,18 +545,26 @@ namespace antwika::music_editor
             return;
         }
 
-        try
+        // A replay reproduces the run's state, never its disk.
+        // The write is the one thing here a replay skips.
+        // Everything below it happens identically on every run.
+        // Anything less would diverge from the run at this click.
+        if (writesScores)
         {
-            saveScore(scorePath(scoresDirectory, name), state.source);
-        }
-        // The excluded line is the catch chain's dispatch.
-        // Its one unexercised edge is a second kind of exception.
-        // Nothing under saveScore() throws anything else.
-        catch (const ScoreFileError &failed) // GCOVR_EXCL_LINE
-        {
-            state.notice = failed.what();
+            try
+            {
+                saveScore(
+                    scorePath(scoresDirectory, name), state.source);
+            }
+            // The excluded line is the catch chain's dispatch.
+            // Its one unexercised edge is a second kind of exception.
+            // Nothing under saveScore() throws anything else.
+            catch (const ScoreFileError &failed) // GCOVR_EXCL_LINE
+            {
+                state.notice = failed.what();
 
-            return;
+                return;
+            }
         }
 
         // Added rather than re-listed.

@@ -50,7 +50,7 @@ namespace antwika::music_editor
         EditorSink editor(
             state, score, playback, config.codec, config.scene,
             config.canvas, config.clipboard, stopSignal,
-            config.scoresDirectory);
+            config.scoresDirectory, config.writesScores);
 
         std::vector<std::reference_wrapper<ITickEventSink>> timedSinks{
             editor, stopSignal};
