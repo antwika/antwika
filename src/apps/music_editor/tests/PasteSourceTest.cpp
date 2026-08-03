@@ -53,6 +53,42 @@ TEST(PasteSourceTest, TypesTheClipboardAfterAFreshControlV)
     EXPECT_EQ(events[1].payload, "$: drum.n(\"0\")");
 }
 
+// The filter sits here, upstream of the recorder.
+// So the recording holds what was typed, never the raw bytes.
+TEST(PasteSourceTest, TypesTheFilteredClipboardOnly)
+{
+    const InputEventCodec codec;
+    MemoryClipboard clipboard;
+
+    clipboard.setText("a\r\nb\xE9");
+
+    ReplaySource inner({pressAt(
+        1, KeyPressed{.key = Key::V, .modifiers = kControl})});
+
+    PasteSource source(inner, clipboard, codec, true);
+
+    const auto events = source.eventsFor(1);
+
+    ASSERT_EQ(events.size(), 2U);
+    EXPECT_EQ(events[1].payload, "a\nb");
+}
+
+// A clipboard holding nothing the pane could show pastes nothing.
+TEST(PasteSourceTest, AnUnpasteableClipboardPastesNothing)
+{
+    const InputEventCodec codec;
+    MemoryClipboard clipboard;
+
+    clipboard.setText("\x07\x80");
+
+    ReplaySource inner({pressAt(
+        1, KeyPressed{.key = Key::V, .modifiers = kControl})});
+
+    PasteSource source(inner, clipboard, codec, true);
+
+    EXPECT_EQ(source.eventsFor(1).size(), 1U);
+}
+
 // The key edge itself passes through untouched and first.
 // It is what a recording holds beside the paste it caused.
 TEST(PasteSourceTest, LeavesTheStreamItReadUntouched)
