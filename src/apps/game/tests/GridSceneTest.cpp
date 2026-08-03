@@ -1427,3 +1427,154 @@ TEST_F(GridSceneTest, Draw_MergesATiedDiagonalRuinFirst)
 
     EXPECT_LT(debrisAt, houseAt);
 }
+
+namespace
+{
+    // Where one source tile lands in the blit stream.
+    // The stream is short in these scenes, so a scan is fine.
+    [[nodiscard]] std::size_t blitIndexOf(
+        const RecordingRenderer &recorded, Rect source)
+    {
+        for (std::size_t index = 0; index < recorded.blits.size();
+             ++index)
+        {
+            if (recorded.blits[index].source == source)
+            {
+                return index;
+            }
+        }
+
+        return recorded.blits.size();
+    }
+} // namespace
+
+// The painter's order reaches the walkers now.
+// One standing behind a block is painted before it and hidden by it.
+// It used to be painted last and float over the block's headroom.
+TEST_F(GridSceneTest, Draw_HidesAWalkerBehindTheBlockInFrontOfIt)
+{
+    auto scene_ = snapshot(
+        Camera(Point{.x = 300, .y = 40}, 2),
+        GridExtent{.width = 6, .height = 6},
+        {},
+        {WalkerSprite{
+            .at = Cell{.x = 1, .y = 1}, .facing = Direction::North}});
+    scene_.buildings.push_back(
+        antwika::game::BuildingSprite{
+            .at = Cell{.x = 2, .y = 2},
+            .kind = antwika::game::BuildingKind::Farm});
+
+    scene.draw(renderer, kCanvas, scene_, atlases);
+
+    const auto walker = blitIndexOf(
+        renderer, walkerTile(Direction::North));
+    const auto farm = blitIndexOf(
+        renderer,
+        antwika::game::buildingTile(antwika::game::BuildingKind::Farm));
+
+    ASSERT_LT(walker, renderer.blits.size());
+    ASSERT_LT(farm, renderer.blits.size());
+    EXPECT_LT(walker, farm);
+}
+
+// And one standing in front of a block is painted after it.
+TEST_F(GridSceneTest, Draw_KeepsAWalkerInFrontOfTheBlockBehindIt)
+{
+    auto scene_ = snapshot(
+        Camera(Point{.x = 300, .y = 40}, 2),
+        GridExtent{.width = 6, .height = 6},
+        {},
+        {WalkerSprite{
+            .at = Cell{.x = 4, .y = 4}, .facing = Direction::North}});
+    scene_.buildings.push_back(
+        antwika::game::BuildingSprite{
+            .at = Cell{.x = 2, .y = 2},
+            .kind = antwika::game::BuildingKind::Farm});
+
+    scene.draw(renderer, kCanvas, scene_, atlases);
+
+    const auto walker = blitIndexOf(
+        renderer, walkerTile(Direction::North));
+    const auto farm = blitIndexOf(
+        renderer,
+        antwika::game::buildingTile(antwika::game::BuildingKind::Farm));
+
+    ASSERT_LT(walker, renderer.blits.size());
+    ASSERT_LT(farm, renderer.blits.size());
+    EXPECT_LT(farm, walker);
+}
+
+// A walker mid-step paints at the deeper of its two cells.
+// Here that is the cell it is leaving, stepping away north-west.
+// The deeper one is the first diagonal that can be in front of it.
+TEST_F(GridSceneTest, Draw_PaintsAMidStepWalkerAtItsDeeperCell)
+{
+    auto scene_ = snapshot(
+        Camera(Point{.x = 300, .y = 40}, 2),
+        GridExtent{.width = 6, .height = 6},
+        {},
+        {WalkerSprite{
+            .at = Cell{.x = 2, .y = 1},
+            .facing = Direction::North,
+            .from = Cell{.x = 3, .y = 1},
+            .ticksIntoStep = 0}});
+    scene_.buildings.push_back(
+        antwika::game::BuildingSprite{
+            .at = Cell{.x = 2, .y = 2},
+            .kind = antwika::game::BuildingKind::Farm});
+
+    scene.draw(renderer, kCanvas, scene_, atlases);
+
+    // Its deeper cell shares the farm's diagonal.
+    // Blocks flush first, so it is painted after the art.
+    const auto walker = blitIndexOf(
+        renderer, walkerTile(Direction::North));
+    const auto farm = blitIndexOf(
+        renderer,
+        antwika::game::buildingTile(antwika::game::BuildingKind::Farm));
+
+    ASSERT_LT(walker, renderer.blits.size());
+    ASSERT_LT(farm, renderer.blits.size());
+    EXPECT_LT(farm, walker);
+}
+
+// Two walkers paint back to front whatever order the snapshot holds.
+TEST_F(GridSceneTest, Draw_PaintsWalkersBackToFront)
+{
+    const auto scene_ = snapshot(
+        Camera(Point{.x = 300, .y = 40}, 2),
+        GridExtent{.width = 6, .height = 6},
+        {},
+        {WalkerSprite{
+             .at = Cell{.x = 3, .y = 3}, .facing = Direction::North},
+         WalkerSprite{
+             .at = Cell{.x = 0, .y = 0}, .facing = Direction::East}});
+
+    scene.draw(renderer, kCanvas, scene_, atlases);
+
+    const auto shallow = blitIndexOf(
+        renderer, walkerTile(Direction::East));
+    const auto deep = blitIndexOf(
+        renderer, walkerTile(Direction::North));
+
+    ASSERT_LT(shallow, renderer.blits.size());
+    ASSERT_LT(deep, renderer.blits.size());
+    EXPECT_LT(shallow, deep);
+}
+
+// A scene draws what it is handed, a walker past the extent included.
+TEST_F(GridSceneTest, Draw_PaintsAWalkerHandedFromPastTheExtent)
+{
+    const auto scene_ = snapshot(
+        Camera(Point{.x = 300, .y = 40}, 2),
+        GridExtent{.width = 2, .height = 2},
+        {},
+        {WalkerSprite{
+            .at = Cell{.x = 3, .y = 3}, .facing = Direction::North}});
+
+    scene.draw(renderer, kCanvas, scene_, atlases);
+
+    EXPECT_LT(
+        blitIndexOf(renderer, walkerTile(Direction::North)),
+        renderer.blits.size());
+}

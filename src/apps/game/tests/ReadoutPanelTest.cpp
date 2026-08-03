@@ -110,22 +110,22 @@ TEST(ReadoutPanelTest, Panel_NamesASourceAndListsNoStockItNeverSpends)
         kCanvas,
         kTranslator);
 
-    ASSERT_EQ(panel.lines.size(), 9U);
+    ASSERT_EQ(panel.lines.size(), 8U);
     EXPECT_EQ(panel.lines[0].text, "farm");
     EXPECT_EQ(panel.lines[1].text, "staff 0/4");
 
-    // Water and medicine are on every building, even at nothing.
+    // The medicine is on every building, even at nothing.
+    // Water is a house's alone: only a household drinks it.
     // The stock a source keeps and nobody drains stays unlisted.
     EXPECT_EQ(panel.lines[2].text, "resources");
-    EXPECT_EQ(panel.lines[3].text, "  water 0/100");
-    EXPECT_EQ(panel.lines[4].text, "  medicine 0/100");
+    EXPECT_EQ(panel.lines[3].text, "  medicine 0/100");
 
     // The risk section is on every building, even at nothing.
     // A watched district's danger is a fact somebody wants at zero.
-    EXPECT_EQ(panel.lines[5].text, "risk");
-    EXPECT_EQ(panel.lines[6].text, "  fire 0%");
-    EXPECT_EQ(panel.lines[7].text, "  collapse 0%");
-    EXPECT_EQ(panel.lines[8].text, "  disease 0%");
+    EXPECT_EQ(panel.lines[4].text, "risk");
+    EXPECT_EQ(panel.lines[5].text, "  fire 0%");
+    EXPECT_EQ(panel.lines[6].text, "  collapse 0%");
+    EXPECT_EQ(panel.lines[7].text, "  disease 0%");
 }
 
 TEST(ReadoutPanelTest, Panel_NamesAWalkerAndWhatItIsCarrying)
@@ -300,9 +300,9 @@ TEST(ReadoutPanelTest, EqualityComparesEveryField)
     EXPECT_NE(base, recoloured);
 }
 
-// Water and medicine are listed for every kind of building.
-// Both are amounts on the stock lines' own scale and format.
-TEST(ReadoutPanelTest, Panel_ListsWaterAndMedicineOnAnyBuilding)
+// The medicine is listed for every kind of building.
+// Water is a house's alone: only a household drinks it.
+TEST(ReadoutPanelTest, Panel_ListsTheMedicineOnAnyBuilding)
 {
     const auto panel = readoutPanel(
         over(
@@ -313,13 +313,12 @@ TEST(ReadoutPanelTest, Panel_ListsWaterAndMedicineOnAnyBuilding)
         kCanvas,
         kTranslator);
 
-    ASSERT_EQ(panel.lines.size(), 9U);
+    ASSERT_EQ(panel.lines.size(), 8U);
     EXPECT_EQ(panel.lines[0].text, "well");
     EXPECT_EQ(panel.lines[1].text, "staff 0/1");
     EXPECT_EQ(panel.lines[2].text, "resources");
-    EXPECT_EQ(panel.lines[3].text, "  water 100/100");
-    EXPECT_EQ(panel.lines[4].text, "  medicine 50/100");
-    EXPECT_EQ(panel.lines[5].text, "risk");
+    EXPECT_EQ(panel.lines[3].text, "  medicine 50/100");
+    EXPECT_EQ(panel.lines[4].text, "risk");
 }
 
 // The tier is named rather than numbered.
@@ -393,11 +392,11 @@ TEST(ReadoutPanelTest, Panel_SaysNoOccupancyForABuildingNobodyLivesIn)
         kCanvas,
         kTranslator);
 
-    ASSERT_EQ(panel.lines.size(), 9U);
+    ASSERT_EQ(panel.lines.size(), 8U);
     EXPECT_EQ(panel.lines[0].text, "well");
     EXPECT_EQ(panel.lines[1].text, "staff 0/1");
     EXPECT_EQ(panel.lines[2].text, "resources");
-    EXPECT_EQ(panel.lines[5].text, "risk");
+    EXPECT_EQ(panel.lines[4].text, "risk");
 }
 
 TEST(ReadoutPanelTest, Panel_ColoursTheMedicineLineOutOfTheServiceTable)
@@ -411,9 +410,9 @@ TEST(ReadoutPanelTest, Panel_ColoursTheMedicineLineOutOfTheServiceTable)
         kCanvas,
         kTranslator);
 
-    ASSERT_EQ(panel.lines.size(), 9U);
-    EXPECT_EQ(panel.lines[4].colour, serviceColour(Service::Health));
-    EXPECT_EQ(panel.lines[4].text, "  medicine 100/100");
+    ASSERT_EQ(panel.lines.size(), 8U);
+    EXPECT_EQ(panel.lines[3].colour, serviceColour(Service::Health));
+    EXPECT_EQ(panel.lines[3].text, "  medicine 100/100");
 }
 
 // A ruin says its state and stops.
@@ -449,3 +448,22 @@ TEST(ReadoutPanelTest, Panel_NamesTheDebrisAFireLeaves)
     ASSERT_EQ(panel.lines.size(), 1U);
     EXPECT_EQ(panel.lines[0].text, "debris");
 }
+
+// A house's stock lines read against its own level's shelf.
+// A cottage holds four houses' worth -- see stockCapacityOf().
+TEST(ReadoutPanelTest, Panel_SizesAHousesShelfByItsLevel)
+{
+    const auto panel = readoutPanel(
+        over(
+            BuildingSprite{
+                .at = Cell{},
+                .kind = BuildingKind::House,
+                .stock = {150, 0, 0},
+                .level = antwika::game::HousingLevel::Cottage}),
+        kCanvas,
+        kTranslator);
+
+    ASSERT_GE(panel.lines.size(), 6U);
+    EXPECT_EQ(panel.lines[5].text, "  food 150/400");
+}
+

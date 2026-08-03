@@ -123,23 +123,6 @@ namespace antwika::game
         return buildingKindOf(tool).has_value();
     }
 
-    /**
-     * @brief Check whether a right press puts this tool down.
-     *
-     * Every tool that arms a mode is left that way, the raze tool
-     * included: a destructive mode somebody cannot back out of is a
-     * click away from a building nobody meant to lose. Road is the
-     * exception because it is what a session starts with, and a right
-     * press over it has always dropped a walker instead -- see
-     * GridSink.
-     *
-     * @param tool The tool to ask about.
-     * @return True for every tool but Road.
-     */
-    [[nodiscard]] constexpr bool cancellable(BuildTool tool) noexcept
-    {
-        return tool != BuildTool::Road;
-    }
 
     // Every building kind has to be placeable.
     // Otherwise it is art nobody can put down.
@@ -175,8 +158,4 @@ namespace antwika::game
     static_assert(
         buildingKindOf(BuildTool::EngineerPost)
         == BuildingKind::EngineerPost);
-    static_assert(!cancellable(BuildTool::Road));
-    static_assert(cancellable(BuildTool::House));
-    static_assert(cancellable(BuildTool::Raze));
-
 } // namespace antwika::game

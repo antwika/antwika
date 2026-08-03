@@ -681,3 +681,63 @@ TEST(PopulationSystemTest, Update_SendsForNobodyWhileTheHouseIsDry)
     EXPECT_EQ(scene.people(), 0);
     EXPECT_EQ(scene.walking(), 0);
 }
+
+// A starved or dry house's people give up on the whole city.
+// A spare bed elsewhere is not asked; they head straight for a gate.
+TEST(PopulationSystemTest, Update_SendsADryHousesPeopleOffTheMap)
+{
+    Scene scene;
+    scene.pave();
+    scene.settle(Household{.population = 1});
+    scene.water(0);
+
+    // A house with beds free, which a mere mover would have taken.
+    const auto vacancy = scene.world.create();
+    scene.world.add<Cell>(vacancy, Cell{.x = 6, .y = 6});
+    scene.world.add<Building>(
+        vacancy, Building{.kind = BuildingKind::House});
+    scene.world.commit();
+
+    scene.run(kSettlerPeriodTicks);
+
+    EXPECT_EQ(scene.people(), 0);
+    ASSERT_EQ(scene.walking(), 1);
+
+    for (const auto walker :
+         scene.world.view<Walker, antwika::game::Journey>())
+    {
+        EXPECT_EQ(
+            scene.world.get<antwika::game::Journey>(walker).house,
+            antwika::ecs::kNullEntity);
+    }
+}
+
+// A mover shed for room or poor ground still takes the spare bed.
+// Only hunger and thirst turn a leaver into an emigrant.
+TEST(PopulationSystemTest, Update_StillMovesACrowdedHousesOverflowIn)
+{
+    Scene scene;
+    scene.pave();
+    scene.settle(
+        Household{
+            .population =
+                populationCapacityOf(HousingLevel::Tent) + 1});
+
+    const auto vacancy = scene.world.create();
+    scene.world.add<Cell>(vacancy, Cell{.x = 6, .y = 6});
+    scene.world.add<Building>(
+        vacancy, Building{.kind = BuildingKind::House});
+    scene.world.commit();
+
+    scene.run(kSettlerPeriodTicks);
+
+    ASSERT_EQ(scene.walking(), 1);
+
+    for (const auto walker :
+         scene.world.view<Walker, antwika::game::Journey>())
+    {
+        EXPECT_EQ(
+            scene.world.get<antwika::game::Journey>(walker).house,
+            vacancy);
+    }
+}

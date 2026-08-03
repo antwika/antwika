@@ -202,6 +202,9 @@ TEST_F(GridSinkTest, RightPress_PutsAWalkerOnAPath)
     constexpr Cell target{.x = 2, .y = 2};
     clickAt(target, MouseButton::Left);
 
+    // The first right press puts the road brush down.
+    // A walker is what a right press means with nothing selected.
+    clickAt(target, MouseButton::Right);
     clickAt(target, MouseButton::Right);
 
     EXPECT_EQ(walkerCount(), 1U);
@@ -275,15 +278,18 @@ TEST_F(GridSinkTest, RightPress_IsAWalkerAgainOnceBuildModeIsLeft)
 
 // The road is a tool a cancel does not reach past.
 // It places something, so a right press with it up is a walker.
-TEST_F(GridSinkTest, RightPress_IsAWalkerWithTheRoadToolSelected)
+// The road brush cancels like every other tool now.
+// It used to drop a walker instead.
+// That made the mode a session starts in the one with no way out.
+TEST_F(GridSinkTest, RightPress_PutsTheRoadBrushDown)
 {
     constexpr Cell target{.x = 2, .y = 2};
     clickAt(target, MouseButton::Left);
 
     clickAt(target, MouseButton::Right);
 
-    EXPECT_EQ(overlay.tool(), BuildTool::Road);
-    EXPECT_EQ(walkerCount(), 1U);
+    EXPECT_FALSE(overlay.tool().has_value());
+    EXPECT_EQ(walkerCount(), 0U);
 }
 
 // What the toolbar covers, it covers from the grid too.
@@ -756,6 +762,9 @@ TEST_F(GridSinkTest, RightPress_PlacesAWalkerForNothing)
     constexpr Cell target{.x = 2, .y = 2};
     clickAt(target, MouseButton::Left);
 
+    // Once to put the brush down, once to drop the walker.
+    // Neither press costs a thing.
+    clickAt(target, MouseButton::Right);
     clickAt(target, MouseButton::Right);
 
     EXPECT_EQ(walkerCount(), 1U);
@@ -1088,4 +1097,15 @@ TEST_F(GridSinkTest, LeftPress_PlacesAFarmWithNoCoverageAtAll)
     EXPECT_EQ(
         antwika::game::coverageOf(world, *farms.begin()),
         antwika::game::Coverage{});
+}
+
+// Bare ground takes no walker, even once the brush is down.
+// The refusal is placeWalker()'s own -- a walker goes onto a path.
+TEST_F(GridSinkTest, RightPress_PutsNoWalkerOnBareGroundOnceCancelled)
+{
+    clickAt(Cell{.x = 2, .y = 2}, MouseButton::Right);
+    clickAt(Cell{.x = 2, .y = 2}, MouseButton::Right);
+
+    EXPECT_FALSE(overlay.tool().has_value());
+    EXPECT_EQ(walkerCount(), 0U);
 }

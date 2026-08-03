@@ -241,9 +241,8 @@ TEST(HoverTest, AHoveredWellSaysNothingAboutWhoLivesThere)
     EXPECT_EQ(
         said,
         (std::vector<std::string>{
-            "well", "staff 0/1", "resources", "  water 0/100",
-            "  medicine 0/100", "risk", "  fire 0%", "  collapse 0%",
-            "  disease 0%"}));
+            "well", "staff 0/1", "resources", "  medicine 0/100",
+            "risk", "  fire 0%", "  collapse 0%", "  disease 0%"}));
 }
 
 // A building covers a block of cells rather than one.
@@ -392,6 +391,13 @@ namespace
                                 .x = point.x, .y = point.y}})});
         }
 
+        // The first right press puts the default road brush down.
+        // A walker is what the second means, nothing being selected.
+        events.push_back(
+            TickEvent{
+                .tick = 1,
+                .event =
+                    pressAt(Cell{.x = 1, .y = 2}, MouseButton::Right)});
         events.push_back(
             TickEvent{
                 .tick = 1,
@@ -546,4 +552,22 @@ TEST(HoverTest, HoverFor_ReportsNothingBesideARuin)
         pointingAt(Cell{.x = 6, .y = 6}), kCamera, scene, false);
 
     EXPECT_FALSE(readout.ruin.has_value());
+}
+
+// A walker somewhere else says nothing about the cell in hand.
+// The building under the pointer still answers.
+TEST(HoverTest, HoverFor_PassesOverAWalkerOnAnotherCell)
+{
+    const Cell where{.x = 2, .y = 2};
+    const auto readout = hoverFor(
+        pointingAt(where),
+        kCamera,
+        sceneOf(
+            {BuildingSprite{.at = where, .kind = BuildingKind::House}},
+            {WalkerSprite{.at = Cell{.x = 5, .y = 5}}}),
+        false);
+
+    EXPECT_FALSE(readout.walker.has_value());
+    ASSERT_TRUE(readout.building.has_value());
+    EXPECT_EQ(readout.building->at, where);
 }

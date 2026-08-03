@@ -342,33 +342,27 @@ namespace antwika::game
         // A snapshot then draws the same picture wherever it is drawn.
         const auto phase = snapshot.paused ? Progress() : subTick;
 
-        drawTerrain(renderer, canvas, snapshot, atlases);
+        // With no overlay up, the walkers ride in the terrain pass.
+        // Each paints at its own screen depth there.
+        // So a block in front of one hides it -- see drawTerrain().
+        const bool overlaid = snapshot.view != MapView::Normal;
+
+        drawTerrain(renderer, canvas, snapshot, atlases, phase, !overlaid);
 
         // Over the ground and the blocks, under the walkers.
         // A walker is a thing in the city rather than a fact about it.
         // So an overlay reads as painted on rather than over the top.
         drawOverlay(renderer, canvas, snapshot, atlases);
 
-        // Last, so a walker is never hidden by what it is standing on.
-        for (const auto &walker : snapshot.walkers)
+        // Over the scrim, since a reader opened the view to read it.
+        // And the depth the scrim flattened is not worth occluding.
+        if (overlaid)
         {
-            // Culled on where it is drawn, not on the cell it is on.
-            // Between two ticks those are not the same box.
-            // And a walker halfway off the edge is still half on it.
-            const auto bounds = walkerBounds(walker, snapshot.camera, phase);
-
-            if (!overlaps(bounds, canvas))
+            for (const auto &walker : snapshot.walkers)
             {
-                continue;
+                drawWalker(
+                    renderer, canvas, walker, snapshot, atlases, phase);
             }
-
-            // The frame reads the slide's own pause-adjusted fraction.
-            // So a held walker's legs freeze with it.
-            renderer.drawTexture(
-                atlases.oneByOne,
-                walkerTile(walker.facing, walkerFrame(walker, phase)),
-                bounds,
-                kUntinted);
         }
 
         // Before the ghost, which is one cell and sits on top of it.
@@ -380,15 +374,83 @@ namespace antwika::game
         drawReadout(renderer, canvas, snapshot);
     }
 
+    void GridScene::drawWalker(
+        IRenderer &renderer,
+        Size canvas,
+        const WalkerSprite &walker,
+        const SceneSnapshot &snapshot,
+        const AtlasTextures &atlases,
+        Progress phase) const
+    {
+        // Culled on where it is drawn, not on the cell it is on.
+        // Between two ticks those are not the same box.
+        // And a walker halfway off the edge is still half on it.
+        const auto bounds = walkerBounds(walker, snapshot.camera, phase);
+
+        if (!overlaps(bounds, canvas))
+        {
+            return;
+        }
+
+        // The frame reads the slide's own pause-adjusted fraction.
+        // So a held walker's legs freeze with it.
+        renderer.drawTexture(
+            atlases.oneByOne,
+            walkerTile(walker.facing, walkerFrame(walker, phase)),
+            bounds,
+            kUntinted);
+    }
+
     void GridScene::drawTerrain(
         IRenderer &renderer,
         Size canvas,
         const SceneSnapshot &snapshot,
-        const AtlasTextures &atlases) const
+        const AtlasTextures &atlases,
+        Progress phase,
+        bool withWalkers) const
     {
         const auto blocks = blocksOf(snapshot);
         const auto covered = coveredCells(blocks);
         std::size_t next = 0;
+
+        // A walker paints at the deeper of its two cells' depths.
+        // Mid-step it stands somewhere between the two.
+        // The deeper is the first diagonal that can be in front of it.
+        // A walker a block is in front of is then hidden by the art.
+        // And one behind a block is not, which was the whole bug.
+        // Walkers painted last floated over the headroom in front.
+        const auto depthOf = [&](const WalkerSprite &walker)
+        {
+            const auto from = walker.from.value_or(walker.at);
+
+            return std::max(
+                walker.at.x + walker.at.y, from.x + from.y);
+        };
+
+        // Sorted by that depth, stably, when they ride this pass.
+        // The snapshot's own order breaks ties.
+        // So one frame of one snapshot is one picture.
+        std::vector<std::size_t> marching;
+        std::size_t stepping = 0;
+
+        if (withWalkers)
+        {
+            marching.resize(snapshot.walkers.size());
+
+            for (std::size_t index = 0; index < marching.size(); ++index)
+            {
+                marching[index] = index;
+            }
+
+            std::stable_sort(
+                marching.begin(),
+                marching.end(),
+                [&](std::size_t left, std::size_t right)
+                {
+                    return depthOf(snapshot.walkers[left])
+                        < depthOf(snapshot.walkers[right]);
+                });
+        }
 
         const auto drawBlock = [&](const BlockArt &block)
         {
@@ -494,6 +556,23 @@ namespace antwika::game
                 drawBlock(blocks[next]);
                 ++next;
             }
+
+            // This diagonal's walkers, after its blocks.
+            // A block on it stands beside them, never on their cell.
+            // Everything deeper is painted after and covers both.
+            while (stepping < marching.size()
+                   && depthOf(snapshot.walkers[marching[stepping]])
+                       <= diagonal)
+            {
+                drawWalker(
+                    renderer,
+                    canvas,
+                    snapshot.walkers[marching[stepping]],
+                    snapshot,
+                    atlases,
+                    phase);
+                ++stepping;
+            }
         }
 
         // A snapshot is drawn whole even where the extent ends.
@@ -503,6 +582,19 @@ namespace antwika::game
         {
             drawBlock(blocks[next]);
             ++next;
+        }
+
+        // And its walkers with it, on the same terms.
+        while (stepping < marching.size())
+        {
+            drawWalker(
+                renderer,
+                canvas,
+                snapshot.walkers[marching[stepping]],
+                snapshot,
+                atlases,
+                phase);
+            ++stepping;
         }
     }
 

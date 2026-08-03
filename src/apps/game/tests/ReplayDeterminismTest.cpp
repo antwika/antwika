@@ -302,6 +302,13 @@ namespace
                 .event =
                     releaseAt(Cell{.x = 3, .y = 4}, MouseButton::Left)});
 
+        // The first right press puts the default road brush down.
+        // Walkers are what the later ones mean, nothing being selected.
+        events.push_back(
+            TickEvent{
+                .tick = 1,
+                .event =
+                    pressAt(Cell{.x = 1, .y = 2}, MouseButton::Right)});
         events.push_back(
             TickEvent{
                 .tick = 1,

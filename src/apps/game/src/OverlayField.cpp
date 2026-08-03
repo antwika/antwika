@@ -7,6 +7,7 @@
 #include "antwika/game/BuildingKind.hpp"
 #include "antwika/game/Coverage.hpp"
 #include "antwika/game/Footprint.hpp"
+#include "antwika/game/HousingQuery.hpp"
 #include "antwika/game/ResourceColour.hpp"
 #include "antwika/game/Store.hpp"
 
@@ -142,11 +143,14 @@ namespace antwika::game
 
             // Whichever of the two this view is, and never both.
             // MapView.hpp's static_assert is what says so.
+            // The shelf is the building's own -- stockCapacityAt().
+            // A house's grows with its level.
             const auto share = service.has_value()
                 ? asShare(
                       coverageOf(world, entity, *service), kCoverageFull)
                 : asShare(
-                      stockOf(world, entity, *resource), capacityOf(kind));
+                      stockOf(world, entity, *resource),
+                      stockCapacityAt(world, entity, kind));
 
             if (share <= 0)
             {

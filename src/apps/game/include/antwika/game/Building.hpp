@@ -60,12 +60,23 @@ namespace antwika::game
     inline constexpr std::int32_t kRiskPeriodTicks = kTicksPerSecond;
 
     /**
-     * @brief Ticks between one unit of stock draining and the next.
+     * @brief Ticks between one serving of stock draining and the next.
      *
      * One every four seconds, so a house put up with kStockOnCompletion
      * has forty seconds to be found by a walker.
      */
     inline constexpr std::int32_t kDrainPeriodTicks = 4 * kTicksPerSecond;
+
+    /**
+     * @brief How many occupants share one serving per drain period.
+     *
+     * **A fuller house eats faster, and an empty one eats nothing.**
+     * Each started group of this many people costs one unit of every
+     * resource the house holds per period -- so a full tent's five
+     * eat two units where a lone settler eats one, and a house whose
+     * people have all left stops draining at all.
+     */
+    inline constexpr std::int32_t kMouthsPerServing = 4;
 
     /**
      * @brief Ticks between a building being free and sending somebody out.

@@ -285,9 +285,16 @@ namespace antwika::game
                             MessageId::ReadoutResourcesTitle),
                         .colour = kReadoutTitle});
 
-                // The very rule the bars follow -- see buildingBars().
+                // Consumed stock only, which is the panel's old rule.
+                // Against the shelf the building actually has.
+                // A house's shelf grows with its level.
+                // Only a house consumes.
+                // So the level's answer is the whole rule here.
                 if (consumes(building.kind))
                 {
+                    const auto shelf =
+                        stockCapacityOf(building.level);
+
                     for (std::size_t slot = 0; slot < kResourceCount;
                          ++slot)
                     {
@@ -297,24 +304,29 @@ namespace antwika::game
                                     translator,
                                     kResources[slot],
                                     building.stock[slot],
-                                    kStockCapacity)),
+                                    shelf)),
                                 .colour =
                                     resourceColour(kResources[slot])});
                     }
                 }
 
-                // What a carrier and a doctor left behind, as amounts.
-                // On the stock lines' own scale and format.
-                // A dry house empties, so the water line is always said.
-                // And the medicine is what holds the disease off.
-                said.push_back(
-                    Said{ // GCOVR_EXCL_LINE
-                        .text = grouped(servedText(
-                            translator,
-                            MessageId::ServiceWater,
-                            building.coverage[
-                                serviceIndex(Service::Water)])),
-                        .colour = serviceColour(Service::Water)});
+                // What a carrier left behind, on a house alone.
+                // Only a household drinks the water.
+                // A dry house empties, so zero is still said.
+                if (housesPeople(building.kind))
+                {
+                    said.push_back(
+                        Said{ // GCOVR_EXCL_LINE
+                            .text = grouped(servedText(
+                                translator,
+                                MessageId::ServiceWater,
+                                building.coverage[
+                                    serviceIndex(Service::Water)])),
+                            .colour = serviceColour(Service::Water)});
+                }
+
+                // The medicine stays on every kind of building.
+                // Disease is a fact about any of them.
                 said.push_back(
                     Said{ // GCOVR_EXCL_LINE
                         .text = grouped(servedText(

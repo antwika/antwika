@@ -19,6 +19,7 @@
 #include "antwika/game/Direction.hpp"
 #include "antwika/game/Errand.hpp"
 #include "antwika/game/Footprint.hpp"
+#include "antwika/game/HousingQuery.hpp"
 #include "antwika/game/Resource.hpp"
 #include "antwika/game/Service.hpp"
 #include "antwika/game/StandingBuildings.hpp"
@@ -65,11 +66,17 @@ namespace antwika::game
             return building.collapseRisk >= kMaxRisk;
         }
 
+        // The room is the caller's to say.
+        // A house's shelf grows with its level.
+        // See stockCapacityAt().
         void deliverTo(
-            Building &building, Walker &walker, Resource resource)
+            Building &building,
+            Walker &walker,
+            Resource resource,
+            std::int32_t capacity)
         {
             auto &held = building.stock[resourceIndex(resource)];
-            const auto room = capacityOf(building.kind) - held;
+            const auto room = capacity - held;
             const auto given = std::min(walker.carried, room);
 
             if (given <= 0)
@@ -184,7 +191,12 @@ namespace antwika::game
                         continue;
                     }
 
-                    deliverTo(building, walker, *carries);
+                    deliverTo(
+                        building,
+                        walker,
+                        *carries,
+                        stockCapacityAt(
+                            world, standingHere, building.kind));
                 }
 
                 if (walker.carried != before)
@@ -262,12 +274,20 @@ namespace antwika::game
                 {
                     building.ticksUntilDrain = kDrainPeriodTicks;
 
-                    // Only a house eats; a source keeps what it holds.
-                    if (consumes(building.kind))
+                    // Only a household eats, by its own headcount.
+                    // A workshop's clay goes into pottery, not away.
+                    // An empty house eats nothing at all.
+                    // Each started serving of people costs one unit.
+                    if (housesPeople(building.kind))
                     {
+                        const auto eaten =
+                            (populationAt(world, entity)
+                             + kMouthsPerServing - 1)
+                            / kMouthsPerServing;
+
                         for (auto &held : building.stock)
                         {
-                            held = std::max(0, held - 1);
+                            held = std::max(0, held - eaten);
                         }
                     }
                 }

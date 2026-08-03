@@ -281,6 +281,13 @@ TEST(BootstrapTest, Bootstrap_LaysAPathDropsAWalkerAndWalksIt)
             .event = releaseAt(
                 antwika::game::Cell{.x = 2, .y = 1},
                 antwika::input::MouseButton::Left)},
+        // The first right press puts the default road brush down.
+        // A walker is what the second means, nothing being selected.
+        TickEvent{
+            .tick = 0,
+            .event = pressAt(
+                antwika::game::Cell{.x = 1, .y = 1},
+                antwika::input::MouseButton::Right)},
         TickEvent{
             .tick = 0,
             .event = pressAt(
