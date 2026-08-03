@@ -33,7 +33,7 @@ add_executable(antwika_atlas_editor_tests
 )
 
 # The game's include directory, for DefaultSheetSizeTest alone.
-# game::kAtlasSize is the contract a blank sheet here has to meet.
+# game::atlasSizeOf() is the contract a blank sheet has to meet.
 # It is header-only and compile-time, so nothing is linked for it.
 # The application target does not get it, and must not: this editor
 # builds without apps/game, and only the test knows the two exist.
