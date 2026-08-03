@@ -65,6 +65,30 @@ namespace antwika::synth
         /** @brief Minus one is hard left, plus one hard right. */
         float pan = 0.0F;
 
+        /**
+         * @brief How fast the pitch wobbles, in hertz; zero is none.
+         *
+         * The wobble is a triangle rather than a sine, deliberately:
+         * the render path stays free of transcendentals, and a
+         * vibrato's shape is inaudible at vibrato rates.
+         */
+        double vibratoHertz = 0.0;
+
+        /** @brief How far it wobbles, as a fraction of the pitch. */
+        double vibratoDepth = 0.0;
+
+        /**
+         * @brief The pitch alternates to this ratio of itself.
+         *
+         * One is off. The classic chiptune arpeggio: the oscillator
+         * spends alternate steps at the ratio, which a caller computes
+         * from semitones before the render path ever sees it.
+         */
+        double arpeggioRatio = 1.0;
+
+        /** @brief Frames per arpeggio step; zero is off. */
+        FrameCount arpeggioPeriod = 0;
+
         /** @brief What makes one noise voice differ from another. */
         std::uint64_t seed = 0;
 

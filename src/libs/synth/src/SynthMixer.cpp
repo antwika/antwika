@@ -79,6 +79,35 @@ namespace antwika::synth
                 + " voice needs a finite frequency above zero");
         }
 
+        // Finiteness by name, for the frequency's reason exactly.
+        if (desc.vibratoHertz < 0.0
+            || !std::isfinite(desc.vibratoHertz)
+            || desc.vibratoHertz >= static_cast<double>(wave.rate) / 2.0)
+        {
+            throw SynthError(
+                "antwika::synth: a vibrato of "
+                + std::to_string(desc.vibratoHertz)
+                + " Hz is not between zero and half the sample rate");
+        }
+
+        if (desc.vibratoDepth < 0.0 || desc.vibratoDepth >= 1.0
+            || !std::isfinite(desc.vibratoDepth))
+        {
+            throw SynthError(
+                "antwika::synth: a vibrato depth of "
+                + std::to_string(desc.vibratoDepth)
+                + " lies outside zero up to one");
+        }
+
+        if (!(desc.arpeggioRatio > 0.0)
+            || !std::isfinite(desc.arpeggioRatio))
+        {
+            throw SynthError(
+                "antwika::synth: an arpeggio ratio of "
+                + std::to_string(desc.arpeggioRatio)
+                + " is not a finite ratio above zero");
+        }
+
         if (desc.envelope.sustain < 0.0F || desc.envelope.sustain > 1.0F)
         {
             throw SynthError(
@@ -161,8 +190,29 @@ namespace antwika::synth
         const auto rate = static_cast<double>(wave.rate);
         const auto seconds = static_cast<double>(voice.elapsed) / rate;
 
-        const auto frequency = voice.desc.frequency
+        auto frequency = voice.desc.frequency
             + voice.desc.frequencySlide * seconds;
+
+        // A triangle rather than a sine.
+        // The render path stays free of transcendentals.
+        // See VoiceDesc::vibratoHertz.
+        if (voice.desc.vibratoHertz > 0.0)
+        {
+            const auto turn =
+                voice.vibratoPhase - std::floor(voice.vibratoPhase);
+            const auto triangle = 4.0 * std::abs(turn - 0.5) - 1.0;
+
+            frequency *= 1.0 + voice.desc.vibratoDepth * triangle;
+            voice.vibratoPhase += voice.desc.vibratoHertz / rate;
+        }
+
+        // Alternate steps sound at the ratio.
+        // Integer arithmetic decides which step this frame is on.
+        if (voice.desc.arpeggioPeriod > 0
+            && (voice.elapsed / voice.desc.arpeggioPeriod) % 2 == 1)
+        {
+            frequency *= voice.desc.arpeggioRatio;
+        }
 
         const auto raw = oscillate(
             voice.desc.shape, voice.phase, voice.desc.seed, voice.elapsed);

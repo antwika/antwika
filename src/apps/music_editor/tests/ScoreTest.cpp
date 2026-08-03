@@ -1052,3 +1052,36 @@ TEST(ScoreTest, ARewrittenBarsLineThatRefusesKeepsTheLastOne)
     EXPECT_EQ(onsetsAt(score, 1, 2), 1U);
     EXPECT_EQ(onsetsAt(score, 1, 0), 0U);
 }
+
+// The wiki's example scores, read by the real parser.
+// A documented chain that will not read is a documentation bug.
+TEST(ScoreTest, ReadsEveryDocumentedModulationExample)
+{
+    Score score;
+
+    score.read(
+        "$: drum.s(sine).base(150).slide(-600).hold(90).rel(80)"
+        ".n(\"0 ~ 0 ~\")\n"
+        "$: drum.bpf(2000).dec(60).hold(70).gain(.25).n(\"~ 0 ~ 0\")\n"
+        "$: drum.hpf(8000).hold(25).rel(30).gain(.15).n(\"0 0 0 0\")\n"
+        "$: drum.hpf(5000).hold(60).rel(900).gain(.2).n(\"0 ~ ~ ~\")\n");
+    EXPECT_EQ(score.voices().size(), 4U);
+
+    score.read(
+        "$: lead.s(triangle).att(2).dec(250).sus(.3).rel(200)"
+        ".n(\"0 4 7 12\")\n"
+        "$: bass.o(-1).n(\"0 ~ 0 3\")\n"
+        "$: lead.s(saw).lpf(1800).dec(180).sus(.2).rel(120).harm(12)"
+        ".n(\"0 7\")\n");
+    EXPECT_EQ(score.voices().size(), 3U);
+
+    score.read(
+        "$: bell.n(\"[0,3,7] [8,12,15] [3,7,10] [10,14,17]\")"
+        ".gain(.25)\n");
+    EXPECT_EQ(score.voices().size(), 1U);
+
+    score.read(
+        "$: lead.vib(6).delay(250).delaymix(.3).harm(7)"
+        ".n(\"0 ~ 3 ~\").gain(.2)\n");
+    EXPECT_EQ(score.voices().size(), 1U);
+}

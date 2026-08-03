@@ -357,7 +357,8 @@ TEST(VoiceChainTest, TheRefusalNamesEveryControlThereIs)
 
     for (const auto *call :
          {"n", "s", "base", "o", "trans", "gain", "pan", "att", "dec",
-          "sus", "rel", "hold", "lpf", "hpf", "bpf", "res", "slide"})
+          "sus", "rel", "hold", "lpf", "hpf", "bpf", "res", "slide",
+          "vib", "vibdepth", "arp", "delay", "delaymix", "harm"})
     {
         EXPECT_NE(controls.find(call), std::string::npos) << call;
     }
@@ -411,4 +412,55 @@ TEST(VoiceChainTest, ComparesChainsFieldByField)
     EXPECT_NE(chain, parseVoiceChain("bass.n(\"0\")"));
     EXPECT_NE(chain, parseVoiceChain("drum.n(\"3\")"));
     EXPECT_NE(chain, parseVoiceChain("drum .n(\"0\")"));
+}
+
+// The five modulations, read on the same terms as every other call.
+TEST(VoiceChainTest, ReadsTheVibratoRateAndDepth)
+{
+    EXPECT_DOUBLE_EQ(after("vib(6)").vibratoHertz, 6.0);
+    EXPECT_DOUBLE_EQ(after("vib(.5)").vibratoHertz, 0.5);
+    EXPECT_FLOAT_EQ(after("vibdepth(.02)").vibratoDepth, 0.02F);
+    EXPECT_FLOAT_EQ(after("vibdepth(0)").vibratoDepth, 0.0F);
+}
+
+TEST(VoiceChainTest, RefusesAVibratoThatIsNotPositive)
+{
+    EXPECT_THROW(read("n(\"0\").vib(0)"), ScoreError);
+    EXPECT_THROW(read("n(\"0\").vib(-2)"), ScoreError);
+    EXPECT_THROW(read("n(\"0\").vibdepth(2)"), ScoreError);
+}
+
+TEST(VoiceChainTest, ReadsTheArpeggioInterval)
+{
+    EXPECT_EQ(after("arp(12)").arpSemitones, 12);
+    EXPECT_EQ(after("arp(-7)").arpSemitones, -7);
+    EXPECT_EQ(after("arp(0)").arpSemitones, 0);
+}
+
+TEST(VoiceChainTest, RefusesAnArpeggioThatIsNotWhole)
+{
+    EXPECT_THROW(read("n(\"0\").arp(1.5)"), ScoreError);
+}
+
+TEST(VoiceChainTest, ReadsTheDelayAndItsMix)
+{
+    EXPECT_EQ(after("delay(250)").delayMs, 250U);
+    EXPECT_FLOAT_EQ(after("delaymix(.3)").delayMix, 0.3F);
+}
+
+TEST(VoiceChainTest, RefusesADelayMixOutsideZeroToOne)
+{
+    EXPECT_THROW(read("n(\"0\").delaymix(1.5)"), ScoreError);
+    EXPECT_THROW(read("n(\"0\").delay(-10)"), ScoreError);
+}
+
+TEST(VoiceChainTest, ReadsTheHarmonyInterval)
+{
+    EXPECT_EQ(after("harm(7)").harmonySemitones, 7);
+    EXPECT_EQ(after("harm(-12)").harmonySemitones, -12);
+}
+
+TEST(VoiceChainTest, RefusesAHarmonyThatIsNotWhole)
+{
+    EXPECT_THROW(read("n(\"0\").harm(.5)"), ScoreError);
 }

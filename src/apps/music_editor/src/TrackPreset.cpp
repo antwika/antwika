@@ -22,6 +22,15 @@ namespace antwika::music_editor
 
     namespace
     {
+        // Gentle: half a per cent of the pitch either way.
+        constexpr double kDefaultVibratoDepth = 0.005;
+
+        // The classic chiptune rate: twenty-five steps a second.
+        constexpr std::uint32_t kArpeggioStepMs = 40;
+    } // namespace
+
+    namespace
+    {
         constexpr std::uint32_t kMillisecondsPerSecond = 1000;
 
         constexpr double kSemitones =
@@ -138,6 +147,21 @@ namespace antwika::music_editor
         const auto hold = std::min(
             frames, framesForMs(preset.maxHoldMs, rate));
 
+        // A rate with no depth said gets a gentle default.
+        // So vib(6) alone is audible without a second call.
+        const auto vibratoDepth =
+            preset.vibratoHertz > 0.0 && preset.vibratoDepth == 0.0F
+            ? kDefaultVibratoDepth
+            : static_cast<double>(preset.vibratoDepth);
+
+        // Semitones become a ratio here, where floats are at home.
+        // The render path multiplies and never takes a power.
+        const auto arpeggioRatio = preset.arpSemitones != 0
+            ? std::pow(
+                  2.0,
+                  static_cast<double>(preset.arpSemitones) / kSemitones)
+            : 1.0;
+
         return VoiceDesc{
             .shape = preset.shape,
             .frequency = hertz,
@@ -151,6 +175,12 @@ namespace antwika::music_editor
             .filter = preset.filter,
             .gain = preset.gain,
             .pan = preset.pan,
+            .vibratoHertz = preset.vibratoHertz,
+            .vibratoDepth = vibratoDepth,
+            .arpeggioRatio = arpeggioRatio,
+            .arpeggioPeriod = preset.arpSemitones != 0
+                ? framesForMs(kArpeggioStepMs, rate)
+                : 0,
             // Where the hit falls, rather than how long it is.
             // Two hits of one length are not one hit sounded twice.
             // And the same hit is the same hit on every run.
