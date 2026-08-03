@@ -339,6 +339,31 @@ TEST(ToolbarTest, Describe_ReportsTheRatingsItIsGiven)
             {std::string{"pop 42"}, std::string{"jobs 75%"}}));
 }
 
+// The bank is on the ratings' terms exactly, negative included.
+// Spending is never refused, so the readout is where a debt shows.
+TEST(ToolbarTest, Describe_ReportsTheFundsItIsGiven)
+{
+    const Toolbar toolbar{kTranslator};
+    const Camera camera;
+
+    const auto frame = toolbar.describe(
+        kCanvas,
+        Pointer{},
+        camera,
+        antwika::game::BuildTool::Road,
+        false,
+        0,
+        CityRatings{},
+        false,
+        antwika::game::MapView::Normal,
+        false,
+        -125);
+
+    EXPECT_THAT(
+        textsOf(frame.commands),
+        ::testing::IsSupersetOf({std::string{"money -125"}}));
+}
+
 // A picture, and only a picture.
 // There is nothing here to press, so the labels declare no widget.
 // And so a rating can never become an input.

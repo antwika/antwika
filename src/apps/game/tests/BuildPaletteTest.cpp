@@ -388,6 +388,7 @@ namespace
         antwika::game::tests::FakeMenuCommands commands;
         MenuModalScene modalScene{kTranslator};
         antwika::game::CityRatings ratings;
+        antwika::game::GameState state;
         UiSink uiSink{
             camera,
             overlay,
@@ -399,7 +400,8 @@ namespace
             drag,
             modalScene,
             camera,
-            ratings};
+            ratings,
+            state};
         GridSink gridSink{
             world,
             paths,
@@ -410,7 +412,8 @@ namespace
             overlay,
             cities,
             built,
-            drag};
+            drag,
+            state};
     };
 } // namespace
 

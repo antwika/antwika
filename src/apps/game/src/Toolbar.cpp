@@ -68,7 +68,8 @@ namespace antwika::game
         CityRatings ratings,
         bool menuOpen,
         MapView view,
-        bool viewOpen) const
+        bool viewOpen,
+        std::int64_t funds) const
     {
         const auto scale = scaleForCanvas(canvas);
 
@@ -278,6 +279,15 @@ namespace antwika::game
                 ui.label(
                     translator.formatted(
                         MessageId::ToolbarEmployment, jobArgs));
+
+                // The bank, on the ratings' terms exactly.
+                // Spent inside the tick path from recorded clicks.
+                // So a replay draws the same number -- see GameState.
+                const auto bank = std::to_string(funds);
+                const std::array<std::string_view, 1> bankArgs{bank};
+                ui.label(
+                    translator.formatted(
+                        MessageId::ToolbarMoney, bankArgs));
             }
         }
 

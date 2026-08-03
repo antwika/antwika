@@ -508,6 +508,11 @@ namespace antwika::game
         ActionResetView,
 
         /**
+         * @brief Toolbar: what is left in the bank, `{0}` being it.
+         */
+        ToolbarMoney,
+
+        /**
          * @brief How many ids there are; not an id itself.
          *
          * Messages.cpp static_asserts its name table against this,

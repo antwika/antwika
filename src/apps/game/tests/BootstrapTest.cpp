@@ -370,7 +370,7 @@ TEST(PrintSummaryTest, WritesTheStateTheCountsAndTheCamera)
 
     EXPECT_EQ(
         out.str(),
-        "Final state: ticksProcessed=4 score=7\n"
+        "Final state: ticksProcessed=4 score=7 money=5000\n"
         "Paths laid: 2\n"
         "Walkers: 0\n"
         "Buildings: 0\n"

@@ -702,6 +702,25 @@ Anything else wrong with it is refused rather than repaired, on `SaveGame`'s ter
 **The `Options` button was declared beside `Quit` rather than under it**, on a row of two.
 The menu's card is centred in the canvas, so a fifth row would have moved all four items already there and left every session recorded before this one opening something else — the same reason the ratings labels were appended to the toolbar's first row rather than inserted among the buttons.
 
+## Money, and why a placement is never refused for want of it
+
+**Every road and every building placed is paid for out of one bank, and the bank lives on `GameState`.**
+A session opens at `kStartingMoney`, `Cost.hpp` is the table of what each placement takes -- `kRoadCost` per cell of road, `costOf(kind)` per building, tables for exactly `footprintOf()`'s reason -- and `GridSink` pays at the moment it lays, which makes every change to the balance a value derived from a recorded click.
+Putting the member on `GameState` is what made the rest free: `SaveGame` already carries the state, so a save keeps the bank and `SessionStore::restore` brings it back, and `GameSummary` already compares it, so a live run and its replay disagreeing about money fails `ReplayDeterminismTest` directly.
+
+**A dragged run of road costs the road's price times the tiles it put down, by construction rather than by arithmetic.**
+The charge sits inside `placePath()` after the refusals, and a release lays its route through that same function once per cell -- so a cell the route crosses that is already paved is refused there, laid as nothing and charged as nothing.
+Nobody computes a route's price anywhere, which is why nobody can compute it differently from what the release actually laid.
+
+**Spending is never refused, so the bank may go below zero, and both halves of that are deliberate.**
+Nothing pays money in yet: a placement refused at zero would end every session for good the moment the bank ran out, with the readout the only clue.
+The refusal rule belongs to the workstream that gives the city an income, where running out becomes a state a player can get back out of.
+Deducting without refusing also leaves `canPlace()` and the ghost's contract exactly as they were -- what a preview promises, a click still delivers -- so the render side needed no change at all and no funds check exists to drift from the placement's.
+
+**The save format grew one optional member and no version bump.**
+`"money"` on the state object is additive per [`docs/schema-versioning.md`](../../docs/schema-versioning.md): absent means the starting bank, which is what a file written before money existed says, and it is the state object's one signed member since a debt has to survive a save.
+The bar reports the balance as a `money {0}` label beside the ratings, appended after them for the reason they sit after the growing spacer -- every widget declared before it keeps its rectangle, so no recorded click resolves differently for the readout having appeared.
+
 ## Future work
 
 **`UiSink`/`UiOverlay`/`Toolbar` should adopt `ui::applyHover()` next.**

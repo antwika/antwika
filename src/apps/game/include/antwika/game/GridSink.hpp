@@ -13,6 +13,7 @@
 #include "antwika/game/BuildingIndex.hpp"
 #include "antwika/game/Camera.hpp"
 #include "antwika/game/Cell.hpp"
+#include "antwika/game/GameState.hpp"
 #include "antwika/game/GridExtent.hpp"
 #include "antwika/game/InputFold.hpp"
 #include "antwika/game/PathIndex.hpp"
@@ -159,6 +160,8 @@ namespace antwika::game
          * @param built Which cells hold a building.
          * @param drag Where a run of road starts and ends; written here
          * and read by whatever draws the preview.
+         * @param state The bank each placement is paid out of; see
+         * GameState::money for why spending is never refused.
          */
         GridSink(
             World &world,
@@ -170,7 +173,8 @@ namespace antwika::game
             UiOverlay &overlay,
             const WorldMapState &cities,
             BuildingIndex &built,
-            RoadDrag &drag);
+            RoadDrag &drag,
+            GameState &state);
 
         GridSink(const GridSink &) = delete;
         GridSink(GridSink &&) = delete;
@@ -216,6 +220,11 @@ namespace antwika::game
         // Shared rather than private, since a preview is drawn from it.
         // Written here and nowhere else, inside the tick path.
         RoadDrag &drag;
+
+        // The bank a placement is paid out of.
+        // The reducer owns the other members; this sink spends money.
+        // Two writers, and never of one field -- see GameState.
+        GameState &state;
     };
 
 } // namespace antwika::game

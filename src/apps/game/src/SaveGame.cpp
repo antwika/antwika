@@ -2,6 +2,7 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <limits>
 #include <map>
 #include <optional>
 #include <string>
@@ -32,6 +33,24 @@ namespace antwika::game
         using replay::coordinateShape;
         using replay::countShape;
 
+        // The bank may be negative -- see GameState::money.
+        // So no count shape fits it.
+        // Bounded by what a std::int64_t holds instead.
+        // That is boundedCountShape's reason exactly.
+        // A wider number would be narrowed by the decode in silence.
+        nlohmann::json moneyShape()
+        {
+            nlohmann::json shape;
+            shape["type"] = "integer";
+            shape["minimum"] = std::numeric_limits<std::int64_t>::min();
+            shape["maximum"] = std::numeric_limits<std::int64_t>::max();
+            return shape;
+
+            // gcov puts the returned json's unwind block on this brace.
+            // arrayOf() below carries the identical exclusion.
+            // No input reaches it.
+        } // GCOVR_EXCL_LINE
+
         nlohmann::json stateShape()
         {
             nlohmann::json shape;
@@ -40,6 +59,11 @@ namespace antwika::game
             shape["required"] = {"ticksProcessed", "score"}; // GCOVR_EXCL_LINE
             shape["properties"]["ticksProcessed"] = countShape();
             shape["properties"]["score"] = countShape();
+
+            // Optional, and absent means the starting bank.
+            // Which is what a file written before money existed says.
+            // Additive per docs/schema-versioning.md: no version bump.
+            shape["properties"]["money"] = moneyShape();
             return shape;
         }
 
@@ -152,6 +176,7 @@ namespace antwika::game
             kSaveFormatVersion;
         encoded["state"]["ticksProcessed"] = save.state.ticksProcessed;
         encoded["state"]["score"] = save.state.score;
+        encoded["state"]["money"] = save.state.money;
         encoded["extent"]["width"] = save.extent.width;
         encoded["extent"]["height"] = save.extent.height;
         encoded["camera"]["panX"] = save.camera.pan().x;
@@ -193,6 +218,14 @@ namespace antwika::game
             document.at("state").at("ticksProcessed").get<std::uint64_t>();
         save.state.score =
             document.at("state").at("score").get<std::uint64_t>();
+
+        // Absent keeps the default, which is the starting bank.
+        // That is what a file written before money existed says.
+        if (document.at("state").contains("money"))
+        {
+            save.state.money =
+                document.at("state").at("money").get<std::int64_t>();
+        }
         save.extent = GridExtent{
             .width = document.at("extent").at("width").get<std::int32_t>(),
             .height =
