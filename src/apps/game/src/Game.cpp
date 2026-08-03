@@ -101,7 +101,7 @@ namespace antwika::game
         AppModeState &mode = config.mode;
 
         SystemScheduler scheduler;
-        WalkerSystem walkerSystem(paths, config.extent);
+        WalkerSystem walkerSystem(paths, config.built, config.extent);
         SpawnSystem spawnSystem(paths);
         BuildingSystem buildingSystem(config.built);
 
@@ -248,7 +248,7 @@ namespace antwika::game
         // A person arriving is employable from the following tick.
         // Both gates, in the order every other system takes them.
         PopulationSystem populationSystem(
-            paths, desirability, config.extent);
+            paths, config.built, desirability, config.extent);
         LabourSystem labourSystem;
 
         SessionGatedSystem gatedPopulation(populationSystem, mode);

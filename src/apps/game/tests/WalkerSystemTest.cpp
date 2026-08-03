@@ -66,7 +66,8 @@ namespace
         ::testing::NiceMock<MockLogger> logger;
         World world{logger};
         PathIndex paths;
-        WalkerSystem system{paths, kExtent};
+        antwika::game::BuildingIndex built;
+        WalkerSystem system{paths, built, kExtent};
     };
 } // namespace
 
@@ -668,15 +669,23 @@ TEST_F(WalkerSystemTest, Update_RetiresAMigrantWhoseHouseHasGone)
     EXPECT_FALSE(world.alive(mover));
 }
 
-// Walled off, or the road under it has gone.
-// A person who cannot get where they were going is gone too.
+// Walled in by buildings, which is the only way to be cut off.
+// A person walks over open ground -- see stepAcross().
 TEST_F(WalkerSystemTest, Update_RetiresAMigrantWithNoRouteLeft)
 {
-    layPath({{.x = 0, .y = 0}});
-
-    const auto leaver = addWalker(Cell{.x = 0, .y = 0}, Direction::East);
+    const auto leaver = addWalker(Cell{.x = 1, .y = 1}, Direction::East);
     world.add<Journey>(leaver, Journey{.towards = Cell{.x = 9, .y = 9}});
     world.commit();
+
+    for (const auto around : {
+             Cell{.x = 0, .y = 1},
+             Cell{.x = 2, .y = 1},
+             Cell{.x = 1, .y = 0},
+             Cell{.x = 1, .y = 2}})
+    {
+        (void)built.insert(
+            around, antwika::game::footprintOf(BuildingKind::Well));
+    }
 
     tick();
 

@@ -130,7 +130,7 @@ namespace
         PathIndex paths;
         BuildingIndex built;
         SystemScheduler scheduler;
-        WalkerSystem walkers{paths, kExtent};
+        WalkerSystem walkers{paths, built, kExtent};
         BuildingSystem buildings{built};
         SpawnSystem spawns{paths};
         ProductionSystem production;

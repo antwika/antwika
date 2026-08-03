@@ -10,6 +10,7 @@
 #include <antwika/time/Tick.hpp>
 
 #include "antwika/game/Building.hpp"
+#include "antwika/game/BuildingIndex.hpp"
 #include "antwika/game/Cell.hpp"
 #include "antwika/game/Desirability.hpp"
 #include "antwika/game/GridExtent.hpp"
@@ -97,11 +98,14 @@ namespace antwika::game
          * @brief Construct the system over what a house is judged by.
          * @param paths The roads, asked whether one runs beside a house;
          * must outlive this system.
+         * @param built The blocks a person crossing open ground may not
+         * walk through; must outlive this system.
          * @param desirability The field, read at each house's own origin
          * cell; must outlive this system.
          */
         PopulationSystem(
             const PathIndex &paths,
+            const BuildingIndex &built,
             const DesirabilityField &desirability,
             GridExtent extent) noexcept;
 
@@ -145,6 +149,7 @@ namespace antwika::game
             std::optional<Cell> door);
 
         const PathIndex &paths;
+        const BuildingIndex &built;
         const DesirabilityField &desirability;
         GridExtent extent;
     };

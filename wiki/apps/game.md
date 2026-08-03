@@ -290,11 +290,9 @@ Save and load share one verb because they share one screen: the picker is where 
 `new game` restores an empty `SaveGame` through `SessionStore`, which is the one route into the live grid a load already goes through, so "empty the city" is not a second way of doing it; the other cities of a world keep what was built on them, since a session holds one live grid.
 
 **Moving a widget changes what every recorded click means**, so `replays/demo.jsonl` was recorded again against this layout — by driving the application with `--replay` over the re-aimed session and `--record` writing what it actually dispatched, rather than by editing the file.
-It reaches the identical city either way: ten road tiles, one house at (4,3) at `tent` with water coverage 474, service reach 25, camera at pan (512,48) and zoom 3 after 92 ticks.
+It reaches the identical city either way: ten road tiles, one house at (4,3) at `tent` with water coverage 474, population 3, service reach 25, camera at pan (512,48) and zoom 3 after 92 ticks.
 
-**It houses nobody, and that is the immigration rule showing rather than a regression.**
-Its ten road tiles are laid in the middle of the grid and none of them reaches an edge, so there is no gate for anybody to walk in through — see the population section below.
-The file is still what pins the layout and the determinism, which is what it is for; a session that wanted people in it would have to lay road out to the edge first.
+Its ten road tiles are laid in the middle of the grid and reach no edge of it, which is why walking over open ground is what keeps that population where it was: bound to the roads, the same file housed nobody at all.
 `BootstrapTest` pins the two pixels that file depends on — the main menu's New Game and the palette's House — so a layout change fails a test rather than being rediscovered by hand.
 
 **The menu modal is a modal rather than a mode, and whether it is up is simulation state.**
@@ -581,14 +579,30 @@ It runs a second city for the walker cap: ninety-six wells, each one cell with a
 The city is asserted to be genuinely at the cap first, for the reason the first one is asserted to be genuinely short of people: two runs that both sent everybody would agree for the wrong reason.
 
 **Nobody appears out of thin air any more, and nobody vanishes into it.**
-A house that is due somebody sends for them, and what arrives is an ordinary walker carrying a `Journey`: it enters at the nearest road on the *edge of the map*, walks the road network to the door, and the house's number goes up on the tick it gets there rather than on the tick it was sent for.
-So a district a long way from a gate fills more slowly than one beside it, and **a city no road reaches out of takes nobody in at all** — which is a fact about the road network rather than a rule written anywhere.
+A house that is due somebody sends for them, and what arrives is an ordinary walker carrying a `Journey`: it enters at the nearest cell on the *edge of the map*, walks to the door, and the house's number goes up on the tick it gets there rather than on the tick it was sent for.
+So a district a long way from the edge fills more slowly than one beside it, which is a fact about where it was built rather than a rule written anywhere.
 
-A house that sheds somebody sends one out the same way, and where they go is decided in that order: `nearestVacancy()` for the nearest house with a bed going, and failing that `nearestGate()` for the nearest road out of town.
+A house that sheds somebody sends one out the same way, and where they go is decided in that order: `nearestVacancy()` for the nearest house with a bed going, and failing that `nearestGate()` for the nearest way out of town.
 So a house that has just devolved does not evaporate its overflow — the people it can no longer hold walk to whatever room there is, and the city's total only falls when there is none.
 
-**A road on the edge of the extent is the whole of what a city border is here.**
-There is nothing beyond the extent, so a road that reaches it is a road that leads somewhere else; `nearestGate()` orders the candidates by route length and then by ascending `Cell`, which is `nearestAccepting()`'s order and is total for the same reason it has to be — which gate a migrant uses decides which roads they walk down, and a replay has to pick the same one.
+**A person walks over open ground, and that is what tells them apart from every other walker here.**
+`stepAcross()` and `crossingCost()` are `stepTowards()` and `routeCost()` with one thing changed — what a route may run along — and they are the same A* over the same `GridGraph` with the same tie-break.
+A water carrier, a cart pusher and a market seller are doing the city's business and the road network is what that business runs on; somebody moving house is not a delivery, and walks across a field, round the back of a workshop or straight at the edge of the map.
+The only thing in their way is what is standing: every cell of the extent is walkable except the ones a building covers, plus the goal's own block by the exception the road search already makes.
+
+That was not so at first, and the version that came before is worth stating because it *looked* right.
+Migrants were bound to the roads like everybody else, so a gate was an edge cell with a road on it and **a city whose roads stopped short of the grid took nobody in at all** — a rule nothing on screen explained, which the shipped `replays/demo.jsonl` walked straight into.
+
+**Any cell of the outermost ring with nothing standing on it is a way out.**
+There is nothing beyond the extent, so ground that reaches it is ground that leads somewhere else.
+`nearestGate()` orders the candidates by how far off they are *as the crow flies* and then by ascending `Cell`, and answers with the first one a route actually reaches.
+That is total, which is all a replay needs of it, and over open ground it is also exact — with nothing in the way a route is exactly that many steps, so the first candidate is the shortest.
+Ordering by route length instead would be a search per edge cell, ninety-two of them on the shipped grid, every time a house asked for somebody; this is one search unless a building is genuinely in the way.
+`nearestVacancy()` *does* search every candidate, because the houses with room are few and each one is a place somebody might actually live, where the edge of the map is ninety-two cells that all mean the same thing.
+
+**A house still needs a road beside it, and the reason is no longer reachability.**
+Every *other* walker in the city is road-bound, so a house with no road at its door can never be watered, fed, doctored or sold to: moving somebody into one would be moving them into a house nothing can ever reach.
+One tile at the door is the whole of what that asks for, and the walk to it crosses whatever is in between.
 
 **A house asks for nobody while somebody is on the way**, and the bookkeeping for that is the handle in its own walker slot rather than a flag: a house already knows which walkers it has out, and `ecs::EntityManager` never reusing an index is already why a stale handle can only be dead.
 Somebody walking *out* takes no slot, because the house they left is not waiting for them.
