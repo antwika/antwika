@@ -168,9 +168,29 @@ A session that pressed Load replays faithfully only while the file it re-read is
 Most applications attach one or both of `input`'s upstream decorators, but a paint tool can attach neither: `CoalescingPointerSource` would drop every pixel of a stroke but the last, and `IdleMotionSource` would freeze the pixel readout between clicks -- and that readout is simulation state, so it may not be driven off `input::PointerHintChannel` the way `apps/game`'s placement ghost is.
 The movement between two clicks *is* the stroke, so a `--record` file grows at the window system's rate rather than the tick rate, which is the price of that.
 
+## The window resizes, and F10 fills the screen
+
+The window is resizable and **F10** toggles fullscreen, and neither changes anything a session can see.
+
+The editor lays out and hit-tests against **1280x720** -- the size the window is *asked* for, which `EditorState::canvas()` carries and `main.cpp` states once.
+`RenderSink` builds a `gfx::ViewportRenderer` per frame from the size the window *reports*, so the whole picture -- the sheet, the slot grid, the guides, the selection and the toolbar alike -- is scaled up and centred into whatever the window currently is, with black letterboxes either side.
+That is the one place in this application that reads the reported size, and it reads it to place a picture and nothing else; `docs/resizable-windows.md` is the rule, and this is an ordinary application of it.
+
+The pointer is mapped back the other way by `app::WindowPointerMapping`, attached **upstream of the recorder**, so a `--record` file holds canvas positions and nothing about the window it was made on.
+A session recorded in a small window replays in a big one, or fullscreen, or the other way about.
+The fullscreen toggle itself is `app::FullscreenToggleSource`, above the loop rather than in a sink, because filling the screen is an action on a window and not simulation state -- the *key press* is ordinary recorded input, so a replay fills the screen at the same tick and reaches the same sheet either way.
+
+**One consequence is worth stating plainly, because this is a pixel editor and the unit being edited is one pixel.**
+A window whose height is a whole multiple of 720 scales by a whole number, and a click lands on exactly the pixel it would have at 1280x720.
+At any other size the scale is a fraction, and a window pixel maps to a sheet pixel and back to *within one* -- so the same gesture can put a dot on the neighbouring pixel.
+Below a scale of one it is coarser again, one window pixel then covering more than one of the sheet's.
+Zooming the view in is what an artist does about that, and the view's zoom is simulation state, so a replay reproduces it.
+None of it costs a replay anything: the recording holds whichever sheet pixel the pointer was actually over, and that is what a replay repaints.
+`ViewportReplayTest` is where all of that is asserted end to end, against the pixels rather than against the arithmetic.
+
 ## How a session ends
 
-Closing the window ends it, and so does Escape; both are input, so both are recorded and both replay.
+Closing the window ends it, and so does Escape; both are input, so both are recorded and both replay -- as F10 does, which ends nothing and fills the screen.
 The `null` backend reports neither, which is why there is also `--max-ticks <n>`, defaulting to 90000 -- an hour at the 40 ms frame period.
 Reaching it ends the session by *asking it to stop*, through `app::TickLimitSource`, rather than through `EngineLoop`'s own `maxTicks`, which throws.
 Running out of the ticks somebody asked for is not a failure, and a `--record` run has to reach its epilogue to save its file at all.

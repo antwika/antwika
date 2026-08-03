@@ -32,6 +32,7 @@ add_executable(antwika_atlas_editor_tests
     RunIntegrationTest.cpp
     SceneTest.cpp
     SelectionTest.cpp
+    ViewportReplayTest.cpp
     SpriteGuidesTest.cpp
     TileGridTest.cpp
 )
@@ -58,6 +59,7 @@ target_link_libraries(antwika_atlas_editor_tests
         antwika::i18n
         antwika::i18n::tests::conformance
         antwika::input
+        antwika::input::tests::fakes
         antwika::log::tests::mocks
         antwika::replay
         antwika::simulation

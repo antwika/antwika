@@ -4,7 +4,9 @@
 #include <string>
 
 #include <antwika/app/ConsoleLogging.hpp>
+#include <antwika/app/FullscreenToggleSource.hpp>
 #include <antwika/app/RunRecorded.hpp>
+#include <antwika/app/WindowPointerMapping.hpp>
 #include <antwika/gfx/SelectedBackend.hpp>
 #include <antwika/gfx/Size.hpp>
 #include <antwika/gfx/WindowDesc.hpp>
@@ -53,6 +55,13 @@ namespace
 
     constexpr std::chrono::milliseconds kFramePeriod{40};
 
+    // Fills the screen, and puts the window back.
+    // An action on the window rather than anything a tick can see.
+    // Which is why it is acted on above the loop and not in a sink.
+    // A run reaches the same state whether or not it was ever pressed.
+    constexpr antwika::input::Key kFullscreenKey =
+        antwika::input::Key::F10;
+
     void run(const RecordedRun &recorded)
     {
         const auto options = antwika::atlas_editor::editorOptionsFrom(
@@ -71,10 +80,16 @@ namespace
                 + std::string(backend->name()) + ", input: "
                 + std::string(inputBackend->name()));
 
+        // Asked for the canvas the toolbar is resolved against.
+        // Stating the two separately is what lets them disagree.
+        // Resizable, and F10 fills the screen, so they will.
+        // What that changes is how big the picture is drawn and where.
+        // Never which pixel of the sheet a click means.
+        // See RenderSink and docs/resizable-windows.md.
         const auto window = backend->createWindow(WindowDesc{
             .title = "Antwika Atlas Editor",
             .size = kWindowSize,
-            .resizable = false});
+            .resizable = true});
 
         const EditorScene scene;
         SystemSleeper sleeper;
@@ -94,6 +109,13 @@ namespace
 
         const InputEventCodec codec;
 
+        // Where a window pixel is on the canvas, and nothing else.
+        // Attached upstream of the recorder.
+        // So a file holds canvas positions and replays under any size.
+        // A session recorded in a window replays fullscreen, and back.
+        const antwika::app::WindowPointerMapping mapping(
+            *window, kWindowSize);
+
         // Neither thinning decorator is attached.
         // Both absences are deliberate.
         // Coalescing keeps only the last movement of a tick.
@@ -109,15 +131,22 @@ namespace
             *inputBackend,
             codec,
             {.readsDevice = !recorded.options.replayPath.has_value(),
+             .pointerMapping = mapping,
              .stopOnKey = antwika::input::Key::Escape});
 
         WindowInputSource windowed(input, *backend, window->id());
+
+        // Above the loop, since filling the screen is not a tick's news.
+        // The key press is ordinary recorded input all the same.
+        // So a replay fills the screen where the run did, and agrees.
+        antwika::app::FullscreenToggleSource fullscreen(
+            windowed, *window, codec, kFullscreenKey);
 
         // The cap ends a session by asking it to stop.
         // EngineLoop's own maxTicks throws when it is reached.
         // Running out of the ticks asked for is not a failure.
         // A `--record` run also has to reach its epilogue to save.
-        TickLimitSource source(windowed, options.maxTicks);
+        TickLimitSource source(fullscreen, options.maxTicks);
 
         const EditorSummary summary = antwika::atlas_editor::bootstrap({
             .logger = logger,
