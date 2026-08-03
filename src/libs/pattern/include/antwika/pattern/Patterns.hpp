@@ -77,4 +77,40 @@ namespace antwika::pattern
      */
     [[nodiscard]] Pattern fastcat(std::vector<Pattern> parts);
 
+    /**
+     * @brief One slice of a weighted sequence.
+     */
+    struct Slice
+    {
+        /** @brief How much of the cycle this slice holds, over the
+         * sum of every slice's weight. */
+        Cycle weight{1};
+
+        /** @brief What plays inside it. */
+        Pattern part = silence();
+    };
+
+    /**
+     * @brief Fit every pattern into one cycle, each as wide as its
+     * weight says.
+     *
+     * Tidal calls this `timeCat`, and it is what the mini-notation's
+     * tie is read into: `"0 _ 3"` is a slice of weight two and one of
+     * weight one.
+     * With every weight equal it plays exactly as fastcat does; the
+     * weights are what fastcat cannot say.
+     *
+     * One cycle of a slice's pattern is squeezed into each of that
+     * slice's occurrences, and the cycle asked for advances with the
+     * outer one -- so an alternation inside a slice still turns once
+     * per cycle, exactly as it would in a fastcat.
+     *
+     * @param parts What to play, in order, sharing one cycle by
+     * weight.
+     * @return The pattern.
+     * @throws PatternError If nothing was given, or any weight is
+     * nothing or less.
+     */
+    [[nodiscard]] Pattern timecat(std::vector<Slice> parts);
+
 } // namespace antwika::pattern

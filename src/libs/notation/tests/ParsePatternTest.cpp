@@ -412,3 +412,123 @@ TEST(ParsePatternTest, HandsTheReaderEachWordsOffset)
 
     EXPECT_EQ(offsets, expected);
 }
+
+// The tie holds the slot before it one slot longer, as Tidal writes it.
+TEST(ParsePatternTest, ATieHoldsTheSlotBeforeItLonger)
+{
+    const auto haps = read("0 _ 3");
+
+    ASSERT_EQ(haps.size(), 2U);
+    EXPECT_EQ(
+        haps[0].whole,
+        Span(Cycle(0), Cycle(2, 3)));
+    EXPECT_EQ(valueOf(haps[0]), 0);
+    EXPECT_EQ(
+        haps[1].whole,
+        Span(Cycle(2, 3), Cycle(1)));
+    EXPECT_EQ(valueOf(haps[1]), 3);
+}
+
+TEST(ParsePatternTest, TiesAccumulateOneSlotEach)
+{
+    const auto haps = read("0 _ _ 3");
+
+    ASSERT_EQ(haps.size(), 2U);
+    EXPECT_EQ(haps[0].whole, Span(Cycle(0), Cycle(3, 4)));
+    EXPECT_EQ(haps[1].whole, Span(Cycle(3, 4), Cycle(1)));
+}
+
+// A tie filling the whole sequence is the plain word again.
+TEST(ParsePatternTest, ATieAloneWithItsSlotIsThatSlotWhole)
+{
+    const auto haps = read("0 _");
+
+    ASSERT_EQ(haps.size(), 1U);
+    EXPECT_EQ(haps[0].whole, Span(Cycle(0), Cycle(1)));
+}
+
+TEST(ParsePatternTest, ATieWorksInsideABracket)
+{
+    const auto haps = read("[0 _ 3] 5");
+
+    ASSERT_EQ(haps.size(), 3U);
+    EXPECT_EQ(haps[0].whole, Span(Cycle(0), Cycle(1, 3)));
+    EXPECT_EQ(haps[1].whole, Span(Cycle(1, 3), Cycle(1, 2)));
+    EXPECT_EQ(haps[2].whole, Span(Cycle(1, 2), Cycle(1)));
+}
+
+// A rest held longer is a longer rest.
+TEST(ParsePatternTest, ATieMayHoldARest)
+{
+    const auto haps = read("~ _ 3");
+
+    ASSERT_EQ(haps.size(), 1U);
+    EXPECT_EQ(haps[0].whole, Span(Cycle(2, 3), Cycle(1)));
+}
+
+// A window that sees only part of a held note is owed the fragment.
+TEST(ParsePatternTest, AHeldNoteFragmentsHonestly)
+{
+    const auto haps = parsePattern("0 _ 3", kWords)
+                          .queryAll(Span(Cycle(1, 3), Cycle(2, 3)));
+
+    ASSERT_EQ(haps.size(), 1U);
+    EXPECT_EQ(haps[0].part, Span(Cycle(1, 3), Cycle(2, 3)));
+    EXPECT_EQ(haps[0].whole, Span(Cycle(0), Cycle(2, 3)));
+    EXPECT_FALSE(haps[0].hasOnset());
+}
+
+// An alternation inside a held slot still turns once per cycle.
+TEST(ParsePatternTest, AnAlternationInsideAHeldSlotStillTurns)
+{
+    const auto first = read("<0 7> _ 3", 0, 1);
+    const auto second = read("<0 7> _ 3", 1, 2);
+
+    ASSERT_EQ(first.size(), 2U);
+    ASSERT_EQ(second.size(), 2U);
+    EXPECT_EQ(valueOf(first[0]), 0);
+    EXPECT_EQ(valueOf(second[0]), 7);
+}
+
+// '_' is a word character, so only the lone underscore is a tie.
+TEST(ParsePatternTest, AnUnderscoreInsideAWordIsStillAWord)
+{
+    const AnyWord any;
+
+    const auto haps =
+        parsePattern("a_b _", any).queryAll(cycles(0, 1));
+
+    ASSERT_EQ(haps.size(), 1U);
+    EXPECT_EQ(haps[0].whole, Span(Cycle(0), Cycle(1)));
+}
+
+TEST(ParsePatternTest, ATieWithNoSlotBeforeItIsRefused)
+{
+    EXPECT_THROW((void)read("_ 3"), NotationError);
+    EXPECT_THROW((void)read("[_ 3]"), NotationError);
+    EXPECT_THROW((void)read("0, _"), NotationError);
+}
+
+// A turn is a cycle, and a tie cannot stretch one.
+TEST(ParsePatternTest, ATieInsideAnAlternationIsRefused)
+{
+    EXPECT_THROW((void)read("<0 _>"), NotationError);
+}
+
+// Every tie is one more slot of density towards the bound.
+TEST(ParsePatternTest, TiesCountTowardsTheDensityBound)
+{
+    EXPECT_THROW((void)read("[[[0!16 _]!16]!16]"), NotationError);
+}
+
+// An underscore that opens a word is that word's first character.
+TEST(ParsePatternTest, AWordMayOpenWithAnUnderscore)
+{
+    const AnyWord any;
+
+    const auto haps =
+        parsePattern("_x 3", any).queryAll(cycles(0, 1));
+
+    ASSERT_EQ(haps.size(), 2U);
+    EXPECT_EQ(haps[0].whole, Span(Cycle(0), Cycle(1, 2)));
+}

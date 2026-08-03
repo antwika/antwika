@@ -37,7 +37,7 @@ It also knows nothing about audio: it does not depend on [`sound`](sound.md) or 
 | `IHapSink.hpp` | `IHapSink` | Where a query hands what it found. |
 | `HapBuffer.hpp` | `HapBuffer` | The sink that collects into a vector. |
 | `Pattern.hpp` | `IPattern`, `Pattern` | The query interface, and the value that owns one. |
-| `Patterns.hpp` | `silence`, `pure`, `steady`, `stack`, `slowcat`, `fastcat` | Building one. |
+| `Patterns.hpp` | `silence`, `pure`, `steady`, `stack`, `slowcat`, `fastcat`, `timecat` | Building one. |
 | `Combinators.hpp` | `fast`, `slow`, `early`, `late`, `rev`, `euclid`, `degradeBy`, `during` | Transforming one. |
 | `PatternError.hpp` | `PatternError` | This library's one failure type. |
 
@@ -90,6 +90,11 @@ Hashing means asking about cycle four hundred directly answers exactly as playin
 **`degradeBy` passes a continuous value through untouched**, for the same reason.
 A hap with no `whole` has no onset to hash, and its `part` is only ever the window the caller asked about -- so thinning one at all would make whether a steady cutoff survives depend on how a caller sliced its queries, which is exactly the property above.
 A signal has nothing to drop; `DegradeKeepsAContinuousValueHoweverItIsAskedFor` pins it.
+
+**`timecat` is first-class because a composed one would owe fragments it could not pay.**
+`fastcat` is one line -- `fast(n, slowcat(parts))` -- and a weighted sequence can almost be said the same way, with a long slice as a `slow` pattern followed by silences.
+Almost: a window that saw only the middle of the held note would meet a silence slot and get nothing back, where the contract says a cut event comes back as a fragment -- its `part` inside its `whole`.
+So `timecat` maps each slice's run of the cycle onto one cycle of its pattern and back, fragments included, and the cycle number rides through unchanged so an alternation inside a slice still turns per cycle, exactly as in a `fastcat`.
 
 **`during` restarts its pattern at every window, and that is why it is not `slowcat`.**
 `slowcat` hands a slot its pattern's *nth* cycle, so an alternation inside one advances once per revolution of the whole -- the right arithmetic for interleaving, and the wrong one for a song section.

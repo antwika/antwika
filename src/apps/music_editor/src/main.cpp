@@ -65,9 +65,9 @@ namespace
     constexpr antwika::sound::WaveFormat kFormat{
         .rate = 48000, .channels = 2};
 
-    // Two seconds to the cycle, so a four-slot line is a half a slot.
-    // Typing into it is heard as a change rather than as a blur.
-    constexpr std::int64_t kFramesPerCycle = 2 * kFormat.rate;
+    // One second to the cycle, a quarter of it to a four-slot beat.
+    // Brisk enough to groove, and the speed box halves it from here.
+    constexpr std::int64_t kFramesPerCycle = kFormat.rate;
 
     // The same key apps/game fills the screen with.
     // One editor with a different one would be one to remember.

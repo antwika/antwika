@@ -22,6 +22,7 @@ It is the notation TidalCycles and Strudel are written in, over the patterns [`p
 | `a*3%2` | an exact ratio |
 | `3%2` | a word a reader may read as a fraction |
 | `a!3` | three slots of it |
+| `a _` | the slot before the tie, held one slot longer |
 | `a(3,8)` | its onsets on a Euclidean rhythm |
 | `a?` | half its events dropped, reproducibly |
 
@@ -63,6 +64,11 @@ Either one defeats [`music_editor`](../apps/music_editor.md)'s whole resilience 
 A thousand and twenty-four slots is finer than one cycle can be heard to articulate, so the limit refuses nothing musical.
 The product is bounded separately because `*` composes: four factors of sixty-four nest into a factor of sixteen million in a dozen characters, and a per-factor bound alone would let that through.
 Sequences and brackets are deliberately not counted towards it -- `"0*64 3*64"` is two independent terms, not a factor of four thousand.
+
+**The tie is a lone underscore, and it weighs rather than plays.**
+`"0 _ 3"` is two slices of one [`timecat`](pattern.md) -- the 0 holding two thirds of the cycle as one onset, the 3 the rest -- which is Tidal's `_` read into Tidal's `timeCat`, and the reason the note is held rather than retriggered.
+`_` is a word character, so `a_b` is still one word and only the underscore standing alone is a tie; one with no slot before it is refused, and every tie counts one slot towards the density bound, since it thins everything around it exactly as a slot does.
+It is refused inside `<>`, where a turn is a cycle and cannot be stretched -- a note held across cycles is written `0/2`.
 
 **Each `?` gets its own seed, counted left to right.**
 Two of them in one string thin out differently, and both do so the same way on every run.
