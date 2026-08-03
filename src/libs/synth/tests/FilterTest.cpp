@@ -78,6 +78,56 @@ TEST(FilterTest, CoefficientsClampWellBelowTheRate)
     EXPECT_NEAR(coefficients.frequency, 1.0, kTolerance);
 }
 
+// Stability binds the coefficient pair: f*f + 2*f*q < 4.
+// The old clamp bounded the frequency alone.
+// A resonance past the pair's bound grew without limit.
+TEST(FilterTest, DampingIsHeldInsideTheStabilityBound)
+{
+    const auto clamped = filterCoefficientsFor(
+        FilterDesc{
+            .mode = FilterMode::LowPass,
+            .cutoff = 8000.0,
+            .resonance = 2.0},
+        kRate);
+
+    // At the ratio cap the frequency coefficient is exactly one.
+    // So the pair is stable only below three halves.
+    EXPECT_LT(clamped.damping, 1.5);
+
+    const auto kept = filterCoefficientsFor(
+        FilterDesc{
+            .mode = FilterMode::LowPass,
+            .cutoff = 8000.0,
+            .resonance = 1.0},
+        kRate);
+
+    EXPECT_DOUBLE_EQ(kept.damping, 1.0);
+}
+
+TEST(FilterTest, AHighResonanceImpulseStaysBounded)
+{
+    const auto coefficients = filterCoefficientsFor(
+        FilterDesc{
+            .mode = FilterMode::LowPass,
+            .cutoff = 8000.0,
+            .resonance = 2.0},
+        kRate);
+
+    FilterState state;
+
+    auto out = filterSample(
+        FilterMode::LowPass, coefficients, state, 1.0F);
+
+    for (int sample = 0; sample < 4096; ++sample)
+    {
+        out = filterSample(
+            FilterMode::LowPass, coefficients, state, 0.0F);
+
+        ASSERT_LT(out, 10.0F);
+        ASSERT_GT(out, -10.0F);
+    }
+}
+
 TEST(FilterTest, NoneHandsTheSampleBackUntouched)
 {
     const auto coefficients = filterCoefficientsFor(kLowPass, kRate);

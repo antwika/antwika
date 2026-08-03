@@ -279,6 +279,68 @@ TEST(VoiceChainTest, RefusesAValueOutsideMinusOneToOne)
     EXPECT_THROW(read("n(\"0\").sus(-1.5)"), ScoreError);
 }
 
+// The synth holds a sustain to zero through one.
+// A negative one it accepted here used to end the run at note time.
+TEST(VoiceChainTest, RefusesASustainOutsideZeroToOne)
+{
+    EXPECT_THROW(read("n(\"0\").sus(-.5)"), ScoreError);
+    EXPECT_THROW(read("n(\"0\").sus(1.5)"), ScoreError);
+
+    EXPECT_FLOAT_EQ(after("sus(0)").sustain, 0.0F);
+    EXPECT_FLOAT_EQ(after("sus(1)").sustain, 1.0F);
+}
+
+// std::from_chars reads "nan" and "inf" as numbers.
+// A NaN gain used to poison every sample of the mixer's bus.
+TEST(VoiceChainTest, RefusesANumberThatIsNotFinite)
+{
+    EXPECT_THROW(read("n(\"0\").gain(nan)"), ScoreError);
+    EXPECT_THROW(read("n(\"0\").base(inf)"), ScoreError);
+    EXPECT_THROW(read("n(\"0\").sus(nan)"), ScoreError);
+    EXPECT_THROW(read("n(\"0\").slide(-inf)"), ScoreError);
+}
+
+// The cast to int32 is defined only inside int32's range.
+TEST(VoiceChainTest, RefusesAWholeNumberOutsideItsRange)
+{
+    EXPECT_THROW(read("n(\"0\").o(1e10)"), ScoreError);
+    EXPECT_THROW(read("n(\"0\").trans(-1e10)"), ScoreError);
+}
+
+// Ten octaves either way covers every audible ask.
+// Past the bound, 2^(transpose/12) leaves what a double can hold.
+TEST(VoiceChainTest, RefusesATransposePastTenOctaves)
+{
+    EXPECT_THROW(read("n(\"0\").o(11)"), ScoreError);
+    EXPECT_THROW(read("n(\"0\").trans(121)"), ScoreError);
+    EXPECT_THROW(read("n(\"0\").trans(-121)"), ScoreError);
+    EXPECT_THROW(read("n(\"0\").o(200000000)"), ScoreError);
+
+    EXPECT_EQ(after("o(10)").transpose, 120);
+    EXPECT_EQ(after("trans(-120)").transpose, -120);
+}
+
+// The drum has no pitch for a periodic wave to sound at.
+// The synth would refuse the first note; this line never reads.
+TEST(VoiceChainTest, RefusesAPeriodicShapeWithNoBaseToPitchFrom)
+{
+    EXPECT_THROW(read("drum.n(\"0\").s(sine)"), ScoreError);
+
+    // Given a base, the same switch is an ordinary edit.
+    EXPECT_DOUBLE_EQ(
+        presetOf("drum.n(\"0\").s(sine).base(220)").baseHertz, 220.0);
+}
+
+// hold(0) with rel(0) is a voice of no frames at all.
+TEST(VoiceChainTest, RefusesAnEnvelopeThatCouldNeverBeHeard)
+{
+    EXPECT_THROW(read("n(\"0\").hold(0).rel(0)"), ScoreError);
+
+    // Either alone leaves something to hear.
+    EXPECT_EQ(after("hold(0)").maxHoldMs, 0U);
+    EXPECT_EQ(after("rel(0)").releaseMs, 0U);
+}
+
 TEST(VoiceChainTest, RefusesNothingWhereSomethingPositiveIsWanted)
 {
     EXPECT_THROW(read("n(\"0\").base(0)"), ScoreError);

@@ -340,6 +340,12 @@ namespace
         const auto saveOptions =
             antwika::game::saveCliOptionsFrom(recorded.commandLine);
 
+        // A loaded city reaches the session through no event.
+        // A recording started from one replays against an empty grid.
+        // So the pair is refused rather than recorded wrongly.
+        antwika::game::requireRecordableStart(
+            saveOptions, recorded.options.recordPath.has_value());
+
         const auto summary =
             antwika::game::bootstrap(antwika::game::GameConfig{
                 .logger = logger,

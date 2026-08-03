@@ -46,8 +46,10 @@ namespace antwika::replay
      *
      * @tparam ErrorT The exception type this format reports a bad
      * document as; must be constructible from a `const char *`.
-     * @param document The parsed document, taken by value because it is
-     * migrated in place and a caller's copy may not be.
+     * @param document The parsed document, taken by reference so the
+     * depth guard runs before any copy: json's copy constructor
+     * recurses, and a by-value parameter would copy at the call site.
+     * It is copied inside, once guarded, and migrated in place there.
      * @param migrations The chain that brings it to the current version,
      * constructed and injected by the format that owns it.
      * @param validator The one schema for that current version.
@@ -61,13 +63,15 @@ namespace antwika::replay
      */
     template <typename ErrorT>
     [[nodiscard]] nlohmann::json readVersionedDocument(
-        nlohmann::json document,
+        const nlohmann::json &document,
         const MigrationChain &migrations,
         const nlohmann::json_schema::json_validator &validator,
         std::string_view whatFailed)
     {
         // Before anything recursive is allowed near the document.
         // The parser is iterative; the validator's error path is not.
+        // Neither is json's copy constructor.
+        // A by-value parameter would run that copy ahead of this.
         // See DocumentDepth.hpp.
         if (nestsTooDeep(document))
         {
@@ -76,15 +80,19 @@ namespace antwika::replay
                 + "the document nests deeper than this format writes");
         }
 
+        // Copied only now the depth is known survivable.
+        // The migrations rewrite it in place; the caller's stays.
+        nlohmann::json migrated = document;
+
         if constexpr (std::is_base_of_v<ErrorT, SchemaVersionError>)
         {
-            migrations.migrate(document);
+            migrations.migrate(migrated);
         }
         else
         {
             try
             {
-                migrations.migrate(document);
+                migrations.migrate(migrated);
             }
             // GCOVR_EXCL_START
             catch (const SchemaVersionError &error)
@@ -98,14 +106,14 @@ namespace antwika::replay
 
         try
         {
-            validator.validate(document);
+            validator.validate(migrated);
         }
         catch (const std::exception &error) // GCOVR_EXCL_LINE
         {
             throw ErrorT(std::string(whatFailed) + error.what());
         }
 
-        return document;
+        return migrated;
     }
 
     /**
@@ -129,8 +137,9 @@ namespace antwika::replay
      *
      * @tparam ErrorT The exception type this format reports a bad record
      * as; must be constructible from a `const char *`.
-     * @param record The parsed record, taken by value because it is
-     * migrated in place and a caller's copy may not be.
+     * @param record The parsed record, taken by reference for its
+     * whole-document neighbour's reason: the depth guard must run
+     * before json's recursive copy constructor does.
      * @param statedVersion The version the file's header stated.
      * @param migrations The chain that brings a record to the current
      * version, constructed and injected by the format that owns it.
@@ -144,13 +153,14 @@ namespace antwika::replay
      */
     template <typename ErrorT>
     [[nodiscard]] nlohmann::json readVersionedRecord(
-        nlohmann::json record,
+        const nlohmann::json &record,
         std::uint32_t statedVersion,
         const MigrationChain &migrations,
         const nlohmann::json_schema::json_validator &validator,
         std::string_view whatFailed)
     {
         // The same guard its whole-document neighbour opens with.
+        // Ahead of the copy below, whose constructor recurses too.
         // See DocumentDepth.hpp.
         if (nestsTooDeep(record))
         {
@@ -159,18 +169,20 @@ namespace antwika::replay
                 + "the record nests deeper than this format writes");
         }
 
-        migrations.migrateFrom(record, statedVersion);
+        nlohmann::json migrated = record;
+
+        migrations.migrateFrom(migrated, statedVersion);
 
         try
         {
-            validator.validate(record);
+            validator.validate(migrated);
         }
         catch (const std::exception &error) // GCOVR_EXCL_LINE
         {
             throw ErrorT(std::string(whatFailed) + error.what());
         }
 
-        return record;
+        return migrated;
     }
 
 } // namespace antwika::replay

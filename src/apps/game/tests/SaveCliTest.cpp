@@ -5,6 +5,7 @@
 #include <vector>
 
 #include <antwika/cli/CommandLine.hpp>
+#include <antwika/cli/CommandLineError.hpp>
 #include <antwika/replay/ReplayCli.hpp>
 
 #include "antwika/game/SaveCli.hpp"
@@ -12,6 +13,7 @@
 using antwika::cli::CommandLine;
 using antwika::cli::FlagSpec;
 using antwika::cli::parseCommandLine;
+using antwika::game::requireRecordableStart;
 using antwika::game::saveCliFlags;
 using antwika::game::saveCliOptionsFrom;
 using antwika::replay::replayCliFlags;
@@ -80,4 +82,32 @@ TEST(SaveCliTest, LeavesBothUnsetWhenNeitherIsGiven)
 
     EXPECT_FALSE(options.savePath.has_value());
     EXPECT_FALSE(options.loadPath.has_value());
+}
+
+// A recording keeps only input, and a loaded city is not input.
+// Recorded over a save, the replay would start from an empty grid.
+TEST(SaveCliTest, RefusesRecordingARunStartedFromASave)
+{
+    const auto options = saveCliOptionsFrom(parse(
+        {"antwika_game", "--record", "out.jsonl", "--load", "in.json"}));
+
+    EXPECT_THROW(
+        requireRecordableStart(options, true),
+        antwika::cli::CommandLineError);
+}
+
+TEST(SaveCliTest, LetsARecordingStartEmpty)
+{
+    const auto options = saveCliOptionsFrom(
+        parse({"antwika_game", "--record", "out.jsonl"}));
+
+    requireRecordableStart(options, true);
+}
+
+TEST(SaveCliTest, LetsAnUnrecordedRunLoadASave)
+{
+    const auto options = saveCliOptionsFrom(
+        parse({"antwika_game", "--load", "in.json"}));
+
+    requireRecordableStart(options, false);
 }

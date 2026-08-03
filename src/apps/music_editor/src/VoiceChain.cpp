@@ -2,8 +2,10 @@
 
 #include <array>
 #include <charconv>
+#include <cmath>
 #include <cstddef>
 #include <cstdint>
+#include <limits>
 #include <string>
 #include <string_view>
 #include <system_error>
@@ -108,6 +110,17 @@ namespace antwika::music_editor
                     + ") wants a number");
             }
 
+            // from_chars reads "nan" and "inf" as numbers.
+            // Every comparison a validator makes lets a NaN through.
+            // One sails to the mixer and poisons its whole bus.
+            // So nothing non-finite leaves this function.
+            if (!std::isfinite(value))
+            {
+                throw ScoreError(
+                    std::string(name) + "(" + std::string(argument)
+                    + ") wants a finite number");
+            }
+
             return value;
         }
 
@@ -115,6 +128,21 @@ namespace antwika::music_editor
             std::string_view name, std::string_view argument)
         {
             const auto value = numberIn(name, argument);
+
+            // The cast below is defined only inside int32's range.
+            // So the range is checked first, never read back after.
+            constexpr auto kLow = static_cast<double>(
+                std::numeric_limits<std::int32_t>::min());
+            constexpr auto kHigh = static_cast<double>(
+                std::numeric_limits<std::int32_t>::max());
+
+            if (value < kLow || value > kHigh)
+            {
+                throw ScoreError(
+                    std::string(name) + "(" + std::string(argument)
+                    + ") wants a whole number");
+            }
+
             const auto whole = static_cast<std::int32_t>(value);
 
             if (static_cast<double>(whole) != value)
@@ -150,6 +178,22 @@ namespace antwika::music_editor
             {
                 throw ScoreError(
                     std::string(name) + " lies between -1 and 1");
+            }
+
+            return static_cast<float>(value);
+        }
+
+        // The synth holds a sustain to zero through one.
+        // Passing it a negative one would end the run at note time.
+        [[nodiscard]] float zeroToOne(
+            std::string_view name, std::string_view argument)
+        {
+            const auto value = numberIn(name, argument);
+
+            if (value < 0.0 || value > 1.0)
+            {
+                throw ScoreError(
+                    std::string(name) + " lies between 0 and 1");
             }
 
             return static_cast<float>(value);
@@ -195,6 +239,29 @@ namespace antwika::music_editor
             return std::string(argument.substr(1, argument.size() - 2));
         }
 
+        // Ten octaves either way covers every audible ask.
+        // The bound is what keeps 2^(transpose/12) finite downstream.
+        constexpr std::int64_t kMaxTranspose = 120;
+
+        void addTranspose(
+            TrackPreset &preset,
+            const std::string_view name,
+            const std::int64_t amount)
+        {
+            // Summed in int64, where no chain of calls can overflow.
+            const auto total =
+                static_cast<std::int64_t>(preset.transpose) + amount;
+
+            if (total < -kMaxTranspose || total > kMaxTranspose)
+            {
+                throw ScoreError(
+                    std::string(name) + " transposes past "
+                    + std::to_string(kMaxTranspose) + " semitones");
+            }
+
+            preset.transpose = static_cast<std::int32_t>(total);
+        }
+
         void applyCall(
             VoiceChain &voice,
             const std::string_view name,
@@ -225,12 +292,14 @@ namespace antwika::music_editor
             }
             else if (name == "o")
             {
-                preset.transpose +=
-                    kSemitonesPerOctave * wholeIn(name, argument);
+                addTranspose(
+                    preset, name,
+                    static_cast<std::int64_t>(kSemitonesPerOctave)
+                        * wholeIn(name, argument));
             }
             else if (name == "trans")
             {
-                preset.transpose += wholeIn(name, argument);
+                addTranspose(preset, name, wholeIn(name, argument));
             }
             else if (name == "gain")
             {
@@ -250,7 +319,7 @@ namespace antwika::music_editor
             }
             else if (name == "sus")
             {
-                preset.sustain = withinOne(name, argument);
+                preset.sustain = zeroToOne(name, argument);
             }
             else if (name == "rel")
             {
@@ -369,6 +438,23 @@ namespace antwika::music_editor
         if (voice.notation.empty())
         {
             throw ScoreError("a voice needs an n(\"...\") to play");
+        }
+
+        // The synth would refuse each of these at note time.
+        // That throw lands inside the tick and ends the whole run.
+        // Refusing here keeps the line a problem like any other.
+        if (synth::isPeriodic(voice.preset.shape)
+            && !(voice.preset.baseHertz > 0.0))
+        {
+            throw ScoreError(
+                "s(" + std::string(waveshapeName(voice.preset.shape))
+                + ") wants a base(...) above zero to pitch from");
+        }
+
+        if (voice.preset.maxHoldMs == 0 && voice.preset.releaseMs == 0)
+        {
+            throw ScoreError(
+                "hold(0) with rel(0) would never be heard");
         }
 
         return voice;

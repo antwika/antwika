@@ -66,12 +66,17 @@ namespace antwika::synth
                 "releasing over none would never be heard");
         }
 
-        if (isPeriodic(desc.shape) && !(desc.frequency > 0.0))
+        // NaN fails the comparison and infinity passes it.
+        // Both would ride the phase for the voice's whole life.
+        // So finiteness is asked for by name.
+        if (isPeriodic(desc.shape)
+            && (!(desc.frequency > 0.0)
+                || !std::isfinite(desc.frequency)))
         {
             throw SynthError(
                 "antwika::synth: a "
                 + std::string(waveshapeName(desc.shape))
-                + " voice needs a frequency above zero");
+                + " voice needs a finite frequency above zero");
         }
 
         if (desc.envelope.sustain < 0.0F || desc.envelope.sustain > 1.0F)

@@ -5,6 +5,8 @@
 
 #include <nlohmann/json-schema.hpp>
 
+#include "antwika/replay/DocumentDepth.hpp"
+
 namespace antwika::replay
 {
 
@@ -41,6 +43,17 @@ namespace antwika::replay
         catch (const nlohmann::json::parse_error &) // GCOVR_EXCL_LINE
         {
             throw ErrorT(std::string(context) + " is not valid JSON");
+        }
+
+        // A record is depth two, but its payload is a free string.
+        // The validator's refusal path serializes what it refuses.
+        // That recurses per level, so depth is refused first here.
+        // See DocumentDepth.hpp.
+        if (nestsTooDeep(parsed))
+        {
+            throw ErrorT(
+                std::string(context)
+                + " nests deeper than any event this project writes");
         }
 
         try

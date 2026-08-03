@@ -172,14 +172,20 @@ namespace antwika::notation
                     widest = std::max(widest, deepest);
                 }
 
-                deepest = widest;
-
                 if (slots.empty())
                 {
                     throw NotationError(
                         "antwika::notation: a sequence at position "
                         + std::to_string(at) + " holds nothing");
                 }
+
+                // A sequence of n slots plays each n times as fast.
+                // So n multiplies every slot's nesting-path product.
+                // Siblings alone still meet as a maximum above.
+                // "0*64 3*64" is two paths of 128, never one of 4096.
+                // Nested "[0!64]!64" brackets multiply, and refuse.
+                deepest = times(
+                    widest, static_cast<std::int64_t>(slots.size()));
 
                 if (slots.size() == 1)
                 {
@@ -265,6 +271,11 @@ namespace antwika::notation
                         expect(',');
                         const auto steps = parseWholeNumber();
                         expect(')');
+
+                        // A Euclidean rhythm is a fastcat, steps wide.
+                        // Its steps multiply density like '*' does.
+                        // So they fold into the same bound.
+                        speed = times(speed, steps);
 
                         result = pattern::euclid(
                             pulses, steps, std::move(result));
