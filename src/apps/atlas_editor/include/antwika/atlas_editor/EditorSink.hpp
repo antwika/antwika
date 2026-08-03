@@ -122,6 +122,10 @@ namespace antwika::atlas_editor
 
         void applyToSheet(const InputEvent &event, Point was, Point at);
 
+        void applySelection(const InputEvent &event, Point at);
+
+        void applyToKeyboard(const InputEvent &event);
+
         void strokeAlong(Point from, Point to, Brush brush);
 
         void report(MessageId id, std::string detail);

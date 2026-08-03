@@ -32,6 +32,16 @@ namespace antwika::atlas_editor
 
         /** @brief Take the pixel's colour as the selected one. */
         Pick,
+
+        /**
+         * @brief Mark a rectangle of the sheet out, and move it.
+         *
+         * The one tool whose left button is a gesture rather than a
+         * brush: a drag from outside the marked rectangle draws a new
+         * one, and a drag from inside it carries its pixels somewhere
+         * else when the button comes up.
+         */
+        Select,
     };
 
     /**
@@ -41,7 +51,7 @@ namespace antwika::atlas_editor
      * tool is one enumerator and the toolbar grows a button on its own.
      */
     inline constexpr std::size_t kToolCount =
-        static_cast<std::size_t>(Tool::Pick) + 1;
+        static_cast<std::size_t>(Tool::Select) + 1;
 
     /**
      * @brief Get which message names a tool.

@@ -24,8 +24,10 @@
 #include "antwika/atlas_editor/Pixel.hpp"
 #include "antwika/atlas_editor/RenderSink.hpp"
 #include "antwika/atlas_editor/SceneSnapshot.hpp"
+#include "antwika/atlas_editor/Selection.hpp"
 #include "antwika/atlas_editor/SpriteGuides.hpp"
 #include "antwika/atlas_editor/TileGrid.hpp"
+#include "antwika/atlas_editor/Tool.hpp"
 #include "antwika/atlas_editor/UiOverlay.hpp"
 
 using antwika::atlas_editor::Canvas;
@@ -37,6 +39,7 @@ using antwika::atlas_editor::Pixel;
 using antwika::atlas_editor::pixelRect;
 using antwika::atlas_editor::RenderSink;
 using antwika::atlas_editor::SceneSnapshot;
+using antwika::atlas_editor::Selection;
 using antwika::atlas_editor::snapshotOf;
 using antwika::atlas_editor::SpriteGuides;
 using antwika::atlas_editor::TileGrid;
@@ -246,6 +249,69 @@ TEST(EditorSceneTest, Draw_ScalesAndPansTheDiamondsWithTheSheet)
     scene.draw(renderer, shown, nullptr);
 }
 
+TEST(EditorSceneTest, Draw_OutlinesTheMarkedRectangleRoundItsPixels)
+{
+    NiceMock<MockRenderer> renderer;
+    const EditorScene scene;
+
+    auto shown = guided(std::nullopt);
+    shown.selection = Selection{
+        .origin = {.x = 2, .y = 1}, .size = {.width = 3, .height = 2}};
+
+    // Round the outside, so the far edge is one past the last pixel.
+    constexpr Point kCorner{.x = 2, .y = 1};
+    constexpr Point kFar{.x = 5, .y = 3};
+
+    EXPECT_CALL(renderer, drawLine(_, _, _)).Times(AnyNumber());
+    EXPECT_CALL(
+        renderer, drawLine(kCorner, Point{.x = 5, .y = 1}, _)).Times(1);
+    EXPECT_CALL(
+        renderer, drawLine(Point{.x = 5, .y = 1}, kFar, _)).Times(1);
+    EXPECT_CALL(
+        renderer, drawLine(kFar, Point{.x = 2, .y = 3}, _)).Times(1);
+    EXPECT_CALL(
+        renderer, drawLine(Point{.x = 2, .y = 3}, kCorner, _)).Times(1);
+
+    scene.draw(renderer, shown, nullptr);
+}
+
+TEST(EditorSceneTest, Draw_ScalesAndPansTheMarkedRectangleToo)
+{
+    NiceMock<MockRenderer> renderer;
+    const EditorScene scene;
+
+    auto shown = guided(std::nullopt);
+    shown.view = CanvasView{.pan = {.x = 5, .y = 7}, .zoom = 1};
+    shown.selection = Selection{
+        .origin = {.x = 2, .y = 1}, .size = {.width = 3, .height = 2}};
+
+    EXPECT_CALL(renderer, drawLine(_, _, _)).Times(AnyNumber());
+    EXPECT_CALL(
+        renderer,
+        drawLine(
+            Point{.x = (2 * 2) + 5, .y = (1 * 2) + 7},
+            Point{.x = (5 * 2) + 5, .y = (1 * 2) + 7},
+            _))
+        .Times(1);
+
+    scene.draw(renderer, shown, nullptr);
+}
+
+// Four sides and no more, the grid and the guides both being off.
+TEST(EditorSceneTest, Draw_DrawsFourSidesForTheMarkedRectangle)
+{
+    NiceMock<MockRenderer> renderer;
+    const EditorScene scene;
+
+    auto shown = guided(std::nullopt);
+    shown.selection = Selection{
+        .origin = {.x = 2, .y = 1}, .size = {.width = 3, .height = 2}};
+
+    EXPECT_CALL(renderer, drawLine(_, _, _)).Times(4);
+
+    scene.draw(renderer, shown, nullptr);
+}
+
 TEST(EditorSceneTest, Draw_OutlinesThePixelUnderThePointer)
 {
     NiceMock<MockRenderer> renderer;
@@ -279,6 +345,24 @@ TEST(SnapshotOfTest, SnapshotOf_TakesTheDrawingHalfOfTheState)
     EXPECT_FALSE(shown.gridVisible);
     EXPECT_EQ(shown.hovered, (Pixel{.x = 0, .y = 0}));
     EXPECT_EQ(shown.guides, state.guides());
+    EXPECT_FALSE(shown.selection.has_value());
+}
+
+// The one a drag is heading for rather than the one it started from.
+// So the outline follows the pointer and the sheet waits for the button.
+TEST(SnapshotOfTest, SnapshotOf_CarriesTheSelectionADragIsHeadingFor)
+{
+    EditorState state = opened();
+    state.selectTool(antwika::atlas_editor::Tool::Select);
+
+    state.beginSelecting(state.view().pan);
+    state.dragSelectionTo(
+        Point{.x = state.view().pan.x + 3, .y = state.view().pan.y + 2});
+
+    const auto shown = snapshotOf(state);
+
+    ASSERT_TRUE(shown.selection.has_value());
+    EXPECT_EQ(shown.selection->size, (Size{.width = 4, .height = 3}));
 }
 
 // Hidden and having none come to the same picture.

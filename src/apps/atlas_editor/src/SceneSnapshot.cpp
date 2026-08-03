@@ -16,6 +16,7 @@ namespace antwika::atlas_editor
             // So they are folded into one answer here.
             .guides = state.guidesVisible() ? state.guides()
                                             : std::nullopt,
+            .selection = state.shownSelection(),
             .hovered = state.hovered()};
     }
 

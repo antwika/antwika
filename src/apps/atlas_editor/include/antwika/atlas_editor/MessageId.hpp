@@ -43,6 +43,11 @@ namespace antwika::atlas_editor
         ToolPick,
 
         /**
+         * @brief The tool that marks a rectangle out and moves it.
+         */
+        ToolSelect,
+
+        /**
          * @brief Put the whole sheet back in the middle.
          */
         ResetView,
@@ -81,6 +86,11 @@ namespace antwika::atlas_editor
          * @brief Which slot that pixel falls in, `{0}`.
          */
         Slot,
+
+        /**
+         * @brief How big the marked rectangle is, `{0}` by `{1}`.
+         */
+        SelectionSize,
 
         /**
          * @brief The sheet has changed since it was written.

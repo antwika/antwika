@@ -189,6 +189,57 @@ namespace
             session.codec));
     }
 
+    // The events a window system reports for one drag on the sheet.
+    // A press, a movement, and the release that ends it.
+    void dragOnSheet(
+        Session &session,
+        EditorSink &sink,
+        const Point from,
+        const Point to,
+        const MouseButton button = MouseButton::Left,
+        const std::uint64_t tick = 2)
+    {
+        sink.handle(inputAt(
+            tick,
+            PointerButtonPressed{
+                .button = button,
+                .position = {.x = from.x, .y = from.y}},
+            session.codec));
+        sink.handle(inputAt(
+            tick,
+            PointerMoved{.position = {.x = to.x, .y = to.y}},
+            session.codec));
+        sink.handle(inputAt(
+            tick,
+            PointerButtonReleased{
+                .button = button, .position = {.x = to.x, .y = to.y}},
+            session.codec));
+    }
+
+    void chord(
+        Session &session,
+        EditorSink &sink,
+        const Key key,
+        const std::uint64_t tick = 3)
+    {
+        sink.handle(inputAt(
+            tick,
+            KeyPressed{.key = key, .modifiers = {.control = true}},
+            session.codec));
+    }
+
+    // Put Select in hand, then mark a rectangle out with it.
+    void markOut(
+        Session &session,
+        EditorSink &sink,
+        const Point from,
+        const Point to)
+    {
+        namespace widgets = antwika::atlas_editor::widgets;
+        press(session, sink, widgets::toolWidget(Tool::Select));
+        dragOnSheet(session, sink, from, to);
+    }
+
     Bitmap oneRedPixel()
     {
         return Bitmap{
@@ -722,4 +773,290 @@ TEST(EditorSinkTest, Handle_IgnoresAnEventThatIsNeitherATickNorInput)
     EXPECT_EQ(session.state.ticks(), 0U);
     EXPECT_EQ(session.state.edits(), 0U);
     EXPECT_TRUE(session.overlay.commands().empty());
+}
+
+TEST(EditorSinkTest, Handle_MarksOutTheRectangleADragCrossed)
+{
+    Session session;
+    EditorSink sink(
+        session.state,
+        session.overlay,
+        session.store,
+        session.codec,
+        kTranslator);
+
+    markOut(
+        session,
+        sink,
+        Point{.x = 200, .y = 300},
+        Point{.x = 203, .y = 302});
+
+    ASSERT_TRUE(session.state.selection().has_value());
+    EXPECT_EQ(
+        session.state.selection()->origin, (Pixel{.x = 200, .y = 300}));
+    EXPECT_EQ(
+        session.state.selection()->size, (Size{.width = 4, .height = 3}));
+
+    // A gesture is not a brush, so the drag laid no paint.
+    EXPECT_EQ(session.state.edits(), 0U);
+}
+
+TEST(EditorSinkTest, Handle_CarriesAMarkedRectangleToWhereADragEnded)
+{
+    Session session;
+    EditorSink sink(
+        session.state,
+        session.overlay,
+        session.store,
+        session.codec,
+        kTranslator);
+
+    // Paint one pixel, mark it, then drag it from inside the mark.
+    sink.handle(inputAt(
+        1,
+        PointerButtonPressed{
+            .button = MouseButton::Left, .position = {.x = 200, .y = 300}},
+        session.codec));
+
+    markOut(
+        session,
+        sink,
+        Point{.x = 200, .y = 300},
+        Point{.x = 200, .y = 300});
+
+    dragOnSheet(
+        session,
+        sink,
+        Point{.x = 200, .y = 300},
+        Point{.x = 260, .y = 340},
+        MouseButton::Left,
+        4);
+
+    EXPECT_EQ(session.state.image().at(Pixel{.x = 200, .y = 300}), kClear);
+    EXPECT_EQ(
+        session.state.image().at(Pixel{.x = 260, .y = 340}),
+        defaultPalette().front());
+}
+
+TEST(EditorSinkTest, Handle_ClearsTheSelectionOnARightPress)
+{
+    Session session;
+    EditorSink sink(
+        session.state,
+        session.overlay,
+        session.store,
+        session.codec,
+        kTranslator);
+
+    markOut(
+        session,
+        sink,
+        Point{.x = 200, .y = 300},
+        Point{.x = 210, .y = 310});
+    ASSERT_TRUE(session.state.selection().has_value());
+
+    sink.handle(inputAt(
+        5,
+        PointerButtonPressed{
+            .button = MouseButton::Right, .position = {.x = 400, .y = 300}},
+        session.codec));
+
+    EXPECT_FALSE(session.state.selection().has_value());
+
+    // And with Select in hand the right button erased nothing.
+    EXPECT_EQ(session.state.edits(), 0U);
+}
+
+// The right button goes on erasing under every other tool.
+TEST(EditorSinkTest, Handle_StillErasesOnTheRightWithABrushInHand)
+{
+    Session session;
+    EditorSink sink(
+        session.state,
+        session.overlay,
+        session.store,
+        session.codec,
+        kTranslator);
+
+    sink.handle(inputAt(
+        1,
+        PointerButtonPressed{
+            .button = MouseButton::Left, .position = {.x = 200, .y = 300}},
+        session.codec));
+    sink.handle(inputAt(
+        1,
+        PointerButtonReleased{
+            .button = MouseButton::Left, .position = {.x = 200, .y = 300}},
+        session.codec));
+    EXPECT_EQ(session.state.edits(), 1U);
+
+    sink.handle(inputAt(
+        2,
+        PointerButtonPressed{
+            .button = MouseButton::Right, .position = {.x = 200, .y = 300}},
+        session.codec));
+
+    EXPECT_EQ(session.state.image().at(Pixel{.x = 200, .y = 300}), kClear);
+    EXPECT_EQ(session.state.edits(), 2U);
+}
+
+TEST(EditorSinkTest, Handle_CopiesAndPastesWithControlCAndControlV)
+{
+    Session session;
+    EditorSink sink(
+        session.state,
+        session.overlay,
+        session.store,
+        session.codec,
+        kTranslator);
+
+    sink.handle(inputAt(
+        1,
+        PointerButtonPressed{
+            .button = MouseButton::Left, .position = {.x = 200, .y = 300}},
+        session.codec));
+
+    markOut(
+        session,
+        sink,
+        Point{.x = 200, .y = 300},
+        Point{.x = 200, .y = 300});
+
+    chord(session, sink, Key::C);
+
+    // Paste lands where the pointer is.
+    // Which is what carries art from one slot to another.
+    sink.handle(inputAt(
+        4,
+        PointerMoved{.position = {.x = 400, .y = 350}},
+        session.codec));
+    chord(session, sink, Key::V, 5);
+
+    EXPECT_EQ(
+        session.state.image().at(Pixel{.x = 200, .y = 300}),
+        defaultPalette().front());
+    EXPECT_EQ(
+        session.state.image().at(Pixel{.x = 400, .y = 350}),
+        defaultPalette().front());
+}
+
+TEST(EditorSinkTest, Handle_CutsWithControlX)
+{
+    Session session;
+    EditorSink sink(
+        session.state,
+        session.overlay,
+        session.store,
+        session.codec,
+        kTranslator);
+
+    sink.handle(inputAt(
+        1,
+        PointerButtonPressed{
+            .button = MouseButton::Left, .position = {.x = 200, .y = 300}},
+        session.codec));
+
+    markOut(
+        session,
+        sink,
+        Point{.x = 200, .y = 300},
+        Point{.x = 200, .y = 300});
+
+    chord(session, sink, Key::X);
+
+    EXPECT_EQ(session.state.image().at(Pixel{.x = 200, .y = 300}), kClear);
+
+    sink.handle(inputAt(
+        4,
+        PointerMoved{.position = {.x = 400, .y = 350}},
+        session.codec));
+    chord(session, sink, Key::V, 5);
+
+    EXPECT_EQ(
+        session.state.image().at(Pixel{.x = 400, .y = 350}),
+        defaultPalette().front());
+}
+
+// A held key repeats, and a paste is something one asks for once.
+TEST(EditorSinkTest, Handle_IgnoresARepeatedChordAndAnUnmodifiedKey)
+{
+    Session session;
+    EditorSink sink(
+        session.state,
+        session.overlay,
+        session.store,
+        session.codec,
+        kTranslator);
+
+    sink.handle(inputAt(
+        1,
+        PointerButtonPressed{
+            .button = MouseButton::Left, .position = {.x = 200, .y = 300}},
+        session.codec));
+
+    markOut(
+        session,
+        sink,
+        Point{.x = 200, .y = 300},
+        Point{.x = 200, .y = 300});
+
+    // Held down rather than pressed: no copy.
+    sink.handle(inputAt(
+        4,
+        KeyPressed{
+            .key = Key::X,
+            .modifiers = {.control = true},
+            .repeat = true},
+        session.codec));
+
+    // And a bare X, which is not a chord at all.
+    sink.handle(inputAt(
+        5, KeyPressed{.key = Key::X}, session.codec));
+
+    EXPECT_EQ(
+        session.state.image().at(Pixel{.x = 200, .y = 300}),
+        defaultPalette().front());
+}
+
+TEST(EditorSinkTest, Handle_IgnoresAChordItHasNoUseFor)
+{
+    Session session;
+    EditorSink sink(
+        session.state,
+        session.overlay,
+        session.store,
+        session.codec,
+        kTranslator);
+
+    chord(session, sink, Key::A);
+
+    EXPECT_EQ(session.state.edits(), 0U);
+}
+
+// Panning is the middle button's whatever else is going on.
+TEST(EditorSinkTest, Handle_PansWithTheMiddleButtonUnderTheSelectTool)
+{
+    Session session;
+    EditorSink sink(
+        session.state,
+        session.overlay,
+        session.store,
+        session.codec,
+        kTranslator);
+
+    namespace widgets = antwika::atlas_editor::widgets;
+    press(session, sink, widgets::toolWidget(Tool::Select));
+
+    const Point before = session.state.view().pan;
+
+    dragOnSheet(
+        session,
+        sink,
+        Point{.x = 200, .y = 300},
+        Point{.x = 220, .y = 310},
+        MouseButton::Middle,
+        4);
+
+    EXPECT_NE(session.state.view().pan, before);
+    EXPECT_FALSE(session.state.selection().has_value());
 }

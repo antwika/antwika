@@ -52,9 +52,9 @@ build-sdl3/bin/antwika_atlas_editor/antwika_atlas_editor --image atlas.png --out
 
 ## What the mouse does
 
-- **Left button**: whatever the selected tool is, on the pixel under the pointer, and on every pixel a drag crosses.
-- **Right button**: erases, whichever tool is selected, so taking a mistake back never costs a trip to the toolbar.
-- **Middle button, dragged**: pans the sheet across the window.
+- **Left button**: whatever the selected tool is, on the pixel under the pointer, and on every pixel a drag crosses -- except under `SELECT`, whose left button is a gesture rather than a brush.
+- **Right button**: drops the marked rectangle when there is one; and, under every tool but `SELECT`, erases, so taking a mistake back never costs a trip to the toolbar.
+- **Middle button, dragged**: pans the sheet across the window, whichever tool is in hand.
 - **Wheel**: zooms in and out, keeping the pixel under the pointer under the pointer.
 
 **"Every pixel a drag crosses" is the whole segment rather than one dot per event**, and that is what the held-button arms actually walk.
@@ -62,7 +62,7 @@ A window system reports a fast stroke as a handful of long jumps, so painting on
 The walk is integer Bresenham from where the pointer was to where it is, for the no-floating-point reason below: which pixel a press means is simulation state, and a float's last bit is not the same on every toolchain.
 Repainting the pixel the last event already put down costs nothing, since a write of the colour already there is no change at all.
 
-The four tools are `PAINT`, which puts the selected colour down, `ERASE`, which makes a pixel fully transparent, `FILL`, which spreads the selected colour over every pixel joined to the one clicked that holds the colour that one does, and `PICK`, which takes the colour under the pointer as the one to paint with.
+The five tools are `PAINT`, which puts the selected colour down, `ERASE`, which makes a pixel fully transparent, `FILL`, which spreads the selected colour over every pixel joined to the one clicked that holds the colour that one does, `PICK`, which takes the colour under the pointer as the one to paint with, and `SELECT`, which is the one below.
 A picked colour that no swatch offers leaves no swatch shown as chosen, rather than the nearest one lighting up and lying about it.
 
 **`FILL` is a tool here and not a command, and nothing about it is persisted.**
@@ -85,6 +85,33 @@ A press the bar covers therefore never reaches the art -- otherwise every button
 Under the buttons is one line saying what would happen and where: the selected tool, the pixel under the pointer, **which slot that pixel is in**, the zoom, the sheet's size, whether there is anything unsaved, and what the last save or load came to.
 The slot number is counted left to right then top to bottom from zero, which is exactly how `game::TileAtlas.hpp` addresses the sheet -- so the number here is the number that header names.
 A pixel in the strip along an edge too narrow for a whole slot reads `slot -`, because it belongs to no slot the game will ever blit.
+
+## Selecting, moving, and the clipboard
+
+`SELECT` marks a rectangle of the sheet out and carries it somewhere else, and it is the one tool whose left button is a *gesture* -- down, along, and up -- rather than a brush applied to every pixel a drag crosses.
+
+- **Drag from outside the marked rectangle**: draws a new one, both corners included, so a press and a release on one pixel select that pixel.
+- **Drag from inside it**: carries it, and the pixels land where the button comes up.
+- **Right click**: drops the marked rectangle, whichever tool is in hand -- a rectangle marked with `SELECT` outlives a trip to the palette, so the button that clears it has to as well.
+- **Ctrl+C / Ctrl+X**: take a copy of the marked pixels, and cut clears where they came from.
+- **Ctrl+V**: puts the clipboard down with its corner **under the pointer**, and marks out where it landed.
+
+Pasting at the pointer rather than back where it came from is what the whole thing is for: carrying a sprite from one slot to another is the move this editor exists to make cheap, and the walk cycles and the sixteen road junctions are mostly variants of one another.
+The pixel under the pointer is legitimately simulation state here, since this is the one application in the tree that thins nothing out of its recording -- every movement is recorded, so a replay works out the same pixel; an application attaching `IdleMotionSource` could not do this.
+
+**Nothing about a selection, a drag or the clipboard is persisted**, and no event is added for any of it.
+What a recording holds is the press, the movements and the release; which rectangle they came to, which pixels it lifted and where they landed are all worked out again on replay, exactly as a painted pixel is.
+That is also why a drag changes no pixel until the button comes up: the outline follows the pointer and the sheet waits, so one gesture is one edit rather than one per movement the window system happened to report.
+
+**A paste writes straight over what was there, transparency included, rather than compositing.**
+Putting one slot's art into another means *replacing* it, and a paste that let the old art show through the new one's gaps could not do that at all.
+
+A marked rectangle is only ever set through `clampedTo()`, so it is inside the sheet whenever it holds anything -- which is what lets copy, cut and carry index the image directly.
+A drag that leaves the sheet marks the part of it that did not, and one that leaves entirely marks nothing; a carry right off the sheet moves nothing rather than dropping the art off an edge.
+A load clears the selection, since a rectangle on the old sheet is not one on the new sheet, whose size need not even be the same -- the clipboard survives, being nobody's sheet in particular.
+
+**There is still no undo, and cut is exactly the case that makes that worth restating.**
+Replaying a session up to a point is the undo this design has, and a cut is one recorded chord like any other press.
 
 ## The sprite guides, and the one thing a slot grid cannot say
 

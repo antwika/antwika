@@ -7,6 +7,7 @@
 #include "antwika/atlas_editor/CanvasView.hpp"
 #include "antwika/atlas_editor/EditorState.hpp"
 #include "antwika/atlas_editor/Pixel.hpp"
+#include "antwika/atlas_editor/Selection.hpp"
 #include "antwika/atlas_editor/SpriteGuides.hpp"
 #include "antwika/atlas_editor/TileGrid.hpp"
 
@@ -53,6 +54,15 @@ namespace antwika::atlas_editor
          * this.
          */
         std::optional<SpriteGuides> guides{};
+
+        /**
+         * @brief Which rectangle to outline, if one is marked out.
+         *
+         * What a drag in progress is heading for while there is one, so
+         * the outline follows the pointer and the sheet under it does
+         * not change until the button comes up.
+         */
+        std::optional<Selection> selection{};
 
         /** @brief Which pixel to outline, if the pointer is on one. */
         std::optional<Pixel> hovered{};

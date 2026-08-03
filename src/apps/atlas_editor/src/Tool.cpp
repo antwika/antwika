@@ -14,7 +14,8 @@ namespace antwika::atlas_editor
             MessageId::ToolPaint,
             MessageId::ToolErase,
             MessageId::ToolFill,
-            MessageId::ToolPick};
+            MessageId::ToolPick,
+            MessageId::ToolSelect};
 
         const auto index = static_cast<std::size_t>(tool);
 

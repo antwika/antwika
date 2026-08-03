@@ -93,6 +93,19 @@ namespace antwika::atlas_editor
             + std::to_string(scaleOf(state.view())) + "  "
             + sizeText(state.image().size());
 
+        if (const auto marked = state.shownSelection(); marked)
+        {
+            const std::string across =
+                std::to_string(marked->size.width);
+            const std::string down =
+                std::to_string(marked->size.height);
+            const std::array<std::string_view, 2> extent{across, down};
+
+            line += "  "
+                    + translator.formatted(
+                        MessageId::SelectionSize, extent);
+        }
+
         if (state.unsaved())
         {
             line += "  " + translator.text(MessageId::Unsaved);

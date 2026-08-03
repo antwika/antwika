@@ -108,6 +108,7 @@ namespace antwika::atlas_editor
             widgets::toolWidget(Tool::Erase),
             widgets::toolWidget(Tool::Fill),
             widgets::toolWidget(Tool::Pick),
+            widgets::toolWidget(Tool::Select),
             widgets::swatchWidget(0)),
         "every toolbar widget needs its own id");
 

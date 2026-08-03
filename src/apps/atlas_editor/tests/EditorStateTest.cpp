@@ -251,6 +251,347 @@ TEST(EditorStateTest, ToggleGrid_TurnsTheSlotBoundariesOffAndOnAgain)
     EXPECT_TRUE(state.gridVisible());
 }
 
+TEST(EditorStateTest, Select_MarksOutWhatTheDragCrossed)
+{
+    EditorState state = opened();
+    state.selectTool(Tool::Select);
+
+    state.beginSelecting(at(2, 2));
+    state.dragSelectionTo(at(4, 5));
+    state.finishSelecting(at(4, 5));
+
+    ASSERT_TRUE(state.selection().has_value());
+    EXPECT_EQ(state.selection()->origin, (Pixel{.x = 2, .y = 2}));
+    EXPECT_EQ(state.selection()->size, (Size{.width = 3, .height = 4}));
+    EXPECT_EQ(state.edits(), 0U);
+}
+
+// The outline follows the pointer; the sheet waits for the button.
+TEST(EditorStateTest, Select_ShowsTheDragBeforeItIsFinished)
+{
+    EditorState state = opened();
+    state.selectTool(Tool::Select);
+
+    state.beginSelecting(at(2, 2));
+    state.dragSelectionTo(at(4, 5));
+
+    EXPECT_FALSE(state.selection().has_value());
+    ASSERT_TRUE(state.shownSelection().has_value());
+    EXPECT_EQ(
+        state.shownSelection()->size, (Size{.width = 3, .height = 4}));
+}
+
+TEST(EditorStateTest, Select_MarksNothingForADragEntirelyOffTheSheet)
+{
+    EditorState state = opened();
+    state.selectTool(Tool::Select);
+
+    state.beginSelecting(Point{.x = 0, .y = 0});
+    state.finishSelecting(Point{.x = 2, .y = 2});
+
+    EXPECT_FALSE(state.selection().has_value());
+}
+
+TEST(EditorStateTest, Select_CutsAMarkedDragDownToTheSheet)
+{
+    EditorState state = opened();
+    state.selectTool(Tool::Select);
+
+    state.beginSelecting(at(8, 8));
+    state.finishSelecting(at(40, 40));
+
+    ASSERT_TRUE(state.selection().has_value());
+    EXPECT_EQ(state.selection()->origin, (Pixel{.x = 8, .y = 8}));
+    EXPECT_EQ(state.selection()->size, (Size{.width = 2, .height = 2}));
+}
+
+TEST(EditorStateTest, Select_DraggingFromInsideCarriesThePixels)
+{
+    EditorState state = opened();
+    state.selectColor(4);
+    state.applyAt(at(2, 2));
+
+    state.selectTool(Tool::Select);
+    state.beginSelecting(at(2, 2));
+    state.finishSelecting(at(2, 2));
+
+    // From inside the marked pixel, three across and one down.
+    state.beginSelecting(at(2, 2));
+    state.dragSelectionTo(at(5, 3));
+    state.finishSelecting(at(5, 3));
+
+    EXPECT_EQ(state.image().at(Pixel{.x = 2, .y = 2}), kClear);
+    EXPECT_EQ(
+        state.image().at(Pixel{.x = 5, .y = 3}), defaultPalette()[4]);
+    EXPECT_EQ(state.selection()->origin, (Pixel{.x = 5, .y = 3}));
+}
+
+// Lifted before the source is cleared.
+// Otherwise the overlap is erased after it has been written.
+TEST(EditorStateTest, Select_CarryingOntoItselfKeepsWhatItIsCarrying)
+{
+    EditorState state = opened();
+    state.selectColor(4);
+    state.applyAt(at(2, 2));
+    state.applyAt(at(3, 2));
+
+    state.selectTool(Tool::Select);
+    state.beginSelecting(at(2, 2));
+    state.finishSelecting(at(3, 2));
+
+    // One pixel to the right, so the old right half is the new left one.
+    state.beginSelecting(at(2, 2));
+    state.finishSelecting(at(3, 2));
+
+    EXPECT_EQ(state.image().at(Pixel{.x = 2, .y = 2}), kClear);
+    EXPECT_EQ(
+        state.image().at(Pixel{.x = 3, .y = 2}), defaultPalette()[4]);
+    EXPECT_EQ(
+        state.image().at(Pixel{.x = 4, .y = 2}), defaultPalette()[4]);
+}
+
+TEST(EditorStateTest, Select_CarryingRightOffTheSheetMovesNothing)
+{
+    EditorState state = opened();
+    state.selectColor(4);
+    state.applyAt(at(2, 2));
+
+    state.selectTool(Tool::Select);
+    state.beginSelecting(at(2, 2));
+    state.finishSelecting(at(2, 2));
+
+    state.beginSelecting(at(2, 2));
+    state.finishSelecting(Point{.x = 0, .y = 0});
+
+    EXPECT_FALSE(state.selection().has_value());
+    EXPECT_EQ(
+        state.image().at(Pixel{.x = 2, .y = 2}), defaultPalette()[4]);
+}
+
+TEST(EditorStateTest, Select_DraggingFromOutsideMarksANewRectangle)
+{
+    EditorState state = opened();
+    state.selectTool(Tool::Select);
+
+    state.beginSelecting(at(1, 1));
+    state.finishSelecting(at(2, 2));
+
+    state.beginSelecting(at(6, 6));
+    state.finishSelecting(at(7, 7));
+
+    EXPECT_EQ(state.selection()->origin, (Pixel{.x = 6, .y = 6}));
+    EXPECT_EQ(state.edits(), 0U);
+}
+
+TEST(EditorStateTest, Select_ADragCarriedNowhereChangesNoPixel)
+{
+    EditorState state = opened();
+    state.selectTool(Tool::Select);
+
+    state.dragSelectionTo(at(3, 3));
+    state.finishSelecting(at(3, 3));
+
+    EXPECT_FALSE(state.selection().has_value());
+    EXPECT_FALSE(state.shownSelection().has_value());
+    EXPECT_EQ(state.edits(), 0U);
+}
+
+TEST(EditorStateTest, ClearSelection_DropsTheRectangleAndAnyDrag)
+{
+    EditorState state = opened();
+    state.selectTool(Tool::Select);
+
+    state.beginSelecting(at(1, 1));
+    state.dragSelectionTo(at(4, 4));
+    state.clearSelection();
+
+    EXPECT_FALSE(state.selection().has_value());
+    EXPECT_FALSE(state.shownSelection().has_value());
+}
+
+// A brush is not what Select's left button is.
+TEST(EditorStateTest, ApplyAt_PutsNoPixelDownWhileSelectIsInHand)
+{
+    EditorState state = opened();
+    state.selectTool(Tool::Select);
+
+    state.applyAt(at(3, 3));
+
+    EXPECT_EQ(state.edits(), 0U);
+    EXPECT_EQ(state.hovered(), (Pixel{.x = 3, .y = 3}));
+}
+
+TEST(EditorStateTest, Copy_TakesThePixelsAndPasteLandsThemAtThePointer)
+{
+    EditorState state = opened();
+    state.selectColor(4);
+    state.applyAt(at(1, 1));
+
+    state.selectTool(Tool::Select);
+    state.beginSelecting(at(1, 1));
+    state.finishSelecting(at(1, 1));
+    state.copySelection();
+
+    EXPECT_TRUE(state.hasClipboard());
+
+    state.moveTo(at(7, 5));
+    state.pasteClipboard();
+
+    // Both, a copy having left the first where it was.
+    EXPECT_EQ(
+        state.image().at(Pixel{.x = 1, .y = 1}), defaultPalette()[4]);
+    EXPECT_EQ(
+        state.image().at(Pixel{.x = 7, .y = 5}), defaultPalette()[4]);
+    EXPECT_EQ(state.selection()->origin, (Pixel{.x = 7, .y = 5}));
+}
+
+TEST(EditorStateTest, Cut_TakesThePixelsAndLeavesNothingBehind)
+{
+    EditorState state = opened();
+    state.selectColor(4);
+    state.applyAt(at(1, 1));
+
+    state.selectTool(Tool::Select);
+    state.beginSelecting(at(1, 1));
+    state.finishSelecting(at(1, 1));
+    state.cutSelection();
+
+    EXPECT_TRUE(state.hasClipboard());
+    EXPECT_EQ(state.image().at(Pixel{.x = 1, .y = 1}), kClear);
+
+    state.moveTo(at(7, 5));
+    state.pasteClipboard();
+
+    EXPECT_EQ(
+        state.image().at(Pixel{.x = 7, .y = 5}), defaultPalette()[4]);
+}
+
+// Over rather than through, so one slot's art replaces another's.
+TEST(EditorStateTest, Paste_WritesTransparencyOverWhatWasThere)
+{
+    EditorState state = opened();
+    state.selectColor(4);
+    state.applyAt(at(6, 6));
+
+    state.selectTool(Tool::Select);
+    state.beginSelecting(at(1, 1));
+    state.finishSelecting(at(2, 2));
+    state.copySelection();
+
+    state.moveTo(at(6, 6));
+    state.pasteClipboard();
+
+    EXPECT_EQ(state.image().at(Pixel{.x = 6, .y = 6}), kClear);
+}
+
+TEST(EditorStateTest, Paste_LandsTheHalfOfItTheSheetHolds)
+{
+    EditorState state = opened();
+    state.selectColor(4);
+    state.applyAt(at(0, 0));
+    state.applyAt(at(1, 0));
+
+    state.selectTool(Tool::Select);
+    state.beginSelecting(at(0, 0));
+    state.finishSelecting(at(1, 0));
+    state.copySelection();
+
+    state.moveTo(at(9, 4));
+    state.pasteClipboard();
+
+    EXPECT_EQ(
+        state.image().at(Pixel{.x = 9, .y = 4}), defaultPalette()[4]);
+    EXPECT_EQ(state.selection()->size, (Size{.width = 1, .height = 1}));
+}
+
+TEST(EditorStateTest, CopyAndCut_DoNothingWithNothingMarked)
+{
+    EditorState state = opened();
+
+    state.copySelection();
+    state.cutSelection();
+
+    EXPECT_FALSE(state.hasClipboard());
+    EXPECT_EQ(state.edits(), 0U);
+}
+
+TEST(EditorStateTest, Paste_DoesNothingWithAnEmptyClipboard)
+{
+    EditorState state = opened();
+    state.moveTo(at(3, 3));
+
+    state.pasteClipboard();
+
+    EXPECT_EQ(state.edits(), 0U);
+    EXPECT_FALSE(state.selection().has_value());
+}
+
+TEST(EditorStateTest, Paste_DoesNothingWithNothingEverCopied)
+{
+    EditorState state = opened();
+
+    state.pasteClipboard();
+
+    EXPECT_EQ(state.edits(), 0U);
+}
+
+// A load takes the pointer off the sheet and keeps the clipboard.
+// Which is the one way to hold something and have nowhere to put it.
+TEST(EditorStateTest, Paste_DoesNothingBeforeThePointerHasBeenAnywhere)
+{
+    EditorState state = opened();
+    state.selectColor(4);
+    state.applyAt(at(1, 1));
+
+    state.selectTool(Tool::Select);
+    state.beginSelecting(at(1, 1));
+    state.finishSelecting(at(1, 1));
+    state.copySelection();
+
+    state.replace(Canvas::blank(kSheet));
+    ASSERT_FALSE(state.hovered().has_value());
+
+    const auto before = state.edits();
+    state.pasteClipboard();
+
+    EXPECT_EQ(state.edits(), before);
+    EXPECT_FALSE(state.selection().has_value());
+}
+
+// A clear counts what it changed rather than what it covered.
+TEST(EditorStateTest, Cut_CountsOnlyThePixelsThatWereNotAlreadyClear)
+{
+    EditorState state = opened();
+    state.selectColor(4);
+    state.applyAt(at(1, 1));
+
+    state.selectTool(Tool::Select);
+    state.beginSelecting(at(1, 1));
+    state.finishSelecting(at(2, 1));
+
+    state.cutSelection();
+
+    // The paint, and the one pixel of the two the cut actually cleared.
+    EXPECT_EQ(state.edits(), 2U);
+}
+
+TEST(EditorStateTest, Paste_MarksNothingWhenItLandsOffTheSheet)
+{
+    EditorState state = opened();
+    state.selectColor(4);
+    state.applyAt(at(1, 1));
+
+    state.selectTool(Tool::Select);
+    state.beginSelecting(at(1, 1));
+    state.finishSelecting(at(1, 1));
+    state.copySelection();
+
+    state.moveTo(Point{.x = 0, .y = 0});
+    state.pasteClipboard();
+
+    EXPECT_FALSE(state.selection().has_value());
+}
+
 TEST(EditorStateTest, ToggleGuides_TurnsTheDiamondsOffAndOnAgain)
 {
     EditorState state = opened();

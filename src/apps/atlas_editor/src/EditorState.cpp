@@ -236,6 +236,14 @@ namespace antwika::atlas_editor
 
         const Pixel pixel = pixelAt(where, point);
 
+        // Select's left button is a gesture rather than a brush.
+        // Which is beginSelecting() and the two that follow it.
+        // So there is no pixel for a stroke to put down here.
+        if (selected == Tool::Select)
+        {
+            return;
+        }
+
         if (selected == Tool::Fill)
         {
             fillFrom(pixel);
@@ -271,12 +279,240 @@ namespace antwika::atlas_editor
         }
     }
 
+    std::optional<Selection> EditorState::selection() const noexcept
+    {
+        return marked;
+    }
+
+    std::optional<Selection> EditorState::shownSelection() const noexcept
+    {
+        if (!gesture.has_value())
+        {
+            return marked;
+        }
+
+        // A drawn rectangle is the two corners of the drag.
+        // A carried one is the marked rectangle, slid by how far it came.
+        if (!gesture->carrying)
+        {
+            return selectionBetween(gesture->from, gesture->to);
+        }
+
+        return movedBy(
+            *marked,
+            gesture->to.x - gesture->from.x,
+            gesture->to.y - gesture->from.y);
+    }
+
+    bool EditorState::hasClipboard() const noexcept
+    {
+        return clipboard.has_value();
+    }
+
+    Canvas EditorState::lift(const Selection &area) const
+    {
+        Canvas taken = Canvas::blank(area.size);
+
+        for (std::uint32_t down = 0; down < area.size.height; ++down)
+        {
+            for (std::uint32_t across = 0; across < area.size.width;
+                 ++across)
+            {
+                const Pixel from{
+                    .x = area.origin.x + static_cast<std::int32_t>(across),
+                    .y = area.origin.y + static_cast<std::int32_t>(down)};
+
+                taken.set(
+                    Pixel{
+                        .x = static_cast<std::int32_t>(across),
+                        .y = static_cast<std::int32_t>(down)},
+                    sheet.at(from));
+            }
+        }
+
+        return taken;
+    }
+
+    void EditorState::stamp(const Canvas &clip, const Pixel at)
+    {
+        const Size extent = clip.size();
+
+        for (std::uint32_t down = 0; down < extent.height; ++down)
+        {
+            for (std::uint32_t across = 0; across < extent.width; ++across)
+            {
+                const Pixel read{
+                    .x = static_cast<std::int32_t>(across),
+                    .y = static_cast<std::int32_t>(down)};
+                const Pixel write{
+                    .x = at.x + static_cast<std::int32_t>(across),
+                    .y = at.y + static_cast<std::int32_t>(down)};
+
+                // A pixel off the sheet is dropped by the canvas itself.
+                // So a paste half off an edge lands the half that fits.
+                if (sheet.set(write, clip.at(read)))
+                {
+                    ++changes;
+                }
+            }
+        }
+    }
+
+    void EditorState::clearRegion(const Selection &area)
+    {
+        for (std::uint32_t down = 0; down < area.size.height; ++down)
+        {
+            for (std::uint32_t across = 0; across < area.size.width;
+                 ++across)
+            {
+                const Pixel pixel{
+                    .x = area.origin.x + static_cast<std::int32_t>(across),
+                    .y = area.origin.y + static_cast<std::int32_t>(down)};
+
+                if (sheet.set(pixel, kClear))
+                {
+                    ++changes;
+                }
+            }
+        }
+    }
+
+    void EditorState::beginSelecting(const Point point) noexcept
+    {
+        moveTo(point);
+
+        const Pixel pixel = pixelAt(where, point);
+
+        // Inside the marked rectangle carries it.
+        // Anywhere else draws a new one.
+        const bool carrying =
+            marked.has_value() && contains(*marked, pixel);
+
+        gesture = Gesture{
+            .carrying = carrying, .from = pixel, .to = pixel};
+    }
+
+    void EditorState::dragSelectionTo(const Point point) noexcept
+    {
+        moveTo(point);
+
+        if (!gesture.has_value())
+        {
+            return;
+        }
+
+        gesture->to = pixelAt(where, point);
+    }
+
+    void EditorState::finishSelecting(const Point point)
+    {
+        moveTo(point);
+
+        if (!gesture.has_value())
+        {
+            return;
+        }
+
+        // Where the button came up.
+        // Which need not be where the last movement left it.
+        // A release carries a position of its own.
+        // And a drag can end with no further movement reported.
+        gesture->to = pixelAt(where, point);
+
+        const Gesture drag = *gesture;
+        gesture.reset();
+
+        // Only the part of it the sheet holds is ever marked.
+        // A drag that left the sheet entirely marks nothing at all.
+        if (!drag.carrying)
+        {
+            marked = clampedTo(
+                selectionBetween(drag.from, drag.to), sheet.size());
+            return;
+        }
+
+        // Carrying is only ever begun with a rectangle marked.
+        const Selection source = *marked;
+        const Selection lands = movedBy(
+            source,
+            drag.to.x - drag.from.x,
+            drag.to.y - drag.from.y);
+
+        marked = clampedTo(lands, sheet.size());
+
+        if (!marked.has_value())
+        {
+            return;
+        }
+
+        // Copied out before the source is cleared.
+        // So one carried a little way onto itself keeps its pixels.
+        const Canvas carried = lift(source);
+
+        clearRegion(source);
+
+        // From the unclamped corner.
+        // So a rectangle half off the sheet lands its half in place.
+        stamp(carried, lands.origin);
+    }
+
+    void EditorState::clearSelection() noexcept
+    {
+        marked.reset();
+        gesture.reset();
+    }
+
+    // Neither clamps, and neither has to.
+    // A marked rectangle is only ever set through clampedTo().
+    // So it is inside the sheet before anything here can act on it.
+    void EditorState::copySelection()
+    {
+        if (!marked.has_value())
+        {
+            return;
+        }
+
+        clipboard = lift(*marked);
+    }
+
+    void EditorState::cutSelection()
+    {
+        if (!marked.has_value())
+        {
+            return;
+        }
+
+        clipboard = lift(*marked);
+        clearRegion(*marked);
+    }
+
+    void EditorState::pasteClipboard()
+    {
+        if (!clipboard.has_value() || !under.has_value())
+        {
+            return;
+        }
+
+        stamp(*clipboard, *under);
+
+        // What landed becomes the marked rectangle.
+        // So a paste can be carried on without being marked out again.
+        marked = clampedTo(
+            Selection{.origin = *under, .size = clipboard->size()},
+            sheet.size());
+    }
+
     void EditorState::replace(Canvas image)
     {
         sheet = std::move(image);
         savedRevision = sheet.revision();
         where = centredView(area, sheet.size(), kOpeningZoom);
         under = std::nullopt;
+
+        // A rectangle on the old sheet is not one on the new sheet.
+        // Whose size need not even be the same.
+        // The clipboard survives, being nobody's sheet in particular.
+        clearSelection();
         ++read;
     }
 
