@@ -358,7 +358,8 @@ TEST(VoiceChainTest, TheRefusalNamesEveryControlThereIs)
     for (const auto *call :
          {"n", "s", "base", "o", "trans", "gain", "pan", "att", "dec",
           "sus", "rel", "hold", "lpf", "hpf", "bpf", "res", "slide",
-          "vib", "vibdepth", "arp", "delay", "delaymix", "harm"})
+          "vib", "vibdepth", "arp", "delay", "delaymix", "harm",
+          "pianoroll", "waveform"})
     {
         EXPECT_NE(controls.find(call), std::string::npos) << call;
     }
@@ -377,6 +378,35 @@ TEST(VoiceChainTest, TheRefusalNamesEveryControlThereIs)
     }
 }
 
+// A display request rather than a sound.
+// The preset comes out exactly as it would have without it.
+TEST(VoiceChainTest, ReadsAPianorollRequest)
+{
+    const auto voice = parseVoiceChain("drum.n(\"0\").pianoroll()");
+
+    EXPECT_TRUE(voice.pianoroll);
+    EXPECT_EQ(voice.preset, named("drum"));
+
+    EXPECT_FALSE(parseVoiceChain("drum.n(\"0\")").pianoroll);
+}
+
+TEST(VoiceChainTest, ReadsAWaveformRequest)
+{
+    const auto voice = parseVoiceChain("drum.n(\"0\").waveform()");
+
+    EXPECT_TRUE(voice.waveform);
+    EXPECT_FALSE(voice.pianoroll);
+    EXPECT_EQ(voice.preset, named("drum"));
+}
+
+// The two calls that take nothing.
+// Each asks for a picture, and a picture has no number.
+TEST(VoiceChainTest, RefusesAPictureCallGivenAnything)
+{
+    EXPECT_THROW(read("n(\"0\").pianoroll(1)"), ScoreError);
+    EXPECT_THROW(read("n(\"0\").waveform(1)"), ScoreError);
+}
+
 TEST(VoiceChainTest, ComparesFieldByField)
 {
     const auto voice = parseVoiceChain("n(\"0\")");
@@ -384,6 +414,8 @@ TEST(VoiceChainTest, ComparesFieldByField)
     EXPECT_EQ(voice, parseVoiceChain("n(\"0\")"));
     EXPECT_NE(voice, parseVoiceChain("n(\"3\")"));
     EXPECT_NE(voice, parseVoiceChain("n(\"0\").gain(.9)"));
+    EXPECT_NE(voice, parseVoiceChain("n(\"0\").pianoroll()"));
+    EXPECT_NE(voice, parseVoiceChain("n(\"0\").waveform()"));
     EXPECT_EQ(VoiceChain{}, VoiceChain{});
 }
 

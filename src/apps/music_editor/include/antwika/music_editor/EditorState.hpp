@@ -65,6 +65,12 @@ namespace antwika::music_editor
     /** @brief The speed box's first option's id, likewise. */
     inline constexpr WidgetId kSpeedOptions{500};
 
+    /** @brief The id the first pianoroll's band carries, likewise. */
+    inline constexpr WidgetId kPianorollBands{600};
+
+    /** @brief The id the first waveform's band carries, likewise. */
+    inline constexpr WidgetId kWaveformBands{700};
+
     /**
      * @brief One speed the playback can be asked to run at.
      */
@@ -108,6 +114,30 @@ namespace antwika::music_editor
     {
         return WidgetId{
             static_cast<std::uint64_t>(kLoadOptions) + at};
+    }
+
+    /**
+     * @brief Get the id the nth pianoroll's band carries.
+     * @param at Which roll, as an index into Score::pianorolls().
+     * @return Its id, kPianorollBands plus the index.
+     */
+    [[nodiscard]] constexpr WidgetId pianorollBand(
+        const std::size_t at) noexcept
+    {
+        return WidgetId{
+            static_cast<std::uint64_t>(kPianorollBands) + at};
+    }
+
+    /**
+     * @brief Get the id the nth waveform's band carries.
+     * @param at Which wave, as an index into Score::waveforms().
+     * @return Its id, kWaveformBands plus the index.
+     */
+    [[nodiscard]] constexpr WidgetId waveformBand(
+        const std::size_t at) noexcept
+    {
+        return WidgetId{
+            static_cast<std::uint64_t>(kWaveformBands) + at};
     }
 
     /**

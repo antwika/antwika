@@ -38,6 +38,22 @@ namespace antwika::music_editor
     inline constexpr std::uint32_t kTextScale = 2;
 
     /**
+     * @brief How many rows of the pane a pianoroll stands on.
+     *
+     * Whole rows rather than pixels, because that is the unit
+     * antwika::ui holds a band's room open in -- a click below a
+     * roll then still lands on the line that was under it.
+     */
+    inline constexpr std::uint32_t kPianorollRows = 3;
+
+    /**
+     * @brief How many rows of the pane a waveform stands on.
+     *
+     * On kPianorollRows' terms, and the same three of them.
+     */
+    inline constexpr std::uint32_t kWaveformRows = 3;
+
+    /**
      * @brief Get the theme the editor draws with.
      * @return The theme, which is the default one at kTextScale.
      */
