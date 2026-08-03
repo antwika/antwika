@@ -17,8 +17,10 @@ using antwika::game::tileSpriteBounds;
 using antwika::game::Cell;
 using antwika::game::Direction;
 using antwika::game::kTicksPerStep;
+using antwika::game::kWalkCycleFrames;
 using antwika::game::stepPhase;
 using antwika::game::walkerBounds;
+using antwika::game::walkerFrame;
 using antwika::game::WalkerSprite;
 
 namespace
@@ -66,6 +68,35 @@ TEST(WalkerMotionTest, StepPhase_NeverReachesTheEndOfTheStep)
         stepPhase(kTicksPerStep - 1, Progress(frames - 1, frames));
 
     EXPECT_LT(last.numerator(), last.denominator());
+}
+
+// The legs read the same clock as the slide.
+// One whole cycle per cell, left to right, frame by frame.
+TEST(WalkerMotionTest, WalkerFrame_CyclesOncePerCellAsThePhaseGoes)
+{
+    EXPECT_EQ(walkerFrame(stepping(0), Progress()), 0U);
+    EXPECT_EQ(walkerFrame(stepping(0), Progress(1, 2)), 1U);
+    EXPECT_EQ(walkerFrame(stepping(1), Progress()), 2U);
+    EXPECT_EQ(walkerFrame(stepping(1), Progress(1, 2)), 3U);
+}
+
+TEST(WalkerMotionTest, WalkerFrame_NeverLeavesTheCycle)
+{
+    // The last frame of the last tick of a step stays the last frame.
+    // stepPhase() never reaches one, so the quotient never wraps.
+    EXPECT_EQ(
+        walkerFrame(stepping(kTicksPerStep - 1), Progress(7, 8)),
+        kWalkCycleFrames - 1);
+}
+
+TEST(WalkerMotionTest, WalkerFrame_HoldsAnIdleWalkerOnTheStandingFrame)
+{
+    // A walker with nowhere it came from has never stepped.
+    // Whatever the frames do, it stands on the cycle's first frame.
+    const WalkerSprite fresh{.at = kDestination};
+
+    EXPECT_EQ(walkerFrame(fresh, Progress()), 0U);
+    EXPECT_EQ(walkerFrame(fresh, Progress(3, 4)), 0U);
 }
 
 TEST(WalkerMotionTest, WalkerBounds_PutsAWalkerAtItsStartWhenNoneHasGone)

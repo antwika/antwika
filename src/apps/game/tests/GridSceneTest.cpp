@@ -380,6 +380,53 @@ TEST_F(GridSceneTest, Draw_ChoosesAWalkerTileByWhichWayItFaces)
     }
 }
 
+// The legs read the same clock as the slide.
+// A tick and a half into a two-tick step is frame 3 of 4.
+TEST_F(GridSceneTest, Draw_CyclesAWalkersLegsAsItCrossesACell)
+{
+    scene.draw(
+        renderer,
+        kCanvas,
+        snapshot(
+            Camera(Point{.x = 300, .y = 40}, 2),
+            GridExtent{},
+            {},
+            {WalkerSprite{
+                .at = Cell{.x = 1, .y = 1},
+                .facing = Direction::East,
+                .from = Cell{.x = 0, .y = 1},
+                .ticksIntoStep = 1}}),
+        atlases,
+        Progress(1, 2));
+
+    ASSERT_EQ(renderer.blits.size(), 1U);
+    EXPECT_EQ(
+        renderer.blits.front().source, walkerTile(Direction::East, 3));
+}
+
+// A held walker's legs freeze with its slide.
+// The same forced zero fraction decides both -- see draw().
+TEST_F(GridSceneTest, Draw_HoldsAPausedWalkersLegsStill)
+{
+    auto scene_ = snapshot(
+        Camera(Point{.x = 300, .y = 40}, 2),
+        GridExtent{},
+        {},
+        {WalkerSprite{
+            .at = Cell{.x = 1, .y = 1},
+            .facing = Direction::East,
+            .from = Cell{.x = 0, .y = 1},
+            .ticksIntoStep = 1}});
+    scene_.paused = true;
+
+    scene.draw(renderer, kCanvas, scene_, atlases, Progress(1, 2));
+
+    // One whole tick of the step and none of the frame is frame 2.
+    ASSERT_EQ(renderer.blits.size(), 1U);
+    EXPECT_EQ(
+        renderer.blits.front().source, walkerTile(Direction::East, 2));
+}
+
 // A walker is never hidden by the road it is standing on.
 TEST_F(GridSceneTest, Draw_BlitsAWalkerAfterTheGroundAndTheRoad)
 {

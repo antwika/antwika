@@ -63,14 +63,15 @@ sprite  count  what
 1-16    16     roads, ordered by which arms they join (below)
 17-21   5      the 1x1 buildings: house, well, doctor,
                  fire station, engineer post
-24      1      walker facing NE on screen (grid north), row 3
-32      1      walker facing SE on screen (grid east), row 4
-40      1      walker facing SW on screen (grid south), row 5
-48      1      walker facing NW on screen (grid west), row 6
+24-27   4      walker facing NE on screen (grid north), row 3
+32-35   4      walker facing SE on screen (grid east), row 4
+40-43   4      walker facing SW on screen (grid south), row 5
+48-51   4      walker facing NW on screen (grid west), row 6
 ```
 
 Every other sprite is currently unused: the game never blits one, so what an unused cell holds is free — today most hold the template block the sheet was ruled out from.
-The rest of each walker's row (25-31, 33-39, 41-47, 49-55) is reserved for that facing's walk-cycle frames.
+Each walker row's four sprites are that facing's walk cycle, cycled left to right once per cell crossed; the first doubles as the standing frame, which is why an idle walker needs no fifth sprite.
+The rest of each walker's row (28-31, 36-39, 44-47, 52-55) stays reserved for more frames.
 
 ## The roads, and the mask-to-sprite table
 
@@ -95,6 +96,10 @@ sprite  arms on screen        sprite  arms on screen
 ## The walkers
 
 One facing per row, rows 3 to 6, in `Direction` order — and **facing is in grid space, not screen space**: north is up-and-*right* on screen, east is down-and-right, south is down-and-left, west is up-and-left.
+
+**Each row's first four sprites are that facing's walk cycle**, in walking order left to right, and the first of them doubles as the standing frame.
+Which frame shows is `WalkerMotion.hpp`'s `walkerFrame()`: one whole cycle per cell crossed, resolved from the same exact step fraction that slides the walker between cells, so the legs cannot drift against the ground and a paused run freezes both together.
+An idle walker — one that has not yet taken a step — holds the standing frame.
 
 **A walker sprite is meant to be tinted at blit time, once per walker kind.**
 There are seven kinds — water carrier, doctor, fireman, engineer, cart pusher, market buyer and market seller — and four facings, and the art is four sprites rather than twenty-eight because the kind is meant to be applied as a colour multiply over the facing's sprite.
@@ -152,7 +157,7 @@ satisfies `|east| <= 0.5` and `|south| <= 0.5`, where `w` and `h` are half the f
 
 **Most of the building sprites are placeholder blocks and want drawing properly.**
 A placeholder is the template block — the footprint diamond and its skirt in a flat fill — which respects every rule above and says nothing about what the building is.
-The walkers are small neutral figures, one per facing, with their walk-cycle rows empty.
+The walkers are small neutral figures, four walk-cycle frames per facing.
 
 ## What is left checking the art
 

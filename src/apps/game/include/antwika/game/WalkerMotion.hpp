@@ -58,6 +58,29 @@ namespace antwika::game
         std::uint8_t ticksIntoStep, Progress subTick);
 
     /**
+     * @brief Get which frame of its walk cycle a walker is showing.
+     *
+     * One whole cycle per cell, resolved from the same exact fraction
+     * that slides the walker: the phase times kWalkCycleFrames,
+     * truncated, so the legs and the slide read one clock and cannot
+     * drift apart.  The phase never reaches one, so the answer is
+     * always inside the cycle.
+     *
+     * A walker with nowhere it came from has never stepped, and shows
+     * the standing frame -- the cycle held at its start rather than a
+     * fifth sprite.
+     *
+     * A paused caller passes the zero fraction, exactly as it does to
+     * walkerBounds(), so a held walker's legs freeze with its slide.
+     *
+     * @param walker The walker to resolve.
+     * @param subTick How far through the current tick this frame is.
+     * @return The frame to show, always below kWalkCycleFrames.
+     */
+    [[nodiscard]] std::uint32_t walkerFrame(
+        const WalkerSprite &walker, Progress subTick);
+
+    /**
      * @brief Get where to draw a walker this frame.
      *
      * A walker with nowhere it came from is drawn on its own cell, since
