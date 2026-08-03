@@ -69,6 +69,41 @@ Every call takes exactly one argument.
 The presets a line may open with are `bass` (a filtered saw), `lead` (a square), `bell` (a sine) and `drum` (a filtered noise hit).
 They are four points to start from rather than four instruments, and a document naming none of them is an ordinary document.
 
+## Arranging a score
+
+A document may arrange itself into sections, with three headers beside the voice lines:
+
+```
+form: intro verse verse/4 outro
+bars: 8
+
+$: drum.n("0*2")            // above any part: always on
+
+part: verse
+$: bass.n("<0*2 8*2>").o(-1)
+$: lead.n("[0 3 ~ 7]").gain(.15)
+
+part: intro outro
+$: bell.n("[0 ~ 12 ~]")
+```
+
+`form:` says which sections play and in what order, once per score; the same name may occur as many times as the song asks for.
+`bars:` says how many cycles an unmarked section lasts, and an occurrence may carry a length of its own -- `verse/4` -- so a turnaround verse or a half-length final chorus is one token, not an edit to every voice.
+`part:` opens a block whose voices play only in the sections it names, however many; a voice above every header plays the whole run, which is also what every line of a form-less document does, so a score written before the form existed reads unchanged.
+When the form runs out it comes round again, so the arrangement loops at the sum of its lengths.
+
+**Each occurrence of a section replays its material from its own first bar.**
+Every verse sounds the same, an alternation like `<0*2 8*2>` advances per bar *inside* a section, and a figure whose length does not divide the section's is cut at the boundary and restarts -- "the verse ends" is a hard edge, though a note that began before it still rings out its `hold`.
+Writing a section twice in a row -- `chorus chorus` -- is therefore the chorus twice; a continuous double-length one is `chorus/16` with material written to span it.
+
+**A section with no material is silence, and a block the form never plays is too -- but they are told apart.**
+A name the form plays with no `part:` block anywhere is listed as a problem, since that is what a typo'd block name looks like from the form's side.
+An empty `part: breakdown` block *is* the way to write a silent section on purpose.
+A block whose names the form never plays is refused nothing: cutting the form down to `form: verse` is how a section is soloed while it is written, and the other parts wait unlisted.
+
+The headers take comments like any other line, a header line ends a chain being gathered above it, and a form or bars line that will not read keeps the last one that did -- the same resilience a half-typed voice line gets.
+Deleting the form is treated as the intended cut it is: the part blocks fall silent and the first `part:` header names what is missing.
+
 ## Some scores
 
 Each of these is a whole document.
@@ -201,6 +236,16 @@ A line is its own voice, deleting it takes that voice out, and writing one above
 **A call changes a copy, and the chain is read left to right.**
 `bass.o(-1).o(-1)` is two octaves down, because `o()` and `trans()` accumulate into one semitone offset rather than setting it -- that is the one call where "left to right" is visible, and it is what lets `.o(1).trans(-2)` mean what it looks like.
 Every other call sets what it names, so a chain naming `gain` twice ends on the second.
+
+**The form is section-major because the masks it replaced were not.**
+Before the headers existed, a song's shape was written per voice, as one 72-slot alternation of `~!8` runs on every line -- twelve parallel counts that had to agree by arithmetic, where one miscounted `!N` slid a voice against the others forever and nothing refused it.
+The form inverts that: sections carry the voices, the timeline is stated once, and a disagreement is unrepresentable because no voice states its own.
+The engine under it is [`pattern`](../libraries/pattern.md)'s `during`, whose occurrence-local restart is the whole point -- `slowcat` would freeze an alternation to one value per revolution of the form, which is exactly the trap the masks had.
+
+**A part: header that will not read silences its block rather than merging it up.**
+The lines under it belong to *some* block; the only question is whose, and the block above is the one answer that sounds voices in sections nobody put them in.
+Silent-with-a-problem is also what half a header reads as while it is typed, which is the same posture as a half-typed bracket.
+Deleting a header outright does merge its lines into the block above, because that is what the text then says -- the refusal is only for a header that is present and unreadable.
 
 **A line that will not parse keeps playing whatever it last did.**
 Half a bracket is typed on the way to a whole one, and an editor that fell silent at every intermediate keystroke would be unusable.

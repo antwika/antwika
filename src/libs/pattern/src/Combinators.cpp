@@ -1,5 +1,6 @@
 #include "antwika/pattern/Combinators.hpp"
 
+#include <algorithm>
 #include <cstddef>
 #include <cstdint>
 #include <memory>
@@ -225,6 +226,108 @@ namespace antwika::pattern
             Pattern inner;
         };
 
+        // Patterns.cpp keeps its own copy for slowcat.
+        // Ten lines shared would cost a header both files must own.
+        [[nodiscard]] std::int64_t floorDivide(
+            std::int64_t top, std::int64_t bottom) noexcept
+        {
+            auto whole = top / bottom;
+
+            if (top % bottom != 0 && (top < 0) != (bottom < 0))
+            {
+                --whole;
+            }
+
+            return whole;
+        }
+
+        class DuringPattern final : public IPattern
+        {
+        public:
+            DuringPattern(
+                std::int64_t every,
+                std::vector<Span> when,
+                Pattern wrapped)
+                : period(every),
+                  windows(std::move(when)),
+                  inner(std::move(wrapped))
+            {
+            }
+
+            void query(const Span &window, IHapSink &out) const override
+            {
+                // The repetition of the schedule the window opens in.
+                const auto first =
+                    floorDivide(window.begin().floorCycle(), period);
+
+                for (auto turn = first;
+                     Cycle(turn * period) < window.end();
+                     ++turn)
+                {
+                    const Cycle base(turn * period);
+
+                    for (const auto &slot : windows)
+                    {
+                        const auto open = base + slot.begin();
+                        const auto close = base + slot.end();
+
+                        const auto from =
+                            std::max(open, window.begin());
+                        const auto until =
+                            std::min(close, window.end());
+
+                        if (until <= from)
+                        {
+                            continue;
+                        }
+
+                        // Each window replays inner from its start.
+                        // Every occurrence of a section sounds alike.
+                        ShiftedSink shifted(out, open);
+
+                        inner.query(
+                            Span(from - open, until - open), shifted);
+                    }
+                }
+            }
+
+        private:
+            class ShiftedSink final : public IHapSink
+            {
+            public:
+                ShiftedSink(IHapSink &wrapped, Cycle by)
+                    : out(wrapped), offset(by)
+                {
+                }
+
+                void accept(const Hap &hap) override
+                {
+                    out.accept(
+                        Hap{
+                            .whole = hap.whole.has_value()
+                                ? std::optional<Span>(
+                                      forward(*hap.whole))
+                                : std::nullopt,
+                            .part = forward(hap.part),
+                            .value = hap.value});
+                }
+
+            private:
+                [[nodiscard]] Span forward(const Span &span) const
+                {
+                    return Span(
+                        span.begin() + offset, span.end() + offset);
+                }
+
+                IHapSink &out;
+                Cycle offset;
+            };
+
+            std::int64_t period;
+            std::vector<Span> windows;
+            Pattern inner;
+        };
+
         [[nodiscard]] Pattern timeMapped(
             Cycle factor, Cycle offset, Pattern inner)
         {
@@ -322,6 +425,42 @@ namespace antwika::pattern
                 static_cast<std::uint64_t>(chance.raw()),
                 seed,
                 std::move(inner)));
+    }
+
+    Pattern during(
+        std::int64_t period, std::vector<Span> windows, Pattern inner)
+    {
+        if (period < 1)
+        {
+            throw PatternError(
+                "antwika::pattern: a schedule cannot repeat every "
+                + std::to_string(period) + " cycles");
+        }
+
+        if (windows.empty())
+        {
+            throw PatternError(
+                "antwika::pattern: a schedule of no windows would "
+                "never play");
+        }
+
+        auto reached = Cycle();
+
+        for (const auto &slot : windows)
+        {
+            if (slot.begin() < reached || Cycle(period) < slot.end())
+            {
+                throw PatternError(
+                    "antwika::pattern: a schedule's windows sit in "
+                    "order, apart, and inside its period");
+            }
+
+            reached = slot.end();
+        }
+
+        return Pattern(
+            std::make_shared<const DuringPattern>(
+                period, std::move(windows), std::move(inner)));
     }
 
 } // namespace antwika::pattern

@@ -38,7 +38,7 @@ It also knows nothing about audio: it does not depend on [`sound`](sound.md) or 
 | `HapBuffer.hpp` | `HapBuffer` | The sink that collects into a vector. |
 | `Pattern.hpp` | `IPattern`, `Pattern` | The query interface, and the value that owns one. |
 | `Patterns.hpp` | `silence`, `pure`, `steady`, `stack`, `slowcat`, `fastcat` | Building one. |
-| `Combinators.hpp` | `fast`, `slow`, `early`, `late`, `rev`, `euclid`, `degradeBy` | Transforming one. |
+| `Combinators.hpp` | `fast`, `slow`, `early`, `late`, `rev`, `euclid`, `degradeBy`, `during` | Transforming one. |
 | `PatternError.hpp` | `PatternError` | This library's one failure type. |
 
 ## Depends on
@@ -90,6 +90,12 @@ Hashing means asking about cycle four hundred directly answers exactly as playin
 **`degradeBy` passes a continuous value through untouched**, for the same reason.
 A hap with no `whole` has no onset to hash, and its `part` is only ever the window the caller asked about -- so thinning one at all would make whether a steady cutoff survives depend on how a caller sliced its queries, which is exactly the property above.
 A signal has nothing to drop; `DegradeKeepsAContinuousValueHoweverItIsAskedFor` pins it.
+
+**`during` restarts its pattern at every window, and that is why it is not `slowcat`.**
+`slowcat` hands a slot its pattern's *nth* cycle, so an alternation inside one advances once per revolution of the whole -- the right arithmetic for interleaving, and the wrong one for a song section.
+`during(period, windows, p)` instead hands every window `p`'s own cycle zero, so each occurrence of a section sounds the same and a `slowcat` inside it advances once per cycle again.
+An event cut by its window's edge keeps its `whole`, so a note that began inside may ring past the boundary while nothing new begins outside -- the same part/whole discipline as everywhere else.
+The period is explicit rather than derived from the last window, because a schedule may end in silence.
 
 **`euclid` uses the Bresenham formulation** -- a step sounds when `(step * pulses) % steps < pulses`.
 It needs no working array and is exact integer arithmetic rather than a repeated subdivision.

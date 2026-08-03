@@ -1,10 +1,12 @@
 #pragma once
 
 #include <cstdint>
+#include <vector>
 
 #include "antwika/pattern/Cycle.hpp"
 #include "antwika/pattern/ParamValue.hpp"
 #include "antwika/pattern/Pattern.hpp"
+#include "antwika/pattern/Span.hpp"
 
 namespace antwika::pattern
 {
@@ -92,5 +94,35 @@ namespace antwika::pattern
      */
     [[nodiscard]] Pattern degradeBy(
         ParamValue chance, std::uint64_t seed, Pattern inner);
+
+    /**
+     * @brief Play a pattern inside scheduled windows of a period.
+     *
+     * **Each window replays the pattern from its own start**: the
+     * window opening at cycle twelve hands the pattern its cycle
+     * zero, so every occurrence of a section sounds the same,
+     * wherever the schedule puts it.
+     * That is deliberately not slowcat's arithmetic, which hands a
+     * slot its pattern's *nth* cycle and so advances an alternation
+     * once per revolution rather than once per cycle.
+     *
+     * Outside every window is silence, and the whole schedule
+     * repeats every `period` cycles.
+     * An event cut by its window's edge keeps its whole, so what
+     * began inside may ring past the boundary; nothing begins
+     * outside.
+     *
+     * @param period How many cycles the schedule spans before it
+     * repeats.
+     * @param windows Where inside one period the pattern plays, in
+     * order.
+     * @param inner What to play there.
+     * @return The pattern.
+     * @throws PatternError If the period is below one, the schedule
+     * holds no windows, or the windows overlap, run out of order or
+     * leave the period.
+     */
+    [[nodiscard]] Pattern during(
+        std::int64_t period, std::vector<Span> windows, Pattern inner);
 
 } // namespace antwika::pattern

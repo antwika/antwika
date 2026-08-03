@@ -19,6 +19,7 @@
 using antwika::pattern::Controls;
 using antwika::pattern::Cycle;
 using antwika::pattern::degradeBy;
+using antwika::pattern::during;
 using antwika::pattern::early;
 using antwika::pattern::euclid;
 using antwika::pattern::fast;
@@ -319,4 +320,143 @@ TEST(CombinatorsTest, RevKeepsAContinuousValueContinuous)
 
     ASSERT_EQ(haps.size(), 1U);
     EXPECT_FALSE(haps[0].whole.has_value());
+}
+
+TEST(CombinatorsTest, DuringPlaysInsideItsWindowsAndNowhereElse)
+{
+    const auto scheduled =
+        during(4, {cycles(1, 2)}, note(1));
+
+    EXPECT_TRUE(scheduled.queryAll(cycles(0, 1)).empty());
+    EXPECT_EQ(scheduled.queryAll(cycles(1, 2)).size(), 1U);
+    EXPECT_TRUE(scheduled.queryAll(cycles(2, 4)).empty());
+}
+
+// The reason this is not slowcat: every occurrence restarts.
+// An alternation inside a section advances once per cycle.
+// And every occurrence of the section sounds the same.
+TEST(CombinatorsTest, DuringRestartsAtEachWindow)
+{
+    const auto alternation = antwika::pattern::slowcat(
+        {note(1), note(2)});
+
+    const auto scheduled = during(
+        8,
+        {cycles(2, 4), cycles(6, 8)},
+        alternation);
+
+    const auto haps = scheduled.queryAll(cycles(0, 8));
+
+    ASSERT_EQ(haps.size(), 4U);
+    EXPECT_EQ(haps[0].value, named(1));
+    EXPECT_EQ(haps[1].value, named(2));
+    EXPECT_EQ(haps[2].value, named(1));
+    EXPECT_EQ(haps[3].value, named(2));
+}
+
+TEST(CombinatorsTest, DuringRepeatsEveryPeriod)
+{
+    const auto scheduled = during(4, {cycles(1, 2)}, note(1));
+
+    const auto first = scheduled.queryAll(cycles(1, 2));
+    const auto again = scheduled.queryAll(cycles(5, 6));
+
+    ASSERT_EQ(first.size(), 1U);
+    ASSERT_EQ(again.size(), 1U);
+    EXPECT_EQ(again[0].part, cycles(5, 6));
+    EXPECT_EQ(again[0].value, first[0].value);
+}
+
+TEST(CombinatorsTest, DuringRepeatsBehindZeroToo)
+{
+    const auto scheduled = during(4, {cycles(1, 2)}, note(1));
+
+    const auto haps = scheduled.queryAll(cycles(-4, 0));
+
+    ASSERT_EQ(haps.size(), 1U);
+    EXPECT_EQ(haps[0].part, cycles(-3, -2));
+
+    // A window opening off the period's own boundary, too.
+    // Flooring a negative division is the arithmetic under this.
+    const auto inside = scheduled.queryAll(cycles(-3, -2));
+
+    ASSERT_EQ(inside.size(), 1U);
+    EXPECT_EQ(inside[0].part, cycles(-3, -2));
+}
+
+// What began inside the window may ring past its edge.
+// Nothing new begins outside it.
+TEST(CombinatorsTest, DuringCutsAtItsWindowsEdgeButKeepsTheWhole)
+{
+    const auto held = slow(Cycle(2), note(1));
+
+    const auto scheduled = during(4, {cycles(0, 1)}, held);
+
+    const auto haps = scheduled.queryAll(cycles(0, 4));
+
+    ASSERT_EQ(haps.size(), 1U);
+    EXPECT_EQ(haps[0].part, cycles(0, 1));
+    EXPECT_EQ(haps[0].whole, cycles(0, 2));
+    EXPECT_TRUE(haps[0].hasOnset());
+}
+
+TEST(CombinatorsTest, DuringKeepsAContinuousValueContinuous)
+{
+    const auto scheduled =
+        during(4, {cycles(1, 3)}, steady(named(9)));
+
+    const auto haps = scheduled.queryAll(cycles(1, 2));
+
+    ASSERT_EQ(haps.size(), 1U);
+    EXPECT_FALSE(haps[0].whole.has_value());
+    EXPECT_EQ(haps[0].part, cycles(1, 2));
+}
+
+// Positional, like everything else here.
+// Asking about the form in one window answers as playing it would.
+TEST(CombinatorsTest, DuringAnswersTheSameHoweverItIsAskedFor)
+{
+    const auto scheduled = during(
+        8,
+        {cycles(2, 4), cycles(6, 8)},
+        fast(Cycle(2), note(1)));
+
+    const auto wide = scheduled.queryAll(cycles(0, 8));
+
+    std::vector<Hap> narrow;
+
+    for (std::int64_t cycle = 0; cycle < 8; ++cycle)
+    {
+        for (const auto &hap :
+             scheduled.queryAll(cycles(cycle, cycle + 1)))
+        {
+            narrow.push_back(hap);
+        }
+    }
+
+    EXPECT_EQ(wide, narrow);
+}
+
+TEST(CombinatorsTest, DuringRefusesAPeriodOfNothing)
+{
+    EXPECT_THROW(
+        (void)during(0, {cycles(0, 1)}, note(1)), PatternError);
+}
+
+TEST(CombinatorsTest, DuringRefusesAScheduleOfNoWindows)
+{
+    EXPECT_THROW((void)during(4, {}, note(1)), PatternError);
+}
+
+TEST(CombinatorsTest, DuringRefusesWindowsThatOverlap)
+{
+    EXPECT_THROW(
+        (void)during(4, {cycles(0, 2), cycles(1, 3)}, note(1)),
+        PatternError);
+}
+
+TEST(CombinatorsTest, DuringRefusesAWindowPastItsPeriod)
+{
+    EXPECT_THROW(
+        (void)during(4, {cycles(2, 5)}, note(1)), PatternError);
 }

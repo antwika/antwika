@@ -3,6 +3,7 @@ add_executable(antwika_music_editor
     src/EditorScene.cpp
     src/EditorSink.cpp
     src/EditorState.cpp
+    src/FormUse.cpp
     src/MusicEditor.cpp
     src/NoteWords.cpp
     src/PasteSource.cpp

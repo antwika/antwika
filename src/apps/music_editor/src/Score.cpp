@@ -1,5 +1,6 @@
 #include "antwika/music_editor/Score.hpp"
 
+#include <algorithm>
 #include <cstddef>
 #include <optional>
 #include <string>
@@ -8,8 +9,10 @@
 
 #include <antwika/notation/NotationError.hpp>
 #include <antwika/notation/ParsePattern.hpp>
+#include <antwika/pattern/Combinators.hpp>
 #include <antwika/pattern/PatternError.hpp>
 
+#include "antwika/music_editor/FormUse.hpp"
 #include "antwika/music_editor/ScoreError.hpp"
 #include "antwika/music_editor/VoiceChain.hpp"
 
@@ -32,6 +35,13 @@ namespace antwika::music_editor
         // So a chain half written still reads as calls all the way down.
         // And so no line has to be edited to add another under it.
         constexpr std::string_view kJoinMark{"."};
+
+        // The arrangement headers.
+        // Each is a whole word together with its colon.
+        // So "formless:" opens no header.
+        constexpr std::string_view kFormMark{"form:"};
+        constexpr std::string_view kBarsMark{"bars:"};
+        constexpr std::string_view kPartMark{"part:"};
 
         // Cut a line at the comment that ends it, if one does.
         // Outside quotes alone, so a notation is never cut into.
@@ -89,6 +99,12 @@ namespace antwika::music_editor
         refusals.clear();
         seen = 0;
 
+        formPresent = false;
+        barsPresent = false;
+        activeParts.reset();
+        partNames.clear();
+        firstPartLine = 0;
+
         std::size_t number = 0;
         std::size_t begin = 0;
 
@@ -128,6 +144,80 @@ namespace antwika::music_editor
         // A line that is gone takes its voice with it.
         lines.resize(seen);
 
+        // A deleted header takes what it held with it.
+        // Holding on would be resilience against an intended cut.
+        if (!formPresent)
+        {
+            formEver = false;
+            formHeld.clear();
+        }
+
+        if (!barsPresent)
+        {
+            barsEver = false;
+        }
+
+        assemble();
+
+        // In line order however late a pass found each problem.
+        // The form's cross-checks land after every line has read.
+        std::ranges::stable_sort(refusals, {}, &Problem::line);
+    }
+
+    void Score::assemble()
+    {
+        // The form, resolved against the bars: default.
+        std::vector<FormUse> uses;
+        std::int64_t period = 0;
+        bool scheduled = false;
+
+        if (formEver)
+        {
+            try
+            {
+                uses = formHeld;
+                resolveBars(uses, barsEver ? barsHeld : 0);
+                period = periodOf(uses);
+                scheduled = true;
+            }
+            // The excluded line is the handler's no-match edge.
+            // Only a non-ScoreError exception would take it.
+            // resolveBars can raise nothing else.
+            catch (const ScoreError &refused) // GCOVR_EXCL_LINE
+            {
+                refuse(formLine, refused.what());
+            }
+        }
+
+        if (scheduled)
+        {
+            // An empty part: block is a silent section on purpose.
+            // A name no header holds anywhere is the typo this catches.
+            for (const auto &use : uses)
+            {
+                if (std::ranges::find(partNames, use.name)
+                    != partNames.end())
+                {
+                    continue;
+                }
+
+                const Problem missing{
+                    .line = formLine,
+                    .message = "no part: holds " + use.name};
+
+                if (std::ranges::find(refusals, missing)
+                    == refusals.end())
+                {
+                    refusals.push_back(missing);
+                }
+            }
+        }
+
+        if (!formPresent && firstPartLine != 0)
+        {
+            refuse(firstPartLine, "no form: says when these parts play");
+        }
+
         sounding.clear();
         soundingLines.clear();
 
@@ -139,7 +229,42 @@ namespace antwika::music_editor
                 continue;
             }
 
-            sounding.push_back(lines[at].voice);
+            const auto &parts = lines[at].parts;
+
+            // A voice above every header plays the whole run.
+            if (!parts.has_value())
+            {
+                sounding.push_back(lines[at].voice);
+                soundingLines.push_back(at);
+
+                continue;
+            }
+
+            // A block's voices are silent until a form schedules them.
+            if (!scheduled)
+            {
+                continue;
+            }
+
+            auto windows = windowsFor(*parts, uses);
+
+            // A part the form never plays is how a section is soloed.
+            if (windows.empty())
+            {
+                continue;
+            }
+
+            // Cannot throw.
+            // The windows walk the form in order.
+            // And every resolved length is at least one bar.
+            sounding.push_back(
+                Voice{
+                    .preset = lines[at].voice.preset,
+                    .playing = pattern::during(
+                        period,
+                        std::move(windows),
+                        lines[at].voice.playing)});
+
             soundingLines.push_back(at);
         }
     }
@@ -188,9 +313,34 @@ namespace antwika::music_editor
         // Which keeps the problems in the order their lines are in.
         finish(gathering);
 
+        if (text.starts_with(kFormMark))
+        {
+            readForm(
+                trimmed(text.substr(kFormMark.size())), number);
+
+            return;
+        }
+
+        if (text.starts_with(kBarsMark))
+        {
+            readBars(
+                trimmed(text.substr(kBarsMark.size())), number);
+
+            return;
+        }
+
+        if (text.starts_with(kPartMark))
+        {
+            readPart(
+                trimmed(text.substr(kPartMark.size())), number);
+
+            return;
+        }
+
         if (!text.starts_with(kVoiceMark))
         {
-            refuse(number, "a voice line opens with $:");
+            refuse(
+                number, "a line opens with $:, form:, bars: or part:");
 
             return;
         }
@@ -199,6 +349,7 @@ namespace antwika::music_editor
 
         gathering.chain = std::string(content);
         gathering.segments.clear();
+        gathering.parts = activeParts;
         gathering.opened = number;
 
         // A bare $: gathers no characters and so points at nothing.
@@ -210,6 +361,95 @@ namespace antwika::music_editor
                     + static_cast<std::size_t>(
                                      content.data() - line.data()),
                 .length = content.size()});
+        }
+    }
+
+    void Score::readForm(
+        const std::string_view text, const std::size_t number)
+    {
+        if (formPresent)
+        {
+            refuse(number, "one form: per score");
+
+            return;
+        }
+
+        formPresent = true;
+        formLine = number;
+
+        try
+        {
+            formHeld = readFormLine(text);
+            formEver = true;
+        }
+        // The excluded line is the handler's no-match edge.
+        // Only a non-ScoreError exception would take it.
+        // readFormLine can raise nothing else.
+        catch (const ScoreError &refused) // GCOVR_EXCL_LINE
+        {
+            // The last form that read keeps arranging.
+            // Retyping one is half a bracket down, as a chain gets.
+            refuse(number, refused.what());
+        }
+    }
+
+    void Score::readBars(
+        const std::string_view text, const std::size_t number)
+    {
+        if (barsPresent)
+        {
+            refuse(number, "one bars: per score");
+
+            return;
+        }
+
+        barsPresent = true;
+
+        try
+        {
+            barsHeld = readBarsLine(text);
+            barsEver = true;
+        }
+        // The excluded line is the handler's no-match edge.
+        // Only a non-ScoreError exception would take it.
+        // readBarsLine can raise nothing else.
+        catch (const ScoreError &refused) // GCOVR_EXCL_LINE
+        {
+            refuse(number, refused.what());
+        }
+    }
+
+    void Score::readPart(
+        const std::string_view text, const std::size_t number)
+    {
+        if (firstPartLine == 0)
+        {
+            firstPartLine = number;
+        }
+
+        try
+        {
+            activeParts = readPartLine(text);
+
+            for (const auto &name : *activeParts)
+            {
+                if (std::ranges::find(partNames, name)
+                    == partNames.end())
+                {
+                    partNames.push_back(name);
+                }
+            }
+        }
+        // The excluded line is the handler's no-match edge.
+        // Only a non-ScoreError exception would take it.
+        // readPartLine can raise nothing else.
+        catch (const ScoreError &refused) // GCOVR_EXCL_LINE
+        {
+            // A header that will not read schedules nothing.
+            // Merged up, its voices would sound where nobody put them.
+            activeParts.emplace();
+
+            refuse(number, refused.what());
         }
     }
 
@@ -244,6 +484,10 @@ namespace antwika::music_editor
         // Where the chain sits is refreshed on every read.
         // An unchanged line still moves when lines above it do.
         held.segments = gathering.segments;
+
+        // So is which block holds it.
+        // A part: header written above an unchanged line moves it.
+        held.parts = gathering.parts;
 
         // Read once, however many ticks the line then sits there for.
         // A refusal is repeated, since the line is still refused.
