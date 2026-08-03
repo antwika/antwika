@@ -96,6 +96,12 @@ namespace antwika::game
     private:
         // Roaming and heading home are two whole rules.
         // Rather than two arms of one, so they are two functions.
+        void travel(
+            World &world,
+            antwika::ecs::Entity entity,
+            const Walker &walker,
+            Cell at);
+
         void roam(
             World &world,
             antwika::ecs::Entity entity,

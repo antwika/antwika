@@ -119,6 +119,41 @@ namespace antwika::game
     static_assert(covers(Cell{}, Footprint{2, 2}, Cell{.x = 1, .y = 1}));
     static_assert(!covers(Cell{}, Footprint{2, 2}, Cell{.x = 2, .y = 0}));
 
+    /**
+     * @brief Check whether a cell is next to a block without being in it.
+     *
+     * **What "has arrived" means for anybody walking to a building.**
+     * Nothing stands on a block but the building itself, so a walker
+     * heading for one stops on the road beside it -- and every system
+     * that reacts to an arrival has to ask the same question the walker
+     * stopped on, or it waits for a cell the walker will never reach.
+     *
+     * Any cell of the block will do, which is why spawnCellFor() walks
+     * the whole perimeter and stepTowards() makes every cell of the goal
+     * passable.
+     *
+     * @param at Where the walker is.
+     * @param origin Where the building was placed.
+     * @param footprint How big it is.
+     * @return True when a single step from `at` lands on the block.
+     */
+    [[nodiscard]] constexpr bool beside(
+        Cell at, Cell origin, Footprint footprint) noexcept
+    {
+        return covers(origin, footprint, Cell{.x = at.x, .y = at.y - 1})
+            || covers(origin, footprint, Cell{.x = at.x + 1, .y = at.y})
+            || covers(origin, footprint, Cell{.x = at.x, .y = at.y + 1})
+            || covers(origin, footprint, Cell{.x = at.x - 1, .y = at.y});
+    }
+
+    static_assert(beside(Cell{.x = 0, .y = 1}, Cell{}, Footprint{1, 1}));
+    static_assert(beside(Cell{.x = 2, .y = 1}, Cell{}, Footprint{2, 2}));
+    static_assert(!beside(Cell{.x = 3, .y = 1}, Cell{}, Footprint{2, 2}));
+
+    // A one-cell block is not beside itself.
+    // Nothing ever stands on a block, so this is the shape of the rule.
+    static_assert(!beside(Cell{}, Cell{}, Footprint{1, 1}));
+
     // Square only, and the whole art argument above rests on it.
     static_assert(
         []

@@ -26,6 +26,7 @@ add_executable(antwika_game_tests
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/GridSink.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/HaulingSystem.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/Homing.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/Journey.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/HotkeySink.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/Household.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/HousingQuery.cpp
@@ -67,6 +68,7 @@ add_executable(antwika_game_tests
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/SaveLoadScene.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/SaveLoadSink.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/SaveLoadState.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/SaveMigrants.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/SaveMigration.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/SaveMigrationV2ToV3.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/SaveProduction.cpp
@@ -129,6 +131,7 @@ add_executable(antwika_game_tests
     RatingsSystemTest.cpp
     HotkeySinkTest.cpp
     HoverTest.cpp
+    JourneyTest.cpp
     InputFoldTest.cpp
     KeyTextTest.cpp
     IsoProjectionTest.cpp

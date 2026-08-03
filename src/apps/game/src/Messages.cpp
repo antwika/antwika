@@ -21,7 +21,7 @@ namespace antwika::game
         using i18n::Locale;
         using i18n::MessageName;
 
-        constexpr std::array<MessageName<MessageId>, 87> kNames{{
+        constexpr std::array<MessageName<MessageId>, 88> kNames{{
             {MessageId::ToolbarZoomIn, "ToolbarZoomIn"},
             {MessageId::ToolbarZoomOut, "ToolbarZoomOut"},
             {MessageId::ToolbarResetView, "ToolbarResetView"},
@@ -72,6 +72,7 @@ namespace antwika::game
             {MessageId::WalkerCartPusher, "WalkerCartPusher"},
             {MessageId::WalkerMarketBuyer, "WalkerMarketBuyer"},
             {MessageId::WalkerMarketSeller, "WalkerMarketSeller"},
+            {MessageId::WalkerMigrant, "WalkerMigrant"},
             {MessageId::ResourceFood, "ResourceFood"},
             {MessageId::ResourceClay, "ResourceClay"},
             {MessageId::ResourcePottery, "ResourcePottery"},
@@ -171,6 +172,7 @@ namespace antwika::game
                 {MessageId::WalkerCartPusher, "cart pusher"},
                 {MessageId::WalkerMarketBuyer, "buyer"},
                 {MessageId::WalkerMarketSeller, "market seller"},
+                {MessageId::WalkerMigrant, "migrant"},
                 {MessageId::ResourceFood, "food"},
                 {MessageId::ResourceClay, "clay"},
                 {MessageId::ResourcePottery, "pottery"},
@@ -262,6 +264,7 @@ namespace antwika::game
                 {MessageId::WalkerCartPusher, "kärrdragare"},
                 {MessageId::WalkerMarketBuyer, "inköpare"},
                 {MessageId::WalkerMarketSeller, "torgförsäljare"},
+                {MessageId::WalkerMigrant, "flyttande"},
                 {MessageId::ResourceFood, "mat"},
                 {MessageId::ResourceClay, "lera"},
                 {MessageId::ResourcePottery, "keramik"},

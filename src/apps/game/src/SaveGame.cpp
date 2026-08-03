@@ -16,6 +16,7 @@
 #include "antwika/game/Building.hpp"
 #include "antwika/game/Coverage.hpp"
 #include "antwika/game/Errand.hpp"
+#include "antwika/game/Journey.hpp"
 #include "antwika/game/Household.hpp"
 #include "antwika/game/Production.hpp"
 #include "antwika/game/SaveFormatError.hpp"
@@ -168,6 +169,7 @@ namespace antwika::game
         housingToJson(save, encoded);
         labourToJson(save, encoded);
         productionToJson(save, encoded);
+        migrantsToJson(save, encoded);
 
         encoded["seed"] = save.seed;
         return encoded;
@@ -215,11 +217,13 @@ namespace antwika::game
         housingFromJson(document, save);
         labourFromJson(document, save);
         productionFromJson(document, save);
+        migrantsFromJson(document, save);
 
         save.seed = document.at("seed").get<std::uint64_t>();
 
         requireConsistentLinks(save);
         requireConsistentErrands(save);
+        requireConsistentJourneys(save);
 
         return save;
     } // GCOVR_EXCL_LINE
@@ -262,6 +266,16 @@ namespace antwika::game
                     .leg = held.leg};
             }
 
+            // The house is filled in with the links below too.
+            std::optional<SavedJourney> journey;
+
+            if (world.has<Journey>(entity))
+            {
+                journey = SavedJourney{
+                    .towards = world.get<Journey>(entity).towards,
+                    .house = std::nullopt};
+            }
+
             save.walkers.push_back(SavedWalker{
                 .at = world.get<Cell>(entity),
                 .facing = walker.facing,
@@ -270,7 +284,8 @@ namespace antwika::game
                 .stepsUntilHome = walker.stepsUntilHome,
                 .ticksUntilStep = walker.ticksUntilStep,
                 .home = std::nullopt,
-                .errand = errand});
+                .errand = errand,
+                .journey = journey});
         }
 
         for (const auto entity : world.view<Building, Cell>())
@@ -349,6 +364,27 @@ namespace antwika::game
             }
 
             save.walkers[walkerAt.at(entity)].errand->destination =
+                found->second;
+        }
+
+        // The journeys' houses, on exactly those terms again.
+        // A house not in the file is somebody leaving town.
+        for (const auto entity : world.view<Walker, Cell>())
+        {
+            if (!world.has<Journey>(entity))
+            {
+                continue;
+            }
+
+            const auto found =
+                buildingAt.find(world.get<Journey>(entity).house);
+
+            if (found == buildingAt.end())
+            {
+                continue;
+            }
+
+            save.walkers[walkerAt.at(entity)].journey->house =
                 found->second;
         }
 

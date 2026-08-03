@@ -273,6 +273,11 @@ namespace antwika::game
         WalkerMarketSeller,
 
         /**
+         * @brief Readout: somebody moving house.
+         */
+        WalkerMigrant,
+
+        /**
          * @brief Readout: food.
          */
         ResourceFood,

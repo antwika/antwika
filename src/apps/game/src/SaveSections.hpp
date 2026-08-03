@@ -237,6 +237,37 @@ namespace antwika::game
     void requireConsistentErrands(const SaveGame &save);
 
     /**
+     * @brief Add a person's journey to a walker's shape.
+     * @param walker The shape to extend.
+     */
+    void describeJourney(nlohmann::json &walker);
+
+    /**
+     * @brief Write every journey into the document.
+     * @param save The state to read.
+     * @param document The document, with its arrays already filled.
+     */
+    void migrantsToJson(const SaveGame &save, nlohmann::json &document);
+
+    /**
+     * @brief Read every journey back out.
+     * @param document The validated document to read.
+     * @param save The state, with its arrays already sized.
+     */
+    void migrantsFromJson(const nlohmann::json &document, SaveGame &save);
+
+    /**
+     * @brief Refuse a document whose journey names no such building.
+     *
+     * requireConsistentErrands()' counterpart for the one link this
+     * section added, and refused on exactly the same terms.
+     *
+     * @param save The decoded state to check.
+     * @throws SaveFormatError If any house index is out of range.
+     */
+    void requireConsistentJourneys(const SaveGame &save);
+
+    /**
      * @brief Refuse a document whose walker and building links disagree.
      *
      * An index past the end of the array it points into is corrupt, and

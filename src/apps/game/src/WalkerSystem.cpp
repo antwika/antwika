@@ -7,6 +7,7 @@
 #include "antwika/game/Errand.hpp"
 #include "antwika/game/Footprint.hpp"
 #include "antwika/game/Homing.hpp"
+#include "antwika/game/Journey.hpp"
 #include "antwika/game/Walker.hpp"
 #include "antwika/game/Walking.hpp"
 
@@ -37,6 +38,16 @@ namespace antwika::game
             }
 
             const auto at = world.get<Cell>(entity);
+
+            // A person walking themselves somewhere, ahead of a load.
+            // The two are never both on one walker.
+            // A migrant carries nothing and an errand is about goods.
+            if (world.has<Journey>(entity))
+            {
+                travel(world, entity, walker, at);
+                continue;
+            }
+
             const auto bound = errandTargetOf(world, entity);
 
             // An errand is the one thing that overrides roaming.
@@ -101,6 +112,67 @@ namespace antwika::game
             // And that system runs in a later phase.
             // So stepping on here would destroy it too soon.
             if (world.get<Errand>(entity).leg == ErrandLeg::Returning)
+            {
+                world.destroy(entity);
+            }
+
+            return;
+        }
+
+        auto moved = walker;
+        moved.facing = *heading;
+        moved.ticksUntilStep = kTicksPerStep - 1;
+        moved.from = at;
+
+        world.set<Walker>(entity, moved);
+        world.set<Cell>(entity, onto);
+    }
+
+    void WalkerSystem::travel(
+        World &world,
+        antwika::ecs::Entity entity,
+        const Walker &walker,
+        Cell at)
+    {
+        const auto journey = world.get<Journey>(entity);
+        const auto joining = journey.house != antwika::ecs::kNullEntity;
+
+        // A house demolished while somebody was walking to it.
+        // Answered by the world rather than by the stale cell.
+        // Which is the same arm headHome() and runErrand() take.
+        if (joining && !world.has<Cell>(journey.house))
+        {
+            world.destroy(entity);
+            return;
+        }
+
+        // The block for a house, one cell for a road out of town.
+        // So arriving means the same thing either way below.
+        const auto footprint = joining
+            ? footprintOf(world.get<Building>(journey.house).kind)
+            : Footprint{.width = 1, .height = 1};
+
+        const auto heading =
+            stepTowards(at, journey.towards, footprint, paths, extent);
+
+        // Walled off, or the road under it has gone.
+        // A person who cannot get where they were going is gone too.
+        if (!heading.has_value())
+        {
+            world.destroy(entity);
+            return;
+        }
+
+        const auto onto = step(at, *heading);
+
+        if (covers(journey.towards, footprint, onto))
+        {
+            // Somebody leaving has left, and that is the whole of it.
+            // Somebody arriving stands at the door and waits.
+            // PopulationSystem is what lets them in.
+            // And it runs in a later phase.
+            // So stepping on here would destroy them at the doorstep.
+            if (!joining)
             {
                 world.destroy(entity);
             }

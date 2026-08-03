@@ -240,7 +240,8 @@ namespace antwika::game
         // Which is one tick behind the one being counted here.
         // A person arriving is employable from the following tick.
         // Both gates, in the order every other system takes them.
-        PopulationSystem populationSystem(paths, desirability);
+        PopulationSystem populationSystem(
+            paths, desirability, config.extent);
         LabourSystem labourSystem;
 
         SessionGatedSystem gatedPopulation(populationSystem, mode);

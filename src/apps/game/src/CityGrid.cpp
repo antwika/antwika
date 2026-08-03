@@ -42,11 +42,20 @@ namespace antwika::game
                 errand->destination = kNullEntity;
             }
 
+            std::optional<Journey> journey;
+
+            if (world.has<Journey>(entity))
+            {
+                journey = world.get<Journey>(entity);
+                journey->house = kNullEntity;
+            }
+
             grid.walkers.push_back(
                 StoredWalker{
                     .at = world.get<Cell>(entity),
                     .walker = walker,
-                    .errand = errand});
+                    .errand = errand,
+                    .journey = journey});
         }
 
         for (const auto entity : world.view<Building, Cell>())
@@ -129,6 +138,25 @@ namespace antwika::game
             grid.walkers[walkerAt.at(entity)].destination = found->second;
         }
 
+        // And the journeys', on exactly those terms again.
+        for (const auto entity : world.view<Walker, Cell>())
+        {
+            if (!world.has<Journey>(entity))
+            {
+                continue;
+            }
+
+            const auto found =
+                buildingAt.find(world.get<Journey>(entity).house);
+
+            if (found == buildingAt.end())
+            {
+                continue;
+            }
+
+            grid.walkers[walkerAt.at(entity)].joining = found->second;
+        }
+
         return grid;
         // The excluded line is the local grid's unwind destructor.
         // Nothing between its construction and the return throws.
@@ -196,6 +224,16 @@ namespace antwika::game
 
             world.add<Cell>(walkers[index], stored.at);
             world.add<Walker>(walkers[index], walker);
+
+            if (stored.journey.has_value())
+            {
+                auto journey = *stored.journey;
+                journey.house = stored.joining.has_value()
+                    ? buildings[*stored.joining]
+                    : kNullEntity;
+
+                world.add<Journey>(walkers[index], journey);
+            }
 
             if (!stored.errand.has_value())
             {

@@ -24,6 +24,7 @@ add_executable(antwika_game
     src/GridSink.cpp
     src/HaulingSystem.cpp
     src/Homing.cpp
+    src/Journey.cpp
     src/HotkeySink.cpp
     src/Household.cpp
     src/HousingQuery.cpp
@@ -65,6 +66,7 @@ add_executable(antwika_game
     src/SaveLoadScene.cpp
     src/SaveLoadSink.cpp
     src/SaveLoadState.cpp
+    src/SaveMigrants.cpp
     src/SaveMigration.cpp
     src/SaveMigrationV2ToV3.cpp
     src/SaveProduction.cpp

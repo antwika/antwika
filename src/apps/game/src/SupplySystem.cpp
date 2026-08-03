@@ -50,22 +50,6 @@ namespace antwika::game
                 .first->second;
         }
 
-        [[nodiscard]] bool besideBlock(
-            Cell at, Cell origin, Footprint footprint)
-        {
-            for (std::size_t index = 0; index < kDirectionCount; ++index)
-            {
-                if (covers(
-                        origin,
-                        footprint,
-                        step(at, static_cast<Direction>(index))))
-                {
-                    return true;
-                }
-            }
-
-            return false;
-        }
     } // namespace
 
     SupplySystem::SupplySystem(const PathIndex &paths, GridExtent extent)
@@ -156,7 +140,7 @@ namespace antwika::game
                 if (errand.leg == ErrandLeg::Returning)
                 {
                     if (walker.carried <= 0
-                        || !besideBlock(
+                        || !beside(
                             world.get<Cell>(walkerEntity),
                             origin,
                             footprint))
@@ -180,7 +164,7 @@ namespace antwika::game
                     continue;
                 }
 
-                if (!besideBlock(
+                if (!beside(
                         world.get<Cell>(walkerEntity),
                         world.get<Cell>(errand.destination),
                         footprintOf(

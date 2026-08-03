@@ -129,6 +129,31 @@ namespace antwika::game
             = default;
     };
 
+    /**
+     * @brief Where a person on the move is walking to, as a file has to
+     * remember it.
+     *
+     * Separate from Journey for SavedErrand's reason exactly: that
+     * component names its house by ecs::Entity, and a restore destroys
+     * and recreates every entity.
+     *
+     * **The index is optional and absent means leaving town**, which is
+     * not the same as there being no journey at all: somebody walking
+     * to the edge of the map has one and is bound for no building,
+     * while a walker who is not a person on the move has no member here.
+     */
+    struct SavedJourney
+    {
+        /** @brief The cell being walked to. */
+        Cell towards;
+
+        /** @brief Which saved house is being moved into, by index. */
+        std::optional<std::size_t> house = std::nullopt;
+
+        [[nodiscard]] bool operator==(const SavedJourney &other) const
+            = default;
+    };
+
     struct SavedWalker
     {
         Cell at;
@@ -156,6 +181,16 @@ namespace antwika::game
          * walker in a file written before errands existed did.
          */
         std::optional<SavedErrand> errand = std::nullopt;
+
+        /**
+         * @brief Where it is walking itself, if it is a person on the
+         * move.
+         *
+         * Optional, and absent means it is not one -- which is what
+         * every walker in a file written before people walked to the
+         * houses they moved into was.
+         */
+        std::optional<SavedJourney> journey = std::nullopt;
 
         [[nodiscard]] bool operator==(const SavedWalker &other) const
             = default;

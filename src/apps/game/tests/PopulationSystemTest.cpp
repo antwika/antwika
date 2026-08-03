@@ -1,4 +1,6 @@
 #include "antwika/game/PopulationSystem.hpp"
+#include "antwika/game/Walker.hpp"
+#include "antwika/game/WalkerSystem.hpp"
 
 #include <cstddef>
 #include <cstdint>
@@ -17,6 +19,7 @@
 #include "antwika/game/Household.hpp"
 #include "antwika/game/HousingLevel.hpp"
 #include "antwika/game/HousingQuery.hpp"
+#include "antwika/game/GridExtent.hpp"
 #include "antwika/game/PathIndex.hpp"
 
 namespace
@@ -31,17 +34,25 @@ namespace
     using antwika::game::householdOf;
     using antwika::game::HousingLevel;
     using antwika::game::kSettlerPeriodTicks;
-    using antwika::game::PathIndex;
+    using antwika::game::GridExtent;
+using antwika::game::PathIndex;
     using antwika::game::populationAt;
     using antwika::game::populationCapacityOf;
     using antwika::game::PopulationSystem;
     using antwika::game::requirementOf;
     using antwika::game::setHousehold;
-    using antwika::log::mocks::MockLogger;
+    using antwika::game::Walker;
+using antwika::log::mocks::MockLogger;
 
     constexpr Cell kAt{.x = 4, .y = 4};
+    constexpr GridExtent kExtent{.width = 9, .height = 9};
 
-    // One house, one road, one field, built fresh per case.
+    // One house, a road to the edge, a field, built fresh per case.
+    //
+    // The walkers run beside the system under test.
+    // Nobody moves in without walking there any more.
+    // A scene with no WalkerSystem would send for people.
+    // Who would then stand on the gate for ever.
     class Scene
     {
     public:
@@ -53,7 +64,18 @@ namespace
             world.commit();
         }
 
+        // A road from the house's north side out to the west edge.
+        // So there is a gate, and a walk of a few cells to make.
         void pave()
+        {
+            for (std::int32_t x = 0; x <= kAt.x; ++x)
+            {
+                paths.insert(Cell{.x = x, .y = kAt.y - 1});
+            }
+        }
+
+        // A road beside the house that reaches no edge at all.
+        void paveDeadEnd()
         {
             paths.insert(Cell{.x = kAt.x, .y = kAt.y - 1});
         }
@@ -68,9 +90,29 @@ namespace
         {
             for (std::int32_t tick = 0; tick < ticks; ++tick)
             {
+                walkers.update(world, static_cast<std::size_t>(tick));
+                world.commit();
                 system.update(world, static_cast<std::size_t>(tick));
                 world.commit();
             }
+        }
+
+        // How many people the whole scene is carrying.
+        // Both in the houses and on the roads between them.
+        [[nodiscard]] std::int32_t walking()
+        {
+            std::int32_t count = 0;
+
+            for (const auto entity : world.view<Walker>())
+            {
+                if (world.get<Walker>(entity).kind
+                    == antwika::game::WalkerKind::Migrant)
+                {
+                    ++count;
+                }
+            }
+
+            return count;
         }
 
         [[nodiscard]] std::int32_t people()
@@ -82,7 +124,8 @@ namespace
         World world{logger};
         PathIndex paths;
         DesirabilityField field;
-        PopulationSystem system{paths, field};
+        PopulationSystem system{paths, field, kExtent};
+        antwika::game::WalkerSystem walkers{paths, kExtent};
         Entity house{};
     };
 } // namespace
@@ -97,16 +140,56 @@ TEST(PopulationSystemTest, Update_HousesNobodyWhereNoRoadRunsBeside)
     EXPECT_EQ(scene.people(), 0);
 }
 
+// And a city walled off from the outside takes nobody in either.
+// A road beside the house that reaches no edge is not a way in.
+TEST(PopulationSystemTest, Update_HousesNobodyWithNoWayIntoTheCity)
+{
+    Scene scene;
+    scene.paveDeadEnd();
+
+    scene.run(4 * kSettlerPeriodTicks);
+
+    EXPECT_EQ(scene.people(), 0);
+    EXPECT_EQ(scene.walking(), 0);
+}
+
+// Sent for on the countdown, and counted when they get there.
+// The walk is four cells at kTicksPerStep ticks each.
 TEST(PopulationSystemTest, Update_MovesOnePersonInEachPeriod)
 {
     Scene scene;
     scene.pave();
 
     scene.run(kSettlerPeriodTicks);
+
+    // Sent for, and still on the road.
+    EXPECT_EQ(scene.people(), 0);
+    EXPECT_EQ(scene.walking(), 1);
+
+    // The one sent for last period walks in during this one.
+    // And the countdown sends for the next at the end of it.
+    scene.run(kSettlerPeriodTicks);
     EXPECT_EQ(scene.people(), 1);
 
     scene.run(kSettlerPeriodTicks);
     EXPECT_EQ(scene.people(), 2);
+}
+
+// A migrant enters at the edge of the map rather than at the door.
+TEST(PopulationSystemTest, Update_LetsAMigrantInAtTheEdgeOfTheMap)
+{
+    Scene scene;
+    scene.pave();
+
+    scene.run(kSettlerPeriodTicks);
+
+    ASSERT_EQ(scene.walking(), 1);
+
+    for (const auto entity : scene.world.view<Walker, Cell>())
+    {
+        // The west edge, which is the only gate this scene has.
+        EXPECT_LE(scene.world.get<Cell>(entity).x, 1);
+    }
 }
 
 // Not a tick sooner, which is what the countdown is for.
@@ -126,7 +209,7 @@ TEST(PopulationSystemTest, Update_FillsATentAndStopsAtItsCapacity)
     scene.pave();
 
     const auto capacity = populationCapacityOf(HousingLevel::Tent);
-    scene.run(kSettlerPeriodTicks * (capacity + 4));
+    scene.run(kSettlerPeriodTicks * (capacity + 8));
 
     EXPECT_EQ(scene.people(), capacity);
 }
@@ -142,7 +225,7 @@ TEST(PopulationSystemTest, Update_FillsAGrownHouseToItsOwnCapacity)
     scene.settle(Household{.level = HousingLevel::Cottage});
 
     const auto capacity = populationCapacityOf(HousingLevel::Cottage);
-    scene.run(kSettlerPeriodTicks * (capacity + 2));
+    scene.run(kSettlerPeriodTicks * (capacity + 8));
 
     EXPECT_EQ(scene.people(), capacity);
 }
@@ -188,6 +271,26 @@ TEST(PopulationSystemTest, Update_ThinsAHouseHoldingMoreThanItsCapacity)
     scene.run(kSettlerPeriodTicks);
 
     EXPECT_EQ(scene.people(), over - 1);
+
+    // And the person it could no longer hold is out on the road.
+    // Rather than gone the instant the ceiling fell.
+    EXPECT_EQ(scene.walking(), 1);
+}
+
+// A house holding more than its tier can turns the overflow out.
+// With nowhere else in town to go, they walk to the edge and leave.
+TEST(PopulationSystemTest, Update_WalksACrowdedHousesOverflowOffTheMap)
+{
+    Scene scene;
+    scene.pave();
+
+    const auto capacity = populationCapacityOf(HousingLevel::Tent);
+    scene.settle(Household{.population = capacity + 2});
+
+    scene.run(kSettlerPeriodTicks * 12);
+
+    EXPECT_EQ(scene.people(), capacity);
+    EXPECT_EQ(scene.walking(), 0);
 }
 
 // A well is not somewhere anybody lives.

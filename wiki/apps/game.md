@@ -555,8 +555,26 @@ The one member it sorts before comparing is `GameSummary::buildings`, which list
 It runs a second city for the walker cap: ninety-six wells, each one cell with a road beside it and a saved `ticksUntilSpawn` of nothing, so every one of them asks on the very first tick and a third of them have to be turned down.
 The city is asserted to be genuinely at the cap first, for the reason the first one is asserted to be genuinely short of people: two runs that both sent everybody would agree for the wrong reason.
 
-**Immigration is per house and takes from nothing anybody else takes from**, so it reads `ecs::View` directly and no order over the houses is observable.
-There is no shared migrant pool in this round, deliberately: a pool would be a second contended allocation, and one is enough to get right.
+**Nobody appears out of thin air any more, and nobody vanishes into it.**
+A house that is due somebody sends for them, and what arrives is an ordinary walker carrying a `Journey`: it enters at the nearest road on the *edge of the map*, walks the road network to the door, and the house's number goes up on the tick it gets there rather than on the tick it was sent for.
+So a district a long way from a gate fills more slowly than one beside it, and **a city no road reaches out of takes nobody in at all** — which is a fact about the road network rather than a rule written anywhere.
+
+A house that sheds somebody sends one out the same way, and where they go is decided in that order: `nearestVacancy()` for the nearest house with a bed going, and failing that `nearestGate()` for the nearest road out of town.
+So a house that has just devolved does not evaporate its overflow — the people it can no longer hold walk to whatever room there is, and the city's total only falls when there is none.
+
+**A road on the edge of the extent is the whole of what a city border is here.**
+There is nothing beyond the extent, so a road that reaches it is a road that leads somewhere else; `nearestGate()` orders the candidates by route length and then by ascending `Cell`, which is `nearestAccepting()`'s order and is total for the same reason it has to be — which gate a migrant uses decides which roads they walk down, and a replay has to pick the same one.
+
+**A house asks for nobody while somebody is on the way**, and the bookkeeping for that is the handle in its own walker slot rather than a flag: a house already knows which walkers it has out, and `ecs::EntityManager` never reusing an index is already why a stale handle can only be dead.
+Somebody walking *out* takes no slot, because the house they left is not waiting for them.
+
+**Sending is still per house and takes from nothing anybody else takes from**, so it reads `ecs::View` directly; there is still no shared migrant pool.
+*Arriving* is not, because two people reaching one house on one tick split the room it has left, so the arrivals are walked out of a `std::map` keyed by ascending cell and entity — the entity being in the key because two walkers may share a cell.
+They are counted before a single household is written, and folded into the one write each house gets, because `HousingSystem`'s trap applies to a system racing *itself* just as much as to two of them.
+
+`Journey` is a component of its own rather than a member on `Errand`, and the two are never both on one walker.
+An errand names a building and says what is in the cart; a journey names either a house somebody is moving into or a way off the map they are taking, and there is nothing in the cart at all.
+Putting a cell on `Errand` was tried and rejected: `errandTarget()` answers with an `ecs::Entity`, every reader treats `kNullEntity` as "not routed", and a load bound for nowhere already means something else entirely.
 
 **`PopulationSystem` runs in a `"populate"` phase of its own, after `"settle"`, and this is the trap the phase list exists to avoid.**
 `HousingSystem` writes a whole `Household` back and so does this; two systems in one phase both read what the last buffer swap left, so the tier one wrote and the occupancy the other wrote could not both survive the tick they were written in — the later write would silently undo the earlier, some of the time, and a divergent replay a long way from its cause is what that looks like.
@@ -585,9 +603,11 @@ They are labels rather than buttons, and not by omission: there is nothing to pr
 
 **No new event kind, and this is the workstream where one was most tempting.**
 `game.immigrant_arrived` is a pure function of a road, a field and a tier, all of which a replay regenerates from the clicks that built them, so a recorder would write it beside those clicks and a replay would house the same person twice.
+That holds just as well now the arrival is a walker reaching a cell: where a walker is is a function of a route, which is a function of a click.
 `game.set_wage` is worse: a wage is a click on a widget resolved by a sink inside the tick path, which is exactly what "no `ui.*` event name may ever exist" means.
 
 **Nothing here bumped the save format either.**
+`SavedWalker` gained an optional `"journey"` object, absent for every walker that is not a person on the move — which is what every walker in a file written before this was — and its house is an index into the buildings array refused when it points past the end, exactly as an errand's destination is.
 `SavedBuilding` gained an optional `"employed"`, and absent means nobody has been allocated there — which is both what a version-3 file written before labour says and what a workplace put up this tick holds.
 The population rides on the household object housing already wrote, which gained one further optional member, `"ticksUntilSettler"`.
 That one member is the only one of the five the validator does not require, and it is not an inconsistency: the other four arrived together and only mean anything together, while a file written between the two workstreams is one whose houses had no settler countdown to name, and refusing it would be tightening the schema rather than growing it.

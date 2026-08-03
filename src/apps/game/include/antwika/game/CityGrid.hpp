@@ -13,6 +13,7 @@
 #include "antwika/game/Coverage.hpp"
 #include "antwika/game/Errand.hpp"
 #include "antwika/game/Household.hpp"
+#include "antwika/game/Journey.hpp"
 #include "antwika/game/PathIndex.hpp"
 #include "antwika/game/Production.hpp"
 #include "antwika/game/Walker.hpp"
@@ -76,6 +77,24 @@ namespace antwika::game
          * at all.
          */
         std::optional<std::size_t> destination = std::nullopt;
+
+        /**
+         * @brief Where it is walking itself, if it is walking anywhere.
+         *
+         * Its `house` is always kNullEntity here, for `walker`'s
+         * reason; which house it is moving into is the index below.
+         * Absent for every walker that is not a person on the move.
+         */
+        std::optional<Journey> journey = std::nullopt;
+
+        /**
+         * @brief Which stored house its journey names, by index.
+         *
+         * Absent for somebody leaving town, which is the ordinary
+         * other half of a journey -- see Journey -- as well as for a
+         * walker with no journey at all.
+         */
+        std::optional<std::size_t> joining = std::nullopt;
 
         /**
          * @brief Compare two stored walkers.

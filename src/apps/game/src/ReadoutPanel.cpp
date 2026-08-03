@@ -61,7 +61,8 @@ namespace antwika::game
                 MessageId::WalkerEngineer,
                 MessageId::WalkerCartPusher,
                 MessageId::WalkerMarketBuyer,
-                MessageId::WalkerMarketSeller};
+                MessageId::WalkerMarketSeller,
+                MessageId::WalkerMigrant};
 
         constexpr std::array<MessageId, kResourceCount> kResourceLabels{
             MessageId::ResourceFood,
