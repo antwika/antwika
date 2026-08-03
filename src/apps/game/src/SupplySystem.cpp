@@ -1,4 +1,4 @@
-#include "antwika/game/MarketSystem.hpp"
+#include "antwika/game/SupplySystem.hpp"
 
 #include <algorithm>
 #include <cstddef>
@@ -27,11 +27,12 @@ namespace antwika::game
 
         using Pending = std::map<Entity, Building>;
 
-        // Read off the seller rather than named a second time here.
-        // Two statements of what a market trades is one to get wrong.
-        constexpr Resource kMarketGood = Resource::Food;
+        // What a market trades is read off its seller.
+        // Rather than named a second time here.
+        // Two statements of one thing is one to get wrong.
         static_assert(
-            carriedResource(WalkerKind::MarketSeller) == kMarketGood);
+            carriedResource(WalkerKind::MarketSeller)
+            == fetchedFromStores(BuildingKind::Market));
 
         // Seeded from the last commit the first time it is touched.
         // So every change this tick accumulates onto one value.
@@ -67,39 +68,44 @@ namespace antwika::game
         }
     } // namespace
 
-    MarketSystem::MarketSystem(const PathIndex &paths, GridExtent extent)
+    SupplySystem::SupplySystem(const PathIndex &paths, GridExtent extent)
         : paths(paths), extent(extent)
     {
     }
 
-    void MarketSystem::update(World &world, antwika::time::Tick)
+    void SupplySystem::update(World &world, antwika::time::Tick)
     {
         // Ascending Cell, out of a map rather than a view.
-        // Two markets buying from one storehouse split what it holds.
-        std::map<Cell, Entity> markets;
+        // Two buyers fetching from one storehouse split what it holds.
+        std::map<Cell, Entity> fetchers;
 
         for (const auto entity : world.view<Building, Cell>())
         {
-            if (world.get<Building>(entity).kind != BuildingKind::Market)
+            if (!fetchedFromStores(world.get<Building>(entity).kind)
+                     .has_value())
             {
                 continue;
             }
 
-            markets.emplace(world.get<Cell>(entity), entity);
+            fetchers.emplace(world.get<Cell>(entity), entity);
         }
 
-        // Counted once rather than per market.
+        // Counted once rather than per building.
         // Every buyer staged this tick is one the cap has to see.
         std::size_t out = world.view<Walker>().size();
 
         Pending pending;
 
-        for (const auto &[origin, entity] : markets)
+        for (const auto &[origin, entity] : fetchers)
         {
-            const auto footprint = footprintOf(BuildingKind::Market);
-            const auto door = spawnCellFor(origin, footprint, paths);
             const auto standing = world.get<Building>(entity);
-            auto &market = touch(world, pending, entity);
+            const auto kind = standing.kind;
+
+            // What this kind cannot make, and therefore goes to get.
+            const auto wanted = *fetchedFromStores(kind);
+            const auto footprint = footprintOf(kind);
+            const auto door = spawnCellFor(origin, footprint, paths);
+            auto &shelf = touch(world, pending, entity);
 
             for (const auto walkerEntity : standing.walkers)
             {
@@ -113,7 +119,7 @@ namespace antwika::game
                 if (walker.kind == WalkerKind::MarketSeller
                     && !world.has<Errand>(walkerEntity))
                 {
-                    auto &held = market.stock[resourceIndex(kMarketGood)];
+                    auto &held = shelf.stock[resourceIndex(wanted)];
                     const auto load = std::min(kWalkerLoad, held);
                     held -= load;
 
@@ -128,7 +134,7 @@ namespace antwika::game
                         walkerEntity,
                         Errand{
                             .destination = kNullEntity,
-                            .carrying = kMarketGood,
+                            .carrying = wanted,
                             .leg = ErrandLeg::Outbound});
                     continue;
                 }
@@ -141,12 +147,12 @@ namespace antwika::game
 
                 const auto errand = world.get<Errand>(walkerEntity);
 
-                // The market is credited here, not in BuildingSystem.
+                // Credited here rather than in BuildingSystem.
                 // That is the whole reason a buyer exists at all.
-                // A market sends walkers.
-                // So its cadence rewrites it in the walk phase.
+                // Both kinds that send one send walkers of their own.
+                // So a cadence rewrites them in the walk phase.
                 // Which would undo a delivery made there.
-                // This phase is the market's own -- see acceptsAt().
+                // This phase is nobody else's -- see acceptsAt().
                 if (errand.leg == ErrandLeg::Returning)
                 {
                     if (walker.carried <= 0
@@ -158,10 +164,9 @@ namespace antwika::game
                         continue;
                     }
 
-                    auto &held = market.stock[resourceIndex(kMarketGood)];
-                    const auto given = std::min(
-                        walker.carried,
-                        capacityOf(BuildingKind::Market) - held);
+                    auto &held = shelf.stock[resourceIndex(wanted)];
+                    const auto given =
+                        std::min(walker.carried, capacityOf(kind) - held);
                     held += given;
 
                     auto emptied = walker;
@@ -186,8 +191,8 @@ namespace antwika::game
                 }
 
                 auto &store = touch(world, pending, errand.destination);
-                const auto room = capacityOf(BuildingKind::Market)
-                    - market.stock[resourceIndex(kMarketGood)];
+                const auto room =
+                    capacityOf(kind) - shelf.stock[resourceIndex(wanted)];
 
                 // Nothing left, or nowhere to put it, is no error.
                 // A store emptied while it walked turns it round.
@@ -212,8 +217,7 @@ namespace antwika::game
 
             const auto slot = freeWalkerSlot(world, standing);
 
-            if (market.stock[resourceIndex(kMarketGood)]
-                    >= capacityOf(BuildingKind::Market)
+            if (shelf.stock[resourceIndex(wanted)] >= capacityOf(kind)
                 || hasWalkerOfKind(
                     world, standing, WalkerKind::MarketBuyer)
                 || !door.has_value() || !slot.has_value()
@@ -223,7 +227,7 @@ namespace antwika::game
             }
 
             const auto store = nearestHolding(
-                world, *door, kMarketGood, paths, extent);
+                world, *door, wanted, paths, extent);
 
             if (store == kNullEntity)
             {
@@ -242,11 +246,11 @@ namespace antwika::game
                 buyer,
                 Errand{
                     .destination = store,
-                    .carrying = kMarketGood,
+                    .carrying = wanted,
                     .leg = ErrandLeg::Outbound});
             ++out;
 
-            market.walkers[*slot] = buyer;
+            shelf.walkers[*slot] = buyer;
         }
 
         for (const auto &[entity, building] : pending)

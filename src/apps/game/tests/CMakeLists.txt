@@ -36,7 +36,7 @@ add_executable(antwika_game_tests
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/LabourSystem.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/MainMenuScene.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/MainMenuSink.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/../src/MarketSystem.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/SupplySystem.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/MenuCommands.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/MenuModalScene.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/Messages.cpp
@@ -165,7 +165,7 @@ add_executable(antwika_game_tests
     ErrandRoutingTest.cpp
     ErrandTest.cpp
     HaulingSystemTest.cpp
-    MarketSystemTest.cpp
+    SupplySystemTest.cpp
     ProductionSystemTest.cpp
     ServiceTest.cpp
     ServiceWalkTest.cpp

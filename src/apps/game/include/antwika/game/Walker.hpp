@@ -43,7 +43,7 @@ namespace antwika::game
         Fireman,           ///< Confers Service::Safety.
         Engineer,          ///< Confers Service::Structure.
         CartPusher,        ///< Hauls a load to a named store.
-        MarketBuyer,       ///< Fetches goods from a store.
+        MarketBuyer,       ///< Fetches an input from a store.
         MarketSeller,      ///< Hands goods out to houses.
     };
 

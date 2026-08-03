@@ -34,7 +34,7 @@ add_executable(antwika_game
     src/LabourSystem.cpp
     src/MainMenuScene.cpp
     src/MainMenuSink.cpp
-    src/MarketSystem.cpp
+    src/SupplySystem.cpp
     src/MenuCommands.cpp
     src/MenuModalScene.cpp
     src/Messages.cpp

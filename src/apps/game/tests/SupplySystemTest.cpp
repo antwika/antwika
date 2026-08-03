@@ -1,4 +1,4 @@
-#include "antwika/game/MarketSystem.hpp"
+#include "antwika/game/SupplySystem.hpp"
 
 #include <cstddef>
 #include <cstdint>
@@ -40,7 +40,7 @@ namespace
     using antwika::game::GridExtent;
     using antwika::game::kWalkerLimit;
     using antwika::game::kWalkerLoad;
-    using antwika::game::MarketSystem;
+    using antwika::game::SupplySystem;
     using antwika::game::PathIndex;
     using antwika::game::Resource;
     using antwika::game::resourceIndex;
@@ -50,7 +50,7 @@ namespace
 
     constexpr GridExtent kExtent{.width = 14, .height = 14};
 
-    class MarketSystemTest : public ::testing::Test
+    class SupplySystemTest : public ::testing::Test
     {
     protected:
         Entity build(Cell at, BuildingKind kind, std::int32_t food)
@@ -123,14 +123,14 @@ namespace
         World world{logger};
         PathIndex paths;
         BuildingIndex built;
-        MarketSystem markets{paths, kExtent};
+        SupplySystem markets{paths, kExtent};
     };
 } // namespace
 
 // The bug this whole system exists to close.
 // SpawnSystem sends the seller out with the load its kind carries.
 // Here it is paid for out of what the market actually holds.
-TEST_F(MarketSystemTest, Update_PaysASellerOutOfTheMarketsOwnShelf)
+TEST_F(SupplySystemTest, Update_PaysASellerOutOfTheMarketsOwnShelf)
 {
     paveRow(5, 0, 13);
     const auto market =
@@ -143,7 +143,7 @@ TEST_F(MarketSystemTest, Update_PaysASellerOutOfTheMarketsOwnShelf)
     EXPECT_EQ(food(market), 0);
 }
 
-TEST_F(MarketSystemTest, Update_SendsASellerOutEmptyFromAnEmptyMarket)
+TEST_F(SupplySystemTest, Update_SendsASellerOutEmptyFromAnEmptyMarket)
 {
     paveRow(5, 0, 13);
     const auto market =
@@ -155,7 +155,7 @@ TEST_F(MarketSystemTest, Update_SendsASellerOutEmptyFromAnEmptyMarket)
     EXPECT_EQ(world.get<Walker>(seller).carried, 0);
 }
 
-TEST_F(MarketSystemTest, Update_MarksASellerSoItIsNeverPaidTwice)
+TEST_F(SupplySystemTest, Update_MarksASellerSoItIsNeverPaidTwice)
 {
     paveRow(5, 0, 13);
     const auto market =
@@ -171,7 +171,7 @@ TEST_F(MarketSystemTest, Update_MarksASellerSoItIsNeverPaidTwice)
     EXPECT_EQ(world.get<Errand>(seller).destination, kNullEntity);
 }
 
-TEST_F(MarketSystemTest, Update_SendsNoBuyerWithNothingToBuy)
+TEST_F(SupplySystemTest, Update_SendsNoBuyerWithNothingToBuy)
 {
     paveRow(5, 0, 13);
     build(Cell{.x = 2, .y = 3}, BuildingKind::Market, 0);
@@ -182,7 +182,7 @@ TEST_F(MarketSystemTest, Update_SendsNoBuyerWithNothingToBuy)
     EXPECT_TRUE(buyers().empty());
 }
 
-TEST_F(MarketSystemTest, Update_SendsABuyerToTheStoreWithTheGoods)
+TEST_F(SupplySystemTest, Update_SendsABuyerToTheStoreWithTheGoods)
 {
     paveRow(5, 0, 13);
     const auto market =
@@ -200,7 +200,7 @@ TEST_F(MarketSystemTest, Update_SendsABuyerToTheStoreWithTheGoods)
     EXPECT_EQ(world.get<Errand>(sent[0]).leg, ErrandLeg::Outbound);
 }
 
-TEST_F(MarketSystemTest, Update_SendsOnlyOneBuyerAtATime)
+TEST_F(SupplySystemTest, Update_SendsOnlyOneBuyerAtATime)
 {
     paveRow(5, 0, 13);
     build(Cell{.x = 2, .y = 3}, BuildingKind::Market, 0);
@@ -212,7 +212,7 @@ TEST_F(MarketSystemTest, Update_SendsOnlyOneBuyerAtATime)
     EXPECT_EQ(buyers().size(), 1U);
 }
 
-TEST_F(MarketSystemTest, Update_SendsNoBuyerFromAMarketAlreadyFull)
+TEST_F(SupplySystemTest, Update_SendsNoBuyerFromAMarketAlreadyFull)
 {
     paveRow(5, 0, 13);
     build(
@@ -226,7 +226,7 @@ TEST_F(MarketSystemTest, Update_SendsNoBuyerFromAMarketAlreadyFull)
     EXPECT_TRUE(buyers().empty());
 }
 
-TEST_F(MarketSystemTest, Update_SendsNoBuyerFromAMarketWithNoRoadBeside)
+TEST_F(SupplySystemTest, Update_SendsNoBuyerFromAMarketWithNoRoadBeside)
 {
     paveRow(5, 0, 13);
     build(Cell{.x = 2, .y = 0}, BuildingKind::Market, 0);
@@ -237,7 +237,7 @@ TEST_F(MarketSystemTest, Update_SendsNoBuyerFromAMarketWithNoRoadBeside)
     EXPECT_TRUE(buyers().empty());
 }
 
-TEST_F(MarketSystemTest, Update_SendsNoBuyerFromAMarketWithNoFreeSlot)
+TEST_F(SupplySystemTest, Update_SendsNoBuyerFromAMarketWithNoFreeSlot)
 {
     paveRow(5, 0, 13);
     const auto market =
@@ -258,7 +258,7 @@ TEST_F(MarketSystemTest, Update_SendsNoBuyerFromAMarketWithNoFreeSlot)
     EXPECT_TRUE(buyers().empty());
 }
 
-TEST_F(MarketSystemTest, Update_LoadsABuyerStandingBesideItsStore)
+TEST_F(SupplySystemTest, Update_LoadsABuyerStandingBesideItsStore)
 {
     paveRow(5, 0, 13);
     const auto market =
@@ -280,7 +280,7 @@ TEST_F(MarketSystemTest, Update_LoadsABuyerStandingBesideItsStore)
     EXPECT_EQ(food(market), 0);
 }
 
-TEST_F(MarketSystemTest, Update_LoadsNoMoreThanTheMarketHasRoomFor)
+TEST_F(SupplySystemTest, Update_LoadsNoMoreThanTheMarketHasRoomFor)
 {
     paveRow(5, 0, 13);
     build(
@@ -304,7 +304,7 @@ TEST_F(MarketSystemTest, Update_LoadsNoMoreThanTheMarketHasRoomFor)
 
 // A store emptied while the buyer walked to it turns it round.
 // Rather than leaving it standing at the door for ever.
-TEST_F(MarketSystemTest, Update_TurnsABuyerRoundAtAnEmptiedStore)
+TEST_F(SupplySystemTest, Update_TurnsABuyerRoundAtAnEmptiedStore)
 {
     paveRow(5, 0, 13);
     build(Cell{.x = 2, .y = 3}, BuildingKind::Market, 0);
@@ -327,7 +327,7 @@ TEST_F(MarketSystemTest, Update_TurnsABuyerRoundAtAnEmptiedStore)
     EXPECT_EQ(world.get<Errand>(buyer).leg, ErrandLeg::Returning);
 }
 
-TEST_F(MarketSystemTest, Update_LeavesABuyerStillOnItsWayAlone)
+TEST_F(SupplySystemTest, Update_LeavesABuyerStillOnItsWayAlone)
 {
     paveRow(5, 0, 13);
     build(Cell{.x = 2, .y = 3}, BuildingKind::Market, 0);
@@ -344,7 +344,7 @@ TEST_F(MarketSystemTest, Update_LeavesABuyerStillOnItsWayAlone)
     EXPECT_EQ(food(store), 60);
 }
 
-TEST_F(MarketSystemTest, Update_LeavesABuyerWhoseStoreIsGoneToTheWalker)
+TEST_F(SupplySystemTest, Update_LeavesABuyerWhoseStoreIsGoneToTheWalker)
 {
     paveRow(5, 0, 13);
     build(Cell{.x = 2, .y = 3}, BuildingKind::Market, 0);
@@ -364,7 +364,7 @@ TEST_F(MarketSystemTest, Update_LeavesABuyerWhoseStoreIsGoneToTheWalker)
 
 // Two markets, one storehouse, and one load between them.
 // The lower market gets it, whichever order they were built in.
-TEST_F(MarketSystemTest, Update_SplitsOneStoreBetweenTwoMarketsInCellOrder)
+TEST_F(SupplySystemTest, Update_SplitsOneStoreBetweenTwoMarketsInCellOrder)
 {
     paveRow(5, 0, 13);
     build(Cell{.x = 10, .y = 3}, BuildingKind::Market, 0);
@@ -395,7 +395,7 @@ TEST_F(MarketSystemTest, Update_SplitsOneStoreBetweenTwoMarketsInCellOrder)
     }
 }
 
-TEST_F(MarketSystemTest, Update_LeavesAWalkerThatIsNoMarketWalkerAlone)
+TEST_F(SupplySystemTest, Update_LeavesAWalkerThatIsNoMarketWalkerAlone)
 {
     paveRow(5, 0, 13);
     const auto market =
@@ -420,7 +420,7 @@ TEST_F(MarketSystemTest, Update_LeavesAWalkerThatIsNoMarketWalkerAlone)
 
 // The other half of the buyer's round trip.
 // Here rather than in BuildingSystem: this phase is the market's own.
-TEST_F(MarketSystemTest, Update_CreditsTheMarketWhenItsBuyerGetsBack)
+TEST_F(SupplySystemTest, Update_CreditsTheMarketWhenItsBuyerGetsBack)
 {
     paveRow(5, 0, 13);
     const auto market =
@@ -444,7 +444,7 @@ TEST_F(MarketSystemTest, Update_CreditsTheMarketWhenItsBuyerGetsBack)
     EXPECT_EQ(world.get<Walker>(buyer).carried, 0);
 }
 
-TEST_F(MarketSystemTest, Update_CreditsAMarketOnlyWhatItHasRoomFor)
+TEST_F(SupplySystemTest, Update_CreditsAMarketOnlyWhatItHasRoomFor)
 {
     paveRow(5, 0, 13);
     const auto market =
@@ -472,7 +472,7 @@ TEST_F(MarketSystemTest, Update_CreditsAMarketOnlyWhatItHasRoomFor)
     EXPECT_EQ(world.get<Walker>(buyer).carried, 50);
 }
 
-TEST_F(MarketSystemTest, Update_LeavesABuyerStillWalkingBackAlone)
+TEST_F(SupplySystemTest, Update_LeavesABuyerStillWalkingBackAlone)
 {
     paveRow(5, 0, 13);
     const auto market =
@@ -496,7 +496,7 @@ TEST_F(MarketSystemTest, Update_LeavesABuyerStillWalkingBackAlone)
     EXPECT_EQ(world.get<Walker>(buyer).carried, 60);
 }
 
-TEST_F(MarketSystemTest, Update_LeavesAnEmptyBuyerComingHomeAlone)
+TEST_F(SupplySystemTest, Update_LeavesAnEmptyBuyerComingHomeAlone)
 {
     paveRow(5, 0, 13);
     const auto market =
@@ -526,7 +526,7 @@ TEST_F(MarketSystemTest, Update_LeavesAnEmptyBuyerComingHomeAlone)
 
 // A file may hold a market buyer with no errand at all.
 // Which is a walker that roams, and nothing this system acts on.
-TEST_F(MarketSystemTest, Update_LeavesABuyerWithNoErrandAlone)
+TEST_F(SupplySystemTest, Update_LeavesABuyerWithNoErrandAlone)
 {
     paveRow(5, 0, 13);
     const auto market =
@@ -550,7 +550,7 @@ TEST_F(MarketSystemTest, Update_LeavesABuyerWithNoErrandAlone)
     EXPECT_FALSE(world.has<Errand>(stray));
 }
 
-TEST_F(MarketSystemTest, Update_SendsNoBuyerWithTheWalkerCapReached)
+TEST_F(SupplySystemTest, Update_SendsNoBuyerWithTheWalkerCapReached)
 {
     paveRow(5, 0, 13);
     build(Cell{.x = 2, .y = 3}, BuildingKind::Market, 0);

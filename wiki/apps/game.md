@@ -440,7 +440,17 @@ That is not a fallback bolted on afterwards -- it is what keeps a city migrated 
 A load changes hands in `BuildingSystem`, which shares the `"walk"` phase with `SpawnSystem`.
 Both read a building as of the last commit and both write the whole component back, and the cadence's write is the later of the two -- so a delivery into any kind that sends walkers is undone in the same tick it was made, silently, whenever that building happens to have nobody out.
 A storehouse is the one kind that sends nobody, which is what makes it the one kind `acceptsAt()` names.
-Everything else that receives goods is credited by the system that owns it, in a later phase where nothing else writes it: that is why a market has a buyer of its own instead of being carted to, and why nothing yet carries clay into a workshop -- that would want a walker kind this round's vocabulary has not got, and `Walker.hpp` is not this workstream's to change.
+Everything else that receives goods is credited by the system that owns it, in a later phase where nothing else writes it: that is why a market has a buyer of its own instead of being carted to, and why a workshop has one too.
+
+**Clay becomes pottery because a workshop goes and fetches it, and that is one code path rather than a second chain.**
+`fetchedFromStores()` is the table of kinds that send a buyer out for something they cannot make -- a market for the food its seller hands out, a workshop for the clay it fires -- and `SupplySystem` (which is what `MarketSystem` grew into) drives both off it.
+A `static_assert` holds it to `consumedToProduce()` wherever both have an answer, so a kind that eats an input and has no way to get one is a build failure rather than a building that stands for ever with an empty hopper.
+The whole chain closes on itself: a clay pit digs, a cart pusher hauls to the storehouse, the workshop's buyer fetches it back, `ProductionSystem` fires it, and the workshop's own cart pusher takes the pottery to the storehouse like any other output.
+
+**That system has a phase of its own now, `"supply"`, and a workshop is the reason.**
+It used to share `"haul"` with `HaulingSystem`, which was safe on exactly the grounds stated above -- a cart is loaded out of a producer, a buyer is loaded out of a storehouse, and no building is both.
+A workshop is both: pottery out, clay in.
+So the two would read one `Building` as of the same commit and write the whole component back, and the later write would silently undo the earlier -- which is the trap the phase list exists to avoid, met for the second time.
 
 **The chain runs in two phases, `"produce"` then `"haul"`, rather than the one the plan sketched.**
 A phase is where the World's buffers swap, so two systems in one phase both read what the last swap left and both write a whole `Building` back.
@@ -478,7 +488,7 @@ That is what makes the two arms mutually exclusive: meeting the next row implies
 
 **The ladder may only demand food, and the `static_assert` saying so is the most useful line in the header.**
 A market seller is the one walker that ever hands goods to a house, and `carriedResource()` says it sets out with exactly one resource.
-Clay only ever reaches a storehouse, and pottery is not made in a running city at all, because nothing yet carts clay into a workshop — `Store.hpp` explains why that would need a walker kind this round has not got.
+Clay reaches a storehouse and a workshop and pottery comes back out of one, but a house sees neither: a market seller is still the one walker that hands anything to a house, and food is still what it sets out with.
 A tier demanding either would have been a rung no city could ever stand on, and nothing would have said so; the assertion turns that into a build failure the day somebody adds a cart that changes the answer.
 The desirability figures are read off `kDesirabilityOf` and its integer falloff rather than guessed: a well truncates to nothing one cell away, so a threshold of 1 means a market or a doctor within two cells and 2 means both.
 
