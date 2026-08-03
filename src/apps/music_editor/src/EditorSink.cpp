@@ -72,6 +72,7 @@ namespace antwika::music_editor
         const IInputEventCodec &codec,
         const EditorScene &scene,
         const Size canvas,
+        WaveRenderDesc waveRender,
         input::IClipboard *clipboard,
         ITickEventSink &stop,
         std::string scoresDirectory,
@@ -85,7 +86,8 @@ namespace antwika::music_editor
           clipboard(clipboard),
           stop(stop),
           scoresDirectory(std::move(scoresDirectory)),
-          writesScores(writesScores)
+          writesScores(writesScores),
+          waveImages(std::move(waveRender))
     {
     }
 
@@ -248,7 +250,14 @@ namespace antwika::music_editor
             .voices = playback.voices(),
             .cycles = playback.playedTicks(),
             .lines = playback.sounding(),
-            .playing = std::move(playing)};
+            .playing = std::move(playing),
+            // The waveform lines' rendered cycles, from the cache.
+            // Rendered afresh only when a chain or the speed changed.
+            // The excluded line carries the unwind edges alone.
+            // Only a refresh that failed to allocate would take them.
+            // See docs/confirming-unreachable-branches.md.
+            .waves = waveImages.refresh(
+                score, state.speed)}; // GCOVR_EXCL_LINE
 
         return scene.describe(
             state, score, status, canvas, pointerNow(edge), keyboard);

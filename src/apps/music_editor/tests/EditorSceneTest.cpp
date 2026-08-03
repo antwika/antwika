@@ -607,12 +607,41 @@ TEST(EditorSceneTest, ARollAndAWaveStackUnderOneLine)
         roll->origin.y + static_cast<std::int32_t>(kRollHeight));
 }
 
-// A square at pitch nought shows exactly two oscillations.
-// The first column sits on the midline's far side at full gain.
-TEST(EditorSceneTest, PaintsASquareWaveOverItsBand)
+namespace
 {
-    const auto frame = pianorollFrame(
-        "$: n(\"0\").s(square).base(220).gain(1).waveform()\n");
+    using antwika::music_editor::WaveImage;
+
+    /**
+     * @brief Describe a document with its waveform images handed in.
+     * @param source The document, read into a fresh score.
+     * @param waves One rendered cycle per waveform() line.
+     * @return The frame.
+     */
+    [[nodiscard]] antwika::ui::Frame waveFrame(
+        const std::string &source,
+        const std::vector<WaveImage> &waves)
+    {
+        EditorState state;
+        state.source = source;
+
+        Score score;
+        score.read(state.source);
+
+        return describe(
+            state, score, PlaybackStatus{.waves = waves});
+    }
+} // namespace
+
+// The image is the voice's actual audio, folded to column extremes.
+// A column of ink reaches from the highest sample to the lowest.
+TEST(EditorSceneTest, PaintsTheRenderedWaveOverItsBand)
+{
+    const std::vector<WaveImage> waves{WaveImage{
+        .low = {-1.0F, 0.0F, 0.0F, -0.5F},
+        .high = {1.0F, 0.5F, 0.0F, 0.0F}}};
+
+    const auto frame =
+        waveFrame("$: drum.n(\"0\").waveform()\n", waves);
 
     const auto band = frame.rects.find(waveformBand(0));
 
@@ -620,39 +649,55 @@ TEST(EditorSceneTest, PaintsASquareWaveOverItsBand)
 
     const auto columns = fillsIn(frame.commands, kWaveInk);
 
-    // One column per four pixels, right across the band.
-    ASSERT_EQ(columns.size(), (band->size.width + 3) / 4);
+    // One column of ink per pixel, right across the band.
+    ASSERT_EQ(columns.size(), band->size.width);
 
     const auto half =
         static_cast<std::int32_t>(band->size.height / 2);
 
-    // Up first: the square's positive half, at full amplitude.
+    // The first image column spans the whole range.
     EXPECT_EQ(
         columns[0].rect,
         (Rect{
             .origin = {.x = band->origin.x, .y = band->origin.y},
             .size =
-                {.width = 4,
-                 .height = static_cast<std::uint32_t>(half)}}));
+                {.width = 1,
+                 .height = static_cast<std::uint32_t>(2 * half)}}));
+
+    // The last quarter reaches from the midline half way down.
+    const auto tail = columns[(band->size.width / 4) * 3].rect;
+
+    EXPECT_EQ(tail.origin.y, band->origin.y + half);
+    EXPECT_EQ(
+        tail.size.height, static_cast<std::uint32_t>(half / 2));
 }
 
-// Each shape draws a wave of its own, and every pitch draws some.
-// The octaves double and halve the oscillations, saturated far in.
-TEST(EditorSceneTest, EveryShapeDrawsItsOwnWave)
+// Silence is a flat midline rather than nothing at all.
+TEST(EditorSceneTest, ASilentImageDrawsItsMidline)
 {
-    for (const auto *shape :
-         {"sine", "saw", "square", "triangle", "noise"})
-    {
-        const auto frame = pianorollFrame(
-            "$: n(\"0 84 -84\").s(" + std::string(shape)
-            + ").base(220).gain(.5).waveform()\n");
+    const std::vector<WaveImage> waves{WaveImage{
+        .low = {0.0F, 0.0F}, .high = {0.0F, 0.0F}}};
 
-        EXPECT_FALSE(fillsIn(frame.commands, kWaveInk).empty())
-            << shape;
-    }
+    const auto frame =
+        waveFrame("$: drum.n(\"~ ~\").waveform()\n", waves);
+
+    const auto band = frame.rects.find(waveformBand(0));
+
+    ASSERT_TRUE(band.has_value());
+
+    const auto columns = fillsIn(frame.commands, kWaveInk);
+
+    ASSERT_EQ(columns.size(), band->size.width);
+    EXPECT_EQ(columns[0].rect.size.height, 1U);
+    EXPECT_EQ(
+        columns[0].rect.origin.y,
+        band->origin.y
+            + static_cast<std::int32_t>(band->size.height / 2));
 }
 
-TEST(EditorSceneTest, AWaveOfRestsIsItsBackdropAlone)
+// The audio arrives through the status, rendered and cached outside.
+// A band whose image is not there yet is its backdrop alone.
+TEST(EditorSceneTest, AWaveWithNoImageIsItsBackdropAlone)
 {
     const auto frame =
         pianorollFrame("$: drum.n(\"~ ~\").waveform()\n");
@@ -661,32 +706,15 @@ TEST(EditorSceneTest, AWaveOfRestsIsItsBackdropAlone)
     EXPECT_TRUE(fillsIn(frame.commands, kWaveInk).empty());
 }
 
-// A note thinner than a pixel has no column to hold.
-// So a thousand and twenty-four notes cross a three-hundred-pixel window.
-// What is left is one one-pixel column per pixel that got a note at all.
-TEST(EditorSceneTest, NotesThinnerThanAPixelHoldNoColumn)
+// An image of no columns has no audio to say anything of.
+TEST(EditorSceneTest, AnEmptyImageIsItsBackdropAlone)
 {
-    EditorState state;
-    state.source = "$: drum.n(\"0*1024\").waveform()\n";
+    const auto frame = waveFrame(
+        "$: drum.n(\"~ ~\").waveform()\n",
+        std::vector<WaveImage>{WaveImage{}});
 
-    Score score;
-    score.read(state.source);
-
-    const EditorScene scene;
-
-    const auto frame = scene.describe(
-        state,
-        score,
-        PlaybackStatus{},
-        antwika::gfx::Size{.width = 300, .height = 640},
-        Pointer{},
-        Keyboard{});
-
-    const auto band = frame.rects.find(waveformBand(0));
-
-    ASSERT_TRUE(band.has_value());
-    EXPECT_EQ(
-        fillsIn(frame.commands, kWaveInk).size(), band->size.width);
+    EXPECT_EQ(fillsIn(frame.commands, kRollBackdrop).size(), 1U);
+    EXPECT_TRUE(fillsIn(frame.commands, kWaveInk).empty());
 }
 
 TEST(EditorSceneTest, AWaveScrolledOffTheTopPaintsNothing)

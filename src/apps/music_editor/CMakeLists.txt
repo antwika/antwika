@@ -14,6 +14,8 @@ add_executable(antwika_music_editor
     src/ScoreFiles.cpp
     src/TrackPreset.cpp
     src/VoiceChain.cpp
+    src/WaveImage.cpp
+    src/WaveImageCache.cpp
     src/main.cpp
 )
 

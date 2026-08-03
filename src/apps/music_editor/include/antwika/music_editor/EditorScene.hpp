@@ -12,11 +12,13 @@
 #include <antwika/ui/TextAreaSpec.hpp>
 #include <antwika/ui/Theme.hpp>
 
+#include <span>
 #include <vector>
 
 #include "antwika/music_editor/EditorState.hpp"
 #include "antwika/music_editor/Score.hpp"
 #include "antwika/music_editor/TrackPreset.hpp"
+#include "antwika/music_editor/WaveImage.hpp"
 
 namespace antwika::music_editor
 {
@@ -83,6 +85,18 @@ namespace antwika::music_editor
          * lights what the run lit.
          */
         std::vector<antwika::ui::TextHighlight> playing{};
+
+        /**
+         * @brief One rendered cycle per waveform the score asks for.
+         *
+         * Parallel to Score::waveforms(), handed in on playing's
+         * terms: rendering audio is the projection side's business,
+         * and a scene that rendered it itself would be paying for a
+         * cycle of samples on every description.  A missing image --
+         * the span shorter than the waveforms -- draws as the bare
+         * backdrop.  See WaveImageCache.
+         */
+        std::span<const WaveImage> waves{};
     };
 
     /**

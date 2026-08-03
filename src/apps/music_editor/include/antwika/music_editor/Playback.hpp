@@ -268,13 +268,6 @@ namespace antwika::music_editor
             TrackPreset preset{};
 
         private:
-            void sound(
-                const TrackPreset &sounded,
-                const pattern::Controls &value,
-                FrameCount frames,
-                FrameIndex startFrame,
-                float gainScale);
-
             synth::SynthMixer &mixer;
             std::uint64_t &counter;
 

@@ -103,6 +103,14 @@ namespace antwika::music_editor
 
         /** @brief The document line the chain ends on, from nought. */
         std::size_t line = 0;
+
+        /**
+         * @brief The chain text the line reads as.
+         *
+         * What a render cache keys an image on, since equal text
+         * parses to an equal sound.  Borrowed until the next read().
+         */
+        std::string_view chain{};
     };
 
     /**

@@ -13,6 +13,7 @@
 
 #include "antwika/music_editor/EditorSink.hpp"
 #include "antwika/music_editor/Score.hpp"
+#include "antwika/music_editor/WaveImage.hpp"
 
 namespace antwika::music_editor
 {
@@ -49,8 +50,14 @@ namespace antwika::music_editor
 
         EditorSink editor(
             state, score, playback, config.codec, config.scene,
-            config.canvas, config.clipboard, stopSignal,
-            config.scoresDirectory, config.writesScores);
+            config.canvas,
+            // The playback's own two numbers.
+            // So the pictures are of the sound this very run makes.
+            WaveRenderDesc{
+                .rate = config.mixer.format().rate,
+                .framesPerCycle = config.playback.framesPerCycle},
+            config.clipboard, stopSignal, config.scoresDirectory,
+            config.writesScores);
 
         std::vector<std::reference_wrapper<ITickEventSink>> timedSinks{
             editor, stopSignal};

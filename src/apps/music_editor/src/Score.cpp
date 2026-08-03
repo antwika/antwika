@@ -256,7 +256,8 @@ namespace antwika::music_editor
                 waves.push_back(Waveform{ // GCOVR_EXCL_LINE
                     .playing = held.voice.playing,
                     .preset = held.voice.preset,
-                    .line = below});
+                    .line = below,
+                    .chain = held.chain});
             }
         }
 
