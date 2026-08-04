@@ -304,6 +304,19 @@ The alternative to all of it would have been persisting what each press *did* --
 
 `Lineage::record()` is offered the ending companion's age whether there is a store behind the session or not, for the same equivalence: a replay has no store by design, and a best that depended on there being a file would be one number the two runs disagreed on.
 
+## The debug console
+
+The console is `antwika::console` mounted whole: the grave key slides the sheet over the top half of the window, and `dump_state` / `load_state` are the two commands it answers.
+The library defaults are kept even on this 256-pixel canvas -- the sheet is half of it, which is room enough for two commands.
+`console::InputFold` is registered first and `ConsoleSink` immediately after it, ahead of everything it gates.
+`PropSink` and `ReviveSink` are wrapped in `console::ConsoleGatedSink`, so a press under the sheet prods nothing while one on the props below it still lands.
+`PetSink` is deliberately not wrapped: the pet does not pause while the console is open.
+`CompanionSnapshotStore` is this application's half of the two commands.
+A dump is the very `CompanionMemory` the save file round-trips, embedded whole -- magic, version and migrations included -- as the envelope's opaque state under the dump's own magic, `antwika-companion-state-dump`.
+A load rebuilds the Pet and the Lineage through the same constructors `RestoreSink` uses, so there is no moment at which a half-restored companion exists.
+`load_state` is refused under `--record` and `--replay`, since a load reads a file whose contents no recording carries; `dump_state` is a write-only projection and runs everywhere.
+The session's summary carries the console's history, exactly as the game's does.
+
 ## Running it
 
 ```sh

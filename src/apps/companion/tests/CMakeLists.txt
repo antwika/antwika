@@ -1,8 +1,10 @@
 antwika_add_app_tests(
     APP companion
     TESTS
+        CompanionSnapshotStoreTest.cpp
         CompanionTest.cpp
         ConfigFileTest.cpp
+        ConsoleSinkTest.cpp
         DayMoodTest.cpp
         FilePetStoreTest.cpp
         LifeStageTest.cpp
@@ -24,6 +26,7 @@ antwika_add_app_tests(
         antwika::app
         antwika::config
         antwika::config::tests::conformance
+        antwika::console
         antwika::ecs
         antwika::engine
         antwika::event::tests::mocks
@@ -37,5 +40,6 @@ antwika_add_app_tests(
         antwika::testing
         antwika::time::tests::fakes
         antwika::tween
+        antwika::ui
         gtest::gtest
 )

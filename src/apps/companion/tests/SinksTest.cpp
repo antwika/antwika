@@ -4,6 +4,7 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
+#include <antwika/console/ConsolePicture.hpp>
 #include <antwika/engine/Events.hpp>
 #include <antwika/event/Event.hpp>
 #include <antwika/event/TickEvent.hpp>
@@ -253,7 +254,9 @@ namespace
 
         EXPECT_CALL(renderer, present()).Times(1);
 
-        RenderSink sink(window, scene, pet, lineage, kCanvas);
+        const antwika::console::ConsolePicture consolePicture;
+        RenderSink sink(
+            window, scene, pet, lineage, kCanvas, consolePicture);
         sink.handle(tick());
     }
 
@@ -269,7 +272,9 @@ namespace
 
         EXPECT_CALL(window, renderer()).Times(0);
 
-        RenderSink sink(window, scene, pet, lineage, kCanvas);
+        const antwika::console::ConsolePicture consolePicture;
+        RenderSink sink(
+            window, scene, pet, lineage, kCanvas, consolePicture);
         sink.handle(other());
         sink.handle(tick());
     }

@@ -204,6 +204,7 @@ TEST(RunIntegrationTest, TheSameInputReachesTheSameCompanionTwice)
     EXPECT_EQ(first.pesters, second.pesters);
     EXPECT_EQ(first.collapses, second.collapses);
     EXPECT_EQ(first.perished, second.perished);
+    EXPECT_EQ(first.console, second.console);
 }
 
 TEST(RunIntegrationTest, AStopEventEndsTheSessionBeforeTheCap)
