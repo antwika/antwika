@@ -17,6 +17,7 @@ add_executable(antwika_app_tests
     WavFileTest.cpp
     WindowCloseSourceTest.cpp
     WindowInputSourceTest.cpp
+    WindowedSessionTest.cpp
     WindowPointerMappingTest.cpp
 )
 

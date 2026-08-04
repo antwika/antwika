@@ -5,19 +5,15 @@
 
 #include <antwika/app/ConsoleLogging.hpp>
 #include <antwika/app/RunRecorded.hpp>
+#include <antwika/app/WindowedSession.hpp>
 #include <antwika/console/ConsolePicture.hpp>
 #include <antwika/console/SnapshotCommands.hpp>
 #include <antwika/gfx/SelectedBackend.hpp>
 #include <antwika/gfx/Size.hpp>
-#include <antwika/gfx/WindowDesc.hpp>
 #include <antwika/i18n/Locale.hpp>
-#include <antwika/input/InputEventCodec.hpp>
-#include <antwika/input/InputPipeline.hpp>
 #include <antwika/input/Key.hpp>
 #include <antwika/input/SelectedInputBackend.hpp>
 #include <antwika/log/Level.hpp>
-#include <antwika/replay/ReplaySource.hpp>
-#include <antwika/app/WindowInputSource.hpp>
 #include <antwika/time/SystemSleeper.hpp>
 
 #include <antwika/app/AssetPath.hpp>
@@ -36,12 +32,9 @@
 
 using antwika::app::ConsoleLogging;
 using antwika::app::RecordedRun;
-using antwika::gfx::WindowDesc;
-using antwika::input::InputEventCodec;
-using antwika::input::InputPipeline;
+using antwika::app::WindowedSession;
+using antwika::app::WindowedSessionDesc;
 using antwika::log::Level;
-using antwika::replay::ReplaySource;
-using antwika::app::WindowInputSource;
 using antwika::sudoku::BoardOverlay;
 using antwika::sudoku::Messages;
 using antwika::sudoku::PuzzleSource;
@@ -79,16 +72,18 @@ namespace
         const auto inputBackend =
             antwika::input::makeSelectedInputBackend(logger);
 
-        logger.log(
-            Level::Info,
-            "Antwika Sudoku on backend: "
-                + std::string(backend->name()) + ", input: "
-                + std::string(inputBackend->name()));
+        // Movement is coalesced, since a layout reads one position.
+        // Nothing here is painted by dragging.
+        const WindowedSessionDesc desc{
+            .name = "Antwika Sudoku",
+            .windowTitle = "Antwika Sudoku",
+            .canvas = kWindowSize,
+            .input =
+                {.coalescePointerMotion = true,
+                 .stopOnKey = antwika::input::Key::Escape},
+            .replayPath = recorded.options.replayPath};
 
-        const auto window = backend->createWindow(WindowDesc{
-            .title = "Antwika Sudoku",
-            .size = kWindowSize,
-            .resizable = false});
+        WindowedSession session(logger, *backend, *inputBackend, desc);
 
         // Fixed here, and read from nowhere else.
         // The Solve button is as wide as its own label.
@@ -103,30 +98,12 @@ namespace
 
         // The console's picture, shared by the sink and the renderer.
         // Handing it over is what mounts the console at all.
-        antwika::console::ConsolePicture consolePicture{kWindowSize};
-
-        ReplaySource fileSource(
-            antwika::app::scriptedEvents(recorded.options.replayPath));
-
-        const InputEventCodec codec;
-
-        // Live input is attached only when there is no replay to run.
-        // Movement is coalesced, since a layout reads one position.
-        // Nothing here is painted by dragging.
-        InputPipeline input(
-            fileSource,
-            *inputBackend,
-            codec,
-            {.readsDevice = !recorded.options.replayPath.has_value(),
-             .coalescePointerMotion = true,
-             .stopOnKey = antwika::input::Key::Escape});
-
-        WindowInputSource windowed(input, *backend, window->id());
+        antwika::console::ConsolePicture consoleOverlay{session.canvas()};
 
         // The puzzle goes into the stream ahead of the recorder.
         // So a recording carries the grid it was played on.
         PuzzleSource puzzled(
-            windowed,
+            session.source(),
             antwika::sudoku::startingPuzzle(
                 options.puzzlePath,
                 recorded.options.replayPath.has_value()));
@@ -137,7 +114,7 @@ namespace
             .logger = logger,
             .eventSink = recorded.eventSink,
             .inputSource = source,
-            .codec = codec,
+            .codec = session.codec(),
             .translator = translator,
             .canvas = kWindowSize,
             .replayRecorder = recorded.replayRecorder,
@@ -145,15 +122,15 @@ namespace
                 [&](const PuzzleState &, const BoardOverlay &overlay)
             {
                 return std::make_unique<RenderSink>(
-                    *window,
+                    session.window(),
                     scene,
                     overlay,
-                    consolePicture,
+                    consoleOverlay,
                     sleeper,
                     std::chrono::milliseconds(
                         config.framePeriodMs));
             },
-            .consoleOverlay = consolePicture,
+            .consoleOverlay = consoleOverlay,
             .consoleLoadEnabled = antwika::console::consoleLoadPermitted(
                 recorded.options.recordPath.has_value(),
                 recorded.options.replayPath.has_value())});
