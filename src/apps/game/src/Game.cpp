@@ -520,8 +520,11 @@ namespace antwika::game
             wiring.stateDumpPath,
             wiring.consoleLoadEnabled);
 
+        // The excluded line is the setup temporary's unwind block.
+        // The sink's constructor stores references and cannot throw.
+        // See docs/confirming-unreachable-branches.md.
         antwika::console::ConsoleSink consoleSink(
-            antwika::console::ConsoleSinkSetup{
+            antwika::console::ConsoleSinkSetup{ // GCOVR_EXCL_LINE
                 .console = console,
                 .input = input,
                 .picture = consolePicture,

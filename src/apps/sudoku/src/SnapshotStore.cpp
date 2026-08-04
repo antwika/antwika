@@ -211,8 +211,11 @@ namespace antwika::sudoku
         const std::string &path,
         const std::vector<std::string> &console)
     {
+        // The excluded line is the envelope temporary's unwind arms.
+        // Only a failed allocation inside it could take one.
+        // See docs/confirming-unreachable-branches.md.
         dumpFormat().write(
-            antwika::console::Snapshot{
+            antwika::console::Snapshot{ // GCOVR_EXCL_LINE
                 .console = console,
                 .state = puzzleStateToJson(state)},
             path);

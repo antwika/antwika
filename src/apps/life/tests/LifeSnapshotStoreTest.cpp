@@ -255,3 +255,29 @@ TEST(LifeSnapshotStoreTest, AStoreWithoutAPointerSinkCarriesNoDrag)
     EXPECT_TRUE(drag.inProgress());
     EXPECT_TRUE(console.empty());
 }
+
+TEST(LifeSnapshotStoreTest, LoadRefusesABoardOfAnotherHeight)
+{
+    const antwika::testing::ScratchFile file(
+        "antwika_life_store_load_height.json");
+    const auto path = file.path().string();
+
+    // The width matches the running grid; only the height does not.
+    StateDump dump;
+    dump.board = Board{
+        .width = 2,
+        .height = 3,
+        .alive = {false, false, false, false, false, false}};
+
+    dumpFormat().write(
+        antwika::console::Snapshot{
+            .console = {},
+            .state = antwika::life::stateDumpToJson(dump)},
+        path);
+
+    StoreHarness harness;
+
+    EXPECT_THROW(
+        (void)harness.store.load(path),
+        antwika::console::SnapshotError);
+}

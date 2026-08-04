@@ -161,3 +161,114 @@ TEST(StateDumpTest, AWrongTypeIsRefusedBySchemaNotByAccessor)
 
     EXPECT_THROW((void)stateDumpFromJson(encoded), AtlasEditorError);
 }
+
+TEST(StateDumpTest, DumpedImageEqualityComparesEveryField)
+{
+    const DumpedImage base{
+        .size = {.width = 8, .height = 12}, .fingerprint = 77};
+
+    EXPECT_EQ(base, base);
+
+    auto resized = base;
+    resized.size = {.width = 9, .height = 12};
+    EXPECT_NE(base, resized);
+
+    auto reprinted = base;
+    reprinted.fingerprint = 78;
+    EXPECT_NE(base, reprinted);
+}
+
+TEST(StateDumpTest, GestureEqualityComparesEveryField)
+{
+    const Gesture base{
+        .carrying = true, .from = {.x = 0, .y = 1}, .to = {.x = 5, .y = 6}};
+
+    EXPECT_EQ(base, base);
+
+    auto drawing = base;
+    drawing.carrying = false;
+    EXPECT_NE(base, drawing);
+
+    auto moved = base;
+    moved.from = Pixel{.x = 2, .y = 1};
+    EXPECT_NE(base, moved);
+
+    auto reached = base;
+    reached.to = Pixel{.x = 5, .y = 7};
+    EXPECT_NE(base, reached);
+}
+
+TEST(StateDumpTest, EqualityComparesEveryField)
+{
+    const auto base = fullDump();
+
+    EXPECT_EQ(base, base);
+
+    auto resheeted = base;
+    resheeted.sheet.fingerprint = 1;
+    EXPECT_NE(base, resheeted);
+
+    auto revised = base;
+    revised.sheetRevision = 99;
+    EXPECT_NE(base, revised);
+
+    auto emptied = base;
+    emptied.clipboard.reset();
+    EXPECT_NE(base, emptied);
+
+    auto panned = base;
+    panned.view.pan.x = 100;
+    EXPECT_NE(base, panned);
+
+    auto retooled = base;
+    retooled.tool = Tool::Paint;
+    EXPECT_NE(base, retooled);
+
+    auto repainted = base;
+    repainted.paint.red = 200;
+    EXPECT_NE(base, repainted);
+
+    auto reswatched = base;
+    reswatched.swatch.reset();
+    EXPECT_NE(base, reswatched);
+
+    auto gridded = base;
+    gridded.showGrid = true;
+    EXPECT_NE(base, gridded);
+
+    auto guided = base;
+    guided.showGuides = true;
+    EXPECT_NE(base, guided);
+
+    auto hovered = base;
+    hovered.under = Pixel{.x = 7, .y = 7};
+    EXPECT_NE(base, hovered);
+
+    auto unmarked = base;
+    unmarked.marked.reset();
+    EXPECT_NE(base, unmarked);
+
+    auto released = base;
+    released.gesture.reset();
+    EXPECT_NE(base, released);
+
+    auto changed = base;
+    changed.changes = 999;
+    EXPECT_NE(base, changed);
+
+    auto stepped = base;
+    stepped.stepped = 999;
+    EXPECT_NE(base, stepped);
+
+    auto written = base;
+    written.written = 999;
+    EXPECT_NE(base, written);
+
+    auto read = base;
+    read.read = 999;
+    EXPECT_NE(base, read);
+
+    auto saved = base;
+    saved.savedRevision = 999;
+    EXPECT_NE(base, saved);
+}
