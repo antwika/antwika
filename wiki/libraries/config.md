@@ -39,7 +39,9 @@ Its tests instantiate `ConfigFileContract` from `antwika::config::tests::conform
 ## It reads any versioned document, not only a config
 
 `FileFormat` takes the error type as a second parameter, defaulted to `ConfigFormatError`, because a save, an options file and a high score are read in exactly the same order and differ only in what a bad one is *called* -- and the house rule is one exception type per failure category.
-`tower_defence`'s `HighScore` is the first format outside a config to go through it; the remaining four snapshot formats still hand-roll the pipeline and are the obvious next ones.
+`tower_defence`'s `HighScore` and `apps/game`'s options file are full `FormatSpec` ports now.
+The three heaviest documents -- the game save, the companion save and the sudoku puzzle -- take the pipeline without the restructuring: they call `migratedAs`, `parseAs` and `writeConfig` directly, so the migrate-then-validate order, the JSON parse and the two-space dump are shared while their own schema and codec stay where they are.
+That split is deliberate rather than unfinished: those three carry sections, migrations and a raw-grid pre-parse that a `FormatSpec`'s four function pointers do not describe well, and the duplication worth removing was the plumbing.
 
 ## Non-obvious decisions
 

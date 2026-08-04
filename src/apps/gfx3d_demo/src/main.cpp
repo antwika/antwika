@@ -1,3 +1,5 @@
+#include <antwika/time/SystemSleeper.hpp>
+#include <chrono>
 #include <cstdint>
 #include <iostream>
 #include <optional>
@@ -27,6 +29,10 @@ namespace
 {
     // At namespace scope for the reason sound_demo's main.cpp gives.
     // A local would be odr-used by the lambda below.
+    // Sixty a second, which is what a window is refreshed at.
+    // A demo with nothing to wait for would otherwise spin.
+    constexpr std::chrono::milliseconds kFramePeriod{16};
+
     constexpr std::string_view kName = "antwika_gfx3d_demo";
 
     // Capped, rather than run until the window is closed.
@@ -72,7 +78,8 @@ int main(int argc, char **argv)
                     + std::string(backend->name()));
 
             const SpinScene scene;
-            SpinLoop loop(*backend, scene);
+            antwika::time::SystemSleeper sleeper;
+            SpinLoop loop(*backend, scene, sleeper, kFramePeriod);
 
             loop.run(
                 WindowDesc{

@@ -16,8 +16,15 @@ namespace antwika::gfx3d_demo
     using antwika::gfx::CloseRequested;
     using antwika::gfx::GfxError;
 
-    SpinLoop::SpinLoop(IGfxBackend &backend, const SpinScene &scene)
-        : backend(backend), scene(scene)
+    SpinLoop::SpinLoop(
+        IGfxBackend &backend,
+        const SpinScene &scene,
+        ISleeper &sleeper,
+        std::chrono::milliseconds framePeriod)
+        : backend(backend),
+          scene(scene),
+          sleeper(sleeper),
+          framePeriod(framePeriod)
     {
     }
 
@@ -74,6 +81,10 @@ namespace antwika::gfx3d_demo
 
             scene.draw(flat, *space, *mesh, window->size(), tickCount);
             flat.present();
+
+            // Paced through an injected sleeper rather than spun.
+            // Otherwise it would take a core flat out.
+            sleeper.sleep(framePeriod);
 
             ++tickCount;
         }

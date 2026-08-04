@@ -7,6 +7,9 @@
 
 #include <antwika/input/InputError.hpp>
 #include <antwika/input/Key.hpp>
+#include <antwika/config/ConfigDocument.hpp>
+#include <antwika/config/FileFormat.hpp>
+#include <antwika/config/Format.hpp>
 #include <antwika/replay/SchemaVersion.hpp>
 #include <antwika/replay/VersionedDocument.hpp>
 
@@ -18,11 +21,19 @@ namespace antwika::game
 
     namespace
     {
+        using antwika::config::FileFormat;
+        using antwika::config::FormatSpec;
+
+        // An options file is a versioned JSON document like any other.
+        // It reports an OptionsFormatError while being read.
+        // Which is why the format is templated on its error type.
+        using OptionsFormat = FileFormat<KeyBindings, OptionsFormatError>;
+
         // Two spaces, one member a line.
         // Enough to diff a layout against the next version of itself.
         constexpr int kIndent = 2;
 
-        nlohmann::json optionsSchema()
+        void describeMembers(nlohmann::json &schema)
         {
             nlohmann::json binding;
             binding["type"] = "object";
@@ -31,31 +42,10 @@ namespace antwika::game
             binding["properties"]["action"]["type"] = "string";
             binding["properties"]["key"]["type"] = "string";
 
-            nlohmann::json schema;
-            schema["$schema"] = "http://json-schema.org/draft-07/schema#";
-            schema["title"] = "antwika game options document";
-            schema["type"] = "object";
-            schema["additionalProperties"] = false;
-
-            // The version member is described but not required.
-            // A document without one is read as version 1 instead.
-            // By the time this runs the document has been migrated.
-            // So the only version it may carry is the current one.
-            schema["required"] = {"magic", "bindings"}; // GCOVR_EXCL_LINE
-            schema["properties"]["magic"]["const"] =
-                std::string(kOptionsMagic);
-            schema["properties"][std::string(replay::kSchemaVersionKey)]
-                  ["const"] = kOptionsFormatVersion;
+            schema["required"] = {
+                "magic", "bindings"}; // GCOVR_EXCL_LINE
             schema["properties"]["bindings"]["type"] = "array";
             schema["properties"]["bindings"]["items"] = binding;
-            return schema;
-        }
-
-        const nlohmann::json_schema::json_validator &optionsValidator()
-        {
-            static const nlohmann::json_schema::json_validator validator(
-                optionsSchema()); // GCOVR_EXCL_LINE
-            return validator;
         }
 
         // The key's own name is antwika::input's to police.
@@ -85,101 +75,106 @@ namespace antwika::game
         return MigrationChain({}, kOptionsFormatVersion); // GCOVR_EXCL_LINE
     }
 
-    nlohmann::json bindingsToJson(const KeyBindings &bindings)
+    namespace
     {
-        nlohmann::json encoded;
-        encoded["magic"] = std::string(kOptionsMagic);
-        encoded[std::string(replay::kSchemaVersionKey)] =
-            kOptionsFormatVersion;
-        encoded["bindings"] = nlohmann::json::array();
-
-        for (const auto action : kActions)
+        void encodeMembers(
+            const KeyBindings &bindings, nlohmann::json &encoded)
         {
-            nlohmann::json one;
-            one["action"] = std::string(actionName(action));
-            one["key"] = std::string(
-                antwika::input::toString(bindings.keyFor(action)));
-            encoded["bindings"].push_back(std::move(one));
+            encoded["bindings"] = nlohmann::json::array();
+
+            for (const auto action : kActions)
+            {
+                nlohmann::json one;
+                one["action"] = std::string(actionName(action));
+                one["key"] = std::string(
+                    antwika::input::toString(bindings.keyFor(action)));
+                encoded["bindings"].push_back(std::move(one));
+            }
         }
 
-        return encoded;
+        KeyBindings decodeMembers(const nlohmann::json &document)
+        {
+            KeyBindings bindings;
 
-        // gcov puts the cleanup block on this closing brace.
-        // SaveGame.cpp's own encoder explains it at length.
-        // No input reaches it.
-    } // GCOVR_EXCL_LINE
+            for (const auto &one : document.at("bindings"))
+        {
+                const auto name = one.at("action").get<std::string>();
+                const auto action = actionFromName(name);
+
+                if (!action.has_value())
+                {
+                    throw OptionsFormatError(
+                        "antwika::game: options name an action this build "
+                        "does not know: "
+                        + name);
+                }
+
+                const auto named = one.at("key").get<std::string>();
+                const auto outcome = bindings.bind(*action, keyNamed(named));
+
+                // Refused rather than repaired.
+                // Exactly as a save's building/walker link is.
+                // A layout nobody could have chosen is not one to guess at.
+                if (outcome == BindOutcome::Reserved)
+                {
+                    throw OptionsFormatError(
+                        "antwika::game: options bind a key this build acts "
+                        "on above the tick loop: "
+                        + named);
+                }
+
+                if (outcome == BindOutcome::Taken)
+                {
+                    throw OptionsFormatError(
+                        "antwika::game: options bind two actions to one "
+                        "key: "
+                        + named);
+                }
+            }
+
+            return bindings;
+        }
+
+        const OptionsFormat &optionsFormat()
+        {
+            // The excluded closing line carries the static guard.
+            // Its concurrency arms are unreachable one-threaded.
+            // See docs/confirming-unreachable-branches.md.
+            static const OptionsFormat format(
+                FormatSpec<KeyBindings>{
+                    .format =
+                        {.magic = kOptionsMagic,
+                         .version = kOptionsFormatVersion},
+                    .title = "antwika game options document",
+                    .whatFailed = "antwika::game: options JSON failed "
+                                  "schema validation: ",
+                    .members = describeMembers,
+                    .encode = encodeMembers,
+                    .decode = decodeMembers,
+                    .migrations =
+                        standardOptionsMigrations}); // GCOVR_EXCL_LINE
+            return format;
+        }
+    } // namespace
+
+    nlohmann::json bindingsToJson(const KeyBindings &bindings)
+    {
+        return optionsFormat().toJson(bindings);
+    }
 
     KeyBindings bindingsFromJson(const nlohmann::json &document)
     {
-        const auto migrated =
-            replay::readVersionedDocument<OptionsFormatError>(
-                document,
-                standardOptionsMigrations(),
-                optionsValidator(),
-                "antwika::game: options JSON failed schema validation: ");
-
-        KeyBindings bindings;
-
-        for (const auto &one : migrated.at("bindings"))
-        {
-            const auto name = one.at("action").get<std::string>();
-            const auto action = actionFromName(name);
-
-            if (!action.has_value())
-            {
-                throw OptionsFormatError(
-                    "antwika::game: options name an action this build "
-                    "does not know: "
-                    + name);
-            }
-
-            const auto named = one.at("key").get<std::string>();
-            const auto outcome = bindings.bind(*action, keyNamed(named));
-
-            // Refused rather than repaired.
-            // Exactly as a save's building/walker link is.
-            // A layout nobody could have chosen is not one to guess at.
-            if (outcome == BindOutcome::Reserved)
-            {
-                throw OptionsFormatError(
-                    "antwika::game: options bind a key this build acts "
-                    "on above the tick loop: "
-                    + named);
-            }
-
-            if (outcome == BindOutcome::Taken)
-            {
-                throw OptionsFormatError(
-                    "antwika::game: options bind two actions to one "
-                    "key: "
-                    + named);
-            }
-        }
-
-        return bindings;
+        return optionsFormat().fromJson(document);
     }
 
     void writeOptions(const KeyBindings &bindings, std::ostream &out)
     {
-        out << bindingsToJson(bindings).dump(kIndent) << '\n';
+        optionsFormat().write(bindings, out);
     }
 
     KeyBindings readOptions(std::istream &in)
     {
-        nlohmann::json document;
-        try
-        {
-            in >> document;
-        }
-        catch (const nlohmann::json::exception &error) // GCOVR_EXCL_LINE
-        {
-            throw OptionsFormatError(
-                std::string(
-                    "antwika::game: options are not valid JSON: ")
-                + error.what());
-        }
-
-        return bindingsFromJson(document);
+        return optionsFormat().read(in);
     }
 
     void saveOptionsFile(

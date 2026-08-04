@@ -1,5 +1,6 @@
 #include "antwika/game/SaveGameFile.hpp"
 
+#include <antwika/config/ConfigDocument.hpp>
 #include <fstream>
 
 #include <nlohmann/json.hpp>
@@ -11,32 +12,19 @@ namespace antwika::game
 
     namespace
     {
-        // Two spaces, one member a line.
-        // Enough to diff a save against the next version of itself.
-        // That is the whole reason this format is not compact.
-        constexpr int kIndent = 2;
     } // namespace
 
     void writeSaveGame(const SaveGame &save, std::ostream &out)
     {
-        out << saveGameToJson(save).dump(kIndent) << '\n';
+        antwika::config::writeConfig(saveGameToJson(save), out);
     }
 
     SaveGame readSaveGame(std::istream &in)
     {
-        nlohmann::json document;
-        try
-        {
-            in >> document;
-        }
-        catch (const nlohmann::json::exception &error) // GCOVR_EXCL_LINE
-        {
-            throw SaveFormatError(
-                std::string("antwika::game: save is not valid JSON: ")
-                + error.what());
-        }
-
-        return saveGameFromJson(document);
+        // The parse is antwika::config's.
+        // So a malformed document reads the same way everywhere.
+        return saveGameFromJson(
+            antwika::config::parseAs<SaveFormatError>(in));
     }
 
     void saveGameFile(const SaveGame &save, const std::string &path)

@@ -1,5 +1,7 @@
 #pragma once
 
+#include <antwika/time/ISleeper.hpp>
+#include <chrono>
 #include <cstdint>
 #include <optional>
 
@@ -12,6 +14,7 @@
 namespace antwika::gfx3d_demo
 {
 
+    using antwika::time::ISleeper;
     using antwika::gfx::IGfxBackend;
     using antwika::gfx::MeshData;
     using antwika::gfx::WindowDesc;
@@ -40,7 +43,11 @@ namespace antwika::gfx3d_demo
          * @param backend Supplies the window and its events.
          * @param scene Draws each frame.
          */
-        SpinLoop(IGfxBackend &backend, const SpinScene &scene);
+        SpinLoop(
+            IGfxBackend &backend,
+            const SpinScene &scene,
+            ISleeper &sleeper,
+            std::chrono::milliseconds framePeriod);
 
         SpinLoop(const SpinLoop &) = delete;
         SpinLoop(SpinLoop &&) = delete;
@@ -80,6 +87,8 @@ namespace antwika::gfx3d_demo
         const SpinScene &scene;
 
         std::uint64_t tickCount = 0;
+        ISleeper &sleeper;
+        std::chrono::milliseconds framePeriod;
     };
 
 } // namespace antwika::gfx3d_demo
