@@ -2,6 +2,7 @@ antwika_add_app(
     NAME companion
     SOURCES
         src/Companion.cpp
+        src/CompanionSnapshotStore.cpp
         src/ConfigFile.cpp
         src/DayMood.cpp
         src/FilePetStore.cpp
@@ -25,6 +26,7 @@ antwika_add_app(
         antwika::animation
         antwika::app
         antwika::config
+        antwika::console
         antwika::ecs
         antwika::engine
         antwika::gfx
@@ -37,6 +39,7 @@ antwika_add_app(
         antwika::simulation
         antwika::time
         antwika::tween
+        antwika::ui
     ASSETS
         assets/config.json
         replays/demo.jsonl

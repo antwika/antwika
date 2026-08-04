@@ -1,5 +1,6 @@
 #pragma once
 
+#include <antwika/console/ConsolePicture.hpp>
 #include <antwika/event/ITickEventSink.hpp>
 #include <antwika/event/TickEvent.hpp>
 #include <antwika/gfx/IWindow.hpp>
@@ -46,13 +47,17 @@ namespace antwika::companion
          * @param pet Snapshotted each tick. Must outlive this sink.
          * @param lineage The record behind it. Must outlive this sink.
          * @param canvas The size everything is laid out against.
+         * @param consolePicture The debug console's sheet, painted
+         * last so it stands over the companion. Must outlive this
+         * sink.
          */
         RenderSink(
             IWindow &window,
             const PetScene &scene,
             const Pet &pet,
             const Lineage &lineage,
-            Size canvas);
+            Size canvas,
+            const antwika::console::ConsolePicture &consolePicture);
 
         RenderSink(const RenderSink &) = delete;
         RenderSink(RenderSink &&) = delete;
@@ -73,6 +78,7 @@ namespace antwika::companion
         const Pet &pet;
         const Lineage &lineage;
         Size canvas;
+        const antwika::console::ConsolePicture &consolePicture;
     };
 
 } // namespace antwika::companion
