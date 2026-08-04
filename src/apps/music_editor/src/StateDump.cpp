@@ -206,7 +206,10 @@ namespace antwika::music_editor
             encoded["num"] = value.numerator();
             encoded["den"] = value.denominator();
             return encoded;
-        }
+
+            // gcov puts the returned value's unwind block here.
+            // No input reaches it.
+        } // GCOVR_EXCL_LINE
 
         [[nodiscard]] sequencer::Rational rationalFromJson(
             const nlohmann::json &encoded)
@@ -258,7 +261,10 @@ namespace antwika::music_editor
             encoded["notice"] = editor.notice;
             encoded["scores"] = editor.scores;
             return encoded;
-        }
+
+            // gcov puts the returned value's unwind block here.
+            // No input reaches it.
+        } // GCOVR_EXCL_LINE
 
         [[nodiscard]] EditorState editorFromJson(
             const nlohmann::json &encoded)
@@ -367,7 +373,10 @@ namespace antwika::music_editor
             encoded["voiceCount"] =
                 static_cast<std::uint64_t>(playback.voiceCount);
             return encoded;
-        }
+
+            // gcov puts the returned value's unwind block here.
+            // No input reaches it.
+        } // GCOVR_EXCL_LINE
 
         [[nodiscard]] PlaybackMemory playbackFromJson(
             const nlohmann::json &encoded)

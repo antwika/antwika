@@ -91,7 +91,9 @@ namespace antwika::music_editor
 
         antwika::console::InputFold fold(config.codec);
         antwika::console::ConsoleSink consoleSink(
-            antwika::console::ConsoleSinkSetup{
+            // gcov parks the statement's unwind block on this line.
+            // The setup is only references, so nothing here throws.
+            antwika::console::ConsoleSinkSetup{ // GCOVR_EXCL_LINE
                 .console = console,
                 .input = fold,
                 .picture = consolePicture,

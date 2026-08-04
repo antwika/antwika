@@ -2,13 +2,17 @@
 
 #include <chrono>
 #include <cstddef>
+#include <cstdint>
+#include <limits>
 #include <string>
 
 #include <gtest/gtest.h>
 
+#include <antwika/pattern/PatternError.hpp>
 #include <antwika/sequencer/FrameClock.hpp>
 #include <antwika/sequencer/Rational.hpp>
 #include <antwika/sequencer/SequencerError.hpp>
+#include <antwika/sequencer/TempoMap.hpp>
 #include <antwika/sound/DeviceDesc.hpp>
 #include <antwika/sound/IDevice.hpp>
 #include <antwika/sound/OfflineDevice.hpp>
@@ -1112,6 +1116,33 @@ TEST(PlaybackTest, RefusesAMemoryWithNoTempoSegmentAtAll)
         antwika::music_editor::StateDumpError);
 
     EXPECT_EQ(playback.playedTicks(), 4U);
+}
+
+// A table whose arithmetic will not fit is the pattern's refusal.
+// The seam only rewraps the sequencer's own category.
+// And the refusal still lands before anything is mutated.
+TEST(PlaybackTest, AnOverflowingMemoryEscapesAsThePatternsError)
+{
+    Rig rig;
+
+    Playback playback(
+        rig.score, rig.mixer, rig.device, rig.sleeper,
+        oneCycleASecond());
+
+    playback.step(false);
+
+    auto memory = playback.remember();
+    memory.segments.push_back(
+        antwika::sequencer::TempoMap::Segment{
+            .startCycle = Rational(
+                std::numeric_limits<std::int64_t>::max()),
+            .startFrame = 0,
+            .framesPerCycle = Rational(48000)});
+
+    EXPECT_THROW(
+        playback.restore(memory), antwika::pattern::PatternError);
+
+    EXPECT_EQ(playback.playedTicks(), 1U);
 }
 
 // A table the TempoMap itself refuses is refused as a dump error.

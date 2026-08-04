@@ -1,11 +1,14 @@
 #include "antwika/music_editor/StateDump.hpp"
 
 #include <cstddef>
+#include <cstdint>
+#include <limits>
 #include <optional>
 #include <string>
 
 #include <gtest/gtest.h>
 
+#include <antwika/pattern/PatternError.hpp>
 #include <antwika/sequencer/Rational.hpp>
 #include <antwika/sequencer/TempoMap.hpp>
 #include <antwika/ui/TextAreaSpec.hpp>
@@ -207,6 +210,67 @@ TEST(StateDumpTest, RefusesATempoThatWouldNeverAdvance)
     document["playback"]["segments"][0]["framesPerCycle"]["num"] = 0;
 
     EXPECT_THROW((void)editorDumpFromJson(document), StateDumpError);
+}
+
+// The defaulted comparison must consult every field, not stop early.
+TEST(StateDumpTest, PlaybackMemoryEqualityComparesEveryField)
+{
+    const auto base = busyDump().playback;
+
+    auto tabled = base;
+    tabled.segments.pop_back();
+    EXPECT_NE(base, tabled);
+
+    auto landed = base;
+    landed.retimed = Rational(3);
+    EXPECT_NE(base, landed);
+
+    auto ticked = base;
+    ticked.played = 26;
+    EXPECT_NE(base, ticked);
+
+    auto counted = base;
+    counted.counter = 41;
+    EXPECT_NE(base, counted);
+
+    auto fed = base;
+    fed.queued = 120001;
+    EXPECT_NE(base, fed);
+
+    auto stood = base;
+    stood.pausedFrames = 4801;
+    EXPECT_NE(base, stood);
+
+    auto grown = base;
+    grown.voiceCount = 3;
+    EXPECT_NE(base, grown);
+}
+
+// Both halves count, not only whichever one is compared first.
+TEST(StateDumpTest, EditorDumpEqualityComparesBothHalves)
+{
+    const auto base = busyDump();
+
+    auto typed = base;
+    typed.editor.cursor = 6;
+    EXPECT_NE(base, typed);
+
+    auto clocked = base;
+    clocked.playback.played = 26;
+    EXPECT_NE(base, clocked);
+}
+
+// A table whose arithmetic will not fit is the pattern's refusal.
+// The decode only rewraps the sequencer's own category.
+TEST(StateDumpTest, AnOverflowingTempoTableEscapesAsThePatternsError)
+{
+    auto document = editorDumpToJson(busyDump());
+    document["playback"]["segments"][1]["startCycle"]["num"] =
+        std::numeric_limits<std::int64_t>::max();
+
+    EXPECT_THROW(
+        (void)editorDumpFromJson(document),
+        antwika::pattern::PatternError);
 }
 
 // startFrame is never written; the decode recomputes every one.

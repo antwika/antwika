@@ -16,6 +16,7 @@ add_executable(antwika_music_editor_tests
     RunIntegrationTest.cpp
     ScoreFilesTest.cpp
     ScoreTest.cpp
+    SnapshotStoreTest.cpp
     StateDumpTest.cpp
     TrackPresetTest.cpp
     VoiceChainTest.cpp

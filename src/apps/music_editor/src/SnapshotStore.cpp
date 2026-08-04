@@ -34,11 +34,14 @@ namespace antwika::music_editor
         const std::string &path,
         const std::vector<std::string> &console)
     {
+        // The excluded lines are the aggregates' unwind edges.
+        // Only a failed allocation would take any of them.
+        // See docs/confirming-unreachable-branches.md, signature (a).
         dumpFormat().write(
-            antwika::console::Snapshot{
+            antwika::console::Snapshot{ // GCOVR_EXCL_LINE
                 .console = console,
                 .state = editorDumpToJson(
-                    EditorDump{
+                    EditorDump{ // GCOVR_EXCL_LINE
                         .editor = state,
                         .playback = playback.remember()})},
             path);
