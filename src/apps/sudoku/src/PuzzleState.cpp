@@ -22,6 +22,23 @@ namespace antwika::sudoku
         return cells;
     }
 
+    const Board &PuzzleState::clues() const noexcept
+    {
+        return givens;
+    }
+
+    void PuzzleState::restore(
+        const Board &puzzle,
+        const Board &progress,
+        const std::optional<Square> &pick,
+        const Status said)
+    {
+        givens = puzzle;
+        cells = progress;
+        chosen = pick;
+        note = said;
+    }
+
     bool PuzzleState::isGiven(const Square square) const
     {
         return givens.at(square.row, square.col).has_value();

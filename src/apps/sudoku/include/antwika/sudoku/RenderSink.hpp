@@ -2,6 +2,7 @@
 
 #include <chrono>
 
+#include <antwika/console/ConsolePicture.hpp>
 #include <antwika/event/ITickEventSink.hpp>
 #include <antwika/event/TickEvent.hpp>
 #include <antwika/gfx/IWindow.hpp>
@@ -39,6 +40,8 @@ namespace antwika::sudoku
          * outlive this sink.
          * @param scene Draws the picture. Must outlive this sink.
          * @param overlay Holds the picture. Must outlive this sink.
+         * @param console The console's picture, painted last so the
+         * sheet stands over whatever is up. Must outlive this sink.
          * @param sleeper Paces the frames. Must outlive this sink.
          * @param framePeriod How long to hold each frame.
          */
@@ -46,6 +49,7 @@ namespace antwika::sudoku
             IWindow &window,
             const SudokuScene &scene,
             const BoardOverlay &overlay,
+            const antwika::console::ConsolePicture &console,
             ISleeper &sleeper,
             std::chrono::milliseconds framePeriod);
 
@@ -66,6 +70,7 @@ namespace antwika::sudoku
         IWindow &window;
         const SudokuScene &scene;
         const BoardOverlay &overlay;
+        const antwika::console::ConsolePicture &console;
         ISleeper &sleeper;
         std::chrono::milliseconds framePeriod;
     };

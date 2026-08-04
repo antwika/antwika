@@ -7,6 +7,7 @@
 #include <optional>
 #include <string>
 
+#include <antwika/console/ConsolePicture.hpp>
 #include <antwika/event/IEventSink.hpp>
 #include <antwika/event/ITickEventSink.hpp>
 #include <antwika/gfx/Size.hpp>
@@ -53,6 +54,15 @@ namespace antwika::sudoku
 
         /** @brief How many commands the last frame drew. */
         std::size_t commands = 0;
+
+        /**
+         * @brief Every line the console said or was told, oldest
+         * first.
+         *
+         * Empty when no console was mounted, and empty again when one
+         * was mounted and never spoken to.
+         */
+        std::vector<std::string> console;
     };
 
     /**
@@ -128,6 +138,33 @@ namespace antwika::sudoku
 
         /** @brief Factory for one more tick sink, e.g. the renderer. */
         TickSinkFactory extraSink = {};
+
+        /**
+         * @brief The debug console's picture, which turns it on.
+         *
+         * Absent, no console exists: no sink is registered, no key
+         * toggles anything, and every gate forwards untouched.
+         * Present, the caller paints it last, over the whole picture
+         * -- see RenderSink.
+         */
+        std::optional<
+            std::reference_wrapper<antwika::console::ConsolePicture>>
+            consoleOverlay = std::nullopt;
+
+        /**
+         * @brief Whether the console's load_state may run at all.
+         *
+         * False under --record and --replay, since a load reads a
+         * file no recording carries -- see
+         * console::consoleLoadPermitted().
+         */
+        bool consoleLoadEnabled = true;
+
+        /**
+         * @brief Where the console's dump_state writes and load_state
+         * reads.
+         */
+        std::string stateDumpPath = "dump_state.json";
         /**
          * @brief How much search one press of Solve may spend.
          *
