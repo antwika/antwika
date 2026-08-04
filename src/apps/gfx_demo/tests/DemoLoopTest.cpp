@@ -1,3 +1,5 @@
+#include <antwika/time/fakes/FakeSleeper.hpp>
+#include <chrono>
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
@@ -59,6 +61,8 @@ using ::testing::ReturnRef;
 
 namespace
 {
+    constexpr std::chrono::milliseconds kTestFramePeriod{1};
+
     // The size every test lays its widgets out against.
     constexpr Size kCanvas{.width = 700, .height = 400};
 
@@ -157,7 +161,9 @@ TEST(DemoLoopTest, Run_DrawsAndPresentsOncePerFrame)
 
     const DemoScene scene;
     FakeInputBackend input;
-    DemoLoop loop(fixture.backend, input, scene);
+    antwika::time::fakes::FakeSleeper sleeper;
+    DemoLoop loop(
+        fixture.backend, input, scene, sleeper, kTestFramePeriod);
 
     loop.run(WindowDesc{.title = "Antwika"}, DemoFixture::logo(), 2);
 }
@@ -177,7 +183,9 @@ TEST(DemoLoopTest, Run_ClosesTheWindowWhenTheBackendReportsACloseRequest)
 
     const DemoScene scene;
     FakeInputBackend input;
-    DemoLoop loop(fixture.backend, input, scene);
+    antwika::time::fakes::FakeSleeper sleeper;
+    DemoLoop loop(
+        fixture.backend, input, scene, sleeper, kTestFramePeriod);
 
     // Once for the close request and once on the way out.
     // Closing an already-closed window is part of IWindow's contract.
@@ -201,7 +209,9 @@ TEST(DemoLoopTest, Run_KeepsDrawingThroughEventsThatAreNotCloseRequests)
 
     const DemoScene scene;
     FakeInputBackend input;
-    DemoLoop loop(fixture.backend, input, scene);
+    antwika::time::fakes::FakeSleeper sleeper;
+    DemoLoop loop(
+        fixture.backend, input, scene, sleeper, kTestFramePeriod);
 
     loop.run(WindowDesc{.title = "Antwika"}, DemoFixture::logo(), 1);
 }
@@ -221,7 +231,9 @@ TEST(DemoLoopTest, Run_IgnoresACloseRequestForSomebodyElsesWindow)
 
     const DemoScene scene;
     FakeInputBackend input;
-    DemoLoop loop(fixture.backend, input, scene);
+    antwika::time::fakes::FakeSleeper sleeper;
+    DemoLoop loop(
+        fixture.backend, input, scene, sleeper, kTestFramePeriod);
 
     // Only the one on the way out, never one caused by that event.
     EXPECT_CALL(*fixture.window, close()).Times(1);
@@ -252,7 +264,9 @@ TEST(DemoLoopTest, Run_WithoutAFrameCapDrawsUntilTheWindowCloses)
 
     const DemoScene scene;
     FakeInputBackend input;
-    DemoLoop loop(fixture.backend, input, scene);
+    antwika::time::fakes::FakeSleeper sleeper;
+    DemoLoop loop(
+        fixture.backend, input, scene, sleeper, kTestFramePeriod);
 
     loop.run(WindowDesc{.title = "Antwika"}, DemoFixture::logo(), std::nullopt);
 }
@@ -271,7 +285,9 @@ TEST(DemoLoopTest, Run_UploadsTheTextureOnceForTheWholeRun)
 
     const DemoScene scene;
     FakeInputBackend input;
-    DemoLoop loop(fixture.backend, input, scene);
+    antwika::time::fakes::FakeSleeper sleeper;
+    DemoLoop loop(
+        fixture.backend, input, scene, sleeper, kTestFramePeriod);
 
     loop.run(WindowDesc{.title = "Antwika"}, DemoFixture::logo(), 3);
 }
@@ -286,7 +302,9 @@ TEST(DemoLoopTest, Run_OpensAndClosesTheWindowEvenWithNoFrames)
 
     const DemoScene scene;
     FakeInputBackend input;
-    DemoLoop loop(fixture.backend, input, scene);
+    antwika::time::fakes::FakeSleeper sleeper;
+    DemoLoop loop(
+        fixture.backend, input, scene, sleeper, kTestFramePeriod);
 
     EXPECT_CALL(*fixture.window, close()).Times(1);
 
@@ -303,7 +321,9 @@ TEST(DemoLoopTest, Run_CountsAPressOnTheCountingButton)
 
     const DemoScene scene;
     FakeInputBackend input(clickAt(positionOn(widgets::kCount)));
-    DemoLoop loop(fixture.backend, input, scene);
+    antwika::time::fakes::FakeSleeper sleeper;
+    DemoLoop loop(
+        fixture.backend, input, scene, sleeper, kTestFramePeriod);
 
     loop.run(WindowDesc{.title = "Antwika"}, DemoFixture::logo(), 2);
 
@@ -324,7 +344,9 @@ TEST(DemoLoopTest, Run_PutsTheCountBackOnAPressOnTheResetButton)
         clickAt(positionOn(widgets::kCount)),
         clickAt(positionOn(widgets::kReset)),
         clickAt(positionOn(widgets::kCount))});
-    DemoLoop loop(fixture.backend, input, scene);
+    antwika::time::fakes::FakeSleeper sleeper;
+    DemoLoop loop(
+        fixture.backend, input, scene, sleeper, kTestFramePeriod);
 
     loop.run(WindowDesc{.title = "Antwika"}, DemoFixture::logo(), 3);
 
@@ -346,7 +368,9 @@ TEST(DemoLoopTest, Run_IgnoresAPressThatLandsOnNoButton)
     FakeInputBackend input(clickAt(Position{
         .x = static_cast<std::int32_t>(kCanvas.width) - 1,
         .y = static_cast<std::int32_t>(kCanvas.height) - 1}));
-    DemoLoop loop(fixture.backend, input, scene);
+    antwika::time::fakes::FakeSleeper sleeper;
+    DemoLoop loop(
+        fixture.backend, input, scene, sleeper, kTestFramePeriod);
 
     loop.run(WindowDesc{.title = "Antwika"}, DemoFixture::logo(), 1);
 
@@ -367,7 +391,9 @@ TEST(DemoLoopTest, Run_TakesAPressWithNoMovementBeforeIt)
     FakeInputBackend input(std::vector<InputEvent>{PointerButtonPressed{
         .button = MouseButton::Left,
         .position = positionOn(widgets::kCount)}});
-    DemoLoop loop(fixture.backend, input, scene);
+    antwika::time::fakes::FakeSleeper sleeper;
+    DemoLoop loop(
+        fixture.backend, input, scene, sleeper, kTestFramePeriod);
 
     loop.run(WindowDesc{.title = "Antwika"}, DemoFixture::logo(), 1);
 
@@ -386,7 +412,9 @@ TEST(DemoLoopTest, Run_CountsNothingForAReleaseOnAButton)
     FakeInputBackend input(std::vector<InputEvent>{PointerButtonReleased{
         .button = MouseButton::Left,
         .position = positionOn(widgets::kCount)}});
-    DemoLoop loop(fixture.backend, input, scene);
+    antwika::time::fakes::FakeSleeper sleeper;
+    DemoLoop loop(
+        fixture.backend, input, scene, sleeper, kTestFramePeriod);
 
     loop.run(WindowDesc{.title = "Antwika"}, DemoFixture::logo(), 1);
 
@@ -419,7 +447,9 @@ TEST(DemoLoopTest, Run_LightsAButtonThePointerMerelyMovedOnto)
     const DemoScene scene;
     FakeInputBackend input(std::vector<InputEvent>{
         PointerMoved{.position = positionOn(widgets::kCount)}});
-    DemoLoop loop(fixture.backend, input, scene);
+    antwika::time::fakes::FakeSleeper sleeper;
+    DemoLoop loop(
+        fixture.backend, input, scene, sleeper, kTestFramePeriod);
 
     loop.run(WindowDesc{.title = "Antwika"}, DemoFixture::logo(), 1);
 
@@ -447,7 +477,9 @@ TEST(DemoLoopTest, Run_DrawsNoHighlightBeforeThePointerHasBeenSeen)
 
     const DemoScene scene;
     FakeInputBackend input;
-    DemoLoop loop(fixture.backend, input, scene);
+    antwika::time::fakes::FakeSleeper sleeper;
+    DemoLoop loop(
+        fixture.backend, input, scene, sleeper, kTestFramePeriod);
 
     loop.run(WindowDesc{.title = "Antwika"}, DemoFixture::logo(), 1);
 }
@@ -465,7 +497,9 @@ TEST(DemoLoopTest, Run_LeavesThePointerNowhereForAKeyPress)
     const DemoScene scene;
     FakeInputBackend input(
         std::vector<InputEvent>{KeyPressed{.key = antwika::input::Key::A}});
-    DemoLoop loop(fixture.backend, input, scene);
+    antwika::time::fakes::FakeSleeper sleeper;
+    DemoLoop loop(
+        fixture.backend, input, scene, sleeper, kTestFramePeriod);
 
     loop.run(WindowDesc{.title = "Antwika"}, DemoFixture::logo(), 1);
 
