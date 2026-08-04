@@ -5,6 +5,7 @@ antwika_add_app_tests(
         BoardSinkTest.cpp
         BoardTest.cpp
         ConfigFileTest.cpp
+        ConsoleIntegrationTest.cpp
         KeyMappingTest.cpp
         MessagesTest.cpp
         PlaySinkTest.cpp
@@ -14,6 +15,7 @@ antwika_add_app_tests(
         PuzzleTest.cpp
         RenderSinkTest.cpp
         ReplayIntegrationTest.cpp
+        SnapshotStoreTest.cpp
         SolveTest.cpp
         SudokuDeterminismTest.cpp
         SudokuOptionsTest.cpp
@@ -25,6 +27,7 @@ antwika_add_app_tests(
         antwika::cli
         antwika::config
         antwika::config::tests::conformance
+        antwika::console
         antwika::engine
         antwika::event
         antwika::event::tests::mocks

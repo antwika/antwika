@@ -3,6 +3,7 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
+#include <antwika/console/ConsolePicture.hpp>
 #include <antwika/engine/Events.hpp>
 #include <antwika/event/Event.hpp>
 #include <antwika/event/TickEvent.hpp>
@@ -40,6 +41,9 @@ namespace
 
     constexpr Size kCanvas{.width = 720, .height = 800};
 
+    // Never written, as a run with no console mounted leaves it.
+    const antwika::console::ConsolePicture kNoConsole{};
+
     [[nodiscard]] TickEvent tick()
     {
         return TickEvent{
@@ -70,6 +74,7 @@ namespace
             window,
             scene,
             overlay,
+            kNoConsole,
             sleeper,
             std::chrono::milliseconds{5});
 
@@ -91,6 +96,7 @@ namespace
             window,
             scene,
             overlay,
+            kNoConsole,
             sleeper,
             std::chrono::milliseconds{5});
 
@@ -112,6 +118,7 @@ namespace
             window,
             scene,
             overlay,
+            kNoConsole,
             sleeper,
             std::chrono::milliseconds{5});
 

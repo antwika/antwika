@@ -14,6 +14,7 @@ antwika_add_app(
         src/PuzzleSource.cpp
         src/PuzzleState.cpp
         src/RenderSink.cpp
+        src/SnapshotStore.cpp
         src/Solve.cpp
         src/Sudoku.cpp
         src/SudokuOptions.cpp
@@ -23,6 +24,7 @@ antwika_add_app(
         antwika::app
         antwika::cli
         antwika::config
+        antwika::console
         antwika::engine
         antwika::event
         antwika::gfx
