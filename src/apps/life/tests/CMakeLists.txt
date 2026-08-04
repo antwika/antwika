@@ -41,6 +41,7 @@ target_link_libraries(antwika_life_tests
     PRIVATE
         antwika::app
         antwika::config
+        antwika::config::tests::conformance
         antwika::ecs
         antwika::ecs::tests::mocks
         antwika::engine

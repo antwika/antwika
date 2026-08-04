@@ -1,5 +1,16 @@
 {
   "bigBlind": 10,
+  "handStrengths": [
+    20,
+    45,
+    62,
+    76,
+    85,
+    90,
+    95,
+    98,
+    100
+  ],
   "magic": "antwika-poker-config",
   "minimumBuyIn": 100,
   "smallBlind": 5,

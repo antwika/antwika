@@ -1,17 +1,32 @@
 #pragma once
 
+#include <array>
 #include <cstddef>
 #include <cstdint>
 #include <string>
 
 #include <antwika/holdem/Blinds.hpp>
+#include <antwika/holdem/HandCategory.hpp>
 #include <antwika/holdem/Chips.hpp>
 
 namespace antwika::poker
 {
 
     using antwika::holdem::Blinds;
+    using antwika::holdem::kHandCategoryCount;
     using antwika::holdem::Chips;
+
+    /**
+     * @brief How strongly the shipped agents rate each made hand.
+     *
+     * Indexed by HandCategory, weakest first, on a 0..100 scale.
+     * A lookup rather than arithmetic on the enumeration, and a value
+     * on RoomConfig rather than a constant in PolicyAgent.cpp, so the
+     * config file can restate it at runtime; this is its shipped
+     * default.
+     */
+    inline constexpr std::array<unsigned, kHandCategoryCount>
+        kDefaultHandStrengths{20, 45, 62, 76, 85, 90, 95, 98, 100};
 
     /**
      * @brief How a poker room is set up, before anybody walks in.
@@ -46,6 +61,16 @@ namespace antwika::poker
          * why no card ever has to be written into a replay.
          */
         std::uint64_t seed = 1;
+
+        /**
+         * @brief How strongly the agents rate each made hand.
+         *
+         * Weakest category first; the decode refuses a table that is
+         * not non-decreasing, since a straight rated under a pair is a
+         * table somebody wrote backwards.
+         */
+        std::array<unsigned, kHandCategoryCount> handStrengths =
+            kDefaultHandStrengths;
 
         bool operator==(const RoomConfig &other) const = default;
     };

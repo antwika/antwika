@@ -55,6 +55,7 @@ target_link_libraries(antwika_atlas_editor_tests
         antwika::app
         antwika::cli
         antwika::config
+        antwika::config::tests::conformance
         antwika::engine
         antwika::event::tests::mocks
         antwika::gfx

@@ -225,6 +225,7 @@ target_link_libraries(antwika_game_tests
         antwika::app::tests::fakes
         antwika::cli
         antwika::config
+        antwika::config::tests::conformance
         antwika::engine::tests::mocks
         antwika::event::tests::mocks
         antwika::ecs

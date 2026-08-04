@@ -1,5 +1,8 @@
 #pragma once
 
+#include <array>
+
+#include <antwika/holdem/HandCategory.hpp>
 #include <antwika/holdem/Action.hpp>
 #include <antwika/holdem/IAgent.hpp>
 #include <antwika/holdem/TableView.hpp>
@@ -10,6 +13,7 @@ namespace antwika::poker
 {
 
     using antwika::holdem::Action;
+    using antwika::holdem::kHandCategoryCount;
     using antwika::holdem::IAgent;
     using antwika::holdem::TableView;
 
@@ -35,7 +39,17 @@ namespace antwika::poker
          * @brief Construct the agent with a playing style.
          * @param style How willing it should be to commit chips.
          */
-        explicit PolicyAgent(AgentStyle style) noexcept;
+        /**
+         * @brief Construct an agent over its style and its ratings.
+         * @param style How boldly this agent plays.
+         * @param handStrengths How strongly each made hand is rated,
+         * weakest category first; RoomConfig carries the table the
+         * config file states.
+         */
+        PolicyAgent(
+            AgentStyle style,
+            std::array<unsigned, kHandCategoryCount>
+                handStrengths) noexcept;
 
         /**
          * @brief Decide what to do with the hand in front of it.
@@ -52,6 +66,7 @@ namespace antwika::poker
 
     private:
         AgentStyle style;
+        std::array<unsigned, kHandCategoryCount> handStrengths;
     };
 
     /**
@@ -64,6 +79,8 @@ namespace antwika::poker
      * @param view The hand to judge.
      * @return A strength score in [0, 100].
      */
-    [[nodiscard]] unsigned handStrength(const TableView &view);
+    [[nodiscard]] unsigned handStrength(
+        const TableView &view,
+        const std::array<unsigned, kHandCategoryCount> &handStrengths);
 
 } // namespace antwika::poker

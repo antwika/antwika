@@ -1,235 +1,175 @@
-#include <gtest/gtest.h>
-
 #include <cstdint>
-#include <filesystem>
-#include <fstream>
-#include <sstream>
+#include <istream>
+#include <ostream>
 #include <string>
+#include <string_view>
 
-#include <unistd.h>
+#include <gtest/gtest.h>
 
 #include <nlohmann/json.hpp>
 
-#include <antwika/app/AssetPath.hpp>
-#include <antwika/config/ConfigFormatError.hpp>
-#include <antwika/replay/SchemaVersion.hpp>
+#include <antwika/config/conformance/ConfigFileContract.hpp>
+#include <antwika/replay/MigrationChain.hpp>
 
 #include "antwika/poker/ConfigFile.hpp"
 #include "antwika/poker/RoomConfig.hpp"
 
-using antwika::config::ConfigFormatError;
-using antwika::poker::configFromJson;
-using antwika::poker::configToJson;
-using antwika::poker::kConfigFormatVersion;
-using antwika::poker::kConfigMagic;
-using antwika::poker::loadConfigFileOrDefaults;
-using antwika::poker::readConfig;
-using antwika::poker::standardConfigMigrations;
-using antwika::poker::writeConfig;
-using antwika::poker::RoomConfig;
+namespace antwika::config::conformance
+{
+
+    namespace
+    {
+        /**
+         * @brief This application's config format, for the shared
+         * contract suite.
+         */
+        struct PokerConfigTraits
+        {
+            using Config = antwika::poker::RoomConfig;
+
+            static std::string_view magic()
+            {
+                return antwika::poker::kConfigMagic;
+            }
+
+            static std::uint32_t version()
+            {
+                return antwika::poker::kConfigFormatVersion;
+            }
+
+            static antwika::replay::MigrationChain migrations()
+            {
+                return antwika::poker::standardConfigMigrations();
+            }
+
+            // Every member is off its default here.
+            // A dropped member lands on the default and fails below.
+            static Config retuned()
+            {
+                Config config;
+                config.blinds.small = 25;
+                config.blinds.big = 50;
+                config.minimumBuyIn = 1000;
+                config.handStrengths = {
+                    10, 20, 30, 40, 50, 60, 70, 80, 90};
+                return config;
+            }
+
+            static void expectEqual(
+                const Config &decoded, const Config &expected)
+            {
+                EXPECT_EQ(
+                    decoded.blinds.small, expected.blinds.small);
+                EXPECT_EQ(decoded.blinds.big, expected.blinds.big);
+                EXPECT_EQ(
+                    decoded.minimumBuyIn, expected.minimumBuyIn);
+                EXPECT_EQ(
+                    decoded.handStrengths, expected.handStrengths);
+            }
+
+            static const char *floorMember()
+            {
+                return "smallBlind";
+            }
+
+            static nlohmann::json toJson(const Config &config)
+            {
+                return antwika::poker::configToJson(config);
+            }
+
+            static Config fromJson(const nlohmann::json &document)
+            {
+                return antwika::poker::configFromJson(document);
+            }
+
+            static void write(const Config &config, std::ostream &out)
+            {
+                antwika::poker::writeConfig(config, out);
+            }
+
+            static Config read(std::istream &in)
+            {
+                return antwika::poker::readConfig(in);
+            }
+
+            static Config loadFileOrDefaults(const std::string &path)
+            {
+                return antwika::poker::loadConfigFileOrDefaults(path);
+            }
+
+            static std::string scratchPrefix()
+            {
+                return "antwika-poker-config";
+            }
+        };
+    } // namespace
+
+    INSTANTIATE_TYPED_TEST_SUITE_P(
+        Poker, ConfigFileContract, PokerConfigTraits);
+
+} // namespace antwika::config::conformance
 
 namespace
 {
-    // Every member is off its default here.
-    // A round trip that dropped one lands back on the default.
-    // The comparisons below are what would say so.
-    [[nodiscard]] RoomConfig retuned()
+
+    using antwika::config::ConfigFormatError;
+    using antwika::poker::configFromJson;
+    using antwika::poker::configToJson;
+    using antwika::poker::RoomConfig;
+
+    // The schema checks each number alone.
+    // These two rules are between numbers.
+    // A table nobody could sit at is refused outright.
+    TEST(PokerConfigRulesTest, ABigBlindBelowTheSmallIsRefused)
     {
-        RoomConfig config;
-        config.blinds.small = 25;
-        config.blinds.big = 50;
-        config.minimumBuyIn = 1000;
-        return config;
+        auto document = configToJson(RoomConfig{});
+        document["smallBlind"] = 50;
+        document["bigBlind"] = 25;
+
+        EXPECT_THROW((void)configFromJson(document), ConfigFormatError);
     }
 
-    void expectEqual(const RoomConfig &decoded, const RoomConfig &expected)
+    TEST(PokerConfigRulesTest, ABuyInBelowTheBigBlindIsRefused)
     {
-        EXPECT_EQ(decoded.blinds.small, expected.blinds.small);
-        EXPECT_EQ(decoded.blinds.big, expected.blinds.big);
-        EXPECT_EQ(decoded.minimumBuyIn, expected.minimumBuyIn);
+        auto document = configToJson(RoomConfig{});
+        document["minimumBuyIn"] = 5;
+
+        EXPECT_THROW((void)configFromJson(document), ConfigFormatError);
     }
 
-    void expectDefaults(const RoomConfig &decoded)
-    {
-        expectEqual(decoded, RoomConfig{});
-    }
-
-    [[nodiscard]] std::string versionKey()
-    {
-        return std::string(antwika::replay::kSchemaVersionKey);
-    }
-
-    class ConfigFileTest : public ::testing::Test
-    {
-    protected:
-        void SetUp() override
-        {
-            std::filesystem::create_directories(directory);
-        }
-
-        void TearDown() override
-        {
-            std::error_code ignored;
-            std::filesystem::remove_all(directory, ignored);
-        }
-
-        [[nodiscard]] std::string pathIn(const std::string &name) const
-        {
-            return (directory / name).string();
-        }
-
-        void writeText(const std::string &name, const std::string &text)
-        {
-            std::ofstream file(pathIn(name));
-            file << text;
-        }
-
-        // Named per process, for game's ScratchDirectory.hpp's reason.
-        // CTest runs every case as its own process.
-        // A never-before-seen path cannot be mid-removal already.
-        std::filesystem::path directory{
-            std::filesystem::temp_directory_path()
-            / ("antwika-poker-config." + std::to_string(::getpid()))};
-    };
 } // namespace
 
-TEST_F(ConfigFileTest, ADocumentStatesItsFormatAndItsVersion)
+namespace
 {
-    const auto encoded = configToJson(RoomConfig{});
 
-    EXPECT_EQ(encoded.at("magic").get<std::string>(), kConfigMagic);
-    EXPECT_EQ(
-        encoded.at(versionKey()).get<std::uint32_t>(),
-        kConfigFormatVersion);
-}
+    using antwika::poker::kHandCategoryCount;
 
-TEST_F(ConfigFileTest, AConfigRoundTripsThroughTheDocument)
-{
-    expectEqual(configFromJson(configToJson(retuned())), retuned());
-}
+    // Weakest first is the table's whole meaning.
+    // A straight rated under a pair was written backwards.
+    TEST(PokerConfigRulesTest, ABackwardsStrengthTableIsRefused)
+    {
+        auto document = configToJson(RoomConfig{});
+        document["handStrengths"] = {90, 80, 30, 40, 50, 60, 70, 80, 90};
 
-// A config stating one number is a one-line change.
-// Not a restatement of every default it leaves alone.
-TEST_F(ConfigFileTest, AMinimalDocumentIsTheShippedApplication)
-{
-    nlohmann::json document;
-    document["magic"] = std::string(kConfigMagic);
+        EXPECT_THROW((void)configFromJson(document), ConfigFormatError);
+    }
 
-    expectDefaults(configFromJson(document));
-}
+    // Nine categories exist, so nine ratings are the only legal count.
+    TEST(PokerConfigRulesTest, AStrengthTableOfTheWrongLengthIsRefused)
+    {
+        auto document = configToJson(RoomConfig{});
+        document["handStrengths"] = {20, 45, 62};
 
-TEST_F(ConfigFileTest, AConfigRoundTripsThroughAStream)
-{
-    std::stringstream stream;
-    writeConfig(retuned(), stream);
+        EXPECT_THROW((void)configFromJson(document), ConfigFormatError);
+    }
 
-    expectEqual(readConfig(stream), retuned());
-}
+    TEST(PokerConfigRulesTest, ARatingPastTheScaleIsRefused)
+    {
+        auto document = configToJson(RoomConfig{});
+        document["handStrengths"] = {
+            20, 45, 62, 76, 85, 90, 95, 98, 101};
 
-TEST_F(ConfigFileTest, AConfigRoundTripsThroughAFile)
-{
-    std::stringstream stream;
-    writeConfig(retuned(), stream);
-    writeText("config.json", stream.str());
+        EXPECT_THROW((void)configFromJson(document), ConfigFormatError);
+    }
 
-    expectEqual(loadConfigFileOrDefaults(pathIn("config.json")), retuned());
-}
-
-// An install nobody has tuned plays the shipped defaults.
-// That is a state, not a failure.
-TEST_F(ConfigFileTest, AMissingFileIsTheShippedApplication)
-{
-    expectDefaults(loadConfigFileOrDefaults(pathIn("nothing.json")));
-}
-
-// The file beside the executable is the one main() reads.
-// Pinned to the defaults, so shipping it changes nothing on its own.
-TEST_F(ConfigFileTest, TheShippedConfigStatesTheDefaults)
-{
-    expectDefaults(
-        loadConfigFileOrDefaults(antwika::app::assetPath("config.json")));
-    EXPECT_TRUE(std::filesystem::exists(
-        antwika::app::assetPath("config.json")));
-}
-
-TEST_F(ConfigFileTest, TextThatIsNotJsonIsRefused)
-{
-    writeText("config.json", "not json at all");
-
-    EXPECT_THROW(
-        (void)loadConfigFileOrDefaults(pathIn("config.json")),
-        ConfigFormatError);
-}
-
-TEST_F(ConfigFileTest, ADocumentOfAnotherFormatIsRefused)
-{
-    auto document = configToJson(RoomConfig{});
-    document["magic"] = "antwika-game-save";
-
-    EXPECT_THROW((void)configFromJson(document), ConfigFormatError);
-}
-
-// Read before anything is decoded.
-// So a file from a build this one has never met is refused.
-TEST_F(ConfigFileTest, ADocumentFromANewerBuildIsRefused)
-{
-    auto document = configToJson(RoomConfig{});
-    document[versionKey()] = kConfigFormatVersion + 1;
-
-    EXPECT_THROW((void)configFromJson(document), ConfigFormatError);
-}
-
-TEST_F(ConfigFileTest, ADocumentOfTheWrongShapeIsRefused)
-{
-    auto document = configToJson(RoomConfig{});
-    document["smallBlind"] = "plenty";
-
-    EXPECT_THROW((void)configFromJson(document), ConfigFormatError);
-}
-
-// A value the field's meaning excludes is refused beside the parse.
-TEST_F(ConfigFileTest, AValueBelowTheFloorIsRefused)
-{
-    auto document = configToJson(RoomConfig{});
-    document["smallBlind"] = 0;
-
-    EXPECT_THROW((void)configFromJson(document), ConfigFormatError);
-}
-
-// A misspelt member would otherwise be a change that never took.
-TEST_F(ConfigFileTest, AnUnknownMemberIsRefused)
-{
-    auto document = configToJson(RoomConfig{});
-    document["smallBlindz"] = 9;
-
-    EXPECT_THROW((void)configFromJson(document), ConfigFormatError);
-}
-
-// There has only ever been one revision; the chain is here anyway.
-// It is what refuses a document from a newer build.
-TEST_F(ConfigFileTest, TheChainBringsDocumentsToTheCurrentVersion)
-{
-    EXPECT_EQ(
-        standardConfigMigrations().currentVersion(),
-        kConfigFormatVersion);
-}
-
-// The schema checks each number alone.
-// These two rules are between numbers.
-// A table nobody could sit at is refused outright.
-TEST_F(ConfigFileTest, ABigBlindBelowTheSmallIsRefused)
-{
-    auto document = configToJson(RoomConfig{});
-    document["smallBlind"] = 50;
-    document["bigBlind"] = 25;
-
-    EXPECT_THROW((void)configFromJson(document), ConfigFormatError);
-}
-
-TEST_F(ConfigFileTest, ABuyInBelowTheBigBlindIsRefused)
-{
-    auto document = configToJson(RoomConfig{});
-    document["minimumBuyIn"] = 5;
-
-    EXPECT_THROW((void)configFromJson(document), ConfigFormatError);
-}
+} // namespace

@@ -1,12 +1,12 @@
 #include "antwika/companion/ConfigFile.hpp"
 
+#include <cstddef>
 #include <cstdint>
 #include <limits>
 #include <string>
 
-#include <nlohmann/json-schema.hpp>
-
 #include <antwika/config/ConfigDocument.hpp>
+#include <antwika/config/FileFormat.hpp>
 #include <antwika/config/Format.hpp>
 
 namespace antwika::companion
@@ -14,35 +14,35 @@ namespace antwika::companion
 
     namespace
     {
-        constexpr antwika::config::Format kFormat{
-            .magic = kConfigMagic, .version = kConfigFormatVersion};
+        using antwika::config::FileFormat;
+        using antwika::config::FormatSpec;
+        using antwika::config::memberOr;
+        using antwika::config::wholeShape;
 
         // A period of no ticks would never come due.
         // So the floor is one tick, stated beside the parse.
         nlohmann::json period()
         {
-            return antwika::config::wholeShape(
+            return wholeShape(
                 1, std::numeric_limits<std::int64_t>::max());
         }
 
         // A gauge's ceiling has to hold at least one unit.
         nlohmann::json amount1()
         {
-            return antwika::config::wholeShape(
+            return wholeShape(
                 1, std::numeric_limits<std::uint32_t>::max());
         }
 
         // An amount a verb moves a gauge by may be nothing at all.
         nlohmann::json amount()
         {
-            return antwika::config::wholeShape(
+            return wholeShape(
                 0, std::numeric_limits<std::uint32_t>::max());
         }
 
-        nlohmann::json configSchema()
+        void describeMembers(nlohmann::json &schema)
         {
-            auto schema = antwika::config::documentSchema(
-                kFormat, "antwika companion config document");
             schema["properties"]["hungerPeriodTicks"] = period();
             schema["properties"]["starvePeriodTicks"] = period();
             schema["properties"]["funDecayPeriodTicks"] = period();
@@ -75,16 +75,150 @@ namespace antwika::companion
             schema["properties"]["contentBand"] = amount();
             schema["properties"]["disturbCost"] = amount();
             schema["properties"]["pesterCost"] = amount();
-            schema["properties"]["tiredPercent"] =
-                antwika::config::wholeShape(0, 100);
-            return schema;
-        } // GCOVR_EXCL_LINE
+            schema["properties"]["tiredPercent"] = wholeShape(0, 100);
+        }
 
-        const nlohmann::json_schema::json_validator &configValidator()
+        void encodeMembers(const PetConfig &config, nlohmann::json &out)
         {
-            static const nlohmann::json_schema::json_validator validator(
-                configSchema()); // GCOVR_EXCL_LINE
-            return validator;
+            out["hungerPeriodTicks"] = config.hungerPeriodTicks;
+            out["starvePeriodTicks"] = config.starvePeriodTicks;
+            out["funDecayPeriodTicks"] = config.funDecayPeriodTicks;
+            out["fretPeriodTicks"] = config.fretPeriodTicks;
+            out["recoverPeriodTicks"] = config.recoverPeriodTicks;
+            out["restPeriodTicks"] = config.restPeriodTicks;
+            out["sayingTicks"] = config.sayingTicks;
+            out["chatterPeriodTicks"] = config.chatterPeriodTicks;
+            out["drainHappyTicks"] = config.drainHappyTicks;
+            out["drainContentTicks"] = config.drainContentTicks;
+            out["drainLowTicks"] = config.drainLowTicks;
+            out["drainMiserableTicks"] = config.drainMiserableTicks;
+            out["childTicks"] = config.childTicks;
+            out["teenTicks"] = config.teenTicks;
+            out["adultTicks"] = config.adultTicks;
+            out["elderTicks"] = config.elderTicks;
+            out["hungerMax"] = config.hungerMax;
+            out["funMax"] = config.funMax;
+            out["happinessMax"] = config.happinessMax;
+            out["hungerThreshold"] = config.hungerThreshold;
+            out["feedRelief"] = config.feedRelief;
+            out["feedJoy"] = config.feedJoy;
+            out["funStart"] = config.funStart;
+            out["playFun"] = config.playFun;
+            out["playHunger"] = config.playHunger;
+            out["playEnergy"] = config.playEnergy;
+            out["playJoy"] = config.playJoy;
+            out["happinessStart"] = config.happinessStart;
+            out["happyBand"] = config.happyBand;
+            out["contentBand"] = config.contentBand;
+            out["disturbCost"] = config.disturbCost;
+            out["pesterCost"] = config.pesterCost;
+            out["tiredPercent"] = config.tiredPercent;
+        }
+
+        PetConfig decodeMembers(const nlohmann::json &document)
+        {
+            PetConfig config;
+            config.hungerPeriodTicks =
+                memberOr(
+                    document, "hungerPeriodTicks", config.hungerPeriodTicks);
+            config.starvePeriodTicks =
+                memberOr(
+                    document, "starvePeriodTicks", config.starvePeriodTicks);
+            config.funDecayPeriodTicks =
+                memberOr(
+                    document,
+                    "funDecayPeriodTicks",
+                    config.funDecayPeriodTicks);
+            config.fretPeriodTicks =
+                memberOr(document, "fretPeriodTicks", config.fretPeriodTicks);
+            config.recoverPeriodTicks =
+                memberOr(
+                    document, "recoverPeriodTicks", config.recoverPeriodTicks);
+            config.restPeriodTicks =
+                memberOr(document, "restPeriodTicks", config.restPeriodTicks);
+            config.sayingTicks =
+                memberOr(document, "sayingTicks", config.sayingTicks);
+            config.chatterPeriodTicks =
+                memberOr(
+                    document, "chatterPeriodTicks", config.chatterPeriodTicks);
+            config.drainHappyTicks =
+                memberOr(document, "drainHappyTicks", config.drainHappyTicks);
+            config.drainContentTicks =
+                memberOr(
+                    document, "drainContentTicks", config.drainContentTicks);
+            config.drainLowTicks =
+                memberOr(document, "drainLowTicks", config.drainLowTicks);
+            config.drainMiserableTicks =
+                memberOr(
+                    document,
+                    "drainMiserableTicks",
+                    config.drainMiserableTicks);
+            config.childTicks =
+                memberOr(document, "childTicks", config.childTicks);
+            config.teenTicks =
+                memberOr(document, "teenTicks", config.teenTicks);
+            config.adultTicks =
+                memberOr(document, "adultTicks", config.adultTicks);
+            config.elderTicks =
+                memberOr(document, "elderTicks", config.elderTicks);
+            config.hungerMax =
+                memberOr(document, "hungerMax", config.hungerMax);
+            config.funMax =
+                memberOr(document, "funMax", config.funMax);
+            config.happinessMax =
+                memberOr(document, "happinessMax", config.happinessMax);
+            config.hungerThreshold =
+                memberOr(document, "hungerThreshold", config.hungerThreshold);
+            config.feedRelief =
+                memberOr(document, "feedRelief", config.feedRelief);
+            config.feedJoy =
+                memberOr(document, "feedJoy", config.feedJoy);
+            config.funStart =
+                memberOr(document, "funStart", config.funStart);
+            config.playFun =
+                memberOr(document, "playFun", config.playFun);
+            config.playHunger =
+                memberOr(document, "playHunger", config.playHunger);
+            config.playEnergy =
+                memberOr(document, "playEnergy", config.playEnergy);
+            config.playJoy =
+                memberOr(document, "playJoy", config.playJoy);
+            config.happinessStart =
+                memberOr(document, "happinessStart", config.happinessStart);
+            config.happyBand =
+                memberOr(document, "happyBand", config.happyBand);
+            config.contentBand =
+                memberOr(document, "contentBand", config.contentBand);
+            config.disturbCost =
+                memberOr(document, "disturbCost", config.disturbCost);
+            config.pesterCost =
+                memberOr(document, "pesterCost", config.pesterCost);
+            config.tiredPercent =
+                memberOr(document, "tiredPercent", config.tiredPercent);
+            return config;
+        }
+
+        const FileFormat<PetConfig> &fileFormat()
+        {
+            using AppFormat = FileFormat<PetConfig>;
+
+            // The excluded closing line carries the static guard.
+            // Its concurrency arms are unreachable one-threaded.
+            // See docs/confirming-unreachable-branches.md.
+            static const AppFormat format(
+                FormatSpec<PetConfig>{
+                    .format =
+                        {.magic = kConfigMagic,
+                         .version = kConfigFormatVersion},
+                    .title = "antwika companion config document",
+                    .whatFailed =
+                        "antwika::companion: config JSON failed schema "
+                        "validation: ",
+                    .members = describeMembers,
+                    .encode = encodeMembers,
+                    .decode = decodeMembers,
+                    .migrations = standardConfigMigrations}); // GCOVR_EXCL_LINE
+            return format;
         }
     } // namespace
 
@@ -98,146 +232,27 @@ namespace antwika::companion
 
     nlohmann::json configToJson(const PetConfig &config)
     {
-        auto encoded = antwika::config::newDocument(kFormat);
-        encoded["hungerPeriodTicks"] = config.hungerPeriodTicks;
-        encoded["starvePeriodTicks"] = config.starvePeriodTicks;
-        encoded["funDecayPeriodTicks"] = config.funDecayPeriodTicks;
-        encoded["fretPeriodTicks"] = config.fretPeriodTicks;
-        encoded["recoverPeriodTicks"] = config.recoverPeriodTicks;
-        encoded["restPeriodTicks"] = config.restPeriodTicks;
-        encoded["sayingTicks"] = config.sayingTicks;
-        encoded["chatterPeriodTicks"] = config.chatterPeriodTicks;
-        encoded["drainHappyTicks"] = config.drainHappyTicks;
-        encoded["drainContentTicks"] = config.drainContentTicks;
-        encoded["drainLowTicks"] = config.drainLowTicks;
-        encoded["drainMiserableTicks"] = config.drainMiserableTicks;
-        encoded["childTicks"] = config.childTicks;
-        encoded["teenTicks"] = config.teenTicks;
-        encoded["adultTicks"] = config.adultTicks;
-        encoded["elderTicks"] = config.elderTicks;
-        encoded["hungerMax"] = config.hungerMax;
-        encoded["funMax"] = config.funMax;
-        encoded["happinessMax"] = config.happinessMax;
-        encoded["hungerThreshold"] = config.hungerThreshold;
-        encoded["feedRelief"] = config.feedRelief;
-        encoded["feedJoy"] = config.feedJoy;
-        encoded["funStart"] = config.funStart;
-        encoded["playFun"] = config.playFun;
-        encoded["playHunger"] = config.playHunger;
-        encoded["playEnergy"] = config.playEnergy;
-        encoded["playJoy"] = config.playJoy;
-        encoded["happinessStart"] = config.happinessStart;
-        encoded["happyBand"] = config.happyBand;
-        encoded["contentBand"] = config.contentBand;
-        encoded["disturbCost"] = config.disturbCost;
-        encoded["pesterCost"] = config.pesterCost;
-        encoded["tiredPercent"] = config.tiredPercent;
-        return encoded;
-
-        // gcov puts the cleanup block on this closing brace.
-        // SaveGame.cpp's own encoder explains it at length.
-        // No input reaches it.
-    } // GCOVR_EXCL_LINE
+        return fileFormat().toJson(config);
+    }
 
     PetConfig configFromJson(const nlohmann::json &document)
     {
-        using antwika::config::memberOr;
-
-        const auto brought = antwika::config::migrated(
-            document,
-            standardConfigMigrations(),
-            configValidator(),
-            "antwika::companion: config JSON failed schema "
-            "validation: ");
-
-        PetConfig config;
-        config.hungerPeriodTicks =
-            memberOr(brought, "hungerPeriodTicks", config.hungerPeriodTicks);
-        config.starvePeriodTicks =
-            memberOr(brought, "starvePeriodTicks", config.starvePeriodTicks);
-        config.funDecayPeriodTicks = memberOr(
-            brought, "funDecayPeriodTicks", config.funDecayPeriodTicks);
-        config.fretPeriodTicks =
-            memberOr(brought, "fretPeriodTicks", config.fretPeriodTicks);
-        config.recoverPeriodTicks =
-            memberOr(brought, "recoverPeriodTicks", config.recoverPeriodTicks);
-        config.restPeriodTicks =
-            memberOr(brought, "restPeriodTicks", config.restPeriodTicks);
-        config.sayingTicks =
-            memberOr(brought, "sayingTicks", config.sayingTicks);
-        config.chatterPeriodTicks = memberOr(
-            brought, "chatterPeriodTicks", config.chatterPeriodTicks);
-        config.drainHappyTicks =
-            memberOr(brought, "drainHappyTicks", config.drainHappyTicks);
-        config.drainContentTicks = memberOr(
-            brought, "drainContentTicks", config.drainContentTicks);
-        config.drainLowTicks =
-            memberOr(brought, "drainLowTicks", config.drainLowTicks);
-        config.drainMiserableTicks = memberOr(
-            brought, "drainMiserableTicks", config.drainMiserableTicks);
-        config.childTicks =
-            memberOr(brought, "childTicks", config.childTicks);
-        config.teenTicks =
-            memberOr(brought, "teenTicks", config.teenTicks);
-        config.adultTicks =
-            memberOr(brought, "adultTicks", config.adultTicks);
-        config.elderTicks =
-            memberOr(brought, "elderTicks", config.elderTicks);
-        config.hungerMax =
-            memberOr(brought, "hungerMax", config.hungerMax);
-        config.funMax =
-            memberOr(brought, "funMax", config.funMax);
-        config.happinessMax =
-            memberOr(brought, "happinessMax", config.happinessMax);
-        config.hungerThreshold =
-            memberOr(brought, "hungerThreshold", config.hungerThreshold);
-        config.feedRelief =
-            memberOr(brought, "feedRelief", config.feedRelief);
-        config.feedJoy =
-            memberOr(brought, "feedJoy", config.feedJoy);
-        config.funStart =
-            memberOr(brought, "funStart", config.funStart);
-        config.playFun =
-            memberOr(brought, "playFun", config.playFun);
-        config.playHunger =
-            memberOr(brought, "playHunger", config.playHunger);
-        config.playEnergy =
-            memberOr(brought, "playEnergy", config.playEnergy);
-        config.playJoy =
-            memberOr(brought, "playJoy", config.playJoy);
-        config.happinessStart =
-            memberOr(brought, "happinessStart", config.happinessStart);
-        config.happyBand =
-            memberOr(brought, "happyBand", config.happyBand);
-        config.contentBand =
-            memberOr(brought, "contentBand", config.contentBand);
-        config.disturbCost =
-            memberOr(brought, "disturbCost", config.disturbCost);
-        config.pesterCost =
-            memberOr(brought, "pesterCost", config.pesterCost);
-        config.tiredPercent =
-            memberOr(brought, "tiredPercent", config.tiredPercent);
-        return config;
+        return fileFormat().fromJson(document);
     }
 
     void writeConfig(const PetConfig &config, std::ostream &out)
     {
-        antwika::config::writeConfig(configToJson(config), out);
+        fileFormat().write(config, out);
     }
 
     PetConfig readConfig(std::istream &in)
     {
-        return configFromJson(antwika::config::parseConfig(in));
+        return fileFormat().read(in);
     }
 
     PetConfig loadConfigFileOrDefaults(const std::string &path)
     {
-        const auto document = antwika::config::parseConfigFile(path);
-
-        // A file that is not there is an install nobody has tuned.
-        // Which is a state rather than a failure.
-        return document.has_value() ? configFromJson(*document)
-                                    : PetConfig{};
+        return fileFormat().loadFileOrDefaults(path);
     }
 
 } // namespace antwika::companion

@@ -1,5 +1,7 @@
 find_package(GTest REQUIRED)
 
+add_subdirectory(conformance)
+
 add_executable(antwika_config_tests
     ConfigDocumentTest.cpp
 )

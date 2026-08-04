@@ -5,11 +5,9 @@
 #include <limits>
 #include <string>
 
-#include <nlohmann/json-schema.hpp>
-
 #include <antwika/config/ConfigDocument.hpp>
+#include <antwika/config/FileFormat.hpp>
 #include <antwika/config/Format.hpp>
-
 #include "antwika/game/BuildingKind.hpp"
 
 namespace antwika::game
@@ -17,15 +15,17 @@ namespace antwika::game
 
     namespace
     {
-        constexpr antwika::config::Format kFormat{
-            .magic = kConfigMagic, .version = kConfigFormatVersion};
+        using antwika::config::FileFormat;
+        using antwika::config::FormatSpec;
+        using antwika::config::memberOr;
+        using antwika::config::wholeShape;
 
         // A zero period would never come due, or divide by zero.
         // mouthsPerServing is one such divisor.
         // So the floor is one tick, stated beside the parse.
         nlohmann::json periodShape()
         {
-            return antwika::config::wholeShape(
+            return wholeShape(
                 1, std::numeric_limits<std::int32_t>::max());
         }
 
@@ -33,7 +33,7 @@ namespace antwika::game
         // Never negative, which would pay the player to build.
         nlohmann::json costShape()
         {
-            return antwika::config::wholeShape(
+            return wholeShape(
                 0, std::numeric_limits<std::int64_t>::max());
         }
 
@@ -41,7 +41,7 @@ namespace antwika::game
         // Money is the one number here the game itself takes negative.
         nlohmann::json moneyShape()
         {
-            return antwika::config::wholeShape(
+            return wholeShape(
                 std::numeric_limits<std::int64_t>::min(),
                 std::numeric_limits<std::int64_t>::max());
         }
@@ -70,11 +70,8 @@ namespace antwika::game
             // No input reaches it.
         } // GCOVR_EXCL_LINE
 
-        nlohmann::json configSchema()
+        void describeMembers(nlohmann::json &schema)
         {
-            auto schema = antwika::config::documentSchema(
-                kFormat, "antwika game config document");
-
             schema["properties"]["startingMoney"] = moneyShape();
             schema["properties"]["roadCost"] = costShape();
             schema["properties"]["razeCost"] = costShape();
@@ -91,17 +88,128 @@ namespace antwika::game
             schema["properties"]["productionBatch"] = periodShape();
             schema["properties"]["labourPeriodTicks"] = periodShape();
             schema["properties"]["staffDecayPeriodTicks"] = periodShape();
-            schema["properties"]["walkerLimit"] =
-                antwika::config::wholeShape(
-                    0, std::numeric_limits<std::int64_t>::max());
-            return schema;
-        } // GCOVR_EXCL_LINE
+            schema["properties"]["walkerLimit"] = wholeShape(
+                0, std::numeric_limits<std::int64_t>::max());
+        }
 
-        const nlohmann::json_schema::json_validator &configValidator()
+        void encodeMembers(const GameConfig &config, nlohmann::json &out)
         {
-            static const nlohmann::json_schema::json_validator validator(
-                configSchema()); // GCOVR_EXCL_LINE
-            return validator;
+            out["startingMoney"] = config.startingMoney;
+            out["roadCost"] = config.roadCost;
+            out["razeCost"] = config.razeCost;
+
+            for (std::size_t index = 0; index < kBuildingKindCount;
+                 ++index)
+            {
+                const auto kind = static_cast<BuildingKind>(index);
+                out["buildingCosts"]
+                   [std::string(buildingKindName(kind))] =
+                       config.costOf(kind);
+            }
+            out["riskPeriodTicks"] = config.riskPeriodTicks;
+            out["drainPeriodTicks"] = config.drainPeriodTicks;
+            out["mouthsPerServing"] = config.mouthsPerServing;
+            out["spawnPeriodTicks"] = config.spawnPeriodTicks;
+            out["burnDurationTicks"] = config.burnDurationTicks;
+            out["settlerPeriodTicks"] = config.settlerPeriodTicks;
+            out["evolvePeriodTicks"] = config.evolvePeriodTicks;
+            out["devolvePeriodTicks"] = config.devolvePeriodTicks;
+            out["productionPeriodTicks"] = config.productionPeriodTicks;
+            out["productionBatch"] = config.productionBatch;
+            out["labourPeriodTicks"] = config.labourPeriodTicks;
+            out["staffDecayPeriodTicks"] = config.staffDecayPeriodTicks;
+            out["walkerLimit"] = config.walkerLimit;
+        }
+
+        GameConfig decodeMembers(const nlohmann::json &document)
+        {
+            GameConfig config;
+            config.startingMoney =
+                memberOr(document, "startingMoney", config.startingMoney);
+            config.roadCost =
+                memberOr(document, "roadCost", config.roadCost);
+            config.razeCost =
+                memberOr(document, "razeCost", config.razeCost);
+
+            if (document.contains("buildingCosts"))
+            {
+                const auto &costs = document.at("buildingCosts");
+
+                for (std::size_t index = 0; index < kBuildingKindCount;
+                     ++index)
+                {
+                    const auto kind = static_cast<BuildingKind>(index);
+                    const auto name =
+                        std::string(buildingKindName(kind));
+
+                    if (costs.contains(name))
+                    {
+                        config.buildingCosts[index] =
+                            costs.at(name).get<std::int64_t>();
+                    }
+                }
+            }
+            config.riskPeriodTicks =
+                memberOr(document, "riskPeriodTicks", config.riskPeriodTicks);
+            config.drainPeriodTicks =
+                memberOr(document, "drainPeriodTicks", config.drainPeriodTicks);
+            config.mouthsPerServing =
+                memberOr(document, "mouthsPerServing", config.mouthsPerServing);
+            config.spawnPeriodTicks =
+                memberOr(document, "spawnPeriodTicks", config.spawnPeriodTicks);
+            config.burnDurationTicks =
+                memberOr(
+                    document, "burnDurationTicks", config.burnDurationTicks);
+            config.settlerPeriodTicks =
+                memberOr(
+                    document, "settlerPeriodTicks", config.settlerPeriodTicks);
+            config.evolvePeriodTicks =
+                memberOr(
+                    document, "evolvePeriodTicks", config.evolvePeriodTicks);
+            config.devolvePeriodTicks =
+                memberOr(
+                    document, "devolvePeriodTicks", config.devolvePeriodTicks);
+            config.productionPeriodTicks =
+                memberOr(
+                    document,
+                    "productionPeriodTicks",
+                    config.productionPeriodTicks);
+            config.productionBatch =
+                memberOr(document, "productionBatch", config.productionBatch);
+            config.labourPeriodTicks =
+                memberOr(
+                    document, "labourPeriodTicks", config.labourPeriodTicks);
+            config.staffDecayPeriodTicks =
+                memberOr(
+                    document,
+                    "staffDecayPeriodTicks",
+                    config.staffDecayPeriodTicks);
+            config.walkerLimit =
+                memberOr(document, "walkerLimit", config.walkerLimit);
+            return config;
+        }
+
+        const FileFormat<GameConfig> &fileFormat()
+        {
+            using AppFormat = FileFormat<GameConfig>;
+
+            // The excluded closing line carries the static guard.
+            // Its concurrency arms are unreachable one-threaded.
+            // See docs/confirming-unreachable-branches.md.
+            static const AppFormat format(
+                FormatSpec<GameConfig>{
+                    .format =
+                        {.magic = kConfigMagic,
+                         .version = kConfigFormatVersion},
+                    .title = "antwika game config document",
+                    .whatFailed =
+                        "antwika::game: config JSON failed schema "
+                        "validation: ",
+                    .members = describeMembers,
+                    .encode = encodeMembers,
+                    .decode = decodeMembers,
+                    .migrations = standardConfigMigrations}); // GCOVR_EXCL_LINE
+            return format;
         }
     } // namespace
 
@@ -115,125 +223,27 @@ namespace antwika::game
 
     nlohmann::json configToJson(const GameConfig &config)
     {
-        auto encoded = antwika::config::newDocument(kFormat);
-
-        encoded["startingMoney"] = config.startingMoney;
-        encoded["roadCost"] = config.roadCost;
-        encoded["razeCost"] = config.razeCost;
-
-        for (std::size_t index = 0; index < kBuildingKindCount; ++index)
-        {
-            const auto kind = static_cast<BuildingKind>(index);
-            encoded["buildingCosts"]
-                   [std::string(buildingKindName(kind))] =
-                       config.costOf(kind);
-        }
-
-        encoded["riskPeriodTicks"] = config.riskPeriodTicks;
-        encoded["drainPeriodTicks"] = config.drainPeriodTicks;
-        encoded["mouthsPerServing"] = config.mouthsPerServing;
-        encoded["spawnPeriodTicks"] = config.spawnPeriodTicks;
-        encoded["burnDurationTicks"] = config.burnDurationTicks;
-        encoded["settlerPeriodTicks"] = config.settlerPeriodTicks;
-        encoded["evolvePeriodTicks"] = config.evolvePeriodTicks;
-        encoded["devolvePeriodTicks"] = config.devolvePeriodTicks;
-        encoded["productionPeriodTicks"] = config.productionPeriodTicks;
-        encoded["productionBatch"] = config.productionBatch;
-        encoded["labourPeriodTicks"] = config.labourPeriodTicks;
-        encoded["staffDecayPeriodTicks"] = config.staffDecayPeriodTicks;
-        encoded["walkerLimit"] = config.walkerLimit;
-        return encoded;
-
-        // gcov puts the cleanup block on this closing brace.
-        // SaveGame.cpp's own encoder explains it at length.
-        // No input reaches it.
-    } // GCOVR_EXCL_LINE
+        return fileFormat().toJson(config);
+    }
 
     GameConfig configFromJson(const nlohmann::json &document)
     {
-        using antwika::config::memberOr;
-
-        const auto brought = antwika::config::migrated(
-            document,
-            standardConfigMigrations(),
-            configValidator(),
-            "antwika::game: config JSON failed schema validation: ");
-
-        GameConfig config;
-        config.startingMoney =
-            memberOr(brought, "startingMoney", config.startingMoney);
-        config.roadCost = memberOr(brought, "roadCost", config.roadCost);
-        config.razeCost = memberOr(brought, "razeCost", config.razeCost);
-
-        if (brought.contains("buildingCosts"))
-        {
-            const auto &costs = brought.at("buildingCosts");
-
-            for (std::size_t index = 0; index < kBuildingKindCount;
-                 ++index)
-            {
-                const auto kind = static_cast<BuildingKind>(index);
-                const auto name = std::string(buildingKindName(kind));
-
-                if (costs.contains(name))
-                {
-                    config.buildingCosts[index] =
-                        costs.at(name).get<std::int64_t>();
-                }
-            }
-        }
-
-        config.riskPeriodTicks =
-            memberOr(brought, "riskPeriodTicks", config.riskPeriodTicks);
-        config.drainPeriodTicks = memberOr(
-            brought, "drainPeriodTicks", config.drainPeriodTicks);
-        config.mouthsPerServing = memberOr(
-            brought, "mouthsPerServing", config.mouthsPerServing);
-        config.spawnPeriodTicks = memberOr(
-            brought, "spawnPeriodTicks", config.spawnPeriodTicks);
-        config.burnDurationTicks = memberOr(
-            brought, "burnDurationTicks", config.burnDurationTicks);
-        config.settlerPeriodTicks = memberOr(
-            brought, "settlerPeriodTicks", config.settlerPeriodTicks);
-        config.evolvePeriodTicks = memberOr(
-            brought, "evolvePeriodTicks", config.evolvePeriodTicks);
-        config.devolvePeriodTicks = memberOr(
-            brought, "devolvePeriodTicks", config.devolvePeriodTicks);
-        config.productionPeriodTicks = memberOr(
-            brought,
-            "productionPeriodTicks",
-            config.productionPeriodTicks);
-        config.productionBatch = memberOr(
-            brought, "productionBatch", config.productionBatch);
-        config.labourPeriodTicks = memberOr(
-            brought, "labourPeriodTicks", config.labourPeriodTicks);
-        config.staffDecayPeriodTicks = memberOr(
-            brought,
-            "staffDecayPeriodTicks",
-            config.staffDecayPeriodTicks);
-        config.walkerLimit =
-            memberOr(brought, "walkerLimit", config.walkerLimit);
-        return config;
+        return fileFormat().fromJson(document);
     }
 
     void writeConfig(const GameConfig &config, std::ostream &out)
     {
-        antwika::config::writeConfig(configToJson(config), out);
+        fileFormat().write(config, out);
     }
 
     GameConfig readConfig(std::istream &in)
     {
-        return configFromJson(antwika::config::parseConfig(in));
+        return fileFormat().read(in);
     }
 
     GameConfig loadConfigFileOrDefaults(const std::string &path)
     {
-        const auto document = antwika::config::parseConfigFile(path);
-
-        // A file that is not there is a build nobody has rebalanced.
-        // Which is a state rather than a failure.
-        return document.has_value() ? configFromJson(*document)
-                                    : GameConfig{};
+        return fileFormat().loadFileOrDefaults(path);
     }
 
 } // namespace antwika::game

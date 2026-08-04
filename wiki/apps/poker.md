@@ -95,6 +95,6 @@ See [`blog/010-a-poker-hand-in-one-number.md`](../../blog/010-a-poker-hand-in-on
 
 ## The config file
 
-`config.json` beside the executable is read once at startup through [`antwika::config`](../libraries/config.md) and decodes into `RoomConfig`: `smallBlind`, `bigBlind` and `minimumBuyIn`.
-Two rules sit between the numbers and are refused at the decode -- a big blind below the small one, and a buy-in below the big blind -- since a table nobody could sit at is a config nobody meant.
+`config.json` beside the executable is read once at startup through [`antwika::config`](../libraries/config.md) and decodes into `RoomConfig`: `smallBlind`, `bigBlind`, `minimumBuyIn`, and `handStrengths`, the nine ratings the agents give each made hand -- a lookup indexed by `HandCategory` rather than arithmetic on the enumeration, so a rebalance of the shipped players is an edit to the file.
+Three rules sit between the numbers and are refused at the decode -- a big blind below the small one, a buy-in below the big blind, and a strength table that is not weakest-first -- since a table nobody could sit at, or one that rates a straight under a pair, is a config nobody meant.
 The seat count, the table name and the shuffle seed stay in source: the seats decide the layout a recorded click is resolved against, and the seed is a constant for the reason `apps/game` gives about its world seed.

@@ -1,46 +1,136 @@
 #include "antwika/poker/ConfigFile.hpp"
 
+#include <cstddef>
 #include <cstdint>
 #include <limits>
 #include <string>
 
-#include <nlohmann/json-schema.hpp>
-
 #include <antwika/config/ConfigDocument.hpp>
-#include <antwika/config/ConfigFormatError.hpp>
+#include <antwika/config/FileFormat.hpp>
 #include <antwika/config/Format.hpp>
+#include <antwika/config/ConfigFormatError.hpp>
 
 namespace antwika::poker
 {
 
     namespace
     {
-        constexpr antwika::config::Format kFormat{
-            .magic = kConfigMagic, .version = kConfigFormatVersion};
+        using antwika::config::FileFormat;
+        using antwika::config::FormatSpec;
+        using antwika::config::memberOr;
+        using antwika::config::wholeShape;
 
         // A blind or a buy-in of nothing is no cash game at all.
         // So the floor is one chip, stated beside the parse.
         nlohmann::json chipsShape()
         {
-            return antwika::config::wholeShape(
+            return wholeShape(
                 1, std::numeric_limits<std::int64_t>::max());
         }
 
-        nlohmann::json configSchema()
+        void describeMembers(nlohmann::json &schema)
         {
-            auto schema = antwika::config::documentSchema(
-                kFormat, "antwika poker config document");
             schema["properties"]["smallBlind"] = chipsShape();
             schema["properties"]["bigBlind"] = chipsShape();
             schema["properties"]["minimumBuyIn"] = chipsShape();
-            return schema;
-        } // GCOVR_EXCL_LINE
 
-        const nlohmann::json_schema::json_validator &configValidator()
+            // One rating per category, weakest first, 0..100.
+            auto &strengths = schema["properties"]["handStrengths"];
+            strengths["type"] = "array";
+            strengths["items"] = wholeShape(0, 100);
+            strengths["minItems"] = kHandCategoryCount;
+            strengths["maxItems"] = kHandCategoryCount;
+        }
+
+        void encodeMembers(const RoomConfig &config, nlohmann::json &out)
         {
-            static const nlohmann::json_schema::json_validator validator(
-                configSchema()); // GCOVR_EXCL_LINE
-            return validator;
+            out["smallBlind"] = config.blinds.small;
+            out["bigBlind"] = config.blinds.big;
+            out["minimumBuyIn"] = config.minimumBuyIn;
+
+            for (const auto strength : config.handStrengths)
+            {
+                out["handStrengths"].push_back(strength);
+            }
+        }
+
+        RoomConfig decodeMembers(const nlohmann::json &document)
+        {
+            RoomConfig config;
+            config.blinds.small =
+                memberOr(document, "smallBlind", config.blinds.small);
+            config.blinds.big =
+                memberOr(document, "bigBlind", config.blinds.big);
+            config.minimumBuyIn =
+                memberOr(document, "minimumBuyIn", config.minimumBuyIn);
+
+            if (document.contains("handStrengths"))
+            {
+                const auto &strengths = document.at("handStrengths");
+
+                for (std::size_t index = 0;
+                     index < kHandCategoryCount;
+                     ++index)
+                {
+                    config.handStrengths[index] =
+                        strengths.at(index).get<unsigned>();
+                }
+            }
+
+            // The schema checks each number alone.
+            // These two rules are between numbers.
+            // So they are refused beside the decode.
+            if (config.blinds.big < config.blinds.small)
+            {
+                throw antwika::config::ConfigFormatError(
+                    "antwika::poker: config states a big blind "
+                    "smaller than the small blind");
+            }
+
+            // Weakest first is the table's whole meaning.
+            // A straight rated under a pair was written backwards.
+            for (std::size_t index = 1; index < kHandCategoryCount;
+                 ++index)
+            {
+                if (config.handStrengths[index]
+                    < config.handStrengths[index - 1])
+                {
+                    throw antwika::config::ConfigFormatError(
+                        "antwika::poker: config rates a stronger "
+                        "hand category under a weaker one");
+                }
+            }
+
+            if (config.minimumBuyIn < config.blinds.big)
+            {
+                throw antwika::config::ConfigFormatError(
+                    "antwika::poker: config states a minimum "
+                    "buy-in smaller than the big blind");
+            }
+            return config;
+        }
+
+        const FileFormat<RoomConfig> &fileFormat()
+        {
+            using AppFormat = FileFormat<RoomConfig>;
+
+            // The excluded closing line carries the static guard.
+            // Its concurrency arms are unreachable one-threaded.
+            // See docs/confirming-unreachable-branches.md.
+            static const AppFormat format(
+                FormatSpec<RoomConfig>{
+                    .format =
+                        {.magic = kConfigMagic,
+                         .version = kConfigFormatVersion},
+                    .title = "antwika poker config document",
+                    .whatFailed =
+                        "antwika::poker: config JSON failed schema "
+                        "validation: ",
+                    .members = describeMembers,
+                    .encode = encodeMembers,
+                    .decode = decodeMembers,
+                    .migrations = standardConfigMigrations}); // GCOVR_EXCL_LINE
+            return format;
         }
     } // namespace
 
@@ -54,82 +144,27 @@ namespace antwika::poker
 
     nlohmann::json configToJson(const RoomConfig &config)
     {
-        auto encoded = antwika::config::newDocument(kFormat);
-        encoded["smallBlind"] = config.blinds.small;
-        encoded["bigBlind"] = config.blinds.big;
-        encoded["minimumBuyIn"] = config.minimumBuyIn;
-        return encoded;
-
-        // gcov puts the cleanup block on this closing brace.
-        // SaveGame.cpp's own encoder explains it at length.
-        // No input reaches it.
-    } // GCOVR_EXCL_LINE
+        return fileFormat().toJson(config);
+    }
 
     RoomConfig configFromJson(const nlohmann::json &document)
     {
-        using antwika::config::memberOr;
-
-        const auto brought = antwika::config::migrated(
-            document,
-            standardConfigMigrations(),
-            configValidator(),
-            "antwika::poker: config JSON failed schema validation: ");
-
-        RoomConfig config;
-        config.blinds.small =
-            memberOr(brought, "smallBlind", config.blinds.small);
-        config.blinds.big =
-            memberOr(brought, "bigBlind", config.blinds.big);
-        config.minimumBuyIn =
-            memberOr(brought, "minimumBuyIn", config.minimumBuyIn);
-
-        // The schema checks each number alone.
-        // These two rules are between numbers.
-        // So they live here beside the decode.
-        if (config.blinds.big < config.blinds.small)
-        {
-            throw antwika::config::ConfigFormatError(
-                "antwika::poker: config states a big blind smaller "
-                "than the small blind");
-        }
-
-        if (config.minimumBuyIn < config.blinds.big)
-        {
-            throw antwika::config::ConfigFormatError(
-                "antwika::poker: config states a minimum buy-in "
-                "smaller than the big blind");
-        }
-
-        return config;
+        return fileFormat().fromJson(document);
     }
 
     void writeConfig(const RoomConfig &config, std::ostream &out)
     {
-        antwika::config::writeConfig(configToJson(config), out);
+        fileFormat().write(config, out);
     }
 
     RoomConfig readConfig(std::istream &in)
     {
-        return configFromJson(antwika::config::parseConfig(in));
+        return fileFormat().read(in);
     }
 
     RoomConfig loadConfigFileOrDefaults(const std::string &path)
     {
-        const auto document = antwika::config::parseConfigFile(path);
-
-        // A file that is not there is an install nobody has tuned.
-        // Which is a state rather than a failure.
-        // An if rather than a ternary, since RoomConfig has a string.
-        // A mixed ternary's temporary hands gcov edges nobody reaches.
-        if (!document.has_value())
-        {
-            // The unreached arm allocates the default tableName.
-            // A seven-char literal's SSO always spares it.
-            // See docs/confirming-unreachable-branches.md.
-            return RoomConfig{}; // GCOVR_EXCL_LINE
-        }
-
-        return configFromJson(*document);
+        return fileFormat().loadFileOrDefaults(path);
     }
 
 } // namespace antwika::poker

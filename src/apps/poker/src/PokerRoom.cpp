@@ -111,7 +111,9 @@ namespace antwika::poker
         agentRefs.reserve(config.seatCount);
         for (std::size_t index = 0; index < config.seatCount; ++index)
         {
-            agents.emplace_back(kSeatStyles[index % kSeatStyles.size()]);
+            agents.emplace_back(
+                kSeatStyles[index % kSeatStyles.size()],
+                config.handStrengths);
         }
         for (auto &agent : agents)
         {

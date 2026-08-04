@@ -1,213 +1,99 @@
-#include <gtest/gtest.h>
-
 #include <cstdint>
-#include <filesystem>
-#include <fstream>
-#include <sstream>
+#include <istream>
+#include <ostream>
 #include <string>
+#include <string_view>
 
-#include <unistd.h>
+#include <gtest/gtest.h>
 
 #include <nlohmann/json.hpp>
 
-#include <antwika/app/AssetPath.hpp>
-#include <antwika/config/ConfigFormatError.hpp>
-#include <antwika/replay/SchemaVersion.hpp>
+#include <antwika/config/conformance/ConfigFileContract.hpp>
+#include <antwika/replay/MigrationChain.hpp>
 
 #include "antwika/atlas_editor/ConfigFile.hpp"
-#include "antwika/atlas_editor/AtlasEditorConfig.hpp"
 
-using antwika::config::ConfigFormatError;
-using antwika::atlas_editor::configFromJson;
-using antwika::atlas_editor::configToJson;
-using antwika::atlas_editor::kConfigFormatVersion;
-using antwika::atlas_editor::kConfigMagic;
-using antwika::atlas_editor::loadConfigFileOrDefaults;
-using antwika::atlas_editor::readConfig;
-using antwika::atlas_editor::standardConfigMigrations;
-using antwika::atlas_editor::writeConfig;
-using antwika::atlas_editor::AtlasEditorConfig;
-
-namespace
+namespace antwika::config::conformance
 {
-    // Every member is off its default here.
-    // A round trip that dropped one lands back on the default.
-    // The comparisons below are what would say so.
-    [[nodiscard]] AtlasEditorConfig retuned()
-    {
-        AtlasEditorConfig config;
-        config.framePeriodMs = 60;
-        return config;
-    }
 
-    void expectEqual(
-        const AtlasEditorConfig &decoded,
-        const AtlasEditorConfig &expected)
+    namespace
     {
-        EXPECT_EQ(decoded.framePeriodMs, expected.framePeriodMs);
-    }
-
-    void expectDefaults(const AtlasEditorConfig &decoded)
-    {
-        EXPECT_EQ(decoded.framePeriodMs, AtlasEditorConfig{}.framePeriodMs);
-    }
-
-    [[nodiscard]] std::string versionKey()
-    {
-        return std::string(antwika::replay::kSchemaVersionKey);
-    }
-
-    class ConfigFileTest : public ::testing::Test
-    {
-    protected:
-        void SetUp() override
+        /**
+         * @brief This application's config format, for the shared
+         * contract suite.
+         */
+        struct AtlasEditorConfigTraits
         {
-            std::filesystem::create_directories(directory);
-        }
+            using Config = antwika::atlas_editor::AtlasEditorConfig;
 
-        void TearDown() override
-        {
-            std::error_code ignored;
-            std::filesystem::remove_all(directory, ignored);
-        }
+            static std::string_view magic()
+            {
+                return antwika::atlas_editor::kConfigMagic;
+            }
 
-        [[nodiscard]] std::string pathIn(const std::string &name) const
-        {
-            return (directory / name).string();
-        }
+            static std::uint32_t version()
+            {
+                return antwika::atlas_editor::kConfigFormatVersion;
+            }
 
-        void writeText(const std::string &name, const std::string &text)
-        {
-            std::ofstream file(pathIn(name));
-            file << text;
-        }
+            static antwika::replay::MigrationChain migrations()
+            {
+                return antwika::atlas_editor::standardConfigMigrations();
+            }
 
-        // Named per process, for game's ScratchDirectory.hpp's reason.
-        // CTest runs every case as its own process.
-        // A never-before-seen path cannot be mid-removal already.
-        std::filesystem::path directory{
-            std::filesystem::temp_directory_path()
-            / ("antwika-atlas_editor-config." + std::to_string(::getpid()))};
-    };
-} // namespace
+            // Every member is off its default here.
+            // A dropped member lands on the default and fails below.
+            static Config retuned()
+            {
+                Config config;
+                config.framePeriodMs = 60;
+                return config;
+            }
 
-TEST_F(ConfigFileTest, ADocumentStatesItsFormatAndItsVersion)
-{
-    const auto encoded = configToJson(AtlasEditorConfig{});
+            static void expectEqual(
+                const Config &decoded, const Config &expected)
+            {
+                EXPECT_EQ(decoded.framePeriodMs, expected.framePeriodMs);
+            }
 
-    EXPECT_EQ(encoded.at("magic").get<std::string>(), kConfigMagic);
-    EXPECT_EQ(
-        encoded.at(versionKey()).get<std::uint32_t>(),
-        kConfigFormatVersion);
-}
+            static const char *floorMember()
+            {
+                return "framePeriodMs";
+            }
 
-TEST_F(ConfigFileTest, AConfigRoundTripsThroughTheDocument)
-{
-    expectEqual(configFromJson(configToJson(retuned())), retuned());
-}
+            static nlohmann::json toJson(const Config &config)
+            {
+                return antwika::atlas_editor::configToJson(config);
+            }
 
-// A config stating one number is a one-line change.
-// Not a restatement of every default it leaves alone.
-TEST_F(ConfigFileTest, AMinimalDocumentIsTheShippedApplication)
-{
-    nlohmann::json document;
-    document["magic"] = std::string(kConfigMagic);
+            static Config fromJson(const nlohmann::json &document)
+            {
+                return antwika::atlas_editor::configFromJson(document);
+            }
 
-    expectDefaults(configFromJson(document));
-}
+            static void write(const Config &config, std::ostream &out)
+            {
+                antwika::atlas_editor::writeConfig(config, out);
+            }
 
-TEST_F(ConfigFileTest, AConfigRoundTripsThroughAStream)
-{
-    std::stringstream stream;
-    writeConfig(retuned(), stream);
+            static Config read(std::istream &in)
+            {
+                return antwika::atlas_editor::readConfig(in);
+            }
 
-    expectEqual(readConfig(stream), retuned());
-}
+            static Config loadFileOrDefaults(const std::string &path)
+            {
+                return antwika::atlas_editor::loadConfigFileOrDefaults(path);
+            }
 
-TEST_F(ConfigFileTest, AConfigRoundTripsThroughAFile)
-{
-    std::stringstream stream;
-    writeConfig(retuned(), stream);
-    writeText("config.json", stream.str());
+            static std::string scratchPrefix()
+            {
+                return "antwika-atlas_editor-config";
+            }
+        };
+    } // namespace
 
-    expectEqual(loadConfigFileOrDefaults(pathIn("config.json")), retuned());
-}
+    INSTANTIATE_TYPED_TEST_SUITE_P(
+        AtlasEditor, ConfigFileContract, AtlasEditorConfigTraits);
 
-// An install nobody has tuned plays the shipped defaults.
-// That is a state, not a failure.
-TEST_F(ConfigFileTest, AMissingFileIsTheShippedApplication)
-{
-    expectDefaults(loadConfigFileOrDefaults(pathIn("nothing.json")));
-}
-
-// The file beside the executable is the one main() reads.
-// Pinned to the defaults, so shipping it changes nothing on its own.
-TEST_F(ConfigFileTest, TheShippedConfigStatesTheDefaults)
-{
-    expectDefaults(
-        loadConfigFileOrDefaults(antwika::app::assetPath("config.json")));
-    EXPECT_TRUE(std::filesystem::exists(
-        antwika::app::assetPath("config.json")));
-}
-
-TEST_F(ConfigFileTest, TextThatIsNotJsonIsRefused)
-{
-    writeText("config.json", "not json at all");
-
-    EXPECT_THROW(
-        (void)loadConfigFileOrDefaults(pathIn("config.json")),
-        ConfigFormatError);
-}
-
-TEST_F(ConfigFileTest, ADocumentOfAnotherFormatIsRefused)
-{
-    auto document = configToJson(AtlasEditorConfig{});
-    document["magic"] = "antwika-game-save";
-
-    EXPECT_THROW((void)configFromJson(document), ConfigFormatError);
-}
-
-// Read before anything is decoded.
-// So a file from a build this one has never met is refused.
-TEST_F(ConfigFileTest, ADocumentFromANewerBuildIsRefused)
-{
-    auto document = configToJson(AtlasEditorConfig{});
-    document[versionKey()] = kConfigFormatVersion + 1;
-
-    EXPECT_THROW((void)configFromJson(document), ConfigFormatError);
-}
-
-TEST_F(ConfigFileTest, ADocumentOfTheWrongShapeIsRefused)
-{
-    auto document = configToJson(AtlasEditorConfig{});
-    document["framePeriodMs"] = "plenty";
-
-    EXPECT_THROW((void)configFromJson(document), ConfigFormatError);
-}
-
-// A value the field's meaning excludes is refused beside the parse.
-TEST_F(ConfigFileTest, AValueBelowTheFloorIsRefused)
-{
-    auto document = configToJson(AtlasEditorConfig{});
-    document["framePeriodMs"] = 0;
-
-    EXPECT_THROW((void)configFromJson(document), ConfigFormatError);
-}
-
-// A misspelt member would otherwise be a change that never took.
-TEST_F(ConfigFileTest, AnUnknownMemberIsRefused)
-{
-    auto document = configToJson(AtlasEditorConfig{});
-    document["framePeriodMsz"] = 9;
-
-    EXPECT_THROW((void)configFromJson(document), ConfigFormatError);
-}
-
-// There has only ever been one revision; the chain is here anyway.
-// It is what refuses a document from a newer build.
-TEST_F(ConfigFileTest, TheChainBringsDocumentsToTheCurrentVersion)
-{
-    EXPECT_EQ(
-        standardConfigMigrations().currentVersion(),
-        kConfigFormatVersion);
-}
+} // namespace antwika::config::conformance

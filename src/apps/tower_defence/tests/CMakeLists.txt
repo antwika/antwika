@@ -44,6 +44,7 @@ target_link_libraries(antwika_tower_defence_tests
     PRIVATE
         antwika::app
         antwika::config
+        antwika::config::tests::conformance
         antwika::engine
         antwika::event::tests::mocks
         antwika::gfx

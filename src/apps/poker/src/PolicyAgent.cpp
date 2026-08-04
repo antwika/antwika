@@ -84,25 +84,6 @@ namespace antwika::poker
             return std::min(strength, 100U);
         }
 
-        // Indexed by HandCategory, weakest first.
-        // A table rather than a switch, with no unreachable default.
-        constexpr std::array<unsigned, 9> kStrengthByCategory{
-            20,
-            45,
-            62,
-            76,
-            85,
-            90,
-            95,
-            98,
-            100,
-        };
-
-        [[nodiscard]] unsigned madeHandStrength(
-            HandCategory category) noexcept
-        {
-            return kStrengthByCategory[static_cast<std::size_t>(category)];
-        }
 
         // Sizes a wager at roughly the pot, then clamps it.
         // That is what keeps every action this agent names legal.
@@ -115,7 +96,10 @@ namespace antwika::poker
 
     } // namespace
 
-    PolicyAgent::PolicyAgent(AgentStyle style) noexcept : style(style)
+    PolicyAgent::PolicyAgent(
+        AgentStyle style,
+        std::array<unsigned, kHandCategoryCount> handStrengths) noexcept
+        : style(style), handStrengths(handStrengths)
     {
     }
 
@@ -126,7 +110,7 @@ namespace antwika::poker
 
     Action PolicyAgent::act(const TableView &view)
     {
-        const auto strength = handStrength(view);
+        const auto strength = handStrength(view, handStrengths);
         const auto thresholds = thresholdsFor(style);
         const auto canRaise =
             view.mayRaise && view.maxRaiseTo > view.currentBet;
@@ -148,7 +132,9 @@ namespace antwika::poker
         return fold();
     }
 
-    unsigned handStrength(const TableView &view)
+    unsigned handStrength(
+        const TableView &view,
+        const std::array<unsigned, kHandCategoryCount> &handStrengths)
     {
         if (view.board.empty())
         {
@@ -158,7 +144,10 @@ namespace antwika::poker
         std::vector<Card> cards(
             view.holeCards.begin(), view.holeCards.end());
         cards.insert(cards.end(), view.board.begin(), view.board.end());
-        return madeHandStrength(categoryOf(evaluate(cards)));
+        // Indexed by HandCategory, weakest first.
+        // A lookup rather than a switch, with no unreachable default.
+        return handStrengths[static_cast<std::size_t>(
+            categoryOf(evaluate(cards)))];
     }
 
 } // namespace antwika::poker

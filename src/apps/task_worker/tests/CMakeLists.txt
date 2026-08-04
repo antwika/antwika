@@ -40,6 +40,7 @@ target_link_libraries(antwika_task_worker_tests
     PRIVATE
         antwika::app
         antwika::config
+        antwika::config::tests::conformance
         antwika::ecs
         antwika::ecs_commons
         antwika::engine
