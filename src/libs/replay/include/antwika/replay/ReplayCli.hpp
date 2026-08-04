@@ -10,7 +10,7 @@
 #include <antwika/cli/CommandLine.hpp>
 #include <antwika/cli/FlagSpec.hpp>
 #include <antwika/event/TickEvent.hpp>
-#include <antwika/gfx/Size.hpp>
+#include <antwika/geometry/Size.hpp>
 #include <antwika/replay/CanvasCheck.hpp>
 #include <antwika/replay/ReplayWriter.hpp>
 
@@ -128,6 +128,6 @@ namespace antwika::replay
     void saveReplayFile(
         const std::vector<TickEvent> &events,
         const std::string &path,
-        std::optional<gfx::Size> canvas = std::nullopt);
+        std::optional<geometry::Size> canvas = std::nullopt);
 
 } // namespace antwika::replay

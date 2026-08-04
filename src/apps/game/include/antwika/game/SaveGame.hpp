@@ -15,6 +15,7 @@
 #include "antwika/game/BuildingKind.hpp"
 #include "antwika/game/Camera.hpp"
 #include "antwika/game/Cell.hpp"
+#include "antwika/game/CityGrid.hpp"
 #include "antwika/game/Errand.hpp"
 #include "antwika/game/GameState.hpp"
 #include "antwika/game/GameSummary.hpp"
@@ -463,6 +464,29 @@ namespace antwika::game
      * @param seed The seed the run was configured with.
      * @return The state to write.
      */
+    /**
+     * @brief Turn a city's contents into the state a file holds.
+     * @param grid What the World was read into; every link in it is
+     * already an index rather than a handle.
+     * @param paths The road cells to record.
+     * @param camera Where the grid is looked at from.
+     * @param state The plain app state to record.
+     * @param extent The bounds the run was configured with.
+     * @param seed The seed the run was configured with.
+     * @return The state to write.
+     *
+     * The half of taking a session out that is genuinely about the
+     * *file format*: CityGrid is what walks the World, and it walks it
+     * once for both directions.
+     */
+    [[nodiscard]] SaveGame saveGameFrom(
+        const CityGrid &grid,
+        const PathIndex &paths,
+        const Camera &camera,
+        const GameState &state,
+        GridExtent extent,
+        std::uint64_t seed = 0);
+
     [[nodiscard]] SaveGame saveGameOf(
         const antwika::ecs::World &world,
         const PathIndex &paths,

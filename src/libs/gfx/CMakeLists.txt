@@ -81,6 +81,7 @@ target_include_directories(antwika_gfx
 target_link_libraries(antwika_gfx
     PUBLIC
         antwika::font
+        antwika::geometry
         antwika::log
         glm::glm
     PRIVATE

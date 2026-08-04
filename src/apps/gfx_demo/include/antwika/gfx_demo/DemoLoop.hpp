@@ -1,5 +1,6 @@
 #pragma once
 
+#include <chrono>
 #include <cstdint>
 #include <optional>
 
@@ -7,12 +8,14 @@
 #include <antwika/gfx/IGfxBackend.hpp>
 #include <antwika/gfx/WindowDesc.hpp>
 #include <antwika/input/IInputBackend.hpp>
+#include <antwika/time/ISleeper.hpp>
 
 #include "antwika/gfx_demo/DemoScene.hpp"
 
 namespace antwika::gfx_demo
 {
 
+    using antwika::time::ISleeper;
     using antwika::gfx::Bitmap;
     using antwika::gfx::IGfxBackend;
     using antwika::gfx::WindowDesc;
@@ -48,7 +51,9 @@ namespace antwika::gfx_demo
         DemoLoop(
             IGfxBackend &backend,
             IInputBackend &input,
-            const DemoScene &scene);
+            const DemoScene &scene,
+            ISleeper &sleeper,
+            std::chrono::milliseconds framePeriod);
 
         DemoLoop(const DemoLoop &) = delete;
         DemoLoop(DemoLoop &&) = delete;
@@ -85,6 +90,8 @@ namespace antwika::gfx_demo
         IGfxBackend &backend;
         IInputBackend &input;
         const DemoScene &scene;
+        ISleeper &sleeper;
+        std::chrono::milliseconds framePeriod;
 
         std::uint32_t clickCount = 0;
     };

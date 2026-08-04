@@ -12,9 +12,10 @@ find_package(nlohmann_json_schema_validator REQUIRED)
 # antwika::cli comes in for ReplayCli, which is the --record/--replay
 # table and nothing else: the parsing itself lives there, so a program
 # that only wants flags does not link this library to get them.
-# antwika::gfx comes in for the gfx::Size a replay records its canvas
-# as, and antwika::log for the one thing this library reports rather
-# than throws: a recording made against another canvas.
+# antwika::geometry comes in for the Size a replay records its canvas
+# as -- a width and a height, with no graphics library behind them --
+# and antwika::log for the one thing this library reports rather than
+# throws: a recording made against another canvas.
 # All of them are one-way: none of those libraries knows this one
 # exists.
 antwika_add_library(
@@ -37,7 +38,7 @@ antwika_add_library(
         antwika::cli
         antwika::engine
         antwika::event
-        antwika::gfx
+        antwika::geometry
         antwika::log
         antwika::simulation
         antwika::time

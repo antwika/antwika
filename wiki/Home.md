@@ -48,6 +48,7 @@ Each page covers what the library is for, its key headers and types, what it dep
 | [cli](libraries/cli.md) | Flag tables, one parse, and a help text that cannot disagree with it. |
 | [font](libraries/font.md) | TrueType metrics and glyph coverage masks, depending on nothing here. |
 | [time](libraries/time.md) | The `Tick` type, `IClock` and `ISleeper`. |
+| [geometry](libraries/geometry.md) | Points, sizes and rectangles, depending on nothing. |
 | [log](libraries/log.md) | Composable logging with no global state. |
 | [testing](libraries/testing.md) | Scratch paths for tests, named so two processes cannot collide. |
 | [app](libraries/app.md) | The wiring every app's `main.cpp` would otherwise repeat. |

@@ -1,6 +1,8 @@
 #pragma once
 
 #include <cstdint>
+#include <fstream>
+#include <string_view>
 #include <istream>
 #include <optional>
 #include <ostream>
@@ -10,6 +12,7 @@
 #include <nlohmann/json.hpp>
 
 #include <antwika/replay/MigrationChain.hpp>
+#include <antwika/replay/VersionedDocument.hpp>
 
 #include "antwika/config/Format.hpp"
 
@@ -150,5 +153,116 @@ namespace antwika::config
      */
     [[nodiscard]] std::optional<nlohmann::json> parseConfigFile(
         const std::string &path);
+
+    /**
+     * @brief Bring a document up and validate it, reporting failures
+     * as the caller's own error type.
+     *
+     * migrated()'s general form: a save, an options file and a high
+     * score are read exactly the same way and differ only in what a
+     * bad one is called.
+     *
+     * @tparam ErrorT What this format reports a bad document as.
+     * @param document The parsed document.
+     * @param migrations The chain that brings it to the current
+     * version.
+     * @param validator The one schema for that version.
+     * @param whatFailed What to say ahead of the validator's message.
+     * @return The migrated document, ready to decode.
+     * @throws ErrorT If it states an unreachable version or fails the
+     * schema.
+     */
+    template <typename ErrorT>
+    [[nodiscard]] nlohmann::json migratedAs(
+        const nlohmann::json &document,
+        const replay::MigrationChain &migrations,
+        const nlohmann::json_schema::json_validator &validator,
+        std::string_view whatFailed)
+    {
+        return replay::readVersionedDocument<ErrorT>(
+            document, migrations, validator, whatFailed);
+    }
+
+    /**
+     * @brief Parse a document off a stream.
+     * @tparam ErrorT What this format reports bad JSON as.
+     * @param in Holds the document.
+     * @return The parsed document.
+     * @throws ErrorT If the stream does not hold JSON.
+     */
+    template <typename ErrorT>
+    [[nodiscard]] nlohmann::json parseAs(std::istream &in)
+    {
+        nlohmann::json document;
+        try
+        {
+            in >> document;
+        }
+        catch (const nlohmann::json::exception &error) // GCOVR_EXCL_LINE
+        {
+            throw ErrorT(
+                std::string("antwika: the document is not valid JSON: ")
+                + error.what());
+        }
+
+        return document;
+    }
+
+    /**
+     * @brief Parse the document a file holds, if the file is there.
+     *
+     * **A missing file is not a malformed one.** It is a first run,
+     * and unchecked it would reach the parser as an empty stream,
+     * which reports "you have never had one of these" as corruption.
+     *
+     * @tparam ErrorT What this format reports bad JSON as.
+     * @param path Where the file would be.
+     * @return The parsed document, or nothing when it is not there.
+     * @throws ErrorT If a file is there and does not hold JSON.
+     */
+    template <typename ErrorT>
+    [[nodiscard]] std::optional<nlohmann::json> parseFileAs(
+        const std::string &path)
+    {
+        std::ifstream file(path);
+
+        if (!file.is_open())
+        {
+            return std::nullopt;
+        }
+
+        return parseAs<ErrorT>(file);
+    }
+
+    /**
+     * @brief Write a document out, replacing whatever was there.
+     *
+     * The write is flushed here rather than by the destructor, which
+     * cannot report anything: a full disk fails on the flush and not
+     * on the open.
+     *
+     * @tparam ErrorT What this format reports a failed write as.
+     * @param document What to write.
+     * @param path Where to write it.
+     * @throws ErrorT If the file cannot be opened or written.
+     */
+    template <typename ErrorT>
+    void writeDocumentFileAs(
+        const nlohmann::json &document, const std::string &path)
+    {
+        std::ofstream file(path);
+        if (!file.is_open())
+        {
+            throw ErrorT("antwika: could not open to write: " + path);
+        }
+
+        writeConfig(document, file);
+
+        file.flush();
+        if (!file)
+        {
+            throw ErrorT("antwika: could not write: " + path);
+        }
+    }
 
 } // namespace antwika::config

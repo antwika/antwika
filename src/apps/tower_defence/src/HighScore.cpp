@@ -1,12 +1,13 @@
 #include "antwika/tower_defence/HighScore.hpp"
 
+#include <cstddef>
+#include <cstdint>
 #include <string>
 
-#include <nlohmann/json-schema.hpp>
-
+#include <antwika/config/ConfigDocument.hpp>
+#include <antwika/config/FileFormat.hpp>
+#include <antwika/config/Format.hpp>
 #include <antwika/replay/JsonShapes.hpp>
-#include <antwika/replay/SchemaVersion.hpp>
-#include <antwika/replay/VersionedDocument.hpp>
 
 #include "antwika/tower_defence/ScoreFormatError.hpp"
 
@@ -15,105 +16,90 @@ namespace antwika::tower_defence
 
     namespace
     {
-        // Two spaces, one member a line.
-        // Enough to diff a record against the next one.
-        // That is the whole reason this format is not compact.
-        constexpr int kIndent = 2;
-
+        using antwika::config::FileFormat;
+        using antwika::config::FormatSpec;
         using antwika::replay::countShape;
 
-        nlohmann::json scoreSchema()
-        {
-            nlohmann::json schema;
-            schema["$schema"] = "http://json-schema.org/draft-07/schema#";
-            schema["title"] = "antwika tower defence score document";
-            schema["type"] = "object";
-            schema["additionalProperties"] = false;
+        // A high score is a versioned JSON document like any other.
+        // So it is read through the one pipeline rather than a copy.
+        // It reports a ScoreFormatError while doing so.
+        // Which is why the format is templated on its error type.
+        using ScoreFormat = FileFormat<HighScore, ScoreFormatError>;
 
-            // The version member is described but not required.
-            // A document without one is read as version 1 instead.
-            // By the time this runs the document has been migrated.
-            // So the only version it may carry is the current one.
-            // GCOVR_EXCL_START
-            schema["required"] = {"magic", "bestScore", "bestLevel"};
-            // GCOVR_EXCL_STOP
-            schema["properties"]["magic"]["const"] =
-                std::string(kScoreMagic);
-            schema["properties"][std::string(replay::kSchemaVersionKey)]
-                  ["const"] = kScoreFormatVersion;
+        void describeMembers(nlohmann::json &schema)
+        {
+            schema["required"] = {
+                "magic", "bestScore", "bestLevel"}; // GCOVR_EXCL_LINE
             schema["properties"]["bestScore"] = countShape();
             schema["properties"]["bestLevel"] = countShape();
-            return schema;
         }
 
-        const nlohmann::json_schema::json_validator &scoreValidator()
+        void encodeMembers(const HighScore &score, nlohmann::json &out)
         {
-            static const nlohmann::json_schema::json_validator validator(
-                scoreSchema()); // GCOVR_EXCL_LINE
-            return validator;
+            out["bestScore"] = score.bestScore;
+            out["bestLevel"] = score.bestLevel;
+        }
+
+        HighScore decodeMembers(const nlohmann::json &document)
+        {
+            return HighScore{
+                .bestScore =
+                    document.at("bestScore").get<std::uint64_t>(),
+                .bestLevel =
+                    document.at("bestLevel").get<std::size_t>()};
+        }
+
+        const ScoreFormat &scoreFormat()
+        {
+            // The excluded closing line carries the static guard.
+            // Its concurrency arms are unreachable one-threaded.
+            // See docs/confirming-unreachable-branches.md.
+            static const ScoreFormat format(
+                FormatSpec<HighScore>{
+                    .format =
+                        {.magic = kScoreMagic,
+                         .version = kScoreFormatVersion},
+                    .title = "antwika tower defence score document",
+                    .whatFailed = "antwika::tower_defence: a saved high "
+                                  "score failed schema validation: ",
+                    .members = describeMembers,
+                    .encode = encodeMembers,
+                    .decode = decodeMembers,
+                    .migrations =
+                        standardScoreMigrations}); // GCOVR_EXCL_LINE
+            return format;
         }
     } // namespace
 
     MigrationChain standardScoreMigrations()
     {
-        // The version key is the shared one, so none is passed.
-        // The list is empty because this format has one revision.
-        return MigrationChain({}, kScoreFormatVersion);
+        // Every branch left on the excluded line is the allocator's.
+        // The list is empty, so no heap branch is taken here.
+        // What is left is the throw edge of building it.
+        return MigrationChain({}, kScoreFormatVersion); // GCOVR_EXCL_LINE
     }
 
     nlohmann::json highScoreToJson(const HighScore &score)
     {
-        nlohmann::json encoded;
-        encoded["magic"] = std::string(kScoreMagic);
-        encoded[std::string(replay::kSchemaVersionKey)] =
-            kScoreFormatVersion;
-        encoded["bestScore"] = score.bestScore;
-        encoded["bestLevel"] = score.bestLevel;
-        return encoded;
-
-        // gcov puts the cleanup block on this closing brace.
-        // ReplayJson.cpp's own encoder explains it at length.
-        // No input reaches it.
-    } // GCOVR_EXCL_LINE
+        return scoreFormat().toJson(score);
+    }
 
     HighScore highScoreFromJson(const nlohmann::json &document)
     {
-        const auto migrated =
-            replay::readVersionedDocument<ScoreFormatError>(
-                document,
-                standardScoreMigrations(),
-                scoreValidator(),
-                "antwika::tower_defence: a saved high score failed "
-                "schema validation: ");
-
-        return HighScore{
-            .bestScore = migrated.at("bestScore").get<std::uint64_t>(),
-            .bestLevel = migrated.at("bestLevel").get<std::size_t>()};
+        return scoreFormat().fromJson(document);
     }
 
     void writeHighScore(const HighScore &score, std::ostream &out)
     {
-        out << highScoreToJson(score).dump(kIndent) << '\n';
+        scoreFormat().write(score, out);
     }
 
     HighScore readHighScore(std::istream &in)
     {
-        nlohmann::json document;
-        try
-        {
-            in >> document;
-        }
-        catch (const nlohmann::json::exception &error) // GCOVR_EXCL_LINE
-        {
-            throw ScoreFormatError(
-                std::string("antwika::tower_defence: a saved high score "
-                            "is not valid JSON: ")
-                + error.what());
-        }
-
-        return highScoreFromJson(document);
+        return scoreFormat().read(in);
     }
 
+    // Domain rather than format: which of two runs the record keeps.
     HighScore bestOf(const HighScore &best, const HighScore &run)
     {
         if (run.bestScore <= best.bestScore)

@@ -10,7 +10,7 @@ namespace antwika::replay
 {
 
     ReplayWriter::ReplayWriter(
-        std::optional<gfx::Size> canvas) noexcept
+        std::optional<geometry::Size> canvas) noexcept
         : canvas(canvas)
     {
     }

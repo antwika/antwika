@@ -38,6 +38,7 @@ src/
     ├── engine/
     ├── event/
     ├── font/
+    ├── geometry/
     ├── gfx/
     ├── holdem/
     ├── i18n/

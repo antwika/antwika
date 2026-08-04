@@ -1,11 +1,11 @@
 #include <gtest/gtest.h>
 
-#include <antwika/gfx/Size.hpp>
+#include <antwika/geometry/Size.hpp>
 
 #include "antwika/replay/ReplayHeader.hpp"
 #include "antwika/replay/SchemaVersion.hpp"
 
-using antwika::gfx::Size;
+using antwika::geometry::Size;
 using antwika::replay::kReplayDocumentVersion;
 using antwika::replay::ReplayHeader;
 

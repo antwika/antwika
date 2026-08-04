@@ -78,7 +78,8 @@ There is no cycle check to write, to test or to pay for at runtime.
 `Worker::label` was a `std::array<char, 32>` with a truncating `makeWorkerLabel()` beside it, which is `Name` and `makeName()` written a second time -- same cap of 31 characters, same silent truncation, same reason for a fixed buffer rather than a `std::string` (an `ecs::Component` must stay trivially copyable and standard-layout).
 The type is a drop-in and the call sites were not, which is the whole of what the migration had to be careful about: the old buffer always had a spare byte for a terminator, `Name`'s has none, so a label filling it exactly holds no NUL at all.
 `StatusPrintSystem` therefore reads it with `view()` rather than streaming `label.text.data()`, which would have run off the end of the array, and `StatusPrintSystemTest.PrintsALabelThatExactlyFillsItsBuffer` is what pins that.
-Nothing else about the app moved: the worker's own countdown is deliberately **not** a `Lifetime`, since `LifetimeSystem` destroys the entity at zero and a finished worker here goes `Idle` and waits for the next task.
+Nothing else about the app moved: the worker's own countdown was deliberately **not** an `ecs_commons` `Lifetime`, since that library's `LifetimeSystem` destroyed the entity at zero and a finished worker here goes `Idle` and waits for the next task.
+That pair has since been pruned from `ecs_commons` -- this app declining to use it was part of the evidence that nothing did.
 
 **Starvation is possible on purpose.**
 A steady stream of higher-priority submissions can keep a low-priority task pending forever; unconditional priority respect is the requirement.

@@ -24,3 +24,9 @@ install(
     DIRECTORY include/
     DESTINATION include
 )
+
+install(
+    EXPORT antwika_testingTargets
+    NAMESPACE antwika::
+    DESTINATION lib/cmake/antwika
+)

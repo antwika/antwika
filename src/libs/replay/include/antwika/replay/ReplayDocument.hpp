@@ -4,7 +4,7 @@
 #include <vector>
 
 #include <antwika/event/TickEvent.hpp>
-#include <antwika/gfx/Size.hpp>
+#include <antwika/geometry/Size.hpp>
 
 namespace antwika::replay
 {
@@ -37,7 +37,7 @@ namespace antwika::replay
          * Such a file is taken at face value rather than refused: the
          * caller's canvas is the only one either side knows about.
          */
-        std::optional<gfx::Size> canvas{};
+        std::optional<geometry::Size> canvas{};
 
         /**
          * @brief Compare two documents.

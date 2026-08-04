@@ -9,6 +9,7 @@ antwika_add_app_tests(
         antwika::gfx::tests::mocks
         antwika::input
         antwika::input::tests::fakes
+        antwika::time::tests::fakes
         antwika::ui
         gtest::gtest
 )

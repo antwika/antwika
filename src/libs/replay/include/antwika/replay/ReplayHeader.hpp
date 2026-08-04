@@ -3,7 +3,7 @@
 #include <cstdint>
 #include <optional>
 
-#include <antwika/gfx/Size.hpp>
+#include <antwika/geometry/Size.hpp>
 #include <antwika/replay/SchemaVersion.hpp>
 
 namespace antwika::replay
@@ -37,7 +37,7 @@ namespace antwika::replay
          * Unset means it does not say, which every recording written
          * before the field existed does not.
          */
-        std::optional<gfx::Size> canvas{};
+        std::optional<geometry::Size> canvas{};
 
         /**
          * @brief Compare two headers.
