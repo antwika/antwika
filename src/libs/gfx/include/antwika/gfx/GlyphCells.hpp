@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstdint>
+#include <map>
 #include <vector>
 
 #include "antwika/gfx/Size.hpp"
@@ -78,23 +79,38 @@ namespace antwika::gfx
     };
 
     /**
-     * @brief Get the cells for one scale, building them if this is the
-     * first line of text drawn at it.
+     * @brief The cells for every scale drawn at so far, built the
+     * first time a line of text is drawn at each and then kept.
      *
      * Text is drawn every frame and rasterising a font is not frame
      * work, so the cells for a scale are built once and kept.
      * What is kept is a memo of a pure function and nothing else: the
      * cells for a scale are decided by the scale and by bytes the build
-     * compiled in, so the cache changes how long a call takes and can
-     * change nothing else.  Nothing can reach it, empty it or replace
-     * what is in it, and nothing it hands back is ever read back into a
-     * simulation -- drawing is a write-only projection.
-     * wiki/libraries/gfx.md says why that is worth the static.
-     *
-     * @param scale Pixels per glyph pixel.
-     * @return The cells, which live as long as the program does and
-     * stay put as later scales arrive.
+     * compiled in, so a cache changes how long a call takes and can
+     * change nothing else.
+     * A value the caller owns rather than a static, so who can reach a
+     * cache and how long it lives are its owner's to decide: a renderer
+     * keeps one to itself for its own lifetime, and no state outlives
+     * every owner.  What the cells *hold* stays this library's answer
+     * either way -- wiki/libraries/gfx.md says why that is the line
+     * that matters.
      */
-    [[nodiscard]] const GlyphCells &glyphCells(std::uint32_t scale);
+    class GlyphCellsCache final
+    {
+    public:
+        /**
+         * @brief Get the cells for one scale, building them if this is
+         * the first ask at it.
+         * @param scale Pixels per glyph pixel.
+         * @return The cells, which live as long as this cache does and
+         * stay put as later scales arrive.
+         */
+        [[nodiscard]] const GlyphCells &at(std::uint32_t scale);
+
+    private:
+        // Keyed by scale, and a map rather than a vector on purpose.
+        // A reference handed out here outlives every later arrival.
+        std::map<std::uint32_t, GlyphCells> cells;
+    };
 
 } // namespace antwika::gfx

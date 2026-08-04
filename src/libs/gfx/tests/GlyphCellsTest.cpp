@@ -7,7 +7,7 @@
 #include <antwika/gfx/Size.hpp>
 
 using antwika::gfx::GlyphCells;
-using antwika::gfx::glyphCells;
+using antwika::gfx::GlyphCellsCache;
 using antwika::gfx::kGlyphAdvance;
 using antwika::gfx::kGlyphLineHeight;
 using antwika::gfx::Size;
@@ -133,21 +133,26 @@ TEST(GlyphCellsTest, GlyphCells_BuildsTheSameCellsEveryTime)
     }
 }
 
-// The cache hands back the same cells rather than building them again.
-// It keeps one set per scale.
-TEST(GlyphCellsTest, GlyphCells_KeepsOneSetOfCellsPerScale)
+// A cache hands back the same cells rather than building them again.
+// It keeps one set per scale, and a later scale moves no earlier one.
+TEST(GlyphCellsTest, GlyphCellsCache_KeepsOneSetOfCellsPerScale)
 {
-    const GlyphCells &first = glyphCells(2);
-    const GlyphCells &again = glyphCells(2);
-    const GlyphCells &other = glyphCells(3);
+    GlyphCellsCache cache;
+
+    const GlyphCells &first = cache.at(2);
+    const GlyphCells &again = cache.at(2);
+    const GlyphCells &other = cache.at(3);
 
     EXPECT_EQ(&first, &again);
     EXPECT_NE(&first, &other);
+    EXPECT_EQ(&first, &cache.at(2));
     EXPECT_EQ(first.cellSize(), again.cellSize());
     EXPECT_NE(first.cellSize(), other.cellSize());
 }
 
-TEST(GlyphCellsTest, GlyphCells_AnswersAZeroScaleWithEmptyCells)
+TEST(GlyphCellsTest, GlyphCellsCache_AnswersAZeroScaleWithEmptyCells)
 {
-    EXPECT_EQ((Size{}), glyphCells(0).cellSize());
+    GlyphCellsCache cache;
+
+    EXPECT_EQ((Size{}), cache.at(0).cellSize());
 }

@@ -186,6 +186,7 @@ namespace antwika::gfx::raylib
         // What colour its coverage leaves it is gfx's answer too.
         // Every backend draws the same glyphs, in the same colours.
         forEachGlyphPixel(
+            glyphCells,
             origin,
             text,
             scale,

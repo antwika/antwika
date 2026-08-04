@@ -23,7 +23,7 @@ The concrete frameworks live under `backends/`, and exactly one is compiled into
 | `Bitmap.hpp`, `PngReader.hpp`, `Blit.hpp` | `Bitmap`, `PngReader` | Decoding a byte stream to straight RGBA, once, in the library rather than per backend. |
 | `PngWriter.hpp` | `PngWriter` | `write(bitmap, out)` — the way back out, to a stream rather than a path. |
 | `Glyphs.hpp`, `TextLayout.hpp` | `kGlyphAdvance`, `kGlyphLineHeight`, `textSize()` | The one built-in font's fixed cell, and the arithmetic over it. |
-| `GlyphCells.hpp`, `TextRaster.hpp` | `GlyphCells`, `glyphCells()`, `forEachGlyphPixel()` | That font rasterised onto those cells, and the one walk over the result every backend paints. |
+| `GlyphCells.hpp`, `TextRaster.hpp` | `GlyphCells`, `GlyphCellsCache`, `forEachGlyphPixel()` | That font rasterised onto those cells, a caller-owned memo of them per scale, and the one walk over the result every backend paints. |
 | `Point.hpp`, `Size.hpp`, `Rect.hpp`, `Color.hpp` | — | Geometry and colour. |
 | `Viewport.hpp` | `Viewport`, `viewportFor()` | Where a fixed-size canvas goes inside a window, and how much it is enlarged getting there. |
 | `ViewportRenderer.hpp` | `ViewportRenderer` | An `IRenderer` decorator putting every call through one of those, plus `fillSurround()` for the bars. |
@@ -89,12 +89,13 @@ That is the only way anything here has ever wanted atlas text, so the mask-to-RG
 An application that does want a real font *of its own* still does what [`font`](font.md) says — bundle it with `antwika_bundle_app()`, open it with `app::assetPath()` — and writes the four lines of coverage-to-alpha expansion where it can see them, which is a smaller thing to add back than a library seam is to keep proving nothing calls.
 What has not changed is the argument `AtlasText.hpp` writes out about a font's metrics never reaching a layout, since every layout here is built on the fixed cell `textSize()` measures and a proportional font would change what a recorded click lands on.
 
-**The cells are cached per scale, in a static, on purpose.**
-Text is drawn every frame and rasterising 95 glyphs is not frame work, so `glyphCells(scale)` builds one set of cells the first time a scale is drawn at and keeps it in a function-local `std::map` — a `map` rather than a `vector` because a reference handed out has to survive the arrival of every later scale.
-It is mutable global state and it is worth being exact about why that is acceptable here rather than pretending otherwise: what is kept is a memo of a pure function of the scale and of bytes the build compiled in, nothing can reach it, empty it or replace what is in it, and it can therefore change how long a call takes and nothing else.
-Drawing is a write-only projection, so nothing it hands back is ever read back into a tick.
-The numbers are why it is not an argument: building one scale's cells costs 0.23 to 0.44 ms and reaching cached ones costs about 50 ns, so an atlas per `drawText()` would be a quarter of a millisecond per line of text on a 16 ms frame.
-The other alternative — a cache each backend owns — would put the one thing every backend has to agree about in the one place they are allowed to differ.
+**The cells are cached per scale, in a cache the caller owns.**
+Text is drawn every frame and rasterising 95 glyphs is not frame work, so a `GlyphCellsCache` builds one set of cells the first time a scale is asked for and keeps it in a `std::map` member — a `map` rather than a `vector` because a reference handed out has to survive the arrival of every later scale.
+What is kept is a memo of a pure function of the scale and of bytes the build compiled in, so a cache changes how long a call takes and nothing else; drawing is a write-only projection, so nothing it hands back is ever read back into a tick.
+The numbers are why the memo exists at all: building one scale's cells costs 0.23 to 0.44 ms and reaching cached ones costs about 50 ns, so an atlas per `drawText()` would be a quarter of a millisecond per line of text on a 16 ms frame.
+The memo used to live in a function-local static inside `glyphCells(scale)`, argued acceptable on exactly the grounds above, and moving it into a caller-owned value is what retired the last mutable global in the tree — each backend renderer now holds a `GlyphCellsCache` of its own, so who can reach a cache and how long it lives are decided by an owner rather than by the process.
+That is not the per-backend cache this page once warned against: the warned-against version had each backend *deriving* its own cells, putting the one thing every backend has to agree about in the one place they are allowed to differ.
+`GlyphCellsCache` is a `gfx` type and `forEachGlyphPixel()` is still the one walk, so a backend owns only when the rasterising happens, never what it produces — two renderers can differ in how warm their memos are and cannot differ in what they draw.
 Walking one 57-character line costs 5 µs at scale 1, 18 µs at scale 2 and 42 µs at scale 3, which is the cost of about 2.7 times as many rectangles as the bitmap font emitted; a backend's own fill calls are on top of that and are what the batching in `Sdl3Renderer::drawText()` is for.
 
 **Images are decoded once, by the library.**

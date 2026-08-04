@@ -18,7 +18,8 @@
 
 using antwika::gfx::Color;
 using antwika::gfx::forEachGlyphPixel;
-using antwika::gfx::glyphCells;
+using antwika::gfx::GlyphCells;
+using antwika::gfx::GlyphCellsCache;
 using antwika::gfx::glyphPixelColor;
 using antwika::gfx::kGlyphAdvance;
 using antwika::gfx::kGlyphLineHeight;
@@ -45,9 +46,13 @@ namespace
         std::uint32_t scale,
         Color color = kInk)
     {
+        // A fresh cache per walk, since a walk only reads the cells.
+        // GlyphCellsTest proves two builds of a scale agree.
+        GlyphCellsCache cache;
         std::vector<Visited> pixels;
 
         forEachGlyphPixel(
+            cache,
             origin,
             text,
             scale,
@@ -63,7 +68,7 @@ namespace
     [[nodiscard]] std::size_t inkedPixels(
         char character, std::uint32_t scale)
     {
-        const auto &cells = glyphCells(scale);
+        const GlyphCells cells{scale};
         std::size_t count = 0;
 
         for (std::uint32_t row = 0; row < cells.cellSize().height; ++row)
@@ -221,7 +226,7 @@ TEST(TextRasterTest, ForEachGlyphPixel_HandsOverTheCellsOwnCoverage)
     constexpr std::uint32_t scale = 2;
     constexpr std::string_view text = "gW";
 
-    const auto &cells = glyphCells(scale);
+    const GlyphCells cells{scale};
     std::vector<Visited> expected;
 
     for (std::size_t cell = 0; cell < text.size(); ++cell)

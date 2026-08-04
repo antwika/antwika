@@ -165,6 +165,7 @@ namespace antwika::gfx::sdl3
         };
 
         forEachGlyphPixel(
+            glyphCells,
             origin,
             text,
             scale,

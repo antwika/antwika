@@ -8,6 +8,7 @@
 #include <antwika/gfx/Bitmap.hpp>
 #include <antwika/gfx/Camera3D.hpp>
 #include <antwika/gfx/Color.hpp>
+#include <antwika/gfx/GlyphCells.hpp>
 #include <antwika/gfx/IMesh.hpp>
 #include <antwika/gfx/IRenderer.hpp>
 #include <antwika/gfx/IRenderer3D.hpp>
@@ -224,6 +225,10 @@ namespace antwika::gfx::raylib
 
         bool drawing = false;
         bool attached = true;
+
+        // This renderer's own memo of the built-in font's cells.
+        // gfx decides what a scale's cells hold; this only keeps them.
+        GlyphCellsCache glyphCells;
 
         // Not owned: each texture owns itself and deregisters here.
         // Only how detach() reaches them while the context lives.
