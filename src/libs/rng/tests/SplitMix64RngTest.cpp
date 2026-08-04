@@ -52,3 +52,17 @@ TEST(SplitMix64RngTest, Next_DoesNotRepeatItselfWithinAShortRun)
     const std::set<std::uint64_t> distinct(drawn.begin(), drawn.end());
     EXPECT_EQ(distinct.size(), drawn.size());
 }
+
+// The state read back and handed to a fresh generator continues the
+// stream from the very next draw -- the whole of what a dump needs.
+TEST(SplitMix64RngTest, CurrentState_ResumesTheStreamExactly)
+{
+    antwika::rng::SplitMix64Rng original(7);
+    (void)original.next();
+    (void)original.next();
+
+    antwika::rng::SplitMix64Rng resumed(original.currentState());
+
+    EXPECT_EQ(resumed.next(), original.next());
+    EXPECT_EQ(resumed.next(), original.next());
+}

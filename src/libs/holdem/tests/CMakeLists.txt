@@ -21,6 +21,7 @@ add_executable(antwika_holdem_tests
     ShowdownTest.cpp
     StageTest.cpp
     TableBettingTest.cpp
+    TableMemoryTest.cpp
     TableRunnerTest.cpp
     TableSeatingTest.cpp
     TableShowdownTest.cpp

@@ -7,6 +7,7 @@
 
 #include "antwika/holdem/Card.hpp"
 #include "antwika/holdem/IDeck.hpp"
+#include "antwika/holdem/TableMemory.hpp"
 
 namespace antwika::holdem
 {
@@ -48,6 +49,22 @@ namespace antwika::holdem
          * @return How many cards remain before the next shuffle().
          */
         [[nodiscard]] std::size_t remaining() const noexcept;
+
+        /**
+         * @brief Take the deck's exact position, as a value.
+         * @return The order and the deal cursor.
+         */
+        [[nodiscard]] DeckMemory remember() const;
+
+        /**
+         * @brief Stand this deck at a remembered position.
+         *
+         * Total: the memory's cursor is the caller's to have bounded,
+         * which the dump schema does before one ever reaches here.
+         *
+         * @param memory The position to stand at.
+         */
+        void restore(const DeckMemory &memory);
 
     private:
         rng::IRng &rng;

@@ -48,6 +48,30 @@ namespace antwika::holdem
         void end() noexcept;
 
         /**
+         * @brief Stand the flow at a remembered stage and board.
+         *
+         * State only: the deck stays let go of, which is what a table
+         * between hands looks like.
+         * A hand in progress calls adopt() as well.
+         *
+         * @param stage How far the hand had progressed.
+         * @param board The community cards turned so far.
+         */
+        void resume(Stage stage, std::vector<Card> board);
+
+        /**
+         * @brief Rebind the deck a resumed hand deals from.
+         *
+         * begin()'s taking of the deck without its shuffling and
+         * clearing: a restored mid-hand flow deals its next card off
+         * the deck exactly where the remembered one stood.
+         *
+         * @param source The deck to deal the rest of the hand from.
+         * Must outlive the hand, exactly as begin()'s must.
+         */
+        void adopt(IDeck &source) noexcept;
+
+        /**
          * @brief Get how far the current or last hand progressed.
          * @return The current stage.
          */

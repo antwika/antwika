@@ -1,6 +1,7 @@
 #pragma once
 
 #include "antwika/holdem/Chips.hpp"
+#include "antwika/holdem/TableMemory.hpp"
 
 namespace antwika::holdem
 {
@@ -94,6 +95,18 @@ namespace antwika::holdem
          * bet, or falls below the minimum while holding chips back.
          */
         [[nodiscard]] bool raiseTo(Chips target, Chips allInTo);
+
+        /**
+         * @brief Take the round's standing, as a value.
+         * @return The live bet and the last full raise.
+         */
+        [[nodiscard]] BettingMemory remember() const noexcept;
+
+        /**
+         * @brief Stand this round at a remembered position.
+         * @param memory The position to stand at.
+         */
+        void restore(const BettingMemory &memory) noexcept;
 
     private:
         Chips currentBet = 0;

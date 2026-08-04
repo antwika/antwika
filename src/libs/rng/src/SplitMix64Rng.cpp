@@ -25,4 +25,9 @@ namespace antwika::rng
         return drawn ^ (drawn >> 31U);
     }
 
+    std::uint64_t SplitMix64Rng::currentState() const noexcept
+    {
+        return state;
+    }
+
 } // namespace antwika::rng

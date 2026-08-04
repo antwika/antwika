@@ -76,4 +76,16 @@ namespace antwika::holdem
         return true;
     }
 
+    BettingMemory BettingRound::remember() const noexcept
+    {
+        return BettingMemory{
+            .currentBet = currentBet, .lastRaiseSize = lastRaiseSize};
+    }
+
+    void BettingRound::restore(const BettingMemory &memory) noexcept
+    {
+        currentBet = memory.currentBet;
+        lastRaiseSize = memory.lastRaiseSize;
+    }
+
 } // namespace antwika::holdem

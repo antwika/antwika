@@ -42,4 +42,15 @@ namespace antwika::holdem
         return kCardCount - dealt;
     }
 
+    DeckMemory Deck::remember() const
+    {
+        return DeckMemory{.cards = cards, .dealt = dealt};
+    }
+
+    void Deck::restore(const DeckMemory &memory)
+    {
+        cards = memory.cards;
+        dealt = memory.dealt;
+    }
+
 } // namespace antwika::holdem
