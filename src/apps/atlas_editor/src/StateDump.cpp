@@ -1,11 +1,11 @@
 #include "antwika/atlas_editor/StateDump.hpp"
 
-#include <array>
 #include <cstddef>
 #include <exception>
 #include <string>
 
-#include <nlohmann/json-schema.hpp>
+#include <antwika/replay/JsonShapes.hpp>
+#include <antwika/replay/NameTable.hpp>
 
 #include "antwika/atlas_editor/AtlasEditorError.hpp"
 
@@ -14,38 +14,19 @@ namespace antwika::atlas_editor
 
     namespace
     {
+        using antwika::replay::countShape;
+        using antwika::replay::objectShape;
+        using antwika::replay::wordShape;
+
         // The names a dump document holds, one per tool.
         // Persisted, so they may not change once written.
-        constexpr std::array<std::string_view, kToolCount> kToolNames{
-            "paint", "erase", "fill", "pick", "select"};
-
-        [[nodiscard]] std::string_view toolName(const Tool tool) noexcept
-        {
-            return kToolNames[
-                static_cast<std::size_t>(tool) % kToolCount];
-        }
-
-        [[nodiscard]] std::optional<Tool> toolFromName(
-            const std::string_view name) noexcept
-        {
-            for (std::size_t index = 0; index < kToolCount; ++index)
-            {
-                if (kToolNames[index] == name)
-                {
-                    return static_cast<Tool>(index);
-                }
-            }
-
-            return std::nullopt;
-        }
+        constexpr antwika::replay::NameTable<Tool, kToolCount> kTools{
+            {"paint", "erase", "fill", "pick", "select"}};
 
         [[nodiscard]] nlohmann::json imageSchema()
         {
-            nlohmann::json image;
-            image["type"] = "object";
-            image["additionalProperties"] = false;
-            image["required"] = {
-                "width", "height", "fingerprint"}; // GCOVR_EXCL_LINE
+            nlohmann::json image =
+                objectShape({"width", "height", "fingerprint"});
             image["properties"]["width"]["type"] = "integer";
             image["properties"]["width"]["minimum"] = 1;
             image["properties"]["height"]["type"] = "integer";
@@ -59,10 +40,7 @@ namespace antwika::atlas_editor
 
         [[nodiscard]] nlohmann::json pixelSchema()
         {
-            nlohmann::json pixel;
-            pixel["type"] = "object";
-            pixel["additionalProperties"] = false;
-            pixel["required"] = {"x", "y"}; // GCOVR_EXCL_LINE
+            nlohmann::json pixel = objectShape({"x", "y"});
             pixel["properties"]["x"]["type"] = "integer";
             pixel["properties"]["y"]["type"] = "integer";
             return pixel;
@@ -70,65 +48,47 @@ namespace antwika::atlas_editor
 
         [[nodiscard]] nlohmann::json stateSchema()
         {
-            nlohmann::json schema;
-            schema["$schema"] =
-                "http://json-schema.org/draft-07/schema#";
-            schema["title"] = "antwika atlas editor dump state";
-            schema["type"] = "object";
-            schema["additionalProperties"] = false;
-            schema["required"] = {
-                "sheet",
-                "view",
-                "tool",
-                "paint",
-                "showGrid",
-                "showGuides",
-                "counters"}; // GCOVR_EXCL_LINE
+            nlohmann::json schema = antwika::replay::documentShape(
+                "antwika atlas editor dump state",
+                {"sheet",
+                 "view",
+                 "tool",
+                 "paint",
+                 "showGrid",
+                 "showGuides",
+                 "counters"});
 
             schema["properties"]["sheet"] = imageSchema();
             schema["properties"]["sheet"]["required"].push_back(
                 "revision");
-            schema["properties"]["sheet"]["properties"]["revision"]
-                  ["type"] = "integer";
-            schema["properties"]["sheet"]["properties"]["revision"]
-                  ["minimum"] = 0;
+            schema["properties"]["sheet"]["properties"]["revision"] =
+                countShape();
 
             schema["properties"]["clipboard"] = imageSchema();
 
             auto &view = schema["properties"]["view"];
-            view["type"] = "object";
-            view["additionalProperties"] = false;
-            view["required"] = {
-                "panX", "panY", "zoom"}; // GCOVR_EXCL_LINE
+            view = objectShape({"panX", "panY", "zoom"});
             view["properties"]["panX"]["type"] = "integer";
             view["properties"]["panY"]["type"] = "integer";
-            view["properties"]["zoom"]["type"] = "integer";
-            view["properties"]["zoom"]["minimum"] = 0;
+            view["properties"]["zoom"] = countShape();
 
-            schema["properties"]["tool"]["type"] = "string";
+            schema["properties"]["tool"] = wordShape();
 
             auto &paint = schema["properties"]["paint"];
-            paint["type"] = "object";
-            paint["additionalProperties"] = false;
-            paint["required"] = {"r", "g", "b", "a"}; // GCOVR_EXCL_LINE
+            paint = objectShape({"r", "g", "b", "a"});
             for (const auto *channel : {"r", "g", "b", "a"})
             {
-                paint["properties"][channel]["type"] = "integer";
-                paint["properties"][channel]["minimum"] = 0;
-                paint["properties"][channel]["maximum"] = 255;
+                paint["properties"][channel] =
+                    antwika::replay::boundedCountShape(255);
             }
 
-            schema["properties"]["swatch"]["type"] = "integer";
-            schema["properties"]["swatch"]["minimum"] = 0;
+            schema["properties"]["swatch"] = countShape();
             schema["properties"]["showGrid"]["type"] = "boolean";
             schema["properties"]["showGuides"]["type"] = "boolean";
             schema["properties"]["under"] = pixelSchema();
 
             auto &marked = schema["properties"]["marked"];
-            marked["type"] = "object";
-            marked["additionalProperties"] = false;
-            marked["required"] = {
-                "x", "y", "width", "height"}; // GCOVR_EXCL_LINE
+            marked = objectShape({"x", "y", "width", "height"});
             marked["properties"]["x"]["type"] = "integer";
             marked["properties"]["y"]["type"] = "integer";
             marked["properties"]["width"]["type"] = "integer";
@@ -137,42 +97,26 @@ namespace antwika::atlas_editor
             marked["properties"]["height"]["minimum"] = 1;
 
             auto &gesture = schema["properties"]["gesture"];
-            gesture["type"] = "object";
-            gesture["additionalProperties"] = false;
-            gesture["required"] = {
-                "carrying", "from", "to"}; // GCOVR_EXCL_LINE
+            gesture = objectShape({"carrying", "from", "to"});
             gesture["properties"]["carrying"]["type"] = "boolean";
             gesture["properties"]["from"] = pixelSchema();
             gesture["properties"]["to"] = pixelSchema();
 
             auto &counters = schema["properties"]["counters"];
-            counters["type"] = "object";
-            counters["additionalProperties"] = false;
-            counters["required"] = {
-                "changes",
-                "stepped",
-                "written",
-                "read",
-                "savedRevision"}; // GCOVR_EXCL_LINE
+            counters = objectShape(
+                {"changes",
+                 "stepped",
+                 "written",
+                 "read",
+                 "savedRevision"});
             for (const auto *count :
                  {"changes", "stepped", "written", "read",
                   "savedRevision"})
             {
-                counters["properties"][count]["type"] = "integer";
-                counters["properties"][count]["minimum"] = 0;
+                counters["properties"][count] = countShape();
             }
 
             return schema;
-        }
-
-        const nlohmann::json_schema::json_validator &stateValidator()
-        {
-            // The excluded closing line carries the static guard.
-            // Its concurrency arms are unreachable one-threaded.
-            // See docs/confirming-unreachable-branches.md.
-            static const nlohmann::json_schema::json_validator validator(
-                stateSchema()); // GCOVR_EXCL_LINE
-            return validator;
         }
 
         [[nodiscard]] nlohmann::json imageToJson(
@@ -244,7 +188,7 @@ namespace antwika::atlas_editor
         encoded["view"]["panY"] = dump.view.pan.y;
         encoded["view"]["zoom"] = dump.view.zoom;
 
-        encoded["tool"] = std::string(toolName(dump.tool));
+        encoded["tool"] = std::string(kTools.name(dump.tool));
 
         encoded["paint"]["r"] = dump.paint.red;
         encoded["paint"]["g"] = dump.paint.green;
@@ -297,7 +241,8 @@ namespace antwika::atlas_editor
     {
         try
         {
-            stateValidator().validate(state);
+            antwika::replay::validatorFor<stateSchema>().validate(
+                state);
         }
         // The validator's failure type is the library's business.
         // What this format promises is AtlasEditorError.
@@ -336,7 +281,7 @@ namespace antwika::atlas_editor
         }
 
         const auto named = state.at("tool").get<std::string>();
-        const auto tool = toolFromName(named);
+        const auto tool = kTools.from(named);
 
         if (!tool.has_value())
         {

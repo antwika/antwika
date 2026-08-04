@@ -1,14 +1,12 @@
 #include "antwika/task_worker/StateDump.hpp"
 
-#include <array>
 #include <cstddef>
 #include <exception>
-#include <optional>
 #include <utility>
 
-#include <nlohmann/json-schema.hpp>
-
 #include <antwika/console/SnapshotError.hpp>
+#include <antwika/replay/JsonShapes.hpp>
+#include <antwika/replay/NameTable.hpp>
 #include <antwika/scheduler/Priority.hpp>
 
 namespace antwika::task_worker
@@ -17,149 +15,70 @@ namespace antwika::task_worker
     namespace
     {
         using antwika::console::SnapshotError;
+        using antwika::replay::countShape;
+        using antwika::replay::objectShape;
+        using antwika::replay::wordShape;
 
         // The names a dump document holds, one per worker status.
         // Persisted, so they may not change once written.
-        constexpr std::array<std::string_view, 2> kWorkerStatusNames{
-            "idle", "busy"};
+        constexpr antwika::replay::NameTable<WorkerStatus, 2>
+            kWorkerStatuses{{"idle", "busy"}};
 
         // The names a dump document holds, one per task status.
-        constexpr std::array<std::string_view, 3> kTaskStatusNames{
-            "pending", "running", "completed"};
-
-        [[nodiscard]] std::string_view workerStatusName(
-            WorkerStatus status) noexcept
-        {
-            return kWorkerStatusNames
-                [static_cast<std::size_t>(status)
-                 % kWorkerStatusNames.size()];
-        }
-
-        [[nodiscard]] std::optional<WorkerStatus> workerStatusFromName(
-            std::string_view name) noexcept
-        {
-            for (std::size_t index = 0;
-                 index < kWorkerStatusNames.size();
-                 ++index)
-            {
-                if (kWorkerStatusNames[index] == name)
-                {
-                    return static_cast<WorkerStatus>(index);
-                }
-            }
-
-            return std::nullopt;
-        }
-
-        [[nodiscard]] std::string_view taskStatusName(
-            TaskStatus status) noexcept
-        {
-            return kTaskStatusNames
-                [static_cast<std::size_t>(status)
-                 % kTaskStatusNames.size()];
-        }
-
-        [[nodiscard]] std::optional<TaskStatus> taskStatusFromName(
-            std::string_view name) noexcept
-        {
-            for (std::size_t index = 0;
-                 index < kTaskStatusNames.size();
-                 ++index)
-            {
-                if (kTaskStatusNames[index] == name)
-                {
-                    return static_cast<TaskStatus>(index);
-                }
-            }
-
-            return std::nullopt;
-        }
+        constexpr antwika::replay::NameTable<TaskStatus, 3>
+            kTaskStatuses{{"pending", "running", "completed"}};
 
         nlohmann::json stateSchema()
         {
-            nlohmann::json schema;
-            schema["$schema"] =
-                "http://json-schema.org/draft-07/schema#";
-            schema["title"] = "antwika task worker dump state";
-            schema["type"] = "object";
-            schema["additionalProperties"] = false;
-            schema["required"] = {
-                "workers",
-                "tasks",
-                "submissions",
-                "dispatch"}; // GCOVR_EXCL_LINE
+            nlohmann::json schema = antwika::replay::documentShape(
+                "antwika task worker dump state",
+                {"workers", "tasks", "submissions", "dispatch"});
 
-            auto &worker = schema["properties"]["workers"]["items"];
-            schema["properties"]["workers"]["type"] = "array";
-            worker["type"] = "object";
-            worker["additionalProperties"] = false;
-            worker["required"] = {
-                "status",
-                "remainingTicks",
-                "taskId",
-                "label"}; // GCOVR_EXCL_LINE
-            worker["properties"]["status"]["type"] = "string";
-            worker["properties"]["remainingTicks"]["type"] = "integer";
-            worker["properties"]["remainingTicks"]["minimum"] = 0;
-            worker["properties"]["taskId"]["type"] = "integer";
-            worker["properties"]["taskId"]["minimum"] = 0;
-            worker["properties"]["label"]["type"] = "string";
+            auto &workers = schema["properties"]["workers"];
+            workers["type"] = "array";
+            workers["items"] = objectShape(
+                {"status", "remainingTicks", "taskId", "label"});
 
-            auto &task = schema["properties"]["tasks"]["items"];
-            schema["properties"]["tasks"]["type"] = "array";
-            task["type"] = "object";
-            task["additionalProperties"] = false;
-            task["required"] = {
-                "taskId",
-                "label",
-                "priority",
-                "status",
-                "durationTicks",
-                "remainingTicks"}; // GCOVR_EXCL_LINE
-            task["properties"]["taskId"]["type"] = "integer";
-            task["properties"]["taskId"]["minimum"] = 0;
-            task["properties"]["label"]["type"] = "string";
-            task["properties"]["priority"]["type"] = "integer";
-            task["properties"]["priority"]["minimum"] = 0;
-            task["properties"]["priority"]["maximum"] = 255;
-            task["properties"]["status"]["type"] = "string";
-            task["properties"]["durationTicks"]["type"] = "integer";
-            task["properties"]["durationTicks"]["minimum"] = 0;
-            task["properties"]["remainingTicks"]["type"] = "integer";
-            task["properties"]["remainingTicks"]["minimum"] = 0;
-            task["properties"]["dependsOn"]["type"] = "integer";
-            task["properties"]["dependsOn"]["minimum"] = 0;
+            auto &worker = workers["items"];
+            worker["properties"]["status"] = wordShape();
+            worker["properties"]["remainingTicks"] = countShape();
+            worker["properties"]["taskId"] = countShape();
+            worker["properties"]["label"] = wordShape();
 
-            auto &entry = schema["properties"]["submissions"]["items"];
-            schema["properties"]["submissions"]["type"] = "array";
-            entry["type"] = "object";
-            entry["additionalProperties"] = false;
-            entry["required"] = {"taskId", "label"}; // GCOVR_EXCL_LINE
-            entry["properties"]["taskId"]["type"] = "integer";
-            entry["properties"]["taskId"]["minimum"] = 0;
-            entry["properties"]["label"]["type"] = "string";
+            auto &tasks = schema["properties"]["tasks"];
+            tasks["type"] = "array";
+            tasks["items"] = objectShape(
+                {"taskId",
+                 "label",
+                 "priority",
+                 "status",
+                 "durationTicks",
+                 "remainingTicks"});
+
+            auto &task = tasks["items"];
+            task["properties"]["taskId"] = countShape();
+            task["properties"]["label"] = wordShape();
+            task["properties"]["priority"] =
+                antwika::replay::boundedCountShape(255);
+            task["properties"]["status"] = wordShape();
+            task["properties"]["durationTicks"] = countShape();
+            task["properties"]["remainingTicks"] = countShape();
+            task["properties"]["dependsOn"] = countShape();
+
+            auto &submissions = schema["properties"]["submissions"];
+            submissions["type"] = "array";
+            submissions["items"] = objectShape({"taskId", "label"});
+
+            auto &entry = submissions["items"];
+            entry["properties"]["taskId"] = countShape();
+            entry["properties"]["label"] = wordShape();
 
             auto &dispatch = schema["properties"]["dispatch"];
-            dispatch["type"] = "object";
-            dispatch["additionalProperties"] = false;
-            dispatch["required"] = {
-                "budget", "dispatched"}; // GCOVR_EXCL_LINE
-            dispatch["properties"]["budget"]["type"] = "integer";
-            dispatch["properties"]["budget"]["minimum"] = 0;
-            dispatch["properties"]["dispatched"]["type"] = "integer";
-            dispatch["properties"]["dispatched"]["minimum"] = 0;
+            dispatch = objectShape({"budget", "dispatched"});
+            dispatch["properties"]["budget"] = countShape();
+            dispatch["properties"]["dispatched"] = countShape();
 
             return schema;
-        }
-
-        const nlohmann::json_schema::json_validator &stateValidator()
-        {
-            // The excluded closing line carries the static guard.
-            // Its concurrency arms are unreachable one-threaded.
-            // See docs/confirming-unreachable-branches.md.
-            static const nlohmann::json_schema::json_validator validator(
-                stateSchema()); // GCOVR_EXCL_LINE
-            return validator;
         }
 
         [[nodiscard]] const TaskInfo *taskWithId(
@@ -194,7 +113,7 @@ namespace antwika::task_worker
         {
             nlohmann::json entry;
             entry["status"] =
-                std::string(workerStatusName(worker.status));
+                std::string(kWorkerStatuses.name(worker.status));
             entry["remainingTicks"] = worker.remainingTicks;
             entry["taskId"] = worker.taskId;
             entry["label"] = worker.label;
@@ -209,7 +128,8 @@ namespace antwika::task_worker
             entry["label"] = task.label;
             entry["priority"] =
                 antwika::scheduler::rawValue(task.priority);
-            entry["status"] = std::string(taskStatusName(task.status));
+            entry["status"] =
+                std::string(kTaskStatuses.name(task.status));
             entry["durationTicks"] = task.durationTicks;
             entry["remainingTicks"] = task.remainingTicks;
 
@@ -245,7 +165,7 @@ namespace antwika::task_worker
     {
         try
         {
-            stateValidator().validate(state);
+            antwika::replay::validatorFor<stateSchema>().validate(state);
         }
         // The validator's failure type is the library's business.
         // What this format promises is SnapshotError.
@@ -264,7 +184,7 @@ namespace antwika::task_worker
         {
             const auto named =
                 entry.at("status").get<std::string>();
-            const auto status = workerStatusFromName(named);
+            const auto status = kWorkerStatuses.from(named);
 
             if (!status.has_value())
             {
@@ -286,7 +206,7 @@ namespace antwika::task_worker
         {
             const auto named =
                 entry.at("status").get<std::string>();
-            const auto status = taskStatusFromName(named);
+            const auto status = kTaskStatuses.from(named);
 
             if (!status.has_value())
             {

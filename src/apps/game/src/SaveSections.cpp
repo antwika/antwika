@@ -155,10 +155,7 @@ namespace antwika::game
 
     nlohmann::json cellShape()
     {
-        nlohmann::json shape;
-        shape["type"] = "object";
-        shape["additionalProperties"] = false;
-        shape["required"] = {"x", "y"}; // GCOVR_EXCL_LINE
+        nlohmann::json shape = replay::objectShape({"x", "y"});
         shape["properties"]["x"] = replay::coordinateShape();
         shape["properties"]["y"] = replay::coordinateShape();
         return shape;
@@ -203,16 +200,14 @@ namespace antwika::game
     nlohmann::json walkerShape()
     {
         nlohmann::json shape = cellShape();
-        // GCOVR_EXCL_START
-        shape["required"] = {
-            "x",
-            "y",
-            "facing",
-            "kind",
-            "carried",
-            "stepsUntilHome",
-            "ticksUntilStep"};
-        // GCOVR_EXCL_STOP
+        shape["required"] = replay::requiredShape(
+            {"x",
+             "y",
+             "facing",
+             "kind",
+             "carried",
+             "stepsUntilHome",
+             "ticksUntilStep"});
         shape["properties"]["facing"] = replay::wordShape();
         shape["properties"]["kind"] = replay::wordShape();
         shape["properties"]["carried"] = signedCountShape();
@@ -233,17 +228,15 @@ namespace antwika::game
     nlohmann::json buildingShape()
     {
         nlohmann::json shape = cellShape();
-        // GCOVR_EXCL_START
-        shape["required"] = {
-            "x",
-            "y",
-            "kind",
-            "stock",
-            "risk",
-            "ticksUntilSpawn",
-            "ticksUntilDrain",
-            "ticksUntilRisk"};
-        // GCOVR_EXCL_STOP
+        shape["required"] = replay::requiredShape(
+            {"x",
+             "y",
+             "kind",
+             "stock",
+             "risk",
+             "ticksUntilSpawn",
+             "ticksUntilDrain",
+             "ticksUntilRisk"});
         shape["properties"]["kind"] = replay::wordShape();
         shape["properties"]["stock"]["type"] = "array";
         shape["properties"]["stock"]["items"] = signedCountShape();

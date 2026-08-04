@@ -7,10 +7,9 @@
 #include <string>
 #include <utility>
 
-#include <nlohmann/json-schema.hpp>
-
 #include <antwika/config/ConfigDocument.hpp>
 #include <antwika/replay/IMigration.hpp>
+#include <antwika/replay/JsonShapes.hpp>
 #include <antwika/replay/SchemaVersion.hpp>
 #include <antwika/replay/VersionedDocument.hpp>
 
@@ -68,26 +67,15 @@ namespace antwika::sudoku
         // companion::PetSave draws that line around its own members.
         nlohmann::json puzzleSchema()
         {
-            nlohmann::json schema;
-            schema["$schema"] = "http://json-schema.org/draft-07/schema#";
-            schema["title"] = "antwika sudoku puzzle document";
-            schema["type"] = "object";
-            schema["additionalProperties"] = false;
-            schema["required"] = {"magic", "cells"}; // GCOVR_EXCL_LINE
+            nlohmann::json schema = antwika::replay::documentShape(
+                "antwika sudoku puzzle document", {"magic", "cells"});
             schema["properties"]["magic"]["const"] =
                 std::string(kPuzzleMagic);
             schema["properties"]
                   [std::string(antwika::replay::kSchemaVersionKey)]
                   ["const"] = kPuzzleDocumentVersion;
-            schema["properties"]["cells"]["type"] = "string";
+            schema["properties"]["cells"] = antwika::replay::wordShape();
             return schema;
-        }
-
-        const nlohmann::json_schema::json_validator &puzzleValidator()
-        {
-            static const nlohmann::json_schema::json_validator validator(
-                puzzleSchema()); // GCOVR_EXCL_LINE
-            return validator;
         }
 
         [[nodiscard]] bool opensLikeJson(const std::string_view text)
@@ -150,7 +138,7 @@ namespace antwika::sudoku
             antwika::config::migratedAs<BoardFormatError>(
                 document,
                 standardPuzzleMigrations(),
-                puzzleValidator(),
+                antwika::replay::validatorFor<puzzleSchema>(),
                 "antwika::sudoku: a puzzle failed schema validation: ");
 
         return Board::parse(migrated.at("cells").get<std::string>());

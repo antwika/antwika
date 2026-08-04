@@ -48,9 +48,8 @@ namespace antwika::game
     nlohmann::json ruinShape()
     {
         nlohmann::json shape = cellShape();
-        // GCOVR_EXCL_START
-        shape["required"] = {"x", "y", "kind", "state", "ticksUntilOut"};
-        // GCOVR_EXCL_STOP
+        shape["required"] = replay::requiredShape(
+            {"x", "y", "kind", "state", "ticksUntilOut"});
         shape["properties"]["kind"] = replay::wordShape();
         shape["properties"]["state"] = replay::wordShape();
         shape["properties"]["ticksUntilOut"] = signedCountShape();

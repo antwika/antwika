@@ -1,10 +1,10 @@
 #include "antwika/game/BindingEvent.hpp"
 
-#include <nlohmann/json-schema.hpp>
 #include <nlohmann/json.hpp>
 
 #include <antwika/input/InputError.hpp>
 #include <antwika/input/Key.hpp>
+#include <antwika/replay/JsonShapes.hpp>
 #include <antwika/replay/PayloadJson.hpp>
 
 #include "antwika/game/Action.hpp"
@@ -17,22 +17,11 @@ namespace antwika::game
     {
         nlohmann::json bindKeySchema()
         {
-            nlohmann::json schema;
-            schema["$schema"] = "http://json-schema.org/draft-07/schema#";
-            schema["title"] = "game.bind_key payload";
-            schema["type"] = "object";
-            schema["additionalProperties"] = false;
-            schema["required"] = {"action", "key"}; // GCOVR_EXCL_LINE
-            schema["properties"]["action"]["type"] = "string";
-            schema["properties"]["key"]["type"] = "string";
+            nlohmann::json schema = replay::documentShape(
+                "game.bind_key payload", {"action", "key"});
+            schema["properties"]["action"] = replay::wordShape();
+            schema["properties"]["key"] = replay::wordShape();
             return schema;
-        }
-
-        const nlohmann::json_schema::json_validator &bindKeyValidator()
-        {
-            static const nlohmann::json_schema::json_validator validator(
-                bindKeySchema()); // GCOVR_EXCL_LINE
-            return validator;
         }
     } // namespace
 
@@ -54,7 +43,7 @@ namespace antwika::game
         const auto parsed =
             antwika::replay::parseAndValidatePayload<OptionsFormatError>(
                 payload,
-                bindKeyValidator(),
+                replay::validatorFor<bindKeySchema>(),
                 "BindingSink: game.bind_key payload");
 
         const auto name = parsed.at("action").get<std::string>();

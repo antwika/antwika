@@ -1,7 +1,10 @@
 #pragma once
 
 #include <cstdint>
+#include <initializer_list>
+#include <string_view>
 
+#include <nlohmann/json-schema.hpp>
 #include <nlohmann/json.hpp>
 
 /**
@@ -14,9 +17,10 @@
  * std::int32_t holds, how many zoom levels there are -- and cannot drift
  * from the type the document decodes into.
  *
- * These four are the fragments the replay document, the game save and
- * the companion save each had a copy of. A shape only one format has
- * stays in that format, next to the rule it states.
+ * These are the fragments the replay document, the game save, every
+ * dump state and every event payload each had a copy of, plus the one
+ * validator every one of them then wrapped its schema in. A shape only
+ * one format has stays in that format, next to the rule it states.
  */
 namespace antwika::replay
 {
@@ -60,5 +64,67 @@ namespace antwika::replay
      * message can hold the name it did not know.
      */
     [[nodiscard]] nlohmann::json wordShape();
+
+    /**
+     * @brief The members a document must state.
+     * @param members The member names, in the order they read best.
+     * @return The array a schema's "required" holds.
+     *
+     * A brace-init list assigned straight into a schema leaves an unwind
+     * edge per element that no input can take, which is why every format
+     * that wrote one had an exclusion comment beside it. Stated here
+     * once, that comment is in one place.
+     */
+    [[nodiscard]] nlohmann::json requiredShape(
+        std::initializer_list<std::string_view> members);
+
+    /**
+     * @brief The shape of an object with a closed set of members.
+     * @param required The members a document must state.
+     * @return The schema fragment.
+     *
+     * Closed rather than open: an unknown member is a document this
+     * build cannot read, and reading it as the members it does know is
+     * how a half-understood file gets written back out whole.
+     */
+    [[nodiscard]] nlohmann::json objectShape(
+        std::initializer_list<std::string_view> required);
+
+    /**
+     * @brief The shape of a whole document, rather than a member of one.
+     * @param title What the document is, for a validator's message.
+     * @param required The members a document must state.
+     * @return The schema fragment, an objectShape() that says which
+     * dialect it is written in and what it describes.
+     */
+    [[nodiscard]] nlohmann::json documentShape(
+        std::string_view title,
+        std::initializer_list<std::string_view> required);
+
+    /**
+     * @brief The one validator a schema is read through.
+     * @tparam BuildSchema The function that states the schema.
+     * @return The validator, built once and shared from then on.
+     *
+     * Compiling a schema is worth doing once, so each format wrapped its
+     * own in a static local -- twenty copies of four lines, and of the
+     * reason the static guard's concurrency arms are excluded. The
+     * schema is a template argument rather than a parameter because that
+     * is what gives each format a static of its own: two formats passing
+     * one function pointer would otherwise share one validator.
+     */
+    template <auto BuildSchema>
+    [[nodiscard]] const nlohmann::json_schema::json_validator &
+    validatorFor()
+    {
+        // The excluded line carries the static guard.
+        // Its concurrency arms are unreachable one-threaded.
+        // The marker covers every instantiation, deliberately.
+        // Each one says the same thing about its own guard.
+        // See docs/confirming-unreachable-branches.md.
+        static const nlohmann::json_schema::json_validator validator(
+            BuildSchema()); // GCOVR_EXCL_LINE
+        return validator;
+    }
 
 } // namespace antwika::replay

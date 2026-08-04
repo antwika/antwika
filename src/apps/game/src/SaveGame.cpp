@@ -8,8 +8,6 @@
 #include <string>
 #include <utility>
 
-#include <nlohmann/json-schema.hpp>
-
 #include <antwika/config/ConfigDocument.hpp>
 #include <antwika/replay/JsonShapes.hpp>
 #include <antwika/replay/SchemaVersion.hpp>
@@ -52,10 +50,8 @@ namespace antwika::game
 
         nlohmann::json stateShape()
         {
-            nlohmann::json shape;
-            shape["type"] = "object";
-            shape["additionalProperties"] = false;
-            shape["required"] = {"ticksProcessed", "score"}; // GCOVR_EXCL_LINE
+            nlohmann::json shape =
+                replay::objectShape({"ticksProcessed", "score"});
             shape["properties"]["ticksProcessed"] = countShape();
             shape["properties"]["score"] = countShape();
 
@@ -68,10 +64,8 @@ namespace antwika::game
 
         nlohmann::json extentShape()
         {
-            nlohmann::json shape;
-            shape["type"] = "object";
-            shape["additionalProperties"] = false;
-            shape["required"] = {"width", "height"}; // GCOVR_EXCL_LINE
+            nlohmann::json shape =
+                replay::objectShape({"width", "height"});
             shape["properties"]["width"] = coordinateShape();
             shape["properties"]["height"] = coordinateShape();
             return shape;
@@ -91,12 +85,8 @@ namespace antwika::game
 
         nlohmann::json cameraShape()
         {
-            nlohmann::json shape;
-            shape["type"] = "object";
-            shape["additionalProperties"] = false;
-            // GCOVR_EXCL_START
-            shape["required"] = {"panX", "panY", "zoomLevel"};
-            // GCOVR_EXCL_STOP
+            nlohmann::json shape =
+                replay::objectShape({"panX", "panY", "zoomLevel"});
             shape["properties"]["panX"] = coordinateShape();
             shape["properties"]["panY"] = coordinateShape();
             shape["properties"]["zoomLevel"] = zoomLevelShape();
@@ -116,27 +106,20 @@ namespace antwika::game
         // See SaveSections.hpp.
         nlohmann::json saveSchema()
         {
-            nlohmann::json schema;
-            schema["$schema"] = "http://json-schema.org/draft-07/schema#";
-            schema["title"] = "antwika game save document";
-            schema["type"] = "object";
-            schema["additionalProperties"] = false;
-
             // The version member is described but not required.
             // A document without one is read as version 1 instead.
             // By the time this runs the document has been migrated.
             // So the only version it may carry is the current one.
-            // GCOVR_EXCL_START
-            schema["required"] = {
-                "magic",
-                "state",
-                "extent",
-                "camera",
-                "paths",
-                "walkers",
-                "buildings",
-                "seed"};
-            // GCOVR_EXCL_STOP
+            nlohmann::json schema = replay::documentShape(
+                "antwika game save document",
+                {"magic",
+                 "state",
+                 "extent",
+                 "camera",
+                 "paths",
+                 "walkers",
+                 "buildings",
+                 "seed"});
             schema["properties"]["magic"]["const"] =
                 std::string(kSaveMagic);
             schema["properties"][std::string(replay::kSchemaVersionKey)]
@@ -158,13 +141,6 @@ namespace antwika::game
             describeRuins(schema);
             schema["properties"]["seed"] = countShape();
             return schema;
-        }
-
-        const nlohmann::json_schema::json_validator &saveValidator()
-        {
-            static const nlohmann::json_schema::json_validator validator(
-                saveSchema()); // GCOVR_EXCL_LINE
-            return validator;
         }
     } // namespace
 
@@ -211,7 +187,7 @@ namespace antwika::game
             antwika::config::migratedAs<SaveFormatError>(
                 j,
                 standardSaveMigrations(),
-                saveValidator(),
+                replay::validatorFor<saveSchema>(),
                 "antwika::game: save JSON failed schema validation: ");
 
         SaveGame save;

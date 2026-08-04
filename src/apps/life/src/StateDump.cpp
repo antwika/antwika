@@ -5,73 +5,49 @@
 #include <string>
 #include <utility>
 
-#include <nlohmann/json-schema.hpp>
+#include <antwika/replay/JsonShapes.hpp>
 
 namespace antwika::life
 {
 
     namespace
     {
+        // The pair takes the shape of its members.
+        // A cell is a whole number and a drag is a signed one.
         [[nodiscard]] nlohmann::json coordinateSchema(
-            std::int64_t minimum, std::int64_t maximum)
+            nlohmann::json bounds)
         {
-            nlohmann::json schema;
-            schema["type"] = "object";
-            schema["additionalProperties"] = false;
-            schema["required"] = {"x", "y"}; // GCOVR_EXCL_LINE
-            schema["properties"]["x"]["type"] = "integer";
-            schema["properties"]["x"]["minimum"] = minimum;
-            schema["properties"]["x"]["maximum"] = maximum;
-            schema["properties"]["y"]["type"] = "integer";
-            schema["properties"]["y"]["minimum"] = minimum;
-            schema["properties"]["y"]["maximum"] = maximum;
+            nlohmann::json schema =
+                antwika::replay::objectShape({"x", "y"});
+            schema["properties"]["x"] = bounds;
+            schema["properties"]["y"] = std::move(bounds);
             return schema;
         }
 
         nlohmann::json stateSchema()
         {
             constexpr std::int64_t kCellMax = 0xFFFFFFFF;
-            constexpr std::int64_t kPixelMin = -2147483648;
-            constexpr std::int64_t kPixelMax = 2147483647;
 
-            nlohmann::json schema;
-            schema["$schema"] = "http://json-schema.org/draft-07/schema#";
-            schema["title"] = "antwika life dump state";
-            schema["type"] = "object";
-            schema["additionalProperties"] = false;
-            schema["required"] = {
-                "board", "dragging", "visited"}; // GCOVR_EXCL_LINE
+            nlohmann::json schema = antwika::replay::documentShape(
+                "antwika life dump state",
+                {"board", "dragging", "visited"});
 
             auto &board = schema["properties"]["board"];
-            board["type"] = "object";
-            board["additionalProperties"] = false;
-            board["required"] = {
-                "width", "height", "cells"}; // GCOVR_EXCL_LINE
-            board["properties"]["width"]["type"] = "integer";
-            board["properties"]["width"]["minimum"] = 0;
-            board["properties"]["width"]["maximum"] = kCellMax;
-            board["properties"]["height"]["type"] = "integer";
-            board["properties"]["height"]["minimum"] = 0;
-            board["properties"]["height"]["maximum"] = kCellMax;
-            board["properties"]["cells"]["type"] = "string";
+            board = antwika::replay::objectShape(
+                {"width", "height", "cells"});
+            board["properties"]["width"] =
+                antwika::replay::boundedCountShape(kCellMax);
+            board["properties"]["height"] =
+                antwika::replay::boundedCountShape(kCellMax);
+            board["properties"]["cells"] = antwika::replay::wordShape();
 
             schema["properties"]["dragging"]["type"] = "boolean";
             schema["properties"]["visited"]["type"] = "array";
-            schema["properties"]["visited"]["items"] =
-                coordinateSchema(0, kCellMax);
+            schema["properties"]["visited"]["items"] = coordinateSchema(
+                antwika::replay::boundedCountShape(kCellMax));
             schema["properties"]["lastDrag"] =
-                coordinateSchema(kPixelMin, kPixelMax);
+                coordinateSchema(antwika::replay::coordinateShape());
             return schema;
-        }
-
-        const nlohmann::json_schema::json_validator &stateValidator()
-        {
-            // The excluded closing line carries the static guard.
-            // Its concurrency arms are unreachable one-threaded.
-            // See docs/confirming-unreachable-branches.md.
-            static const nlohmann::json_schema::json_validator validator(
-                stateSchema()); // GCOVR_EXCL_LINE
-            return validator;
         }
     } // namespace
 
@@ -130,7 +106,7 @@ namespace antwika::life
     {
         try
         {
-            stateValidator().validate(state);
+            antwika::replay::validatorFor<stateSchema>().validate(state);
         }
         // The validator's failure type is the library's business.
         // What this format promises is StateDumpError.

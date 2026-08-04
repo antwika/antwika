@@ -1,13 +1,12 @@
 #include "antwika/poker/StateDump.hpp"
 
-#include <array>
 #include <cstddef>
 #include <exception>
 
-#include <nlohmann/json-schema.hpp>
-
 #include <antwika/holdem/Card.hpp>
 #include <antwika/holdem/Stage.hpp>
+#include <antwika/replay/JsonShapes.hpp>
+#include <antwika/replay/NameTable.hpp>
 
 namespace antwika::poker
 {
@@ -22,30 +21,22 @@ namespace antwika::poker
     {
         // The names a dump document holds, one per stage.
         // Persisted, so they may not change once written.
-        constexpr std::array<std::string_view, 5> kStageNames{
-            "pre_flop", "flop", "turn", "river", "showdown"};
-
-        [[nodiscard]] std::string_view stageName(Stage stage) noexcept
-        {
-            return kStageNames
-                [static_cast<std::size_t>(stage) % kStageNames.size()];
-        }
+        constexpr antwika::replay::NameTable<Stage, 5> kStages{
+            {"pre_flop", "flop", "turn", "river", "showdown"}};
 
         [[nodiscard]] Stage stageNamed(const std::string &name)
         {
-            for (std::size_t index = 0; index < kStageNames.size();
-                 ++index)
+            const auto stage = kStages.from(name);
+
+            if (!stage.has_value())
             {
-                if (kStageNames[index] == name)
-                {
-                    return static_cast<Stage>(index);
-                }
+                throw StateDumpError(
+                    "antwika::poker: dump names a stage this build does "
+                    "not know: "
+                    + name);
             }
 
-            throw StateDumpError(
-                "antwika::poker: dump names a stage this build does "
-                "not know: "
-                + name);
+            return *stage;
         }
 
         [[nodiscard]] nlohmann::json cardsToJson(const auto &cards)
@@ -134,7 +125,7 @@ namespace antwika::poker
             nlohmann::json encoded;
 
             encoded["pot"] = result.pot;
-            encoded["stage"] = std::string(stageName(result.stage));
+            encoded["stage"] = std::string(kStages.name(result.stage));
             encoded["board"] = cardsToJson(result.board);
             encoded["payouts"] = nlohmann::json::array();
 
@@ -224,55 +215,38 @@ namespace antwika::poker
             // Cards are bounded here, once.
             // A decode's cast is then total.
             // Everything structural is bounded by type.
-            nlohmann::json card;
-            card["type"] = "integer";
-            card["minimum"] = 0;
-            card["maximum"] = kCardCount - 1;
+            const nlohmann::json card =
+                antwika::replay::boundedCountShape(kCardCount - 1);
 
+            // Open rather than closed, unlike every other shape here.
+            // Each of the three objects is judged by its own decode.
             nlohmann::json schema;
             schema["$schema"] = "http://json-schema.org/draft-07/schema#";
             schema["title"] = "antwika poker dump state";
             schema["type"] = "object";
-            schema["required"] = {
-                "bits",
-                "deck",
-                "table",
-                "balances",
-                "names",
-                "printer"}; // GCOVR_EXCL_LINE
+            schema["required"] = antwika::replay::requiredShape(
+                {"bits", "deck", "table", "balances", "names",
+                 "printer"});
             schema["properties"]["bits"]["type"] = "integer";
-            schema["properties"]["deck"]["type"] = "object";
-            schema["properties"]["deck"]["required"] = {
-                "cards", "dealt"}; // GCOVR_EXCL_LINE
-            schema["properties"]["deck"]["properties"]["cards"]["type"] =
-                "array";
-            schema["properties"]["deck"]["properties"]["cards"]["items"] =
-                card;
-            schema["properties"]["deck"]["properties"]["cards"]
-                  ["minItems"] = kCardCount;
-            schema["properties"]["deck"]["properties"]["cards"]
-                  ["maxItems"] = kCardCount;
-            schema["properties"]["deck"]["properties"]["dealt"]
-                  ["type"] = "integer";
-            schema["properties"]["deck"]["properties"]["dealt"]
-                  ["minimum"] = 0;
-            schema["properties"]["deck"]["properties"]["dealt"]
-                  ["maximum"] = kCardCount;
+
+            auto &deck = schema["properties"]["deck"];
+            deck["type"] = "object";
+            deck["required"] =
+                antwika::replay::requiredShape({"cards", "dealt"});
+            deck["properties"]["cards"]["type"] = "array";
+            deck["properties"]["cards"]["items"] = card;
+            deck["properties"]["cards"]["minItems"] = kCardCount;
+            deck["properties"]["cards"]["maxItems"] = kCardCount;
+            deck["properties"]["dealt"] =
+                antwika::replay::boundedCountShape(kCardCount);
+
             schema["properties"]["table"]["type"] = "object";
             schema["properties"]["balances"]["type"] = "object";
             schema["properties"]["names"]["type"] = "array";
-            schema["properties"]["names"]["items"]["type"] = "string";
+            schema["properties"]["names"]["items"] =
+                antwika::replay::wordShape();
             schema["properties"]["printer"]["type"] = "object";
             return schema;
-        }
-
-        const nlohmann::json_schema::json_validator &stateValidator()
-        {
-            // The excluded closing line carries the static guard.
-            // Its concurrency arms are unreachable one-threaded.
-            static const nlohmann::json_schema::json_validator validator(
-                stateSchema()); // GCOVR_EXCL_LINE
-            return validator;
         }
     } // namespace
 
@@ -311,7 +285,7 @@ namespace antwika::poker
         table["pot"] = dump.table.pot;
         table["currentBet"] = dump.table.betting.currentBet;
         table["lastRaiseSize"] = dump.table.betting.lastRaiseSize;
-        table["stage"] = std::string(stageName(dump.table.stage));
+        table["stage"] = std::string(kStages.name(dump.table.stage));
         table["board"] = cardsToJson(dump.table.board);
         table["handCount"] = dump.table.handCount;
         table["button"] = rawValue(dump.table.button);
@@ -330,7 +304,7 @@ namespace antwika::poker
             auto &told = printer["notes"].emplace_back();
 
             told["roundStake"] = note.roundStake;
-            told["foldedOn"] = std::string(stageName(note.foldedOn));
+            told["foldedOn"] = std::string(kStages.name(note.foldedOn));
             told["dealtIn"] = note.dealtIn;
             told["folded"] = note.folded;
         }
@@ -346,7 +320,7 @@ namespace antwika::poker
             printer["bigBlind"] = rawValue(*dump.printer.bigBlindSeat);
         }
 
-        printer["stage"] = std::string(stageName(dump.printer.stage));
+        printer["stage"] = std::string(kStages.name(dump.printer.stage));
         printer["boardShown"] = dump.printer.boardShown;
 
         return encoded;
@@ -358,7 +332,8 @@ namespace antwika::poker
     {
         try
         {
-            stateValidator().validate(state);
+            antwika::replay::validatorFor<stateSchema>().validate(
+                state);
         }
         // The validator's failure type is the library's business.
         // What this format promises is StateDumpError.

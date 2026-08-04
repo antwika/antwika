@@ -1,15 +1,14 @@
 #include "antwika/game/StateDump.hpp"
 
-#include <array>
 #include <cstddef>
 #include <exception>
 #include <memory>
 #include <string>
 #include <utility>
 
-#include <nlohmann/json-schema.hpp>
-
 #include <antwika/replay/IMigration.hpp>
+#include <antwika/replay/JsonShapes.hpp>
+#include <antwika/replay/NameTable.hpp>
 
 #include "antwika/game/SaveFormatError.hpp"
 
@@ -18,100 +17,51 @@ namespace antwika::game
 
     namespace
     {
+        using antwika::replay::wordShape;
+
         // The names a dump document holds, one per tool.
         // Persisted, so they may not change once written.
         // The same rule buildingKindName() is held to.
-        constexpr std::array<std::string_view, kBuildToolCount>
-            kToolNames{
-                "road",
-                "house",
-                "farm",
-                "clay_pit",
-                "workshop",
-                "storage",
-                "market",
-                "well",
-                "doctor",
-                "fire_station",
-                "engineer_post",
-                "raze"};
+        constexpr antwika::replay::NameTable<BuildTool, kBuildToolCount>
+            kTools{
+                {"road",
+                 "house",
+                 "farm",
+                 "clay_pit",
+                 "workshop",
+                 "storage",
+                 "market",
+                 "well",
+                 "doctor",
+                 "fire_station",
+                 "engineer_post",
+                 "raze"}};
 
         // The names a dump document holds, one per view.
-        constexpr std::array<std::string_view, kMapViewCount> kViewNames{
-            "normal",
-            "desirability",
-            "food",
-            "water",
-            "medicine",
-            "fire",
-            "damage"};
-
-        [[nodiscard]] std::string_view toolName(BuildTool tool) noexcept
-        {
-            return kToolNames[buildToolIndex(tool) % kBuildToolCount];
-        }
-
-        [[nodiscard]] std::optional<BuildTool> toolFromName(
-            std::string_view name) noexcept
-        {
-            for (std::size_t index = 0; index < kBuildToolCount; ++index)
-            {
-                if (kToolNames[index] == name)
-                {
-                    return static_cast<BuildTool>(index);
-                }
-            }
-
-            return std::nullopt;
-        }
-
-        [[nodiscard]] std::string_view viewName(MapView view) noexcept
-        {
-            return kViewNames[mapViewIndex(view) % kMapViewCount];
-        }
-
-        [[nodiscard]] std::optional<MapView> viewFromName(
-            std::string_view name) noexcept
-        {
-            for (std::size_t index = 0; index < kMapViewCount; ++index)
-            {
-                if (kViewNames[index] == name)
-                {
-                    return static_cast<MapView>(index);
-                }
-            }
-
-            return std::nullopt;
-        }
+        constexpr antwika::replay::NameTable<MapView, kMapViewCount>
+            kViews{
+                {"normal",
+                 "desirability",
+                 "food",
+                 "water",
+                 "medicine",
+                 "fire",
+                 "damage"}};
 
         nlohmann::json stateSchema()
         {
             // The save is a whole versioned document of its own.
             // saveGameFromJson() migrates and validates it itself.
             // This schema only says that one is there.
-            nlohmann::json schema;
-            schema["$schema"] = "http://json-schema.org/draft-07/schema#";
-            schema["title"] = "antwika game dump state";
-            schema["type"] = "object";
-            schema["additionalProperties"] = false;
-            schema["required"] = {
-                "save", "paused", "mapView", "locale"}; // GCOVR_EXCL_LINE
+            nlohmann::json schema = antwika::replay::documentShape(
+                "antwika game dump state",
+                {"save", "paused", "mapView", "locale"});
             schema["properties"]["save"]["type"] = "object";
             schema["properties"]["paused"]["type"] = "boolean";
-            schema["properties"]["tool"]["type"] = "string";
-            schema["properties"]["mapView"]["type"] = "string";
-            schema["properties"]["locale"]["type"] = "string";
+            schema["properties"]["tool"] = wordShape();
+            schema["properties"]["mapView"] = wordShape();
+            schema["properties"]["locale"] = wordShape();
             return schema;
-        }
-
-        const nlohmann::json_schema::json_validator &stateValidator()
-        {
-            // The excluded closing line carries the static guard.
-            // Its concurrency arms are unreachable one-threaded.
-            // See docs/confirming-unreachable-branches.md.
-            static const nlohmann::json_schema::json_validator validator(
-                stateSchema()); // GCOVR_EXCL_LINE
-            return validator;
         }
 
         // Version 2 moved the state under the shared envelope.
@@ -184,10 +134,10 @@ namespace antwika::game
         // A member for it would be a name for no tool.
         if (dump.tool.has_value())
         {
-            encoded["tool"] = std::string(toolName(*dump.tool));
+            encoded["tool"] = std::string(kTools.name(*dump.tool));
         }
 
-        encoded["mapView"] = std::string(viewName(dump.view));
+        encoded["mapView"] = std::string(kViews.name(dump.view));
         encoded["locale"] =
             std::string(antwika::i18n::tagOf(dump.locale));
 
@@ -202,7 +152,8 @@ namespace antwika::game
     {
         try
         {
-            stateValidator().validate(state);
+            antwika::replay::validatorFor<stateSchema>().validate(
+                state);
         }
         // The validator's failure type is the library's business.
         // What this format promises is SaveFormatError.
@@ -224,7 +175,7 @@ namespace antwika::game
         if (state.contains("tool"))
         {
             const auto named = state.at("tool").get<std::string>();
-            const auto tool = toolFromName(named);
+            const auto tool = kTools.from(named);
 
             if (!tool.has_value())
             {
@@ -242,7 +193,7 @@ namespace antwika::game
         }
 
         const auto viewNamed = state.at("mapView").get<std::string>();
-        const auto view = viewFromName(viewNamed);
+        const auto view = kViews.from(viewNamed);
 
         if (!view.has_value())
         {

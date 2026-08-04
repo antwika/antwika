@@ -1,9 +1,9 @@
 #include "antwika/game/LocaleEvent.hpp"
 
-#include <nlohmann/json-schema.hpp>
 #include <nlohmann/json.hpp>
 
 #include <antwika/i18n/Locale.hpp>
+#include <antwika/replay/JsonShapes.hpp>
 #include <antwika/replay/PayloadJson.hpp>
 
 #include "antwika/game/OptionsFormatError.hpp"
@@ -15,21 +15,10 @@ namespace antwika::game
     {
         nlohmann::json setLocaleSchema()
         {
-            nlohmann::json schema;
-            schema["$schema"] = "http://json-schema.org/draft-07/schema#";
-            schema["title"] = "game.set_locale payload";
-            schema["type"] = "object";
-            schema["additionalProperties"] = false;
-            schema["required"] = {"locale"}; // GCOVR_EXCL_LINE
-            schema["properties"]["locale"]["type"] = "string";
+            nlohmann::json schema = replay::documentShape(
+                "game.set_locale payload", {"locale"});
+            schema["properties"]["locale"] = replay::wordShape();
             return schema;
-        }
-
-        const nlohmann::json_schema::json_validator &setLocaleValidator()
-        {
-            static const nlohmann::json_schema::json_validator validator(
-                setLocaleSchema()); // GCOVR_EXCL_LINE
-            return validator;
         }
     } // namespace
 
@@ -50,7 +39,7 @@ namespace antwika::game
         const auto parsed =
             antwika::replay::parseAndValidatePayload<OptionsFormatError>(
                 payload,
-                setLocaleValidator(),
+                replay::validatorFor<setLocaleSchema>(),
                 "LocaleState: game.set_locale payload");
 
         const auto tag = parsed.at("locale").get<std::string>();

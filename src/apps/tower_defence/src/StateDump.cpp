@@ -1,114 +1,64 @@
 #include "antwika/tower_defence/StateDump.hpp"
 
-#include <array>
 #include <cstddef>
 #include <exception>
-#include <optional>
 #include <string>
 #include <utility>
 
-#include <nlohmann/json-schema.hpp>
+#include <antwika/replay/JsonShapes.hpp>
+#include <antwika/replay/NameTable.hpp>
 
 namespace antwika::tower_defence
 {
 
     namespace
     {
+        using antwika::replay::countShape;
+        using antwika::replay::objectShape;
+        using antwika::replay::wordShape;
+
         // The names a dump document holds, one per mob kind.
         // Persisted, so they may not change once written.
-        constexpr std::array<std::string_view, kMobKindCount>
-            kMobKindNames{"grunt", "runner", "brute", "shielded"};
+        constexpr antwika::replay::NameTable<MobKind, kMobKindCount>
+            kMobKinds{{"grunt", "runner", "brute", "shielded"}};
 
         // The names a dump document holds, one per campaign phase.
-        constexpr std::size_t kPhaseCount = 3;
-        constexpr std::array<std::string_view, kPhaseCount> kPhaseNames{
-            "fighting", "won", "lost"};
-
-        [[nodiscard]] std::string_view mobKindName(
-            const MobKind kind) noexcept
-        {
-            return kMobKindNames[
-                static_cast<std::size_t>(kind) % kMobKindCount];
-        }
-
-        [[nodiscard]] std::optional<MobKind> mobKindFromName(
-            const std::string_view name) noexcept
-        {
-            for (std::size_t index = 0; index < kMobKindCount; ++index)
-            {
-                if (kMobKindNames[index] == name)
-                {
-                    return static_cast<MobKind>(index);
-                }
-            }
-
-            return std::nullopt;
-        }
-
-        [[nodiscard]] std::string_view phaseName(
-            const CampaignPhase phase) noexcept
-        {
-            return kPhaseNames[
-                static_cast<std::size_t>(phase) % kPhaseCount];
-        }
-
-        [[nodiscard]] std::optional<CampaignPhase> phaseFromName(
-            const std::string_view name) noexcept
-        {
-            for (std::size_t index = 0; index < kPhaseCount; ++index)
-            {
-                if (kPhaseNames[index] == name)
-                {
-                    return static_cast<CampaignPhase>(index);
-                }
-            }
-
-            return std::nullopt;
-        }
+        constexpr antwika::replay::NameTable<CampaignPhase, 3> kPhases{
+            {"fighting", "won", "lost"}};
 
         nlohmann::json stateSchema()
         {
             // The level and the wave plan are validated by absence.
             // Both are regenerated from the seed on restore.
             // A dump carrying one is one this build never wrote.
-            nlohmann::json schema;
-            schema["$schema"] =
-                "http://json-schema.org/draft-07/schema#";
-            schema["title"] = "antwika tower defence dump state";
-            schema["type"] = "object";
-            schema["additionalProperties"] = false;
-            schema["required"] = {
-                "level",
-                "score",
-                "lives",
-                "ticks",
-                "phase",
-                "bestScore",
-                "battle"}; // GCOVR_EXCL_LINE
+            nlohmann::json schema = antwika::replay::documentShape(
+                "antwika tower defence dump state",
+                {"level",
+                 "score",
+                 "lives",
+                 "ticks",
+                 "phase",
+                 "bestScore",
+                 "battle"});
 
-            // Assignment style throughout, never brace-init lists.
-            // An initializer list compiles to untakeable branches.
             auto &top = schema["properties"];
             for (const auto *counter :
                  {"level", "score", "lives", "ticks", "bestScore"})
             {
-                top[counter]["type"] = "integer";
-                top[counter]["minimum"] = 0;
+                top[counter] = countShape();
             }
-            top["phase"]["type"] = "string";
+            top["phase"] = wordShape();
 
             auto &battle = top["battle"];
-            battle["type"] = "object";
-            battle["additionalProperties"] = false;
-            battle["required"] = {
-                "waveIndex",
-                "spawnedInWave",
-                "ticksUntilRelease",
-                "ticks",
-                "nextMobId",
-                "nextTowerId",
-                "mobs",
-                "towers"}; // GCOVR_EXCL_LINE
+            battle = objectShape(
+                {"waveIndex",
+                 "spawnedInWave",
+                 "ticksUntilRelease",
+                 "ticks",
+                 "nextMobId",
+                 "nextTowerId",
+                 "mobs",
+                 "towers"});
 
             auto &fight = battle["properties"];
             for (const auto *counter :
@@ -119,61 +69,36 @@ namespace antwika::tower_defence
                   "nextMobId",
                   "nextTowerId"})
             {
-                fight[counter]["type"] = "integer";
-                fight[counter]["minimum"] = 0;
+                fight[counter] = countShape();
             }
 
-            auto &mob = fight["mobs"]["items"];
             fight["mobs"]["type"] = "array";
-            mob["type"] = "object";
-            mob["additionalProperties"] = false;
-            mob["required"] = {
-                "id",
-                "kind",
-                "pathIndex",
-                "health",
-                "ticksUntilStep"}; // GCOVR_EXCL_LINE
-            mob["properties"]["id"]["type"] = "integer";
-            mob["properties"]["id"]["minimum"] = 0;
-            mob["properties"]["kind"]["type"] = "string";
-            mob["properties"]["pathIndex"]["type"] = "integer";
-            mob["properties"]["pathIndex"]["minimum"] = 0;
+            fight["mobs"]["items"] = objectShape(
+                {"id", "kind", "pathIndex", "health", "ticksUntilStep"});
+
+            auto &mob = fight["mobs"]["items"];
+            mob["properties"]["id"] = countShape();
+            mob["properties"]["kind"] = wordShape();
+            mob["properties"]["pathIndex"] = countShape();
 
             // At least one, since a dead mob is never in a dump.
             // A mob at zero died on the tick it got there.
             mob["properties"]["health"]["type"] = "integer";
             mob["properties"]["health"]["minimum"] = 1;
-            mob["properties"]["ticksUntilStep"]["type"] = "integer";
-            mob["properties"]["ticksUntilStep"]["minimum"] = 0;
+            mob["properties"]["ticksUntilStep"] = countShape();
+
+            fight["towers"]["type"] = "array";
+            fight["towers"]["items"] = objectShape({"id", "cell"});
 
             auto &tower = fight["towers"]["items"];
-            fight["towers"]["type"] = "array";
-            tower["type"] = "object";
-            tower["additionalProperties"] = false;
-            tower["required"] = {"id", "cell"}; // GCOVR_EXCL_LINE
-            tower["properties"]["id"]["type"] = "integer";
-            tower["properties"]["id"]["minimum"] = 0;
+            tower["properties"]["id"] = countShape();
 
             auto &cell = tower["properties"]["cell"];
-            cell["type"] = "object";
-            cell["additionalProperties"] = false;
-            cell["required"] = {"x", "y"}; // GCOVR_EXCL_LINE
-            cell["properties"]["x"]["type"] = "integer";
-            cell["properties"]["x"]["minimum"] = 0;
-            cell["properties"]["y"]["type"] = "integer";
-            cell["properties"]["y"]["minimum"] = 0;
+            cell = objectShape({"x", "y"});
+            cell["properties"]["x"] = countShape();
+            cell["properties"]["y"] = countShape();
 
             return schema;
-        }
-
-        const nlohmann::json_schema::json_validator &stateValidator()
-        {
-            // The excluded closing line carries the static guard.
-            // Its concurrency arms are unreachable one-threaded.
-            // See docs/confirming-unreachable-branches.md.
-            static const nlohmann::json_schema::json_validator validator(
-                stateSchema()); // GCOVR_EXCL_LINE
-            return validator;
         }
     } // namespace
 
@@ -202,7 +127,7 @@ namespace antwika::tower_defence
         {
             nlohmann::json entry;
             entry["id"] = mob.id;
-            entry["kind"] = std::string(mobKindName(mob.kind));
+            entry["kind"] = std::string(kMobKinds.name(mob.kind));
             entry["pathIndex"] = mob.pathIndex;
             entry["health"] = mob.health;
             entry["ticksUntilStep"] = mob.ticksUntilStep;
@@ -224,7 +149,8 @@ namespace antwika::tower_defence
         encoded["score"] = dump.campaign.score;
         encoded["lives"] = dump.campaign.lives;
         encoded["ticks"] = dump.campaign.ticks;
-        encoded["phase"] = std::string(phaseName(dump.campaign.phase));
+        encoded["phase"] =
+            std::string(kPhases.name(dump.campaign.phase));
         encoded["bestScore"] = dump.bestScore;
         encoded["battle"] = std::move(battle);
 
@@ -238,7 +164,8 @@ namespace antwika::tower_defence
     {
         try
         {
-            stateValidator().validate(state);
+            antwika::replay::validatorFor<stateSchema>().validate(
+                state);
         }
         // The validator's failure type is the library's business.
         // What this format promises is StateDumpError.
@@ -259,7 +186,7 @@ namespace antwika::tower_defence
         dump.bestScore = state.at("bestScore").get<std::uint64_t>();
 
         const auto phaseNamed = state.at("phase").get<std::string>();
-        const auto phase = phaseFromName(phaseNamed);
+        const auto phase = kPhases.from(phaseNamed);
 
         if (!phase.has_value())
         {
@@ -288,7 +215,7 @@ namespace antwika::tower_defence
         for (const nlohmann::json &entry : battle.at("mobs"))
         {
             const auto kindNamed = entry.at("kind").get<std::string>();
-            const auto kind = mobKindFromName(kindNamed);
+            const auto kind = kMobKinds.from(kindNamed);
 
             if (!kind.has_value())
             {
