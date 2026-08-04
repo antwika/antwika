@@ -74,7 +74,8 @@ namespace antwika::game
      *
      * @param document The parsed document.
      * @return The config it states, defaults filling what it does not.
-     * @throws ConfigFormatError If it is not this format, states a
+     * @throws antwika::config::ConfigFormatError If it is not this
+     * format, states a
      * version this build cannot reach the current one from, or fails
      * the schema -- a member of the wrong shape, a period of zero
      * ticks, a negative cost, or a building kind no name goes by.
@@ -92,7 +93,8 @@ namespace antwika::game
      * @brief Read a config from a stream.
      * @param in Holds the document.
      * @return The config it holds.
-     * @throws ConfigFormatError If the stream does not hold one.
+     * @throws antwika::config::ConfigFormatError If the stream does
+     * not hold one.
      */
     [[nodiscard]] GameConfig readConfig(std::istream &in);
 
@@ -107,7 +109,8 @@ namespace antwika::game
      *
      * @param path Where the file would be.
      * @return What it held, or the defaults when it is not there.
-     * @throws ConfigFormatError If a file is there and is not one of
+     * @throws antwika::config::ConfigFormatError If a file is there
+     * and is not one of
      * these.
      */
     [[nodiscard]] GameConfig loadConfigFileOrDefaults(
