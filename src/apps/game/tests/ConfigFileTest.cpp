@@ -9,18 +9,18 @@
 #include <nlohmann/json.hpp>
 
 #include <antwika/app/AssetPath.hpp>
+#include <antwika/config/ConfigFormatError.hpp>
 #include <antwika/replay/SchemaVersion.hpp>
 
 #include "ScratchDirectory.hpp"
 #include "antwika/game/BuildingKind.hpp"
 #include "antwika/game/ConfigFile.hpp"
-#include "antwika/game/ConfigFormatError.hpp"
 #include "antwika/game/GameConfig.hpp"
 
 using antwika::game::tests::scratchDirectory;
 
+using antwika::config::ConfigFormatError;
 using antwika::game::BuildingKind;
-using antwika::game::ConfigFormatError;
 using antwika::game::configFromJson;
 using antwika::game::configToJson;
 using antwika::game::GameConfig;

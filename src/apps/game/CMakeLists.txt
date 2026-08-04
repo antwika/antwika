@@ -109,6 +109,7 @@ target_link_libraries(antwika_game
         antwika::animation
         antwika::app
         antwika::cli
+        antwika::config
         antwika::ecs
         antwika::engine
         antwika::gfx

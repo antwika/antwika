@@ -32,6 +32,7 @@ src/
     ├── animation/
     ├── app/
     ├── cli/
+    ├── config/
     ├── ecs/
     ├── ecs_commons/
     ├── engine/
