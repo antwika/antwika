@@ -23,6 +23,7 @@ antwika_add_app_tests(
         antwika::app
         antwika::cli
         antwika::console
+        antwika::console::tests::conformance
         antwika::testing
         antwika::config
         antwika::config::tests::conformance

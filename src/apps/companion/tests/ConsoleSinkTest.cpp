@@ -9,6 +9,8 @@
 #include <antwika/console/ConsolePicture.hpp>
 #include <antwika/console/ConsoleState.hpp>
 #include <antwika/console/SnapshotFormat.hpp>
+#include <antwika/console/conformance/ConsoleContract.hpp>
+#include <antwika/console/conformance/ConsoleSnapshotRoundTrip.hpp>
 #include <antwika/console/testing/ConsoleScript.hpp>
 #include <antwika/event/mocks/MockEventSink.hpp>
 #include <antwika/event/TickEvent.hpp>
@@ -50,7 +52,6 @@ using antwika::replay::ReplaySource;
 using antwika::time::fakes::FakeSleeper;
 using antwika::time::Tick;
 using ::testing::NiceMock;
-using ::testing::StartsWith;
 
 namespace
 {
@@ -141,43 +142,53 @@ namespace
                 .maxTicks = kMaxTicks});
         }
     };
+
+    // This application's half of the shared console contract.
+    struct CompanionConsoleTraits
+    {
+        using Summary = CompanionSummary;
+
+        static Summary run(
+            std::vector<TickEvent> script,
+            const std::string &dumpPath,
+            const bool loadEnabled)
+        {
+            script.push_back(stopAt(kOpenTick + 1));
+
+            ConsoleHarness harness;
+
+            return harness.run(
+                std::move(script), dumpPath, loadEnabled);
+        }
+
+        static const std::vector<std::string> &console(
+            const Summary &summary)
+        {
+            return summary.console;
+        }
+
+        static void expectUntouched(const Summary &summary)
+        {
+            EXPECT_EQ(summary.meals, 0U);
+        }
+
+        static std::string scratchPrefix()
+        {
+            return "antwika_companion_console.";
+        }
+    };
 } // namespace
 
-TEST(ConsoleSinkTest, AnUnknownCommandIsEchoedAndRefused)
+namespace antwika::console::conformance
 {
-    ConsoleHarness harness;
-    std::vector<TickEvent> events{keyAt(harness.codec, 1, Key::Grave)};
-    typeText(events, harness.codec, kOpenTick, "hello");
-    events.push_back(keyAt(harness.codec, kOpenTick, Key::Enter));
-    events.push_back(stopAt(kOpenTick + 1));
 
-    const auto summary =
-        harness.run(std::move(events), "unused.json");
+    INSTANTIATE_TYPED_TEST_SUITE_P(
+        Companion, ConsoleContract, CompanionConsoleTraits);
 
-    EXPECT_EQ(
-        summary.console,
-        (std::vector<std::string>{
-            "> hello", "unknown command: hello"}));
-}
+    INSTANTIATE_TYPED_TEST_SUITE_P(
+        Companion, ConsoleSnapshotRoundTrip, CompanionConsoleTraits);
 
-TEST(ConsoleSinkTest, TypingBeforeFullyOpenReachesNoField)
-{
-    ConsoleHarness harness;
-    std::vector<TickEvent> events{keyAt(harness.codec, 1, Key::Grave)};
-
-    // Half way along the slide, none of this may land.
-    typeText(events, harness.codec, 3, "hello");
-    events.push_back(keyAt(harness.codec, 3, Key::Enter));
-
-    // Fully open, the field is still empty, so Enter says nothing.
-    events.push_back(keyAt(harness.codec, kOpenTick, Key::Enter));
-    events.push_back(stopAt(kOpenTick + 1));
-
-    const auto summary =
-        harness.run(std::move(events), "unused.json");
-
-    EXPECT_TRUE(summary.console.empty());
-}
+} // namespace antwika::console::conformance
 
 TEST(ConsoleSinkTest, APressUnderTheSheetNeverReachesTheCompanion)
 {
@@ -259,8 +270,6 @@ TEST(ConsoleSinkTest, LoadStateComesBackToTheDumpedInstant)
         harness.run(std::move(events), path);
     }
 
-    const auto dumped = readDump(path);
-
     // A fresh session loads it mid-run and continues from there.
     ConsoleHarness fresh;
     std::vector<TickEvent> events{keyAt(fresh.codec, 1, Key::Grave)};
@@ -270,48 +279,7 @@ TEST(ConsoleSinkTest, LoadStateComesBackToTheDumpedInstant)
 
     const auto summary = fresh.run(std::move(events), path);
 
+    // What the console history carries over is the contract's.
+    // That the fed companion came back with it is this file's.
     EXPECT_EQ(summary.meals, 1U);
-
-    // The dump's own exchange, then what loading it said.
-    auto expected = dumped.console;
-    expected.push_back("loaded state from " + path);
-    EXPECT_EQ(summary.console, expected);
-}
-
-TEST(ConsoleSinkTest, LoadStateIsRefusedWhileRecordingOrReplaying)
-{
-    ConsoleHarness harness;
-    std::vector<TickEvent> events{keyAt(harness.codec, 1, Key::Grave)};
-    typeText(events, harness.codec, kOpenTick, "load_state");
-    events.push_back(keyAt(harness.codec, kOpenTick, Key::Enter));
-    events.push_back(stopAt(kOpenTick + 1));
-
-    const auto summary =
-        harness.run(std::move(events), "unused.json", false);
-
-    EXPECT_EQ(
-        summary.console,
-        (std::vector<std::string>{
-            "> load_state",
-            "load_state: not available while recording or replaying"}));
-    EXPECT_EQ(summary.meals, 0U);
-}
-
-TEST(ConsoleSinkTest, LoadStateAnswersAFileThatIsNotThere)
-{
-    const antwika::testing::ScratchFile file(
-        "antwika_companion_console_load_absent.json");
-
-    ConsoleHarness harness;
-    std::vector<TickEvent> events{keyAt(harness.codec, 1, Key::Grave)};
-    typeText(events, harness.codec, kOpenTick, "load_state");
-    events.push_back(keyAt(harness.codec, kOpenTick, Key::Enter));
-    events.push_back(stopAt(kOpenTick + 1));
-
-    const auto summary =
-        harness.run(std::move(events), file.path().string());
-
-    ASSERT_EQ(summary.console.size(), 2U);
-    EXPECT_EQ(summary.console[0], "> load_state");
-    EXPECT_THAT(summary.console[1], StartsWith("could not load: "));
 }

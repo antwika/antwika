@@ -99,3 +99,15 @@ Being outside a `tests/` directory it is measured by the coverage gate like any 
 `typeText()` takes the board it types by rather than assuming one, and asks `typedCharacterFor()` which position prints each character — the inverse of this library's own table rather than a second copy of it, so "the American slash position prints an underscore on a Swedish board" is still said in exactly one place.
 That is what lets an application which announces a different board script by that board, while a run that says nothing types by the Swedish default.
 A character no board prints answers a key that types nothing, so such a script lands nothing rather than landing some other character.
+
+`tests/conformance/include/antwika/console/conformance/` is the other half: what the scripts are *asserted* about, said once and instantiated per application the way `i18n`'s `MessageSetCompleteness` and `gfx`'s `GfxBackendConformance` are.
+`ConsoleContract` owns the four cases that are the library's own behaviour seen through whichever application happens to be underneath — an unknown line is echoed and refused, a key pressed while the sheet is still sliding types nowhere, a load is refused under `--record` and `--replay`, and a load answers a file that is not there.
+`ConsoleSnapshotRoundTrip` owns the fifth, that a `dump_state` and then a `load_state` carries the console history over, and is registered apart because [`poker`](../apps/poker.md) dumps a room mid-hand and reads no dump back; weakening the round trip until poker could pass it would have cost the other eight the assertion that matters.
+
+A `Traits` supplies the application's half and only that half: its `Summary` type, a `run()` taking a script and handing back one, the console history out of a `Summary`, an `expectUntouched()` saying what a refused load must have left alone, and a `scratchPrefix()` naming its temporary files.
+`run()` appends the application's own stop event or tick limit, which is what keeps nine differently-shaped bootstraps behind one call in the contract — a harness with a camera and an ECS and one that is a free function taking a stop tick both reduce to it.
+Anything an application promises beyond the five — that a press under the sheet lays no road, that a loaded pool runs on exactly as the dumped one did, that a decoder's refusal comes back as an answer — stays an ordinary `TEST` in that application's own file.
+
+**These headers sit under `tests/` where `ConsoleScript.hpp` deliberately does not, and the difference is the coverage gate.**
+`scripts/coverage.sh` excludes `.*/tests/.*` and nothing else that would catch them, so a suite full of `EXPECT_*` is measured nowhere; the same file under `include/` would be product code, and every assertion's untaken failure edge would be a missing branch.
+The price is that each of the nine applications' `tests/CMakeLists.txt` names `antwika::console::tests::conformance`, which a scripting header that carries no assertion does not have to be worth.

@@ -25,6 +25,7 @@ antwika_add_app_tests(
         antwika::config
         antwika::config::tests::conformance
         antwika::console
+        antwika::console::tests::conformance
         antwika::ecs
         antwika::ecs::tests::mocks
         antwika::ecs_commons

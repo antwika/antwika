@@ -8,6 +8,8 @@
 
 #include <antwika/console/ConsolePicture.hpp>
 #include <antwika/console/ConsoleState.hpp>
+#include <antwika/console/conformance/ConsoleContract.hpp>
+#include <antwika/console/conformance/ConsoleSnapshotRoundTrip.hpp>
 #include <antwika/console/testing/ConsoleScript.hpp>
 #include <antwika/event/mocks/MockEventSink.hpp>
 #include <antwika/event/TickEvent.hpp>
@@ -57,7 +59,6 @@ using antwika::sudoku::SudokuSummary;
 using antwika::sudoku::tests::squareCentre;
 using antwika::time::Tick;
 using ::testing::NiceMock;
-using ::testing::StartsWith;
 
 namespace
 {
@@ -114,21 +115,42 @@ namespace
             .stateDumpPath = dumpPath});
     }
 
-    TEST(ConsoleIntegrationTest, AnUnknownCommandIsEchoedAndRefused)
+    // This application's half of the shared console contract.
+    struct SudokuConsoleTraits
     {
-        const InputEventCodec codec;
-        std::vector<TickEvent> events{keyAt(codec, 1, Key::Grave)};
-        typeText(events, codec, kOpenTick, "hello");
-        events.push_back(keyAt(codec, kOpenTick, Key::Enter));
+        using Summary = SudokuSummary;
 
-        const auto summary =
-            play(std::move(events), kOpenTick + 1, "unused.json");
+        static Summary run(
+            std::vector<TickEvent> script,
+            const std::string &dumpPath,
+            const bool loadEnabled)
+        {
+            // TickLimitSource is this application's own stop.
+            // A puzzle runs until it is solved or the window closes.
+            return play(
+                std::move(script),
+                kOpenTick + 1,
+                dumpPath,
+                loadEnabled);
+        }
 
-        EXPECT_EQ(
-            summary.console,
-            (std::vector<std::string>{
-                "> hello", "unknown command: hello"}));
-    }
+        static const std::vector<std::string> &console(
+            const Summary &summary)
+        {
+            return summary.console;
+        }
+
+        // A refused load leaves the demo puzzle as it was dealt.
+        // APressUnderTheSheetSelectsNothing reads that square out.
+        static void expectUntouched(const Summary &)
+        {
+        }
+
+        static std::string scratchPrefix()
+        {
+            return "antwika_sudoku_console.";
+        }
+    };
 
     TEST(ConsoleIntegrationTest, ADigitTypesIntoTheOpenConsole)
     {
@@ -194,11 +216,6 @@ namespace
             file.string());
 
         EXPECT_EQ(dumped.grid.at(kBlankIndex), '4');
-        EXPECT_EQ(
-            dumped.console,
-            (std::vector<std::string>{
-                "> dump_state",
-                "dumped state to " + file.string()}));
 
         // A fresh session on the same puzzle loads it back.
         std::vector<TickEvent> loading{keyAt(codec, 1, Key::Grave)};
@@ -209,52 +226,8 @@ namespace
             std::move(loading), kOpenTick + 1, file.string());
 
         // The grid is the dumped one again, 4 included.
-        // And the history is what the dumped console read.
+        // What the console history carries over is the contract's.
         EXPECT_EQ(loaded.grid.at(kBlankIndex), '4');
-        EXPECT_EQ(
-            loaded.console,
-            (std::vector<std::string>{
-                "> dump_state",
-                "dumped state to " + file.string(),
-                "loaded state from " + file.string()}));
-    }
-
-    TEST(ConsoleIntegrationTest, ALoadIsRefusedWhileRecording)
-    {
-        const InputEventCodec codec;
-        std::vector<TickEvent> events{keyAt(codec, 1, Key::Grave)};
-        typeText(events, codec, kOpenTick, "load_state");
-        events.push_back(keyAt(codec, kOpenTick, Key::Enter));
-
-        const auto summary = play(
-            std::move(events), kOpenTick + 1, "unused.json", false);
-
-        EXPECT_EQ(
-            summary.console,
-            (std::vector<std::string>{
-                "> load_state",
-                "load_state: not available while recording or "
-                "replaying"}));
-    }
-
-    TEST(ConsoleIntegrationTest, ALoadAnswersAMissingFile)
-    {
-        const InputEventCodec codec;
-        std::vector<TickEvent> events{keyAt(codec, 1, Key::Grave)};
-        typeText(events, codec, kOpenTick, "load_state");
-        events.push_back(keyAt(codec, kOpenTick, Key::Enter));
-
-        const auto summary = play(
-            std::move(events),
-            kOpenTick + 1,
-            antwika::testing::scratchPath(
-                "antwika_sudoku_console_missing_")
-                .string());
-
-        ASSERT_EQ(summary.console.size(), 2U);
-        EXPECT_EQ(summary.console.at(0), "> load_state");
-        EXPECT_THAT(
-            summary.console.at(1), StartsWith("could not load: "));
     }
 
     TEST(ConsoleIntegrationTest, NoConsoleMountedMeansNoConsole)
@@ -284,3 +257,14 @@ namespace
         EXPECT_TRUE(summary.console.empty());
     }
 } // namespace
+
+namespace antwika::console::conformance
+{
+
+    INSTANTIATE_TYPED_TEST_SUITE_P(
+        Sudoku, ConsoleContract, SudokuConsoleTraits);
+
+    INSTANTIATE_TYPED_TEST_SUITE_P(
+        Sudoku, ConsoleSnapshotRoundTrip, SudokuConsoleTraits);
+
+} // namespace antwika::console::conformance
