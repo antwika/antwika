@@ -55,7 +55,7 @@ using antwika::tower_defence::MobKind;
 using antwika::tower_defence::ScoreFormatError;
 using antwika::tower_defence::storeIfLive;
 using antwika::tower_defence::summaryLine;
-using antwika::tower_defence::TowerDefenceConfig;
+using antwika::tower_defence::TowerDefenceWiring;
 using antwika::tower_defence::Translator;
 using antwika::tower_defence::Wave;
 using antwika::tower_defence::WaveEntry;
@@ -224,7 +224,7 @@ namespace
         const Translator translator{antwika::i18n::kDefaultLocale};
         ReplaySource source(script());
 
-        TowerDefenceConfig config{
+        TowerDefenceWiring config{
             .logger = logger,
             .eventSink = eventSink,
             .inputSource = source,
@@ -292,7 +292,7 @@ TEST(RunIntegrationTest, TheExtraSinkSeesEveryFinishedTick)
 
     WatchedTicks seen;
     const BattleSummary summary =
-        antwika::tower_defence::bootstrap(TowerDefenceConfig{
+        antwika::tower_defence::bootstrap(TowerDefenceWiring{
             .logger = logger,
             .eventSink = eventSink,
             .inputSource = source,
@@ -332,7 +332,7 @@ TEST(RunIntegrationTest, TheReplayRecorderReceivesEveryDispatchedEvent)
     TickEventRecorder recorder;
 
     const BattleSummary summary =
-        antwika::tower_defence::bootstrap(TowerDefenceConfig{
+        antwika::tower_defence::bootstrap(TowerDefenceWiring{
             .logger = logger,
             .eventSink = eventSink,
             .inputSource = source,

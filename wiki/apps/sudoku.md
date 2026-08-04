@@ -98,3 +98,8 @@ The locale is fixed at `i18n::kDefaultLocale` in `main()` and read from nowhere 
 Storing the words would put the active locale inside the state a replay reproduces.
 
 See [`blog/005-wave-function-collapse-that-never-guesses.md`](../../blog/005-wave-function-collapse-that-never-guesses.md) and [`blog/008-the-solver-that-lied-the-zombie-component-and-a-coverage-gate-with-teeth.md`](../../blog/008-the-solver-that-lied-the-zombie-component-and-a-coverage-gate-with-teeth.md), which describe this application while it was still a console showcase.
+
+## The config file
+
+`config.json` beside the executable is read once at startup through [`antwika::config`](../libraries/config.md): `solveStepBudget`, how much search one press of Solve may spend inside a tick, and `framePeriodMs`, how long a frame takes on the wall clock.
+A replay assumes the config it was recorded under, exactly as `apps/game`'s page states: a recorded Solve press replayed under a smaller budget is a different game, so the shipped file states the defaults and a test pins that.

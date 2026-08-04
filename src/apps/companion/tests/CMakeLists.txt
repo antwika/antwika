@@ -2,6 +2,7 @@ find_package(GTest REQUIRED)
 
 add_executable(antwika_companion_tests
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/Companion.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/ConfigFile.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/DayMood.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/FilePetStore.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/LifeStage.cpp
@@ -20,6 +21,7 @@ add_executable(antwika_companion_tests
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/RenderSink.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/ReviveSink.cpp
     CompanionTest.cpp
+    ConfigFileTest.cpp
     DayMoodTest.cpp
     FilePetStoreTest.cpp
     LifeStageTest.cpp
@@ -46,6 +48,8 @@ target_include_directories(antwika_companion_tests
 target_link_libraries(antwika_companion_tests
     PRIVATE
         antwika::animation
+        antwika::app
+        antwika::config
         antwika::ecs
         antwika::engine
         antwika::event::tests::mocks

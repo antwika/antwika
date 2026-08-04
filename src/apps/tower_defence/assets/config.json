@@ -1,0 +1,6 @@
+{
+  "framePeriodMs": 80,
+  "magic": "antwika-tower-defence-config",
+  "startingLives": 12,
+  "version": 1
+}

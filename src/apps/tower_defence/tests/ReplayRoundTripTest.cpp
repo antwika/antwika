@@ -53,7 +53,7 @@ using antwika::tower_defence::LevelPlan;
 using antwika::tower_defence::MobKind;
 using antwika::tower_defence::ScoreOverlay;
 using antwika::tower_defence::Tile;
-using antwika::tower_defence::TowerDefenceConfig;
+using antwika::tower_defence::TowerDefenceWiring;
 using antwika::tower_defence::Translator;
 using antwika::tower_defence::Wave;
 using antwika::tower_defence::WaveEntry;
@@ -188,7 +188,7 @@ namespace
         const Translator translator{antwika::i18n::kDefaultLocale};
         ReplaySource source(events);
 
-        TowerDefenceConfig config{
+        TowerDefenceWiring config{
             .logger = logger,
             .eventSink = eventSink,
             .inputSource = source,

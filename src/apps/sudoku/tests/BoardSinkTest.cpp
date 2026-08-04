@@ -22,6 +22,7 @@ using antwika::sudoku::Board;
 using antwika::sudoku::BoardFormatError;
 using antwika::sudoku::BoardSink;
 using antwika::sudoku::kDemoPuzzle;
+using antwika::sudoku::kSolveStepBudget;
 using antwika::sudoku::newPuzzleEvent;
 using antwika::sudoku::PuzzleState;
 using antwika::sudoku::Status;
@@ -48,7 +49,7 @@ namespace
     TEST(BoardSinkTest, Handle_StartsASessionOnTheGridItIsGiven)
     {
         PuzzleState state;
-        BoardSink sink(state);
+        BoardSink sink(state, kSolveStepBudget);
 
         sink.handle(newPuzzle());
 
@@ -58,7 +59,7 @@ namespace
     TEST(BoardSinkTest, Handle_WritesOneDigitIntoOneSquare)
     {
         PuzzleState state;
-        BoardSink sink(state);
+        BoardSink sink(state, kSolveStepBudget);
         sink.handle(newPuzzle());
 
         sink.handle(
@@ -77,7 +78,7 @@ namespace
     TEST(BoardSinkTest, Handle_LeavesAClueAloneAndSaysSo)
     {
         PuzzleState state;
-        BoardSink sink(state);
+        BoardSink sink(state, kSolveStepBudget);
         sink.handle(newPuzzle());
 
         sink.handle(
@@ -91,7 +92,7 @@ namespace
     TEST(BoardSinkTest, Handle_FinishesTheGridWhenAskedTo)
     {
         PuzzleState state;
-        BoardSink sink(state);
+        BoardSink sink(state, kSolveStepBudget);
         sink.handle(newPuzzle());
 
         sink.handle(at(antwika::sudoku::events::kSolve, ""));
@@ -103,7 +104,7 @@ namespace
     TEST(BoardSinkTest, Handle_IgnoresEverythingElse)
     {
         PuzzleState state;
-        BoardSink sink(state);
+        BoardSink sink(state, kSolveStepBudget);
         sink.handle(newPuzzle());
 
         sink.handle(
@@ -117,7 +118,7 @@ namespace
     TEST(BoardSinkTest, Handle_RefusesAPayloadOfTheWrongShape)
     {
         PuzzleState state;
-        BoardSink sink(state);
+        BoardSink sink(state, kSolveStepBudget);
 
         EXPECT_THROW(
             sink.handle(
@@ -137,7 +138,7 @@ namespace
     TEST(BoardSinkTest, Handle_RefusesAGridThatIsNotOne)
     {
         PuzzleState state;
-        BoardSink sink(state);
+        BoardSink sink(state, kSolveStepBudget);
 
         EXPECT_THROW(
             sink.handle(

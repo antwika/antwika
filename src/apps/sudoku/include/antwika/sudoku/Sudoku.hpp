@@ -18,6 +18,7 @@
 #include "antwika/sudoku/BoardOverlay.hpp"
 #include "antwika/sudoku/Messages.hpp"
 #include "antwika/sudoku/PuzzleState.hpp"
+#include "antwika/sudoku/Solve.hpp"
 #include "antwika/sudoku/Status.hpp"
 
 namespace antwika::sudoku
@@ -73,7 +74,7 @@ namespace antwika::sudoku
      * list, so a wrong argument is a compile error rather than a
      * silently different run.
      */
-    struct SudokuConfig
+    struct SudokuWiring
     {
         /** @brief Receives the run's diagnostics. */
         ILogger &logger;
@@ -127,6 +128,14 @@ namespace antwika::sudoku
 
         /** @brief Factory for one more tick sink, e.g. the renderer. */
         TickSinkFactory extraSink = {};
+        /**
+         * @brief How much search one press of Solve may spend.
+         *
+         * Read off config.json by main() -- see ConfigFile.hpp -- and
+         * defaulted to the shipped budget, so a caller that says
+         * nothing solves exactly as it always did.
+         */
+        std::uint64_t solveStepBudget = kSolveStepBudget;
     };
 
     /**
@@ -142,6 +151,6 @@ namespace antwika::sudoku
      * @throws BoardFormatError If an event carries a payload that is
      * not the shape its schema describes.
      */
-    SudokuSummary bootstrap(const SudokuConfig &config);
+    SudokuSummary bootstrap(const SudokuWiring &config);
 
 } // namespace antwika::sudoku

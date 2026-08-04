@@ -1,0 +1,6 @@
+{
+  "framePeriodMs": 40,
+  "magic": "antwika-sudoku-config",
+  "solveStepBudget": 200000,
+  "version": 1
+}

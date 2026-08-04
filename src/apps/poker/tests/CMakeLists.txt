@@ -4,6 +4,7 @@ add_executable(antwika_poker_tests
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/AgentStyle.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/BankrollLedger.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/CashGame.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/ConfigFile.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/PokerRoom.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/PokerRoomSink.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/PolicyAgent.cpp
@@ -16,6 +17,7 @@ add_executable(antwika_poker_tests
     BankrollLedgerTest.cpp
     BootstrapTest.cpp
     CashGameTest.cpp
+    ConfigFileTest.cpp
     PokerAtlasTest.cpp
     PokerRoomSinkTest.cpp
     PolicyAgentTest.cpp
@@ -37,6 +39,7 @@ target_link_libraries(antwika_poker_tests
     PRIVATE
         antwika::app
         antwika::cli
+        antwika::config
         antwika::engine
         antwika::event
         antwika::event::tests::mocks

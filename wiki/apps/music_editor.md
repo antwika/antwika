@@ -386,6 +386,11 @@ What *does* read it is the render sink alone, to place the picture and nothing e
 Every layout here is against `configuredSize()`, so a recorded session reaches the same state whether or not anybody pressed it, and a replay of one where somebody did fills the screen at the same tick and still reaches that state.
 It is the same key [game](game.md) uses, since an editor with a different one would be one to remember.
 
+## The config file
+
+`config.json` beside the executable is read once at startup through [`antwika::config`](../libraries/config.md), and holds `tickIntervalMs`, how long a tick takes on the wall clock -- which also fixes how much audio one tick renders, through `FrameClock`.
+The keyboard layout deliberately stays in source: what a keystroke types is simulation state, so a layout read from a machine's file would resolve a recorded chord to different text on another machine, exactly the trap `apps/game`'s locale rule names.
+
 ## See also
 
 - [`notation`](../libraries/notation.md) — the grammar a voice line is written in.

@@ -92,3 +92,9 @@ It used to be a near-copy of `simulation::WindowInputSource` living here, and it
 `TablePrinter` reads the blinds, the raise sizes and the uncalled bet off what the table reported, rather than recomputing the betting — otherwise it would be a second implementation of the rules, free to drift.
 
 See [`blog/010-a-poker-hand-in-one-number.md`](../../blog/010-a-poker-hand-in-one-number.md) and [`blog/011-writing-a-hand-history-the-rest-of-the-world-can-read.md`](../../blog/011-writing-a-hand-history-the-rest-of-the-world-can-read.md).
+
+## The config file
+
+`config.json` beside the executable is read once at startup through [`antwika::config`](../libraries/config.md) and decodes into `RoomConfig`: `smallBlind`, `bigBlind` and `minimumBuyIn`.
+Two rules sit between the numbers and are refused at the decode -- a big blind below the small one, and a buy-in below the big blind -- since a table nobody could sit at is a config nobody meant.
+The seat count, the table name and the shuffle seed stay in source: the seats decide the layout a recorded click is resolved against, and the seed is a constant for the reason `apps/game` gives about its world seed.

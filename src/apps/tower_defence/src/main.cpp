@@ -17,6 +17,8 @@
 #include <antwika/simulation/WindowInputSource.hpp>
 #include <antwika/time/SystemSleeper.hpp>
 
+#include <antwika/app/AssetPath.hpp>
+#include "antwika/tower_defence/ConfigFile.hpp"
 #include "antwika/tower_defence/BattleScene.hpp"
 #include "antwika/tower_defence/FileScoreStore.hpp"
 #include "antwika/tower_defence/Messages.hpp"
@@ -47,7 +49,6 @@ namespace
     constexpr antwika::gfx::Size kWindowSize{
         .width = 960, .height = 720};
 
-    constexpr std::chrono::milliseconds kFramePeriod{80};
 
     // Where the record waits between one run and the next.
     // Beside the working directory rather than beside the executable.
@@ -58,6 +59,11 @@ namespace
 
     void run(const RecordedRun &recorded)
     {
+        // The numbers the run reads off config.json, once.
+        const auto config =
+            antwika::tower_defence::loadConfigFileOrDefaults(
+                antwika::app::assetPath("config.json"));
+
         ConsoleLogging logging(std::cout, Level::Info);
         auto &logger = logging.logger();
 
@@ -114,6 +120,7 @@ namespace
                 .codec = codec,
                 .translator = translator,
                 .canvas = kWindowSize,
+                .campaign = {.lives = config.startingLives},
                 .scoreStore = antwika::tower_defence::storeIfLive(
                     store, recorded.options.replayPath),
                 .replayRecorder = recorded.replayRecorder,
@@ -127,7 +134,8 @@ namespace
                         campaign,
                         overlay,
                         sleeper,
-                        kFramePeriod,
+                        std::chrono::milliseconds(
+                            config.framePeriodMs),
                         kWindowSize);
                 }});
 

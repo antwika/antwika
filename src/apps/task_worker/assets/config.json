@@ -1,0 +1,6 @@
+{
+  "magic": "antwika-task-worker-config",
+  "tickIntervalMs": 400,
+  "version": 1,
+  "workerCount": 2
+}

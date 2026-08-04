@@ -53,3 +53,9 @@ Which ticks were paused follows from the recorded presses and releases, so a rep
 This app attaches `input::IdleMotionSource` but not `CoalescingPointerSource`, because a drag toggles every cell it crosses and thinning a run of movements inside a tick would skip some.
 
 See [`blog/003-an-entity-component-system-with-nowhere-to-hide-a-mutation.md`](../../blog/003-an-entity-component-system-with-nowhere-to-hide-a-mutation.md) and [`blog/004-a-game-of-life-demo-and-a-queue-nobody-was-reading.md`](../../blog/004-a-game-of-life-demo-and-a-queue-nobody-was-reading.md).
+
+## The config file
+
+`config.json` beside the executable is read once at startup through [`antwika::config`](../libraries/config.md), and holds the one number this application is willing to move: `tickIntervalMs`, how long a tick takes on the wall clock.
+Pacing is safe to move because a pacer changes how long a tick takes and never what it computes; the board's size stays in source, since the cell a click means is worked out from it.
+A missing file is the shipped application, and a broken one is refused at startup rather than repaired.

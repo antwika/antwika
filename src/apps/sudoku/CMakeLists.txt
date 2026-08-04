@@ -3,6 +3,7 @@ add_executable(antwika_sudoku
     src/BoardLayout.cpp
     src/BoardOverlay.cpp
     src/BoardSink.cpp
+    src/ConfigFile.cpp
     src/KeyMapping.cpp
     src/Messages.cpp
     src/PlaySink.cpp
@@ -27,6 +28,7 @@ target_link_libraries(antwika_sudoku
     PRIVATE
         antwika::app
         antwika::cli
+        antwika::config
         antwika::engine
         antwika::event
         antwika::gfx
@@ -49,6 +51,7 @@ endif()
 antwika_bundle_app(
     TARGET antwika_sudoku
     ASSETS
+        assets/config.json
         replays/demo.jsonl
 )
 

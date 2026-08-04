@@ -26,7 +26,7 @@
 #include "antwika/companion/Pet.hpp"
 #include "antwika/companion/PetLayout.hpp"
 
-using antwika::companion::CompanionConfig;
+using antwika::companion::CompanionWiring;
 using antwika::companion::CompanionSummary;
 using antwika::companion::layoutFor;
 using antwika::companion::Lineage;
@@ -170,7 +170,7 @@ namespace
         FakeSleeper sleeper;
         ReplaySource source(script());
 
-        return antwika::companion::bootstrap(CompanionConfig{
+        return antwika::companion::bootstrap(CompanionWiring{
             .logger = logger,
             .eventSink = eventSink,
             .inputSource = source,
@@ -241,7 +241,7 @@ TEST(RunIntegrationTest, TheExtraSinkSeesEveryFinishedTick)
 
     WatchedTicks seen;
     const CompanionSummary summary =
-        antwika::companion::bootstrap(CompanionConfig{
+        antwika::companion::bootstrap(CompanionWiring{
             .logger = logger,
             .eventSink = eventSink,
             .inputSource = source,
@@ -279,7 +279,7 @@ TEST(RunIntegrationTest, TheReplayRecorderReceivesEveryDispatchedEvent)
     TickEventRecorder recorder;
 
     const CompanionSummary summary =
-        antwika::companion::bootstrap(CompanionConfig{
+        antwika::companion::bootstrap(CompanionWiring{
             .logger = logger,
             .eventSink = eventSink,
             .inputSource = source,
@@ -328,7 +328,7 @@ TEST(RunIntegrationTest, ASessionCanEndWithACompanionThatHasPerished)
     ReplaySource source(presses);
 
     const CompanionSummary summary =
-        antwika::companion::bootstrap(CompanionConfig{
+        antwika::companion::bootstrap(CompanionWiring{
             .logger = logger,
             .eventSink = eventSink,
             .inputSource = source,

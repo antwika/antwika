@@ -6,6 +6,7 @@ add_executable(antwika_tower_defence_tests
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/BattleSnapshot.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/Campaign.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/CampaignSink.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/ConfigFile.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/FileScoreStore.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/GridLayout.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/HighScore.cpp
@@ -21,6 +22,7 @@ add_executable(antwika_tower_defence_tests
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/Wave.cpp
     BattleTest.cpp
     CampaignTest.cpp
+    ConfigFileTest.cpp
     GridLayoutTest.cpp
     HighScoreTest.cpp
     LevelGeneratorTest.cpp
@@ -40,6 +42,8 @@ target_include_directories(antwika_tower_defence_tests
 
 target_link_libraries(antwika_tower_defence_tests
     PRIVATE
+        antwika::app
+        antwika::config
         antwika::engine
         antwika::event::tests::mocks
         antwika::gfx

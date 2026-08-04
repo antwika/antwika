@@ -18,6 +18,8 @@
 #include <antwika/simulation/WindowInputSource.hpp>
 #include <antwika/time/SystemSleeper.hpp>
 
+#include <antwika/app/AssetPath.hpp>
+#include "antwika/sudoku/ConfigFile.hpp"
 #include "antwika/sudoku/BoardOverlay.hpp"
 #include "antwika/sudoku/Messages.hpp"
 #include "antwika/sudoku/PuzzleFile.hpp"
@@ -57,10 +59,14 @@ namespace
     constexpr antwika::gfx::Size kWindowSize{
         .width = 720, .height = 800};
 
-    constexpr std::chrono::milliseconds kFramePeriod{40};
 
     void run(const RecordedRun &recorded)
     {
+        // The numbers the run reads off config.json, once.
+        const auto config =
+            antwika::sudoku::loadConfigFileOrDefaults(
+                antwika::app::assetPath("config.json"));
+
         const auto options =
             antwika::sudoku::sudokuOptionsFrom(recorded.commandLine);
 
@@ -133,7 +139,12 @@ namespace
                 [&](const PuzzleState &, const BoardOverlay &overlay)
             {
                 return std::make_unique<RenderSink>(
-                    *window, scene, overlay, sleeper, kFramePeriod);
+                    *window,
+                    scene,
+                    overlay,
+                    sleeper,
+                    std::chrono::milliseconds(
+                        config.framePeriodMs));
             }});
 
         logger.log(

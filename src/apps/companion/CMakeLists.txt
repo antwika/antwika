@@ -1,5 +1,6 @@
 add_executable(antwika_companion
     src/Companion.cpp
+    src/ConfigFile.cpp
     src/DayMood.cpp
     src/FilePetStore.cpp
     src/LifeStage.cpp
@@ -29,6 +30,7 @@ target_link_libraries(antwika_companion
     PRIVATE
         antwika::animation
         antwika::app
+        antwika::config
         antwika::ecs
         antwika::engine
         antwika::gfx
@@ -50,6 +52,7 @@ endif()
 antwika_bundle_app(
     TARGET antwika_companion
     ASSETS
+        assets/config.json
         replays/demo.jsonl
 )
 

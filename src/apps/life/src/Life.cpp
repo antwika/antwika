@@ -42,7 +42,7 @@ namespace antwika::life
         engine.start();
     }
 
-    Board bootstrap(const LifeConfig &config)
+    Board bootstrap(const LifeWiring &config)
     {
         ILogger &logger = config.logger;
 

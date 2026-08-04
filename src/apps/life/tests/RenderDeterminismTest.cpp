@@ -146,7 +146,7 @@ TEST(
 
         std::vector<std::reference_wrapper<ISystem>> observers{renderSystem};
         liveBoard = antwika::life::bootstrap(
-            antwika::life::LifeConfig{
+            antwika::life::LifeWiring{
                 .logger = logger,
                 .eventSink = eventSink,
                 .inputSource = source,
@@ -181,7 +181,7 @@ TEST(
 
     std::vector<std::reference_wrapper<ISystem>> observers{renderSystem};
     const auto replayedBoard = antwika::life::bootstrap(
-        antwika::life::LifeConfig{
+        antwika::life::LifeWiring{
             .logger = logger,
             .eventSink = eventSink,
             .inputSource = source,

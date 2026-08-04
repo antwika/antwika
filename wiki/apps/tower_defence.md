@@ -170,3 +170,8 @@ So the coverage legs prove the coverage and an optimised build proves the proper
 
 **Everything else a campaign test needs is fought on a five-by-three grid.**
 Generating is the only expensive thing this application does, and what those cases are about is what happens *between* levels, so they ask for the smallest grid the generator will answer for rather than the shipped one.
+
+## The config file
+
+`config.json` beside the executable is read once at startup through [`antwika::config`](../libraries/config.md): `startingLives`, the leaks a run can afford, and `framePeriodMs`, how long a frame takes on the wall clock.
+The campaign seed and the level plans stay in source -- the world a recording was made on may not depend on an editable file's absence or presence differing between two machines, which is the stance `apps/game`'s page states in full.

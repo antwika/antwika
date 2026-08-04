@@ -1,5 +1,7 @@
 #pragma once
 
+#include <cstdint>
+
 #include <antwika/event/ITickEventSink.hpp>
 #include <antwika/event/TickEvent.hpp>
 
@@ -33,7 +35,13 @@ namespace antwika::sudoku
          * @param state The puzzle, the selection and the last thing
          * said. Must outlive this sink.
          */
-        explicit BoardSink(PuzzleState &state);
+        /**
+         * @brief Construct the sink over the session it drives.
+         * @param state The session; must outlive this sink.
+         * @param solveStepBudget How much search one press of Solve
+         * may spend.
+         */
+        BoardSink(PuzzleState &state, std::uint64_t solveStepBudget);
 
         BoardSink(const BoardSink &) = delete;
         BoardSink(BoardSink &&) = delete;
@@ -53,6 +61,7 @@ namespace antwika::sudoku
 
     private:
         PuzzleState &state;
+        std::uint64_t solveStepBudget;
     };
 
 } // namespace antwika::sudoku

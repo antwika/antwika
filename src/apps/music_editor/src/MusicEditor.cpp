@@ -24,7 +24,7 @@ namespace antwika::music_editor
     using antwika::event::TickedEventDispatcher;
     using antwika::simulation::EngineLoop;
 
-    EditorSummary bootstrap(const MusicEditorConfig &config)
+    EditorSummary bootstrap(const MusicEditorWiring &config)
     {
         ILogger &logger = config.logger;
 

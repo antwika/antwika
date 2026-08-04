@@ -39,7 +39,7 @@
 using antwika::atlas_editor::bootstrap;
 using antwika::atlas_editor::Canvas;
 using antwika::atlas_editor::describeEditor;
-using antwika::atlas_editor::EditorConfig;
+using antwika::atlas_editor::EditorWiring;
 using antwika::atlas_editor::EditorState;
 using antwika::atlas_editor::EditorSummary;
 using antwika::atlas_editor::IAtlasStore;
@@ -199,7 +199,7 @@ namespace
         const InputEventCodec codec;
         ReplaySource source(script());
 
-        return bootstrap(EditorConfig{
+        return bootstrap(EditorWiring{
             .logger = logger,
             .eventSink = eventSink,
             .inputSource = source,
@@ -283,7 +283,7 @@ TEST(RunIntegrationTest, TheExtraSinkSeesEveryFinishedTick)
     MemoryStore store;
 
     WatchedTicks seen;
-    const EditorSummary summary = bootstrap(EditorConfig{
+    const EditorSummary summary = bootstrap(EditorWiring{
         .logger = logger,
         .eventSink = eventSink,
         .inputSource = source,
@@ -324,7 +324,7 @@ TEST(RunIntegrationTest, AReplayAgainstAnotherSheetIsRefused)
         ReplaySource source(script());
         MemoryStore store;
 
-        (void)bootstrap(EditorConfig{
+        (void)bootstrap(EditorWiring{
             .logger = logger,
             .eventSink = eventSink,
             .inputSource = source,
@@ -346,7 +346,7 @@ TEST(RunIntegrationTest, AReplayAgainstAnotherSheetIsRefused)
     ReplaySource replay(recorder.getEvents());
 
     EXPECT_THROW(
-        (void)bootstrap(EditorConfig{
+        (void)bootstrap(EditorWiring{
             .logger = logger,
             .eventSink = eventSink,
             .inputSource = replay,
@@ -372,7 +372,7 @@ TEST(RunIntegrationTest, AReplayAgainstTheSameSheetPlaysThrough)
         ReplaySource source(script());
         MemoryStore store;
 
-        (void)bootstrap(EditorConfig{
+        (void)bootstrap(EditorWiring{
             .logger = logger,
             .eventSink = eventSink,
             .inputSource = source,
@@ -390,7 +390,7 @@ TEST(RunIntegrationTest, AReplayAgainstTheSameSheetPlaysThrough)
     MemoryStore same;
     ReplaySource replay(recorder.getEvents());
 
-    const EditorSummary summary = bootstrap(EditorConfig{
+    const EditorSummary summary = bootstrap(EditorWiring{
         .logger = logger,
         .eventSink = eventSink,
         .inputSource = replay,
@@ -415,7 +415,7 @@ TEST(RunIntegrationTest, TheReplayRecorderReceivesEveryDispatchedEvent)
     TickEventRecorder recorder;
     MemoryStore store;
 
-    const EditorSummary summary = bootstrap(EditorConfig{
+    const EditorSummary summary = bootstrap(EditorWiring{
         .logger = logger,
         .eventSink = eventSink,
         .inputSource = source,

@@ -120,7 +120,7 @@ namespace antwika::life
      * A name per argument is what makes a wrong one a compile error
      * rather than a silently different run.
      */
-    struct LifeConfig
+    struct LifeWiring
     {
         /** @brief Receives the run's diagnostics. */
         ILogger &logger;
@@ -195,6 +195,6 @@ namespace antwika::life
      * @param config What the run is wired out of.
      * @return The resulting Board, for callers (main.cpp, tests).
      */
-    Board bootstrap(const LifeConfig &config);
+    Board bootstrap(const LifeWiring &config);
 
 } // namespace antwika::life

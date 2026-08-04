@@ -214,7 +214,7 @@ TEST(PointerReplayIntegrationTest, RecordingADragReplaysToTheSameBoard)
         LiveInputSource source(fileSource, backend, codec);
 
         liveBoard = antwika::life::bootstrap(
-            antwika::life::LifeConfig{
+            antwika::life::LifeWiring{
                 .logger = logger,
                 .eventSink = eventSink,
                 .inputSource = source,
@@ -249,7 +249,7 @@ TEST(PointerReplayIntegrationTest, RecordingADragReplaysToTheSameBoard)
     ReplaySource replaySource(recorded);
 
     const auto replayedBoard = antwika::life::bootstrap(
-        antwika::life::LifeConfig{
+        antwika::life::LifeWiring{
             .logger = logger,
             .eventSink = eventSink,
             .inputSource = replaySource,
@@ -283,7 +283,7 @@ TEST(PointerReplayIntegrationTest, ADragWithinOneTickDrawsWhatItCrossed)
 
     // One tick only, so what is alive is what the drag drew.
     const auto board = antwika::life::bootstrap(
-        antwika::life::LifeConfig{
+        antwika::life::LifeWiring{
             .logger = logger,
             .eventSink = eventSink,
             .inputSource = source,
@@ -358,7 +358,7 @@ TEST(PointerReplayIntegrationTest, HoldingTheButtonStopsTheGenerations)
     std::vector<std::reference_wrapper<ISystem>> observers{recorder};
 
     antwika::life::bootstrap(
-        antwika::life::LifeConfig{
+        antwika::life::LifeWiring{
             .logger = logger,
             .eventSink = eventSink,
             .inputSource = source,
@@ -431,7 +431,7 @@ namespace
                  : static_cast<antwika::simulation::ITickEventSource &>(live);
 
         auto board = antwika::life::bootstrap(
-            antwika::life::LifeConfig{
+            antwika::life::LifeWiring{
                 .logger = logger,
                 .eventSink = eventSink,
                 .inputSource = source,

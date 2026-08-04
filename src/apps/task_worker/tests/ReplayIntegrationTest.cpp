@@ -42,7 +42,7 @@ namespace
         NiceMock<MockEventSink> eventSink;
 
         return antwika::task_worker::bootstrap(
-            antwika::task_worker::TaskWorkerConfig{
+            antwika::task_worker::TaskWorkerWiring{
                 .logger = logger,
                 .eventSink = eventSink,
                 .inputSource = source,

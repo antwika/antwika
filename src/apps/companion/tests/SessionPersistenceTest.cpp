@@ -32,7 +32,7 @@
 #include "antwika/companion/Pet.hpp"
 #include "antwika/companion/SaveFormatError.hpp"
 
-using antwika::companion::CompanionConfig;
+using antwika::companion::CompanionWiring;
 using antwika::companion::CompanionError;
 using antwika::companion::CompanionMemory;
 using antwika::companion::CompanionSummary;
@@ -202,12 +202,12 @@ namespace
 
     // The config a bootstrap needs but a test does not care about.
     // Assembled in one place, since every case below repeats it.
-    CompanionConfig configFor(
+    CompanionWiring configFor(
         MockLogger &logger, IPetStore &store, ReplaySource &source,
         MockEventSink &events, FakeSleeper &sleeper,
         const InputEventCodec &codec)
     {
-        return CompanionConfig{
+        return CompanionWiring{
             .logger = logger,
             .eventSink = events,
             .inputSource = source,
@@ -238,7 +238,7 @@ namespace
         const InputEventCodec codec;
 
         const CompanionSummary summary =
-            antwika::companion::bootstrap(CompanionConfig{
+            antwika::companion::bootstrap(CompanionWiring{
                 .logger = logger,
                 .eventSink = events,
                 .inputSource = source,
@@ -409,7 +409,7 @@ namespace
         unbalanced.hungerPeriodTicks = 0;
 
         EXPECT_THROW(
-            antwika::companion::bootstrap(CompanionConfig{
+            antwika::companion::bootstrap(CompanionWiring{
                 .logger = logger,
                 .eventSink = events,
                 .inputSource = source,
@@ -478,7 +478,7 @@ namespace
         // No store at all, which is exactly what a `--replay` gets.
         // storeIfLive() withholds it.
         // So nothing here can reach the companion on this machine.
-        return antwika::companion::bootstrap(CompanionConfig{
+        return antwika::companion::bootstrap(CompanionWiring{
             .logger = logger,
             .eventSink = sink,
             .inputSource = source,

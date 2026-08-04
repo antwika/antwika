@@ -170,7 +170,7 @@ TEST(BootstrapTest, Bootstrap_RunsScriptedTasksToCompletion)
     ReplaySource inputSource(script);
 
     auto finalState = antwika::task_worker::bootstrap(
-        antwika::task_worker::TaskWorkerConfig{
+        antwika::task_worker::TaskWorkerWiring{
             .logger = logger,
             .eventSink = eventSink,
             .inputSource = inputSource,
@@ -199,7 +199,7 @@ TEST(BootstrapTest, Bootstrap_RunsEveryObserverOncePerTick)
     CallCountingSystem countingSystem;
 
     antwika::task_worker::bootstrap(
-        antwika::task_worker::TaskWorkerConfig{
+        antwika::task_worker::TaskWorkerWiring{
             .logger = logger,
             .eventSink = eventSink,
             .inputSource = inputSource,
@@ -220,7 +220,7 @@ TEST(BootstrapTest, Bootstrap_KeepsACallerSuppliedRegistryInSync)
     TaskRegistry registry;
 
     antwika::task_worker::bootstrap(
-        antwika::task_worker::TaskWorkerConfig{
+        antwika::task_worker::TaskWorkerWiring{
             .logger = logger,
             .eventSink = eventSink,
             .inputSource = inputSource,
@@ -274,7 +274,7 @@ TEST(BootstrapTest, Bootstrap_DrawsTheQueueTheSchedulerWillActuallyPull)
     SnapshotRecordingSystem frames(registry);
 
     antwika::task_worker::bootstrap(
-        antwika::task_worker::TaskWorkerConfig{
+        antwika::task_worker::TaskWorkerWiring{
             .logger = logger,
             .eventSink = eventSink,
             .inputSource = inputSource,
@@ -326,7 +326,7 @@ TEST(BootstrapTest, Bootstrap_WithNoScriptedInputAllWorkersStayIdle)
     });
 
     auto finalState = antwika::task_worker::bootstrap(
-        antwika::task_worker::TaskWorkerConfig{
+        antwika::task_worker::TaskWorkerWiring{
             .logger = logger,
             .eventSink = eventSink,
             .inputSource = inputSource,
@@ -359,7 +359,7 @@ TEST(BootstrapTest, Bootstrap_ForwardsDispatchedEventsToATickEventRecorder)
     TickEventRecorder replayRecorder;
 
     antwika::task_worker::bootstrap(
-        antwika::task_worker::TaskWorkerConfig{
+        antwika::task_worker::TaskWorkerWiring{
             .logger = logger,
             .eventSink = eventSink,
             .inputSource = inputSource,
@@ -396,7 +396,7 @@ TEST(BootstrapTest, Bootstrap_ThrowsWhenMaxTicksIsReachedWithoutAStopEvent)
 
     EXPECT_THROW(
         antwika::task_worker::bootstrap(
-            antwika::task_worker::TaskWorkerConfig{
+            antwika::task_worker::TaskWorkerWiring{
                 .logger = logger,
                 .eventSink = eventSink,
                 .inputSource = inputSource,

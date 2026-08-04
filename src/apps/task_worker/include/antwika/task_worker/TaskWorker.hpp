@@ -72,7 +72,7 @@ namespace antwika::task_worker
      * A name per argument is what makes a wrong one a compile error
      * rather than a silently different run.
      */
-    struct TaskWorkerConfig
+    struct TaskWorkerWiring
     {
         /**
          * @brief Where this run says what it is doing.
@@ -146,6 +146,6 @@ namespace antwika::task_worker
      * @param config What the run is wired out of.
      * @return Every Worker's final state, in creation order.
      */
-    std::vector<Worker> bootstrap(const TaskWorkerConfig &config);
+    std::vector<Worker> bootstrap(const TaskWorkerWiring &config);
 
 } // namespace antwika::task_worker

@@ -5,6 +5,7 @@ add_executable(antwika_sudoku_tests
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/BoardLayout.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/BoardOverlay.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/BoardSink.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/ConfigFile.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/KeyMapping.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/Messages.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/PlaySink.cpp
@@ -20,6 +21,7 @@ add_executable(antwika_sudoku_tests
     BoardLayoutTest.cpp
     BoardSinkTest.cpp
     BoardTest.cpp
+    ConfigFileTest.cpp
     KeyMappingTest.cpp
     MessagesTest.cpp
     PlaySinkTest.cpp
@@ -46,6 +48,7 @@ target_link_libraries(antwika_sudoku_tests
     PRIVATE
         antwika::app
         antwika::cli
+        antwika::config
         antwika::engine
         antwika::event
         antwika::event::tests::mocks

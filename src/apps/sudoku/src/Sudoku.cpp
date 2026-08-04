@@ -22,7 +22,7 @@ namespace antwika::sudoku
     using antwika::event::TickedEventDispatcher;
     using antwika::simulation::EngineLoop;
 
-    SudokuSummary bootstrap(const SudokuConfig &config)
+    SudokuSummary bootstrap(const SudokuWiring &config)
     {
         ILogger &logger = config.logger;
 
@@ -37,8 +37,9 @@ namespace antwika::sudoku
         // So a solve a replay asked for is in the grid described from.
         // Then the input, which resolves this tick's clicks and keys.
         // Then whatever draws it, so a frame is of the finished tick.
-        BoardSink board(state);
-        PlaySink play(state, overlay, config.codec, scene);
+        BoardSink board(state, config.solveStepBudget);
+        PlaySink play(
+            state, overlay, config.codec, scene, config.solveStepBudget);
         StopSignal stopSignal;
 
         std::vector<std::reference_wrapper<ITickEventSink>> timedSinks{
