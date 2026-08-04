@@ -87,15 +87,6 @@ namespace antwika::game
         void advance() noexcept;
 
         /**
-         * @brief Put the console away at once, with no slide out.
-         *
-         * What leaving the city does: the console belongs to the
-         * city's screen, and a mode it cannot open on may not keep
-         * swallowing that mode's keys -- see ConsoleSink.
-         */
-        void close() noexcept;
-
-        /**
          * @brief Check whether any of the console is on screen.
          * @return True from the first tick of the slide in to the last
          * tick of the slide out.

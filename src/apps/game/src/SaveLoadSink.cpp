@@ -41,6 +41,7 @@ namespace antwika::game
         const InputFold &input,
         const SaveLoadScene &scene,
         SessionStore &session,
+        const OptionsState &options,
         std::string directory)
         : state(state),
           mode(mode),
@@ -48,6 +49,7 @@ namespace antwika::game
           input(input),
           scene(scene),
           session(session),
+          options(options),
           directory(std::move(directory))
     {
     }
@@ -88,8 +90,8 @@ namespace antwika::game
                 keyboard.keys.push_back(*meaning);
             }
 
-            const char typed =
-                typedCharacterFor(key->key, key->modifiers.shift);
+            const char typed = typedCharacterFor(
+                key->key, key->modifiers.shift, options.keyboard());
             if (typed != '\0')
             {
                 // The edge is what says where in the order it lands.

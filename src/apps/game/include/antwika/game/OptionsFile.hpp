@@ -13,6 +13,7 @@
 #include <antwika/replay/MigrationChain.hpp>
 
 #include "antwika/game/KeyBindings.hpp"
+#include "antwika/game/KeyboardLayout.hpp"
 
 namespace antwika::game
 {
@@ -46,6 +47,11 @@ namespace antwika::game
         antwika::i18n::Locale locale{antwika::i18n::kDefaultLocale};
 
         /**
+         * @brief Which board the typed characters are read off.
+         */
+        KeyboardLayout keyboard{kDefaultKeyboardLayout};
+
+        /**
          * @brief Compare two sets of preferences.
          * @param other The preferences to compare against.
          * @return True when both members match.
@@ -73,7 +79,7 @@ namespace antwika::game
      * one member every persisted document in this code base carries its
      * version in, rather than a name of this format's own.
      */
-    inline constexpr std::uint32_t kOptionsFormatVersion = 2;
+    inline constexpr std::uint32_t kOptionsFormatVersion = 3;
 
     /**
      * @brief The member an options document names its language in.
@@ -83,6 +89,13 @@ namespace antwika::game
      * it out would be four chances to write one of them differently.
      */
     inline constexpr std::string_view kLocaleKey = "locale";
+
+    /**
+     * @brief The member an options document names its keyboard in.
+     *
+     * Written once, for kLocaleKey's reason exactly.
+     */
+    inline constexpr std::string_view kKeyboardKey = "keyboard";
 
     /**
      * @brief Build the migration chain for the options document format.
@@ -205,6 +218,14 @@ namespace antwika::game
          * recorded clicks against a layout the recording never had.
          */
         std::optional<antwika::i18n::Locale> locale{};
+
+        /**
+         * @brief The keyboard layout the machine is carrying, if it is
+         * this run's business at all.
+         *
+         * Empty for a replay on the locale's exact terms.
+         */
+        std::optional<KeyboardLayout> keyboard{};
 
         /**
          * @brief Where this run should leave its layout, if anywhere.

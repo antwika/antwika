@@ -46,10 +46,10 @@ namespace antwika::game
 
         /**
          * @brief Apply a tick event.
-         * @param event A game.bind_key is folded; anything else is
-         * ignored.
-         * @throws OptionsFormatError If a game.bind_key carries a
-         * payload of the wrong shape, or names an action or a key this
+         * @param event A game.bind_key or a game.set_keyboard is
+         * folded; anything else is ignored.
+         * @throws OptionsFormatError If either carries a payload of
+         * the wrong shape, or names an action, a key or a layout this
          * build does not know.
          */
         void handle(const TickEvent &event) override;

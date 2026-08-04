@@ -47,10 +47,12 @@ namespace
         EXPECT_EQ(
             bindings.bind(Action::ResetView, Key::K), BindOutcome::Bound);
 
-        // A language away from the default as well as a rebound key.
-        // So a round trip that dropped either one is a red test.
+        // A language, a board and a key all away from their defaults.
+        // So a round trip that dropped any one is a red test.
         return PlayerOptions{
-            .bindings = bindings, .locale = antwika::i18n::Locale::Swedish};
+            .bindings = bindings,
+            .locale = antwika::i18n::Locale::Swedish,
+            .keyboard = antwika::game::KeyboardLayout::English};
     }
 
     [[nodiscard]] std::string versionKey()
@@ -290,6 +292,56 @@ TEST_F(OptionsFileTest, APickedLanguageSurvivesTheFile)
     EXPECT_EQ(
         loadOptionsFileOrDefaults(pathIn("options.json")).locale,
         antwika::i18n::Locale::Swedish);
+}
+
+TEST_F(OptionsFileTest, APickedKeyboardSurvivesTheFile)
+{
+    saveOptionsFile(
+        PlayerOptions{
+            .keyboard = antwika::game::KeyboardLayout::English},
+        pathIn("options.json"));
+
+    EXPECT_EQ(
+        loadOptionsFileOrDefaults(pathIn("options.json")).keyboard,
+        antwika::game::KeyboardLayout::English);
+}
+
+// Version 3 added the board the typing is read off.
+// A file written before there was a choice typed by the shipped one.
+// And now says so, which is the whole of what the step does.
+TEST_F(OptionsFileTest, AVersionTwoDocumentIsReadAsTheShippedBoard)
+{
+    auto document = optionsToJson(rebound());
+
+    // Back to what a version 2 writer would have left behind.
+    document.erase(std::string(antwika::game::kKeyboardKey));
+    document[versionKey()] = 2U;
+
+    const auto loaded = optionsFromJson(document);
+
+    EXPECT_EQ(
+        loaded.keyboard, antwika::game::kDefaultKeyboardLayout);
+
+    // And the halves that were already there are untouched.
+    EXPECT_EQ(loaded.bindings, rebound().bindings);
+    EXPECT_EQ(loaded.locale, antwika::i18n::Locale::Swedish);
+}
+
+TEST_F(OptionsFileTest, TwoPreferencesDifferingOnlyByBoardDiffer)
+{
+    PlayerOptions base;
+    PlayerOptions other;
+    other.keyboard = antwika::game::KeyboardLayout::English;
+
+    EXPECT_NE(base, other);
+}
+
+TEST_F(OptionsFileTest, ADocumentNamingNoBoardIsRefused)
+{
+    auto document = optionsToJson(PlayerOptions{});
+    document[std::string(antwika::game::kKeyboardKey)] = "dvorak";
+
+    EXPECT_THROW((void)optionsFromJson(document), OptionsFormatError);
 }
 
 TEST_F(OptionsFileTest, ADocumentNamingNoCatalogueIsRefused)

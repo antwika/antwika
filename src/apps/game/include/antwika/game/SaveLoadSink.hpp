@@ -10,6 +10,7 @@
 
 #include "antwika/game/AppMode.hpp"
 #include "antwika/game/InputFold.hpp"
+#include "antwika/game/OptionsState.hpp"
 #include "antwika/game/SaveLoadScene.hpp"
 #include "antwika/game/SaveLoadState.hpp"
 #include "antwika/game/SessionStore.hpp"
@@ -71,6 +72,8 @@ namespace antwika::game
          * @param scene Describes the screen. Must outlive this sink.
          * @param session Taken from by "Save" and put back by "Load".
          * Must outlive this sink.
+         * @param options The run's options, read for the keyboard
+         * layout a typed name goes through. Must outlive this sink.
          * @param directory Where saves are kept, which is the one place
          * this sink names a file.
          */
@@ -81,6 +84,7 @@ namespace antwika::game
             const InputFold &input,
             const SaveLoadScene &scene,
             SessionStore &session,
+            const OptionsState &options,
             std::string directory);
 
         SaveLoadSink(const SaveLoadSink &) = delete;
@@ -115,6 +119,7 @@ namespace antwika::game
         const InputFold &input;
         const SaveLoadScene &scene;
         SessionStore &session;
+        const OptionsState &options;
         std::string directory;
     };
 

@@ -502,6 +502,21 @@ namespace antwika::game
         ActionResetView,
 
         /**
+         * @brief The options screen's keyboard-layout heading.
+         */
+        OptionsKeyboard,
+
+        /**
+         * @brief The American QWERTY board, on the options screen.
+         */
+        KeyboardEnglish,
+
+        /**
+         * @brief The Swedish QWERTY board, on the options screen.
+         */
+        KeyboardSwedish,
+
+        /**
          * @brief The action that slides the debug console in and out.
          */
         ActionConsoleToggle,

@@ -9,6 +9,7 @@
 #include <antwika/ui/WidgetId.hpp>
 
 #include "antwika/game/Action.hpp"
+#include "antwika/game/KeyboardLayout.hpp"
 #include "antwika/game/LocaleState.hpp"
 #include "antwika/game/Messages.hpp"
 #include "antwika/game/OptionsState.hpp"
@@ -82,6 +83,27 @@ namespace antwika::game
             return static_cast<WidgetId>(
                 static_cast<std::uint64_t>(kFirstLanguage)
                 + static_cast<std::uint64_t>(locale));
+        }
+
+        /**
+         * @brief The first keyboard layout's button, one per layout.
+         *
+         * Above kFirstLanguage on the range-separation terms that one
+         * sits above kFirstAction.
+         */
+        inline constexpr WidgetId kFirstKeyboard{280};
+
+        /**
+         * @brief Get which button picks a keyboard layout.
+         * @param layout The layout to ask about.
+         * @return That layout's button.
+         */
+        [[nodiscard]] constexpr WidgetId keyboardWidget(
+            KeyboardLayout layout) noexcept
+        {
+            return static_cast<WidgetId>(
+                static_cast<std::uint64_t>(kFirstKeyboard)
+                + keyboardLayoutIndex(layout));
         }
     } // namespace optionsWidgets
 

@@ -63,14 +63,6 @@ namespace antwika::game
     {
         if (event.event.name == antwika::engine::events::kTick)
         {
-            // Leaving the city takes the console with it.
-            // Left open elsewhere, its gates would swallow keys.
-            // And the toggle could never be reached to stop them.
-            if (setup.mode.mode() != AppMode::CityMap)
-            {
-                setup.console.close();
-            }
-
             // The slide is ticks, so it moves here and only here.
             setup.console.advance();
             setup.console.setHeight(consoleHeightAt(
@@ -78,13 +70,6 @@ namespace antwika::game
 
             // Described again here, for the renderer about to paint.
             refreshAndAct(false, Keyboard{});
-            return;
-        }
-
-        // Nothing at all in any other mode.
-        // The console is the city's -- see the tick arm above.
-        if (setup.mode.mode() != AppMode::CityMap)
-        {
             return;
         }
 
@@ -141,8 +126,10 @@ namespace antwika::game
                     keyboard.keys.push_back(*meaning);
                 }
 
-                const char typed =
-                    typedCharacterFor(key->key, key->modifiers.shift);
+                const char typed = typedCharacterFor(
+                    key->key,
+                    key->modifiers.shift,
+                    setup.options.keyboard());
                 if (typed != '\0')
                 {
                     // The edge says where in the order it lands.

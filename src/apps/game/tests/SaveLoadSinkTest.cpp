@@ -203,6 +203,7 @@ namespace
         InputFold input{codec};
         SaveLoadScene scene{kTranslator};
         SaveLoadState state;
+        antwika::game::OptionsState options;
         SaveLoadSink sink{
             state,
             mode,
@@ -210,6 +211,7 @@ namespace
             input,
             scene,
             session,
+            options,
             directory.string()};
     };
 
@@ -332,6 +334,7 @@ namespace
             input,
             scene,
             session,
+            options,
             directory.string()};
 
         layPath(Cell{.x = 5, .y = 5});
@@ -373,6 +376,7 @@ namespace
             input,
             scene,
             session,
+            options,
             (directory / "not-a-directory").string()};
 
         const auto at = pixelOn(saveWidgets::kName);

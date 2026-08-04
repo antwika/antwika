@@ -287,6 +287,10 @@ namespace
         expectMemberCompared(
             base,
             [](GameSummary &s)
+            { s.keyboard = antwika::game::KeyboardLayout::English; });
+        expectMemberCompared(
+            base,
+            [](GameSummary &s)
             { s.bindings = antwika::game::KeyBindings{}; });
     }
 

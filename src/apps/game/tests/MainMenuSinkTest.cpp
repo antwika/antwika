@@ -402,3 +402,20 @@ TEST_F(MainMenuSinkTest, APressOnNoLanguageChangesNothing)
     EXPECT_EQ(localeState.next(), kLocale);
     EXPECT_EQ(options.locale(), kLocale);
 }
+
+// The board is set outright rather than staged.
+// No layout or hit-test is a function of it -- only later typing is.
+TEST_F(MainMenuSinkTest, PressingAKeyboardLayoutTakesItAtOnce)
+{
+    pressAt(pixelOn(menuWidgets::kOptions));
+    tick();
+
+    EXPECT_EQ(
+        options.keyboard(), antwika::game::kDefaultKeyboardLayout);
+
+    pressAt(pixelOnOptions(optionsWidgets::keyboardWidget(
+        antwika::game::KeyboardLayout::English)));
+
+    EXPECT_EQ(
+        options.keyboard(), antwika::game::KeyboardLayout::English);
+}

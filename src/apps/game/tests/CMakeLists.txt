@@ -62,6 +62,9 @@ antwika_add_app_tests(
         MenuCommandsTest.cpp
         MenuModalSceneTest.cpp
         KeyBindingsTest.cpp
+        KeyboardEventTest.cpp
+        KeyboardLayoutTest.cpp
+        KeyboardSourceTest.cpp
         ConfigFileTest.cpp
         OptionsFileTest.cpp
         OverlayFieldTest.cpp

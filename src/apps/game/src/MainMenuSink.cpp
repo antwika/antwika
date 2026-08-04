@@ -142,6 +142,17 @@ namespace antwika::game
             }
         }
 
+        for (const auto board : kKeyboardLayouts)
+        {
+            if (activated == optionsWidgets::keyboardWidget(board))
+            {
+                // Set outright rather than staged.
+                // No layout or hit-test is a function of the board.
+                // Only later typing is, and it is later either way.
+                options.setKeyboard(board);
+            }
+        }
+
         overlay.set(
             std::move(frame.commands),
             std::move(frame.hoverTargets),

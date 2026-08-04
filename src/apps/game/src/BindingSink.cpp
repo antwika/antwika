@@ -2,6 +2,7 @@
 
 #include "antwika/game/BindingEvent.hpp"
 #include "antwika/game/Events.hpp"
+#include "antwika/game/KeyboardEvent.hpp"
 
 namespace antwika::game
 {
@@ -13,6 +14,15 @@ namespace antwika::game
 
     void BindingSink::handle(const TickEvent &event)
     {
+        // The keyboard layout arrives on a binding's own terms.
+        // The machine's own, announced at the start of a run.
+        if (event.event.name == events::kSetKeyboard)
+        {
+            options.setKeyboard(
+                keyboardFromPayload(event.event.payload));
+            return;
+        }
+
         if (event.event.name != events::kBindKey)
         {
             return;

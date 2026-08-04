@@ -8,7 +8,6 @@
 #include <antwika/ui/Keyboard.hpp>
 #include <antwika/ui/Pointer.hpp>
 
-#include "antwika/game/AppMode.hpp"
 #include "antwika/game/ConsoleScene.hpp"
 #include "antwika/game/ConsoleState.hpp"
 #include "antwika/game/InputFold.hpp"
@@ -42,16 +41,6 @@ namespace antwika::game
     {
         /** @brief The console being driven. */
         ConsoleState &console;
-
-        /**
-         * @brief The app's mode, read to keep the console the city's.
-         *
-         * The sink gates itself rather than being wrapped, because a
-         * mode change has to *close* the console: left open across a
-         * screen it cannot open on, its gates would swallow that
-         * screen's keys with no way of asking it to stop.
-         */
-        const AppModeState &mode;
 
         /** @brief The run's bindings, for the toggle and execute keys. */
         const OptionsState &options;
@@ -135,13 +124,12 @@ namespace antwika::game
      * refusal is itself deterministic, so a hand-authored replay that
      * types load_state reads exactly what a recorded run would have.
      *
-     * Register it ahead of the hotkey, toolbar, world-map and grid
-     * sinks, each of those wrapped in a ConsoleGatedSink -- the
-     * console is on top, so what it stands over it takes.
-     * It gates itself on AppMode::CityMap rather than being wrapped,
-     * and leaving the city closes it outright: a console left out
-     * over another screen would go on swallowing that screen's keys
-     * with the toggle gated off, which is a door with no handle.
+     * Register it ahead of every sink that reads a key or a pixel --
+     * the menu, the picker, the hotkeys, the toolbar, the world map
+     * and the grid -- each of those wrapped in a ConsoleGatedSink.
+     * The console is on top, so what it stands over it takes, and it
+     * belongs to no mode: a debugging surface has to be reachable
+     * from whichever screen the thing being debugged is on.
      */
     class ConsoleSink final : public ITickEventSink
     {

@@ -481,6 +481,7 @@ namespace antwika::game
             input,
             saveScene,
             session,
+            options,
             wiring.saveDirectory);
 
         // Gated on the mode rather than checking one themselves.
@@ -511,7 +512,6 @@ namespace antwika::game
         ConsoleSink consoleSink(
             ConsoleSinkSetup{ // GCOVR_EXCL_LINE
                 .console = console,
-                .mode = mode,
                 .options = options,
                 .input = input,
                 .overlay = consoleUi,
@@ -525,8 +525,10 @@ namespace antwika::game
             wiring.stateDumpPath);
 
         // The console is on top, so what it stands over it takes.
-        // Every sink reading the city's keys or pixels is wrapped.
-        // The world-map key is one of the city's keys.
+        // Every sink reading a key or a pixel is wrapped.
+        // Whichever screen it owns: the console belongs to no mode.
+        ConsoleGatedSink consoleGatedMenu(menuSink, console, input);
+        ConsoleGatedSink consoleGatedSave(saveSink, console, input);
         ConsoleGatedSink consoleGatedHotkeys(
             playingHotkeys, console, input);
         ConsoleGatedSink consoleGatedUi(playingUi, console, input);
@@ -559,10 +561,9 @@ namespace antwika::game
         // Beside the mode, and for its reason exactly.
         // A language staged last tick lands before anything lays out.
         // ConsoleSink is ahead of everything it gates.
-        // A press has to be the console's before the city may ask.
+        // A press has to be the console's before any screen may ask.
         std::vector<std::reference_wrapper<ITickEventSink>> timedSinks{
-            input, mode, localeState, bindingSink, reducer, menuSink,
-            saveSink};
+            input, mode, localeState, bindingSink, reducer};
 
         // Registered only when there is somewhere to put the picture.
         // "No console" then means no console, not an invisible one.
@@ -571,6 +572,8 @@ namespace antwika::game
             timedSinks.push_back(consoleSink);
         }
 
+        timedSinks.push_back(consoleGatedMenu);
+        timedSinks.push_back(consoleGatedSave);
         timedSinks.push_back(consoleGatedHotkeys);
 
         // Registered only when there is somewhere to put the picture.
@@ -618,7 +621,8 @@ namespace antwika::game
         antwika::game::saveOptionsFileIfNamed(
             PlayerOptions{
                 .bindings = options.bindings(),
-                .locale = options.locale()},
+                .locale = options.locale(),
+                .keyboard = options.keyboard()},
             wiring.optionsPath);
 
         const auto frame =
@@ -646,6 +650,7 @@ namespace antwika::game
             .camera = camera,
             .ratings = finalRatings,
             .console = console.history(),
+            .keyboard = options.keyboard(),
             .bindings = options.bindings()};
         // The excluded line is the local summary's unwind destructor.
         // Nothing between its construction and the return throws.

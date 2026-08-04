@@ -71,4 +71,14 @@ namespace antwika::game
         language = locale;
     }
 
+    KeyboardLayout OptionsState::keyboard() const noexcept
+    {
+        return typing;
+    }
+
+    void OptionsState::setKeyboard(KeyboardLayout layout) noexcept
+    {
+        typing = layout;
+    }
+
 } // namespace antwika::game

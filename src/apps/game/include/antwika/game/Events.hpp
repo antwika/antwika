@@ -79,6 +79,26 @@ namespace antwika::game::events
     inline constexpr const char *kSetLocale = "game.set_locale";
 
     /**
+     * @brief The keyboard layout a live run started typing by,
+     * announced once ahead of its first tick.
+     *
+     * What a key press *types* depends on it -- see
+     * KeyText::typedCharacterFor() -- so it is simulation state on
+     * kBindKey's exact terms: the machine's own layout comes off the
+     * options file, no replayed input implies it, and the rule that
+     * only externally-supplied input is persisted says outright that
+     * it has to be recorded.
+     *
+     * The payload is a JSON object of one string, "keyboard", the
+     * layout's persisted name -- see KeyboardEvent.hpp.
+     *
+     * **A layout picked on the options screen is not this event**, for
+     * the reason a rebinding is not kBindKey: the click is already
+     * recorded and a replay works the change out again.
+     */
+    inline constexpr const char *kSetKeyboard = "game.set_keyboard";
+
+    /**
      * @brief There is deliberately no event here for placing a path or a
      * walker.
      *

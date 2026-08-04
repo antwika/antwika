@@ -21,7 +21,7 @@ namespace antwika::game
         using i18n::Locale;
         using i18n::MessageName;
 
-        constexpr std::array<MessageName<MessageId>, 109> kNames{{
+        constexpr std::array<MessageName<MessageId>, 112> kNames{{
             {MessageId::ToolbarZoomIn, "ToolbarZoomIn"},
             {MessageId::ToolbarZoomOut, "ToolbarZoomOut"},
             {MessageId::ToolbarResetView, "ToolbarResetView"},
@@ -117,6 +117,9 @@ namespace antwika::game
             {MessageId::ActionZoomIn, "ActionZoomIn"},
             {MessageId::ActionZoomOut, "ActionZoomOut"},
             {MessageId::ActionResetView, "ActionResetView"},
+            {MessageId::OptionsKeyboard, "OptionsKeyboard"},
+            {MessageId::KeyboardEnglish, "KeyboardEnglish"},
+            {MessageId::KeyboardSwedish, "KeyboardSwedish"},
             {MessageId::ActionConsoleToggle, "ActionConsoleToggle"},
             {MessageId::ActionConsoleExecute, "ActionConsoleExecute"},
             {MessageId::ToolbarMoney, "ToolbarMoney"},
@@ -238,6 +241,9 @@ namespace antwika::game
                 {MessageId::ActionZoomIn, "zoom in"},
                 {MessageId::ActionZoomOut, "zoom out"},
                 {MessageId::ActionResetView, "reset view"},
+                {MessageId::OptionsKeyboard, "Keyboard"},
+                {MessageId::KeyboardEnglish, "English (QWERTY)"},
+                {MessageId::KeyboardSwedish, "Swedish (QWERTY)"},
                 {MessageId::ActionConsoleToggle, "debug console"},
                 {MessageId::ActionConsoleExecute, "run command"},
                 {MessageId::ToolbarMoney, "money {0}"},
@@ -352,6 +358,9 @@ namespace antwika::game
                 {MessageId::ActionZoomIn, "zooma in"},
                 {MessageId::ActionZoomOut, "zooma ut"},
                 {MessageId::ActionResetView, "återställ vyn"},
+                {MessageId::OptionsKeyboard, "Tangentbord"},
+                {MessageId::KeyboardEnglish, "engelskt (QWERTY)"},
+                {MessageId::KeyboardSwedish, "svenskt (QWERTY)"},
                 {MessageId::ActionConsoleToggle, "felsökningskonsol"},
                 {MessageId::ActionConsoleExecute, "kör kommando"},
                 {MessageId::ToolbarMoney, "pengar {0}"},

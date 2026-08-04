@@ -4,14 +4,19 @@
 #include <antwika/ui/Keyboard.hpp>
 
 #include "antwika/game/KeyText.hpp"
+#include "antwika/game/KeyboardLayout.hpp"
 
 namespace
 {
 
+    using antwika::game::KeyboardLayout;
     using antwika::game::typedCharacterFor;
     using antwika::game::uiKeyFor;
     using antwika::input::Key;
     using UiKey = antwika::ui::Key;
+
+    constexpr auto kEnglish = KeyboardLayout::English;
+    constexpr auto kSwedish = KeyboardLayout::Swedish;
 
     TEST(KeyTextTest, UiKeyFor_TellsTabFromShiftTab)
     {
@@ -36,35 +41,66 @@ namespace
         EXPECT_FALSE(uiKeyFor(Key::F1, true).has_value());
     }
 
-    TEST(KeyTextTest, TypedCharacterFor_TypesLettersInEitherCase)
+    TEST(KeyTextTest, TypedCharacterFor_TypesLettersOnEitherBoard)
     {
-        EXPECT_EQ(typedCharacterFor(Key::A, false), 'a');
-        EXPECT_EQ(typedCharacterFor(Key::Z, false), 'z');
-        EXPECT_EQ(typedCharacterFor(Key::A, true), 'A');
-        EXPECT_EQ(typedCharacterFor(Key::Z, true), 'Z');
+        EXPECT_EQ(typedCharacterFor(Key::A, false, kEnglish), 'a');
+        EXPECT_EQ(typedCharacterFor(Key::Z, false, kEnglish), 'z');
+        EXPECT_EQ(typedCharacterFor(Key::A, true, kSwedish), 'A');
+        EXPECT_EQ(typedCharacterFor(Key::Z, true, kSwedish), 'Z');
     }
 
-    TEST(KeyTextTest, TypedCharacterFor_TypesUnshiftedDigits)
+    TEST(KeyTextTest, TypedCharacterFor_TypesUnshiftedDigitsOnEither)
     {
-        EXPECT_EQ(typedCharacterFor(Key::Digit0, false), '0');
-        EXPECT_EQ(typedCharacterFor(Key::Digit9, false), '9');
-        EXPECT_EQ(typedCharacterFor(Key::Digit1, true), '\0');
+        EXPECT_EQ(typedCharacterFor(Key::Digit0, false, kEnglish), '0');
+        EXPECT_EQ(typedCharacterFor(Key::Digit9, false, kSwedish), '9');
+
+        // The American row's shifted symbols are deliberately absent.
+        EXPECT_EQ(typedCharacterFor(Key::Digit1, true, kEnglish), '\0');
     }
 
-    TEST(KeyTextTest, TypedCharacterFor_TypesWhatAFileNameNeeds)
+    TEST(KeyTextTest, TypedCharacterFor_TypesTheAmericanPunctuation)
     {
-        EXPECT_EQ(typedCharacterFor(Key::Space, false), ' ');
-        EXPECT_EQ(typedCharacterFor(Key::Minus, false), '-');
-        EXPECT_EQ(typedCharacterFor(Key::Minus, true), '_');
-        EXPECT_EQ(typedCharacterFor(Key::Period, false), '.');
-        EXPECT_EQ(typedCharacterFor(Key::Period, true), '\0');
+        EXPECT_EQ(typedCharacterFor(Key::Space, false, kEnglish), ' ');
+        EXPECT_EQ(typedCharacterFor(Key::Minus, false, kEnglish), '-');
+        EXPECT_EQ(typedCharacterFor(Key::Minus, true, kEnglish), '_');
+        EXPECT_EQ(typedCharacterFor(Key::Period, false, kEnglish), '.');
+        EXPECT_EQ(
+            typedCharacterFor(Key::Period, true, kEnglish), '\0');
+        EXPECT_EQ(
+            typedCharacterFor(Key::Slash, false, kEnglish), '\0');
+    }
+
+    TEST(KeyTextTest, TypedCharacterFor_TypesWhatASwedishBoardPrints)
+    {
+        // Named by where the key is: the American positions.
+        EXPECT_EQ(typedCharacterFor(Key::Minus, false, kSwedish), '+');
+        EXPECT_EQ(typedCharacterFor(Key::Minus, true, kSwedish), '?');
+        EXPECT_EQ(typedCharacterFor(Key::Slash, false, kSwedish), '-');
+        EXPECT_EQ(typedCharacterFor(Key::Slash, true, kSwedish), '_');
+        EXPECT_EQ(typedCharacterFor(Key::Period, false, kSwedish), '.');
+        EXPECT_EQ(typedCharacterFor(Key::Period, true, kSwedish), ':');
+        EXPECT_EQ(typedCharacterFor(Key::Comma, false, kSwedish), ',');
+        EXPECT_EQ(typedCharacterFor(Key::Comma, true, kSwedish), ';');
+    }
+
+    TEST(KeyTextTest, TypedCharacterFor_TypesTheSwedishShiftedDigits)
+    {
+        EXPECT_EQ(typedCharacterFor(Key::Digit1, true, kSwedish), '!');
+        EXPECT_EQ(typedCharacterFor(Key::Digit2, true, kSwedish), '"');
+        EXPECT_EQ(typedCharacterFor(Key::Digit7, true, kSwedish), '/');
+        EXPECT_EQ(typedCharacterFor(Key::Digit0, true, kSwedish), '=');
+
+        // The currency sign over 4 is not ASCII, so it types nothing.
+        EXPECT_EQ(
+            typedCharacterFor(Key::Digit4, true, kSwedish), '\0');
     }
 
     TEST(KeyTextTest, TypedCharacterFor_TypesNothingForEverythingElse)
     {
-        EXPECT_EQ(typedCharacterFor(Key::Tab, false), '\0');
-        EXPECT_EQ(typedCharacterFor(Key::Escape, true), '\0');
-        EXPECT_EQ(typedCharacterFor(Key::F12, false), '\0');
+        EXPECT_EQ(typedCharacterFor(Key::Tab, false, kEnglish), '\0');
+        EXPECT_EQ(typedCharacterFor(Key::Escape, true, kSwedish), '\0');
+        EXPECT_EQ(typedCharacterFor(Key::F12, false, kEnglish), '\0');
+        EXPECT_EQ(typedCharacterFor(Key::Equal, false, kSwedish), '\0');
     }
 
 } // namespace

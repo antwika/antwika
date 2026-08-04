@@ -71,6 +71,9 @@ antwika_add_app(
         src/RoadDrag.cpp
         src/RoadPlan.cpp
         src/KeyText.cpp
+        src/KeyboardEvent.cpp
+        src/KeyboardLayout.cpp
+        src/KeyboardSource.cpp
         src/SaveCli.cpp
         src/SaveCoverage.cpp
         src/SaveGame.cpp
