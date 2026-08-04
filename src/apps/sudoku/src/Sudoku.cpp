@@ -3,12 +3,8 @@
 #include <vector>
 
 #include <antwika/console/ConsoleGatedSink.hpp>
-#include <antwika/console/ConsoleScene.hpp>
-#include <antwika/console/ConsoleSink.hpp>
-#include <antwika/console/ConsoleState.hpp>
-#include <antwika/console/IConsoleControls.hpp>
+#include <antwika/console/ConsoleMount.hpp>
 #include <antwika/console/InputFold.hpp>
-#include <antwika/console/SnapshotCommands.hpp>
 #include <antwika/engine/Engine.hpp>
 #include <antwika/engine/StopSignal.hpp>
 #include <antwika/event/EventDispatcher.hpp>
@@ -50,44 +46,31 @@ namespace antwika::sudoku
             state, overlay, config.codec, scene, config.solveStepBudget);
         StopSignal stopSignal;
 
-        // The console's own picture, which turns the console on.
-        // Absent, no sink is registered and the state stays closed.
-        // So the gate below forwards everything, untouched.
-        antwika::console::ConsolePicture noConsole;
-        const bool hasConsole = config.consoleOverlay.has_value();
-        antwika::console::ConsolePicture &consolePicture =
-            hasConsole ? config.consoleOverlay->get() : noConsole;
-
-        antwika::console::ConsoleState console;
-        const antwika::console::ConsoleScene consoleScene;
-        const antwika::console::FixedConsoleControls consoleControls{};
-
         // This application's half of the console's snapshot seam.
         // The whole session is the one PuzzleState.
         SudokuSnapshotStore snapshotStore(state);
-        antwika::console::SnapshotCommands consoleCommands(
-            snapshotStore,
-            config.stateDumpPath,
-            config.consoleLoadEnabled);
 
         antwika::console::InputFold input(config.codec);
-        // The excluded line is the setup temporary's unwind block.
-        // The sink's constructor stores references and cannot throw.
-        // See docs/confirming-unreachable-branches.md.
-        antwika::console::ConsoleSink consoleSink(
-            antwika::console::ConsoleSinkSetup{ // GCOVR_EXCL_LINE
-                .console = console,
-                .input = input,
-                .picture = consolePicture,
-                .scene = consoleScene,
-                .controls = consoleControls,
-                .commands = consoleCommands});
+
+        // The overlay is the console's own picture, which turns it on.
+        // Absent, no sink is registered and the state stays closed.
+        // So the gate below forwards everything, untouched.
+        // No controls are named, so the shipped constants stand.
+        // A named setup rather than a temporary in the call.
+        // gcov parks a temporary's unwind code on its head line.
+        const antwika::console::ConsoleMountSetup consoleSetup{
+            .overlay = config.consoleOverlay,
+            .input = input,
+            .store = snapshotStore,
+            .dumpPath = config.stateDumpPath,
+            .loadEnabled = config.consoleLoadEnabled};
+        antwika::console::ConsoleMount consoleMount(consoleSetup);
 
         // The console is on top, so what it stands over it takes.
         // PlaySink is the one sink that reads a key or a pixel.
         // Fully open, a digit types into the field, never a square.
-        antwika::console::ConsoleGatedSink gatedPlay(
-            play, console, input);
+        antwika::console::ConsoleGatedSink gatedPlay =
+            consoleMount.gate(play);
 
         // The fold is first, ahead of everything that reads it.
         // ConsoleSink is straight after, ahead of what it gates.
@@ -97,9 +80,9 @@ namespace antwika::sudoku
 
         // Registered only when there is somewhere to put the picture.
         // "No console" then means no console, not an invisible one.
-        if (hasConsole)
+        if (consoleMount.mounted())
         {
-            timedSinks.push_back(consoleSink);
+            timedSinks.push_back(consoleMount.sink());
         }
 
         timedSinks.push_back(board);
@@ -139,7 +122,7 @@ namespace antwika::sudoku
             .filled = state.filled(),
             .status = state.status(),
             .commands = overlay.commands().size(),
-            .console = console.history()};
+            .console = consoleMount.state().history()};
     } // GCOVR_EXCL_STOP
 
 } // namespace antwika::sudoku

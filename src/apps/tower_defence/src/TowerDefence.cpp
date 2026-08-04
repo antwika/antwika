@@ -13,12 +13,8 @@
 #include <antwika/simulation/EngineLoop.hpp>
 
 #include <antwika/console/ConsoleGatedSink.hpp>
-#include <antwika/console/ConsoleScene.hpp>
-#include <antwika/console/ConsoleSink.hpp>
-#include <antwika/console/ConsoleState.hpp>
-#include <antwika/console/IConsoleControls.hpp>
+#include <antwika/console/ConsoleMount.hpp>
 #include <antwika/console/InputFold.hpp>
-#include <antwika/console/SnapshotCommands.hpp>
 
 #include "antwika/tower_defence/CampaignSink.hpp"
 #include "antwika/tower_defence/ScoreFormatError.hpp"
@@ -129,54 +125,40 @@ namespace antwika::tower_defence
             campaign, overlay, config.translator, bestBaseline);
         StopSignal stopSignal;
 
-        // The console's own picture, which turns the console on.
-        // Absent, no sink is registered and the state stays closed.
-        // So the gate below forwards everything, untouched.
-        antwika::console::ConsolePicture noConsole;
-        const bool hasConsole = config.consoleOverlay.has_value();
-        antwika::console::ConsolePicture &consolePicture =
-            hasConsole ? config.consoleOverlay->get() : noConsole;
-
-        antwika::console::ConsoleState console;
-        const antwika::console::ConsoleScene consoleScene;
-
-        // This application rebinds nothing, so the keys are constants.
-        const antwika::console::FixedConsoleControls consoleControls;
-
         // This application's half of the console's snapshot seam.
         TowerDefenceSnapshotStore snapshotStore(campaign, bestBaseline);
-        antwika::console::SnapshotCommands consoleCommands(
-            snapshotStore,
-            config.stateDumpPath,
-            config.consoleLoadEnabled);
 
+        // The overlay is the console's own picture, which turns it on.
+        // Absent, no sink is registered and the state stays closed.
+        // So the gate below forwards everything, untouched.
+        // This application rebinds nothing.
+        // No controls are named, so the shipped constants stand.
         // A named setup rather than a temporary in the call.
         // gcov parks a temporary's unwind code on its head line.
-        const antwika::console::ConsoleSinkSetup consoleSetup{
-            .console = console,
+        const antwika::console::ConsoleMountSetup consoleSetup{
+            .overlay = config.consoleOverlay,
             .input = input,
-            .picture = consolePicture,
-            .scene = consoleScene,
-            .controls = consoleControls,
-            .commands = consoleCommands};
-        antwika::console::ConsoleSink consoleSink(consoleSetup);
+            .store = snapshotStore,
+            .dumpPath = config.stateDumpPath,
+            .loadEnabled = config.consoleLoadEnabled};
+        antwika::console::ConsoleMount consoleMount(consoleSetup);
 
         // The console is on top, so what it stands over it takes.
         // Placement is the one sink reading a key or a pixel.
         // So it is the one wrapped.
         // The step, the bar and the stop read no input at all.
         // The battle therefore keeps running under an open console.
-        antwika::console::ConsoleGatedSink gatedPlacement(
-            placement, console, input);
+        antwika::console::ConsoleGatedSink gatedPlacement =
+            consoleMount.gate(placement);
 
         std::vector<std::reference_wrapper<ITickEventSink>> timedSinks{
             input};
 
         // Registered only when there is somewhere to put the picture.
         // "No console" then means no console, not an invisible one.
-        if (hasConsole)
+        if (consoleMount.mounted())
         {
-            timedSinks.push_back(consoleSink);
+            timedSinks.push_back(consoleMount.sink());
         }
 
         timedSinks.push_back(gatedPlacement);
@@ -234,7 +216,7 @@ namespace antwika::tower_defence
             .phase = campaign.phase(),
             .previousBest = previous,
             .best = best,
-            .console = console.history()};
+            .console = consoleMount.state().history()};
         // The excluded line is the local summary's unwind destructor.
         // Nothing between its construction and the return throws.
     } // GCOVR_EXCL_LINE

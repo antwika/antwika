@@ -22,17 +22,13 @@
 #include <antwika/holdem/SeatId.hpp>
 #include <antwika/holdem/Table.hpp>
 #include <antwika/holdem/TableRunner.hpp>
+#include <antwika/input/InputEventCodec.hpp>
 #include <antwika/log/Level.hpp>
 #include <antwika/simulation/EngineLoop.hpp>
 #include <antwika/rng/SplitMix64Rng.hpp>
 
-#include <antwika/console/ConsoleGatedSink.hpp>
-#include <antwika/console/ConsoleScene.hpp>
-#include <antwika/console/ConsoleSink.hpp>
-#include <antwika/console/ConsoleState.hpp>
-#include <antwika/console/IConsoleControls.hpp>
+#include <antwika/console/ConsoleMount.hpp>
 #include <antwika/console/InputFold.hpp>
-#include <antwika/console/SnapshotCommands.hpp>
 
 #include "antwika/poker/AgentStyle.hpp"
 #include "antwika/poker/BankrollLedger.hpp"
@@ -133,42 +129,44 @@ namespace antwika::poker
 
         // The console, when the caller mounted one.
         // It needs the codec too: the fold decodes off the wire.
+        // Either half missing is a room with no console at all.
         // Nothing else here reads input, so nothing needs a gate.
-        const bool hasConsole = setup.consoleOverlay.has_value()
-                                && setup.codec.has_value();
-        antwika::console::ConsolePicture noConsole;
-        antwika::console::ConsoleState console;
-        const antwika::console::ConsoleScene consoleScene;
-        const antwika::console::FixedConsoleControls consoleControls;
+        std::optional<std::reference_wrapper<
+            antwika::console::ConsolePicture>>
+            consoleOverlay;
+        if (setup.codec.has_value())
+        {
+            consoleOverlay = setup.consoleOverlay;
+        }
+
+        // The stand-in a room given no codec folds nothing with.
+        // The fold is registered with the console or not at all.
+        // So a room without one decodes nothing through either.
+        const antwika::input::InputEventCodec noCodec;
+        antwika::console::InputFold fold(
+            setup.codec.has_value() ? setup.codec->get() : noCodec);
+
         PokerSnapshotStore snapshotStore(
             table, deck, rng, ledger, game, printer);
-        antwika::console::SnapshotCommands consoleCommands(
-            snapshotStore,
-            setup.stateDumpPath,
-            setup.consoleLoadEnabled);
-        std::optional<antwika::console::InputFold> fold;
-        std::optional<antwika::console::ConsoleSink> consoleSink;
 
-        if (hasConsole)
-        {
-            fold.emplace(setup.codec->get());
-            consoleSink.emplace(antwika::console::ConsoleSinkSetup{
-                .console = console,
-                .input = *fold,
-                .picture = setup.consoleOverlay->get(),
-                .scene = consoleScene,
-                .controls = consoleControls,
-                .commands = consoleCommands});
-        }
+        // A named setup rather than a temporary in the call.
+        // gcov parks a temporary's unwind code on its head line.
+        const antwika::console::ConsoleMountSetup consoleSetup{
+            .overlay = consoleOverlay,
+            .input = fold,
+            .store = snapshotStore,
+            .dumpPath = setup.stateDumpPath,
+            .loadEnabled = setup.consoleLoadEnabled};
+        antwika::console::ConsoleMount consoleMount(consoleSetup);
 
         std::vector<std::reference_wrapper<ITickEventSink>> timedSinks;
 
         // The fold first, then the console, ahead of the room.
         // The order every console-mounting application takes.
-        if (hasConsole)
+        if (consoleMount.mounted())
         {
-            timedSinks.push_back(*fold);
-            timedSinks.push_back(*consoleSink);
+            timedSinks.push_back(fold);
+            timedSinks.push_back(consoleMount.sink());
         }
 
         timedSinks.push_back(roomSink);
@@ -214,7 +212,7 @@ namespace antwika::poker
                     ? std::optional<std::reference_wrapper<const ITexture>>(
                           *atlasTexture)
                     : std::nullopt,
-                hasConsole
+                consoleMount.mounted()
                     ? std::optional<std::reference_wrapper<
                           const antwika::console::ConsolePicture>>(
                           setup.consoleOverlay->get())
@@ -263,7 +261,7 @@ namespace antwika::poker
             .handsPlayed = table.handsPlayed(),
             .balances = ledger.balances(),
             .chipsLeftOnTable = leftOnTable,
-            .console = console.history(),
+            .console = consoleMount.state().history(),
         };
     }
 
