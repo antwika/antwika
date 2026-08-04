@@ -85,3 +85,16 @@ See [`docs/schema-versioning.md`](../../docs/schema-versioning.md) for what coun
 
 **`ReplaySource::eventsFor()` scans linearly.**
 An index has deliberately not been built, because replays are not yet long enough for it to matter.
+
+## The pieces every other format borrows
+
+Two headers here belong to no replay document at all: they are what the twenty-odd persisted formats in this tree had each grown their own copy of, and they live in this library because this is where the versioned-document discipline is already stated.
+
+`JsonShapes.hpp` is the JSON Schema half.
+Alongside `countShape()`, `boundedCountShape()`, `coordinateShape()` and `wordShape()` it now holds `requiredShape()`, `objectShape()` and `documentShape()` -- the closed object with its member list, and the same thing with the draft-07 dialect and a title on top -- plus `validatorFor<Schema>()`, the static local every format wrapped its schema in.
+The schema is a *template argument* rather than a parameter, because that is what gives each format a validator of its own: two formats passing one function pointer would share a single static and one would be validated against the other's schema.
+The rule the file already stated is unchanged -- a shape only one format has stays in that format, next to the rule it states -- which is why `apps/poker`'s open dump schema, `apps/atlas_editor`'s "at least one pixel" and `apps/music_editor`'s caret with no minimum are all still written out where they are meant.
+
+`NameTable.hpp` is the enumeration half: a constexpr aggregate holding one name per enumerator, with `name()` one way and `from()` the other.
+Ten formats had written that pair out by hand, twenty-five lines at a time, and the two details worth keeping were easy to lose in a copy.
+`name()` takes the enumerator modulo the table's size, so a value cast in from a document that named something this build has never heard of reads a name rather than whatever follows the array; `from()` answers with an optional rather than throwing, because which failure category an unknown name belongs to is the format's own and the message that names it belongs where it is thrown.

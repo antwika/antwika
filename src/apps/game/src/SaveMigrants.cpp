@@ -14,10 +14,7 @@ namespace antwika::game
     {
         [[nodiscard]] nlohmann::json journeyShape()
         {
-            nlohmann::json shape;
-            shape["type"] = "object";
-            shape["additionalProperties"] = false;
-            shape["required"] = {"towards"}; // GCOVR_EXCL_LINE
+            nlohmann::json shape = replay::objectShape({"towards"});
             shape["properties"]["towards"] = cellShape();
 
             // An index into the buildings array, or absent for leaving.

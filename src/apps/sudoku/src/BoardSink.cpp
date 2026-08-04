@@ -5,8 +5,7 @@
 #include <cstddef>
 #include <string>
 
-#include <nlohmann/json-schema.hpp>
-
+#include <antwika/replay/JsonShapes.hpp>
 #include <antwika/replay/PayloadJson.hpp>
 
 #include "antwika/sudoku/BoardFormatError.hpp"
@@ -19,54 +18,28 @@ namespace antwika::sudoku
     {
         nlohmann::json newPuzzleSchema()
         {
-            nlohmann::json schema;
-            schema["$schema"] = "http://json-schema.org/draft-07/schema#";
-            schema["title"] = "sudoku.new_puzzle payload";
-            schema["type"] = "object";
-            schema["additionalProperties"] = false;
-            schema["required"] = {"cells"}; // GCOVR_EXCL_LINE
-            schema["properties"]["cells"]["type"] = "string";
+            nlohmann::json schema = antwika::replay::documentShape(
+                "sudoku.new_puzzle payload", {"cells"});
+            schema["properties"]["cells"] = antwika::replay::wordShape();
             return schema;
-        }
+        } // GCOVR_EXCL_LINE
 
         // x and y are bounded by the grid rather than by their type.
         // A coordinate the board lacks is a payload nobody meant.
         // And the schema is where a payload's shape is judged.
         nlohmann::json setCellSchema()
         {
-            nlohmann::json schema;
-            schema["$schema"] = "http://json-schema.org/draft-07/schema#";
-            schema["title"] = "sudoku.set_cell payload";
-            schema["type"] = "object";
-            schema["additionalProperties"] = false;
-            schema["required"] = {"x", "y", "digit"}; // GCOVR_EXCL_LINE
+            nlohmann::json schema = antwika::replay::documentShape(
+                "sudoku.set_cell payload", {"x", "y", "digit"});
             for (const char *field : {"x", "y"})
             {
-                schema["properties"][field]["type"] = "integer";
-                schema["properties"][field]["minimum"] = 0;
-                schema["properties"][field]["maximum"] =
-                    Board::kSize - 1;
+                schema["properties"][field] =
+                    antwika::replay::boundedCountShape(Board::kSize - 1);
             }
-            schema["properties"]["digit"]["type"] = "integer";
-            schema["properties"]["digit"]["minimum"] = 0;
-            schema["properties"]["digit"]["maximum"] = Board::kSize;
+            schema["properties"]["digit"] =
+                antwika::replay::boundedCountShape(Board::kSize);
             return schema;
-        }
-
-        const nlohmann::json_schema::json_validator &
-        newPuzzleValidator()
-        {
-            static const nlohmann::json_schema::json_validator validator(
-                newPuzzleSchema()); // GCOVR_EXCL_LINE
-            return validator;
-        }
-
-        const nlohmann::json_schema::json_validator &setCellValidator()
-        {
-            static const nlohmann::json_schema::json_validator validator(
-                setCellSchema()); // GCOVR_EXCL_LINE
-            return validator;
-        }
+        } // GCOVR_EXCL_LINE
     } // namespace
 
     BoardSink::BoardSink(
@@ -83,7 +56,8 @@ namespace antwika::sudoku
                 antwika::replay::parseAndValidatePayload<
                     BoardFormatError>(
                     event.event.payload,
-                    newPuzzleValidator(),
+                    antwika::replay::validatorFor<
+                        newPuzzleSchema>(),
                     "BoardSink: sudoku.new_puzzle payload");
 
             state.start(
@@ -97,7 +71,8 @@ namespace antwika::sudoku
                 antwika::replay::parseAndValidatePayload<
                     BoardFormatError>(
                     event.event.payload,
-                    setCellValidator(),
+                    antwika::replay::validatorFor<
+                        setCellSchema>(),
                     "BoardSink: sudoku.set_cell payload");
 
             state.write(

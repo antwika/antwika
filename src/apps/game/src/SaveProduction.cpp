@@ -46,10 +46,8 @@ namespace antwika::game
 
         [[nodiscard]] nlohmann::json errandShape()
         {
-            nlohmann::json shape;
-            shape["type"] = "object";
-            shape["additionalProperties"] = false;
-            shape["required"] = {"carrying", "leg"}; // GCOVR_EXCL_LINE
+            nlohmann::json shape =
+                replay::objectShape({"carrying", "leg"});
             shape["properties"]["carrying"] = replay::wordShape();
             shape["properties"]["leg"] = replay::wordShape();
 

@@ -8,9 +8,8 @@
 #include <utility>
 #include <vector>
 
-#include <nlohmann/json-schema.hpp>
-
 #include <antwika/engine/Events.hpp>
+#include <antwika/replay/JsonShapes.hpp>
 #include <antwika/replay/PayloadJson.hpp>
 #include <antwika/scheduler/Priority.hpp>
 
@@ -25,32 +24,21 @@ namespace antwika::task_worker
 
         nlohmann::json taskSubmitSchema()
         {
-            nlohmann::json schema;
-            schema["$schema"] = "http://json-schema.org/draft-07/schema#";
-            schema["title"] = "task.submit payload";
-            schema["type"] = "object";
-            schema["additionalProperties"] = false;
-            schema["required"] =
-                {"id", "priority", "durationTicks", "label"}; // GCOVR_EXCL_LINE
-            schema["properties"]["id"]["type"] = "integer";
-            schema["properties"]["id"]["minimum"] = 0;
-            schema["properties"]["priority"]["type"] = "integer";
-            schema["properties"]["priority"]["minimum"] = 0;
-            schema["properties"]["priority"]["maximum"] = 255;
+            nlohmann::json schema = antwika::replay::documentShape(
+                "task.submit payload",
+                {"id", "priority", "durationTicks", "label"});
+            schema["properties"]["id"] = antwika::replay::countShape();
+            schema["properties"]["priority"] =
+                antwika::replay::boundedCountShape(255);
+
+            // At least one tick, since a task that takes none is done.
             schema["properties"]["durationTicks"]["type"] = "integer";
             schema["properties"]["durationTicks"]["minimum"] = 1;
-            schema["properties"]["label"]["type"] = "string";
-            schema["properties"]["dependsOnId"]["type"] = "integer";
-            schema["properties"]["dependsOnId"]["minimum"] = 0;
+            schema["properties"]["label"] = antwika::replay::wordShape();
+            schema["properties"]["dependsOnId"] =
+                antwika::replay::countShape();
             return schema;
-        }
-
-        const nlohmann::json_schema::json_validator &taskSubmitValidator()
-        {
-            static const nlohmann::json_schema::json_validator validator(
-                taskSubmitSchema()); // GCOVR_EXCL_LINE
-            return validator;
-        }
+        } // GCOVR_EXCL_LINE
 
     } // namespace
 
@@ -97,7 +85,7 @@ namespace antwika::task_worker
         const auto parsed =
             antwika::replay::parseAndValidatePayload<TaskSubmissionError>(
                 event.event.payload,
-                taskSubmitValidator(),
+                antwika::replay::validatorFor<taskSubmitSchema>(),
                 "TaskSubmissionSink: task.submit payload");
 
         const auto taskId = parsed.at("id").get<std::uint64_t>();

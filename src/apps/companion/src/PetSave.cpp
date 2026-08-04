@@ -1,15 +1,13 @@
 #include "antwika/companion/PetSave.hpp"
 
-#include <array>
 #include <cstddef>
 #include <memory>
 #include <string>
 
-#include <nlohmann/json-schema.hpp>
-
 #include <antwika/config/ConfigDocument.hpp>
 #include <antwika/replay/IMigration.hpp>
 #include <antwika/replay/JsonShapes.hpp>
+#include <antwika/replay/NameTable.hpp>
 #include <antwika/replay/SchemaVersion.hpp>
 #include <antwika/replay/VersionedDocument.hpp>
 
@@ -25,75 +23,61 @@ namespace antwika::companion
         // A name survives the enumeration being reordered.
         // Being hand-editable is most of why this format is JSON.
         // Indexed by the enumerator, so the order is the enum's.
-        constexpr std::array<std::string_view, 3> kStateNames{
-            "awake", "asleep", "perished"};
+        constexpr antwika::replay::NameTable<PetState, 3> kStates{
+            {"awake", "asleep", "perished"}};
 
         static_assert(
-            kStateNames.size()
+            kStates.names.size()
             == static_cast<std::size_t>(PetState::Perished) + 1);
 
-        constexpr std::array<std::string_view, 16> kSayingNames{
-            "none",
-            "hello",
-            "bored",
-            "niceDay",
-            "silly",
-            "feedMe",
-            "yum",
-            "notHungry",
-            "letMeSleep",
-            "zzz",
-            "playWithMe",
-            "wheee",
-            "tooTired",
-            "notSleepy",
-            "yawn",
-            "poked"};
+        constexpr antwika::replay::NameTable<Saying, 16> kSayings{
+            {"none",
+             "hello",
+             "bored",
+             "niceDay",
+             "silly",
+             "feedMe",
+             "yum",
+             "notHungry",
+             "letMeSleep",
+             "zzz",
+             "playWithMe",
+             "wheee",
+             "tooTired",
+             "notSleepy",
+             "yawn",
+             "poked"}};
 
         static_assert(
-            kSayingNames.size()
+            kSayings.names.size()
             == static_cast<std::size_t>(Saying::Poked) + 1);
-
-        [[nodiscard]] std::string_view stateName(const PetState state)
-        {
-            return kStateNames[static_cast<std::size_t>(state)];
-        }
 
         [[nodiscard]] PetState stateFromName(const std::string &name)
         {
-            for (std::size_t index = 0; index < kStateNames.size();
-                 ++index)
+            const auto state = kStates.from(name);
+
+            if (!state.has_value())
             {
-                if (kStateNames[index] == name)
-                {
-                    return static_cast<PetState>(index);
-                }
+                throw SaveFormatError(
+                    "antwika::companion: a saved companion names a "
+                    "state that is not one of the three: " + name);
             }
 
-            throw SaveFormatError(
-                "antwika::companion: a saved companion names a state "
-                "that is not one of the three: " + name);
-        }
-
-        [[nodiscard]] std::string_view sayingName(const Saying saying)
-        {
-            return kSayingNames[static_cast<std::size_t>(saying)];
+            return *state;
         }
 
         [[nodiscard]] Saying sayingFromName(const std::string &name)
         {
-            for (std::size_t index = 0; index < kSayingNames.size();
-                 ++index)
+            const auto saying = kSayings.from(name);
+
+            if (!saying.has_value())
             {
-                if (kSayingNames[index] == name)
-                {
-                    return static_cast<Saying>(index);
-                }
+                throw SaveFormatError(
+                    "antwika::companion: a saved companion says a line "
+                    "this build does not have: " + name);
             }
 
-            throw SaveFormatError(
-                "antwika::companion: a saved companion says a line this "
-                "build does not have: " + name);
+            return *saying;
         }
 
         // What a version 1 companion becomes.
@@ -143,7 +127,7 @@ namespace antwika::companion
                 // And the ceiling is arithmetic over the collapses.
                 // So a perished one arrives with enough of them.
                 const bool gone = document.value("state", std::string())
-                                  == kStateNames.back();
+                                  == kStates.names.back();
 
                 document["fun"] = kFunStart;
                 document["energy"] = gone ? 0 : kEnergyBase;
@@ -206,37 +190,30 @@ namespace antwika::companion
         // That way the message holds the name it did not know.
         nlohmann::json petSchema()
         {
-            nlohmann::json schema;
-            schema["$schema"] = "http://json-schema.org/draft-07/schema#";
-            schema["title"] = "antwika companion document";
-            schema["type"] = "object";
-            schema["additionalProperties"] = false;
-
             // The version member is described but not required.
             // A document without one is read as version 1 instead.
             // By the time this runs the document has been migrated.
             // So the only version it may carry is the current one.
-            // GCOVR_EXCL_START
-            schema["required"] = {
-                "magic",
-                "ticks",
-                "state",
-                "saying",
-                "sayingTicksLeft",
-                "hunger",
-                "fun",
-                "happiness",
-                "energy",
-                "day",
-                "meals",
-                "plays",
-                "disturbances",
-                "pesters",
-                "collapses",
-                "woken",
-                "generation",
-                "bestTicks"};
-            // GCOVR_EXCL_STOP
+            nlohmann::json schema = replay::documentShape(
+                "antwika companion document",
+                {"magic",
+                 "ticks",
+                 "state",
+                 "saying",
+                 "sayingTicksLeft",
+                 "hunger",
+                 "fun",
+                 "happiness",
+                 "energy",
+                 "day",
+                 "meals",
+                 "plays",
+                 "disturbances",
+                 "pesters",
+                 "collapses",
+                 "woken",
+                 "generation",
+                 "bestTicks"});
             schema["properties"]["magic"]["const"] =
                 std::string(kSaveMagic);
             schema["properties"][std::string(replay::kSchemaVersionKey)]
@@ -259,14 +236,7 @@ namespace antwika::companion
             schema["properties"]["generation"] = countShape();
             schema["properties"]["bestTicks"] = countShape();
             return schema;
-        }
-
-        const nlohmann::json_schema::json_validator &petValidator()
-        {
-            static const nlohmann::json_schema::json_validator validator(
-                petSchema()); // GCOVR_EXCL_LINE
-            return validator;
-        }
+        } // GCOVR_EXCL_LINE
     } // namespace
 
     MigrationChain standardPetMigrations()
@@ -286,8 +256,8 @@ namespace antwika::companion
         encoded[std::string(replay::kSchemaVersionKey)] =
             kSaveFormatVersion;
         encoded["ticks"] = memory.pet.ticks;
-        encoded["state"] = std::string(stateName(memory.pet.state));
-        encoded["saying"] = std::string(sayingName(memory.pet.saying));
+        encoded["state"] = std::string(kStates.name(memory.pet.state));
+        encoded["saying"] = std::string(kSayings.name(memory.pet.saying));
         encoded["sayingTicksLeft"] = memory.pet.sayingTicksLeft;
         encoded["hunger"] = memory.pet.hunger;
         encoded["fun"] = memory.pet.fun;
@@ -316,7 +286,7 @@ namespace antwika::companion
             antwika::config::migratedAs<SaveFormatError>(
                 document,
                 standardPetMigrations(),
-                petValidator(),
+                replay::validatorFor<petSchema>(),
                 "antwika::companion: a saved companion failed schema "
                 "validation: ");
 

@@ -1,6 +1,7 @@
 #include "antwika/replay/JsonShapes.hpp"
 
 #include <limits>
+#include <string>
 
 namespace antwika::replay
 {
@@ -38,6 +39,40 @@ namespace antwika::replay
     {
         nlohmann::json shape;
         shape["type"] = "string";
+        return shape;
+    } // GCOVR_EXCL_LINE
+
+    nlohmann::json requiredShape(
+        std::initializer_list<std::string_view> members)
+    {
+        auto shape = nlohmann::json::array();
+
+        for (const auto member : members)
+        {
+            shape.push_back(std::string(member)); // GCOVR_EXCL_LINE
+        }
+
+        return shape;
+    } // GCOVR_EXCL_LINE
+
+    nlohmann::json objectShape(
+        std::initializer_list<std::string_view> required)
+    {
+        nlohmann::json shape;
+        shape["type"] = "object";
+        shape["additionalProperties"] = false;
+        shape["required"] = requiredShape(required);
+        return shape;
+    } // GCOVR_EXCL_LINE
+
+    nlohmann::json documentShape(
+        std::string_view title,
+        std::initializer_list<std::string_view> required)
+    {
+        // Draft 07 throughout, which is what every format here states.
+        nlohmann::json shape = objectShape(required);
+        shape["$schema"] = "http://json-schema.org/draft-07/schema#";
+        shape["title"] = std::string(title);
         return shape;
     } // GCOVR_EXCL_LINE
 
