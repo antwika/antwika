@@ -6,8 +6,6 @@
 
 #include "antwika/animation/AnimationError.hpp"
 #include "antwika/animation/Clip.hpp"
-#include "antwika/animation/DirectionalClipSet.hpp"
-#include "antwika/animation/Facing.hpp"
 #include "antwika/animation/Frame.hpp"
 #include "antwika/animation/KeyFrame.hpp"
 #include "antwika/animation/LoopMode.hpp"
@@ -51,14 +49,6 @@ namespace antwika::animation
             .progress = Progress(remaining, current.durationTicks),
             .finished = false,
         };
-    }
-
-    Frame resolve(
-        const DirectionalClipSet &clips,
-        Facing facing,
-        time::Tick elapsedTicks)
-    {
-        return resolve(clips.clipFor(facing), elapsedTicks);
     }
 
     Progress stepProgress(time::Tick elapsedTicks, time::Tick ticksPerStep)

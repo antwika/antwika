@@ -3,8 +3,6 @@
 #include <antwika/time/Tick.hpp>
 
 #include "antwika/animation/Clip.hpp"
-#include "antwika/animation/DirectionalClipSet.hpp"
-#include "antwika/animation/Facing.hpp"
 #include "antwika/animation/Frame.hpp"
 #include "antwika/animation/Progress.hpp"
 
@@ -25,18 +23,6 @@ namespace antwika::animation
      * @return The frame to show.
      */
     [[nodiscard]] Frame resolve(const Clip &clip, time::Tick elapsedTicks);
-
-    /**
-     * @brief Work out which frame the clip for one facing is showing.
-     * @param clips The clips to choose between.
-     * @param facing Which way the thing being drawn is going.
-     * @param elapsedTicks How many ticks the clip has been running.
-     * @return The frame to show.
-     */
-    [[nodiscard]] Frame resolve(
-        const DirectionalClipSet &clips,
-        Facing facing,
-        time::Tick elapsedTicks);
 
     /**
      * @brief Work out how far a movement has got between where it

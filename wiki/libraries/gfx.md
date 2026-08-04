@@ -38,7 +38,7 @@ A conformance suite lives under `tests/conformance/` (`GfxBackendConformance.hpp
 
 [`font`](font.md) and [`log`](log.md), plus `glm` (PUBLIC, for the 3D maths types) and `stb` (PRIVATE, for PNG decoding).
 
-`font` is PUBLIC because `AtlasText.hpp` and `GlyphAtlasBitmap.hpp` name `font::GlyphAtlas` in their signatures.
+`font` is PUBLIC because `AtlasText.hpp` names `font::GlyphAtlas` in its signatures.
 The direction is the only one available: `antwika::font` names no module of this project at all and has no `DEPENDS` line to name one with, so `gfx -> font` is acyclic by construction rather than by agreement.
 
 It deliberately does **not** depend on [`input`](input.md), and `input` does not depend on it: reading input must not require opening a window.
@@ -83,11 +83,11 @@ Handing the colour over rather than the coverage is deliberate: a backend that h
 So `antwika_embed_binary()` in [`cmake/AntwikaEmbedBinary.cmake`](../../cmake/AntwikaEmbedBinary.cmake) turns `assets/fonts/RobotoMono-Regular.ttf` into a C++ source of bytes at configure time, and `BuiltInFont.cpp` parses it once.
 The generated source is data and nothing else — no function, no initialiser that runs — so it adds nothing for the coverage gate to measure, and it is written by CMake itself rather than by a tool the build has to run, which is what keeps a cross build to MinGW from needing a host-built generator.
 
-**`AtlasText.hpp` and `glyphAtlasBitmap()` are a route no application in this tree takes yet.**
-An application that wants a real font *of its own* does what [`font`](font.md) says: bundles it with `antwika_bundle_app()`, opens it with `app::assetPath()`, expands the atlas into a `Bitmap` with `glyphAtlasBitmap()`, uploads that once and measures and blits through `AtlasText.hpp`.
-None has wanted one, because every layout here is built on the fixed cell `textSize()` measures, and a proportional font would change what a recorded click lands on.
-Both surfaces are therefore **speculative**: fully tested, so the coverage gate says nothing about the vacancy either way, and named as unadopted here for the reason [`tween`](tween.md) names its own non-users — a page that reads as a description of live code when it is not is what costs the next reader an afternoon.
-What keeps them rather than deletes them is the argument `AtlasText.hpp` writes out about a font's metrics never reaching a layout, which is the thing worth having in the tree whether or not anything blits from it.
+**`AtlasText.hpp` is live and `glyphAtlasBitmap()` was pruned, and the two facts are the same fact.**
+[`game`](../apps/game.md) measures and blits through `AtlasText.hpp` — `AtlasTextures.hpp`, `GridScene` and `RenderSystem` all name it — against a sheet it *hand-authored and ships*, never against one expanded from a `.ttf` at runtime.
+That is the only way anything here has ever wanted atlas text, so the mask-to-RGBA step in between never acquired a caller: `glyphAtlasBitmap()` sat fully tested and wholly unreached, and this page used to claim `AtlasText.hpp` was unreached with it, which had stopped being true and is exactly the drift that costs the next reader an afternoon.
+An application that does want a real font *of its own* still does what [`font`](font.md) says — bundle it with `antwika_bundle_app()`, open it with `app::assetPath()` — and writes the four lines of coverage-to-alpha expansion where it can see them, which is a smaller thing to add back than a library seam is to keep proving nothing calls.
+What has not changed is the argument `AtlasText.hpp` writes out about a font's metrics never reaching a layout, since every layout here is built on the fixed cell `textSize()` measures and a proportional font would change what a recorded click lands on.
 
 **The cells are cached per scale, in a static, on purpose.**
 Text is drawn every frame and rasterising 95 glyphs is not frame work, so `glyphCells(scale)` builds one set of cells the first time a scale is drawn at and keeps it in a function-local `std::map` — a `map` rather than a `vector` because a reference handed out has to survive the arrival of every later scale.

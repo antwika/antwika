@@ -105,11 +105,6 @@ namespace antwika::font::detail
         return advance;
     }
 
-    int Rasteriser::kerningAdvance(int left, int right) const
-    {
-        return stbtt_GetGlyphKernAdvance(&font->handle(), left, right);
-    }
-
     GlyphBox Rasteriser::glyphBox(int glyph, float scale) const
     {
         GlyphBox box;

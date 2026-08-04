@@ -18,8 +18,6 @@ A `Clip` is a definition — keyframes plus a loop policy — and `resolve(clip,
 | `LoopMode.hpp` | `LoopMode` | Whether a clip repeats or holds its last frame. |
 | `Frame.hpp` | `Frame`, `resolve()` | The answer: a frame index and how far into it the tick is. |
 | `Progress.hpp` | `Progress`, `interpolate()` | An exact rational position, and interpolation over `std::int64_t`. |
-| `Facing.hpp` | `Facing` | The four directions, and `facingIndex()`; speculative, see below. |
-| `DirectionalClipSet.hpp` | `DirectionalClipSet` | One clip per facing, sharing a single elapsed count; speculative, see below. |
 | `Playback.hpp` | `stepProgress()` | Folding a whole-tick phase and a sub-tick fraction into one rational. |
 | `AnimationError.hpp` | `AnimationError` | Thrown from constructors and factories only. |
 
@@ -49,14 +47,11 @@ An app that wants a clip to start when a walker was placed keeps that walker's s
 An app that wants every walker in step passes the engine's tick straight through.
 Both are one subtraction, and both are the caller's decision about what the animation is anchored to, which is a question about the app's state rather than about animation.
 
-`DirectionalClipSet` falls out of the same choice.
-A walker that turns a corner keeps its elapsed count and asks a different clip, so the walk cycle carries on through the turn instead of restarting.
-Four little players, one per facing, would each be at a different point and would need resynchronising by hand; four clips and one number cannot get out of step, because there is only one number.
-
-**`DirectionalClipSet` and `Facing` are speculative, and nothing in this tree uses them.**
-[`game`](../apps/game.md) is the one application with anything that turns a corner, and it has a facing of its own — `game::Direction`, in `Direction.hpp`, which `Walking.hpp`'s `nextFacing()` yields — because what it needs is the direction a path step went on an isometric grid rather than one an animation library chose to name.
-So the pair is kept for the argument above and adopted by nobody, and saying so is what [`tween`](tween.md) does with its own non-users: a page that reads as a description of live code when it is not is the kind of documentation that costs a reader time.
-`resolve(Clip, Tick)` is the overload every caller actually uses, and [`companion`](../apps/companion.md) is the only one, through `PetScene`'s breathe, blink and drowse clips.
+**`DirectionalClipSet` and `Facing` were here once and were pruned.**
+They were one clip per facing sharing a single elapsed count, so a walker turning a corner carried its walk cycle through the turn instead of restarting it — a good argument, and one nothing in this tree ever took up.
+[`game`](../apps/game.md) is the only application with anything that turns a corner, and it has a facing of its own — `game::Direction`, in `Direction.hpp`, which `Walking.hpp`'s `nextFacing()` yields — because what it needs is the direction a path step went on an isometric grid rather than one an animation library chose to name.
+An argument written down is worth keeping; a class kept only to hold an argument is not, since it costs a reader a header and the gate a set of tests to prove nothing calls it.
+`resolve(Clip, Tick)` is the whole playback surface now, and [`companion`](../apps/companion.md) is its one caller, through `PetScene`'s breathe, blink and drowse clips.
 
 **`Progress` is a numerator and a denominator, not a `float`.**
 Integer division agrees across GNU, LLVM and MinGW alike; a rounded fraction does not, and an assertion on a drawn position would become an assertion with a tolerance.

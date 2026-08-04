@@ -84,21 +84,6 @@ namespace antwika::font
             char32_t codepoint, std::uint32_t pixelHeight) const;
 
         /**
-         * @brief Ask how much closer a pair of characters sit than
-         * their advances alone would put them.
-         * @param left The character on the left.
-         * @param right The character on the right.
-         * @param pixelHeight How tall ascender-to-descender should be.
-         * @return The adjustment to add to the left advance, in whole
-         * pixels, and zero for a font carrying no kerning at all.
-         * @throws FontError If pixelHeight is zero.
-         */
-        [[nodiscard]] int kerning(
-            char32_t left,
-            char32_t right,
-            std::uint32_t pixelHeight) const;
-
-        /**
          * @brief Draw one glyph into a coverage mask.
          * @param codepoint The character to draw.
          * @param pixelHeight How tall ascender-to-descender should be.

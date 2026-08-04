@@ -112,15 +112,6 @@ namespace antwika::font::detail
         [[nodiscard]] int advanceWidth(int glyph) const;
 
         /**
-         * @brief Read how much closer a pair of glyphs sit.
-         * @param left The glyph index on the left.
-         * @param right The glyph index on the right.
-         * @return The adjustment, in design units, and zero for a font
-         * carrying no kerning at all.
-         */
-        [[nodiscard]] int kerningAdvance(int left, int right) const;
-
-        /**
          * @brief Work out where a glyph lands without drawing it.
          * @param glyph The glyph index.
          * @param scale The factor from scaleForPixelHeight().

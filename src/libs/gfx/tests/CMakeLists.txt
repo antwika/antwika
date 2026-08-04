@@ -9,7 +9,6 @@ add_executable(antwika_gfx_tests
     BlitTest.cpp
     Camera3DTest.cpp
     ColorTest.cpp
-    GlyphAtlasBitmapTest.cpp
     GlyphBlitTest.cpp
     GlyphCellsTest.cpp
     IRendererTest.cpp

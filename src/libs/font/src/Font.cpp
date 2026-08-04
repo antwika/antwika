@@ -104,18 +104,6 @@ namespace antwika::font
             *rasteriser, rasteriser->glyphIndex(codepoint), scale);
     }
 
-    int Font::kerning(
-        char32_t left, char32_t right, std::uint32_t pixelHeight) const
-    {
-        const float scale = scaleFor(*rasteriser, pixelHeight);
-
-        return toPixels(
-            rasteriser->kerningAdvance(
-                rasteriser->glyphIndex(left),
-                rasteriser->glyphIndex(right)),
-            scale);
-    }
-
     Glyph Font::rasterise(
         char32_t codepoint, std::uint32_t pixelHeight) const
     {
