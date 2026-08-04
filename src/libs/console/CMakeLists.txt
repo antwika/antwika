@@ -3,6 +3,7 @@ antwika_add_library(
     SOURCES
         src/ConsolePicture.cpp
         src/ConsoleGatedSink.cpp
+        src/ConsoleMount.cpp
         src/ConsoleScene.cpp
         src/ConsoleSink.cpp
         src/ConsoleState.cpp

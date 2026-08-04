@@ -16,10 +16,7 @@
 #include "antwika/game/BuildingSystem.hpp"
 #include "antwika/game/CityRatings.hpp"
 #include <antwika/console/ConsoleGatedSink.hpp>
-#include <antwika/console/ConsoleScene.hpp>
-#include <antwika/console/ConsoleSink.hpp>
-#include <antwika/console/ConsoleState.hpp>
-#include <antwika/console/SnapshotCommands.hpp>
+#include <antwika/console/ConsoleMount.hpp>
 #include "antwika/game/CoverageSystem.hpp"
 #include "antwika/game/Desirability.hpp"
 #include "antwika/game/DesirabilitySystem.hpp"
@@ -498,51 +495,40 @@ namespace antwika::game
         // So choosing a key cannot also fire what it is bound to.
         ModeGatedSink playingHotkeys(hotkeySink, mode, AppMode::CityMap);
 
-        // The console's own picture, which turns the console on.
-        // Absent, no sink is registered and the state stays closed.
-        // So every gate below forwards everything, untouched.
-        antwika::console::ConsolePicture noConsole;
-        const bool hasConsole = wiring.consoleOverlay.has_value();
-        antwika::console::ConsolePicture &consolePicture =
-            hasConsole ? wiring.consoleOverlay->get() : noConsole;
-
-        antwika::console::ConsoleState console;
-        const antwika::console::ConsoleScene consoleScene;
-
         // This application's halves of the console's two seams.
         // The keys and the board answer off the options.
         // The state goes through the very store the picker uses.
         OptionsConsoleControls consoleControls(options);
         GameSnapshotStore snapshotStore(
             session, pause, ui, view, localeState);
-        antwika::console::SnapshotCommands consoleCommands(
-            snapshotStore,
-            wiring.stateDumpPath,
-            wiring.consoleLoadEnabled);
 
-        // The excluded line is the setup temporary's unwind block.
-        // The sink's constructor stores references and cannot throw.
-        // See docs/confirming-unreachable-branches.md.
-        antwika::console::ConsoleSink consoleSink(
-            antwika::console::ConsoleSinkSetup{ // GCOVR_EXCL_LINE
-                .console = console,
-                .input = input,
-                .picture = consolePicture,
-                .scene = consoleScene,
-                .controls = consoleControls,
-                .commands = consoleCommands});
+        // The overlay is the console's own picture, which turns it on.
+        // Absent, no sink is registered and the state stays closed.
+        // So every gate below forwards everything, untouched.
+        // A named setup rather than a temporary in the call.
+        // gcov parks a temporary's unwind code on its head line.
+        const antwika::console::ConsoleMountSetup consoleSetup{
+            .overlay = wiring.consoleOverlay,
+            .input = input,
+            .store = snapshotStore,
+            .dumpPath = wiring.stateDumpPath,
+            .loadEnabled = wiring.consoleLoadEnabled,
+            .controls = consoleControls};
+        antwika::console::ConsoleMount consoleMount(consoleSetup);
 
         // The console is on top, so what it stands over it takes.
         // Every sink reading a key or a pixel is wrapped.
         // Whichever screen it owns: the console belongs to no mode.
         using antwika::console::ConsoleGatedSink;
-        ConsoleGatedSink consoleGatedMenu(menuSink, console, input);
-        ConsoleGatedSink consoleGatedSave(saveSink, console, input);
-        ConsoleGatedSink consoleGatedHotkeys(
-            playingHotkeys, console, input);
-        ConsoleGatedSink consoleGatedUi(playingUi, console, input);
-        ConsoleGatedSink consoleGatedGrid(playingGrid, console, input);
-        ConsoleGatedSink consoleGatedWorld(worldSink, console, input);
+        ConsoleGatedSink consoleGatedMenu = consoleMount.gate(menuSink);
+        ConsoleGatedSink consoleGatedSave = consoleMount.gate(saveSink);
+        ConsoleGatedSink consoleGatedHotkeys =
+            consoleMount.gate(playingHotkeys);
+        ConsoleGatedSink consoleGatedUi = consoleMount.gate(playingUi);
+        ConsoleGatedSink consoleGatedGrid =
+            consoleMount.gate(playingGrid);
+        ConsoleGatedSink consoleGatedWorld =
+            consoleMount.gate(worldSink);
 
         // The fold is first.
         // What it holds is the event the sinks after it are given now.
@@ -576,9 +562,9 @@ namespace antwika::game
 
         // Registered only when there is somewhere to put the picture.
         // "No console" then means no console, not an invisible one.
-        if (hasConsole)
+        if (consoleMount.mounted())
         {
-            timedSinks.push_back(consoleSink);
+            timedSinks.push_back(consoleMount.sink());
         }
 
         timedSinks.push_back(consoleGatedMenu);
@@ -658,7 +644,7 @@ namespace antwika::game
             .ruins = ruinViewsOf(world),
             .camera = camera,
             .ratings = finalRatings,
-            .console = console.history(),
+            .console = consoleMount.state().history(),
             .keyboard = options.keyboard(),
             .bindings = options.bindings()};
         // The excluded line is the local summary's unwind destructor.

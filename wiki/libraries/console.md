@@ -15,6 +15,7 @@ It began as `apps/game`'s own feature and became a library the day every other a
 | `ConsoleScene.hpp` | `ConsoleScene`, `consoleWidgets`, `kConsoleHistoryShown` | Describes the sheet as a `ui::Frame`, bottom-anchored field included. |
 | `ConsolePicture.hpp` | `ConsolePicture` | The picture the sink writes and a renderer paints last, with the canvas it was described against. |
 | `ConsoleSink.hpp` | `ConsoleSink`, `ConsoleSinkSetup` | Resolves the toggle, the typing and the execute press inside the tick path. |
+| `ConsoleMount.hpp` | `ConsoleMount`, `ConsoleMountSetup` | One application's whole console in one object, registering nothing. |
 | `ConsoleGatedSink.hpp` | `ConsoleGatedSink` | Wraps any sink; what the console stands over, it takes. |
 | `InputFold.hpp` | `InputFold` | The one fold of `input.*` events every console-mounting app registers first. |
 | `IConsoleControls.hpp` | `IConsoleControls`, `FixedConsoleControls` | The toggle key, the execute key and the typing board — a seam, since the game answers off rebindable options. |
@@ -60,6 +61,12 @@ A command language is a format, like a save file's kind names, and history lines
 **The typing tables are ASCII only, keyed by position.**
 `input::Key` says where a key *is*; `typedCharacterFor()` says what that position prints on the chosen board.
 The Swedish letters would be multi-byte in the UTF-8 the UI holds, and a field's caret arithmetic counts bytes, so å, ä and ö type nothing rather than something a caret would land inside.
+
+**`ConsoleMount` is the block every bootstrap used to copy.**
+The picture-or-stand-in, the state, the scene, the controls, the snapshot commands and the `ConsoleSink` over them were the same twenty-odd lines in nine applications, comments included, and they had already drifted between them -- one named its setup to dodge a gcov artifact, another excluded the line instead, and each spelled "no console means no console" its own way.
+The mount is those lines said once, constructed from a `ConsoleMountSetup` naming the overlay, the fold, the store, the dump path, whether a load is permitted, and optionally the controls -- unset controls being the shipped constants, which is what an application with no options screen to rebind them on wants.
+It deliberately **registers nothing**: where each sink sits in a run's list is a correctness contract rather than a detail to hide -- the fold first, `ConsoleSink` ahead of everything it gates, and the recorder where the application put it -- so a bootstrap goes on writing its own list and asks the mount only for `mounted()`, `sink()`, `state()` and a `gate()` around each sink the console stands over.
+The fold is borrowed rather than owned for the same reason `apps/game` folds once for all of its sinks: a run has exactly one fold, and which sinks share it is the application's business.
 
 ## Who uses it
 

@@ -7,12 +7,8 @@
 
 #include <antwika/app/StoreIfLive.hpp>
 #include <antwika/console/ConsoleGatedSink.hpp>
-#include <antwika/console/ConsoleScene.hpp>
-#include <antwika/console/ConsoleSink.hpp>
-#include <antwika/console/ConsoleState.hpp>
-#include <antwika/console/IConsoleControls.hpp>
+#include <antwika/console/ConsoleMount.hpp>
 #include <antwika/console/InputFold.hpp>
-#include <antwika/console/SnapshotCommands.hpp>
 #include <antwika/engine/Engine.hpp>
 #include <antwika/engine/StopSignal.hpp>
 #include <antwika/event/EventDispatcher.hpp>
@@ -148,55 +144,40 @@ namespace antwika::companion
         PacingSink pacing(logger, config.sleeper, config.tickInterval);
         StopSignal stopSignal;
 
-        // The console's own picture, which turns the console on.
+        // This application's half of the console's snapshot seam.
+        // The state goes through the save file's own encoder.
+        CompanionSnapshotStore snapshotStore(pet, lineage);
+
+        // The overlay is the console's own picture, which turns it on.
         // Absent, no sink is registered and the state stays closed.
         // So both gates below forward everything, untouched.
-        antwika::console::ConsolePicture noConsole;
-        const bool hasConsole = config.consoleOverlay.has_value();
-        antwika::console::ConsolePicture &consolePicture =
-            hasConsole ? config.consoleOverlay->get() : noConsole;
-
-        antwika::console::ConsoleState console;
-        const antwika::console::ConsoleScene consoleScene;
-
-        // This application's halves of the console's two seams.
         // The keys are the library's defaults: nothing rebinds here.
-        // The state goes through the save file's own encoder.
-        const antwika::console::FixedConsoleControls consoleControls;
-        CompanionSnapshotStore snapshotStore(pet, lineage);
-        antwika::console::SnapshotCommands consoleCommands(
-            snapshotStore,
-            config.stateDumpPath,
-            config.consoleLoadEnabled);
-
-        // The excluded line is the setup temporary's unwind block.
-        // The sink's constructor stores references and cannot throw.
-        // See docs/confirming-unreachable-branches.md.
-        antwika::console::ConsoleSink consoleSink(
-            antwika::console::ConsoleSinkSetup{ // GCOVR_EXCL_LINE
-                .console = console,
-                .input = input,
-                .picture = consolePicture,
-                .scene = consoleScene,
-                .controls = consoleControls,
-                .commands = consoleCommands});
+        // A named setup rather than a temporary in the call.
+        // gcov parks a temporary's unwind code on its head line.
+        const antwika::console::ConsoleMountSetup consoleSetup{
+            .overlay = config.consoleOverlay,
+            .input = input,
+            .store = snapshotStore,
+            .dumpPath = config.stateDumpPath,
+            .loadEnabled = config.consoleLoadEnabled};
+        antwika::console::ConsoleMount consoleMount(consoleSetup);
 
         // The console is on top, so what it stands over it takes.
         // The two sinks reading a press are wrapped; nothing else is.
         // The pet does not pause while the console is open.
-        antwika::console::ConsoleGatedSink gatedProps(
-            propSink, console, input);
-        antwika::console::ConsoleGatedSink gatedRevive(
-            reviveSink, console, input);
+        antwika::console::ConsoleGatedSink gatedProps =
+            consoleMount.gate(propSink);
+        antwika::console::ConsoleGatedSink gatedRevive =
+            consoleMount.gate(reviveSink);
 
         std::vector<std::reference_wrapper<ITickEventSink>> timedSinks{
             input};
 
         // Registered only when there is somewhere to put the picture.
         // "No console" then means no console, not an invisible one.
-        if (hasConsole)
+        if (consoleMount.mounted())
         {
-            timedSinks.push_back(consoleSink);
+            timedSinks.push_back(consoleMount.sink());
         }
 
         timedSinks.push_back(restoreSink);
@@ -264,7 +245,7 @@ namespace antwika::companion
             .generation = lineage.generation(),
             .bestTicks = lineage.bestTicks(),
             .perished = pet.state() == PetState::Perished,
-            .console = console.history()};
+            .console = consoleMount.state().history()};
     }
 
     std::optional<std::reference_wrapper<IPetStore>> storeIfLive(

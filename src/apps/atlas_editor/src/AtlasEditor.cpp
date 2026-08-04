@@ -8,13 +8,8 @@
 #include <vector>
 
 #include <antwika/console/ConsoleGatedSink.hpp>
-#include <antwika/console/ConsolePicture.hpp>
-#include <antwika/console/ConsoleScene.hpp>
-#include <antwika/console/ConsoleSink.hpp>
-#include <antwika/console/ConsoleState.hpp>
-#include <antwika/console/IConsoleControls.hpp>
+#include <antwika/console/ConsoleMount.hpp>
 #include <antwika/console/InputFold.hpp>
-#include <antwika/console/SnapshotCommands.hpp>
 #include <antwika/engine/Engine.hpp>
 #include <antwika/engine/StopSignal.hpp>
 #include <antwika/event/EventDispatcher.hpp>
@@ -79,47 +74,33 @@ namespace antwika::atlas_editor
             config.translator);
         StopSignal stopSignal;
 
-        // The console's own picture, which turns the console on.
+        antwika::console::InputFold input(config.codec);
+        EditorSnapshotStore snapshotStore(state);
+
+        // The overlay is the console's own picture, which turns it on.
         // Absent, no sink is registered and the state stays closed.
         // So the gate below forwards everything, untouched.
-        antwika::console::ConsolePicture noConsole;
-        const bool hasConsole = config.consoleOverlay.has_value();
-        antwika::console::ConsolePicture &consolePicture =
-            hasConsole ? config.consoleOverlay->get() : noConsole;
-
-        antwika::console::InputFold input(config.codec);
-        antwika::console::ConsoleState console;
-        const antwika::console::ConsoleScene consoleScene;
-
-        // This application rebinds nothing, so the keys are constants.
+        // This application rebinds nothing.
+        // No controls are named, so the shipped constants stand.
         // Grave, Enter and the Swedish board.
         // Grave conflicts with nothing here.
         // F10 and Escape stay reserved upstream, untouched.
-        const antwika::console::FixedConsoleControls consoleControls;
-        EditorSnapshotStore snapshotStore(state);
-        antwika::console::SnapshotCommands consoleCommands(
-            snapshotStore,
-            config.stateDumpPath,
-            config.consoleLoadEnabled);
-
-        // The excluded line is the setup temporary's unwind block.
-        // The sink's constructor stores references and cannot throw.
-        // See docs/confirming-unreachable-branches.md.
-        antwika::console::ConsoleSink consoleSink(
-            antwika::console::ConsoleSinkSetup{ // GCOVR_EXCL_LINE
-                .console = console,
-                .input = input,
-                .picture = consolePicture,
-                .scene = consoleScene,
-                .controls = consoleControls,
-                .commands = consoleCommands});
+        // A named setup rather than a temporary in the call.
+        // gcov parks a temporary's unwind code on its head line.
+        const antwika::console::ConsoleMountSetup consoleSetup{
+            .overlay = config.consoleOverlay,
+            .input = input,
+            .store = snapshotStore,
+            .dumpPath = config.stateDumpPath,
+            .loadEnabled = config.consoleLoadEnabled};
+        antwika::console::ConsoleMount consoleMount(consoleSetup);
 
         // The console is on top, so what it stands over it takes.
         // EditorSink is the one sink here reading a key or a pixel.
         // Its own private fold is left alone.
         // The gate simply stops swallowed events reaching it.
-        antwika::console::ConsoleGatedSink gatedEditor(
-            editor, console, input);
+        antwika::console::ConsoleGatedSink gatedEditor =
+            consoleMount.gate(editor);
 
         // The fold is first, ahead of everything that reads it.
         // ConsoleSink is next, ahead of everything it gates.
@@ -129,9 +110,9 @@ namespace antwika::atlas_editor
 
         // Registered only when there is somewhere to put the picture.
         // "No console" then means no console, not an invisible one.
-        if (hasConsole)
+        if (consoleMount.mounted())
         {
-            timedSinks.push_back(consoleSink);
+            timedSinks.push_back(consoleMount.sink());
         }
 
         timedSinks.push_back(gatedEditor);
@@ -181,7 +162,7 @@ namespace antwika::atlas_editor
             .saves = state.saves(),
             .loads = state.loads(),
             .image = state.image().size(),
-            .console = console.history()};
+            .console = consoleMount.state().history()};
     }
 
 } // namespace antwika::atlas_editor

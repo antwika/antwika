@@ -5,13 +5,8 @@
 #include <vector>
 
 #include <antwika/console/ConsoleGatedSink.hpp>
-#include <antwika/console/ConsolePicture.hpp>
-#include <antwika/console/ConsoleScene.hpp>
-#include <antwika/console/ConsoleSink.hpp>
-#include <antwika/console/ConsoleState.hpp>
-#include <antwika/console/IConsoleControls.hpp>
+#include <antwika/console/ConsoleMount.hpp>
 #include <antwika/console/InputFold.hpp>
-#include <antwika/console/SnapshotCommands.hpp>
 #include <antwika/engine/Engine.hpp>
 #include <antwika/engine/StopSignal.hpp>
 #include <antwika/event/EventDispatcher.hpp>
@@ -68,52 +63,39 @@ namespace antwika::music_editor
             config.clipboard, stopSignal, config.scoresDirectory,
             config.writesScores);
 
-        // The console's own picture, which turns the console on.
-        // Absent, no sink is registered and the state stays closed.
-        // So the gate below forwards everything, untouched.
-        antwika::console::ConsolePicture noConsole;
-        const bool hasConsole = config.consoleOverlay.has_value();
-        antwika::console::ConsolePicture &consolePicture =
-            hasConsole ? config.consoleOverlay->get() : noConsole;
-
-        antwika::console::ConsoleState console;
-        const antwika::console::ConsoleScene consoleScene;
-
-        // Grave toggles, Enter executes, the Swedish board types.
-        // The board the document's own table also defaults to.
-        const antwika::console::FixedConsoleControls consoleControls;
-
         MusicSnapshotStore snapshotStore(state, score, playback);
-        antwika::console::SnapshotCommands consoleCommands(
-            snapshotStore,
-            config.stateDumpPath,
-            config.consoleLoadEnabled);
 
         antwika::console::InputFold fold(config.codec);
-        antwika::console::ConsoleSink consoleSink(
-            // gcov parks the statement's unwind block on this line.
-            // The setup is only references, so nothing here throws.
-            antwika::console::ConsoleSinkSetup{ // GCOVR_EXCL_LINE
-                .console = console,
-                .input = fold,
-                .picture = consolePicture,
-                .scene = consoleScene,
-                .controls = consoleControls,
-                .commands = consoleCommands});
+
+        // The overlay is the console's own picture, which turns it on.
+        // Absent, no sink is registered and the state stays closed.
+        // So the gate below forwards everything, untouched.
+        // No controls are named, so the shipped constants stand:
+        // Grave toggles, Enter executes, the Swedish board types.
+        // The board the document's own table also defaults to.
+        // A named setup rather than a temporary in the call.
+        // gcov parks a temporary's unwind code on its head line.
+        const antwika::console::ConsoleMountSetup consoleSetup{
+            .overlay = config.consoleOverlay,
+            .input = fold,
+            .store = snapshotStore,
+            .dumpPath = config.stateDumpPath,
+            .loadEnabled = config.consoleLoadEnabled};
+        antwika::console::ConsoleMount consoleMount(consoleSetup);
 
         // The console is on top, so what it stands over it takes.
         // The editor is the one sink here reading a key or a pixel.
-        antwika::console::ConsoleGatedSink gatedEditor(
-            editor, console, fold);
+        antwika::console::ConsoleGatedSink gatedEditor =
+            consoleMount.gate(editor);
 
         std::vector<std::reference_wrapper<ITickEventSink>> timedSinks;
 
         // The fold first, then the console, ahead of the editor.
         // The order every console-mounting application takes.
-        if (hasConsole)
+        if (consoleMount.mounted())
         {
             timedSinks.push_back(fold);
-            timedSinks.push_back(consoleSink);
+            timedSinks.push_back(consoleMount.sink());
         }
 
         timedSinks.push_back(gatedEditor);
@@ -151,7 +133,7 @@ namespace antwika::music_editor
             .played = playback.playedTicks(),
             .reparses = score.reparses(),
             .commands = editor.commands().size(),
-            .console = console.history()};
+            .console = consoleMount.state().history()};
     }
 
 } // namespace antwika::music_editor
