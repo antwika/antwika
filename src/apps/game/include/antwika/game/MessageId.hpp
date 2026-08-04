@@ -467,6 +467,16 @@ namespace antwika::game
         OptionsReserved,
 
         /**
+         * @brief The heading over the row of languages.
+         */
+        OptionsLanguage,
+
+        /**
+         * @brief The language now on, as `{0}` its own name.
+         */
+        OptionsLanguageActive,
+
+        /**
          * @brief Leave the key bindings screen.
          */
         OptionsBack,

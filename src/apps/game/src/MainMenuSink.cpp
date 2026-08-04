@@ -40,14 +40,16 @@ namespace antwika::game
         const MainMenuScene &scene,
         ITickEventSink &stop,
         OptionsState &options,
-        const OptionsScene &optionsScene)
+        const OptionsScene &optionsScene,
+        LocaleState &locale)
         : mode(mode),
           overlay(overlay),
           input(input),
           scene(scene),
           stop(stop),
           options(options),
-          optionsScene(optionsScene)
+          optionsScene(optionsScene),
+          locale(locale)
     {
     }
 
@@ -104,8 +106,15 @@ namespace antwika::game
 
     void MainMenuSink::refreshOptions(bool pressed)
     {
+        // Described against the language this tick is running in.
+        // A change asked for below lands at the next tick's boundary.
+        // So the press that asked was resolved against the layout it
+        // was made on, which is what LocaleState stages for.
         auto frame = optionsScene.describe(
-            overlay.canvas(), pointerNow(pressed), options);
+            overlay.canvas(),
+            pointerNow(pressed),
+            options,
+            locale.locale());
         const auto activated = frame.interactions.activated;
 
         if (activated == optionsWidgets::kBack)
@@ -118,6 +127,18 @@ namespace antwika::game
             if (activated == optionsWidgets::actionWidget(action))
             {
                 options.await(action);
+            }
+        }
+
+        for (const auto picked : antwika::i18n::kAllLocales)
+        {
+            if (activated == optionsWidgets::languageWidget(picked))
+            {
+                // Staged, never written to the wire.
+                // The click is already recorded, so a replay reaches
+                // this line again and stages the same language.
+                locale.request(picked);
+                options.setLocale(picked);
             }
         }
 

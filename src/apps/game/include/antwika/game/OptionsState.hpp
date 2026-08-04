@@ -2,6 +2,8 @@
 
 #include <optional>
 
+#include <antwika/i18n/Locale.hpp>
+
 #include "antwika/game/Action.hpp"
 #include "antwika/game/KeyBindings.hpp"
 
@@ -120,11 +122,31 @@ namespace antwika::game
          */
         BindOutcome apply(Action action, Key key) noexcept;
 
+        /**
+         * @brief Get the language the player has picked.
+         *
+         * Held here so it can be written to the options file beside the
+         * bindings, and read back to announce on the next run. What the
+         * run is *actually* being played in is LocaleState's, which is a
+         * sink in the tick path -- this is the preference, that is the
+         * simulation state, and MainMenuSink sets both from one press.
+         *
+         * @return The picked language.
+         */
+        [[nodiscard]] antwika::i18n::Locale locale() const noexcept;
+
+        /**
+         * @brief Remember the language the player has picked.
+         * @param locale The language to write down.
+         */
+        void setLocale(antwika::i18n::Locale locale) noexcept;
+
     private:
         KeyBindings current{};
         std::optional<Action> pending{};
         std::optional<BindOutcome> last{};
         bool showing = false;
+        antwika::i18n::Locale language{antwika::i18n::kDefaultLocale};
     };
 
 } // namespace antwika::game

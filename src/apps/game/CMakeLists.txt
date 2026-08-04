@@ -40,6 +40,9 @@ antwika_add_app(
         src/LabourDispatchSystem.cpp
         src/MapView.cpp
         src/MainMenuScene.cpp
+        src/LocaleEvent.cpp
+        src/LocaleSource.cpp
+        src/LocaleState.cpp
         src/MainMenuSink.cpp
         src/SupplySystem.cpp
         src/MenuCommands.cpp

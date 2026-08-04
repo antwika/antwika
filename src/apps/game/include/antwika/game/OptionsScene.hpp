@@ -3,11 +3,13 @@
 #include <cstdint>
 
 #include <antwika/gfx/Size.hpp>
+#include <antwika/i18n/Locale.hpp>
 #include <antwika/ui/Frame.hpp>
 #include <antwika/ui/Pointer.hpp>
 #include <antwika/ui/WidgetId.hpp>
 
 #include "antwika/game/Action.hpp"
+#include "antwika/game/LocaleState.hpp"
 #include "antwika/game/Messages.hpp"
 #include "antwika/game/OptionsState.hpp"
 
@@ -59,6 +61,28 @@ namespace antwika::game
                 static_cast<std::uint64_t>(kFirstAction)
                 + actionIndex(action));
         }
+
+        /**
+         * @brief The first language's button, one per i18n::Locale.
+         *
+         * Far enough above kFirstAction that the two ranges cannot meet
+         * whichever grows, which is the only thing keeping a click on a
+         * language off a key binding.
+         */
+        inline constexpr WidgetId kFirstLanguage{260};
+
+        /**
+         * @brief Get which button picks a language.
+         * @param locale The language to ask about.
+         * @return That language's button.
+         */
+        [[nodiscard]] constexpr WidgetId languageWidget(
+            antwika::i18n::Locale locale) noexcept
+        {
+            return static_cast<WidgetId>(
+                static_cast<std::uint64_t>(kFirstLanguage)
+                + static_cast<std::uint64_t>(locale));
+        }
     } // namespace optionsWidgets
 
     /**
@@ -92,7 +116,17 @@ namespace antwika::game
          * @param translator Words every caption; must outlive this
          * scene.
          */
-        explicit OptionsScene(const Translator &translator);
+        /**
+         * @brief Construct the scene over what words it.
+         * @param translator The captions; must outlive this object.
+         * @param languages The language names, at the same locale; must
+         * outlive this object. A second translator rather than more ids
+         * because `Locale` is i18n's enum and its names are i18n's --
+         * see LocaleState.hpp.
+         */
+        OptionsScene(
+            const Translator &translator,
+            const LanguageTranslator &languages);
 
         /**
          * @brief Describe the screen for one tick.
@@ -100,15 +134,20 @@ namespace antwika::game
          * @param pointer Where the pointer is and what it is doing.
          * @param state The bindings, the waiting action and whatever the
          * last attempt had to say.
+         * @param active Which language is on, so its button can be shown
+         * as the one already chosen. Passed rather than read off the
+         * translator so this stays a pure function of its arguments.
          * @return The drawing commands and what the pointer did.
          */
         [[nodiscard]] Frame describe(
             Size canvas,
             Pointer pointer,
-            const OptionsState &state) const;
+            const OptionsState &state,
+            antwika::i18n::Locale active) const;
 
     private:
         const Translator &translator;
+        const LanguageTranslator &languages;
     };
 
 } // namespace antwika::game

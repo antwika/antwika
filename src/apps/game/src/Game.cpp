@@ -26,6 +26,7 @@
 #include "antwika/game/HousingLevel.hpp"
 #include "antwika/game/HousingSystem.hpp"
 #include "antwika/game/InputFold.hpp"
+#include "antwika/game/LocaleState.hpp"
 #include "antwika/game/LabourDispatchSystem.hpp"
 #include "antwika/game/StaffingSystem.hpp"
 #include "antwika/game/LiveGrid.hpp"
@@ -92,11 +93,14 @@ namespace antwika::game
         PathIndex &paths = wiring.paths;
 
         // Fixed in source either way -- see GameWiring::translator.
-        const Translator ownTranslator{
-            antwika::i18n::kDefaultLocale};
-        const Translator &translator =
-            wiring.translator.has_value() ? wiring.translator->get()
-                                          : ownTranslator;
+        // Seeded from the injected translator when a test gave one.
+        // A Translator holds a locale and nothing else, so this is the
+        // whole of what such a test was saying -- see LocaleState.
+        LocaleState localeState(
+            wiring.translator.has_value()
+                ? wiring.translator->get().locale()
+                : antwika::i18n::kDefaultLocale);
+        const Translator &translator = localeState.translator();
 
         EventDispatcher dispatcher({wiring.eventSink});
 
@@ -433,7 +437,8 @@ namespace antwika::game
         BindingSink bindingSink(options);
 
         const MainMenuScene menuScene(translator);
-        const OptionsScene optionsScene(translator);
+        const OptionsScene optionsScene(
+            translator, localeState.languages());
         MainMenuSink menuSink(
             mode,
             menuUi,
@@ -441,7 +446,8 @@ namespace antwika::game
             menuScene,
             stopSignal,
             options,
-            optionsScene);
+            optionsScene,
+            localeState);
 
         // The camera it puts back is the one this run opened with.
         // Copied here exactly as the bar's reset button copies it.
@@ -508,8 +514,11 @@ namespace antwika::game
         // Before that tick's own input.
         // A sink reading a binding this one has not folded yet.
         // Would be reading a layout nobody was playing.
+        // Beside the mode, and for its reason exactly.
+        // A language staged last tick lands before anything lays out.
         std::vector<std::reference_wrapper<ITickEventSink>> timedSinks{
-            input, mode, bindingSink, reducer, menuSink, saveSink,
+            input, mode, localeState, bindingSink, reducer, menuSink,
+            saveSink,
             playingHotkeys};
 
         // Registered only when there is somewhere to put the picture.
@@ -555,7 +564,10 @@ namespace antwika::game
         // A replay names nowhere.
         // So replaying somebody else's session rebinds nothing here.
         antwika::game::saveOptionsFileIfNamed(
-            options.bindings(), wiring.optionsPath);
+            PlayerOptions{
+                .bindings = options.bindings(),
+                .locale = options.locale()},
+            wiring.optionsPath);
 
         const auto frame =
             snapshotOf(world, paths, camera, wiring.extent);

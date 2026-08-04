@@ -52,6 +52,33 @@ namespace antwika::game::events
     inline constexpr const char *kBindKey = "game.bind_key";
 
     /**
+     * @brief The language a live run started in, announced once ahead of
+     * its first tick.
+     *
+     * **This is what lets the options screen change the language at all.**
+     * i18n::Translator states the rule it is answering: a layout is a
+     * function of the strings declared into it and a hit-test is a
+     * function of the layout, so a run recorded in one language and
+     * replayed in another resolves one recorded click to two different
+     * widgets. The way out is not to keep the language out of the
+     * recording but to put it *in* -- the locale becomes simulation
+     * state, LocaleState folds it in the tick path, and a replay
+     * reproduces the language the same way it reproduces the camera.
+     *
+     * The payload is a JSON object of one string, "locale", the
+     * language's tag -- see LocaleEvent.hpp.
+     *
+     * **A language picked on the options screen is not this event**, for
+     * the reason a rebinding is not kBindKey: that is a click resolved
+     * against a layout inside the tick path, downstream of the recorder,
+     * and a replay works the change out again from the click it already
+     * holds. Only the locale a run *starts* in is announced, because it
+     * came from the player's options file and no replayed input implies
+     * it.
+     */
+    inline constexpr const char *kSetLocale = "game.set_locale";
+
+    /**
      * @brief There is deliberately no event here for placing a path or a
      * walker.
      *

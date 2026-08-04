@@ -9,6 +9,7 @@
 
 #include <nlohmann/json.hpp>
 
+#include <antwika/i18n/Locale.hpp>
 #include <antwika/replay/MigrationChain.hpp>
 
 #include "antwika/game/KeyBindings.hpp"
@@ -17,6 +18,41 @@ namespace antwika::game
 {
 
     using antwika::replay::MigrationChain;
+
+    /**
+     * @brief Everything an options file holds.
+     *
+     * Two preferences that have nothing to do with each other beyond
+     * both being the player's rather than the session's, which is what
+     * one file is for. They travel together because they are read and
+     * written together; neither knows about the other.
+     *
+     * **Neither is simulation state as it sits here.** The bindings
+     * become some through OptionsState and the language through
+     * LocaleState, and both reach a run the same way: announced once,
+     * ahead of the first tick, by a source that a replay constructs
+     * empty -- see BindingSource and LocaleSource.
+     */
+    struct PlayerOptions
+    {
+        /**
+         * @brief Which key asks for what.
+         */
+        KeyBindings bindings{};
+
+        /**
+         * @brief Which language the captions are worded in.
+         */
+        antwika::i18n::Locale locale{antwika::i18n::kDefaultLocale};
+
+        /**
+         * @brief Compare two sets of preferences.
+         * @param other The preferences to compare against.
+         * @return True when both members match.
+         */
+        [[nodiscard]] bool operator==(
+            const PlayerOptions &other) const = default;
+    };
 
     /**
      * @brief What every document of this format says it is.
@@ -37,19 +73,29 @@ namespace antwika::game
      * one member every persisted document in this code base carries its
      * version in, rather than a name of this format's own.
      */
-    inline constexpr std::uint32_t kOptionsFormatVersion = 1;
+    inline constexpr std::uint32_t kOptionsFormatVersion = 2;
+
+    /**
+     * @brief The member an options document names its language in.
+     *
+     * Written once so the schema, the migration, the encoder and the
+     * decoder cannot disagree about it -- four places that each spelled
+     * it out would be four chances to write one of them differently.
+     */
+    inline constexpr std::string_view kLocaleKey = "locale";
 
     /**
      * @brief Build the migration chain for the options document format.
      * @return A chain that brings an options document of any version
      * this build still reads up to kOptionsFormatVersion.
      *
-     * Empty today, because there has only ever been one revision, and
-     * present anyway: the reading order is `parse -> read version ->
-     * migrate -> validate -> decode` whether or not there is a step to
-     * take, and a chain constructed here is what refuses a document from
-     * a newer build instead of decoding it on the strength of happening
-     * to satisfy today's schema.
+     * One step long: version 2 added the picked language, so a
+     * version 1 document has "locale" written into it as the default
+     * language's tag before it is validated. That is the whole reason
+     * the chain was built empty rather than left out -- the reading
+     * order is `parse -> read version -> migrate -> validate -> decode`
+     * whether or not there is a step to take, so adding the first real
+     * step changed one function and no caller.
      * A factory rather than a constant, so adding a migration changes
      * one function; list order is not semantic, so appending to it is
      * conflict-free.
@@ -61,8 +107,8 @@ namespace antwika::game
      * @param bindings The layout to write.
      * @return The document, stating its magic and its version.
      */
-    [[nodiscard]] nlohmann::json bindingsToJson(
-        const KeyBindings &bindings);
+    [[nodiscard]] nlohmann::json optionsToJson(
+        const PlayerOptions &options);
 
     /**
      * @brief Decode an options document.
@@ -74,7 +120,7 @@ namespace antwika::game
      * describes a layout that cannot exist -- two actions on one key, or
      * an action on a key this application spends above the tick loop.
      */
-    [[nodiscard]] KeyBindings bindingsFromJson(
+    [[nodiscard]] PlayerOptions optionsFromJson(
         const nlohmann::json &document);
 
     /**
@@ -82,7 +128,7 @@ namespace antwika::game
      * @param bindings The layout to write.
      * @param out Receives the document.
      */
-    void writeOptions(const KeyBindings &bindings, std::ostream &out);
+    void writeOptions(const PlayerOptions &options, std::ostream &out);
 
     /**
      * @brief Read a layout from a stream.
@@ -90,7 +136,7 @@ namespace antwika::game
      * @return The layout it holds.
      * @throws OptionsFormatError If the stream does not hold one.
      */
-    [[nodiscard]] KeyBindings readOptions(std::istream &in);
+    [[nodiscard]] PlayerOptions readOptions(std::istream &in);
 
     /**
      * @brief Write a layout to a file.
@@ -100,7 +146,7 @@ namespace antwika::game
      * written.
      */
     void saveOptionsFile(
-        const KeyBindings &bindings, const std::string &path);
+        const PlayerOptions &options, const std::string &path);
 
     /**
      * @brief Read the layout a machine is carrying.
@@ -117,7 +163,7 @@ namespace antwika::game
      * @throws OptionsFormatError If a file is there and is not one of
      * these.
      */
-    [[nodiscard]] KeyBindings loadOptionsFileOrDefaults(
+    [[nodiscard]] PlayerOptions loadOptionsFileOrDefaults(
         const std::string &path);
 
     /**
@@ -128,7 +174,7 @@ namespace antwika::game
      * written.
      */
     void saveOptionsFileIfNamed(
-        const KeyBindings &bindings,
+        const PlayerOptions &options,
         const std::optional<std::string> &path);
 
     /**
@@ -148,6 +194,17 @@ namespace antwika::game
          * business at all.
          */
         std::optional<KeyBindings> bindings{};
+
+        /**
+         * @brief The language the machine is carrying, if it is this
+         * run's business at all.
+         *
+         * Empty for a replay for the reason the bindings are: the
+         * recording already carries the language it was played in, and
+         * reading the machine's over the top of it would resolve
+         * recorded clicks against a layout the recording never had.
+         */
+        std::optional<antwika::i18n::Locale> locale{};
 
         /**
          * @brief Where this run should leave its layout, if anywhere.

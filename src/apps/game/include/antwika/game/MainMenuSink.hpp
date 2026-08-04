@@ -6,6 +6,7 @@
 
 #include "antwika/game/AppMode.hpp"
 #include "antwika/game/InputFold.hpp"
+#include "antwika/game/LocaleState.hpp"
 #include "antwika/game/MainMenuScene.hpp"
 #include "antwika/game/OptionsScene.hpp"
 #include "antwika/game/OptionsState.hpp"
@@ -78,6 +79,8 @@ namespace antwika::game
          * outlive this sink.
          * @param optionsScene Describes the key bindings. Must outlive
          * this sink.
+         * @param locale The language the run is in, which a press on the
+         * options screen asks to change. Must outlive this sink.
          */
         MainMenuSink(
             AppModeState &mode,
@@ -86,7 +89,8 @@ namespace antwika::game
             const MainMenuScene &scene,
             ITickEventSink &stop,
             OptionsState &options,
-            const OptionsScene &optionsScene);
+            const OptionsScene &optionsScene,
+            LocaleState &locale);
 
         MainMenuSink(const MainMenuSink &) = delete;
         MainMenuSink(MainMenuSink &&) = delete;
@@ -117,6 +121,7 @@ namespace antwika::game
         ITickEventSink &stop;
         OptionsState &options;
         const OptionsScene &optionsScene;
+        LocaleState &locale;
     };
 
 } // namespace antwika::game
