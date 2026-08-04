@@ -5,6 +5,7 @@
 #include <string>
 #include <utility>
 
+#include <antwika/console/ConsolePicture.hpp>
 #include <antwika/engine/Events.hpp>
 #include <antwika/engine/StopSignal.hpp>
 #include <antwika/event/TickEvent.hpp>
@@ -77,6 +78,9 @@ namespace antwika::music_editor::tests
 
         // What the menu's quit tells, and a test then asks.
         engine::StopSignal stopSignal{};
+
+        // Empty unless a console test writes it; painting it is free.
+        console::ConsolePicture consolePicture{kCanvas};
 
         // Where the save box writes; a test that saves passes its own.
         std::string scoresDirectory;

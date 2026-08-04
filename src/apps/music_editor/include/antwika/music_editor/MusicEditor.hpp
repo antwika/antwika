@@ -7,6 +7,7 @@
 #include <string>
 #include <vector>
 
+#include <antwika/console/ConsolePicture.hpp>
 #include <antwika/event/IEventSink.hpp>
 #include <antwika/event/ITickEventSink.hpp>
 #include <antwika/gfx/Size.hpp>
@@ -49,6 +50,9 @@ namespace antwika::music_editor
 
         /** @brief How many commands the last frame drew. */
         std::size_t commands = 0;
+
+        /** @brief What the console's history held when the run ended. */
+        std::vector<std::string> console{};
     };
 
     /**
@@ -124,6 +128,27 @@ namespace antwika::music_editor
             replayRecorder{};
 
         TickSinkFactory extraSink{};
+
+        /**
+         * @brief The console's picture, which turns the console on.
+         *
+         * Absent, no console sink is registered, the toggle key types
+         * nothing anywhere, and the gate under it forwards everything.
+         */
+        std::optional<
+            std::reference_wrapper<antwika::console::ConsolePicture>>
+            consoleOverlay = std::nullopt;
+
+        /**
+         * @brief Whether the console's load_state may run at all.
+         *
+         * False under --record and --replay -- see
+         * console::consoleLoadPermitted().
+         */
+        bool consoleLoadEnabled = false;
+
+        /** @brief Where dump_state writes and load_state reads. */
+        std::string stateDumpPath{"dump_state.json"};
 
         /** @brief A ceiling on the run, or none. */
         std::optional<time::Tick> maxTicks{};

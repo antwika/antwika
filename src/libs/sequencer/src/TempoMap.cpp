@@ -38,7 +38,7 @@ namespace antwika::sequencer
     {
         refuseAStandingTempo(framesPerCycle);
 
-        segments.push_back(
+        table.push_back(
             Segment{
                 .startCycle = Cycle(),
                 .startFrame = 0,
@@ -49,7 +49,7 @@ namespace antwika::sequencer
     {
         refuseAStandingTempo(framesPerCycle);
 
-        if (startCycle <= segments.back().startCycle)
+        if (startCycle <= table.back().startCycle)
         {
             throw SequencerError(
                 "antwika::sequencer: a tempo segment at cycle "
@@ -62,7 +62,7 @@ namespace antwika::sequencer
         // So the previous tempo decides where this one begins.
         const auto startFrame = framesAt(startCycle);
 
-        segments.push_back(
+        table.push_back(
             Segment{
                 .startCycle = startCycle,
                 .startFrame = startFrame,
@@ -71,7 +71,13 @@ namespace antwika::sequencer
 
     std::size_t TempoMap::segmentCount() const noexcept
     {
-        return segments.size();
+        return table.size();
+    }
+
+    const std::vector<TempoMap::Segment> &
+    TempoMap::segments() const noexcept
+    {
+        return table;
     }
 
     const TempoMap::Segment &TempoMap::segmentFor(
@@ -79,9 +85,9 @@ namespace antwika::sequencer
     {
         std::size_t chosen = 0;
 
-        for (std::size_t index = 1; index < segments.size(); ++index)
+        for (std::size_t index = 1; index < table.size(); ++index)
         {
-            if (segments[index].startCycle > at)
+            if (table[index].startCycle > at)
             {
                 break;
             }
@@ -89,7 +95,7 @@ namespace antwika::sequencer
             chosen = index;
         }
 
-        return segments[chosen];
+        return table[chosen];
     }
 
     const TempoMap::Segment &TempoMap::segmentFor(
@@ -97,9 +103,9 @@ namespace antwika::sequencer
     {
         std::size_t chosen = 0;
 
-        for (std::size_t index = 1; index < segments.size(); ++index)
+        for (std::size_t index = 1; index < table.size(); ++index)
         {
-            if (segments[index].startFrame > frame)
+            if (table[index].startFrame > frame)
             {
                 break;
             }
@@ -107,7 +113,7 @@ namespace antwika::sequencer
             chosen = index;
         }
 
-        return segments[chosen];
+        return table[chosen];
     }
 
     FrameIndex TempoMap::framesAt(Cycle at) const

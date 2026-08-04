@@ -1,5 +1,6 @@
 #pragma once
 
+#include <antwika/console/ConsolePicture.hpp>
 #include <antwika/event/ITickEventSink.hpp>
 #include <antwika/event/TickEvent.hpp>
 #include <antwika/gfx/IWindow.hpp>
@@ -45,12 +46,16 @@ namespace antwika::music_editor
          * @param editor Holds the picture; must outlive this object.
          * @param canvas The size the window was **asked** for, which is
          * what every drawn command is expressed in.
+         * @param console The console's picture, painted last so the
+         * sheet stands over the whole editor; empty while no console
+         * is mounted, which paints nothing.  Must outlive this object.
          */
         RenderSink(
             IWindow &window,
             const EditorScene &scene,
             const EditorSink &editor,
-            Size canvas);
+            Size canvas,
+            const antwika::console::ConsolePicture &console);
 
         RenderSink(const RenderSink &) = delete;
         RenderSink(RenderSink &&) = delete;
@@ -69,6 +74,7 @@ namespace antwika::music_editor
         const EditorScene &scene;
         const EditorSink &editor;
         Size canvas;
+        const antwika::console::ConsolePicture &console;
     };
 
 } // namespace antwika::music_editor

@@ -1,5 +1,7 @@
 #include "antwika/sequencer/TempoMap.hpp"
 
+#include <cstddef>
+
 #include <gtest/gtest.h>
 
 #include <antwika/pattern/Cycle.hpp>
@@ -109,4 +111,44 @@ TEST(TempoMapTest, ClampsAPositionBeforeTheVeryFirstFrame)
     const TempoMap tempo(Rational(48000));
 
     EXPECT_EQ(tempo.framesAt(Cycle(-5)), 0U);
+}
+
+// The table a caller reads back grows with every segment added.
+TEST(TempoMapTest, ReportsItsSegmentsInOrder)
+{
+    TempoMap tempo(Rational(48000));
+
+    ASSERT_EQ(tempo.segments().size(), 1U);
+    EXPECT_EQ(tempo.segments().front().startCycle, Cycle());
+    EXPECT_EQ(tempo.segments().front().startFrame, 0U);
+    EXPECT_EQ(tempo.segments().front().framesPerCycle, Rational(48000));
+
+    tempo.addSegment(Cycle(2), Rational(24000));
+
+    ASSERT_EQ(tempo.segments().size(), 2U);
+    EXPECT_EQ(tempo.segments().back().startCycle, Cycle(2));
+    EXPECT_EQ(tempo.segments().back().startFrame, 96000U);
+    EXPECT_EQ(tempo.segments().back().framesPerCycle, Rational(24000));
+}
+
+// A dump rebuilds a map from its table, so the replay must be exact.
+// Each startFrame is derived from the segments before it alone.
+TEST(TempoMapTest, ReplayingItsSegmentsReproducesAnEqualMap)
+{
+    TempoMap tempo(Rational(48000));
+    tempo.addSegment(Cycle(2), Rational(24000));
+    tempo.addSegment(Cycle(4), Rational(96000));
+
+    const auto &table = tempo.segments();
+
+    TempoMap replayed(table.front().framesPerCycle);
+
+    for (std::size_t index = 1; index < table.size(); ++index)
+    {
+        replayed.addSegment(
+            table[index].startCycle, table[index].framesPerCycle);
+    }
+
+    // startFrame included: the replay recomputed every one of them.
+    EXPECT_EQ(replayed.segments(), table);
 }

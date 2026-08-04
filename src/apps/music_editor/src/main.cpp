@@ -7,6 +7,8 @@
 
 #include <antwika/app/ConsoleLogging.hpp>
 #include <antwika/app/FullscreenToggleSource.hpp>
+#include <antwika/console/ConsolePicture.hpp>
+#include <antwika/console/SnapshotCommands.hpp>
 #include <antwika/app/RunRecorded.hpp>
 #include <antwika/app/WindowPointerMapping.hpp>
 #include <antwika/gfx/SelectedBackend.hpp>
@@ -160,6 +162,9 @@ namespace
 
         PasteSource pasting(fullscreen, *clipboard, codec, live);
 
+        // Against the canvas the editor is drawn on.
+        antwika::console::ConsolePicture consolePicture(kWindowSize);
+
         // Until the window closes or a replay says stop, like game.
         // The null backend reports no close, so Ctrl+C ends one there.
         const auto summary = antwika::music_editor::bootstrap({
@@ -197,8 +202,14 @@ namespace
                 [&](const EditorSink &editor)
             {
                 return std::make_unique<RenderSink>(
-                    *window, scene, editor, kWindowSize);
-            }});
+                    *window, scene, editor, kWindowSize,
+                    consolePicture);
+            },
+            .consoleOverlay = consolePicture,
+            .consoleLoadEnabled =
+                antwika::console::consoleLoadPermitted(
+                    recorded.options.recordPath.has_value(),
+                    recorded.options.replayPath.has_value())});
 
         device->stop();
 

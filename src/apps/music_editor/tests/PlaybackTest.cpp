@@ -18,6 +18,7 @@
 #include <antwika/time/ISleeper.hpp>
 
 #include "antwika/music_editor/Score.hpp"
+#include "antwika/music_editor/StateDumpError.hpp"
 #include "antwika/music_editor/TrackPreset.hpp"
 
 using antwika::music_editor::kPresetCount;
@@ -999,4 +1000,137 @@ TEST(PlaybackTest, LightsANoteOnTheTickItsAudioBegins)
     }
 
     EXPECT_TRUE(next);
+}
+
+// What a dump takes is the tempo table and the clocks, nothing audible.
+TEST(PlaybackTest, RemembersItsTempoTableAndClocks)
+{
+    Rig rig;
+    rig.play("$: drum.n(\"0*4\")\n");
+
+    Playback playback(
+        rig.score, rig.mixer, rig.device, rig.sleeper,
+        oneCycleASecond());
+
+    step(playback, 12, false);
+    playback.setSpeed(Rational(2));
+    step(playback, 3, false);
+
+    const auto memory = playback.remember();
+
+    EXPECT_EQ(memory.segments.size(), 2U);
+    EXPECT_EQ(memory.played, playback.playedTicks());
+    EXPECT_EQ(memory.counter, playback.started());
+    EXPECT_EQ(memory.queued, playback.queuedFrames());
+    EXPECT_EQ(memory.voiceCount, 1U);
+}
+
+// The whole point of the memory.
+// Another Playback stands at the instant it remembers.
+// From there the two runs decide the very same notes.
+TEST(PlaybackTest, RestoreStandsAFreshPlaybackAtTheRememberedInstant)
+{
+    const std::string source =
+        "$: drum.n(\"0*4\")\n$: drum.n(\"~ 0\")\n";
+
+    Rig one;
+    one.play(source);
+
+    Playback original(
+        one.score, one.mixer, one.device, one.sleeper,
+        oneCycleASecond());
+
+    step(original, 12, false);
+    original.setSpeed(Rational(2));
+    step(original, 5, false);
+
+    const auto memory = original.remember();
+
+    Rig two;
+    two.play(source);
+
+    Playback restored(
+        two.score, two.mixer, two.device, two.sleeper,
+        oneCycleASecond());
+
+    restored.restore(memory);
+
+    EXPECT_EQ(restored.playedTicks(), original.playedTicks());
+    EXPECT_EQ(restored.queuedFrames(), original.queuedFrames());
+    EXPECT_EQ(restored.started(), original.started());
+    EXPECT_EQ(restored.position(), original.position());
+
+    // Remembering the restored instant gives the very same memory.
+    EXPECT_EQ(restored.remember(), memory);
+
+    // Past the ring of every note decided before the dump.
+    // The tail is the one thing a restore deliberately cuts.
+    step(original, 6, false);
+    step(restored, 6, false);
+
+    EXPECT_EQ(restored.position(), original.position());
+    EXPECT_EQ(restored.playedTicks(), original.playedTicks());
+    EXPECT_EQ(restored.started(), original.started());
+    EXPECT_EQ(restored.highlights(), original.highlights());
+}
+
+// The pool grows to the dump's count, and never below the floor of one.
+TEST(PlaybackTest, RestoringNoVoicesStillKeepsTheConstructorsFloor)
+{
+    Rig rig;
+
+    Playback playback(
+        rig.score, rig.mixer, rig.device, rig.sleeper,
+        oneCycleASecond());
+
+    auto memory = playback.remember();
+    memory.voiceCount = 0;
+
+    playback.restore(memory);
+    playback.step(false);
+
+    EXPECT_EQ(playback.playedTicks(), 1U);
+}
+
+// A restore that cannot happen must leave the playback untouched.
+TEST(PlaybackTest, RefusesAMemoryWithNoTempoSegmentAtAll)
+{
+    Rig rig;
+    rig.play("$: drum.n(\"0\")\n");
+
+    Playback playback(
+        rig.score, rig.mixer, rig.device, rig.sleeper,
+        oneCycleASecond());
+
+    step(playback, 4, false);
+
+    auto memory = playback.remember();
+    memory.segments.clear();
+
+    EXPECT_THROW(
+        playback.restore(memory),
+        antwika::music_editor::StateDumpError);
+
+    EXPECT_EQ(playback.playedTicks(), 4U);
+}
+
+// A table the TempoMap itself refuses is refused as a dump error.
+TEST(PlaybackTest, RefusesAMemoryWhoseSegmentsAreOutOfOrder)
+{
+    Rig rig;
+
+    Playback playback(
+        rig.score, rig.mixer, rig.device, rig.sleeper,
+        oneCycleASecond());
+
+    playback.step(false);
+
+    auto memory = playback.remember();
+    memory.segments.push_back(memory.segments.front());
+
+    EXPECT_THROW(
+        playback.restore(memory),
+        antwika::music_editor::StateDumpError);
+
+    EXPECT_EQ(playback.playedTicks(), 1U);
 }
