@@ -6,6 +6,8 @@
 #include <system_error>
 #include <vector>
 
+#include <unistd.h>
+
 #include <antwika/engine/Events.hpp>
 #include <antwika/event/Event.hpp>
 #include <antwika/event/mocks/MockEventSink.hpp>
@@ -91,7 +93,14 @@ namespace
     {
     public:
         explicit ScratchFile(std::string name)
-            : path((std::filesystem::temp_directory_path() / name).string())
+            : path(
+                  (std::filesystem::temp_directory_path()
+                   // The pid keeps parallel ctest runs apart.
+                   // Each case is its own process under ctest -j.
+                   // Two cases on one fixed name raced here.
+                   // See game/tests/ScratchDirectory.hpp.
+                   / (std::string(name) + "." + std::to_string(::getpid())))
+                      .string())
         {
         }
 

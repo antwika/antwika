@@ -6,6 +6,8 @@
 #include <string>
 #include <variant>
 
+#include <unistd.h>
+
 #include <gtest/gtest.h>
 
 #include <antwika/event/TickEvent.hpp>
@@ -226,7 +228,10 @@ namespace
     [[nodiscard]] std::string freshDirectory(const std::string &name)
     {
         const auto path =
-            std::filesystem::temp_directory_path() / "antwika-editor"
+            std::filesystem::temp_directory_path()
+            // The pid keeps parallel ctest processes apart.
+            // See game/tests/ScratchDirectory.hpp.
+            / ("antwika-editor." + std::to_string(::getpid()))
             / name;
 
         std::filesystem::remove_all(path);
