@@ -13,6 +13,11 @@ antwika_add_library(
         src/Typing.cpp
     DEPENDS
         antwika::animation
+        # For PointerReading.hpp, which is now one definition there and
+        # a re-export here.
+        # Every application linking antwika::console already links
+        # antwika::app, so no application gains a library here.
+        antwika::app
         antwika::config
         antwika::engine
         antwika::event
