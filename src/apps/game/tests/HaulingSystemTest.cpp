@@ -105,7 +105,7 @@ namespace
         PathIndex paths;
         BuildingIndex built;
         HaulingSystem hauling{paths, kExtent};
-        BuildingSystem buildings{built, kExtent, antwika::game::Tuning{}};
+        BuildingSystem buildings{built, kExtent, antwika::game::GameConfig{}};
     };
 } // namespace
 

@@ -9,16 +9,16 @@
 #include <antwika/event/TickEvent.hpp>
 #include <antwika/input/InputEvent.hpp>
 
-#include "antwika/game/BuildTool.hpp"
 #include "antwika/game/BuildingIndex.hpp"
+#include "antwika/game/BuildTool.hpp"
 #include "antwika/game/Camera.hpp"
 #include "antwika/game/Cell.hpp"
+#include "antwika/game/GameConfig.hpp"
 #include "antwika/game/GameState.hpp"
 #include "antwika/game/GridExtent.hpp"
 #include "antwika/game/InputFold.hpp"
 #include "antwika/game/PathIndex.hpp"
 #include "antwika/game/RoadDrag.hpp"
-#include "antwika/game/Tuning.hpp"
 #include "antwika/game/UiOverlay.hpp"
 #include "antwika/game/WorldMapState.hpp"
 
@@ -183,7 +183,7 @@ namespace antwika::game
          * and read by whatever draws the preview.
          * @param state The bank each placement is paid out of; see
          * GameState::money for why spending is never refused.
-         * @param tuning The costs and the periods a placement starts
+         * @param config The costs and the periods a placement starts
          * with; copied, so no lifetime rule attaches to it.
          */
         GridSink(
@@ -198,7 +198,7 @@ namespace antwika::game
             BuildingIndex &built,
             RoadDrag &drag,
             GameState &state,
-            Tuning tuning);
+            GameConfig config);
 
         GridSink(const GridSink &) = delete;
         GridSink(GridSink &&) = delete;
@@ -250,7 +250,7 @@ namespace antwika::game
         // The reducer owns the other members; this sink spends money.
         // Two writers, and never of one field -- see GameState.
         GameState &state;
-        Tuning tuning;
+        GameConfig config;
     };
 
 } // namespace antwika::game

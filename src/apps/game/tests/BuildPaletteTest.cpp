@@ -37,22 +37,21 @@
 #include "FakeMenuCommands.hpp"
 #include "TestTranslator.hpp"
 #include "antwika/game/BuildGhost.hpp"
-#include "antwika/game/BuildTool.hpp"
 #include "antwika/game/Building.hpp"
 #include "antwika/game/BuildingIndex.hpp"
+#include "antwika/game/BuildTool.hpp"
 #include "antwika/game/Camera.hpp"
 #include "antwika/game/Cell.hpp"
 #include "antwika/game/FootprintOutline.hpp"
 #include "antwika/game/GridExtent.hpp"
 #include "antwika/game/GridScene.hpp"
 #include "antwika/game/GridSink.hpp"
-#include "antwika/game/WorldMapState.hpp"
 #include "antwika/game/InputFold.hpp"
 #include "antwika/game/IsoProjection.hpp"
-#include "antwika/game/Path.hpp"
-#include "antwika/game/MenuModalScene.hpp"
-#include "antwika/game/PathIndex.hpp"
 #include "antwika/game/MapView.hpp"
+#include "antwika/game/MenuModalScene.hpp"
+#include "antwika/game/Path.hpp"
+#include "antwika/game/PathIndex.hpp"
 #include "antwika/game/PauseState.hpp"
 #include "antwika/game/RoadDrag.hpp"
 #include "antwika/game/SceneSnapshot.hpp"
@@ -61,53 +60,54 @@
 #include "antwika/game/Toolbar.hpp"
 #include "antwika/game/UiOverlay.hpp"
 #include "antwika/game/UiSink.hpp"
+#include "antwika/game/WorldMapState.hpp"
 
-using antwika::game::Tuning;
+using antwika::game::GameConfig;
 using antwika::game::tests::kTranslator;
 
 using antwika::ecs::SystemScheduler;
 using antwika::ecs::World;
 using antwika::event::Event;
 using antwika::event::TickEvent;
-using antwika::game::tests::widgetCentre;
 using antwika::game::BuildGhost;
-using antwika::game::ghostFor;
 using antwika::game::Building;
-using antwika::game::BuildingSprite;
-using antwika::game::buildingKindIndex;
-using antwika::game::buildingTile;
+using antwika::game::BuildingIndex;
 using antwika::game::BuildingKind;
+using antwika::game::buildingKindIndex;
+using antwika::game::BuildingSprite;
+using antwika::game::buildingTile;
 using antwika::game::BuildTool;
 using antwika::game::buildToolIndex;
-using antwika::game::BuildingIndex;
 using antwika::game::Camera;
 using antwika::game::Cell;
 using antwika::game::cellBounds;
+using antwika::game::cellCentre;
 using antwika::game::footprintBounds;
 using antwika::game::footprintOf;
 using antwika::game::footprintOutline;
-using antwika::game::kOutlineCorners;
-using antwika::game::cellCentre;
+using antwika::game::ghostFor;
 using antwika::game::GridExtent;
 using antwika::game::GridScene;
 using antwika::game::GridSink;
-using antwika::game::MenuModalScene;
-using antwika::game::PauseState;
-using antwika::game::RoadDrag;
-using antwika::game::WorldMap;
-using antwika::game::WorldMapState;
 using antwika::game::InputFold;
 using antwika::game::kBuildToolCount;
+using antwika::game::kOutlineCorners;
+using antwika::game::MenuModalScene;
 using antwika::game::Path;
 using antwika::game::PathIndex;
+using antwika::game::PauseState;
 using antwika::game::placesBuilding;
+using antwika::game::RoadDrag;
 using antwika::game::roadTile;
 using antwika::game::SceneSnapshot;
 using antwika::game::snapshotOf;
+using antwika::game::tests::widgetCentre;
 using antwika::game::Toolbar;
 using antwika::game::toolTile;
 using antwika::game::UiOverlay;
 using antwika::game::UiSink;
+using antwika::game::WorldMap;
+using antwika::game::WorldMapState;
 using antwika::gfx::Color;
 using antwika::gfx::ITexture;
 using antwika::gfx::Point;
@@ -418,7 +418,7 @@ namespace
             built,
             drag,
             state,
-            Tuning{}};
+            GameConfig{}};
     };
 } // namespace
 

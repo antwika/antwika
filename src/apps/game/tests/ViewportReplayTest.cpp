@@ -276,7 +276,7 @@ namespace
         InputPipeline input(inner, device, codec, options);
 
         auto summary = antwika::game::bootstrap(
-            antwika::game::GameConfig{
+            antwika::game::GameWiring{
                 .logger = logger,
                 .eventSink = eventSink,
                 .inputSource = input,

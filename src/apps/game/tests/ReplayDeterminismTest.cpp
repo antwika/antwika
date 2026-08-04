@@ -138,7 +138,7 @@ namespace
         antwika::game::PauseState pause;
 
         auto summary = antwika::game::bootstrap(
-            antwika::game::GameConfig{
+            antwika::game::GameWiring{
                 .logger = logger,
                 .eventSink = eventSink,
                 .inputSource = source,
@@ -175,7 +175,7 @@ namespace
         UiOverlay overlay(kUiCanvas);
 
         auto summary = antwika::game::bootstrap(
-            antwika::game::GameConfig{
+            antwika::game::GameWiring{
                 .logger = logger,
                 .eventSink = eventSink,
                 .inputSource = source,

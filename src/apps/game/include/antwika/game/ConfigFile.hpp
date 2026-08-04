@@ -10,7 +10,7 @@
 
 #include <antwika/replay/MigrationChain.hpp>
 
-#include "antwika/game/Tuning.hpp"
+#include "antwika/game/GameConfig.hpp"
 
 namespace antwika::game
 {
@@ -53,13 +53,13 @@ namespace antwika::game
     [[nodiscard]] MigrationChain standardConfigMigrations();
 
     /**
-     * @brief Encode a tuning as a config document.
-     * @param tuning The tuning to write.
+     * @brief Encode a config as a config document.
+     * @param config The config to write.
      * @return The document, stating its magic, its version and every
      * member outright -- a written config is the full picture, so what
      * each number is called and currently is can be read off the file.
      */
-    [[nodiscard]] nlohmann::json tuningToJson(const Tuning &tuning);
+    [[nodiscard]] nlohmann::json configToJson(const GameConfig &config);
 
     /**
      * @brief Decode a config document.
@@ -73,35 +73,35 @@ namespace antwika::game
      * member changes meaning.
      *
      * @param document The parsed document.
-     * @return The tuning it states, defaults filling what it does not.
+     * @return The config it states, defaults filling what it does not.
      * @throws ConfigFormatError If it is not this format, states a
      * version this build cannot reach the current one from, or fails
      * the schema -- a member of the wrong shape, a period of zero
      * ticks, a negative cost, or a building kind no name goes by.
      */
-    [[nodiscard]] Tuning tuningFromJson(const nlohmann::json &document);
+    [[nodiscard]] GameConfig configFromJson(const nlohmann::json &document);
 
     /**
-     * @brief Write a tuning to a stream.
-     * @param tuning The tuning to write.
+     * @brief Write a config to a stream.
+     * @param config The config to write.
      * @param out Receives the document.
      */
-    void writeConfig(const Tuning &tuning, std::ostream &out);
+    void writeConfig(const GameConfig &config, std::ostream &out);
 
     /**
-     * @brief Read a tuning from a stream.
+     * @brief Read a config from a stream.
      * @param in Holds the document.
-     * @return The tuning it holds.
+     * @return The config it holds.
      * @throws ConfigFormatError If the stream does not hold one.
      */
-    [[nodiscard]] Tuning readConfig(std::istream &in);
+    [[nodiscard]] GameConfig readConfig(std::istream &in);
 
     /**
      * @brief Read the config the game ships beside its assets.
      *
      * **A missing file is an ordinary install**, not an error: a build
      * nobody has rebalanced plays the game these sources define, which
-     * is exactly what a default-constructed Tuning is. Anything else
+     * is exactly what a default-constructed GameConfig is. Anything else
      * wrong with a file that is there is refused rather than repaired,
      * for the reason ConfigFormatError gives.
      *
@@ -110,7 +110,7 @@ namespace antwika::game
      * @throws ConfigFormatError If a file is there and is not one of
      * these.
      */
-    [[nodiscard]] Tuning loadConfigFileOrDefaults(
+    [[nodiscard]] GameConfig loadConfigFileOrDefaults(
         const std::string &path);
 
 } // namespace antwika::game

@@ -5,7 +5,7 @@
 #include <antwika/time/Tick.hpp>
 
 #include "antwika/game/Desirability.hpp"
-#include "antwika/game/Tuning.hpp"
+#include "antwika/game/GameConfig.hpp"
 
 namespace antwika::game
 {
@@ -63,11 +63,11 @@ namespace antwika::game
          * @param desirability The field, rebuilt every tick by
          * DesirabilitySystem in the phase before this one. Must outlive
          * this object.
-         * @param tuning The evolve and devolve periods; copied, so no
+         * @param config The evolve and devolve periods; copied, so no
          * lifetime rule attaches to it.
          */
         HousingSystem(
-            const DesirabilityField &desirability, Tuning tuning);
+            const DesirabilityField &desirability, GameConfig config);
 
         HousingSystem(const HousingSystem &) = delete;
         HousingSystem(HousingSystem &&) = delete;
@@ -95,7 +95,7 @@ namespace antwika::game
 
     private:
         const DesirabilityField &desirability;
-        Tuning tuning;
+        GameConfig config;
     };
 
 } // namespace antwika::game

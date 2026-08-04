@@ -2,10 +2,10 @@
 
 #include "antwika/game/AppMode.hpp"
 #include "antwika/game/Camera.hpp"
+#include "antwika/game/GameConfig.hpp"
 #include "antwika/game/IMenuCommands.hpp"
 #include "antwika/game/LiveGrid.hpp"
 #include "antwika/game/SessionStore.hpp"
-#include "antwika/game/Tuning.hpp"
 #include "antwika/game/WorldMapState.hpp"
 
 namespace antwika::game
@@ -42,7 +42,7 @@ namespace antwika::game
          * @param home Where a new game's camera is put back to; a copy,
          * since it is a value the run was configured with rather than a
          * camera anybody moves.
-         * @param tuning Where a new game's bank opens; a copy, on the
+         * @param config Where a new game's bank opens; a copy, on the
          * same terms the camera is.
          */
         MenuCommands(
@@ -51,7 +51,7 @@ namespace antwika::game
             WorldMapState &cities,
             const LiveGrid &live,
             Camera home,
-            Tuning tuning);
+            GameConfig config);
 
         MenuCommands(const MenuCommands &) = delete;
         MenuCommands(MenuCommands &&) = delete;
@@ -85,7 +85,7 @@ namespace antwika::game
         WorldMapState &cities;
         const LiveGrid &live;
         Camera home;
-        Tuning tuning;
+        GameConfig config;
     };
 
 } // namespace antwika::game

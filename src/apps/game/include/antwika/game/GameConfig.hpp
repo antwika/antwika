@@ -33,7 +33,7 @@ namespace antwika::game
      *
      * Declared here rather than in SpawnSystem.hpp, where it used to
      * live, because every system that counts walkers now reads the cap
-     * off a Tuning and this constant is only its default.
+     * off a GameConfig and this constant is only its default.
      */
     inline constexpr std::size_t kWalkerLimit = 64;
 
@@ -41,13 +41,13 @@ namespace antwika::game
      * @brief The numbers a session's rules run on, gathered as a value.
      *
      * Every field defaults to the constant it externalizes, so a
-     * default-constructed Tuning *is* the shipped game and a test that
-     * says nothing about tuning exercises exactly what it always did.
+     * default-constructed GameConfig *is* the shipped game and a test that
+     * says nothing about config exercises exactly what it always did.
      * The application reads config.json beside its assets at startup --
      * see ConfigFile.hpp -- and hands the result in through bootstrap(),
      * so a rebalance is an edit to a file rather than to this header.
      *
-     * **A Tuning is part of the game's definition, exactly as the source
+     * **A GameConfig is part of the game's definition, exactly as the source
      * and the art are.** Nothing here is recorded: a replay assumes the
      * config it was recorded under, as it assumes the build it was
      * recorded by, and replaying a session under an edited config is
@@ -64,7 +64,7 @@ namespace antwika::game
      * ConfigFile.cpp's schema is where a zero period or a negative cost
      * is refused, beside the parse that would admit it.
      */
-    struct Tuning
+    struct GameConfig
     {
         /** @brief What the bank opens with. */
         std::int64_t startingMoney = kStartingMoney;
@@ -135,10 +135,10 @@ namespace antwika::game
 
         /**
          * @brief Compare two tunings.
-         * @param other The tuning to compare against.
+         * @param other The config to compare against.
          * @return True when every field matches.
          */
-        [[nodiscard]] bool operator==(const Tuning &other) const = default;
+        [[nodiscard]] bool operator==(const GameConfig &other) const = default;
     };
 
 } // namespace antwika::game

@@ -11,13 +11,13 @@ namespace antwika::game
         WorldMapState &cities,
         const LiveGrid &live,
         Camera home,
-        Tuning tuning)
+        GameConfig config)
         : mode(mode),
           session(session),
           cities(cities),
           live(live),
           home(home),
-          tuning(tuning)
+          config(config)
     {
     }
 
@@ -33,7 +33,7 @@ namespace antwika::game
 
         // A fresh bank opens with the configured funds.
         // The save's own default is the shipped constant.
-        fresh.state.money = tuning.startingMoney;
+        fresh.state.money = config.startingMoney;
 
         session.restore(fresh);
     }

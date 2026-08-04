@@ -11,23 +11,23 @@
 #include "antwika/game/BuildTool.hpp"
 #include "antwika/game/Camera.hpp"
 #include "antwika/game/Cell.hpp"
+#include "antwika/game/CityRatings.hpp"
 #include "antwika/game/Direction.hpp"
+#include "antwika/game/Employment.hpp"
 #include "antwika/game/Errand.hpp"
+#include "antwika/game/GameConfig.hpp"
 #include "antwika/game/GameSummary.hpp"
 #include "antwika/game/GridExtent.hpp"
-#include "antwika/game/CityRatings.hpp"
 #include "antwika/game/Household.hpp"
-#include "antwika/game/LabourQuery.hpp"
 #include "antwika/game/HousingLevel.hpp"
 #include "antwika/game/KeyBindings.hpp"
-#include "antwika/game/Production.hpp"
-#include "antwika/game/Employment.hpp"
-#include "antwika/game/Staff.hpp"
-#include "antwika/game/SaveGame.hpp"
+#include "antwika/game/LabourQuery.hpp"
 #include "antwika/game/MapView.hpp"
+#include "antwika/game/Production.hpp"
+#include "antwika/game/SaveGame.hpp"
 #include "antwika/game/SceneSnapshot.hpp"
+#include "antwika/game/Staff.hpp"
 #include "antwika/game/Terrain.hpp"
-#include "antwika/game/Tuning.hpp"
 #include "antwika/game/WorldMap.hpp"
 #include "antwika/game/WorldMapScene.hpp"
 
@@ -70,7 +70,7 @@ namespace
     using antwika::game::SaveGame;
     using antwika::game::SceneSnapshot;
     using antwika::game::Terrain;
-    using antwika::game::Tuning;
+    using antwika::game::GameConfig;
     using antwika::game::WalkerSprite;
     using antwika::game::WalkerView;
     using antwika::game::WorldMap;
@@ -571,41 +571,41 @@ namespace
     }
 
 
-    TEST(TuningValueTest, EqualityComparesEveryField)
+    TEST(GameConfigValueTest, EqualityComparesEveryField)
     {
-        const Tuning base;
+        const GameConfig base;
 
         expectMemberCompared(
-            base, [](Tuning &t) { t.startingMoney = 1; });
-        expectMemberCompared(base, [](Tuning &t) { t.roadCost = 99; });
-        expectMemberCompared(base, [](Tuning &t) { t.razeCost = 99; });
+            base, [](GameConfig &t) { t.startingMoney = 1; });
+        expectMemberCompared(base, [](GameConfig &t) { t.roadCost = 99; });
+        expectMemberCompared(base, [](GameConfig &t) { t.razeCost = 99; });
         expectMemberCompared(
-            base, [](Tuning &t) { t.buildingCosts[0] = 99; });
+            base, [](GameConfig &t) { t.buildingCosts[0] = 99; });
         expectMemberCompared(
-            base, [](Tuning &t) { t.riskPeriodTicks = 99; });
+            base, [](GameConfig &t) { t.riskPeriodTicks = 99; });
         expectMemberCompared(
-            base, [](Tuning &t) { t.drainPeriodTicks = 99; });
+            base, [](GameConfig &t) { t.drainPeriodTicks = 99; });
         expectMemberCompared(
-            base, [](Tuning &t) { t.mouthsPerServing = 99; });
+            base, [](GameConfig &t) { t.mouthsPerServing = 99; });
         expectMemberCompared(
-            base, [](Tuning &t) { t.spawnPeriodTicks = 99; });
+            base, [](GameConfig &t) { t.spawnPeriodTicks = 99; });
         expectMemberCompared(
-            base, [](Tuning &t) { t.burnDurationTicks = 99; });
+            base, [](GameConfig &t) { t.burnDurationTicks = 99; });
         expectMemberCompared(
-            base, [](Tuning &t) { t.settlerPeriodTicks = 99; });
+            base, [](GameConfig &t) { t.settlerPeriodTicks = 99; });
         expectMemberCompared(
-            base, [](Tuning &t) { t.evolvePeriodTicks = 99; });
+            base, [](GameConfig &t) { t.evolvePeriodTicks = 99; });
         expectMemberCompared(
-            base, [](Tuning &t) { t.devolvePeriodTicks = 99; });
+            base, [](GameConfig &t) { t.devolvePeriodTicks = 99; });
         expectMemberCompared(
-            base, [](Tuning &t) { t.productionPeriodTicks = 99; });
+            base, [](GameConfig &t) { t.productionPeriodTicks = 99; });
         expectMemberCompared(
-            base, [](Tuning &t) { t.productionBatch = 99; });
+            base, [](GameConfig &t) { t.productionBatch = 99; });
         expectMemberCompared(
-            base, [](Tuning &t) { t.labourPeriodTicks = 99; });
+            base, [](GameConfig &t) { t.labourPeriodTicks = 99; });
         expectMemberCompared(
-            base, [](Tuning &t) { t.staffDecayPeriodTicks = 99; });
-        expectMemberCompared(base, [](Tuning &t) { t.walkerLimit = 99; });
+            base, [](GameConfig &t) { t.staffDecayPeriodTicks = 99; });
+        expectMemberCompared(base, [](GameConfig &t) { t.walkerLimit = 99; });
     }
 
 } // namespace

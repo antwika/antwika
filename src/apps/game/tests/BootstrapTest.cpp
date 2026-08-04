@@ -107,7 +107,7 @@ namespace
             antwika::time::Tick maxTicks,
             antwika::event::ITickEventSink *recorder = nullptr)
         {
-            antwika::game::GameConfig config{
+            antwika::game::GameWiring config{
                 .logger = logger,
                 .eventSink = eventSink,
                 .inputSource = source,
@@ -343,7 +343,7 @@ TEST(BootstrapTest, Bootstrap_RunsEveryObserverOncePerTick)
     CountingObserver second;
 
     antwika::game::bootstrap(
-        antwika::game::GameConfig{
+        antwika::game::GameWiring{
             .logger = harness.logger,
             .eventSink = harness.eventSink,
             .inputSource = source,
@@ -451,7 +451,7 @@ namespace
         antwika::game::GameSummary run(ReplaySource &source)
         {
             return antwika::game::bootstrap(
-                antwika::game::GameConfig{
+                antwika::game::GameWiring{
                     .logger = logger,
                     .eventSink = eventSink,
                     .inputSource = source,
@@ -598,7 +598,7 @@ TEST(BootstrapTest, Bootstrap_WordsItselfWithTheTranslatorItIsGiven)
     antwika::game::UiOverlay overlay{antwika::game::kUiCanvas};
 
     const auto summary = antwika::game::bootstrap(
-        antwika::game::GameConfig{
+        antwika::game::GameWiring{
             .logger = logger,
             .eventSink = eventSink,
             .inputSource = source,
@@ -667,7 +667,7 @@ namespace
         antwika::game::GameSummary run(ReplaySource &source)
         {
             return antwika::game::bootstrap(
-                antwika::game::GameConfig{
+                antwika::game::GameWiring{
                     .logger = logger,
                     .eventSink = eventSink,
                     .inputSource = source,
@@ -793,7 +793,7 @@ namespace
             std::optional<antwika::game::SaveGame> start = std::nullopt)
         {
             return antwika::game::bootstrap(
-                antwika::game::GameConfig{
+                antwika::game::GameWiring{
                     .logger = logger,
                     .eventSink = eventSink,
                     .inputSource = source,
@@ -1014,7 +1014,7 @@ namespace
         antwika::game::GameSummary run(ReplaySource &source)
         {
             return antwika::game::bootstrap(
-                antwika::game::GameConfig{
+                antwika::game::GameWiring{
                     .logger = logger,
                     .eventSink = eventSink,
                     .inputSource = source,

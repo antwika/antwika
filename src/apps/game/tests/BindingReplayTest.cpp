@@ -194,7 +194,7 @@ namespace
         BindingSource bound(input, machine.bindings);
 
         auto summary = antwika::game::bootstrap(
-            antwika::game::GameConfig{
+            antwika::game::GameWiring{
                 .logger = logger,
                 .eventSink = eventSink,
                 .inputSource = bound,

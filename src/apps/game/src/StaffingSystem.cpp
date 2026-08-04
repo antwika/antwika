@@ -216,7 +216,7 @@ namespace antwika::game
         }
     } // namespace
 
-    StaffingSystem::StaffingSystem(Tuning tuning) : tuning(tuning)
+    StaffingSystem::StaffingSystem(GameConfig config) : config(config)
     {
     }
 
@@ -277,7 +277,7 @@ namespace antwika::game
                 continue;
             }
 
-            staff.ticksUntilDecay = tuning.staffDecayPeriodTicks;
+            staff.ticksUntilDecay = config.staffDecayPeriodTicks;
 
             const auto house = shedOne(staff);
             compact(staff);

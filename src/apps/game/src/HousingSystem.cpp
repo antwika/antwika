@@ -68,17 +68,17 @@ namespace antwika::game
         void settleAt(
             Household &household,
             std::size_t index,
-            const Tuning &tuning)
+            const GameConfig &config)
         {
             household.level = static_cast<HousingLevel>(index);
-            household.ticksUntilEvolve = tuning.evolvePeriodTicks;
-            household.ticksUntilDevolve = tuning.devolvePeriodTicks;
+            household.ticksUntilEvolve = config.evolvePeriodTicks;
+            household.ticksUntilDevolve = config.devolvePeriodTicks;
         }
     } // namespace
 
     HousingSystem::HousingSystem(
-        const DesirabilityField &desirability, Tuning tuning)
-        : desirability(desirability), tuning(tuning)
+        const DesirabilityField &desirability, GameConfig config)
+        : desirability(desirability), config(config)
     {
     }
 
@@ -109,12 +109,12 @@ namespace antwika::game
                     at,
                     static_cast<HousingLevel>(next)))
             {
-                household.ticksUntilDevolve = tuning.devolvePeriodTicks;
+                household.ticksUntilDevolve = config.devolvePeriodTicks;
                 --household.ticksUntilEvolve;
 
                 if (household.ticksUntilEvolve <= 0)
                 {
-                    settleAt(household, next, tuning);
+                    settleAt(household, next, config);
                 }
             }
             else if (
@@ -122,12 +122,12 @@ namespace antwika::game
                 && !meets(
                     world, desirability, entity, at, household.level))
             {
-                household.ticksUntilEvolve = tuning.evolvePeriodTicks;
+                household.ticksUntilEvolve = config.evolvePeriodTicks;
                 --household.ticksUntilDevolve;
 
                 if (household.ticksUntilDevolve <= 0)
                 {
-                    settleAt(household, index - 1, tuning);
+                    settleAt(household, index - 1, config);
                 }
             }
             else
@@ -136,8 +136,8 @@ namespace antwika::game
                 // "Has had this for a while" is what is measured.
                 // One that remembered a broken stretch would not.
                 // It would measure "has had this on and off".
-                household.ticksUntilEvolve = tuning.evolvePeriodTicks;
-                household.ticksUntilDevolve = tuning.devolvePeriodTicks;
+                household.ticksUntilEvolve = config.evolvePeriodTicks;
+                household.ticksUntilDevolve = config.devolvePeriodTicks;
             }
 
             // Given one only once there is something to say.

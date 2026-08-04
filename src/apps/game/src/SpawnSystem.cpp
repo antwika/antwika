@@ -17,8 +17,8 @@
 namespace antwika::game
 {
 
-    SpawnSystem::SpawnSystem(const PathIndex &paths, Tuning tuning)
-        : paths(paths), tuning(tuning)
+    SpawnSystem::SpawnSystem(const PathIndex &paths, GameConfig config)
+        : paths(paths), config(config)
     {
     }
 
@@ -147,7 +147,7 @@ namespace antwika::game
             // With the countdown held rather than reset.
             // So a building unstaffed for a thousand ticks owes none.
             const auto period = workedPeriod(
-                tuning.spawnPeriodTicks, staffingOf(world, entity));
+                config.spawnPeriodTicks, staffingOf(world, entity));
 
             if (!period.has_value())
             {
@@ -171,7 +171,7 @@ namespace antwika::game
             const auto slot = freeWalkerSlot(world, building);
 
             if (!onto.has_value() || !slot.has_value()
-                || out >= tuning.walkerLimit)
+                || out >= config.walkerLimit)
             {
                 continue;
             }

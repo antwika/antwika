@@ -753,9 +753,9 @@ The bar reports the balance as a `money {0}` label beside the ratings, appended 
 
 ## The config file, and which numbers may live in it
 
-**The gameplay tuning is a `Tuning` value read from `config.json` beside the executable, and everything in it defaults to the constant it externalizes.**
+**The gameplay tuning is a `GameConfig` value read from `config.json` beside the executable, and everything in it defaults to the constant it externalizes.**
 `main()` reads the file once, before the loop, through `loadConfigFileOrDefaults()`; a missing file is an ordinary install playing the game these sources define, and anything else wrong with one is refused as a `ConfigFormatError` rather than repaired -- a config with a member quietly defaulted would be a rebalance that only half took.
-The value rides into `bootstrap()` on `GameConfig::tuning` and is copied into the systems that read it, so a test that overrides one number constructs the system with it and no global exists anywhere.
+The value rides into `bootstrap()` on `GameWiring::config` -- the wiring bundle every collaborator already arrives on -- and is copied into the systems that read it, so a test that overrides one number constructs the system with it and no global exists anywhere.
 
 **What it holds is costs, periods and caps**: the starting money, the road, raze and per-kind building costs, the drain, risk, spawn, settler, evolve, devolve, production, labour and staff-decay periods, the burn duration, the production batch, the mouths a serving feeds, and the walker cap.
 Every member is optional -- a config stating one number is a one-line rebalance, not a restatement of every default -- which also keeps additions additive, so the format should stay at version 1 until a member changes meaning.

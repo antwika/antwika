@@ -143,7 +143,7 @@ namespace
             {.tickInterval = kInterval, .framesPerTick = framesPerTick});
 
         auto summary = antwika::game::bootstrap(
-            antwika::game::GameConfig{
+            antwika::game::GameWiring{
                 .logger = logger,
                 .eventSink = eventSink,
                 .inputSource = paced,
@@ -225,7 +225,7 @@ TEST(FrameRateDeterminismTest, TheWholeRunTakesAsLongWhicheverRateItDrewAt)
         {.tickInterval = kInterval, .framesPerTick = 7});
 
     const auto summary = antwika::game::bootstrap(
-        antwika::game::GameConfig{
+        antwika::game::GameWiring{
             .logger = logger,
             .eventSink = eventSink,
             .inputSource = paced,
