@@ -78,7 +78,7 @@ namespace antwika::tower_defence
      * list, so a wrong argument is a compile error rather than a
      * silently different run.
      */
-    struct TowerDefenceConfig
+    struct TowerDefenceWiring
     {
         /** @brief Receives the run's diagnostics. */
         ILogger &logger;
@@ -168,7 +168,7 @@ namespace antwika::tower_defence
      * @throws ScoreFormatError If there is a store and the record cannot
      * be written to it.
      */
-    BattleSummary bootstrap(const TowerDefenceConfig &config);
+    BattleSummary bootstrap(const TowerDefenceWiring &config);
 
     /**
      * @brief Offer a store to a live run and none to a replay.

@@ -1,5 +1,7 @@
 #include "antwika/sudoku/BoardSink.hpp"
 
+#include <cstdint>
+
 #include <cstddef>
 #include <string>
 
@@ -67,7 +69,9 @@ namespace antwika::sudoku
         }
     } // namespace
 
-    BoardSink::BoardSink(PuzzleState &state) : state(state)
+    BoardSink::BoardSink(
+        PuzzleState &state, std::uint64_t solveStepBudget)
+        : state(state), solveStepBudget(solveStepBudget)
     {
     }
 
@@ -106,7 +110,7 @@ namespace antwika::sudoku
 
         if (event.event.name == events::kSolve)
         {
-            state.solve();
+            state.solve({.maxSteps = solveStepBudget});
         }
     }
 

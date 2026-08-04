@@ -98,7 +98,7 @@ TEST(BootstrapTest, Bootstrap_RunsScriptedTicksAndReturnsResultingBoard)
     });
 
     auto board = antwika::life::bootstrap(
-        antwika::life::LifeConfig{
+        antwika::life::LifeWiring{
             .logger = logger,
             .eventSink = eventSink,
             .inputSource = inputSource,
@@ -152,7 +152,7 @@ TEST(BootstrapTest, Bootstrap_RunsEveryObserverOncePerTick)
     CallCountingSystem countingSystem;
 
     auto board = antwika::life::bootstrap(
-        antwika::life::LifeConfig{
+        antwika::life::LifeWiring{
             .logger = logger,
             .eventSink = eventSink,
             .inputSource = inputSource,
@@ -189,7 +189,7 @@ TEST(BootstrapTest, Bootstrap_WithNoScriptedInputStaysAllDead)
     });
 
     auto board = antwika::life::bootstrap(
-        antwika::life::LifeConfig{
+        antwika::life::LifeWiring{
             .logger = logger,
             .eventSink = eventSink,
             .inputSource = inputSource,
@@ -224,7 +224,7 @@ TEST(BootstrapTest, Bootstrap_ForwardsDispatchedEventsToATickEventRecorder)
     TickEventRecorder replayRecorder;
 
     antwika::life::bootstrap(
-        antwika::life::LifeConfig{
+        antwika::life::LifeWiring{
             .logger = logger,
             .eventSink = eventSink,
             .inputSource = inputSource,
@@ -265,7 +265,7 @@ TEST(BootstrapTest, Bootstrap_ThrowsWhenMaxTicksIsReachedWithoutAStopEvent)
 
     EXPECT_THROW(
         antwika::life::bootstrap(
-            antwika::life::LifeConfig{
+            antwika::life::LifeWiring{
                 .logger = logger,
                 .eventSink = eventSink,
                 .inputSource = inputSource,

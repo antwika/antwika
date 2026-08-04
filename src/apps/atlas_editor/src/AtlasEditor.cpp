@@ -46,7 +46,7 @@ namespace antwika::atlas_editor
         }
     } // namespace
 
-    EditorSummary bootstrap(const EditorConfig &config)
+    EditorSummary bootstrap(const EditorWiring &config)
     {
         ILogger &logger = config.logger;
 

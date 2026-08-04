@@ -1,5 +1,7 @@
 #pragma once
 
+#include <cstdint>
+
 #include <optional>
 
 #include <antwika/event/ITickEventSink.hpp>
@@ -57,12 +59,15 @@ namespace antwika::sudoku
          * @param codec Decodes the input events off the tick stream.
          * Must outlive this sink.
          * @param scene Describes the picture. Must outlive this sink.
+         * @param solveStepBudget How much search one press of Solve
+         * may spend.
          */
         PlaySink(
             PuzzleState &state,
             BoardOverlay &overlay,
             const IInputEventCodec &codec,
-            const SudokuScene &scene);
+            const SudokuScene &scene,
+            std::uint64_t solveStepBudget);
 
         PlaySink(const PlaySink &) = delete;
         PlaySink(PlaySink &&) = delete;
@@ -99,6 +104,7 @@ namespace antwika::sudoku
         InputState folded;
         std::optional<antwika::time::Tick> foldedTick;
         bool located = false;
+        std::uint64_t solveStepBudget;
     };
 
 } // namespace antwika::sudoku

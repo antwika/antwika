@@ -1,6 +1,7 @@
 add_executable(antwika_atlas_editor
     src/AtlasEditor.cpp
     src/Canvas.cpp
+    src/ConfigFile.cpp
     src/OpeningSheet.cpp
     src/CanvasView.cpp
     src/EditorOptions.cpp
@@ -30,6 +31,7 @@ target_link_libraries(antwika_atlas_editor
     PRIVATE
         antwika::app
         antwika::cli
+        antwika::config
         antwika::engine
         antwika::gfx
         antwika::gfx_backend
@@ -49,6 +51,8 @@ endif()
 
 antwika_bundle_app(
     TARGET antwika_atlas_editor
+    ASSETS
+        assets/config.json
 )
 
 install(TARGETS antwika_atlas_editor

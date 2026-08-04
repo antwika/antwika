@@ -1,4 +1,5 @@
 add_executable(antwika_music_editor
+    src/ConfigFile.cpp
     src/EditorKeys.cpp
     src/EditorScene.cpp
     src/EditorSink.cpp
@@ -27,6 +28,7 @@ target_include_directories(antwika_music_editor
 target_link_libraries(antwika_music_editor
     PRIVATE
         antwika::app
+        antwika::config
         antwika::engine
         antwika::event
         antwika::gfx
@@ -52,6 +54,8 @@ endif()
 
 antwika_bundle_app(
     TARGET antwika_music_editor
+    ASSETS
+        assets/config.json
 )
 
 install(TARGETS antwika_music_editor

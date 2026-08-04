@@ -1,6 +1,7 @@
 find_package(GTest REQUIRED)
 
 add_executable(antwika_music_editor_tests
+    ConfigFileTest.cpp
     EditorKeysTest.cpp
     EditorSceneTest.cpp
     EditorSinkTest.cpp
@@ -27,6 +28,7 @@ target_include_directories(antwika_music_editor_tests
 
 target_sources(antwika_music_editor_tests
     PRIVATE
+        ../src/ConfigFile.cpp
         ../src/EditorKeys.cpp
         ../src/EditorScene.cpp
         ../src/EditorSink.cpp
@@ -50,6 +52,7 @@ target_link_libraries(antwika_music_editor_tests
     PRIVATE
         antwika::app
         antwika::engine
+        antwika::config
         antwika::event
         antwika::event::tests::mocks
         antwika::log::tests::mocks

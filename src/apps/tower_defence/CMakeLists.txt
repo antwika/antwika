@@ -4,6 +4,7 @@ add_executable(antwika_tower_defence
     src/BattleSnapshot.cpp
     src/Campaign.cpp
     src/CampaignSink.cpp
+    src/ConfigFile.cpp
     src/FileScoreStore.cpp
     src/GridLayout.cpp
     src/HighScore.cpp
@@ -28,6 +29,7 @@ target_include_directories(antwika_tower_defence
 target_link_libraries(antwika_tower_defence
     PRIVATE
         antwika::app
+        antwika::config
         antwika::engine
         antwika::gfx
         antwika::gfx_backend
@@ -49,6 +51,8 @@ endif()
 
 antwika_bundle_app(
     TARGET antwika_tower_defence
+    ASSETS
+        assets/config.json
 )
 
 install(TARGETS antwika_tower_defence

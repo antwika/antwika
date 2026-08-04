@@ -2,6 +2,7 @@ add_executable(antwika_poker
     src/AgentStyle.cpp
     src/BankrollLedger.cpp
     src/CashGame.cpp
+    src/ConfigFile.cpp
     src/PokerRoom.cpp
     src/PokerRoomSink.cpp
     src/PolicyAgent.cpp
@@ -22,6 +23,7 @@ target_link_libraries(antwika_poker
     PRIVATE
         antwika::app
         antwika::cli
+        antwika::config
         antwika::engine
         antwika::event
         antwika::gfx
@@ -42,6 +44,7 @@ endif()
 antwika_bundle_app(
     TARGET antwika_poker
     ASSETS
+        assets/config.json
         assets/atlas.png
         replays/demo.jsonl
 )

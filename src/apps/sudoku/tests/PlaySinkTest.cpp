@@ -42,6 +42,7 @@ using antwika::sudoku::PuzzleState;
 using antwika::sudoku::Square;
 using antwika::sudoku::Status;
 using antwika::sudoku::SudokuScene;
+using antwika::sudoku::kSolveStepBudget;
 using antwika::sudoku::tests::squareCentre;
 using antwika::sudoku::tests::widgetCentre;
 namespace widgets = antwika::sudoku::widgets;
@@ -127,7 +128,8 @@ namespace
             session.state,
             session.overlay,
             session.codec,
-            session.scene);
+            session.scene,
+            kSolveStepBudget);
 
         sink.handle(session.pressAt(session.centreOf(kBlank)));
 
@@ -142,7 +144,8 @@ namespace
             session.state,
             session.overlay,
             session.codec,
-            session.scene);
+            session.scene,
+            kSolveStepBudget);
 
         sink.handle(session.pressAt(session.centreOf(kClue)));
 
@@ -157,7 +160,8 @@ namespace
             session.state,
             session.overlay,
             session.codec,
-            session.scene);
+            session.scene,
+            kSolveStepBudget);
 
         // Inside the board's own area, but beside the grid itself.
         // Which is the margin left over once it is made square.
@@ -181,7 +185,8 @@ namespace
             session.state,
             session.overlay,
             session.codec,
-            session.scene);
+            session.scene,
+            kSolveStepBudget);
 
         sink.handle(TickEvent{
             .tick = 0,
@@ -201,7 +206,8 @@ namespace
             session.state,
             session.overlay,
             session.codec,
-            session.scene);
+            session.scene,
+            kSolveStepBudget);
 
         sink.handle(session.pressAt(session.centreOf(kBlank)));
         sink.handle(session.keyPress(Key::Digit4));
@@ -220,7 +226,8 @@ namespace
             session.state,
             session.overlay,
             session.codec,
-            session.scene);
+            session.scene,
+            kSolveStepBudget);
 
         sink.handle(session.pressAt(session.centreOf(kBlank)));
         sink.handle(session.keyPress(Key::Digit4));
@@ -236,7 +243,8 @@ namespace
             session.state,
             session.overlay,
             session.codec,
-            session.scene);
+            session.scene,
+            kSolveStepBudget);
 
         sink.handle(session.keyPress(Key::Q));
 
@@ -250,7 +258,8 @@ namespace
             session.state,
             session.overlay,
             session.codec,
-            session.scene);
+            session.scene,
+            kSolveStepBudget);
 
         sink.handle(session.pressAt(session.solveButton()));
 
@@ -265,7 +274,8 @@ namespace
             session.state,
             session.overlay,
             session.codec,
-            session.scene);
+            session.scene,
+            kSolveStepBudget);
 
         // A second 5 in the top-left box, then ask for the rest.
         sink.handle(session.pressAt(session.centreOf(kBlank)));
@@ -283,7 +293,8 @@ namespace
             session.state,
             session.overlay,
             session.codec,
-            session.scene);
+            session.scene,
+            kSolveStepBudget);
 
         EXPECT_TRUE(session.overlay.commands().empty());
 
@@ -304,7 +315,8 @@ namespace
             session.state,
             session.overlay,
             session.codec,
-            session.scene);
+            session.scene,
+            kSolveStepBudget);
 
         sink.handle(TickEvent{
             .tick = 0, .event = Event{.name = "sudoku.solve"}});

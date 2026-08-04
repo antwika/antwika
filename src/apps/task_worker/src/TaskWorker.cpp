@@ -42,7 +42,7 @@ namespace antwika::task_worker
         engine.start();
     }
 
-    std::vector<Worker> bootstrap(const TaskWorkerConfig &config)
+    std::vector<Worker> bootstrap(const TaskWorkerWiring &config)
     {
         ILogger &logger = config.logger;
         EventDispatcher dispatcher({config.eventSink});

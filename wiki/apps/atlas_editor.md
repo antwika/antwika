@@ -205,3 +205,8 @@ This editor will happily paint outside the diamond, leave a road stub that meets
 ```sh
 build-sdl3/bin/antwika_game/antwika_game --replay src/apps/game/replays/demo.jsonl
 ```
+
+## The config file
+
+`config.json` beside the executable is read once at startup through [`antwika::config`](../libraries/config.md), and holds `framePeriodMs`, how long a frame takes on the wall clock.
+The sheet and tile geometry stay in source: the canvas view is simulation state, and what a recorded click paints is worked out from that geometry.

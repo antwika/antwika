@@ -81,7 +81,7 @@ namespace antwika::atlas_editor
      * list, so a wrong argument is a compile error rather than a
      * silently different session.
      */
-    struct EditorConfig
+    struct EditorWiring
     {
         /** @brief Receives the session's diagnostics. */
         ILogger &logger;
@@ -167,6 +167,6 @@ namespace antwika::atlas_editor
      * mid-session, which is reported in the status line instead.
      * @throws AtlasEditorError If the sheet to open holds no pixels.
      */
-    EditorSummary bootstrap(const EditorConfig &config);
+    EditorSummary bootstrap(const EditorWiring &config);
 
 } // namespace antwika::atlas_editor

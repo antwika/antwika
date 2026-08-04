@@ -1,5 +1,7 @@
 #include "antwika/sudoku/PlaySink.hpp"
 
+#include <cstdint>
+
 #include <utility>
 #include <variant>
 
@@ -58,8 +60,13 @@ namespace antwika::sudoku
         PuzzleState &state,
         BoardOverlay &overlay,
         const IInputEventCodec &codec,
-        const SudokuScene &scene)
-        : state(state), overlay(overlay), codec(codec), scene(scene)
+        const SudokuScene &scene,
+        std::uint64_t solveStepBudget)
+        : state(state),
+          overlay(overlay),
+          codec(codec),
+          scene(scene),
+          solveStepBudget(solveStepBudget)
     {
     }
 
@@ -137,7 +144,7 @@ namespace antwika::sudoku
 
         if (frame.interactions.activated == widgets::kSolve)
         {
-            state.solve();
+            state.solve({.maxSteps = solveStepBudget});
             return true;
         }
 

@@ -20,6 +20,8 @@
 #include <antwika/simulation/WindowInputSource.hpp>
 #include <antwika/time/SystemSleeper.hpp>
 
+#include <antwika/app/AssetPath.hpp>
+#include "antwika/atlas_editor/ConfigFile.hpp"
 #include "antwika/atlas_editor/AtlasEditor.hpp"
 #include "antwika/atlas_editor/EditorOptions.hpp"
 #include "antwika/atlas_editor/EditorScene.hpp"
@@ -53,7 +55,6 @@ namespace
     constexpr antwika::gfx::Size kWindowSize{
         .width = 1280, .height = 720};
 
-    constexpr std::chrono::milliseconds kFramePeriod{40};
 
     // Fills the screen, and puts the window back.
     // An action on the window rather than anything a tick can see.
@@ -64,6 +65,11 @@ namespace
 
     void run(const RecordedRun &recorded)
     {
+        // The numbers the run reads off config.json, once.
+        const auto config =
+            antwika::atlas_editor::loadConfigFileOrDefaults(
+                antwika::app::assetPath("config.json"));
+
         const auto options = antwika::atlas_editor::editorOptionsFrom(
             recorded.commandLine);
 
@@ -170,7 +176,8 @@ namespace
                     state,
                     overlay,
                     sleeper,
-                    kFramePeriod);
+                    std::chrono::milliseconds(
+                        config.framePeriodMs));
             }});
 
         logger.log(

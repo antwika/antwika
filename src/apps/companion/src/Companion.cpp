@@ -45,7 +45,7 @@ namespace antwika::companion
         // A session is restored through the event stream instead.
         // Never through a constructor -- see RestoreSource.
         std::optional<CompanionMemory> openSession(
-            const CompanionConfig &config)
+            const CompanionWiring &config)
         {
             if (!config.store.has_value())
             {
@@ -92,7 +92,7 @@ namespace antwika::companion
         // A run ended with Ctrl+C therefore keeps nothing.
         // Unlike a --record run, which appends as it goes.
         void keepSession(
-            const CompanionConfig &config,
+            const CompanionWiring &config,
             const Pet &pet,
             const Lineage &lineage)
         {
@@ -106,7 +106,7 @@ namespace antwika::companion
         }
     } // namespace
 
-    CompanionSummary bootstrap(const CompanionConfig &config)
+    CompanionSummary bootstrap(const CompanionWiring &config)
     {
         ILogger &logger = config.logger;
 

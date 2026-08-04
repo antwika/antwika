@@ -1,3 +1,4 @@
+#include "antwika/poker/ConfigFile.hpp"
 #include "antwika/poker/PokerRoom.hpp"
 
 #include <iostream>
@@ -28,6 +29,11 @@ namespace
 {
     void run(const RecordedRun &recorded)
     {
+        // The chips the table runs on, read off config.json once.
+        const auto config =
+            antwika::poker::loadConfigFileOrDefaults(
+                antwika::app::assetPath("config.json"));
+
         const auto watch =
             antwika::poker::watchOptionsFrom(recorded.commandLine);
 
@@ -63,6 +69,7 @@ namespace
                     .eventSink = recorded.eventSink,
                     .inputSource = source,
                     .out = std::cout,
+                    .room = config,
                     .replayRecorder = recorded.replayRecorder,
                     .window = window}));
     }

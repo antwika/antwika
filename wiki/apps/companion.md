@@ -317,3 +317,9 @@ The shipped `demo.jsonl` is a 35-second session of two well-played days: two mea
 It ends with an `engine.stop`, so it finishes on its own.
 **It replaced the version 1 demo outright rather than being amended**, because a press now means whichever prop it landed on, and every recording written before this one lands somewhere else.
 A headless build reports neither a window close nor any input, so `Ctrl+C` is what ends a live run there -- and a `--record` run killed that way keeps every event up to the kill.
+
+## The config file
+
+`config.json` beside the executable is read once at startup through [`antwika::config`](../libraries/config.md) and decodes into the `PetConfig` the wiring already carried: every metabolism period, gauge ceiling and verb amount.
+The three energy numbers -- `energyBase`, `stageEnergyBonus` and `collapsePenalty` -- deliberately stay in source: `PetSave` derives its perished marker from them, and a bound a persisted file depends on may not drift with an editable one.
+A missing file is the shipped companion, and a broken one is refused at startup rather than repaired.

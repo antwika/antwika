@@ -27,6 +27,8 @@
 #include <antwika/synth/SynthMixer.hpp>
 #include <antwika/time/SystemSleeper.hpp>
 
+#include <antwika/app/AssetPath.hpp>
+#include "antwika/music_editor/ConfigFile.hpp"
 #include "antwika/music_editor/EditorScene.hpp"
 #include "antwika/music_editor/MusicEditor.hpp"
 #include "antwika/music_editor/PasteSource.hpp"
@@ -60,7 +62,6 @@ namespace
 
     // A keystroke lands on a tick, and so does a note.
     // This is the granularity of both.
-    constexpr std::chrono::milliseconds kTickInterval{25};
 
     constexpr antwika::sound::WaveFormat kFormat{
         .rate = 48000, .channels = 2};
@@ -80,6 +81,11 @@ namespace
 
     void run(const RecordedRun &recorded)
     {
+        // The numbers the run reads off config.json, once.
+        const auto config =
+            antwika::music_editor::loadConfigFileOrDefaults(
+                antwika::app::assetPath("config.json"));
+
         ConsoleLogging logging(std::cout, Level::Info);
         auto &logger = logging.logger();
 
@@ -166,7 +172,10 @@ namespace
             .sleeper = sleeper,
             .playback =
                 PlaybackDesc{
-                    .clock = FrameClock(kFormat.rate, kTickInterval),
+                    .clock = FrameClock(
+                        kFormat.rate,
+                        std::chrono::milliseconds(
+                            config.tickIntervalMs)),
                     .framesPerCycle = Rational(kFramesPerCycle),
                     .lookahead = 6,
                     .lead = 4},

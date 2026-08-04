@@ -38,7 +38,7 @@ using antwika::input::KeyPressed;
 using antwika::log::mocks::MockLogger;
 using antwika::music_editor::bootstrap;
 using antwika::music_editor::EditorScene;
-using antwika::music_editor::MusicEditorConfig;
+using antwika::music_editor::MusicEditorWiring;
 using antwika::music_editor::PlaybackDesc;
 using antwika::music_editor::tests::kCanvas;
 using antwika::replay::ReplaySource;
@@ -137,7 +137,7 @@ TEST(RunIntegrationTest, RunsToItsScriptedStopAndSoundsTheOpeningDocument)
     ReplaySource source(script(kBudget));
 
     const auto summary = bootstrap(
-        MusicEditorConfig{
+        MusicEditorWiring{
             .logger = logger,
             .eventSink = events,
             .inputSource = source,
@@ -189,7 +189,7 @@ TEST(RunIntegrationTest, HandsTheEditorToWhateverElseWantsIt)
     int ticks = 0;
 
     const auto summary = bootstrap(
-        MusicEditorConfig{
+        MusicEditorWiring{
             .logger = logger,
             .eventSink = events,
             .inputSource = source,
@@ -242,7 +242,7 @@ TEST(RunIntegrationTest, RecordsWhenItIsGivenSomewhereToRecord)
     antwika::event::TickEventRecorder recorder;
 
     const auto summary = bootstrap(
-        MusicEditorConfig{
+        MusicEditorWiring{
             .logger = logger,
             .eventSink = events,
             .inputSource = source,

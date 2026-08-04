@@ -1,3 +1,4 @@
+#include "antwika/life/ConfigFile.hpp"
 #include "antwika/life/Life.hpp"
 
 #include <chrono>
@@ -54,14 +55,17 @@ namespace
     // PointerToggleSink says why, and why the window is not resizable.
     constexpr antwika::gfx::Size kWindowSize{.width = 768, .height = 768};
 
-    constexpr std::chrono::milliseconds kTickInterval{50};
-
     // The backend that draws nothing.
     // A build using it has nothing to watch and nothing to wait for.
     constexpr std::string_view kHeadlessBackendName = "null";
 
     void run(const RecordedRun &recorded)
     {
+        // The numbers the run reads off config.json, once.
+        const auto config =
+            antwika::life::loadConfigFileOrDefaults(
+                antwika::app::assetPath("config.json"));
+
         ConsoleLogging logging(std::cout, Level::Info);
         auto &logger = logging.logger();
 
@@ -85,7 +89,9 @@ namespace
         RenderSystem renderSystem(*window, scene, kBoardWidth, kBoardHeight);
         PrintSystem printSystem(kBoardWidth, std::cout);
         SystemSleeper sleeper;
-        TickPacer pacer(sleeper, kTickInterval);
+        TickPacer pacer(
+            sleeper,
+            std::chrono::milliseconds(config.tickIntervalMs));
 
         ReplaySource fileSource(antwika::app::scriptedEvents(
             recorded.options.replayPath,
@@ -110,7 +116,7 @@ namespace
 
         WindowInputSource source(input, *backend, window->id());
 
-        antwika::life::bootstrap(antwika::life::LifeConfig{
+        antwika::life::bootstrap(antwika::life::LifeWiring{
             .logger = logger,
             .eventSink = recorded.eventSink,
             .inputSource = source,

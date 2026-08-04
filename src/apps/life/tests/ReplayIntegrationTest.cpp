@@ -39,7 +39,7 @@ namespace
         NiceMock<MockEventSink> eventSink;
 
         return antwika::life::bootstrap(
-            antwika::life::LifeConfig{
+            antwika::life::LifeWiring{
                 .logger = logger,
                 .eventSink = eventSink,
                 .inputSource = source,

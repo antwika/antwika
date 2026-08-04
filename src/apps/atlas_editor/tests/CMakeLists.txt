@@ -3,6 +3,7 @@ find_package(GTest REQUIRED)
 add_executable(antwika_atlas_editor_tests
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/AtlasEditor.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/Canvas.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/ConfigFile.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/OpeningSheet.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/CanvasView.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/EditorOptions.cpp
@@ -22,6 +23,7 @@ add_executable(antwika_atlas_editor_tests
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/UiOverlay.cpp
     CanvasTest.cpp
     CanvasViewTest.cpp
+    ConfigFileTest.cpp
     DefaultSheetSizeTest.cpp
     EditorOptionsTest.cpp
     EditorSinkTest.cpp
@@ -52,6 +54,7 @@ target_link_libraries(antwika_atlas_editor_tests
     PRIVATE
         antwika::app
         antwika::cli
+        antwika::config
         antwika::engine
         antwika::event::tests::mocks
         antwika::gfx

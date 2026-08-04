@@ -18,6 +18,8 @@
 #include <antwika/simulation/WindowInputSource.hpp>
 #include <antwika/time/SystemSleeper.hpp>
 
+#include <antwika/app/AssetPath.hpp>
+#include "antwika/companion/ConfigFile.hpp"
 #include "antwika/companion/Companion.hpp"
 #include "antwika/companion/FilePetStore.hpp"
 #include "antwika/companion/Messages.hpp"
@@ -64,6 +66,11 @@ namespace
 
     void run(const RecordedRun &recorded)
     {
+        // The metabolism the pet runs on, read off config.json once.
+        const auto config =
+            antwika::companion::loadConfigFileOrDefaults(
+                antwika::app::assetPath("config.json"));
+
         ConsoleLogging logging(std::cout, Level::Info);
         auto &logger = logging.logger();
 
@@ -122,6 +129,7 @@ namespace
                 .inputSource = source,
                 .codec = codec,
                 .sleeper = sleeper,
+                .pet = config,
                 .canvas = kWindowSize,
                 .store = antwika::companion::storeIfLive(
                     store, recorded.options.replayPath),

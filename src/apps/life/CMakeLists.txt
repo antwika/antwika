@@ -3,6 +3,7 @@ add_executable(antwika_life
     src/BoardLayout.cpp
     src/BoardScene.cpp
     src/BoardSink.cpp
+    src/ConfigFile.cpp
     src/DragPausedSystem.cpp
     src/DragState.cpp
     src/Grid.cpp
@@ -22,6 +23,7 @@ target_include_directories(antwika_life
 target_link_libraries(antwika_life
     PRIVATE
         antwika::app
+        antwika::config
         antwika::ecs
         antwika::engine
         antwika::gfx
@@ -41,6 +43,7 @@ endif()
 antwika_bundle_app(
     TARGET antwika_life
     ASSETS
+        assets/config.json
         replays/demo.jsonl
 )
 

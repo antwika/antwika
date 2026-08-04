@@ -84,3 +84,8 @@ Nothing else about the app moved: the worker's own countdown is deliberately **n
 A steady stream of higher-priority submissions can keep a low-priority task pending forever; unconditional priority respect is the requirement.
 
 See [`blog/006-a-job-scheduler-and-a-worker-pool-that-cant-lie-to-itself.md`](../../blog/006-a-job-scheduler-and-a-worker-pool-that-cant-lie-to-itself.md).
+
+## The config file
+
+`config.json` beside the executable is read once at startup through [`antwika::config`](../libraries/config.md): `workerCount`, how many workers pull from the queue, and `tickIntervalMs`, how long a tick takes on the wall clock.
+A missing file is the shipped application, and a broken one is refused at startup rather than repaired.

@@ -83,7 +83,7 @@ namespace antwika::companion
      * list, so a wrong argument is a compile error rather than a
      * silently different session.
      */
-    struct CompanionConfig
+    struct CompanionWiring
     {
         /** @brief Receives the session's diagnostics. */
         ILogger &logger;
@@ -200,7 +200,7 @@ namespace antwika::companion
      * @throws SaveFormatError If there is a store and the companion
      * cannot be written to it.
      */
-    CompanionSummary bootstrap(const CompanionConfig &config);
+    CompanionSummary bootstrap(const CompanionWiring &config);
 
     /**
      * @brief Offer a store to a live session and none to a replay.

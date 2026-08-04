@@ -1,0 +1,7 @@
+{
+  "bigBlind": 10,
+  "magic": "antwika-poker-config",
+  "minimumBuyIn": 100,
+  "smallBlind": 5,
+  "version": 1
+}

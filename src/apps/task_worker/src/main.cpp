@@ -1,3 +1,4 @@
+#include "antwika/task_worker/ConfigFile.hpp"
 #include "antwika/task_worker/TaskWorker.hpp"
 
 #include <chrono>
@@ -40,20 +41,20 @@ using antwika::time::SystemSleeper;
 
 namespace
 {
-    constexpr std::uint32_t kWorkerCount = 2;
 
     // Wide enough for the pool beside the queue.
     // It is also what everything is laid out against.
     // Never the size the window reports back.
     constexpr antwika::gfx::Size kWindowSize{.width = 960, .height = 600};
 
-    // Slow enough to watch a queue drain, which the window is for.
-    // The run is the same one either way.
-    // A pacer changes how long a tick takes, never what it computes.
-    constexpr std::chrono::milliseconds kTickInterval{400};
 
     void run(const RecordedRun &recorded)
     {
+        // The numbers the run reads off config.json, once.
+        const auto config =
+            antwika::task_worker::loadConfigFileOrDefaults(
+                antwika::app::assetPath("config.json"));
+
         ConsoleLogging logging(std::cout, Level::Info);
         auto &logger = logging.logger();
 
@@ -81,7 +82,9 @@ namespace
         RenderSystem renderSystem(*window, scene, registry);
         StatusPrintSystem printSystem(std::cout, registry);
         SystemSleeper sleeper;
-        TickPacer pacer(sleeper, kTickInterval);
+        TickPacer pacer(
+            sleeper,
+            std::chrono::milliseconds(config.tickIntervalMs));
 
         ReplaySource fileSource(antwika::app::scriptedEvents(
             recorded.options.replayPath,
@@ -93,11 +96,11 @@ namespace
         WindowInputSource source(fileSource, *backend, window->id());
 
         antwika::task_worker::bootstrap(
-            antwika::task_worker::TaskWorkerConfig{
+            antwika::task_worker::TaskWorkerWiring{
                 .logger = logger,
                 .eventSink = recorded.eventSink,
                 .inputSource = source,
-                .workerCount = kWorkerCount,
+                .workerCount = config.workerCount,
                 .observers = {printSystem, renderSystem, pacer},
                 .registry = registry,
                 .replayRecorder = recorded.replayRecorder});

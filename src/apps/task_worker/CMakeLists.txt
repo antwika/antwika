@@ -1,4 +1,5 @@
 add_executable(antwika_task_worker
+    src/ConfigFile.cpp
     src/Messages.cpp
     src/PoolScene.cpp
     src/PoolSnapshot.cpp
@@ -23,6 +24,7 @@ target_include_directories(antwika_task_worker
 target_link_libraries(antwika_task_worker
     PRIVATE
         antwika::app
+        antwika::config
         antwika::ecs
         antwika::ecs_commons
         antwika::engine
@@ -44,6 +46,7 @@ endif()
 antwika_bundle_app(
     TARGET antwika_task_worker
     ASSETS
+        assets/config.json
         replays/demo.jsonl
 )
 

@@ -1,6 +1,7 @@
 find_package(GTest REQUIRED)
 
 add_executable(antwika_task_worker_tests
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/ConfigFile.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/Messages.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/PoolScene.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/PoolSnapshot.cpp
@@ -15,6 +16,7 @@ add_executable(antwika_task_worker_tests
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/WorkerCompletionSystem.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/WorkerLookup.cpp
     BootstrapTest.cpp
+    ConfigFileTest.cpp
     MessagesTest.cpp
     PoolSceneTest.cpp
     PoolSnapshotTest.cpp
@@ -36,6 +38,8 @@ target_include_directories(antwika_task_worker_tests
 
 target_link_libraries(antwika_task_worker_tests
     PRIVATE
+        antwika::app
+        antwika::config
         antwika::ecs
         antwika::ecs_commons
         antwika::engine

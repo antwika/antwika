@@ -33,7 +33,7 @@ namespace antwika::tower_defence
         // A file that will not read is said out loud and stepped over.
         // Refusing to start over an unreadable record is worse.
         // It leaves the game unplayable until a file is deleted.
-        HighScore openRecord(const TowerDefenceConfig &config)
+        HighScore openRecord(const TowerDefenceWiring &config)
         {
             if (!config.scoreStore.has_value())
             {
@@ -73,7 +73,7 @@ namespace antwika::tower_defence
         // A run ended with Ctrl+C therefore keeps nothing.
         // Unlike a --record run, which appends as it goes.
         void keepRecord(
-            const TowerDefenceConfig &config, const HighScore &best)
+            const TowerDefenceWiring &config, const HighScore &best)
         {
             if (!config.scoreStore.has_value())
             {
@@ -84,7 +84,7 @@ namespace antwika::tower_defence
         }
     } // namespace
 
-    BattleSummary bootstrap(const TowerDefenceConfig &config)
+    BattleSummary bootstrap(const TowerDefenceWiring &config)
     {
         ILogger &logger = config.logger;
 

@@ -64,7 +64,7 @@ namespace antwika::music_editor
     /**
      * @brief Everything a run needs that it does not own.
      */
-    struct MusicEditorConfig
+    struct MusicEditorWiring
     {
         ILogger &logger;
         IEventSink &eventSink;
@@ -130,6 +130,6 @@ namespace antwika::music_editor
      * @param config Everything the run needs.
      * @return What the run left behind.
      */
-    [[nodiscard]] EditorSummary bootstrap(const MusicEditorConfig &config);
+    [[nodiscard]] EditorSummary bootstrap(const MusicEditorWiring &config);
 
 } // namespace antwika::music_editor
