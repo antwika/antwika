@@ -209,15 +209,6 @@ TEST_F(OptionsFileTest, AnUnwritablePathIsRefused)
         OptionsFormatError);
 }
 
-// A full disk fails on the flush rather than on the open.
-// Which is why the write is flushed here and not by a destructor.
-TEST_F(OptionsFileTest, AStreamThatCannotTakeTheDocumentIsRefused)
-{
-    EXPECT_THROW(
-        saveOptionsFile(PlayerOptions{}, "/dev/full"),
-        OptionsFormatError);
-}
-
 TEST_F(OptionsFileTest, NamingNowhereWritesNothing)
 {
     saveOptionsFileIfNamed(rebound(), std::nullopt);

@@ -39,6 +39,7 @@ antwika_add_library(
         antwika::engine
         antwika::event
         antwika::geometry
+        antwika::io
         antwika::log
         antwika::simulation
         antwika::time

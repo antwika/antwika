@@ -1,4 +1,3 @@
-#include <filesystem>
 #include <fstream>
 #include <sstream>
 #include <string>
@@ -182,20 +181,5 @@ namespace
     {
         FileScoreStore store("/antwika-no-such-directory/record.json");
         EXPECT_THROW(store.save(HighScore{}), ScoreFormatError);
-    }
-
-    // A full disk fails only once the bytes are flushed.
-    // /dev/full is the portable-enough way to make that happen.
-    TEST(FileScoreStoreTest, BytesThatCannotBeWrittenAreReported)
-    {
-        if (!std::filesystem::exists("/dev/full"))
-        {
-            GTEST_SKIP() << "no /dev/full to fill";
-        }
-
-        FileScoreStore store("/dev/full");
-        EXPECT_THROW(
-            store.save(HighScore{.bestScore = 1, .bestLevel = 1}),
-            ScoreFormatError);
     }
 } // namespace

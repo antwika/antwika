@@ -15,11 +15,14 @@ find_package(nlohmann_json_schema_validator REQUIRED)
 # which docs/schema-versioning.md makes the one migration mechanism for
 # every persisted format; the dependency is one-way, and replay does not
 # know this library exists.
+# antwika::io is the open/flush/check discipline, stated once over
+# there rather than a second time here.
 antwika_add_library(
     NAME config
     SOURCES
         src/ConfigDocument.cpp
     DEPENDS
+        antwika::io
         antwika::replay
         nlohmann_json::nlohmann_json
         nlohmann_json_schema_validator

@@ -1,7 +1,8 @@
 #include "antwika/config/ConfigDocument.hpp"
 
-#include <fstream>
 #include <string>
+
+#include <antwika/io/File.hpp>
 
 #include <antwika/replay/SchemaVersion.hpp>
 #include <antwika/replay/VersionedDocument.hpp>
@@ -97,16 +98,16 @@ namespace antwika::config
     std::optional<nlohmann::json> parseConfigFile(
         const std::string &path)
     {
-        std::ifstream file(path);
-
         // A file that is not there is an install nobody has rebalanced.
         // Which is a state rather than a failure.
-        if (!file.is_open())
+        auto file = io::openToReadIfPresent(path);
+
+        if (!file.has_value())
         {
             return std::nullopt;
         }
 
-        return parseConfig(file);
+        return parseConfig(*file);
     }
 
 } // namespace antwika::config

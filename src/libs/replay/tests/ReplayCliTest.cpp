@@ -239,33 +239,3 @@ TEST(ReplayCliTest, SaveReplayFileSaysAnUnwritablePathCouldNotBeOpened)
     }
 }
 
-// Opening is not writing: a full disk fails only once bytes are flushed.
-// ReplayRecorderTest is what covers that throw, on any machine.
-// This one confirms it against a real device where there is one.
-// It may skip freely: skipping it costs no coverage any more.
-TEST(ReplayCliTest, SaveReplayFileThrowsWhenTheBytesCannotBeWritten)
-{
-    if (!std::filesystem::exists("/dev/full"))
-    {
-        GTEST_SKIP() << "no /dev/full to fill";
-    }
-
-    std::vector<TickEvent> events{
-        TickEvent{
-            .tick = 0,
-            .event = Event{.name = "game.score_increment", .payload = "1"},
-        },
-    };
-
-    try
-    {
-        saveReplayFile(events, "/dev/full");
-        FAIL() << "writing to a full device should have thrown";
-    }
-    catch (const ReplayFormatError &error)
-    {
-        const std::string message = error.what();
-        EXPECT_NE(message.find("could not write"), std::string::npos)
-            << message;
-    }
-}

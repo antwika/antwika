@@ -5,6 +5,7 @@
 #include <utility>
 
 #include <antwika/cli/CommandLine.hpp>
+#include <antwika/io/File.hpp>
 
 #include "antwika/replay/ReplayFormatError.hpp"
 #include "antwika/replay/ReplayReader.hpp"
@@ -52,17 +53,11 @@ namespace antwika::replay
     std::vector<TickEvent> loadReplayFile(
         const std::string &path, CanvasCheck check)
     {
-        std::ifstream replayFile(path);
-
         // A file that is not there is not a malformed document.
         // Unchecked, it reached the reader as an empty stream.
         // Which reported a valid replay as invalid JSON.
-        if (!replayFile.is_open())
-        {
-            throw ReplayFormatError(
-                "antwika::replay: could not open a replay to read: "
-                + path);
-        }
+        std::ifstream replayFile =
+            io::openToReadAs<ReplayFormatError>(path, "a replay");
 
         const ReplayReader reader(std::move(check));
         return reader.read(replayFile);
@@ -70,18 +65,9 @@ namespace antwika::replay
 
     std::ofstream openReplayFile(const std::string &path)
     {
-        std::ofstream replayFile(path);
-
         // A path that will not take a header will not take a session.
         // Unchecked, a mistyped --record path used to lose one whole.
-        if (!replayFile.is_open())
-        {
-            throw ReplayFormatError(
-                "antwika::replay: could not open a replay to write: "
-                + path);
-        }
-
-        return replayFile;
+        return io::openToWriteAs<ReplayFormatError>(path, "a replay");
     }
 
     void saveReplayFile(

@@ -1,6 +1,7 @@
 add_subdirectory(time)
 add_subdirectory(geometry)
 add_subdirectory(cli)
+add_subdirectory(io)
 add_subdirectory(i18n)
 add_subdirectory(log)
 add_subdirectory(event)

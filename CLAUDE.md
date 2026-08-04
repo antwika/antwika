@@ -239,6 +239,7 @@ Breaking one is the class of mistake that looks fine live and surfaces as a dive
   It is the transport half of multiplayer and nothing more -- it cannot name a `Tick` or an `Event`, so remote input can only ever reach a simulation as events an `ITickEventSource` supplied for a tick, which is what lets a recorded networked session replay with no socket opened.
 - [`app`](wiki/libraries/app.md) is what every `main()` shares -- `runRecorded()`, `assetPath()`, `FramePacedSource`/`IFramePass` and `pointerFrom()`/`hoverFrom()`.
 - [`cli`](wiki/libraries/cli.md) is the flag parsing, depending on nothing at all; one `FlagSpec` table is both the parser's input and the help text's, and a program parses once against one concatenated table.
+- [`io`](wiki/libraries/io.md) is opening, writing and flushing files, stated once: dependency-free so everything that touches a file can reach it, templated on the caller's exception type so it owns no failure category, and home to the tree's one `/dev/full` proof that a full disk fails on the flush.
 - [`log`](wiki/libraries/log.md) is composable logging with no global state.
 - [`testing`](wiki/libraries/testing.md) is the scratch-path helper every suite's temporary files go through, named with the case and the pid so two ctest processes cannot collide -- the rule that stopped `SessionPersistenceTest` flaking, stated once rather than in fifteen copies.
 

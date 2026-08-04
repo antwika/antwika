@@ -30,7 +30,7 @@ Running the loop is [`simulation`](simulation.md)'s, and this library depends on
 
 ## Depends on
 
-[`cli`](cli.md), [`engine`](engine.md), [`event`](event.md), [`gfx`](gfx.md), [`log`](log.md), [`simulation`](simulation.md), [`time`](time.md).
+[`cli`](cli.md), [`engine`](engine.md), [`event`](event.md), [`gfx`](gfx.md), [`io`](io.md), [`log`](log.md), [`simulation`](simulation.md), [`time`](time.md).
 `simulation` is there because `ReplaySource` implements its seam, and `gfx` for the recorded canvas size — both narrow, deliberate edges.
 
 ## Non-obvious decisions

@@ -1,7 +1,7 @@
 #include "antwika/game/SaveGameFile.hpp"
 
 #include <antwika/config/ConfigDocument.hpp>
-#include <fstream>
+#include <antwika/io/File.hpp>
 
 #include <nlohmann/json.hpp>
 
@@ -29,37 +29,20 @@ namespace antwika::game
 
     void saveGameFile(const SaveGame &save, const std::string &path)
     {
-        std::ofstream file(path);
-        if (!file.is_open())
-        {
-            throw SaveFormatError(
-                "antwika::game: could not open a save to write: " + path);
-        }
-
-        writeSaveGame(save, file);
-
-        // Flushed here rather than by the destructor, which cannot say.
-        // A full disk fails on the flush, not on the open.
-        file.flush();
-        if (!file)
-        {
-            throw SaveFormatError(
-                "antwika::game: could not write a save: " + path);
-        }
+        // The open, the flush and the write refusal are antwika::io's.
+        // That discipline is stated once, over there.
+        io::writeFileAs<SaveFormatError>(
+            path, "a save", [&save](std::ostream &out) {
+                writeSaveGame(save, out);
+            });
     }
 
     SaveGame loadGameFile(const std::string &path)
     {
-        std::ifstream file(path);
-
         // A file that is not there is not a malformed document.
         // Unchecked it reaches the parser as an empty stream.
         // Which reports a missing save as invalid JSON.
-        if (!file.is_open())
-        {
-            throw SaveFormatError(
-                "antwika::game: could not open a save to read: " + path);
-        }
+        auto file = io::openToReadAs<SaveFormatError>(path, "a save");
 
         return readSaveGame(file);
     }

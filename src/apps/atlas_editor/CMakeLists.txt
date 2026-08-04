@@ -32,6 +32,7 @@ antwika_add_app(
         antwika::i18n
         antwika::input
         antwika::input_backend
+        antwika::io
         antwika::log
         antwika::replay
         antwika::simulation

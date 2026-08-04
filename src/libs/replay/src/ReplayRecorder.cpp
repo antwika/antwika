@@ -3,6 +3,7 @@
 #include <utility>
 
 #include <antwika/engine/Events.hpp>
+#include <antwika/io/File.hpp>
 #include <antwika/replay/ReplayFormatError.hpp>
 
 namespace antwika::replay
@@ -13,17 +14,11 @@ namespace antwika::replay
         void requireStreamTookIt(
             std::ostream &out, const std::string &destination)
         {
-            // Flushed here rather than by the destructor.
-            // A destructor cannot say that it failed.
-            // A full disk fails on the flush, not on the open.
-            // And a recording nobody flushed is one a kill loses.
-            out.flush();
-            if (!out)
-            {
-                throw ReplayFormatError(
-                    "antwika::replay: could not write a replay: "
-                    + destination);
-            }
+            // Flushed per line rather than once at the end on purpose.
+            // A recording nobody flushed is one a kill loses.
+            // The flush-then-check itself is antwika::io's, stated once.
+            io::requireStreamTookAs<ReplayFormatError>(
+                out, "a replay", destination);
         }
     } // namespace
 
