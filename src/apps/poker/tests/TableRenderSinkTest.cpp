@@ -4,6 +4,7 @@
 #include <chrono>
 #include <string>
 
+#include <antwika/console/ConsolePicture.hpp>
 #include <antwika/engine/Events.hpp>
 #include <antwika/event/Event.hpp>
 #include <antwika/event/TickEvent.hpp>
@@ -154,6 +155,36 @@ TEST_F(TableRenderSinkTest, Render_ShowsTheTableItWasGiven)
     EXPECT_CALL(renderer, present());
 
     sink.render();
+}
+
+// The console's sheet goes over the table, when one is mounted.
+// Described in the tick path; this sink only paints what it is handed.
+TEST_F(TableRenderSinkTest, Render_PaintsTheConsolePictureLast)
+{
+    const antwika::gfx::Rect sheet{
+        .origin = {.x = 1, .y = 2},
+        .size = {.width = 3, .height = 4}};
+    const antwika::gfx::Color ink{.red = 5, .green = 6, .blue = 7};
+
+    antwika::console::ConsolePicture picture(kCanvas);
+    picture.set({antwika::ui::FillRect{.rect = sheet, .color = ink}});
+
+    TableRenderSink overlaid{
+        window,
+        kCanvas,
+        scene,
+        table,
+        game,
+        sleeper,
+        kFramePeriod,
+        "Antwika",
+        std::nullopt,
+        picture};
+
+    EXPECT_CALL(renderer, drawRect(sheet, ink)).Times(1);
+    EXPECT_CALL(renderer, present()).Times(1);
+
+    overlaid.render();
 }
 
 // The size the window was asked for, never the size it reports.

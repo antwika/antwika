@@ -492,7 +492,9 @@ namespace antwika::poker
 
     PrinterMemory TablePrinter::remember() const
     {
-        return PrinterMemory{
+        // Handing the notes to the memory copies one vector.
+        // The edge gcov reports here is its unwind path only.
+        return PrinterMemory{ // GCOVR_EXCL_LINE
             .notes = notes,
             .smallBlindSeat = smallBlindSeat,
             .bigBlindSeat = bigBlindSeat,

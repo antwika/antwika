@@ -138,22 +138,26 @@ namespace antwika::poker
             encoded["board"] = cardsToJson(result.board);
             encoded["payouts"] = nlohmann::json::array();
 
+            // Built key by key, as seatToJson does.
+            // An initializer list leaves unwind blocks mid-statement.
             for (const auto &payout : result.payouts)
             {
-                encoded["payouts"].push_back(
-                    {{"seat", rawValue(payout.seat)},
-                     {"amount", payout.amount}});
+                auto &paid = encoded["payouts"].emplace_back();
+
+                paid["seat"] = rawValue(payout.seat);
+                paid["amount"] = payout.amount;
             }
 
             encoded["showdown"] = nlohmann::json::array();
 
             for (const auto &entry : result.showdown)
             {
-                encoded["showdown"].push_back(
-                    {{"seat", rawValue(entry.seat)},
-                     {"hole", cardsToJson(entry.holeCards)},
-                     {"value",
-                      static_cast<std::uint32_t>(entry.value)}});
+                auto &shown = encoded["showdown"].emplace_back();
+
+                shown["seat"] = rawValue(entry.seat);
+                shown["hole"] = cardsToJson(entry.holeCards);
+                shown["value"] =
+                    static_cast<std::uint32_t>(entry.value);
             }
 
             return encoded;
@@ -319,13 +323,16 @@ namespace antwika::poker
         auto &printer = encoded["printer"];
         printer["notes"] = nlohmann::json::array();
 
+        // Built key by key, as seatToJson does.
+        // An initializer list leaves unwind blocks mid-statement.
         for (const auto &note : dump.printer.notes)
         {
-            printer["notes"].push_back(
-                {{"roundStake", note.roundStake},
-                 {"foldedOn", std::string(stageName(note.foldedOn))},
-                 {"dealtIn", note.dealtIn},
-                 {"folded", note.folded}});
+            auto &told = printer["notes"].emplace_back();
+
+            told["roundStake"] = note.roundStake;
+            told["foldedOn"] = std::string(stageName(note.foldedOn));
+            told["dealtIn"] = note.dealtIn;
+            told["folded"] = note.folded;
         }
 
         if (dump.printer.smallBlindSeat.has_value())
@@ -422,14 +429,19 @@ namespace antwika::poker
 
         const auto &printer = state.at("printer");
 
+        // Built field by field, as seatFrom does.
+        // An initializer list leaves unwind blocks mid-statement.
         for (const auto &note : printer.at("notes"))
         {
-            dump.printer.notes.push_back(PrinterNote{
-                .roundStake = note.at("roundStake").get<Chips>(),
-                .foldedOn = stageNamed(
-                    note.at("foldedOn").get<std::string>()),
-                .dealtIn = note.at("dealtIn").get<bool>(),
-                .folded = note.at("folded").get<bool>()});
+            PrinterNote told;
+
+            told.roundStake = note.at("roundStake").get<Chips>();
+            told.foldedOn =
+                stageNamed(note.at("foldedOn").get<std::string>());
+            told.dealtIn = note.at("dealtIn").get<bool>();
+            told.folded = note.at("folded").get<bool>();
+
+            dump.printer.notes.push_back(told);
         }
 
         if (printer.contains("smallBlind"))

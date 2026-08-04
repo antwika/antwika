@@ -169,6 +169,68 @@ TEST(SnapshotStoreTest, LoadRefusesAnotherTablesCounts)
         (void)wide.store.load(file.path().string()), SnapshotError);
 }
 
+TEST(SnapshotStoreTest, DumpRefusesAPathThatCannotBeWritten)
+{
+    Room room(7);
+
+    EXPECT_THROW(
+        room.store.dump(
+            "/nonexistent-directory/antwika_poker_snapshot.json", {}),
+        SnapshotError);
+}
+
+TEST(SnapshotStoreTest, LoadRefusesAnotherTablesCountOfNotes)
+{
+    const antwika::testing::ScratchFile file(
+        "antwika_poker_snapshot_notes.json");
+
+    Room original(7);
+    original.store.dump(file.path().string(), {});
+
+    Room resumed(7);
+
+    // Rewrite the dump to narrate three seats at a two-seat table.
+    const antwika::console::SnapshotFormat format(
+        {.magic = antwika::poker::kStateDumpMagic,
+         .version = antwika::poker::kStateDumpVersion},
+        "antwika poker state dump document",
+        antwika::poker::standardStateDumpMigrations);
+    auto snapshot = format.read(file.path().string());
+    snapshot.state["printer"]["notes"].push_back(
+        snapshot.state["printer"]["notes"].at(0));
+    format.write(snapshot, file.path().string());
+
+    EXPECT_THROW(
+        (void)resumed.store.load(file.path().string()), SnapshotError);
+}
+
+// A dump the codec and the counts both accept, refused by the table.
+// The store's promise is one error type whoever below refused it.
+TEST(SnapshotStoreTest, LoadWrapsWhatTheTableItselfRefuses)
+{
+    const antwika::testing::ScratchFile file(
+        "antwika_poker_snapshot_toact.json");
+
+    Room original(7);
+    original.store.dump(file.path().string(), {});
+
+    Room resumed(7);
+
+    // Rewrite the dump to claim a hand with nobody left to act.
+    const antwika::console::SnapshotFormat format(
+        {.magic = antwika::poker::kStateDumpMagic,
+         .version = antwika::poker::kStateDumpVersion},
+        "antwika poker state dump document",
+        antwika::poker::standardStateDumpMigrations);
+    auto snapshot = format.read(file.path().string());
+    snapshot.state["table"]["handInProgress"] = true;
+    snapshot.state["table"].erase("toAct");
+    format.write(snapshot, file.path().string());
+
+    EXPECT_THROW(
+        (void)resumed.store.load(file.path().string()), SnapshotError);
+}
+
 TEST(SnapshotStoreTest, LoadRefusesAFileThatIsNotThere)
 {
     const antwika::testing::ScratchFile file(

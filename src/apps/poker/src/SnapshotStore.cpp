@@ -41,14 +41,15 @@ namespace antwika::poker
         const std::string &path,
         const std::vector<std::string> &console)
     {
-        dumpFormat().write(
-            antwika::console::Snapshot{
-                .console = console, .state = roomDumpToJson(take())},
-            path);
+        // Built field by field, as the dump's own codec builds.
+        // An aggregate temporary carries unwind blocks mid-statement.
+        antwika::console::Snapshot snapshot;
 
-        // The excluded line is the local snapshot's unwind destructor.
-        // Nothing after its construction throws but the write itself.
-    } // GCOVR_EXCL_LINE
+        snapshot.console = console;
+        snapshot.state = roomDumpToJson(take());
+
+        dumpFormat().write(snapshot, path);
+    }
 
     std::vector<std::string> PokerSnapshotStore::load(
         const std::string &path)

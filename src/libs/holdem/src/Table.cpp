@@ -611,7 +611,9 @@ namespace antwika::holdem
 
     TableMemory Table::remember() const
     {
-        return TableMemory{
+        // Standing the memory up copies two vectors and an optional.
+        // The edges gcov reports here are those unwind paths only.
+        return TableMemory{ // GCOVR_EXCL_LINE
             .seats = seats,
             .result = result,
             .toAct = toAct,

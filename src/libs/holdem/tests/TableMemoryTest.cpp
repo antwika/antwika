@@ -15,6 +15,7 @@ using antwika::holdem::check;
 using antwika::holdem::Deck;
 using antwika::holdem::DeckMemory;
 using antwika::holdem::makeSeatId;
+using antwika::holdem::rawValue;
 using antwika::holdem::Table;
 using antwika::holdem::TableMemory;
 using antwika::holdem::TableStateError;
@@ -158,11 +159,167 @@ TEST(TableMemoryTest, EqualityComparesEveryField)
 
     const auto base = table.remember();
 
+    auto reseated = base;
+    reseated.seats[0].stack += 1;
+    EXPECT_NE(base, reseated);
+
+    auto decided = base;
+    antwika::holdem::HandResult won;
+    won.pot = 1;
+    decided.result = won;
+    EXPECT_NE(base, decided);
+
+    auto waiting = base;
+    waiting.toAct = makeSeatId(1 - rawValue(*base.toAct));
+    EXPECT_NE(base, waiting);
+
     auto moved = base;
     moved.pot = 999;
     EXPECT_NE(base, moved);
 
+    auto raised = base;
+    raised.betting.currentBet += 1;
+    EXPECT_NE(base, raised);
+
+    auto staged = base;
+    staged.stage = antwika::holdem::Stage::River;
+    EXPECT_NE(base, staged);
+
+    auto dealt = base;
+    dealt.board.push_back(static_cast<antwika::holdem::Card>(0));
+    EXPECT_NE(base, dealt);
+
     auto turned = base;
     turned.handCount = 42;
     EXPECT_NE(base, turned);
+
+    auto rotated = base;
+    rotated.button = makeSeatId(1 - rawValue(base.button));
+    EXPECT_NE(base, rotated);
+
+    auto settled = base;
+    settled.handInProgress = !base.handInProgress;
+    EXPECT_NE(base, settled);
+}
+
+// The two-field memories, each field telling the two apart alone.
+TEST(TableMemoryTest, DeckAndBettingEqualityCompareEveryField)
+{
+    SplitMix64Rng bits(5);
+    Deck deck(bits);
+    deck.shuffle();
+
+    const auto base = deck.remember();
+
+    auto reordered = base;
+    std::swap(reordered.cards[0], reordered.cards[1]);
+    EXPECT_NE(base, reordered);
+
+    auto drawn = base;
+    drawn.dealt += 1;
+    EXPECT_NE(base, drawn);
+
+    const antwika::holdem::BettingMemory betting{
+        .currentBet = 10, .lastRaiseSize = 10};
+
+    auto pushed = betting;
+    pushed.currentBet = 20;
+    EXPECT_NE(betting, pushed);
+
+    auto reopened = betting;
+    reopened.lastRaiseSize = 20;
+    EXPECT_NE(betting, reopened);
+}
+
+// The seat a memory carries, every field telling two apart alone.
+TEST(TableMemoryTest, SeatEqualityComparesEveryField)
+{
+    antwika::holdem::Seat base;
+    base.occupied = true;
+
+    auto richer = base;
+    richer.stack += 1;
+    EXPECT_NE(base, richer);
+
+    auto staked = base;
+    staked.committed += 1;
+    EXPECT_NE(base, staked);
+
+    auto called = base;
+    called.roundCommitted += 1;
+    EXPECT_NE(base, called);
+
+    auto empty = base;
+    empty.occupied = false;
+    EXPECT_NE(base, empty);
+
+    auto dealt = base;
+    dealt.inHand = true;
+    EXPECT_NE(base, dealt);
+
+    auto acted = base;
+    acted.actedThisRound = true;
+    EXPECT_NE(base, acted);
+
+    auto capped = base;
+    capped.mayRaise = false;
+    EXPECT_NE(base, capped);
+
+    auto redealt = base;
+    redealt.holeCards[0] = static_cast<antwika::holdem::Card>(51);
+    EXPECT_NE(base, redealt);
+}
+
+// The result a memory carries, every field telling two apart alone.
+TEST(TableMemoryTest, HandResultEqualityComparesEveryField)
+{
+    const antwika::holdem::HandResult base{
+        .pot = 20,
+        .payouts = {{.seat = makeSeatId(0), .amount = 20}},
+        .showdown = {{.seat = makeSeatId(0)}},
+        .board = {static_cast<antwika::holdem::Card>(7)},
+        .stage = antwika::holdem::Stage::River};
+
+    auto bigger = base;
+    bigger.pot += 1;
+    EXPECT_NE(base, bigger);
+
+    auto repaid = base;
+    repaid.payouts[0].amount += 1;
+    EXPECT_NE(base, repaid);
+
+    auto reshown = base;
+    reshown.showdown.clear();
+    EXPECT_NE(base, reshown);
+
+    auto redealt = base;
+    redealt.board.clear();
+    EXPECT_NE(base, redealt);
+
+    auto earlier = base;
+    earlier.stage = antwika::holdem::Stage::Turn;
+    EXPECT_NE(base, earlier);
+}
+
+// The showdown line a result carries, field by field again.
+TEST(TableMemoryTest, ShowdownEntryEqualityComparesEveryField)
+{
+    const antwika::holdem::ShowdownEntry base{
+        .seat = makeSeatId(0),
+        .holeCards =
+            {static_cast<antwika::holdem::Card>(3),
+             static_cast<antwika::holdem::Card>(17)},
+        .value = static_cast<antwika::holdem::HandValue>(77)};
+
+    auto elsewhere = base;
+    elsewhere.seat = makeSeatId(1);
+    EXPECT_NE(base, elsewhere);
+
+    auto redealt = base;
+    redealt.holeCards[0] = static_cast<antwika::holdem::Card>(4);
+    EXPECT_NE(base, redealt);
+
+    auto weaker = base;
+    weaker.value = static_cast<antwika::holdem::HandValue>(76);
+    EXPECT_NE(base, weaker);
 }
