@@ -90,6 +90,7 @@ add_executable(antwika_game_tests
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/SceneSnapshot.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/UiOverlay.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/UiSink.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/ViewCommands.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/WalkerMotion.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/WalkerSystem.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/WorldMap.cpp
@@ -199,6 +200,7 @@ add_executable(antwika_game_tests
     ToolLabelTest.cpp
     UiOverlayTest.cpp
     ValueEqualityTest.cpp
+    ViewCommandsTest.cpp
     ViewportReplayTest.cpp
     UiSinkTest.cpp
     WalkerMotionTest.cpp
@@ -226,6 +228,7 @@ target_link_libraries(antwika_game_tests
         antwika::cli
         antwika::config
         antwika::config::tests::conformance
+        antwika::ecs_commons
         antwika::engine::tests::mocks
         antwika::event::tests::mocks
         antwika::ecs
@@ -240,6 +243,7 @@ target_link_libraries(antwika_game_tests
         antwika::replay
         antwika::rng
         antwika::simulation
+        antwika::testing
         antwika::time::tests::fakes
         antwika::tween
         antwika::ui

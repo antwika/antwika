@@ -70,15 +70,8 @@ namespace antwika::i18n::tests
         [[nodiscard]] static const Catalogue<TestId> &catalogueFor(
             Locale locale) noexcept
         {
-            switch (locale)
-            {
-            case Locale::English:
-                return kTestEnglishCatalogue;
-            case Locale::Swedish:
-                return kTestSwedishCatalogue;
-            }
-
-            return catalogueFor(kDefaultLocale);
+        return antwika::i18n::pickCatalogue(
+            locale, kTestEnglishCatalogue, kTestSwedishCatalogue);
         }
     };
 

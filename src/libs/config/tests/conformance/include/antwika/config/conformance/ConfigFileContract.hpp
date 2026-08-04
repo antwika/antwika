@@ -16,6 +16,7 @@
 #include <antwika/app/AssetPath.hpp>
 #include <antwika/config/ConfigFormatError.hpp>
 #include <antwika/replay/SchemaVersion.hpp>
+#include <antwika/testing/ScratchPath.hpp>
 
 namespace antwika::config::conformance
 {
@@ -80,13 +81,9 @@ namespace antwika::config::conformance
             return std::string(antwika::replay::kSchemaVersionKey);
         }
 
-        // The pid keeps parallel ctest runs apart.
-        // Each case is its own process under ctest -j.
-        // See game/tests/ScratchDirectory.hpp for the long form.
+        // antwika::testing names it, for the reason stated there.
         std::filesystem::path directory{
-            std::filesystem::temp_directory_path()
-            / (std::string(Traits::scratchPrefix()) + "."
-               + std::to_string(::getpid()))};
+            antwika::testing::scratchPath(Traits::scratchPrefix())};
     };
 
     TYPED_TEST_SUITE_P(ConfigFileContract);

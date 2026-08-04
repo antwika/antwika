@@ -12,6 +12,7 @@
 #include "antwika/game/Household.hpp"
 #include "antwika/game/HousingLevel.hpp"
 #include "antwika/game/Production.hpp"
+#include "antwika/game/Resource.hpp"
 #include "antwika/game/Ruin.hpp"
 #include "antwika/game/Staff.hpp"
 
@@ -64,6 +65,23 @@ namespace antwika::game
      * ConfigFile.cpp's schema is where a zero period or a negative cost
      * is refused, beside the parse that would admit it.
      */
+    /**
+     * @brief The shipped answer to which goods sustain a household.
+     * @return One flag per resource, in Resource's own order.
+     */
+    [[nodiscard]] constexpr std::array<bool, kResourceCount>
+    defaultSustaining() noexcept
+    {
+        std::array<bool, kResourceCount> sustaining{};
+
+        for (const auto resource : kResources)
+        {
+            sustaining[resourceIndex(resource)] = sustains(resource);
+        }
+
+        return sustaining;
+    }
+
     struct GameConfig
     {
         /** @brief What the bank opens with. */
@@ -120,6 +138,18 @@ namespace antwika::game
 
         /** @brief How many walkers may exist at once. */
         std::size_t walkerLimit = kWalkerLimit;
+
+        /**
+         * @brief Which goods a household cannot go without.
+         *
+         * A house out of one of these empties, one person per settler
+         * period; the rest are goods it merely holds. Stated as a
+         * lookup keyed by resource rather than as the negation of one
+         * name, so a config can move which good is a staple without
+         * this file's help -- sustains() is the shipped default.
+         */
+        std::array<bool, kResourceCount> sustaining =
+            defaultSustaining();
 
         /**
          * @brief What putting up a building of this kind costs.

@@ -61,6 +61,7 @@ target_link_libraries(antwika_companion_tests
         antwika::input
         antwika::log::tests::mocks
         antwika::replay
+        antwika::testing
         antwika::time::tests::fakes
         antwika::tween
         gtest::gtest

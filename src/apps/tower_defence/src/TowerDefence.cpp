@@ -4,6 +4,7 @@
 #include <utility>
 #include <vector>
 
+#include <antwika/app/StoreIfLive.hpp>
 #include <antwika/engine/Engine.hpp>
 #include <antwika/engine/StopSignal.hpp>
 #include <antwika/event/EventDispatcher.hpp>
@@ -162,14 +163,10 @@ namespace antwika::tower_defence
     }
 
     std::optional<std::reference_wrapper<IScoreStore>> storeIfLive(
-        IScoreStore &store, const std::optional<std::string> &replayPath)
+        IScoreStore &store,
+        const std::optional<std::string> &replayPath)
     {
-        if (replayPath.has_value())
-        {
-            return std::nullopt;
-        }
-
-        return store;
+        return antwika::app::storeIfLive(store, replayPath);
     }
 
     std::string summaryLine(const BattleSummary &summary)

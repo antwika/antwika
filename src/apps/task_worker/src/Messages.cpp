@@ -90,15 +90,8 @@ namespace antwika::task_worker
     const i18n::Catalogue<MessageId> &Messages::catalogueFor(
         i18n::Locale locale) noexcept
     {
-        switch (locale)
-        {
-        case Locale::English:
-            return kEnglishCatalogue;
-        case Locale::Swedish:
-            return kSwedishCatalogue;
-        }
-
-        return catalogueFor(i18n::kDefaultLocale);
+        return antwika::i18n::pickCatalogue(
+            locale, kEnglishCatalogue, kSwedishCatalogue);
     }
 
 } // namespace antwika::task_worker

@@ -7,6 +7,14 @@ namespace antwika::tower_defence
 
     namespace
     {
+        // The run's own table rather than the shipped constant.
+        // A config states one set of mobs for the whole campaign.
+        [[nodiscard]] const MobProfile &profileFor(
+            const BattleConfig &config, const MobKind kind)
+        {
+            return config.mobs[static_cast<std::size_t>(kind)];
+        }
+
         std::uint32_t squaredDistance(const Cell &left, const Cell &right)
         {
             const auto dx = static_cast<std::int64_t>(left.x)
@@ -86,7 +94,8 @@ namespace antwika::tower_defence
             }
 
             ++mob.pathIndex;
-            mob.ticksUntilStep = profileOf(mob.kind).ticksPerCell - 1;
+            mob.ticksUntilStep =
+                profileFor(config, mob.kind).ticksPerCell - 1;
             if (mob.pathIndex + 1 < levelData.path.size())
             {
                 survivors.push_back(mob);
@@ -127,7 +136,7 @@ namespace antwika::tower_defence
             Mob released;
             released.id = nextMobId;
             released.kind = kind;
-            released.health = profileOf(kind).health;
+            released.health = profileFor(config, kind).health;
             living.push_back(released);
             ++nextMobId;
             ++spawnedInWave;
@@ -185,7 +194,8 @@ namespace antwika::tower_defence
             }
 
             living[best].health -= damageTo(
-                config.towerDamage, profileOf(living[best].kind).armour);
+                config.towerDamage,
+                profileFor(config, living[best].kind).armour);
         }
 
         std::uint64_t earned = 0;
@@ -198,7 +208,7 @@ namespace antwika::tower_defence
                 survivors.push_back(mob);
                 continue;
             }
-            earned += profileOf(mob.kind).reward;
+            earned += profileFor(config, mob.kind).reward;
         }
         living = std::move(survivors);
         return earned;

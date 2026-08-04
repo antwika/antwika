@@ -33,25 +33,6 @@ namespace antwika::poker
     namespace
     {
 
-        struct Thresholds
-        {
-            unsigned raiseAt = 0;
-            unsigned callAt = 0;
-        };
-
-        [[nodiscard]] Thresholds thresholdsFor(AgentStyle style) noexcept
-        {
-            if (style == AgentStyle::Tight)
-            {
-                return Thresholds{.raiseAt = 80, .callAt = 55};
-            }
-            if (style == AgentStyle::Aggressive)
-            {
-                return Thresholds{.raiseAt = 55, .callAt = 25};
-            }
-            return Thresholds{.raiseAt = 70, .callAt = 40};
-        }
-
         [[nodiscard]] unsigned preFlopStrength(
             const std::array<Card, antwika::holdem::kHoleCardCount> &hole)
         {
@@ -98,8 +79,11 @@ namespace antwika::poker
 
     PolicyAgent::PolicyAgent(
         AgentStyle style,
-        std::array<unsigned, kHandCategoryCount> handStrengths) noexcept
-        : style(style), handStrengths(handStrengths)
+        std::array<unsigned, kHandCategoryCount> handStrengths,
+        std::array<AgentThresholds, kAgentStyleCount> thresholds) noexcept
+        : style(style),
+          handStrengths(handStrengths),
+          thresholds(thresholds)
     {
     }
 
@@ -111,11 +95,12 @@ namespace antwika::poker
     Action PolicyAgent::act(const TableView &view)
     {
         const auto strength = handStrength(view, handStrengths);
-        const auto thresholds = thresholdsFor(style);
+        const auto limits =
+            thresholds[static_cast<std::size_t>(style)];
         const auto canRaise =
             view.mayRaise && view.maxRaiseTo > view.currentBet;
 
-        if (strength >= thresholds.raiseAt && canRaise)
+        if (strength >= limits.raiseAt && canRaise)
         {
             const auto target = wagerTarget(view);
             return view.currentBet == 0 ? bet(target) : raiseTo(target);
@@ -125,7 +110,7 @@ namespace antwika::poker
         {
             return check();
         }
-        if (strength >= thresholds.callAt)
+        if (strength >= limits.callAt)
         {
             return call();
         }

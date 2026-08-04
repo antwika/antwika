@@ -24,6 +24,7 @@
 #include <antwika/log/mocks/MockLogger.hpp>
 #include <antwika/replay/ReplayCli.hpp>
 #include <antwika/replay/ReplaySource.hpp>
+#include <antwika/testing/ScratchPath.hpp>
 #include <antwika/time/fakes/FakeSleeper.hpp>
 
 #include "antwika/companion/Companion.hpp"
@@ -102,45 +103,6 @@ namespace
         .collapsePenalty = 10,
         .happinessMax = 6,
         .happinessStart = 4};
-
-    // Removes its backing file on scope exit.
-    // That way a failing assertion leaves no stray temp files behind.
-    class ScratchFile
-    {
-    public:
-        explicit ScratchFile(std::string_view name)
-            : path(
-                  std::filesystem::temp_directory_path()
-                  // The pid keeps parallel ctest runs apart.
-                  // Each case is its own process under ctest -j.
-                  // Two cases on one fixed name raced here.
-                  // See game/tests/ScratchDirectory.hpp.
-                  / (std::string(name) + "." + std::to_string(::getpid())))
-        {
-        }
-
-        ~ScratchFile()
-        {
-            // The error_code overload, not the throwing one.
-            // A destructor is implicitly noexcept.
-            std::error_code ignored;
-            std::filesystem::remove(path, ignored);
-        }
-
-        ScratchFile(const ScratchFile &) = delete;
-        ScratchFile(ScratchFile &&) = delete;
-        ScratchFile &operator=(const ScratchFile &) = delete;
-        ScratchFile &operator=(ScratchFile &&) = delete;
-
-        [[nodiscard]] std::string string() const
-        {
-            return path.string();
-        }
-
-    private:
-        std::filesystem::path path;
-    };
-
     // A store with no filesystem behind it.
     // Which is the whole reason IPetStore exists.
     // A session cannot tell this from a real one.
@@ -468,7 +430,8 @@ namespace
     // A round trip skipping it would prove something no run ever does.
     std::vector<TickEvent> throughAFile(std::vector<TickEvent> recorded)
     {
-        const ScratchFile file{"antwika_companion_replay.json"};
+        const antwika::testing::ScratchFile file{
+            "antwika_companion_replay.json"};
         antwika::replay::saveReplayFile(
             std::move(recorded), file.string());
 

@@ -173,5 +173,5 @@ Generating is the only expensive thing this application does, and what those cas
 
 ## The config file
 
-`config.json` beside the executable is read once at startup through [`antwika::config`](../libraries/config.md): `startingLives`, the leaks a run can afford, and `framePeriodMs`, how long a frame takes on the wall clock.
+`config.json` beside the executable is read once at startup through [`antwika::config`](../libraries/config.md): `startingLives`, the leaks a run can afford, `framePeriodMs`, how long a frame takes on the wall clock, and `mobs`, what each kind is worth, costs and survives -- a lookup keyed by `MobKind` that `BattleConfig` carries, so one campaign plays one set of mobs.
 The campaign seed and the level plans stay in source -- the world a recording was made on may not depend on an editable file's absence or presence differing between two machines, which is the stance `apps/game`'s page states in full.

@@ -8,6 +8,7 @@
 #include <antwika/holdem/TableView.hpp>
 
 #include "antwika/poker/AgentStyle.hpp"
+#include "antwika/poker/RoomConfig.hpp"
 
 namespace antwika::poker
 {
@@ -45,11 +46,14 @@ namespace antwika::poker
          * @param handStrengths How strongly each made hand is rated,
          * weakest category first; RoomConfig carries the table the
          * config file states.
+         * @param thresholds When each style raises and calls, from the
+         * same RoomConfig.
          */
         PolicyAgent(
             AgentStyle style,
-            std::array<unsigned, kHandCategoryCount>
-                handStrengths) noexcept;
+            std::array<unsigned, kHandCategoryCount> handStrengths,
+            std::array<AgentThresholds, kAgentStyleCount>
+                thresholds) noexcept;
 
         /**
          * @brief Decide what to do with the hand in front of it.
@@ -67,6 +71,7 @@ namespace antwika::poker
     private:
         AgentStyle style;
         std::array<unsigned, kHandCategoryCount> handStrengths;
+        std::array<AgentThresholds, kAgentStyleCount> thresholds;
     };
 
     /**

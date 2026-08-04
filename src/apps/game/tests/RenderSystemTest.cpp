@@ -297,6 +297,7 @@ TEST_F(RenderSystemTest, Update_DrawsNoGhostUnderTheToolbar)
             .rect = Rect{
                 .origin = antwika::gfx::Point{.x = 0, .y = 0},
                 .size = kCanvas}}},
+        {},
         false);
 
     RenderSystem system(setup());
@@ -328,6 +329,7 @@ TEST_F(RenderSystemTest, Update_DrawsAGhostTheStalePressFlagWouldHide)
             .rect = Rect{
                 .origin = antwika::gfx::Point{.x = 300, .y = 0},
                 .size = Size{.width = 20, .height = 240}}}},
+        {},
         true);
 
     RenderSystem system(setup());

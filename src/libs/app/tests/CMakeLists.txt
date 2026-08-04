@@ -25,6 +25,7 @@ target_link_libraries(antwika_app_tests
         antwika::app::tests::fakes
         antwika::gfx::tests::mocks
         antwika::input::tests::fakes
+        antwika::testing
         antwika::time::tests::fakes
         gtest::gtest
 )

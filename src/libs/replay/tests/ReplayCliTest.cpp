@@ -12,6 +12,7 @@
 #include <unistd.h>
 
 #include <antwika/cli/CommandLineError.hpp>
+#include <antwika/testing/ScratchPath.hpp>
 
 #include "antwika/replay/ReplayCli.hpp"
 #include "antwika/replay/ReplayFormatError.hpp"
@@ -26,45 +27,6 @@ using antwika::replay::saveReplayFile;
 
 namespace
 {
-    // Removes its backing file on scope exit.
-    // That way a failing assertion never leaves stray temp files behind.
-    class ScratchFile
-    {
-    public:
-        explicit ScratchFile(std::string_view name)
-            : path(
-                  std::filesystem::temp_directory_path()
-                  // The pid keeps parallel ctest runs apart.
-                  // Each case is its own process under ctest -j.
-                  // Two cases on one fixed name raced here.
-                  // See game/tests/ScratchDirectory.hpp.
-                  / (std::string(name) + "." + std::to_string(::getpid())))
-        {
-        }
-
-        ~ScratchFile()
-        {
-            // The error_code overload, not the throwing one.
-            // A destructor is implicitly noexcept.
-            // A throwing removal would take the whole binary down.
-            std::error_code ignored;
-            std::filesystem::remove(path, ignored);
-        }
-
-        ScratchFile(const ScratchFile &) = delete;
-        ScratchFile(ScratchFile &&) = delete;
-        ScratchFile &operator=(const ScratchFile &) = delete;
-        ScratchFile &operator=(ScratchFile &&) = delete;
-
-        [[nodiscard]] std::string string() const
-        {
-            return path.string();
-        }
-
-    private:
-        std::filesystem::path path;
-    };
-
     std::vector<char *> toArgv(const std::vector<std::string> &args)
     {
         std::vector<char *> argv;
@@ -151,7 +113,7 @@ TEST(ReplayCliTest, ReplayCliFlagsAreTheTwoEveryAppTakes)
 
 TEST(ReplayCliTest, LoadReplayFileDecodesAPreviouslySavedDocument)
 {
-    ScratchFile file("antwika_replay_cli_load_test.jsonl");
+    antwika::testing::ScratchFile file("antwika_replay_cli_load_test.jsonl");
     {
         std::ofstream out(file.string());
         out << R"({"magic":"antwika-replay","version":1,"events":)"
@@ -170,7 +132,8 @@ TEST(ReplayCliTest, LoadReplayFileDecodesAPreviouslySavedDocument)
 
 TEST(ReplayCliTest, LoadReplayFileThrowsWhenFileCannotBeParsed)
 {
-    ScratchFile file("antwika_replay_cli_load_malformed_test.jsonl");
+    antwika::testing::ScratchFile file(
+        "antwika_replay_cli_load_malformed_test.jsonl");
     {
         std::ofstream out(file.string());
         out << "not a replay document";
@@ -181,7 +144,7 @@ TEST(ReplayCliTest, LoadReplayFileThrowsWhenFileCannotBeParsed)
 
 TEST(ReplayCliTest, SaveReplayFileFiltersOutBuiltInTicks)
 {
-    ScratchFile file("antwika_replay_cli_save_test.jsonl");
+    antwika::testing::ScratchFile file("antwika_replay_cli_save_test.jsonl");
     std::vector<TickEvent> events{
         TickEvent{.tick = 0, .event = Event{.name = "engine.tick"}},
         TickEvent{
@@ -209,7 +172,8 @@ TEST(ReplayCliTest, SaveReplayFileFiltersOutBuiltInTicks)
 // So the open is a step of its own, and a step a caller can take.
 TEST(ReplayCliTest, OpenReplayFileGivesAStreamToAppendARecordingTo)
 {
-    const ScratchFile file("antwika_replay_cli_open_test.jsonl");
+    const antwika::testing::ScratchFile file(
+        "antwika_replay_cli_open_test.jsonl");
 
     {
         std::ofstream out = openReplayFile(file.string());
@@ -234,7 +198,8 @@ TEST(ReplayCliTest, OpenReplayFileThrowsOnAPathItCannotTake)
 // They used to produce the same message.
 TEST(ReplayCliTest, LoadReplayFileSaysAMissingFileCouldNotBeOpened)
 {
-    const ScratchFile file("antwika_replay_cli_load_absent_test.jsonl");
+    const antwika::testing::ScratchFile file(
+        "antwika_replay_cli_load_absent_test.jsonl");
 
     try
     {

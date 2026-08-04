@@ -21,6 +21,7 @@
 #include <antwika/log/mocks/MockLogger.hpp>
 #include <antwika/replay/ReplayCli.hpp>
 #include <antwika/replay/ReplaySource.hpp>
+#include <antwika/testing/ScratchPath.hpp>
 #include <antwika/ui/Pointer.hpp>
 #include <antwika/ui/WidgetId.hpp>
 
@@ -74,45 +75,6 @@ namespace
     // Well down the grid, since the toolbar covers the top.
     // A press the bar covers never reaches the world.
     constexpr std::int32_t kRoadRow = 6;
-
-    // Removes its backing file on scope exit.
-    class ScratchFile
-    {
-    public:
-        explicit ScratchFile(std::string name)
-            : path(
-                  (std::filesystem::temp_directory_path()
-                   // The pid keeps parallel ctest runs apart.
-                   // Each case is its own process under ctest -j.
-                   // Two cases on one fixed name raced here.
-                   // See game/tests/ScratchDirectory.hpp.
-                   / (std::string(name) + "." + std::to_string(::getpid())))
-                      .string())
-        {
-        }
-
-        ScratchFile(const ScratchFile &) = delete;
-        ScratchFile(ScratchFile &&) = delete;
-
-        ScratchFile &operator=(const ScratchFile &) = delete;
-        ScratchFile &operator=(ScratchFile &&) = delete;
-
-        ~ScratchFile()
-        {
-            // A destructor must not throw, so use the non-throwing form.
-            std::error_code ignored;
-            std::filesystem::remove(path, ignored);
-        }
-
-        [[nodiscard]] const std::string &name() const noexcept
-        {
-            return path;
-        }
-
-    private:
-        std::string path;
-    };
-
     struct RunResult
     {
         GameSummary summary;
@@ -360,9 +322,9 @@ TEST(PauseDeterminismTest, APausedRunReplaysToTheSameState)
     ReplaySource liveSource(script);
     const auto live = run(liveSource);
 
-    const ScratchFile file("antwika-game-pause.replay");
-    antwika::replay::saveReplayFile(live.recorded, file.name());
-    auto loaded = antwika::replay::loadReplayFile(file.name());
+    const antwika::testing::ScratchFile file("antwika-game-pause.replay");
+    antwika::replay::saveReplayFile(live.recorded, file.string());
+    auto loaded = antwika::replay::loadReplayFile(file.string());
 
     // Nothing about a pause may be in the file.
     const InputEventCodec codec;

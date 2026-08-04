@@ -237,6 +237,7 @@ Breaking one is the class of mistake that looks fine live and surfaces as a dive
 - [`app`](wiki/libraries/app.md) is what every `main()` shares -- `runRecorded()`, `assetPath()`, `FramePacedSource`/`IFramePass` and `pointerFrom()`/`hoverFrom()`.
 - [`cli`](wiki/libraries/cli.md) is the flag parsing, depending on nothing at all; one `FlagSpec` table is both the parser's input and the help text's, and a program parses once against one concatenated table.
 - [`log`](wiki/libraries/log.md) is composable logging with no global state.
+- [`testing`](wiki/libraries/testing.md) is the scratch-path helper every suite's temporary files go through, named with the case and the pid so two ctest processes cannot collide -- the rule that stopped `SessionPersistenceTest` flaking, stated once rather than in fifteen copies.
 
 Backends live under [`backends/`](backends/), are selected at build time, and are the only place a concrete framework is named; `null` implementations that belong to the coverage gate live in the library instead.
 `backends/sockets` is the one that is not a framework: it names the operating system's own socket API, adds no package and no lockfile entry, and is therefore exempt from the rule that one build names one framework.

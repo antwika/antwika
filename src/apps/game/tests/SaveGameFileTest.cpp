@@ -12,6 +12,7 @@
 
 #include "antwika/game/SaveFormatError.hpp"
 #include "antwika/game/SaveGameFile.hpp"
+#include <antwika/testing/ScratchPath.hpp>
 
 using antwika::game::Camera;
 using antwika::game::Cell;
@@ -29,44 +30,6 @@ using antwika::game::writeSaveGame;
 
 namespace
 {
-    // Removes its backing file on scope exit.
-    // That way a failing assertion leaves no stray temp files behind.
-    class ScratchFile
-    {
-    public:
-        explicit ScratchFile(std::string_view name)
-            : path(
-                  std::filesystem::temp_directory_path()
-                  // The pid keeps parallel ctest runs apart.
-                  // Each case is its own process under ctest -j.
-                  // Two cases on one fixed name raced here.
-                  // See game/tests/ScratchDirectory.hpp.
-                  / (std::string(name) + "." + std::to_string(::getpid())))
-        {
-        }
-
-        ~ScratchFile()
-        {
-            // The error_code overload, not the throwing one.
-            // A destructor is implicitly noexcept.
-            std::error_code ignored;
-            std::filesystem::remove(path, ignored);
-        }
-
-        ScratchFile(const ScratchFile &) = delete;
-        ScratchFile(ScratchFile &&) = delete;
-        ScratchFile &operator=(const ScratchFile &) = delete;
-        ScratchFile &operator=(ScratchFile &&) = delete;
-
-        [[nodiscard]] std::string string() const
-        {
-            return path.string();
-        }
-
-    private:
-        std::filesystem::path path;
-    };
-
     SaveGame populated()
     {
         SaveGame save;
@@ -102,7 +65,8 @@ TEST(SaveGameFileTest, WritesAnIndentedDocument)
 
 TEST(SaveGameFileTest, RoundTripsThroughAFile)
 {
-    const ScratchFile file("antwika_game_save_roundtrip.json");
+    const antwika::testing::ScratchFile file(
+        "antwika_game_save_roundtrip.json");
     const auto original = populated();
 
     saveGameFile(original, file.string());
@@ -119,7 +83,7 @@ TEST(SaveGameFileTest, RejectsAStreamThatIsNotJson)
 
 TEST(SaveGameFileTest, RejectsAFileThatIsNotThere)
 {
-    const ScratchFile file("antwika_game_save_absent.json");
+    const antwika::testing::ScratchFile file("antwika_game_save_absent.json");
 
     EXPECT_THROW((void)loadGameFile(file.string()), SaveFormatError);
 }
@@ -133,7 +97,8 @@ TEST(SaveGameFileTest, RejectsAPathThatCannotBeWritten)
 
 TEST(SaveGameFileTest, RejectsAMalformedFile)
 {
-    const ScratchFile file("antwika_game_save_malformed.json");
+    const antwika::testing::ScratchFile file(
+        "antwika_game_save_malformed.json");
     {
         std::ofstream out(file.string());
         out << "{ \"magic\": ";
@@ -168,7 +133,7 @@ TEST(SaveGameFileTest, NothingIsReadOrWrittenWhenNoPathWasNamed)
 
 TEST(SaveGameFileTest, ANamedPathIsWrittenAndReadBack)
 {
-    const ScratchFile file("antwika_game_save_if_named.json");
+    const antwika::testing::ScratchFile file("antwika_game_save_if_named.json");
     const std::optional<std::string> path{file.string()};
 
     antwika::game::saveGameFileIfNamed(populated(), path);

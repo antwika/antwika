@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstddef>
 #include <cstdint>
 #include <string_view>
 
@@ -26,6 +27,15 @@ namespace antwika::poker
          */
         Aggressive,
     };
+
+    /**
+     * @brief How many styles an agent can play in.
+     *
+     * Declared beside the enumeration it counts, so a table keyed by
+     * style states its size rather than repeating a three.
+     */
+    inline constexpr std::size_t kAgentStyleCount =
+        static_cast<std::size_t>(AgentStyle::Aggressive) + 1;
 
     /**
      * @brief Name a style as a table would describe the player.

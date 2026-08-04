@@ -1,14 +1,17 @@
 #include "antwika/game/ConfigFile.hpp"
 
+#include <algorithm>
 #include <cstddef>
 #include <cstdint>
 #include <limits>
 #include <string>
 
 #include <antwika/config/ConfigDocument.hpp>
+#include <antwika/config/ConfigFormatError.hpp>
 #include <antwika/config/FileFormat.hpp>
 #include <antwika/config/Format.hpp>
 #include "antwika/game/BuildingKind.hpp"
+#include "antwika/game/Resource.hpp"
 
 namespace antwika::game
 {
@@ -88,6 +91,13 @@ namespace antwika::game
             schema["properties"]["productionBatch"] = periodShape();
             schema["properties"]["labourPeriodTicks"] = periodShape();
             schema["properties"]["staffDecayPeriodTicks"] = periodShape();
+            // One flag per resource, in Resource's own order.
+            auto &staples = schema["properties"]["sustaining"];
+            staples["type"] = "array";
+            staples["items"]["type"] = "boolean";
+            staples["minItems"] = kResourceCount;
+            staples["maxItems"] = kResourceCount;
+
             schema["properties"]["walkerLimit"] = wholeShape(
                 0, std::numeric_limits<std::int64_t>::max());
         }
@@ -119,6 +129,11 @@ namespace antwika::game
             out["labourPeriodTicks"] = config.labourPeriodTicks;
             out["staffDecayPeriodTicks"] = config.staffDecayPeriodTicks;
             out["walkerLimit"] = config.walkerLimit;
+
+            for (const auto staple : config.sustaining)
+            {
+                out["sustaining"].push_back(staple);
+            }
         }
 
         GameConfig decodeMembers(const nlohmann::json &document)
@@ -186,6 +201,29 @@ namespace antwika::game
                     config.staffDecayPeriodTicks);
             config.walkerLimit =
                 memberOr(document, "walkerLimit", config.walkerLimit);
+
+            if (document.contains("sustaining"))
+            {
+                const auto &staples = document.at("sustaining");
+
+                for (std::size_t index = 0; index < kResourceCount; ++index)
+                {
+                    config.sustaining[index] =
+                        staples.at(index).get<bool>();
+                }
+            }
+
+            // A household that needs nothing can never empty.
+            // That turns the population rule off rather than tuning it.
+            if (std::none_of(
+                    config.sustaining.begin(),
+                    config.sustaining.end(),
+                    [](const bool staple) { return staple; }))
+            {
+                throw antwika::config::ConfigFormatError(
+                    "antwika::game: config names no good a household "
+                    "cannot go without");
+            }
             return config;
         }
 

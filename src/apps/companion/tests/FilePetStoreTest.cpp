@@ -12,6 +12,7 @@
 #include "antwika/companion/FilePetStore.hpp"
 #include "antwika/companion/Pet.hpp"
 #include "antwika/companion/SaveFormatError.hpp"
+#include <antwika/testing/ScratchPath.hpp>
 
 using antwika::companion::CompanionMemory;
 using antwika::companion::FilePetStore;
@@ -23,44 +24,6 @@ using antwika::companion::Saying;
 
 namespace
 {
-    // Removes its backing file on scope exit.
-    // That way a failing assertion leaves no stray temp files behind.
-    class ScratchFile
-    {
-    public:
-        explicit ScratchFile(std::string_view name)
-            : path(
-                  std::filesystem::temp_directory_path()
-                  // The pid keeps parallel ctest runs apart.
-                  // Each case is its own process under ctest -j.
-                  // Two cases on one fixed name raced here.
-                  // See game/tests/ScratchDirectory.hpp.
-                  / (std::string(name) + "." + std::to_string(::getpid())))
-        {
-        }
-
-        ~ScratchFile()
-        {
-            // The error_code overload, not the throwing one.
-            // A destructor is implicitly noexcept.
-            std::error_code ignored;
-            std::filesystem::remove(path, ignored);
-        }
-
-        ScratchFile(const ScratchFile &) = delete;
-        ScratchFile(ScratchFile &&) = delete;
-        ScratchFile &operator=(const ScratchFile &) = delete;
-        ScratchFile &operator=(ScratchFile &&) = delete;
-
-        [[nodiscard]] std::string string() const
-        {
-            return path.string();
-        }
-
-    private:
-        std::filesystem::path path;
-    };
-
     CompanionMemory lived()
     {
         return CompanionMemory{
@@ -87,7 +50,7 @@ namespace
 
 TEST(FilePetStoreTest, Load_AnswersNothingWhenThereIsNoPreviousCompanion)
 {
-    const ScratchFile file("antwika_companion_absent.json");
+    const antwika::testing::ScratchFile file("antwika_companion_absent.json");
     FilePetStore store(file.string());
 
     EXPECT_FALSE(store.load().has_value());
@@ -95,7 +58,8 @@ TEST(FilePetStoreTest, Load_AnswersNothingWhenThereIsNoPreviousCompanion)
 
 TEST(FilePetStoreTest, Save_RoundTripsThroughTheFile)
 {
-    const ScratchFile file("antwika_companion_round_trip.json");
+    const antwika::testing::ScratchFile file(
+        "antwika_companion_round_trip.json");
     FilePetStore store(file.string());
 
     store.save(lived());
@@ -107,7 +71,8 @@ TEST(FilePetStoreTest, Save_RoundTripsThroughTheFile)
 
 TEST(FilePetStoreTest, Load_RefusesAFileThatIsNotACompanion)
 {
-    const ScratchFile file("antwika_companion_malformed.json");
+    const antwika::testing::ScratchFile file(
+        "antwika_companion_malformed.json");
     {
         std::ofstream out(file.string());
         out << "{ \"magic\": ";

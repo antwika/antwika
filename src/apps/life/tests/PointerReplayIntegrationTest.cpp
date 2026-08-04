@@ -30,6 +30,7 @@
 #include <antwika/log/mocks/MockLogger.hpp>
 #include <antwika/replay/ReplayCli.hpp>
 #include <antwika/replay/ReplaySource.hpp>
+#include <antwika/testing/ScratchPath.hpp>
 
 #include "antwika/life/Board.hpp"
 #include "antwika/life/Events.hpp"
@@ -38,7 +39,6 @@
 #include "antwika/life/Life.hpp"
 #include "antwika/life/PointerToggleSink.hpp"
 
-#include "ScratchFile.hpp"
 
 using antwika::ecs::ISystem;
 using antwika::ecs::World;
@@ -63,7 +63,6 @@ using antwika::life::DragState;
 using antwika::life::readBoardFromView;
 using antwika::life::Grid;
 using antwika::life::PointerToggleSink;
-using antwika::life::tests::ScratchFile;
 using antwika::log::mocks::MockLogger;
 using antwika::replay::ReplaySource;
 using ::testing::NiceMock;
@@ -200,7 +199,8 @@ namespace
 // The same board has to come back, or input found a second way in.
 TEST(PointerReplayIntegrationTest, RecordingADragReplaysToTheSameBoard)
 {
-    const ScratchFile replayFile("antwika_life_pointer_drag.replay");
+    const antwika::testing::ScratchFile replayFile(
+        "antwika_life_pointer_drag.replay");
     const InputEventCodec codec;
 
     Board liveBoard;

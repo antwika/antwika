@@ -3,7 +3,10 @@
 #include <optional>
 #include <string>
 
+#include <antwika/app/FileSnapshotStore.hpp>
+
 #include "antwika/companion/IPetStore.hpp"
+#include "antwika/companion/SaveFormatError.hpp"
 
 namespace antwika::companion
 {
@@ -51,7 +54,8 @@ namespace antwika::companion
         void save(const CompanionMemory &memory) override;
 
     private:
-        std::string path;
+        antwika::app::FileSnapshotStore<CompanionMemory, SaveFormatError>
+            file;
     };
 
 } // namespace antwika::companion

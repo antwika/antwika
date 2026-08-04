@@ -4,6 +4,7 @@
 #include <cstdint>
 #include <limits>
 #include <string>
+#include <utility>
 
 #include <antwika/config/ConfigDocument.hpp>
 #include <antwika/config/FileFormat.hpp>
@@ -34,6 +35,22 @@ namespace antwika::poker
             schema["properties"]["bigBlind"] = chipsShape();
             schema["properties"]["minimumBuyIn"] = chipsShape();
 
+            // Two numbers per style, on hand strength's own scale.
+            auto &limits = schema["properties"]["thresholds"];
+            limits["type"] = "array";
+            limits["items"]["type"] = "object";
+            limits["items"]["additionalProperties"] = false;
+            // The braced list's spare branches are the allocator's.
+            // Every other required list here carries the same note.
+            limits["items"]["required"] = {
+                "raiseAt", "callAt"}; // GCOVR_EXCL_LINE
+            limits["items"]["properties"]["raiseAt"] =
+                wholeShape(0, 100);
+            limits["items"]["properties"]["callAt"] =
+                wholeShape(0, 100);
+            limits["minItems"] = kAgentStyleCount;
+            limits["maxItems"] = kAgentStyleCount;
+
             // One rating per category, weakest first, 0..100.
             auto &strengths = schema["properties"]["handStrengths"];
             strengths["type"] = "array";
@@ -47,6 +64,14 @@ namespace antwika::poker
             out["smallBlind"] = config.blinds.small;
             out["bigBlind"] = config.blinds.big;
             out["minimumBuyIn"] = config.minimumBuyIn;
+
+            for (const auto limit : config.thresholds)
+            {
+                nlohmann::json one;
+                one["raiseAt"] = limit.raiseAt;
+                one["callAt"] = limit.callAt;
+                out["thresholds"].push_back(std::move(one));
+            }
 
             for (const auto strength : config.handStrengths)
             {
@@ -85,6 +110,33 @@ namespace antwika::poker
                 throw antwika::config::ConfigFormatError(
                     "antwika::poker: config states a big blind "
                     "smaller than the small blind");
+            }
+
+            if (document.contains("thresholds"))
+            {
+                const auto &limits = document.at("thresholds");
+
+                for (std::size_t index = 0; index < kAgentStyleCount;
+                     ++index)
+                {
+                    config.thresholds[index] = AgentThresholds{
+                        .raiseAt =
+                            limits.at(index).at("raiseAt").get<unsigned>(),
+                        .callAt =
+                            limits.at(index).at("callAt").get<unsigned>()};
+                }
+            }
+
+            // An agent raising hands it would not call is nonsense.
+            // So the pair is refused rather than repaired.
+            for (const auto limit : config.thresholds)
+            {
+                if (limit.raiseAt < limit.callAt)
+                {
+                    throw antwika::config::ConfigFormatError(
+                        "antwika::poker: config gives a style a raise "
+                        "threshold under its call threshold");
+                }
             }
 
             // Weakest first is the table's whole meaning.

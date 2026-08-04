@@ -44,6 +44,7 @@ target_link_libraries(antwika_life_tests
         antwika::config::tests::conformance
         antwika::ecs
         antwika::ecs::tests::mocks
+        antwika::ecs_commons
         antwika::engine
         antwika::gfx
         antwika::gfx::tests::mocks
@@ -52,6 +53,7 @@ target_link_libraries(antwika_life_tests
         antwika::log::tests::mocks
         antwika::replay
         antwika::simulation
+        antwika::testing
         antwika::time::tests::fakes
         antwika::event::tests::mocks
         gtest::gtest

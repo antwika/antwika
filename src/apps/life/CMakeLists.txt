@@ -25,6 +25,7 @@ target_link_libraries(antwika_life
         antwika::app
         antwika::config
         antwika::ecs
+        antwika::ecs_commons
         antwika::engine
         antwika::gfx
         antwika::gfx_backend

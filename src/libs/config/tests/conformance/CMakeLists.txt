@@ -13,6 +13,10 @@ target_link_libraries(antwika_config_tests_conformance
     INTERFACE
         antwika::app
         antwika::config
+        # Build-only: antwika::testing is test support and is not in
+        # this module's export set, so an installed consumer must not
+        # be told to look for it.
+        $<BUILD_INTERFACE:antwika::testing>
 )
 
 install(

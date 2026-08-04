@@ -20,6 +20,7 @@
 #include "antwika/game/RoadDrag.hpp"
 #include "antwika/game/Toolbar.hpp"
 #include "antwika/game/UiOverlay.hpp"
+#include "antwika/game/ViewCommands.hpp"
 
 namespace antwika::game
 {
@@ -120,15 +121,17 @@ namespace antwika::game
     public:
         /**
          * @brief Construct the sink over everything it drives.
-         * @param camera Zoomed and reset by the buttons. Must outlive
-         * this sink.
+         * @param camera Read to describe the bar's zoom readout; the
+         * buttons move it through viewCommands rather than from here.
+         * Must outlive this sink.
          * @param overlay Written every tick. Must outlive this sink.
          * @param input The folded input, holding the event being
          * handled. Must outlive this sink, and must be registered ahead
          * of it.
          * @param toolbar Describes the bar. Must outlive this sink.
-         * @param pause Toggled by the pause button, held by the modal
-         * opening, and read to label the button. Must outlive this sink.
+         * @param pause Read to label the pause button; the button
+         * holds and releases the run through viewCommands rather than
+         * from here. Must outlive this sink.
          * @param view Which picture of the city the overlay dropdown
          * has chosen. Written here and by nothing else, inside the tick
          * path, so a replay chooses the same one. Must outlive this
@@ -138,7 +141,10 @@ namespace antwika::game
          * @param drag The road drag opening the modal ends. Written here
          * and by GridSink, and by nothing else. Must outlive this sink.
          * @param modal Describes the menu modal. Must outlive this sink.
-         * @param home The camera "reset view" puts back.
+         * @param viewCommands What the bar's first four buttons ask
+         * for -- the same four verbs a bound key asks for, which is why
+         * neither sink spells them out any more. Must outlive this
+         * sink.
          * @param ratings How the city is doing, reported by the
          * last two readouts on the bottom bar. Written by RatingsSystem
          * in the observe phase, so it shows the city as the tick left it
@@ -151,16 +157,16 @@ namespace antwika::game
          * outlive this sink.
          */
         UiSink(
-            Camera &camera,
+            const Camera &camera,
             UiOverlay &overlay,
             const InputFold &input,
             const Toolbar &toolbar,
-            PauseState &pause,
+            const PauseState &pause,
             MapViewState &view,
             IMenuCommands &commands,
             RoadDrag &drag,
             const MenuModalScene &modal,
-            Camera home,
+            ViewCommands &viewCommands,
             const CityRatings &ratings,
             const GameState &state);
 
@@ -221,16 +227,16 @@ namespace antwika::game
 
         void selectFrom(WidgetId activated);
 
-        Camera &camera;
+        const Camera &camera;
         UiOverlay &overlay;
         const InputFold &input;
         const Toolbar &toolbar;
-        PauseState &pause;
+        const PauseState &pause;
         MapViewState &view;
         IMenuCommands &commands;
         RoadDrag &drag;
         const MenuModalScene &modal;
-        Camera home;
+        ViewCommands &viewCommands;
         const CityRatings &ratings;
         const GameState &state;
 

@@ -36,15 +36,22 @@ namespace antwika::game
         return area;
     }
 
-    void UiOverlay::set(DrawList commands, bool covered)
+    void UiOverlay::set(
+        DrawList commands, HoverTargets targets, bool covered)
     {
         picture = std::move(commands);
+        this->targets = std::move(targets);
         this->covered = covered;
     }
 
     const DrawList &UiOverlay::commands() const noexcept
     {
         return picture;
+    }
+
+    const HoverTargets &UiOverlay::hoverTargets() const noexcept
+    {
+        return targets;
     }
 
     bool UiOverlay::pointerOverUi() const noexcept

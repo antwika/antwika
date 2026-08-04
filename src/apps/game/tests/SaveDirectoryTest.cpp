@@ -1,4 +1,5 @@
 #include <gtest/gtest.h>
+#include <antwika/testing/ScratchPath.hpp>
 
 #include <filesystem>
 #include <fstream>
@@ -6,15 +7,13 @@
 #include <system_error>
 #include <vector>
 
-#include "ScratchDirectory.hpp"
 
 #include "antwika/game/SaveDirectory.hpp"
 
 namespace
 {
 
-    using antwika::game::tests::scratchDirectory;
-    using antwika::game::listSaveGames;
+        using antwika::game::listSaveGames;
     using antwika::game::saveGamePath;
 
     // A directory of its own per test, removed however the test leaves.
@@ -22,7 +21,8 @@ namespace
     {
     protected:
         SaveDirectoryTest()
-            : directory(scratchDirectory("antwika_save_directory_test_"))
+            : directory(
+                  antwika::testing::scratchPath("antwika_saves_"))
         {
             std::error_code ignored;
             std::filesystem::remove_all(directory, ignored);

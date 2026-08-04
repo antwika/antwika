@@ -39,6 +39,7 @@ target_link_libraries(antwika_input_tests
         antwika::input::tests::fakes
         antwika::input::tests::mocks
         antwika::log::tests::mocks
+        antwika::testing
         gtest::gtest
 )
 

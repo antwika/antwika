@@ -5,6 +5,7 @@
 #include <antwika/gfx/Point.hpp>
 #include <antwika/gfx/Size.hpp>
 #include <antwika/ui/DrawList.hpp>
+#include <antwika/ui/HoverTargets.hpp>
 
 #include "antwika/game/BuildTool.hpp"
 
@@ -13,6 +14,7 @@ namespace antwika::game
 
     using antwika::gfx::Size;
     using antwika::ui::DrawList;
+    using antwika::ui::HoverTargets;
 
     /**
      * @brief The toolbar's picture, whether it is under the pointer, and
@@ -75,13 +77,27 @@ namespace antwika::game
          * @param covered Whether the pointer is over anything the UI
          * filled in.
          */
-        void set(DrawList picture, bool covered);
+        void set(
+            DrawList picture, HoverTargets targets, bool covered);
 
         /**
          * @brief Get the UI's picture.
          * @return The drawing commands, empty until the first set().
          */
         [[nodiscard]] const DrawList &commands() const noexcept;
+
+        /**
+         * @brief Which widgets a hover pass may recolour.
+         *
+         * Carried beside the picture because a hover repaint is the
+         * renderer's, and the renderer is the one thing allowed to
+         * read the free-moving pointer -- see
+         * docs/hover-is-not-simulation.md.
+         * Nothing in the tick path reads this.
+         *
+         * @return The targets the last describe() produced.
+         */
+        [[nodiscard]] const HoverTargets &hoverTargets() const noexcept;
 
         /**
          * @brief Check whether the UI is under the pointer.
@@ -162,6 +178,7 @@ namespace antwika::game
     private:
         Size area;
         DrawList picture;
+        HoverTargets targets;
         bool covered = false;
         std::optional<BuildTool> selected = BuildTool::Road;
     };

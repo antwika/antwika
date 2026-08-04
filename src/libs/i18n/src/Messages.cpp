@@ -56,15 +56,8 @@ namespace antwika::i18n
     const Catalogue<MessageId> &Messages::catalogueFor(
         Locale locale) noexcept
     {
-        switch (locale)
-        {
-        case Locale::English:
-            return kEnglishCatalogue;
-        case Locale::Swedish:
-            return kSwedishCatalogue;
-        }
-
-        return catalogueFor(kDefaultLocale);
+        return antwika::i18n::pickCatalogue(
+            locale, kEnglishCatalogue, kSwedishCatalogue);
     }
 
 } // namespace antwika::i18n

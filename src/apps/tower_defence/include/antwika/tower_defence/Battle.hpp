@@ -1,5 +1,7 @@
 #pragma once
 
+#include <array>
+
 #include <cstddef>
 #include <cstdint>
 #include <vector>
@@ -53,6 +55,15 @@ namespace antwika::tower_defence
          * how many of them there are.
          */
         std::uint32_t towerRangeSquared = 4;
+
+        /**
+         * @brief What each mob kind is worth, costs and survives.
+         *
+         * Carried on the battle rather than read off a constant, so a
+         * config file can restate it -- kDefaultMobProfiles is what a
+         * run that says nothing plays.
+         */
+        std::array<MobProfile, kMobKindCount> mobs = kDefaultMobProfiles;
 
         /**
          * @brief Health a tower takes off its target each tick.

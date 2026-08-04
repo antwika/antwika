@@ -144,8 +144,13 @@ namespace antwika::tower_defence
         // So nothing a tick does depends on a generator's position.
         SplitMix64Rng rng(seedFor(config.seed, index, kWaveStride));
 
+        // The campaign's mobs rather than the plan's default.
+        // So one campaign plays one set of them.
+        BattleConfig battle = plan.battle;
+        battle.mobs = config.mobs;
+
         return Battle(
-            generateLevel(level), plan.battle, planWaves(plan.waves, rng));
+            generateLevel(level), battle, planWaves(plan.waves, rng));
     }
 
     bool Campaign::placeTower(const Cell &cell)

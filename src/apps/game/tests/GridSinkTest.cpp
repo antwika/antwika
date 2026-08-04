@@ -299,7 +299,7 @@ TEST_F(GridSinkTest, RightPress_PutsTheRoadBrushDown)
 TEST_F(GridSinkTest, RightPress_LeavesBuildModeAloneWhereTheToolbarIs)
 {
     overlay.select(BuildTool::House);
-    overlay.set({}, true);
+    overlay.set({}, {}, true);
 
     clickAt(Cell{.x = 2, .y = 2}, MouseButton::Right);
 
@@ -469,7 +469,7 @@ TEST_F(GridSinkTest, LeftPress_LaysNoPathWhereTheToolbarIs)
 {
     constexpr Cell target{.x = 3, .y = 4};
 
-    overlay.set({}, true);
+    overlay.set({}, {}, true);
     clickAt(target, MouseButton::Left);
 
     EXPECT_FALSE(paths.has(target));
@@ -480,7 +480,7 @@ TEST_F(GridSinkTest, Scroll_DoesNotZoomWhereTheToolbarIs)
 {
     const auto before = camera;
 
-    overlay.set({}, true);
+    overlay.set({}, {}, true);
     send(PointerScrolled{.vertical = 1});
 
     EXPECT_EQ(before, camera);
@@ -496,7 +496,7 @@ TEST_F(GridSinkTest, Move_KeepsPanningAcrossTheToolbar)
 
     const auto before = camera.pan();
 
-    overlay.set({}, true);
+    overlay.set({}, {}, true);
     send(PointerMoved{.position = Position{.x = 110, .y = 100}});
 
     EXPECT_EQ(before.x + 10, camera.pan().x);
@@ -649,7 +649,7 @@ TEST_F(GridSinkTest, LeftRelease_EndsTheDragEvenOverTheToolbar)
 {
     clickAt(Cell{.x = 2, .y = 3}, MouseButton::Left);
 
-    overlay.set({}, true);
+    overlay.set({}, {}, true);
 
     send(
         PointerButtonReleased{

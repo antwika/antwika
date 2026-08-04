@@ -3,6 +3,8 @@
 #include <antwika/gfx/Color.hpp>
 #include <antwika/gfx/Point.hpp>
 #include <antwika/gfx/ViewportRenderer.hpp>
+#include <antwika/app/PointerReading.hpp>
+#include <antwika/ui/Hover.hpp>
 #include <antwika/ui/Painter.hpp>
 
 #include "antwika/game/BuildGhost.hpp"
@@ -16,6 +18,28 @@ namespace antwika::game
 
     namespace
     {
+        // A hover repaint is the renderer's alone.
+        // The hint it reads is in no recording, by construction.
+        // So the copy it recolours never reaches the tick path.
+        // See docs/hover-is-not-simulation.md.
+        [[nodiscard]] antwika::ui::DrawList hovered(
+            const UiOverlay &overlay,
+            const antwika::input::PointerHintChannel &hint)
+        {
+            auto picture = overlay.commands();
+
+            antwika::ui::applyHover(
+                picture,
+                overlay.hoverTargets(),
+                antwika::app::hoverFrom(hint.forRenderingOnly()));
+
+            return picture;
+
+            // gcov puts the returned list's unwind block on this brace.
+            // SaveGame.cpp's own encoder explains it at length.
+            // No input reaches it.
+        } // GCOVR_EXCL_LINE
+
         // Around the world map rather than behind it.
         // The map covers only the tiles it has, being centred.
         // A mode owns the whole screen, so the rest is filled here.
@@ -130,13 +154,15 @@ namespace antwika::game
         {
             // The whole screen, with no grid behind it.
             // The menu is a mode rather than a modal -- see AppMode.hpp.
-            setup.menuScene.draw(renderer, setup.menuOverlay.commands());
+            setup.menuScene.draw(
+                renderer, hovered(setup.menuOverlay, setup.hint));
             return;
         }
 
         if (setup.mode.mode() == AppMode::SaveLoad)
         {
-            setup.saveScene.draw(renderer, setup.saveOverlay.commands());
+            setup.saveScene.draw(
+                renderer, hovered(setup.saveOverlay, setup.hint));
             return;
         }
 
@@ -208,7 +234,12 @@ namespace antwika::game
         // Laid out against the size the window was asked for.
         // That is the size UiSink described it against.
         // And the size a recorded click was resolved against.
-        antwika::ui::paint(renderer, setup.overlay.commands());
+        // Last, and only the picture -- see docs/hover-is-not-simulation.
+        // Every interaction above came off the recorded pointer.
+        // This repaints what the free-moving one is over.
+        // So a button lights up on approach, recorded nowhere.
+        antwika::ui::paint(
+            renderer, hovered(setup.overlay, setup.hint));
 
         // Described here rather than in a sink.
         // Everything else painted in this app is described in one.
