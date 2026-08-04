@@ -156,10 +156,11 @@ TEST(StateDumpTest, AVersionOneDocumentIsReadThroughTheEnvelope)
     EXPECT_EQ(stateDumpFromJson(snapshot.state), dump);
 }
 
-TEST(StateDumpTest, AVersionOneDocumentMayLackAMember)
+TEST(StateDumpTest, AVersionOneDocumentMayLackItsTool)
 {
     // A v1 document missing a member migrates without inventing it.
-    // The decoder is what refuses the migrated state, not the chain.
+    // The tool is the one member absence means something for.
+    // A palette that was down stays down through the envelope too.
     nlohmann::json old = stateDumpToJson(populatedDump());
     old.erase("tool");
     old["magic"] = std::string(antwika::game::kStateDumpMagic);
@@ -169,6 +170,5 @@ TEST(StateDumpTest, AVersionOneDocumentMayLackAMember)
     const auto snapshot = gameFormat().fromJson(old);
 
     EXPECT_FALSE(snapshot.state.contains("tool"));
-    EXPECT_THROW(
-        (void)stateDumpFromJson(snapshot.state), SaveFormatError);
+    EXPECT_EQ(stateDumpFromJson(snapshot.state).tool, std::nullopt);
 }
