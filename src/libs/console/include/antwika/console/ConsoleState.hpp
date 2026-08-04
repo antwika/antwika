@@ -9,7 +9,7 @@
 #include <antwika/gfx/Size.hpp>
 #include <antwika/ui/TextFieldSpec.hpp>
 
-namespace antwika::game
+namespace antwika::console
 {
 
     using antwika::gfx::Point;
@@ -194,4 +194,4 @@ namespace antwika::game
         std::vector<std::string> lines;
     };
 
-} // namespace antwika::game
+} // namespace antwika::console

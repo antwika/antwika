@@ -1,4 +1,4 @@
-#include "antwika/game/ConsoleState.hpp"
+#include "antwika/console/ConsoleState.hpp"
 
 #include <utility>
 
@@ -6,7 +6,7 @@
 #include <antwika/tween/Ease.hpp>
 #include <antwika/tween/Easing.hpp>
 
-namespace antwika::game
+namespace antwika::console
 {
 
     namespace
@@ -117,4 +117,4 @@ namespace antwika::game
         lines = std::move(loaded);
     }
 
-} // namespace antwika::game
+} // namespace antwika::console

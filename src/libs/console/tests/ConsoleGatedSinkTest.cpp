@@ -9,18 +9,17 @@
 #include <antwika/input/Key.hpp>
 #include <antwika/input/MouseButton.hpp>
 
-#include "antwika/game/ConsoleGatedSink.hpp"
-#include "antwika/game/ConsoleState.hpp"
-#include "antwika/game/InputFold.hpp"
-#include "antwika/game/UiCanvas.hpp"
+#include "antwika/console/ConsoleGatedSink.hpp"
+#include "antwika/console/ConsoleState.hpp"
+#include "antwika/console/InputFold.hpp"
 
 using antwika::event::Event;
 using antwika::event::TickEvent;
-using antwika::game::ConsoleGatedSink;
-using antwika::game::consoleHeightAt;
-using antwika::game::ConsoleState;
-using antwika::game::InputFold;
-using antwika::game::kConsoleAnimTicks;
+using antwika::console::ConsoleGatedSink;
+using antwika::console::consoleHeightAt;
+using antwika::console::ConsoleState;
+using antwika::console::InputFold;
+using antwika::console::kConsoleAnimTicks;
 using antwika::input::InputEventCodec;
 using antwika::input::Key;
 using antwika::input::KeyPressed;
@@ -33,7 +32,10 @@ using antwika::input::PointerScrolled;
 
 namespace
 {
-    constexpr auto kCanvas = antwika::game::kUiCanvas;
+    constexpr antwika::gfx::Size kTestCanvas{
+        .width = 1024, .height = 640};
+
+    constexpr auto kCanvas = kTestCanvas;
 
     // A sink that only remembers how much got through.
     struct CountingSink final : antwika::event::ITickEventSink

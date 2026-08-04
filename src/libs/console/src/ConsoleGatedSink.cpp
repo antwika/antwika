@@ -1,10 +1,10 @@
-#include "antwika/game/ConsoleGatedSink.hpp"
+#include "antwika/console/ConsoleGatedSink.hpp"
 
 #include <variant>
 
 #include <antwika/input/InputEvent.hpp>
 
-namespace antwika::game
+namespace antwika::console
 {
 
     using antwika::input::KeyPressed;
@@ -61,4 +61,4 @@ namespace antwika::game
         inner.handle(event);
     }
 
-} // namespace antwika::game
+} // namespace antwika::console

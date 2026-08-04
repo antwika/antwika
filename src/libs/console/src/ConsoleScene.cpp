@@ -1,4 +1,4 @@
-#include "antwika/game/ConsoleScene.hpp"
+#include "antwika/console/ConsoleScene.hpp"
 
 #include <string_view>
 
@@ -8,7 +8,7 @@
 #include <antwika/ui/TextFieldSpec.hpp>
 #include <antwika/ui/Theme.hpp>
 
-namespace antwika::game
+namespace antwika::console
 {
 
     using antwika::gfx::Color;
@@ -79,4 +79,4 @@ namespace antwika::game
         return ui.finish();
     }
 
-} // namespace antwika::game
+} // namespace antwika::console

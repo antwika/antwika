@@ -15,10 +15,11 @@
 #include "antwika/game/BuildingKind.hpp"
 #include "antwika/game/BuildingSystem.hpp"
 #include "antwika/game/CityRatings.hpp"
-#include "antwika/game/ConsoleGatedSink.hpp"
-#include "antwika/game/ConsoleScene.hpp"
-#include "antwika/game/ConsoleSink.hpp"
-#include "antwika/game/ConsoleState.hpp"
+#include <antwika/console/ConsoleGatedSink.hpp>
+#include <antwika/console/ConsoleScene.hpp>
+#include <antwika/console/ConsoleSink.hpp>
+#include <antwika/console/ConsoleState.hpp>
+#include <antwika/console/SnapshotCommands.hpp>
 #include "antwika/game/CoverageSystem.hpp"
 #include "antwika/game/Desirability.hpp"
 #include "antwika/game/DesirabilitySystem.hpp"
@@ -59,6 +60,8 @@
 #include "antwika/game/Service.hpp"
 #include "antwika/game/SessionGatedSystem.hpp"
 #include "antwika/game/SessionStore.hpp"
+#include "antwika/game/SnapshotStore.hpp"
+#include "antwika/game/OptionsConsoleControls.hpp"
 #include "antwika/game/SpawnSystem.hpp"
 #include "antwika/game/Toolbar.hpp"
 #include "antwika/game/UiSink.hpp"
@@ -498,35 +501,38 @@ namespace antwika::game
         // The console's own picture, which turns the console on.
         // Absent, no sink is registered and the state stays closed.
         // So every gate below forwards everything, untouched.
-        UiOverlay noConsole;
+        antwika::console::ConsolePicture noConsole;
         const bool hasConsole = wiring.consoleOverlay.has_value();
-        UiOverlay &consoleUi = hasConsole
-                                   ? wiring.consoleOverlay->get()
-                                   : noConsole;
+        antwika::console::ConsolePicture &consolePicture =
+            hasConsole ? wiring.consoleOverlay->get() : noConsole;
 
-        ConsoleState console;
-        const ConsoleScene consoleScene;
-        // The excluded line carries this expression's unwind block.
-        // It is entered only if the path copy two lines down throws.
-        // The same landing pad Board.cpp's closing brace documents.
-        ConsoleSink consoleSink(
-            ConsoleSinkSetup{ // GCOVR_EXCL_LINE
+        antwika::console::ConsoleState console;
+        const antwika::console::ConsoleScene consoleScene;
+
+        // This application's halves of the console's two seams.
+        // The keys and the board answer off the options.
+        // The state goes through the very store the picker uses.
+        OptionsConsoleControls consoleControls(options);
+        GameSnapshotStore snapshotStore(
+            session, pause, ui, view, localeState);
+        antwika::console::SnapshotCommands consoleCommands(
+            snapshotStore,
+            wiring.stateDumpPath,
+            wiring.consoleLoadEnabled);
+
+        antwika::console::ConsoleSink consoleSink(
+            antwika::console::ConsoleSinkSetup{
                 .console = console,
-                .options = options,
                 .input = input,
-                .overlay = consoleUi,
+                .picture = consolePicture,
                 .scene = consoleScene,
-                .session = session,
-                .pause = pause,
-                .view = view,
-                .toolbar = ui,
-                .locale = localeState,
-                .loadEnabled = wiring.consoleLoadEnabled},
-            wiring.stateDumpPath);
+                .controls = consoleControls,
+                .commands = consoleCommands});
 
         // The console is on top, so what it stands over it takes.
         // Every sink reading a key or a pixel is wrapped.
         // Whichever screen it owns: the console belongs to no mode.
+        using antwika::console::ConsoleGatedSink;
         ConsoleGatedSink consoleGatedMenu(menuSink, console, input);
         ConsoleGatedSink consoleGatedSave(saveSink, console, input);
         ConsoleGatedSink consoleGatedHotkeys(

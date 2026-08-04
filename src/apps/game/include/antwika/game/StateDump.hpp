@@ -2,9 +2,7 @@
 
 #include <cstdint>
 #include <optional>
-#include <string>
 #include <string_view>
-#include <vector>
 
 #include <nlohmann/json.hpp>
 
@@ -19,15 +17,19 @@ namespace antwika::game
 {
 
     /**
-     * @brief What every state dump document says it is.
+     * @brief What every dump of this application says it is.
      */
     inline constexpr std::string_view kStateDumpMagic =
         "antwika-game-state-dump";
 
     /**
      * @brief The dump revision this build writes.
+     *
+     * Version 2 moved the state under console::SnapshotFormat's shared
+     * envelope, with the console's history beside it; version 1 was
+     * this application's own bespoke document.
      */
-    inline constexpr std::uint32_t kStateDumpVersion = 1;
+    inline constexpr std::uint32_t kStateDumpVersion = 2;
 
     /**
      * @brief The running session, as the console's dump_state takes it.
@@ -36,16 +38,20 @@ namespace antwika::game
      * everything the picker persists -- the grid, the walkers, the
      * buildings, the camera, the money and the seed -- and this wraps
      * it with the rest of what a click's meaning depends on: the
-     * pause, the selected tool, the map view, the language and the
-     * console itself.
+     * pause, the selected tool, the map view and the language.
      * Coming back to a dump therefore means coming back to the
      * instant it was taken, not merely to its city.
      *
+     * The console's own history rides in the envelope rather than in
+     * here, since carrying the console is every application's dump
+     * behaviour and written once -- see console::SnapshotFormat.
+     *
      * What it deliberately does not carry: the engine's tick number,
      * which a recording forbids going backwards; the other cities of
-     * the world map, which a save has never carried either; and any
-     * open menu, which load_state closes exactly as opening the menu
-     * modal ends a road drag.
+     * the world map, which a save has never carried either; any open
+     * menu, which load_state closes exactly as opening the menu modal
+     * ends a road drag; and the machine's own key bindings and
+     * keyboard layout, which are options rather than the session.
      */
     struct StateDump
     {
@@ -69,9 +75,6 @@ namespace antwika::game
         /** @brief The language the run was worded in. */
         antwika::i18n::Locale locale = antwika::i18n::kDefaultLocale;
 
-        /** @brief The console's history, oldest line first. */
-        std::vector<std::string> console;
-
         /**
          * @brief Compare two dumps.
          * @param other The dump to compare against.
@@ -84,41 +87,36 @@ namespace antwika::game
     /**
      * @brief Build the chain that brings an old dump document up.
      *
-     * Empty at version 1, and a factory anyway, so adding the first
-     * migration changes this function and nothing else -- the same
-     * shape standardOptionsMigrations() has.
+     * One step: a version 1 document was this application's own
+     * bespoke shape, and moving its members under the envelope's
+     * "state" object is the whole of what version 2 changed.
      *
-     * @return The chain, currently with no steps.
+     * @return The chain.
      */
     [[nodiscard]] antwika::replay::MigrationChain
     standardStateDumpMigrations();
 
     /**
-     * @brief Encode a dump as JSON matching the dump-document schema.
+     * @brief Encode a dump as the envelope's opaque state object.
      *
      * Pure: no filesystem, no clock. The embedded save is a complete
      * versioned save document of its own, so the two formats migrate
-     * independently -- a dump written today still reads after the
-     * save format's next bump, through the save's own chain.
+     * independently.
      *
      * @param dump The state to encode.
-     * @return The encoded document, carrying kStateDumpVersion.
+     * @return The state object, magic-free: the envelope stamps the
+     * document -- see console::SnapshotFormat.
      */
     [[nodiscard]] nlohmann::json stateDumpToJson(const StateDump &dump);
 
     /**
-     * @brief Decode a dump from JSON, validating it first.
-     *
-     * The same four stages every persisted document here goes
-     * through: read the version, migrate up, validate, decode -- see
-     * docs/schema-versioning.md.
-     *
-     * @param document The document to read.
+     * @brief Decode the envelope's state object, validating it first.
+     * @param state The state object a snapshot carried.
      * @return The decoded state.
-     * @throws SaveFormatError If the document is not a state dump
-     * this build can read.
+     * @throws SaveFormatError If the object is not a state this build
+     * can read.
      */
     [[nodiscard]] StateDump stateDumpFromJson(
-        const nlohmann::json &document);
+        const nlohmann::json &state);
 
 } // namespace antwika::game

@@ -1,4 +1,4 @@
-#include "antwika/game/ConsoleSink.hpp"
+#include "antwika/console/ConsoleSink.hpp"
 
 #include <optional>
 #include <utility>
@@ -8,13 +8,9 @@
 #include <antwika/input/InputEvent.hpp>
 #include <antwika/input/MouseButton.hpp>
 
-#include "antwika/game/Action.hpp"
-#include "antwika/game/KeyText.hpp"
-#include "antwika/game/SaveFormatError.hpp"
-#include "antwika/game/StateDump.hpp"
-#include "antwika/game/StateDumpFile.hpp"
+#include "antwika/console/Typing.hpp"
 
-namespace antwika::game
+namespace antwika::console
 {
 
     using antwika::input::InputEvent;
@@ -48,14 +44,7 @@ namespace antwika::game
         }
     } // namespace
 
-    bool consoleLoadPermitted(bool recording, bool replaying) noexcept
-    {
-        return !recording && !replaying;
-    }
-
-    ConsoleSink::ConsoleSink(
-        const ConsoleSinkSetup &setup, std::string dumpPath)
-        : setup(setup), dumpPath(std::move(dumpPath))
+    ConsoleSink::ConsoleSink(const ConsoleSinkSetup &setup) : setup(setup)
     {
     }
 
@@ -66,7 +55,7 @@ namespace antwika::game
             // The slide is ticks, so it moves here and only here.
             setup.console.advance();
             setup.console.setHeight(consoleHeightAt(
-                setup.console.steps(), setup.overlay.canvas()));
+                setup.console.steps(), setup.picture.canvas()));
 
             // Described again here, for the renderer about to paint.
             refreshAndAct(false, Keyboard{});
@@ -80,13 +69,12 @@ namespace antwika::game
             return;
         }
 
-        const auto &bindings = setup.options.bindings();
         const auto *key = std::get_if<KeyPressed>(&*decoded);
 
         // The toggle answers whether or not the console is open.
         // It is how the console closes, so it cannot be the field's.
         if (key != nullptr && !key->repeat
-            && key->key == bindings.keyFor(Action::ConsoleToggle))
+            && key->key == setup.controls.toggleKey())
         {
             setup.console.toggle();
             refreshAndAct(false, Keyboard{});
@@ -108,20 +96,16 @@ namespace antwika::game
         if (key != nullptr)
         {
             if (!key->repeat
-                && key->key == bindings.keyFor(Action::ConsoleExecute))
+                && key->key == setup.controls.executeKey())
             {
                 // The bound key is what submits, whichever it is.
                 keyboard.keys.push_back(antwika::ui::Key::Activate);
             }
             else
             {
-                const auto meaning =
-                    uiKeyFor(key->key, key->modifiers.shift);
+                const auto meaning = consoleKeyFor(key->key);
 
-                // Activate stays the execute binding's alone.
-                // Rebound away from Enter, Enter must stop executing.
-                if (meaning.has_value()
-                    && *meaning != antwika::ui::Key::Activate)
+                if (meaning.has_value())
                 {
                     keyboard.keys.push_back(*meaning);
                 }
@@ -129,7 +113,7 @@ namespace antwika::game
                 const char typed = typedCharacterFor(
                     key->key,
                     key->modifiers.shift,
-                    setup.options.keyboard());
+                    setup.controls.keyboard());
                 if (typed != '\0')
                 {
                     // The edge says where in the order it lands.
@@ -162,7 +146,7 @@ namespace antwika::game
         bool pressed, const Keyboard &keyboard)
     {
         auto frame = setup.scene.describe(
-            setup.overlay.canvas(),
+            setup.picture.canvas(),
             pointerNow(pressed),
             keyboard,
             setup.console);
@@ -171,17 +155,14 @@ namespace antwika::game
 
         // What was just typed or executed is not in that picture.
         // So it is described once more, and the second one is drawn.
-        // The same remedy SaveLoadSink spells out.
+        // The same remedy game::SaveLoadSink spells out.
         frame = setup.scene.describe(
-            setup.overlay.canvas(),
+            setup.picture.canvas(),
             pointerNow(pressed),
             Keyboard{},
             setup.console);
 
-        setup.overlay.set(
-            std::move(frame.commands),
-            std::move(frame.hoverTargets),
-            frame.interactions.pointerOverUi);
+        setup.picture.set(std::move(frame.commands));
     }
 
     void ConsoleSink::act(const Interactions &interactions)
@@ -194,7 +175,7 @@ namespace antwika::game
         setup.console.setLine(
             interactions.edit->text, interactions.edit->cursor);
 
-        // Enter in the field is its submit, so it executes.
+        // The execute key in the field is its submit, so it executes.
         if (interactions.edit->submitted)
         {
             execute(trimmed(setup.console.takeLine()));
@@ -211,92 +192,7 @@ namespace antwika::game
 
         setup.console.pushHistory("> " + command);
 
-        if (command == "dump_state")
-        {
-            dumpState();
-        }
-        else if (command == "load_state")
-        {
-            loadState();
-        }
-        else
-        {
-            setup.console.pushHistory("unknown command: " + command);
-        }
+        setup.commands.execute(command, setup.console);
     }
 
-    void ConsoleSink::dumpState()
-    {
-        // Answered before the state is taken, deliberately.
-        // The dump then carries the whole exchange that made it.
-        setup.console.pushHistory("dumped state to " + dumpPath);
-
-        StateDump dump;
-        dump.save = setup.session.take();
-        dump.paused = setup.pause.paused();
-        dump.tool = setup.toolbar.tool();
-        dump.view = setup.view.view();
-        dump.locale = setup.locale.locale();
-        dump.console = setup.console.history();
-
-        stateDumpFile(dump, dumpPath);
-
-        // The excluded line is the local dump's unwind destructor.
-        // Nothing after its construction throws but the write itself.
-    } // GCOVR_EXCL_LINE
-
-    void ConsoleSink::loadState()
-    {
-        // The console-level twin of requireRecordableStart().
-        // A load reads a file no recording carries.
-        // So a recorded or replayed run refuses it outright.
-        // The refusal is a history line, and so deterministic.
-        // A replay typing load_state reads what the live run read.
-        if (!setup.loadEnabled)
-        {
-            setup.console.pushHistory(
-                "load_state: not available while recording or "
-                "replaying");
-            return;
-        }
-
-        std::optional<StateDump> loaded;
-
-        try
-        {
-            loaded = loadStateDump(dumpPath);
-        }
-        // The excluded line's second branch is the catch's own.
-        // It is taken by an exception this catch does not match.
-        // Nothing under loadStateDump() throws anything else.
-        catch (const SaveFormatError &failed) // GCOVR_EXCL_LINE
-        {
-            setup.console.pushHistory(
-                std::string("could not load: ") + failed.what());
-            return;
-        }
-
-        setup.session.restore(loaded->save);
-        setup.pause.set(loaded->paused);
-
-        if (loaded->tool.has_value())
-        {
-            setup.toolbar.select(*loaded->tool);
-        }
-        else
-        {
-            setup.toolbar.clearTool();
-        }
-
-        setup.view.set(loaded->view);
-
-        // Staged rather than switched.
-        // So it lands at the tick boundary, as the options screen's.
-        setup.locale.request(loaded->locale);
-
-        setup.console.replaceHistory(loaded->console);
-        setup.console.pushHistory(
-            "loaded state from " + dumpPath);
-    }
-
-} // namespace antwika::game
+} // namespace antwika::console

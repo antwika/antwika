@@ -6,20 +6,22 @@
 #include <antwika/ui/DrawCommand.hpp>
 #include <antwika/ui/Frame.hpp>
 
-#include "antwika/game/ConsoleScene.hpp"
-#include "antwika/game/ConsoleState.hpp"
-#include "antwika/game/UiCanvas.hpp"
+#include "antwika/console/ConsoleScene.hpp"
+#include "antwika/console/ConsoleState.hpp"
 
-using antwika::game::ConsoleScene;
-using antwika::game::ConsoleState;
-using antwika::game::consoleHeightAt;
-using antwika::game::kConsoleAnimTicks;
-using antwika::game::kConsoleHistoryShown;
+using antwika::console::ConsoleScene;
+using antwika::console::ConsoleState;
+using antwika::console::consoleHeightAt;
+using antwika::console::kConsoleAnimTicks;
+using antwika::console::kConsoleHistoryShown;
 using antwika::ui::DrawText;
 
 namespace
 {
-    constexpr auto kCanvas = antwika::game::kUiCanvas;
+    constexpr antwika::gfx::Size kTestCanvas{
+        .width = 1024, .height = 640};
+
+    constexpr auto kCanvas = kTestCanvas;
 
     void slideTo(ConsoleState &console, std::uint32_t steps)
     {
@@ -59,7 +61,7 @@ TEST(ConsoleSceneTest, Describe_ClosedDrawsNothingAtAll)
 
     EXPECT_TRUE(frame.commands.empty());
     EXPECT_FALSE(
-        frame.rects.find(antwika::game::consoleWidgets::kSheet)
+        frame.rects.find(antwika::console::consoleWidgets::kSheet)
             .has_value());
 }
 
@@ -72,7 +74,7 @@ TEST(ConsoleSceneTest, Describe_MidSlideIsAnEmptySheetAtItsOwnHeight)
     const auto frame = scene.describe(kCanvas, {}, {}, console);
 
     const auto sheet =
-        frame.rects.find(antwika::game::consoleWidgets::kSheet);
+        frame.rects.find(antwika::console::consoleWidgets::kSheet);
     ASSERT_TRUE(sheet.has_value());
 
     // The sheet hangs from the top, the full canvas across.
@@ -83,7 +85,7 @@ TEST(ConsoleSceneTest, Describe_MidSlideIsAnEmptySheetAtItsOwnHeight)
 
     // No field part way along: the input reads only fully open.
     EXPECT_FALSE(
-        frame.rects.find(antwika::game::consoleWidgets::kInput)
+        frame.rects.find(antwika::console::consoleWidgets::kInput)
             .has_value());
 }
 
@@ -96,9 +98,9 @@ TEST(ConsoleSceneTest, Describe_OpenPutsTheFieldOnTheSheetsBottomEdge)
     const auto frame = scene.describe(kCanvas, {}, {}, console);
 
     const auto sheet =
-        frame.rects.find(antwika::game::consoleWidgets::kSheet);
+        frame.rects.find(antwika::console::consoleWidgets::kSheet);
     const auto field =
-        frame.rects.find(antwika::game::consoleWidgets::kInput);
+        frame.rects.find(antwika::console::consoleWidgets::kInput);
     ASSERT_TRUE(sheet.has_value());
     ASSERT_TRUE(field.has_value());
 

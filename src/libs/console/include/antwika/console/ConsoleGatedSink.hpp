@@ -3,10 +3,10 @@
 #include <antwika/event/ITickEventSink.hpp>
 #include <antwika/event/TickEvent.hpp>
 
-#include "antwika/game/ConsoleState.hpp"
-#include "antwika/game/InputFold.hpp"
+#include "antwika/console/ConsoleState.hpp"
+#include "antwika/console/InputFold.hpp"
 
-namespace antwika::game
+namespace antwika::console
 {
 
     using antwika::event::ITickEventSink;
@@ -67,4 +67,4 @@ namespace antwika::game
         const InputFold &input;
     };
 
-} // namespace antwika::game
+} // namespace antwika::console

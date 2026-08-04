@@ -16,10 +16,7 @@ antwika_add_app_tests(
         CameraTest.cpp
         CellTest.cpp
         CityGridTest.cpp
-        ConsoleGatedSinkTest.cpp
-        ConsoleSceneTest.cpp
         ConsoleSinkTest.cpp
-        ConsoleStateTest.cpp
         CoverageSystemTest.cpp
         CoverageTest.cpp
         DemolitionTest.cpp
@@ -51,7 +48,6 @@ antwika_add_app_tests(
         HotkeySinkTest.cpp
         HoverTest.cpp
         JourneyTest.cpp
-        InputFoldTest.cpp
         KeyTextTest.cpp
         IsoProjectionTest.cpp
         MainMenuSceneTest.cpp
@@ -102,7 +98,6 @@ antwika_add_app_tests(
         StoreTest.cpp
         SupplyChainTest.cpp
         SessionStoreTest.cpp
-        StateDumpFileTest.cpp
         StateDumpTest.cpp
         StandingBuildingsTest.cpp
         SpawnSystemTest.cpp
@@ -133,6 +128,7 @@ antwika_add_app_tests(
         antwika::cli
         antwika::config
         antwika::config::tests::conformance
+        antwika::console
         antwika::ecs_commons
         antwika::engine::tests::mocks
         antwika::event::tests::mocks

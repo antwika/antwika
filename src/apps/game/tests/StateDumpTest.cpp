@@ -4,6 +4,7 @@
 
 #include <nlohmann/json.hpp>
 
+#include <antwika/console/SnapshotFormat.hpp>
 #include <antwika/i18n/Locale.hpp>
 #include <antwika/replay/SchemaVersion.hpp>
 
@@ -36,14 +37,17 @@ namespace
         dump.tool = BuildTool::Well;
         dump.view = MapView::Water;
         dump.locale = antwika::i18n::Locale::Swedish;
-        dump.console = {"> dump_state", "dumped state to dump_state.json"};
 
         return dump;
     }
 
-    [[nodiscard]] std::string versionKey()
+    [[nodiscard]] antwika::console::SnapshotFormat gameFormat()
     {
-        return std::string(antwika::replay::kSchemaVersionKey);
+        return antwika::console::SnapshotFormat(
+            {.magic = antwika::game::kStateDumpMagic,
+             .version = antwika::game::kStateDumpVersion},
+            "antwika game state dump document",
+            antwika::game::standardStateDumpMigrations);
     }
 } // namespace
 
@@ -89,65 +93,65 @@ TEST(StateDumpTest, EqualityComparesEveryField)
     auto worded = populatedDump();
     worded.locale = antwika::i18n::kDefaultLocale;
     EXPECT_NE(base, worded);
-
-    auto quiet = populatedDump();
-    quiet.console.clear();
-    EXPECT_NE(base, quiet);
-}
-
-TEST(StateDumpTest, FromJson_RefusesTheWrongMagic)
-{
-    auto document = stateDumpToJson(populatedDump());
-    document["magic"] = "antwika-game-save";
-
-    EXPECT_THROW((void)stateDumpFromJson(document), SaveFormatError);
-}
-
-TEST(StateDumpTest, FromJson_RefusesADocumentFromANewerBuild)
-{
-    auto document = stateDumpToJson(populatedDump());
-    document[versionKey()] = antwika::game::kStateDumpVersion + 1;
-
-    EXPECT_THROW((void)stateDumpFromJson(document), SaveFormatError);
 }
 
 TEST(StateDumpTest, FromJson_RefusesAMissingMember)
 {
-    auto document = stateDumpToJson(populatedDump());
-    document.erase("paused");
+    auto state = stateDumpToJson(populatedDump());
+    state.erase("paused");
 
-    EXPECT_THROW((void)stateDumpFromJson(document), SaveFormatError);
+    EXPECT_THROW((void)stateDumpFromJson(state), SaveFormatError);
 }
 
 TEST(StateDumpTest, FromJson_RefusesAToolThisBuildDoesNotKnow)
 {
-    auto document = stateDumpToJson(populatedDump());
-    document["tool"] = "bulldozer";
+    auto state = stateDumpToJson(populatedDump());
+    state["tool"] = "bulldozer";
 
-    EXPECT_THROW((void)stateDumpFromJson(document), SaveFormatError);
+    EXPECT_THROW((void)stateDumpFromJson(state), SaveFormatError);
 }
 
 TEST(StateDumpTest, FromJson_RefusesAMapViewThisBuildDoesNotKnow)
 {
-    auto document = stateDumpToJson(populatedDump());
-    document["mapView"] = "crime";
+    auto state = stateDumpToJson(populatedDump());
+    state["mapView"] = "crime";
 
-    EXPECT_THROW((void)stateDumpFromJson(document), SaveFormatError);
+    EXPECT_THROW((void)stateDumpFromJson(state), SaveFormatError);
 }
 
 TEST(StateDumpTest, FromJson_RefusesALanguageWithNoCatalogue)
 {
-    auto document = stateDumpToJson(populatedDump());
-    document["locale"] = "fr";
+    auto state = stateDumpToJson(populatedDump());
+    state["locale"] = "fr";
 
-    EXPECT_THROW((void)stateDumpFromJson(document), SaveFormatError);
+    EXPECT_THROW((void)stateDumpFromJson(state), SaveFormatError);
 }
 
 TEST(StateDumpTest, FromJson_RefusesASaveTheSaveFormatRefuses)
 {
-    auto document = stateDumpToJson(populatedDump());
-    document["save"]["magic"] = "not-a-save";
+    auto state = stateDumpToJson(populatedDump());
+    state["save"]["magic"] = "not-a-save";
 
     // The embedded save polices itself, through its own reader.
-    EXPECT_THROW((void)stateDumpFromJson(document), SaveFormatError);
+    EXPECT_THROW((void)stateDumpFromJson(state), SaveFormatError);
+}
+
+// Version 2 moved the state under the shared envelope.
+// A version 1 file was this application's own bespoke shape.
+// It still loads, members meaning exactly what they meant.
+TEST(StateDumpTest, AVersionOneDocumentIsReadThroughTheEnvelope)
+{
+    const auto dump = populatedDump();
+
+    nlohmann::json old = stateDumpToJson(dump);
+    old["magic"] = std::string(antwika::game::kStateDumpMagic);
+    old[std::string(antwika::replay::kSchemaVersionKey)] = 1U;
+    old["console"] = {"> dump_state"};
+
+    const auto snapshot = gameFormat().fromJson(old);
+
+    EXPECT_EQ(
+        snapshot.console,
+        (std::vector<std::string>{"> dump_state"}));
+    EXPECT_EQ(stateDumpFromJson(snapshot.state), dump);
 }

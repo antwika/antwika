@@ -13,11 +13,11 @@
 #include <antwika/input/Position.hpp>
 #include <antwika/time/Tick.hpp>
 
-#include "antwika/game/InputFold.hpp"
+#include "antwika/console/InputFold.hpp"
 
 using antwika::event::Event;
 using antwika::event::TickEvent;
-using antwika::game::InputFold;
+using antwika::console::InputFold;
 using antwika::gfx::Point;
 using antwika::input::InputError;
 using antwika::input::InputEvent;

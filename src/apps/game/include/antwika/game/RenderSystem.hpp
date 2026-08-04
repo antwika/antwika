@@ -13,6 +13,8 @@
 #include <antwika/input/PointerHintChannel.hpp>
 #include <antwika/time/Tick.hpp>
 
+#include <antwika/console/ConsolePicture.hpp>
+
 #include "antwika/game/AppMode.hpp"
 #include "antwika/game/AtlasTextures.hpp"
 #include "antwika/game/BuildingIndex.hpp"
@@ -177,7 +179,8 @@ namespace antwika::game
          * Optional, and absent by default, so a run with no console
          * pays nothing for one -- the same shape the map view has.
          */
-        std::optional<std::reference_wrapper<const UiOverlay>>
+        std::optional<std::reference_wrapper<
+            const antwika::console::ConsolePicture>>
             consoleOverlay = std::nullopt;
 
         /** @brief Draws the world and its cities. */

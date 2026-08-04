@@ -8,9 +8,9 @@
 #include <antwika/ui/Pointer.hpp>
 #include <antwika/ui/WidgetId.hpp>
 
-#include "antwika/game/ConsoleState.hpp"
+#include "antwika/console/ConsoleState.hpp"
 
-namespace antwika::game
+namespace antwika::console
 {
 
     using antwika::gfx::Size;
@@ -79,4 +79,4 @@ namespace antwika::game
             const ConsoleState &state) const;
     };
 
-} // namespace antwika::game
+} // namespace antwika::console

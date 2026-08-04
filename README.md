@@ -33,6 +33,7 @@ src/
     ├── app/
     ├── cli/
     ├── config/
+    ├── console/
     ├── ecs/
     ├── ecs_commons/
     ├── engine/

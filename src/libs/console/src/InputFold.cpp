@@ -1,8 +1,8 @@
-#include "antwika/game/InputFold.hpp"
+#include "antwika/console/InputFold.hpp"
 
-#include "antwika/game/PointerReading.hpp"
+#include "antwika/console/PointerReading.hpp"
 
-namespace antwika::game
+namespace antwika::console
 {
 
     InputFold::InputFold(const IInputEventCodec &codec) : codec(codec)
@@ -56,4 +56,4 @@ namespace antwika::game
         return hasPosition;
     }
 
-} // namespace antwika::game
+} // namespace antwika::console

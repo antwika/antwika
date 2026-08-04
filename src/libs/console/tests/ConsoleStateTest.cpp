@@ -3,17 +3,19 @@
 #include <antwika/gfx/Point.hpp>
 #include <antwika/gfx/Size.hpp>
 
-#include "antwika/game/ConsoleState.hpp"
-#include "antwika/game/UiCanvas.hpp"
+#include "antwika/console/ConsoleState.hpp"
 
-using antwika::game::ConsoleState;
-using antwika::game::consoleHeightAt;
-using antwika::game::kConsoleAnimTicks;
+using antwika::console::ConsoleState;
+using antwika::console::consoleHeightAt;
+using antwika::console::kConsoleAnimTicks;
 using antwika::gfx::Point;
 
 namespace
 {
-    constexpr auto kCanvas = antwika::game::kUiCanvas;
+    constexpr antwika::gfx::Size kTestCanvas{
+        .width = 1024, .height = 640};
+
+    constexpr auto kCanvas = kTestCanvas;
 
     void openFully(ConsoleState &console)
     {
