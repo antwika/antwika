@@ -10,14 +10,17 @@ antwika_add_app(
         src/DragState.cpp
         src/Grid.cpp
         src/Life.cpp
+        src/LifeSnapshotStore.cpp
         src/LifeSystem.cpp
         src/PointerToggleSink.cpp
         src/PrintSystem.cpp
         src/RenderSystem.cpp
+        src/StateDump.cpp
         src/main.cpp
     LIBS
         antwika::app
         antwika::config
+        antwika::console
         antwika::ecs
         antwika::ecs_commons
         antwika::engine
@@ -29,6 +32,7 @@ antwika_add_app(
         antwika::replay
         antwika::simulation
         antwika::time
+        antwika::ui
     ASSETS
         assets/config.json
         replays/demo.jsonl

@@ -203,7 +203,7 @@ TEST(PointerReplayIntegrationTest, RecordingADragReplaysToTheSameBoard)
         "antwika_life_pointer_drag.replay");
     const InputEventCodec codec;
 
-    Board liveBoard;
+    antwika::life::LifeSummary liveBoard;
     {
         NiceMock<MockLogger> logger;
         NiceMock<MockEventSink> eventSink;
@@ -229,7 +229,7 @@ TEST(PointerReplayIntegrationTest, RecordingADragReplaysToTheSameBoard)
             replayRecorder.getEvents(), replayFile.string());
     }
 
-    ASSERT_TRUE(anythingAlive(liveBoard));
+    ASSERT_TRUE(anythingAlive(liveBoard.board));
 
     const auto recorded =
         antwika::replay::loadReplayFile(replayFile.string());
@@ -290,7 +290,7 @@ TEST(PointerReplayIntegrationTest, ADragWithinOneTickDrawsWhatItCrossed)
             .width = kWidth,
             .height = kHeight,
             .maxTicks = 2,
-            .extraSink = toggleSinkFactory(codec)});
+            .extraSink = toggleSinkFactory(codec)}).board;
 
     // A 2x2 block is a still life.
     // So the generation that ran during that tick left it as drawn.
@@ -430,7 +430,7 @@ namespace
             gate ? static_cast<antwika::event::ITickEventSource &>(gated)
                  : static_cast<antwika::event::ITickEventSource &>(live);
 
-        auto board = antwika::life::bootstrap(
+        auto summary = antwika::life::bootstrap(
             antwika::life::LifeWiring{
                 .logger = logger,
                 .eventSink = eventSink,
@@ -442,7 +442,7 @@ namespace
                 .extraSink = toggleSinkFactory(codec)});
 
         return WanderResult{
-            .board = std::move(board),
+            .board = std::move(summary.board),
             .recorded = replayRecorder.getEvents()};
     }
 } // namespace

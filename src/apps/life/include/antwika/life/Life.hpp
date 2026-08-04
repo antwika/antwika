@@ -4,7 +4,10 @@
 #include <functional>
 #include <memory>
 #include <optional>
+#include <string>
 #include <vector>
+
+#include <antwika/console/ConsolePicture.hpp>
 
 #include <antwika/ecs/ISystem.hpp>
 #include <antwika/ecs/World.hpp>
@@ -19,6 +22,7 @@
 #include "antwika/life/Board.hpp"
 #include "antwika/life/DragState.hpp"
 #include "antwika/life/Grid.hpp"
+#include "antwika/life/PointerToggleSink.hpp"
 
 namespace antwika::life
 {
@@ -67,15 +71,43 @@ namespace antwika::life
     void announceHowToStop(ILogger &logger, bool drawsNothing);
 
     /**
-     * @brief Builds a tick sink over the state bootstrap() owns.
+     * @brief Builds the pointer sink over the state bootstrap() owns.
      *
      * A factory rather than a sink, because a sink that folds events into
      * the board needs the World, the Grid and the DragState, and none of
      * them exists before bootstrap() creates them. Ownership passes back,
      * so the sink lives exactly as long as the run it belongs to.
+     *
+     * The concrete type rather than ITickEventSink, because the console's
+     * dump carries the sink's drag bookkeeping, and a type-erased sink
+     * would leave the snapshot store nothing to ask for it.
      */
-    using TickSinkFactory = std::function<
-        std::unique_ptr<ITickEventSink>(World &, const Grid &, DragState &)>;
+    using TickSinkFactory = std::function<std::unique_ptr<
+        PointerToggleSink>(World &, const Grid &, DragState &)>;
+
+    /**
+     * @brief What one run amounted to, for callers and tests.
+     *
+     * The board plus the console's history, so a replay-determinism
+     * comparison covers what the console said as well as what the
+     * cells became -- the same role apps/game's GameSummary plays.
+     */
+    struct LifeSummary
+    {
+        /** @brief Every cell's alive state when the run ended. */
+        Board board;
+
+        /** @brief The console's history, oldest line first. */
+        std::vector<std::string> console;
+
+        /**
+         * @brief Compare two summaries.
+         * @param other The summary to compare against.
+         * @return True when every field matches.
+         */
+        [[nodiscard]] bool operator==(
+            const LifeSummary &other) const = default;
+    };
 
     /**
      * @brief Announces the run in the log and starts the engine.
@@ -174,6 +206,40 @@ namespace antwika::life
          * PointerToggleSink.
          */
         TickSinkFactory extraSink = {};
+
+        /**
+         * @brief The debug console's own picture, which turns it on.
+         *
+         * Unset, no ConsoleSink is registered at all, so the run has
+         * no console -- which is what every test whose subject is
+         * something else wants, and what keeps the toggle key a plain
+         * unbound key there.
+         *
+         * Passed in rather than created here because a renderer built
+         * beforehand has to read it.
+         */
+        std::optional<
+            std::reference_wrapper<antwika::console::ConsolePicture>>
+            consoleOverlay = std::nullopt;
+
+        /**
+         * @brief Whether the console's load_state may run.
+         *
+         * main() passes false when --record or --replay was given: a
+         * load reads a file whose contents no recording carries, so a
+         * recorded run may not perform one.
+         * The refusal is a deterministic history line rather than a
+         * throw -- see console::SnapshotCommands.
+         */
+        bool consoleLoadEnabled = true;
+
+        /**
+         * @brief Where dump_state writes and load_state reads.
+         *
+         * Relative to wherever the binary was started from; a test
+         * points it into a scratch directory instead.
+         */
+        std::string stateDumpPath = "dump_state.json";
     };
 
     /**
@@ -193,8 +259,9 @@ namespace antwika::life
      * bootstrap() is ever called (see main.cpp).
      *
      * @param config What the run is wired out of.
-     * @return The resulting Board, for callers (main.cpp, tests).
+     * @return The resulting board and console history, for callers
+     * (main.cpp, tests).
      */
-    Board bootstrap(const LifeWiring &config);
+    LifeSummary bootstrap(const LifeWiring &config);
 
 } // namespace antwika::life

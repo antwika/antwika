@@ -11,6 +11,8 @@
 #include <antwika/app/AssetPath.hpp>
 #include <antwika/app/ConsoleLogging.hpp>
 #include <antwika/app/RunRecorded.hpp>
+#include <antwika/console/ConsolePicture.hpp>
+#include <antwika/console/SnapshotCommands.hpp>
 #include <antwika/gfx/SelectedBackend.hpp>
 #include <antwika/gfx/WindowDesc.hpp>
 #include <antwika/input/InputEventCodec.hpp>
@@ -86,7 +88,13 @@ namespace
             .resizable = false});
 
         const BoardScene scene;
-        RenderSystem renderSystem(*window, scene, kBoardWidth, kBoardHeight);
+
+        // Against the size the window was asked for.
+        // Never the size one reports, which nothing records.
+        antwika::console::ConsolePicture consoleOverlay(kWindowSize);
+
+        RenderSystem renderSystem(
+            *window, scene, kBoardWidth, kBoardHeight, consoleOverlay);
         PrintSystem printSystem(kBoardWidth, std::cout);
         SystemSleeper sleeper;
         TickPacer pacer(
@@ -130,7 +138,11 @@ namespace
             {
                 return std::make_unique<PointerToggleSink>(
                     world, grid, codec, kWindowSize, drag);
-            }});
+            },
+            .consoleOverlay = consoleOverlay,
+            .consoleLoadEnabled = antwika::console::consoleLoadPermitted(
+                recorded.options.recordPath.has_value(),
+                recorded.options.replayPath.has_value())});
     }
 } // namespace
 

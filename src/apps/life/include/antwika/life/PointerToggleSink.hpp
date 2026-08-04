@@ -105,6 +105,39 @@ namespace antwika::life
          */
         void handle(const TickEvent &event) override;
 
+        /**
+         * @brief Get the cells the drag under way has already toggled.
+         *
+         * What the console's dump_state carries, so a loaded run
+         * continues a drag without re-toggling what it had crossed.
+         *
+         * @return The entities, ascending.
+         */
+        [[nodiscard]] const std::set<Entity> &
+        visitedCells() const noexcept;
+
+        /**
+         * @brief Get where the drag last was.
+         * @return The position, absent while no drag is under way.
+         */
+        [[nodiscard]] const std::optional<Position> &
+        lastDragPosition() const noexcept;
+
+        /**
+         * @brief Put a loaded run's drag bookkeeping back.
+         *
+         * What the console's load_state applies: the visited set and
+         * the last position come back exactly as the dump held them,
+         * and the note of what this tick staged is dropped, since the
+         * loaded board replaces whatever those toggles did.
+         *
+         * @param visitedCells The cells the loaded drag had toggled.
+         * @param lastDragPosition Where the loaded drag last was.
+         */
+        void restoreDrag(
+            std::set<Entity> visitedCells,
+            std::optional<Position> lastDragPosition);
+
     private:
         void toggleAt(Position position);
 

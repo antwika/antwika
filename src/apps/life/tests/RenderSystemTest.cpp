@@ -3,12 +3,14 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
+#include <antwika/console/ConsolePicture.hpp>
 #include <antwika/gfx/Color.hpp>
 #include <antwika/gfx/Rect.hpp>
 #include <antwika/gfx/Size.hpp>
 #include <antwika/gfx/mocks/MockRenderer.hpp>
 #include <antwika/gfx/mocks/MockWindow.hpp>
 #include <antwika/log/mocks/MockLogger.hpp>
+#include <antwika/ui/DrawCommand.hpp>
 
 #include "antwika/life/Board.hpp"
 #include "antwika/life/BoardScene.hpp"
@@ -167,4 +169,41 @@ TEST(RenderSystemTest, Update_LeavesTheWorldUnchanged)
     world.commit();
 
     EXPECT_EQ(antwika::life::readBoard(world, grid), before);
+}
+
+// The console's picture is painted over the board, before present().
+// Described in the tick path like the board, painted here only.
+TEST(RenderSystemTest, Update_PaintsTheConsolePictureBeforePresenting)
+{
+    NiceMock<MockLogger> logger;
+    World world(logger);
+    Grid grid(world, 2, 2);
+    seedOneLiveCell(world, grid);
+
+    NiceMock<MockRenderer> renderer;
+    NiceMock<MockWindow> window;
+    ON_CALL(window, renderer()).WillByDefault(ReturnRef(renderer));
+    ON_CALL(window, configuredSize())
+        .WillByDefault(Return(Size{.width = 20, .height = 20}));
+
+    constexpr Color kSheet{.red = 1, .green = 2, .blue = 3};
+    constexpr Rect kSheetRect{
+        .origin = {.x = 0, .y = 0},
+        .size = {.width = 20, .height = 10}};
+
+    antwika::console::ConsolePicture picture(
+        Size{.width = 20, .height = 20});
+    picture.set({antwika::ui::FillRect{
+        .rect = kSheetRect, .color = kSheet}});
+
+    const InSequence sequence;
+    EXPECT_CALL(renderer, clear(_));
+    EXPECT_CALL(renderer, drawRect(_, kDeadCells));
+    EXPECT_CALL(renderer, drawRect(_, kAliveCell));
+    EXPECT_CALL(renderer, drawRect(kSheetRect, kSheet));
+    EXPECT_CALL(renderer, present());
+
+    const BoardScene scene;
+    RenderSystem system(window, scene, 2, 2, picture);
+    system.update(world, 0);
 }

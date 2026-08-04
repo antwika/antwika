@@ -33,7 +33,7 @@ namespace
     constexpr std::uint32_t kWidth = 5;
     constexpr std::uint32_t kHeight = 5;
 
-    Board runLife(ITickEventSource &source)
+    antwika::life::LifeSummary runLife(ITickEventSource &source)
     {
         NiceMock<MockLogger> logger;
         NiceMock<MockEventSink> eventSink;

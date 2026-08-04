@@ -1,7 +1,10 @@
 #pragma once
 
 #include <cstdint>
+#include <functional>
+#include <optional>
 
+#include <antwika/console/ConsolePicture.hpp>
 #include <antwika/ecs/ISystem.hpp>
 #include <antwika/ecs/World.hpp>
 #include <antwika/gfx/IWindow.hpp>
@@ -50,12 +53,18 @@ namespace antwika::life
          * @param scene Draws the board. Must outlive this system.
          * @param width Number of columns on the board.
          * @param height Number of rows on the board.
+         * @param console The debug console's picture, painted over the
+         * board; absent for a run with no console. Must outlive this
+         * system when present.
          */
         RenderSystem(
             IWindow &window,
             const BoardScene &scene,
             std::uint32_t width,
-            std::uint32_t height);
+            std::uint32_t height,
+            std::optional<std::reference_wrapper<
+                const antwika::console::ConsolePicture>>
+                console = std::nullopt);
 
         RenderSystem(const RenderSystem &) = delete;
         RenderSystem(RenderSystem &&) = delete;
@@ -75,6 +84,9 @@ namespace antwika::life
         const BoardScene &scene;
         std::uint32_t width;
         std::uint32_t height;
+        std::optional<std::reference_wrapper<
+            const antwika::console::ConsolePicture>>
+            console;
     };
 
 } // namespace antwika::life

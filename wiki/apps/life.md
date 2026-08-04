@@ -54,6 +54,18 @@ This app attaches `input::IdleMotionSource` but not `CoalescingPointerSource`, b
 
 See [`blog/003-an-entity-component-system-with-nowhere-to-hide-a-mutation.md`](../../blog/003-an-entity-component-system-with-nowhere-to-hide-a-mutation.md) and [`blog/004-a-game-of-life-demo-and-a-queue-nobody-was-reading.md`](../../blog/004-a-game-of-life-demo-and-a-queue-nobody-was-reading.md).
 
+## The debug console
+
+The grave key drops `antwika::console`'s sheet over the board, with the shipped constants: Grave to toggle, Enter to execute, the Swedish typing board.
+`InputFold` runs first in the sink list and `ConsoleSink` immediately after, and `PointerToggleSink` -- the one sink here that reads a key or a pixel -- is wrapped in a `ConsoleGatedSink`, so a press under the sheet toggles no cell while one below it still does.
+`BoardSink` and `StopSignal` are not wrapped, since neither reads input, and the generations do not pause while the console is open: the sheet is a surface over the run, not a hold on it.
+`RenderSystem` paints the console's picture after the board and before `present()`, off the same `ConsolePicture` the sink describes into.
+
+`dump_state` writes the whole state to `dump_state.json` and `load_state` reads it back: the `Board`, whether a drag was under way, which cells that drag had already toggled and where it last was -- so coming back to a dump means coming back to the instant it was taken, mid-drag and all.
+The file is `console::SnapshotFormat`'s shared envelope under this application's own magic, carrying the console's history beside the state, and `LifeSnapshotStore` owns what the state *is* while `console::SnapshotCommands` owns the policy.
+A load stages every cell into the `World`, where it lands at the next commit exactly as a toggle does, and is refused with a history line -- never performed -- while recording or replaying, since the file's contents are nothing a recording carries.
+`bootstrap()` returns a `LifeSummary`, the board plus the console's history, so a replay-determinism comparison covers what the console said as well as what the cells became.
+
 ## The config file
 
 `config.json` beside the executable is read once at startup through [`antwika::config`](../libraries/config.md), and holds the one number this application is willing to move: `tickIntervalMs`, how long a tick takes on the wall clock.
