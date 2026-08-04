@@ -3,8 +3,8 @@
 #include <antwika/ecs/World.hpp>
 
 #include "antwika/game/BuildingIndex.hpp"
+#include "antwika/game/GameConfig.hpp"
 #include "antwika/game/GridExtent.hpp"
-#include "antwika/game/Tuning.hpp"
 
 namespace antwika::game
 {
@@ -47,14 +47,14 @@ namespace antwika::game
      * @param entity The building to tear down; must be alive and carry
      * a Building and a Cell.
      * @param extent The bounds the vacancy and gate searches run over.
-     * @param tuning The walker cap the leavers count against.
+     * @param config The walker cap the leavers count against.
      */
     void demolish(
         World &world,
         BuildingIndex &built,
         antwika::ecs::Entity entity,
         GridExtent extent,
-        const Tuning &tuning);
+        const GameConfig &config);
 
     /**
      * @brief Set one building alight and turn its occupants out.
@@ -81,7 +81,7 @@ namespace antwika::game
      * @param entity The building to set alight; must be alive and
      * carry a Building and a Cell.
      * @param extent The bounds the vacancy and gate searches run over.
-     * @param tuning The walker cap the leavers count against, and how
+     * @param config The walker cap the leavers count against, and how
      * long the fire burns.
      */
     void ignite(
@@ -89,7 +89,7 @@ namespace antwika::game
         BuildingIndex &built,
         antwika::ecs::Entity entity,
         GridExtent extent,
-        const Tuning &tuning);
+        const GameConfig &config);
 
     /**
      * @brief Drop one building to debris and turn its occupants out.
@@ -108,13 +108,13 @@ namespace antwika::game
      * @param entity The building to drop; must be alive and carry a
      * Building and a Cell.
      * @param extent The bounds the vacancy and gate searches run over.
-     * @param tuning The walker cap the leavers count against.
+     * @param config The walker cap the leavers count against.
      */
     void collapse(
         World &world,
         BuildingIndex &built,
         antwika::ecs::Entity entity,
         GridExtent extent,
-        const Tuning &tuning);
+        const GameConfig &config);
 
 } // namespace antwika::game

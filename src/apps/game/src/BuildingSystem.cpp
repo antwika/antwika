@@ -261,7 +261,7 @@ namespace antwika::game
         }
 
         void age(
-            World &world, Pending &pending, const Tuning &tuning)
+            World &world, Pending &pending, const GameConfig &config)
         {
             for (const auto entity : world.view<Building, Cell>())
             {
@@ -273,7 +273,7 @@ namespace antwika::game
                 }
                 else
                 {
-                    building.ticksUntilDrain = tuning.drainPeriodTicks;
+                    building.ticksUntilDrain = config.drainPeriodTicks;
 
                     // Only a household eats, by its own headcount.
                     // A workshop's clay goes into pottery, not away.
@@ -283,8 +283,8 @@ namespace antwika::game
                     {
                         const auto eaten =
                             (populationAt(world, entity)
-                             + tuning.mouthsPerServing - 1)
-                            / tuning.mouthsPerServing;
+                             + config.mouthsPerServing - 1)
+                            / config.mouthsPerServing;
 
                         for (auto &held : building.stock)
                         {
@@ -302,7 +302,7 @@ namespace antwika::game
                 // Fire and collapse only ever climb here.
                 // The relief pass is what puts either back to zero.
                 // Disease still answers to a service -- the medicine.
-                building.ticksUntilRisk = tuning.riskPeriodTicks;
+                building.ticksUntilRisk = config.riskPeriodTicks;
                 building.fireRisk =
                     std::min(kMaxRisk, building.fireRisk + 1);
                 building.collapseRisk =
@@ -314,8 +314,8 @@ namespace antwika::game
     } // namespace
 
     BuildingSystem::BuildingSystem(
-        BuildingIndex &built, GridExtent extent, Tuning tuning)
-        : built(built), extent(extent), tuning(tuning)
+        BuildingIndex &built, GridExtent extent, GameConfig config)
+        : built(built), extent(extent), config(config)
     {
     }
 
@@ -328,7 +328,7 @@ namespace antwika::game
         Pending pending;
 
         deliver(world, standing, pending);
-        age(world, pending, tuning);
+        age(world, pending, config);
 
         // After age(), so a visit outlasts the step it shares.
         // A saviour beside a maxing building saves it that tick.
@@ -388,11 +388,11 @@ namespace antwika::game
         {
             if (ending.second == Ending::Burns)
             {
-                ignite(world, built, ending.first, extent, tuning);
+                ignite(world, built, ending.first, extent, config);
             }
             else
             {
-                collapse(world, built, ending.first, extent, tuning);
+                collapse(world, built, ending.first, extent, config);
             }
         }
     }

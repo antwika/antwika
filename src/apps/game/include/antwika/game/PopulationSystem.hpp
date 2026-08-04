@@ -13,10 +13,10 @@
 #include "antwika/game/BuildingIndex.hpp"
 #include "antwika/game/Cell.hpp"
 #include "antwika/game/Desirability.hpp"
+#include "antwika/game/GameConfig.hpp"
 #include "antwika/game/GridExtent.hpp"
 #include "antwika/game/Household.hpp"
 #include "antwika/game/PathIndex.hpp"
-#include "antwika/game/Tuning.hpp"
 
 namespace antwika::game
 {
@@ -104,7 +104,7 @@ namespace antwika::game
          * @param desirability The field, read at each house's own origin
          * cell; must outlive this system.
          * @param extent The bounds the gate search runs over.
-         * @param tuning The settler period and the walker cap; copied,
+         * @param config The settler period and the walker cap; copied,
          * so no lifetime rule attaches to it.
          */
         PopulationSystem(
@@ -112,7 +112,7 @@ namespace antwika::game
             const BuildingIndex &built,
             const DesirabilityField &desirability,
             GridExtent extent,
-            Tuning tuning) noexcept;
+            GameConfig config) noexcept;
 
         PopulationSystem(const PopulationSystem &) = delete;
         PopulationSystem(PopulationSystem &&) = delete;
@@ -164,7 +164,7 @@ namespace antwika::game
         const BuildingIndex &built;
         const DesirabilityField &desirability;
         GridExtent extent;
-        Tuning tuning;
+        GameConfig config;
     };
 
 } // namespace antwika::game

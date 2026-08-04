@@ -15,21 +15,21 @@
 #include "antwika/game/BuildingKind.hpp"
 #include "antwika/game/ConfigFile.hpp"
 #include "antwika/game/ConfigFormatError.hpp"
-#include "antwika/game/Tuning.hpp"
+#include "antwika/game/GameConfig.hpp"
 
 using antwika::game::tests::scratchDirectory;
 
 using antwika::game::BuildingKind;
 using antwika::game::ConfigFormatError;
+using antwika::game::configFromJson;
+using antwika::game::configToJson;
+using antwika::game::GameConfig;
 using antwika::game::kBuildingKindCount;
 using antwika::game::kConfigFormatVersion;
 using antwika::game::kConfigMagic;
 using antwika::game::loadConfigFileOrDefaults;
 using antwika::game::readConfig;
 using antwika::game::standardConfigMigrations;
-using antwika::game::Tuning;
-using antwika::game::tuningFromJson;
-using antwika::game::tuningToJson;
 using antwika::game::writeConfig;
 
 namespace
@@ -37,32 +37,32 @@ namespace
     // Every member is off its default here.
     // A round trip that dropped one would land back on the default.
     // The comparison against this value is what would say so.
-    [[nodiscard]] Tuning rebalanced()
+    [[nodiscard]] GameConfig rebalanced()
     {
-        Tuning tuning;
-        tuning.startingMoney = 123;
-        tuning.roadCost = 7;
-        tuning.razeCost = 5;
+        GameConfig config;
+        config.startingMoney = 123;
+        config.roadCost = 7;
+        config.razeCost = 5;
 
         for (std::size_t index = 0; index < kBuildingKindCount; ++index)
         {
-            tuning.buildingCosts[index] += 1;
+            config.buildingCosts[index] += 1;
         }
 
-        tuning.riskPeriodTicks = 11;
-        tuning.drainPeriodTicks = 12;
-        tuning.mouthsPerServing = 3;
-        tuning.spawnPeriodTicks = 13;
-        tuning.burnDurationTicks = 14;
-        tuning.settlerPeriodTicks = 15;
-        tuning.evolvePeriodTicks = 16;
-        tuning.devolvePeriodTicks = 17;
-        tuning.productionPeriodTicks = 18;
-        tuning.productionBatch = 19;
-        tuning.labourPeriodTicks = 20;
-        tuning.staffDecayPeriodTicks = 21;
-        tuning.walkerLimit = 9;
-        return tuning;
+        config.riskPeriodTicks = 11;
+        config.drainPeriodTicks = 12;
+        config.mouthsPerServing = 3;
+        config.spawnPeriodTicks = 13;
+        config.burnDurationTicks = 14;
+        config.settlerPeriodTicks = 15;
+        config.evolvePeriodTicks = 16;
+        config.devolvePeriodTicks = 17;
+        config.productionPeriodTicks = 18;
+        config.productionBatch = 19;
+        config.labourPeriodTicks = 20;
+        config.staffDecayPeriodTicks = 21;
+        config.walkerLimit = 9;
+        return config;
     }
 
     [[nodiscard]] std::string versionKey()
@@ -101,7 +101,7 @@ namespace
 
 TEST_F(ConfigFileTest, ADocumentStatesItsFormatAndItsVersion)
 {
-    const auto encoded = tuningToJson(Tuning{});
+    const auto encoded = configToJson(GameConfig{});
 
     EXPECT_EQ(encoded.at("magic").get<std::string>(), kConfigMagic);
     EXPECT_EQ(
@@ -111,8 +111,8 @@ TEST_F(ConfigFileTest, ADocumentStatesItsFormatAndItsVersion)
 
 TEST_F(ConfigFileTest, ATuningRoundTripsThroughTheDocument)
 {
-    EXPECT_EQ(tuningFromJson(tuningToJson(rebalanced())), rebalanced());
-    EXPECT_EQ(tuningFromJson(tuningToJson(Tuning{})), Tuning{});
+    EXPECT_EQ(configFromJson(configToJson(rebalanced())), rebalanced());
+    EXPECT_EQ(configFromJson(configToJson(GameConfig{})), GameConfig{});
 }
 
 // A config stating one number is a one-line rebalance.
@@ -122,7 +122,7 @@ TEST_F(ConfigFileTest, AMinimalDocumentIsTheShippedGame)
     nlohmann::json document;
     document["magic"] = std::string(kConfigMagic);
 
-    EXPECT_EQ(tuningFromJson(document), Tuning{});
+    EXPECT_EQ(configFromJson(document), GameConfig{});
 }
 
 TEST_F(ConfigFileTest, APartialDocumentChangesOnlyWhatItStates)
@@ -132,14 +132,14 @@ TEST_F(ConfigFileTest, APartialDocumentChangesOnlyWhatItStates)
     document["roadCost"] = 9;
     document["buildingCosts"]["well"] = 99;
 
-    const auto tuning = tuningFromJson(document);
+    const auto config = configFromJson(document);
 
-    Tuning expected;
+    GameConfig expected;
     expected.roadCost = 9;
     expected.buildingCosts[antwika::game::buildingKindIndex(
         BuildingKind::Well)] = 99;
 
-    EXPECT_EQ(tuning, expected);
+    EXPECT_EQ(config, expected);
 }
 
 TEST_F(ConfigFileTest, ATuningRoundTripsThroughAStream)
@@ -164,7 +164,7 @@ TEST_F(ConfigFileTest, ATuningRoundTripsThroughAFile)
 TEST_F(ConfigFileTest, AMissingFileIsTheShippedGame)
 {
     EXPECT_EQ(
-        loadConfigFileOrDefaults(pathIn("nothing-here.json")), Tuning{});
+        loadConfigFileOrDefaults(pathIn("nothing-here.json")), GameConfig{});
 }
 
 // The file beside the executable is the one main() reads.
@@ -174,7 +174,7 @@ TEST_F(ConfigFileTest, TheShippedConfigStatesTheDefaults)
 {
     EXPECT_EQ(
         loadConfigFileOrDefaults(antwika::app::assetPath("config.json")),
-        Tuning{});
+        GameConfig{});
     EXPECT_TRUE(std::filesystem::exists(
         antwika::app::assetPath("config.json")));
 }
@@ -190,10 +190,10 @@ TEST_F(ConfigFileTest, TextThatIsNotJsonIsRefused)
 
 TEST_F(ConfigFileTest, ADocumentOfAnotherFormatIsRefused)
 {
-    auto document = tuningToJson(Tuning{});
+    auto document = configToJson(GameConfig{});
     document["magic"] = "antwika-game-save";
 
-    EXPECT_THROW((void)tuningFromJson(document), ConfigFormatError);
+    EXPECT_THROW((void)configFromJson(document), ConfigFormatError);
 }
 
 // Read before anything is decoded.
@@ -201,53 +201,53 @@ TEST_F(ConfigFileTest, ADocumentOfAnotherFormatIsRefused)
 // Rather than read for happening to satisfy today's schema.
 TEST_F(ConfigFileTest, ADocumentFromANewerBuildIsRefused)
 {
-    auto document = tuningToJson(Tuning{});
+    auto document = configToJson(GameConfig{});
     document[versionKey()] = kConfigFormatVersion + 1;
 
-    EXPECT_THROW((void)tuningFromJson(document), ConfigFormatError);
+    EXPECT_THROW((void)configFromJson(document), ConfigFormatError);
 }
 
 TEST_F(ConfigFileTest, ADocumentOfTheWrongShapeIsRefused)
 {
-    auto document = tuningToJson(Tuning{});
+    auto document = configToJson(GameConfig{});
     document["startingMoney"] = "plenty";
 
-    EXPECT_THROW((void)tuningFromJson(document), ConfigFormatError);
+    EXPECT_THROW((void)configFromJson(document), ConfigFormatError);
 }
 
 // A period of zero would never come due, or divide by zero.
 // Refused rather than repaired, for ConfigFormatError's reason.
 TEST_F(ConfigFileTest, AZeroPeriodIsRefused)
 {
-    auto document = tuningToJson(Tuning{});
+    auto document = configToJson(GameConfig{});
     document["drainPeriodTicks"] = 0;
 
-    EXPECT_THROW((void)tuningFromJson(document), ConfigFormatError);
+    EXPECT_THROW((void)configFromJson(document), ConfigFormatError);
 }
 
 TEST_F(ConfigFileTest, ANegativeCostIsRefused)
 {
-    auto document = tuningToJson(Tuning{});
+    auto document = configToJson(GameConfig{});
     document["roadCost"] = -1;
 
-    EXPECT_THROW((void)tuningFromJson(document), ConfigFormatError);
+    EXPECT_THROW((void)configFromJson(document), ConfigFormatError);
 }
 
 // A misspelt member would otherwise be a rebalance that never took.
 TEST_F(ConfigFileTest, AnUnknownMemberIsRefused)
 {
-    auto document = tuningToJson(Tuning{});
+    auto document = configToJson(GameConfig{});
     document["roadCosts"] = 9;
 
-    EXPECT_THROW((void)tuningFromJson(document), ConfigFormatError);
+    EXPECT_THROW((void)configFromJson(document), ConfigFormatError);
 }
 
 TEST_F(ConfigFileTest, AnUnknownBuildingKindIsRefused)
 {
-    auto document = tuningToJson(Tuning{});
+    auto document = configToJson(GameConfig{});
     document["buildingCosts"]["tower"] = 9;
 
-    EXPECT_THROW((void)tuningFromJson(document), ConfigFormatError);
+    EXPECT_THROW((void)configFromJson(document), ConfigFormatError);
 }
 
 // There has only ever been one revision.

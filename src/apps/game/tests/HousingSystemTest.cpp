@@ -117,7 +117,7 @@ namespace
         ::testing::NiceMock<MockLogger> logger;
         World world{logger};
         DesirabilityField field;
-        HousingSystem system{field, antwika::game::Tuning{}};
+        HousingSystem system{field, antwika::game::GameConfig{}};
         Cell at{.x = 3, .y = 3};
         Entity house{};
     };

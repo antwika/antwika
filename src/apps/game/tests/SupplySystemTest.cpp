@@ -123,7 +123,7 @@ namespace
         World world{logger};
         PathIndex paths;
         BuildingIndex built;
-        SupplySystem markets{paths, kExtent, antwika::game::Tuning{}};
+        SupplySystem markets{paths, kExtent, antwika::game::GameConfig{}};
     };
 } // namespace
 

@@ -23,8 +23,8 @@ namespace antwika::game
     } // namespace
 
     LabourDispatchSystem::LabourDispatchSystem(
-        const PathIndex &paths, Tuning tuning) noexcept
-        : paths(paths), tuning(tuning)
+        const PathIndex &paths, GameConfig config) noexcept
+        : paths(paths), config(config)
     {
     }
 
@@ -80,12 +80,12 @@ namespace antwika::game
             // The cadence rule every sender here already lives under.
             if (!door.has_value() || !slot.has_value()
                 || hasWalkerOfKind(world, building, WalkerKind::Labourer)
-                || out >= tuning.walkerLimit)
+                || out >= config.walkerLimit)
             {
                 continue;
             }
 
-            employment.ticksUntilDispatch = tuning.labourPeriodTicks;
+            employment.ticksUntilDispatch = config.labourPeriodTicks;
             setEmployment(world, entity, employment);
 
             const auto labourer = world.create();

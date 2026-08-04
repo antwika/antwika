@@ -84,30 +84,30 @@ namespace antwika::game
         engine.start();
     }
 
-    GameSummary bootstrap(const GameConfig &config)
+    GameSummary bootstrap(const GameWiring &wiring)
     {
-        ILogger &logger = config.logger;
-        Camera &camera = config.camera;
-        PathIndex &paths = config.paths;
+        ILogger &logger = wiring.logger;
+        Camera &camera = wiring.camera;
+        PathIndex &paths = wiring.paths;
 
-        // Fixed in source either way -- see GameConfig::translator.
+        // Fixed in source either way -- see GameWiring::translator.
         const Translator ownTranslator{
             antwika::i18n::kDefaultLocale};
         const Translator &translator =
-            config.translator.has_value() ? config.translator->get()
+            wiring.translator.has_value() ? wiring.translator->get()
                                           : ownTranslator;
 
-        EventDispatcher dispatcher({config.eventSink});
+        EventDispatcher dispatcher({wiring.eventSink});
 
         World world(logger);
 
-        AppModeState &mode = config.mode;
+        AppModeState &mode = wiring.mode;
 
         SystemScheduler scheduler;
-        WalkerSystem walkerSystem(paths, config.built, config.extent);
-        SpawnSystem spawnSystem(paths, config.tuning);
+        WalkerSystem walkerSystem(paths, wiring.built, wiring.extent);
+        SpawnSystem spawnSystem(paths, wiring.config);
         BuildingSystem buildingSystem(
-            config.built, config.extent, config.tuning);
+            wiring.built, wiring.extent, wiring.config);
 
         // The walkers stop with the session, never with the screen.
         // Only that one system stops.
@@ -136,7 +136,7 @@ namespace antwika::game
         // The way in and out is the bar's pause button, both ways.
         // Owned by the caller, as the camera and the mode are.
         // A renderer built before this call has to read it too.
-        PauseState &pause = config.pause;
+        PauseState &pause = wiring.pause;
         PauseGatedSystem pausedWalkers(gatedWalkers, pause);
         PauseGatedSystem pausedBuildings(gatedBuildings, pause);
         PauseGatedSystem pausedSpawns(gatedSpawns, pause);
@@ -178,11 +178,11 @@ namespace antwika::game
         // The caller's where there is one, for the drag's reason.
         // A renderer built before this call paints the view off it.
         DesirabilityField ownDesirability;
-        DesirabilityField &desirability = config.desirability.has_value()
-            ? config.desirability->get()
+        DesirabilityField &desirability = wiring.desirability.has_value()
+            ? wiring.desirability->get()
             : ownDesirability;
 
-        DesirabilitySystem desirabilitySystem(desirability, config.extent);
+        DesirabilitySystem desirabilitySystem(desirability, wiring.extent);
 
         SessionGatedSystem gatedCoverage(coverageSystem, mode);
         SessionGatedSystem gatedDesirability(desirabilitySystem, mode);
@@ -197,10 +197,10 @@ namespace antwika::game
         // A city runs while its player reads the world map.
         // And it stops only where a player asked.
         // So both gates, in that order.
-        ProductionSystem productionSystem(config.tuning);
-        HaulingSystem haulingSystem(paths, config.extent);
+        ProductionSystem productionSystem(wiring.config);
+        HaulingSystem haulingSystem(paths, wiring.extent);
         SupplySystem supplySystem(
-            paths, config.extent, config.tuning);
+            paths, wiring.extent, wiring.config);
 
         SessionGatedSystem gatedProduction(productionSystem, mode);
         SessionGatedSystem gatedHauling(haulingSystem, mode);
@@ -242,7 +242,7 @@ namespace antwika::game
         // The field it judges its ground by is the serve phase's.
         // Which is this tick's too, two phases earlier.
         // Both gates, in the order every other system takes them.
-        HousingSystem housingSystem(desirability, config.tuning);
+        HousingSystem housingSystem(desirability, wiring.config);
 
         SessionGatedSystem gatedHousing(housingSystem, mode);
         PauseGatedSystem pausedHousing(gatedHousing, pause);
@@ -269,10 +269,10 @@ namespace antwika::game
         // Both gates, in the order every other system takes them.
         PopulationSystem populationSystem(
             paths,
-            config.built,
+            wiring.built,
             desirability,
-            config.extent,
-            config.tuning);
+            wiring.extent,
+            wiring.config);
 
         SessionGatedSystem gatedPopulation(populationSystem, mode);
         PauseGatedSystem pausedPopulation(gatedPopulation, pause);
@@ -288,8 +288,8 @@ namespace antwika::game
         // Two writers of one component in one phase is the trap.
         // The phase list exists to avoid it, so this runs after.
         // A person who arrived this tick is employable next one.
-        StaffingSystem staffingSystem(config.tuning);
-        LabourDispatchSystem dispatchSystem(paths, config.tuning);
+        StaffingSystem staffingSystem(wiring.config);
+        LabourDispatchSystem dispatchSystem(paths, wiring.config);
 
         SessionGatedSystem gatedStaffing(staffingSystem, mode);
         SessionGatedSystem gatedDispatch(dispatchSystem, mode);
@@ -317,28 +317,28 @@ namespace antwika::game
 
         scheduler.addSystem(observePhase, pausedRatings);
 
-        for (auto &observer : config.observers)
+        for (auto &observer : wiring.observers)
         {
             scheduler.addSystem(observePhase, observer.get());
         }
 
         GameState state;
-        state.money = config.tuning.startingMoney;
+        state.money = wiring.config.startingMoney;
         GameStateReducer reducer(state);
 
         // A run with no toolbar still needs something the grid can ask.
         // An overlay nothing writes covers nothing.
         // So every click is the world's, which is what that means.
         UiOverlay noToolbar;
-        const bool hasToolbar = config.overlay.has_value();
-        UiOverlay &ui = hasToolbar ? config.overlay->get() : noToolbar;
+        const bool hasToolbar = wiring.overlay.has_value();
+        UiOverlay &ui = hasToolbar ? wiring.overlay->get() : noToolbar;
 
         // The menu's own picture, never the toolbar's.
         // The two belong to different modes.
         // Neither may overwrite the other's.
         UiOverlay noMenu;
-        UiOverlay &menuUi = config.menuOverlay.has_value()
-                                ? config.menuOverlay->get()
+        UiOverlay &menuUi = wiring.menuOverlay.has_value()
+                                ? wiring.menuOverlay->get()
                                 : noMenu;
 
         // A run with no world map still has one city, permanently open.
@@ -346,19 +346,19 @@ namespace antwika::game
         // The world itself is empty, and nothing draws it.
         WorldMapState oneCity{WorldMap{}};
         WorldMapState &cities =
-            config.world.has_value() ? config.world->get() : oneCity;
+            wiring.world.has_value() ? wiring.world->get() : oneCity;
 
         // A run with nobody to show a preview to still drags roads out.
         // So one is made here when no caller has offered one.
         RoadDrag ownDrag;
         RoadDrag &drag =
-            config.drag.has_value() ? config.drag->get() : ownDrag;
+            wiring.drag.has_value() ? wiring.drag->get() : ownDrag;
 
         // And one with nobody to paint an overlay for still runs.
         // So one of those is made here on exactly those terms.
         MapViewState ownView;
         MapViewState &view =
-            config.view.has_value() ? config.view->get() : ownView;
+            wiring.view.has_value() ? wiring.view->get() : ownView;
 
         // The four that are swapped together, named together.
         // A city is opened by putting its contents into these.
@@ -367,27 +367,27 @@ namespace antwika::game
         const LiveGrid live{
             .world = world,
             .paths = paths,
-            .built = config.built,
+            .built = wiring.built,
             .camera = camera};
 
         SessionStore session(
             world,
             paths,
-            config.built,
+            wiring.built,
             camera,
             state,
-            config.extent,
-            config.seed);
+            wiring.extent,
+            wiring.seed);
 
         // What the top bar's game menu does, written once.
         // The menu modal's own way out goes through it too.
         // So leaving for the main menu is one transition, not two.
         MenuCommands commands(
-            mode, session, cities, live, camera, config.tuning);
+            mode, session, cities, live, camera, wiring.config);
 
         const Toolbar toolbar(translator);
         const MenuModalScene menuModal(translator);
-        InputFold input(config.codec);
+        InputFold input(wiring.codec);
         UiSink uiSink(
             camera,
             ui,
@@ -405,18 +405,18 @@ namespace antwika::game
             world,
             paths,
             camera,
-            config.extent,
+            wiring.extent,
             scheduler,
             input,
             ui,
             cities,
-            config.built,
+            wiring.built,
             drag,
             state,
-            config.tuning);
+            wiring.config);
 
         WorldMapSink worldSink(
-            cities, mode, live, input, config.canvas);
+            cities, mode, live, input, wiring.canvas);
         StopSignal stopSignal;
 
         // Owned here rather than by the caller.
@@ -446,19 +446,19 @@ namespace antwika::game
         // The save screen's own picture, never the menu's or the bar's.
         // Three modes, three overlays, for the reason the menu has one.
         UiOverlay noSaveScreen;
-        UiOverlay &saveUi = config.saveOverlay.has_value()
-                                ? config.saveOverlay->get()
+        UiOverlay &saveUi = wiring.saveOverlay.has_value()
+                                ? wiring.saveOverlay->get()
                                 : noSaveScreen;
 
         // Restored before the first tick.
         // Through the very store the Load button uses.
         // So the two cannot come out differently.
-        if (config.start.has_value())
+        if (wiring.start.has_value())
         {
-            session.restore(*config.start);
+            session.restore(*wiring.start);
         }
 
-        SaveLoadState saveState(config.saves);
+        SaveLoadState saveState(wiring.saves);
         const SaveLoadScene saveScene(translator);
         SaveLoadSink saveSink(
             saveState,
@@ -467,7 +467,7 @@ namespace antwika::game
             input,
             saveScene,
             session,
-            config.saveDirectory);
+            wiring.saveDirectory);
 
         // Gated on the mode rather than checking one themselves.
         // What a mode changes is what a click means.
@@ -519,7 +519,7 @@ namespace antwika::game
         // Registered only when there is a world to map.
         // A run with one city has nowhere to go back to.
         // The way-back key would then put its only grid away.
-        if (config.world.has_value())
+        if (wiring.world.has_value())
         {
             timedSinks.push_back(worldSink);
         }
@@ -527,9 +527,9 @@ namespace antwika::game
         timedSinks.push_back(playingGrid);
         timedSinks.push_back(stopSignal);
 
-        if (config.replayRecorder.has_value())
+        if (wiring.replayRecorder.has_value())
         {
-            timedSinks.push_back(config.replayRecorder->get());
+            timedSinks.push_back(wiring.replayRecorder->get());
         }
         TickedEventDispatcher tickedDispatcher(dispatcher, timedSinks);
 
@@ -537,23 +537,23 @@ namespace antwika::game
         Game game(engine, logger);
         game.run();
 
-        EngineLoop loop(engine, tickedDispatcher, config.inputSource);
-        loop.run(stopSignal, config.maxTicks);
+        EngineLoop loop(engine, tickedDispatcher, wiring.inputSource);
+        loop.run(stopSignal, wiring.maxTicks);
 
         // Taken while the World is still here.
         // A save is read out of it rather than out of the summary.
         antwika::game::saveGameFileIfNamed(
-            session.take(), config.savePath);
+            session.take(), wiring.savePath);
 
         // The layout this session ended on.
         // Left where the next live run will find it.
         // A replay names nowhere.
         // So replaying somebody else's session rebinds nothing here.
         antwika::game::saveOptionsFileIfNamed(
-            options.bindings(), config.optionsPath);
+            options.bindings(), wiring.optionsPath);
 
         const auto frame =
-            snapshotOf(world, paths, camera, config.extent);
+            snapshotOf(world, paths, camera, wiring.extent);
 
         // Read out here rather than inside the record below.
         // A call among an aggregate's vector members needs a pad.

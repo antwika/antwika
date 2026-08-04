@@ -10,8 +10,8 @@
 #include "antwika/game/Building.hpp"
 #include "antwika/game/Cell.hpp"
 #include "antwika/game/Footprint.hpp"
+#include "antwika/game/GameConfig.hpp"
 #include "antwika/game/PathIndex.hpp"
-#include "antwika/game/Tuning.hpp"
 #include "antwika/game/Walker.hpp"
 
 namespace antwika::game
@@ -125,10 +125,10 @@ namespace antwika::game
          * @brief Construct the system over the roads it spawns onto.
          * @param paths Consulted for each building's neighbours; must
          * outlive this system.
-         * @param tuning The spawn period and the walker cap; copied, so
+         * @param config The spawn period and the walker cap; copied, so
          * no lifetime rule attaches to it.
          */
-        SpawnSystem(const PathIndex &paths, Tuning tuning);
+        SpawnSystem(const PathIndex &paths, GameConfig config);
 
         SpawnSystem(const SpawnSystem &) = delete;
         SpawnSystem(SpawnSystem &&) = delete;
@@ -148,7 +148,7 @@ namespace antwika::game
 
     private:
         const PathIndex &paths;
-        Tuning tuning;
+        GameConfig config;
     };
 
 } // namespace antwika::game

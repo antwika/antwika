@@ -5,8 +5,8 @@
 #include <antwika/time/Tick.hpp>
 
 #include "antwika/game/BuildingIndex.hpp"
+#include "antwika/game/GameConfig.hpp"
 #include "antwika/game/GridExtent.hpp"
-#include "antwika/game/Tuning.hpp"
 
 namespace antwika::game
 {
@@ -62,11 +62,11 @@ namespace antwika::game
          * outlive this system.
          * @param extent The bounds a demolition's leavers search for a
          * vacancy and a gate over -- see Demolition.hpp.
-         * @param tuning The periods and caps the rules run on; copied,
+         * @param config The periods and caps the rules run on; copied,
          * so no lifetime rule attaches to it.
          */
         BuildingSystem(
-            BuildingIndex &built, GridExtent extent, Tuning tuning);
+            BuildingIndex &built, GridExtent extent, GameConfig config);
 
         BuildingSystem(const BuildingSystem &) = delete;
         BuildingSystem(BuildingSystem &&) = delete;
@@ -95,7 +95,7 @@ namespace antwika::game
     private:
         BuildingIndex &built;
         GridExtent extent;
-        Tuning tuning;
+        GameConfig config;
     };
 
 } // namespace antwika::game

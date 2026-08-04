@@ -162,38 +162,38 @@ namespace antwika::game
         return MigrationChain({}, kConfigFormatVersion); // GCOVR_EXCL_LINE
     }
 
-    nlohmann::json tuningToJson(const Tuning &tuning)
+    nlohmann::json configToJson(const GameConfig &config)
     {
         nlohmann::json encoded;
         encoded["magic"] = std::string(kConfigMagic);
         encoded[std::string(replay::kSchemaVersionKey)] =
             kConfigFormatVersion;
 
-        encoded["startingMoney"] = tuning.startingMoney;
-        encoded["roadCost"] = tuning.roadCost;
-        encoded["razeCost"] = tuning.razeCost;
+        encoded["startingMoney"] = config.startingMoney;
+        encoded["roadCost"] = config.roadCost;
+        encoded["razeCost"] = config.razeCost;
 
         for (std::size_t index = 0; index < kBuildingKindCount; ++index)
         {
             const auto kind = static_cast<BuildingKind>(index);
             encoded["buildingCosts"]
                    [std::string(buildingKindName(kind))] =
-                       tuning.costOf(kind);
+                       config.costOf(kind);
         }
 
-        encoded["riskPeriodTicks"] = tuning.riskPeriodTicks;
-        encoded["drainPeriodTicks"] = tuning.drainPeriodTicks;
-        encoded["mouthsPerServing"] = tuning.mouthsPerServing;
-        encoded["spawnPeriodTicks"] = tuning.spawnPeriodTicks;
-        encoded["burnDurationTicks"] = tuning.burnDurationTicks;
-        encoded["settlerPeriodTicks"] = tuning.settlerPeriodTicks;
-        encoded["evolvePeriodTicks"] = tuning.evolvePeriodTicks;
-        encoded["devolvePeriodTicks"] = tuning.devolvePeriodTicks;
-        encoded["productionPeriodTicks"] = tuning.productionPeriodTicks;
-        encoded["productionBatch"] = tuning.productionBatch;
-        encoded["labourPeriodTicks"] = tuning.labourPeriodTicks;
-        encoded["staffDecayPeriodTicks"] = tuning.staffDecayPeriodTicks;
-        encoded["walkerLimit"] = tuning.walkerLimit;
+        encoded["riskPeriodTicks"] = config.riskPeriodTicks;
+        encoded["drainPeriodTicks"] = config.drainPeriodTicks;
+        encoded["mouthsPerServing"] = config.mouthsPerServing;
+        encoded["spawnPeriodTicks"] = config.spawnPeriodTicks;
+        encoded["burnDurationTicks"] = config.burnDurationTicks;
+        encoded["settlerPeriodTicks"] = config.settlerPeriodTicks;
+        encoded["evolvePeriodTicks"] = config.evolvePeriodTicks;
+        encoded["devolvePeriodTicks"] = config.devolvePeriodTicks;
+        encoded["productionPeriodTicks"] = config.productionPeriodTicks;
+        encoded["productionBatch"] = config.productionBatch;
+        encoded["labourPeriodTicks"] = config.labourPeriodTicks;
+        encoded["staffDecayPeriodTicks"] = config.staffDecayPeriodTicks;
+        encoded["walkerLimit"] = config.walkerLimit;
         return encoded;
 
         // gcov puts the cleanup block on this closing brace.
@@ -201,7 +201,7 @@ namespace antwika::game
         // No input reaches it.
     } // GCOVR_EXCL_LINE
 
-    Tuning tuningFromJson(const nlohmann::json &document)
+    GameConfig configFromJson(const nlohmann::json &document)
     {
         const auto migrated =
             replay::readVersionedDocument<ConfigFormatError>(
@@ -210,11 +210,11 @@ namespace antwika::game
                 configValidator(),
                 "antwika::game: config JSON failed schema validation: ");
 
-        Tuning tuning;
-        tuning.startingMoney =
-            coin(migrated, "startingMoney", tuning.startingMoney);
-        tuning.roadCost = coin(migrated, "roadCost", tuning.roadCost);
-        tuning.razeCost = coin(migrated, "razeCost", tuning.razeCost);
+        GameConfig config;
+        config.startingMoney =
+            coin(migrated, "startingMoney", config.startingMoney);
+        config.roadCost = coin(migrated, "roadCost", config.roadCost);
+        config.razeCost = coin(migrated, "razeCost", config.razeCost);
 
         if (migrated.contains("buildingCosts"))
         {
@@ -228,56 +228,56 @@ namespace antwika::game
 
                 if (costs.contains(name))
                 {
-                    tuning.buildingCosts[index] =
+                    config.buildingCosts[index] =
                         costs.at(name).get<std::int64_t>();
                 }
             }
         }
 
-        tuning.riskPeriodTicks =
-            whole(migrated, "riskPeriodTicks", tuning.riskPeriodTicks);
-        tuning.drainPeriodTicks =
-            whole(migrated, "drainPeriodTicks", tuning.drainPeriodTicks);
-        tuning.mouthsPerServing =
-            whole(migrated, "mouthsPerServing", tuning.mouthsPerServing);
-        tuning.spawnPeriodTicks =
-            whole(migrated, "spawnPeriodTicks", tuning.spawnPeriodTicks);
-        tuning.burnDurationTicks =
-            whole(migrated, "burnDurationTicks", tuning.burnDurationTicks);
-        tuning.settlerPeriodTicks = whole(
-            migrated, "settlerPeriodTicks", tuning.settlerPeriodTicks);
-        tuning.evolvePeriodTicks =
-            whole(migrated, "evolvePeriodTicks", tuning.evolvePeriodTicks);
-        tuning.devolvePeriodTicks = whole(
-            migrated, "devolvePeriodTicks", tuning.devolvePeriodTicks);
-        tuning.productionPeriodTicks = whole(
+        config.riskPeriodTicks =
+            whole(migrated, "riskPeriodTicks", config.riskPeriodTicks);
+        config.drainPeriodTicks =
+            whole(migrated, "drainPeriodTicks", config.drainPeriodTicks);
+        config.mouthsPerServing =
+            whole(migrated, "mouthsPerServing", config.mouthsPerServing);
+        config.spawnPeriodTicks =
+            whole(migrated, "spawnPeriodTicks", config.spawnPeriodTicks);
+        config.burnDurationTicks =
+            whole(migrated, "burnDurationTicks", config.burnDurationTicks);
+        config.settlerPeriodTicks = whole(
+            migrated, "settlerPeriodTicks", config.settlerPeriodTicks);
+        config.evolvePeriodTicks =
+            whole(migrated, "evolvePeriodTicks", config.evolvePeriodTicks);
+        config.devolvePeriodTicks = whole(
+            migrated, "devolvePeriodTicks", config.devolvePeriodTicks);
+        config.productionPeriodTicks = whole(
             migrated,
             "productionPeriodTicks",
-            tuning.productionPeriodTicks);
-        tuning.productionBatch =
-            whole(migrated, "productionBatch", tuning.productionBatch);
-        tuning.labourPeriodTicks =
-            whole(migrated, "labourPeriodTicks", tuning.labourPeriodTicks);
-        tuning.staffDecayPeriodTicks = whole(
+            config.productionPeriodTicks);
+        config.productionBatch =
+            whole(migrated, "productionBatch", config.productionBatch);
+        config.labourPeriodTicks =
+            whole(migrated, "labourPeriodTicks", config.labourPeriodTicks);
+        config.staffDecayPeriodTicks = whole(
             migrated,
             "staffDecayPeriodTicks",
-            tuning.staffDecayPeriodTicks);
+            config.staffDecayPeriodTicks);
 
         if (migrated.contains("walkerLimit"))
         {
-            tuning.walkerLimit =
+            config.walkerLimit =
                 migrated.at("walkerLimit").get<std::size_t>();
         }
 
-        return tuning;
+        return config;
     }
 
-    void writeConfig(const Tuning &tuning, std::ostream &out)
+    void writeConfig(const GameConfig &config, std::ostream &out)
     {
-        out << tuningToJson(tuning).dump(kIndent) << '\n';
+        out << configToJson(config).dump(kIndent) << '\n';
     }
 
-    Tuning readConfig(std::istream &in)
+    GameConfig readConfig(std::istream &in)
     {
         nlohmann::json document;
         try
@@ -291,10 +291,10 @@ namespace antwika::game
                 + error.what());
         }
 
-        return tuningFromJson(document);
+        return configFromJson(document);
     }
 
-    Tuning loadConfigFileOrDefaults(const std::string &path)
+    GameConfig loadConfigFileOrDefaults(const std::string &path)
     {
         std::ifstream file(path);
 
@@ -302,7 +302,7 @@ namespace antwika::game
         // Which is a state rather than a failure.
         if (!file.is_open())
         {
-            return Tuning{};
+            return GameConfig{};
         }
 
         return readConfig(file);

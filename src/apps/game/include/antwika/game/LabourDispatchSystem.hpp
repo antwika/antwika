@@ -4,8 +4,8 @@
 #include <antwika/ecs/World.hpp>
 #include <antwika/time/Tick.hpp>
 
+#include "antwika/game/GameConfig.hpp"
 #include "antwika/game/PathIndex.hpp"
-#include "antwika/game/Tuning.hpp"
 
 namespace antwika::game
 {
@@ -41,11 +41,11 @@ namespace antwika::game
          * @brief Construct the system over the roads it spawns onto.
          * @param paths Consulted for a road beside each door; must
          * outlive this system.
-         * @param tuning The dispatch period and the walker cap; copied,
+         * @param config The dispatch period and the walker cap; copied,
          * so no lifetime rule attaches to it.
          */
         LabourDispatchSystem(
-            const PathIndex &paths, Tuning tuning) noexcept;
+            const PathIndex &paths, GameConfig config) noexcept;
 
         LabourDispatchSystem(const LabourDispatchSystem &) = delete;
         LabourDispatchSystem(LabourDispatchSystem &&) = delete;
@@ -63,7 +63,7 @@ namespace antwika::game
 
     private:
         const PathIndex &paths;
-        Tuning tuning;
+        GameConfig config;
     };
 
 } // namespace antwika::game

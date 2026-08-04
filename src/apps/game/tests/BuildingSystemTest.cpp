@@ -33,22 +33,22 @@ using antwika::game::BuildingIndex;
 using antwika::game::BuildingKind;
 using antwika::game::BuildingSystem;
 using antwika::game::Cell;
+using antwika::game::Coverage;
 using antwika::game::Errand;
 using antwika::game::ErrandLeg;
 using antwika::game::Footprint;
-using antwika::game::Tuning;
 using antwika::game::footprintOf;
-using antwika::game::Coverage;
+using antwika::game::GameConfig;
 using antwika::game::kCoverageFull;
 using antwika::game::kDrainPeriodTicks;
 using antwika::game::kMaxRisk;
 using antwika::game::kRiskPeriodTicks;
 using antwika::game::kServiceCount;
 using antwika::game::kStockCapacity;
-using antwika::game::setCoverage;
 using antwika::game::kWalkerLoad;
 using antwika::game::Resource;
 using antwika::game::resourceIndex;
+using antwika::game::setCoverage;
 using antwika::game::Walker;
 using antwika::game::WalkerKind;
 using antwika::log::mocks::MockLogger;
@@ -100,7 +100,7 @@ namespace
         BuildingSystem system{
             built,
             antwika::game::GridExtent{.width = 16, .height = 16},
-            Tuning{}};
+            GameConfig{}};
     };
 } // namespace
 
@@ -864,16 +864,16 @@ TEST_F(BuildingSystemTest, Update_RelievesNothingAcrossOpenGround)
     EXPECT_EQ(world.get<Building>(house).fireRisk, 60);
 }
 
-// The period is the injected tuning's rather than the constant.
+// The period is the injected config's rather than the constant.
 // A countdown that has run out is reset to the configured span.
 TEST_F(BuildingSystemTest, Update_ResetsTheDrainToTheConfiguredPeriod)
 {
-    Tuning tuning;
-    tuning.drainPeriodTicks = 7;
+    GameConfig config;
+    config.drainPeriodTicks = 7;
     BuildingSystem tuned{
         built,
         antwika::game::GridExtent{.width = 16, .height = 16},
-        tuning};
+        config};
 
     const auto house = build(
         Cell{.x = 5, .y = 5},

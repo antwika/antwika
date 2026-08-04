@@ -6,21 +6,21 @@
 #include <antwika/engine/Events.hpp>
 #include <antwika/input/MouseButton.hpp>
 
-#include "antwika/game/BuildTool.hpp"
 #include "antwika/game/Building.hpp"
+#include "antwika/game/BuildTool.hpp"
 #include "antwika/game/Cell.hpp"
 #include "antwika/game/Cost.hpp"
 #include "antwika/game/Coverage.hpp"
 #include "antwika/game/Demolition.hpp"
-#include "antwika/game/HousingLevel.hpp"
-#include "antwika/game/Service.hpp"
-#include "antwika/game/IsoProjection.hpp"
 #include "antwika/game/Footprint.hpp"
+#include "antwika/game/HousingLevel.hpp"
+#include "antwika/game/IsoProjection.hpp"
 #include "antwika/game/Path.hpp"
 #include "antwika/game/Placement.hpp"
 #include "antwika/game/PointerReading.hpp"
 #include "antwika/game/RoadPlan.hpp"
 #include "antwika/game/Ruin.hpp"
+#include "antwika/game/Service.hpp"
 #include "antwika/game/Walker.hpp"
 
 namespace antwika::game
@@ -44,7 +44,7 @@ namespace antwika::game
         BuildingIndex &built,
         RoadDrag &drag,
         GameState &state,
-        Tuning tuning)
+        GameConfig config)
         : world(world),
           paths(paths),
           camera(camera),
@@ -56,7 +56,7 @@ namespace antwika::game
           built(built),
           drag(drag),
           state(state),
-          tuning(tuning)
+          config(config)
     {
     }
 
@@ -254,7 +254,7 @@ namespace antwika::game
         // A dragged route runs through this once per cell it lays.
         // And a cell already paved was refused above, and costs nothing.
         // So a drag's price is the tiles it put down, by construction.
-        state.money -= tuning.roadCost;
+        state.money -= config.roadCost;
     }
 
     void GridSink::placeBuilding(Cell cell, BuildingKind kind)
@@ -279,9 +279,9 @@ namespace antwika::game
         // One short of the spawn period, as the default is.
         // See Building::ticksUntilSpawn.
         Building put{.kind = kind};
-        put.ticksUntilSpawn = tuning.spawnPeriodTicks - 1;
-        put.ticksUntilDrain = tuning.drainPeriodTicks;
-        put.ticksUntilRisk = tuning.riskPeriodTicks;
+        put.ticksUntilSpawn = config.spawnPeriodTicks - 1;
+        put.ticksUntilDrain = config.drainPeriodTicks;
+        put.ticksUntilRisk = config.riskPeriodTicks;
         world.add<Building>(entity, put);
 
         // A house is put up watered, as it is put up with food.
@@ -300,7 +300,7 @@ namespace antwika::game
 
         // After the refusals, so a refused block costs nothing.
         // Never refused for want of money -- see GameState::money.
-        state.money -= tuning.costOf(kind);
+        state.money -= config.costOf(kind);
     }
 
     void GridSink::cancelToolOrPlaceWalker(Cell cell)
@@ -344,12 +344,12 @@ namespace antwika::game
 
                 if (covers(origin, footprint, cell))
                 {
-                    demolish(world, built, entity, extent, tuning);
+                    demolish(world, built, entity, extent, config);
 
                     // After the removal, so a miss costs nothing.
                     // Never refused for want of money.
                     // Placing never is either -- see GameState::money.
-                    state.money -= tuning.razeCost;
+                    state.money -= config.razeCost;
                     return;
                 }
             }
@@ -370,7 +370,7 @@ namespace antwika::game
                 {
                     world.destroy(entity);
                     (void)built.erase(origin, footprint);
-                    state.money -= tuning.razeCost;
+                    state.money -= config.razeCost;
                     return;
                 }
             }
@@ -397,7 +397,7 @@ namespace antwika::game
                 (void)paths.erase(cell);
 
                 // A road torn up is a removal like any other.
-                state.money -= tuning.razeCost;
+                state.money -= config.razeCost;
                 return;
             }
         }

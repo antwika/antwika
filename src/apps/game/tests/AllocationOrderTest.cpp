@@ -138,7 +138,7 @@ namespace
         ReplaySource source(script);
 
         return antwika::game::bootstrap(
-            antwika::game::GameConfig{
+            antwika::game::GameWiring{
                 .logger = logger,
                 .eventSink = eventSink,
                 .inputSource = source,

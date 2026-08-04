@@ -107,7 +107,7 @@ namespace antwika::game
          * @param initial The mode both current and staged begin as. The
          * application leaves this defaulted; a test whose subject is the
          * grid starts in Playing rather than clicking its way there, the
-         * same way it sets GameConfig::maxTicks rather than dispatching a
+         * same way it sets GameWiring::maxTicks rather than dispatching a
          * stop.
          */
         explicit AppModeState(AppMode initial = AppMode::MainMenu) noexcept

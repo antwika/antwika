@@ -59,7 +59,7 @@ namespace
         antwika::game::PauseState pause;
 
         return antwika::game::bootstrap(
-                   antwika::game::GameConfig{
+                   antwika::game::GameWiring{
                        .logger = logger,
                        .eventSink = eventSink,
                        .inputSource = source,

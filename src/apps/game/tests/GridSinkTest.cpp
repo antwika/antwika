@@ -11,27 +11,27 @@
 #include <antwika/input/MouseButton.hpp>
 #include <antwika/log/mocks/MockLogger.hpp>
 
-#include "antwika/game/BuildTool.hpp"
 #include "antwika/game/Building.hpp"
 #include "antwika/game/BuildingIndex.hpp"
-#include "antwika/game/Cost.hpp"
-#include "antwika/game/Coverage.hpp"
-#include "antwika/game/Ruin.hpp"
-#include "antwika/game/Service.hpp"
-#include "antwika/game/GameState.hpp"
-#include "antwika/game/LiveGrid.hpp"
+#include "antwika/game/BuildTool.hpp"
 #include "antwika/game/Camera.hpp"
 #include "antwika/game/Cell.hpp"
+#include "antwika/game/Cost.hpp"
+#include "antwika/game/Coverage.hpp"
+#include "antwika/game/GameState.hpp"
 #include "antwika/game/GridExtent.hpp"
 #include "antwika/game/GridSink.hpp"
-#include "antwika/game/WorldMapState.hpp"
 #include "antwika/game/InputFold.hpp"
 #include "antwika/game/IsoProjection.hpp"
+#include "antwika/game/LiveGrid.hpp"
 #include "antwika/game/Path.hpp"
 #include "antwika/game/PathIndex.hpp"
 #include "antwika/game/RoadDrag.hpp"
+#include "antwika/game/Ruin.hpp"
+#include "antwika/game/Service.hpp"
 #include "antwika/game/UiOverlay.hpp"
 #include "antwika/game/Walker.hpp"
+#include "antwika/game/WorldMapState.hpp"
 
 using antwika::ecs::SystemScheduler;
 using antwika::ecs::World;
@@ -39,25 +39,25 @@ using antwika::event::Event;
 using antwika::event::TickEvent;
 using antwika::game::BuildingIndex;
 using antwika::game::BuildTool;
-using antwika::game::LiveGrid;
 using antwika::game::Camera;
 using antwika::game::Cell;
-using antwika::game::Tuning;
 using antwika::game::cellCentre;
 using antwika::game::costOf;
+using antwika::game::GameConfig;
 using antwika::game::GameState;
 using antwika::game::GridExtent;
 using antwika::game::GridSink;
+using antwika::game::InputFold;
 using antwika::game::kRoadCost;
 using antwika::game::kStartingMoney;
-using antwika::game::WorldMap;
-using antwika::game::WorldMapState;
-using antwika::game::InputFold;
+using antwika::game::LiveGrid;
 using antwika::game::Path;
 using antwika::game::PathIndex;
 using antwika::game::RoadDrag;
 using antwika::game::UiOverlay;
 using antwika::game::Walker;
+using antwika::game::WorldMap;
+using antwika::game::WorldMapState;
 using antwika::input::InputEvent;
 using antwika::input::InputEventCodec;
 using antwika::input::MouseButton;
@@ -157,7 +157,7 @@ namespace
             built,
             drag,
             state,
-            Tuning{}};
+            GameConfig{}};
     };
 } // namespace
 
@@ -1112,12 +1112,12 @@ TEST_F(GridSinkTest, RightPress_PutsNoWalkerOnBareGroundOnceCancelled)
     EXPECT_EQ(walkerCount(), 0U);
 }
 
-// The price is the injected tuning's rather than the constant.
+// The price is the injected config's rather than the constant.
 // Dispatched by hand, since the fixture's helpers drive its own sink.
 TEST_F(GridSinkTest, LeftPress_PaysTheConfiguredRoadCost)
 {
-    Tuning tuning;
-    tuning.roadCost = 9;
+    GameConfig config;
+    config.roadCost = 9;
     GridSink tuned{
         world,
         paths,
@@ -1130,7 +1130,7 @@ TEST_F(GridSinkTest, LeftPress_PaysTheConfiguredRoadCost)
         built,
         drag,
         state,
-        tuning};
+        config};
 
     const auto event = TickEvent{
         .tick = 0,

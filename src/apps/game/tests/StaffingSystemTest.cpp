@@ -72,7 +72,7 @@ namespace
 
         ::testing::NiceMock<MockLogger> logger;
         World world{logger};
-        StaffingSystem system{antwika::game::Tuning{}};
+        StaffingSystem system{antwika::game::GameConfig{}};
     };
 } // namespace
 

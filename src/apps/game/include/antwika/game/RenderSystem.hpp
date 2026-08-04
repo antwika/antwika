@@ -44,7 +44,7 @@ namespace antwika::game
      * @brief Everything the renderer draws each mode's picture out of.
      *
      * A struct with designated initialisers rather than a parameter list,
-     * for the reason GameConfig gives: one screen per mode means one
+     * for the reason GameWiring gives: one screen per mode means one
      * scene and one overlay per mode, and a positional list of them is a
      * row of same-typed references distinguishable only by where they
      * sit.

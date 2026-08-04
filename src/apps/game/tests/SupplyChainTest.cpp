@@ -18,12 +18,12 @@
 #include "antwika/game/Footprint.hpp"
 #include "antwika/game/GridExtent.hpp"
 #include "antwika/game/HaulingSystem.hpp"
-#include "antwika/game/SupplySystem.hpp"
 #include "antwika/game/Path.hpp"
 #include "antwika/game/PathIndex.hpp"
 #include "antwika/game/ProductionSystem.hpp"
 #include "antwika/game/Resource.hpp"
 #include "antwika/game/SpawnSystem.hpp"
+#include "antwika/game/SupplySystem.hpp"
 #include "antwika/game/Walker.hpp"
 #include "antwika/game/WalkerSystem.hpp"
 
@@ -131,11 +131,11 @@ namespace
         BuildingIndex built;
         SystemScheduler scheduler;
         WalkerSystem walkers{paths, built, kExtent};
-        BuildingSystem buildings{built, kExtent, antwika::game::Tuning{}};
-        SpawnSystem spawns{paths, antwika::game::Tuning{}};
-        ProductionSystem production{antwika::game::Tuning{}};
+        BuildingSystem buildings{built, kExtent, antwika::game::GameConfig{}};
+        SpawnSystem spawns{paths, antwika::game::GameConfig{}};
+        ProductionSystem production{antwika::game::GameConfig{}};
         HaulingSystem hauling{paths, kExtent};
-        SupplySystem supplies{paths, kExtent, antwika::game::Tuning{}};
+        SupplySystem supplies{paths, kExtent, antwika::game::GameConfig{}};
     };
 } // namespace
 

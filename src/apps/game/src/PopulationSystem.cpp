@@ -54,12 +54,12 @@ namespace antwika::game
         const BuildingIndex &built,
         const DesirabilityField &desirability,
         GridExtent extent,
-        Tuning tuning) noexcept
+        GameConfig config) noexcept
         : paths(paths),
           built(built),
           desirability(desirability),
           extent(extent),
-          tuning(tuning)
+          config(config)
     {
     }
 
@@ -98,7 +98,7 @@ namespace antwika::game
 
             if (household.ticksUntilSettler <= 0)
             {
-                household.ticksUntilSettler = tuning.settlerPeriodTicks;
+                household.ticksUntilSettler = config.settlerPeriodTicks;
                 settle(world, entity, building, household);
             }
 
@@ -175,7 +175,7 @@ namespace antwika::game
         // A city walled off from the outside takes nobody in.
         // Which is an ordinary answer rather than an error.
         if (!slot.has_value() || !gate.has_value()
-            || out >= tuning.walkerLimit)
+            || out >= config.walkerLimit)
         {
             return;
         }
@@ -205,7 +205,7 @@ namespace antwika::game
 
         // Nowhere to walk from, so there is nobody to draw walking.
         // The person has left either way; only the picture differs.
-        if (!door.has_value() || out >= tuning.walkerLimit)
+        if (!door.has_value() || out >= config.walkerLimit)
         {
             return;
         }

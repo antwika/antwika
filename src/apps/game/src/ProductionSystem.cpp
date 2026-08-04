@@ -19,7 +19,7 @@ namespace antwika::game
         [[nodiscard]] bool canFinish(
             const Building &building,
             Resource output,
-            const Tuning &tuning)
+            const GameConfig &config)
         {
             if (building.stock[resourceIndex(output)]
                 >= capacityOf(building.kind))
@@ -31,11 +31,11 @@ namespace antwika::game
 
             return !input.has_value()
                 || building.stock[resourceIndex(*input)]
-                       >= tuning.productionBatch;
+                       >= config.productionBatch;
         }
     } // namespace
 
-    ProductionSystem::ProductionSystem(Tuning tuning) : tuning(tuning)
+    ProductionSystem::ProductionSystem(GameConfig config) : config(config)
     {
     }
 
@@ -59,7 +59,7 @@ namespace antwika::game
                 world.add<Production>(
                     entity,
                     Production{
-                        .ticksUntilOutput = tuning.productionPeriodTicks});
+                        .ticksUntilOutput = config.productionPeriodTicks});
                 continue;
             }
 
@@ -68,7 +68,7 @@ namespace antwika::game
             // Which is the rule a workshop out of clay already follows.
             // Read out here for a second reason.
             const auto period = workedPeriod(
-                tuning.productionPeriodTicks, staffingOf(world, entity));
+                config.productionPeriodTicks, staffingOf(world, entity));
 
             if (!period.has_value())
             {
@@ -89,7 +89,7 @@ namespace antwika::game
 
             // Held at zero, not reset.
             // So a workshop long out of clay owes nobody a backlog.
-            if (!canFinish(building, *output, tuning))
+            if (!canFinish(building, *output, config))
             {
                 continue;
             }
@@ -102,13 +102,13 @@ namespace antwika::game
             if (input.has_value())
             {
                 worked.stock[resourceIndex(*input)] -=
-                    tuning.productionBatch;
+                    config.productionBatch;
             }
 
             auto &held = worked.stock[resourceIndex(*output)];
             held = std::min(
                 capacityOf(building.kind),
-                held + tuning.productionBatch);
+                held + config.productionBatch);
 
             world.set<Building>(entity, worked);
             world.set<Production>(

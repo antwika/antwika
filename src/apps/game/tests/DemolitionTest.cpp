@@ -98,7 +98,7 @@ TEST_F(DemolitionTest, TearsTheBuildingDownAndFreesItsCells)
 {
     const auto entity = house(kAt, 0);
 
-    demolish(world, built, entity, kExtent, antwika::game::Tuning{});
+    demolish(world, built, entity, kExtent, antwika::game::GameConfig{});
     world.commit();
 
     EXPECT_EQ(built.size(), 0U);
@@ -110,7 +110,7 @@ TEST_F(DemolitionTest, TurnsTheOccupantsOutToAHouseWithRoom)
     const auto home = house(kAt, 2);
     const auto refuge = house(Cell{.x = 1, .y = 1}, 0);
 
-    demolish(world, built, home, kExtent, antwika::game::Tuning{});
+    demolish(world, built, home, kExtent, antwika::game::GameConfig{});
 
     const auto journeys = journeysOut();
     ASSERT_EQ(journeys.size(), 2U);
@@ -131,7 +131,7 @@ TEST_F(DemolitionTest, SendsTheOverflowToTheGate)
         antwika::game::populationCapacityOf(HousingLevel::Tent);
     const auto home = house(kAt, beds + 2);
 
-    demolish(world, built, home, kExtent, antwika::game::Tuning{});
+    demolish(world, built, home, kExtent, antwika::game::GameConfig{});
 
     const auto journeys = journeysOut();
     ASSERT_EQ(journeys.size(), static_cast<std::size_t>(beds) + 2U);
@@ -160,7 +160,7 @@ TEST_F(DemolitionTest, SendsEverybodyToTheGateWithNoVacancyInTown)
 {
     const auto home = house(kAt, 3);
 
-    demolish(world, built, home, kExtent, antwika::game::Tuning{});
+    demolish(world, built, home, kExtent, antwika::game::GameConfig{});
 
     const auto journeys = journeysOut();
     ASSERT_EQ(journeys.size(), 3U);
@@ -194,7 +194,7 @@ TEST_F(DemolitionTest, SpawnsNobodyWithNoVacancyAndNoGate)
 
     const auto home = house(kAt, 3);
 
-    demolish(world, built, home, kExtent, antwika::game::Tuning{});
+    demolish(world, built, home, kExtent, antwika::game::GameConfig{});
 
     EXPECT_EQ(journeysOut().size(), 0U);
     EXPECT_EQ((world.view<Building, Cell>().size()), 0U);
@@ -204,7 +204,7 @@ TEST_F(DemolitionTest, TurnsNobodyOutOfABuildingThatHousesNobody)
 {
     const auto farm = stand(kAt, BuildingKind::Farm);
 
-    demolish(world, built, farm, kExtent, antwika::game::Tuning{});
+    demolish(world, built, farm, kExtent, antwika::game::GameConfig{});
 
     EXPECT_EQ(journeysOut().size(), 0U);
     EXPECT_EQ((world.view<Building, Cell>().size()), 0U);
@@ -223,7 +223,7 @@ TEST_F(DemolitionTest, SpawnsNobodyPastTheWalkerLimit)
 
     const auto home = house(kAt, 3);
 
-    demolish(world, built, home, kExtent, antwika::game::Tuning{});
+    demolish(world, built, home, kExtent, antwika::game::GameConfig{});
 
     EXPECT_EQ(journeysOut().size(), 0U);
 }
@@ -235,7 +235,8 @@ TEST_F(DemolitionTest, IgniteStandsARuinUpAndKeepsTheGround)
 {
     const auto farm = stand(kAt, BuildingKind::Farm);
 
-    antwika::game::ignite(world, built, farm, kExtent, antwika::game::Tuning{});
+    antwika::game::ignite(
+        world, built, farm, kExtent, antwika::game::GameConfig{});
     world.commit();
 
     EXPECT_FALSE(world.alive(farm));
@@ -260,7 +261,7 @@ TEST_F(DemolitionTest, IgniteTurnsTheOccupantsOutAtThePerimeter)
     const auto burning = house(kAt, 2);
 
     antwika::game::ignite(
-        world, built, burning, kExtent, antwika::game::Tuning{});
+        world, built, burning, kExtent, antwika::game::GameConfig{});
     world.commit();
 
     const auto out = journeysOut();
@@ -294,7 +295,7 @@ TEST_F(DemolitionTest, IgniteTurnsNobodyOutOfAWalledInBuilding)
     }
 
     antwika::game::ignite(
-        world, built, burning, kExtent, antwika::game::Tuning{});
+        world, built, burning, kExtent, antwika::game::GameConfig{});
     world.commit();
 
     EXPECT_TRUE(journeysOut().empty());
@@ -306,7 +307,8 @@ TEST_F(DemolitionTest, IgniteTurnsNobodyOutOfAWell)
 {
     const auto well = stand(kAt, BuildingKind::Well);
 
-    antwika::game::ignite(world, built, well, kExtent, antwika::game::Tuning{});
+    antwika::game::ignite(
+        world, built, well, kExtent, antwika::game::GameConfig{});
     world.commit();
 
     EXPECT_TRUE(journeysOut().empty());
@@ -320,7 +322,7 @@ TEST_F(DemolitionTest, IgniteFindsAnEscapeFromTheMapsOwnCorner)
     const auto burning = house(Cell{.x = 0, .y = 0}, 1);
 
     antwika::game::ignite(
-        world, built, burning, kExtent, antwika::game::Tuning{});
+        world, built, burning, kExtent, antwika::game::GameConfig{});
     world.commit();
 
     const auto out = journeysOut();

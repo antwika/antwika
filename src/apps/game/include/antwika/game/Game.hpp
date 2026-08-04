@@ -19,8 +19,9 @@
 #include "antwika/game/AppMode.hpp"
 #include "antwika/game/BuildingIndex.hpp"
 #include "antwika/game/Camera.hpp"
-#include "antwika/game/GameSummary.hpp"
 #include "antwika/game/Desirability.hpp"
+#include "antwika/game/GameConfig.hpp"
+#include "antwika/game/GameSummary.hpp"
 #include "antwika/game/GridExtent.hpp"
 #include "antwika/game/MapView.hpp"
 #include "antwika/game/Messages.hpp"
@@ -28,7 +29,6 @@
 #include "antwika/game/PauseState.hpp"
 #include "antwika/game/RoadDrag.hpp"
 #include "antwika/game/SaveGame.hpp"
-#include "antwika/game/Tuning.hpp"
 #include "antwika/game/UiCanvas.hpp"
 #include "antwika/game/UiOverlay.hpp"
 #include "antwika/game/WorldMapState.hpp"
@@ -93,7 +93,7 @@ namespace antwika::game
      * rather than pointers: absent means absent, and there is no third
      * state where a caller passed something that is not there.
      */
-    struct GameConfig
+    struct GameWiring
     {
         /** @brief Receives the run's diagnostics. */
         ILogger &logger;
@@ -392,7 +392,7 @@ namespace antwika::game
          * from config.json beside the assets -- see ConfigFile.hpp --
          * and a test that overrides one number injects it here.
          */
-        Tuning tuning = {};
+        GameConfig config = {};
     };
 
     /**
@@ -400,7 +400,7 @@ namespace antwika::game
      * together, boots the game, then drives the tick loop until an
      * engine.stop event is dispatched.
      *
-     * Sources each tick's events from the config's inputSource -- clicks,
+     * Sources each tick's events from the wiring's inputSource -- clicks,
      * scrolls and drags, encoded by antwika::input -- until it dispatches
      * engine.stop. A live run and a loaded replay both use this same
      * function; they differ only in what inputSource was built from.
@@ -410,14 +410,14 @@ namespace antwika::game
      * one before bootstrap() is ever called, and building a second one
      * here would put two loggers over one appender.
      *
-     * @param config What the run is wired out of.
+     * @param wiring What the run is wired out of.
      * @return What the run amounted to, for callers and tests.
      * @throws antwika::simulation::EngineLoopError If maxTicks is reached
      * without engine.stop.
      * @throws antwika::input::InputError If an input event carries a
      * payload of the wrong shape.
      */
-    GameSummary bootstrap(const GameConfig &config);
+    GameSummary bootstrap(const GameWiring &wiring);
 
     /**
      * @brief Write what a run amounted to.

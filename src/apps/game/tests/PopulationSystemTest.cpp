@@ -1,5 +1,5 @@
-#include "antwika/game/PopulationSystem.hpp"
 #include "antwika/game/Journey.hpp"
+#include "antwika/game/PopulationSystem.hpp"
 #include "antwika/game/SpawnSystem.hpp"
 #include "antwika/game/Walker.hpp"
 #include "antwika/game/WalkerSystem.hpp"
@@ -21,12 +21,12 @@
 #include "antwika/game/Cell.hpp"
 #include "antwika/game/Coverage.hpp"
 #include "antwika/game/Desirability.hpp"
+#include "antwika/game/GridExtent.hpp"
 #include "antwika/game/Household.hpp"
-#include "antwika/game/Service.hpp"
 #include "antwika/game/HousingLevel.hpp"
 #include "antwika/game/HousingQuery.hpp"
-#include "antwika/game/GridExtent.hpp"
 #include "antwika/game/PathIndex.hpp"
+#include "antwika/game/Service.hpp"
 
 namespace
 {
@@ -41,8 +41,8 @@ namespace
     using antwika::game::HousingLevel;
     using antwika::game::kSettlerPeriodTicks;
     using antwika::game::GridExtent;
+using antwika::game::GameConfig;
 using antwika::game::PathIndex;
-using antwika::game::Tuning;
     using antwika::game::populationAt;
     using antwika::game::populationCapacityOf;
     using antwika::game::PopulationSystem;
@@ -166,7 +166,7 @@ using antwika::log::mocks::MockLogger;
         PathIndex paths;
         DesirabilityField field;
         antwika::game::BuildingIndex built;
-        PopulationSystem system{paths, built, field, kExtent, Tuning{}};
+        PopulationSystem system{paths, built, field, kExtent, GameConfig{}};
         antwika::game::WalkerSystem walkers{paths, built, kExtent};
         Entity house{};
     };

@@ -7,8 +7,8 @@
 #include <antwika/ecs/World.hpp>
 #include <antwika/log/mocks/MockLogger.hpp>
 
-#include "antwika/game/BuildTool.hpp"
 #include "antwika/game/Building.hpp"
+#include "antwika/game/BuildTool.hpp"
 #include "antwika/game/Cell.hpp"
 #include "antwika/game/Footprint.hpp"
 #include "antwika/game/PathIndex.hpp"
@@ -79,7 +79,7 @@ namespace
         ::testing::NiceMock<MockLogger> logger;
         World world{logger};
         PathIndex paths;
-        SpawnSystem system{paths, antwika::game::Tuning{}};
+        SpawnSystem system{paths, antwika::game::GameConfig{}};
     };
 
     TEST_F(SpawnSystemTest, SpawnCellFor_TakesTheLowestNeighbouringRoad)
@@ -515,13 +515,13 @@ namespace
 
 } // namespace
 
-// The cap is the injected tuning's rather than the constant.
+// The cap is the injected config's rather than the constant.
 // A cap of nothing spawns nobody, however due a building is.
 TEST_F(SpawnSystemTest, Update_HonoursTheConfiguredWalkerLimit)
 {
-    antwika::game::Tuning tuning;
-    tuning.walkerLimit = 0;
-    SpawnSystem tuned{paths, tuning};
+    antwika::game::GameConfig config;
+    config.walkerLimit = 0;
+    SpawnSystem tuned{paths, config};
 
     build(Cell{.x = 0, .y = 0});
     pave(Cell{.x = 0, .y = 1});

@@ -34,14 +34,14 @@
 #include "antwika/game/AppMode.hpp"
 #include "antwika/game/AtlasImage.hpp"
 #include "antwika/game/BindingSource.hpp"
-#include "antwika/game/ConfigFile.hpp"
 #include "antwika/game/BuildingIndex.hpp"
 #include "antwika/game/Camera.hpp"
+#include "antwika/game/ConfigFile.hpp"
+#include "antwika/game/Desirability.hpp"
 #include "antwika/game/FrameMeter.hpp"
 #include "antwika/game/GridExtent.hpp"
 #include "antwika/game/GridScene.hpp"
 #include "antwika/game/KeyBindings.hpp"
-#include "antwika/game/Desirability.hpp"
 #include "antwika/game/MainMenuScene.hpp"
 #include "antwika/game/MapView.hpp"
 #include "antwika/game/Messages.hpp"
@@ -366,8 +366,8 @@ namespace
 
         // The numbers the rules run on, read once before the loop.
         // Beside the atlases, since it is part of the game's definition.
-        // A replay run reads the very same file -- see Tuning.hpp.
-        const auto tuning = antwika::game::loadConfigFileOrDefaults(
+        // A replay run reads the very same file -- see GameConfig.hpp.
+        const auto config = antwika::game::loadConfigFileOrDefaults(
             antwika::app::assetPath("config.json"));
 
         // A loaded city reaches the session through no event.
@@ -377,7 +377,7 @@ namespace
             saveOptions, recorded.options.recordPath.has_value());
 
         const auto summary =
-            antwika::game::bootstrap(antwika::game::GameConfig{
+            antwika::game::bootstrap(antwika::game::GameWiring{
                 .logger = logger,
                 .eventSink = recorded.eventSink,
                 .inputSource = bound,
@@ -406,7 +406,7 @@ namespace
                 .seed = kWorld.seed,
                 .translator = translator,
                 .canvas = antwika::game::kUiCanvas,
-                .tuning = tuning});
+                .config = config});
 
         antwika::game::printSummary(std::cout, summary);
     }
