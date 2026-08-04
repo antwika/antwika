@@ -17,13 +17,16 @@ antwika_add_app(
         src/RenderSink.cpp
         src/ScoreOverlay.cpp
         src/ScoreSink.cpp
+        src/StateDump.cpp
         src/TowerDefence.cpp
+        src/TowerDefenceSnapshotStore.cpp
         src/TowerPlacementSink.cpp
         src/Wave.cpp
         src/main.cpp
     LIBS
         antwika::app
         antwika::config
+        antwika::console
         antwika::engine
         antwika::gfx
         antwika::gfx_backend

@@ -32,6 +32,8 @@ namespace antwika::tower_defence
          * whatever its kind's pace is.
          */
         std::uint32_t ticksUntilStep = 0;
+
+        [[nodiscard]] bool operator==(const Mob &) const = default;
     };
 
     /** @brief One gun, sitting on a cell no mob will ever walk. */
@@ -39,6 +41,47 @@ namespace antwika::tower_defence
     {
         std::uint32_t id = 0;
         Cell cell;
+
+        [[nodiscard]] bool operator==(const Tower &) const = default;
+    };
+
+    /**
+     * @brief Everything one battle has moved, and nothing it can
+     * rebuild.
+     *
+     * The level and the wave plan are deliberately absent: both are
+     * pure functions of the campaign's seed and the level index, so a
+     * restore regenerates them exactly the way Campaign::buildBattle()
+     * generated them and carries only the fight itself.
+     */
+    struct BattleMemory
+    {
+        /** @brief Which wave the release schedule stands in. */
+        std::size_t waveIndex = 0;
+
+        /** @brief How much of that wave is already out. */
+        std::size_t spawnedInWave = 0;
+
+        /** @brief Ticks left before the next release. */
+        std::uint64_t ticksUntilRelease = 0;
+
+        /** @brief How many ticks the battle has stepped. */
+        std::uint64_t tickCount = 0;
+
+        /** @brief The id the next released mob takes. */
+        std::uint32_t nextMobId = 0;
+
+        /** @brief The id the next placed tower takes. */
+        std::uint32_t nextTowerId = 0;
+
+        /** @brief Every mob still walking, in spawn order. */
+        std::vector<Mob> mobs;
+
+        /** @brief Every tower placed, in placement order. */
+        std::vector<Tower> towers;
+
+        [[nodiscard]] bool operator==(const BattleMemory &) const
+            = default;
     };
 
     /** @brief The numbers one level's guns are balanced with. */
@@ -158,6 +201,25 @@ namespace antwika::tower_defence
 
         /** @brief How many waves have been released in full. */
         [[nodiscard]] std::size_t wavesReleased() const;
+
+        /**
+         * @brief Take everything this battle has moved.
+         * @return The fight, without the level it can rebuild.
+         */
+        [[nodiscard]] BattleMemory remember() const;
+
+        /**
+         * @brief Put a remembered fight back over this battle's level.
+         *
+         * Validated before anything moves, so a refused restore leaves
+         * the battle exactly as it stood.
+         *
+         * @param memory What some battle's remember() answered.
+         * @return True when it fit; false for a mob standing at or past
+         * the end of this level's path, which is a dump for some other
+         * level and is refused rather than repaired.
+         */
+        [[nodiscard]] bool restore(const BattleMemory &memory);
 
     private:
         Level levelData;

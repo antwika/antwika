@@ -17,12 +17,15 @@ add_executable(antwika_tower_defence_tests
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/RenderSink.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/ScoreOverlay.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/ScoreSink.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/StateDump.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/TowerDefence.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/TowerDefenceSnapshotStore.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/TowerPlacementSink.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/Wave.cpp
     BattleTest.cpp
     CampaignTest.cpp
     ConfigFileTest.cpp
+    ConsoleSinkTest.cpp
     GridLayoutTest.cpp
     HighScoreTest.cpp
     LevelGeneratorTest.cpp
@@ -32,6 +35,7 @@ add_executable(antwika_tower_defence_tests
     RunIntegrationTest.cpp
     SinksTest.cpp
     SceneTest.cpp
+    StateDumpTest.cpp
     WaveTest.cpp
 )
 
@@ -45,6 +49,7 @@ target_link_libraries(antwika_tower_defence_tests
         antwika::app
         antwika::config
         antwika::config::tests::conformance
+        antwika::console
         antwika::engine
         antwika::event::tests::mocks
         antwika::gfx

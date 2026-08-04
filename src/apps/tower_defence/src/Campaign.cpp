@@ -235,4 +235,48 @@ namespace antwika::tower_defence
         return state;
     }
 
+    CampaignMemory Campaign::remember() const
+    {
+        // Every branch left on the excluded line is the allocator's:
+        // the throw edges of the battle memory's two vectors.
+        return CampaignMemory{ // GCOVR_EXCL_LINE
+            .level = level,
+            .score = totalScore,
+            .lives = livesLeft,
+            .ticks = tickCount,
+            .phase = state,
+            .battle = current.remember()};
+        // The excluded line is the returned value's unwind block.
+    } // GCOVR_EXCL_LINE
+
+    bool Campaign::restore(const CampaignMemory &memory)
+    {
+        // A won campaign stands exactly one past its last level.
+        // Anything further is no state a campaign can reach.
+        if (memory.level > config.levels.size())
+        {
+            return false;
+        }
+
+        // Rebuilt from the seed and the index, never read from a file.
+        // It is the derivation the constructor and step() use.
+        // So the level and the wave order come back identical.
+        Battle rebuilt = memory.level < config.levels.size()
+            ? buildBattle(memory.level)
+            : emptyBattle();
+
+        if (!rebuilt.restore(memory.battle))
+        {
+            return false;
+        }
+
+        current = std::move(rebuilt);
+        level = memory.level;
+        totalScore = memory.score;
+        livesLeft = memory.lives;
+        tickCount = memory.ticks;
+        state = memory.phase;
+        return true;
+    }
+
 } // namespace antwika::tower_defence

@@ -249,4 +249,45 @@ namespace antwika::tower_defence
         return waveIndex;
     }
 
+    BattleMemory Battle::remember() const
+    {
+        // Every branch left on the excluded line is the allocator's:
+        // the throw edges of copying the two vectors.
+        return BattleMemory{ // GCOVR_EXCL_LINE
+            .waveIndex = waveIndex,
+            .spawnedInWave = spawnedInWave,
+            .ticksUntilRelease = ticksUntilRelease,
+            .tickCount = tickCount,
+            .nextMobId = nextMobId,
+            .nextTowerId = nextTowerId,
+            .mobs = living,
+            .towers = guns};
+        // The excluded line is the returned value's unwind block.
+    } // GCOVR_EXCL_LINE
+
+    bool Battle::restore(const BattleMemory &memory)
+    {
+        // Refused rather than repaired, and checked up front.
+        // A refusal therefore leaves the battle as it stood.
+        // A mob at or past the path's end would have leaked already.
+        // So such a dump is some other level's.
+        for (const Mob &mob : memory.mobs)
+        {
+            if (mob.pathIndex >= levelData.path.size())
+            {
+                return false;
+            }
+        }
+
+        waveIndex = memory.waveIndex;
+        spawnedInWave = memory.spawnedInWave;
+        ticksUntilRelease = memory.ticksUntilRelease;
+        tickCount = memory.tickCount;
+        nextMobId = memory.nextMobId;
+        nextTowerId = memory.nextTowerId;
+        living = memory.mobs;
+        guns = memory.towers;
+        return true;
+    }
+
 } // namespace antwika::tower_defence

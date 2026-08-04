@@ -144,7 +144,7 @@ namespace antwika::tower_defence
         const Campaign &campaign,
         ScoreOverlay &overlay,
         const Translator &translator,
-        const std::uint64_t best)
+        const std::uint64_t &best)
         : campaign(campaign),
           overlay(overlay),
           translator(translator),
