@@ -26,14 +26,15 @@ namespace antwika::music_editor
      * paced by how much audio the device has taken, and a sleeper here
      * would be a second opinion about how fast the run goes.
      *
-     * **The one place in this application reading the reported size**,
-     * and it reads it to place the picture and nothing else: every
-     * command is in canvas pixels, and a gfx::ViewportRenderer built
-     * fresh each frame scales and centres them into whatever the window
-     * currently is -- which is how F10's fullscreen enlarges the editor
-     * rather than parking it in a corner.  The remainder is pillarboxed,
-     * exactly as apps/game draws, and the pointer is mapped back through
-     * the same transform upstream of the recorder in main().
+     * **It draws through app::presentViewport()**, which is the one
+     * place the reported size is read, and it is read to place the
+     * picture and nothing else: every command is in canvas pixels, and
+     * a gfx::ViewportRenderer built fresh each frame scales and centres
+     * them into whatever the window currently is -- which is how F10's
+     * fullscreen enlarges the editor rather than parking it in a
+     * corner.  The remainder is pillarboxed, exactly as apps/game
+     * draws, and the pointer is mapped back through the same transform
+     * upstream of the recorder in main().
      */
     class RenderSink final : public ITickEventSink
     {

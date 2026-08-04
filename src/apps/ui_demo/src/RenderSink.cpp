@@ -1,6 +1,6 @@
 #include "antwika/ui_demo/RenderSink.hpp"
 
-#include <antwika/engine/Events.hpp>
+#include <antwika/app/FramePresentation.hpp>
 
 namespace antwika::ui_demo
 {
@@ -21,19 +21,18 @@ namespace antwika::ui_demo
 
     void RenderSink::handle(const TickEvent &event)
     {
-        if (event.event.name != antwika::engine::events::kTick)
+        if (!antwika::app::drawsOn(event, window))
         {
             return;
         }
 
-        if (!window.isOpen())
-        {
-            return;
-        }
-
-        auto &renderer = window.renderer();
-        scene.draw(renderer, overlay.commands());
-        renderer.present();
+        // No console is mounted here, so the scene is the frame.
+        antwika::app::presentFrame(
+            window,
+            [this](antwika::gfx::IRenderer &renderer)
+            {
+                scene.draw(renderer, overlay.commands());
+            });
 
         sleeper.sleep(framePeriod);
     }

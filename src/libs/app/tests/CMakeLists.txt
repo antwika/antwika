@@ -6,6 +6,7 @@ add_executable(antwika_app_tests
     AssetPathTest.cpp
     ConsoleLoggingTest.cpp
     FramePacedSourceTest.cpp
+    FramePresentationTest.cpp
     FullscreenToggleSourceTest.cpp
     HoverRecordingTest.cpp
     MaxTicksTest.cpp

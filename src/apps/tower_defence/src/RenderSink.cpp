@@ -1,7 +1,6 @@
 #include "antwika/tower_defence/RenderSink.hpp"
 
-#include <antwika/engine/Events.hpp>
-#include <antwika/ui/Painter.hpp>
+#include <antwika/app/FramePresentation.hpp>
 
 #include "antwika/tower_defence/BattleSnapshot.hpp"
 
@@ -30,24 +29,22 @@ namespace antwika::tower_defence
 
     void RenderSink::handle(const TickEvent &event)
     {
-        if (event.event.name != antwika::engine::events::kTick)
+        if (!antwika::app::drawsOn(event, window))
         {
             return;
         }
-        if (!window.isOpen())
-        {
-            return;
-        }
-
-        auto &renderer = window.renderer();
-        scene.draw(renderer, canvas, snapshotOf(campaign));
-
-        // The bar goes on over the battle, so it reads as in front.
-        antwika::ui::paint(renderer, overlay.commands());
 
         // And the console goes on over everything, sheet on top.
-        antwika::ui::paint(renderer, consoleOverlay.commands());
-        renderer.present();
+        antwika::app::presentFrame(
+            window,
+            consoleOverlay,
+            [this](antwika::gfx::IRenderer &renderer)
+            {
+                scene.draw(renderer, canvas, snapshotOf(campaign));
+
+                // The bar goes over the battle, so it reads in front.
+                antwika::app::paintOver(renderer, overlay);
+            });
 
         sleeper.sleep(framePeriod);
     }

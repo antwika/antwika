@@ -20,6 +20,7 @@ It holds no simulation logic of its own — everything here is glue that was dup
 | `FramePacedSource.hpp` | `FramePacedSource`, `FramePacing` | An `ITickEventSource` decorator that draws `framesPerTick - 1` frames in the gap before each tick's events are read, and paces the tick through an injected `time::ISleeper`. |
 | `IFramePass.hpp` | `IFramePass` | `draw(animation::Progress)` — what one of those frames is handed, and all it is handed. |
 | `FramePacingError.hpp` | `FramePacingError` | A pacing no loop could honour, such as a tick that draws no frames at all. |
+| `FramePresentation.hpp` | `Pictured`, `drawsOn()`, `paintOver()`, `presentFrame()`, `presentViewport()` | The un-paced frame: the tick-and-open guard, the overlay painted last, the present, and the viewport a fixed canvas is placed through. |
 | `PointerReading.hpp` | `asPoint()`, `locates()`, `pointerFrom()`, `hoverFrom()` | Turns `input` edges into a `ui::Pointer`, and a pointer hint into a `ui::HoverPointer`. |
 | `WindowPointerMapping.hpp` | `WindowPointerMapping` | An `input::IPointerMapping` reading a window pixel as a pixel on the fixed canvas the app lays out against. |
 | `FullscreenToggleSource.hpp` | `FullscreenToggleSource` | An `ITickEventSource` decorator making a nominated key fill the screen with the window, altering not one event. |
@@ -126,3 +127,19 @@ A program parses once, against one table: an argument not in it is a `cli::Comma
 That is why each layer offers a *table* and a reader rather than a parser of its own — `replayCliFlags()`/`replayCliOptionsFrom()`, `game::saveCliFlags()`/`saveCliOptionsFrom()`, `poker::watchFlags()`/`watchOptionsFrom()` — and why this helper takes an app's own flags as a `std::span<const FlagSpec>` and reads them in the same pass as `--record` and `--replay`.
 
 See [`blog/009-json-wins-tickevent-and-three-mains-that-stopped-repeating-themselves.md`](../../blog/009-json-wins-tickevent-and-three-mains-that-stopped-repeating-themselves.md).
+
+## FramePresentation is the un-paced cousin of FramePacedSource
+
+`FramePacedSource` and `IFramePass` are about the frames *between* two ticks; `FramePresentation.hpp` is about the frame the tick itself draws, which ten render sinks and render systems were each writing out by hand.
+The body they shared is four decisions rather than four lines -- draw only on `engine.tick`, draw only into an open window, paint the console's sheet *after* everything else, and present -- and the third is the one worth owning centrally: "last" is not a property any single call site can check, and an overlay painted a line too early is a bug that only shows up as a sheet with a toolbar drawn through it.
+
+`presentFrame()` takes the frame body as a callback and paints the overlay after it returns, so the ordering is structural rather than remembered.
+`presentViewport()` is the same shape for an application drawing a fixed canvas into a window of some other size: it is the one place the *reported* size is read, it builds a fresh `gfx::ViewportRenderer` per frame, and it fills the surround after the picture so a sprite reaching past the canvas's edge is covered rather than left showing in the bar.
+Neither hands the body anything but a renderer, on exactly `IFramePass::draw()`'s terms -- there is nothing there to read a world from or write one to.
+
+**The overlay is a `Pictured` concept rather than an interface**, satisfied by anything answering `commands()` with a `ui::DrawList`, which is what lets this header name neither [`console`](console.md) nor any application's own overlay type.
+The two overloads of `paintOver()` are the whole reason it is a concept and not one signature: some applications hold their console as a plain reference and some as a `std::optional<std::reference_wrapper<const T>>`, because a console is only mounted when one was asked for, and the second overload is where "no console mounted paints nothing" is stated once instead of in four `if (has_value())` blocks.
+
+**`drawsOn()` is deliberately not inside `presentFrame()`.** Three of the ten -- `life`, `task_worker` and `game` -- check neither the tick nor the window: they are `ecs::ISystem`s, so they only ever run on a tick, and window lifetime belongs to a composition root that keeps the window open for the whole run.
+A guard that can never be false is a branch the coverage gate would demand an impossible test for, which is [`blog/012`](../../blog/012-a-window-that-cant-talk-back.md)'s point, so the guard stays a separate call the six sinks that need it make and the systems do not.
+`poker` splits it further still, since `TableRenderSink::render()` is called from outside the tick as well.
