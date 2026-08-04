@@ -34,7 +34,7 @@ namespace antwika::tower_defence
             return;
         }
 
-        // And the console goes on over everything, sheet on top.
+        // The console goes on over everything, sheet on top.
         antwika::app::presentFrame(
             window,
             consoleOverlay,
