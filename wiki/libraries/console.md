@@ -89,7 +89,6 @@ A store names what its own state can be wrong about, that becomes the `SnapshotE
 A store whose state's own reader already refuses with `SnapshotError` names that as its `ErrorT`, and the rewrapping is then the identity.
 
 What the envelope's own write throws is outside the rewrapping either way: it is already a `SnapshotError`, and a full disk is the machine's truth rather than the state's.
-=======
 ## Test support
 
 `include/antwika/console/testing/ConsoleScript.hpp` is the scripted input a console test drives a run with: `kOpenTick`, `keyAt()`, `typeText()`, `pressAt()`, `releaseAt()`, `moveTo()`, `scrollAt()` and `stopAt()`.
@@ -100,4 +99,3 @@ Being outside a `tests/` directory it is measured by the coverage gate like any 
 `typeText()` takes the board it types by rather than assuming one, and asks `typedCharacterFor()` which position prints each character — the inverse of this library's own table rather than a second copy of it, so "the American slash position prints an underscore on a Swedish board" is still said in exactly one place.
 That is what lets an application which announces a different board script by that board, while a run that says nothing types by the Swedish default.
 A character no board prints answers a key that types nothing, so such a script lands nothing rather than landing some other character.
->>>>>>> worktree-agent-a836ea01a82a97e7a
