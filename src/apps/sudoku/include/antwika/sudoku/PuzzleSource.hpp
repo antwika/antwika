@@ -4,7 +4,7 @@
 #include <vector>
 
 #include <antwika/event/Event.hpp>
-#include <antwika/simulation/ITickEventSource.hpp>
+#include <antwika/event/ITickEventSource.hpp>
 #include <antwika/time/Tick.hpp>
 
 #include "antwika/sudoku/Board.hpp"
@@ -13,7 +13,7 @@ namespace antwika::sudoku
 {
 
     using antwika::event::Event;
-    using antwika::simulation::ITickEventSource;
+    using antwika::event::ITickEventSource;
 
     /**
      * @brief Encode a board as this application's sudoku.new_puzzle

@@ -1,4 +1,5 @@
 #include "antwika/input/CoalescingPointerSource.hpp"
+#include <antwika/event/ITickEventSource.hpp>
 
 #include <cstddef>
 
@@ -6,6 +7,8 @@
 
 namespace antwika::input
 {
+
+    using antwika::event::ITickEventSource;
 
     CoalescingPointerSource::CoalescingPointerSource(ITickEventSource &inner)
         : inner(inner)

@@ -1,4 +1,5 @@
 #include "antwika/sudoku/PuzzleSource.hpp"
+#include <antwika/event/ITickEventSource.hpp>
 
 #include <utility>
 
@@ -8,6 +9,8 @@
 
 namespace antwika::sudoku
 {
+
+    using antwika::event::ITickEventSource;
 
     Event newPuzzleEvent(const Board &board)
     {

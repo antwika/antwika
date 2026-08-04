@@ -3,7 +3,7 @@
 #include <vector>
 
 #include <antwika/event/Event.hpp>
-#include <antwika/simulation/ITickEventSource.hpp>
+#include <antwika/event/ITickEventSource.hpp>
 #include <antwika/time/Tick.hpp>
 
 #include "antwika/input/IInputBackend.hpp"
@@ -13,7 +13,7 @@ namespace antwika::input
 {
 
     using antwika::event::Event;
-    using antwika::simulation::ITickEventSource;
+    using antwika::event::ITickEventSource;
 
     /**
      * @brief Adds whatever a keyboard and a pointer did to another

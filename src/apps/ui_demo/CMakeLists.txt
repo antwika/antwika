@@ -1,22 +1,16 @@
-add_executable(antwika_ui_demo
-    src/DemoOverlay.cpp
-    src/DemoScene.cpp
-    src/DemoSink.cpp
-    src/DemoState.cpp
-    src/KeyMapping.cpp
-    src/Messages.cpp
-    src/RenderSink.cpp
-    src/UiDemo.cpp
-    src/main.cpp
-)
-
-target_include_directories(antwika_ui_demo
-    PRIVATE
-        ${CMAKE_CURRENT_SOURCE_DIR}/include
-)
-
-target_link_libraries(antwika_ui_demo
-    PRIVATE
+antwika_add_app(
+    NAME ui_demo
+    SOURCES
+        src/DemoOverlay.cpp
+        src/DemoScene.cpp
+        src/DemoSink.cpp
+        src/DemoState.cpp
+        src/KeyMapping.cpp
+        src/Messages.cpp
+        src/RenderSink.cpp
+        src/UiDemo.cpp
+        src/main.cpp
+    LIBS
         antwika::app
         antwika::engine
         antwika::event
@@ -30,16 +24,4 @@ target_link_libraries(antwika_ui_demo
         antwika::simulation
         antwika::time
         antwika::ui
-)
-
-if(BUILD_TESTING AND NOT CMAKE_CROSSCOMPILING)
-    add_subdirectory(tests)
-endif()
-
-antwika_bundle_app(
-    TARGET antwika_ui_demo
-)
-
-install(TARGETS antwika_ui_demo
-    RUNTIME DESTINATION bin
 )

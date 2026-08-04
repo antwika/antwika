@@ -191,7 +191,7 @@ namespace
     // A replay run reads the file and maps nothing, as main.cpp does.
     [[nodiscard]] Run drive(
         Size window,
-        antwika::simulation::ITickEventSource &inner,
+        antwika::event::ITickEventSource &inner,
         FakeInputBackend &device,
         bool live)
     {

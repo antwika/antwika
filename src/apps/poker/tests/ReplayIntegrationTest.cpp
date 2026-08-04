@@ -32,7 +32,7 @@
 #include <antwika/holdem/Blinds.hpp>
 #include <antwika/log/Level.hpp>
 #include <antwika/log/mocks/MockLogger.hpp>
-#include <antwika/simulation/ITickEventSource.hpp>
+#include <antwika/event/ITickEventSource.hpp>
 #include <antwika/replay/ReplayReader.hpp>
 #include <antwika/replay/ReplaySource.hpp>
 #include <antwika/replay/ReplayWriter.hpp>
@@ -63,7 +63,7 @@ using antwika::gfx::WindowEvent;
 using antwika::gfx::WindowId;
 using antwika::holdem::Blinds;
 using antwika::log::Level;
-using antwika::simulation::ITickEventSource;
+using antwika::event::ITickEventSource;
 using antwika::replay::ReplayReader;
 using antwika::replay::ReplaySource;
 using antwika::replay::ReplayWriter;

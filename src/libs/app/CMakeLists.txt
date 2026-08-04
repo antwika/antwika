@@ -5,6 +5,7 @@
 antwika_add_library(
     NAME app
     SOURCES
+        src/WindowInputSource.cpp
         src/AssetPath.cpp
         src/ConsoleLogging.cpp
         src/FramePacedSource.cpp

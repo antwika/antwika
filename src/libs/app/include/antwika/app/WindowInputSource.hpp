@@ -3,16 +3,17 @@
 #include <vector>
 
 #include <antwika/event/Event.hpp>
+#include <antwika/event/ITickEventSource.hpp>
 #include <antwika/gfx/IGfxBackend.hpp>
 #include <antwika/gfx/WindowId.hpp>
 #include <antwika/time/Tick.hpp>
 
-#include "ITickEventSource.hpp"
 
-namespace antwika::simulation
+namespace antwika::app
 {
 
     using antwika::event::Event;
+    using antwika::event::ITickEventSource;
     using antwika::gfx::IGfxBackend;
     using antwika::gfx::WindowId;
 
@@ -92,4 +93,4 @@ namespace antwika::simulation
         WindowId window;
     };
 
-} // namespace antwika::simulation
+} // namespace antwika::app

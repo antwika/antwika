@@ -8,7 +8,7 @@
 #include <antwika/event/IEventSink.hpp>
 #include <antwika/event/ITickEventSink.hpp>
 #include <antwika/log/ILogger.hpp>
-#include <antwika/simulation/ITickEventSource.hpp>
+#include <antwika/event/ITickEventSource.hpp>
 #include <antwika/time/IClock.hpp>
 #include <antwika/time/Tick.hpp>
 
@@ -24,7 +24,7 @@ namespace antwika::poker
     using antwika::event::IEventSink;
     using antwika::event::ITickEventSink;
     using antwika::log::ILogger;
-    using antwika::simulation::ITickEventSource;
+    using antwika::event::ITickEventSource;
     using antwika::time::IClock;
 
     /**

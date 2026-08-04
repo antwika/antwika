@@ -1,4 +1,5 @@
 #include "antwika/input/IdleMotionSource.hpp"
+#include <antwika/event/ITickEventSource.hpp>
 
 #include <utility>
 #include <variant>
@@ -7,6 +8,8 @@
 
 namespace antwika::input
 {
+
+    using antwika::event::ITickEventSource;
 
     IdleMotionSource::IdleMotionSource(
         ITickEventSource &inner, const IInputEventCodec &codec)

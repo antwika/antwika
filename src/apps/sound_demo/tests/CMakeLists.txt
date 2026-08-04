@@ -1,21 +1,10 @@
-find_package(GTest REQUIRED)
-
-add_executable(antwika_sound_demo_tests
-    ${CMAKE_CURRENT_SOURCE_DIR}/../src/DemoLoop.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/../src/DemoOptions.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/../src/DemoTrack.cpp
-    DemoLoopTest.cpp
-    DemoOptionsTest.cpp
-    DemoTrackTest.cpp
-)
-
-target_include_directories(antwika_sound_demo_tests
-    PRIVATE
-        ${CMAKE_CURRENT_SOURCE_DIR}/../include
-)
-
-target_link_libraries(antwika_sound_demo_tests
-    PRIVATE
+antwika_add_app_tests(
+    APP sound_demo
+    TESTS
+        DemoLoopTest.cpp
+        DemoOptionsTest.cpp
+        DemoTrackTest.cpp
+    LIBS
         antwika::cli
         antwika::log::tests::mocks
         antwika::sound
@@ -23,5 +12,3 @@ target_link_libraries(antwika_sound_demo_tests
         antwika::time::tests::fakes
         gtest::gtest
 )
-
-antwika_bundle_test(TARGET antwika_sound_demo_tests)

@@ -4,16 +4,17 @@
 
 #include <antwika/engine/IEngine.hpp>
 #include <antwika/engine/StopSignal.hpp>
+#include <antwika/event/ITickEventSource.hpp>
 #include <antwika/event/TickedEventDispatcher.hpp>
 #include <antwika/time/Tick.hpp>
 
-#include "ITickEventSource.hpp"
 
 namespace antwika::simulation
 {
 
     using antwika::engine::IEngine;
     using antwika::engine::StopSignal;
+    using antwika::event::ITickEventSource;
     using antwika::event::TickedEventDispatcher;
 
     /**

@@ -29,7 +29,7 @@
 #include <antwika/log/mocks/MockLogger.hpp>
 #include <antwika/replay/ReplayCli.hpp>
 #include <antwika/replay/ReplaySource.hpp>
-#include <antwika/simulation/WindowInputSource.hpp>
+#include <antwika/app/WindowInputSource.hpp>
 
 #include "TestTranslator.hpp"
 #include "antwika/game/AppMode.hpp"
@@ -66,7 +66,7 @@ using antwika::game::PathIndex;
 using antwika::game::Toolbar;
 using antwika::game::UiOverlay;
 using antwika::gfx::CloseRequested;
-using antwika::simulation::WindowInputSource;
+using antwika::app::WindowInputSource;
 using antwika::gfx::NullBackend;
 using antwika::gfx::WindowEvent;
 using antwika::gfx::WindowId;
@@ -94,7 +94,7 @@ namespace
         std::vector<TickEvent> recorded;
     };
 
-    [[nodiscard]] RunResult run(antwika::simulation::ITickEventSource &source)
+    [[nodiscard]] RunResult run(antwika::event::ITickEventSource &source)
     {
         NiceMock<MockLogger> logger;
         NiceMock<MockEventSink> eventSink;
@@ -129,7 +129,7 @@ namespace
     }
 
     [[nodiscard]] RunResult runWithToolbar(
-        antwika::simulation::ITickEventSource &source,
+        antwika::event::ITickEventSource &source,
         antwika::time::Tick ticks = kMaxTicks)
     {
         NiceMock<MockLogger> logger;

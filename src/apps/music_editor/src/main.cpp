@@ -1,4 +1,5 @@
 #include <chrono>
+#include <functional>
 #include <iostream>
 #include <memory>
 #include <string>
@@ -20,7 +21,7 @@
 #include <antwika/replay/ReplaySource.hpp>
 #include <antwika/sequencer/FrameClock.hpp>
 #include <antwika/sequencer/Rational.hpp>
-#include <antwika/simulation/WindowInputSource.hpp>
+#include <antwika/app/WindowInputSource.hpp>
 #include <antwika/sound/DeviceDesc.hpp>
 #include <antwika/sound/SelectedSoundBackend.hpp>
 #include <antwika/sound/WaveFormat.hpp>
@@ -50,7 +51,7 @@ using antwika::music_editor::RenderSink;
 using antwika::replay::ReplaySource;
 using antwika::sequencer::FrameClock;
 using antwika::sequencer::Rational;
-using antwika::simulation::WindowInputSource;
+using antwika::app::WindowInputSource;
 using antwika::time::SystemSleeper;
 
 namespace
@@ -181,7 +182,10 @@ namespace
                     .lead = 4},
             .canvas = kWindowSize,
             // A replay must not write this machine's clipboard either.
-            .clipboard = live ? clipboard.get() : nullptr,
+            .clipboard = live
+                ? std::optional<std::reference_wrapper<
+                      antwika::input::IClipboard>>(*clipboard)
+                : std::nullopt,
             .scoresDirectory = std::string(kScoreDirectory),
             // Nor this machine's scores; the state changes still do.
             .writesScores = live,

@@ -1,42 +1,22 @@
-find_package(GTest REQUIRED)
-
-add_executable(antwika_poker_tests
-    ${CMAKE_CURRENT_SOURCE_DIR}/../src/AgentStyle.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/../src/BankrollLedger.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/../src/CashGame.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/../src/ConfigFile.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/../src/PokerRoom.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/../src/PokerRoomSink.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/../src/PolicyAgent.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/../src/TablePrinter.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/../src/TableRenderSink.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/../src/TableScene.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/../src/TableSnapshot.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/../src/WatchOptions.cpp
-    AgentStyleTest.cpp
-    BankrollLedgerTest.cpp
-    BootstrapTest.cpp
-    CashGameTest.cpp
-    ConfigFileTest.cpp
-    PokerAtlasTest.cpp
-    PokerRoomSinkTest.cpp
-    PolicyAgentTest.cpp
-    ReplayIntegrationTest.cpp
-    RoomSummaryTest.cpp
-    TablePrinterTest.cpp
-    TableRenderSinkTest.cpp
-    TableSceneTest.cpp
-    TableSnapshotTest.cpp
-    WatchOptionsTest.cpp
-)
-
-target_include_directories(antwika_poker_tests
-    PRIVATE
-        ${CMAKE_CURRENT_SOURCE_DIR}/../include
-)
-
-target_link_libraries(antwika_poker_tests
-    PRIVATE
+antwika_add_app_tests(
+    APP poker
+    TESTS
+        AgentStyleTest.cpp
+        BankrollLedgerTest.cpp
+        BootstrapTest.cpp
+        CashGameTest.cpp
+        ConfigFileTest.cpp
+        PokerAtlasTest.cpp
+        PokerRoomSinkTest.cpp
+        PolicyAgentTest.cpp
+        ReplayIntegrationTest.cpp
+        RoomSummaryTest.cpp
+        TablePrinterTest.cpp
+        TableRenderSinkTest.cpp
+        TableSceneTest.cpp
+        TableSnapshotTest.cpp
+        WatchOptionsTest.cpp
+    LIBS
         antwika::app
         antwika::cli
         antwika::config
@@ -57,5 +37,3 @@ target_link_libraries(antwika_poker_tests
         antwika::ui
         gtest::gtest
 )
-
-antwika_bundle_test(TARGET antwika_poker_tests)

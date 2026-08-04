@@ -1,6 +1,8 @@
 #pragma once
 
 #include <cstdint>
+#include <functional>
+#include <optional>
 #include <string>
 
 #include <antwika/event/ITickEventSink.hpp>
@@ -99,7 +101,8 @@ namespace antwika::music_editor
             const EditorScene &scene,
             Size canvas,
             WaveRenderDesc waveRender,
-            input::IClipboard *clipboard,
+            std::optional<std::reference_wrapper<input::IClipboard>>
+                clipboard,
             ITickEventSink &stop,
             std::string scoresDirectory,
             bool writesScores);
@@ -170,7 +173,8 @@ namespace antwika::music_editor
         const IInputEventCodec &codec;
         const EditorScene &scene;
         Size canvas;
-        input::IClipboard *clipboard;
+        std::optional<std::reference_wrapper<input::IClipboard>>
+            clipboard;
         ITickEventSink &stop;
         std::string scoresDirectory;
         bool writesScores;

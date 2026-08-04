@@ -4,12 +4,15 @@
 #include <vector>
 
 #include <antwika/animation/Progress.hpp>
+#include <antwika/event/ITickEventSource.hpp>
 #include <antwika/time/Tick.hpp>
 
 #include "antwika/app/FramePacingError.hpp"
 
 namespace antwika::app
 {
+
+    using antwika::event::ITickEventSource;
 
     FramePacedSource::FramePacedSource(
         ITickEventSource &inner,

@@ -7,7 +7,7 @@
 
 #include <antwika/event/Event.hpp>
 #include <antwika/gfx/Bitmap.hpp>
-#include <antwika/simulation/ITickEventSource.hpp>
+#include <antwika/event/ITickEventSource.hpp>
 #include <antwika/time/Tick.hpp>
 
 #include "antwika/atlas_editor/Canvas.hpp"
@@ -16,7 +16,7 @@ namespace antwika::atlas_editor
 {
 
     using antwika::event::Event;
-    using antwika::simulation::ITickEventSource;
+    using antwika::event::ITickEventSource;
 
     namespace events
     {

@@ -214,7 +214,7 @@ namespace
     // Live and replayed differ only in that argument.
     // That is the whole claim under test.
     [[nodiscard]] RunResult run(
-        antwika::simulation::ITickEventSource &source,
+        antwika::event::ITickEventSource &source,
         antwika::time::Tick maxTicks)
     {
         ::testing::NiceMock<MockLogger> logger;

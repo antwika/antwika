@@ -8,7 +8,7 @@
 #include <antwika/event/mocks/MockEventSink.hpp>
 #include <antwika/event/TickEvent.hpp>
 #include <antwika/log/mocks/MockLogger.hpp>
-#include <antwika/simulation/ITickEventSource.hpp>
+#include <antwika/event/ITickEventSource.hpp>
 #include <antwika/replay/ReplayReader.hpp>
 #include <antwika/replay/ReplaySource.hpp>
 #include <antwika/replay/ReplayWriter.hpp>
@@ -21,7 +21,7 @@ using antwika::event::mocks::MockEventSink;
 using antwika::event::TickEvent;
 using antwika::life::Board;
 using antwika::log::mocks::MockLogger;
-using antwika::simulation::ITickEventSource;
+using antwika::event::ITickEventSource;
 using antwika::replay::ReplayReader;
 using antwika::replay::ReplaySource;
 using antwika::replay::ReplayWriter;

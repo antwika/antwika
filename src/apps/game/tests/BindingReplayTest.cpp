@@ -164,7 +164,7 @@ namespace
     [[nodiscard]] Played drive(
         const std::string &optionsPath,
         bool replaying,
-        antwika::simulation::ITickEventSource &inner,
+        antwika::event::ITickEventSource &inner,
         FakeInputBackend &device,
         AppMode start)
     {

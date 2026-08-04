@@ -1,31 +1,25 @@
-add_executable(antwika_sudoku
-    src/Board.cpp
-    src/BoardLayout.cpp
-    src/BoardOverlay.cpp
-    src/BoardSink.cpp
-    src/ConfigFile.cpp
-    src/KeyMapping.cpp
-    src/Messages.cpp
-    src/PlaySink.cpp
-    src/Puzzle.cpp
-    src/PuzzleFile.cpp
-    src/PuzzleSource.cpp
-    src/PuzzleState.cpp
-    src/RenderSink.cpp
-    src/Solve.cpp
-    src/Sudoku.cpp
-    src/SudokuOptions.cpp
-    src/SudokuScene.cpp
-    src/main.cpp
-)
-
-target_include_directories(antwika_sudoku
-    PRIVATE
-        ${CMAKE_CURRENT_SOURCE_DIR}/include
-)
-
-target_link_libraries(antwika_sudoku
-    PRIVATE
+antwika_add_app(
+    NAME sudoku
+    SOURCES
+        src/Board.cpp
+        src/BoardLayout.cpp
+        src/BoardOverlay.cpp
+        src/BoardSink.cpp
+        src/ConfigFile.cpp
+        src/KeyMapping.cpp
+        src/Messages.cpp
+        src/PlaySink.cpp
+        src/Puzzle.cpp
+        src/PuzzleFile.cpp
+        src/PuzzleSource.cpp
+        src/PuzzleState.cpp
+        src/RenderSink.cpp
+        src/Solve.cpp
+        src/Sudoku.cpp
+        src/SudokuOptions.cpp
+        src/SudokuScene.cpp
+        src/main.cpp
+    LIBS
         antwika::app
         antwika::cli
         antwika::config
@@ -42,19 +36,7 @@ target_link_libraries(antwika_sudoku
         antwika::time
         antwika::ui
         antwika::wfc
-)
-
-if(BUILD_TESTING AND NOT CMAKE_CROSSCOMPILING)
-    add_subdirectory(tests)
-endif()
-
-antwika_bundle_app(
-    TARGET antwika_sudoku
     ASSETS
         assets/config.json
         replays/demo.jsonl
-)
-
-install(TARGETS antwika_sudoku
-    RUNTIME DESTINATION bin
 )

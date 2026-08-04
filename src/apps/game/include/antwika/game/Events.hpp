@@ -1,4 +1,5 @@
 #pragma once
+#include <antwika/event/ITickEventSource.hpp>
 
 /**
  * @file
@@ -6,6 +7,8 @@
  */
 namespace antwika::game::events
 {
+
+    using antwika::event::ITickEventSource;
 
     /**
      * @brief An application-defined event, unknown to the engine core.

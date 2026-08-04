@@ -9,7 +9,7 @@
 #include <antwika/event/TickEvent.hpp>
 #include <antwika/input/InputEventCodec.hpp>
 #include <antwika/log/mocks/MockLogger.hpp>
-#include <antwika/simulation/ITickEventSource.hpp>
+#include <antwika/event/ITickEventSource.hpp>
 #include <antwika/replay/ReplayReader.hpp>
 #include <antwika/replay/ReplaySource.hpp>
 #include <antwika/replay/ReplayWriter.hpp>
@@ -34,7 +34,7 @@ using antwika::game::GridExtent;
 using antwika::game::PathIndex;
 using antwika::input::InputEventCodec;
 using antwika::log::mocks::MockLogger;
-using antwika::simulation::ITickEventSource;
+using antwika::event::ITickEventSource;
 using antwika::replay::ReplayReader;
 using antwika::replay::ReplaySource;
 using antwika::replay::ReplayWriter;

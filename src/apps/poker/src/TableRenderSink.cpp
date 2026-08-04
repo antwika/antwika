@@ -1,5 +1,7 @@
 #include "antwika/poker/TableRenderSink.hpp"
 
+#include <functional>
+#include <optional>
 #include <utility>
 
 #include <antwika/engine/Events.hpp>
@@ -18,7 +20,7 @@ namespace antwika::poker
         ISleeper &sleeper,
         std::chrono::milliseconds framePeriod,
         std::string tableName,
-        const ITexture *atlas)
+        OptionalAtlas atlas)
         : window(window),
           canvas(canvas),
           scene(scene),
@@ -27,7 +29,7 @@ namespace antwika::poker
           sleeper(sleeper),
           framePeriod(framePeriod),
           tableName(std::move(tableName)),
-          atlas(atlas)
+          atlas(std::move(atlas))
     {
     }
 

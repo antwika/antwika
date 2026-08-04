@@ -1,27 +1,21 @@
-add_executable(antwika_life
-    src/Board.cpp
-    src/BoardLayout.cpp
-    src/BoardScene.cpp
-    src/BoardSink.cpp
-    src/ConfigFile.cpp
-    src/DragPausedSystem.cpp
-    src/DragState.cpp
-    src/Grid.cpp
-    src/Life.cpp
-    src/LifeSystem.cpp
-    src/PointerToggleSink.cpp
-    src/PrintSystem.cpp
-    src/RenderSystem.cpp
-    src/main.cpp
-)
-
-target_include_directories(antwika_life
-    PRIVATE
-        ${CMAKE_CURRENT_SOURCE_DIR}/include
-)
-
-target_link_libraries(antwika_life
-    PRIVATE
+antwika_add_app(
+    NAME life
+    SOURCES
+        src/Board.cpp
+        src/BoardLayout.cpp
+        src/BoardScene.cpp
+        src/BoardSink.cpp
+        src/ConfigFile.cpp
+        src/DragPausedSystem.cpp
+        src/DragState.cpp
+        src/Grid.cpp
+        src/Life.cpp
+        src/LifeSystem.cpp
+        src/PointerToggleSink.cpp
+        src/PrintSystem.cpp
+        src/RenderSystem.cpp
+        src/main.cpp
+    LIBS
         antwika::app
         antwika::config
         antwika::ecs
@@ -35,19 +29,7 @@ target_link_libraries(antwika_life
         antwika::replay
         antwika::simulation
         antwika::time
-)
-
-if(BUILD_TESTING AND NOT CMAKE_CROSSCOMPILING)
-    add_subdirectory(tests)
-endif()
-
-antwika_bundle_app(
-    TARGET antwika_life
     ASSETS
         assets/config.json
         replays/demo.jsonl
-)
-
-install(TARGETS antwika_life
-    RUNTIME DESTINATION bin
 )

@@ -5,7 +5,7 @@
 #include <vector>
 
 #include <antwika/event/Event.hpp>
-#include <antwika/simulation/ITickEventSource.hpp>
+#include <antwika/event/ITickEventSource.hpp>
 #include <antwika/time/IClock.hpp>
 #include <antwika/time/ISleeper.hpp>
 #include <antwika/time/Tick.hpp>
@@ -16,7 +16,7 @@ namespace antwika::app
 {
 
     using antwika::event::Event;
-    using antwika::simulation::ITickEventSource;
+    using antwika::event::ITickEventSource;
     using antwika::time::ISleeper;
 
     /**

@@ -2,17 +2,21 @@
 
 #include <vector>
 
-#include <antwika/event/Event.hpp>
+#include "antwika/event/Event.hpp"
 #include <antwika/time/Tick.hpp>
 
-namespace antwika::simulation
+namespace antwika::event
 {
 
-    using antwika::event::Event;
 
     /**
      * @brief Supplies the events that occurred on a given tick, whether from
      * a live source or a loaded replay.
+     *
+     * It lives here rather than beside the loop that reads it, because
+     * seven of its implementers are antwika::input decorators and only
+     * two are the loop's own -- a library implementing an interface
+     * should not have to link the one place that happens to call it.
      *
      * **Ticks are asked for once each, in increasing order.** EngineLoop
      * counts up from zero and asks once per tick, and an implementation
@@ -36,4 +40,4 @@ namespace antwika::simulation
             antwika::time::Tick tick) = 0;
     };
 
-} // namespace antwika::simulation
+} // namespace antwika::event

@@ -3,12 +3,14 @@
 #include <variant>
 
 #include <antwika/engine/Events.hpp>
+#include <antwika/event/ITickEventSource.hpp>
 #include <antwika/gfx/WindowEvent.hpp>
 
 namespace antwika::app
 {
 
     using antwika::engine::events::kStop;
+    using antwika::event::ITickEventSource;
     using antwika::gfx::CloseRequested;
 
     WindowCloseSource::WindowCloseSource(

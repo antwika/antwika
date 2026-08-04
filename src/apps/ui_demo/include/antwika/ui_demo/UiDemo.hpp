@@ -11,7 +11,7 @@
 #include <antwika/gfx/Size.hpp>
 #include <antwika/input/IInputEventCodec.hpp>
 #include <antwika/log/ILogger.hpp>
-#include <antwika/simulation/ITickEventSource.hpp>
+#include <antwika/event/ITickEventSource.hpp>
 #include <antwika/time/Tick.hpp>
 
 #include "antwika/ui_demo/DemoOverlay.hpp"
@@ -27,7 +27,7 @@ namespace antwika::ui_demo
     using antwika::gfx::Size;
     using antwika::input::IInputEventCodec;
     using antwika::log::ILogger;
-    using antwika::simulation::ITickEventSource;
+    using antwika::event::ITickEventSource;
 
     /**
      * @brief What one run leaves behind, for a caller or a test.

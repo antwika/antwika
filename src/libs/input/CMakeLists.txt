@@ -1,5 +1,7 @@
-# antwika::simulation comes in for the tick bridge alone: ITickEventSource
-# is the seam live input travels through.
+# antwika::event carries ITickEventSource, the seam live input travels
+# through and which seven of the decorators here implement.
+# antwika::simulation is deliberately absent: this library implements
+# that interface rather than running the loop that reads it.
 # antwika::replay comes in for PayloadJson, the shared
 # parse-and-validate step every structured payload already uses.
 # antwika::engine comes in for StopOnKeySource, which names engine.stop.
@@ -30,6 +32,5 @@ antwika_add_library(
         antwika::event
         antwika::log
         antwika::replay
-        antwika::simulation
         antwika::time
 )

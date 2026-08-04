@@ -14,7 +14,7 @@
 #include <antwika/input/SelectedInputBackend.hpp>
 #include <antwika/log/Level.hpp>
 #include <antwika/replay/ReplaySource.hpp>
-#include <antwika/simulation/WindowInputSource.hpp>
+#include <antwika/app/WindowInputSource.hpp>
 #include <antwika/time/SystemSleeper.hpp>
 #include <antwika/time/Tick.hpp>
 
@@ -34,7 +34,7 @@ using antwika::input::InputEventCodec;
 using antwika::input::InputPipeline;
 using antwika::log::Level;
 using antwika::replay::ReplaySource;
-using antwika::simulation::WindowInputSource;
+using antwika::app::WindowInputSource;
 using antwika::time::SystemSleeper;
 using antwika::ui_demo::DemoOverlay;
 using antwika::ui_demo::DemoScene;

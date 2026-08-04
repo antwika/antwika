@@ -213,7 +213,12 @@ It became an ordinary tick-loop application, and its argument parsing moved behi
 - `antwika_bundle_app(TARGET <target> [ASSETS <path>...])` from the same file is an application's counterpart, and every application under `src/apps/` calls it.
   It gives the executable a directory of its own under `bin/`, copies the named assets in beside it, and on MinGW copies the runtime DLLs in too.
   An asset is found at run time with `antwika::app::assetPath()`, never by a path baked in at configure time: that path is the building machine's, and a cross build's building machine is never the one that runs the result.
-- `antwika_bundle_test(TARGET <target>)` from the same file ends every `tests/CMakeLists.txt`, in place of `include(GoogleTest)` and `gtest_discover_tests()`.
+- `antwika_add_app(NAME <app> SOURCES ... LIBS ... [ASSETS ...])` is the application counterpart, and `antwika_add_app_tests(APP <app> TESTS ... LIBS ... [EXTRA_SOURCES ...] [EXTRA_INCLUDES ...])` its test target.
+  The test helper reads the app's own source list off the target rather than taking a second copy of it: every app's `tests/CMakeLists.txt` used to restate the whole list with a `../src/` prefix, and nothing checked that the two agreed.
+  An app that genuinely differs -- `music_editor` adds sources through `target_sources`, `tower_defence` picks a seed count per configuration -- still writes its own rules out, on exactly the terms `antwika_add_library` sets.
+- `antwika_add_test_support(MODULE <module> KIND fakes|mocks|conformance [DEPENDS ...])` writes an INTERFACE test-support target, its alias, its include directory and its install rules.
+  Eighteen of those files were identical, and one had already drifted to linking a raw target where its siblings linked the alias.
+- `antwika_bundle_test(TARGET <target>)` from the same file ends every `tests/CMakeLists.txt` a helper does not already end, in place of `include(GoogleTest)` and `gtest_discover_tests()`.
   It puts the suite in the directory of the module that owns it -- the target's own name with the trailing `_tests` taken off -- and registers its cases with CTest, so an application's suite sits beside the executable and a library's gets a directory of the library's name.
   A test target's name therefore has to end in `_tests`, which is what says which module owns it.
 

@@ -1,32 +1,26 @@
-add_executable(antwika_music_editor
-    src/ConfigFile.cpp
-    src/EditorKeys.cpp
-    src/EditorScene.cpp
-    src/EditorSink.cpp
-    src/EditorState.cpp
-    src/FormUse.cpp
-    src/MusicEditor.cpp
-    src/NoteWords.cpp
-    src/PasteSource.cpp
-    src/PasteText.cpp
-    src/Playback.cpp
-    src/RenderSink.cpp
-    src/Score.cpp
-    src/ScoreFiles.cpp
-    src/TrackPreset.cpp
-    src/VoiceChain.cpp
-    src/WaveImage.cpp
-    src/WaveImageCache.cpp
-    src/main.cpp
-)
-
-target_include_directories(antwika_music_editor
-    PRIVATE
-        ${CMAKE_CURRENT_SOURCE_DIR}/include
-)
-
-target_link_libraries(antwika_music_editor
-    PRIVATE
+antwika_add_app(
+    NAME music_editor
+    SOURCES
+        src/ConfigFile.cpp
+        src/EditorKeys.cpp
+        src/EditorScene.cpp
+        src/EditorSink.cpp
+        src/EditorState.cpp
+        src/FormUse.cpp
+        src/MusicEditor.cpp
+        src/NoteWords.cpp
+        src/PasteSource.cpp
+        src/PasteText.cpp
+        src/Playback.cpp
+        src/RenderSink.cpp
+        src/Score.cpp
+        src/ScoreFiles.cpp
+        src/TrackPreset.cpp
+        src/VoiceChain.cpp
+        src/WaveImage.cpp
+        src/WaveImageCache.cpp
+        src/main.cpp
+    LIBS
         antwika::app
         antwika::config
         antwika::engine
@@ -46,18 +40,6 @@ target_link_libraries(antwika_music_editor
         antwika::synth
         antwika::time
         antwika::ui
-)
-
-if(BUILD_TESTING AND NOT CMAKE_CROSSCOMPILING)
-    add_subdirectory(tests)
-endif()
-
-antwika_bundle_app(
-    TARGET antwika_music_editor
     ASSETS
         assets/config.json
-)
-
-install(TARGETS antwika_music_editor
-    RUNTIME DESTINATION bin
 )

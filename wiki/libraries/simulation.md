@@ -28,6 +28,14 @@ That named the smaller half of it — a live run is not a replay at all — and 
 [`ecs`](ecs.md), [`engine`](engine.md), [`event`](event.md), [`gfx`](gfx.md), [`time`](time.md).
 `ecs` is there for `TickPacer` and `gfx` for `WindowInputSource` — both narrow, deliberate edges.
 
+## Two things that used to live here
+
+**`ITickEventSource` is [`event`](event.md)'s now.**
+Seven of its implementers are [`input`](input.md) decorators and two are this library's, and a library implementing an interface should not have to link the one place that happens to call it -- so `input` no longer depends on `simulation` at all.
+
+**`WindowInputSource` is [`app`](app.md)'s now**, and with it went this library's dependency on [`gfx`](gfx.md).
+A tick loop has no business knowing what a window is; turning a close request into `engine.stop` is composition, which is what `app` is for.
+
 ## Non-obvious decisions
 
 **The seam is named for what it does, not for one of its implementers.**

@@ -1,4 +1,3 @@
-#include "antwika/simulation/WindowInputSource.hpp"
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
@@ -14,6 +13,8 @@
 #include <antwika/gfx/mocks/MockGfxBackend.hpp>
 #include <antwika/replay/ReplaySource.hpp>
 
+#include "antwika/app/WindowInputSource.hpp"
+
 using antwika::event::Event;
 using antwika::event::TickEvent;
 using antwika::gfx::CloseRequested;
@@ -22,7 +23,7 @@ using antwika::gfx::WindowEvent;
 using antwika::gfx::WindowId;
 using antwika::gfx::mocks::MockGfxBackend;
 using antwika::replay::ReplaySource;
-using antwika::simulation::WindowInputSource;
+using antwika::app::WindowInputSource;
 using ::testing::NiceMock;
 using ::testing::Return;
 

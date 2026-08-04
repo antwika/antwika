@@ -1,4 +1,5 @@
 #pragma once
+#include <antwika/event/ITickEventSource.hpp>
 
 #include <optional>
 
@@ -6,6 +7,8 @@
 
 namespace antwika::input
 {
+
+    using antwika::event::ITickEventSource;
 
     /**
      * @brief The one channel in the system a replay does not reproduce:

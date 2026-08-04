@@ -26,6 +26,11 @@ There is exactly one mechanism, with no special-casing between events the engine
 
 [`time`](time.md) only.
 
+## ITickEventSource
+
+**The seam a tick's events arrive through is declared here**, rather than beside the loop that reads it.
+Seven of its implementers are [`input`](input.md) decorators and only two belong to [`simulation`](simulation.md); a library implementing an interface should not have to link the one place that calls it, and `event` is what both already depend on.
+
 ## Non-obvious decisions
 
 **An event's payload is an opaque string.**

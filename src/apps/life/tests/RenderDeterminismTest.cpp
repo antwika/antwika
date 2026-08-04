@@ -24,7 +24,7 @@
 #include <antwika/log/mocks/MockLogger.hpp>
 #include <antwika/replay/ReplayCli.hpp>
 #include <antwika/replay/ReplaySource.hpp>
-#include <antwika/simulation/WindowInputSource.hpp>
+#include <antwika/app/WindowInputSource.hpp>
 #include <antwika/testing/ScratchPath.hpp>
 
 #include "antwika/life/Board.hpp"
@@ -54,7 +54,7 @@ using antwika::life::BoardScene;
 using antwika::life::RenderSystem;
 using antwika::log::mocks::MockLogger;
 using antwika::replay::ReplaySource;
-using antwika::simulation::WindowInputSource;
+using antwika::app::WindowInputSource;
 using ::testing::ByMove;
 using ::testing::NiceMock;
 using ::testing::Return;
