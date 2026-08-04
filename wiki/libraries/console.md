@@ -28,7 +28,10 @@ It began as `apps/game`'s own feature and became a library the day every other a
 
 ## Depends on
 
-[`animation`](animation.md), [`config`](config.md), [`engine`](engine.md), [`event`](event.md), [`gfx`](gfx.md), [`input`](input.md), [`replay`](replay.md), [`time`](time.md), [`tween`](tween.md), [`ui`](ui.md).
+[`animation`](animation.md), [`app`](app.md), [`config`](config.md), [`engine`](engine.md), [`event`](event.md), [`gfx`](gfx.md), [`input`](input.md), [`replay`](replay.md), [`time`](time.md), [`tween`](tween.md), [`ui`](ui.md).
+
+The one on [`app`](app.md) is for `PointerReading.hpp` alone, which is defined there and re-exported here: `asPoint()` and `locates()` had a word-for-word copy in each library, which is the second place to say it differently that both copies' comments said they existed to prevent.
+Every application linking `antwika::console` already linked `antwika::app`, so no application gained a library it did not have, and the edge runs this way round rather than the other because [`app`](app.md) is where an application says that two libraries knowing nothing of each other describe one thing.
 
 ## Non-obvious decisions
 
