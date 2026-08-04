@@ -35,10 +35,6 @@ namespace antwika::game
         // Which is why the format is templated on its error type.
         using OptionsFormat = FileFormat<PlayerOptions, OptionsFormatError>;
 
-        // Two spaces, one member a line.
-        // Enough to diff a layout against the next version of itself.
-        constexpr int kIndent = 2;
-
         void describeMembers(nlohmann::json &schema)
         {
             nlohmann::json binding;
