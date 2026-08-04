@@ -6,6 +6,8 @@
 #include <string_view>
 #include <system_error>
 
+#include <unistd.h>
+
 namespace antwika::sudoku::tests
 {
 
@@ -26,7 +28,13 @@ namespace antwika::sudoku::tests
          * @param name File name, unique among this suite's files.
          */
         explicit ScratchFile(std::string_view name)
-            : path(std::filesystem::temp_directory_path() / name)
+            : path(
+                  std::filesystem::temp_directory_path()
+                  // The pid keeps parallel ctest runs apart.
+                  // Each case is its own process under ctest -j.
+                  // Two cases on one fixed name raced here.
+                  // See game/tests/ScratchDirectory.hpp.
+                  / (std::string(name) + "." + std::to_string(::getpid())))
         {
         }
 

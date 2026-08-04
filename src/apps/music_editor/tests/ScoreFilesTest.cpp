@@ -4,6 +4,8 @@
 #include <fstream>
 #include <string>
 
+#include <unistd.h>
+
 #include <gtest/gtest.h>
 
 using antwika::music_editor::listScores;
@@ -19,7 +21,10 @@ namespace
     [[nodiscard]] std::string freshDirectory(const std::string &name)
     {
         const auto path =
-            std::filesystem::temp_directory_path() / "antwika-scores"
+            std::filesystem::temp_directory_path()
+            // The pid keeps parallel ctest processes apart.
+            // See game/tests/ScratchDirectory.hpp.
+            / ("antwika-scores." + std::to_string(::getpid()))
             / name;
 
         std::filesystem::remove_all(path);

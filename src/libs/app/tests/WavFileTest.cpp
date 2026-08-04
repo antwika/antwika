@@ -6,6 +6,8 @@
 #include <string>
 #include <system_error>
 
+#include <unistd.h>
+
 #include <gtest/gtest.h>
 
 #include <antwika/app/WavFile.hpp>
@@ -34,7 +36,13 @@ namespace
     {
     public:
         explicit TempFile(const std::string &name)
-            : path(std::filesystem::temp_directory_path() / name)
+            : path(
+                  std::filesystem::temp_directory_path()
+                  // The pid keeps parallel ctest runs apart.
+                  // Each case is its own process under ctest -j.
+                  // Two cases on one fixed name raced here.
+                  // See game/tests/ScratchDirectory.hpp.
+                  / (std::string(name) + "." + std::to_string(::getpid())))
         {
         }
 

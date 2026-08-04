@@ -9,6 +9,8 @@
 #include <system_error>
 #include <vector>
 
+#include <unistd.h>
+
 #include <antwika/gfx/Bitmap.hpp>
 #include <antwika/gfx/GfxError.hpp>
 #include <antwika/gfx/Size.hpp>
@@ -30,7 +32,13 @@ namespace
     {
     public:
         explicit TempFile(const std::string &name)
-            : where(std::filesystem::temp_directory_path() / name)
+            : where(
+                  std::filesystem::temp_directory_path()
+                  // The pid keeps parallel ctest runs apart.
+                  // Each case is its own process under ctest -j.
+                  // Two cases on one fixed name raced here.
+                  // See game/tests/ScratchDirectory.hpp.
+                  / (std::string(name) + "." + std::to_string(::getpid())))
         {
         }
 
