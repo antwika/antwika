@@ -860,6 +860,7 @@ That is [`docs/hover-is-not-simulation.md`](../../docs/hover-is-not-simulation.m
 ## The debug console
 
 **The grave key slides a console over the top half of the city, and two commands snapshot and restore the running state.**
+The shell, the gating and the command policy are [`console`](../libraries/console.md)'s now -- every application mounts the same library -- and what stays on this page is this application's own half: its rebindable keys, its dump's contents and its store.
 Both keys are ordinary rebindable actions -- `console_toggle` on Grave and `console_execute` on Enter -- so they ride `BindingSource`'s announcement like every other binding, and neither defines an event: the toggle, the typing and the Enter are recorded input, and `ConsoleSink` regenerates the slide, the history and the command's effect from them inside the tick path, exactly as `SaveLoadSink` regenerates a save from a click.
 No `console.*` event name exists, and none may.
 
