@@ -16,6 +16,10 @@ antwika_add_app_tests(
         CameraTest.cpp
         CellTest.cpp
         CityGridTest.cpp
+        ConsoleGatedSinkTest.cpp
+        ConsoleSceneTest.cpp
+        ConsoleSinkTest.cpp
+        ConsoleStateTest.cpp
         CoverageSystemTest.cpp
         CoverageTest.cpp
         DemolitionTest.cpp
@@ -95,6 +99,8 @@ antwika_add_app_tests(
         StoreTest.cpp
         SupplyChainTest.cpp
         SessionStoreTest.cpp
+        StateDumpFileTest.cpp
+        StateDumpTest.cpp
         StandingBuildingsTest.cpp
         SpawnSystemTest.cpp
         TileAtlasTest.cpp

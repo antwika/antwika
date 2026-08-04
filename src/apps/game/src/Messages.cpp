@@ -21,7 +21,7 @@ namespace antwika::game
         using i18n::Locale;
         using i18n::MessageName;
 
-        constexpr std::array<MessageName<MessageId>, 107> kNames{{
+        constexpr std::array<MessageName<MessageId>, 109> kNames{{
             {MessageId::ToolbarZoomIn, "ToolbarZoomIn"},
             {MessageId::ToolbarZoomOut, "ToolbarZoomOut"},
             {MessageId::ToolbarResetView, "ToolbarResetView"},
@@ -117,6 +117,8 @@ namespace antwika::game
             {MessageId::ActionZoomIn, "ActionZoomIn"},
             {MessageId::ActionZoomOut, "ActionZoomOut"},
             {MessageId::ActionResetView, "ActionResetView"},
+            {MessageId::ActionConsoleToggle, "ActionConsoleToggle"},
+            {MessageId::ActionConsoleExecute, "ActionConsoleExecute"},
             {MessageId::ToolbarMoney, "ToolbarMoney"},
             {MessageId::ToolRaze, "ToolRaze"},
             {MessageId::WalkerLabourer, "WalkerLabourer"},
@@ -236,6 +238,8 @@ namespace antwika::game
                 {MessageId::ActionZoomIn, "zoom in"},
                 {MessageId::ActionZoomOut, "zoom out"},
                 {MessageId::ActionResetView, "reset view"},
+                {MessageId::ActionConsoleToggle, "debug console"},
+                {MessageId::ActionConsoleExecute, "run command"},
                 {MessageId::ToolbarMoney, "money {0}"},
                 {MessageId::ToolRaze, "raze"},
                 {MessageId::WalkerLabourer, "labourer"},
@@ -348,6 +352,8 @@ namespace antwika::game
                 {MessageId::ActionZoomIn, "zooma in"},
                 {MessageId::ActionZoomOut, "zooma ut"},
                 {MessageId::ActionResetView, "återställ vyn"},
+                {MessageId::ActionConsoleToggle, "felsökningskonsol"},
+                {MessageId::ActionConsoleExecute, "kör kommando"},
                 {MessageId::ToolbarMoney, "pengar {0}"},
                 {MessageId::ToolRaze, "riv"},
                 {MessageId::WalkerLabourer, "arbetare"},

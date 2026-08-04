@@ -252,6 +252,15 @@ namespace antwika::game
                 describeFps(
                     setup.canvas, setup.fps->get().perSecond()));
         }
+
+        // The console last of all, when any of it is out.
+        // Described in the tick path like the bar, painted here only.
+        // No hover pass: nothing on it changes on approach.
+        if (setup.consoleOverlay.has_value())
+        {
+            antwika::ui::paint(
+                renderer, setup.consoleOverlay->get().commands());
+        }
     }
 
 } // namespace antwika::game

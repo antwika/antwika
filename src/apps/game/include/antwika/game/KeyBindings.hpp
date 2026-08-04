@@ -211,10 +211,17 @@ namespace antwika::game
         // Space pauses because it is the biggest key on the board.
         // And the run is what a player holds and lets go of most.
         // The zoom pair is the one every map in the world uses.
-        // None of the four is reserved, and no two are the same.
+        // Grave opens the console because every console ever has.
+        // Enter executes because a command line is a line.
+        // None of the six is reserved, and no two are the same.
         // KeyBindingsTest asserts that rather than a comment.
         std::array<Key, kActionCount> keys{
-            Key::Space, Key::Equal, Key::Minus, Key::Home};
+            Key::Space,
+            Key::Equal,
+            Key::Minus,
+            Key::Home,
+            Key::Grave,
+            Key::Enter};
     };
 
     /**

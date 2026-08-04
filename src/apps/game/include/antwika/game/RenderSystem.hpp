@@ -168,6 +168,18 @@ namespace antwika::game
         /** @brief Read for the save/load screen's picture. */
         const UiOverlay &saveOverlay;
 
+        /**
+         * @brief Read for the debug console's picture, painted last.
+         *
+         * Over the toolbar and the modal alike, since the console is
+         * the topmost thing the city's screen can show.
+         *
+         * Optional, and absent by default, so a run with no console
+         * pays nothing for one -- the same shape the map view has.
+         */
+        std::optional<std::reference_wrapper<const UiOverlay>>
+            consoleOverlay = std::nullopt;
+
         /** @brief Draws the world and its cities. */
         const WorldMapScene &worldScene;
 

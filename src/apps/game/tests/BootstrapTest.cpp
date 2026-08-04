@@ -377,6 +377,7 @@ TEST(PrintSummaryTest, WritesTheStateTheCountsAndTheCamera)
               .state = antwika::game::RuinState::Debris}},
         .camera = Camera(Point{.x = 512, .y = 48}),
         .ratings = {},
+        .console = {},
         .bindings = {}};
 
     antwika::game::printSummary(out, summary);
@@ -390,6 +391,7 @@ TEST(PrintSummaryTest, WritesTheStateTheCountsAndTheCamera)
         "Ruins: 1\n"
         "  farm at (2, 3) debris\n"
         "Ratings: population=0 employment=0 housing=0 service=0\n"
+        "Console lines: 0\n"
         "Camera: pan (512, 48) zoom 3\n");
 }
 
@@ -406,6 +408,7 @@ TEST(PrintSummaryTest, WritesEveryWalkerWhereItStandsAndWhereItFaces)
         .ruins = {},
         .camera = Camera(Point{.x = 0, .y = 0}),
         .ratings = {},
+        .console = {},
         .bindings = {}};
 
     antwika::game::printSummary(out, summary);
@@ -869,6 +872,7 @@ TEST(PrintSummaryTest, WritesEveryBuildingAndWhatItIs)
         .ruins = {},
         .camera = Camera(Point{.x = 0, .y = 0}),
         .ratings = {},
+        .console = {},
         .bindings = {}};
 
     antwika::game::printSummary(out, summary);

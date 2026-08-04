@@ -260,6 +260,7 @@ namespace
                 .employment = 50,
                 .averageHousingLevel = 100,
                 .serviceReach = 25},
+            .console = {"> dump_state"},
             .bindings = reboundLayout()};
     }
 
@@ -281,6 +282,8 @@ namespace
             base, [](GameSummary &s) { s.camera = Camera(); });
         expectMemberCompared(
             base, [](GameSummary &s) { s.ratings.population = 0; });
+        expectMemberCompared(
+            base, [](GameSummary &s) { s.console.clear(); });
         expectMemberCompared(
             base,
             [](GameSummary &s)

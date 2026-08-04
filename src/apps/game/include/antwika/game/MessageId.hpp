@@ -502,6 +502,16 @@ namespace antwika::game
         ActionResetView,
 
         /**
+         * @brief The action that slides the debug console in and out.
+         */
+        ActionConsoleToggle,
+
+        /**
+         * @brief The action that executes the console's field.
+         */
+        ActionConsoleExecute,
+
+        /**
          * @brief Toolbar: what is left in the bank, `{0}` being it.
          */
         ToolbarMoney,

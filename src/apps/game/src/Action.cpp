@@ -12,13 +12,20 @@ namespace antwika::game
         // So an action added to the enumeration is a compile error.
         // Rather than an arm somebody forgot.
         constexpr std::array<std::string_view, kActionCount> kNames{
-            "pause", "zoom_in", "zoom_out", "reset_view"};
+            "pause",
+            "zoom_in",
+            "zoom_out",
+            "reset_view",
+            "console_toggle",
+            "console_execute"};
 
         constexpr std::array<MessageId, kActionCount> kLabels{
             MessageId::ActionPause,
             MessageId::ActionZoomIn,
             MessageId::ActionZoomOut,
-            MessageId::ActionResetView};
+            MessageId::ActionResetView,
+            MessageId::ActionConsoleToggle,
+            MessageId::ActionConsoleExecute};
     } // namespace
 
     std::string_view actionName(Action action) noexcept

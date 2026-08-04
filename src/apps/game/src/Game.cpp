@@ -15,6 +15,10 @@
 #include "antwika/game/BuildingKind.hpp"
 #include "antwika/game/BuildingSystem.hpp"
 #include "antwika/game/CityRatings.hpp"
+#include "antwika/game/ConsoleGatedSink.hpp"
+#include "antwika/game/ConsoleScene.hpp"
+#include "antwika/game/ConsoleSink.hpp"
+#include "antwika/game/ConsoleState.hpp"
 #include "antwika/game/CoverageSystem.hpp"
 #include "antwika/game/Desirability.hpp"
 #include "antwika/game/DesirabilitySystem.hpp"
@@ -490,6 +494,45 @@ namespace antwika::game
         // So choosing a key cannot also fire what it is bound to.
         ModeGatedSink playingHotkeys(hotkeySink, mode, AppMode::CityMap);
 
+        // The console's own picture, which turns the console on.
+        // Absent, no sink is registered and the state stays closed.
+        // So every gate below forwards everything, untouched.
+        UiOverlay noConsole;
+        const bool hasConsole = wiring.consoleOverlay.has_value();
+        UiOverlay &consoleUi = hasConsole
+                                   ? wiring.consoleOverlay->get()
+                                   : noConsole;
+
+        ConsoleState console;
+        const ConsoleScene consoleScene;
+        // The excluded line carries this expression's unwind block.
+        // It is entered only if the path copy two lines down throws.
+        // The same landing pad Board.cpp's closing brace documents.
+        ConsoleSink consoleSink(
+            ConsoleSinkSetup{ // GCOVR_EXCL_LINE
+                .console = console,
+                .mode = mode,
+                .options = options,
+                .input = input,
+                .overlay = consoleUi,
+                .scene = consoleScene,
+                .session = session,
+                .pause = pause,
+                .view = view,
+                .toolbar = ui,
+                .locale = localeState,
+                .loadEnabled = wiring.consoleLoadEnabled},
+            wiring.stateDumpPath);
+
+        // The console is on top, so what it stands over it takes.
+        // Every sink reading the city's keys or pixels is wrapped.
+        // The world-map key is one of the city's keys.
+        ConsoleGatedSink consoleGatedHotkeys(
+            playingHotkeys, console, input);
+        ConsoleGatedSink consoleGatedUi(playingUi, console, input);
+        ConsoleGatedSink consoleGatedGrid(playingGrid, console, input);
+        ConsoleGatedSink consoleGatedWorld(worldSink, console, input);
+
         // The fold is first.
         // What it holds is the event the sinks after it are given now.
         // It is also the only thing that clears an edge.
@@ -515,10 +558,20 @@ namespace antwika::game
         // Would be reading a layout nobody was playing.
         // Beside the mode, and for its reason exactly.
         // A language staged last tick lands before anything lays out.
+        // ConsoleSink is ahead of everything it gates.
+        // A press has to be the console's before the city may ask.
         std::vector<std::reference_wrapper<ITickEventSink>> timedSinks{
             input, mode, localeState, bindingSink, reducer, menuSink,
-            saveSink,
-            playingHotkeys};
+            saveSink};
+
+        // Registered only when there is somewhere to put the picture.
+        // "No console" then means no console, not an invisible one.
+        if (hasConsole)
+        {
+            timedSinks.push_back(consoleSink);
+        }
+
+        timedSinks.push_back(consoleGatedHotkeys);
 
         // Registered only when there is somewhere to put the picture.
         // Otherwise the bar is described against a zero canvas.
@@ -526,7 +579,7 @@ namespace antwika::game
         // "No toolbar" then means no toolbar, not an unhittable one.
         if (hasToolbar)
         {
-            timedSinks.push_back(playingUi);
+            timedSinks.push_back(consoleGatedUi);
         }
 
         // Registered only when there is a world to map.
@@ -534,10 +587,10 @@ namespace antwika::game
         // The way-back key would then put its only grid away.
         if (wiring.world.has_value())
         {
-            timedSinks.push_back(worldSink);
+            timedSinks.push_back(consoleGatedWorld);
         }
 
-        timedSinks.push_back(playingGrid);
+        timedSinks.push_back(consoleGatedGrid);
         timedSinks.push_back(stopSignal);
 
         if (wiring.replayRecorder.has_value())
@@ -592,6 +645,7 @@ namespace antwika::game
             .ruins = ruinViewsOf(world),
             .camera = camera,
             .ratings = finalRatings,
+            .console = console.history(),
             .bindings = options.bindings()};
         // The excluded line is the local summary's unwind destructor.
         // Nothing between its construction and the return throws.
@@ -648,6 +702,10 @@ namespace antwika::game
             << " employment=" << summary.ratings.employment
             << " housing=" << summary.ratings.averageHousingLevel
             << " service=" << summary.ratings.serviceReach << '\n';
+
+        // The count rather than the lines.
+        // A summary line is a fact, and the history is state above.
+        out << "Console lines: " << summary.console.size() << '\n';
 
         out << "Camera: pan (" << summary.camera.pan().x << ", "
             << summary.camera.pan().y << ") zoom "
