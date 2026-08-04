@@ -2,11 +2,13 @@
 
 #include <cstdint>
 #include <string>
-#include <vector>
 
-#include <antwika/console/ISnapshotStore.hpp>
+#include <nlohmann/json.hpp>
+
+#include <antwika/console/JsonSnapshotStore.hpp>
 
 #include "antwika/tower_defence/Campaign.hpp"
+#include "antwika/tower_defence/StateDump.hpp"
 
 namespace antwika::tower_defence
 {
@@ -25,7 +27,7 @@ namespace antwika::tower_defence
      * every application.
      */
     class TowerDefenceSnapshotStore final
-        : public antwika::console::ISnapshotStore
+        : public antwika::console::JsonSnapshotStore<StateDumpError>
     {
     public:
         /**
@@ -40,29 +42,14 @@ namespace antwika::tower_defence
         TowerDefenceSnapshotStore(
             Campaign &campaign, std::uint64_t &best) noexcept;
 
-        /**
-         * @brief Write the running state to a file.
-         * @param path Where to write it.
-         * @param console The console's history, carried in the dump.
-         * @throws console::SnapshotError If the file cannot be
-         * written.
-         */
-        void dump(
-            const std::string &path,
-            const std::vector<std::string> &console) override;
-
-        /**
-         * @brief Read a file and apply the state it holds.
-         * @param path The file to read.
-         * @return The console history the dump carried.
-         * @throws console::SnapshotError If the file is not there, is
-         * not this application's dump, or does not fit the level its
-         * seed regenerates.
-         */
-        [[nodiscard]] std::vector<std::string> load(
+    private:
+        [[nodiscard]] nlohmann::json takeState(
             const std::string &path) override;
 
-    private:
+        void applyState(
+            const std::string &path,
+            const nlohmann::json &state) override;
+
         Campaign &campaign;
         std::uint64_t &best;
     };

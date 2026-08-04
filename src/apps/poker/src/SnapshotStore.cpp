@@ -1,25 +1,9 @@
 #include "antwika/poker/SnapshotStore.hpp"
 
-#include <antwika/console/SnapshotFormat.hpp>
 #include <antwika/holdem/TableStateError.hpp>
 
 namespace antwika::poker
 {
-
-    namespace
-    {
-        const antwika::console::SnapshotFormat &dumpFormat()
-        {
-            // The excluded closing line carries the static guard.
-            // Its concurrency arms are unreachable one-threaded.
-            static const antwika::console::SnapshotFormat format(
-                {.magic = kStateDumpMagic,
-                 .version = kStateDumpVersion},
-                "antwika poker state dump document",
-                standardStateDumpMigrations); // GCOVR_EXCL_LINE
-            return format;
-        }
-    } // namespace
 
     PokerSnapshotStore::PokerSnapshotStore(
         antwika::holdem::Table &table,
@@ -28,7 +12,12 @@ namespace antwika::poker
         BankrollLedger &ledger,
         CashGame &game,
         TablePrinter &printer) noexcept
-        : table(table),
+        : antwika::console::JsonSnapshotStore<StateDumpError>(
+              {.magic = kStateDumpMagic,
+               .version = kStateDumpVersion},
+              "antwika poker state dump document",
+              standardStateDumpMigrations),
+          table(table),
           deck(deck),
           bits(bits),
           ledger(ledger),
@@ -37,41 +26,25 @@ namespace antwika::poker
     {
     }
 
-    void PokerSnapshotStore::dump(
-        const std::string &path,
-        const std::vector<std::string> &console)
+    nlohmann::json PokerSnapshotStore::takeState(const std::string &)
     {
-        // Built field by field, as the dump's own codec builds.
-        // An aggregate temporary carries unwind blocks mid-statement.
-        antwika::console::Snapshot snapshot;
-
-        snapshot.console = console;
-        snapshot.state = roomDumpToJson(take());
-
-        dumpFormat().write(snapshot, path);
+        return roomDumpToJson(take());
     }
 
-    std::vector<std::string> PokerSnapshotStore::load(
-        const std::string &path)
+    void PokerSnapshotStore::applyState(
+        const std::string &, const nlohmann::json &state)
     {
-        auto snapshot = dumpFormat().read(path);
-
         try
         {
-            apply(roomDumpFromJson(snapshot.state));
+            apply(roomDumpFromJson(state));
         }
-        // The state's own readers promise their own two errors.
-        // What this seam promises is console::SnapshotError.
-        catch (const StateDumpError &failed) // GCOVR_EXCL_LINE
-        {
-            throw antwika::console::SnapshotError(failed.what());
-        }
+        // A table refusing what the codec accepted is a bad dump.
+        // So it is said in this application's own error.
+        // The seam then takes that to the one it promises.
         catch (const antwika::holdem::TableStateError &failed)
         {
-            throw antwika::console::SnapshotError(failed.what());
+            throw StateDumpError(failed.what());
         }
-
-        return snapshot.console;
     }
 
     RoomDump PokerSnapshotStore::take() const

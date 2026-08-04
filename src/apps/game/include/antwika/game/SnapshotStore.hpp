@@ -1,13 +1,15 @@
 #pragma once
 
 #include <string>
-#include <vector>
 
-#include <antwika/console/ISnapshotStore.hpp>
+#include <nlohmann/json.hpp>
+
+#include <antwika/console/JsonSnapshotStore.hpp>
 
 #include "antwika/game/LocaleState.hpp"
 #include "antwika/game/MapView.hpp"
 #include "antwika/game/PauseState.hpp"
+#include "antwika/game/SaveFormatError.hpp"
 #include "antwika/game/SessionStore.hpp"
 #include "antwika/game/StateDump.hpp"
 #include "antwika/game/UiOverlay.hpp"
@@ -30,7 +32,8 @@ namespace antwika::game
      * LocaleState, and puts the palette and the map view back exactly
      * as the dump held them.
      */
-    class GameSnapshotStore final : public antwika::console::ISnapshotStore
+    class GameSnapshotStore final
+        : public antwika::console::JsonSnapshotStore<SaveFormatError>
     {
     public:
         /**
@@ -59,28 +62,14 @@ namespace antwika::game
         GameSnapshotStore &operator=(const GameSnapshotStore &) = delete;
         GameSnapshotStore &operator=(GameSnapshotStore &&) = delete;
 
-        /**
-         * @brief Write the running state to a file.
-         * @param path Where to write it.
-         * @param console The console's history, carried in the dump.
-         * @throws console::SnapshotError If the file cannot be
-         * written.
-         */
-        void dump(
-            const std::string &path,
-            const std::vector<std::string> &console) override;
-
-        /**
-         * @brief Read a file and apply the state it holds.
-         * @param path The file to read.
-         * @return The console history the dump carried.
-         * @throws console::SnapshotError If the file is not there, is
-         * not this application's dump, or cannot be applied.
-         */
-        [[nodiscard]] std::vector<std::string> load(
+    private:
+        [[nodiscard]] nlohmann::json takeState(
             const std::string &path) override;
 
-    private:
+        void applyState(
+            const std::string &path,
+            const nlohmann::json &state) override;
+
         [[nodiscard]] StateDump take() const;
 
         void apply(const StateDump &dump);

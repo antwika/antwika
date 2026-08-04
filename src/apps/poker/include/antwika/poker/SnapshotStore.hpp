@@ -1,9 +1,10 @@
 #pragma once
 
 #include <string>
-#include <vector>
 
-#include <antwika/console/ISnapshotStore.hpp>
+#include <nlohmann/json.hpp>
+
+#include <antwika/console/JsonSnapshotStore.hpp>
 #include <antwika/holdem/Deck.hpp>
 #include <antwika/holdem/Table.hpp>
 #include <antwika/rng/SplitMix64Rng.hpp>
@@ -24,8 +25,13 @@ namespace antwika::poker
      * bankrolls, the seating and the hand history's narration, taken
      * and applied together so a resumed session deals the very next
      * card the remembered one would have.
+     *
+     * A dump the codec accepted and the table itself refuses is said
+     * in StateDumpError, this application's own category, so it leaves
+     * the seam as the console::SnapshotError every refusal does.
      */
-    class PokerSnapshotStore final : public antwika::console::ISnapshotStore
+    class PokerSnapshotStore final
+        : public antwika::console::JsonSnapshotStore<StateDumpError>
     {
     public:
         /**
@@ -56,28 +62,14 @@ namespace antwika::poker
             delete;
         PokerSnapshotStore &operator=(PokerSnapshotStore &&) = delete;
 
-        /**
-         * @brief Write the running state to a file.
-         * @param path Where to write it.
-         * @param console The console's history, carried in the dump.
-         * @throws console::SnapshotError If the file cannot be
-         * written.
-         */
-        void dump(
-            const std::string &path,
-            const std::vector<std::string> &console) override;
-
-        /**
-         * @brief Read a file and apply the state it holds.
-         * @param path The file to read.
-         * @return The console history the dump carried.
-         * @throws console::SnapshotError If the file is not there, is
-         * not this application's dump, or cannot be applied.
-         */
-        [[nodiscard]] std::vector<std::string> load(
+    private:
+        [[nodiscard]] nlohmann::json takeState(
             const std::string &path) override;
 
-    private:
+        void applyState(
+            const std::string &path,
+            const nlohmann::json &state) override;
+
         [[nodiscard]] RoomDump take() const;
 
         void apply(const RoomDump &dump);
