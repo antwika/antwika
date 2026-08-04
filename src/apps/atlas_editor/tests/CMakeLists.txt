@@ -8,6 +8,7 @@ antwika_add_app_tests(
         CanvasTest.cpp
         CanvasViewTest.cpp
         ConfigFileTest.cpp
+        ConsoleSinkTest.cpp
         DefaultSheetSizeTest.cpp
         EditorOptionsTest.cpp
         EditorSinkTest.cpp
@@ -18,6 +19,8 @@ antwika_add_app_tests(
         RunIntegrationTest.cpp
         SceneTest.cpp
         SelectionTest.cpp
+        SnapshotStoreTest.cpp
+        StateDumpTest.cpp
         ViewportReplayTest.cpp
         SpriteGuidesTest.cpp
         TileGridTest.cpp
@@ -26,6 +29,7 @@ antwika_add_app_tests(
         antwika::cli
         antwika::config
         antwika::config::tests::conformance
+        antwika::console
         antwika::engine
         antwika::event::tests::mocks
         antwika::gfx

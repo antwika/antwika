@@ -7,6 +7,8 @@
 #include <antwika/app/FullscreenToggleSource.hpp>
 #include <antwika/app/RunRecorded.hpp>
 #include <antwika/app/WindowPointerMapping.hpp>
+#include <antwika/console/ConsolePicture.hpp>
+#include <antwika/console/SnapshotCommands.hpp>
 #include <antwika/gfx/SelectedBackend.hpp>
 #include <antwika/gfx/Size.hpp>
 #include <antwika/gfx/WindowDesc.hpp>
@@ -100,6 +102,10 @@ namespace
         const EditorScene scene;
         SystemSleeper sleeper;
 
+        // Against the size the window was asked for.
+        // The console's sheet is laid out and hit-tested on it too.
+        antwika::console::ConsolePicture consoleOverlay(kWindowSize);
+
         // Fixed here, and read from nowhere else.
         // The bar is measured from these words.
         // A press is then resolved against the layout they produce.
@@ -166,6 +172,11 @@ namespace
             .tiles = options.tile,
             .announceOpening =
                 !recorded.options.replayPath.has_value(),
+            .consoleOverlay = consoleOverlay,
+            .consoleLoadEnabled =
+                antwika::console::consoleLoadPermitted(
+                    recorded.options.recordPath.has_value(),
+                    recorded.options.replayPath.has_value()),
             .replayRecorder = recorded.replayRecorder,
             .extraSink =
                 [&](const EditorState &state, const UiOverlay &overlay)
@@ -175,6 +186,7 @@ namespace
                     scene,
                     state,
                     overlay,
+                    consoleOverlay,
                     sleeper,
                     std::chrono::milliseconds(
                         config.framePeriodMs));

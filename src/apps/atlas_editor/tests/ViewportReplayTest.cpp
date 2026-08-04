@@ -40,6 +40,8 @@
 #include "antwika/atlas_editor/EditorUi.hpp"
 #include "antwika/atlas_editor/IAtlasStore.hpp"
 #include "antwika/atlas_editor/Messages.hpp"
+#include <antwika/console/ConsolePicture.hpp>
+
 #include "antwika/atlas_editor/RenderSink.hpp"
 #include "antwika/atlas_editor/TileGrid.hpp"
 #include "antwika/atlas_editor/Tool.hpp"
@@ -310,6 +312,9 @@ namespace
 
         Bitmap painted;
 
+        // Never opened here; the frame still paints its empty list.
+        antwika::console::ConsolePicture consolePicture;
+
         const auto summary = antwika::atlas_editor::bootstrap({
             .logger = logger,
             .eventSink = eventSink,
@@ -333,6 +338,7 @@ namespace
                         scene,
                         state,
                         overlay,
+                        consolePicture,
                         sleeper,
                         std::chrono::milliseconds{0}),
                     state,

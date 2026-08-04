@@ -17,6 +17,8 @@ antwika_add_app(
         src/RenderSink.cpp
         src/SceneSnapshot.cpp
         src/Selection.cpp
+        src/SnapshotStore.cpp
+        src/StateDump.cpp
         src/SpriteGuides.cpp
         src/TileGrid.cpp
         src/Tool.cpp
@@ -26,6 +28,7 @@ antwika_add_app(
         antwika::app
         antwika::cli
         antwika::config
+        antwika::console
         antwika::engine
         antwika::gfx
         antwika::gfx_backend
