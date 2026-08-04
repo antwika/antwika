@@ -758,6 +758,41 @@ TEST(ConsoleSinkTest, LoadStateAnswersAFileThatIsNotThere)
     EXPECT_THAT(summary.console[1], StartsWith("could not load: "));
 }
 
+TEST(ConsoleSinkTest, LoadStateAnswersAStateTheDecoderRefuses)
+{
+    const antwika::testing::ScratchFile file(
+        "antwika_game_console_load_bad_state.json");
+    const auto path = file.path().string();
+
+    // A well-enveloped dump whose state names an unknown tool.
+    // The decoder's SaveFormatError comes back as the answer.
+    const antwika::console::SnapshotFormat format(
+        {.magic = antwika::game::kStateDumpMagic,
+         .version = antwika::game::kStateDumpVersion},
+        "antwika game state dump document",
+        antwika::game::standardStateDumpMigrations);
+    const antwika::game::StateDump dump;
+    auto state = antwika::game::stateDumpToJson(dump);
+    state["tool"] = "not-a-tool";
+    format.write(
+        antwika::console::Snapshot{.console = {}, .state = state},
+        path);
+
+    ConsoleHarness harness;
+    std::vector<TickEvent> events{keyAt(harness.codec, 1, Key::Grave)};
+    typeText(events, harness.codec, kOpenTick, "load_state");
+    events.push_back(keyAt(harness.codec, kOpenTick, Key::Enter));
+    events.push_back(stopAt(kOpenTick + 1));
+    ReplaySource source(std::move(events));
+
+    const auto summary = harness.run(source, 40, path);
+
+    ASSERT_EQ(summary.console.size(), 2U);
+    EXPECT_EQ(summary.console[0], "> load_state");
+    EXPECT_THAT(summary.console[1], StartsWith("could not load: "));
+    EXPECT_TRUE(summary.paths.empty());
+}
+
 TEST(ConsoleSinkTest, ARecordedConsoleSessionReplaysToTheSameRun)
 {
     const antwika::testing::ScratchFile file(

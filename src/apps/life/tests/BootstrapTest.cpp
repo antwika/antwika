@@ -342,3 +342,21 @@ TEST(AnnounceHowToStopTest, SaysHowToStopAHeadlessRun)
 
     antwika::life::announceHowToStop(logger, true);
 }
+
+TEST(LifeSummaryTest, EqualityComparesEveryField)
+{
+    antwika::life::LifeSummary base;
+    base.board = Board{
+        .width = 2, .height = 1, .alive = {true, false}};
+    base.console = {"> dump_state"};
+
+    EXPECT_EQ(base, base);
+
+    auto reboarded = base;
+    reboarded.board.alive[0] = false;
+    EXPECT_NE(base, reboarded);
+
+    auto silenced = base;
+    silenced.console.clear();
+    EXPECT_NE(base, silenced);
+}

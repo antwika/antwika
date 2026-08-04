@@ -41,10 +41,15 @@ namespace antwika::companion
         const std::string &path,
         const std::vector<std::string> &console)
     {
+        // The excluded lines are the envelope temporary's unwind arms.
+        // Only a failed allocation inside them could take one.
+        // See docs/confirming-unreachable-branches.md.
         dumpFormat().write(
+            // GCOVR_EXCL_START
             antwika::console::Snapshot{
                 .console = console,
                 .state = companionMemoryToJson(CompanionMemory{
+                    // GCOVR_EXCL_STOP
                     .pet = pet.remember(),
                     .lineage = lineage.remember()})},
             path);

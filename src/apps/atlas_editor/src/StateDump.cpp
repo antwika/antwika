@@ -183,7 +183,11 @@ namespace antwika::atlas_editor
             encoded["height"] = image.size.height;
             encoded["fingerprint"] = image.fingerprint;
             return encoded;
-        }
+
+            // The excluded line is the local json's unwind destructor.
+            // Only a failed allocation could unwind through it.
+            // See docs/confirming-unreachable-branches.md.
+        } // GCOVR_EXCL_LINE
 
         [[nodiscard]] DumpedImage imageFromJson(
             const nlohmann::json &image)
@@ -202,7 +206,11 @@ namespace antwika::atlas_editor
             encoded["x"] = pixel.x;
             encoded["y"] = pixel.y;
             return encoded;
-        }
+
+            // The excluded line is the local json's unwind destructor.
+            // Only a failed allocation could unwind through it.
+            // See docs/confirming-unreachable-branches.md.
+        } // GCOVR_EXCL_LINE
 
         [[nodiscard]] Pixel pixelFromJson(const nlohmann::json &pixel)
         {

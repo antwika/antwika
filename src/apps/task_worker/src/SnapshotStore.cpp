@@ -49,10 +49,13 @@ namespace antwika::task_worker
         const std::string &path,
         const std::vector<std::string> &console)
     {
+        // The excluded lines are the envelope temporary's unwind arms.
+        // Only a failed allocation inside them could take one.
+        // See docs/confirming-unreachable-branches.md.
         dumpFormat().write(
-            antwika::console::Snapshot{
+            antwika::console::Snapshot{ // GCOVR_EXCL_LINE
                 .console = console,
-                .state = stateDumpToJson(take())},
+                .state = stateDumpToJson(take())}, // GCOVR_EXCL_LINE
             path);
 
         // The excluded line is the local snapshot's unwind destructor.

@@ -102,8 +102,13 @@ namespace antwika::life
 
         for (const auto &cell : dump.visited)
         {
+            // The excluded line is the pair temporaries' unwind arms.
+            // Only a failed allocation inside them could take one.
+            // See docs/confirming-unreachable-branches.md.
             encoded["visited"].push_back(
+                // GCOVR_EXCL_START
                 nlohmann::json{{"x", cell.x}, {"y", cell.y}});
+            // GCOVR_EXCL_STOP
         }
 
         // Absent means no drag was under way.

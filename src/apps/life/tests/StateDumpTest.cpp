@@ -122,3 +122,26 @@ TEST(StateDumpTest, TheMigrationsStartAndEndAtVersionOne)
     EXPECT_EQ(
         chain.currentVersion(), antwika::life::kStateDumpVersion);
 }
+
+TEST(StateDumpTest, EqualityComparesEveryField)
+{
+    const auto base = wholeDump();
+
+    EXPECT_EQ(base, base);
+
+    auto reboarded = base;
+    reboarded.board.alive[0] = false;
+    EXPECT_NE(base, reboarded);
+
+    auto released = base;
+    released.dragging = false;
+    EXPECT_NE(base, released);
+
+    auto unvisited = base;
+    unvisited.visited.clear();
+    EXPECT_NE(base, unvisited);
+
+    auto rested = base;
+    rested.lastDrag.reset();
+    EXPECT_NE(base, rested);
+}

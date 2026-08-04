@@ -155,3 +155,20 @@ TEST(StateDumpTest, AVersionOneDocumentIsReadThroughTheEnvelope)
         (std::vector<std::string>{"> dump_state"}));
     EXPECT_EQ(stateDumpFromJson(snapshot.state), dump);
 }
+
+TEST(StateDumpTest, AVersionOneDocumentMayLackAMember)
+{
+    // A v1 document missing a member migrates without inventing it.
+    // The decoder is what refuses the migrated state, not the chain.
+    nlohmann::json old = stateDumpToJson(populatedDump());
+    old.erase("tool");
+    old["magic"] = std::string(antwika::game::kStateDumpMagic);
+    old[std::string(antwika::replay::kSchemaVersionKey)] = 1U;
+    old["console"] = nlohmann::json::array();
+
+    const auto snapshot = gameFormat().fromJson(old);
+
+    EXPECT_FALSE(snapshot.state.contains("tool"));
+    EXPECT_THROW(
+        (void)stateDumpFromJson(snapshot.state), SaveFormatError);
+}

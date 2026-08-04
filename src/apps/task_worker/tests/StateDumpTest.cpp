@@ -164,3 +164,64 @@ TEST(StateDumpTest, AMissingTaskMemberIsRefused)
             antwika::task_worker::stateDumpFromJson(encoded)),
         SnapshotError);
 }
+
+TEST(StateDumpTest, WorkerDumpEqualityComparesEveryField)
+{
+    const WorkerDump base{WorkerStatus::Busy, 4, 2, "Beta"};
+
+    EXPECT_EQ(base, base);
+
+    auto idled = base;
+    idled.status = WorkerStatus::Idle;
+    EXPECT_NE(base, idled);
+
+    auto later = base;
+    later.remainingTicks = 9;
+    EXPECT_NE(base, later);
+
+    auto retasked = base;
+    retasked.taskId = 7;
+    EXPECT_NE(base, retasked);
+
+    auto renamed = base;
+    renamed.label = "Gamma";
+    EXPECT_NE(base, renamed);
+}
+
+TEST(StateDumpTest, SubmissionDumpEqualityComparesEveryField)
+{
+    const SubmissionDump base{1, "Alpha"};
+
+    EXPECT_EQ(base, base);
+
+    auto renumbered = base;
+    renumbered.taskId = 2;
+    EXPECT_NE(base, renumbered);
+
+    auto renamed = base;
+    renamed.label = "Beta";
+    EXPECT_NE(base, renamed);
+}
+
+TEST(StateDumpTest, EqualityComparesEveryField)
+{
+    const auto base = fullDump();
+
+    EXPECT_EQ(base, base);
+
+    auto reworked = base;
+    reworked.workers.pop_back();
+    EXPECT_NE(base, reworked);
+
+    auto retasked = base;
+    retasked.tasks.pop_back();
+    EXPECT_NE(base, retasked);
+
+    auto resubmitted = base;
+    resubmitted.submissions.pop_back();
+    EXPECT_NE(base, resubmitted);
+
+    auto redispatched = base;
+    redispatched.dispatch.dispatched += 1;
+    EXPECT_NE(base, redispatched);
+}

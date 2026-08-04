@@ -296,7 +296,10 @@ namespace antwika::task_worker
                     + named);
             }
 
-            dump.tasks.push_back(TaskInfo{
+            // The excluded line is the info temporary's unwind arms.
+            // Only a failed allocation inside it could take one.
+            // See docs/confirming-unreachable-branches.md.
+            dump.tasks.push_back(TaskInfo{ // GCOVR_EXCL_LINE
                 entry.at("taskId").get<std::uint64_t>(),
                 entry.at("label").get<std::string>(),
                 static_cast<antwika::scheduler::Priority>(

@@ -169,10 +169,13 @@ namespace antwika::atlas_editor
             throw antwika::console::SnapshotError(failed.what());
         }
 
+        // The excluded lines are the envelope temporary's unwind arms.
+        // Only a failed allocation inside them could take one.
+        // See docs/confirming-unreachable-branches.md.
         dumpFormat().write(
-            antwika::console::Snapshot{
+            antwika::console::Snapshot{ // GCOVR_EXCL_LINE
                 .console = console,
-                .state = stateDumpToJson(takeDump(state))},
+                .state = stateDumpToJson(takeDump(state))}, // GCOVR_EXCL_LINE
             path);
 
         // The excluded line is the local snapshot's unwind destructor.
@@ -199,7 +202,10 @@ namespace antwika::atlas_editor
                     clipboardPathFor(path), *dump.clipboard));
             }
 
-            state.restore(SessionRestore{
+            // The excluded line is the restore temporary's unwind arms.
+            // Only a failed allocation inside it could take one.
+            // See docs/confirming-unreachable-branches.md.
+            state.restore(SessionRestore{ // GCOVR_EXCL_LINE
                 .sheet = std::move(sheet),
                 .clipboard = std::move(clipboard),
                 .view = dump.view,
