@@ -6,7 +6,7 @@
 
 #include <antwika/event/ITickEventSink.hpp>
 #include <antwika/event/TickEvent.hpp>
-#include <antwika/gfx/Size.hpp>
+#include <antwika/geometry/Size.hpp>
 #include <antwika/replay/ReplayWriter.hpp>
 
 namespace antwika::replay
@@ -56,7 +56,7 @@ namespace antwika::replay
         explicit ReplayRecorder(
             std::ostream &out,
             std::string destination,
-            std::optional<gfx::Size> canvas = std::nullopt);
+            std::optional<geometry::Size> canvas = std::nullopt);
 
         ReplayRecorder(const ReplayRecorder &) = delete;
         ReplayRecorder(ReplayRecorder &&) = delete;

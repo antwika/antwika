@@ -8,7 +8,7 @@
 #include <string_view>
 #include <vector>
 
-#include <antwika/gfx/Size.hpp>
+#include <antwika/geometry/Size.hpp>
 
 #include "antwika/replay/ReplayFormatError.hpp"
 #include "antwika/replay/ReplayReader.hpp"
@@ -16,7 +16,7 @@
 
 using antwika::event::Event;
 using antwika::event::TickEvent;
-using antwika::gfx::Size;
+using antwika::geometry::Size;
 using antwika::replay::ReplayFormatError;
 using antwika::replay::ReplayReader;
 using antwika::replay::ReplayRecorder;

@@ -1,78 +1,41 @@
 # antwika::ecs_commons
 
-`src/libs/ecs_commons/` — the vocabulary half of the ECS.
+`src/libs/ecs_commons/` — the vocabulary half of the ECS: what an app names an entity with, and the gate it runs a system behind.
 
 ## What it is for
 
-The components and systems that most ECS applications want, kept **out** of [`ecs`](ecs.md) itself.
+Two things, both header-only.
 
-`ecs` is the mechanism — entities, storages, the double-buffered `World`, the scheduler.
-These are content: a position, a velocity, a countdown, and the systems that act on them.
-Splitting them means an application that wants the scheduler does not link a countdown it never uses.
+`Name` is a component holding a short label, for an entity a diagnostic or a readout has to talk about.
+`GatedSystem` is the decorator that runs a system only while something else says it may -- **staging nothing is what holds a world still**, so the commit after that phase finds only what the tick's input did.
+
+It is separate from [`ecs`](ecs.md) so that an app wanting the scheduler does not link vocabulary it never uses.
 
 ## Key types
 
 | Header | Type | Role |
 | --- | --- | --- |
-| `GridPosition.hpp` | `GridPosition` | Integer cell coordinates. |
-| `Velocity.hpp` | `Velocity` | Integer per-tick movement. |
-| `Lifetime.hpp` | `Lifetime` | A countdown in ticks. |
-| `Name.hpp` | `Name` | A fixed-capacity name, so it stays a `Component`. |
-| `Tag.hpp` | `Tag<Kind>` | An empty marker component, one type per kind. |
-| `MovementSystem.hpp` | `MovementSystem` | Applies `Velocity` to `GridPosition`. |
-| `LifetimeSystem.hpp` | `LifetimeSystem` | Counts `Lifetime` down and destroys at zero. |
-| `PeriodicSystem.hpp` | `PeriodicSystem` | Runs another system every N ticks. |
-| `EcsCommonsError.hpp` | `EcsCommonsError` | This library's one failure type. |
+| `Name.hpp` | `Name` | A short label on an entity. |
+| `GatedSystem.hpp` | `GatedSystem` | Runs an inner `ISystem` only on ticks a predicate allows. |
 
 ## Depends on
 
-[`ecs`](ecs.md) and [`time`](time.md).
+[`ecs`](ecs.md) and [`time`](time.md), for `ISystem` and `Tick`.
 
 ## Non-obvious decisions
 
-**Everything here is integer.**
-A component that a replay reproduces may not hold floating point, so `Velocity` moves whole cells per tick rather than a fraction of one.
-Sub-tick smoothness is a rendering question, and [`animation`](animation.md) is where it is answered.
+**`GatedSystem` takes a predicate rather than naming a condition**, because three applications had written the same class out with three different questions in the middle of it: `apps/game`'s `PauseGatedSystem` and `SessionGatedSystem`, and `apps/life`'s `DragPausedSystem`.
+Each of those still exists and still has its own name -- "this system is pause-gated" is worth saying at the registration site -- but each is now a forwarder, so the mechanism is written once.
+The predicate is asked once per tick rather than once at construction, so a gate that opens mid-run opens for the very next tick.
 
-**`Name` has a fixed capacity rather than holding a `std::string`.**
-`ecs`'s `Component` concept requires trivially copyable and standard layout, which a `std::string` is not.
-The cap is the price of a name being storable in a component at all.
+**This library used to be much larger, and the rest was pruned.**
+`GridPosition`, `Velocity`, `Lifetime`, `Tag<Kind>`, `MovementSystem`, `LifetimeSystem`, `PeriodicSystem` and the error type only `PeriodicSystem` threw were all offered here and **never called by any application in the tree**.
+They were tested to 100%, which is exactly why the gap was invisible: the coverage gate says nothing about a surface nobody uses.
+A library is not a place to keep code warm on the chance somebody wants it -- git remembers it, and a reader of this page should not have to work out which half is real.
 
-**`Tag<Kind>` is a template so that two tags are two types.**
-One `Tag` type with a runtime kind field would make "every entity tagged X" a filter rather than a view, and the whole point of a tag is that the storage already knows.
+That removed the file's other oddity with them: the sources used to be compiled *into* the test binary rather than linked, to stop the linker discarding a second copy of the `ecs` templates and zeroing their counters.
+With nothing left to compile, the arrangement went too.
 
-**Not every app should use these.**
-[game](../apps/game.md) deliberately does not link this library: its walkers count steps rather than ticks, so `Lifetime` would be the wrong shape, and it would have become the only game-side caller of the whole module for one integer.
-Content is worth sharing only when it is genuinely the same content.
-
-**A `Health` component and a `Parent`/`Transform` hierarchy were considered and left out.**
-No app here has hit points or composes entities, so there is no duplication to remove and no second caller to check a design against — and a hierarchy additionally has a commit-ordering question (does a child see its parent's move this tick or next?) that a real caller should answer rather than a guess.
-Inventing a rule to avoid a situation nothing requires would be inventing a requirement.
-
-## GatedSystem
-
-**Running a system only while something else says it may** is a decorator three applications had written out with three different questions in the middle: `game`'s `PauseGatedSystem` and `SessionGatedSystem`, `life`'s `DragPausedSystem`.
-`GatedSystem` is the mechanism -- staging nothing is what holds a world still, so the commit after the phase finds only what the tick's input did -- and each app keeps its own named type as a thin forwarder, since "this system is pause-gated" is vocabulary worth saying at the registration site.
-
-## Migrating an app onto these
-
-Nothing was refactored when this library was added, because several apps were being edited concurrently.
-Two of the candidates are worth doing and two should be struck rather than scheduled.
-One of the two is now done, and a survey of the rest of the tree turned up no third: `Velocity`, `MovementSystem`, `LifetimeSystem` and `PeriodicSystem` still have no caller anywhere, because every countdown in the tree is per entity and every mover recomputes its direction rather than storing one.
-
-- **`game::Cell` → `GridPosition`, and `game::Path` → `Tag<struct PathKind>`.**
-  Both are drop-ins: field-for-field identical, ordering and all, and both tags are empty structs with a defaulted `==`.
-  Mechanical; only the blast radius is large, since the first touches `IsoProjection`, `PathIndex`, `GridSink`, `SceneSnapshot` and their tests.
-- **`task_worker::Worker::label` → `Name`** is **done**, and [task_worker](../apps/task_worker.md) is this library's first caller.
-  It was a drop-in for the type and *not* for the call sites, which is what the migration had to be careful about.
-  The old `Worker::label` was always null-terminated; `Name::text` has no terminator slot at all, and `StatusPrintSystem.cpp` streamed `label.data()`, which reads until a NUL.
-  Substituting the type without moving that call site to `view(worker.label)` would read past the end of the array for a label of exactly the maximum length, so both moved together and `StatusPrintSystemTest.PrintsALabelThatExactlyFillsItsBuffer` pins it.
-  What went with it was `kWorkerLabelMaxLength` and `makeWorkerLabel()`, which were `kNameMaxLength` and `makeName()` written a second time, truncation and all.
-- **`task_worker`'s completion countdown must *not* become a `Lifetime`.**
-  `LifetimeSystem` destroys the entity at zero, and this app's workers are a fixed pool created once — a finished worker goes Idle and waits.
-  The substitution would delete one worker per completed task, and there is no "react to expiry" hook, because here expiry *is* the destruction.
-- **`game::WalkerSystem` is not a `MovementSystem`.**
-  A walker's step comes from `nextFacing()` rather than a stored velocity, and more importantly neither half of this library can express its cadence: `Velocity` is whole cells per tick with no notion of a slower one, and `PeriodicSystem` gates on `tick % period`, which is the global clock.
-  Composing them would move a per-entity countdown back onto the global tick and make every walker share one speed by construction.
-
-The two components a migration would want and not find — a `Lifetime` that expires without destroying, and a per-entity cadence — are each wanted by exactly one caller today, which is the same bar `Health` and `Parent` failed.
+**Adopting `Name` is a real thing an app can do and mostly has not.**
+Twelve files use it; `apps/game` still has its own `Cell` where a `GridPosition` would have done.
+That migration was considered and is not obviously worth its blast radius -- `IsoProjection`, `PathIndex`, `GridSink` and `SceneSnapshot` all speak `Cell` -- which is part of why the unused half was pruned rather than kept waiting for a caller.

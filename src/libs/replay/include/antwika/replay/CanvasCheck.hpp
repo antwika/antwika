@@ -3,7 +3,7 @@
 #include <functional>
 #include <optional>
 
-#include <antwika/gfx/Size.hpp>
+#include <antwika/geometry/Size.hpp>
 #include <antwika/log/ILogger.hpp>
 
 namespace antwika::replay
@@ -26,7 +26,7 @@ namespace antwika::replay
          * Unset means the caller has nothing to compare, so nothing is
          * compared.
          */
-        std::optional<gfx::Size> canvas{};
+        std::optional<geometry::Size> canvas{};
 
         /**
          * @brief Where a mismatch is reported.

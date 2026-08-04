@@ -1,12 +1,12 @@
 #include <gtest/gtest.h>
 
-#include <antwika/gfx/Size.hpp>
+#include <antwika/geometry/Size.hpp>
 
 #include "antwika/replay/ReplayDocument.hpp"
 
 using antwika::event::Event;
 using antwika::event::TickEvent;
-using antwika::gfx::Size;
+using antwika::geometry::Size;
 using antwika::replay::ReplayDocument;
 
 namespace

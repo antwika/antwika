@@ -30,7 +30,7 @@ namespace antwika::replay
     ReplayRecorder::ReplayRecorder(
         std::ostream &out,
         std::string destination,
-        std::optional<gfx::Size> canvas)
+        std::optional<geometry::Size> canvas)
         : out(out), destination(std::move(destination)), writer(canvas)
     {
         writer.writeHeader(out);

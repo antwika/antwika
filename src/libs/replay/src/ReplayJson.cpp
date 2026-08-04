@@ -186,7 +186,7 @@ namespace antwika::replay
         const auto canvas = j.find("canvas");
         if (canvas != j.end())
         {
-            header.canvas = gfx::Size{
+            header.canvas = geometry::Size{
                 .width = canvas->at("width").get<std::uint32_t>(),
                 .height = canvas->at("height").get<std::uint32_t>(),
             };

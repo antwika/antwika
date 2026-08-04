@@ -9,7 +9,7 @@
 #include <tuple>
 #include <vector>
 
-#include <antwika/gfx/Size.hpp>
+#include <antwika/geometry/Size.hpp>
 #include <antwika/log/Level.hpp>
 #include <antwika/log/mocks/MockLogger.hpp>
 
@@ -20,7 +20,7 @@
 
 using antwika::event::Event;
 using antwika::event::TickEvent;
-using antwika::gfx::Size;
+using antwika::geometry::Size;
 using antwika::log::Level;
 using antwika::log::mocks::MockLogger;
 using antwika::replay::CanvasCheck;

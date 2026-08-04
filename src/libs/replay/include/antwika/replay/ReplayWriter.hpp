@@ -5,7 +5,7 @@
 #include <vector>
 
 #include <antwika/event/TickEvent.hpp>
-#include <antwika/gfx/Size.hpp>
+#include <antwika/geometry/Size.hpp>
 
 namespace antwika::replay
 {
@@ -39,7 +39,7 @@ namespace antwika::replay
          * no pointer input in it has to say on the subject.
          */
         explicit ReplayWriter(
-            std::optional<gfx::Size> canvas = std::nullopt) noexcept;
+            std::optional<geometry::Size> canvas = std::nullopt) noexcept;
 
         /**
          * @brief Write the line that opens a replay.
@@ -70,7 +70,7 @@ namespace antwika::replay
             const std::vector<TickEvent> &events, std::ostream &out) const;
 
     private:
-        std::optional<gfx::Size> canvas;
+        std::optional<geometry::Size> canvas;
     };
 
 } // namespace antwika::replay

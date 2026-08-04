@@ -87,7 +87,7 @@ namespace antwika::replay
     void saveReplayFile(
         const std::vector<TickEvent> &events,
         const std::string &path,
-        std::optional<gfx::Size> canvas)
+        std::optional<geometry::Size> canvas)
     {
         std::ofstream replayFile = openReplayFile(path);
 
