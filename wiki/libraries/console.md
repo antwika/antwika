@@ -64,3 +64,14 @@ The Swedish letters would be multi-byte in the UTF-8 the UI holds, and a field's
 ## Who uses it
 
 Every application except the four demos; each one's wiki page describes its own snapshot store — what its `state` object carries, and what it deliberately leaves out.
+
+## Test support
+
+`include/antwika/console/testing/ConsoleScript.hpp` is the scripted input a console test drives a run with: `kOpenTick`, `keyAt()`, `typeText()`, `pressAt()`, `releaseAt()`, `moveTo()`, `scrollAt()` and `stopAt()`.
+Nine applications had each written those out for themselves — the same builders, the same `1 + kConsoleAnimTicks`, and the same comment about the toggle going down on tick 1 — so the one thing every console test depends on was nine copies that agreed only by hand.
+It sits in the library's own `include/` rather than under its `tests/`, because it is included by nine *other* modules' suites: a test-support target would have to be named in each of their `CMakeLists.txt` as well, and a public header of the library that defines the console is already on every one of those targets' include path.
+Being outside a `tests/` directory it is measured by the coverage gate like any other header here, which is why it carries no assertion and no unreachable answer.
+
+`typeText()` takes the board it types by rather than assuming one, and asks `typedCharacterFor()` which position prints each character — the inverse of this library's own table rather than a second copy of it, so "the American slash position prints an underscore on a Swedish board" is still said in exactly one place.
+That is what lets an application which announces a different board script by that board, while a run that says nothing types by the Swedish default.
+A character no board prints answers a key that types nothing, so such a script lands nothing rather than landing some other character.

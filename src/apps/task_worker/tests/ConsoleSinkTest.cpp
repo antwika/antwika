@@ -4,14 +4,13 @@
 #include <cstdint>
 #include <optional>
 #include <string>
-#include <string_view>
 #include <utility>
 #include <vector>
 
 #include <antwika/console/ConsolePicture.hpp>
 #include <antwika/console/ConsoleState.hpp>
 #include <antwika/console/SnapshotFormat.hpp>
-#include <antwika/engine/Events.hpp>
+#include <antwika/console/testing/ConsoleScript.hpp>
 #include <antwika/event/Event.hpp>
 #include <antwika/event/TickEvent.hpp>
 #include <antwika/event/mocks/MockEventSink.hpp>
@@ -30,12 +29,15 @@
 #include "antwika/task_worker/Worker.hpp"
 
 using antwika::console::kConsoleAnimTicks;
+using antwika::console::testing::keyAt;
+using antwika::console::testing::kOpenTick;
+using antwika::console::testing::stopAt;
+using antwika::console::testing::typeText;
 using antwika::event::Event;
 using antwika::event::TickEvent;
 using antwika::event::mocks::MockEventSink;
 using antwika::input::InputEventCodec;
 using antwika::input::Key;
-using antwika::input::KeyPressed;
 using antwika::log::mocks::MockLogger;
 using antwika::replay::ReplaySource;
 using antwika::task_worker::TaskRegistry;
@@ -50,56 +52,6 @@ namespace
 {
     // The canvas the sheet drops down over, main.cpp's size.
     constexpr antwika::gfx::Size kCanvas{.width = 960, .height = 600};
-
-    // The first tick on which the field reads.
-    // The toggle goes down on tick 1 and each tick slides one step.
-    constexpr Tick kOpenTick = 1 + kConsoleAnimTicks;
-
-    [[nodiscard]] TickEvent keyAt(
-        const InputEventCodec &codec,
-        Tick tick,
-        Key key,
-        bool shift = false)
-    {
-        return TickEvent{
-            .tick = tick,
-            .event = codec.encode(KeyPressed{
-                .key = key, .modifiers = {.shift = shift}})};
-    }
-
-    // The keys that type one command, one press per character.
-    // Only what the two commands need: letters, underscore.
-    // A run types by the Swedish board unless told otherwise.
-    // So the underscore is shift over the American slash position.
-    void typeText(
-        std::vector<TickEvent> &events,
-        const InputEventCodec &codec,
-        Tick tick,
-        std::string_view text)
-    {
-        for (const char character : text)
-        {
-            if (character == '_')
-            {
-                events.push_back(keyAt(codec, tick, Key::Slash, true));
-                continue;
-            }
-
-            events.push_back(keyAt(
-                codec,
-                tick,
-                static_cast<Key>(
-                    static_cast<std::uint8_t>(Key::A)
-                    + (character - 'a'))));
-        }
-    }
-
-    [[nodiscard]] TickEvent stopAt(Tick tick)
-    {
-        return TickEvent{
-            .tick = tick,
-            .event = Event{.name = antwika::engine::events::kStop}};
-    }
 
     [[nodiscard]] TickEvent submitAt(Tick tick, std::string payload)
     {

@@ -3,23 +3,19 @@
 
 #include <cstdint>
 #include <string>
-#include <string_view>
 #include <utility>
 #include <vector>
 
 #include <antwika/console/ConsolePicture.hpp>
 #include <antwika/console/ConsoleState.hpp>
 #include <antwika/console/SnapshotFormat.hpp>
-#include <antwika/engine/Events.hpp>
-#include <antwika/event/Event.hpp>
+#include <antwika/console/testing/ConsoleScript.hpp>
 #include <antwika/event/mocks/MockEventSink.hpp>
 #include <antwika/event/TickEvent.hpp>
 #include <antwika/gfx/Point.hpp>
 #include <antwika/gfx/Size.hpp>
-#include <antwika/input/InputEvent.hpp>
 #include <antwika/input/InputEventCodec.hpp>
 #include <antwika/input/Key.hpp>
-#include <antwika/input/MouseButton.hpp>
 #include <antwika/log/mocks/MockLogger.hpp>
 #include <antwika/replay/ReplaySource.hpp>
 #include <antwika/testing/ScratchPath.hpp>
@@ -38,16 +34,17 @@ using antwika::companion::PetConfig;
 using antwika::companion::Prop;
 using antwika::companion::propBox;
 using antwika::console::kConsoleAnimTicks;
-using antwika::event::Event;
+using antwika::console::testing::keyAt;
+using antwika::console::testing::kOpenTick;
+using antwika::console::testing::pressAt;
+using antwika::console::testing::stopAt;
+using antwika::console::testing::typeText;
 using antwika::event::mocks::MockEventSink;
 using antwika::event::TickEvent;
 using antwika::gfx::Point;
 using antwika::gfx::Size;
 using antwika::input::InputEventCodec;
 using antwika::input::Key;
-using antwika::input::KeyPressed;
-using antwika::input::MouseButton;
-using antwika::input::PointerButtonPressed;
 using antwika::log::mocks::MockLogger;
 using antwika::replay::ReplaySource;
 using antwika::time::fakes::FakeSleeper;
@@ -60,10 +57,6 @@ namespace
     constexpr Tick kMaxTicks = 60;
 
     constexpr Size kCanvas{.width = 256, .height = 256};
-
-    // The first tick on which the field reads.
-    // The toggle goes down on tick 1 and each tick slides one step.
-    constexpr Tick kOpenTick = 1 + kConsoleAnimTicks;
 
     // Hungry after two ticks, and nothing else moving at all.
     // So a session ends on what the scripted input did to it.
@@ -90,61 +83,6 @@ namespace
         .collapsePenalty = 10,
         .happinessMax = 6,
         .happinessStart = 4};
-
-    [[nodiscard]] TickEvent keyAt(
-        const InputEventCodec &codec,
-        Tick tick,
-        Key key,
-        bool shift = false)
-    {
-        return TickEvent{
-            .tick = tick,
-            .event = codec.encode(KeyPressed{
-                .key = key, .modifiers = {.shift = shift}})};
-    }
-
-    // The keys that type one command, one press per character.
-    // A run types by the Swedish board, the library's default.
-    // So the underscore is shift over the American slash position.
-    void typeText(
-        std::vector<TickEvent> &events,
-        const InputEventCodec &codec,
-        Tick tick,
-        std::string_view text)
-    {
-        for (const char character : text)
-        {
-            if (character == '_')
-            {
-                events.push_back(keyAt(codec, tick, Key::Slash, true));
-                continue;
-            }
-
-            events.push_back(keyAt(
-                codec,
-                tick,
-                static_cast<Key>(
-                    static_cast<std::uint8_t>(Key::A)
-                    + (character - 'a'))));
-        }
-    }
-
-    [[nodiscard]] TickEvent pressAt(
-        const InputEventCodec &codec, Tick tick, Point at)
-    {
-        return TickEvent{
-            .tick = tick,
-            .event = codec.encode(PointerButtonPressed{
-                .button = MouseButton::Left,
-                .position = {.x = at.x, .y = at.y}})};
-    }
-
-    [[nodiscard]] TickEvent stopAt(Tick tick)
-    {
-        return TickEvent{
-            .tick = tick,
-            .event = Event{.name = antwika::engine::events::kStop}};
-    }
 
     // The middle of a prop's own box.
     // So a test aims at what the sink hit-tests, not at a guess.
