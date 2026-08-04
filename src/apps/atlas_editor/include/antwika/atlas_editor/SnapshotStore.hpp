@@ -1,9 +1,11 @@
 #pragma once
 
+#include <stdexcept>
 #include <string>
-#include <vector>
 
-#include <antwika/console/ISnapshotStore.hpp>
+#include <nlohmann/json.hpp>
+
+#include <antwika/console/JsonSnapshotStore.hpp>
 
 #include "antwika/atlas_editor/EditorState.hpp"
 
@@ -24,8 +26,11 @@ namespace antwika::atlas_editor
      * Everything that can go wrong -- a PNG that will not read, a
      * document naming a tool this build lacks -- leaves this seam as
      * console::SnapshotError, which is the type the seam promises.
+     * Which is why std::runtime_error is what it names as its own
+     * category: every failure either half can meet is one of its own.
      */
-    class EditorSnapshotStore final : public console::ISnapshotStore
+    class EditorSnapshotStore final
+        : public console::JsonSnapshotStore<std::runtime_error>
     {
     public:
         /**
@@ -35,30 +40,16 @@ namespace antwika::atlas_editor
          */
         explicit EditorSnapshotStore(EditorState &state) noexcept;
 
-        /**
-         * @brief Write the running state beside its PNGs.
-         * @param path Where the JSON document goes; the PNG paths are
-         * derived from it.
-         * @param console The console's history, carried in the dump.
-         * @throws console::SnapshotError If any of the files cannot
-         * be written.
-         */
-        void dump(
-            const std::string &path,
-            const std::vector<std::string> &console) override;
-
-        /**
-         * @brief Read a dump and put its state back into the session.
-         * @param path The JSON document to read.
-         * @return The console history the dump carried.
-         * @throws console::SnapshotError If any file is missing, the
-         * document is not this application's dump, or a PNG does not
-         * answer the fingerprint the document names.
-         */
-        [[nodiscard]] std::vector<std::string> load(
+    private:
+        // The PNGs go beside the document.
+        // So both halves read the path they are handed.
+        [[nodiscard]] nlohmann::json takeState(
             const std::string &path) override;
 
-    private:
+        void applyState(
+            const std::string &path,
+            const nlohmann::json &dumped) override;
+
         EditorState &state;
     };
 

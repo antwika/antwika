@@ -2,16 +2,14 @@
 #include <gtest/gtest.h>
 
 #include <chrono>
-#include <cstdint>
 #include <filesystem>
 #include <sstream>
 #include <string>
 #include <vector>
 
 #include <antwika/console/ConsolePicture.hpp>
-#include <antwika/console/ConsoleState.hpp>
-#include <antwika/engine/Events.hpp>
-#include <antwika/event/Event.hpp>
+#include <antwika/console/conformance/ConsoleContract.hpp>
+#include <antwika/console/testing/ConsoleScript.hpp>
 #include <antwika/event/mocks/MockEventSink.hpp>
 #include <antwika/event/TickEvent.hpp>
 #include <antwika/holdem/Blinds.hpp>
@@ -25,25 +23,22 @@
 #include "antwika/poker/PokerRoom.hpp"
 #include "antwika/poker/RoomConfig.hpp"
 
-using antwika::event::Event;
+using antwika::console::testing::keyAt;
+using antwika::console::testing::kOpenTick;
+using antwika::console::testing::stopAt;
+using antwika::console::testing::typeText;
 using antwika::event::mocks::MockEventSink;
 using antwika::event::TickEvent;
 using antwika::holdem::Blinds;
 using antwika::input::InputEventCodec;
 using antwika::input::Key;
-using antwika::input::KeyPressed;
 using antwika::log::mocks::MockLogger;
 using antwika::replay::ReplaySource;
 using antwika::time::fakes::FakeClock;
-using antwika::time::Tick;
 using ::testing::NiceMock;
-using ::testing::StartsWith;
 
 namespace
 {
-    constexpr auto kOpenTick =
-        1 + antwika::console::kConsoleAnimTicks;
-
     constexpr antwika::poker::RoomConfig kRoom{
         .seatCount = 2,
         .blinds = Blinds{.small = 5, .big = 10},
@@ -51,49 +46,12 @@ namespace
         .seed = 7,
     };
 
-    [[nodiscard]] TickEvent keyAt(
-        const InputEventCodec &codec,
-        Tick tick,
-        Key key,
-        bool shift = false)
-    {
-        return TickEvent{
-            .tick = tick,
-            .event = codec.encode(KeyPressed{
-                .key = key, .modifiers = {.shift = shift}})};
-    }
-
-    void typeText(
-        std::vector<TickEvent> &events,
-        const InputEventCodec &codec,
-        Tick tick,
-        std::string_view text)
-    {
-        for (const char character : text)
-        {
-            if (character == '_')
-            {
-                events.push_back(keyAt(codec, tick, Key::Slash, true));
-                continue;
-            }
-
-            events.push_back(keyAt(
-                codec,
-                tick,
-                static_cast<Key>(
-                    static_cast<std::uint8_t>(Key::A)
-                    + (character - 'a'))));
-        }
-    }
-
     [[nodiscard]] antwika::poker::RoomSummary run(
         std::vector<TickEvent> events,
         const std::string &dumpPath,
         bool loadEnabled)
     {
-        events.push_back(TickEvent{
-            .tick = kOpenTick + 2,
-            .event = Event{.name = antwika::engine::events::kStop}});
+        events.push_back(stopAt(kOpenTick + 2));
 
         std::chrono::system_clock::time_point time{};
         FakeClock clock(time);
@@ -119,22 +77,49 @@ namespace
             .maxTicks = 100});
     }
 
+    // This application's half of the shared console contract.
+    //
+    // It instantiates ConsoleContract and not the round trip.
+    // The room dumps itself mid-hand and reads no dump back.
+    // So there is no round trip here to hold to that promise.
+    struct PokerConsoleTraits
+    {
+        using Summary = antwika::poker::RoomSummary;
+
+        static Summary run(
+            std::vector<TickEvent> script,
+            const std::string &dumpPath,
+            const bool loadEnabled)
+        {
+            return ::run(std::move(script), dumpPath, loadEnabled);
+        }
+
+        static const std::vector<std::string> &console(
+            const Summary &summary)
+        {
+            return summary.console;
+        }
+
+        // A refused load leaves a hand nothing here can name.
+        // The room is dealt from a seed, so every number is the deal's.
+        static void expectUntouched(const Summary &)
+        {
+        }
+
+        static std::string scratchPrefix()
+        {
+            return "antwika_poker_console.";
+        }
+    };
 } // namespace
 
-TEST(ConsoleSinkTest, AnUnknownCommandIsEchoedAndRefused)
+namespace antwika::console::conformance
 {
-    InputEventCodec codec;
-    std::vector<TickEvent> events{keyAt(codec, 1, Key::Grave)};
-    typeText(events, codec, kOpenTick, "hello");
-    events.push_back(keyAt(codec, kOpenTick, Key::Enter));
 
-    const auto summary = run(std::move(events), "unused.json", true);
+    INSTANTIATE_TYPED_TEST_SUITE_P(
+        Poker, ConsoleContract, PokerConsoleTraits);
 
-    EXPECT_EQ(
-        summary.console,
-        (std::vector<std::string>{
-            "> hello", "unknown command: hello"}));
-}
+} // namespace antwika::console::conformance
 
 TEST(ConsoleSinkTest, DumpStateWritesTheRoomMidHand)
 {
@@ -157,40 +142,6 @@ TEST(ConsoleSinkTest, DumpStateWritesTheRoomMidHand)
     EXPECT_TRUE(std::filesystem::exists(file.path()));
 }
 
-TEST(ConsoleSinkTest, LoadStateIsRefusedWhileRecordingOrReplaying)
-{
-    InputEventCodec codec;
-    std::vector<TickEvent> events{keyAt(codec, 1, Key::Grave)};
-    typeText(events, codec, kOpenTick, "load_state");
-    events.push_back(keyAt(codec, kOpenTick, Key::Enter));
-
-    const auto summary = run(std::move(events), "unused.json", false);
-
-    EXPECT_EQ(
-        summary.console,
-        (std::vector<std::string>{
-            "> load_state",
-            "load_state: not available while recording or "
-            "replaying"}));
-}
-
-TEST(ConsoleSinkTest, LoadStateAnswersAFileThatIsNotThere)
-{
-    const antwika::testing::ScratchFile file(
-        "antwika_poker_console_absent.json");
-
-    InputEventCodec codec;
-    std::vector<TickEvent> events{keyAt(codec, 1, Key::Grave)};
-    typeText(events, codec, kOpenTick, "load_state");
-    events.push_back(keyAt(codec, kOpenTick, Key::Enter));
-
-    const auto summary =
-        run(std::move(events), file.path().string(), true);
-
-    ASSERT_EQ(summary.console.size(), 2U);
-    EXPECT_THAT(summary.console[1], StartsWith("could not load: "));
-}
-
 TEST(ConsoleSinkTest, ARoomWithNoConsoleIgnoresTheKeys)
 {
     std::chrono::system_clock::time_point time{};
@@ -200,9 +151,7 @@ TEST(ConsoleSinkTest, ARoomWithNoConsoleIgnoresTheKeys)
     InputEventCodec codec;
 
     std::vector<TickEvent> events{keyAt(codec, 1, Key::Grave)};
-    events.push_back(TickEvent{
-        .tick = 3,
-        .event = Event{.name = antwika::engine::events::kStop}});
+    events.push_back(stopAt(3));
     ReplaySource source(std::move(events));
     std::ostringstream out;
 

@@ -5,7 +5,6 @@
 #include <string>
 #include <utility>
 
-#include <antwika/console/SnapshotFormat.hpp>
 #include <antwika/ecs/Entity.hpp>
 
 #include "antwika/life/Board.hpp"
@@ -14,68 +13,33 @@
 namespace antwika::life
 {
 
-    namespace
-    {
-        const antwika::console::SnapshotFormat &dumpFormat()
-        {
-            // The excluded closing line carries the static guard.
-            // Its concurrency arms are unreachable one-threaded.
-            // See docs/confirming-unreachable-branches.md.
-            static const antwika::console::SnapshotFormat format(
-                {.magic = kStateDumpMagic,
-                 .version = kStateDumpVersion},
-                "antwika life state dump document",
-                standardStateDumpMigrations); // GCOVR_EXCL_LINE
-            return format;
-        }
-    } // namespace
-
     LifeSnapshotStore::LifeSnapshotStore(
         World &world,
         const Grid &grid,
         DragState &drag,
         std::optional<std::reference_wrapper<PointerToggleSink>>
             pointer) noexcept
-        : world(world), grid(grid), drag(drag), pointer(pointer)
+        : antwika::console::JsonSnapshotStore<StateDumpError>(
+              {.magic = kStateDumpMagic,
+               .version = kStateDumpVersion},
+              "antwika life state dump document",
+              standardStateDumpMigrations),
+          world(world),
+          grid(grid),
+          drag(drag),
+          pointer(pointer)
     {
     }
 
-    void LifeSnapshotStore::dump(
-        const std::string &path,
-        const std::vector<std::string> &console)
+    nlohmann::json LifeSnapshotStore::takeState(const std::string &)
     {
-        // The excluded lines are the envelope temporary's unwind arms.
-        // Only a failed allocation inside them could take one.
-        // See docs/confirming-unreachable-branches.md.
-        dumpFormat().write(
-            // GCOVR_EXCL_START
-            antwika::console::Snapshot{
-                .console = console, .state = stateDumpToJson(take())},
-            // GCOVR_EXCL_STOP
-            path);
+        return stateDumpToJson(take());
+    }
 
-        // The excluded line is the local snapshot's unwind destructor.
-        // Nothing after its construction throws but the write itself.
-    } // GCOVR_EXCL_LINE
-
-    std::vector<std::string> LifeSnapshotStore::load(
-        const std::string &path)
+    void LifeSnapshotStore::applyState(
+        const std::string &, const nlohmann::json &state)
     {
-        auto snapshot = dumpFormat().read(path);
-
-        try
-        {
-            apply(stateDumpFromJson(snapshot.state));
-        }
-        // The state's own reader promises StateDumpError.
-        // What this seam promises is console::SnapshotError.
-        // So it is rewrapped here, exactly as apps/game's store does.
-        catch (const StateDumpError &failed) // GCOVR_EXCL_LINE
-        {
-            throw antwika::console::SnapshotError(failed.what());
-        }
-
-        return snapshot.console;
+        apply(stateDumpFromJson(state));
     }
 
     StateDump LifeSnapshotStore::take() const

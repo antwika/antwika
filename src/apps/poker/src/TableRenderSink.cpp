@@ -1,11 +1,10 @@
 #include "antwika/poker/TableRenderSink.hpp"
 
-#include <antwika/ui/Painter.hpp>
-
 #include <functional>
 #include <optional>
 #include <utility>
 
+#include <antwika/app/FramePresentation.hpp>
 #include <antwika/engine/Events.hpp>
 
 #include "antwika/poker/TableSnapshot.hpp"
@@ -56,22 +55,19 @@ namespace antwika::poker
             return;
         }
 
-        auto &renderer = window.renderer();
-        scene.draw(
-            renderer,
-            canvas,
-            snapshotOf(table, game, tableName),
-            atlas);
-
         // The console last of all, when one is mounted.
         // Described in the tick path; painted here only.
-        if (consolePicture.has_value())
-        {
-            antwika::ui::paint(
-                renderer, consolePicture->get().commands());
-        }
-
-        renderer.present();
+        antwika::app::presentFrame(
+            window,
+            consolePicture,
+            [this](antwika::gfx::IRenderer &renderer)
+            {
+                scene.draw(
+                    renderer,
+                    canvas,
+                    snapshotOf(table, game, tableName),
+                    atlas);
+            });
 
         // Poker at one step per tick is unwatchable without this.
         sleeper.sleep(framePeriod);

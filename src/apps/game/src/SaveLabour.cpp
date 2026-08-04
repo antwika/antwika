@@ -3,6 +3,8 @@
 
 #include <nlohmann/json.hpp>
 
+#include <antwika/replay/JsonShapes.hpp>
+
 #include "antwika/game/SaveFormatError.hpp"
 #include "antwika/game/SaveGame.hpp"
 #include "SaveSections.hpp"
@@ -33,19 +35,13 @@ namespace antwika::game
         [[nodiscard]] nlohmann::json ledgerShape(
             const char *linkName)
         {
-            nlohmann::json entry;
-            entry["type"] = "object";
-            entry["additionalProperties"] = false;
-            entry["required"] = {linkName, "count"}; // GCOVR_EXCL_LINE
+            nlohmann::json entry =
+                antwika::replay::objectShape({linkName, "count"});
             entry["properties"][linkName] = signedCountShape();
             entry["properties"]["count"] = signedCountShape();
 
-            nlohmann::json shape;
-            shape["type"] = "object";
-            shape["additionalProperties"] = false;
-            // GCOVR_EXCL_START
-            shape["required"] = {"entries", "countdown"};
-            // GCOVR_EXCL_STOP
+            nlohmann::json shape =
+                antwika::replay::objectShape({"entries", "countdown"});
             shape["properties"]["entries"]["type"] = "array";
             shape["properties"]["entries"]["items"] = entry;
             shape["properties"]["countdown"] = signedCountShape();

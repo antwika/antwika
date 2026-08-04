@@ -1,5 +1,7 @@
 #include "antwika/game/Action.hpp"
 
+#include <antwika/replay/NameTable.hpp>
+
 #include "antwika/game/MessageId.hpp"
 
 namespace antwika::game
@@ -11,13 +13,14 @@ namespace antwika::game
         // Every entry is addressed by actionIndex().
         // So an action added to the enumeration is a compile error.
         // Rather than an arm somebody forgot.
-        constexpr std::array<std::string_view, kActionCount> kNames{
-            "pause",
-            "zoom_in",
-            "zoom_out",
-            "reset_view",
-            "console_toggle",
-            "console_execute"};
+        constexpr antwika::replay::NameTable<Action, kActionCount>
+            kNames{
+                {"pause",
+                 "zoom_in",
+                 "zoom_out",
+                 "reset_view",
+                 "console_toggle",
+                 "console_execute"}};
 
         constexpr std::array<MessageId, kActionCount> kLabels{
             MessageId::ActionPause,
@@ -30,20 +33,12 @@ namespace antwika::game
 
     std::string_view actionName(Action action) noexcept
     {
-        return kNames[actionIndex(action)];
+        return kNames.name(action);
     }
 
     std::optional<Action> actionFromName(std::string_view name) noexcept
     {
-        for (const auto action : kActions)
-        {
-            if (actionName(action) == name)
-            {
-                return action;
-            }
-        }
-
-        return std::nullopt;
+        return kNames.from(name);
     }
 
     MessageId actionLabel(Action action) noexcept

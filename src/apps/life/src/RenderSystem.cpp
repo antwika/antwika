@@ -1,6 +1,6 @@
 #include "antwika/life/RenderSystem.hpp"
 
-#include <antwika/ui/Painter.hpp>
+#include <antwika/app/FramePresentation.hpp>
 
 #include "antwika/life/Board.hpp"
 
@@ -27,16 +27,14 @@ namespace antwika::life
     {
         const auto board = readBoardFromView(world, width, height);
 
-        auto &renderer = window.renderer();
-        scene.draw(renderer, window.configuredSize(), board);
-
         // Described in the tick path like the board, painted here only.
-        if (console.has_value())
-        {
-            antwika::ui::paint(renderer, console->get().commands());
-        }
-
-        renderer.present();
+        antwika::app::presentFrame(
+            window,
+            console,
+            [this, &board](antwika::gfx::IRenderer &renderer)
+            {
+                scene.draw(renderer, window.configuredSize(), board);
+            });
     }
 
 } // namespace antwika::life

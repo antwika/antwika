@@ -232,8 +232,9 @@ namespace antwika::game
      * that is only supposed to read.
      *
      * **Every picture here is drawn in canvas pixels and scaled on the
-     * way out.** Each frame builds a gfx::ViewportRenderer over the
-     * window's reported size and the configured canvas, and every scene,
+     * way out.** Each frame goes through app::presentViewport(), which
+     * builds a gfx::ViewportRenderer over the window's reported size
+     * and the configured canvas, and every scene,
      * every UI painter and every readout draws through that. So the
      * whole game is laid out, hit-tested and simulated against one fixed
      * canvas -- nothing inside the tick path learns what size the window
@@ -308,10 +309,6 @@ namespace antwika::game
         void draw(antwika::animation::Progress subTick) override;
 
     private:
-        void drawMode(
-            antwika::gfx::IRenderer &renderer,
-            antwika::animation::Progress subTick);
-
         void drawScreen(
             antwika::gfx::IRenderer &renderer,
             antwika::animation::Progress subTick);

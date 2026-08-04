@@ -1,10 +1,14 @@
 find_package(GTest REQUIRED)
 
+add_subdirectory(conformance)
+
 add_executable(antwika_console_tests
     ConsoleGatedSinkTest.cpp
+    ConsoleMountTest.cpp
     ConsoleSceneTest.cpp
     ConsoleStateTest.cpp
     InputFoldTest.cpp
+    JsonSnapshotStoreTest.cpp
     SnapshotCommandsTest.cpp
     SnapshotFormatTest.cpp
     TypingTest.cpp

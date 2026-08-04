@@ -1,27 +1,18 @@
 #include "antwika/sudoku/Messages.hpp"
 
-#include <array>
-#include <cstddef>
-#include <span>
-
-#include <antwika/i18n/Catalogue.hpp>
-#include <antwika/i18n/Locale.hpp>
-#include <antwika/i18n/MessageName.hpp>
+#include <antwika/i18n/MessageTable.hpp>
 
 #include "antwika/sudoku/MessageId.hpp"
 
 namespace antwika::sudoku
 {
 
-    namespace
-    {
-
-        using i18n::Catalogue;
-        using i18n::CatalogueEntry;
-        using i18n::Locale;
-        using i18n::MessageName;
-
-        constexpr std::array<MessageName<MessageId>, 8> kNames{{
+    // Every array lists every id, in the same order.
+    // A forgotten entry is a value-initialised hole, not a short array.
+    // isComplete() below is what sees that hole.
+    // A missing Swedish string is a red build, not a wrong label.
+    constexpr i18n::MessageTable<MessageId> kMessageTable{
+        .names{{
             {MessageId::Title, "Title"},
             {MessageId::SolveButton, "SolveButton"},
             {MessageId::Hint, "Hint"},
@@ -30,61 +21,33 @@ namespace antwika::sudoku
             {MessageId::NoSolution, "NoSolution"},
             {MessageId::LimitExceeded, "LimitExceeded"},
             {MessageId::GivenLocked, "GivenLocked"},
-        }};
+        }},
+        .english{{
+            {MessageId::Title, "Sudoku"},
+            {MessageId::SolveButton, "Solve"},
+            {MessageId::Hint,
+             "Pick a square, then type 1-9. Backspace clears it."},
+            {MessageId::Solved, "Solved."},
+            {MessageId::Complete, "Finished. Every square agrees."},
+            {MessageId::NoSolution, "No solution exists from here."},
+            {MessageId::LimitExceeded, "Solver step limit exceeded."},
+            {MessageId::GivenLocked, "That square is a clue."},
+        }},
+        .swedish{{
+            {MessageId::Title, "Sudoku"},
+            {MessageId::SolveButton, "Lös"},
+            {MessageId::Hint,
+             "Välj en ruta och skriv 1-9. Backsteg tömmer den."},
+            {MessageId::Solved, "Löst."},
+            {MessageId::Complete, "Klart. Alla rutor stämmer."},
+            {MessageId::NoSolution, "Det finns ingen lösning härifrån."},
+            {MessageId::LimitExceeded, "Lösarens stegtak överskreds."},
+            {MessageId::GivenLocked, "Den rutan är en ledtråd."},
+        }},
+    };
 
-        static_assert(
-            kNames.size() == static_cast<std::size_t>(MessageId::Count),
-            "every MessageId must appear in kNames exactly once");
-
-        // Both arrays list every id, in the same order.
-        // MessagesTest asserts they cover exactly kNames.
-        // That assertion is the point of keying by id.
-        // A forgotten Swedish entry is a red build, not a wrong label.
-        constexpr std::array<CatalogueEntry<MessageId>, kNames.size()>
-            kEnglishEntries{{
-                {MessageId::Title, "Sudoku"},
-                {MessageId::SolveButton, "Solve"},
-                {MessageId::Hint,
-                 "Pick a square, then type 1-9. Backspace clears it."},
-                {MessageId::Solved, "Solved."},
-                {MessageId::Complete, "Finished. Every square agrees."},
-                {MessageId::NoSolution, "No solution exists from here."},
-                {MessageId::LimitExceeded, "Solver step limit exceeded."},
-                {MessageId::GivenLocked, "That square is a clue."},
-            }};
-
-        constexpr std::array<CatalogueEntry<MessageId>, kNames.size()>
-            kSwedishEntries{{
-                {MessageId::Title, "Sudoku"},
-                {MessageId::SolveButton, "Lös"},
-                {MessageId::Hint,
-                 "Välj en ruta och skriv 1-9. Backsteg tömmer den."},
-                {MessageId::Solved, "Löst."},
-                {MessageId::Complete, "Klart. Alla rutor stämmer."},
-                {MessageId::NoSolution, "Det finns ingen lösning härifrån."},
-                {MessageId::LimitExceeded, "Lösarens stegtak överskreds."},
-                {MessageId::GivenLocked, "Den rutan är en ledtråd."},
-            }};
-
-        constexpr Catalogue<MessageId> kEnglishCatalogue{
-            Locale::English, kEnglishEntries};
-
-        constexpr Catalogue<MessageId> kSwedishCatalogue{
-            Locale::Swedish, kSwedishEntries};
-
-    } // namespace
-
-    std::span<const i18n::MessageName<MessageId>>
-        Messages::names() noexcept
-    {
-        return kNames;
-    }
-
-    const i18n::Catalogue<MessageId> &Messages::catalogueFor(
-        i18n::Locale locale) noexcept
-    {
-        return antwika::i18n::pickCatalogue(
-            locale, kEnglishCatalogue, kSwedishCatalogue);
-    }
+    static_assert(
+        i18n::isComplete(kMessageTable),
+        "every MessageId needs a name and text in both locales");
 
 } // namespace antwika::sudoku

@@ -1,17 +1,15 @@
 #include "antwika/app/WindowCloseSource.hpp"
 
-#include <variant>
-
 #include <antwika/engine/Events.hpp>
 #include <antwika/event/ITickEventSource.hpp>
-#include <antwika/gfx/WindowEvent.hpp>
+
+#include "antwika/app/WindowEvents.hpp"
 
 namespace antwika::app
 {
 
     using antwika::engine::events::kStop;
     using antwika::event::ITickEventSource;
-    using antwika::gfx::CloseRequested;
 
     WindowCloseSource::WindowCloseSource(
         ITickEventSource &inner, IGfxBackend &backend, IWindow &window)
@@ -38,19 +36,9 @@ namespace antwika::app
 
     void WindowCloseSource::pumpEvents()
     {
-        while (const auto event = backend.pollEvent())
+        if (closeRequestedOn(backend, window.id()))
         {
-            // The backend pumps one queue for all its windows.
-            // An event for somebody else's window is not ours.
-            if (event->window != window.id())
-            {
-                continue;
-            }
-
-            if (std::holds_alternative<CloseRequested>(event->payload))
-            {
-                window.close();
-            }
+            window.close();
         }
     }
 

@@ -11,8 +11,9 @@
 #include <antwika/console/ConsolePicture.hpp>
 #include <antwika/console/ConsoleState.hpp>
 #include <antwika/console/SnapshotFormat.hpp>
-#include <antwika/engine/Events.hpp>
-#include <antwika/event/Event.hpp>
+#include <antwika/console/conformance/ConsoleContract.hpp>
+#include <antwika/console/conformance/ConsoleSnapshotRoundTrip.hpp>
+#include <antwika/console/testing/ConsoleScript.hpp>
 #include <antwika/event/mocks/MockEventSink.hpp>
 #include <antwika/event/TickEvent.hpp>
 #include <antwika/gfx/Bitmap.hpp>
@@ -23,7 +24,6 @@
 #include <antwika/input/InputEvent.hpp>
 #include <antwika/input/InputEventCodec.hpp>
 #include <antwika/input/Key.hpp>
-#include <antwika/input/MouseButton.hpp>
 #include <antwika/log/mocks/MockLogger.hpp>
 #include <antwika/replay/ReplaySource.hpp>
 #include <antwika/testing/ScratchPath.hpp>
@@ -52,7 +52,13 @@ using antwika::atlas_editor::TileGrid;
 using antwika::atlas_editor::Tool;
 using antwika::atlas_editor::UiOverlay;
 using antwika::console::kConsoleAnimTicks;
-using antwika::event::Event;
+using antwika::console::testing::keyAt;
+using antwika::console::testing::kOpenTick;
+using antwika::console::testing::moveTo;
+using antwika::console::testing::pressAt;
+using antwika::console::testing::releaseAt;
+using antwika::console::testing::stopAt;
+using antwika::console::testing::typeText;
 using antwika::event::mocks::MockEventSink;
 using antwika::event::TickEvent;
 using antwika::gfx::Bitmap;
@@ -61,99 +67,24 @@ using antwika::gfx::Size;
 using antwika::input::InputEventCodec;
 using antwika::input::Key;
 using antwika::input::KeyPressed;
-using antwika::input::MouseButton;
 using antwika::log::mocks::MockLogger;
 using antwika::replay::ReplaySource;
 using antwika::testing::ScratchDirectory;
 using antwika::time::Tick;
 using ::testing::NiceMock;
-using ::testing::StartsWith;
 
 namespace
 {
     constexpr Size kCanvas{.width = 800, .height = 480};
 
-    // The first tick on which the field reads.
-    // The toggle goes down on tick 1 and each tick slides one step.
-    constexpr Tick kOpenTick = 1 + kConsoleAnimTicks;
-
-    [[nodiscard]] TickEvent keyAt(
-        const InputEventCodec &codec,
-        const Tick tick,
-        const Key key,
-        const bool shift = false,
-        const bool control = false)
+    // Ctrl held, for the copy and paste chords.
+    [[nodiscard]] TickEvent chordAt(
+        const InputEventCodec &codec, const Tick tick, const Key key)
     {
-        return TickEvent{
-            .tick = tick,
-            .event = codec.encode(KeyPressed{
-                .key = key,
-                .modifiers = {.shift = shift, .control = control}})};
-    }
-
-    // The keys that type one command, one press per character.
-    // Only what the two commands need: letters and underscore.
-    // A run types by the Swedish board, the fixed default here.
-    // So the underscore is shift over the American slash position.
-    void typeText(
-        std::vector<TickEvent> &events,
-        const InputEventCodec &codec,
-        const Tick tick,
-        const std::string_view text)
-    {
-        for (const char character : text)
-        {
-            if (character == '_')
-            {
-                events.push_back(keyAt(codec, tick, Key::Slash, true));
-                continue;
-            }
-
-            events.push_back(keyAt(
-                codec,
-                tick,
-                static_cast<Key>(
-                    static_cast<std::uint8_t>(Key::A)
-                    + (character - 'a'))));
-        }
-    }
-
-    [[nodiscard]] TickEvent pressAt(
-        const InputEventCodec &codec, const Tick tick, const Point at)
-    {
-        return TickEvent{
-            .tick = tick,
-            .event = codec.encode(
-                antwika::input::PointerButtonPressed{
-                    .button = MouseButton::Left,
-                    .position = {.x = at.x, .y = at.y}})};
-    }
-
-    [[nodiscard]] TickEvent releaseAt(
-        const InputEventCodec &codec, const Tick tick, const Point at)
-    {
-        return TickEvent{
-            .tick = tick,
-            .event = codec.encode(
-                antwika::input::PointerButtonReleased{
-                    .button = MouseButton::Left,
-                    .position = {.x = at.x, .y = at.y}})};
-    }
-
-    [[nodiscard]] TickEvent moveTo(
-        const InputEventCodec &codec, const Tick tick, const Point at)
-    {
-        return TickEvent{
-            .tick = tick,
-            .event = codec.encode(antwika::input::PointerMoved{
-                .position = {.x = at.x, .y = at.y}})};
-    }
-
-    [[nodiscard]] TickEvent stopAt(const Tick tick)
-    {
-        return TickEvent{
-            .tick = tick,
-            .event = Event{.name = antwika::engine::events::kStop}};
+        return keyAt(
+            codec,
+            tick,
+            KeyPressed{.key = key, .modifiers = {.control = true}});
     }
 
     class MemoryStore final : public IAtlasStore
@@ -245,43 +176,55 @@ namespace
 
         return format.read(path);
     }
+
+    // This application's half of the shared console contract.
+    struct AtlasEditorConsoleTraits
+    {
+        using Summary = EditorSummary;
+
+        static Summary run(
+            std::vector<TickEvent> script,
+            const std::string &dumpPath,
+            const bool loadEnabled)
+        {
+            script.push_back(stopAt(kOpenTick + 1));
+
+            ReplaySource source(std::move(script));
+            ConsoleHarness harness;
+
+            return harness.run(source, 40, dumpPath, loadEnabled);
+        }
+
+        static const std::vector<std::string> &console(
+            const Summary &summary)
+        {
+            return summary.console;
+        }
+
+        static void expectUntouched(const Summary &summary)
+        {
+            EXPECT_EQ(summary.edits, 0U);
+        }
+
+        static std::string scratchPrefix()
+        {
+            return "antwika_atlas_editor_console.";
+        }
+    };
 } // namespace
 
-TEST(ConsoleSinkTest, AnUnknownCommandIsEchoedAndRefused)
+namespace antwika::console::conformance
 {
-    ConsoleHarness harness;
-    std::vector<TickEvent> events{keyAt(harness.codec, 1, Key::Grave)};
-    typeText(events, harness.codec, kOpenTick, "hello");
-    events.push_back(keyAt(harness.codec, kOpenTick, Key::Enter));
-    events.push_back(stopAt(kOpenTick + 1));
-    ReplaySource source(std::move(events));
 
-    const auto summary = harness.run(source, 40, "unused.json");
+    INSTANTIATE_TYPED_TEST_SUITE_P(
+        AtlasEditor, ConsoleContract, AtlasEditorConsoleTraits);
 
-    EXPECT_EQ(
-        summary.console,
-        (std::vector<std::string>{
-            "> hello", "unknown command: hello"}));
-}
+    INSTANTIATE_TYPED_TEST_SUITE_P(
+        AtlasEditor,
+        ConsoleSnapshotRoundTrip,
+        AtlasEditorConsoleTraits);
 
-TEST(ConsoleSinkTest, TypingBeforeFullyOpenReachesNoField)
-{
-    ConsoleHarness harness;
-    std::vector<TickEvent> events{keyAt(harness.codec, 1, Key::Grave)};
-
-    // Half way along the slide, none of this may land.
-    typeText(events, harness.codec, 3, "hello");
-    events.push_back(keyAt(harness.codec, 3, Key::Enter));
-
-    // Fully open, the field is still empty, so Enter says nothing.
-    events.push_back(keyAt(harness.codec, kOpenTick, Key::Enter));
-    events.push_back(stopAt(kOpenTick + 1));
-    ReplaySource source(std::move(events));
-
-    const auto summary = harness.run(source, 40, "unused.json");
-
-    EXPECT_TRUE(summary.console.empty());
-}
+} // namespace antwika::console::conformance
 
 TEST(ConsoleSinkTest, APressUnderTheSheetPaintsNoPixel)
 {
@@ -325,15 +268,14 @@ TEST(ConsoleSinkTest, TheChordsUnderTheOpenConsoleReachNoEditor)
     events.push_back(pressAt(harness.codec, 4, {.x = 295, .y = 295}));
     events.push_back(
         releaseAt(harness.codec, 4, {.x = 305, .y = 305}));
-    events.push_back(
-        keyAt(harness.codec, 5, Key::C, false, true));
+    events.push_back(chordAt(harness.codec, 5, Key::C));
 
     // Ctrl+V over an open console must paste nothing at all.
     events.push_back(
         moveTo(harness.codec, 5, {.x = 500, .y = 300}));
     events.push_back(keyAt(harness.codec, 6, Key::Grave));
-    events.push_back(keyAt(
-        harness.codec, 6 + kConsoleAnimTicks, Key::V, false, true));
+    events.push_back(
+        chordAt(harness.codec, 6 + kConsoleAnimTicks, Key::V));
 
     // Closed again, the same chord pastes where the pointer is.
     events.push_back(
@@ -341,8 +283,7 @@ TEST(ConsoleSinkTest, TheChordsUnderTheOpenConsoleReachNoEditor)
     const Tick closed = 6 + 2 * kConsoleAnimTicks + 1;
     events.push_back(
         moveTo(harness.codec, closed, {.x = 600, .y = 300}));
-    events.push_back(
-        keyAt(harness.codec, closed, Key::V, false, true));
+    events.push_back(chordAt(harness.codec, closed, Key::V));
     events.push_back(stopAt(closed + 1));
     ReplaySource source(std::move(events));
 
@@ -417,8 +358,6 @@ TEST(ConsoleSinkTest, LoadStateComesBackToTheDumpedInstant)
         harness.run(source, 40, path);
     }
 
-    const auto dumped = readDump(path);
-
     // A fresh session loads it, closes the console, and clicks.
     // The click lands on the very pixel the dump holds painted.
     ConsoleHarness fresh;
@@ -439,50 +378,8 @@ TEST(ConsoleSinkTest, LoadStateComesBackToTheDumpedInstant)
 
     // The pixel was already down, so the click changed nothing.
     // The count is the dump's own, carried back exactly.
+    // What the console history carries over is the contract's.
     EXPECT_EQ(summary.edits, 1U);
-
-    auto expected = dumped.console;
-    expected.push_back("loaded state from " + path);
-    EXPECT_EQ(summary.console, expected);
-}
-
-TEST(ConsoleSinkTest, LoadStateIsRefusedWhileRecordingOrReplaying)
-{
-    ConsoleHarness harness;
-    std::vector<TickEvent> events{keyAt(harness.codec, 1, Key::Grave)};
-    typeText(events, harness.codec, kOpenTick, "load_state");
-    events.push_back(keyAt(harness.codec, kOpenTick, Key::Enter));
-    events.push_back(stopAt(kOpenTick + 1));
-    ReplaySource source(std::move(events));
-
-    const auto summary =
-        harness.run(source, 40, "unused.json", false);
-
-    EXPECT_EQ(
-        summary.console,
-        (std::vector<std::string>{
-            "> load_state",
-            "load_state: not available while recording or replaying"}));
-    EXPECT_EQ(summary.edits, 0U);
-}
-
-TEST(ConsoleSinkTest, LoadStateAnswersAFileThatIsNotThere)
-{
-    const ScratchDirectory dir("antwika_atlas_console_absent.");
-    const auto path = (dir.path() / "dump_state.json").string();
-
-    ConsoleHarness harness;
-    std::vector<TickEvent> events{keyAt(harness.codec, 1, Key::Grave)};
-    typeText(events, harness.codec, kOpenTick, "load_state");
-    events.push_back(keyAt(harness.codec, kOpenTick, Key::Enter));
-    events.push_back(stopAt(kOpenTick + 1));
-    ReplaySource source(std::move(events));
-
-    const auto summary = harness.run(source, 40, path);
-
-    ASSERT_EQ(summary.console.size(), 2U);
-    EXPECT_EQ(summary.console[0], "> load_state");
-    EXPECT_THAT(summary.console[1], StartsWith("could not load: "));
 }
 
 TEST(ConsoleSinkTest, ARunWithoutAConsoleOverlayHasNoConsole)

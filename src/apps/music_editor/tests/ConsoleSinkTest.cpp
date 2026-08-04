@@ -1,8 +1,6 @@
 #include <chrono>
-#include <cstdint>
 #include <filesystem>
 #include <string>
-#include <string_view>
 #include <utility>
 #include <vector>
 
@@ -12,8 +10,9 @@
 #include <antwika/console/ConsolePicture.hpp>
 #include <antwika/console/ConsoleState.hpp>
 #include <antwika/console/SnapshotFormat.hpp>
-#include <antwika/engine/Events.hpp>
-#include <antwika/event/Event.hpp>
+#include <antwika/console/conformance/ConsoleContract.hpp>
+#include <antwika/console/conformance/ConsoleSnapshotRoundTrip.hpp>
+#include <antwika/console/testing/ConsoleScript.hpp>
 #include <antwika/event/TickEvent.hpp>
 #include <antwika/event/mocks/MockEventSink.hpp>
 #include <antwika/gfx/Size.hpp>
@@ -40,12 +39,14 @@
 #include "antwika/music_editor/SnapshotStore.hpp"
 #include "antwika/music_editor/StateDump.hpp"
 
-using antwika::event::Event;
+using antwika::console::testing::keyAt;
+using antwika::console::testing::kOpenTick;
+using antwika::console::testing::stopAt;
+using antwika::console::testing::typeText;
 using antwika::event::mocks::MockEventSink;
 using antwika::event::TickEvent;
 using antwika::input::InputEventCodec;
 using antwika::input::Key;
-using antwika::input::KeyPressed;
 using antwika::log::mocks::MockLogger;
 using antwika::music_editor::bootstrap;
 using antwika::music_editor::EditorScene;
@@ -56,7 +57,6 @@ using antwika::music_editor::PlaybackDesc;
 using antwika::replay::ReplaySource;
 using antwika::time::Tick;
 using ::testing::NiceMock;
-using ::testing::StartsWith;
 
 namespace
 {
@@ -64,9 +64,6 @@ namespace
         .rate = 48000, .channels = 2};
 
     constexpr antwika::gfx::Size kCanvas{.width = 1120, .height = 640};
-
-    // The first tick the console stands fully open on.
-    constexpr Tick kOpenTick = 1 + antwika::console::kConsoleAnimTicks;
 
     [[nodiscard]] PlaybackDesc pacing()
     {
@@ -78,55 +75,13 @@ namespace
             .lead = 2};
     }
 
-    [[nodiscard]] TickEvent keyAt(
-        const InputEventCodec &codec,
-        const Tick tick,
-        const Key key,
-        const bool shift = false)
-    {
-        return TickEvent{
-            .tick = tick,
-            .event = codec.encode(
-                KeyPressed{
-                    .key = key, .modifiers = {.shift = shift}})};
-    }
-
-    // Lowercase letters and the underscore, on the Swedish board.
-    void typeText(
-        std::vector<TickEvent> &events,
-        const InputEventCodec &codec,
-        const Tick tick,
-        const std::string_view text)
-    {
-        for (const char character : text)
-        {
-            if (character == '_')
-            {
-                events.push_back(keyAt(codec, tick, Key::Slash, true));
-                continue;
-            }
-
-            events.push_back(
-                keyAt(
-                    codec,
-                    tick,
-                    static_cast<Key>(
-                        static_cast<std::uint8_t>(Key::A)
-                        + (character - 'a'))));
-        }
-    }
-
     [[nodiscard]] EditorSummary run(
         std::vector<TickEvent> events,
         const std::string &dumpPath,
         const bool loadEnabled,
         const Tick stopTick = kOpenTick + 3)
     {
-        events.push_back(
-            TickEvent{
-                .tick = stopTick,
-                .event = Event{
-                    .name = antwika::engine::events::kStop}});
+        events.push_back(stopAt(stopTick));
 
         NiceMock<MockLogger> logger;
         NiceMock<MockEventSink> eventSink;
@@ -180,35 +135,51 @@ namespace
         return antwika::music_editor::editorDumpFromJson(
             format.read(path).state);
     }
+
+    // This application's half of the shared console contract.
+    struct MusicEditorConsoleTraits
+    {
+        using Summary = EditorSummary;
+
+        static Summary run(
+            std::vector<TickEvent> script,
+            const std::string &dumpPath,
+            const bool loadEnabled)
+        {
+            return ::run(std::move(script), dumpPath, loadEnabled);
+        }
+
+        static const std::vector<std::string> &console(
+            const Summary &summary)
+        {
+            return summary.console;
+        }
+
+        // A refused load leaves the pane where it opened.
+        // LoadStateRestoresTheSessionAndItsClock reads that in full.
+        static void expectUntouched(const Summary &)
+        {
+        }
+
+        static std::string scratchPrefix()
+        {
+            return "antwika_music_editor_console.";
+        }
+    };
 } // namespace
 
-TEST(ConsoleSinkTest, AnUnknownCommandIsEchoedAndRefused)
+namespace antwika::console::conformance
 {
-    InputEventCodec codec;
-    std::vector<TickEvent> events{keyAt(codec, 1, Key::Grave)};
-    typeText(events, codec, kOpenTick, "hello");
-    events.push_back(keyAt(codec, kOpenTick, Key::Enter));
 
-    const auto summary = run(std::move(events), "unused.json", true);
+    INSTANTIATE_TYPED_TEST_SUITE_P(
+        MusicEditor, ConsoleContract, MusicEditorConsoleTraits);
 
-    EXPECT_EQ(
-        summary.console,
-        (std::vector<std::string>{
-            "> hello", "unknown command: hello"}));
-}
+    INSTANTIATE_TYPED_TEST_SUITE_P(
+        MusicEditor,
+        ConsoleSnapshotRoundTrip,
+        MusicEditorConsoleTraits);
 
-// A key pressed while the sheet is still sliding types nowhere.
-TEST(ConsoleSinkTest, TypingIsGatedUntilTheConsoleStandsFullyOpen)
-{
-    InputEventCodec codec;
-    std::vector<TickEvent> events{keyAt(codec, 1, Key::Grave)};
-    typeText(events, codec, 2, "x");
-    events.push_back(keyAt(codec, kOpenTick, Key::Enter));
-
-    const auto summary = run(std::move(events), "unused.json", true);
-
-    EXPECT_TRUE(summary.console.empty());
-}
+} // namespace antwika::console::conformance
 
 // The console is on top, so a letter under it is the console's.
 // The document underneath keeps every character it had.
@@ -340,40 +311,6 @@ TEST(ConsoleSinkTest, LoadStateRestoresTheSessionAndItsClock)
     EXPECT_EQ(dump.playback.played, 25U);
 }
 
-TEST(ConsoleSinkTest, LoadStateIsRefusedWhileRecordingOrReplaying)
-{
-    InputEventCodec codec;
-    std::vector<TickEvent> events{keyAt(codec, 1, Key::Grave)};
-    typeText(events, codec, kOpenTick, "load_state");
-    events.push_back(keyAt(codec, kOpenTick, Key::Enter));
-
-    const auto summary = run(std::move(events), "unused.json", false);
-
-    EXPECT_EQ(
-        summary.console,
-        (std::vector<std::string>{
-            "> load_state",
-            "load_state: not available while recording or "
-            "replaying"}));
-}
-
-TEST(ConsoleSinkTest, LoadStateAnswersAFileThatIsNotThere)
-{
-    const antwika::testing::ScratchFile file(
-        "antwika_music_editor_console_absent.json");
-
-    InputEventCodec codec;
-    std::vector<TickEvent> events{keyAt(codec, 1, Key::Grave)};
-    typeText(events, codec, kOpenTick, "load_state");
-    events.push_back(keyAt(codec, kOpenTick, Key::Enter));
-
-    const auto summary =
-        run(std::move(events), file.path().string(), true);
-
-    ASSERT_EQ(summary.console.size(), 2U);
-    EXPECT_THAT(summary.console[1], StartsWith("could not load: "));
-}
-
 // No overlay named means no console, not an invisible one.
 TEST(ConsoleSinkTest, AnEditorWithNoConsoleIgnoresTheKeys)
 {
@@ -395,12 +332,7 @@ TEST(ConsoleSinkTest, AnEditorWithNoConsoleIgnoresTheKeys)
     const EditorScene scene;
     const InputEventCodec codec;
 
-    ReplaySource source(
-        {keyAt(codec, 1, Key::Grave),
-         TickEvent{
-             .tick = 3,
-             .event = Event{
-                 .name = antwika::engine::events::kStop}}});
+    ReplaySource source({keyAt(codec, 1, Key::Grave), stopAt(3)});
 
     const auto summary = bootstrap(
         MusicEditorWiring{

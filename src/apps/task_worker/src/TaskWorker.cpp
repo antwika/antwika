@@ -2,12 +2,8 @@
 
 #include <utility>
 
-#include <antwika/console/ConsoleScene.hpp>
-#include <antwika/console/ConsoleSink.hpp>
-#include <antwika/console/ConsoleState.hpp>
-#include <antwika/console/IConsoleControls.hpp>
+#include <antwika/console/ConsoleMount.hpp>
 #include <antwika/console/InputFold.hpp>
-#include <antwika/console/SnapshotCommands.hpp>
 #include <antwika/ecs/SystemScheduler.hpp>
 #include <antwika/ecs/World.hpp>
 #include <antwika/engine/Engine.hpp>
@@ -95,22 +91,11 @@ namespace antwika::task_worker
             world, systemScheduler, jobQueue, lookup, taskRegistry);
         StopSignal stopSignal;
 
-        // The console's own picture, which turns the console on.
-        // Absent, no console sink is registered and nothing changes.
-        antwika::console::ConsolePicture noConsole;
-        const bool hasConsole = config.consoleOverlay.has_value();
-        antwika::console::ConsolePicture &consolePicture =
-            hasConsole ? config.consoleOverlay->get() : noConsole;
-
         // Owned here rather than wired in.
         // The console is this app's one reader of input.
         // So nothing else shares the codec or the fold.
         const antwika::input::InputEventCodec codec;
         antwika::console::InputFold input(codec);
-
-        antwika::console::ConsoleState console;
-        const antwika::console::ConsoleScene consoleScene;
-        const antwika::console::FixedConsoleControls consoleControls;
 
         TaskWorkerSnapshotStore snapshotStore(
             world,
@@ -119,22 +104,19 @@ namespace antwika::task_worker
             submissionSink,
             jobQueue,
             lookup);
-        antwika::console::SnapshotCommands consoleCommands(
-            snapshotStore,
-            config.stateDumpPath,
-            config.consoleLoadEnabled);
 
-        // The excluded line is the setup temporary's unwind block.
-        // The sink's constructor stores references and cannot throw.
-        // See docs/confirming-unreachable-branches.md.
-        antwika::console::ConsoleSink consoleSink(
-            antwika::console::ConsoleSinkSetup{ // GCOVR_EXCL_LINE
-                .console = console,
-                .input = input,
-                .picture = consolePicture,
-                .scene = consoleScene,
-                .controls = consoleControls,
-                .commands = consoleCommands});
+        // The overlay is the console's own picture, which turns it on.
+        // Absent, no console sink is registered and nothing changes.
+        // No controls are named, so the shipped constants stand.
+        // A named setup rather than a temporary in the call.
+        // gcov parks a temporary's unwind code on its head line.
+        const antwika::console::ConsoleMountSetup consoleSetup{
+            .overlay = config.consoleOverlay,
+            .input = input,
+            .store = snapshotStore,
+            .dumpPath = config.stateDumpPath,
+            .loadEnabled = config.consoleLoadEnabled};
+        antwika::console::ConsoleMount consoleMount(consoleSetup);
 
         // The fold is first and the console right after it.
         // Ahead of everything else, as in every app mounting one.
@@ -142,10 +124,10 @@ namespace antwika::task_worker
         // apps/game wraps such sinks in ConsoleGatedSinks.
         // Here there is nothing to take a press away from.
         std::vector<std::reference_wrapper<ITickEventSink>> timedSinks;
-        if (hasConsole)
+        if (consoleMount.mounted())
         {
             timedSinks.push_back(input);
-            timedSinks.push_back(consoleSink);
+            timedSinks.push_back(consoleMount.sink());
         }
 
         timedSinks.push_back(submissionSink);
@@ -174,7 +156,7 @@ namespace antwika::task_worker
         // the throw edges of copying the two vectors into the record.
         return TaskWorkerSummary{ // GCOVR_EXCL_LINE
             .workers = std::move(finalState),
-            .console = console.history()};
+            .console = consoleMount.state().history()};
         // The excluded line is the local summary's unwind destructor.
         // Nothing between its construction and the return throws.
     } // GCOVR_EXCL_LINE

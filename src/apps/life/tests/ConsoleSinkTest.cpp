@@ -10,14 +10,14 @@
 #include <antwika/console/ConsolePicture.hpp>
 #include <antwika/console/ConsoleState.hpp>
 #include <antwika/console/SnapshotFormat.hpp>
-#include <antwika/engine/Events.hpp>
+#include <antwika/console/conformance/ConsoleContract.hpp>
+#include <antwika/console/conformance/ConsoleSnapshotRoundTrip.hpp>
+#include <antwika/console/testing/ConsoleScript.hpp>
 #include <antwika/event/Event.hpp>
 #include <antwika/event/TickEvent.hpp>
 #include <antwika/event/mocks/MockEventSink.hpp>
-#include <antwika/input/InputEvent.hpp>
 #include <antwika/input/InputEventCodec.hpp>
 #include <antwika/input/Key.hpp>
-#include <antwika/input/MouseButton.hpp>
 #include <antwika/log/mocks/MockLogger.hpp>
 #include <antwika/replay/ReplaySource.hpp>
 #include <antwika/testing/ScratchPath.hpp>
@@ -29,14 +29,17 @@
 #include "antwika/life/StateDump.hpp"
 
 using antwika::console::kConsoleAnimTicks;
+using antwika::console::testing::keyAt;
+using antwika::console::testing::kOpenTick;
+using antwika::console::testing::pressAt;
+using antwika::console::testing::stopAt;
+using antwika::console::testing::typeText;
 using antwika::ecs::World;
 using antwika::event::Event;
 using antwika::event::TickEvent;
 using antwika::event::mocks::MockEventSink;
 using antwika::input::InputEventCodec;
 using antwika::input::Key;
-using antwika::input::KeyPressed;
-using antwika::input::MouseButton;
 using antwika::life::Board;
 using antwika::life::DragState;
 using antwika::life::Grid;
@@ -45,7 +48,6 @@ using antwika::log::mocks::MockLogger;
 using antwika::replay::ReplaySource;
 using antwika::time::Tick;
 using ::testing::NiceMock;
-using ::testing::StartsWith;
 
 namespace
 {
@@ -54,63 +56,6 @@ namespace
 
     // Ten whole pixels per cell, so the sheet covers rows 0 and 1.
     constexpr antwika::gfx::Size kCanvas{.width = 40, .height = 40};
-
-    // The first tick on which the field reads.
-    // The toggle goes down on tick 1 and each tick slides one step.
-    constexpr Tick kOpenTick = 1 + kConsoleAnimTicks;
-
-    [[nodiscard]] TickEvent keyAt(
-        const InputEventCodec &codec,
-        Tick tick,
-        Key key,
-        bool shift = false)
-    {
-        return TickEvent{
-            .tick = tick,
-            .event = codec.encode(KeyPressed{
-                .key = key, .modifiers = {.shift = shift}})};
-    }
-
-    // The keys that type one command, one press per character.
-    // Only what the two commands need: letters, underscore, space.
-    // A run types by the Swedish board unless told otherwise.
-    // So the underscore is shift over the American slash position.
-    void typeText(
-        std::vector<TickEvent> &events,
-        const InputEventCodec &codec,
-        Tick tick,
-        std::string_view text)
-    {
-        for (const char character : text)
-        {
-            if (character == '_')
-            {
-                events.push_back(keyAt(codec, tick, Key::Slash, true));
-                continue;
-            }
-
-            events.push_back(keyAt(
-                codec,
-                tick,
-                static_cast<Key>(
-                    static_cast<std::uint8_t>(Key::A)
-                    + (character - 'a'))));
-        }
-    }
-
-    [[nodiscard]] TickEvent pressAt(
-        const InputEventCodec &codec,
-        Tick tick,
-        std::int32_t x,
-        std::int32_t y)
-    {
-        return TickEvent{
-            .tick = tick,
-            .event = codec.encode(
-                antwika::input::PointerButtonPressed{
-                    .button = MouseButton::Left,
-                    .position = {.x = x, .y = y}})};
-    }
 
     [[nodiscard]] TickEvent toggleAt(
         Tick tick, std::uint32_t x, std::uint32_t y)
@@ -121,13 +66,6 @@ namespace
                 .name = antwika::life::events::kToggleCell,
                 .payload = R"({"x":)" + std::to_string(x)
                            + R"(,"y":)" + std::to_string(y) + "}"}};
-    }
-
-    [[nodiscard]] TickEvent stopAt(Tick tick)
-    {
-        return TickEvent{
-            .tick = tick,
-            .event = Event{.name = antwika::engine::events::kStop}};
     }
 
     // A 2x2 block: a still life, so the generations leave it alone.
@@ -206,43 +144,54 @@ namespace
                 .stateDumpPath = dumpPath});
         }
     };
+
+    // This application's half of the shared console contract.
+    struct LifeConsoleTraits
+    {
+        using Summary = antwika::life::LifeSummary;
+
+        static Summary run(
+            std::vector<TickEvent> script,
+            const std::string &dumpPath,
+            const bool loadEnabled)
+        {
+            script.push_back(stopAt(kOpenTick + 1));
+
+            ReplaySource source(std::move(script));
+            ConsoleHarness harness;
+
+            return harness.run(source, 40, dumpPath, loadEnabled);
+        }
+
+        static const std::vector<std::string> &console(
+            const Summary &summary)
+        {
+            return summary.console;
+        }
+
+        static void expectUntouched(const Summary &summary)
+        {
+            EXPECT_EQ(
+                summary.board.alive, std::vector<bool>(16, false));
+        }
+
+        static std::string scratchPrefix()
+        {
+            return "antwika_life_console.";
+        }
+    };
 } // namespace
 
-TEST(ConsoleSinkTest, AnUnknownCommandIsEchoedAndRefused)
+namespace antwika::console::conformance
 {
-    ConsoleHarness harness;
-    std::vector<TickEvent> events{keyAt(harness.codec, 1, Key::Grave)};
-    typeText(events, harness.codec, kOpenTick, "hello");
-    events.push_back(keyAt(harness.codec, kOpenTick, Key::Enter));
-    events.push_back(stopAt(kOpenTick + 1));
-    ReplaySource source(std::move(events));
 
-    const auto summary = harness.run(source, 40, "unused.json");
+    INSTANTIATE_TYPED_TEST_SUITE_P(
+        Life, ConsoleContract, LifeConsoleTraits);
 
-    EXPECT_EQ(
-        summary.console,
-        (std::vector<std::string>{
-            "> hello", "unknown command: hello"}));
-}
+    INSTANTIATE_TYPED_TEST_SUITE_P(
+        Life, ConsoleSnapshotRoundTrip, LifeConsoleTraits);
 
-TEST(ConsoleSinkTest, TypingBeforeFullyOpenReachesNoField)
-{
-    ConsoleHarness harness;
-    std::vector<TickEvent> events{keyAt(harness.codec, 1, Key::Grave)};
-
-    // Half way along the slide, none of this may land.
-    typeText(events, harness.codec, 3, "hello");
-    events.push_back(keyAt(harness.codec, 3, Key::Enter));
-
-    // Fully open, the field is still empty, so Enter says nothing.
-    events.push_back(keyAt(harness.codec, kOpenTick, Key::Enter));
-    events.push_back(stopAt(kOpenTick + 1));
-    ReplaySource source(std::move(events));
-
-    const auto summary = harness.run(source, 40, "unused.json");
-
-    EXPECT_TRUE(summary.console.empty());
-}
+} // namespace antwika::console::conformance
 
 TEST(ConsoleSinkTest, APressUnderTheSheetTogglesNoCell)
 {
@@ -251,8 +200,10 @@ TEST(ConsoleSinkTest, APressUnderTheSheetTogglesNoCell)
 
     // One press under the sheet and one below it.
     // Only the second may reach the board.
-    events.push_back(pressAt(harness.codec, kOpenTick, 5, 5));
-    events.push_back(pressAt(harness.codec, kOpenTick, 5, 35));
+    events.push_back(
+        pressAt(harness.codec, kOpenTick, {.x = 5, .y = 5}));
+    events.push_back(
+        pressAt(harness.codec, kOpenTick, {.x = 5, .y = 35}));
     events.push_back(stopAt(kOpenTick + 1));
     ReplaySource source(std::move(events));
 
@@ -332,50 +283,7 @@ TEST(ConsoleSinkTest, LoadStateComesBackToTheDumpedBoard)
 
     const auto summary = fresh.run(source, 40, path);
 
+    // The console history the load carried is the contract's.
+    // The board it came back to is this file's.
     EXPECT_EQ(summary.board.alive, dumped.state.board.alive);
-
-    // The dump's own exchange, then what loading it said.
-    auto expected = dumped.console;
-    expected.push_back("loaded state from " + path);
-    EXPECT_EQ(summary.console, expected);
-}
-
-TEST(ConsoleSinkTest, LoadStateIsRefusedWhileRecordingOrReplaying)
-{
-    ConsoleHarness harness;
-    std::vector<TickEvent> events{keyAt(harness.codec, 1, Key::Grave)};
-    typeText(events, harness.codec, kOpenTick, "load_state");
-    events.push_back(keyAt(harness.codec, kOpenTick, Key::Enter));
-    events.push_back(stopAt(kOpenTick + 1));
-    ReplaySource source(std::move(events));
-
-    const auto summary =
-        harness.run(source, 40, "unused.json", false);
-
-    EXPECT_EQ(
-        summary.console,
-        (std::vector<std::string>{
-            "> load_state",
-            "load_state: not available while recording or replaying"}));
-    EXPECT_EQ(summary.board.alive, std::vector<bool>(16, false));
-}
-
-TEST(ConsoleSinkTest, LoadStateAnswersAFileThatIsNotThere)
-{
-    const antwika::testing::ScratchFile file(
-        "antwika_life_console_load_absent.json");
-
-    ConsoleHarness harness;
-    std::vector<TickEvent> events{keyAt(harness.codec, 1, Key::Grave)};
-    typeText(events, harness.codec, kOpenTick, "load_state");
-    events.push_back(keyAt(harness.codec, kOpenTick, Key::Enter));
-    events.push_back(stopAt(kOpenTick + 1));
-    ReplaySource source(std::move(events));
-
-    const auto summary =
-        harness.run(source, 40, file.path().string());
-
-    ASSERT_EQ(summary.console.size(), 2U);
-    EXPECT_EQ(summary.console[0], "> load_state");
-    EXPECT_THAT(summary.console[1], StartsWith("could not load: "));
 }

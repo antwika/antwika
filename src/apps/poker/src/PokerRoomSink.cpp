@@ -2,11 +2,10 @@
 
 #include <string>
 
-#include <nlohmann/json-schema.hpp>
-
 #include <antwika/engine/Events.hpp>
 #include <antwika/holdem/Chips.hpp>
 #include <antwika/holdem/StepOutcome.hpp>
+#include <antwika/replay/JsonShapes.hpp>
 #include <antwika/replay/PayloadJson.hpp>
 
 #include "antwika/poker/Events.hpp"
@@ -21,56 +20,41 @@ namespace antwika::poker
     namespace
     {
 
+        // A named player, which both payloads open with.
+        // An empty name is nobody, and refused here.
+        void describePlayer(nlohmann::json &schema)
+        {
+            schema["properties"]["player"] = antwika::replay::wordShape();
+            schema["properties"]["player"]["minLength"] = 1;
+        }
+
         nlohmann::json playerAmountSchema(const char *title)
         {
-            nlohmann::json schema;
-            schema["$schema"] = "http://json-schema.org/draft-07/schema#";
-            schema["title"] = title;
-            schema["type"] = "object";
-            schema["additionalProperties"] = false;
-            schema["required"] = {"player", "amount"}; // GCOVR_EXCL_LINE
-            schema["properties"]["player"]["type"] = "string";
-            schema["properties"]["player"]["minLength"] = 1;
+            nlohmann::json schema =
+                antwika::replay::documentShape(title, {"player", "amount"});
+            describePlayer(schema);
             schema["properties"]["amount"]["type"] = "integer";
             schema["properties"]["amount"]["minimum"] = 1;
             return schema;
+        } // GCOVR_EXCL_LINE
+
+        nlohmann::json depositSchema()
+        {
+            return playerAmountSchema("poker.deposit payload");
         }
 
-        nlohmann::json playerSchema()
+        nlohmann::json buyInSchema()
         {
-            nlohmann::json schema;
-            schema["$schema"] = "http://json-schema.org/draft-07/schema#";
-            schema["title"] = "poker.cash_out payload";
-            schema["type"] = "object";
-            schema["additionalProperties"] = false;
-            schema["required"] = {"player"}; // GCOVR_EXCL_LINE
-            schema["properties"]["player"]["type"] = "string";
-            schema["properties"]["player"]["minLength"] = 1;
+            return playerAmountSchema("poker.buy_in payload");
+        }
+
+        nlohmann::json cashOutSchema()
+        {
+            nlohmann::json schema = antwika::replay::documentShape(
+                "poker.cash_out payload", {"player"});
+            describePlayer(schema);
             return schema;
-        }
-
-        const nlohmann::json_schema::json_validator &depositValidator()
-        {
-            static const nlohmann::json_schema::json_validator validator(
-                playerAmountSchema(
-                    "poker.deposit payload")); // GCOVR_EXCL_LINE
-            return validator;
-        }
-
-        const nlohmann::json_schema::json_validator &buyInValidator()
-        {
-            static const nlohmann::json_schema::json_validator validator(
-                playerAmountSchema(
-                    "poker.buy_in payload")); // GCOVR_EXCL_LINE
-            return validator;
-        }
-
-        const nlohmann::json_schema::json_validator &cashOutValidator()
-        {
-            static const nlohmann::json_schema::json_validator validator(
-                playerSchema()); // GCOVR_EXCL_LINE
-            return validator;
-        }
+        } // GCOVR_EXCL_LINE
 
     } // namespace
 
@@ -104,7 +88,7 @@ namespace antwika::poker
             const auto parsed =
                 antwika::replay::parseAndValidatePayload<PokerEventError>(
                     event.event.payload,
-                    depositValidator(),
+                    antwika::replay::validatorFor<depositSchema>(),
                     "PokerRoomSink: poker.deposit payload");
             ledger.deposit(
                 parsed.at("player").get<std::string>(),
@@ -117,7 +101,7 @@ namespace antwika::poker
             const auto parsed =
                 antwika::replay::parseAndValidatePayload<PokerEventError>(
                     event.event.payload,
-                    buyInValidator(),
+                    antwika::replay::validatorFor<buyInSchema>(),
                     "PokerRoomSink: poker.buy_in payload");
             static_cast<void>(game.buyIn(
                 parsed.at("player").get<std::string>(),
@@ -130,7 +114,7 @@ namespace antwika::poker
             const auto parsed =
                 antwika::replay::parseAndValidatePayload<PokerEventError>(
                     event.event.payload,
-                    cashOutValidator(),
+                    antwika::replay::validatorFor<cashOutSchema>(),
                     "PokerRoomSink: poker.cash_out payload");
             game.cashOut(parsed.at("player").get<std::string>());
         }

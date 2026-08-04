@@ -65,16 +65,11 @@ namespace antwika::game
 
         [[nodiscard]] nlohmann::json householdShape()
         {
-            nlohmann::json shape;
-            shape["type"] = "object";
-            shape["additionalProperties"] = false;
-            // GCOVR_EXCL_START
-            shape["required"] = {
-                "level",
-                "ticksUntilEvolve",
-                "ticksUntilDevolve",
-                "population"};
-            // GCOVR_EXCL_STOP
+            nlohmann::json shape = replay::objectShape(
+                {"level",
+                 "ticksUntilEvolve",
+                 "ticksUntilDevolve",
+                 "population"});
             shape["properties"]["level"] = replay::wordShape();
             shape["properties"]["ticksUntilEvolve"] = signedCountShape();
             shape["properties"]["ticksUntilDevolve"] = signedCountShape();

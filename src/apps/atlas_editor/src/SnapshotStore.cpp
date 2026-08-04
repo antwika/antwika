@@ -2,12 +2,9 @@
 
 #include <fstream>
 #include <optional>
-#include <stdexcept>
 #include <string>
 #include <utility>
 
-#include <antwika/console/SnapshotError.hpp>
-#include <antwika/console/SnapshotFormat.hpp>
 #include <antwika/gfx/Bitmap.hpp>
 #include <antwika/gfx/GfxError.hpp>
 #include <antwika/gfx/PngReader.hpp>
@@ -27,19 +24,6 @@ namespace antwika::atlas_editor
 
     namespace
     {
-        const antwika::console::SnapshotFormat &dumpFormat()
-        {
-            // The excluded closing line carries the static guard.
-            // Its concurrency arms are unreachable one-threaded.
-            // See docs/confirming-unreachable-branches.md.
-            static const antwika::console::SnapshotFormat format(
-                {.magic = kStateDumpMagic,
-                 .version = kStateDumpVersion},
-                "antwika atlas editor state dump document",
-                standardStateDumpMigrations); // GCOVR_EXCL_LINE
-            return format;
-        }
-
         // The PNG paths are derived, never asked for.
         // One name on the console names the whole set of files.
         [[nodiscard]] std::string sidePath(
@@ -143,95 +127,69 @@ namespace antwika::atlas_editor
 
     EditorSnapshotStore::EditorSnapshotStore(
         EditorState &state) noexcept
-        : state(state)
+        : console::JsonSnapshotStore<std::runtime_error>(
+              {.magic = kStateDumpMagic,
+               .version = kStateDumpVersion},
+              "antwika atlas editor state dump document",
+              standardStateDumpMigrations),
+          state(state)
     {
     }
 
-    void EditorSnapshotStore::dump(
-        const std::string &path,
-        const std::vector<std::string> &console)
-    {
-        try
-        {
-            writePng(sheetPathFor(path), state.image().bitmap());
-
-            if (state.clipboardImage().has_value())
-            {
-                writePng(
-                    clipboardPathFor(path),
-                    state.clipboardImage()->bitmap());
-            }
-        }
-        // The seam promises console::SnapshotError.
-        // So the PNG side's GfxError is rewrapped at the boundary.
-        catch (const GfxError &failed) // GCOVR_EXCL_LINE
-        {
-            throw antwika::console::SnapshotError(failed.what());
-        }
-
-        // The excluded lines are the envelope temporary's unwind arms.
-        // Only a failed allocation inside them could take one.
-        // See docs/confirming-unreachable-branches.md.
-        dumpFormat().write(
-            antwika::console::Snapshot{ // GCOVR_EXCL_LINE
-                .console = console,
-                .state = stateDumpToJson(takeDump(state))}, // GCOVR_EXCL_LINE
-            path);
-
-        // The excluded line is the local snapshot's unwind destructor.
-        // Nothing after its construction throws but the write itself.
-    } // GCOVR_EXCL_LINE
-
-    std::vector<std::string> EditorSnapshotStore::load(
+    nlohmann::json EditorSnapshotStore::takeState(
         const std::string &path)
     {
-        auto snapshot = dumpFormat().read(path);
+        // The bitmaps go first.
+        // A document then only ever names PNGs already written.
+        // A GfxError from either leaves dump() as a SnapshotError.
+        writePng(sheetPathFor(path), state.image().bitmap());
 
-        try
+        if (state.clipboardImage().has_value())
         {
-            const auto dump = stateDumpFromJson(snapshot.state);
-
-            Canvas sheet(
-                readBoundPng(sheetPathFor(path), dump.sheet),
-                dump.sheetRevision);
-
-            std::optional<Canvas> clipboard;
-            if (dump.clipboard.has_value())
-            {
-                clipboard = Canvas(readBoundPng(
-                    clipboardPathFor(path), *dump.clipboard));
-            }
-
-            // The excluded line is the restore temporary's unwind arms.
-            // Only a failed allocation inside it could take one.
-            // See docs/confirming-unreachable-branches.md.
-            state.restore(SessionRestore{ // GCOVR_EXCL_LINE
-                .sheet = std::move(sheet),
-                .clipboard = std::move(clipboard),
-                .view = dump.view,
-                .tool = dump.tool,
-                .paint = dump.paint,
-                .swatch = dump.swatch,
-                .showGrid = dump.showGrid,
-                .showGuides = dump.showGuides,
-                .under = dump.under,
-                .marked = dump.marked,
-                .gesture = dump.gesture,
-                .changes = dump.changes,
-                .stepped = dump.stepped,
-                .written = dump.written,
-                .read = dump.read,
-                .savedRevision = dump.savedRevision});
-        }
-        // The document's reader and the PNG side promise their own.
-        // What this seam promises is console::SnapshotError.
-        // So both are rewrapped here, as game's store rewraps.
-        catch (const std::runtime_error &failed) // GCOVR_EXCL_LINE
-        {
-            throw antwika::console::SnapshotError(failed.what());
+            writePng(
+                clipboardPathFor(path),
+                state.clipboardImage()->bitmap());
         }
 
-        return snapshot.console;
+        return stateDumpToJson(takeDump(state));
+    }
+
+    void EditorSnapshotStore::applyState(
+        const std::string &path, const nlohmann::json &dumped)
+    {
+        const auto dump = stateDumpFromJson(dumped);
+
+        Canvas sheet(
+            readBoundPng(sheetPathFor(path), dump.sheet),
+            dump.sheetRevision);
+
+        std::optional<Canvas> clipboard;
+        if (dump.clipboard.has_value())
+        {
+            clipboard = Canvas(readBoundPng(
+                clipboardPathFor(path), *dump.clipboard));
+        }
+
+        // The excluded line is the restore temporary's unwind arms.
+        // Only a failed allocation inside it could take one.
+        // See docs/confirming-unreachable-branches.md.
+        state.restore(SessionRestore{ // GCOVR_EXCL_LINE
+            .sheet = std::move(sheet),
+            .clipboard = std::move(clipboard),
+            .view = dump.view,
+            .tool = dump.tool,
+            .paint = dump.paint,
+            .swatch = dump.swatch,
+            .showGrid = dump.showGrid,
+            .showGuides = dump.showGuides,
+            .under = dump.under,
+            .marked = dump.marked,
+            .gesture = dump.gesture,
+            .changes = dump.changes,
+            .stepped = dump.stepped,
+            .written = dump.written,
+            .read = dump.read,
+            .savedRevision = dump.savedRevision});
     }
 
 } // namespace antwika::atlas_editor

@@ -1,12 +1,27 @@
 #include "antwika/tower_defence/GridLayout.hpp"
 
-#include <algorithm>
-
+#include <antwika/geometry/Grid.hpp>
 #include <antwika/gfx/Glyphs.hpp>
 #include <antwika/ui/Theme.hpp>
 
 namespace antwika::tower_defence
 {
+
+    namespace
+    {
+        // The same four numbers under two sets of names.
+        // GridLayout is what BattleScene and the sink pass around.
+        // The arithmetic over it is antwika::geometry's.
+        [[nodiscard]] antwika::geometry::Grid gridOf(
+            const GridLayout &layout) noexcept
+        {
+            return antwika::geometry::Grid{
+                .origin = layout.origin,
+                .cell = layout.cell,
+                .columns = layout.width,
+                .rows = layout.height};
+        }
+    } // namespace
 
     std::uint32_t scoreBarHeight(const Size canvas) noexcept
     {
@@ -24,36 +39,33 @@ namespace antwika::tower_defence
         const std::uint32_t width,
         const std::uint32_t height)
     {
-        if (width == 0 || height == 0)
-        {
-            return std::nullopt;
-        }
-
         const std::uint32_t bar = scoreBarHeight(canvas);
         if (canvas.height <= bar)
         {
             return std::nullopt;
         }
 
-        const std::uint32_t usable = canvas.height - bar;
-        const std::uint32_t cell =
-            std::min(canvas.width / width, usable / height);
-        if (cell == 0)
+        // What parts this from every other grid in the tree.
+        // The strip is taken off the top before anything is fitted.
+        // So a click on the bar falls outside the area cells fitted in.
+        const auto grid = antwika::geometry::gridFit(
+            Rect{
+                .origin = Point{.x = 0, .y = static_cast<std::int32_t>(bar)},
+                .size = Size{
+                    .width = canvas.width, .height = canvas.height - bar}},
+            width,
+            height);
+
+        if (!grid.has_value())
         {
             return std::nullopt;
         }
 
-        const std::uint32_t drawnWidth = cell * width;
-        const std::uint32_t drawnHeight = cell * height;
         return GridLayout{
-            .width = width,
-            .height = height,
-            .cell = cell,
-            .origin = Point{
-                .x = static_cast<std::int32_t>(
-                    (canvas.width - drawnWidth) / 2),
-                .y = static_cast<std::int32_t>(
-                    bar + ((usable - drawnHeight) / 2))}};
+            .width = grid->columns,
+            .height = grid->rows,
+            .cell = grid->cell,
+            .origin = grid->origin};
     }
 
     std::optional<Cell> cellAt(
@@ -61,37 +73,22 @@ namespace antwika::tower_defence
         const std::int32_t x,
         const std::int32_t y)
     {
-        const std::int64_t localX =
-            static_cast<std::int64_t>(x) - layout.origin.x;
-        const std::int64_t localY =
-            static_cast<std::int64_t>(y) - layout.origin.y;
-        if (localX < 0 || localY < 0)
+        const auto cell = antwika::geometry::cellAt(
+            gridOf(layout), Point{.x = x, .y = y});
+
+        if (!cell.has_value())
         {
             return std::nullopt;
         }
 
-        const auto column =
-            static_cast<std::uint64_t>(localX) / layout.cell;
-        const auto row = static_cast<std::uint64_t>(localY) / layout.cell;
-        if (column >= layout.width || row >= layout.height)
-        {
-            return std::nullopt;
-        }
-
-        return Cell{
-            .x = static_cast<std::uint32_t>(column),
-            .y = static_cast<std::uint32_t>(row)};
+        return Cell{.x = cell->column, .y = cell->row};
     }
 
     Rect cellRect(const GridLayout &layout, const Cell &cell)
     {
-        return Rect{
-            .origin = Point{
-                .x = layout.origin.x
-                    + static_cast<std::int32_t>(cell.x * layout.cell),
-                .y = layout.origin.y
-                    + static_cast<std::int32_t>(cell.y * layout.cell)},
-            .size = Size{.width = layout.cell, .height = layout.cell}};
+        return antwika::geometry::cellRect(
+            gridOf(layout),
+            antwika::geometry::GridCell{.column = cell.x, .row = cell.y});
     }
 
 } // namespace antwika::tower_defence

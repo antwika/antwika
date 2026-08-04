@@ -5,6 +5,7 @@ antwika_add_app_tests(
         SpinLoopTest.cpp
         SpinSceneTest.cpp
     LIBS
+        antwika::app
         antwika::gfx
         antwika::gfx::tests::mocks
         antwika::time::tests::fakes

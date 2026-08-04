@@ -1,8 +1,8 @@
 #include "antwika/game/KeyboardEvent.hpp"
 
-#include <nlohmann/json-schema.hpp>
 #include <nlohmann/json.hpp>
 
+#include <antwika/replay/JsonShapes.hpp>
 #include <antwika/replay/PayloadJson.hpp>
 
 #include "antwika/game/OptionsFormatError.hpp"
@@ -14,23 +14,11 @@ namespace antwika::game
     {
         nlohmann::json setKeyboardSchema()
         {
-            nlohmann::json schema;
-            schema["$schema"] = "http://json-schema.org/draft-07/schema#";
-            schema["title"] = "game.set_keyboard payload";
-            schema["type"] = "object";
-            schema["additionalProperties"] = false;
-            schema["required"] = {"keyboard"}; // GCOVR_EXCL_LINE
-            schema["properties"]["keyboard"]["type"] = "string";
+            nlohmann::json schema = replay::documentShape(
+                "game.set_keyboard payload", {"keyboard"});
+            schema["properties"]["keyboard"] = replay::wordShape();
             return schema;
-        }
-
-        const nlohmann::json_schema::json_validator &
-        setKeyboardValidator()
-        {
-            static const nlohmann::json_schema::json_validator validator(
-                setKeyboardSchema()); // GCOVR_EXCL_LINE
-            return validator;
-        }
+        } // GCOVR_EXCL_LINE
     } // namespace
 
     std::string setKeyboardPayload(KeyboardLayout layout)
@@ -49,7 +37,7 @@ namespace antwika::game
         const auto parsed =
             antwika::replay::parseAndValidatePayload<OptionsFormatError>(
                 payload,
-                setKeyboardValidator(),
+                replay::validatorFor<setKeyboardSchema>(),
                 "BindingSink: game.set_keyboard payload");
 
         const auto named = parsed.at("keyboard").get<std::string>();

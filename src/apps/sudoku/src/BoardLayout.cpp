@@ -2,6 +2,8 @@
 
 #include <cstddef>
 
+#include <antwika/geometry/Grid.hpp>
+
 namespace antwika::sudoku
 {
 
@@ -9,30 +11,30 @@ namespace antwika::sudoku
     {
         constexpr std::uint32_t kSide =
             static_cast<std::uint32_t>(Board::kSize);
+
+        // A layout holds no side, since a sudoku only has the one.
+        // The arithmetic over it is antwika::geometry's all the same.
+        [[nodiscard]] antwika::geometry::Grid gridOf(
+            const BoardLayout &layout) noexcept
+        {
+            return antwika::geometry::Grid{
+                .origin = layout.origin,
+                .cell = layout.cell,
+                .columns = kSide,
+                .rows = kSide};
+        }
     } // namespace
 
     std::optional<BoardLayout> layoutFor(const Rect area)
     {
-        const auto byWidth = area.size.width / kSide;
-        const auto byHeight = area.size.height / kSide;
-        const auto cell = byWidth < byHeight ? byWidth : byHeight;
+        const auto grid = antwika::geometry::gridFit(area, kSide, kSide);
 
-        if (cell == 0)
+        if (!grid.has_value())
         {
             return std::nullopt;
         }
 
-        const auto used = cell * kSide;
-
-        return BoardLayout{
-            .cell = cell,
-            .origin = {
-                .x = area.origin.x
-                     + static_cast<std::int32_t>(
-                         (area.size.width - used) / 2),
-                .y = area.origin.y
-                     + static_cast<std::int32_t>(
-                         (area.size.height - used) / 2)}};
+        return BoardLayout{.cell = grid->cell, .origin = grid->origin};
     }
 
     std::optional<Square> cellAt(
@@ -40,48 +42,26 @@ namespace antwika::sudoku
         const std::int32_t x,
         const std::int32_t y)
     {
-        if (layout.cell == 0)
-        {
-            return std::nullopt;
-        }
+        const auto cell = antwika::geometry::cellAt(
+            gridOf(layout), Point{.x = x, .y = y});
 
-        // Widened before subtracting, so this cannot overflow.
-        // A pointer far outside the area should miss, not wrap.
-        const auto localX =
-            static_cast<std::int64_t>(x) - layout.origin.x;
-        const auto localY =
-            static_cast<std::int64_t>(y) - layout.origin.y;
-
-        if (localX < 0 || localY < 0)
-        {
-            return std::nullopt;
-        }
-
-        const auto column =
-            static_cast<std::uint64_t>(localX) / layout.cell;
-        const auto row = static_cast<std::uint64_t>(localY) / layout.cell;
-
-        if (column >= kSide || row >= kSide)
+        if (!cell.has_value())
         {
             return std::nullopt;
         }
 
         return Square{
-            .row = static_cast<std::size_t>(row),
-            .col = static_cast<std::size_t>(column)};
+            .row = static_cast<std::size_t>(cell->row),
+            .col = static_cast<std::size_t>(cell->column)};
     }
 
     Rect squareRect(const BoardLayout &layout, const Square square)
     {
-        return Rect{
-            .origin = {
-                .x = layout.origin.x
-                     + static_cast<std::int32_t>(
-                         square.col * layout.cell),
-                .y = layout.origin.y
-                     + static_cast<std::int32_t>(
-                         square.row * layout.cell)},
-            .size = {.width = layout.cell, .height = layout.cell}};
+        return antwika::geometry::cellRect(
+            gridOf(layout),
+            antwika::geometry::GridCell{
+                .column = static_cast<std::uint32_t>(square.col),
+                .row = static_cast<std::uint32_t>(square.row)});
     }
 
 } // namespace antwika::sudoku

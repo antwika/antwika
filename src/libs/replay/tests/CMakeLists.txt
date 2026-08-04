@@ -5,6 +5,7 @@ add_executable(antwika_replay_tests
     EventJsonTest.cpp
     JsonShapesTest.cpp
     MigrationChainTest.cpp
+    NameTableTest.cpp
     PayloadJsonTest.cpp
     ReplayCliTest.cpp
     ReplayDeterminismTest.cpp

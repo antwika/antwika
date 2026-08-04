@@ -1,17 +1,15 @@
 #include "antwika/app/WindowInputSource.hpp"
 
-#include <variant>
-
 #include <antwika/engine/Events.hpp>
 #include <antwika/event/ITickEventSource.hpp>
-#include <antwika/gfx/WindowEvent.hpp>
+
+#include "antwika/app/WindowEvents.hpp"
 
 namespace antwika::app
 {
 
     using antwika::engine::events::kStop;
     using antwika::event::ITickEventSource;
-    using antwika::gfx::CloseRequested;
 
     WindowInputSource::WindowInputSource(
         ITickEventSource &inner, IGfxBackend &backend, WindowId window)
@@ -23,19 +21,7 @@ namespace antwika::app
     {
         auto events = inner.eventsFor(tick);
 
-        bool closeRequested = false;
-        while (const auto event = backend.pollEvent())
-        {
-            if (event->window != window)
-            {
-                continue;
-            }
-
-            if (std::holds_alternative<CloseRequested>(event->payload))
-            {
-                closeRequested = true;
-            }
-        }
+        const bool closeRequested = closeRequestedOn(backend, window);
 
         // One stop, however many times closing was asked for.
         // Every branch left on the excluded line is the allocator's.

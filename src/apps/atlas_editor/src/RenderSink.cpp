@@ -1,9 +1,7 @@
 #include "antwika/atlas_editor/RenderSink.hpp"
 
-#include <antwika/engine/Events.hpp>
+#include <antwika/app/FramePresentation.hpp>
 #include <antwika/gfx/Color.hpp>
-#include <antwika/gfx/ViewportRenderer.hpp>
-#include <antwika/ui/Painter.hpp>
 
 #include "antwika/atlas_editor/SceneSnapshot.hpp"
 
@@ -62,41 +60,29 @@ namespace antwika::atlas_editor
 
     void RenderSink::handle(const TickEvent &event)
     {
-        if (event.event.name != antwika::engine::events::kTick)
-        {
-            return;
-        }
-        if (!window.isOpen())
+        if (!antwika::app::drawsOn(event, window))
         {
             return;
         }
 
         uploadIfChanged();
 
-        // **The one place here reading the size a window reports.**
-        // And it reads it to place a picture and nothing else.
-        // Every call below is in canvas pixels, exactly as before.
-        // This scales and centres them, after every decision is made.
-        // A new one each frame, so a resize needs no handling of its own.
-        // See docs/resizable-windows.md.
-        antwika::gfx::ViewportRenderer view(
-            window.renderer(), window.size(), state.canvas());
-
-        scene.draw(view, snapshotOf(state), sheet.get());
-
-        // The bar goes on last, so it reads as being in front.
-        // The sheet under it is covered rather than clipped.
-        // antwika::gfx has no scissor, and paint order is the depth.
-        antwika::ui::paint(view, overlay.commands());
-
         // The console goes over the bar, being over everything.
         // Empty and free whenever no console is mounted or it is in.
-        antwika::ui::paint(view, console.commands());
+        antwika::app::presentViewport(
+            window,
+            state.canvas(),
+            kSurround,
+            console,
+            [this](antwika::gfx::IRenderer &view)
+            {
+                scene.draw(view, snapshotOf(state), sheet.get());
 
-        // Last, so whatever reached past the canvas is covered.
-        // Nothing at all when the window is the canvas's own shape.
-        view.fillSurround(kSurround);
-        view.present();
+                // The bar goes on last, so it reads as being in front.
+                // The sheet under it is covered rather than clipped.
+                // antwika::gfx has no scissor, and paint order is depth.
+                antwika::app::paintOver(view, overlay);
+            });
 
         sleeper.sleep(framePeriod);
     }

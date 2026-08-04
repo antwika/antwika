@@ -1,11 +1,10 @@
 #include "antwika/gfx_demo/DemoLoop.hpp"
 
 #include <optional>
-#include <variant>
 
 #include <antwika/app/PointerReading.hpp>
+#include <antwika/app/WindowEvents.hpp>
 #include <antwika/gfx/IWindow.hpp>
-#include <antwika/gfx/WindowEvent.hpp>
 #include <antwika/gfx/WindowId.hpp>
 #include <antwika/input/InputState.hpp>
 #include <antwika/input/PointerHint.hpp>
@@ -20,7 +19,6 @@ namespace antwika::gfx_demo
     using antwika::app::hoverFrom;
     using antwika::app::locates;
     using antwika::app::pointerFrom;
-    using antwika::gfx::CloseRequested;
     using antwika::input::InputState;
     using antwika::input::PointerHint;
     using antwika::input::PointerHintChannel;
@@ -66,19 +64,9 @@ namespace antwika::gfx_demo
              !maxFrames.has_value() || frame < maxFrames.value();
              ++frame)
         {
-            while (const auto event = backend.pollEvent())
+            if (antwika::app::closeRequestedOn(backend, window->id()))
             {
-                // The backend pumps one queue for all its windows.
-                // An event for somebody else's window is not ours.
-                if (event->window != window->id())
-                {
-                    continue;
-                }
-
-                if (std::holds_alternative<CloseRequested>(event->payload))
-                {
-                    window->close();
-                }
+                window->close();
             }
 
             if (!window->isOpen())

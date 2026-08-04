@@ -5,23 +5,18 @@
 #include <cstdint>
 #include <iostream>
 #include <memory>
-#include <string>
-#include <string_view>
 
 #include <antwika/app/AssetPath.hpp>
 #include <antwika/app/ConsoleLogging.hpp>
 #include <antwika/app/RunRecorded.hpp>
+#include <antwika/app/WindowedSession.hpp>
 #include <antwika/console/ConsolePicture.hpp>
 #include <antwika/console/SnapshotCommands.hpp>
 #include <antwika/gfx/SelectedBackend.hpp>
-#include <antwika/gfx/WindowDesc.hpp>
-#include <antwika/input/InputEventCodec.hpp>
-#include <antwika/input/InputPipeline.hpp>
+#include <antwika/gfx/Size.hpp>
 #include <antwika/input/SelectedInputBackend.hpp>
 #include <antwika/log/Level.hpp>
-#include <antwika/replay/ReplaySource.hpp>
 #include <antwika/simulation/TickPacer.hpp>
-#include <antwika/app/WindowInputSource.hpp>
 #include <antwika/time/SystemSleeper.hpp>
 
 #include "antwika/life/BoardScene.hpp"
@@ -31,10 +26,9 @@
 
 using antwika::app::ConsoleLogging;
 using antwika::app::RecordedRun;
+using antwika::app::WindowedSession;
+using antwika::app::WindowedSessionDesc;
 using antwika::ecs::World;
-using antwika::gfx::WindowDesc;
-using antwika::input::InputEventCodec;
-using antwika::input::InputPipeline;
 using antwika::life::BoardScene;
 using antwika::life::DragState;
 using antwika::life::Grid;
@@ -42,9 +36,7 @@ using antwika::life::PointerToggleSink;
 using antwika::life::PrintSystem;
 using antwika::life::RenderSystem;
 using antwika::log::Level;
-using antwika::replay::ReplaySource;
 using antwika::simulation::TickPacer;
-using antwika::app::WindowInputSource;
 using antwika::time::SystemSleeper;
 
 namespace
@@ -56,10 +48,6 @@ namespace
     // Also what a click is mapped against, not the size a window reports.
     // PointerToggleSink says why, and why the window is not resizable.
     constexpr antwika::gfx::Size kWindowSize{.width = 768, .height = 768};
-
-    // The backend that draws nothing.
-    // A build using it has nothing to watch and nothing to wait for.
-    constexpr std::string_view kHeadlessBackendName = "null";
 
     void run(const RecordedRun &recorded)
     {
@@ -74,70 +62,59 @@ namespace
         const auto backend = antwika::gfx::makeSelectedBackend(logger);
         const auto inputBackend =
             antwika::input::makeSelectedInputBackend(logger);
-        const bool drawsNothing = backend->name() == kHeadlessBackendName;
 
-        logger.log(
-            Level::Info,
-            "Antwika Life on backend: " + std::string(backend->name())
-                + ", input: " + std::string(inputBackend->name()));
-        antwika::life::announceHowToStop(logger, drawsNothing);
+        // Coalescing is deliberately off here.
+        // A drag toggles every cell it crosses.
+        // Thinning a run of movement inside a tick would skip cells.
+        // Idle movement toggles nothing, so it is held back.
+        const WindowedSessionDesc desc{
+            .name = "Antwika Life",
+            .windowTitle = "Antwika Life",
+            .canvas = kWindowSize,
+            .input =
+                {.coalescePointerMotion = false, .thinIdleMotion = true},
+            .replayPath = recorded.options.replayPath,
+            .demoReplay = antwika::app::assetPath("demo.jsonl")};
 
-        const auto window = backend->createWindow(WindowDesc{
-            .title = "Antwika Life",
-            .size = kWindowSize,
-            .resizable = false});
+        WindowedSession session(logger, *backend, *inputBackend, desc);
+
+        antwika::life::announceHowToStop(logger, session.drawsNothing());
 
         const BoardScene scene;
 
         // Against the size the window was asked for.
         // Never the size one reports, which nothing records.
-        antwika::console::ConsolePicture consoleOverlay(kWindowSize);
+        antwika::console::ConsolePicture consoleOverlay(session.canvas());
 
         RenderSystem renderSystem(
-            *window, scene, kBoardWidth, kBoardHeight, consoleOverlay);
+            session.window(),
+            scene,
+            kBoardWidth,
+            kBoardHeight,
+            consoleOverlay);
         PrintSystem printSystem(kBoardWidth, std::cout);
         SystemSleeper sleeper;
         TickPacer pacer(
             sleeper,
             std::chrono::milliseconds(config.tickIntervalMs));
 
-        ReplaySource fileSource(antwika::app::scriptedEvents(
-            recorded.options.replayPath,
-            antwika::app::assetPath("demo.jsonl")));
-
-        const InputEventCodec codec;
-
-        // Live input is attached only when there is no replay to run.
-        // A replay already holds the input it recorded.
-        // Reading a device too would make every event arrive twice.
-        // Idle movement toggles nothing, so it is held back.
-        // Coalescing is deliberately off here.
-        // A drag toggles every cell it crosses.
-        // Thinning a run of movement inside a tick would skip cells.
-        InputPipeline input(
-            fileSource,
-            *inputBackend,
-            codec,
-            {.readsDevice = !recorded.options.replayPath.has_value(),
-             .coalescePointerMotion = false,
-             .thinIdleMotion = true});
-
-        WindowInputSource source(input, *backend, window->id());
-
         antwika::life::bootstrap(antwika::life::LifeWiring{
             .logger = logger,
             .eventSink = recorded.eventSink,
-            .inputSource = source,
+            .inputSource = session.source(),
             .width = kBoardWidth,
             .height = kBoardHeight,
             .observers = antwika::life::observersFor(
-                renderSystem, printSystem, pacer, drawsNothing),
+                renderSystem,
+                printSystem,
+                pacer,
+                session.drawsNothing()),
             .replayRecorder = recorded.replayRecorder,
             .extraSink =
-                [&codec](World &world, const Grid &grid, DragState &drag)
+                [&session](World &world, const Grid &grid, DragState &drag)
             {
                 return std::make_unique<PointerToggleSink>(
-                    world, grid, codec, kWindowSize, drag);
+                    world, grid, session.codec(), kWindowSize, drag);
             },
             .consoleOverlay = consoleOverlay,
             .consoleLoadEnabled = antwika::console::consoleLoadPermitted(

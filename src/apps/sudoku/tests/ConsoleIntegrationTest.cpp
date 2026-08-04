@@ -1,15 +1,16 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
-#include <cstdint>
+#include <cstddef>
 #include <string>
-#include <string_view>
 #include <utility>
 #include <vector>
 
 #include <antwika/console/ConsolePicture.hpp>
 #include <antwika/console/ConsoleState.hpp>
-#include <antwika/event/Event.hpp>
+#include <antwika/console/conformance/ConsoleContract.hpp>
+#include <antwika/console/conformance/ConsoleSnapshotRoundTrip.hpp>
+#include <antwika/console/testing/ConsoleScript.hpp>
 #include <antwika/event/mocks/MockEventSink.hpp>
 #include <antwika/event/TickEvent.hpp>
 #include <antwika/gfx/Point.hpp>
@@ -17,7 +18,6 @@
 #include <antwika/i18n/Locale.hpp>
 #include <antwika/input/InputEventCodec.hpp>
 #include <antwika/input/Key.hpp>
-#include <antwika/input/MouseButton.hpp>
 #include <antwika/log/mocks/MockLogger.hpp>
 #include <antwika/replay/ReplaySource.hpp>
 #include <antwika/testing/ScratchPath.hpp>
@@ -36,15 +36,16 @@
 
 using antwika::app::TickLimitSource;
 using antwika::console::kConsoleAnimTicks;
+using antwika::console::testing::keyAt;
+using antwika::console::testing::kOpenTick;
+using antwika::console::testing::pressAt;
+using antwika::console::testing::typeText;
 using antwika::event::mocks::MockEventSink;
 using antwika::event::TickEvent;
 using antwika::gfx::Point;
 using antwika::gfx::Size;
 using antwika::input::InputEventCodec;
 using antwika::input::Key;
-using antwika::input::KeyPressed;
-using antwika::input::MouseButton;
-using antwika::input::PointerButtonPressed;
 using antwika::log::mocks::MockLogger;
 using antwika::replay::ReplaySource;
 using antwika::sudoku::Board;
@@ -58,7 +59,6 @@ using antwika::sudoku::SudokuSummary;
 using antwika::sudoku::tests::squareCentre;
 using antwika::time::Tick;
 using ::testing::NiceMock;
-using ::testing::StartsWith;
 
 namespace
 {
@@ -73,59 +73,6 @@ namespace
 
     // Where that blank square sits in the flat summary grid.
     constexpr std::size_t kBlankIndex = 2;
-
-    // The first tick on which the field reads.
-    // The toggle goes down on tick 1 and each tick slides one step.
-    constexpr Tick kOpenTick = 1 + kConsoleAnimTicks;
-
-    [[nodiscard]] TickEvent keyAt(
-        const InputEventCodec &codec,
-        Tick tick,
-        Key key,
-        bool shift = false)
-    {
-        return TickEvent{
-            .tick = tick,
-            .event = codec.encode(KeyPressed{
-                .key = key, .modifiers = {.shift = shift}})};
-    }
-
-    [[nodiscard]] TickEvent pressAt(
-        const InputEventCodec &codec, Tick tick, Point at)
-    {
-        return TickEvent{
-            .tick = tick,
-            .event = codec.encode(PointerButtonPressed{
-                .button = MouseButton::Left,
-                .position = {.x = at.x, .y = at.y}})};
-    }
-
-    // The keys that type one command, one press per character.
-    // Only what the two commands need: letters and the underscore.
-    // A run types by the Swedish board unless told otherwise.
-    // So the underscore is shift over the American slash position.
-    void typeText(
-        std::vector<TickEvent> &events,
-        const InputEventCodec &codec,
-        Tick tick,
-        std::string_view text)
-    {
-        for (const char character : text)
-        {
-            if (character == '_')
-            {
-                events.push_back(keyAt(codec, tick, Key::Slash, true));
-                continue;
-            }
-
-            events.push_back(keyAt(
-                codec,
-                tick,
-                static_cast<Key>(
-                    static_cast<std::uint8_t>(Key::A)
-                    + (character - 'a'))));
-        }
-    }
 
     [[nodiscard]] Point placeOf(const Square square)
     {
@@ -168,21 +115,42 @@ namespace
             .stateDumpPath = dumpPath});
     }
 
-    TEST(ConsoleIntegrationTest, AnUnknownCommandIsEchoedAndRefused)
+    // This application's half of the shared console contract.
+    struct SudokuConsoleTraits
     {
-        const InputEventCodec codec;
-        std::vector<TickEvent> events{keyAt(codec, 1, Key::Grave)};
-        typeText(events, codec, kOpenTick, "hello");
-        events.push_back(keyAt(codec, kOpenTick, Key::Enter));
+        using Summary = SudokuSummary;
 
-        const auto summary =
-            play(std::move(events), kOpenTick + 1, "unused.json");
+        static Summary run(
+            std::vector<TickEvent> script,
+            const std::string &dumpPath,
+            const bool loadEnabled)
+        {
+            // TickLimitSource is this application's own stop.
+            // A puzzle runs until it is solved or the window closes.
+            return play(
+                std::move(script),
+                kOpenTick + 1,
+                dumpPath,
+                loadEnabled);
+        }
 
-        EXPECT_EQ(
-            summary.console,
-            (std::vector<std::string>{
-                "> hello", "unknown command: hello"}));
-    }
+        static const std::vector<std::string> &console(
+            const Summary &summary)
+        {
+            return summary.console;
+        }
+
+        // A refused load leaves the demo puzzle as it was dealt.
+        // APressUnderTheSheetSelectsNothing reads that square out.
+        static void expectUntouched(const Summary &)
+        {
+        }
+
+        static std::string scratchPrefix()
+        {
+            return "antwika_sudoku_console.";
+        }
+    };
 
     TEST(ConsoleIntegrationTest, ADigitTypesIntoTheOpenConsole)
     {
@@ -248,11 +216,6 @@ namespace
             file.string());
 
         EXPECT_EQ(dumped.grid.at(kBlankIndex), '4');
-        EXPECT_EQ(
-            dumped.console,
-            (std::vector<std::string>{
-                "> dump_state",
-                "dumped state to " + file.string()}));
 
         // A fresh session on the same puzzle loads it back.
         std::vector<TickEvent> loading{keyAt(codec, 1, Key::Grave)};
@@ -263,52 +226,8 @@ namespace
             std::move(loading), kOpenTick + 1, file.string());
 
         // The grid is the dumped one again, 4 included.
-        // And the history is what the dumped console read.
+        // What the console history carries over is the contract's.
         EXPECT_EQ(loaded.grid.at(kBlankIndex), '4');
-        EXPECT_EQ(
-            loaded.console,
-            (std::vector<std::string>{
-                "> dump_state",
-                "dumped state to " + file.string(),
-                "loaded state from " + file.string()}));
-    }
-
-    TEST(ConsoleIntegrationTest, ALoadIsRefusedWhileRecording)
-    {
-        const InputEventCodec codec;
-        std::vector<TickEvent> events{keyAt(codec, 1, Key::Grave)};
-        typeText(events, codec, kOpenTick, "load_state");
-        events.push_back(keyAt(codec, kOpenTick, Key::Enter));
-
-        const auto summary = play(
-            std::move(events), kOpenTick + 1, "unused.json", false);
-
-        EXPECT_EQ(
-            summary.console,
-            (std::vector<std::string>{
-                "> load_state",
-                "load_state: not available while recording or "
-                "replaying"}));
-    }
-
-    TEST(ConsoleIntegrationTest, ALoadAnswersAMissingFile)
-    {
-        const InputEventCodec codec;
-        std::vector<TickEvent> events{keyAt(codec, 1, Key::Grave)};
-        typeText(events, codec, kOpenTick, "load_state");
-        events.push_back(keyAt(codec, kOpenTick, Key::Enter));
-
-        const auto summary = play(
-            std::move(events),
-            kOpenTick + 1,
-            antwika::testing::scratchPath(
-                "antwika_sudoku_console_missing_")
-                .string());
-
-        ASSERT_EQ(summary.console.size(), 2U);
-        EXPECT_EQ(summary.console.at(0), "> load_state");
-        EXPECT_THAT(
-            summary.console.at(1), StartsWith("could not load: "));
     }
 
     TEST(ConsoleIntegrationTest, NoConsoleMountedMeansNoConsole)
@@ -338,3 +257,14 @@ namespace
         EXPECT_TRUE(summary.console.empty());
     }
 } // namespace
+
+namespace antwika::console::conformance
+{
+
+    INSTANTIATE_TYPED_TEST_SUITE_P(
+        Sudoku, ConsoleContract, SudokuConsoleTraits);
+
+    INSTANTIATE_TYPED_TEST_SUITE_P(
+        Sudoku, ConsoleSnapshotRoundTrip, SudokuConsoleTraits);
+
+} // namespace antwika::console::conformance

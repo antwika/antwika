@@ -1,27 +1,7 @@
 #include "antwika/game/SnapshotStore.hpp"
 
-#include <antwika/console/SnapshotFormat.hpp>
-
-#include "antwika/game/SaveFormatError.hpp"
-
 namespace antwika::game
 {
-
-    namespace
-    {
-        const antwika::console::SnapshotFormat &dumpFormat()
-        {
-            // The excluded closing line carries the static guard.
-            // Its concurrency arms are unreachable one-threaded.
-            // See docs/confirming-unreachable-branches.md.
-            static const antwika::console::SnapshotFormat format(
-                {.magic = kStateDumpMagic,
-                 .version = kStateDumpVersion},
-                "antwika game state dump document",
-                standardStateDumpMigrations); // GCOVR_EXCL_LINE
-            return format;
-        }
-    } // namespace
 
     GameSnapshotStore::GameSnapshotStore(
         SessionStore &session,
@@ -29,7 +9,12 @@ namespace antwika::game
         UiOverlay &toolbar,
         MapViewState &view,
         LocaleState &locale) noexcept
-        : session(session),
+        : antwika::console::JsonSnapshotStore<SaveFormatError>(
+              {.magic = kStateDumpMagic,
+               .version = kStateDumpVersion},
+              "antwika game state dump document",
+              standardStateDumpMigrations),
+          session(session),
           pause(pause),
           toolbar(toolbar),
           view(view),
@@ -37,42 +22,15 @@ namespace antwika::game
     {
     }
 
-    void GameSnapshotStore::dump(
-        const std::string &path,
-        const std::vector<std::string> &console)
+    nlohmann::json GameSnapshotStore::takeState(const std::string &)
     {
-        // The excluded lines are the envelope temporary's unwind arms.
-        // Only a failed allocation inside them could take one.
-        // See docs/confirming-unreachable-branches.md.
-        dumpFormat().write(
-            // GCOVR_EXCL_START
-            antwika::console::Snapshot{
-                .console = console, .state = stateDumpToJson(take())},
-            // GCOVR_EXCL_STOP
-            path);
+        return stateDumpToJson(take());
+    }
 
-        // The excluded line is the local snapshot's unwind destructor.
-        // Nothing after its construction throws but the write itself.
-    } // GCOVR_EXCL_LINE
-
-    std::vector<std::string> GameSnapshotStore::load(
-        const std::string &path)
+    void GameSnapshotStore::applyState(
+        const std::string &, const nlohmann::json &state)
     {
-        auto snapshot = dumpFormat().read(path);
-
-        try
-        {
-            apply(stateDumpFromJson(snapshot.state));
-        }
-        // The state's own reader promises SaveFormatError.
-        // What this seam promises is console::SnapshotError.
-        // So it is rewrapped here, exactly as keyNamed() rewraps.
-        catch (const SaveFormatError &failed) // GCOVR_EXCL_LINE
-        {
-            throw antwika::console::SnapshotError(failed.what());
-        }
-
-        return snapshot.console;
+        apply(stateDumpFromJson(state));
     }
 
     StateDump GameSnapshotStore::take() const

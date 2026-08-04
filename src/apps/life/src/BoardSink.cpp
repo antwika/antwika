@@ -3,9 +3,8 @@
 #include <cstdint>
 #include <limits>
 
-#include <nlohmann/json-schema.hpp>
-
 #include <antwika/engine/Events.hpp>
+#include <antwika/replay/JsonShapes.hpp>
 #include <antwika/replay/PayloadJson.hpp>
 
 #include "antwika/life/BoardSinkError.hpp"
@@ -21,27 +20,15 @@ namespace antwika::life
 
         nlohmann::json toggleCellSchema()
         {
-            nlohmann::json schema;
-            schema["$schema"] = "http://json-schema.org/draft-07/schema#";
-            schema["title"] = "life.toggle_cell payload";
-            schema["type"] = "object";
-            schema["additionalProperties"] = false;
-            schema["required"] = {"x", "y"}; // GCOVR_EXCL_LINE
+            nlohmann::json schema = antwika::replay::documentShape(
+                "life.toggle_cell payload", {"x", "y"});
             for (const char *field : {"x", "y"})
             {
-                schema["properties"][field]["type"] = "integer";
-                schema["properties"][field]["minimum"] = 0;
-                schema["properties"][field]["maximum"] = kMaxCoordinate;
+                schema["properties"][field] =
+                    antwika::replay::boundedCountShape(kMaxCoordinate);
             }
             return schema;
-        }
-
-        const nlohmann::json_schema::json_validator &toggleCellValidator()
-        {
-            static const nlohmann::json_schema::json_validator validator(
-                toggleCellSchema()); // GCOVR_EXCL_LINE
-            return validator;
-        }
+        } // GCOVR_EXCL_LINE
     } // namespace
 
     BoardSink::BoardSink(
@@ -62,7 +49,7 @@ namespace antwika::life
             const auto parsed =
                 antwika::replay::parseAndValidatePayload<BoardSinkError>(
                     event.event.payload,
-                    toggleCellValidator(),
+                    antwika::replay::validatorFor<toggleCellSchema>(),
                     "BoardSink: life.toggle_cell payload");
             const auto x = parsed.at("x").get<std::uint32_t>();
             const auto y = parsed.at("y").get<std::uint32_t>();

@@ -16,6 +16,7 @@
 #include <antwika/config/FileFormat.hpp>
 #include <antwika/config/Format.hpp>
 #include <antwika/replay/IMigration.hpp>
+#include <antwika/replay/JsonShapes.hpp>
 #include <antwika/replay/SchemaVersion.hpp>
 #include <antwika/replay/VersionedDocument.hpp>
 
@@ -37,24 +38,20 @@ namespace antwika::game
 
         void describeMembers(nlohmann::json &schema)
         {
-            nlohmann::json binding;
-            binding["type"] = "object";
-            binding["additionalProperties"] = false;
-            binding["required"] = {"action", "key"}; // GCOVR_EXCL_LINE
-            binding["properties"]["action"]["type"] = "string";
-            binding["properties"]["key"]["type"] = "string";
+            nlohmann::json binding =
+                antwika::replay::objectShape({"action", "key"});
+            binding["properties"]["action"] =
+                antwika::replay::wordShape();
+            binding["properties"]["key"] = antwika::replay::wordShape();
 
-            schema["required"] = {
-                "magic",
-                "bindings",
-                "locale",
-                "keyboard"}; // GCOVR_EXCL_LINE
+            schema["required"] = antwika::replay::requiredShape(
+                {"magic", "bindings", "locale", "keyboard"});
             schema["properties"]["bindings"]["type"] = "array";
             schema["properties"]["bindings"]["items"] = binding;
-            schema["properties"][std::string(kLocaleKey)]["type"]
-                = "string";
-            schema["properties"][std::string(kKeyboardKey)]["type"]
-                = "string";
+            schema["properties"][std::string(kLocaleKey)] =
+                antwika::replay::wordShape();
+            schema["properties"][std::string(kKeyboardKey)] =
+                antwika::replay::wordShape();
         }
 
         // The key's own name is antwika::input's to police.

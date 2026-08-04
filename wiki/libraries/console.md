@@ -15,6 +15,7 @@ It began as `apps/game`'s own feature and became a library the day every other a
 | `ConsoleScene.hpp` | `ConsoleScene`, `consoleWidgets`, `kConsoleHistoryShown` | Describes the sheet as a `ui::Frame`, bottom-anchored field included. |
 | `ConsolePicture.hpp` | `ConsolePicture` | The picture the sink writes and a renderer paints last, with the canvas it was described against. |
 | `ConsoleSink.hpp` | `ConsoleSink`, `ConsoleSinkSetup` | Resolves the toggle, the typing and the execute press inside the tick path. |
+| `ConsoleMount.hpp` | `ConsoleMount`, `ConsoleMountSetup` | One application's whole console in one object, registering nothing. |
 | `ConsoleGatedSink.hpp` | `ConsoleGatedSink` | Wraps any sink; what the console stands over, it takes. |
 | `InputFold.hpp` | `InputFold` | The one fold of `input.*` events every console-mounting app registers first. |
 | `IConsoleControls.hpp` | `IConsoleControls`, `FixedConsoleControls` | The toggle key, the execute key and the typing board — a seam, since the game answers off rebindable options. |
@@ -28,7 +29,10 @@ It began as `apps/game`'s own feature and became a library the day every other a
 
 ## Depends on
 
-[`animation`](animation.md), [`config`](config.md), [`engine`](engine.md), [`event`](event.md), [`gfx`](gfx.md), [`input`](input.md), [`replay`](replay.md), [`time`](time.md), [`tween`](tween.md), [`ui`](ui.md).
+[`animation`](animation.md), [`app`](app.md), [`config`](config.md), [`engine`](engine.md), [`event`](event.md), [`gfx`](gfx.md), [`input`](input.md), [`replay`](replay.md), [`time`](time.md), [`tween`](tween.md), [`ui`](ui.md).
+
+The one on [`app`](app.md) is for `PointerReading.hpp` alone, which is defined there and re-exported here: `asPoint()` and `locates()` had a word-for-word copy in each library, which is the second place to say it differently that both copies' comments said they existed to prevent.
+Every application linking `antwika::console` already linked `antwika::app`, so no application gained a library it did not have, and the edge runs this way round rather than the other because [`app`](app.md) is where an application says that two libraries knowing nothing of each other describe one thing.
 
 ## Non-obvious decisions
 
@@ -61,6 +65,49 @@ A command language is a format, like a save file's kind names, and history lines
 `input::Key` says where a key *is*; `typedCharacterFor()` says what that position prints on the chosen board.
 The Swedish letters would be multi-byte in the UTF-8 the UI holds, and a field's caret arithmetic counts bytes, so å, ä and ö type nothing rather than something a caret would land inside.
 
+**`ConsoleMount` is the block every bootstrap used to copy.**
+The picture-or-stand-in, the state, the scene, the controls, the snapshot commands and the `ConsoleSink` over them were the same twenty-odd lines in nine applications, comments included, and they had already drifted between them -- one named its setup to dodge a gcov artifact, another excluded the line instead, and each spelled "no console means no console" its own way.
+The mount is those lines said once, constructed from a `ConsoleMountSetup` naming the overlay, the fold, the store, the dump path, whether a load is permitted, and optionally the controls -- unset controls being the shipped constants, which is what an application with no options screen to rebind them on wants.
+It deliberately **registers nothing**: where each sink sits in a run's list is a correctness contract rather than a detail to hide -- the fold first, `ConsoleSink` ahead of everything it gates, and the recorder where the application put it -- so a bootstrap goes on writing its own list and asks the mount only for `mounted()`, `sink()`, `state()` and a `gate()` around each sink the console stands over.
+The fold is borrowed rather than owned for the same reason `apps/game` folds once for all of its sinks: a run has exactly one fold, and which sinks share it is the application's business.
+
 ## Who uses it
 
 Every application except the four demos; each one's wiki page describes its own snapshot store — what its `state` object carries, and what it deliberately leaves out.
+
+## The store half is written once too
+
+`JsonSnapshotStore<ErrorT>` is the `ISnapshotStore` an application inherits rather than implements, and every store in the tree now does.
+It holds the `SnapshotFormat`, writes `{console, state}` to a path, reads one back, and asks the application for the two halves that are actually its own -- `takeState()` and `applyState()` -- which is all that ever differed between nine copies of the same twenty lines.
+
+Both halves are handed the document's path, because a store's state need not all fit inside the document.
+[`atlas_editor`](../apps/atlas_editor.md) writes its sheet and its clipboard as PNGs beside it and binds them to it by fingerprint, and that is what the parameter is for.
+
+**`ErrorT` is the failure category the store rewraps, and the narrowness is the point.**
+It is parameterised for `config::FileFormat`'s reason: what differs between two applications reading a versioned document is which error each one reports.
+A store names what its own state can be wrong about, that becomes the `SnapshotError` `ISnapshotStore` documents, and a failure from further down -- [`pattern`](pattern.md)'s refusal to place a segment under [`music_editor`](../apps/music_editor.md), say -- is not that and travels on as itself.
+A store whose state's own reader already refuses with `SnapshotError` names that as its `ErrorT`, and the rewrapping is then the identity.
+
+What the envelope's own write throws is outside the rewrapping either way: it is already a `SnapshotError`, and a full disk is the machine's truth rather than the state's.
+## Test support
+
+`include/antwika/console/testing/ConsoleScript.hpp` is the scripted input a console test drives a run with: `kOpenTick`, `keyAt()`, `typeText()`, `pressAt()`, `releaseAt()`, `moveTo()`, `scrollAt()` and `stopAt()`.
+Nine applications had each written those out for themselves — the same builders, the same `1 + kConsoleAnimTicks`, and the same comment about the toggle going down on tick 1 — so the one thing every console test depends on was nine copies that agreed only by hand.
+It sits in the library's own `include/` rather than under its `tests/`, because it is included by nine *other* modules' suites: a test-support target would have to be named in each of their `CMakeLists.txt` as well, and a public header of the library that defines the console is already on every one of those targets' include path.
+Being outside a `tests/` directory it is measured by the coverage gate like any other header here, which is why it carries no assertion and no unreachable answer.
+
+`typeText()` takes the board it types by rather than assuming one, and asks `typedCharacterFor()` which position prints each character — the inverse of this library's own table rather than a second copy of it, so "the American slash position prints an underscore on a Swedish board" is still said in exactly one place.
+That is what lets an application which announces a different board script by that board, while a run that says nothing types by the Swedish default.
+A character no board prints answers a key that types nothing, so such a script lands nothing rather than landing some other character.
+
+`tests/conformance/include/antwika/console/conformance/` is the other half: what the scripts are *asserted* about, said once and instantiated per application the way `i18n`'s `MessageSetCompleteness` and `gfx`'s `GfxBackendConformance` are.
+`ConsoleContract` owns the four cases that are the library's own behaviour seen through whichever application happens to be underneath — an unknown line is echoed and refused, a key pressed while the sheet is still sliding types nowhere, a load is refused under `--record` and `--replay`, and a load answers a file that is not there.
+`ConsoleSnapshotRoundTrip` owns the fifth, that a `dump_state` and then a `load_state` carries the console history over, and is registered apart because [`poker`](../apps/poker.md) dumps a room mid-hand and reads no dump back; weakening the round trip until poker could pass it would have cost the other eight the assertion that matters.
+
+A `Traits` supplies the application's half and only that half: its `Summary` type, a `run()` taking a script and handing back one, the console history out of a `Summary`, an `expectUntouched()` saying what a refused load must have left alone, and a `scratchPrefix()` naming its temporary files.
+`run()` appends the application's own stop event or tick limit, which is what keeps nine differently-shaped bootstraps behind one call in the contract — a harness with a camera and an ECS and one that is a free function taking a stop tick both reduce to it.
+Anything an application promises beyond the five — that a press under the sheet lays no road, that a loaded pool runs on exactly as the dumped one did, that a decoder's refusal comes back as an answer — stays an ordinary `TEST` in that application's own file.
+
+**These headers sit under `tests/` where `ConsoleScript.hpp` deliberately does not, and the difference is the coverage gate.**
+`scripts/coverage.sh` excludes `.*/tests/.*` and nothing else that would catch them, so a suite full of `EXPECT_*` is measured nowhere; the same file under `include/` would be product code, and every assertion's untaken failure edge would be a missing branch.
+The price is that each of the nine applications' `tests/CMakeLists.txt` names `antwika::console::tests::conformance`, which a scripting header that carries no assertion does not have to be worth.

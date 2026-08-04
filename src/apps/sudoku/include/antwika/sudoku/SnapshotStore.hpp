@@ -4,11 +4,11 @@
 #include <optional>
 #include <string>
 #include <string_view>
-#include <vector>
 
 #include <nlohmann/json.hpp>
 
-#include <antwika/console/ISnapshotStore.hpp>
+#include <antwika/console/JsonSnapshotStore.hpp>
+#include <antwika/console/SnapshotError.hpp>
 
 #include "antwika/sudoku/PuzzleState.hpp"
 #include "antwika/sudoku/Status.hpp"
@@ -77,9 +77,14 @@ namespace antwika::sudoku
      * console::ISnapshotStore.
      * The whole session is one PuzzleState, so this store is that and
      * the envelope, nothing more.
+     *
+     * puzzleStateFromJson() already refuses with the seam's error, so
+     * that is what this names as its own category and the seam's
+     * rewrapping is the identity.
      */
     class SudokuSnapshotStore final
-        : public antwika::console::ISnapshotStore
+        : public antwika::console::JsonSnapshotStore<
+              antwika::console::SnapshotError>
     {
     public:
         /**
@@ -96,28 +101,14 @@ namespace antwika::sudoku
             = delete;
         SudokuSnapshotStore &operator=(SudokuSnapshotStore &&) = delete;
 
-        /**
-         * @brief Write the running session to a file.
-         * @param path Where to write it.
-         * @param console The console's history, carried in the dump.
-         * @throws antwika::console::SnapshotError If the file cannot
-         * be written.
-         */
-        void dump(
-            const std::string &path,
-            const std::vector<std::string> &console) override;
-
-        /**
-         * @brief Read a dump and become the session it holds.
-         * @param path The file to read.
-         * @return The console history the dump carried.
-         * @throws antwika::console::SnapshotError If the file is not
-         * there, is not this application's dump, or cannot be applied.
-         */
-        [[nodiscard]] std::vector<std::string> load(
+    private:
+        [[nodiscard]] nlohmann::json takeState(
             const std::string &path) override;
 
-    private:
+        void applyState(
+            const std::string &path,
+            const nlohmann::json &dumped) override;
+
         PuzzleState &state;
     };
 

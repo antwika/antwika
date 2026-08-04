@@ -60,6 +60,7 @@ target_link_libraries(antwika_music_editor_tests
         antwika::config
         antwika::config::tests::conformance
         antwika::console
+        antwika::console::tests::conformance
         antwika::event
         antwika::event::tests::mocks
         antwika::log::tests::mocks

@@ -6,9 +6,8 @@
 #include <string>
 #include <utility>
 
+#include <antwika/config/AppConfigFile.hpp>
 #include <antwika/config/ConfigDocument.hpp>
-#include <antwika/config/FileFormat.hpp>
-#include <antwika/config/Format.hpp>
 #include <antwika/config/ConfigFormatError.hpp>
 
 namespace antwika::poker
@@ -16,8 +15,6 @@ namespace antwika::poker
 
     namespace
     {
-        using antwika::config::FileFormat;
-        using antwika::config::FormatSpec;
         using antwika::config::memberOr;
         using antwika::config::wholeShape;
 
@@ -161,62 +158,13 @@ namespace antwika::poker
             }
             return config;
         }
-
-        const FileFormat<RoomConfig> &fileFormat()
-        {
-            using AppFormat = FileFormat<RoomConfig>;
-
-            // The excluded closing line carries the static guard.
-            // Its concurrency arms are unreachable one-threaded.
-            // See docs/confirming-unreachable-branches.md.
-            static const AppFormat format(
-                FormatSpec<RoomConfig>{
-                    .format =
-                        {.magic = kConfigMagic,
-                         .version = kConfigFormatVersion},
-                    .title = "antwika poker config document",
-                    .whatFailed =
-                        "antwika::poker: config JSON failed schema "
-                        "validation: ",
-                    .members = describeMembers,
-                    .encode = encodeMembers,
-                    .decode = decodeMembers,
-                    .migrations = standardConfigMigrations}); // GCOVR_EXCL_LINE
-            return format;
-        }
     } // namespace
 
-    MigrationChain standardConfigMigrations()
-    {
-        // Every branch left on the excluded line is the allocator's.
-        // The list is empty, so no heap branch is taken here.
-        // What is left is the throw edge of building it.
-        return MigrationChain({}, kConfigFormatVersion); // GCOVR_EXCL_LINE
-    }
-
-    nlohmann::json configToJson(const RoomConfig &config)
-    {
-        return fileFormat().toJson(config);
-    }
-
-    RoomConfig configFromJson(const nlohmann::json &document)
-    {
-        return fileFormat().fromJson(document);
-    }
-
-    void writeConfig(const RoomConfig &config, std::ostream &out)
-    {
-        fileFormat().write(config, out);
-    }
-
-    RoomConfig readConfig(std::istream &in)
-    {
-        return fileFormat().read(in);
-    }
-
-    RoomConfig loadConfigFileOrDefaults(const std::string &path)
-    {
-        return fileFormat().loadFileOrDefaults(path);
-    }
+    ANTWIKA_CONFIG_FILE(
+        "poker",
+        RoomConfig,
+        describeMembers,
+        encodeMembers,
+        decodeMembers)
 
 } // namespace antwika::poker

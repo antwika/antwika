@@ -4,8 +4,10 @@ add_subdirectory(conformance)
 
 add_executable(antwika_i18n_tests
     CatalogueTest.cpp
+    CompiledMessagesTest.cpp
     LocaleTest.cpp
     LookupTest.cpp
+    MessageTableTest.cpp
     MessagesTest.cpp
     SubstituteTest.cpp
     TranslatorTest.cpp

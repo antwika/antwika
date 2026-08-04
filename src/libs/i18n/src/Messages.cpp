@@ -1,63 +1,32 @@
 #include "antwika/i18n/Messages.hpp"
 
-#include <array>
-#include <cstddef>
-#include <span>
-
-#include "antwika/i18n/Catalogue.hpp"
-#include "antwika/i18n/Locale.hpp"
 #include "antwika/i18n/MessageId.hpp"
-#include "antwika/i18n/MessageName.hpp"
+#include "antwika/i18n/MessageTable.hpp"
 
 namespace antwika::i18n
 {
 
-    namespace
-    {
-
-        constexpr std::array<MessageName<MessageId>, 2> kNames{{
+    // Every array lists every id, in the same order.
+    // A forgotten entry is a value-initialised hole, not a short array.
+    // isComplete() below is what sees that hole.
+    // A missing Swedish string is a red build, not a wrong label.
+    constexpr MessageTable<MessageId> kMessageTable{
+        .names{{
             {MessageId::LanguageEnglish, "LanguageEnglish"},
             {MessageId::LanguageSwedish, "LanguageSwedish"},
-        }};
+        }},
+        .english{{
+            {MessageId::LanguageEnglish, "English"},
+            {MessageId::LanguageSwedish, "Swedish"},
+        }},
+        .swedish{{
+            {MessageId::LanguageEnglish, "Engelska"},
+            {MessageId::LanguageSwedish, "Svenska"},
+        }},
+    };
 
-        static_assert(
-            kNames.size() == static_cast<std::size_t>(MessageId::Count),
-            "every MessageId must appear in kNames exactly once");
-
-        // Both arrays list every id, in the same order.
-        // MessagesTest asserts they cover exactly kNames.
-        // That assertion is the point of keying by id.
-        // A forgotten Swedish entry is a red build, not a wrong label.
-        constexpr std::array<CatalogueEntry<MessageId>, kNames.size()>
-            kEnglishEntries{{
-                {MessageId::LanguageEnglish, "English"},
-                {MessageId::LanguageSwedish, "Swedish"},
-            }};
-
-        constexpr std::array<CatalogueEntry<MessageId>, kNames.size()>
-            kSwedishEntries{{
-                {MessageId::LanguageEnglish, "Engelska"},
-                {MessageId::LanguageSwedish, "Svenska"},
-            }};
-
-        constexpr Catalogue<MessageId> kEnglishCatalogue{
-            Locale::English, kEnglishEntries};
-
-        constexpr Catalogue<MessageId> kSwedishCatalogue{
-            Locale::Swedish, kSwedishEntries};
-
-    } // namespace
-
-    std::span<const MessageName<MessageId>> Messages::names() noexcept
-    {
-        return kNames;
-    }
-
-    const Catalogue<MessageId> &Messages::catalogueFor(
-        Locale locale) noexcept
-    {
-        return antwika::i18n::pickCatalogue(
-            locale, kEnglishCatalogue, kSwedishCatalogue);
-    }
+    static_assert(
+        isComplete(kMessageTable),
+        "every MessageId needs a name and text in both locales");
 
 } // namespace antwika::i18n

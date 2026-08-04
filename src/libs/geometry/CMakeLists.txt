@@ -17,6 +17,13 @@ target_include_directories(antwika_geometry
         $<INSTALL_INTERFACE:include>
 )
 
+# Grid.hpp is the one header here with arithmetic in it, so this is the
+# one module of the three writing out its own rules that still needs a
+# suite of its own.
+if(BUILD_TESTING AND NOT CMAKE_CROSSCOMPILING)
+    add_subdirectory(tests)
+endif()
+
 install(
     TARGETS antwika_geometry
     EXPORT antwika_geometryTargets
