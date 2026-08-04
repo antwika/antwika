@@ -53,6 +53,27 @@ TEST(TempoMapTest, HoldsATempoThatIsNotAWholeNumberOfFrames)
     EXPECT_EQ(tempo.cycleAt(48000), Cycle(7));
 }
 
+// The defaulted comparison must consult every field, not stop early.
+TEST(TempoMapTest, SegmentEqualityComparesEveryField)
+{
+    const TempoMap::Segment base{
+        .startCycle = Cycle(1),
+        .startFrame = 100,
+        .framesPerCycle = Rational(2)};
+
+    auto moved = base;
+    moved.startCycle = Cycle(2);
+    EXPECT_NE(base, moved);
+
+    auto shifted = base;
+    shifted.startFrame = 200;
+    EXPECT_NE(base, shifted);
+
+    auto paced = base;
+    paced.framesPerCycle = Rational(3);
+    EXPECT_NE(base, paced);
+}
+
 TEST(TempoMapTest, ChangesTempoFromACycleOnwards)
 {
     TempoMap tempo(Rational(48000));

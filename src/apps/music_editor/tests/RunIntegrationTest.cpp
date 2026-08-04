@@ -1,5 +1,6 @@
 #include <chrono>
 #include <memory>
+#include <stdexcept>
 #include <vector>
 
 #include <gmock/gmock.h>
@@ -75,6 +76,16 @@ namespace
 
     private:
         int &counter;
+    };
+
+    // Refuses the first tick it is handed, mid-run.
+    class ThrowingSink final : public antwika::event::ITickEventSink
+    {
+    public:
+        void handle(const TickEvent &) override
+        {
+            throw std::runtime_error("the extra sink refused its tick");
+        }
     };
 
     // The run has no budget of its own any more.
@@ -159,6 +170,52 @@ TEST(RunIntegrationTest, RunsToItsScriptedStopAndSoundsTheOpeningDocument)
     // So the musical clock stopped well short of the budget.
     EXPECT_GT(summary.played, 0U);
     EXPECT_LT(summary.played, kBudget);
+}
+
+// A sink's refusal is not the run's to swallow.
+// It unwinds the whole wiring rather than losing a tick silently.
+TEST(RunIntegrationTest, ASinkThrowingMidRunUnwindsTheWholeWiring)
+{
+    NiceMock<MockLogger> logger;
+    NiceMock<MockEventSink> events;
+
+    antwika::sound::Waveform rendered;
+    antwika::sound::OfflineDevice device(
+        antwika::sound::DeviceDesc{
+            .format = kFormat, .preferredBufferFrames = 256},
+        rendered);
+
+    antwika::synth::SynthMixer mixer(
+        antwika::synth::SynthMixerDesc{.format = kFormat});
+
+    device.start(mixer);
+
+    antwika::time::fakes::FakeSleeper sleeper;
+    const EditorScene scene;
+    const InputEventCodec codec;
+
+    ReplaySource source(script(kBudget));
+
+    EXPECT_THROW(
+        (void)bootstrap(
+            MusicEditorWiring{
+                .logger = logger,
+                .eventSink = events,
+                .inputSource = source,
+                .codec = codec,
+                .scene = scene,
+                .mixer = mixer,
+                .device = device,
+                .sleeper = sleeper,
+                .playback = pacing(),
+                .canvas = kCanvas,
+                .extraSink =
+                    [](const antwika::music_editor::EditorSink &)
+                {
+                    return std::make_unique<ThrowingSink>();
+                },
+                .maxTicks = kBudget}),
+        std::runtime_error);
 }
 
 // Nothing is drawn by the run itself.
