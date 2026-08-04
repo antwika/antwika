@@ -100,6 +100,19 @@ TEST(GridTest, ReadsAPointInsideTheGridAsACell)
         (GridCell{.column = 3, .row = 2}));
 }
 
+// A cell differing in either index is a different cell.
+// Both indices are asserted apart on their own here.
+// The comparison is defaulted, so each is one arm of it.
+// Only ever comparing equal cells leaves the other arm untaken.
+TEST(GridTest, CellsDifferingInEitherIndexAreNotEqual)
+{
+    constexpr GridCell cell{.column = 2, .row = 1};
+
+    EXPECT_NE(cell, (GridCell{.column = 3, .row = 1}));
+    EXPECT_NE(cell, (GridCell{.column = 2, .row = 2}));
+    EXPECT_EQ(cell, (GridCell{.column = 2, .row = 1}));
+}
+
 TEST(GridTest, APointBeforeTheOriginIsInNoCell)
 {
     const Grid grid{
