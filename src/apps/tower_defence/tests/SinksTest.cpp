@@ -16,6 +16,8 @@
 #include <antwika/input/MouseButton.hpp>
 #include <antwika/time/fakes/FakeSleeper.hpp>
 
+#include <antwika/console/ConsolePicture.hpp>
+
 #include "antwika/tower_defence/BattleScene.hpp"
 #include "antwika/tower_defence/Campaign.hpp"
 #include "antwika/tower_defence/CampaignSink.hpp"
@@ -157,7 +159,8 @@ namespace
         Campaign campaign(tinyCampaign());
         ScoreOverlay overlay(kCanvas);
         const Translator translator = english();
-        ScoreSink sink(campaign, overlay, translator, 0);
+        const std::uint64_t best = 0;
+        ScoreSink sink(campaign, overlay, translator, best);
 
         sink.handle(other());
         EXPECT_TRUE(overlay.commands().empty());
@@ -239,6 +242,7 @@ namespace
         Campaign campaign(tinyCampaign());
         ScoreOverlay overlay(kCanvas);
         const BattleScene scene;
+        const antwika::console::ConsolePicture consolePicture(kCanvas);
         FakeSleeper sleeper;
         NiceMock<MockRenderer> renderer;
         NiceMock<MockWindow> window;
@@ -252,6 +256,7 @@ namespace
             scene,
             campaign,
             overlay,
+            consolePicture,
             sleeper,
             std::chrono::milliseconds{5},
             kCanvas);
@@ -264,6 +269,7 @@ namespace
         Campaign campaign(tinyCampaign());
         ScoreOverlay overlay(kCanvas);
         const BattleScene scene;
+        const antwika::console::ConsolePicture consolePicture(kCanvas);
         FakeSleeper sleeper;
         NiceMock<MockWindow> window;
         ON_CALL(window, isOpen()).WillByDefault(::testing::Return(false));
@@ -275,6 +281,7 @@ namespace
             scene,
             campaign,
             overlay,
+            consolePicture,
             sleeper,
             std::chrono::milliseconds{5},
             kCanvas);

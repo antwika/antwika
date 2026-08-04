@@ -13,6 +13,7 @@ namespace antwika::tower_defence
         const BattleScene &scene,
         const Campaign &campaign,
         const ScoreOverlay &overlay,
+        const antwika::console::ConsolePicture &consoleOverlay,
         ISleeper &sleeper,
         const std::chrono::milliseconds framePeriod,
         const Size canvas)
@@ -20,6 +21,7 @@ namespace antwika::tower_defence
           scene(scene),
           campaign(campaign),
           overlay(overlay),
+          consoleOverlay(consoleOverlay),
           sleeper(sleeper),
           framePeriod(framePeriod),
           canvas(canvas)
@@ -40,8 +42,11 @@ namespace antwika::tower_defence
         auto &renderer = window.renderer();
         scene.draw(renderer, canvas, snapshotOf(campaign));
 
-        // The bar goes on last, so it reads as being in front.
+        // The bar goes on over the battle, so it reads as in front.
         antwika::ui::paint(renderer, overlay.commands());
+
+        // And the console goes on over everything, sheet on top.
+        antwika::ui::paint(renderer, consoleOverlay.commands());
         renderer.present();
 
         sleeper.sleep(framePeriod);

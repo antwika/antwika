@@ -107,14 +107,17 @@ namespace antwika::tower_defence
          * @param campaign Read for the numbers. Must outlive this sink.
          * @param overlay Written every tick. Must outlive this sink.
          * @param translator Words the labels. Must outlive this sink.
-         * @param best The best score of any earlier run, fixed for this
-         * one.
+         * @param best The best score of any earlier run, read by
+         * reference: the one thing that may rewrite it mid-run is the
+         * console's load_state, which restores the baseline the dump
+         * was played against.
+         * Must outlive this sink.
          */
         ScoreSink(
             const Campaign &campaign,
             ScoreOverlay &overlay,
             const Translator &translator,
-            std::uint64_t best);
+            const std::uint64_t &best);
 
         ScoreSink(const ScoreSink &) = delete;
         ScoreSink(ScoreSink &&) = delete;
@@ -133,7 +136,7 @@ namespace antwika::tower_defence
         const Campaign &campaign;
         ScoreOverlay &overlay;
         const Translator &translator;
-        std::uint64_t best;
+        const std::uint64_t &best;
     };
 
 } // namespace antwika::tower_defence

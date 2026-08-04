@@ -423,11 +423,18 @@ TEST(RunIntegrationTest, TheSummaryLineSaysHowTheCampaignEnded)
     const BattleSummary unfinished{
         .phase = CampaignPhase::Fighting,
         .previousBest = {},
-        .best = {}};
+        .best = {},
+        .console = {}};
     const BattleSummary won{
-        .phase = CampaignPhase::Won, .previousBest = {}, .best = {}};
+        .phase = CampaignPhase::Won,
+        .previousBest = {},
+        .best = {},
+        .console = {}};
     const BattleSummary lost{
-        .phase = CampaignPhase::Lost, .previousBest = {}, .best = {}};
+        .phase = CampaignPhase::Lost,
+        .previousBest = {},
+        .best = {},
+        .console = {}};
 
     EXPECT_THAT(summaryLine(unfinished), ::testing::HasSubstr("left"));
     EXPECT_THAT(summaryLine(won), ::testing::HasSubstr("cleared"));

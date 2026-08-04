@@ -22,7 +22,7 @@ Clearing the last wave of the last level, or running out of lives, ends the *cam
 
 ## Libraries it composes
 
-[`app`](../libraries/app.md), [`engine`](../libraries/engine.md), [`event`](../libraries/event.md), [`gfx`](../libraries/gfx.md), [`i18n`](../libraries/i18n.md), [`input`](../libraries/input.md), [`log`](../libraries/log.md), [`replay`](../libraries/replay.md), [`rng`](../libraries/rng.md), [`ui`](../libraries/ui.md), [`wfc`](../libraries/wfc.md), plus the selected backends.
+[`app`](../libraries/app.md), `console`, [`engine`](../libraries/engine.md), [`event`](../libraries/event.md), [`gfx`](../libraries/gfx.md), [`i18n`](../libraries/i18n.md), [`input`](../libraries/input.md), [`log`](../libraries/log.md), [`replay`](../libraries/replay.md), [`rng`](../libraries/rng.md), [`ui`](../libraries/ui.md), [`wfc`](../libraries/wfc.md), plus the selected backends.
 
 ## The campaign
 
@@ -172,6 +172,17 @@ So the coverage legs prove the coverage and an optimised build proves the proper
 
 **Everything else a campaign test needs is fought on a five-by-three grid.**
 Generating is the only expensive thing this application does, and what those cases are about is what happens *between* levels, so they ask for the smallest grid the generator will answer for rather than the shipped one.
+
+## The debug console and its state dump
+
+`antwika::console` is mounted the way `apps/game` mounts it: `console::InputFold` first, `console::ConsoleSink` immediately after it, and `TowerPlacementSink` -- the one sink that reads a key or a pixel -- wrapped in a `console::ConsoleGatedSink`, so a press the open sheet stands over is the console's and one below it still builds.
+CampaignSink, ScoreSink and the stop are not input, so the battle keeps fighting while the console is open, exactly as the game's city does.
+The renderer paints `ConsolePicture` last, over the score bar, and the console is on only when the wiring names an overlay -- absent, no sink is registered and the gate forwards everything untouched.
+
+`dump_state` writes the whole run through `TowerDefenceSnapshotStore`: the campaign's memory -- level index, score, lives, ticks, phase, and the battle's mobs, towers and release counters -- plus the best-score baseline the bar was showing.
+**The level and the wave plan are deliberately not in the file**: both are pure functions of `(config.seed, level index)`, so `load_state` regenerates them through the very `seedFor()` derivations `Campaign::buildBattle()` used live, and a dump that does not fit the regenerated level -- a mob standing at or past the path's end -- is refused rather than repaired.
+Mob kinds and phases are persisted by name tables whose unknown names refuse, the state object is schema-validated, and the envelope is `console::SnapshotFormat` under this app's own magic, so another app's dump refuses on the magic alone.
+`load_state` runs only in a plain live run (`console::consoleLoadPermitted()`), for the reason the store is absent under `--replay`: a file's contents are carried by no recording.
 
 ## The config file
 
