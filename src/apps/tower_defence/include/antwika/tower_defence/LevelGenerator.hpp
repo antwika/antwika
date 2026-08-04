@@ -35,7 +35,23 @@ namespace antwika::tower_defence
          */
         std::uint32_t wallSpacing = 3;
 
-        /** @brief Solver step budget per attempt. */
+        /**
+         * @brief Solver step budget for the first attempt.
+         *
+         * Solve times are heavy-tailed: most layouts collapse within
+         * a couple of hundred steps and a hard one takes thousands,
+         * so a hard layout is cheaper to abandon and reseed than to
+         * grind out.
+         * Attempts therefore run in batches of eight, and each batch
+         * doubles the budget of the one before it, up to
+         * maxSolverSteps -- which keeps the typical generation about
+         * twenty times cheaper while a grid no cheap attempt can
+         * collapse still gets the deep search.
+         * At least 1 and at most maxSolverSteps.
+         */
+        std::uint64_t initialSolverSteps = 200;
+
+        /** @brief Solver step budget the doubling stops at. */
         std::uint64_t maxSolverSteps = 20000;
 
         /** @brief How many re-seeded attempts before giving up. */

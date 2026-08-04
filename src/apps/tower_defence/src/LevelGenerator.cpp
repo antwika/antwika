@@ -35,6 +35,12 @@ namespace antwika::tower_defence
         // So consecutive attempts start far apart in the sequence.
         constexpr std::uint64_t kAttemptStride = 0x9E3779B97F4A7C15ULL;
 
+        // How many attempts share a budget before it doubles.
+        // A hard default-grid seed takes tens of cheap reseeds.
+        // Doubling per failure would reach the cap by attempt eight.
+        // That grinds at the cap where a cheap reseed was the win.
+        constexpr std::uint32_t kAttemptsPerBudget = 8;
+
         std::size_t indexOf(
             const std::uint32_t width, const Cell &cell)
         {
@@ -293,6 +299,17 @@ namespace antwika::tower_defence
         {
             throw LevelError("Level wallSpacing must be at least 2");
         }
+        if (config.initialSolverSteps < 1)
+        {
+            throw LevelError(
+                "Level initialSolverSteps must be at least 1");
+        }
+        if (config.initialSolverSteps > config.maxSolverSteps)
+        {
+            throw LevelError(
+                "Level initialSolverSteps must not exceed "
+                "maxSolverSteps");
+        }
 
         const CompatibilityTable horizontal =
             sideTable(Side::East, Side::West);
@@ -307,6 +324,7 @@ namespace antwika::tower_defence
             references.emplace_back(constraint);
         }
 
+        std::uint64_t budget = config.initialSolverSteps;
         for (std::uint32_t attempt = 0; attempt < config.maxAttempts;
              ++attempt)
         {
@@ -318,11 +336,23 @@ namespace antwika::tower_defence
                 std::move(layout.wave),
                 references,
                 {},
-                {.maxSteps = config.maxSolverSteps});
+                {.maxSteps = budget});
             const SolveResult result = solver.solve();
             if (result.outcome == SolveOutcome::Solved)
             {
                 return buildLevel(config, layout, result.assignment);
+            }
+
+            // Solve times are heavy-tailed.
+            // A hard layout is cheaper to abandon than to grind out.
+            // So attempts run in cheap batches, doubling to the cap.
+            // A grid no cheap attempt collapses still gets the depth.
+            // Comparing against the halved cap cannot overflow.
+            if (attempt % kAttemptsPerBudget == kAttemptsPerBudget - 1)
+            {
+                budget = budget > config.maxSolverSteps / 2
+                    ? config.maxSolverSteps
+                    : budget * 2;
             }
         }
 

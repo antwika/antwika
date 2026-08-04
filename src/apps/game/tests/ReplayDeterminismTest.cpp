@@ -32,6 +32,7 @@
 #include <antwika/app/WindowInputSource.hpp>
 
 #include "TestTranslator.hpp"
+#include "WidgetPixel.hpp"
 #include "antwika/game/AppMode.hpp"
 #include "antwika/game/BuildingIndex.hpp"
 #include "antwika/game/Camera.hpp"
@@ -167,34 +168,23 @@ namespace
     }
 
     // Where a button is, is the layout's business.
-    // So a test looks for a pixel that hits the one it means.
+    // So a test asks the described frame for the widget's centre.
+    // WidgetPixel.hpp says what the sweep this replaced used to cost.
     [[nodiscard]] antwika::input::Position pixelOn(
         antwika::ui::WidgetId id)
     {
         const Toolbar toolbar{kTranslator};
         const Camera camera;
+        const auto centre = antwika::game::tests::widgetCentre(
+            toolbar.describe(kUiCanvas, antwika::ui::Pointer{}, camera),
+            id);
 
-        for (std::int32_t y = 0;
-             y < static_cast<std::int32_t>(kUiCanvas.height);
-             y += 4)
+        if (!centre.has_value())
         {
-            for (std::int32_t x = 0;
-                 x < static_cast<std::int32_t>(kUiCanvas.width);
-                 x += 4)
-            {
-                const antwika::ui::Pointer pointer{
-                    .position = antwika::gfx::Point{.x = x, .y = y}};
-
-                if (toolbar.describe(kUiCanvas, pointer, camera)
-                        .interactions.hovered
-                    == id)
-                {
-                    return antwika::input::Position{.x = x, .y = y};
-                }
-            }
+            return antwika::input::Position{};
         }
 
-        return antwika::input::Position{};
+        return antwika::input::Position{.x = centre->x, .y = centre->y};
     }
 
     [[nodiscard]] std::vector<TickEvent> toolbarSession()

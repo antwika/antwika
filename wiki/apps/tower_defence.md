@@ -118,7 +118,8 @@ It is arranged in three layers rather than checked for afterwards.
 
 `Tile::Empty` is symbol 0 because `wfc::Solver` tries candidates in ascending order, and wall columns with one gap each keep the grid connected while forcing the path to weave.
 
-A tight per-attempt step budget with many reseeds beat one large budget by roughly twenty times: a hard seed is cheaper to abandon than to grind out.
+A tight per-attempt step budget with many reseeds beat one large budget by roughly ten times: a hard seed is cheaper to abandon than to grind out, and the worst default-grid seed takes tens of cheap reseeds.
+Attempts therefore run in batches of eight whose budget doubles from `initialSolverSteps` toward `maxSolverSteps`, because the shipped 14x9 grid has seeds no cheap attempt collapses — the batches keep the reseeds cheap while a grid that needs the deep search still gets it.
 
 **The property is a property of the alphabet, not of one grid size**, which is what lets a campaign field three differently-shaped levels.
 `LevelGeneratorTest.EveryShippedLevelIsGenerableAndLinear` sweeps every level in `campaignLevels()`, so a fourth level added to that table is soaked for free.
@@ -163,7 +164,8 @@ A second row would leave the bar covering grid rows a click could still reach, s
 Reserving that strip is also why a click on the bar builds nothing: it falls outside the grid, so no sink has to ask the UI whether it covered the pointer.
 
 **The wide seed sweep runs in an optimised build only.**
-`LevelGeneratorTest` asserts the linear-path property over forty seeds, but generating one level costs about 2.9 s under the coverage build's `-O0` against 0.14 s at `-O2`, and forty of them was a third of the entire CI test step.
+`LevelGeneratorTest` asserts the linear-path property over forty seeds, but a level costs about twenty times more to generate under the coverage build's `-O0` than at `-O2`, and forty of them was a third of the entire CI test step.
+The sweep's levels are generated once into a shared pool that the property cases read too, since regenerating the same forty levels per case tripled the suite for no assertion the pool does not carry.
 `src/apps/tower_defence/tests/CMakeLists.txt` sets three seed counts from `ENABLE_COVERAGE`: eight for the linearity soak under instrumentation and forty otherwise, two for the cases reading some other property, and one per shipped level for the campaign sweep, since that one is a whole generation per level.
 CI runs the wide sweep in the GNU leg's "Soak the level generator" step, which builds that one target against `conan-release`.
 So the coverage legs prove the coverage and an optimised build proves the property, and neither pays for the other.

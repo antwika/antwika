@@ -55,6 +55,28 @@ namespace
     constexpr std::uint64_t kCampaignSeedCount =
         ANTWIKA_CAMPAIGN_SEED_COUNT;
 
+    static_assert(
+        kPropertySeedCount <= kSeedCount,
+        "property cases read their levels off the soak's pool");
+
+    // The soak's levels, generated once and shared by every case.
+    // Generating is the expensive half of any one of these cases.
+    // Regenerating one pool per case tripled the suite for nothing.
+    const std::vector<Level> &sweptLevels()
+    {
+        static const std::vector<Level> levels = []
+        {
+            std::vector<Level> generated;
+            generated.reserve(kSeedCount);
+            for (std::uint64_t seed = 0; seed < kSeedCount; ++seed)
+            {
+                generated.push_back(generateLevel({.seed = seed}));
+            }
+            return generated;
+        }();
+        return levels;
+    }
+
     bool adjacent(const Cell &left, const Cell &right)
     {
         const auto dx = static_cast<std::int64_t>(left.x)
@@ -120,9 +142,8 @@ namespace
     {
         for (std::uint64_t seed = 0; seed < kSeedCount; ++seed)
         {
-            const Level level = generateLevel({.seed = seed});
             SCOPED_TRACE("seed " + std::to_string(seed));
-            expectSingleSimplePath(level);
+            expectSingleSimplePath(sweptLevels()[seed]);
         }
     }
 
@@ -130,7 +151,7 @@ namespace
     {
         for (std::uint64_t seed = 0; seed < kPropertySeedCount; ++seed)
         {
-            const Level level = generateLevel({.seed = seed});
+            const Level &level = sweptLevels()[seed];
             for (const Cell &cell : level.path)
             {
                 const Tile tile = level.at(cell);
@@ -174,12 +195,12 @@ namespace
 
     TEST(LevelGeneratorTest, DifferentSeedsGiveDifferentLevels)
     {
-        const std::vector<Cell> reference = generateLevel({.seed = 0}).path;
+        const std::vector<Cell> &reference = sweptLevels()[0].path;
         bool sawADifferentPath = false;
         for (std::uint64_t seed = 1; seed < kPropertySeedCount; ++seed)
         {
             sawADifferentPath = sawADifferentPath
-                || generateLevel({.seed = seed}).path != reference;
+                || sweptLevels()[seed].path != reference;
         }
         EXPECT_TRUE(sawADifferentPath);
     }
@@ -255,11 +276,45 @@ namespace
             LevelError);
     }
 
+    TEST(LevelGeneratorTest, AZeroInitialBudgetIsRefused)
+    {
+        EXPECT_THROW(
+            static_cast<void>(
+                generateLevel({.initialSolverSteps = 0})),
+            LevelError);
+    }
+
+    TEST(LevelGeneratorTest, AnInitialBudgetAboveTheCapIsRefused)
+    {
+        EXPECT_THROW(
+            static_cast<void>(generateLevel(
+                {.initialSolverSteps = 2, .maxSolverSteps = 1})),
+            LevelError);
+    }
+
     TEST(LevelGeneratorTest, ExhaustingTheSolverBudgetIsReported)
     {
         EXPECT_THROW(
             static_cast<void>(generateLevel(
-                {.maxSolverSteps = 1, .maxAttempts = 2})),
+                {.initialSolverSteps = 1,
+                 .maxSolverSteps = 1,
+                 .maxAttempts = 2})),
+            LevelError);
+    }
+
+    // No 32x32 grid collapses within four steps, whatever the seed.
+    // So every attempt fails and the doubling walks up to its cap.
+    // A budget still capped after that walk is what this asserts.
+    // Batches of eight take the budget 1, 2, 4 and then hold it.
+    TEST(LevelGeneratorTest, AnEscalatingBudgetIsStillBounded)
+    {
+        EXPECT_THROW(
+            static_cast<void>(generateLevel(
+                {.width = 32,
+                 .height = 32,
+                 .initialSolverSteps = 1,
+                 .maxSolverSteps = 4,
+                 .maxAttempts = 32})),
             LevelError);
     }
 } // namespace
