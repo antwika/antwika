@@ -7,7 +7,6 @@
 #include <nlohmann/json-schema.hpp>
 
 #include <antwika/console/SnapshotError.hpp>
-#include <antwika/console/SnapshotFormat.hpp>
 #include <antwika/replay/MigrationChain.hpp>
 
 #include "antwika/sudoku/BoardFormatError.hpp"
@@ -78,19 +77,6 @@ namespace antwika::sudoku
         {
             return antwika::replay::MigrationChain(
                 {}, kStateDumpVersion);
-        }
-
-        const antwika::console::SnapshotFormat &dumpFormat()
-        {
-            // The excluded closing line carries the static guard.
-            // Its concurrency arms are unreachable one-threaded.
-            // See docs/confirming-unreachable-branches.md.
-            static const antwika::console::SnapshotFormat format(
-                {.magic = kStateDumpMagic,
-                 .version = kStateDumpVersion},
-                "antwika sudoku state dump document",
-                noStateDumpMigrations); // GCOVR_EXCL_LINE
-            return format;
         }
     } // namespace
 
@@ -203,35 +189,25 @@ namespace antwika::sudoku
 
     SudokuSnapshotStore::SudokuSnapshotStore(
         PuzzleState &state) noexcept
-        : state(state)
+        : antwika::console::JsonSnapshotStore<
+              antwika::console::SnapshotError>(
+              {.magic = kStateDumpMagic,
+               .version = kStateDumpVersion},
+              "antwika sudoku state dump document",
+              noStateDumpMigrations),
+          state(state)
     {
     }
 
-    void SudokuSnapshotStore::dump(
-        const std::string &path,
-        const std::vector<std::string> &console)
+    nlohmann::json SudokuSnapshotStore::takeState(const std::string &)
     {
-        // The excluded line is the envelope temporary's unwind arms.
-        // Only a failed allocation inside it could take one.
-        // See docs/confirming-unreachable-branches.md.
-        dumpFormat().write(
-            antwika::console::Snapshot{ // GCOVR_EXCL_LINE
-                .console = console,
-                .state = puzzleStateToJson(state)},
-            path);
+        return puzzleStateToJson(state);
+    }
 
-        // The excluded line is the local snapshot's unwind destructor.
-        // Nothing after its construction throws but the write itself.
-    } // GCOVR_EXCL_LINE
-
-    std::vector<std::string> SudokuSnapshotStore::load(
-        const std::string &path)
+    void SudokuSnapshotStore::applyState(
+        const std::string &, const nlohmann::json &dumped)
     {
-        auto snapshot = dumpFormat().read(path);
-
-        puzzleStateFromJson(snapshot.state, state);
-
-        return snapshot.console;
+        puzzleStateFromJson(dumped, state);
     }
 
 } // namespace antwika::sudoku

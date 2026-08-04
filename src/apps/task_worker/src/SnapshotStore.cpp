@@ -3,7 +3,6 @@
 #include <memory>
 #include <utility>
 
-#include <antwika/console/SnapshotFormat.hpp>
 #include <antwika/ecs_commons/Name.hpp>
 #include <antwika/scheduler/JobId.hpp>
 
@@ -13,22 +12,6 @@
 namespace antwika::task_worker
 {
 
-    namespace
-    {
-        const antwika::console::SnapshotFormat &dumpFormat()
-        {
-            // The excluded closing line carries the static guard.
-            // Its concurrency arms are unreachable one-threaded.
-            // See docs/confirming-unreachable-branches.md.
-            static const antwika::console::SnapshotFormat format(
-                {.magic = kStateDumpMagic,
-                 .version = kStateDumpVersion},
-                "antwika task worker state dump document",
-                standardStateDumpMigrations); // GCOVR_EXCL_LINE
-            return format;
-        }
-    } // namespace
-
     TaskWorkerSnapshotStore::TaskWorkerSnapshotStore(
         World &world,
         std::vector<Entity> &workers,
@@ -36,7 +19,13 @@ namespace antwika::task_worker
         TaskSubmissionSink &submissions,
         JobQueue &jobs,
         WorkerLookup &lookup) noexcept
-        : world(world),
+        : antwika::console::JsonSnapshotStore<
+              antwika::console::SnapshotError>(
+              {.magic = kStateDumpMagic,
+               .version = kStateDumpVersion},
+              "antwika task worker state dump document",
+              standardStateDumpMigrations),
+          world(world),
           workers(workers),
           registry(registry),
           submissions(submissions),
@@ -45,33 +34,16 @@ namespace antwika::task_worker
     {
     }
 
-    void TaskWorkerSnapshotStore::dump(
-        const std::string &path,
-        const std::vector<std::string> &console)
+    nlohmann::json TaskWorkerSnapshotStore::takeState(
+        const std::string &)
     {
-        // The excluded lines are the envelope temporary's unwind arms.
-        // Only a failed allocation inside them could take one.
-        // See docs/confirming-unreachable-branches.md.
-        dumpFormat().write(
-            antwika::console::Snapshot{ // GCOVR_EXCL_LINE
-                .console = console,
-                .state = stateDumpToJson(take())}, // GCOVR_EXCL_LINE
-            path);
+        return stateDumpToJson(take());
+    }
 
-        // The excluded line is the local snapshot's unwind destructor.
-        // Nothing after its construction throws but the write itself.
-    } // GCOVR_EXCL_LINE
-
-    std::vector<std::string> TaskWorkerSnapshotStore::load(
-        const std::string &path)
+    void TaskWorkerSnapshotStore::applyState(
+        const std::string &, const nlohmann::json &state)
     {
-        auto snapshot = dumpFormat().read(path);
-
-        // The decoder already promises SnapshotError.
-        // So nothing is rewrapped on the way through.
-        apply(stateDumpFromJson(snapshot.state));
-
-        return snapshot.console;
+        apply(stateDumpFromJson(state));
     }
 
     StateDump TaskWorkerSnapshotStore::take() const

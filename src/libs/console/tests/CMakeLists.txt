@@ -5,6 +5,7 @@ add_executable(antwika_console_tests
     ConsoleSceneTest.cpp
     ConsoleStateTest.cpp
     InputFoldTest.cpp
+    JsonSnapshotStoreTest.cpp
     SnapshotCommandsTest.cpp
     SnapshotFormatTest.cpp
     TypingTest.cpp

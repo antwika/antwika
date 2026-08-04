@@ -64,3 +64,18 @@ The Swedish letters would be multi-byte in the UTF-8 the UI holds, and a field's
 ## Who uses it
 
 Every application except the four demos; each one's wiki page describes its own snapshot store — what its `state` object carries, and what it deliberately leaves out.
+
+## The store half is written once too
+
+`JsonSnapshotStore<ErrorT>` is the `ISnapshotStore` an application inherits rather than implements, and every store in the tree now does.
+It holds the `SnapshotFormat`, writes `{console, state}` to a path, reads one back, and asks the application for the two halves that are actually its own -- `takeState()` and `applyState()` -- which is all that ever differed between nine copies of the same twenty lines.
+
+Both halves are handed the document's path, because a store's state need not all fit inside the document.
+[`atlas_editor`](../apps/atlas_editor.md) writes its sheet and its clipboard as PNGs beside it and binds them to it by fingerprint, and that is what the parameter is for.
+
+**`ErrorT` is the failure category the store rewraps, and the narrowness is the point.**
+It is parameterised for `config::FileFormat`'s reason: what differs between two applications reading a versioned document is which error each one reports.
+A store names what its own state can be wrong about, that becomes the `SnapshotError` `ISnapshotStore` documents, and a failure from further down -- [`pattern`](pattern.md)'s refusal to place a segment under [`music_editor`](../apps/music_editor.md), say -- is not that and travels on as itself.
+A store whose state's own reader already refuses with `SnapshotError` names that as its `ErrorT`, and the rewrapping is then the identity.
+
+What the envelope's own write throws is outside the rewrapping either way: it is already a `SnapshotError`, and a full disk is the machine's truth rather than the state's.
