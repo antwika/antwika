@@ -1,9 +1,9 @@
 #include "antwika/game/RenderSystem.hpp"
 
+#include <antwika/app/FramePresentation.hpp>
+#include <antwika/app/PointerReading.hpp>
 #include <antwika/gfx/Color.hpp>
 #include <antwika/gfx/Point.hpp>
-#include <antwika/gfx/ViewportRenderer.hpp>
-#include <antwika/app/PointerReading.hpp>
 #include <antwika/ui/Hover.hpp>
 #include <antwika/ui/Painter.hpp>
 
@@ -121,45 +121,28 @@ namespace antwika::game
 
     void RenderSystem::draw(antwika::animation::Progress subTick)
     {
-        // **The one place in this application reading the reported size.**
-        // And it reads it to place a picture and nothing else.
-        // Every call below is in canvas pixels, exactly as before.
-        // This scales and centres them, after every decision is made.
-        // A new one each frame, so a resize needs no handling of its own.
-        antwika::gfx::ViewportRenderer view(
-            setup.window.renderer(), setup.window.size(), setup.canvas);
-
-        // Counted here rather than in update().
-        // This is the one thing that runs exactly once per frame.
-        // update() draws the tick's own frame by calling it.
-        // app::FramePacedSource calls it again for each frame between.
-        // The count goes nowhere but the readout below.
-        if (setup.fps.has_value())
-        {
-            setup.fps->get().record();
-        }
-
-        drawMode(view, subTick);
-
-        // Last, so whatever reached past the canvas is covered.
-        // Nothing at all when the window is the canvas's own shape.
-        view.fillSurround(kSurround);
-        view.present();
-    }
-
-    void RenderSystem::drawMode(
-        IRenderer &renderer, antwika::animation::Progress subTick)
-    {
-        drawScreen(renderer, subTick);
-
         // The console last of all, whichever screen is up.
         // Described in the tick path like the bar, painted here only.
         // No hover pass: nothing on it changes on approach.
-        if (setup.consoleOverlay.has_value())
-        {
-            antwika::ui::paint(
-                renderer, setup.consoleOverlay->get().commands());
-        }
+        antwika::app::presentViewport(
+            setup.window,
+            setup.canvas,
+            kSurround,
+            setup.consoleOverlay,
+            [this, subTick](IRenderer &view)
+            {
+                // Counted here rather than in update().
+                // This is the one thing that runs once per frame.
+                // update() draws the tick's own frame by calling it.
+                // app::FramePacedSource calls it for each frame between.
+                // The count goes nowhere but the readout below.
+                if (setup.fps.has_value())
+                {
+                    setup.fps->get().record();
+                }
+
+                drawScreen(view, subTick);
+            });
     }
 
     void RenderSystem::drawScreen(

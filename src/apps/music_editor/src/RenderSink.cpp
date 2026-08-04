@@ -1,9 +1,7 @@
 #include "antwika/music_editor/RenderSink.hpp"
 
-#include <antwika/engine/Events.hpp>
+#include <antwika/app/FramePresentation.hpp>
 #include <antwika/gfx/Color.hpp>
-#include <antwika/gfx/ViewportRenderer.hpp>
-#include <antwika/ui/Painter.hpp>
 
 namespace antwika::music_editor
 {
@@ -32,31 +30,22 @@ namespace antwika::music_editor
 
     void RenderSink::handle(const TickEvent &event)
     {
-        if (event.event.name != antwika::engine::events::kTick)
+        if (!antwika::app::drawsOn(event, window))
         {
             return;
         }
-
-        if (!window.isOpen())
-        {
-            return;
-        }
-
-        // A new one each frame, so fullscreen needs no code here.
-        // The next frame simply reads the size the toggle left.
-        antwika::gfx::ViewportRenderer view(
-            window.renderer(), window.size(), canvas);
-
-        scene.draw(view, editor.commands());
 
         // The console over the editor, so the sheet stands on top.
         // An empty list while no console is mounted paints nothing.
-        antwika::ui::paint(view, console.commands());
-
-        // Last, so whatever reached past the canvas is covered.
-        // Nothing at all when the window is the canvas's own shape.
-        view.fillSurround(kSurround);
-        view.present();
+        antwika::app::presentViewport(
+            window,
+            canvas,
+            kSurround,
+            console,
+            [this](antwika::gfx::IRenderer &view)
+            {
+                scene.draw(view, editor.commands());
+            });
     }
 
 } // namespace antwika::music_editor

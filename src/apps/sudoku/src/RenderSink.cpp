@@ -1,7 +1,6 @@
 #include "antwika/sudoku/RenderSink.hpp"
 
-#include <antwika/engine/Events.hpp>
-#include <antwika/ui/Painter.hpp>
+#include <antwika/app/FramePresentation.hpp>
 
 namespace antwika::sudoku
 {
@@ -24,23 +23,20 @@ namespace antwika::sudoku
 
     void RenderSink::handle(const TickEvent &event)
     {
-        if (event.event.name != antwika::engine::events::kTick)
+        if (!antwika::app::drawsOn(event, window))
         {
             return;
         }
-
-        if (!window.isOpen())
-        {
-            return;
-        }
-
-        auto &renderer = window.renderer();
-        scene.draw(renderer, overlay.commands());
 
         // The console last, so the sheet stands over the whole board.
         // An empty list while no console is mounted paints nothing.
-        antwika::ui::paint(renderer, console.commands());
-        renderer.present();
+        antwika::app::presentFrame(
+            window,
+            console,
+            [this](antwika::gfx::IRenderer &renderer)
+            {
+                scene.draw(renderer, overlay.commands());
+            });
 
         sleeper.sleep(framePeriod);
     }

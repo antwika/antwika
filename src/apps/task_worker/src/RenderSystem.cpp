@@ -1,6 +1,6 @@
 #include "antwika/task_worker/RenderSystem.hpp"
 
-#include <antwika/ui/Painter.hpp>
+#include <antwika/app/FramePresentation.hpp>
 
 #include "antwika/task_worker/PoolSnapshot.hpp"
 
@@ -25,18 +25,15 @@ namespace antwika::task_worker
     {
         const auto snapshot = snapshotOf(world, registry, tick);
 
-        auto &renderer = window.renderer();
-        scene.draw(renderer, window.configuredSize(), snapshot);
-
         // The console last of all, over the pool.
         // Described in the tick path, painted here only.
-        if (consoleOverlay.has_value())
-        {
-            antwika::ui::paint(
-                renderer, consoleOverlay->get().commands());
-        }
-
-        renderer.present();
+        antwika::app::presentFrame(
+            window,
+            consoleOverlay,
+            [this, &snapshot](antwika::gfx::IRenderer &renderer)
+            {
+                scene.draw(renderer, window.configuredSize(), snapshot);
+            });
     }
 
 } // namespace antwika::task_worker
