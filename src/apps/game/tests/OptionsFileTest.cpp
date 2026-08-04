@@ -327,6 +327,15 @@ TEST_F(OptionsFileTest, AVersionTwoDocumentIsReadAsTheShippedBoard)
     EXPECT_EQ(loaded.locale, antwika::i18n::Locale::Swedish);
 }
 
+TEST_F(OptionsFileTest, TwoPreferencesDifferingOnlyByBoardDiffer)
+{
+    PlayerOptions base;
+    PlayerOptions other;
+    other.keyboard = antwika::game::KeyboardLayout::English;
+
+    EXPECT_NE(base, other);
+}
+
 TEST_F(OptionsFileTest, ADocumentNamingNoBoardIsRefused)
 {
     auto document = optionsToJson(PlayerOptions{});
