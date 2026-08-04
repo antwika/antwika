@@ -34,6 +34,7 @@
 #include <antwika/console/IConsoleCommands.hpp>
 #include <antwika/console/IConsoleControls.hpp>
 #include <antwika/console/InputFold.hpp>
+#include <antwika/console/testing/ConsoleScript.hpp>
 #include "antwika/game/Desirability.hpp"
 #include "antwika/game/Events.hpp"
 #include "antwika/game/Game.hpp"
@@ -62,6 +63,13 @@ using antwika::game::Camera;
 using antwika::game::Cell;
 using antwika::game::GridExtent;
 using antwika::console::kConsoleAnimTicks;
+using antwika::console::testing::keyAt;
+using antwika::console::testing::kOpenTick;
+using antwika::console::testing::moveTo;
+using antwika::console::testing::pressAt;
+using antwika::console::testing::scrollAt;
+using antwika::console::testing::stopAt;
+using antwika::console::testing::typeText;
 using antwika::input::InputEventCodec;
 using antwika::input::Key;
 using antwika::input::KeyPressed;
@@ -75,58 +83,6 @@ using ::testing::StartsWith;
 namespace
 {
     constexpr GridExtent kExtent{.width = 16, .height = 16};
-
-    // The first tick on which the field reads.
-    // The toggle goes down on tick 1 and each tick slides one step.
-    constexpr Tick kOpenTick = 1 + kConsoleAnimTicks;
-
-    [[nodiscard]] TickEvent keyAt(
-        const InputEventCodec &codec,
-        Tick tick,
-        Key key,
-        bool shift = false,
-        bool repeat = false)
-    {
-        return TickEvent{
-            .tick = tick,
-            .event = codec.encode(KeyPressed{
-                .key = key,
-                .modifiers = {.shift = shift},
-                .repeat = repeat})};
-    }
-
-    // The keys that type one command, one press per character.
-    // Only what the two commands need: letters, underscore, space.
-    // A run types by the Swedish board unless told otherwise.
-    // So the underscore is shift over the American slash position.
-    void typeText(
-        std::vector<TickEvent> &events,
-        const InputEventCodec &codec,
-        Tick tick,
-        std::string_view text)
-    {
-        for (const char character : text)
-        {
-            if (character == '_')
-            {
-                events.push_back(keyAt(codec, tick, Key::Slash, true));
-                continue;
-            }
-
-            if (character == ' ')
-            {
-                events.push_back(keyAt(codec, tick, Key::Space));
-                continue;
-            }
-
-            events.push_back(keyAt(
-                codec,
-                tick,
-                static_cast<Key>(
-                    static_cast<std::uint8_t>(Key::A)
-                    + (character - 'a'))));
-        }
-    }
 
     // A dump read back through the game's own envelope.
     struct ReadDump
@@ -151,13 +107,6 @@ namespace
         return ReadDump{
             .state = antwika::game::stateDumpFromJson(snapshot.state),
             .console = snapshot.console};
-    }
-
-    [[nodiscard]] TickEvent stopAt(Tick tick)
-    {
-        return TickEvent{
-            .tick = tick,
-            .event = Event{.name = antwika::engine::events::kStop}};
     }
 
     // BootstrapTest's harness, with the console turned on.
@@ -314,28 +263,14 @@ TEST(ConsoleSinkTest, APressUnderTheSheetLaysNothing)
     ASSERT_LT(underPoint.y, sheet);
     ASSERT_GT(belowPoint.y, sheet);
 
-    const auto pressAt = [&harness](Tick tick, antwika::gfx::Point at)
-    {
-        return TickEvent{
-            .tick = tick,
-            .event = harness.codec.encode(
-                antwika::input::PointerButtonPressed{
-                    .button = MouseButton::Left,
-                    .position = {.x = at.x, .y = at.y}})};
-    };
-
     std::vector<TickEvent> events{keyAt(harness.codec, 1, Key::Grave)};
-    events.push_back(pressAt(kOpenTick, underPoint));
-    events.push_back(pressAt(kOpenTick, belowPoint));
+    events.push_back(pressAt(harness.codec, kOpenTick, underPoint));
+    events.push_back(pressAt(harness.codec, kOpenTick, belowPoint));
 
     // A right press under the sheet is the console's too.
     // It reaches the field as no press at all, and cancels nothing.
-    events.push_back(TickEvent{
-        .tick = kOpenTick,
-        .event = harness.codec.encode(
-            antwika::input::PointerButtonPressed{
-                .button = MouseButton::Right,
-                .position = {.x = underPoint.x, .y = underPoint.y}})});
+    events.push_back(pressAt(
+        harness.codec, kOpenTick, underPoint, MouseButton::Right));
     events.push_back(stopAt(kOpenTick + 1));
     ReplaySource source(std::move(events));
 
@@ -348,29 +283,12 @@ TEST(ConsoleSinkTest, AScrollUnderTheSheetZoomsNothing)
 {
     ConsoleHarness harness;
 
-    const auto moveTo = [&harness](Tick tick, std::int32_t x,
-                                   std::int32_t y)
-    {
-        return TickEvent{
-            .tick = tick,
-            .event = harness.codec.encode(
-                antwika::input::PointerMoved{
-                    .position = {.x = x, .y = y}})};
-    };
-
-    const auto scrollAt = [&harness](Tick tick)
-    {
-        return TickEvent{
-            .tick = tick,
-            .event = harness.codec.encode(
-                antwika::input::PointerScrolled{.vertical = 1})};
-    };
-
     std::vector<TickEvent> events{keyAt(harness.codec, 1, Key::Grave)};
 
     // Under the sheet the wheel is the console's, and does nothing.
-    events.push_back(moveTo(kOpenTick, 100, 100));
-    events.push_back(scrollAt(kOpenTick));
+    events.push_back(
+        moveTo(harness.codec, kOpenTick, {.x = 100, .y = 100}));
+    events.push_back(scrollAt(harness.codec, kOpenTick, 1));
     events.push_back(stopAt(kOpenTick + 1));
     ReplaySource source(std::move(events));
 
@@ -385,14 +303,9 @@ TEST(ConsoleSinkTest, AScrollBelowTheSheetStillZooms)
     ConsoleHarness harness;
 
     std::vector<TickEvent> events{keyAt(harness.codec, 1, Key::Grave)};
-    events.push_back(TickEvent{
-        .tick = kOpenTick,
-        .event = harness.codec.encode(antwika::input::PointerMoved{
-            .position = {.x = 100, .y = 400}})});
-    events.push_back(TickEvent{
-        .tick = kOpenTick,
-        .event = harness.codec.encode(
-            antwika::input::PointerScrolled{.vertical = 1})});
+    events.push_back(
+        moveTo(harness.codec, kOpenTick, {.x = 100, .y = 400}));
+    events.push_back(scrollAt(harness.codec, kOpenTick, 1));
     events.push_back(stopAt(kOpenTick + 1));
     ReplaySource source(std::move(events));
 
@@ -410,8 +323,10 @@ TEST(ConsoleSinkTest, BackspaceEditsAndOnlyAFreshEnterExecutes)
     events.push_back(keyAt(harness.codec, kOpenTick, Key::Backspace));
 
     // A held Enter is a held key, and executes nothing at all.
-    events.push_back(
-        keyAt(harness.codec, kOpenTick, Key::Enter, false, true));
+    events.push_back(keyAt(
+        harness.codec,
+        kOpenTick,
+        KeyPressed{.key = Key::Enter, .repeat = true}));
     events.push_back(keyAt(harness.codec, kOpenTick, Key::Enter));
     events.push_back(stopAt(kOpenTick + 1));
     ReplaySource source(std::move(events));
@@ -437,12 +352,7 @@ TEST(ConsoleSinkTest, ADownPaletteSurvivesTheRoundTrip)
     {
         ConsoleHarness harness;
         std::vector<TickEvent> events{
-            TickEvent{
-                .tick = 1,
-                .event = harness.codec.encode(
-                    antwika::input::PointerButtonPressed{
-                        .button = MouseButton::Right,
-                        .position = {.x = point.x, .y = point.y}})},
+            pressAt(harness.codec, 1, point, MouseButton::Right),
             keyAt(harness.codec, 2, Key::Grave)};
         typeText(
             events, harness.codec, 2 + kConsoleAnimTicks, "dump_state");
@@ -465,12 +375,7 @@ TEST(ConsoleSinkTest, ADownPaletteSurvivesTheRoundTrip)
     events.push_back(keyAt(fresh.codec, kOpenTick, Key::Grave));
 
     const Tick closed = kOpenTick + kConsoleAnimTicks + 1;
-    events.push_back(TickEvent{
-        .tick = closed,
-        .event = fresh.codec.encode(
-            antwika::input::PointerButtonPressed{
-                .button = MouseButton::Left,
-                .position = {.x = point.x, .y = point.y}})});
+    events.push_back(pressAt(fresh.codec, closed, point));
     events.push_back(stopAt(closed + 1));
     ReplaySource source(std::move(events));
 
@@ -519,22 +424,12 @@ TEST(ConsoleSinkTest, WhatTheSheetCoversTheMenuNeverSees)
 
     ConsoleHarness harness{AppMode::MainMenu};
 
-    const auto pressAt = [&harness](Tick tick, antwika::gfx::Point at)
-    {
-        return TickEvent{
-            .tick = tick,
-            .event = harness.codec.encode(
-                antwika::input::PointerButtonPressed{
-                    .button = MouseButton::Left,
-                    .position = {.x = at.x, .y = at.y}})};
-    };
-
     std::vector<TickEvent> events{keyAt(harness.codec, 1, Key::Grave)};
 
     // New Game under the sheet starts nothing.
     // Quit below it still quits, which is what ends this run.
-    events.push_back(pressAt(kOpenTick, *newGame));
-    events.push_back(pressAt(kOpenTick, *quit));
+    events.push_back(pressAt(harness.codec, kOpenTick, *newGame));
+    events.push_back(pressAt(harness.codec, kOpenTick, *quit));
     events.push_back(stopAt(kOpenTick + 5));
     ReplaySource source(std::move(events));
 
@@ -638,15 +533,12 @@ TEST(ConsoleSinkTest, DumpStateWritesTheInstantAndSaysSo)
     const auto point = antwika::game::cellCentre(laid, Camera());
 
     std::vector<TickEvent> events{
-        TickEvent{
-            .tick = 1,
-            .event = harness.codec.encode(
-                antwika::input::PointerButtonPressed{
-                    .button = MouseButton::Left,
-                    .position = {.x = point.x, .y = point.y}})},
+        pressAt(harness.codec, 1, point),
         keyAt(harness.codec, 2, Key::Grave)};
-    typeText(events, harness.codec, 2 + kConsoleAnimTicks, "dump_state");
-    events.push_back(keyAt(harness.codec, 2 + kConsoleAnimTicks, Key::Enter));
+    typeText(
+        events, harness.codec, 2 + kConsoleAnimTicks, "dump_state");
+    events.push_back(
+        keyAt(harness.codec, 2 + kConsoleAnimTicks, Key::Enter));
     events.push_back(stopAt(3 + kConsoleAnimTicks));
     ReplaySource source(std::move(events));
 
@@ -679,12 +571,7 @@ TEST(ConsoleSinkTest, LoadStateComesBackToTheDumpedInstant)
             Cell{.x = 12, .y = 12}, Camera());
 
         std::vector<TickEvent> events{
-            TickEvent{
-                .tick = 1,
-                .event = harness.codec.encode(
-                    antwika::input::PointerButtonPressed{
-                        .button = MouseButton::Left,
-                        .position = {.x = point.x, .y = point.y}})},
+            pressAt(harness.codec, 1, point),
             keyAt(harness.codec, 2, Key::Grave)};
         typeText(
             events, harness.codec, 2 + kConsoleAnimTicks, "dump_state");
@@ -890,10 +777,7 @@ namespace
 
         void openFully()
         {
-            feed(TickEvent{
-                .tick = 1,
-                .event = codec.encode(
-                    KeyPressed{.key = Key::Grave})});
+            feed(keyAt(codec, 1, Key::Grave));
 
             for (Tick tick = 1; tick <= kConsoleAnimTicks; ++tick)
             {
@@ -908,10 +792,10 @@ TEST(ConsoleSinkTest, ARepeatOfTheToggleKeyIsAHeldKeyNotAPress)
     SinkHarness harness;
     harness.openFully();
 
-    harness.feed(TickEvent{
-        .tick = kConsoleAnimTicks + 1,
-        .event = harness.codec.encode(KeyPressed{
-            .key = Key::Grave, .repeat = true})});
+    harness.feed(keyAt(
+        harness.codec,
+        kConsoleAnimTicks + 1,
+        KeyPressed{.key = Key::Grave, .repeat = true}));
     harness.feedTick(kConsoleAnimTicks + 1);
 
     // A held toggle holds the console open rather than flickering it.

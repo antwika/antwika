@@ -1,8 +1,6 @@
 #include <chrono>
-#include <cstdint>
 #include <filesystem>
 #include <string>
-#include <string_view>
 #include <utility>
 #include <vector>
 
@@ -12,8 +10,7 @@
 #include <antwika/console/ConsolePicture.hpp>
 #include <antwika/console/ConsoleState.hpp>
 #include <antwika/console/SnapshotFormat.hpp>
-#include <antwika/engine/Events.hpp>
-#include <antwika/event/Event.hpp>
+#include <antwika/console/testing/ConsoleScript.hpp>
 #include <antwika/event/TickEvent.hpp>
 #include <antwika/event/mocks/MockEventSink.hpp>
 #include <antwika/gfx/Size.hpp>
@@ -40,12 +37,14 @@
 #include "antwika/music_editor/SnapshotStore.hpp"
 #include "antwika/music_editor/StateDump.hpp"
 
-using antwika::event::Event;
+using antwika::console::testing::keyAt;
+using antwika::console::testing::kOpenTick;
+using antwika::console::testing::stopAt;
+using antwika::console::testing::typeText;
 using antwika::event::mocks::MockEventSink;
 using antwika::event::TickEvent;
 using antwika::input::InputEventCodec;
 using antwika::input::Key;
-using antwika::input::KeyPressed;
 using antwika::log::mocks::MockLogger;
 using antwika::music_editor::bootstrap;
 using antwika::music_editor::EditorScene;
@@ -65,9 +64,6 @@ namespace
 
     constexpr antwika::gfx::Size kCanvas{.width = 1120, .height = 640};
 
-    // The first tick the console stands fully open on.
-    constexpr Tick kOpenTick = 1 + antwika::console::kConsoleAnimTicks;
-
     [[nodiscard]] PlaybackDesc pacing()
     {
         return PlaybackDesc{
@@ -78,55 +74,13 @@ namespace
             .lead = 2};
     }
 
-    [[nodiscard]] TickEvent keyAt(
-        const InputEventCodec &codec,
-        const Tick tick,
-        const Key key,
-        const bool shift = false)
-    {
-        return TickEvent{
-            .tick = tick,
-            .event = codec.encode(
-                KeyPressed{
-                    .key = key, .modifiers = {.shift = shift}})};
-    }
-
-    // Lowercase letters and the underscore, on the Swedish board.
-    void typeText(
-        std::vector<TickEvent> &events,
-        const InputEventCodec &codec,
-        const Tick tick,
-        const std::string_view text)
-    {
-        for (const char character : text)
-        {
-            if (character == '_')
-            {
-                events.push_back(keyAt(codec, tick, Key::Slash, true));
-                continue;
-            }
-
-            events.push_back(
-                keyAt(
-                    codec,
-                    tick,
-                    static_cast<Key>(
-                        static_cast<std::uint8_t>(Key::A)
-                        + (character - 'a'))));
-        }
-    }
-
     [[nodiscard]] EditorSummary run(
         std::vector<TickEvent> events,
         const std::string &dumpPath,
         const bool loadEnabled,
         const Tick stopTick = kOpenTick + 3)
     {
-        events.push_back(
-            TickEvent{
-                .tick = stopTick,
-                .event = Event{
-                    .name = antwika::engine::events::kStop}});
+        events.push_back(stopAt(stopTick));
 
         NiceMock<MockLogger> logger;
         NiceMock<MockEventSink> eventSink;
@@ -395,12 +349,7 @@ TEST(ConsoleSinkTest, AnEditorWithNoConsoleIgnoresTheKeys)
     const EditorScene scene;
     const InputEventCodec codec;
 
-    ReplaySource source(
-        {keyAt(codec, 1, Key::Grave),
-         TickEvent{
-             .tick = 3,
-             .event = Event{
-                 .name = antwika::engine::events::kStop}}});
+    ReplaySource source({keyAt(codec, 1, Key::Grave), stopAt(3)});
 
     const auto summary = bootstrap(
         MusicEditorWiring{

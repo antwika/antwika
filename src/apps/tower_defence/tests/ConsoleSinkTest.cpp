@@ -1,6 +1,5 @@
 #include <cstdint>
 #include <string>
-#include <string_view>
 #include <utility>
 #include <vector>
 
@@ -10,17 +9,14 @@
 #include <antwika/console/ConsolePicture.hpp>
 #include <antwika/console/ConsoleState.hpp>
 #include <antwika/console/SnapshotFormat.hpp>
-#include <antwika/engine/Events.hpp>
-#include <antwika/event/Event.hpp>
+#include <antwika/console/testing/ConsoleScript.hpp>
 #include <antwika/event/mocks/MockEventSink.hpp>
 #include <antwika/event/TickEvent.hpp>
 #include <antwika/gfx/Point.hpp>
 #include <antwika/gfx/Size.hpp>
 #include <antwika/i18n/Locale.hpp>
-#include <antwika/input/InputEvent.hpp>
 #include <antwika/input/InputEventCodec.hpp>
 #include <antwika/input/Key.hpp>
-#include <antwika/input/MouseButton.hpp>
 #include <antwika/log/mocks/MockLogger.hpp>
 #include <antwika/replay/ReplaySource.hpp>
 #include <antwika/testing/ScratchPath.hpp>
@@ -33,14 +29,16 @@
 #include "antwika/tower_defence/Wave.hpp"
 
 using antwika::console::kConsoleAnimTicks;
-using antwika::event::Event;
+using antwika::console::testing::keyAt;
+using antwika::console::testing::kOpenTick;
+using antwika::console::testing::pressAt;
+using antwika::console::testing::stopAt;
+using antwika::console::testing::typeText;
 using antwika::event::mocks::MockEventSink;
 using antwika::event::TickEvent;
 using antwika::gfx::Size;
 using antwika::input::InputEventCodec;
 using antwika::input::Key;
-using antwika::input::KeyPressed;
-using antwika::input::MouseButton;
 using antwika::log::mocks::MockLogger;
 using antwika::replay::ReplaySource;
 using antwika::time::Tick;
@@ -65,10 +63,6 @@ namespace
 {
     constexpr Size kCanvas{.width = 960, .height = 720};
 
-    // The first tick on which the field reads.
-    // The toggle goes down on tick 1 and each tick slides one step.
-    constexpr Tick kOpenTick = 1 + kConsoleAnimTicks;
-
     // Small enough that the solver is not what these cases cost.
     CampaignConfig tinyCampaign()
     {
@@ -82,72 +76,6 @@ namespace
                     .entries = {WaveEntry{MobKind::Grunt, 2}},
                     .spawnPeriodTicks = 3,
                     .gapTicks = 0}}}}};
-    }
-
-    [[nodiscard]] TickEvent keyAt(
-        const InputEventCodec &codec,
-        const Tick tick,
-        const Key key,
-        const bool shift = false)
-    {
-        return TickEvent{
-            .tick = tick,
-            .event = codec.encode(KeyPressed{
-                .key = key, .modifiers = {.shift = shift}})};
-    }
-
-    // The keys that type one command, one press per character.
-    // Only what the two commands need: letters, underscore, space.
-    // A run types by the Swedish board unless told otherwise.
-    // So the underscore is shift over the American slash position.
-    void typeText(
-        std::vector<TickEvent> &events,
-        const InputEventCodec &codec,
-        const Tick tick,
-        const std::string_view text)
-    {
-        for (const char character : text)
-        {
-            if (character == '_')
-            {
-                events.push_back(keyAt(codec, tick, Key::Slash, true));
-                continue;
-            }
-
-            if (character == ' ')
-            {
-                events.push_back(keyAt(codec, tick, Key::Space));
-                continue;
-            }
-
-            events.push_back(keyAt(
-                codec,
-                tick,
-                static_cast<Key>(
-                    static_cast<std::uint8_t>(Key::A)
-                    + (character - 'a'))));
-        }
-    }
-
-    [[nodiscard]] TickEvent pressAt(
-        const InputEventCodec &codec,
-        const Tick tick,
-        const std::int32_t x,
-        const std::int32_t y)
-    {
-        return TickEvent{
-            .tick = tick,
-            .event = codec.encode(
-                antwika::input::PointerButtonPressed{
-                    .button = MouseButton::Left,
-                    .position = {.x = x, .y = y}})};
-    }
-
-    [[nodiscard]] TickEvent stopAt(const Tick tick)
-    {
-        return TickEvent{
-            .tick = tick,
-            .event = Event{.name = antwika::engine::events::kStop}};
     }
 
     // A dump read back through this application's own envelope.
@@ -297,10 +225,8 @@ TEST(ConsoleSinkTest, APressUnderTheSheetPlacesNoTower)
 
     // The press the sheet covers is the console's, and builds nothing.
     // The one below it is the battle's, and builds.
-    events.push_back(pressAt(
-        harness.codec, kOpenTick, cells.under.x, cells.under.y));
-    events.push_back(pressAt(
-        harness.codec, kOpenTick, cells.below.x, cells.below.y));
+    events.push_back(pressAt(harness.codec, kOpenTick, cells.under));
+    events.push_back(pressAt(harness.codec, kOpenTick, cells.below));
     events.push_back(stopAt(kOpenTick + 1));
     ReplaySource source(std::move(events));
 
@@ -321,7 +247,7 @@ TEST(ConsoleSinkTest, DumpThenLoadComesBackToTheDumpedInstant)
     {
         ConsoleHarness harness;
         std::vector<TickEvent> events{
-            pressAt(harness.codec, 1, cells.below.x, cells.below.y),
+            pressAt(harness.codec, 1, cells.below),
             keyAt(harness.codec, 2, Key::Grave)};
         typeText(
             events, harness.codec, 2 + kConsoleAnimTicks, "dump_state");
