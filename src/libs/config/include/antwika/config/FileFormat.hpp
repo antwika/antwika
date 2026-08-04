@@ -81,6 +81,8 @@ namespace antwika::config
          * A factory rather than a chain, because MigrationChain is
          * built per read and adding a migration should change one
          * function in the owning application.
+         * A config file's is AppConfigFile's own, since every one of
+         * them is empty for the same reason.
          */
         replay::MigrationChain (*migrations)();
     };
@@ -97,10 +99,14 @@ namespace antwika::config
      * defaulted.
      *
      * The class is the pattern the per-application loaders repeated
-     * nine times, said once: an application declares a FormatSpec and
-     * thin free functions forwarding here, and what it took to read a
+     * nine times, said once: a caller declares a FormatSpec and thin
+     * free functions forwarding here, and what it took to read a
      * versioned document correctly -- and identically to every other
-     * application -- stops being its concern.
+     * caller -- stops being its concern.
+     * A config file declares neither by hand any more, since
+     * AppConfigFile.hpp writes both from what one application states;
+     * this is what a document that is not a config, or a config that
+     * has outgrown that shape, still reaches for.
      *
      * The validator is built once, at construction, from the envelope
      * plus the spec's members; the schema therefore cannot drift from

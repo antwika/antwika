@@ -6,10 +6,9 @@
 #include <limits>
 #include <string>
 
+#include <antwika/config/AppConfigFile.hpp>
 #include <antwika/config/ConfigDocument.hpp>
 #include <antwika/config/ConfigFormatError.hpp>
-#include <antwika/config/FileFormat.hpp>
-#include <antwika/config/Format.hpp>
 #include "antwika/game/BuildingKind.hpp"
 #include "antwika/game/Resource.hpp"
 
@@ -18,8 +17,6 @@ namespace antwika::game
 
     namespace
     {
-        using antwika::config::FileFormat;
-        using antwika::config::FormatSpec;
         using antwika::config::memberOr;
         using antwika::config::wholeShape;
 
@@ -226,62 +223,13 @@ namespace antwika::game
             }
             return config;
         }
-
-        const FileFormat<GameConfig> &fileFormat()
-        {
-            using AppFormat = FileFormat<GameConfig>;
-
-            // The excluded closing line carries the static guard.
-            // Its concurrency arms are unreachable one-threaded.
-            // See docs/confirming-unreachable-branches.md.
-            static const AppFormat format(
-                FormatSpec<GameConfig>{
-                    .format =
-                        {.magic = kConfigMagic,
-                         .version = kConfigFormatVersion},
-                    .title = "antwika game config document",
-                    .whatFailed =
-                        "antwika::game: config JSON failed schema "
-                        "validation: ",
-                    .members = describeMembers,
-                    .encode = encodeMembers,
-                    .decode = decodeMembers,
-                    .migrations = standardConfigMigrations}); // GCOVR_EXCL_LINE
-            return format;
-        }
     } // namespace
 
-    MigrationChain standardConfigMigrations()
-    {
-        // Every branch left on the excluded line is the allocator's.
-        // The list is empty, so no heap branch is taken here.
-        // What is left is the throw edge of building it.
-        return MigrationChain({}, kConfigFormatVersion); // GCOVR_EXCL_LINE
-    }
-
-    nlohmann::json configToJson(const GameConfig &config)
-    {
-        return fileFormat().toJson(config);
-    }
-
-    GameConfig configFromJson(const nlohmann::json &document)
-    {
-        return fileFormat().fromJson(document);
-    }
-
-    void writeConfig(const GameConfig &config, std::ostream &out)
-    {
-        fileFormat().write(config, out);
-    }
-
-    GameConfig readConfig(std::istream &in)
-    {
-        return fileFormat().read(in);
-    }
-
-    GameConfig loadConfigFileOrDefaults(const std::string &path)
-    {
-        return fileFormat().loadFileOrDefaults(path);
-    }
+    ANTWIKA_CONFIG_FILE(
+        "game",
+        GameConfig,
+        describeMembers,
+        encodeMembers,
+        decodeMembers)
 
 } // namespace antwika::game

@@ -64,3 +64,17 @@ An application's save and options files keep error types of their own, because a
 ## Used by
 
 [`apps/game`](../apps/game.md) reads `config.json` through this for its `GameConfig` — see the config section of that page for what may and may not live in a game's config file.
+
+## What is generic now, and what is still the application's
+
+`FileFormat` left each application a trailer of its own — a static `FileFormat` built from a `FormatSpec` of the same shape, an empty `MigrationChain`, and six free functions forwarding to it — and all nine were byte-identical apart from the config type's name.
+`AppConfigFile.hpp` is that trailer said once: `AppConfigFile<Spec>` holds the static format, builds the chain and answers the six calls, and the `ANTWIKA_CONFIG_FILE` macro beside it writes the `Spec` and the six functions the application's header has already promised.
+
+The macro is there for one reason, and it is not the logic: no template can give a function in `antwika::life` the name `loadConfigFileOrDefaults`, so what a macro contributes here is names, and every line it emits is one call into the template.
+It reads the `kConfigMagic` and `kConfigFormatVersion` of the namespace it is invoked in rather than taking them as arguments, so a format cannot state one thing in its header and another in its loader.
+It builds the two messages a refusal carries — `antwika <app> config document` and `antwika::<app>: config JSON failed schema validation: ` — from the application's name, because nine copies of one sentence were nine chances to word it differently.
+
+What stays with the application is what always differed: its magic and version, the schema members, the encode, the decode, and whatever rule between two members that decode refuses — poker's blind ordering, the game's household staples.
+Its header stays its own too, declaring the six functions with its own documentation, since that header is the application's public face and a macro there would hide it from a reader and from generated docs alike.
+The chain is the template's rather than the application's because all nine are empty for the same reason — every member is optional, so adding one is additive and the version stays at 1 — and a format that does grow a migration outgrows `AppConfigFile` and states a `FormatSpec` of its own.
+That is where the documents named above stay: `AppConfigFile` is the shape a *config* has, and a save with sections, migrations and a raw-grid pre-parse is not one.
