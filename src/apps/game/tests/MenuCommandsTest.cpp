@@ -29,6 +29,7 @@ using antwika::game::LiveGrid;
 using antwika::game::MenuCommands;
 using antwika::game::PathIndex;
 using antwika::game::SessionStore;
+using antwika::game::Tuning;
 using antwika::game::WorldMapState;
 using antwika::gfx::Point;
 using antwika::log::mocks::MockLogger;
@@ -68,7 +69,7 @@ namespace
             .built = built,
             .camera = camera};
         MenuCommands commands{
-            mode, session, cities, live, Camera{kHome}};
+            mode, session, cities, live, Camera{kHome}, Tuning{}};
     };
 } // namespace
 
@@ -157,4 +158,17 @@ TEST_F(MenuCommandsTest, Request_LandsAtTheTickBoundaryAndNotBefore)
 
     EXPECT_EQ(AppMode::CityMap, mode.mode());
     EXPECT_EQ(AppMode::MainMenu, mode.next());
+}
+
+// The bank opens with the injected funds rather than the constant.
+// A rebalanced config reaches a fresh city through this seam.
+TEST_F(MenuCommandsTest, NewGame_OpensTheBankWithTheConfiguredFunds)
+{
+    Tuning tuning;
+    tuning.startingMoney = 1234;
+    MenuCommands tuned{mode, session, cities, live, Camera{kHome}, tuning};
+
+    tuned.newGame();
+
+    EXPECT_EQ(state.money, 1234);
 }

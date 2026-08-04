@@ -10,6 +10,7 @@ add_executable(antwika_game
     src/BuildingSystem.cpp
     src/CityGrid.cpp
     src/CityRatings.cpp
+    src/ConfigFile.cpp
     src/Coverage.cpp
     src/CoverageSystem.cpp
     src/Desirability.cpp
@@ -136,6 +137,7 @@ antwika_bundle_app(
         assets/atlas_1x1.png
         assets/atlas_2x2.png
         assets/atlas_3x3.png
+        assets/config.json
 )
 
 install(TARGETS antwika_game

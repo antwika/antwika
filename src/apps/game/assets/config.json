@@ -1,0 +1,32 @@
+{
+  "buildingCosts": {
+    "clay_pit": 40,
+    "doctor": 60,
+    "engineer_post": 50,
+    "farm": 40,
+    "fire_station": 70,
+    "house": 10,
+    "market": 50,
+    "storage": 70,
+    "well": 15,
+    "workshop": 60
+  },
+  "burnDurationTicks": 500,
+  "devolvePeriodTicks": 100,
+  "drainPeriodTicks": 100,
+  "evolvePeriodTicks": 100,
+  "labourPeriodTicks": 150,
+  "magic": "antwika-game-config",
+  "mouthsPerServing": 4,
+  "productionBatch": 25,
+  "productionPeriodTicks": 25,
+  "razeCost": 2,
+  "riskPeriodTicks": 25,
+  "roadCost": 4,
+  "settlerPeriodTicks": 25,
+  "spawnPeriodTicks": 25,
+  "staffDecayPeriodTicks": 500,
+  "startingMoney": 5000,
+  "version": 1,
+  "walkerLimit": 64
+}

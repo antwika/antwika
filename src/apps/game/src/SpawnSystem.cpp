@@ -17,7 +17,8 @@
 namespace antwika::game
 {
 
-    SpawnSystem::SpawnSystem(const PathIndex &paths) : paths(paths)
+    SpawnSystem::SpawnSystem(const PathIndex &paths, Tuning tuning)
+        : paths(paths), tuning(tuning)
     {
     }
 
@@ -105,7 +106,7 @@ namespace antwika::game
         std::size_t out = world.view<Walker>().size();
 
         // Ascending Cell, out of a map rather than a view.
-        // kWalkerLimit is a limited amount split between buildings.
+        // The walker cap is a limited amount split between buildings.
         // And a view's order is nobody's to name.
         // At the cap the last slots would go to whichever were built first.
         // LabourSystem and SupplySystem collect for that reason too.
@@ -145,8 +146,8 @@ namespace antwika::game
             // And nobody at all is never.
             // With the countdown held rather than reset.
             // So a building unstaffed for a thousand ticks owes none.
-            const auto period =
-                workedPeriod(kSpawnPeriodTicks, staffingOf(world, entity));
+            const auto period = workedPeriod(
+                tuning.spawnPeriodTicks, staffingOf(world, entity));
 
             if (!period.has_value())
             {
@@ -170,7 +171,7 @@ namespace antwika::game
             const auto slot = freeWalkerSlot(world, building);
 
             if (!onto.has_value() || !slot.has_value()
-                || out >= kWalkerLimit)
+                || out >= tuning.walkerLimit)
             {
                 continue;
             }

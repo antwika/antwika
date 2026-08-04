@@ -46,6 +46,7 @@ add_executable(antwika_game_tests
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/Messages.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/ModeGatedSink.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/OverlayField.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/ConfigFile.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/OptionsFile.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/OptionsScene.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/OptionsState.cpp
@@ -151,6 +152,7 @@ add_executable(antwika_game_tests
     MenuCommandsTest.cpp
     MenuModalSceneTest.cpp
     KeyBindingsTest.cpp
+    ConfigFileTest.cpp
     OptionsFileTest.cpp
     OverlayFieldTest.cpp
     OptionsSceneTest.cpp

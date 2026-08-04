@@ -62,6 +62,7 @@
 #include "antwika/game/UiOverlay.hpp"
 #include "antwika/game/UiSink.hpp"
 
+using antwika::game::Tuning;
 using antwika::game::tests::kTranslator;
 
 using antwika::ecs::SystemScheduler;
@@ -416,7 +417,8 @@ namespace
             cities,
             built,
             drag,
-            state};
+            state,
+            Tuning{}};
     };
 } // namespace
 

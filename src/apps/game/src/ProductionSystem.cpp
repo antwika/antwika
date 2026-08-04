@@ -17,7 +17,9 @@ namespace antwika::game
         // Whether one batch can be finished right now.
         // A workshop out of clay and a full barn are the same answer.
         [[nodiscard]] bool canFinish(
-            const Building &building, Resource output)
+            const Building &building,
+            Resource output,
+            const Tuning &tuning)
         {
             if (building.stock[resourceIndex(output)]
                 >= capacityOf(building.kind))
@@ -29,9 +31,13 @@ namespace antwika::game
 
             return !input.has_value()
                 || building.stock[resourceIndex(*input)]
-                       >= kProductionBatch;
+                       >= tuning.productionBatch;
         }
     } // namespace
+
+    ProductionSystem::ProductionSystem(Tuning tuning) : tuning(tuning)
+    {
+    }
 
     void ProductionSystem::update(World &world, antwika::time::Tick)
     {
@@ -50,7 +56,10 @@ namespace antwika::game
             // add() is staged, so it takes effect from the next tick.
             if (!world.has<Production>(entity))
             {
-                world.add<Production>(entity, Production{});
+                world.add<Production>(
+                    entity,
+                    Production{
+                        .ticksUntilOutput = tuning.productionPeriodTicks});
                 continue;
             }
 
@@ -59,7 +68,7 @@ namespace antwika::game
             // Which is the rule a workshop out of clay already follows.
             // Read out here for a second reason.
             const auto period = workedPeriod(
-                kProductionPeriodTicks, staffingOf(world, entity));
+                tuning.productionPeriodTicks, staffingOf(world, entity));
 
             if (!period.has_value())
             {
@@ -80,7 +89,7 @@ namespace antwika::game
 
             // Held at zero, not reset.
             // So a workshop long out of clay owes nobody a backlog.
-            if (!canFinish(building, *output))
+            if (!canFinish(building, *output, tuning))
             {
                 continue;
             }
@@ -92,12 +101,14 @@ namespace antwika::game
 
             if (input.has_value())
             {
-                worked.stock[resourceIndex(*input)] -= kProductionBatch;
+                worked.stock[resourceIndex(*input)] -=
+                    tuning.productionBatch;
             }
 
             auto &held = worked.stock[resourceIndex(*output)];
             held = std::min(
-                capacityOf(building.kind), held + kProductionBatch);
+                capacityOf(building.kind),
+                held + tuning.productionBatch);
 
             world.set<Building>(entity, worked);
             world.set<Production>(

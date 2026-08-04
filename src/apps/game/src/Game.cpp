@@ -105,8 +105,9 @@ namespace antwika::game
 
         SystemScheduler scheduler;
         WalkerSystem walkerSystem(paths, config.built, config.extent);
-        SpawnSystem spawnSystem(paths);
-        BuildingSystem buildingSystem(config.built, config.extent);
+        SpawnSystem spawnSystem(paths, config.tuning);
+        BuildingSystem buildingSystem(
+            config.built, config.extent, config.tuning);
 
         // The walkers stop with the session, never with the screen.
         // Only that one system stops.
@@ -196,9 +197,10 @@ namespace antwika::game
         // A city runs while its player reads the world map.
         // And it stops only where a player asked.
         // So both gates, in that order.
-        ProductionSystem productionSystem;
+        ProductionSystem productionSystem(config.tuning);
         HaulingSystem haulingSystem(paths, config.extent);
-        SupplySystem supplySystem(paths, config.extent);
+        SupplySystem supplySystem(
+            paths, config.extent, config.tuning);
 
         SessionGatedSystem gatedProduction(productionSystem, mode);
         SessionGatedSystem gatedHauling(haulingSystem, mode);
@@ -240,7 +242,7 @@ namespace antwika::game
         // The field it judges its ground by is the serve phase's.
         // Which is this tick's too, two phases earlier.
         // Both gates, in the order every other system takes them.
-        HousingSystem housingSystem(desirability);
+        HousingSystem housingSystem(desirability, config.tuning);
 
         SessionGatedSystem gatedHousing(housingSystem, mode);
         PauseGatedSystem pausedHousing(gatedHousing, pause);
@@ -266,7 +268,11 @@ namespace antwika::game
         // A person arriving is employable from the following tick.
         // Both gates, in the order every other system takes them.
         PopulationSystem populationSystem(
-            paths, config.built, desirability, config.extent);
+            paths,
+            config.built,
+            desirability,
+            config.extent,
+            config.tuning);
 
         SessionGatedSystem gatedPopulation(populationSystem, mode);
         PauseGatedSystem pausedPopulation(gatedPopulation, pause);
@@ -282,8 +288,8 @@ namespace antwika::game
         // Two writers of one component in one phase is the trap.
         // The phase list exists to avoid it, so this runs after.
         // A person who arrived this tick is employable next one.
-        StaffingSystem staffingSystem;
-        LabourDispatchSystem dispatchSystem(paths);
+        StaffingSystem staffingSystem(config.tuning);
+        LabourDispatchSystem dispatchSystem(paths, config.tuning);
 
         SessionGatedSystem gatedStaffing(staffingSystem, mode);
         SessionGatedSystem gatedDispatch(dispatchSystem, mode);
@@ -317,6 +323,7 @@ namespace antwika::game
         }
 
         GameState state;
+        state.money = config.tuning.startingMoney;
         GameStateReducer reducer(state);
 
         // A run with no toolbar still needs something the grid can ask.
@@ -375,7 +382,8 @@ namespace antwika::game
         // What the top bar's game menu does, written once.
         // The menu modal's own way out goes through it too.
         // So leaving for the main menu is one transition, not two.
-        MenuCommands commands(mode, session, cities, live, camera);
+        MenuCommands commands(
+            mode, session, cities, live, camera, config.tuning);
 
         const Toolbar toolbar(translator);
         const MenuModalScene menuModal(translator);
@@ -404,7 +412,8 @@ namespace antwika::game
             cities,
             config.built,
             drag,
-            state);
+            state,
+            config.tuning);
 
         WorldMapSink worldSink(
             cities, mode, live, input, config.canvas);

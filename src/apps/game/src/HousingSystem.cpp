@@ -65,16 +65,20 @@ namespace antwika::game
 
         // Both countdowns, whichever way the house just went.
         // A level is arrived at fresh rather than part-way out of it.
-        void settleAt(Household &household, std::size_t index)
+        void settleAt(
+            Household &household,
+            std::size_t index,
+            const Tuning &tuning)
         {
             household.level = static_cast<HousingLevel>(index);
-            household.ticksUntilEvolve = kEvolvePeriodTicks;
-            household.ticksUntilDevolve = kDevolvePeriodTicks;
+            household.ticksUntilEvolve = tuning.evolvePeriodTicks;
+            household.ticksUntilDevolve = tuning.devolvePeriodTicks;
         }
     } // namespace
 
-    HousingSystem::HousingSystem(const DesirabilityField &desirability)
-        : desirability(desirability)
+    HousingSystem::HousingSystem(
+        const DesirabilityField &desirability, Tuning tuning)
+        : desirability(desirability), tuning(tuning)
     {
     }
 
@@ -105,12 +109,12 @@ namespace antwika::game
                     at,
                     static_cast<HousingLevel>(next)))
             {
-                household.ticksUntilDevolve = kDevolvePeriodTicks;
+                household.ticksUntilDevolve = tuning.devolvePeriodTicks;
                 --household.ticksUntilEvolve;
 
                 if (household.ticksUntilEvolve <= 0)
                 {
-                    settleAt(household, next);
+                    settleAt(household, next, tuning);
                 }
             }
             else if (
@@ -118,12 +122,12 @@ namespace antwika::game
                 && !meets(
                     world, desirability, entity, at, household.level))
             {
-                household.ticksUntilEvolve = kEvolvePeriodTicks;
+                household.ticksUntilEvolve = tuning.evolvePeriodTicks;
                 --household.ticksUntilDevolve;
 
                 if (household.ticksUntilDevolve <= 0)
                 {
-                    settleAt(household, index - 1);
+                    settleAt(household, index - 1, tuning);
                 }
             }
             else
@@ -132,8 +136,8 @@ namespace antwika::game
                 // "Has had this for a while" is what is measured.
                 // One that remembered a broken stretch would not.
                 // It would measure "has had this on and off".
-                household.ticksUntilEvolve = kEvolvePeriodTicks;
-                household.ticksUntilDevolve = kDevolvePeriodTicks;
+                household.ticksUntilEvolve = tuning.evolvePeriodTicks;
+                household.ticksUntilDevolve = tuning.devolvePeriodTicks;
             }
 
             // Given one only once there is something to say.

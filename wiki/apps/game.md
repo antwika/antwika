@@ -751,6 +751,22 @@ Deducting without refusing also leaves `canPlace()` and the ghost's contract exa
 `"money"` on the state object is additive per [`docs/schema-versioning.md`](../../docs/schema-versioning.md): absent means the starting bank, which is what a file written before money existed says, and it is the state object's one signed member since a debt has to survive a save.
 The bar reports the balance as a `money {0}` label beside the ratings, appended after them for the reason they sit after the growing spacer -- every widget declared before it keeps its rectangle, so no recorded click resolves differently for the readout having appeared.
 
+## The config file, and which numbers may live in it
+
+**The gameplay tuning is a `Tuning` value read from `config.json` beside the executable, and everything in it defaults to the constant it externalizes.**
+`main()` reads the file once, before the loop, through `loadConfigFileOrDefaults()`; a missing file is an ordinary install playing the game these sources define, and anything else wrong with one is refused as a `ConfigFormatError` rather than repaired -- a config with a member quietly defaulted would be a rebalance that only half took.
+The value rides into `bootstrap()` on `GameConfig::tuning` and is copied into the systems that read it, so a test that overrides one number constructs the system with it and no global exists anywhere.
+
+**What it holds is costs, periods and caps**: the starting money, the road, raze and per-kind building costs, the drain, risk, spawn, settler, evolve, devolve, production, labour and staff-decay periods, the burn duration, the production batch, the mouths a serving feeds, and the walker cap.
+Every member is optional -- a config stating one number is a one-line rebalance, not a restatement of every default -- which also keeps additions additive, so the format should stay at version 1 until a member changes meaning.
+The document is read `parse -> read version -> migrate -> validate -> decode` like every other snapshot in the tree, with the magic `antwika-game-config` telling it apart from the save and the options file, and the schema is where a zero-tick period or a negative cost is refused, beside the parse that would admit it.
+The shipped `assets/config.json` states the defaults outright, and `ConfigFileTest` pins that -- so shipping the file changes nothing on its own, and what each number is called and currently is can be read off it.
+
+**What may not live in it is anything the meaning of a click depends on.**
+The canvas, the layout, the zoom table, the atlas geometry and the locale all decide what a recorded pixel means, so a config file reaching any of them would re-aim every recorded click; they stay in source, where changing one is visibly a change to the game.
+The tuning is part of the game's definition on exactly the terms the source and the art are: nothing about it is recorded, a replay assumes the config it was recorded under, and replaying a session under an edited config is running it on a different game.
+That is also why the schema constants a *save* is validated against -- `kCoverageFull`, `kRoamingSteps`, `kTicksPerStep` -- stay constants: a bound a persisted file is checked against may not drift with a file somebody edits.
+
 ## The raze tool, and where the people go
 
 **Raze is the palette tool `buildingKindOf()` always said would arrive**: it places nothing, so every crossing to `BuildingKind` answers nullopt for it exactly as it does for Road, and the table shape absorbed it without an offset going quietly wrong -- which is the very failure that section was written about.

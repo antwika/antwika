@@ -10,12 +10,14 @@ namespace antwika::game
         SessionStore &session,
         WorldMapState &cities,
         const LiveGrid &live,
-        Camera home)
+        Camera home,
+        Tuning tuning)
         : mode(mode),
           session(session),
           cities(cities),
           live(live),
-          home(home)
+          home(home),
+          tuning(tuning)
     {
     }
 
@@ -28,6 +30,10 @@ namespace antwika::game
         // Any other way would be a second way to empty a city.
         SaveGame fresh;
         fresh.camera = home;
+
+        // A fresh bank opens with the configured funds.
+        // The save's own default is the shipped constant.
+        fresh.state.money = tuning.startingMoney;
 
         session.restore(fresh);
     }

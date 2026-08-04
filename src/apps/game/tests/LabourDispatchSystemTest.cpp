@@ -85,7 +85,7 @@ namespace
         ::testing::NiceMock<MockLogger> logger;
         World world{logger};
         PathIndex paths;
-        LabourDispatchSystem system{paths};
+        LabourDispatchSystem system{paths, antwika::game::Tuning{}};
     };
 } // namespace
 

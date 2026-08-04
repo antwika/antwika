@@ -42,6 +42,7 @@ using antwika::game::BuildTool;
 using antwika::game::LiveGrid;
 using antwika::game::Camera;
 using antwika::game::Cell;
+using antwika::game::Tuning;
 using antwika::game::cellCentre;
 using antwika::game::costOf;
 using antwika::game::GameState;
@@ -155,7 +156,8 @@ namespace
             cities,
             built,
             drag,
-            state};
+            state,
+            Tuning{}};
     };
 } // namespace
 
@@ -1108,4 +1110,36 @@ TEST_F(GridSinkTest, RightPress_PutsNoWalkerOnBareGroundOnceCancelled)
 
     EXPECT_FALSE(overlay.tool().has_value());
     EXPECT_EQ(walkerCount(), 0U);
+}
+
+// The price is the injected tuning's rather than the constant.
+// Dispatched by hand, since the fixture's helpers drive its own sink.
+TEST_F(GridSinkTest, LeftPress_PaysTheConfiguredRoadCost)
+{
+    Tuning tuning;
+    tuning.roadCost = 9;
+    GridSink tuned{
+        world,
+        paths,
+        camera,
+        kExtent,
+        scheduler,
+        input,
+        overlay,
+        cities,
+        built,
+        drag,
+        state,
+        tuning};
+
+    const auto event = TickEvent{
+        .tick = 0,
+        .event = codec.encode(
+            PointerButtonPressed{
+                .button = MouseButton::Left,
+                .position = pixelOf(Cell{.x = 3, .y = 4})})};
+    input.handle(event);
+    tuned.handle(event);
+
+    EXPECT_EQ(state.money, antwika::game::kStartingMoney - 9);
 }

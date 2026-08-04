@@ -131,11 +131,11 @@ namespace
         BuildingIndex built;
         SystemScheduler scheduler;
         WalkerSystem walkers{paths, built, kExtent};
-        BuildingSystem buildings{built, kExtent};
-        SpawnSystem spawns{paths};
-        ProductionSystem production;
+        BuildingSystem buildings{built, kExtent, antwika::game::Tuning{}};
+        SpawnSystem spawns{paths, antwika::game::Tuning{}};
+        ProductionSystem production{antwika::game::Tuning{}};
         HaulingSystem hauling{paths, kExtent};
-        SupplySystem supplies{paths, kExtent};
+        SupplySystem supplies{paths, kExtent, antwika::game::Tuning{}};
     };
 } // namespace
 
