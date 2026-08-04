@@ -150,14 +150,16 @@ namespace antwika::tower_defence
             config.stateDumpPath,
             config.consoleLoadEnabled);
 
-        antwika::console::ConsoleSink consoleSink(
-            antwika::console::ConsoleSinkSetup{
-                .console = console,
-                .input = input,
-                .picture = consolePicture,
-                .scene = consoleScene,
-                .controls = consoleControls,
-                .commands = consoleCommands});
+        // A named setup rather than a temporary in the call.
+        // gcov parks a temporary's unwind code on its head line.
+        const antwika::console::ConsoleSinkSetup consoleSetup{
+            .console = console,
+            .input = input,
+            .picture = consolePicture,
+            .scene = consoleScene,
+            .controls = consoleControls,
+            .commands = consoleCommands};
+        antwika::console::ConsoleSink consoleSink(consoleSetup);
 
         // The console is on top, so what it stands over it takes.
         // Placement is the one sink reading a key or a pixel.

@@ -130,6 +130,134 @@ TEST(StateDumpTest, TheDumpRoundTripsThroughTheCodec)
     EXPECT_EQ(decoded, dump);
 }
 
+TEST(StateDumpTest, EqualityComparesEveryFieldOfAMob)
+{
+    // One mutation per member, so every differs edge is walked.
+    const Mob base = fullDump().campaign.battle.mobs[0];
+
+    Mob named = base;
+    named.id = 99;
+    EXPECT_NE(base, named);
+
+    Mob kinded = base;
+    kinded.kind = MobKind::Shielded;
+    EXPECT_NE(base, kinded);
+
+    Mob walked = base;
+    walked.pathIndex = 9;
+    EXPECT_NE(base, walked);
+
+    Mob hurt = base;
+    hurt.health = 1;
+    EXPECT_NE(base, hurt);
+
+    Mob paced = base;
+    paced.ticksUntilStep = 7;
+    EXPECT_NE(base, paced);
+
+    EXPECT_EQ(base, Mob{base});
+}
+
+TEST(StateDumpTest, EqualityComparesEveryFieldOfATower)
+{
+    const Tower base = fullDump().campaign.battle.towers[0];
+
+    Tower named = base;
+    named.id = 99;
+    EXPECT_NE(base, named);
+
+    Tower moved = base;
+    moved.cell.x = 6;
+    EXPECT_NE(base, moved);
+
+    EXPECT_EQ(base, Tower{base});
+}
+
+TEST(StateDumpTest, EqualityComparesEveryFieldOfABattleMemory)
+{
+    const BattleMemory base = fullDump().campaign.battle;
+
+    BattleMemory waved = base;
+    waved.waveIndex = 9;
+    EXPECT_NE(base, waved);
+
+    BattleMemory spawned = base;
+    spawned.spawnedInWave = 9;
+    EXPECT_NE(base, spawned);
+
+    BattleMemory held = base;
+    held.ticksUntilRelease = 9;
+    EXPECT_NE(base, held);
+
+    BattleMemory ticked = base;
+    ticked.tickCount = 9;
+    EXPECT_NE(base, ticked);
+
+    BattleMemory mobNamed = base;
+    mobNamed.nextMobId = 9;
+    EXPECT_NE(base, mobNamed);
+
+    BattleMemory towerNamed = base;
+    towerNamed.nextTowerId = 9;
+    EXPECT_NE(base, towerNamed);
+
+    BattleMemory walked = base;
+    walked.mobs.clear();
+    EXPECT_NE(base, walked);
+
+    BattleMemory gunned = base;
+    gunned.towers.clear();
+    EXPECT_NE(base, gunned);
+
+    EXPECT_EQ(base, BattleMemory{base});
+}
+
+TEST(StateDumpTest, EqualityComparesEveryFieldOfACampaignMemory)
+{
+    const CampaignMemory base = fullDump().campaign;
+
+    CampaignMemory levelled = base;
+    levelled.level = 9;
+    EXPECT_NE(base, levelled);
+
+    CampaignMemory scored = base;
+    scored.score = 9;
+    EXPECT_NE(base, scored);
+
+    CampaignMemory lively = base;
+    lively.lives = 3;
+    EXPECT_NE(base, lively);
+
+    CampaignMemory ticked = base;
+    ticked.ticks = 9;
+    EXPECT_NE(base, ticked);
+
+    CampaignMemory phased = base;
+    phased.phase = CampaignPhase::Won;
+    EXPECT_NE(base, phased);
+
+    CampaignMemory fought = base;
+    fought.battle.mobs.clear();
+    EXPECT_NE(base, fought);
+
+    EXPECT_EQ(base, CampaignMemory{base});
+}
+
+TEST(StateDumpTest, EqualityComparesEveryFieldOfAStateDump)
+{
+    const StateDump base = fullDump();
+
+    StateDump run = base;
+    run.campaign.score = 9;
+    EXPECT_NE(base, run);
+
+    StateDump bested = base;
+    bested.bestScore = 9;
+    EXPECT_NE(base, bested);
+
+    EXPECT_EQ(base, StateDump{base});
+}
+
 TEST(StateDumpTest, EveryPhaseRoundTripsByItsPersistedName)
 {
     for (const auto phase :
