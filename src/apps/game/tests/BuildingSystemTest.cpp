@@ -36,6 +36,7 @@ using antwika::game::Cell;
 using antwika::game::Errand;
 using antwika::game::ErrandLeg;
 using antwika::game::Footprint;
+using antwika::game::Tuning;
 using antwika::game::footprintOf;
 using antwika::game::Coverage;
 using antwika::game::kCoverageFull;
@@ -97,7 +98,9 @@ namespace
         World world{logger};
         BuildingIndex built;
         BuildingSystem system{
-            built, antwika::game::GridExtent{.width = 16, .height = 16}};
+            built,
+            antwika::game::GridExtent{.width = 16, .height = 16},
+            Tuning{}};
     };
 } // namespace
 
@@ -859,4 +862,25 @@ TEST_F(BuildingSystemTest, Update_RelievesNothingAcrossOpenGround)
     run(1);
 
     EXPECT_EQ(world.get<Building>(house).fireRisk, 60);
+}
+
+// The period is the injected tuning's rather than the constant.
+// A countdown that has run out is reset to the configured span.
+TEST_F(BuildingSystemTest, Update_ResetsTheDrainToTheConfiguredPeriod)
+{
+    Tuning tuning;
+    tuning.drainPeriodTicks = 7;
+    BuildingSystem tuned{
+        built,
+        antwika::game::GridExtent{.width = 16, .height = 16},
+        tuning};
+
+    const auto house = build(
+        Cell{.x = 5, .y = 5},
+        Building{.kind = BuildingKind::House, .ticksUntilDrain = 0});
+
+    tuned.update(world, 0);
+    world.commit();
+
+    EXPECT_EQ(world.get<Building>(house).ticksUntilDrain, 7);
 }

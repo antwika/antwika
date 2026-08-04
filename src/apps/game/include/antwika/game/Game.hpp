@@ -28,6 +28,7 @@
 #include "antwika/game/PauseState.hpp"
 #include "antwika/game/RoadDrag.hpp"
 #include "antwika/game/SaveGame.hpp"
+#include "antwika/game/Tuning.hpp"
 #include "antwika/game/UiCanvas.hpp"
 #include "antwika/game/UiOverlay.hpp"
 #include "antwika/game/WorldMapState.hpp"
@@ -382,6 +383,16 @@ namespace antwika::game
          * Defaulted to kUiCanvas, the one number the shipped app uses.
          */
         Size canvas = kUiCanvas;
+
+        /**
+         * @brief The numbers the session's rules run on.
+         *
+         * Defaulted to the shipped constants, so a caller that says
+         * nothing plays the game these sources define. main() fills it
+         * from config.json beside the assets -- see ConfigFile.hpp --
+         * and a test that overrides one number injects it here.
+         */
+        Tuning tuning = {};
     };
 
     /**

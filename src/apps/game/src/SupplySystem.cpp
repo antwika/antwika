@@ -52,8 +52,9 @@ namespace antwika::game
 
     } // namespace
 
-    SupplySystem::SupplySystem(const PathIndex &paths, GridExtent extent)
-        : paths(paths), extent(extent)
+    SupplySystem::SupplySystem(
+        const PathIndex &paths, GridExtent extent, Tuning tuning)
+        : paths(paths), extent(extent), tuning(tuning)
     {
     }
 
@@ -205,7 +206,7 @@ namespace antwika::game
                 || hasWalkerOfKind(
                     world, standing, WalkerKind::MarketBuyer)
                 || !door.has_value() || !slot.has_value()
-                || out >= kWalkerLimit)
+                || out >= tuning.walkerLimit)
             {
                 continue;
             }

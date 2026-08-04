@@ -216,6 +216,10 @@ namespace antwika::game
         }
     } // namespace
 
+    StaffingSystem::StaffingSystem(Tuning tuning) : tuning(tuning)
+    {
+    }
+
     void StaffingSystem::update(World &world, antwika::time::Tick)
     {
         std::map<Entity, Staff> staffs;
@@ -273,7 +277,7 @@ namespace antwika::game
                 continue;
             }
 
-            staff.ticksUntilDecay = kStaffDecayPeriodTicks;
+            staff.ticksUntilDecay = tuning.staffDecayPeriodTicks;
 
             const auto house = shedOne(staff);
             compact(staff);

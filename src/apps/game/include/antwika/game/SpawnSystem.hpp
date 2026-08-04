@@ -11,6 +11,7 @@
 #include "antwika/game/Cell.hpp"
 #include "antwika/game/Footprint.hpp"
 #include "antwika/game/PathIndex.hpp"
+#include "antwika/game/Tuning.hpp"
 #include "antwika/game/Walker.hpp"
 
 namespace antwika::game
@@ -18,21 +19,6 @@ namespace antwika::game
 
     using antwika::ecs::ISystem;
     using antwika::ecs::World;
-
-    /**
-     * @brief How many walkers a session may have out at once.
-     *
-     * A run left going has an unbounded number of buildings on it and no
-     * reason for any walker to leave, so without a cap the population and
-     * the per-tick work behind it grow for ever. Sixty-four is well past
-     * what a 24x24 grid reads as busy and far below what a tick costs
-     * anything to walk.
-     *
-     * A building at the cap *holds* its countdown at zero rather than
-     * resetting it, so the moment somebody wanders off the end of the
-     * world -- or the cap is raised -- the next one leaves at once.
-     */
-    inline constexpr std::size_t kWalkerLimit = 64;
 
     /**
      * @brief Find the path cell a building would send somebody out onto.
@@ -118,13 +104,13 @@ namespace antwika::game
      *
      * **The buildings are visited in ascending Cell rather than in
      * ecs::View order**, out of a std::map collected first, exactly as
-     * LabourSystem and SupplySystem do. kWalkerLimit is a limited amount
-     * split between buildings, and a view iterates in an order that is
-     * a property of the world's history rather than of the city -- so at
-     * the cap the last free slots would otherwise go to whichever
-     * buildings a restore happened to create first, and one save loaded
-     * twice with its buildings in different orders could disagree about
-     * which building sent the last walker.
+     * LabourSystem and SupplySystem do. The walker cap is a limited
+     * amount split between buildings, and a view iterates in an order
+     * that is a property of the world's history rather than of the city
+     * -- so at the cap the last free slots would otherwise go to
+     * whichever buildings a restore happened to create first, and one
+     * save loaded twice with its buildings in different orders could
+     * disagree about which building sent the last walker.
      *
      * Nothing here is a persisted event, for the reason GridSink gives
      * about placing a tile: a spawn follows from the click that placed
@@ -139,8 +125,10 @@ namespace antwika::game
          * @brief Construct the system over the roads it spawns onto.
          * @param paths Consulted for each building's neighbours; must
          * outlive this system.
+         * @param tuning The spawn period and the walker cap; copied, so
+         * no lifetime rule attaches to it.
          */
-        explicit SpawnSystem(const PathIndex &paths);
+        SpawnSystem(const PathIndex &paths, Tuning tuning);
 
         SpawnSystem(const SpawnSystem &) = delete;
         SpawnSystem(SpawnSystem &&) = delete;
@@ -160,6 +148,7 @@ namespace antwika::game
 
     private:
         const PathIndex &paths;
+        Tuning tuning;
     };
 
 } // namespace antwika::game

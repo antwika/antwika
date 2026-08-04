@@ -104,7 +104,8 @@ namespace antwika::game
             Entity leaving,
             Cell from,
             std::int32_t people,
-            GridExtent extent)
+            GridExtent extent,
+            const Tuning &tuning)
         {
             // Asked once: the world does not change under this loop.
             // The building coming down is never the answer.
@@ -122,7 +123,7 @@ namespace antwika::game
 
             for (std::int32_t person = 0; person < people; ++person)
             {
-                if (out + sent >= kWalkerLimit)
+                if (out + sent >= tuning.walkerLimit)
                 {
                     break;
                 }
@@ -168,7 +169,8 @@ namespace antwika::game
         World &world,
         BuildingIndex &built,
         antwika::ecs::Entity entity,
-        GridExtent extent)
+        GridExtent extent,
+        const Tuning &tuning)
     {
         const auto at = world.get<Cell>(entity);
         const auto building = world.get<Building>(entity);
@@ -181,7 +183,7 @@ namespace antwika::game
 
         if (people > 0)
         {
-            turnOut(world, built, entity, at, people, extent);
+            turnOut(world, built, entity, at, people, extent, tuning);
         }
 
         world.destroy(entity);
@@ -200,6 +202,7 @@ namespace antwika::game
             BuildingIndex &built,
             antwika::ecs::Entity entity,
             GridExtent extent,
+            const Tuning &tuning,
             RuinState state,
             std::int32_t ticksUntilOut)
         {
@@ -214,7 +217,7 @@ namespace antwika::game
 
             if (escape.has_value())
             {
-                turnOut(world, built, entity, *escape, people, extent);
+                turnOut(world, built, entity, *escape, people, extent, tuning);
             }
 
             // The ruin stands up where the building stood.
@@ -237,26 +240,29 @@ namespace antwika::game
         World &world,
         BuildingIndex &built,
         antwika::ecs::Entity entity,
-        GridExtent extent)
+        GridExtent extent,
+        const Tuning &tuning)
     {
         fall(
             world,
             built,
             entity,
             extent,
+            tuning,
             RuinState::Burning,
-            kBurnDurationTicks);
+            tuning.burnDurationTicks);
     }
 
     void collapse(
         World &world,
         BuildingIndex &built,
         antwika::ecs::Entity entity,
-        GridExtent extent)
+        GridExtent extent,
+        const Tuning &tuning)
     {
         // Straight to debris: there is no fire to put out.
         // So no fireman is ever called to a collapse.
-        fall(world, built, entity, extent, RuinState::Debris, 0);
+        fall(world, built, entity, extent, tuning, RuinState::Debris, 0);
     }
 
 } // namespace antwika::game

@@ -27,6 +27,7 @@
 #include "antwika/game/MapView.hpp"
 #include "antwika/game/SceneSnapshot.hpp"
 #include "antwika/game/Terrain.hpp"
+#include "antwika/game/Tuning.hpp"
 #include "antwika/game/WorldMap.hpp"
 #include "antwika/game/WorldMapScene.hpp"
 
@@ -69,6 +70,7 @@ namespace
     using antwika::game::SaveGame;
     using antwika::game::SceneSnapshot;
     using antwika::game::Terrain;
+    using antwika::game::Tuning;
     using antwika::game::WalkerSprite;
     using antwika::game::WalkerView;
     using antwika::game::WorldMap;
@@ -566,6 +568,44 @@ namespace
             base, [](Household &h) { h.population = 0; });
         expectMemberCompared(
             base, [](Household &h) { h.ticksUntilSettler = 0; });
+    }
+
+
+    TEST(TuningValueTest, EqualityComparesEveryField)
+    {
+        const Tuning base;
+
+        expectMemberCompared(
+            base, [](Tuning &t) { t.startingMoney = 1; });
+        expectMemberCompared(base, [](Tuning &t) { t.roadCost = 99; });
+        expectMemberCompared(base, [](Tuning &t) { t.razeCost = 99; });
+        expectMemberCompared(
+            base, [](Tuning &t) { t.buildingCosts[0] = 99; });
+        expectMemberCompared(
+            base, [](Tuning &t) { t.riskPeriodTicks = 99; });
+        expectMemberCompared(
+            base, [](Tuning &t) { t.drainPeriodTicks = 99; });
+        expectMemberCompared(
+            base, [](Tuning &t) { t.mouthsPerServing = 99; });
+        expectMemberCompared(
+            base, [](Tuning &t) { t.spawnPeriodTicks = 99; });
+        expectMemberCompared(
+            base, [](Tuning &t) { t.burnDurationTicks = 99; });
+        expectMemberCompared(
+            base, [](Tuning &t) { t.settlerPeriodTicks = 99; });
+        expectMemberCompared(
+            base, [](Tuning &t) { t.evolvePeriodTicks = 99; });
+        expectMemberCompared(
+            base, [](Tuning &t) { t.devolvePeriodTicks = 99; });
+        expectMemberCompared(
+            base, [](Tuning &t) { t.productionPeriodTicks = 99; });
+        expectMemberCompared(
+            base, [](Tuning &t) { t.productionBatch = 99; });
+        expectMemberCompared(
+            base, [](Tuning &t) { t.labourPeriodTicks = 99; });
+        expectMemberCompared(
+            base, [](Tuning &t) { t.staffDecayPeriodTicks = 99; });
+        expectMemberCompared(base, [](Tuning &t) { t.walkerLimit = 99; });
     }
 
 } // namespace

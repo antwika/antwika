@@ -6,6 +6,7 @@
 
 #include "antwika/game/GridExtent.hpp"
 #include "antwika/game/PathIndex.hpp"
+#include "antwika/game/Tuning.hpp"
 
 namespace antwika::game
 {
@@ -74,8 +75,11 @@ namespace antwika::game
          * a route to each candidate store; must outlive this system.
          * @param extent The bounds that search is numbered over; see
          * nearestHolding() for why it is stated rather than derived.
+         * @param tuning The walker cap; copied, so no lifetime rule
+         * attaches to it.
          */
-        SupplySystem(const PathIndex &paths, GridExtent extent);
+        SupplySystem(
+            const PathIndex &paths, GridExtent extent, Tuning tuning);
 
         SupplySystem(const SupplySystem &) = delete;
         SupplySystem(SupplySystem &&) = delete;
@@ -95,6 +99,7 @@ namespace antwika::game
     private:
         const PathIndex &paths;
         GridExtent extent;
+        Tuning tuning;
     };
 
 } // namespace antwika::game

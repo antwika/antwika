@@ -79,7 +79,7 @@ namespace
         ::testing::NiceMock<MockLogger> logger;
         World world{logger};
         PathIndex paths;
-        SpawnSystem system{paths};
+        SpawnSystem system{paths, antwika::game::Tuning{}};
     };
 
     TEST_F(SpawnSystemTest, SpawnCellFor_TakesTheLowestNeighbouringRoad)
@@ -514,3 +514,23 @@ namespace
     }
 
 } // namespace
+
+// The cap is the injected tuning's rather than the constant.
+// A cap of nothing spawns nobody, however due a building is.
+TEST_F(SpawnSystemTest, Update_HonoursTheConfiguredWalkerLimit)
+{
+    antwika::game::Tuning tuning;
+    tuning.walkerLimit = 0;
+    SpawnSystem tuned{paths, tuning};
+
+    build(Cell{.x = 0, .y = 0});
+    pave(Cell{.x = 0, .y = 1});
+
+    for (std::size_t tick = 0; tick < kSpawnPeriodTicks; ++tick)
+    {
+        tuned.update(world, tick);
+        world.commit();
+    }
+
+    EXPECT_EQ(walkers(), 0U);
+}

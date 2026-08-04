@@ -34,6 +34,7 @@
 #include "antwika/game/AppMode.hpp"
 #include "antwika/game/AtlasImage.hpp"
 #include "antwika/game/BindingSource.hpp"
+#include "antwika/game/ConfigFile.hpp"
 #include "antwika/game/BuildingIndex.hpp"
 #include "antwika/game/Camera.hpp"
 #include "antwika/game/FrameMeter.hpp"
@@ -363,6 +364,12 @@ namespace
         const auto saveOptions =
             antwika::game::saveCliOptionsFrom(recorded.commandLine);
 
+        // The numbers the rules run on, read once before the loop.
+        // Beside the atlases, since it is part of the game's definition.
+        // A replay run reads the very same file -- see Tuning.hpp.
+        const auto tuning = antwika::game::loadConfigFileOrDefaults(
+            antwika::app::assetPath("config.json"));
+
         // A loaded city reaches the session through no event.
         // A recording started from one replays against an empty grid.
         // So the pair is refused rather than recorded wrongly.
@@ -398,7 +405,8 @@ namespace
                 .optionsPath = machine.path,
                 .seed = kWorld.seed,
                 .translator = translator,
-                .canvas = antwika::game::kUiCanvas});
+                .canvas = antwika::game::kUiCanvas,
+                .tuning = tuning});
 
         antwika::game::printSummary(std::cout, summary);
     }

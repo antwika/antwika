@@ -42,6 +42,7 @@ namespace
     using antwika::game::kSettlerPeriodTicks;
     using antwika::game::GridExtent;
 using antwika::game::PathIndex;
+using antwika::game::Tuning;
     using antwika::game::populationAt;
     using antwika::game::populationCapacityOf;
     using antwika::game::PopulationSystem;
@@ -165,7 +166,7 @@ using antwika::log::mocks::MockLogger;
         PathIndex paths;
         DesirabilityField field;
         antwika::game::BuildingIndex built;
-        PopulationSystem system{paths, built, field, kExtent};
+        PopulationSystem system{paths, built, field, kExtent, Tuning{}};
         antwika::game::WalkerSystem walkers{paths, built, kExtent};
         Entity house{};
     };

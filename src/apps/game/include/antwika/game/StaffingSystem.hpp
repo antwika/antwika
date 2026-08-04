@@ -4,6 +4,8 @@
 #include <antwika/ecs/World.hpp>
 #include <antwika/time/Tick.hpp>
 
+#include "antwika/game/Tuning.hpp"
+
 namespace antwika::game
 {
 
@@ -47,7 +49,12 @@ namespace antwika::game
     class StaffingSystem final : public ISystem
     {
     public:
-        StaffingSystem() = default;
+        /**
+         * @brief Construct the system over its decay period.
+         * @param tuning The staff decay period; copied, so no lifetime
+         * rule attaches to it.
+         */
+        explicit StaffingSystem(Tuning tuning);
 
         StaffingSystem(const StaffingSystem &) = delete;
         StaffingSystem(StaffingSystem &&) = delete;
@@ -61,6 +68,9 @@ namespace antwika::game
          * @param tick The tick being processed; unused.
          */
         void update(World &world, antwika::time::Tick tick) override;
+
+    private:
+        Tuning tuning;
     };
 
 } // namespace antwika::game

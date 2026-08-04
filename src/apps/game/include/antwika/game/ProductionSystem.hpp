@@ -4,6 +4,8 @@
 #include <antwika/ecs/World.hpp>
 #include <antwika/time/Tick.hpp>
 
+#include "antwika/game/Tuning.hpp"
+
 namespace antwika::game
 {
 
@@ -45,7 +47,12 @@ namespace antwika::game
     class ProductionSystem final : public ISystem
     {
     public:
-        ProductionSystem() = default;
+        /**
+         * @brief Construct the system over its period and batch size.
+         * @param tuning The production period and batch; copied, so no
+         * lifetime rule attaches to it.
+         */
+        explicit ProductionSystem(Tuning tuning);
 
         ProductionSystem(const ProductionSystem &) = delete;
         ProductionSystem(ProductionSystem &&) = delete;
@@ -70,6 +77,9 @@ namespace antwika::game
          * it.
          */
         void update(World &world, antwika::time::Tick tick) override;
+
+    private:
+        Tuning tuning;
     };
 
 } // namespace antwika::game

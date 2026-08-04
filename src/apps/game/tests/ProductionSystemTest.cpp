@@ -67,7 +67,7 @@ namespace
 
         ::testing::NiceMock<MockLogger> logger;
         World world{logger};
-        ProductionSystem system;
+        ProductionSystem system{antwika::game::Tuning{}};
     };
 
     // One tick to be given a countdown, then the countdown itself.
