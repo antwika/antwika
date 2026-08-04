@@ -7,5 +7,6 @@ antwika_add_app_tests(
     LIBS
         antwika::gfx
         antwika::gfx::tests::mocks
+        antwika::time::tests::fakes
         gtest::gtest
 )

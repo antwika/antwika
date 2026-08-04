@@ -9,6 +9,7 @@
 
 #include <nlohmann/json-schema.hpp>
 
+#include <antwika/config/ConfigDocument.hpp>
 #include <antwika/replay/IMigration.hpp>
 #include <antwika/replay/SchemaVersion.hpp>
 #include <antwika/replay/VersionedDocument.hpp>
@@ -146,7 +147,7 @@ namespace antwika::sudoku
     Board puzzleFromJson(const nlohmann::json &document)
     {
         const auto migrated =
-            antwika::replay::readVersionedDocument<BoardFormatError>(
+            antwika::config::migratedAs<BoardFormatError>(
                 document,
                 standardPuzzleMigrations(),
                 puzzleValidator(),

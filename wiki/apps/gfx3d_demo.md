@@ -49,3 +49,9 @@ Floating point may never appear in anything a replay reproduces, and rendering i
 ## See also
 
 - [`blog/012-a-window-that-cant-talk-back.md`](../../blog/012-a-window-that-cant-talk-back.md).
+
+## Pacing
+
+The loop sleeps a frame period through an **injected** `time::ISleeper`, as every window-driven application here does.
+It used to spin: nine hundred frames drawn as fast as the machine could manage is a core at full tilt and a cube nobody can see turning.
+The sleeper is injected rather than called directly so a test can run the loop at no wall-clock cost, which is what `SpinLoopTest` does.

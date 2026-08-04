@@ -208,7 +208,7 @@ namespace antwika::game
     SaveGame saveGameFromJson(const nlohmann::json &j)
     {
         const auto document =
-            replay::readVersionedDocument<SaveFormatError>(
+            antwika::config::migratedAs<SaveFormatError>(
                 j,
                 standardSaveMigrations(),
                 saveValidator(),

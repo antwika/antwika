@@ -1,3 +1,5 @@
+#include <antwika/time/fakes/FakeSleeper.hpp>
+#include <chrono>
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
@@ -46,6 +48,8 @@ using ::testing::ReturnRef;
 
 namespace
 {
+    constexpr std::chrono::milliseconds kTestFramePeriod{1};
+
     constexpr Size kCanvas{.width = 800, .height = 600};
 
     /**
@@ -105,7 +109,9 @@ TEST(SpinLoopTest, Run_UploadsTheCubeOnceAndDrawsEachFrame)
     EXPECT_CALL(fixture.renderer, present()).Times(3);
 
     const SpinScene scene;
-    SpinLoop loop(fixture.backend, scene);
+    antwika::time::fakes::FakeSleeper sleeper;
+    SpinLoop loop(
+        fixture.backend, scene, sleeper, kTestFramePeriod);
 
     loop.run(WindowDesc{.title = "Antwika"}, cubeMesh(), 3);
 
@@ -129,7 +135,9 @@ TEST(SpinLoopTest, Run_TurnsTheCubeFurtherEveryFrame)
     EXPECT_CALL(fixture.renderer, drawMesh(_, scene.modelAt(0), _, _));
     EXPECT_CALL(fixture.renderer, drawMesh(_, scene.modelAt(1), _, _));
 
-    SpinLoop loop(fixture.backend, scene);
+    antwika::time::fakes::FakeSleeper sleeper;
+    SpinLoop loop(
+        fixture.backend, scene, sleeper, kTestFramePeriod);
 
     loop.run(WindowDesc{.title = "Antwika"}, cubeMesh(), 2);
 }
@@ -149,7 +157,9 @@ TEST(SpinLoopTest, Run_ClosesTheWindowWhenTheBackendReportsACloseRequest)
     EXPECT_CALL(fixture.renderer, present()).Times(0);
 
     const SpinScene scene;
-    SpinLoop loop(fixture.backend, scene);
+    antwika::time::fakes::FakeSleeper sleeper;
+    SpinLoop loop(
+        fixture.backend, scene, sleeper, kTestFramePeriod);
 
     // Once for the close request and once on the way out.
     // Closing an already-closed window is part of IWindow's contract.
@@ -175,7 +185,9 @@ TEST(SpinLoopTest, Run_IgnoresAnEventForSomebodyElsesWindow)
     EXPECT_CALL(fixture.renderer, present()).Times(1);
 
     const SpinScene scene;
-    SpinLoop loop(fixture.backend, scene);
+    antwika::time::fakes::FakeSleeper sleeper;
+    SpinLoop loop(
+        fixture.backend, scene, sleeper, kTestFramePeriod);
 
     loop.run(WindowDesc{.title = "Antwika"}, cubeMesh(), 1);
 }
@@ -196,7 +208,9 @@ TEST(SpinLoopTest, Run_KeepsDrawingThroughEventsThatAreNotCloseRequests)
     EXPECT_CALL(fixture.renderer, present()).Times(1);
 
     const SpinScene scene;
-    SpinLoop loop(fixture.backend, scene);
+    antwika::time::fakes::FakeSleeper sleeper;
+    SpinLoop loop(
+        fixture.backend, scene, sleeper, kTestFramePeriod);
 
     loop.run(WindowDesc{.title = "Antwika"}, cubeMesh(), 1);
 }
@@ -214,7 +228,9 @@ TEST(SpinLoopTest, Run_StopsAtOnceWhenTheWindowIsAlreadyClosed)
     EXPECT_CALL(fixture.renderer, present()).Times(0);
 
     const SpinScene scene;
-    SpinLoop loop(fixture.backend, scene);
+    antwika::time::fakes::FakeSleeper sleeper;
+    SpinLoop loop(
+        fixture.backend, scene, sleeper, kTestFramePeriod);
 
     loop.run(WindowDesc{.title = "Antwika"}, cubeMesh(), std::nullopt);
 
@@ -230,7 +246,9 @@ TEST(SpinLoopTest, Run_DrawsNothingWhenNoFramesAreAskedFor)
     EXPECT_CALL(*fixture.window, close()).Times(1);
 
     const SpinScene scene;
-    SpinLoop loop(fixture.backend, scene);
+    antwika::time::fakes::FakeSleeper sleeper;
+    SpinLoop loop(
+        fixture.backend, scene, sleeper, kTestFramePeriod);
 
     loop.run(WindowDesc{.title = "Antwika"}, cubeMesh(), 0);
 }
@@ -247,7 +265,9 @@ TEST(SpinLoopTest, Run_RefusesABackendWithNo3DRenderer)
     fixture.wireWindow(true, flatOnly);
 
     const SpinScene scene;
-    SpinLoop loop(fixture.backend, scene);
+    antwika::time::fakes::FakeSleeper sleeper;
+    SpinLoop loop(
+        fixture.backend, scene, sleeper, kTestFramePeriod);
 
     EXPECT_THROW(
         loop.run(WindowDesc{.title = "Antwika"}, cubeMesh(), 1),

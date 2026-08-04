@@ -7,6 +7,7 @@
 
 #include <nlohmann/json-schema.hpp>
 
+#include <antwika/config/ConfigDocument.hpp>
 #include <antwika/replay/IMigration.hpp>
 #include <antwika/replay/JsonShapes.hpp>
 #include <antwika/replay/SchemaVersion.hpp>
@@ -19,10 +20,6 @@ namespace antwika::companion
 
     namespace
     {
-        // Two spaces, one member a line.
-        // Enough to diff a companion against the next version of itself.
-        // That is the whole reason this format is not compact.
-        constexpr int kIndent = 2;
 
         // Symbolic rather than the enumerator's number.
         // A name survives the enumeration being reordered.
@@ -316,7 +313,7 @@ namespace antwika::companion
         const nlohmann::json &document)
     {
         const auto migrated =
-            replay::readVersionedDocument<SaveFormatError>(
+            antwika::config::migratedAs<SaveFormatError>(
                 document,
                 standardPetMigrations(),
                 petValidator(),
@@ -359,25 +356,16 @@ namespace antwika::companion
     void writeCompanionMemory(
         const CompanionMemory &memory, std::ostream &out)
     {
-        out << companionMemoryToJson(memory).dump(kIndent) << '\n';
+        antwika::config::writeConfig(
+            companionMemoryToJson(memory), out);
     }
 
     CompanionMemory readCompanionMemory(std::istream &in)
     {
-        nlohmann::json document;
-        try
-        {
-            in >> document;
-        }
-        catch (const nlohmann::json::exception &error) // GCOVR_EXCL_LINE
-        {
-            throw SaveFormatError(
-                std::string("antwika::companion: a saved companion is "
-                            "not valid JSON: ")
-                + error.what());
-        }
-
-        return companionMemoryFromJson(document);
+        // The parse is antwika::config's.
+        // So a malformed document reads the same way everywhere.
+        return companionMemoryFromJson(
+            antwika::config::parseAs<SaveFormatError>(in));
     }
 
 } // namespace antwika::companion
