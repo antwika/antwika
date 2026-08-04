@@ -123,6 +123,47 @@ namespace antwika::music_editor
         time::Tick until = 0;
     };
 
+    /**
+     * @brief Everything a dump needs to stand a Playback back up.
+     *
+     * The tempo table, the musical clock and the device bookkeeping;
+     * nothing audible.  The synth's voice pool, the active notes and
+     * every pattern are deliberately absent: the tail is cut by
+     * restore()'s silence(), the notes re-derive as ticks re-trigger,
+     * and the patterns regenerate from the document via Score::read().
+     */
+    struct PlaybackMemory
+    {
+        /** @brief The whole tempo table, speed changes and all. */
+        std::vector<sequencer::TempoMap::Segment> segments;
+
+        /** @brief Where the last speed change landed. */
+        sequencer::Rational retimed{};
+
+        /** @brief How many ticks the musical clock had advanced. */
+        time::Tick played = 0;
+
+        /** @brief How many voices had been started in all. */
+        std::uint64_t counter = 0;
+
+        /** @brief How many frames had been handed to the device. */
+        FrameIndex queued = 0;
+
+        /** @brief How many frames went by while the clock stood. */
+        FrameIndex pausedFrames = 0;
+
+        /** @brief How many sequencer lines the pool had grown to. */
+        std::size_t voiceCount = 0;
+
+        /**
+         * @brief Compare two memories.
+         * @param other The memory to compare against.
+         * @return True when every field matches.
+         */
+        [[nodiscard]] bool operator==(
+            const PlaybackMemory &other) const = default;
+    };
+
     class Playback final
     {
     public:
@@ -241,6 +282,27 @@ namespace antwika::music_editor
          */
         void setSpeed(sequencer::Rational speed);
 
+        /**
+         * @brief Take what a dump needs to stand this back up.
+         * @return The memory, tempo table and clocks included.
+         */
+        [[nodiscard]] PlaybackMemory remember() const;
+
+        /**
+         * @brief Stand this playback at a remembered instant.
+         *
+         * **The simulation is what restores; the audible tail is
+         * deliberately cut.** Everything sounding is silenced first,
+         * and the notes of the restored instant re-derive as the next
+         * ticks re-trigger them -- exactly as a replay regenerates a
+         * click's consequences rather than carrying them.
+         *
+         * @param memory What remember() took, possibly in another run.
+         * @throws StateDumpError If the memory holds no tempo segment
+         * at all, or a segment the TempoMap itself refuses; nothing is
+         * mutated when it throws.
+         */
+        void restore(const PlaybackMemory &memory);
 
     private:
         // Turns one voice's events into that voice's sound.

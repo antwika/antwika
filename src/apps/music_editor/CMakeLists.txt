@@ -14,6 +14,8 @@ antwika_add_app(
         src/Playback.cpp
         src/RenderSink.cpp
         src/Score.cpp
+        src/SnapshotStore.cpp
+        src/StateDump.cpp
         src/ScoreFiles.cpp
         src/TrackPreset.cpp
         src/VoiceChain.cpp
@@ -23,6 +25,7 @@ antwika_add_app(
     LIBS
         antwika::app
         antwika::config
+        antwika::console
         antwika::engine
         antwika::event
         antwika::gfx

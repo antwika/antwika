@@ -2,6 +2,7 @@ find_package(GTest REQUIRED)
 
 add_executable(antwika_music_editor_tests
     ConfigFileTest.cpp
+    ConsoleSinkTest.cpp
     EditorKeysTest.cpp
     EditorSceneTest.cpp
     EditorSinkTest.cpp
@@ -15,6 +16,7 @@ add_executable(antwika_music_editor_tests
     RunIntegrationTest.cpp
     ScoreFilesTest.cpp
     ScoreTest.cpp
+    StateDumpTest.cpp
     TrackPresetTest.cpp
     VoiceChainTest.cpp
     WaveImageCacheTest.cpp
@@ -41,6 +43,8 @@ target_sources(antwika_music_editor_tests
         ../src/NoteWords.cpp
         ../src/RenderSink.cpp
         ../src/Score.cpp
+        ../src/SnapshotStore.cpp
+        ../src/StateDump.cpp
         ../src/ScoreFiles.cpp
         ../src/WaveImage.cpp
         ../src/WaveImageCache.cpp
@@ -54,6 +58,7 @@ target_link_libraries(antwika_music_editor_tests
         antwika::engine
         antwika::config
         antwika::config::tests::conformance
+        antwika::console
         antwika::event
         antwika::event::tests::mocks
         antwika::log::tests::mocks

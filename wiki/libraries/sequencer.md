@@ -14,7 +14,7 @@ It is the only place the two clocks meet, and it is deliberately small.
 | --- | --- | --- |
 | `Rational.hpp` | `Rational` | The exact fraction, which is `pattern::Cycle` under a second name. |
 | `FrameClock.hpp` | `FrameClock` | A tick, to the frame it begins on. |
-| `TempoMap.hpp` | `TempoMap` | A cycle to a frame and back, across tempo changes. |
+| `TempoMap.hpp` | `TempoMap` | A cycle to a frame and back, across tempo changes; `segments()` reads the table back, so a dump can rebuild an equal map by replaying `addSegment()`. |
 | `ISequencerSink.hpp` | `ISequencerSink` | Where what begins is handed. |
 | `Sequencer.hpp` | `Sequencer`, `SequencerDesc` | The window, the query, the onset rule, and `joinAt()` for a voice arriving late. |
 | `SequencerError.hpp` | `SequencerError` | This library's one failure type. |
