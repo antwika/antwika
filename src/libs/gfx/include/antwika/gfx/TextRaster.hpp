@@ -66,6 +66,10 @@ namespace antwika::gfx
      * a glyph offset is a sum that can wrap, and a wrapped glyph lands
      * somewhere absurd rather than merely off canvas.
      *
+     * @param cache The caller's cells, in which this walk builds the
+     * scale's on the first line drawn at it; a renderer owns one for
+     * its own lifetime, so the rasterising happens once per scale
+     * rather than per line.
      * @param origin Top-left corner of the first glyph's cell.
      * @param text The characters to walk; one the font has no glyph for
      * inks no pixel, and so occupies a blank cell of the same width.
@@ -77,6 +81,7 @@ namespace antwika::gfx
      */
     template <typename Visit>
     void forEachGlyphPixel(
+        GlyphCellsCache &cache,
         Point origin,
         std::string_view text,
         std::uint32_t scale,
@@ -88,7 +93,7 @@ namespace antwika::gfx
             return;
         }
 
-        const GlyphCells &cells = glyphCells(scale);
+        const GlyphCells &cells = cache.at(scale);
         const Size size = cells.cellSize();
         const auto step = static_cast<std::int64_t>(size.width);
         const auto top = static_cast<std::int64_t>(origin.y);

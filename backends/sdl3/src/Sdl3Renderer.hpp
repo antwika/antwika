@@ -9,6 +9,7 @@
 
 #include <antwika/gfx/Bitmap.hpp>
 #include <antwika/gfx/Color.hpp>
+#include <antwika/gfx/GlyphCells.hpp>
 #include <antwika/gfx/IRenderer.hpp>
 #include <antwika/gfx/ITexture.hpp>
 #include <antwika/gfx/Point.hpp>
@@ -163,6 +164,10 @@ namespace antwika::gfx::sdl3
 
         ILogger &logger;
         SDL_Renderer *renderer;
+
+        // This renderer's own memo of the built-in font's cells.
+        // gfx decides what a scale's cells hold; this only keeps them.
+        GlyphCellsCache glyphCells;
 
         // Not owned: each texture owns itself and deregisters here.
         // Only how detach() reaches them before SDL frees it.

@@ -2,7 +2,6 @@
 
 #include <cstddef>
 #include <cstdint>
-#include <map>
 #include <vector>
 
 #include <antwika/font/GlyphAtlas.hpp>
@@ -133,14 +132,8 @@ namespace antwika::gfx
                        + column];
     }
 
-    const GlyphCells &glyphCells(std::uint32_t scale)
+    const GlyphCells &GlyphCellsCache::at(std::uint32_t scale)
     {
-        // Keyed by scale, and a map rather than a vector on purpose.
-        // A reference handed out here outlives every later arrival.
-        // The excluded line holds the guard's throw and abort edges.
-        // That is the exclusion antwika::replay's validators carry.
-        static std::map<std::uint32_t, GlyphCells> cells; // GCOVR_EXCL_LINE
-
         const auto found = cells.find(scale);
 
         if (found != cells.end())
