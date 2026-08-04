@@ -12,14 +12,17 @@
 #include <antwika/testing/ScratchPath.hpp>
 
 #include "antwika/game/Action.hpp"
+#include <antwika/i18n/Locale.hpp>
+
 #include "antwika/game/KeyBindings.hpp"
 #include "antwika/game/OptionsFile.hpp"
 #include "antwika/game/OptionsFormatError.hpp"
 
 
 using antwika::game::Action;
-using antwika::game::bindingsFromJson;
-using antwika::game::bindingsToJson;
+using antwika::game::optionsFromJson;
+using antwika::game::optionsToJson;
+using antwika::game::PlayerOptions;
 using antwika::game::BindOutcome;
 using antwika::game::kDefaultBindings;
 using antwika::game::KeyBindings;
@@ -37,13 +40,17 @@ using antwika::input::Key;
 
 namespace
 {
-    [[nodiscard]] KeyBindings rebound()
+    [[nodiscard]] PlayerOptions rebound()
     {
         KeyBindings bindings;
         EXPECT_EQ(bindings.bind(Action::Pause, Key::J), BindOutcome::Bound);
         EXPECT_EQ(
             bindings.bind(Action::ResetView, Key::K), BindOutcome::Bound);
-        return bindings;
+
+        // A language away from the default as well as a rebound key.
+        // So a round trip that dropped either one is a red test.
+        return PlayerOptions{
+            .bindings = bindings, .locale = antwika::i18n::Locale::Swedish};
     }
 
     [[nodiscard]] std::string versionKey()
@@ -83,7 +90,7 @@ namespace
 
 TEST_F(OptionsFileTest, ADocumentStatesItsFormatAndItsVersion)
 {
-    const auto encoded = bindingsToJson(kDefaultBindings);
+    const auto encoded = optionsToJson(PlayerOptions{});
 
     EXPECT_EQ(encoded.at("magic").get<std::string>(), kOptionsMagic);
     EXPECT_EQ(
@@ -93,10 +100,10 @@ TEST_F(OptionsFileTest, ADocumentStatesItsFormatAndItsVersion)
 
 TEST_F(OptionsFileTest, ALayoutRoundTripsThroughTheDocument)
 {
-    EXPECT_EQ(bindingsFromJson(bindingsToJson(rebound())), rebound());
+    EXPECT_EQ(optionsFromJson(optionsToJson(rebound())), rebound());
     EXPECT_EQ(
-        bindingsFromJson(bindingsToJson(kDefaultBindings)),
-        kDefaultBindings);
+        optionsFromJson(optionsToJson(PlayerOptions{})),
+        PlayerOptions{});
 }
 
 TEST_F(OptionsFileTest, ALayoutRoundTripsThroughAStream)
@@ -121,7 +128,7 @@ TEST_F(OptionsFileTest, AMissingFileIsAnOrdinaryFirstRun)
 {
     EXPECT_EQ(
         loadOptionsFileOrDefaults(pathIn("nothing-here.json")),
-        kDefaultBindings);
+        PlayerOptions{});
 }
 
 TEST_F(OptionsFileTest, TextThatIsNotJsonIsRefused)
@@ -135,10 +142,10 @@ TEST_F(OptionsFileTest, TextThatIsNotJsonIsRefused)
 
 TEST_F(OptionsFileTest, ADocumentOfAnotherFormatIsRefused)
 {
-    auto document = bindingsToJson(kDefaultBindings);
+    auto document = optionsToJson(PlayerOptions{});
     document["magic"] = "antwika-game-save";
 
-    EXPECT_THROW((void)bindingsFromJson(document), OptionsFormatError);
+    EXPECT_THROW((void)optionsFromJson(document), OptionsFormatError);
 }
 
 // Read before anything is decoded.
@@ -146,59 +153,59 @@ TEST_F(OptionsFileTest, ADocumentOfAnotherFormatIsRefused)
 // Rather than read for happening to satisfy today's schema.
 TEST_F(OptionsFileTest, ADocumentFromANewerBuildIsRefused)
 {
-    auto document = bindingsToJson(kDefaultBindings);
+    auto document = optionsToJson(PlayerOptions{});
     document[versionKey()] = kOptionsFormatVersion + 1;
 
-    EXPECT_THROW((void)bindingsFromJson(document), OptionsFormatError);
+    EXPECT_THROW((void)optionsFromJson(document), OptionsFormatError);
 }
 
 TEST_F(OptionsFileTest, ADocumentOfTheWrongShapeIsRefused)
 {
-    auto document = bindingsToJson(kDefaultBindings);
+    auto document = optionsToJson(PlayerOptions{});
     document["bindings"][0].erase("key");
 
-    EXPECT_THROW((void)bindingsFromJson(document), OptionsFormatError);
+    EXPECT_THROW((void)optionsFromJson(document), OptionsFormatError);
 }
 
 TEST_F(OptionsFileTest, ADocumentNamingAnActionThisBuildLacksIsRefused)
 {
-    auto document = bindingsToJson(kDefaultBindings);
+    auto document = optionsToJson(PlayerOptions{});
     document["bindings"][0]["action"] = "fly";
 
-    EXPECT_THROW((void)bindingsFromJson(document), OptionsFormatError);
+    EXPECT_THROW((void)optionsFromJson(document), OptionsFormatError);
 }
 
 TEST_F(OptionsFileTest, ADocumentNamingAKeyThisBuildLacksIsRefused)
 {
-    auto document = bindingsToJson(kDefaultBindings);
+    auto document = optionsToJson(PlayerOptions{});
     document["bindings"][0]["key"] = "Joystick";
 
-    EXPECT_THROW((void)bindingsFromJson(document), OptionsFormatError);
+    EXPECT_THROW((void)optionsFromJson(document), OptionsFormatError);
 }
 
 // Refused rather than repaired, exactly as a save's links are.
 // A layout nobody could have chosen is not one to guess at.
 TEST_F(OptionsFileTest, ADocumentBindingTwoActionsToOneKeyIsRefused)
 {
-    auto document = bindingsToJson(kDefaultBindings);
+    auto document = optionsToJson(PlayerOptions{});
     document["bindings"][1]["key"] =
         document["bindings"][0]["key"];
 
-    EXPECT_THROW((void)bindingsFromJson(document), OptionsFormatError);
+    EXPECT_THROW((void)optionsFromJson(document), OptionsFormatError);
 }
 
 TEST_F(OptionsFileTest, ADocumentBindingAReservedKeyIsRefused)
 {
-    auto document = bindingsToJson(kDefaultBindings);
+    auto document = optionsToJson(PlayerOptions{});
     document["bindings"][0]["key"] = "Escape";
 
-    EXPECT_THROW((void)bindingsFromJson(document), OptionsFormatError);
+    EXPECT_THROW((void)optionsFromJson(document), OptionsFormatError);
 }
 
 TEST_F(OptionsFileTest, AnUnwritablePathIsRefused)
 {
     EXPECT_THROW(
-        saveOptionsFile(kDefaultBindings, pathIn("no/such/dir/o.json")),
+        saveOptionsFile(PlayerOptions{}, pathIn("no/such/dir/o.json")),
         OptionsFormatError);
 }
 
@@ -207,7 +214,7 @@ TEST_F(OptionsFileTest, AnUnwritablePathIsRefused)
 TEST_F(OptionsFileTest, AStreamThatCannotTakeTheDocumentIsRefused)
 {
     EXPECT_THROW(
-        saveOptionsFile(kDefaultBindings, "/dev/full"),
+        saveOptionsFile(PlayerOptions{}, "/dev/full"),
         OptionsFormatError);
 }
 
@@ -249,7 +256,8 @@ TEST_F(OptionsFileTest, ALiveRunIsToldWhatTheMachineHoldsAndWhereItIs)
 
     const auto machine = machineOptionsFor(false, pathIn("options.json"));
 
-    EXPECT_EQ(machine.bindings, rebound());
+    EXPECT_EQ(machine.bindings, rebound().bindings);
+    EXPECT_EQ(machine.locale, rebound().locale);
     EXPECT_EQ(machine.path, pathIn("options.json"));
 }
 
@@ -260,4 +268,64 @@ TEST_F(OptionsFileTest, ALiveRunWithNoFileYetIsToldTheShippedLayout)
 
     EXPECT_EQ(machine.bindings, kDefaultBindings);
     EXPECT_EQ(machine.path, pathIn("nothing-here.json"));
+}
+
+// Version 2 added the language.
+// A file written before there was a choice played the shipped one.
+// And now says so, which is the whole of what the step does.
+// That is what lets the schema require the member.
+TEST_F(OptionsFileTest, AVersionOneDocumentIsReadAsTheShippedLanguage)
+{
+    auto document = optionsToJson(rebound());
+
+    // Back to what a version 1 writer would have left behind.
+    document.erase(std::string(antwika::game::kLocaleKey));
+    document[versionKey()] = 1U;
+
+    const auto loaded = optionsFromJson(document);
+
+    EXPECT_EQ(loaded.locale, antwika::i18n::kDefaultLocale);
+
+    // And the half that was already there is untouched by the step.
+    EXPECT_EQ(loaded.bindings, rebound().bindings);
+}
+
+TEST_F(OptionsFileTest, APickedLanguageSurvivesTheFile)
+{
+    saveOptionsFile(
+        PlayerOptions{.locale = antwika::i18n::Locale::Swedish},
+        pathIn("options.json"));
+
+    EXPECT_EQ(
+        loadOptionsFileOrDefaults(pathIn("options.json")).locale,
+        antwika::i18n::Locale::Swedish);
+}
+
+TEST_F(OptionsFileTest, ADocumentNamingNoCatalogueIsRefused)
+{
+    auto document = optionsToJson(PlayerOptions{});
+    document[std::string(antwika::game::kLocaleKey)] = "de";
+
+    EXPECT_THROW((void)optionsFromJson(document), OptionsFormatError);
+}
+
+TEST_F(OptionsFileTest, ADocumentWithNoLanguageAtAllIsRefused)
+{
+    auto document = optionsToJson(PlayerOptions{});
+    document.erase(std::string(antwika::game::kLocaleKey));
+
+    EXPECT_THROW((void)optionsFromJson(document), OptionsFormatError);
+}
+
+// A replay reads neither half, for one reason.
+TEST_F(OptionsFileTest, AReplayIsToldNothingAboutTheMachinesLanguage)
+{
+    saveOptionsFile(
+        PlayerOptions{.locale = antwika::i18n::Locale::Swedish},
+        pathIn("options.json"));
+
+    const auto machine = machineOptionsFor(true, pathIn("options.json"));
+
+    EXPECT_FALSE(machine.locale.has_value());
+    EXPECT_FALSE(machine.bindings.has_value());
 }

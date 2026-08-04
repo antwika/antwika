@@ -22,6 +22,7 @@
 #include "antwika/game/Desirability.hpp"
 #include "antwika/game/GameConfig.hpp"
 #include "antwika/game/GameSummary.hpp"
+#include "antwika/game/LocaleState.hpp"
 #include "antwika/game/GridExtent.hpp"
 #include "antwika/game/MapView.hpp"
 #include "antwika/game/Messages.hpp"
@@ -357,23 +358,23 @@ namespace antwika::game
         /**
          * @brief The language every caption in the run is worded in.
          *
-         * **Injected rather than reached for, and fixed in source.** A
-         * layout is a function of the strings declared into it and a
-         * hit-test is a function of the layout, so a run recorded in one
-         * language and replayed in another would resolve one recorded
-         * click to two different widgets -- see Translator.hpp.
+         * **Injected rather than created here, and mutable**, because a
+         * renderer built beforehand words its own scenes off the very
+         * same object -- so a language picked on the options screen
+         * reaches the drawn text and the laid-out text together. A
+         * second one would let the two disagree, which is the divergence
+         * this whole design exists to make unexpressible.
          *
-         * Unset, one at kDefaultLocale is made here. That is not a
-         * default anybody may vary: it is the same fixed-in-source
-         * choice a composition root makes, written once so a test whose
-         * subject is the grid need not say it.
+         * The locale is simulation state and is folded in the tick path;
+         * LocaleState says why and Translator.hpp states the rule it is
+         * answering.
          *
-         * Passed in rather than created here because a renderer built
-         * beforehand words its own scenes with it.
+         * Unset, one at kDefaultLocale is made here -- what a test whose
+         * subject is not the language wants, and what this application
+         * shipped before a language could be picked at all.
          */
-        std::optional<
-            std::reference_wrapper<const Translator>>
-            translator = std::nullopt;
+        std::optional<std::reference_wrapper<LocaleState>>
+            locale = std::nullopt;
 
         /**
          * @brief The area every mode's UI is laid out against.

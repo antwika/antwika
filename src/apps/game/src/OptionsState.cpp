@@ -61,4 +61,14 @@ namespace antwika::game
         return current.bind(action, key);
     }
 
+    antwika::i18n::Locale OptionsState::locale() const noexcept
+    {
+        return language;
+    }
+
+    void OptionsState::setLocale(antwika::i18n::Locale locale) noexcept
+    {
+        language = locale;
+    }
+
 } // namespace antwika::game

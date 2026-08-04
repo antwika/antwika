@@ -30,6 +30,7 @@
 #include "antwika/game/Camera.hpp"
 #include "antwika/game/Events.hpp"
 #include "antwika/game/Game.hpp"
+#include "antwika/game/LocaleState.hpp"
 #include "antwika/game/Cell.hpp"
 #include "antwika/game/Direction.hpp"
 #include "antwika/game/GridExtent.hpp"
@@ -610,8 +611,7 @@ TEST(BootstrapTest, Bootstrap_WordsItselfWithTheTranslatorItIsGiven)
             .mode = harness.mode,
             .pause = harness.pause,
             .maxTicks = 4,
-            .overlay = overlay,
-            .translator = kTranslator});
+            .overlay = overlay});
 
     EXPECT_EQ(summary.state.ticksProcessed, 2U);
 
@@ -1075,4 +1075,69 @@ TEST(BootstrapTest, Bootstrap_OpeningTheBarsGameMenuLaysNothing)
     const auto summary = harness.run(source);
 
     EXPECT_TRUE(summary.paths.empty());
+}
+
+// The caller's LocaleState, not one of the loop's own.
+// A renderer built beforehand words its scenes off that object.
+// So the drawn text and the laid-out text change together.
+TEST(BootstrapTest, Bootstrap_WordsItselfWithTheLocaleStateItIsGiven)
+{
+    Harness harness;
+    const InputEventCodec codec;
+
+    ReplaySource source(
+        {TickEvent{
+            .tick = 1,
+            .event = Event{.name = antwika::engine::events::kStop}}});
+
+    NiceMock<MockLogger> logger;
+    NiceMock<MockEventSink> eventSink;
+    antwika::game::UiOverlay overlay{antwika::game::kUiCanvas};
+
+    antwika::game::LocaleState localeState{antwika::i18n::Locale::Swedish};
+
+    const auto summary = antwika::game::bootstrap(
+        antwika::game::GameWiring{
+            .logger = logger,
+            .eventSink = eventSink,
+            .inputSource = source,
+            .codec = codec,
+            .extent = kExtent,
+            .camera = harness.camera,
+            .paths = harness.paths,
+            .built = harness.built,
+            .mode = harness.mode,
+            .pause = harness.pause,
+            .maxTicks = 4,
+            .overlay = overlay,
+            .locale = localeState});
+
+    EXPECT_EQ(summary.state.ticksProcessed, 2U);
+
+    // The bar it drew is the bar that language words.
+    const antwika::game::Toolbar toolbar{localeState.translator()};
+    const auto expected = toolbar.describe(
+        antwika::game::kUiCanvas,
+        antwika::ui::Pointer{},
+        harness.camera,
+        antwika::game::BuildTool::Road,
+        false,
+        summary.state.ticksProcessed - 1);
+
+    EXPECT_EQ(overlay.commands(), expected.commands);
+
+    // And a Swedish bar is not an English one.
+    const antwika::game::Toolbar english{kTranslator};
+
+    EXPECT_NE(
+        overlay.commands(),
+        english
+            .describe(
+                antwika::game::kUiCanvas,
+                antwika::ui::Pointer{},
+                harness.camera,
+                antwika::game::BuildTool::Road,
+                false,
+                summary.state.ticksProcessed - 1)
+            .commands);
 }

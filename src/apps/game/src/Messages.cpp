@@ -21,7 +21,7 @@ namespace antwika::game
         using i18n::Locale;
         using i18n::MessageName;
 
-        constexpr std::array<MessageName<MessageId>, 105> kNames{{
+        constexpr std::array<MessageName<MessageId>, 107> kNames{{
             {MessageId::ToolbarZoomIn, "ToolbarZoomIn"},
             {MessageId::ToolbarZoomOut, "ToolbarZoomOut"},
             {MessageId::ToolbarResetView, "ToolbarResetView"},
@@ -110,6 +110,8 @@ namespace antwika::game
             {MessageId::OptionsBound, "OptionsBound"},
             {MessageId::OptionsTaken, "OptionsTaken"},
             {MessageId::OptionsReserved, "OptionsReserved"},
+            {MessageId::OptionsLanguage, "OptionsLanguage"},
+            {MessageId::OptionsLanguageActive, "OptionsLanguageActive"},
             {MessageId::OptionsBack, "OptionsBack"},
             {MessageId::ActionPause, "ActionPause"},
             {MessageId::ActionZoomIn, "ActionZoomIn"},
@@ -227,6 +229,8 @@ namespace antwika::game
                 {MessageId::OptionsBound, "bound"},
                 {MessageId::OptionsTaken, "that key is already bound"},
                 {MessageId::OptionsReserved, "that key cannot be bound"},
+                {MessageId::OptionsLanguage, "Language"},
+                {MessageId::OptionsLanguageActive, "{0} (on)"},
                 {MessageId::OptionsBack, "Back"},
                 {MessageId::ActionPause, "pause"},
                 {MessageId::ActionZoomIn, "zoom in"},
@@ -337,6 +341,8 @@ namespace antwika::game
                 {MessageId::OptionsBound, "bunden"},
                 {MessageId::OptionsTaken, "tangenten är redan bunden"},
                 {MessageId::OptionsReserved, "tangenten kan inte bindas"},
+                {MessageId::OptionsLanguage, "Språk"},
+                {MessageId::OptionsLanguageActive, "{0} (på)"},
                 {MessageId::OptionsBack, "Tillbaka"},
                 {MessageId::ActionPause, "pausa"},
                 {MessageId::ActionZoomIn, "zooma in"},

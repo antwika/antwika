@@ -64,13 +64,17 @@ namespace antwika::game
         }
     } // namespace
 
-    OptionsScene::OptionsScene(const Translator &translator)
-        : translator(translator)
+    OptionsScene::OptionsScene(
+        const Translator &translator, const LanguageTranslator &languages)
+        : translator(translator), languages(languages)
     {
     }
 
     Frame OptionsScene::describe(
-        Size canvas, Pointer pointer, const OptionsState &state) const
+        Size canvas,
+        Pointer pointer,
+        const OptionsState &state,
+        antwika::i18n::Locale active) const
     {
         Context ui{
             canvas, scaledTheme(Theme{}, scaleForCanvas(canvas)), pointer};
@@ -121,6 +125,32 @@ namespace antwika::game
                 ui.label(
                     translator.text(noticeMessage(state.notice())),
                     ui.theme().muted);
+
+                ui.label(translator.text(MessageId::OptionsLanguage));
+
+                for (const auto locale : antwika::i18n::kAllLocales)
+                {
+                    // Named through the *active* translator.
+                    // So the list reads in the language now on.
+                    // Rather than each entry in its own.
+                    auto name =
+                        languages.text(antwika::i18n::nameIdOf(locale));
+
+                    // Marked in the text rather than by a colour.
+                    // So the mark survives a theme change.
+                    // And a test can assert on the caption.
+                    if (locale == active)
+                    {
+                        name = translator.formatted(
+                            MessageId::OptionsLanguageActive,
+                            std::array<std::string_view, 1>{name});
+                    }
+
+                    ui.button(
+                        name,
+                        {.id = optionsWidgets::languageWidget(locale),
+                         .width = kGrow});
+                }
 
                 ui.button(
                     translator.text(MessageId::OptionsBack),

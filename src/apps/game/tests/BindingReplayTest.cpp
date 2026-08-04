@@ -13,6 +13,7 @@
 #include <antwika/event/mocks/MockEventSink.hpp>
 #include <antwika/gfx/Point.hpp>
 #include <antwika/gfx/Size.hpp>
+#include <antwika/i18n/Locale.hpp>
 #include <antwika/input/InputEvent.hpp>
 #include <antwika/input/InputEventCodec.hpp>
 #include <antwika/input/InputPipeline.hpp>
@@ -47,6 +48,7 @@
 #include "antwika/game/UiCanvas.hpp"
 #include "antwika/game/UiOverlay.hpp"
 
+using antwika::game::tests::kLanguages;
 using antwika::game::tests::kTranslator;
 using antwika::game::tests::widgetCentre;
 
@@ -91,6 +93,11 @@ using ::testing::NiceMock;
 
 namespace
 {
+    // The language every layout in this file is described in.
+    // Named once so a call to describe() still fits a line.
+    // And named rather than defaulted on purpose.
+    // Which language a layout was built in is what these rest on.
+    constexpr auto kLocale = antwika::i18n::kDefaultLocale;
     constexpr GridExtent kExtent{.width = 16, .height = 16};
     constexpr antwika::time::Tick kMaxTicks = 24;
 
@@ -138,10 +145,12 @@ namespace
 
     [[nodiscard]] Position pixelOnOptions(antwika::ui::WidgetId id)
     {
-        const OptionsScene scene{kTranslator};
+        const OptionsScene scene{kTranslator, kLanguages};
         const OptionsState state;
         const auto centre = widgetCentre(
-            scene.describe(kUiCanvas, antwika::ui::Pointer{}, state), id);
+            scene.describe(
+                kUiCanvas, antwika::ui::Pointer{}, state, kLocale),
+            id);
 
         return Position{
             .x = centre.value_or(antwika::gfx::Point{}).x,
@@ -209,8 +218,7 @@ namespace
                 .overlay = overlay,
                 .menuOverlay = menuOverlay,
                 .saveOverlay = saveOverlay,
-                .optionsPath = machine.path,
-                .translator = kTranslator});
+                .optionsPath = machine.path});
 
         return Played{
             .summary = std::move(summary),
@@ -262,8 +270,12 @@ namespace
         void SetUp() override
         {
             std::filesystem::create_directories(directory);
-            saveOptionsFile(machineOne(), one());
-            saveOptionsFile(machineTwo(), two());
+            saveOptionsFile(
+                antwika::game::PlayerOptions{.bindings = machineOne()},
+                one());
+            saveOptionsFile(
+                antwika::game::PlayerOptions{.bindings = machineTwo()},
+                two());
         }
 
         void TearDown() override
@@ -454,7 +466,8 @@ TEST_F(BindingReplayTest, AReplayDoesNotRebindTheMachineItRunsOn)
     (void)replay(two(), fileOf(recorded), AppMode::MainMenu);
 
     EXPECT_EQ(
-        antwika::game::loadOptionsFileOrDefaults(two()), machineTwo());
+        antwika::game::loadOptionsFileOrDefaults(two()).bindings,
+        machineTwo());
 }
 
 // And a live run leaves what it ended with.
@@ -465,6 +478,6 @@ TEST_F(BindingReplayTest, ALiveRunLeavesItsLayoutOnTheMachine)
         record(one(), rebindSession(), AppMode::MainMenu);
 
     EXPECT_EQ(
-        antwika::game::loadOptionsFileOrDefaults(one()),
+        antwika::game::loadOptionsFileOrDefaults(one()).bindings,
         recorded.summary.bindings);
 }

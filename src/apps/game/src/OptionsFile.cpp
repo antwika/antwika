@@ -1,15 +1,21 @@
 #include "antwika/game/OptionsFile.hpp"
 
 #include <fstream>
+#include <memory>
 #include <string>
+#include <string_view>
+#include <utility>
 
 #include <nlohmann/json-schema.hpp>
 
 #include <antwika/input/InputError.hpp>
 #include <antwika/input/Key.hpp>
+#include <antwika/i18n/Locale.hpp>
+
 #include <antwika/config/ConfigDocument.hpp>
 #include <antwika/config/FileFormat.hpp>
 #include <antwika/config/Format.hpp>
+#include <antwika/replay/IMigration.hpp>
 #include <antwika/replay/SchemaVersion.hpp>
 #include <antwika/replay/VersionedDocument.hpp>
 
@@ -27,7 +33,7 @@ namespace antwika::game
         // An options file is a versioned JSON document like any other.
         // It reports an OptionsFormatError while being read.
         // Which is why the format is templated on its error type.
-        using OptionsFormat = FileFormat<KeyBindings, OptionsFormatError>;
+        using OptionsFormat = FileFormat<PlayerOptions, OptionsFormatError>;
 
         // Two spaces, one member a line.
         // Enough to diff a layout against the next version of itself.
@@ -43,9 +49,11 @@ namespace antwika::game
             binding["properties"]["key"]["type"] = "string";
 
             schema["required"] = {
-                "magic", "bindings"}; // GCOVR_EXCL_LINE
+                "magic", "bindings", "locale"}; // GCOVR_EXCL_LINE
             schema["properties"]["bindings"]["type"] = "array";
             schema["properties"]["bindings"]["items"] = binding;
+            schema["properties"][std::string(kLocaleKey)]["type"]
+                = "string";
         }
 
         // The key's own name is antwika::input's to police.
@@ -67,19 +75,71 @@ namespace antwika::game
         }
     } // namespace
 
+    namespace
+    {
+        // Version 2 added the language the captions are worded in.
+        // A version 1 document was written before there was a choice.
+        // So it played in the default one, and now says so.
+        // Written before validation rather than after it.
+        // Which is what lets the schema require the member.
+        class OptionsV1ToV2 final : public antwika::replay::IMigration
+        {
+        public:
+            [[nodiscard]] std::uint32_t fromVersion() const noexcept
+                override
+            {
+                return 1;
+            }
+
+            [[nodiscard]] std::uint32_t toVersion() const noexcept
+                override
+            {
+                return 2;
+            }
+
+            // Only ever read to word a MigrationChain's refusal.
+            // It is the message thrown when a step is not one step.
+            // This one reads 1 and produces 2.
+            // So reaching it means editing the two functions above.
+            // Which breaks the migration rather than feeding it input.
+            // See docs/confirming-unreachable-branches.md.
+            // GCOVR_EXCL_START
+            [[nodiscard]] std::string_view name() const noexcept override
+            {
+                return "options v1 -> v2: the picked language";
+            }
+            // GCOVR_EXCL_STOP
+
+            void apply(nlohmann::json &document) const override
+            {
+                document[std::string(kLocaleKey)] = std::string(
+                    antwika::i18n::tagOf(antwika::i18n::kDefaultLocale));
+            }
+        };
+    } // namespace
+
     MigrationChain standardOptionsMigrations()
     {
         // Every branch left on the excluded line is the allocator's.
-        // The list is empty, so no heap branch is taken here.
-        // What is left is the throw edge of building it.
-        return MigrationChain({}, kOptionsFormatVersion); // GCOVR_EXCL_LINE
+        // The unwind edges of building a list of one shared_ptr.
+        antwika::replay::MigrationList migrations;
+        migrations.push_back(
+            std::make_shared<const OptionsV1ToV2>()); // GCOVR_EXCL_LINE
+
+        return MigrationChain(
+            std::move(migrations),
+            kOptionsFormatVersion); // GCOVR_EXCL_LINE
     }
 
     namespace
     {
         void encodeMembers(
-            const KeyBindings &bindings, nlohmann::json &encoded)
+            const PlayerOptions &options, nlohmann::json &encoded)
         {
+            const KeyBindings &bindings = options.bindings;
+
+            encoded[std::string(kLocaleKey)] =
+                std::string(antwika::i18n::tagOf(options.locale));
             encoded["bindings"] = nlohmann::json::array();
 
             for (const auto action : kActions)
@@ -92,12 +152,12 @@ namespace antwika::game
             }
         }
 
-        KeyBindings decodeMembers(const nlohmann::json &document)
+        PlayerOptions decodeMembers(const nlohmann::json &document)
         {
             KeyBindings bindings;
 
             for (const auto &one : document.at("bindings"))
-        {
+            {
                 const auto name = one.at("action").get<std::string>();
                 const auto action = actionFromName(name);
 
@@ -132,7 +192,22 @@ namespace antwika::game
                 }
             }
 
-            return bindings;
+            // The tag is the migration's business to have put there.
+            // A version 1 document reaches this with the default's.
+            // So this lookup answers for every document that validates.
+            const auto tag =
+                document.at(std::string(kLocaleKey)).get<std::string>();
+            const auto locale = antwika::i18n::localeFromTag(tag);
+
+            if (!locale.has_value())
+            {
+                throw OptionsFormatError(
+                    "antwika::game: options name a language this build "
+                    "has no catalogue for: "
+                    + tag);
+            }
+
+            return PlayerOptions{.bindings = bindings, .locale = *locale};
         }
 
         const OptionsFormat &optionsFormat()
@@ -141,7 +216,7 @@ namespace antwika::game
             // Its concurrency arms are unreachable one-threaded.
             // See docs/confirming-unreachable-branches.md.
             static const OptionsFormat format(
-                FormatSpec<KeyBindings>{
+                FormatSpec<PlayerOptions>{
                     .format =
                         {.magic = kOptionsMagic,
                          .version = kOptionsFormatVersion},
@@ -157,28 +232,28 @@ namespace antwika::game
         }
     } // namespace
 
-    nlohmann::json bindingsToJson(const KeyBindings &bindings)
+    nlohmann::json optionsToJson(const PlayerOptions &options)
     {
-        return optionsFormat().toJson(bindings);
+        return optionsFormat().toJson(options);
     }
 
-    KeyBindings bindingsFromJson(const nlohmann::json &document)
+    PlayerOptions optionsFromJson(const nlohmann::json &document)
     {
         return optionsFormat().fromJson(document);
     }
 
-    void writeOptions(const KeyBindings &bindings, std::ostream &out)
+    void writeOptions(const PlayerOptions &options, std::ostream &out)
     {
-        optionsFormat().write(bindings, out);
+        optionsFormat().write(options, out);
     }
 
-    KeyBindings readOptions(std::istream &in)
+    PlayerOptions readOptions(std::istream &in)
     {
         return optionsFormat().read(in);
     }
 
     void saveOptionsFile(
-        const KeyBindings &bindings, const std::string &path)
+        const PlayerOptions &options, const std::string &path)
     {
         std::ofstream file(path);
         if (!file.is_open())
@@ -188,7 +263,7 @@ namespace antwika::game
                 + path);
         }
 
-        writeOptions(bindings, file);
+        writeOptions(options, file);
 
         // Flushed here rather than by the destructor, which cannot say.
         // A full disk fails on the flush, not on the open.
@@ -200,7 +275,7 @@ namespace antwika::game
         }
     }
 
-    KeyBindings loadOptionsFileOrDefaults(const std::string &path)
+    PlayerOptions loadOptionsFileOrDefaults(const std::string &path)
     {
         std::ifstream file(path);
 
@@ -208,14 +283,14 @@ namespace antwika::game
         // Which is a state rather than a failure.
         if (!file.is_open())
         {
-            return kDefaultBindings;
+            return PlayerOptions{};
         }
 
         return readOptions(file);
     }
 
     void saveOptionsFileIfNamed(
-        const KeyBindings &bindings,
+        const PlayerOptions &options,
         const std::optional<std::string> &path)
     {
         if (!path.has_value())
@@ -223,7 +298,7 @@ namespace antwika::game
             return;
         }
 
-        saveOptionsFile(bindings, *path);
+        saveOptionsFile(options, *path);
     }
 
     MachineOptions machineOptionsFor(
@@ -234,8 +309,12 @@ namespace antwika::game
             return MachineOptions{};
         }
 
+        const auto stored = loadOptionsFileOrDefaults(path);
+
         return MachineOptions{
-            .bindings = loadOptionsFileOrDefaults(path), .path = path};
+            .bindings = stored.bindings,
+            .locale = stored.locale,
+            .path = path};
     }
 
 } // namespace antwika::game
