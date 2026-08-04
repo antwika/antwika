@@ -265,8 +265,8 @@ namespace antwika::game
         return save;
     } // GCOVR_EXCL_LINE
 
-    SaveGame saveGameOf(
-        const antwika::ecs::World &world,
+    SaveGame saveGameFrom(
+        const CityGrid &grid,
         const PathIndex &paths,
         const Camera &camera,
         const GameState &state,
@@ -280,268 +280,113 @@ namespace antwika::game
         save.paths.assign(paths.cells().begin(), paths.cells().end());
         save.seed = seed;
 
-        // Walked once each, keeping where every entity landed.
-        // So the second pass turns a handle into a record's index.
-        std::map<antwika::ecs::Entity, std::size_t> walkerAt;
-        std::map<antwika::ecs::Entity, std::size_t> buildingAt;
+        save.walkers.reserve(grid.walkers.size());
+        save.buildings.reserve(grid.buildings.size());
+        save.ruins.reserve(grid.ruins.size());
 
-        for (const auto entity : world.view<Walker, Cell>())
+        for (const auto &stored : grid.walkers)
         {
-            walkerAt.emplace(entity, save.walkers.size());
-            const auto walker = world.get<Walker>(entity);
-
-            // The destination is filled in with the links below.
-            // A handle means nothing in a file -- see SavedErrand.
             std::optional<SavedErrand> errand;
 
-            if (world.has<Errand>(entity))
+            if (stored.errand.has_value())
             {
-                const auto held = world.get<Errand>(entity);
                 errand = SavedErrand{
-                    .destination = std::nullopt,
-                    .carrying = held.carrying,
-                    .leg = held.leg};
+                    .destination = stored.destination,
+                    .carrying = stored.errand->carrying,
+                    .leg = stored.errand->leg};
             }
 
-            // The house is filled in with the links below too.
             std::optional<SavedJourney> journey;
 
-            if (world.has<Journey>(entity))
+            if (stored.journey.has_value())
             {
                 journey = SavedJourney{
-                    .towards = world.get<Journey>(entity).towards,
-                    .house = std::nullopt};
+                    .towards = stored.journey->towards,
+                    .house = stored.joining};
             }
 
             save.walkers.push_back(SavedWalker{
-                .at = world.get<Cell>(entity),
-                .facing = walker.facing,
-                .kind = walker.kind,
-                .carried = walker.carried,
-                .stepsUntilHome = walker.stepsUntilHome,
-                .ticksUntilStep = walker.ticksUntilStep,
-                .home = std::nullopt,
+                .at = stored.at,
+                .facing = stored.walker.facing,
+                .kind = stored.walker.kind,
+                .carried = stored.walker.carried,
+                .stepsUntilHome = stored.walker.stepsUntilHome,
+                .ticksUntilStep = stored.walker.ticksUntilStep,
+                .home = stored.home,
                 .errand = errand,
-                .journey = journey});
+                .journey = journey,
+                .fireCall = stored.attending});
         }
 
-        for (const auto entity : world.view<Building, Cell>())
+        for (const auto &stored : grid.buildings)
         {
-            buildingAt.emplace(entity, save.buildings.size());
-            const auto building = world.get<Building>(entity);
+            // The array's occupied slots, in slot order, compacted.
+            // A file lists what a building has out.
+            // Which slot each one sat in is not a fact about the city.
+            std::vector<std::size_t> out;
 
-            // Read out here rather than inside the record below.
-            // A call after the record's vector member needs a pad.
-            // To unwind the half-built record it was made from.
-            // Which is a second landing pad on a second line.
-            const auto coverage = coverageOf(world, entity);
+            for (const auto slot : stored.walkers)
+            {
+                if (slot.has_value())
+                {
+                    out.push_back(*slot);
+                }
+            }
 
             std::optional<std::int32_t> countdown;
 
-            if (world.has<Production>(entity))
+            if (stored.production.has_value())
             {
-                countdown = world.get<Production>(entity).ticksUntilOutput;
+                countdown = stored.production->ticksUntilOutput;
             }
 
-            // Written only where there is one, for coverage's reason.
-            // An absent component and a default one say one thing.
-            std::optional<Household> household;
-
-            if (world.has<Household>(entity))
-            {
-                household = world.get<Household>(entity);
-            }
-
-            // The branches left on the excluded line are that pad.
-            // push_back destroying the temporary it was handed.
-            // Reachable only if the vector's allocation throws.
-            // gcov leaves them untagged, so the flags miss them.
-            // See docs/confirming-unreachable-branches.md, (a).
             save.buildings.push_back(SavedBuilding{ // GCOVR_EXCL_LINE
-                .at = world.get<Cell>(entity),
-                .kind = building.kind,
-                .stock = building.stock,
-                .risk = building.fireRisk,
-                .collapseRisk = building.collapseRisk,
-                .diseaseRisk = building.diseaseRisk,
-                .ticksUntilSpawn = building.ticksUntilSpawn,
-                .ticksUntilDrain = building.ticksUntilDrain,
-                .ticksUntilRisk = building.ticksUntilRisk,
-                .walkers = {},
-                .coverage = coverage.ticksLeft,
+                .at = stored.at,
+                .kind = stored.building.kind,
+                .stock = stored.building.stock,
+                .risk = stored.building.fireRisk,
+                .collapseRisk = stored.building.collapseRisk,
+                .diseaseRisk = stored.building.diseaseRisk,
+                .ticksUntilSpawn = stored.building.ticksUntilSpawn,
+                .ticksUntilDrain = stored.building.ticksUntilDrain,
+                .ticksUntilRisk = stored.building.ticksUntilRisk,
+                .walkers = std::move(out),
+                .coverage = stored.coverage.ticksLeft,
                 .ticksUntilOutput = countdown,
-                .household = household});
+                .household = stored.household,
+                .staff = stored.staff,
+                .employment = stored.employment});
         }
 
-        // The two labour ledgers, once every building is indexed.
-        // An entry naming a building not in the file names nothing.
-        for (const auto entity : world.view<Building, Cell>())
+        for (const auto &stored : grid.ruins)
         {
-            if (world.has<Staff>(entity))
-            {
-                const auto &staff = world.get<Staff>(entity);
-                // The unwind pad of a record with a vector member.
-                // See docs/confirming-unreachable-branches.md, (a).
-                // GCOVR_EXCL_START
-                StoredStaff stored{
-                    .entries = {},
-                    .ticksUntilDecay = staff.ticksUntilDecay};
-                // GCOVR_EXCL_STOP
-
-                for (const auto &entry : staff.sources)
-                {
-                    const auto found = buildingAt.find(entry.house);
-
-                    if (entry.count > 0 && found != buildingAt.end())
-                    {
-                        stored.entries.push_back(
-                            StoredStaffEntry{
-                                .house = found->second,
-                                .count = entry.count});
-                    }
-                }
-
-                save.buildings[buildingAt.at(entity)].staff = stored;
-            }
-
-            if (world.has<Employment>(entity))
-            {
-                const auto &employment = world.get<Employment>(entity);
-                // The unwind pad of a record with a vector member.
-                // See docs/confirming-unreachable-branches.md, (a).
-                // GCOVR_EXCL_START
-                StoredEmployment stored{
-                    .jobs = {},
-                    .ticksUntilDispatch =
-                        employment.ticksUntilDispatch};
-                // GCOVR_EXCL_STOP
-
-                for (const auto &holding : employment.jobs)
-                {
-                    const auto found =
-                        buildingAt.find(holding.workplace);
-
-                    if (holding.count > 0 && found != buildingAt.end())
-                    {
-                        stored.jobs.push_back(
-                            StoredJob{
-                                .workplace = found->second,
-                                .count = holding.count});
-                    }
-                }
-
-                save.buildings[buildingAt.at(entity)].employment =
-                    stored;
-            }
-        }
-
-        // The errands' destinations, once every building is indexed.
-        // A destination not in the file is nowhere.
-        // Which is the state a cart with no store already has.
-        for (const auto entity : world.view<Walker, Cell>())
-        {
-            if (!world.has<Errand>(entity))
-            {
-                continue;
-            }
-
-            const auto found =
-                buildingAt.find(world.get<Errand>(entity).destination);
-
-            if (found == buildingAt.end())
-            {
-                continue;
-            }
-
-            save.walkers[walkerAt.at(entity)].errand->destination =
-                found->second;
-        }
-
-        // The journeys' houses, on exactly those terms again.
-        // A house not in the file is somebody leaving town.
-        for (const auto entity : world.view<Walker, Cell>())
-        {
-            if (!world.has<Journey>(entity))
-            {
-                continue;
-            }
-
-            const auto found =
-                buildingAt.find(world.get<Journey>(entity).house);
-
-            if (found == buildingAt.end())
-            {
-                continue;
-            }
-
-            save.walkers[walkerAt.at(entity)].journey->house =
-                found->second;
-        }
-
-        // The ruins, and then the fire calls against where they land.
-        std::map<antwika::ecs::Entity, std::size_t> ruinAt;
-
-        for (const auto entity : world.view<Ruin, Cell>())
-        {
-            ruinAt.emplace(entity, save.ruins.size());
-            const auto ruin = world.get<Ruin>(entity);
-
             save.ruins.push_back(SavedRuin{
-                .at = world.get<Cell>(entity),
-                .kind = ruin.kind,
-                .state = ruin.state,
-                .ticksUntilOut = ruin.ticksUntilOut});
-        }
-
-        // A call whose ruin is not in the file names nothing.
-        // The walker then roams on the way back in.
-        // Which is what the dispatcher corrects within a tick.
-        for (const auto entity : world.view<Walker, Cell>())
-        {
-            if (!world.has<FireCall>(entity))
-            {
-                continue;
-            }
-
-            const auto found =
-                ruinAt.find(world.get<FireCall>(entity).target);
-
-            if (found == ruinAt.end())
-            {
-                continue;
-            }
-
-            save.walkers[walkerAt.at(entity)].fireCall = found->second;
-        }
-
-        // The links, written only where both ends were recorded.
-        // A building whose walker is not in the file has that slot free.
-        // Which is exactly what it will be on the way back.
-        //
-        // Written in slot order and closed up.
-        // A slot number is not a role -- see Building::walkers.
-        // So a walker held in the second slot alone comes back first.
-        for (const auto entity : world.view<Building, Cell>())
-        {
-            const auto held = world.get<Building>(entity).walkers;
-
-            for (const auto walker : held)
-            {
-                const auto found = walkerAt.find(walker);
-
-                if (found == walkerAt.end())
-                {
-                    continue;
-                }
-
-                save.buildings[buildingAt.at(entity)].walkers.push_back(
-                    found->second);
-                save.walkers[found->second].home = buildingAt.at(entity);
-            }
+                .at = stored.at,
+                .kind = stored.ruin.kind,
+                .state = stored.ruin.state,
+                .ticksUntilOut = stored.ruin.ticksUntilOut});
         }
 
         return save;
     } // GCOVR_EXCL_LINE
+
+    SaveGame saveGameOf(
+        const antwika::ecs::World &world,
+        const PathIndex &paths,
+        const Camera &camera,
+        const GameState &state,
+        GridExtent extent,
+        std::uint64_t seed)
+    {
+        // Through CityGrid, the one code that walks the World.
+        // Turning a handle into an index is stated there, once.
+        // SessionStore::restore already came back this way.
+        // Taking a session out went round it and walked the World again.
+        // So a component added to one was missing from the other.
+        // Silently, and only in whichever direction was forgotten.
+        return saveGameFrom(
+            cityGridOf(world), paths, camera, state, extent, seed);
+    }
 
     PathIndex pathIndexOf(const SaveGame &save)
     {

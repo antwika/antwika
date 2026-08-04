@@ -44,3 +44,9 @@ See [`docs/hover-is-not-simulation.md`](../../docs/hover-is-not-simulation.md).
 There is no release-to-activate and no pointer capture, because either would be cross-frame state — see [`ui`](../libraries/ui.md).
 
 See [`blog/012-a-window-that-cant-talk-back.md`](../../blog/012-a-window-that-cant-talk-back.md).
+
+## Pacing
+
+The loop sleeps a frame period through an **injected** `time::ISleeper`, as every window-driven application here does.
+It used to spin: with nothing to wait for, a demo left open took a core flat out for as long as somebody watched it.
+The sleeper is injected rather than called directly so a test can run the loop at no wall-clock cost, which is what `DemoLoopTest` does.

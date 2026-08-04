@@ -1,3 +1,5 @@
+#include <antwika/time/SystemSleeper.hpp>
+#include <chrono>
 #include <cstdint>
 #include <iostream>
 #include <optional>
@@ -34,6 +36,10 @@ namespace
 
     // The demo is something to look at, so it draws until it is closed.
     // The null backend reports no close, so that build never finishes.
+    // Sixty a second, which is what a window is refreshed at.
+    // A demo with nothing to wait for would otherwise spin a core.
+    constexpr std::chrono::milliseconds kFramePeriod{16};
+
     constexpr std::optional<std::uint32_t> kUntilWindowClosed = std::nullopt;
 } // namespace
 
@@ -76,7 +82,9 @@ int main(int argc, char **argv)
                 assetPath("antwika.png"), "antwika_gfx_demo");
 
             const DemoScene scene;
-            DemoLoop loop(*backend, *inputBackend, scene);
+            antwika::time::SystemSleeper sleeper;
+            DemoLoop loop(
+                *backend, *inputBackend, scene, sleeper, kFramePeriod);
 
             loop.run(
                 WindowDesc{

@@ -13,6 +13,7 @@
 #include <antwika/replay/MigrationChain.hpp>
 
 #include "antwika/config/ConfigDocument.hpp"
+#include "antwika/config/ConfigFormatError.hpp"
 #include "antwika/config/Format.hpp"
 
 namespace antwika::config
@@ -88,6 +89,13 @@ namespace antwika::config
      * @brief One application's config format, with the shared reading
      * and writing plumbing attached.
      *
+     * **It serves any versioned JSON document, not only a config.**
+     * A save, an options file and a high score are read exactly the
+     * same way; what differs between them is the error type each
+     * reports, which is why that is the second parameter rather than
+     * something baked in. `antwika::config`'s own documents leave it
+     * defaulted.
+     *
      * The class is the pattern the per-application loaders repeated
      * nine times, said once: an application declares a FormatSpec and
      * thin free functions forwarding here, and what it took to read a
@@ -99,7 +107,7 @@ namespace antwika::config
      * the decode it guards, and a misspelt member is refused with the
      * property list in the message.
      */
-    template <typename ConfigT>
+    template <typename ConfigT, typename ErrorT = ConfigFormatError>
     class FileFormat final
     {
     public:
@@ -146,7 +154,7 @@ namespace antwika::config
         [[nodiscard]] ConfigT fromJson(
             const nlohmann::json &document) const
         {
-            return spec.decode(migrated(
+            return spec.decode(migratedAs<ErrorT>(
                 document, spec.migrations(), validator, spec.whatFailed));
         }
 
@@ -168,7 +176,57 @@ namespace antwika::config
          */
         [[nodiscard]] ConfigT read(std::istream &in) const
         {
-            return fromJson(parseConfig(in));
+            return fromJson(parseAs<ErrorT>(in));
+        }
+
+        /**
+         * @brief Read a value from a file that must be there.
+         * @param path Where the file is.
+         * @return What it held.
+         * @throws ErrorT If the file is missing or is not one of these.
+         */
+        [[nodiscard]] ConfigT loadFile(const std::string &path) const
+        {
+            const auto document = parseFileAs<ErrorT>(path);
+
+            if (!document.has_value())
+            {
+                throw ErrorT(
+                    "antwika: no such file to read: " + path);
+            }
+
+            return fromJson(*document);
+        }
+
+        /**
+         * @brief Read a value from a file, or nothing when absent.
+         * @param path Where the file would be.
+         * @return What it held, or nothing at all.
+         * @throws ErrorT If a file is there and is not one of these.
+         */
+        [[nodiscard]] std::optional<ConfigT> loadFileIfPresent(
+            const std::string &path) const
+        {
+            const auto document = parseFileAs<ErrorT>(path);
+
+            if (!document.has_value())
+            {
+                return std::nullopt;
+            }
+
+            return fromJson(*document);
+        }
+
+        /**
+         * @brief Write a value to a file, replacing what was there.
+         * @param value What to write.
+         * @param path Where to write it.
+         * @throws ErrorT If the file cannot be opened or written.
+         */
+        void storeFile(
+            const ConfigT &value, const std::string &path) const
+        {
+            writeDocumentFileAs<ErrorT>(toJson(value), path);
         }
 
         /**
@@ -186,7 +244,7 @@ namespace antwika::config
         [[nodiscard]] ConfigT loadFileOrDefaults(
             const std::string &path) const
         {
-            const auto document = parseConfigFile(path);
+            const auto document = parseFileAs<ErrorT>(path);
 
             if (!document.has_value())
             {

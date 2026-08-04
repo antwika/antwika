@@ -29,8 +29,16 @@ namespace antwika::gfx_demo
     using antwika::ui::Pointer;
 
     DemoLoop::DemoLoop(
-        IGfxBackend &backend, IInputBackend &input, const DemoScene &scene)
-        : backend(backend), input(input), scene(scene)
+        IGfxBackend &backend,
+        IInputBackend &input,
+        const DemoScene &scene,
+        ISleeper &sleeper,
+        std::chrono::milliseconds framePeriod)
+        : backend(backend),
+          input(input),
+          scene(scene),
+          sleeper(sleeper),
+          framePeriod(framePeriod)
     {
     }
 
@@ -144,6 +152,10 @@ namespace antwika::gfx_demo
             scene.draw(
                 window->renderer(), canvas, *texture, picture.commands);
             window->renderer().present();
+
+            // Paced through an injected sleeper rather than spun.
+            // Otherwise it would take a core flat out.
+            sleeper.sleep(framePeriod);
         }
 
         window->close();

@@ -329,6 +329,11 @@ What it buys beyond the simplification is that opening a screen is no longer a p
 What the button sends is still worked out from the state it read, though, and `UiSink` re-describes the bar between the events of one tick, so two pause presses landing inside the same tick *do* cancel: the second one reads what the first one set and asks for the opposite.
 Making them agree would mean carrying the intended value on distinct pause and resume widget ids, and a city one player builds has not needed it.
 
+**A session goes out the way it comes back.**
+`SessionStore::restore` always went `SaveGame -> CityGrid -> World`, and taking one out now goes `World -> CityGrid -> SaveGame` through `saveGameFrom()`.
+`cityGridOf()` is therefore the one piece of code that walks the `World` and turns a handle into an index -- it already resolved every link there is, walker homes and errand destinations and fire calls and both labour ledgers -- and `saveGameOf` is two lines over it.
+The two directions used to hold the same entity-index-map algorithm written twice, which made a component added to one a component silently missing from the other.
+
 **A save is version 2 and carries the buildings.**
 Kinds, stock, risk and all three countdowns — countdowns reset on load are exactly the lockstep they exist to avoid.
 
