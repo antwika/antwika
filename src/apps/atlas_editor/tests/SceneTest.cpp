@@ -22,6 +22,8 @@
 #include "antwika/atlas_editor/EditorScene.hpp"
 #include "antwika/atlas_editor/EditorState.hpp"
 #include "antwika/atlas_editor/Pixel.hpp"
+#include <antwika/console/ConsolePicture.hpp>
+
 #include "antwika/atlas_editor/RenderSink.hpp"
 #include "antwika/atlas_editor/SceneSnapshot.hpp"
 #include "antwika/atlas_editor/Selection.hpp"
@@ -408,8 +410,10 @@ TEST(RenderSinkTest, Handle_UploadsTheSheetOnceAndAgainWhenItChanges)
     EXPECT_CALL(renderer, createTexture(_)).Times(2);
     EXPECT_CALL(renderer, present()).Times(3);
 
+    const antwika::console::ConsolePicture noConsole;
     RenderSink sink(
-        window, scene, state, overlay, sleeper, kFramePeriod);
+        window, scene, state, overlay, noConsole, sleeper,
+        kFramePeriod);
 
     sink.handle(tickAt(1));
 
@@ -445,8 +449,10 @@ TEST(RenderSinkTest, Handle_UploadsAgainWhenAnUneditedSheetIsReplaced)
 
     EXPECT_CALL(renderer, createTexture(_)).Times(2);
 
+    const antwika::console::ConsolePicture noConsole;
     RenderSink sink(
-        window, scene, state, overlay, sleeper, kFramePeriod);
+        window, scene, state, overlay, noConsole, sleeper,
+        kFramePeriod);
 
     sink.handle(tickAt(1));
 
@@ -473,8 +479,10 @@ TEST(RenderSinkTest, Handle_DrawsNothingOnceTheWindowHasGone)
 
     EXPECT_CALL(window, renderer()).Times(0);
 
+    const antwika::console::ConsolePicture noConsole;
     RenderSink sink(
-        window, scene, state, overlay, sleeper, kFramePeriod);
+        window, scene, state, overlay, noConsole, sleeper,
+        kFramePeriod);
 
     sink.handle(tickAt(1));
 }
@@ -489,8 +497,10 @@ TEST(RenderSinkTest, Handle_IgnoresAnythingThatIsNotATick)
 
     EXPECT_CALL(window, isOpen()).Times(0);
 
+    const antwika::console::ConsolePicture noConsole;
     RenderSink sink(
-        window, scene, state, overlay, sleeper, kFramePeriod);
+        window, scene, state, overlay, noConsole, sleeper,
+        kFramePeriod);
 
     sink.handle(TickEvent{
         .tick = 1, .event = Event{.name = "atlas_editor.nothing"}});

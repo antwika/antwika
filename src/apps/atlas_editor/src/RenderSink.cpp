@@ -25,12 +25,14 @@ namespace antwika::atlas_editor
         const EditorScene &scene,
         const EditorState &state,
         const UiOverlay &overlay,
+        const antwika::console::ConsolePicture &console,
         ISleeper &sleeper,
         const std::chrono::milliseconds framePeriod)
         : window(window),
           scene(scene),
           state(state),
           overlay(overlay),
+          console(console),
           sleeper(sleeper),
           framePeriod(framePeriod)
     {
@@ -86,6 +88,10 @@ namespace antwika::atlas_editor
         // The sheet under it is covered rather than clipped.
         // antwika::gfx has no scissor, and paint order is the depth.
         antwika::ui::paint(view, overlay.commands());
+
+        // The console goes over the bar, being over everything.
+        // Empty and free whenever no console is mounted or it is in.
+        antwika::ui::paint(view, console.commands());
 
         // Last, so whatever reached past the canvas is covered.
         // Nothing at all when the window is the canvas's own shape.

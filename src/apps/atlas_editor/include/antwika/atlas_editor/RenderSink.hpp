@@ -5,6 +5,7 @@
 #include <memory>
 #include <optional>
 
+#include <antwika/console/ConsolePicture.hpp>
 #include <antwika/event/ITickEventSink.hpp>
 #include <antwika/event/TickEvent.hpp>
 #include <antwika/gfx/ITexture.hpp>
@@ -64,6 +65,8 @@ namespace antwika::atlas_editor
          * this sink.
          * @param overlay Holds the toolbar's picture. Must outlive this
          * sink.
+         * @param console Holds the debug console's picture, painted
+         * over everything else. Must outlive this sink.
          * @param sleeper Paces the frames. Must outlive this sink.
          * @param framePeriod How long to hold each frame.
          */
@@ -72,6 +75,7 @@ namespace antwika::atlas_editor
             const EditorScene &scene,
             const EditorState &state,
             const UiOverlay &overlay,
+            const antwika::console::ConsolePicture &console,
             ISleeper &sleeper,
             std::chrono::milliseconds framePeriod);
 
@@ -109,6 +113,7 @@ namespace antwika::atlas_editor
         const EditorScene &scene;
         const EditorState &state;
         const UiOverlay &overlay;
+        const antwika::console::ConsolePicture &console;
         ISleeper &sleeper;
         std::chrono::milliseconds framePeriod;
 

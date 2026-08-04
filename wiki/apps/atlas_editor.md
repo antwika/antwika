@@ -188,6 +188,20 @@ Zooming the view in is what an artist does about that, and the view's zoom is si
 None of it costs a replay anything: the recording holds whichever sheet pixel the pointer was actually over, and that is what a replay repaints.
 `ViewportReplayTest` is where all of that is asserted end to end, against the pixels rather than against the arithmetic.
 
+## The debug console, and a dump that carries its bitmaps beside it
+
+Grave slides `antwika::console`'s sheet down over the top half of the window, on the library's standard terms: `dump_state` writes the whole session to `dump_state.json` and `load_state` reads it back, live only.
+The keys are `console::FixedConsoleControls`' fixed defaults -- Grave, Enter and the Swedish board -- since this application rebinds nothing; Grave conflicts with no editor key, and F10 and Escape stay reserved upstream as before.
+`EditorSink` is the one sink here that reads a key or a pixel, so it is the one sink wrapped in a `console::ConsoleGatedSink`: while the console stands over a pixel, a press or a scroll there is the console's, and Ctrl+C, Ctrl+X and Ctrl+V under an open console reach the field rather than the clipboard.
+
+**The sheet and the clipboard are bitmaps, and neither goes into the JSON.**
+A 512x768 sheet inline would be megabytes of numbers nobody can read; each is written as a PNG beside the document instead -- `dump_state.sheet.png`, and `dump_state.clipboard.png` when anything is in hand -- and the document binds them with the same `fingerprintOf()` the opening announcement uses.
+A load whose PNG does not answer the fingerprint the JSON names is refused whole, exactly as a replay against a changed `--image` is: a dump edited by hand is not repaired.
+Everything else the session is goes into the document member for member -- view, tool, colour, swatch, grid and guide toggles, hovered pixel, marked rectangle, a drag mid-gesture, the counters -- except the status line, which is transient and deliberately dropped.
+
+The `atlas.opening_sheet` announcement and `load_state` never meet, and that is by construction rather than by luck: the announcement checks the sheet a *replay* opens against the sheet its recording was drawn on, and `load_state` answers a deterministic refusal in any run that records or replays.
+A live run may load whatever it likes -- nothing is checking it against a recording, because there is no recording -- and a replayed run re-executes `dump_state` and rewrites the same files while refusing `load_state`, so the announcement always describes the sheet the run actually opened with.
+
 ## How a session ends
 
 Closing the window ends it, and so does Escape; both are input, so both are recorded and both replay -- as F10 does, which ends nothing and fills the screen.

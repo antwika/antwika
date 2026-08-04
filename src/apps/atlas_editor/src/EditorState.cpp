@@ -120,6 +120,11 @@ namespace antwika::atlas_editor
         return sheet.revision() != savedRevision;
     }
 
+    std::uint64_t EditorState::savedAtRevision() const noexcept
+    {
+        return savedRevision;
+    }
+
     void EditorState::selectTool(const Tool tool) noexcept
     {
         selected = tool;
@@ -307,6 +312,17 @@ namespace antwika::atlas_editor
     bool EditorState::hasClipboard() const noexcept
     {
         return clipboard.has_value();
+    }
+
+    const std::optional<Canvas> &
+    EditorState::clipboardImage() const noexcept
+    {
+        return clipboard;
+    }
+
+    std::optional<Gesture> EditorState::currentGesture() const noexcept
+    {
+        return gesture;
     }
 
     Canvas EditorState::lift(const Selection &area) const
@@ -514,6 +530,37 @@ namespace antwika::atlas_editor
         // The clipboard survives, being nobody's sheet in particular.
         clearSelection();
         ++read;
+    }
+
+    void EditorState::restore(SessionRestore snapshot)
+    {
+        sheet = std::move(snapshot.sheet);
+        clipboard = std::move(snapshot.clipboard);
+        where = snapshot.view;
+        selected = snapshot.tool;
+        paint = snapshot.paint;
+        swatch = snapshot.swatch;
+        showGrid = snapshot.showGrid;
+        showGuides = snapshot.showGuides;
+        under = snapshot.under;
+        gesture = snapshot.gesture;
+
+        // Clamped again at the door, exactly as a finished drag is.
+        // A rectangle a dump names has to be inside the sheet it names.
+        // Or copy, cut and carry would index pixels that are not there.
+        marked = snapshot.marked.has_value()
+                     ? clampedTo(*snapshot.marked, sheet.size())
+                     : std::nullopt;
+
+        // Transient, and deliberately not part of a dump.
+        // The last thing said is not part of what the session is.
+        message.reset();
+
+        changes = snapshot.changes;
+        stepped = snapshot.stepped;
+        written = snapshot.written;
+        read = snapshot.read;
+        savedRevision = snapshot.savedRevision;
     }
 
     void EditorState::markSaved() noexcept

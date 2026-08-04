@@ -40,11 +40,14 @@ namespace antwika::atlas_editor
         /**
          * @brief Take an image somebody decoded.
          * @param image The pixels, which must be complete.
+         * @param revision Where the change count starts, zero for a
+         * freshly opened sheet; a state dump restores the count it
+         * carried, so a renderer's upload key reads as it did.
          * @throws AtlasEditorError If the bitmap does not hold exactly
          * the pixels it claims to, since every later access indexes into
          * it arithmetically.
          */
-        explicit Canvas(Bitmap image);
+        explicit Canvas(Bitmap image, std::uint64_t revision = 0);
 
         /**
          * @brief Make a fully transparent image to draw on.

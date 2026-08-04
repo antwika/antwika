@@ -4,7 +4,10 @@
 #include <functional>
 #include <memory>
 #include <optional>
+#include <string>
+#include <vector>
 
+#include <antwika/console/ConsolePicture.hpp>
 #include <antwika/event/IEventSink.hpp>
 #include <antwika/event/ITickEventSink.hpp>
 #include <antwika/gfx/Size.hpp>
@@ -60,6 +63,9 @@ namespace antwika::atlas_editor
         std::uint32_t saves = 0;
         std::uint32_t loads = 0;
         Size image{};
+
+        /** @brief The debug console's history at the end of the run. */
+        std::vector<std::string> console;
     };
 
     /**
@@ -144,6 +150,29 @@ namespace antwika::atlas_editor
          * refuses a mismatch loudly.
          */
         bool announceOpening = false;
+
+        /**
+         * @brief The debug console's own picture, which turns it on.
+         *
+         * On game::GameWiring's shape exactly: absent, no console sink
+         * is registered and the state stays closed, so "no console"
+         * means no console rather than an invisible one.
+         */
+        std::optional<
+            std::reference_wrapper<antwika::console::ConsolePicture>>
+            consoleOverlay = std::nullopt;
+
+        /**
+         * @brief Whether the console's load_state may run.
+         *
+         * False under --record and --replay, for the reason
+         * console::consoleLoadPermitted() states: a load reads a file
+         * whose contents no recording carries.
+         */
+        bool consoleLoadEnabled = true;
+
+        /** @brief Where dump_state writes and load_state reads. */
+        std::string stateDumpPath = "dump_state.json";
 
         /** @brief Sink receiving every dispatched event, tick-stamped. */
         std::optional<std::reference_wrapper<ITickEventSink>>
