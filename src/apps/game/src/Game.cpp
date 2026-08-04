@@ -92,14 +92,13 @@ namespace antwika::game
         Camera &camera = wiring.camera;
         PathIndex &paths = wiring.paths;
 
-        // Fixed in source either way -- see GameWiring::translator.
-        // Seeded from the injected translator when a test gave one.
-        // A Translator holds a locale and nothing else, so this is the
-        // whole of what such a test was saying -- see LocaleState.
-        LocaleState localeState(
-            wiring.translator.has_value()
-                ? wiring.translator->get().locale()
-                : antwika::i18n::kDefaultLocale);
+        // The caller's when it has one -- see GameWiring::locale.
+        // A renderer built beforehand words its scenes off that object.
+        // So the drawn text and the laid-out text change together.
+        // Otherwise one of this loop's own, at the shipped language.
+        LocaleState ownLocale;
+        LocaleState &localeState =
+            wiring.locale.has_value() ? wiring.locale->get() : ownLocale;
         const Translator &translator = localeState.translator();
 
         EventDispatcher dispatcher({wiring.eventSink});

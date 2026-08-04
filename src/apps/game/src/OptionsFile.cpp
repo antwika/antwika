@@ -80,8 +80,8 @@ namespace antwika::game
         // Version 2 added the language the captions are worded in.
         // A version 1 document was written before there was a choice.
         // So it played in the default one, and now says so.
-        // Written before validation, which is what lets the schema
-        // require the member rather than treat it as optional.
+        // Written before validation rather than after it.
+        // Which is what lets the schema require the member.
         class OptionsV1ToV2 final : public antwika::replay::IMigration
         {
         public:
@@ -97,10 +97,18 @@ namespace antwika::game
                 return 2;
             }
 
+            // Only ever read to word a MigrationChain's refusal.
+            // It is the message thrown when a step is not one step.
+            // This one reads 1 and produces 2.
+            // So reaching it means editing the two functions above.
+            // Which breaks the migration rather than feeding it input.
+            // See docs/confirming-unreachable-branches.md.
+            // GCOVR_EXCL_START
             [[nodiscard]] std::string_view name() const noexcept override
             {
                 return "options v1 -> v2: the picked language";
             }
+            // GCOVR_EXCL_STOP
 
             void apply(nlohmann::json &document) const override
             {

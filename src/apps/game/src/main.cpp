@@ -34,6 +34,8 @@
 #include "antwika/game/AppMode.hpp"
 #include "antwika/game/AtlasImage.hpp"
 #include "antwika/game/BindingSource.hpp"
+#include "antwika/game/LocaleSource.hpp"
+#include "antwika/game/LocaleState.hpp"
 #include "antwika/game/BuildingIndex.hpp"
 #include "antwika/game/Camera.hpp"
 #include "antwika/game/ConfigFile.hpp"
@@ -204,14 +206,19 @@ namespace
         const auto atlas3x3 =
             window->renderer().createTexture(atlas3x3Bitmap);
 
-        // **One translator, at kDefaultLocale, fixed in source.**
+        // **One LocaleState, and every scene words itself off it.**
         // Never from a flag and never from the environment.
         // This application lays its toolbar out from that text.
         // And it resolves a recorded click against that layout.
         // So the language may not be a thing a recording lacks.
-        // Changing it is a source change, exactly as kUiCanvas is.
-        const antwika::game::Translator translator{
-            antwika::i18n::kDefaultLocale};
+        // What changed is only where it may come from.
+        // The options screen, folded in the tick path.
+        // And announced into the recording, rather than nowhere.
+        // It starts at the shipped language.
+        // The file's is announced below, so a replay reads its own.
+        antwika::game::LocaleState localeState;
+        const antwika::game::Translator &translator =
+            localeState.translator();
 
         Camera camera(kInitialPan);
         PathIndex paths;
@@ -361,6 +368,10 @@ namespace
         // Upstream of the recorder, so a --record file carries it.
         antwika::game::BindingSource bound(paced, machine.bindings);
 
+        // Outside that again, for the same two reasons.
+        // A replay is handed nothing, so the recording's is what lands.
+        antwika::game::LocaleSource localised(bound, machine.locale);
+
         const auto saveOptions =
             antwika::game::saveCliOptionsFrom(recorded.commandLine);
 
@@ -380,7 +391,7 @@ namespace
             antwika::game::bootstrap(antwika::game::GameWiring{
                 .logger = logger,
                 .eventSink = recorded.eventSink,
-                .inputSource = bound,
+                .inputSource = localised,
                 .codec = codec,
                 .extent = kExtent,
                 .camera = camera,
@@ -404,7 +415,7 @@ namespace
                 .savePath = saveOptions.savePath,
                 .optionsPath = machine.path,
                 .seed = kWorld.seed,
-                .translator = translator,
+                .locale = localeState,
                 .canvas = antwika::game::kUiCanvas,
                 .config = config});
 

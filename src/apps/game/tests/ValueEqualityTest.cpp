@@ -23,6 +23,7 @@
 #include "antwika/game/KeyBindings.hpp"
 #include "antwika/game/LabourQuery.hpp"
 #include "antwika/game/MapView.hpp"
+#include "antwika/game/OptionsFile.hpp"
 #include "antwika/game/Production.hpp"
 #include "antwika/game/SaveGame.hpp"
 #include "antwika/game/SceneSnapshot.hpp"
@@ -608,6 +609,21 @@ namespace
         expectMemberCompared(base, [](GameConfig &t) { t.walkerLimit = 99; });
         expectMemberCompared(
             base, [](GameConfig &t) { t.sustaining[1] = true; });
+    }
+
+
+    TEST(ValueEqualityTest, PlayerOptionsComparesEveryMember)
+    {
+        const antwika::game::PlayerOptions base{};
+
+        expectMemberCompared(
+            base,
+            [](antwika::game::PlayerOptions &t)
+            { t.bindings = reboundLayout(); });
+        expectMemberCompared(
+            base,
+            [](antwika::game::PlayerOptions &t)
+            { t.locale = antwika::i18n::Locale::Swedish; });
     }
 
 } // namespace

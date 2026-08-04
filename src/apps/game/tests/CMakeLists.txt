@@ -51,6 +51,9 @@ antwika_add_app_tests(
         KeyTextTest.cpp
         IsoProjectionTest.cpp
         MainMenuSceneTest.cpp
+        LocaleEventTest.cpp
+        LocaleSourceTest.cpp
+        LocaleStateTest.cpp
         MainMenuSinkTest.cpp
         MenuCommandsTest.cpp
         MenuModalSceneTest.cpp

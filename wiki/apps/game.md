@@ -425,9 +425,20 @@ A slot number is not a role: a walker goes into the lowest free one, so two buil
 `SpawnSystem`'s cadence keeps one walker *of the kind it sends* out at a time, which is what stops a wider array from doubling every building's output on the day it grew; the remaining slot is room for an errand another system sends.
 `world.alive()` is still the authority over every handle, and `ecs::EntityManager` never reusing an index is still why a stale one can only be dead.
 
-**Every caption now goes through [`i18n`](../libraries/i18n.md)**, and the locale is fixed at `kDefaultLocale` in `main()`.
-That is not a preference: an `antwika::ui` layout is a function of the strings declared into it and a hit-test is a function of that layout, so a run recorded in one language and replayed in another would resolve one recorded click to a different button.
+**Every caption goes through [`i18n`](../libraries/i18n.md), and the language is picked on the options screen while the game is running.**
 `toolLabel()` and `pauseLabel()` return a `MessageId` rather than words, and `Toolbar`, `GridScene`, `MainMenuScene`, `MenuModalScene` and `SaveLoadScene` take a `const Translator &` like any other injected collaborator.
+
+The locale was fixed at `kDefaultLocale` in `main()` for as long as it could be, and the reason it could not stay there is worth stating precisely, because it is the reason the design took the shape it did.
+An `antwika::ui` layout is a function of the strings declared into it and a hit-test is a function of that layout, so a run recorded in one language and replayed in another resolves one recorded click to a different button.
+The answer is not to keep the language out of the recording but to put it *in*: `LocaleState` owns the `Translator`, is an `ITickEventSink` registered immediately after `InputFold` beside `AppModeState`, and **stages** a change that lands at the tick boundary — so the press that asked for a language is read on the layout it was made on, and the same press cannot be resolved against two different layouts.
+Every scene was already holding `const Translator &`, so pointing them at `LocaleState::translator()` changed no scene's signature at all; the constness is what keeps this the only place a language can change.
+
+**`LocaleSource` announces only the locale a run starts in**, in `BindingSource`'s exact shape and for its exact reason.
+That value came from the player's options file, no replayed input implies it, and the cross-module rule that only externally-supplied input is persisted therefore says outright that it has to be recorded — so a `--record` file carries the language the session was played in, and a replay announces nothing because the recording already holds the announcement.
+A language *picked* on the options screen is not an event: the click is already recorded, so a replay reaches `MainMenuSink` again and stages the same language, which is the same reason rebinding a key defines no event.
+A locale equal to `kDefaultLocale` is not announced either, so a player who never opened the screen records exactly what they recorded before any of this existed.
+
+**The options file went to version 2 for it**, giving `standardOptionsMigrations()` its first real step: a version 1 document has its language written in as the default's tag before validation, which is what lets the schema require the member rather than treat it as optional.
 `buildingKindName()` deliberately does *not*: that is the name a save file writes, and a schema is not something a person reads.
 
 **The save format went to version 3, and `SaveMigrationV2ToV3.cpp` is the one step.**
@@ -768,7 +779,8 @@ The document is read `parse -> read version -> migrate -> validate -> decode` th
 The shipped `assets/config.json` states the defaults outright, and `ConfigFileTest` pins that -- so shipping the file changes nothing on its own, and what each number is called and currently is can be read off it.
 
 **What may not live in it is anything the meaning of a click depends on.**
-The canvas, the layout, the zoom table, the atlas geometry and the locale all decide what a recorded pixel means, so a config file reaching any of them would re-aim every recorded click; they stay in source, where changing one is visibly a change to the game.
+The canvas, the layout, the zoom table and the atlas geometry all decide what a recorded pixel means, so a config file reaching any of them would re-aim every recorded click; they stay in source, where changing one is visibly a change to the game.
+The locale belongs on that list too and is the one member of it a player may change, which is exactly why it is not in the config file either: it is announced into the recording instead, so a replay reads the language off the session rather than off whatever the replaying machine's file happens to say.
 The tuning is part of the game's definition on exactly the terms the source and the art are: nothing about it is recorded, a replay assumes the config it was recorded under, and replaying a session under an edited config is running it on a different game.
 That is also why the schema constants a *save* is validated against -- `kCoverageFull`, `kRoamingSteps`, `kTicksPerStep` -- stay constants: a bound a persisted file is checked against may not drift with a file somebody edits.
 

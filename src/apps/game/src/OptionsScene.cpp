@@ -130,15 +130,15 @@ namespace antwika::game
 
                 for (const auto locale : antwika::i18n::kAllLocales)
                 {
-                    // Named through the *active* translator, so the
-                    // list reads in the language now on rather than
-                    // each entry in its own -- see i18n::MessageId.
+                    // Named through the *active* translator.
+                    // So the list reads in the language now on.
+                    // Rather than each entry in its own.
                     auto name =
                         languages.text(antwika::i18n::nameIdOf(locale));
 
-                    // The one on marked in the text rather than by a
-                    // colour, so the mark survives a theme and is
-                    // readable to a test asserting on the caption.
+                    // Marked in the text rather than by a colour.
+                    // So the mark survives a theme change.
+                    // And a test can assert on the caption.
                     if (locale == active)
                     {
                         name = translator.formatted(

@@ -108,8 +108,8 @@ namespace antwika::game
     {
         // Described against the language this tick is running in.
         // A change asked for below lands at the next tick's boundary.
-        // So the press that asked was resolved against the layout it
-        // was made on, which is what LocaleState stages for.
+        // So the press that asked was read on the layout it was made on.
+        // Which is the whole of what LocaleState stages for.
         auto frame = optionsScene.describe(
             overlay.canvas(),
             pointerNow(pressed),
@@ -135,8 +135,8 @@ namespace antwika::game
             if (activated == optionsWidgets::languageWidget(picked))
             {
                 // Staged, never written to the wire.
-                // The click is already recorded, so a replay reaches
-                // this line again and stages the same language.
+                // The click that got here is already in the recording.
+                // So a replay reaches this line and stages the same.
                 locale.request(picked);
                 options.setLocale(picked);
             }

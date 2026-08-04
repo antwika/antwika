@@ -8,6 +8,7 @@
 #include <antwika/event/TickEvent.hpp>
 #include <antwika/gfx/Point.hpp>
 #include <antwika/gfx/Size.hpp>
+#include <antwika/i18n/Locale.hpp>
 #include <antwika/input/InputEvent.hpp>
 #include <antwika/input/InputEventCodec.hpp>
 #include <antwika/input/MouseButton.hpp>
@@ -21,6 +22,7 @@
 #include "antwika/game/AppMode.hpp"
 #include "antwika/game/InputFold.hpp"
 #include "antwika/game/MainMenuScene.hpp"
+#include "antwika/game/LocaleState.hpp"
 #include "antwika/game/MainMenuSink.hpp"
 #include "antwika/game/Action.hpp"
 #include "antwika/game/KeyBindings.hpp"
@@ -28,6 +30,7 @@
 #include "antwika/game/OptionsState.hpp"
 #include "antwika/game/UiOverlay.hpp"
 
+using antwika::game::tests::kLanguages;
 using antwika::game::tests::kTranslator;
 
 using antwika::engine::StopSignal;
@@ -60,6 +63,11 @@ namespace optionsWidgets = antwika::game::optionsWidgets;
 
 namespace
 {
+    // The language every layout in this file is described in.
+    // Named once so a call to describe() still fits a line.
+    // And named rather than defaulted on purpose.
+    // Which language a layout was built in is what these rest on.
+    constexpr auto kLocale = antwika::i18n::kDefaultLocale;
     constexpr Size kCanvas{.width = 1024, .height = 640};
 
     // The corner: the menu's card is centred, so nothing is there.
@@ -86,7 +94,9 @@ namespace
         [[nodiscard]] Position pixelOnOptions(WidgetId id) const
         {
             const auto centre = widgetCentre(
-                optionsScene.describe(kCanvas, Pointer{}, options), id);
+                optionsScene.describe(
+                    kCanvas, Pointer{}, options, kLocale),
+                id);
 
             if (!centre.has_value())
             {
@@ -132,7 +142,9 @@ namespace
         MainMenuScene scene{kTranslator};
         StopSignal stop;
         OptionsState options;
-        OptionsScene optionsScene{kTranslator};
+        OptionsScene optionsScene{kTranslator, kLanguages};
+        antwika::game::LocaleState localeState{};
+
         MainMenuSink sink{
             mode,
             overlay,
@@ -140,7 +152,8 @@ namespace
             scene,
             stop,
             options,
-            optionsScene};
+            optionsScene,
+            localeState};
     };
 } // namespace
 
@@ -255,7 +268,9 @@ TEST_F(MainMenuSinkTest, AMiddlePressActivatesNothing)
 // So one overlay, one scene to paint it, and a flag saying which.
 TEST_F(MainMenuSinkTest, PressingOptionsShowsTheKeyBindings)
 {
-    pressAt(pixelOn(menuWidgets::kOptions));
+    const auto at = pixelOn(menuWidgets::kOptions);
+
+    pressAt(at);
 
     EXPECT_TRUE(options.open());
 
@@ -263,9 +278,23 @@ TEST_F(MainMenuSinkTest, PressingOptionsShowsTheKeyBindings)
     EXPECT_EQ(mode.next(), AppMode::MainMenu);
 
     tick();
+
+    // Described at the pointer the sink actually has.
+    // Still where the press left it, and still held.
+    // Whatever it lands on is drawn hovered.
+    // So comparing against an empty pointer agrees only by luck.
+    // That is a fact about the card's height, not about this sink.
     EXPECT_EQ(
         overlay.commands(),
-        optionsScene.describe(kCanvas, Pointer{}, options).commands);
+        optionsScene
+            .describe(
+                kCanvas,
+                Pointer{
+                    .position = Point{.x = at.x, .y = at.y},
+                    .down = true},
+                options,
+                kLocale)
+            .commands);
 }
 
 TEST_F(MainMenuSinkTest, TheOptionsScreenIsLeavable)
@@ -325,4 +354,51 @@ TEST_F(MainMenuSinkTest, APressOnNoRowAsksForNothing)
 
     EXPECT_TRUE(options.open());
     EXPECT_FALSE(options.awaiting().has_value());
+}
+
+// The press is recorded; the change is worked out from it again.
+// So this stages rather than writing anything to the wire.
+TEST_F(MainMenuSinkTest, PressingALanguageStagesItForTheNextTick)
+{
+    pressAt(pixelOn(menuWidgets::kOptions));
+    tick();
+
+    pressAt(pixelOnOptions(
+        optionsWidgets::languageWidget(antwika::i18n::Locale::Swedish)));
+
+    EXPECT_EQ(localeState.locale(), kLocale);
+    EXPECT_EQ(localeState.next(), antwika::i18n::Locale::Swedish);
+
+    // And it lands at the boundary the state itself owns.
+    localeState.handle(TickEvent{
+        .tick = 0, .event = Event{.name = antwika::engine::events::kTick}});
+
+    EXPECT_EQ(localeState.locale(), antwika::i18n::Locale::Swedish);
+}
+
+// The preference is written down too.
+// So the file carries it and the next live run announces it.
+// See LocaleSource.
+TEST_F(MainMenuSinkTest, PressingALanguageAlsoRemembersThePreference)
+{
+    pressAt(pixelOn(menuWidgets::kOptions));
+    tick();
+
+    EXPECT_EQ(options.locale(), kLocale);
+
+    pressAt(pixelOnOptions(
+        optionsWidgets::languageWidget(antwika::i18n::Locale::Swedish)));
+
+    EXPECT_EQ(options.locale(), antwika::i18n::Locale::Swedish);
+}
+
+TEST_F(MainMenuSinkTest, APressOnNoLanguageChangesNothing)
+{
+    pressAt(pixelOn(menuWidgets::kOptions));
+    tick();
+
+    pressAt(kOffEveryItem);
+
+    EXPECT_EQ(localeState.next(), kLocale);
+    EXPECT_EQ(options.locale(), kLocale);
 }
