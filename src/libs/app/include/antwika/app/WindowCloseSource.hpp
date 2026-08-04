@@ -5,7 +5,7 @@
 #include <antwika/event/Event.hpp>
 #include <antwika/gfx/IGfxBackend.hpp>
 #include <antwika/gfx/IWindow.hpp>
-#include <antwika/simulation/ITickEventSource.hpp>
+#include <antwika/event/ITickEventSource.hpp>
 #include <antwika/time/Tick.hpp>
 
 namespace antwika::app
@@ -14,7 +14,7 @@ namespace antwika::app
     using antwika::event::Event;
     using antwika::gfx::IGfxBackend;
     using antwika::gfx::IWindow;
-    using antwika::simulation::ITickEventSource;
+    using antwika::event::ITickEventSource;
 
     /**
      * @brief Turns closing the window into an engine.stop event, and

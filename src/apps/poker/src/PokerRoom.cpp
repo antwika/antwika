@@ -12,6 +12,7 @@
 #include <antwika/engine/StopSignal.hpp>
 #include <antwika/event/Event.hpp>
 #include <antwika/event/EventDispatcher.hpp>
+#include <antwika/event/ITickEventSource.hpp>
 #include <antwika/event/TickedEventDispatcher.hpp>
 #include <antwika/gfx/ITexture.hpp>
 #include <antwika/gfx/IWindow.hpp>
@@ -42,6 +43,7 @@ namespace antwika::poker
     using antwika::engine::StopSignal;
     using antwika::event::Event;
     using antwika::event::EventDispatcher;
+    using antwika::event::ITickEventSource;
     using antwika::event::TickedEventDispatcher;
     using antwika::gfx::ITexture;
     using antwika::gfx::IWindow;
@@ -52,8 +54,8 @@ namespace antwika::poker
     using antwika::holdem::Table;
     using antwika::holdem::TableRunner;
     using antwika::log::Level;
-    using antwika::simulation::EngineLoop;
     using antwika::rng::SplitMix64Rng;
+    using antwika::simulation::EngineLoop;
 
     namespace
     {
@@ -159,7 +161,10 @@ namespace antwika::poker
                 window.sleeper,
                 window.framePeriod,
                 config.tableName,
-                atlasTexture.get());
+                atlasTexture
+                    ? std::optional<std::reference_wrapper<const ITexture>>(
+                          *atlasTexture)
+                    : std::nullopt);
 
             // After roomSink, which is what steps the table.
             // A frame drawn before that shows the previous tick.

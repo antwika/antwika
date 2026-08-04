@@ -5,7 +5,7 @@
 #include <antwika/event/Event.hpp>
 #include <antwika/input/IClipboard.hpp>
 #include <antwika/input/IInputEventCodec.hpp>
-#include <antwika/simulation/ITickEventSource.hpp>
+#include <antwika/event/ITickEventSource.hpp>
 #include <antwika/time/Tick.hpp>
 
 namespace antwika::music_editor
@@ -14,7 +14,7 @@ namespace antwika::music_editor
     using antwika::event::Event;
     using antwika::input::IClipboard;
     using antwika::input::IInputEventCodec;
-    using antwika::simulation::ITickEventSource;
+    using antwika::event::ITickEventSource;
 
     /**
      * @brief Turns Ctrl+V into the clipboard's characters, as an event.

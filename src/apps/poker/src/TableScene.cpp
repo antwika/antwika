@@ -3,6 +3,8 @@
 #include <algorithm>
 #include <cstddef>
 #include <cstdint>
+#include <functional>
+#include <optional>
 #include <span>
 #include <string>
 
@@ -260,7 +262,7 @@ namespace antwika::poker
         IRenderer &renderer,
         Size canvas,
         const TableSnapshot &snapshot,
-        const ITexture *atlas) const
+        OptionalAtlas atlas) const
     {
         // ui::paint() deliberately neither clears nor presents.
         // So the felt behind the picture is still this scene's to lay.
@@ -272,13 +274,16 @@ namespace antwika::poker
 
         // No atlas is an ordinary state rather than a failure.
         // A test draws through a mock that was never handed one.
-        if (atlas != nullptr)
+        if (atlas.has_value())
         {
             for (const auto &blit :
                  describeArt(canvas, frame.rects, snapshot))
             {
                 renderer.drawTexture(
-                    *atlas, blit.source, blit.destination, blit.tint);
+                    atlas->get(),
+                    blit.source,
+                    blit.destination,
+                    blit.tint);
             }
         }
 

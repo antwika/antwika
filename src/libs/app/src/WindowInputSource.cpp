@@ -1,14 +1,16 @@
-#include "antwika/simulation/WindowInputSource.hpp"
+#include "antwika/app/WindowInputSource.hpp"
 
 #include <variant>
 
 #include <antwika/engine/Events.hpp>
+#include <antwika/event/ITickEventSource.hpp>
 #include <antwika/gfx/WindowEvent.hpp>
 
-namespace antwika::simulation
+namespace antwika::app
 {
 
     using antwika::engine::events::kStop;
+    using antwika::event::ITickEventSource;
     using antwika::gfx::CloseRequested;
 
     WindowInputSource::WindowInputSource(
@@ -47,4 +49,4 @@ namespace antwika::simulation
         return events;
     } // GCOVR_EXCL_LINE
 
-} // namespace antwika::simulation
+} // namespace antwika::app

@@ -4,14 +4,14 @@
 #include <vector>
 
 #include <antwika/event/Event.hpp>
-#include <antwika/simulation/ITickEventSource.hpp>
+#include <antwika/event/ITickEventSource.hpp>
 #include <antwika/time/Tick.hpp>
 
 namespace antwika::app
 {
 
     using antwika::event::Event;
-    using antwika::simulation::ITickEventSource;
+    using antwika::event::ITickEventSource;
 
     /**
      * @brief Ends a session after a given number of ticks, by asking

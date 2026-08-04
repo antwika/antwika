@@ -5,14 +5,14 @@
 
 #include <antwika/event/Event.hpp>
 #include <antwika/event/TickEvent.hpp>
-#include <antwika/simulation/ITickEventSource.hpp>
+#include <antwika/event/ITickEventSource.hpp>
 
 namespace antwika::replay
 {
 
     using antwika::event::Event;
     using antwika::event::TickEvent;
-    using antwika::simulation::ITickEventSource;
+    using antwika::event::ITickEventSource;
 
     /**
      * @brief ITickEventSource that feeds a recorded or hand-scripted

@@ -13,7 +13,7 @@
 #include <antwika/input/IClipboard.hpp>
 #include <antwika/input/IInputEventCodec.hpp>
 #include <antwika/log/ILogger.hpp>
-#include <antwika/simulation/ITickEventSource.hpp>
+#include <antwika/event/ITickEventSource.hpp>
 #include <antwika/sound/IDevice.hpp>
 #include <antwika/synth/SynthMixer.hpp>
 #include <antwika/time/ISleeper.hpp>
@@ -31,7 +31,7 @@ namespace antwika::music_editor
     using antwika::event::ITickEventSink;
     using antwika::input::IInputEventCodec;
     using antwika::log::ILogger;
-    using antwika::simulation::ITickEventSource;
+    using antwika::event::ITickEventSource;
 
     /**
      * @brief What one run leaves behind, for a caller or a test.
@@ -90,10 +90,14 @@ namespace antwika::music_editor
         /**
          * @brief Where a copy is mirrored to, or null.
          *
-         * Null on a replay, so replaying a session leaves this
+         * Absent on a replay, so replaying a session leaves this
          * machine's clipboard alone; see EditorSink's constructor.
+         * An optional rather than a pointer, for the reason
+         * GameWiring's own optionals give: absent means absent, and
+         * there is no third state.
          */
-        input::IClipboard *clipboard = nullptr;
+        std::optional<std::reference_wrapper<input::IClipboard>>
+            clipboard = std::nullopt;
 
         /**
          * @brief Where the menu's save writes and its load reads.

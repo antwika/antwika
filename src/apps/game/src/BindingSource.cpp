@@ -1,4 +1,5 @@
 #include "antwika/game/BindingSource.hpp"
+#include <antwika/event/ITickEventSource.hpp>
 
 #include <utility>
 
@@ -8,6 +9,8 @@
 
 namespace antwika::game
 {
+
+    using antwika::event::ITickEventSource;
 
     BindingSource::BindingSource(
         ITickEventSource &inner,

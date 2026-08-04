@@ -6,7 +6,7 @@
 #include <antwika/gfx/IWindow.hpp>
 #include <antwika/input/IInputEventCodec.hpp>
 #include <antwika/input/Key.hpp>
-#include <antwika/simulation/ITickEventSource.hpp>
+#include <antwika/event/ITickEventSource.hpp>
 #include <antwika/time/Tick.hpp>
 
 namespace antwika::app
@@ -16,7 +16,7 @@ namespace antwika::app
     using antwika::gfx::IWindow;
     using antwika::input::IInputEventCodec;
     using antwika::input::Key;
-    using antwika::simulation::ITickEventSource;
+    using antwika::event::ITickEventSource;
 
     /**
      * @brief Makes a nominated key fill the screen with the window, and

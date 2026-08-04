@@ -1,10 +1,13 @@
 #include "antwika/atlas_editor/OpeningSheet.hpp"
+#include <antwika/event/ITickEventSource.hpp>
 
 #include <string>
 #include <utility>
 
 namespace antwika::atlas_editor
 {
+
+    using antwika::event::ITickEventSource;
 
     namespace
     {

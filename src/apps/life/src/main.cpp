@@ -19,7 +19,7 @@
 #include <antwika/log/Level.hpp>
 #include <antwika/replay/ReplaySource.hpp>
 #include <antwika/simulation/TickPacer.hpp>
-#include <antwika/simulation/WindowInputSource.hpp>
+#include <antwika/app/WindowInputSource.hpp>
 #include <antwika/time/SystemSleeper.hpp>
 
 #include "antwika/life/BoardScene.hpp"
@@ -42,7 +42,7 @@ using antwika::life::RenderSystem;
 using antwika::log::Level;
 using antwika::replay::ReplaySource;
 using antwika::simulation::TickPacer;
-using antwika::simulation::WindowInputSource;
+using antwika::app::WindowInputSource;
 using antwika::time::SystemSleeper;
 
 namespace

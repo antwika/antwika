@@ -1,4 +1,5 @@
 #pragma once
+#include <antwika/event/ITickEventSource.hpp>
 
 /**
  * @file
@@ -6,6 +7,8 @@
  */
 namespace antwika::engine::events
 {
+
+    using antwika::event::ITickEventSource;
 
     /**
      * @brief Dispatched by Engine::step() once per fixed tick, after

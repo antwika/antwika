@@ -1,6 +1,8 @@
 #pragma once
 
 #include <chrono>
+#include <functional>
+#include <optional>
 #include <string>
 
 #include <antwika/event/ITickEventSink.hpp>
@@ -20,6 +22,7 @@ namespace antwika::poker
     using antwika::event::ITickEventSink;
     using antwika::event::TickEvent;
     using antwika::gfx::ITexture;
+
     using antwika::gfx::IWindow;
     using antwika::gfx::Size;
     using antwika::holdem::Table;
@@ -67,7 +70,7 @@ namespace antwika::poker
             ISleeper &sleeper,
             std::chrono::milliseconds framePeriod,
             std::string tableName,
-            const ITexture *atlas = nullptr);
+            OptionalAtlas atlas = std::nullopt);
 
         TableRenderSink(const TableRenderSink &) = delete;
         TableRenderSink(TableRenderSink &&) = delete;
@@ -97,7 +100,7 @@ namespace antwika::poker
         ISleeper &sleeper;
         std::chrono::milliseconds framePeriod;
         std::string tableName;
-        const ITexture *atlas;
+        OptionalAtlas atlas;
     };
 
 } // namespace antwika::poker

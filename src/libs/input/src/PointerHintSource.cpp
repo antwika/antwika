@@ -1,4 +1,5 @@
 #include "antwika/input/PointerHintSource.hpp"
+#include <antwika/event/ITickEventSource.hpp>
 
 #include <optional>
 #include <variant>
@@ -8,6 +9,8 @@
 
 namespace antwika::input
 {
+
+    using antwika::event::ITickEventSource;
 
     namespace
     {

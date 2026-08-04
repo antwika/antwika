@@ -3,6 +3,7 @@
 #include <string>
 #include <variant>
 
+#include <antwika/event/ITickEventSource.hpp>
 #include <antwika/input/InputEvent.hpp>
 #include <antwika/input/Key.hpp>
 
@@ -11,6 +12,8 @@
 
 namespace antwika::music_editor
 {
+
+    using antwika::event::ITickEventSource;
 
     PasteSource::PasteSource(
         ITickEventSource &inner,

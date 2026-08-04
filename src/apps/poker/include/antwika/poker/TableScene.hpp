@@ -2,6 +2,8 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <functional>
+#include <optional>
 #include <span>
 
 #include <vector>
@@ -26,6 +28,15 @@ namespace antwika::poker
     using antwika::gfx::Color;
     using antwika::gfx::IRenderer;
     using antwika::gfx::ITexture;
+
+    /**
+     * @brief An atlas to blit from, or nothing at all.
+     *
+     * An optional rather than a pointer: absent means absent, and
+     * there is no third state a caller has to think about.
+     */
+    using OptionalAtlas =
+        std::optional<std::reference_wrapper<const ITexture>>;
     using antwika::gfx::Rect;
     using antwika::gfx::Size;
     using antwika::ui::Context;
@@ -95,7 +106,7 @@ namespace antwika::poker
             IRenderer &renderer,
             Size canvas,
             const TableSnapshot &snapshot,
-            const ITexture *atlas = nullptr) const;
+            OptionalAtlas atlas = std::nullopt) const;
 
         /**
          * @brief Work out the atlas blits without drawing them.

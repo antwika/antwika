@@ -2,10 +2,13 @@
 
 #include <variant>
 
+#include <antwika/event/ITickEventSource.hpp>
 #include <antwika/input/InputEvent.hpp>
 
 namespace antwika::app
 {
+
+    using antwika::event::ITickEventSource;
 
     FullscreenToggleSource::FullscreenToggleSource(
         ITickEventSource &inner,

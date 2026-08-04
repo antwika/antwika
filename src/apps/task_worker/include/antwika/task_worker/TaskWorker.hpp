@@ -11,7 +11,7 @@
 #include <antwika/event/IEventSink.hpp>
 #include <antwika/event/ITickEventSink.hpp>
 #include <antwika/log/ILogger.hpp>
-#include <antwika/simulation/ITickEventSource.hpp>
+#include <antwika/event/ITickEventSource.hpp>
 #include <antwika/time/Tick.hpp>
 
 #include "antwika/task_worker/TaskRegistry.hpp"
@@ -26,7 +26,7 @@ namespace antwika::task_worker
     using antwika::event::IEventSink;
     using antwika::event::ITickEventSink;
     using antwika::log::ILogger;
-    using antwika::simulation::ITickEventSource;
+    using antwika::event::ITickEventSource;
 
     /**
      * @brief Announces the run in the log and starts the engine.

@@ -31,6 +31,11 @@ It holds no simulation logic of its own — everything here is glue that was dup
 [`animation`](animation.md), [`cli`](cli.md), [`event`](event.md), [`gfx`](gfx.md), [`input`](input.md), [`log`](log.md), [`replay`](replay.md), [`simulation`](simulation.md), [`sound`](sound.md), [`time`](time.md), [`ui`](ui.md).
 It is the widest library in the project, and that is the point: it is where the seams are joined, so no other library has to know about more than its own neighbours.
 
+## WindowInputSource
+
+**Turning a window's close request into the `engine.stop` that ends a run** lives here rather than in [`simulation`](simulation.md), because it is the one thing in that library that had to know what a window is.
+Moving it took `gfx` out of the tick loop's dependency list entirely.
+
 ## The two things every app kept writing twice
 
 `storeIfLive()` is **the guard that keeps a replay from writing**: reading a machine's file would resolve a recorded session against state the recording never carried, and writing it would leave whoever replayed somebody else's session carrying its result.

@@ -8,7 +8,6 @@ find_package(GTest REQUIRED)
 add_executable(antwika_simulation_tests
     EngineLoopTest.cpp
     TickPacerTest.cpp
-    WindowInputSourceTest.cpp
 )
 
 target_link_libraries(antwika_simulation_tests

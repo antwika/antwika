@@ -1,4 +1,5 @@
 #include "antwika/simulation/EngineLoop.hpp"
+#include <antwika/event/ITickEventSource.hpp>
 
 #include <utility>
 
@@ -6,6 +7,8 @@
 
 namespace antwika::simulation
 {
+
+    using antwika::event::ITickEventSource;
 
     EngineLoop::EngineLoop(
         IEngine &engine,

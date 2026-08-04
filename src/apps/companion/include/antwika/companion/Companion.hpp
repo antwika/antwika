@@ -12,7 +12,7 @@
 #include <antwika/gfx/Size.hpp>
 #include <antwika/input/IInputEventCodec.hpp>
 #include <antwika/log/ILogger.hpp>
-#include <antwika/simulation/ITickEventSource.hpp>
+#include <antwika/event/ITickEventSource.hpp>
 #include <antwika/time/ISleeper.hpp>
 #include <antwika/time/Tick.hpp>
 
@@ -28,7 +28,7 @@ namespace antwika::companion
     using antwika::gfx::Size;
     using antwika::input::IInputEventCodec;
     using antwika::log::ILogger;
-    using antwika::simulation::ITickEventSource;
+    using antwika::event::ITickEventSource;
     using antwika::time::ISleeper;
 
     /**

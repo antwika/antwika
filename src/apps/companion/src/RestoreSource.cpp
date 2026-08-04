@@ -1,4 +1,5 @@
 #include "antwika/companion/RestoreSource.hpp"
+#include <antwika/event/ITickEventSource.hpp>
 
 #include <utility>
 
@@ -9,6 +10,8 @@
 
 namespace antwika::companion
 {
+
+    using antwika::event::ITickEventSource;
 
     Event restoreEvent(const CompanionMemory &memory)
     {

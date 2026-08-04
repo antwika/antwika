@@ -1,6 +1,7 @@
 #pragma once
 
 #include <chrono>
+#include <functional>
 #include <string>
 #include <utility>
 
@@ -111,7 +112,7 @@ namespace antwika::music_editor::tests
                       .rate = format.rate,
                       .framesPerCycle =
                           sequencer::Rational(format.rate)},
-                  &osClipboard,
+                  std::ref(osClipboard),
                   stopSignal,
                   scoresDirectory,
                   writes}

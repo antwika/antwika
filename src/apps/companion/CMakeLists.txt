@@ -1,33 +1,27 @@
-add_executable(antwika_companion
-    src/Companion.cpp
-    src/ConfigFile.cpp
-    src/DayMood.cpp
-    src/FilePetStore.cpp
-    src/LifeStage.cpp
-    src/Lineage.cpp
-    src/Messages.cpp
-    src/PacingSink.cpp
-    src/Pet.cpp
-    src/PetLayout.cpp
-    src/PetSave.cpp
-    src/PetScene.cpp
-    src/PetSink.cpp
-    src/PetSnapshot.cpp
-    src/PropSink.cpp
-    src/RestoreSink.cpp
-    src/RestoreSource.cpp
-    src/RenderSink.cpp
-    src/ReviveSink.cpp
-    src/main.cpp
-)
-
-target_include_directories(antwika_companion
-    PRIVATE
-        ${CMAKE_CURRENT_SOURCE_DIR}/include
-)
-
-target_link_libraries(antwika_companion
-    PRIVATE
+antwika_add_app(
+    NAME companion
+    SOURCES
+        src/Companion.cpp
+        src/ConfigFile.cpp
+        src/DayMood.cpp
+        src/FilePetStore.cpp
+        src/LifeStage.cpp
+        src/Lineage.cpp
+        src/Messages.cpp
+        src/PacingSink.cpp
+        src/Pet.cpp
+        src/PetLayout.cpp
+        src/PetSave.cpp
+        src/PetScene.cpp
+        src/PetSink.cpp
+        src/PetSnapshot.cpp
+        src/PropSink.cpp
+        src/RestoreSink.cpp
+        src/RestoreSource.cpp
+        src/RenderSink.cpp
+        src/ReviveSink.cpp
+        src/main.cpp
+    LIBS
         antwika::animation
         antwika::app
         antwika::config
@@ -43,19 +37,7 @@ target_link_libraries(antwika_companion
         antwika::simulation
         antwika::time
         antwika::tween
-)
-
-if(BUILD_TESTING AND NOT CMAKE_CROSSCOMPILING)
-    add_subdirectory(tests)
-endif()
-
-antwika_bundle_app(
-    TARGET antwika_companion
     ASSETS
         assets/config.json
         replays/demo.jsonl
-)
-
-install(TARGETS antwika_companion
-    RUNTIME DESTINATION bin
 )

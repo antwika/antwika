@@ -1,52 +1,25 @@
-find_package(GTest REQUIRED)
-
-add_executable(antwika_companion_tests
-    ${CMAKE_CURRENT_SOURCE_DIR}/../src/Companion.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/../src/ConfigFile.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/../src/DayMood.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/../src/FilePetStore.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/../src/LifeStage.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/../src/Lineage.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/../src/Messages.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/../src/PacingSink.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/../src/Pet.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/../src/PetLayout.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/../src/PetSave.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/../src/PetScene.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/../src/PetSink.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/../src/PetSnapshot.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/../src/PropSink.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/../src/RestoreSink.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/../src/RestoreSource.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/../src/RenderSink.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/../src/ReviveSink.cpp
-    CompanionTest.cpp
-    ConfigFileTest.cpp
-    DayMoodTest.cpp
-    FilePetStoreTest.cpp
-    LifeStageTest.cpp
-    LineageTest.cpp
-    MessagesTest.cpp
-    PetLayoutTest.cpp
-    PetSaveTest.cpp
-    PetSceneTest.cpp
-    PetSnapshotTest.cpp
-    PetTest.cpp
-    RestoreSinkTest.cpp
-    RestoreSourceTest.cpp
-    ReviveSinkTest.cpp
-    RunIntegrationTest.cpp
-    SessionPersistenceTest.cpp
-    SinksTest.cpp
-)
-
-target_include_directories(antwika_companion_tests
-    PRIVATE
-        ${CMAKE_CURRENT_SOURCE_DIR}/../include
-)
-
-target_link_libraries(antwika_companion_tests
-    PRIVATE
+antwika_add_app_tests(
+    APP companion
+    TESTS
+        CompanionTest.cpp
+        ConfigFileTest.cpp
+        DayMoodTest.cpp
+        FilePetStoreTest.cpp
+        LifeStageTest.cpp
+        LineageTest.cpp
+        MessagesTest.cpp
+        PetLayoutTest.cpp
+        PetSaveTest.cpp
+        PetSceneTest.cpp
+        PetSnapshotTest.cpp
+        PetTest.cpp
+        RestoreSinkTest.cpp
+        RestoreSourceTest.cpp
+        ReviveSinkTest.cpp
+        RunIntegrationTest.cpp
+        SessionPersistenceTest.cpp
+        SinksTest.cpp
+    LIBS
         antwika::animation
         antwika::app
         antwika::config
@@ -66,5 +39,3 @@ target_link_libraries(antwika_companion_tests
         antwika::tween
         gtest::gtest
 )
-
-antwika_bundle_test(TARGET antwika_companion_tests)

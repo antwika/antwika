@@ -1,7 +1,10 @@
 #include "antwika/input/InputPipeline.hpp"
+#include <antwika/event/ITickEventSource.hpp>
 
 namespace antwika::input
 {
+
+    using antwika::event::ITickEventSource;
 
     InputPipeline::InputPipeline(
         ITickEventSource &inner,

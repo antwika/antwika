@@ -4,6 +4,7 @@
 #include <cstdint>
 #include <optional>
 
+#include <antwika/event/ITickEventSource.hpp>
 #include <antwika/input/Key.hpp>
 
 #include "antwika/game/Action.hpp"
@@ -11,6 +12,7 @@
 namespace antwika::game
 {
 
+    using antwika::event::ITickEventSource;
     using antwika::input::Key;
 
     /**

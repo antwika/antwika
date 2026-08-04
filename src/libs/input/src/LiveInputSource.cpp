@@ -1,7 +1,10 @@
 #include "antwika/input/LiveInputSource.hpp"
+#include <antwika/event/ITickEventSource.hpp>
 
 namespace antwika::input
 {
+
+    using antwika::event::ITickEventSource;
 
     LiveInputSource::LiveInputSource(
         ITickEventSource &inner,

@@ -16,7 +16,7 @@
 #include <antwika/log/Level.hpp>
 #include <antwika/replay/ReplaySource.hpp>
 #include <antwika/simulation/TickPacer.hpp>
-#include <antwika/simulation/WindowInputSource.hpp>
+#include <antwika/app/WindowInputSource.hpp>
 #include <antwika/time/SystemSleeper.hpp>
 
 #include "antwika/task_worker/Messages.hpp"
@@ -31,7 +31,7 @@ using antwika::gfx::WindowDesc;
 using antwika::log::Level;
 using antwika::replay::ReplaySource;
 using antwika::simulation::TickPacer;
-using antwika::simulation::WindowInputSource;
+using antwika::app::WindowInputSource;
 using antwika::task_worker::PoolScene;
 using antwika::task_worker::RenderSystem;
 using antwika::task_worker::StatusPrintSystem;

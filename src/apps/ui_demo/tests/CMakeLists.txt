@@ -1,30 +1,14 @@
-find_package(GTest REQUIRED)
-
-add_executable(antwika_ui_demo_tests
-    ${CMAKE_CURRENT_SOURCE_DIR}/../src/DemoOverlay.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/../src/DemoScene.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/../src/DemoSink.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/../src/DemoState.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/../src/KeyMapping.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/../src/Messages.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/../src/RenderSink.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/../src/UiDemo.cpp
-    DemoSceneTest.cpp
-    DemoSinkTest.cpp
-    DemoStateTest.cpp
-    KeyMappingTest.cpp
-    MessagesTest.cpp
-    RenderSinkTest.cpp
-    RunIntegrationTest.cpp
-)
-
-target_include_directories(antwika_ui_demo_tests
-    PRIVATE
-        ${CMAKE_CURRENT_SOURCE_DIR}/../include
-)
-
-target_link_libraries(antwika_ui_demo_tests
-    PRIVATE
+antwika_add_app_tests(
+    APP ui_demo
+    TESTS
+        DemoSceneTest.cpp
+        DemoSinkTest.cpp
+        DemoStateTest.cpp
+        KeyMappingTest.cpp
+        MessagesTest.cpp
+        RenderSinkTest.cpp
+        RunIntegrationTest.cpp
+    LIBS
         antwika::app
         antwika::engine
         antwika::event
@@ -40,5 +24,3 @@ target_link_libraries(antwika_ui_demo_tests
         antwika::ui
         gtest::gtest
 )
-
-antwika_bundle_test(TARGET antwika_ui_demo_tests)

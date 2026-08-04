@@ -227,3 +227,186 @@ function(antwika_add_library)
         DESTINATION lib/cmake/antwika
     )
 endfunction()
+
+# Defines antwika_<NAME> as an application, from SOURCES and LIBS.
+#
+# Thirteen applications wrote out the same fifty lines -- the
+# executable, the private include directory, the link list, the
+# BUILD_TESTING guard, antwika_bundle_app() and the install rule --
+# and differed only in a name, a source list, a link list and which
+# assets to stage.
+# That is antwika_add_library()'s reason applied one level up, and the
+# same rule holds: a module that genuinely differs still spells its own
+# out, so the difference stays visible.
+#
+# The source list is recorded on the target, which is what lets
+# antwika_add_app_tests() compile exactly the app's own sources without
+# a second copy of the list to keep in step by hand.
+function(antwika_add_app)
+    cmake_parse_arguments(PARSE_ARGV 0 ARG "" "NAME" "SOURCES;LIBS;ASSETS")
+
+    if(NOT ARG_NAME)
+        message(FATAL_ERROR "antwika_add_app: NAME is required")
+    endif()
+
+    if(NOT ARG_SOURCES)
+        message(FATAL_ERROR
+            "antwika_add_app(${ARG_NAME}): SOURCES is required")
+    endif()
+
+    if(ARG_UNPARSED_ARGUMENTS)
+        message(FATAL_ERROR
+            "antwika_add_app(${ARG_NAME}): unrecognised arguments "
+            "'${ARG_UNPARSED_ARGUMENTS}'")
+    endif()
+
+    set(target antwika_${ARG_NAME})
+
+    add_executable(${target} ${ARG_SOURCES})
+
+    # The app's own sources, minus the composition root a test never
+    # compiles, kept where antwika_add_app_tests() can read them.
+    set(own ${ARG_SOURCES})
+    list(REMOVE_ITEM own src/main.cpp)
+    set_property(TARGET ${target} PROPERTY ANTWIKA_APP_SOURCES ${own})
+    set_property(TARGET ${target} PROPERTY ANTWIKA_APP_LIBS ${ARG_LIBS})
+
+    target_include_directories(${target}
+        PRIVATE
+            ${CMAKE_CURRENT_SOURCE_DIR}/include
+    )
+
+    if(ARG_LIBS)
+        target_link_libraries(${target}
+            PRIVATE
+                ${ARG_LIBS}
+        )
+    endif()
+
+    if(BUILD_TESTING AND NOT CMAKE_CROSSCOMPILING
+            AND EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/tests/CMakeLists.txt")
+        add_subdirectory(tests)
+    endif()
+
+    if(ARG_ASSETS)
+        antwika_bundle_app(TARGET ${target} ASSETS ${ARG_ASSETS})
+    else()
+        antwika_bundle_app(TARGET ${target})
+    endif()
+
+    install(TARGETS ${target}
+        RUNTIME DESTINATION bin
+    )
+endfunction()
+
+# Defines antwika_<NAME>_tests over the app's own sources plus TESTS.
+#
+# The app's sources come off the target antwika_add_app() recorded them
+# on rather than from a second list beside them: every app's tests/
+# CMakeLists used to restate the whole source list with a ../src/
+# prefix, and nothing checked that the two agreed.
+# Paths are made absolute here, since the app states them relative to
+# its own directory and this runs one level down.
+function(antwika_add_app_tests)
+    cmake_parse_arguments(PARSE_ARGV 0 ARG "" "APP"
+        "TESTS;LIBS;EXTRA_SOURCES;EXTRA_INCLUDES")
+
+    if(NOT ARG_APP)
+        message(FATAL_ERROR "antwika_add_app_tests: APP is required")
+    endif()
+
+    if(NOT ARG_TESTS)
+        message(FATAL_ERROR
+            "antwika_add_app_tests(${ARG_APP}): TESTS is required")
+    endif()
+
+    if(ARG_UNPARSED_ARGUMENTS)
+        message(FATAL_ERROR
+            "antwika_add_app_tests(${ARG_APP}): unrecognised arguments "
+            "'${ARG_UNPARSED_ARGUMENTS}'")
+    endif()
+
+    find_package(GTest REQUIRED)
+
+    set(app antwika_${ARG_APP})
+    set(target ${app}_tests)
+
+    get_target_property(app_sources ${app} ANTWIKA_APP_SOURCES)
+
+    set(sources "")
+    foreach(one IN LISTS app_sources)
+        list(APPEND sources "${CMAKE_CURRENT_SOURCE_DIR}/../${one}")
+    endforeach()
+
+    add_executable(${target} ${sources} ${ARG_EXTRA_SOURCES} ${ARG_TESTS})
+
+    # ../src is on the list because a module's private headers live
+    # next to the .cpp that needs them, and a test may include one.
+    # Anything past that -- another app's headers, say -- is stated by
+    # the caller through EXTRA_INCLUDES rather than defaulted, since
+    # borrowing across modules should be visible where it happens.
+    target_include_directories(${target}
+        PRIVATE
+            ${CMAKE_CURRENT_SOURCE_DIR}/../include
+            ${CMAKE_CURRENT_SOURCE_DIR}/../src
+            ${CMAKE_CURRENT_SOURCE_DIR}
+            ${ARG_EXTRA_INCLUDES}
+    )
+
+    if(ARG_LIBS)
+        target_link_libraries(${target}
+            PRIVATE
+                ${ARG_LIBS}
+        )
+    endif()
+
+    antwika_bundle_test(TARGET ${target})
+endfunction()
+
+# Defines antwika_<MODULE>_tests_<KIND> as a header-only test-support
+# target, aliased to antwika::<MODULE>::tests::<KIND>.
+#
+# Eighteen of these existed -- six fakes, eight mocks, six conformance
+# -- each twenty-odd identical lines, and one of them already differed
+# by linking a raw target where its siblings linked the alias.
+function(antwika_add_test_support)
+    cmake_parse_arguments(PARSE_ARGV 0 ARG "" "MODULE;KIND" "DEPENDS")
+
+    if(NOT ARG_MODULE OR NOT ARG_KIND)
+        message(FATAL_ERROR
+            "antwika_add_test_support: MODULE and KIND are required")
+    endif()
+
+    if(ARG_UNPARSED_ARGUMENTS)
+        message(FATAL_ERROR
+            "antwika_add_test_support(${ARG_MODULE}): unrecognised "
+            "arguments '${ARG_UNPARSED_ARGUMENTS}'")
+    endif()
+
+    set(target antwika_${ARG_MODULE}_tests_${ARG_KIND})
+
+    add_library(${target} INTERFACE)
+    add_library(antwika::${ARG_MODULE}::tests::${ARG_KIND} ALIAS ${target})
+
+    target_include_directories(${target}
+        INTERFACE
+            $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+            $<INSTALL_INTERFACE:include>
+    )
+
+    target_link_libraries(${target}
+        INTERFACE
+            antwika::${ARG_MODULE}
+            ${ARG_DEPENDS}
+    )
+
+    install(
+        TARGETS ${target}
+        EXPORT antwika_${ARG_MODULE}Targets
+    )
+
+    install(
+        DIRECTORY include/
+        DESTINATION include
+    )
+endfunction()

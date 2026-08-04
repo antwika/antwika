@@ -3,6 +3,7 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <functional>
 #include <optional>
 #include <string>
 #include <string_view>
@@ -800,7 +801,7 @@ TEST(TableArtTest, Draw_PaintsTheArtBeforeTheText)
     EXPECT_CALL(renderer, drawTexture(_, _, _, _))
         .Times(static_cast<int>(artOf(scene, kCanvas, snapshot).size()));
 
-    scene.draw(renderer, kCanvas, snapshot, &atlas);
+    scene.draw(renderer, kCanvas, snapshot, std::cref(atlas));
 }
 
 TEST(TableArtTest, Draw_DrawsNoTextureWithoutAnAtlas)

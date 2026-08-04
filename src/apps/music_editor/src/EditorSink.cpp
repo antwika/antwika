@@ -74,7 +74,8 @@ namespace antwika::music_editor
         const EditorScene &scene,
         const Size canvas,
         WaveRenderDesc waveRender,
-        input::IClipboard *clipboard,
+        std::optional<std::reference_wrapper<input::IClipboard>>
+            clipboard,
         ITickEventSink &stop,
         std::string scoresDirectory,
         const bool writesScores)
@@ -84,7 +85,7 @@ namespace antwika::music_editor
           codec(codec),
           scene(scene),
           canvas(canvas),
-          clipboard(clipboard),
+          clipboard(std::move(clipboard)),
           stop(stop),
           scoresDirectory(std::move(scoresDirectory)),
           writesScores(writesScores),
@@ -627,10 +628,10 @@ namespace antwika::music_editor
     // On changes alone, or every tick would touch the clipboard.
     void EditorSink::mirrorClipboard()
     {
-        if (clipboard != nullptr && state.clipboard != mirrored)
+        if (clipboard.has_value() && state.clipboard != mirrored)
         {
             mirrored = state.clipboard;
-            clipboard->setText(mirrored);
+            clipboard->get().setText(mirrored);
         }
     }
 

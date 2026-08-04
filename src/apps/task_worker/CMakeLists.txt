@@ -1,28 +1,22 @@
-add_executable(antwika_task_worker
-    src/ConfigFile.cpp
-    src/Messages.cpp
-    src/PoolScene.cpp
-    src/PoolSnapshot.cpp
-    src/RenderSystem.cpp
-    src/StatusPrintSystem.cpp
-    src/TaskDispatchSystem.cpp
-    src/TaskJob.cpp
-    src/TaskRegistry.cpp
-    src/TaskSubmissionSink.cpp
-    src/TaskWorker.cpp
-    src/Worker.cpp
-    src/WorkerCompletionSystem.cpp
-    src/WorkerLookup.cpp
-    src/main.cpp
-)
-
-target_include_directories(antwika_task_worker
-    PRIVATE
-        ${CMAKE_CURRENT_SOURCE_DIR}/include
-)
-
-target_link_libraries(antwika_task_worker
-    PRIVATE
+antwika_add_app(
+    NAME task_worker
+    SOURCES
+        src/ConfigFile.cpp
+        src/Messages.cpp
+        src/PoolScene.cpp
+        src/PoolSnapshot.cpp
+        src/RenderSystem.cpp
+        src/StatusPrintSystem.cpp
+        src/TaskDispatchSystem.cpp
+        src/TaskJob.cpp
+        src/TaskRegistry.cpp
+        src/TaskSubmissionSink.cpp
+        src/TaskWorker.cpp
+        src/Worker.cpp
+        src/WorkerCompletionSystem.cpp
+        src/WorkerLookup.cpp
+        src/main.cpp
+    LIBS
         antwika::app
         antwika::config
         antwika::ecs
@@ -37,19 +31,7 @@ target_link_libraries(antwika_task_worker
         antwika::scheduler
         antwika::simulation
         antwika::time
-)
-
-if(BUILD_TESTING AND NOT CMAKE_CROSSCOMPILING)
-    add_subdirectory(tests)
-endif()
-
-antwika_bundle_app(
-    TARGET antwika_task_worker
     ASSETS
         assets/config.json
         replays/demo.jsonl
-)
-
-install(TARGETS antwika_task_worker
-    RUNTIME DESTINATION bin
 )

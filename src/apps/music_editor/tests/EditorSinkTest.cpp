@@ -767,7 +767,7 @@ TEST(EditorSinkTest, CopiesLandNowhereWhenThereIsNoClipboard)
             .rate = rig.format.rate,
             .framesPerCycle =
                 antwika::sequencer::Rational(rig.format.rate)},
-        nullptr,
+        std::nullopt,
         rig.stopSignal,
         rig.scoresDirectory,
         true};
