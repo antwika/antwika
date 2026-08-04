@@ -5,6 +5,7 @@
 #include <exception>
 #include <optional>
 #include <string>
+#include <utility>
 
 #include <nlohmann/json-schema.hpp>
 
@@ -85,13 +86,16 @@ namespace antwika::tower_defence
                 "bestScore",
                 "battle"}; // GCOVR_EXCL_LINE
 
+            // Assignment style throughout, never brace-init lists.
+            // An initializer list compiles to untakeable branches.
             auto &top = schema["properties"];
-            top["level"] = {{"type", "integer"}, {"minimum", 0}};
-            top["score"] = {{"type", "integer"}, {"minimum", 0}};
-            top["lives"] = {{"type", "integer"}, {"minimum", 0}};
-            top["ticks"] = {{"type", "integer"}, {"minimum", 0}};
+            for (const auto *counter :
+                 {"level", "score", "lives", "ticks", "bestScore"})
+            {
+                top[counter]["type"] = "integer";
+                top[counter]["minimum"] = 0;
+            }
             top["phase"]["type"] = "string";
-            top["bestScore"] = {{"type", "integer"}, {"minimum", 0}};
 
             auto &battle = top["battle"];
             battle["type"] = "object";
@@ -115,7 +119,8 @@ namespace antwika::tower_defence
                   "nextMobId",
                   "nextTowerId"})
             {
-                fight[counter] = {{"type", "integer"}, {"minimum", 0}};
+                fight[counter]["type"] = "integer";
+                fight[counter]["minimum"] = 0;
             }
 
             auto &mob = fight["mobs"]["items"];
@@ -128,35 +133,35 @@ namespace antwika::tower_defence
                 "pathIndex",
                 "health",
                 "ticksUntilStep"}; // GCOVR_EXCL_LINE
-            mob["properties"]["id"] = {
-                {"type", "integer"}, {"minimum", 0}};
+            mob["properties"]["id"]["type"] = "integer";
+            mob["properties"]["id"]["minimum"] = 0;
             mob["properties"]["kind"]["type"] = "string";
-            mob["properties"]["pathIndex"] = {
-                {"type", "integer"}, {"minimum", 0}};
+            mob["properties"]["pathIndex"]["type"] = "integer";
+            mob["properties"]["pathIndex"]["minimum"] = 0;
 
             // At least one, since a dead mob is never in a dump.
             // A mob at zero died on the tick it got there.
-            mob["properties"]["health"] = {
-                {"type", "integer"}, {"minimum", 1}};
-            mob["properties"]["ticksUntilStep"] = {
-                {"type", "integer"}, {"minimum", 0}};
+            mob["properties"]["health"]["type"] = "integer";
+            mob["properties"]["health"]["minimum"] = 1;
+            mob["properties"]["ticksUntilStep"]["type"] = "integer";
+            mob["properties"]["ticksUntilStep"]["minimum"] = 0;
 
             auto &tower = fight["towers"]["items"];
             fight["towers"]["type"] = "array";
             tower["type"] = "object";
             tower["additionalProperties"] = false;
             tower["required"] = {"id", "cell"}; // GCOVR_EXCL_LINE
-            tower["properties"]["id"] = {
-                {"type", "integer"}, {"minimum", 0}};
+            tower["properties"]["id"]["type"] = "integer";
+            tower["properties"]["id"]["minimum"] = 0;
 
             auto &cell = tower["properties"]["cell"];
             cell["type"] = "object";
             cell["additionalProperties"] = false;
             cell["required"] = {"x", "y"}; // GCOVR_EXCL_LINE
-            cell["properties"]["x"] = {
-                {"type", "integer"}, {"minimum", 0}};
-            cell["properties"]["y"] = {
-                {"type", "integer"}, {"minimum", 0}};
+            cell["properties"]["x"]["type"] = "integer";
+            cell["properties"]["x"]["minimum"] = 0;
+            cell["properties"]["y"]["type"] = "integer";
+            cell["properties"]["y"]["minimum"] = 0;
 
             return schema;
         }
@@ -190,24 +195,28 @@ namespace antwika::tower_defence
         battle["nextMobId"] = fight.nextMobId;
         battle["nextTowerId"] = fight.nextTowerId;
 
+        // Assignment style rather than a brace-init per entry.
+        // An initializer list compiles to untakeable branches.
         battle["mobs"] = nlohmann::json::array();
         for (const Mob &mob : fight.mobs)
         {
-            battle["mobs"].push_back(
-                {{"id", mob.id},
-                 {"kind", std::string(mobKindName(mob.kind))},
-                 {"pathIndex", mob.pathIndex},
-                 {"health", mob.health},
-                 {"ticksUntilStep", mob.ticksUntilStep}});
+            nlohmann::json entry;
+            entry["id"] = mob.id;
+            entry["kind"] = std::string(mobKindName(mob.kind));
+            entry["pathIndex"] = mob.pathIndex;
+            entry["health"] = mob.health;
+            entry["ticksUntilStep"] = mob.ticksUntilStep;
+            battle["mobs"].push_back(std::move(entry));
         }
 
         battle["towers"] = nlohmann::json::array();
         for (const Tower &tower : fight.towers)
         {
-            battle["towers"].push_back(
-                {{"id", tower.id},
-                 {"cell",
-                  {{"x", tower.cell.x}, {"y", tower.cell.y}}}});
+            nlohmann::json entry;
+            entry["id"] = tower.id;
+            entry["cell"]["x"] = tower.cell.x;
+            entry["cell"]["y"] = tower.cell.y;
+            battle["towers"].push_back(std::move(entry));
         }
 
         nlohmann::json encoded;
@@ -289,13 +298,17 @@ namespace antwika::tower_defence
                     + kindNamed);
             }
 
-            fight.mobs.push_back(Mob{
-                .id = entry.at("id").get<std::uint32_t>(),
-                .kind = *kind,
-                .pathIndex = entry.at("pathIndex").get<std::size_t>(),
-                .health = entry.at("health").get<std::int32_t>(),
-                .ticksUntilStep =
-                    entry.at("ticksUntilStep").get<std::uint32_t>()});
+            // A named mob rather than a temporary in the call.
+            // gcov parks a temporary's unwind code on its head line.
+            Mob walker;
+            walker.id = entry.at("id").get<std::uint32_t>();
+            walker.kind = *kind;
+            walker.pathIndex =
+                entry.at("pathIndex").get<std::size_t>();
+            walker.health = entry.at("health").get<std::int32_t>();
+            walker.ticksUntilStep =
+                entry.at("ticksUntilStep").get<std::uint32_t>();
+            fight.mobs.push_back(walker);
         }
 
         for (const nlohmann::json &entry : battle.at("towers"))

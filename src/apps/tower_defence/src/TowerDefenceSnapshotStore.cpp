@@ -34,16 +34,21 @@ namespace antwika::tower_defence
         const std::string &path,
         const std::vector<std::string> &console)
     {
-        dumpFormat().write(
-            antwika::console::Snapshot{
-                .console = console,
-                .state = stateDumpToJson(StateDump{
-                    .campaign = campaign.remember(),
-                    .bestScore = best})},
-            path);
+        // Named locals in assignment style, never nested temporaries.
+        // A partly-built temporary needs conditional unwind cleanups.
+        // Those are branches gcov counts and no input can take.
+        StateDump dump;
+        dump.campaign = campaign.remember();
+        dump.bestScore = best;
 
-        // The excluded line is the local snapshot's unwind destructor.
-        // Nothing after its construction throws but the write itself.
+        antwika::console::Snapshot snapshot;
+        snapshot.console = console;
+        snapshot.state = stateDumpToJson(dump);
+
+        dumpFormat().write(snapshot, path);
+
+        // The excluded line is the locals' unwind destructor.
+        // Nothing after their construction throws but the write itself.
     } // GCOVR_EXCL_LINE
 
     std::vector<std::string> TowerDefenceSnapshotStore::load(
