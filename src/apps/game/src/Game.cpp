@@ -57,6 +57,7 @@
 #include "antwika/game/SpawnSystem.hpp"
 #include "antwika/game/Toolbar.hpp"
 #include "antwika/game/UiSink.hpp"
+#include "antwika/game/ViewCommands.hpp"
 #include "antwika/game/WalkerSystem.hpp"
 #include "antwika/game/WorldMapSink.hpp"
 
@@ -385,6 +386,10 @@ namespace antwika::game
         MenuCommands commands(
             mode, session, cities, live, camera, wiring.config);
 
+        // What the bar's buttons and the bound keys both ask for.
+        // Stated once so the two routes to a zoom cannot drift.
+        ViewCommands viewCommands(camera, pause, camera);
+
         const Toolbar toolbar(translator);
         const MenuModalScene menuModal(translator);
         InputFold input(wiring.codec);
@@ -398,7 +403,7 @@ namespace antwika::game
             commands,
             drag,
             menuModal,
-            camera,
+            viewCommands,
             ratings,
             state);
         GridSink gridSink(
@@ -441,7 +446,7 @@ namespace antwika::game
         // The camera it puts back is the one this run opened with.
         // Copied here exactly as the bar's reset button copies it.
         // So the key and the button agree about where back is.
-        HotkeySink hotkeySink(options, input, camera, camera, pause);
+        HotkeySink hotkeySink(options, input, viewCommands);
 
         // The save screen's own picture, never the menu's or the bar's.
         // Three modes, three overlays, for the reason the menu has one.

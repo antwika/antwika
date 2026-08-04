@@ -3,7 +3,10 @@
 #include <optional>
 #include <string>
 
+#include <antwika/app/FileSnapshotStore.hpp>
+
 #include "antwika/tower_defence/IScoreStore.hpp"
+#include "antwika/tower_defence/ScoreFormatError.hpp"
 
 namespace antwika::tower_defence
 {
@@ -49,7 +52,7 @@ namespace antwika::tower_defence
         void save(const HighScore &score) override;
 
     private:
-        std::string path;
+        antwika::app::FileSnapshotStore<HighScore, ScoreFormatError> file;
     };
 
 } // namespace antwika::tower_defence

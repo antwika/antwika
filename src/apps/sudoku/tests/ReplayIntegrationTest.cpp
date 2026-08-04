@@ -33,9 +33,9 @@
 #include <antwika/sudoku/SudokuScene.hpp>
 #include <antwika/app/TickLimitSource.hpp>
 #include <antwika/sudoku/Widgets.hpp>
+#include <antwika/testing/ScratchPath.hpp>
 
 #include "antwika/sudoku/Messages.hpp"
-#include "ScratchFile.hpp"
 #include "WidgetCentre.hpp"
 
 using antwika::event::Event;
@@ -62,7 +62,6 @@ using antwika::sudoku::Status;
 using antwika::sudoku::SudokuScene;
 using antwika::sudoku::SudokuSummary;
 using antwika::app::TickLimitSource;
-using antwika::sudoku::tests::ScratchFile;
 using antwika::sudoku::tests::squareCentre;
 using antwika::sudoku::tests::widgetCentre;
 using ::testing::NiceMock;
@@ -209,7 +208,7 @@ namespace
         // antwika_bundle_test registers every case with CTest.
         // So two cases calling this are two parallel processes.
         // One fixed name is one file they would fight over.
-        const ScratchFile file{
+        const antwika::testing::ScratchFile file{
             std::string{"antwika_sudoku_replay_"}
             + ::testing::UnitTest::GetInstance()->current_test_info()
                   ->name()

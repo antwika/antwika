@@ -9,6 +9,22 @@
     automerge: true,
     automergeType: 'branch',
     customManagers: [
+        // Conan pins live in a Python file, which no built-in manager
+        // reads, so every requires() line here was outside Renovate's
+        // reach and drifted silently -- stb sat on a 2022 snapshot.
+        // The lockfiles are not matched: they are generated, and
+        // scripts/update_lockfiles.sh is what regenerates them once a
+        // pin here has moved.
+        {
+            customType: 'regex',
+            managerFilePatterns: [
+                '/^conanfile\\.py$/',
+            ],
+            matchStrings: [
+                'requires\\("(?<depName>[^/"]+)/(?<currentValue>[^"]+)"',
+            ],
+            datasourceTemplate: 'conan',
+        },
         {
             customType: 'regex',
             managerFilePatterns: [

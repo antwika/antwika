@@ -34,11 +34,12 @@ namespace antwika::game
         // Only what sustains() names is a larder.
         // This replaces BuildingSystem's old starvation ending.
         // What finally takes a neglected building is its own risk.
-        [[nodiscard]] bool starved(const Building &building)
+        [[nodiscard]] bool starved(
+            const Building &building, const GameConfig &config)
         {
             for (const auto resource : kResources)
             {
-                if (sustains(resource)
+                if (config.sustaining[resourceIndex(resource)]
                     && building.stock[resourceIndex(resource)] <= 0)
                 {
                     return true;
@@ -133,7 +134,7 @@ namespace antwika::game
 
         // A starved or dry house is one its people give up on.
         // They leave the map rather than move to another house.
-        const bool unlivable = starved(building) || dry;
+        const bool unlivable = starved(building, config) || dry;
 
         // A house that has just devolved is over its ceiling.
         // Which is the one way to be crowded here.

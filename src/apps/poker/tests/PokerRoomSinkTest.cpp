@@ -49,6 +49,7 @@ using antwika::poker::PokerRoomSink;
 using antwika::poker::PolicyAgent;
 using antwika::poker::TablePrinter;
 using antwika::poker::kDefaultHandStrengths;
+using antwika::poker::kDefaultThresholds;
 using antwika::time::fakes::FakeClock;
 
 namespace
@@ -76,8 +77,10 @@ namespace
 
         Room()
         {
-            agents.emplace_back(AgentStyle::Balanced, kDefaultHandStrengths);
-            agents.emplace_back(AgentStyle::Balanced, kDefaultHandStrengths);
+            agents.emplace_back(AgentStyle::Balanced, kDefaultHandStrengths,
+            kDefaultThresholds);
+            agents.emplace_back(AgentStyle::Balanced, kDefaultHandStrengths,
+            kDefaultThresholds);
         }
 
         [[nodiscard]] TableRunner makeRunner()

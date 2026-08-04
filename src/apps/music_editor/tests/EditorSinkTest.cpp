@@ -18,6 +18,7 @@
 #include <antwika/input/Key.hpp>
 #include <antwika/input/KeyModifiers.hpp>
 #include <antwika/input/MouseButton.hpp>
+#include <antwika/testing/ScratchPath.hpp>
 #include <antwika/ui/DrawCommand.hpp>
 #include <antwika/ui/WidgetId.hpp>
 

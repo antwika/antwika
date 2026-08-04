@@ -12,6 +12,7 @@
 
 #include <antwika/app/PngFile.hpp>
 #include <antwika/gfx/GfxError.hpp>
+#include <antwika/testing/ScratchPath.hpp>
 
 using antwika::app::readPngFile;
 using antwika::gfx::GfxError;
@@ -29,57 +30,19 @@ namespace
         0x54, 0x78, 0xda, 0x63, 0xfc, 0xcf, 0xc0, 0x50, 0x0f, 0x00,
         0x04, 0x85, 0x01, 0x80, 0x84, 0xa9, 0x8c, 0x21, 0x00, 0x00,
         0x00, 0x00, 0x49, 0x45, 0x4e, 0x44, 0xae, 0x42, 0x60, 0x82};
-
-    /**
-     * @brief A file in the temporary directory, removed when it goes.
-     */
-    class TempFile final
-    {
-    public:
-        explicit TempFile(const std::string &name)
-            : path(
-                  std::filesystem::temp_directory_path()
-                  // The pid keeps parallel ctest runs apart.
-                  // Each case is its own process under ctest -j.
-                  // Two cases on one fixed name raced here.
-                  // See game/tests/ScratchDirectory.hpp.
-                  / (std::string(name) + "." + std::to_string(::getpid())))
-        {
-        }
-
-        TempFile(const TempFile &) = delete;
-        TempFile(TempFile &&) = delete;
-
-        TempFile &operator=(const TempFile &) = delete;
-        TempFile &operator=(TempFile &&) = delete;
-
-        ~TempFile()
-        {
-            std::error_code ignored;
-            std::filesystem::remove(path, ignored);
-        }
-
-        [[nodiscard]] std::string name() const
-        {
-            return path.string();
-        }
-
-    private:
-        std::filesystem::path path;
-    };
 } // namespace
 
 TEST(PngFileTest, ReadsAPngOffDisk)
 {
-    const TempFile file("antwika-app-one-pixel.png");
+    const antwika::testing::ScratchFile file("antwika-app-one-pixel.png");
     {
-        std::ofstream out(file.name(), std::ios::binary);
+        std::ofstream out(file.string(), std::ios::binary);
         out.write(
             reinterpret_cast<const char *>(kOnePixelPng.data()),
             static_cast<std::streamsize>(kOnePixelPng.size()));
     }
 
-    const auto bitmap = readPngFile(file.name(), "antwika_test");
+    const auto bitmap = readPngFile(file.string(), "antwika_test");
 
     EXPECT_EQ(bitmap.size.width, 1U);
     EXPECT_EQ(bitmap.size.height, 1U);

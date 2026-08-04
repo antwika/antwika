@@ -192,18 +192,25 @@ jobs:
             image: llvm
             conan_profile: clang-linux-x86_64
             coverage: true
+            runs_tests: true
             gcov_executable: "llvm-cov-21 gcov"
             build_dir: build-coverage
           - name: GNU
             image: gnu
             conan_profile: gcc-linux-x86_64
             coverage: true
+            runs_tests: true
             gcov_executable: gcov
             build_dir: build-coverage
+          # A cross build registers no tests at all: both CMakeLists.txt
+          # and antwika_bundle_test() guard on NOT CMAKE_CROSSCOMPILING,
+          # and nothing here can run a Windows binary.
+          # So this leg compiles, links and checks the binaries exist.
           - name: MinGW
             image: mingw
             conan_profile: mingw-windows-x86_64
             coverage: false
+            runs_tests: false
             build_dir: build
 
     container:
@@ -284,9 +291,25 @@ jobs:
       # The instrumented run contends on the .gcda writes, so it scales
       # sublinearly rather than not at all -- and the coverage totals
       # come out identical either way, which is the thing worth knowing.
+      #
+      # A run that registered nothing would pass while proving nothing,
+      # which is exactly what this leg did before the guard below: the
+      # cross leg has no tests to register, so it reported success over
+      # an empty list.
+      # The conformance suites are held to the same rule.
       - name: Test
+        if: matrix.runs_tests
         shell: bash
-        run: ctest --test-dir "$BUILD_DIR" -j"$(nproc)" --output-on-failure
+        run: |
+          set -o pipefail
+
+          ctest --test-dir "$BUILD_DIR" -j"$(nproc)" --output-on-failure \
+            | tee ctest.log
+
+          if ! grep -qE '[1-9][0-9]* tests passed' ctest.log; then
+            echo "ctest passed no tests at all"
+            exit 1
+          fi
 
       # The linearity property is soaked over forty seeds, which costs
       # ~116s under the coverage build's -O0 and under six at -O2.
@@ -322,6 +345,11 @@ jobs:
             --output coverage-badge.json \
             --label "coverage (${{ matrix.image }})"
 
+      # One leg enforces, deliberately.
+      # LLVM measures the same sources and publishes a badge, but its
+      # gcov reports unwind edges GNU's does not, so holding both to
+      # 100% would be holding the code to two different numbers.
+      # MinGW measures nothing at all -- see runs_tests above.
       - name: Enforce full coverage (GNU)
         if: matrix.coverage && matrix.image == 'gnu'
         shell: bash

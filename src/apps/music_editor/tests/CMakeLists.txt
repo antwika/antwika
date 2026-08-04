@@ -62,6 +62,7 @@ target_link_libraries(antwika_music_editor_tests
         antwika::gfx::tests::mocks
         antwika::input
         antwika::simulation
+        antwika::testing
         antwika::time::tests::fakes
         antwika::notation
         antwika::pattern

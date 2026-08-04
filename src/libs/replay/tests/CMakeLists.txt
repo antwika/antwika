@@ -28,6 +28,7 @@ target_link_libraries(antwika_replay_tests
         antwika::replay
         antwika::simulation
         antwika::log::tests::mocks
+        antwika::testing
         gtest::gtest
 )
 

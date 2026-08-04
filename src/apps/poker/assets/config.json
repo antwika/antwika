@@ -14,5 +14,19 @@
   "magic": "antwika-poker-config",
   "minimumBuyIn": 100,
   "smallBlind": 5,
+  "thresholds": [
+    {
+      "callAt": 55,
+      "raiseAt": 80
+    },
+    {
+      "callAt": 40,
+      "raiseAt": 70
+    },
+    {
+      "callAt": 25,
+      "raiseAt": 55
+    }
+  ],
   "version": 1
 }

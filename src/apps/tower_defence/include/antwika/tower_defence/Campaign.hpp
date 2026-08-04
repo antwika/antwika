@@ -83,6 +83,14 @@ namespace antwika::tower_defence
 
         /** @brief The levels to fight, first to last. */
         std::vector<LevelPlan> levels = campaignLevels();
+
+        /**
+         * @brief What each mob kind is worth, costs and survives.
+         *
+         * Handed to every level's battle, so one campaign plays one
+         * set of mobs.
+         */
+        std::array<MobProfile, kMobKindCount> mobs = kDefaultMobProfiles;
     };
 
     /**

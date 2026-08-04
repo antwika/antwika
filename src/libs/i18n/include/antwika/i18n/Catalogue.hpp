@@ -100,4 +100,33 @@ namespace antwika::i18n
         std::span<const CatalogueEntry<Id>> catalogueEntries;
     };
 
+    /**
+     * @brief Choose the catalogue a locale asks for.
+     * @tparam Id The message id the catalogues are keyed by.
+     * @param locale The locale to serve.
+     * @param english The English catalogue.
+     * @param swedish The Swedish catalogue.
+     * @return Whichever the locale names.
+     *
+     * Every module that owns a MessageSet had a copy of this switch,
+     * fallback line included -- nine of them, all identical but for
+     * the two constants they named.
+     * The fallback is what makes the lookup total: a locale this build
+     * has no catalogue for is served the default's rather than
+     * reaching an arm no enumerator names.
+     */
+    template <typename Id>
+    [[nodiscard]] const Catalogue<Id> &pickCatalogue(
+        Locale locale,
+        const Catalogue<Id> &english,
+        const Catalogue<Id> &swedish) noexcept
+    {
+        if (locale == Locale::Swedish)
+        {
+            return swedish;
+        }
+
+        return english;
+    }
+
 } // namespace antwika::i18n

@@ -17,6 +17,7 @@
 #include <antwika/event/TickEvent.hpp>
 #include <antwika/replay/ReplayCli.hpp>
 #include <antwika/replay/ReplayFormatError.hpp>
+#include <antwika/testing/ScratchPath.hpp>
 #include <antwika/time/Tick.hpp>
 
 using antwika::app::RecordedRun;
@@ -29,44 +30,6 @@ using antwika::replay::saveReplayFile;
 
 namespace
 {
-    /**
-     * @brief A file in the temporary directory, removed when it goes.
-     */
-    class TempFile final
-    {
-    public:
-        explicit TempFile(const std::string &name)
-            : path(
-                  std::filesystem::temp_directory_path()
-                  // The pid keeps parallel ctest runs apart.
-                  // Each case is its own process under ctest -j.
-                  // Two cases on one fixed name raced here.
-                  // See game/tests/ScratchDirectory.hpp.
-                  / (std::string(name) + "." + std::to_string(::getpid())))
-        {
-        }
-
-        TempFile(const TempFile &) = delete;
-        TempFile(TempFile &&) = delete;
-
-        TempFile &operator=(const TempFile &) = delete;
-        TempFile &operator=(TempFile &&) = delete;
-
-        ~TempFile()
-        {
-            std::error_code ignored;
-            std::filesystem::remove(path, ignored);
-        }
-
-        [[nodiscard]] std::string name() const
-        {
-            return path.string();
-        }
-
-    private:
-        std::filesystem::path path;
-    };
-
     const TickEvent kScripted{
         .tick = antwika::time::Tick{1},
         .event = {.name = "test.event", .payload = "payload"}};
@@ -126,8 +89,8 @@ TEST(RunRecordedTest, AttachesNoRecorderWithoutRecord)
 
 TEST(RunRecordedTest, SavesWhatTheRecorderWasGiven)
 {
-    const TempFile file("antwika-app-recorded.json");
-    const std::string path = file.name();
+    const antwika::testing::ScratchFile file("antwika-app-recorded.json");
+    const std::string path = file.string();
     std::array<char *, 3> argv{
         const_cast<char *>("antwika_test"),
         const_cast<char *>("--record"),
@@ -147,13 +110,13 @@ TEST(RunRecordedTest, SavesWhatTheRecorderWasGiven)
         errors);
 
     EXPECT_EQ(exitCode, EXIT_SUCCESS);
-    EXPECT_EQ(loadReplayFile(file.name()), std::vector{kScripted});
+    EXPECT_EQ(loadReplayFile(file.string()), std::vector{kScripted});
 }
 
 TEST(RunRecordedTest, SavesWhatAFailedRunGotTo)
 {
-    const TempFile file("antwika-app-failed.json");
-    const std::string path = file.name();
+    const antwika::testing::ScratchFile file("antwika-app-failed.json");
+    const std::string path = file.string();
     std::array<char *, 3> argv{
         const_cast<char *>("antwika_test"),
         const_cast<char *>("--record"),
@@ -173,7 +136,7 @@ TEST(RunRecordedTest, SavesWhatAFailedRunGotTo)
         errors);
 
     EXPECT_EQ(exitCode, EXIT_FAILURE);
-    EXPECT_EQ(loadReplayFile(file.name()), std::vector{kScripted});
+    EXPECT_EQ(loadReplayFile(file.string()), std::vector{kScripted});
 }
 
 // A recording is appended as the run goes.
@@ -216,8 +179,8 @@ TEST(RunRecordedTest, RefusesARecordingPathBeforeTheSessionStarts)
 // What the file holds is asked from inside the session.
 TEST(RunRecordedTest, KeepsWhatAKilledRunGotToBeforeItEnded)
 {
-    const TempFile file("antwika-app-killed.jsonl");
-    const std::string path = file.name();
+    const antwika::testing::ScratchFile file("antwika-app-killed.jsonl");
+    const std::string path = file.string();
     std::array<char *, 3> argv{
         const_cast<char *>("antwika_test"),
         const_cast<char *>("--record"),
@@ -273,21 +236,21 @@ TEST(ScriptedEventsTest, StartsEmptyWithNoPathAndNoFallback)
 
 TEST(ScriptedEventsTest, LoadsTheFallbackWhenNoPathWasGiven)
 {
-    const TempFile file("antwika-app-fallback.json");
-    saveReplayFile({kScripted}, file.name());
+    const antwika::testing::ScratchFile file("antwika-app-fallback.json");
+    saveReplayFile({kScripted}, file.string());
 
     EXPECT_EQ(
-        scriptedEvents(std::nullopt, file.name()),
+        scriptedEvents(std::nullopt, file.string()),
         std::vector{kScripted});
 }
 
 TEST(ScriptedEventsTest, LoadsThePathInPreferenceToTheFallback)
 {
-    const TempFile file("antwika-app-named.json");
-    saveReplayFile({kScripted}, file.name());
+    const antwika::testing::ScratchFile file("antwika-app-named.json");
+    saveReplayFile({kScripted}, file.string());
 
     EXPECT_EQ(
-        scriptedEvents(file.name(), "no-such-fallback.json"),
+        scriptedEvents(file.string(), "no-such-fallback.json"),
         std::vector{kScripted});
 }
 
@@ -411,8 +374,8 @@ TEST(RunRecordedTest, AnswersHelpWithoutRunningTheBody)
 // Asking what the flags are is not a session, so it records none.
 TEST(RunRecordedTest, WritesNoRecordingWhenHelpWasAskedFor)
 {
-    const TempFile file("antwika-app-help.json");
-    const std::string path = file.name();
+    const antwika::testing::ScratchFile file("antwika-app-help.json");
+    const std::string path = file.string();
     std::array<char *, 4> argv{
         const_cast<char *>("antwika_test"),
         const_cast<char *>("--record"),

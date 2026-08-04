@@ -18,11 +18,11 @@
 #include <antwika/input/MouseButton.hpp>
 #include <antwika/input/Position.hpp>
 #include <antwika/log/mocks/MockLogger.hpp>
+#include <antwika/testing/ScratchPath.hpp>
 #include <antwika/ui/Keyboard.hpp>
 #include <antwika/ui/Pointer.hpp>
 #include <antwika/ui/WidgetId.hpp>
 
-#include "ScratchDirectory.hpp"
 #include "WidgetPixel.hpp"
 
 #include "TestTranslator.hpp"
@@ -48,8 +48,7 @@ using antwika::game::tests::kTranslator;
 namespace
 {
 
-    using antwika::game::tests::scratchDirectory;
-    using antwika::game::tests::widgetCentre;
+        using antwika::game::tests::widgetCentre;
     using antwika::ecs::World;
     using antwika::event::Event;
     using antwika::event::TickEvent;
@@ -91,7 +90,8 @@ namespace
     {
     protected:
         SaveLoadSinkTest()
-            : directory(scratchDirectory("antwika_save_load_sink_test_"))
+            : directory(
+                  antwika::testing::scratchPath("antwika_saveload_"))
         {
             std::error_code ignored;
             std::filesystem::remove_all(directory, ignored);

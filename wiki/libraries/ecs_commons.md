@@ -49,6 +49,11 @@ Content is worth sharing only when it is genuinely the same content.
 No app here has hit points or composes entities, so there is no duplication to remove and no second caller to check a design against — and a hierarchy additionally has a commit-ordering question (does a child see its parent's move this tick or next?) that a real caller should answer rather than a guess.
 Inventing a rule to avoid a situation nothing requires would be inventing a requirement.
 
+## GatedSystem
+
+**Running a system only while something else says it may** is a decorator three applications had written out with three different questions in the middle: `game`'s `PauseGatedSystem` and `SessionGatedSystem`, `life`'s `DragPausedSystem`.
+`GatedSystem` is the mechanism -- staging nothing is what holds a world still, so the commit after the phase finds only what the tick's input did -- and each app keeps its own named type as a thin forwarder, since "this system is pause-gated" is vocabulary worth saying at the registration site.
+
 ## Migrating an app onto these
 
 Nothing was refactored when this library was added, because several apps were being edited concurrently.

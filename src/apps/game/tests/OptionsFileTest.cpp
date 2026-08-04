@@ -9,14 +9,13 @@
 
 #include <antwika/input/Key.hpp>
 #include <antwika/replay/SchemaVersion.hpp>
+#include <antwika/testing/ScratchPath.hpp>
 
-#include "ScratchDirectory.hpp"
 #include "antwika/game/Action.hpp"
 #include "antwika/game/KeyBindings.hpp"
 #include "antwika/game/OptionsFile.hpp"
 #include "antwika/game/OptionsFormatError.hpp"
 
-using antwika::game::tests::scratchDirectory;
 
 using antwika::game::Action;
 using antwika::game::bindingsFromJson;
@@ -77,7 +76,8 @@ namespace
             file << text;
         }
 
-        std::filesystem::path directory{scratchDirectory("options.")};
+        std::filesystem::path directory{
+            antwika::testing::scratchPath("options.")};
     };
 } // namespace
 

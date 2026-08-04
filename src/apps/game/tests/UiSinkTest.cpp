@@ -39,7 +39,9 @@
 #include "antwika/game/Toolbar.hpp"
 #include "antwika/game/UiOverlay.hpp"
 #include "antwika/game/UiSink.hpp"
+#include "antwika/game/ViewCommands.hpp"
 
+using antwika::game::ViewCommands;
 using antwika::game::tests::kTranslator;
 
 using antwika::event::Event;
@@ -245,6 +247,7 @@ namespace
         MenuModalScene modalScene{kTranslator};
         antwika::game::CityRatings ratings;
         antwika::game::GameState state;
+        ViewCommands viewCommands{camera, pause, camera};
         UiSink sink{
             camera,
             overlay,
@@ -255,7 +258,7 @@ namespace
             commands,
             drag,
             modalScene,
-            camera,
+            viewCommands,
             ratings,
             state};
     };

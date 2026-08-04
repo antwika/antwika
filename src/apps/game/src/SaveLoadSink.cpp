@@ -131,7 +131,9 @@ namespace antwika::game
             overlay.canvas(), pointerNow(pressed), Keyboard{}, state);
 
         overlay.set(
-            std::move(frame.commands), frame.interactions.pointerOverUi);
+            std::move(frame.commands),
+            std::move(frame.hoverTargets),
+            frame.interactions.pointerOverUi);
     }
 
     void SaveLoadSink::act(const Interactions &interactions)

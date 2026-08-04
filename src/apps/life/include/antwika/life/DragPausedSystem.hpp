@@ -1,6 +1,7 @@
 #pragma once
 
 #include <antwika/ecs/ISystem.hpp>
+#include <antwika/ecs_commons/GatedSystem.hpp>
 #include <antwika/ecs/World.hpp>
 #include <antwika/time/Tick.hpp>
 
@@ -60,8 +61,7 @@ namespace antwika::life
         void update(World &world, antwika::time::Tick tick) override;
 
     private:
-        ISystem &inner;
-        const DragState &drag;
+        antwika::ecs_commons::GatedSystem gate;
     };
 
 } // namespace antwika::life

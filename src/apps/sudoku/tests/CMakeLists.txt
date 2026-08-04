@@ -61,6 +61,7 @@ target_link_libraries(antwika_sudoku_tests
         antwika::log::tests::mocks
         antwika::replay
         antwika::simulation
+        antwika::testing
         antwika::time::tests::fakes
         antwika::ui
         antwika::wfc

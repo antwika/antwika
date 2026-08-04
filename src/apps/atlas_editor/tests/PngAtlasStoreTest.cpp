@@ -14,6 +14,7 @@
 #include <antwika/gfx/Bitmap.hpp>
 #include <antwika/gfx/GfxError.hpp>
 #include <antwika/gfx/Size.hpp>
+#include <antwika/testing/ScratchPath.hpp>
 
 #include "antwika/atlas_editor/AtlasEditorError.hpp"
 #include "antwika/atlas_editor/PngAtlasStore.hpp"
@@ -26,45 +27,6 @@ using antwika::gfx::Size;
 
 namespace
 {
-    // A file that removes itself.
-    // A failing test then leaves nothing for the next run to find.
-    class TempFile final
-    {
-    public:
-        explicit TempFile(const std::string &name)
-            : where(
-                  std::filesystem::temp_directory_path()
-                  // The pid keeps parallel ctest runs apart.
-                  // Each case is its own process under ctest -j.
-                  // Two cases on one fixed name raced here.
-                  // See game/tests/ScratchDirectory.hpp.
-                  / (std::string(name) + "." + std::to_string(::getpid())))
-        {
-        }
-
-        TempFile(const TempFile &) = delete;
-        TempFile(TempFile &&) = delete;
-
-        TempFile &operator=(const TempFile &) = delete;
-        TempFile &operator=(TempFile &&) = delete;
-
-        ~TempFile()
-        {
-            // The non-throwing overload.
-            // A destructor that throws calls std::terminate.
-            std::error_code code;
-            std::filesystem::remove(where, code);
-        }
-
-        [[nodiscard]] std::string path() const
-        {
-            return where.string();
-        }
-
-    private:
-        std::filesystem::path where;
-    };
-
     Bitmap twoByTwo()
     {
         return Bitmap{
@@ -77,7 +39,8 @@ namespace
 
 TEST(PngAtlasStoreTest, SaveThenLoad_GivesBackEveryByte)
 {
-    const TempFile file("antwika_atlas_editor_roundtrip.png");
+    const antwika::testing::ScratchFile file(
+        "antwika_atlas_editor_roundtrip.png");
     PngAtlasStore store(file.path(), file.path());
 
     store.save(twoByTwo());
@@ -105,7 +68,8 @@ TEST(PngAtlasStoreTest, Load_ThrowsWhenTheFileIsNotThere)
 
 TEST(PngAtlasStoreTest, Load_ThrowsWhenTheFileIsNotAPng)
 {
-    const TempFile file("antwika_atlas_editor_notapng.png");
+    const antwika::testing::ScratchFile file(
+        "antwika_atlas_editor_notapng.png");
 
     {
         std::ofstream out(file.path(), std::ios::binary);
@@ -146,8 +110,8 @@ TEST(PngAtlasStoreTest, SavePath_SaysWhereASaveWouldGo)
 // Opening the game's atlas cannot overwrite it without an --out.
 TEST(PngAtlasStoreTest, Save_WritesToItsOwnPathRatherThanTheOpenedOne)
 {
-    const TempFile opened("antwika_atlas_editor_in.png");
-    const TempFile written("antwika_atlas_editor_out.png");
+    const antwika::testing::ScratchFile opened("antwika_atlas_editor_in.png");
+    const antwika::testing::ScratchFile written("antwika_atlas_editor_out.png");
 
     PngAtlasStore seeding(std::nullopt, opened.path());
     seeding.save(twoByTwo());

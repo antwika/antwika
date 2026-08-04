@@ -78,6 +78,14 @@ namespace antwika::tower_defence
 
         /** @brief Score for killing one. */
         std::uint64_t reward = 0;
+
+        /**
+         * @brief Compare two profiles.
+         * @param other The profile to compare against.
+         * @return True when every field matches.
+         */
+        [[nodiscard]] bool operator==(
+            const MobProfile &other) const = default;
     };
 
     /**
@@ -85,6 +93,36 @@ namespace antwika::tower_defence
      * @param kind The kind to describe; one of the enumerators.
      * @return Its profile.
      */
+    /**
+     * @brief What each kind is worth, costs and survives, in MobKind
+     * order.
+     *
+     * The four pull against each other rather than ranking: a Runner
+     * is through a reach in a third of a Brute's ticks, a Brute is
+     * worth more but blocks nothing while it plods, and a Shielded one
+     * is only worth building for once guns hit hard.
+     *
+     * A lookup a config file can restate rather than a table only this
+     * build can see; profileOf() answers from this, and BattleConfig
+     * carries whichever table a run was configured with.
+     */
+    inline constexpr std::array<MobProfile, kMobKindCount>
+        kDefaultMobProfiles{
+            MobProfile{
+                .ticksPerCell = 2, .health = 6, .armour = 0, .reward = 10},
+            MobProfile{
+                .ticksPerCell = 1, .health = 4, .armour = 0, .reward = 14},
+            MobProfile{
+                .ticksPerCell = 3,
+                .health = 18,
+                .armour = 0,
+                .reward = 24},
+            MobProfile{
+                .ticksPerCell = 2,
+                .health = 8,
+                .armour = 1,
+                .reward = 30}};
+
     [[nodiscard]] MobProfile profileOf(MobKind kind);
 
 } // namespace antwika::tower_defence

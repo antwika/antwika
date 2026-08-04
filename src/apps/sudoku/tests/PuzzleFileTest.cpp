@@ -11,8 +11,8 @@
 #include <antwika/sudoku/Board.hpp>
 #include <antwika/sudoku/BoardFormatError.hpp>
 #include <antwika/sudoku/PuzzleFile.hpp>
+#include <antwika/testing/ScratchPath.hpp>
 
-#include "ScratchFile.hpp"
 
 using antwika::sudoku::Board;
 using antwika::sudoku::BoardFormatError;
@@ -24,7 +24,6 @@ using antwika::sudoku::puzzleFromJson;
 using antwika::sudoku::readPuzzle;
 using antwika::sudoku::standardPuzzleMigrations;
 using antwika::sudoku::startingPuzzle;
-using antwika::sudoku::tests::ScratchFile;
 
 namespace
 {
@@ -157,7 +156,7 @@ namespace
 
     TEST(StartingPuzzleTest, StartingPuzzle_ReadsTheFileItIsGiven)
     {
-        const ScratchFile file{"antwika_sudoku_puzzle.txt"};
+        const antwika::testing::ScratchFile file{"antwika_sudoku_puzzle.txt"};
         file.write(
             "1........\n"
             ".........\n"

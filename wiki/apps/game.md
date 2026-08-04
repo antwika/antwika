@@ -757,7 +757,7 @@ The bar reports the balance as a `money {0}` label beside the ratings, appended 
 `main()` reads the file once, before the loop, through `loadConfigFileOrDefaults()`; a missing file is an ordinary install playing the game these sources define, and anything else wrong with one is refused as [`antwika::config`](../libraries/config.md)'s `ConfigFormatError` rather than repaired -- a config with a member quietly defaulted would be a rebalance that only half took.
 The value rides into `bootstrap()` on `GameWiring::config` -- the wiring bundle every collaborator already arrives on -- and is copied into the systems that read it, so a test that overrides one number constructs the system with it and no global exists anywhere.
 
-**What it holds is costs, periods and caps**: the starting money, the road, raze and per-kind building costs, the drain, risk, spawn, settler, evolve, devolve, production, labour and staff-decay periods, the burn duration, the production batch, the mouths a serving feeds, and the walker cap.
+**What it holds is costs, periods and caps**: the starting money, the road, raze and per-kind building costs, the drain, risk, spawn, settler, evolve, devolve, production, labour and staff-decay periods, which goods a household cannot go without, the burn duration, the production batch, the mouths a serving feeds, and the walker cap.
 Every member is optional -- a config stating one number is a one-line rebalance, not a restatement of every default -- which also keeps additions additive, so the format should stay at version 1 until a member changes meaning.
 The document is read `parse -> read version -> migrate -> validate -> decode` through [`antwika::config`](../libraries/config.md), which owns the envelope, the pipeline and the file handling, with the magic `antwika-game-config` telling it apart from the save and the options file; the schema -- this app's own, built on that library's `wholeShape()` -- is where a zero-tick period or a negative cost is refused, beside the parse that would admit it.
 The shipped `assets/config.json` states the defaults outright, and `ConfigFileTest` pins that -- so shipping the file changes nothing on its own, and what each number is called and currently is can be read off it.
@@ -829,10 +829,16 @@ The legacy `"employed"` count older files carry is still accepted by the schema 
 
 **`BuildingView` carries the employed count**, so a live run and its replay disagreeing about who works where fails `ReplayDeterminismTest` directly, and the hover readout says both numbers in words -- `unemployed {0}/{1}` on anything that houses people, `staff {0}/{1}` on anything that wants workers.
 
-## Future work
+## The four view verbs, said once
 
-**`UiSink`/`UiOverlay`/`Toolbar` should adopt `ui::applyHover()` next.**
-The app already owns a hint channel and already draws its placement ghost from it, so the toolbar buttons lighting up on approach is `main.cpp` handing `RenderSystem` the channel and one `applyHover()` call after the sink has resolved the press — and it is the one remaining thing `apps/game` says it does not do.
+**Zoom in, zoom out, put the view back and hold the run are asked for two ways** -- a press on the bottom bar and a bound key -- and `ViewCommands` is the one statement of what each means.
+Both sinks used to spell the four out for themselves, which is why both took a `Camera &` to move *and* a `Camera` to go back to, and why `UiSink`'s constructor was handed the same camera twice with nothing but argument order telling them apart.
+`UiSink` now reads the camera and the pause to *describe* the bar and writes neither, `HotkeySink` names neither at all, and the two routes to a zoom cannot drift.
+
+**The bar lights up under the pointer**, through `ui::applyHover()` on the render side.
+`UiOverlay` carries the frame's `hoverTargets` beside its picture, and `RenderSystem` recolours a *copy* of that picture from `input::PointerHintChannel` just before painting -- so a button brightens on approach while nothing about the hover reaches a sink, a system, a snapshot or a recording.
+That is [`docs/hover-is-not-simulation.md`](../../docs/hover-is-not-simulation.md)'s rule kept exactly: the hint may decide what is drawn and nothing else.
+
 
 ## See also
 

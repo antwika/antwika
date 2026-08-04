@@ -1,4 +1,5 @@
 #include "antwika/music_editor/ScoreFiles.hpp"
+#include <antwika/testing/ScratchPath.hpp>
 
 #include <filesystem>
 #include <fstream>

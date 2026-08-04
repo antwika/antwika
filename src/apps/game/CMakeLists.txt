@@ -88,6 +88,7 @@ add_executable(antwika_game
     src/SceneSnapshot.cpp
     src/UiOverlay.cpp
     src/UiSink.cpp
+    src/ViewCommands.cpp
     src/WalkerMotion.cpp
     src/WalkerSystem.cpp
     src/WorldMap.cpp
@@ -111,6 +112,7 @@ target_link_libraries(antwika_game
         antwika::cli
         antwika::config
         antwika::ecs
+        antwika::ecs_commons
         antwika::engine
         antwika::gfx
         antwika::gfx_backend

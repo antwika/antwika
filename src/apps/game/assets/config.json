@@ -27,6 +27,11 @@
   "spawnPeriodTicks": 25,
   "staffDecayPeriodTicks": 500,
   "startingMoney": 5000,
+  "sustaining": [
+    true,
+    false,
+    false
+  ],
   "version": 1,
   "walkerLimit": 64
 }

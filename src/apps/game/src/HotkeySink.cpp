@@ -14,14 +14,8 @@ namespace antwika::game
     HotkeySink::HotkeySink(
         const OptionsState &options,
         const InputFold &input,
-        Camera &camera,
-        Camera home,
-        PauseState &pause) noexcept
-        : options(options),
-          input(input),
-          camera(camera),
-          home(home),
-          pause(pause)
+        ViewCommands &view) noexcept
+        : options(options), input(input), view(view)
     {
     }
 
@@ -60,23 +54,23 @@ namespace antwika::game
         // The last action is the fall-through, so nothing is left over.
         if (action == Action::Pause)
         {
-            pause.set(!pause.paused());
+            view.togglePause();
             return;
         }
 
         if (action == Action::ZoomIn)
         {
-            camera.zoomIn();
+            view.zoomIn();
             return;
         }
 
         if (action == Action::ZoomOut)
         {
-            camera.zoomOut();
+            view.zoomOut();
             return;
         }
 
-        camera = home;
+        view.resetView();
     }
 
 } // namespace antwika::game

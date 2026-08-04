@@ -90,7 +90,7 @@ class AntwikaConan(ConanFile):
         # antwika::gfx decodes an image once for every backend to
         # upload, so the decoder is not part of anyone's graph in
         # particular.
-        self.requires("stb/cci.20220909")
+        self.requires("stb/cci.20240531")
 
         # Also unconditional, and for the same reason: antwika::gfx's
         # 3D math types are built on GLM whichever backend draws them.

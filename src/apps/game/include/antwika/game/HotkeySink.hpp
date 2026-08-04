@@ -3,10 +3,9 @@
 #include <antwika/event/ITickEventSink.hpp>
 #include <antwika/event/TickEvent.hpp>
 
-#include "antwika/game/Camera.hpp"
 #include "antwika/game/InputFold.hpp"
 #include "antwika/game/OptionsState.hpp"
-#include "antwika/game/PauseState.hpp"
+#include "antwika/game/ViewCommands.hpp"
 
 namespace antwika::game
 {
@@ -53,20 +52,14 @@ namespace antwika::game
          * @param input The folded input, holding the event being
          * handled. Must outlive this sink, and must be registered ahead
          * of it.
-         * @param camera Moved by the zoom and reset actions. Must
-         * outlive this sink.
-         * @param home Where the reset action puts the camera back to,
-         * copied at construction exactly as UiSink's is -- so the button
-         * and the key cannot come to disagree about where "back" is.
-         * @param pause Held and let go by the pause action. Must outlive
-         * this sink.
+         * @param view What a bound action asks for -- the same four
+         * verbs the bar's buttons ask for. Must outlive this sink.
+
          */
         HotkeySink(
             const OptionsState &options,
             const InputFold &input,
-            Camera &camera,
-            Camera home,
-            PauseState &pause) noexcept;
+            ViewCommands &view) noexcept;
 
         HotkeySink(const HotkeySink &) = delete;
         HotkeySink(HotkeySink &&) = delete;
@@ -86,9 +79,7 @@ namespace antwika::game
 
         const OptionsState &options;
         const InputFold &input;
-        Camera &camera;
-        Camera home;
-        PauseState &pause;
+        ViewCommands &view;
     };
 
 } // namespace antwika::game

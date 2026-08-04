@@ -122,7 +122,9 @@ namespace antwika::game
         }
 
         overlay.set(
-            std::move(frame.commands), frame.interactions.pointerOverUi);
+            std::move(frame.commands),
+            std::move(frame.hoverTargets),
+            frame.interactions.pointerOverUi);
     }
 
     void MainMenuSink::refreshAndAct(
@@ -173,7 +175,9 @@ namespace antwika::game
         }
 
         overlay.set(
-            std::move(frame.commands), frame.interactions.pointerOverUi);
+            std::move(frame.commands),
+            std::move(frame.hoverTargets),
+            frame.interactions.pointerOverUi);
     }
 
 } // namespace antwika::game

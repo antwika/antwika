@@ -16,6 +16,7 @@
 #include "antwika/game/KeyBindings.hpp"
 #include "antwika/game/OptionsState.hpp"
 #include "antwika/game/PauseState.hpp"
+#include "antwika/game/ViewCommands.hpp"
 
 using antwika::event::Event;
 using antwika::event::TickEvent;
@@ -23,6 +24,7 @@ using antwika::game::Action;
 using antwika::game::Camera;
 using antwika::game::HotkeySink;
 using antwika::game::InputFold;
+using antwika::game::ViewCommands;
 using antwika::game::kDefaultBindings;
 using antwika::game::OptionsState;
 using antwika::game::PauseState;
@@ -72,7 +74,8 @@ namespace
         InputFold input{codec};
         Camera camera{kHome};
         PauseState pause;
-        HotkeySink sink{options, input, camera, camera, pause};
+        ViewCommands view{camera, pause, camera};
+        HotkeySink sink{options, input, view};
     };
 } // namespace
 

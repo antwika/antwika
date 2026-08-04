@@ -73,6 +73,7 @@ namespace antwika::config::conformance
                 config.labourPeriodTicks = 20;
                 config.staffDecayPeriodTicks = 21;
                 config.walkerLimit = 9;
+                config.sustaining = {false, true, true};
                 return config;
             }
 
@@ -163,6 +164,21 @@ namespace
     {
         auto document = configToJson(GameConfig{});
         document["buildingCosts"]["tower"] = 9;
+
+        EXPECT_THROW((void)configFromJson(document), ConfigFormatError);
+    }
+
+} // namespace
+
+namespace
+{
+
+    // A household that needs nothing can never empty.
+    // That turns the population rule off rather than tuning it.
+    TEST(GameConfigRulesTest, AConfigNamingNoStapleIsRefused)
+    {
+        auto document = configToJson(GameConfig{});
+        document["sustaining"] = {false, false, false};
 
         EXPECT_THROW((void)configFromJson(document), ConfigFormatError);
     }

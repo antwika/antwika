@@ -17,6 +17,7 @@ endif()
 add_executable(antwika_ecs_commons_tests
     ${ANTWIKA_ECS_COMMONS_SOURCES}
     ComponentsTest.cpp
+    GatedSystemTest.cpp
     LifetimeSystemTest.cpp
     MovementSystemTest.cpp
     NameTest.cpp

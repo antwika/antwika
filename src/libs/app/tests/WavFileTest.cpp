@@ -12,6 +12,7 @@
 
 #include <antwika/app/WavFile.hpp>
 #include <antwika/sound/SoundError.hpp>
+#include <antwika/testing/ScratchPath.hpp>
 
 using antwika::app::readWavFile;
 using antwika::sound::SoundError;
@@ -28,57 +29,19 @@ namespace
         0x01, 0x00, 0x01, 0x00, 0x80, 0xbb, 0x00, 0x00, 0x00, 0x77,
         0x01, 0x00, 0x02, 0x00, 0x10, 0x00, 'd',  'a',  't',  'a',
         0x04, 0x00, 0x00, 0x00, 0x00, 0x40, 0x00, 0x00};
-
-    /**
-     * @brief A file in the temporary directory, removed when it goes.
-     */
-    class TempFile final
-    {
-    public:
-        explicit TempFile(const std::string &name)
-            : path(
-                  std::filesystem::temp_directory_path()
-                  // The pid keeps parallel ctest runs apart.
-                  // Each case is its own process under ctest -j.
-                  // Two cases on one fixed name raced here.
-                  // See game/tests/ScratchDirectory.hpp.
-                  / (std::string(name) + "." + std::to_string(::getpid())))
-        {
-        }
-
-        TempFile(const TempFile &) = delete;
-        TempFile(TempFile &&) = delete;
-
-        TempFile &operator=(const TempFile &) = delete;
-        TempFile &operator=(TempFile &&) = delete;
-
-        ~TempFile()
-        {
-            std::error_code ignored;
-            std::filesystem::remove(path, ignored);
-        }
-
-        [[nodiscard]] std::string name() const
-        {
-            return path.string();
-        }
-
-    private:
-        std::filesystem::path path;
-    };
 } // namespace
 
 TEST(WavFileTest, ReadsAWavOffDisk)
 {
-    const TempFile file("antwika-app-two-frames.wav");
+    const antwika::testing::ScratchFile file("antwika-app-two-frames.wav");
     {
-        std::ofstream out(file.name(), std::ios::binary);
+        std::ofstream out(file.string(), std::ios::binary);
         out.write(
             reinterpret_cast<const char *>(kTwoFrameWav.data()),
             static_cast<std::streamsize>(kTwoFrameWav.size()));
     }
 
-    const auto wave = readWavFile(file.name(), "antwika_test");
+    const auto wave = readWavFile(file.string(), "antwika_test");
 
     EXPECT_EQ(wave.format.rate, 48000U);
     EXPECT_EQ(wave.format.channels, 1U);

@@ -15,6 +15,7 @@ target_link_libraries(antwika_config_tests
     PRIVATE
         antwika::config
         antwika::replay
+        antwika::testing
         gtest::gtest
 )
 

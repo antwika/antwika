@@ -25,6 +25,7 @@
 #include <antwika/replay/ReplayCli.hpp>
 #include <antwika/replay/ReplaySource.hpp>
 #include <antwika/simulation/WindowInputSource.hpp>
+#include <antwika/testing/ScratchPath.hpp>
 
 #include "antwika/life/Board.hpp"
 #include "antwika/life/BoardScene.hpp"
@@ -32,7 +33,6 @@
 #include "antwika/life/Life.hpp"
 #include "antwika/life/RenderSystem.hpp"
 
-#include "ScratchFile.hpp"
 
 using antwika::ecs::ISystem;
 using antwika::event::Event;
@@ -52,7 +52,6 @@ using antwika::gfx::mocks::MockWindow;
 using antwika::life::Board;
 using antwika::life::BoardScene;
 using antwika::life::RenderSystem;
-using antwika::life::tests::ScratchFile;
 using antwika::log::mocks::MockLogger;
 using antwika::replay::ReplaySource;
 using antwika::simulation::WindowInputSource;
@@ -100,7 +99,8 @@ TEST(
     RenderDeterminismTest,
     RecordingAWindowedRunReplaysIdenticallyUnderNullBackend)
 {
-    const ScratchFile replayFile("antwika_life_render_determinism.replay");
+    const antwika::testing::ScratchFile replayFile(
+        "antwika_life_render_determinism.replay");
     const BoardScene scene;
 
     // The live run: a mocked window, closed part way through.

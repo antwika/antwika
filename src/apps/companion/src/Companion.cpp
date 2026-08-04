@@ -5,6 +5,7 @@
 #include <utility>
 #include <vector>
 
+#include <antwika/app/StoreIfLive.hpp>
 #include <antwika/engine/Engine.hpp>
 #include <antwika/engine/StopSignal.hpp>
 #include <antwika/event/EventDispatcher.hpp>
@@ -201,14 +202,10 @@ namespace antwika::companion
     }
 
     std::optional<std::reference_wrapper<IPetStore>> storeIfLive(
-        IPetStore &store, const std::optional<std::string> &replayPath)
+        IPetStore &store,
+        const std::optional<std::string> &replayPath)
     {
-        if (replayPath.has_value())
-        {
-            return std::nullopt;
-        }
-
-        return store;
+        return antwika::app::storeIfLive(store, replayPath);
     }
 
     void announceHowToStop(ILogger &logger, const bool drawsNothing)

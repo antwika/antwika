@@ -10,6 +10,7 @@
 
 #include <nlohmann/json-schema.hpp>
 
+#include <antwika/config/ConfigDocument.hpp>
 #include <antwika/replay/JsonShapes.hpp>
 #include <antwika/replay/SchemaVersion.hpp>
 #include <antwika/replay/VersionedDocument.hpp>
@@ -39,20 +40,15 @@ namespace antwika::game
         // The bank may be negative -- see GameState::money.
         // So no count shape fits it.
         // Bounded by what a std::int64_t holds instead.
-        // That is boundedCountShape's reason exactly.
-        // A wider number would be narrowed by the decode in silence.
+        // antwika::config states that shape for every format.
+        // ConfigFile.cpp's money member reads the very same call.
+        // So there is no second copy of it here.
         nlohmann::json moneyShape()
         {
-            nlohmann::json shape;
-            shape["type"] = "integer";
-            shape["minimum"] = std::numeric_limits<std::int64_t>::min();
-            shape["maximum"] = std::numeric_limits<std::int64_t>::max();
-            return shape;
-
-            // gcov puts the returned json's unwind block on this brace.
-            // arrayOf() below carries the identical exclusion.
-            // No input reaches it.
-        } // GCOVR_EXCL_LINE
+            return antwika::config::wholeShape(
+                std::numeric_limits<std::int64_t>::min(),
+                std::numeric_limits<std::int64_t>::max());
+        }
 
         nlohmann::json stateShape()
         {

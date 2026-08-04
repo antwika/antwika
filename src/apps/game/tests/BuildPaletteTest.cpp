@@ -60,9 +60,11 @@
 #include "antwika/game/Toolbar.hpp"
 #include "antwika/game/UiOverlay.hpp"
 #include "antwika/game/UiSink.hpp"
+#include "antwika/game/ViewCommands.hpp"
 #include "antwika/game/WorldMapState.hpp"
 
 using antwika::game::GameConfig;
+using antwika::game::ViewCommands;
 using antwika::game::tests::kTranslator;
 
 using antwika::ecs::SystemScheduler;
@@ -393,6 +395,7 @@ namespace
         MenuModalScene modalScene{kTranslator};
         antwika::game::CityRatings ratings;
         antwika::game::GameState state;
+        ViewCommands viewCommands{camera, pause, camera};
         UiSink uiSink{
             camera,
             overlay,
@@ -403,7 +406,7 @@ namespace
             commands,
             drag,
             modalScene,
-            camera,
+            viewCommands,
             ratings,
             state};
         GridSink gridSink{

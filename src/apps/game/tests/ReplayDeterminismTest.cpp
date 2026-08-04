@@ -23,6 +23,7 @@
 #include <antwika/input/InputEventCodec.hpp>
 #include <antwika/input/MouseButton.hpp>
 #include <antwika/input/Position.hpp>
+#include <antwika/testing/ScratchPath.hpp>
 #include <antwika/ui/Pointer.hpp>
 #include <antwika/ui/WidgetId.hpp>
 #include <antwika/log/mocks/MockLogger.hpp>
@@ -87,45 +88,6 @@ namespace
     constexpr GridExtent kExtent{.width = 16, .height = 16};
     constexpr antwika::time::Tick kMaxTicks = 40;
     constexpr WindowId kWindow{7};
-
-    // Removes its backing file on scope exit.
-    class ScratchFile
-    {
-    public:
-        explicit ScratchFile(std::string name)
-            : path(
-                  (std::filesystem::temp_directory_path()
-                   // The pid keeps parallel ctest runs apart.
-                   // Each case is its own process under ctest -j.
-                   // Two cases on one fixed name raced here.
-                   // See game/tests/ScratchDirectory.hpp.
-                   / (std::string(name) + "." + std::to_string(::getpid())))
-                      .string())
-        {
-        }
-
-        ScratchFile(const ScratchFile &) = delete;
-        ScratchFile(ScratchFile &&) = delete;
-
-        ScratchFile &operator=(const ScratchFile &) = delete;
-        ScratchFile &operator=(ScratchFile &&) = delete;
-
-        ~ScratchFile()
-        {
-            // A destructor must not throw, so use the non-throwing form.
-            std::error_code ignored;
-            std::filesystem::remove(path, ignored);
-        }
-
-        [[nodiscard]] const std::string &name() const noexcept
-        {
-            return path;
-        }
-
-    private:
-        std::string path;
-    };
-
     struct RunResult
     {
         GameSummary summary;
@@ -352,10 +314,10 @@ TEST(ReplayDeterminismTest, ARecordedRunReplaysToTheSameState)
     ReplaySource liveSource(script);
     const auto live = run(liveSource);
 
-    const ScratchFile file("antwika-game-determinism.replay");
+    const antwika::testing::ScratchFile file("antwika-game-determinism.replay");
     antwika::replay::saveReplayFile(
-        live.recorded, file.name());
-    auto loaded = antwika::replay::loadReplayFile(file.name());
+        live.recorded, file.string());
+    auto loaded = antwika::replay::loadReplayFile(file.string());
 
     ReplaySource replayedSource(std::move(loaded));
     const auto replayed = run(replayedSource);
@@ -393,10 +355,10 @@ TEST(ReplayDeterminismTest, TheRecordingHoldsClicksAndNoDerivedPlacement)
 
     const auto result = run(source);
 
-    const ScratchFile file("antwika-game-recording.replay");
+    const antwika::testing::ScratchFile file("antwika-game-recording.replay");
     antwika::replay::saveReplayFile(
-        result.recorded, file.name());
-    const auto loaded = antwika::replay::loadReplayFile(file.name());
+        result.recorded, file.string());
+    const auto loaded = antwika::replay::loadReplayFile(file.string());
 
     const InputEventCodec codec;
     std::size_t inputEvents = 0;
@@ -451,10 +413,10 @@ TEST(ReplayDeterminismTest, ClosingTheWindowEndsTheRunAndReplaysTheSame)
     EXPECT_EQ(
         live.recorded.back().event.name, antwika::engine::events::kTick);
 
-    const ScratchFile file("antwika-game-close.replay");
+    const antwika::testing::ScratchFile file("antwika-game-close.replay");
     antwika::replay::saveReplayFile(
-        live.recorded, file.name());
-    auto loaded = antwika::replay::loadReplayFile(file.name());
+        live.recorded, file.string());
+    auto loaded = antwika::replay::loadReplayFile(file.string());
 
     // Replayed under a source with no window at all.
     ReplaySource replayedSource(std::move(loaded));
@@ -478,10 +440,10 @@ TEST(ReplayDeterminismTest, AToolbarClickReplaysToTheSameCamera)
         live.summary.camera.zoomLevel());
     EXPECT_TRUE(live.summary.paths.empty());
 
-    const ScratchFile file("antwika-game-toolbar.replay");
+    const antwika::testing::ScratchFile file("antwika-game-toolbar.replay");
     antwika::replay::saveReplayFile(
-        live.recorded, file.name());
-    auto loaded = antwika::replay::loadReplayFile(file.name());
+        live.recorded, file.string());
+    auto loaded = antwika::replay::loadReplayFile(file.string());
 
     // Nothing about a button may be in the file.
     const InputEventCodec codec;
@@ -821,9 +783,9 @@ TEST(ReplayDeterminismTest, ARightClickCancelReplaysToTheSameState)
     ASSERT_EQ(live.summary.paths.size(), 1U);
     EXPECT_EQ(live.summary.paths[0], (Cell{.x = 4, .y = 5}));
 
-    const ScratchFile file("antwika-game-cancel.replay");
-    antwika::replay::saveReplayFile(live.recorded, file.name());
-    auto loaded = antwika::replay::loadReplayFile(file.name());
+    const antwika::testing::ScratchFile file("antwika-game-cancel.replay");
+    antwika::replay::saveReplayFile(live.recorded, file.string());
+    auto loaded = antwika::replay::loadReplayFile(file.string());
 
     // Nothing about a mode may be in the file, only the clicks.
     const InputEventCodec codec;
@@ -890,9 +852,9 @@ TEST(ReplayDeterminismTest, ABuildingsWalkersAreRegeneratedRatherThanStored)
             || event.event.name == antwika::engine::events::kStop);
     }
 
-    const ScratchFile file("antwika-game-spawn.replay");
-    antwika::replay::saveReplayFile(live.recorded, file.name());
-    auto loaded = antwika::replay::loadReplayFile(file.name());
+    const antwika::testing::ScratchFile file("antwika-game-spawn.replay");
+    antwika::replay::saveReplayFile(live.recorded, file.string());
+    auto loaded = antwika::replay::loadReplayFile(file.string());
 
     ReplaySource replayedSource(std::move(loaded));
     const auto replayed = runWithToolbar(replayedSource, kSpawnTicks);
@@ -1029,9 +991,9 @@ TEST(ReplayDeterminismTest, ACoveredCityReplaysToTheSameCoverage)
     ReplaySource liveSource(script);
     const auto live = runWithToolbar(liveSource, kCoverageTicks);
 
-    const ScratchFile file("antwika-game-coverage.replay");
-    antwika::replay::saveReplayFile(live.recorded, file.name());
-    auto loaded = antwika::replay::loadReplayFile(file.name());
+    const antwika::testing::ScratchFile file("antwika-game-coverage.replay");
+    antwika::replay::saveReplayFile(live.recorded, file.string());
+    auto loaded = antwika::replay::loadReplayFile(file.string());
 
     // Nothing about coverage may be on the wire; it is regenerated.
     for (const auto &event : loaded)
@@ -1167,9 +1129,9 @@ TEST(ReplayDeterminismTest, AGrowingCityReplaysToTheSameLevels)
     ReplaySource liveSource(script);
     const auto live = runWithToolbar(liveSource, kHousingTicks);
 
-    const ScratchFile file("antwika-game-housing.replay");
-    antwika::replay::saveReplayFile(live.recorded, file.name());
-    auto loaded = antwika::replay::loadReplayFile(file.name());
+    const antwika::testing::ScratchFile file("antwika-game-housing.replay");
+    antwika::replay::saveReplayFile(live.recorded, file.string());
+    auto loaded = antwika::replay::loadReplayFile(file.string());
 
     // Nothing about a house growing may be on the wire.
     // It is a function of coverage, stock and desirability.
@@ -1297,9 +1259,9 @@ TEST(ReplayDeterminismTest, AContendedCityReplaysToTheSameAllocation)
     ReplaySource liveSource(script);
     const auto live = runWithToolbar(liveSource, kLabourTicks);
 
-    const ScratchFile file("antwika-game-labour.replay");
-    antwika::replay::saveReplayFile(live.recorded, file.name());
-    auto loaded = antwika::replay::loadReplayFile(file.name());
+    const antwika::testing::ScratchFile file("antwika-game-labour.replay");
+    antwika::replay::saveReplayFile(live.recorded, file.string());
+    auto loaded = antwika::replay::loadReplayFile(file.string());
 
     // Nothing about a person or a job may be on the wire.
     // Both follow from a road, a field and a tier.

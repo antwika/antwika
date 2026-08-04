@@ -48,6 +48,27 @@ namespace antwika::config::conformance
                 Config config;
                 config.startingLives = 3;
                 config.framePeriodMs = 40;
+                config.mobs = {
+                    antwika::tower_defence::MobProfile{
+                        .ticksPerCell = 5,
+                        .health = 50,
+                        .armour = 5,
+                        .reward = 50},
+                    antwika::tower_defence::MobProfile{
+                        .ticksPerCell = 6,
+                        .health = 60,
+                        .armour = 6,
+                        .reward = 60},
+                    antwika::tower_defence::MobProfile{
+                        .ticksPerCell = 7,
+                        .health = 70,
+                        .armour = 7,
+                        .reward = 70},
+                    antwika::tower_defence::MobProfile{
+                        .ticksPerCell = 8,
+                        .health = 80,
+                        .armour = 8,
+                        .reward = 80}};
                 return config;
             }
 
@@ -55,7 +76,9 @@ namespace antwika::config::conformance
                 const Config &decoded, const Config &expected)
             {
                 EXPECT_EQ(decoded.startingLives, expected.startingLives);
-                EXPECT_EQ(decoded.framePeriodMs, expected.framePeriodMs);
+                EXPECT_EQ(
+                    decoded.framePeriodMs, expected.framePeriodMs);
+                EXPECT_EQ(decoded.mobs, expected.mobs);
             }
 
             static const char *floorMember()
@@ -99,3 +122,54 @@ namespace antwika::config::conformance
         TowerDefence, ConfigFileContract, TowerDefenceConfigTraits);
 
 } // namespace antwika::config::conformance
+
+namespace
+{
+
+    using antwika::tower_defence::MobProfile;
+
+    // A defaulted operator== is one comparison per member.
+    // A test that varies one member proves only that member is in it.
+    TEST(MobProfileTest, EqualityComparesEveryField)
+    {
+        const MobProfile base{
+            .ticksPerCell = 2, .health = 6, .armour = 0, .reward = 10};
+
+        EXPECT_EQ(
+            base,
+            (MobProfile{
+                .ticksPerCell = 2,
+                .health = 6,
+                .armour = 0,
+                .reward = 10}));
+        EXPECT_NE(
+            base,
+            (MobProfile{
+                .ticksPerCell = 3,
+                .health = 6,
+                .armour = 0,
+                .reward = 10}));
+        EXPECT_NE(
+            base,
+            (MobProfile{
+                .ticksPerCell = 2,
+                .health = 7,
+                .armour = 0,
+                .reward = 10}));
+        EXPECT_NE(
+            base,
+            (MobProfile{
+                .ticksPerCell = 2,
+                .health = 6,
+                .armour = 1,
+                .reward = 10}));
+        EXPECT_NE(
+            base,
+            (MobProfile{
+                .ticksPerCell = 2,
+                .health = 6,
+                .armour = 0,
+                .reward = 11}));
+    }
+
+} // namespace

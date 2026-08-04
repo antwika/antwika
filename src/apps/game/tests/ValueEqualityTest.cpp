@@ -606,6 +606,8 @@ namespace
         expectMemberCompared(
             base, [](GameConfig &t) { t.staffDecayPeriodTicks = 99; });
         expectMemberCompared(base, [](GameConfig &t) { t.walkerLimit = 99; });
+        expectMemberCompared(
+            base, [](GameConfig &t) { t.sustaining[1] = true; });
     }
 
 } // namespace

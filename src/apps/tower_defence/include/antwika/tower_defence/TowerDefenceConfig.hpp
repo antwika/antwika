@@ -1,8 +1,10 @@
 #pragma once
 
+#include <array>
 #include <cstdint>
 
 #include "antwika/tower_defence/Campaign.hpp"
+#include "antwika/tower_defence/MobKind.hpp"
 
 namespace antwika::tower_defence
 {
@@ -24,6 +26,15 @@ namespace antwika::tower_defence
         std::uint32_t startingLives = kStartingLives;
         /** @brief Milliseconds one frame takes on the wall clock. */
         std::int32_t framePeriodMs = 80;
+
+        /**
+         * @brief What each mob kind is worth, costs and survives.
+         *
+         * A lookup keyed by kind rather than a constant only this
+         * build can see -- kDefaultMobProfiles is what a run that says
+         * nothing plays.
+         */
+        std::array<MobProfile, kMobKindCount> mobs = kDefaultMobProfiles;
     };
 
 } // namespace antwika::tower_defence

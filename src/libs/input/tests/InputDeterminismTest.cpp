@@ -21,6 +21,7 @@
 #include <antwika/simulation/EngineLoop.hpp>
 #include <antwika/replay/ReplayCli.hpp>
 #include <antwika/replay/ReplaySource.hpp>
+#include <antwika/testing/ScratchPath.hpp>
 
 #include "antwika/input/IdleMotionSource.hpp"
 #include "antwika/input/InputEvent.hpp"
@@ -60,44 +61,6 @@ using antwika::replay::ReplaySource;
 
 namespace
 {
-    // Removes its backing file on scope exit.
-    class ScratchFile
-    {
-    public:
-        explicit ScratchFile(std::string name)
-            : path(
-                  (std::filesystem::temp_directory_path()
-                   // The pid keeps parallel ctest runs apart.
-                   // Each case is its own process under ctest -j.
-                   // Two cases on one fixed name raced here.
-                   // See game/tests/ScratchDirectory.hpp.
-                   / (std::string(name) + "." + std::to_string(::getpid())))
-                      .string())
-        {
-        }
-
-        ScratchFile(const ScratchFile &) = delete;
-        ScratchFile(ScratchFile &&) = delete;
-
-        ScratchFile &operator=(const ScratchFile &) = delete;
-        ScratchFile &operator=(ScratchFile &&) = delete;
-
-        ~ScratchFile()
-        {
-            // A destructor must not throw, so use the non-throwing form.
-            std::error_code ignored;
-            std::filesystem::remove(path, ignored);
-        }
-
-        [[nodiscard]] const std::string &name() const noexcept
-        {
-            return path;
-        }
-
-    private:
-        std::string path;
-    };
-
     // What a session amounted to, in terms an application cares about.
     // Comparable, so two runs are asserted equal rather than hashed.
     // A hash would agree for the wrong reason if both folded nothing.
@@ -295,9 +258,10 @@ TEST(
 
     // Round-trip through the real save and load.
     // That exercises the engine.tick filtering rather than assuming it.
-    const ScratchFile file("antwika-input-determinism.replay");
-    antwika::replay::saveReplayFile(liveRun.recorded, file.name());
-    auto loaded = antwika::replay::loadReplayFile(file.name());
+    const antwika::testing::ScratchFile file(
+        "antwika-input-determinism.replay");
+    antwika::replay::saveReplayFile(liveRun.recorded, file.string());
+    auto loaded = antwika::replay::loadReplayFile(file.string());
 
     ReplaySource replayed(std::move(loaded));
     const auto replayedRun = run(replayed, kMaxTicks);
@@ -342,9 +306,9 @@ TEST(InputDeterminismTest, TheRecordingKeepsTheInputAndDropsTheTicks)
 
     const auto liveRun = run(live, kMaxTicks);
 
-    const ScratchFile file("antwika-input-recording.replay");
-    antwika::replay::saveReplayFile(liveRun.recorded, file.name());
-    const auto loaded = antwika::replay::loadReplayFile(file.name());
+    const antwika::testing::ScratchFile file("antwika-input-recording.replay");
+    antwika::replay::saveReplayFile(liveRun.recorded, file.string());
+    const auto loaded = antwika::replay::loadReplayFile(file.string());
 
     std::size_t inputEvents = 0;
     for (const auto &event : loaded)
@@ -427,9 +391,9 @@ TEST(InputDeterminismTest, AGatedLiveSessionReplaysToTheSameState)
 
     const auto liveRun = run(gated, kMaxTicks);
 
-    const ScratchFile file("antwika-input-gated.replay");
-    antwika::replay::saveReplayFile(liveRun.recorded, file.name());
-    auto loaded = antwika::replay::loadReplayFile(file.name());
+    const antwika::testing::ScratchFile file("antwika-input-gated.replay");
+    antwika::replay::saveReplayFile(liveRun.recorded, file.string());
+    auto loaded = antwika::replay::loadReplayFile(file.string());
 
     // Gated on the way back too, since both paths run one pipeline.
     // An already gated stream must come through it unchanged.

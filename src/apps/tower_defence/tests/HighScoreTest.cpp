@@ -12,6 +12,7 @@
 #include <nlohmann/json.hpp>
 
 #include <antwika/replay/SchemaVersion.hpp>
+#include <antwika/testing/ScratchPath.hpp>
 
 #include "antwika/tower_defence/FileScoreStore.hpp"
 #include "antwika/tower_defence/HighScore.hpp"
@@ -31,44 +32,6 @@ using antwika::tower_defence::writeHighScore;
 
 namespace
 {
-    // Removes its backing file on scope exit.
-    // That way a failing assertion leaves no stray temp files behind.
-    class ScratchFile
-    {
-    public:
-        explicit ScratchFile(std::string_view name)
-            : path(
-                  std::filesystem::temp_directory_path()
-                  // The pid keeps parallel ctest runs apart.
-                  // Each case is its own process under ctest -j.
-                  // Two cases on one fixed name raced here.
-                  // See game/tests/ScratchDirectory.hpp.
-                  / (std::string(name) + "." + std::to_string(::getpid())))
-        {
-        }
-
-        ~ScratchFile()
-        {
-            // The error_code overload, not the throwing one.
-            // A destructor is implicitly noexcept.
-            std::error_code ignored;
-            std::filesystem::remove(path, ignored);
-        }
-
-        ScratchFile(const ScratchFile &) = delete;
-        ScratchFile(ScratchFile &&) = delete;
-        ScratchFile &operator=(const ScratchFile &) = delete;
-        ScratchFile &operator=(ScratchFile &&) = delete;
-
-        [[nodiscard]] std::string string() const
-        {
-            return path.string();
-        }
-
-    private:
-        std::filesystem::path path;
-    };
-
     HighScore parsed(const std::string &text)
     {
         std::istringstream in(text);
@@ -184,14 +147,14 @@ namespace
 
     TEST(FileScoreStoreTest, AFileThatIsNotThereIsAFirstRun)
     {
-        const ScratchFile file("antwika-td-absent.json");
+        const antwika::testing::ScratchFile file("antwika-td-absent.json");
         FileScoreStore store(file.string());
         EXPECT_FALSE(store.load().has_value());
     }
 
     TEST(FileScoreStoreTest, WhatIsWrittenIsWhatIsReadBack)
     {
-        const ScratchFile file("antwika-td-record.json");
+        const antwika::testing::ScratchFile file("antwika-td-record.json");
         const HighScore kept{.bestScore = 512, .bestLevel = 2};
 
         FileScoreStore store(file.string());
@@ -204,7 +167,7 @@ namespace
 
     TEST(FileScoreStoreTest, AFileThatWillNotReadIsReported)
     {
-        const ScratchFile file("antwika-td-broken.json");
+        const antwika::testing::ScratchFile file("antwika-td-broken.json");
         {
             std::ofstream out(file.string());
             out << "{ this is not a record";

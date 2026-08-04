@@ -120,7 +120,9 @@ namespace
                 .codec = codec,
                 .translator = translator,
                 .canvas = kWindowSize,
-                .campaign = {.lives = config.startingLives},
+                .campaign =
+                    {.lives = config.startingLives,
+                     .mobs = config.mobs},
                 .scoreStore = antwika::tower_defence::storeIfLive(
                     store, recorded.options.replayPath),
                 .replayRecorder = recorded.replayRecorder,

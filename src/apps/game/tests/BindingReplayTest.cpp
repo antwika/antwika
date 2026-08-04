@@ -22,9 +22,9 @@
 #include <antwika/input/fakes/FakeInputBackend.hpp>
 #include <antwika/log/mocks/MockLogger.hpp>
 #include <antwika/replay/ReplaySource.hpp>
+#include <antwika/testing/ScratchPath.hpp>
 #include <antwika/ui/Pointer.hpp>
 
-#include "ScratchDirectory.hpp"
 #include "TestTranslator.hpp"
 #include "WidgetPixel.hpp"
 #include "antwika/game/Action.hpp"
@@ -48,7 +48,6 @@
 #include "antwika/game/UiOverlay.hpp"
 
 using antwika::game::tests::kTranslator;
-using antwika::game::tests::scratchDirectory;
 using antwika::game::tests::widgetCentre;
 
 using antwika::event::TickEvent;
@@ -305,7 +304,8 @@ namespace
             return drive(optionsPath, true, fromFile, untouched, start);
         }
 
-        std::filesystem::path directory{scratchDirectory("bindings.")};
+        std::filesystem::path directory{
+            antwika::testing::scratchPath("bindings.")};
     };
 
     // A session somebody really could have played on machine one.

@@ -57,15 +57,6 @@ namespace antwika::poker
 
     namespace
     {
-        // Styles belong to seats rather than to players.
-        // PolicyAgent holds no state beyond its style.
-        // So a seat's style is the same as its occupant's own agent.
-        constexpr std::array<AgentStyle, 3> kSeatStyles{
-            AgentStyle::Balanced,
-            AgentStyle::Tight,
-            AgentStyle::Aggressive,
-        };
-
         // A window that vanished on the last tick would hide the end.
         // The sink paces each frame, so this waits rather than spins.
         void holdFinalFrame(
@@ -112,8 +103,9 @@ namespace antwika::poker
         for (std::size_t index = 0; index < config.seatCount; ++index)
         {
             agents.emplace_back(
-                kSeatStyles[index % kSeatStyles.size()],
-                config.handStrengths);
+                config.seatStyles[index % config.seatStyles.size()],
+                config.handStrengths,
+                config.thresholds);
         }
         for (auto &agent : agents)
         {

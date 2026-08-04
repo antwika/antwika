@@ -32,16 +32,16 @@ namespace antwika::game
     } // namespace
 
     UiSink::UiSink(
-        Camera &camera,
+        const Camera &camera,
         UiOverlay &overlay,
         const InputFold &input,
         const Toolbar &toolbar,
-        PauseState &pause,
+        const PauseState &pause,
         MapViewState &view,
         IMenuCommands &commands,
         RoadDrag &drag,
         const MenuModalScene &modal,
-        Camera home,
+        ViewCommands &viewCommands,
         const CityRatings &ratings,
         const GameState &state)
         : camera(camera),
@@ -53,7 +53,7 @@ namespace antwika::game
           commands(commands),
           drag(drag),
           modal(modal),
-          home(home),
+          viewCommands(viewCommands),
           ratings(ratings),
           state(state)
     {
@@ -178,7 +178,10 @@ namespace antwika::game
             actOnModal(chosen);
         }
 
-        overlay.set(std::move(frame.commands), covered);
+        overlay.set(
+            std::move(frame.commands),
+            std::move(frame.hoverTargets),
+            covered);
     }
 
     bool UiSink::actOnUi(const Interactions &interactions, bool pressed)
@@ -275,22 +278,19 @@ namespace antwika::game
     {
         if (activated == widgets::kZoomIn)
         {
-            camera.zoomIn();
+            viewCommands.zoomIn();
         }
         else if (activated == widgets::kZoomOut)
         {
-            camera.zoomOut();
+            viewCommands.zoomOut();
         }
         else if (activated == widgets::kResetView)
         {
-            camera = home;
+            viewCommands.resetView();
         }
         else if (activated == widgets::kPauseResume)
         {
-            // The opposite of what the button was showing, not a flip.
-            // Two players flipping on one tick would leave it running.
-            // Both asking for the same thing agree -- see PauseState.
-            pause.set(!pause.paused());
+            viewCommands.togglePause();
         }
         else if (activated == widgets::kMenu)
         {

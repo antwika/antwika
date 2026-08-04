@@ -40,6 +40,7 @@ using antwika::poker::AgentStyle;
 using antwika::poker::handStrength;
 using antwika::poker::PolicyAgent;
 using antwika::poker::kDefaultHandStrengths;
+using antwika::poker::kDefaultThresholds;
 using antwika::rng::SplitMix64Rng;
 
 namespace
@@ -143,14 +144,16 @@ TEST(PolicyAgentTest, HandStrength_ScoresAFullHouseBetweenFlushAndQuads)
 
 TEST(PolicyAgentTest, PlayingStyle_ReportsWhatItWasBuiltWith)
 {
-    const PolicyAgent agent(AgentStyle::Tight, kDefaultHandStrengths);
+    const PolicyAgent agent(AgentStyle::Tight, kDefaultHandStrengths,
+            kDefaultThresholds);
 
     EXPECT_EQ(agent.playingStyle(), AgentStyle::Tight);
 }
 
 TEST(PolicyAgentTest, Act_ChecksRatherThanFoldingWhenItIsFree)
 {
-    PolicyAgent agent(AgentStyle::Tight, kDefaultHandStrengths);
+    PolicyAgent agent(AgentStyle::Tight, kDefaultHandStrengths,
+            kDefaultThresholds);
     auto view = viewWith("7c 2d", "");
     view.toCall = 0;
     view.currentBet = 0;
@@ -160,7 +163,8 @@ TEST(PolicyAgentTest, Act_ChecksRatherThanFoldingWhenItIsFree)
 
 TEST(PolicyAgentTest, Act_FoldsAWeakHandFacingABet)
 {
-    PolicyAgent agent(AgentStyle::Tight, kDefaultHandStrengths);
+    PolicyAgent agent(AgentStyle::Tight, kDefaultHandStrengths,
+            kDefaultThresholds);
     auto view = viewWith("7c 2d", "");
     view.toCall = 40;
     view.currentBet = 40;
@@ -170,7 +174,8 @@ TEST(PolicyAgentTest, Act_FoldsAWeakHandFacingABet)
 
 TEST(PolicyAgentTest, Act_CallsAMiddlingHandFacingABet)
 {
-    PolicyAgent agent(AgentStyle::Balanced, kDefaultHandStrengths);
+    PolicyAgent agent(AgentStyle::Balanced, kDefaultHandStrengths,
+            kDefaultThresholds);
     auto view = viewWith("Ac 9d", "");
     view.toCall = 40;
     view.currentBet = 40;
@@ -180,7 +185,8 @@ TEST(PolicyAgentTest, Act_CallsAMiddlingHandFacingABet)
 
 TEST(PolicyAgentTest, Act_RaisesAStrongHandFacingABet)
 {
-    PolicyAgent agent(AgentStyle::Balanced, kDefaultHandStrengths);
+    PolicyAgent agent(AgentStyle::Balanced, kDefaultHandStrengths,
+            kDefaultThresholds);
     auto view = viewWith("Ac Ad", "");
     view.toCall = 40;
     view.currentBet = 40;
@@ -194,7 +200,8 @@ TEST(PolicyAgentTest, Act_RaisesAStrongHandFacingABet)
 
 TEST(PolicyAgentTest, Act_OpensWithABetRatherThanARaiseWhenNothingIsLive)
 {
-    PolicyAgent agent(AgentStyle::Balanced, kDefaultHandStrengths);
+    PolicyAgent agent(AgentStyle::Balanced, kDefaultHandStrengths,
+            kDefaultThresholds);
     auto view = viewWith("Ac Ad", "");
     view.toCall = 0;
     view.currentBet = 0;
@@ -209,8 +216,10 @@ TEST(PolicyAgentTest, Act_LetsAWiderRangeOfHandsPlayWhenAggressive)
     view.toCall = 40;
     view.currentBet = 40;
 
-    PolicyAgent tight(AgentStyle::Tight, kDefaultHandStrengths);
-    PolicyAgent aggressive(AgentStyle::Aggressive, kDefaultHandStrengths);
+    PolicyAgent tight(AgentStyle::Tight, kDefaultHandStrengths,
+            kDefaultThresholds);
+    PolicyAgent aggressive(AgentStyle::Aggressive, kDefaultHandStrengths,
+            kDefaultThresholds);
 
     EXPECT_EQ(tight.act(view).type, ActionType::Fold);
     EXPECT_NE(aggressive.act(view).type, ActionType::Fold);
@@ -221,7 +230,8 @@ TEST(PolicyAgentTest, Act_LetsAWiderRangeOfHandsPlayWhenAggressive)
 // Anything else would be rejected by the table.
 TEST(PolicyAgentTest, Act_ShovesTheRestWhenItCannotMakeAFullRaise)
 {
-    PolicyAgent agent(AgentStyle::Balanced, kDefaultHandStrengths);
+    PolicyAgent agent(AgentStyle::Balanced, kDefaultHandStrengths,
+            kDefaultThresholds);
     auto view = viewWith("Ac Ad", "");
     view.toCall = 40;
     view.currentBet = 40;
@@ -236,7 +246,8 @@ TEST(PolicyAgentTest, Act_ShovesTheRestWhenItCannotMakeAFullRaise)
 
 TEST(PolicyAgentTest, Act_CallsInsteadOfRaisingWhenTheStackCannotBeatTheBet)
 {
-    PolicyAgent agent(AgentStyle::Balanced, kDefaultHandStrengths);
+    PolicyAgent agent(AgentStyle::Balanced, kDefaultHandStrengths,
+            kDefaultThresholds);
     auto view = viewWith("Ac Ad", "");
     view.toCall = 40;
     view.currentBet = 100;
@@ -247,7 +258,8 @@ TEST(PolicyAgentTest, Act_CallsInsteadOfRaisingWhenTheStackCannotBeatTheBet)
 
 TEST(PolicyAgentTest, Act_CallsInsteadOfRaisingWhenTheBettingIsNotReopened)
 {
-    PolicyAgent agent(AgentStyle::Balanced, kDefaultHandStrengths);
+    PolicyAgent agent(AgentStyle::Balanced, kDefaultHandStrengths,
+            kDefaultThresholds);
     auto view = viewWith("Ac Ad", "");
     view.toCall = 40;
     view.currentBet = 40;
@@ -269,10 +281,14 @@ TEST(PolicyAgentTest, Act_NeverReturnsAnActionTheTableWouldReject)
     }
 
     std::vector<PolicyAgent> agents;
-    agents.emplace_back(AgentStyle::Tight, kDefaultHandStrengths);
-    agents.emplace_back(AgentStyle::Balanced, kDefaultHandStrengths);
-    agents.emplace_back(AgentStyle::Aggressive, kDefaultHandStrengths);
-    agents.emplace_back(AgentStyle::Balanced, kDefaultHandStrengths);
+    agents.emplace_back(AgentStyle::Tight, kDefaultHandStrengths,
+            kDefaultThresholds);
+    agents.emplace_back(AgentStyle::Balanced, kDefaultHandStrengths,
+            kDefaultThresholds);
+    agents.emplace_back(AgentStyle::Aggressive, kDefaultHandStrengths,
+            kDefaultThresholds);
+    agents.emplace_back(AgentStyle::Balanced, kDefaultHandStrengths,
+            kDefaultThresholds);
     std::vector<std::reference_wrapper<IAgent>> refs;
     for (auto &agent : agents)
     {
