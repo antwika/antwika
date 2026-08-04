@@ -1,20 +1,17 @@
 #include <chrono>
 #include <iostream>
 #include <memory>
+#include <optional>
 #include <string>
 
 #include <antwika/app/ConsoleLogging.hpp>
 #include <antwika/app/RunRecorded.hpp>
+#include <antwika/app/WindowedSession.hpp>
 #include <antwika/gfx/SelectedBackend.hpp>
 #include <antwika/gfx/Size.hpp>
-#include <antwika/gfx/WindowDesc.hpp>
 #include <antwika/i18n/Locale.hpp>
-#include <antwika/input/InputEventCodec.hpp>
-#include <antwika/input/InputPipeline.hpp>
 #include <antwika/input/SelectedInputBackend.hpp>
 #include <antwika/log/Level.hpp>
-#include <antwika/replay/ReplaySource.hpp>
-#include <antwika/app/WindowInputSource.hpp>
 #include <antwika/time/SystemSleeper.hpp>
 #include <antwika/time/Tick.hpp>
 
@@ -29,12 +26,9 @@
 
 using antwika::app::ConsoleLogging;
 using antwika::app::RecordedRun;
-using antwika::gfx::WindowDesc;
-using antwika::input::InputEventCodec;
-using antwika::input::InputPipeline;
+using antwika::app::WindowedSession;
+using antwika::app::WindowedSessionDesc;
 using antwika::log::Level;
-using antwika::replay::ReplaySource;
-using antwika::app::WindowInputSource;
 using antwika::time::SystemSleeper;
 using antwika::ui_demo::DemoOverlay;
 using antwika::ui_demo::DemoScene;
@@ -68,16 +62,18 @@ namespace
         const auto inputBackend =
             antwika::input::makeSelectedInputBackend(logger);
 
-        logger.log(
-            Level::Info,
-            "Antwika ui demo on backend: "
-                + std::string(backend->name()) + ", input: "
-                + std::string(inputBackend->name()));
+        // Movement is coalesced, since a layout reads one position.
+        // Idle movement is deliberately not held back here.
+        // A showcase wants a button lighting up as the pointer nears.
+        // That appearance is antwika::ui resolving the event stream.
+        const WindowedSessionDesc desc{
+            .name = "Antwika ui demo",
+            .windowTitle = "Antwika ui demo",
+            .canvas = kWindowSize,
+            .input = {.coalescePointerMotion = true},
+            .replayPath = recorded.options.replayPath};
 
-        const auto window = backend->createWindow(WindowDesc{
-            .title = "Antwika ui demo",
-            .size = kWindowSize,
-            .resizable = false});
+        WindowedSession session(logger, *backend, *inputBackend, desc);
 
         // Fixed here, and read from nowhere else.
         // Every button is as wide as its own label.
@@ -90,31 +86,14 @@ namespace
         const DemoScene scene{translator};
         SystemSleeper sleeper;
 
-        ReplaySource fileSource(
-            antwika::app::scriptedEvents(recorded.options.replayPath));
-
-        const InputEventCodec codec;
-
-        // Live input is attached only when there is no replay to run.
-        // Movement is coalesced, since a layout reads one position.
-        // Idle movement is deliberately not held back here.
-        // A showcase wants a button lighting up as the pointer nears.
-        // That appearance is antwika::ui resolving the event stream.
-        InputPipeline input(
-            fileSource,
-            *inputBackend,
-            codec,
-            {.readsDevice = !recorded.options.replayPath.has_value(),
-             .coalescePointerMotion = true});
-
-        WindowInputSource windowed(input, *backend, window->id());
-        TickLimitSource source(windowed, std::optional{kTickBudget});
+        TickLimitSource source(
+            session.source(), std::optional{kTickBudget});
 
         const DemoSummary summary = antwika::ui_demo::bootstrap({
             .logger = logger,
             .eventSink = recorded.eventSink,
             .inputSource = source,
-            .codec = codec,
+            .codec = session.codec(),
             .translator = translator,
             .canvas = kWindowSize,
             .replayRecorder = recorded.replayRecorder,
@@ -122,7 +101,11 @@ namespace
                 [&](const DemoState &, const DemoOverlay &overlay)
             {
                 return std::make_unique<RenderSink>(
-                    *window, scene, overlay, sleeper, kFramePeriod);
+                    session.window(),
+                    scene,
+                    overlay,
+                    sleeper,
+                    kFramePeriod);
             }});
 
         logger.log(

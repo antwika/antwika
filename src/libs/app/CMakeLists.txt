@@ -18,6 +18,7 @@ antwika_add_library(
         src/TickLimitSource.cpp
         src/WavFile.cpp
         src/WindowCloseSource.cpp
+        src/WindowedSession.cpp
         src/WindowPointerMapping.cpp
     DEPENDS
         antwika::animation

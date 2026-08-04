@@ -126,3 +126,27 @@ A program parses once, against one table: an argument not in it is a `cli::Comma
 That is why each layer offers a *table* and a reader rather than a parser of its own — `replayCliFlags()`/`replayCliOptionsFrom()`, `game::saveCliFlags()`/`saveCliOptionsFrom()`, `poker::watchFlags()`/`watchOptionsFrom()` — and why this helper takes an app's own flags as a `std::span<const FlagSpec>` and reads them in the same pass as `--record` and `--replay`.
 
 See [`blog/009-json-wins-tickevent-and-three-mains-that-stopped-repeating-themselves.md`](../../blog/009-json-wins-tickevent-and-three-mains-that-stopped-repeating-themselves.md).
+
+## WindowedSession
+
+**The fifty lines every windowed application opened with**, now stated once: announce both backends, open the window, seed a `replay::ReplaySource` from `--replay` or a demo recording, assemble the `input::InputPipeline` and put a `WindowInputSource` over it.
+An application says only what it differs by, through a `WindowedSessionDesc`, and wires the bundle into its own `bootstrap()`.
+
+**`readsDevice` is derived rather than passed.**
+It is `!replayPath.has_value()` in one place instead of seven, because a replay already holds the input it recorded and reading a device too makes every event arrive twice — the one line of that preamble whose getting wrong shows up as a doubled recording rather than as a failure.
+
+**It names nothing of [`console`](console.md)**, which depends on this library rather than the other way round, so a `console::ConsolePicture` here would be a cycle.
+Each application still constructs its own, one line, and `canvas()` is what it is constructed against — so the picture is still laid against the size the window was *asked* for and never against one a window reports, which is the property that mattered.
+
+**It creates no backend and owns no logging, deliberately.**
+`gfx::makeSelectedBackend()` and `input::makeSelectedInputBackend()` are declared here and *defined* under [`backends/`](../../backends/), linked by an application rather than by a library, so a library calling one would drag a graphics framework into every test binary that links `antwika::app` — and a unit test of this class would open a real window under an `sdl3` build.
+Taking the logger and both backends as constructor references is what keeps it provable against `MockGfxBackend` and `FakeInputBackend` instead.
+
+Every field of `input::InputPipelineOptions` is passed through untouched except those two, so `apps/life` still turns coalescing off — a drag toggles every cell it crosses — and `apps/atlas_editor` still attaches neither thinning decorator.
+`mapsPointerToCanvas` is a flag rather than a `WindowPointerMapping` because the mapping needs the window this description has not opened yet.
+
+**Four applications are deliberately not on it**, and the reason is the same in each: bending either end to fit would cost more than the repetition does.
+[`music_editor`](../apps/music_editor.md) announces a third backend in the same line and has to open a sound device between the input backend and that line; [`poker`](../apps/poker.md) opens no window of its own, logs no such line and runs at `Level::Warning`; [`game`](../apps/game.md) words its line differently and interleaves its preamble with three atlases, a `LocaleState` and a pointer hint channel; and [`sound_demo`](../apps/sound_demo.md) has no window, no tick loop and no replay at all.
+
+One ordering detail is worth knowing: `apps/life` and `apps/companion` announce how to stop *after* the session rather than between the backend line and the window, since `drawsNothing()` is what they ask.
+Creating a window emits nothing at `Level::Info` — the `sdl3` backend logs it at `Level::Debug` and the `null` one logs nothing — so what reaches the console is unchanged.
