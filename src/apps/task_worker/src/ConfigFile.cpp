@@ -1,12 +1,12 @@
 #include "antwika/task_worker/ConfigFile.hpp"
 
+#include <cstddef>
 #include <cstdint>
 #include <limits>
 #include <string>
 
-#include <nlohmann/json-schema.hpp>
-
 #include <antwika/config/ConfigDocument.hpp>
+#include <antwika/config/FileFormat.hpp>
 #include <antwika/config/Format.hpp>
 
 namespace antwika::task_worker
@@ -14,27 +14,57 @@ namespace antwika::task_worker
 
     namespace
     {
-        constexpr antwika::config::Format kFormat{
-            .magic = kConfigMagic, .version = kConfigFormatVersion};
+        using antwika::config::FileFormat;
+        using antwika::config::FormatSpec;
+        using antwika::config::memberOr;
+        using antwika::config::wholeShape;
 
-        nlohmann::json configSchema()
+        void describeMembers(nlohmann::json &schema)
         {
-            auto schema = antwika::config::documentSchema(
-                kFormat, "antwika task_worker config document");
             schema["properties"]["workerCount"] =
-                antwika::config::wholeShape(
+                wholeShape(
                     1, std::numeric_limits<std::uint32_t>::max());
             schema["properties"]["tickIntervalMs"] =
-                antwika::config::wholeShape(
-                    1, std::numeric_limits<std::int32_t>::max());
-            return schema;
-        } // GCOVR_EXCL_LINE
+                wholeShape(1, std::numeric_limits<std::int32_t>::max());
+        }
 
-        const nlohmann::json_schema::json_validator &configValidator()
+        void encodeMembers(const TaskWorkerConfig &config, nlohmann::json &out)
         {
-            static const nlohmann::json_schema::json_validator validator(
-                configSchema()); // GCOVR_EXCL_LINE
-            return validator;
+            out["workerCount"] = config.workerCount;
+            out["tickIntervalMs"] = config.tickIntervalMs;
+        }
+
+        TaskWorkerConfig decodeMembers(const nlohmann::json &document)
+        {
+            TaskWorkerConfig config;
+            config.workerCount =
+                memberOr(document, "workerCount", config.workerCount);
+            config.tickIntervalMs =
+                memberOr(document, "tickIntervalMs", config.tickIntervalMs);
+            return config;
+        }
+
+        const FileFormat<TaskWorkerConfig> &fileFormat()
+        {
+            using AppFormat = FileFormat<TaskWorkerConfig>;
+
+            // The excluded closing line carries the static guard.
+            // Its concurrency arms are unreachable one-threaded.
+            // See docs/confirming-unreachable-branches.md.
+            static const AppFormat format(
+                FormatSpec<TaskWorkerConfig>{
+                    .format =
+                        {.magic = kConfigMagic,
+                         .version = kConfigFormatVersion},
+                    .title = "antwika task_worker config document",
+                    .whatFailed =
+                        "antwika::task_worker: config JSON failed schema "
+                        "validation: ",
+                    .members = describeMembers,
+                    .encode = encodeMembers,
+                    .decode = decodeMembers,
+                    .migrations = standardConfigMigrations}); // GCOVR_EXCL_LINE
+            return format;
         }
     } // namespace
 
@@ -48,52 +78,27 @@ namespace antwika::task_worker
 
     nlohmann::json configToJson(const TaskWorkerConfig &config)
     {
-        auto encoded = antwika::config::newDocument(kFormat);
-        encoded["workerCount"] = config.workerCount;
-        encoded["tickIntervalMs"] = config.tickIntervalMs;
-        return encoded;
-
-        // gcov puts the cleanup block on this closing brace.
-        // SaveGame.cpp's own encoder explains it at length.
-        // No input reaches it.
-    } // GCOVR_EXCL_LINE
+        return fileFormat().toJson(config);
+    }
 
     TaskWorkerConfig configFromJson(const nlohmann::json &document)
     {
-        using antwika::config::memberOr;
-
-        const auto brought = antwika::config::migrated(
-            document,
-            standardConfigMigrations(),
-            configValidator(),
-            "antwika::task_worker: config JSON failed schema validation: ");
-
-        TaskWorkerConfig config;
-        config.workerCount =
-            memberOr(brought, "workerCount", config.workerCount);
-        config.tickIntervalMs =
-            memberOr(brought, "tickIntervalMs", config.tickIntervalMs);
-        return config;
+        return fileFormat().fromJson(document);
     }
 
     void writeConfig(const TaskWorkerConfig &config, std::ostream &out)
     {
-        antwika::config::writeConfig(configToJson(config), out);
+        fileFormat().write(config, out);
     }
 
     TaskWorkerConfig readConfig(std::istream &in)
     {
-        return configFromJson(antwika::config::parseConfig(in));
+        return fileFormat().read(in);
     }
 
     TaskWorkerConfig loadConfigFileOrDefaults(const std::string &path)
     {
-        const auto document = antwika::config::parseConfigFile(path);
-
-        // A file that is not there is an install nobody has tuned.
-        // Which is a state rather than a failure.
-        return document.has_value() ? configFromJson(*document)
-                                    : TaskWorkerConfig{};
+        return fileFormat().loadFileOrDefaults(path);
     }
 
 } // namespace antwika::task_worker

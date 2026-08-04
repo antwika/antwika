@@ -1,261 +1,170 @@
-#include <gtest/gtest.h>
-
 #include <cstddef>
-#include <filesystem>
-#include <fstream>
-#include <sstream>
+#include <cstdint>
+#include <istream>
+#include <ostream>
 #include <string>
+#include <string_view>
+
+#include <gtest/gtest.h>
 
 #include <nlohmann/json.hpp>
 
-#include <antwika/app/AssetPath.hpp>
-#include <antwika/config/ConfigFormatError.hpp>
-#include <antwika/replay/SchemaVersion.hpp>
+#include <antwika/config/conformance/ConfigFileContract.hpp>
+#include <antwika/replay/MigrationChain.hpp>
 
-#include "ScratchDirectory.hpp"
-#include "antwika/game/BuildingKind.hpp"
 #include "antwika/game/ConfigFile.hpp"
+#include "antwika/game/BuildingKind.hpp"
 #include "antwika/game/GameConfig.hpp"
 
-using antwika::game::tests::scratchDirectory;
+namespace antwika::config::conformance
+{
 
-using antwika::config::ConfigFormatError;
-using antwika::game::BuildingKind;
-using antwika::game::configFromJson;
-using antwika::game::configToJson;
-using antwika::game::GameConfig;
-using antwika::game::kBuildingKindCount;
-using antwika::game::kConfigFormatVersion;
-using antwika::game::kConfigMagic;
-using antwika::game::loadConfigFileOrDefaults;
-using antwika::game::readConfig;
-using antwika::game::standardConfigMigrations;
-using antwika::game::writeConfig;
+    namespace
+    {
+        /**
+         * @brief This application's config format, for the shared
+         * contract suite.
+         */
+        struct GameConfigTraits
+        {
+            using Config = antwika::game::GameConfig;
+
+            static std::string_view magic()
+            {
+                return antwika::game::kConfigMagic;
+            }
+
+            static std::uint32_t version()
+            {
+                return antwika::game::kConfigFormatVersion;
+            }
+
+            static antwika::replay::MigrationChain migrations()
+            {
+                return antwika::game::standardConfigMigrations();
+            }
+
+            // Every member is off its default here.
+            // A dropped member lands on the default and fails below.
+            static Config retuned()
+            {
+                Config config;
+                config.startingMoney = 123;
+                config.roadCost = 7;
+                config.razeCost = 5;
+
+                for (std::size_t index = 0;
+                     index < antwika::game::kBuildingKindCount;
+                     ++index)
+                {
+                    config.buildingCosts[index] += 1;
+                }
+
+                config.riskPeriodTicks = 11;
+                config.drainPeriodTicks = 12;
+                config.mouthsPerServing = 3;
+                config.spawnPeriodTicks = 13;
+                config.burnDurationTicks = 14;
+                config.settlerPeriodTicks = 15;
+                config.evolvePeriodTicks = 16;
+                config.devolvePeriodTicks = 17;
+                config.productionPeriodTicks = 18;
+                config.productionBatch = 19;
+                config.labourPeriodTicks = 20;
+                config.staffDecayPeriodTicks = 21;
+                config.walkerLimit = 9;
+                return config;
+            }
+
+            static void expectEqual(
+                const Config &decoded, const Config &expected)
+            {
+                EXPECT_EQ(decoded, expected);
+            }
+
+            static const char *floorMember()
+            {
+                return "drainPeriodTicks";
+            }
+
+            static nlohmann::json toJson(const Config &config)
+            {
+                return antwika::game::configToJson(config);
+            }
+
+            static Config fromJson(const nlohmann::json &document)
+            {
+                return antwika::game::configFromJson(document);
+            }
+
+            static void write(const Config &config, std::ostream &out)
+            {
+                antwika::game::writeConfig(config, out);
+            }
+
+            static Config read(std::istream &in)
+            {
+                return antwika::game::readConfig(in);
+            }
+
+            static Config loadFileOrDefaults(const std::string &path)
+            {
+                return antwika::game::loadConfigFileOrDefaults(path);
+            }
+
+            static std::string scratchPrefix()
+            {
+                return "antwika-game-config";
+            }
+        };
+    } // namespace
+
+    INSTANTIATE_TYPED_TEST_SUITE_P(
+        Game, ConfigFileContract, GameConfigTraits);
+
+} // namespace antwika::config::conformance
 
 namespace
 {
-    // Every member is off its default here.
-    // A round trip that dropped one would land back on the default.
-    // The comparison against this value is what would say so.
-    [[nodiscard]] GameConfig rebalanced()
+
+    using antwika::config::ConfigFormatError;
+    using antwika::game::BuildingKind;
+    using antwika::game::configFromJson;
+    using antwika::game::configToJson;
+    using antwika::game::GameConfig;
+    using antwika::game::kConfigMagic;
+
+    TEST(GameConfigRulesTest, APartialDocumentChangesOnlyWhatItStates)
     {
-        GameConfig config;
-        config.startingMoney = 123;
-        config.roadCost = 7;
-        config.razeCost = 5;
+        nlohmann::json document;
+        document["magic"] = std::string(kConfigMagic);
+        document["roadCost"] = 9;
+        document["buildingCosts"]["well"] = 99;
 
-        for (std::size_t index = 0; index < kBuildingKindCount; ++index)
-        {
-            config.buildingCosts[index] += 1;
-        }
+        const auto config = configFromJson(document);
 
-        config.riskPeriodTicks = 11;
-        config.drainPeriodTicks = 12;
-        config.mouthsPerServing = 3;
-        config.spawnPeriodTicks = 13;
-        config.burnDurationTicks = 14;
-        config.settlerPeriodTicks = 15;
-        config.evolvePeriodTicks = 16;
-        config.devolvePeriodTicks = 17;
-        config.productionPeriodTicks = 18;
-        config.productionBatch = 19;
-        config.labourPeriodTicks = 20;
-        config.staffDecayPeriodTicks = 21;
-        config.walkerLimit = 9;
-        return config;
+        GameConfig expected;
+        expected.roadCost = 9;
+        expected.buildingCosts[antwika::game::buildingKindIndex(
+            BuildingKind::Well)] = 99;
+
+        EXPECT_EQ(config, expected);
     }
 
-    [[nodiscard]] std::string versionKey()
+    TEST(GameConfigRulesTest, ANegativeCostIsRefused)
     {
-        return std::string(antwika::replay::kSchemaVersionKey);
+        auto document = configToJson(GameConfig{});
+        document["roadCost"] = -1;
+
+        EXPECT_THROW((void)configFromJson(document), ConfigFormatError);
     }
 
-    class ConfigFileTest : public ::testing::Test
+    TEST(GameConfigRulesTest, AnUnknownBuildingKindIsRefused)
     {
-    protected:
-        void SetUp() override
-        {
-            std::filesystem::create_directories(directory);
-        }
+        auto document = configToJson(GameConfig{});
+        document["buildingCosts"]["tower"] = 9;
 
-        void TearDown() override
-        {
-            std::error_code ignored;
-            std::filesystem::remove_all(directory, ignored);
-        }
+        EXPECT_THROW((void)configFromJson(document), ConfigFormatError);
+    }
 
-        [[nodiscard]] std::string pathIn(const std::string &name) const
-        {
-            return (directory / name).string();
-        }
-
-        void writeText(const std::string &name, const std::string &text)
-        {
-            std::ofstream file(pathIn(name));
-            file << text;
-        }
-
-        std::filesystem::path directory{scratchDirectory("config.")};
-    };
 } // namespace
-
-TEST_F(ConfigFileTest, ADocumentStatesItsFormatAndItsVersion)
-{
-    const auto encoded = configToJson(GameConfig{});
-
-    EXPECT_EQ(encoded.at("magic").get<std::string>(), kConfigMagic);
-    EXPECT_EQ(
-        encoded.at(versionKey()).get<std::uint32_t>(),
-        kConfigFormatVersion);
-}
-
-TEST_F(ConfigFileTest, ATuningRoundTripsThroughTheDocument)
-{
-    EXPECT_EQ(configFromJson(configToJson(rebalanced())), rebalanced());
-    EXPECT_EQ(configFromJson(configToJson(GameConfig{})), GameConfig{});
-}
-
-// A config stating one number is a one-line rebalance.
-// Not a restatement of every default it leaves alone.
-TEST_F(ConfigFileTest, AMinimalDocumentIsTheShippedGame)
-{
-    nlohmann::json document;
-    document["magic"] = std::string(kConfigMagic);
-
-    EXPECT_EQ(configFromJson(document), GameConfig{});
-}
-
-TEST_F(ConfigFileTest, APartialDocumentChangesOnlyWhatItStates)
-{
-    nlohmann::json document;
-    document["magic"] = std::string(kConfigMagic);
-    document["roadCost"] = 9;
-    document["buildingCosts"]["well"] = 99;
-
-    const auto config = configFromJson(document);
-
-    GameConfig expected;
-    expected.roadCost = 9;
-    expected.buildingCosts[antwika::game::buildingKindIndex(
-        BuildingKind::Well)] = 99;
-
-    EXPECT_EQ(config, expected);
-}
-
-TEST_F(ConfigFileTest, ATuningRoundTripsThroughAStream)
-{
-    std::stringstream stream;
-    writeConfig(rebalanced(), stream);
-
-    EXPECT_EQ(readConfig(stream), rebalanced());
-}
-
-TEST_F(ConfigFileTest, ATuningRoundTripsThroughAFile)
-{
-    std::stringstream stream;
-    writeConfig(rebalanced(), stream);
-    writeText("config.json", stream.str());
-
-    EXPECT_EQ(loadConfigFileOrDefaults(pathIn("config.json")), rebalanced());
-}
-
-// A build nobody has rebalanced plays the game these sources define.
-// That is a state, not a failure.
-TEST_F(ConfigFileTest, AMissingFileIsTheShippedGame)
-{
-    EXPECT_EQ(
-        loadConfigFileOrDefaults(pathIn("nothing-here.json")), GameConfig{});
-}
-
-// The file beside the executable is the one main() reads.
-// Pinned to the defaults, so shipping it changes nothing on its own.
-// A rebalance is an edit to that file, and this test says where it is.
-TEST_F(ConfigFileTest, TheShippedConfigStatesTheDefaults)
-{
-    EXPECT_EQ(
-        loadConfigFileOrDefaults(antwika::app::assetPath("config.json")),
-        GameConfig{});
-    EXPECT_TRUE(std::filesystem::exists(
-        antwika::app::assetPath("config.json")));
-}
-
-TEST_F(ConfigFileTest, TextThatIsNotJsonIsRefused)
-{
-    writeText("config.json", "not json at all");
-
-    EXPECT_THROW(
-        (void)loadConfigFileOrDefaults(pathIn("config.json")),
-        ConfigFormatError);
-}
-
-TEST_F(ConfigFileTest, ADocumentOfAnotherFormatIsRefused)
-{
-    auto document = configToJson(GameConfig{});
-    document["magic"] = "antwika-game-save";
-
-    EXPECT_THROW((void)configFromJson(document), ConfigFormatError);
-}
-
-// Read before anything is decoded.
-// So a file from a build this one has never met is refused.
-// Rather than read for happening to satisfy today's schema.
-TEST_F(ConfigFileTest, ADocumentFromANewerBuildIsRefused)
-{
-    auto document = configToJson(GameConfig{});
-    document[versionKey()] = kConfigFormatVersion + 1;
-
-    EXPECT_THROW((void)configFromJson(document), ConfigFormatError);
-}
-
-TEST_F(ConfigFileTest, ADocumentOfTheWrongShapeIsRefused)
-{
-    auto document = configToJson(GameConfig{});
-    document["startingMoney"] = "plenty";
-
-    EXPECT_THROW((void)configFromJson(document), ConfigFormatError);
-}
-
-// A period of zero would never come due, or divide by zero.
-// Refused rather than repaired, for ConfigFormatError's reason.
-TEST_F(ConfigFileTest, AZeroPeriodIsRefused)
-{
-    auto document = configToJson(GameConfig{});
-    document["drainPeriodTicks"] = 0;
-
-    EXPECT_THROW((void)configFromJson(document), ConfigFormatError);
-}
-
-TEST_F(ConfigFileTest, ANegativeCostIsRefused)
-{
-    auto document = configToJson(GameConfig{});
-    document["roadCost"] = -1;
-
-    EXPECT_THROW((void)configFromJson(document), ConfigFormatError);
-}
-
-// A misspelt member would otherwise be a rebalance that never took.
-TEST_F(ConfigFileTest, AnUnknownMemberIsRefused)
-{
-    auto document = configToJson(GameConfig{});
-    document["roadCosts"] = 9;
-
-    EXPECT_THROW((void)configFromJson(document), ConfigFormatError);
-}
-
-TEST_F(ConfigFileTest, AnUnknownBuildingKindIsRefused)
-{
-    auto document = configToJson(GameConfig{});
-    document["buildingCosts"]["tower"] = 9;
-
-    EXPECT_THROW((void)configFromJson(document), ConfigFormatError);
-}
-
-// There has only ever been one revision.
-// The chain is here anyway.
-// It is what refuses a document from a newer build.
-TEST_F(ConfigFileTest, TheChainBringsDocumentsToTheCurrentVersion)
-{
-    EXPECT_EQ(
-        standardConfigMigrations().currentVersion(),
-        kConfigFormatVersion);
-}

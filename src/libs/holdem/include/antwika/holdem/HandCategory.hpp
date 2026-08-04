@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstddef>
 #include <cstdint>
 #include <string_view>
 
@@ -26,6 +27,16 @@ namespace antwika::holdem
         FourOfAKind,
         StraightFlush,
     };
+
+    /**
+     * @brief How many categories a hand can score as.
+     *
+     * Declared beside the enumeration it counts, the way
+     * kBuildingKindCount is, so a table indexed by category can state
+     * its size instead of repeating a nine.
+     */
+    inline constexpr std::size_t kHandCategoryCount =
+        static_cast<std::size_t>(HandCategory::StraightFlush) + 1;
 
     /**
      * @brief Render a category as the name a player would use for it.

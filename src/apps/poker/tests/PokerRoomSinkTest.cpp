@@ -27,6 +27,7 @@
 #include "antwika/poker/PokerEventError.hpp"
 #include "antwika/poker/PokerRoomSink.hpp"
 #include "antwika/poker/PolicyAgent.hpp"
+#include "antwika/poker/RoomConfig.hpp"
 #include "antwika/poker/TablePrinter.hpp"
 
 using antwika::event::Event;
@@ -47,6 +48,7 @@ using antwika::poker::PokerEventError;
 using antwika::poker::PokerRoomSink;
 using antwika::poker::PolicyAgent;
 using antwika::poker::TablePrinter;
+using antwika::poker::kDefaultHandStrengths;
 using antwika::time::fakes::FakeClock;
 
 namespace
@@ -74,8 +76,8 @@ namespace
 
         Room()
         {
-            agents.emplace_back(AgentStyle::Balanced);
-            agents.emplace_back(AgentStyle::Balanced);
+            agents.emplace_back(AgentStyle::Balanced, kDefaultHandStrengths);
+            agents.emplace_back(AgentStyle::Balanced, kDefaultHandStrengths);
         }
 
         [[nodiscard]] TableRunner makeRunner()

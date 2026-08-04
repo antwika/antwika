@@ -50,6 +50,7 @@ target_link_libraries(antwika_companion_tests
         antwika::animation
         antwika::app
         antwika::config
+        antwika::config::tests::conformance
         antwika::ecs
         antwika::engine
         antwika::event::tests::mocks

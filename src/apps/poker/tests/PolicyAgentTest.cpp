@@ -22,6 +22,7 @@
 
 #include "antwika/poker/AgentStyle.hpp"
 #include "antwika/poker/PolicyAgent.hpp"
+#include "antwika/poker/RoomConfig.hpp"
 
 using antwika::holdem::ActionType;
 using antwika::holdem::Blinds;
@@ -38,6 +39,7 @@ using antwika::holdem::TableView;
 using antwika::poker::AgentStyle;
 using antwika::poker::handStrength;
 using antwika::poker::PolicyAgent;
+using antwika::poker::kDefaultHandStrengths;
 using antwika::rng::SplitMix64Rng;
 
 namespace
@@ -64,50 +66,57 @@ namespace
 TEST(PolicyAgentTest, HandStrength_RatesAPocketPairAboveTwoBlanks)
 {
     EXPECT_GT(
-        handStrength(viewWith("Ac Ad", "")),
-        handStrength(viewWith("7c 2d", "")));
+        handStrength(viewWith("Ac Ad", ""), kDefaultHandStrengths),
+        handStrength(viewWith("7c 2d", ""), kDefaultHandStrengths));
 }
 
 TEST(PolicyAgentTest, HandStrength_RatesHigherCardsHigher)
 {
     EXPECT_GT(
-        handStrength(viewWith("Ac 8d", "")),
-        handStrength(viewWith("Tc 8d", "")));
+        handStrength(viewWith("Ac 8d", ""), kDefaultHandStrengths),
+        handStrength(viewWith("Tc 8d", ""), kDefaultHandStrengths));
 }
 
 TEST(PolicyAgentTest, HandStrength_RewardsBeingSuited)
 {
     EXPECT_GT(
-        handStrength(viewWith("Kc 8c", "")),
-        handStrength(viewWith("Kc 8d", "")));
+        handStrength(viewWith("Kc 8c", ""), kDefaultHandStrengths),
+        handStrength(viewWith("Kc 8d", ""), kDefaultHandStrengths));
 }
 
 TEST(PolicyAgentTest, HandStrength_RewardsBeingConnected)
 {
     EXPECT_GT(
-        handStrength(viewWith("Kd Qc", "")),
-        handStrength(viewWith("Kd Jc", "")));
+        handStrength(viewWith("Kd Qc", ""), kDefaultHandStrengths),
+        handStrength(viewWith("Kd Jc", ""), kDefaultHandStrengths));
 }
 
 TEST(PolicyAgentTest, HandStrength_PenalisesAWideGap)
 {
     EXPECT_GT(
-        handStrength(viewWith("Kd Jc", "")),
-        handStrength(viewWith("Kd 7c", "")));
+        handStrength(viewWith("Kd Jc", ""), kDefaultHandStrengths),
+        handStrength(viewWith("Kd 7c", ""), kDefaultHandStrengths));
 }
 
 // From the flop on the agent stops guessing and asks the evaluator.
 TEST(PolicyAgentTest, HandStrength_RanksMadeHandsByCategory)
 {
-    const auto highCard = handStrength(viewWith("Ac Kd", "7h 4s 2c"));
-    const auto pair = handStrength(viewWith("Ac Ad", "7h 4s 2c"));
-    const auto twoPair = handStrength(viewWith("Ac 7d", "7h Ah 2c"));
-    const auto trips = handStrength(viewWith("Ac Ad", "Ah 4s 2c"));
-    const auto straight = handStrength(viewWith("6c 5d", "7h 8s 9c"));
-    const auto flush = handStrength(viewWith("Ac 8c", "7c 4c 2c"));
-    const auto quads = handStrength(viewWith("Ac Ad", "Ah As 2c"));
+    const auto highCard = handStrength(
+        viewWith("Ac Kd", "7h 4s 2c"), kDefaultHandStrengths);
+    const auto pair = handStrength(
+        viewWith("Ac Ad", "7h 4s 2c"), kDefaultHandStrengths);
+    const auto twoPair = handStrength(
+        viewWith("Ac 7d", "7h Ah 2c"), kDefaultHandStrengths);
+    const auto trips = handStrength(
+        viewWith("Ac Ad", "Ah 4s 2c"), kDefaultHandStrengths);
+    const auto straight = handStrength(
+        viewWith("6c 5d", "7h 8s 9c"), kDefaultHandStrengths);
+    const auto flush = handStrength(
+        viewWith("Ac 8c", "7c 4c 2c"), kDefaultHandStrengths);
+    const auto quads = handStrength(
+        viewWith("Ac Ad", "Ah As 2c"), kDefaultHandStrengths);
     const auto straightFlush =
-        handStrength(viewWith("6c 5c", "7c 8c 9c"));
+        handStrength(viewWith("6c 5c", "7c 8c 9c"), kDefaultHandStrengths);
 
     EXPECT_LT(highCard, pair);
     EXPECT_LT(pair, twoPair);
@@ -121,9 +130,12 @@ TEST(PolicyAgentTest, HandStrength_RanksMadeHandsByCategory)
 
 TEST(PolicyAgentTest, HandStrength_ScoresAFullHouseBetweenFlushAndQuads)
 {
-    const auto flush = handStrength(viewWith("Ac 8c", "7c 4c 2c"));
-    const auto fullHouse = handStrength(viewWith("Ac Ad", "Ah 4s 4c"));
-    const auto quads = handStrength(viewWith("Ac Ad", "Ah As 2c"));
+    const auto flush = handStrength(
+        viewWith("Ac 8c", "7c 4c 2c"), kDefaultHandStrengths);
+    const auto fullHouse = handStrength(
+        viewWith("Ac Ad", "Ah 4s 4c"), kDefaultHandStrengths);
+    const auto quads = handStrength(
+        viewWith("Ac Ad", "Ah As 2c"), kDefaultHandStrengths);
 
     EXPECT_LT(flush, fullHouse);
     EXPECT_LT(fullHouse, quads);
@@ -131,14 +143,14 @@ TEST(PolicyAgentTest, HandStrength_ScoresAFullHouseBetweenFlushAndQuads)
 
 TEST(PolicyAgentTest, PlayingStyle_ReportsWhatItWasBuiltWith)
 {
-    const PolicyAgent agent(AgentStyle::Tight);
+    const PolicyAgent agent(AgentStyle::Tight, kDefaultHandStrengths);
 
     EXPECT_EQ(agent.playingStyle(), AgentStyle::Tight);
 }
 
 TEST(PolicyAgentTest, Act_ChecksRatherThanFoldingWhenItIsFree)
 {
-    PolicyAgent agent(AgentStyle::Tight);
+    PolicyAgent agent(AgentStyle::Tight, kDefaultHandStrengths);
     auto view = viewWith("7c 2d", "");
     view.toCall = 0;
     view.currentBet = 0;
@@ -148,7 +160,7 @@ TEST(PolicyAgentTest, Act_ChecksRatherThanFoldingWhenItIsFree)
 
 TEST(PolicyAgentTest, Act_FoldsAWeakHandFacingABet)
 {
-    PolicyAgent agent(AgentStyle::Tight);
+    PolicyAgent agent(AgentStyle::Tight, kDefaultHandStrengths);
     auto view = viewWith("7c 2d", "");
     view.toCall = 40;
     view.currentBet = 40;
@@ -158,7 +170,7 @@ TEST(PolicyAgentTest, Act_FoldsAWeakHandFacingABet)
 
 TEST(PolicyAgentTest, Act_CallsAMiddlingHandFacingABet)
 {
-    PolicyAgent agent(AgentStyle::Balanced);
+    PolicyAgent agent(AgentStyle::Balanced, kDefaultHandStrengths);
     auto view = viewWith("Ac 9d", "");
     view.toCall = 40;
     view.currentBet = 40;
@@ -168,7 +180,7 @@ TEST(PolicyAgentTest, Act_CallsAMiddlingHandFacingABet)
 
 TEST(PolicyAgentTest, Act_RaisesAStrongHandFacingABet)
 {
-    PolicyAgent agent(AgentStyle::Balanced);
+    PolicyAgent agent(AgentStyle::Balanced, kDefaultHandStrengths);
     auto view = viewWith("Ac Ad", "");
     view.toCall = 40;
     view.currentBet = 40;
@@ -182,7 +194,7 @@ TEST(PolicyAgentTest, Act_RaisesAStrongHandFacingABet)
 
 TEST(PolicyAgentTest, Act_OpensWithABetRatherThanARaiseWhenNothingIsLive)
 {
-    PolicyAgent agent(AgentStyle::Balanced);
+    PolicyAgent agent(AgentStyle::Balanced, kDefaultHandStrengths);
     auto view = viewWith("Ac Ad", "");
     view.toCall = 0;
     view.currentBet = 0;
@@ -197,8 +209,8 @@ TEST(PolicyAgentTest, Act_LetsAWiderRangeOfHandsPlayWhenAggressive)
     view.toCall = 40;
     view.currentBet = 40;
 
-    PolicyAgent tight(AgentStyle::Tight);
-    PolicyAgent aggressive(AgentStyle::Aggressive);
+    PolicyAgent tight(AgentStyle::Tight, kDefaultHandStrengths);
+    PolicyAgent aggressive(AgentStyle::Aggressive, kDefaultHandStrengths);
 
     EXPECT_EQ(tight.act(view).type, ActionType::Fold);
     EXPECT_NE(aggressive.act(view).type, ActionType::Fold);
@@ -209,7 +221,7 @@ TEST(PolicyAgentTest, Act_LetsAWiderRangeOfHandsPlayWhenAggressive)
 // Anything else would be rejected by the table.
 TEST(PolicyAgentTest, Act_ShovesTheRestWhenItCannotMakeAFullRaise)
 {
-    PolicyAgent agent(AgentStyle::Balanced);
+    PolicyAgent agent(AgentStyle::Balanced, kDefaultHandStrengths);
     auto view = viewWith("Ac Ad", "");
     view.toCall = 40;
     view.currentBet = 40;
@@ -224,7 +236,7 @@ TEST(PolicyAgentTest, Act_ShovesTheRestWhenItCannotMakeAFullRaise)
 
 TEST(PolicyAgentTest, Act_CallsInsteadOfRaisingWhenTheStackCannotBeatTheBet)
 {
-    PolicyAgent agent(AgentStyle::Balanced);
+    PolicyAgent agent(AgentStyle::Balanced, kDefaultHandStrengths);
     auto view = viewWith("Ac Ad", "");
     view.toCall = 40;
     view.currentBet = 100;
@@ -235,7 +247,7 @@ TEST(PolicyAgentTest, Act_CallsInsteadOfRaisingWhenTheStackCannotBeatTheBet)
 
 TEST(PolicyAgentTest, Act_CallsInsteadOfRaisingWhenTheBettingIsNotReopened)
 {
-    PolicyAgent agent(AgentStyle::Balanced);
+    PolicyAgent agent(AgentStyle::Balanced, kDefaultHandStrengths);
     auto view = viewWith("Ac Ad", "");
     view.toCall = 40;
     view.currentBet = 40;
@@ -257,10 +269,10 @@ TEST(PolicyAgentTest, Act_NeverReturnsAnActionTheTableWouldReject)
     }
 
     std::vector<PolicyAgent> agents;
-    agents.emplace_back(AgentStyle::Tight);
-    agents.emplace_back(AgentStyle::Balanced);
-    agents.emplace_back(AgentStyle::Aggressive);
-    agents.emplace_back(AgentStyle::Balanced);
+    agents.emplace_back(AgentStyle::Tight, kDefaultHandStrengths);
+    agents.emplace_back(AgentStyle::Balanced, kDefaultHandStrengths);
+    agents.emplace_back(AgentStyle::Aggressive, kDefaultHandStrengths);
+    agents.emplace_back(AgentStyle::Balanced, kDefaultHandStrengths);
     std::vector<std::reference_wrapper<IAgent>> refs;
     for (auto &agent : agents)
     {

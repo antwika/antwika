@@ -40,6 +40,7 @@ target_link_libraries(antwika_poker_tests
         antwika::app
         antwika::cli
         antwika::config
+        antwika::config::tests::conformance
         antwika::engine
         antwika::event
         antwika::event::tests::mocks

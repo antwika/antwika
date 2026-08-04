@@ -22,10 +22,18 @@ The split is the one [`cli`](cli.md) draws for flags: this library owns the mech
 | `ConfigDocument.hpp` | `parseConfig()` / `writeConfig()` | A document off a stream and onto one, two-space indented for diffing. |
 | `ConfigDocument.hpp` | `parseConfigFile()` | A file's document, or nothing at all for a file that is not there. |
 | `ConfigFormatError.hpp` | `ConfigFormatError` | The one failure category: a config document could not be read. |
+| `FileFormat.hpp` | `FormatSpec` / `FileFormat` | One application's format as data -- magic, schema members, encode, decode -- with the shared read/write plumbing attached once. |
 
 ## Depends on
 
 [`replay`](replay.md), for `MigrationChain` and `readVersionedDocument()` — [`docs/schema-versioning.md`](../../docs/schema-versioning.md) makes those the one migration mechanism for every persisted format, and this library adds a document kind rather than a second mechanism.
+
+## The two halves an application writes
+
+An application's loader states a `FormatSpec` -- its magic and version, a `members` function adding its schema properties, an `encode`, a `decode` and a migrations factory -- and forwards its public free functions to one static `FileFormat`.
+The pipeline, the envelope, the validator's construction and the file handling therefore exist once, and a new application writes only what is genuinely its own.
+
+Its tests instantiate `ConfigFileContract` from `antwika::config::tests::conformance` -- the fourteen promises every config file makes, as one typed suite on `MessageSetCompleteness`'s pattern -- and keep only their format's own rules (poker's blind ordering, the game's per-kind cost table) as local tests.
 
 ## Non-obvious decisions
 
