@@ -28,6 +28,7 @@ The split is the one [`cli`](cli.md) draws for flags: this library owns the mech
 ## Depends on
 
 [`replay`](replay.md), for `MigrationChain` and `readVersionedDocument()` — [`docs/schema-versioning.md`](../../docs/schema-versioning.md) makes those the one migration mechanism for every persisted format, and this library adds a document kind rather than a second mechanism.
+[`io`](io.md), for the open/flush/check discipline around a document file, stated once over there rather than a second time here.
 
 ## The two halves an application writes
 

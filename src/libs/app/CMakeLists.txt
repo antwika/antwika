@@ -25,6 +25,7 @@ antwika_add_library(
         antwika::event
         antwika::gfx
         antwika::input
+        antwika::io
         antwika::log
         antwika::replay
         antwika::simulation

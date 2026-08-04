@@ -1,11 +1,12 @@
 #pragma once
 
-#include <fstream>
 #include <istream>
 #include <optional>
 #include <ostream>
 #include <string>
 #include <utility>
+
+#include <antwika/io/File.hpp>
 
 namespace antwika::app
 {
@@ -18,10 +19,9 @@ namespace antwika::app
      * two differed in seventeen lines, every one of them a type name or
      * a message string.
      * What they share is the whole of it: a missing file is a first
-     * run rather than a malformed one, a write that cannot open says
-     * so, and a write is flushed here rather than by the destructor
-     * because a full disk fails on the flush and a destructor cannot
-     * report anything at all.
+     * run rather than a malformed one, and a write that cannot open or
+     * cannot land says so -- through antwika::io, which owns that
+     * discipline for every module that touches a file.
      *
      * The reader and the writer arrive as plain function pointers, so
      * a store holds no state beyond its path and an application's own
@@ -76,41 +76,31 @@ namespace antwika::app
          */
         [[nodiscard]] std::optional<ValueT> loadIfPresent() const
         {
-            std::ifstream file(path);
+            auto file = io::openToReadIfPresent(path);
 
-            if (!file.is_open())
+            if (!file.has_value())
             {
                 return std::nullopt;
             }
 
-            return read(file);
+            return read(*file);
         }
 
         /**
          * @brief Write a value out, replacing whatever was there.
+         *
+         * The open, the flush and the failed-write refusal are
+         * antwika::io's, stated once over there.
+         *
          * @param value What to write.
          * @throws ErrorT If the file cannot be opened or written.
          */
         void store(const ValueT &value) const
         {
-            std::ofstream file(path);
-            if (!file.is_open())
-            {
-                throw ErrorT(
-                    "antwika: could not open " + subject + " to write: "
-                    + path);
-            }
-
-            write(value, file);
-
-            // Flushed here rather than by a destructor that cannot say.
-            // A full disk fails on the flush, not on the open.
-            file.flush();
-            if (!file)
-            {
-                throw ErrorT(
-                    "antwika: could not write " + subject + ": " + path);
-            }
+            io::writeFileAs<ErrorT>(
+                path, subject, [this, &value](std::ostream &out) {
+                    write(value, out);
+                });
         }
 
     private:

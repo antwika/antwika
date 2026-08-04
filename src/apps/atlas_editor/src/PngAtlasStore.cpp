@@ -1,7 +1,6 @@
 #include "antwika/atlas_editor/PngAtlasStore.hpp"
 
 #include <fstream>
-#include <ios>
 #include <optional>
 #include <string>
 #include <utility>
@@ -9,6 +8,7 @@
 #include <antwika/gfx/GfxError.hpp>
 #include <antwika/gfx/PngReader.hpp>
 #include <antwika/gfx/PngWriter.hpp>
+#include <antwika/io/File.hpp>
 
 #include "antwika/atlas_editor/AtlasEditorError.hpp"
 
@@ -31,12 +31,8 @@ namespace antwika::atlas_editor
             return std::nullopt;
         }
 
-        std::ifstream file(*from, std::ios::binary);
-        if (!file.is_open())
-        {
-            throw GfxError(
-                "atlas_editor: could not open an image: " + *from);
-        }
+        std::ifstream file = io::openToReadAs<GfxError>(
+            *from, "an image", io::Content::Bytes);
 
         return antwika::gfx::PngReader{}.read(file);
     }
@@ -51,13 +47,8 @@ namespace antwika::atlas_editor
         }
 
         // Scoped, never opened and closed by hand.
-        std::ofstream file(*to, std::ios::binary | std::ios::trunc);
-        if (!file.is_open())
-        {
-            throw GfxError(
-                "atlas_editor: could not open an image for writing: "
-                + *to);
-        }
+        std::ofstream file = io::openToWriteAs<GfxError>(
+            *to, "an image", io::Content::Bytes);
 
         // The writer flushes and checks the stream itself.
         // A refusal by the filesystem arrives as a GfxError.

@@ -1,7 +1,6 @@
 #pragma once
 
 #include <cstdint>
-#include <fstream>
 #include <string_view>
 #include <istream>
 #include <optional>
@@ -11,6 +10,7 @@
 #include <nlohmann/json-schema.hpp>
 #include <nlohmann/json.hpp>
 
+#include <antwika/io/File.hpp>
 #include <antwika/replay/MigrationChain.hpp>
 #include <antwika/replay/VersionedDocument.hpp>
 
@@ -224,22 +224,22 @@ namespace antwika::config
     [[nodiscard]] std::optional<nlohmann::json> parseFileAs(
         const std::string &path)
     {
-        std::ifstream file(path);
+        auto file = io::openToReadIfPresent(path);
 
-        if (!file.is_open())
+        if (!file.has_value())
         {
             return std::nullopt;
         }
 
-        return parseAs<ErrorT>(file);
+        return parseAs<ErrorT>(*file);
     }
 
     /**
      * @brief Write a document out, replacing whatever was there.
      *
-     * The write is flushed here rather than by the destructor, which
-     * cannot report anything: a full disk fails on the flush and not
-     * on the open.
+     * The open, the flush and the failed-write refusal are
+     * antwika::io's, stated once over there; what is this module's is
+     * only what a document looks like on the stream.
      *
      * @tparam ErrorT What this format reports a failed write as.
      * @param document What to write.
@@ -250,19 +250,10 @@ namespace antwika::config
     void writeDocumentFileAs(
         const nlohmann::json &document, const std::string &path)
     {
-        std::ofstream file(path);
-        if (!file.is_open())
-        {
-            throw ErrorT("antwika: could not open to write: " + path);
-        }
-
-        writeConfig(document, file);
-
-        file.flush();
-        if (!file)
-        {
-            throw ErrorT("antwika: could not write: " + path);
-        }
+        io::writeFileAs<ErrorT>(
+            path, "a document", [&document](std::ostream &out) {
+                writeConfig(document, out);
+            });
     }
 
 } // namespace antwika::config

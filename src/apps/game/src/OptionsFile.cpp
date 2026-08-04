@@ -1,6 +1,5 @@
 #include "antwika/game/OptionsFile.hpp"
 
-#include <fstream>
 #include <memory>
 #include <string>
 #include <string_view>
@@ -11,6 +10,7 @@
 #include <antwika/input/InputError.hpp>
 #include <antwika/input/Key.hpp>
 #include <antwika/i18n/Locale.hpp>
+#include <antwika/io/File.hpp>
 
 #include <antwika/config/ConfigDocument.hpp>
 #include <antwika/config/FileFormat.hpp>
@@ -251,38 +251,26 @@ namespace antwika::game
     void saveOptionsFile(
         const PlayerOptions &options, const std::string &path)
     {
-        std::ofstream file(path);
-        if (!file.is_open())
-        {
-            throw OptionsFormatError(
-                "antwika::game: could not open options to write: "
-                + path);
-        }
-
-        writeOptions(options, file);
-
-        // Flushed here rather than by the destructor, which cannot say.
-        // A full disk fails on the flush, not on the open.
-        file.flush();
-        if (!file)
-        {
-            throw OptionsFormatError(
-                "antwika::game: could not write options: " + path);
-        }
+        // The open, the flush and the write refusal are antwika::io's.
+        // That discipline is stated once, over there.
+        io::writeFileAs<OptionsFormatError>(
+            path, "options", [&options](std::ostream &out) {
+                writeOptions(options, out);
+            });
     }
 
     PlayerOptions loadOptionsFileOrDefaults(const std::string &path)
     {
-        std::ifstream file(path);
-
         // A file that is not there is a player who never opened this.
         // Which is a state rather than a failure.
-        if (!file.is_open())
+        auto file = io::openToReadIfPresent(path);
+
+        if (!file.has_value())
         {
             return PlayerOptions{};
         }
 
-        return readOptions(file);
+        return readOptions(*file);
     }
 
     void saveOptionsFileIfNamed(

@@ -28,7 +28,7 @@ It holds no simulation logic of its own — everything here is glue that was dup
 
 ## Depends on
 
-[`animation`](animation.md), [`cli`](cli.md), [`event`](event.md), [`gfx`](gfx.md), [`input`](input.md), [`log`](log.md), [`replay`](replay.md), [`simulation`](simulation.md), [`sound`](sound.md), [`time`](time.md), [`ui`](ui.md).
+[`animation`](animation.md), [`cli`](cli.md), [`event`](event.md), [`gfx`](gfx.md), [`input`](input.md), [`io`](io.md), [`log`](log.md), [`replay`](replay.md), [`simulation`](simulation.md), [`sound`](sound.md), [`time`](time.md), [`ui`](ui.md).
 It is the widest library in the project, and that is the point: it is where the seams are joined, so no other library has to know about more than its own neighbours.
 
 ## WindowInputSource
@@ -41,7 +41,7 @@ Moving it took `gfx` out of the tick loop's dependency list entirely.
 `storeIfLive()` is **the guard that keeps a replay from writing**: reading a machine's file would resolve a recorded session against state the recording never carried, and writing it would leave whoever replayed somebody else's session carrying its result.
 `companion` and `tower_defence` had a copy each, untested in both; it is one function with one test now.
 
-`FileSnapshotStore<ValueT, ErrorT>` is the file half of a snapshot -- a missing file is a first run rather than a corrupt one, a write that cannot open says so, and a write is flushed here rather than by a destructor that could not report anything.
+`FileSnapshotStore<ValueT, ErrorT>` is the file half of a snapshot -- a missing file is a first run rather than a corrupt one, and a write that cannot open or cannot land says so, through [`io`](io.md), which owns the open/flush/check discipline for the whole tree.
 `FilePetStore` and `FileScoreStore` were the same fifty-five lines with seventeen names changed between them, and are thin forwarders now.
 
 ## Non-obvious decisions

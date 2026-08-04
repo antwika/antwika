@@ -1,6 +1,5 @@
 #include <gtest/gtest.h>
 
-#include <filesystem>
 #include <fstream>
 #include <string>
 #include <string_view>
@@ -86,21 +85,6 @@ TEST(FilePetStoreTest, Load_RefusesAFileThatIsNotACompanion)
 TEST(FilePetStoreTest, Save_RefusesAPathThatCannotBeWritten)
 {
     FilePetStore store("/nonexistent-directory/companion.json");
-
-    EXPECT_THROW(store.save(lived()), SaveFormatError);
-}
-
-// Opening is not writing.
-// A full disk fails only once the bytes are flushed.
-// /dev/full is the portable-enough way to make that happen on purpose.
-TEST(FilePetStoreTest, Save_ReportsAWriteThatFailsAfterTheOpen)
-{
-    if (!std::filesystem::exists("/dev/full"))
-    {
-        GTEST_SKIP() << "no /dev/full to fill";
-    }
-
-    FilePetStore store("/dev/full");
 
     EXPECT_THROW(store.save(lived()), SaveFormatError);
 }

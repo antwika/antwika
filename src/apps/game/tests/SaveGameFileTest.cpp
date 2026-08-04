@@ -1,6 +1,5 @@
 #include <gtest/gtest.h>
 
-#include <filesystem>
 #include <fstream>
 #include <optional>
 #include <sstream>
@@ -105,18 +104,6 @@ TEST(SaveGameFileTest, RejectsAMalformedFile)
     }
 
     EXPECT_THROW((void)loadGameFile(file.string()), SaveFormatError);
-}
-
-// Opening is not writing: a full disk fails only once bytes are flushed.
-// /dev/full is the portable-enough way to make that happen on purpose.
-TEST(SaveGameFileTest, ReportsAWriteThatFailsAfterTheOpen)
-{
-    if (!std::filesystem::exists("/dev/full"))
-    {
-        GTEST_SKIP() << "no /dev/full to fill";
-    }
-
-    EXPECT_THROW(saveGameFile(populated(), "/dev/full"), SaveFormatError);
 }
 
 // The two flags' whole behaviour, where a test can reach it.
