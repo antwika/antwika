@@ -364,6 +364,7 @@ TEST(SceneSnapshotTest, GameSummaryEqualityComparesEveryField)
         .ruins = {},
         .camera = Camera(),
         .ratings = {},
+        .console = {},
         .bindings = {}};
 
     EXPECT_EQ(base, base);

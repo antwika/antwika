@@ -70,7 +70,15 @@ namespace antwika::game
             return;
         }
 
-        view.resetView();
+        if (action == Action::ResetView)
+        {
+            view.resetView();
+            return;
+        }
+
+        // The console's own two actions fall through to nothing.
+        // ConsoleSink acts on them, open or closed.
+        // A tail that did anything would make Enter a reset key.
     }
 
 } // namespace antwika::game

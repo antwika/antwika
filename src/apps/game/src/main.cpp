@@ -39,6 +39,7 @@
 #include "antwika/game/BuildingIndex.hpp"
 #include "antwika/game/Camera.hpp"
 #include "antwika/game/ConfigFile.hpp"
+#include "antwika/game/ConsoleSink.hpp"
 #include "antwika/game/Desirability.hpp"
 #include "antwika/game/FrameMeter.hpp"
 #include "antwika/game/GridExtent.hpp"
@@ -255,6 +256,7 @@ namespace
         UiOverlay overlay(antwika::game::kUiCanvas);
         UiOverlay menuOverlay(antwika::game::kUiCanvas);
         UiOverlay saveOverlay(antwika::game::kUiCanvas);
+        UiOverlay consoleOverlay(antwika::game::kUiCanvas);
 
         const SaveLoadScene saveScene(translator);
 
@@ -296,6 +298,7 @@ namespace
             .menuOverlay = menuOverlay,
             .saveScene = saveScene,
             .saveOverlay = saveOverlay,
+            .consoleOverlay = consoleOverlay,
             .worldScene = worldScene,
             .cities = cities,
             .fps = frameMeter});
@@ -408,6 +411,10 @@ namespace
                 .menuOverlay = menuOverlay,
                 .world = cities,
                 .saveOverlay = saveOverlay,
+                .consoleOverlay = consoleOverlay,
+                .consoleLoadEnabled = antwika::game::consoleLoadPermitted(
+                    recorded.options.recordPath.has_value(),
+                    recorded.options.replayPath.has_value()),
                 .saves = antwika::game::listSaveGames(kSaveDirectory),
                 .saveDirectory = std::string(kSaveDirectory),
                 .start = antwika::game::loadGameFileIfNamed(

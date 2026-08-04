@@ -1,5 +1,6 @@
 #pragma once
 
+#include <string>
 #include <vector>
 
 #include "antwika/game/Camera.hpp"
@@ -70,6 +71,20 @@ namespace antwika::game
          * what a save already holds -- see CityRatings.
          */
         CityRatings ratings;
+
+        /**
+         * @brief Every line the console held when the run ended.
+         *
+         * **Here so that a divergence in the console fails the replay
+         * comparison directly.** The history is simulation state --
+         * what a dump carries and what the open console lists -- so a
+         * live run and its replay disagreeing about it is the silent
+         * divergence this summary exists to catch.
+         *
+         * A run that never opened the console ends with it empty,
+         * which is what every summary held before this member existed.
+         */
+        std::vector<std::string> console;
 
         /**
          * @brief Which key asked for what, when the run ended.

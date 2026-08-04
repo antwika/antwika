@@ -27,7 +27,7 @@ F10 fills the screen with the window and puts it back, which is the one key here
 The toolbar carries zoom, reset-view, pause and menu buttons, drawn over the grid by `Toolbar`, described and resolved once per tick by `UiSink`, and painted last by `RenderSystem`; the bar also reports the tick, and a corner of the screen reports the frame rate.
 A city runs from the moment it comes up, so that button is how a player asks for a pause and how they let one go.
 The toolbar's `menu` button opens a menu modal over the city with two items: one back to the main menu, and one back to the game.
-The main menu's `Options` button opens the key bindings screen, where an action is picked and the next key pressed is bound to it; Space pauses, `=` and `-` zoom and Home puts the view back, until somebody says otherwise.
+The main menu's `Options` button opens the key bindings screen, where an action is picked and the next key pressed is bound to it; Space pauses, `=` and `-` zoom, Home puts the view back, the grave key slides the debug console in and Enter executes what its field holds, until somebody says otherwise.
 F10 fills the screen with the window and puts it back, which — with Escape — is one of the two keys here that reach no sink at all, and therefore the two that may not be bound to anything.
 It starts on an empty grid and loads nothing unless `--replay` says so, so a session contains exactly what somebody clicked.
 
@@ -856,6 +856,36 @@ Both sinks used to spell the four out for themselves, which is why both took a `
 `UiOverlay` carries the frame's `hoverTargets` beside its picture, and `RenderSystem` recolours a *copy* of that picture from `input::PointerHintChannel` just before painting -- so a button brightens on approach while nothing about the hover reaches a sink, a system, a snapshot or a recording.
 That is [`docs/hover-is-not-simulation.md`](../../docs/hover-is-not-simulation.md)'s rule kept exactly: the hint may decide what is drawn and nothing else.
 
+
+## The debug console
+
+**The grave key slides a console over the top half of the city, and two commands snapshot and restore the running state.**
+Both keys are ordinary rebindable actions -- `console_toggle` on Grave and `console_execute` on Enter -- so they ride `BindingSource`'s announcement like every other binding, and neither defines an event: the toggle, the typing and the Enter are recorded input, and `ConsoleSink` regenerates the slide, the history and the command's effect from them inside the tick path, exactly as `SaveLoadSink` regenerates a save from a click.
+No `console.*` event name exists, and none may.
+
+**The slide is simulation state, shaped by a tween.**
+Whether the console is open decides what a key press means, so how far along the slide is has to be something a replay reaches again: `ConsoleState` counts `kConsoleAnimTicks` whole ticks, and `consoleHeightAt()` shapes that count into a height with `tween::Easing::CubicOut` -- exact rational arithmetic, so the same tick is the same pixel on every toolchain.
+The input field reads only when the console stands fully open and is not on its way out, which is what makes every keystroke's meaning a function of state rather than of a frame.
+Part way along, the sheet is an empty surface; fully open, it lists the newest `kConsoleHistoryShown` history lines above a field on its bottom edge.
+
+**The console is on top, and `ConsoleGatedSink` is how that is said.**
+While any of it is out, every key edge is the console's -- typing a space must not also pause the city -- and a press or a scroll above its bottom edge is too, while movements and releases still pass on the toolbar's own terms, so a pan begun on the city carries on across the sheet.
+The hotkey, toolbar, world-map and grid sinks are each wrapped in one, and the rule is stated where they are registered rather than inside them.
+The console itself gates on `AppMode::CityMap`, and leaving the city *closes* it outright: left open over another screen, its gates would swallow that screen's keys with the toggle gated off.
+
+**`dump_state` writes the instant to `dump_state.json`, and runs everywhere.**
+The document (`StateDump`, its own versioned format with its own migration chain) is a whole `SaveGame` plus the view around it: the pause, the selected tool, the map view, the language and the console's own history.
+It deliberately does not carry the engine's tick number, which a recording forbids going backwards; the other cities of the world map, which a save has never carried either; or any open menu, which a load closes exactly as opening the modal ends a road drag.
+A dump is a write-only projection of state a replay reproduces, so a `--replay` run re-executes it and rewrites the same file -- which is a feature: trim a recording to any tick, replay it, and the file *is* the state at that point.
+
+**`load_state` reads it back, and only a plain live run may.**
+Under `--record` or `--replay` the command answers with a deterministic refusal line -- the console-level twin of `requireRecordableStart()`, and for its exact reason: a load reaches the session through no event, so a recording containing one would replay against a different city.
+The refusal being an ordinary history line is what keeps a hand-authored replay that types `load_state` reading exactly what a recorded run would have read.
+A live load restores through the very `SessionStore` the picker uses, stages the language change to the tick boundary through `LocaleState`, and replaces the console's history with the dump's own -- coming back to the instant means reading what it read.
+
+**Every word the console says is a literal, not a `MessageId`.**
+A command language is a format, like a save file's kind names: `dump_state` is its name in every language, and history lines are state a dump carries, so wording them per locale would make the dumped console a function of the language it was typed under.
+The history is session-only -- nothing writes it out on the way down -- and it sits in `GameSummary::console`, so a live run and its replay disagreeing about it fails `ReplayDeterminismTest`'s comparison like any other divergence.
 
 ## See also
 

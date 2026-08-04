@@ -588,3 +588,24 @@ TEST_F(RenderSystemTest, Update_PreviewsNothingWithNoDragUnderWay)
 
     system.update(world, 0);
 }
+
+// The console's picture is painted over everything the grid drew.
+TEST_F(RenderSystemTest, Update_PaintsTheConsoleOverlayWhenOneIsOffered)
+{
+    UiOverlay consoleOverlay{kCanvas};
+    consoleOverlay.set(
+        {antwika::ui::FillRect{
+            .rect = Rect{
+                .origin = antwika::gfx::Point{.x = 0, .y = 0},
+                .size = Size{.width = kCanvas.width, .height = 120}}}},
+        {},
+        false);
+
+    auto offered = setup();
+    offered.consoleOverlay = consoleOverlay;
+    RenderSystem system(offered);
+
+    EXPECT_CALL(renderer, drawRect(_, _)).Times(::testing::AtLeast(1));
+
+    system.update(world, 0);
+}

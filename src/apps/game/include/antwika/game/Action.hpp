@@ -50,6 +50,16 @@ namespace antwika::game
          * @brief Put the camera back where the run opened it.
          */
         ResetView,
+
+        /**
+         * @brief Slide the debug console in, or send it back out.
+         */
+        ConsoleToggle,
+
+        /**
+         * @brief Execute what the console's field holds.
+         */
+        ConsoleExecute,
     };
 
     /**
@@ -59,11 +69,13 @@ namespace antwika::game
      * that adding an action adds a row and a line rather than an edit in
      * each.
      */
-    inline constexpr std::array<Action, 4> kActions{
+    inline constexpr std::array<Action, 6> kActions{
         Action::Pause,
         Action::ZoomIn,
         Action::ZoomOut,
-        Action::ResetView};
+        Action::ResetView,
+        Action::ConsoleToggle,
+        Action::ConsoleExecute};
 
     /**
      * @brief How many actions there are.

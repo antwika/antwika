@@ -13,6 +13,10 @@ antwika_add_app(
         src/CityGrid.cpp
         src/CityRatings.cpp
         src/ConfigFile.cpp
+        src/ConsoleGatedSink.cpp
+        src/ConsoleScene.cpp
+        src/ConsoleSink.cpp
+        src/ConsoleState.cpp
         src/Coverage.cpp
         src/CoverageSystem.cpp
         src/Desirability.cpp
@@ -85,6 +89,8 @@ antwika_add_app(
         src/SaveRuins.cpp
         src/SaveSections.cpp
         src/SessionGatedSystem.cpp
+        src/StateDump.cpp
+        src/StateDumpFile.cpp
         src/StandingBuildings.cpp
         src/SessionStore.cpp
         src/SpawnSystem.cpp

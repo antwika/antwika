@@ -299,6 +299,46 @@ namespace antwika::game
             std::nullopt;
 
         /**
+         * @brief The debug console's own picture, which turns it on.
+         *
+         * A fourth overlay, for the reason the menu and the picker
+         * each have one: it is painted over the toolbar's and belongs
+         * to a different describer, so neither may overwrite the
+         * other's picture.
+         *
+         * Unset, no ConsoleSink is registered at all, so the run has
+         * no console -- which is what every test whose subject is
+         * something else wants, and what keeps the toggle key a plain
+         * unbound key there.
+         *
+         * Passed in rather than created here because a renderer built
+         * beforehand has to read it.
+         */
+        std::optional<std::reference_wrapper<UiOverlay>> consoleOverlay =
+            std::nullopt;
+
+        /**
+         * @brief Whether the console's load_state may run.
+         *
+         * main() passes false when --record or --replay was given,
+         * which is requireRecordableStart()'s rule arriving at the
+         * console: a load reads a file whose contents no recording
+         * carries, so a recorded run may not perform one.
+         * The refusal is a deterministic history line rather than a
+         * throw -- see ConsoleSink.
+         */
+        bool consoleLoadEnabled = true;
+
+        /**
+         * @brief Where dump_state writes and load_state reads.
+         *
+         * Relative to wherever the binary was started from, exactly
+         * as the save directory is; a test points it into a scratch
+         * directory instead.
+         */
+        std::string stateDumpPath = "dump_state.json";
+
+        /**
          * @brief The saves that existed when the run started.
          *
          * Read once, before the loop, and fixed for the run -- see
