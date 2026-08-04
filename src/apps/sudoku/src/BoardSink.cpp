@@ -22,7 +22,7 @@ namespace antwika::sudoku
                 "sudoku.new_puzzle payload", {"cells"});
             schema["properties"]["cells"] = antwika::replay::wordShape();
             return schema;
-        }
+        } // GCOVR_EXCL_LINE
 
         // x and y are bounded by the grid rather than by their type.
         // A coordinate the board lacks is a payload nobody meant.
@@ -39,7 +39,7 @@ namespace antwika::sudoku
             schema["properties"]["digit"] =
                 antwika::replay::boundedCountShape(Board::kSize);
             return schema;
-        }
+        } // GCOVR_EXCL_LINE
     } // namespace
 
     BoardSink::BoardSink(

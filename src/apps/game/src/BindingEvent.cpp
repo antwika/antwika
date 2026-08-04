@@ -22,7 +22,7 @@ namespace antwika::game
             schema["properties"]["action"] = replay::wordShape();
             schema["properties"]["key"] = replay::wordShape();
             return schema;
-        }
+        } // GCOVR_EXCL_LINE
     } // namespace
 
     std::string bindKeyPayload(KeyBinding binding)

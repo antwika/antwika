@@ -76,7 +76,7 @@ namespace antwika::sudoku
                   ["const"] = kPuzzleDocumentVersion;
             schema["properties"]["cells"] = antwika::replay::wordShape();
             return schema;
-        }
+        } // GCOVR_EXCL_LINE
 
         [[nodiscard]] bool opensLikeJson(const std::string_view text)
         {

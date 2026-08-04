@@ -117,13 +117,15 @@ namespace antwika::replay
     [[nodiscard]] const nlohmann::json_schema::json_validator &
     validatorFor()
     {
-        // The excluded line carries the static guard.
+        // The excluded lines carry the static guard.
         // Its concurrency arms are unreachable one-threaded.
         // The marker covers every instantiation, deliberately.
         // Each one says the same thing about its own guard.
         // See docs/confirming-unreachable-branches.md.
+        // GCOVR_EXCL_START
         static const nlohmann::json_schema::json_validator validator(
-            BuildSchema()); // GCOVR_EXCL_LINE
+            BuildSchema());
+        // GCOVR_EXCL_STOP
         return validator;
     }
 

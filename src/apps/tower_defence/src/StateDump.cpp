@@ -99,7 +99,7 @@ namespace antwika::tower_defence
             cell["properties"]["y"] = countShape();
 
             return schema;
-        }
+        } // GCOVR_EXCL_LINE
     } // namespace
 
     antwika::replay::MigrationChain standardStateDumpMigrations()

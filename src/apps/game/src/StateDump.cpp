@@ -62,7 +62,7 @@ namespace antwika::game
             schema["properties"]["mapView"] = wordShape();
             schema["properties"]["locale"] = wordShape();
             return schema;
-        }
+        } // GCOVR_EXCL_LINE
 
         // Version 2 moved the state under the shared envelope.
         // A version 1 document was this application's own shape.

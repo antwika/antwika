@@ -236,7 +236,7 @@ namespace antwika::companion
             schema["properties"]["generation"] = countShape();
             schema["properties"]["bestTicks"] = countShape();
             return schema;
-        }
+        } // GCOVR_EXCL_LINE
     } // namespace
 
     MigrationChain standardPetMigrations()

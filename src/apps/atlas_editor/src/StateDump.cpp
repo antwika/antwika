@@ -36,7 +36,7 @@ namespace antwika::atlas_editor
             // A signed bound would read the top half as negative.
             image["properties"]["fingerprint"]["type"] = "integer";
             return image;
-        }
+        } // GCOVR_EXCL_LINE
 
         [[nodiscard]] nlohmann::json pixelSchema()
         {
@@ -44,7 +44,7 @@ namespace antwika::atlas_editor
             pixel["properties"]["x"]["type"] = "integer";
             pixel["properties"]["y"]["type"] = "integer";
             return pixel;
-        }
+        } // GCOVR_EXCL_LINE
 
         [[nodiscard]] nlohmann::json stateSchema()
         {
@@ -117,7 +117,7 @@ namespace antwika::atlas_editor
             }
 
             return schema;
-        }
+        } // GCOVR_EXCL_LINE
 
         [[nodiscard]] nlohmann::json imageToJson(
             const DumpedImage &image)

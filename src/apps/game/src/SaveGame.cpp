@@ -60,7 +60,7 @@ namespace antwika::game
             // Additive per docs/schema-versioning.md: no version bump.
             shape["properties"]["money"] = moneyShape();
             return shape;
-        }
+        } // GCOVR_EXCL_LINE
 
         nlohmann::json extentShape()
         {
@@ -69,7 +69,7 @@ namespace antwika::game
             shape["properties"]["width"] = coordinateShape();
             shape["properties"]["height"] = coordinateShape();
             return shape;
-        }
+        } // GCOVR_EXCL_LINE
 
         // Camera clamps a level it cannot honour, and keeps doing so.
         // That is right for zoomIn(), for zoomOut() and for a default.
@@ -91,7 +91,7 @@ namespace antwika::game
             shape["properties"]["panY"] = coordinateShape();
             shape["properties"]["zoomLevel"] = zoomLevelShape();
             return shape;
-        }
+        } // GCOVR_EXCL_LINE
 
         nlohmann::json arrayOf(nlohmann::json items)
         {

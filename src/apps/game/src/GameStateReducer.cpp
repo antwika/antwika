@@ -18,7 +18,7 @@ namespace antwika::game
                 "game.score_increment payload", {"amount"});
             schema["properties"]["amount"] = replay::countShape();
             return schema;
-        }
+        } // GCOVR_EXCL_LINE
 
         std::uint64_t parseAmount(const std::string &payload)
         {

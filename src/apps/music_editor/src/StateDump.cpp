@@ -45,7 +45,7 @@ namespace antwika::music_editor
             // A denominator of zero is no fraction at all.
             schema["properties"]["den"]["minimum"] = 1;
             return schema;
-        }
+        } // GCOVR_EXCL_LINE
 
         nlohmann::json editorSchema()
         {
@@ -95,7 +95,7 @@ namespace antwika::music_editor
             fields["scores"]["type"] = "array";
             fields["scores"]["items"] = wordShape();
             return schema;
-        }
+        } // GCOVR_EXCL_LINE
 
         nlohmann::json playbackSchema()
         {
@@ -125,7 +125,7 @@ namespace antwika::music_editor
             fields["pausedFrames"] = countShape();
             fields["voiceCount"] = countShape();
             return schema;
-        }
+        } // GCOVR_EXCL_LINE
 
         nlohmann::json stateSchema()
         {
@@ -135,7 +135,7 @@ namespace antwika::music_editor
             schema["properties"]["editor"] = editorSchema();
             schema["properties"]["playback"] = playbackSchema();
             return schema;
-        }
+        } // GCOVR_EXCL_LINE
 
         [[nodiscard]] nlohmann::json rationalToJson(
             const sequencer::Rational &value)

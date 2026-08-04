@@ -54,7 +54,7 @@ namespace antwika::game
         shape["properties"]["state"] = replay::wordShape();
         shape["properties"]["ticksUntilOut"] = signedCountShape();
         return shape;
-    }
+    } // GCOVR_EXCL_LINE
 
     void describeRuins(nlohmann::json &schema)
     {

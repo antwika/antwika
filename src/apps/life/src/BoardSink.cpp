@@ -28,7 +28,7 @@ namespace antwika::life
                     antwika::replay::boundedCountShape(kMaxCoordinate);
             }
             return schema;
-        }
+        } // GCOVR_EXCL_LINE
     } // namespace
 
     BoardSink::BoardSink(

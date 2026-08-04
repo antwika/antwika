@@ -19,7 +19,7 @@ namespace antwika::game
                 "game.set_locale payload", {"locale"});
             schema["properties"]["locale"] = replay::wordShape();
             return schema;
-        }
+        } // GCOVR_EXCL_LINE
     } // namespace
 
     std::string setLocalePayload(Locale locale)

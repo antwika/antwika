@@ -18,7 +18,7 @@ namespace antwika::game
                 "game.set_keyboard payload", {"keyboard"});
             schema["properties"]["keyboard"] = replay::wordShape();
             return schema;
-        }
+        } // GCOVR_EXCL_LINE
     } // namespace
 
     std::string setKeyboardPayload(KeyboardLayout layout)

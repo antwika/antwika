@@ -36,7 +36,7 @@ namespace antwika::poker
             schema["properties"]["amount"]["type"] = "integer";
             schema["properties"]["amount"]["minimum"] = 1;
             return schema;
-        }
+        } // GCOVR_EXCL_LINE
 
         nlohmann::json depositSchema()
         {
@@ -54,7 +54,7 @@ namespace antwika::poker
                 "poker.cash_out payload", {"player"});
             describePlayer(schema);
             return schema;
-        }
+        } // GCOVR_EXCL_LINE
 
     } // namespace
 

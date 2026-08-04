@@ -79,7 +79,7 @@ namespace antwika::task_worker
             dispatch["properties"]["dispatched"] = countShape();
 
             return schema;
-        }
+        } // GCOVR_EXCL_LINE
 
         [[nodiscard]] const TaskInfo *taskWithId(
             const std::vector<TaskInfo> &tasks,

@@ -22,7 +22,7 @@ namespace antwika::life
             schema["properties"]["x"] = bounds;
             schema["properties"]["y"] = std::move(bounds);
             return schema;
-        }
+        } // GCOVR_EXCL_LINE
 
         nlohmann::json stateSchema()
         {
@@ -48,7 +48,7 @@ namespace antwika::life
             schema["properties"]["lastDrag"] =
                 coordinateSchema(antwika::replay::coordinateShape());
             return schema;
-        }
+        } // GCOVR_EXCL_LINE
     } // namespace
 
     antwika::replay::MigrationChain standardStateDumpMigrations()

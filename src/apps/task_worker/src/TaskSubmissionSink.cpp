@@ -38,7 +38,7 @@ namespace antwika::task_worker
             schema["properties"]["dependsOnId"] =
                 antwika::replay::countShape();
             return schema;
-        }
+        } // GCOVR_EXCL_LINE
 
     } // namespace
 

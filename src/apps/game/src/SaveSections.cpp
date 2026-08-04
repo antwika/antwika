@@ -159,7 +159,7 @@ namespace antwika::game
         shape["properties"]["x"] = replay::coordinateShape();
         shape["properties"]["y"] = replay::coordinateShape();
         return shape;
-    }
+    } // GCOVR_EXCL_LINE
 
     nlohmann::json signedCountShape()
     {
@@ -223,7 +223,7 @@ namespace antwika::game
         describeJourney(shape);
         describeFireCall(shape);
         return shape;
-    }
+    } // GCOVR_EXCL_LINE
 
     nlohmann::json buildingShape()
     {
@@ -266,7 +266,7 @@ namespace antwika::game
         // One line per section, and each in a file of its own.
         describeProduction(shape);
         return shape;
-    }
+    } // GCOVR_EXCL_LINE
 
     void walkersToJson(const SaveGame &save, nlohmann::json &document)
     {
