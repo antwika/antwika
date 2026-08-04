@@ -11,6 +11,9 @@ antwika_add_app_tests(
         PolicyAgentTest.cpp
         ReplayIntegrationTest.cpp
         RoomSummaryTest.cpp
+        SnapshotStoreTest.cpp
+        StateDumpTest.cpp
+        ConsoleSinkTest.cpp
         TablePrinterTest.cpp
         TableRenderSinkTest.cpp
         TableSceneTest.cpp
@@ -19,6 +22,8 @@ antwika_add_app_tests(
     LIBS
         antwika::app
         antwika::cli
+        antwika::console
+        antwika::testing
         antwika::config
         antwika::config::tests::conformance
         antwika::engine

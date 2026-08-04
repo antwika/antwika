@@ -47,6 +47,17 @@ namespace antwika::task_worker
         WorkerLookup &operator=(WorkerLookup &&) = delete;
 
         /**
+         * @brief Replace the tracked entities with a restored pool's.
+         * @param replacement Every Worker entity of the restored pool,
+         * in claim-priority order, already committed into the World.
+         *
+         * What load_state calls once the old entities are destroyed:
+         * the cache starts over as the constructor's would, and the
+         * next tick's refresh() reads the restored statuses.
+         */
+        void reset(std::vector<Entity> replacement);
+
+        /**
          * @brief Resync the idle/busy cache from World's committed
          * (front-buffer) Worker state.
          *

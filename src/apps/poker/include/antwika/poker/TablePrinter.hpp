@@ -18,6 +18,7 @@
 #include <antwika/time/IClock.hpp>
 
 #include "antwika/poker/CashGame.hpp"
+#include "antwika/poker/PrinterMemory.hpp"
 
 namespace antwika::poker
 {
@@ -80,18 +81,19 @@ namespace antwika::poker
          */
         void printStep(const StepOutcome &outcome);
 
-    private:
         /**
-         * @brief What one seat did in the hand being written up.
+         * @brief Take the narration's mid-hand standing, as a value.
+         * @return Everything restore() needs.
          */
-        struct SeatNote
-        {
-            Chips roundStake{};
-            Stage foldedOn{};
-            bool dealtIn = false;
-            bool folded = false;
-        };
+        [[nodiscard]] PrinterMemory remember() const;
 
+        /**
+         * @brief Stand the narration at a remembered instant.
+         * @param memory The instant to stand at.
+         */
+        void restore(const PrinterMemory &memory);
+
+    private:
         /**
          * @brief A bet nobody covered, on its way back to its owner.
          */
@@ -106,7 +108,7 @@ namespace antwika::poker
         const Table &table;
         IClock &clock;
         std::string tableName;
-        std::vector<SeatNote> notes;
+        std::vector<PrinterNote> notes;
         std::optional<SeatId> smallBlindSeat;
         std::optional<SeatId> bigBlindSeat;
         Stage stage{};

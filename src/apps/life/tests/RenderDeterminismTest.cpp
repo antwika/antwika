@@ -104,7 +104,7 @@ TEST(
     const BoardScene scene;
 
     // The live run: a mocked window, closed part way through.
-    Board liveBoard;
+    antwika::life::LifeSummary liveBoard;
     {
         NiceMock<MockLogger> logger;
         NiceMock<MockEventSink> eventSink;
@@ -194,7 +194,7 @@ TEST(
 
     // Two empty boards would agree for the wrong reason.
     EXPECT_NE(
-        liveBoard.alive,
+        liveBoard.board.alive,
         std::vector<bool>(
             static_cast<std::size_t>(kWidth) * kHeight, false));
 }

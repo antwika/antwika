@@ -94,6 +94,39 @@ namespace antwika::tower_defence
     };
 
     /**
+     * @brief Everything one campaign has moved, and nothing its seed
+     * rebuilds.
+     *
+     * The level layouts and the wave orders are deliberately absent:
+     * they are pure functions of the campaign's seed and the level
+     * index, so Campaign::restore() regenerates them the way
+     * Campaign::buildBattle() generated them the first time.
+     */
+    struct CampaignMemory
+    {
+        /** @brief Which level is being fought, counting from zero. */
+        std::size_t level = 0;
+
+        /** @brief Score earned across every level so far. */
+        std::uint64_t score = 0;
+
+        /** @brief Leaks the player can still afford. */
+        std::uint32_t lives = 0;
+
+        /** @brief How many ticks step() has been called for. */
+        std::uint64_t ticks = 0;
+
+        /** @brief How far the campaign has got. */
+        CampaignPhase phase = CampaignPhase::Fighting;
+
+        /** @brief The fight the level index rebuilds a level for. */
+        BattleMemory battle;
+
+        [[nodiscard]] bool operator==(const CampaignMemory &) const
+            = default;
+    };
+
+    /**
      * @brief A sequence of levels, the score across them and the lives
      * left to spend.
      *
@@ -161,6 +194,33 @@ namespace antwika::tower_defence
 
         /** @brief How far the campaign has got. */
         [[nodiscard]] CampaignPhase phase() const;
+
+        /**
+         * @brief Take everything this campaign has moved.
+         * @return The state its seed does not rebuild.
+         */
+        [[nodiscard]] CampaignMemory remember() const;
+
+        /**
+         * @brief Put a remembered campaign back, regenerating its
+         * level.
+         *
+         * The battle is rebuilt from (config.seed, memory.level)
+         * exactly as the constructor and step() build one, so the
+         * level and the wave order come back without ever having been
+         * written down.
+         * A campaign standing one past its last level -- a won one --
+         * gets the empty battle nobody fights, as a levelless config
+         * does.
+         *
+         * @param memory What some campaign's remember() answered.
+         * @return True when it fit; false for a level index past one
+         * beyond the last level, and for a fight that does not fit the
+         * regenerated level -- both refused rather than repaired,
+         * leaving this campaign as it stood.
+         * @throws LevelError If the named level cannot be generated.
+         */
+        [[nodiscard]] bool restore(const CampaignMemory &memory);
 
     private:
         CampaignConfig config;

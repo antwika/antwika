@@ -30,6 +30,35 @@ namespace antwika::sequencer
     {
     public:
         /**
+         * @brief One stretch of the timeline at one tempo.
+         *
+         * Public so a caller can read the table back and rebuild an
+         * equal map elsewhere: constructing at the first segment's
+         * pace and replaying addSegment() for the rest reproduces
+         * every startFrame, since each is derived from the segments
+         * before it and nothing else.
+         */
+        struct Segment
+        {
+            /** @brief Where it starts, in cycles. */
+            Cycle startCycle;
+
+            /** @brief Where it starts, in frames. */
+            FrameIndex startFrame = 0;
+
+            /** @brief How many frames one cycle takes inside it. */
+            Rational framesPerCycle;
+
+            /**
+             * @brief Compare two segments.
+             * @param other The segment to compare against.
+             * @return True when every field matches.
+             */
+            [[nodiscard]] bool operator==(
+                const Segment &other) const = default;
+        };
+
+        /**
          * @brief Build a map at one tempo, from the very first frame.
          * @param framesPerCycle How long one cycle lasts.
          * @throws SequencerError If a cycle would take no frames at all.
@@ -50,6 +79,13 @@ namespace antwika::sequencer
          * @return The count, never zero.
          */
         [[nodiscard]] std::size_t segmentCount() const noexcept;
+
+        /**
+         * @brief Get the whole table, first segment first.
+         * @return The segments, never empty.
+         */
+        [[nodiscard]] const std::vector<Segment> &
+        segments() const noexcept;
 
         /**
          * @brief Get the frame a musical position falls on.
@@ -75,19 +111,12 @@ namespace antwika::sequencer
         [[nodiscard]] Cycle cycleAt(FrameIndex frame) const;
 
     private:
-        struct Segment
-        {
-            Cycle startCycle;
-            FrameIndex startFrame = 0;
-            Rational framesPerCycle;
-        };
-
         [[nodiscard]] const Segment &segmentFor(Cycle at) const noexcept;
 
         [[nodiscard]] const Segment &segmentFor(
             FrameIndex frame) const noexcept;
 
-        std::vector<Segment> segments;
+        std::vector<Segment> table;
     };
 
 } // namespace antwika::sequencer

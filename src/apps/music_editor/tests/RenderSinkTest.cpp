@@ -43,7 +43,8 @@ TEST(RenderSinkTest, DrawsAndPresentsOnTheTick)
     EXPECT_CALL(renderer, present()).Times(1);
 
     EditorRig rig;
-    RenderSink sink(window, rig.scene, rig.editor, kCanvas);
+    RenderSink sink(
+        window, rig.scene, rig.editor, kCanvas, rig.consolePicture);
 
     sink.handle(tickAt(1));
 }
@@ -58,7 +59,8 @@ TEST(RenderSinkTest, DrawsNothingForAnyOtherEvent)
     EXPECT_CALL(renderer, present()).Times(0);
 
     EditorRig rig;
-    RenderSink sink(window, rig.scene, rig.editor, kCanvas);
+    RenderSink sink(
+        window, rig.scene, rig.editor, kCanvas, rig.consolePicture);
 
     sink.handle(
         TickEvent{.tick = 1, .event = {.name = "input.key_pressed"}});
@@ -74,7 +76,8 @@ TEST(RenderSinkTest, DrawsNothingOnceTheWindowHasClosed)
     EXPECT_CALL(renderer, present()).Times(0);
 
     EditorRig rig;
-    RenderSink sink(window, rig.scene, rig.editor, kCanvas);
+    RenderSink sink(
+        window, rig.scene, rig.editor, kCanvas, rig.consolePicture);
 
     sink.handle(tickAt(1));
 }
@@ -116,7 +119,8 @@ TEST(RenderSinkTest, AWiderWindowIsPillarboxedAroundTheScaledCanvas)
         .Times(1);
 
     EditorRig rig;
-    RenderSink sink(window, rig.scene, rig.editor, kCanvas);
+    RenderSink sink(
+        window, rig.scene, rig.editor, kCanvas, rig.consolePicture);
 
     sink.handle(tickAt(1));
 }

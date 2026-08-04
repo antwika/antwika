@@ -40,6 +40,8 @@
 #include "antwika/game/PathIndex.hpp"
 #include "antwika/game/PauseState.hpp"
 #include "antwika/game/RoadDrag.hpp"
+#include <antwika/console/ConsolePicture.hpp>
+
 #include "antwika/game/RenderSystem.hpp"
 #include "antwika/game/SaveLoadScene.hpp"
 #include "antwika/game/TileAtlas.hpp"
@@ -592,14 +594,12 @@ TEST_F(RenderSystemTest, Update_PreviewsNothingWithNoDragUnderWay)
 // The console's picture is painted over everything the grid drew.
 TEST_F(RenderSystemTest, Update_PaintsTheConsoleOverlayWhenOneIsOffered)
 {
-    UiOverlay consoleOverlay{kCanvas};
+    antwika::console::ConsolePicture consoleOverlay{kCanvas};
     consoleOverlay.set(
         {antwika::ui::FillRect{
             .rect = Rect{
                 .origin = antwika::gfx::Point{.x = 0, .y = 0},
-                .size = Size{.width = kCanvas.width, .height = 120}}}},
-        {},
-        false);
+                .size = Size{.width = kCanvas.width, .height = 120}}}});
 
     auto offered = setup();
     offered.consoleOverlay = consoleOverlay;

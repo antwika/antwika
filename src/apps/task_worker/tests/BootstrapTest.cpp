@@ -175,7 +175,7 @@ TEST(BootstrapTest, Bootstrap_RunsScriptedTasksToCompletion)
             .eventSink = eventSink,
             .inputSource = inputSource,
             .workerCount = kWorkerCount,
-            .maxTicks = kMaxTicks});
+            .maxTicks = kMaxTicks}).workers;
 
     // At tick 5, Delta's and Beta's workers free simultaneously.
     // Epsilon (Normal) now outranks Gamma (Low) for the freed slot.
@@ -331,7 +331,7 @@ TEST(BootstrapTest, Bootstrap_WithNoScriptedInputAllWorkersStayIdle)
             .eventSink = eventSink,
             .inputSource = inputSource,
             .workerCount = 2,
-            .maxTicks = kMaxTicks});
+            .maxTicks = kMaxTicks}).workers;
 
     EXPECT_EQ(finalState[0], (Worker{WorkerStatus::Idle, 0}));
     EXPECT_EQ(finalState[1], (Worker{WorkerStatus::Idle, 0}));

@@ -6,7 +6,9 @@
 #include <memory>
 #include <optional>
 #include <string>
+#include <vector>
 
+#include <antwika/console/ConsolePicture.hpp>
 #include <antwika/event/IEventSink.hpp>
 #include <antwika/event/ITickEventSink.hpp>
 #include <antwika/gfx/Size.hpp>
@@ -62,6 +64,9 @@ namespace antwika::companion
         std::uint32_t generation = 1;
         antwika::time::Tick bestTicks = 0;
         bool perished = false;
+
+        /** @brief Every line the debug console said or was told. */
+        std::vector<std::string> console;
     };
 
     /**
@@ -144,6 +149,29 @@ namespace antwika::companion
          */
         std::optional<std::reference_wrapper<IPetStore>> store =
             std::nullopt;
+
+        /**
+         * @brief The debug console's own picture, which turns it on.
+         *
+         * Absent, no console sink is registered and the state stays
+         * closed, so every gate forwards everything untouched -- which
+         * is what every test whose subject is the companion wants.
+         */
+        std::optional<
+            std::reference_wrapper<antwika::console::ConsolePicture>>
+            consoleOverlay = std::nullopt;
+
+        /**
+         * @brief Whether the console's load_state may run.
+         *
+         * False under --record and --replay: a load reads a file whose
+         * contents no recording carries -- see
+         * console::consoleLoadPermitted().
+         */
+        bool consoleLoadEnabled = true;
+
+        /** @brief Where dump_state writes and load_state reads. */
+        std::string stateDumpPath = "dump_state.json";
 
         /** @brief How long to hold each tick for. */
         std::chrono::milliseconds tickInterval = kTickInterval;

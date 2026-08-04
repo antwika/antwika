@@ -12,6 +12,7 @@ namespace
             .handsPlayed = 12,
             .balances = {{"alice", 400}, {"bob", 600}},
             .chipsLeftOnTable = 0,
+            .console = {},
         };
     }
 } // namespace
@@ -33,4 +34,8 @@ TEST(RoomSummaryTest, Equality_ComparesEveryFieldIndependently)
     auto chipsStranded = sample();
     chipsStranded.chipsLeftOnTable = 25;
     EXPECT_NE(summary, chipsStranded);
+
+    auto chattier = sample();
+    chattier.console = {"> hello"};
+    EXPECT_NE(summary, chattier);
 }

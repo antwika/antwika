@@ -25,6 +25,91 @@ namespace antwika::atlas_editor
     using antwika::gfx::Size;
 
     /**
+     * @brief What a left drag is doing to the selection.
+     *
+     * One value rather than a flag and two loose corners, so a
+     * gesture cannot be half in progress: there is either one of
+     * these or there is no gesture.
+     */
+    struct Gesture
+    {
+        /** @brief Whether the drag draws a rectangle or carries one. */
+        bool carrying = false;
+
+        /** @brief The pixel the button went down on. */
+        Pixel from{};
+
+        /** @brief The pixel the pointer has reached. */
+        Pixel to{};
+
+        /**
+         * @brief Compare two gestures.
+         * @param other The gesture to compare against.
+         * @return True when every field matches.
+         */
+        [[nodiscard]] bool operator==(const Gesture &other) const =
+            default;
+    };
+
+    /**
+     * @brief Everything a state dump puts back into a session.
+     *
+     * The status message is deliberately absent: it is transient --
+     * the last thing said, not part of what the session *is* -- so a
+     * dump drops it and a restore clears it.
+     */
+    struct SessionRestore
+    {
+        /** @brief The sheet, carrying the revision it was dumped at. */
+        Canvas sheet;
+
+        /** @brief What a paste would put down, if anything. */
+        std::optional<Canvas> clipboard;
+
+        /** @brief Where the sheet sits and how far in it is zoomed. */
+        CanvasView view;
+
+        /** @brief What a left click does. */
+        Tool tool = Tool::Paint;
+
+        /** @brief The colour Paint puts down. */
+        Color paint;
+
+        /** @brief Which swatch is selected, if any. */
+        std::optional<std::size_t> swatch;
+
+        /** @brief Whether the slot grid is drawn. */
+        bool showGrid = true;
+
+        /** @brief Whether the sprite guides are drawn. */
+        bool showGuides = true;
+
+        /** @brief The image pixel the pointer was last over. */
+        std::optional<Pixel> under;
+
+        /** @brief The rectangle marked out, if any. */
+        std::optional<Selection> marked;
+
+        /** @brief The drag in progress, if any. */
+        std::optional<Gesture> gesture;
+
+        /** @brief How many pixels the session had changed. */
+        std::uint64_t changes = 0;
+
+        /** @brief How many ticks the session had run. */
+        std::uint64_t stepped = 0;
+
+        /** @brief How many times the sheet had been written out. */
+        std::uint32_t written = 0;
+
+        /** @brief How many times a sheet had been read in. */
+        std::uint32_t read = 0;
+
+        /** @brief The revision the last save was taken at. */
+        std::uint64_t savedRevision = 0;
+    };
+
+    /**
      * @brief Everything one editing session is, apart from the picture
      * of it.
      *
@@ -157,6 +242,20 @@ namespace antwika::atlas_editor
         [[nodiscard]] bool hasClipboard() const noexcept;
 
         /**
+         * @brief Get the clipboard's pixels, if anything is in hand.
+         * @return The clipboard, or nothing before a cut or copy.
+         */
+        [[nodiscard]] const std::optional<Canvas> &
+        clipboardImage() const noexcept;
+
+        /**
+         * @brief Get the drag in progress, if any.
+         * @return The gesture, or nothing between drags.
+         */
+        [[nodiscard]] std::optional<Gesture>
+        currentGesture() const noexcept;
+
+        /**
          * @brief Get the last thing worth telling the artist.
          * @return The message, or nothing until something has
          * happened.
@@ -194,6 +293,12 @@ namespace antwika::atlas_editor
          * @return True when there is something worth saving.
          */
         [[nodiscard]] bool unsaved() const noexcept;
+
+        /**
+         * @brief Get the revision the last save was taken at.
+         * @return The revision, which unsaved() compares against.
+         */
+        [[nodiscard]] std::uint64_t savedAtRevision() const noexcept;
 
         /**
          * @brief Choose what a left click does.
@@ -349,6 +454,21 @@ namespace antwika::atlas_editor
         void replace(Canvas image);
 
         /**
+         * @brief Put a dumped session's whole state back.
+         *
+         * What the console's load_state applies, and the counterpart
+         * of replace(): everything is taken as dumped rather than
+         * recentred or recounted, so the session carries on exactly
+         * where the dump was taken.
+         * The invariants still hold at the door -- the marked
+         * rectangle is clamped to the restored sheet as a drag's is --
+         * and the status message is cleared, being transient.
+         *
+         * @param snapshot The state to come back to.
+         */
+        void restore(SessionRestore snapshot);
+
+        /**
          * @brief Note that the image has been written out as it stands.
          */
         void markSaved() noexcept;
@@ -365,25 +485,6 @@ namespace antwika::atlas_editor
         void setStatus(StatusMessage message);
 
     private:
-        /**
-         * @brief What a left drag is doing to the selection.
-         *
-         * One value rather than a flag and two loose corners, so a
-         * gesture cannot be half in progress: there is either one of
-         * these or there is no gesture.
-         */
-        struct Gesture
-        {
-            /** @brief Whether the drag draws a rectangle or carries one. */
-            bool carrying = false;
-
-            /** @brief The pixel the button went down on. */
-            Pixel from{};
-
-            /** @brief The pixel the pointer has reached. */
-            Pixel to{};
-        };
-
         /**
          * @brief Spread the selected colour out from one pixel.
          * @param start Where the fill was asked for; one outside the

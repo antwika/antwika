@@ -3,8 +3,10 @@
 #include <cstdint>
 #include <functional>
 #include <optional>
+#include <string>
 #include <vector>
 
+#include <antwika/console/ConsolePicture.hpp>
 #include <antwika/ecs/ISystem.hpp>
 #include <antwika/engine/IEngine.hpp>
 #include <antwika/event/IEventDispatcher.hpp>
@@ -130,6 +132,50 @@ namespace antwika::task_worker
          */
         std::optional<std::reference_wrapper<ITickEventSink>>
             replayRecorder = std::nullopt;
+
+        /**
+         * @brief The debug console's own picture, which turns it on.
+         *
+         * The one thing the console sink and the caller's renderer
+         * share, described in the tick path and painted last.
+         * Unset, no console sink is registered at all, so a run with
+         * no console keeps yesterday's event stream untouched.
+         */
+        std::optional<
+            std::reference_wrapper<antwika::console::ConsolePicture>>
+            consoleOverlay = std::nullopt;
+
+        /**
+         * @brief Whether the console's load_state may run.
+         *
+         * False under --record and --replay, through
+         * antwika::console::consoleLoadPermitted(): a load reads a
+         * file whose contents no recording carries, so those runs
+         * answer it with a refusal line instead.
+         */
+        bool consoleLoadEnabled = true;
+
+        /**
+         * @brief Where dump_state writes and load_state reads.
+         */
+        std::string stateDumpPath = "dump_state.json";
+    };
+
+    /**
+     * @brief What one run amounts to, read out after the loop ends.
+     */
+    struct TaskWorkerSummary
+    {
+        /** @brief Every Worker's final state, in creation order. */
+        std::vector<Worker> workers;
+
+        /**
+         * @brief Every console line said or answered, oldest first.
+         *
+         * Empty for a run wired without a console, exactly as the
+         * console itself was.
+         */
+        std::vector<std::string> console;
     };
 
     /**
@@ -144,8 +190,8 @@ namespace antwika::task_worker
      * antwika::life::bootstrap() follows for its own state.
      *
      * @param config What the run is wired out of.
-     * @return Every Worker's final state, in creation order.
+     * @return The final worker states and the console's history.
      */
-    std::vector<Worker> bootstrap(const TaskWorkerWiring &config);
+    TaskWorkerSummary bootstrap(const TaskWorkerWiring &config);
 
 } // namespace antwika::task_worker

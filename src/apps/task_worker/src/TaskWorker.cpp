@@ -1,5 +1,13 @@
 #include "antwika/task_worker/TaskWorker.hpp"
 
+#include <utility>
+
+#include <antwika/console/ConsoleScene.hpp>
+#include <antwika/console/ConsoleSink.hpp>
+#include <antwika/console/ConsoleState.hpp>
+#include <antwika/console/IConsoleControls.hpp>
+#include <antwika/console/InputFold.hpp>
+#include <antwika/console/SnapshotCommands.hpp>
 #include <antwika/ecs/SystemScheduler.hpp>
 #include <antwika/ecs/World.hpp>
 #include <antwika/engine/Engine.hpp>
@@ -7,10 +15,12 @@
 #include <antwika/event/Event.hpp>
 #include <antwika/event/EventDispatcher.hpp>
 #include <antwika/event/TickedEventDispatcher.hpp>
+#include <antwika/input/InputEventCodec.hpp>
 #include <antwika/log/Level.hpp>
 #include <antwika/simulation/EngineLoop.hpp>
-#include <antwika/scheduler/Scheduler.hpp>
 
+#include "antwika/task_worker/JobQueue.hpp"
+#include "antwika/task_worker/SnapshotStore.hpp"
 #include "antwika/task_worker/TaskDispatchSystem.hpp"
 #include "antwika/task_worker/TaskSubmissionSink.hpp"
 #include "antwika/task_worker/WorkerCompletionSystem.hpp"
@@ -26,7 +36,6 @@ using antwika::event::EventDispatcher;
 using antwika::event::TickedEventDispatcher;
 using antwika::log::Level;
 using antwika::simulation::EngineLoop;
-using antwika::scheduler::Scheduler;
 
 namespace antwika::task_worker
 {
@@ -42,7 +51,7 @@ namespace antwika::task_worker
         engine.start();
     }
 
-    std::vector<Worker> bootstrap(const TaskWorkerWiring &config)
+    TaskWorkerSummary bootstrap(const TaskWorkerWiring &config)
     {
         ILogger &logger = config.logger;
         EventDispatcher dispatcher({config.eventSink});
@@ -64,7 +73,7 @@ namespace antwika::task_worker
                                           : localRegistry;
 
         WorkerLookup lookup(world, workerEntities);
-        Scheduler jobScheduler;
+        JobQueue jobQueue;
 
         SystemScheduler systemScheduler;
         WorkerCompletionSystem completionSystem(taskRegistry);
@@ -72,7 +81,7 @@ namespace antwika::task_worker
         systemScheduler.addSystem(releasePhase, completionSystem);
 
         TaskDispatchSystem dispatchSystem(
-            jobScheduler, lookup, taskRegistry);
+            jobQueue, lookup, taskRegistry);
         const auto dispatchPhase = systemScheduler.createPhase("dispatch");
         systemScheduler.addSystem(dispatchPhase, dispatchSystem);
 
@@ -83,11 +92,64 @@ namespace antwika::task_worker
         }
 
         TaskSubmissionSink submissionSink(
-            world, systemScheduler, jobScheduler, lookup, taskRegistry);
+            world, systemScheduler, jobQueue, lookup, taskRegistry);
         StopSignal stopSignal;
 
-        std::vector<std::reference_wrapper<ITickEventSink>> timedSinks{
-            submissionSink, stopSignal};
+        // The console's own picture, which turns the console on.
+        // Absent, no console sink is registered and nothing changes.
+        antwika::console::ConsolePicture noConsole;
+        const bool hasConsole = config.consoleOverlay.has_value();
+        antwika::console::ConsolePicture &consolePicture =
+            hasConsole ? config.consoleOverlay->get() : noConsole;
+
+        // Owned here rather than wired in.
+        // The console is this app's one reader of input.
+        // So nothing else shares the codec or the fold.
+        const antwika::input::InputEventCodec codec;
+        antwika::console::InputFold input(codec);
+
+        antwika::console::ConsoleState console;
+        const antwika::console::ConsoleScene consoleScene;
+        const antwika::console::FixedConsoleControls consoleControls;
+
+        TaskWorkerSnapshotStore snapshotStore(
+            world,
+            workerEntities,
+            taskRegistry,
+            submissionSink,
+            jobQueue,
+            lookup);
+        antwika::console::SnapshotCommands consoleCommands(
+            snapshotStore,
+            config.stateDumpPath,
+            config.consoleLoadEnabled);
+
+        // The excluded line is the setup temporary's unwind block.
+        // The sink's constructor stores references and cannot throw.
+        // See docs/confirming-unreachable-branches.md.
+        antwika::console::ConsoleSink consoleSink(
+            antwika::console::ConsoleSinkSetup{ // GCOVR_EXCL_LINE
+                .console = console,
+                .input = input,
+                .picture = consolePicture,
+                .scene = consoleScene,
+                .controls = consoleControls,
+                .commands = consoleCommands});
+
+        // The fold is first and the console right after it.
+        // Ahead of everything else, as in every app mounting one.
+        // No sink below reads a key or a pixel.
+        // apps/game wraps such sinks in ConsoleGatedSinks.
+        // Here there is nothing to take a press away from.
+        std::vector<std::reference_wrapper<ITickEventSink>> timedSinks;
+        if (hasConsole)
+        {
+            timedSinks.push_back(input);
+            timedSinks.push_back(consoleSink);
+        }
+
+        timedSinks.push_back(submissionSink);
+        timedSinks.push_back(stopSignal);
         if (config.replayRecorder.has_value())
         {
             timedSinks.push_back(config.replayRecorder->get());
@@ -107,7 +169,14 @@ namespace antwika::task_worker
         {
             finalState.push_back(world.get<Worker>(entity));
         }
-        return finalState;
-    }
+
+        // Every branch left on the excluded line is the allocator's:
+        // the throw edges of copying the two vectors into the record.
+        return TaskWorkerSummary{ // GCOVR_EXCL_LINE
+            .workers = std::move(finalState),
+            .console = console.history()};
+        // The excluded line is the local summary's unwind destructor.
+        // Nothing between its construction and the return throws.
+    } // GCOVR_EXCL_LINE
 
 } // namespace antwika::task_worker

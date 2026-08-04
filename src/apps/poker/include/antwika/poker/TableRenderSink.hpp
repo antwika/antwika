@@ -14,6 +14,8 @@
 #include <antwika/time/ISleeper.hpp>
 
 #include "antwika/poker/CashGame.hpp"
+#include <antwika/console/ConsolePicture.hpp>
+
 #include "antwika/poker/TableScene.hpp"
 
 namespace antwika::poker
@@ -70,7 +72,10 @@ namespace antwika::poker
             ISleeper &sleeper,
             std::chrono::milliseconds framePeriod,
             std::string tableName,
-            OptionalAtlas atlas = std::nullopt);
+            OptionalAtlas atlas = std::nullopt,
+            std::optional<std::reference_wrapper<
+                const antwika::console::ConsolePicture>>
+                consolePicture = std::nullopt);
 
         TableRenderSink(const TableRenderSink &) = delete;
         TableRenderSink(TableRenderSink &&) = delete;
@@ -101,6 +106,9 @@ namespace antwika::poker
         std::chrono::milliseconds framePeriod;
         std::string tableName;
         OptionalAtlas atlas;
+        std::optional<std::reference_wrapper<
+            const antwika::console::ConsolePicture>>
+            consolePicture;
     };
 
 } // namespace antwika::poker

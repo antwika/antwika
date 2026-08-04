@@ -35,6 +35,31 @@ namespace antwika::rng
          */
         [[nodiscard]] std::uint64_t next() noexcept override;
 
+        /**
+         * @brief Read the counter the next draw will advance from.
+         *
+         * What a state dump carries: the constructor takes exactly
+         * this value back, so a generator rebuilt over it continues
+         * the stream from the very next draw -- which is what lets a
+         * poker session resume mid-deal without replaying the hands
+         * that positioned it.
+         *
+         * @return The current internal state.
+         */
+        [[nodiscard]] std::uint64_t currentState() const noexcept;
+
+        /**
+         * @brief Stand the counter at a remembered value.
+         *
+         * currentState()'s other half, for a generator other objects
+         * already borrow: a Deck holds its reference for a whole
+         * session, so the state has to come back in place rather
+         * than through a fresh construction.
+         *
+         * @param value The counter the next draw advances from.
+         */
+        void restoreState(std::uint64_t value) noexcept;
+
     private:
         std::uint64_t state;
     };

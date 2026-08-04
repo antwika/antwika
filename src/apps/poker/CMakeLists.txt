@@ -7,6 +7,8 @@ antwika_add_app(
         src/ConfigFile.cpp
         src/PokerRoom.cpp
         src/PokerRoomSink.cpp
+        src/SnapshotStore.cpp
+        src/StateDump.cpp
         src/PolicyAgent.cpp
         src/TablePrinter.cpp
         src/TableRenderSink.cpp
@@ -17,12 +19,15 @@ antwika_add_app(
     LIBS
         antwika::app
         antwika::cli
+        antwika::console
         antwika::config
         antwika::engine
         antwika::event
         antwika::gfx
         antwika::gfx_backend
         antwika::holdem
+        antwika::input
+        antwika::input_backend
         antwika::log
         antwika::replay
         antwika::rng

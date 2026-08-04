@@ -15,6 +15,7 @@ namespace antwika::task_worker
         entries.push_back(TaskInfo{ // GCOVR_EXCL_LINE
             taskId, std::move(label), priority, TaskStatus::Pending,
             durationTicks, durationTicks, std::move(dependsOn)});
+        startTargets.push_back(entries.size() - 1);
     }
 
     void TaskRegistry::noteDispatch(
@@ -26,9 +27,28 @@ namespace antwika::task_worker
     void TaskRegistry::markStarted(antwika::scheduler::JobId jobId)
     {
         const auto index = antwika::scheduler::rawValue(jobId) - 1;
-        if (index < entries.size())
+        if (index < startTargets.size())
         {
-            entries[index].status = TaskStatus::Running;
+            entries[startTargets[index]].status = TaskStatus::Running;
+        }
+    }
+
+    void TaskRegistry::restore(
+        std::vector<TaskInfo> tasks, DispatchInfo lastDispatch)
+    {
+        entries = std::move(tasks);
+        dispatch = lastDispatch;
+
+        // The fresh scheduler's JobId N is the Nth Pending entry.
+        // The store schedules them in exactly this order.
+        // That is the invariant markStarted() stands on.
+        startTargets.clear();
+        for (std::size_t index = 0; index < entries.size(); ++index)
+        {
+            if (entries[index].status == TaskStatus::Pending)
+            {
+                startTargets.push_back(index);
+            }
         }
     }
 

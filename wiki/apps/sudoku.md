@@ -99,6 +99,15 @@ Storing the words would put the active locale inside the state a replay reproduc
 
 See [`blog/005-wave-function-collapse-that-never-guesses.md`](../../blog/005-wave-function-collapse-that-never-guesses.md) and [`blog/008-the-solver-that-lied-the-zombie-component-and-a-coverage-gate-with-teeth.md`](../../blog/008-the-solver-that-lied-the-zombie-component-and-a-coverage-gate-with-teeth.md), which describe this application while it was still a console showcase.
 
+## The debug console
+
+The shared `antwika::console` library is mounted here on its own terms: the backtick slides it over the top half of the board, `dump_state` writes the whole session to `dump_state.json` in the working directory, and `load_state` reads it back — live only.
+The dump's state object is small because the session is: both boards in `Board::format()`'s flat 81-character form, the picked square if any, and the status under its persisted name (`playing`, `solved`, `complete`, `unsolvable`, `limit_exceeded`, `given_locked`), all behind `SudokuSnapshotStore` under the magic `antwika-sudoku-state-dump`.
+While the console stands fully open, a digit types into its field rather than filling the picked square, and a click on a square the sheet stands over selects nothing — `PlaySink` is the one sink that reads a key or a pixel, and it is wrapped in the library's `ConsoleGatedSink`.
+
+One interplay is worth stating: `PuzzleSource` announces the starting puzzle ahead of the recorder, and a `load_state` can then hand the session a different grid mid-run.
+That needs no guard, because a load is refused outright while recording or replaying — the announced puzzle stays the truth of every recording, and a live-only load has no recording to disagree with.
+
 ## The config file
 
 `config.json` beside the executable is read once at startup through [`antwika::config`](../libraries/config.md): `solveStepBudget`, how much search one press of Solve may spend inside a tick, and `framePeriodMs`, how long a frame takes on the wall clock.

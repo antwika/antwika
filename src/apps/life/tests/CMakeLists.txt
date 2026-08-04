@@ -7,9 +7,11 @@ antwika_add_app_tests(
         BoardTest.cpp
         BootstrapTest.cpp
         ConfigFileTest.cpp
+        ConsoleSinkTest.cpp
         DragPausedSystemTest.cpp
         DragStateTest.cpp
         GridTest.cpp
+        LifeSnapshotStoreTest.cpp
         LifeSystemTest.cpp
         PointerReplayIntegrationTest.cpp
         PointerToggleSinkTest.cpp
@@ -17,10 +19,12 @@ antwika_add_app_tests(
         RenderDeterminismTest.cpp
         RenderSystemTest.cpp
         ReplayIntegrationTest.cpp
+        StateDumpTest.cpp
     LIBS
         antwika::app
         antwika::config
         antwika::config::tests::conformance
+        antwika::console
         antwika::ecs
         antwika::ecs::tests::mocks
         antwika::ecs_commons
@@ -34,6 +38,7 @@ antwika_add_app_tests(
         antwika::simulation
         antwika::testing
         antwika::time::tests::fakes
+        antwika::ui
         antwika::event::tests::mocks
         gtest::gtest
 )

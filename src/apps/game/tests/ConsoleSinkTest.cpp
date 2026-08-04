@@ -26,9 +26,14 @@
 #include "antwika/game/BuildingIndex.hpp"
 #include "antwika/game/Camera.hpp"
 #include "antwika/game/MainMenuScene.hpp"
-#include "antwika/game/ConsoleScene.hpp"
-#include "antwika/game/ConsoleSink.hpp"
-#include "antwika/game/ConsoleState.hpp"
+#include <antwika/console/ConsolePicture.hpp>
+#include <antwika/console/SnapshotFormat.hpp>
+#include <antwika/console/ConsoleScene.hpp>
+#include <antwika/console/ConsoleSink.hpp>
+#include <antwika/console/ConsoleState.hpp>
+#include <antwika/console/IConsoleCommands.hpp>
+#include <antwika/console/IConsoleControls.hpp>
+#include <antwika/console/InputFold.hpp>
 #include "antwika/game/Desirability.hpp"
 #include "antwika/game/Events.hpp"
 #include "antwika/game/Game.hpp"
@@ -43,7 +48,7 @@
 #include "antwika/game/PauseState.hpp"
 #include "antwika/game/RoadDrag.hpp"
 #include "antwika/game/SessionStore.hpp"
-#include "antwika/game/StateDumpFile.hpp"
+#include "antwika/game/StateDump.hpp"
 #include "antwika/game/UiCanvas.hpp"
 #include "antwika/game/UiOverlay.hpp"
 
@@ -56,7 +61,7 @@ using antwika::game::AppModeState;
 using antwika::game::Camera;
 using antwika::game::Cell;
 using antwika::game::GridExtent;
-using antwika::game::kConsoleAnimTicks;
+using antwika::console::kConsoleAnimTicks;
 using antwika::input::InputEventCodec;
 using antwika::input::Key;
 using antwika::input::KeyPressed;
@@ -123,6 +128,31 @@ namespace
         }
     }
 
+    // A dump read back through the game's own envelope.
+    struct ReadDump
+    {
+        antwika::game::StateDump state;
+        std::vector<std::string> console;
+
+        [[nodiscard]] bool operator==(
+            const ReadDump &other) const = default;
+    };
+
+    [[nodiscard]] ReadDump readDump(const std::string &path)
+    {
+        const antwika::console::SnapshotFormat format(
+            {.magic = antwika::game::kStateDumpMagic,
+             .version = antwika::game::kStateDumpVersion},
+            "antwika game state dump document",
+            antwika::game::standardStateDumpMigrations);
+
+        const auto snapshot = format.read(path);
+
+        return ReadDump{
+            .state = antwika::game::stateDumpFromJson(snapshot.state),
+            .console = snapshot.console};
+    }
+
     [[nodiscard]] TickEvent stopAt(Tick tick)
     {
         return TickEvent{
@@ -150,7 +180,8 @@ namespace
         antwika::game::MapViewState mapView;
         antwika::game::DesirabilityField desirability;
         antwika::game::UiOverlay menuOverlay{antwika::game::kUiCanvas};
-        antwika::game::UiOverlay consoleOverlay{antwika::game::kUiCanvas};
+        antwika::console::ConsolePicture consoleOverlay{
+            antwika::game::kUiCanvas};
 
         antwika::game::GameSummary run(
             ReplaySource &source,
@@ -423,8 +454,8 @@ TEST(ConsoleSinkTest, ADownPaletteSurvivesTheRoundTrip)
         harness.run(source, 40, path);
     }
 
-    const auto dumped = antwika::game::loadStateDump(path);
-    ASSERT_EQ(dumped.tool, std::nullopt);
+    const auto dumped = readDump(path);
+    ASSERT_EQ(dumped.state.tool, std::nullopt);
 
     // A fresh session loads it, closes the console, and clicks.
     ConsoleHarness fresh;
@@ -446,7 +477,7 @@ TEST(ConsoleSinkTest, ADownPaletteSurvivesTheRoundTrip)
     const auto summary = fresh.run(source, 60, path);
 
     // The loaded palette is down, so the click laid nothing.
-    EXPECT_EQ(summary.paths, dumped.save.paths);
+    EXPECT_EQ(summary.paths, dumped.state.save.paths);
 }
 
 TEST(ConsoleSinkTest, TheConsoleOpensOverTheMainMenu)
@@ -529,9 +560,9 @@ TEST(ConsoleSinkTest, DumpStateWorksFromTheMainMenu)
     const auto summary = harness.run(source, 40, path);
 
     // The dump is the live session, whichever screen was up.
-    const auto dumped = antwika::game::loadStateDump(path);
+    const auto dumped = readDump(path);
 
-    EXPECT_TRUE(dumped.save.paths.empty());
+    EXPECT_TRUE(dumped.state.save.paths.empty());
     EXPECT_EQ(summary.console, dumped.console);
 }
 
@@ -621,13 +652,13 @@ TEST(ConsoleSinkTest, DumpStateWritesTheInstantAndSaysSo)
 
     const auto summary = harness.run(source, 40, path);
 
-    const auto dumped = antwika::game::loadStateDump(path);
+    const auto dumped = readDump(path);
 
-    EXPECT_EQ(dumped.save.paths, (std::vector<Cell>{laid}));
-    EXPECT_FALSE(dumped.paused);
-    EXPECT_EQ(dumped.tool, antwika::game::BuildTool::Road);
-    EXPECT_EQ(dumped.view, antwika::game::MapView::Normal);
-    EXPECT_EQ(dumped.locale, antwika::i18n::kDefaultLocale);
+    EXPECT_EQ(dumped.state.save.paths, (std::vector<Cell>{laid}));
+    EXPECT_FALSE(dumped.state.paused);
+    EXPECT_EQ(dumped.state.tool, antwika::game::BuildTool::Road);
+    EXPECT_EQ(dumped.state.view, antwika::game::MapView::Normal);
+    EXPECT_EQ(dumped.state.locale, antwika::i18n::kDefaultLocale);
     EXPECT_EQ(
         dumped.console,
         (std::vector<std::string>{
@@ -665,7 +696,7 @@ TEST(ConsoleSinkTest, LoadStateComesBackToTheDumpedInstant)
         harness.run(source, 40, path);
     }
 
-    const auto dumped = antwika::game::loadStateDump(path);
+    const auto dumped = readDump(path);
 
     // A fresh session loads it and continues from that instant.
     ConsoleHarness fresh;
@@ -677,9 +708,9 @@ TEST(ConsoleSinkTest, LoadStateComesBackToTheDumpedInstant)
 
     const auto summary = fresh.run(source, 40, path);
 
-    EXPECT_EQ(summary.paths, dumped.save.paths);
-    EXPECT_EQ(summary.state.money, dumped.save.state.money);
-    EXPECT_EQ(summary.camera, dumped.save.camera);
+    EXPECT_EQ(summary.paths, dumped.state.save.paths);
+    EXPECT_EQ(summary.state.money, dumped.state.save.state.money);
+    EXPECT_EQ(summary.camera, dumped.state.save.camera);
 
     // The dump's own exchange, then what loading it said.
     auto expected = dumped.console;
@@ -727,6 +758,41 @@ TEST(ConsoleSinkTest, LoadStateAnswersAFileThatIsNotThere)
     EXPECT_THAT(summary.console[1], StartsWith("could not load: "));
 }
 
+TEST(ConsoleSinkTest, LoadStateAnswersAStateTheDecoderRefuses)
+{
+    const antwika::testing::ScratchFile file(
+        "antwika_game_console_load_bad_state.json");
+    const auto path = file.path().string();
+
+    // A well-enveloped dump whose state names an unknown tool.
+    // The decoder's SaveFormatError comes back as the answer.
+    const antwika::console::SnapshotFormat format(
+        {.magic = antwika::game::kStateDumpMagic,
+         .version = antwika::game::kStateDumpVersion},
+        "antwika game state dump document",
+        antwika::game::standardStateDumpMigrations);
+    const antwika::game::StateDump dump;
+    auto state = antwika::game::stateDumpToJson(dump);
+    state["tool"] = "not-a-tool";
+    format.write(
+        antwika::console::Snapshot{.console = {}, .state = state},
+        path);
+
+    ConsoleHarness harness;
+    std::vector<TickEvent> events{keyAt(harness.codec, 1, Key::Grave)};
+    typeText(events, harness.codec, kOpenTick, "load_state");
+    events.push_back(keyAt(harness.codec, kOpenTick, Key::Enter));
+    events.push_back(stopAt(kOpenTick + 1));
+    ReplaySource source(std::move(events));
+
+    const auto summary = harness.run(source, 40, path);
+
+    ASSERT_EQ(summary.console.size(), 2U);
+    EXPECT_EQ(summary.console[0], "> load_state");
+    EXPECT_THAT(summary.console[1], StartsWith("could not load: "));
+    EXPECT_TRUE(summary.paths.empty());
+}
+
 TEST(ConsoleSinkTest, ARecordedConsoleSessionReplaysToTheSameRun)
 {
     const antwika::testing::ScratchFile file(
@@ -762,7 +828,7 @@ TEST(ConsoleSinkTest, ARecordedConsoleSessionReplaysToTheSameRun)
             return event.event.name == antwika::engine::events::kTick;
         });
 
-    const auto liveDump = antwika::game::loadStateDump(path);
+    const auto liveDump = readDump(path);
 
     // The replay re-executes the dump and rewrites the same file.
     ConsoleHarness again;
@@ -771,62 +837,46 @@ TEST(ConsoleSinkTest, ARecordedConsoleSessionReplaysToTheSameRun)
     const auto replayed = again.run(source, 40, path, false);
 
     EXPECT_EQ(replayed, live);
-    EXPECT_EQ(antwika::game::loadStateDump(path), liveDump);
-}
-
-TEST(ConsoleSinkTest, ConsoleLoadPermitted_OnlyInAPlainLiveRun)
-{
-    EXPECT_TRUE(antwika::game::consoleLoadPermitted(false, false));
-    EXPECT_FALSE(antwika::game::consoleLoadPermitted(true, false));
-    EXPECT_FALSE(antwika::game::consoleLoadPermitted(false, true));
-    EXPECT_FALSE(antwika::game::consoleLoadPermitted(true, true));
+    EXPECT_EQ(readDump(path), liveDump);
 }
 
 namespace
 {
+    // A command set that swallows everything, for the shell alone.
+    struct QuietCommands final : antwika::console::IConsoleCommands
+    {
+        void execute(
+            const std::string &, antwika::console::ConsoleState &)
+            override
+        {
+        }
+    };
+
     // The sink alone, for the branches a whole run cannot steer.
     struct SinkHarness
     {
-        NiceMock<MockLogger> logger;
         InputEventCodec codec;
-        antwika::game::InputFold input{codec};
-        antwika::ecs::World world{logger};
-        antwika::game::PathIndex paths;
-        antwika::game::BuildingIndex built;
-        Camera camera;
-        antwika::game::GameState state;
-        antwika::game::SessionStore session{
-            world, paths, built, camera, state, kExtent, 7};
-        antwika::game::OptionsState options;
-        antwika::game::UiOverlay overlay{antwika::game::kUiCanvas};
-        antwika::game::UiOverlay toolbar;
-        antwika::game::ConsoleScene scene;
-        antwika::game::ConsoleState console;
-        antwika::game::PauseState pause;
-        antwika::game::MapViewState mapView;
-        antwika::game::LocaleState locale;
-        AppModeState mode{AppMode::CityMap};
-        antwika::game::ConsoleSink sink{
-            antwika::game::ConsoleSinkSetup{
+        antwika::console::InputFold input{codec};
+        antwika::console::ConsolePicture picture{
+            antwika::game::kUiCanvas};
+        antwika::console::ConsoleScene scene;
+        antwika::console::ConsoleState console;
+        antwika::console::FixedConsoleControls controls;
+        QuietCommands commands;
+        antwika::console::ConsoleSink sink{
+            antwika::console::ConsoleSinkSetup{
                 .console = console,
-                .options = options,
                 .input = input,
-                .overlay = overlay,
+                .picture = picture,
                 .scene = scene,
-                .session = session,
-                .pause = pause,
-                .view = mapView,
-                .toolbar = toolbar,
-                .locale = locale,
-                .loadEnabled = true},
-            "unused.json"};
+                .controls = controls,
+                .commands = commands}};
 
-        // The fold first, then the mode, then the sink.
-        // The order bootstrap() registers the three in.
+        // The fold first, then the sink.
+        // The order bootstrap() registers the two in.
         void feed(const TickEvent &event)
         {
             input.handle(event);
-            mode.handle(event);
             sink.handle(event);
         }
 

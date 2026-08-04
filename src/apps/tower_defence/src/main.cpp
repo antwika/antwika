@@ -6,6 +6,8 @@
 
 #include <antwika/app/ConsoleLogging.hpp>
 #include <antwika/app/RunRecorded.hpp>
+#include <antwika/console/ConsolePicture.hpp>
+#include <antwika/console/SnapshotCommands.hpp>
 #include <antwika/gfx/SelectedBackend.hpp>
 #include <antwika/gfx/WindowDesc.hpp>
 #include <antwika/i18n/Locale.hpp>
@@ -92,6 +94,9 @@ namespace
         SystemSleeper sleeper;
         FileScoreStore store{std::string(kScoreFile)};
 
+        // The console's picture, which is what turns the console on.
+        antwika::console::ConsolePicture consoleOverlay(kWindowSize);
+
         ReplaySource fileSource(
             antwika::app::scriptedEvents(recorded.options.replayPath));
 
@@ -125,6 +130,11 @@ namespace
                      .mobs = config.mobs},
                 .scoreStore = antwika::tower_defence::storeIfLive(
                     store, recorded.options.replayPath),
+                .consoleOverlay = consoleOverlay,
+                .consoleLoadEnabled =
+                    antwika::console::consoleLoadPermitted(
+                        recorded.options.recordPath.has_value(),
+                        recorded.options.replayPath.has_value()),
                 .replayRecorder = recorded.replayRecorder,
                 .extraSink =
                     [&](const Campaign &campaign,
@@ -135,6 +145,7 @@ namespace
                         scene,
                         campaign,
                         overlay,
+                        consoleOverlay,
                         sleeper,
                         std::chrono::milliseconds(
                             config.framePeriodMs),

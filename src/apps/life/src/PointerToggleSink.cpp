@@ -2,6 +2,7 @@
 
 #include <cstdint>
 #include <cstdlib>
+#include <utility>
 #include <variant>
 
 #include <antwika/engine/Events.hpp>
@@ -95,6 +96,27 @@ namespace antwika::life
                 lastDrag = moved->position;
             }
         }
+    }
+
+    const std::set<Entity> &
+    PointerToggleSink::visitedCells() const noexcept
+    {
+        return visited;
+    }
+
+    const std::optional<Position> &
+    PointerToggleSink::lastDragPosition() const noexcept
+    {
+        return lastDrag;
+    }
+
+    void PointerToggleSink::restoreDrag(
+        std::set<Entity> visitedCells,
+        std::optional<Position> lastDragPosition)
+    {
+        visited = std::move(visitedCells);
+        lastDrag = lastDragPosition;
+        staged.clear();
     }
 
     // The integer Bresenham atlas_editor already strokes with.

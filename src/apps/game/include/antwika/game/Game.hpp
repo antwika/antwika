@@ -16,6 +16,8 @@
 #include <antwika/event/ITickEventSource.hpp>
 #include <antwika/time/Tick.hpp>
 
+#include <antwika/console/ConsolePicture.hpp>
+
 #include "antwika/game/AppMode.hpp"
 #include "antwika/game/BuildingIndex.hpp"
 #include "antwika/game/Camera.hpp"
@@ -314,8 +316,9 @@ namespace antwika::game
          * Passed in rather than created here because a renderer built
          * beforehand has to read it.
          */
-        std::optional<std::reference_wrapper<UiOverlay>> consoleOverlay =
-            std::nullopt;
+        std::optional<
+            std::reference_wrapper<antwika::console::ConsolePicture>>
+            consoleOverlay = std::nullopt;
 
         /**
          * @brief Whether the console's load_state may run.

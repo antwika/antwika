@@ -609,4 +609,56 @@ namespace antwika::holdem
         }
     }
 
+    TableMemory Table::remember() const
+    {
+        // Standing the memory up copies two vectors and an optional.
+        // The edges gcov reports here are those unwind paths only.
+        return TableMemory{ // GCOVR_EXCL_LINE
+            .seats = seats,
+            .result = result,
+            .toAct = toAct,
+            .pot = potChips,
+            .betting = betting.remember(),
+            .stage = flow.stage(),
+            .board = flow.board(),
+            .handCount = handCount,
+            .button = buttonSeat,
+            .handInProgress = handInProgress};
+
+        // gcov puts the returned value's unwind block here.
+        // No input reaches it.
+    } // GCOVR_EXCL_LINE
+
+    void Table::restore(const TableMemory &memory, IDeck &deck)
+    {
+        if (memory.seats.size() != seats.size())
+        {
+            throw TableStateError(
+                "antwika::holdem: a memory of another table's seat "
+                "count cannot stand here");
+        }
+
+        if (memory.handInProgress && !memory.toAct.has_value())
+        {
+            throw TableStateError(
+                "antwika::holdem: a hand in progress always has a "
+                "seat to act");
+        }
+
+        seats = memory.seats;
+        result = memory.result;
+        toAct = memory.toAct;
+        potChips = memory.pot;
+        betting.restore(memory.betting);
+        flow.resume(memory.stage, memory.board);
+        handCount = memory.handCount;
+        buttonSeat = memory.button;
+        handInProgress = memory.handInProgress;
+
+        if (handInProgress)
+        {
+            flow.adopt(deck);
+        }
+    }
+
 } // namespace antwika::holdem

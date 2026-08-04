@@ -386,6 +386,19 @@ What *does* read it is the render sink alone, to place the picture and nothing e
 Every layout here is against `configuredSize()`, so a recorded session reaches the same state whether or not anybody pressed it, and a replay of one where somebody did fills the screen at the same tick and still reaches that state.
 It is the same key [game](game.md) uses, since an editor with a different one would be one to remember.
 
+## The debug console
+
+Grave slides `antwika::console`'s sheet down over the pane, on the library's standard terms: `dump_state` writes the whole session to `dump_state.json` and `load_state` reads it back, live only.
+The keys are `console::FixedConsoleControls`' fixed defaults -- Grave, Enter and the Swedish board -- and the console's toggle owns Grave on every screen of this application, which costs the document nothing since Grave is no character `EditorKeys` types.
+`EditorSink` is the one sink here that reads a key or a pixel, so it is the one sink wrapped in a `console::ConsoleGatedSink`: while the console stands over a pixel, a keystroke there is the console's and never the score's -- including Escape, so pausing waits until the sheet is away, which is accepted and stated here rather than worked around.
+
+**The simulation restores; the audible tail does not.**
+A dump carries the `EditorState` member for member and a `PlaybackMemory` -- the tempo table read back off `sequencer::TempoMap::segments()`, the musical clock, the device bookkeeping and the pool's size -- and a load silences everything sounding before standing the session at that instant, since the notes of the restored moment re-derive as the next ticks re-trigger them, exactly as a replay regenerates a click's consequences.
+The synth's voice pool, the active notes, the waveform image cache and every `pattern::Pattern` are therefore in no dump: the first two are the tail being cut, and the rest regenerate from the restored text through `Score::read()`.
+Per-voice sequencer cursors need no serialising either, because at any dump instant every line stands exactly at the clock, and a load stands each fresh sequencer there with `Sequencer::joinAt()`.
+
+One boundary is worth saying plainly: a line that is unparseable when the dump is taken keeps playing its last-good chain live, and that chain is not in the dump, so after a load such a line is silent until its text next parses.
+
 ## The config file
 
 `config.json` beside the executable is read once at startup through [`antwika::config`](../libraries/config.md), and holds `tickIntervalMs`, how long a tick takes on the wall clock -- which also fixes how much audio one tick renders, through `FrameClock`.

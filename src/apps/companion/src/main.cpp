@@ -6,6 +6,8 @@
 
 #include <antwika/app/ConsoleLogging.hpp>
 #include <antwika/app/RunRecorded.hpp>
+#include <antwika/console/ConsolePicture.hpp>
+#include <antwika/console/SnapshotCommands.hpp>
 #include <antwika/gfx/SelectedBackend.hpp>
 #include <antwika/gfx/Size.hpp>
 #include <antwika/gfx/WindowDesc.hpp>
@@ -102,6 +104,10 @@ namespace
         SystemSleeper sleeper;
         FilePetStore store{std::string(kCompanionFile)};
 
+        // The debug console's picture, described in the tick path.
+        // Against the size the window was asked for, as everything is.
+        antwika::console::ConsolePicture consoleOverlay(kWindowSize);
+
         ReplaySource fileSource(
             antwika::app::scriptedEvents(recorded.options.replayPath));
 
@@ -133,12 +139,22 @@ namespace
                 .canvas = kWindowSize,
                 .store = antwika::companion::storeIfLive(
                     store, recorded.options.replayPath),
+                .consoleOverlay = consoleOverlay,
+                .consoleLoadEnabled =
+                    antwika::console::consoleLoadPermitted(
+                        recorded.options.recordPath.has_value(),
+                        recorded.options.replayPath.has_value()),
                 .replayRecorder = recorded.replayRecorder,
                 .extraSink =
                     [&](const Pet &pet, const Lineage &lineage)
                 {
                     return std::make_unique<RenderSink>(
-                        *window, scene, pet, lineage, kWindowSize);
+                        *window,
+                        scene,
+                        pet,
+                        lineage,
+                        kWindowSize,
+                        consoleOverlay);
                 }});
 
         logger.log(

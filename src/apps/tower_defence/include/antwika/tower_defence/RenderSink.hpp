@@ -2,6 +2,7 @@
 
 #include <chrono>
 
+#include <antwika/console/ConsolePicture.hpp>
 #include <antwika/event/ITickEventSink.hpp>
 #include <antwika/event/TickEvent.hpp>
 #include <antwika/gfx/IWindow.hpp>
@@ -53,6 +54,9 @@ namespace antwika::tower_defence
          * sink.
          * @param overlay Holds the score bar's picture. Must outlive
          * this sink.
+         * @param consoleOverlay Holds the console's picture, painted
+         * last so the sheet reads as being in front of everything.
+         * Must outlive this sink.
          * @param sleeper Paces the frames. Must outlive this sink.
          * @param framePeriod How long to hold each frame.
          * @param canvas The size everything is laid out against.
@@ -62,6 +66,7 @@ namespace antwika::tower_defence
             const BattleScene &scene,
             const Campaign &campaign,
             const ScoreOverlay &overlay,
+            const antwika::console::ConsolePicture &consoleOverlay,
             ISleeper &sleeper,
             std::chrono::milliseconds framePeriod,
             Size canvas);
@@ -84,6 +89,7 @@ namespace antwika::tower_defence
         const BattleScene &scene;
         const Campaign &campaign;
         const ScoreOverlay &overlay;
+        const antwika::console::ConsolePicture &consoleOverlay;
         ISleeper &sleeper;
         std::chrono::milliseconds framePeriod;
         Size canvas;

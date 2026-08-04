@@ -50,7 +50,8 @@ namespace
             .collapses = 1,
             .generation = 2,
             .bestTicks = 400,
-            .perished = false};
+            .perished = false,
+            .console = {}};
 
         const auto line = summaryLine(summary);
 
@@ -69,7 +70,8 @@ namespace
 
     TEST(SummaryLineTest, APerishedCompanionIsSaidToHavePerished)
     {
-        const CompanionSummary summary{.ticks = 900, .perished = true};
+        const CompanionSummary summary{
+            .ticks = 900, .perished = true, .console = {}};
 
         const auto line = summaryLine(summary);
 

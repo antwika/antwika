@@ -1,5 +1,7 @@
 #include "antwika/holdem/HandFlow.hpp"
 
+#include <utility>
+
 #include <cstddef>
 #include <cstdint>
 
@@ -76,6 +78,18 @@ namespace antwika::holdem
             throw TableStateError("HandFlow: no hand has been begun");
         }
         return deck->get();
+    }
+
+    void HandFlow::resume(Stage stage, std::vector<Card> board)
+    {
+        currentStage = stage;
+        communityCards = std::move(board);
+        deck.reset();
+    }
+
+    void HandFlow::adopt(IDeck &source) noexcept
+    {
+        deck = source;
     }
 
 } // namespace antwika::holdem

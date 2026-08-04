@@ -4,10 +4,10 @@ namespace antwika::task_worker
 {
 
     TaskDispatchSystem::TaskDispatchSystem(
-        Scheduler &jobScheduler,
+        JobQueue &jobs,
         WorkerLookup &lookup,
         TaskRegistry &registry)
-        : jobScheduler(jobScheduler), lookup(lookup), registry(registry)
+        : jobs(jobs), lookup(lookup), registry(registry)
     {
     }
 
@@ -15,7 +15,7 @@ namespace antwika::task_worker
     {
         lookup.refresh();
         const auto budget = lookup.idleCount();
-        const auto executed = jobScheduler.run(tick, budget);
+        const auto executed = jobs.scheduler().run(tick, budget);
         for (const auto jobId : executed)
         {
             registry.markStarted(jobId);

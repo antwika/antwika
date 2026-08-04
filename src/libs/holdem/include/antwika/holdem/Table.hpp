@@ -18,6 +18,7 @@
 #include "antwika/holdem/SeatId.hpp"
 #include "antwika/holdem/ShowdownEntry.hpp"
 #include "antwika/holdem/Stage.hpp"
+#include "antwika/holdem/TableMemory.hpp"
 #include "antwika/holdem/TableView.hpp"
 
 namespace antwika::holdem
@@ -243,6 +244,31 @@ namespace antwika::holdem
          * @return How many times startHand() has succeeded.
          */
         [[nodiscard]] std::uint64_t handsPlayed() const noexcept;
+
+        /**
+         * @brief Take the table's whole standing, as a value.
+         * @return Everything restore() needs, the deck excepted --
+         * that belongs to whoever owns the shuffle.
+         */
+        [[nodiscard]] TableMemory remember() const;
+
+        /**
+         * @brief Stand this table at a remembered instant.
+         *
+         * Mid-hand included: the flow takes the stage and the board
+         * back and adopts the given deck, so the next card dealt is
+         * the one the remembered table would have dealt.
+         *
+         * @param memory The instant to stand at.
+         * @param deck The deck a resumed hand deals the rest from,
+         * already restored to its own remembered position. Must
+         * outlive the hand.
+         * @throws TableStateError If the memory's seat count is not
+         * this table's, or it claims a hand in progress with nobody
+         * to act -- a standing no run could have been in, refused
+         * rather than repaired.
+         */
+        void restore(const TableMemory &memory, IDeck &deck);
 
     private:
         std::vector<Seat> seats;

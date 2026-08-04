@@ -6,7 +6,9 @@
 #include <memory>
 #include <optional>
 #include <string>
+#include <vector>
 
+#include <antwika/console/ConsolePicture.hpp>
 #include <antwika/event/IEventSink.hpp>
 #include <antwika/event/ITickEventSink.hpp>
 #include <antwika/gfx/Size.hpp>
@@ -56,6 +58,9 @@ namespace antwika::tower_defence
 
         /** @brief The record kept once this run was folded in. */
         HighScore best;
+
+        /** @brief The console's history when the run ended. */
+        std::vector<std::string> console;
     };
 
     /**
@@ -130,6 +135,29 @@ namespace antwika::tower_defence
          * Tests should always set it.
          */
         std::optional<antwika::time::Tick> maxTicks = std::nullopt;
+
+        /**
+         * @brief The console's picture, which turns the console on.
+         *
+         * Absent, no console sink is registered and the state stays
+         * closed, so the placement gate forwards everything untouched
+         * -- "no console" means no console, not an invisible one.
+         */
+        std::optional<
+            std::reference_wrapper<antwika::console::ConsolePicture>>
+            consoleOverlay = std::nullopt;
+
+        /**
+         * @brief Whether the console's load_state may run.
+         *
+         * main() passes false when --record or --replay was given --
+         * see console::consoleLoadPermitted() -- since a load reads a
+         * file whose contents no recording carries.
+         */
+        bool consoleLoadEnabled = true;
+
+        /** @brief Where dump_state writes and load_state reads. */
+        std::string stateDumpPath = "dump_state.json";
 
         /** @brief Sink receiving every dispatched event, tick-stamped. */
         std::optional<std::reference_wrapper<ITickEventSink>>

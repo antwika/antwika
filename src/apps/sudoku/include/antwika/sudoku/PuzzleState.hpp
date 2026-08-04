@@ -43,6 +43,33 @@ namespace antwika::sudoku
         [[nodiscard]] const Board &board() const noexcept;
 
         /**
+         * @brief Get the grid as it was given.
+         * @return The clues alone, blanks where the player writes.
+         */
+        [[nodiscard]] const Board &clues() const noexcept;
+
+        /**
+         * @brief Become a dumped session, wholesale.
+         *
+         * What load_state applies -- see SudokuSnapshotStore.
+         * Every field is replaced at once rather than through the
+         * playing methods, because select() and write() answer a
+         * *player*: replaying the dump's selection through select()
+         * would overwrite the status the dump carried.
+         *
+         * @param puzzle The clues, as the dumped session was given
+         * them.
+         * @param progress The clues and everything written since.
+         * @param pick Which square was picked, if any.
+         * @param said What the dumped session last said.
+         */
+        void restore(
+            const Board &puzzle,
+            const Board &progress,
+            const std::optional<Square> &pick,
+            Status said);
+
+        /**
          * @brief Check whether a square is one of the puzzle's clues.
          * @param square The square to ask about.
          * @return True when the puzzle arrived with a digit there.

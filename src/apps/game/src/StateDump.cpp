@@ -2,12 +2,14 @@
 
 #include <array>
 #include <cstddef>
+#include <exception>
+#include <memory>
+#include <string>
 #include <utility>
 
 #include <nlohmann/json-schema.hpp>
 
-#include <antwika/config/FileFormat.hpp>
-#include <antwika/config/Format.hpp>
+#include <antwika/replay/IMigration.hpp>
 
 #include "antwika/game/SaveFormatError.hpp"
 
@@ -16,11 +18,6 @@ namespace antwika::game
 
     namespace
     {
-        using antwika::config::FileFormat;
-        using antwika::config::FormatSpec;
-
-        using DumpFormat = FileFormat<StateDump, SaveFormatError>;
-
         // The names a dump document holds, one per tool.
         // Persisted, so they may not change once written.
         // The same rule buildingKindName() is held to.
@@ -87,141 +84,190 @@ namespace antwika::game
             return std::nullopt;
         }
 
-        void describeMembers(nlohmann::json &schema)
+        nlohmann::json stateSchema()
         {
             // The save is a whole versioned document of its own.
             // saveGameFromJson() migrates and validates it itself.
-            // The envelope's schema only says that one is there.
+            // This schema only says that one is there.
+            nlohmann::json schema;
+            schema["$schema"] = "http://json-schema.org/draft-07/schema#";
+            schema["title"] = "antwika game dump state";
+            schema["type"] = "object";
+            schema["additionalProperties"] = false;
             schema["required"] = {
-                "magic",
-                "save",
-                "paused",
-                "mapView",
-                "locale",
-                "console"}; // GCOVR_EXCL_LINE
+                "save", "paused", "mapView", "locale"}; // GCOVR_EXCL_LINE
             schema["properties"]["save"]["type"] = "object";
             schema["properties"]["paused"]["type"] = "boolean";
             schema["properties"]["tool"]["type"] = "string";
             schema["properties"]["mapView"]["type"] = "string";
             schema["properties"]["locale"]["type"] = "string";
-            schema["properties"]["console"]["type"] = "array";
-            schema["properties"]["console"]["items"]["type"] = "string";
+            return schema;
         }
 
-        void encodeMembers(const StateDump &dump, nlohmann::json &encoded)
-        {
-            encoded["save"] = saveGameToJson(dump.save);
-            encoded["paused"] = dump.paused;
-
-            // Absent means the palette was down.
-            // A member for it would be a name for no tool.
-            if (dump.tool.has_value())
-            {
-                encoded["tool"] = std::string(toolName(*dump.tool));
-            }
-
-            encoded["mapView"] = std::string(viewName(dump.view));
-            encoded["locale"] =
-                std::string(antwika::i18n::tagOf(dump.locale));
-            encoded["console"] = dump.console;
-        }
-
-        StateDump decodeMembers(const nlohmann::json &document)
-        {
-            StateDump dump;
-
-            dump.save = saveGameFromJson(document.at("save"));
-            dump.paused = document.at("paused").get<bool>();
-
-            if (document.contains("tool"))
-            {
-                const auto named =
-                    document.at("tool").get<std::string>();
-                const auto tool = toolFromName(named);
-
-                if (!tool.has_value())
-                {
-                    throw SaveFormatError(
-                        "antwika::game: dump names a tool this build "
-                        "does not know: "
-                        + named);
-                }
-
-                dump.tool = tool;
-            }
-            else
-            {
-                dump.tool = std::nullopt;
-            }
-
-            const auto viewNamed =
-                document.at("mapView").get<std::string>();
-            const auto view = viewFromName(viewNamed);
-
-            if (!view.has_value())
-            {
-                throw SaveFormatError(
-                    "antwika::game: dump names a map view this build "
-                    "does not know: "
-                    + viewNamed);
-            }
-
-            dump.view = *view;
-
-            const auto tag = document.at("locale").get<std::string>();
-            const auto locale = antwika::i18n::localeFromTag(tag);
-
-            if (!locale.has_value())
-            {
-                throw SaveFormatError(
-                    "antwika::game: dump names a language this build "
-                    "has no catalogue for: "
-                    + tag);
-            }
-
-            dump.locale = *locale;
-            dump.console =
-                document.at("console").get<std::vector<std::string>>();
-
-            return dump;
-        }
-
-        const DumpFormat &dumpFormat()
+        const nlohmann::json_schema::json_validator &stateValidator()
         {
             // The excluded closing line carries the static guard.
             // Its concurrency arms are unreachable one-threaded.
             // See docs/confirming-unreachable-branches.md.
-            static const DumpFormat format(
-                FormatSpec<StateDump>{
-                    .format =
-                        {.magic = kStateDumpMagic,
-                         .version = kStateDumpVersion},
-                    .title = "antwika game state dump document",
-                    .whatFailed = "antwika::game: state dump JSON failed "
-                                  "schema validation: ",
-                    .members = describeMembers,
-                    .encode = encodeMembers,
-                    .decode = decodeMembers,
-                    .migrations =
-                        standardStateDumpMigrations}); // GCOVR_EXCL_LINE
-            return format;
+            static const nlohmann::json_schema::json_validator validator(
+                stateSchema()); // GCOVR_EXCL_LINE
+            return validator;
         }
+
+        // Version 2 moved the state under the shared envelope.
+        // A version 1 document was this application's own shape.
+        // Its members move under "state" and mean what they meant.
+        class DumpV1ToV2 final : public antwika::replay::IMigration
+        {
+        public:
+            [[nodiscard]] std::uint32_t fromVersion() const noexcept
+                override
+            {
+                return 1;
+            }
+
+            [[nodiscard]] std::uint32_t toVersion() const noexcept
+                override
+            {
+                return 2;
+            }
+
+            // Only ever read to word a MigrationChain's refusal.
+            // OptionsV1ToV2 says why no input can reach it.
+            // GCOVR_EXCL_START
+            [[nodiscard]] std::string_view name() const noexcept override
+            {
+                return "game dump v1 -> v2: the shared envelope";
+            }
+            // GCOVR_EXCL_STOP
+
+            void apply(nlohmann::json &document) const override
+            {
+                nlohmann::json state;
+
+                for (const auto *member :
+                     {"save", "paused", "tool", "mapView", "locale"})
+                {
+                    if (document.contains(member))
+                    {
+                        state[member] = std::move(document.at(member));
+                        document.erase(member);
+                    }
+                }
+
+                document["state"] = std::move(state);
+            }
+        };
     } // namespace
 
     antwika::replay::MigrationChain standardStateDumpMigrations()
     {
+        // Every branch left on the excluded lines is the allocator's.
+        // The unwind edges of building a list of one shared_ptr.
+        antwika::replay::MigrationList migrations;
+        migrations.push_back(
+            std::make_shared<const DumpV1ToV2>()); // GCOVR_EXCL_LINE
+
         return antwika::replay::MigrationChain(
-            {}, kStateDumpVersion); // GCOVR_EXCL_LINE
+            std::move(migrations),
+            kStateDumpVersion); // GCOVR_EXCL_LINE
     }
 
     nlohmann::json stateDumpToJson(const StateDump &dump)
     {
-        return dumpFormat().toJson(dump);
-    }
+        nlohmann::json encoded;
 
-    StateDump stateDumpFromJson(const nlohmann::json &document)
+        encoded["save"] = saveGameToJson(dump.save);
+        encoded["paused"] = dump.paused;
+
+        // Absent means the palette was down.
+        // A member for it would be a name for no tool.
+        if (dump.tool.has_value())
+        {
+            encoded["tool"] = std::string(toolName(*dump.tool));
+        }
+
+        encoded["mapView"] = std::string(viewName(dump.view));
+        encoded["locale"] =
+            std::string(antwika::i18n::tagOf(dump.locale));
+
+        return encoded;
+
+        // gcov puts the returned value's unwind block here.
+        // SaveGame.cpp's own encoder explains it at length.
+        // No input reaches it.
+    } // GCOVR_EXCL_LINE
+
+    StateDump stateDumpFromJson(const nlohmann::json &state)
     {
-        return dumpFormat().fromJson(document);
+        try
+        {
+            stateValidator().validate(state);
+        }
+        // The validator's failure type is the library's business.
+        // What this format promises is SaveFormatError.
+        // So it is rewrapped here, as keyNamed() rewraps a key's.
+        catch (const std::exception &failed) // GCOVR_EXCL_LINE
+        {
+            throw SaveFormatError(
+                std::string(
+                    "antwika::game: dump state failed schema "
+                    "validation: ")
+                + failed.what());
+        }
+
+        StateDump dump;
+
+        dump.save = saveGameFromJson(state.at("save"));
+        dump.paused = state.at("paused").get<bool>();
+
+        if (state.contains("tool"))
+        {
+            const auto named = state.at("tool").get<std::string>();
+            const auto tool = toolFromName(named);
+
+            if (!tool.has_value())
+            {
+                throw SaveFormatError(
+                    "antwika::game: dump names a tool this build "
+                    "does not know: "
+                    + named);
+            }
+
+            dump.tool = tool;
+        }
+        else
+        {
+            dump.tool = std::nullopt;
+        }
+
+        const auto viewNamed = state.at("mapView").get<std::string>();
+        const auto view = viewFromName(viewNamed);
+
+        if (!view.has_value())
+        {
+            throw SaveFormatError(
+                "antwika::game: dump names a map view this build "
+                "does not know: "
+                + viewNamed);
+        }
+
+        dump.view = *view;
+
+        const auto tag = state.at("locale").get<std::string>();
+        const auto locale = antwika::i18n::localeFromTag(tag);
+
+        if (!locale.has_value())
+        {
+            throw SaveFormatError(
+                "antwika::game: dump names a language this build "
+                "has no catalogue for: "
+                + tag);
+        }
+
+        dump.locale = *locale;
+
+        return dump;
     }
 
 } // namespace antwika::game

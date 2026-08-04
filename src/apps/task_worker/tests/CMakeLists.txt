@@ -3,11 +3,13 @@ antwika_add_app_tests(
     TESTS
         BootstrapTest.cpp
         ConfigFileTest.cpp
+        ConsoleSinkTest.cpp
         MessagesTest.cpp
         PoolSceneTest.cpp
         PoolSnapshotTest.cpp
         RenderSystemTest.cpp
         ReplayIntegrationTest.cpp
+        StateDumpTest.cpp
         StatusPrintSystemTest.cpp
         TaskDispatchSystemTest.cpp
         TaskJobTest.cpp
@@ -19,6 +21,7 @@ antwika_add_app_tests(
         antwika::app
         antwika::config
         antwika::config::tests::conformance
+        antwika::console
         antwika::ecs
         antwika::ecs_commons
         antwika::engine
@@ -26,11 +29,14 @@ antwika_add_app_tests(
         antwika::gfx::tests::mocks
         antwika::i18n
         antwika::i18n::tests::conformance
+        antwika::input
         antwika::log::tests::mocks
         antwika::replay
         antwika::scheduler
         antwika::scheduler::tests::mocks
         antwika::simulation
+        antwika::testing
         antwika::event::tests::mocks
+        antwika::ui
         gtest::gtest
 )

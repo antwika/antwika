@@ -5,6 +5,8 @@
 
 #include <antwika/app/ConsoleLogging.hpp>
 #include <antwika/app/RunRecorded.hpp>
+#include <antwika/console/ConsolePicture.hpp>
+#include <antwika/console/SnapshotCommands.hpp>
 #include <antwika/gfx/SelectedBackend.hpp>
 #include <antwika/gfx/Size.hpp>
 #include <antwika/gfx/WindowDesc.hpp>
@@ -99,6 +101,10 @@ namespace
         const SudokuScene scene{translator};
         SystemSleeper sleeper;
 
+        // The console's picture, shared by the sink and the renderer.
+        // Handing it over is what mounts the console at all.
+        antwika::console::ConsolePicture consolePicture{kWindowSize};
+
         ReplaySource fileSource(
             antwika::app::scriptedEvents(recorded.options.replayPath));
 
@@ -142,10 +148,15 @@ namespace
                     *window,
                     scene,
                     overlay,
+                    consolePicture,
                     sleeper,
                     std::chrono::milliseconds(
                         config.framePeriodMs));
-            }});
+            },
+            .consoleOverlay = consolePicture,
+            .consoleLoadEnabled = antwika::console::consoleLoadPermitted(
+                recorded.options.recordPath.has_value(),
+                recorded.options.replayPath.has_value())});
 
         logger.log(
             Level::Info,

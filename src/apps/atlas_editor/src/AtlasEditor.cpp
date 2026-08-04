@@ -7,6 +7,14 @@
 #include <utility>
 #include <vector>
 
+#include <antwika/console/ConsoleGatedSink.hpp>
+#include <antwika/console/ConsolePicture.hpp>
+#include <antwika/console/ConsoleScene.hpp>
+#include <antwika/console/ConsoleSink.hpp>
+#include <antwika/console/ConsoleState.hpp>
+#include <antwika/console/IConsoleControls.hpp>
+#include <antwika/console/InputFold.hpp>
+#include <antwika/console/SnapshotCommands.hpp>
 #include <antwika/engine/Engine.hpp>
 #include <antwika/engine/StopSignal.hpp>
 #include <antwika/event/EventDispatcher.hpp>
@@ -16,6 +24,7 @@
 
 #include "antwika/atlas_editor/Canvas.hpp"
 #include "antwika/atlas_editor/EditorSink.hpp"
+#include "antwika/atlas_editor/SnapshotStore.hpp"
 
 namespace antwika::atlas_editor
 {
@@ -70,8 +79,63 @@ namespace antwika::atlas_editor
             config.translator);
         StopSignal stopSignal;
 
+        // The console's own picture, which turns the console on.
+        // Absent, no sink is registered and the state stays closed.
+        // So the gate below forwards everything, untouched.
+        antwika::console::ConsolePicture noConsole;
+        const bool hasConsole = config.consoleOverlay.has_value();
+        antwika::console::ConsolePicture &consolePicture =
+            hasConsole ? config.consoleOverlay->get() : noConsole;
+
+        antwika::console::InputFold input(config.codec);
+        antwika::console::ConsoleState console;
+        const antwika::console::ConsoleScene consoleScene;
+
+        // This application rebinds nothing, so the keys are constants.
+        // Grave, Enter and the Swedish board.
+        // Grave conflicts with nothing here.
+        // F10 and Escape stay reserved upstream, untouched.
+        const antwika::console::FixedConsoleControls consoleControls;
+        EditorSnapshotStore snapshotStore(state);
+        antwika::console::SnapshotCommands consoleCommands(
+            snapshotStore,
+            config.stateDumpPath,
+            config.consoleLoadEnabled);
+
+        // The excluded line is the setup temporary's unwind block.
+        // The sink's constructor stores references and cannot throw.
+        // See docs/confirming-unreachable-branches.md.
+        antwika::console::ConsoleSink consoleSink(
+            antwika::console::ConsoleSinkSetup{ // GCOVR_EXCL_LINE
+                .console = console,
+                .input = input,
+                .picture = consolePicture,
+                .scene = consoleScene,
+                .controls = consoleControls,
+                .commands = consoleCommands});
+
+        // The console is on top, so what it stands over it takes.
+        // EditorSink is the one sink here reading a key or a pixel.
+        // Its own private fold is left alone.
+        // The gate simply stops swallowed events reaching it.
+        antwika::console::ConsoleGatedSink gatedEditor(
+            editor, console, input);
+
+        // The fold is first, ahead of everything that reads it.
+        // ConsoleSink is next, ahead of everything it gates.
+        // A press has to be the console's before the editor may ask.
         std::vector<std::reference_wrapper<ITickEventSink>> timedSinks{
-            editor, stopSignal};
+            input};
+
+        // Registered only when there is somewhere to put the picture.
+        // "No console" then means no console, not an invisible one.
+        if (hasConsole)
+        {
+            timedSinks.push_back(consoleSink);
+        }
+
+        timedSinks.push_back(gatedEditor);
+        timedSinks.push_back(stopSignal);
 
         // Held out here rather than inside the if.
         // The sink has to outlive the reference the dispatcher keeps.
@@ -109,12 +173,15 @@ namespace antwika::atlas_editor
         EngineLoop loop(engine, tickedDispatcher, announced);
         loop.run(stopSignal, config.maxTicks);
 
-        return EditorSummary{
+        // The branch left on the excluded line is the allocator's.
+        // The throw edge of copying the history into the summary.
+        return EditorSummary{ // GCOVR_EXCL_LINE
             .ticks = state.ticks(),
             .edits = state.edits(),
             .saves = state.saves(),
             .loads = state.loads(),
-            .image = state.image().size()};
+            .image = state.image().size(),
+            .console = console.history()};
     }
 
 } // namespace antwika::atlas_editor

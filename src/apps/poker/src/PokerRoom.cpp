@@ -26,10 +26,19 @@
 #include <antwika/simulation/EngineLoop.hpp>
 #include <antwika/rng/SplitMix64Rng.hpp>
 
+#include <antwika/console/ConsoleGatedSink.hpp>
+#include <antwika/console/ConsoleScene.hpp>
+#include <antwika/console/ConsoleSink.hpp>
+#include <antwika/console/ConsoleState.hpp>
+#include <antwika/console/IConsoleControls.hpp>
+#include <antwika/console/InputFold.hpp>
+#include <antwika/console/SnapshotCommands.hpp>
+
 #include "antwika/poker/AgentStyle.hpp"
 #include "antwika/poker/BankrollLedger.hpp"
 #include "antwika/poker/CashGame.hpp"
 #include "antwika/poker/PokerRoomSink.hpp"
+#include "antwika/poker/SnapshotStore.hpp"
 #include "antwika/poker/PolicyAgent.hpp"
 #include "antwika/poker/TablePrinter.hpp"
 #include "antwika/poker/TableRenderSink.hpp"
@@ -122,8 +131,48 @@ namespace antwika::poker
         PokerRoomSink roomSink(runner, game, ledger, printer);
         StopSignal stopSignal;
 
-        std::vector<std::reference_wrapper<ITickEventSink>> timedSinks{
-            roomSink, stopSignal};
+        // The console, when the caller mounted one.
+        // It needs the codec too: the fold decodes off the wire.
+        // Nothing else here reads input, so nothing needs a gate.
+        const bool hasConsole = setup.consoleOverlay.has_value()
+                                && setup.codec.has_value();
+        antwika::console::ConsolePicture noConsole;
+        antwika::console::ConsoleState console;
+        const antwika::console::ConsoleScene consoleScene;
+        const antwika::console::FixedConsoleControls consoleControls;
+        PokerSnapshotStore snapshotStore(
+            table, deck, rng, ledger, game, printer);
+        antwika::console::SnapshotCommands consoleCommands(
+            snapshotStore,
+            setup.stateDumpPath,
+            setup.consoleLoadEnabled);
+        std::optional<antwika::console::InputFold> fold;
+        std::optional<antwika::console::ConsoleSink> consoleSink;
+
+        if (hasConsole)
+        {
+            fold.emplace(setup.codec->get());
+            consoleSink.emplace(antwika::console::ConsoleSinkSetup{
+                .console = console,
+                .input = *fold,
+                .picture = setup.consoleOverlay->get(),
+                .scene = consoleScene,
+                .controls = consoleControls,
+                .commands = consoleCommands});
+        }
+
+        std::vector<std::reference_wrapper<ITickEventSink>> timedSinks;
+
+        // The fold first, then the console, ahead of the room.
+        // The order every console-mounting application takes.
+        if (hasConsole)
+        {
+            timedSinks.push_back(*fold);
+            timedSinks.push_back(*consoleSink);
+        }
+
+        timedSinks.push_back(roomSink);
+        timedSinks.push_back(stopSignal);
 
         // Declared before the optionals that hold references to it.
         std::unique_ptr<IWindow> tableWindow;
@@ -164,6 +213,11 @@ namespace antwika::poker
                 atlasTexture
                     ? std::optional<std::reference_wrapper<const ITexture>>(
                           *atlasTexture)
+                    : std::nullopt,
+                hasConsole
+                    ? std::optional<std::reference_wrapper<
+                          const antwika::console::ConsolePicture>>(
+                          setup.consoleOverlay->get())
                     : std::nullopt);
 
             // After roomSink, which is what steps the table.
@@ -209,6 +263,7 @@ namespace antwika::poker
             .handsPlayed = table.handsPlayed(),
             .balances = ledger.balances(),
             .chipsLeftOnTable = leftOnTable,
+            .console = console.history(),
         };
     }
 

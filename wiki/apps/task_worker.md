@@ -5,7 +5,7 @@
 ## What it demonstrates
 
 [`ecs`](../libraries/ecs.md) and [`scheduler`](../libraries/scheduler.md) combined: a fixed pool of `Worker` entities pulling tasks off a deterministic, priority-ordered, budget-bounded `Scheduler`, once per tick.
-It has no input of any kind, and its window is a readout rather than a game: the smallest complete illustration of the tick loop, with the scheduler's promises drawn while they are being kept.
+Its window is a readout rather than a game, and the only thing a key ever reaches is the debug console: the smallest complete illustration of the tick loop, with the scheduler's promises drawn while they are being kept.
 
 ## Running it
 
@@ -21,8 +21,8 @@ Under the default `null` backend the window draws nothing and the run is exactly
 
 ## Libraries it composes
 
-[`app`](../libraries/app.md), [`ecs`](../libraries/ecs.md), [`ecs_commons`](../libraries/ecs_commons.md), [`engine`](../libraries/engine.md), [`event`](../libraries/event.md), [`gfx`](../libraries/gfx.md), [`i18n`](../libraries/i18n.md), [`log`](../libraries/log.md), [`replay`](../libraries/replay.md), [`scheduler`](../libraries/scheduler.md), [`simulation`](../libraries/simulation.md), [`time`](../libraries/time.md).
-A graphics backend, and deliberately no input backend: there is nothing here to click.
+[`app`](../libraries/app.md), `antwika::console`, [`ecs`](../libraries/ecs.md), [`ecs_commons`](../libraries/ecs_commons.md), [`engine`](../libraries/engine.md), [`event`](../libraries/event.md), [`gfx`](../libraries/gfx.md), [`i18n`](../libraries/i18n.md), [`input`](../libraries/input.md), [`log`](../libraries/log.md), [`replay`](../libraries/replay.md), [`scheduler`](../libraries/scheduler.md), [`simulation`](../libraries/simulation.md), [`time`](../libraries/time.md), [`ui`](../libraries/ui.md).
+A graphics backend and an input backend, the latter solely for the console: nothing else here reads a key or a pixel.
 
 ## How it is put together
 
@@ -60,9 +60,9 @@ That is one observation added where a system already computes it, which is the a
 The bar is whole pixels of a track computed with integer arithmetic, so no floating-point value from the render side exists to leak into anything a replay reproduces, and two backends cannot round it apart.
 `RenderSystem` lays out against `IWindow::configuredSize()` rather than the size the window reports; nothing here is hit-tested, so that costs nothing and keeps one rule across the applications instead of two.
 
-**There is no interaction, deliberately.**
-An application with a pointer would need its UI described and resolved inside the tick path, and this one has nothing for a press to mean: the run is a script.
-So it links no input backend at all, and the recording is byte for byte what it was before the window existed.
+**The console is the only interaction, deliberately.**
+The run is a script, and the pool has nothing for a press to mean: the input backend and the `InputFold` exist solely so the debug console can be typed at, and where [`game`](game.md) wraps every input-reading sink in a `ConsoleGatedSink`, here there is nothing under the sheet for the console to take a press away from -- the comment at the sink list in `TaskWorker.cpp` says exactly that.
+A run wired without a `consoleOverlay` registers neither the fold nor the console sink, so its event handling is byte for byte what it was before input existed.
 
 **The printing stayed.**
 `StatusPrintSystem` still runs every tick beside the renderer, rather than being dropped or made conditional on a headless backend, because the console output is what this application's tests read and what a `--replay` run is compared through.
@@ -85,6 +85,24 @@ That pair has since been pruned from `ecs_commons` -- this app declining to use 
 A steady stream of higher-priority submissions can keep a low-priority task pending forever; unconditional priority respect is the requirement.
 
 See [`blog/006-a-job-scheduler-and-a-worker-pool-that-cant-lie-to-itself.md`](../../blog/006-a-job-scheduler-and-a-worker-pool-that-cant-lie-to-itself.md).
+
+## The debug console, and what a dump holds
+
+**The grave key slides `antwika::console` over the pool, and `dump_state`/`load_state` snapshot and restore the whole run.**
+The shell is the library's -- `ConsoleState`, `ConsoleScene`, `ConsolePicture`, `InputFold`, `ConsoleSink`, `SnapshotCommands` -- mounted exactly as [`game`](game.md) mounts it, with `FixedConsoleControls` because this app has no options screen to rebind from, and `RenderSystem` painting the picture last, over the pool.
+`main()` stays branchless: `consoleLoadPermitted()` decides that a `--record` or `--replay` run answers `load_state` with a refusal line instead of a read.
+
+**The full state is the Workers and the task bookkeeping; the scheduler's pending queue is rebuilt, never serialized.**
+A `scheduler::Scheduler` job is a callable by design (see [`scheduler`](../libraries/scheduler.md)), so a dump cannot hold one: `TaskWorkerSnapshotStore` writes the worker components, the registry's tasks, the accepted submissions and the last dispatch, and a load re-`schedule`s a fresh `TaskJob` for every task the dump holds as Pending.
+A task already Running keeps its worker's countdown -- the worker entry carries it, and the worker state is authoritative -- and a Completed task is not scheduled at all.
+
+**A restore renumbers every JobId, and the invariant is stated where it is kept.**
+The scheduler cannot be cleared and its ids only count up, so `JobQueue` swaps in a fresh one whose ids start at 1 again, dropping whatever the interrupted run still had pending.
+The Pending tasks are re-scheduled in their original submission order, so the Nth Pending entry holds new JobId N -- and `TaskRegistry::restore()` records exactly that numbering, which is what keeps `markStarted()` resolving a renumbered id to the right task.
+The submission sink's list is rebuilt with the same numbering, a no-longer-pending task marked `kInvalidJobId`, so a later `task.submit` depending on it schedules no edge: a dependency on a task that has already run is satisfied by definition.
+An edge between two still-Pending tasks *is* re-expressed through the new ids, which is observable -- a loaded high-priority task that depends on a low-priority one still waits its turn.
+
+**The dump file is the shared `console::SnapshotFormat` envelope under this app's own magic**, `antwika-task-worker-state-dump` at version 1, with the state validated by a local JSON schema and every persisted name -- `idle`/`busy`, `pending`/`running`/`completed` -- refused on the way in if this build does not know it.
 
 ## The config file
 

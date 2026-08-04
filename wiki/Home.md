@@ -26,6 +26,7 @@ Each page covers what the library is for, its key headers and types, what it dep
 | [simulation](libraries/simulation.md) | The shared live/replay tick loop, its `ITickEventSource` seam, and the pacing around it. |
 | [replay](libraries/replay.md) | The JSON replay format, its migrations, and the CLI flags. |
 | [config](libraries/config.md) | The versioned-JSON plumbing every app's config file shares; the fields stay the app's. |
+| [console](libraries/console.md) | The debug console every app mounts, and the dump_state/load_state seam behind it. |
 | [ecs](libraries/ecs.md) | Double-buffered entity/component `World` with staged mutations. |
 | [scheduler](libraries/scheduler.md) | Deterministic, priority-ordered, budget-bounded job dispatch. |
 | [wfc](libraries/wfc.md) | Wave Function Collapse over a flat cell array, with no grid concept inside. |

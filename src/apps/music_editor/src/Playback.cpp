@@ -10,8 +10,12 @@
 #include <antwika/pattern/Controls.hpp>
 #include <antwika/pattern/PatternError.hpp>
 #include <antwika/sequencer/Sequencer.hpp>
+#include <antwika/sequencer/SequencerError.hpp>
+#include <antwika/sequencer/TempoMap.hpp>
 #include <antwika/synth/SynthError.hpp>
 #include <antwika/synth/TriggerRequest.hpp>
+
+#include "antwika/music_editor/StateDumpError.hpp"
 
 namespace antwika::music_editor
 {
@@ -341,6 +345,86 @@ namespace antwika::music_editor
     sequencer::Rational Playback::position() const
     {
         return tempo.cycleAt(shape.clock.frameAtTick(played));
+    }
+
+    PlaybackMemory Playback::remember() const
+    {
+        // The excluded lines are the aggregate's unwind edges.
+        // Only a failed allocation would take any of them.
+        // See docs/confirming-unreachable-branches.md, signature (a).
+        return PlaybackMemory{ // GCOVR_EXCL_LINE
+            .segments = tempo.segments(), // GCOVR_EXCL_LINE
+            .retimed = retimed,
+            .played = played,
+            .counter = counter,
+            .queued = queued,
+            .pausedFrames = pausedFrames,
+            .voiceCount = perVoice.size()}; // GCOVR_EXCL_LINE
+    }
+
+    void Playback::restore(const PlaybackMemory &memory)
+    {
+        // Both refusals land before anything here is mutated.
+        if (memory.segments.empty())
+        {
+            throw StateDumpError(
+                "antwika::music_editor: a dump remembers no tempo "
+                "segment at all");
+        }
+
+        // Rebuilt off to the side, so a refusal changes nothing.
+        // Replaying addSegment() recomputes every startFrame exactly.
+        // The sequencer's TempoMapTest replay case is the proof.
+        sequencer::TempoMap rebuilt(
+            memory.segments.front().framesPerCycle);
+
+        try
+        {
+            for (std::size_t at = 1; at < memory.segments.size(); ++at)
+            {
+                rebuilt.addSegment(
+                    memory.segments[at].startCycle,
+                    memory.segments[at].framesPerCycle);
+            }
+        }
+        // The map's own refusal is the sequencer's failure category.
+        // What this seam promises is the application's dump error.
+        catch (const sequencer::SequencerError &refused)
+        {
+            throw StateDumpError(refused.what());
+        }
+
+        // The audible tail is deliberately cut.
+        // The simulation is what restores.
+        // The restored instant's notes re-derive as ticks re-trigger.
+        silence();
+
+        tempo = std::move(rebuilt);
+        retimed = memory.retimed;
+
+        played = memory.played;
+        counter = memory.counter;
+        queued = memory.queued;
+        pausedFrames = memory.pausedFrames;
+        active.clear();
+
+        // After the tempo, on purpose.
+        // grow() copies the rebuilt map into each fresh sequencer.
+        // So a joiner keeps the dump's pace.
+        // At least one, which is the constructor's own floor.
+        perVoice.clear();
+        grow(std::max<std::size_t>(memory.voiceCount, 1));
+
+        // At any dump instant every line stood at advanced == played.
+        // step() joins stragglers before it advances anything.
+        // So no per-line cursor needs serialising.
+        // A fresh sequencer at zero would query the whole run so far.
+        // joinAt() stands it at the clock, that history already asked.
+        for (auto &line : perVoice)
+        {
+            line.sequencer->joinAt(played);
+            line.advanced = played;
+        }
     }
 
     void Playback::setSpeed(const sequencer::Rational speed)

@@ -26,7 +26,8 @@ namespace antwika::atlas_editor
         }
     } // namespace
 
-    Canvas::Canvas(Bitmap image) : image(std::move(image))
+    Canvas::Canvas(Bitmap image, const std::uint64_t revision)
+        : image(std::move(image)), changes(revision)
     {
         if (!this->image.isComplete())
         {

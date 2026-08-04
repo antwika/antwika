@@ -13,10 +13,6 @@ antwika_add_app(
         src/CityGrid.cpp
         src/CityRatings.cpp
         src/ConfigFile.cpp
-        src/ConsoleGatedSink.cpp
-        src/ConsoleScene.cpp
-        src/ConsoleSink.cpp
-        src/ConsoleState.cpp
         src/Coverage.cpp
         src/CoverageSystem.cpp
         src/Desirability.cpp
@@ -38,7 +34,6 @@ antwika_add_app(
         src/HousingQuery.cpp
         src/HousingSystem.cpp
         src/Hover.cpp
-        src/InputFold.cpp
         src/LabourQuery.cpp
         src/StaffingSystem.cpp
         src/LabourDispatchSystem.cpp
@@ -54,6 +49,7 @@ antwika_add_app(
         src/Messages.cpp
         src/ModeGatedSink.cpp
         src/OverlayField.cpp
+        src/OptionsConsoleControls.cpp
         src/OptionsFile.cpp
         src/OptionsScene.cpp
         src/OptionsState.cpp
@@ -93,9 +89,9 @@ antwika_add_app(
         src/SaveSections.cpp
         src/SessionGatedSystem.cpp
         src/StateDump.cpp
-        src/StateDumpFile.cpp
         src/StandingBuildings.cpp
         src/SessionStore.cpp
+        src/SnapshotStore.cpp
         src/SpawnSystem.cpp
         src/Store.cpp
         src/Toolbar.cpp
@@ -114,6 +110,7 @@ antwika_add_app(
         src/main.cpp
     LIBS
         antwika::animation
+        antwika::console
         antwika::app
         antwika::cli
         antwika::config
