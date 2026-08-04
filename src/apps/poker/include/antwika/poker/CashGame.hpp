@@ -106,6 +106,20 @@ namespace antwika::poker
          * @param player The player's name.
          * @return Their seat, or nothing if they are not at the table.
          */
+        /**
+         * @brief Read who sits where, seat by seat.
+         * @return One name per seat, empty where nobody sits.
+         */
+        [[nodiscard]] const std::vector<std::string> &
+        names() const noexcept;
+
+        /**
+         * @brief Stand the seating at a remembered arrangement.
+         * @param held One name per seat; sized to the table by the
+         * dump schema before it ever reaches here.
+         */
+        void restoreNames(std::vector<std::string> held);
+
         [[nodiscard]] std::optional<SeatId> seatOf(
             const std::string &player) const;
 

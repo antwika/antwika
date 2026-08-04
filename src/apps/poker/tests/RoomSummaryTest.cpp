@@ -12,6 +12,7 @@ namespace
             .handsPlayed = 12,
             .balances = {{"alice", 400}, {"bob", 600}},
             .chipsLeftOnTable = 0,
+            .console = {},
         };
     }
 } // namespace

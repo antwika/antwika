@@ -1,5 +1,7 @@
 #include "antwika/poker/BankrollLedger.hpp"
 
+#include <utility>
+
 #include <string>
 
 #include "antwika/poker/BankrollError.hpp"
@@ -38,6 +40,11 @@ namespace antwika::poker
         const noexcept
     {
         return accounts;
+    }
+
+    void BankrollLedger::restore(std::map<std::string, Chips> held)
+    {
+        accounts = std::move(held);
     }
 
 } // namespace antwika::poker

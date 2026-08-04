@@ -98,3 +98,12 @@ See [`blog/010-a-poker-hand-in-one-number.md`](../../blog/010-a-poker-hand-in-on
 `config.json` beside the executable is read once at startup through [`antwika::config`](../libraries/config.md) and decodes into `RoomConfig`: `smallBlind`, `bigBlind`, `minimumBuyIn`, `handStrengths`, the nine ratings the agents give each made hand, `thresholds`, the raise and call points of each style, and `seatStyles`, which style sits where round the table -- a lookup indexed by `HandCategory` rather than arithmetic on the enumeration, so a rebalance of the shipped players is an edit to the file.
 Four rules sit between the numbers and are refused at the decode -- a big blind below the small one, a buy-in below the big blind, a strength table that is not weakest-first, and a style whose raise point sits under its call point -- since a table nobody could sit at, or one that rates a straight under a pair, is a config nobody meant.
 The seat count, the table name and the shuffle seed stay in source: the seats decide the layout a recorded click is resolved against, and the seed is a constant for the reason `apps/game` gives about its world seed.
+
+## The debug console
+
+**The console mounts here as everywhere, and its dump carries the exact deal.**
+The grave key slides [`console`](../libraries/console.md)'s sheet over the table; nothing else in this room reads input, so no sink needs a gate, and the keyboard the console brought is this application's first.
+`dump_state` remembers the room whole: the table mid-hand (`holdem::TableMemory`), the deck's order and deal cursor, the generator's counter (`rng::SplitMix64Rng::currentState()`), every bankroll, the seating and the hand history's own narration -- so a loaded room deals the very next card the remembered one would have, and the history resumes with the right header.
+`load_state` runs only in a plain live run, refuses another table's seat count outright, and re-binds the flow's deck through `Table::restore()` when a hand was in progress.
+The agents are not dumped: they are stateless policy rebuilt from config.
+

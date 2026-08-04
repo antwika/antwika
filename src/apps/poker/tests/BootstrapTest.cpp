@@ -673,7 +673,8 @@ TEST(PrintSummaryTest, WritesEveryBalanceInNameOrder)
     const RoomSummary summary{
         .handsPlayed = 3,
         .balances = {{"Ada", 120}, {"Bob", 80}},
-        .chipsLeftOnTable = 0};
+        .chipsLeftOnTable = 0,
+            .console = {},};
 
     antwika::poker::printSummary(out, summary);
 
@@ -686,7 +687,8 @@ TEST(PrintSummaryTest, MentionsChipsNobodyHasWonYet)
 {
     std::ostringstream out;
     const RoomSummary summary{
-        .handsPlayed = 1, .balances = {}, .chipsLeftOnTable = 45};
+        .handsPlayed = 1, .balances = {}, .chipsLeftOnTable = 45,
+            .console = {},};
 
     antwika::poker::printSummary(out, summary);
 

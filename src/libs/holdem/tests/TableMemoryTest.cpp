@@ -31,8 +31,9 @@ namespace
     }
 } // namespace
 
-// The whole point: a remembered table, deck and generator stood back
-// up continue the session move for move, mid-hand included.
+// The whole point of the memory types, asserted end to end.
+// A remembered table, deck and generator continue move for move.
+// Mid-hand included.
 TEST(TableMemoryTest, Restore_ContinuesExactlyWhereItStood)
 {
     SplitMix64Rng originalBits(9);

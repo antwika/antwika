@@ -1,8 +1,10 @@
 #pragma once
 
+#include <string>
+#include <vector>
+
 #include <cstdint>
 #include <map>
-#include <string>
 
 #include <antwika/holdem/Chips.hpp>
 
@@ -35,6 +37,14 @@ namespace antwika::poker
          * than folded into a bankroll, so the books still balance.
          */
         Chips chipsLeftOnTable = 0;
+
+        /**
+         * @brief Every line the console held when the run ended.
+         *
+         * Here so a divergence in the console fails a replay
+         * comparison directly, on game::GameSummary's terms.
+         */
+        std::vector<std::string> console;
 
         bool operator==(const RoomSummary &other) const = default;
     };

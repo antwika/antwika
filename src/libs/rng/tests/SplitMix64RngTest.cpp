@@ -53,8 +53,8 @@ TEST(SplitMix64RngTest, Next_DoesNotRepeatItselfWithinAShortRun)
     EXPECT_EQ(distinct.size(), drawn.size());
 }
 
-// The state read back and handed to a fresh generator continues the
-// stream from the very next draw -- the whole of what a dump needs.
+// A fresh generator over the read-back state continues the stream.
+// From the very next draw, which is the whole of what a dump needs.
 TEST(SplitMix64RngTest, CurrentState_ResumesTheStreamExactly)
 {
     antwika::rng::SplitMix64Rng original(7);
@@ -65,4 +65,16 @@ TEST(SplitMix64RngTest, CurrentState_ResumesTheStreamExactly)
 
     EXPECT_EQ(resumed.next(), original.next());
     EXPECT_EQ(resumed.next(), original.next());
+}
+
+TEST(SplitMix64RngTest, RestoreState_ResumesInPlace)
+{
+    antwika::rng::SplitMix64Rng original(7);
+    (void)original.next();
+    const auto held = original.currentState();
+    const auto expected = original.next();
+
+    original.restoreState(held);
+
+    EXPECT_EQ(original.next(), expected);
 }

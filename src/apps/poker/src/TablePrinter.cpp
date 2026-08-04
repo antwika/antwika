@@ -113,7 +113,7 @@ namespace antwika::poker
         bigBlindSeat.reset();
         for (auto &note : notes)
         {
-            note = SeatNote{};
+            note = PrinterNote{};
         }
 
         const auto blinds = table.blinds();
@@ -155,7 +155,7 @@ namespace antwika::poker
     void TablePrinter::printBlinds()
     {
         const auto dealtIn = std::ranges::count_if(
-            notes, [](const SeatNote &note) { return note.dealtIn; });
+            notes, [](const PrinterNote &note) { return note.dealtIn; });
 
         // Heads-up the button posts the small blind, as Table has it.
         // Everywhere else the blinds sit to the left of the button.
@@ -488,6 +488,28 @@ namespace antwika::poker
             }
         }
         return stack;
+    }
+
+    PrinterMemory TablePrinter::remember() const
+    {
+        return PrinterMemory{
+            .notes = notes,
+            .smallBlindSeat = smallBlindSeat,
+            .bigBlindSeat = bigBlindSeat,
+            .stage = stage,
+            .boardShown = boardShown};
+
+        // gcov puts the returned value's unwind block here.
+        // No input reaches it.
+    } // GCOVR_EXCL_LINE
+
+    void TablePrinter::restore(const PrinterMemory &memory)
+    {
+        notes = memory.notes;
+        smallBlindSeat = memory.smallBlindSeat;
+        bigBlindSeat = memory.bigBlindSeat;
+        stage = memory.stage;
+        boardShown = memory.boardShown;
     }
 
 } // namespace antwika::poker

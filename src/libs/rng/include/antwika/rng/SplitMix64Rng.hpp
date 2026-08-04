@@ -48,6 +48,18 @@ namespace antwika::rng
          */
         [[nodiscard]] std::uint64_t currentState() const noexcept;
 
+        /**
+         * @brief Stand the counter at a remembered value.
+         *
+         * currentState()'s other half, for a generator other objects
+         * already borrow: a Deck holds its reference for a whole
+         * session, so the state has to come back in place rather
+         * than through a fresh construction.
+         *
+         * @param value The counter the next draw advances from.
+         */
+        void restoreState(std::uint64_t value) noexcept;
+
     private:
         std::uint64_t state;
     };

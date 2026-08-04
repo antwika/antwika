@@ -51,6 +51,16 @@ namespace antwika::poker
          * @brief Read every balance.
          * @return Balances by player name, in name order.
          */
+        /**
+         * @brief Stand every balance at a remembered value.
+         *
+         * Wholesale, since a restore is resuming a session rather
+         * than merging two -- SessionStore::restore's rule.
+         *
+         * @param accounts The balances to hold instead.
+         */
+        void restore(std::map<std::string, Chips> accounts);
+
         [[nodiscard]] const std::map<std::string, Chips> &balances()
             const noexcept;
 

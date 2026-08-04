@@ -9,6 +9,11 @@
 #include <antwika/app/RunRecorded.hpp>
 #include <antwika/gfx/SelectedBackend.hpp>
 #include <antwika/log/Level.hpp>
+#include <antwika/console/ConsolePicture.hpp>
+#include <antwika/console/SnapshotCommands.hpp>
+#include <antwika/input/InputEventCodec.hpp>
+#include <antwika/input/InputPipeline.hpp>
+#include <antwika/input/SelectedInputBackend.hpp>
 #include <antwika/replay/ReplaySource.hpp>
 #include <antwika/time/SystemClock.hpp>
 #include <antwika/time/SystemSleeper.hpp>
@@ -49,6 +54,19 @@ namespace
         const auto backend =
             antwika::gfx::makeSelectedBackend(logging.logger());
 
+        // The console is what brought a keyboard to this room.
+        // A --replay run must not read a device.
+        const auto inputBackend =
+            antwika::input::makeSelectedInputBackend(logging.logger());
+        const antwika::input::InputEventCodec codec;
+        antwika::input::InputPipeline input(
+            source,
+            *inputBackend,
+            codec,
+            {.readsDevice = !recorded.options.replayPath.has_value(),
+             .coalescePointerMotion = true,
+             .thinIdleMotion = true});
+
         // antwika::gfx opens no files, so the app reads the atlas.
         const auto atlas = antwika::app::readPngFile(
             antwika::app::assetPath("atlas.png"), "antwika_poker");
@@ -60,6 +78,9 @@ namespace
             .atlas = &atlas,
         };
 
+        // Against the canvas the table is drawn on.
+        antwika::console::ConsolePicture consolePicture(window.size);
+
         antwika::poker::printSummary(
             std::cout,
             antwika::poker::bootstrap(
@@ -67,9 +88,15 @@ namespace
                     .clock = clock,
                     .logger = logging.logger(),
                     .eventSink = recorded.eventSink,
-                    .inputSource = source,
+                    .inputSource = input,
                     .out = std::cout,
                     .room = config,
+                    .codec = codec,
+                    .consoleOverlay = consolePicture,
+                    .consoleLoadEnabled =
+                        antwika::console::consoleLoadPermitted(
+                            recorded.options.recordPath.has_value(),
+                            recorded.options.replayPath.has_value()),
                     .replayRecorder = recorded.replayRecorder,
                     .window = window}));
     }

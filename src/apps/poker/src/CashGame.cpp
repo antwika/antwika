@@ -1,5 +1,7 @@
 #include "antwika/poker/CashGame.hpp"
 
+#include <utility>
+
 #include <cstddef>
 #include <optional>
 #include <string>
@@ -159,5 +161,15 @@ namespace antwika::poker
         }
         return sentHome;
     } // GCOVR_EXCL_LINE
+
+    const std::vector<std::string> &CashGame::names() const noexcept
+    {
+        return namesBySeat;
+    }
+
+    void CashGame::restoreNames(std::vector<std::string> held)
+    {
+        namesBySeat = std::move(held);
+    }
 
 } // namespace antwika::poker

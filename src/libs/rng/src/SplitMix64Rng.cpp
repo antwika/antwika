@@ -30,4 +30,9 @@ namespace antwika::rng
         return state;
     }
 
+    void SplitMix64Rng::restoreState(std::uint64_t value) noexcept
+    {
+        state = value;
+    }
+
 } // namespace antwika::rng

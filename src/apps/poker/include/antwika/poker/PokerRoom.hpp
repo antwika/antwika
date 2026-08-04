@@ -13,6 +13,9 @@
 #include <antwika/time/Tick.hpp>
 
 #include "antwika/poker/RoomConfig.hpp"
+#include <antwika/console/ConsolePicture.hpp>
+#include <antwika/input/IInputEventCodec.hpp>
+
 #include "antwika/poker/RoomSummary.hpp"
 #include "antwika/poker/WindowSetup.hpp"
 
@@ -108,6 +111,39 @@ namespace antwika::poker
          * Seats, blinds, minimum buy-in and shuffle seed.
          */
         RoomConfig room = {};
+
+        /**
+         * @brief Decodes the input events off the tick stream.
+         *
+         * Optional because the room ran for a long time with no
+         * input at all; the console is what brought a keyboard here,
+         * and it is mounted only when both this and consoleOverlay
+         * are present.
+         */
+        std::optional<
+            std::reference_wrapper<const input::IInputEventCodec>>
+            codec = std::nullopt;
+
+        /**
+         * @brief The debug console's picture, which turns it on.
+         *
+         * Passed in rather than created here because a renderer
+         * reads it; absent means no console at all.
+         */
+        std::optional<
+            std::reference_wrapper<antwika::console::ConsolePicture>>
+            consoleOverlay = std::nullopt;
+
+        /**
+         * @brief Whether the console's load_state may run.
+         *
+         * False under --record and --replay -- see
+         * console::consoleLoadPermitted().
+         */
+        bool consoleLoadEnabled = true;
+
+        /** @brief Where dump_state writes and load_state reads. */
+        std::string stateDumpPath = "dump_state.json";
 
         /**
          * @brief Safety cap on how many ticks to run.
