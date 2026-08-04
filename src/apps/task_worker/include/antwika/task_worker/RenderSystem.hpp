@@ -1,5 +1,9 @@
 #pragma once
 
+#include <functional>
+#include <optional>
+
+#include <antwika/console/ConsolePicture.hpp>
 #include <antwika/ecs/ISystem.hpp>
 #include <antwika/ecs/World.hpp>
 #include <antwika/gfx/IWindow.hpp>
@@ -45,11 +49,20 @@ namespace antwika::task_worker
          * @param scene Draws the pool. Must outlive this system.
          * @param registry Read for every task's status. Must outlive
          * this system.
+         * @param consoleOverlay Read for the debug console's picture,
+         * painted last, over the pool.
+         * Described in the tick path like everything drawn here, and
+         * painted only -- see antwika::console::ConsolePicture.
+         * Optional, and absent by default, so a run with no console
+         * paints exactly what it always did.
          */
         RenderSystem(
             IWindow &window,
             const PoolScene &scene,
-            const TaskRegistry &registry);
+            const TaskRegistry &registry,
+            std::optional<std::reference_wrapper<
+                const antwika::console::ConsolePicture>>
+                consoleOverlay = std::nullopt);
 
         RenderSystem(const RenderSystem &) = delete;
         RenderSystem(RenderSystem &&) = delete;
@@ -68,6 +81,9 @@ namespace antwika::task_worker
         IWindow &window;
         const PoolScene &scene;
         const TaskRegistry &registry;
+        std::optional<std::reference_wrapper<
+            const antwika::console::ConsolePicture>>
+            consoleOverlay;
     };
 
 } // namespace antwika::task_worker

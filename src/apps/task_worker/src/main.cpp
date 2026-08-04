@@ -9,10 +9,15 @@
 #include <antwika/app/AssetPath.hpp>
 #include <antwika/app/ConsoleLogging.hpp>
 #include <antwika/app/RunRecorded.hpp>
+#include <antwika/console/ConsolePicture.hpp>
+#include <antwika/console/SnapshotCommands.hpp>
 #include <antwika/gfx/SelectedBackend.hpp>
 #include <antwika/gfx/Size.hpp>
 #include <antwika/gfx/WindowDesc.hpp>
 #include <antwika/i18n/Locale.hpp>
+#include <antwika/input/InputEventCodec.hpp>
+#include <antwika/input/InputPipeline.hpp>
+#include <antwika/input/SelectedInputBackend.hpp>
 #include <antwika/log/Level.hpp>
 #include <antwika/replay/ReplaySource.hpp>
 #include <antwika/simulation/TickPacer.hpp>
@@ -28,6 +33,8 @@
 using antwika::app::ConsoleLogging;
 using antwika::app::RecordedRun;
 using antwika::gfx::WindowDesc;
+using antwika::input::InputEventCodec;
+using antwika::input::InputPipeline;
 using antwika::log::Level;
 using antwika::replay::ReplaySource;
 using antwika::simulation::TickPacer;
@@ -59,11 +66,14 @@ namespace
         auto &logger = logging.logger();
 
         const auto backend = antwika::gfx::makeSelectedBackend(logger);
+        const auto inputBackend =
+            antwika::input::makeSelectedInputBackend(logger);
 
         logger.log(
             Level::Info,
             "Antwika TaskWorker on backend: "
-                + std::string(backend->name()));
+                + std::string(backend->name()) + ", input: "
+                + std::string(inputBackend->name()));
 
         const auto window = backend->createWindow(WindowDesc{
             .title = "Antwika Task Worker",
@@ -78,8 +88,13 @@ namespace
 
         const PoolScene scene{translator};
 
+        // The console's picture, against the configured size.
+        // Never the size a window reports back.
+        antwika::console::ConsolePicture consoleOverlay(kWindowSize);
+
         TaskRegistry registry;
-        RenderSystem renderSystem(*window, scene, registry);
+        RenderSystem renderSystem(
+            *window, scene, registry, consoleOverlay);
         StatusPrintSystem printSystem(std::cout, registry);
         SystemSleeper sleeper;
         TickPacer pacer(
@@ -90,10 +105,26 @@ namespace
             recorded.options.replayPath,
             antwika::app::assetPath("demo.jsonl")));
 
+        const InputEventCodec codec;
+
+        // Live input is attached only when there is no replay to run.
+        // A replay already holds the input it recorded.
+        // Reading a device too would make every event arrive twice.
+        // Idle movement is held back and motion is coalesced.
+        // Only the console reads the pointer here.
+        // It hit-tests the folded position, not every point crossed.
+        InputPipeline input(
+            fileSource,
+            *inputBackend,
+            codec,
+            {.readsDevice = !recorded.options.replayPath.has_value(),
+             .coalescePointerMotion = true,
+             .thinIdleMotion = true});
+
         // Closing the window ends the run, as in every windowed app.
         // It arrives as an engine.stop event through the source.
         // So closing one is recorded and replayed like anything else.
-        WindowInputSource source(fileSource, *backend, window->id());
+        WindowInputSource source(input, *backend, window->id());
 
         antwika::task_worker::bootstrap(
             antwika::task_worker::TaskWorkerWiring{
@@ -103,7 +134,12 @@ namespace
                 .workerCount = config.workerCount,
                 .observers = {printSystem, renderSystem, pacer},
                 .registry = registry,
-                .replayRecorder = recorded.replayRecorder});
+                .replayRecorder = recorded.replayRecorder,
+                .consoleOverlay = consoleOverlay,
+                .consoleLoadEnabled =
+                    antwika::console::consoleLoadPermitted(
+                        recorded.options.recordPath.has_value(),
+                        recorded.options.replayPath.has_value())});
     }
 } // namespace
 

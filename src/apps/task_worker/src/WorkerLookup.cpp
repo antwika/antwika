@@ -16,6 +16,12 @@ namespace antwika::task_worker
     {
     }
 
+    void WorkerLookup::reset(std::vector<Entity> replacement)
+    {
+        workers = std::move(replacement);
+        idle.assign(workers.size(), true);
+    }
+
     void WorkerLookup::refresh()
     {
         for (std::size_t i = 0; i < workers.size(); ++i)

@@ -57,15 +57,27 @@ namespace antwika::task_worker
     TaskSubmissionSink::TaskSubmissionSink(
         World &world,
         SystemScheduler &systemScheduler,
-        Scheduler &jobScheduler,
+        JobQueue &jobs,
         WorkerLookup &lookup,
         TaskRegistry &registry)
         : world(world),
           systemScheduler(systemScheduler),
-          jobScheduler(jobScheduler),
+          jobs(jobs),
           lookup(lookup),
           registry(registry)
     {
+    }
+
+    const std::vector<TaskSubmissionSink::Submission> &
+    TaskSubmissionSink::submissions() const noexcept
+    {
+        return submitted;
+    }
+
+    void TaskSubmissionSink::restore(
+        std::vector<Submission> replacement)
+    {
+        submitted = std::move(replacement);
     }
 
     void TaskSubmissionSink::handle(const TickEvent &event)
@@ -123,14 +135,20 @@ namespace antwika::task_worker
                     "TaskSubmissionSink: dependsOnId refers to a task "
                     "id that was never submitted");
             }
-            dependsOn.push_back(found->jobId);
+            // A restore marks a started or finished task invalid.
+            // Its dependency edge is satisfied by definition.
+            // So no edge is scheduled for it.
+            if (found->jobId != antwika::scheduler::kInvalidJobId)
+            {
+                dependsOn.push_back(found->jobId);
+            }
             dependencyInfo =
                 TaskDependency{dependsOnTaskId, found->label};
         }
 
         auto job = std::make_unique<TaskJob>(
             lookup, taskId, label, durationTicks);
-        const auto jobId = jobScheduler.schedule(
+        const auto jobId = jobs.scheduler().schedule(
             std::move(job), priority, dependsOn);
         registry.submit(
             taskId, label, priority, durationTicks, dependencyInfo);

@@ -2,9 +2,9 @@
 
 #include <antwika/ecs/ISystem.hpp>
 #include <antwika/ecs/World.hpp>
-#include <antwika/scheduler/Scheduler.hpp>
 #include <antwika/time/Tick.hpp>
 
+#include "antwika/task_worker/JobQueue.hpp"
 #include "antwika/task_worker/TaskRegistry.hpp"
 #include "antwika/task_worker/WorkerLookup.hpp"
 
@@ -13,7 +13,6 @@ namespace antwika::task_worker
 
     using antwika::ecs::ISystem;
     using antwika::ecs::World;
-    using antwika::scheduler::Scheduler;
 
     /**
      * @brief Dispatches ready jobs to idle workers, once per tick.
@@ -28,7 +27,8 @@ namespace antwika::task_worker
     public:
         /**
          * @brief Construct the system over its collaborators.
-         * @param jobScheduler Scheduler run() is called against.
+         * @param jobs Holds the scheduler run() is called against --
+         * reached per call, since load_state may replace it mid-run.
          * @param lookup Worker lookup refreshed and used to compute
          * this tick's dispatch budget.
          * @param registry Task registry marked Running for every job
@@ -36,7 +36,7 @@ namespace antwika::task_worker
          * budget was.
          */
         TaskDispatchSystem(
-            Scheduler &jobScheduler,
+            JobQueue &jobs,
             WorkerLookup &lookup,
             TaskRegistry &registry);
 
@@ -59,7 +59,7 @@ namespace antwika::task_worker
         void update(World &world, antwika::time::Tick tick) override;
 
     private:
-        Scheduler &jobScheduler;
+        JobQueue &jobs;
         WorkerLookup &lookup;
         TaskRegistry &registry;
     };

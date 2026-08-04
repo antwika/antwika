@@ -8,6 +8,7 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
+#include <antwika/console/ConsolePicture.hpp>
 #include <antwika/ecs/World.hpp>
 #include <antwika/ecs_commons/Name.hpp>
 #include <antwika/gfx/Color.hpp>
@@ -19,6 +20,8 @@
 #include <antwika/log/mocks/MockLogger.hpp>
 #include <antwika/scheduler/JobId.hpp>
 #include <antwika/scheduler/Priority.hpp>
+#include <antwika/ui/DrawCommand.hpp>
+#include <antwika/ui/DrawList.hpp>
 
 #include "antwika/task_worker/Messages.hpp"
 #include "antwika/task_worker/PoolScene.hpp"
@@ -119,6 +122,42 @@ TEST(RenderSystemTest, Update_LaysOutAgainstTheConfiguredWindowSize)
     const Translator translator{kDefaultLocale};
     const PoolScene scene{translator};
     RenderSystem system(window, scene, registry);
+
+    system.update(world, 0);
+}
+
+// The console's picture is painted last, over the pool.
+// Whatever the tick path described is what lands on screen.
+TEST(RenderSystemTest, Update_PaintsTheConsoleOverlayWhenGivenOne)
+{
+    NiceMock<MockLogger> logger;
+    World world(logger);
+    TaskRegistry registry;
+    seedOneBusyWorker(world, registry);
+
+    NiceMock<MockRenderer> renderer;
+    NiceMock<MockWindow> window;
+    ON_CALL(window, renderer()).WillByDefault(ReturnRef(renderer));
+    ON_CALL(window, configuredSize()).WillByDefault(Return(kConfigured));
+    ON_CALL(window, size()).WillByDefault(Return(kReported));
+
+    antwika::console::ConsolePicture overlay(kConfigured);
+    const antwika::ui::FillRect sheet{
+        .rect = {
+            .origin = {.x = 0, .y = 0},
+            .size = {.width = 960, .height = 300}},
+        .color = {.red = 1, .green = 2, .blue = 3, .alpha = 4}};
+    overlay.set(antwika::ui::DrawList{sheet});
+
+    // The scene draws what it draws; the sheet must be among it all.
+    EXPECT_CALL(renderer, drawRect(::testing::_, ::testing::_))
+        .Times(::testing::AnyNumber());
+    EXPECT_CALL(renderer, drawRect(sheet.rect, sheet.color)).Times(1);
+    EXPECT_CALL(renderer, present()).Times(1);
+
+    const Translator translator{kDefaultLocale};
+    const PoolScene scene{translator};
+    RenderSystem system(window, scene, registry, overlay);
 
     system.update(world, 0);
 }
