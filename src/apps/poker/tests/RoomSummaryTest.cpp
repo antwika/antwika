@@ -34,4 +34,8 @@ TEST(RoomSummaryTest, Equality_ComparesEveryFieldIndependently)
     auto chipsStranded = sample();
     chipsStranded.chipsLeftOnTable = 25;
     EXPECT_NE(summary, chipsStranded);
+
+    auto chattier = sample();
+    chattier.console = {"> hello"};
+    EXPECT_NE(summary, chattier);
 }

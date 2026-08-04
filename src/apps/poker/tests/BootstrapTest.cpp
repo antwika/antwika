@@ -12,6 +12,7 @@
 #include <string_view>
 #include <vector>
 
+#include <antwika/console/ConsolePicture.hpp>
 #include <antwika/engine/Events.hpp>
 #include <antwika/event/Event.hpp>
 #include <antwika/event/mocks/MockEventSink.hpp>
@@ -30,6 +31,8 @@
 #include <antwika/gfx/WindowEvent.hpp>
 #include <antwika/gfx/WindowId.hpp>
 #include <antwika/holdem/Blinds.hpp>
+#include <antwika/input/InputEventCodec.hpp>
+#include <antwika/input/Key.hpp>
 #include <antwika/log/Level.hpp>
 #include <antwika/log/mocks/MockLogger.hpp>
 #include <antwika/event/ITickEventSource.hpp>
@@ -735,4 +738,75 @@ TEST(BootstrapTest, Bootstrap_UploadsNothingWithoutAnAtlas)
     ASSERT_NE(backend.window, nullptr);
     EXPECT_EQ(backend.window->uploads(), 0U);
     EXPECT_EQ(backend.window->blits(), 0U);
+}
+
+// A console needs both its picture and a codec to decode the keys.
+// Half a mounting is silently no console rather than half of one.
+TEST(BootstrapTest, Bootstrap_AnOverlayWithoutACodecMountsNoConsole)
+{
+    auto script = threeHandedSession(10);
+    ReplaySource source(script);
+    std::ostringstream out;
+    std::chrono::system_clock::time_point time{};
+    FakeClock clock(time);
+    NiceMock<MockLogger> logger;
+    NiceMock<MockEventSink> eventSink;
+    antwika::console::ConsolePicture picture(
+        {.width = 1024, .height = 640});
+
+    const auto summary =
+        antwika::poker::bootstrap(antwika::poker::RoomSetup{
+            .clock = clock,
+            .logger = logger,
+            .eventSink = eventSink,
+            .inputSource = source,
+            .out = out,
+            .room = kThreeHandedRoom,
+            .consoleOverlay = picture,
+            .maxTicks = kMaxTicks});
+
+    EXPECT_TRUE(summary.console.empty());
+    EXPECT_TRUE(picture.commands().empty());
+}
+
+// The one composition nothing else exercises: a window and a console.
+// The render sink is handed the picture, and the opened sheet shows.
+TEST(BootstrapTest, Bootstrap_AWindowedRoomPaintsTheConsole)
+{
+    antwika::input::InputEventCodec codec;
+    auto script = threeHandedSession(10);
+    script.insert(
+        script.end() - 1,
+        TickEvent{
+            .tick = 1,
+            .event = codec.encode(antwika::input::KeyPressed{
+                .key = antwika::input::Key::Grave})});
+    ReplaySource source(script);
+    std::ostringstream out;
+    std::chrono::system_clock::time_point time{};
+    FakeClock clock(time);
+    NiceMock<MockLogger> logger;
+    NiceMock<MockEventSink> eventSink;
+    antwika::console::ConsolePicture picture(
+        {.width = 1024, .height = 640});
+    FakeBackend backend;
+    FakeSleeper sleeper;
+    const WindowSetup window{.backend = backend, .sleeper = sleeper};
+
+    static_cast<void>(
+        antwika::poker::bootstrap(antwika::poker::RoomSetup{
+            .clock = clock,
+            .logger = logger,
+            .eventSink = eventSink,
+            .inputSource = source,
+            .out = out,
+            .room = kThreeHandedRoom,
+            .codec = codec,
+            .consoleOverlay = picture,
+            .maxTicks = kMaxTicks,
+            .window = window}));
+
+    ASSERT_NE(backend.window, nullptr);
+    EXPECT_GT(backend.window->frames(), 0U);
+    EXPECT_FALSE(picture.commands().empty());
 }

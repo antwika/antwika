@@ -118,6 +118,16 @@ TEST(StateDumpTest, FromJson_RefusesACardPastTheDeck)
     EXPECT_THROW((void)roomDumpFromJson(encoded), StateDumpError);
 }
 
+// The deck's cards are bounded by the schema before decode.
+// The board's are not, so this one exercises cardFrom's own refusal.
+TEST(StateDumpTest, FromJson_RefusesABoardCardPastTheDeck)
+{
+    auto encoded = roomDumpToJson(populatedDump());
+    encoded["table"]["board"][0] = 52;
+
+    EXPECT_THROW((void)roomDumpFromJson(encoded), StateDumpError);
+}
+
 TEST(StateDumpTest, FromJson_RefusesACursorPastTheDeck)
 {
     auto encoded = roomDumpToJson(populatedDump());
@@ -158,6 +168,18 @@ TEST(StateDumpTest, EqualityComparesTheParts)
     drawn.bits = 1;
     EXPECT_NE(base, drawn);
 
+    auto reshuffled = populatedDump();
+    reshuffled.deck.dealt = 0;
+    EXPECT_NE(base, reshuffled);
+
+    auto reseated = populatedDump();
+    reseated.table.pot = 0;
+    EXPECT_NE(base, reseated);
+
+    auto repaid = populatedDump();
+    repaid.balances["alice"] = 1;
+    EXPECT_NE(base, repaid);
+
     auto renamed = populatedDump();
     renamed.names[0] = "carol";
     EXPECT_NE(base, renamed);
@@ -165,4 +187,56 @@ TEST(StateDumpTest, EqualityComparesTheParts)
     auto narrated = populatedDump();
     narrated.printer.boardShown = 0;
     EXPECT_NE(base, narrated);
+}
+
+// The note a printer memory carries, every field telling two apart.
+TEST(StateDumpTest, PrinterNoteEqualityComparesEveryField)
+{
+    const antwika::poker::PrinterNote base{
+        .roundStake = 10,
+        .foldedOn = antwika::holdem::Stage::Turn,
+        .dealtIn = true,
+        .folded = false};
+
+    auto restaked = base;
+    restaked.roundStake += 1;
+    EXPECT_NE(base, restaked);
+
+    auto earlier = base;
+    earlier.foldedOn = antwika::holdem::Stage::Flop;
+    EXPECT_NE(base, earlier);
+
+    auto sittingOut = base;
+    sittingOut.dealtIn = false;
+    EXPECT_NE(base, sittingOut);
+
+    auto mucked = base;
+    mucked.folded = true;
+    EXPECT_NE(base, mucked);
+}
+
+// The printer's whole memory, every field telling two apart alone.
+TEST(StateDumpTest, PrinterMemoryEqualityComparesEveryField)
+{
+    const auto base = populatedDump().printer;
+
+    auto retold = base;
+    retold.notes[0].folded = true;
+    EXPECT_NE(base, retold);
+
+    auto reposted = base;
+    reposted.smallBlindSeat.reset();
+    EXPECT_NE(base, reposted);
+
+    auto restraddled = base;
+    restraddled.bigBlindSeat.reset();
+    EXPECT_NE(base, restraddled);
+
+    auto staged = base;
+    staged.stage = antwika::holdem::Stage::River;
+    EXPECT_NE(base, staged);
+
+    auto redealt = base;
+    redealt.boardShown = 0;
+    EXPECT_NE(base, redealt);
 }
