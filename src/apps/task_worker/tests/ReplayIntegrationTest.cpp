@@ -47,7 +47,7 @@ namespace
                 .eventSink = eventSink,
                 .inputSource = source,
                 .workerCount = kWorkerCount,
-                .maxTicks = kMaxTicks});
+                .maxTicks = kMaxTicks}).workers;
     }
 } // namespace
 

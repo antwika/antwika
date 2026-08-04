@@ -8,9 +8,9 @@
 #include <antwika/ecs_commons/Name.hpp>
 #include <antwika/engine/Events.hpp>
 #include <antwika/log/mocks/MockLogger.hpp>
-#include <antwika/scheduler/Scheduler.hpp>
 
 #include "antwika/task_worker/Events.hpp"
+#include "antwika/task_worker/JobQueue.hpp"
 #include "antwika/task_worker/TaskDispatchSystem.hpp"
 #include "antwika/task_worker/TaskRegistry.hpp"
 #include "antwika/task_worker/TaskSubmissionError.hpp"
@@ -23,7 +23,7 @@ using antwika::ecs_commons::makeName;
 using antwika::event::Event;
 using antwika::event::TickEvent;
 using antwika::log::mocks::MockLogger;
-using antwika::scheduler::Scheduler;
+using antwika::task_worker::JobQueue;
 using antwika::task_worker::TaskDependency;
 using antwika::task_worker::TaskDispatchSystem;
 using antwika::task_worker::TaskRegistry;
@@ -50,7 +50,7 @@ TEST(TaskSubmissionSinkTest, ParsesAPayloadIntoAScheduledTaskAtItsPriority)
     world.commit();
 
     WorkerLookup lookup(world, {workerA, workerB});
-    Scheduler jobScheduler;
+    JobQueue jobScheduler;
     SystemScheduler systemScheduler;
     static_cast<void>(systemScheduler.createPhase("dispatch"));
     TaskRegistry registry;
@@ -66,10 +66,10 @@ TEST(TaskSubmissionSinkTest, ParsesAPayloadIntoAScheduledTaskAtItsPriority)
         },
     });
 
-    EXPECT_EQ(jobScheduler.pending(), 1U);
+    EXPECT_EQ(jobScheduler.scheduler().pending(), 1U);
 
     lookup.refresh();
-    const auto executed = jobScheduler.run(0, lookup.idleCount());
+    const auto executed = jobScheduler.scheduler().run(0, lookup.idleCount());
     EXPECT_EQ(executed.size(), 1U);
 
     world.commit();
@@ -89,7 +89,7 @@ TEST(
     world.commit();
 
     WorkerLookup lookup(world, {worker});
-    Scheduler jobScheduler;
+    JobQueue jobScheduler;
     SystemScheduler systemScheduler;
     static_cast<void>(systemScheduler.createPhase("dispatch"));
     TaskRegistry registry;
@@ -113,15 +113,15 @@ TEST(
         },
     });
 
-    EXPECT_EQ(jobScheduler.pending(), 2U);
+    EXPECT_EQ(jobScheduler.scheduler().pending(), 2U);
     EXPECT_EQ(
         registry.allTasks()[1].dependsOn,
         (std::optional<TaskDependency>{TaskDependency{1, "First"}}));
 
     lookup.refresh();
-    const auto firstRun = jobScheduler.run(0, lookup.idleCount());
+    const auto firstRun = jobScheduler.scheduler().run(0, lookup.idleCount());
     EXPECT_EQ(firstRun.size(), 1U);
-    EXPECT_EQ(jobScheduler.pending(), 1U);
+    EXPECT_EQ(jobScheduler.scheduler().pending(), 1U);
 }
 
 TEST(TaskSubmissionSinkTest, PayloadThatIsNotValidJsonThrows)
@@ -133,7 +133,7 @@ TEST(TaskSubmissionSinkTest, PayloadThatIsNotValidJsonThrows)
     world.commit();
 
     WorkerLookup lookup(world, {worker});
-    Scheduler jobScheduler;
+    JobQueue jobScheduler;
     SystemScheduler systemScheduler;
     static_cast<void>(systemScheduler.createPhase("dispatch"));
     TaskRegistry registry;
@@ -160,7 +160,7 @@ TEST(TaskSubmissionSinkTest, PayloadMissingDurationTicksFieldThrows)
     world.commit();
 
     WorkerLookup lookup(world, {worker});
-    Scheduler jobScheduler;
+    JobQueue jobScheduler;
     SystemScheduler systemScheduler;
     static_cast<void>(systemScheduler.createPhase("dispatch"));
     TaskRegistry registry;
@@ -187,7 +187,7 @@ TEST(TaskSubmissionSinkTest, PayloadMissingLabelFieldThrows)
     world.commit();
 
     WorkerLookup lookup(world, {worker});
-    Scheduler jobScheduler;
+    JobQueue jobScheduler;
     SystemScheduler systemScheduler;
     static_cast<void>(systemScheduler.createPhase("dispatch"));
     TaskRegistry registry;
@@ -214,7 +214,7 @@ TEST(TaskSubmissionSinkTest, NonNumericFieldThrows)
     world.commit();
 
     WorkerLookup lookup(world, {worker});
-    Scheduler jobScheduler;
+    JobQueue jobScheduler;
     SystemScheduler systemScheduler;
     static_cast<void>(systemScheduler.createPhase("dispatch"));
     TaskRegistry registry;
@@ -242,7 +242,7 @@ TEST(TaskSubmissionSinkTest, PayloadWithNonStringLabelThrows)
     world.commit();
 
     WorkerLookup lookup(world, {worker});
-    Scheduler jobScheduler;
+    JobQueue jobScheduler;
     SystemScheduler systemScheduler;
     static_cast<void>(systemScheduler.createPhase("dispatch"));
     TaskRegistry registry;
@@ -270,7 +270,7 @@ TEST(TaskSubmissionSinkTest, ZeroDurationTicksThrows)
     world.commit();
 
     WorkerLookup lookup(world, {worker});
-    Scheduler jobScheduler;
+    JobQueue jobScheduler;
     SystemScheduler systemScheduler;
     static_cast<void>(systemScheduler.createPhase("dispatch"));
     TaskRegistry registry;
@@ -298,7 +298,7 @@ TEST(TaskSubmissionSinkTest, PriorityAboveUInt8RangeThrows)
     world.commit();
 
     WorkerLookup lookup(world, {worker});
-    Scheduler jobScheduler;
+    JobQueue jobScheduler;
     SystemScheduler systemScheduler;
     static_cast<void>(systemScheduler.createPhase("dispatch"));
     TaskRegistry registry;
@@ -326,7 +326,7 @@ TEST(TaskSubmissionSinkTest, DuplicateTaskIdThrows)
     world.commit();
 
     WorkerLookup lookup(world, {worker});
-    Scheduler jobScheduler;
+    JobQueue jobScheduler;
     SystemScheduler systemScheduler;
     static_cast<void>(systemScheduler.createPhase("dispatch"));
     TaskRegistry registry;
@@ -368,7 +368,7 @@ TEST(
     world.commit();
 
     WorkerLookup lookup(world, {worker});
-    Scheduler jobScheduler;
+    JobQueue jobScheduler;
     SystemScheduler systemScheduler;
     static_cast<void>(systemScheduler.createPhase("dispatch"));
     TaskRegistry registry;
@@ -407,7 +407,7 @@ TEST(TaskSubmissionSinkTest, PayloadWithNonNumericDependsOnIdThrows)
     world.commit();
 
     WorkerLookup lookup(world, {worker});
-    Scheduler jobScheduler;
+    JobQueue jobScheduler;
     SystemScheduler systemScheduler;
     static_cast<void>(systemScheduler.createPhase("dispatch"));
     TaskRegistry registry;
@@ -444,7 +444,7 @@ TEST(TaskSubmissionSinkTest, UnresolvableDependsOnIdThrows)
     world.commit();
 
     WorkerLookup lookup(world, {worker});
-    Scheduler jobScheduler;
+    JobQueue jobScheduler;
     SystemScheduler systemScheduler;
     static_cast<void>(systemScheduler.createPhase("dispatch"));
     TaskRegistry registry;
@@ -472,7 +472,7 @@ TEST(TaskSubmissionSinkTest, TickEventCommitsAndRunsSystemScheduler)
     world.commit();
 
     WorkerLookup lookup(world, {worker});
-    Scheduler jobScheduler;
+    JobQueue jobScheduler;
     SystemScheduler systemScheduler;
     TaskRegistry registry;
     TaskDispatchSystem dispatchSystem(jobScheduler, lookup, registry);
@@ -494,7 +494,7 @@ TEST(TaskSubmissionSinkTest, TickEventCommitsAndRunsSystemScheduler)
         .event = Event{.name = antwika::engine::events::kTick},
     });
 
-    EXPECT_TRUE(jobScheduler.empty());
+    EXPECT_TRUE(jobScheduler.scheduler().empty());
     EXPECT_EQ(
         world.get<Worker>(worker),
         (Worker{WorkerStatus::Busy, 3, 1, makeName("Alpha")}));

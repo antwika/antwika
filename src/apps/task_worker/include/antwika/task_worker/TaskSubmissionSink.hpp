@@ -8,8 +8,8 @@
 #include <antwika/ecs/World.hpp>
 #include <antwika/event/ITickEventSink.hpp>
 #include <antwika/scheduler/JobId.hpp>
-#include <antwika/scheduler/Scheduler.hpp>
 
+#include "antwika/task_worker/JobQueue.hpp"
 #include "antwika/task_worker/TaskJob.hpp"
 #include "antwika/task_worker/TaskRegistry.hpp"
 #include "antwika/task_worker/WorkerLookup.hpp"
@@ -22,7 +22,6 @@ namespace antwika::task_worker
     using antwika::event::ITickEventSink;
     using antwika::event::TickEvent;
     using antwika::scheduler::JobId;
-    using antwika::scheduler::Scheduler;
 
     /**
      * @brief Drives the ECS world and job scheduler from the same
@@ -44,8 +43,9 @@ namespace antwika::task_worker
          * @brief Construct the sink over its collaborators.
          * @param world World committed on every tick.
          * @param systemScheduler Run once per tick, after the commit.
-         * @param jobScheduler Scheduler each parsed task is scheduled
-         * on.
+         * @param jobs Holds the scheduler each parsed task is
+         * scheduled on -- reached per call, since load_state may
+         * replace it mid-run.
          * @param lookup Worker lookup each TaskJob claims workers
          * through.
          * @param registry Task registry each parsed task's identity is
@@ -54,7 +54,7 @@ namespace antwika::task_worker
         TaskSubmissionSink(
             World &world,
             SystemScheduler &systemScheduler,
-            Scheduler &jobScheduler,
+            JobQueue &jobs,
             WorkerLookup &lookup,
             TaskRegistry &registry);
 
@@ -74,17 +74,42 @@ namespace antwika::task_worker
          */
         void handle(const TickEvent &event) override;
 
-    private:
+        /**
+         * @brief One accepted task.submit, as this sink remembers it.
+         *
+         * What duplicate-id refusal and dependsOnId resolution both
+         * read; jobId is kInvalidJobId for a task a restore found
+         * already started or finished, whose dependency edge is
+         * therefore already satisfied.
+         */
         struct Submission
         {
             std::uint64_t taskId;
             JobId jobId;
             std::string label;
+
+            bool operator==(const Submission &other) const = default;
         };
 
+        /**
+         * @brief Get every accepted submission, oldest first.
+         * @return The submissions, jobIds included.
+         */
+        [[nodiscard]] const std::vector<Submission> &
+        submissions() const noexcept;
+
+        /**
+         * @brief Replace the accepted list with a loaded dump's.
+         * @param replacement The submissions, in their original order,
+         * each Pending task carrying its renumbered JobId and every
+         * other task kInvalidJobId.
+         */
+        void restore(std::vector<Submission> replacement);
+
+    private:
         World &world;
         SystemScheduler &systemScheduler;
-        Scheduler &jobScheduler;
+        JobQueue &jobs;
         WorkerLookup &lookup;
         TaskRegistry &registry;
         std::vector<Submission> submitted;

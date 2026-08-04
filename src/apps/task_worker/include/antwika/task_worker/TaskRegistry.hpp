@@ -153,6 +153,22 @@ namespace antwika::task_worker
         void noteDispatch(std::size_t budget, std::size_t dispatched);
 
         /**
+         * @brief Replace every entry with a loaded dump's task list.
+         * @param tasks The tasks, in their original submission order.
+         * @param lastDispatch The dispatch the dump was taken after.
+         *
+         * The caller re-schedules every Pending entry, in this list's
+         * order, on a fresh scheduler whose JobIds start at 1 again --
+         * so the Nth Pending entry holds new JobId N, and this call
+         * records exactly that numbering.
+         * That shared invariant is what keeps markStarted() resolving
+         * a renumbered JobId to the right task afterwards; see
+         * TaskWorkerSnapshotStore, the one caller.
+         */
+        void restore(
+            std::vector<TaskInfo> tasks, DispatchInfo lastDispatch);
+
+        /**
          * @brief Get every submitted task's current status.
          * @return Tasks in submission (ascending JobId) order.
          */
@@ -167,8 +183,13 @@ namespace antwika::task_worker
     private:
         [[nodiscard]] TaskInfo *findByTaskId(std::uint64_t taskId);
 
-        // Indexed by rawValue(jobId) - 1.
+        // In submission order, which restore() preserves.
         std::vector<TaskInfo> entries;
+
+        // Maps rawValue(jobId) - 1 to an index into entries.
+        // Identity until a restore renumbers the pending tasks.
+        std::vector<std::size_t> startTargets;
+
         DispatchInfo dispatch;
     };
 
