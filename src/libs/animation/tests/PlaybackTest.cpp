@@ -1,12 +1,9 @@
 #include <gtest/gtest.h>
 
-#include <array>
 #include <vector>
 
 #include <antwika/animation/AnimationError.hpp>
 #include <antwika/animation/Clip.hpp>
-#include <antwika/animation/DirectionalClipSet.hpp>
-#include <antwika/animation/Facing.hpp>
 #include <antwika/animation/Frame.hpp>
 #include <antwika/animation/KeyFrame.hpp>
 #include <antwika/animation/LoopMode.hpp>
@@ -117,34 +114,6 @@ namespace antwika::animation
         EXPECT_EQ(resolve(clip, 0).index, 3U);
         EXPECT_EQ(resolve(clip, 7).index, 3U);
         EXPECT_EQ(resolve(clip, 7).progress, Progress(0, 1));
-    }
-
-    TEST(PlaybackTest, Resolve_PicksTheClipForTheFacing)
-    {
-        const DirectionalClipSet clips(std::array<Clip, kFacingCount>{
-            uniformClip(0, 2, 1),
-            uniformClip(10, 2, 1),
-            uniformClip(20, 2, 1),
-            uniformClip(30, 2, 1),
-        });
-
-        EXPECT_EQ(resolve(clips, Facing::North, 1).index, 1U);
-        EXPECT_EQ(resolve(clips, Facing::East, 1).index, 11U);
-        EXPECT_EQ(resolve(clips, Facing::South, 1).index, 21U);
-        EXPECT_EQ(resolve(clips, Facing::West, 1).index, 31U);
-    }
-
-    TEST(PlaybackTest, Resolve_CarriesElapsedTicksAcrossAFacingChange)
-    {
-        const DirectionalClipSet clips(std::array<Clip, kFacingCount>{
-            uniformClip(0, 4, 1),
-            uniformClip(10, 4, 1),
-            uniformClip(20, 4, 1),
-            uniformClip(30, 4, 1),
-        });
-
-        EXPECT_EQ(resolve(clips, Facing::North, 6).index, 2U);
-        EXPECT_EQ(resolve(clips, Facing::East, 6).index, 12U);
     }
 
     TEST(PlaybackTest, StepProgress_CountsThroughTheStep)

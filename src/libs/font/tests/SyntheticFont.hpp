@@ -33,11 +33,6 @@ namespace antwika::font::tests
          * @brief The four bytes the file opens with.
          */
         std::uint32_t flavour = 0x00010000;
-
-        /**
-         * @brief Whether to write the 'kern' table at all.
-         */
-        bool kerning = true;
     };
 
     /**

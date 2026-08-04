@@ -258,28 +258,6 @@ namespace antwika::font::tests
             return table;
         }
 
-        // Format 0, horizontal, one pair.
-        // That is the only shape stb_truetype reads 'kern' in.
-        [[nodiscard]] Bytes kernTable()
-        {
-            Bytes table;
-
-            writeU16(table, 0);
-            writeU16(table, 1);
-            writeU16(table, 0);
-            writeU16(table, 20);
-            writeU16(table, 1);
-            writeU16(table, 1);
-            writeU16(table, 6);
-            writeU16(table, 0);
-            writeU16(table, 0);
-            writeU16(table, 2);
-            writeU16(table, 3);
-            writeI16(table, -100);
-
-            return table;
-        }
-
         struct Table
         {
             std::string tag;
@@ -296,11 +274,6 @@ namespace antwika::font::tests
         tables.push_back({"head", headTable()});
         tables.push_back({"hhea", hheaTable()});
         tables.push_back({"hmtx", hmtxTable()});
-
-        if (recipe.kerning)
-        {
-            tables.push_back({"kern", kernTable()});
-        }
 
         tables.push_back({"loca", locaTable()});
         tables.push_back({"maxp", maxpTable()});

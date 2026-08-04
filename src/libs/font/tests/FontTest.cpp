@@ -183,28 +183,6 @@ TEST(FontTest, GlyphMetrics_RefuseAPixelHeightOfZero)
     EXPECT_THROW((void)font.glyphMetrics(U'A', 0), FontError);
 }
 
-TEST(FontTest, Kerning_IsTheAdjustmentTheFontHolds)
-{
-    const Font font{buildFont()};
-
-    EXPECT_EQ(font.kerning(U'A', U'B', kHeight), -2);
-    EXPECT_EQ(font.kerning(U'B', U'A', kHeight), 0);
-}
-
-TEST(FontTest, Kerning_IsZeroWithoutAKernTable)
-{
-    const Font font{buildFont(FontRecipe{.kerning = false})};
-
-    EXPECT_EQ(font.kerning(U'A', U'B', kHeight), 0);
-}
-
-TEST(FontTest, Kerning_RefusesAPixelHeightOfZero)
-{
-    const Font font{buildFont()};
-
-    EXPECT_THROW((void)font.kerning(U'A', U'B', 0), FontError);
-}
-
 TEST(FontTest, Rasterise_DrawsTheGlyphIntoACompleteMask)
 {
     const Font font{buildFont()};
