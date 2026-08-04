@@ -20,16 +20,22 @@
 #include <antwika/replay/ReplaySource.hpp>
 #include <antwika/testing/ScratchPath.hpp>
 
+#include "TestTranslator.hpp"
+#include "WidgetPixel.hpp"
 #include "antwika/game/AppMode.hpp"
 #include "antwika/game/BuildingIndex.hpp"
 #include "antwika/game/Camera.hpp"
+#include "antwika/game/MainMenuScene.hpp"
 #include "antwika/game/ConsoleScene.hpp"
 #include "antwika/game/ConsoleSink.hpp"
 #include "antwika/game/ConsoleState.hpp"
 #include "antwika/game/Desirability.hpp"
+#include "antwika/game/Events.hpp"
 #include "antwika/game/Game.hpp"
 #include "antwika/game/GridExtent.hpp"
 #include "antwika/game/IsoProjection.hpp"
+#include "antwika/game/KeyboardEvent.hpp"
+#include "antwika/game/KeyboardLayout.hpp"
 #include "antwika/game/LocaleState.hpp"
 #include "antwika/game/MapView.hpp"
 #include "antwika/game/OptionsState.hpp"
@@ -86,6 +92,8 @@ namespace
 
     // The keys that type one command, one press per character.
     // Only what the two commands need: letters, underscore, space.
+    // A run types by the Swedish board unless told otherwise.
+    // So the underscore is shift over the American slash position.
     void typeText(
         std::vector<TickEvent> &events,
         const InputEventCodec &codec,
@@ -96,7 +104,7 @@ namespace
         {
             if (character == '_')
             {
-                events.push_back(keyAt(codec, tick, Key::Minus, true));
+                events.push_back(keyAt(codec, tick, Key::Slash, true));
                 continue;
             }
 
@@ -125,17 +133,23 @@ namespace
     // BootstrapTest's harness, with the console turned on.
     struct ConsoleHarness
     {
+        explicit ConsoleHarness(AppMode start = AppMode::CityMap)
+            : mode{start}
+        {
+        }
+
         NiceMock<MockLogger> logger;
         NiceMock<MockEventSink> eventSink;
         InputEventCodec codec;
         Camera camera;
         antwika::game::PathIndex paths;
         antwika::game::BuildingIndex built;
-        AppModeState mode{AppMode::CityMap};
+        AppModeState mode;
         antwika::game::PauseState pause;
         antwika::game::RoadDrag drag;
         antwika::game::MapViewState mapView;
         antwika::game::DesirabilityField desirability;
+        antwika::game::UiOverlay menuOverlay{antwika::game::kUiCanvas};
         antwika::game::UiOverlay consoleOverlay{antwika::game::kUiCanvas};
 
         antwika::game::GameSummary run(
@@ -160,6 +174,7 @@ namespace
                 .desirability = desirability,
                 .drag = drag,
                 .maxTicks = maxTicks,
+                .menuOverlay = menuOverlay,
                 .consoleOverlay = consoleOverlay,
                 .consoleLoadEnabled = loadEnabled,
                 .stateDumpPath = dumpPath};
@@ -434,6 +449,138 @@ TEST(ConsoleSinkTest, ADownPaletteSurvivesTheRoundTrip)
     EXPECT_EQ(summary.paths, dumped.save.paths);
 }
 
+TEST(ConsoleSinkTest, TheConsoleOpensOverTheMainMenu)
+{
+    ConsoleHarness harness{AppMode::MainMenu};
+    std::vector<TickEvent> events{keyAt(harness.codec, 1, Key::Grave)};
+    typeText(events, harness.codec, kOpenTick, "hello");
+    events.push_back(keyAt(harness.codec, kOpenTick, Key::Enter));
+    events.push_back(stopAt(kOpenTick + 1));
+    ReplaySource source(std::move(events));
+
+    const auto summary = harness.run(source, 40, "unused.json");
+
+    EXPECT_EQ(
+        summary.console,
+        (std::vector<std::string>{
+            "> hello", "unknown command: hello"}));
+}
+
+TEST(ConsoleSinkTest, WhatTheSheetCoversTheMenuNeverSees)
+{
+    const antwika::game::MainMenuScene scene{
+        antwika::game::tests::kTranslator};
+    const auto frame =
+        scene.describe(antwika::game::kUiCanvas, antwika::ui::Pointer{});
+
+    const auto newGame = antwika::game::tests::widgetCentre(
+        frame, antwika::game::menuWidgets::kNewGame);
+    const auto quit = antwika::game::tests::widgetCentre(
+        frame, antwika::game::menuWidgets::kQuit);
+    ASSERT_TRUE(newGame.has_value());
+    ASSERT_TRUE(quit.has_value());
+
+    // One button under the sheet and one below it.
+    const auto sheet = static_cast<std::int32_t>(
+        antwika::game::kUiCanvas.height / 2);
+    ASSERT_LT(newGame->y, sheet);
+    ASSERT_GT(quit->y, sheet);
+
+    ConsoleHarness harness{AppMode::MainMenu};
+
+    const auto pressAt = [&harness](Tick tick, antwika::gfx::Point at)
+    {
+        return TickEvent{
+            .tick = tick,
+            .event = harness.codec.encode(
+                antwika::input::PointerButtonPressed{
+                    .button = MouseButton::Left,
+                    .position = {.x = at.x, .y = at.y}})};
+    };
+
+    std::vector<TickEvent> events{keyAt(harness.codec, 1, Key::Grave)};
+
+    // New Game under the sheet starts nothing.
+    // Quit below it still quits, which is what ends this run.
+    events.push_back(pressAt(kOpenTick, *newGame));
+    events.push_back(pressAt(kOpenTick, *quit));
+    events.push_back(stopAt(kOpenTick + 5));
+    ReplaySource source(std::move(events));
+
+    const auto summary = harness.run(source, 40, "unused.json");
+
+    EXPECT_EQ(summary.state.ticksProcessed, kOpenTick + 1);
+    EXPECT_TRUE(summary.console.empty());
+}
+
+TEST(ConsoleSinkTest, DumpStateWorksFromTheMainMenu)
+{
+    const antwika::testing::ScratchFile file(
+        "antwika_game_console_menu_dump.json");
+    const auto path = file.path().string();
+
+    ConsoleHarness harness{AppMode::MainMenu};
+    std::vector<TickEvent> events{keyAt(harness.codec, 1, Key::Grave)};
+    typeText(events, harness.codec, kOpenTick, "dump_state");
+    events.push_back(keyAt(harness.codec, kOpenTick, Key::Enter));
+    events.push_back(stopAt(kOpenTick + 1));
+    ReplaySource source(std::move(events));
+
+    const auto summary = harness.run(source, 40, path);
+
+    // The dump is the live session, whichever screen was up.
+    const auto dumped = antwika::game::loadStateDump(path);
+
+    EXPECT_TRUE(dumped.save.paths.empty());
+    EXPECT_EQ(summary.console, dumped.console);
+}
+
+TEST(ConsoleSinkTest, TheAnnouncedBoardDecidesWhatAKeyTypes)
+{
+    // By default the American minus position prints a Swedish plus.
+    {
+        ConsoleHarness harness;
+        std::vector<TickEvent> events{
+            keyAt(harness.codec, 1, Key::Grave)};
+        events.push_back(keyAt(harness.codec, kOpenTick, Key::Comma));
+        events.push_back(keyAt(harness.codec, kOpenTick, Key::Enter));
+        events.push_back(stopAt(kOpenTick + 1));
+        ReplaySource source(std::move(events));
+
+        const auto summary = harness.run(source, 40, "unused.json");
+
+        EXPECT_EQ(
+            summary.console,
+            (std::vector<std::string>{"> ,", "unknown command: ,"}));
+    }
+
+    // Announced English, the same position types by that board.
+    {
+        ConsoleHarness harness;
+        std::vector<TickEvent> events{
+            TickEvent{
+                .tick = 1,
+                .event =
+                    Event{
+                        .name = antwika::game::events::kSetKeyboard,
+                        .payload = antwika::game::setKeyboardPayload(
+                            antwika::game::KeyboardLayout::English)}},
+            keyAt(harness.codec, 1, Key::Grave)};
+        events.push_back(keyAt(harness.codec, kOpenTick, Key::Comma));
+        events.push_back(keyAt(harness.codec, kOpenTick, Key::Enter));
+        events.push_back(stopAt(kOpenTick + 1));
+        ReplaySource source(std::move(events));
+
+        const auto summary = harness.run(source, 40, "unused.json");
+
+        // The American comma position types nothing this build maps.
+        // So the field stays empty and Enter says nothing at all.
+        EXPECT_TRUE(summary.console.empty());
+        EXPECT_EQ(
+            summary.keyboard, antwika::game::KeyboardLayout::English);
+    }
+}
+
 TEST(ConsoleSinkTest, AnEmptyLineExecutesNothing)
 {
     ConsoleHarness harness;
@@ -662,7 +809,6 @@ namespace
         antwika::game::ConsoleSink sink{
             antwika::game::ConsoleSinkSetup{
                 .console = console,
-                .mode = mode,
                 .options = options,
                 .input = input,
                 .overlay = overlay,
@@ -706,35 +852,6 @@ namespace
         }
     };
 } // namespace
-
-TEST(ConsoleSinkTest, LeavingTheCityClosesTheConsole)
-{
-    SinkHarness harness;
-    harness.openFully();
-
-    ASSERT_TRUE(harness.console.acceptsText());
-
-    // The mode lands at the tick boundary, and the console follows.
-    harness.mode.request(AppMode::MainMenu);
-    harness.feedTick(kConsoleAnimTicks + 1);
-
-    EXPECT_FALSE(harness.console.visible());
-}
-
-TEST(ConsoleSinkTest, TheToggleOpensNothingOffTheCityScreen)
-{
-    SinkHarness harness;
-    harness.mode.request(AppMode::MainMenu);
-    harness.feedTick(1);
-
-    harness.feed(TickEvent{
-        .tick = 2,
-        .event =
-            harness.codec.encode(KeyPressed{.key = Key::Grave})});
-    harness.feedTick(2);
-
-    EXPECT_FALSE(harness.console.visible());
-}
 
 TEST(ConsoleSinkTest, ARepeatOfTheToggleKeyIsAHeldKeyNotAPress)
 {

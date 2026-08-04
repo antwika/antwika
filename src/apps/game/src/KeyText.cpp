@@ -1,5 +1,7 @@
 #include "antwika/game/KeyText.hpp"
 
+#include <array>
+#include <cstddef>
 #include <cstdint>
 
 namespace antwika::game
@@ -29,7 +31,55 @@ namespace antwika::game
         return std::nullopt;
     }
 
-    char typedCharacterFor(Key key, bool shift) noexcept
+    namespace
+    {
+        // What shift over each digit types on a Swedish board.
+        // The currency sign over 4 is not ASCII, so it types nothing.
+        constexpr std::array<char, 10> kSwedishShiftedDigits{
+            '=', '!', '"', '#', '\0', '%', '&', '/', '(', ')'};
+
+        [[nodiscard]] char englishPunctuation(
+            Key key, bool shift) noexcept
+        {
+            switch (key)
+            {
+            case Key::Minus:
+                // The shifted hyphen, since a file name often wants one.
+                return shift ? '_' : '-';
+            case Key::Period:
+                return shift ? '\0' : '.';
+            default:
+                break;
+            }
+
+            return '\0';
+        }
+
+        [[nodiscard]] char swedishPunctuation(
+            Key key, bool shift) noexcept
+        {
+            // Named by where the key *is* -- the American position.
+            // What it says is what a Swedish board prints there.
+            switch (key)
+            {
+            case Key::Minus:
+                return shift ? '?' : '+';
+            case Key::Slash:
+                return shift ? '_' : '-';
+            case Key::Period:
+                return shift ? ':' : '.';
+            case Key::Comma:
+                return shift ? ';' : ',';
+            default:
+                break;
+            }
+
+            return '\0';
+        }
+    } // namespace
+
+    char typedCharacterFor(
+        Key key, bool shift, KeyboardLayout layout) noexcept
     {
         const auto index = static_cast<std::uint8_t>(key);
 
@@ -38,10 +88,22 @@ namespace antwika::game
         // Letters first would leave "at least Digit0" always true here.
         // That is a branch no test could take.
         // And Key.hpp says the order may be changed anyway.
-        if (key >= Key::Digit0 && key <= Key::Digit9 && !shift)
+        if (key >= Key::Digit0 && key <= Key::Digit9)
         {
-            return static_cast<char>(
-                '0' + (index - static_cast<std::uint8_t>(Key::Digit0)));
+            const auto digit =
+                index - static_cast<std::uint8_t>(Key::Digit0);
+
+            if (!shift)
+            {
+                return static_cast<char>('0' + digit);
+            }
+
+            // Only the Swedish board says what shift over one types.
+            // The American row's symbols are not what save names need.
+            return layout == KeyboardLayout::Swedish
+                       ? kSwedishShiftedDigits[static_cast<std::size_t>(
+                             digit)]
+                       : '\0';
         }
 
         if (key >= Key::A && key <= Key::Z)
@@ -51,20 +113,14 @@ namespace antwika::game
             return static_cast<char>((shift ? 'A' : 'a') + offset);
         }
 
-        switch (key)
+        if (key == Key::Space)
         {
-        case Key::Space:
             return ' ';
-        case Key::Minus:
-            // The shifted hyphen, since a file name often wants one.
-            return shift ? '_' : '-';
-        case Key::Period:
-            return shift ? '\0' : '.';
-        default:
-            break;
         }
 
-        return '\0';
+        return layout == KeyboardLayout::Swedish
+                   ? swedishPunctuation(key, shift)
+                   : englishPunctuation(key, shift);
     }
 
 } // namespace antwika::game

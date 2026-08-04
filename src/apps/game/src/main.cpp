@@ -45,6 +45,7 @@
 #include "antwika/game/GridExtent.hpp"
 #include "antwika/game/GridScene.hpp"
 #include "antwika/game/KeyBindings.hpp"
+#include "antwika/game/KeyboardSource.hpp"
 #include "antwika/game/MainMenuScene.hpp"
 #include "antwika/game/MapView.hpp"
 #include "antwika/game/Messages.hpp"
@@ -375,6 +376,9 @@ namespace
         // A replay is handed nothing, so the recording's is what lands.
         antwika::game::LocaleSource localised(bound, machine.locale);
 
+        // And the board the typing is read off, on the same terms.
+        antwika::game::KeyboardSource typed(localised, machine.keyboard);
+
         const auto saveOptions =
             antwika::game::saveCliOptionsFrom(recorded.commandLine);
 
@@ -394,7 +398,7 @@ namespace
             antwika::game::bootstrap(antwika::game::GameWiring{
                 .logger = logger,
                 .eventSink = recorded.eventSink,
-                .inputSource = localised,
+                .inputSource = typed,
                 .codec = codec,
                 .extent = kExtent,
                 .camera = camera,

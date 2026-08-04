@@ -6,6 +6,7 @@
 
 #include "antwika/game/Action.hpp"
 #include "antwika/game/KeyBindings.hpp"
+#include "antwika/game/KeyboardLayout.hpp"
 
 namespace antwika::game
 {
@@ -141,12 +142,31 @@ namespace antwika::game
          */
         void setLocale(antwika::i18n::Locale locale) noexcept;
 
+        /**
+         * @brief Get the board the run's typing is read off.
+         *
+         * Simulation state exactly as the bindings are: what a key
+         * press *types* depends on it, so it is folded in the tick
+         * path, announced at a live run's start by KeyboardSource,
+         * and changed by a recorded click on the options screen.
+         *
+         * @return The layout every typed character goes through.
+         */
+        [[nodiscard]] KeyboardLayout keyboard() const noexcept;
+
+        /**
+         * @brief Take the board the player, or an announcement, named.
+         * @param layout The layout typing now goes through.
+         */
+        void setKeyboard(KeyboardLayout layout) noexcept;
+
     private:
         KeyBindings current{};
         std::optional<Action> pending{};
         std::optional<BindOutcome> last{};
         bool showing = false;
         antwika::i18n::Locale language{antwika::i18n::kDefaultLocale};
+        KeyboardLayout typing{kDefaultKeyboardLayout};
     };
 
 } // namespace antwika::game

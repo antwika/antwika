@@ -152,6 +152,36 @@ namespace antwika::game
                          .width = kGrow});
                 }
 
+                {
+                    // One row rather than a section of its own.
+                    // The card has to stay inside the canvas's height.
+                    const auto row = ui.row({.width = kGrow});
+
+                    ui.label(
+                        translator.text(MessageId::OptionsKeyboard));
+
+                    for (const auto layout : kKeyboardLayouts)
+                    {
+                        auto name = translator.text(
+                            keyboardLayoutLabel(layout));
+
+                        // Marked as the language rows mark theirs.
+                        // The active board is a caption, not a colour.
+                        if (layout == state.keyboard())
+                        {
+                            name = translator.formatted(
+                                MessageId::OptionsLanguageActive,
+                                std::array<std::string_view, 1>{name});
+                        }
+
+                        ui.button(
+                            name,
+                            {.id = optionsWidgets::keyboardWidget(
+                                 layout),
+                             .width = kGrow});
+                    }
+                }
+
                 ui.button(
                     translator.text(MessageId::OptionsBack),
                     {.id = optionsWidgets::kBack, .width = kGrow});

@@ -45,10 +45,15 @@ namespace antwika::game
             binding["properties"]["key"]["type"] = "string";
 
             schema["required"] = {
-                "magic", "bindings", "locale"}; // GCOVR_EXCL_LINE
+                "magic",
+                "bindings",
+                "locale",
+                "keyboard"}; // GCOVR_EXCL_LINE
             schema["properties"]["bindings"]["type"] = "array";
             schema["properties"]["bindings"]["items"] = binding;
             schema["properties"][std::string(kLocaleKey)]["type"]
+                = "string";
+            schema["properties"][std::string(kKeyboardKey)]["type"]
                 = "string";
         }
 
@@ -114,13 +119,53 @@ namespace antwika::game
         };
     } // namespace
 
+    namespace
+    {
+        // Version 3 added the board the typed characters come off.
+        // A version 2 document was written before there was a choice.
+        // Every run before it typed by the shipped default's table.
+        // So it says the default now, and validates like a new one.
+        class OptionsV2ToV3 final : public antwika::replay::IMigration
+        {
+        public:
+            [[nodiscard]] std::uint32_t fromVersion() const noexcept
+                override
+            {
+                return 2;
+            }
+
+            [[nodiscard]] std::uint32_t toVersion() const noexcept
+                override
+            {
+                return 3;
+            }
+
+            // Only ever read to word a MigrationChain's refusal.
+            // OptionsV1ToV2 says why no input can reach it.
+            // GCOVR_EXCL_START
+            [[nodiscard]] std::string_view name() const noexcept override
+            {
+                return "options v2 -> v3: the keyboard layout";
+            }
+            // GCOVR_EXCL_STOP
+
+            void apply(nlohmann::json &document) const override
+            {
+                document[std::string(kKeyboardKey)] = std::string(
+                    keyboardLayoutName(kDefaultKeyboardLayout));
+            }
+        };
+    } // namespace
+
     MigrationChain standardOptionsMigrations()
     {
-        // Every branch left on the excluded line is the allocator's.
-        // The unwind edges of building a list of one shared_ptr.
+        // Every branch left on the excluded lines is the allocator's.
+        // The unwind edges of building a list of two shared_ptrs.
         antwika::replay::MigrationList migrations;
         migrations.push_back(
             std::make_shared<const OptionsV1ToV2>()); // GCOVR_EXCL_LINE
+        migrations.push_back(
+            std::make_shared<const OptionsV2ToV3>()); // GCOVR_EXCL_LINE
 
         return MigrationChain(
             std::move(migrations),
@@ -136,6 +181,8 @@ namespace antwika::game
 
             encoded[std::string(kLocaleKey)] =
                 std::string(antwika::i18n::tagOf(options.locale));
+            encoded[std::string(kKeyboardKey)] =
+                std::string(keyboardLayoutName(options.keyboard));
             encoded["bindings"] = nlohmann::json::array();
 
             for (const auto action : kActions)
@@ -203,7 +250,23 @@ namespace antwika::game
                     + tag);
             }
 
-            return PlayerOptions{.bindings = bindings, .locale = *locale};
+            const auto board =
+                document.at(std::string(kKeyboardKey))
+                    .get<std::string>();
+            const auto keyboard = keyboardLayoutFromName(board);
+
+            if (!keyboard.has_value())
+            {
+                throw OptionsFormatError(
+                    "antwika::game: options name a keyboard layout "
+                    "this build does not know: "
+                    + board);
+            }
+
+            return PlayerOptions{
+                .bindings = bindings,
+                .locale = *locale,
+                .keyboard = *keyboard};
         }
 
         const OptionsFormat &optionsFormat()
@@ -298,6 +361,7 @@ namespace antwika::game
         return MachineOptions{
             .bindings = stored.bindings,
             .locale = stored.locale,
+            .keyboard = stored.keyboard,
             .path = path};
     }
 

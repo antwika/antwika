@@ -5,6 +5,8 @@
 #include <antwika/input/Key.hpp>
 #include <antwika/ui/Keyboard.hpp>
 
+#include "antwika/game/KeyboardLayout.hpp"
+
 namespace antwika::game
 {
 
@@ -34,24 +36,31 @@ namespace antwika::game
         antwika::input::Key key, bool shift) noexcept;
 
     /**
-     * @brief Get the character a key types.
+     * @brief Get the character a key types, on one layout.
      *
      * A layout written down rather than asked of a window system, so
      * that what a recording holds is the symbolic key and the character
      * comes back identically under any backend on any keyboard. That is
      * the same reason InputEventCodec persists key names rather than
-     * scancodes -- and it is why a name typed on a French keyboard is
-     * the name a replay types on an American one.
+     * scancodes -- and which written-down layout a run types by is
+     * itself simulation state, announced onto the wire, so a session
+     * typed on one machine replays its characters on any other.
      *
-     * Letters, digits, space, hyphen and full stop, which is what a file
-     * name needs and no more: a key with no character here types
-     * nothing.
+     * ASCII only, deliberately: letters, digits, space and the
+     * punctuation a command or a file name needs.
+     * The Swedish letters would be two bytes each in the UTF-8 the UI
+     * holds, and a text field's caret and click arithmetic count
+     * bytes, so those three keys type nothing rather than something
+     * a caret would land inside.
      *
      * @param key The key that went down.
      * @param shift Whether shift was held.
+     * @param layout Which board decides what the position types.
      * @return The character, or '\0' when the key types none.
      */
     [[nodiscard]] char typedCharacterFor(
-        antwika::input::Key key, bool shift) noexcept;
+        antwika::input::Key key,
+        bool shift,
+        KeyboardLayout layout) noexcept;
 
 } // namespace antwika::game

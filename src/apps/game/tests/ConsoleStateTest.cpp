@@ -90,20 +90,6 @@ TEST(ConsoleStateTest, Toggle_ClosingTakesTheFieldWithIt)
     EXPECT_FALSE(console.acceptsText());
 }
 
-TEST(ConsoleStateTest, Close_PutsTheConsoleAwayAtOnce)
-{
-    ConsoleState console;
-    openFully(console);
-    console.setHeight(consoleHeightAt(console.steps(), kCanvas));
-
-    console.close();
-
-    EXPECT_FALSE(console.visible());
-    EXPECT_FALSE(console.acceptsText());
-    EXPECT_EQ(console.height(), 0U);
-    EXPECT_EQ(console.steps(), 0U);
-}
-
 TEST(ConsoleStateTest, ConsoleHeightAt_AnchorsBothEndsAndOnlyGrows)
 {
     EXPECT_EQ(consoleHeightAt(0, kCanvas), 0U);

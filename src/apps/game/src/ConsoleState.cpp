@@ -47,13 +47,6 @@ namespace antwika::game
         }
     }
 
-    void ConsoleState::close() noexcept
-    {
-        wanted = false;
-        along = 0;
-        tall = 0;
-    }
-
     bool ConsoleState::visible() const noexcept
     {
         return along > 0;

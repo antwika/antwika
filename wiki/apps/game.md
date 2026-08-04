@@ -870,8 +870,9 @@ Part way along, the sheet is an empty surface; fully open, it lists the newest `
 
 **The console is on top, and `ConsoleGatedSink` is how that is said.**
 While any of it is out, every key edge is the console's -- typing a space must not also pause the city -- and a press or a scroll above its bottom edge is too, while movements and releases still pass on the toolbar's own terms, so a pan begun on the city carries on across the sheet.
-The hotkey, toolbar, world-map and grid sinks are each wrapped in one, and the rule is stated where they are registered rather than inside them.
-The console itself gates on `AppMode::CityMap`, and leaving the city *closes* it outright: left open over another screen, its gates would swallow that screen's keys with the toggle gated off.
+Every sink that reads a key or a pixel is wrapped in one -- the menu, the picker, the hotkeys, the toolbar, the world map and the grid -- and the rule is stated where they are registered rather than inside them.
+**The console belongs to no mode**: a debugging surface has to be reachable from whichever screen the thing being debugged is on, so the toggle works over the main menu, the world map and the picker exactly as it works over the city, and `dump_state`/`load_state` act on the live session whichever screen is up.
+A toggle press while the options screen awaits a key is answered by both on purpose: the console opens, and the binding attempt is refused as `Taken` because the toggle already holds that key.
 
 **`dump_state` writes the instant to `dump_state.json`, and runs everywhere.**
 The document (`StateDump`, its own versioned format with its own migration chain) is a whole `SaveGame` plus the view around it: the pause, the selected tool, the map view, the language and the console's own history.
@@ -882,6 +883,12 @@ A dump is a write-only projection of state a replay reproduces, so a `--replay` 
 Under `--record` or `--replay` the command answers with a deterministic refusal line -- the console-level twin of `requireRecordableStart()`, and for its exact reason: a load reaches the session through no event, so a recording containing one would replay against a different city.
 The refusal being an ordinary history line is what keeps a hand-authored replay that types `load_state` reading exactly what a recorded run would have read.
 A live load restores through the very `SessionStore` the picker uses, stages the language change to the tick boundary through `LocaleState`, and replaces the console's history with the dump's own -- coming back to the instant means reading what it read.
+
+**What a key types is a layout written down, and which layout is an option.**
+[`input`](../libraries/input.md) reports where a key *is*, so `KeyText` keeps one typing table per `KeyboardLayout` -- English and Swedish QWERTY, ASCII only -- and every field in this app (the console's, the picker's name) types through the run's current one.
+The layout is simulation state on the bindings' exact terms: it defaults to `kDefaultKeyboardLayout` (Swedish, the board this project is written on), the machine's own choice is announced onto the wire once at a live run's start by `KeyboardSource` in `LocaleSource`'s shape, a replay announces nothing because the recording already holds it, and `GameSummary::keyboard` makes a divergence fail the replay comparison directly.
+It is picked on the options screen -- a row of its own beside the language buttons -- and deliberately independent of the language: what the captions say and what the keys type are different facts about a player, and an English reader on a Swedish board is exactly who this project's own author is.
+The options file carries it as version 3's one addition, with a migration writing the default into older files.
 
 **Every word the console says is a literal, not a `MessageId`.**
 A command language is a format, like a save file's kind names: `dump_state` is its name in every language, and history lines are state a dump carries, so wording them per locale would make the dumped console a function of the language it was typed under.

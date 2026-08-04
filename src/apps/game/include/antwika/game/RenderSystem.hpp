@@ -171,8 +171,8 @@ namespace antwika::game
         /**
          * @brief Read for the debug console's picture, painted last.
          *
-         * Over the toolbar and the modal alike, since the console is
-         * the topmost thing the city's screen can show.
+         * Over whichever mode's screen is up, since the console
+         * belongs to no mode and is the topmost thing the app shows.
          *
          * Optional, and absent by default, so a run with no console
          * pays nothing for one -- the same shape the map view has.
@@ -306,6 +306,10 @@ namespace antwika::game
 
     private:
         void drawMode(
+            antwika::gfx::IRenderer &renderer,
+            antwika::animation::Progress subTick);
+
+        void drawScreen(
             antwika::gfx::IRenderer &renderer,
             antwika::animation::Progress subTick);
 

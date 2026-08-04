@@ -8,6 +8,7 @@
 #include "antwika/game/CityRatings.hpp"
 #include "antwika/game/GameState.hpp"
 #include "antwika/game/KeyBindings.hpp"
+#include "antwika/game/KeyboardLayout.hpp"
 #include "antwika/game/SceneSnapshot.hpp"
 #include "antwika/game/Toolbar.hpp"
 
@@ -85,6 +86,20 @@ namespace antwika::game
          * which is what every summary held before this member existed.
          */
         std::vector<std::string> console;
+
+        /**
+         * @brief Which board the run's typing was read off at the end.
+         *
+         * **Here so that a divergence in the layout fails the replay
+         * comparison directly**, on the bindings' exact argument: the
+         * layout decides what every later key press types, so two
+         * runs disagreeing about it could type two different commands
+         * from one recording.
+         *
+         * A run that was never told otherwise ends on
+         * kDefaultKeyboardLayout.
+         */
+        KeyboardLayout keyboard{kDefaultKeyboardLayout};
 
         /**
          * @brief Which key asked for what, when the run ended.

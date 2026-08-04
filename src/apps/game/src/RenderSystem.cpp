@@ -150,6 +150,21 @@ namespace antwika::game
     void RenderSystem::drawMode(
         IRenderer &renderer, antwika::animation::Progress subTick)
     {
+        drawScreen(renderer, subTick);
+
+        // The console last of all, whichever screen is up.
+        // Described in the tick path like the bar, painted here only.
+        // No hover pass: nothing on it changes on approach.
+        if (setup.consoleOverlay.has_value())
+        {
+            antwika::ui::paint(
+                renderer, setup.consoleOverlay->get().commands());
+        }
+    }
+
+    void RenderSystem::drawScreen(
+        IRenderer &renderer, antwika::animation::Progress subTick)
+    {
         if (setup.mode.mode() == AppMode::MainMenu)
         {
             // The whole screen, with no grid behind it.
@@ -251,15 +266,6 @@ namespace antwika::game
                 renderer,
                 describeFps(
                     setup.canvas, setup.fps->get().perSecond()));
-        }
-
-        // The console last of all, when any of it is out.
-        // Described in the tick path like the bar, painted here only.
-        // No hover pass: nothing on it changes on approach.
-        if (setup.consoleOverlay.has_value())
-        {
-            antwika::ui::paint(
-                renderer, setup.consoleOverlay->get().commands());
         }
     }
 
