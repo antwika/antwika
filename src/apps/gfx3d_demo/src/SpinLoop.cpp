@@ -2,18 +2,16 @@
 
 #include <cstdint>
 #include <optional>
-#include <variant>
 
+#include <antwika/app/WindowEvents.hpp>
 #include <antwika/gfx/GfxError.hpp>
 #include <antwika/gfx/IRenderer.hpp>
 #include <antwika/gfx/IRenderer3D.hpp>
 #include <antwika/gfx/IWindow.hpp>
-#include <antwika/gfx/WindowEvent.hpp>
 
 namespace antwika::gfx3d_demo
 {
 
-    using antwika::gfx::CloseRequested;
     using antwika::gfx::GfxError;
 
     SpinLoop::SpinLoop(
@@ -59,19 +57,9 @@ namespace antwika::gfx3d_demo
              !maxFrames.has_value() || frame < maxFrames.value();
              ++frame)
         {
-            while (const auto event = backend.pollEvent())
+            if (antwika::app::closeRequestedOn(backend, window->id()))
             {
-                // The backend pumps one queue for all its windows.
-                // An event for somebody else's window is not ours.
-                if (event->window != window->id())
-                {
-                    continue;
-                }
-
-                if (std::holds_alternative<CloseRequested>(event->payload))
-                {
-                    window->close();
-                }
+                window->close();
             }
 
             if (!window->isOpen())

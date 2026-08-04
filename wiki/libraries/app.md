@@ -166,3 +166,12 @@ The two overloads of `paintOver()` are the whole reason it is a concept and not 
 **`drawsOn()` is deliberately not inside `presentFrame()`.** Three of the ten -- `life`, `task_worker` and `game` -- check neither the tick nor the window: they are `ecs::ISystem`s, so they only ever run on a tick, and window lifetime belongs to a composition root that keeps the window open for the whole run.
 A guard that can never be false is a branch the coverage gate would demand an impossible test for, which is [`blog/012`](../../blog/012-a-window-that-cant-talk-back.md)'s point, so the guard stays a separate call the six sinks that need it make and the systems do not.
 `poker` splits it further still, since `TableRenderSink::render()` is called from outside the tick as well.
+
+## Draining one window's events
+
+`closeRequestedOn()` takes everything the backend's queue holds and answers whether one window was asked to close.
+Four places were doing that by hand -- `WindowCloseSource`, `WindowInputSource` and the two demos' frame loops -- with the same two decisions in each: a backend pumps one queue for all of its windows, so an event belonging to somebody else's window is skipped, and the queue is drained past those anyway rather than left to grow without bound in a process nobody closes.
+
+**It says what was asked rather than acting on it**, which is the one thing the four callers do differently.
+A caller holding an `IWindow` closes it; one holding only a `gfx::WindowId` cannot, and emits `engine.stop` instead.
+That difference is the whole reason `WindowCloseSource` and `WindowInputSource` are two classes, so it stays at the call site and the draining does not.

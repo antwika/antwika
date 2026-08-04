@@ -17,6 +17,7 @@ add_executable(antwika_app_tests
     TickLimitSourceTest.cpp
     WavFileTest.cpp
     WindowCloseSourceTest.cpp
+    WindowEventsTest.cpp
     WindowInputSourceTest.cpp
     WindowedSessionTest.cpp
     WindowPointerMappingTest.cpp
