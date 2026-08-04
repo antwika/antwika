@@ -8,6 +8,7 @@
 #include <vector>
 
 #include <antwika/console/ConsolePicture.hpp>
+#include <antwika/console/conformance/ConsoleContract.hpp>
 #include <antwika/console/testing/ConsoleScript.hpp>
 #include <antwika/event/mocks/MockEventSink.hpp>
 #include <antwika/event/TickEvent.hpp>
@@ -35,7 +36,6 @@ using antwika::log::mocks::MockLogger;
 using antwika::replay::ReplaySource;
 using antwika::time::fakes::FakeClock;
 using ::testing::NiceMock;
-using ::testing::StartsWith;
 
 namespace
 {
@@ -77,22 +77,49 @@ namespace
             .maxTicks = 100});
     }
 
+    // This application's half of the shared console contract.
+    //
+    // It instantiates ConsoleContract and not the round trip.
+    // The room dumps itself mid-hand and reads no dump back.
+    // So there is no round trip here to hold to that promise.
+    struct PokerConsoleTraits
+    {
+        using Summary = antwika::poker::RoomSummary;
+
+        static Summary run(
+            std::vector<TickEvent> script,
+            const std::string &dumpPath,
+            const bool loadEnabled)
+        {
+            return ::run(std::move(script), dumpPath, loadEnabled);
+        }
+
+        static const std::vector<std::string> &console(
+            const Summary &summary)
+        {
+            return summary.console;
+        }
+
+        // A refused load leaves a hand nothing here can name.
+        // The room is dealt from a seed, so every number is the deal's.
+        static void expectUntouched(const Summary &)
+        {
+        }
+
+        static std::string scratchPrefix()
+        {
+            return "antwika_poker_console.";
+        }
+    };
 } // namespace
 
-TEST(ConsoleSinkTest, AnUnknownCommandIsEchoedAndRefused)
+namespace antwika::console::conformance
 {
-    InputEventCodec codec;
-    std::vector<TickEvent> events{keyAt(codec, 1, Key::Grave)};
-    typeText(events, codec, kOpenTick, "hello");
-    events.push_back(keyAt(codec, kOpenTick, Key::Enter));
 
-    const auto summary = run(std::move(events), "unused.json", true);
+    INSTANTIATE_TYPED_TEST_SUITE_P(
+        Poker, ConsoleContract, PokerConsoleTraits);
 
-    EXPECT_EQ(
-        summary.console,
-        (std::vector<std::string>{
-            "> hello", "unknown command: hello"}));
-}
+} // namespace antwika::console::conformance
 
 TEST(ConsoleSinkTest, DumpStateWritesTheRoomMidHand)
 {
@@ -113,40 +140,6 @@ TEST(ConsoleSinkTest, DumpStateWritesTheRoomMidHand)
             "> dump_state",
             "dumped state to " + file.path().string()}));
     EXPECT_TRUE(std::filesystem::exists(file.path()));
-}
-
-TEST(ConsoleSinkTest, LoadStateIsRefusedWhileRecordingOrReplaying)
-{
-    InputEventCodec codec;
-    std::vector<TickEvent> events{keyAt(codec, 1, Key::Grave)};
-    typeText(events, codec, kOpenTick, "load_state");
-    events.push_back(keyAt(codec, kOpenTick, Key::Enter));
-
-    const auto summary = run(std::move(events), "unused.json", false);
-
-    EXPECT_EQ(
-        summary.console,
-        (std::vector<std::string>{
-            "> load_state",
-            "load_state: not available while recording or "
-            "replaying"}));
-}
-
-TEST(ConsoleSinkTest, LoadStateAnswersAFileThatIsNotThere)
-{
-    const antwika::testing::ScratchFile file(
-        "antwika_poker_console_absent.json");
-
-    InputEventCodec codec;
-    std::vector<TickEvent> events{keyAt(codec, 1, Key::Grave)};
-    typeText(events, codec, kOpenTick, "load_state");
-    events.push_back(keyAt(codec, kOpenTick, Key::Enter));
-
-    const auto summary =
-        run(std::move(events), file.path().string(), true);
-
-    ASSERT_EQ(summary.console.size(), 2U);
-    EXPECT_THAT(summary.console[1], StartsWith("could not load: "));
 }
 
 TEST(ConsoleSinkTest, ARoomWithNoConsoleIgnoresTheKeys)

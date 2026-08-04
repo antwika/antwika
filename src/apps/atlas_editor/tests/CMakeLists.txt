@@ -30,6 +30,7 @@ antwika_add_app_tests(
         antwika::config
         antwika::config::tests::conformance
         antwika::console
+        antwika::console::tests::conformance
         antwika::engine
         antwika::event::tests::mocks
         antwika::gfx

@@ -11,6 +11,8 @@
 #include <antwika/console/ConsolePicture.hpp>
 #include <antwika/console/ConsoleState.hpp>
 #include <antwika/console/SnapshotFormat.hpp>
+#include <antwika/console/conformance/ConsoleContract.hpp>
+#include <antwika/console/conformance/ConsoleSnapshotRoundTrip.hpp>
 #include <antwika/console/testing/ConsoleScript.hpp>
 #include <antwika/event/mocks/MockEventSink.hpp>
 #include <antwika/event/TickEvent.hpp>
@@ -70,7 +72,6 @@ using antwika::replay::ReplaySource;
 using antwika::testing::ScratchDirectory;
 using antwika::time::Tick;
 using ::testing::NiceMock;
-using ::testing::StartsWith;
 
 namespace
 {
@@ -175,43 +176,55 @@ namespace
 
         return format.read(path);
     }
+
+    // This application's half of the shared console contract.
+    struct AtlasEditorConsoleTraits
+    {
+        using Summary = EditorSummary;
+
+        static Summary run(
+            std::vector<TickEvent> script,
+            const std::string &dumpPath,
+            const bool loadEnabled)
+        {
+            script.push_back(stopAt(kOpenTick + 1));
+
+            ReplaySource source(std::move(script));
+            ConsoleHarness harness;
+
+            return harness.run(source, 40, dumpPath, loadEnabled);
+        }
+
+        static const std::vector<std::string> &console(
+            const Summary &summary)
+        {
+            return summary.console;
+        }
+
+        static void expectUntouched(const Summary &summary)
+        {
+            EXPECT_EQ(summary.edits, 0U);
+        }
+
+        static std::string scratchPrefix()
+        {
+            return "antwika_atlas_editor_console.";
+        }
+    };
 } // namespace
 
-TEST(ConsoleSinkTest, AnUnknownCommandIsEchoedAndRefused)
+namespace antwika::console::conformance
 {
-    ConsoleHarness harness;
-    std::vector<TickEvent> events{keyAt(harness.codec, 1, Key::Grave)};
-    typeText(events, harness.codec, kOpenTick, "hello");
-    events.push_back(keyAt(harness.codec, kOpenTick, Key::Enter));
-    events.push_back(stopAt(kOpenTick + 1));
-    ReplaySource source(std::move(events));
 
-    const auto summary = harness.run(source, 40, "unused.json");
+    INSTANTIATE_TYPED_TEST_SUITE_P(
+        AtlasEditor, ConsoleContract, AtlasEditorConsoleTraits);
 
-    EXPECT_EQ(
-        summary.console,
-        (std::vector<std::string>{
-            "> hello", "unknown command: hello"}));
-}
+    INSTANTIATE_TYPED_TEST_SUITE_P(
+        AtlasEditor,
+        ConsoleSnapshotRoundTrip,
+        AtlasEditorConsoleTraits);
 
-TEST(ConsoleSinkTest, TypingBeforeFullyOpenReachesNoField)
-{
-    ConsoleHarness harness;
-    std::vector<TickEvent> events{keyAt(harness.codec, 1, Key::Grave)};
-
-    // Half way along the slide, none of this may land.
-    typeText(events, harness.codec, 3, "hello");
-    events.push_back(keyAt(harness.codec, 3, Key::Enter));
-
-    // Fully open, the field is still empty, so Enter says nothing.
-    events.push_back(keyAt(harness.codec, kOpenTick, Key::Enter));
-    events.push_back(stopAt(kOpenTick + 1));
-    ReplaySource source(std::move(events));
-
-    const auto summary = harness.run(source, 40, "unused.json");
-
-    EXPECT_TRUE(summary.console.empty());
-}
+} // namespace antwika::console::conformance
 
 TEST(ConsoleSinkTest, APressUnderTheSheetPaintsNoPixel)
 {
@@ -345,8 +358,6 @@ TEST(ConsoleSinkTest, LoadStateComesBackToTheDumpedInstant)
         harness.run(source, 40, path);
     }
 
-    const auto dumped = readDump(path);
-
     // A fresh session loads it, closes the console, and clicks.
     // The click lands on the very pixel the dump holds painted.
     ConsoleHarness fresh;
@@ -367,50 +378,8 @@ TEST(ConsoleSinkTest, LoadStateComesBackToTheDumpedInstant)
 
     // The pixel was already down, so the click changed nothing.
     // The count is the dump's own, carried back exactly.
+    // What the console history carries over is the contract's.
     EXPECT_EQ(summary.edits, 1U);
-
-    auto expected = dumped.console;
-    expected.push_back("loaded state from " + path);
-    EXPECT_EQ(summary.console, expected);
-}
-
-TEST(ConsoleSinkTest, LoadStateIsRefusedWhileRecordingOrReplaying)
-{
-    ConsoleHarness harness;
-    std::vector<TickEvent> events{keyAt(harness.codec, 1, Key::Grave)};
-    typeText(events, harness.codec, kOpenTick, "load_state");
-    events.push_back(keyAt(harness.codec, kOpenTick, Key::Enter));
-    events.push_back(stopAt(kOpenTick + 1));
-    ReplaySource source(std::move(events));
-
-    const auto summary =
-        harness.run(source, 40, "unused.json", false);
-
-    EXPECT_EQ(
-        summary.console,
-        (std::vector<std::string>{
-            "> load_state",
-            "load_state: not available while recording or replaying"}));
-    EXPECT_EQ(summary.edits, 0U);
-}
-
-TEST(ConsoleSinkTest, LoadStateAnswersAFileThatIsNotThere)
-{
-    const ScratchDirectory dir("antwika_atlas_console_absent.");
-    const auto path = (dir.path() / "dump_state.json").string();
-
-    ConsoleHarness harness;
-    std::vector<TickEvent> events{keyAt(harness.codec, 1, Key::Grave)};
-    typeText(events, harness.codec, kOpenTick, "load_state");
-    events.push_back(keyAt(harness.codec, kOpenTick, Key::Enter));
-    events.push_back(stopAt(kOpenTick + 1));
-    ReplaySource source(std::move(events));
-
-    const auto summary = harness.run(source, 40, path);
-
-    ASSERT_EQ(summary.console.size(), 2U);
-    EXPECT_EQ(summary.console[0], "> load_state");
-    EXPECT_THAT(summary.console[1], StartsWith("could not load: "));
 }
 
 TEST(ConsoleSinkTest, ARunWithoutAConsoleOverlayHasNoConsole)

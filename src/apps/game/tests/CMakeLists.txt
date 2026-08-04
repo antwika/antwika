@@ -129,6 +129,7 @@ antwika_add_app_tests(
         antwika::config
         antwika::config::tests::conformance
         antwika::console
+        antwika::console::tests::conformance
         antwika::ecs_commons
         antwika::engine::tests::mocks
         antwika::event::tests::mocks
