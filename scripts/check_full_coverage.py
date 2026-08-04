@@ -1,18 +1,53 @@
 #!/usr/bin/env python3
 # Fails unless a gcovr --json-summary report is 100% covered.
 # Checks lines, functions, and branches, each independently.
+#
+# The counts are compared rather than the percentages beside them.
+# gcovr rounds a percentage to one decimal.
+# So 17373 of 17375 branches read as 100.0 and passed this gate.
+# That is about a dozen uncovered branches at this tree's size.
+# A count is exact, and one branch short is what the gate is for.
 import argparse
 import json
 import sys
 from pathlib import Path
 
+# The three things measured, and how a report names each.
+KINDS = (
+    ("line", "Lines"),
+    ("function", "Functions"),
+    ("branch", "Branches"),
+)
+
+
+def counts_of(summary: dict, kind: str) -> tuple:
+    return (summary[f"{kind}_covered"], summary[f"{kind}_total"])
+
+
+def shortfalls(summary: dict) -> list:
+    missed = []
+
+    for kind, label in KINDS:
+        covered, total = counts_of(summary, kind)
+
+        if covered != total:
+            missed.append((label, total - covered))
+
+    return missed
+
 
 def is_full_coverage(summary: dict) -> bool:
-    return (
-        summary["line_percent"] == 100
-        and summary["function_percent"] == 100
-        and summary["branch_percent"] == 100
-    )
+    return not shortfalls(summary)
+
+
+def report(summary: dict) -> str:
+    parts = []
+
+    for kind, label in KINDS:
+        covered, total = counts_of(summary, kind)
+        parts.append(f"{label}: {covered}/{total}")
+
+    return " ".join(parts)
 
 
 def main() -> int:
@@ -28,16 +63,14 @@ def main() -> int:
     with args.summary.open() as f:
         summary = json.load(f)
 
-    lines = summary["line_percent"]
-    functions = summary["function_percent"]
-    branches = summary["branch_percent"]
+    print(report(summary))
 
-    print(
-        f"Lines: {lines:.1f}% Functions: {functions:.1f}% "
-        f"Branches: {branches:.1f}%"
-    )
+    missed = shortfalls(summary)
 
-    if not is_full_coverage(summary):
+    if missed:
+        for label, short in missed:
+            print(f"{label}: {short} uncovered.")
+
         print(
             "Coverage must be 100% lines/functions/branches -- see "
             "docs/confirming-unreachable-branches.md."
