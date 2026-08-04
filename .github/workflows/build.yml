@@ -306,7 +306,13 @@ jobs:
           ctest --test-dir "$BUILD_DIR" -j"$(nproc)" --output-on-failure \
             | tee ctest.log
 
-          if ! grep -qE '[1-9][0-9]* tests passed' ctest.log; then
+          # The summary of a green run reads "100% tests passed,
+          # 0 tests failed out of 5462".
+          # A red run never reaches this grep, since bash runs with -e
+          # here and a failing ctest already ended the step.
+          # An empty run prints no summary at all, and a total of zero
+          # would not match the leading digit this insists on.
+          if ! grep -qE 'tests failed out of [1-9][0-9]*' ctest.log; then
             echo "ctest passed no tests at all"
             exit 1
           fi
