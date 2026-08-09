@@ -1,0 +1,86 @@
+find_package(GTest REQUIRED)
+
+add_executable(antwika_music_editor_tests
+    ConfigFileTest.cpp
+    ConsoleSinkTest.cpp
+    EditorKeysTest.cpp
+    EditorPreviewTest.cpp
+    EditorSceneTest.cpp
+    EditorSinkTest.cpp
+    EditorStateTest.cpp
+    FormUseTest.cpp
+    NoteWordsTest.cpp
+    PasteSourceTest.cpp
+    PasteTextTest.cpp
+    PlaybackTest.cpp
+    RenderSinkTest.cpp
+    RunIntegrationTest.cpp
+    ScoreFilesTest.cpp
+    ScoreTest.cpp
+    SnapshotStoreTest.cpp
+    StateDumpTest.cpp
+    TrackPresetTest.cpp
+    VoiceChainTest.cpp
+    WaveImageCacheTest.cpp
+    WaveImageTest.cpp
+)
+
+target_include_directories(antwika_music_editor_tests
+    PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/../include
+)
+
+target_sources(antwika_music_editor_tests
+    PRIVATE
+        ../src/ConfigFile.cpp
+        ../src/EditorKeys.cpp
+        ../src/EditorScene.cpp
+        ../src/EditorSink.cpp
+        ../src/EditorState.cpp
+        ../src/FormUse.cpp
+        ../src/MusicEditor.cpp
+        ../src/MusicSnapshotStore.cpp
+        ../src/NoteWords.cpp
+        ../src/PasteSource.cpp
+        ../src/PasteText.cpp
+        ../src/Playback.cpp
+        ../src/RenderSink.cpp
+        ../src/Score.cpp
+        ../src/ScoreFiles.cpp
+        ../src/StateDump.cpp
+        ../src/TrackPreset.cpp
+        ../src/VoiceChain.cpp
+        ../src/WaveImage.cpp
+        ../src/WaveImageCache.cpp
+)
+
+target_link_libraries(antwika_music_editor_tests
+    PRIVATE
+        antwika::app
+        antwika::app::tests::preview
+        antwika::engine
+        antwika::config
+        antwika::config::tests::conformance
+        antwika::console
+        antwika::console::tests::conformance
+        antwika::event
+        antwika::event::tests::mocks
+        antwika::log::tests::mocks
+        antwika::replay
+        antwika::gfx
+        antwika::gfx::tests::mocks
+        antwika::input
+        antwika::simulation
+        antwika::testing
+        antwika::time::tests::fakes
+        antwika::notation
+        antwika::pattern
+        antwika::sequencer
+        antwika::sound
+        antwika::synth
+        antwika::ui
+
+        gtest::gtest
+)
+
+antwika_bundle_test(TARGET antwika_music_editor_tests)

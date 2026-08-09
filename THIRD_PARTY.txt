@@ -1,0 +1,101 @@
+Third-party components in antwika
+=================================
+
+antwika's own code is under the Apache License 2.0, in LICENSE. This
+file records what else a built executable carries and under what terms.
+
+The set is not fixed: it depends on which backends the build selects,
+so the sections below say when each component is present. Read "Before
+a binary release" at the end before shipping anything built from here.
+
+
+Compiled into every executable
+------------------------------
+
+Roboto Mono 3.001 -- SIL Open Font License 1.1
+    Copyright 2015 The Roboto Mono Project Authors
+    https://github.com/googlefonts/RobotoMono
+
+    antwika_embed_binary() in cmake/AntwikaEmbedBinary.cmake turns
+    assets/fonts/RobotoMono-Regular.ttf into a byte array that
+    antwika::gfx links, so the font is inside every application, not
+    only the ones with an assets directory of their own.
+
+    The OFL requires its text to travel with the font, so a copy of
+    assets/fonts/LICENSE.txt sits beside every executable as
+    RobotoMono-OFL.txt. A modified version of the font may not keep the
+    reserved name "Roboto Mono".
+
+
+Linked into every executable
+----------------------------
+
+glm 1.0.1                      -- MIT, or the Happy Bunny License
+nlohmann_json 3.12.0           -- MIT
+json-schema-validator 2.4.0    -- MIT
+stb cci.20240531               -- MIT, or public domain
+
+
+Linked when the gfx or sound backend is sdl3
+--------------------------------------------
+
+SDL 3.2.20                     -- zlib
+
+SDL arrives with a dependency graph of its own. On Linux that graph
+carries LGPL-2.1 components: pulseaudio, libalsa, libsndfile, mpg123,
+libmp3lame, libiconv and libgettext's libintl. dbus is dual-licensed
+AFL-2.1 or GPL-2.0-or-later, and the AFL terms are the ones to take.
+The rest are permissive: openssl (Apache-2.0), opus, ogg, vorbis and
+flac (BSD-3-Clause), wayland, xkbcommon, libxml2, expat (MIT), zlib.
+
+The exact set moves with the profile and the recipe options, so read it
+off the build you intend to ship rather than off this list:
+
+    conan graph info . --format=json
+
+
+Linked when the gfx backend is raylib
+-------------------------------------
+
+raylib 6.0                     -- zlib
+glfw 3.4                       -- zlib
+
+
+Copied beside a Windows build
+-----------------------------
+
+libgcc_s_seh-1.dll             -- GPL-3.0 with the GCC Runtime
+libstdc++-6.dll                   Library Exception
+libwinpthread-1.dll            -- permissive mingw-w64 terms
+
+The runtime exception is what lets these ship next to a program that is
+not itself GPL, and it holds as long as the program was compiled with a
+GCC that carries the exception, which the mingw dev container is.
+
+
+Built but not shipped
+---------------------
+
+GoogleTest 1.17.0 is BSD-3-Clause and links only into the _tests
+executables, which no release carries. CMake, Conan and the dev
+container toolchain build the artefacts without becoming part of them.
+
+
+Before a binary release
+-----------------------
+
+1. The permissive licences above (MIT, BSD, zlib, Apache-2.0) each want
+   their notice reproduced when the code they cover is redistributed,
+   and static linking is redistribution. This file names the components
+   but does not yet carry their licence texts; a release that ships
+   binaries needs those texts alongside it.
+
+2. No profile or build script sets a shared option, so Conan builds
+   dependencies static by default. Statically linking the LGPL
+   components listed above obliges you to give recipients the means to
+   relink against a modified version of them. Building those shared
+   (-o *:shared=True), or taking them from the system, avoids the
+   question. The raylib and null backends do not raise it at all.
+
+3. conan.lock, conan-sdl3.lock and conan-raylib.lock pin what is
+   actually built. Re-read this file whenever one of them changes.

@@ -1,0 +1,29 @@
+antwika_add_library(
+    NAME console
+    SOURCES
+        src/ConsoleEvents.cpp
+        src/ConsoleGatedSink.cpp
+        src/ConsoleMount.cpp
+        src/ConsolePicture.cpp
+        src/ConsoleScene.cpp
+        src/ConsoleSink.cpp
+        src/ConsoleState.cpp
+        src/HistoryRows.cpp
+        src/InputFold.cpp
+        src/KeyboardLayout.cpp
+        src/SnapshotCommands.cpp
+        src/SnapshotFormat.cpp
+        src/Typing.cpp
+    DEPENDS
+        antwika::animation
+        antwika::app
+        antwika::config
+        antwika::engine
+        antwika::event
+        antwika::gfx
+        antwika::input
+        antwika::replay
+        antwika::time
+        antwika::tween
+        antwika::ui
+)

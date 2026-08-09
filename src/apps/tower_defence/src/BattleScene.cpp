@@ -1,0 +1,139 @@
+#include "antwika/tower_defence/BattleScene.hpp"
+
+#include <array>
+#include <cstddef>
+
+#include <antwika/gfx/Color.hpp>
+#include <antwika/gfx/Rect.hpp>
+
+#include "antwika/tower_defence/GridLayout.hpp"
+#include "antwika/tower_defence/LevelTile.hpp"
+#include "antwika/tower_defence/MobKind.hpp"
+
+namespace antwika::tower_defence
+{
+
+    using antwika::gfx::Color;
+    using antwika::gfx::Rect;
+
+    namespace
+    {
+        constexpr Color kBackground{
+            .red = 18, .green = 22, .blue = 26, .alpha = 255};
+        constexpr Color kGround{
+            .red = 34, .green = 58, .blue = 40, .alpha = 255};
+        constexpr Color kRoad{
+            .red = 122, .green = 106, .blue = 74, .alpha = 255};
+        constexpr Color kStart{
+            .red = 86, .green = 168, .blue = 96, .alpha = 255};
+        constexpr Color kEnd{
+            .red = 190, .green = 78, .blue = 72, .alpha = 255};
+        constexpr Color kTower{
+            .red = 92, .green = 132, .blue = 198, .alpha = 255};
+        constexpr Color kReach{
+            .red = 92, .green = 132, .blue = 198, .alpha = 48};
+        constexpr std::array<Color, kMobKindCount> kMobColors{
+            Color{.red = 226, .green = 196, .blue = 84, .alpha = 255},
+            Color{.red = 240, .green = 138, .blue = 64, .alpha = 255},
+            Color{.red = 168, .green = 84, .blue = 200, .alpha = 255},
+            Color{.red = 176, .green = 188, .blue = 200, .alpha = 255}};
+
+        Color colorFor(const MobKind kind)
+        {
+            return kMobColors[static_cast<std::size_t>(kind)];
+        }
+
+        Color colorFor(const Tile tile)
+        {
+            if (tile == Tile::Start)
+            {
+                return kStart;
+            }
+            if (tile == Tile::End)
+            {
+                return kEnd;
+            }
+            if (tile == Tile::Empty)
+            {
+                return kGround;
+            }
+            return kRoad;
+        }
+
+        Rect inset(const Rect &rect, const std::uint32_t by)
+        {
+            const std::uint32_t taken = by * 2;
+            return Rect{
+                .origin = {
+                    .x = rect.origin.x + static_cast<std::int32_t>(by),
+                    .y = rect.origin.y + static_cast<std::int32_t>(by)},
+                .size = {
+                    .width = rect.size.width > taken
+                        ? rect.size.width - taken
+                        : 0,
+                    .height = rect.size.height > taken
+                        ? rect.size.height - taken
+                        : 0}};
+        }
+    }
+
+    void BattleScene::draw(
+        IRenderer &renderer,
+        const Size canvas,
+        const BattleSnapshot &snapshot) const
+    {
+        renderer.clear(kBackground);
+
+        const auto layout = layoutFor(
+            canvas, snapshot.level.width, snapshot.level.height);
+        if (!layout)
+        {
+            return;
+        }
+
+        for (std::uint32_t y = 0; y < snapshot.level.height; ++y)
+        {
+            for (std::uint32_t x = 0; x < snapshot.level.width; ++x)
+            {
+                const Cell cell{.x = x, .y = y};
+                renderer.drawRect(
+                    inset(cellRect(*layout, cell), 1),
+                    colorFor(snapshot.level.at(cell)));
+            }
+        }
+
+        const std::uint32_t radius =
+            rangeRadius(snapshot.towerRangeSquared);
+        for (const Cell &tower : snapshot.towers)
+        {
+            const Rect centre = cellRect(*layout, tower);
+            const auto span =
+                static_cast<std::int32_t>(radius * layout->cell);
+            renderer.drawRect(
+                Rect{
+                    .origin = {
+                        .x = centre.origin.x - span,
+                        .y = centre.origin.y - span},
+                    .size = {
+                        .width = centre.size.width
+                            + (radius * 2 * layout->cell),
+                        .height = centre.size.height
+                            + (radius * 2 * layout->cell)}},
+                kReach);
+        }
+
+        for (const Cell &tower : snapshot.towers)
+        {
+            renderer.drawRect(
+                inset(cellRect(*layout, tower), layout->cell / 6), kTower);
+        }
+
+        for (const MobMarker &mob : snapshot.mobs)
+        {
+            renderer.drawRect(
+                inset(cellRect(*layout, mob.cell), layout->cell / 3),
+                colorFor(mob.kind));
+        }
+    }
+
+}

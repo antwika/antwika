@@ -1,0 +1,28 @@
+antwika_add_app(
+    NAME ui_demo
+    SOURCES
+        src/DemoOverlay.cpp
+        src/DemoScene.cpp
+        src/DemoSink.cpp
+        src/DemoState.cpp
+        src/KeyMapping.cpp
+        src/Messages.cpp
+        src/RenderSink.cpp
+        src/UiDemo.cpp
+        src/main.cpp
+    LIBS
+        antwika::enums
+        antwika::app
+        antwika::engine
+        antwika::event
+        antwika::gfx
+        antwika::gfx_backend
+        antwika::i18n
+        antwika::input
+        antwika::input_backend
+        antwika::log
+        antwika::replay
+        antwika::simulation
+        antwika::time
+        antwika::ui
+)

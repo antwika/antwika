@@ -1,0 +1,484 @@
+name: Build
+
+on:
+  workflow_call:
+    inputs:
+      version:
+        required: true
+        type: string
+      latest:
+        required: false
+        type: boolean
+        default: false
+      ref:
+        required: false
+        type: string
+
+permissions:
+  contents: read
+  packages: write
+
+env:
+  GIT_CONFIG_COUNT: 2
+  GIT_CONFIG_KEY_0: advice.detachedHead
+  GIT_CONFIG_VALUE_0: false
+  GIT_CONFIG_KEY_1: init.defaultBranch
+  GIT_CONFIG_VALUE_1: main
+  REGISTRY: ghcr.io
+  IMAGE_PREFIX: ${{ github.repository_owner }}/antwika-dev
+
+jobs:
+  checks:
+    name: Checks
+    uses: ./.github/workflows/checks.yml
+    permissions:
+      contents: read
+    with:
+      ref: ${{ inputs.ref }}
+
+  build-base:
+    name: Base image
+    needs: checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ inputs.ref }}
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v4
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+
+      - name: Publish base dev container image
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          file: .devcontainer/base/Dockerfile
+          push: true
+          cache-from: type=gha,scope=base
+          cache-to: type=gha,mode=max,scope=base
+          tags: |
+            ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}-base:${{ inputs.version }}
+            ${{ inputs.latest && format('{0}/{1}-base:latest', env.REGISTRY, env.IMAGE_PREFIX) || '' }}
+
+  images:
+    name: ${{ matrix.name }} image
+    needs: build-base
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: LLVM
+            image: llvm
+            dockerfile: .devcontainer/llvm/Dockerfile
+          - name: GNU
+            image: gnu
+            dockerfile: .devcontainer/gnu/Dockerfile
+          - name: MinGW
+            image: mingw
+            dockerfile: .devcontainer/mingw/Dockerfile
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ inputs.ref }}
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v4
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+
+      - name: Publish ${{ matrix.name }} dev container image
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          file: ${{ matrix.dockerfile }}
+          push: true
+          cache-from: type=gha,scope=${{ matrix.image }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.image }}
+          build-args: |
+            BASE_VERSION=${{ inputs.version }}
+          tags: |
+            ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}-${{ matrix.image }}:${{ inputs.version }}
+            ${{ inputs.latest && format('{0}/{1}-{2}:latest', env.REGISTRY, env.IMAGE_PREFIX, matrix.image) || '' }}
+
+  apps:
+    name: ${{ matrix.name }} app(s)
+    needs: images
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: LLVM
+            image: llvm
+            conan_profile: clang-linux-x86_64
+            coverage: true
+            runs_tests: true
+            gcov_executable: "llvm-cov-21 gcov"
+            build_dir: build-coverage
+          - name: GNU
+            image: gnu
+            conan_profile: gcc-linux-x86_64
+            coverage: true
+            runs_tests: true
+            gcov_executable: gcov
+            build_dir: build-coverage
+          - name: MinGW
+            image: mingw
+            conan_profile: mingw-windows-x86_64
+            coverage: false
+            runs_tests: false
+            build_dir: build
+
+    container:
+      image: ghcr.io/${{ github.repository_owner }}/antwika-dev-${{ matrix.image }}:${{ inputs.version }}
+      options: --user root
+    env:
+      CONAN_PROFILE: ${{ matrix.conan_profile }}
+      BUILD_DIR: ${{ matrix.build_dir }}
+      CCACHE_DIR: /tmp/ccache
+      CCACHE_MAXSIZE: 1G
+      CCACHE_SLOPPINESS: pch_defines,time_macros
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ inputs.ref }}
+
+      - name: Cache Conan packages
+        uses: actions/cache@v6
+        with:
+          path: ~/.conan2
+          key: conan-${{ matrix.image }}-${{ hashFiles('conanfile.py', 'conan.lock', format('profiles/build/{0}', matrix.conan_profile), format('profiles/host/{0}', matrix.conan_profile)) }}
+          restore-keys: |
+            conan-${{ matrix.image }}-
+
+      - name: Cache ccache
+        uses: actions/cache@v6
+        with:
+          path: /tmp/ccache
+          key: ccache-${{ matrix.image }}-${{ github.sha }}
+          restore-keys: |
+            ccache-${{ matrix.image }}-
+
+      - name: Install dependencies
+        shell: bash
+        run: |
+          conan install . \
+            -of build \
+            -pr:b=./profiles/build/${CONAN_PROFILE} \
+            -pr:h=./profiles/host/${CONAN_PROFILE} \
+            --build=missing \
+            -s build_type=Release \
+            --lockfile=conan.lock
+
+      - name: Configure CMake
+        shell: bash
+        run: |
+          cmake --preset ${{ matrix.coverage && 'conan-coverage' || 'conan-release' }} \
+            -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
+
+      - name: Build
+        shell: bash
+        run: cmake --build "$BUILD_DIR" -j24
+
+      - name: Report ccache effectiveness
+        shell: bash
+        run: ccache --show-stats
+
+      - name: Test
+        if: matrix.runs_tests
+        shell: bash
+        run: |
+          set -o pipefail
+
+          ctest --test-dir "$BUILD_DIR" -j"$(nproc)" --output-on-failure \
+            | tee ctest.log
+
+          if ! grep -qE 'tests failed out of [1-9][0-9]*' ctest.log; then
+            echo "ctest passed no tests at all"
+            exit 1
+          fi
+
+      - name: Soak the level generator
+        if: matrix.image == 'gnu'
+        shell: bash
+        run: |
+          cmake --preset conan-release -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
+          cmake --build build --target antwika_tower_defence_tests -j24
+          build/bin/antwika_tower_defence/antwika_tower_defence_tests \
+            --gtest_filter='LevelGeneratorTest.*'
+
+      - name: Generate coverage report
+        if: matrix.coverage
+        shell: bash
+        env:
+          GCOV_EXECUTABLE: ${{ matrix.gcov_executable }}
+        run: |
+          scripts/coverage.sh \
+            --build-dir "$BUILD_DIR" \
+            --summary coverage-summary.json
+
+          python3 scripts/generate_coverage_badge.py \
+            --summary coverage-summary.json \
+            --output coverage-badge.json \
+            --label "coverage (${{ matrix.image }})"
+
+      - name: Enforce full coverage (GNU)
+        if: matrix.coverage && matrix.image == 'gnu'
+        shell: bash
+        run: python3 scripts/check_full_coverage.py --summary coverage-summary.json
+
+      - name: Upload coverage badge
+        if: matrix.coverage
+        uses: actions/upload-artifact@v7
+        with:
+          name: coverage-badge-${{ matrix.image }}
+          path: coverage-badge.json
+          retention-days: 1
+
+      - name: Verify executables
+        shell: bash
+        run: |
+          failed=0
+          manifest="${BUILD_DIR}/expected-executables.txt"
+
+          if [ ! -s "$manifest" ]; then
+            echo "Missing or empty manifest: $manifest"
+            exit 1
+          fi
+
+          while IFS= read -r binary; do
+            if [ ! -f "$binary" ]; then
+              echo "Missing binary: $binary"
+              failed=1
+            else
+              echo "Found: $binary"
+            fi
+          done < "$manifest"
+
+          exit $failed
+
+  backends:
+    name: ${{ matrix.name }} backend
+    needs: images
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: SDL3
+            backend: sdl3
+            subsystems: gfx input sound
+            options: -o gfx_backend=sdl3 -o sound_backend=sdl3
+            folder_vars: "['options.gfx_backend']"
+            preset: conan-gfx_backend_sdl3-release
+            lockfile: conan-sdl3.lock
+          - name: raylib
+            backend: raylib
+            subsystems: gfx input
+            options: -o gfx_backend=raylib
+            folder_vars: "['options.gfx_backend']"
+            preset: conan-gfx_backend_raylib-release
+            lockfile: conan-raylib.lock
+          - name: sockets
+            backend: sockets
+            subsystems: network
+            options: -o network_backend=sockets
+            folder_vars: "['options.network_backend']"
+            preset: conan-network_backend_sockets-release
+            lockfile: conan.lock
+
+    container:
+      image: ghcr.io/${{ github.repository_owner }}/antwika-dev-gnu:${{ inputs.version }}
+      options: --user root
+    env:
+      CONAN_PROFILE: gcc-linux-x86_64
+      BUILD_DIR: build-${{ matrix.backend }}
+      CCACHE_DIR: /tmp/ccache
+      CCACHE_MAXSIZE: 1G
+      CCACHE_SLOPPINESS: pch_defines,time_macros
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ inputs.ref }}
+
+      - name: Cache Conan packages
+        uses: actions/cache@v6
+        with:
+          path: ~/.conan2
+          key: conan-gnu-${{ matrix.backend }}-${{ hashFiles('conanfile.py', 'conan.lock', matrix.lockfile, 'profiles/build/gcc-linux-x86_64', 'profiles/host/gcc-linux-x86_64') }}
+          restore-keys: |
+            conan-gnu-${{ matrix.backend }}-
+
+      - name: Cache ccache
+        uses: actions/cache@v6
+        with:
+          path: /tmp/ccache
+          key: ccache-${{ matrix.backend }}-${{ github.sha }}
+          restore-keys: |
+            ccache-${{ matrix.backend }}-
+
+      - name: Install the default configuration, for its presets
+        shell: bash
+        run: |
+          conan install . \
+            -of build \
+            -pr:b=./profiles/build/${CONAN_PROFILE} \
+            -pr:h=./profiles/host/${CONAN_PROFILE} \
+            --build=missing \
+            -s build_type=Release \
+            --lockfile=conan.lock
+
+      - name: Install dependencies
+        shell: bash
+        run: |
+          conan install . \
+            -of "$BUILD_DIR" \
+            ${{ matrix.options }} \
+            -c tools.cmake.cmake_layout:build_folder_vars="${{ matrix.folder_vars }}" \
+            -pr:b=./profiles/build/${CONAN_PROFILE} \
+            -pr:h=./profiles/host/${CONAN_PROFILE} \
+            --build=missing \
+            -s build_type=Release \
+            --lockfile=${{ matrix.lockfile }}
+
+      - name: Configure CMake
+        shell: bash
+        run: |
+          cmake --preset ${{ matrix.preset }} \
+            -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
+
+      - name: Build the conformance suites
+        shell: bash
+        run: |
+          targets=()
+
+          for subsystem in ${{ matrix.subsystems }}; do
+            targets+=("antwika_${subsystem}_backend_${{ matrix.backend }}_tests")
+          done
+
+          cmake --build "$BUILD_DIR" -j24 --target "${targets[@]}"
+
+      - name: Report ccache effectiveness
+        shell: bash
+        run: ccache --show-stats
+
+      - name: Run the conformance suites
+        shell: bash
+        run: |
+          set -o pipefail
+          failed=0
+
+          for subsystem in ${{ matrix.subsystems }}; do
+            module="antwika_${subsystem}_backend_${{ matrix.backend }}"
+            binary="${BUILD_DIR}/bin/${module}/${module}_tests"
+
+            if [ ! -f "$binary" ]; then
+              echo "Missing binary: $binary"
+              failed=1
+              continue
+            fi
+
+            log="conformance-${subsystem}.log"
+
+            case "$subsystem" in
+              sound) runner=(env SDL_AUDIO_DRIVER=dummy) ;;
+              network) runner=(env) ;;
+              *) runner=(xvfb-run -a) ;;
+            esac
+
+            if ! "${runner[@]}" "$binary" 2>&1 | tee "$log"; then
+              echo "The ${subsystem} conformance suite failed"
+              failed=1
+            fi
+
+            if ! grep -qE '^\[  PASSED  \] [1-9][0-9]* test' "$log"; then
+              echo "The ${subsystem} conformance suite passed no tests"
+              failed=1
+            fi
+          done
+
+          exit $failed
+
+  coverage-badges:
+    name: Publish coverage badges
+    needs: apps
+    if: inputs.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 1
+    permissions:
+      contents: write
+    concurrency:
+      group: coverage-badges-publish
+      cancel-in-progress: false
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ inputs.ref }}
+          fetch-depth: 0
+
+      - name: Download coverage badges
+        uses: actions/download-artifact@v8
+        with:
+          pattern: coverage-badge-*
+          path: /tmp/coverage-badges
+
+      - name: Publish coverage badges
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          cp /tmp/coverage-badges/coverage-badge-gnu/coverage-badge.json /tmp/coverage-gnu.json
+          cp /tmp/coverage-badges/coverage-badge-llvm/coverage-badge.json /tmp/coverage-llvm.json
+
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          if git ls-remote --exit-code --heads origin badges >/dev/null 2>&1; then
+            git fetch origin badges:badges
+            git checkout badges
+          else
+            git checkout --orphan badges
+          fi
+
+          git rm -rf . >/dev/null 2>&1 || true
+
+          cp /tmp/coverage-gnu.json coverage-gnu.json
+          cp /tmp/coverage-llvm.json coverage-llvm.json
+          git add coverage-gnu.json coverage-llvm.json
+
+          if git diff --cached --quiet; then
+            echo "No changes to badges"
+          else
+            git commit -m "chore: update coverage badges [skip ci]"
+            git push origin HEAD:badges
+          fi

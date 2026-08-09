@@ -1,0 +1,20 @@
+antwika_add_library(
+    NAME holdem
+    SOURCES
+        src/ActionType.cpp
+        src/BettingRound.cpp
+        src/CardText.cpp
+        src/Deck.cpp
+        src/HandCategory.cpp
+        src/HandEvaluator.cpp
+        src/HandFlow.cpp
+        src/HandText.cpp
+        src/Pots.cpp
+        src/Showdown.cpp
+        src/Stage.cpp
+        src/Table.cpp
+        src/TableRunner.cpp
+    DEPENDS
+        antwika::enums
+        antwika::rng
+)

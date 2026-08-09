@@ -1,0 +1,47 @@
+antwika_add_app_tests(
+    APP poker
+    TESTS
+        AgentStyleTest.cpp
+        BankrollLedgerTest.cpp
+        BootstrapTest.cpp
+        CashGameTest.cpp
+        ConfigFileTest.cpp
+        ConsoleSinkTest.cpp
+        PokerAtlasTest.cpp
+        PokerRoomSinkTest.cpp
+        PolicyAgentTest.cpp
+        ReplayIntegrationTest.cpp
+        RoomSummaryTest.cpp
+        SnapshotStoreTest.cpp
+        StateDumpTest.cpp
+        TablePreviewTest.cpp
+        TablePrinterTest.cpp
+        TableRenderSinkTest.cpp
+        TableSceneTest.cpp
+        TableSnapshotTest.cpp
+        WatchOptionsTest.cpp
+    LIBS
+        antwika::app
+        antwika::app::tests::preview
+        antwika::cli
+        antwika::console
+        antwika::console::tests::conformance
+        antwika::testing
+        antwika::config
+        antwika::config::tests::conformance
+        antwika::engine
+        antwika::event
+        antwika::event::tests::mocks
+        antwika::gfx
+        antwika::gfx::tests::mocks
+        antwika::holdem
+        antwika::holdem::tests::fakes
+        antwika::log
+        antwika::log::tests::mocks
+        antwika::replay
+        antwika::rng
+        antwika::simulation
+        antwika::time::tests::fakes
+        antwika::ui
+        gtest::gtest
+)

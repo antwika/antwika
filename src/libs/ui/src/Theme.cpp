@@ -1,0 +1,43 @@
+#include "antwika/ui/Theme.hpp"
+
+#include <cstdint>
+
+#include "Saturate.hpp"
+
+namespace antwika::ui
+{
+
+    namespace
+    {
+        constexpr std::uint32_t kCanvasPerPixel = 240;
+
+        std::uint32_t scaled(
+            std::uint32_t value, std::uint32_t scale) noexcept
+        {
+            return detail::clampToU32(
+                std::uint64_t{value} * std::uint64_t{scale});
+        }
+    }
+
+    std::uint32_t scaleForCanvas(Size canvas) noexcept
+    {
+        const auto scale = canvas.height / kCanvasPerPixel;
+
+        return scale > 0 ? scale : 1;
+    }
+
+    Theme scaledTheme(Theme base, std::uint32_t scale) noexcept
+    {
+        base.textScale = scaled(base.textScale, scale);
+        base.padding = scaled(base.padding, scale);
+        base.gap = scaled(base.gap, scale);
+        base.buttonPadding = scaled(base.buttonPadding, scale);
+        base.focusRingThickness = scaled(base.focusRingThickness, scale);
+        base.scrollbarWidth = scaled(base.scrollbarWidth, scale);
+        base.dividerThickness =
+            scaled(base.dividerThickness, scale);
+
+        return base;
+    }
+
+}

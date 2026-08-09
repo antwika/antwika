@@ -1,0 +1,45 @@
+antwika_add_app(
+    NAME task_worker
+    SOURCES
+        src/ConfigFile.cpp
+        src/JobQueue.cpp
+        src/Messages.cpp
+        src/PoolScene.cpp
+        src/PoolSnapshot.cpp
+        src/RenderSystem.cpp
+        src/StateDump.cpp
+        src/StatusPrintSystem.cpp
+        src/TaskDispatchSystem.cpp
+        src/TaskJob.cpp
+        src/TaskRegistry.cpp
+        src/TaskSubmissionSink.cpp
+        src/TaskWorker.cpp
+        src/TaskWorkerSnapshotStore.cpp
+        src/Worker.cpp
+        src/WorkerCompletionSystem.cpp
+        src/WorkerLookup.cpp
+        src/main.cpp
+    LIBS
+        antwika::enums
+        antwika::app
+        antwika::config
+        antwika::console
+        antwika::ecs
+        antwika::ecs_commons
+        antwika::engine
+        antwika::event
+        antwika::gfx
+        antwika::gfx_backend
+        antwika::i18n
+        antwika::input
+        antwika::input_backend
+        antwika::log
+        antwika::replay
+        antwika::scheduler
+        antwika::simulation
+        antwika::time
+        antwika::ui
+    ASSETS
+        assets/config.json
+        replays/demo.jsonl
+)

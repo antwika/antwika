@@ -1,0 +1,11 @@
+/build
+/build-*
+/CMakeUserPresets.json
+__pycache__
+/.claude/*
+!/.claude/skills/
+/.worktrees/
+core.*
+*.gcov
+/STATUS.md
+/.vscode/*-backend

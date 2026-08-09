@@ -1,0 +1,46 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - "**"
+      - "!badges"
+    tags:
+      - "v*"
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+
+jobs:
+  determine-version:
+    name: Determine version
+    runs-on: ubuntu-latest
+    timeout-minutes: 1
+
+    outputs:
+      version: ${{ steps.determine-version.outputs.version }}
+      latest: ${{ steps.determine-version.outputs.latest }}
+
+    steps:
+      - id: determine-version
+        run: |
+          if [[ "$GITHUB_REF" == refs/tags/v* ]]; then
+            echo "version=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
+            echo "latest=true" >> $GITHUB_OUTPUT
+          else
+            echo "version=$GITHUB_SHA" >> $GITHUB_OUTPUT
+            echo "latest=false" >> $GITHUB_OUTPUT
+          fi
+
+  build:
+    name: Build
+    needs: determine-version
+    uses: ./.github/workflows/build.yml
+    permissions:
+      contents: write
+      packages: write
+    with:
+      version: ${{ needs.determine-version.outputs.version }}
+      latest: ${{ needs.determine-version.outputs.latest == 'true' }}
+      ref: ${{ github.ref }}

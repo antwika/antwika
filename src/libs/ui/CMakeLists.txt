@@ -1,0 +1,23 @@
+antwika_add_library(
+    NAME ui
+    SOURCES
+        src/Context.cpp
+        src/Dropdown.cpp
+        src/Flatten.cpp
+        src/Hover.cpp
+        src/Layout.cpp
+        src/LayoutTree.cpp
+        src/Overlays.cpp
+        src/Painter.cpp
+        src/Resolve.cpp
+        src/Scope.cpp
+        src/Slider.cpp
+        src/Split.cpp
+        src/TextArea.cpp
+        src/TextEditing.cpp
+        src/TextField.cpp
+        src/Theme.cpp
+        src/WidgetRects.cpp
+    DEPENDS
+        antwika::gfx
+)

@@ -1,0 +1,69 @@
+#pragma once
+
+#include <cstdint>
+#include <memory>
+#include <string_view>
+
+#include "antwika/gfx/Bitmap.hpp"
+#include "antwika/gfx/Color.hpp"
+#include "antwika/gfx/IRenderer.hpp"
+#include "antwika/gfx/IRenderer3D.hpp"
+#include "antwika/gfx/ITexture.hpp"
+#include "antwika/gfx/Point.hpp"
+#include "antwika/gfx/Rect.hpp"
+#include "antwika/gfx/Size.hpp"
+#include "antwika/gfx/Viewport.hpp"
+
+namespace antwika::gfx
+{
+
+    class ViewportRenderer final : public IRenderer
+    {
+    public:
+        ViewportRenderer(IRenderer &inner, Size reported, Size canvas);
+
+        ViewportRenderer(const ViewportRenderer &) = delete;
+        ViewportRenderer(ViewportRenderer &&) = delete;
+
+        ViewportRenderer &operator=(const ViewportRenderer &) = delete;
+        ViewportRenderer &operator=(ViewportRenderer &&) = delete;
+
+        [[nodiscard]] Viewport viewport() const noexcept;
+
+        void clear(Color color) override;
+
+        void drawRect(Rect rect, Color color) override;
+
+        void drawLine(Point from, Point to, Color color) override;
+
+        void drawText(
+            Point origin,
+            std::string_view text,
+            std::uint32_t scale,
+            Color color) override;
+
+        [[nodiscard]] std::unique_ptr<ITexture> createTexture(
+            const Bitmap &bitmap) override;
+
+        void drawTexture(
+            const ITexture &texture,
+            Rect source,
+            Rect destination,
+            Color tint) override;
+
+        [[nodiscard]] IRenderer3D *renderer3d() override;
+
+        void fillSurround(Color color);
+
+        void present() override;
+
+    private:
+        void fillIfDrawable(Rect rect, Color color);
+
+        IRenderer &inner;
+        Size reported;
+        Size canvas;
+        Viewport transform;
+    };
+
+}

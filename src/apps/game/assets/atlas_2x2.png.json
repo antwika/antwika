@@ -1,0 +1,13 @@
+{
+  "columns": 8,
+  "isometricHeight": 32,
+  "isometricWidth": 64,
+  "kind": "isometric",
+  "magic": "antwika-atlas-editor-atlas",
+  "pivotX": 48,
+  "pivotY": 80,
+  "rows": 8,
+  "spriteHeight": 112,
+  "spriteWidth": 96,
+  "version": 1
+}

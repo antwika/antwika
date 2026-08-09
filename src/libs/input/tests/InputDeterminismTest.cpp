@@ -1,0 +1,323 @@
+#include <gmock/gmock.h>
+#include <gtest/gtest.h>
+
+#include <cstdint>
+#include <filesystem>
+#include <string>
+#include <system_error>
+#include <vector>
+
+#include <unistd.h>
+
+#include <antwika/engine/Engine.hpp>
+#include <antwika/engine/Events.hpp>
+#include <antwika/engine/StopSignal.hpp>
+#include <antwika/event/EventDispatcher.hpp>
+#include <antwika/event/ITickEventSink.hpp>
+#include <antwika/event/TickEvent.hpp>
+#include <antwika/event/TickEventRecorder.hpp>
+#include <antwika/event/TickedEventDispatcher.hpp>
+#include <antwika/input/fakes/FakeSummarySink.hpp>
+#include <antwika/log/mocks/MockLogger.hpp>
+#include <antwika/simulation/EngineLoop.hpp>
+#include <antwika/replay/ReplayCli.hpp>
+#include <antwika/replay/ReplaySource.hpp>
+#include <antwika/testing/ScratchPath.hpp>
+
+#include "antwika/input/IdleMotionSource.hpp"
+#include "antwika/input/InputEvent.hpp"
+#include "antwika/input/InputEventCodec.hpp"
+#include "antwika/input/InputState.hpp"
+#include "antwika/input/Key.hpp"
+#include "antwika/input/LiveInputSource.hpp"
+#include "antwika/input/MouseButton.hpp"
+#include "antwika/input/Position.hpp"
+#include "antwika/input/fakes/FakeInputBackend.hpp"
+
+using antwika::engine::Engine;
+using antwika::engine::StopSignal;
+using antwika::event::EventDispatcher;
+using antwika::event::ITickEventSink;
+using antwika::event::TickEvent;
+using antwika::event::TickEventRecorder;
+using antwika::event::TickedEventDispatcher;
+using antwika::input::IdleMotionSource;
+using antwika::input::InputEvent;
+using antwika::input::InputEventCodec;
+using antwika::input::InputState;
+using antwika::input::Key;
+using antwika::input::KeyPressed;
+using antwika::input::KeyReleased;
+using antwika::input::LiveInputSource;
+using antwika::input::MouseButton;
+using antwika::input::PointerButtonPressed;
+using antwika::input::PointerButtonReleased;
+using antwika::input::PointerMoved;
+using antwika::input::PointerScrolled;
+using antwika::input::Position;
+using antwika::input::fakes::FakeInputBackend;
+using antwika::input::fakes::FakeSummarySink;
+using antwika::input::fakes::SessionSummary;
+using antwika::log::mocks::MockLogger;
+using antwika::simulation::EngineLoop;
+using antwika::replay::ReplaySource;
+
+namespace
+{
+    [[nodiscard]] std::vector<InputEvent> scriptedSession()
+    {
+        return {
+            PointerMoved{.position = {.x = 100, .y = 100}},
+            PointerButtonPressed{
+                .button = MouseButton::Left,
+                .position = {.x = 100, .y = 100}},
+            PointerMoved{.position = {.x = 140, .y = 90}},
+            PointerButtonReleased{
+                .button = MouseButton::Left,
+                .position = {.x = 140, .y = 90}},
+            PointerScrolled{.vertical = 3},
+            KeyPressed{.key = Key::W, .modifiers = {.shift = true}},
+            KeyReleased{.key = Key::W},
+            PointerButtonPressed{
+                .button = MouseButton::Right,
+                .position = {.x = 200, .y = 10}},
+        };
+    }
+
+    [[nodiscard]] std::vector<std::vector<InputEvent>> wanderingSession()
+    {
+        std::vector<std::vector<InputEvent>> rounds;
+
+        const auto wander = [&rounds](std::int32_t from, std::int32_t to)
+        {
+            for (std::int32_t step = from; step < to; ++step)
+            {
+                rounds.push_back(
+                    {PointerMoved{.position = {.x = step, .y = step}}});
+            }
+        };
+
+        wander(0, 10);
+        rounds.push_back(
+            {PointerButtonPressed{
+                .button = MouseButton::Left,
+                .position = {.x = 9, .y = 9}}});
+        wander(10, 13);
+        rounds.push_back(
+            {PointerButtonReleased{
+                .button = MouseButton::Left,
+                .position = {.x = 12, .y = 12}}});
+        wander(13, 18);
+        rounds.push_back({PointerScrolled{.vertical = -2}});
+
+        return rounds;
+    }
+
+    constexpr antwika::time::Tick kWanderingTicks = 21;
+
+    [[nodiscard]] std::size_t inputEventsIn(
+        const std::vector<TickEvent> &events)
+    {
+        const InputEventCodec codec;
+
+        std::size_t count = 0;
+        for (const auto &event : events)
+        {
+            if (codec.decode(event.event).has_value())
+            {
+                ++count;
+            }
+        }
+        return count;
+    }
+
+    struct RunResult final
+    {
+        SessionSummary summary;
+        std::vector<TickEvent> recorded;
+    };
+
+    [[nodiscard]] RunResult run(
+        antwika::event::ITickEventSource &source,
+        antwika::time::Tick maxTicks)
+    {
+        ::testing::NiceMock<MockLogger> logger;
+
+        EventDispatcher plain({});
+        FakeSummarySink sink;
+        TickEventRecorder recorder;
+        StopSignal stopSignal;
+        TickedEventDispatcher dispatcher(
+            plain, {sink, stopSignal, recorder});
+        Engine engine(logger, dispatcher);
+        EngineLoop loop(engine, dispatcher, source);
+
+        loop.run(stopSignal, maxTicks);
+
+        return RunResult{
+            .summary = sink.result(), .recorded = recorder.getEvents()};
+    }
+}
+
+TEST(
+    InputDeterminismTest,
+    Replay_ReachesTheSameStateAsALiveRun)
+{
+    constexpr antwika::time::Tick kMaxTicks = 20;
+
+    ReplaySource stopAtTwo(
+        {TickEvent{
+            .tick = 2,
+            .event = {.name = antwika::engine::events::kStop}}});
+    FakeInputBackend backend(scriptedSession());
+    const InputEventCodec codec;
+    LiveInputSource live(stopAtTwo, backend, codec);
+
+    const auto liveRun = run(live, kMaxTicks);
+
+    ASSERT_NE(liveRun.summary, SessionSummary{});
+    ASSERT_FALSE(liveRun.recorded.empty());
+
+    const antwika::testing::ScratchFile file(
+        "antwika-input-determinism.replay");
+    antwika::replay::saveReplayFile(liveRun.recorded, file.string());
+    auto loaded = antwika::replay::loadReplayFile(file.string());
+
+    ReplaySource replayed(std::move(loaded));
+    const auto replayedRun = run(replayed, kMaxTicks);
+
+    EXPECT_EQ(replayedRun.summary, liveRun.summary);
+    EXPECT_EQ(replayedRun.recorded, liveRun.recorded);
+}
+
+TEST(InputDeterminismTest, Live_FoldsSomething)
+{
+    constexpr antwika::time::Tick kMaxTicks = 20;
+
+    ReplaySource stopAtTwo(
+        {TickEvent{
+            .tick = 2,
+            .event = {.name = antwika::engine::events::kStop}}});
+    FakeInputBackend backend(scriptedSession());
+    const InputEventCodec codec;
+    LiveInputSource live(stopAtTwo, backend, codec);
+
+    const auto liveRun = run(live, kMaxTicks);
+
+    EXPECT_EQ(liveRun.summary.pointer, (Position{.x = 200, .y = 10}));
+    EXPECT_EQ(liveRun.summary.pressedKeys, (std::vector<std::string>{"W"}));
+    EXPECT_EQ(liveRun.summary.clicks, 2U);
+    EXPECT_EQ(liveRun.summary.scrolled, 3);
+    EXPECT_FALSE(liveRun.summary.leftHeldAtEnd);
+}
+
+TEST(InputDeterminismTest, Recording_KeepsInputAndDropsTicks)
+{
+    constexpr antwika::time::Tick kMaxTicks = 20;
+
+    ReplaySource stopAtTwo(
+        {TickEvent{
+            .tick = 2,
+            .event = {.name = antwika::engine::events::kStop}}});
+    FakeInputBackend backend(scriptedSession());
+    const InputEventCodec codec;
+    LiveInputSource live(stopAtTwo, backend, codec);
+
+    const auto liveRun = run(live, kMaxTicks);
+
+    const antwika::testing::ScratchFile file("antwika-input-recording.replay");
+    antwika::replay::saveReplayFile(liveRun.recorded, file.string());
+    const auto loaded = antwika::replay::loadReplayFile(file.string());
+
+    std::size_t inputEvents = 0;
+    for (const auto &event : loaded)
+    {
+        EXPECT_NE(event.event.name, antwika::engine::events::kTick);
+
+        if (codec.decode(event.event).has_value())
+        {
+            ++inputEvents;
+        }
+    }
+
+    EXPECT_EQ(inputEvents, scriptedSession().size());
+}
+
+TEST(InputDeterminismTest, IdleMotionGate_ChangesNothingTheAppFolds)
+{
+    constexpr antwika::time::Tick kMaxTicks = 30;
+
+    const InputEventCodec codec;
+
+    ReplaySource ungatedStop(
+        {TickEvent{
+            .tick = kWanderingTicks,
+            .event = {.name = antwika::engine::events::kStop}}});
+    FakeInputBackend ungatedBackend(wanderingSession());
+    LiveInputSource ungatedLive(ungatedStop, ungatedBackend, codec);
+
+    const auto ungated = run(ungatedLive, kMaxTicks);
+
+    ASSERT_EQ(ungated.summary.clicks, 1U);
+    ASSERT_EQ(ungated.summary.scrolled, -2);
+
+    ReplaySource gatedStop(
+        {TickEvent{
+            .tick = kWanderingTicks,
+            .event = {.name = antwika::engine::events::kStop}}});
+    FakeInputBackend gatedBackend(wanderingSession());
+    LiveInputSource gatedLive(gatedStop, gatedBackend, codec);
+    IdleMotionSource gated(gatedLive, codec);
+
+    const auto run_ = run(gated, kMaxTicks);
+
+    EXPECT_EQ(run_.summary, ungated.summary);
+}
+
+TEST(InputDeterminismTest, IdleMotionGate_KeepsOnlyMotionThatDidSomething)
+{
+    constexpr antwika::time::Tick kMaxTicks = 30;
+
+    const InputEventCodec codec;
+    ReplaySource stopping(
+        {TickEvent{
+            .tick = kWanderingTicks,
+            .event = {.name = antwika::engine::events::kStop}}});
+    FakeInputBackend backend(wanderingSession());
+    LiveInputSource live(stopping, backend, codec);
+    IdleMotionSource gated(live, codec);
+
+    const auto gatedRun = run(gated, kMaxTicks);
+
+    EXPECT_EQ(inputEventsIn(gatedRun.recorded), 8U);
+}
+
+TEST(InputDeterminismTest, Replay_ReachesTheSameStateWhenGated)
+{
+    constexpr antwika::time::Tick kMaxTicks = 30;
+
+    const InputEventCodec codec;
+    ReplaySource stopping(
+        {TickEvent{
+            .tick = kWanderingTicks,
+            .event = {.name = antwika::engine::events::kStop}}});
+    FakeInputBackend backend(wanderingSession());
+    LiveInputSource live(stopping, backend, codec);
+    IdleMotionSource gated(live, codec);
+
+    const auto liveRun = run(gated, kMaxTicks);
+
+    ASSERT_NE(liveRun.summary, SessionSummary{});
+    ASSERT_FALSE(liveRun.recorded.empty());
+
+    const antwika::testing::ScratchFile file("antwika-input-gated.replay");
+    antwika::replay::saveReplayFile(liveRun.recorded, file.string());
+    auto loaded = antwika::replay::loadReplayFile(file.string());
+
+    ReplaySource replayed(std::move(loaded));
+    IdleMotionSource replayedGate(replayed, codec);
+    const auto replayedRun = run(replayedGate, kMaxTicks);
+
+    EXPECT_EQ(replayedRun.summary, liveRun.summary);
+    EXPECT_EQ(replayedRun.recorded, liveRun.recorded);
+}

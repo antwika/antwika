@@ -1,0 +1,18 @@
+{
+    "version": 6,
+    "include": [
+        "build/CMakePresets.json"
+    ],
+    "configurePresets": [
+        {
+            "name": "conan-coverage",
+            "inherits": "conan-release",
+            "binaryDir": "${sourceDir}/build-coverage",
+            "toolchainFile": "${sourceDir}/build/conan_toolchain.cmake",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Release",
+                "ENABLE_COVERAGE": "ON"
+            }
+        }
+    ]
+}

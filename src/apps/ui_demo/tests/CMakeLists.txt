@@ -1,0 +1,29 @@
+antwika_add_app_tests(
+    APP ui_demo
+    TESTS
+        DemoSceneTest.cpp
+        DemoSinkTest.cpp
+        DemoStateTest.cpp
+        KeyMappingTest.cpp
+        MessagesTest.cpp
+        RenderSinkTest.cpp
+        RunIntegrationTest.cpp
+        ShowcasePreviewTest.cpp
+    LIBS
+        antwika::app
+        antwika::app::tests::preview
+        antwika::engine
+        antwika::event
+        antwika::event::tests::mocks
+        antwika::gfx
+        antwika::gfx::tests::mocks
+        antwika::i18n
+        antwika::i18n::tests::conformance
+        antwika::input
+        antwika::log::tests::mocks
+        antwika::replay
+        antwika::time::tests::fakes
+        antwika::ui
+        antwika::ui::tests::support
+        gtest::gtest
+)

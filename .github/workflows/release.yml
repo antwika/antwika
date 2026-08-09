@@ -1,0 +1,87 @@
+name: Release
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  issues: write
+  pull-requests: write
+
+jobs:
+  checks:
+    name: Checks
+    uses: ./.github/workflows/checks.yml
+    permissions:
+      contents: read
+    with:
+      ref: ${{ github.sha }}
+
+  release:
+    name: Release
+    needs: checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+
+    permissions:
+      contents: write
+      issues: write
+      pull-requests: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - name: Setup Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: "lts/*"
+      - name: Note the latest tag before releasing
+        id: before
+        run: |
+          git fetch --tags
+          TAG=$(git describe --tags --abbrev=0 --match "v*" \
+            2>/dev/null || echo "none")
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+      - name: Release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          npm install --no-save \
+            semantic-release@25.0.8 \
+            @semantic-release/changelog@7.0.0 \
+            @semantic-release/git@11.0.1
+          npx semantic-release
+      - name: Fetch tags
+        run: git fetch --tags
+      - name: Get released version
+        id: version
+        run: |
+          if ! VERSION=$(git describe --tags --abbrev=0 --match "v*"); then
+            echo "No release created"
+            exit 1
+          fi
+          if [ "$VERSION" = "${{ steps.before.outputs.tag }}" ]; then
+            echo "semantic-release created no new release; refusing to"
+            echo "republish $VERSION"
+            exit 1
+          fi
+          VERSION=${VERSION#v}
+          echo "Released version: $VERSION"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
+  build:
+    name: Build
+    needs: release
+    uses: ./.github/workflows/build.yml
+    permissions:
+      contents: write
+      packages: write
+    with:
+      version: ${{ needs.release.outputs.version }}
+      latest: true
+      ref: v${{ needs.release.outputs.version }}

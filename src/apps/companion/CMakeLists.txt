@@ -1,0 +1,47 @@
+antwika_add_app(
+    NAME companion
+    SOURCES
+        src/Companion.cpp
+        src/CompanionSnapshotStore.cpp
+        src/ConfigFile.cpp
+        src/DayMood.cpp
+        src/FilePetStore.cpp
+        src/LifeStage.cpp
+        src/Lineage.cpp
+        src/Messages.cpp
+        src/PacingSink.cpp
+        src/Pet.cpp
+        src/PetLayout.cpp
+        src/PetSave.cpp
+        src/PetScene.cpp
+        src/PetSink.cpp
+        src/PetSnapshot.cpp
+        src/PropSink.cpp
+        src/RenderSink.cpp
+        src/RestoreSink.cpp
+        src/RestoreSource.cpp
+        src/ReviveSink.cpp
+        src/main.cpp
+    LIBS
+        antwika::enums
+        antwika::animation
+        antwika::app
+        antwika::config
+        antwika::console
+        antwika::ecs
+        antwika::engine
+        antwika::gfx
+        antwika::gfx_backend
+        antwika::i18n
+        antwika::input
+        antwika::input_backend
+        antwika::log
+        antwika::replay
+        antwika::simulation
+        antwika::time
+        antwika::tween
+        antwika::ui
+    ASSETS
+        assets/config.json
+        replays/demo.jsonl
+)

@@ -1,0 +1,203 @@
+#include <gmock/gmock.h>
+#include <gtest/gtest.h>
+
+#include <cstddef>
+#include <cstdint>
+
+#include <antwika/ecs/Entity.hpp>
+#include <antwika/ecs/World.hpp>
+#include <antwika/log/mocks/MockLogger.hpp>
+
+#include "antwika/game/CityRatings.hpp"
+#include "antwika/game/Building.hpp"
+#include "antwika/game/BuildingKind.hpp"
+#include "antwika/game/Cell.hpp"
+#include "antwika/game/Coverage.hpp"
+#include "antwika/game/Household.hpp"
+#include "antwika/game/HousingLevel.hpp"
+#include "antwika/game/Service.hpp"
+#include "antwika/game/Staff.hpp"
+#include "antwika/game/Workforce.hpp"
+
+namespace
+{
+    using antwika::ecs::Entity;
+    using antwika::ecs::World;
+    using antwika::game::Building;
+    using antwika::game::BuildingKind;
+    using antwika::game::Cell;
+    using antwika::game::CityRatings;
+    using antwika::game::Coverage;
+    using antwika::game::Household;
+    using antwika::game::HousingLevel;
+    using antwika::game::kCoverageFull;
+    using antwika::game::ratingsOf;
+    using antwika::game::setCoverage;
+    using antwika::game::setHousehold;
+    using antwika::game::setStaff;
+    using antwika::game::Staff;
+    using antwika::game::StaffEntry;
+    using antwika::game::workersWantedBy;
+    using antwika::log::mocks::MockLogger;
+
+    class Scene final
+    {
+    public:
+        Entity put(Cell at, BuildingKind kind)
+        {
+            const auto entity = world.create();
+            world.add<Cell>(entity, at);
+            world.add<Building>(entity, Building{.kind = kind});
+            world.commit();
+            return entity;
+        }
+
+        Entity house(Cell at, Household household)
+        {
+            const auto entity = put(at, BuildingKind::House);
+            setHousehold(world, entity, household);
+            world.commit();
+            return entity;
+        }
+
+        void employ(Entity entity, std::int32_t people)
+        {
+            Staff staff;
+            staff.sources[0] = StaffEntry{
+                .house = entity, .count = people};
+            setStaff(world, entity, staff);
+            world.commit();
+        }
+
+        void serve(Entity entity, std::size_t services)
+        {
+            Coverage coverage;
+
+            for (std::size_t slot = 0; slot < services; ++slot)
+            {
+                coverage.ticksLeft[slot] = kCoverageFull;
+            }
+
+            setCoverage(world, entity, coverage);
+            world.commit();
+        }
+
+        ::testing::NiceMock<MockLogger> logger;
+        World world{logger};
+    };
+}
+
+TEST(CityRatingsTest, RatingsOf_RatesAnEmptyCityAtNothingAtAll)
+{
+    Scene scene;
+
+    EXPECT_EQ(ratingsOf(scene.world), CityRatings{});
+}
+
+TEST(CityRatingsTest, RatingsOf_CountsEverybodyLivingInTheCity)
+{
+    Scene scene;
+    scene.house(Cell{.x = 0, .y = 0}, Household{.population = 4});
+    scene.house(Cell{.x = 1, .y = 0}, Household{.population = 3});
+
+    EXPECT_EQ(ratingsOf(scene.world).population, 7);
+}
+
+TEST(CityRatingsTest, RatingsOf_RatesACityWithNoJobsAtNoEmployment)
+{
+    Scene scene;
+    scene.house(Cell{.x = 0, .y = 0}, Household{.population = 4});
+
+    EXPECT_EQ(ratingsOf(scene.world).employment, 0);
+}
+
+TEST(CityRatingsTest, RatingsOf_ReportsTheShareOfTheCitysJobsThatAreFilled)
+{
+    Scene scene;
+    const auto farm = scene.put(Cell{.x = 2, .y = 0}, BuildingKind::Farm);
+    const auto well = scene.put(Cell{.x = 4, .y = 0}, BuildingKind::Well);
+
+    scene.employ(farm, 1);
+    scene.employ(well, 0);
+
+    const auto jobs = workersWantedBy(BuildingKind::Farm)
+        + workersWantedBy(BuildingKind::Well);
+    EXPECT_EQ(ratingsOf(scene.world).employment, 100 / jobs);
+}
+
+TEST(CityRatingsTest, RatingsOf_CountsAWorkplaceNothingHasAllocatedToYet)
+{
+    Scene scene;
+    scene.put(Cell{.x = 2, .y = 0}, BuildingKind::Farm);
+
+    EXPECT_EQ(ratingsOf(scene.world).employment, 100);
+}
+
+TEST(CityRatingsTest, RatingsOf_RatesACityOfTentsAtNoHousingAtAll)
+{
+    Scene scene;
+    scene.house(Cell{.x = 0, .y = 0}, Household{});
+
+    EXPECT_EQ(ratingsOf(scene.world).averageHousingLevel, 0);
+}
+
+TEST(CityRatingsTest, RatingsOf_AveragesTheHousingTierInHundredths)
+{
+    Scene scene;
+    scene.house(
+        Cell{.x = 0, .y = 0}, Household{.level = HousingLevel::Tent});
+    scene.house(
+        Cell{.x = 1, .y = 0}, Household{.level = HousingLevel::Hovel});
+
+    EXPECT_EQ(ratingsOf(scene.world).averageHousingLevel, 100);
+}
+
+TEST(CityRatingsTest, RatingsOf_ReportsTheShareOfServicesReachingHouses)
+{
+    Scene scene;
+    const auto home = scene.house(Cell{.x = 0, .y = 0}, Household{});
+
+    scene.serve(home, 1);
+
+    EXPECT_EQ(
+        ratingsOf(scene.world).serviceReach,
+        100 / static_cast<std::int32_t>(antwika::game::kServiceCount));
+}
+
+TEST(CityRatingsTest, RatingsOf_ReportsFullReachForAFullyServedHouse)
+{
+    Scene scene;
+    const auto home = scene.house(Cell{.x = 0, .y = 0}, Household{});
+
+    scene.serve(home, antwika::game::kServiceCount);
+
+    EXPECT_EQ(ratingsOf(scene.world).serviceReach, 100);
+}
+
+TEST(CityRatingsTest, RatingsOf_CountsServiceReachOverHousesAlone)
+{
+    Scene scene;
+    const auto well = scene.put(Cell{.x = 2, .y = 0}, BuildingKind::Well);
+
+    scene.serve(well, antwika::game::kServiceCount);
+
+    EXPECT_EQ(ratingsOf(scene.world).serviceReach, 0);
+}
+
+TEST(CityRatingsTest, RatingsOf_ScoresAMixedCityFieldByField)
+{
+    Scene scene;
+    scene.house(Cell{.x = 0, .y = 0}, Household{.population = 4});
+    scene.house(
+        Cell{.x = 1, .y = 0},
+        Household{.level = HousingLevel::Shack, .population = 2});
+    scene.employ(scene.put(Cell{.x = 3, .y = 0}, BuildingKind::Farm), 2);
+
+    const auto ratings = ratingsOf(scene.world);
+
+    EXPECT_EQ(ratings.population, 6);
+    EXPECT_EQ(
+        ratings.employment, 200 / workersWantedBy(BuildingKind::Farm));
+    EXPECT_EQ(ratings.averageHousingLevel, 50);
+    EXPECT_EQ(ratings.serviceReach, 0);
+}

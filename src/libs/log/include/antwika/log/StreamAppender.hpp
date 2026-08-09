@@ -1,0 +1,28 @@
+#pragma once
+
+#include <ostream>
+#include <string_view>
+
+#include "IAppender.hpp"
+
+namespace antwika::log
+{
+
+    class StreamAppender final : public IAppender
+    {
+    public:
+        explicit StreamAppender(std::ostream &stream);
+
+        StreamAppender(const StreamAppender &) = delete;
+        StreamAppender(StreamAppender &&) = delete;
+
+        StreamAppender &operator=(const StreamAppender &) = delete;
+        StreamAppender &operator=(StreamAppender &&) = delete;
+
+        void append(std::string_view message) override;
+
+    private:
+        std::ostream &stream;
+    };
+
+}

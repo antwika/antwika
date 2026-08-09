@@ -1,0 +1,107 @@
+#include "antwika/gfx/Camera3D.hpp"
+
+#include <glm/ext/matrix_clip_space.hpp>
+#include <glm/ext/matrix_transform.hpp>
+
+#include <variant>
+
+#include "antwika/gfx/Math3D.hpp"
+
+namespace antwika::gfx
+{
+
+    namespace
+    {
+
+        struct ProjectionMatrix final
+        {
+            [[nodiscard]] Mat4 operator()(
+                const Perspective &value) const
+            {
+                return glm::perspective(
+                    value.fovYRadians,
+                    value.aspectRatio,
+                    value.nearPlane,
+                    value.farPlane);
+            }
+
+            [[nodiscard]] Mat4 operator()(
+                const Orthographic &value) const
+            {
+                return glm::ortho(
+                    -value.halfWidth,
+                    value.halfWidth,
+                    -value.halfHeight,
+                    value.halfHeight,
+                    value.nearPlane,
+                    value.farPlane);
+            }
+        };
+
+    }
+
+    Camera3D::Camera3D(
+        Vec3 position, Vec3 target, Vec3 up, Projection projection)
+        : eye(position)
+        , lookAt(target)
+        , upward(up)
+        , how(projection)
+    {
+    }
+
+    Vec3 Camera3D::position() const
+    {
+        return eye;
+    }
+
+    Vec3 Camera3D::target() const
+    {
+        return lookAt;
+    }
+
+    Vec3 Camera3D::up() const
+    {
+        return upward;
+    }
+
+    const Camera3D::Projection &Camera3D::projection() const
+    {
+        return how;
+    }
+
+    void Camera3D::setPosition(Vec3 value)
+    {
+        eye = value;
+    }
+
+    void Camera3D::setTarget(Vec3 value)
+    {
+        lookAt = value;
+    }
+
+    void Camera3D::setProjection(Projection value)
+    {
+        how = value;
+    }
+
+    Mat4 Camera3D::view() const
+    {
+        if (eye == lookAt)
+        {
+            return identityMatrix();
+        }
+
+        return glm::lookAt(eye, lookAt, upward);
+    }
+
+    Mat4 Camera3D::projectionMatrix() const
+    {
+        return std::visit(ProjectionMatrix{}, how);
+    }
+
+    Mat4 Camera3D::viewProjection() const
+    {
+        return projectionMatrix() * view();
+    }
+
+}
