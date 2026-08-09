@@ -60,17 +60,18 @@ jobs:
         run: git fetch --tags
       - name: Get released version
         id: version
+        env:
+          BEFORE: ${{ steps.before.outputs.tag }}
         run: |
-          if ! VERSION=$(git describe --tags --abbrev=0 --match "v*"); then
+          AFTER=$(git describe --tags --abbrev=0 --match "v*" \
+            2>/dev/null || echo "none")
+
+          if [ "$AFTER" = "none" ] || [ "$AFTER" = "$BEFORE" ]; then
             echo "No release created"
             exit 1
           fi
-          if [ "$VERSION" = "${{ steps.before.outputs.tag }}" ]; then
-            echo "semantic-release created no new release; refusing to"
-            echo "republish $VERSION"
-            exit 1
-          fi
-          VERSION=${VERSION#v}
+
+          VERSION=${AFTER#v}
           echo "Released version: $VERSION"
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
 
