@@ -10,11 +10,16 @@ namespace antwika::tilemap_demo
 
     namespace
     {
+        using antwika::autotile::kDisplayTile;
         using antwika::autotile::kSheetHeight;
         using antwika::autotile::kSheetWidth;
         using antwika::gfx::Bitmap;
         using antwika::gfx::Color;
         using antwika::tilemap::TerrainClass;
+
+        constexpr std::int32_t kRightColumn = 64;
+
+        constexpr std::int32_t kSpecialRow = 32;
 
         [[nodiscard]] bool patternInk(
             const TerrainClass terrain,
@@ -45,8 +50,8 @@ namespace antwika::tilemap_demo
             const std::int32_t x,
             const std::int32_t y)
         {
-            const auto fx = static_cast<float>(x) / 7.0F;
-            const auto fy = static_cast<float>(y) / 7.0F;
+            const auto fx = static_cast<float>(x) / 15.0F;
+            const auto fy = static_cast<float>(y) / 15.0F;
 
             auto value = 0.0F;
 
@@ -91,7 +96,7 @@ namespace antwika::tilemap_demo
                 return true;
             }
 
-            return patternInk(terrain, x, y);
+            return patternInk(terrain, x % 8, y % 8);
         }
 
         [[nodiscard]] bool bandInk(
@@ -123,7 +128,7 @@ namespace antwika::tilemap_demo
             const std::int32_t x,
             const std::int32_t y)
         {
-            return patternInk(terrain, (x + 3) % 8, y);
+            return patternInk(terrain, (x + 3) % 8, y % 8);
         }
 
         [[nodiscard]] bool variantTwoInk(
@@ -131,7 +136,7 @@ namespace antwika::tilemap_demo
             const std::int32_t x,
             const std::int32_t y)
         {
-            return patternInk(terrain, x, (y + 3) % 8);
+            return patternInk(terrain, x % 8, (y + 3) % 8);
         }
 
         [[nodiscard]] bool frameBInk(
@@ -139,7 +144,7 @@ namespace antwika::tilemap_demo
             const std::int32_t x,
             const std::int32_t y)
         {
-            return patternInk(terrain, (x + 2) % 8, y);
+            return patternInk(terrain, (x + 2) % 8, y % 8);
         }
     }
 
@@ -168,17 +173,38 @@ namespace antwika::tilemap_demo
 
         for (std::uint8_t mask = 0; mask < 16; ++mask)
         {
-            const auto originX = (mask % 4) * 8;
-            const auto originY = (mask / 4) * 8;
+            const auto originX = (mask % 4) * kDisplayTile;
+            const auto originY = (mask / 4) * kDisplayTile;
 
-            for (std::int32_t y = 0; y < 8; ++y)
+            for (std::int32_t y = 0; y < kDisplayTile; ++y)
             {
-                for (std::int32_t x = 0; x < 8; ++x)
+                for (std::int32_t x = 0; x < kDisplayTile; ++x)
                 {
                     if (surfaceInk(terrain, mask, x, y))
                     {
                         put(originX + x, originY + y);
                     }
+                }
+            }
+        }
+
+        for (std::int32_t y = 0; y < kDisplayTile; ++y)
+        {
+            for (std::int32_t x = 0; x < kDisplayTile; ++x)
+            {
+                if (variantOneInk(terrain, x, y))
+                {
+                    put(kRightColumn + x, y);
+                }
+
+                if (variantTwoInk(terrain, x, y))
+                {
+                    put(kRightColumn + kDisplayTile + x, y);
+                }
+
+                if (frameBInk(terrain, x, y))
+                {
+                    put(kRightColumn + x, kDisplayTile + y);
                 }
             }
         }
@@ -189,37 +215,22 @@ namespace antwika::tilemap_demo
             {
                 if (bandInk(x, y))
                 {
-                    put(x, 32 + y);
+                    put(kRightColumn + x, kSpecialRow + y);
                 }
 
                 if (rimInk(x, y))
                 {
-                    put(8 + x, 32 + y);
+                    put(kRightColumn + 8 + x, kSpecialRow + y);
                 }
 
                 if (bridgeInk(x, y))
                 {
-                    put(16 + x, 32 + y);
+                    put(kRightColumn + 16 + x, kSpecialRow + y);
                 }
 
                 if (shadeInk(x, y))
                 {
-                    put(24 + x, 32 + y);
-                }
-
-                if (variantOneInk(terrain, x, y))
-                {
-                    put(x, 40 + y);
-                }
-
-                if (variantTwoInk(terrain, x, y))
-                {
-                    put(8 + x, 40 + y);
-                }
-
-                if (frameBInk(terrain, x, y))
-                {
-                    put(16 + x, 40 + y);
+                    put(kRightColumn + 24 + x, kSpecialRow + y);
                 }
             }
         }

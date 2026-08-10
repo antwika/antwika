@@ -57,9 +57,9 @@ namespace antwika::map_editor
         constexpr Color kLabelColor{
             .red = 214, .green = 224, .blue = 216};
 
-        constexpr std::int32_t kWorkspaceLeft = 80;
+        constexpr std::int32_t kWorkspaceLeft = 16;
 
-        constexpr std::int32_t kWorkspaceTop = 20;
+        constexpr std::int32_t kWorkspaceTop = 40;
 
         constexpr std::int32_t kWorkspaceWidth =
             static_cast<std::int32_t>(kSheetWidth) * kSheetZoom;
@@ -130,13 +130,22 @@ namespace antwika::map_editor
             return {};
         }
 
-        const auto column = pixel.x / 8;
+        if (pixel.x < 64)
+        {
+            const auto mask =
+                (pixel.y / 16) * 4 + pixel.x / 16;
+
+            return "mask " + std::to_string(mask);
+        }
+
+        if (pixel.y < 16)
+        {
+            return pixel.x < 80 ? "variant 1" : "variant 2";
+        }
 
         if (pixel.y < 32)
         {
-            const auto mask = (pixel.y / 8) * 4 + column;
-
-            return "mask " + std::to_string(mask);
+            return pixel.x < 80 ? "water frame B" : "spare";
         }
 
         if (pixel.y < 40)
@@ -145,14 +154,11 @@ namespace antwika::map_editor
                 "wall band", "wall rim", "bridge deck", "shade"};
 
             return std::string(
-                kSpecial[static_cast<std::size_t>(column)]);
+                kSpecial[static_cast<std::size_t>(
+                    (pixel.x - 64) / 8)]);
         }
 
-        constexpr std::array<std::string_view, 4> kVariants{
-            "variant 1", "variant 2", "water frame B", "spare"};
-
-        return std::string(
-            kVariants[static_cast<std::size_t>(column)]);
+        return "spare";
     }
 
     bool setSheetPixel(
@@ -213,10 +219,23 @@ namespace antwika::map_editor
                     return bitmap;
                 }
 
-                logger.log(
-                    log::Level::Warning,
-                    "map_editor: wrong sheet size in "
-                        + path.string());
+                if (bitmap.size.width == 32
+                    && bitmap.size.height == 48)
+                {
+                    logger.log(
+                        log::Level::Warning,
+                        "map_editor: legacy sheet layout in "
+                            + path.string()
+                            + ", redraw needed; using the "
+                              "placeholder");
+                }
+                else
+                {
+                    logger.log(
+                        log::Level::Warning,
+                        "map_editor: wrong sheet size in "
+                            + path.string());
+                }
             }
             catch (const gfx::GfxError &error)
             {
@@ -485,7 +504,7 @@ namespace antwika::map_editor
             view.drawLine(
                 {lineX, top},
                 {lineX, top + static_cast<float>(kWorkspaceHeight)},
-                kSlotGuideColor);
+                x % 16 == 0 ? kBandGuideColor : kSlotGuideColor);
         }
 
         for (std::int32_t y = 0;
@@ -493,12 +512,11 @@ namespace antwika::map_editor
              y += 8)
         {
             const auto lineY = top + static_cast<float>(y) * zoom;
-            const bool band = y == 32 || y == 40 || y == 48;
 
             view.drawLine(
                 {left, lineY},
                 {left + static_cast<float>(kWorkspaceWidth), lineY},
-                band ? kBandGuideColor : kSlotGuideColor);
+                y % 16 == 0 ? kBandGuideColor : kSlotGuideColor);
         }
 
         if (!hover.has_value())

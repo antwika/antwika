@@ -12,9 +12,10 @@ namespace antwika::autotile
     inline constexpr std::int32_t kHalfTile = 8;
     inline constexpr std::int32_t kUnit = 16;
     inline constexpr std::int32_t kLevelRise = 8;
+    inline constexpr std::int32_t kDisplayTile = 16;
 
-    inline constexpr std::uint32_t kSheetWidth = 32;
-    inline constexpr std::uint32_t kSheetHeight = 48;
+    inline constexpr std::uint32_t kSheetWidth = 96;
+    inline constexpr std::uint32_t kSheetHeight = 64;
 
     /**
      * @brief Locates a piece's sprite on the terrain sheet.
@@ -23,7 +24,8 @@ namespace antwika::autotile
      * @param mask The corner mask; only the low four bits are read.
      * @param variant The alternate-art index; a variant no slot backs
      *                falls back to the plain mask tile.
-     * @return The 8x8 source rectangle on the sheet.
+     * @return The source rectangle on the sheet: 16x16 for Surface
+     *         pieces and 8x8 for the special half-tile pieces.
      *
      * Ensures: every input yields a rectangle inside the sheet.
      */

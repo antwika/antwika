@@ -29,6 +29,7 @@ Unit tests for the editor itself remain deferred by explicit decision; see docs/
 | 17 | Generate-every-second-press bug | fixed |
 | 18 | Yellow hover outline | shipped |
 | 19 | Pointer hint line | shipped |
+| 20 | Disconnected-tiles rendering bug | fixed |
 
 ## 1: menu bar (shipped)
 
@@ -254,6 +255,19 @@ Widget hints come from ui::Interactions.hovered, which the ui library's hover ma
 Tiles view reuses the task 7 slot naming as "mask 5  px 10,12" with an "ink" suffix on inked pixels, and the characters view reads "walk_up frame 1  px 30,19"; the old bottom-left workspace labels and ink indicator are removed so slotLabelAt and rowNameOf feed exactly one presentation, and the workspace draw functions dropped their now-unused bitmap parameter.
 While a modal dialog is open the hint describes only the dialog's own widgets ("apply the palette as one undoable edit") and is otherwise empty, never leaking map hints from underneath; when the pointer sits under a visible console sheet the hint empties too, and the line itself would hide if the sheet ever reached it.
 Verified under Xvfb with captures: the annotated cell hint over a bridge-plus-light cell carrying a transition, the ghost hint past the south edge, the Generate panel hint, the tile-slot and character-frame hints, a palette-dialog widget hint, and zero muted-text pixels in the hint strip both over the void and with the pointer parked under the open console.
+
+## 20: disconnected-tiles rendering bug
+
+User report: the 16x16 unit tiles are not visually connected — it looks like only the lower-right sprite is ever drawn, the other three sprite slots appear seemingly empty, and terrain is not continuous.
+The before-fix capture confirmed the geometry: addSurface drew ONE 8x8 sprite per dual corner at (dc*16-8, dr*16-8), which covers only the quadrant north-west of the corner — the SE quadrant of one cell — so 8x8 sprites at 16-pixel spacing painted exactly a quarter of the plane and three quadrants of every cell stayed empty.
+Fix: the standard dual-grid display-tile scheme — a surface sprite is now a 16x16 display tile drawn centered on its corner (the draw position was already the correct top-left for that), giving full plane coverage and edges the artist controls directly.
+The mirrored-8x8-quadrants alternative was rejected: raylib's DrawTexturePro could flip via negative source rects, but the IRenderer/ViewportRenderer contract and every backend and conformance suite assume positive rectangles, so it would be an invasive gfx-contract change for flip-dependent art, against an app-and-lib-local layout change with native 1x pixels.
+The sheet is now 96x64: the 4x4 mask grid of 16x16 display tiles fills the left 64x64, the three 16x16 variant tiles plus a spare sit top-right, and the four 8x8 specials (band, rim, bridge deck, shade) sit beneath them — laid out wide rather than as a 64x88 stack because the workspace area is 320x260 and the wide sheet fits at a 3x magnification where the tall one fits only at 2x.
+sheetSource now returns 16x16 rects for surfaces and 8x8 for specials, and both apps size the destination rect from the source instead of a hardcoded 8x8; DrawPlan itself is unchanged apart from that, since faces, bridges, and shades were always per-half-tile draws.
+The bilinear placeholder coverage extends to 16x16 with the corner at the tile center (weights over x/15, y/15) and the terrain patterns tile per 8x8 quadrant; the editor's generator now carries the full slot set so both apps' C++ and the regenerated scripts/generate_placeholder_tiles.py produce identical coverage, and assets/tiles was regenerated.
+The workspace runs at 3x with the pixel-grid gate lowered to 3, strong guides on the 16-pixel display-tile boundaries and fainter 8-pixel quadrant guides inside them, relabeled slots feeding the hint line, and a loaded 32x48 PNG logs "legacy sheet layout, redraw needed" and falls back to the placeholder.
+Verified under Xvfb: the before capture shows the scattered quadrants, the after captures show a connected wall border and slab, a coherent water pool boundary, cliff bands flush under a raised plateau lip, and the demo's built-in map reading as one continuous scene; a pixel scan found zero empty 8x8 quadrants inside painted wall and floor regions (minimum 288 and 18 ink pixels per quadrant), the task 7 restart round-trip passed on the 96x64 sheet with the edited art rendering after relaunch, and the legacy-sheet warning plus placeholder fallback were exercised live.
+docs/TILE_SHEETS.md was rewritten for the new convention and docs/GUIDE.md's tiles section updated.
 
 ## After the queue drains
 

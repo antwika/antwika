@@ -352,7 +352,9 @@ namespace antwika::map_editor
                      static_cast<float>(draw.screen.y) * zoom
                          + store.camera.panY
                          + static_cast<float>(kMenuBarHeight)},
-                    {8.0F * zoom, 8.0F * zoom}),
+                    {static_cast<float>(source.size.width) * zoom,
+                     static_cast<float>(source.size.height)
+                         * zoom}),
                 tint);
         }
     }

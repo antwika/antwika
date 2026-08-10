@@ -412,7 +412,9 @@ int main(int argc, char **argv)
                         RectF(
                             {static_cast<float>(draw.screen.x),
                              static_cast<float>(draw.screen.y)},
-                            {8.0F, 8.0F}),
+                            {static_cast<float>(source.size.width),
+                             static_cast<float>(
+                                 source.size.height)}),
                         shade ? Color{.red = 0, .green = 0, .blue = 0}
                               : ink);
                 }

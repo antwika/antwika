@@ -17,15 +17,15 @@
 namespace antwika::map_editor
 {
 
-    inline constexpr std::int32_t kSheetZoom = 5;
+    inline constexpr std::int32_t kSheetZoom = 3;
 
     /**
      * @brief The zoom at or above which the faint pixel grid shows.
      *
-     * The workspace zoom is fixed at kSheetZoom, which sits above
+     * The workspace zoom is fixed at kSheetZoom, which sits at
      * this gate, mirroring atlas_editor's zoom-gated grid.
      */
-    inline constexpr std::int32_t kPixelGridMinZoom = 4;
+    inline constexpr std::int32_t kPixelGridMinZoom = 3;
 
     /**
      * @brief Finds the sheet pixel under a canvas position.
@@ -63,7 +63,10 @@ namespace antwika::map_editor
      * @brief Loads a terrain sheet from the tiles directory.
      *
      * @return The file's bitmap when it exists and is exactly
-     *         32x48, else the procedural placeholder.
+     *         96x64, else the procedural placeholder.
+     *
+     * Ensures: a legacy 32x48 sheet logs that a redraw is needed
+     *          and falls back to the placeholder.
      */
     [[nodiscard]] gfx::Bitmap loadSheetOrPlaceholder(
         const std::filesystem::path &directory,

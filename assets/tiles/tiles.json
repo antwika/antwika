@@ -1,41 +1,41 @@
 {
   "sheet": {
-    "width": 32,
-    "height": 48
+    "width": 96,
+    "height": 64
   },
-  "masks": "4x4 at 0,0",
+  "masks": "4x4 of 16x16 at 0,0",
   "slots": {
+    "surface_variant_1": [
+      64,
+      0
+    ],
+    "surface_variant_2": [
+      80,
+      0
+    ],
+    "water_frame_b": [
+      64,
+      16
+    ],
+    "spare": [
+      80,
+      16
+    ],
     "wall_band": [
-      0,
+      64,
       32
     ],
     "wall_rim": [
-      8,
+      72,
       32
     ],
     "bridge_deck": [
-      16,
+      80,
       32
     ],
     "shade": [
-      24,
+      88,
       32
-    ],
-    "surface_variant_1": [
-      0,
-      40
-    ],
-    "surface_variant_2": [
-      8,
-      40
-    ],
-    "water_frame_b": [
-      16,
-      40
-    ],
-    "spare": [
-      24,
-      40
     ]
   }
 }

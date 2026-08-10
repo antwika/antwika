@@ -10,8 +10,12 @@ ROOT = Path(__file__).resolve().parent.parent
 
 TILES_DIR = ROOT / "assets" / "tiles"
 
-SHEET_WIDTH = 32
-SHEET_HEIGHT = 48
+SHEET_WIDTH = 96
+SHEET_HEIGHT = 64
+
+TILE = 16
+
+RIGHT = 64
 
 INK = (0xD6, 0xE0, 0xD8, 255)
 TRANSPARENT = (0, 0, 0, 0)
@@ -19,14 +23,14 @@ TRANSPARENT = (0, 0, 0, 0)
 TERRAINS = ("floor", "wall", "water", "cliff", "path", "stair")
 
 SLOTS = {
-    "wall_band": [0, 32],
-    "wall_rim": [8, 32],
-    "bridge_deck": [16, 32],
-    "shade": [24, 32],
-    "surface_variant_1": [0, 40],
-    "surface_variant_2": [8, 40],
-    "water_frame_b": [16, 40],
-    "spare": [24, 40],
+    "surface_variant_1": [64, 0],
+    "surface_variant_2": [80, 0],
+    "water_frame_b": [64, 16],
+    "spare": [80, 16],
+    "wall_band": [64, 32],
+    "wall_rim": [72, 32],
+    "bridge_deck": [80, 32],
+    "shade": [88, 32],
 }
 
 
@@ -50,8 +54,8 @@ def pattern_ink(terrain: str, x: int, y: int) -> bool:
 
 
 def coverage(mask: int, x: int, y: int) -> float:
-    fx = x / 7.0
-    fy = y / 7.0
+    fx = x / 15.0
+    fy = y / 15.0
 
     value = 0.0
 
@@ -79,7 +83,7 @@ def surface_ink(terrain: str, mask: int, x: int, y: int) -> bool:
     if value < 0.66:
         return True
 
-    return pattern_ink(terrain, x, y)
+    return pattern_ink(terrain, x % 8, y % 8)
 
 
 def band_ink(x: int, y: int) -> bool:
@@ -99,15 +103,15 @@ def shade_ink(x: int, y: int) -> bool:
 
 
 def variant_one_ink(terrain: str, x: int, y: int) -> bool:
-    return pattern_ink(terrain, (x + 3) % 8, y)
+    return pattern_ink(terrain, (x + 3) % 8, y % 8)
 
 
 def variant_two_ink(terrain: str, x: int, y: int) -> bool:
-    return pattern_ink(terrain, x, (y + 3) % 8)
+    return pattern_ink(terrain, x % 8, (y + 3) % 8)
 
 
 def frame_b_ink(terrain: str, x: int, y: int) -> bool:
-    return pattern_ink(terrain, (x + 2) % 8, y)
+    return pattern_ink(terrain, (x + 2) % 8, y % 8)
 
 
 def sheet_pixels(terrain: str) -> bytearray:
@@ -118,36 +122,38 @@ def sheet_pixels(terrain: str) -> bytearray:
         pixels[at : at + 4] = bytes(INK)
 
     for mask in range(16):
-        origin_x = (mask % 4) * 8
-        origin_y = (mask // 4) * 8
+        origin_x = (mask % 4) * TILE
+        origin_y = (mask // 4) * TILE
 
-        for y in range(8):
-            for x in range(8):
+        for y in range(TILE):
+            for x in range(TILE):
                 if surface_ink(terrain, mask, x, y):
                     put(origin_x + x, origin_y + y)
+
+    for y in range(TILE):
+        for x in range(TILE):
+            if variant_one_ink(terrain, x, y):
+                put(RIGHT + x, y)
+
+            if variant_two_ink(terrain, x, y):
+                put(RIGHT + TILE + x, y)
+
+            if frame_b_ink(terrain, x, y):
+                put(RIGHT + x, TILE + y)
 
     for y in range(8):
         for x in range(8):
             if band_ink(x, y):
-                put(x, 32 + y)
+                put(RIGHT + x, 32 + y)
 
             if rim_ink(x, y):
-                put(8 + x, 32 + y)
+                put(RIGHT + 8 + x, 32 + y)
 
             if bridge_ink(x, y):
-                put(16 + x, 32 + y)
+                put(RIGHT + 16 + x, 32 + y)
 
             if shade_ink(x, y):
-                put(24 + x, 32 + y)
-
-            if variant_one_ink(terrain, x, y):
-                put(x, 40 + y)
-
-            if variant_two_ink(terrain, x, y):
-                put(8 + x, 40 + y)
-
-            if frame_b_ink(terrain, x, y):
-                put(16 + x, 40 + y)
+                put(RIGHT + 24 + x, 32 + y)
 
     return pixels
 
@@ -181,7 +187,7 @@ def png_bytes(width: int, height: int, pixels: bytes) -> bytes:
 def sidecar_text() -> str:
     sidecar = {
         "sheet": {"width": SHEET_WIDTH, "height": SHEET_HEIGHT},
-        "masks": "4x4 at 0,0",
+        "masks": "4x4 of 16x16 at 0,0",
         "slots": SLOTS,
     }
 

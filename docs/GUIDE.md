@@ -83,10 +83,10 @@ Apply commits as one undoable step and Cancel restores; the colors save in the m
 
 ## Drawing tiles
 
-View > Tiles (or Tab) opens the pixel workspace for the selected terrain's 32×48 sheet.
-The grid shows every pixel; stronger guide lines separate the 16 corner-mask slots (top), the band, rim, bridge, and shade slots (middle row), and the variant slots (bottom row).
+View > Tiles (or Tab) opens the pixel workspace for the selected terrain's 96×64 sheet.
+The grid shows every pixel; strong guide lines mark the 16×16 display tiles — the 4×4 corner-mask grid on the left, the variant tiles top-right, and the band, rim, bridge, and shade half-tiles beneath them — while fainter lines keep the 8×8 quadrant structure visible inside every mask tile.
 Left-click inks a pixel and right-click clears it; art is strictly one-bit.
-The corner masks encode which corners of an 8×8 half-tile are inside the terrain: draw the full tile (mask 15) first, then the edges.
+Each 16×16 mask tile draws centered on a dual-grid corner, and its mask encodes which of the four surrounding cells hold the terrain: draw the full tile (mask 15) first, then the edges.
 Every edit updates the map view live; File > Save Sheet writes `assets/tiles/<terrain>.png`, which the editor and demo load at startup.
 Sheets are drawn in white and tinted by the map's ink color at render time.
 The layout convention is documented in [TILE_SHEETS.md](TILE_SHEETS.md).
