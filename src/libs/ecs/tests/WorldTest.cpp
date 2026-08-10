@@ -555,3 +555,64 @@ TEST(WorldTest, Add_FillsAPoolAnotherWorldOpenedFirst)
     ASSERT_TRUE(second.has<Unregistered>(other));
     EXPECT_EQ(second.get<Unregistered>(other), (Unregistered{4}));
 }
+
+TEST(WorldTest, Remove_BeatsAnEarlierAddInAPhase)
+{
+    NiceMock<MockLogger> logger;
+    World world(logger);
+    const auto entity = world.create();
+
+    world.add<Position>(entity, Position{1, 2});
+    world.remove<Position>(entity);
+    world.commit();
+
+    EXPECT_FALSE(world.has<Position>(entity));
+}
+
+TEST(WorldTest, Add_BeatsAnEarlierRemoveInAPhase)
+{
+    NiceMock<MockLogger> logger;
+    World world(logger);
+    const auto entity = world.create();
+    world.add<Position>(entity, Position{1, 2});
+    world.commit();
+
+    world.remove<Position>(entity);
+    world.add<Position>(entity, Position{7, 8});
+    world.commit();
+
+    ASSERT_TRUE(world.has<Position>(entity));
+    EXPECT_EQ(world.get<Position>(entity), (Position{7, 8}));
+}
+
+TEST(WorldTest, Commit_LeavesADrainedBufferAlone)
+{
+    NiceMock<MockLogger> logger;
+    World world(logger);
+    const auto entity = world.create();
+
+    world.add<Position>(entity, Position{1, 2});
+    world.commit();
+    world.commit();
+
+    ASSERT_TRUE(world.has<Position>(entity));
+    EXPECT_EQ(world.get<Position>(entity), (Position{1, 2}));
+}
+
+TEST(WorldTest, Add_IsDiscardedWhenTheEntityDiesInTheSamePhase)
+{
+    NiceMock<MockLogger> logger;
+    World world(logger);
+    const auto doomed = world.create();
+    const auto kept = world.create();
+
+    world.destroy(doomed);
+    world.add<Position>(doomed, Position{1, 2});
+    world.add<Position>(kept, Position{3, 4});
+    world.commit();
+
+    EXPECT_FALSE(world.alive(doomed));
+    EXPECT_FALSE(world.has<Position>(doomed));
+    ASSERT_TRUE(world.has<Position>(kept));
+    EXPECT_EQ(world.get<Position>(kept), (Position{3, 4}));
+}

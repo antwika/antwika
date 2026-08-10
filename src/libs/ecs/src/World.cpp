@@ -67,17 +67,13 @@ namespace antwika::ecs
 
     void World::commit()
     {
-        std::vector<std::function<void()>> running;
-        running.swap(pendingOps);
-
         std::vector<Entity> destroying;
         destroying.swap(pendingDestroys);
 
         const ScopeGuard guard(
             [this]
             {
-                pendingOps.clear();
-                pendingDestroys.clear();
+                clearPending();
 
                 for (const auto &commitCallback : commitCallbacks)
                 {
@@ -85,12 +81,22 @@ namespace antwika::ecs
                 }
             });
 
-        for (const auto &op : running)
+        for (const auto &drainCallback : drainCallbacks)
         {
-            op();
+            drainCallback();
         }
 
         retireAll(destroying);
+    }
+
+    void World::clearPending() noexcept
+    {
+        pendingDestroys.clear();
+
+        for (const auto &clearCallback : clearCallbacks)
+        {
+            clearCallback();
+        }
     }
 
     void World::retireAll(std::span<const Entity> entities)
