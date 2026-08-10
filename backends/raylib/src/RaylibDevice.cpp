@@ -33,8 +33,6 @@ namespace antwika::raylib
                                              : kFallbackBufferFrames)
     {
         planes.assign(wave.channels, std::vector<float>(buffer, 0.0F));
-        interleaved.assign(
-            static_cast<std::size_t>(buffer) * wave.channels, 0.0F);
 
         if (!audio->isReady())
         {
@@ -119,16 +117,6 @@ namespace antwika::raylib
         sink->render(
             SampleBuffer{.channels = views, .frames = frames}, rendered);
 
-        for (FrameCount frame = 0; frame < frames; ++frame)
-        {
-            for (std::size_t channel = 0; channel < planes.size();
-                 ++channel)
-            {
-                interleaved[frame * planes.size() + channel] =
-                    planes[channel][frame];
-            }
-        }
-
         rendered += frames;
 
         if (!streaming)
@@ -138,12 +126,51 @@ namespace antwika::raylib
             return;
         }
 
-        if (IsAudioStreamProcessed(stream))
+        for (FrameCount frame = 0; frame < frames; ++frame)
+        {
+            for (std::size_t channel = 0; channel < planes.size();
+                 ++channel)
+            {
+                pending.push_back(planes[channel][frame]);
+            }
+        }
+
+        drain();
+    }
+
+    FrameCount RaylibDevice::pendingFrames() const noexcept
+    {
+        return static_cast<FrameCount>(
+            (pending.size() - pendingRead) / planes.size());
+    }
+
+    void RaylibDevice::drain()
+    {
+        while (pendingFrames() >= buffer && IsAudioStreamProcessed(stream))
         {
             UpdateAudioStream(
-                stream, interleaved.data(), static_cast<int>(frames));
+                stream,
+                pending.data() + pendingRead,
+                static_cast<int>(buffer));
 
-            accepted += frames;
+            pendingRead += static_cast<std::size_t>(buffer) * planes.size();
+            accepted += buffer;
+        }
+
+        if (pendingRead == pending.size())
+        {
+            pending.clear();
+            pendingRead = 0;
+
+            return;
+        }
+
+        if (pendingRead >= pending.size() / 2)
+        {
+            pending.erase(
+                pending.begin(),
+                pending.begin() + static_cast<std::ptrdiff_t>(pendingRead));
+            pendingRead = 0;
         }
     }
 
@@ -159,10 +186,17 @@ namespace antwika::raylib
 
     FrameIndex RaylibDevice::framesPlayed() const
     {
-        const auto held =
-            std::min<FrameIndex>(accepted, buffer * kSubBuffers);
+        FrameCount held = 0;
 
-        played = std::max(played, accepted - held);
+        if (streaming)
+        {
+            held = IsAudioStreamProcessed(stream) ? buffer
+                                                  : buffer * kSubBuffers;
+        }
+
+        const auto behind = std::min<FrameIndex>(accepted, held);
+
+        played = std::max(played, accepted - behind);
 
         return played;
     }

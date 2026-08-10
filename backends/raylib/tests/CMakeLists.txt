@@ -33,6 +33,7 @@ if(ANTWIKA_SOUND_BACKEND STREQUAL "raylib")
         ${CMAKE_CURRENT_SOURCE_DIR}/../src/RaylibAudioRuntime.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/../src/RaylibDevice.cpp
         ${CMAKE_CURRENT_SOURCE_DIR}/../src/RaylibSoundBackend.cpp
+        RaylibDeviceTest.cpp
         RaylibSoundBackendConformanceTest.cpp
     )
 

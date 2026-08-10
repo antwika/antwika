@@ -2,6 +2,7 @@
 
 #include <raylib.h>
 
+#include <cstddef>
 #include <memory>
 #include <vector>
 
@@ -51,6 +52,10 @@ namespace antwika::raylib
     private:
         void render(FrameCount frames);
 
+        void drain();
+
+        [[nodiscard]] FrameCount pendingFrames() const noexcept;
+
         std::shared_ptr<RaylibAudioRuntime> audio;
 
         AudioStream stream{};
@@ -67,7 +72,8 @@ namespace antwika::raylib
         mutable FrameIndex played = 0;
 
         std::vector<std::vector<float>> planes;
-        std::vector<float> interleaved;
+        std::vector<float> pending;
+        std::size_t pendingRead = 0;
     };
 
 }
