@@ -14,7 +14,6 @@
 #include <antwika/gfx/GfxError.hpp>
 #include <antwika/gfx/IGfxBackend.hpp>
 #include <antwika/gfx/IMesh.hpp>
-#include <antwika/gfx/IRenderer3D.hpp>
 #include <antwika/gfx/ITexture.hpp>
 #include <antwika/gfx/IWindow.hpp>
 #include <antwika/gfx/Math3D.hpp>
@@ -116,9 +115,9 @@ namespace antwika::gfx::conformance
                     .aspectRatio = 640.0F / 480.0F}};
         }
 
-        [[nodiscard]] static IRenderer3D *renderer3dOf(IWindow &window)
+        [[nodiscard]] static IRenderer &rendererOf(IWindow &window)
         {
-            return window.renderer().renderer3d();
+            return window.renderer();
         }
 
         ::testing::NiceMock<MockLogger> logger;
@@ -609,14 +608,10 @@ namespace antwika::gfx::conformance
                  CreateMesh_ReportsTheGeometrysCounts)
     {
         const auto window = this->backend->createWindow(this->demoDesc());
-        auto *renderer = this->renderer3dOf(*window);
+        auto &renderer = this->rendererOf(*window);
 
-        if (renderer == nullptr)
-        {
-            GTEST_SKIP() << "backend offers no 3D renderer";
-        }
 
-        const auto mesh = renderer->createMesh(this->demoMesh());
+        const auto mesh = renderer.createMesh(this->demoMesh());
 
         ASSERT_NE(mesh, nullptr);
 
@@ -627,20 +622,16 @@ namespace antwika::gfx::conformance
     TYPED_TEST_P(GfxBackendConformanceTest, CreateMesh_ThrowsOnIncompleteData)
     {
         const auto window = this->backend->createWindow(this->demoDesc());
-        auto *renderer = this->renderer3dOf(*window);
+        auto &renderer = this->rendererOf(*window);
 
-        if (renderer == nullptr)
-        {
-            GTEST_SKIP() << "backend offers no 3D renderer";
-        }
 
         EXPECT_THROW(
-            { const auto mesh = renderer->createMesh(MeshData{}); },
+            { const auto mesh = renderer.createMesh(MeshData{}); },
             GfxError);
 
         EXPECT_THROW(
             {
-                const auto mesh = renderer->createMesh(
+                const auto mesh = renderer.createMesh(
                     MeshData{
                         .vertices = {Vertex3D{}},
                         .indices = {0, 1, 2}});
@@ -649,7 +640,7 @@ namespace antwika::gfx::conformance
 
         EXPECT_THROW(
             {
-                const auto mesh = renderer->createMesh(
+                const auto mesh = renderer.createMesh(
                     MeshData{
                         .vertices = {Vertex3D{}, Vertex3D{}, Vertex3D{}},
                         .indices = {0, 1}});
@@ -662,21 +653,17 @@ namespace antwika::gfx::conformance
     {
         const auto window = this->backend->createWindow(this->demoDesc());
         auto &flat = window->renderer();
-        auto *renderer = this->renderer3dOf(*window);
+        auto &renderer = this->rendererOf(*window);
 
-        if (renderer == nullptr)
-        {
-            GTEST_SKIP() << "backend offers no 3D renderer";
-        }
 
-        const auto mesh = renderer->createMesh(this->demoMesh());
+        const auto mesh = renderer.createMesh(this->demoMesh());
         const auto camera = this->demoCamera();
         const Color white{.red = 255, .green = 255, .blue = 255};
 
         EXPECT_NO_THROW({
             flat.clear(Color{.red = 8, .green = 8, .blue = 16});
-            renderer->drawMesh(*mesh, identityMatrix(), camera, white);
-            renderer->drawMesh(
+            renderer.drawMesh(*mesh, identityMatrix(), camera, white);
+            renderer.drawMesh(
                 *mesh,
                 Transform{
                     .translation = {0.5F, 0.0F, -1.0F},
@@ -697,18 +684,14 @@ namespace antwika::gfx::conformance
     TYPED_TEST_P(GfxBackendConformanceTest, DrawMesh_AcceptsAnAwkwardCamera)
     {
         const auto window = this->backend->createWindow(this->demoDesc());
-        auto *renderer = this->renderer3dOf(*window);
+        auto &renderer = this->rendererOf(*window);
 
-        if (renderer == nullptr)
-        {
-            GTEST_SKIP() << "backend offers no 3D renderer";
-        }
 
-        const auto mesh = renderer->createMesh(this->demoMesh());
+        const auto mesh = renderer.createMesh(this->demoMesh());
         const Color white{.red = 255, .green = 255, .blue = 255};
 
         EXPECT_NO_THROW({
-            renderer->drawMesh(
+            renderer.drawMesh(
                 *mesh,
                 identityMatrix(),
                 Camera3D{
@@ -717,7 +700,7 @@ namespace antwika::gfx::conformance
                     Vec3{0.0F, 1.0F, 0.0F},
                     Perspective{}},
                 white);
-            renderer->drawMesh(
+            renderer.drawMesh(
                 *mesh,
                 identityMatrix(),
                 Camera3D{
@@ -740,18 +723,14 @@ namespace antwika::gfx::conformance
 
         const auto first = this->backend->createWindow(this->demoDesc());
         const auto second = this->backend->createWindow(this->demoDesc());
-        auto *mine = this->renderer3dOf(*first);
-        auto *theirs = this->renderer3dOf(*second);
+        auto &mine = this->rendererOf(*first);
+        auto &theirs = this->rendererOf(*second);
 
-        if (mine == nullptr || theirs == nullptr)
-        {
-            GTEST_SKIP() << "backend offers no 3D renderer";
-        }
 
-        const auto mesh = mine->createMesh(this->demoMesh());
+        const auto mesh = mine.createMesh(this->demoMesh());
 
         EXPECT_NO_THROW({
-            theirs->drawMesh(
+            theirs.drawMesh(
                 *mesh,
                 identityMatrix(),
                 this->demoCamera(),
@@ -763,17 +742,13 @@ namespace antwika::gfx::conformance
     TYPED_TEST_P(GfxBackendConformanceTest, DrawMesh_AcceptsAMeshOfAnotherKind)
     {
         const auto window = this->backend->createWindow(this->demoDesc());
-        auto *renderer = this->renderer3dOf(*window);
+        auto &renderer = this->rendererOf(*window);
 
-        if (renderer == nullptr)
-        {
-            GTEST_SKIP() << "backend offers no 3D renderer";
-        }
 
         const fakes::FakeForeignMesh foreign;
 
         EXPECT_NO_THROW({
-            renderer->drawMesh(
+            renderer.drawMesh(
                 foreign,
                 identityMatrix(),
                 this->demoCamera(),
@@ -785,18 +760,14 @@ namespace antwika::gfx::conformance
     TYPED_TEST_P(GfxBackendConformanceTest, Mesh_MayOutliveItsWindow)
     {
         auto window = this->backend->createWindow(this->demoDesc());
-        auto *renderer = this->renderer3dOf(*window);
+        auto &renderer = this->rendererOf(*window);
 
-        if (renderer == nullptr)
-        {
-            GTEST_SKIP() << "backend offers no 3D renderer";
-        }
 
-        auto mesh = renderer->createMesh(this->demoMesh());
+        auto mesh = renderer.createMesh(this->demoMesh());
 
         window->close();
 
-        EXPECT_NO_THROW(renderer->drawMesh(
+        EXPECT_NO_THROW(renderer.drawMesh(
             *mesh,
             identityMatrix(),
             this->demoCamera(),

@@ -7,9 +7,13 @@
 #include <string_view>
 
 #include <antwika/gfx/Bitmap.hpp>
+#include <antwika/gfx/Camera3D.hpp>
 #include <antwika/gfx/Color.hpp>
+#include <antwika/gfx/IMesh.hpp>
 #include <antwika/gfx/IRenderer.hpp>
 #include <antwika/gfx/ITexture.hpp>
+#include <antwika/gfx/Math3D.hpp>
+#include <antwika/gfx/MeshData.hpp>
 #include <antwika/gfx/Point.hpp>
 #include <antwika/gfx/Rect.hpp>
 
@@ -44,6 +48,19 @@ namespace antwika::gfx::mocks
             (const ITexture &texture,
              Rect source,
              Rect destination,
+             Color tint),
+            (override));
+        MOCK_METHOD(
+            std::unique_ptr<IMesh>,
+            createMesh,
+            (const MeshData &mesh),
+            (override));
+        MOCK_METHOD(
+            void,
+            drawMesh,
+            (const IMesh &mesh,
+             const Mat4 &model,
+             const Camera3D &camera,
              Color tint),
             (override));
         MOCK_METHOD(void, present, (), (override));

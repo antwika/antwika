@@ -11,7 +11,6 @@
 #include "antwika/gfx/Color.hpp"
 #include "antwika/gfx/IMesh.hpp"
 #include "antwika/gfx/IRenderer.hpp"
-#include "antwika/gfx/IRenderer3D.hpp"
 #include "antwika/gfx/ITexture.hpp"
 #include "antwika/gfx/Math3D.hpp"
 #include "antwika/gfx/MeshData.hpp"
@@ -23,9 +22,7 @@ namespace antwika::gfx::detail
 
     using antwika::log::ILogger;
 
-    class NullRenderer final
-        : public IRenderer
-        , public IRenderer3D
+    class NullRenderer final : public IRenderer
     {
     public:
         explicit NullRenderer(ILogger &logger);
@@ -56,8 +53,6 @@ namespace antwika::gfx::detail
             Rect source,
             Rect destination,
             Color tint) override;
-
-        [[nodiscard]] IRenderer3D *renderer3d() override;
 
         [[nodiscard]] std::unique_ptr<IMesh> createMesh(
             const MeshData &mesh) override;

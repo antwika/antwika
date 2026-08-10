@@ -4,15 +4,12 @@
 #include <optional>
 
 #include <antwika/app/WindowEvents.hpp>
-#include <antwika/gfx/GfxError.hpp>
 #include <antwika/gfx/IRenderer.hpp>
-#include <antwika/gfx/IRenderer3D.hpp>
 #include <antwika/gfx/IWindow.hpp>
 
 namespace antwika::gfx3d_demo
 {
 
-    using antwika::gfx::GfxError;
 
     SpinLoop::SpinLoop(
         IGfxBackend &backend,
@@ -34,15 +31,7 @@ namespace antwika::gfx3d_demo
         const auto window = backend.createWindow(desc);
         auto &flat = window->renderer();
 
-        auto *space = flat.renderer3d();
-
-        if (space == nullptr)
-        {
-            throw GfxError(
-                "gfx3d_demo: the selected graphics backend draws no 3D");
-        }
-
-        const auto mesh = space->createMesh(cube);
+        const auto mesh = flat.createMesh(cube);
 
         for (std::uint32_t frame = 0;
              !maxFrames.has_value() || frame < maxFrames.value();
@@ -58,7 +47,7 @@ namespace antwika::gfx3d_demo
                 break;
             }
 
-            scene.draw(flat, *space, *mesh, window->size(), tickCount);
+            scene.draw(flat, *mesh, window->size(), tickCount);
             flat.present();
 
             sleeper.sleep(framePeriod);

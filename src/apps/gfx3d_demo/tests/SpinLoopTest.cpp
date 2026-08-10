@@ -6,7 +6,6 @@
 #include <optional>
 
 #include <antwika/time/fakes/FakeSleeper.hpp>
-#include <antwika/gfx/GfxError.hpp>
 #include <antwika/gfx/IMesh.hpp>
 #include <antwika/gfx/IWindow.hpp>
 #include <antwika/gfx/MeshData.hpp>
@@ -16,7 +15,6 @@
 #include <antwika/gfx/mocks/MockGfxBackend.hpp>
 #include <antwika/gfx/mocks/MockMesh.hpp>
 #include <antwika/gfx/mocks/MockRenderer.hpp>
-#include <antwika/gfx/mocks/MockRenderer3D.hpp>
 #include <antwika/gfx/mocks/MockWindow.hpp>
 
 #include "antwika/gfx3d_demo/CubeMesh.hpp"
@@ -24,7 +22,6 @@
 #include "antwika/gfx3d_demo/SpinScene.hpp"
 
 using antwika::gfx::CloseRequested;
-using antwika::gfx::GfxError;
 using antwika::gfx::IMesh;
 using antwika::gfx::IWindow;
 using antwika::gfx::Resized;
@@ -35,7 +32,6 @@ using antwika::gfx::WindowId;
 using antwika::gfx::mocks::MockGfxBackend;
 using antwika::gfx::mocks::MockMesh;
 using antwika::gfx::mocks::MockRenderer;
-using antwika::gfx::mocks::MockRenderer3D;
 using antwika::gfx::mocks::MockWindow;
 using antwika::gfx3d_demo::cubeMesh;
 using antwika::gfx3d_demo::SpinLoop;
@@ -55,7 +51,7 @@ namespace
     struct SpinFixture final
     {
         NiceMock<MockGfxBackend> backend;
-        NiceMock<MockRenderer3D> renderer;
+        NiceMock<MockRenderer> renderer;
         MockWindow *window = nullptr;
 
         static constexpr WindowId kOurWindow{1};
@@ -236,21 +232,4 @@ TEST(SpinLoopTest, Run_DrawsNothingWhenNoFramesAreAskedFor)
         fixture.backend, scene, sleeper, kTestFramePeriod);
 
     loop.run(WindowDesc{.title = "Antwika"}, cubeMesh(), 0);
-}
-
-TEST(SpinLoopTest, Run_RefusesABackendWithNo3DRenderer)
-{
-    SpinFixture fixture;
-    NiceMock<MockRenderer> flatOnly;
-
-    fixture.wireWindow(true, flatOnly);
-
-    const SpinScene scene;
-    antwika::time::fakes::FakeSleeper sleeper;
-    SpinLoop loop(
-        fixture.backend, scene, sleeper, kTestFramePeriod);
-
-    EXPECT_THROW(
-        loop.run(WindowDesc{.title = "Antwika"}, cubeMesh(), 1),
-        GfxError);
 }

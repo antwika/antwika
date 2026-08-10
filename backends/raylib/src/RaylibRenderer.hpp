@@ -11,7 +11,6 @@
 #include <antwika/gfx/GlyphSheetTextures.hpp>
 #include <antwika/gfx/IMesh.hpp>
 #include <antwika/gfx/IRenderer.hpp>
-#include <antwika/gfx/IRenderer3D.hpp>
 #include <antwika/gfx/ITexture.hpp>
 #include <antwika/gfx/Math3D.hpp>
 #include <antwika/gfx/MeshData.hpp>
@@ -25,9 +24,7 @@ namespace antwika::gfx::raylib
     class RaylibMesh;
     class RaylibTexture;
 
-    class RaylibRenderer final
-        : public IRenderer
-        , public IRenderer3D
+    class RaylibRenderer final : public IRenderer
     {
     public:
         RaylibRenderer();
@@ -60,8 +57,6 @@ namespace antwika::gfx::raylib
             Rect source,
             Rect destination,
             Color tint) override;
-
-        [[nodiscard]] IRenderer3D *renderer3d() override;
 
         [[nodiscard]] std::unique_ptr<IMesh> createMesh(
             const MeshData &mesh) override;

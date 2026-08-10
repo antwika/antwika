@@ -5,7 +5,7 @@
 #include <memory>
 
 #include <antwika/gfx/mocks/MockRenderer.hpp>
-#include <antwika/gfx/mocks/MockRenderer3D.hpp>
+#include <antwika/gfx/mocks/MockMesh.hpp>
 #include <antwika/gfx/mocks/MockTexture.hpp>
 
 #include "antwika/gfx/Bitmap.hpp"
@@ -18,7 +18,10 @@
 
 using antwika::gfx::Bitmap;
 using antwika::gfx::Color;
-using antwika::gfx::IRenderer3D;
+using antwika::gfx::Camera3D;
+using antwika::gfx::identityMatrix;
+using antwika::gfx::MeshData;
+using antwika::gfx::mocks::MockMesh;
 using antwika::gfx::ITexture;
 using antwika::gfx::Point;
 using antwika::gfx::Rect;
@@ -26,10 +29,10 @@ using antwika::gfx::Size;
 using antwika::gfx::Viewport;
 using antwika::gfx::ViewportRenderer;
 using antwika::gfx::mocks::MockRenderer;
-using antwika::gfx::mocks::MockRenderer3D;
 using antwika::gfx::mocks::MockTexture;
 using ::testing::_;
 using ::testing::NiceMock;
+using ::testing::Ref;
 using ::testing::Return;
 
 namespace
@@ -162,12 +165,27 @@ TEST(ViewportRendererTest, CreateTexture_ComesFromTheWrappedRenderer)
     EXPECT_EQ(view.createTexture(Bitmap{}), nullptr);
 }
 
-TEST(ViewportRendererTest, Renderer3d_IsWhateverTheWrappedRendererHas)
+TEST(ViewportRendererTest, CreateMesh_ReachesTheWrappedRenderer)
 {
-    NiceMock<MockRenderer3D> inner;
+    NiceMock<MockRenderer> inner;
     ViewportRenderer view(inner, kWindow, kCanvas);
 
-    EXPECT_EQ(view.renderer3d(), static_cast<IRenderer3D *>(&inner));
+    EXPECT_CALL(inner, createMesh(_));
+
+    (void)view.createMesh(MeshData{});
+}
+
+TEST(ViewportRendererTest, DrawMesh_ReachesTheWrappedRendererUnscaled)
+{
+    NiceMock<MockRenderer> inner;
+    ViewportRenderer view(inner, kWindow, kCanvas);
+    const NiceMock<MockMesh> mesh;
+    const Camera3D camera;
+    const Color tint{.red = 255, .green = 255, .blue = 255};
+
+    EXPECT_CALL(inner, drawMesh(Ref(mesh), _, _, tint));
+
+    view.drawMesh(mesh, identityMatrix(), camera, tint);
 }
 
 TEST(ViewportRendererTest, Present_ReachesTheWrappedRenderer)

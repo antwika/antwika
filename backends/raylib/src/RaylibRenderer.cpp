@@ -231,11 +231,6 @@ namespace antwika::gfx::raylib
             toRaylib(tint));
     }
 
-    IRenderer3D *RaylibRenderer::renderer3d()
-    {
-        return this;
-    }
-
     std::unique_ptr<IMesh> RaylibRenderer::createMesh(const MeshData &mesh)
     {
         if (!mesh.isComplete())

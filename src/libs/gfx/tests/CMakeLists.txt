@@ -14,7 +14,6 @@ add_executable(antwika_gfx_tests
     GlyphCellsTest.cpp
     GlyphSheetTest.cpp
     GlyphSheetTexturesTest.cpp
-    IRendererTest.cpp
     IWindowTest.cpp
     Math3DTest.cpp
     MeshDataTest.cpp

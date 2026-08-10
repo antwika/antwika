@@ -10,7 +10,7 @@
 #include "antwika/gfx/Color.hpp"
 #include "antwika/gfx/GfxError.hpp"
 #include "antwika/gfx/IMesh.hpp"
-#include "antwika/gfx/IRenderer3D.hpp"
+#include "antwika/gfx/IRenderer.hpp"
 #include "antwika/gfx/Math3D.hpp"
 #include "antwika/gfx/MeshData.hpp"
 
@@ -21,7 +21,6 @@ using antwika::gfx::Color;
 using antwika::gfx::GfxError;
 using antwika::gfx::identityMatrix;
 using antwika::gfx::IMesh;
-using antwika::gfx::IRenderer3D;
 using antwika::gfx::MeshData;
 using antwika::gfx::Vec3;
 using antwika::gfx::Vertex3D;
@@ -41,18 +40,6 @@ namespace
                  Vertex3D{.position = Vec3{0.0F, 1.0F, 0.0F}}},
             .indices = {0U, 1U, 2U}};
     }
-}
-
-TEST(NullRenderer3DTest, Renderer3d_OffersItselfAsTheThreeDeeHalf)
-{
-    NiceMock<MockLogger> logger;
-    NullRenderer renderer(logger);
-
-    IRenderer3D *renderer3d = renderer.renderer3d();
-
-    ASSERT_NE(nullptr, renderer3d);
-    EXPECT_EQ(
-        static_cast<IRenderer3D *>(&renderer), renderer3d);
 }
 
 TEST(NullRenderer3DTest, CreateMesh_ReportsTheCountsItWasGiven)

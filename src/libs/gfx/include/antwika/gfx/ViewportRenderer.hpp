@@ -7,7 +7,7 @@
 #include "antwika/gfx/Bitmap.hpp"
 #include "antwika/gfx/Color.hpp"
 #include "antwika/gfx/IRenderer.hpp"
-#include "antwika/gfx/IRenderer3D.hpp"
+#include "antwika/gfx/IMesh.hpp"
 #include "antwika/gfx/ITexture.hpp"
 #include "antwika/gfx/Point.hpp"
 #include "antwika/gfx/Rect.hpp"
@@ -51,7 +51,14 @@ namespace antwika::gfx
             Rect destination,
             Color tint) override;
 
-        [[nodiscard]] IRenderer3D *renderer3d() override;
+        [[nodiscard]] std::unique_ptr<IMesh> createMesh(
+            const MeshData &mesh) override;
+
+        void drawMesh(
+            const IMesh &mesh,
+            const Mat4 &model,
+            const Camera3D &camera,
+            Color tint) override;
 
         void fillSurround(Color color);
 

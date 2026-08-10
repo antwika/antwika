@@ -60,11 +60,6 @@ namespace antwika::gfx::detail
         logger.log(Level::Trace, "gfx.null: draw texture");
     }
 
-    IRenderer3D *NullRenderer::renderer3d()
-    {
-        return this;
-    }
-
     std::unique_ptr<IMesh> NullRenderer::createMesh(
         const MeshData &mesh)
     {

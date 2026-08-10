@@ -9,7 +9,7 @@
 #include <antwika/gfx/Point.hpp>
 #include <antwika/gfx/Size.hpp>
 #include <antwika/gfx/mocks/MockMesh.hpp>
-#include <antwika/gfx/mocks/MockRenderer3D.hpp>
+#include <antwika/gfx/mocks/MockRenderer.hpp>
 
 #include "antwika/gfx3d_demo/SpinScene.hpp"
 
@@ -20,7 +20,7 @@ using antwika::gfx::Perspective;
 using antwika::gfx::Point;
 using antwika::gfx::Size;
 using antwika::gfx::mocks::MockMesh;
-using antwika::gfx::mocks::MockRenderer3D;
+using antwika::gfx::mocks::MockRenderer;
 using antwika::gfx3d_demo::SpinScene;
 using ::testing::_;
 using ::testing::InSequence;
@@ -98,7 +98,7 @@ TEST(SpinSceneTest, CameraFor_FallsBackWhenTheCanvasHasNoHeight)
 TEST(SpinSceneTest, Draw_ClearsThenDrawsTheCubeThenTheCaption)
 {
     const SpinScene scene;
-    NiceMock<MockRenderer3D> renderer;
+    NiceMock<MockRenderer> renderer;
     const NiceMock<MockMesh> mesh;
 
     const InSequence order;
@@ -109,16 +109,16 @@ TEST(SpinSceneTest, Draw_ClearsThenDrawsTheCubeThenTheCaption)
         drawMesh(::testing::Ref(mesh), scene.modelAt(4), _, _));
     EXPECT_CALL(renderer, drawText(_, _, _, _));
 
-    scene.draw(renderer, renderer, mesh, kCanvas, 4);
+    scene.draw(renderer, mesh, kCanvas, 4);
 }
 
 TEST(SpinSceneTest, Draw_NeverPresentsTheFrameItself)
 {
     const SpinScene scene;
-    NiceMock<MockRenderer3D> renderer;
+    NiceMock<MockRenderer> renderer;
     const NiceMock<MockMesh> mesh;
 
     EXPECT_CALL(renderer, present()).Times(0);
 
-    scene.draw(renderer, renderer, mesh, kCanvas, 0);
+    scene.draw(renderer, mesh, kCanvas, 0);
 }

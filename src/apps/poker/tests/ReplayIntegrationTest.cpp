@@ -188,6 +188,18 @@ namespace
                     const ITexture &, Rect, Rect, Color) override
                 {
                 }
+                [[nodiscard]] std::unique_ptr<antwika::gfx::IMesh>
+                    createMesh(const antwika::gfx::MeshData &) override
+                {
+                    return nullptr;
+                }
+                void drawMesh(
+                    const antwika::gfx::IMesh &,
+                    const antwika::gfx::Mat4 &,
+                    const antwika::gfx::Camera3D &,
+                    Color) override
+                {
+                }
                 void present() override { ++frames; }
 
             private:

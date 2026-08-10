@@ -87,9 +87,19 @@ namespace antwika::gfx
             texture, source, transform.toWindow(destination), tint);
     }
 
-    IRenderer3D *ViewportRenderer::renderer3d()
+    std::unique_ptr<IMesh> ViewportRenderer::createMesh(
+        const MeshData &mesh)
     {
-        return inner.renderer3d();
+        return inner.createMesh(mesh);
+    }
+
+    void ViewportRenderer::drawMesh(
+        const IMesh &mesh,
+        const Mat4 &model,
+        const Camera3D &camera,
+        const Color tint)
+    {
+        inner.drawMesh(mesh, model, camera, tint);
     }
 
     void ViewportRenderer::fillSurround(Color color)

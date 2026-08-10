@@ -72,17 +72,16 @@ namespace antwika::gfx3d_demo
     }
 
     void SpinScene::draw(
-        IRenderer &flat,
-        IRenderer3D &space,
+        IRenderer &renderer,
         const IMesh &cube,
         Size canvas,
         std::uint64_t tick) const
     {
-        flat.clear(kBackground);
+        renderer.clear(kBackground);
 
-        space.drawMesh(cube, modelAt(tick), cameraFor(canvas), kNoTint);
+        renderer.drawMesh(cube, modelAt(tick), cameraFor(canvas), kNoTint);
 
-        flat.drawText(
+        renderer.drawText(
             kCaptionOrigin, kCaption, kCaptionScale, kCaptionColor);
     }
 
