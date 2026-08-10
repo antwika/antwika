@@ -1,5 +1,6 @@
 #pragma once
 
+#include <glm/gtc/matrix_transform.hpp>
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 
@@ -19,8 +20,11 @@
 #include <antwika/gfx/Math3D.hpp>
 #include <antwika/gfx/MeshData.hpp>
 #include <antwika/gfx/Point.hpp>
+#include <antwika/gfx/PointF.hpp>
 #include <antwika/gfx/Rect.hpp>
+#include <antwika/gfx/RectF.hpp>
 #include <antwika/gfx/Size.hpp>
+#include <antwika/gfx/SizeF.hpp>
 #include <antwika/gfx/Transform.hpp>
 #include <antwika/gfx/WindowDesc.hpp>
 #include <antwika/gfx/WindowId.hpp>
@@ -831,6 +835,48 @@ namespace antwika::gfx::conformance
         EXPECT_NO_THROW(window.reset());
     }
 
+    TYPED_TEST_P(
+        GfxBackendConformanceTest, PushTransform_AcceptsAFrameDrawnUnderIt)
+    {
+        const auto window = this->backend->createWindow(this->demoDesc());
+        auto &renderer = this->rendererOf(*window);
+
+        EXPECT_NO_THROW({
+            renderer.pushTransform(
+                glm::translate(identityMatrix(), Vec3{8.0F, 4.0F, 0.0F}));
+            renderer.drawRect(
+                RectF{PointF{0.0F, 0.0F}, SizeF{16.0F, 16.0F}},
+                Color{.red = 255, .green = 255, .blue = 255});
+            renderer.popTransform();
+            renderer.present();
+        });
+    }
+
+    TYPED_TEST_P(GfxBackendConformanceTest, PushTransform_Nests)
+    {
+        const auto window = this->backend->createWindow(this->demoDesc());
+        auto &renderer = this->rendererOf(*window);
+
+        EXPECT_NO_THROW({
+            renderer.pushTransform(
+                glm::scale(identityMatrix(), Vec3{2.0F, 2.0F, 1.0F}));
+            renderer.pushTransform(
+                glm::translate(identityMatrix(), Vec3{1.0F, 1.0F, 0.0F}));
+            renderer.popTransform();
+            renderer.popTransform();
+            renderer.present();
+        });
+    }
+
+    TYPED_TEST_P(
+        GfxBackendConformanceTest, PopTransform_ThrowsWhenNothingIsPushed)
+    {
+        const auto window = this->backend->createWindow(this->demoDesc());
+        auto &renderer = this->rendererOf(*window);
+
+        EXPECT_THROW(renderer.popTransform(), GfxError);
+    }
+
     REGISTER_TYPED_TEST_SUITE_P(
         GfxBackendConformanceTest,
         Name_IsNotEmpty,
@@ -872,6 +918,9 @@ namespace antwika::gfx::conformance
         DrawMesh_AcceptsAnAwkwardCamera,
         DrawMesh_AcceptsAMeshFromAnotherRenderer,
         DrawMesh_AcceptsAMeshOfAnotherKind,
+        PushTransform_AcceptsAFrameDrawnUnderIt,
+        PushTransform_Nests,
+        PopTransform_ThrowsWhenNothingIsPushed,
         Mesh_MayOutliveItsWindow,
         PollEvent_DrainsToAnEmptyQueue,
         PollEvent_DrainsAfterAFrameIsDrawn,

@@ -10,6 +10,7 @@
 #include "antwika/gfx/IRenderer.hpp"
 #include "antwika/gfx/ITexture.hpp"
 #include "antwika/gfx/Point.hpp"
+#include "antwika/gfx/PointF.hpp"
 #include "antwika/gfx/Size.hpp"
 
 namespace antwika::gfx
@@ -27,7 +28,7 @@ namespace antwika::gfx
         IRenderer &renderer,
         const ITexture &texture,
         const font::GlyphAtlas &atlas,
-        Point origin,
+        PointF origin,
         std::string_view text,
         Color tint);
 

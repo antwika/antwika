@@ -8,6 +8,7 @@
 #include <antwika/font/FontMetrics.hpp>
 #include <antwika/font/GlyphAtlas.hpp>
 #include <antwika/font/Rect.hpp>
+#include <antwika/gfx/RectF.hpp>
 
 #include "antwika/gfx/AtlasText.hpp"
 #include "antwika/gfx/Color.hpp"
@@ -28,6 +29,7 @@ using antwika::gfx::drawAtlasText;
 using antwika::gfx::GlyphBlit;
 using antwika::gfx::Point;
 using antwika::gfx::Size;
+using antwika::gfx::RectF;
 using antwika::gfx::mocks::MockRenderer;
 using antwika::gfx::mocks::MockTexture;
 using testing::_;
@@ -181,15 +183,15 @@ TEST(AtlasTextTest, DrawAtlasText_BlitsOncePerDrawableCharacter)
         renderer,
         drawTexture(
             testing::Ref(texture),
-            kBlitForA.source,
-            kBlitForA.destination,
+            RectF{kBlitForA.source},
+            RectF{kBlitForA.destination},
             kTint));
     EXPECT_CALL(
         renderer,
         drawTexture(
             testing::Ref(texture),
-            kBlitForB.source,
-            kBlitForB.destination,
+            RectF{kBlitForB.source},
+            RectF{kBlitForB.destination},
             kTint));
 
     drawAtlasText(

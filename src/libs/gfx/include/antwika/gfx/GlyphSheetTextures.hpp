@@ -5,11 +5,13 @@
 #include <memory>
 #include <string_view>
 
+#include <antwika/gfx/PointF.hpp>
+
 #include "antwika/gfx/Color.hpp"
 #include "antwika/gfx/GlyphCells.hpp"
 #include "antwika/gfx/IRenderer.hpp"
 #include "antwika/gfx/ITexture.hpp"
-#include "antwika/gfx/Point.hpp"
+#include "antwika/gfx/PointF.hpp"
 
 namespace antwika::gfx
 {
@@ -27,7 +29,7 @@ namespace antwika::gfx
 
         void draw(
             IRenderer &renderer,
-            Point origin,
+            PointF origin,
             std::string_view text,
             std::uint32_t scale,
             Color color);

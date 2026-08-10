@@ -1,38 +1,39 @@
 #include "antwika/gfx/Blit.hpp"
 
-#include <cstdint>
+#include <antwika/gfx/RectF.hpp>
 
-#include "antwika/gfx/Rect.hpp"
+#include "antwika/gfx/RectF.hpp"
 #include "antwika/gfx/Size.hpp"
 
 namespace antwika::gfx
 {
 
     bool blitIsDrawable(
-        Size texture, Rect source, Rect destination) noexcept
+        const Size texture,
+        const RectF source,
+        const RectF destination) noexcept
     {
-        if (source.size.width == 0 || source.size.height == 0)
+        if (source.size.width <= 0.0F || source.size.height <= 0.0F)
         {
             return false;
         }
 
-        if (destination.size.width == 0 || destination.size.height == 0)
+        if (destination.size.width <= 0.0F
+            || destination.size.height <= 0.0F)
         {
             return false;
         }
 
-        if (source.origin.x < 0 || source.origin.y < 0)
+        if (source.origin.x < 0.0F || source.origin.y < 0.0F)
         {
             return false;
         }
 
-        const auto right = static_cast<std::int64_t>(source.origin.x)
-            + static_cast<std::int64_t>(source.size.width);
-        const auto bottom = static_cast<std::int64_t>(source.origin.y)
-            + static_cast<std::int64_t>(source.size.height);
+        const auto right = source.origin.x + source.size.width;
+        const auto bottom = source.origin.y + source.size.height;
 
-        return right <= static_cast<std::int64_t>(texture.width)
-            && bottom <= static_cast<std::int64_t>(texture.height);
+        return right <= static_cast<float>(texture.width)
+            && bottom <= static_cast<float>(texture.height);
     }
 
 }

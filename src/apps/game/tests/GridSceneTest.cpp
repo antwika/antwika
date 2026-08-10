@@ -15,6 +15,8 @@
 #include <antwika/gfx/Size.hpp>
 #include <antwika/gfx/mocks/MockRenderer.hpp>
 #include <antwika/gfx/mocks/MockTexture.hpp>
+#include <antwika/gfx/RectF.hpp>
+#include <antwika/gfx/PointF.hpp>
 
 #include "Translators.hpp"
 #include "AtlasSpecsFixture.hpp"
@@ -54,7 +56,9 @@ using antwika::game::WalkerSprite;
 using antwika::gfx::Color;
 using antwika::gfx::ITexture;
 using antwika::gfx::Point;
+using antwika::gfx::PointF;
 using antwika::gfx::Rect;
+using antwika::gfx::RectF;
 using antwika::gfx::Size;
 using antwika::gfx::mocks::MockRenderer;
 using antwika::gfx::mocks::MockTexture;
@@ -86,8 +90,8 @@ namespace
                 .WillByDefault(
                     [this](
                         const ITexture &texture,
-                        Rect source,
-                        Rect destination,
+                        RectF source,
+                        RectF destination,
                         Color tint)
                     {
                         blits.push_back(
@@ -97,7 +101,7 @@ namespace
 
             ON_CALL(*this, drawRect(_, _))
                 .WillByDefault(
-                    [this](Rect rect, Color color)
+                    [this](RectF rect, Color color)
                     {
                         rects.push_back(Filled{rect, color});
                         order.push_back(Call::Rect);
@@ -106,7 +110,7 @@ namespace
             ON_CALL(*this, drawText(_, _, _, _))
                 .WillByDefault(
                     [this](
-                        antwika::gfx::Point origin,
+                        antwika::gfx::PointF origin,
                         std::string_view text,
                         std::uint32_t scale,
                         Color color)
@@ -120,7 +124,7 @@ namespace
 
         struct Filled final
         {
-            Rect rect;
+            RectF rect;
             Color color;
 
             [[nodiscard]] bool operator==(const Filled &other) const
@@ -129,7 +133,7 @@ namespace
 
         struct Written final
         {
-            antwika::gfx::Point origin;
+            antwika::gfx::PointF origin;
             std::string text;
             std::uint32_t scale = 0;
             Color color;
@@ -145,8 +149,8 @@ namespace
         struct Blit final
         {
             const ITexture *texture;
-            Rect source;
-            Rect destination;
+            RectF source;
+            RectF destination;
             Color tint;
 
             [[nodiscard]] bool operator==(const Blit &other) const = default;
@@ -1015,7 +1019,7 @@ TEST_F(GridSceneTest, Draw_PreviewsAPlannedBlockAsTheHousesItWouldLay)
 
     scene.draw(renderer, kCanvas, scene_, atlases);
 
-    std::vector<Rect> previewed;
+    std::vector<RectF> previewed;
 
     for (const auto &blit : renderer.blits)
     {
@@ -1025,7 +1029,7 @@ TEST_F(GridSceneTest, Draw_PreviewsAPlannedBlockAsTheHousesItWouldLay)
         }
     }
 
-    const std::vector<Rect> wanted(
+    const std::vector<RectF> wanted(
         3U,
         antwika::game::buildingTile(kTestSpecs, 
             antwika::game::BuildingKind::House));
@@ -1047,7 +1051,7 @@ TEST_F(GridSceneTest, Draw_PreviewsAPlannedRunAsOneConnectedRoad)
 
     scene.draw(renderer, kCanvas, scene_, atlases);
 
-    std::vector<Rect> previewed;
+    std::vector<RectF> previewed;
 
     for (const auto &blit : renderer.blits)
     {
@@ -1057,7 +1061,7 @@ TEST_F(GridSceneTest, Draw_PreviewsAPlannedRunAsOneConnectedRoad)
         }
     }
 
-    const std::vector<Rect> wanted{
+    const std::vector<RectF> wanted{
         roadTile(kTestSpecs, antwika::game::linkBit(Direction::East)),
         roadTile(kTestSpecs, 
             antwika::game::linkBit(Direction::East)

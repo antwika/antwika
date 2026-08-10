@@ -14,6 +14,8 @@
 #include <antwika/gfx/mocks/MockWindow.hpp>
 #include <antwika/gfx/Point.hpp>
 #include <antwika/gfx/Size.hpp>
+#include <antwika/gfx/RectF.hpp>
+#include <antwika/gfx/PointF.hpp>
 #include <antwika/i18n/Locale.hpp>
 #include <antwika/log/mocks/MockLogger.hpp>
 #include <antwika/scheduler/JobId.hpp>
@@ -34,6 +36,8 @@ using antwika::gfx::mocks::MockRenderer;
 using antwika::gfx::mocks::MockWindow;
 using antwika::gfx::Point;
 using antwika::gfx::Size;
+using antwika::gfx::RectF;
+using antwika::gfx::PointF;
 using antwika::i18n::kDefaultLocale;
 using antwika::log::mocks::MockLogger;
 using antwika::scheduler::JobId;
@@ -79,7 +83,7 @@ TEST(RenderSystemTest, Update_DrawsThisTicksPoolAndPresents)
     ON_CALL(renderer, drawText)
         .WillByDefault(
             [&lines](
-                Point, std::string_view text, std::uint32_t, Color)
+                PointF, std::string_view text, std::uint32_t, Color)
             { lines.push_back(std::string{text}); });
 
     NiceMock<MockWindow> window;
@@ -143,7 +147,7 @@ TEST(RenderSystemTest, Update_PaintsTheConsoleOverlayWhenGivenOne)
 
     EXPECT_CALL(renderer, drawRect(::testing::_, ::testing::_))
         .Times(::testing::AnyNumber());
-    EXPECT_CALL(renderer, drawRect(sheet.rect, sheet.color)).Times(1);
+    EXPECT_CALL(renderer, drawRect(RectF{sheet.rect}, sheet.color)).Times(1);
     EXPECT_CALL(renderer, present()).Times(1);
 
     const Translator translator{kDefaultLocale};

@@ -115,7 +115,7 @@ namespace
     {
         GameSummary summary;
         std::vector<TickEvent> recorded;
-        std::vector<Rect> blits;
+        std::vector<antwika::gfx::RectF> blits;
     };
 
     [[nodiscard]] Position onWindow(
@@ -204,13 +204,13 @@ namespace
         ON_CALL(windowMock, size()).WillByDefault(Return(window));
         ON_CALL(windowMock, configuredSize()).WillByDefault(Return(kAsked));
 
-        std::vector<Rect> blits;
+        std::vector<antwika::gfx::RectF> blits;
         ON_CALL(renderer, drawTexture(_, _, _, _))
             .WillByDefault(
                 [&blits](
                     const antwika::gfx::ITexture &,
-                    Rect,
-                    Rect destination,
+                    antwika::gfx::RectF,
+                    antwika::gfx::RectF destination,
                     antwika::gfx::Color)
                 { blits.push_back(destination); });
 

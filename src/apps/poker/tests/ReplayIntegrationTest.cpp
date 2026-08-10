@@ -29,6 +29,8 @@
 #include <antwika/gfx/WindowDesc.hpp>
 #include <antwika/gfx/WindowEvent.hpp>
 #include <antwika/gfx/WindowId.hpp>
+#include <antwika/gfx/RectF.hpp>
+#include <antwika/gfx/PointF.hpp>
 #include <antwika/holdem/Blinds.hpp>
 #include <antwika/log/Level.hpp>
 #include <antwika/log/mocks/MockLogger.hpp>
@@ -56,7 +58,9 @@ using antwika::gfx::IRenderer;
 using antwika::gfx::ITexture;
 using antwika::gfx::IWindow;
 using antwika::gfx::Point;
+using antwika::gfx::PointF;
 using antwika::gfx::Rect;
+using antwika::gfx::RectF;
 using antwika::gfx::Size;
 using antwika::gfx::WindowDesc;
 using antwika::gfx::WindowEvent;
@@ -173,10 +177,10 @@ namespace
                 }
 
                 void clear(Color) override {}
-                void drawRect(Rect, Color) override {}
-                void drawLine(Point, Point, Color) override {}
+                void drawRect(RectF, Color) override {}
+                void drawLine(PointF, PointF, Color) override {}
                 void drawText(
-                    Point, std::string_view, std::uint32_t, Color) override
+                    PointF, std::string_view, std::uint32_t, Color) override
                 {
                 }
                 [[nodiscard]] std::unique_ptr<ITexture> createTexture(
@@ -185,7 +189,7 @@ namespace
                     return nullptr;
                 }
                 void drawTexture(
-                    const ITexture &, Rect, Rect, Color) override
+                    const ITexture &, RectF, RectF, Color) override
                 {
                 }
                 [[nodiscard]] std::unique_ptr<antwika::gfx::IMesh>
@@ -200,6 +204,11 @@ namespace
                     Color) override
                 {
                 }
+                void pushTransform(
+                    const antwika::gfx::Mat4 &) override
+                {
+                }
+                void popTransform() override {}
                 void present() override { ++frames; }
 
             private:

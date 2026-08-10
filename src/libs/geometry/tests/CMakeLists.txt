@@ -2,6 +2,9 @@ find_package(GTest REQUIRED)
 
 add_executable(antwika_geometry_tests
     GridTest.cpp
+    PointFTest.cpp
+    RectFTest.cpp
+    SizeFTest.cpp
     SizeTest.cpp
 )
 

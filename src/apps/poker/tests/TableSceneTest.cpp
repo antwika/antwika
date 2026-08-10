@@ -7,6 +7,7 @@
 #include <optional>
 #include <string>
 #include <string_view>
+#include <type_traits>
 #include <variant>
 #include <vector>
 
@@ -16,6 +17,8 @@
 #include <antwika/gfx/TextLayout.hpp>
 #include <antwika/gfx/mocks/MockRenderer.hpp>
 #include <antwika/gfx/mocks/MockTexture.hpp>
+#include <antwika/gfx/RectF.hpp>
+#include <antwika/gfx/PointF.hpp>
 #include <antwika/holdem/CardText.hpp>
 #include <antwika/holdem/Stage.hpp>
 #include <antwika/ui/DrawCommand.hpp>
@@ -31,6 +34,8 @@
 
 using antwika::gfx::Color;
 using antwika::gfx::Rect;
+using antwika::gfx::PointF;
+using antwika::gfx::RectF;
 using antwika::gfx::Size;
 using antwika::gfx::mocks::MockRenderer;
 using antwika::holdem::parseCards;
@@ -54,19 +59,74 @@ namespace
     constexpr Color kToAct{.red = 232, .green = 196, .blue = 72};
     constexpr Color kInFront{.red = 224, .green = 176, .blue = 64};
 
-    [[nodiscard]] std::int32_t rightOf(Rect rect) noexcept
+    struct PaintedRect final
+    {
+        RectF rect{};
+        Color color{};
+
+        [[nodiscard]] bool operator==(const PaintedRect &other) const
+            = default;
+    };
+
+    struct PaintedText final
+    {
+        PointF origin{};
+        std::string text;
+        std::uint32_t scale = 0;
+        Color color{};
+
+        [[nodiscard]] bool operator==(const PaintedText &other) const
+            = default;
+    };
+
+    using Painted = std::variant<PaintedRect, PaintedText>;
+
+    [[nodiscard]] std::vector<Painted> paintedOf(
+        const antwika::ui::DrawList &commands)
+    {
+        std::vector<Painted> painted;
+        painted.reserve(commands.size());
+
+        for (const auto &command : commands)
+        {
+            std::visit(
+                [&painted](const auto &one)
+                {
+                    using One = std::decay_t<decltype(one)>;
+
+                    if constexpr (std::is_same_v<
+                                      One, antwika::ui::FillRect>)
+                    {
+                        painted.push_back(
+                            PaintedRect{one.rect, one.color});
+                    }
+                    else
+                    {
+                        painted.push_back(
+                            PaintedText{
+                                one.origin, one.text, one.scale,
+                                one.color});
+                    }
+                },
+                command);
+        }
+
+        return painted;
+    }
+
+    [[nodiscard]] float rightOf(RectF rect) noexcept
     {
         return rect.origin.x
                + static_cast<std::int32_t>(rect.size.width);
     }
 
-    [[nodiscard]] std::int32_t bottomOf(Rect rect) noexcept
+    [[nodiscard]] float bottomOf(RectF rect) noexcept
     {
         return rect.origin.y
                + static_cast<std::int32_t>(rect.size.height);
     }
 
-    [[nodiscard]] bool overlaps(Rect one, Rect other) noexcept
+    [[nodiscard]] bool overlaps(RectF one, RectF other) noexcept
     {
         return one.origin.x < rightOf(other)
                && other.origin.x < rightOf(one)
@@ -74,7 +134,7 @@ namespace
                && other.origin.y < bottomOf(one);
     }
 
-    [[nodiscard]] bool contains(Rect outer, Rect inner) noexcept
+    [[nodiscard]] bool contains(RectF outer, RectF inner) noexcept
     {
         return inner.origin.x >= outer.origin.x
                && inner.origin.y >= outer.origin.y
@@ -353,12 +413,12 @@ TEST_F(TableSceneTest, Draw_KeepsANineSeatTableInsideTheCanvas)
     }
 
     const Size canvas{.width = 640, .height = 480};
-    std::vector<Rect> rects;
+    std::vector<RectF> rects;
     EXPECT_CALL(renderer, clear(_));
     EXPECT_CALL(renderer, drawText(_, _, _, _)).Times(AnyNumber());
     EXPECT_CALL(renderer, drawRect(_, _))
         .Times(AnyNumber())
-        .WillRepeatedly([&rects](Rect rect, Color) { rects.push_back(rect); });
+        .WillRepeatedly([&rects](RectF rect, Color) { rects.push_back(rect); });
 
     scene.draw(renderer, canvas, snapshot);
 
@@ -395,10 +455,10 @@ TEST_F(TableSceneTest, Draw_ShrinksRowsThatCannotAllFitRatherThanOverflowing)
     }
 
     constexpr Size canvas{.width = 320, .height = 200};
-    std::vector<Rect> rects;
+    std::vector<RectF> rects;
     EXPECT_CALL(renderer, drawRect(_, _))
         .Times(AnyNumber())
-        .WillRepeatedly([&rects](Rect rect, Color) { rects.push_back(rect); });
+        .WillRepeatedly([&rects](RectF rect, Color) { rects.push_back(rect); });
 
     scene.draw(renderer, canvas, snapshot);
 
@@ -416,30 +476,30 @@ TEST_F(TableSceneTest, Describe_IsThePictureDrawPaints)
 {
     const auto frame = scene.describe(kCanvas, liveTable());
 
-    antwika::ui::DrawList painted;
+    std::vector<Painted> painted;
 
     EXPECT_CALL(renderer, drawRect(_, _))
         .Times(AnyNumber())
         .WillRepeatedly(
-            [&painted](Rect rect, Color color) {
-                painted.push_back(antwika::ui::FillRect{rect, color});
+            [&painted](RectF rect, Color color) {
+                painted.push_back(PaintedRect{rect, color});
             });
     EXPECT_CALL(renderer, drawText(_, _, _, _))
         .Times(AnyNumber())
         .WillRepeatedly(
             [&painted](
-                antwika::gfx::Point origin,
+                antwika::gfx::PointF origin,
                 std::string_view text,
                 std::uint32_t scale,
                 Color color) {
-                painted.push_back(antwika::ui::DrawText{
+                painted.push_back(PaintedText{
                     origin, std::string(text), scale, color});
             });
 
     scene.draw(renderer, kCanvas, liveTable());
 
     EXPECT_FALSE(frame.commands.empty());
-    EXPECT_EQ(painted, frame.commands);
+    EXPECT_EQ(painted, paintedOf(frame.commands));
 
     EXPECT_EQ(frame.interactions, antwika::ui::Interactions{});
 }
@@ -545,7 +605,7 @@ TEST(TableArtTest, DescribeArt_PlatesTheVerySeatsTheUiBoxed)
         antwika::poker::sourceOf(antwika::poker::kPlateSlot);
     const auto frame = scene.describe(kCanvas, snapshot);
 
-    std::vector<Rect> plates;
+    std::vector<RectF> plates;
     for (const auto &blit :
          scene.describeArt(kCanvas, frame.rects, snapshot))
     {
@@ -556,7 +616,7 @@ TEST(TableArtTest, DescribeArt_PlatesTheVerySeatsTheUiBoxed)
     }
 
     constexpr Color kSeatBox{.red = 16, .green = 50, .blue = 36};
-    std::vector<Rect> boxes;
+    std::vector<RectF> boxes;
     for (const auto &command : frame.commands)
     {
         const auto *fill = std::get_if<antwika::ui::FillRect>(&command);
@@ -807,7 +867,7 @@ TEST(TableArtTest, Draw_DrawsNoTextureWithoutAnAtlas)
 namespace
 {
     using antwika::gfx::Point;
-    using antwika::ui::DrawText;
+        using antwika::ui::DrawText;
     using antwika::ui::Frame;
     using antwika::ui::WidgetRect;
     using antwika::ui::WidgetRects;
@@ -872,7 +932,7 @@ namespace
         return faces;
     }
 
-    [[nodiscard]] std::vector<Rect> cardBlitsOf(
+    [[nodiscard]] std::vector<RectF> cardBlitsOf(
         const std::vector<ArtBlit> &art)
     {
         const auto face =
@@ -880,7 +940,7 @@ namespace
         const auto back =
             antwika::poker::sourceOf(antwika::poker::kCardBackSlot);
 
-        std::vector<Rect> drawn;
+        std::vector<RectF> drawn;
         for (const auto &blit : art)
         {
             if (blit.source == face || blit.source == back)
@@ -980,7 +1040,7 @@ TEST(TableAlignmentTest, Describe_PutsEachCardsTextOnItsCard)
                     EXPECT_TRUE(contains(face.rect, *text))
                         << face.text;
 
-                    std::vector<Rect> under;
+                    std::vector<RectF> under;
                     for (const auto &blit : cardBlitsOf(art))
                     {
                         if (contains(blit, *text))
@@ -1210,7 +1270,7 @@ TEST(TableAlignmentTest, Describe_KeepsASeatsPlateInsideItsRow)
         const auto art =
             scene.describeArt(canvas, frame.rects, snapshot);
 
-        std::vector<Rect> plates;
+        std::vector<RectF> plates;
         for (const auto &blit : art)
         {
             if (blit.source == plate)

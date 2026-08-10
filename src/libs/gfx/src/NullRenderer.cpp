@@ -2,12 +2,13 @@
 
 #include <memory>
 
+#include <antwika/gfx/PointF.hpp>
+#include <antwika/gfx/RectF.hpp>
 #include <antwika/log/Level.hpp>
-
-#include "antwika/gfx/GfxError.hpp"
 
 #include "NullMesh.hpp"
 #include "NullTexture.hpp"
+#include "antwika/gfx/GfxError.hpp"
 
 namespace antwika::gfx::detail
 {
@@ -24,18 +25,18 @@ namespace antwika::gfx::detail
         logger.log(Level::Trace, "gfx.null: clear");
     }
 
-    void NullRenderer::drawRect(Rect, Color)
+    void NullRenderer::drawRect(RectF, Color)
     {
         logger.log(Level::Trace, "gfx.null: draw rect");
     }
 
-    void NullRenderer::drawLine(Point, Point, Color)
+    void NullRenderer::drawLine(PointF, PointF, Color)
     {
         logger.log(Level::Trace, "gfx.null: draw line");
     }
 
     void NullRenderer::drawText(
-        Point, std::string_view, std::uint32_t, Color)
+        PointF, std::string_view, std::uint32_t, Color)
     {
         logger.log(Level::Trace, "gfx.null: draw text");
     }
@@ -55,7 +56,7 @@ namespace antwika::gfx::detail
     }
 
     void NullRenderer::drawTexture(
-        const ITexture &, Rect, Rect, Color)
+        const ITexture &, RectF, RectF, Color)
     {
         logger.log(Level::Trace, "gfx.null: draw texture");
     }
@@ -79,6 +80,25 @@ namespace antwika::gfx::detail
         const IMesh &, const Mat4 &, const Camera3D &, Color)
     {
         logger.log(Level::Trace, "gfx.null: draw mesh");
+    }
+
+    void NullRenderer::pushTransform(const Mat4 &)
+    {
+        ++pushed;
+
+        logger.log(Level::Trace, "gfx.null: push transform");
+    }
+
+    void NullRenderer::popTransform()
+    {
+        if (pushed == 0)
+        {
+            throw GfxError("gfx.null: no transform is pushed");
+        }
+
+        --pushed;
+
+        logger.log(Level::Trace, "gfx.null: pop transform");
     }
 
     void NullRenderer::present()

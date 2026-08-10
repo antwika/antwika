@@ -19,6 +19,8 @@
 #include <antwika/gfx/Point.hpp>
 #include <antwika/gfx/Rect.hpp>
 #include <antwika/gfx/Size.hpp>
+#include <antwika/gfx/RectF.hpp>
+#include <antwika/gfx/PointF.hpp>
 #include <antwika/time/fakes/FakeSleeper.hpp>
 #include <antwika/console/ConsolePicture.hpp>
 
@@ -60,7 +62,9 @@ using antwika::gfx::mocks::MockRenderer;
 using antwika::gfx::mocks::MockTexture;
 using antwika::gfx::mocks::MockWindow;
 using antwika::gfx::Point;
+using antwika::gfx::PointF;
 using antwika::gfx::Rect;
+using antwika::gfx::RectF;
 using antwika::gfx::Size;
 using antwika::time::fakes::FakeSleeper;
 using ::testing::_;
@@ -127,7 +131,7 @@ TEST(EditorSceneTest, Draw_ClearsAndBacksTheSheetBeforeAnythingElse)
     EXPECT_CALL(renderer, clear(_)).Times(1);
     EXPECT_CALL(renderer, drawRect(_, _)).Times(AnyNumber());
     EXPECT_CALL(
-        renderer, drawRect(imageRect(shown.view, shown.image), _))
+        renderer, drawRect(RectF{imageRect(shown.view, shown.image)}, _))
         .Times(1);
 
     scene.draw(renderer, shown, nullptr);
@@ -144,8 +148,8 @@ TEST(EditorSceneTest, Draw_BlitsTheWholeSheetWhenThereIsATextureOfIt)
         renderer,
         drawTexture(
             _,
-            Rect{.origin = {}, .size = kSheet},
-            imageRect(shown.view, shown.image),
+            RectF{Rect{.origin = {}, .size = kSheet}},
+            RectF{imageRect(shown.view, shown.image)},
             _))
         .Times(1);
 
@@ -191,10 +195,10 @@ TEST(EditorSceneTest, Draw_RulesALineBetweenEveryPixelOfTheSheet)
     EXPECT_CALL(
         renderer,
         drawLine(
-            Point{.x = step, .y = 0},
-            Point{
+            PointF{Point{.x = step, .y = 0}},
+            PointF{Point{
                 .x = step,
-                .y = static_cast<std::int32_t>(kSheet.height) * step},
+                .y = static_cast<std::int32_t>(kSheet.height) * step}},
             _))
         .Times(1);
 
@@ -266,19 +270,19 @@ TEST(EditorSceneTest, Draw_TracesTheDiamondRoundTheTileItsSlotHolds)
     EXPECT_CALL(renderer, drawLine(_, _, _)).Times(AnyNumber());
     EXPECT_CALL(
         renderer,
-        drawLine(Point{.x = 33, .y = 64}, Point{.x = 33, .y = 63}, _))
+        drawLine(PointF{33.0F, 64.0F}, PointF{33.0F, 63.0F}, _))
         .Times(1);
     EXPECT_CALL(
         renderer,
-        drawLine(Point{.x = 48, .y = 56}, Point{.x = 48, .y = 55}, _))
+        drawLine(PointF{48.0F, 56.0F}, PointF{48.0F, 55.0F}, _))
         .Times(1);
     EXPECT_CALL(
         renderer,
-        drawLine(Point{.x = 33, .y = 47}, Point{.x = 31, .y = 47}, _))
+        drawLine(PointF{33.0F, 47.0F}, PointF{31.0F, 47.0F}, _))
         .Times(1);
     EXPECT_CALL(
         renderer,
-        drawLine(Point{.x = 16, .y = 55}, Point{.x = 16, .y = 56}, _))
+        drawLine(PointF{16.0F, 55.0F}, PointF{16.0F, 56.0F}, _))
         .Times(1);
 
     scene.draw(renderer, guided(kGameSlotGuides), nullptr);
@@ -292,11 +296,11 @@ TEST(EditorSceneTest, Draw_PokesTheDiamondOutOnePixelAtEachSideVertex)
     EXPECT_CALL(renderer, drawLine(_, _, _)).Times(AnyNumber());
     EXPECT_CALL(
         renderer,
-        drawLine(Point{.x = 47, .y = 56}, Point{.x = 48, .y = 56}, _))
+        drawLine(PointF{47.0F, 56.0F}, PointF{48.0F, 56.0F}, _))
         .Times(1);
     EXPECT_CALL(
         renderer,
-        drawLine(Point{.x = 17, .y = 55}, Point{.x = 16, .y = 55}, _))
+        drawLine(PointF{17.0F, 55.0F}, PointF{16.0F, 55.0F}, _))
         .Times(1);
 
     scene.draw(renderer, guided(kGameSlotGuides), nullptr);
@@ -313,7 +317,7 @@ TEST(EditorSceneTest, Draw_StepsTheGuidesAlongThePixelEdgesOnly)
     ON_CALL(renderer, drawLine(_, _, _))
         .WillByDefault(
             [&legs, &diagonals](
-                const Point from, const Point to, const Color)
+                const PointF from, const PointF to, const Color)
             {
                 ++legs;
 
@@ -337,11 +341,11 @@ TEST(EditorSceneTest, Draw_CrossesThePivotUnderTheDiamondItAnchors)
     EXPECT_CALL(renderer, drawLine(_, _, _)).Times(AnyNumber());
     EXPECT_CALL(
         renderer,
-        drawLine(Point{.x = 30, .y = 64}, Point{.x = 34, .y = 64}, _))
+        drawLine(PointF{30.0F, 64.0F}, PointF{34.0F, 64.0F}, _))
         .Times(1);
     EXPECT_CALL(
         renderer,
-        drawLine(Point{.x = 32, .y = 62}, Point{.x = 32, .y = 66}, _))
+        drawLine(PointF{32.0F, 62.0F}, PointF{32.0F, 66.0F}, _))
         .Times(1);
 
     scene.draw(
@@ -365,8 +369,8 @@ TEST(EditorSceneTest, Draw_SitsThePivotHalfAPixelLeftAndAboveItsCentre)
     EXPECT_CALL(
         renderer,
         drawLine(
-            Point{.x = 30 * step, .y = 64 * step},
-            Point{.x = 34 * step, .y = 64 * step},
+            PointF{Point{.x = 30 * step, .y = 64 * step}},
+            PointF{Point{.x = 34 * step, .y = 64 * step}},
             _))
         .Times(1);
 
@@ -388,7 +392,7 @@ TEST(EditorSceneTest, Draw_ShowsThePixelsAShapeDragWouldPaint)
     EXPECT_CALL(renderer, drawRect(_, _)).Times(AnyNumber());
     EXPECT_CALL(
         renderer,
-        drawRect(pixelRect(shown.view, Pixel{.x = 2, .y = 1}), _))
+        drawRect(RectF{pixelRect(shown.view, Pixel{.x = 2, .y = 1})}, _))
         .Times(1);
 
     scene.draw(renderer, shown, nullptr);
@@ -405,7 +409,7 @@ TEST(EditorSceneTest, Draw_ShowsNoShapeWithNoDragInHand)
     EXPECT_CALL(renderer, drawRect(_, _)).Times(AnyNumber());
     EXPECT_CALL(
         renderer,
-        drawRect(pixelRect(shown.view, Pixel{.x = 2, .y = 1}), _))
+        drawRect(RectF{pixelRect(shown.view, Pixel{.x = 2, .y = 1})}, _))
         .Times(0);
 
     scene.draw(renderer, shown, nullptr);
@@ -426,8 +430,8 @@ TEST(EditorSceneTest, Draw_ScalesAndPansTheDiamondsWithTheSheet)
     EXPECT_CALL(
         renderer,
         drawLine(
-            Point{.x = (16 * step) + 5, .y = (55 * step) + 7},
-            Point{.x = (16 * step) + 5, .y = (56 * step) + 7},
+            PointF{Point{.x = (16 * step) + 5, .y = (55 * step) + 7}},
+            PointF{Point{.x = (16 * step) + 5, .y = (56 * step) + 7}},
             _))
         .Times(1);
 
@@ -448,13 +452,13 @@ TEST(EditorSceneTest, Draw_OutlinesTheMarkedRectangleRoundItsPixels)
 
     EXPECT_CALL(renderer, drawLine(_, _, _)).Times(AnyNumber());
     EXPECT_CALL(
-        renderer, drawLine(kCorner, Point{.x = 5, .y = 1}, _)).Times(1);
+        renderer, drawLine(PointF{kCorner}, PointF{5.0F, 1.0F}, _)).Times(1);
     EXPECT_CALL(
-        renderer, drawLine(Point{.x = 5, .y = 1}, kFar, _)).Times(1);
+        renderer, drawLine(PointF{5.0F, 1.0F}, PointF{kFar}, _)).Times(1);
     EXPECT_CALL(
-        renderer, drawLine(kFar, Point{.x = 2, .y = 3}, _)).Times(1);
+        renderer, drawLine(PointF{kFar}, PointF{2.0F, 3.0F}, _)).Times(1);
     EXPECT_CALL(
-        renderer, drawLine(Point{.x = 2, .y = 3}, kCorner, _)).Times(1);
+        renderer, drawLine(PointF{2.0F, 3.0F}, PointF{kCorner}, _)).Times(1);
 
     scene.draw(renderer, shown, nullptr);
 }
@@ -473,8 +477,8 @@ TEST(EditorSceneTest, Draw_ScalesAndPansTheMarkedRectangleToo)
     EXPECT_CALL(
         renderer,
         drawLine(
-            Point{.x = (2 * 2) + 5, .y = (1 * 2) + 7},
-            Point{.x = (5 * 2) + 5, .y = (1 * 2) + 7},
+            PointF{Point{.x = (2 * 2) + 5, .y = (1 * 2) + 7}},
+            PointF{Point{.x = (5 * 2) + 5, .y = (1 * 2) + 7}},
             _))
         .Times(1);
 
@@ -506,7 +510,7 @@ TEST(EditorSceneTest, Draw_OutlinesThePixelUnderThePointer)
     EXPECT_CALL(renderer, drawRect(_, _)).Times(AnyNumber());
     EXPECT_CALL(
         renderer,
-        drawRect(pixelRect(shown.view, Pixel{.x = 3, .y = 2}), _))
+        drawRect(RectF{pixelRect(shown.view, Pixel{.x = 3, .y = 2})}, _))
         .Times(1);
 
     scene.draw(renderer, shown, nullptr);
@@ -680,7 +684,7 @@ TEST(EditorSceneTest, Draw_MarksThePivotWithTheDiamondTurnedOff)
     EXPECT_CALL(renderer, drawLine(_, _, _)).Times(AnyNumber());
     EXPECT_CALL(
         renderer,
-        drawLine(Point{.x = 32, .y = 62}, Point{.x = 32, .y = 66}, _))
+        drawLine(PointF{32.0F, 62.0F}, PointF{32.0F, 66.0F}, _))
         .Times(1);
 
     scene.draw(
@@ -714,7 +718,7 @@ TEST(EditorSceneTest, Draw_LeavesThePivotOffWhileOnlyTheDiamondIsOn)
     EXPECT_CALL(renderer, drawLine(_, _, _)).Times(AnyNumber());
     EXPECT_CALL(
         renderer,
-        drawLine(Point{.x = 32, .y = 62}, Point{.x = 32, .y = 66}, _))
+        drawLine(PointF{32.0F, 62.0F}, PointF{32.0F, 66.0F}, _))
         .Times(0);
 
     scene.draw(renderer, guided(kGameSlotGuides), nullptr);
@@ -732,17 +736,17 @@ TEST(EditorSceneTest, Draw_ChequersTheSheetBehindWhatItHolds)
     EXPECT_CALL(
         renderer,
         drawRect(
-            Rect{
+            RectF{Rect{
                 .origin = {.x = 0, .y = 0},
-                .size = {.width = 8, .height = 8}},
+                .size = {.width = 8, .height = 8}}},
             _))
         .Times(1);
     EXPECT_CALL(
         renderer,
         drawRect(
-            Rect{
+            RectF{Rect{
                 .origin = {.x = 8, .y = 0},
-                .size = {.width = 8, .height = 8}},
+                .size = {.width = 8, .height = 8}}},
             _))
         .Times(0);
 
@@ -762,9 +766,9 @@ TEST(EditorSceneTest, Draw_ChequersOnlyAsFarAsTheSheetReaches)
     EXPECT_CALL(
         renderer,
         drawRect(
-            Rect{
+            RectF{Rect{
                 .origin = {.x = 0, .y = 0},
-                .size = {.width = 8, .height = 4}},
+                .size = {.width = 8, .height = 4}}},
             _))
         .Times(1);
 
@@ -780,11 +784,11 @@ TEST(EditorSceneTest, Draw_RingsThePixelUnderThePointerWhenAskedTo)
     shown.hovered = Pixel{.x = 2, .y = 1};
     shown.pointerBorder = true;
 
-    std::vector<std::pair<Point, Point>> legs;
+    std::vector<std::pair<PointF, PointF>> legs;
 
     ON_CALL(renderer, drawLine(_, _, _))
         .WillByDefault(
-            [&legs](const Point from, const Point to, const Color)
+            [&legs](const PointF from, const PointF to, const Color)
             { legs.emplace_back(from, to); });
 
     scene.draw(renderer, shown, nullptr);
@@ -797,7 +801,7 @@ TEST(EditorSceneTest, Draw_RingsThePixelUnderThePointerWhenAskedTo)
 
     EXPECT_EQ(
         legs,
-        (std::vector<std::pair<Point, Point>>{
+        (std::vector<std::pair<PointF, PointF>>{
             {corner, Point{.x = far.x, .y = corner.y}},
             {Point{.x = far.x, .y = corner.y}, far},
             {far, Point{.x = corner.x, .y = far.y}},

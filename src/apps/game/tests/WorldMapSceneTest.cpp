@@ -9,6 +9,7 @@
 #include <antwika/gfx/Rect.hpp>
 #include <antwika/gfx/Size.hpp>
 #include <antwika/gfx/mocks/MockRenderer.hpp>
+#include <antwika/gfx/RectF.hpp>
 
 #include "antwika/game/Cell.hpp"
 #include "antwika/game/Terrain.hpp"
@@ -32,6 +33,7 @@ namespace
     using antwika::game::worldTileRect;
     using antwika::gfx::Color;
     using antwika::gfx::Rect;
+    using antwika::gfx::RectF;
     using antwika::gfx::Size;
     using antwika::gfx::mocks::MockRenderer;
     using ::testing::_;
@@ -80,22 +82,22 @@ namespace
         EXPECT_CALL(
             renderer,
             drawRect(
-                worldTileRect(kCanvas, 2, 2, Cell{0, 0}),
+                RectF{worldTileRect(kCanvas, 2, 2, Cell{0, 0})},
                 colorOf(Terrain::Water)));
         EXPECT_CALL(
             renderer,
             drawRect(
-                worldTileRect(kCanvas, 2, 2, Cell{1, 0}),
+                RectF{worldTileRect(kCanvas, 2, 2, Cell{1, 0})},
                 colorOf(Terrain::Plains)));
         EXPECT_CALL(
             renderer,
             drawRect(
-                worldTileRect(kCanvas, 2, 2, Cell{0, 1}),
+                RectF{worldTileRect(kCanvas, 2, 2, Cell{0, 1})},
                 colorOf(Terrain::Forest)));
         EXPECT_CALL(
             renderer,
             drawRect(
-                worldTileRect(kCanvas, 2, 2, Cell{1, 1}),
+                RectF{worldTileRect(kCanvas, 2, 2, Cell{1, 1})},
                 colorOf(Terrain::Hills)));
         EXPECT_CALL(renderer, drawText(_, _, 1, _)).Times(kCityCount);
 

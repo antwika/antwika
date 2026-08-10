@@ -7,6 +7,7 @@
 #include <antwika/gfx/Size.hpp>
 #include <antwika/gfx/mocks/MockRenderer.hpp>
 #include <antwika/gfx/mocks/MockWindow.hpp>
+#include <antwika/gfx/RectF.hpp>
 #include <antwika/log/mocks/MockLogger.hpp>
 #include <antwika/ui/DrawCommand.hpp>
 
@@ -19,6 +20,7 @@
 using antwika::ecs::World;
 using antwika::gfx::Color;
 using antwika::gfx::Rect;
+using antwika::gfx::RectF;
 using antwika::gfx::Size;
 using antwika::gfx::mocks::MockRenderer;
 using antwika::gfx::mocks::MockWindow;
@@ -64,16 +66,16 @@ TEST(RenderSystemTest, Update_DrawsTheWorldsCellsAndPresents)
     EXPECT_CALL(
         renderer,
         drawRect(
-            Rect{
+            RectF{Rect{
                 .origin = {.x = 0, .y = 0},
-                .size = {.width = 20, .height = 20}},
+                .size = {.width = 20, .height = 20}}},
             kDeadCells));
     EXPECT_CALL(
         renderer,
         drawRect(
-            Rect{
+            RectF{Rect{
                 .origin = {.x = 10, .y = 0},
-                .size = {.width = 10, .height = 10}},
+                .size = {.width = 10, .height = 10}}},
             kAliveCell));
     EXPECT_CALL(renderer, present());
 
@@ -121,16 +123,16 @@ TEST(RenderSystemTest, Update_DrawsAgainstTheConfiguredSizeNotTheReported)
     EXPECT_CALL(
         renderer,
         drawRect(
-            Rect{
+            RectF{Rect{
                 .origin = {.x = 0, .y = 0},
-                .size = {.width = 20, .height = 20}},
+                .size = {.width = 20, .height = 20}}},
             kDeadCells));
     EXPECT_CALL(
         renderer,
         drawRect(
-            Rect{
+            RectF{Rect{
                 .origin = {.x = 10, .y = 0},
-                .size = {.width = 10, .height = 10}},
+                .size = {.width = 10, .height = 10}}},
             kAliveCell));
 
     const BoardScene scene;
@@ -188,7 +190,7 @@ TEST(RenderSystemTest, Update_PaintsTheConsolePictureBeforePresenting)
     EXPECT_CALL(renderer, clear(_));
     EXPECT_CALL(renderer, drawRect(_, kDeadCells));
     EXPECT_CALL(renderer, drawRect(_, kAliveCell));
-    EXPECT_CALL(renderer, drawRect(kSheetRect, kSheet));
+    EXPECT_CALL(renderer, drawRect(RectF{kSheetRect}, kSheet));
     EXPECT_CALL(renderer, present());
 
     const BoardScene scene;

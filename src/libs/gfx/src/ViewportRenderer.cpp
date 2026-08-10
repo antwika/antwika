@@ -3,6 +3,9 @@
 #include <cstddef>
 #include <cstdint>
 
+#include <antwika/gfx/PointF.hpp>
+#include <antwika/gfx/RectF.hpp>
+
 #include "antwika/gfx/Glyphs.hpp"
 
 namespace antwika::gfx
@@ -27,19 +30,20 @@ namespace antwika::gfx
         inner.clear(color);
     }
 
-    void ViewportRenderer::drawRect(Rect rect, Color color)
+    void ViewportRenderer::drawRect(RectF rect, Color color)
     {
         inner.drawRect(transform.toWindow(rect), color);
     }
 
-    void ViewportRenderer::drawLine(Point from, Point to, Color color)
+    void ViewportRenderer::drawLine(
+        PointF from, PointF to, Color color)
     {
         inner.drawLine(
             transform.toWindow(from), transform.toWindow(to), color);
     }
 
     void ViewportRenderer::drawText(
-        Point origin,
+        PointF origin,
         std::string_view text,
         std::uint32_t scale,
         Color color)
@@ -62,9 +66,8 @@ namespace antwika::gfx
             const auto step = static_cast<std::int64_t>(at)
                               * kGlyphAdvance * scale;
 
-            const Point cell{
-                .x = static_cast<std::int32_t>(origin.x + step),
-                .y = origin.y};
+            const PointF cell{
+                origin.x + static_cast<float>(step), origin.y};
 
             inner.drawText(
                 transform.toWindow(cell), text.substr(at, 1), drawn, color);
@@ -79,8 +82,8 @@ namespace antwika::gfx
 
     void ViewportRenderer::drawTexture(
         const ITexture &texture,
-        Rect source,
-        Rect destination,
+        RectF source,
+        RectF destination,
         Color tint)
     {
         inner.drawTexture(
@@ -145,6 +148,16 @@ namespace antwika::gfx
                     .width = frame.size.width,
                     .height = static_cast<std::uint32_t>(height - bottom)}},
             color);
+    }
+
+    void ViewportRenderer::pushTransform(const Mat4 &matrix)
+    {
+        inner.pushTransform(matrix);
+    }
+
+    void ViewportRenderer::popTransform()
+    {
+        inner.popTransform();
     }
 
     void ViewportRenderer::present()

@@ -16,6 +16,7 @@
 #include <antwika/gfx/mocks/MockRenderer.hpp>
 #include <antwika/gfx/mocks/MockTexture.hpp>
 #include <antwika/gfx/mocks/MockWindow.hpp>
+#include <antwika/gfx/RectF.hpp>
 #include <antwika/input/PointerHint.hpp>
 #include <antwika/input/PointerHintChannel.hpp>
 #include <antwika/log/mocks/MockLogger.hpp>
@@ -74,6 +75,7 @@ using antwika::game::UiOverlay;
 using antwika::game::WorldMapScene;
 using antwika::game::WorldMapState;
 using antwika::gfx::Rect;
+using antwika::gfx::RectF;
 using antwika::gfx::Size;
 using antwika::gfx::mocks::MockRenderer;
 using antwika::gfx::mocks::MockTexture;
@@ -202,9 +204,9 @@ TEST_F(RenderSystemTest, Update_DrawsThePathsItIsGiven)
 
     EXPECT_CALL(renderer, drawTexture(_, _, _, _))
         .Times(static_cast<int>(kExtent.width * kExtent.height));
-    EXPECT_CALL(renderer, drawTexture(Ref(atlas), roadTile(
+    EXPECT_CALL(renderer, drawTexture(Ref(atlas), RectF{roadTile(
         kTestSpecs,
-        0), _, _));
+        0)}, _, _));
 
     system.update(world, 0);
 }
@@ -460,15 +462,15 @@ TEST_F(RenderSystemTest, Draw_HoldsAWalkerStillWhileTheRunIsPaused)
 
     RenderSystem system(setup());
 
-    Rect atTick{};
-    Rect between{};
+    RectF atTick{};
+    RectF between{};
 
     EXPECT_CALL(renderer, drawTexture(_, _, _, _)).Times(AnyNumber());
     EXPECT_CALL(
         renderer,
-        drawTexture(Ref(atlas), walkerTile(
+        drawTexture(Ref(atlas), RectF{walkerTile(
             kTestSpecs,
-            Direction::East, 2), _, _))
+            Direction::East, 2)}, _, _))
         .WillOnce(SaveArg<2>(&atTick))
         .WillOnce(SaveArg<2>(&between));
 
@@ -492,15 +494,15 @@ TEST_F(RenderSystemTest, Draw_SlidesAWalkerWhileTheRunIsNotPaused)
 
     RenderSystem system(setup());
 
-    Rect atTick{};
-    Rect between{};
+    RectF atTick{};
+    RectF between{};
 
     EXPECT_CALL(renderer, drawTexture(_, _, _, _)).Times(AnyNumber());
     EXPECT_CALL(
         renderer,
-        drawTexture(Ref(atlas), walkerTile(
+        drawTexture(Ref(atlas), RectF{walkerTile(
             kTestSpecs,
-            Direction::East, 2), _, _))
+            Direction::East, 2)}, _, _))
         .WillOnce(SaveArg<2>(&atTick))
         .WillOnce(SaveArg<2>(&between));
 

@@ -179,7 +179,7 @@ namespace
             ON_CALL(renderer, drawRect)
                 .WillByDefault(
                     [&drawn](
-                        antwika::gfx::Rect, const antwika::gfx::Color ink)
+                        antwika::gfx::RectF, const antwika::gfx::Color ink)
                     { drawn.push_back(ink); });
 
             const BattleScene scene;
@@ -354,11 +354,11 @@ namespace
         ASSERT_EQ(layout->cell, 1U);
 
         NiceMock<MockRenderer> renderer;
-        std::vector<antwika::gfx::Rect> rects;
+        std::vector<antwika::gfx::RectF> rects;
         ON_CALL(renderer, drawRect)
             .WillByDefault(
                 [&rects](
-                    const antwika::gfx::Rect rect, antwika::gfx::Color)
+                    const antwika::gfx::RectF rect, antwika::gfx::Color)
                 { rects.push_back(rect); });
 
         const BattleScene scene;

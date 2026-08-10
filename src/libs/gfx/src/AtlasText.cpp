@@ -5,6 +5,8 @@
 #include <vector>
 
 #include <antwika/font/GlyphAtlas.hpp>
+#include <antwika/gfx/PointF.hpp>
+#include <antwika/gfx/RectF.hpp>
 
 #include "antwika/gfx/Blit.hpp"
 #include "antwika/gfx/Color.hpp"
@@ -130,15 +132,22 @@ namespace antwika::gfx
         IRenderer &renderer,
         const ITexture &texture,
         const font::GlyphAtlas &atlas,
-        Point origin,
+        PointF origin,
         std::string_view text,
         Color tint)
     {
-        for (const GlyphBlit &blit :
-             atlasTextBlits(atlas, origin, text))
+        for (const GlyphBlit &blit : atlasTextBlits(atlas, Point{}, text))
         {
+            const RectF destination{
+                PointF{
+                    origin.x
+                        + static_cast<float>(blit.destination.origin.x),
+                    origin.y
+                        + static_cast<float>(blit.destination.origin.y)},
+                blit.destination.size};
+
             renderer.drawTexture(
-                texture, blit.source, blit.destination, tint);
+                texture, blit.source, destination, tint);
         }
     }
 

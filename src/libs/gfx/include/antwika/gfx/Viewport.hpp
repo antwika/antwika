@@ -2,9 +2,15 @@
 
 #include <cstdint>
 
+#include <antwika/gfx/PointF.hpp>
+#include <antwika/gfx/RectF.hpp>
+
 #include "antwika/gfx/Point.hpp"
+#include "antwika/gfx/PointF.hpp"
 #include "antwika/gfx/Rect.hpp"
+#include "antwika/gfx/RectF.hpp"
 #include "antwika/gfx/Size.hpp"
+#include "antwika/gfx/SizeF.hpp"
 
 namespace antwika::gfx
 {
@@ -22,6 +28,10 @@ namespace antwika::gfx
         [[nodiscard]] Point toWindow(Point point) const noexcept;
 
         [[nodiscard]] Rect toWindow(Rect rect) const noexcept;
+
+        [[nodiscard]] PointF toWindow(PointF point) const noexcept;
+
+        [[nodiscard]] RectF toWindow(RectF rect) const noexcept;
 
         [[nodiscard]] Point toCanvas(Point point) const noexcept;
 

@@ -2,6 +2,8 @@
 
 #include <cstdint>
 #include <numeric>
+#include <antwika/gfx/RectF.hpp>
+#include <antwika/gfx/PointF.hpp>
 
 namespace antwika::gfx
 {
@@ -49,6 +51,26 @@ namespace antwika::gfx
                     bottomRight.x - topLeft.x),
                 .height = static_cast<std::uint32_t>(
                     bottomRight.y - topLeft.y)}};
+    }
+
+    PointF Viewport::toWindow(const PointF point) const noexcept
+    {
+        const auto factor = static_cast<float>(numerator)
+                            / static_cast<float>(denominator);
+
+        return antwika::gfx::PointF{
+            static_cast<float>(offset.x) + (point.x * factor),
+            static_cast<float>(offset.y) + (point.y * factor)};
+    }
+
+    RectF Viewport::toWindow(const RectF rect) const noexcept
+    {
+        const auto factor = static_cast<float>(numerator)
+                            / static_cast<float>(denominator);
+
+        return antwika::gfx::RectF{
+            toWindow(rect.origin),
+            SizeF{rect.size.width * factor, rect.size.height * factor}};
     }
 
     Point Viewport::toCanvas(Point point) const noexcept

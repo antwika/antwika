@@ -14,25 +14,29 @@
 #include <antwika/gfx/ITexture.hpp>
 #include <antwika/gfx/Math3D.hpp>
 #include <antwika/gfx/MeshData.hpp>
-#include <antwika/gfx/Point.hpp>
-#include <antwika/gfx/Rect.hpp>
+#include <antwika/gfx/PointF.hpp>
+#include <antwika/gfx/RectF.hpp>
 
 namespace antwika::gfx::mocks
 {
 
     using antwika::gfx::IRenderer;
 
+    using antwika::gfx::RectF;
+
+    using antwika::gfx::PointF;
+
     class MockRenderer : public IRenderer
     {
     public:
         MOCK_METHOD(void, clear, (Color color), (override));
-        MOCK_METHOD(void, drawRect, (Rect rect, Color color), (override));
+        MOCK_METHOD(void, drawRect, (RectF rect, Color color), (override));
         MOCK_METHOD(
-            void, drawLine, (Point from, Point to, Color color), (override));
+            void, drawLine, (PointF from, PointF to, Color color), (override));
         MOCK_METHOD(
             void,
             drawText,
-            (Point origin,
+            (PointF origin,
              std::string_view text,
              std::uint32_t scale,
              Color color),
@@ -46,8 +50,8 @@ namespace antwika::gfx::mocks
             void,
             drawTexture,
             (const ITexture &texture,
-             Rect source,
-             Rect destination,
+             RectF source,
+             RectF destination,
              Color tint),
             (override));
         MOCK_METHOD(
@@ -63,6 +67,9 @@ namespace antwika::gfx::mocks
              const Camera3D &camera,
              Color tint),
             (override));
+        MOCK_METHOD(
+            void, pushTransform, (const Mat4 &transform), (override));
+        MOCK_METHOD(void, popTransform, (), (override));
         MOCK_METHOD(void, present, (), (override));
     };
 

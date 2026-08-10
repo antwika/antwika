@@ -5,6 +5,8 @@
 #include <antwika/gfx/Point.hpp>
 #include <antwika/gfx/Rect.hpp>
 #include <antwika/gfx/mocks/MockRenderer.hpp>
+#include <antwika/gfx/RectF.hpp>
+#include <antwika/gfx/PointF.hpp>
 
 #include "antwika/ui/DrawCommand.hpp"
 #include "antwika/ui/DrawList.hpp"
@@ -12,7 +14,9 @@
 
 using antwika::gfx::Color;
 using antwika::gfx::Point;
+using antwika::gfx::PointF;
 using antwika::gfx::Rect;
+using antwika::gfx::RectF;
 using antwika::gfx::mocks::MockRenderer;
 using antwika::ui::DrawList;
 using antwika::ui::DrawText;
@@ -36,7 +40,7 @@ TEST(PainterTest, Paint_DrawsAFillAsARectangle)
 {
     NiceMock<MockRenderer> renderer;
 
-    EXPECT_CALL(renderer, drawRect(kBox, kPanel));
+    EXPECT_CALL(renderer, drawRect(RectF{kBox}, kPanel));
 
     paint(renderer, DrawList{FillRect{.rect = kBox, .color = kPanel}});
 }
@@ -46,7 +50,7 @@ TEST(PainterTest, Paint_DrawsTextWithItsOwnScaleAndColour)
     NiceMock<MockRenderer> renderer;
 
     EXPECT_CALL(
-        renderer, drawText(Point{.x = 3, .y = 4}, "ab", 2, kInk));
+        renderer, drawText(PointF{3.0F, 4.0F}, "ab", 2, kInk));
 
     paint(
         renderer,
@@ -62,10 +66,10 @@ TEST(PainterTest, Paint_DrawsCommandsInTheOrderTheyAreGiven)
     NiceMock<MockRenderer> renderer;
     const InSequence sequence;
 
-    EXPECT_CALL(renderer, drawRect(kBox, kPanel));
+    EXPECT_CALL(renderer, drawRect(RectF{kBox}, kPanel));
     EXPECT_CALL(
-        renderer, drawText(Point{.x = 3, .y = 4}, "ab", 1, kInk));
-    EXPECT_CALL(renderer, drawRect(kBox, kInk));
+        renderer, drawText(PointF{3.0F, 4.0F}, "ab", 1, kInk));
+    EXPECT_CALL(renderer, drawRect(RectF{kBox}, kInk));
 
     paint(
         renderer,
@@ -83,7 +87,7 @@ TEST(PainterTest, Paint_NeverClearsAndNeverPresents)
 {
     NiceMock<MockRenderer> renderer;
 
-    EXPECT_CALL(renderer, drawRect(kBox, kPanel));
+    EXPECT_CALL(renderer, drawRect(RectF{kBox}, kPanel));
     EXPECT_CALL(renderer, clear(_)).Times(0);
     EXPECT_CALL(renderer, present()).Times(0);
 

@@ -56,6 +56,8 @@ namespace antwika::gfx::raylib
 
         constexpr std::size_t kMaxMeshVertices = 65536;
 
+        constexpr std::size_t kMaxTransformDepth = 32;
+
         template <typename T>
         T *allocateFor(std::size_t count)
         {
@@ -97,7 +99,7 @@ namespace antwika::gfx::raylib
         ClearBackground(toRaylib(color));
     }
 
-    void RaylibRenderer::drawRect(Rect rect, Color color)
+    void RaylibRenderer::drawRect(RectF rect, Color color)
     {
         beginIfNeeded();
 
@@ -106,15 +108,16 @@ namespace antwika::gfx::raylib
             return;
         }
 
-        DrawRectangle(
-            rect.origin.x,
-            rect.origin.y,
-            static_cast<int>(rect.size.width),
-            static_cast<int>(rect.size.height),
+        DrawRectangleRec(
+            ::Rectangle{
+                .x = rect.origin.x,
+                .y = rect.origin.y,
+                .width = rect.size.width,
+                .height = rect.size.height},
             toRaylib(color));
     }
 
-    void RaylibRenderer::drawLine(Point from, Point to, Color color)
+    void RaylibRenderer::drawLine(PointF from, PointF to, Color color)
     {
         beginIfNeeded();
 
@@ -125,17 +128,20 @@ namespace antwika::gfx::raylib
 
         const auto raylibColor = toRaylib(color);
 
+        const ::Vector2 start{.x = from.x, .y = from.y};
+        const ::Vector2 end{.x = to.x, .y = to.y};
+
         if (from == to)
         {
-            DrawPixel(from.x, from.y, raylibColor);
+            DrawPixelV(start, raylibColor);
             return;
         }
 
-        DrawLine(from.x, from.y, to.x, to.y, raylibColor);
+        DrawLineV(start, end, raylibColor);
     }
 
     void RaylibRenderer::drawText(
-        Point origin,
+        PointF origin,
         std::string_view text,
         std::uint32_t scale,
         Color color)
@@ -189,7 +195,10 @@ namespace antwika::gfx::raylib
     }
 
     void RaylibRenderer::drawTexture(
-        const ITexture &texture, Rect source, Rect destination, Color tint)
+        const ITexture &texture,
+        RectF source,
+        RectF destination,
+        Color tint)
     {
         const auto *mine = dynamic_cast<const RaylibTexture *>(&texture);
 
@@ -211,16 +220,16 @@ namespace antwika::gfx::raylib
         }
 
         const ::Rectangle from{
-            .x = static_cast<float>(source.origin.x),
-            .y = static_cast<float>(source.origin.y),
-            .width = static_cast<float>(source.size.width),
-            .height = static_cast<float>(source.size.height)};
+            .x = source.origin.x,
+            .y = source.origin.y,
+            .width = source.size.width,
+            .height = source.size.height};
 
         const ::Rectangle to{
-            .x = static_cast<float>(destination.origin.x),
-            .y = static_cast<float>(destination.origin.y),
-            .width = static_cast<float>(destination.size.width),
-            .height = static_cast<float>(destination.size.height)};
+            .x = destination.origin.x,
+            .y = destination.origin.y,
+            .width = destination.size.width,
+            .height = destination.size.height};
 
         DrawTexturePro(
             mine->raw(),
@@ -356,11 +365,55 @@ namespace antwika::gfx::raylib
         rlSetMatrixProjection(wasProjection);
     }
 
+    void RaylibRenderer::pushTransform(const Mat4 &transform)
+    {
+        if (pushed == kMaxTransformDepth)
+        {
+            throw GfxError(
+                "gfx.raylib: the transform stack is full");
+        }
+
+        beginIfNeeded();
+
+        ++pushed;
+
+        if (!drawing)
+        {
+            return;
+        }
+
+        rlPushMatrix();
+        rlMultMatrixf(&transform[0][0]);
+    }
+
+    void RaylibRenderer::popTransform()
+    {
+        if (pushed == 0)
+        {
+            throw GfxError("gfx.raylib: no transform is pushed");
+        }
+
+        --pushed;
+
+        if (!drawing)
+        {
+            return;
+        }
+
+        rlPopMatrix();
+    }
+
     void RaylibRenderer::present()
     {
         if (!drawing)
         {
             return;
+        }
+
+        while (pushed > 0)
+        {
+            rlPopMatrix();
+            --pushed;
         }
 
         EndDrawing();

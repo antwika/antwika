@@ -2,6 +2,9 @@
 
 A C++ project built around deterministic simulation: the libraries under `src/libs/` and the applications under `src/apps/` share one engine, one replay format and one rendering seam, with the graphics, sound and network backends chosen at build time.
 
+Simulation state is integer throughout.
+Floating point begins at the `antwika::gfx::IRenderer` call and goes no further: `PointF`, `SizeF` and `RectF` convert implicitly from their integer counterparts and never back, so a frame can be drawn at sub-pixel positions without a float ever reaching the state a replay reproduces.
+
 ## Building
 
 The build needs a Conan profile named in `CONAN_PROFILE`, matching a file under `profiles/host/`.

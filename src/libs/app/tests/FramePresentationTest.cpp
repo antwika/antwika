@@ -13,6 +13,7 @@
 #include <antwika/gfx/Size.hpp>
 #include <antwika/gfx/mocks/MockRenderer.hpp>
 #include <antwika/gfx/mocks/MockWindow.hpp>
+#include <antwika/gfx/RectF.hpp>
 #include <antwika/ui/DrawCommand.hpp>
 #include <antwika/ui/DrawList.hpp>
 
@@ -23,6 +24,7 @@ using antwika::event::TickEvent;
 using antwika::gfx::Color;
 using antwika::gfx::IRenderer;
 using antwika::gfx::Rect;
+using antwika::gfx::RectF;
 using antwika::gfx::Size;
 using antwika::gfx::mocks::MockRenderer;
 using antwika::gfx::mocks::MockWindow;
@@ -113,7 +115,7 @@ TEST(FramePresentationTest, PaintOver_PaintsEveryCommandTheOverlayHolds)
     MockRenderer renderer;
     const auto picture = overlay();
 
-    EXPECT_CALL(renderer, drawRect(kOverlayRect, kOverlayColor));
+    EXPECT_CALL(renderer, drawRect(RectF{kOverlayRect}, kOverlayColor));
 
     antwika::app::paintOver(renderer, picture);
 }
@@ -124,7 +126,7 @@ TEST(FramePresentationTest, PaintOver_PaintsAnOverlayThatIsMounted)
     const auto picture = overlay();
     const OptionalOverlay mounted{std::cref(picture)};
 
-    EXPECT_CALL(renderer, drawRect(kOverlayRect, kOverlayColor));
+    EXPECT_CALL(renderer, drawRect(RectF{kOverlayRect}, kOverlayColor));
 
     antwika::app::paintOver(renderer, mounted);
 }
@@ -145,7 +147,7 @@ TEST(FramePresentationTest, PresentFrame_DrawsTheFrameThenPresentsIt)
     ON_CALL(window, renderer()).WillByDefault(ReturnRef(renderer));
 
     const InSequence order;
-    EXPECT_CALL(renderer, drawRect(kSceneRect, kSceneColor));
+    EXPECT_CALL(renderer, drawRect(RectF{kSceneRect}, kSceneColor));
     EXPECT_CALL(renderer, present());
 
     antwika::app::presentFrame(
@@ -165,8 +167,8 @@ TEST(FramePresentationTest, PresentFrame_PaintsTheOverlayLastOfAll)
     const auto picture = overlay();
 
     const InSequence order;
-    EXPECT_CALL(renderer, drawRect(kSceneRect, kSceneColor));
-    EXPECT_CALL(renderer, drawRect(kOverlayRect, kOverlayColor));
+    EXPECT_CALL(renderer, drawRect(RectF{kSceneRect}, kSceneColor));
+    EXPECT_CALL(renderer, drawRect(RectF{kOverlayRect}, kOverlayColor));
     EXPECT_CALL(renderer, present());
 
     antwika::app::presentFrame(
@@ -193,16 +195,16 @@ TEST(FramePresentationTest, PresentViewport_FillsTheSurroundLastOfAll)
     EXPECT_CALL(
         renderer,
         drawRect(
-            Rect{
+            RectF{Rect{
                 .origin = {.x = 50, .y = 0},
-                .size = {.width = 10, .height = 10}},
+                .size = {.width = 10, .height = 10}}},
             kSceneColor));
     EXPECT_CALL(
         renderer,
         drawRect(
-            Rect{
+            RectF{Rect{
                 .origin = {.x = 55, .y = 5},
-                .size = {.width = 4, .height = 4}},
+                .size = {.width = 4, .height = 4}}},
             kOverlayColor));
 
     EXPECT_CALL(renderer, drawRect(_, kSurround)).Times(2);

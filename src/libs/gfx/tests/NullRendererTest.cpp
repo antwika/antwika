@@ -152,3 +152,34 @@ TEST(NullRendererTest, Present_DiscardsTheFrameAndTracesIt)
 
     renderer.present();
 }
+
+TEST(NullRendererTest, PushTransform_TracesTheMatrixItWasGiven)
+{
+    NiceMock<MockLogger> logger;
+    NullRenderer renderer(logger);
+
+    EXPECT_CALL(logger, log(Level::Trace, "gfx.null: push transform"));
+
+    renderer.pushTransform(antwika::gfx::identityMatrix());
+}
+
+TEST(NullRendererTest, PopTransform_ThrowsWhenNothingIsPushed)
+{
+    NiceMock<MockLogger> logger;
+    NullRenderer renderer(logger);
+
+    EXPECT_THROW(renderer.popTransform(), antwika::gfx::GfxError);
+}
+
+TEST(NullRendererTest, PopTransform_UndoesOnePushEach)
+{
+    NiceMock<MockLogger> logger;
+    NullRenderer renderer(logger);
+
+    renderer.pushTransform(antwika::gfx::identityMatrix());
+    renderer.pushTransform(antwika::gfx::identityMatrix());
+    renderer.popTransform();
+    renderer.popTransform();
+
+    EXPECT_THROW(renderer.popTransform(), antwika::gfx::GfxError);
+}

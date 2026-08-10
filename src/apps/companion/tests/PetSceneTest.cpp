@@ -4,6 +4,7 @@
 #include <algorithm>
 #include <array>
 #include <cstddef>
+#include <cmath>
 #include <cstdint>
 #include <set>
 #include <string>
@@ -17,6 +18,8 @@
 #include <antwika/gfx/Rect.hpp>
 #include <antwika/gfx/Size.hpp>
 #include <antwika/gfx/TextLayout.hpp>
+#include <antwika/gfx/RectF.hpp>
+#include <antwika/gfx/PointF.hpp>
 #include <antwika/i18n/Locale.hpp>
 #include <antwika/time/Tick.hpp>
 
@@ -47,7 +50,9 @@ using antwika::gfx::Color;
 using antwika::gfx::kGlyphLineHeight;
 using antwika::gfx::mocks::MockRenderer;
 using antwika::gfx::Point;
+using antwika::gfx::PointF;
 using antwika::gfx::Rect;
+using antwika::gfx::RectF;
 using antwika::gfx::Size;
 using antwika::time::Tick;
 using ::testing::_;
@@ -65,7 +70,7 @@ namespace
 
     struct Text final
     {
-        Point origin{};
+        PointF origin{};
         std::string text;
         std::uint32_t scale = 0;
         Color color{};
@@ -74,7 +79,7 @@ namespace
     struct Drawn final
     {
         Color cleared{};
-        std::vector<Rect> rects;
+        std::vector<RectF> rects;
         std::vector<Color> colors;
         std::vector<Text> texts;
     };
@@ -92,7 +97,7 @@ namespace
                            { drawn.cleared = color; });
         ON_CALL(renderer, drawRect(_, _))
             .WillByDefault(
-                [&drawn](const Rect rect, const Color color)
+                [&drawn](const RectF rect, const Color color)
                 {
                     drawn.rects.push_back(rect);
                     drawn.colors.push_back(color);
@@ -100,7 +105,7 @@ namespace
         ON_CALL(renderer, drawText(_, _, _, _))
             .WillByDefault(
                 [&drawn](
-                    const Point origin,
+                    const PointF origin,
                     const std::string_view text,
                     const std::uint32_t scale,
                     const Color color)
@@ -148,7 +153,7 @@ namespace
         return drawn.texts[static_cast<std::size_t>(prop)];
     }
 
-    [[nodiscard]] bool within(const Rect &area, const Text &text)
+    [[nodiscard]] bool within(const RectF &area, const Text &text)
     {
         const auto size = antwika::gfx::textSize(text.text, text.scale);
 
@@ -164,12 +169,12 @@ namespace
                          + static_cast<std::int32_t>(area.size.height);
     }
 
-    [[nodiscard]] Rect bubbleOf(const Drawn &drawn)
+    [[nodiscard]] RectF bubbleOf(const Drawn &drawn)
     {
         return drawn.rects[drawn.rects.size() - 2];
     }
 
-    [[nodiscard]] bool drew(const Drawn &drawn, const Rect &rect)
+    [[nodiscard]] bool drew(const Drawn &drawn, const RectF &rect)
     {
         return std::find(drawn.rects.begin(), drawn.rects.end(), rect)
                != drawn.rects.end();
@@ -678,7 +683,7 @@ namespace
 
         const Drawn drawn = render(scene, kCanvas, overfull);
 
-        for (const Rect &rect : drawn.rects)
+        for (const RectF &rect : drawn.rects)
         {
             EXPECT_LE(
                 rect.origin.x
@@ -919,7 +924,7 @@ namespace
         talking.saying = Saying::Yum;
 
         const Drawn drawn = render(scene, kCanvas, talking);
-        const Rect bubble = bubbleOf(drawn);
+        const RectF bubble = bubbleOf(drawn);
 
         EXPECT_GE(
             bubble.origin.y,
@@ -967,10 +972,12 @@ namespace
 
         const Drawn drawn = render(scene, kCanvas, awake());
 
-        for (const Rect &rect : drawn.rects)
+        for (const RectF &rect : drawn.rects)
         {
-            EXPECT_EQ(rect.size.width % layout->unit, 0U);
-            EXPECT_EQ(rect.size.height % layout->unit, 0U);
+            const auto unit = static_cast<float>(layout->unit);
+
+            EXPECT_FLOAT_EQ(std::fmod(rect.size.width, unit), 0.0F);
+            EXPECT_FLOAT_EQ(std::fmod(rect.size.height, unit), 0.0F);
         }
     }
 

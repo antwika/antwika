@@ -7,6 +7,8 @@
 #include <antwika/gfx/mocks/MockRenderer.hpp>
 #include <antwika/gfx/mocks/MockMesh.hpp>
 #include <antwika/gfx/mocks/MockTexture.hpp>
+#include <antwika/gfx/RectF.hpp>
+#include <antwika/gfx/PointF.hpp>
 
 #include "antwika/gfx/Bitmap.hpp"
 #include "antwika/gfx/Color.hpp"
@@ -24,7 +26,9 @@ using antwika::gfx::MeshData;
 using antwika::gfx::mocks::MockMesh;
 using antwika::gfx::ITexture;
 using antwika::gfx::Point;
+using antwika::gfx::PointF;
 using antwika::gfx::Rect;
+using antwika::gfx::RectF;
 using antwika::gfx::Size;
 using antwika::gfx::Viewport;
 using antwika::gfx::ViewportRenderer;
@@ -75,9 +79,9 @@ TEST(ViewportRendererTest, DrawRect_ScalesAndOffsetsTheRectangle)
     EXPECT_CALL(
         inner,
         drawRect(
-            Rect{
+            RectF{Rect{
                 .origin = {.x = 70, .y = 20},
-                .size = {.width = 20, .height = 8}},
+                .size = {.width = 20, .height = 8}}},
             kInk));
 
     view.drawRect(
@@ -94,7 +98,7 @@ TEST(ViewportRendererTest, DrawLine_ScalesAndOffsetsBothEnds)
 
     EXPECT_CALL(
         inner,
-        drawLine(Point{.x = 50, .y = 0}, Point{.x = 250, .y = 100}, kInk));
+        drawLine(PointF{50.0F, 0.0F}, PointF{250.0F, 100.0F}, kInk));
 
     view.drawLine(Point{.x = 0, .y = 0}, Point{.x = 100, .y = 50}, kInk);
 }
@@ -105,7 +109,7 @@ TEST(ViewportRendererTest, DrawText_ScalesTheOriginAndTheGlyphScale)
     ViewportRenderer view(inner, kWindow, kCanvas);
 
     EXPECT_CALL(
-        inner, drawText(Point{.x = 70, .y = 20}, "hi", std::uint32_t{4}, kInk));
+        inner, drawText(PointF{70.0F, 20.0F}, "hi", std::uint32_t{4}, kInk));
 
     view.drawText(Point{.x = 10, .y = 10}, "hi", 2, kInk);
 }
@@ -117,9 +121,9 @@ TEST(ViewportRendererTest, DrawText_AnchorsEachGlyphOnANonWholeScale)
         inner, Size{.width = 150, .height = 75}, kCanvas);
 
     EXPECT_CALL(
-        inner, drawText(Point{.x = 15, .y = 15}, "h", std::uint32_t{1}, kInk));
+        inner, drawText(PointF{15.0F, 15.0F}, "h", std::uint32_t{1}, kInk));
     EXPECT_CALL(
-        inner, drawText(Point{.x = 24, .y = 15}, "i", std::uint32_t{1}, kInk));
+        inner, drawText(PointF{24.0F, 15.0F}, "i", std::uint32_t{1}, kInk));
 
     view.drawText(Point{.x = 10, .y = 10}, "hi", 1, kInk);
 }
@@ -137,10 +141,10 @@ TEST(ViewportRendererTest, DrawTexture_ScalesTheDestinationAndNotTheSource)
         inner,
         drawTexture(
             _,
-            source,
-            Rect{
+            RectF{source},
+            RectF{Rect{
                 .origin = {.x = 50, .y = 0},
-                .size = {.width = 200, .height = 100}},
+                .size = {.width = 200, .height = 100}}},
             kInk));
 
     view.drawTexture(
@@ -206,16 +210,16 @@ TEST(ViewportRendererTest, FillSurround_PaintsThePillarboxes)
     EXPECT_CALL(
         inner,
         drawRect(
-            Rect{
+            RectF{Rect{
                 .origin = {.x = 0, .y = 0},
-                .size = {.width = 50, .height = 100}},
+                .size = {.width = 50, .height = 100}}},
             kInk));
     EXPECT_CALL(
         inner,
         drawRect(
-            Rect{
+            RectF{Rect{
                 .origin = {.x = 250, .y = 0},
-                .size = {.width = 50, .height = 100}},
+                .size = {.width = 50, .height = 100}}},
             kInk));
 
     view.fillSurround(kInk);
@@ -229,16 +233,16 @@ TEST(ViewportRendererTest, FillSurround_PaintsTheLetterboxes)
     EXPECT_CALL(
         inner,
         drawRect(
-            Rect{
+            RectF{Rect{
                 .origin = {.x = 0, .y = 0},
-                .size = {.width = 100, .height = 15}},
+                .size = {.width = 100, .height = 15}}},
             kInk));
     EXPECT_CALL(
         inner,
         drawRect(
-            Rect{
+            RectF{Rect{
                 .origin = {.x = 0, .y = 65},
-                .size = {.width = 100, .height = 15}},
+                .size = {.width = 100, .height = 15}}},
             kInk));
 
     view.fillSurround(kInk);
@@ -262,10 +266,30 @@ TEST(ViewportRendererTest, EveryCall_IsUntouchedWhenTheSizesAgree)
     const Rect rect{
         .origin = {.x = 3, .y = 4}, .size = {.width = 5, .height = 6}};
 
-    EXPECT_CALL(inner, drawRect(rect, kInk));
+    EXPECT_CALL(inner, drawRect(RectF{rect}, kInk));
     EXPECT_CALL(
-        inner, drawText(Point{.x = 3, .y = 4}, "x", std::uint32_t{2}, kInk));
+        inner, drawText(PointF{3.0F, 4.0F}, "x", std::uint32_t{2}, kInk));
 
     view.drawRect(rect, kInk);
     view.drawText(Point{.x = 3, .y = 4}, "x", 2, kInk);
+}
+
+TEST(ViewportRendererTest, PushTransform_ReachesTheWrappedRenderer)
+{
+    NiceMock<MockRenderer> inner;
+    ViewportRenderer view(inner, kWindow, kCanvas);
+
+    EXPECT_CALL(inner, pushTransform(_));
+
+    view.pushTransform(identityMatrix());
+}
+
+TEST(ViewportRendererTest, PopTransform_ReachesTheWrappedRenderer)
+{
+    NiceMock<MockRenderer> inner;
+    ViewportRenderer view(inner, kWindow, kCanvas);
+
+    EXPECT_CALL(inner, popTransform());
+
+    view.popTransform();
 }

@@ -30,6 +30,8 @@
 #include <antwika/gfx/WindowDesc.hpp>
 #include <antwika/gfx/WindowEvent.hpp>
 #include <antwika/gfx/WindowId.hpp>
+#include <antwika/gfx/RectF.hpp>
+#include <antwika/gfx/PointF.hpp>
 #include <antwika/holdem/Blinds.hpp>
 #include <antwika/input/InputEventCodec.hpp>
 #include <antwika/input/Key.hpp>
@@ -58,7 +60,9 @@ using antwika::gfx::IRenderer;
 using antwika::gfx::ITexture;
 using antwika::gfx::IWindow;
 using antwika::gfx::Point;
+using antwika::gfx::PointF;
 using antwika::gfx::Rect;
+using antwika::gfx::RectF;
 using antwika::gfx::Size;
 using antwika::gfx::WindowDesc;
 using antwika::gfx::WindowEvent;
@@ -139,9 +143,9 @@ namespace
     {
     public:
         void clear(Color) override {}
-        void drawRect(Rect, Color) override {}
-        void drawLine(Point, Point, Color) override {}
-        void drawText(Point, std::string_view, std::uint32_t, Color) override
+        void drawRect(RectF, Color) override {}
+        void drawLine(PointF, PointF, Color) override {}
+        void drawText(PointF, std::string_view, std::uint32_t, Color) override
         {
         }
         [[nodiscard]] std::unique_ptr<ITexture> createTexture(
@@ -151,7 +155,7 @@ namespace
 
             return std::make_unique<FakeTexture>();
         }
-        void drawTexture(const ITexture &, Rect, Rect, Color) override
+        void drawTexture(const ITexture &, RectF, RectF, Color) override
         {
             ++blits;
         }
@@ -167,6 +171,8 @@ namespace
             Color) override
         {
         }
+        void pushTransform(const antwika::gfx::Mat4 &) override {}
+        void popTransform() override {}
         void present() override { ++presents; }
 
         std::size_t presents = 0;

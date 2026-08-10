@@ -7,6 +7,7 @@
 #include <antwika/gfx/Size.hpp>
 #include <antwika/gfx/mocks/MockRenderer.hpp>
 #include <antwika/gfx/mocks/MockWindow.hpp>
+#include <antwika/gfx/RectF.hpp>
 
 #include "antwika/music_editor/RenderSink.hpp"
 #include "EditorRig.hpp"
@@ -96,18 +97,18 @@ TEST(RenderSinkTest, Handle_AWiderWindowIsPillarboxedAroundTheScaledCanvas)
     EXPECT_CALL(
         renderer,
         drawRect(
-            antwika::gfx::Rect{
+            antwika::gfx::RectF{antwika::gfx::Rect{
                 .origin = {.x = 0, .y = 0},
-                .size = {.width = 560, .height = 1280}},
+                .size = {.width = 560, .height = 1280}}},
             ::testing::_))
         .Times(1);
 
     EXPECT_CALL(
         renderer,
         drawRect(
-            antwika::gfx::Rect{
+            antwika::gfx::RectF{antwika::gfx::Rect{
                 .origin = {.x = 2800, .y = 0},
-                .size = {.width = 560, .height = 1280}},
+                .size = {.width = 560, .height = 1280}}},
             ::testing::_))
         .Times(1);
 

@@ -20,6 +20,8 @@
 #include <antwika/gfx/Size.hpp>
 #include <antwika/gfx/mocks/MockRenderer.hpp>
 #include <antwika/gfx/mocks/MockTexture.hpp>
+#include <antwika/gfx/RectF.hpp>
+#include <antwika/gfx/PointF.hpp>
 #include <antwika/input/InputEvent.hpp>
 #include <antwika/input/InputEventCodec.hpp>
 #include <antwika/input/Key.hpp>
@@ -112,7 +114,9 @@ using antwika::game::WorldMapState;
 using antwika::gfx::Color;
 using antwika::gfx::ITexture;
 using antwika::gfx::Point;
+using antwika::gfx::PointF;
 using antwika::gfx::Rect;
+using antwika::gfx::RectF;
 using antwika::gfx::Size;
 using antwika::gfx::mocks::MockRenderer;
 using antwika::gfx::mocks::MockTexture;
@@ -767,8 +771,8 @@ namespace
 {
     struct Blit final
     {
-        Rect source;
-        Rect destination;
+        RectF source;
+        RectF destination;
         Color tint;
     };
 
@@ -802,7 +806,7 @@ namespace
         ON_CALL(renderer, drawTexture(_, _, _, _))
             .WillByDefault(
                 [&blits](
-                    const ITexture &, Rect source, Rect destination,
+                    const ITexture &, RectF source, RectF destination,
                     Color tint)
                 { blits.push_back(Blit{source, destination, tint}); });
 
@@ -1008,8 +1012,8 @@ namespace
 {
     struct Line final
     {
-        Point from;
-        Point to;
+        PointF from;
+        PointF to;
         Color color;
 
         [[nodiscard]] bool operator==(const Line &other) const = default;
@@ -1029,7 +1033,7 @@ namespace
 
         ON_CALL(renderer, drawLine(_, _, _))
             .WillByDefault(
-                [&lines](Point from, Point to, Color color)
+                [&lines](PointF from, PointF to, Color color)
                 { lines.push_back(Line{from, to, color}); });
 
         const GridScene scene{kTranslator};

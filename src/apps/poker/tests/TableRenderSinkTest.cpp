@@ -12,6 +12,7 @@
 #include <antwika/gfx/WindowId.hpp>
 #include <antwika/gfx/mocks/MockRenderer.hpp>
 #include <antwika/gfx/mocks/MockWindow.hpp>
+#include <antwika/gfx/RectF.hpp>
 #include <antwika/holdem/Blinds.hpp>
 #include <antwika/holdem/Table.hpp>
 #include <antwika/time/fakes/FakeSleeper.hpp>
@@ -25,6 +26,7 @@
 using antwika::event::Event;
 using antwika::event::TickEvent;
 using antwika::gfx::Size;
+using antwika::gfx::RectF;
 using antwika::gfx::mocks::MockRenderer;
 using antwika::gfx::mocks::MockWindow;
 using antwika::holdem::Blinds;
@@ -176,7 +178,7 @@ TEST_F(TableRenderSinkTest, Render_PaintsTheConsolePictureLast)
         std::nullopt,
         picture};
 
-    EXPECT_CALL(renderer, drawRect(sheet, ink)).Times(1);
+    EXPECT_CALL(renderer, drawRect(RectF{sheet}, ink)).Times(1);
     EXPECT_CALL(renderer, present()).Times(1);
 
     overlaid.render();

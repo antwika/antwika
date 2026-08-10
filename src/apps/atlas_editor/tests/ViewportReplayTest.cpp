@@ -146,7 +146,7 @@ namespace
     {
         std::vector<TickEvent> recorded;
         Bitmap sheet;
-        std::vector<Rect> blits;
+        std::vector<antwika::gfx::RectF> blits;
         std::uint64_t edits = 0;
     };
 
@@ -262,7 +262,7 @@ namespace
         const InputEventCodec codec;
         TickEventRecorder recorder;
 
-        std::vector<Rect> blits;
+        std::vector<antwika::gfx::RectF> blits;
 
         ON_CALL(windowMock, isOpen()).WillByDefault(Return(true));
         ON_CALL(windowMock, renderer()).WillByDefault(ReturnRef(renderer));
@@ -279,8 +279,8 @@ namespace
             .WillByDefault(
                 [&blits](
                     const antwika::gfx::ITexture &,
-                    Rect,
-                    const Rect destination,
+                    antwika::gfx::RectF,
+                    const antwika::gfx::RectF destination,
                     antwika::gfx::Color)
                 { blits.push_back(destination); });
 

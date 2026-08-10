@@ -5,12 +5,14 @@
 #include <antwika/gfx/Rect.hpp>
 #include <antwika/gfx/Size.hpp>
 #include <antwika/gfx/mocks/MockRenderer.hpp>
+#include <antwika/gfx/RectF.hpp>
 
 #include "antwika/life/BoardScene.hpp"
 #include "antwika/life/Board.hpp"
 
 using antwika::gfx::Color;
 using antwika::gfx::Rect;
+using antwika::gfx::RectF;
 using antwika::gfx::Size;
 using antwika::gfx::mocks::MockRenderer;
 using antwika::life::Board;
@@ -41,25 +43,25 @@ TEST(BoardSceneTest, Draw_ClearsThenFillsTheBoardAreaThenEachAliveCell)
     EXPECT_CALL(
         renderer,
         drawRect(
-            Rect{
+            RectF{Rect{
                 .origin = {.x = 0, .y = 0},
-                .size = {.width = 30, .height = 20}},
+                .size = {.width = 30, .height = 20}}},
             kDeadCells));
 
     EXPECT_CALL(
         renderer,
         drawRect(
-            Rect{
+            RectF{Rect{
                 .origin = {.x = 10, .y = 0},
-                .size = {.width = 10, .height = 10}},
+                .size = {.width = 10, .height = 10}}},
             kAliveCell));
 
     EXPECT_CALL(
         renderer,
         drawRect(
-            Rect{
+            RectF{Rect{
                 .origin = {.x = 0, .y = 10},
-                .size = {.width = 10, .height = 10}},
+                .size = {.width = 10, .height = 10}}},
             kAliveCell));
 
     scene.draw(renderer, Size{.width = 30, .height = 20}, board);
@@ -76,9 +78,9 @@ TEST(BoardSceneTest, Draw_SizesCellsToTheShorterCanvasAxisOnAWideCanvas)
     EXPECT_CALL(
         renderer,
         drawRect(
-            Rect{
+            RectF{Rect{
                 .origin = {.x = 50, .y = 0},
-                .size = {.width = 100, .height = 100}},
+                .size = {.width = 100, .height = 100}}},
             kDeadCells));
 
     scene.draw(renderer, Size{.width = 200, .height = 100}, board);
@@ -95,9 +97,9 @@ TEST(BoardSceneTest, Draw_SizesCellsToTheShorterCanvasAxisOnATallCanvas)
     EXPECT_CALL(
         renderer,
         drawRect(
-            Rect{
+            RectF{Rect{
                 .origin = {.x = 0, .y = 50},
-                .size = {.width = 100, .height = 100}},
+                .size = {.width = 100, .height = 100}}},
             kDeadCells));
 
     scene.draw(renderer, Size{.width = 100, .height = 200}, board);
@@ -114,9 +116,9 @@ TEST(BoardSceneTest, Draw_CentresTheBoardWithinTheCanvas)
     EXPECT_CALL(
         renderer,
         drawRect(
-            Rect{
+            RectF{Rect{
                 .origin = {.x = 1, .y = 6},
-                .size = {.width = 48, .height = 48}},
+                .size = {.width = 48, .height = 48}}},
             kDeadCells));
     EXPECT_CALL(renderer, drawRect(_, kAliveCell)).Times(9);
 

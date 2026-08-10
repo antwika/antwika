@@ -14,6 +14,7 @@
 #include <antwika/gfx/TextLayout.hpp>
 #include <antwika/gfx/mocks/MockRenderer.hpp>
 #include <antwika/gfx/mocks/MockTexture.hpp>
+#include <antwika/gfx/RectF.hpp>
 #include <antwika/ui/DrawCommand.hpp>
 #include <antwika/ui/DrawList.hpp>
 #include <antwika/ui/Pointer.hpp>
@@ -25,6 +26,7 @@
 using antwika::gfx::Color;
 using antwika::gfx::Point;
 using antwika::gfx::Rect;
+using antwika::gfx::RectF;
 using antwika::gfx::Size;
 using antwika::gfx::textSize;
 using antwika::gfx::mocks::MockRenderer;
@@ -152,25 +154,25 @@ TEST_F(DemoSceneTest, Draw_ClearsThenDrawsOneBarPerColourInOrder)
     EXPECT_CALL(
         renderer,
         drawRect(
-            Rect{
+            RectF{Rect{
                 .origin = {.x = 100, .y = 100},
-                .size = {.width = 100, .height = 200}},
+                .size = {.width = 100, .height = 200}}},
             Color{.red = 224, .green = 64, .blue = 64}));
 
     EXPECT_CALL(
         renderer,
         drawRect(
-            Rect{
+            RectF{Rect{
                 .origin = {.x = 300, .y = 100},
-                .size = {.width = 100, .height = 200}},
+                .size = {.width = 100, .height = 200}}},
             Color{.red = 64, .green = 224, .blue = 96}));
 
     EXPECT_CALL(
         renderer,
         drawRect(
-            Rect{
+            RectF{Rect{
                 .origin = {.x = 500, .y = 100},
-                .size = {.width = 100, .height = 200}},
+                .size = {.width = 100, .height = 200}}},
             Color{.red = 80, .green = 128, .blue = 240}));
 
     EXPECT_CALL(renderer, drawTexture(_, _, _, _)).Times(2);
@@ -187,12 +189,12 @@ TEST_F(DemoSceneTest, Draw_BlitsTheWholeLogoUntintedAboveTheBars)
         renderer,
         drawTexture(
             Ref(logo),
-            Rect{
+            RectF{Rect{
                 .origin = {.x = 0, .y = 0},
-                .size = {.width = 64, .height = 64}},
-            Rect{
+                .size = {.width = 64, .height = 64}}},
+            RectF{Rect{
                 .origin = {.x = 325, .y = 25},
-                .size = {.width = 50, .height = 50}},
+                .size = {.width = 50, .height = 50}}},
             kUntinted));
 
     scene.draw(renderer, kCanvas, logo, scene.describe(kCanvas).commands);
@@ -208,9 +210,9 @@ TEST_F(DemoSceneTest, Draw_KeepsTheBadgeOnTheCanvasWhenItIsTooWide)
         drawTexture(
             Ref(logo),
             _,
-            Rect{
+            RectF{Rect{
                 .origin = {.x = 0, .y = 56},
-                .size = {.width = 112, .height = 112}},
+                .size = {.width = 112, .height = 112}}},
             kUntinted));
 
     scene.draw(
@@ -226,12 +228,12 @@ TEST_F(DemoSceneTest, Draw_BlitsTheLogosLeftHalfTintedBelowTheBars)
         renderer,
         drawTexture(
             Ref(logo),
-            Rect{
+            RectF{Rect{
                 .origin = {.x = 0, .y = 0},
-                .size = {.width = 32, .height = 64}},
-            Rect{
+                .size = {.width = 32, .height = 64}}},
+            RectF{Rect{
                 .origin = {.x = 325, .y = 325},
-                .size = {.width = 50, .height = 50}},
+                .size = {.width = 50, .height = 50}}},
             kWarmTint));
 
     scene.draw(renderer, kCanvas, logo, scene.describe(kCanvas).commands);
@@ -248,18 +250,18 @@ TEST_F(DemoSceneTest, Draw_AsksTheTextureForItsSizeRatherThanAssuming)
         renderer,
         drawTexture(
             _,
-            Rect{
+            RectF{Rect{
                 .origin = {.x = 0, .y = 0},
-                .size = {.width = 20, .height = 10}},
+                .size = {.width = 20, .height = 10}}},
             _, kUntinted));
 
     EXPECT_CALL(
         renderer,
         drawTexture(
             _,
-            Rect{
+            RectF{Rect{
                 .origin = {.x = 0, .y = 0},
-                .size = {.width = 10, .height = 10}},
+                .size = {.width = 10, .height = 10}}},
             _, kWarmTint));
 
     scene.draw(renderer, kCanvas, logo, scene.describe(kCanvas).commands);
@@ -273,25 +275,25 @@ TEST_F(DemoSceneTest, Draw_ScalesTheBarsToTheCanvas)
     EXPECT_CALL(
         renderer,
         drawRect(
-            Rect{
+            RectF{Rect{
                 .origin = {.x = 200, .y = 200},
-                .size = {.width = 200, .height = 400}},
+                .size = {.width = 200, .height = 400}}},
             ::testing::_));
 
     EXPECT_CALL(
         renderer,
         drawRect(
-            Rect{
+            RectF{Rect{
                 .origin = {.x = 600, .y = 200},
-                .size = {.width = 200, .height = 400}},
+                .size = {.width = 200, .height = 400}}},
             ::testing::_));
 
     EXPECT_CALL(
         renderer,
         drawRect(
-            Rect{
+            RectF{Rect{
                 .origin = {.x = 1000, .y = 200},
-                .size = {.width = 200, .height = 400}},
+                .size = {.width = 200, .height = 400}}},
             ::testing::_));
 
     scene.draw(

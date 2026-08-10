@@ -402,8 +402,9 @@ namespace antwika::game
                 atlases.specs,
                 cell, snapshot.camera);
 
-            renderer.drawTexture(
-                atlases.oneByOne, groundTile(atlases.specs), bounds, kUntinted);
+            const auto ground = groundTile(atlases.specs);
+
+            renderer.drawTexture(atlases.oneByOne, ground, bounds, kUntinted);
 
             if (paved(snapshot.paths, cell))
             {

@@ -13,6 +13,8 @@
 #include <antwika/gfx/Point.hpp>
 #include <antwika/gfx/Rect.hpp>
 #include <antwika/gfx/Size.hpp>
+#include <antwika/gfx/RectF.hpp>
+#include <antwika/gfx/PointF.hpp>
 #include <antwika/i18n/Locale.hpp>
 #include <antwika/scheduler/Priority.hpp>
 
@@ -24,7 +26,9 @@
 using antwika::gfx::Color;
 using antwika::gfx::mocks::MockRenderer;
 using antwika::gfx::Point;
+using antwika::gfx::PointF;
 using antwika::gfx::Rect;
+using antwika::gfx::RectF;
 using antwika::gfx::Size;
 using antwika::i18n::kDefaultLocale;
 using antwika::scheduler::kLowPriority;
@@ -49,14 +53,14 @@ namespace
 
     struct DrawnText final
     {
-        Point origin{};
+        PointF origin{};
         std::string text;
         Color color{};
     };
 
     struct DrawnRect final
     {
-        Rect rect{};
+        RectF rect{};
         Color color{};
     };
 
@@ -74,12 +78,12 @@ namespace
                            { drawn.cleared = color; });
         ON_CALL(renderer, drawRect)
             .WillByDefault(
-                [&drawn](Rect rect, Color color)
+                [&drawn](RectF rect, Color color)
                 { drawn.rects.push_back(DrawnRect{rect, color}); });
         ON_CALL(renderer, drawText)
             .WillByDefault(
                 [&drawn](
-                    Point origin,
+                    PointF origin,
                     std::string_view text,
                     std::uint32_t,
                     Color color)
@@ -193,7 +197,11 @@ TEST(PoolSceneTest, Draw_FillsABusyWorkersBarInProportionToItsProgress)
     ASSERT_NE(track, drawn.rects.end());
     ASSERT_NE(fill, drawn.rects.end());
     EXPECT_EQ(fill->rect.origin, track->rect.origin);
-    EXPECT_EQ(fill->rect.size.width, track->rect.size.width * 3 / 4);
+    const auto trackWidth =
+        static_cast<std::uint32_t>(track->rect.size.width);
+
+    EXPECT_FLOAT_EQ(
+        fill->rect.size.width, static_cast<float>(trackWidth * 3 / 4));
 }
 
 TEST(PoolSceneTest, Draw_LeavesTheBarEmptyForATaskThatHasNotMovedYet)
