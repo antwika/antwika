@@ -25,6 +25,7 @@ Unit tests for the editor itself remain deferred by explicit decision; see docs/
 | 13 | Map palette picker | shipped |
 | 14 | Developer console in tilemap_demo and map_editor | shipped |
 | 15 | Fullscreen support | shipped |
+| 16 | Drag-resizable windows | shipped |
 
 ## 1: menu bar (shipped)
 
@@ -212,6 +213,16 @@ Selecting a UI Scale while fullscreen leaves fullscreen first and then applies t
 The config file gained an optional boolean "fullscreen" member written on every toggle and scale change and applied after window creation, before the ViewportRenderer is built, so a persisted fullscreen start computes its transform from the real monitor-sized window; files without the member load as windowed.
 tilemap_demo handles F10 in its loop with the same rebuild plus a console overlay rebuild at the new window size.
 Verification under the 1920x1080 Xvfb root: F10 moved the editor from 1440x810 at 240,135 to 1920x1080 at 0,0 with the capture filling the root at a crisp 4x, a wall painted at cell 5,4 while fullscreen landed exactly there in the saved JSON, F10 restored the windowed geometry, UI Scale 2x chosen while fullscreen left fullscreen into a 960x540 window with the config recording uiScale 2 and fullscreen false, a relaunch after quitting fullscreen started at 1920x1080 from the persisted flag, and the demo toggled 1280x720 to 1920x1080 and back with arrows alive throughout.
+
+## 16: drag-resizable windows
+
+The editor and demo windows resize by dragging, with the viewport adapting continuously while the canvases stay 480x270 and 320x180.
+gfx::WindowDesc already carried a `resizable` flag at the base commit, applied by backends/raylib through FLAG_WINDOW_RESIZABLE after InitWindow (raylib accepts the state change post-init, so no SetConfigFlags reordering was needed) and ignored by the null backend, so no gfx or backend change shipped — both apps simply opt in with resizable = true.
+Adaptation uses the event path: the raylib backend already emits a gfx Resized window event whenever the polled size changes, but app::closeRequestedOn drained and discarded it, so both main loops now drain backend->pollEvent() themselves, treating CloseRequested as before and answering Resized with the task 15 path — view.resize(size) plus the console overlay rebuild (through the store-held window size in the editor, directly in the demo).
+A behavior divergence is recorded rather than "fixed": viewportFor letterboxes with an exact reduced rational scale, not the largest integer multiple, so a 1000x700 window renders the editor canvas at 25/12 with top and bottom bars, and a window smaller than the canvas scales below 1x, shrinking to fit with the aspect kept instead of clamping at 1x and cropping.
+That contract is shared by every app and pinned by the gfx tests, hit-testing inverts it exactly at any size, and the sub-canvas capture stays coherent, so it was kept as-is.
+A manual drag never writes the config file — the persisted uiScale remains the last explicitly chosen scale — and the UI Scale entries still snap to exact window sizes, which required the setUiScale early-return to also compare the actual window size so re-choosing the persisted scale after a drag still restores its exact geometry.
+Verification under Xvfb: xdotool windowsize drove 1000x700, 1500x900, 700x400, and a sub-canvas 400x220 with captures showing crisp aspect-true letterboxing and no stretching, a wall painted at cell 7,3 in the 1000x700 window landed exactly there in the saved JSON, the config stayed untouched by drags, UI Scale 3x afterwards snapped back to 1440x810, F10 still entered and left 1920x1080, and the demo resized through 1000x700 and 640x500 with arrows moving the player throughout.
 
 ## After the queue drains
 

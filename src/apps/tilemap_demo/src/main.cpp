@@ -11,7 +11,6 @@
 
 #include <antwika/app/ConsoleLogging.hpp>
 #include <antwika/app/RunGuarded.hpp>
-#include <antwika/app/WindowEvents.hpp>
 #include <antwika/console/ConsolePicture.hpp>
 #include <antwika/console/ConsoleScene.hpp>
 #include <antwika/console/ConsoleSink.hpp>
@@ -37,6 +36,7 @@
 #include <antwika/gfx/SelectedBackend.hpp>
 #include <antwika/gfx/ViewportRenderer.hpp>
 #include <antwika/gfx/WindowDesc.hpp>
+#include <antwika/gfx/WindowEvent.hpp>
 #include <antwika/input/InputEvent.hpp>
 #include <antwika/input/InputEventCodec.hpp>
 #include <antwika/input/Key.hpp>
@@ -226,7 +226,8 @@ int main(int argc, char **argv)
 
             const auto window = backend->createWindow(WindowDesc{
                 .title = "Wakewater tilemap demo",
-                .size = kWindow});
+                .size = kWindow,
+                .resizable = true});
 
             ViewportRenderer view(
                 window->renderer(), window->size(), kCanvas);
@@ -280,8 +281,33 @@ int main(int argc, char **argv)
 
             while (window->isOpen())
             {
-                if (antwika::app::closeRequestedOn(
-                        *backend, window->id()))
+                bool closeRequested = false;
+
+                while (const auto event = backend->pollEvent())
+                {
+                    if (event->window != window->id())
+                    {
+                        continue;
+                    }
+
+                    if (std::holds_alternative<
+                            antwika::gfx::CloseRequested>(
+                            event->payload))
+                    {
+                        closeRequested = true;
+                    }
+
+                    if (const auto *resized =
+                            std::get_if<antwika::gfx::Resized>(
+                                &event->payload))
+                    {
+                        view.resize(resized->size);
+                        overlay = antwika::console::ConsolePicture(
+                            resized->size);
+                    }
+                }
+
+                if (closeRequested)
                 {
                     window->close();
                     break;

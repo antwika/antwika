@@ -743,7 +743,12 @@ namespace antwika::map_editor
 
     void UiSystem::setUiScale(const std::uint32_t scale)
     {
-        if (scale == store.uiScale && !window.isFullscreen())
+        const gfx::Size exact{
+            .width = canvas.width * scale,
+            .height = canvas.height * scale};
+
+        if (scale == store.uiScale && !window.isFullscreen()
+            && window.size() == exact)
         {
             return;
         }

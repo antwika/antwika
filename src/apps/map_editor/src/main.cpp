@@ -2,6 +2,7 @@
 #include <array>
 #include <chrono>
 #include <filesystem>
+#include <variant>
 #include <iostream>
 #include <string>
 #include <string_view>
@@ -9,7 +10,6 @@
 #include <antwika/app/AssetPath.hpp>
 #include <antwika/app/ConsoleLogging.hpp>
 #include <antwika/app/RunGuarded.hpp>
-#include <antwika/app/WindowEvents.hpp>
 #include <antwika/cli/CommandLine.hpp>
 #include <antwika/ecs/SystemScheduler.hpp>
 #include <antwika/ecs/World.hpp>
@@ -18,6 +18,7 @@
 #include <antwika/gfx/Size.hpp>
 #include <antwika/gfx/ViewportRenderer.hpp>
 #include <antwika/gfx/WindowDesc.hpp>
+#include <antwika/gfx/WindowEvent.hpp>
 #include <antwika/input/SelectedInputBackend.hpp>
 #include <antwika/log/Level.hpp>
 #include <antwika/time/SystemSleeper.hpp>
@@ -154,7 +155,8 @@ int main(int argc, char **argv)
                 .title = "Wakewater map editor",
                 .size =
                     {.width = kCanvas.width * store.uiScale,
-                     .height = kCanvas.height * store.uiScale}});
+                     .height = kCanvas.height * store.uiScale},
+                .resizable = true});
 
             if (config.fullscreen)
             {
@@ -213,8 +215,32 @@ int main(int argc, char **argv)
 
             while (window->isOpen())
             {
-                if (antwika::app::closeRequestedOn(
-                        *backend, window->id()))
+                bool closeRequested = false;
+
+                while (const auto event = backend->pollEvent())
+                {
+                    if (event->window != window->id())
+                    {
+                        continue;
+                    }
+
+                    if (std::holds_alternative<
+                            antwika::gfx::CloseRequested>(
+                            event->payload))
+                    {
+                        closeRequested = true;
+                    }
+
+                    if (const auto *resized =
+                            std::get_if<antwika::gfx::Resized>(
+                                &event->payload))
+                    {
+                        view.resize(resized->size);
+                        store.windowSize = resized->size;
+                    }
+                }
+
+                if (closeRequested)
                 {
                     window->close();
                     break;
