@@ -1,5 +1,7 @@
 #include "antwika/replay/SchemaVersion.hpp"
 
+#include <nlohmann/json.hpp>
+
 #include <format>
 #include <limits>
 #include <string>

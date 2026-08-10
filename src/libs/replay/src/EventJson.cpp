@@ -1,5 +1,7 @@
 #include "antwika/replay/EventJson.hpp"
 
+#include <nlohmann/json.hpp>
+
 namespace antwika::event
 {
 

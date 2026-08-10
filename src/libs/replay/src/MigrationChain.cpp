@@ -1,5 +1,7 @@
 #include "antwika/replay/MigrationChain.hpp"
 
+#include <nlohmann/json.hpp>
+
 #include <algorithm>
 #include <cstddef>
 #include <format>

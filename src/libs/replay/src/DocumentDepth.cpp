@@ -1,5 +1,7 @@
 #include "antwika/replay/DocumentDepth.hpp"
 
+#include <nlohmann/json.hpp>
+
 #include <cstddef>
 #include <utility>
 #include <vector>

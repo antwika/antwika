@@ -1,5 +1,7 @@
 #include "DropRiskServices.hpp"
 
+#include <nlohmann/json.hpp>
+
 #include <cstddef>
 #include <string_view>
 

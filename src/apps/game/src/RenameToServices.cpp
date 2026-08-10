@@ -1,5 +1,7 @@
 #include "RenameToServices.hpp"
 
+#include <nlohmann/json.hpp>
+
 #include <array>
 #include <cstddef>
 #include <span>
