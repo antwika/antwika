@@ -1,13 +1,25 @@
 #include <chrono>
 #include <cstdint>
 #include <cstdio>
+#include <functional>
 #include <string_view>
+#include <utility>
 #include <vector>
 
 #include <antwika/ecs/View.hpp>
 #include <antwika/ecs/World.hpp>
 #include <antwika/log/ILogger.hpp>
 #include <antwika/log/Level.hpp>
+#include <antwika/engine/Events.hpp>
+#include <antwika/event/EventDispatcher.hpp>
+#include <antwika/event/IEventSink.hpp>
+#include <antwika/event/ITickEventSink.hpp>
+#include <antwika/event/TickedEventDispatcher.hpp>
+#include <antwika/gfx/BitmapRenderer.hpp>
+#include <antwika/gfx/Color.hpp>
+#include <antwika/gfx/Rect.hpp>
+#include <antwika/gfx/Size.hpp>
+#include <antwika/time/Tick.hpp>
 
 namespace
 {
@@ -269,6 +281,126 @@ namespace
         return Result{millisSince(start), checksum};
     }
 
+    class CountingSink final : public antwika::event::IEventSink
+    {
+    public:
+        void handle(const antwika::event::Event &event) override
+        {
+            if (event.name == antwika::engine::events::kTick)
+            {
+                ++seen;
+            }
+        }
+
+        [[nodiscard]] std::uint64_t count() const noexcept
+        {
+            return seen;
+        }
+
+    private:
+        std::uint64_t seen{};
+    };
+
+    class CountingTickSink final : public antwika::event::ITickEventSink
+    {
+    public:
+        void handle(const antwika::event::TickEvent &event) override
+        {
+            if (event.event.name == antwika::engine::events::kTick)
+            {
+                ++seen;
+            }
+        }
+
+        [[nodiscard]] std::uint64_t count() const noexcept
+        {
+            return seen;
+        }
+
+    private:
+        std::uint64_t seen{};
+    };
+
+    // Mirrors an engine tick fanning out to every sink an app registers,
+    // where each sink compares the event name against a constant.
+    [[nodiscard]] Result benchmarkEvents(const char *payload)
+    {
+        constexpr std::size_t kSinks = 20;
+        constexpr int kEvents = 200000;
+
+        std::vector<CountingSink> sinks(kSinks);
+        std::vector<std::reference_wrapper<antwika::event::IEventSink>> refs;
+        for (auto &sink : sinks)
+        {
+            refs.emplace_back(sink);
+        }
+
+        CountingTickSink recorder;
+        std::vector<std::reference_wrapper<antwika::event::ITickEventSink>>
+            timed;
+        timed.emplace_back(recorder);
+
+        antwika::event::EventDispatcher inner(std::move(refs));
+        antwika::event::TickedEventDispatcher dispatcher(
+            inner, std::move(timed));
+
+        const auto start = Clock::now();
+
+        for (int at = 0; at < kEvents; ++at)
+        {
+            dispatcher.setTick(static_cast<antwika::time::Tick>(at));
+            dispatcher.dispatch(antwika::event::Event{
+                .name = antwika::engine::events::kTick, .payload = payload});
+        }
+
+        std::uint64_t checksum = recorder.count();
+        for (const auto &sink : sinks)
+        {
+            checksum += sink.count();
+        }
+
+        return Result{millisSince(start), checksum};
+    }
+
+    // Mirrors a preview frame: clear the page, then lay opaque and
+    // translucent rectangles over it.
+    [[nodiscard]] Result benchmarkRenderer()
+    {
+        constexpr int kFrames = 200;
+
+        SilentLogger logger;
+        antwika::gfx::BitmapRenderer renderer(
+            logger, antwika::gfx::Size{1280, 720});
+
+        const auto start = Clock::now();
+
+        for (int frame = 0; frame < kFrames; ++frame)
+        {
+            renderer.clear(antwika::gfx::Color{10, 20, 30, 255});
+
+            for (int at = 0; at < 40; ++at)
+            {
+                const auto span = static_cast<std::int32_t>(at);
+                renderer.drawRect(
+                    antwika::gfx::Rect{
+                        {span * 8, span * 4}, {200, 120}},
+                    antwika::gfx::Color{200, 100, 50, 255});
+                renderer.drawRect(
+                    antwika::gfx::Rect{
+                        {span * 8 + 4, span * 4 + 2}, {180, 100}},
+                    antwika::gfx::Color{20, 200, 90, 128});
+            }
+        }
+
+        std::uint64_t checksum = 0;
+        for (const auto value : renderer.page().pixels)
+        {
+            checksum += value;
+        }
+
+        return Result{millisSince(start), checksum};
+    }
+
     void report(const char *name, const Result &result)
     {
         std::printf(
@@ -287,5 +419,11 @@ int main()
     report("grid-reads", benchmarkGridReads());
     report("views", benchmarkViews());
     report("teardown", benchmarkTeardown());
+    report("events-sso", benchmarkEvents("ok"));
+    report("renderer", benchmarkRenderer());
+    report(
+        "events-heap",
+        benchmarkEvents(
+            "a payload comfortably past the small string buffer limit"));
     return 0;
 }
