@@ -23,6 +23,31 @@ option(ANTWIKA_WARNINGS_AS_ERRORS "Treat compiler warnings as errors" ON)
 option(ANTWIKA_BUILD_BENCHMARKS
     "Build the benchmark executables under benchmarks/" OFF)
 
+option(ANTWIKA_ENABLE_LTO
+    "Link Release builds with interprocedural optimisation" OFF)
+
+if(NOT DEFINED CMAKE_CXX_COMPILER_LAUNCHER)
+    find_program(ANTWIKA_CCACHE ccache)
+
+    if(ANTWIKA_CCACHE)
+        set(CMAKE_C_COMPILER_LAUNCHER "${ANTWIKA_CCACHE}")
+        set(CMAKE_CXX_COMPILER_LAUNCHER "${ANTWIKA_CCACHE}")
+    endif()
+endif()
+
+if(ANTWIKA_ENABLE_LTO AND NOT ENABLE_COVERAGE)
+    include(CheckIPOSupported)
+    check_ipo_supported(RESULT ANTWIKA_IPO_SUPPORTED OUTPUT ANTWIKA_IPO_ERROR)
+
+    if(ANTWIKA_IPO_SUPPORTED)
+        set(CMAKE_INTERPROCEDURAL_OPTIMIZATION_RELEASE ON)
+    else()
+        message(WARNING
+            "ANTWIKA_ENABLE_LTO is on but this toolchain refused it: "
+            "${ANTWIKA_IPO_ERROR}")
+    endif()
+endif()
+
 set(ANTWIKA_GFX_BACKEND "null" CACHE STRING
     "Graphics backend to compile and link, named after a backends/ subdirectory")
 

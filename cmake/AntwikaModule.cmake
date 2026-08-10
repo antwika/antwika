@@ -161,7 +161,7 @@ function(antwika_bundle_test)
     )
 
     include(GoogleTest)
-    gtest_discover_tests(${ARG_TARGET})
+    gtest_discover_tests(${ARG_TARGET} DISCOVERY_MODE PRE_TEST)
 endfunction()
 
 function(antwika_add_library)
@@ -249,12 +249,33 @@ function(antwika_add_app)
 
     set(target antwika_${ARG_NAME})
 
-    add_executable(${target} ${ARG_SOURCES})
-
     set(own ${ARG_SOURCES})
     list(REMOVE_ITEM own src/main.cpp)
+
+    set(objects ${target}_objects)
+
+    add_library(${objects} OBJECT ${own})
+
+    target_include_directories(${objects}
+        PRIVATE
+            ${CMAKE_CURRENT_SOURCE_DIR}/include
+            ${CMAKE_CURRENT_SOURCE_DIR}/src
+    )
+
+    foreach(one IN LISTS ARG_LIBS)
+        target_link_libraries(${objects}
+            PRIVATE
+                $<COMPILE_ONLY:${one}>
+        )
+    endforeach()
+
+    add_executable(${target} src/main.cpp)
+
+    target_sources(${target} PRIVATE $<TARGET_OBJECTS:${objects}>)
+
     set_property(TARGET ${target} PROPERTY ANTWIKA_APP_SOURCES ${own})
     set_property(TARGET ${target} PROPERTY ANTWIKA_APP_LIBS ${ARG_LIBS})
+    set_property(TARGET ${target} PROPERTY ANTWIKA_APP_OBJECTS ${objects})
 
     target_include_directories(${target}
         PRIVATE
@@ -304,14 +325,11 @@ function(antwika_add_app_tests)
     set(app antwika_${ARG_APP})
     set(target ${app}_tests)
 
-    get_target_property(app_sources ${app} ANTWIKA_APP_SOURCES)
+    get_target_property(app_objects ${app} ANTWIKA_APP_OBJECTS)
 
-    set(sources "")
-    foreach(one IN LISTS app_sources)
-        list(APPEND sources "${CMAKE_CURRENT_SOURCE_DIR}/../${one}")
-    endforeach()
+    add_executable(${target} ${ARG_EXTRA_SOURCES} ${ARG_TESTS})
 
-    add_executable(${target} ${sources} ${ARG_EXTRA_SOURCES} ${ARG_TESTS})
+    target_sources(${target} PRIVATE $<TARGET_OBJECTS:${app_objects}>)
 
     target_include_directories(${target}
         PRIVATE

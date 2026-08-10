@@ -99,7 +99,7 @@ conan install . \
     --lockfile="$lockfile"
 
 cmake --preset conan-release
-cmake --build build -j24
+cmake --build build -j"$(nproc)"
 
 profile_os() {
     sed -n 's/^os=//p' "profiles/$1/${CONAN_PROFILE}"
