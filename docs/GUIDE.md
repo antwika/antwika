@@ -83,10 +83,11 @@ Apply commits as one undoable step and Cancel restores; the colors save in the m
 
 ## Drawing tiles
 
-View > Tiles (or Tab) opens the pixel workspace for the selected terrain's 96×64 sheet.
-The grid shows every pixel; strong guide lines mark the 16×16 display tiles — the 4×4 corner-mask grid on the left, the variant tiles top-right, and the band, rim, bridge, and shade half-tiles beneath them — while fainter lines keep the 8×8 quadrant structure visible inside every mask tile.
+View > Tiles (or Tab) opens the pixel workspace for the selected terrain's 96×80 sheet.
+The grid shows every pixel; strong guide lines mark the 16×16 display tiles — the 4×4 corner-mask grid on the left, the seven variant tiles plus the water frame on the right, and the band, rim, bridge, and shade half-tiles on the bottom strip — while fainter lines keep the 8×8 quadrant structure visible inside every mask tile.
 Left-click inks a pixel and right-click clears it; art is strictly one-bit.
 Each 16×16 mask tile draws centered on a dual-grid corner, and its mask encodes which of the four surrounding cells hold the terrain: draw the full tile (mask 15) first, then the edges.
+Interior machinery connects across tiles when pipes cross edges only at the two-pixel edge midpoints, per the connection convention in TILE_SHEETS.md — the wall placeholders ship as connectable pipe pieces that demonstrate it.
 Every edit updates the map view live; File > Save Sheet writes `assets/tiles/<terrain>.png`, which the editor and demo load at startup.
 Sheets are drawn in white and tinted by the map's ink color at render time.
 The layout convention is documented in [TILE_SHEETS.md](TILE_SHEETS.md).
@@ -96,7 +97,8 @@ The layout convention is documented in [TILE_SHEETS.md](TILE_SHEETS.md).
 View > Characters manages the character roster.
 New creates a character under the name in the field (a placeholder silhouette that already walks); Delete asks for a confirming second click before removing the files.
 A character is a 64×64 sheet of 16×16 frames: rows are walk down, up, left, and right; columns are frames 0 to 3, and frame 0 doubles as the idle pose.
-The workspace edits pixels exactly like the tile view, and a preview in the panel plays the animation while you draw.
+The workspace edits pixels exactly like the tile view — left-click inks, right-click erases to transparency — and characters render in the map's ink color everywhere they appear.
+A preview beside the workspace plays the animation while you draw.
 Characters save as `assets/characters/<name>.png` plus a JSON sidecar; a character named `player` becomes the playable sprite in the demo.
 
 ## Playtesting

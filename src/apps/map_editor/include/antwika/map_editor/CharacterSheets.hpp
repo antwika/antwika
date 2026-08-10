@@ -7,6 +7,7 @@
 #include <vector>
 
 #include <antwika/gfx/Bitmap.hpp>
+#include <antwika/gfx/Color.hpp>
 #include <antwika/gfx/ITexture.hpp>
 #include <antwika/gfx/Point.hpp>
 #include <antwika/gfx/RectF.hpp>
@@ -92,6 +93,7 @@ namespace antwika::map_editor
     void drawCharacterWorkspace(
         gfx::ViewportRenderer &view,
         const gfx::ITexture &sheet,
+        gfx::Color ink,
         std::optional<gfx::Point> hover,
         std::uint32_t tick);
 

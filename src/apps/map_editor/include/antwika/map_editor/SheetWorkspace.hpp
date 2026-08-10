@@ -54,6 +54,14 @@ namespace antwika::map_editor
     bool setSheetPixel(gfx::Bitmap &sheet, gfx::Point pixel, bool ink);
 
     /**
+     * @brief Maps every opaque pixel to white, keeping alpha.
+     *
+     * Ensures: sheets saved with any legacy opaque color render
+     *          identically once tinted at draw time.
+     */
+    void recolorOpaqueToWhite(gfx::Bitmap &sheet);
+
+    /**
      * @brief Reads whether a sheet pixel currently holds ink.
      */
     [[nodiscard]] bool sheetPixelInked(

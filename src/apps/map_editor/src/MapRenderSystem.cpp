@@ -220,6 +220,7 @@ namespace antwika::map_editor
         drawCharacterWorkspace(
             view,
             *characterTextures[characters.selected].texture,
+            colorOf(store.state.map.header().ink),
             hover,
             static_cast<std::uint32_t>(tick));
     }

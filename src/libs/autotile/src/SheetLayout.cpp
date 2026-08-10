@@ -7,8 +7,7 @@ namespace antwika::autotile
     {
         constexpr std::int32_t kFullMask = 15;
         constexpr std::int32_t kRightColumn = 64;
-        constexpr std::int32_t kSpecialRow = 32;
-        constexpr std::int32_t kVariantSlots = 3;
+        constexpr std::int32_t kSpecialRow = 64;
 
         [[nodiscard]] geometry::Rect halfSlotAt(
             const std::int32_t x, const std::int32_t y) noexcept
@@ -35,32 +34,29 @@ namespace antwika::autotile
     {
         if (piece == TilePiece::WallBand)
         {
-            return halfSlotAt(kRightColumn, kSpecialRow);
+            return halfSlotAt(0, kSpecialRow);
         }
 
         if (piece == TilePiece::WallRim)
         {
-            return halfSlotAt(
-                kRightColumn + kHalfTile, kSpecialRow);
+            return halfSlotAt(kHalfTile, kSpecialRow);
         }
 
         if (piece == TilePiece::BridgeDeck)
         {
-            return halfSlotAt(
-                kRightColumn + 2 * kHalfTile, kSpecialRow);
+            return halfSlotAt(2 * kHalfTile, kSpecialRow);
         }
 
         if (piece == TilePiece::Shade)
         {
-            return halfSlotAt(
-                kRightColumn + 3 * kHalfTile, kSpecialRow);
+            return halfSlotAt(3 * kHalfTile, kSpecialRow);
         }
 
         const auto index = static_cast<std::int32_t>(mask % 16);
 
         if (index == kFullMask
             && variant >= 1
-            && variant <= kVariantSlots)
+            && variant <= kWaterFrameBVariant)
         {
             const auto slot =
                 static_cast<std::int32_t>(variant) - 1;

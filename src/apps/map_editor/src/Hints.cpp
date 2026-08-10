@@ -489,10 +489,20 @@ namespace antwika::map_editor
             const auto frame =
                 pixel->x / static_cast<std::int32_t>(kFrameSize);
 
-            return std::string(rowNameOf(row)) + " frame "
-                   + std::to_string(frame) + "  px "
-                   + std::to_string(pixel->x) + ","
-                   + std::to_string(pixel->y);
+            auto hint = std::string(rowNameOf(row)) + " frame "
+                        + std::to_string(frame) + "  px "
+                        + std::to_string(pixel->x) + ","
+                        + std::to_string(pixel->y);
+
+            if (sheetPixelInked(
+                    characters.list[characters.selected]
+                        .sheet.image,
+                    *pixel))
+            {
+                hint += "  ink";
+            }
+
+            return hint;
         }
     }
 

@@ -30,6 +30,8 @@ Unit tests for the editor itself remain deferred by explicit decision; see docs/
 | 18 | Yellow hover outline | shipped |
 | 19 | Pointer hint line | shipped |
 | 20 | Disconnected-tiles rendering bug | fixed |
+| 21 | Eight interior variants and connected pipes | shipped |
+| 22 | Character eraser and ink consistency | fixed |
 
 ## 1: menu bar (shipped)
 
@@ -268,6 +270,27 @@ The bilinear placeholder coverage extends to 16x16 with the corner at the tile c
 The workspace runs at 3x with the pixel-grid gate lowered to 3, strong guides on the 16-pixel display-tile boundaries and fainter 8-pixel quadrant guides inside them, relabeled slots feeding the hint line, and a loaded 32x48 PNG logs "legacy sheet layout, redraw needed" and falls back to the placeholder.
 Verified under Xvfb: the before capture shows the scattered quadrants, the after captures show a connected wall border and slab, a coherent water pool boundary, cliff bands flush under a raised plateau lip, and the demo's built-in map reading as one continuous scene; a pixel scan found zero empty 8x8 quadrants inside painted wall and floor regions (minimum 288 and 18 ink pixels per quadrant), the task 7 restart round-trip passed on the 96x64 sheet with the edited art rendering after relaunch, and the legacy-sheet warning plus placeholder fallback were exercised live.
 docs/TILE_SHEETS.md was rewritten for the new convention and docs/GUIDE.md's tiles section updated.
+
+## 21: eight interior variants and connected pipes
+
+Interior variants grow from three slots to seven alternates beside the mask 15 base, all 16x16 display tiles, and the wall interiors now read as a jumble of connected pipes.
+The sheet grows to 96x80: the 4x4 mask block keeps the left 64x64, the seven variants and water frame B stack two wide and four tall in the right column, and the four 8x8 specials move to a bottom strip at 0,64 — a static layout that fits the tile workspace at the existing 3x magnification with no sheet panning (96x80 at 3x is 288x240 inside the 320x260 area).
+sheetSource maps variants 1 through 7 to the column and variant 8 to water frame B, with anything larger falling back to the base; the scatter draws bucket = hash % 14, giving the base exactly half the tiles and each variant a fourteenth, deterministic as before.
+Water keeps its animation on the base only — a water tile whose scatter lands on a variant stays static, and one on the base cycles to frame B on the clock — the simplest honest reading, since animating every variant would need seven more frame slots.
+The connection convention is documented in TILE_SHEETS.md: two-pixel pipes cross tile edges only at the edge midpoints (pixels 7 and 8), run at least four pixels straight inward, and unused midpoints stay clear so an arriving neighbour pipe reads as entering the wall mass.
+The wall placeholder's base became the pipe cross touching all four midpoints — at half of all tiles it is what makes long runs certain — and the variants are the straight horizontal, straight vertical, north-east elbow, south-west elbow, west-east-south T, valve box, and four-way tank, over a sparse-dot backdrop replacing the old interior checker; floors gained quiet unconnected details (seams, rivets, grate, extra dots, corner seam, hatch) and the other terrains phase-shift their pattern per variant.
+Both C++ placeholder generators and scripts/generate_placeholder_tiles.py carry identical math, assets/tiles was regenerated, the workspace labels and hint line name the new slots ("variant 5"), and the 96x64 layout from task 20 joined 32x48 in the legacy redraw-needed fallback.
+Verified under Xvfb: an 11x7 painted wall slab renders as a visibly connected mechanical jumble with valve boxes and a tank, a pixel-check found horizontal runs crossing six tile boundaries and vertical runs crossing four with ink on both sides of every shared midpoint, the floor field shows scattered detail variety, two captures of the same map were pixel-identical, the workspace edited a variant slot with the hint naming it and the edit surviving the restart round-trip at 96x80, the legacy 96x64 sheet warned and fell back, and the demo rendered the identical pipe jumble.
+
+## 22: character eraser and ink consistency
+
+User report: left-click draws white, right-click draws black with no way to erase to transparency, and the example character is off-white with no way to match its color.
+The confirmed root cause sat below the diagnosed one: gfx::Color defaults alpha to 255, so setSheetPixel's "clear" color `Color{}` painted opaque black in BOTH pixel workspaces — invisible over the dark map for tiles, glaring against the character checkerboard — and a later load would resurrect those black pixels as ink through the opaque-to-white normalization.
+The one-line fix clears with an explicit zero alpha, restoring the strict ink-or-transparent model everywhere; no black-painting path remains.
+The second half matched the diagnosis: the New-character silhouette baked the old fixed 214/224/216 ink while strokes baked pure white, so the template now writes white, character loading normalizes any opaque pixel to white exactly as task 13 did for tiles (the user's off-white player.png becomes consistent with no action), and characters render tinted by the map's ink color everywhere — the workspace canvas, the animated preview, and the demo's player sprite, which previously drew with a fixed white tint.
+The hint line's "ink" suffix now applies to the character workspace too, and the guide's characters section states the left-inks/right-erases model and the ink-color rendering.
+Verified under Xvfb: a right-click over an inked body pixel now shows the checkerboard through the hole (before the fix the same click left an opaque black pixel, sampled as 0,0,0), a paint-and-save round-trip left player.png with every opaque pixel at 255/255/255 by byte assertion, and after a console `palette ink 22ddff` the workspace canvas, the animated preview, and the demo's player all sampled exactly 34/221/255.
+The user's original player.png was restored after the test edits, since load-time normalization makes rewriting it unnecessary.
 
 ## After the queue drains
 

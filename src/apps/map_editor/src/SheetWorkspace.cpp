@@ -59,7 +59,7 @@ namespace antwika::map_editor
 
         constexpr std::int32_t kWorkspaceLeft = 16;
 
-        constexpr std::int32_t kWorkspaceTop = 40;
+        constexpr std::int32_t kWorkspaceTop = 14;
 
         constexpr std::int32_t kWorkspaceWidth =
             static_cast<std::int32_t>(kSheetWidth) * kSheetZoom;
@@ -88,21 +88,22 @@ namespace antwika::map_editor
                           sheet.size.height);
         }
 
-        void recolorOpaqueToWhite(Bitmap &sheet)
-        {
-            for (std::size_t offset = 0;
-                 offset + 3 < sheet.pixels.size();
-                 offset += gfx::kBytesPerPixel)
-            {
-                if (sheet.pixels[offset + 3] == 0)
-                {
-                    continue;
-                }
+    }
 
-                sheet.pixels[offset] = 255;
-                sheet.pixels[offset + 1] = 255;
-                sheet.pixels[offset + 2] = 255;
+    void recolorOpaqueToWhite(Bitmap &sheet)
+    {
+        for (std::size_t offset = 0;
+             offset + 3 < sheet.pixels.size();
+             offset += gfx::kBytesPerPixel)
+        {
+            if (sheet.pixels[offset + 3] == 0)
+            {
+                continue;
             }
+
+            sheet.pixels[offset] = 255;
+            sheet.pixels[offset + 1] = 255;
+            sheet.pixels[offset + 2] = 255;
         }
     }
 
@@ -130,7 +131,7 @@ namespace antwika::map_editor
             return {};
         }
 
-        if (pixel.x < 64)
+        if (pixel.x < 64 && pixel.y < 64)
         {
             const auto mask =
                 (pixel.y / 16) * 4 + pixel.x / 16;
@@ -138,24 +139,22 @@ namespace antwika::map_editor
             return "mask " + std::to_string(mask);
         }
 
-        if (pixel.y < 16)
+        if (pixel.x >= 64 && pixel.y < 64)
         {
-            return pixel.x < 80 ? "variant 1" : "variant 2";
+            const auto slot =
+                (pixel.y / 16) * 2 + (pixel.x - 64) / 16;
+
+            return slot < 7 ? "variant " + std::to_string(slot + 1)
+                            : "water frame B";
         }
 
-        if (pixel.y < 32)
-        {
-            return pixel.x < 80 ? "water frame B" : "spare";
-        }
-
-        if (pixel.y < 40)
+        if (pixel.y < 72 && pixel.x < 32)
         {
             constexpr std::array<std::string_view, 4> kSpecial{
                 "wall band", "wall rim", "bridge deck", "shade"};
 
             return std::string(
-                kSpecial[static_cast<std::size_t>(
-                    (pixel.x - 64) / 8)]);
+                kSpecial[static_cast<std::size_t>(pixel.x / 8)]);
         }
 
         return "spare";
@@ -170,7 +169,7 @@ namespace antwika::map_editor
         }
 
         const auto offset = pixelOffset(sheet, pixel);
-        const Color color = ink ? kInk : Color{};
+        const Color color = ink ? kInk : Color{.alpha = 0};
 
         if (sheet.pixels[offset] == color.red
             && sheet.pixels[offset + 1] == color.green
@@ -219,8 +218,13 @@ namespace antwika::map_editor
                     return bitmap;
                 }
 
-                if (bitmap.size.width == 32
-                    && bitmap.size.height == 48)
+                const bool legacy =
+                    (bitmap.size.width == 32
+                     && bitmap.size.height == 48)
+                    || (bitmap.size.width == 96
+                        && bitmap.size.height == 64);
+
+                if (legacy)
                 {
                     logger.log(
                         log::Level::Warning,

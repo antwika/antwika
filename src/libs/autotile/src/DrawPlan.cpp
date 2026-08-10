@@ -27,7 +27,6 @@ namespace antwika::autotile
         };
 
         constexpr std::uint8_t kFullMask = 15;
-        constexpr std::uint8_t kWaterFrameB = 3;
         constexpr std::uint32_t kWaterPeriod = 30;
         constexpr std::uint8_t kShadeBelow = 192;
         constexpr std::uint8_t kDenseShadeBelow = 96;
@@ -88,26 +87,34 @@ namespace antwika::autotile
         [[nodiscard]] std::uint8_t scatteredVariant(
             const std::uint64_t hash) noexcept
         {
-            const auto bucket = hash % 4;
+            const auto bucket = hash % (2 * kVariantSlots);
 
-            if (bucket < 2)
+            if (bucket < kVariantSlots)
             {
                 return 0;
             }
 
-            return static_cast<std::uint8_t>(bucket - 1);
+            return static_cast<std::uint8_t>(
+                bucket - kVariantSlots + 1);
         }
 
         [[nodiscard]] std::uint8_t waterVariant(
             const std::uint64_t hash,
             const std::uint32_t clock) noexcept
         {
+            const auto scattered = scatteredVariant(hash);
+
+            if (scattered != 0)
+            {
+                return scattered;
+            }
+
             if ((clock / kWaterPeriod + hash) % 2 == 0)
             {
                 return 0;
             }
 
-            return kWaterFrameB;
+            return kWaterFrameBVariant;
         }
 
         [[nodiscard]] std::uint8_t surfaceVariant(

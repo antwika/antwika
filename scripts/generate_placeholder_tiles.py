@@ -11,11 +11,15 @@ ROOT = Path(__file__).resolve().parent.parent
 TILES_DIR = ROOT / "assets" / "tiles"
 
 SHEET_WIDTH = 96
-SHEET_HEIGHT = 64
+SHEET_HEIGHT = 80
 
 TILE = 16
 
 RIGHT = 64
+
+SPECIAL_ROW = 64
+
+VARIANT_SHIFTS = ((3, 0), (0, 3), (2, 5), (5, 2), (1, 6), (6, 1), (4, 4))
 
 INK = (0xD6, 0xE0, 0xD8, 255)
 TRANSPARENT = (0, 0, 0, 0)
@@ -25,12 +29,16 @@ TERRAINS = ("floor", "wall", "water", "cliff", "path", "stair")
 SLOTS = {
     "surface_variant_1": [64, 0],
     "surface_variant_2": [80, 0],
-    "water_frame_b": [64, 16],
-    "spare": [80, 16],
-    "wall_band": [64, 32],
-    "wall_rim": [72, 32],
-    "bridge_deck": [80, 32],
-    "shade": [88, 32],
+    "surface_variant_3": [64, 16],
+    "surface_variant_4": [80, 16],
+    "surface_variant_5": [64, 32],
+    "surface_variant_6": [80, 32],
+    "surface_variant_7": [64, 48],
+    "water_frame_b": [80, 48],
+    "wall_band": [0, 64],
+    "wall_rim": [8, 64],
+    "bridge_deck": [16, 64],
+    "shade": [24, 64],
 }
 
 
@@ -74,7 +82,80 @@ def coverage(mask: int, x: int, y: int) -> float:
     return value
 
 
+def on_pipe(at: int) -> bool:
+    return at in (7, 8)
+
+
+def pipe_ink(piece: int, x: int, y: int) -> bool:
+    if piece == 0:
+        return on_pipe(x) or on_pipe(y)
+
+    if piece == 1:
+        return on_pipe(y)
+
+    if piece == 2:
+        return on_pipe(x)
+
+    if piece == 3:
+        return (on_pipe(x) and y <= 8) or (on_pipe(y) and x >= 7)
+
+    if piece == 4:
+        return (on_pipe(x) and y >= 7) or (on_pipe(y) and x <= 8)
+
+    if piece == 5:
+        return on_pipe(y) or (on_pipe(x) and y >= 7)
+
+    if piece == 6:
+        return on_pipe(y) or (
+            5 <= x <= 10
+            and 5 <= y <= 10
+            and (x in (5, 10) or y in (5, 10))
+        )
+
+    return (
+        (3 <= x <= 12 and 3 <= y <= 12 and (x in (3, 12) or y in (3, 12)))
+        or (on_pipe(x) and (y < 3 or y > 12))
+        or (on_pipe(y) and (x < 3 or x > 12))
+        or (y in (6, 9) and 5 <= x <= 10)
+    )
+
+
+def wall_backdrop_ink(x: int, y: int) -> bool:
+    return x % 4 == 2 and y % 4 == 2
+
+
+def wall_interior_ink(piece: int, x: int, y: int) -> bool:
+    return wall_backdrop_ink(x, y) or pipe_ink(piece, x, y)
+
+
+def floor_detail_ink(variant: int, x: int, y: int) -> bool:
+    if variant == 1:
+        return y == 8 and x % 3 != 2
+
+    if variant == 2:
+        return x == 8 and y % 3 != 2
+
+    if variant == 3:
+        return x in (2, 13) and y in (2, 13)
+
+    if variant == 4:
+        return 5 <= x <= 10 and 5 <= y <= 10 and (x + y) % 2 == 0
+
+    if variant == 5:
+        return (x, y) in ((3, 10), (11, 4), (12, 12))
+
+    if variant == 6:
+        return (x == 8 and y <= 8 and y % 3 != 2) or (
+            y == 8 and x <= 8 and x % 3 != 2
+        )
+
+    return 6 <= x <= 9 and 6 <= y <= 9 and (x in (6, 9) or y in (6, 9))
+
+
 def surface_ink(terrain: str, mask: int, x: int, y: int) -> bool:
+    if mask == 15 and terrain == "wall":
+        return wall_interior_ink(0, x, y)
+
     value = coverage(mask, x, y)
 
     if value < 0.5:
@@ -84,6 +165,20 @@ def surface_ink(terrain: str, mask: int, x: int, y: int) -> bool:
         return True
 
     return pattern_ink(terrain, x % 8, y % 8)
+
+
+def variant_ink(terrain: str, variant: int, x: int, y: int) -> bool:
+    if terrain == "wall":
+        return wall_interior_ink(variant, x, y)
+
+    if terrain == "floor":
+        return pattern_ink(terrain, x % 8, y % 8) or floor_detail_ink(
+            variant, x, y
+        )
+
+    shift_x, shift_y = VARIANT_SHIFTS[variant - 1]
+
+    return pattern_ink(terrain, (x + shift_x) % 8, (y + shift_y) % 8)
 
 
 def band_ink(x: int, y: int) -> bool:
@@ -100,14 +195,6 @@ def bridge_ink(x: int, y: int) -> bool:
 
 def shade_ink(x: int, y: int) -> bool:
     return (x + y) % 2 == 0
-
-
-def variant_one_ink(terrain: str, x: int, y: int) -> bool:
-    return pattern_ink(terrain, (x + 3) % 8, y % 8)
-
-
-def variant_two_ink(terrain: str, x: int, y: int) -> bool:
-    return pattern_ink(terrain, x % 8, (y + 3) % 8)
 
 
 def frame_b_ink(terrain: str, x: int, y: int) -> bool:
@@ -130,30 +217,34 @@ def sheet_pixels(terrain: str) -> bytearray:
                 if surface_ink(terrain, mask, x, y):
                     put(origin_x + x, origin_y + y)
 
+    for variant in range(1, 8):
+        slot = variant - 1
+        origin_x = RIGHT + slot % 2 * TILE
+        origin_y = slot // 2 * TILE
+
+        for y in range(TILE):
+            for x in range(TILE):
+                if variant_ink(terrain, variant, x, y):
+                    put(origin_x + x, origin_y + y)
+
     for y in range(TILE):
         for x in range(TILE):
-            if variant_one_ink(terrain, x, y):
-                put(RIGHT + x, y)
-
-            if variant_two_ink(terrain, x, y):
-                put(RIGHT + TILE + x, y)
-
             if frame_b_ink(terrain, x, y):
-                put(RIGHT + x, TILE + y)
+                put(RIGHT + TILE + x, 3 * TILE + y)
 
     for y in range(8):
         for x in range(8):
             if band_ink(x, y):
-                put(RIGHT + x, 32 + y)
+                put(x, SPECIAL_ROW + y)
 
             if rim_ink(x, y):
-                put(RIGHT + 8 + x, 32 + y)
+                put(8 + x, SPECIAL_ROW + y)
 
             if bridge_ink(x, y):
-                put(RIGHT + 16 + x, 32 + y)
+                put(16 + x, SPECIAL_ROW + y)
 
             if shade_ink(x, y):
-                put(RIGHT + 24 + x, 32 + y)
+                put(24 + x, SPECIAL_ROW + y)
 
     return pixels
 

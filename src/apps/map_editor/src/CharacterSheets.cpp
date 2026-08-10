@@ -28,7 +28,7 @@ namespace antwika::map_editor
         using antwika::gfx::RectF;
 
         constexpr Color kInk{
-            .red = 214, .green = 224, .blue = 216, .alpha = 255};
+            .red = 255, .green = 255, .blue = 255, .alpha = 255};
 
         constexpr Color kBackdropLight{
             .red = 74, .green = 76, .blue = 84};
@@ -247,6 +247,8 @@ namespace antwika::map_editor
                 std::ifstream in(entry.path(), std::ios::binary);
                 auto bitmap = gfx::PngReader{}.read(in);
 
+                recolorOpaqueToWhite(bitmap);
+
                 if (bitmap.size.width != kCharacterSize
                     || bitmap.size.height != kCharacterSize)
                 {
@@ -369,6 +371,7 @@ namespace antwika::map_editor
     void drawCharacterWorkspace(
         gfx::ViewportRenderer &view,
         const gfx::ITexture &sheet,
+        const Color ink,
         const std::optional<Point> hover,
         const std::uint32_t tick)
     {
@@ -402,7 +405,7 @@ namespace antwika::map_editor
                 {left, top},
                 {static_cast<float>(kExtent),
                  static_cast<float>(kExtent)}),
-            kWhite);
+            ink);
 
         if (kCharacterZoom >= kPixelGridMinZoom)
         {
@@ -464,7 +467,7 @@ namespace antwika::map_editor
             sheet,
             characterFrameSource(row, frame),
             RectF({8.0F, 28.0F}, {16.0F, 16.0F}),
-            kWhite);
+            ink);
 
         if (!hover.has_value())
         {

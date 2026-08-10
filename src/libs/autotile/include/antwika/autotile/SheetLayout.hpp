@@ -15,7 +15,11 @@ namespace antwika::autotile
     inline constexpr std::int32_t kDisplayTile = 16;
 
     inline constexpr std::uint32_t kSheetWidth = 96;
-    inline constexpr std::uint32_t kSheetHeight = 64;
+    inline constexpr std::uint32_t kSheetHeight = 80;
+
+    inline constexpr std::uint8_t kVariantSlots = 7;
+
+    inline constexpr std::uint8_t kWaterFrameBVariant = 8;
 
     /**
      * @brief Locates a piece's sprite on the terrain sheet.

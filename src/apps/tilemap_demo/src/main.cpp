@@ -179,7 +179,21 @@ namespace
         try
         {
             std::ifstream in(path, std::ios::binary);
-            const auto bitmap = antwika::gfx::PngReader{}.read(in);
+            auto bitmap = antwika::gfx::PngReader{}.read(in);
+
+            for (std::size_t at = 0;
+                 at + 3 < bitmap.pixels.size();
+                 at += 4)
+            {
+                if (bitmap.pixels[at + 3] == 0)
+                {
+                    continue;
+                }
+
+                bitmap.pixels[at] = 255;
+                bitmap.pixels[at + 1] = 255;
+                bitmap.pixels[at + 2] = 255;
+            }
 
             if (bitmap.size.width != 64 || bitmap.size.height != 64)
             {
@@ -441,7 +455,7 @@ int main(int argc, char **argv)
                                  - static_cast<float>(player.height)
                                        * 8.0F},
                             {16.0F, 16.0F}),
-                        kWhite);
+                        ink);
                 }
                 else
                 {
