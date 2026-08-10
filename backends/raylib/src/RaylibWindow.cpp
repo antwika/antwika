@@ -42,9 +42,10 @@ namespace antwika::gfx::raylib
 
         if (!IsWindowReady())
         {
-            CloseWindow();
-
-            throw GfxError("gfx.raylib: could not open the window");
+            throw GfxError(
+                "gfx.raylib: could not open a window, so there is no "
+                "display to draw on; set DISPLAY, or run under "
+                "xvfb-run");
         }
 
         if (desc.resizable)

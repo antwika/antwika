@@ -4,9 +4,11 @@
 #include <raylib.h>
 
 #include <cstdint>
+#include <cstdlib>
 #include <variant>
 
 #include <antwika/gfx/Color.hpp>
+#include <antwika/gfx/GfxError.hpp>
 #include <antwika/gfx/IRenderer.hpp>
 #include <antwika/gfx/IWindow.hpp>
 #include <antwika/gfx/WindowDesc.hpp>
@@ -101,4 +103,28 @@ TEST(RaylibBackendTest, PollEvent_ReportsANewSizeOnlyOnce)
     }
 
     EXPECT_EQ(resizes, 1u);
+}
+
+TEST(RaylibBackendDeathTest, CreateWindow_FailsCleanlyWithNoDisplay)
+{
+    EXPECT_EXIT(
+        {
+            ::setenv("DISPLAY", ":9999", 1);
+
+            NiceMock<MockLogger> logger;
+            RaylibBackend backend(logger);
+
+            try
+            {
+                (void)backend.createWindow(resizableDesc());
+            }
+            catch (const antwika::gfx::GfxError &)
+            {
+                std::_Exit(42);
+            }
+
+            std::_Exit(0);
+        },
+        ::testing::ExitedWithCode(42),
+        "");
 }
