@@ -42,8 +42,9 @@ namespace antwika::raylib
 
         logger.log(
             Level::Warning,
-            "sound.raylib: no audio device; frames will be rendered but "
-            "not heard");
+            "sound.raylib: no playback device opened, so frames will be "
+            "rendered but not heard; a sound server has to be reachable "
+            "before the process starts");
     }
 
     RaylibAudioRuntime::~RaylibAudioRuntime()
