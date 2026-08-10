@@ -1,8 +1,10 @@
 #pragma once
 
 #include <cstddef>
+#include <iterator>
 #include <limits>
-#include <vector>
+#include <span>
+#include <tuple>
 
 #include "antwika/ecs/Component.hpp"
 #include "antwika/ecs/ComponentStorage.hpp"
@@ -15,46 +17,110 @@ namespace antwika::ecs
     class View final
     {
     public:
+        using Pools = std::tuple<const ComponentStorage<Ts> *...>;
+
         explicit View(const ComponentStorage<Ts> *...storages)
+            : pools(storages...)
         {
             if ((... || (storages == nullptr)))
             {
                 return;
             }
 
-            matching = smallestEntitiesOf(storages...);
-            std::erase_if(
-                matching,
-                [&](Entity entity) // GCOVR_EXCL_LINE
-                {
-                    return !(
-                        ... && storages->contains(entity)); // GCOVR_EXCL_LINE
-                });
+            chosen = smallestEntitiesOf(storages...);
         } // GCOVR_EXCL_LINE
 
-        using const_iterator = std::vector<Entity>::const_iterator;
+        class const_iterator final
+        {
+        public:
+            using iterator_category = std::forward_iterator_tag;
+            using value_type = Entity;
+            using difference_type = std::ptrdiff_t;
+            using pointer = const Entity *;
+            using reference = const Entity &;
+
+            const_iterator() = default;
+
+            const_iterator(
+                std::span<const Entity> entities,
+                std::size_t at,
+                Pools pools)
+                : entities(entities), at(at), pools(pools)
+            {
+                skipToMatch();
+            }
+
+            [[nodiscard]] reference operator*() const noexcept
+            {
+                return entities[at];
+            }
+
+            const_iterator &operator++() noexcept
+            {
+                ++at;
+                skipToMatch();
+                return *this;
+            }
+
+            const_iterator operator++(int) noexcept
+            {
+                const auto was = *this;
+                ++(*this);
+                return was;
+            }
+
+            [[nodiscard]] bool operator==(
+                const const_iterator &other) const noexcept
+            {
+                return at == other.at;
+            }
+
+        private:
+            void skipToMatch() noexcept
+            {
+                while (at < entities.size() && !matches(entities[at]))
+                {
+                    ++at;
+                }
+            }
+
+            [[nodiscard]] bool matches(Entity entity) const noexcept
+            {
+                return std::apply(
+                    [entity](const auto *...storages) // GCOVR_EXCL_LINE
+                    {
+                        return (
+                            ... && storages->contains(entity));
+                    },
+                    pools);
+            }
+
+            std::span<const Entity> entities{};
+            std::size_t at{};
+            Pools pools{};
+        };
 
         [[nodiscard]] const_iterator begin() const noexcept
         {
-            return matching.begin();
+            return const_iterator(chosen, 0, pools);
         }
 
         [[nodiscard]] const_iterator end() const noexcept
         {
-            return matching.end();
+            return const_iterator(chosen, chosen.size(), pools);
         }
 
         [[nodiscard]] std::size_t size() const noexcept
         {
-            return matching.size();
+            return static_cast<std::size_t>(std::distance(begin(), end()));
         }
 
     private:
         template <typename... Storages>
-        [[nodiscard]] static std::vector<Entity> smallestEntitiesOf(
+        [[nodiscard]] static std::span<const Entity> smallestEntitiesOf(
             Storages *...storages)
         {
-            std::vector<Entity> smallest;
+            std::span<const Entity> smallest;
             std::size_t smallestSize = std::numeric_limits<std::size_t>::max();
 
             auto consider = [&](auto *storage) // GCOVR_EXCL_LINE
@@ -63,10 +129,7 @@ namespace antwika::ecs
                 if (entities.size() < smallestSize) // GCOVR_EXCL_LINE
                 {
                     smallestSize = entities.size();
-
-                    // GCOVR_EXCL_START
-                    smallest.assign(entities.begin(), entities.end());
-                    // GCOVR_EXCL_STOP
+                    smallest = entities;
                 }
             };
             (consider(storages), ...);
@@ -74,7 +137,8 @@ namespace antwika::ecs
             return smallest;
         } // GCOVR_EXCL_LINE
 
-        std::vector<Entity> matching;
+        Pools pools;
+        std::span<const Entity> chosen{};
     };
 
 }
