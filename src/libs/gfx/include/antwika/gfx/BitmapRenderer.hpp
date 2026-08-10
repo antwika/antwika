@@ -84,6 +84,14 @@ namespace antwika::gfx
     private:
         void blend(std::int32_t x, std::int32_t y, Color color) noexcept;
 
+        /**
+         * @brief Mixes one colour into the pixel starting at an offset.
+         *
+         * Requires: at is the byte offset of a whole pixel inside the
+         * page, so at + kBytesPerPixel does not exceed its size.
+         */
+        void blendAt(std::size_t at, Color color) noexcept;
+
         ILogger &logger;
         Bitmap sheet;
         GlyphCellsCache cells;

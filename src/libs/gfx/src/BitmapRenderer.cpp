@@ -1,8 +1,10 @@
 #include "antwika/gfx/BitmapRenderer.hpp"
 
 #include <algorithm>
+#include <array>
 #include <cstddef>
 #include <cstdlib>
+#include <cstring>
 #include <memory>
 #include <utility>
 
@@ -80,13 +82,14 @@ namespace antwika::gfx
 
     void BitmapRenderer::clear(Color color)
     {
+        const std::array<std::uint8_t, kBytesPerPixel> pixel{
+            color.red, color.green, color.blue, 255};
+
         for (std::size_t at = 0; at < sheet.pixels.size();
              at += kBytesPerPixel)
         {
-            sheet.pixels[at] = color.red;
-            sheet.pixels[at + 1] = color.green;
-            sheet.pixels[at + 2] = color.blue;
-            sheet.pixels[at + 3] = 255;
+            std::memcpy(
+                sheet.pixels.data() + at, pixel.data(), kBytesPerPixel);
         }
     }
 
@@ -104,12 +107,14 @@ namespace antwika::gfx
 
         for (auto y = top; y < floor; ++y)
         {
+            auto at = (static_cast<std::size_t>(y) * sheet.size.width
+                       + static_cast<std::size_t>(from))
+                * kBytesPerPixel;
+
             for (auto x = from; x < to; ++x)
             {
-                blend(
-                    static_cast<std::int32_t>(x),
-                    static_cast<std::int32_t>(y),
-                    color);
+                blendAt(at, color);
+                at += kBytesPerPixel;
             }
         }
     }
@@ -255,6 +260,19 @@ namespace antwika::gfx
 
         const auto at = (static_cast<std::size_t>(y) * sheet.size.width + x)
             * kBytesPerPixel;
+
+        blendAt(at, color);
+    }
+
+    void BitmapRenderer::blendAt(std::size_t at, Color color) noexcept
+    {
+        if (color.alpha == 255)
+        {
+            sheet.pixels[at] = color.red;
+            sheet.pixels[at + 1] = color.green;
+            sheet.pixels[at + 2] = color.blue;
+            return;
+        }
 
         sheet.pixels[at] = mixed(sheet.pixels[at], color.red, color.alpha);
         sheet.pixels[at + 1] =
