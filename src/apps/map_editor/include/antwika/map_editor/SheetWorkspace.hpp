@@ -7,6 +7,7 @@
 #include <antwika/gfx/Bitmap.hpp>
 #include <antwika/gfx/ITexture.hpp>
 #include <antwika/gfx/Point.hpp>
+#include <antwika/gfx/PointF.hpp>
 #include <antwika/gfx/ViewportRenderer.hpp>
 #include <antwika/log/ILogger.hpp>
 #include <antwika/tilemap/TerrainClass.hpp>
@@ -82,6 +83,18 @@ namespace antwika::map_editor
     [[nodiscard]] std::filesystem::path sheetPathFor(
         const std::filesystem::path &directory,
         tilemap::TerrainClass terrain);
+
+    /**
+     * @brief Outlines one magnified workspace pixel in yellow.
+     *
+     * @param origin The pixel's top-left corner in canvas pixels.
+     * @param zoom The workspace magnification in canvas pixels.
+     *
+     * Ensures: the outline is the theme's focus-ring yellow, one
+     *          canvas pixel thin, drawn just inside the pixel.
+     */
+    void drawPixelOutline(
+        gfx::ViewportRenderer &view, gfx::PointF origin, float zoom);
 
     /**
      * @brief Folds one pointer gesture into the current sheet.

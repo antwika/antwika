@@ -478,6 +478,11 @@ namespace antwika::map_editor
                  top + static_cast<float>(hover->y) * zoom},
                 {zoom, zoom}),
             kHoverColor);
+        drawPixelOutline(
+            view,
+            {left + static_cast<float>(hover->x) * zoom,
+             top + static_cast<float>(hover->y) * zoom},
+            zoom);
 
         const bool inked = sheetPixelInked(image, *hover);
 

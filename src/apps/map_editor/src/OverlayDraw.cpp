@@ -12,6 +12,7 @@
 #include <antwika/gfx/SizeF.hpp>
 #include <antwika/tilemap/Overlay.hpp>
 #include <antwika/tilemap/TerrainClass.hpp>
+#include <antwika/ui/Theme.hpp>
 
 #include "antwika/map_editor/PaletteMath.hpp"
 
@@ -140,6 +141,40 @@ namespace antwika::map_editor
         const MapCamera &camera)
     {
         outlineRect(view, cellRectF(map, cell, camera), kSelected);
+    }
+
+    void drawHover(
+        ViewportRenderer &view,
+        const TileMap &map,
+        const GridCell cell,
+        const MapCamera &camera)
+    {
+        const auto rect = cellRectF(map, cell, camera);
+        const auto thickness =
+            camera.zoom() >= 1.0F ? camera.zoom() : 1.0F;
+        const auto color = antwika::ui::Theme{}.focusRing;
+        const auto left = rect.origin.x;
+        const auto top = rect.origin.y;
+        const auto width = rect.size.width;
+        const auto height = rect.size.height;
+
+        view.drawRect(
+            RectF({left, top}, {width, thickness}), color);
+        view.drawRect(
+            RectF(
+                {left, top + height - thickness},
+                {width, thickness}),
+            color);
+        view.drawRect(
+            RectF(
+                {left, top + thickness},
+                {thickness, height - 2.0F * thickness}),
+            color);
+        view.drawRect(
+            RectF(
+                {left + width - thickness, top + thickness},
+                {thickness, height - 2.0F * thickness}),
+            color);
     }
 
     void drawFreeMark(

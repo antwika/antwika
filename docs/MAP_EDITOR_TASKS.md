@@ -27,6 +27,7 @@ Unit tests for the editor itself remain deferred by explicit decision; see docs/
 | 15 | Fullscreen support | shipped |
 | 16 | Drag-resizable windows | shipped |
 | 17 | Generate-every-second-press bug | fixed |
+| 18 | Yellow hover outline | shipped |
 
 ## 1: menu bar (shipped)
 
@@ -233,6 +234,15 @@ The flushed log then overturned the seed-parity-contradiction candidate too: eve
 Root cause: makeWave seeded its xorshift32 stream with `seed | 1U`, which collapses seeds 2k and 2k+1 onto the same nonzero state; with the rest of the solve fully deterministic, seeds 2 and 3 (4 and 5, and so on) yield the same map, so the incrementing per-press counter visibly regenerated only every second press.
 Fix: the stream now starts from `scrambled(seed)`, a splitmix-style finalizer (add golden-ratio constant, two xor-shift-multiply rounds) with a zero-state remap to one, so every practical seed gets a distinct nonzero xorshift32 state; the coordinator's fallback idea of retrying the next seed on contradiction was not needed because no contradictions were occurring.
 Verified after the fix: six consecutive Map > Generate presses produced six distinct terrain hashes with a pre-painted pinned water cell and the pinned wall border verbatim in every snapshot, two G presses and two panel presses each changed the map identically, one undo reverted exactly the last Generate (the saved JSON matched the previous press's snapshot), and a constructed contradiction — pinned water beside pinned cliff, an incompatible adjacency — failed in about a second with "generate failed (seed 11)" in the console, the yellow panel notice, a live editor, and a map untouched apart from the two painted pins.
+
+## 18: yellow hover outline
+
+The cell under the pointer now carries a thin outline in the theme's focus-ring yellow, so the artist always sees exactly which cell a click will hit.
+Map view: a new drawHover in OverlayDraw outlines state.hovered through the same cellRectF/cellOrigin path as the selection outline, so it follows the elevation lift; the color is read from ui::Theme{}.focusRing rather than a new constant, and the thickness is one canvas pixel at 1x, scaling with the camera zoom (clamped to one pixel below 1x).
+MapRenderSystem draws it last in the render phase — above tiles, markers, and the validator overlay, and below everything the ui phase paints — and gates it on the pointer actually being over the map viewport: no outline while the pointer sits over the panel or the menu bar, while a modal dialog is open, or under a visible console sheet.
+The auto-extend ghost cell shares no code with the hover outline — it keeps its own paper-derived gray fill and edge from task 13 — so nothing needed differentiating, and the selected-entity outline stays white so hover and selection read apart when they coincide.
+The tile and character pixel workspaces already had an atlas_editor-style hover affordance in the same yellow (a translucent fill at the hovered pixel), which is reinforced rather than replaced: a shared drawPixelOutline helper in SheetWorkspace now draws an opaque one-canvas-pixel focus-yellow outline just inside the magnified pixel in both workspaces, over the existing fill.
+Verified under Xvfb with captures: the outline on a hovered cell at 1x, the outline riding a two-step lifted plateau, a thicker outline on the correct cell at 2x camera zoom, zero focus-yellow pixels in the map area while hovering the panel and while the palette dialog is open (pixel-scan assertions), and the crisp pixel outline in both the tile and character workspaces.
 
 ## After the queue drains
 

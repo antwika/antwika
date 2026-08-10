@@ -54,6 +54,8 @@ namespace antwika::map_editor
 
         void drawGhost();
 
+        void drawHoverOutline();
+
         void drawFreeMarks();
 
         void refreshSheets();

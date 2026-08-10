@@ -143,6 +143,33 @@ namespace antwika::map_editor
         }
 
         drawValidatorOverlay(view, store.state, store.camera);
+        drawHoverOutline();
+    }
+
+    void MapRenderSystem::drawHoverOutline()
+    {
+        const auto &pointer = store.input.canvasPointer;
+
+        if (!pointer.has_value() || store.ui.pointerOverUi
+            || modalOpen(store))
+        {
+            return;
+        }
+
+        const bool overMap = pointer->x >= 0
+                             && pointer->x < kMapViewWidth
+                             && pointer->y >= kMenuBarHeight;
+        const bool underConsole =
+            store.input.consoleVisible
+            && pointer->y < store.input.consoleHeightCanvas;
+
+        if (!overMap || underConsole)
+        {
+            return;
+        }
+
+        drawHover(
+            view, store.state.map, store.state.hovered, store.camera);
     }
 
     void MapRenderSystem::refreshCharacters()

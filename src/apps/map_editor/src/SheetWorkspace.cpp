@@ -17,6 +17,7 @@
 #include <antwika/gfx/RectF.hpp>
 #include <antwika/enums/Enumeration.hpp>
 #include <antwika/log/Level.hpp>
+#include <antwika/ui/Theme.hpp>
 
 #include "antwika/map_editor/PlaceholderSheets.hpp"
 
@@ -378,6 +379,30 @@ namespace antwika::map_editor
                       .string());
     }
 
+    void drawPixelOutline(
+        gfx::ViewportRenderer &view,
+        const gfx::PointF origin,
+        const float zoom)
+    {
+        const auto color = antwika::ui::Theme{}.focusRing;
+
+        view.drawRect(
+            RectF(origin, {zoom, 1.0F}), color);
+        view.drawRect(
+            RectF(
+                {origin.x, origin.y + zoom - 1.0F}, {zoom, 1.0F}),
+            color);
+        view.drawRect(
+            RectF(
+                {origin.x, origin.y + 1.0F}, {1.0F, zoom - 2.0F}),
+            color);
+        view.drawRect(
+            RectF(
+                {origin.x + zoom - 1.0F, origin.y + 1.0F},
+                {1.0F, zoom - 2.0F}),
+            color);
+    }
+
     void drawSheetWorkspace(
         gfx::ViewportRenderer &view,
         const gfx::ITexture &sheet,
@@ -492,6 +517,11 @@ namespace antwika::map_editor
                 .green = kHoverColor.green,
                 .blue = kHoverColor.blue,
                 .alpha = 90});
+        drawPixelOutline(
+            view,
+            {left + static_cast<float>(hover->x) * zoom,
+             top + static_cast<float>(hover->y) * zoom},
+            zoom);
 
         const bool inked = sheetPixelInked(image, *hover);
 
