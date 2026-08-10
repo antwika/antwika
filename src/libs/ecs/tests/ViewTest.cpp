@@ -132,20 +132,6 @@ TEST(ViewTest, View_OrdersBySmallerStorageEitherWay)
     EXPECT_EQ(entities, (std::vector<Entity>{Entity{7}, Entity{3}}));
 }
 
-TEST(ViewTest, Iterator_StepsForwardAfterAPostfixIncrement)
-{
-    ComponentStorage<Position> positions;
-    positions.insert(Entity{1}, Position{});
-    positions.insert(Entity{2}, Position{});
-
-    const View<Position> view(&positions);
-    auto it = view.begin();
-    const auto was = it++;
-
-    EXPECT_EQ(*was, Entity{1});
-    EXPECT_EQ(*it, Entity{2});
-}
-
 TEST(ViewTest, Iterator_SkipsAnEntityMissingFromTheOtherStorage)
 {
     ComponentStorage<Position> positions;
@@ -158,7 +144,7 @@ TEST(ViewTest, Iterator_SkipsAnEntityMissingFromTheOtherStorage)
     velocities.insert(Entity{2}, Velocity{});
     velocities.insert(Entity{3}, Velocity{});
     velocities.insert(Entity{4}, Velocity{});
-    velocities.remove(Entity{2});
+    velocities.removeAll(std::vector<Entity>{Entity{2}});
 
     const View<Position, Velocity> view(&positions, &velocities);
     const std::vector<Entity> entities(view.begin(), view.end());

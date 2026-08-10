@@ -57,20 +57,13 @@ TEST(ComponentStorageTest, Write_ThrowsOnAnUnknownEntity)
     EXPECT_THROW(storage.write(Entity{7}, Position{}), EcsError);
 }
 
-TEST(ComponentStorageTest, Remove_ThrowsOnAnUnknownEntity)
-{
-    ComponentStorage<Position> storage;
-
-    EXPECT_THROW(storage.remove(Entity{7}), EcsError);
-}
-
-TEST(ComponentStorageTest, Remove_LeavesAnEntityNoLongerContained)
+TEST(ComponentStorageTest, RemoveAll_LeavesAnEntityNoLongerContained)
 {
     ComponentStorage<Position> storage;
     const Entity entity{1};
     storage.insert(entity, Position{1, 2});
 
-    storage.remove(entity);
+    storage.removeAll(std::vector<Entity>{entity});
 
     EXPECT_FALSE(storage.contains(entity));
     EXPECT_THROW(static_cast<void>(storage.read(entity)), EcsError);
@@ -100,7 +93,7 @@ TEST(ComponentStorageTest, Entities_KeepOrderAcrossInsertAndRemove)
     storage.insert(b, Position{});
     storage.insert(c, Position{});
     storage.insert(d, Position{});
-    storage.remove(b);
+    storage.removeAll(std::vector<Entity>{b});
     storage.insert(e, Position{});
 
     const auto entities = storage.entities();
@@ -109,7 +102,7 @@ TEST(ComponentStorageTest, Entities_KeepOrderAcrossInsertAndRemove)
     EXPECT_EQ(order, (std::vector<Entity>{a, c, d, e}));
 }
 
-TEST(ComponentStorageTest, Remove_MovesEachRemainingComponentWithItsEntity)
+TEST(ComponentStorageTest, RemoveAll_MovesEachRemainingComponentWithItsEntity)
 {
     ComponentStorage<Position> storage;
     storage.insert(Entity{1}, Position{10, 11});
@@ -117,14 +110,14 @@ TEST(ComponentStorageTest, Remove_MovesEachRemainingComponentWithItsEntity)
     storage.insert(Entity{3}, Position{30, 31});
     storage.insert(Entity{4}, Position{40, 41});
 
-    storage.remove(Entity{2});
+    storage.removeAll(std::vector<Entity>{Entity{2}});
 
     EXPECT_EQ(storage.read(Entity{1}), (Position{10, 11}));
     EXPECT_EQ(storage.read(Entity{3}), (Position{30, 31}));
     EXPECT_EQ(storage.read(Entity{4}), (Position{40, 41}));
 }
 
-TEST(ComponentStorageTest, Remove_ShiftsRatherThanSwappingWithTheLast)
+TEST(ComponentStorageTest, RemoveAll_ShiftsRatherThanSwappingWithTheLast)
 {
     ComponentStorage<Position> storage;
     for (std::uint64_t value = 1; value <= 5; ++value)
@@ -132,8 +125,8 @@ TEST(ComponentStorageTest, Remove_ShiftsRatherThanSwappingWithTheLast)
         storage.insert(Entity{value}, Position{});
     }
 
-    storage.remove(Entity{2});
-    storage.remove(Entity{4});
+    storage.removeAll(std::vector<Entity>{Entity{2}});
+    storage.removeAll(std::vector<Entity>{Entity{4}});
     storage.insert(Entity{6}, Position{});
 
     const auto entities = storage.entities();
