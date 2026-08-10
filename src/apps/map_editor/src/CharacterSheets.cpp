@@ -369,7 +369,6 @@ namespace antwika::map_editor
     void drawCharacterWorkspace(
         gfx::ViewportRenderer &view,
         const gfx::ITexture &sheet,
-        const Bitmap &image,
         const std::optional<Point> hover,
         const std::uint32_t tick)
     {
@@ -483,22 +482,6 @@ namespace antwika::map_editor
             {left + static_cast<float>(hover->x) * zoom,
              top + static_cast<float>(hover->y) * zoom},
             zoom);
-
-        const bool inked = sheetPixelInked(image, *hover);
-
-        view.drawRect(
-            RectF({4.0F, 262.0F}, {6.0F, 6.0F}),
-            inked ? kInk : kBackdropDark);
-
-        view.drawText(
-            {14.0F, 262.0F},
-            std::string(rowNameOf(row)) + " f"
-                + std::to_string(
-                    hover->x / static_cast<std::int32_t>(kFrameSize))
-                + " " + std::to_string(hover->x) + ","
-                + std::to_string(hover->y),
-            gfx::encodeTextScale(gfx::TextFace::Small, 1),
-            kLabelColor);
     }
 
 }

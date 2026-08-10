@@ -90,8 +90,6 @@ namespace antwika::map_editor
 
         if (store.view == EditorView::Tiles)
         {
-            const auto &doc =
-                store.tiles.docs[enums::index(store.state.brush)];
             std::optional<gfx::Point> hover{};
 
             if (store.input.canvasPointer.has_value())
@@ -102,7 +100,6 @@ namespace antwika::map_editor
             drawSheetWorkspace(
                 view,
                 *sheets[enums::index(store.state.brush)],
-                doc.image,
                 hover);
             return;
         }
@@ -223,7 +220,6 @@ namespace antwika::map_editor
         drawCharacterWorkspace(
             view,
             *characterTextures[characters.selected].texture,
-            characters.list[characters.selected].sheet.image,
             hover,
             static_cast<std::uint32_t>(tick));
     }

@@ -22,6 +22,7 @@ The map viewport fills the left of the canvas and the tool panel the right.
 Tab cycles between the three views: Map, Tiles, and Characters; Escape always backs out of the innermost thing first (dialog, then menu, then field edit, then quit).
 Inside the map bounds the background is a subtle checkerboard; the solid dark area beyond it is outside the map.
 The cell under the pointer carries a thin yellow outline so you always see where a click will land.
+A hint line in the bottom-left corner describes whatever the cursor points at: the hovered cell with its terrain, height, and annotations, a panel button's purpose, a menu entry, or the sheet slot and pixel in the drawing workspaces.
 
 ## Editing the map
 

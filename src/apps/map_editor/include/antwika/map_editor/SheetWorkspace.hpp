@@ -123,13 +123,12 @@ namespace antwika::map_editor
      * @brief Draws the magnified pixel workspace for one sheet.
      *
      * Draws the transparency backdrop, the sheet texture at
-     * kSheetZoom, the pixel grid, the 8x8 slot guides, the hover
-     * highlight, and the hover label with an ink indicator.
+     * kSheetZoom, the pixel grid, the 8x8 slot guides, and the
+     * hover highlight; the hover label lives in the hint line.
      */
     void drawSheetWorkspace(
         gfx::ViewportRenderer &view,
         const gfx::ITexture &sheet,
-        const gfx::Bitmap &image,
         std::optional<gfx::Point> hover);
 
 }

@@ -28,6 +28,7 @@ Unit tests for the editor itself remain deferred by explicit decision; see docs/
 | 16 | Drag-resizable windows | shipped |
 | 17 | Generate-every-second-press bug | fixed |
 | 18 | Yellow hover outline | shipped |
+| 19 | Pointer hint line | shipped |
 
 ## 1: menu bar (shipped)
 
@@ -243,6 +244,16 @@ MapRenderSystem draws it last in the render phase — above tiles, markers, and 
 The auto-extend ghost cell shares no code with the hover outline — it keeps its own paper-derived gray fill and edge from task 13 — so nothing needed differentiating, and the selected-entity outline stays white so hover and selection read apart when they coincide.
 The tile and character pixel workspaces already had an atlas_editor-style hover affordance in the same yellow (a translucent fill at the hovered pixel), which is reinforced rather than replaced: a shared drawPixelOutline helper in SheetWorkspace now draws an opaque one-canvas-pixel focus-yellow outline just inside the magnified pixel in both workspaces, over the existing fill.
 Verified under Xvfb with captures: the outline on a hovered cell at 1x, the outline riding a two-step lifted plateau, a thicker outline on the correct cell at 2x camera zoom, zero focus-yellow pixels in the map area while hovering the panel and while the palette dialog is open (pixel-scan assertions), and the crisp pixel outline in both the tile and character workspaces.
+
+## 19: pointer hint line
+
+A single line of small-face muted text sits two pixels off the bottom-left of the canvas in every view, describing what the pointer points at, drawn by the ui system after the panel paint and rebuilt only when the hovered target changes.
+The cache key (view, hovered widget, pointer position, modality, undo depth) lives beside the string in the ui system; the undo depth rides along so an edit under a still pointer — painting, raising, bridging — refreshes the hint without waiting for movement.
+Map view hints render most-specific-first: "cell 5,4  floor h=0" with appended annotations for bridge, non-full light ("light 160"), a free cell, the water flags (deadly, swimmable, current with its direction), and every entity on the cell as "door-1 transition"; the auto-extend ghost says "paint to extend the map" and the void says nothing.
+Widget hints come from ui::Interactions.hovered, which the ui library's hover machinery already exposes as a plain WidgetId — enough to map the editor's whole widget roster (brushes, cell tools, entity tools, fields, menu titles and every dropdown entry, file-dialog rows by their listed name, palette controls, and character rows as "select character player") without touching HoverTargets, so no limitation needed reporting.
+Tiles view reuses the task 7 slot naming as "mask 5  px 10,12" with an "ink" suffix on inked pixels, and the characters view reads "walk_up frame 1  px 30,19"; the old bottom-left workspace labels and ink indicator are removed so slotLabelAt and rowNameOf feed exactly one presentation, and the workspace draw functions dropped their now-unused bitmap parameter.
+While a modal dialog is open the hint describes only the dialog's own widgets ("apply the palette as one undoable edit") and is otherwise empty, never leaking map hints from underneath; when the pointer sits under a visible console sheet the hint empties too, and the line itself would hide if the sheet ever reached it.
+Verified under Xvfb with captures: the annotated cell hint over a bridge-plus-light cell carrying a transition, the ghost hint past the south edge, the Generate panel hint, the tile-slot and character-frame hints, a palette-dialog widget hint, and zero muted-text pixels in the hint strip both over the void and with the pointer parked under the open console.
 
 ## After the queue drains
 

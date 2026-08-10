@@ -5,6 +5,7 @@
 
 #include <memory>
 #include <optional>
+#include <string>
 
 #include <antwika/console/ConsolePicture.hpp>
 #include <antwika/ecs/ISystem.hpp>
@@ -20,6 +21,7 @@
 #include <antwika/ui/WidgetRects.hpp>
 
 #include "antwika/map_editor/EditorStore.hpp"
+#include "antwika/map_editor/Hints.hpp"
 
 namespace antwika::map_editor
 {
@@ -61,6 +63,10 @@ namespace antwika::map_editor
 
         void drawPaletteOverlay(const ui::WidgetRects &rects);
 
+        void refreshHint(ui::WidgetId hovered);
+
+        void drawHint();
+
         void confirmDialog();
 
         [[nodiscard]] bool actMenus(
@@ -96,6 +102,8 @@ namespace antwika::map_editor
         log::ILogger &logger;
         std::unique_ptr<gfx::ITexture> svTexture{};
         std::optional<std::uint32_t> svTextureHue{};
+        std::string hint{};
+        HintKey hintKey{};
     };
 
 }

@@ -16,14 +16,17 @@
 #include <antwika/enums/Enumeration.hpp>
 #include <antwika/log/Level.hpp>
 #include <antwika/tilemap/TerrainClass.hpp>
+#include <antwika/gfx/Glyphs.hpp>
 #include <antwika/ui/Keyboard.hpp>
 #include <antwika/ui/Painter.hpp>
+#include <antwika/ui/Theme.hpp>
 #include <antwika/ui/Pointer.hpp>
 
 #include "antwika/map_editor/CharacterSheets.hpp"
 #include "antwika/map_editor/Commands.hpp"
 #include "antwika/map_editor/ConfigFile.hpp"
 #include "antwika/map_editor/Generate.hpp"
+#include "antwika/map_editor/Hints.hpp"
 #include "antwika/map_editor/PaletteMath.hpp"
 #include "antwika/map_editor/PanelScene.hpp"
 #include "antwika/map_editor/SheetWorkspace.hpp"
@@ -100,6 +103,7 @@ namespace antwika::map_editor
             describePanel(store, canvas, pointer, keyboard);
 
         act(first.interactions, first.rects);
+        refreshHint(first.interactions.hovered);
 
         auto frame =
             describePanel(store, canvas, pointer, ui::Keyboard{});
@@ -111,6 +115,7 @@ namespace antwika::map_editor
             drawPaletteOverlay(frame.rects);
         }
 
+        drawHint();
         ui::paint(window.renderer(), console.commands());
 
         view.present();
@@ -405,6 +410,37 @@ namespace antwika::map_editor
                  static_cast<float>(markY - 1)},
                 {3.0F, 3.0F}),
             gfx::Color{.red = 255, .green = 255, .blue = 255});
+    }
+
+    void UiSystem::refreshHint(const ui::WidgetId hovered)
+    {
+        const auto key = hintKeyFor(store, hovered);
+
+        if (key == hintKey)
+        {
+            return;
+        }
+
+        hintKey = key;
+        hint = hintFor(store, hovered);
+    }
+
+    void UiSystem::drawHint()
+    {
+        constexpr std::int32_t kHintTop = 262;
+
+        if (hint.empty()
+            || (store.input.consoleVisible
+                && store.input.consoleHeightCanvas > kHintTop))
+        {
+            return;
+        }
+
+        view.drawText(
+            {2.0F, static_cast<float>(kHintTop)},
+            hint,
+            gfx::encodeTextScale(gfx::TextFace::Small, 1),
+            ui::Theme{}.muted);
     }
 
     void UiSystem::confirmDialog()
