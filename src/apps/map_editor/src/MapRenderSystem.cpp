@@ -100,6 +100,8 @@ namespace antwika::map_editor
             drawSheetWorkspace(
                 view,
                 *sheets[enums::index(store.state.brush)],
+                store.tiles
+                    .connectors[enums::index(store.state.brush)],
                 hover);
             return;
         }
@@ -329,7 +331,8 @@ namespace antwika::map_editor
             state.map,
             state.hovered,
             state.map.at(state.hovered).height,
-            static_cast<std::uint32_t>(tick));
+            static_cast<std::uint32_t>(tick),
+            store.tiles.connectors);
 
         const auto zoom = store.camera.zoom();
         const auto ink = colorOf(state.map.header().ink);

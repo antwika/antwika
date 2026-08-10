@@ -98,6 +98,12 @@ namespace antwika::map_editor
                 continue;
             }
 
+            if (key == Key::Escape && store.rules.open)
+            {
+                store.rules.open = false;
+                continue;
+            }
+
             if (key == Key::Escape
                 && store.ui.openMenu.has_value())
             {

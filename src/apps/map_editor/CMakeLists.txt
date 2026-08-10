@@ -11,6 +11,7 @@ antwika_add_app(
         src/EditorStore.cpp
         src/EntityEditSystem.cpp
         src/Generate.cpp
+        src/GenerationRules.cpp
         src/Hints.cpp
         src/KeyboardSystem.cpp
         src/MapRenderSystem.cpp

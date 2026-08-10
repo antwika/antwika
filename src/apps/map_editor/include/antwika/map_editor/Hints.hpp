@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstddef>
+#include <cstdint>
 #include <optional>
 #include <string>
 
@@ -19,6 +20,7 @@ namespace antwika::map_editor
         std::optional<gfx::Point> pointer{};
         bool modal = false;
         std::size_t edits = 0;
+        std::uint8_t connectorEdges = 0;
 
         [[nodiscard]] bool operator==(const HintKey &other) const =
             default;

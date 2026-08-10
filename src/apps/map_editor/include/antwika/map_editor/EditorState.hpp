@@ -12,6 +12,8 @@
 #include <antwika/tilemap/TerrainClass.hpp>
 #include <antwika/tilemap/TileMap.hpp>
 
+#include "antwika/map_editor/GenerationRules.hpp"
+
 namespace antwika::map_editor
 {
 
@@ -41,6 +43,7 @@ namespace antwika::map_editor
         tilemap::TerrainClass brush = tilemap::TerrainClass::Floor;
         bool brushFree = false;
         std::vector<bool> pinned{};
+        GenerationRules rules = defaultGenerationRules();
         std::uint32_t generateSeed = 1;
         std::uint32_t generateFailedTicks = 0;
         geometry::GridCell hovered{};

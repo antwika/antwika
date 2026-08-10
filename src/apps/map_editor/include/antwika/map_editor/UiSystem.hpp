@@ -59,6 +59,8 @@ namespace antwika::map_editor
             const ui::Interactions &interactions,
             const ui::WidgetRects &rects);
 
+        void actRules(const ui::Interactions &interactions);
+
         void dragPaletteSquare(const ui::WidgetRects &rects);
 
         void drawPaletteOverlay(const ui::WidgetRects &rects);

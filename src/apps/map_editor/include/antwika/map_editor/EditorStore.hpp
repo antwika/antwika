@@ -15,6 +15,7 @@
 #include <antwika/gfx/Size.hpp>
 #include <antwika/input/InputEvent.hpp>
 #include <antwika/io/FileList.hpp>
+#include <antwika/autotile/Connectors.hpp>
 #include <antwika/tilemap/Rgb.hpp>
 #include <antwika/tilemap/TerrainClass.hpp>
 #include <antwika/ui/Interactions.hpp>
@@ -136,6 +137,7 @@ namespace antwika::map_editor
         std::filesystem::path directory{};
         std::array<SheetDoc, enums::kCount<tilemap::TerrainClass>>
             docs{};
+        autotile::TerrainConnectors connectors{};
         bool stroke = false;
         bool strokeInk = true;
     };
@@ -198,6 +200,13 @@ namespace antwika::map_editor
         bool hueDragging = false;
     };
 
+    struct RulesDialog final
+    {
+        bool open = false;
+        GenerationRules edit{};
+        std::string message{};
+    };
+
     struct CharacterDoc final
     {
         std::string name{};
@@ -222,6 +231,7 @@ namespace antwika::map_editor
         MapCamera camera{};
         FileDialog dialog{};
         PaletteDialog palette{};
+        RulesDialog rules{};
         EditorView view = EditorView::Map;
         TileSheets tiles{};
         CharacterSet characters{};
@@ -242,7 +252,8 @@ namespace antwika::map_editor
     [[nodiscard]] inline bool modalOpen(
         const EditorStore &store) noexcept
     {
-        return store.dialog.open() || store.palette.open;
+        return store.dialog.open() || store.palette.open
+               || store.rules.open;
     }
 
     /**

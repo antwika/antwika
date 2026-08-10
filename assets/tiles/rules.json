@@ -1,0 +1,67 @@
+{
+  "weights": {
+    "floor": 8,
+    "wall": 3,
+    "water": 2,
+    "cliff": 1,
+    "path": 2
+  },
+  "adjacency": [
+    [
+      "floor",
+      "floor"
+    ],
+    [
+      "floor",
+      "wall"
+    ],
+    [
+      "floor",
+      "water"
+    ],
+    [
+      "floor",
+      "cliff"
+    ],
+    [
+      "floor",
+      "path"
+    ],
+    [
+      "floor",
+      "stair"
+    ],
+    [
+      "wall",
+      "wall"
+    ],
+    [
+      "wall",
+      "path"
+    ],
+    [
+      "wall",
+      "stair"
+    ],
+    [
+      "water",
+      "water"
+    ],
+    [
+      "cliff",
+      "cliff"
+    ],
+    [
+      "path",
+      "path"
+    ],
+    [
+      "path",
+      "stair"
+    ],
+    [
+      "stair",
+      "stair"
+    ]
+  ]
+}

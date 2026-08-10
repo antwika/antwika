@@ -59,6 +59,22 @@ The rest of the bottom strip, from 32,64 to 96,80 and under the specials, is spa
 
 `assets/tiles/tiles.json` records the sheet size, the mask grid, and the named slot positions for tools that do not link the C++ layout.
 
+An optional `connectors` object declares, per terrain and per interior variant 1 through 7, which display-tile edges carry a connector, as a string of the letters N, E, S, and W (for example `"connectors": {"wall": {"1": "EW", "7": ""}}`).
+A variant the sidecar does not mention connects all four edges, which reproduces the pre-connector behavior exactly, and the base tile is implicitly all-connected and not configurable.
+The editor shows the declaration as four edge markers while the cursor is over a variant tile, toggles one on a click at its two-pixel edge-midpoint hotspot (paint across a hotspot by dragging through it), and File > Save Sheet writes the section back, omitting all-connected defaults.
+
+The variant scatter is edge-aware: variants are chosen row-major so each choice matches its west and north neighbours' facing edges, connector to connector and blank to blank, still keyed off the deterministic position hash with the base favored.
+When the status-quo pick does not fit, the fallback prefers candidates matching both facing edges (the base first, else the hash picks), then candidates matching the west edge alone, then the north edge alone, then the base.
+Edges facing anything that is not a same-terrain interior tile — mask edges, other terrains, the map border — are unconstrained, and keeping that art coherent stays the artist's responsibility for now.
+The art must honor the declaration: a declared connector edge should carry pipe ink at the edge midpoint and a blank edge should not, or mismatched pixels will show even though placement is consistent.
+
+## Generation rules
+
+`assets/tiles/rules.json` makes the generation weights and the terrain adjacency artist-editable per tileset, honoring `--tiles`.
+The document holds a `weights` object with a positive number per generatable terrain (floor, wall, water, cliff, path — stair is artist-only and keeps its fixed weight) and an `adjacency` array of two-name pairs; each listed pair is applied symmetrically, self-pairs included, and unlisted pairs are forbidden.
+Unknown terrain names, non-positive weights, or malformed pairs make the file invalid; a missing or corrupt file logs a warning and the compiled-in defaults (the task 3 table with weights 8/3/2/2/1) apply instead.
+The editor edits the file through Map > Rules..., and `scripts/generate_placeholder_tiles.py` regenerates a defaults-matching rules.json beside the sheets.
+
 ## Legacy sheets
 
 A PNG with the pre-display-tile 32x48 layout or the short-lived 96x64 layout is refused with a "legacy sheet layout, redraw needed" warning and the placeholder is used instead.

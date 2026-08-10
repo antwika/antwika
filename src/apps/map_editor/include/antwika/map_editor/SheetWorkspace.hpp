@@ -6,6 +6,7 @@
 
 #include <antwika/gfx/Bitmap.hpp>
 #include <antwika/gfx/ITexture.hpp>
+#include <antwika/autotile/Connectors.hpp>
 #include <antwika/gfx/Point.hpp>
 #include <antwika/gfx/PointF.hpp>
 #include <antwika/gfx/ViewportRenderer.hpp>
@@ -108,6 +109,47 @@ namespace antwika::map_editor
         gfx::ViewportRenderer &view, gfx::PointF origin, float zoom);
 
     /**
+     * @brief Loads the per-variant edge connectors from tiles.json.
+     *
+     * Ensures: terrains or variants the sidecar does not mention
+     *          keep all four edges connected, reproducing the
+     *          pre-connector behavior.
+     */
+    [[nodiscard]] autotile::TerrainConnectors loadConnectorsFile(
+        const std::filesystem::path &directory);
+
+    /**
+     * @brief Writes every terrain's connectors into tiles.json.
+     *
+     * @return An error message, or nothing on success.
+     *
+     * Ensures: other sidecar members are preserved, and all-edge
+     *          defaults are omitted so untouched sheets keep a
+     *          connector-free sidecar.
+     */
+    [[nodiscard]] std::optional<std::string> saveConnectorsFile(
+        const std::filesystem::path &directory,
+        const autotile::TerrainConnectors &connectors);
+
+    /**
+     * @brief The variant slot under a sheet pixel, if any.
+     *
+     * @return The variant id 1 to 7 for the seven variant slots,
+     *         and nothing elsewhere (the frame B slot included).
+     */
+    [[nodiscard]] std::optional<std::int32_t> variantSlotAt(
+        gfx::Point pixel);
+
+    /**
+     * @brief The connector edge under a variant-slot pixel, if any.
+     *
+     * @return One edge bit when the pixel sits on a two-pixel edge
+     *         midpoint hotspot of a variant tile.
+     */
+    [[nodiscard]] std::optional<std::uint8_t> connectorHotspotAt(
+        gfx::Point pixel);
+
+    /**
      * @brief Folds one pointer gesture into the current sheet.
      *
      * Ensures: a press starts an undoable stroke, moves extend it
@@ -140,6 +182,7 @@ namespace antwika::map_editor
     void drawSheetWorkspace(
         gfx::ViewportRenderer &view,
         const gfx::ITexture &sheet,
+        const autotile::SheetConnectors &connectors,
         std::optional<gfx::Point> hover);
 
 }

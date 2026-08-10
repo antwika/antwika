@@ -32,6 +32,8 @@ Unit tests for the editor itself remain deferred by explicit decision; see docs/
 | 20 | Disconnected-tiles rendering bug | fixed |
 | 21 | Eight interior variants and connected pipes | shipped |
 | 22 | Character eraser and ink consistency | fixed |
+| 23 | Artist-editable adjacency rules and weights | shipped |
+| 24 | Per-variant edge connectors | shipped |
 
 ## 1: menu bar (shipped)
 
@@ -291,6 +293,26 @@ The second half matched the diagnosis: the New-character silhouette baked the ol
 The hint line's "ink" suffix now applies to the character workspace too, and the guide's characters section states the left-inks/right-erases model and the ink-color rendering.
 Verified under Xvfb: a right-click over an inked body pixel now shows the checkerboard through the hole (before the fix the same click left an opaque black pixel, sampled as 0,0,0), a paint-and-save round-trip left player.png with every opaque pixel at 255/255/255 by byte assertion, and after a console `palette ink 22ddff` the workspace canvas, the animated preview, and the demo's player all sampled exactly 34/221/255.
 The user's original player.png was restored after the test edits, since load-time normalization makes rewriting it unnecessary.
+
+## 23: artist-editable adjacency rules and weights
+
+The WFC adjacency table and generation weights moved out of Generate.cpp into GenerationRules, loaded from <tiles>/rules.json (honoring --tiles) with the old table kept as the compiled-in default.
+The schema, documented in TILE_SHEETS.md, is a weights object per generatable terrain plus an adjacency array of symmetric two-name pairs; validation rejects unknown names, non-positive weights, and malformed pairs, and a missing or corrupt file logs a warning and falls back to the defaults.
+Stair stays artist-only in the domain exactly as before, with a fixed weight.
+Map > Rules... opens a modal under the file-dialog modality rules with the 6x6 symmetric pair matrix (self-pairs included, one click flips both cells) and integer +/- steppers for the five generatable weights, labeled "tileset-level, not part of map undo"; Apply writes rules.json and swaps the live rules so the next Generate uses them, Cancel and Escape discard.
+scripts/generate_placeholder_tiles.py now regenerates a defaults-matching rules.json beside the sheets, and assets/tiles ships one.
+Verified under Xvfb: toggling wall-floor off and applying produced a generated map whose saved JSON had zero wall-floor 4-adjacencies, raising water's weight from 2 to 8 took the water count across two seeds from 2 to 7 cells, a corrupt rules.json logged the warning and generation showed wall-floor adjacencies again (defaults in effect), and a relaunch after Apply still generated with the saved rules.
+
+## 24: per-variant edge connectors
+
+Interior variants 1 through 7 can declare which of their four edges carry a connector, stored in the tiles.json sidecar as N/E/S/W letter strings per terrain and variant; unspecified variants default to all four edges, and the base is implicitly all-connected.
+The autotile library gained a Connectors header and a buildDrawPlan overload taking per-terrain connectors, with the plain overload passing all-connected defaults — a captured all-wall map rendered pixel-identically to the pre-change reference with no sidecar config present, and the demo keeps the plain overload.
+The scatter is edge-aware and deterministic: variants are chosen row-major so each choice sees its west and north neighbours' facing edges and must match both, connector to connector and blank to blank; the status-quo hash pick is tried first (which is what preserves default behavior bit-for-bit), and on a miss the fallback prefers both-edge matches (base first, else the hash picks among them by id order), then west-only, then north-only, then the base — the rule documented in TILE_SHEETS.md.
+Edges facing non-interior tiles stay unconstrained, water frame B stays base-only, and the art-matches-declaration duty is documented as the artist's responsibility.
+The workspace shows four edge markers at the hovered variant tile's edge midpoints (yellow for connector, dim for blank), a click on a two-pixel midpoint hotspot toggles one (dragging through still paints), Save Sheet writes the section, the hint line reports "variant 1  px 79,7  ink  edges E,W", and the connector state rides the hint cache key so a toggle refreshes the line immediately.
+Verified under Xvfb with a test sidecar declaring truthful contacts (straight-H E+W, straight-V N+S, the elbows, the T, the valve E+W, and the tank with no edges): a Python replica of the hash and chooser predicted every interior corner's variant, every shared edge matched by declaration, and pixel checks at all shared midpoints inside the wall slab showed ink exactly where connectors meet and blank where blanks meet with zero mismatches — the no-edge tank simply never enters the constrained interior, which is the mechanism keeping pipe stubs out of blank-edged neighbours.
+Two captures of the same map were pixel-identical, the E-edge toggle saved as "W" in tiles.json and survived a relaunch, and the truthful-contact interior visibly collapses toward the all-connected cross, an honest consequence of edge matching that richer all-edge art relieves.
+The shipped assets/tiles sidecar carries no connectors section, so defaults apply out of the box.
 
 ## After the queue drains
 

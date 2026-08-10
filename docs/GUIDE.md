@@ -88,6 +88,8 @@ The grid shows every pixel; strong guide lines mark the 16×16 display tiles —
 Left-click inks a pixel and right-click clears it; art is strictly one-bit.
 Each 16×16 mask tile draws centered on a dual-grid corner, and its mask encodes which of the four surrounding cells hold the terrain: draw the full tile (mask 15) first, then the edges.
 Interior machinery connects across tiles when pipes cross edges only at the two-pixel edge midpoints, per the connection convention in TILE_SHEETS.md — the wall placeholders ship as connectable pipe pieces that demonstrate it.
+Each variant can declare which edges carry a connector (hover a variant tile and click an edge marker), and the scatter only places variants whose facing edges agree, so directional pieces — straight runs, caps, standalone machines — are now safe to draw.
+Map > Rules... edits the tileset's generation weights and terrain adjacency; the rules live in rules.json beside the sheets and are not part of map undo.
 Every edit updates the map view live; File > Save Sheet writes `assets/tiles/<terrain>.png`, which the editor and demo load at startup.
 Sheets are drawn in white and tinted by the map's ink color at render time.
 The layout convention is documented in [TILE_SHEETS.md](TILE_SHEETS.md).

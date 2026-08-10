@@ -123,6 +123,40 @@ namespace antwika::map_editor::widgets
 
     inline constexpr ui::WidgetId kPaletteCancel{246};
 
+    inline constexpr std::uint64_t kRulesPairBase = 700;
+
+    inline constexpr std::size_t kRulesTerrains = 6;
+
+    [[nodiscard]] constexpr ui::WidgetId rulesPairButton(
+        const std::size_t row, const std::size_t column) noexcept
+    {
+        return static_cast<ui::WidgetId>(
+            kRulesPairBase + row * kRulesTerrains + column);
+    }
+
+    [[nodiscard]] constexpr std::optional<std::size_t> rulesPairIndex(
+        const ui::WidgetId id) noexcept
+    {
+        const auto raw = static_cast<std::uint64_t>(id);
+
+        if (raw < kRulesPairBase
+            || raw >= kRulesPairBase
+                          + kRulesTerrains * kRulesTerrains)
+        {
+            return std::nullopt;
+        }
+
+        return raw - kRulesPairBase;
+    }
+
+    inline constexpr std::uint64_t kRulesWeightDownBase = 740;
+
+    inline constexpr std::uint64_t kRulesWeightUpBase = 750;
+
+    inline constexpr ui::WidgetId kRulesApply{760};
+
+    inline constexpr ui::WidgetId kRulesCancel{761};
+
     inline constexpr ui::WidgetId kCharName{300};
 
     inline constexpr ui::WidgetId kCharNew{301};

@@ -1,21 +1,26 @@
 #include "antwika/map_editor/SheetWorkspace.hpp"
 
+#include <nlohmann/json.hpp>
+
 #include <array>
 #include <cstddef>
 #include <cstdint>
+#include <cstdlib>
 #include <fstream>
 #include <string>
 #include <string_view>
 #include <system_error>
+#include <utility>
 
 #include <antwika/autotile/SheetLayout.hpp>
+#include <antwika/enums/Enumeration.hpp>
 #include <antwika/gfx/Color.hpp>
 #include <antwika/gfx/GfxError.hpp>
 #include <antwika/gfx/Glyphs.hpp>
 #include <antwika/gfx/PngReader.hpp>
 #include <antwika/gfx/PngWriter.hpp>
+#include <antwika/gfx/PointF.hpp>
 #include <antwika/gfx/RectF.hpp>
-#include <antwika/enums/Enumeration.hpp>
 #include <antwika/log/Level.hpp>
 #include <antwika/ui/Theme.hpp>
 
@@ -31,6 +36,7 @@ namespace antwika::map_editor
         using antwika::gfx::Bitmap;
         using antwika::gfx::Color;
         using antwika::gfx::Point;
+        using antwika::gfx::PointF;
         using antwika::gfx::RectF;
 
         constexpr Color kInk{
@@ -88,6 +94,44 @@ namespace antwika::map_editor
                           sheet.size.height);
         }
 
+        constexpr std::array<std::pair<char, std::uint8_t>, 4>
+            kEdgeLetters{
+                {{'N', autotile::kEdgeNorth},
+                 {'E', autotile::kEdgeEast},
+                 {'S', autotile::kEdgeSouth},
+                 {'W', autotile::kEdgeWest}}};
+
+        [[nodiscard]] std::string edgesToText(
+            const std::uint8_t edges)
+        {
+            std::string text;
+
+            for (const auto &[letter, bit] : kEdgeLetters)
+            {
+                if ((edges & bit) != 0)
+                {
+                    text.push_back(letter);
+                }
+            }
+
+            return text;
+        }
+
+        [[nodiscard]] std::uint8_t edgesFromText(
+            const std::string &text)
+        {
+            std::uint8_t edges = 0;
+
+            for (const auto &[letter, bit] : kEdgeLetters)
+            {
+                if (text.find(letter) != std::string::npos)
+                {
+                    edges |= bit;
+                }
+            }
+
+            return edges;
+        }
     }
 
     void recolorOpaqueToWhite(Bitmap &sheet)
@@ -284,6 +328,195 @@ namespace antwika::map_editor
         return std::nullopt;
     }
 
+    autotile::TerrainConnectors loadConnectorsFile(
+        const std::filesystem::path &directory)
+    {
+        autotile::TerrainConnectors connectors{};
+
+        std::ifstream in(directory / "tiles.json");
+
+        if (!in)
+        {
+            return connectors;
+        }
+
+        const auto document =
+            nlohmann::json::parse(in, nullptr, false);
+
+        if (document.is_discarded()
+            || !document.contains("connectors")
+            || !document.at("connectors").is_object())
+        {
+            return connectors;
+        }
+
+        for (const auto &[name, slots] :
+             document.at("connectors").items())
+        {
+            for (const auto terrain :
+                 enums::kAll<tilemap::TerrainClass>)
+            {
+                if (tilemap::toString(terrain) != name
+                    || !slots.is_object())
+                {
+                    continue;
+                }
+
+                for (const auto &[slot, edges] : slots.items())
+                {
+                    const auto variant = std::atoi(slot.c_str());
+
+                    if (variant < 1 || variant > 7
+                        || !edges.is_string())
+                    {
+                        continue;
+                    }
+
+                    connectors[enums::index(terrain)]
+                        .edges[static_cast<std::size_t>(variant)] =
+                        edgesFromText(
+                            edges.get<std::string>());
+                }
+            }
+        }
+
+        return connectors;
+    }
+
+    std::optional<std::string> saveConnectorsFile(
+        const std::filesystem::path &directory,
+        const autotile::TerrainConnectors &connectors)
+    {
+        const auto path = directory / "tiles.json";
+
+        nlohmann::json document = nlohmann::json::object();
+
+        {
+            std::ifstream in(path);
+
+            if (in)
+            {
+                auto parsed =
+                    nlohmann::json::parse(in, nullptr, false);
+
+                if (!parsed.is_discarded() && parsed.is_object())
+                {
+                    document = std::move(parsed);
+                }
+            }
+        }
+
+        nlohmann::json section = nlohmann::json::object();
+
+        for (const auto terrain :
+             enums::kAll<tilemap::TerrainClass>)
+        {
+            nlohmann::json slots = nlohmann::json::object();
+
+            for (std::size_t variant = 1; variant <= 7; ++variant)
+            {
+                const auto edges =
+                    connectors[enums::index(terrain)]
+                        .edges[variant];
+
+                if (edges == autotile::kEdgeAll)
+                {
+                    continue;
+                }
+
+                slots[std::to_string(variant)] =
+                    edgesToText(edges);
+            }
+
+            if (!slots.empty())
+            {
+                section[std::string(
+                    tilemap::toString(terrain))] =
+                    std::move(slots);
+            }
+        }
+
+        if (section.empty())
+        {
+            document.erase("connectors");
+        }
+        else
+        {
+            document["connectors"] = std::move(section);
+        }
+
+        std::ofstream out(path);
+
+        if (!out)
+        {
+            return "cannot open " + path.string();
+        }
+
+        out << document.dump(2) << '\n';
+
+        if (!out.good())
+        {
+            return "cannot write " + path.string();
+        }
+
+        return std::nullopt;
+    }
+
+    std::optional<std::int32_t> variantSlotAt(const Point pixel)
+    {
+        if (pixel.x < 64 || pixel.x >= 96 || pixel.y < 0
+            || pixel.y >= 64)
+        {
+            return std::nullopt;
+        }
+
+        const auto slot =
+            (pixel.y / 16) * 2 + (pixel.x - 64) / 16;
+
+        if (slot >= 7)
+        {
+            return std::nullopt;
+        }
+
+        return slot + 1;
+    }
+
+    std::optional<std::uint8_t> connectorHotspotAt(
+        const Point pixel)
+    {
+        if (!variantSlotAt(pixel).has_value())
+        {
+            return std::nullopt;
+        }
+
+        const auto lx = (pixel.x - 64) % 16;
+        const auto ly = pixel.y % 16;
+        const bool midX = lx == 7 || lx == 8;
+        const bool midY = ly == 7 || ly == 8;
+
+        if (ly == 0 && midX)
+        {
+            return autotile::kEdgeNorth;
+        }
+
+        if (ly == 15 && midX)
+        {
+            return autotile::kEdgeSouth;
+        }
+
+        if (lx == 0 && midY)
+        {
+            return autotile::kEdgeWest;
+        }
+
+        if (lx == 15 && midY)
+        {
+            return autotile::kEdgeEast;
+        }
+
+        return std::nullopt;
+    }
+
     namespace
     {
         void applyStrokePixel(
@@ -309,6 +542,21 @@ namespace antwika::map_editor
 
         auto &doc = *active;
         auto &tiles = store.tiles;
+
+        if (gesture.kind == GestureKind::Press
+            && store.view == EditorView::Tiles && gesture.ink)
+        {
+            if (const auto edge =
+                    connectorHotspotAt(gesture.pixel))
+            {
+                const auto slot = *variantSlotAt(gesture.pixel);
+
+                tiles.connectors[enums::index(store.state.brush)]
+                    .edges[static_cast<std::size_t>(slot)] ^=
+                    *edge;
+                return;
+            }
+        }
 
         if (gesture.kind == GestureKind::Press)
         {
@@ -395,6 +643,15 @@ namespace antwika::map_editor
         }
 
         doc.dirty = false;
+
+        const auto connectorError = saveConnectorsFile(
+            store.tiles.directory, store.tiles.connectors);
+
+        if (connectorError.has_value())
+        {
+            logger.log(log::Level::Error, *connectorError);
+        }
+
         logger.log(
             log::Level::Info,
             "map_editor: saved "
@@ -429,6 +686,7 @@ namespace antwika::map_editor
     void drawSheetWorkspace(
         gfx::ViewportRenderer &view,
         const gfx::ITexture &sheet,
+        const autotile::SheetConnectors &connectors,
         const std::optional<Point> hover)
     {
         const auto left = static_cast<float>(kWorkspaceLeft);
@@ -543,6 +801,45 @@ namespace antwika::map_editor
             {left + static_cast<float>(hover->x) * zoom,
              top + static_cast<float>(hover->y) * zoom},
             zoom);
+
+        if (const auto slot = variantSlotAt(*hover))
+        {
+            const auto tileX = static_cast<float>(
+                64 + ((hover->x - 64) / 16) * 16);
+            const auto tileY =
+                static_cast<float>((hover->y / 16) * 16);
+            const auto edges = connectors.edges[static_cast<
+                std::size_t>(*slot)];
+            const std::array<
+                std::pair<std::uint8_t, PointF>,
+                4>
+                markers{
+                    {{autotile::kEdgeNorth, {7.0F, 0.0F}},
+                     {autotile::kEdgeSouth, {7.0F, 14.0F}},
+                     {autotile::kEdgeWest, {0.0F, 7.0F}},
+                     {autotile::kEdgeEast, {14.0F, 7.0F}}}};
+
+            for (const auto &[bit, at] : markers)
+            {
+                const auto on = (edges & bit) != 0;
+
+                view.drawRect(
+                    RectF(
+                        {left + (tileX + at.x) * zoom,
+                         top + (tileY + at.y) * zoom},
+                        {2.0F * zoom, 2.0F * zoom}),
+                    on ? Color{
+                             .red = 244,
+                             .green = 208,
+                             .blue = 63,
+                             .alpha = 200}
+                       : Color{
+                             .red = 110,
+                             .green = 114,
+                             .blue = 124,
+                             .alpha = 160});
+            }
+        }
     }
 
 }

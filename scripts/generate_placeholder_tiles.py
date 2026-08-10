@@ -275,6 +275,38 @@ def png_bytes(width: int, height: int, pixels: bytes) -> bytes:
     )
 
 
+FORBIDDEN = (
+    ("wall", "water"),
+    ("wall", "cliff"),
+    ("water", "path"),
+    ("water", "cliff"),
+    ("water", "stair"),
+    ("path", "cliff"),
+    ("cliff", "stair"),
+)
+
+ALL_TERRAINS = ("floor", "wall", "water", "cliff", "path", "stair")
+
+WEIGHTS = {"floor": 8, "wall": 3, "water": 2, "cliff": 1, "path": 2}
+
+
+def rules_text() -> str:
+    allowed = []
+
+    for a_index, a_name in enumerate(ALL_TERRAINS):
+        for b_name in ALL_TERRAINS[a_index:]:
+            pair = tuple(sorted((a_name, b_name)))
+
+            if pair in (tuple(sorted(f)) for f in FORBIDDEN):
+                continue
+
+            allowed.append([a_name, b_name])
+
+    document = {"weights": WEIGHTS, "adjacency": allowed}
+
+    return json.dumps(document, indent=2) + "\n"
+
+
 def sidecar_text() -> str:
     sidecar = {
         "sheet": {"width": SHEET_WIDTH, "height": SHEET_HEIGHT},
@@ -302,6 +334,10 @@ def main() -> int:
     sidecar = TILES_DIR / "tiles.json"
     sidecar.write_text(sidecar_text(), encoding="utf-8")
     print(f"OK: wrote {sidecar}")
+
+    rules = TILES_DIR / "rules.json"
+    rules.write_text(rules_text(), encoding="utf-8")
+    print(f"OK: wrote {rules}")
 
     return 0
 

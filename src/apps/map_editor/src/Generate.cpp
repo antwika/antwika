@@ -37,38 +37,26 @@ namespace antwika::map_editor
         constexpr std::size_t kStair =
             static_cast<std::size_t>(TerrainClass::Stair);
 
-        constexpr std::array<double, kAlphabet> kWeights{
-            8.0, 3.0, 2.0, 1.0, 2.0, 1.0};
-
         constexpr std::uint64_t kMaxSteps = 200000;
 
         constexpr std::uint32_t kSeedEvery = 6;
 
         constexpr std::uint32_t kGenerateFailedTicks = 180;
 
-        using Pair = std::pair<TerrainClass, TerrainClass>;
-
-        constexpr std::array kForbidden{
-            Pair{TerrainClass::Wall, TerrainClass::Water},
-            Pair{TerrainClass::Wall, TerrainClass::Cliff},
-            Pair{TerrainClass::Water, TerrainClass::Path},
-            Pair{TerrainClass::Water, TerrainClass::Cliff},
-            Pair{TerrainClass::Water, TerrainClass::Stair},
-            Pair{TerrainClass::Path, TerrainClass::Cliff},
-            Pair{TerrainClass::Cliff, TerrainClass::Stair},
-        };
-
-        [[nodiscard]] CompatibilityTable makeTable()
+        [[nodiscard]] CompatibilityTable makeTable(
+            const GenerationRules &rules)
         {
             CompatibilityTable table(kAlphabet);
 
-            for (const auto &[left, right] : kForbidden)
+            for (std::size_t a = 0; a < kAlphabet; ++a)
             {
-                const auto a = static_cast<std::size_t>(left);
-                const auto b = static_cast<std::size_t>(right);
-
-                table.set(a, b, false);
-                table.set(b, a, false);
+                for (std::size_t b = 0; b < kAlphabet; ++b)
+                {
+                    if (!rules.allowed[a][b])
+                    {
+                        table.set(a, b, false);
+                    }
+                }
             }
 
             return table;
@@ -105,13 +93,15 @@ namespace antwika::map_editor
         }
 
         [[nodiscard]] std::size_t weightedPick(
-            const Domain &domain, std::uint32_t &rng)
+            const Domain &domain,
+            const GenerationRules &rules,
+            std::uint32_t &rng)
         {
             double total = 0.0;
 
             for (const auto value : domain)
             {
-                total += kWeights[value];
+                total += rules.weights[value];
             }
 
             auto roll = static_cast<double>(next(rng) % 1024U)
@@ -119,7 +109,7 @@ namespace antwika::map_editor
 
             for (const auto value : domain)
             {
-                roll -= kWeights[value];
+                roll -= rules.weights[value];
 
                 if (roll <= 0.0)
                 {
@@ -244,8 +234,8 @@ namespace antwika::map_editor
 
                         if (!safe.isEmpty())
                         {
-                            const auto value =
-                                weightedPick(safe, rng);
+                            const auto value = weightedPick(
+                                safe, state.rules, rng);
 
                             domain.restrictTo(value);
                             fixed[index] = value;
@@ -298,14 +288,15 @@ namespace antwika::map_editor
             const bool seeded,
             const std::uint32_t seed)
         {
-            const auto table = makeTable();
+            const auto table = makeTable(state.rules);
             const auto constraints = makeConstraints(state, table);
             const auto refs = antwika::wfc::referencesTo(constraints);
 
             const Solver solver(
                 makeWave(state, table, seeded, seed),
                 refs,
-                {kWeights.begin(), kWeights.end()},
+                {state.rules.weights.begin(),
+                 state.rules.weights.end()},
                 {.maxSteps = kMaxSteps});
 
             const auto result = solver.solve();

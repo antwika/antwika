@@ -101,11 +101,12 @@ namespace antwika::map_editor
                    + (scale == active ? "x *" : "x");
         }
 
-        constexpr std::array<std::string_view, 4> kMapEntries{
+        constexpr std::array<std::string_view, 5> kMapEntries{
             "Playtest  F5",
             "Validate Now",
             "Generate  G",
-            "Palette..."};
+            "Palette...",
+            "Rules..."};
 
         constexpr std::array<
             std::span<const std::string_view>,
@@ -638,6 +639,129 @@ namespace antwika::map_editor
             ui.spacer(kGrow);
         }
 
+        constexpr std::array<std::string_view, 6> kTerrainShort{
+            "flr", "wal", "wat", "clf", "pth", "str"};
+
+        void describeRulesMatrix(Context &ui, const EditorStore &store)
+        {
+            {
+                const auto header = ui.row({.width = kGrow, .gap = 1});
+
+                ui.label("    ");
+
+                for (const auto name : kTerrainShort)
+                {
+                    ui.label(name, ui.theme().muted);
+                }
+            }
+
+            for (std::size_t row = 0;
+                 row < widgets::kRulesTerrains;
+                 ++row)
+            {
+                const auto line = ui.row({.width = kGrow, .gap = 1});
+
+                ui.label(kTerrainShort[row]);
+
+                for (std::size_t column = 0;
+                     column < widgets::kRulesTerrains;
+                     ++column)
+                {
+                    ButtonSpec spec{
+                        .id = widgets::rulesPairButton(row, column)};
+
+                    if (store.rules.edit.allowed[row][column])
+                    {
+                        spec.state = ButtonState::Pressed;
+                    }
+
+                    ui.button(
+                        store.rules.edit.allowed[row][column]
+                            ? "+"
+                            : "-",
+                        spec);
+                }
+            }
+        }
+
+        void describeRulesWeights(
+            Context &ui, const EditorStore &store)
+        {
+            for (std::size_t terrain = 0;
+                 terrain < widgets::kRulesTerrains;
+                 ++terrain)
+            {
+                if (static_cast<tilemap::TerrainClass>(terrain)
+                    == tilemap::TerrainClass::Stair)
+                {
+                    continue;
+                }
+
+                const auto line = ui.row({.width = kGrow, .gap = 2});
+
+                ui.label(kTerrainShort[terrain]);
+                ui.button(
+                    "-",
+                    {.id = static_cast<ui::WidgetId>(
+                         widgets::kRulesWeightDownBase + terrain)});
+                ui.label(std::to_string(static_cast<std::int32_t>(
+                    store.rules.edit.weights[terrain])));
+                ui.button(
+                    "+",
+                    {.id = static_cast<ui::WidgetId>(
+                         widgets::kRulesWeightUpBase + terrain)});
+            }
+        }
+
+        void describeRulesDialog(
+            Context &ui, const EditorStore &store)
+        {
+            ui.spacer(kGrow);
+
+            {
+                const auto center = ui.row({.width = kGrow});
+
+                ui.spacer(kGrow);
+
+                {
+                    const auto box = ui.column(
+                        {.width = fixedSize(180),
+                         .background = ui.theme().panel,
+                         .padding = 3,
+                         .gap = 1});
+
+                    ui.label("Generation rules");
+                    ui.label(
+                        "tileset-level, not part of map undo",
+                        ui.theme().muted);
+                    describeRulesMatrix(ui, store);
+                    ui.label("weights", ui.theme().muted);
+                    describeRulesWeights(ui, store);
+
+                    if (!store.rules.message.empty())
+                    {
+                        ui.label(
+                            store.rules.message,
+                            ui.theme().focusRing);
+                    }
+
+                    {
+                        const auto buttons =
+                            ui.row({.width = kGrow, .gap = 2});
+
+                        ui.button(
+                            "Apply", {.id = widgets::kRulesApply});
+                        ui.button(
+                            "Cancel", {.id = widgets::kRulesCancel});
+                    }
+                }
+
+                ui.spacer(kGrow);
+            }
+
+            ui.spacer(kGrow);
+        }
+
         void describeMenuBar(Context &ui, const EditorStore &store)
         {
             const auto bar = ui.row(
@@ -790,6 +914,18 @@ namespace antwika::map_editor
                          .gap = 0});
 
                     describePaletteDialog(ui, store);
+                }
+                else if (store.rules.open)
+                {
+                    const auto mapArea = ui.column(
+                        {.width = fixedSize(
+                             static_cast<std::uint32_t>(
+                                 kMapViewWidth)),
+                         .height = kGrow,
+                         .padding = 0,
+                         .gap = 0});
+
+                    describeRulesDialog(ui, store);
                 }
                 else
                 {

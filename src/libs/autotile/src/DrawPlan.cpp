@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <array>
 #include <cstddef>
+#include <vector>
 
 #include "antwika/autotile/Cutaway.hpp"
 #include "antwika/autotile/SheetLayout.hpp"
@@ -98,45 +99,93 @@ namespace antwika::autotile
                 bucket - kVariantSlots + 1);
         }
 
-        [[nodiscard]] std::uint8_t waterVariant(
-            const std::uint64_t hash,
-            const std::uint32_t clock) noexcept
+        [[nodiscard]] bool edgeOn(
+            const SheetConnectors &sheet,
+            const std::int32_t variant,
+            const std::uint8_t edge) noexcept
         {
-            const auto scattered = scatteredVariant(hash);
-
-            if (scattered != 0)
-            {
-                return scattered;
-            }
-
-            if ((clock / kWaterPeriod + hash) % 2 == 0)
-            {
-                return 0;
-            }
-
-            return kWaterFrameBVariant;
+            return (sheet.edges[static_cast<std::size_t>(variant)]
+                    & edge)
+                   != 0;
         }
 
-        [[nodiscard]] std::uint8_t surfaceVariant(
-            const TerrainClass terrain,
-            const std::int64_t dualColumn,
-            const std::int64_t dualRow,
-            const std::uint8_t mask,
-            const std::uint32_t clock) noexcept
+        [[nodiscard]] bool fitsNeighbours(
+            const SheetConnectors &sheet,
+            const std::int32_t variant,
+            const std::int32_t west,
+            const std::int32_t north,
+            const bool useWest,
+            const bool useNorth) noexcept
         {
-            if (mask != kFullMask)
+            if (useWest && west >= 0
+                && edgeOn(sheet, variant, kEdgeWest)
+                       != edgeOn(sheet, west, kEdgeEast))
             {
-                return 0;
+                return false;
             }
 
-            const auto hash = positionHash(dualColumn, dualRow);
-
-            if (terrain == TerrainClass::Water)
+            if (useNorth && north >= 0
+                && edgeOn(sheet, variant, kEdgeNorth)
+                       != edgeOn(sheet, north, kEdgeSouth))
             {
-                return waterVariant(hash, clock);
+                return false;
             }
 
-            return scatteredVariant(hash);
+            return true;
+        }
+
+        [[nodiscard]] std::uint8_t chooseVariant(
+            const SheetConnectors &sheet,
+            const std::uint64_t hash,
+            const std::int32_t west,
+            const std::int32_t north) noexcept
+        {
+            const auto preliminary = scatteredVariant(hash);
+
+            if (fitsNeighbours(
+                    sheet, preliminary, west, north, true, true))
+            {
+                return preliminary;
+            }
+
+            constexpr std::array<std::array<bool, 2>, 3> kPasses{
+                {{true, true}, {true, false}, {false, true}}};
+
+            for (const auto &pass : kPasses)
+            {
+                std::array<std::uint8_t, 8> candidates{};
+                std::size_t count = 0;
+                bool baseFits = false;
+
+                for (std::int32_t variant = 0; variant < 8;
+                     ++variant)
+                {
+                    if (!fitsNeighbours(
+                            sheet,
+                            variant,
+                            west,
+                            north,
+                            pass[0],
+                            pass[1]))
+                    {
+                        continue;
+                    }
+
+                    baseFits = baseFits || variant == 0;
+                    candidates[count] =
+                        static_cast<std::uint8_t>(variant);
+                    ++count;
+                }
+
+                if (count == 0)
+                {
+                    continue;
+                }
+
+                return baseFits ? 0 : candidates[hash % count];
+            }
+
+            return 0;
         }
 
         class PlanBuilder final
@@ -146,10 +195,12 @@ namespace antwika::autotile
                 const TileMap &map,
                 const GridCell player,
                 const std::int32_t playerHeight,
-                const std::uint32_t clock)
+                const std::uint32_t clock,
+                const TerrainConnectors &connectors)
                 : map(map),
                   playerHeight(playerHeight),
                   clock(clock),
+                  connectors(connectors),
                   hidden(cutawayHidden(map, player, playerHeight))
             {
             }
@@ -208,28 +259,54 @@ namespace antwika::autotile
 
             void addSurfaces(const std::int32_t level)
             {
+                const auto width =
+                    static_cast<std::size_t>(map.columns()) + 1;
+
                 for (const auto terrain : kDrawOrder)
                 {
+                    std::vector<std::int32_t> previousRow(
+                        width, -1);
+                    std::vector<std::int32_t> currentRow(width, -1);
+
                     for (std::int64_t dualRow = 0;
                          dualRow <= map.rows();
                          ++dualRow)
                     {
+                        std::ranges::fill(currentRow, -1);
+
                         for (std::int64_t dualColumn = 0;
                              dualColumn <= map.columns();
                              ++dualColumn)
                         {
-                            addSurface(
-                                dualColumn, dualRow, level, terrain);
+                            const auto at = static_cast<
+                                std::size_t>(dualColumn);
+                            const auto west =
+                                dualColumn > 0
+                                    ? currentRow[at - 1]
+                                    : -1;
+                            const auto north = previousRow[at];
+
+                            currentRow[at] = addSurface(
+                                dualColumn,
+                                dualRow,
+                                level,
+                                terrain,
+                                west,
+                                north);
                         }
+
+                        std::swap(previousRow, currentRow);
                     }
                 }
             }
 
-            void addSurface(
+            [[nodiscard]] std::int32_t addSurface(
                 const std::int64_t dualColumn,
                 const std::int64_t dualRow,
                 const std::int32_t level,
-                const TerrainClass terrain)
+                const TerrainClass terrain,
+                const std::int32_t west,
+                const std::int32_t north)
             {
                 std::uint8_t mask = 0;
 
@@ -256,15 +333,37 @@ namespace antwika::autotile
 
                 if (mask == 0)
                 {
-                    return;
+                    return -1;
+                }
+
+                std::int32_t chosen = -1;
+                std::uint8_t variant = 0;
+
+                if (mask == kFullMask)
+                {
+                    const auto hash =
+                        positionHash(dualColumn, dualRow);
+                    const auto &sheet =
+                        connectors[enums::index(terrain)];
+
+                    chosen = chooseVariant(sheet, hash, west, north);
+                    variant = static_cast<std::uint8_t>(chosen);
+
+                    if (terrain == TerrainClass::Water
+                        && chosen == 0)
+                    {
+                        variant =
+                            (clock / kWaterPeriod + hash) % 2 == 0
+                                ? 0
+                                : kWaterFrameBVariant;
+                    }
                 }
 
                 plan.push_back(TileDraw{
                     .terrain = terrain,
                     .piece = TilePiece::Surface,
                     .mask = mask,
-                    .variant = surfaceVariant(
-                        terrain, dualColumn, dualRow, mask, clock),
+                    .variant = variant,
                     .screen = {
                         .x = static_cast<std::int32_t>(dualColumn)
                              * kUnit
@@ -272,6 +371,8 @@ namespace antwika::autotile
                         .y = static_cast<std::int32_t>(dualRow) * kUnit
                              - kHalfTile
                              - level * kLevelRise}});
+
+                return chosen;
             }
 
             void addFaces(const std::int32_t level)
@@ -442,6 +543,7 @@ namespace antwika::autotile
             const TileMap &map;
             std::int32_t playerHeight;
             std::uint32_t clock;
+            const TerrainConnectors &connectors;
             std::vector<bool> hidden;
             DrawPlan plan{};
         };
@@ -453,7 +555,23 @@ namespace antwika::autotile
         const std::int32_t playerHeight,
         const std::uint32_t clock)
     {
-        return PlanBuilder(map, player, playerHeight, clock).build();
+        const TerrainConnectors allConnected{};
+
+        return PlanBuilder(
+                   map, player, playerHeight, clock, allConnected)
+            .build();
+    }
+
+    DrawPlan buildDrawPlan(
+        const TileMap &map,
+        const GridCell player,
+        const std::int32_t playerHeight,
+        const std::uint32_t clock,
+        const TerrainConnectors &connectors)
+    {
+        return PlanBuilder(
+                   map, player, playerHeight, clock, connectors)
+            .build();
     }
 
 }

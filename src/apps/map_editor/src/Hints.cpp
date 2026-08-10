@@ -3,10 +3,12 @@
 #include <array>
 #include <cmath>
 #include <cstdint>
+#include <utility>
 #include <span>
 #include <string_view>
 #include <variant>
 
+#include <antwika/autotile/Connectors.hpp>
 #include <antwika/enums/Enumeration.hpp>
 
 #include <antwika/tilemap/Cell.hpp>
@@ -64,11 +66,12 @@ namespace antwika::map_editor
             "window at 4x scale",
             "toggle fullscreen"};
 
-        constexpr std::array<std::string_view, 4> kMapEntryHints{
+        constexpr std::array<std::string_view, 5> kMapEntryHints{
             "save and launch the demo",
             "run the validator now",
             "generate: fill all free cells",
-            "pick the ink and paper colors"};
+            "pick the ink and paper colors",
+            "edit the tileset generation rules"};
 
         [[nodiscard]] std::optional<std::string_view> rangeHint(
             const WidgetId id,
@@ -275,6 +278,63 @@ namespace antwika::map_editor
                 return "apply the palette as one undoable edit";
             }
 
+            if (const auto pair = widgets::rulesPairIndex(id))
+            {
+                const auto row =
+                    *pair / widgets::kRulesTerrains;
+                const auto column =
+                    *pair % widgets::kRulesTerrains;
+
+                return "toggle "
+                       + std::string(tilemap::toString(
+                           static_cast<TerrainClass>(row)))
+                       + "-"
+                       + std::string(tilemap::toString(
+                           static_cast<TerrainClass>(column)))
+                       + " adjacency (tileset rules)";
+            }
+
+            {
+                const auto raw =
+                    static_cast<std::uint64_t>(id);
+
+                if (raw >= widgets::kRulesWeightDownBase
+                    && raw < widgets::kRulesWeightDownBase
+                                 + widgets::kRulesTerrains)
+                {
+                    return "lower the "
+                           + std::string(tilemap::toString(
+                               static_cast<TerrainClass>(
+                                   raw
+                                   - widgets::
+                                       kRulesWeightDownBase)))
+                           + " weight";
+                }
+
+                if (raw >= widgets::kRulesWeightUpBase
+                    && raw < widgets::kRulesWeightUpBase
+                                 + widgets::kRulesTerrains)
+                {
+                    return "raise the "
+                           + std::string(tilemap::toString(
+                               static_cast<TerrainClass>(
+                                   raw
+                                   - widgets::
+                                       kRulesWeightUpBase)))
+                           + " weight";
+                }
+            }
+
+            if (id == widgets::kRulesApply)
+            {
+                return "write rules.json for this tileset";
+            }
+
+            if (id == widgets::kRulesCancel)
+            {
+                return "discard the rule edits";
+            }
+
             if (id == widgets::kCharName)
             {
                 return "type a character name";
@@ -462,6 +522,50 @@ namespace antwika::map_editor
                 hint += "  ink";
             }
 
+            if (const auto slot = variantSlotAt(*pixel))
+            {
+                const auto edges =
+                    store.tiles
+                        .connectors[enums::index(
+                            store.state.brush)]
+                        .edges[static_cast<std::size_t>(*slot)];
+
+                hint += "  edges ";
+
+                if (edges == 0)
+                {
+                    hint += "none";
+                }
+                else
+                {
+                    const std::array<
+                        std::pair<std::uint8_t, char>,
+                        4>
+                        letters{
+                            {{autotile::kEdgeNorth, 'N'},
+                             {autotile::kEdgeEast, 'E'},
+                             {autotile::kEdgeSouth, 'S'},
+                             {autotile::kEdgeWest, 'W'}}};
+                    bool first = true;
+
+                    for (const auto &[bit, letter] : letters)
+                    {
+                        if ((edges & bit) == 0)
+                        {
+                            continue;
+                        }
+
+                        if (!first)
+                        {
+                            hint += ",";
+                        }
+
+                        hint += letter;
+                        first = false;
+                    }
+                }
+            }
+
             return hint;
         }
 
@@ -509,13 +613,34 @@ namespace antwika::map_editor
     HintKey hintKeyFor(
         const EditorStore &store, const ui::WidgetId hovered)
     {
+        std::uint8_t connectorEdges = 0;
+
+        if (store.view == EditorView::Tiles
+            && store.input.canvasPointer.has_value())
+        {
+            if (const auto pixel =
+                    sheetPixelAt(*store.input.canvasPointer))
+            {
+                if (const auto slot = variantSlotAt(*pixel))
+                {
+                    connectorEdges =
+                        store.tiles
+                            .connectors[enums::index(
+                                store.state.brush)]
+                            .edges[static_cast<std::size_t>(
+                                *slot)];
+                }
+            }
+        }
+
         return HintKey{
             .view = store.view,
             .widget = hovered,
             .pointer = store.input.canvasPointer,
             .modal = modalOpen(store),
             .edits = store.state.undoStack.size()
-                     + store.state.redoStack.size()};
+                     + store.state.redoStack.size(),
+            .connectorEdges = connectorEdges};
     }
 
     std::string hintFor(

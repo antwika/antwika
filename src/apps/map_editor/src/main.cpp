@@ -30,6 +30,7 @@
 #include "antwika/map_editor/EditorConsole.hpp"
 #include "antwika/map_editor/EditorStore.hpp"
 #include "antwika/map_editor/EntityEditSystem.hpp"
+#include "antwika/map_editor/GenerationRules.hpp"
 #include "antwika/map_editor/KeyboardSystem.hpp"
 #include "antwika/map_editor/MapRenderSystem.hpp"
 #include "antwika/map_editor/MirrorSystem.hpp"
@@ -122,6 +123,10 @@ int main(int argc, char **argv)
                 command.value(kTilesFlag)
                     .value_or(std::string(kDefaultTiles)));
 
+            store.state.rules =
+                antwika::map_editor::loadRulesFileOrDefaults(
+                    store.tiles.directory / "rules.json", logger);
+
             for (const auto terrain :
                  antwika::enums::kAll<antwika::tilemap::TerrainClass>)
             {
@@ -129,6 +134,10 @@ int main(int argc, char **argv)
                     .image = antwika::map_editor::loadSheetOrPlaceholder(
                     store.tiles.directory, terrain, logger);
             }
+
+            store.tiles.connectors =
+                antwika::map_editor::loadConnectorsFile(
+                    store.tiles.directory);
 
             store.characters.directory = std::filesystem::path(
                 command.value(kCharactersFlag)

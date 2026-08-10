@@ -26,6 +26,7 @@
 #include "antwika/map_editor/Commands.hpp"
 #include "antwika/map_editor/ConfigFile.hpp"
 #include "antwika/map_editor/Generate.hpp"
+#include "antwika/map_editor/GenerationRules.hpp"
 #include "antwika/map_editor/Hints.hpp"
 #include "antwika/map_editor/PaletteMath.hpp"
 #include "antwika/map_editor/PanelScene.hpp"
@@ -136,6 +137,12 @@ namespace antwika::map_editor
         if (store.palette.open)
         {
             actPalette(interactions, rects);
+            return;
+        }
+
+        if (store.rules.open)
+        {
+            actRules(interactions);
             return;
         }
 
@@ -306,6 +313,75 @@ namespace antwika::map_editor
         else if (activated == widgets::kPaletteCancel)
         {
             cancelPaletteDialog(store);
+        }
+    }
+
+    void UiSystem::actRules(const ui::Interactions &interactions)
+    {
+        auto &dialog = store.rules;
+        const auto activated = interactions.activated;
+
+        store.ui.focus = activated == kNoWidget
+                             ? interactions.focused
+                             : activated;
+
+        if (const auto pair = widgets::rulesPairIndex(activated))
+        {
+            const auto row = *pair / widgets::kRulesTerrains;
+            const auto column = *pair % widgets::kRulesTerrains;
+            const bool allowed =
+                !dialog.edit.allowed[row][column];
+
+            dialog.edit.allowed[row][column] = allowed;
+            dialog.edit.allowed[column][row] = allowed;
+            return;
+        }
+
+        const auto raw = static_cast<std::uint64_t>(activated);
+
+        if (raw >= widgets::kRulesWeightDownBase
+            && raw < widgets::kRulesWeightDownBase
+                         + widgets::kRulesTerrains)
+        {
+            auto &weight =
+                dialog.edit
+                    .weights[raw - widgets::kRulesWeightDownBase];
+
+            weight = std::max(1.0, weight - 1.0);
+            return;
+        }
+
+        if (raw >= widgets::kRulesWeightUpBase
+            && raw < widgets::kRulesWeightUpBase
+                         + widgets::kRulesTerrains)
+        {
+            auto &weight =
+                dialog.edit
+                    .weights[raw - widgets::kRulesWeightUpBase];
+
+            weight = std::min(20.0, weight + 1.0);
+            return;
+        }
+
+        if (activated == widgets::kRulesApply)
+        {
+            const auto error = saveRulesFile(
+                store.tiles.directory / "rules.json", dialog.edit);
+
+            if (error.has_value())
+            {
+                dialog.message = *error;
+                return;
+            }
+
+            store.state.rules = dialog.edit;
+            dialog.open = false;
+            return;
+        }
+
+        if (activated == widgets::kRulesCancel)
+        {
+            dialog.open = false;
         }
     }
 
@@ -639,7 +715,14 @@ namespace antwika::map_editor
             return;
         }
 
-        openPaletteDialog(store);
+        if (entry == 3)
+        {
+            openPaletteDialog(store);
+            return;
+        }
+
+        store.rules = RulesDialog{
+            .open = true, .edit = store.state.rules};
     }
 
     void UiSystem::saveCurrentSheet()
