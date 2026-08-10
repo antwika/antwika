@@ -26,6 +26,7 @@ Unit tests for the editor itself remain deferred by explicit decision; see docs/
 | 14 | Developer console in tilemap_demo and map_editor | shipped |
 | 15 | Fullscreen support | shipped |
 | 16 | Drag-resizable windows | shipped |
+| 17 | Generate-every-second-press bug | fixed |
 
 ## 1: menu bar (shipped)
 
@@ -223,6 +224,15 @@ A behavior divergence is recorded rather than "fixed": viewportFor letterboxes w
 That contract is shared by every app and pinned by the gfx tests, hit-testing inverts it exactly at any size, and the sub-canvas capture stays coherent, so it was kept as-is.
 A manual drag never writes the config file — the persisted uiScale remains the last explicitly chosen scale — and the UI Scale entries still snap to exact window sizes, which required the setUiScale early-return to also compare the actual window size so re-choosing the persisted scale after a drag still restores its exact geometry.
 Verification under Xvfb: xdotool windowsize drove 1000x700, 1500x900, 700x400, and a sub-canvas 400x220 with captures showing crisp aspect-true letterboxing and no stretching, a wall painted at cell 7,3 in the 1000x700 window landed exactly there in the saved JSON, the config stayed untouched by drags, UI Scale 3x afterwards snapped back to 1440x810, F10 still entered and left 1920x1080, and the demo resized through 1000x700 and 640x500 with arrows moving the player throughout.
+
+## 17: generate-every-second-press bug
+
+User report: "Only every second press on Map > Generate does generate the map."
+Reproduction under Xvfb before any theory: six menu presses on a fresh map with the JSON saved and hashed after each showed changes on presses 2, 4, and 6 only, and the same alternation held for the G key and the panel Generate button, which exonerated the menu-dispatch and pending-plumbing candidates immediately since those are path-specific.
+The flushed log then overturned the seed-parity-contradiction candidate too: every press logged "generated with seed N" with no failures — generation ran and applied every time, but consecutive seeds produced byte-identical maps in pairs.
+Root cause: makeWave seeded its xorshift32 stream with `seed | 1U`, which collapses seeds 2k and 2k+1 onto the same nonzero state; with the rest of the solve fully deterministic, seeds 2 and 3 (4 and 5, and so on) yield the same map, so the incrementing per-press counter visibly regenerated only every second press.
+Fix: the stream now starts from `scrambled(seed)`, a splitmix-style finalizer (add golden-ratio constant, two xor-shift-multiply rounds) with a zero-state remap to one, so every practical seed gets a distinct nonzero xorshift32 state; the coordinator's fallback idea of retrying the next seed on contradiction was not needed because no contradictions were occurring.
+Verified after the fix: six consecutive Map > Generate presses produced six distinct terrain hashes with a pre-painted pinned water cell and the pinned wall border verbatim in every snapshot, two G presses and two panel presses each changed the map identically, one undo reverted exactly the last Generate (the saved JSON matched the previous press's snapshot), and a constructed contradiction — pinned water beside pinned cliff, an incompatible adjacency — failed in about a second with "generate failed (seed 11)" in the console, the yellow panel notice, a live editor, and a map untouched apart from the two painted pins.
 
 ## After the queue drains
 

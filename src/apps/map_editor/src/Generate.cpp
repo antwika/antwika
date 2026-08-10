@@ -82,6 +82,28 @@ namespace antwika::map_editor
             return rng;
         }
 
+        /**
+         * @brief Spreads a counter seed into an xorshift32 state.
+         *
+         * Ensures: the result is never zero, and every distinct
+         *          seed below the zero remap's single collision
+         *          yields a distinct state, so consecutive seeds
+         *          never share a stream.
+         */
+        [[nodiscard]] std::uint32_t scrambled(
+            const std::uint32_t seed) noexcept
+        {
+            auto value = seed + 0x9E3779B9U;
+
+            value ^= value >> 16U;
+            value *= 0x21F0AAADU;
+            value ^= value >> 15U;
+            value *= 0x735A2D97U;
+            value ^= value >> 15U;
+
+            return value == 0 ? 1U : value;
+        }
+
         [[nodiscard]] std::size_t weightedPick(
             const Domain &domain, std::uint32_t &rng)
         {
@@ -165,7 +187,7 @@ namespace antwika::map_editor
         {
             const auto columns = state.map.columns();
             const auto rows = state.map.rows();
-            auto rng = seed | 1U;
+            auto rng = scrambled(seed);
             auto fixed = pinnedValues(state);
 
             std::vector<Domain> wave;
