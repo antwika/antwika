@@ -15,7 +15,7 @@ class AntwikaConan(ConanFile):
     options = {
         "gfx_backend": ["null", "sdl3", "raylib"],
         "input_backend": ["auto", "null", "sdl3", "raylib"],
-        "sound_backend": ["null", "sdl3"],
+        "sound_backend": ["null", "sdl3", "raylib"],
         "network_backend": ["null", "sockets"],
     }
 

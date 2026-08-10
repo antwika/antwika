@@ -28,6 +28,31 @@ if(ANTWIKA_GFX_BACKEND STREQUAL "raylib")
     antwika_bundle_test(TARGET antwika_gfx_backend_raylib_tests)
 endif()
 
+if(ANTWIKA_SOUND_BACKEND STREQUAL "raylib")
+    add_executable(antwika_sound_backend_raylib_tests
+        ${CMAKE_CURRENT_SOURCE_DIR}/../src/RaylibAudioRuntime.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/../src/RaylibDevice.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/../src/RaylibSoundBackend.cpp
+        RaylibSoundBackendConformanceTest.cpp
+    )
+
+    target_include_directories(antwika_sound_backend_raylib_tests
+        PRIVATE
+            ${CMAKE_CURRENT_SOURCE_DIR}/../src
+    )
+
+    target_link_libraries(antwika_sound_backend_raylib_tests
+        PRIVATE
+            antwika::sound
+            antwika::sound::tests::conformance
+            antwika::log::tests::mocks
+            gtest::gtest
+            raylib
+    )
+
+    antwika_bundle_test(TARGET antwika_sound_backend_raylib_tests)
+endif()
+
 if(ANTWIKA_INPUT_BACKEND STREQUAL "raylib")
     add_executable(antwika_input_backend_raylib_tests
         ${CMAKE_CURRENT_SOURCE_DIR}/../src/RaylibInputBackend.cpp

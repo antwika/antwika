@@ -22,6 +22,7 @@ ENV CCACHE_SLOPPINESS=pch_defines,time_macros
 
 RUN apt-get update \
     && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        libasound2-dev \
         libegl-dev \
         libfontenc-dev \
         libgl-dev \

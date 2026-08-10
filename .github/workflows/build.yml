@@ -300,8 +300,8 @@ jobs:
             lockfile: conan-sdl3.lock
           - name: raylib
             backend: raylib
-            subsystems: gfx input
-            options: -o gfx_backend=raylib
+            subsystems: gfx input sound
+            options: -o gfx_backend=raylib -o sound_backend=raylib
             folder_vars: "['options.gfx_backend']"
             preset: conan-gfx_backend_raylib-release
             lockfile: conan-raylib.lock
@@ -409,7 +409,11 @@ jobs:
             log="conformance-${subsystem}.log"
 
             case "$subsystem" in
-              sound) runner=(env SDL_AUDIO_DRIVER=dummy) ;;
+              sound)
+                printf 'pcm.!default { type null }\nctl.!default { type null }\n' \
+                  > /etc/asound.conf
+                runner=(env SDL_AUDIO_DRIVER=dummy)
+                ;;
               network) runner=(env) ;;
               *) runner=(xvfb-run -a) ;;
             esac
