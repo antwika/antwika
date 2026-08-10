@@ -5,6 +5,7 @@
 #include <limits>
 #include <memory>
 #include <span>
+#include <utility>
 #include <vector>
 
 #include <antwika/log/ILogger.hpp>
@@ -19,6 +20,27 @@
 namespace antwika::ecs::detail
 {
     class EntityManager;
+
+    enum class OpKind : std::uint8_t
+    {
+        Insert,
+        Remove,
+    };
+
+    template <Component T>
+    struct PendingOps final
+    {
+        std::vector<std::pair<Entity, T>> inserts;
+        std::vector<Entity> removes;
+        std::vector<OpKind> order;
+
+        void clear() noexcept
+        {
+            inserts.clear();
+            removes.clear();
+            order.clear();
+        }
+    };
 }
 
 namespace antwika::ecs
@@ -56,15 +78,9 @@ namespace antwika::ecs
                 throw EcsError("World: entity is not alive");
             }
 
-            pendingOps.push_back(
-                [this, entity, value] // GCOVR_EXCL_LINE
-                {
-                    if (!alive(entity))
-                    {
-                        return;
-                    }
-                    storageFor<T>().insert(entity, value);
-                });
+            auto &pending = pendingFor<T>();
+            pending.inserts.emplace_back(entity, value);
+            pending.order.push_back(detail::OpKind::Insert);
         }
 
         template <Component T>
@@ -75,15 +91,9 @@ namespace antwika::ecs
                 throw EcsError("World: entity is not alive");
             }
 
-            pendingOps.push_back(
-                [this, entity]
-                {
-                    auto &storage = storageFor<T>();
-                    if (storage.contains(entity))
-                    {
-                        storage.remove(entity);
-                    }
-                });
+            auto &pending = pendingFor<T>();
+            pending.removes.push_back(entity);
+            pending.order.push_back(detail::OpKind::Remove);
         }
 
         template <Component T>
@@ -170,6 +180,74 @@ namespace antwika::ecs
         }
 
         template <Component T>
+        [[nodiscard]] detail::PendingOps<T> &pendingFor()
+        {
+            const auto id = detail::componentId<T>();
+            if (id < buffers.size() && buffers[id] != nullptr)
+            {
+                return *static_cast<detail::PendingOps<T> *>(
+                    buffers[id].get());
+            }
+
+            if (id >= buffers.size())
+            {
+                buffers.resize(id + 1);
+            }
+
+            auto buffer = std::make_shared<detail::PendingOps<T>>();
+            auto *rawPtr = buffer.get();
+            buffers[id] = std::move(buffer);
+
+            drainCallbacks.push_back(
+                [this, rawPtr] // GCOVR_EXCL_LINE
+                { drain<T>(*rawPtr); });
+            clearCallbacks.push_back(
+                [rawPtr] // GCOVR_EXCL_LINE
+                { rawPtr->clear(); });
+
+            return *rawPtr;
+        }
+
+        template <Component T>
+        void drain(detail::PendingOps<T> &pending)
+        {
+            if (pending.order.empty())
+            {
+                return;
+            }
+
+            auto &storage = storageFor<T>();
+            std::size_t nextInsert = 0;
+            std::size_t nextRemove = 0;
+
+            for (const auto kind : pending.order)
+            {
+                if (kind == detail::OpKind::Insert)
+                {
+                    const auto &staged = pending.inserts[nextInsert];
+                    ++nextInsert;
+
+                    if (alive(staged.first))
+                    {
+                        storage.insert(staged.first, staged.second);
+                    }
+
+                    continue;
+                }
+
+                const auto entity = pending.removes[nextRemove];
+                ++nextRemove;
+
+                if (storage.contains(entity))
+                {
+                    storage.remove(entity);
+                }
+            }
+
+            pending.clear();
+        }
+
+        template <Component T>
         [[nodiscard]] const ComponentStorage<T> *findStorage() const noexcept
         {
             const auto id = detail::componentId<T>();
@@ -183,12 +261,16 @@ namespace antwika::ecs
 
         void retireAll(std::span<const Entity> entities);
 
+        void clearPending() noexcept;
+
         std::unique_ptr<detail::EntityManager> entityManager;
         std::vector<std::shared_ptr<void>> pools;
+        std::vector<std::shared_ptr<void>> buffers;
         std::vector<std::function<void()>> commitCallbacks;
         std::vector<std::function<void(std::span<const Entity>)>>
             removeFromAllPools;
-        std::vector<std::function<void()>> pendingOps;
+        std::vector<std::function<void()>> drainCallbacks;
+        std::vector<std::function<void()>> clearCallbacks;
         std::vector<Entity> pendingDestroys;
     };
 
