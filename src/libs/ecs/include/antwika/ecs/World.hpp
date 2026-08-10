@@ -226,22 +226,13 @@ namespace antwika::ecs
                 {
                     const auto &staged = pending.inserts[nextInsert];
                     ++nextInsert;
-
-                    if (alive(staged.first))
-                    {
-                        storage.insert(staged.first, staged.second);
-                    }
-
+                    storage.insert(staged.first, staged.second);
                     continue;
                 }
 
                 const auto entity = pending.removes[nextRemove];
                 ++nextRemove;
-
-                if (storage.contains(entity))
-                {
-                    storage.remove(entity);
-                }
+                storage.removeAll(std::span<const Entity>(&entity, 1));
             }
 
             pending.clear();

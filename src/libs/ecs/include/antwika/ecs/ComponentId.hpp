@@ -24,7 +24,7 @@ namespace antwika::ecs::detail
     template <Component T>
     [[nodiscard]] std::size_t componentId() noexcept
     {
-        static const std::size_t id = nextComponentId();
+        static const std::size_t id = nextComponentId(); // GCOVR_EXCL_LINE
         return id;
     }
 

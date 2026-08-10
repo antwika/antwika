@@ -616,3 +616,26 @@ TEST(WorldTest, Add_IsDiscardedWhenTheEntityDiesInTheSamePhase)
     ASSERT_TRUE(world.has<Position>(kept));
     EXPECT_EQ(world.get<Position>(kept), (Position{3, 4}));
 }
+
+TEST(WorldTest, Destroy_ClearsBothPoolsOfATypePairSharedAcrossWorlds)
+{
+    NiceMock<MockLogger> logger;
+    World world(logger);
+    const auto entity = world.create();
+    world.add<Unregistered>(entity, Unregistered{1});
+    world.add<Registered>(entity, Registered{2});
+    world.commit();
+
+    ASSERT_TRUE(world.has<Unregistered>(entity));
+    ASSERT_TRUE(world.has<Registered>(entity));
+
+    const auto view = world.view<Unregistered>();
+    const std::vector<Entity> listed(view.begin(), view.end());
+    EXPECT_EQ(listed, (std::vector<Entity>{entity}));
+
+    world.destroy(entity);
+    world.commit();
+
+    EXPECT_FALSE(world.has<Unregistered>(entity));
+    EXPECT_FALSE(world.has<Registered>(entity));
+}

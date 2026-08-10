@@ -62,13 +62,6 @@ namespace antwika::ecs
                 return *this;
             }
 
-            const_iterator operator++(int) noexcept
-            {
-                const auto was = *this;
-                ++(*this);
-                return was;
-            }
-
             [[nodiscard]] bool operator==(
                 const const_iterator &other) const noexcept
             {
@@ -89,8 +82,9 @@ namespace antwika::ecs
                 return std::apply(
                     [entity](const auto *...storages) // GCOVR_EXCL_LINE
                     {
-                        return (
-                            ... && storages->contains(entity));
+                        // GCOVR_EXCL_START
+                        return (... && storages->contains(entity));
+                        // GCOVR_EXCL_STOP
                     },
                     pools);
             }

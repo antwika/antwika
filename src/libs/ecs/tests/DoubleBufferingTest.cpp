@@ -70,14 +70,14 @@ TEST(DoubleBufferingTest, Commit_LeavesAnUntouchedEntityUnchanged)
     EXPECT_EQ(storage.read(untouched), (Health{20}));
 }
 
-TEST(DoubleBufferingTest, Commit_KeepsTheComponentsAnEarlierRemoveShiftedDown)
+TEST(DoubleBufferingTest, Commit_KeepsTheComponentsAnEarlierRemovalShiftedDown)
 {
     ComponentStorage<Health> storage;
     storage.insert(Entity{1}, Health{10});
     storage.insert(Entity{2}, Health{20});
     storage.insert(Entity{3}, Health{30});
 
-    storage.remove(Entity{2});
+    storage.removeAll(std::vector<Entity>{Entity{2}});
     storage.commit();
 
     EXPECT_EQ(storage.read(Entity{1}), (Health{10}));
@@ -95,35 +95,6 @@ TEST(DoubleBufferingTest, Commit_ReseedsTheBackFromTheFront)
     storage.commit();
 
     EXPECT_EQ(storage.read(entity), (Health{1}));
-}
-
-TEST(DoubleBufferingTest, Remove_KeepsAPendingWriteOnASurvivor)
-{
-    ComponentStorage<Health> storage;
-    storage.insert(Entity{1}, Health{10});
-    storage.insert(Entity{2}, Health{20});
-    storage.insert(Entity{3}, Health{30});
-
-    storage.write(Entity{3}, Health{99});
-    storage.remove(Entity{1});
-    storage.commit();
-
-    EXPECT_EQ(storage.read(Entity{3}), (Health{99}));
-    EXPECT_EQ(storage.read(Entity{2}), (Health{20}));
-}
-
-TEST(DoubleBufferingTest, Remove_DropsAPendingWriteOnTheRemovedEntity)
-{
-    ComponentStorage<Health> storage;
-    storage.insert(Entity{1}, Health{10});
-    storage.insert(Entity{2}, Health{20});
-
-    storage.write(Entity{1}, Health{99});
-    storage.remove(Entity{1});
-    storage.commit();
-
-    EXPECT_FALSE(storage.contains(Entity{1}));
-    EXPECT_EQ(storage.read(Entity{2}), (Health{20}));
 }
 
 TEST(DoubleBufferingTest, RemoveAll_KeepsAPendingWriteOnASurvivor)

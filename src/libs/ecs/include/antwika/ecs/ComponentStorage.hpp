@@ -35,31 +35,6 @@ namespace antwika::ecs
             written.push_back(0);
         }
 
-        void remove(Entity entity)
-        {
-            const auto index = indexOf(entity);
-            if (!index.has_value())
-            {
-                throw EcsError("ComponentStorage: entity has no component");
-            }
-
-            for (auto i = *index + 1; i < dense.size(); ++i)
-            {
-                dense[i - 1] = dense[i];
-                front[i - 1] = front[i];
-                back[i - 1] = back[i];
-                written[i - 1] = written[i];
-                sparse[rawValue(dense[i - 1])] = i - 1;
-            }
-
-            dense.pop_back();
-            front.pop_back();
-            back.pop_back();
-            written.pop_back();
-            sparse[rawValue(entity)] = kNotPresent;
-            rebuildWrittenIndices();
-        }
-
         void removeAll(std::span<const Entity> batch)
         {
             doomed.assign(dense.size(), 0);
@@ -177,19 +152,6 @@ namespace antwika::ecs
             if (value >= sparse.size())
             {
                 sparse.resize(value + 1, kNotPresent);
-            }
-        }
-
-        void rebuildWrittenIndices()
-        {
-            writtenIndices.clear();
-
-            for (std::size_t at = 0; at < written.size(); ++at)
-            {
-                if (written[at] == 1)
-                {
-                    writtenIndices.push_back(at);
-                }
             }
         }
 
