@@ -20,6 +20,9 @@ enable_testing()
 option(ENABLE_COVERAGE "Enable coverage" OFF)
 option(ANTWIKA_WARNINGS_AS_ERRORS "Treat compiler warnings as errors" ON)
 
+option(ANTWIKA_BUILD_BENCHMARKS
+    "Build the benchmark executables under benchmarks/" OFF)
+
 set(ANTWIKA_GFX_BACKEND "null" CACHE STRING
     "Graphics backend to compile and link, named after a backends/ subdirectory")
 
@@ -82,6 +85,10 @@ endif()
 
 add_subdirectory(src)
 add_subdirectory(backends)
+
+if(ANTWIKA_BUILD_BENCHMARKS AND NOT CMAKE_CROSSCOMPILING)
+    add_subdirectory(benchmarks)
+endif()
 
 antwika_install_notices(share/doc/antwika)
 

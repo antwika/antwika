@@ -57,16 +57,7 @@ namespace antwika::ecs
             throw EcsError("World: entity is not alive");
         }
 
-        pendingOps.push_back(
-            [this, entity]
-            {
-                if (!alive(entity))
-                {
-                    return;
-                }
-
-                retire(entity);
-            });
+        pendingDestroys.push_back(entity);
     }
 
     bool World::alive(Entity entity) const noexcept
@@ -79,10 +70,14 @@ namespace antwika::ecs
         std::vector<std::function<void()>> running;
         running.swap(pendingOps);
 
+        std::vector<Entity> destroying;
+        destroying.swap(pendingDestroys);
+
         const ScopeGuard guard(
             [this]
             {
                 pendingOps.clear();
+                pendingDestroys.clear();
 
                 for (const auto &commitCallback : commitCallbacks)
                 {
@@ -94,16 +89,35 @@ namespace antwika::ecs
         {
             op();
         }
+
+        retireAll(destroying);
     }
 
-    void World::retire(Entity entity)
+    void World::retireAll(std::span<const Entity> entities)
     {
-        for (const auto &purge : removeFromAllPools)
+        std::vector<Entity> doomed;
+        doomed.reserve(entities.size());
+
+        for (const auto entity : entities)
         {
-            purge(entity);
+            if (!alive(entity))
+            {
+                continue;
+            }
+
+            entityManager->destroy(entity);
+            doomed.push_back(entity);
         }
 
-        entityManager->destroy(entity);
+        if (doomed.empty())
+        {
+            return;
+        }
+
+        for (const auto &purge : removeFromAllPools)
+        {
+            purge(doomed);
+        }
     }
 
 }

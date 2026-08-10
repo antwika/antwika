@@ -4,13 +4,13 @@
 #include <functional>
 #include <limits>
 #include <memory>
-#include <typeindex>
-#include <unordered_map>
+#include <span>
 #include <vector>
 
 #include <antwika/log/ILogger.hpp>
 
 #include "antwika/ecs/Component.hpp"
+#include "antwika/ecs/ComponentId.hpp"
 #include "antwika/ecs/ComponentStorage.hpp"
 #include "antwika/ecs/EcsError.hpp"
 #include "antwika/ecs/Entity.hpp"
@@ -144,29 +144,27 @@ namespace antwika::ecs
         template <Component T>
         [[nodiscard]] ComponentStorage<T> &storageFor()
         {
-            const auto key = std::type_index(typeid(T));
-            const auto found = pools.find(key);
-            if (found != pools.end())
+            const auto id = detail::componentId<T>();
+            if (id < pools.size() && pools[id] != nullptr)
             {
-                return *static_cast<ComponentStorage<T> *>(
-                    found->second.get());
+                return *static_cast<ComponentStorage<T> *>(pools[id].get());
+            }
+
+            if (id >= pools.size())
+            {
+                pools.resize(id + 1);
             }
 
             auto storage = std::make_shared<ComponentStorage<T>>();
             auto *rawPtr = storage.get();
-            pools.emplace(key, std::move(storage));
+            pools[id] = std::move(storage);
 
             commitCallbacks.push_back(
                 [rawPtr] // GCOVR_EXCL_LINE
                 { rawPtr->commit(); });
             removeFromAllPools.push_back(
-                [rawPtr](Entity entity) // GCOVR_EXCL_LINE
-                {
-                    if (rawPtr->contains(entity)) // GCOVR_EXCL_LINE
-                    {
-                        rawPtr->remove(entity);
-                    }
-                });
+                [rawPtr](std::span<const Entity> batch) // GCOVR_EXCL_LINE
+                { rawPtr->removeAll(batch); });
 
             return *rawPtr;
         }
@@ -174,24 +172,24 @@ namespace antwika::ecs
         template <Component T>
         [[nodiscard]] const ComponentStorage<T> *findStorage() const noexcept
         {
-            const auto key = std::type_index(typeid(T));
-            const auto found = pools.find(key);
-            if (found == pools.end())
+            const auto id = detail::componentId<T>();
+            if (id >= pools.size() || pools[id] == nullptr)
             {
                 return nullptr;
             }
 
-            return static_cast<const ComponentStorage<T> *>(
-                found->second.get());
+            return static_cast<const ComponentStorage<T> *>(pools[id].get());
         }
 
-        void retire(Entity entity);
+        void retireAll(std::span<const Entity> entities);
 
         std::unique_ptr<detail::EntityManager> entityManager;
-        std::unordered_map<std::type_index, std::shared_ptr<void>> pools;
+        std::vector<std::shared_ptr<void>> pools;
         std::vector<std::function<void()>> commitCallbacks;
-        std::vector<std::function<void(Entity)>> removeFromAllPools;
+        std::vector<std::function<void(std::span<const Entity>)>>
+            removeFromAllPools;
         std::vector<std::function<void()>> pendingOps;
+        std::vector<Entity> pendingDestroys;
     };
 
 }

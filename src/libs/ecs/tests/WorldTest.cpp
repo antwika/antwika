@@ -436,3 +436,122 @@ TEST(WorldTest, View_IntersectsMultipleComponentTypes)
 
     EXPECT_EQ(positionEntities, (std::vector<Entity>{both, positionOnly}));
 }
+
+TEST(WorldTest, Destroy_KeepsTheOrderOfTheSurvivorsInAView)
+{
+    NiceMock<MockLogger> logger;
+    World world(logger);
+
+    std::vector<Entity> entities;
+    for (int at = 0; at < 6; ++at)
+    {
+        const auto entity = world.create();
+        world.add<Position>(entity, Position{at, at});
+        entities.push_back(entity);
+    }
+    world.commit();
+
+    world.destroy(entities[1]);
+    world.destroy(entities[4]);
+    world.commit();
+
+    const auto view = world.view<Position>();
+    const std::vector<Entity> order(view.begin(), view.end());
+
+    EXPECT_EQ(
+        order,
+        (std::vector<Entity>{
+            entities[0], entities[2], entities[3], entities[5]}));
+}
+
+TEST(WorldTest, Destroy_ClearsEveryPoolOfABatchInOneCommit)
+{
+    NiceMock<MockLogger> logger;
+    World world(logger);
+
+    std::vector<Entity> entities;
+    for (int at = 0; at < 4; ++at)
+    {
+        const auto entity = world.create();
+        world.add<Position>(entity, Position{at, at});
+        world.add<Velocity>(entity, Velocity{at});
+        entities.push_back(entity);
+    }
+    world.commit();
+
+    for (const auto entity : entities)
+    {
+        world.destroy(entity);
+    }
+    world.commit();
+
+    for (const auto entity : entities)
+    {
+        EXPECT_FALSE(world.alive(entity));
+        EXPECT_FALSE(world.has<Position>(entity));
+        EXPECT_FALSE(world.has<Velocity>(entity));
+    }
+
+    EXPECT_EQ(world.view<Position>().size(), 0U);
+    EXPECT_EQ(world.view<Velocity>().size(), 0U);
+}
+
+namespace
+{
+
+    struct Registered final
+    {
+        int value{};
+
+        bool operator==(const Registered &) const = default;
+    };
+
+    struct Unregistered final
+    {
+        int value{};
+
+        bool operator==(const Unregistered &) const = default;
+    };
+
+}
+
+TEST(WorldTest, Has_IsFalseForATypeAnotherWorldRegisteredFirst)
+{
+    NiceMock<MockLogger> logger;
+
+    World first(logger);
+    const auto entity = first.create();
+    first.add<Unregistered>(entity, Unregistered{1});
+    first.add<Registered>(entity, Registered{2});
+    first.commit();
+
+    World second(logger);
+    const auto other = second.create();
+    second.add<Registered>(other, Registered{3});
+    second.commit();
+
+    EXPECT_FALSE(second.has<Unregistered>(other));
+    EXPECT_EQ(second.view<Unregistered>().size(), 0U);
+}
+
+TEST(WorldTest, Add_FillsAPoolAnotherWorldOpenedFirst)
+{
+    NiceMock<MockLogger> logger;
+
+    World first(logger);
+    const auto entity = first.create();
+    first.add<Unregistered>(entity, Unregistered{1});
+    first.add<Registered>(entity, Registered{2});
+    first.commit();
+
+    World second(logger);
+    const auto other = second.create();
+    second.add<Registered>(other, Registered{3});
+    second.commit();
+
+    second.add<Unregistered>(other, Unregistered{4});
+    second.commit();
+
+    ASSERT_TRUE(second.has<Unregistered>(other));
+    EXPECT_EQ(second.get<Unregistered>(other), (Unregistered{4}));
+}
